@@ -2,9 +2,11 @@
 """The MATTE: a painting over a flat key colour becomes the pilot on transparency, with no fringe and no specks.
 
 A painter (an image model, a scan of an artist's board) delivers the pilot on one flat colour the brief named
-(brief.py: green #00FF00 unless the coat or the faction accent is near it, then magenta or blue). The matte:
+(brief.key_for: green #00FF00, or blue for a green coat, IVY's leaves or a Preservationist's green jacket; a spec
+may name magenta for a non-Ruby pilot that can take neither). The matte:
 
-  1. ESTIMATES the key from the border ring of the image (the brief asks for an edge-to-edge flat colour, so the
+  1. ESTIMATES the key from the border ring of the image (seeded by the brief's key: the boots touch the bottom
+     edge, so an unseeded ring would count the figure) (the brief asks for an edge-to-edge flat colour, so the
      ring is the background; a model's slight gradient or noise is measured there too and becomes the tolerance);
   2. computes the DIFFERENCE KEY: a pixel blended over a pure green (or blue, or magenta) key carries that much
      excess of the key's channel over the others, so alpha = 1 - excess / the key's own excess (0.5 for a half
@@ -144,13 +146,36 @@ def decontaminate(rgb, alpha, key):
     for _ in range(FRINGE_PX):
         p = np.pad(eroded, 1, constant_values=False)
         eroded = p[1:-1, 1:-1] & p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:]
-    fringe = (alpha > 0.0) & ~eroded
-    dom = int(np.argmax(key))                                     # the key's dominant channel (green, red or blue)
-    others = [c for c in range(3) if c != dom]
-    if key[dom] > key[others].max() + 0.3:                        # a saturated key: a chroma key, not a grey
-        cap = out[..., others].mean(axis=-1)
-        chan = out[..., dom]
-        out[..., dom] = np.where(fringe, np.minimum(chan, cap + 0.02), chan)
+    # Only semi-transparent pixels: an opaque edge pixel is the pilot's own colour (jade trim is green-rich), and
+    # capping it dulled real trim (review 2026-11-07).
+    fringe = (alpha > 0.0) & (alpha < 1.0) & ~eroded
+    dom, oth = key_channels(key)                                  # green: [1]; magenta: [0, 2]; blue: [2]
+    if dom:                                                       # a chroma key, not a grey
+        cap = out[..., oth].mean(axis=-1)
+        for c in dom:
+            chan = out[..., c]
+            out[..., c] = np.where(fringe, np.minimum(chan, cap + 0.02), chan)
+    return out
+
+
+def _fill_from_neighbours(rgb, holes):
+    """Paint each hole pixel with the mean of its known 8-neighbours, growing inward until every hole is painted."""
+    out = rgb.copy()
+    known = ~holes
+    while not known.all():
+        p = np.pad(out, ((1, 1), (1, 1), (0, 0)), mode="edge")
+        pk = np.pad(known, 1, constant_values=False)
+        acc = np.zeros_like(out)
+        cnt = np.zeros(out.shape[:2], dtype=np.float32)
+        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+            k = pk[1 + dy:pk.shape[0] - 1 + dy, 1 + dx:pk.shape[1] - 1 + dx]
+            acc += p[1 + dy:p.shape[0] - 1 + dy, 1 + dx:p.shape[1] - 1 + dx] * k[..., None]
+            cnt += k
+        grow = ~known & (cnt > 0)
+        if not grow.any():
+            break
+        out[grow] = acc[grow] / cnt[grow][:, None]
+        known = known | grow
     return out
 
 
@@ -189,9 +214,12 @@ def key_matte(rgb, key_hex=None):
     """RGB float HxWx3 over a key colour -> (RGBA float HxWx4, info)."""
     hint = hex_rgb(key_hex) if key_hex else None
     key, spread = estimate_key(rgb, hint)
-    alpha = alpha_from_key(rgb, key, spread)
-    alpha = clean(alpha)
+    raw = alpha_from_key(rgb, key, spread)
+    alpha = clean(raw)
+    filled = (alpha >= 1.0) & (raw < 0.5)                # pinholes clean() closed: their colour is still the key's
     colour = decontaminate(rgb, alpha, key)
+    if filled.any():
+        colour = _fill_from_neighbours(colour, filled)
     rgba = np.concatenate([colour, alpha[..., None]], axis=-1).astype(np.float32)
     info = dict(key=[float(c) for c in key], spread=spread)
     return rgba, info
@@ -239,6 +267,8 @@ def self_test():
         failures.append("the speck survived")
     if a[150, 120] < 0.99:
         failures.append("the pinhole was not filled")
+    if abs(rgba[150, 120, :3] - np.array([0.45, 0.40, 0.35])).max() > 0.03:
+        failures.append(f"the filled pinhole kept the key's colour: {rgba[150, 120, :3]}")
     c = rgba[100, 171, :3]
     if c[1] > max(c[0], c[2]) + 0.05:
         failures.append(f"the fringe kept the green: {c}")
@@ -263,6 +293,8 @@ def self_test():
         failures.append(f"a green key made interior jade trim see-through: alpha {rgba3[110, 130, 3]:.3f}")
     if rgba3[210, 91, 3] < 0.9:
         failures.append(f"a green key ate jade trim on the edge: alpha {rgba3[210, 91, 3]:.2f}")
+    if abs(rgba3[110, 130, :3] - hex_rgb("#0EC0B6")).max() > 0.01:
+        failures.append(f"the fringe cap dulled opaque jade trim: {rgba3[110, 130, :3]}")
     # A magenta key DOES eat ruby trim on the figure's edge: the reason brief.key_for never pairs them.
     rgb4 = np.broadcast_to(hex_rgb("#FF00FF"), (h, w, 3)).astype(np.float32).copy()
     rgb4[fig] = (0.45, 0.40, 0.35)
@@ -279,7 +311,7 @@ def self_test():
         failures.append("from_alpha did not clean or kept the figure wrong")
     for f in failures:
         print("SELF-TEST FAIL:", f)
-    print("self-test:", "FAILED" if failures else "OK (12 checks)")
+    print("self-test:", "FAILED" if failures else "OK (14 checks)")
     return 1 if failures else 0
 
 
@@ -287,7 +319,7 @@ def main(argv):
     if "--self-test" in argv:
         return self_test()
     paths = [a for a in argv if not a.startswith("--")]
-    key = argv[argv.index("--key") + 1] if "--key" in argv else None
+    key = argv[argv.index("--key") + 1] if "--key" in argv else "#00FF00"   # always seeded (see 1. above)
     out = argv[argv.index("--out") + 1] if "--out" in argv else None
     if not paths or not out:
         print(__doc__)

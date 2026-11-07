@@ -12,9 +12,9 @@ right). The finish puts every new portrait on that same stage, by measurement:
   2. its ANCHOR, the mean of the head band's centre and the torso band's centre (measure.band), goes to CX of the
      frame; the whole silhouette is then shifted the least that keeps it inside the frame (a tail may hang to the
      edge, it never leaves it);
-  3. resampling is done on PREMULTIPLIED colour with Lanczos (an RGBA resize on straight colour drags the black of
-     the transparent pixels into every edge: the dark halo), then un-premultiplied, with the edge colour extended
-     a few pixels into the transparent area so a bilinear sample in the UI never reads a dark pixel;
+  3. the edge colour is extended a few pixels into the transparent area, and the resample is Pillow's Lanczos on
+     RGBA, which premultiplies internally (so the black of the transparent pixels never reaches an edge); the edge
+     colour is extended again after it, so a bilinear sample in the UI never reads a dark pixel;
   4. a light unsharp mask puts back the crispness a 4-5x downsample takes (the set is crisp at 220 px).
 
 Nothing here changes a colour or a value: a tone decision is the painter's (the brief) and is judged on the sheet.
@@ -96,15 +96,13 @@ def finish(rgba, size=SIZE):
     p = plan(rgba, size)
     x0, y0, x1, y1 = p["crop"]
     piece = rgba[y0:y1, x0:x1]
-    alpha = piece[..., 3:4]
     rgb = _extend_edges(piece[..., :3], piece[..., 3])
-    pre = np.concatenate([rgb * alpha, alpha], axis=-1)
-    pre8 = Image.fromarray((np.clip(pre, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
-    small = np.asarray(pre8.resize(p["size"], Image.LANCZOS), dtype=np.float32) / 255.0
-    a = small[..., 3:4]
-    straight = np.where(a > 1e-3, small[..., :3] / np.maximum(a, 1e-3), 0.0)
-    straight = np.clip(straight, 0, 1)
-    straight = _extend_edges(straight, small[..., 3])
+    straight8 = np.concatenate([rgb, piece[..., 3:4]], axis=-1)
+    src8 = Image.fromarray((np.clip(straight8, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
+    # Pillow resizes RGBA in premultiplied form internally (RGBA -> RGBa -> RGBA), so straight colour goes in and
+    # straight colour comes out; premultiplying here as well weighted every edge by alpha squared (review 2026-11-07).
+    small = np.asarray(src8.resize(p["size"], Image.LANCZOS), dtype=np.float32) / 255.0
+    straight = _extend_edges(small[..., :3], small[..., 3])
     rgb8 = Image.fromarray((straight * 255 + 0.5).astype(np.uint8), "RGB").filter(ImageFilter.UnsharpMask(**UNSHARP))
     sprite = Image.new("RGBA", size, (0, 0, 0, 0))
     layer = Image.merge("RGBA", (*rgb8.split(), Image.fromarray((small[..., 3] * 255 + 0.5).astype(np.uint8), "L")))
@@ -155,9 +153,13 @@ def self_test():
     light = np.zeros((1000, 800, 4), dtype=np.float32)
     light[100:900, 300:500, :3] = 0.9
     light[100:900, 300:500, 3] = 1.0
+    light[100:900, 500:510, :3] = 0.9                    # a soft right edge, so the check has pixels to judge
+    light[100:900, 500:510, 3] = np.linspace(0.9, 0.1, 10)[None, :]
     arr = np.asarray(finish(light), dtype=np.float32) / 255.0
     edge = (arr[..., 3] > 0.05) & (arr[..., 3] < 0.95)
-    if edge.any() and arr[edge][:, :3].mean() < 0.8:
+    if not edge.any():
+        failures.append("the halo check found no soft edge to judge")
+    elif arr[edge][:, :3].mean() < 0.8:
         failures.append(f"a dark halo on a light figure's edge: {arr[edge][:, :3].mean():.2f}")
     # 5. An empty matte is refused.
     try:

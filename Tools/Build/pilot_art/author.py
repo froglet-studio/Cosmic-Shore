@@ -35,26 +35,51 @@ import re
 import subprocess
 import sys
 
-import numpy as np
-from PIL import Image
+try:                                     # numpy and Pillow are not in every collaborator's Python; the ship gate
+    import numpy as np                   # then SKIPs this check (like the reference compile) instead of failing
+    from PIL import Image                # every branch (review 2026-11-07)
+    MISSING = None
+except ImportError as _e:                # pragma: no cover - environment dependent
+    np = Image = None
+    MISSING = str(_e)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import brief  # noqa: E402
-import finish  # noqa: E402
-import matte  # noqa: E402
-import measure  # noqa: E402
-import sheet as sheet_mod  # noqa: E402
-import verify  # noqa: E402
+if MISSING is None:
+    import finish  # noqa: E402
+    import matte  # noqa: E402
+    import measure  # noqa: E402
+    import sheet as sheet_mod  # noqa: E402
+    import verify  # noqa: E402
 
-ROOT = measure.ROOT
+ROOT = brief.ROOT
 OUT_DIR = "Assets/_Graphics/Pilots"
-SHEETS = sheet_mod.SHEETS
+SHEETS = "Docs/Pilots/art/sheets"
 WIRED = "Tools/Build/pilot_art/wired.json"
 META_DONOR = "Assets/_Graphics/Pilots/Portrait_Mason_Placeholder.png.meta"   # the set's importer (serializedVersion 13)
 PILOT_GENERATOR = "Tools/Build/author_pilot_assets.py"
 ROSTER_DIR = "Assets/_SO_Assets/Pilots/Roster"
+
+
+TOLERANCE_LEVELS = 3          # --check: the most any channel may differ from the re-finish, in 0-255 levels
+TOLERANCE_SHARE = 0.01        # --check: the largest share of channel values that may differ at all
+
+
+def check_wired():
+    """Every wired.json entry names a spec that still exists, still wires that pilot, and a PNG that exists."""
+    problems = []
+    names = set(spec_names())
+    for pid, e in load_wired()["portraits"].items():
+        spec = e.get("spec", "")
+        if spec.lower() not in names:
+            problems.append(f"{WIRED}: {pid} is wired by spec {spec!r}, which no longer exists")
+        elif brief.load_spec(spec.lower()).get("pilot") != pid:
+            problems.append(f"{WIRED}: {pid} is wired by spec {spec!r}, which now names {brief.load_spec(spec.lower()).get('pilot')!r}")
+        if not os.path.exists(os.path.join(ROOT, e.get("png", ""))):
+            problems.append(f"{WIRED}: {pid} points at {e.get('png')!r}, which does not exist")
+    return problems
 
 
 def guid_for(name):
@@ -154,6 +179,8 @@ def write(spec, sprite):
         with open(meta, "w", encoding="utf-8", newline="\n") as f:
             f.write(meta_text(spec))
     data = load_wired()
+    for pid in [p for p, e in data["portraits"].items() if e.get("spec") == spec["name"] and p != spec.get("pilot")]:
+        del data["portraits"][pid]                     # the spec's pilot moved or was cleared: its old wire goes
     if spec.get("pilot"):
         data["portraits"][spec["pilot"]] = dict(png=rel, guid=guid_for(spec["name"]), spec=spec["name"])
     save_wired(data)
@@ -176,9 +203,18 @@ def check(spec, sprite):
     if not os.path.exists(full):
         problems.append(f"{rel} is missing")
     else:
-        disk = np.asarray(Image.open(full).convert("RGBA"))
-        if disk.shape != np.asarray(sprite).shape or not np.array_equal(disk, np.asarray(sprite)):
-            problems.append(f"{rel} differs from the finish of {spec['source']}")
+        disk = np.asarray(Image.open(full).convert("RGBA")).astype(np.int16)
+        mine = np.asarray(sprite).astype(np.int16)
+        # Not byte equality: the matte is float maths (OKLab cube roots, smoothsteps) whose last bit may differ
+        # between numpy builds. A re-finish on another machine moves a few pixels by one or two levels; a hand edit
+        # or a changed source moves many, or one by a lot (review 2026-11-07).
+        if disk.shape != mine.shape:
+            problems.append(f"{rel} differs from the finish of {spec['source']} (size)")
+        else:
+            diff = np.abs(disk - mine)
+            if diff.max() > TOLERANCE_LEVELS or (diff > 0).mean() > TOLERANCE_SHARE:
+                problems.append(f"{rel} differs from the finish of {spec['source']} "
+                                f"(max {int(diff.max())} levels, {100 * (diff > 0).mean():.2f}% of values)")
     meta = full + ".meta"
     if not os.path.exists(meta):
         problems.append(f"{rel}.meta is missing")
@@ -226,6 +262,10 @@ def run(names, mode, sheet_name=None, dump=None):
             continue
         if mode == "write":
             print("  wrote", write(spec, sprite))
+    if mode == "check":
+        for p in check_wired():
+            print("DRIFT:", p)
+            failures += 1
     if cands:
         out = os.path.join(ROOT, SHEETS, (sheet_name or (names[0] if len(names) == 1 else "round")) + ".png")
         sheet_mod.sheet(cands, out, title=f"Pilot portraits: {', '.join(c['person'] for c in cands)}")
@@ -257,9 +297,9 @@ def self_test():
     sprite = Image.new("RGBA", measure.SIZE, (10, 20, 30, 255))
     global OUT_DIR, WIRED
     keep = (OUT_DIR, WIRED)
-    with tempfile.TemporaryDirectory(dir=ROOT) as tmp:
-        OUT_DIR = os.path.relpath(tmp, ROOT)
-        WIRED = os.path.relpath(os.path.join(tmp, "wired.json"), ROOT)
+    with tempfile.TemporaryDirectory() as tmp:          # outside the repo: absolute paths survive os.path.join(ROOT, ...)
+        OUT_DIR = tmp
+        WIRED = os.path.join(tmp, "wired.json")
         try:
             if "is missing" not in " ".join(check(spec, sprite)):
                 failures.append("check() did not report a missing sprite")
@@ -267,21 +307,32 @@ def self_test():
             if check(spec, sprite):
                 failures.append(f"check() reports drift right after write(): {check(spec, sprite)}")
             tampered = sprite.copy()
-            tampered.putpixel((0, 0), (99, 99, 99, 255))
-            if not any("differs" in p for p in check(spec, tampered)):
-                failures.append("check() did not report a tampered sprite")
+            tampered.putpixel((0, 0), (11, 21, 31, 255))   # one pixel, one level: float noise
+            big = sprite.copy()
+            big.paste((200, 200, 200, 255), (0, 0, 40, 40))
+            if not any("differs" in p for p in check(spec, big)):
+                failures.append("check() did not report a hand-edited sprite")
+            if any("differs" in p for p in check(spec, tampered)):
+                failures.append("check() failed a one-pixel float-noise difference inside the tolerance")
             data = load_wired()
             if data["portraits"]["pilot.callsign.talon"]["guid"] != guid_for("SelfTest"):
                 failures.append("write() did not record the wire")
+            spec2 = dict(spec, pilot="pilot.callsign.volt")
+            write(spec2, sprite)
+            if "pilot.callsign.talon" in load_wired()["portraits"]:
+                failures.append("write() kept the old wire after the spec's pilot moved")
         finally:
             OUT_DIR, WIRED = keep
     for f in failures:
         print("SELF-TEST FAIL:", f)
-    print("self-test:", "FAILED" if failures else "OK (7 checks)")
+    print("self-test:", "FAILED" if failures else "OK (9 checks)")
     return 1 if failures else 0
 
 
 def main(argv):
+    if MISSING is not None:
+        print(f"SKIP  pilot_art/author.py: {MISSING} (pip install numpy pillow to run it)")
+        return 0 if "--check" in argv else 3
     if "--self-test" in argv:
         return self_test()
     def option(flag):

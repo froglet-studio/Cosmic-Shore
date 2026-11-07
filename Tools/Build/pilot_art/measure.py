@@ -22,7 +22,9 @@ Metrics (fractions of the frame unless said):
     sat                        mean HSV saturation of the opaque pixels
     accent                     share of opaque pixels with sat > 0.6 (the glow lines and the one accent)
     thumb_keep                 silhouette mass kept at the Hangar's 44x56 (box-filtered, > 0.5) over the full-size mass
-    islands                    silhouette components beyond the largest, with more than 0.05 % of the frame each
+    islands                    SPECKS: components beyond the largest with more than 0.05 % of the frame and less than
+                               KEEP_SHARE (2 %) of the largest; a bigger detached piece is one matte.clean keeps on
+                               purpose (a thrown rope, a feather) and is not counted
 """
 import json
 import os
@@ -39,6 +41,7 @@ THUMB = (44, 56)                  # the Hangar's pilot card portrait (author_men
 HEAD_BAND = (0.0, 0.18)
 TORSO_BAND = (0.30, 0.60)
 ALPHA = 0.5
+KEEP_SHARE = 0.02                 # matte.KEEP_SHARE: a detached piece this share of the figure is kept, not a speck
 
 
 def load(path):
@@ -110,8 +113,9 @@ def band(mask, ys, lo, hi):
     b0 = y0 + int(round((y1 - y0) * lo))
     b1 = max(b0 + 1, y0 + int(round((y1 - y0) * hi)))
     cols = np.nonzero(mask[b0:b1].any(axis=0))[0]
-    if len(cols) == 0:
-        return 0.5, 0.0
+    if len(cols) == 0:                                   # an empty band: fall back to the whole silhouette's columns
+        cols = np.nonzero(mask.any(axis=0))[0]
+        return float((cols.min() + cols.max() + 1) / 2), 0.0
     return float((cols.min() + cols.max() + 1) / 2), float(cols.max() - cols.min() + 1)
 
 
@@ -161,7 +165,7 @@ def metrics(img):
     out["thumb_keep"] = float((thumb > ALPHA).mean() / full_mass) if full_mass > 0 else 0.0
     _, sizes = components(m)
     floor = 0.0005 * h * w
-    out["islands"] = int(sum(1 for s in sizes[1:] if s > floor))
+    out["islands"] = int(sum(1 for s in sizes[1:] if floor < s < KEEP_SHARE * sizes[0]))
     out["empty"] = False
     return out
 
@@ -181,9 +185,15 @@ def table(rows):
     return "\n".join(lines)
 
 
+def is_reference(name):
+    """The 32 painted portraits: `Portrait_<Name>_Placeholder.png` and `PilotPortrait_*.png`. The kit writes its own
+    `Portrait_<Name>.png` into the same folder, and those must never join the envelope they are judged against."""
+    return name.endswith(".png") and (name.startswith("PilotPortrait_") or name.endswith("_Placeholder.png"))
+
+
 def references():
     d = os.path.join(ROOT, REFERENCE_DIR)
-    return sorted(os.path.join(d, f) for f in os.listdir(d) if f.endswith(".png"))
+    return sorted(os.path.join(d, f) for f in os.listdir(d) if is_reference(f))
 
 
 def envelope(rows):
@@ -206,7 +216,7 @@ def self_test():
         failures.append(f"box metrics wrong: {m}")
     if m["islands"] != 0:
         failures.append("a single box reported islands")
-    img[10:20, 10:20, 3] = 1.0               # 100 px island (> 0.05 % of 61,600 = 31 px)
+    img[10:20, 10:20, 3] = 1.0               # 100 px island (> 0.05 % of 61,600 = 31 px, < 2 % of the box)
     if metrics(img)["islands"] != 1:
         failures.append("an island was not counted")
     img[10:20, 10:20, 3] = 0.0

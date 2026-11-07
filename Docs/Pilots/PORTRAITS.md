@@ -36,7 +36,7 @@ soft fur edges, no backdrop.
 
 | Piece | What |
 |---|---|
-| `brief.py` | the art direction composed from the game's data: 48 `AnimalSpecies` lines (head / lent feature / colour), 18 callsign marks, 16 faction gear lines with the domain accent hexes from `colour_domains.json`, the house style, the key colour choice; `--self-test` holds the tables to the enums |
+| `brief.py` | the art direction composed from the game's data: 48 `AnimalSpecies` lines (head / lent feature / colour), 18 callsign marks, 16 faction gear lines with the domain accent hexes copied from `colour_domains.json` (held to it by `--self-test`), the house style, the key colour choice; `--self-test` holds the tables to the enums |
 | `specs/<name>.py` | one portrait: the person, callsign, heritage, faction, pose, source, key, exemptions, the pilot it is wired to |
 | `matte.py` | the key-colour matte: key estimated from the border ring, the difference key in the edge band, decontamination, specks and pinholes cleaned |
 | `finish.py` | the 220x280 sprite framed to the set's stage by measurement (top 0.010, bottom 0.995, anchor 0.49, width <= 0.96), premultiplied Lanczos, edge colour extended, a light unsharp; changes no colour or value |

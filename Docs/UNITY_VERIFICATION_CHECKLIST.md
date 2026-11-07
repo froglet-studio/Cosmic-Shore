@@ -21709,7 +21709,7 @@ Both `--check`s and `bash .claude/skills/ship/gates.sh` are green. The sheet: `D
 
 1. **Import**: the four PNGs import as single sprites with transparency (no white or green halo round the fur).
 2. **Hangar**: Menu_Main > Hangar > PILOTS: TALON, VOLT, SUNDIAL and BANDIT show their portrait at 44x56 in the card's
-   portrait slot, upright, boots at the bottom, the other fourteen still show the no-art word.
+   portrait slot, upright, boots at the bottom, the other fourteen still show an empty portrait slot (noArtWord is authored blank).
 3. **Squads page**: a squad slot with one of those four seated shows the same portrait in its pilot image.
 4. **Legibility**: at the Hangar's size the animal reads first (lynx, axolotl, owl, octopus); if it does not, say which,
    and the brief's species line is what changes (`Tools/Build/pilot_art/brief.py`).
@@ -21720,6 +21720,6 @@ Branch `cece/sweet-goodall-duyp56`. No C# changed. Fourteen more sprites (`Portr
 Obelo,Nedira,Zeko,Mathalo,Fenlia,Jorin,Ilia,Haradek,Ekora}.png`) are wired to the fourteen remaining `Pilot_<Callsign>.asset`s,
 so every callsign now references a portrait. Both `--check`s and the ship gates are green. Sheet: `Docs/Pilots/art/sheets/round2.png`.
 
-1. **Hangar**: Menu_Main > Hangar > PILOTS: all eighteen cards show a portrait at 44x56, none shows the no-art word.
+1. **Hangar**: Menu_Main > Hangar > PILOTS: all eighteen cards show a portrait at 44x56, none shows an empty portrait slot.
 2. **Legibility at 44x56**: the animal reads first on each card; if one does not, name it and the brief's species line changes.
 3. **Transparency**: no green, blue or magenta fringe round any figure (three key colours were used this round).
