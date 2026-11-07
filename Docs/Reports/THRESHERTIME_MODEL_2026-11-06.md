@@ -162,3 +162,89 @@ real-game soak with pass-3 E is the test that counts.
 4. The model's limits (section 1) bias it slow; a person's nest race would let the human-time test be judged.
 
 Results JSONs: `/mnt/project-files/regatta-training/results/thresher-time/`.
+
+## 7. With the nose lead on (2026-11-07)
+
+Brief 20 of the Regatta balancing project: the lead-on twin `threshertime-thresher-time-lead` (same search, seeds and
+genomes, with `nose_rate` 1.5 and `nose_lead` 2.5, the model of `AIPilot.NoseLeadGain` from PR #1786, which ships at 0).
+**Every number is the MODEL's** (`thresher_time_sim.py`); nothing was raced in the game and nothing is written to an asset.
+
+**One correction to the brief.** This model never assumed a lag-free nose: `race()`'s `nose_rate=None` is already the
+fleet lag (`LERP` 1.5/s), so every number in sections 3-5 IS the lag-only cell (lag on, lead off). The extra cell
+reported below is the lag-free one (`nose_rate` 0).
+
+### The search
+
+Two restarts (B, C), sep-CMA-ES, sigma 0.2, the twin's 3 courses per intensity, run by hand with `local_run.py`.
+
+| Run | 540 evals | 1,503 evals | 2,511 evals | Last gain |
+|---|---|---|---|---|
+| B | 3.176 | 2.878 | **2.736** | eval 2,097 of 2,511 (none in the last 16%) |
+| C | 3.024 | 2.943 | **2.794** | eval 2,520 (still improving) |
+
+Both end in ONE basin, not the parent's: plant on a turn of about 95° (the parent's: 110°), a sling every 0.75-0.85 s,
+and an aimed hold of 1.28 s (the parent's: 0.04 s); the lead lets the AI hold the aimed launch and trust its aim.
+B (2,511): turn 96.2°, distance 20.2, interval 0.84 s, cone 10.3°, max plant 1.6 s, hold 1.28 s, tolerance 6.9°.
+C (2,511): turn 95.4°, distance 0.2, interval 0.75 s, cone 15.8°, max plant 3.2 s, hold 1.28 s, tolerance 9.6°.
+They are 2.1% apart and C was still improving, so by the project's rule (within 2%, no gain in the last 20%) the
+lead-on search has **not quite converged**.
+
+### The 2x2 (plus the lag-free cell and gain 1.5), 12 FRESH courses per intensity (seeds 1001-1012)
+
+Loss as the evaluator scores it (no stay-near term); finished of 48; median finish per intensity, seconds.
+
+| Genome | Nose | Loss | Finished | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|---|---|---|
+| Parent's winner (pass-3 E) | lag-free | 3.364 | 48/48 | 111 | 103 | 99 | 98 |
+| Parent's winner (pass-3 E) | lag, lead off (today) | 3.195 | 48/48 | 109 | 102 | 94 | 103 |
+| Parent's winner (pass-3 E) | lag, lead 1.5 | 3.111 | 48/48 | 103 | 93 | 101 | 107 |
+| Parent's winner (pass-3 E) | lag, lead 2.5 | 3.175 | 48/48 | 106 | 90 | 98 | 105 |
+| Lead-on B, 1,503 evals | lag-free | 11.662 | 42/48 | 143 | 191 | 189 | 193 |
+| Lead-on B, 1,503 evals | lag, lead off | 10.091 | 44/48 | 97 | 146 | 121 | 172 |
+| Lead-on B, 1,503 evals | lag, lead 1.5 | **2.784** | 48/48 | 91 | 88 | 93 | 93 |
+| Lead-on B, 1,503 evals | lag, lead 2.5 | 2.986 | 48/48 | 94 | 102 | 94 | 94 |
+| Lead-on B, 2,511 evals | lag, lead off | 12.326 | 33/48 | 108 | 100 | 99 | 92 |
+| Lead-on B, 2,511 evals | lag, lead 1.5 | 3.417 | 48/48 | 94 | 94 | 96 | 98 |
+| Lead-on B, 2,511 evals | lag, lead 2.5 | 3.013 | 48/48 | 96 | 99 | 101 | 97 |
+| Lead-on C, 2,511 evals | lag, lead off | 13.473 | 31/48 | 101 | 106 | 91 | 217 |
+| Lead-on C, 2,511 evals | lag, lead 1.5 | 3.897 | 48/48 | 92 | 93 | 98 | 104 |
+| Lead-on C, 2,511 evals | lag, lead 2.5 | **2.985** | 48/48 | 98 | 100 | 93 | 106 |
+
+(Every cell, the training courses too: `/mnt/project-files/regatta-training/results/thresher-lead/cmp_*.json`.)
+
+What it says:
+1. **The lead alone changes little for the Thresher.** The parent's winner already finishes all 48 nests with the lag,
+   and the 2.5 lead moves its loss by 0.6% (3.195 to 3.175; gain 1.5: 2.6%). The Thresher's launch snaps nose and
+   command together, so the lag costs it little; unlike the Scarab, Serpent, Dolphin and Manta, there was no
+   overshoot to remove. The lag-free cell is even slightly WORSE (3.364): the parent's genome was tuned on a lagged nose.
+2. **The drive must move to profit from the lead, and then it gains about 6%**: the lead-on winners score 2.985-3.013
+   at gain 2.5 on fresh courses against the parent's 3.175 with the lead (3.195 without), all 48 finished, medians
+   93-106 s against 90-106 s.
+3. **The lead-on genomes need the lead.** Without it they DNF 4-17 of 48 fresh courses (loss 10-13), and with no lag at
+   all they collapse (loss 12-20). So a lead-on genome must never ship while the switch is off; the parent's genome is
+   the right one until Yash turns `NoseLeadGain` on.
+4. **Gain matters per genome.** The 1,503-eval B is the most robust: best of all at gain 1.5 (2.784) and level with the
+   final winners at 2.5 (2.986). The longer runs fit the 3 training courses tighter and lost ground at gain 1.5 on
+   fresh courses (3.42-3.90), the sign of an over-fit to the training seeds.
+
+**The roll stick** (the Manta thread's warning: in a model that ports AIPilot's roll stick, the 2.5 lead can corkscrew
+the hull). This model does port it (`race()`: the roll stick turns the command about the nose's forward, Roll 130).
+Its docstring records the corkscrew in CRUISE (no sling): at I4 course 1 the 2.5 lead passes 1 gate where today's
+cruise passes 8. In the sling races above it never shows: no lead-on race DNFs or finishes fewer nests than its
+lead-off twin for the parent's genome, at gain 1.5 or 2.5, because each plant and launch snaps nose and command
+together. The cruise-only seat is the one it would hurt, and no Thresher Time AI cruises.
+
+### Is it "well trained" with the lead on?
+
+| Test | Result |
+|---|---|
+| Restarts within 2%, no gain in the last 20% | **Not quite**: 2.736 / 2.794 (2.1% apart), one basin, C still improving. |
+| Beats every genome on the composite | Yes, in the model, with the lead on (fresh 2.985-3.013 vs the parent's 3.175 and the shipped genome's 21.69, 0/48). |
+| Within 15% of the best human time | Cannot be judged: no person has finished a nest race. |
+| No missed rings in the real game | Not run: needs the editor (`ThresherTimeSoakRunner`) with `NoseLeadGain` on. |
+
+**Proposal for the day Yash turns the switch on** (not before; the job's `promote` rule): the 1,503-eval lead-on B
+(turn 93.0°, distance 21.4, interval 0.59 s, cone 7.3°, max plant 1.7 s, hold 1.28 s, tolerance 9.5°;
+`results/thresher-lead/lead_B_1503.json`), because it holds up at both gains on fresh courses; the 2,511-eval C if
+Yash fixes the gain at 2.5. Until then the parent's pass-3 E stays the proposal. A third restart pair, or a search
+that races 6+ courses per intensity, would settle convergence and the over-fit; the editor soak decides either way.
