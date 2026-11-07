@@ -467,6 +467,11 @@ prisms), the dive (nose-down over a hill). The HUD had no omni card: it now show
 (`Core/Goby_OmniCrystal`). `author_goby_hud.py` keeps the metas and the variant and no longer writes the PNGs.
 Sheet: `Docs/Icons/sheets/goby.png`.
 
+**The Meerkat (2026-11-07, the roster pass; Yash's round-1 set kept):** the set already drew the real hull and
+passed every gate; two fixes only. The Exit Portal's six prisms were `prism_halves`, which read as rhombi at 40 px, so
+they are `prism_square_x` now; and the hull (`Meerkat.fbx`, a thin stick side-on) is dilated 2.6 px instead of 1.4 so
+Sentinel Mode and Faster Ride hold at 40 px. Guids kept (`meerkat_icon_ids.py`). Sheet: `Docs/Icons/sheets/meerkat.png`.
+
 | Round | What | Why first |
 |---|---|---|
 | 0 | `ICON_LANGUAGE.md` draft (section 4) to Garrett and Shombith; settle round vs angular | everything downstream draws with it |
