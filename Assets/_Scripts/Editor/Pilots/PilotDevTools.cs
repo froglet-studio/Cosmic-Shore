@@ -1,27 +1,35 @@
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Editor.Froglet;
-using CosmicShore.ScriptableObjects;
 using UnityEditor;
 using UnityEngine;
 
 namespace CosmicShore.Editor.Pilots
 {
     /// <summary>
-    /// Test helpers for the Hangar's PILOTS and ARTIFACTS tabs (Docs/Pilots/CALLSIGNS.md, Docs/Pilots/ARTIFACTS.md): empty every vessel's
-    /// artifact slots or every pilot seat. Every pilot and artifact is free (Shombith, 2026-10-26), so nothing is granted. They write the device store (<see cref="PilotLoadoutStore"/>, PlayerPrefs) and no asset, so this is a
-    /// READER-side tool: it records nothing in the tool ledger.
+    /// Test helpers for the Hangar's PILOTS and ARTIFACTS tabs and the Ark's ARTIFACTS tab (Docs/Pilots/INVENTORY.md,
+    /// Docs/Pilots/CALLSIGNS.md, Docs/Pilots/ARTIFACTS.md): empty every vessel's artifact slot or pilot seat, credit
+    /// crystals, and empty what every held artifact was fed.
+    ///
+    /// <para><b>2026-11-07 (Garrett): every artifact is unique and accepts ONE element</b> without limit, with
+    /// diminishing returns (<see cref="ArtifactRecord"/>, <see cref="ArtifactCurve"/>). There are no four track levels to
+    /// zero any more, so the old "reset every track" became "reset every held artifact's feed": each artifact goes back
+    /// to the level it was rolled at (<see cref="PilotLoadoutStore.ResetFed"/>, no refund).</para>
+    ///
+    /// <para>Everything goes through <see cref="PilotLoadoutStore"/>, so it writes the account inventory (the cloud
+    /// record once signed in, otherwise this machine's snapshot of it) and no asset: this is a READER-side tool and
+    /// records nothing in the tool ledger.</para>
     /// </summary>
     public static class PilotDevTools
     {
         [MenuItem("FrogletTools/Pilots/Clear Every Artifact Slot (dev)", false, 301)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 1,
-            Description = "Empties every vessel's artifact slots (every artifact is free, so there is nothing to grant).")]
+            Description = "Empties every vessel's artifact slot in the account inventory (the artifacts stay in the hoard).")]
         public static void ClearSlots()
         {
             foreach (VesselClassType v in System.Enum.GetValues(typeof(VesselClassType)))
-                PlayerPrefs.DeleteKey($"artifacts.slots.{(int)v}");
-            PlayerPrefs.Save();
+                if (v != VesselClassType.Any && v != VesselClassType.Random) PilotLoadoutStore.SetSlottedArtifact(v, string.Empty);
             Debug.Log("[Pilots] Emptied every artifact slot.");
         }
 
@@ -35,15 +43,16 @@ namespace CosmicShore.Editor.Pilots
                 PilotLoadoutStore.AddCrystals(e, 20, "dev grant");
         }
 
-        [MenuItem("FrogletTools/Pilots/Reset Every Artifact Track (dev)", false, 304)]
+        [MenuItem("FrogletTools/Pilots/Reset Every Artifact Feed (dev)", false, 304)]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 1,
-            Description = "Sets every artifact's four track levels back to 0 on this device.")]
-        public static void ResetTracks()
+            Description = "Empties the crystals fed to every held artifact, so each one is back at the level it was rolled at (no refund).")]
+        public static void ResetFed()
         {
-            var catalog = PilotArtifactCatalogSO.Load();
-            if (!catalog) return;
-            foreach (var a in catalog.Artifacts)
-                if (a) PilotLoadoutStore.ResetTracks(a.Id);
+            var hoard = new List<ArtifactRecord>();
+            PilotLoadoutStore.GetHoard(hoard);
+            foreach (var a in hoard)
+                PilotLoadoutStore.ResetFed(a.Id);
+            Debug.Log($"[Pilots] Emptied what {hoard.Count} held artifact(s) were fed.");
         }
 
         [MenuItem("FrogletTools/Pilots/Empty Every Pilot Seat (dev)", false, 302)]

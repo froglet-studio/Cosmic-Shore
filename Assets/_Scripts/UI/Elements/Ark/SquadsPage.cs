@@ -34,6 +34,21 @@ namespace CosmicShore.UI
     ///
     /// <para>The squads are the player's <c>SQUAD_DATA</c> record (<see cref="UGSDataService.SquadRepo"/>). Joining rides each
     /// player's PUBLIC squad record (<see cref="SquadDirectory"/>); <see cref="SquadMembership"/> holds the rules.</para>
+    ///
+    /// <para><b>Pilots are people, artifacts are one of a kind</b> (Garrett 2026-11-07, Docs/Pilots/INVENTORY.md). A slot's
+    /// pilot id names a person in a crew (<see cref="PilotRecord"/>, <c>pilot.callsign.volt#seed</c>) and its artifact id
+    /// one artifact in a hoard (<see cref="ArtifactRecord"/>, <c>artifact.javelin#seed</c>). The pilot picker lists the
+    /// people in the player's crew whose callsign can fly the card's hull, the artifact picker the hoard's artifacts the
+    /// hull can carry, and each writes the record's own id. The catalog still turns any of those ids into the callsign or
+    /// kind asset (portrait, requirement), so the cards draw every slot through it. Only a slot whose ids are the player's
+    /// (<see cref="IdsAreMine"/>: their own card, and the AI or open cards of a squad they made) is also looked up in the
+    /// player's inventory for the person's name and the artifact's name: a friend's card, and every card of a joined squad
+    /// but the player's own, carry their owner's ids, which this player's crew does not hold (and a bare lookup would
+    /// wrongly find the player's own person on the same callsign).</para>
+    ///
+    /// <para>A slot saved before 2026-11-07 holds a bare callsign or kind id until <see cref="AccountInventory.AdoptSquads"/>
+    /// rewrites it; the picker lights the person or artifact it resolves to (<see cref="PilotLoadoutStore.TryGetPilot"/>,
+    /// <see cref="PilotLoadoutStore.TryGetArtifact"/>), and opening the picker adopts the draft's own cards.</para>
     /// </summary>
     public class SquadsPage : MonoBehaviour, IArkTabPage
     {
@@ -164,8 +179,12 @@ namespace CosmicShore.UI
         [SerializeField] private string[] domainNames = { "", "Jade", "Ruby", "Blue", "Gold" };
         [Tooltip("A squad card's pilot word when the catalog offers its vessel no pilot at all.")]
         [SerializeField] private string basePilotLine = "No pilot";
-        [Tooltip("A pilot's line in the picker; {sight} is what its callsign lights on LB (CallsignSetSO).")]
+        [Tooltip("A pilot's line in the picker; {sight} is what its callsign lights on LB (CallsignSetSO), {callsign} its callsign word, {species} the person's animals.")]
         [SerializeField] private string pilotDetail = "{sight}";
+        [Tooltip("A pilot chip's word: {name} is the person, {callsign} the callsign word (VOLT).")]
+        [SerializeField] private string pilotChipWord = "{name} - {callsign}";
+        [Tooltip("An artifact chip's word is the artifact's name, cut at a word to at most this many characters.")]
+        [SerializeField, Min(4)] private int artifactChipChars = 16;
         [SerializeField] private string noArtifactLine = "No artifact";
         [SerializeField] private string noArtifactChip = "None";
         [SerializeField] private string createWord = "Create squad";
@@ -203,8 +222,12 @@ namespace CosmicShore.UI
         readonly Dictionary<string, SquadJoinState> _joinStates = new();
         readonly List<(string ownerId, string ownerName, SavedSquad squad)> _offers = new();
         readonly List<SO_Vessel> _offered = new();
-        readonly List<PilotSO> _pilots = new();
-        readonly List<ArtifactSO> _artifacts = new();
+        // The picker's offers: crew people with their callsign assets (index for index), and hoard artifacts. Read into these on each draw (no allocation per draw).
+        readonly List<PilotRecord> _crew = new();
+        readonly List<PilotRecord> _pilots = new();
+        readonly List<PilotSO> _pilotCallsigns = new();
+        readonly List<ArtifactRecord> _hoard = new();
+        readonly List<ArtifactRecord> _artifacts = new();
         readonly List<string> _slotted = new();
         readonly Dictionary<ScreenSwitcher.ModalWindows, MenuHubButton> _hubs = new();
 
@@ -454,7 +477,7 @@ namespace CosmicShore.UI
             EditSlot(s =>
             {
                 var moved = s.WithVessel(v.Class);
-                // The player's own card starts on the pilot they keep in that vessel's Hangar seat.
+                // The player's own card starts on the person they keep in that vessel's Hangar seat (a crew id).
                 if (mine) moved.PilotId = PilotLoadoutStore.GetPilot(v.Class);
                 return moved;
             });
@@ -478,20 +501,34 @@ namespace CosmicShore.UI
 
         readonly List<string> _pilotIds = new();
 
-        /// <summary>Every vessel needs a pilot: a slot with none (or one another slot flies) takes the next free one.</summary>
+        /// <summary>
+        /// Every vessel needs a pilot: a slot with none (or one another slot flies) takes the next free person of the
+        /// crew, in crew order. First the cards whose ids are the player's are adopted: a legacy callsign id becomes the
+        /// person it resolves to, so the "another slot flies them" test compares people, not a person against a callsign.
+        /// A friend's seated card keeps its owner's ids.
+        /// </summary>
         void FillPilots(SavedSquad squad)
         {
-            if (squad == null || !catalog) return;
+            if (squad == null) return;
+            for (int seat = 0; seat < SavedSquad.SlotCount; seat++)
+            {
+                if (!IdsAreMine(squad, seat)) continue;
+                var slot = squad.GetSlot(seat);
+                if (slot.UsesDefaultPilot() || !PilotLoadoutStore.TryGetPilot(slot.PilotId, out var person) || person.Id == slot.PilotId) continue;
+                slot.PilotId = person.Id;
+                squad.SetSlot(seat, slot);
+            }
+            PilotLoadoutStore.GetCrew(_crew);
             _pilotIds.Clear();
-            foreach (var p in catalog.Pilots)
-                if (p) _pilotIds.Add(p.Id);
+            foreach (var p in _crew)
+                if (!string.IsNullOrEmpty(p.Id)) _pilotIds.Add(p.Id);
             squad.FillPilots(_pilotIds);
         }
 
         void PickPilot(int chip)
         {
             PilotsFor(_draft.GetSlot(_seat).Vessel);
-            // The chips are one page of the callsign pilots; there is no empty seat (every vessel needs a pilot).
+            // The chips are one page of the crew's people; there is no empty seat (every vessel needs a pilot).
             int index = _pilotPage * PilotsPerPage + chip;
             if (index < 0 || index >= _pilots.Count) return;
             EditSlot(s =>
@@ -512,7 +549,7 @@ namespace CosmicShore.UI
         void ShowPilotPageOf(SquadSlot slot)
         {
             PilotsFor(slot.Vessel);
-            int at = _pilots.FindIndex(p => p.Id == slot.PilotId);
+            int at = IndexOfPilot(slot.PilotId);
             _pilotPage = at < 0 ? 0 : at / PilotsPerPage;
         }
 
@@ -529,7 +566,7 @@ namespace CosmicShore.UI
         void PickArtifact(int chip)
         {
             var slot = _draft.GetSlot(_seat);
-            ArtifactsFor(slot.Vessel, IsMySeat(_draft, _seat));
+            ArtifactsFor(slot.Vessel);
             EditSlot(s =>
             {
                 s.ArtifactId = chip == 0 || chip > _artifacts.Count ? null : _artifacts[chip - 1].Id;
@@ -655,7 +692,10 @@ namespace CosmicShore.UI
             var mine = squad.GetSlot(squad.IsJoined() ? squad.MySeat : 0);
             // The configure window opens on the hull last selected this session (unless the card remembers its own).
             if (_gameData && _gameData.selectedVesselClass) _gameData.selectedVesselClass.Value = mine.Vessel;
-            if (!mine.UsesDefaultPilot()) PilotLoadoutStore.SetPilot(mine.Vessel, mine.PilotId);
+            // The card holds the player's own person id (or a legacy callsign id); one the crew cannot resolve would empty
+            // the Hangar seat, so it is left alone.
+            if (!mine.UsesDefaultPilot() && PilotLoadoutStore.TryGetPilot(mine.PilotId, out _))
+                PilotLoadoutStore.SetPilot(mine.Vessel, mine.PilotId);
             // The card's artifact is what that vessel carries into the match (VesselPilotLoadout reads the slot).
             PilotLoadoutStore.SetSlottedArtifact(mine.Vessel, mine.ArtifactId);
             InviteSquadMates(squad);
@@ -948,12 +988,20 @@ namespace CosmicShore.UI
                 : slot.IsOpen() ? openLine : aiLine;
             var vessel = Vessel(slot.Vessel);
             var keywords = vessel ? vessel.Keywords : null;
+            // The catalog gives the callsign and kind for anyone's ids; only the player's own ids name a person and an
+            // artifact this inventory holds (a joined squad's other cards carry the owner's).
             var pilot = catalog && vessel ? catalog.ResolvePilot(slot, keywords) : null;
             var artifact = catalog && vessel ? catalog.ResolveArtifact(slot, keywords) : null;
+            bool ids = IdsAreMine(squad, seat);
+            string pilotName = !pilot ? basePilotLine
+                : ids && PilotLoadoutStore.TryGetPilot(slot.PilotId, out var person) && person.CallsignOrTemplate() == pilot.Id
+                    ? person.DisplayName() : pilot.DisplayName;
+            string artifactName = !artifact ? noArtifactLine
+                : ids && PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var held) && held.Kind() == artifact.Id
+                    ? held.Name : artifact.DisplayName;
             card.Draw(SeatName(seat), TemplateText.Fill(numberLine, "n", (seat + 1).ToString()), who, HullArt(vessel),
                 vessel ? vessel.CardName : string.Empty, ElementName(slot.Element),
-                pilot ? pilot.Portrait : null, pilot ? pilot.DisplayName : basePilotLine,
-                artifact ? artifact.DisplayName : noArtifactLine, artifact, slot.IsOpen());
+                pilot ? pilot.Portrait : null, pilotName, artifactName, artifact, slot.IsOpen());
             bool making = _mode == Mode.Make;
             card.SetEditing(making && seat == _seat, domain);
             card.SetPressable(making && CanEdit(squad, seat));
@@ -963,7 +1011,6 @@ namespace CosmicShore.UI
         {
             if (_draft == null) return;
             var slot = _draft.GetSlot(_seat);
-            bool mine = IsMySeat(_draft, _seat);
 
             Offered();
             int start = _vesselPage * vesselTiles.Length;
@@ -978,13 +1025,23 @@ namespace CosmicShore.UI
             if (vesselNextButton) vesselNextButton.interactable = paged;
 
             PilotsFor(slot.Vessel);
+            // The slot may hold a legacy callsign id: the chip lit is the person it resolves to.
+            string seatedId = PilotLoadoutStore.TryGetPilot(slot.PilotId, out var seated) ? seated.Id : null;
             for (int i = 0; i < pilotChips.Length; i++)
             {
                 if (!pilotChips[i]) continue;
                 int index = _pilotPage * PilotsPerPage + i;
-                var p = index < _pilots.Count ? _pilots[index] : null;
-                pilotChips[i].Draw(p, p ? p.DisplayName : null, p ? TemplateText.Fill(pilotDetail, "sight", SightOf(p)) : null,
-                    p ? p.Portrait : null, p && p.Id == slot.PilotId);
+                if (index >= _pilots.Count)
+                {
+                    pilotChips[i].Draw(false, null, null, null, false);
+                    continue;
+                }
+                var person = _pilots[index];
+                var p = _pilotCallsigns[index];
+                string word = CallsignWord(p);
+                pilotChips[i].Draw(true, TemplateText.Fill(pilotChipWord, "name", person.DisplayName(), "callsign", word),
+                    TemplateText.Fill(pilotDetail, "sight", SightOf(p), "callsign", word, "species", person.SpeciesCombo()),
+                    p.Portrait, person.Id == seatedId);
             }
             bool pilotsPaged = _pilots.Count > PilotsPerPage;
             if (pilotPrevButton) pilotPrevButton.interactable = pilotsPaged;
@@ -1000,7 +1057,9 @@ namespace CosmicShore.UI
                     elementChips[i].Draw(i < ElementCycle.Length, i < ElementCycle.Length ? ElementName(ElementCycle[i]) : null, null, null,
                         i < ElementCycle.Length && slot.Element == ElementCycle[i]);
 
-            ArtifactsFor(slot.Vessel, mine);
+            ArtifactsFor(slot.Vessel);
+            // The slot may hold a legacy kind id: the chip lit is the artifact it resolves to.
+            string carriedId = PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var carried) ? carried.Id : null;
             for (int i = 0; i < artifactChips.Length; i++)
             {
                 if (!artifactChips[i]) continue;
@@ -1010,7 +1069,8 @@ namespace CosmicShore.UI
                     continue;
                 }
                 var a = i - 1 < _artifacts.Count ? _artifacts[i - 1] : null;
-                artifactChips[i].Draw(a, a ? a.DisplayName : null, null, null, a && a.Id == slot.ArtifactId);
+                artifactChips[i].Draw(a != null, a != null ? ShortName(a.Name, artifactChipChars) : null, null, null,
+                    a != null && a.Id == carriedId);
             }
         }
 
@@ -1073,6 +1133,13 @@ namespace CosmicShore.UI
         static bool CanEdit(SavedSquad squad, int seat) =>
             squad != null && (IsMySeat(squad, seat) || (!squad.IsJoined() && seat > 0 && !squad.GetSlot(seat).IsPlayer()));
 
+        /// <summary>
+        /// True when the card's pilot and artifact ids are this player's (their crew and hoard): exactly the cards they may
+        /// edit. A friend's card in a squad the player made, and every card of a joined squad but the player's own, hold
+        /// their owner's ids, which are drawn through the catalog only.
+        /// </summary>
+        static bool IdsAreMine(SavedSquad squad, int seat) => CanEdit(squad, seat);
+
         static int OpenSeats(SavedSquad s)
         {
             int open = 0;
@@ -1121,29 +1188,74 @@ namespace CosmicShore.UI
                 if (v && !v.IsLocked) _offered.Add(v);
         }
 
+        /// <summary>
+        /// The crew's people a <paramref name="cls"/> hull can fly, in crew order, with their callsign assets (the rule
+        /// <see cref="PilotArtifactCatalogSO.GetPilotsFor(SO_Vessel, List{PilotSO})"/> applies to callsigns). A crew holds
+        /// one person per callsign at most, so this is never longer than the callsign list was.
+        /// </summary>
         void PilotsFor(VesselClassType cls)
         {
             _pilots.Clear();
+            _pilotCallsigns.Clear();
             var vessel = Vessel(cls);
-            if (catalog && vessel) catalog.GetPilotsFor(vessel, _pilots);
-            _pilots.RemoveAll(p => !p);
+            if (!catalog || !vessel) return;
+            PilotLoadoutStore.GetCrew(_crew);
+            foreach (var person in _crew)
+            {
+                if (!catalog.TryGetPilot(person.Id, out var callsign) || !callsign) continue;
+                if (callsign.Requirement == null || !callsign.Requirement.IsMetBy(vessel.Class, vessel.Keywords)) continue;
+                _pilots.Add(person);
+                _pilotCallsigns.Add(callsign);
+            }
+        }
+
+        /// <summary>The offered person <paramref name="slotPilotId"/> names (a crew id or a legacy callsign id), or -1.</summary>
+        int IndexOfPilot(string slotPilotId)
+        {
+            if (!PilotLoadoutStore.TryGetPilot(slotPilotId, out var person)) return -1;
+            for (int i = 0; i < _pilots.Count; i++)
+                if (_pilots[i].Id == person.Id) return i;
+            return -1;
         }
 
         static string SightOf(PilotSO p) => PilotSight.Set ? PilotSight.Set.For(p.Vision)?.meaning ?? string.Empty : string.Empty;
 
-        void ArtifactsFor(VesselClassType cls, bool mine)
+        static string CallsignWord(PilotSO p) => PilotSight.Set ? PilotSight.Set.For(p.Vision)?.word ?? string.Empty : string.Empty;
+
+        /// <summary>
+        /// The hoard's artifacts a <paramref name="cls"/> hull can carry (their kind's requirement), in the order they arrived.
+        /// Every card the picker edits is the player's (their own, or an AI or open card of a squad they made), and each
+        /// artifact is one of a kind, so only what the hoard holds is offered - to an AI wingmate too
+        /// (<see cref="AccountInventory.AdoptSquads"/> drops an artifact no longer held from any card of a made squad).
+        /// </summary>
+        void ArtifactsFor(VesselClassType cls)
         {
             _artifacts.Clear();
             var vessel = Vessel(cls);
-            if (catalog && vessel) catalog.GetArtifactsFor(vessel, _artifacts);
-            // The player carries only what they hold; an AI wingmate may carry anything.
-            if (mine) _artifacts.RemoveAll(a => !a || !PilotLoadoutStore.Holds(a.Id));
+            if (!catalog || !vessel) return;
+            PilotLoadoutStore.GetHoard(_hoard);
+            foreach (var artifact in _hoard)
+            {
+                if (!catalog.TryGetArtifact(artifact.Id, out var kind) || !kind) continue;
+                if (kind.Requirement == null || !kind.Requirement.IsMetBy(vessel.Class, vessel.Keywords)) continue;
+                _artifacts.Add(artifact);
+            }
+        }
+
+        /// <summary><paramref name="name"/> cut at a word to at most <paramref name="max"/> characters (a narrow chip):
+        /// "Hollow Javelin of Tarn" becomes "Hollow Javelin".</summary>
+        static string ShortName(string name, int max)
+        {
+            if (string.IsNullOrEmpty(name) || name.Length <= max) return name ?? string.Empty;
+            int cut = name.LastIndexOf(' ', max);
+            return cut > 0 ? name.Substring(0, cut) : name.Substring(0, max);
         }
 
         static Element ElementOf(SO_Vessel v, Element fallback) =>
             v && v.PrimaryElement != Element.None && v.PrimaryElement != Element.Omni ? v.PrimaryElement : fallback;
 
-        /// <summary>The player's card for a new or joined squad: the hull they last picked and its Hangar pilot and artifact.</summary>
+        /// <summary>The player's card for a new or joined squad: the hull they last picked and its Hangar pilot and artifact
+        /// (a crew person's id and a hoard artifact's id, Docs/Pilots/INVENTORY.md).</summary>
         SquadSlot MyDefaultLoadout()
         {
             Offered();

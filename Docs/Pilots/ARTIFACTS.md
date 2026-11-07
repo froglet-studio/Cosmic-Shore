@@ -3,6 +3,12 @@
 **Status: THE ARTIFACT CONCEPT** (Garrett, 2026-10-27, rev 2). It is the partner of the pilot concept,
 [`CALLSIGNS.md`](CALLSIGNS.md).
 
+**Every artifact is unique (Garrett, 2026-11-07; [`INVENTORY.md`](INVENTORY.md)).** The artifacts below are now KINDS.
+Each artifact a player holds is rolled from its own seed on top of a kind. It accepts ONE element (one of the kind's
+four tracks) and improves that one track without limit, with diminishing returns. Its other three tracks are fixed at
+rolled levels. It lives in the account's `ACCOUNT_INVENTORY` record. §4's per-track raises (0 to 10 in whole levels,
+device-local) are replaced by feeding: see INVENTORY.md §2.
+
 **Built so far (`claude/squad-payload-pilots-artifacts`, 2026-10-27, unverified in the editor):** the plain payload
 (§9 step 1) in the Wander toy's "With Ark". `ArkHold` (`Assets/_Scripts/Controller/Payload/`) hands out six real hull
 prisms per payload (`Ark.TakeHullPrisms`, never the last dozen); `PayloadCarrier`, ensured on every vessel by
@@ -38,7 +44,7 @@ tracks (value now and next, the twist, dim until level 5), RAISE in the track's 
 crystals instead (always the player's pick). The crystals are the profile's own balances (`PlayerDataService`'s
 elemental crystals and the omni balance, Shombith's section 97), so nothing new goes to the backend; **the track
 levels are still on the device** (`PilotLoadoutStore`, PlayerPrefs) until the profile carries them, which is
-Shombith's call. Dev: FrogletTools > Pilots > Grant 20 Crystals / Reset Every Artifact Track. Hand tests: "The Ark's
+Shombith's call. Dev: FrogletTools > Pilots > Grant 20 Crystals / Reset Every Artifact Feed (was Reset Every Artifact Track; INVENTORY.md). Hand tests: "The Ark's
 ARTIFACTS tab" in the checklist.
 
 **Shombith's branch merged (Garrett, 2026-10-27: "it should merge and build but throw anything out that conflicts

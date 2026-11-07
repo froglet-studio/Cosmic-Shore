@@ -89,6 +89,7 @@ namespace CosmicShore.Gameplay
         float _speed01, _creation01, _destruction01, _charge01;
         float _ringPhase;            // radians: the support ring's firing rotation about the nose axis
         int _aimedPoint;             // the turret the ring has turned to the aim (it holds when the stick centres)
+        readonly BrittleStarRules.AimSweep _aimSweep = new();   // how fast the stick's angle turns (ForwardTurn)
         bool _aiming;                // the stick is outside the deadzone this frame
         bool _firing;                // RT held (the replicated press)
         bool _shotOwedNow;           // the press owes one volley at once
@@ -256,6 +257,7 @@ namespace CosmicShore.Gameplay
             _speed01 = _creation01 = _destruction01 = _charge01 = 0f;
             _ringPhase = 0f;
             _aimedPoint = 0;
+            _aimSweep.Reset();
             _aiming = false;
             _firing = false;
             _shotOwedNow = false;
@@ -518,12 +520,13 @@ namespace CosmicShore.Gameplay
             // with it); its DEFLECTION moves those in and out (ArmDirection). The turret it brings round is RT's one gun
             // in every other mode, and it stays the gun when the stick centres - the ring holds its rotation.
             float? aim = _speedRolling ? null : BrittleStarRules.AimAngle(stick, config.AimDeadzone);
+            var sweep = _aimSweep.Step(aim, dt, config.AimSweepSmoothing, config.AimFlickDegrees);
             _aiming = aim != null;
             if (aim == null) return;   // the ring holds its last rotation, and its aimed turret
-            _aimedPoint = BrittleStarRules.NearestPoint(aim.Value, _ringPhase);
-            float target = BrittleStarRules.PhaseToAim(aim.Value, _aimedPoint, _ringPhase);
-            float maxStep = config.RingTurnRate * Mathf.Deg2Rad * dt;
-            _ringPhase = Mathf.MoveTowards(_ringPhase, target, maxStep);
+            // A spinning stick turns the ring FORWARD, never back to the turret behind the aim (the wagon wheel,
+            // BrittleStarRules.ForwardTurn); slower than ringTurnRate it moves exactly as the nearest-turret rule did.
+            _ringPhase = BrittleStarRules.ForwardTurn(aim.Value, _ringPhase, ref _aimedPoint, sweep,
+                                                      config.AimSweepThreshold, config.RingTurnRate, dt);
             // Keep the float small; the ring has five-fold symmetry so a full turn changes nothing.
             const float turn = Mathf.PI * 2f;
             if (_ringPhase > turn * 8f) _ringPhase -= turn * 8f;

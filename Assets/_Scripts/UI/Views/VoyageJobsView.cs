@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -431,7 +432,10 @@ namespace CosmicShore.UI
                 string vessel = vessels && vessels.TryGetVesselByClass(slot.Vessel, out var v, reportMissing: false)
                     ? v.CardName : string.Empty;
                 var pilot = catalog ? catalog.ResolvePilot(slot, null) : null;
-                seats.Add(TemplateText.Fill(lines.CardSquadSeat, "vessel", vessel, "pilot", pilot ? pilot.DisplayName : string.Empty));
+                // The seat's own person when the crew holds them (Docs/Pilots/INVENTORY.md §3), else the callsign's name.
+                string name = PilotLoadoutStore.TryGetPilot(slot.PilotId, out var person) && pilot && UniqueId.TemplateOf(person.Id) == pilot.Id
+                    ? person.DisplayName() : pilot ? pilot.DisplayName : string.Empty;
+                seats.Add(TemplateText.Fill(lines.CardSquadSeat, "vessel", vessel, "pilot", name));
             }
             return string.Join(lines.CardSquadSeparator ?? string.Empty, seats);
         }
