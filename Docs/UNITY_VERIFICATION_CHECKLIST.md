@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Rhino splits into the Rhino (the plough) and the Swordfish (the sword) (`cece/practical-mendel-cdfsc3`, 2026-11-07, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SWORDFISH.md`, `R_VesselActions/RHINO_PLOUGH.md` § "The plough kit".
+- A new vessel, the **Swordfish** (`VesselClassType.Swordfish = 30`): the Rhino's prefab with the whole sword kit, its hull a ram, registered everywhere a hull is (prefab container, network prefabs, class lists, toybox roster, hull fusion, touch profiles, ProtocolVersion 26).
+- The **Rhino** loses the sword (document-level strip, `author_swordfish_assets.py`) and gains the plough kit: Carry / Avalanche, Blade / Berm, Furrow / Unstoppable, LT / RT steer (a pull shoves, a hold steers). The blade's skimmer stays as a static crystal catcher.
+- Cleave and Astro League seat the Swordfish; Broadside seats it in the Rhino's place; Brood Rush offers both; Regatta and Headlong keep the Rhino.
+
+**Verified without the editor:**
+- The reference compile (editor config): 0 errors in changed files; the 21 left are the Vivox / Moderation package gaps.
+- `author_swordfish_assets.py --check` and `--self-test` (8 planted defects caught); `dangling_refs` clean on both prefabs; `check_network_prefab_hashes.py`, `check_vessel_prefab_container.py`, `author_touch_profiles.py --check`, `author_cleave/broadside/regatta/headlong/pilot_assets --check`, `element_ability_table.py Rhino` / `Swordfish` (4/4 scaling, 4/4 L5 gates each).
+
+**Verify in the editor:**
+1. Reimport. No missing-script or missing-reference warnings on `Rhino.prefab` or `Swordfish.prefab`.
+2. Toybox → Vessel Changer offers both. The Swordfish flies as the Rhino did before (swing, energize, afterimages, Surge); its hull destroys what it rams.
+3. The Rhino: hold RT through a trail and every ploughed prism lands right; a pull alone sidesteps a little. Raise Space / Mass / Charge in the element panel: wider furrow, wider blade, longer strikes. Crystals still collect.
+4. The three Rhino L5s (Unstoppable, Berm, Avalanche) as in `RHINO_PLOUGH.md` steps 9-14.
+5. Cleave and Astro League spawn Swordfish for the player and the AI; Broadside lists the Swordfish, not the Rhino.
+6. MPPM two clients: both hulls spawn on both; a steered plough lands prisms on the same side on both.
+7. Audits: Ability Rows, Skimmers, Elemental Morphs, Construction over both hulls.
+
+**First-pass tuning** (all guesses): furrow 0 → 20 u, carry 0 → 40 u, blade 14 → 40 u, shove 30 u/s for 0.25 s, Avalanche 3 links.
+
 ### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Pilots/INVENTORY.md`.

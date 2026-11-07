@@ -1,5 +1,12 @@
 # Rhino Plough — the hull shoves prisms aside instead of destroying them
 
+> **2026-11-07 (Garrett): the Rhino is ALL PLOUGH.** "split the rhino into two vessels: the rhino and a swordfish.
+> the sword fish will be all about the sword. the rhino will be all about the plow." The sword, its energize, the
+> afterimages and the Surge moved to the **Swordfish** (`SWORDFISH.md`); the Rhino keeps the plough and the ramp and
+> gains the plough kit below (§ "The plough kit"): Space **Furrow** / L5 **Unstoppable**, Mass **Blade** / L5
+> **Berm**, Charge **Carry** / L5 **Avalanche**, and the triggers **steer** the plough. Wherever the rest of this
+> doc says "the sword" or "the blade cuts", read it as the Swordfish's.
+
 > **2026-10-16:** no plough code changed. The throw figures are restated at the live cruise
 > (50 u/s) and top (840 u/s); the peer-agreement claim is corrected (peers agree on the side, not
 > always on the landing point); the hull ignoring mass is now a recorded design statement (the
@@ -77,6 +84,61 @@ danger prisms above 588 u/s. The plough is unchanged by the 2026-10-17 call that
 own BLADE cut its own afterimages past the same 1 s grace (`RHINO_SWORD_AFTERIMAGE.md`): the blade
 cuts them, the hull ploughs them.
 
+## The plough kit (2026-11-07)
+
+Garrett's answers, 2026-11-07: the plough kit with all three level-5s, and for the triggers "the steer is fun, but
+pulling it should be a little shove in the direction of the trigger, holding it keeps the plough steered."
+
+| Element | Ability | What it does | Level 5 |
+|---|---|---|---|
+| Space | **Furrow** | Adds 0 u at rest → 20 u at Space 10 to every throw, at any speed, on top of the speed throw (`furrowDistance`) | **Unstoppable**: super-shielded mass is ploughed too (`unstoppableUpgradeElement`) |
+| Mass | **Blade** | A plough blade across the nose, 14 u wide at rest → 40 u at Mass 10, floor 10 (`RhinoPloughBlade.width`) | **Berm**: a prism that LANDS lands shielded (`bermUpgradeElement`) |
+| Charge | **Carry** | A thrown prism still strikes a prism up to 0 u (rest) → 40 u (Charge 10) past its landing point; a strike destroys both (`carryDistance`) | **Avalanche**: after a strike the next prism down the line within the carry is thrown on too, up to 3 more (`avalancheUpgradeElement`, `avalancheLinks`) |
+| Time | **Ramp Spool** | unchanged (`RHINO_RAMP_BOOST.md`) | **Momentum**, unchanged |
+
+Every element read is the REPLICATED level (`ElementalFloat.EvaluateReplicated`) and every L5 is the replicated unlock
+bit (`IsUpgradeActive`), so every peer ploughs alike. At rest Furrow and Carry are 0 and the blade is a little wider than
+the hull, so a Rhino at rest ploughs almost exactly as it did before the kit (the blade adds 14 u of width at the nose).
+
+### Steering (LT / RT)
+
+`RhinoPloughSteerActionSO` (two assets, `RhinoPloughSteerLeftAction` / `RhinoPloughSteerRightAction`, bound on the
+pad and touch overrides to `LeftStickAction` / `RightStickAction`, the inputs the sword swing used) and
+`RhinoPloughSteerExecutor` (the swing executor's slot, same fileID):
+
+- **Press**: a small sideways shove toward that trigger, `ModifyVelocity(right × ±30 u/s, 0.25 s)` — about 5 u of
+  sidestep, well under the fleet's 100 u/s displacement ceiling (vessel skill §4.ab2).
+- **Hold**: every prism the hull ploughs is thrown to that side, across the centreline if it sat on the other one
+  (`RhinoPlough.ShoveToward`). Both held: the last one pulled wins; letting it go hands back to the one still held.
+- **Release**: each prism goes to the side it already sat on again.
+- The press and release replicate (`R_VesselActionHandler`), so the steered side is the same on every peer.
+- **Phone**: a thumb lift is that side's trigger (`author_touch_profiles.py`), so lifting a thumb shoves and holding
+  it up keeps the steer. Nothing energizes any more, so both-thumbs-off does nothing special.
+- **AI**: nothing presses the steer for a bot yet (vessel rule 52). Follow-up below.
+
+### The Blade (Mass)
+
+`RhinoPloughBlade` sits on a new `PloughBlade` GameObject under the root: a trigger `BoxCollider` (10 u tall, 2 u deep,
+centred 7.5 u ahead of the root and 1.2 u down, level with the fuselage box) with an `ImpactCollider` routed to the
+`VesselImpactor`, so `VesselImpactor.HullColliders` already includes it and the plough's clearance is measured off it:
+a wider blade catches more mass and throws it clear of the whole blade. The width changes the box's local x only, when
+the replicated Mass level moves. Side effect worth knowing: a rival's skimmer also sees the wider hull.
+
+### The crystal skimmer
+
+The sword's blade was the Rhino's only near-field skimmer, and an elemental crystal is only collected by an initialised
+skimmer (vessel rule 11). So the blade's skimmer stays on the Rhino as `CrystalSkimmer`: re-posed to the hull's centre,
+a static sphere (`elongateYOnly` off, `Scale` fixed at 30, so 15 u world radius) with a haptics-only container
+(`RhinoSkimmerImpactorDataContainer`). It cuts nothing and takes no petals.
+
+### Avalanche, exactly
+
+On a strike (a thrown prism meets another and neither is shielded) both break, as always. With Avalanche, before the
+pair breaks the plough sweeps the struck prism's box on along the throw line for the carry distance; the first prism
+it meets (not super-shielded, unless Unstoppable) is then thrown the full carry along the same line, and its own strike
+repeats the rule while links remain. A thrown-on prism that strikes nothing lands at the end of its carry. A shielded
+pair bounces as before, and a bounce ends the chain.
+
 ## Files
 
 | File | Role |
@@ -84,7 +146,13 @@ cuts them, the hull ploughs them.
 | `_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Prism Effects/RhinoPloughPrismEffectSO.cs` | The effect, plus the pure `RhinoPlough` geometry (side, shove, support distances) |
 | `_SO_Assets/Effects/Vessel Prism Effects/RhinoPloughPrismEffect.asset` | The tuned instance |
 | `_SO_Assets/Effects/Effect Containers/VesselContainers/RhinoImpactorDataContainer.asset` | `vesselPrismEffects[1]`: `VesselDamagePrismEffect` → `RhinoPloughPrismEffect` |
-| `_Scripts/Tests/Editor/RhinoPloughTests.cs` | Side choice, landing point, idempotence, support distances, disabled colliders |
+| `_Scripts/Tests/Editor/RhinoPloughTests.cs` | Side choice, landing point, idempotence, support distances, disabled colliders; the steered shove, the furrow, the steer rule |
+| `_Scripts/Controller/Vessel/R_VesselActions/Data Containers/RhinoPloughSteerActionSO.cs` | A trigger: the shove on press, the steer while held |
+| `_Scripts/Controller/Vessel/R_VesselActions/Executors/RhinoPloughSteerExecutor.cs` | The held side (`SteeredSide`), per vessel |
+| `_Scripts/Controller/Vessel/RhinoPloughBlade.cs` | The Mass blade's width |
+| `_SO_Assets/VesselActions/Rhino/RhinoPloughSteerLeftAction.asset`, `...RightAction.asset` | The two triggers' numbers |
+| `_SO_Assets/Effects/Effect Containers/SkimmerContainers/RhinoSkimmerImpactorDataContainer.asset` | The crystal skimmer's haptics-only container |
+| `Tools/Build/author_swordfish_assets.py` | Authored the split; `--check` holds it |
 
 ## Tuning knobs (`RhinoPloughPrismEffect.asset`)
 
@@ -95,6 +163,13 @@ cuts them, the hull ploughs them.
 | `maxThrowDistance` | 30 u | Ceiling on that throw — reached from 750 u/s, so a ramp-boosted Rhino at top speed (840 u/s) throws 30, not 33.6 |
 | `slideSeconds` | 0.25 s | How long the visual takes to slide out. Animation only |
 | `skipWhileAttached` | on | A riding vessel does not plough the trail it rides |
+| `furrowDistance` | 0 → 20 u (Space), floor 0 | The Furrow: added to every throw |
+| `unstoppableUpgradeElement` | Space | Unstoppable's gate (None = never) |
+| `carryDistance` | 0 → 40 u (Charge), floor 0 | The Carry: how far past landing a thrown prism still strikes |
+| `avalancheUpgradeElement` / `avalancheLinks` | Charge / 3 | Avalanche's gate and how many more prisms one chain throws |
+| `bermUpgradeElement` | Mass | Berm's gate |
+| `RhinoPloughBlade.width` (prefab) | 14 → 40 u (Mass), floor 10 | The Blade |
+| `RhinoPloughSteer*Action.shoveSpeed` / `shoveSeconds` | 30 u/s / 0.25 s | The trigger's little shove |
 
 ## What this changes elsewhere
 
@@ -110,6 +185,18 @@ cuts them, the hull ploughs them.
   slice instead of two (`RHINO_ENERGY_SWORD.md`, `FLEET_MAPS.md`).
 
 ## In-editor verification
+
+**The plough kit (2026-11-07)** — not run in the editor either:
+
+9. **Steer.** Hold RT and fly through a trail: every prism lands on the RIGHT, including those left of the centreline.
+   A pull alone gives a small visible sidestep. Release: prisms go back to their own sides.
+10. **Furrow.** Raise Space (the Toybox's element panel): the furrow is visibly wider at cruise.
+11. **Blade.** Raise Mass: a wider band of a trail is caught at the nose. No new console warnings.
+12. **Carry.** Raise Charge near dense mass: thrown prisms reach further to break others.
+13. **L5s.** Unstoppable: a super-shielded prism is shoved rather than jiggled. Berm: landed prisms are shielded.
+    Avalanche: one strike in a dense field breaks a line of prisms.
+14. **Crystals.** Elemental and omni crystals still collect (the re-posed crystal skimmer), with no "pickup with no
+    vessel" warning.
 
 No `unity` binary was available in the authoring session, so none of this has been seen in play.
 
@@ -135,6 +222,15 @@ No `unity` binary was available in the authoring session, so none of this has be
    up).
 
 ## Follow-ups
+
+- **The plough kit is unplayed.** Every number above is a first guess: the furrow's 20, the carry's 40, the blade's
+  14 → 40, the shove's 30 u/s. Tune in play.
+- **The AI never steers** the plough and has no use for Avalanche or Berm (vessel rule 52): it ploughs and ramps.
+- **The HUD's cards still draw the sword's icons**: the four plough abilities need their own (`/ability-icon`), and the
+  Rhino has no omni-crystal ability (the Surge was the sword's).
+- **Unstoppable ploughs arena linings and race tracks** (they are super-shielded), and the comeback system hands L5 to
+  whoever is losing (vessel rule 31). Watch Headlong and Regatta.
+- **Broadside**: the plough-only Rhino has no vessel-hit verb, so the Swordfish took its seat (`broadside_balance.py`).
 
 - A prism ploughed again while its first slide is still running restarts the slide from its
   previous REST point rather than from where its visual currently is (a small visible hop). Track

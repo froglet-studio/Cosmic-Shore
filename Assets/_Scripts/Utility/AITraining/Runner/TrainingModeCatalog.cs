@@ -71,8 +71,8 @@ namespace CosmicShore.Utility.AITraining
                 VesselClassType.Dolphin, true, 4, TargetSensor.TargetMode.ClosestCrystal,
                 "MinigameRampage",
                 "Domain sum of HostilePrismsDestroyed ends the match. Golf Score is shared and negated."),
-            new(GameModes.Cleave, "Ribcage", "Peel the Cage · Rhino · I4",
-                VesselClassType.Rhino, true, 4, TargetSensor.TargetMode.ClosestCrystal,
+            new(GameModes.Cleave, "Ribcage", "Peel the Cage · Swordfish · I4",
+                VesselClassType.Swordfish, true, 4, TargetSensor.TargetMode.ClosestCrystal,
                 "MinigameCleave",
                 "Domain sum of HostilePrismsDestroyed ends the match. Golf Score is shared and negated."),
             new(GameModes.WildlifeLiberation, "WildlifeLiberation", "Wildlife Liberation · Sparrow · I4",
@@ -99,10 +99,10 @@ namespace CosmicShore.Utility.AITraining
                 VesselClassType.Squirrel, false, 4, TargetSensor.TargetMode.ClosestCrystal,
                 "MinigameBroodRush",
                 "Domain sum of GoalsScored ends the match. Each wave is stamped on one representative player, so a teammate who did not receive the stamp scores zero brood."),
-            new(GameModes.AstroLeague, "AstroLeague", "Astro League · Rhino · I4",
-                VesselClassType.Rhino, false, 4, TargetSensor.TargetMode.BothPreferCrystal,
+            new(GameModes.AstroLeague, "AstroLeague", "Astro League · Swordfish · I4",
+                VesselClassType.Swordfish, false, 4, TargetSensor.TargetMode.BothPreferCrystal,
                 "MinigameAstroLeague",
-                "Domain sum of goals ends the match. Card also allows Scarab; the scenario defaults to Rhino. Fitness uses this pilot's GoalsScored."),
+                "Domain sum of goals ends the match. Card also allows Scarab and Squirrel; the scenario defaults to Swordfish (the Rhino's blade moved to it, 2026-11-07). Fitness uses this pilot's GoalsScored."),
             // Added 2026-10-28 (Froglet Compute trains every card): every remaining multiplayer card with a
             // scoring rule. Their recipes are FitnessProfileSO.MetricRecipes; gate races seek TargetMode.NextGate.
             // Not here: Maelstrom (chains other modes) and Grizzly Charge (in development, no scoring rule).
