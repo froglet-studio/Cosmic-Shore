@@ -31,6 +31,9 @@ What is read, and how (all of it mechanical; nothing is typed in by hand):
   run in editor 'yes' when the heading says approved in editor; 'no: NOT RUN IN EDITOR' on that marker; 'awaiting'
                 on 'awaiting in-editor approval' (or Shombith's approval / a two-client test); else blank.
   awaiting      any 'awaiting' in the section (heading or body): the marker that excuses a round from --check.
+  decided       a pick line, or an explicit 'superseded' / 'scrapped' / 'Rejected (...)': a round decided against is
+                decided too (Rev 39 was superseded by the Rev 40 pick; Rev 34 was rejected and redrawn as Rev 36).
+  rev           a section whose heading names 'Rev N' at all (a round, or the build from one): the --screens 'revs'.
 
 Exit 0; 1 when --check finds an undecided round or the self-test fails; 2 on a setup error (doc or markers missing).
 """
@@ -54,8 +57,10 @@ STALE_DAYS = 3  # a round older than this with no pick and no 'awaiting' was nev
 HEADING = re.compile(r"^## (\d+)\. (.+?)\s*$")
 OTHER_HEADING = re.compile(r"^## ")
 DATE = re.compile(r"20\d\d-\d\d-\d\d")
-ROUND = re.compile(r"\bRev \d+(?: ?/ ?\d+)?\b.*\b(mockups?|boards)\b|\b(mockups?|boards)\b.*\bRev \d+\b")
-BUILT = re.compile(r"\b[Bb]uilt\b|^Item \d+\b|\bItem \d+:")
+ROUND = re.compile(r"\b[Rr]ev \d+(?: ?/ ?\d+)?\b.*\b(mockups?|boards)\b|\b(mockups?|boards)\b.*\b[Rr]ev \d+\b")
+REV = re.compile(r"\b[Rr]ev \d+\b")
+BUILT = re.compile(r"\b[Bb]uilt\b|^Item \d+\b|\bItem \d+:|awaiting in-editor|\b[Aa]pproved\b")
+DECIDED_OTHER = [re.compile(p) for p in (r"\bsuperseded\b", r"\bscrapped\b", r"^\*\*Rejected\b", r"\brejected\b")]
 FIX = re.compile(r"\b[Ff]ix(?:es|ed)?\b|\b[Pp]lay-?test\b|\b[Pp]olish\b")
 NOT_RUN = "NOT RUN IN EDITOR"
 APPROVED_IN_EDITOR = re.compile(r"approved in (?:the )?editor", re.I)
@@ -138,8 +143,9 @@ SCREENS: list[tuple[str, re.Pattern]] = [
     for name, pat in (
         ("Hangar", r"\bHangar(?:'s)?\b"),
         ("Home", r"\bHome\b"),
-        ("Arcade", r"\bArcade(?:'s)?\b"),
-        ("Configure", r"\b[Cc]onfigure\b|\bconfiguration\b|launch panel|mode's preview|game mode\b"),
+        ("Arcade", r"\bArcade(?:'s)?\b|ALL GAMES"),
+        ("Configure", r"\b[Cc]onfigure\b|\bconfiguration\b|launch panel|mode's preview|(?<!Hangar )\bpreview\b|"
+                      r"\b[Ii]ntensity\b|\bpodium\b|\bpedestals?\b|AI seat"),
         ("Profile", r"\bProfile(?:'s)?\b|pilot record|[Cc]olour sets"),
         ("Ark", r"\bArk(?:'s)?\b"),
         ("Squads", r"\bSquads?\b|\bdeck\b"),
@@ -154,25 +160,26 @@ SCREENS: list[tuple[str, re.Pattern]] = [
         ("Credits", r"\bCredits\b"),
         ("Toy Box", r"\bToy ?[Bb]ox\b|\btoy cards?\b"),
         ("Arena", r"\bArena\b"),
-        ("Mode windows", r"mode windows"),
+        ("Mode windows", r"mode windows|four windows|hub windows"),
         ("Start flow / sign-in", r"start flow|[Ss]ign-in|[Ss]igning in|[Ss]plash|[Bb]ootstrap|welcome card|providers"),
         ("Connection", r"[Cc]onnection\b|[Cc]onnecting\b|rejoin"),
         ("Loading", r"[Ll]oading|boot world|into a game mode"),
         ("In-game HUD", r"\bHUD\b|in-game UI|\bin-game\b"),
         ("Maelstrom", r"\bMaelstrom\b"),
         ("Toasts", r"\b[Tt]oasts?\b"),
-        ("Top nav", r"top nav|top bar|\bnav\b|\bnavigation\b"),
+        ("Top nav", r"top nav|top bar|\bnav\b"),
         ("FTUE", r"\bFTUE\b|first-login|[Tt]utorial"),
-        ("Game cards", r"game (?:and toy )?cards|\bcards?\b|hull lit|card art"),
+        ("Game cards", r"\b(?:game|toy|[Aa]rcade|[Aa]rena) cards\b|game and toy cards|hull lit"),
+        ("Window backgrounds", r"sea lines|\blattice\b|frosted|\bbackgrounds?\b|\bbg\b"),
         ("Hover", r"\b[Hh]over\b"),
-        ("Kit / borders", r"component kit|[Rr]eusable components|kit label|\bborders\b|\bkit\b"),
+        ("Kit", r"component kit|[Rr]eusable components|kit label|[Gg]lowing borders|\bkit supersedes\b"),
         ("Closed surfaces / purchase", r"closed surfaces|[Pp]urchase"),
         ("Compute console", r"Compute console|Computer artifact"),
         ("Analytics console", r"\bAnalytics\b"),
         ("Frogma (the board)", r"\bFrogma\b|design board|[Tt]he board\b"),
         ("Style guide", r"[Ss]tyle guide"),
         ("Replays", r"\b[Rr]eplays?\b"),
-        ("Elemental UI", r"elemental UI|palette"),
+        ("Palette / elemental UI", r"elemental UI|palette"),
     )
 ]
 
@@ -204,6 +211,10 @@ class Section:
         return bool(ROUND.search(self.title))
 
     @property
+    def is_rev(self) -> bool:
+        return bool(REV.search(self.title))
+
+    @property
     def kind(self) -> str:
         if self.is_round:
             return "round"
@@ -218,10 +229,11 @@ class Section:
         return [name for name, pat in SCREENS if pat.search(self.title)]
 
     def pick_lines(self) -> tuple[list[tuple[int, str]], list[tuple[int, str]]]:
-        """(strong, weak) pick lines, each (lineno, text), heading first."""
+        """(strong, weak) pick lines, each (lineno, text): the body first (its Picked line is the record), then the
+        heading (which may only say 'Shombith picked B')."""
         strong: list[tuple[int, str]] = []
         weak: list[tuple[int, str]] = []
-        for lineno, text in [(self.line, self.title)] + self.lines:
+        for lineno, text in self.lines + [(self.line, self.title)]:
             if any(p.search(text) for p in PICK_STRONG):
                 strong.append((lineno, text))
             elif any(p.search(text) for p in PICK_WEAK):
@@ -230,8 +242,11 @@ class Section:
 
     @property
     def decided(self) -> bool:
+        """A pick was recorded, or the round was explicitly superseded, scrapped or rejected."""
         strong, weak = self.pick_lines()
-        return bool(strong or weak)
+        if strong or weak:
+            return True
+        return any(p.search(t) for p in DECIDED_OTHER for _, t in self.lines + [(self.line, self.title)])
 
     @property
     def awaiting(self) -> bool:
@@ -300,6 +315,7 @@ class Section:
             "date": self.date,
             "kind": self.kind,
             "round": self.is_round,
+            "rev": self.is_rev,
             "screens": self.screens,
             "pick_line": plain((strong or weak)[0][1]) if (strong or weak) else "",
             "pick_words": self.pick_words(),
@@ -372,9 +388,13 @@ def screen_counts(sections: list[Section]) -> list[dict]:
     counts: dict[str, dict] = {}
     for s in sections:
         for name in s.screens:
-            c = counts.setdefault(name, {"screen": name, "sections": 0, "rounds": 0, "built": 0, "fixes": 0, "numbers": []})
+            c = counts.setdefault(
+                name, {"screen": name, "sections": 0, "rounds": 0, "revs": 0, "built": 0, "fixes": 0, "numbers": []}
+            )
             c["sections"] += 1
             c["numbers"].append(s.number)
+            if s.is_rev:
+                c["revs"] += 1
             if s.kind == "round":
                 c["rounds"] += 1
             elif s.kind == "built":
@@ -385,10 +405,16 @@ def screen_counts(sections: list[Section]) -> list[dict]:
 
 
 def render_screens(counts: list[dict]) -> str:
-    out = [f"{'screen':<28} {'sections':>8} {'rounds':>6} {'built':>5} {'fixes':>5}  sections"]
+    out = [
+        "sections: '## N.' sections whose heading names the screen (the rebuild count); rounds: 'Rev N mockups / boards'",
+        "sections among them; revs: sections naming any 'Rev N' (a round, or the build from one); built / fixes by heading.",
+        f"{'screen':<28} {'sections':>8} {'rounds':>6} {'revs':>4} {'built':>5} {'fixes':>5}  sections",
+    ]
     for c in counts:
         nums = ", ".join(str(n) for n in c["numbers"])
-        out.append(f"{c['screen']:<28} {c['sections']:>8} {c['rounds']:>6} {c['built']:>5} {c['fixes']:>5}  {nums}")
+        out.append(
+            f"{c['screen']:<28} {c['sections']:>8} {c['rounds']:>6} {c['revs']:>4} {c['built']:>5} {c['fixes']:>5}  {nums}"
+        )
     return "\n".join(out)
 
 
@@ -469,6 +495,10 @@ Built from the pick; the old plate removed.
 
 Shombith: "Go ahead with the colourful card renders". The (REMOVE) button stays.
 
+## 5. Rev 5 mockups: the Voyage window (2026-10-01; superseded by the Rev 6 pick)
+
+Six layouts; none taken. "I didn't much like the mockup ideas".
+
 ## Unnumbered heading
 
 Lines here belong to no section; "Lets go with X" must not count.
@@ -483,11 +513,15 @@ def self_test() -> int:
         with open(doc, "w", encoding="utf-8") as fh:
             fh.write(SELF_TEST_DOC)
         secs = parse(doc)
-        assert [s.number for s in secs] == [1, 2, 3, 4], [s.number for s in secs]
-        assert [s.date for s in secs] == ["2026-10-01", "2026-10-05", "2026-10-01", "2026-10-03"], [s.date for s in secs]
-        assert [s.line for s in secs] == [5, 20, 24, 28], [s.line for s in secs]
-        assert [s.kind for s in secs] == ["round", "round", "round", "built"], [s.kind for s in secs]
-        one, two, three, four = secs
+        assert [s.number for s in secs] == [1, 2, 3, 4, 5], [s.number for s in secs]
+        assert [s.date for s in secs] == ["2026-10-01", "2026-10-05", "2026-10-01", "2026-10-03", "2026-10-01"], [
+            s.date for s in secs
+        ]
+        doc_lines = SELF_TEST_DOC.splitlines()
+        expect = [i for i, t in enumerate(doc_lines, 1) if HEADING.match(t) and not t.startswith("## 99.")]
+        assert [s.line for s in secs] == expect, ([s.line for s in secs], expect)
+        assert [s.kind for s in secs] == ["round", "round", "round", "built", "round"], [s.kind for s in secs]
+        one, two, three, four, five = secs
         # the decided round: the pick line, his words, the rejection, the screens, the sub-section's marker
         assert one.is_round and one.decided and one.awaiting, one.as_dict()
         assert one.pick_words() == ["go with C, the deck"], one.pick_words()
@@ -509,6 +543,9 @@ def self_test() -> int:
         assert four.pick_words() == ["Go ahead with the colourful card renders"], four.pick_words()
         assert four.rejected_words() == [], four.rejected_words()
         assert four.screens == ["Hangar", "Game cards"], four.screens
+        # the superseded round: decided against, no pick line, not awaiting; its dislike is still read
+        assert five.decided and not five.awaiting and not any(five.pick_lines()), five.as_dict()
+        assert five.rejected_words() == ["I didn't much like the mockup ideas"], five.rejected_words()
         # --check: section 3 fails when it is older than three days, and only it
         bad = undecided(secs, _dt.date(2026, 10, 20))
         assert [s.number for s in bad] == [3], [s.number for s in bad]
@@ -516,7 +553,9 @@ def self_test() -> int:
         assert undecided(secs, _dt.date(2026, 10, 5)) and undecided(secs, _dt.date(2026, 10, 5))[0].number == 3
         # --screens
         counts = {c["screen"]: c for c in screen_counts(secs)}
-        assert counts["Hangar"] == {"screen": "Hangar", "sections": 2, "rounds": 1, "built": 1, "fixes": 0, "numbers": [1, 4]}, counts["Hangar"]
+        assert counts["Hangar"] == {
+            "screen": "Hangar", "sections": 2, "rounds": 1, "revs": 1, "built": 1, "fixes": 0, "numbers": [1, 4]
+        }, counts["Hangar"]
         assert counts["Game cards"]["sections"] == 2 and counts["Profile"]["rounds"] == 1, counts
         # --md keeps the hand-written part, replaces only what is between the markers, and is idempotent
         md = os.path.join(tmp, "UI_LESSONS.md")
