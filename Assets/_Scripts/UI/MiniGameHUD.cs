@@ -503,6 +503,9 @@ namespace CosmicShore.UI
                 case GameModes.DecoyRun:
                     // the Jacks' Time race: neutral rings, a per-viewer arrow.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_DecoyRun");
+                case GameModes.SlipLine:
+                    // the Honeyguide's Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SlipLine");
                 case GameModes.PerchRun:
                     // the Goby's Time race: neutral rings, a per-viewer arrow.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_PerchRun");

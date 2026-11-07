@@ -96,6 +96,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigamePerchRun.unity
     guid: 6d8b3f7ed203c511c5889741bf835ca4
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameSlipLine.unity
+    guid: fe3059816a98db83f74d40393c66364a
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameLanternRun.unity
     guid: 5e16a160d1561b34a716f590891fda67
   - enabled: 1

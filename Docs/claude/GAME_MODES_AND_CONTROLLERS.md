@@ -978,6 +978,16 @@ Goby gained a reach ring (where a charging dart will stop) and an AI race coach,
 `Tools/Build/perch_run_harness/`), generator `author_perch_run_assets.py` on `hull_time_race.py`. See
 `_Scripts/Controller/Arcade/PERCH_RUN.md`. Authored headless.
 
+`SlipLine(82)` is the **Honeyguide's Time race** (2026-11-07): prism RAILS in the Dynamo's Ruby, Jade and Gold run down
+the legs, and a slip down a rail the battery holds a charge for crosses the leg at 480 u/s against a 60 u/s cruise. I1
+three rails a leg (any charge rides), I2 one coloured rail a leg with stubs not worth a charge, I3 rails leaning off the
+line (turn out to meet them), I4 chains (two rails, two colours, one ride for two rings) with the smallest rings. The
+rails are super-shielded prism trails every peer derives from the broadcast rings. The Honeyguide gained one AI hook,
+`HoneyguideCrew.RaceCoach` (`IHoneyguideRaceCoach`), so the AI's slip guard measures a ride against where the race says
+it is going. `SlipLineController : GateRaceController`, `SlipLineCourse`, `SlipLineCourseTests` (offline:
+`Tools/Build/slip_line_harness/`, with the real Ratel AI), generator `author_slip_line_assets.py`. See
+`_Scripts/Controller/Arcade/SLIP_LINE.md`. Authored headless.
+
 `ScarabRally(72)`, `SerpentTime(73)` and `BrittleStarTime(74)` are **Time races for three hulls that had none**
 (Garrett, 2026-10-27: "make every vessel's time game very fun"). Each one is a `GateRaceController` race with a
 `RaceGateTurnMonitor`, and all three are authored by one shared helper, `Tools/Build/hull_time_race.py`, with one
@@ -1430,6 +1440,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             │   └── ThornlineController           — Shrike-only sling race (the Shrike's Time card): thorn to thorn through a ring a leg
             ├── DecoyRunController                — Jacks-only herd-and-travel race (the Jacks' Time card): doors, skewers, rolled flats, hairpins
             ├── PerchRunController                — Goby-only dart race (the Goby's Time card): open rings, hairpins, coral blockers, doubles
+            ├── SlipLineController                — Honeyguide-only rail race (the Honeyguide's Time card): three rails, coloured rails and stubs, leaning rails, chains
             ├── HeadlongController                — Rhino-only circuit race; a CLOSED loop flown in LAPS, every corner cut to the Rhino's flat-out turn radius
             ├── BreakwaterController              — Sparrow-only station race; a polar START GATE (the platform's one lead-in) plus a closed circuit of danger-woven dishes, fire/saw/thread. 202 lines: the course, the lead-in and the stations, and nothing else
             ├── SkeinController                   — Urchin-only cable race; the rings sit ON the arena's own rails, so the course is a thing you RIDE rather than fly between
