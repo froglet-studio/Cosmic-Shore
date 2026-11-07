@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: SUNDIAL
   description: 
   flavor: 
-  portrait: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 831080755955379338daf3cc54cd49c3, type: 3}
   portraitIsStandIn: 0
   icon: {fileID: 0}
   requirement:
