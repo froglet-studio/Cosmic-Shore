@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;

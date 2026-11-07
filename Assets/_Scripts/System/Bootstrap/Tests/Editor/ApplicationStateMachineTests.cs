@@ -21,7 +21,7 @@ namespace CosmicShore.Core
             // created via CreateInstance (no serialization pass). Force-initialize it.
             if (_stateVariable.Value == null)
             {
-                var field = typeof(Obvious.Soap.ScriptableVariable<ApplicationStateData>)
+                var field = typeof(CosmicShore.Soap.ScriptableVariable<ApplicationStateData>)
                     .GetField("_value", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 field?.SetValue(_stateVariable, new ApplicationStateData());
             }

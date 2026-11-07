@@ -12,6 +12,15 @@ namespace CosmicShore.Gameplay
     /// The Stoat's SLINGSHOT (<c>R_VesselActions/STOAT.md</c>): an attractor–repulsor WORMHOLE pair
     /// laid beside the hull — the attractor on the trigger's side, the repulsor mirrored on the other.
     ///
+    /// <para><b>TIME MODE IS THE TRAMPOLINE (Yash, 2026-11-04, <c>STOAT_DIPOLE.md</c> §1b "The trampoline")</b> whenever
+    /// <see cref="StoatSlingConfigSO.Trampoline"/> is on (it ships on): no orbit, no black hole. PRESS lays a lone WHITE HOLE
+    /// ahead on the line you are flying, off to the side away from the bounce, with a soft shell round it
+    /// (<see cref="StoatSlingMath.TrampolineCentre"/>). Touch the shell moving in and it gives like a trampoline: a spring
+    /// pushes you out along its normal (<see cref="StoatSlingMath.TrampolineStep"/>), and leaving it throws you off with the
+    /// kick added. Where you touch it decides where you go - a graze turns you a little, deeper more. The trigger's release
+    /// does nothing to it: it stays up until bounced off, passed, or its life is out, then pops (the Charge ripple). The
+    /// bounce is flown on the simulating machine for THIS hull only (an owned hole moves no other vessel).</para>
+    ///
     /// <para><b>TIME MODE IS THE SKIM SLING (2026-10-29, <c>STOAT_DIPOLE.md</c> §1q)</b> whenever
     /// <see cref="StoatSlingConfigSO.Skim"/> is set (it ships set). PRESS lays a pair <see cref="StoatSkimConfigSO.LayAhead"/>
     /// ahead and <see cref="StoatSkimConfigSO.LaySide"/> to the pressed side, its axis the hull's up. Fly past and the
@@ -113,6 +122,8 @@ namespace CosmicShore.Gameplay
         float _orbitRadius;
         float _squeezeRadius; // the squeeze's circle, before the inner pull: the detection ring is drawn from it
         float _orbitAngle;   // radians swept round the attractor since the catch
+        float _orbitSeconds; // seconds in the orbit since the catch (the aimed exit's window)
+        Vector3 _entryHeading; // the heading the hull was caught on (the aimed exit turns it)
         Vector3 _lastRadial;
         float _laidAt;
         float _momentumClock = 1f;       // the flight clock at the last paid launch, × its timing
@@ -152,6 +163,32 @@ namespace CosmicShore.Gameplay
         bool _skipFxPerfect;
         bool _skipFxGraze;
 
+        // The trampoline (Time mode with config.Trampoline on): a lone white hole and its soft shell.
+        BlackHole _white;
+        bool _tramp;                // a trampoline is up (every peer)
+        bool _touching;             // ...and the hull is in its shell (the simulating machine)
+        bool _trampWasInside;       // the hull has been inside it (every peer: the Mass-5 shield on the pop)
+        Side _trampSide;            // the bounce's side
+        Vector3 _trampCentre;
+        float _trampRadius;
+        float _trampAt;
+        float _touchSeconds;
+        Vector3 _bounceVelocity;    // carried from the touch through the bounce (the spring reverses it)
+        Vector3 _dentNormal = Vector3.up;
+        float _dentDepth;
+        float _bounceFxAt = float.NegativeInfinity;
+        Vector3 _bounceFxCentre;
+        Vector3 _bounceFxNormal = Vector3.up;
+        float _bounceFxRadius;
+        // The hull's turn, eased (rad/s about an axis): a trampoline is laid on the line it is turning along.
+        Vector3 _turnVelocity;
+        Vector3 _lastForward;
+        // The autopilot's steering, borrowed while a trampoline is up and untouched: it flies at the flank for the turn it
+        // wants, then hands back whatever provider was there (a mode's race line) - never clears one.
+        System.Func<Vector3> _aiSteer;
+        System.Func<Vector3> _aiSteerPrev;
+        AIPilot _aiSteered;
+
         /// <summary>The Time-mode pair this hull laid last, alive or not; null before the first one.</summary>
         public BlackHoleRegistry.Pair LastPair => _pair;
         /// <summary>The crystal pair this hull slung last (the crystal style, Docs/BLACK_HOLE.md §13); null before the first.</summary>
@@ -161,8 +198,9 @@ namespace CosmicShore.Gameplay
         public float Hold01(Side side) => _holds[(int)side].Peak;
         /// <summary>True while a Time-mode pair is laid and held (caught or not yet).</summary>
         public bool HasPair => _laid && _pair != null && _pair.Black != null;
-        /// <summary>True while the attractor has caught the hull and it is circling (the simulating machine).</summary>
-        public bool IsOrbiting => _laid && _caught;
+        /// <summary>True while the attractor has caught the hull and it is circling - or, with the trampoline, while the hull is
+        /// in its shell (the simulating machine). The warp and the HUD's Time card read it.</summary>
+        public bool IsOrbiting => (_laid && _caught) || _touching;
         /// <summary>The orbit radius the squeeze asks for right now, world units (0 with no pair) — the solid ring.</summary>
         public float OrbitRadius => _laid ? _orbitRadius : 0f;
         /// <summary>How far out the attractor can catch the hull, world units (0 with no pair) — the faint ring.</summary>
@@ -176,18 +214,42 @@ namespace CosmicShore.Gameplay
         public BlackHole Attractor => HasPair ? _pair.Black : null;
         /// <summary>How well a release RIGHT NOW would be timed, 0..1 (0 before a catch) — the rings and the HUD.</summary>
         public float Timing01 => !IsOrbiting || !config ? 0f
-            : UsesSkim ? config.Skim.SweetSpot(_orbitAngle * Mathf.Rad2Deg) : config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
+            : _touching ? 1f
+            : UsesSkim ? config.Skim.SweetSpot(_orbitAngle * Mathf.Rad2Deg)
+            : config.AimedExit ? config.ExitTiming(_orbitSeconds) : config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
+        /// <summary>Seconds the current orbit has held the hull (0 before a catch).</summary>
+        public float OrbitSeconds => IsOrbiting ? _orbitSeconds : 0f;
         /// <summary>Space-5 Accretion on the orbit: how much of the +40% ripple-reach bonus the pair has earned, 0..1.</summary>
         public float Accretion01 => config && config.AccretionMax > 0f ? Mathf.Clamp01(_accretion / config.AccretionMax) : 0f;
         /// <summary>The Charge ripple the open pair would throw now, as a share of the largest (Accretion full), 0..1;
         /// empty with no pair. HUD only.</summary>
-        public float RippleCharge01 => HasPair && config ? (1f + _accretion) / (1f + config.AccretionMax) : 0f;
-        /// <summary>How far round the current orbit is toward the sweet spot, 0..1 (the HUD's Time card).</summary>
+        public float RippleCharge01 => (HasPair || _tramp) && config ? (1f + _accretion) / (1f + config.AccretionMax) : 0f;
+        /// <summary>How far round the current orbit is toward the sweet spot, 0..1 (the HUD's Time card); with the trampoline,
+        /// how far through the bounce the hull is.</summary>
         public float SweetProgress01 => !IsOrbiting || !config ? 0f
+            : _touching ? Mathf.Clamp01(_touchSeconds / config.TrampolineSoftSeconds)
+            : !UsesSkim && config.AimedExit ? Mathf.Clamp01(_orbitSeconds / config.ExitWindowSeconds)
             : Mathf.Clamp01(_orbitAngle * Mathf.Rad2Deg / (UsesSkim ? config.Skim.SweetSpotDegrees : config.SweetSpotDegrees));
 
-        /// <summary>Time mode flies the Skim Sling: a skim config is set and the crystal style is off.</summary>
-        public bool UsesSkim => config && config.Skim && !(BlackHoleRegistry.Config && BlackHoleRegistry.Config.CrystalPairs);
+        /// <summary>Time mode flies the trampoline: it is on and the crystal style is off.</summary>
+        public bool UsesTrampoline => config && config.Trampoline && !(BlackHoleRegistry.Config && BlackHoleRegistry.Config.CrystalPairs);
+        /// <summary>True while a trampoline is up (every peer).</summary>
+        public bool IsTrampolineUp => _tramp;
+        /// <summary>The trampoline's white hole (the shell's centre) and the shell's radius, world.</summary>
+        public Vector3 TrampolineCentre => _trampCentre;
+        public float TrampolineRadius => _tramp ? _trampRadius : 0f;
+        /// <summary>The shell's dent while the hull is in it: its normal (out through the hull) and depth, world units.</summary>
+        public Vector3 DentNormal => _dentNormal;
+        public float DentDepth => _touching ? _dentDepth : 0f;
+        /// <summary>Seconds since the last bounce (+∞ before the first), and where it was: the bounce ripple.</summary>
+        public float BounceFxAge => Time.time - _bounceFxAt;
+        public Vector3 BounceFxCentre => _bounceFxCentre;
+        public Vector3 BounceFxNormal => _bounceFxNormal;
+        public float BounceFxRadius => _bounceFxRadius;
+
+        /// <summary>Time mode flies the Skim Sling: a skim config is set, the trampoline is off and the crystal style is off.</summary>
+        public bool UsesSkim => config && config.Skim && !config.Trampoline &&
+                                !(BlackHoleRegistry.Config && BlackHoleRegistry.Config.CrystalPairs);
         /// <summary>The laid Skimshell's centre (the pair's midpoint, held still).</summary>
         public Vector3 SkimCentre => _skimCentre;
         /// <summary>The laid Skimshell's spin axis (the Skimline's normal; the dots scroll round it).</summary>
@@ -242,6 +304,10 @@ namespace CosmicShore.Gameplay
             _pendingPerfect = _perfect = _grazeOnly = false;
             _skipFxAt = float.NegativeInfinity;
             _skipFxCount = 0;
+            _tramp = _touching = false;
+            _bounceFxAt = float.NegativeInfinity;
+            _turnVelocity = Vector3.zero;
+            _lastForward = Vector3.zero;
             _resolvedSiblings = false;
             _lastTiming = -1f;
             _stance = TryGetComponent<ActionExecutorRegistry>(out var registry) ? registry.Get<ToggleTranslationModeActionExecutor>() : null;
@@ -277,6 +343,8 @@ namespace CosmicShore.Gameplay
             if (!_holds[i].Holding) return;
             _holds[i].Holding = false;
             if (config == null || _status == null) return;
+            // The trampoline stays up when the trigger is let go: the hold only tensions it (its deepest squeeze is the kick).
+            if (_tramp) return;
             if (_laid)
             {
                 if (_orbitSide != side) return;
@@ -295,6 +363,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void ReleaseAll()
         {
+            if (_tramp) EndTrampoline(bounced: false);
             if (_laid) Slingshot(boost: false);
             _holds[0].Holding = false;
             _holds[1].Holding = false;
@@ -331,8 +400,9 @@ namespace CosmicShore.Gameplay
         /// the press (<see cref="StoatSlingConfigSO.CatchWarpFromPress"/>) or once caught. The pathfinder, the one writer of
         /// the clock, reads it.
         /// </summary>
-        public bool WarpsFlight => !UsesSkim && _laid && _pair != null && _pair.IsAlive && _pair.Held && config &&
-                                   config.CatchWarpShare > 0f && (_caught || config.CatchWarpFromPress);
+        public bool WarpsFlight => config && config.CatchWarpShare > 0f &&
+                                   (_tramp ? _touching || config.CatchWarpFromPress
+                                       : !UsesSkim && _laid && _pair != null && _pair.IsAlive && _pair.Held && (_caught || config.CatchWarpFromPress));
 
         float RadiusFor(float hold01)
         {
@@ -354,6 +424,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void LayPair(Side side)
         {
+            if (UsesTrampoline) { LayTrampoline(side); return; }
             if (UsesSkim) { LaySkim(side); return; }
             var hull = _status.Transform;
             if (hull == null) return;
@@ -387,6 +458,7 @@ namespace CosmicShore.Gameplay
             _orbitSide = side;
             _orbitRadius = _squeezeRadius = RadiusFor(_holds[(int)side].Live);
             _orbitAngle = 0f;
+            _orbitSeconds = 0f;
             _laidAt = Time.time;
             // A sling is a launch: leave the hold-still stance, which would otherwise pin the hull.
             if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
@@ -429,6 +501,8 @@ namespace CosmicShore.Gameplay
                 _caught = true;
                 _inWindow = false;
                 _orbitAngle = 0f;
+                _orbitSeconds = 0f;
+                _entryHeading = hull.forward;
                 _lastRadial = hull.position - centre;
                 // Held where it was caught: no yank onto the squeeze's circle (the studio's dpHoldAtCatch).
                 if (config.HoldAtCatch) _orbitRadius = _lastRadial.magnitude;
@@ -460,6 +534,7 @@ namespace CosmicShore.Gameplay
             var radial = hull.position - centre;
             _orbitAngle += Vector3.Angle(_lastRadial, radial) * Mathf.Deg2Rad;
             _lastRadial = radial;
+            _orbitSeconds += dt;
             bool inWindow = Timing01 >= 0.999f;
             if (inWindow && !_inWindow && _status.IsLocalUser && !_status.AutoPilotEnabled) HapticController.PlaySkim(1f);
             _inWindow = inWindow;
@@ -515,16 +590,20 @@ namespace CosmicShore.Gameplay
             }
             if (boost && caught && transformer && hull && MantaStingActionExecutor.IsSimAuthority(_status))
             {
-                // AIMED: toward where the stick points, up to launchConeDegrees off the tangent (a flick's direction, or the
-                // stick held at the release; the AI's stick points at its target). The hull turns onto it at once.
+                // AIMED: the aimed exit turns the ENTRY heading 30-45 deg the way the orbit turns, the stick picking where;
+                // without it, toward where the stick points, up to launchConeDegrees off the tangent (a flick's direction,
+                // or the stick held at the release; the AI's stick points at its target). The hull turns onto it at once.
                 Stick(out float x, out float y, out _);
-                var aim = StoatSlingMath.LaunchAim(hull.forward, hull.right, hull.up, x, y, config.AimMinStick, config.LaunchConeDegrees);
+                var aim = config.AimedExit
+                    ? StoatSlingMath.AimedExit(_entryHeading, _lastRadial, hull.forward,
+                        StoatSlingMath.ExitDegrees(x, _orbitSide == Side.Right, config.ExitMinDegrees, config.ExitMaxDegrees))
+                    : StoatSlingMath.LaunchAim(hull.forward, hull.right, hull.up, x, y, config.AimMinStick, config.LaunchConeDegrees);
                 Quaternion.FromToRotation(hull.forward, aim).ToAngleAxis(out float turned, out var turnAxis);
                 if (turned > 1e-3f && turnAxis.sqrMagnitude > 1e-8f) transformer.ApplyRotation(turned, turnAxis);
                 transformer.SetCourseVelocity(aim);
-                // TIMED: the whole kick for a release a quarter-turn round (the sweet spot), the miss share outside it;
-                // × MASS's power (launchPower, ×1 → ×2.5). Time keeps the warp.
-                float timing = config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
+                // TIMED: the whole kick for a release in the window (the aimed exit's seconds, or a quarter-turn round),
+                // the miss share outside it; × MASS's power (launchPower, ×1 → ×2.5). Time keeps the warp.
+                float timing = config.AimedExit ? config.ExitTiming(_orbitSeconds) : config.SweetSpot(_orbitAngle * Mathf.Rad2Deg);
                 float power = config.LaunchPower.EvaluateLive(_status);
                 float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_orbitSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
                 float swept = _orbitAngle * Mathf.Rad2Deg;
@@ -548,7 +627,7 @@ namespace CosmicShore.Gameplay
                 PlayOneShot(config.SlingEvent);
             }
             CSDebug.LogVerbose(CSLogChannel.BlackHole,
-                $"[Stoat] {_orbitSide} Time-mode pair let go ({(caught ? $"after {_orbitAngle * Mathf.Rad2Deg:F0}°" : "never caught")})");
+                $"[Stoat] {_orbitSide} Time-mode pair let go ({(caught ? $"after {_orbitAngle * Mathf.Rad2Deg:F0}°, {_orbitSeconds:F2} s" : "never caught")})");
         }
 
         void EndLastPair()
@@ -608,6 +687,150 @@ namespace CosmicShore.Gameplay
         }
 
         void OnEnable() => BlackHoleRegistry.PairMet += OnPairMet;
+
+        // ------------------------------------------------------------------ Time mode: the trampoline (STOAT_DIPOLE.md §1b)
+
+        /// <summary>
+        /// The press: a lone WHITE HOLE laid <see cref="StoatSlingConfigSO.TrampolineAhead"/> along the line the hull is
+        /// flying, <see cref="StoatSlingConfigSO.TrampolineLine"/> × its shell's radius to the side away from the bounce, held
+        /// still. Owned by this hull, so it moves no vessel. Every peer lays its own copy from the replicated press.
+        /// </summary>
+        void LayTrampoline(Side side)
+        {
+            var hull = _status.Transform;
+            if (hull == null) return;
+            // One per Stoat: a press over a live trampoline pops it (and any old pair) first.
+            if (_tramp) EndTrampoline(bounced: false);
+            if (_laid) Slingshot(boost: false);
+            EndLastPair();
+            var bh = BlackHoleRegistry.Config;
+            if (!BlackHoleRegistry.CanSpawn(1))
+            {
+                CSDebug.LogVerbose(CSLogChannel.BlackHole,
+                    $"[Stoat] trampoline refused — needs one free of {bh.MaxBlackHoles} wormholes ({BlackHoleRegistry.Count} live).");
+                return;
+            }
+
+            // Space is reach: the replicated tier, so every peer's shell is the same size.
+            float radius = config.TrampolineRadius * Mathf.Max(1f, config.OrbitReach.EvaluateReplicated(_status));
+            float rate = _turnVelocity.magnitude;
+            var centre = StoatSlingMath.TrampolineCentre(hull.position, hull.forward, hull.right, side == Side.Right,
+                config.TrampolineAhead, radius, config.TrampolineLine, _turnVelocity, rate, OrbitSpeed(), config.TrampolinePredictDegrees);
+            float strength = config.PoleGM / Mathf.Max(1e-3f, bh.GmPerStrength);
+            _white = BlackHoleRegistry.Spawn(centre, strength, Vector3.zero, hull.up, config.PoleHorizon, HolePolarity.Source);
+            if (_white == null) return;
+            _white.OwnerVessel = OwnerTransform();
+
+            _tramp = true;
+            _touching = false;
+            _trampWasInside = false;
+            _trampSide = side;
+            _trampCentre = centre;
+            _trampRadius = radius;
+            _trampAt = Time.time;
+            _accretion = 0f;
+            // A bounce is a launch: leave the hold-still stance, which would otherwise pin the hull.
+            if (_status.IsTranslationRestricted && _stance) _stance.EndStance();
+            CSDebug.LogVerbose(CSLogChannel.BlackHole,
+                $"[Stoat] {side} trampoline laid {config.TrampolineAhead:F0} u ahead, shell {radius:F0} u");
+        }
+
+        /// <summary>
+        /// A frame with a trampoline up. The simulating machine: touch the shell moving in and the spring turns the hull out
+        /// along its normal; leaving it again is the bounce. Every peer: passed untouched (moving away outside it) or its life
+        /// out, it pops.
+        /// </summary>
+        void StepTrampoline(float dt)
+        {
+            var hull = _status.Transform;
+            if (!hull) return;
+            if (!_white || _white.IsDespawning) { EndTrampoline(bounced: false); return; }
+            var radial = hull.position - _trampCentre;
+            float d = radial.magnitude;
+            bool outward = Vector3.Dot(hull.forward, radial) > 0f;
+            if (d < _trampRadius) _trampWasInside = true;
+
+            var transformer = _status.VesselTransformer;
+            if (MantaStingActionExecutor.IsSimAuthority(_status) && transformer && !_status.IsTranslationRestricted)
+            {
+                if (!_touching && StoatSlingMath.TrampolineTouches(hull.position, hull.forward, _trampCentre, _trampRadius))
+                {
+                    _touching = true;
+                    _touchSeconds = 0f;
+                    _bounceVelocity = hull.forward * OrbitSpeed();
+                    PlayOneShot(config.TrampolineTouchEvent);
+                    if (_status.IsLocalUser && !_status.AutoPilotEnabled) HapticController.PlaySkim(1f);
+                    CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] touched the trampoline {_trampRadius - d:F1} u in");
+                }
+                if (_touching)
+                {
+                    // Out of the shell again (or held in it far past a bounce's length): the bounce.
+                    if (d >= _trampRadius || _touchSeconds > 3f * config.TrampolineSoftSeconds) { Bounce(transformer, hull); return; }
+                    _bounceVelocity = StoatSlingMath.TrampolineStep(_bounceVelocity, radial, _trampRadius, config.TrampolineSoftSeconds, dt);
+                    var heading = _bounceVelocity.sqrMagnitude > 1e-4f ? _bounceVelocity.normalized : hull.forward;
+                    Quaternion.FromToRotation(hull.forward, heading).ToAngleAxis(out float degrees, out var axis);
+                    if (degrees > 1e-4f && axis.sqrMagnitude > 1e-8f) transformer.ApplyRotation(degrees, axis);
+                    transformer.SetCourseVelocity(heading);
+                    _touchSeconds += dt;
+                    _dentNormal = d > 1e-3f ? radial / d : hull.forward;
+                    _dentDepth = _trampRadius - d;
+                    return;
+                }
+            }
+            if (!_touching && ((outward && d > _trampRadius) || Time.time - _trampAt >= config.TrampolineSeconds))
+                EndTrampoline(bounced: false);
+        }
+
+        /// <summary>
+        /// Thrown off the shell (the simulating machine): the kick along the heading the shell gave - the deepest squeeze of
+        /// the hold × Mass's power, under the caps - and the warp kept as momentum. Every bounce is timed.
+        /// </summary>
+        void Bounce(VesselTransformer transformer, Transform hull)
+        {
+            _touching = false;
+            float power = config.LaunchPower.EvaluateLive(_status);
+            float squeeze = StoatSlingMath.SlingBoost(EngineSpeed(), _holds[(int)_trampSide].Peak, config.SlingBoostMin, config.SlingBoostMax);
+            float kick = StoatSlingMath.CappedKick(StoatSlingMath.TimedKick(squeeze, 1f, config.MissKickShare, power),
+                _status.Speed, config.SpeedCapShare, 180f, 0f);
+            kick = StoatSlingMath.WarpCappedKick(kick, transformer.FlightTimeScale, EngineSpeed(), config.WarpKickCapCruise);
+            _momentumClock = Mathf.Max(1f, transformer.FlightTimeScale);
+            _momentumAt = Time.time;
+            _lastTiming = 1f;
+            if (kick > 0f) transformer.ModifyVelocity(hull.forward * (kick / 1.5f), config.SlingBoostSeconds, false, kick * 1.05f);
+            _bounceFxAt = Time.time;
+            _bounceFxCentre = _trampCentre;
+            _bounceFxNormal = _dentNormal;
+            _bounceFxRadius = _trampRadius;
+            PlayOneShot(config.TrampolineBounceEvent);
+            CSDebug.LogVerbose(CSLogChannel.BlackHole,
+                $"[Stoat] bounced off the trampoline after {_touchSeconds:F2} s, {_dentDepth:F1} u deep: kick {kick:F0}");
+            EndTrampoline(bounced: true);
+        }
+
+        /// <summary>The trampoline pops (every peer, its own copy): the white hole goes and the Charge ripple is thrown from it.
+        /// A hull that was in it lays its trail shielded for the kick's length (Mass 5).</summary>
+        void EndTrampoline(bool bounced)
+        {
+            if (!_tramp) return;
+            _tramp = false;
+            _touching = false;
+            if (_white && !_white.IsDespawning) _white.BeginDespawn(0.25f);
+            _white = null;
+            if (bounced || _trampWasInside) _launchShieldUntil = Time.time + config.SlingBoostSeconds;
+            Detonate(_trampCentre, 2f * config.CatchSide);
+            CSDebug.LogVerbose(CSLogChannel.BlackHole, $"[Stoat] trampoline popped ({(bounced ? "bounced" : _trampWasInside ? "passed through" : "untouched")})");
+        }
+
+        /// <summary>The hull's turn, eased: what <see cref="LayTrampoline"/> carries on to lay the shell on the line it flies.</summary>
+        void TrackTurn(float dt)
+        {
+            var hull = _status.Transform;
+            if (!hull || dt <= 0f) return;
+            var forward = hull.forward;
+            if (_lastForward.sqrMagnitude > 0.5f)
+                _turnVelocity = Vector3.Lerp(_turnVelocity, Vector3.Cross(_lastForward, forward) / dt, 1f - Mathf.Exp(-12f * dt));
+            _lastForward = forward;
+        }
 
         // ------------------------------------------------------------------ Time mode: the Skim Sling (STOAT_DIPOLE.md §1q)
 
@@ -906,6 +1129,8 @@ namespace CosmicShore.Gameplay
             if (prisms) prisms.ForceShielded = Time.time < _launchShieldUntil && config.ShieldsLaunchTrail(_status);
 
             StepAccretion();
+            TrackTurn(Time.deltaTime);
+            if (_tramp) StepTrampoline(Time.deltaTime);
             if (_laid)
             {
                 // The pair ended under us (annihilated, or held past its lifetime and let go on its own).
@@ -917,6 +1142,7 @@ namespace CosmicShore.Gameplay
 
             ResolveSiblings();
             if (autopilot && MantaStingActionExecutor.IsSimAuthority(_status) && (!_mode || _mode.UsesOrbit)) AutopilotSling();
+            else ReturnSteering();
         }
 
         /// <summary>
@@ -934,6 +1160,8 @@ namespace CosmicShore.Gameplay
             var ai = _status.AIPilot;
             var hull = _status.Transform;
             if (!handler || !ai || !hull) return;
+            if (UsesTrampoline) { AutopilotTrampoline(handler, ai, hull); return; }
+            ReturnSteering();
             // A graze shell (its trigger already let go) is no hold to manage: the AI flies on and may press again.
             if (_laid && !_grazeOnly)
             {
@@ -947,7 +1175,10 @@ namespace CosmicShore.Gameplay
                     // EARNED speed: hold for the sweet spot and launch there (the stick aims it at the target); past
                     // aiHoldForWindowDegrees let go anyway. 0: the old rule, let go once the target is near the nose.
                     float hold = AIConfig.AiHoldForWindowDegrees;
-                    letGo = hold > 0f ? aimedInWindow || _orbitAngle * Mathf.Rad2Deg >= hold : off <= cone || aimedInWindow;
+                    // The aimed exit's direction is set by the entry, not the moment: the AI lets go as the window opens
+                    // (its stick picks the angle toward its target), and by the window's end at the latest.
+                    if (config.AimedExit) letGo = Timing01 >= 0.999f || _orbitSeconds >= config.ExitWindowEndSeconds;
+                    else letGo = hold > 0f ? aimedInWindow || _orbitAngle * Mathf.Rad2Deg >= hold : off <= cone || aimedInWindow;
                 }
                 if (letGo && ResolveBoundInput(_orbitSide, handler, out var held)) handler.StopShipControllerActionsReplicated(held);
                 return;
@@ -970,6 +1201,64 @@ namespace CosmicShore.Gameplay
             _aiLastSlingTime = Time.time;
             handler.PerformShipControllerActionsReplicated(ie);                                         // the squeeze: the pair is laid ahead
             if (BlackHoleRegistry.Config.CrystalPairs) handler.StopShipControllerActionsReplicated(ie);   // the crystal sling
+        }
+
+        /// <summary>
+        /// The autopilot's trampoline. It presses toward a turn it wants, as the orbit's AI did (target at least
+        /// <c>aiSlingMinTurnDegrees</c> off the nose, far enough away, every <c>aiSlingIntervalSeconds</c>), and lets go at once -
+        /// the shell stays up. While the shell is up and untouched it borrows the steering and flies at the flank as deep as
+        /// the turn it wants (<see cref="StoatSlingMath.TrampolineLineFor"/>): a person aims the bounce with the stick, the AI
+        /// with its steering. Both edges through the REPLICATED path. <c>stoat_orbit_sim.py --trampoline</c>: without the aim
+        /// the AI touched 12-38% of its shells; with it, all of them.
+        /// </summary>
+        void AutopilotTrampoline(R_VesselActionHandler handler, AIPilot ai, Transform hull)
+        {
+            for (int i = 0; i < 2; i++)
+                if (_holds[i].Holding && ResolveBoundInput((Side)i, handler, out var held)) handler.StopShipControllerActionsReplicated(held);
+            if (_tramp && !_touching) { BorrowSteering(ai); return; }
+            ReturnSteering();
+            if (_tramp || AIConfig.AiSlingMinTurnDegrees <= 0f || Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
+            var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),
+                                                       (ai.ObjectivePosition - hull.position).magnitude);
+            if (!StoatSlingMath.TryAutopilotSide(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance, out bool turnLeft)) return;
+            var side = turnLeft ? Side.Left : Side.Right;
+            if (!ResolveBoundInput(side, handler, out var ie)) return;
+            _aiLastSlingTime = Time.time;
+            handler.PerformShipControllerActionsReplicated(ie);   // the trampoline is laid ahead
+            handler.StopShipControllerActionsReplicated(ie);      // and stays up
+        }
+
+        /// <summary>Fly the AI at the shell's flank: install this hull's aim as the pilot's target, keeping whatever was there to
+        /// hand back (and to read the turn it wants from).</summary>
+        void BorrowSteering(AIPilot ai)
+        {
+            if (_aiSteered && _aiSteered != ai) ReturnSteering();
+            _aiSteer ??= TrampolineAim;
+            if (ReferenceEquals(ai.ExternalTargetProvider, _aiSteer)) return;
+            _aiSteerPrev = ai.ExternalTargetProvider;
+            _aiSteered = ai;
+            ai.SetExternalTargetProvider(_aiSteer);
+        }
+
+        /// <summary>Hand the AI's steering back as it was - only if it is still this hull's (a mode may have set its own since).</summary>
+        void ReturnSteering()
+        {
+            if (!_aiSteered) { _aiSteerPrev = null; return; }
+            if (ReferenceEquals(_aiSteered.ExternalTargetProvider, _aiSteer)) _aiSteered.SetExternalTargetProvider(_aiSteerPrev);
+            _aiSteered = null;
+            _aiSteerPrev = null;
+        }
+
+        /// <summary>The AI's aim while a trampoline is up: the flank point for the turn from its nose to where it really wants to
+        /// go (the provider it had, or its objective).</summary>
+        Vector3 TrampolineAim()
+        {
+            var hull = _status.Transform;
+            if (!hull || !_tramp || !config) return hull ? hull.position + hull.forward * 100f : Vector3.zero;
+            var want = _aiSteerPrev != null ? _aiSteerPrev() : _aiSteered ? _aiSteered.ObjectivePosition : _trampCentre;
+            float turn = Vector3.Angle(hull.forward, want - hull.position);
+            float line = StoatSlingMath.TrampolineLineFor(turn, AIConfig.TrampolineAiTurnScale);
+            return StoatSlingMath.TrampolineFlank(hull.position, _trampCentre, hull.right, _trampSide == Side.Right, line, _trampRadius);
         }
 
         /// <summary>Which input event this side's sling is bound to on THIS vessel — read off the
@@ -1027,6 +1316,13 @@ namespace CosmicShore.Gameplay
                 _laid = _caught = false;
                 BlackHoleRegistry.LetGo(_pair);
             }
+            if (_tramp)
+            {
+                _tramp = _touching = false;
+                if (_white && !_white.IsDespawning) _white.BeginDespawn(0.25f);
+                _white = null;
+            }
+            ReturnSteering();
             _hookRate = 0f;
             _holds[0] = default;
             _holds[1] = default;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.UI;
 namespace CosmicShore.Gameplay

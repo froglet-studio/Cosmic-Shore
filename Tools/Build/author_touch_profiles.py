@@ -25,7 +25,7 @@ SCRIPT_META = "Assets/_Scripts/Controller/IO/TouchControls/TouchControlProfileLi
 
 VESSEL = dict(Manta=1, Dolphin=2, Rhino=3, Urchin=4, Grizzly=5, Squirrel=6, Serpent=7, Shrike=10, Sparrow=11,
               Scarab=12, Thresher=14, Stoat=15, BrittleStar=16, Angler=17, Goby=18, Wrasse=19, Orca=20, Honeyguide=23,
-              TigerMoth=29)
+              Meerkat=28, TigerMoth=29)
 INPUT = dict(RightStick=1, LeftStick=2, Flip=3, Idle=4, A=6, B=7, X=8, Y=14)
 ELEMENT = dict(none=0, Charge=1, Mass=2, Space=3, Time=4)
 SCHEME = dict(ThumbLifts=0, TotemButtons=1)
@@ -98,6 +98,12 @@ PROFILES = [
     # The Honeyguide (lab round 8, 2026-11-01): LT is its Charge active (Flit and the Charge upgrades), RT its Space active
     # (Peck and the Space upgrades); lift a thumb to preview, touch it back down to fire, lift both to cancel. No boost.
     profile("Honeyguide", "ThumbLifts", glyphs=[("Charge", "LiftLeftThumb"), ("Space", "LiftRightThumb")]),
+    # The Meerkat (prototype, 2026-11-03, Yash; needs Garrett's sign-off and a phone test) steers off the left stick alone
+    # (SingleStickVesselTransformer), so two thumbs are the pad's two sticks: the left flies and the right bends the
+    # reticle. Lift the left thumb to form the soliton (RT; held while riding it is the slide's push), lift the right to
+    # lengthen its straight shaft (LT, which ramps on touch). Sentinel Mode is the Charge card's tap, so a lift waits 0.12 s
+    # and is dropped if the finger lands on it. A bend needs the right thumb down, so a long shaft forms straight.
+    profile("Meerkat", "ThumbLifts", liftDefer=0.12, glyphs=[("Space", "LiftLeftThumb")]),
 
     # ---- Totem buttons: no thumb-lift abilities; cards (and extras) round the right thumb.
     profile("Urchin", "TotemButtons"),

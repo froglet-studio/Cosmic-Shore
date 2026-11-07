@@ -151,7 +151,11 @@ $DOMAIN {
 	encode gzip
 	reverse_proxy 127.0.0.1:$PORT
 }
+
+# other services on this VM add their own site files here (Tools/Analytics/server/setup-analytics-vm.sh)
+import /etc/caddy/conf.d/*.caddy
 CADDY
+sudo mkdir -p /etc/caddy/conf.d
 sudo systemctl enable --now caddy >/dev/null
 sudo systemctl reload caddy || sudo systemctl restart caddy
 

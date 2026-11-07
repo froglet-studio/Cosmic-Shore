@@ -316,6 +316,12 @@ holds the lab page's solver to this C# frame by frame on 4 digital and 5 analog 
   `HapticController.PlaySkim(lerp(0.45, 1, heat))`. **Combo**: one world counter `x2, x3…` per whip.
 - **Audio** (all **shipped EMPTY**, LOCKED FMOD convention): `smashEvent`, `crushEvent`,
   `bounceEvent`, `sliceEvent`, `plantEvent`, `yankEvent` on `ThresherExecutor`.
+  The abilities' own sounds live on `ThresherAudioController` (root of `Thresher.prefab`, 2026-11-04):
+  `morningStarLoop` (passive loop positioned on the ball every frame with its velocity; drives `Ball Speed`
+  = `Gauge01` and `Ball Hot` = smash speed), and for each trigger a press event (`leftTriggerEvent` /
+  `rightTriggerEvent`, stopped with fade-out on release; drives `Trigger Depth`) plus a release one-shot
+  (`leftTriggerReleaseEvent` / `rightTriggerReleaseEvent`). Edges come from the executor's
+  `PlantPressed/PlantReleased/WinchPressed/WinchReleased` events; local pilot only by default.
 - **Look**: a studded ball that rolls — since 2026-10-13 a faceted **morning star**
   (`ThresherBallForm`: an 80-facet core at the gameplay radius and twelve five-sided spikes on the
   icosahedron's axes, one shared mesh, one renderer; it replaced a runtime sphere and six cube studs) on

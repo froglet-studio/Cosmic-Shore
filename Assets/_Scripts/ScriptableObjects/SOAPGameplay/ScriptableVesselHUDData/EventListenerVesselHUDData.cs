@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.ScriptableObjects;
 namespace CosmicShore.ScriptableObjects
 {

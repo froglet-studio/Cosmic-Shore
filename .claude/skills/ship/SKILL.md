@@ -197,6 +197,8 @@ git diff --name-only --diff-filter=U        # the conflicted files
 ```bash
 bash .claude/skills/ship/gates.sh
 ```
+The gate LIST is `Tools/Build/ship_gates.py` (since 2026-11-06; `gates.sh` only calls it, and the Unity Source Control
+window runs the same file on Windows, `Docs/SOURCE_CONTROL.md`): add a gate there, never to `gates.sh`.
 It runs the static checks `bleeding-edge-guard.yml` runs, every `author_*` generator's `--check`, and the
 headless reference compile only when a .NET SDK is already present (it prints SKIP otherwise - §0.05 stands:
 never stand a compiler up for a ship, and a SKIP is not a failure). Player config must report `RESULT: OK`;
