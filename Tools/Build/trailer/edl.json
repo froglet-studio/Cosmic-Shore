@@ -5,7 +5,7 @@
   "end": 73.49,
   "segments": [
     {"t0": 30.30, "shot": "S01", "src_in": 1.0, "fade_in": 0.8},
-    {"t0": 33.16, "shot": "S02", "src_in": 0.5},
+    {"t0": 33.16, "shot": "S02", "src_in": 6.0},
     {"t0": 36.04, "shot": "S15a", "src_in": 0.5},
     {"t0": 38.92, "shot": "S03", "src_in": 1.0},
     {"t0": 39.89, "shot": "S06", "src_in": 1.0},
@@ -16,10 +16,10 @@
     {"t0": 44.21, "shot": "S09a", "src_in": 0.5, "speed": 0.4, "grade": {"brightness": -0.06, "saturation": 0.9}},
     {"t0": 46.09, "shot": "S11a", "src_in": 0.5, "flash": true},
     {"t0": 47.55, "shot": "S14a", "src_in": 3.0},
-    {"t0": 48.53, "shot": "S09a", "src_in": 3.0},
-    {"t0": 49.48, "shot": "S14e", "src_in": 0.5},
+    {"t0": 48.53, "shot": "S08g", "src_in": 3.5},
+    {"t0": 49.48, "shot": "S14e", "src_in": 1.4},
     {"t0": 50.43, "shot": "S12", "src_in": 0.5},
-    {"t0": 51.41, "shot": "S13b", "src_in": 1.5},
+    {"t0": 51.41, "shot": "S13b", "src_in": 2.85},
     {"t0": 52.36, "shot": "S14c", "src_in": 0.5},
     {"t0": 54.27, "shot": "S11a", "src_in": 3.5},
     {"t0": 55.24, "shot": "S06", "src_in": 4.0},
@@ -29,11 +29,11 @@
     {"t0": 61.95, "shot": "S14e", "src_in": 3.0},
     {"t0": 63.88, "shot": "S07", "src_in": 4.5},
     {"t0": 65.81, "shot": "S12", "src_in": 4.5},
-    {"t0": 67.73, "shot": "S16b", "src_in": 1.0}
+    {"t0": 67.73, "shot": "S16b", "src_in": 1.6}
   ],
   "texts": [
     {"t0": 33.5, "t1": 35.9, "lines": ["A LIVING SEA OF LIGHT"], "sizes": [70]},
-    {"t0": 39.0, "t1": 44.1, "lines": ["EVERY VESSEL", "PLAYS A DIFFERENT GAME"], "sizes": [54, 70]},
+    {"t0": 39.0, "t1": 44.1, "lines": ["EVERY VESSEL", "PLAYS A DIFFERENT GAME"], "sizes": [54, 70], "cy": 0.82},
     {"t0": 44.3, "t1": 46.0, "lines": ["FLY IT TOGETHER"], "sizes": [84]}
   ],
   "endcard": {"dur": 6.5, "tagline": "THE PARTY GAME FOR PILOTS", "platforms": "COMING SOON  ·  iOS  ·  ANDROID  ·  STEAM"}
