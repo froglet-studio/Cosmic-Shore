@@ -34,12 +34,12 @@ namespace CosmicShore.Editor.Trailer
     /// vessel CLASS | autopilot on|off | spawn vessel CLASS,..|all N [DOMAIN] [RADIUS] | spawn fauna|flora NAME [N] |
     /// clearfleet | aim SUBJ TARGET|X,Y,Z|clear | circle SUBJ RADIUS SECONDS | action SUBJ|all INPUTEVENT [FRAMES] |
     /// blast SUBJ COUNT [FORCE] | herd follow SUBJ DIST [NAME] | herd off | teleport SUBJ TARGET DIST [UP] [SIDE] |
-    /// place SUBJ X,Y,Z FACINGX,Y,Z | aimcrystal SUBJ | cue FRAME VERB.. (runs at that frame of the next record) | super N (supersampling) |
+    /// place SUBJ X,Y,Z FACINGX,Y,Z | aimcrystal SUBJ | sea LEVEL [FRAMES] | keep SUBJ.. | dark on|off | hide|unhide TEXT | reveal SUBJ|X,Y,Z SPEED [FADE] [FLASH] | renderers | pace SUBJ|all THROTTLE | formation SUBJ LEADER LEAD RATE RADIUS PERIOD | muster X,Y,Z FACINGX,Y,Z SPREAD [hero] | squadron LEADER SPREAD [FAR] [SECONDS] | wave SUBJ SPEED [FADE] [FLASH] | drive SUBJ X,Y,Z FACINGX,Y,Z SPEED [SWAY] [PERIOD] | parts SUBJ | hidepart SUBJ TEXT | weave SUBJ TARGET LEAD RADIUS PERIOD | headon SUBJ TARGET DIST SIDE UP | cue FRAME VERB.. (runs at that frame of the next record) | super N (supersampling) |
     /// arcade MODE PLAYERS INTENSITY CLASS | menu |
     /// chase SUBJ BACK UP SIDE [LEAD] [SMOOTH] | ease BACK UP SIDE FRAMES | tq SUBJ DIST AZIMUTH HEIGHT [DRIFT] [SMOOTH] |
     /// orbit SUBJ DIST HEIGHT DEG/S [PHASE] | rail SUBJ AHEAD SIDE UP [SMOOTH] | crane SUBJ A B FRAMES [SMOOTH] (offsets
     /// from where SUBJ is when the shot starts) | fov DEGREES | release | record NAME FRAMES | still NAME | recorder NAME FRAMES (the Unity Recorder, for comparison) | quit.</para>
-    /// <para>A SUBJ is local, aiN, class:Rhino, nearest, fastest, fleet, flora, fauna, crystal, or name:TEXT. It resolves
+    /// <para>A SUBJ is local, aiN, class:Rhino, nearest, fastest, fleet, all, kept, flora, fauna, crystal, or name:TEXT. It resolves
     /// once per shot and is held. The camera rides the subject's position exactly and low-passes only the heading,
     /// keeps a world-up horizon, and is posed after every LateUpdate, just before the frame draws.</para>
     /// </summary>
@@ -361,6 +361,23 @@ namespace CosmicShore.Editor.Trailer
                 case "cue": _cues.Add((I(w[1]), string.Join(' ', w.Skip(2)))); return null;
                 case "place": Place(w[1], V(w[2]), V(w[3])); return null;
                 case "aimcrystal": AimCrystal(w[1]); return null;
+                case "dark": SetDark(w[1] == "on"); return null;
+                case "hide": _hideTokens.Add(w[1]); _nextRendererScan = 0; return null;
+                case "unhide": _hideTokens.Remove(w[1]); RestoreRenderers(); _nextRendererScan = 0; return null;
+                case "reveal": _revealFlash = At(w, 4, 0.6f); StartReveal(w[1], F(w[2]), At(w, 3, 0.5f)); return null;
+                case "renderers": ListRenderers(); return null;
+                case "parts": Parts(w[1]); return null;
+                case "drive": Drive(w); return null;
+                case "squadron": Squadron(w); return null;
+                case "wave": Wave(w[1], F(w[2]), At(w, 3, 0.7f), At(w, 4, 0.8f)); return null;
+                case "muster": Muster(V(w[1]), V(w[2]), F(w[3]), w.Length > 4 && w[4] == "hero"); return null;
+                case "formation": Formation(w); return null;
+                case "pace": Pace(w[1], F(w[2])); return null;
+                case "hidepart": HidePart(w[1], w[2]); return null;
+                case "keep": Keep(w.Skip(1).ToArray()); return null;
+                case "sea": SeaLevel(F(w[1]), w.Length > 2 ? I(w[2]) : 0); return null;
+                case "weave": Weave(w[1], w[2], F(w[3]), F(w[4]), F(w[5])); return null;
+                case "headon": HeadOn(w[1], w[2], F(w[3]), F(w[4]), F(w[5])); return null;
                 case "quit": TrailerShoot.Quit(); return null;
                 default: Log("unknown verb " + w[0]); return null;
             }
@@ -395,10 +412,17 @@ namespace CosmicShore.Editor.Trailer
                 _releases.RemoveAt(i);
             }
             if (_herding) Herd();
+            if (_dark) DarkTick();
+            if (_seaFrom >= 0f) SeaTick();
+            foreach (var kv in _paces) if (kv.Key) s_throttle?.SetValue(kv.Key, kv.Value);
         }
 
         void LateUpdate()
         {
+            FlyDrive();
+            FlyFormation();
+            FlySquadron();
+            WaveTick();
             if (_hudOff)
                 foreach (var c in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
                     if (c && c.enabled) c.enabled = false;
@@ -430,9 +454,9 @@ namespace CosmicShore.Editor.Trailer
             if (_subject == null || !_subject.gameObject.activeInHierarchy) _subject = Resolve(_subjectSpec);
             var s = _subject;
             if (s == null) return;
-            if (_subjectSpec == "fleet") Resolve("fleet");
+            if (_subjectSpec is "fleet" or "all" or "kept") Resolve(_subjectSpec);
             var at = s.position;
-            if (_subjectSpec == "fleet")
+            if (_subjectSpec is "fleet" or "all" or "kept")
             {
                 _fleetSmoothed = _fleetHave ? Vector3.Lerp(_fleetSmoothed, at, 1f - Mathf.Exp(-0.8f * dt)) : at;
                 _fleetHave = true;
@@ -602,6 +626,18 @@ namespace CosmicShore.Editor.Trailer
                 foreach (var o in others) c += o.position;
                 _fleetAnchor.position = c / others.Count;
                 _fleetAnchor.rotation = others[0].rotation;
+                return _fleetAnchor;
+            }
+            if (spec is "all" or "kept")
+            {
+                // The middle of every vessel (all), or of those on the keep list (kept): frames a pair or a whole pack.
+                var group = spec == "kept" ? vessels.Where(_keepVessels.Contains).ToList() : vessels;
+                if (group.Count == 0) return local;
+                if (!_fleetAnchor) { _fleetAnchor = new GameObject("TrailerFleetAnchor").transform; DontDestroyOnLoad(_fleetAnchor.gameObject); }
+                var c = Vector3.zero;
+                foreach (var o in group) c += o.transform.position;
+                _fleetAnchor.position = c / group.Count;
+                _fleetAnchor.rotation = group[0].transform.rotation;
                 return _fleetAnchor;
             }
             if (spec == "crystal") return Nearest<Crystal>(from);
@@ -996,6 +1032,426 @@ namespace CosmicShore.Editor.Trailer
             vc.SetPose(new Pose(pos, Quaternion.LookRotation(look.sqrMagnitude > 1e-3f ? look.normalized : at.forward, Vector3.up)));
             _haveHeading = false;
             Log($"teleported {t.name} to {pos}, facing {at.name}");
+        }
+
+        // ---- the dark sea, and the light coming back ----
+
+        bool _dark;
+        readonly HashSet<Prism> _hiddenPrisms = new();
+        readonly List<Renderer> _hiddenRenderers = new();
+        readonly List<string> _hideTokens = new();
+        int _nextRendererScan;
+        bool _revealing;
+        Vector3 _revealCentre;
+        float _revealRadius, _revealSpeed, _revealFade, _revealFlash = 1f;
+
+        /// <summary>dark on: the world's own prisms, flora, fauna and crystals stop drawing and the sea and the vessels' own
+        /// trails stay. Photons only (Prism.SetOwnerHidden): colliders, mass and the ecosystem carry on, so nothing has to
+        /// regrow for the reveal. dark off puts everything back at once.</summary>
+        void SetDark(bool on)
+        {
+            _dark = on;
+            _revealing = false;
+            _nextRendererScan = 0;
+            if (on) { DarkTick(); Log($"dark: hid {_hiddenPrisms.Count} prisms, {_hiddenRenderers.Count} renderers"); return; }
+            foreach (var p in _hiddenPrisms) if (p) p.SetOwnerHidden(false);
+            _hiddenPrisms.Clear();
+            RestoreRenderers();
+            RestoreDraws();
+        }
+
+        // The life drawn straight from GPU buffers has no Renderer to switch off, so its drawers stand down instead. They only draw.
+        static readonly string[] DrawerTypes = { "SwarmMemberRenderer", "SubstrateMemberRenderer", "SpindleLodSystem", "CrystalHeartDraw", "SwarmMemberFallbackDraw" };
+        static List<Type> s_drawers;
+        readonly List<MonoBehaviour> _stoodDownDraws = new();
+
+        void StandDownDraws()
+        {
+            s_drawers ??= AppDomain.CurrentDomain.GetAssemblies().Where(a => a.GetName().Name.StartsWith("CosmicShore", StringComparison.Ordinal) || a.GetName().Name == "Assembly-CSharp")
+                .SelectMany(a => { try { return a.GetTypes(); } catch (System.Reflection.ReflectionTypeLoadException) { return Array.Empty<Type>(); } })
+                .Where(t => DrawerTypes.Contains(t.Name) && typeof(MonoBehaviour).IsAssignableFrom(t)).ToList();
+            foreach (var type in s_drawers)
+                foreach (var o in FindObjectsByType(type, FindObjectsSortMode.None))
+                    if (o is MonoBehaviour mb && mb.enabled) { mb.enabled = false; _stoodDownDraws.Add(mb); }
+        }
+
+        void RestoreDraws()
+        {
+            foreach (var mb in _stoodDownDraws) if (mb) mb.enabled = true;
+            _stoodDownDraws.Clear();
+        }
+
+        readonly HashSet<string> _keepNames = new();
+        readonly HashSet<VesselController> _keepVessels = new();
+
+        /// <summary>keep SUBJ..: in the dark, only these vessels and their trails draw (the rest of the fleet waits, unseen, for the reveal). keep with no subject: every vessel draws.</summary>
+        void Keep(string[] subjects)
+        {
+            _keepNames.Clear(); _keepVessels.Clear();
+            RestoreRenderers();   // a vessel new to the list comes back at once; the rest are caught again by the next tick
+            foreach (var spec in subjects)
+            {
+                var t = Resolve(spec);
+                var vc = t ? t.GetComponent<VesselController>() : null;
+                var st = t ? t.GetComponent<IVesselStatus>() : null;
+                if (!vc || st?.Player == null) { Log("keep: no vessel " + spec); continue; }
+                _keepVessels.Add(vc);
+                _keepNames.Add(st.PlayerName);
+            }
+            _nextRendererScan = 0;
+            Log("keep: " + string.Join(",", _keepNames));
+        }
+
+        void RestoreRenderers()
+        {
+            foreach (var r in _hiddenRenderers) if (r) r.enabled = true;
+            _hiddenRenderers.Clear();
+        }
+
+        bool Hides(Renderer r)
+        {
+            var owner = r.GetComponentInParent<VesselController>();
+            if (owner != null) return _keepNames.Count > 0 && !_keepVessels.Contains(owner);
+            if (r.GetComponentInParent<Flora>() != null || r.GetComponentInParent<Fauna>() != null || r.GetComponentInParent<Crystal>() != null) return true;
+            string n = r.name, root = r.transform.root.name;
+            foreach (var t in _hideTokens)
+                if (n.Contains(t, StringComparison.OrdinalIgnoreCase) || root.Contains(t, StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
+        void DarkTick()
+        {
+            float rSqr = -1f;
+            if (_revealing)
+            {
+                _revealRadius += _revealSpeed * Time.deltaTime;
+                rSqr = _revealRadius * _revealRadius;
+            }
+            foreach (var p in FindObjectsByType<Prism>(FindObjectsSortMode.None))
+            {
+                if (!p || p.OwnerHidden || !p.isActiveAndEnabled) continue;
+                if (!p.IsEnvironmentOwned && (_keepNames.Count == 0 || _keepNames.Contains(p.PlayerName))) continue;
+                if (rSqr >= 0f && (p.transform.position - _revealCentre).sqrMagnitude <= rSqr) continue;
+                p.SetOwnerHidden(true);
+                _hiddenPrisms.Add(p);
+            }
+            if (_revealing)
+            {
+                _hiddenPrisms.RemoveWhere(p =>
+                {
+                    if (!p) return true;
+                    if ((p.transform.position - _revealCentre).sqrMagnitude > rSqr) return false;
+                    p.SetOwnerHidden(false);
+                    p.SetColorLift(0f, _revealFade, _revealFlash);   // arrives lit and settles into its own colour
+                    return true;
+                });
+                for (int i = _hiddenRenderers.Count - 1; i >= 0; i--)
+                {
+                    var r = _hiddenRenderers[i];
+                    if (r && (r.bounds.center - _revealCentre).sqrMagnitude > rSqr) continue;
+                    if (r) r.enabled = true;
+                    _hiddenRenderers.RemoveAt(i);
+                }
+            }
+            if (Time.frameCount < _nextRendererScan) return;
+            _nextRendererScan = Time.frameCount + 20;
+            if (!_revealing) StandDownDraws();
+            foreach (var r in FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+            {
+                if (!r || !r.enabled || !Hides(r)) continue;
+                if (rSqr >= 0f && (r.bounds.center - _revealCentre).sqrMagnitude <= rSqr) continue;
+                r.enabled = false;
+                _hiddenRenderers.Add(r);
+            }
+        }
+
+        /// <summary>reveal SUBJ|X,Y,Z SPEED [FADE]: the hidden world comes back in a sphere growing from a point at SPEED units
+        /// per second, each prism arriving white and fading to its colour over FADE seconds.</summary>
+        void StartReveal(string from, float speed, float fade)
+        {
+            if (from.Contains(',')) _revealCentre = V(from);
+            else { var t = Resolve(from); _revealCentre = t ? t.position : Vector3.zero; }
+            _revealRadius = 0f; _revealSpeed = speed; _revealFade = fade; _revealing = true;
+            RestoreDraws();
+            Log($"reveal from {_revealCentre} at {speed} u/s, {_hiddenPrisms.Count} prisms waiting");
+        }
+
+        // An AI's throttle only ever climbs on open water: a hull with nothing to dodge ends up at several times race pace.
+        static readonly System.Reflection.FieldInfo s_throttle = typeof(AIPilot).GetField("throttle", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        readonly Dictionary<AIPilot, float> _paces = new();
+
+        /// <summary>pace SUBJ|all THROTTLE: holds a pilot's throttle (0..1) every frame; a negative value lets it go.</summary>
+        void Pace(string subject, float throttle)
+        {
+            var list = subject == "all" ? Vessels().Select(v => v.transform) : new[] { Resolve(subject) };
+            foreach (var t in list)
+            {
+                var pilot = t ? t.GetComponent<IVesselStatus>()?.AIPilot as AIPilot : null;
+                if (!pilot) { Log("pace: no pilot on " + subject); continue; }
+                if (throttle < 0f) _paces.Remove(pilot); else _paces[pilot] = throttle;
+            }
+            Log($"pace {subject} {throttle}: field {(s_throttle != null)}");
+        }
+
+        Transform _formMember, _formLeader;
+        float _formLead, _formRate, _formRadius, _formW, _formStart;
+        Vector3 _formPrev;
+        bool _formHavePrev;
+
+        /// <summary>formation SUBJ LEADER LEAD RATE RADIUS PERIOD | formation off: flies SUBJ by hand off LEADER's line for a shot that AI steering
+        /// cannot hit: LEAD ahead of it, closing at RATE u/s (a negative RATE is a head-on pass), circling it at RADIUS every PERIOD seconds. Trails keep laying.</summary>
+        void Formation(string[] w)
+        {
+            if (w[1] == "off") { _formMember = null; return; }
+            _formMember = Resolve(w[1]); _formLeader = Resolve(w[2]);
+            _formLead = F(w[3]); _formRate = F(w[4]); _formRadius = F(w[5]);
+            _formW = 2f * Mathf.PI / Mathf.Max(F(w[6]), 0.5f); _formStart = Time.time; _formHavePrev = false;
+            Log($"formation {(_formMember ? _formMember.name : "none")} on {(_formLeader ? _formLeader.name : "none")}");
+        }
+
+        void FlyFormation()
+        {
+            if (!_formMember || !_formLeader) return;
+            float age = Time.time - _formStart, a = age * _formW;
+            var f = _formLeader.forward;
+            var right = Vector3.Cross(Vector3.up, f).normalized;
+            var up = Vector3.Cross(f, right);
+            var pos = _formLeader.position + f * (_formLead + _formRate * age) + (right * Mathf.Cos(a) + up * Mathf.Sin(a)) * _formRadius;
+            var along = _formRate < 0f ? -f : (_formHavePrev && (pos - _formPrev).sqrMagnitude > 1e-4f ? (pos - _formPrev).normalized : f);
+            _formPrev = pos; _formHavePrev = true;
+            _formMember.SetPositionAndRotation(pos, Quaternion.Slerp(_formMember.rotation, Quaternion.LookRotation(along, up), 0.2f));
+        }
+
+        /// <summary>muster X,Y,Z FACINGX,Y,Z SPREAD [hero]: the AI fleet (and the local vessel out in front, with hero) sets down as one pack at a point,
+        /// rows behind it, all flying the same line far past the facing point. Parallel trails, one direction.</summary>
+        void Muster(Vector3 at, Vector3 facing, float spread, bool hero)
+        {
+            var f = (facing - at).normalized;
+            var right = Vector3.Cross(Vector3.up, f).normalized;
+            var up = Vector3.Cross(f, right);
+            var goal = at + f * 20000f;
+            int i = 0;
+            foreach (var v in Vessels())
+            {
+                bool local = IsLocal(v);
+                if (local && !hero) continue;
+                if (v.transform == _formMember) continue;
+                int row = local ? 0 : 1 + i / 4, col = local ? 0 : i % 4;
+                float x = local ? 0f : (col - 1.5f) * spread + (row % 2) * spread * 0.5f;
+                float y = local ? 0f : ((i * 7) % 5 - 2) * spread * 0.3f;
+                var pos = at - f * (row * spread * 1.1f) + right * x + up * y;
+                v.SetPose(new Pose(pos, Quaternion.LookRotation(f, Vector3.up)));
+                v.GetComponent<IVesselStatus>()?.AIPilot?.SetExternalTargetProvider(() => goal);
+                if (!local) i++;
+            }
+            _haveHeading = false;
+            Log($"mustered {i} at {at}");
+        }
+
+        Transform _squadLeader;
+        readonly List<Transform> _squad = new();
+        float _squadSpread, _squadFar, _squadSeconds, _squadStart;
+        Vector3 _squadHeading;
+
+        /// <summary>squadron LEADER SPREAD [FAR] [SECONDS] | squadron off: every AI but the formation member flies by hand in a V behind LEADER, SPREAD between
+        /// slots, each swooping in from FAR times its slot distance over SECONDS. AI steering scatters a fleet in seconds; this is the one way to see it as a pack. Trails keep laying.</summary>
+        void Squadron(string[] w)
+        {
+            _squad.Clear();
+            _squadLeader = null;
+            if (w[1] == "off") return;
+            _squadLeader = Resolve(w[1]);
+            _squadSpread = F(w[2]); _squadFar = At(w, 3, 1f); _squadSeconds = At(w, 4, 1f); _squadStart = Time.time;
+            if (_squadLeader) _squadHeading = _squadLeader.forward;
+            _squad.AddRange(Vessels().Where(v => !IsLocal(v) && v.transform != _formMember).Select(v => v.transform));
+            Log($"squadron of {_squad.Count} on {(_squadLeader ? _squadLeader.name : "none")}");
+        }
+
+        void FlySquadron()
+        {
+            if (!_squadLeader) return;
+            float age = Time.time - _squadStart;
+            _squadHeading = Vector3.Lerp(_squadHeading, _squadLeader.forward, 1f - Mathf.Exp(-1.2f * Time.deltaTime)).normalized;
+            var f = _squadHeading;
+            var right = Vector3.Cross(Vector3.up, f).normalized;
+            var up = Vector3.Cross(f, right);
+            float k = Mathf.Clamp01(age / Mathf.Max(_squadSeconds, 0.1f));
+            k = k * k * (3f - 2f * k);
+            float scale = Mathf.Lerp(_squadFar, 1f, k);
+            for (int i = 0; i < _squad.Count; i++)
+            {
+                var t = _squad[i];
+                if (!t) continue;
+                int row = 1 + i / 2;
+                float side = i % 2 == 0 ? 1f : -1f;
+                float x = side * row * _squadSpread;
+                float back = row * _squadSpread * 0.75f;
+                float y = Mathf.Sin(i * 2.4f) * _squadSpread * 0.8f + Mathf.Sin(age * 0.9f + i) * _squadSpread * 0.18f;
+                x += Mathf.Sin(age * 0.7f + i * 1.7f) * _squadSpread * 0.18f;
+                var pos = _squadLeader.position + (right * x - f * back + up * y) * scale;
+                var look = Quaternion.LookRotation((f + right * (-side * (scale - 1f) * 0.25f)).normalized, up);
+                t.SetPositionAndRotation(pos, Quaternion.Slerp(t.rotation, look, 0.2f));
+            }
+        }
+
+        bool _waving;
+        Vector3 _waveCentre;
+        float _waveRadius, _waveSpeed, _waveFade, _waveFlash;
+
+        /// <summary>wave SUBJ SPEED [FADE] [FLASH]: a shell of light runs out from SUBJ through the prisms that are there, each lifting toward white and settling back over FADE seconds.</summary>
+        void Wave(string subject, float speed, float fade, float flash)
+        {
+            var t = Resolve(subject);
+            _waveCentre = t ? t.position : Vector3.zero;
+            _waveRadius = 0f; _waveSpeed = speed; _waveFade = fade; _waveFlash = flash; _waving = true;
+            Log($"wave from {_waveCentre} at {speed}");
+        }
+
+        void WaveTick()
+        {
+            if (!_waving) return;
+            float from = _waveRadius;
+            _waveRadius += _waveSpeed * Time.deltaTime;
+            float a = from * from, b = _waveRadius * _waveRadius;
+            int live = 0;
+            foreach (var p in FindObjectsByType<Prism>(FindObjectsSortMode.None))
+            {
+                if (!p || !p.isActiveAndEnabled) continue;
+                float d = (p.transform.position - _waveCentre).sqrMagnitude;
+                if (d > b) { live++; continue; }
+                if (d >= a) p.SetColorLift(0f, _waveFade, _waveFlash);
+            }
+            if (live == 0) _waving = false;
+        }
+
+        Transform _driven;
+        Vector3 _driveFrom, _driveF, _drivePrev;
+        float _driveSpeed, _driveAmp, _driveW, _driveStart;
+        bool _driveHavePrev;
+
+        /// <summary>drive SUBJ X,Y,Z FACINGX,Y,Z SPEED [SWAY] [PERIOD] | drive off: flies SUBJ by hand along a line at a fixed speed, swaying SWAY units side to side every PERIOD seconds.
+        /// A hull with its nose held straight boosts itself to several times its pace, and then no shot can hold it.</summary>
+        void Drive(string[] w)
+        {
+            _driven = null;
+            if (w[1] == "off") return;
+            _driven = Resolve(w[1]);
+            _driveFrom = V(w[2]);
+            _driveF = (V(w[3]) - _driveFrom).normalized;
+            _driveSpeed = F(w[4]); _driveAmp = At(w, 5, 0f); _driveW = 2f * Mathf.PI / Mathf.Max(At(w, 6, 6f), 0.5f);
+            _driveStart = Time.time; _driveHavePrev = false; _haveHeading = false;
+            if (_driven) _driven.SetPositionAndRotation(_driveFrom, Quaternion.LookRotation(_driveF, Vector3.up));
+            Log($"drive {(_driven ? _driven.name : "none")} from {_driveFrom} at {_driveSpeed}");
+        }
+
+        void FlyDrive()
+        {
+            if (!_driven) return;
+            float age = Time.time - _driveStart, a = age * _driveW;
+            var right = Vector3.Cross(Vector3.up, _driveF).normalized;
+            var up = Vector3.Cross(_driveF, right);
+            var pos = _driveFrom + _driveF * (_driveSpeed * age) + right * (Mathf.Sin(a) * _driveAmp) + up * (Mathf.Sin(a * 0.6f) * _driveAmp * 0.5f);
+            var along = _driveHavePrev && (pos - _drivePrev).sqrMagnitude > 1e-5f ? (pos - _drivePrev).normalized : _driveF;
+            _drivePrev = pos; _driveHavePrev = true;
+            float bank = -Mathf.Cos(a) * Mathf.Clamp(_driveAmp * _driveW / Mathf.Max(_driveSpeed, 1f), -1f, 1f) * 40f;
+            var rot = Quaternion.LookRotation(along, Quaternion.AngleAxis(bank, along) * Vector3.up);
+            _driven.SetPositionAndRotation(pos, Quaternion.Slerp(_driven.rotation, rot, 0.25f));
+        }
+
+        void Parts(string subject)
+        {
+            var t = Resolve(subject);
+            if (!t) { Log("parts: no " + subject); return; }
+            foreach (var r in t.GetComponentsInChildren<Renderer>(true))
+                Log($"  {r.GetType().Name} {r.name} on {r.enabled && r.gameObject.activeInHierarchy} size {r.bounds.size} parent {(r.transform.parent ? r.transform.parent.name : "-")}");
+        }
+
+        void HidePart(string subject, string text)
+        {
+            var t = Resolve(subject);
+            if (!t) { Log("hidepart: no " + subject); return; }
+            int n = 0;
+            foreach (var r in t.GetComponentsInChildren<Renderer>(true))
+                if (r.name.Contains(text, StringComparison.OrdinalIgnoreCase) || (r.transform.parent && r.transform.parent.name.Contains(text, StringComparison.OrdinalIgnoreCase))) { r.enabled = false; n++; }
+            Log($"hidepart {subject} {text}: {n}");
+        }
+
+        void ListRenderers()
+        {
+            var groups = FindObjectsByType<Renderer>(FindObjectsSortMode.None).Where(r => r && r.enabled && r.gameObject.activeInHierarchy)
+                .GroupBy(r => r.transform.root.name + " / " + r.GetType().Name + " / " + r.name.Split(' ', '(')[0])
+                .OrderByDescending(g => g.Count()).Take(60);
+            foreach (var g in groups) Log($"  {g.Count()} x {g.Key}");
+            var prisms = FindObjectsByType<Prism>(FindObjectsSortMode.None);
+            Log($"  prisms {prisms.Length}, environment {prisms.Count(p => p && p.IsEnvironmentOwned)}, names {string.Join(",", prisms.Where(p => p).Select(p => p.PlayerName).Distinct().Take(12))}");
+        }
+
+        /// <summary>weave SUBJ TARGET LEAD RADIUS PERIOD: SUBJ's pilot flies a helix around TARGET's line, LEAD ahead of it.</summary>
+        void Weave(string subject, string target, float lead, float radius, float period)
+        {
+            var t = Resolve(subject);
+            var other = Resolve(target);
+            var pilot = t ? t.GetComponent<IVesselStatus>()?.AIPilot : null;
+            if (pilot == null || !other) { Log($"weave: no pilot on {subject} or no {target}"); return; }
+            float t0 = Time.time, w = 2f * Mathf.PI / Mathf.Max(period, 0.5f);
+            pilot.SetExternalTargetProvider(() =>
+            {
+                if (!other) return t.position + t.forward * 50f;
+                float a = (Time.time - t0) * w;
+                return other.position + other.forward * lead + (other.right * Mathf.Cos(a) + other.up * Mathf.Sin(a)) * radius;
+            });
+        }
+
+        /// <summary>headon SUBJ TARGET DIST SIDE UP: sets SUBJ down DIST ahead of TARGET and flies it back past TARGET, SIDE and UP off its line: a near miss.</summary>
+        void HeadOn(string subject, string target, float dist, float side, float up)
+        {
+            var t = Resolve(subject);
+            var other = Resolve(target);
+            var vc = t ? t.GetComponent<VesselController>() : null;
+            var pilot = t ? t.GetComponent<IVesselStatus>()?.AIPilot : null;
+            if (!vc || pilot == null || !other) { Log($"headon: no vessel {subject} or no {target}"); return; }
+            var f = other.forward;
+            var offset = other.right * side + other.up * up;
+            var pos = other.position + f * dist + offset;
+            vc.SetPose(new Pose(pos, Quaternion.LookRotation(-f, Vector3.up)));
+            pilot.SetExternalTargetProvider(() => other ? other.position + offset - other.forward * 30f : t.position + t.forward * 50f);
+            Log($"headon: {t.name} from {pos} past {other.name}");
+        }
+
+        // A copy of the sky, never the asset: nothing here may write to the project.
+        static readonly string[] SeaFloats = { "_CellOverlayStrength", "_NebulaStrength", "_DustStrength", "_GalacticBrightness", "_CoreBrightness", "_CoreHaloSize", "_AndromedaBrightness", "_AtmosphereStrength", "_AmbientStrength", "_StarBrightness" };
+        Material _seaSky, _seaBase;
+        float _seaNow = 1f, _seaFrom = -1f, _seaTo = 1f;
+        int _seaStart, _seaFrames;
+        Color _membraneBright, _membraneDull;
+        bool _haveMembrane;
+
+        /// <summary>sea LEVEL [FRAMES]: scales the sky's light and the cell's lattice lines (1 = as the game draws them, 0 = black), easing over FRAMES.</summary>
+        void SeaLevel(float level, int frames)
+        {
+            if (!_seaSky && RenderSettings.skybox)
+            {
+                _seaBase = RenderSettings.skybox;
+                _seaSky = new Material(_seaBase) { name = "TrailerSea" };
+                RenderSettings.skybox = _seaSky;
+            }
+            var m = HostCell() ? HostCell().MembraneVisual : null;
+            if (m && !_haveMembrane) _haveMembrane = m.TryGetMaterialColours(out _membraneBright, out _membraneDull);
+            _seaFrom = _seaNow; _seaTo = level; _seaStart = Time.frameCount; _seaFrames = Mathf.Max(0, frames);
+            SeaTick();
+        }
+
+        void SeaTick()
+        {
+            float t = _seaFrames == 0 ? 1f : Mathf.Clamp01((Time.frameCount - _seaStart) / (float)_seaFrames);
+            t = t * t * (3f - 2f * t);
+            _seaNow = Mathf.Lerp(_seaFrom, _seaTo, t);
+            if (_seaSky && _seaBase)
+                foreach (var f in SeaFloats)
+                    if (_seaSky.HasProperty(f)) _seaSky.SetFloat(f, _seaBase.GetFloat(f) * _seaNow);
+            var m = HostCell() ? HostCell().MembraneVisual : null;
+            if (m && _haveMembrane) m.SetColourOverride(_membraneBright * _seaNow, _membraneDull * _seaNow);
+            if (t >= 1f) _seaFrom = -1f;
         }
 
         // ---- the arcade ----

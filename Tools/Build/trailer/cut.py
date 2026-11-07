@@ -205,6 +205,22 @@ def cut_segment(seg, dur, shots, out):
          "-c:v", "libx264", "-preset", "veryfast", "-crf", "10", "-pix_fmt", "yuv420p", out])
 
 
+def loudnorm(path, target):
+    """Two-pass EBU R128 on the audio only (the picture is copied): measure, then correct linearly to the target."""
+    spec = f"I={target.get('I', -14)}:TP={target.get('TP', -1)}:LRA={target.get('LRA', 11)}"
+    r = subprocess.run([FFMPEG, "-hide_banner", "-nostats", "-i", path, "-vn", "-af", f"loudnorm={spec}:print_format=json", "-f", "null", "-"],
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
+    tail = r.stderr[r.stderr.rindex("{"):]
+    m = json.loads(tail[:tail.rindex("}") + 1])
+    chain = (f"loudnorm={spec}:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}"
+             f":measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
+    out = path + ".norm.mp4"
+    run(["ffmpeg", "-y", "-v", "error", "-i", path, "-c:v", "copy", "-af", chain, "-ar", "48000",
+         "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart", out])
+    os.replace(out, path)
+    print(f"loudness: {m['input_i']} LUFS, {m['input_tp']} dBTP -> target {spec}")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--edl", required=True)
@@ -265,6 +281,8 @@ def main(argv=None):
     run(["ffmpeg", "-y", "-v", "error", *inputs, "-i", music, "-filter_complex", fc, "-map", vmap, "-map", "[a]",
          "-c:v", "libx264", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p", "-r", str(FPS),
          "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart", "-t", f"{total:.3f}", a.out])
+    if edl.get("loudness"):
+        loudnorm(a.out, edl["loudness"])
     print(f"wrote {a.out} ({total:.1f} s)")
     if a.sheet:
         mids = [((frames[i] + frames[i + 1]) / 2) / FPS for i in range(len(segs))] + [total - 2.0]

@@ -1,31 +1,39 @@
 <title>Cosmic Shore Trailer</title>
 <style>
 :root{color-scheme:dark;--bg:#04070d;--fg:#e9f6fb;--muted:#7fa3b3;--accent:#2fd4f5;--panel:#0b1420}
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#04070d;--fg:#e9f6fb;--muted:#7fa3b3;--accent:#2fd4f5;--panel:#0b1420}}
-:root[data-theme="dark"]{--bg:#04070d;--fg:#e9f6fb;--muted:#7fa3b3;--accent:#2fd4f5;--panel:#0b1420}
 html,body{margin:0;background:var(--bg);color:var(--fg);font-family:"Chakra Petch",system-ui,sans-serif}
 main{max-width:1280px;margin:0 auto;padding:24px 16px 40px}
 h1{font-size:15px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+h2{font-size:13px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:40px 0 10px}
 .frame{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:6px;overflow:hidden;box-shadow:0 0 40px rgba(47,212,245,.12)}
+.older{max-width:560px}
 video{width:100%;height:100%;display:block;background:#000}
-p{color:var(--muted);font-size:14px;line-height:1.5;margin:12px 0 0}
+p{color:var(--muted);font-size:14px;line-height:1.5;margin:12px 0 0;max-width:68ch}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600&display=swap">
 <main>
-  <h1>Cosmic Shore · Trailer v1</h1>
-  <div class="frame"><video id="v" controls playsinline preload="metadata" poster="trailer/poster.jpg"></video></div>
-  <p>Filmed in the game itself (Unity, real lighting and post), cut to SKY FIRE from the Cosmic Shore soundtrack.</p>
+  <h1>Cosmic Shore · Trailer v2</h1>
+  <div class="frame"><video id="v2" controls playsinline preload="metadata" poster="v2/poster.jpg"></video></div>
+  <p>One pilot alone in a dark sea, then a second, then everyone. Filmed in the game itself in Unity and cut to SKY FIRE from the Cosmic Shore soundtrack.</p>
+  <h2>Older cut · v1</h2>
+  <div class="frame older"><video id="v1" controls playsinline preload="none" poster="trailer/poster.jpg"></video></div>
 </main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
 <script>
 (function(){
-  // Artifacts serve neither .m3u8 nor .ts: the playlist is index.txt and the segments are fragmented .mp4.
+  // Artifacts serve neither .m3u8 nor .ts: each playlist is index.txt and the segments are fragmented .mp4.
   // A browser without Media Source Extensions (older iPhones) gets one progressive 720p file.
-  var v=document.getElementById('v'), src='trailer/index.txt', fallback='trailer/fallback.mp4';
-  if(window.Hls && Hls.isSupported()){
-    var h=new Hls({maxBufferLength:60});
-    h.on(Hls.Events.ERROR,function(e,d){if(d.fatal){h.destroy();v.src=fallback;}});
-    h.loadSource(src);h.attachMedia(v);
-  } else {v.src=fallback;}
+  function load(id,dir,lazy){
+    var v=document.getElementById(id), src=dir+'/index.txt', fallback=dir+'/fallback.mp4';
+    if(window.Hls && Hls.isSupported()){
+      var h=new Hls({maxBufferLength:60,autoStartLoad:!lazy});
+      h.on(Hls.Events.ERROR,function(e,d){if(d.fatal){h.destroy();v.src=fallback;}});
+      h.loadSource(src);h.attachMedia(v);
+      // the older cut fetches its video only when someone plays it
+      if(lazy)v.addEventListener('play',function once(){v.removeEventListener('play',once);h.startLoad();});
+    } else {v.src=fallback;}
+  }
+  load('v2','v2',false);
+  load('v1','trailer',true);
 })();
 </script>
