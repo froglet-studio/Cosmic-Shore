@@ -11,8 +11,8 @@ namespace CosmicShore.UI
     /// components — gated for the local human pilot only AFTER the detach, so a re-init that
     /// hands this vessel to an AI or a remote owner can never strand the old handlers.
     ///
-    /// The fuse countdown is the one per-frame poll (a burning number has no event to ride);
-    /// it early-outs while nothing is planted.
+    /// The shared fuse is the one per-frame poll (a burning number has no event to ride); it
+    /// early-outs while nothing is planted. Energy rides <c>OnBayChanged</c> onto the Space card.
     /// </summary>
     public class MantaHUDController : VesselHUDController
     {
@@ -49,6 +49,7 @@ namespace CosmicShore.UI
             stingExecutor.OnBombArmed += HandleBombArmed;
             stingExecutor.OnBombPlanted += HandleBombPlanted;
             stingExecutor.OnKabloom += HandleKabloom;
+            stingExecutor.OnDecoySprung += HandleDecoySprung;
             _bound = true;
             HandleBayChanged();
             HandlePlantedChanged();
@@ -63,6 +64,7 @@ namespace CosmicShore.UI
             stingExecutor.OnBombArmed -= HandleBombArmed;
             stingExecutor.OnBombPlanted -= HandleBombPlanted;
             stingExecutor.OnKabloom -= HandleKabloom;
+            stingExecutor.OnDecoySprung -= HandleDecoySprung;
             _bound = false;
         }
 
@@ -72,19 +74,17 @@ namespace CosmicShore.UI
         {
             // The burning-fuse number. Event-driven everywhere else; a countdown has to tick.
             if (!_bound || !view || !stingExecutor) return;
-            int planted = stingExecutor.PlantedBombs.Count;
-            if (planted > 0)
-                view.SetPlantedBoard(planted, stingExecutor.ShortestFuseRemaining);
+            if (stingExecutor.PlantedBombs.Count > 0) HandlePlantedChanged();
         }
 
         // ── Card juice. Each beat flashes the card of the ELEMENT that owns it, so the row
-        //    doubles as the feedback surface: Charge for everything the bomb bay does, Space
-        //    for the cash-out. PlayPressFlash is the fleet's existing press animation — the
-        //    same language every other vessel's abilities already speak.
-        void HandleSkimCharged() => Flash(Element.Charge);
-        void HandleBombArmed() => Flash(Element.Charge);
+        //    doubles as the feedback surface: Space for the energy the skim gathers, Charge for
+        //    the bombs and their shared fuse, Mass for a decoy sprung.
+        void HandleSkimCharged() => Flash(Element.Space);
+        void HandleBombArmed() => Flash(Element.Space);
         void HandleBombPlanted() => Flash(Element.Charge);
-        void HandleKabloom(int cashed) => Flash(Element.Space);
+        void HandleKabloom(int cashed) => Flash(Element.Charge);
+        void HandleDecoySprung() => Flash(Element.Mass);
 
         void Flash(Element element)
         {
@@ -94,15 +94,15 @@ namespace CosmicShore.UI
         void HandleBayChanged()
         {
             if (view && stingExecutor)
-                view.SetBombBay(stingExecutor.ArmedBombs, stingExecutor.Capacity,
-                                stingExecutor.Charge);
+                view.SetEnergy(stingExecutor.ArmedBombs, stingExecutor.Capacity,
+                               stingExecutor.Energy);
         }
 
         void HandlePlantedChanged()
         {
             if (view && stingExecutor)
-                view.SetPlantedBoard(stingExecutor.PlantedBombs.Count,
-                                     stingExecutor.ShortestFuseRemaining);
+                view.SetFuse(stingExecutor.PlantedBombs.Count, stingExecutor.Fuse01,
+                             stingExecutor.FuseRemaining);
         }
     }
 }

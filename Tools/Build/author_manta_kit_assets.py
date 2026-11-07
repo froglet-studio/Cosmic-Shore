@@ -14,6 +14,8 @@ compares and exits nonzero on drift. It owns:
   * MantaStingConfig.asset
   * MantaStingSkimPrismEffect.asset / MantaStingPlantBombVesselEffect.asset
   * MantaKabloomByCrystalEffect.asset
+  * MantaDetonateByPrismEffect.asset - hull hits a prism: every planted bomb goes off (2026-11-07 overhaul)
+  * MantaDecoyByCrystalEffect.asset  - a collected crystal leaves a decoy (the Mass ability)
   * MantaStingSkimmerImpactorDataContainer.asset  - REWRITES the renamed
                                      MantaOvercharge... container in place (guid preserved,
                                      so Manta.prefab's SkimmerImpactor override never moves)
@@ -41,6 +43,8 @@ SCRIPT = {
     "MantaStingPlantBombVesselEffectSO": "93535b5ea9fb9381d319896eae6b11f8",
     "MantaKabloomByCrystalEffectSO":   "4de6a983ee9f3d43306090bb86b07bf2",
     "MantaPlantBombByLifeformJoustEffectSO": "99e1d40fff3139f2a58cf225fdea541b",
+    "MantaDetonateByPrismEffectSO":    "d005686f0e6a48e7835888c602e7a0a7",
+    "MantaDecoyByCrystalEffectSO":     "13045f1c8b2741c4a33864a1803978f3",
     "VesselElementalDebuffByExplosionEffectSO": "c2e449f647cc48e9be66d67fbc166a33",
     "ExplosionImpactorDataContainerSO": "841db4ce66da4384a711272307733e0f",
     "SkimmerImpactorDataContainerSO":  "07132fee89b7c9d4ea24a34ffcf1d9f3",  # resolved below
@@ -66,6 +70,15 @@ SKIM_EFFECT_GUID = guid_for("MantaStingSkimPrismEffect.asset")
 PLANT_EFFECT_GUID = guid_for("MantaStingPlantBombVesselEffect.asset")
 KABLOOM_EFFECT_GUID = guid_for("MantaKabloomByCrystalEffect.asset")
 JOUST_PLANT_EFFECT_GUID = guid_for("MantaPlantBombByLifeformJoustEffect.asset")
+DETONATE_EFFECT_GUID = guid_for("MantaDetonateByPrismEffect.asset")
+DECOY_EFFECT_GUID = guid_for("MantaDecoyByCrystalEffect.asset")
+
+# The decoy is built from the real crystal prefabs: the omni one is referenced here, the four elemental
+# ones come from Resources/ElementalCrystalSet at runtime. The morph is the fleet's danger-block hemisphere.
+OMNI_CRYSTAL_PREFAB_GUID = "54802b89e00a0ed4281025fa5e770811"       # Crystal.prefab
+OMNI_CRYSTAL_ROOT_FILEID = 5535990081244205914
+DANGER_BLOCKS_PREFAB_GUID = "c3ab658461bdc764ea9f7da47252c0ba"      # AOEDangerBlocks.prefab
+DANGER_BLOCKS_COMPONENT_FILEID = 3631957846213860199
 
 SO_HEADER = """%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -170,6 +183,8 @@ FILES[_BOMB_DEBUFF_ASSET] = (
     so_asset("VesselElementalDebuffByExplosionEffectSO", "MantaBombDebuffByExplosionEffect",
              "  debuffMagnitude: %s\n" % _live_bomb_debuff_magnitude() +
              "  debuffDuration: 4\n"
+             # CHARGE scales the petals a bloom knocks loose (Garrett, 2026-11-07): x1 at rest, x2 at Charge 10.
+             "  magnitudeAtFullCharge: 2\n"
              "  cooldown: 1\n"
              "  elements:\n"
              "  - 2\n"
@@ -187,32 +202,41 @@ FILES["Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/MantaBlo
 
 FILES["Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset"] = (
     so_asset("MantaStingConfigSO", "MantaStingConfig",
-             "  baseCapacity: 3\n"
-             "  capacityPerChargeLevel: 0.2\n"
-             "  minCapacity: 1\n"
-             "  maxCapacity: 5\n"
-             "  chargePerSkim: 0.34\n"
-             "  chargeRateAtFullCharge: 2\n"
-             "  minChargeRateMultiplier: 0.25\n"
-             "  perPrismChargeCooldown: 1.5\n"
-             "  fuseSeconds: 25\n"
+             # The 2026-11-07 overhaul (Garrett): skimming gathers ENERGY (one bomb's worth = 1), the bombs share
+             # ONE fuse that every plant resets, a hull hit on a prism sets every bomb off and loses the energy,
+             # the omni crystal sets them all off big, and a collected crystal leaves a decoy.
+             "  energyCapacity: 1\n"
+             "  energyPerSkim: 0.34\n"
+             "  perPrismEnergyCooldown: 1.5\n"
+             "  skimPrimesExplosive: 1\n"
+             "  explosiveLift: 0.55\n"
+             "  explosiveLiftFadeSeconds: 0.25\n"
+             "  fuseSeconds: 20\n"
              "  plantSpeedMargin: 0\n"
-             "  knockOffGraceSeconds: 1\n"
-             "  ownFreshTrailGraceSeconds: 6\n"
              "  aoePrefabs:\n"
              f"  - {{fileID: {AOE_EXPLOSION_COMPONENT_FILEID}, guid: {BLOOM_PREFAB_GUID}, type: 3}}\n"
              "  bloomMaterial: {fileID: 0}\n"
              "  fuseBlastScale: 70\n"
              "  kabloomBlastScale: 140\n"
+             "  omniScalePerExtraBomb: 0.35\n"
+             "  omniScaleMultiplierMax: 3\n"
+             "  bloomGrowSeconds: 2.5\n"
+             "  omniBloomGrowSeconds: 4\n"
              "  kabloomSelfBlastScale: 140\n"
-             "  blastScaleAtFullSpace: 1.6\n"
-             "  minBlastScaleMultiplier: 0.5\n"
              "  contagionRadiusFraction: 1\n"
              # Juice (playtest 2026-08-26). The cascade stagger is the payoff beat; the marker
              # is how a pilot reads a fuse without reading a number. Audio slots stay EMPTY -
              # an unwired EventReference is silent by design and is the audio owner's to fill.
              "  cascadeStaggerSeconds: 0.09\n"
              "  cascadeMaxSeconds: 1.2\n"
+             f"  omniCrystalPrefab: {{fileID: {OMNI_CRYSTAL_ROOT_FILEID}, guid: {OMNI_CRYSTAL_PREFAB_GUID}, type: 3}}\n"
+             "  decoyLifetimeSeconds: 45\n"
+             "  decoyLifetimeAtFullMass: 2\n"
+             "  minDecoyLifetimeMultiplier: 0.5\n"
+             "  decoyMorphPrefabs:\n"
+             f"  - {{fileID: {DANGER_BLOCKS_COMPONENT_FILEID}, guid: {DANGER_BLOCKS_PREFAB_GUID}, type: 3}}\n"
+             "  decoyMorphScale: 60\n"
+             "  decoyTriggerRadiusScale: 1\n"
              "  showFuseMarker: 1\n"
              "  markerRadius: 14\n"
              "  markerCalmColor: {r: 0.35, g: 0.8, b: 1, a: 1}\n"
@@ -222,6 +246,15 @@ FILES["Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset"] = (
              "  markerCriticalPulseHz: 5\n"
              "  markerFadeSeconds: 0.22\n"),
     ASSET_META.format(guid=STING_CONFIG_GUID))
+
+FILES["Assets/_SO_Assets/Effects/Vessel Prism Effects/MantaDetonateByPrismEffect.asset"] = (
+    so_asset("MantaDetonateByPrismEffectSO", "MantaDetonateByPrismEffect", ""),
+    ASSET_META.format(guid=DETONATE_EFFECT_GUID))
+
+FILES["Assets/_SO_Assets/Effects/Vessel Crystal Effects/MantaDecoyByCrystalEffect.asset"] = (
+    so_asset("MantaDecoyByCrystalEffectSO", "MantaDecoyByCrystalEffect",
+             "  cooldownSeconds: 0.15\n"),
+    ASSET_META.format(guid=DECOY_EFFECT_GUID))
 
 FILES["Assets/_SO_Assets/Effects/Skimmer Prism Effects/MantaStingSkimPrismEffect.asset"] = (
     so_asset("MantaStingSkimPrismEffectSO", "MantaStingSkimPrismEffect", ""),
@@ -272,17 +305,26 @@ FILES["Assets/_SO_Assets/Effects/Effect Containers/VesselContainers/MantaImpacto
              "  - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}\n"
              "  - {fileID: 11400000, guid: 4da62d4eefe03594ba35027dd537aff0, type: 2}\n"
              "  - {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}\n"
+             # The Manta's risk: its hull on a prism sets off every bomb it planted.
+             f"  - {{fileID: 11400000, guid: {DETONATE_EFFECT_GUID}, type: 2}}\n"
              "  vesselCrystalEffects:\n"
              f"  - {{fileID: 11400000, guid: {KABLOOM_EFFECT_GUID}, type: 2}}\n"
+             # The Mass 5 omni decoy (the bay checks the upgrade).
+             f"  - {{fileID: 11400000, guid: {DECOY_EFFECT_GUID}, type: 2}}\n"
              # The JOUST surface: hull reaches a living lifeform's heart and PLANTS on it.
              # Deliberately NOT the Squirrel's withering joust — a kill would destroy the
              # target the bomb is riding, which is the opposite of this vessel.
              "  vesselLifeformCrystalEffects:\n"
              f"  - {{fileID: 11400000, guid: {JOUST_PLANT_EFFECT_GUID}, type: 2}}\n"
-             "  vesselMassCrystalEffects: []\n"
-             "  vesselChargeCrystalEffects: []\n"
-             "  vesselSpaceCrystalEffects: []\n"
-             "  vesselTimeCrystalEffects: []\n"
+             # The base Mass ability: every elemental crystal leaves an elemental decoy.
+             "  vesselMassCrystalEffects:\n"
+             f"  - {{fileID: 11400000, guid: {DECOY_EFFECT_GUID}, type: 2}}\n"
+             "  vesselChargeCrystalEffects:\n"
+             f"  - {{fileID: 11400000, guid: {DECOY_EFFECT_GUID}, type: 2}}\n"
+             "  vesselSpaceCrystalEffects:\n"
+             f"  - {{fileID: 11400000, guid: {DECOY_EFFECT_GUID}, type: 2}}\n"
+             "  vesselTimeCrystalEffects:\n"
+             f"  - {{fileID: 11400000, guid: {DECOY_EFFECT_GUID}, type: 2}}\n"
              "  vesselSkimmerEffects: []\n"
              # The omni-crystal retirement: the crystal becomes the Kabloom self-blast sphere
              # instead of the shared husk spray (R_VesselActions/SPHERE_BLAST_CRYSTAL_MORPH.md;
@@ -296,10 +338,10 @@ MAP_BODY = """  vesselClass: 1
   entries:
   - Element: 1
     AbilityLabel: Sting
-    AbilityDescription: Charge raises the bomb bay's capacity and its skim-charge rate.
-      Both authored on MantaStingConfig.asset (capacityPerChargeLevel, chargeRateAtFullCharge);
-      each parameter carries its own ElementalFloat, so one element can never
-      drive a parameter it was not authored on.
+    AbilityDescription: Skimming a rival plants a bomb that costs one bomb of energy. Every
+      bomb shares ONE fuse, reset by each plant, so they all go off together. Charge raises the
+      petals each bloom knocks out of a rival (MantaBombDebuffByExplosionEffect.asset
+      magnitudeAtFullCharge, 2x at level 10).
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -308,40 +350,42 @@ MAP_BODY = """  vesselClass: 1
     UpgradeDescription: Anything caught in a bomb's detonation is itself bombed, free -
       one good route cascades through a whole pack. Snapshotted per bomb at plant time.
   - Element: 2
-    AbilityLabel: Yastri
-    AbilityDescription: Mass grows the trail's prism volume (VesselPrismController.trailVolume
-      on Manta.prefab, 1x to 2.5x). The turn itself is deliberately unscaled - Yastri's element
-      shapes what the turn LEAVES (YawsteryActionSO.turnRateMultiplier is disabled).
-    Input: 12
-    UnlockLevel: 5
-    RelockBelowLevel: 4
-    LatchPolicy: 0
-    UpgradeLabel: Shielded Turn Trails
-    UpgradeDescription: Prisms laid during a hard Yastri turn come out shielded - a bank
-      leaves a defensible wall behind you. Regular shield only, per-spawn snapshot.
-  - Element: 3
-    AbilityLabel: Kabloom
-    AbilityDescription: Space widens every bomb bloom (MantaStingConfig.asset,
-      blastScaleAtFullSpace 1.6x at level 10).
+    AbilityLabel: Decoy
+    AbilityDescription: An elemental crystal the Manta collects leaves a decoy where it was,
+      with its own element's effect frozen as the tell. A rival who takes it gets a cluster of
+      danger prisms across their course. Mass lengthens how long a decoy stands
+      (MantaStingConfig.asset decoyLifetimeAtFullMass, 2x at level 10).
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: No Friendly Fire
-    UpgradeDescription: Blooms stop catching allies and allied prisms, so the Manta can
-      detonate freely inside a team fight. Snapshotted per bomb at plant time.
-  - Element: 4
-    AbilityLabel: Soar
-    AbilityDescription: Time raises the maximum soaring speed, authored on Manta.prefab's
-      VesselTransformer.BoostSpeedMultiplier (x1 at rest -> x1.3 at level 10, floored at
-      x0.7) and read while boosting. It was a fleet-wide read of this map's own generic
-      multiplier until the element-scaling unification; the numbers are unchanged.
-    Input: 13
+    UpgradeLabel: Omni Decoy
+    UpgradeDescription: The omni crystal leaves a decoy too, an omni crystal with one of its
+      four effects frozen. One elemental and one omni decoy at a time; a new one pops the old.
+  - Element: 3
+    AbilityLabel: Skim
+    AbilityDescription: Skimming gathers the energy that plants bombs, and turns rival prisms
+      explosive - destroyed, they take their prismscape neighbours with them. Hitting a prism
+      loses all the energy. Space widens the skimmer (Manta.prefab Skimmer scale, 20 to 40).
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Shield Breaker
+    UpgradeDescription: Skimming a shielded rival prism pops its shield and makes it explosive.
+  - Element: 4
+    AbilityLabel: Yastri
+    AbilityDescription: Hard flat turns on the turn pair. Time makes the Manta faster:
+      cruise speed (VesselTransformer.ThrottleScalerMultiplier, x1.5 at level 10) and the
+      soaring speed (BoostSpeedMultiplier, x1.3 at level 10). The trail is a plain
+      Squirrel-style trail: no element grows it and turns do not flare it.
+    Input: 12
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Soar
+    UpgradeDescription: Boosting unlocks. The analog turn-boost and the boost button both stay
+      dark until Time 5 (MantaSoarBoostAction.asset, MantaAnalogTurnBoostExecutor.soarUnlockedBy).
 """
 FILES["Assets/Resources/ElementalAbilityMaps/Manta.asset"] = (
     so_asset("ElementalAbilityMapSO", "Manta", MAP_BODY), None)  # meta already exists
