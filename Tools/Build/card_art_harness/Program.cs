@@ -115,10 +115,12 @@ static class Program
             case "serpenttime":
             case "brittlestartime":
             case "lanternrun":
+            case "thornline":
             case "regattaGates":
             {
                 int intensity = layer.GetProperty("intensity").GetInt32();
                 int seed = layer.GetProperty("seed").GetInt32();
+                var thorns = new List<Vector3>();
                 List<RaceGate> gates = kind switch
                 {
                     "switchback" => SwitchbackCourse.Generate(seed, Apply(SwitchbackCourseSettings.ForIntensity(intensity), layer)),
@@ -132,6 +134,7 @@ static class Program
                     "serpenttime" => HeadlongCircuit.Generate(seed, Apply(SerpentTimeCourse.ForIntensity(intensity), layer)),
                     "brittlestartime" => BrittleStarTimeLap(seed, intensity, layer),
                     "lanternrun" => HeadlongCircuit.Generate(seed, Apply(LanternRunCourse.ForIntensity(intensity), layer)),
+                    "thornline" => ThornlineCourse.Generate(seed, Apply(ThornlineCourse.ForIntensity(intensity), layer), thorns),
                     _ => RegattaCourse.BuildGates(seed, intensity),
                 };
                 if (gates == null || gates.Count == 0) { UnityEngine.Debug.LogError($"{kind}: course generator returned no gates"); return 0; }
@@ -140,10 +143,18 @@ static class Program
                 foreach (var g in gates)
                     scene.Ring(ToV(g.Position), ToV(g.Axis), g.Radius, g.Radius * tube, gm, 56, 8);
                 if (layer.TryGetProperty("path", out var pe) && pe.GetBoolean())
-                    DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback" && kind != "scarabrally", pal, layer);
+                    DrawPath(scene, gates.Select(g => ToV(g.Position)).ToList(), kind != "switchback" && kind != "scarabrally" && kind != "thornline", pal, layer);
                 if (kind == "threshertime") StageSling(scene, gates);
                 if (kind == "wrasserun") StageKite(scene, gates);
                 if (kind == "lanternrun") StageClusters(scene, gates, intensity);
+                if (kind == "thornline")
+                {
+                    var laid = new List<Thorn>();
+                    ThornlineCourse.Lay(thorns, Apply(ThornlineCourse.ForIntensity(intensity), layer), laid);
+                    foreach (var t in laid)
+                        AddPrism(scene, new SpawnPoint(t.Position, Quaternion.identity, Vector3.one * t.Size), pal.For(Domains.Blue, t.Kind));
+                    return laid.Count;
+                }
                 return 0;
             }
             case "breakwater":

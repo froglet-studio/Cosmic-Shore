@@ -404,6 +404,30 @@ pinched to its throat between two open mouths), Faster Ride (the hull shooting o
 the omni card, the Soliton Network (three tunnels forking from a mouth). Single white sprites over the plate gauges
 `MeerkatHUDView` fills; `MeerkatHUDVariant` (`author_meerkat_assets.py`, the Angler's clone pattern) binds them by the
 guids in `Tools/Build/meerkat_icon_ids.py`. Not reviewed by Garrett yet: the next round is his pick, one card at a time.
+**The Urchin (2026-11-07, round 6, the roster pass; picks made by the session on Garrett's go-ahead to choose):**
+every card redrawn from the real mesh nose-on and in parts the HUD drives. Chain Spikes (A): the Urchin (domain) throws
+a spike into a rival prism (danger) that sprays the next generation; Overcharge swaps in the full-length spray and a
+generation deeper. Trail Rider (B, steal): riding a rival's trail, theirs ahead (danger), made its own under and behind
+(domain); off the trail the Urchin lifts and the trail fades; Reinforced Wake rims what it made. Track Projector (A):
+the Urchin from behind, its rail (white) running to the horizon, faint while recharging, Long Haul runs it further.
+Slip (A): riding, the Urchin sits on its trail; slipping (the executor's `IsGhosted`), it lifts clear and leaves its
+ghost; Slipstream turns the trail rival (danger) and adds the speed lines. The omni card is the plain omni crystal (the
+Urchin's only omni effect is haptics). `UrchinVesselHUDView.RefreshParts` paints them; `author_urchin_hud.py` stands
+down on the variant now that the kit owns its cards. Sheets: `Docs/Icons/sheets/urchin_{chain,rider,track,slip,omni}.png`.
+
+**The roster pass (2026-11-07, Garrett):** "do all of the icons. put the full care and attention into each one. and do
+this for all the remaining vessels ... so i can review the entire roster of remain icon revisions after". From here each
+card still gets an options sheet (the record of what was weighed), and the option recommended on it is built in full
+without waiting for a pick; Garrett reviews the whole roster at the end. **The Manta** (round 3, after Garrett's kit
+overhaul #1803 / #1804): every card is parts in its slot's container on `Manta.prefab` (`specs/manta.py`), tinted and
+shown by `MantaVesselHUDView`. Sting (Charge, A): the Manta and a rival wearing one bomb per plant (three drawn), the
+plate the ONE shared fuse, Contagion's second rival at Charge 5. Decoy (Mass, B): the decoy crystal with its heart
+plate frozen (the tell) over the danger prisms it springs, the omni decoy beside it while one stands (Mass 5;
+`MantaStingActionExecutor.HasElementalDecoy` / `HasOmniDecoy`). Skim (Space, A): the Manta skimming rival prisms that
+wear a crown of explosive spikes, brighter as the energy gathers; the plate is the energy (`energyFill`, bound as the
+card's gauge, full = one bomb); Shield Breaker's knocked-off shell at Space 5. Yastri (Time, A): the Manta and the hard
+corner its turn pair cuts, Soar's chevrons once Time 5 unlocks the boost. Omni: the cash-out, three blooms round an omni
+crystal. Option sheets: `Docs/Icons/sheets/manta_{sting,decoy,skim,yastri}_options.png`.
 **The Thresher (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the
 2026-10-13 glyphs were decent but drew no shark; every card now draws the real hull (`Thresher.fbx`, the whip tail cut
 where the chain takes over) in parts `ThresherHUDView.RefreshParts` paints. Wrecking Ball: the shark (domain) tows the

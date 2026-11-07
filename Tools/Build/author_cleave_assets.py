@@ -153,7 +153,9 @@ EXISTING = {
     "CleaveMembrane_prefab": "6eb45784f9024cbb879f94c23ae46bd9",
     "Cytoplasm_prefab":   "9cacd903fcf4643459f5f14ac811bb20",
     "CellIcon":           "6aa1c06e11b265744a5f9fa8858ac72a",
-    "Vessel_Rhino":       "ec97e344adb08f847a8f7649ab79088e",
+    # The sword hull. Cleave was the Rhino's until the sword split off into the Swordfish (2026-11-07,
+    # R_VesselActions/SWORDFISH.md); the plough-only Rhino cuts nothing, and Cleave is scored on cuts.
+    "Vessel_Swordfish":   "a7e14c2b9d3f4a6c8b5e0d1f2c3a4b96",
     # arcade card art (shared with Rampage - the destruction family)
     "IconActive":         "1dc25875d7cbd3e478fc5a133e65eedb",
     "IconInactive":       "fa9b62abd1b217b4ba3d7c5a4a2c0916",
@@ -371,7 +373,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameCleave.asset",
   GolfScoring: 1
   SceneName: MinigameCleave
   Vessels:
-  - {{fileID: 11400000, guid: {EXISTING['Vessel_Rhino']}, type: 2}}
+  - {{fileID: 11400000, guid: {EXISTING['Vessel_Swordfish']}, type: 2}}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 4
   MinDomainsAllowed: 2

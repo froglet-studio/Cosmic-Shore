@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Mode: 37
   Notes: 'OPEN-ENDED: the goals and the ball are controller-built, so nothing can
-    score yet - the preview teaches the Rhino and the court cell. A StructurePrefab
-    with local goals + a ball would finish it. Vessel pinned to Rhino(3).'
+    score yet - the preview teaches the Swordfish and the court cell. A StructurePrefab
+    with local goals + a ball would finish it. Vessel pinned to Swordfish(30); was Rhino(3) until the sword split off, 2026-11-07.'
   PreviewCell: {fileID: 11400000, guid: 110109e224f74072bc477644901047af, type: 2}
   PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
-  Vessel: 3
+  Vessel: 30
   ObjectiveText: Strike the ball through the rival goal
   ObjectiveMetric: 4
   ObjectiveTarget: 0
