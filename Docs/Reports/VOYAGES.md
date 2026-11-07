@@ -93,6 +93,11 @@ a report on voyages rebuilds it from git and the team-task issues, never from me
 _Generated 2026-11-07 from git (last 14 days), who_works_where.py and the team-task issues: `python3 Tools/Build/team_report.py area voyages --days 14`._
 
 ### Recent changes (25+)
+- 2026-11-07 `1274e7f84` feat(voyages): no rival in a harbour, and two Froglet dev tools for the galaxy — on another branch
+- 2026-11-07 `1ee3f9a9b` feat(voyages): Voyage Board side view cuts along the chart's bottom edge so the two views lock up — on bleeding-edge
+- 2026-11-07 `52128176b` feat(voyages): wingmates fly the escort roles, outcomes told more than one way, standing and the log on the card — on cece/magical-pascal-5uveyi
+- 2026-11-07 `817052b3c` feat(voyages): Voyage Board cells in 3D - truncated octahedra, nucleus and membrane, ecology regions, slice bar — on bleeding-edge
+- 2026-11-07 `261dde8a4` feat(voyages): the living HyperSea, rival crews, every faction's work, sagas and relics (DEPTH.md) — on cece/magical-pascal-5uveyi
 - 2026-11-07 `f98b07383` feat(pilots): unique pilots, unique artifacts and the account inventory — on cece/magical-pascal-5uveyi, bleeding-edge
 - 2026-11-02 `357dd6460` fix(voyages): ship review of the Voyage window - same-frame RB, idle poster rebuilds, Ark crew draft — on cece/magical-pascal-5uveyi, bleeding-edge
 - 2026-11-02 `e3f105c23` feat(voyages): Voyage window in four tabs with the Rev 49 C open voyage card — on cece/magical-pascal-5uveyi, bleeding-edge
@@ -113,11 +118,6 @@ _Generated 2026-11-07 from git (last 14 days), who_works_where.py and the team-t
 - 2026-11-01 `d8661e21d` feat(escort): each escort world runs its own cytoplasm pointing at its own crystal — on cece/magical-pascal-5uveyi, bleeding-edge
 - 2026-11-01 `6a60c47a4` feat(voyages): the Voyage Board's real Milky Way sea on the job cards — on cece/magical-pascal-5uveyi, bleeding-edge
 - 2026-11-01 `e8e3c6164` docs(escort): chaos pass write-up (regrow gate, lure, bite floors, ladder, sims) — on cece/magical-pascal-5uveyi, bleeding-edge
-- 2026-11-01 `9909b3db8` tune(escort): armour bite floors per tier; regrow only in pacified (or still-friendly) nuclei — on cece/magical-pascal-5uveyi, bleeding-edge
-- 2026-11-01 `47a6e2a2a` feat(escort): regrow only in a held nucleus; feeding lure and faster waves — on cece/magical-pascal-5uveyi, bleeding-edge
-- 2026-11-01 `4aebc6fa7` fix(escort): the player sails in their own vessel, never swapped to the seat's hull or left on autopilot — on cece/magical-pascal-5uveyi, bleeding-edge
-- 2026-10-31 `4c3bacbf0` docs(voyages): verification sim results — on cece/magical-pascal-5uveyi, bleeding-edge
-- 2026-10-31 `338b2147c` docs(voyages): verify pass write-up, final (sims not run: owner's editor open for the hour) — on cece/magical-pascal-5uveyi, bleeding-edge
 
 ### Also in flight on other branches
 - `claude/voyage-scene` (Garrett, 2026-11-01): fix(escort-sim): close the privacy overlay through its own Finish so the waiting boot resumes
