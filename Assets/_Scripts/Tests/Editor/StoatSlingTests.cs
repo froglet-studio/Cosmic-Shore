@@ -769,6 +769,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TrampolinePress_TurnsAsBefore_AndPressesForTheWarpOnlyWhenTheRuleIsOn()
+        {
+            // The shipped configs carry aiWarpMinDistance 0: the trampoline AI presses exactly as before (to turn only).
+            Assert.IsFalse(StoatSlingMath.TrampolinePress(new Vector3(0f, 0f, 900f), 50f, 123f, 0f, out _), "dead ahead, rule off");
+            Assert.IsTrue(StoatSlingMath.TrampolinePress(new Vector3(-400f, 0f, 100f), 50f, 123f, 0f, out bool left), "a turn of 76 deg");
+            Assert.IsTrue(left, "the target on the left bounces left");
+            Assert.IsFalse(StoatSlingMath.TrampolinePress(new Vector3(-40f, 0f, 10f), 50f, 123f, 0f, out _), "too near to press");
+            // With the rule on, a long leg dead ahead is a press; a short one is not.
+            Assert.IsTrue(StoatSlingMath.TrampolinePress(new Vector3(0f, 0f, 420f), 50f, 123f, 400f, out bool ahead), "a long leg");
+            Assert.IsFalse(ahead, "dead ahead bounces right (TryAutopilotSide's side for x >= 0)");
+            Assert.IsFalse(StoatSlingMath.TrampolinePress(new Vector3(0f, 0f, 399f), 50f, 123f, 400f, out _), "under the warp distance");
+            // The executor's trampoline autopilot reads it (the source, as the asset tests read the configs).
+            StringAssert.Contains("StoatSlingMath.TrampolinePress(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance,",
+                Read("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs"));
+        }
+
+        [Test]
         public void EveryAIStoat_EarnsItsSpeed_NoWarpOnlyPresses_HoldsForTheWindow()
         {
             // Since 2026-11-02 speed is earned by timed launches: an AI that pressed for the warp alone spammed ~20-28 presses a

@@ -21619,3 +21619,10 @@ UnityEngine and NUnit stubs (9/9). Nothing has been played. Set `RegattaCourseFe
 8. **Line crystals** (`Crystals`: PerLap 3): three crystals sit on the racing line and respawn in place; no AI turns off its line
    for one; with PerLap 0 the nucleus crystals are back.
 9. **Two machines:** host and client see the same alternate rings, gaps and crystals.
+## 🟡 Stoat: the trampoline autopilot can press for the warp (2026-11-06, Garrett's regatta balancing, NOT PLAYED)
+`StoatSlingMath.TrampolinePress`; `StoatSlingExecutor.AutopilotTrampoline` reads `aiWarpMinDistance` (both shipped configs
+carry 0, so the game is unchanged). Compiled by `unity_refcompile` (player and editor configs, 0 errors in the changed
+files; 21 errors elsewhere on bleeding-edge that predate this). EditMode tests not run (no editor). `Docs/Reports/SLINGSHOT_STOAT_AI.md`.
+- [ ] Run `StoatSlingTests` (the new `TrampolinePress_*` test).
+- [ ] With the trained rows in `StoatSlingConfig_Slingshot` (report section 5, restart C): AI Stoats race Slingshot I1-I4,
+      finish, miss few rings, never fly far off the course (model: 62-71 s).
