@@ -22,9 +22,9 @@ first person to see the thing at all.
   test PR #1754, the soak launchers).
 - `Assets/_Scripts/Editor/Look/LookSheetLauncher.cs` (the launcher's arguments and the two flows) and
   `LookSheetCapture.cs` (the capture and its known limits).
-- Status: built 2026-11-07, **not yet run in Unity** (no .NET SDK reachable in the session that wrote it). Until
-  the first run's checklist entry is green, say so when you hand a sheet over, and prefer the Game view yardstick
-  (`*_gameview.png`) when both exist.
+- Status: built and reference-compiled 2026-11-07 (`unity_refcompile --config editor`, zero errors, negative
+  control proven), **not yet run in Unity**. Until the first run's checklist entry is green, say so when you hand a
+  sheet over, and prefer the Game view yardstick (`*_gameview.png`) when both exist.
 
 ## 2. The pipeline (one command)
 
