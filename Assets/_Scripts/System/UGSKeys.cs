@@ -105,5 +105,43 @@ namespace CosmicShore.Core
         public const string ParamHumansOnOtherDomains = "humans_on_other_domains";
         public const string ParamAiOnMyDomain         = "ai_on_my_domain";
         public const string ParamAiOnOtherDomains     = "ai_on_other_domains";
+
+        // ── 2026-11-07, round 3: sessions, balance, quits, invites, errors ──
+        // Every event and parameter below is Froglet Analytics ONLY ("sinks": ["froglet"] in
+        // Docs/Analytics/EVENT_SCHEMA.json): UgsAnalyticsSink drops the three events and strips the
+        // parameters, so UGS needs no Event Manager row for any of them.
+        public const string EventSessionStarted   = "session_started";
+        public const string EventMatchAbandoned   = "match_abandoned";
+        public const string EventClientException  = "client_exception";
+
+        // session_started / session_ended
+        public const string ParamSessionId        = "session_id";
+        public const string ParamLaunchKind       = "launch_kind";
+        public const string ParamSessionSeconds   = "session_seconds";
+
+        // game_completed (match_abandoned carries ai_difficulty too)
+        public const string ParamScore            = "score";
+        public const string ParamPlacement        = "placement";
+        public const string ParamPlayersInMatch   = "players_in_match";
+        public const string ParamAiDifficulty     = "ai_difficulty";
+        public const string ParamBehindBy         = "behind_by";
+
+        // match_abandoned
+        public const string ParamElapsedSeconds   = "elapsed_seconds";
+        public const string ParamFlightTimeSeconds = "flight_time_seconds";
+        public const string ParamReason           = "reason";
+        public const string ParamScoreAtQuit      = "score_at_quit";
+        public const string ParamPlacementAtQuit  = "placement_at_quit";
+
+        // party_invite_sent / party_invite_received / party_joined
+        public const string ParamInviteId         = "invite_id";
+        public const string ParamInviterId        = "inviter_id";
+
+        // client_exception
+        public const string ParamExceptionType    = "exception_type";
+        public const string ParamTopFrame         = "top_frame";
+        public const string ParamScene            = "scene";
+        public const string ParamMessageHash      = "message_hash";
+        public const string ParamCount            = "count";
     }
 }

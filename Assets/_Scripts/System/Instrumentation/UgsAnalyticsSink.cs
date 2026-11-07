@@ -59,6 +59,22 @@ namespace CosmicShore.Core
             UGSKeys.EventGameStarted + "." + UGSKeys.ParamHumansOnOtherDomains,
             UGSKeys.EventGameStarted + "." + UGSKeys.ParamAiOnMyDomain,
             UGSKeys.EventGameStarted + "." + UGSKeys.ParamAiOnOtherDomains,
+
+            // 2026-11-07, round 3: sessions, balance, quits, invites, errors.
+            UGSKeys.EventSessionStarted,
+            UGSKeys.EventMatchAbandoned,
+            UGSKeys.EventClientException,
+            UGSKeys.EventSessionEnded + "." + UGSKeys.ParamSessionId,
+            UGSKeys.EventSessionEnded + "." + UGSKeys.ParamSessionSeconds,
+            UGSKeys.EventGameCompleted + "." + UGSKeys.ParamScore,
+            UGSKeys.EventGameCompleted + "." + UGSKeys.ParamPlacement,
+            UGSKeys.EventGameCompleted + "." + UGSKeys.ParamPlayersInMatch,
+            UGSKeys.EventGameCompleted + "." + UGSKeys.ParamAiDifficulty,
+            UGSKeys.EventGameCompleted + "." + UGSKeys.ParamBehindBy,
+            UGSKeys.EventPartyInviteSent + "." + UGSKeys.ParamInviteId,
+            UGSKeys.EventPartyInviteReceived + "." + UGSKeys.ParamInviteId,
+            UGSKeys.EventPartyJoined + "." + UGSKeys.ParamInviteId,
+            UGSKeys.EventPartyJoined + "." + UGSKeys.ParamInviterId,
         };
 
         /// <summary>
