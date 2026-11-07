@@ -557,3 +557,10 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
 83. **A wormhole reads as an arch only when its feet go INTO something.** An arch with its mouths cut open across the
     ends still read as a horseshoe; standing each foot in an edge-on ellipse ring, with the ring's near lip cut over the
     tube, reads as a tunnel from one hole in space to another.
+84. **The omni crystal's face list carries every plate twice (front and back), so freeze a plate by WHERE it sits, never
+    by its index.** The Manta's decoy froze face 0 as an outline and the card showed a whole crystal: face 16 is the same
+    plate seen from behind and filled it back in. `specs/manta.decoy` matches every face whose centroid is within 0.08 of
+    the frozen one; the heart pentagon reads best as the tell at 40 px.
+85. **"Explosive" is a crown of short spikes standing OFF the prism, not a halo round it.** A solid star cut round each
+    prism read as a shield (a white shell), the opposite message; eight separate spikes with a clear gap read as "about
+    to go off" and leave the prism's own colour untouched.
