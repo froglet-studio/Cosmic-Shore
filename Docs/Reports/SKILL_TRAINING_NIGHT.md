@@ -42,8 +42,8 @@ report in the morning of everything I need to review, all your questions, etc."
 | 3.7 Near-A skills | the measurement of fauna-creation, cardart and prism-morph: rounds so far, every gate with or without a negative control, the smallest steps to A | a section at the end of each SKILL.md | measured; flora and ecology not reached |
 | 3.8 Later | nothing started | | by design |
 
-Skill grades by the ledger's proxy, before and after the night: A 5 to 9, B 27 to 29, C 11 to 10, D 12 to 12 (of 55,
-now 59 skills).
+Skill grades by the ledger's proxy, before and after the night: A 5 to 8, B 27 to 28, C 11 to 11, D 12 to 12 (of 55,
+now 59 skills; `python3 Tools/Build/rework_ledger.py --skills`).
 
 ## 3. What to review, in order (about an hour in all)
 
