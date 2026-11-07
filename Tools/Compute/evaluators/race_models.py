@@ -8,7 +8,8 @@ checkout (so a job pinned to the ai branch races its AI):
     dolphin_drive  Tools/Build/dolphin_drive_sim.py  ChargeBoostAIPolicySO's discharge drive (module constants)
     line           Tools/Build/regatta_line_sim.py   the race line + AIPilot's orbit break-off at the hull's AI speed
                                                      (Regatta's rails only)
-    rail           a rider on its own lane: lane length x laps / rail speed (the Urchin's grind, 300 u/s measured)
+    rail           a rider on its own lane: lane length x laps / rail speed (the Urchin's grind), the neutral share at free speed
+    measured       a measured editor race, moved by the line and lap models' responses (regatta_measured_roster.py)
     balance        Tools/Build/regatta_balance.py    the competent-pilot lap model (every hull, including the Squirrel
                                                      and the Stoat, which have no AI race model yet)
 
@@ -27,9 +28,10 @@ MODEL_LIMITS = {
     "rhino_drive": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
     "manta_drive": "point mass; no break-off, no nose lag; Regatta's through-the-centre steering in every mode",
     "dolphin_drive": "point mass; no break-off; the scalar charge economy (DOLPHIN_ENERGY_ECONOMY.md 2)",
-    "line": "constant speed (the hull's median AI speed in editor Regatta races); Regatta rails only",
-    "rail": "constant rail speed, no corners (the rail rides them), no lane changes",
-    "balance": "a competent pilot, not an AI: top speed, corner speed solved per radius, instant braking",
+    "line": "constant speed (the hull's AI speed, calibrated to measured Regatta races); Regatta rails only; no rivals",
+    "rail": "constant rail speed, no corners (the rail rides them), no lane changes; a neutral share flown at free speed",
+    "measured": "anchored to the measured editor race on the shipped I1 course; a new course moves it by the mean of the line and lap models' ratios",
+    "balance": "a competent pilot, not an AI: top speed, corner speed solved per radius, instant braking (x a measured scale)",
 }
 DNF_BASE, DNF_PER_RING = 30.0, 10.0      # a race not finished costs the time limit + 30 s + 10 s per ring left
 
@@ -56,15 +58,43 @@ def race(hull, model, course, intensity=1, drive=None, steering="centre", limit=
     n = len(course["gates"])
     total = n * laps
     if model == "rail":
+        # `neutral`: the middle share of every leg's rail is laid in no team's colour (RegattaCourse.NeutralShareFor),
+        # and a rider leaves its rail there and flies free at `free_speed` until its colour starts again.
         lane = drive.get("lane", 0)
         speed = float(drive.get("speed", 300.0))
-        t = course["laneLengths"][lane] * laps / speed
+        neutral = min(max(float(drive.get("neutral", 0.0)), 0.0), 1.0)
+        free = float(drive.get("free_speed", speed))
+        length = course["laneLengths"][lane] * laps
+        t = length * (1.0 - neutral) / speed + length * neutral / free
         return t, {"time": t, "rings": total}
+    if model == "measured":
+        # A hull anchored at its MEASURED race on the shipped I1 course, moved by the models' response to a new course:
+        # the geometric mean of the race-line model's ratio (line length, missed mouths, the AI's turn law) and the lap
+        # model's (per-hull corner speed, acceleration, the Time level). A hull with no race-line row uses the lap model
+        # alone. Tools/Build/regatta_measured_roster.py sets the anchor and the two reference times.
+        bal_drive = {"time_levels": drive.get("time_levels"), "time_level": drive.get("time_level", 0)}
+        ratio = race(hull, "balance", course, intensity, bal_drive, limit=limit, laps=laps)[0] / float(drive["bal_ref"])
+        rings = total
+        if drive.get("line_ref"):
+            lt, lr = race(hull, "line", course, intensity, {"speed": drive["speed"], "share": drive.get("share", 0.35)},
+                          limit=limit, laps=laps)
+            ratio = math.sqrt(ratio * lt / float(drive["line_ref"]))
+            rings = lr["rings"]
+        # The race-line AIs miss more mouths as the mouth tightens, which neither model prices (both were calibrated on
+        # I1's 110 u mouths): x (mouth_ref / tightest mouth) ^ mouth_alpha, 1 on the course the anchor was measured on.
+        alpha = float(drive.get("mouth_alpha", 0.0))
+        if alpha:
+            tight = min(g["r"] for g in course["gates"])
+            ratio *= (float(drive.get("mouth_ref", tight)) / max(tight, 1.0)) ** alpha
+        t = float(drive["anchor"]) * ratio
+        return t, {"time": t if rings >= total else None, "rings": rings}
     if model == "balance":
+        # `scale`: measured / modelled seconds on the shipped course, for a hull whose AI has no race model of its own
+        # (calibrated by Tools/Build/regatta_measured_roster.py against the Regatta Hull Benchmark).
         import regatta_balance as RB
         c = _balance_constants()
-        level = int(drive.get("time_level", 0))
-        lap = RB.lap_time(hull, RB.MODELS[hull](c, level), course)
+        level = int((drive.get("time_levels") or {}).get(str(intensity), drive.get("time_level", 0)))
+        lap = RB.lap_time(hull, RB.MODELS[hull](c, level), course) * float(drive.get("scale", 1.0))
         return lap * laps, {"time": lap * laps, "rings": total}
     with use_course(course):
         if model == "rhino_drive":
@@ -87,8 +117,17 @@ def race(hull, model, course, intensity=1, drive=None, steering="centre", limit=
                 setattr(sim, k.upper(), v)
             t, rings, top = sim.race(True, intensity, T=limit)
         elif model == "line":
+            # `speed` (the hull's AI speed, u/s) and `share` (its race line's LaneShare) override the sim's table for this
+            # race only; regatta_measured_roster.py sets them from the shipped race lines and the measured races.
             sim = _sim("regatta_line_sim")
-            r = sim.race(hull, intensity, True, T=limit, gate=True, only_when_cut=True)
+            row = sim.HULLS[hull]
+            v, share = float(drive.get("speed", row[0])), float(drive.get("share", row[3]))
+            sim.HULLS[hull] = (v, row[1], row[2], share, row[4], row[5])
+            try:
+                r = sim.race(hull, intensity, True, T=limit, gate=True, only_when_cut=True,
+                             look_s=sim.authored_look_seconds(hull))
+            finally:
+                sim.HULLS[hull] = row
             t, rings, top = r["time"], r["rings"], None
         else:
             raise ValueError(f"unknown race model {model}")
