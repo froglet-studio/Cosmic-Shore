@@ -162,6 +162,21 @@ selection modes" work.
 end-condition target is authored once (24), and `LapsPerRace = target / 8`. A target that is not
 a multiple of eight races to the course's honest length and warns.
 
+### 4.1 Lifeforms are a course setting, off on every shipped course (2026-11-06)
+
+A course may grow plants beside its spine and carry creatures (`Plan step: time-arena-course`, Garrett:
+"lifeforms, etc."). The arena never spawns one: `SpawnableRegattaRails` prepares planting SITES per leg
+(`RegattaLifeformSiteSettings`: sites per leg, offset from the spine, side window, leg window, ring clearance;
+the pure `RegattaLifeformSites.Sow` keeps every site off every rail, out of every mouth and inside the shell)
+and may ask its cell for a fauna corridor round the spine (`ICellFaunaCorridorSource`, adopted by the `Cell`
+like a garden's beds). WHICH species and HOW MANY are the course's own spawn profile, forked from Tollway's
+networked race-court plants (Spire, Cacti, Borromean; no lattice species, whose colonies grow off-site) and
+Skim Race's tadpole, with counts changed only. `Tools/Build/regatta_lifeforms.py` is the one description
+(catalogue, presets, search space, validation, `--self-test`); `author_regatta_assets.py`'s `LIFEFORMS` table
+writes it, today `RL.NONE` on all four, so the Barren profile and the cell configs are unchanged. The offline
+model sees none of this; a lifeform course is judged in the real game only. Report:
+`Docs/Reports/REGATTA_LIFEFORMS.md`.
+
 ## 5. The start
 
 Everyone spawns on a ring **behind gate 0, pointed through it** (`IPlayerSpawnLine`, 260 u

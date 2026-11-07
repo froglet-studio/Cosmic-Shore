@@ -12970,3 +12970,23 @@ stays outside. Invariants: no culling, no teleport, no decay, no domain asymmetr
 
 **Side effect to know.** Anything else that reads the densest region in a corridor cell reads it without the corridor's
 mass: the spawner's fauna birth point (desired - nothing is born on the path) and the pilot-sight densest-mass hint.
+
+## 68. The IntensityWise spawner plants on prepared ground too; an environment may ask for a fauna corridor (2026-11-06)
+
+**The trap, live.** `CellLifeSpawnerBase.PlantFlora` (root a plant on the environment's prepared ground, else
+disperse) was called only by `RandomLifeSpawner`. `IntensityWiseLifeSpawner` called `SpawnFlora` directly, so a
+site-sowing world in an IntensityWise cell dispersed its plants over the whole cell, and it never waited for the
+deferred environment build either. It now plants through `PlantFlora` (for a cell whose world sows no sites that is
+exactly the old `SpawnFlora` call, so every shipped IntensityWise cell is unchanged) and waits on the build only when
+the environment declares `CellEnvironmentSpawnableBase.PreparesPlantingSites` (false by default; the Regatta rails
+override it when their course authors sites), so no other cell's planting clock moved.
+
+**An environment may describe a fauna corridor** (`ICellFaunaCorridorSource`): the `Cell` adopts it when it builds
+that environment (`Cell.AdoptFaunaCorridor`, the same `SetFaunaPathCorridor` Switchback's controller calls) and
+releases only a corridor it adopted itself, so a mode's corridor is never cleared by a world swap. Same diet +
+steering contract as section 67, never a wall.
+
+The first user is Regatta (`Assets/_Scripts/Controller/Arcade/REGATTA.md` 4.1): lifeforms as a course setting,
+off on every shipped course. Nothing in the locked law moves: the arena prepares ground and never spawns a
+lifeform, plants roll their colour and creatures take the cell's, rails stay super-shielded (never food), and the
+course's phase ladder is raised by the forest's measured volume.

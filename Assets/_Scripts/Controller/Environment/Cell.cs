@@ -2396,6 +2396,7 @@ namespace CosmicShore.Gameplay
             // Cleared unconditionally: a swap into a config with no environment (or none at all)
             // must not leave the previous world's beds addressable.
             ClearPlantingSites();
+            ReleaseEnvironmentFaunaCorridor();
 
             if (!cellConfigData || cellConfigData.EnvironmentPrefab == null) return;
             using (LoadInsights.Measure(LoadInsightCategory.Environment,
@@ -2415,7 +2416,38 @@ namespace CosmicShore.Gameplay
                 environment.transform.localPosition = Vector3.zero;
                 environment.transform.localRotation = Quaternion.identity;
                 AdoptPlantingSites();
+                AdoptFaunaCorridor();
             }
+        }
+
+        // ---------------------------------------------------------------------
+        //  Environment fauna corridor - an authored world (a race course) may ask its cell to keep
+        //  fauna off a path, the way a garden offers beds (ICellFaunaCorridorSource). Adopted with
+        //  the environment and released with it; a corridor a MODE set (Switchback) is never
+        //  touched here, because this only clears one it adopted itself.
+        // ---------------------------------------------------------------------
+
+        readonly List<Vector3> _environmentCorridorPath = new();
+        bool _environmentCorridorAdopted;
+
+        void AdoptFaunaCorridor()
+        {
+            if (cellConfigData.EnvironmentPrefab is not ICellFaunaCorridorSource source) return;
+            if (!source.TryGetFaunaCorridor(_environmentCorridorPath, out float radius, out bool closed,
+                    out float standoff) || radius <= 0f || _environmentCorridorPath.Count < 2)
+                return;
+
+            for (int i = 0; i < _environmentCorridorPath.Count; i++)
+                _environmentCorridorPath[i] = transform.TransformPoint(_environmentCorridorPath[i]);
+            SetFaunaPathCorridor(_environmentCorridorPath, radius, closed, standoff);
+            _environmentCorridorAdopted = true;
+        }
+
+        void ReleaseEnvironmentFaunaCorridor()
+        {
+            if (!_environmentCorridorAdopted) return;
+            _environmentCorridorAdopted = false;
+            ClearFaunaPathCorridor();
         }
 
         // ---------------------------------------------------------------------
