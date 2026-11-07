@@ -68,6 +68,10 @@ SCRIPT_PATHS = {
     "SpawnableRegattaRails":     "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRegattaRails.cs",
     "VesselStartingElements":    "Assets/_Scripts/Data/Structs/VesselStartingElements.cs",
     "RegattaCourseTests":        "Assets/_Scripts/Tests/Editor/RegattaCourseTests.cs",
+    "RegattaCoursePoolSO":       "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCoursePoolSO.cs",
+    "CourseShuffleBag":          "Assets/_Scripts/Controller/Arcade/Regatta/CourseShuffleBag.cs",
+    "CourseVariantOverride":     "Assets/_Scripts/Controller/Arcade/CourseVariantOverride.cs",
+    "RegattaCoursePoolTests":    "Assets/_Scripts/Tests/Editor/RegattaCoursePoolTests.cs",
     "VesselStartingElementsTests": "Assets/_Scripts/Tests/Editor/VesselStartingElementsTests.cs",
 }
 G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
@@ -79,12 +83,14 @@ G_ASSET = {
     "GameToastConfigRegatta": guid("asset/GameToastConfigRegatta"),
     "ModePreviewRegatta":     guid("asset/ModePreviewRegatta"),
     "MinigameRegatta.unity":  guid("asset/MinigameRegatta.unity"),
+    "RegattaCoursePool":      guid("asset/RegattaCoursePool"),
 }
 for _i in range(1, 5):
     G_ASSET[f"CellConfig{_i}"] = guid(f"asset/Regatta Cell Config {_i}")
     G_ASSET[f"SpawnableRegattaRails{_i}"] = guid(f"prefab/SpawnableRegattaRails{_i}")
 
 CELL_DIR = "Assets/_SO_Assets/Cell Configs/Regatta Cell"
+POOL_ASSET = f"{CELL_DIR}/Regatta Course Pool.asset"
 PREFAB_DIR = "Assets/_Prefabs/Spawnables"
 SCRIPTS_DIR = "Assets/_Scripts/Controller/Arcade/Regatta"
 DOC = "Assets/_Scripts/Controller/Arcade/REGATTA.md"
@@ -253,8 +259,9 @@ for _i in range(1, 5):
     c = COURSE["intensities"][str(_i)]
     t = phase_thresholds(prisms_at(_i), rail_volume_at(_i))
     desc = lib.wrap_yaml_scalar(
-        f"Regatta at intensity {_i} of 4 (CellTypeChoiceOptions.IntensityWise, list order = "
-        f"intensity): a closed circuit of {c['rings']} rings with three super-shielded rails - one "
+        f"Regatta course-pool entry {_i - 1} (circuit row {_i}; CellTypeChoiceOptions.CourseVariantWise, list "
+        f"order = Regatta Course Pool order - the host deals one entry per match, intensity does not pick it): "
+        f"a closed circuit of {c['rings']} rings with three super-shielded rails - one "
         f"per playable domain - braided along it, {c['prismCount']} (6,6,8) prisms (each length fitted "
         f"flush to its neighbours, {c['railVolume']:,} volume) on a "
         f"{c['spineLength']:.0f}u spine, mouths {c['ringRadius']:.0f}u, no corner under "
@@ -279,6 +286,34 @@ for _i in range(1, 5):
   EnvironmentIntensity: {_i}
   PhaseThresholds:
 """ + "".join(f"    {k}: {v}\n" for k, v in t.items()))
+
+# ── 4b. The course pool: one Regatta level shuffles between these circuits ──
+# Garrett, 2026-11-06: no intensities in an arena game, one Regatta level, several balanced course variants dealt in a
+# shuffle. An entry IS a cell config (its EnvironmentPrefab lays the circuit, its thresholds ride that circuit's
+# volume); the host deals one per match (RegattaCoursePoolSO.Draw, a shuffle bag) and the scene's Cell lays
+# CellConfigs[variant] - so the entries are listed in the Cell's order (NEW_CELL_BLOCK below, checked). Today's pool is
+# the four circuits that used to be the intensity ladder; a searched course joins as a new prefab + config + entry here.
+POOL_ENTRIES = [
+    # (label, circuit row, enabled, notes)
+    ("Wide", 1, True, "The old intensity-1 circuit - gentle corners (90 deg hardest), 110 u mouths, 200 u floor."),
+    ("Mixed", 2, True, "The old intensity-2 circuit - 118 deg hardest corner, 88 u mouths, 150 u floor."),
+    ("Hairpins", 3, True, "The old intensity-3 circuit - 135 deg hardest corner, 72 u mouths, 120 u floor."),
+    ("Tight", 4, True, "The old intensity-4 circuit - three hard corners (150 deg), 54 u mouths, 100 u floor."),
+]
+
+
+def pool_rows() -> str:
+    rows = []
+    for label, row, enabled, notes in POOL_ENTRIES:
+        rows.append(f"  - Label: {label}\n"
+                    f"    CellConfig: {{fileID: 11400000, guid: {G_ASSET[f'CellConfig{row}']}, type: 2}}\n"
+                    f"    Enabled: {1 if enabled else 0}\n"
+                    f"    Notes: {notes}\n")
+    return "".join(rows)
+
+
+g.emit_asset(POOL_ASSET, G_ASSET["RegattaCoursePool"],
+             lib.header_for(G_SCRIPT["RegattaCoursePoolSO"], "Regatta Course Pool") + "  entries:\n" + pool_rows())
 
 # ── 5. The arcade card: every playable hull, and the starting-element table ──
 # Every OPPONENT AI (a domain no human flies) flies this hull: the platform's gate-race AI holds
@@ -388,6 +423,15 @@ g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Regatta.asset", G_ASSE
 g.register_preview(G_ASSET["ModePreviewRegatta"])
 
 # ── 8. Scene: clone MinigameRedline, swap the mode-specific wiring ───────────
+def _choice_value(member: str) -> int:
+    src = g.read("Assets/_Scripts/Controller/Environment/Cell.cs")
+    m = re.search(rf"^\s*{member}\s*=\s*(\d+)\s*,", src, re.M)
+    assert m, f"Cell.CellTypeChoiceOptions.{member} not found - has the member been renamed?"
+    return int(m.group(1))
+
+
+COURSE_VARIANT_WISE = _choice_value("CourseVariantWise")
+
 OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RedlineScoringRule']}, type: 2}}
   cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
   courseOuterRadius: 1080
@@ -423,18 +467,20 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RegattaScoringRule'
   maxPlausibleSpeed: 1400
   reportResyncSeconds: 3
   arenaCell: {{fileID: 1700000065}}
+  coursePool: {{fileID: 11400000, guid: {G_ASSET['RegattaCoursePool']}, type: 2}}
   startLineStandoff: 260
   startLineRadius: 120
   aiRailLeadDistance: 260
 """
 CONTROLLER_SCRIPT_LINE = f"  m_Script: {{fileID: 11500000, guid: {G_SCRIPT['RegattaController']}, type: 3}}\n"
 
-# THE CELL becomes INTENSITY-WISE over the four rail arenas.
+# THE CELL lays the match's COURSE VARIANT (CellTypeChoiceOptions.CourseVariantWise, read out of Cell.cs below) over
+# the rail arenas, in the course pool's order. It was IntensityWise (1) until 2026-11-07.
 OLD_CELL_BLOCK = (f"  CellConfigs:\n  - {{fileID: 11400000, guid: {EXISTING['SkimRaceCellConfig']}, type: 2}}\n"
                   "  cellTypeChoiceOptions: 0\n")
 NEW_CELL_BLOCK = ("  CellConfigs:\n"
                   + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'CellConfig{i}']}, type: 2}}\n" for i in range(1, 5))
-                  + "  cellTypeChoiceOptions: 1\n")
+                  + f"  cellTypeChoiceOptions: {COURSE_VARIANT_WISE}\n")
 
 # THE AI ROSTER draws its hull from the CARD: vesselClass 0 (Random) makes
 # ServerPlayerVesselInitializerWithAI.PickAIVesselType roll uniformly over the card's Vessels,
@@ -570,8 +616,22 @@ if G_SCRIPT["RegattaController"] not in sc:
     errors.append("cloned scene missing RegattaController")
 if sc.count("  - vesselClass: 0\n") != 4:
     errors.append("cloned scene does not carry 4 Random-hull AI templates")
-if sc.count("  cellTypeChoiceOptions: 1\n") != 1:
-    errors.append("cloned scene is not IntensityWise")
+if sc.count(f"  cellTypeChoiceOptions: {COURSE_VARIANT_WISE}\n") != 1:
+    errors.append("scene's Cell is not CourseVariantWise - intensity would pick the course again")
+
+# The course pool deals CellConfigs[variant]: its entries must be the scene Cell's configs, in order, each a different
+# circuit, and the controller must carry the pool.
+pool = g.files[POOL_ASSET]
+_pool_guids = re.findall(r"^    CellConfig: \{fileID: 11400000, guid: ([0-9a-f]{32}), type: 2\}$", pool, re.M)
+_cell_guids = re.findall(r"^  - \{fileID: 11400000, guid: ([0-9a-f]{32}), type: 2\}$", NEW_CELL_BLOCK, re.M)
+if _pool_guids != _cell_guids:
+    errors.append(f"course pool entries {_pool_guids} are not the scene Cell's CellConfigs {_cell_guids} in order")
+if len(set(row for _, row, _, _ in POOL_ENTRIES)) != len(POOL_ENTRIES):
+    errors.append("two course pool entries lay the same circuit row - the shuffle would deal one course twice")
+if not any(enabled for _, _, enabled, _ in POOL_ENTRIES):
+    errors.append("no course pool entry is enabled - every match would fall back to entry 0")
+if f"  coursePool: {{fileID: 11400000, guid: {G_ASSET['RegattaCoursePool']}, type: 2}}\n" not in sc:
+    errors.append("the scene's RegattaController does not carry the Regatta Course Pool")
 
 # The card lists every playable hull exactly once, and every StartingElements row names one of them.
 card = g.files["Assets/_SO_Assets/Games/ArcadeGameRegatta.asset"]

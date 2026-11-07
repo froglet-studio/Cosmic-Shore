@@ -832,6 +832,7 @@ MonoBehaviour:
   maxPlausibleSpeed: 1400
   reportResyncSeconds: 3
   arenaCell: {fileID: 1700000065}
+  coursePool: {fileID: 11400000, guid: d9ffdf94d153e7fc61376ce08dee6647, type: 2}
   startLineStandoff: 260
   startLineRadius: 120
   aiRailLeadDistance: 260
@@ -981,7 +982,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 6a8fdec94d8d7c1e55ce2b82f195fb2d, type: 2}
   - {fileID: 11400000, guid: ff80f22ab0303ace7a1139de2f9f2222, type: 2}
   - {fileID: 11400000, guid: 1fd418b9587960e42b0cbdb69f7cd2ec, type: 2}
-  cellTypeChoiceOptions: 1
+  cellTypeChoiceOptions: 3
   retireSuctionSeconds: 0
   runtime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   nucleusScaleMultiplier: 1

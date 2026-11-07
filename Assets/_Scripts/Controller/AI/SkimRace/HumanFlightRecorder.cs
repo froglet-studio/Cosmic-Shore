@@ -828,6 +828,9 @@ namespace CosmicShore.Gameplay
             AppendRivalDifficulties(sb);
             sb.Append("\"build\":\"").Append(Esc(Application.version)).Append("\",\"unity\":\"").Append(Esc(Application.unityVersion)).Append("\",");
             sb.Append("\"courseSeed\":").Append(_courseSeed).Append(",\"courseIntensity\":").Append(_courseIntensity).Append(',');
+            // The course-pool entry the host drew (Regatta's RegattaCoursePoolSO; -1 for a mode with no pool). Intensity
+            // no longer picks Regatta's circuit, so this plus courseSeed / courseIntensity (the laid prefab's) names it.
+            sb.Append("\"courseVariant\":").Append(_gameData ? _gameData.CourseVariant : -1).Append(',');
             if (_funType.Length > 0) sb.Append("\"funType\":\"").Append(_funType).Append("\",");
             sb.Append("\"date\":\"").Append(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", c)).Append("\",");
             sb.Append("\"ended\":\"").Append(why).Append("\",");

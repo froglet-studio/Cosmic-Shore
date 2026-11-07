@@ -9,7 +9,8 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Regatta's arena: three super-shielded rails - one per playable domain - braided along
     /// a closed circuit of eight rings, laid as ordinary conserved mass by the Cell like every
-    /// other authored environment. One prefab variant per intensity.
+    /// other authored environment. One prefab variant per circuit; each is an entry of Regatta's
+    /// course pool (<see cref="RegattaCoursePoolSO"/>), which the host deals from once per match.
     ///
     /// <para><b>The rails ARE the racing line, and they are what makes a mixed grid a race.</b>
     /// An Urchin grinds the rail in its own colour at 300 u/s against its 65 u/s cruise, a
@@ -34,13 +35,16 @@ namespace CosmicShore.Gameplay
     /// <see cref="CourseSeed"/> and <see cref="CourseIntensity"/> through the same pure call
     /// (<see cref="RegattaCourse.BuildGates"/>), so the rails and the rings cannot disagree, and
     /// it can do so during the spawn chain off the prefab ASSET (nothing here has to be spawned
-    /// to answer). The cost, as in Skein: a given intensity is the same circuit every match.</para>
+    /// to answer). A given prefab is the same circuit every match; the VARIETY comes from the pool
+    /// dealing a different prefab (cell config) per match.</para>
     /// </summary>
     public class SpawnableRegattaRails : CellEnvironmentSpawnableBase
     {
         [Header("Regatta")]
-        [Tooltip("Which rung of the ladder this variant lays. One prefab per intensity; the cell " +
-                 "config that points at it authors the same number as EnvironmentIntensity.")]
+        [Tooltip("Which of RegattaCourse's circuit rows (RegattaCourse.ForIntensity) this variant lays. The " +
+                 "rows were once one per intensity; since 2026-11-07 a prefab is a COURSE-POOL entry " +
+                 "(RegattaCoursePoolSO) and intensity no longer picks it. The cell config that points at it " +
+                 "authors the same number as EnvironmentIntensity.")]
         [SerializeField, Range(1, 4)] int courseIntensity = 1;
 
         [Tooltip("0 = RegattaCourse.DefaultSeed. Non-zero pins the circuit, which is how a " +

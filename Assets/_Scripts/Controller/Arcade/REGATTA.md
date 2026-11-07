@@ -124,11 +124,39 @@ rails' volume drops 0.9-1.4% (517,194 / 580,342 / 627,530 / 625,649 at intensiti
 by `Tools/Build/regatta_course_harness/run.sh` into `railVolume`). The cell's volume ladder prices
 that measured volume (`author_regatta_assets.py`), never count x 288.
 
-**The seed lives on the arena.** `SpawnableRegattaRails` (one prefab variant per intensity) lays
+**The seed lives on the arena.** `SpawnableRegattaRails` (one prefab variant per circuit) lays
 the rails from its own seed, and `RegattaController.BuildCourse` re-derives the SAME gates from
 the same pure call off the cell's *expected* config — Skein's pattern — so rails and rings
-cannot disagree, and the start line can be answered during the spawn chain. The cost, as in
-Skein: a given intensity is the same circuit every match.
+cannot disagree, and the start line can be answered during the spawn chain. A given prefab is the
+same circuit every match; the variety comes from the course pool below.
+
+### 4.1 The shuffled course pool (2026-11-07)
+
+Garrett, 2026-11-06: one Regatta level, no intensities, several balanced course variants shuffled.
+**Intensity no longer picks the course.** The four circuits in the table above (the rows of
+`RegattaCourse.ForIntensity`, which used to be the intensity ladder) are the four entries of
+`Regatta Course Pool.asset` (`RegattaCoursePoolSO`, next to the cell configs): Wide, Mixed,
+Hairpins, Tight.
+
+| step | where | what |
+|---|---|---|
+| draw | host, `RegattaController.DrawCourseVariant` (called once by `MultiplayerMiniGameControllerBase.OnNetworkSpawn` before the config broadcast, or earlier by the start line during the spawn chain) | `RegattaCoursePoolSO.Draw`: a pinned variant (`CourseVariantOverride`: a replay, a benchmark) wins, else a **shuffle bag** (`CourseShuffleBag`) deals every enabled entry once before any repeats and never the same circuit twice running |
+| carry | `GameDataSO.CourseVariant` (-1 = none drawn), sent in `SyncGameConfigToClients_ClientRpc` (last argument before the rpc params) | cleared on every runtime reset, so each match draws afresh |
+| lay | the scene's Cell, `CellTypeChoiceOptions.CourseVariantWise` (3) | `CellConfigs[CourseVariant]`; waits (on the host too) until the variant is known, so no peer latches the wrong arena; runs the same life spawner IntensityWise did |
+| record | replay summary `CoursePoolEntry` (one-based), flight JSON `courseVariant` | a replay re-lays the circuit it was flown on |
+
+An entry IS a cell config: its `EnvironmentPrefab` carries the circuit (row, seed and any per-arena
+setting the course search adds) and its phase thresholds ride that circuit's measured volume, so the
+course data stays where the harness and the parity gates read it. The pool's entries must be the
+Cell's `CellConfigs` in the same order (`author_regatta_assets.py` checks it; the controller warns
+at runtime). An entry is taken out of the shuffle with its `Enabled` toggle. A searched course
+(the pool search, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) joins as a new rails prefab + cell
+config + `POOL_ENTRIES` row in the generator.
+
+**Not yet decided by this change:** the card's `StartingElements` rows are still keyed by
+intensity, though intensity no longer picks the circuit they were measured on; removing intensity
+from the arena launch and its per-intensity rows is the "Replace arena intensities with vessel
+selection modes" work.
 
 **Laps are derived, not authored twice.** The arena lays exactly `RingsPerLap` (8) rings, the
 end-condition target is authored once (24), and `LapsPerRace = target / 8`. A target that is not
@@ -491,8 +519,8 @@ next to look at with its own model.
 Everything by `Tools/Build/author_regatta_assets.py` (`--check` passes; `--check` was watched to
 fail on a mutated cell config). The card is registered in the **master roster and `ArenaGames`**
 (`arcade_mode_lib.register_arena_card`), never `ArcadeGames`. The scene is a clone of
-`MinigameRedline` with the controller, rule, field block, IntensityWise cell list and AI templates
-swapped. Preview: four cells by intensity, `Vessel: -1` (the carousel's pick flies).
+`MinigameRedline` with the controller, rule, field block, cell list (CourseVariantWise since 2026-11-07,
+IntensityWise before) and AI templates swapped; the controller also carries the course pool. Preview: four cells by intensity, `Vessel: -1` (the carousel's pick flies).
 
 **Toasts** (`GameToastConfig_Regatta.asset`, authored by the generator): two idle hints
 (`RegattaRailHint` 110, `RegattaLaneHint` 111), the comeback line, and — since #985 — the four
