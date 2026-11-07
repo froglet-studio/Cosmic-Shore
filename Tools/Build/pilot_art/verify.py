@@ -36,7 +36,7 @@ GATES = [
      "head and torso centres within 0.5 +/- 0.20 (set: head 0.32-0.62, torso 0.31-0.57; the winged and the shelled sit left)"),
     ("width", lambda m: 0.35 <= m["width"] <= 1.0, "silhouette width 0.35-1.00 (set 0.40-0.99)"),
     ("coverage", lambda m: 0.15 <= m["coverage"] <= 0.55, "silhouette covers 0.15-0.55 of the frame (set 0.167-0.531)"),
-    ("alpha_clean", lambda m: m["islands"] == 0 and m["soft"] <= 3.0, "no islands; soft edge <= 3.0 px per edge px (set max 2.5)"),
+    ("alpha_clean", lambda m: m["islands"] == 0 and m["soft"] <= 3.0, "no specks (measure.py islands); soft edge <= 3.0 px per edge px (set max 2.5)"),
     ("no_halo", lambda m: m["halo"] <= 0.15, "no coloured fringe: halo <= 0.15 (set max 0.111)"),
     ("value", lambda m: 0.10 <= m["lum_p50"] <= 0.60 and m["lum_p95"] >= 0.50 and m["lum_p5"] <= 0.30,
      "median luminance 0.10-0.60, a highlight (p95 >= 0.50), a shadow (p5 <= 0.30) (set 0.135-0.534 / >= 0.544 / <= 0.252)"),
@@ -55,6 +55,11 @@ def verify(img, exempt=()):
         img = measure.load(img)
     m = measure.metrics(img)
     ex = dict(exempt)
+    for gate, reason in ex.items():
+        if gate not in NAMES:
+            raise ValueError(f"exemption names no gate: {gate!r} (gates: {', '.join(NAMES)})")
+        if not str(reason).strip():
+            raise ValueError(f"exemption of {gate!r} gives no reason")
     rows = []
     ok = True
     for name, test, _ in GATES:
@@ -148,6 +153,13 @@ def self_test():
     off[..., :3] = good[..., :3]
     if dict((n, p) for n, p, _ in verify(off)[1])["upright"]:
         failures.append("a head off the body not caught by upright")
+    # An exemption must name a real gate and carry a reason.
+    for bad in ((("widht", "typo"),), (("width", " "),)):
+        try:
+            verify(good, exempt=bad)
+            failures.append(f"a bad exemption was accepted: {bad}")
+        except ValueError:
+            pass
     # An exemption turns a fail into a pass with its reason kept.
     ok2, rows2, _ = verify(plants["width"], exempt=(("width", "a test"),))
     if not ok2 or not any(n == "width" and r == "a test" for n, _, r in rows2):

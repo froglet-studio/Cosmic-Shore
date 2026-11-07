@@ -327,17 +327,34 @@ KEYS = {"green": "#00FF00", "magenta": "#FF00FF", "blue": "#0000FF"}
 
 
 def background(key_hex):
+    if key_hex.upper() == "ALPHA":            # an artist delivering with their own alpha paints no key at all
+        return "The background is fully transparent."
     name = {v: k for k, v in KEYS.items()}.get(key_hex.upper(), "flat")
     return (f"The background is a perfectly flat, uniform, solid {name} colour {key_hex.upper()} filling the entire "
             f"image edge to edge, with no gradient, no vignette, no texture and nothing else in the scene.")
 
 
-def key_for(animals, domain, callsign=""):
+GREEN_GEAR = {"Preservationist"}          # GEAR lines that dress the pilot in green ("a green ranger's jacket")
+
+
+def key_for(animals, domain, callsign="", faction=""):
     """The key colour the painter paints over, chosen so the matte's difference key never eats the pilot: green
-    unless the coat is green (GREENISH) or the callsign wears leaves (IVY), then blue. Never magenta on its own:
-    it eats Ruby trim (matte.py's negative control); a spec may still name it for a blue-coated green animal."""
-    greenish = any(a in GREENISH for a in animals) or callsign.upper() == "IVY"
+    unless the coat is green (GREENISH), the callsign wears leaves (IVY) or the faction's gear is green
+    (GREEN_GEAR), then blue. Never magenta on its own: it eats Ruby trim (matte.py's negative control); a spec may
+    still name it for a non-Ruby pilot that can take neither."""
+    greenish = any(a in GREENISH for a in animals) or callsign.upper() == "IVY" or faction in GREEN_GEAR
     return KEYS["blue"] if greenish else KEYS["green"]
+
+
+def faction_words(faction):
+    """'BountyHunter' -> 'bounty hunter', 'FirstResponder' -> 'first responder' (FactionCatalog.TypeName's words)."""
+    return re.sub(r"(?<!^)(?=[A-Z])", " ", faction).lower()
+
+
+def sentence(text):
+    """First letter up, the rest as written: str.capitalize() lowercased names and callsigns inside a pose."""
+    t = text.strip().rstrip(".")
+    return t[:1].upper() + t[1:]
 
 
 def crew_phrase(name):
@@ -365,18 +382,18 @@ def compose(callsign, animals, faction, name="", faction_name="", pose="", key=N
         raise KeyError(f"unknown faction type {faction!r} (FactionType)")
     domain = DOMAIN_OF[faction]
     accent = ACCENT[domain]
-    key = (key or key_for(animals, domain, callsign)).upper()
+    key = (key or key_for(animals, domain, callsign, faction)).upper()
     who = f"{name} ({callsign})" if name else callsign
     crew = crew_phrase(faction_name)
     prompt = (
-        f"Full-body character portrait of one anthropomorphic pilot, {who}, {faction.lower()}{crew}: "
+        f"Full-body character portrait of one anthropomorphic pilot, {who}, {faction_words(faction)}{crew}: "
         f"a human body and build with {SPECIES[first]['head']}, fur and skin {SPECIES[first]['colour']}, "
         f"and {SPECIES[second]['lend']}. "
-        f"{(pose or DEFAULT_POSE).strip().rstrip('.').capitalize()}. "
+        f"{sentence(pose or DEFAULT_POSE)}. "
         f"Wearing {GEAR[faction]}, trimmed in {accent['word']} ({accent['hex']}) with thin glowing "
         f"{accent['word']} seam lights, and {MOTIFS[callsign]}. "
         + (extra.strip().rstrip(".") + ". " if extra.strip() else "")
-        + f"{STYLE} {FRAMING} {NEVER} {background(key)}"
+        + f"{STYLE} {FRAMING} {NEVER} {background(key)}".rstrip()
     )
     lines = [
         ("pilot", who),
@@ -461,6 +478,18 @@ def self_test():
         failures.append("key_for does not move the key off IVY's leaves")
     if key_for(("Owl", "Lynx"), "Ruby") != KEYS["green"]:
         failures.append("key_for moved the key for no reason")
+    import json
+    fam = json.load(open(os.path.join(ROOT, "Docs/VesselModels/colour_domains.json"), encoding="utf-8"))["families"]
+    for dom, anchor in (("Ruby", "ruby-0"), ("Gold", "gold-0"), ("Jade", "jade-0")):
+        want = next(a["hex"] for a in fam[dom.lower()]["anchors"] if a["id"] == anchor)
+        if ACCENT[dom]["hex"].upper() != want.upper():
+            failures.append(f"ACCENT[{dom}] {ACCENT[dom]['hex']} is not {anchor} {want} in colour_domains.json")
+    if key_for(("Owl", "Lynx"), "Jade", "TALON", "Preservationist") != KEYS["blue"]:
+        failures.append("key_for does not move the key off a Preservationist's green jacket")
+    if faction_words("BountyHunter") != "bounty hunter" or sentence("standing near Rosh.") != "Standing near Rosh":
+        failures.append("faction_words or sentence mangles a word")
+    if "transparent" not in background("alpha"):
+        failures.append("an alpha delivery asks for a key colour")
     if KEYS["magenta"] in (key_for(a, d) for a in (("Mantis", "Owl"), ("Owl", "Lynx")) for d in ("Ruby", "Gold", "Jade")):
         failures.append("key_for chose magenta, which eats Ruby trim")
     for given, want in (("Black Tide", " of the Black Tide"), ("House Verdance", " of House Verdance"),

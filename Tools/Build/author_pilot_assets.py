@@ -6,7 +6,7 @@ rewrites the same bytes), --check compares against disk and exits nonzero on dri
 --self-test proves the checks fire. It owns:
 
   * Assets/_SO_Assets/Pilots/                                   folder
-  * Assets/_SO_Assets/Pilots/Roster/Pilot_<Callsign>.asset       one pilot per callsign (17)
+  * Assets/_SO_Assets/Pilots/Roster/Pilot_<Callsign>.asset       one pilot per callsign (18)
   * Assets/_SO_Assets/Pilots/Artifacts/Artifact_<Name>.asset     the artifacts (Javelin, Aegis, Hydra, Aftershock)
   * Assets/_SO_Assets/Pilots/Transforms/<Name>Transform.asset    each artifact's payload transformation
   * Assets/Resources/Pilots/PilotArtifactCatalog.asset          every pilot and artifact, in order (Resources: the
@@ -27,7 +27,7 @@ THE PORTRAITS (2026-11-07): a callsign's portrait sprite is made by the pilot-ar
 the /pilot-art skill, Docs/Pilots/PORTRAITS.md), which records what it wired in Tools/Build/pilot_art/wired.json
 (pilot id -> PNG and guid). This generator reads that record and writes the sprite reference into the pilot asset,
 so the kit's --check and this one agree; a callsign with no record keeps `portrait: {fileID: 0}` and the Hangar
-shows its no-art word.
+shows an empty portrait slot (the Hangar's noArtWord is authored blank).
 
 Usage:
     python3 Tools/Build/author_pilot_assets.py             # write
@@ -216,7 +216,8 @@ def wired_portraits():
     for pid, entry in json.load(open(path, encoding="utf-8")).get("portraits", {}).items():
         meta = entry["png"] + ".meta"
         assert os.path.exists(os.path.join(ROOT, meta)), f"{WIRED_PORTRAITS}: {meta} is missing (run pilot_art/author.py)"
-        guid = re.search(r"^guid: ([0-9a-f]{32})$", read(meta), re.M).group(1)
+        assert pid in {pilot_id(v) for v, _, _ in CALLSIGNS}, f"{WIRED_PORTRAITS}: {pid!r} is no callsign's pilot id"
+        guid = re.search(r"^guid: ([0-9a-f]{32})\s*$", read(meta), re.M).group(1)
         assert guid == entry["guid"], f"{WIRED_PORTRAITS}: {meta} carries {guid}, the record says {entry['guid']}"
         out[pid] = guid
     return out

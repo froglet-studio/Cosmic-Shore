@@ -24,7 +24,7 @@ better."
 3. **The difference key must act only in the edge band.** Delmira's jade-teal seam lights and brocade have a
    little green excess (#0EC0B6: g 0.75 over b 0.71), so the whole coat interior came out 4 % see-through:
    `soft` 4.54 against the set's 2.50 maximum and a `halo` of 0.167. The key now applies within 1 % of the image
-   height (13 px at 1280) of a background pixel and interior pixels keep alpha 1; Delmira passed (soft 1.5).
+   height (13 px at 1280) of a background pixel and interior pixels keep alpha 1; Delmira passed (soft 1.7).
 4. **The cloud environment cannot download the painting's URL.** `www.figma.com` is not on the environment's
    allow-list (the proxy answers 403 to the CONNECT). `get_screenshot` with `enableBase64Response: true` and
    `maxDimension: 1280` returns the full 1024 x 1280 PNG inline and the harness saves it under `tool-results/`;
@@ -42,7 +42,7 @@ better."
 8. **The sheet's nearest references are chosen by measurement** (width, coverage, median luminance, saturation,
    accent), which puts a lynx hunter beside Comet, Fiest and Tenacious: the same darkness and the same bulk. That
    is the right neighbour for judging whether a new portrait belongs in the column, better than the same species.
-9. **The image model follows the brief closely enough that the TABLES are the art direction.** Round 1's five
+9. **The image model follows the brief closely enough that the TABLES are the art direction.** Round 1's six
    paintings carried the exact accent hex as trim and seam lights, the callsign mark (the fang cord and clawed
    gauntlet, the crackling monocle, the forearm sundial, the crosshair eyepiece), the lent feature (the jackal's
    tail, the koi fins and patches, the pangolin scales and tail, the raven wings). So a species line, a motif or a
@@ -96,3 +96,31 @@ proposed fix, and three cast designers (legibility first, character first, the s
     refused `get_screenshot`, so five repaints (Figma nodes 6:2 Mathalo, 6:3 Fenlia, 6:4 Ilia, 6:5 Haradek,
     6:6 Ekora) were painted but not captured. A round costs two calls per portrait (generate + capture): budget
     them, and capture each painting right after it is generated so a cut-off leaves nothing uncaptured.
+
+## 2026-11-07 - the kit review (four lenses, three refuters per finding)
+
+Garrett: "finish and merge." A workflow reviewed the kit through four lenses (numerics, pipeline, gates, docs);
+each finding had to survive three refuters. What held, and what changed:
+
+19. **Pillow already premultiplies an RGBA resize.** `finish.py` premultiplied the colour itself before
+    `Image.resize`, so every soft edge was weighted by alpha squared and came out with a pale rim (a fur edge
+    measured 127 mean luminance against 81 after the fix, alpha identical). Feed Pillow straight colour.
+20. **A pinhole the matte fills keeps the key's colour** unless something repaints it: `clean()` set alpha to 1
+    and the decontamination only touches semi-transparent pixels. Filled holes now take their neighbours' colour.
+21. **The fringe cap must not touch opaque pixels**: jade trim is green-rich, and capping opaque edge pixels dulled
+    it. The cap now acts on semi-transparent pixels only, and on both channels of a two-channel key (magenta).
+22. **The reference folder holds the kit's own output too.** `measure.references()` took every PNG in
+    `Assets/_Graphics/Pilots`, so after round 1 the envelope, the audit sheet and the nearest-reference picker
+    would have judged new portraits against earlier ones. The painted 32 are named by `is_reference()`.
+23. **A ship gate must not need packages a collaborator lacks.** `author.py --check` needed numpy and Pillow;
+    without them it now prints SKIP (like the reference compile) instead of failing every branch.
+24. **Byte equality is the wrong drift test for float maths across machines.** `--check` now allows a handful of
+    one-or-two-level differences and still fails a real edit (both proved in its self-test).
+25. **One spec wires one pilot.** Moving or clearing a spec's `pilot` now removes its old wire, and `--check`
+    audits `wired.json` as a whole (a spec that no longer exists, a pilot it no longer names, a missing PNG).
+    `author_pilot_assets.py` refuses a wired id that is no callsign's.
+26. **Smaller fixes**: a Preservationist's green jacket now moves the key to blue; the pose keeps its capitals and
+    "BountyHunter" reads "bounty hunter"; an artist's alpha delivery asks for no key colour; an exemption must name a
+    real gate and give a reason; a kept detached piece (a thrown rope) is no longer counted as a speck; the sheet's
+    font keeps its size without DejaVu; ACCENT is held to `colour_domains.json` by the brief's self-test; the docs
+    no longer claim the portrait shows in the codex or the voyage card, or that an unwired card shows a word.

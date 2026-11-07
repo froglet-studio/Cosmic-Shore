@@ -1,7 +1,8 @@
 # Painters: where the pixels come from, what each costs, who approves
 
 The kit never paints. It briefs, captures, mattes, frames, gates and wires. A painting comes from one of these,
-always from `brief.py`'s prompt verbatim, always 1024 x 1280 (portrait 4:5) over the key colour the brief named.
+always from `brief.py`'s prompt verbatim, asked for at 1024 x 1280 (portrait 4:5; the Figma tool treats the size as an
+aspect hint, so `author.py` reads whatever size arrives) over the key colour the brief named.
 
 ## 1. The Figma connector's image models (what round 1 used)
 

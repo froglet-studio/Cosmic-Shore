@@ -44,8 +44,11 @@ NEAREST_KEYS = ("width", "coverage", "lum_p50", "sat", "accent")
 def font(size=13, bold=False):
     try:
         return ImageFont.truetype(FONT_BOLD if bold else FONT_PATH, size)
-    except OSError:
-        return ImageFont.load_default()
+    except OSError:                                    # no DejaVu (Windows, macOS): Pillow's own font at the size
+        try:
+            return ImageFont.load_default(size=size)
+        except TypeError:                              # Pillow older than 10.1
+            return ImageFont.load_default()
 
 
 def fit(img, w, h):
@@ -106,6 +109,8 @@ def nearest(m, k=3):
         return []
     scored = []
     for name, pm in portraits.items():
+        if pm.get("empty") or not measure.is_reference(name + ".png"):
+            continue
         d = 0.0
         for key in NEAREST_KEYS:
             span = max(1e-6, env[key]["max"] - env[key]["min"])

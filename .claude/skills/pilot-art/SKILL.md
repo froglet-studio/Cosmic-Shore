@@ -7,8 +7,8 @@ description: Make a Cosmic Shore PILOT PORTRAIT - the full-body painted pilot in
 
 You are about to make the picture of a PERSON the player recruits, seats and flies with: a unique pilot
 (`Docs/Pilots/INVENTORY.md` section 3: a name, human plus two animals, a faction, a backstory) on one of the
-eighteen callsigns (`Docs/Pilots/CALLSIGNS.md`). It shows in the Hangar's pilot card at **44x56**, on the
-Squads page and in the codex at up to **220x280**, beside 32 portraits an artist painted
+eighteen callsigns (`Docs/Pilots/CALLSIGNS.md`). It shows in the Hangar's pilot card at **44x56** and in
+the Squads page card's pilot image at about **180x229** (the sprite itself is **220x280**), beside 32 portraits an artist painted
 (`Assets/_Graphics/Pilots/`). Garrett, 2026-11-07: "i tried to get you to make pilot artwork but that came out
 terrible. you have illustrations of pilots for reference. perhaps you could try to build up a skill that could
 make art like the ones we have but even better." The plan, the audit and the round status:
