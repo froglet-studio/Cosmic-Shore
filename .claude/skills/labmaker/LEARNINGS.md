@@ -919,6 +919,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `relight`, `assignTargets` (`toWall`), `wantCombine` in `omega-studio.js`; CONCEPT_FLEET.md section 10.1.
 - Promoted: no
 
+### L-STU-164 — A "normalized" average of n copies on an 8-bit canvas is not normalized: rounding brightens it
+- Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `cece/elegant-shannon-e7nrb2` · By: Garrett's session · Date: 2026-11-03
+- What happened: the motion-smear scope drew n ghost copies with `lighter` at weights summing to 1.5 (+25..+58% brighter than the still ring). Fixing the weights to 1/n still left +2% at 4 copies, +9% at 15 and +18% at 24: the SAME image stacked n times at `globalAlpha = 1/n` brightens, because every small 8-bit contribution rounds up. Composite mode `lighter` also summed each copy's OWN overlapping parts (a glow under its beam, a dark pod hole), which a normal draw stacks.
+- Do instead: draw each copy whole (normal compositing) on a scratch layer, then average the copies in FLOAT (WebGL2 with an `EXT_color_buffer_float` target, or a Float32Array over the object's box) and quantize once. Prove it with a stack-the-same-image control: n copies of one image at 1/n must equal the image.
+- Evidence: the page's `lum.js` / `q.js` measurements (scratch), round 2 publish; the Unity port (`BrittleStarRingSmear.shader`) averages in the shader's registers for the same reason.
+- Promoted: no
+
+### L-STU-165 — Port the control's rule line for line into JS first, then write the C# tests from what it measured
+- Lab: Brittle Star Ring Spin · Branch: `cece/elegant-shannon-e7nrb2` · Date: 2026-11-03
+- What happened: with no Unity and no .NET in the container, the C# `BrittleStarRules.ForwardTurn` was transliterated to JS (Mathf.DeltaAngle / Repeat / MoveTowards included) and run against the old rule: 0 difference frame for frame below the turn rate (0.25..2 rev/s), exactly the cap and 0 backward frames above it, and the old rule's 13..30 backward frames a second. The EditMode tests assert those numbers, so they were measured before they were written, not guessed.
+- Do instead: when the tests cannot run here, run a line-for-line copy of the code under test and assert only what it produced; say in the PR that the C# itself did not run.
+- Evidence: `BrittleStarRingSpinTests` (written, not run in Unity).
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-STU-146 — A combine bolted onto autonomous vessels has no loop; design the parts so neither phase can do the other's work
