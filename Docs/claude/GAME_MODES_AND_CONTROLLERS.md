@@ -960,6 +960,44 @@ smallest thorns. Every peer rebuilds the thorns from the broadcast rings. `Thorn
 `ThornlineCourse`, `ThornlineCourseTests` (offline: `Tools/Build/thornline_course_harness/`), generator
 `author_thornline_assets.py` on `hull_time_race.py`. See `_Scripts/Controller/Arcade/THORNLINE.md`. Authored headless.
 
+`DecoyRun(80)` is the **Jacks' Time race** (2026-11-07): the herd-and-travel cycle as a race. Herd the jacks so one lays
+the decoy past the ring and their midpoint sits behind it, take off (the jump is a teleport and threads nothing), and
+fly to the decoy (the travel threads). I1 doors, I2 skewers (two rings on one line, one travel), I3 skewers on rolled
+flats (roll the board onto each), I4 a skewer and a hairpin with Time 5 from the card. Chalk rails (super-shielded
+prisms) show each flat; every peer derives flats and chalk from the broadcast rings. The AI races through
+`IJacksRaceCoach` on `JacksExecutor` (input-only). `DecoyRunController : GateRaceController`, `DecoyRunCourse`,
+`DecoyRunCourseTests` (offline: `Tools/Build/decoy_run_harness/`), generator `author_decoy_run_assets.py` on
+`hull_time_race.py`. See `_Scripts/Controller/Arcade/DECOY_RUN.md`. Authored headless.
+
+`PerchRun(81)` is the **Goby's Time race** (2026-11-07): a dart costs one second however far it goes, so the race is
+how few darts a course takes. I1 open rings, I2 hairpins (a full charge overshoots out of reach: judge the length), I3
+coral blockers on the legs (a dart at the centre stops on the head: take the rim), I4 doubles (two rings on one line,
+one dart) with the smallest mouths. The coral is super-shielded prisms every peer derives from the broadcast rings. The
+Goby gained a reach ring (where a charging dart will stop) and an AI race coach, `IGobyRaceCoach` on `GobyPistolDuo`
+(input-only). `PerchRunController : GateRaceController`, `PerchRunCourse`, `PerchRunCourseTests` (offline:
+`Tools/Build/perch_run_harness/`), generator `author_perch_run_assets.py` on `hull_time_race.py`. See
+`_Scripts/Controller/Arcade/PERCH_RUN.md`. Authored headless.
+
+`SlipLine(82)` is the **Honeyguide's Time race** (2026-11-07): prism RAILS in the Dynamo's Ruby, Jade and Gold run down
+the legs, and a slip down a rail the battery holds a charge for crosses the leg at 480 u/s against a 60 u/s cruise. I1
+three rails a leg (any charge rides), I2 one coloured rail a leg with stubs not worth a charge, I3 rails leaning off the
+line (turn out to meet them), I4 chains (two rails, two colours, one ride for two rings) with the smallest rings. The
+rails are super-shielded prism trails every peer derives from the broadcast rings. The Honeyguide gained one AI hook,
+`HoneyguideCrew.RaceCoach` (`IHoneyguideRaceCoach`), so the AI's slip guard measures a ride against where the race says
+it is going. `SlipLineController : GateRaceController`, `SlipLineCourse`, `SlipLineCourseTests` (offline:
+`Tools/Build/slip_line_harness/`, with the real Ratel AI), generator `author_slip_line_assets.py`. See
+`_Scripts/Controller/Arcade/SLIP_LINE.md`. Authored headless.
+
+`Breach(83)` is the **Orca's Time race** (2026-11-07): the helm's burn is five times the Orca's 30 u/s cruise from a 3 s
+tank that refills slowly, and a burning hull turns round a circle 3.5 times as wide, so the race is where in each leg to
+burn. I1 gentle bends (burn the straights, learn the tank), I2 short 90-120 degree hard turns (a burn into one misses the
+ring), I3 WALLS of Blue danger prisms standing before every other ring, rounded on the inside of the turn (a burn round
+one is a dead stop), I4 both with the smallest rings. Walls regrow 6 s after they break, every peer derives them from
+the broadcast rings. The Orca gained one AI hook, `OrcaCrew.RaceCoach` (`IOrcaRaceCoach`): the shipped AI helm never
+burned. `BreachController : GateRaceController`, `BreachCourse`, `BreachCourseTests` (offline:
+`Tools/Build/breach_harness/`), generator `author_breach_assets.py`. See `_Scripts/Controller/Arcade/BREACH.md`.
+Authored headless.
+
 `ScarabRally(72)`, `SerpentTime(73)` and `BrittleStarTime(74)` are **Time races for three hulls that had none**
 (Garrett, 2026-10-27: "make every vessel's time game very fun"). Each one is a `GateRaceController` race with a
 `RaceGateTurnMonitor`, and all three are authored by one shared helper, `Tools/Build/hull_time_race.py`, with one
@@ -1410,6 +1448,10 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             ├── SwitchbackController              — Dolphin-only gate race; an OPEN chain flown once
             │   └── ScarabRallyController         — Scarab-only ring race (the Scarab's Time card, no ball); Switchback's walk cut for throttle, drift and juke
             │   └── ThornlineController           — Shrike-only sling race (the Shrike's Time card): thorn to thorn through a ring a leg
+            ├── DecoyRunController                — Jacks-only herd-and-travel race (the Jacks' Time card): doors, skewers, rolled flats, hairpins
+            ├── PerchRunController                — Goby-only dart race (the Goby's Time card): open rings, hairpins, coral blockers, doubles
+            ├── SlipLineController                — Honeyguide-only rail race (the Honeyguide's Time card): three rails, coloured rails and stubs, leaning rails, chains
+            ├── BreachController                  — Orca-only burn-and-coast race (the Orca's Time card): open water, hard turns, danger walls, both
             ├── HeadlongController                — Rhino-only circuit race; a CLOSED loop flown in LAPS, every corner cut to the Rhino's flat-out turn radius
             ├── BreakwaterController              — Sparrow-only station race; a polar START GATE (the platform's one lead-in) plus a closed circuit of danger-woven dishes, fire/saw/thread. 202 lines: the course, the lead-in and the stations, and nothing else
             ├── SkeinController                   — Urchin-only cable race; the rings sit ON the arena's own rails, so the course is a thing you RIDE rather than fly between

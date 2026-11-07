@@ -264,6 +264,22 @@ namespace CosmicShore.ScriptableObjects
         /// Read by <c>ThornlineCourseSource</c> to size the course and, through it, by the turn monitor.</summary>
         public const int DefaultThornlineGateTarget = 16;
 
+        /// <summary>Decoy Run RACE length used when <see cref="decoyRunGateTarget"/> is 0 - rings threaded in order,
+        /// flown once. The course tests prove the course at 12 (DECOYRUN.md).</summary>
+        public const int DefaultDecoyRunGateTarget = 12;
+
+        /// <summary>Breach RACE length used when <see cref="breachGateTarget"/> is 0 - rings threaded in order,
+        /// flown once. The course tests prove the course at 16 (BREACH.md).</summary>
+        public const int DefaultBreachGateTarget = 16;
+
+        /// <summary>Slip Line RACE length used when <see cref="slipLineGateTarget"/> is 0 - rings threaded in order,
+        /// flown once. The course tests prove the course at 16 (SLIPLINE.md).</summary>
+        public const int DefaultSlipLineGateTarget = 16;
+
+        /// <summary>Perch Run RACE length used when <see cref="perchRunGateTarget"/> is 0 - rings threaded in order,
+        /// flown once. The course tests prove the course at 16 (PERCHRUN.md).</summary>
+        public const int DefaultPerchRunGateTarget = 16;
+
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
         /// per lap are a property of the ARENA (RegattaCourse.RingsPerLap - the rails are laid
@@ -442,6 +458,18 @@ namespace CosmicShore.ScriptableObjects
                  "The course is proven at 16; another count re-spaces the snipes.")]
         [Min(0)] public int thornlineGateTarget = 16;
 
+        [Tooltip("Decoy Run race length in rings (flown once). 0 = use the default (12). The course is proven at 12.")]
+        [Min(0)] public int decoyRunGateTarget = 12;
+
+        [Tooltip("Breach race length in rings (flown once). 0 = use the default (16). The course is proven at 16.")]
+        [Min(0)] public int breachGateTarget = 16;
+
+        [Tooltip("Slip Line race length in rings (flown once). 0 = use the default (16). The course is proven at 16.")]
+        [Min(0)] public int slipLineGateTarget = 16;
+
+        [Tooltip("Perch Run race length in rings (flown once). 0 = use the default (16). The course is proven at 16.")]
+        [Min(0)] public int perchRunGateTarget = 16;
+
 
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
@@ -539,6 +567,10 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int brittleStarTimeGateTargetBuild = 16;
         [Min(0)] public int lanternRunGateTargetBuild = 16;
         [Min(0)] public int thornlineGateTargetBuild = 16;
+        [Min(0)] public int decoyRunGateTargetBuild = 12;
+        [Min(0)] public int breachGateTargetBuild = 16;
+        [Min(0)] public int slipLineGateTargetBuild = 16;
+        [Min(0)] public int perchRunGateTargetBuild = 16;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 500;
         [Min(0)] public int tollwayTollTargetBuild = 3;
@@ -849,6 +881,26 @@ namespace CosmicShore.ScriptableObjects
         public int GetThornlineGateTarget() =>
             thornlineGateTarget > 0 ? thornlineGateTarget : DefaultThornlineGateTarget;
 
+        /// <summary>Decoy Run race length (rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultDecoyRunGateTarget"/>.</summary>
+        public int GetDecoyRunGateTarget() =>
+            decoyRunGateTarget > 0 ? decoyRunGateTarget : DefaultDecoyRunGateTarget;
+
+        /// <summary>Breach race length (rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultBreachGateTarget"/>.</summary>
+        public int GetBreachGateTarget() =>
+            breachGateTarget > 0 ? breachGateTarget : DefaultBreachGateTarget;
+
+        /// <summary>Slip Line race length (rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultSlipLineGateTarget"/>.</summary>
+        public int GetSlipLineGateTarget() =>
+            slipLineGateTarget > 0 ? slipLineGateTarget : DefaultSlipLineGateTarget;
+
+        /// <summary>Perch Run race length (rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultPerchRunGateTarget"/>.</summary>
+        public int GetPerchRunGateTarget() =>
+            perchRunGateTarget > 0 ? perchRunGateTarget : DefaultPerchRunGateTarget;
+
         /// <summary>
         /// Burrow Run race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultBurrowRunGateTarget"/>. Read by
@@ -1009,6 +1061,10 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.BrittleStarTime           => GetBrittleStarTimeGateTarget(),
                 GameModes.LanternRun              => GetLanternRunGateTarget(),
                 GameModes.Thornline                 => GetThornlineGateTarget(),
+                GameModes.DecoyRun                    => GetDecoyRunGateTarget(),
+                GameModes.Breach                      => GetBreachGateTarget(),
+                GameModes.SlipLine                    => GetSlipLineGateTarget(),
+                GameModes.PerchRun                    => GetPerchRunGateTarget(),
                 // GameModes.Waystation has no row: its finish line is the rings the course lays (towers vary with the
                 // gaps), auto-calculated from the track like a SkimRace with a 0 count.
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
@@ -1083,6 +1139,10 @@ namespace CosmicShore.ScriptableObjects
             brittleStarTimeGateTarget == brittleStarTimeGateTargetBuild &&
             lanternRunGateTarget == lanternRunGateTargetBuild &&
             thornlineGateTarget == thornlineGateTargetBuild &&
+            decoyRunGateTarget == decoyRunGateTargetBuild &&
+            breachGateTarget == breachGateTargetBuild &&
+            slipLineGateTarget == slipLineGateTargetBuild &&
+            perchRunGateTarget == perchRunGateTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
@@ -1133,6 +1193,10 @@ namespace CosmicShore.ScriptableObjects
             brittleStarTimeGateTarget = brittleStarTimeGateTargetBuild;
             lanternRunGateTarget = lanternRunGateTargetBuild;
             thornlineGateTarget = thornlineGateTargetBuild;
+            decoyRunGateTarget = decoyRunGateTargetBuild;
+            breachGateTarget = breachGateTargetBuild;
+            slipLineGateTarget = slipLineGateTargetBuild;
+            perchRunGateTarget = perchRunGateTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
@@ -1184,6 +1248,10 @@ namespace CosmicShore.ScriptableObjects
             brittleStarTimeGateTargetBuild = brittleStarTimeGateTarget;
             lanternRunGateTargetBuild = lanternRunGateTarget;
             thornlineGateTargetBuild = thornlineGateTarget;
+            decoyRunGateTargetBuild = decoyRunGateTarget;
+            breachGateTargetBuild = breachGateTarget;
+            slipLineGateTargetBuild = slipLineGateTarget;
+            perchRunGateTargetBuild = perchRunGateTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;

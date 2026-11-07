@@ -141,6 +141,15 @@ namespace CosmicShore.Gameplay
         public int HumanSeat => _humanSeat;
         public int MissilesAt(int seat) => seat > Helm && seat < Seats ? _mags[seat]?.Count ?? 0 : 0;
         public float BoostTank01 => _cfg && _cfg.BoostTank > 0f ? Mathf.Clamp01(_tank / _cfg.BoostTank) : 0f;
+        /// <summary>Seconds of burn left in the helm's tank, and whether the helm burns now (for a race's coach).</summary>
+        public float BoostTankSeconds => _tank;
+        public bool Boosting => _boosting;
+
+        /// <summary>
+        /// A race's coach for this hull's AI helm (Breach). Set: the AI helm holds the burn when the coach says so, through
+        /// the same tank. Null: the shipped AI helm, which never burns. A person at the helm never asks it.
+        /// </summary>
+        public IOrcaRaceCoach RaceCoach { get; set; }
         public float ShieldCooldown01 => _cfg && _cfg.ShieldCooldown > 0f ? Mathf.Clamp01((_shieldReadyAt - Time.time) / _cfg.ShieldCooldown) : 0f;
         public bool ShieldUp => _shield.Count > 0;
 
@@ -443,7 +452,11 @@ namespace CosmicShore.Gameplay
                 // the lab's other shield keys: E, and the pad's B
                 shieldEdge |= (Keyboard.current?.eKey.wasPressedThisFrame ?? false) || (Gamepad.current?.buttonEast.wasPressedThisFrame ?? false);
             }
-            else shieldEdge = HelmAIWantsShield();
+            else
+            {
+                shieldEdge = HelmAIWantsShield();
+                wantBoost = RaceCoach != null && RaceCoach.HelmBurns(this);   // Breach: the race says when to burn
+            }
 
             if (wantBoost && _tank > 0f)
             {

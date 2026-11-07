@@ -21602,6 +21602,70 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
 
+## 🔴 Breach: the Orca's Time race (2026-11-07, branch `claude/orca-convoy`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/breach_harness/run.sh --self-test`:
+10 pass, 6 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from `Arcade/BREACH.md` §8:
+
+1. Open `MinigameBreach` once and save it (a text clone); then `python3 Tools/Build/author_breach_assets.py --check`.
+2. Run the EditMode tests `BreachCourseTests` and `EnumIntegrityTests`.
+3. I1, one Orca with AI crew: hold the burn and the tank empties and stays empty; let go and it refills.
+4. I2: a burn into a hard turn swings wide of the ring; coasting it makes the ring.
+5. I3: walls stand before every other ring, rounded on the inside of the turn; flying into one stops the hull dead. The
+   gunners shoot a breach and it grows back 6 s later. I4: a wall on the ring after each hard turn, never meeting one.
+6. Two AI Orcas burn the straights, coast the turns and the walls, and finish (note any wall an AI hits).
+7. Outside the race: an AI Orca in any other mode flies exactly as before (its coach is null there; it never burns).
+8. MPPM two clients: both see the same walls.
+
+## 🔴 Slip Line: the Honeyguide's Time race (2026-11-07, branch `claude/honeyguide-slip-line`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/slip_line_harness/run.sh
+--self-test`: 10 pass, 6 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/SLIP_LINE.md` §8:
+
+1. Open `MinigameSlipLine` once and save it (a text clone); then `python3 Tools/Build/author_slip_line_assets.py --check`.
+2. Run the EditMode tests `SlipLineCourseTests` and `EnumIntegrityTests`.
+3. I1, one Honeyguide with an AI Ratel: three rails a leg in Ruby, Jade and Gold. With a charge, fly onto that colour's
+   rail nose along it: the hull zips to just past the ring, the ring counts, the charge goes. Ring to ring without a
+   slip never touches a rail.
+4. I2: one rail a leg, stubs visibly short. I3: rails lean off the line; a turn out early catches one inside the cone.
+5. I4: a chain's first ride lands on the second rail and rides on through the next ring when both colours are held.
+6. Two AI Honeyguides ride rails and finish (note any that circles a rail without catching it: `aiRailLead`).
+7. Outside the race: a Honeyguide in the Toybox slips and hunts exactly as before (its coach is null there).
+8. MPPM two clients: both see the same rails in the same colours.
+
+## 🔴 Perch Run: the Goby's Time race (2026-11-07, branch `claude/goby-perch-run`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/perch_run_harness/run.sh
+--self-test`: 10 pass, 7 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/PERCH_RUN.md` §8:
+
+1. Open `MinigamePerchRun` once and save it (a text clone); then `python3 Tools/Build/author_perch_run_assets.py --check`.
+2. Run the EditMode tests `PerchRunCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: hold the dart; the new reach ring slides out along the nose and the Goby stops on it. A dart through a ring
+   counts it.
+4. I2: a full charge through a hairpin leaves the next ring out of reach; a judged charge turns it in one dart.
+5. I3: coral heads stand on their legs; a dart at the centre stops on the head (the reach ring sits on it); a rim shot
+   threads. I4: a double darted on the right line counts both rings.
+6. Two AI Gobys dart ring to ring and finish (note any that turns in place or cruises).
+7. Outside the race: a Goby in the Toybox darts and its AI lays islands exactly as before (the coach is null there);
+   the reach ring shows while charging.
+
+## 🔴 Decoy Run: the Jacks' Time race (2026-11-07, branch `claude/jacks-decoy-run`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/decoy_run_harness/run.sh
+--self-test`: 10 pass, 8 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/DECOY_RUN.md` §8:
+
+1. Open `MinigameDecoyRun` once and save it (a text clone); then `python3 Tools/Build/author_decoy_run_assets.py --check`.
+2. Run the EditMode tests `DecoyRunCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: rings and chalk rails on one flat; herd past a ring, drop the decoy, centre the jacks behind it on the new
+   white take-off mark, take off, travel: the ring counts. Taking off THROUGH a ring does not count it.
+4. I2: one travel down a skewer counts both rings. I3: roll onto the next flat; the skewer lies on the board.
+5. I4: the hull starts with two decoys; the second travel doubles back through the hairpin and counts it.
+6. Two AI Jacks herd, take off and travel cycle by cycle and finish (note any jack that stops short of its waypoint).
+7. Outside the race: a Jacks in the Toybox herds and travels exactly as before (the coach is null there).
+
 ## 🔴 Thornline: the Shrike's Time race (2026-11-07, branch `claude/shrike-sling-race`)
 
 Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/thornline_course_harness/run.sh
