@@ -40,6 +40,20 @@ NOSE_FOLLOW = 1.5                 # VesselTransformer.LERP_AMOUNT: the fleet nos
 DEFAULT_MAX_EXTRA_DEG = 40.0      # AIPilot.NoseLeadMaxExtraDegrees as #1786 ships it
 MAX_TURN_DEG = 170.0              # AIPilot.NoseLeadDirection never asks for a turn past 170 deg from the nose
 CONFIG_KEY = "nose_lead"          # the job / evaluator config key every model reads
+# The ROLL LAW while the lead is on (AIPilot: the roll stick YDiff of a dual-stick hull with no belly target), which
+# NoseLeadSteering.RollStick decides in the game:
+#   "zero"  (AIPilot as of the roll decoupling, 2026-11-07, and the default): no roll stick while the lead steers; the
+#           lead steers yaw and pitch alone. VesselTransformer.Roll turns the COMMAND about the NOSE's forward, and the
+#           lead holds the command far from the nose by design, so ANY roll stick swings it round the nose: the
+#           corkscrew of PRs #1829 (Manta), #1831 (Urchin), #1832 (Serpent).
+#   "led"   (#1786 as first built; reproduces PR #1826's lead-on numbers): roll = the led yaw stick, pinned full.
+#   "unled" (a what-if, measured and rejected): roll = the lead-off yaw stick (judged from the nose to the aim). A lagging
+#           nose is off the aim for most of every turn, so it still whirls the command (Manta, Redline, 2.5 / 40: 39 of
+#           48 fresh races finish, I2-I4 medians 620-835 s; "zero" finishes 48 of 48 at 130-455 s).
+# A single-stick hull (SingleStickVesselTransformer: roll = -x, the yaw stick itself) cannot take a separate roll from
+# its pilot, so no law applies there: its lead is the led stick, roll included, under every law.
+ROLL_LAWS = ("zero", "led", "unled")
+DEFAULT_ROLL_LAW = "zero"
 
 
 def _norm(v):
@@ -66,11 +80,14 @@ def _ang(a, b):
 class NoseLead:
     """The lead knob: gain 0 is OFF (today's steering); max_extra_deg caps how far past the aim the nose is asked."""
 
-    __slots__ = ("gain", "max_extra_deg")
+    __slots__ = ("gain", "max_extra_deg", "roll")
 
-    def __init__(self, gain=0.0, max_extra_deg=DEFAULT_MAX_EXTRA_DEG):
+    def __init__(self, gain=0.0, max_extra_deg=DEFAULT_MAX_EXTRA_DEG, roll=DEFAULT_ROLL_LAW):
         self.gain = float(gain or 0.0)
         self.max_extra_deg = float(max_extra_deg if max_extra_deg is not None else DEFAULT_MAX_EXTRA_DEG)
+        self.roll = DEFAULT_ROLL_LAW if roll is None else str(roll)
+        if self.roll not in ROLL_LAWS:
+            raise ValueError(f"nose_lead roll law {roll!r}: one of {ROLL_LAWS}")
 
     @property
     def off(self):
@@ -91,8 +108,9 @@ class NoseLead:
         if isinstance(cfg, dict) and key in cfg:
             return cls.from_config(cfg[key], key)
         if isinstance(cfg, dict):
-            if "gain" in cfg or "max_extra_deg" in cfg:
-                return cls(cfg.get("gain", 0.0), cfg.get("max_extra_deg", DEFAULT_MAX_EXTRA_DEG))
+            if "gain" in cfg or "max_extra_deg" in cfg or "roll" in cfg:
+                return cls(cfg.get("gain", 0.0), cfg.get("max_extra_deg", DEFAULT_MAX_EXTRA_DEG),
+                           cfg.get("roll", DEFAULT_ROLL_LAW))
             return cls()
         if isinstance(cfg, bool):
             return cls(0.0)
@@ -101,21 +119,25 @@ class NoseLead:
         raise ValueError(f"nose_lead: not a gain, a dict or a NoseLead: {cfg!r}")
 
     def to_config(self):
-        return {"gain": self.gain, "max_extra_deg": self.max_extra_deg}
+        return {"gain": self.gain, "max_extra_deg": self.max_extra_deg, "roll": self.roll}
 
     @classmethod
     def from_cli(cls, text):
-        """The `--nose-lead G[,EXTRA]` flag every model's command line takes: the gain stated at the fleet lag and, after a
-        comma, how far past the aim the command may be placed (degrees; DEFAULT_MAX_EXTRA_DEG unless given). None (the
-        flag absent) stays None: off, today's steering."""
+        """The `--nose-lead G[,EXTRA[,ROLL]]` flag every model's command line takes: the gain stated at the fleet lag,
+        after a comma how far past the aim the command may be placed (degrees; DEFAULT_MAX_EXTRA_DEG unless given), and
+        after a second comma the roll law (ROLL_LAWS; DEFAULT_ROLL_LAW unless given). None (the flag absent) stays
+        None: off, today's steering."""
         if text is None:
             return None
         parts = str(text).split(",")
         extra = parts[1].strip() if len(parts) > 1 else ""
-        return cls(float(parts[0]), float(extra) if extra else DEFAULT_MAX_EXTRA_DEG)
+        roll = parts[2].strip() if len(parts) > 2 else ""
+        return cls(float(parts[0]), float(extra) if extra else DEFAULT_MAX_EXTRA_DEG, roll or DEFAULT_ROLL_LAW)
 
     def __repr__(self):
-        return "NoseLead(off)" if self.off else f"NoseLead(gain={self.gain:g}, max_extra_deg={self.max_extra_deg:g})"
+        if self.off:
+            return "NoseLead(off)"
+        return f"NoseLead(gain={self.gain:g}, max_extra_deg={self.max_extra_deg:g}, roll={self.roll})"
 
 
 OFF = NoseLead()
@@ -174,6 +196,20 @@ def judge_and_want(fwd, cmd, steer, gain_eff, extra_deg=DEFAULT_MAX_EXTRA_DEG):
     return cmd, slerp_beyond(fwd, _unit(steer), gain_eff, extra_deg)
 
 
+def roll_stick(led_yaw, unled_yaw, law=DEFAULT_ROLL_LAW):
+    """AIPilot's roll stick (YDiff) for a dual-stick hull with no belly target WHILE THE LEAD IS ON
+    (NoseLeadSteering.RollStick): none ("zero", the game's law and the default), the led yaw stick ("led", #1786 as first
+    built) or the yaw stick of the unled error ("unled", a rejected what-if). With the lead off the roll stick is the yaw
+    stick under every law: a model asks this only while leading."""
+    if law == "unled":
+        return unled_yaw
+    if law == "led":
+        return led_yaw
+    if law == "zero":
+        return 0.0
+    raise ValueError(f"roll law {law!r}: one of {ROLL_LAWS}")
+
+
 def self_test():
     bad = []
     # the share a first-order nose closes
@@ -230,6 +266,21 @@ def self_test():
         n = NoseLead.from_cli(text)
         if n.gain != gain or n.max_extra_deg != extra: bad.append(f"from_cli({text!r}) -> {n!r}")
     if NoseLead.from_cli(None) is not None: bad.append("from_cli(None) is not None (off)")
+    # the roll law: the decoupled default flies no roll while leading; "led" is #1786's; the knob carries and parses it
+    if NoseLead(2.5).roll != "zero" or NoseLead.from_config(2.5).roll != "zero": bad.append("default roll law is zero")
+    if roll_stick(0.9, 0.2) != 0.0 or roll_stick(0.9, 0.2, "led") != 0.9 or roll_stick(0.9, 0.2, "unled") != 0.2:
+        bad.append("roll_stick laws")
+    if NoseLead.from_config({"gain": 2.5, "roll": "led"}).roll != "led": bad.append("from_config roll")
+    if NoseLead.from_cli("2.5,40,zero").roll != "zero" or NoseLead.from_cli("2.5,,led").max_extra_deg != 40:
+        bad.append("from_cli roll")
+    if NoseLead.from_config(NoseLead(2.5, 20, "led").to_config()).roll != "led": bad.append("to_config roll round trip")
+    try:
+        NoseLead(2.5, 40, "sideways"); bad.append("NoseLead accepted an unknown roll law")
+    except ValueError:
+        pass
+    # negative control: a model that forgot the law (roll = the led stick) is told apart from the decoupled default
+    if roll_stick(0.9, 0.2) == 0.9 or roll_stick(-1.0, -1.0) != 0.0:
+        bad.append("negative control: the default law returned a roll stick while leading")
     print("ai_nose_lead self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return bad
 

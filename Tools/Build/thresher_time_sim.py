@@ -65,7 +65,15 @@ one of the four (course 1: 4 of 16, the hull turns away at gate 4 and never come
 stick zeroed finishes it with the lead on, 219.6 s); with the nests at I3-I4, where today's lagged cruise DNFs on every
 course and a lag-free nose finishes 7 of the 8 (I4 course 1: 8 of 16 gates against 386.6 s), the 2.5 lead passes 1-2
 gates. The sling masks the corkscrew: a hull turned 70 deg off its objective plants, and the launch snaps nose and
-command together. That is AIPilot's roll rule to change, not this model's: the port stays as the game is.
+command together. That was AIPilot's roll rule to change, and it changed (below).
+THE ROLL DECOUPLING (2026-11-07, brief 22): AIPilot now flies NO roll stick while the lead steers
+(NoseLeadSteering.RollStick; ai_nose_lead.roll_stick, roll law "zero", the default), and so does this model; the
+lead as first built is the law "led" ({"gain": 2.5, "roll": "led"}), which the checks above use to keep the
+corkscrew measured, and "unled" (the lead-off yaw stick as the roll) is a rejected what-if. On 12 fresh nest courses an
+intensity the decoupled 2.5 lead scores 3.061 with the parent's genome (led 3.175, off 3.195) and 2.953 with the
+lead-on twin's C (led 2.985): the one hull here the decoupling makes faster. The I4 cruise course of the checks stays
+lost with no roll too (2 gates), so single cruise races are not the roll's alone.
+Numbers: /mnt/project-files/regatta-training/results/lead-roll-decoupled/.
 
 NOT modelled (LIMITS): rivals, their nests and trails (a rival can open your nest, or follow you through yours); the
 cage's plates (a hull or ball is taken to pass through them, so I2-I4 cost no speed, no danger-plate hit, no shield
@@ -98,7 +106,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), "Compute", "evaluators"))
 sys.path.insert(0, HERE)
 
 import manta_redline_sim as M   # noqa: E402  (AIPilot's stick, break-off and the quaternion helpers)
-from ai_nose_lead import NoseLead, slerp_beyond   # noqa: E402  (the AI nose lead, AIPilot.NoseLeadGain, one shared piece)
+from ai_nose_lead import NoseLead, roll_stick, slerp_beyond   # noqa: E402  (the AI nose lead, AIPilot.NoseLeadGain, one shared piece)
 
 add, sub, mul, dot, cross, norm, unit, angle = M.add, M.sub, M.mul, M.dot, M.cross, M.norm, M.unit, M.angle
 FWD, UP, RIGHT = M.FWD, M.UP, M.RIGHT
@@ -480,6 +488,7 @@ def race(course, intensity, genome=None, nests=True, sling=True, limit=600.0, dt
     lead_knob = NoseLead.from_config(nose_lead)
     g_lead = lead_knob.effective(follow) if follow_step < 1.0 else 0.0
     lead_extra = lead_knob.max_extra_deg
+    lead_roll = lead_knob.roll                                # AIPilot's roll law while the lead is on (ai_nose_lead)
 
     p0, a0, _ = gates[0]
     pos = sub(p0, mul(a0, START_BACK))
@@ -628,6 +637,7 @@ def race(course, intensity, genome=None, nests=True, sling=True, limit=600.0, dt
                 steer = target
             dist = sub(steer, pos)
             dsq = dot(dist, dist)
+            yd = None
             if dsq <= 1e-12:
                 xs, ys = 0.0, 0.0
             elif g_lead > 0.0:
@@ -637,8 +647,12 @@ def race(course, intensity, genome=None, nests=True, sling=True, limit=600.0, dt
                 # break-off's escape steer takes the lead like any aim. Never here while planted (no stick runs there).
                 want = tuple(slerp_beyond(heading, unit(dist), g_lead, lead_extra))
                 xs, ys = M.stick(q, want, dsq, judged=unit(M.q_rot(cmd, FWD)))
+                # the roll stick with the lead on (AIPilot's roll law): the unled error's yaw stick by default
+                yd = roll_stick(xs, M.stick(q, unit(dist), dsq)[0] if lead_roll == "unled" else xs, lead_roll)
             else:
                 xs, ys = M.stick(q, unit(dist), dsq)
+            if yd is None:
+                yd = xs                                           # the roll stick is the yaw stick (AIPilot, no belly target)
             thr = max(0.0, min(1.0, throttle))
             throttle += creep * dt
 
@@ -660,7 +674,7 @@ def race(course, intensity, genome=None, nests=True, sling=True, limit=600.0, dt
                 newpos = pos
             else:
                 nose_up = M.q_rot(q, UP)
-                cmd = M.q_mul(M.q_axis(xs * sh["roll"] * dt, M.q_rot(q, FWD)), cmd)
+                cmd = M.q_mul(M.q_axis(yd * sh["roll"] * dt, M.q_rot(q, FWD)), cmd)
                 cmd = M.q_mul(M.q_axis(xs * sh["yaw"] * dt, nose_up), cmd)
                 cmd = M.q_mul(M.q_axis(ys * sh["pitch"] * dt, M.q_rot(q, RIGHT)), cmd)
                 q = M.q_slerp(q, cmd, follow_step)
@@ -848,22 +862,36 @@ def self_test():
     #     cost in CRUISE: with the nests at I4 course 1, where today's lagged cruise passes 8 of 16 gates and a lag-free
     #     nose finishes (386.6 s), the 2.5 lead corkscrews away and passes 1 (the roll stick whirls a command placed far
     #     from the nose round the nose's forward). A port that changes any of this re-measures.
+    #     (These fly the lead as first built, #1786: its roll law "led". The game's law since the roll decoupling is the
+    #     last check's.)
+    LED = {"gain": 2.5, "roll": "led"}
     c3 = course_for(1, 3)
-    today3, nolag3, led3 = race(c3, 1, nests=False), race(c3, 1, nests=False, nose_rate=0), race(c3, 1, nests=False, nose_lead=2.5)
+    today3, nolag3, led3 = race(c3, 1, nests=False), race(c3, 1, nests=False, nose_rate=0), race(c3, 1, nests=False, nose_lead=LED)
     if not (today3["time"] is None and nolag3["time"] is not None):
         bad.append(f"thresher_time_sim: I1 course 3 on the rings is no longer lost to the nose lag (today {today3}, no lag {nolag3})")
     if not (led3["time"] is not None and led3["misses"] < today3["misses"] and led3["launch_miss"] < today3["launch_miss"]):
         bad.append(f"thresher_time_sim: the 2.5 lead no longer finishes I1 course 3 on the rings with fewer misses: {led3} vs today {today3}")
     fin = lambda kw: sum(1 for s in (1, 2, 3) if race(course_for(2, s), 2, nests=False, **kw)["time"] is not None)
-    today_fin, led_fin, judged_fin = fin({}), fin({"nose_lead": 2.5}), fin({"nose_lead": 1.0})
+    today_fin, led_fin, judged_fin = fin({}), fin({"nose_lead": LED}), fin({"nose_lead": {"gain": 1.0, "roll": "led"}})
     if not (today_fin == 0 and led_fin == 3 and judged_fin <= 1):
         bad.append(f"thresher_time_sim: on I2 courses 1-3 (rings, sling) today finishes {today_fin}, the 2.5 lead {led_fin}, gain 1 "
                    f"{judged_fin} (was 0, 3, 0: re-measure the docstring)")
     c4 = course_for(4, 1)
-    today4, nolag4, led4 = race(c4, 4, sling=False), race(c4, 4, sling=False, nose_rate=0), race(c4, 4, sling=False, nose_lead=2.5)
+    today4, nolag4, led4 = race(c4, 4, sling=False), race(c4, 4, sling=False, nose_rate=0), race(c4, 4, sling=False, nose_lead=LED)
     if not (today4["time"] is None and nolag4["time"] is not None and led4["time"] is None and led4["gates"] < today4["gates"]):
         bad.append(f"thresher_time_sim: the 2.5 lead's corkscrew in the I4 cruise has changed (re-measure the docstring): "
                    f"today {today4}, no lag {nolag4}, lead {led4}")
+    # the roll decoupling (AIPilot's NoseLeadSteering.RollStick, ai_nose_lead.roll_stick, 2026-11-07): the default law
+    # flies no roll stick while leading, so it is another race than the led roll (wired), and no law touches a race with
+    # the lead off. Its effect is an AGGREGATE (results/lead-roll-decoupled/screen_thresher.json, 48 fresh nest races:
+    # the parent's genome 3.195 off, 3.175 led, 3.061 no roll; single races are chaotic here, and this I4 cruise course
+    # stays lost with no roll too, 2 gates, so that one is not the roll's alone)
+    free4 = race(c4, 4, sling=False, nose_lead=2.5)
+    if free4 != race(c4, 4, sling=False, nose_lead={"gain": 2.5, "roll": "zero"}) or free4 == led4:
+        bad.append(f"thresher_time_sim: the default roll law is not 'zero' or not wired: {free4} vs led {led4}")
+    for law in ("led", "unled", "zero"):
+        if race(c, 1, limit=60.0, nose_lead={"gain": 0, "roll": law}) != short:
+            bad.append(f"thresher_time_sim: roll law {law} changed a race with the lead off")
     return bad
 
 

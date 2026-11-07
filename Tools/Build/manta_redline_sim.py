@@ -55,7 +55,15 @@ is swung round the nose's forward by it, the nose chases a command whirling abou
 ~86 deg) and the hull corkscrews away from the course with the stick pinned full. A diagnostic copy with the roll stick
 zeroed while the lead is on finished every race at 2.5 (I4 courses 1-2: 533 s / 19 misses and 272 s / 10 misses against
 today's 428.6 / 33 and 400.65 / 32), so the lead would need its roll decoupled from the judged stick before it can help
-a rolling hull. That is AIPilot's roll rule to change, not this model's: the port stays as the game is.
+a rolling hull. That was AIPilot's roll rule to change, and it changed (below).
+THE ROLL DECOUPLING (2026-11-07, brief 22): AIPilot now flies NO roll stick while the lead steers
+(NoseLeadSteering.RollStick; ai_nose_lead.roll_stick, roll law "zero", the default), and so does this model; the
+lead as first built is the law "led" ({"gain": 2.5, "roll": "led"}), which the checks above use to keep the
+corkscrew measured, and "unled" (the lead-off yaw stick as the roll) is a rejected what-if. On 12 fresh courses an
+intensity (seedbase 1001) the decoupled 2.5 lead finishes 48 of 48 (shipped bands 23.34, the parent's winner 24.15)
+against the led roll's 6 and 11 and the lead off's 22.19 and 18.80: un-trapped, not better; the Manta's fix stays
+the nose row (#1780).
+Numbers: /mnt/project-files/regatta-training/results/lead-roll-decoupled/.
 
 NOT modelled (LIMITS): rivals and their Yastri trails; the Sting and Kabloom; the comeback's element levels; the lobby
 difficulty (GateRaceHandicap: Easy-Hard fly a late or misjudged BELIEF of the ring and the genome is the same; Legendary
@@ -79,7 +87,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "Compute", "evaluators"))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
-from ai_nose_lead import NoseLead, slerp_beyond            # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
+from ai_nose_lead import NoseLead, roll_stick, slerp_beyond            # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 
 # Manta.prefab
 CRUISE, BOOST_MULT, ROT_THROTTLE = 180.0, 4.0, 0.2
@@ -395,6 +403,7 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
     # 0 when the nose has no lag (nose_lag=False, nose_rate=0, or a rate that closes the whole gap in one step)
     g_lead = lead_knob.effective(follow) if follow_step < 1.0 else 0.0
     lead_extra = lead_knob.max_extra_deg
+    lead_roll = lead_knob.roll                                # AIPilot's roll law while the lead is on (ai_nose_lead)
     gates = [(tuple(g["p"]), unit(tuple(g["a"])), float(g["r"])) for g in course["gates"]]
     n = len(gates)
     total = n * max(1, laps)
@@ -473,6 +482,7 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
             steer = target
         dist = sub(steer, pos)
         dsq = dot(dist, dist)
+        yd = None
         if dsq <= 1e-12:
             xs, ys = 0.0, 0.0
         elif g_lead > 0.0:
@@ -481,9 +491,12 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
             # the command update below are untouched, and the break-off's escape steer takes the lead like any aim
             want = tuple(slerp_beyond(q_rot(q, FWD), unit(dist), g_lead, lead_extra))
             xs, ys = stick(q, want, dsq, judged=unit(q_rot(cmd, FWD)))
+            # the roll stick with the lead on (AIPilot's roll law): the unled error's yaw stick by default
+            yd = roll_stick(xs, stick(q, unit(dist), dsq)[0] if lead_roll == "unled" else xs, lead_roll)
         else:
             xs, ys = stick(q, unit(dist), dsq)
-        yd = xs                                                     # the roll stick (no belly target in Redline)
+        if yd is None:
+            yd = xs                                                 # the roll stick (no belly target in Redline)
         thr = max(0.0, min(1.0, max(throttle, throttle_floor)))
         throttle += creep * dt
 
@@ -674,15 +687,30 @@ def self_test():
     #     where today's steering misses 33 mouths through the lag, the 2.5 lead does NOT finish (3 of 40 rings in 900
     #     s): the roll stick about the nose's forward whirls a command placed far from the nose and the hull corkscrews
     #     away. A port that changes any of this re-measures.
+    #     (Checks 11 fly the lead as first built, its roll law "led"; check 12 the game's law since the decoupling.)
+    LED = "led"
     c = course_for(1, 2)
-    today, led, judged = baseline[(1, 2)], race(c, 1, nose_lead=2.5), race(c, 1, nose_lead=1.0)
+    today = baseline[(1, 2)]
+    led, judged = race(c, 1, nose_lead={"gain": 2.5, "roll": LED}), race(c, 1, nose_lead={"gain": 1.0, "roll": LED})
     if not (led["time"] and led["time"] < 0.8 * today["time"]):
         bad.append(f"the 2.5 lead no longer finishes I1 course 2 well under today's {today['time']} s: {led}")
     if not (judged["time"] and judged["time"] < led["time"]):
         bad.append(f"gain 1 (judged from the command, no pull) no longer beats the 2.5 lead on I1 course 2: {judged} vs {led}")
-    trapped = race(course_for(4, 1), 4, nose_lead=2.5)
+    trapped = race(course_for(4, 1), 4, nose_lead={"gain": 2.5, "roll": LED})
     if not (baseline[(4, 1)]["misses"] >= 20 and trapped["time"] is None and trapped["rings"] < 10):
         bad.append(f"the 2.5 lead's corkscrew on I4 course 1 has changed (re-measure the docstring): {trapped}")
+    # 12. the roll decoupling (AIPilot's NoseLeadSteering.RollStick, ai_nose_lead.roll_stick, 2026-11-07): the game's law
+    #     ("zero", the default) flies no roll stick while leading and finishes I4 course 1 (check 11, the "led" law, is
+    #     its negative control); "unled" (the lead-off yaw stick as the roll) is a measured what-if; no law touches a
+    #     race with the lead off
+    free = race(course_for(4, 1), 4, nose_lead=2.5)
+    if free != race(course_for(4, 1), 4, nose_lead={"gain": 2.5, "roll": "zero"}) or free["time"] is None:
+        bad.append(f"the decoupled 2.5 lead (no roll while leading, the default) no longer finishes I4 course 1: {free}")
+    for law in ("led", "unled", "zero"):
+        if race(c, 1, nose_lead={"gain": 0, "roll": law}) != race(c, 1):
+            bad.append(f"roll law {law} changed a race with the lead off")
+    if race(c, 1, nose_lead={"gain": 2.5, "roll": "unled"}) in (race(c, 1, nose_lead=2.5), led):
+        bad.append("the unled roll what-if is the same race as another law (is roll_stick wired?)")
     print("manta_redline_sim self-test: " + ("ok" if not bad else "FAILED\n  " + "\n  ".join(bad)))
     return 0 if not bad else 1
 

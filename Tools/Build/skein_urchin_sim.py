@@ -66,7 +66,13 @@ forward - whirls that command round the nose's axis; the nose chases it, the gap
 finishes in 108.3 s, the lag-free nose's 108.6 s: the lead does what it is for, and that is slower here because today's
 lagging nose happens to latch a rail and ride (ride 0.05, v 103). A scratch copy with the roll stick zeroed while the
 lead is on finished I2 in 362.2 s with 2 misses (I3 8/24, I4 4/24 with 9 misses against today's 19): the decoupling the
-lead needs is AIPilot's roll rule, not this model's; the port stays as the game is.
+lead needed was AIPilot's roll rule, and it changed (below).
+THE ROLL DECOUPLING (2026-11-07, brief 22): AIPilot now flies NO roll stick while the lead steers
+(NoseLeadSteering.RollStick; ai_nose_lead.roll_stick, roll law "zero", the default), and so does this model; the
+lead as first built is the law "led" ({"gain": 2.5, "roll": "led"}), which the checks above use to keep the
+corkscrew measured, and "unled" (the lead-off yaw stick as the roll) is a rejected what-if. On the what-if Skein's hold-out the decoupled 2.5 lead
+finishes 36 of 36 (shipped genome 9.60, genome W 8.59) against the led roll's 0 and the lead off's 8.77 and 7.94.
+Numbers: /mnt/project-files/regatta-training/results/lead-roll-decoupled/.
 
     python3 Tools/Build/skein_urchin_sim.py                  # the shipped AI, I1-I4 on the shipped cables
     python3 Tools/Build/skein_urchin_sim.py --holdout        # ... and on the hold-out cables
@@ -86,7 +92,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 import manta_redline_sim as P   # AIPilot's stick, orbit break-off and Unity's quaternion maths, already ported there
-from ai_nose_lead import NoseLead, slerp_beyond   # the AI nose lead (AIPilot.NoseLeadGain), the one shared piece
+from ai_nose_lead import NoseLead, roll_stick, slerp_beyond   # the AI nose lead (AIPilot.NoseLeadGain), the one shared piece
 
 add, sub, mul, dot, cross, norm, unit = P.add, P.sub, P.mul, P.dot, P.cross, P.norm, P.unit
 q_axis, q_mul, q_rot, q_inv_rot, q_slerp, q_look = P.q_axis, P.q_mul, P.q_rot, P.q_inv_rot, P.q_slerp, P.q_look
@@ -440,6 +446,7 @@ def race(course, cfg=None, limit=900.0, dt=1 / 60, domain=OWN_DOMAIN, track=True
     # AIPilot.EffectiveNoseLeadGain, once a race, from THIS model's nose rate: max(1, gain x 1.5 / rate), 0 with no lag
     g_lead = lead_knob.effective(follow) if nose_step < 1.0 else 0.0
     lead_extra = lead_knob.max_extra_deg
+    lead_roll = lead_knob.roll                                # AIPilot's roll law while the lead is on (ai_nose_lead)
     base, grid, paint = arena(course)
     rails = [Rail(r.pts, [paint[r.id]] * len(r.pts), ARENA_HALF, rid=r.id, arc=r.arc) for r in base]
     track_grid = Grid()
@@ -672,6 +679,7 @@ def race(course, cfg=None, limit=900.0, dt=1 / 60, domain=OWN_DOMAIN, track=True
         skill_throttle += THROTTLE_CREEP * dt
         if dsq <= 1e-12:
             xs, ys = 0.0, 0.0
+            yd = xs
         elif g_lead > 0.0 and att is None:
             # the nose lead (AIPilot.TryNoseLead), in free flight only: want the NOSE turned toward the aim by g_lead
             # times its error, past it (NoseLeadDirection), and judge the error from the COMMAND's forward; the cross
@@ -680,9 +688,11 @@ def race(course, cfg=None, limit=900.0, dt=1 / 60, domain=OWN_DOMAIN, track=True
             # rides the rail, and the ride direction (facing, above) reads the nose.
             want = tuple(slerp_beyond(q_rot(q, FWD), desired, g_lead, lead_extra))
             xs, ys = P.stick(q, want, dsq, judged=unit(q_rot(cmd, FWD)))
+            # the roll stick with the lead on (AIPilot's roll law): the unled error's yaw stick by default
+            yd = roll_stick(xs, P.stick(q, desired, dsq)[0] if lead_roll == "unled" else xs, lead_roll)
         else:
             xs, ys = P.stick(q, desired, dsq)
-        yd = xs
+            yd = xs
         throttle = max(-1.0, min(1.0, (xdiff - REST) / max(0.01, max(REST, 1 - REST))))   # ReadThrottle
 
         # ── attitude: Roll / Yaw / Pitch onto the command, the nose follows at the fleet lag ──
@@ -940,13 +950,24 @@ def self_test():
     nolag2 = race(c2, nose_rate=0)
     if not (today2["time"] is None and today2["misses"] >= 5 and nolag2["time"] is not None and nolag2["misses"] == 0):
         bad.append(f"I2's misses are no longer the lag's (re-measure the docstring): today {today2}, no lag {nolag2}")
-    trapped = race(c2, nose_lead=2.5)
+    LED = {"gain": 2.5, "roll": "led"}            # (c) is the lead as first built (#1786): its roll law "led"
+    trapped = race(c2, nose_lead=LED)
     if not (trapped["time"] is None and trapped["rings"] < 10 and trapped["rings"] < today2["rings"]):
         bad.append(f"the 2.5 lead's corkscrew at I2 has changed (re-measure the docstring): {trapped}")
-    judged2 = race(c2, nose_lead=1.0)
+    judged2 = race(c2, nose_lead={"gain": 1.0, "roll": "led"})
     if not (judged2["rings"] >= today2["rings"] - 2 and judged2["rings"] > trapped["rings"] + 5):
         bad.append("gain 1 (judged from the command, no pull past the aim) is now trapped at I2 too: "
                    f"{judged2} vs 2.5 {trapped}")
+    # (d) the roll decoupling (AIPilot's NoseLeadSteering.RollStick, ai_nose_lead.roll_stick, 2026-11-07): with the
+    #     game's law (no roll stick while leading, the default) the 2.5 lead finishes the I2 race (c) traps it in and
+    #     today's lagged steering does not finish; (c)'s trapped race is its negative control; no law touches a race with
+    #     the lead off
+    free2 = race(c2, nose_lead=2.5)
+    if free2 != race(c2, nose_lead={"gain": 2.5, "roll": "zero"}) or free2["time"] is None:
+        bad.append(f"the decoupled 2.5 lead (no roll while leading) no longer finishes I2: {free2} (today {today2})")
+    for law in ("led", "unled", "zero"):
+        if race(c1, nose_lead={"gain": 0, "roll": law}) != a:
+            bad.append(f"roll law {law} changed a race with the lead off")
     return bad
 
 

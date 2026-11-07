@@ -389,7 +389,7 @@ namespace CosmicShore.Gameplay
         public const float DefaultNoseLeadMaxExtraDegrees = 40f;
 
         /// <summary>The nose lead never turns the command further than this from the nose, degrees.</summary>
-        public const float NoseLeadMaxTurnDegrees = 170f;
+        public const float NoseLeadMaxTurnDegrees = NoseLeadSteering.MaxTurnDegrees;
 
         /// <summary>
         /// Where the nose lead puts the command: <paramref name="nose"/> turned toward <paramref name="desired"/> by
@@ -398,17 +398,8 @@ namespace CosmicShore.Gameplay
         /// it nor <see cref="NoseLeadMaxTurnDegrees"/> from the nose. <paramref name="desired"/> itself when the two are
         /// (anti)parallel or the gain is 0. Pure, for the tests and the offline model (<c>slerp_beyond</c>).
         /// </summary>
-        public static Vector3 NoseLeadDirection(Vector3 nose, Vector3 desired, float gain, float maxExtraDegrees)
-        {
-            Vector3 n = nose.normalized, d = desired.normalized;
-            if (gain <= 0f || n.sqrMagnitude < 1e-8f || d.sqrMagnitude < 1e-8f) return d;
-            Vector3 perp = d - n * Vector3.Dot(n, d);
-            if (perp.sqrMagnitude < 1e-8f) return d;
-            perp.Normalize();
-            float error = Vector3.Angle(n, d);
-            float turn = Mathf.Min(gain * error, error + Mathf.Max(0f, maxExtraDegrees), NoseLeadMaxTurnDegrees) * Mathf.Deg2Rad;
-            return n * Mathf.Cos(turn) + perp * Mathf.Sin(turn);
-        }
+        public static Vector3 NoseLeadDirection(Vector3 nose, Vector3 desired, float gain, float maxExtraDegrees) =>
+            NoseLeadSteering.Direction(nose, desired, gain, maxExtraDegrees);
 
         /// <summary>
         /// The gain the nose lead flies with on a nose that follows at <paramref name="noseFollowRate"/> per second:
@@ -435,6 +426,18 @@ namespace CosmicShore.Gameplay
             if (gain <= 0f) return false;
             commandedForward = transformer.CommandedRotation * Vector3.forward;
             return true;
+        }
+
+        /// <summary>This pilot's stick (<see cref="NoseLeadSteering.ErrorStick"/>) for the error from
+        /// <paramref name="judgedForward"/> to <paramref name="steerDirection"/>, the cross product turned into the nose's
+        /// frame.</summary>
+        Vector2 StickFor(Vector3 judgedForward, Vector3 steerDirection, float sqrDistance)
+        {
+            // Vector3.zero + : the sum the stick was always computed from (it turns a -0 axis into +0), so the lead-off
+            // stick stays bit for bit what it was before this helper.
+            Vector3 localCross = Vector3.zero + transform.InverseTransformDirection(Vector3.Cross(judgedForward, steerDirection));
+            return NoseLeadSteering.ErrorStick(localCross, Vector3.Dot(judgedForward, steerDirection), sqrDistance,
+                                               _maxDistance, aggressiveness);
         }
 
         // Set by the external target provider, for the frame it is sampled in: see MarkBellyTarget.
@@ -1252,38 +1255,32 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            Vector3 combinedLocalCrossProduct = Vector3.zero;
             float sqrMagnitude = _distance.sqrMagnitude;
             // The error is judged from the nose, or with the nose lead (NoseLeadGain) from the COMMAND toward where the
             // lagging nose must be pulled from. The stick turns the command about the nose's own axes either way.
             Vector3 judgedForward = transform.forward;
             Vector3 steerDirection = desiredDirection;
-            if (TryNoseLead(out float leadGain, out Vector3 commandedForward))
+            bool leading = TryNoseLead(out float leadGain, out Vector3 commandedForward);
+            if (leading)
             {
                 steerDirection = NoseLeadDirection(transform.forward, desiredDirection, leadGain, NoseLeadMaxExtraDegrees);
                 judgedForward = commandedForward;
             }
-            Vector3 crossProduct = Vector3.Cross(judgedForward, steerDirection);
-            Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
-            combinedLocalCrossProduct += localCrossProduct;
-
             aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
-            float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
-            TurnHardIfBehind(Vector3.Dot(judgedForward, steerDirection), ref combinedLocalCrossProduct, ref angle);
+            Vector2 stick = StickFor(judgedForward, steerDirection, sqrMagnitude);
 
             if (VesselStatus.IsSingleStickControls)
             {
-                float x = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                float y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-                _inputStatus.EasedLeftJoystickPosition = new Vector2(x, y);
+                // A single stick's roll is its x (SingleStickVesselTransformer): no roll the pilot could decouple.
+                _inputStatus.EasedLeftJoystickPosition = new Vector2(stick.x, -stick.y);
             }
             else
             {
-                _inputStatus.XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                _inputStatus.YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-                _inputStatus.YDiff = _hasBellyTarget
-                    ? BellyRoll()
-                    : Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                _inputStatus.XSum = stick.x;
+                _inputStatus.YSum = stick.y;
+                // The roll stick is the yaw stick, and none while the nose lead steers (NoseLeadSteering.RollStick:
+                // a roll about the nose's forward swings the command the lead holds off the nose into a corkscrew).
+                _inputStatus.YDiff = _hasBellyTarget ? BellyRoll() : NoseLeadSteering.RollStick(leading, stick.x);
                 _inputStatus.XDiff = (LookingAtCrystal && ram) ? 1 : SteeringThrottle;
             }
 
@@ -1332,12 +1329,8 @@ namespace CosmicShore.Gameplay
         /// the cross product's direction, or the hull's own up (a yaw) when the target is exactly astern, at full
         /// deflection. Elsewhere nothing changes; past ~120 deg the old stick was already full. Pure, for the tests.
         /// </summary>
-        public static void TurnHardIfBehind(float forwardDot, ref Vector3 localCross, ref float angleDegrees)
-        {
-            if (forwardDot >= 0f) return;
-            localCross = localCross.sqrMagnitude > 1e-8f ? localCross.normalized : Vector3.up;
-            angleDegrees = 90f;
-        }
+        public static void TurnHardIfBehind(float forwardDot, ref Vector3 localCross, ref float angleDegrees) =>
+            NoseLeadSteering.TurnHardIfBehind(forwardDot, ref localCross, ref angleDegrees);
 
         /// <summary>
         /// The direction this vessel is actually TRAVELLING — the quantity a turn radius applies

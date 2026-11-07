@@ -612,6 +612,12 @@ def self_test():
     free = race(c, shipped, nose_lag=False)
     if race(c, shipped, nose_lag=False, nose_lead=2.5) != free or free["misses"]:
         bad.append(f"the lead changed a lag-free race, or the lag-free Serpent misses: {free}")
+    # 11. the roll decoupling (AIPilot's NoseLeadSteering.RollStick, 2026-11-07) is a dual-stick law: a single stick's
+    #     roll IS its x (SingleStickVesselTransformer), which its pilot cannot separate, so every roll law flies the
+    #     Serpent's same race (the 2.5 stall of check 9 included: the Serpent's remedy is the gain, PR #1832)
+    for law in ("led", "unled", "zero"):
+        if race(c, shipped, nose_lead={"gain": 2.5, "roll": law}) != race(c, shipped, nose_lead=2.5):
+            bad.append(f"roll law {law} changed the single-stick Serpent's race")
     print("serpent_time_sim self-test: " + ("ok" if not bad else "FAILED\n  " + "\n  ".join(bad)))
     return 0 if not bad else 1
 
