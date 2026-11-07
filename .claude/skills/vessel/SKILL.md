@@ -1004,6 +1004,24 @@ applies to new abilities, new resources on the meter list, and anything that add
     target), and a one-element take must pick among the elements the victim HOLDS by their replicated level, or it
     lands on an empty element while another still has petals.
 
+67. **SPLITTING one vessel's kit into two hulls: clone first, strip second, and the weapon is often the skimmer.**
+    The Rhino became the Rhino (the plough) and the Swordfish (the sword) on 2026-11-07
+    (`Tools/Build/author_swordfish_assets.py`, `R_VesselActions/SWORDFISH.md`). Four things that recipe learned:
+    - **One generator, two one-shots, in order:** clone the donor WITH the kit (fresh hash, rule 42), then strip
+      the kit from the donor in a document-level pass gated by `dangling_refs` (rule 46). Each stands down once
+      its output is committed (the clone while the new prefab is absent, the strip while the donor still carries
+      the kit's executor), and `--check` holds both prefabs' invariants. The strip found a dangling reader nothing
+      named (an INACTIVE `CameraZoomFollowScaleProvider` pointing at the blade driver): let the gate find them.
+    - **The weapon may be the vessel's only near-field skimmer**, so removing it silently stops elemental crystals
+      (rule 11). Keep the skimmer as a crystal catcher (static scale, a haptics-only container) instead.
+    - **Re-point the modes, the models AND their generators**: a mode seated on the old hull for the kit you moved
+      (Cleave, Astro League) needs the card, the scene's `aiInitializeDatas`, the mode preview's `Vessel:`, the
+      training catalog and the generator that authors the card; a balance model keyed by hull name
+      (`broadside_balance.py`) needs the row renamed, not duplicated, when only one hull has the verb.
+    - **`element_ability_table.py` resolves an L5 gate only when the `IsUpgradeActive` argument IS the serialized
+      element field.** A helper `UpgradeActive(status, element)` hides every gate behind one parameter and the
+      table reports "UPGRADE IS PROSE". Call `abilities.IsUpgradeActive(<field>)` at each site.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)

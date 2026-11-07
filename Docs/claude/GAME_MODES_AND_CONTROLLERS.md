@@ -1403,9 +1403,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── SkimRaceController              — crystal race (crystals drawn as race rings), deterministic track, golf scoring
         ├── JoustController      — collision tracking, golf scoring
         ├── ScurryController — minimal (1 round, 1 turn)
-        ├── AstroLeagueController             — hypersea soccer, an ARENA card seating Rhino, Scarab and Squirrel (`ArcadeGameAstroLeague.asset` `Vessels`, listed in `ArenaGames`; the Rhino strikes on the blade, the other two play through their own kit — `ASTROLEAGUE.md`), server-simulated ball, golden goal
+        ├── AstroLeagueController             — hypersea soccer, an ARENA card seating Swordfish (the Rhino until the 2026-11-07 split), Scarab and Squirrel (`ArcadeGameAstroLeague.asset` `Vessels`, listed in `ArenaGames`; the Rhino strikes on the blade, the other two play through their own kit — `ASTROLEAGUE.md`), server-simulated ball, golden goal
         ├── BroodRushController             — nucleus-control fauna-wave race, brood scoring
-        ├── CleaveController                      — Rhino-only slicing race; four unrelated arenas, one per intensity
+        ├── CleaveController                      — Swordfish-only slicing race (the Rhino's until the sword split off, 2026-11-07); four unrelated arenas, one per intensity
         └── RampageController                 — Dolphin-only destruction race (Scurry's destructive analog), prisms-destroyed scoring
         └── WildlifeLiberationController       — Sparrow-only three-cage hunt, ecology-scored (creatures killed)
         └── DogFightController                  — Sparrow-only gun duel in the Boneyard; first DOMAIN to the gunnery-point target

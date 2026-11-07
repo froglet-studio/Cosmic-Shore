@@ -1,5 +1,7 @@
 # Cleave — Technical Documentation
 
+> **2026-11-07: Cleave is the SWORDFISH's.** The Rhino split in two (`R_VesselActions/SWORDFISH.md`): the sword went to the Swordfish, so Cleave seats the Swordfish for the player and all four AI (card, scene `aiInitializeDatas`, `TrainingModeCatalog`). Its hull RAMS (destroys), so a hull contact scores again, as it did before the plough. Read "the Rhino" below as "the Swordfish".
+
 > **Naming.** `GameModes.Cleave = 39` is the code/data/enum identity. The mode has been renamed
 > TWICE — `Ribcage` → `PeelTheCage` (2026-09) → `Cleave` (immediately after, when three of its four
 > intensities stopped being cages). Enum VALUES are pinned forever, so both historical names
