@@ -78,6 +78,7 @@ SCENE_FOR_MODE = {
     75: 'MinigameLanternRun',
     77: 'MinigameSerpentGulag',
     79: 'MinigameThornline',
+    80: 'MinigameDecoyRun',
 }
 
 

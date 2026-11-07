@@ -90,6 +90,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameThornline.unity
     guid: 5d57b079d45032f8fdb09ec4a2deb8fc
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameDecoyRun.unity
+    guid: 8c373f0e319c593990d6828088f19d87
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameLanternRun.unity
     guid: 5e16a160d1561b34a716f590891fda67
   - enabled: 1

@@ -21602,6 +21602,21 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
 
+## 🔴 Decoy Run: the Jacks' Time race (2026-11-07, branch `claude/jacks-decoy-run`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/decoy_run_harness/run.sh
+--self-test`: 10 pass, 8 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/DECOY_RUN.md` §8:
+
+1. Open `MinigameDecoyRun` once and save it (a text clone); then `python3 Tools/Build/author_decoy_run_assets.py --check`.
+2. Run the EditMode tests `DecoyRunCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: rings and chalk rails on one flat; herd past a ring, drop the decoy, centre the jacks behind it on the new
+   white take-off mark, take off, travel: the ring counts. Taking off THROUGH a ring does not count it.
+4. I2: one travel down a skewer counts both rings. I3: roll onto the next flat; the skewer lies on the board.
+5. I4: the hull starts with two decoys; the second travel doubles back through the hairpin and counts it.
+6. Two AI Jacks herd, take off and travel cycle by cycle and finish (note any jack that stops short of its waypoint).
+7. Outside the race: a Jacks in the Toybox herds and travels exactly as before (the coach is null there).
+
 ## 🔴 Thornline: the Shrike's Time race (2026-11-07, branch `claude/shrike-sling-race`)
 
 Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/thornline_course_harness/run.sh

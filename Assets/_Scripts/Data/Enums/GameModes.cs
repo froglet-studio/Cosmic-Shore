@@ -388,8 +388,12 @@ namespace CosmicShore.Data
         // See _Scripts/Controller/Arcade/THORNLINE.md.
         Thornline = 79,
 
+        // The Jacks' Time race (DECOY_RUN.md): herd the jacks past the rings, take off, fly
+        // to the decoys. Rings in groups a cycle takes; I3-I4 on rolled flats.
+        DecoyRun = 80,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 72) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 73) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
