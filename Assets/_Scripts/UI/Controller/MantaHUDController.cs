@@ -1,5 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -24,11 +26,14 @@ namespace CosmicShore.UI
                  "Initialize.")]
         [SerializeField] private MantaStingActionExecutor stingExecutor;
 
+        [Inject] GameDataSO _gameData;
+        IVesselStatus _status;
         bool _bound;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
+            _status = vesselStatus;
 
             if (!view)
                 view = View as MantaVesselHUDView;
@@ -75,6 +80,17 @@ namespace CosmicShore.UI
             // The burning-fuse number. Event-driven everywhere else; a countdown has to tick.
             if (!_bound || !view || !stingExecutor) return;
             if (stingExecutor.PlantedBombs.Count > 0) HandlePlantedChanged();
+            // The Mass card's decoys and the domain the four Mantas wear: cheap reads, the view early-outs on no change.
+            view.SetDecoys(stingExecutor.HasElementalDecoy, stingExecutor.HasOmniDecoy);
+            view.SetDomainColor(ResolveDomainSignalColor());
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Brittle Star's.</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return new Color(0f, 0f, 0f, 0f);
+            return colorSet.GetDomainSignalColor(_status.Domain);
         }
 
         // ── Card juice. Each beat flashes the card of the ELEMENT that owns it, so the row

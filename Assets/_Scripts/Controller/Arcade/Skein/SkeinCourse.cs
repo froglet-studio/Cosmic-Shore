@@ -168,7 +168,7 @@ namespace CosmicShore.Gameplay
                 // cover one rideable run plus the longest launch, and both of those are times.
                 // The lower rungs pin less often, so the same transfer window is bought over
                 // several ring gaps instead of one and the rings can sit close enough to see.
-                GateLaps = new[] { 1, 2, 4, 6 }[i - 1],
+                GateLaps = new[] { 1, 2, 3, 6 }[i - 1],
                 PinStride = new[] { 0, 3, 2, 1 }[i - 1],
                 PrismSpacing = 8f,
 

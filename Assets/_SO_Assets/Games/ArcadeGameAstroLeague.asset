@@ -15,7 +15,7 @@ MonoBehaviour:
   Mode: 37
   IsMultiplayer: 1
   DisplayName: Astro League
-  Description: Hypersea soccer, played with a sword. Rhino only - swing the blade
+  Description: Hypersea soccer, played with a sword. Swordfish only - swing the blade
     through the payload and slam it into the enemy portal. Tip strikes hit hardest.
     First to five, golden goal if it's tied. Welcome to the league.
   IconActive: {fileID: 0}
@@ -24,7 +24,7 @@ MonoBehaviour:
   GolfScoring: 0
   SceneName: MinigameAstroLeague
   Vessels:
-  - {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
+  - {fileID: 11400000, guid: a7e14c2b9d3f4a6c8b5e0d1f2c3a4b96, type: 2}
   - {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
   - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
   MinPlayersAllowed: 2

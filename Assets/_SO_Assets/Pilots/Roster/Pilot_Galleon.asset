@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: GALLEON
   description: 
   flavor: 
-  portrait: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 99f446d5aebb2747d91ecd81a2703a1f, type: 3}
   portraitIsStandIn: 0
   icon: {fileID: 0}
   requirement:
