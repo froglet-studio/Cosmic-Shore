@@ -3,7 +3,7 @@
   "note": "The known flat effects, each owed work; --check fails on any signal not listed here. Rewrite with: python3 Tools/Build/look_kit/audit.py --baseline",
   "counts": {
     "unlit-shader": 24,
-    "unlit-by-content": 14,
+    "unlit-by-content": 13,
     "additive-sheet": 21,
     "billboard-particles": 9,
     "screen-ring": 0,
@@ -73,7 +73,6 @@
     "Assets/_Prefabs/Projectile/ProjectileFX.prefab:ProjectileFX/ParticleSystem:billboard-particles",
     "Assets/_Prefabs/Projectile/ProjectileFX.prefab:ProjectileFX/ParticleSystem:unlit-shader",
     "Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab:SkyBurstProjectile/ParticleSystem:unlit-shader",
-    "Assets/_Prefabs/Projectile/SparrowExhaustProjectile.prefab:SparrowExhaustProjectile/MeshRenderer:unlit-by-content",
     "Assets/_Prefabs/Spacevessels/Rhino.prefab:RhinoSwordBladeTracer0/TrailRenderer:additive-sheet",
     "Assets/_Prefabs/Spacevessels/Rhino.prefab:RhinoSwordBladeTracer0/TrailRenderer:unlit-by-content",
     "Assets/_Prefabs/Spacevessels/Rhino.prefab:RhinoSwordBladeTracer1/TrailRenderer:additive-sheet",

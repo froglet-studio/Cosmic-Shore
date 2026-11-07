@@ -6,25 +6,25 @@
 
 ## Counts
 
-- Effects found: **67**: 26 carry at least one flat signal, 29 carry none, 12 could not be read (every material slot empty or unresolved: assigned at runtime)
+- Effects found: **67**: 25 carry at least one flat signal, 30 carry none, 12 could not be read (every material slot empty or unresolved: assigned at runtime)
 - Empty material slots on world renderers (the material is assigned at runtime, the shader unknown offline): 105
 - World renderers on them: 189 (MeshRenderer 150, ParticleSystem 28, TrailRenderer 8, SkinnedMeshRenderer 1, ModelInstance 1, VisualEffect 1)
 - Particle render modes: Billboard 11, None 8, Mesh 5, Stretch 4
 - Shader kinds on their materials: none 105, shadergraph 37, package 27, shader 26, builtin 2, missing 2, embedded 1
 - Renderers left out as UI (under a screen-space canvas): 0
-- Flat signals: **73** in all
+- Flat signals: **72** in all
 
 | signal | count | the rule |
 |---|---:|---|
 | `unlit-shader` | 24 | an Unlit, Particles/Unlit, Sprites or UI shader on a world renderer: the scene's light cannot shade it, it is a fill |
-| `unlit-by-content` | 14 | the shader reads no normal and no light (an Unlit-sub-target graph without a Normal, Fresnel or Light node, or a .shader with no lighting code): nothing in it can respond to the scene's light |
+| `unlit-by-content` | 13 | the shader reads no normal and no light (an Unlit-sub-target graph without a Normal, Fresnel or Light node, or a .shader with no lighting code): nothing in it can respond to the scene's light |
 | `additive-sheet` | 21 | an additive or transparent unlit material on a sheet (a quad or thin mesh, a billboard, a trail or line ribbon): the plain additive glow the rule names |
 | `billboard-particles` | 9 | particles in Billboard, HorizontalBillboard or VerticalBillboard mode with an unlit material: camera-facing sprites read as stickers, no depth, no facets |
 | `screen-ring` | 0 | a world fact drawn as a mark on the screen (a world renderer on the HUD layer, or a ring/radius/reticle renderer inside a screen-space canvas) instead of on the thing itself |
 | `thin-mesh` | 5 | the mesh's thinnest extent is under 0.08 of its longest: a sheet, there is no depth for the light to shade |
 | `no-normals` | 0 | a serialized mesh with no normal channel: the light cannot shade its facets |
 
-Baseline (`audit_baseline.json`, written 2026-11-07): 73 known offenders; today 0 new, 0 fixed since.
+Baseline (`audit_baseline.json`, written 2026-11-07): 72 known offenders; today 0 new, 0 fixed since.
 
 ## The effects
 
@@ -38,7 +38,7 @@ One row per prefab (or scene) that draws an effect in the world. `renderers` cou
 | `Environment/CrystalChargeDandruff.prefab` | MeshRenderer | `SG/ChargeCrystal` | fbx | none |
 | `Environment/CrystalMass.prefab` | MeshRenderer | `Custom/OmniDepthPrismShader` | mesh 1.00 | none |
 | `Environment/CrystalSpace.prefab` | SkinnedMeshRenderer | `Custom/SpreadFresnelShader` | fbx | none |
-| `Environment/CrystalTime.prefab` | ModelInstance | (none) | fbx | none |
+| `Environment/CrystalTime.prefab` | ModelInstance | (none) | fbx | (unreadable) |
 | `Environment/CrystalTimeDandruff.prefab` | MeshRenderer | `SG/CrystalGraph` | fbx | none |
 | `Environment/Materials/FX/FX_skimmer_greenblock.prefab` | ParticleSystem x2 | `URP/Particles/Unlit` x4 | Billboard +trails x2 | `unlit-shader` (2), `additive-sheet` (2), `billboard-particles` (2) |
 | `Environment/Materials/FX/FX_skimmer_lightning.prefab` | ParticleSystem x2 | `URP/Particles/Unlit` x3 | Stretch, Billboard +trails | `unlit-shader` (2), `additive-sheet` (2), `billboard-particles` |
@@ -46,34 +46,34 @@ One row per prefab (or scene) that draws an effect in the world. `renderers` cou
 | `Environment/Materials/FX/FxBoost.prefab` | ParticleSystem | `URP/Particles/Unlit` | Stretch | `unlit-shader`, `additive-sheet` |
 | `Environment/Materials/FX/FxBubbles.prefab` | ParticleSystem | `URP/Particles/Unlit` | Billboard | `unlit-shader`, `additive-sheet`, `billboard-particles` |
 | `Environment/Materials/FX/JetFX.prefab` | ParticleSystem | `URP/Particles/Unlit` | Stretch | `unlit-shader`, `additive-sheet` |
-| `Environment/Materials/FX/VfxArcLightning.prefab` | VisualEffect | (none) |  | none |
+| `Environment/Materials/FX/VfxArcLightning.prefab` | VisualEffect | (none) |  | (unreadable) |
 | `Environment/Materials/FX/fx_BlueCrackle.prefab` | ParticleSystem | `(none)`; `URP/Particles/Unlit` | None +trails | `unlit-shader` |
 | `Environment/Materials/FX/fx_GreenCrackle.prefab` | ParticleSystem | `(none)`; `URP/Particles/Unlit` | None +trails | `unlit-shader` |
 | `Environment/Materials/FX/fx_OrangeCrackle.prefab` | ParticleSystem | `(none)`; `URP/Particles/Unlit` | None +trails | `unlit-shader` |
 | `Environment/Materials/FX/fx_RedCrackle.prefab` | ParticleSystem | `(none)`; `URP/Particles/Unlit` | None +trails | `unlit-shader` |
-| `Projectile/AOEBatmanSpawner.prefab` | MeshRenderer | `(none)` |  | none |
+| `Projectile/AOEBatmanSpawner.prefab` | MeshRenderer | `(none)` |  | (unreadable) |
 | `Projectile/AOEButterflyBloom.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 1.00 | none |
 | `Projectile/AOEConicExplosion.prefab` | MeshRenderer, ParticleSystem | `SG/LaserGraph`; `(none)`; `URP/Particles/Unlit` | mesh 1.00, None +trails | `unlit-shader` |
 | `Projectile/AOEConicSkyBurst.prefab` | MeshRenderer, ParticleSystem | `SG/LaserGraph`; `(none)`; `URP/Particles/Unlit` | mesh 1.00, None +trails | `unlit-shader` |
-| `Projectile/AOEDangerBlocks.prefab` | MeshRenderer | `(none)` |  | none |
+| `Projectile/AOEDangerBlocks.prefab` | MeshRenderer | `(none)` |  | (unreadable) |
 | `Projectile/AOEExplosion.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 1.00 | none |
 | `Projectile/AOEExplosionBlue.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 1.00 | none |
 | `Projectile/AOEExplosionRed.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 0.99 | none |
-| `Projectile/AOEFlowerCreation.prefab` | MeshRenderer | `(none)` |  | none |
-| `Projectile/AOEFlowerSpawner.prefab` | MeshRenderer | `(none)` |  | none |
+| `Projectile/AOEFlowerCreation.prefab` | MeshRenderer | `(none)` |  | (unreadable) |
+| `Projectile/AOEFlowerSpawner.prefab` | MeshRenderer | `(none)` |  | (unreadable) |
 | `Projectile/AOEGrizzlyExplosion.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 1.00 | none |
 | `Projectile/AOEKnockBackExplosion.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 1.00 | none |
 | `Projectile/AOEMantaBloom.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 1.00 | none |
 | `Projectile/AOEMenuExplosion.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 1.00 | none |
 | `Projectile/AOEMissileWarhead.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 1.00 | none |
-| `Projectile/AOERingSpawner.prefab` | MeshRenderer | `(none)` |  | none |
+| `Projectile/AOERingSpawner.prefab` | MeshRenderer | `(none)` |  | (unreadable) |
 | `Projectile/AOEScarabCavitation.prefab` | MeshRenderer x2 | `SG/RippleGraph` | mesh 0.00 x2 | `thin-mesh` (2) |
 | `Projectile/AOEShieldExplosion.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 1.00 | none |
-| `Projectile/AOESinglePrismSpawner.prefab` | MeshRenderer | `(none)` |  | none |
+| `Projectile/AOESinglePrismSpawner.prefab` | MeshRenderer | `(none)` |  | (unreadable) |
 | `Projectile/AOESlowExplosion.prefab` | MeshRenderer | `SG/RippleGraph` | mesh 1.00 | none |
-| `Projectile/AOEWideFiveRingSpawner.prefab` | MeshRenderer | `(none)` |  | none |
+| `Projectile/AOEWideFiveRingSpawner.prefab` | MeshRenderer | `(none)` |  | (unreadable) |
 | `Projectile/AxeBubble.prefab` | MeshRenderer x3 | `SG/ForceFieldGraph`; `SG/SnowGraph`; `Unlit/Transparent` | fbx x2, mesh 0.99 | `unlit-by-content` (2), `unlit-shader` |
-| `Projectile/Ellipsoid1.prefab` | MeshRenderer x90 | `(none)` x90 | mesh 1.00 x90 | none |
+| `Projectile/Ellipsoid1.prefab` | MeshRenderer x90 | `(none)` x90 | mesh 1.00 x90 | (unreadable) |
 | `Projectile/ExplodableProjectile.prefab` | MeshRenderer, ParticleSystem | `Custom/SpreadFresnelShader`; `URP/Particles/Unlit`; `SG/VesselGraph` | fbx, None +trails | `unlit-shader` |
 | `Projectile/FalconProjectile.prefab` | MeshRenderer, ParticleSystem | `SG/ProjectileGraph`; `URP/Particles/Unlit` | mesh 0.99, Billboard | `unlit-by-content`, `unlit-shader`, `additive-sheet`, `billboard-particles` |
 | `Projectile/Firework.prefab` | MeshRenderer | `SG/ExplosionGraph` | mesh 1.00 | `unlit-by-content` |
@@ -83,14 +83,14 @@ One row per prefab (or scene) that draws an effect in the world. `renderers` cou
 | `Projectile/Gun.prefab` | MeshRenderer | `SG/VesselGraph` | mesh 0.00 | `thin-mesh` |
 | `Projectile/Projectile.prefab` | MeshRenderer, ParticleSystem | `SG/ProjectileGraph`; `URP/Particles/Unlit` | mesh 0.99, Billboard | `unlit-by-content`, `unlit-shader`, `additive-sheet`, `billboard-particles` |
 | `Projectile/ProjectileFX.prefab` | MeshRenderer, ParticleSystem | `Custom/SpreadFresnelShader`; `URP/Particles/Unlit` | mesh 0.99, Billboard | `unlit-shader`, `additive-sheet`, `billboard-particles` |
-| `Projectile/SkyBurstAOE.prefab` | MeshRenderer | `(none)` |  | none |
+| `Projectile/SkyBurstAOE.prefab` | MeshRenderer | `(none)` |  | (unreadable) |
 | `Projectile/SkyBurstProjectile.prefab` | TrailRenderer, MeshRenderer, ParticleSystem | `SG/VesselGraph` x3; `embedded-material:Sparrow Missile.fbx`; `URP/Particles/Unlit` | fbx, None +trails | `unlit-shader` |
-| `Projectile/SparrowExhaustProjectile.prefab` | MeshRenderer | `SG/SpindleGraph` | mesh 0.99 | `unlit-by-content` |
+| `Projectile/SparrowExhaustProjectile.prefab` | MeshRenderer | `SG/SpindleGraph` | mesh 0.99 | none |
 | `Projectile/SparrowProjectile.prefab` | MeshRenderer x2 | `SG/ProjectileChargeField`; `Custom/SpreadFresnelShader` | mesh 1.00, mesh 0.99 | none |
 | `Projectile/UrchinSpikeProjectile.prefab` | MeshRenderer | `SG/SpikeGraph` | fbx | none |
 | `Projectile/UrchinSpikeProjectileEnergized.prefab` | MeshRenderer | `SG/SpikeGraph` | fbx | none |
 | `Projectile/UrchinSpikeProjectileSuperEnergized.prefab` | MeshRenderer | `SG/SpikeGraph` | fbx | none |
-| `Projectile/fxriptidecone.prefab` | MeshRenderer | `(none)` |  | none |
+| `Projectile/fxriptidecone.prefab` | MeshRenderer | `(none)` |  | (unreadable) |
 | `Spacevessels/Components/Jet/jet - old.prefab` | ParticleSystem x5 | `GAPH Custom Shader/Shader_IntegradedEffect` x5 | Mesh x5 | none |
 | `Spacevessels/Components/VesselTail.prefab` | TrailRenderer | `Particles/Standard Unlit?` | trail View | none |
 | `Spacevessels/Rhino.prefab` | TrailRenderer x5, ParticleSystem x2 | `Custom/ViewAngleBasedColorBlendHDR` x5; `missing-material:e823cd5b5d27c0f4b8256e7c12ee3e6d` x2 | trail View x5, Billboard x2 | `unlit-by-content` (5), `additive-sheet` (5) |
@@ -201,7 +201,6 @@ Each line is `path:renderer:signal`, the form the gate prints for a NEW offender
 - `Assets/_Prefabs/Projectile/ProjectileFX.prefab:ProjectileFX/ParticleSystem:billboard-particles`
 - `Assets/_Prefabs/Projectile/ProjectileFX.prefab:ProjectileFX/ParticleSystem:unlit-shader`
 - `Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab:SkyBurstProjectile/ParticleSystem:unlit-shader`
-- `Assets/_Prefabs/Projectile/SparrowExhaustProjectile.prefab:SparrowExhaustProjectile/MeshRenderer:unlit-by-content`
 - `Assets/_Prefabs/Spacevessels/Rhino.prefab:RhinoSwordBladeTracer0/TrailRenderer:additive-sheet`
 - `Assets/_Prefabs/Spacevessels/Rhino.prefab:RhinoSwordBladeTracer0/TrailRenderer:unlit-by-content`
 - `Assets/_Prefabs/Spacevessels/Rhino.prefab:RhinoSwordBladeTracer1/TrailRenderer:additive-sheet`

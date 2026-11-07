@@ -407,8 +407,15 @@ class Project:
                 if LIGHT_CODE_RE.search(body):
                     hit = True
                     break
-            if short == "SubGraphNode" and depth < 2:
+            if short == "SubGraphNode" and depth < 3:
+                # the reference is a JSON STRING inside the node: m_SerializedSubGraph = '{"subGraph": {"guid": ...}}'
                 sg = o.get("m_SubGraph") or {}
+                raw = o.get("m_SerializedSubGraph")
+                if raw:
+                    try:
+                        sg = (json.loads(raw) or {}).get("subGraph") or {}
+                    except (json.JSONDecodeError, AttributeError):
+                        sg = {}
                 if isinstance(sg, str):
                     try:
                         sg = json.loads(sg)
@@ -1016,6 +1023,7 @@ def render_report(audit: dict, baseline: dict | None) -> str:
     out.append("")
     out.append("| effect | renderers | shader | render mode | signals |")
     out.append("|---|---|---|---|---|")
+    blind = set(audit.get("blind", []))
     for e in sorted(audit["effects"], key=lambda e: e["path"]):
         rk: Counter = Counter(r["kind"] for r in e["renderers"])
         renderers = ", ".join(f"{k}" + (f" x{n}" if n > 1 else "") for k, n in rk.most_common())
@@ -1033,7 +1041,7 @@ def render_report(audit: dict, baseline: dict | None) -> str:
                 modes.append(f"mesh {r['mesh']['ratio']:.2f}")
         mode_txt = ", ".join(f"{k}" + (f" x{n}" if n > 1 else "") for k, n in Counter(modes).most_common()) or ""
         sig: Counter = Counter(s for r in e["renderers"] for s in r["signals"])
-        sig_txt = ", ".join(f"`{s}`" + (f" ({n})" if n > 1 else "") for s, n in sig.most_common()) or "none"
+        sig_txt = ", ".join(f"`{s}`" + (f" ({n})" if n > 1 else "") for s, n in sig.most_common()) or ("(unreadable)" if e["path"] in blind else "none")
         out.append(f"| `{cell(short_path(e['path']))}` | {renderers} | {cell(shader_txt)} | {cell(mode_txt)} | {sig_txt} |")
     out.append("")
     out.append("## The ten most-used shaders on world effects")
@@ -1173,7 +1181,15 @@ def _mesh_asset(name: str, extent: tuple, normals: bool) -> str:
             f"    m_Extent: {{x: {extent[0]}, y: {extent[1]}, z: {extent[2]}}}\n  m_MeshUsageFlags: 0\n")
 
 
-def _graph(name: str, with_normal_node: bool, surface: int = 1, alpha: int = 2) -> str:
+def _subgraph(with_normal_node: bool) -> str:
+    objs = [{"m_SGVersion": 3, "m_Type": "UnityEditor.ShaderGraph.GraphData", "m_ObjectId": "sg1", "m_IsSubGraph": True},
+            {"m_SGVersion": 0, "m_Type": "UnityEditor.ShaderGraph.SubGraphOutputNode", "m_ObjectId": "so1", "m_Name": "Output"}]
+    if with_normal_node:
+        objs.append({"m_SGVersion": 0, "m_Type": "UnityEditor.ShaderGraph.NormalVectorNode", "m_ObjectId": "sn1", "m_Name": "Normal Vector"})
+    return "\n\n".join(json.dumps(o, indent=4) for o in objs) + "\n"
+
+
+def _graph(name: str, with_normal_node: bool, surface: int = 1, alpha: int = 2, subgraph_guid: str | None = None) -> str:
     objs = [
         {"m_SGVersion": 3, "m_Type": "UnityEditor.ShaderGraph.GraphData", "m_ObjectId": "g1", "m_Path": "Shader Graphs",
          "m_ActiveTargets": [{"m_Id": "t1"}]},
@@ -1184,6 +1200,9 @@ def _graph(name: str, with_normal_node: bool, surface: int = 1, alpha: int = 2) 
     ]
     if with_normal_node:
         objs.append({"m_SGVersion": 0, "m_Type": "UnityEditor.ShaderGraph.NormalVectorNode", "m_ObjectId": "n2", "m_Name": "Normal Vector"})
+    if subgraph_guid:
+        objs.append({"m_SGVersion": 0, "m_Type": "UnityEditor.ShaderGraph.SubGraphNode", "m_ObjectId": "n3", "m_Name": "Shade",
+                     "m_SerializedSubGraph": json.dumps({"subGraph": {"fileID": 11400000, "guid": subgraph_guid, "type": 3}}, indent=4)})
     return "\n\n".join(json.dumps(o, indent=4) for o in objs) + "\n"
 
 
@@ -1240,6 +1259,12 @@ def build_fixture(root: str) -> dict:
            "HLSLPROGRAM float4 frag() : SV_Target { return 1; } ENDHLSL } } }\n", g["unlit.shader"])
     _write(root, "Assets/Shaders/FlatGraph.shadergraph", _graph("FlatGraph", False), g["flat.graph"])
     _write(root, "Assets/Shaders/FacetGraph.shadergraph", _graph("FacetGraph", True, surface=0, alpha=0), g["facet.graph"])
+    _write(root, "Assets/Shaders/Shade.shadersubgraph", _subgraph(True), _guid("shade.sub"))
+    _write(root, "Assets/Shaders/Plain.shadersubgraph", _subgraph(False), _guid("plain.sub"))
+    _write(root, "Assets/Shaders/SubLit.shadergraph", _graph("SubLit", False, subgraph_guid=_guid("shade.sub")), _guid("sublit.graph"))
+    _write(root, "Assets/Shaders/SubFlat.shadergraph", _graph("SubFlat", False, subgraph_guid=_guid("plain.sub")), _guid("subflat.graph"))
+    _write(root, "Assets/Materials/SubLit.mat", _mat("SubLit", -6465566751694194690, _guid("sublit.graph")), _guid("sublit.mat"))
+    _write(root, "Assets/Materials/SubFlat.mat", _mat("SubFlat", -6465566751694194690, _guid("subflat.graph")), _guid("subflat.mat"))
     _write(root, "Assets/Materials/Lit.mat", _mat("Lit", 4800000, g["lit.shader"]), g["lit.mat"])
     _write(root, "Assets/Materials/LitAdditive.mat", _mat("LitAdditive", 4800000, g["lit.shader"], surface=1, blend=2, queue=3000), g["lit-add.mat"])
     _write(root, "Assets/Materials/Unlit.mat", _mat("UnlitGlow", 4800000, g["unlit.shader"], surface=1, blend=2, queue=3000), g["unlit.mat"])
@@ -1293,6 +1318,10 @@ def build_fixture(root: str) -> dict:
            {"FlatGraph/MeshRenderer:unlit-by-content"})
     prefab("FX/FacetGraph.prefab", [{"id": 850, "name": "FacetGraph", "components": [_mesh_filter(850, 860, sphere), _mesh_renderer(850, 861, M("facet.mat"))]}],
            set())
+    prefab("FX/SubLit.prefab", [{"id": 870, "name": "SubLit", "components": [_mesh_filter(870, 880, sphere), _mesh_renderer(870, 881, (2100000, _guid("sublit.mat"), 2))]}],
+           set())   # the normal is read inside a sub graph: lit
+    prefab("FX/SubFlat.prefab", [{"id": 890, "name": "SubFlat", "components": [_mesh_filter(890, 895, sphere), _mesh_renderer(890, 896, (2100000, _guid("subflat.mat"), 2))]}],
+           {"SubFlat/MeshRenderer:unlit-by-content"})   # a sub graph with no normal read does not rescue it
     prefab("FX/Ribbon.prefab", [{"id": 900, "name": "Ribbon", "components": [_line(900, 910, M("unlit.mat"), CLASS_TRAIL)]}],
            {"Ribbon/TrailRenderer:unlit-by-content", "Ribbon/TrailRenderer:additive-sheet"})
     prefab("Hud/WorldMark.prefab", [{"id": 1000, "name": "AimLine", "layer": 5, "components": [_line(1000, 1010, M("lit.mat"))]}],
