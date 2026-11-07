@@ -1,5 +1,7 @@
 # Headlong — the Rhino-only circuit race
 
+> **2026-11-07: the Rhino has no sword.** The Rhino split in two (`R_VesselActions/SWORDFISH.md`): the sword went to the Swordfish, and the Rhino is the plough with its new kit (`RHINO_PLOUGH.md` § "The plough kit"). Headlong stays the Rhino's. Where this doc says the sword is the interference or the AI swings it, that is no longer true. Watch item: the Mass Blade adds a 14 u plough blade at the nose at rest (40 u at Mass 10), wider than the hull the Stampede hedge model measured.
+
 > `GameModes.Headlong = 49`. A closed loop of switch rings is cut through the cell and every
 > pilot flies **laps** of it in order; the first **domain** whose **lead runner** threads the
 > last gate of the last lap wins.
