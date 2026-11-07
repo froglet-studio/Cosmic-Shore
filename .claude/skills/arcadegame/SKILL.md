@@ -399,3 +399,12 @@ saw when opening Wrecking Ball). The gate names the exact using to add; it only 
 - Assume an AI can use a human's input (a stick-driven ability is inert under autopilot).
 - Hand-edit a generated asset. Re-run the generator.
 - Take an enum id from memory. Read the file.
+
+
+## The design brief comes first (2026-11-07)
+
+Before a new mode rule, track, environment or AI behaviour, write the one-page design brief (`Docs/claude/DESIGN_BRIEF.md`): the fundamental it serves,
+the principles it obeys by id (`python3 Tools/Build/principles.py --area modes`; `Docs/claude/PRINCIPLES.md` holds
+the owners' rules in their words, drafted on 2026-11-07 and waiting on each owner to confirm or strike), the one it
+comes closest to breaking, the cheapest prototype, who judges it and where, and the retire condition. A design that
+breaks a drafted principle is a proposal to that principle's owner first, not a build. A mode never changes the vessel (LOCKED, Shombith, 2026-10-31): the brief lists only track, environment and AI.

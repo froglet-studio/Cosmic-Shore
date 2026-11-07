@@ -179,3 +179,33 @@ The kit is spec-first so the same move works for every kingdom:
 4. **The builder.** One `fauna_kit/build.py` that turns any spec into a prefab (spindle and prism instances, the heart,
    the configs) so a species stops needing its own generator; species generators then only add their behaviour class.
 5. **Learnings.** Every species adds what it taught to §5 here, the way `/labmaker` LEARNINGS does.
+
+
+## Round status and what each gate still owes (2026-11-07, measured for Docs/SKILL_TRAINING_PLAN.md 3.7)
+
+**Rounds so far:** one species through the kit, the bee (`Tools/Build/fauna_kit/specs/bee.py`, rounds 1-2 on
+2026-11-01, Garrett: "a fine start"); nine fauna models ship without a spec (shark, bonita, swordfish, three worms,
+clawfish, mediumfish, brittlestar). **Next unit proposed:** the swarm (Garrett, 2026-10-21: "the swarm feels like a
+small pack not ... a murmuration"), or the shark as the first shipped body re-specified. Owner to ask: Garrett.
+
+**Gates and their negative controls** (a negative control is a planted defect asserted to FAIL; "owed" means the
+gate is green today without ever having been proven to fire):
+
+| Gate | Script | Negative control today |
+|---|---|---|
+| the ten celestial laws on the spec | `fauna_kit/celestial.py --self-test` | yes: 15 planted defects (L1-L3, L5-L9); L4 (three health prisms) and L10 (premise) have none |
+| the built prefab held to the spec | `author_bee_assets.py --self-test` | yes: 8 planted defects, 8/8 caught |
+| `build.read_back` (prefab-to-spec drift) | `fauna_kit/build.py` | owed: no `__main__`; `--self-test` prints nothing and exits 0, a gate-shaped command that passes by doing nothing |
+| `render_prefab.py` refuses a prefab that is not its spec | `fauna_kit/render_prefab.py` | owed: the refusal is never asserted |
+| the heart clears the body | `verify_fauna_heart_seat.py` | yes: two rejected Clawfish seats inline; but it walks model-instance bodies only, so a kit-built species is not covered |
+| the heart is the size the band says | `author_lifeform_heart_sizes.py --check` | owed, and the gate is RETIRED (it stands down green): /fauna section 8 still lists it |
+| every heart carries its collection pair | `author_lifeform_heart_collection.py --check` | owed |
+| serialized-field parity | `asset-surgery/field_parity.py` | owed: a silent pass, nothing says what was compared |
+| the collider-budget delta | none: stated by hand | owed: `author_bee_assets.py report()` prints the numbers, no gate holds them |
+
+**The sheet today:** `preview.py` (the spec, four views) and `render_prefab.py` (the built prefab on the real braid
+mesh), no yardstick beside them. The look sheet (`/unity-look`) adds the creature in its cell at the game's distance.
+
+**To promote to A:** give `build.read_back` and `render_prefab.py` a `--self-test` with one planted drift each (the
+kit's owner, Garrett); drop the retired heart-size gate from /fauna section 8 or say it is retired there; a round
+table per species in this file as each one lands.

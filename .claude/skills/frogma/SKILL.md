@@ -271,3 +271,12 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
   and the `rev47` note already there; copying your entries over that index would have REPLACED the other session's
   boards. Re-run `plan` on the fresh index, rename your files to the new number
   (`sed 's/Rev 47/Rev 48/g'` on the titles; the ids inside `/_blob/` ids are hex and need no change), `check`, publish.
+
+
+## The design brief comes first (2026-11-07)
+
+Before a new screen or redesign round, write the one-page design brief (`Docs/claude/DESIGN_BRIEF.md`): the fundamental it serves,
+the principles it obeys by id (`python3 Tools/Build/principles.py --area ui`; `Docs/claude/PRINCIPLES.md` holds
+the owners' rules in their words, drafted on 2026-11-07 and waiting on each owner to confirm or strike), the one it
+comes closest to breaking, the cheapest prototype, who judges it and where, and the retire condition. A design that
+breaks a drafted principle is a proposal to that principle's owner first, not a build. Read `references/UI_LESSONS.md` first (what Shombith picked and rejected, in his words), and run `python3 Tools/Build/check_mockup.py <board.html>` on every mockup before it is shown.

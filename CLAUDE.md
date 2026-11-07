@@ -89,6 +89,13 @@ This file holds only the rules every session needs. Everything else moved verbat
   Garrett's bar: "the icons are teaching the ability". Read before touching `Assets/_Graphics/Icons/AbilityIcons/**`,
   a `<Hull>HUDVariant.prefab` ability card or a `*HUDView` card method. Elements have no colour (LOCKED).
   Sections: the plan; the audit; round status (§8); decisions (§10)
+- [`Docs/SKILL_TRAINING_PLAN.md`](Docs/SKILL_TRAINING_PLAN.md): **The next skills to train** (Garrett, 2026-11-07: "what is
+  missing or what could use more improvements"): the measured audit of what gets redone (`Tools/Build/rework_ledger.py`:
+  reverts, retirements, "again" commits, compile fixes, the 169 never-verified checklist sections, the 43 menu mockup
+  rounds, every skill's maturity), the shape that made `/vessel-model` and `/ability-icon` work, and the ranked rounds:
+  see the real game without a person, the world's look, the principles ledger and design brief, UI first drafts and
+  board parity, sound slots, multiplayer hand tests. Update its §6 status in every change that moves a step.
+  Sections: what made the last two rounds work; the audit; the ranked list; how to spend the cycles; decisions; status
 - [`Docs/Pilots/PORTRAITS.md`](Docs/Pilots/PORTRAITS.md): **The PILOT PORTRAITS are made by `/pilot-art`**
   (`Tools/Build/pilot_art/`: the brief composed from the pilot's record - the first animal's head, ONE feature
   from the second, the faction's gear in its domain colour, the callsign's mark - the painter protocol through the
@@ -403,6 +410,8 @@ a still by default, a short clip (60 s max, 15 fps, 1280x720) for motion or orde
 session or with Playwright for an artifact. The session reads at most 3-4 frames of its own clip (about 1.5k tokens
 each), sends the file with `SendUserFile`, never commits it, and says in the same message what only the Unity editor
 can judge (the final look, feel, audio). A clip never replaces the verify rule (§ Unity CLI verification) or the checklist's hand test.
+For the FINAL LOOK, the look sheet (`Docs/LOOK_SHEET.md`, `/unity-look`, built 2026-11-07, not yet run in Unity) captures the real
+renderer headless (menu screens, a race with the AI on every seat), gated and laid out, locally or through the `Look sheet` CI job.
 
 ## Code Style
 
