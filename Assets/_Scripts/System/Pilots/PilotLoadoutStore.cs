@@ -2,25 +2,27 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
-using UnityEngine;
 
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// The player's pilots and artifacts (Docs/Pilots/CALLSIGNS.md, Docs/Pilots/ARTIFACTS.md): which pilot sits in each
-    /// vessel's seat, which artifacts the player holds, which one is slotted on each vessel, the player's four track
-    /// levels on each artifact, and the elemental crystals they spend to raise them. Ids are the <c>PilotSO.Id</c> /
-    /// <c>ArtifactSO.Id</c> strings, which players save and nobody renames.
+    /// The player's pilots and artifacts (Docs/Pilots/INVENTORY.md): the crew of unique pilots, the Ark's hoard of unique
+    /// artifacts, which pilot sits in each vessel's seat and which artifact is in its slot outside a squad, and feeding an
+    /// artifact the crystals it accepts. Everything that reads or changes them goes through this class; the data is the
+    /// account's <see cref="AccountInventory"/> (<see cref="AccountInventoryStore"/>, the <c>ACCOUNT_INVENTORY</c> record).
     ///
-    /// <para><b>Crystals are the profile's.</b> The four elemental balances and the Omni balance are the player's
-    /// cloud profile (<see cref="CosmicShore.UI.PlayerDataService"/>, Shombith's section 97), so a raise spends the same
-    /// crystals the Hangar and the Converter show. <b>Track levels are a device-local stand-in</b> (PlayerPrefs): they
-    /// belong on the profile beside the Hangar's levels, and that is the backend, so it goes through Shombith
-    /// (Docs/Pilots/ARTIFACTS.md §10). Everything that reads or raises goes through this class, so the move is one
-    /// class.</para>
+    /// <para><b>Ids.</b> A pilot's id is its callsign's id plus '#' and a seed, an artifact's its kind's id plus '#' and a
+    /// seed (<see cref="UniqueId"/>); the catalog finds the callsign or kind from either (<see cref="PilotArtifactCatalogSO"/>).
+    /// A bare callsign or kind id is a legacy id from before 2026-11-07 and resolves to the crew's pilot of that callsign
+    /// or the hoard's first artifact of that kind.</para>
     ///
-    /// <para><b>2026-10-27 (Garrett):</b> built on Shombith's store; the found RANKS of the numeric artifacts are gone
-    /// with them. Every artifact is still free to hold (Shombith, 2026-10-26).</para>
+    /// <para><b>Crystals are the profile's.</b> The four elemental balances and the Omni balance are the player's cloud
+    /// profile (<see cref="CosmicShore.UI.PlayerDataService"/>, Shombith's section 97), so a feed spends the same crystals
+    /// the Hangar and the Converter show.</para>
+    ///
+    /// <para><b>2026-11-07 (Garrett):</b> every pilot is a unique person and every artifact unique, attuned to one element
+    /// it accepts without limit. The device-local PlayerPrefs this class kept since 2026-10-27 (seats, slots, finds,
+    /// four track levels per artifact) are folded into the inventory once and no longer written.</para>
     /// </summary>
     public static class PilotLoadoutStore
     {
@@ -28,10 +30,10 @@ namespace CosmicShore.Core
         public static event Action<VesselClassType, string> PilotChanged;
         /// <summary>A vessel's slotted artifact changed (Any: what the player holds changed).</summary>
         public static event Action<VesselClassType> ArtifactsChanged;
-        /// <summary>A track level or a crystal balance changed.</summary>
+        /// <summary>An artifact was fed, or a crystal balance changed.</summary>
         public static event Action UpgradesChanged;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
             PilotChanged = null;
@@ -39,103 +41,153 @@ namespace CosmicShore.Core
             UpgradesChanged = null;
         }
 
-        const char Separator = ',';
-        static string SeatKey(VesselClassType vessel) => $"pilots.seat.{(int)vessel}";
-        static string SlotsKey(VesselClassType vessel) => $"artifacts.slots.{(int)vessel}";
-        static string HeldKey(string artifactId) => $"artifacts.found.{artifactId}";
-        static string TrackKey(string artifactId, Element element) => $"artifacts.track.{artifactId}.{(int)element}";
+        static AccountInventory Inv => AccountInventoryStore.Current;
 
-        // ---- the seat ----
+        // ── The crew ───────────────────────────────────────────────────────
 
-        public static string GetPilot(VesselClassType vessel) => PlayerPrefs.GetString(SeatKey(vessel), string.Empty);
+        /// <summary>Every pilot in the crew, in the order they joined, into <paramref name="into"/> (cleared first).</summary>
+        public static void GetCrew(List<PilotRecord> into)
+        {
+            into.Clear();
+            foreach (var p in Inv.Pilots)
+                if (p != null) into.Add(p);
+        }
 
+        /// <summary>The crew's pilot a seat or slot id names (a unique id held, or a legacy callsign id); see
+        /// <see cref="AccountInventory.ResolvePilot"/>.</summary>
+        public static bool TryGetPilot(string id, out PilotRecord pilot)
+        {
+            pilot = string.IsNullOrEmpty(id) ? null : Inv.ResolvePilot(id);
+            return pilot != null;
+        }
+
+        /// <summary>The pilot promoted to captain, or null.</summary>
+        public static PilotRecord Captain => Inv.Captain();
+
+        /// <summary>Promotes a crew pilot to captain: the player joins their faction (VOYAGES.md §6.2.1).</summary>
+        public static bool PromoteToCaptain(string pilotId)
+        {
+            if (!Inv.PromoteToCaptain(pilotId)) return false;
+            AccountInventoryStore.Save();
+            return true;
+        }
+
+        /// <summary>Recruits a new pilot on <paramref name="callsign"/> (a voyage reward, an emissary, dev tooling). Null
+        /// when the crew already has that callsign.</summary>
+        public static PilotRecord Recruit(PilotVision callsign, FactionType factionType = FactionType.None, string origin = "recruit")
+        {
+            var pilot = Inv.MintPilot(callsign, factionType, origin, UniqueId.NowMs());
+            if (pilot == null) return null;
+            AccountInventoryStore.Save();
+            PilotChanged?.Invoke(VesselClassType.Any, pilot.Id);
+            return pilot;
+        }
+
+        // ── The seat (outside a squad) ─────────────────────────────────────
+
+        /// <summary>The pilot id seated on <paramref name="vessel"/>, or empty.</summary>
+        public static string GetPilot(VesselClassType vessel) => Inv.HangarFor(vessel)?.PilotId ?? string.Empty;
+
+        /// <summary>Seats a crew pilot on <paramref name="vessel"/>; empty clears the seat. A legacy callsign id seats the
+        /// crew's pilot of that callsign.</summary>
         public static void SetPilot(VesselClassType vessel, string pilotId)
         {
-            pilotId ??= string.Empty;
-            if (pilotId.Length == 0) PlayerPrefs.DeleteKey(SeatKey(vessel));
-            else PlayerPrefs.SetString(SeatKey(vessel), pilotId);
-            PlayerPrefs.Save();
-            PilotChanged?.Invoke(vessel, pilotId);
+            string id = string.IsNullOrEmpty(pilotId) ? string.Empty : Inv.ResolvePilot(pilotId)?.Id ?? string.Empty;
+            if (GetPilot(vessel) == id || !Inv.SetHangarPilot(vessel, id)) return;
+            AccountInventoryStore.Save();
+            PilotChanged?.Invoke(vessel, id);
         }
 
-        // ---- held artifacts ----
+        // ── The hoard ──────────────────────────────────────────────────────
 
-        /// <summary>Every artifact is free (Shombith, 2026-10-26: "all of these can be unlocked for free not buy it"),
-        /// except the ones found on voyages (<see cref="ArtifactSO.FoundOnVoyages"/>), which are locked until found
-        /// (Garrett, 2026-10-28).</summary>
-        public const bool EverythingIsFree = true;
-
-        /// <summary>True when the player holds this artifact: a free one always, one found on voyages once a find was
-        /// recorded (<see cref="Grant"/>; <see cref="Forget"/> takes it back).</summary>
-        public static bool Holds(string artifactId) =>
-            !string.IsNullOrEmpty(artifactId)
-            && ((EverythingIsFree && !MustBeFound(artifactId)) || PlayerPrefs.GetInt(HeldKey(artifactId), 0) > 0);
-
-        /// <summary>True for an artifact that is held only once found on a voyage.</summary>
-        public static bool MustBeFound(string artifactId)
+        /// <summary>Every artifact in the hoard, in the order they arrived, into <paramref name="into"/> (cleared first).</summary>
+        public static void GetHoard(List<ArtifactRecord> into)
         {
+            into.Clear();
+            foreach (var a in Inv.Artifacts)
+                if (a != null) into.Add(a);
+        }
+
+        /// <summary>The held artifact <paramref name="id"/> names (a unique id held, or a legacy kind id).</summary>
+        public static bool TryGetArtifact(string id, out ArtifactRecord artifact)
+        {
+            artifact = string.IsNullOrEmpty(id) ? null : Inv.ResolveArtifact(id);
+            return artifact != null;
+        }
+
+        /// <summary>True when the hoard holds this artifact (for a legacy kind id: any artifact of that kind).</summary>
+        public static bool Holds(string artifactId) => TryGetArtifact(artifactId, out _);
+
+        /// <summary>
+        /// Puts an artifact in the hoard: a voyage find stowed home, a wreck's salvage. A unique id already held changes
+        /// nothing (the squad's own artifact coming home); a unique id from elsewhere is re-rolled from its seed (its
+        /// crystals fed stay with whoever lost it until the backend moves records between accounts); a bare kind id mints
+        /// a brand-new artifact of that kind. Returns the held artifact, or null for an unknown kind.
+        /// </summary>
+        public static ArtifactRecord Grant(string artifactId, string origin = "voyage")
+        {
+            if (string.IsNullOrEmpty(artifactId)) return null;
+            var held = Inv.Artifact(artifactId);
+            if (held != null) return held;
             var catalog = PilotArtifactCatalogSO.Load();
-            return catalog && catalog.TryGetArtifact(artifactId, out var artifact) && artifact.FoundOnVoyages;
-        }
-
-        /// <summary>Records a find (an artifact stowed home from a voyage).</summary>
-        public static void Grant(string artifactId)
-        {
-            if (string.IsNullOrEmpty(artifactId)) return;
-            PlayerPrefs.SetInt(HeldKey(artifactId), 1);
-            PlayerPrefs.Save();
+            if (!catalog || !catalog.TryGetArtifact(artifactId, out var kindSO)) return null;
+            var kind = kindSO.ToArchetype();
+            long now = UniqueId.NowMs();
+            ArtifactRecord granted;
+            if (UniqueId.IsUnique(artifactId))
+            {
+                granted = ArtifactGenerator.FromId(artifactId, kind, origin, now);
+                if (granted == null || Inv.TryAddArtifact(granted) != AccountInventory.AddResult.Added) return null;
+            }
+            else granted = Inv.MintArtifact(kind, origin, now);
+            if (granted == null) return null;
+            AccountInventoryStore.Save();
             ArtifactsChanged?.Invoke(VesselClassType.Any);
+            return granted;
         }
 
-        /// <summary>Forgets a find (an artifact lost with a fallen Ark; dev tooling).</summary>
+        /// <summary>Takes an artifact out of the hoard (lost with a fallen Ark; dev tooling).</summary>
         public static void Forget(string artifactId)
         {
-            if (string.IsNullOrEmpty(artifactId)) return;
-            PlayerPrefs.DeleteKey(HeldKey(artifactId));
-            PlayerPrefs.Save();
+            var held = Inv.ResolveArtifact(artifactId);
+            if (held == null || !Inv.RemoveArtifact(held.Id)) return;
+            AccountInventoryStore.Save();
             ArtifactsChanged?.Invoke(VesselClassType.Any);
         }
 
-        // ---- the slot ----
+        // ── The slot (outside a squad) ─────────────────────────────────────
 
-        /// <summary>The vessel's slotted artifact ids, in slot order, into <paramref name="into"/> (cleared first).</summary>
+        /// <summary>The vessel's slotted artifact ids into <paramref name="into"/> (cleared first): one slot per vessel.</summary>
         public static void GetSlotted(VesselClassType vessel, List<string> into)
         {
             into.Clear();
-            Split(PlayerPrefs.GetString(SlotsKey(vessel), string.Empty), into);
+            string id = GetSlottedArtifact(vessel);
+            if (id.Length > 0) into.Add(id);
         }
 
-        /// <summary>The vessel's first slotted artifact id, or empty.</summary>
-        public static string GetSlottedArtifact(VesselClassType vessel)
-        {
-            var saved = PlayerPrefs.GetString(SlotsKey(vessel), string.Empty);
-            int cut = saved.IndexOf(Separator);
-            return cut < 0 ? saved : saved.Substring(0, cut);
-        }
+        /// <summary>The vessel's slotted artifact id, or empty.</summary>
+        public static string GetSlottedArtifact(VesselClassType vessel) => Inv.HangarFor(vessel)?.ArtifactId ?? string.Empty;
 
-        /// <summary>The vessel's one slot set to <paramref name="artifactId"/> (empty, or one not held, clears it).</summary>
+        /// <summary>The vessel's one slot set to <paramref name="artifactId"/> (empty, or one not held, clears it). An
+        /// artifact rides one vessel at a time, so it leaves any other vessel's slot.</summary>
         public static void SetSlottedArtifact(VesselClassType vessel, string artifactId)
         {
             if (vessel == VesselClassType.Any) return;
-            string id = Holds(artifactId) ? artifactId : string.Empty;
-            if (GetSlottedArtifact(vessel) == id) return;
-            if (id.Length == 0) PlayerPrefs.DeleteKey(SlotsKey(vessel));
-            else PlayerPrefs.SetString(SlotsKey(vessel), id);
-            PlayerPrefs.Save();
+            string id = TryGetArtifact(artifactId, out var held) ? held.Id : string.Empty;
+            if (GetSlottedArtifact(vessel) == id || !Inv.SetHangarArtifact(vessel, id)) return;
+            AccountInventoryStore.Save();
             ArtifactsChanged?.Invoke(vessel);
         }
 
-        /// <summary>Slots the artifact if there is room and it is held, or takes it out if it is slotted. True when it
-        /// ends up slotted. With one slot, slotting another artifact replaces the one there.</summary>
+        /// <summary>Slots the artifact if it is held (replacing the one there), or takes it out if it is slotted. True when
+        /// it ends up slotted.</summary>
         public static bool ToggleSlot(VesselClassType vessel, string artifactId, int slotCount)
         {
             var slotted = new List<string>();
             GetSlotted(vessel, slotted);
             if (slotCount == 1 && slotted.Count == 1 && slotted[0] != artifactId && Holds(artifactId)) slotted.Clear();
             bool now = Toggle(slotted, artifactId, slotCount, Holds(artifactId));
-            PlayerPrefs.SetString(SlotsKey(vessel), string.Join(Separator.ToString(), slotted));
-            PlayerPrefs.Save();
-            ArtifactsChanged?.Invoke(vessel);
+            SetSlottedArtifact(vessel, slotted.Count > 0 ? slotted[0] : string.Empty);
             return now;
         }
 
@@ -150,17 +202,21 @@ namespace CosmicShore.Core
             return true;
         }
 
-        // ---- upgrades: track levels and crystals (Docs/Pilots/ARTIFACTS.md §4) ----
+        // ── Levels and feeding (Docs/Pilots/INVENTORY.md §2.3) ─────────────
 
-        /// <summary>The player's level on <paramref name="artifactId"/>'s <paramref name="element"/> track, 0 to 10.</summary>
-        public static int TrackLevel(string artifactId, Element element) =>
-            string.IsNullOrEmpty(artifactId) ? 0
-                : Mathf.Clamp(PlayerPrefs.GetInt(TrackKey(artifactId, element), 0), 0, ArtifactTrack.MaxLevel);
-
-        /// <summary>The player's four levels on an artifact.</summary>
-        public static ArtifactLevels Levels(string artifactId) => new(
-            TrackLevel(artifactId, Element.Mass), TrackLevel(artifactId, Element.Space),
-            TrackLevel(artifactId, Element.Time), TrackLevel(artifactId, Element.Charge));
+        /// <summary>
+        /// The four track levels of the artifact <paramref name="artifactId"/> names: a held one's own; a unique id the
+        /// player does not hold (a friend's, a peer's) as rolled from its seed, with nothing fed; anything else all zero.
+        /// </summary>
+        public static ArtifactLevels Levels(string artifactId)
+        {
+            if (TryGetArtifact(artifactId, out var held)) return held.Levels();
+            var catalog = PilotArtifactCatalogSO.Load();
+            if (catalog && catalog.TryGetArtifact(artifactId, out var kind)
+                && ArtifactGenerator.FromId(artifactId, kind.ToArchetype()) is { } rolled)
+                return rolled.Levels();
+            return default;
+        }
 
         /// <summary>The player's crystals of <paramref name="element"/> on their profile (Mass, Space, Time and Charge
         /// are the elemental balances, Omni the omni-crystal balance). 0 before the profile is loaded.</summary>
@@ -181,68 +237,62 @@ namespace CosmicShore.Core
             UpgradesChanged?.Invoke();
         }
 
-        /// <summary>Sets an artifact's four track levels back to 0 (dev tooling).</summary>
-        public static void ResetTracks(string artifactId)
+        /// <summary>Empties what an artifact was fed, back to the level it was rolled at (dev tooling; no refund).</summary>
+        public static void ResetFed(string artifactId)
         {
-            if (string.IsNullOrEmpty(artifactId)) return;
-            foreach (var e in new[] { Element.Mass, Element.Space, Element.Time, Element.Charge })
-                PlayerPrefs.DeleteKey(TrackKey(artifactId, e));
-            PlayerPrefs.Save();
+            if (!TryGetArtifact(artifactId, out var held) || held.Invested == 0) return;
+            held.Invested = 0;
+            AccountInventoryStore.Save();
             UpgradesChanged?.Invoke();
+        }
+
+        /// <summary>Why a feed was refused, or <see cref="Fed"/>.</summary>
+        public enum FeedOutcome
+        {
+            Fed = 0,
+            NotEnoughCrystals = 1,
+            NoSuchArtifact = 2,
+            WrongElement = 3,
+            NothingToFeed = 4,
+        }
+
+        /// <summary>
+        /// The feed rule, pure: <paramref name="artifact"/> takes <paramref name="crystals"/> of <paramref name="payer"/>
+        /// when it accepts that crystal (its own element, or Omni) and the balance covers it.
+        /// </summary>
+        public static FeedOutcome Check(ArtifactRecord artifact, Element payer, long crystals, int balance)
+        {
+            if (artifact == null) return FeedOutcome.NoSuchArtifact;
+            if (!artifact.Accepts(payer)) return FeedOutcome.WrongElement;
+            if (crystals <= 0) return FeedOutcome.NothingToFeed;
+            return balance >= crystals ? FeedOutcome.Fed : FeedOutcome.NotEnoughCrystals;
+        }
+
+        /// <summary>
+        /// Spends <paramref name="crystals"/> of the artifact's own element (or of Omni when <paramref name="payWithOmni"/>)
+        /// and feeds them to it. There is no limit; each crystal adds a little less than the one before
+        /// (<see cref="ArtifactCurve"/>). <paramref name="result"/> carries the level before and after.
+        /// </summary>
+        public static FeedOutcome TryFeed(string artifactId, int crystals, bool payWithOmni, out AccountInventory.FeedResult result)
+        {
+            result = default;
+            if (!TryGetArtifact(artifactId, out var artifact)) return FeedOutcome.NoSuchArtifact;
+            var payer = payWithOmni ? Element.Omni : artifact.Element;
+            var outcome = Check(artifact, payer, crystals, Crystals(payer));
+            if (outcome != FeedOutcome.Fed) return outcome;
+            if (!Spend(payer, crystals)) return FeedOutcome.NotEnoughCrystals;
+            result = Inv.Feed(artifact.Id, payer, crystals);
+            AccountInventoryStore.Save();
+            UpgradesChanged?.Invoke();
+            return FeedOutcome.Fed;
         }
 
         static bool Spend(Element element, int amount)
         {
             var data = CosmicShore.UI.PlayerDataService.Instance;
             if (!data) return false;
-            const string source = "artifact track";
+            const string source = "artifact feed";
             return element == Element.Omni ? data.TrySpendCrystals(amount, source) : data.TrySpendElementalCrystals(element, amount, source);
-        }
-
-        /// <summary>Why a raise was refused, or <see cref="Raised"/>.</summary>
-        public enum RaiseResult
-        {
-            Raised = 0,
-            AtTop = 1,
-            NotEnoughCrystals = 2,
-            NoSuchTrack = 3,
-        }
-
-        /// <summary>
-        /// The spend rule, pure: raising a track from <paramref name="level"/> costs its next level's price, paid
-        /// entirely in the track's own crystals, or entirely in Omni when the player picks it (§4: Omni raises any one
-        /// track, the player's pick). <paramref name="balance"/> is the balance of whichever crystal pays.
-        /// </summary>
-        public static RaiseResult Price(ArtifactTrack track, int level, int balance, out int cost)
-        {
-            cost = 0;
-            if (track == null) return RaiseResult.NoSuchTrack;
-            cost = track.CostFrom(level);
-            if (cost <= 0) return RaiseResult.AtTop;
-            return balance >= cost ? RaiseResult.Raised : RaiseResult.NotEnoughCrystals;
-        }
-
-        /// <summary>Spend crystals to raise <paramref name="artifact"/>'s <paramref name="element"/> track one level,
-        /// paying in that element's crystals, or in Omni when <paramref name="payWithOmni"/>.</summary>
-        public static RaiseResult TryRaise(ArtifactSO artifact, Element element, bool payWithOmni = false)
-        {
-            if (!artifact) return RaiseResult.NoSuchTrack;
-            var payer = payWithOmni ? Element.Omni : element;
-            int level = TrackLevel(artifact.Id, element);
-            var result = Price(artifact.Track(element), level, Crystals(payer), out int cost);
-            if (result != RaiseResult.Raised) return result;
-            if (!Spend(payer, cost)) return RaiseResult.NotEnoughCrystals;
-            PlayerPrefs.SetInt(TrackKey(artifact.Id, element), level + 1);
-            PlayerPrefs.Save();
-            UpgradesChanged?.Invoke();
-            return RaiseResult.Raised;
-        }
-
-        static void Split(string saved, List<string> into)
-        {
-            if (string.IsNullOrEmpty(saved)) return;
-            foreach (var part in saved.Split(Separator))
-                if (part.Length > 0 && !into.Contains(part)) into.Add(part);
         }
     }
 }

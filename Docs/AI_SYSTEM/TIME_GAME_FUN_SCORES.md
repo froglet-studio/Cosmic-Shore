@@ -92,3 +92,51 @@ note on what blocks each one.
 | Starling | The pilot does not steer (a passive swarm), so a gate race contradicts the vessel | Needs a different kind of Time goal |
 | Meerkat | Already has one, Burrow Run (71), on `Ys-bleeding-edge` | - |
 | Termite, Falcon | Not live vessels (no ability map, not in the Vessel Changer) | - |
+
+## 2026-11-07, round 3: the unowned floors, raised
+
+Garrett: "solve all the problems with all of the time games ... find the floors that no one is working on and make
+those incredible. if it is a problem with the vessel ... propose fixes to the vessel." Yash's (Dolphin, Manta, Stoat,
+Thresher, Meerkat) and Shombith's (Angler, Brittle Star, Serpent) games were left alone; Squirrel's Skim Race is the bar.
+
+| Vessel | Game | Change | PR | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Rhino | Headlong | the stampede: hedges of mass to plough (I1), apex Time crystals (I2), thorn hedges with an escape window (I3), a Time-5 start with thorns where a clean exit reaches Momentum (I4); the AI takes thorn windows | #1796 | 9 | 7 | **9** | **5** | 2 | 2 | **5.7** |
+| Urchin | Skein | I3 at 3 laps: rides 32 / 63 / **95** / 190 s, next ring on screen 100 / 58 / **25** / 0 % | #1798 | 8 | **6** | **7** | 4 | 3 | 3 | **5.2** |
+| Shrike | **Thornline** (new, 79) | thorn to thorn on the Void Sling, a ring a leg; plain thorns and rim crystals (I2), snipes (I3), the smallest thorns (I4) | #1800 | 9 | 7 | 8 | 5 | 2 | 3 | **5.7** est. |
+
+Each change is measured offline (Headlong: `headlong_stampede_model.py`, a reading pilot beats the best fixed plan by
+1 / 4 / 4 % at I2-I4; Thornline: `thornline_course_harness/run.sh --sweep`, 17 / 29 / 36 % on the reload clock). None
+has been flown; Rivals and Fairness stay low until people race them.
+
+**Checked and left as they are** (ladders sound, generators pass `--check`; the floor is that nobody has raced them):
+Scarab Rally, Breakwater, Grizzly Time, Wrasse Run, Waystation.
+
+### Proposals for the vessels and their AIs (not changed: each is the owner's call)
+
+| Vessel | What the Time game exposed | Proposal | Owner to ask |
+|---|---|---|---|
+| Scarab | The AI holds full throttle and never drifts or jukes, so it races Scarab Rally's hairpins on the full-throttle circle and cannot learn the mode's verbs | give the Scarab autopilot a drift on corners tighter than its ~102 u circle and a juke when the next mouth is off its line (input-only, through the replicated press) | Garrett (his #1786 is in the Scarab AI files) |
+| Shrike | The autopilot presses Mass (detach and nest) after 3 s docked (`aiDockSeconds`), but a plain thorn's reload is 3.1 s at Time 0, so an AI leaves before the sling is ready and reloads at the undocked rate | raise `aiDockSeconds` past the docked reload, or detach only when the sling is ready and has no anchor | Garrett (the Shrike's designer) |
+| Shrike | Whether `AIPilot` can hold a zero-radius ray on a 32 u block at 1,000 u (2°) is unmeasured; if not, the AI crawls in Thornline | measure in the editor first (Thornline's checklist step 7); the fix is the AI's aim, not bigger thorns | Yash (AI) |
+| Rhino | The Headlong AI never reaches the ramp's top speed (the scorecard's Rivals 1) | Garrett's own #1790 turns on `AICommitFromApproachPoint`; #1796 only adds the thorn-window choice beside it | Garrett |
+| Starlings | Hairpins take 2-3x as long as open water (the Starlings lab), which matters for Regatta | a turn-rate floor for the swarm's centroid, decided in the Starlings lab before Unity | Garrett |
+
+### The four new vessels still without a Time game
+
+Orca, Honeyguide, Goby and Jacks are Garrett's own, all from October. Their hulls fly networked (as the Wrasse's does in
+Wrasse Run), but each one's second-seat trick runs on one machine only: the Orca's gunners and their bursts, the Ratel's
+Dynamo board and its battery, the Goby's Pistol. A race built on those tricks would only work for the person flying.
+One-paragraph designs, each built on what the hull does today:
+
+- **Jacks, "Decoy Run"**: the Jacks' Time card IS travel: herding, a pull lays a decoy at a jack; flying, a pull flies the
+  hull to it at 900 u/s (published, so every peer sees it). Rings in pairs across the cell: herd the jacks to drop the
+  two decoys beyond the next rings, switch to flight, and pull through them. I2 moves rings out of the board's plane, I3
+  needs Time 5's second decoy, I4 puts fauna in the way. Fully networked today.
+- **Goby, "Perch Run"**: a Thornline cousin. The Goby perches and darts, and a dart into open space makes its own perch,
+  so the course is rings at dart range with open water between, and the skill is how far each dart goes. Blocked on
+  whether the dart is networked (`GobyPistolDuo` simulates locally).
+- **Honeyguide, "Slip Line"**: rails of each domain between rings; the Slip zips along a rail whose domain the battery
+  holds. The Ratel's patterns decide which rails you can ride. Blocked on the battery being replicated.
+- **Orca, "Convoy"**: the helm's boost tank through rings, with walls only a gunner can clear. Blocked on bursts and
+  prism breaks replicating (today they do not).
