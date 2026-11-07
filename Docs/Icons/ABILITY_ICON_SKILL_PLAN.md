@@ -456,6 +456,10 @@ arcs. Mass Mode: the ball (domain) lays its own row; breaking, it is white and t
 row. Winch: released the chain sags, pulled it runs straight and the ball swings; Breaker shows a super-shielded
 prism ahead. Plant: the shark on its orbit round the stopped ball. Omni: Windmill. The Space plate's lime fill became
 the domain (the CTA lime is never an "on" colour). Sheets: `Docs/Icons/sheets/thresher_{wreck,massmode,winch,plant,omni}.png`.
+**The Meerkat (2026-11-07, the roster pass; Yash's round-1 set kept):** the set already drew the real hull and
+passed every gate; two fixes only. The Exit Portal's six prisms were `prism_halves`, which read as rhombi at 40 px, so
+they are `prism_square_x` now; and the hull (`Meerkat.fbx`, a thin stick side-on) is dilated 2.6 px instead of 1.4 so
+Sentinel Mode and Faster Ride hold at 40 px. Guids kept (`meerkat_icon_ids.py`). Sheet: `Docs/Icons/sheets/meerkat.png`.
 
 | Round | What | Why first |
 |---|---|---|
