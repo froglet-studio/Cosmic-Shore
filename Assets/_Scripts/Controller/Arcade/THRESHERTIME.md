@@ -72,8 +72,21 @@ form, the budget).
   circle it will leave from; during the Thresher's hit-stop (time scale 0.05) the clock-scaled speed falls under the
   ring's and the solve may pick a far root for those few frames; a mace threat first seen inside the last 20 u before
   its plane cannot be dived under (the hull cannot drop 30 u in 20 u).
-- **Not yet raced in Unity.** The A/B is `-ttSoakBelfryAI 0|1` (the soak also reports ducks and broken Belfry prisms).
-  The AI numbers are authored by the generator (`BELFRY_AI_FIELDS`, checked equal to the C# defaults).
+- **Raced in Unity, 2026-11-07** (the A/B soak, `-ttSoakBelfryAI 0|1`, same courses, seeds 7001-7003, 3 races a rung,
+  time scale 1; every race finished in both arms; `Logs/tt_belfry_ab.jsonl`):
+
+  | | median s, off -> on | mean s, off -> on | off-ring deg | Belfry broken | ducks |
+  |---|---|---|---|---|---|
+  | I1 | 96.5 -> 88.8 | 101.8 -> 85.6 | 5.1 -> 5.5 | 0 -> 0 | 0 |
+  | I2 | 126.5 -> 119.8 | 128.8 -> 119.7 | 4.6 -> 5.6 | 112 -> 87 | 0 |
+  | I3 | 146.3 -> 148.0 | 138.7 -> 141.8 | 6.8 -> 5.0 | 215 -> 149 | 5 |
+  | I4 | 215.7 -> 217.8 | 245.6 -> 202.8 | 6.3 -> 4.8 | 980 -> 886 | 23 |
+
+  Faster at I1-I2 in every measure; even at I3; at I4 the median is even but the mean and the worst race (330 -> 241 s)
+  are better. Three races a rung is a small sample. **What it leaves:** I4 still breaks ~890 Belfry prisms a race - the
+  AI flies through the ring's centre while the I4 shutters sweep across it, and it does not time them yet. That is the
+  next lever (wait or arrive on the shutters' open beat), and I4 is still about twice the pre-Belfry 111 s.
+- The AI numbers are authored by the generator (`BELFRY_AI_FIELDS`, checked equal to the C# defaults).
 
 ## 0. Targets: a nest to break at every gate (Yash, 2026-11-04)
 

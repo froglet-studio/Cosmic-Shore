@@ -241,6 +241,11 @@ I4). Serialized on the controller (`belfryAILead`, `belfryAIDuck`, ...). The soa
 gains `-ttSoakBelfryAI 0|1`, `ducks` and `belfryBroken`. `check_ai_no_state_writes.py` now walks `ThresherTime/AI`
 (proved: a planted `s.Speed = 1f` there fails it). Plan step: time-arcade.
 
+**Raced (2026-11-07):** the A/B soak ran in batch Unity (so the real editor compiled it): every race finished in both arms;
+median AI-off -> AI-on I1 96.5 -> 88.8 s, I2 126.5 -> 119.8 s, I3 146.3 -> 148.0 s, I4 215.7 -> 217.8 s (mean
+245.6 -> 202.8 s); 23 ducks at I4, Belfry prisms broken 980 -> 886 (`THRESHERTIME.md` §0a). Steps 2 and 3 below are done;
+the EditMode tests (step 1), the watched race and the profiler are not.
+
 **Verified:** the changed and new files compile with Unity's own Roslyn (`Editor/Data/DotNetSdkRoslyn/csc.dll`,
 LangVersion 9, the project's 142 define symbols) against the project's built assemblies, runtime and tests, 0 errors.
 The open editor could NOT recompile (a Multiplayer Play Mode session was running; `unity recompile` answered
