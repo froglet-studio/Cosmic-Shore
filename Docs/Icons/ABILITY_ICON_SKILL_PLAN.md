@@ -405,6 +405,15 @@ the omni card, the Soliton Network (three tunnels forking from a mouth). Single 
 `MeerkatHUDView` fills; `MeerkatHUDVariant` (`author_meerkat_assets.py`, the Angler's clone pattern) binds them by the
 guids in `Tools/Build/meerkat_icon_ids.py`. Not reviewed by Garrett yet: the next round is his pick, one card at a time.
 
+**The Shrike (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the four
+glyphs drew a generic chevron; every card now draws the real hull from above (`Shrike.fbx`) in parts
+`ShrikeHUDView.RefreshParts` paints. Targeting Array: the Shrike paints a rival prism inside a reticle (a ring with four
+ticks, never the rhombus), solid once locked with the flora's missiles coming in. Nest: the Shrike docked in a cup of
+super-shielded blocks (squares with a negative-space X), a nest flora with its missile once one stands. Void Lance:
+the beam breaks the prism in its line; Void Pierce adds a super-shielded block the beam cuts. Void Sling: the tether to
+the anchor block, the thick blocks laid behind while slinging. Omni: the plain crystal. The selected mode's colour is
+the pilot's domain, not the CTA lime. Sheets: `Docs/Icons/sheets/shrike_{array,nest,lance,sling,omni}.png`.
+
 **The Urchin (2026-11-07, round 6, the roster pass; picks made by the session on Garrett's go-ahead to choose):**
 every card redrawn from the real mesh nose-on and in parts the HUD drives. Chain Spikes (A): the Urchin (domain) throws
 a spike into a rival prism (danger) that sprays the next generation; Overcharge swaps in the full-length spray and a
