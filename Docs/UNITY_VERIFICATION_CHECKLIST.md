@@ -21595,3 +21595,27 @@ new edit-mode tests were compiled, not run. Details: `Docs/Reports/REGATTA_COURS
    different circuits. The start line sits behind the laid circuit's first ring.
 3. **Play a two-machine match**: host and client lay the same circuit (same rings, same rails).
 4. **Watch a Regatta replay** in its real scene: it lays the circuit the match was flown on.
+## 🔴 Regatta course features: rail sections, gaps, detours, alternate rings, line crystals (2026-11-06, Garrett's plan brief 10, NOT RUN IN EDITOR)
+Branch `claude/project-thread-d75lky`. `RegattaCourseFeatures` on `SpawnableRegattaRails` (empty on every shipped variant,
+which lays today's course prism for prism: the course harness output, `course.js` and the measurements are byte-identical).
+Compiled with `unity_refcompile` (0 errors in the changed files; the 21 errors it reports are in `UgsRequestPolicy.cs`, untouched
+here) and `RegattaCourseFeaturesTests` RUN offline by `Tools/Build/regatta_course_harness/features.sh` against the harness's
+UnityEngine and NUnit stubs (9/9). Nothing has been played. Set `RegattaCourseFeatures.Override` from a test or fill a variant's
+`courseFeatures` on a scratch copy, never on a shipped variant without Yash.
+1. **Run the edit-mode tests** `RegattaCourseFeaturesTests` and `RegattaCourseTests` in the editor.
+2. **Empty features, any intensity:** play Regatta. The rails, the rings, the AI and the crystals in the nucleus are as before
+   (an AI Urchin rides its own lane; a Squirrel AI skims its own lane; the race-line hulls fly their sides).
+3. **A neutral stretch** (`Sections`: Leg -1, From 0.3, To 0.7, Neutral): the middle of every leg is Blue; an AI Urchin leaves
+   its rail there and re-latches after; a Squirrel AI keeps skimming through it.
+4. **A gap** (Leg 2, From 0.4, To 0.6, Kind Gap): nothing is laid there, an Urchin riding into it launches off the rail end and
+   re-attaches on the far side; no `NullReferenceException` from the lane readers (controller, Skim Race pilot, flight recorder).
+5. **A detour** (Leg -1, From 0.15, To 0.85, Detour 90, DetourBearing 45): the braid bows off the line mid-leg and still passes
+   through every ring at the lane offset; the race-line AIs follow it without missing a mouth.
+6. **Plain / shielded stretches** (Kind Plain / Shielded): a Rhino sword, a Sparrow gun or a Dolphin blast cuts the plain stretch;
+   an Urchin riding a cut stretch keeps going at its destroyed-terrain speed.
+7. **An alternate ring** (`AlternateGates`: Ring 3, Offset 250, Bearing 0): a second ring stands beside ring 4, lights with it,
+   and threading EITHER counts once (the gate count and the scoreboard advance by one); an AI that is not riding takes it when
+   it is the shorter way.
+8. **Line crystals** (`Crystals`: PerLap 3): three crystals sit on the racing line and respawn in place; no AI turns off its line
+   for one; with PerLap 0 the nucleus crystals are back.
+9. **Two machines:** host and client see the same alternate rings, gaps and crystals.

@@ -287,21 +287,10 @@ namespace CosmicShore.Gameplay
 
             if (!_laneByDomain.TryGetValue(pilot.Domain, out var lane) || lane == null || lane.Count == 0)
             {
-                lane = null;
-                var trails = _railsForAI.GetTrails();
-                if (trails != null)
-                    foreach (var trail in trails)
-                    {
-                        var list = trail?.TrailList;
-                        if (list == null) continue;
-                        foreach (var prism in list)
-                        {
-                            if (!prism) continue;
-                            if (prism.Domain == pilot.Domain) lane = list;
-                            break;   // a lane is one colour: its first live prism says which
-                        }
-                        if (lane != null) break;
-                    }
+                // The lane laid in the pilot's colour, by lane (a lane's first prism may be a neutral stretch, and a
+                // gap cuts a lane into several trails: SpawnableRegattaRails.LanePrisms joins them in order).
+                int laneIndex = _railsForAI.LaneOf(pilot.Domain);
+                lane = laneIndex >= 0 ? _railsForAI.LanePrisms(laneIndex) : null;
                 _laneByDomain[pilot.Domain] = lane;
                 if (lane == null) return false;
             }
@@ -352,18 +341,18 @@ namespace CosmicShore.Gameplay
         {
             point = default;
             distance = float.MaxValue;
-            var trails = _railsForAI ? _railsForAI.GetTrails() : null;
-            if (trails == null) return false;
+            if (!_railsForAI) return false;
             float best = float.MaxValue;
-            _laneByDomain.TryGetValue(own, out var ownLane);
-            foreach (var trail in trails)
+            int ownLane = _railsForAI.LaneOf(own);
+            for (int lane = 0; lane < _railsForAI.LaneCount; lane++)
             {
-                var list = trail?.TrailList;
-                if (list == null || list.Count == 0 || ReferenceEquals(list, ownLane)) continue;
+                if (lane == ownLane) continue;
+                var list = _railsForAI.LanePrisms(lane);
+                if (list == null || list.Count == 0) continue;
                 for (int i = 0; i < list.Count; i += 2)
                 {
                     var prism = list[i];
-                    if (!prism || prism.Domain == own) continue;
+                    if (!prism) continue;
                     float d = (prism.transform.position - from).sqrMagnitude;
                     if (d < best) { best = d; point = prism.transform.position; }
                 }
@@ -413,6 +402,9 @@ namespace CosmicShore.Gameplay
             aim = after = default;
             var status = pilot?.Vessel?.VesselStatus;
             if (status == null || status.VesselType == VesselClassType.Urchin || status.IsAttached) return false;
+            // Bound for this gate's ALTERNATE ring (ChooseAIGate): the line threads the course ring only, so fly the
+            // platform's gate way to the alternate instead.
+            if (TakesAlternate(pilot)) return false;
 
             var style = LineStyleFor(status.VesselType);
             if (!style) return false;
@@ -485,26 +477,17 @@ namespace CosmicShore.Gameplay
             state = default;
             if (_course.Count == 0 || PrismTrailBuilder.IsLayingInProgress) return false;
             if (!_railsForAI && !RegattaCourseSource.TryResolveLiveRails(out _railsForAI, out _)) return false;
-            var trails = _railsForAI.GetTrails();
-            if (trails == null) return false;
-
             var lanes = new List<List<Vector3>>(3);
             int own = -1;
-            foreach (var trail in trails)
+            for (int laneIndex = 0; laneIndex < _railsForAI.LaneCount; laneIndex++)
             {
-                var list = trail?.TrailList;
+                var list = _railsForAI.LanePrisms(laneIndex);
                 if (list == null) continue;
                 var points = new List<Vector3>(list.Count);
-                Domains laneDomain = default;
-                bool known = false;
                 foreach (var prism in list)
-                {
-                    if (!prism) continue;
-                    if (!known) { laneDomain = prism.Domain; known = true; }
-                    points.Add(prism.transform.position);
-                }
+                    if (prism) points.Add(prism.transform.position);
                 if (points.Count < 3) continue;
-                if (known && laneDomain == domain) own = lanes.Count;
+                if (SpawnableRegattaRails.LaneDomain(laneIndex) == domain) own = lanes.Count;
                 lanes.Add(points);
             }
             if (lanes.Count != 3) return false;
@@ -538,12 +521,127 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        // ── Course features: alternate rings and line crystals (RegattaCourseFeatures) ──────────────────
+
+        [Header("Course features")]
+        [Tooltip("An AI takes a gate's ALTERNATE ring only when flying through it (here -> ring -> the next gate) is " +
+                 "shorter than through the course ring by more than this share. Decided once per gate, as the pilot " +
+                 "starts the leg into it, so it never dithers between the two. Rail riders (an attached Urchin) and the " +
+                 "Squirrel's own pilot always fly the course ring the rails thread.")]
+        [SerializeField, Range(0f, 0.5f)] float aiAlternateMargin = 0.05f;
+
+        readonly Dictionary<int, RaceGateRing> _alternateRings = new();
+        readonly Dictionary<int, RaceGate> _alternateGates = new();
+        readonly Dictionary<ulong, (int threaded, bool alternate)> _alternateChoice = new();
+        CrystalManager _lineCrystalManager;
+
+        /// <summary>The features of the arena this match lays (the prefab's, or a benchmark's override).</summary>
+        RegattaCourseFeatures ResolveFeatures() =>
+            TryResolveArena(out var arena, out _) ? arena.Features
+            : RegattaCourseFeatures.Override ?? RegattaCourseFeatures.None;
+
+        /// <summary>
+        /// Every peer, once the rings stand: the alternate ring of each gate that has one (a pure function of the course
+        /// ring and its neighbours, so every peer derives the same ring from the course it was sent), as a child of the
+        /// course ring so its retirement takes it along. The server also hands the line crystals to the cell's crystal
+        /// manager as course keys (Switchback Blast Run's seam): laid at their points, respawned in place. An empty
+        /// feature set adds nothing, which is the course as it was.
+        /// </summary>
+        protected override void OnCourseRaised()
+        {
+            _alternateRings.Clear();
+            _alternateGates.Clear();
+            _alternateChoice.Clear();
+            var features = ResolveFeatures();
+            if (features == null || features.IsEmpty) return;
+
+            var theme = gameData ? gameData.ThemeManagerData : null;
+            for (int i = 0; i < _course.Count; i++)
+            {
+                if (!features.TryAlternate(_course, i, out var alternate)) continue;
+                var courseRing = i < _rings.Count ? _rings[i] : null;
+                var go = new GameObject($"Gate_{i + 1:00}_Alternate");
+                go.transform.SetParent(courseRing ? courseRing.transform : transform, false);
+                var ring = go.AddComponent<RaceGateRing>();
+                ring.Build(i, alternate, theme, 0.9f);
+                _alternateRings[i] = ring;
+                _alternateGates[i] = alternate;
+            }
+
+            if (IsServer && features.Crystals.PerLap > 0) PlaceLineCrystals(features);
+        }
+
+        void PlaceLineCrystals(RegattaCourseFeatures features)
+        {
+            if (!TryResolveArena(out var arena, out string why))
+            {
+                CSDebug.LogWarning($"[Regatta] line crystals not laid: {why}");
+                return;
+            }
+            var layout = RegattaCourse.BuildRails(arena.BuildGatesNow(), arena.RailSettings, features);
+            var points = features.LineCrystalPoints(layout);
+            if (points.Count == 0) return;
+            Vector3 centre = ResolveCellCentre();
+            for (int i = 0; i < points.Count; i++) points[i] += centre;
+            _lineCrystalManager = Object.FindAnyObjectByType<CrystalManager>(FindObjectsInactive.Include);
+            if (_lineCrystalManager) _lineCrystalManager.SetCourseKeys(points);
+            else CSDebug.LogWarning("[Regatta] no CrystalManager in the scene - the line crystals are not laid.");
+        }
+
+        protected override bool ThreadsGate(int ringIndex, Vector3 prev, Vector3 cur) =>
+            base.ThreadsGate(ringIndex, prev, cur)
+            || (_alternateRings.TryGetValue(ringIndex, out var ring) && ring && ring.CrossedMouth(prev, cur));
+
+        protected override void OnLocalNextGateChanged(int previousRing, int nextRing)
+        {
+            if (previousRing >= 0 && _alternateRings.TryGetValue(previousRing, out var was) && was)
+                was.SetIsNextForLocalPilot(false);
+            if (nextRing >= 0 && _alternateRings.TryGetValue(nextRing, out var now) && now)
+                now.SetIsNextForLocalPilot(true);
+        }
+
+        /// <summary>
+        /// The alternate ring when it is the shorter way through this gate by more than <see cref="aiAlternateMargin"/>
+        /// (here, through the ring, on to the next gate), else the course ring. Decided once per gate and seat;
+        /// <see cref="RegattaAlternateChoice.TakesAlternate"/> is the rule, and the offline model applies the same one.
+        /// </summary>
+        protected override RaceGate ChooseAIGate(IPlayer pilot, int threaded, int ringIndex, RaceGate gate)
+        {
+            if (!_alternateGates.TryGetValue(ringIndex, out var alternate)) return gate;
+            var status = pilot?.Vessel?.VesselStatus;
+            var tf = pilot?.Vessel?.Transform;
+            if (status == null || !tf || status.IsAttached || status.VesselType == VesselClassType.Squirrel) return gate;
+
+            ulong seat = pilot.PlayerNetId;
+            if (!_alternateChoice.TryGetValue(seat, out var choice) || choice.threaded != threaded)
+            {
+                Vector3 next = threaded + 1 < RaceLength ? _course[RingIndexFor(threaded + 1)].Position : gate.Position;
+                choice = (threaded, RegattaAlternateChoice.TakesAlternate(tf.position, gate.Position, alternate.Position,
+                                                                           next, aiAlternateMargin));
+                _alternateChoice[seat] = choice;
+            }
+            return choice.alternate ? alternate : gate;
+        }
+
+        bool TakesAlternate(IPlayer pilot)
+        {
+            if (_alternateGates.Count == 0 || pilot == null) return false;
+            int threaded = pilot.RoundStats?.SwitchesThreaded ?? -1;
+            return _alternateChoice.TryGetValue(pilot.PlayerNetId, out var choice)
+                   && choice.threaded == threaded && choice.alternate;
+        }
+
         public override void OnNetworkDespawn()
         {
             _urchinAI?.Clear();
             _pilotLines.Clear();
             _gapLines.Clear();
             _lineIndexAtRing.Clear();
+            _alternateRings.Clear();
+            _alternateGates.Clear();
+            _alternateChoice.Clear();
+            if (IsServer && _lineCrystalManager) _lineCrystalManager.ClearCourseKeys();
+            _lineCrystalManager = null;
             base.OnNetworkDespawn();
         }
     }

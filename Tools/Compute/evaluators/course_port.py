@@ -425,7 +425,7 @@ def _transport(x0, t0, r0, x1, t1):
     return safe_normalize(r1, perpendicular(t1))
 
 
-def _resample(dense, spacing):
+def _resample(dense, spacing, leg_param=None, legs=0, params_out=None):
     m = len(dense)
     seg, length = [], F0
     for j in range(m):
@@ -442,11 +442,19 @@ def _resample(dense, spacing):
             j2 += 1
         u = clamp01((target - into) / seg[j2]) if seg[j2] > f(1e-6) else F0
         out.append(lerp3(dense[j2], dense[(j2 + 1) % m], u))
+        if params_out is not None:   # RegattaRailLayout.LaneLegParams (the last sample's successor is gate 0 a lap on)
+            p0 = leg_param[j2]
+            p1 = leg_param[j2 + 1] if j2 + 1 < m else f(legs)
+            params_out.append(p0 + (p1 - p0) * u)
     return out, length
 
 
-def build_rails(gates, rs=None):
-    """RegattaCourse.BuildRails without the prism rotations: {spine, lanes (prism points), laneLengths}."""
+def build_rails(gates, rs=None, features=None):
+    """RegattaCourse.BuildRails without the prism rotations: {spine, lanes (prism points), laneLengths}.
+
+    With `features` (a RegattaCourseFeatures dict, regatta_features.py) a section's DETOUR swings the braid off the
+    spine, and the result also carries what the features read: legParams per lane, the spine points and their arc.
+    None (or empty) lays exactly the braid it always did."""
     rs = dict(REGATTA_RAILS, **(rs or {}))
     n = len(gates)
     per = max(8, int(rs["SamplesPerLeg"]))
@@ -472,8 +480,16 @@ def build_rails(gates, rs=None):
     mismatch = signed_angle(wrapped, normal[0], tangent[0]) * DEG2RAD
     for j in range(total):
         normal[j] = safe_normalize(rotate_about(normal[j], tangent[j], mismatch * (s[j] / length)), normal[j])
+    leg_param = [F0] * total
+    for i in range(n):
+        a0, leg_arc = s[i * per], s[(i + 1) * per] - s[i * per]
+        for k in range(per):
+            leg_param[i * per + k] = f(i) + ((s[i * per + k] - a0) / leg_arc if leg_arc > f(1e-6) else f(k) / f(per))
+    detours = bool(features and features.get("Sections"))
+    if detours:
+        import regatta_features as rf
     twist = f(rs["TwistTurnsPerLap"]) * F2 * PI
-    lanes, lane_lengths = [], []
+    lanes, lane_lengths, lane_params = [], [], []
     for lane in range(LANE_COUNT):
         phase = f(lane) * F2 * PI / f(LANE_COUNT)
         dense = []
@@ -481,11 +497,22 @@ def build_rails(gates, rs=None):
             theta = phase + twist * (s[j] / length)
             binorm = cross(tangent[j], normal[j])
             radial = add(mul(normal[j], fcos(theta)), mul(binorm, fsin(theta)))
-            dense.append(add(spine[j], mul(radial, f(rs["LaneOffset"]))))
-        pts, lane_len = _resample(dense, f(rs["PrismSpacing"]))
+            q = add(spine[j], mul(radial, f(rs["LaneOffset"])))
+            if detours:
+                leg = min(n - 1, int(leg_param[j]))
+                bow, bearing = rf.detour_at(features, leg, leg_param[j] - f(leg))
+                if bow != F0:
+                    q = add(q, mul(rotate_about(normal[j], tangent[j], bearing * DEG2RAD), bow))
+            dense.append(q)
+        params = []
+        pts, lane_len = _resample(dense, f(rs["PrismSpacing"]), leg_param, n, params)
         lanes.append(pts)
         lane_lengths.append(lane_len)
-    return {"spineLength": float(length), "lanes": lanes, "laneLengths": [float(x) for x in lane_lengths]}
+        lane_params.append(params)
+    out = {"spineLength": float(length), "lanes": lanes, "laneLengths": [float(x) for x in lane_lengths]}
+    if features is not None:
+        out.update(legParams=lane_params, spinePositions=spine, spineArc=s, length32=length)
+    return out
 
 
 # ── what the evaluators read ──────────────────────────────────────────────────
