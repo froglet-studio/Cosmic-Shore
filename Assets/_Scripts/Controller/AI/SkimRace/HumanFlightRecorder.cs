@@ -552,25 +552,35 @@ namespace CosmicShore.Gameplay
             _ownRail = -1;
             try
             {
-                List<Trail> trails;
+                // One list per LANE: a Regatta gap cuts a lane into several trails, and a neutral stretch can be a lane's
+                // first prism (RegattaCourseFeatures), so the Regatta lanes come from SpawnableRegattaRails.LanePrisms
+                // with the lane's team colour; a Skim Race track's trails are its lanes.
+                var lists = new List<List<Prism>>();
+                var laneDomains = new List<Domains?>();
                 if (_gameData && _gameData.GameMode == GameModes.SkimRace)
                 {
                     var track = FindAnyObjectByType<SpawnableWaypointTrack>();
                     if (!track) { _railWhy = "no Skim Race track in the scene yet"; return false; }
-                    trails = track.GetTrails();
+                    var trails = track.GetTrails();
+                    if (trails != null)
+                        foreach (var trail in trails) { lists.Add(trail?.TrailList); laneDomains.Add(null); }
                 }
                 else
                 {
                     if (!RegattaCourseSource.TryResolveLiveRails(out var rails, out _railWhy)) return false;
                     _courseSeed = rails.CourseSeed;
                     _courseIntensity = rails.CourseIntensity;
-                    trails = rails.GetTrails();
+                    for (int lane = 0; lane < rails.LaneCount; lane++)
+                    {
+                        lists.Add(rails.LanePrisms(lane));
+                        laneDomains.Add(SpawnableRegattaRails.LaneDomain(lane));
+                    }
                 }
-                if (trails == null || trails.Count == 0) { _railWhy = "the rails have no lanes"; return false; }
+                if (lists.Count == 0) { _railWhy = "the rails have no lanes"; return false; }
                 Domains domain = _player ? _player.Domain : Domains.Jade;
-                for (int t = 0; t < trails.Count; t++)
+                for (int t = 0; t < lists.Count; t++)
                 {
-                    var list = trails[t]?.TrailList;
+                    var list = lists[t];
                     if (list == null) continue;
                     var copy = new RailCopy();
                     for (int i = 0; i < list.Count; i++)
@@ -580,12 +590,13 @@ namespace CosmicShore.Gameplay
                         var tr = prism.transform;
                         if (copy.Prisms.Count == 0)
                         {
-                            copy.Domain = prism.Domain.ToString();
+                            Domains railDomain = laneDomains[t] ?? prism.Domain;
+                            copy.Domain = railDomain.ToString();
                             Vector3 scale = prism.TargetScale.sqrMagnitude > 1e-8f
                                 ? (tr.parent ? Vector3.Scale(prism.TargetScale, tr.parent.lossyScale) : prism.TargetScale)
                                 : tr.lossyScale;
                             copy.ShellHalf = scale * SkimRaceShell.SuperShieldHalfScale;
-                            if (_ownRail < 0 && prism.Domain == domain) _ownRail = _rails.Count;
+                            if (_ownRail < 0 && railDomain == domain) _ownRail = _rails.Count;
                         }
                         copy.Prisms.Add(prism);
                         copy.Points.Add(tr.position);
