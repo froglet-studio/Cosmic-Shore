@@ -39,8 +39,8 @@ args:
                        lag, or {"gain", "max_extra_deg"}; absent or 0 = OFF, today's steering (the numbers above)
     nose_rate          the AI nose's follow rate per second (VesselTransformer.AINoseFollowPerSecond); absent = the
                        fleet lag (1.5) the model flies today
-    lead_roll          a WHAT-IF for AIPilot's roll rule while the lead is on (manta_redline_sim.race): absent or
-                       "judged" = the game today, "nose" = roll judged from the nose, "off" = no roll while leading
+                       the roll law while the lead is on rides in nose_lead as {"gain", "max_extra_deg", "roll"}
+                       ("zero" = the game's law, no roll while leading; "led" / "unled" are measured what-ifs)
 """
 import importlib.util
 import os
@@ -191,8 +191,7 @@ def evaluate(params, ctx):
     for i, races in _CTX["courses"].items():
         rows = []
         for s, c, flat in races:
-            r = sim.race(c, i, bands=bands, limit=limit, nose_rate=a.get("nose_rate"), nose_lead=a.get("nose_lead"),
-                         **({"lead_roll": a["lead_roll"]} if a.get("lead_roll") else {}))
+            r = sim.race(c, i, bands=bands, limit=limit, nose_rate=a.get("nose_rate"), nose_lead=a.get("nose_lead"))
             r["flat"] = flat
             rows.append(r)
         fin = [r["time"] for r in rows if r["time"] is not None]
