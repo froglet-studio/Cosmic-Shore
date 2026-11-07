@@ -127,6 +127,7 @@ the AI, the same callsign weights its targets.
 | Thresher | Thresher Time | Claude sessions with Yash (`MINIGAME_TRAINING_PLAN.md` section 12): the sweep's `ThresherAIBoostPolicy_ThresherTime` from people's races, the aimed launch (2026-11-02); no offline model, so no search yet | build: a Thresher Time model (added to this table 2026-11-02 by Yash's session; the Thresher is next after the Stoat in Yash's order) |
 | Stoat | Slingshot | Claude sessions with Yash (`MINIGAME_TRAINING_PLAN.md` section 8) | held for the Stoat's configuration |
 | Meerkat | Warpline | Claude sessions with Yash (section 8) | building |
+| Serpent | Serpentine (SerpentTime) | `serpenttime-serpent-time` (2026-11-07, proposed while Compute is paused): one pellet drive for I1-I4 with the composite loss, grown from `SerpentAIBoostPolicy` and `_SerpentTime`, raced on `Tools/Build/serpent_time_sim.py` (dirty race off) by `serpent_fit`; two hand restarts agree within 0.05% (`Docs/Reports/SERPENT_TIME_AI.md`) | trained in the model; a proposal for Yash; no human mark on today's kit |
 
 **Measured for the Squirrel** (2026-11-02, the shipped pilot core in the Skim Race sim, 6 races per track, seedbase
 5000; the per-track score is time over ideal, 1.0 being ideal, averaged over races plus half the worst race, so 1.5
