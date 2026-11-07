@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Stoat ability icons for the orbit-only kit (`claude/stoat-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Stoat's four cards redrawn for Yash's orbit-only kit in parts under each slot icon of
+`StoatHUDVariant.prefab`, painted by `StoatHUDView.RefreshParts` from `StoatSlingExecutor.HasPair`/`IsHoldingAny`,
+`IsOrbiting`, `Timing01` and the new `SinceLaunch`; the omni card `Core/Stoat_Fulmen.png`; the Time card's window colour
+is the pilot's domain, not the CTA lime (`readyColor` white on the prefab). Affects: Yash's Stoat HUD.
+
+**Verified without the editor:** `author.py stoat --check` no drift; `author_hull_ability_rows.py --check`,
+`check_ui_colors.py`, `check_console_logging.py` clean; `author_stoat_assets.py --check` shows only its sparse-checkout
+findings. NOT run: the reference compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `StoatHUDView.cs`, `StoatHUDController.cs` or `StoatSlingExecutor.cs`.
+2. Fly the Stoat as Jade, then Gold. **Pass:** every Stoat on the cards wears the domain; the old mode icon does not
+   show on the Mass card.
+3. Hold LT to lay a pair and get caught. **Pass:** the Charge card's ripple and the Space card's pair go solid, the
+   orbit ring shows; the Time card's Stoat rides the orbit and its window lights in the sweet spot.
+4. Let go. **Pass:** the Time card's Stoat flies off the tangent with speed lines; the Mass card's kick and wake show
+   for about a second.
+5. Upgrade each element to 5. **Pass:** Siphon's dots, Armoured Wake's rims, Accretion's prism and Foresight's path show.
+
 ### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Pilots/INVENTORY.md`.
