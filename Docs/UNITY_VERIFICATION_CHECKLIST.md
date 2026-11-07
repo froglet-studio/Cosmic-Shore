@@ -21490,6 +21490,11 @@ are all missing `.asset` files the sparse checkout left out. Design record: `MAN
    any vessel, the Manta included: the bomb rides that vessel on the same fuse.
 8. **Two editors (protocol 25):** the blooms show on both, at the same slow growth.
 9. **HUD:** the Space card's new `energyFill` / `energyCountText` are unwired on the prefab (the icon pass wires them).
+10. **Follow-up tuning (branch `claude/manta-tuning`, compiled with `unity_refcompile`, NOT RUN IN EDITOR):** the Manta
+    holds one bomb of energy at a time (skim, plant, skim, plant); the fuse no longer changes with Charge; a Charge 10
+    Manta's bloom knocks twice the petals out of a rival that a Charge 0 one does; the trail is thin and even like the
+    Squirrel's, the same at every Time level and through hard turns.
+    A Time 10 Manta cruises about 1.5x as fast as a Time 0 one (270 against 180 u/s at full throttle).
 
 ## 🔴 Brittle Star ring under a spinning stick: forward rule + normalized motion smear (2026-11-03, Garrett, NOT RUN IN EDITOR)
 

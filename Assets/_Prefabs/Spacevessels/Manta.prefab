@@ -1906,11 +1906,11 @@ MonoBehaviour:
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler: 180
   ThrottleScalerMultiplier:
-    Enabled: 0
+    Enabled: 1
     Value: 1
-    Min: 0
-    Max: 0
-    element: 0
+    Min: 1
+    Max: 1.5
+    element: 4
   BoostSpeedMultiplier:
     Enabled: 1
     Value: 1
@@ -1938,7 +1938,7 @@ MonoBehaviour:
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
   skimmer: {fileID: 874579554510349383}
-  BaseScale: {x: 20, y: 1, z: 5}
+  BaseScale: {x: 20, y: 0.75, z: 5.5}
   prismType: 3
   initialWavelength: 10
   minWavelength: 10
@@ -1948,13 +1948,13 @@ MonoBehaviour:
   waitTillOutsideSkimmer: 0
   shielded: 0
   trailVolume:
-    Enabled: 1
+    Enabled: 0
     Value: 1
     Min: 1
     Max: 2.5
-    element: 4
+    element: 0
   turnUpgradeShieldsTrail: 0
-  turnFlareMaxScale: 2
+  turnFlareMaxScale: 1
   offset: 0
   Gap: 18
   MinimumGap: 1

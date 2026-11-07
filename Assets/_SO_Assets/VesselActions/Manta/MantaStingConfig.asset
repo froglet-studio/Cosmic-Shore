@@ -12,15 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74a5f56c62b268ee03e09ae3a9e8811b, type: 3}
   m_Name: MantaStingConfig
   m_EditorClassIdentifier:
-  energyCapacity: 3
+  energyCapacity: 1
   energyPerSkim: 0.34
   perPrismEnergyCooldown: 1.5
   skimPrimesExplosive: 1
   explosiveLift: 0.55
   explosiveLiftFadeSeconds: 0.25
   fuseSeconds: 20
-  fuseScaleAtFullCharge: 1.5
-  minFuseScaleMultiplier: 0.5
   plantSpeedMargin: 0
   aoePrefabs:
   - {fileID: 3479271500403630839, guid: 457e8bc651da151132eb1c90adb8b3bb, type: 3}
