@@ -21588,6 +21588,21 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
 
+## 🔴 Breach: the Orca's Time race (2026-11-07, branch `claude/orca-convoy`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/breach_harness/run.sh --self-test`:
+10 pass, 6 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from `Arcade/BREACH.md` §8:
+
+1. Open `MinigameBreach` once and save it (a text clone); then `python3 Tools/Build/author_breach_assets.py --check`.
+2. Run the EditMode tests `BreachCourseTests` and `EnumIntegrityTests`.
+3. I1, one Orca with AI crew: hold the burn and the tank empties and stays empty; let go and it refills.
+4. I2: a burn into a hard turn swings wide of the ring; coasting it makes the ring.
+5. I3: walls stand before every other ring, rounded on the inside of the turn; flying into one stops the hull dead. The
+   gunners shoot a breach and it grows back 6 s later. I4: a wall on the ring after each hard turn, never meeting one.
+6. Two AI Orcas burn the straights, coast the turns and the walls, and finish (note any wall an AI hits).
+7. Outside the race: an AI Orca in any other mode flies exactly as before (its coach is null there; it never burns).
+8. MPPM two clients: both see the same walls.
+
 ## 🔴 Slip Line: the Honeyguide's Time race (2026-11-07, branch `claude/honeyguide-slip-line`)
 
 Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/slip_line_harness/run.sh

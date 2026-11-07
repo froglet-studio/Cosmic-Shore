@@ -988,6 +988,16 @@ it is going. `SlipLineController : GateRaceController`, `SlipLineCourse`, `SlipL
 `Tools/Build/slip_line_harness/`, with the real Ratel AI), generator `author_slip_line_assets.py`. See
 `_Scripts/Controller/Arcade/SLIP_LINE.md`. Authored headless.
 
+`Breach(83)` is the **Orca's Time race** (2026-11-07): the helm's burn is five times the Orca's 30 u/s cruise from a 3 s
+tank that refills slowly, and a burning hull turns round a circle 3.5 times as wide, so the race is where in each leg to
+burn. I1 gentle bends (burn the straights, learn the tank), I2 short 90-120 degree hard turns (a burn into one misses the
+ring), I3 WALLS of Blue danger prisms standing before every other ring, rounded on the inside of the turn (a burn round
+one is a dead stop), I4 both with the smallest rings. Walls regrow 6 s after they break, every peer derives them from
+the broadcast rings. The Orca gained one AI hook, `OrcaCrew.RaceCoach` (`IOrcaRaceCoach`): the shipped AI helm never
+burned. `BreachController : GateRaceController`, `BreachCourse`, `BreachCourseTests` (offline:
+`Tools/Build/breach_harness/`), generator `author_breach_assets.py`. See `_Scripts/Controller/Arcade/BREACH.md`.
+Authored headless.
+
 `ScarabRally(72)`, `SerpentTime(73)` and `BrittleStarTime(74)` are **Time races for three hulls that had none**
 (Garrett, 2026-10-27: "make every vessel's time game very fun"). Each one is a `GateRaceController` race with a
 `RaceGateTurnMonitor`, and all three are authored by one shared helper, `Tools/Build/hull_time_race.py`, with one
@@ -1441,6 +1451,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             ├── DecoyRunController                — Jacks-only herd-and-travel race (the Jacks' Time card): doors, skewers, rolled flats, hairpins
             ├── PerchRunController                — Goby-only dart race (the Goby's Time card): open rings, hairpins, coral blockers, doubles
             ├── SlipLineController                — Honeyguide-only rail race (the Honeyguide's Time card): three rails, coloured rails and stubs, leaning rails, chains
+            ├── BreachController                  — Orca-only burn-and-coast race (the Orca's Time card): open water, hard turns, danger walls, both
             ├── HeadlongController                — Rhino-only circuit race; a CLOSED loop flown in LAPS, every corner cut to the Rhino's flat-out turn radius
             ├── BreakwaterController              — Sparrow-only station race; a polar START GATE (the platform's one lead-in) plus a closed circuit of danger-woven dishes, fire/saw/thread. 202 lines: the course, the lead-in and the stations, and nothing else
             ├── SkeinController                   — Urchin-only cable race; the rings sit ON the arena's own rails, so the course is a thing you RIDE rather than fly between

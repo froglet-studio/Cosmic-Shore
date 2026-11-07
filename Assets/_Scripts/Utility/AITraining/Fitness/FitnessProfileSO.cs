@@ -206,6 +206,7 @@ namespace CosmicShore.Utility.AITraining
             new(GameModes.ScarabRally, ComponentKind.SwitchesThreaded, 100f, "Gates", "Scarab Rally: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
             new(GameModes.Thornline, ComponentKind.SwitchesThreaded, 100f, "Gates", "Thornline: rings this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
             new(GameModes.DecoyRun, ComponentKind.SwitchesThreaded, 100f, "Gates", "Decoy Run: rings this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
+            new(GameModes.Breach, ComponentKind.SwitchesThreaded, 100f, "Gates", "Breach: rings this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
             new(GameModes.SlipLine, ComponentKind.SwitchesThreaded, 100f, "Gates", "Slip Line: rings this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
             new(GameModes.PerchRun, ComponentKind.SwitchesThreaded, 100f, "Gates", "Perch Run: rings this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
             new(GameModes.BrittleStarTime, ComponentKind.SwitchesThreaded, 100f, "Gates", "Brittle Star Time: gates this pilot threaded in order (SwitchesThreaded). The time penalty prefers the faster match."),
