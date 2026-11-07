@@ -404,6 +404,7 @@ pinched to its throat between two open mouths), Faster Ride (the hull shooting o
 the omni card, the Soliton Network (three tunnels forking from a mouth). Single white sprites over the plate gauges
 `MeerkatHUDView` fills; `MeerkatHUDVariant` (`author_meerkat_assets.py`, the Angler's clone pattern) binds them by the
 guids in `Tools/Build/meerkat_icon_ids.py`. Not reviewed by Garrett yet: the next round is his pick, one card at a time.
+
 **The Urchin (2026-11-07, round 6, the roster pass; picks made by the session on Garrett's go-ahead to choose):**
 every card redrawn from the real mesh nose-on and in parts the HUD drives. Chain Spikes (A): the Urchin (domain) throws
 a spike into a rival prism (danger) that sprays the next generation; Overcharge swaps in the full-length spray and a
@@ -428,6 +429,15 @@ wear a crown of explosive spikes, brighter as the energy gathers; the plate is t
 card's gauge, full = one bomb); Shield Breaker's knocked-off shell at Space 5. Yastri (Time, A): the Manta and the hard
 corner its turn pair cuts, Soar's chevrons once Time 5 unlocks the boost. Omni: the cash-out, three blooms round an omni
 crystal. Option sheets: `Docs/Icons/sheets/manta_{sting,decoy,skim,yastri}_options.png`.
+
+**The Thresher (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the
+2026-10-13 glyphs were decent but drew no shark; every card now draws the real hull (`Thresher.fbx`, the whip tail cut
+where the chain takes over) in parts `ThresherHUDView.RefreshParts` paints. Wrecking Ball: the shark (domain) tows the
+ball into a rival prism; at smash speed the ball goes red-hot and the prism splits round a blast; Magnet adds field
+arcs. Mass Mode: the ball (domain) lays its own row; breaking, it is white and the row faint; Armoured Trail rims the
+row. Winch: released the chain sags, pulled it runs straight and the ball swings; Breaker shows a super-shielded
+prism ahead. Plant: the shark on its orbit round the stopped ball. Omni: Windmill. The Space plate's lime fill became
+the domain (the CTA lime is never an "on" colour). Sheets: `Docs/Icons/sheets/thresher_{wreck,massmode,winch,plant,omni}.png`.
 
 | Round | What | Why first |
 |---|---|---|

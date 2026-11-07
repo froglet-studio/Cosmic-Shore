@@ -575,3 +575,10 @@ least one options round; together they are the pre-send review in SKILL.md §3 s
     block, or its `--check` reports drift on the vessel prefab. `grep -ln "VARIANT" Tools/Build/author_*_hud.py
     Tools/Build/author_*_assets.py` before a rebind.
 
+## 2026-11-07 - the Thresher: a hull with a whip tail
+
+87. **Cut a hull's long tail where the thing it tows takes over.** The Thresher's mesh is half whip: fitted whole, the
+    shark is a sliver at 40 px. `specs/thresher.py` keeps the front half along the nose axis (`_cut`), re-centres the
+    body (`_place`) and starts the chain's round links at the cut, so the shark fills its corner and the tail still
+    reads as the first links. The same cut serves a top view (Plant, Windmill).
+
