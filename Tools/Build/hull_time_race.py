@@ -106,6 +106,8 @@ def author(spec: dict):
     extra_toasts (optional: [(situation, template[, lib.toast kwargs])], the mode's own toasts after the race beats)
     extra_assets (optional: [(rel path, guid, content), ...] - assets the mode owns beyond its card, rule, toasts and
     preview, e.g. its own cell config; emitted and minted like them),
+    card_extra (optional: serialized card lines written before ComebackRatePerScoreDeficit, where SO_ArcadeGame declares
+                them - e.g. the StartingElements table; Brittle Star Time starts its I4 at Time 5),
     cell_configs (optional: [cell config guid, ...] - the scene Cell's CellConfigs; more than one is IntensityWise,
                   list order = intensity 1..n. Omitted: the donor's barren race cell stays)
     """
@@ -161,7 +163,7 @@ def author(spec: dict):
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: {spec['comeback']}
+{spec.get('card_extra', '')}  ComebackRatePerScoreDeficit: {spec['comeback']}
 """)
 
     # 4. scene: clone the donor once, adopt it once committed.

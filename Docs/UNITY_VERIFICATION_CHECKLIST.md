@@ -21359,6 +21359,23 @@ keeps the plugin's script GUIDs and field names, so no scene, prefab or SOAP ass
 5. **Stop Play, then check `git status`.** None of `Assets/_SO_Assets/Game Data/Runtime …Selected….asset` shows as changed:
    values set while playing no longer reach the asset.
 
+## 🔴 Brittle Star Time: four movement rungs (2026-11-06, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/brittle-stars-l5-updates-41j91p`. Verified offline only: `brittle_star_time_course_harness/run.sh
+--self-test` (10 course tests over 400 seeds, four negative controls fire), `/ship` gates ALL OK (unity_refcompile
+player + editor, every generator `--check`). Open `MinigameBrittleStarTime` once and save, then fly each intensity:
+
+1. **I1 Gearbox.** A circuit with about two corners a lap Speed Mode (A) cannot turn: hold it on the rest, drop to
+   Cruise for those two.
+2. **I2 Feather slalom.** Eight rings weaving in and out round a loop. Speed Mode overshoots, Cruise is slow; tapping A
+   in and out should carry ~130 u/s through the weave. Check that feathering really is the fastest line.
+3. **I3 Coast-in hairpins.** Two long straights joined by hairpins. There is no brake: let go of Speed Mode about 100 u
+   before the turn and coast in. Holding it to the turn should overshoot the apex ring.
+4. **I4 Corkscrew.** The hull starts at **Time 5** (check the HUD's Time card shows its L5 state and Speed Roll works).
+   Six rings on a tight coil: holding Speed Mode should thread it ONLY while rolling and pulling with the right stick;
+   then a wide return flown flat out. Expect the AI to be slow here: it cannot roll.
+5. **Every rung:** gate 0 is near the spawn, rings never overlap, nothing sits outside the cell.
+
 ## 🔴 Analytics: Toybox (Freestyle) events, match elements, match setups by domain, the UGS Froglet-only filter (2026-11-07, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/sweet-mayer-se51r6`; froglet-studio/Cosmic-Shore#1777 and the match-setups PR after it. Compiled with
