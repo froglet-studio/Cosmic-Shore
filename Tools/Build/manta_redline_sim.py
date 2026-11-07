@@ -217,10 +217,14 @@ def triggers(yaw, deflection, band, yband):
     return lt, rt
 
 
-def stick(q, desired, dist_sqr):
+def stick(q, desired, dist_sqr, judged=None):
     """AIPilot's stick (XSum, YSum): the cross product of nose and desired direction in the hull's frame, scaled by
-    asin(|cross|^2 x 100 / min(d^2, _maxDistance)) degrees, full and on its own axis when the target is behind."""
-    f = q_rot(q, FWD)
+    asin(|cross|^2 x 100 / min(d^2, _maxDistance)) degrees, full and on its own axis when the target is behind.
+    With the nose lead (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py) the error is judged from the COMMAND's
+    forward instead of the nose: pass it as judged (a unit vector) and the lead's wanted direction as desired; the
+    cross product still lands in the NOSE's frame (transform.InverseTransformDirection) and the stick still turns the
+    command about the nose's axes, as the game does. judged None is today's steering, judged from the nose."""
+    f = q_rot(q, FWD) if judged is None else judged
     local = q_inv_rot(q, cross(f, desired))
     a = math.degrees(math.asin(max(-1.0, min(1.0, dot(local, local) * 100.0 / min(dist_sqr, MAX_DISTANCE)))))
     if dot(f, desired) < 0.0:                                  # TurnHardIfBehind
@@ -512,6 +516,10 @@ def self_test():
         bad.append("triggers: a 0 band boosts")
     # 2. the stick: dead ahead none, 90 deg right a full yaw, above a pitch up (negative YSum), behind full
     q = q_look(FWD)
+    if stick(q, FWD, 1e6, judged=q_rot(q, FWD)) != stick(q, FWD, 1e6) or stick(q, RIGHT, 1e6, judged=q_rot(q, FWD)) != stick(q, RIGHT, 1e6):
+        bad.append("stick judged from the nose's own forward is today's stick")
+    if stick(q, RIGHT, 1e6, judged=RIGHT) != (0.0, 0.0) or stick(q, FWD, 1e6, judged=RIGHT)[0] != -1.0:
+        bad.append("stick judged from a command that already points right: no error, and FWD reads as left of it")
     if stick(q, FWD, 1e6) != (0.0, 0.0) or stick(q, RIGHT, 1e6)[0] != 1.0 or stick(q, UP, 1e6)[1] != -1.0:
         bad.append("stick: the AIPilot cross-product signs are wrong")
     # 3. the shipped AI finishes every course at I1 and I4, and the same race twice is the same race
