@@ -116,6 +116,31 @@ What the table says:
 (`switchback_dolphin_sim.py`, `lag=True`) and `skimrace-squirrel-time` (the harness turns the commanded rotation; the
 Skim Race pilot leads its own lag). None of these fly AIPilot's lead.
 
+## The one proposal for Yash
+
+Nothing below is switched on by this PR. The gain stays 0 by default. These are proposals for Yash, the AI owner.
+
+1. **Switch the lead on for four hulls.** In `Tools/Build/author_race_lines.py` `HULLS`, add `"NoseLeadGain": 2.5` to
+   the Scarab, Serpent, Dolphin and Manta rows, then run the script (`--check` guards the result).
+   - Leave the Rhino and the Sparrow at 0: the model shows they gain nothing.
+   - Leave the Stoat, Squirrel and Urchin at 0: they are not on this model. The Squirrel and the Urchin do not fly a
+     race line style at all.
+2. **Then the Manta's nose row (#1780), as the second step, not an alternative.** With the lead on, the Manta's
+   remainder is I3-I4: 7-11 missed mouths at I3 and about 4 at I4, from its 83 deg/s turn through the lag. That is the
+   only place the per-intensity nose row still buys time.
+3. **The real-game order.**
+   - Regatta Hull Benchmark per hull, at gain 0 and then 2.5, I1-I4 (Legendary, alone).
+   - Then one six-AI grid.
+   - Card changes (the Scarab's `NOT_REGATTA_READY`) come after those.
+4. **The searches to re-run with the lead on, once Yash switches it on.** These modelled no nose lag:
+   - the `drive_fit` models `rhino_drive`, `manta_drive` and `dolphin_drive`, including `drive-rhino-headlong`;
+   - the four `regatta-course-i*` rosters built on them.
+5. **The searches that already model the lag but never fly the lead.** They need the lead added to their model before a
+   re-run:
+   - `redline-manta-time` (`manta_redline_sim.py`);
+   - `switchback-dolphin-time` (`switchback_dolphin_sim.py`);
+   - `skimrace-squirrel-time` (the Skim Race pilot leads its own lag).
+
 ## What is not verified
 
 - **No Unity run.** The reference compile and the ship gates passed (0 errors in the changed files; the 21 errors it
