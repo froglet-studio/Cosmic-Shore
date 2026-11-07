@@ -15,7 +15,7 @@ The map is `Assets/Resources/ElementalAbilityMaps/Manta.asset` — **the asset i
 | Charge | **Sting** (passive) | the petals each bloom knocks out of a rival (`magnitudeAtFullCharge` 2× at Charge 10, on `MantaBombDebuffByExplosionEffect.asset`) | **Contagion** — anything caught in a bloom is itself bombed, free |
 | Mass | **Decoy** (passive) | how long a decoy stands (`decoyLifetimeAtFullMass` 2×) | **Omni Decoy** — the omni crystal leaves a decoy too |
 | Space | **Skim** (passive) | the skimmer's size (Manta.prefab `Skimmer.Scale`, 20 → 40) | **Shield Breaker** — skimming a shielded rival prism pops its shield and makes it explosive |
-| Time | **Yastri** (Input 12, the turn pair) | the soaring speed (`VesselTransformer.BoostSpeedMultiplier`); the trail is a plain Squirrel-style trail, unscaled and unflared | **Soar** — the boost stays dark until Time 5 |
+| Time | **Yastri** (Input 12, the turn pair) | the Manta's speed: cruise (`VesselTransformer.ThrottleScalerMultiplier` 1.5× at Time 10) and soaring (`BoostSpeedMultiplier` 1.3×); the trail is a plain Squirrel-style trail, unscaled and unflared | **Soar** — the boost stays dark until Time 5 |
 
 ## 0. The 2026-11-07 overhaul (Garrett) — the rules as they stand
 
@@ -44,7 +44,8 @@ disagrees with this section, this section wins.
   never hurt) carries the bomb away on the same fuse.
 - **Yastri and Soar are Time.** Shielded Turn Trails is dropped. The trail is toned down to a
   Squirrel-style trail (2026-11-07 follow-up): the Squirrel's prism size (20 × 0.75 × 5.5), no
-  element growing its volume, no turn flare.
+  element growing its volume, no turn flare. Time makes the Manta faster: cruise speed 1.5× at
+  Time 10 (`ThrottleScalerMultiplier`, the Scarab's shape), on top of the soaring speed.
 
 ## 3a. Explosive prisms
 

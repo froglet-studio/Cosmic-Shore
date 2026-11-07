@@ -21494,6 +21494,7 @@ are all missing `.asset` files the sparse checkout left out. Design record: `MAN
     holds one bomb of energy at a time (skim, plant, skim, plant); the fuse no longer changes with Charge; a Charge 10
     Manta's bloom knocks twice the petals out of a rival that a Charge 0 one does; the trail is thin and even like the
     Squirrel's, the same at every Time level and through hard turns.
+    A Time 10 Manta cruises about 1.5x as fast as a Time 0 one (270 against 180 u/s at full throttle).
 
 ## 🔴 Brittle Star ring under a spinning stick: forward rule + normalized motion smear (2026-11-03, Garrett, NOT RUN IN EDITOR)
 

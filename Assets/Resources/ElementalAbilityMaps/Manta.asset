@@ -53,8 +53,9 @@ MonoBehaviour:
     UpgradeDescription: Skimming a shielded rival prism pops its shield and makes it explosive.
   - Element: 4
     AbilityLabel: Yastri
-    AbilityDescription: Hard flat turns on the turn pair. Time raises the soaring speed
-      (VesselTransformer.BoostSpeedMultiplier, x1.3 at level 10). The trail is a plain
+    AbilityDescription: Hard flat turns on the turn pair. Time makes the Manta faster:
+      cruise speed (VesselTransformer.ThrottleScalerMultiplier, x1.5 at level 10) and the
+      soaring speed (BoostSpeedMultiplier, x1.3 at level 10). The trail is a plain
       Squirrel-style trail: no element grows it and turns do not flare it.
     Input: 12
     UnlockLevel: 5

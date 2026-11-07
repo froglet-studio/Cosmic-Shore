@@ -1906,11 +1906,11 @@ MonoBehaviour:
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler: 180
   ThrottleScalerMultiplier:
-    Enabled: 0
+    Enabled: 1
     Value: 1
-    Min: 0
-    Max: 0
-    element: 0
+    Min: 1
+    Max: 1.5
+    element: 4
   BoostSpeedMultiplier:
     Enabled: 1
     Value: 1
