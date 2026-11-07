@@ -213,6 +213,8 @@ const CELLS = (() => {
   function overlay(c) {
     const s = scale(), cellPx = A * s, labels = [];
     c.save();
+    // the chart's bottom edge is the line the side view cuts along: mark it in the slice bar's green so the two lock up
+    c.strokeStyle = "rgba(179,255,89,.6)"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, H - 1); c.lineTo(W, H - 1); c.stroke();
     c.textAlign = "center"; c.textBaseline = "middle";
     // the centre's rings
     RINGS.forEach((g, i) => {
@@ -261,7 +263,7 @@ const CELLS = (() => {
     }
   }
 
-  // the side view at cell zoom: the cells cut upright through the middle of the chart, filled with their own sea,
+  // the side view at cell zoom: the cells cut upright along the chart's bottom edge, filled with their own sea,
   // their membranes and nuclei, and the chart's slice as a bar you can drag to another height
   function side(c, f) {
     barY = null;
