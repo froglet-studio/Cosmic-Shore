@@ -1,0 +1,401 @@
+<title>Cosmic Shore Revenue Projection</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
+<style>
+/* Layout: headline tiles, then one stacked-bar chart per calendar year for the chosen scenario, then the levers,
+   the scenario table, the assumptions and the sources. Froglet Deep Sea, Shore for light. */
+:root {
+  --ground: #00041F; --surface: #0E1236; --surface-2: #222645; --line: #434C89;
+  --text: #E6E9FF; --soft: #8E95C4; --off: #5C5F70;
+  --sel: #00D4FF; --sel-dim: rgba(0,212,255,.14); --warn: #FFAE00;
+  --s1: #566DFE; --s2: #0AA39A; --s3: #C08200; --s4: #D00BCB;   /* validated: dark, surface #0E1236 */
+  --grid: rgba(142,149,196,.18);
+  --font-read: 'Aldrich', 'Chakra Petch', system-ui, sans-serif;
+  --font-press: 'Chakra Petch', 'Aldrich', system-ui, sans-serif;
+  --sl: 14px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --ground: #F4F5FF; --surface: #FFFFFF; --surface-2: #DDE1F7; --line: #B8C0F0;
+  --text: #00041F; --soft: #434C89; --off: #8A8FAE; --sel: #007D73; --sel-dim: rgba(0,125,115,.12); --warn: #9a5b00;
+  --s1: #404EEC; --s2: #0AAFA6; --s3: #C48D19; --s4: #A30AB9; --grid: rgba(67,76,137,.14); color-scheme: light; } }
+:root[data-theme="light"] {
+  --ground: #F4F5FF; --surface: #FFFFFF; --surface-2: #DDE1F7; --line: #B8C0F0;
+  --text: #00041F; --soft: #434C89; --off: #8A8FAE; --sel: #007D73; --sel-dim: rgba(0,125,115,.12); --warn: #9a5b00;
+  --s1: #404EEC; --s2: #0AAFA6; --s3: #C48D19; --s4: #A30AB9; --grid: rgba(67,76,137,.14); color-scheme: light; }
+
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--text); font-family: var(--font-read); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.label { font-family: var(--font-press); font-weight: 600; text-transform: uppercase; letter-spacing: .12em; font-size: 12px; color: var(--soft); }
+.sliver { clip-path: polygon(var(--sl) 0, 100% 0, 100% calc(100% - var(--sl)), calc(100% - var(--sl)) 100%, 0 100%, 0 var(--sl)); }
+a { color: var(--sel); }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 8px 0 12px; font-weight: 400; text-wrap: balance; }
+h2 { font-size: 24px; font-weight: 400; margin: 0 0 8px; text-wrap: balance; }
+p { margin: 0 0 12px; max-width: 70ch; }
+.lede { color: var(--soft); font-size: 17px; }
+.em { color: var(--sel); }
+section { margin-top: 48px; }
+.num { font-variant-numeric: tabular-nums; }
+code { overflow-wrap: anywhere; }
+
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-top: 20px; }
+.tile { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tile .v { font-size: clamp(24px, 3.4vw, 34px); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .d { color: var(--soft); font-size: 13px; }
+.tile.key .v { color: var(--sel); }
+@media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 420px) { .tiles { grid-template-columns: 1fr; } }
+
+.bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.scen { display: flex; gap: 8px; flex-wrap: wrap; }
+button.chip { font-family: var(--font-press); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; font-size: 13px;
+  background: transparent; color: var(--text); border: 1px solid var(--line); padding: 7px 14px; cursor: pointer; }
+button.chip[aria-pressed="true"] { border-color: var(--sel); background: var(--sel-dim); color: var(--sel); }
+button.chip:hover { background: var(--sel-dim); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; display: inline-block; }
+
+.chart { background: var(--surface); padding: 16px 12px 8px; margin-top: 12px; position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--font-read); }
+.tip { position: absolute; pointer-events: none; background: var(--ground); border: 1px solid var(--line); padding: 10px 12px; font-size: 13px; min-width: 190px; z-index: 2; }
+.tip .r { display: grid; grid-template-columns: 12px minmax(0,1fr) auto; gap: 8px; align-items: center; font-variant-numeric: tabular-nums; }
+.tip .t { margin-bottom: 6px; font-family: var(--font-press); font-weight: 700; letter-spacing: .08em; }
+.tip hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+
+.tbl { overflow-x: auto; margin-top: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+th { font-family: var(--font-press); font-weight: 600; text-transform: uppercase; letter-spacing: .1em; font-size: 11px; color: var(--soft); text-align: left; padding: 0 10px 8px; border-bottom: 2px solid var(--line); }
+td { padding: 8px 10px; border-bottom: 1px solid var(--surface-2); vertical-align: top; }
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.tot td { border-top: 2px solid var(--line); color: var(--sel); }
+.lever { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 10px 16px; align-items: center; margin-top: 16px; }
+.lever .n { font-size: 14px; }
+.lever .n small { display: block; color: var(--soft); font-size: 12px; }
+@media (max-width: 640px) { .lever { grid-template-columns: 1fr; gap: 2px 0; } .lever .n { margin-top: 10px; } }
+
+.custom { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px 20px; margin-top: 12px; background: var(--surface); padding: 16px 18px; }
+.custom[hidden] { display: none !important; }
+.custom label { font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
+.custom label b { font-weight: 400; color: var(--sel); font-variant-numeric: tabular-nums; }
+.custom input { width: 100%; accent-color: var(--sel); }
+@media (max-width: 760px) { .custom { grid-template-columns: 1fr; } }
+.note { color: var(--soft); font-size: 13px; }
+.panel { background: var(--surface); padding: 18px 20px; }
+ul.tight { margin: 8px 0 0; padding-left: 18px; }
+ul.tight li { margin-bottom: 8px; max-width: 80ch; }
+ol.src { padding-left: 20px; font-size: 13px; color: var(--soft); }
+ol.src li { margin-bottom: 6px; }
+</style>
+
+<div class="wrap">
+  <div class="label">Froglet Inc. · Projection · 2027–2031 · builds on the <a href="https://claude.ai/artifact/QgkTZY2WKM1khg4twGCind">Market Map</a> and the <a href="https://claude.ai/artifact/AZTC2TZYJJDY7ajqgaogtZ">Audience Roadmap</a></div>
+  <h1>Cosmic Shore revenue, <span class="em">2027 to 2031</span></h1>
+  <p class="lede">Three scenarios, each built from the Steam launch funnel and the roadmap's timing: Steam Early Access, its 1.0, add-ons on PC, mobile once the Ratel brings puzzlers in, and a console port. Gross is what players spend. Net is what reaches Froglet after the store's cut, before tax, refunds and costs.</p>
+
+  <div class="tiles">
+    <div class="tile sliver key"><span class="label">Five-year gross</span><span class="v" id="t5g">–</span><span class="d" id="t5gd"></span></div>
+    <div class="tile sliver"><span class="label">Five-year net to Froglet</span><span class="v" id="t5n">–</span><span class="d">After Steam and console 30%, app stores 15%</span></div>
+    <div class="tile sliver"><span class="label">Peak year</span><span class="v" id="tPk">–</span><span class="d" id="tPkd"></span></div>
+    <div class="tile sliver"><span class="label">Copies sold on Steam</span><span class="v" id="tU">–</span><span class="d" id="tUd"></span></div>
+  </div>
+
+  <div class="bar">
+    <div class="scen" role="group" aria-label="Scenario">
+      <button class="chip" type="button" data-s="low" aria-pressed="false">Low</button>
+      <button class="chip" type="button" data-s="base" aria-pressed="true">Base</button>
+      <button class="chip" type="button" data-s="high" aria-pressed="false">High</button>
+      <button class="chip" type="button" data-s="custom" aria-pressed="false">Your own</button>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div class="custom" id="custom" hidden></div>
+
+  <div class="chart sliver" id="chartBox">
+    <svg id="chart" viewBox="0 0 1000 380" role="img" aria-label="Gross revenue per year by stream"></svg>
+    <div class="tip" id="tip" hidden></div>
+  </div>
+  <p class="note" style="margin-top:8px">Gross revenue per calendar year, stacked by stream. Hover or tap a year for its breakdown. The table under the levers holds every number.</p>
+
+  <section>
+    <h2>What moves it</h2>
+    <p>Each lever halved and doubled in the base case, everything else held. The longest bars are the inputs worth the most attention.</p>
+    <div id="tornado"></div>
+    <p class="note" style="margin-top:12px" id="tornadoNote"></p>
+  </section>
+
+  <section>
+    <h2>Every year, every scenario</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Year</th><th class="r">Low gross</th><th class="r">Low net</th><th class="r">Base gross</th><th class="r">Base net</th><th class="r">High gross</th><th class="r">High net</th></tr></thead>
+        <tbody id="cmp"></tbody>
+      </table>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th id="detailHead">Base, by stream</th><th class="r">2027</th><th class="r">2028</th><th class="r">2029</th><th class="r">2030</th><th class="r">2031</th></tr></thead>
+        <tbody id="detail"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>What each scenario assumes</h2>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Input</th><th class="r">Low</th><th class="r">Base</th><th class="r">High</th><th>Why</th></tr></thead>
+        <tbody id="assume"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Reading it</h2>
+    <div class="panel sliver">
+      <ul class="tight">
+        <li><b style="font-weight:400;color:var(--sel)">The Steam wishlist count decides almost everything.</b> Doubling it nearly doubles five-year revenue; nothing else comes close. The Playtest earns nothing by Valve's rule, so its whole job is wishlists.</li>
+        <li><b style="font-weight:400;color:var(--sel)">Friend invites only pay once the PC base is large.</b> Mobile installs from invites scale with Steam owners, so in the base case (about 20,000 owners) they add little; in the high case they are the largest single source of phone players. The roadmap's order matters for money, not just reach.</li>
+        <li><b style="font-weight:400;color:var(--sel)">Paid mobile acquisition does not pay at these numbers.</b> A casual puzzle install costs $2.50–6.00 to buy; the base case earns $0.40 per install. Phone players have to come from the store, the browser Toybox and invites.</li>
+        <li><b style="font-weight:400;color:var(--sel)">The base case does not fund a team.</b> About $45–80k a year net is below the cost of one full-time developer in most of the US. Reaching the high case depends on a breakout launch, not on the later streams.</li>
+        <li><b style="font-weight:400;color:var(--sel)">Two thresholds sit inside the high case.</b> FMOD's free tier ends at $200k gross a year, and the project's own decision is to buy the licence if it is crossed (<code>Docs/THIRD_PARTY_DECISIONS.md</code>). Steam's cut drops from 30% to 25% only past $10M gross per title, which no scenario reaches.</li>
+        <li><b style="font-weight:400;color:var(--sel)">Below the low case is zero.</b> About 20,000 games launched on Steam in 2025 and the median earned about $249. The low case still assumes a paid launch in 2028 and a mobile release in 2029.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Not included</h2>
+    <p class="note">Sales tax and VAT, refunds, payment fees outside the stores, development and marketing costs, investment or grants, merchandise, and any revenue from the browser Toybox (it is treated as a way in, not a revenue stream). Mobile revenue is counted in the month a player installs. Purchases on PC and mobile are switched off today (R4); both streams assume that decision is made.</p>
+  </section>
+
+  <section>
+    <h2>Sources</h2>
+    <ol class="src">
+      <li>Year one ≈ 3.16× week one; two years ≈ 4.2×; three years ≈ 5.5× (small sample): <a href="https://newsletter.gamediscover.co/p/revealed-the-state-of-steam-wishlist">GameDiscoverCo long-tail survey</a>, <a href="https://gamedevreports.substack.com/p/gamediscoverco-games-long-tail-revenue">summary</a>. Month one ≈ 1.47× week one: <a href="https://newsletter.gamediscover.co/p/data-deep-dive-whats-the-long-tail">GameDiscoverCo</a>.</li>
+      <li>Week-one conversion 0.10× wishlists above $10; year one 2.8× week one for $15–19 games: <a href="https://newsletter.gamediscover.co/p/the-state-of-steam-wishlist-conversions">GameDiscoverCo</a>, <a href="https://gamedevreports.substack.com/p/gamediscoverco-conversion-benchmarks">benchmarks</a>.</li>
+      <li>1.0 launches: only 20% of 2025's 225 Early Access graduates earned more at 1.0; the median 1.0 month ≈ 40% of the Early Access launch month; Meteorfall sold 8× more at 1.0: <a href="https://newsletter.gamediscover.co/p/the-state-of-steam-early-access-graduates">GameDiscoverCo</a>, <a href="https://gameworldobserver.com/2025/12/10/according-to-gamediscoverco-most-games-on-steam-earn-less-after-leaving-early-access-than-they-do-at-launch">Game World Observer</a>.</li>
+      <li>Mobile: median retention ≈ 22% day 1, under 4% day 7, 0.7–0.8% day 30; hybrid casual ARPDAU $0.15–0.50: <a href="https://blog.playio.co/arpdau-benchmarks-mobile-games">Playio (citing GameAnalytics)</a>. Casual puzzle CPI $2.50–6.00: <a href="https://admiral.media/mobile-app-marketing-benchmarks-2026/">Admiral</a>.</li>
+      <li>Console ports: developer reports range from Switch at 7% of lifetime revenue to 3–20× Steam: <a href="https://pcgamer.com/indie-veterans-on-the-state-of-indie-games-on-nintendo-switch-versus-steam">PC Gamer</a>, <a href="https://www.nintendolife.com/news/2018/10/wandersong_on_switch_eshop_has_outperformed_steam_sales_by_nearly_three_to_one">Nintendo Life</a>.</li>
+      <li>Steam release distribution and median: <a href="https://game-developers.org/2025-steam-game-revenue-distribution">game-developers.org</a>. Comparables (Pummel Party, Ultimate Chicken Horse at $8–20M lifetime): the <a href="https://claude.ai/artifact/QgkTZY2WKM1khg4twGCind">Market Map</a>.</li>
+      <li>The game: $15 base price, no rise at 1.0, about 12 months in Early Access (<code>Docs/STEAM_BUSINESS_SETUP.md</code>); the Playtest first and the fee clock not started (<code>Docs/Reports/STEAM_LAUNCH.md</code>); commerce de-scoped (<code>Docs/STEAM_RELEASE_TASKS.md</code> R4); FMOD thresholds (<code>Docs/THIRD_PARTY_DECISIONS.md</code>).</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  // ---------- the model (months from Jan 2027 = 0) ----------
+  function project(p) {
+    const M = 60, steam = new Array(M).fill(0), addon = new Array(M).fill(0), mobile = new Array(M).fill(0), consoleR = new Array(M).fill(0);
+    const units = new Array(M).fill(0), installs = new Array(M).fill(0);
+    function wave(arr, start, y1, tail, unitPrice) {
+      if (start == null || start >= M || y1 <= 0) return;
+      for (let m = 0; m < 12; m++) { const i = start + m; if (i >= 0 && i < M) { const v = y1 * (m === 0 ? 0.465 : 0.535 / 11); arr[i] += v; if (unitPrice) units[i] += v / unitPrice; } }
+      tail.forEach((s, k) => { for (let m = 0; m < 12; m++) { const i = start + 12 * (k + 1) + m; if (i < M) { const v = y1 * s / 12; arr[i] += v; if (unitPrice) units[i] += v / unitPrice; } } });
+    }
+    const y1 = p.wishlists * p.conv * p.yearMult * p.price;
+    wave(steam, p.eaMonth, y1, p.tail, p.price);
+    wave(steam, p.oneMonth, y1 * p.oneBump, p.tail, p.price);
+    wave(consoleR, p.consoleMonth, y1 * p.consoleRatio, p.tail);
+    let owners = 0;
+    for (let i = 0; i < M; i++) {
+      owners += units[i];
+      if (p.oneMonth != null && i >= p.oneMonth) addon[i] = owners * p.attach * p.spend / 12;
+      if (p.mobileMonth != null && i >= p.mobileMonth) { const n = p.organic / 12 + owners * p.invites / 12; installs[i] = n; mobile[i] = n * p.ltv; }
+    }
+    const years = [];
+    for (let y = 0; y < 5; y++) {
+      const s = a => a.slice(y * 12, y * 12 + 12).reduce((x, z) => x + z, 0);
+      const g = { steam: s(steam), addon: s(addon), mobile: s(mobile), console: s(consoleR) };
+      g.total = g.steam + g.addon + g.mobile + g.console;
+      g.net = (g.steam + g.addon + g.console) * 0.70 + g.mobile * 0.85;
+      g.units = s(units); g.installs = s(installs); g.year = 2027 + y;
+      years.push(g);
+    }
+    return years;
+  }
+  const SCEN = {
+    low:  { eaMonth: 12, oneMonth: 27, mobileMonth: 30, consoleMonth: null, wishlists: 7000,   conv: 0.10, yearMult: 2.8, price: 11, oneBump: 0.2, tail: [0.25, 0.15, 0.10, 0.07], attach: 0,    spend: 0,  organic: 20000,  invites: 0.2, ltv: 0.15, consoleRatio: 0 },
+    base: { eaMonth: 6,  oneMonth: 18, mobileMonth: 18, consoleMonth: 42,   wishlists: 30000,  conv: 0.10, yearMult: 2.8, price: 11, oneBump: 0.4, tail: [0.33, 0.28, 0.22, 0.17], attach: 0.03, spend: 8,  organic: 75000,  invites: 1.0, ltv: 0.40, consoleRatio: 0.5 },
+    high: { eaMonth: 3,  oneMonth: 15, mobileMonth: 12, consoleMonth: 30,   wishlists: 150000, conv: 0.15, yearMult: 3.5, price: 11, oneBump: 1.0, tail: [0.50, 0.45, 0.40, 0.35], attach: 0.08, spend: 12, organic: 300000, invites: 2.5, ltv: 1.20, consoleRatio: 1.5 },
+  };
+  const STREAMS = [
+    ['steam', 'Steam: the game', '--s1'],
+    ['mobile', 'Mobile, free to play', '--s2'],
+    ['console', 'Console port', '--s3'],
+    ['addon', 'Add-ons on PC', '--s4'],
+  ];
+
+  // ---------- helpers ----------
+  const $ = id => document.getElementById(id);
+  const fmt = v => v >= 1e6 ? '$' + (v / 1e6).toFixed(v >= 1e7 ? 0 : 1) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'k' : v > 0 ? '$' + Math.round(v) : '$0';
+  const n0 = v => Math.round(v).toLocaleString('en-US');
+  const mon = m => m == null ? 'never' : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m % 12] + ' ' + (2027 + Math.floor(m / 12));
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const sum = (r, k) => r.reduce((a, y) => a + y[k], 0);
+
+  let current = 'base';
+  let custom = JSON.parse(JSON.stringify(SCEN.base));
+  try { const s = JSON.parse(localStorage.getItem('csrp-custom') || 'null'); if (s) custom = { ...custom, ...s }; } catch (e) {}
+  const params = () => current === 'custom' ? custom : SCEN[current];
+
+  $('legend').innerHTML = STREAMS.map(s => `<span><i class="sw" style="background:var(${s[2]})"></i>${s[1]}</span>`).join('');
+
+  // ---------- custom controls ----------
+  const CTRL = [
+    ['wishlists', 'Launch wishlists', 0, 300000, 1000, v => n0(v)],
+    ['eaMonth', 'Early Access launch', 0, 30, 1, v => mon(v)],
+    ['conv', 'Week-one conversion', 0.03, 0.4, 0.01, v => v.toFixed(2) + '×'],
+    ['oneBump', '1.0 wave (share of EA year one)', 0, 2, 0.05, v => Math.round(v * 100) + '%'],
+    ['mobileMonth', 'Public mobile release', 6, 59, 1, v => mon(v)],
+    ['ltv', 'Mobile gross per install', 0.05, 3, 0.05, v => '$' + v.toFixed(2)],
+    ['organic', 'Mobile installs a year, without invites', 0, 1000000, 5000, v => n0(v)],
+    ['invites', 'Phone installs per Steam owner a year', 0, 5, 0.1, v => v.toFixed(1)],
+    ['consoleRatio', 'Console year one vs Steam EA year one', 0, 3, 0.1, v => Math.round(v * 100) + '%'],
+  ];
+  $('custom').innerHTML = CTRL.map(c => `<div><label for="c-${c[0]}">${c[1]} <b id="cv-${c[0]}"></b></label><input type="range" id="c-${c[0]}" min="${c[2]}" max="${c[3]}" step="${c[4]}"></div>`).join('');
+  function syncCustom() { CTRL.forEach(c => { $('c-' + c[0]).value = custom[c[0]] ?? 0; $('cv-' + c[0]).textContent = c[5](custom[c[0]]); }); }
+  CTRL.forEach(c => $('c-' + c[0]).addEventListener('input', e => {
+    custom[c[0]] = parseFloat(e.target.value);
+    if (c[0] === 'eaMonth') custom.oneMonth = custom.eaMonth + 12;
+    $('cv-' + c[0]).textContent = c[5](custom[c[0]]);
+    try { localStorage.setItem('csrp-custom', JSON.stringify(custom)); } catch (e) {}
+    render();
+  }));
+
+  document.querySelectorAll('[data-s]').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.s === 'custom' && current !== 'custom') { custom = JSON.parse(JSON.stringify(SCEN[current])); syncCustom(); }
+    current = b.dataset.s;
+    document.querySelectorAll('[data-s]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    $('custom').hidden = current !== 'custom';
+    render();
+  }));
+
+  // ---------- chart ----------
+  const svg = $('chart'), NS = 'http://www.w3.org/2000/svg';
+  const W = 1000, H = 380, L = 64, R = 16, T = 28, B = 40;
+  const el = (tag, a, p = svg) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+  function niceMax(v) { if (v <= 0) return 1000; const e = Math.pow(10, Math.floor(Math.log10(v))); const f = v / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e; }
+  function drawChart(rows) {
+    svg.innerHTML = '';
+    const max = niceMax(Math.max(...rows.map(r => r.total)) * 1.08);
+    const y = v => H - B - v / max * (H - T - B);
+    for (let i = 0; i <= 4; i++) {
+      const v = max * i / 4, yy = y(v);
+      el('line', { x1: L, x2: W - R, y1: yy, y2: yy, stroke: i === 0 ? 'var(--line)' : 'var(--grid)', 'stroke-width': 1 });
+      const t = el('text', { x: L - 10, y: yy + 4, 'text-anchor': 'end', 'font-size': 13, fill: 'var(--soft)' }); t.textContent = fmt(v);
+    }
+    const slot = (W - L - R) / rows.length, bw = Math.min(96, slot * 0.5);
+    rows.forEach((r, i) => {
+      const cx = L + slot * (i + .5), x = cx - bw / 2;
+      let base = 0;
+      const segs = STREAMS.filter(s => r[s[0]] > 0);
+      segs.forEach((s, k) => {
+        const v = r[s[0]], y0 = y(base), y1 = y(base + v);
+        const top = k === segs.length - 1, h = Math.max(0, y0 - y1 - (k > 0 ? 2 : 0));
+        const yt = y1, yb = yt + h;
+        if (h <= 0) { base += v; return; }
+        const rr = top ? Math.min(4, h) : 0;
+        const d = `M${x},${yb} L${x},${yt + rr} Q${x},${yt} ${x + rr},${yt} L${x + bw - rr},${yt} Q${x + bw},${yt} ${x + bw},${yt + rr} L${x + bw},${yb} Z`;
+        el('path', { d, fill: `var(${s[2]})` });
+        base += v;
+      });
+      const lt = el('text', { x: cx, y: y(r.total) - 8, 'text-anchor': 'middle', 'font-size': 14, fill: 'var(--text)', 'font-variant-numeric': 'tabular-nums' }); lt.textContent = fmt(r.total);
+      const yl = el('text', { x: cx, y: H - B + 22, 'text-anchor': 'middle', 'font-size': 14, fill: 'var(--soft)' }); yl.textContent = r.year;
+      const hit = el('rect', { x: cx - slot / 2, y: T, width: slot, height: H - T - B, fill: 'transparent', tabindex: 0, 'aria-label': `${r.year}: ${fmt(r.total)} gross` });
+      const show = () => showTip(r, cx, y(r.total));
+      hit.addEventListener('mouseenter', show); hit.addEventListener('focus', show); hit.addEventListener('click', show);
+      hit.addEventListener('mouseleave', hideTip); hit.addEventListener('blur', hideTip);
+    });
+  }
+  function showTip(r, cx, yTop) {
+    const tip = $('tip'), box = $('chartBox').getBoundingClientRect(), sv = svg.getBoundingClientRect();
+    tip.innerHTML = `<div class="t">${r.year}</div>` + STREAMS.map(s => `<div class="r"><i class="sw" style="background:var(${s[2]})"></i><span>${s[1]}</span><span>${fmt(r[s[0]])}</span></div>`).join('') +
+      `<hr><div class="r"><span></span><span>Gross</span><span>${fmt(r.total)}</span></div><div class="r"><span></span><span>Net to Froglet</span><span>${fmt(r.net)}</span></div>`;
+    tip.hidden = false;
+    const scale = sv.width / W;
+    let left = (sv.left - box.left) + cx * scale + 14;
+    if (left + tip.offsetWidth > box.width - 8) left = (sv.left - box.left) + cx * scale - tip.offsetWidth - 14;
+    tip.style.left = Math.max(8, left) + 'px';
+    tip.style.top = Math.max(8, (sv.top - box.top) + yTop * scale - 10) + 'px';
+  }
+  function hideTip() { $('tip').hidden = true; }
+
+  // ---------- tornado (base case, five-year gross) ----------
+  function drawTornado() {
+    const b = SCEN.base, tot = p => sum(project(p), 'total'), base = tot(b);
+    const L5 = [
+      ['Launch wishlists', 'the Playtest’s job', x => ({ ...b, wishlists: b.wishlists * x })],
+      ['Steam long tail', 'updates, sales, streamers', x => ({ ...b, tail: b.tail.map(t => t * x) })],
+      ['Mobile gross per install', 'retention × spend', x => ({ ...b, ltv: b.ltv * x })],
+      ['Mobile installs without invites', 'store, browser Toybox', x => ({ ...b, organic: b.organic * x })],
+      ['Console port size', 'vs Steam EA year one', x => ({ ...b, consoleRatio: b.consoleRatio * x })],
+      ['Phone invites per Steam owner', 'the household bridge', x => ({ ...b, invites: b.invites * x })],
+    ].map(([n, s, f]) => ({ n, s, lo: tot(f(0.5)), hi: tot(f(2)) })).sort((a, c) => (c.hi - c.lo) - (a.hi - a.lo));
+    const max = Math.max(...L5.map(l => l.hi)), min = Math.min(...L5.map(l => l.lo));
+    const span = max - min, pos = v => (v - min) / span * 100;
+    $('tornado').innerHTML = L5.map(l => `
+      <div class="lever"><div class="n">${l.n}<small>${l.s}</small></div>
+        <div style="position:relative;height:30px;margin:0 56px">
+          <div style="position:absolute;left:${pos(l.lo)}%;width:${pos(base) - pos(l.lo)}%;top:6px;height:18px;background:var(--line)"></div>
+          <div style="position:absolute;left:${pos(base)}%;width:${pos(l.hi) - pos(base)}%;top:6px;height:18px;background:var(--s1)"></div>
+          <div style="position:absolute;left:${pos(base)}%;top:0;bottom:0;width:2px;background:var(--text)"></div>
+          <span class="num" style="position:absolute;right:calc(${100 - pos(l.lo)}% + 6px);top:5px;font-size:12px;color:var(--soft);white-space:nowrap">${fmt(l.lo)}</span>
+          <span class="num" style="position:absolute;left:calc(${pos(l.hi)}% + 6px);top:5px;font-size:12px;color:var(--text);white-space:nowrap">${fmt(l.hi)}</span>
+        </div></div>`).join('');
+    $('tornadoNote').textContent = `Base five-year gross is ${fmt(base)} (the line). Grey: the lever halved. Blue: the lever doubled. Shifting the Early Access launch six months later costs about ${fmt(base - tot({ ...b, eaMonth: 12, oneMonth: 24 }))} inside the window.`;
+  }
+
+  // ---------- tables ----------
+  const ROWS = [
+    ['Early Access launch', p => mon(p.eaMonth), 'The Steam fee is not paid yet; the floor is about six weeks after it, realistically eight to twelve, then Playtest waves'],
+    ['1.0 launch', p => mon(p.oneMonth), 'About 12 months in Early Access (the store answers)'],
+    ['Launch wishlists', p => n0(p.wishlists), 'The Market Map’s three cases'],
+    ['Week-one conversion', p => p.conv.toFixed(2) + '×', 'GameDiscoverCo median for games above $10 is 0.10×'],
+    ['Year one ÷ week one', p => p.yearMult.toFixed(1) + '×', '2.8× is the median for $15–19 games'],
+    ['Realized gross per copy', p => '$' + p.price, '$15 list, after the launch discount, sales and regional prices'],
+    ['1.0 wave', p => Math.round(p.oneBump * 100) + '% of EA year one', 'The median 1.0 month is about 40% of the EA launch month; 80% of games earn less at 1.0'],
+    ['Steam years 2–5, share of year one', p => p.tail.map(t => Math.round(t * 100) + '%').join(' · '), 'Year two ≈ a third of year one (GameDiscoverCo); multiplayer with updates keeps a longer tail'],
+    ['Add-ons on PC, from 1.0', p => p.attach ? Math.round(p.attach * 100) + '% of owners × $' + p.spend + '/yr' : 'none', 'Needs commerce switched back on (de-scoped, R4)'],
+    ['Public mobile release', p => mon(p.mobileMonth), 'Pin 3: after the paid PC launch'],
+    ['Mobile installs a year, without invites', p => n0(p.organic), 'No paid acquisition: it costs more than an install earns'],
+    ['Phone installs per Steam owner a year', p => p.invites.toFixed(1), 'The household bridge: a PC player brings a puzzler or a kid'],
+    ['Mobile gross per install', p => '$' + p.ltv.toFixed(2), 'About 2.5 active days per install at median retention × ARPDAU $0.15–0.50'],
+    ['Console port', p => p.consoleMonth == null ? 'none' : mon(p.consoleMonth) + ', ' + Math.round(p.consoleRatio * 100) + '%', 'Year one as a share of Steam EA year one; developer reports range from 7% to several times Steam'],
+  ];
+  function renderTables(rows) {
+    const all = { low: project(SCEN.low), base: project(SCEN.base), high: project(SCEN.high) };
+    $('cmp').innerHTML = [0, 1, 2, 3, 4].map(i => `<tr><td>${2027 + i}</td>${['low', 'base', 'high'].map(s => `<td class="r">${fmt(all[s][i].total)}</td><td class="r">${fmt(all[s][i].net)}</td>`).join('')}</tr>`).join('') +
+      `<tr class="tot"><td>Five years</td>${['low', 'base', 'high'].map(s => `<td class="r">${fmt(sum(all[s], 'total'))}</td><td class="r">${fmt(sum(all[s], 'net'))}</td>`).join('')}</tr>`;
+    $('detailHead').textContent = (current === 'custom' ? 'Your own' : current[0].toUpperCase() + current.slice(1)) + ', by stream';
+    $('detail').innerHTML = STREAMS.map(s => `<tr><td><i class="sw" style="background:var(${s[2]});margin-right:8px"></i>${s[1]}</td>${rows.map(r => `<td class="r">${fmt(r[s[0]])}</td>`).join('')}</tr>`).join('') +
+      `<tr><td>Steam copies sold</td>${rows.map(r => `<td class="r">${n0(r.units)}</td>`).join('')}</tr>` +
+      `<tr><td>Mobile installs</td>${rows.map(r => `<td class="r">${n0(r.installs)}</td>`).join('')}</tr>` +
+      `<tr class="tot"><td>Gross</td>${rows.map(r => `<td class="r">${fmt(r.total)}</td>`).join('')}</tr>` +
+      `<tr class="tot"><td>Net to Froglet</td>${rows.map(r => `<td class="r">${fmt(r.net)}</td>`).join('')}</tr>`;
+    $('assume').innerHTML = ROWS.map(([n, f, w]) => `<tr><td>${n}</td>${['low', 'base', 'high'].map(s => `<td class="r">${f(SCEN[s])}</td>`).join('')}<td style="color:var(--soft)">${w}</td></tr>`).join('');
+  }
+
+  function render() {
+    const rows = project(params());
+    drawChart(rows); hideTip(); renderTables(rows);
+    const g5 = sum(rows, 'total'), n5 = sum(rows, 'net'), pk = rows.reduce((a, r) => r.total > a.total ? r : a, rows[0]);
+    $('t5g').textContent = fmt(g5);
+    $('t5gd').textContent = 'What players spend, ' + (current === 'custom' ? 'your own case' : current + ' case');
+    $('t5n').textContent = fmt(n5);
+    $('tPk').textContent = fmt(pk.total);
+    $('tPkd').textContent = pk.total > 0 ? 'Gross in ' + pk.year : 'No revenue in the window';
+    $('tU').textContent = n0(sum(rows, 'units'));
+    $('tUd').textContent = n0(sum(rows, 'installs')) + ' mobile installs';
+  }
+
+  syncCustom(); drawTornado(); render();
+  if (window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', render);
+})();
+</script>
