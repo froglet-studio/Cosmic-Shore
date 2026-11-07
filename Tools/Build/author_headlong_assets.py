@@ -54,6 +54,10 @@ G_SCRIPT = {
     "HeadlongController":  guid("script/HeadlongController"),
     "HeadlongCircuit":     guid("script/HeadlongCircuit"),
     "HeadlongCircuitTests": guid("script/HeadlongCircuitTests"),
+    # The stampede (2026-11-07): the hedges and Time crystals, the controller's half that lays them, their tests.
+    "HeadlongHedges":       guid("script/HeadlongHedges"),
+    "HeadlongControllerStampede": guid("script/HeadlongController.Stampede"),
+    "HeadlongHedgesTests":  guid("script/HeadlongHedgesTests"),
     # Shared with Switchback, introduced on this branch. Minted here because this script is the
     # one that creates them; Switchback's generator references them by name and never mints.
     "GateRaceController":  guid("script/GateRaceController"),
@@ -81,6 +85,8 @@ EXISTING = {
     "IconActive":             "1dc25875d7cbd3e478fc5a133e65eedb",
     "IconInactive":           "fa9b62abd1b217b4ba3d7c5a4a2c0916",
     "CardBackground":         "587d2203114c8004c9985d0112c89585",
+    # the environment prism every arena lays (its Prism component is fileID 4563009547826722997): the hedge slabs
+    "SpawnablePrism":         aml.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab"),
 }
 
 # ── Tuning ───────────────────────────────────────────────────────────────────
@@ -163,6 +169,9 @@ SCRIPT_PATHS = {
     "HeadlongController":   "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongController.cs",
     "HeadlongCircuit":      "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs",
     "HeadlongCircuitTests": "Assets/_Scripts/Tests/Editor/HeadlongCircuitTests.cs",
+    "HeadlongHedges":       "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongHedges.cs",
+    "HeadlongControllerStampede": "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongController.Stampede.cs",
+    "HeadlongHedgesTests":  "Assets/_Scripts/Tests/Editor/HeadlongHedgesTests.cs",
     "GateRaceController":   "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs",
     "RaceCourseGeometry":   "Assets/_Scripts/Controller/Arcade/Racing/RaceCourseGeometry.cs",
 }
@@ -204,6 +213,20 @@ assert _m, "GameModes.Headlong not found - has the member been renamed?"
 MODE_ID = int(_m.group(1))
 
 
+# ── The stampede's starting Time levels: READ from HeadlongHedges, never typed twice ──
+# StartingTimeLevelByIntensity { 0, 0, 0, 5 }: I4 starts at Time 5 so Momentum (Time L5) is live. A card row's
+# levels are normalized (0.5 = level 5), one row per intensity that starts above zero (Brittle Star Time's I4 did it first).
+_HEDGES = read("Assets/_Scripts/Controller/Arcade/Headlong/HeadlongHedges.cs")
+_m = re.search(r"StartingTimeLevelByIntensity = \{ ([0-9, ]+) \}", _HEDGES)
+assert _m, "HeadlongHedges.StartingTimeLevelByIntensity not found"
+START_TIME = [int(x) for x in _m.group(1).split(",")]
+RHINO_CLASS = 3   # VesselClassType.Rhino
+STARTING_ELEMENTS = "".join(
+    f"  - Class: {RHINO_CLASS}\n    Intensity: {i + 1}\n    Levels:\n      Mass: 0\n      Charge: 0\n"
+    f"      Space: 0\n      Time: {lvl / 10:g}\n" for i, lvl in enumerate(START_TIME) if lvl)
+if STARTING_ELEMENTS:
+    STARTING_ELEMENTS = "  StartingElements:\n" + STARTING_ELEMENTS
+
 # ── 3. Arcade game config ────────────────────────────────────────────────────
 # RHINO ONLY: a single entry in Vessels drives all three enforcement layers (the launcher clamp,
 # the server-side spawn clamp, and the AI clamp).
@@ -214,10 +237,11 @@ emit("Assets/_SO_Assets/Games/ArcadeGameHeadlong.asset",
      HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameHeadlong") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Headlong
-  Description: Rhinos only, on a circuit that never lets go. Hold full throttle dead
-    straight and the ramp winds you up to fifteen times cruise - but the boost dies the
-    moment you steer, and every corner is cut just wide enough to take flat out if your
-    hands are quiet enough. Laps until somebody's nerve breaks.
+  Description: Rhinos only, a stampede. Hold the throttle dead straight and the ramp winds
+    you up to fifteen times cruise - and hedges of mass stand across every straight, so
+    plough straight through them. Swerve and the boost dies. Thorn hedges burn your Time,
+    so slip their window or take the burn. Top intensity starts at Time 5 - carry the
+    corner and Momentum bulldozes the danger. Five laps. Fastest domain home wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {aml.card_background('Headlong')}, type: 3}}
@@ -233,7 +257,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameHeadlong.asset",
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: {COMEBACK_RATE}
+{STARTING_ELEMENTS}  ComebackRatePerScoreDeficit: {COMEBACK_RATE}
 """)
 emit("Assets/_SO_Assets/Games/ArcadeGameHeadlong.asset.meta",
      asset_meta(G_ASSET["ArcadeGameHeadlong"]))
@@ -255,6 +279,7 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['HeadlongScoringRule
   courseInnerRadiusFallback: 480
   innerRadiusNucleusFactor: 1.22
   laps: {LAPS}
+  hedgePrefab: {{fileID: 4563009547826722997, guid: {EXISTING['SpawnablePrism']}, type: 3}}
 """
 CONTROLLER_SCRIPT_LINE = f"  m_Script: {{fileID: 11500000, guid: {G_SCRIPT['HeadlongController']}, type: 3}}\n"
 
