@@ -65,6 +65,28 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Shrike ability icons in parts, the selected mode in the domain (`claude/shrike-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Shrike's four cards drawn from the real hull in parts under each slot icon of
+`ShrikeHUDVariant.prefab`, painted by `ShrikeHUDView.RefreshParts` from `ShrikeExecutor.Painting`/`Locked`, `Docked`,
+`FloraCount`, the new `Lancing`, `Tethering` and `Slinging`; the omni card `Core/Shrike_OmniCrystal.png`; the selected
+mode's gauge and the missile count turn the pilot's domain instead of the CTA lime (`readyColor` white on the prefab).
+
+**Verified without the editor:** `author.py shrike --check` no drift; `author_shrike_icons.py --check`,
+`author_hull_ability_rows.py --check`, `check_ui_colors.py`, `check_console_logging.py` clean; `author_shrike_assets.py
+--check` shows only its three sparse-checkout findings (network prefabs, card metas), as before. NOT run: the reference
+compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `ShrikeHUDView.cs`, `ShrikeHUDController.cs` or `ShrikeExecutor.cs`.
+2. Fly the Shrike as Jade, then Gold. **Pass:** every Shrike on the cards wears the domain; the selected mode's gauge is
+   the domain, never lime.
+3. Charge mode, hold RT on a target with a missile ready. **Pass:** the reticle goes solid and two missiles show.
+4. Touch a block to dock, then press A. **Pass:** the Mass cup goes solid while docked; after the nest is built a flora
+   with a missile stands on it.
+5. Space mode, hold RT. **Pass:** the beam shows and the prism splits; at Space 5 the square block is cut by the beam.
+6. Time mode, RT at an anchor. **Pass:** the tether goes solid and the blocks behind the Shrike show while slinging.
+
 ### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Pilots/INVENTORY.md`.
