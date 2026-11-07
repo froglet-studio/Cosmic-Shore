@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(27, values.Length,
+            Assert.AreEqual(28, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -64,6 +64,7 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Honeyguide, 23)]
         [TestCase(VesselClassType.Meerkat, 28)]
         [TestCase(VesselClassType.TigerMoth, 29)]
+        [TestCase(VesselClassType.Swordfish, 30)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.

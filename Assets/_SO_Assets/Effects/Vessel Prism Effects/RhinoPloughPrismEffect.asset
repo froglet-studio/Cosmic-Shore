@@ -15,5 +15,25 @@ MonoBehaviour:
   clearanceMargin: 1
   throwSecondsOfSpeed: 0.04
   maxThrowDistance: 30
+  furrowDistance:
+    Enabled: 1
+    Value: 0
+    Min: 0
+    Max: 20
+    element: 3
+    UseFloor: 1
+    Floor: 0
+  unstoppableUpgradeElement: 3
+  carryDistance:
+    Enabled: 1
+    Value: 0
+    Min: 0
+    Max: 40
+    element: 1
+    UseFloor: 1
+    Floor: 0
+  avalancheUpgradeElement: 1
+  avalancheLinks: 3
+  bermUpgradeElement: 2
   slideSeconds: 0.25
   skipWhileAttached: 1

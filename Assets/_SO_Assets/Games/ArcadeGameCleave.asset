@@ -25,7 +25,7 @@ MonoBehaviour:
   GolfScoring: 1
   SceneName: MinigameCleave
   Vessels:
-  - {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
+  - {fileID: 11400000, guid: a7e14c2b9d3f4a6c8b5e0d1f2c3a4b96, type: 2}
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 4
   MinDomainsAllowed: 2
