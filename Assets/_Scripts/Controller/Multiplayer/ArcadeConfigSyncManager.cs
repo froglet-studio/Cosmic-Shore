@@ -138,6 +138,25 @@ namespace CosmicShore.Gameplay
             /// own, it flies <see cref="AIDifficulty"/>), parallel to the domain slots - so every peer's pedestals
             /// show the level each bot will race at. Protocol version 19.</summary>
             public int  AiD0, AiD1, AiD2, AiD3, AiD4, AiD5;
+            /// <summary>How an ARENA card's seats get their hulls (<c>CosmicShore.Data.VesselSelectionMode</c> as an
+            /// int; 0 = unset, read as Pick through <c>VesselSelectionRules.Resolve</c>). The host's pick on the
+            /// Vessels row, which replaced the arena cards' intensity row. Protocol version 27.</summary>
+            public int  VesselSelection;
+            /// <summary>The draft's turn: 0 while no draft is running, 1..N the turn being picked, -1 once every seat
+            /// has a hull. Only meaningful while <see cref="VesselSelection"/> is Draft.</summary>
+            public int  DraftTurn;
+            /// <summary>Whose turn it is: an AI seat (<see cref="DraftAiOrdinal"/>) or a human (<see cref="DraftClient"/>).</summary>
+            public bool DraftSeatIsAi;
+            /// <summary>The client id of the human whose turn it is.</summary>
+            public ulong DraftClient;
+            /// <summary>The placed-AI ordinal whose turn it is.</summary>
+            public int  DraftAiOrdinal;
+            /// <summary>Server time (<c>NetworkManager.ServerTime.Time</c>) at which the turn runs out and the seat is
+            /// given a random free hull.</summary>
+            public double DraftTurnEndsAt;
+
+            /// <summary>True while a draft turn is being picked.</summary>
+            public bool DraftRunning => DraftTurn > 0;
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
             {
@@ -169,13 +188,25 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref AiD3);
                 serializer.SerializeValue(ref AiD4);
                 serializer.SerializeValue(ref AiD5);
+                serializer.SerializeValue(ref VesselSelection);
+                serializer.SerializeValue(ref DraftTurn);
+                serializer.SerializeValue(ref DraftSeatIsAi);
+                serializer.SerializeValue(ref DraftClient);
+                serializer.SerializeValue(ref DraftAiOrdinal);
+                serializer.SerializeValue(ref DraftTurnEndsAt);
             }
 
             public bool Equals(LobbySnapshot o) =>
                 Generation == o.Generation && IsOpen == o.IsOpen && GameMode == o.GameMode &&
                 Intensity == o.Intensity && PlayerCount == o.PlayerCount && MaxPlayers == o.MaxPlayers &&
                 DomainCount == o.DomainCount && HumanCount == o.HumanCount &&
-                AIDifficulty == o.AIDifficulty && SameAi(o);
+                AIDifficulty == o.AIDifficulty && SameAi(o) && SameSelection(o);
+
+            /// <summary>The Vessels row and the draft's turn are the same on both.</summary>
+            public bool SameSelection(LobbySnapshot o) =>
+                VesselSelection == o.VesselSelection && DraftTurn == o.DraftTurn && DraftSeatIsAi == o.DraftSeatIsAi &&
+                DraftClient == o.DraftClient && DraftAiOrdinal == o.DraftAiOrdinal &&
+                DraftTurnEndsAt.Equals(o.DraftTurnEndsAt);
 
             public bool SameAi(LobbySnapshot o) =>
                 AiCount == o.AiCount && Ai0 == o.Ai0 && Ai1 == o.Ai1 && Ai2 == o.Ai2 && Ai3 == o.Ai3 &&
@@ -337,6 +368,12 @@ namespace CosmicShore.Gameplay
         /// handler reads directly - this is only the change.
         /// </summary>
         public event System.Action<int> OnAIDifficultyChangedOnClient;
+
+        /// <summary>
+        /// Raised on clients when the host moves the Vessels row or the draft moves to its next turn. The modal reads
+        /// the mode and the turn off <see cref="CurrentLobby"/>.
+        /// </summary>
+        public event System.Action OnVesselSelectionChangedOnClient;
 
         /// <summary>
         /// Raised on clients when the host reshapes the roster mid-lobby - an AI placed on a
@@ -740,6 +777,9 @@ namespace CosmicShore.Gameplay
             if (previous.AIDifficulty != next.AIDifficulty)
                 OnAIDifficultyChangedOnClient?.Invoke(next.AIDifficulty);
 
+            if (!previous.SameSelection(next))
+                OnVesselSelectionChangedOnClient?.Invoke();
+
             // HumanCount is not carried by the event - a client reads it off CurrentLobby - but a
             // change to it still reshapes the roster (seats minus humans is the AI count), so it
             // has to be one of the things that asks for a redraw.
@@ -763,6 +803,8 @@ namespace CosmicShore.Gameplay
             if (lobby.AiCount > 0)
                 OnRosterChangedOnClient?.Invoke(lobby.PlayerCount, lobby.DomainCount, lobby.PlacedAiDomains(), lobby.PlacedAiVessels(),
                                                 lobby.PlacedAiDifficulties());
+
+            OnVesselSelectionChangedOnClient?.Invoke();
         }
 
         /// <summary>
@@ -799,6 +841,27 @@ namespace CosmicShore.Gameplay
             var snapshot = _lobby.Value;
             if (!snapshot.IsOpen || snapshot.AIDifficulty == aiDifficulty) return;
             snapshot.AIDifficulty = aiDifficulty;
+            _lobby.Value = snapshot;
+        }
+
+        /// <summary>
+        /// Called by ArcadeGameConfigureModal on the host when the Vessels row moves or the draft turns over, so every
+        /// guest's panel shows the mode and whose turn it is. <paramref name="draftTurn"/> follows
+        /// <see cref="LobbySnapshot.DraftTurn"/>.
+        /// </summary>
+        public void NotifyVesselSelectionChanged(int vesselSelection, int draftTurn, bool draftSeatIsAi,
+                                                 ulong draftClient, int draftAiOrdinal, double draftTurnEndsAt)
+        {
+            if (!IsServer) return;
+            var snapshot = _lobby.Value;
+            if (!snapshot.IsOpen) return;
+            snapshot.VesselSelection = vesselSelection;
+            snapshot.DraftTurn = draftTurn;
+            snapshot.DraftSeatIsAi = draftSeatIsAi;
+            snapshot.DraftClient = draftClient;
+            snapshot.DraftAiOrdinal = draftAiOrdinal;
+            snapshot.DraftTurnEndsAt = draftTurnEndsAt;
+            if (snapshot.SameSelection(_lobby.Value)) return;
             _lobby.Value = snapshot;
         }
 

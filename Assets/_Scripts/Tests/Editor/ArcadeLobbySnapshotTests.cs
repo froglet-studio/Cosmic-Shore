@@ -39,6 +39,8 @@ namespace CosmicShore.Tests
                 object mutated = new ArcadeConfigSyncManager.LobbySnapshot();
                 if (field.FieldType == typeof(int)) field.SetValue(mutated, 7);
                 else if (field.FieldType == typeof(bool)) field.SetValue(mutated, true);
+                else if (field.FieldType == typeof(ulong)) field.SetValue(mutated, 7UL);
+                else if (field.FieldType == typeof(double)) field.SetValue(mutated, 7.0);
                 else Assert.Fail($"LobbySnapshot.{field.Name} is a {field.FieldType.Name}; teach " +
                                  "this test how to mutate it (and check NetworkSerialize handles it).");
 

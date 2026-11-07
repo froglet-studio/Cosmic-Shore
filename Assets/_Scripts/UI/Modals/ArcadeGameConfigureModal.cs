@@ -258,6 +258,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient += HandleIntensityChangedOnClient;
                 arcadeConfigSyncManager.OnAIDifficultyChangedOnClient += HandleAIDifficultyChangedOnClient;
+                arcadeConfigSyncManager.OnVesselSelectionChangedOnClient += HandleVesselSelectionChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient += HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllyVesselCycleRequested += HandleAllyVesselCycleRequested;
                 arcadeConfigSyncManager.OnAIVesselSetRequested += HandleAIVesselSetRequested;
@@ -300,6 +301,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient -= HandleIntensityChangedOnClient;
                 arcadeConfigSyncManager.OnAIDifficultyChangedOnClient -= HandleAIDifficultyChangedOnClient;
+                arcadeConfigSyncManager.OnVesselSelectionChangedOnClient -= HandleVesselSelectionChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient -= HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllyVesselCycleRequested -= HandleAllyVesselCycleRequested;
                 arcadeConfigSyncManager.OnAIVesselSetRequested -= HandleAIVesselSetRequested;
@@ -318,6 +320,7 @@ namespace CosmicShore.UI
 
             ReconcileClientLobby();
             TickArenaHullClaim();
+            TickVesselSelection();
 
             // The pad moves focus through the EventSystem like any other screen: the configure tree
             // is plain Selectables (intensity nodes, domain tiles, each domain's + AI, Start).
@@ -519,6 +522,9 @@ namespace CosmicShore.UI
             RestoreRememberedRoster();
             RestoreRememberedDomain();
             RefreshRoster();
+
+            // The Vessels row opens on Pick, after the commit (the lobby it publishes into is open now).
+            ResetVesselSelection();
         }
 
         /// <summary>
@@ -751,6 +757,7 @@ namespace CosmicShore.UI
                 arena.OnVesselConfirmRequested += HandleVesselConfirmRequested;
                 arena.OnVesselChangeRequested  += HandleVesselChangeRequested;
                 arena.OnVesselPickRequested    += HandleVesselPickRequested;
+                arena.OnVesselSelectionStepRequested += HandleVesselSelectionStepRequested;
             }
 
             WireSeatLineup(_activePanel.SeatLineup);
@@ -797,6 +804,7 @@ namespace CosmicShore.UI
                 arena.OnVesselConfirmRequested -= HandleVesselConfirmRequested;
                 arena.OnVesselChangeRequested  -= HandleVesselChangeRequested;
                 arena.OnVesselPickRequested    -= HandleVesselPickRequested;
+                arena.OnVesselSelectionStepRequested -= HandleVesselSelectionStepRequested;
             }
 
             UnwireSeatLineup(_activePanel.SeatLineup);
@@ -1478,6 +1486,10 @@ namespace CosmicShore.UI
                 : LaunchPreferenceRules.ResolveIntensity(
                     rememberedIntensity, game.MinIntensity, game.MaxIntensity, maxUnlocked);
 
+            // An arena card has no intensity row: it always plays the one arena intensity, whatever was remembered or
+            // unlocked (ResolveIntensity would clamp it to a player's unlocked ceiling, which can sit below it).
+            if (game.ArenaRules) config.Intensity = SO_ArcadeGame.ArenaIntensity;
+
             // The AI difficulty it was last launched with, or the default (Medium) the first time
             // and for a record saved before difficulty existed. The weekly challenge pins it to
             // the default like the rest of its terms: every player in a week faces the same ask.
@@ -1734,6 +1746,7 @@ namespace CosmicShore.UI
             arena.ShowHullStrip(_availableShips, _availableShipIndex,
                                 v => IsHullHeldByOtherPilot(v.Class), _vesselConfirmed);
             RefreshSeatLineup();
+            DrawVesselSelection();   // the Vessels row and, in Squad mode, the chosen squad over the seat caption
         }
 
         /// <summary>A tap on the hull strip: show that hull, unless the pick is already made, a claim
@@ -1748,7 +1761,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            if (_vesselConfirmed || ArenaHullClaimPending) return;
+            if (_vesselConfirmed || ArenaHullClaimPending || !MayChooseOwnHullNow()) return;
             if (index < 0 || index >= _availableShips.Count || index == _availableShipIndex) return;
             if (IsHullHeldByOtherPilot(_availableShips[index].Class)) return;
 
@@ -1766,8 +1779,9 @@ namespace CosmicShore.UI
                 return;
             }
 
+            if (TryStepSquad(direction)) return;   // Squad mode: the arrows step the saved squads
             if (_vesselConfirmed || _availableShips.Count == 0) return;
-            if (ArenaHullClaimPending) return;
+            if (ArenaHullClaimPending || !MayChooseOwnHullNow()) return;
 
             int count = _availableShips.Count;
             // Step past hulls another pilot already holds (arena cards only - a no-op otherwise).
@@ -1787,7 +1801,8 @@ namespace CosmicShore.UI
         {
             // An AI's pick lands as it is made; only the pilot's own hull is claimed.
             if (_vesselSeat != OwnVesselSeat) return;
-            if (_vesselConfirmed || ArenaHullClaimPending) return;
+            if (TryDealFromChosenSquad()) return;   // Squad mode: SELECT deals one of the squad's vessels
+            if (_vesselConfirmed || ArenaHullClaimPending || !MayChooseOwnHullNow()) return;
             if (_availableShipIndex < 0 || _availableShipIndex >= _availableShips.Count) return;
 
             // ARENA: a hull is flown by one pilot, so SELECT VESSEL is a CLAIM the server
@@ -1804,6 +1819,8 @@ namespace CosmicShore.UI
         void HandleVesselChangeRequested()
         {
             if (_vesselSeat != OwnVesselSeat || !_vesselConfirmed || _localPlayerReady) return;
+            // A dealt or drafted hull is not taken back: only Pick lets a pilot change their mind.
+            if (SelectionMode != VesselSelectionMode.Pick) return;
 
             _vesselConfirmed = false;
             ReleaseArenaHullClaim();
@@ -1871,7 +1888,9 @@ namespace CosmicShore.UI
                 if (players[i] is not Player p || !p || p == self || !p.IsSpawned) continue;
                 if (p.ArenaHullClaim == hull) return true;
             }
-            return false;
+
+            // In a draft an AI's hull is as final as a pilot's: it was its turn, and it picked.
+            return SelectionMode == VesselSelectionMode.Draft && config != null && config.AIVessels.Contains(hull);
         }
 
         /// <summary>
@@ -1975,6 +1994,12 @@ namespace CosmicShore.UI
             if (RequiresVesselConfirmation && !_vesselConfirmed)
             {
                 _activePanel.SetStartAvailable(false, "Claim a hull to start.");
+                return;
+            }
+
+            if (SelectionHoldsStart(out var selectionReason))
+            {
+                _activePanel.SetStartAvailable(false, TemplateText.Fill(selectionReason));
                 return;
             }
 
@@ -2571,7 +2596,7 @@ namespace CosmicShore.UI
         /// </summary>
         void ApplyAIVesselSet(Player requester, int ordinal, VesselClassType hull)
         {
-            if (!MayRequesterPickAiSeat(requester, ordinal)) return;
+            if (!MayRequesterPickAiSeat(requester, ordinal) || !MaySetAiHullUnderSelection(requester, ordinal)) return;
             if (!AIHullSeating.IsConcrete(hull) || !_availableShips.Any(v => v && v.Class == hull)) return;
 
             config.SyncAIVesselSlots();
@@ -2602,7 +2627,7 @@ namespace CosmicShore.UI
         /// </summary>
         void ApplyAllyVesselCycle(Player requester, int ordinal, int direction)
         {
-            if (!MayRequesterPickAiSeat(requester, ordinal)) return;
+            if (!MayRequesterPickAiSeat(requester, ordinal) || !MaySetAiHullUnderSelection(requester, ordinal)) return;
 
             config.SyncAIVesselSlots();
             var seatDomain = config.AIDomains[ordinal];
@@ -2837,6 +2862,7 @@ namespace CosmicShore.UI
             _vesselConfirmed = false;
             _vesselSeat = OwnVesselSeat;
             ReleaseArenaHullClaim();
+            ClearVesselSelectionGate();
 
             // A satellite arena is the expensive half of the preview - it must never outlive the
             // window somebody was looking at it through.
@@ -3286,6 +3312,7 @@ namespace CosmicShore.UI
             InitializeDomainSelection();
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
+            ResetVesselSelection();
 
             // Move the APP SHELL to the window the card belongs to first, so the card the host
             // opened is drawn on it rather than over whatever the guest was looking at. An Arena card

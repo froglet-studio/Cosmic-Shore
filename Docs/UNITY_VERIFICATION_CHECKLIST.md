@@ -21585,3 +21585,28 @@ Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's c
 6. **Omni card**: the omni crystal card shows the cash-out (three blooms round a crystal).
 7. **Domain**: switch domain (Jade, Ruby, Gold): every Manta on the cards wears it.
 
+
+## 🔴 Arena Vessels row: Pick, Random, Draft, Squad (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-jypklp`. Compiled with `unity_refcompile` (player and editor configs); no Unity editor was
+open, so the `unity` CLI and the EditMode tests (`VesselSelectionRulesTests`, `ArcadeLobbySnapshotTests`,
+`ArenaSeatingTests`) have not run in Unity. Design: `Docs/HomeHub/ARCHITECTURE.md` §3.10. Protocol version 27: both
+machines need this build.
+
+1. **Run the EditMode tests** above. `EveryArenaCard_PlaysTheOneArenaIntensity` must pass for all four arena cards.
+2. **The row**: open each arena card (Regatta, Broadside, Astro League, Brood Rush). Where Intensity was, the section
+   reads **Vessels** with LB / RB either side of the mode name; the line beside the caption says what the mode does.
+   Check the copied buttons sit inside the section and the label does not overlap them (the row is built at runtime).
+   An arcade card still shows its I1-I4 row.
+3. **Pick**: unchanged: claim a hull, CHANGE, pick an ally AI's hull.
+4. **Random**: host steps to Random. Every human is dealt a hull at once (no two the same), every AI chip shows a
+   hull, Start opens. On Regatta the opponent AI stay Squirrels.
+5. **Squad** (needs a saved squad in the Ark): the vessel caption names the squad and its three vessels; the arrows
+   step between your squads; SELECT deals one of that squad's vessels that is on the card. A second machine with no
+   squad is dealt at random. The squad's element is not applied.
+6. **Draft** (two machines, two teams, an AI on each): the line shows whose turn and the seconds left. Only that pilot
+   can claim; on an ally AI's turn a human on its team picks it from the AI's pedestal; an all-AI team picks after
+   about a second; a seat left for 20 s is dealt a random hull. The order is A B B A. Start stays dead until the
+   draft is done. Adding an AI mid-draft restarts it.
+7. **In the match**: every pilot and AI flies the hull the lobby showed; the AI's autopilot follows the difficulty
+   (Easy noticeably softer than Legendary on Broadside and Astro League).
