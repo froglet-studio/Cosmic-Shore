@@ -366,6 +366,77 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void MarkAimAsPathLead() => _aimIsPathLead = true;
 
+        /// <summary>
+        /// The NOSE LEAD, off (0) unless a mode sets it per hull (Regatta: <c>RaceLineStyleSO.NoseLeadGain</c>). An AI
+        /// hull's nose follows the rotation its stick COMMANDS through a lag (<c>VesselTransformer.NoseFollowRate</c>, the
+        /// fleet's 1.5/s: 0.67 s). The steering below judges its error from the nose, so through that lag it keeps winding
+        /// the command on while the nose is still catching up: the command overshoots, then the nose does. At the
+        /// Scarab's Time-10 324 u/s that is 60-100 u off its Regatta line and 6-20 missed mouths a race (Regatta Hull
+        /// Benchmark, 2026-11-03). With a gain g above 0 the pilot instead places the command where the lagging nose must
+        /// be PULLED from - the nose turned toward the aim by g times its error, past the aim when g is over 1 (at most
+        /// <see cref="NoseLeadMaxExtraDegrees"/> past it, <see cref="NoseLeadDirection"/>) - and steers the command onto
+        /// that, judged from the command. Under a first-order follow the nose then closes its error g times faster
+        /// instead of overshooting. The gain is stated at the fleet lag and scaled to this hull's own rate
+        /// (<see cref="EffectiveNoseLeadGain"/>). Off while drifting (the nose is free of the course then) and on a nose
+        /// with no lag. Input only: the vessel's own flight is untouched. Offline: <c>Tools/Build/scarab_nose_lead_sim.py</c>.
+        /// Server-side state, like <c>VesselTransformer.AINoseFollowPerSecond</c>.
+        /// </summary>
+        public float NoseLeadGain { get; set; }
+
+        /// <summary>How far past the aim the nose lead may place the command, degrees (<see cref="NoseLeadGain"/>).</summary>
+        public float NoseLeadMaxExtraDegrees { get; set; } = DefaultNoseLeadMaxExtraDegrees;
+
+        public const float DefaultNoseLeadMaxExtraDegrees = 40f;
+
+        /// <summary>The nose lead never turns the command further than this from the nose, degrees.</summary>
+        public const float NoseLeadMaxTurnDegrees = 170f;
+
+        /// <summary>
+        /// Where the nose lead puts the command: <paramref name="nose"/> turned toward <paramref name="desired"/> by
+        /// <paramref name="gain"/> times the angle between them along the same great circle (past
+        /// <paramref name="desired"/> when the gain is over 1), but never more than <paramref name="maxExtraDegrees"/> past
+        /// it nor <see cref="NoseLeadMaxTurnDegrees"/> from the nose. <paramref name="desired"/> itself when the two are
+        /// (anti)parallel or the gain is 0. Pure, for the tests and the offline model (<c>slerp_beyond</c>).
+        /// </summary>
+        public static Vector3 NoseLeadDirection(Vector3 nose, Vector3 desired, float gain, float maxExtraDegrees)
+        {
+            Vector3 n = nose.normalized, d = desired.normalized;
+            if (gain <= 0f || n.sqrMagnitude < 1e-8f || d.sqrMagnitude < 1e-8f) return d;
+            Vector3 perp = d - n * Vector3.Dot(n, d);
+            if (perp.sqrMagnitude < 1e-8f) return d;
+            perp.Normalize();
+            float error = Vector3.Angle(n, d);
+            float turn = Mathf.Min(gain * error, error + Mathf.Max(0f, maxExtraDegrees), NoseLeadMaxTurnDegrees) * Mathf.Deg2Rad;
+            return n * Mathf.Cos(turn) + perp * Mathf.Sin(turn);
+        }
+
+        /// <summary>
+        /// The gain the nose lead flies with on a nose that follows at <paramref name="noseFollowRate"/> per second:
+        /// <paramref name="gain"/> is stated at the fleet lag (<c>VesselTransformer.RotationFollowRate</c>, 1.5/s), and what
+        /// it buys is the nose closing at <c>gain x 1.5</c> per second, so a faster nose needs proportionally less lead
+        /// and never less than 1 (judging from the command). 0 when the lead is off or the nose has no lag.
+        /// </summary>
+        public static float EffectiveNoseLeadGain(float gain, float noseFollowRate)
+        {
+            if (gain <= 0f || noseFollowRate <= 0f || float.IsInfinity(noseFollowRate) || float.IsNaN(noseFollowRate))
+                return 0f;
+            return Mathf.Max(1f, gain * VesselTransformer.RotationFollowRate / noseFollowRate);
+        }
+
+        /// <summary>This frame's nose-lead gain and the commanded forward, or false (judge from the nose, as before).</summary>
+        bool TryNoseLead(out float gain, out Vector3 commandedForward)
+        {
+            gain = 0f;
+            commandedForward = default;
+            if (NoseLeadGain <= 0f || VesselStatus.IsDrifting) return false;
+            var transformer = VesselStatus.VesselTransformer;
+            if (!transformer) return false;
+            gain = EffectiveNoseLeadGain(NoseLeadGain, transformer.NoseFollowRate);
+            if (gain <= 0f) return false;
+            commandedForward = transformer.CommandedRotation * Vector3.forward;
+            return true;
+        }
+
         // Set by the external target provider, for the frame it is sampled in: see MarkBellyTarget.
         bool _hasBellyTarget;
         Vector3 _bellyTarget;
@@ -1183,13 +1254,22 @@ namespace CosmicShore.Gameplay
 
             Vector3 combinedLocalCrossProduct = Vector3.zero;
             float sqrMagnitude = _distance.sqrMagnitude;
-            Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
+            // The error is judged from the nose, or with the nose lead (NoseLeadGain) from the COMMAND toward where the
+            // lagging nose must be pulled from. The stick turns the command about the nose's own axes either way.
+            Vector3 judgedForward = transform.forward;
+            Vector3 steerDirection = desiredDirection;
+            if (TryNoseLead(out float leadGain, out Vector3 commandedForward))
+            {
+                steerDirection = NoseLeadDirection(transform.forward, desiredDirection, leadGain, NoseLeadMaxExtraDegrees);
+                judgedForward = commandedForward;
+            }
+            Vector3 crossProduct = Vector3.Cross(judgedForward, steerDirection);
             Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
             combinedLocalCrossProduct += localCrossProduct;
 
             aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
             float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, _maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
-            TurnHardIfBehind(Vector3.Dot(transform.forward, desiredDirection), ref combinedLocalCrossProduct, ref angle);
+            TurnHardIfBehind(Vector3.Dot(judgedForward, steerDirection), ref combinedLocalCrossProduct, ref angle);
 
             if (VesselStatus.IsSingleStickControls)
             {

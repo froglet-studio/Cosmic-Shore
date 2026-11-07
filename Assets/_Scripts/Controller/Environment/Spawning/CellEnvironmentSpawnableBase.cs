@@ -133,6 +133,15 @@ namespace CosmicShore.Gameplay
         protected List<FloraPlantingSite> _plantingSites;
 
         /// <summary>
+        /// True when this environment WILL sow planting sites, answerable off the prefab asset before any
+        /// generation has run (<see cref="PlantingSites"/> is null until then). A flora spawner waits on the
+        /// cell's deferred environment build only for such an environment, so a cell whose world prepares
+        /// no ground keeps its planting timing exactly as it was. False by default; an environment that
+        /// sows overrides it (<see cref="SpawnableRegattaRails"/>, when its course authors sites).
+        /// </summary>
+        public virtual bool PreparesPlantingSites => false;
+
+        /// <summary>
         /// Drop the generated point data (both the <see cref="SpawnableBase"/> trail cache and
         /// <see cref="CachedLays"/>). For a PREVIEW consumer that generated an environment only to
         /// sample it: a freestyle cell's lay list is tens of thousands of structs, and holding

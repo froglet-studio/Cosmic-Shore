@@ -39,6 +39,18 @@ namespace CosmicShore.Gameplay
             // the old serialized FloraExcludeLocalDomain=true inert (same as RandomLifeSpawner).
             Domains? excluded = null;
 
+            // Seed into a world that EXISTS when that world prepares ground - RandomLifeSpawner's rule, here
+            // for the cells that need it (an IntensityWise cell runs THIS spawner, so a planting-site rule
+            // living only in the other one is dead code exactly where a mode asked for it). Gated on the
+            // environment declaring sites, so every IntensityWise cell whose world sows none plants on the
+            // same clock it always did. Bounded, so a build that never lands can't mute the cell's flora.
+            if (config.EnvironmentPrefab is CellEnvironmentSpawnableBase { PreparesPlantingSites: true })
+            {
+                float deadline = Time.time + 25f;
+                while (host && host.IsEnvironmentBuildPending && Time.time < deadline)
+                    yield return null;
+            }
+
             // Per user spec: flora begin spawning with random domains at count=0. The
             // SpawnProbability is applied as a per-attempt roll inside SpawnFloraTypeLoop
             // (NOT as a once-at-startup gate that previously killed the loop on a single
@@ -65,12 +77,15 @@ namespace CosmicShore.Gameplay
             int initialCount = host.ResolveFloraPopulation(Mathf.Max(0, floraCfg.InitialSpawnCount));
             float initialInterval = Mathf.Max(0f, spawnProfile.FloraSpawnIntervalSeconds);
 
-            // Initial batch - gated on FloraPlantingEnabled and per-attempt probability.
+            // Initial batch - gated on FloraPlantingEnabled and per-attempt probability. Planted through
+            // PlantFlora, the shared seam that roots a plant on its environment's prepared ground when there
+            // is any and otherwise makes exactly the old SpawnFlora call (the planting-site path used to be
+            // RandomLifeSpawner-only, so a site-sowing world in an IntensityWise cell dispersed its plants).
             for (int i = 0; i < initialCount; i++)
             {
                 if (host && host.FloraPlantingEnabled && !host.IsFloraAtCap(floraCfg)
                     && AllowSpawn(floraCfg.SpawnProbability))
-                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
+                    PlantFlora(host, floraCfg, excluded);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
@@ -107,7 +122,7 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < toPlant; i++)
                 {
                     if (!host || !host.FloraPlantingEnabled) break;
-                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
+                    PlantFlora(host, floraCfg, excluded);
                     if (i + 1 < toPlant) yield return null;
                 }
             }

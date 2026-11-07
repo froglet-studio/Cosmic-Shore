@@ -34,7 +34,8 @@ import race_models as rm
 VERSION = "1"
 # What a manual run (manual_runs.py) may change, and to what: the course, the intensities, the course seeds, the time
 # limit. hull, model and shipped stay the job's (a different hull is a different job's drive).
-REQUEST_ARGS = {"mode": {"choices": ["Regatta", "Headlong", "Redline"]}, "intensities": {"subset": [1, 2, 3, 4]},
+REQUEST_ARGS = {"mode": {"choices": ["Regatta", "Headlong", "Redline"]},
+                "steering": {"choices": ["centre", "axis", "headlong", "headlong_on", "regatta"]}, "intensities": {"subset": [1, 2, 3, 4]},
                 "seeds": {"subset": list(range(1, 11))}, "limit": {"lo": 60, "hi": 1200}}
 PATHS = ["Tools/Build/", "Assets/Resources/AIBoostPolicies/", "Assets/Resources/RaceLines/",
          "Assets/_Prefabs/Spacevessels/"]
@@ -77,7 +78,9 @@ def evaluate(params, ctx):
         setup(ctx)
     model = a["model"]
     drive = rm.to_sim(model, params)
-    steering = "centre" if a.get("mode", "Regatta") == "Regatta" else "axis"
+    # `steering` (optional): a race_models steering profile ("headlong", "regatta": the mode's own gate steering and
+    # AIPilot's break-off). Absent, the legacy model the job was first published on.
+    steering = a.get("steering") or ("centre" if a.get("mode", "Regatta") == "Regatta" else "axis")
     limit = float(a.get("limit", 400))
     logs, per_i, dnf = [], {}, 0
     for (i, seed, course) in _CTX["courses"]:
@@ -99,7 +102,8 @@ def evaluate(params, ctx):
             loss += w * sum(pen) / len(pen)
     return {"loss": loss, "metrics": {
         "seconds_by_intensity": {str(i): round(sum(v) / len(v), 2) for i, v in per_i.items()},
-        "dnf": dnf, "races": len(logs), "model": model, "limits": rm.MODEL_LIMITS[model]}}
+        "dnf": dnf, "races": len(logs), "model": model,
+        "limits": rm.MODEL_LIMITS.get(f"{model}@{steering}", rm.MODEL_LIMITS[model])}}
 
 
 def self_test():

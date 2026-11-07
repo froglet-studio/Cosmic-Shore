@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: Regatta Cell Config 1
   m_EditorClassIdentifier:
   CellName: Regatta
-  Description: 'Regatta at intensity 1 of 4 (CellTypeChoiceOptions.IntensityWise, list order =
-    intensity): a closed circuit of 8 rings with three super-shielded rails - one per
+  Description: 'Regatta course-pool entry 0 (circuit row 1; CellTypeChoiceOptions.CourseVariantWise,
+    list order = Regatta Course Pool order - the host deals one entry per match, intensity
+    does not pick it): a closed circuit of 8 rings with three super-shielded rails - one per
     playable domain - braided along it, 1812 (6,6,8) prisms (each length fitted flush to its
     neighbours, 517,194 volume) on a 4828u spine, mouths 110u, no corner under 200u. The
     standard nucleus is the crystal respawn volume and the inner shell; the spawn profile is

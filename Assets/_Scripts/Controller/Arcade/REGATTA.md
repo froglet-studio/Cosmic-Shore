@@ -124,15 +124,80 @@ rails' volume drops 0.9-1.4% (517,194 / 580,342 / 627,530 / 625,649 at intensiti
 by `Tools/Build/regatta_course_harness/run.sh` into `railVolume`). The cell's volume ladder prices
 that measured volume (`author_regatta_assets.py`), never count x 288.
 
-**The seed lives on the arena.** `SpawnableRegattaRails` (one prefab variant per intensity) lays
+**The seed lives on the arena.** `SpawnableRegattaRails` (one prefab variant per circuit) lays
 the rails from its own seed, and `RegattaController.BuildCourse` re-derives the SAME gates from
 the same pure call off the cell's *expected* config — Skein's pattern — so rails and rings
-cannot disagree, and the start line can be answered during the spawn chain. The cost, as in
-Skein: a given intensity is the same circuit every match.
+cannot disagree, and the start line can be answered during the spawn chain. A given prefab is the
+same circuit every match; the variety comes from the course pool below.
+
+### 4.1 The shuffled course pool (2026-11-07)
+
+Garrett, 2026-11-06: one Regatta level, no intensities, several balanced course variants shuffled.
+**Intensity no longer picks the course.** The four circuits in the table above (the rows of
+`RegattaCourse.ForIntensity`, which used to be the intensity ladder) are the four entries of
+`Regatta Course Pool.asset` (`RegattaCoursePoolSO`, next to the cell configs): Wide, Mixed,
+Hairpins, Tight.
+
+| step | where | what |
+|---|---|---|
+| draw | host, `RegattaController.DrawCourseVariant` (called once by `MultiplayerMiniGameControllerBase.OnNetworkSpawn` before the config broadcast, or earlier by the start line during the spawn chain) | `RegattaCoursePoolSO.Draw`: a pinned variant (`CourseVariantOverride`: a replay, a benchmark) wins, else a **shuffle bag** (`CourseShuffleBag`) deals every enabled entry once before any repeats and never the same circuit twice running |
+| carry | `GameDataSO.CourseVariant` (-1 = none drawn), sent in `SyncGameConfigToClients_ClientRpc` (last argument before the rpc params) | cleared on every runtime reset, so each match draws afresh |
+| lay | the scene's Cell, `CellTypeChoiceOptions.CourseVariantWise` (3) | `CellConfigs[CourseVariant]`; waits (on the host too) until the variant is known, so no peer latches the wrong arena; runs the same life spawner IntensityWise did |
+| record | replay summary `CoursePoolEntry` (one-based), flight JSON `courseVariant` | a replay re-lays the circuit it was flown on |
+
+An entry IS a cell config: its `EnvironmentPrefab` carries the circuit (row, seed and any per-arena
+setting the course search adds) and its phase thresholds ride that circuit's measured volume, so the
+course data stays where the harness and the parity gates read it. The pool's entries must be the
+Cell's `CellConfigs` in the same order (`author_regatta_assets.py` checks it; the controller warns
+at runtime). An entry is taken out of the shuffle with its `Enabled` toggle. A searched course
+(the pool search, `Docs/AI_SYSTEM/REGATTA_BALANCE_PLAN.md`) joins as a new rails prefab + cell
+config + `POOL_ENTRIES` row in the generator.
+
+**Not yet decided by this change:** the card's `StartingElements` rows are still keyed by
+intensity, though intensity no longer picks the circuit they were measured on; removing intensity
+from the arena launch and its per-intensity rows is the "Replace arena intensities with vessel
+selection modes" work.
 
 **Laps are derived, not authored twice.** The arena lays exactly `RingsPerLap` (8) rings, the
 end-condition target is authored once (24), and `LapsPerRace = target / 8`. A target that is not
 a multiple of eight races to the course's honest length and warns.
+
+### 4.2 Lifeforms are a course setting, off on every shipped course (2026-11-06)
+
+A course may grow plants beside its spine and carry creatures (`Plan step: time-arena-course`, Garrett:
+"lifeforms, etc."). The arena never spawns one: `SpawnableRegattaRails` prepares planting SITES per leg
+(`RegattaLifeformSiteSettings`: sites per leg, offset from the spine, side window, leg window, ring clearance;
+the pure `RegattaLifeformSites.Sow` keeps every site off every rail, out of every mouth and inside the shell)
+and may ask its cell for a fauna corridor round the spine (`ICellFaunaCorridorSource`, adopted by the `Cell`
+like a garden's beds). WHICH species and HOW MANY are the course's own spawn profile, forked from Tollway's
+networked race-court plants (Spire, Cacti, Borromean; no lattice species, whose colonies grow off-site) and
+Skim Race's tadpole, with counts changed only. `Tools/Build/regatta_lifeforms.py` is the one description
+(catalogue, presets, search space, validation, `--self-test`); `author_regatta_assets.py`'s `LIFEFORMS` table
+writes it, today `RL.NONE` on all four, so the Barren profile and the cell configs are unchanged. The offline
+model sees none of this; a lifeform course is judged in the real game only. Report:
+`Docs/Reports/REGATTA_LIFEFORMS.md`.
+### 4.3 Course features: what the course is beyond its rings (2026-11-06, brief 10 of the balance plan)
+`RegattaCourseFeatures` (on each `SpawnableRegattaRails` variant, `courseFeatures`; **empty on every shipped variant,
+which is the course above, prism for prism**) is the space a course search moves beyond the ring geometry (Garrett:
+"not all supershielded ... gaps ... omnicrystals ... perturb regatta in much more interesting ways"):
+- **Rail sections** (`RegattaRailSection`, per leg or every leg, a share of the leg's spine arc, later entries win):
+  the stretch's KIND (super-shielded as today, shielded, or plain - a plain rail can be cut by abilities, so a rider's
+  stretch is contested), its COLOUR (neutral = `RegattaCourseFeatures.NeutralDomain`, no team's lane: an Urchin leaves
+  its rail, a Squirrel still skims it), a DETOUR (the whole braid swings off the spine by a sine-squared bow that is
+  zero at the section's ends, so every lane still threads every ring at 22 u), and a GAP (nothing laid; the lane is cut
+  into OPEN trails there, because a hole inside one trail is bridged at full pace - URCHIN_TRAIL_RIDER.md "Holes").
+- **Alternate rings** (`RegattaAlternateGate`): a second ring in the course ring's plane, either one counts
+  (`RegattaController.ThreadsGate`, Serpent Time's pattern). The rails thread only the course ring, so it is a route
+  choice. An AI takes it only when here -> ring -> next gate is shorter by `aiAlternateMargin` (decided once per gate,
+  `RegattaAlternateChoice`); an attached Urchin and the Squirrel's pilot keep the course ring.
+- **Line crystals** (`RegattaLineCrystals`, at most 4 a lap): crystals on the spine, laid as the crystal manager's
+  course keys (Switchback Blast Run's seam), which REPLACE the nucleus crystals while on. No AI detours for one
+  (`AIDetoursForCrystals` stays false; Yash's rule).
+Every AI reader of the rails reads them by LANE (`SpawnableRegattaRails.LanePrisms`, `LaneDomain`, `LaneOf`), not by
+trail or first-prism colour, so gaps and neutral stretches do not hand a pilot a rival's lane. The offline mirror is
+`Tools/Compute/evaluators/regatta_features.py` (the port, the search space and each feature's price per hull),
+held to the C# by `Tools/Build/regatta_course_harness/features.sh` (which also RUNS `RegattaCourseFeaturesTests`
+offline); the report is `Docs/Reports/REGATTA_COURSE_FEATURES.md`.
 
 ## 5. The start
 
@@ -398,6 +463,9 @@ minute in both), which is why the model is trusted to rank the fix; the editor i
 - **Rail rams:** 90-94% of the time the Dolphin, Sparrow, Squirrel and Urchin spent under 20 u/s mid-race they were
   within 15 u of a rail prism. Most of those races predate the line (2026-10-17), which exists to keep hulls off the
   rails; re-measure with races flown after this change.
+  **Re-measured 2026-11-07 for the Sparrow** (`Tools/Build/sparrow_regatta_sim.py --measure`, 5 races since the line):
+  within 15 u of a rail 0-3% of a race (26-48% before), rams costing 0.4-7 s; its slowness is its base drive letting go
+  of the afterburner every 0.6 s (cruise 35, afterburner 197.5 u/s). `Docs/Reports/SPARROW_AI.md`.
 
 Tests: `RegattaRaceLineTests` (`AimThroughRing_*`, `DistanceAlong_*`). The break-off flag is held by the model's
 self-test, not a Unity test (`AIPilot` needs a live vessel). Not editor-verified (`UNITY_VERIFICATION_CHECKLIST.md`).
@@ -491,8 +559,8 @@ next to look at with its own model.
 Everything by `Tools/Build/author_regatta_assets.py` (`--check` passes; `--check` was watched to
 fail on a mutated cell config). The card is registered in the **master roster and `ArenaGames`**
 (`arcade_mode_lib.register_arena_card`), never `ArcadeGames`. The scene is a clone of
-`MinigameRedline` with the controller, rule, field block, IntensityWise cell list and AI templates
-swapped. Preview: four cells by intensity, `Vessel: -1` (the carousel's pick flies).
+`MinigameRedline` with the controller, rule, field block, cell list (CourseVariantWise since 2026-11-07,
+IntensityWise before) and AI templates swapped; the controller also carries the course pool. Preview: four cells by intensity, `Vessel: -1` (the carousel's pick flies).
 
 **Toasts** (`GameToastConfig_Regatta.asset`, authored by the generator): two idle hints
 (`RegattaRailHint` 110, `RegattaLaneHint` 111), the comeback line, and — since #985 — the four

@@ -1222,7 +1222,9 @@ namespace CosmicShore.Gameplay
             if (_tramp || AIConfig.AiSlingMinTurnDegrees <= 0f || Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
             var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),
                                                        (ai.ObjectivePosition - hull.position).magnitude);
-            if (!StoatSlingMath.TryAutopilotSide(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance, out bool turnLeft)) return;
+            // To turn, or for the warp alone on a long leg (aiWarpMinDistance; 0, as both shipped configs carry it, never).
+            if (!StoatSlingMath.TrampolinePress(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance,
+                                                AIConfig.AiWarpMinDistance, out bool turnLeft)) return;
             var side = turnLeft ? Side.Left : Side.Right;
             if (!ResolveBoundInput(side, handler, out var ie)) return;
             _aiLastSlingTime = Time.time;
