@@ -12,10 +12,10 @@ The map is `Assets/Resources/ElementalAbilityMaps/Manta.asset` — **the asset i
 
 | Element | Ability | Quantitative (authoring home) | L5 upgrade |
 |---|---|---|---|
-| Charge | **Sting** (passive) | the ONE shared fuse's length (`fuseScaleAtFullCharge` 1.5× at Charge 10, floor 0.5×, on `MantaStingConfig.asset`) | **Contagion** — anything caught in a bloom is itself bombed, free |
+| Charge | **Sting** (passive) | the petals each bloom knocks out of a rival (`magnitudeAtFullCharge` 2× at Charge 10, on `MantaBombDebuffByExplosionEffect.asset`) | **Contagion** — anything caught in a bloom is itself bombed, free |
 | Mass | **Decoy** (passive) | how long a decoy stands (`decoyLifetimeAtFullMass` 2×) | **Omni Decoy** — the omni crystal leaves a decoy too |
 | Space | **Skim** (passive) | the skimmer's size (Manta.prefab `Skimmer.Scale`, 20 → 40) | **Shield Breaker** — skimming a shielded rival prism pops its shield and makes it explosive |
-| Time | **Yastri** (Input 12, the turn pair) | trail prism VOLUME (`VesselPrismController.trailVolume`, 1× → 2.5×) and the soaring speed (`VesselTransformer.BoostSpeedMultiplier`) | **Soar** — the boost stays dark until Time 5 |
+| Time | **Yastri** (Input 12, the turn pair) | the soaring speed (`VesselTransformer.BoostSpeedMultiplier`); the trail is a plain Squirrel-style trail, unscaled and unflared | **Soar** — the boost stays dark until Time 5 |
 
 ## 0. The 2026-11-07 overhaul (Garrett) — the rules as they stand
 
@@ -23,11 +23,12 @@ This section is the current design. The sections below it are the earlier record
 disagrees with this section, this section wins.
 
 - **Energy (Space card).** Skimming pays `energyPerSkim` per prism (per-prism cooldown), up to
-  `energyCapacity` (3, fixed). One energy plants one bomb. **Any hull contact with a prism sets off
+  `energyCapacity` (1: the loop is skim, plant, skim, plant; planted bombs have no cap). One energy plants one bomb. **Any hull contact with a prism sets off
   every planted bomb and loses all the energy** (`MantaDetonateByPrismEffectSO` in
   `vesselPrismEffects` → `MantaStingActionExecutor.OnPrismImpact`).
 - **One fuse (Charge card).** Every bomb shares the bay's fuse (`FuseDeadline`); each new plant
-  resets it, so all bombs always go off together. A bomb moved to a new carrier (a fauna heart
+  resets it, so all bombs always go off together. No element scales the fuse; Charge scales the
+  petals each bloom knocks out of a rival instead. A bomb moved to a new carrier (a fauna heart
   crystal, a vessel that picked it up) keeps the running fuse. A fuse or prism-impact board blooms
   every bomb at once at `fuseBlastScale`, growing over `bloomGrowSeconds` (slow on purpose: many
   blooms at once read well and cost less per frame).
@@ -41,7 +42,9 @@ disagrees with this section, this section wins.
 - **A bombed fauna's crystal stays bombed.** When the creature dies the bomb moves onto its heart
   crystal; whoever collects that crystal (any vessel, the Manta's own side included, which blooms
   never hurt) carries the bomb away on the same fuse.
-- **Yastri and Soar are Time.** Shielded Turn Trails is dropped.
+- **Yastri and Soar are Time.** Shielded Turn Trails is dropped. The trail is toned down to a
+  Squirrel-style trail (2026-11-07 follow-up): the Squirrel's prism size (20 × 0.75 × 5.5), no
+  element growing its volume, no turn flare.
 
 ## 3a. Explosive prisms
 

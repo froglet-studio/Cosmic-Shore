@@ -17,8 +17,9 @@ MonoBehaviour:
   - Element: 1
     AbilityLabel: Sting
     AbilityDescription: Skimming a rival plants a bomb that costs one bomb of energy. Every
-      bomb shares ONE fuse, reset by each plant, so they all go off together. Charge lengthens
-      that fuse (MantaStingConfig.asset fuseScaleAtFullCharge, 1.5x at level 10, floored at 0.5x).
+      bomb shares ONE fuse, reset by each plant, so they all go off together. Charge raises the
+      petals each bloom knocks out of a rival (MantaBombDebuffByExplosionEffect.asset
+      magnitudeAtFullCharge, 2x at level 10).
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -52,10 +53,9 @@ MonoBehaviour:
     UpgradeDescription: Skimming a shielded rival prism pops its shield and makes it explosive.
   - Element: 4
     AbilityLabel: Yastri
-    AbilityDescription: Time grows the trail's prism volume (VesselPrismController.trailVolume
-      on Manta.prefab, 1x to 2.5x) and raises the soaring speed (VesselTransformer.BoostSpeedMultiplier,
-      x1.3 at level 10). The turn itself is deliberately unscaled - Yastri's element shapes what
-      the turn LEAVES.
+    AbilityDescription: Hard flat turns on the turn pair. Time raises the soaring speed
+      (VesselTransformer.BoostSpeedMultiplier, x1.3 at level 10). The trail is a plain
+      Squirrel-style trail: no element grows it and turns do not flare it.
     Input: 12
     UnlockLevel: 5
     RelockBelowLevel: 4
