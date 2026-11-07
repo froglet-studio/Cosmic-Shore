@@ -65,6 +65,42 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/Pilots/INVENTORY.md`.
+- Every artifact is unique: it accepts one element and feeds without limit with diminishing returns.
+- Every pilot is a unique person on a callsign.
+- One `ACCOUNT_INVENTORY` cloud record holds the crew, the hoard, the captain and the Hangar picks.
+- The Ark ARTIFACTS tab, the Hangar PILOTS and ARTIFACTS tabs, the Ark SQUADS tab and the voyage open card list people and artifacts, not callsigns and kinds.
+- `NetArtifacts` carries the artifact whole (`ArtifactWire`).
+- This replaces the 2026-10-27 steps below that read "Mass 0 Space 0 Time 0 Charge 0" or raise four tracks, and "Reset Every Artifact Track", which is now "Reset Every Artifact Feed (dev)".
+
+**Verified without the editor:**
+- The reference compile, player and editor configs: 0 errors in changed files. The 21 errors left are pre-existing package gaps.
+- The 20 `AccountInventoryTests` pass under `dotnet test` outside Unity.
+- `ship/gates.sh` passes.
+
+NOT run: Unity, any EditMode test inside Unity, a play.
+
+**Verify in editor:**
+1. Run the EditMode tests `AccountInventoryTests` and `PilotsAndArtifactsTests`. **Pass:** all green.
+2. Sign in, open the Ark's ARTIFACTS tab. **Pass:**
+   - A Javelin and an Aegis show, each with its own name, serial, one element and aspect.
+   - Row 0 is the attuned track; rows 1-3 are dimmed fixed tracks.
+   - FEED spends 5 of that element and the level rises a little less each time; OMNI pays in omni.
+3. Hangar > PILOTS on any hull. **Pass:**
+   - Eighteen people, each with a name (portraits are their callsign's).
+   - Seating one, relaunching the menu and reopening shows the same person.
+   - LB in the Toybox shows their callsign's sight.
+4. Hangar > ARTIFACTS: slot the Javelin on two hulls in turn. **Pass:** it leaves the first hull's slot.
+5. Ark > SQUADS. **Pass:**
+   - A squad saved before this branch shows people and artifacts, not blanks.
+   - Pilot chips read "Name - CALLSIGN"; shorten `pilotChipWord` to `{name}` if they overflow.
+   - Each vessel gets a different artifact.
+6. With the Javelin slotted, fly the Wander toy "With Ark", grab a payload (RB) and release it. **Pass:** it fires a Javelin. In a two-player session the peer sees the same shot.
+7. Voyages: open the job board. **Pass:** each job names a crew person, and their faction type decides the work.
+8. Quit and relaunch online. **Pass:** the inventory is the same. The cloud record `ACCOUNT_INVENTORY` exists in the UGS dashboard.
+
 ### 🔴 Meerkat HUD gauges take the UI theme's tokens (`Ys-bleeding-edge`, 2026-11-06) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatHUDView` takes its gauge colours from `UIThemeSO` through `UITheme.Resolve`:
@@ -21344,6 +21380,28 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
 
+## 🔴 Colour sets for colour vision: six new sets in the Profile's rail, a breadcrumb in Settings (2026-11-05, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nice-lamport-56824k`; `Docs/VesselModels/colour_sets.json` (rule 5), `COLOR_DOMAINS.md`,
+`Docs/SettingsSystem/ARCHITECTURE.md`. Compiled with `unity_refcompile` (0 errors in the changed files; the run's other
+errors are in UGS files whose packages this sandbox could not fetch). `colour_sets.py`, `author_colour_set_assets.py`,
+`author_colour_set_catalog.py`, `author_menu_settings.py` and `author_menu_profile.py` pass `--check` and `--self-test`.
+Not opened in the editor; the edit-mode tests were compiled, not run. Affects Shombith's Settings panel and Profile
+colour sets.
+
+1. **Run the edit-mode tests** `ColorSetCatalogTests` (all six).
+2. **Profile > COLOUR SETS.** "1 of 9 / Wearing Nocturne"; the rail still shows three tiles. Press > past Dart Frog:
+   the rail slides one tile at a time through Contrast, Protanopia, Deuteranopia, Tritanopia, Achromatopsia and Low
+   Vision, each previewed on the cell; < from Nocturne wraps to Low Vision. The pad moving across the tiles previews too.
+3. **APPLY Protanopia**, leave, restart Play: the game starts in Protanopia and the page opens with its tile shown.
+4. **Settings > General: the first row is "Colour sets"** with a COLOUR SETS button (the old Colorblind mode dropdown
+   is gone). Press it in Menu_Main: Settings closes, the Profile opens on COLOUR SETS showing Contrast (the first vision
+   set) on the cell. Leave without applying: the worn set comes back. Open Settings from the Profile and press it again:
+   the same. In a match the button is disabled (menu only, like Credits).
+5. **Judge each vision set by eye**, ideally with a colour-blind simulator or a colour-blind player: can every domain's
+   prism, trail and HUD colour be told from every other's, and do danger (Fire) and the free pickup (Lime) still read?
+   The sets were measured before bloom and ACES.
+
 ## 🟡 Our own SOAP replaces the Obvious plugin (2026-11-06, Yash, COMPILED AND EDITMODE-TESTED IN EDITOR, NOT PLAYED)
 
 Branch `Ys-bleeding-edge`; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP. `Assets/Plugins/Obvious` is gone; `Assets/Plugins/CosmicShoreSoap/`
@@ -21436,3 +21494,21 @@ are all missing `.asset` files the sparse checkout left out. Design record: `MAN
     holds one bomb of energy at a time (skim, plant, skim, plant); the fuse no longer changes with Charge; a Charge 10
     Manta's bloom knocks twice the petals out of a rival that a Charge 0 one does; the trail is thin and even like the
     Squirrel's, the same at every Time level and through hard turns.
+
+## 🔴 Brittle Star ring under a spinning stick: forward rule + normalized motion smear (2026-11-03, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/elegant-shannon-e7nrb2`. **Not compiled**: no .NET SDK in the session's container, so `unity_refcompile`
+did not run, and no editor was open. The rule was checked on a line-for-line JS copy (0 difference from the old rule below
+the turn rate; exactly the cap and 0 backward frames above it); the shader and the render pass were not compiled.
+Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY6ykxFy5o7QR5sh).
+
+1. **Compile** (player + editor) and run `BrittleStarRingSpinTests` and `BrittleStarTests`. Check the console for
+   `BrittleStarRingSmear.shader` errors and for `[BrittleStarAnimation] ... no camera drew the ring's motion smear`.
+2. **Spin the right stick** (Toybox Vessel Changer → Brittle Star, any mode but Speed): fast circles both ways. The ring
+   turns the stick's way, up to 3 rev/s, never stutters back or freezes.
+3. **The smear**: while it spins, the ring is drawn smeared and **no brighter** than a still ring on the same background;
+   the moment the stick stops, the plain ring is back with no pop (element morph unchanged, flames still on the pods).
+   Something opaque in front of the ring (your own trail) still hides it. Check the Scene view while playing too.
+4. **Guns and cords while spinning**: Space Mode + RT: rounds leave the drawn turrets; Charge Mode: the cords hang from
+   the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
+5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.

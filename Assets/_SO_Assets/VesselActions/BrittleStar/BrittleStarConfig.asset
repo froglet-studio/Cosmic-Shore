@@ -61,7 +61,15 @@ MonoBehaviour:
   armFocusDistance: 120
   armSplayDegrees: 25
   aimDeadzone: 0.25
-  ringTurnRate: 540
+  ringTurnRate: 1080
+  aimSweepThreshold: 90
+  aimSweepSmoothing: 0.06
+  aimFlickDegrees: 120
+  ringSmear: 1
+  ringSmearMinDegrees: 1.5
+  ringSmearStepDegrees: 2.5
+  ringSmearMaxCopies: 24
+  ringSmearShader: {fileID: 4800000, guid: e11bf7220dad46a58a1abb59a43afdce, type: 3}
   heatPerRound: 0.000637
   heatCapacity:
     Enabled: 1

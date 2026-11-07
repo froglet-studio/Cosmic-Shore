@@ -919,6 +919,20 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `relight`, `assignTargets` (`toWall`), `wantCombine` in `omega-studio.js`; CONCEPT_FLEET.md section 10.1.
 - Promoted: no
 
+### L-STU-164 — A "normalized" average of n copies on an 8-bit canvas is not normalized: rounding brightens it
+- Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `cece/elegant-shannon-e7nrb2` · By: Garrett's session · Date: 2026-11-03
+- What happened: the motion-smear scope drew n ghost copies with `lighter` at weights summing to 1.5 (+25..+58% brighter than the still ring). Fixing the weights to 1/n still left +2% at 4 copies, +9% at 15 and +18% at 24: the SAME image stacked n times at `globalAlpha = 1/n` brightens, because every small 8-bit contribution rounds up. Composite mode `lighter` also summed each copy's OWN overlapping parts (a glow under its beam, a dark pod hole), which a normal draw stacks.
+- Do instead: draw each copy whole (normal compositing) on a scratch layer, then average the copies in FLOAT (WebGL2 with an `EXT_color_buffer_float` target, or a Float32Array over the object's box) and quantize once. Prove it with a stack-the-same-image control: n copies of one image at 1/n must equal the image.
+- Evidence: the page's `lum.js` / `q.js` measurements (scratch), round 2 publish; the Unity port (`BrittleStarRingSmear.shader`) averages in the shader's registers for the same reason.
+- Promoted: no
+
+### L-STU-165 — Port the control's rule line for line into JS first, then write the C# tests from what it measured
+- Lab: Brittle Star Ring Spin · Branch: `cece/elegant-shannon-e7nrb2` · Date: 2026-11-03
+- What happened: with no Unity and no .NET in the container, the C# `BrittleStarRules.ForwardTurn` was transliterated to JS (Mathf.DeltaAngle / Repeat / MoveTowards included) and run against the old rule: 0 difference frame for frame below the turn rate (0.25..2 rev/s), exactly the cap and 0 backward frames above it, and the old rule's 13..30 backward frames a second. The EditMode tests assert those numbers, so they were measured before they were written, not guessed.
+- Do instead: when the tests cannot run here, run a line-for-line copy of the code under test and assert only what it produced; say in the PR that the C# itself did not run.
+- Evidence: `BrittleStarRingSpinTests` (written, not run in Unity).
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-STU-146 — A combine bolted onto autonomous vessels has no loop; design the parts so neither phase can do the other's work
@@ -1837,4 +1851,18 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - What happened: Dart Frog passed every rule, and its lab showed rim and face as equal swatches with a glowing edge drawn wide. In Unity it was "not quite there": a prism's body is the face and the rim is a thin fresnel line, so Jade read as tan, Ruby as teal and Blue as green. Nothing in the page could show that. A small numpy render of the shader's real formula, lerp(face, rim, fresnel) with bloom and ACES, showed it at once. Darkening Dart Frog's faces barely helped; designing faces in one night-dark band from the start gave Nocturne, which Garrett made the default the same day.
 - Do instead: before tuning colours on a page, render them with the shipped shader's formula, on the real shape, beside what ships today. Weight every colour by the area it covers. Use the rule gate to prove a palette is legal, and the render to judge whether it reads.
 - Evidence: `author_colour_set_assets.py` (face fields take the pigment's own lightness); `colour_sets.json` `nocturne`.
+- Promoted: no
+
+### L-STU-166 — Measure a palette for a viewer on the colours the asset PAINTS, not on the swatches
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `cece/nice-lamport-56824k` · By: the 2026-11-05 vision-sets session · Date: 2026-11-05
+- What happened: the lab's colour-blind report measured swatches at mid L and called two domains apart when EITHER rim or face differed, and put Nocturne at 4.4-4.7 just-noticeable steps for protan, deutan and tritan viewers. But the palette writer pins every rim at the original's bloom-sized brightness (brightest channel about 1), so a rim's lightness comes from its hue and the pigment's L range never reaches the game; and the HUD, trails, danger and pickups read the rim alone. Measured on what is painted, rims alone and faces alone, Nocturne is 0.9-1.1 steps for those viewers and 0.2 with no colour vision.
+- Do instead: before scoring colours for a viewer, run them through the writer's own transform (`colour_sets.painted`) and score each surface a player reads on its own. A searched set then reached 8.8-13.6 steps for its viewer (`colour_sets.py` rule 5).
+- Evidence: `colour_sets.py --report` (the "rule 5 measure" table, every set by every vision); `colour_sets.json` vision sets.
+- Promoted: no
+
+### L-STU-167 — A pigment greyer than its own spread claims grey, and every whitened field falls into it
+- Lab: Colour Sets Lab · Branch: `cece/nice-lamport-56824k` · By: the 2026-11-05 vision-sets session · Date: 2026-11-05
+- What happened: the first search for the vision sets passed rules 1-5 with near-grey faces (sat 0.03-0.08 against rho 0.035), and the palette writer then failed seven fields: the shielded tiers are whitened toward grey, and a pigment whose chroma disc reaches the neutral axis owns that grey, so a Jade shield read as Fire's face.
+- Do instead: keep every pigment's sat at least about 0.1 (grey stays unclaimed), and put the writer's field check (`author_colour_set_assets.field_problems`) inside any search's score, not after it.
+- Evidence: `author_colour_set_assets.py --check` (the failures, then clean on the re-search); the six vision sets' sat values.
 - Promoted: no
