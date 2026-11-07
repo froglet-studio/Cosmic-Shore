@@ -1432,3 +1432,12 @@ done
 Fix by fully qualifying (`UnityEngine.Object.Instantiate`), never by dropping `using System;` —
 the file needs it. Same shape applies to `using System.Diagnostics;` + `Debug`.
 
+
+
+## A .NET root with no installer (2026-11-07)
+
+A cloud session's proxy refuses the .NET installers but serves api.nuget.org. `unity_refcompile` needs no SDK proper (a
+host, a shared runtime, a reference pack and Roslyn's `csc.dll`), and each is a nuget package:
+`python3 Tools/Build/unity_refcompile/dotnet_from_nuget.py` fetches the seven (about 65 MB) and lays out `~/.dotnet`;
+`--check` proves the root runs csc. `dotnet build` does not exist in such a root and nothing here needs it. The sandbox's
+two unfetchable packages (Vivox, Moderation) leave 21 errors in two files on every tree; they are not the branch's.

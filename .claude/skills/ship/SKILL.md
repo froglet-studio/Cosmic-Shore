@@ -36,6 +36,12 @@ What it means in practice:
 - **`gates.sh` runs `unity_refcompile` for you when `~/.dotnet/dotnet` exists, and prints `SKIP`
   when it does not.** A `SKIP` means refcompile did NOT run — it is not a pass. First run needs
   network and about ten minutes; how to run it and its false positives: `/asset-surgery` §4.
+  **No `~/.dotnet` and the installers refused by the proxy** (dot.net, builds.dotnet.microsoft.com and GitHub releases
+  are, in cloud sessions): `python3 Tools/Build/unity_refcompile/dotnet_from_nuget.py` lays one out from nuget.org
+  packages in about a minute, and the SKIP becomes a real compile (2026-11-07). In such a sandbox the player config
+  reports 21 errors in `FactionChatService.cs` and `PlayerReports.cs` (Vivox and Moderation cannot be fetched) and
+  `0 in files changed`: identical on a clean bleeding-edge worktree, so the gate's FAIL there is the sandbox's, not the
+  branch's. A/B it once and say so; anything beyond those two files is real.
 - **Most sessions here have no Unity Editor**, so the `unity` CLI step usually does not apply. When
   neither refcompile nor the CLI ran, the verification line in the PR body and ship report reads
   "not compiled — <why>", followed by what a human must do at the editor, and the change gets a
