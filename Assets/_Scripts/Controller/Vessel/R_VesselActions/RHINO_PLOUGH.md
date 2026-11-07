@@ -229,7 +229,8 @@ No `unity` binary was available in the authoring session, so none of this has be
 - **The HUD's cards still draw the sword's icons**: the four plough abilities need their own (`/ability-icon`), and the
   Rhino has no omni-crystal ability (the Surge was the sword's).
 - **Unstoppable ploughs arena linings and race tracks** (they are super-shielded), and the comeback system hands L5 to
-  whoever is losing (vessel rule 31). Watch Headlong and Regatta.
+  whoever is losing (vessel rule 31). Watch Headlong and Regatta. A ploughed super-shielded prism that strikes a
+  plain one is destroyed with it (PrismMotion: the mover always breaks), so Unstoppable can break a lining, not only move it.
 - **Broadside**: the plough-only Rhino has no vessel-hit verb, so the Swordfish took its seat (`broadside_balance.py`).
 
 - A prism ploughed again while its first slide is still running restarts the slide from its
