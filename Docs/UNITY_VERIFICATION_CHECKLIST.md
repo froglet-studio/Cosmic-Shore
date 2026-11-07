@@ -21370,3 +21370,11 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    and Competitive.
 5. **No `[Analytics]` warnings** in the Console, and the UGS dashboard still receives `game_started` and
    `game_completed` (the Froglet-only fields are stripped for UGS; an undeclared parameter would make UGS drop the event).
+
+## 🟡 Stoat: the trampoline autopilot can press for the warp (2026-11-06, Garrett's regatta balancing, NOT PLAYED)
+`StoatSlingMath.TrampolinePress`; `StoatSlingExecutor.AutopilotTrampoline` reads `aiWarpMinDistance` (both shipped configs
+carry 0, so the game is unchanged). Compiled by `unity_refcompile` (player and editor configs, 0 errors in the changed
+files; 21 errors elsewhere on bleeding-edge that predate this). EditMode tests not run (no editor). `Docs/Reports/SLINGSHOT_STOAT_AI.md`.
+- [ ] Run `StoatSlingTests` (the new `TrampolinePress_*` test).
+- [ ] With the trained rows in `StoatSlingConfig_Slingshot` (report section 5, restart C): AI Stoats race Slingshot I1-I4,
+      finish, miss few rings, never fly far off the course (model: 62-71 s).
