@@ -307,6 +307,26 @@ Lantern Run (the Angler's Time race, 2026-11-01, `claude/intelligent-lovelace-yn
   `dotnet/Sdk/8.0.404/dotnet-sdk-8.0.404-linux-x64.tar.gz`) unpacked into `~/.dotnet` is what `unity_refcompile`, the
   card harness and the course runner look for by default.
 
+Brittle Star Time's movement ladder (2026-11-06, `claude/brittle-stars-l5-updates-41j91p`, `BRITTLESTARTIME.md`) taught four:
+- **A ring counts ANY pass through its plane inside the mouth, in either direction** (`RaceGateRing.PlaneCrossing`), so
+  a course's difficulty is the line a pilot can fly, not the line through the centres. Measure every claim on three
+  lines (through the centres, through the half-mouth line, brushing every rim) and assert the RIM line still asks the
+  question: a weave whose amplitude is under the mouth radius is a straight line.
+- **Sparse rings alias a periodic shape.** Eight rings round a whole-lap five-turn coil sample it at 225 degrees, and the
+  smoothest line through them is a lazy three-turn spiral the other way: the corkscrew vanished. Sample a coil or a
+  weave at most a quarter turn per ring (or Nyquist, alternating sides, for a weave), and hold it with a test plus a
+  negative control that coarsens the step.
+- **A rung can start the hull at an element level** without touching the vessel: `SO_ArcadeGame.StartingElements` rows
+  are per intensity (`Intensity: 4`), and `hull_time_race.author(card_extra=...)` writes them where the card declares
+  them. Brittle Star Time's I4 starts at Time 5 so the Speed Roll upgrade is live, and its test reads the row back.
+- **A pure course and its shipped tests run offline in seconds** with a copy of `redline_course_harness`
+  (`Tools/Build/brittle_star_time_course_harness/run.sh`, with `--sweep`, `--gates I S` for pictures, and `--self-test`
+  negative controls). The card renderer drawn at each intensity (set `render_card_backgrounds.INTENSITY` from a scratch
+  script) plus a plan view from `--gates` is how to show a person every rung without Unity. And if
+  `check_generated_assets.py` dies on a missing file under a plugin bleeding-edge removed, the reference compiler's
+  output folder (`/tmp/unity_refcompile_out/<repo>-*`) still holds the removed assembly's `.rsp`: delete that folder
+  and re-run (a stale local cache, not a defect in the tree).
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```

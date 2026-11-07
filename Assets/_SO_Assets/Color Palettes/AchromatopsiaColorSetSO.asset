@@ -1,0 +1,111 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1c7edc523dbbef4bbe8c3e97ba840c7, type: 3}
+  m_Name: AchromatopsiaColorSetSO
+  m_EditorClassIdentifier: 
+  JadeColors:
+    ShipColor1: {r: 0.202972, g: 0.06735, b: 0.08642, a: 1}
+    ShipColor2: {r: 0.108, g: 0.607109, b: 0.74902, a: 1}
+    OutsideBlockColor: {r: 0.733232, g: 0.243304, b: 0.312193, a: 1}
+    ShieldedOutsideBlockColor: {r: 1.044375, g: 0.47163, b: 0.552165, a: 1}
+    SuperShieldedOutsideBlockColor: {r: 0.794968, g: 0.314647, b: 0.382186, a: 1}
+    InsideBlockColor: {r: 0.163697, g: 0.920206, b: 1.135301, a: 1}
+    ShieldedInsideBlockColor: {r: 0.525834, g: 1.063822, b: 1.216786, a: 1}
+    SuperShieldedInsideBlockColor: {r: 1.082787, g: 1.40611, b: 1.498039, a: 1}
+    AOETextureColor: {r: 0.576687, g: 1.576238, b: 1.860437, a: 0}
+    AOEFresnelColor: {r: 0.291136, g: 0.096605, b: 0.123959, a: 0}
+    AOEConicColor: {r: 0.668112, g: 0.272553, b: 0.328173, a: 1}
+    AOEConicEdgeColor: {r: 0.131001, g: 0.645789, b: 0.792157, a: 0}
+    SpikeLightColor: {r: 0.178442, g: 0.604384, b: 0.72549, a: 0}
+    SpikeDarkColor: {r: 1.691424, g: 0.911606, b: 1.021259, a: 1}
+    SkimmerColor: {r: 0.155551, g: 0.62069, b: 0.752941, a: 1}
+    DullCrystalColor: {r: 0, g: 0, b: 0, a: 0.941176}
+    BrightCrystalColor: {r: 0.154986, g: 0.617511, b: 0.74902, a: 0.941176}
+    TrailHighlightColor: {r: 0.155551, g: 0.62069, b: 0.752941, a: 1}
+    TrailCoreColor: {r: 1.61531, g: 0.535997, b: 0.687763, a: 1}
+    UIAccentColor: {r: 0.415768, g: 0.911588, b: 1, a: 0.784314}
+  RubyColors:
+    ShipColor1: {r: 0.002212, g: 0.071908, b: 0.037856, a: 1}
+    ShipColor2: {r: 0.74902, g: 0.069351, b: 0.599784, a: 1}
+    OutsideBlockColor: {r: 0.007241, g: 0.235453, b: 0.123954, a: 1}
+    ShieldedOutsideBlockColor: {r: 0.127365, g: 0.363003, b: 0.247876, a: 1}
+    SuperShieldedOutsideBlockColor: {r: 0.096899, g: 0.542305, b: 0.324691, a: 1}
+    InsideBlockColor: {r: 1.498039, g: 0.138702, b: 1.199568, a: 1}
+    ShieldedInsideBlockColor: {r: 1.193038, g: 0.561627, b: 1.054399, a: 1}
+    SuperShieldedInsideBlockColor: {r: 1.498039, g: 0.801272, b: 1.345049, a: 1}
+    AOETextureColor: {r: 4, g: 0.370356, b: 3.203036, a: 0}
+    AOEFresnelColor: {r: 0.003778, g: 0.122842, b: 0.064671, a: 0}
+    AOEConicColor: {r: 0.019826, g: 0.224712, b: 0.12461, a: 1}
+    AOEConicEdgeColor: {r: 0.658824, g: 0.149962, b: 0.547092, a: 0}
+    SpikeLightColor: {r: 0.784314, g: 0.072619, b: 0.628046, a: 0}
+    SpikeDarkColor: {r: 0.045112, g: 0.728067, b: 0.394392, a: 1}
+    SkimmerColor: {r: 0.54717, g: 0.050662, b: 0.438151, a: 0}
+    DullCrystalColor: {r: 0, g: 0, b: 0, a: 0.941176}
+    BrightCrystalColor: {r: 0.74902, g: 0.11917, b: 0.610723, a: 0.941176}
+    TrailHighlightColor: {r: 0.784314, g: 0.072619, b: 0.628046, a: 1}
+    TrailCoreColor: {r: 0.017601, g: 0.572267, b: 0.30127, a: 1}
+    UIAccentColor: {r: 1, g: 0.534199, b: 0.934515, a: 0.784314}
+  GoldColors:
+    ShipColor1: {r: 0.399049, g: 0.146635, b: 0.455523, a: 1}
+    ShipColor2: {r: 1.220389, g: 0.472143, b: 0.034044, a: 1}
+    OutsideBlockColor: {r: 0.199767, g: 0.05864, b: 0.231343, a: 1}
+    ShieldedOutsideBlockColor: {r: 0.272789, g: 0.136248, b: 0.303339, a: 1}
+    SuperShieldedOutsideBlockColor: {r: 0.498761, g: 0.149087, b: 0.576995, a: 1}
+    InsideBlockColor: {r: 0.996405, g: 0.381402, b: 0.021318, a: 1}
+    ShieldedInsideBlockColor: {r: 0.844452, g: 0.554098, b: 0.384097, a: 1}
+    SuperShieldedInsideBlockColor: {r: 1.498039, g: 0.890658, b: 0.535036, a: 1}
+    AOETextureColor: {r: 2.059087, g: 1.042032, b: 0.446546, a: 0}
+    AOEFresnelColor: {r: 0.134394, g: 0.03945, b: 0.155637, a: 0}
+    AOEConicColor: {r: 0.343842, g: 0.133112, b: 0.390991, a: 1}
+    AOEConicEdgeColor: {r: 0.643137, g: 0.260838, b: 0.037002, a: 0}
+    SpikeLightColor: {r: 0.858824, g: 0.328739, b: 0.018375, a: 0}
+    SpikeDarkColor: {r: 0.386794, g: 0.113539, b: 0.447931, a: 1}
+    SkimmerColor: {r: 0.74902, g: 0.312459, b: 0.056852, a: 0}
+    DullCrystalColor: {r: 0, g: 0, b: 0, a: 0.941176}
+    BrightCrystalColor: {r: 0.74902, g: 0.312459, b: 0.056852, a: 0.941176}
+    TrailHighlightColor: {r: 1, g: 0.382778, b: 0.021395, a: 1}
+    TrailCoreColor: {r: 0.835868, g: 0.245359, b: 0.967987, a: 1}
+    UIAccentColor: {r: 1, g: 0.751845, b: 0.399117, a: 0.784314}
+  BlueColors:
+    ShipColor1: {r: 0.003419, g: 0.018139, b: 0.001229, a: 1}
+    ShipColor2: {r: 0.009075, g: 0.037533, b: 0.501961, a: 1}
+    OutsideBlockColor: {r: 0.002474, g: 0.013125, b: 0.000889, a: 1}
+    ShieldedOutsideBlockColor: {r: 0.003892, g: 0.020646, b: 0.001399, a: 1}
+    SuperShieldedOutsideBlockColor: {r: 0.003892, g: 0.020646, b: 0.001399, a: 1}
+    InsideBlockColor: {r: 0.021999, g: 0.090982, b: 1.216786, a: 0.941176}
+    ShieldedInsideBlockColor: {r: 1.026196, g: 1.039677, b: 1.259696, a: 0.941176}
+    SuperShieldedInsideBlockColor: {r: 1.220359, g: 1.236391, b: 1.498039, a: 0.941176}
+    AOETextureColor: {r: 0.037228, g: 0.153963, b: 2.059087, a: 0}
+    AOEFresnelColor: {r: 0.00114, g: 0.006046, b: 0.00041, a: 0}
+    AOEConicColor: {r: 0, g: 0, b: 0, a: 0}
+    AOEConicEdgeColor: {r: 0, g: 0, b: 0, a: 0}
+    SpikeLightColor: {r: 0.681377, g: 0.699773, b: 1, a: 0}
+    SpikeDarkColor: {r: 0.00234, g: 0.012092, b: 0.000889, a: 1}
+    SkimmerColor: {r: 0.016591, g: 0.068615, b: 0.917647, a: 0}
+    DullCrystalColor: {r: 0.003586, g: 0.019023, b: 0.001289, a: 0.941176}
+    BrightCrystalColor: {r: 0.013542, g: 0.056006, b: 0.74902, a: 0.941176}
+    TrailHighlightColor: {r: 0.044131, g: 0.09932, b: 1, a: 1}
+    TrailCoreColor: {r: 0.003558, g: 0.018876, b: 0.001279, a: 1}
+    UIAccentColor: {r: 0.143191, g: 0.303079, b: 1, a: 0.784314}
+  EnvironmentColors:
+    SkyColor: {r: 0, g: 0, b: 0.102, a: 0}
+    LightColor: {r: 0, g: 0, b: 0, a: 0}
+    DarkColor: {r: 0, g: 0, b: 0, a: 0}
+    BrightCTA: {r: 0.885446, g: 0.92, b: 0.00213, a: 1}
+    DarkCTA: {r: 0.481221, g: 0.5, b: 0.001158, a: 1}
+    ElementalCrystalDimming: 0.45
+    ElementalCrystalColors:
+    - {r: 0.1821, g: 0.327, b: 0, a: 1}
+    - {r: 0.312, g: 0.5361, b: 0, a: 1}
+    - {r: 0.4519, g: 0.7614, b: 0, a: 1}
+    - {r: 0.6, g: 1, b: 0, a: 1}
+    Danger: {r: 1.497911, g: 0.008425, b: 0.060857, a: 0}

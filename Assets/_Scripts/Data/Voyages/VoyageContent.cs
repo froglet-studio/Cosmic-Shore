@@ -44,12 +44,29 @@ namespace CosmicShore.Data
             return _byId.TryGetValue(id, out var location) ? location : null;
         }
 
-        /// <summary>The person on the crew who carries <paramref name="pilotId"/>'s callsign, or null.</summary>
+        /// <summary>
+        /// Where the player's REAL crew comes from (Docs/Pilots/INVENTORY.md §3.4): the game sets it to read the account's
+        /// unique pilots (<c>AccountInventoryStore</c>), so a seated pilot's id finds that person, their name and their
+        /// faction type. Null in a test or headless run, where the authored <see cref="Crew"/> stands in.
+        /// </summary>
+        public static Func<string, CrewPerson> CrewSource;
+
+        /// <summary>
+        /// The person a seated pilot id names, or null: the player's own pilot (<see cref="CrewSource"/>) first, then the
+        /// authored crew by exact id, then the authored person on the same callsign (a unique pilot id starts with its
+        /// callsign's id, <see cref="UniqueId"/>).
+        /// </summary>
         public CrewPerson Person(string pilotId)
         {
-            if (string.IsNullOrEmpty(pilotId) || Crew == null) return null;
+            if (string.IsNullOrEmpty(pilotId)) return null;
+            if (CrewSource?.Invoke(pilotId) is { } real) return real;
+            if (Crew == null) return null;
             foreach (var p in Crew)
                 if (p != null && p.PilotId == pilotId) return p;
+            string callsign = UniqueId.TemplateOf(pilotId);
+            if (callsign == pilotId) return null;
+            foreach (var p in Crew)
+                if (p != null && p.PilotId == callsign) return p;
             return null;
         }
 
@@ -164,11 +181,13 @@ namespace CosmicShore.Data
         public int Cells = 1;
     }
 
-    /// <summary>A person on the crew: unique, layered on one callsign pilot (VOYAGES.md §6.2.1).</summary>
+    /// <summary>A person on the crew: unique, layered on one callsign pilot (VOYAGES.md §6.2.1). The authored ones stand in
+    /// for a test or headless run; in the game each is made from the player's <see cref="PilotRecord"/>.</summary>
     [Serializable]
     public class CrewPerson
     {
-        /// <summary>The callsign pilot this person is (<c>PilotSO.Id</c>, e.g. pilot.callsign.citadel).</summary>
+        /// <summary>The pilot's id: a unique pilot's (<c>pilot.callsign.citadel#...</c>), or for an authored stand-in the
+        /// callsign's (<c>PilotSO.Id</c>, e.g. pilot.callsign.citadel).</summary>
         public string PilotId;
         public string Name;
         public FactionType Faction;

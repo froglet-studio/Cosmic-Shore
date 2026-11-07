@@ -24,6 +24,14 @@ namespace CosmicShore.UI
     /// </list>
     /// <see cref="VoyageJobsView"/> builds it once and fills it; every word is the voyage content's
     /// (<see cref="VoyageLines"/>) or the game's data, never this class's.
+    ///
+    /// <para><b>Pilots are people, artifacts one of a kind</b> (Garrett 2026-11-07, Docs/Pilots/INVENTORY.md). Pressing a
+    /// seat's pilot cycles the people in the player's crew whose callsign can fly the hull, and its artifact cycles the
+    /// hoard's artifacts the hull can carry (and none); each writes the record's own id into the slot, as the Ark's
+    /// picker does. A seat whose ids are the player's shows the person's name (its callsign word on the setting's label)
+    /// and the artifact's name; a joined squad's other seats carry the owner's ids, which this crew does not hold, so they
+    /// show the callsign and kind from the catalog. A legacy slot (a bare callsign or kind id saved before 2026-11-07)
+    /// cycles on from the person or artifact it resolves to.</para>
     /// </summary>
     public class VoyageOpenCard : MonoBehaviour
     {
@@ -88,6 +96,10 @@ namespace CosmicShore.UI
         RectTransform _sweep, _routeLine;
         Image _endNode;
         Button _sail1, _sail2, _sail3, _save;
+        // Read on each press of a pilot or artifact setting (reused, not allocated per press).
+        readonly List<PilotRecord> _crew = new();
+        readonly List<ArtifactRecord> _hoard = new();
+        readonly List<string> _ids = new();
 
         sealed class Seat
         {
@@ -531,14 +543,23 @@ namespace CosmicShore.UI
                 view.Hull.sprite = sprite;
                 view.Hull.enabled = sprite;
                 bool editable = active != null && CanEdit(active, seat);
-                var pilot = active != null && _catalog ? _catalog.ResolvePilot(slot, null) : null;
-                var artifact = active != null && _catalog ? _catalog.ResolveArtifact(slot, null) : null;
+                var keywords = vessel ? vessel.Keywords : null;
+                var pilot = active != null && _catalog ? _catalog.ResolvePilot(slot, keywords) : null;
+                var artifact = active != null && _catalog ? _catalog.ResolveArtifact(slot, keywords) : null;
+                // The catalog gives the callsign and kind for anyone's ids; only the player's own name a person and an
+                // artifact this inventory holds (SquadsPage.IdsAreMine).
+                PilotRecord person = null;
+                ArtifactRecord held = null;
+                if (editable && pilot && PilotLoadoutStore.TryGetPilot(slot.PilotId, out var p) && p.CallsignOrTemplate() == pilot.Id) person = p;
+                if (editable && artifact && PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var a) && a.Kind() == artifact.Id) held = a;
+                string word = pilot ? Callsigns.WordOf(pilot.Vision) : string.Empty;
+                Set(view.Settings[1].label, string.IsNullOrEmpty(word) ? _lines.CardSettingPilot : _lines.CardSettingPilot + " - " + word);
                 string[] values =
                 {
                     vessel ? vessel.CardName : string.Empty,
-                    pilot ? pilot.DisplayName : string.Empty,
+                    person != null ? person.DisplayName() : pilot ? pilot.DisplayName : string.Empty,
                     ElementName(slot.Element),
-                    artifact ? artifact.DisplayName : _lines.CardNoArtifact,
+                    held != null ? held.Name : artifact ? artifact.DisplayName : _lines.CardNoArtifact,
                 };
                 for (int k = 0; k < 4; k++)
                 {
@@ -599,20 +620,27 @@ namespace CosmicShore.UI
                     var next = VoyageCardRules.Cycle(offered, slot.Vessel);
                     if (offered.Count == 0 || next == slot.Vessel) return;
                     slot = slot.WithVessel(next);
-                    // The player's own card starts on the pilot they keep in that vessel's Hangar seat.
+                    // The player's own card starts on the person they keep in that vessel's Hangar seat (a crew id).
                     if (mine) slot.PilotId = PilotLoadoutStore.GetPilot(next);
                     break;
                 }
                 case 1:
                 {
+                    // The crew's people whose callsign can fly the hull, in crew order.
                     var vessel = Vessel(slot.Vessel);
-                    var pilots = new List<PilotSO>();
-                    if (_catalog && vessel) _catalog.GetPilotsFor(vessel, pilots);
-                    var ids = new List<string>();
-                    foreach (var p in pilots) if (p) ids.Add(p.Id);
-                    var current = _catalog ? _catalog.ResolvePilot(slot, null) : null;
-                    if (ids.Count == 0) return;
-                    slot.PilotId = VoyageCardRules.Cycle(ids, current ? current.Id : slot.PilotId);
+                    _ids.Clear();
+                    if (_catalog && vessel)
+                    {
+                        PilotLoadoutStore.GetCrew(_crew);
+                        foreach (var person in _crew)
+                            if (_catalog.TryGetPilot(person.Id, out var callsign) && callsign && callsign.Requirement != null
+                                && callsign.Requirement.IsMetBy(vessel.Class, vessel.Keywords))
+                                _ids.Add(person.Id);
+                    }
+                    if (_ids.Count == 0) return;
+                    // A legacy callsign id cycles on from the person it resolves to.
+                    string current = PilotLoadoutStore.TryGetPilot(slot.PilotId, out var seated) ? seated.Id : slot.PilotId;
+                    slot.PilotId = VoyageCardRules.Cycle(_ids, current);
                     break;
                 }
                 case 2:
@@ -620,26 +648,33 @@ namespace CosmicShore.UI
                     break;
                 default:
                 {
+                    // The hoard's artifacts the hull can carry: each is one of a kind, so every seat this card edits (the
+                    // player's own, or an AI or open seat of a squad they made) carries only what is held. Null is none.
                     var vessel = Vessel(slot.Vessel);
-                    var artifacts = new List<ArtifactSO>();
-                    if (_catalog && vessel) _catalog.GetArtifactsFor(vessel, artifacts);
-                    // The player carries only what they hold; an AI wingmate may carry anything. Null is no artifact.
-                    var ids = new List<string> { null };
-                    foreach (var a in artifacts)
-                        if (a && (!mine || PilotLoadoutStore.Holds(a.Id))) ids.Add(a.Id);
-                    slot.ArtifactId = VoyageCardRules.Cycle(ids, string.IsNullOrEmpty(slot.ArtifactId) ? null : slot.ArtifactId);
+                    _ids.Clear();
+                    _ids.Add(null);
+                    if (_catalog && vessel)
+                    {
+                        PilotLoadoutStore.GetHoard(_hoard);
+                        foreach (var artifact in _hoard)
+                            if (_catalog.TryGetArtifact(artifact.Id, out var kind) && kind && kind.Requirement != null
+                                && kind.Requirement.IsMetBy(vessel.Class, vessel.Keywords))
+                                _ids.Add(artifact.Id);
+                    }
+                    // A legacy kind id cycles on from the artifact it resolves to.
+                    string current = PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var carried) ? carried.Id : null;
+                    slot.ArtifactId = VoyageCardRules.Cycle(_ids, current);
                     break;
                 }
             }
             squad.SetSlot(seat, slot);
             // Each vessel has its own pilot and artifact: one moved onto this vessel leaves the others (the pilot swaps).
             squad.KeepCardsOwn(seat, previousPilot);
-            if (_catalog)
-            {
-                var all = new List<string>();
-                foreach (var p in _catalog.Pilots) if (p) all.Add(p.Id);
-                squad.FillPilots(all);
-            }
+            // Every vessel needs a pilot: an empty or doubled seat takes the next free person of the crew.
+            PilotLoadoutStore.GetCrew(_crew);
+            _ids.Clear();
+            foreach (var p in _crew) if (!string.IsNullOrEmpty(p.Id)) _ids.Add(p.Id);
+            squad.FillPilots(_ids);
             Draw();
         }
 

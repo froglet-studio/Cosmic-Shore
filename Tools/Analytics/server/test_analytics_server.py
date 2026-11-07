@@ -1542,5 +1542,528 @@ class SetupsHttp(unittest.TestCase):
             self.assertTrue(out["error"])
 
 
+
+# ---------------------------------------------------------------- round 67: sessions, balance, quits, invites, errors,
+# backups, the Ask door end to end (Shombith, 2026-11-07)
+
+R67_EVENTS = ("session_started", "match_abandoned", "client_exception")
+
+
+def r67_extra():
+    """The round's new events the schema does not list yet (the game's half lands them in EVENT_SCHEMA.json)."""
+    have = set(A.schema_events(A.REPO_SCHEMA))
+    return sorted({"client_exception"} | {e for e in R67_EVENTS if e not in have})
+
+
+def write(path, content):
+    with open(path, "wb" if isinstance(content, bytes) else "w") as handle:
+        handle.write(content)
+
+
+def days_ago(n, hour=12):
+    from datetime import datetime, timedelta, timezone
+    d = datetime.now(timezone.utc).replace(hour=hour, minute=0, second=0, microsecond=0) - timedelta(days=n)
+    return int(d.timestamp() * 1000)
+
+
+class R67Case(StoreCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.store = S.Store(self.dir, A.schema_events(A.REPO_SCHEMA), r67_extra())
+
+    def dump(self):
+        return "\n".join(sqlite3.connect(self.store.agg_path).iterdump())
+
+
+class Sessions(R67Case):
+    def test_dau_wau_mau_and_session_lengths(self):
+        d10, d3 = days_ago(10), days_ago(3)
+        self.store.ingest([
+            ev("menu_ready", "zq-p1", d10), ev("menu_ready", "zq-p1", d3), ev("menu_ready", "zq-p2", d3 + 1000),
+            ev("session_started", "zq-p1", d3, session_id="s1", launch_kind="cold"),
+            ev("session_started", "zq-p1", d3 + 50, session_id="s1", launch_kind="cold"),       # sent again: once
+            ev("session_ended", "zq-p1", d3 + 600_000, session_id="s1", session_seconds=600, reason="quit"),
+            ev("session_started", "zq-p1", d3 + 3_600_000, session_id="s2", launch_kind="resume"),
+            ev("session_ended", "zq-p1", d3 + 3_720_000, session_id="s2", reason="pause"),      # no seconds: the gap
+            ev("session_started", "zq-p1", d3 + 7_200_000, session_id="s3", launch_kind="cold"),   # never ended
+            ev("session_started", "zq-p2", d3 + 1000, session_id="t1", launch_kind="cold"),
+        ])
+        self.store.rebuild_aggregates()
+        page = V.sessions(self.store.agg_path, "release", 30)
+        per = {r["day"]: r for r in page["per_day"]}
+        self.assertEqual((per[S.day_of(d3)]["dau"], per[S.day_of(d3)]["wau"], per[S.day_of(d3)]["mau"]), (2, 2, 2))
+        five = S.day_of(days_ago(5))
+        self.assertEqual((per[five]["dau"], per[five]["wau"], per[five]["mau"]), (0, 1, 1))   # p1's day 10 is 5 days back
+        self.assertEqual(per[S.day_of(days_ago(1))]["wau"], 2)
+        self.assertEqual(per[S.day_of(days_ago(0))]["wau"], 2)
+        self.assertEqual(per[S.day_of(days_ago(0))]["mau"], 2)
+        t = page["tiles"]
+        self.assertEqual((t["sessions"], t["ended"], t["sessions_per_player_day"]), (4, 2, 2.0))
+        self.assertEqual(t["median_session_min"], 6.0)          # 600 s and 120 s
+        self.assertEqual({r["bucket"]: r["sessions"] for r in page["lengths"]}["5-15 min"], 1)
+        self.assertEqual(sum(r["cold"] for r in page["sessions_per_day"]), 3)
+        self.assertEqual((t["wau"], t["mau"]), (2, 2))
+        ov = V.overview(self.store.agg_path, "release", 30)["sessions"]
+        self.assertEqual((ov["mau"], ov["sessions"]), (2, 4))
+        self.assertNotIn("zq-p", self.dump())
+
+
+class Balance(R67Case):
+    def seed(self):
+        rows = []
+        for i, (diff, intensity, won, place, score) in enumerate([
+                ("Easy", 1, True, 1, 900), ("Easy", 1, False, 2, 700), ("Hard", 3, False, 3, 400),
+                ("Hard", 3, False, 4, 300), (None, 2, True, None, None)]):
+            m = f"bm{i}"
+            extra = {"score": score, "placement": place, "players_in_match": 4, "behind_by": 0 if won else 100}
+            extra = {k: v for k, v in extra.items() if v is not None}
+            if diff:
+                extra["ai_difficulty"] = diff
+            rows += [started("zq-b", m, T0 + i * 600_000, intensity=intensity, ai=3),
+                     completed("zq-b", m, T0 + i * 600_000 + 100_000, player_won=won, **extra)]
+        self.store.ingest(rows)
+        self.store.rebuild_aggregates()
+
+    def test_score_placement_and_difficulty(self):
+        self.seed()
+        page = V.balance(self.store.agg_path, "release", 7)
+        self.assertEqual([r["ai_difficulty"] for r in page["by_difficulty"]], ["Easy", "Hard", "unknown"])
+        easy = page["by_difficulty"][0]
+        self.assertEqual((easy["plays"], easy["win_pct"], easy["avg_placement"], easy["avg_score"]), (2, 50.0, 1.5, 800.0))
+        self.assertEqual(page["by_difficulty"][1]["avg_behind_by"], 100.0)
+        cell = {(r["intensity"], r["ai_difficulty"]): r for r in page["grid"]}
+        self.assertEqual(cell[("3", "Hard")]["win_pct"], 0.0)
+        self.assertEqual({r["placement"]: r["plays"] for r in page["placements"]}, {1: 1, 2: 1, 3: 1, 4: 1})
+        self.assertEqual((page["tiles"]["scored"], page["tiles"]["with_difficulty"]), (4, 4))
+        out = V.series(self.store.agg_path, "score", "ai_difficulty", "none", "release", 7)
+        self.assertEqual([(p["key"], p["value"]) for p in out["points"]], [("Easy", 800.0), ("Hard", 350.0), ("unknown", None)])
+        self.assertEqual({p["key"]: p["value"] for p in V.series(
+            self.store.agg_path, "placement", "intensity", "none", "release", 7)["points"]}["3"], 3.5)
+        self.assertEqual(V.series(self.store.agg_path, "win_pct", "none", "none", "release", 7)["points"][0]["value"], 40.0)
+        players = V.series(self.store.agg_path, "players", "ai_difficulty", "none", "release", 7)
+        self.assertEqual({p["key"]: p["value"] for p in players["points"]}, {"Easy": 1, "Hard": 1, "unknown": 1})
+        self.assertTrue(any("2026-11-07" in n for n in out["notes"]))
+        with self.assertRaises(V.BadRequest):
+            V.series(self.store.agg_path, "events", "ai_difficulty", "none", "release", 7)
+
+
+class Quits(R67Case):
+    def test_only_builds_that_send_quits_count_and_the_chain_follows_a_fail(self):
+        f = days_ago(9)
+        new = dict(app_version="0.3.0")
+        self.store.ingest([
+            started("zq-q1", "old1", T0, app_version="0.2.1"),                     # an older build: not in the rate
+            ev("session_started", "zq-q1", T0 - 1000, session_id="x", launch_kind="cold", **new),
+            started("zq-q1", "n1", T0, **new), completed("zq-q1", "n1", T0 + 90_000, **new),
+            started("zq-q1", "n2", T0 + 200_000, **new),
+            ev("match_abandoned", "zq-q1", T0 + 245_000, match_id="n2", game_mode="SkimRace", reason="quit_to_menu",
+               elapsed_seconds=45, score_at_quit=10, **new),
+            # the chain: a fail, a quit 20 minutes later, then nothing for 7 days
+            ev("session_started", "zq-q2", f - 1000, session_id="y", launch_kind="cold", **new),
+            started("zq-q2", "f1", f, **new),
+            ev("repeated_game_fail", "zq-q2", f + 60_000, game_mode="SkimRace", fail_count=3, **new),
+            ev("match_abandoned", "zq-q2", f + 1_260_000, match_id="f1", reason="app_quit", elapsed_seconds=400, **new),
+            # a fail followed by a quit only after 2 hours: not part of the chain (negative control)
+            started("zq-q3", "g1", f, **new),
+            ev("repeated_game_fail", "zq-q3", f + 60_000, game_mode="Joust", fail_count=4, **new),
+            ev("match_abandoned", "zq-q3", f + 7_400_000, match_id="g1", reason="disconnect", elapsed_seconds=700, **new),
+            ev("menu_ready", "zq-q3", days_ago(6), **new),
+        ])
+        self.store.rebuild_aggregates()
+        page = V.quits(self.store.agg_path, "release", 30)
+        t = page["tiles"]
+        self.assertEqual((t["plays"], t["tracked_plays"], t["quits"]), (5, 4, 3))   # old1 is from a build that never says
+        self.assertEqual(t["quit_pct"], 75.0)
+        self.assertEqual({r["reason"]: r["quits"] for r in page["reasons"]},
+                         {"quit_to_menu": 1, "app_quit": 1, "disconnect": 1})
+        self.assertEqual({r["bucket"]: r["quits"] for r in page["by_elapsed"]}["30-60 s"], 1)
+        c = page["chain"]
+        self.assertEqual((c["failed"], c["quit_after"], c["quit_mature"], c["gone_7d"]), (2, 1, 1, 1))
+        self.assertEqual((c["failed_mature"], c["failed_gone_7d"]), (2, 1))          # q3 came back on day 6 before now
+        self.assertEqual(self.rows("SELECT COUNT(*) FROM events WHERE event='match_abandoned'")[0][0], 3)
+        out = V.series(self.store.agg_path, "abandon_pct", "game_mode", "none", "release", 30)
+        self.assertEqual({p["key"]: p["value"] for p in out["points"]}["SkimRace"], 75.0)
+        self.assertEqual(sqlite3.connect(self.store.agg_path).execute(
+            "SELECT abandoned FROM plays WHERE match_id='n1'").fetchone()[0], 0)
+        self.assertNotIn("zq-q", self.dump())
+
+
+class Invites(R67Case):
+    def test_an_invite_id_is_followed_exactly_and_older_invites_by_time(self):
+        j = days_ago(9)
+        minute = 60_000
+        self.store.ingest([
+            ev("party_invite_sent", "zq-a", j, target_id="zq-b", invite_id="inv1"),
+            ev("party_invite_received", "zq-b", j + 5_000, host_id="zq-a", invite_id="inv1"),
+            ev("party_joined", "zq-b", j + 20_000, invite_id="inv1", inviter_id="zq-a"),
+            started("zq-a", "pt1", j + 5 * minute, humans=2, ai=0), started("zq-b", "pt1", j + 5 * minute, humans=2, ai=0),
+            ev("menu_ready", "zq-b", days_ago(6)),                                   # back on day 3
+            ev("menu_ready", "zq-a", days_ago(8)),                                   # the inviter back on day 1
+            # an older build: no invite id, matched by time
+            ev("party_invite_sent", "zq-c", j, target_id="zq-d"),
+            ev("party_invite_received", "zq-d", j + 2 * minute, host_id="zq-c"),
+            ev("party_joined", "zq-d", j + 4 * minute),
+            # received 20 minutes after the send: too late to be this invite (negative control)
+            ev("party_invite_sent", "zq-e", j, target_id="zq-f"),
+            ev("party_invite_received", "zq-f", j + 20 * minute, host_id="zq-e"),
+            ev("party_joined", "zq-f", j + 21 * minute),
+        ])
+        self.store.rebuild_aggregates()
+        page = V.invites(self.store.agg_path, "release", 30)
+        self.assertEqual([s["count"] for s in page["funnel"]], [3, 2, 2, 1, 1])
+        self.assertEqual(page["funnel"][-1]["of"], 2)
+        method = {m["method"]: m for m in page["by_method"]}
+        self.assertEqual((method["invite_id"]["joined"], method["time"]["sent"], method["time"]["joined"]), (1, 2, 1))
+        roles = {r["role"]: r for r in page["roles"]}
+        self.assertEqual((roles["inviter"]["players"], roles["inviter"]["d1_pct"]), (2, 50.0))
+        self.assertEqual((roles["invitee"]["players"], roles["invitee"]["d7_pct"], roles["invitee"]["d1_pct"]), (2, 50.0, 0.0))
+        self.assertEqual(page["history"]["first_invite_id_day"], S.day_of(j))
+        dump = self.dump()
+        self.assertNotIn("zq-", dump)
+        self.assertNotIn("inv1", dump)
+
+
+class Errors(R67Case):
+    def test_errors_group_by_frame_count_players_and_keep_no_text(self):
+        boom = dict(exception_type="NullReferenceException", top_frame="CosmicShore.Game.VesselStatus.Update",
+                    scene="Minigame_SkimRace", message_hash="a1b2c3", message="Kestrel's vessel was null")
+        self.store.ingest([
+            ev("client_exception", "zq-e1", T0, count=3, **boom), ev("client_exception", "zq-e2", T0 + 1000, count=1, **boom),
+            ev("client_exception", "zq-e1", days_ago(20), exception_type="ArgumentException", top_frame="CosmicShore.UI.Menu.Open",
+               scene="Menu_Main", message_hash="ffff00", count=1, platform="Android"),
+        ])
+        self.store.rebuild_aggregates()
+        page = V.errors(self.store.agg_path, "release", 30)
+        t = page["tiles"]
+        self.assertEqual((t["events"], t["occurrences"], t["signatures"], t["players"], t["new_this_week"]), (3, 5, 2, 2, 1))
+        top = page["by_frame"][0]
+        self.assertEqual((top["top_frame"], top["occurrences"], top["players"], top["new"]),
+                         ("CosmicShore.Game.VesselStatus.Update", 4, 2, True))
+        self.assertFalse(page["by_frame"][1]["new"])
+        self.assertEqual({r["key"]: r["occurrences"] for r in page["by_platform"]}, {"WindowsPlayer": 4, "Android": 1})
+        dump = self.dump()
+        self.assertNotIn("Kestrel", dump)
+        self.assertNotIn("zq-e", dump)
+
+    def test_data_health_lists_this_rounds_events(self):
+        self.store.ingest([ev("session_started", "zq-h", T0, session_id="s", launch_kind="cold"),
+                           completed("zq-h", "m", T0, score=5)])
+        self.store.rebuild_aggregates()
+        listed = {(r["event"], r["field"]): r for r in V.health(self.store.agg_path, {}, 30)["new_events"]}
+        self.assertEqual(listed[("session_started", None)]["rows"], 1)
+        self.assertIsNotNone(listed[("session_started", None)]["last_received_ms"])
+        self.assertEqual(listed[("game_completed", "score")]["rows"], 1)
+        self.assertEqual(listed[("game_completed", "ai_difficulty")]["rows"], 0)
+        self.assertIsNone(listed[("match_abandoned", None)]["last_received_ms"])
+
+
+class Backups(R67Case):
+    def test_a_backup_is_a_snapshot_of_both_databases_and_restores(self):
+        import tarfile
+        self.store.ingest([started("zq-k", "m1", T0), completed("zq-k", "m1", T0 + 1000)])
+        self.store.rebuild_aggregates()
+        path, size = self.store.backup()
+        self.assertTrue(path.endswith(".tar.gz") and size > 0)
+        self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+        with tarfile.open(path) as tar:
+            self.assertEqual(sorted(tar.getnames()), ["aggregates.db", "events.db"])
+        self.store.ingest([started("zq-k", "m2", T0 + 5000)])        # after the backup: gone after a restore
+        target = tempfile.mkdtemp()
+        try:
+            write(os.path.join(target, "events.db"), "the database it replaces")
+            out = S.restore_backup(path, target)
+            self.assertEqual(out["restored"], ["aggregates.db", "events.db"] if out["restored"][0] == "aggregates.db"
+                             else ["events.db", "aggregates.db"])
+            db = sqlite3.connect(os.path.join(target, "events.db"))
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM events").fetchone()[0], 2)
+            db.close()
+            with open(os.path.join(out["kept_in"], "events.db")) as kept:
+                self.assertEqual(kept.read(), "the database it replaces")
+            # not one of ours: refused, nothing moved
+            bad = os.path.join(target, "bad.tar.gz")
+            with tarfile.open(bad, "w:gz") as tar:
+                tar.add(os.path.join(target, "events.db"), arcname="../events.db")
+            with self.assertRaises(S.Invalid):
+                S.restore_backup(bad, target)
+            broken = os.path.join(target, "broken.tar.gz")
+            junk = os.path.join(target, "junk")
+            write(junk, b"SQLite format 3\x00" + b"\xff" * 4000)
+            with tarfile.open(broken, "w:gz") as tar:
+                tar.add(junk, arcname="events.db")
+            with self.assertRaises(S.Invalid):
+                S.restore_backup(broken, target)
+            db = sqlite3.connect(os.path.join(target, "events.db"))
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM events").fetchone()[0], 2)    # still the restored one
+            db.close()
+        finally:
+            shutil.rmtree(target)
+
+    def test_the_newest_fourteen_are_kept(self):
+        folder = os.path.join(self.dir, "backups")
+        os.makedirs(folder)
+        for i in range(15):
+            write(os.path.join(folder, f"froglet-analytics-20260101-0000{i:02d}-000000.tar.gz"), "x")
+        write(os.path.join(folder, "events-20260101.db"), "an older kind: left alone")
+        path, _ = self.store.backup()
+        kept = sorted(f for f in os.listdir(folder) if f.endswith(".tar.gz"))
+        self.assertEqual(len(kept), 14)
+        self.assertEqual(kept[-1], os.path.basename(path))
+        self.assertNotIn("froglet-analytics-20260101-000000-000000.tar.gz", kept)
+        self.assertNotIn("froglet-analytics-20260101-000001-000000.tar.gz", kept)
+        self.assertTrue(os.path.exists(os.path.join(folder, "events-20260101.db")))
+        facts = self.store.health_facts()["backups"]
+        self.assertEqual((facts["local_kept"], facts["local_file"]), (14, os.path.basename(path)))
+        self.assertIn("Oracle", facts["off_vm"])
+
+
+def verify_sigv4(method, path, query, headers, body, secrets_by_access):
+    """An S3 server's side of Signature Version 4, written apart from the server's signer: rebuild the canonical
+    request from what arrived and compare. Returns None when it holds, else the reason."""
+    import hashlib
+    import hmac as hm
+    from urllib.parse import parse_qsl, quote
+    auth = headers.get("Authorization") or ""
+    m = re.match(r"AWS4-HMAC-SHA256 Credential=([^/]+)/(\d{8})/([^/]+)/s3/aws4_request, "
+                 r"SignedHeaders=([a-z0-9;-]+), Signature=([0-9a-f]{64})$", auth)
+    if not m:
+        return "no signature"
+    access, day, region, names, signature = m.groups()
+    if access not in secrets_by_access:
+        return "unknown access key"
+    if hashlib.sha256(body).hexdigest() != headers.get("x-amz-content-sha256"):
+        return "the body does not match its hash"
+    canon_headers = "".join(f"{n}:{(headers.get(n) or '').strip()}\n" for n in names.split(";"))
+    canon_query = "&".join(f"{quote(k, safe='-_.~')}={quote(v, safe='-_.~')}" for k, v in sorted(parse_qsl(query, True)))
+    canonical = "\n".join([method, path, canon_query, canon_headers, names, headers["x-amz-content-sha256"]])
+    amz_date = headers.get("x-amz-date") or ""
+    scope = f"{day}/{region}/s3/aws4_request"
+    string = "\n".join(["AWS4-HMAC-SHA256", amz_date, scope, hashlib.sha256(canonical.encode()).hexdigest()])
+    k = hm.new(("AWS4" + secrets_by_access[access]).encode(), day.encode(), hashlib.sha256).digest()
+    for part in (region, "s3", "aws4_request"):
+        k = hm.new(k, part.encode(), hashlib.sha256).digest()
+    expected = hm.new(k, string.encode(), hashlib.sha256).hexdigest()
+    return None if hm.compare_digest(expected, signature) else "signature mismatch"
+
+
+class BucketUpload(unittest.TestCase):
+    def setUp(self):
+        from http.server import BaseHTTPRequestHandler
+        stored = self.stored = {}
+
+        class FakeS3(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_PUT(self):
+                body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                path, _, query = self.path.partition("?")
+                why = verify_sigv4("PUT", path, query, {k: v for k, v in self.headers.items()} | {
+                    k.lower(): v for k, v in self.headers.items()}, body, {"AKFROGLET": "right-secret"})
+                if why:
+                    self.send_response(403)
+                    self.end_headers()
+                    self.wfile.write(why.encode())
+                    return
+                stored[path] = body
+                self.send_response(200)
+                self.end_headers()
+
+        self.s3 = ThreadingHTTPServer(("127.0.0.1", 0), FakeS3)
+        threading.Thread(target=self.s3.serve_forever, daemon=True).start()
+        self.env = {"FA_BACKUP_ENDPOINT": f"http://127.0.0.1:{self.s3.server_address[1]}", "FA_BACKUP_BUCKET": "fa-backups",
+                    "FA_BACKUP_ACCESS_KEY": "AKFROGLET", "FA_BACKUP_SECRET_KEY": "right-secret"}
+
+    def tearDown(self):
+        self.s3.shutdown()
+        self.s3.server_close()
+
+    def test_the_signer_matches_aws_published_example(self):
+        h = A.sigv4_headers("GET", "https://examplebucket.s3.amazonaws.com/test.txt", {"range": "bytes=0-9"},
+                            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "AKIAIOSFODNN7EXAMPLE",
+                            "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "us-east-1", "20130524T000000Z")
+        self.assertTrue(h["authorization"].endswith(
+            "Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41"))
+
+    def test_a_signed_put_is_accepted_and_a_wrong_secret_is_refused(self):
+        settings = A.backup_settings(self.env)
+        self.assertEqual(settings["region"], "us-ashburn-1")
+        self.assertEqual(A.s3_put(settings, "froglet-analytics/x.tar.gz", b"snapshot"), 200)
+        self.assertEqual(self.stored["/fa-backups/froglet-analytics/x.tar.gz"], b"snapshot")
+        wrong = dict(settings, secret="wrong-secret")
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            A.s3_put(wrong, "froglet-analytics/y.tar.gz", b"snapshot")
+        self.assertEqual(caught.exception.code, 403)
+        self.assertNotIn("/fa-backups/froglet-analytics/y.tar.gz", self.stored)
+        self.assertIsNone(A.backup_settings(dict(self.env, FA_BACKUP_SECRET_KEY="")))   # a key missing: dormant
+
+    def test_the_nightly_backup_uploads_only_when_the_bucket_is_set(self):
+        work = tempfile.mkdtemp()
+        app = A.App(dict(A.DEFAULTS, data_dir=work, extra_events=r67_extra()))
+        saved = {k: os.environ.get(k) for k in self.env}
+        try:
+            for k in self.env:
+                os.environ.pop(k, None)
+            out = app.backup()
+            self.assertIsNone(out["uploaded"])
+            self.assertEqual(self.stored, {})
+            os.environ.update(self.env)
+            out = app.backup()
+            self.assertEqual(out["uploaded"], "fa-backups/froglet-analytics/" + os.path.basename(out["file"]))
+            self.assertEqual(len(self.stored), 1)
+            facts = json.dumps(app.store.health_facts())
+            self.assertIn("fa-backups", facts)
+            self.assertNotIn("right-secret", facts)
+            self.assertNotIn("AKFROGLET", facts)
+            app.store.mark_job("backup", "made a minute ago")
+            real = C._client
+            C._client = lambda: (None, "Claude is off in this test")             # a test never asks the real Claude
+            try:
+                self.assertIn("skipped", json.dumps(app.nightly()["backup"]))      # the 04:40 timer made tonight's
+            finally:
+                C._client = real
+        finally:
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+            app.store.db.close()
+            shutil.rmtree(work)
+
+
+class R67Http(unittest.TestCase):
+    tearDown = Http.tearDown
+    call = Http.call
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        config = dict(A.DEFAULTS, data_dir=self.dir, ingest_keys=["in-key"], read_keys={"ian": "read-key"},
+                      admin_keys={"admin": "admin-key"}, extra_events=r67_extra())
+        self.app = A.App(config)
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), A.make_handler(self.app))
+        self.base = f"http://127.0.0.1:{self.server.server_address[1]}"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            ev("session_started", "zq-player-7", T0, session_id="s", launch_kind="cold"),
+            started("zq-player-7", "m1", T0), completed("zq-player-7", "m1", T0 + 60_000, score=12, placement=1,
+                                                       ai_difficulty="Medium"),
+            ev("client_exception", "zq-player-7", T0, exception_type="E", top_frame="A.B.C", message_hash="h", count=1)]})
+        self.app.rebuild()
+
+    def test_the_new_pages_answer_readers_and_refuse_bad_input(self):
+        for path in ("/v1/sessions", "/v1/balance", "/v1/quits", "/v1/invites", "/v1/errors"):
+            status, page, _ = self.call("GET", path + "?days=7", key="read-key")
+            self.assertEqual(status, 200, path)
+            self.assertNotIn("zq-player-7", json.dumps(page), path)
+            self.assertEqual(self.call("GET", path)[0], 401, path)
+            self.assertEqual(self.call("GET", path + "?days=5", key="read-key")[0], 400, path)
+            self.assertEqual(self.call("GET", path + "?era=nope", key="read-key")[0], 400, path)
+        status, page, _ = self.call("GET", "/v1/balance?days=7&play=solo_vs_ai", key="read-key")
+        self.assertEqual((status, page["by_difficulty"][0]["ai_difficulty"]), (200, "Medium"))
+        status, page, _ = self.call("GET", "/v1/errors?days=7", key="read-key")
+        self.assertEqual(page["tiles"]["players"], 1)
+        status, out, _ = self.call("GET", "/v1/series?measure=score&by=ai_difficulty&over=none&days=7", key="read-key")
+        self.assertEqual((status, out["points"][0]["value"]), (200, 12.0))
+        for bad in ("measure=abandon_pcts", "measure=score&by=difficulty"):
+            self.assertEqual(self.call("GET", "/v1/series?" + bad, key="read-key")[0], 400, bad)
+        status, health, _ = self.call("GET", "/v1/health?days=30", key="read-key")
+        self.assertEqual(status, 200)
+        self.assertIn("Oracle", health["backups"]["off_vm"])
+        self.assertTrue(any(r["event"] == "session_started" and r["rows"] == 1 for r in health["new_events"]))
+
+    def test_ask_and_query_studio_send_claude_no_player_id_end_to_end(self):
+        sent = []
+
+        def fake_structured(client, model, effort, system, user, schema, max_tokens=4000):
+            sent.append(system + "\n" + user)
+            if schema is C.SQL_SCHEMA:
+                return {"sql": "SELECT ai_difficulty, COUNT(*) AS plays, AVG(score) AS score FROM plays GROUP BY 1",
+                        "can_answer": True, "why_not": ""}, None
+            return {"answer": "Medium: 1 play, score 12.", "caveat": ""}, None
+
+        real = (C._client, C._structured)
+        C._client, C._structured = (lambda: (object(), None)), fake_structured
+        try:
+            status, answer, _ = self.call("POST", "/v1/ask", {"question": "How do players score by AI difficulty?"},
+                                          key="read-key")
+            # Query Studio's Ask: the same door, then the SQL it wrote run again through /v1/query
+            status2, ran, _ = self.call("POST", "/v1/query", {"sql": answer["sql"]}, key="admin-key")
+        finally:
+            C._client, C._structured = real
+        self.assertEqual((status, answer["rows"]), (200, [["Medium", 1, 12.0]]))
+        self.assertEqual((status2, ran["rows"]), (200, [["Medium", 1, 12.0]]))
+        self.assertEqual(len(sent), 2)
+        text = "\n".join(sent)
+        self.assertIn("client_errors", text)                 # the new tables are in the schema Claude is shown
+        for forbidden in ("distinct_id", "zq-player-7", "player_id"):
+            self.assertNotIn(forbidden, text, forbidden)
+        # the ids exist in events.db: the door is what keeps them out (negative control of the assertion itself)
+        self.assertEqual(self.app.store.db.execute("SELECT COUNT(*) FROM events WHERE distinct_id='zq-player-7'").fetchone()[0], 4)
+        self.assertNotIn("zq-player-7", "\n".join(sqlite3.connect(self.app.agg).iterdump()))
+
+
+
+class ClaudeWithoutAKey(unittest.TestCase):
+    """2026-11-07: the VM's self-update refused #1789 because its venv has the anthropic SDK and no key. Newer SDKs build
+    a client without a key and raise TypeError only when the request is sent, which nothing caught, so the nightly job
+    died before marking itself done. Each of the three guards is held here on its own."""
+
+    def setUp(self):
+        import types
+        self.saved = sys.modules.get("anthropic")
+
+        class _Err(Exception):
+            pass
+
+        class Keyless:
+            api_key = None
+            auth_token = None
+
+            class beta:
+                class messages:
+                    @staticmethod
+                    def create(**_):
+                        raise TypeError("Could not resolve authentication method")
+
+        fake = types.ModuleType("anthropic")
+        fake.Anthropic = Keyless
+        fake.RateLimitError = fake.APIStatusError = fake.APIConnectionError = _Err
+        sys.modules["anthropic"] = fake
+        self.keyless = Keyless
+
+    def tearDown(self):
+        if self.saved is None:
+            sys.modules.pop("anthropic", None)
+        else:
+            sys.modules["anthropic"] = self.saved
+
+    def test_a_client_without_a_key_is_off(self):
+        client, why = C._client()
+        self.assertIsNone(client)
+        self.assertIn("ANTHROPIC_API_KEY", why)
+
+    def test_an_unexpected_error_from_the_sdk_is_a_reason_not_a_crash(self):
+        parsed, why = C._structured(self.keyless(), "m", "low", "sys", "user", {"type": "object"})
+        self.assertIsNone(parsed)
+        self.assertIn("TypeError", why)
+
+    def test_the_nightly_job_survives_a_failing_read(self):
+        tmp = tempfile.mkdtemp()
+        app = A.App(dict(A.DEFAULTS, data_dir=tmp, extra_events=r67_extra()))
+        real = C.write_digest
+
+        def boom(*_):
+            raise TypeError("Could not resolve authentication method")
+        C.write_digest = boom
+        try:
+            out = app.nightly()
+            self.assertIn("TypeError", out["digest"]["author"])
+            self.assertTrue(app.store.job("nightly"))       # marked done, so it does not rerun every few minutes
+        finally:
+            C.write_digest = real
+            app.store.db.close()
+            shutil.rmtree(tmp)
+
+
 if __name__ == "__main__":
     unittest.main()

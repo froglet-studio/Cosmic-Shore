@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(27, values.Length,
+            Assert.AreEqual(28, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -64,6 +64,7 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Honeyguide, 23)]
         [TestCase(VesselClassType.Meerkat, 28)]
         [TestCase(VesselClassType.TigerMoth, 29)]
+        [TestCase(VesselClassType.Swordfish, 30)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -188,8 +189,9 @@ namespace CosmicShore.Tests
             // 75 LanternRun's, both in flight).
             // 71 -> 70 on 2026-11-01: WaystationPrototype (76) folded into Waystation (58); 76 is retired and reserved.
             // 70 -> 71 on 2026-11-01: LanternRun (75), the Angler's Time race.
+            // 71 -> 72 on 2026-11-07: Thornline (79), the Shrike's Time race (78 was SpeedPainter's on its branch).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(71, values.Length,
+            Assert.AreEqual(72, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -235,6 +237,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.ScarabRally, 72)]
         [TestCase(GameModes.SerpentTime, 73)]
         [TestCase(GameModes.BrittleStarTime, 74)]
+        [TestCase(GameModes.Thornline, 79)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

@@ -953,6 +953,13 @@ slings** (AIPilot writes no trigger) and races at cruise — an autopilot sling 
 Grizzly Time's scene). See `_Scripts/Controller/Arcade/THRESHERTIME.md`. Authored headless — not yet
 run in the editor.
 
+`Thornline(79)` is the **Shrike's Time race** (2026-11-07): a chain of thorns (one big block each) with a ring at
+the middle of every leg, raced with the Void Sling (one second at any distance, then the reload; x1.6 docked on a plain
+thorn, x2.5 on super-shielded). I2 adds plain thorns and rim-line Time crystals, I3 snipes through two rings, I4 the
+smallest thorns. Every peer rebuilds the thorns from the broadcast rings. `ThornlineController : GateRaceController`,
+`ThornlineCourse`, `ThornlineCourseTests` (offline: `Tools/Build/thornline_course_harness/`), generator
+`author_thornline_assets.py` on `hull_time_race.py`. See `_Scripts/Controller/Arcade/THORNLINE.md`. Authored headless.
+
 `ScarabRally(72)`, `SerpentTime(73)` and `BrittleStarTime(74)` are **Time races for three hulls that had none**
 (Garrett, 2026-10-27: "make every vessel's time game very fun"). Each one is a `GateRaceController` race with a
 `RaceGateTurnMonitor`, and all three are authored by one shared helper, `Tools/Build/hull_time_race.py`, with one
@@ -960,8 +967,14 @@ spec file each (`author_scarab_rally_assets.py`, `author_serpent_time_assets.py`
 - **Scarab Rally** is `SwitchbackController`'s open walk (24 rings, with I3 walls and I4 danger prisms), cut by
   `ScarabRallyCourse` for the Scarab's throttle, drift and juke. It has no ball; the ball game, Scarab Scramble, is
   now the Scarab's Mass card (`ModeGenre`).
-- **Serpent Time** and **Brittle Star Time** use Thresher Time's shape (8 rings x 2 laps on the shared
-  `HeadlongCircuit`), cut against a full pellet stack's ~100 u circle and Speed Mode's ~145 u circle.
+- **Serpent Time** uses Thresher Time's shape (8 rings x 2 laps on the shared `HeadlongCircuit`), cut against a full
+  pellet stack's ~100 u circle.
+- **Brittle Star Time is four movement questions, one per intensity** (Shombith, 2026-11-06; `BrittleStarTimeCourse`):
+  I1 Gearbox (Headlong's solver: hold Speed Mode or shift down), I2 Feather slalom (a weave between the cruise circle and
+  Speed Mode's: tap A for a speed between), I3 Coast-in hairpins (no brake: let go of Speed Mode ~106 u early and coast
+  in), I4 Corkscrew (a coil only a rolling Speed Mode holds; the card's `StartingElements` start I4 at Time 5, where
+  Speed Roll is live). 8 rings x 2 laps on every rung; its tests run offline in
+  `Tools/Build/brittle_star_time_course_harness/`.
 - **Serpent Time (shown as Serpentine since 2026-10-31) is the dirty race** (Shombith, 2026-10-27, `Docs/Studios/SERPENT_TIME.md`): each gate is ONE ring
   (72 / 60 / 50 / 42 u at I1-I4) closed by a mode-laid shape (`SerpentineGate`: Coil, Maw, Iris) with exits to thread
   and a gold core that, broken, disintegrates it; 48 regrowing debris prisms round every gate feed Seed Walls, the
@@ -1381,9 +1394,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── SkimRaceController              — crystal race (crystals drawn as race rings), deterministic track, golf scoring
         ├── JoustController      — collision tracking, golf scoring
         ├── ScurryController — minimal (1 round, 1 turn)
-        ├── AstroLeagueController             — hypersea soccer, an ARENA card seating Rhino, Scarab and Squirrel (`ArcadeGameAstroLeague.asset` `Vessels`, listed in `ArenaGames`; the Rhino strikes on the blade, the other two play through their own kit — `ASTROLEAGUE.md`), server-simulated ball, golden goal
+        ├── AstroLeagueController             — hypersea soccer, an ARENA card seating Swordfish (the Rhino until the 2026-11-07 split), Scarab and Squirrel (`ArcadeGameAstroLeague.asset` `Vessels`, listed in `ArenaGames`; the Rhino strikes on the blade, the other two play through their own kit — `ASTROLEAGUE.md`), server-simulated ball, golden goal
         ├── BroodRushController             — nucleus-control fauna-wave race, brood scoring
-        ├── CleaveController                      — Rhino-only slicing race; four unrelated arenas, one per intensity
+        ├── CleaveController                      — Swordfish-only slicing race (the Rhino's until the sword split off, 2026-11-07); four unrelated arenas, one per intensity
         └── RampageController                 — Dolphin-only destruction race (Scurry's destructive analog), prisms-destroyed scoring
         └── WildlifeLiberationController       — Sparrow-only three-cage hunt, ecology-scored (creatures killed)
         └── DogFightController                  — Sparrow-only gun duel in the Boneyard; first DOMAIN to the gunnery-point target
@@ -1396,6 +1409,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         └── GateRaceController (abstract)         — the shared gate-race platform: course broadcast, rings, crossing detection, the owner-detects/server-records round trip, AI steering, final scores. A subclass supplies its NAME, its COURSE, whether that course WRAPS, and how many rings at the front are a LEAD-IN the laps skip (`LeadInGates`, default 0 — a closed circuit cannot start fairly on its own). It also offers **`OnServerTick`** — a named hook rather than a `virtual Update`, because `Update` is a Unity MESSAGE and a subclass declaring its own would HIDE the base's and take crossing detection down with it, silently (Waystation's autopilot fold is its one caller)
             ├── SwitchbackController              — Dolphin-only gate race; an OPEN chain flown once
             │   └── ScarabRallyController         — Scarab-only ring race (the Scarab's Time card, no ball); Switchback's walk cut for throttle, drift and juke
+            │   └── ThornlineController           — Shrike-only sling race (the Shrike's Time card): thorn to thorn through a ring a leg
             ├── HeadlongController                — Rhino-only circuit race; a CLOSED loop flown in LAPS, every corner cut to the Rhino's flat-out turn radius
             ├── BreakwaterController              — Sparrow-only station race; a polar START GATE (the platform's one lead-in) plus a closed circuit of danger-woven dishes, fire/saw/thread. 202 lines: the course, the lead-in and the stations, and nothing else
             ├── SkeinController                   — Urchin-only cable race; the rings sit ON the arena's own rails, so the course is a thing you RIDE rather than fly between
@@ -1406,7 +1420,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
             ├── ThresherTimeController            — Thresher-only circuit race; Grizzly Time's octagon cut to the Thresher's 229u full-sling circle (plant, wind in, let go), 8 gates x 3 laps; AI races at cruise (never slings)
             ├── WrasseRunController               — the Wrasse and Grouper's circuit race; a ring counts only when the kite (the hull's IRingThreadProbe) threads it, 8 gates x 2 laps; Time loops fuel the Grouper's boosts
             ├── SerpentTimeController             — Serpentine: Serpent-only DIRTY circuit race; 8 gates x 2 laps, one ring a gate closed by a shape (Coil / Maw / Iris) with a gold core that disintegrates it felled by a hit to the heart, regrowing debris, a start behind gate 0, the cytoplasm as the race's current, a dirty AI
-            ├── BrittleStarTimeController         — Brittle Star-only circuit race; 8 gates x 2 laps cut against Speed Mode's ~145 u circle (0/1/2/3 corners it cannot hold)
+            ├── BrittleStarTimeController         — Brittle Star-only race; 8 gates x 2 laps, four movement rungs (Gearbox / Feather slalom / Coast-in hairpins / Corkscrew at Time 5)
             ├── LanternRunController            — Angler-only circuit race; 8 gates x 2 laps, two regrowing prism mass clusters a leg on each ring's axis (one per group): paint, throw, dash through the ring
             ├── RegattaController                 — the ARENA race: every playable hull, three domain-coloured super-shielded rails braided along a lapped circuit, a start line behind gate 0 (`IPlayerSpawnLine`); the grid balanced by the card's `StartingElements`
             └── WaystationController              — the Tiger Moth's Drop Tower race (since 2026-11-01: tower walls + hop autopilot added); before that the Butterfly-only migration race: an OPEN chain dealt into CLUSTERS (coils you weave) laid a FOLD apart, so the course is half flown and half teleported. A teleport threads NOTHING (`VesselTransformer.TeleportCount`), and an autopilot folds through the base's new `OnServerTick` seam

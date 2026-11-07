@@ -14,52 +14,66 @@
 <script src="theme.js"></script>
 <link rel="stylesheet" href="themes.css">
 <link rel="stylesheet" href="console.css">
+<link rel="stylesheet" href="notebook.css">
 </head>
 <body>
 <div class="sea" aria-hidden="true"><div class="sea-lines"><div class="sea-layer"></div><div class="sea-layer"></div><div class="sea-layer"></div></div></div>
 <div class="shell">
-  <nav class="rail" aria-label="Pages">
-    <div class="brand"><span class="lab">Froglet</span><span class="h3">Analytics</span><span class="strip" aria-hidden="true"></span></div>
-    <div class="navs">
-    <a class="nav" href="#overview" data-page="overview">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h6v6H3zM11 3h6v6h-6zM3 11h6v6H3zM11 11h6v6h-6z"/></svg>Overview</a>
-    <a class="nav" href="#players" data-page="players">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="7" r="3"/><path d="M2 17c0-3 2.2-5 5-5s5 2 5 5"/><circle cx="14" cy="6" r="2.5"/><path d="M13 11.5c2.8 0 5 1.8 5 5"/></svg>Players</a>
-    <a class="nav" href="#cohorts" data-page="cohorts">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h8M5 10h10M9 15h8"/></svg>Cohorts</a>
-    <a class="nav" href="#eras" data-page="eras">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14v12H3zM3 9h14M7 3v4M13 3v4"/></svg>Eras</a>
-    <a class="nav" href="#playtypes" data-page="playtypes">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 3v7l5 5"/></svg>Play types</a>
-    <a class="nav" href="#retention" data-page="retention">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M3 3v4h4"/></svg>Retention</a>
-    <a class="nav" href="#matches" data-page="matches">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17V9M8 17V4M13 17v-6M18 17V7"/></svg>Matches</a>
-    <a class="nav" href="#ftue" data-page="ftue">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17V3l12 4-12 4"/></svg>FTUE</a>
-    <a class="nav" href="#economy" data-page="economy">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l6 8-6 8-6-8z"/></svg>Economy</a>
-    <a class="nav" href="#social" data-page="social">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="6" cy="10" r="3"/><circle cx="14" cy="10" r="3"/></svg>Social</a>
-    <a class="nav" href="#health" data-page="health">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10h4l2-5 4 10 2-5h4"/></svg>Data health</a>
-    <a class="nav" href="#ask" data-page="ask">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14v9H8l-4 3v-3H3z"/></svg>Ask Claude</a>
-    <div class="admin-nav" id="admin-nav" hidden>
-      <span class="lab nav-group">Admin</span>
-      <a class="nav" href="#query" data-page="query">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h12v14H4zM7 7h6M7 10h6M7 13h3"/></svg>Query Studio</a>
-      <a class="nav" href="#dashboards" data-page="dashboards">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h6v8H3zM11 3h6v4h-6zM11 9h6v8h-6zM3 13h6v4H3z"/></svg>Dashboards</a>
-      <a class="nav" href="#erasure" data-page="erasure">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg>Erasure</a>
+  <button type="button" class="skip" id="skip">Skip to the page</button>
+  <nav class="rail" id="rail" aria-label="Pages">
+    <div class="rail-top">
+      <a class="brand" href="#overview" aria-label="Froglet Analytics, Overview"><span class="lab">Froglet</span><span class="h3">Analytics</span><span class="strip" aria-hidden="true"></span></a>
+      <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="rail-body"><span class="menu-icon" aria-hidden="true"><i></i><i></i><i></i></span><span id="menu-page">Menu</span></button>
     </div>
-    </div>
-    <div class="looks" id="looks" aria-label="Theme"></div>
-    <div class="who">
-      <span class="lab">Signed in</span>
-      <span class="small" id="who-name">Not signed in</span>
-      <button type="button" class="link" id="sign-out">Change key</button>
+    <div class="rail-body" id="rail-body">
+      <div class="navs">
+      <div class="nav-group" role="group" aria-labelledby="ng-players">
+        <span class="nav-head" id="ng-players">Players</span>
+        <a class="nav" href="#overview" data-page="overview"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h6v6H3zM11 3h6v6h-6zM3 11h6v6H3zM11 11h6v6h-6z"/></svg><span class="nav-text">Overview</span></a>
+        <a class="nav" href="#players" data-page="players"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="7" r="3"/><path d="M2 17c0-3 2.2-5 5-5s5 2 5 5"/><circle cx="14" cy="6" r="2.5"/><path d="M13 11.5c2.8 0 5 1.8 5 5"/></svg><span class="nav-text">Players</span></a>
+        <a class="nav" href="#cohorts" data-page="cohorts"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h8M5 10h10M9 15h8"/></svg><span class="nav-text">Cohorts</span></a>
+        <a class="nav" href="#eras" data-page="eras"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14v12H3zM3 9h14M7 3v4M13 3v4"/></svg><span class="nav-text">Eras</span></a>
+        <a class="nav" href="#retention" data-page="retention"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M3 3v4h4"/></svg><span class="nav-text">Retention</span></a>
+        <a class="nav" href="#sessions" data-page="sessions"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 5v5h4"/></svg><span class="nav-text">Sessions</span></a>
+      </div>
+      <div class="nav-group" role="group" aria-labelledby="ng-matches">
+        <span class="nav-head" id="ng-matches">Matches</span>
+        <a class="nav" href="#playtypes" data-page="playtypes"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 3v7l5 5"/></svg><span class="nav-text">Play types</span></a>
+        <a class="nav" href="#matches" data-page="matches"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17V9M8 17V4M13 17v-6M18 17V7"/></svg><span class="nav-text">Matches</span></a>
+        <a class="nav" href="#balance" data-page="balance"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M5 17h10M3 7h14M3 7l-1.5 5h5zM17 7l-1.5 5h5z"/></svg><span class="nav-text">Balance</span></a>
+        <a class="nav" href="#quits" data-page="quits"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3H3v14h5M12 6l4 4-4 4M16 10H7"/></svg><span class="nav-text">Quits</span></a>
+      </div>
+      <div class="nav-group" role="group" aria-labelledby="ng-game">
+        <span class="nav-head" id="ng-game">Game</span>
+        <a class="nav" href="#ftue" data-page="ftue"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17V3l12 4-12 4"/></svg><span class="nav-text">FTUE</span></a>
+        <a class="nav" href="#economy" data-page="economy"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l6 8-6 8-6-8z"/></svg><span class="nav-text">Economy</span></a>
+        <a class="nav" href="#social" data-page="social"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="6" cy="10" r="3"/><circle cx="14" cy="10" r="3"/></svg><span class="nav-text">Social</span></a>
+      </div>
+      <div class="nav-group" role="group" aria-labelledby="ng-health">
+        <span class="nav-head" id="ng-health">Health</span>
+        <a class="nav" href="#errors" data-page="errors"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l8 15H2zM10 8v4M10 14.5v.5"/></svg><span class="nav-text">Errors</span></a>
+        <a class="nav" href="#health" data-page="health"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10h4l2-5 4 10 2-5h4"/></svg><span class="nav-text">Data health</span></a>
+      </div>
+      <div class="nav-group" role="group" aria-labelledby="ng-claude">
+        <span class="nav-head" id="ng-claude">Claude</span>
+        <a class="nav" href="#ask" data-page="ask"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14v9H8l-4 3v-3H3z"/></svg><span class="nav-text">Ask Claude</span></a>
+        <a class="nav" href="#notebook" data-page="notebook"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2h11v16H5zM3 5h4M3 10h4M3 15h4M9 6h4M9 9h4"/></svg><span class="nav-text">Notebook</span></a>
+      </div>
+      <div class="nav-group admin-nav" role="group" aria-labelledby="ng-admin" id="admin-nav" hidden>
+        <span class="nav-head" id="ng-admin">Admin</span>
+        <a class="nav" href="#query" data-page="query"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h12v14H4zM7 7h6M7 10h6M7 13h3"/></svg><span class="nav-text">Query Studio</span></a>
+        <a class="nav" href="#dashboards" data-page="dashboards"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h6v8H3zM11 3h6v4h-6zM11 9h6v8h-6zM3 13h6v4H3z"/></svg><span class="nav-text">Dashboards</span></a>
+        <a class="nav" href="#erasure" data-page="erasure"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11"/></svg><span class="nav-text">Erasure</span></a>
+      </div>
+      </div>
+      <div class="rail-foot">
+        <div class="looks" id="looks" aria-label="Theme"></div>
+        <div class="who">
+          <span class="lab">Signed in</span>
+          <span class="small" id="who-name">Not signed in</span>
+          <button type="button" class="link" id="sign-out">Change key</button>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -67,19 +81,19 @@
     <header class="top">
       <div class="title">
         <span class="lab" id="eyebrow">Overview</span>
-        <h1 class="h1" id="page-title">Overview</h1>
+        <h1 class="h1" id="page-title" tabindex="-1">Overview</h1>
       </div>
-      <div class="filters" id="filters">
-        <div class="seg era" id="seg-era" hidden></div>
-        <div class="seg" role="group" aria-label="Build" id="seg-build"></div>
-        <div class="seg" role="group" aria-label="Range" id="seg-days"></div>
-        <div class="seg" role="group" aria-label="Play" id="seg-play" hidden></div>
-        <span class="small num" id="updated"></span>
-      </div>
+      <span class="small num updated" id="updated"></span>
     </header>
+    <div class="filters" id="filters" role="toolbar" aria-label="Filters">
+      <div class="seg era" id="seg-era" hidden></div>
+      <div class="seg" role="group" aria-label="Build" id="seg-build"></div>
+      <div class="seg" role="group" aria-label="Range" id="seg-days"></div>
+      <div class="seg" role="group" aria-label="Play" id="seg-play" hidden></div>
+    </div>
     <p class="small unfiltered" id="unfiltered" hidden></p>
     <p class="preview-note sls" id="preview-note" hidden></p>
-    <div id="page" class="page" aria-live="polite"></div>
+    <div id="page" class="page" aria-live="polite" aria-busy="false"></div>
   </main>
 </div>
 
@@ -89,12 +103,13 @@
     <h2 class="h2">Your read key</h2>
     <p class="small">Shombith gives each reader a key. It stays in this browser only.</p>
     <label class="lab" for="gate-key">Key</label>
-    <input id="gate-key" class="field sls" type="password" autocomplete="off" required>
+    <input id="gate-key" class="field sls" type="password" autocomplete="off" required autofocus>
     <p class="small danger" id="gate-error" hidden></p>
     <div class="row"><button class="btn sls default" type="submit">Sign in</button></div>
   </form>
 </div>
 
 <script src="console.js"></script>
+<script src="notebook.js"></script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
@@ -9,16 +10,24 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Hangar's ARTIFACTS tab (Docs/Pilots/ARTIFACTS.md, built on Shombith's 2026-10-26 tab): the vessel's artifact
-    /// slot along the top (<see cref="PilotArtifactCatalogSO.SlotsPerVessel"/>), and every artifact below
-    /// (<see cref="PilotArtifactCatalogSO.GetArtifactsFor(SO_Vessel, List{ArtifactSO})"/>). An artifact is a payload
-    /// transformation: the slotted one reshapes the payloads this vessel grabs. Each row shows whether the player holds it
-    /// and their four track levels (<see cref="PilotLoadoutStore.Levels"/>); a press on a held one slots it (replacing
-    /// the one there) or takes it out (<see cref="PilotLoadoutStore"/>). The header above the vessel names the slot
+    /// The Hangar's ARTIFACTS tab (Docs/Pilots/INVENTORY.md §2, Docs/Pilots/ARTIFACTS.md, built on Shombith's 2026-10-26
+    /// tab): the vessel's artifact slot along the top (<see cref="PilotArtifactCatalogSO.SlotsPerVessel"/>), and below it
+    /// every artifact the player holds that this vessel can carry. An artifact is a payload transformation: the slotted
+    /// one reshapes the payloads this vessel grabs. A press on a row slots that artifact (replacing the one there) or
+    /// takes it out (<see cref="PilotLoadoutStore.ToggleSlot"/>). The header above the vessel names the slot
     /// (<see cref="IHangarHeader"/>). A match reads the slot through <c>VesselPilotLoadout</c>.
     ///
-    /// <para>2026-10-27 (Garrett): the found ranks and the hull / fleet tags went with the numeric artifacts. Every
-    /// artifact is still free to hold (Shombith, 2026-10-26).</para>
+    /// <para><b>2026-11-07 (Garrett): every artifact is unique.</b> The rows are no longer the catalog's kinds but the
+    /// player's own artifacts (<see cref="PilotLoadoutStore.GetHoard"/>, <see cref="ArtifactRecord"/>), each rolled from
+    /// its own seed on top of a kind, so two rows can share a kind and still differ. A row is shown when its kind's
+    /// <see cref="ArtifactSO.Requirement"/> is met by the vessel (the kind is found from the artifact's id,
+    /// <see cref="PilotArtifactCatalogSO.TryGetArtifact"/>). Each row reads the artifact's name, the ONE element it
+    /// accepts and the one thing that element improves (<see cref="ArtifactRecord.Aspect"/>), and its attuned level, a
+    /// real number on the 0-10 band since feeding has diminishing returns (<see cref="ArtifactCurve"/>). Feeding happens on
+    /// the Ark's ARTIFACTS tab, not here. Since every row is held, the tag now marks the slotted one.</para>
+    ///
+    /// <para>The page has a fixed number of rows (eight in the prefab); a hoard with more compatible artifacts shows the
+    /// first ones in the order they arrived, plus the slotted one, which is always shown in its slot.</para>
     /// </summary>
     public class HangarArtifactsPage : MonoBehaviour, IHangarTabPage, IHangarHeader
     {
@@ -38,11 +47,11 @@ namespace CosmicShore.UI
             public CanvasGroup group;
             public KitButton button;
             public TMP_Text nameText;
-            [Tooltip("What the artifact does to a payload.")]
+            [Tooltip("What the artifact accepts and improves (lineTemplate).")]
             public TMP_Text lineText;
-            [Tooltip("The player's four track levels (levelsTemplate), or the not-held word.")]
+            [Tooltip("The attuned element and level (attunedTemplate).")]
             public TMP_Text valueText;
-            [Tooltip("Held or not.")]
+            [Tooltip("The slotted word while it is slotted on this vessel.")]
             public TMP_Text tagText;
             [Tooltip("Lit while the artifact is slotted on this vessel.")]
             public Image underline;
@@ -58,12 +67,14 @@ namespace CosmicShore.UI
         [SerializeField] private string emptySlotWord = "";
         [Tooltip("An empty slot's line.")]
         [SerializeField] private string emptySlotLine = "";
-        [Tooltip("A row's tag while the player holds the artifact.")]
-        [SerializeField] private string heldWord = "";
-        [Tooltip("A row's value while the player does not hold the artifact.")]
-        [SerializeField] private string notHeldWord = "";
-        [Tooltip("The four track levels; {mass}, {space}, {time} and {charge} are filled in (0 to 10).")]
-        [SerializeField] private string levelsTemplate = "";
+        [Tooltip("A row's tag while the artifact is slotted on this vessel.")]
+        [SerializeField] private string slottedWord = "SLOTTED";
+        [Tooltip("Element names, by Element value (None, Charge, Mass, Space, Time, Omni).")]
+        [SerializeField] private string[] elementNames = { "", "Charge", "Mass", "Space", "Time", "Omni" };
+        [Tooltip("A row's line; {element}, {aspect}, {kind} and {serial} are filled in.")]
+        [SerializeField] private string lineTemplate = "Feed {element} to raise {aspect}";
+        [Tooltip("An artifact's attuned level; {element}, {aspect} and {level} (0 to 10) are filled in.")]
+        [SerializeField] private string attunedTemplate = "{element} {level}";
 
         [Header("Header")]
         [Tooltip("The header's kicker; {vessel} and {slots} are filled in. Upper-cased.")]
@@ -72,9 +83,11 @@ namespace CosmicShore.UI
         [Tooltip("The header's line; {slotted}, {slots} and {held} are filled in.")]
         [SerializeField] private string headerLineTemplate = "";
 
-        readonly List<ArtifactSO> _artifacts = new();
+        /// <summary>The held artifacts this vessel can carry, in hoard order.</summary>
+        readonly List<ArtifactRecord> _artifacts = new();
+        readonly List<ArtifactRecord> _hoard = new();
         readonly List<string> _slotted = new();
-        readonly List<ArtifactSO> _shown = new();
+        readonly List<ArtifactRecord> _shown = new();
         string _vesselName;
         SO_Vessel _vessel;
         VesselClassType _vesselClass = VesselClassType.Any;
@@ -109,8 +122,6 @@ namespace CosmicShore.UI
             _vessel = vessel;
             _vesselName = vessel ? vessel.CardName : string.Empty;
             _vesselClass = vessel ? vessel.Class : VesselClassType.Any;
-            if (catalog) catalog.GetArtifactsFor(vessel, _artifacts);
-            else _artifacts.Clear();
             Refresh();
         }
 
@@ -120,22 +131,18 @@ namespace CosmicShore.UI
         {
             kicker = title = line = string.Empty;
             if (!catalog || _vesselClass == VesselClassType.Any) return false;
-            int held = 0;
-            foreach (var a in _artifacts)
-                if (PilotLoadoutStore.Holds(a.Id)) held++;
-            string n = SlotCount.ToString();
+            string n = SlotCount.ToString(CultureInfo.InvariantCulture);
             kicker = TemplateText.Fill(headerKickerTemplate, "vessel", _vesselName, "slots", n).ToUpperInvariant();
             title = headerTitle;
-            line = TemplateText.Fill(headerLineTemplate, "slotted", _slotted.Count.ToString(), "slots", n, "held", held.ToString());
+            line = TemplateText.Fill(headerLineTemplate, "slotted", _shown.Count.ToString(CultureInfo.InvariantCulture),
+                "slots", n, "held", _artifacts.Count.ToString(CultureInfo.InvariantCulture));
             return true;
         }
 
         void Press(int index)
         {
             if (index < 0 || index >= _artifacts.Count || _vesselClass == VesselClassType.Any) return;
-            var a = _artifacts[index];
-            if (!PilotLoadoutStore.Holds(a.Id)) return;                   // not held: nothing to slot
-            PilotLoadoutStore.ToggleSlot(_vesselClass, a.Id, SlotCount);
+            PilotLoadoutStore.ToggleSlot(_vesselClass, _artifacts[index].Id, SlotCount);
         }
 
         void OnArtifactsChanged(VesselClassType vessel)
@@ -143,18 +150,30 @@ namespace CosmicShore.UI
             if (vessel == VesselClassType.Any || vessel == _vesselClass) Refresh();
         }
 
+        /// <summary>The held artifacts whose kind this vessel can carry, into <see cref="_artifacts"/>.</summary>
+        void CollectCompatible()
+        {
+            _artifacts.Clear();
+            if (!catalog || !_vessel) return;
+            PilotLoadoutStore.GetHoard(_hoard);
+            foreach (var a in _hoard)
+                if (Fits(a)) _artifacts.Add(a);
+        }
+
+        bool Fits(ArtifactRecord a) =>
+            a != null && catalog && catalog.TryGetArtifact(a.Kind(), out var kind)
+            && kind.Requirement != null && kind.Requirement.IsMetBy(_vesselClass, _vessel ? _vessel.Keywords : null);
+
         void Refresh()
         {
+            CollectCompatible();
             _slotted.Clear();
             if (_vesselClass != VesselClassType.Any) PilotLoadoutStore.GetSlotted(_vesselClass, _slotted);
-            // A slotted id the catalog no longer has, or one beyond the slot count, is not shown (and not lost).
-            var shown = _shown;
-            shown.Clear();
+            // A slotted id no longer held, one this vessel cannot carry, or one beyond the slot count is not shown (and
+            // not lost).
+            _shown.Clear();
             foreach (var id in _slotted)
-            {
-                if (!catalog || !catalog.TryGetArtifact(id, out var a)) continue;
-                if (_artifacts.Contains(a) && shown.Count < SlotCount) shown.Add(a);
-            }
+                if (PilotLoadoutStore.TryGetArtifact(id, out var a) && Fits(a) && _shown.Count < SlotCount) _shown.Add(a);
 
             var selection = UITheme.Resolve(null, UIColorToken.Selection);
             for (int i = 0; i < slots.Length; i++)
@@ -164,10 +183,10 @@ namespace CosmicShore.UI
                 bool used = i < SlotCount;
                 KitVisibility.SetShown(s.group, used);
                 if (!used) continue;
-                var a = i < shown.Count ? shown[i] : null;
-                if (s.nameText) s.nameText.text = a ? a.DisplayName : emptySlotWord;
-                if (s.valueText) s.valueText.text = a ? LevelsLine(a) : emptySlotLine;
-                if (s.fill) s.fill.color = a ? selection : Color.clear;
+                var a = i < _shown.Count ? _shown[i] : null;
+                if (s.nameText) s.nameText.text = a != null ? DisplayName(a) : emptySlotWord;
+                if (s.valueText) s.valueText.text = a != null ? AttunedLine(a) : emptySlotLine;
+                if (s.fill) s.fill.color = a != null ? selection : Color.clear;
             }
 
             for (int i = 0; i < rows.Length; i++)
@@ -178,23 +197,46 @@ namespace CosmicShore.UI
                 KitVisibility.SetShown(r.group, used);
                 if (!used) continue;
                 var a = _artifacts[i];
-                bool held = PilotLoadoutStore.Holds(a.Id);
-                if (r.nameText) r.nameText.text = a.DisplayName;
-                if (r.lineText) r.lineText.text = a.Description;
-                if (r.valueText) r.valueText.text = held ? LevelsLine(a) : notHeldWord;
-                if (r.tagText) r.tagText.text = held ? heldWord : string.Empty;
-                if (r.underline) r.underline.color = shown.Contains(a) ? selection : Color.clear;
-                if (r.group) r.group.alpha = held ? 1f : 0.55f;
+                bool slotted = IsShown(a);
+                if (r.nameText) r.nameText.text = DisplayName(a);
+                if (r.lineText) r.lineText.text = Line(a);
+                if (r.valueText) r.valueText.text = AttunedLine(a);
+                if (r.tagText) r.tagText.text = slotted ? slottedWord : string.Empty;
+                if (r.underline) r.underline.color = slotted ? selection : Color.clear;
+                if (r.group) r.group.alpha = 1f;
             }
             KitVisibility.SetShown(emptyGroup, _artifacts.Count == 0);
             HeaderChanged?.Invoke();
         }
 
-        string LevelsLine(ArtifactSO a)
+        bool IsShown(ArtifactRecord a)
         {
-            var l = PilotLoadoutStore.Levels(a.Id);
-            return TemplateText.Fill(levelsTemplate, "mass", l.Mass.ToString(), "space", l.Space.ToString(),
-                "time", l.Time.ToString(), "charge", l.Charge.ToString());
+            for (int i = 0; i < _shown.Count; i++)
+                if (_shown[i].Id == a.Id) return true;
+            return false;
+        }
+
+        string DisplayName(ArtifactRecord a)
+        {
+            if (!string.IsNullOrEmpty(a.Name)) return a.Name;
+            return catalog && catalog.TryGetArtifact(a.Kind(), out var kind) ? kind.DisplayName : a.Serial();
+        }
+
+        string Line(ArtifactRecord a)
+        {
+            string kindName = catalog && catalog.TryGetArtifact(a.Kind(), out var kind) ? kind.DisplayName : string.Empty;
+            return TemplateText.Fill(lineTemplate, "element", ElementName(a.Element), "aspect", a.Aspect ?? string.Empty,
+                "kind", kindName, "serial", a.Serial());
+        }
+
+        string AttunedLine(ArtifactRecord a) =>
+            TemplateText.Fill(attunedTemplate, "element", ElementName(a.Element), "aspect", a.Aspect ?? string.Empty,
+                "level", a.AttunedLevel().ToString("0.00", CultureInfo.InvariantCulture));
+
+        string ElementName(Element element)
+        {
+            int i = (int)element;
+            return i >= 0 && i < elementNames.Length ? elementNames[i] : string.Empty;
         }
     }
 }

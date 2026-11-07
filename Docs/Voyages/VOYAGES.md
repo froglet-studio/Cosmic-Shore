@@ -308,6 +308,11 @@ prey on them:
   as co-op where their jobs allow it, and a faction's own rival factions (a pirate faction and the bounty hunters
   hunting it) are what the hostile pairings feed on.
 
+**Built 2026-11-07** ([`Docs/Pilots/INVENTORY.md`](../Pilots/INVENTORY.md) §3): the person record (`PilotRecord`: name,
+human plus two animals, faction, homeworld, backstory, chronicle), founding factions per type with ids, captain and
+allies (`AccountInventory`), and the job board reading the player's real crew. Not built: the backend faction roster
+(optimal size, spawning), emissaries, ranks, and any UI to promote a captain.
+
 What the old Port boards in Figma (*Cosmic Shore for Alpha*, page *UI for vLater*, 2024) already drew for factions,
 for reference: a **primary** faction and **ally** faction slots (buy a slot, replace a faction, "You will always be
 able to rejoin this faction later"); faction **recruiters** who notice you when you upgrade classes and set high

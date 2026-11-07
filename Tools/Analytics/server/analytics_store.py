@@ -13,7 +13,10 @@ import json
 import os
 import re
 import secrets
+import shutil
 import sqlite3
+import tarfile
+import tempfile
 import threading
 import time
 from datetime import date, datetime, timedelta, timezone
@@ -62,7 +65,7 @@ MAX_FILTERS_BYTES = 8 * 1024
 # Saved views ("presets", Shombith 2026-11-06: "save our own view as well and make it public"): a chart's switches and
 # the page's filters under a name. Ownership is by key name; a private one is its owner's alone.
 PRESET_PAGES = ("overview", "players", "cohorts", "eras", "playtypes", "retention", "matches", "ftue", "economy",
-                "social", "health", "query", "dashboards")
+                "social", "health", "query", "dashboards", "sessions", "balance", "quits", "errors")
 PRESET_SETTINGS = ("form", "measure", "by", "over")
 PRESET_FILTERS = ("build", "days", "play", "era")
 PRESET_PLAYS = ("all", "solo_vs_ai", "solo", "multi")
@@ -302,7 +305,56 @@ CREATE TABLE plays(              -- one row per (player, match) from game_starte
                                  -- teams | teams_vs_ai | multi_unrecorded (2+ humans, no domain fields: older builds) |
                                  -- solo_alone | solo_vs_1_ai | solo_vs_2_ai | solo_vs_3plus_ai | solo_with_ai_team
     humans_mine INTEGER, humans_other INTEGER,   -- humans on this player's domain (them included) / on every other;
-    ai_mine INTEGER, ai_other INTEGER            -- AI on it / on every other. NULL: the build did not send it (before 2026-11-07)
+    ai_mine INTEGER, ai_other INTEGER,           -- AI on it / on every other. NULL: the build did not send it (before 2026-11-07)
+    -- Balance and quits (round 67): from game_completed / match_abandoned of builds after 2026-11-07; NULL before
+    score REAL,                  -- the player's own final score (game_completed.score)
+    placement INTEGER,           -- 1 = best, among every player in the match, AI included
+    players_in_match INTEGER,    -- players in the match, AI included
+    ai_difficulty TEXT,          -- the AI skill the opponents were set to, as the game names it
+    behind_by REAL,              -- gap to the winner's score at the end; 0 when the player won
+    abandoned INTEGER,           -- 1: match_abandoned arrived for this play (and no game_completed)
+    abandon_reason TEXT,         -- quit_to_menu | app_quit | disconnect
+    abandon_elapsed REAL,        -- seconds into the match when they left
+    quit_tracked INTEGER         -- 1: this play's build and version sends match_abandoned (the quit rate counts only these)
+);
+CREATE TABLE sessions(           -- one row per app session (session_started, builds after 2026-11-07); NO player id
+    day TEXT, build_kind TEXT, platform TEXT, imported INTEGER,
+    launch_kind TEXT,            -- cold | resume (back after 30+ min in the background)
+    seconds REAL                 -- session_ended.session_seconds, else the gap to its session_ended; NULL: not ended
+);
+CREATE TABLE session_players(day TEXT, build_kind TEXT, imported INTEGER, players INTEGER);  -- players with a session that day
+CREATE TABLE active_rolling(     -- DAU, WAU (7 days to that day) and MAU (30 days) from ANY event, so the PostHog history too
+    day TEXT, build_kind TEXT,   -- or '*': every build, each player once
+    source TEXT,                 -- any | imported | live
+    dau INTEGER, wau INTEGER, mau INTEGER
+);
+CREATE TABLE invites(            -- party invites by the day sent, followed through; counts only
+    day TEXT, build_kind TEXT, imported INTEGER,
+    method TEXT,                 -- invite_id: matched by the invite's own id (builds after 2026-11-07) | time: older
+                                 -- builds, the invitee's received and joined within minutes of the send
+    sent INTEGER, received INTEGER, joined INTEGER,
+    played_together INTEGER,     -- inviter and invitee started the same match within 24 h of the join
+    joined_mature INTEGER,       -- joins 7+ days old (the day-7 step counts only these)
+    invitee_d7 INTEGER           -- of those, the invitee was seen on any of the 7 days after the join
+);
+CREATE TABLE invite_roles(       -- inviters (from their first joined invite) and invitees (from their first join)
+    day TEXT, build_kind TEXT, imported INTEGER, role TEXT,   -- inviter | invitee
+    players INTEGER, mature INTEGER, returned_d1 INTEGER, returned_d7 INTEGER   -- d1/d7 of the mature ones
+);
+CREATE TABLE frustration(        -- player-days with a repeated_game_fail, followed: a quit within 1 h, then gone 7 days
+    day TEXT, build_kind TEXT, imported INTEGER,
+    failed INTEGER, quit_after INTEGER, quit_mature INTEGER, gone_7d INTEGER,
+    failed_mature INTEGER, failed_gone_7d INTEGER          -- every fail 7+ days old, and of those gone 7 days
+);
+CREATE TABLE client_errors(      -- client_exception per day; NO message text, only its hash
+    day TEXT, build_kind TEXT, imported INTEGER, platform TEXT, app_version TEXT, exception_type TEXT,
+    top_frame TEXT, scene TEXT, message_hash TEXT,
+    events INTEGER,              -- client_exception rows
+    occurrences INTEGER,         -- sum of their count (repeats folded in by the game)
+    players INTEGER              -- players that day with this row's error
+);
+CREATE TABLE client_error_signatures(  -- each (type, frame, hash) ever: when it was first and last seen
+    exception_type TEXT, top_frame TEXT, message_hash TEXT, first_day TEXT, last_day TEXT, events INTEGER
 );
 CREATE TABLE daily_events(       -- rows received per day, build, event and source (imported 1 = PostHog history)
     day TEXT, build_kind TEXT, event TEXT, rows INTEGER, near_dup_rows INTEGER, players INTEGER, imported INTEGER
@@ -361,7 +413,8 @@ CREATE TABLE player_counts(      -- distinct players per span, counted once each
     source TEXT,                 -- any | imported (PostHog history) | live; an era's spans carry the era's source
     dim TEXT, key TEXT,          -- none/'' | play_group | play_type | platform | country | game_mode | vessel_class | intensity
                                  -- | element | setup (the match setup) | freestyle/'entered' (entered the Toybox)
-                                 -- | freestyle_vessel (a vessel flown there)
+                                 -- | freestyle_vessel (a vessel flown there) | ai_difficulty (from game_completed)
+                                 -- | error/'any' and error_frame (sent a client_exception; its top frame)
     players INTEGER,             -- players active in the span with that key (a player on two platforms counts in both)
     new_players INTEGER          -- of those, players whose first day (in this source) falls inside the span
 );
@@ -525,6 +578,90 @@ def setup_of(props):
     opponents = next((n for n in (ai_other, _count(props.get("player_count_ai")), _count(props.get("ai_count")))
                       if n is not None), 0)
     return (("solo_alone", "solo_vs_1_ai", "solo_vs_2_ai")[opponents] if opponents < 3 else "solo_vs_3plus_ai",) + counts
+
+
+BACKUP_MEMBERS = ("events.db", "aggregates.db")
+# Shombith, 2026-11-07: off-VM copies are the Oracle boot-volume backup policy (daily 05:00 UTC, 5 kept), set in the
+# Oracle console with no key on the VM; the server cannot see them.
+BACKUP_OFF_VM = "Oracle boot-volume policy (check in the Oracle console)"
+
+
+def restore_backup(archive, data_dir):
+    """Put a backup made by Store.backup back into data_dir. Each database in it is checked (PRAGMA integrity_check)
+    before anything moves; the databases it replaces are kept in <data_dir>/before-restore-<time>/. Stop the server
+    first. Returns {restored: [names], kept_in: folder}. Raises Invalid for an archive that is not one of ours."""
+    if not os.path.isfile(archive):
+        raise Invalid(f"no file {archive}")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    work = tempfile.mkdtemp(prefix=".restore-", dir=data_dir)
+    try:
+        with tarfile.open(archive, "r:gz") as tar:
+            members = tar.getmembers()
+            names = [m.name for m in members]
+            if "events.db" not in names or any(n not in BACKUP_MEMBERS for n in names) or \
+                    any(not m.isfile() for m in members):
+                raise Invalid("not a Froglet Analytics backup (it must hold events.db, and aggregates.db at most)")
+            for m in members:
+                with tar.extractfile(m) as src, open(os.path.join(work, m.name), "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+        for name in names:
+            db = sqlite3.connect(os.path.join(work, name))
+            try:
+                ok = db.execute("PRAGMA integrity_check").fetchone()[0]
+            except sqlite3.DatabaseError as exc:
+                ok = str(exc)
+            finally:
+                db.close()
+            if ok != "ok":
+                raise Invalid(f"{name} in the backup fails its integrity check: {ok}")
+        kept = os.path.join(data_dir, f"before-restore-{stamp}")
+        os.makedirs(kept, exist_ok=True)
+        for name in BACKUP_MEMBERS:
+            for suffix in ("", "-wal", "-shm"):
+                path = os.path.join(data_dir, name + suffix)
+                if os.path.exists(path):
+                    os.replace(path, os.path.join(kept, name + suffix))
+        for name in names:
+            os.replace(os.path.join(work, name), os.path.join(data_dir, name))
+            os.chmod(os.path.join(data_dir, name), 0o600)
+        return {"restored": names, "kept_in": kept}
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def _label(value, limit=40):
+    """A short text value from an event (a reason, a difficulty name, a frame), else None. Numbers become text."""
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        value = str(int(value)) if float(value).is_integer() else str(value)
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.strip()[:limit]
+
+
+def difficulty_of(*props_list):
+    """The AI difficulty the opponents were set to, as the game names it: game_completed's, else match_abandoned's,
+    else game_started's. None when no event of the play sent one (every build before 2026-11-07)."""
+    for props in props_list:
+        found = _label((props or {}).get("ai_difficulty"))
+        if found:
+            return found
+    return None
+
+
+DIFFICULTY_ORDER = ("easy", "normal", "medium", "hard", "expert", "insane")
+
+
+def difficulty_rank(name):
+    """Sort key for difficulty names: the usual words in order, then numbers, then the rest by name."""
+    text = str(name or "")
+    low = text.lower()
+    if low in DIFFICULTY_ORDER:
+        return (0, DIFFICULTY_ORDER.index(low), "")
+    if text.isdigit():
+        return (1, int(text), "")
+    return (2 if text not in ("unknown", "") else 3, 0, low)
 
 
 class Store:
@@ -1020,18 +1157,50 @@ class Store:
         return gone
 
     def backup(self, keep=14):
+        """A consistent snapshot of events.db and aggregates.db (SQLite's online backup API, so ingest and the rebuild
+        may keep running), packed into one gzipped tar in <data_dir>/backups/ (600). The newest `keep` are kept.
+        Returns (path, bytes). `restore_backup` puts one back."""
         folder = os.path.join(self.data_dir, "backups")
         os.makedirs(folder, exist_ok=True)
-        target = os.path.join(folder, "events-" + datetime.now(timezone.utc).strftime("%Y%m%d") + ".db")
-        dest = sqlite3.connect(target)
-        with self.lock:
-            self.db.backup(dest)
-        dest.close()
-        os.chmod(target, 0o600)
-        old = sorted(f for f in os.listdir(folder) if f.startswith("events-") and f.endswith(".db"))
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")     # sorts by time; two in a second differ
+        target = os.path.join(folder, f"froglet-analytics-{stamp}.tar.gz")
+        work = tempfile.mkdtemp(prefix=".snapshot-", dir=folder)
+        try:
+            names = []
+            for name, source in (("events.db", None), ("aggregates.db", self.agg_path)):
+                if source is not None and not os.path.exists(source):
+                    continue                            # no rebuild yet: the raw store alone
+                dest = sqlite3.connect(os.path.join(work, name))
+                if source is None:
+                    with self.lock:
+                        self.db.backup(dest)
+                else:
+                    src = sqlite3.connect(f"file:{source}?mode=ro", uri=True)
+                    src.backup(dest)
+                    src.close()
+                dest.close()
+                names.append(name)
+            partial = target + ".part"
+            with tarfile.open(partial, "w:gz") as tar:
+                for name in names:
+                    tar.add(os.path.join(work, name), arcname=name)
+            os.chmod(partial, 0o600)
+            os.replace(partial, target)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+        old = sorted(f for f in os.listdir(folder) if f.startswith("froglet-analytics-") and f.endswith(".tar.gz"))
         for name in old[:-keep]:
             os.remove(os.path.join(folder, name))
-        return target
+        return target, os.path.getsize(target)
+
+    def backups(self):
+        """The local backups, newest first: [{file, bytes, ms}]."""
+        folder = os.path.join(self.data_dir, "backups")
+        if not os.path.isdir(folder):
+            return []
+        found = [f for f in os.listdir(folder) if f.startswith("froglet-analytics-") and f.endswith(".tar.gz")]
+        return [{"file": f, "bytes": os.path.getsize(os.path.join(folder, f)),
+                 "ms": int(os.path.getmtime(os.path.join(folder, f)) * 1000)} for f in sorted(found, reverse=True)]
 
     def mark_job(self, name, detail=""):
         with self.lock:
@@ -1070,8 +1239,16 @@ class Store:
     def health_facts(self):
         last = self.db.execute("SELECT MAX(received_ms) FROM events").fetchone()[0]
         erasures = self.db.execute("SELECT COUNT(*), MAX(done_ms) FROM erasures").fetchone()
+        local = self.backups()
+        upload = self.job("backup_upload")
         return {"last_event_ms": last, "erasures_done": erasures[0], "last_erasure_ms": erasures[1],
-                "backup": self.job("backup"), "nightly": self.job("nightly"), "rebuild": self.job("rebuild")}
+                "backup": self.job("backup"), "nightly": self.job("nightly"), "rebuild": self.job("rebuild"),
+                # where the backups are: the newest local copy (the file name and size only, never a path or a key)
+                "backups": {"local_last_ms": local[0]["ms"] if local else None,
+                            "local_file": local[0]["file"] if local else None,
+                            "local_bytes": local[0]["bytes"] if local else None, "local_kept": len(local),
+                            "off_vm": BACKUP_OFF_VM,
+                            "bucket_upload": upload}}
 
     # ---------------------------------------------------------------- players (raw data; profile readers only)
 
@@ -1335,6 +1512,16 @@ class Store:
                 "SELECT distinct_id, match_id, ts_ms, props FROM events "
                 "WHERE event='game_completed' AND match_id IS NOT NULL ORDER BY ts_ms"):
             dones.setdefault((distinct_id, match_id), (ts, json.loads(props)))
+        quits = {}
+        for distinct_id, match_id, ts, props in reader.execute(
+                "SELECT distinct_id, match_id, ts_ms, props FROM events "
+                "WHERE event='match_abandoned' AND match_id IS NOT NULL ORDER BY ts_ms"):
+            quits.setdefault((distinct_id, match_id), (ts, json.loads(props)))
+        # The builds that send match_abandoned: a (build, version) from the first day it sent it or session_started
+        # (both arrive together, from the same builds). Only their plays count in the quit rate's denominator.
+        tracked_from = {(b, v): d for b, v, d in reader.execute(
+            "SELECT build_kind, COALESCE(app_version, ''), MIN(day) FROM events "
+            "WHERE event IN ('match_abandoned', 'session_started') GROUP BY 1, 2")}
 
         table = mode_elements()
         by_player = {}
@@ -1355,14 +1542,23 @@ class Store:
                 duration = as_float(done_props.get("duration_seconds"))
                 won = done_props.get("player_won")
                 element, second, element_source = element_of(props, table)
+                quit = quits.get((distinct_id, match_id)) if not done else None
+                quit_props = quit[1] if quit else {}
+                since = tracked_from.get((build, version or ""))
                 rows.append((match_id, day_of(ts), ts, build, platform, version, props.get("game_mode"),
                              as_int(props.get("intensity")), props.get("vessel_class"), play_type_of(props),
                              as_int(props.get("player_count_human")), as_int(props.get("player_count_ai")),
                              1 if done else 0, rematched, flight, duration,
                              (1 if won is True or won == "true" else 0) if done and won is not None else None,
                              max(0.0, duration - flight) if flight is not None and duration is not None else None,
-                             imported, country, element, second, element_source) + setup_of(props))
-        out.executemany(f"INSERT INTO plays VALUES({','.join('?' * 28)})", rows)
+                             imported, country, element, second, element_source) + setup_of(props) + (
+                             as_float(done_props.get("score")), _count(done_props.get("placement")) or None,
+                             _count(done_props.get("players_in_match")) or None,
+                             difficulty_of(done_props, quit_props, props),
+                             as_float(done_props.get("behind_by")),
+                             1 if quit else 0, _label(quit_props.get("reason")), as_float(quit_props.get("elapsed_seconds")),
+                             1 if since is not None and day_of(ts) >= since else 0))
+        out.executemany(f"INSERT INTO plays VALUES({','.join('?' * 37)})", rows)
         # which modes had no element (old names, modes with no genre): Data health lists them
         missing = {}
         for r in rows:
@@ -1430,7 +1626,18 @@ class Store:
         _rebuild_freestyle(reader, out)
         eras = [dict(id=r[0], start=r[1], end=r[2], source=r[3], builds=json.loads(r[4])) for r in reader.execute(
             "SELECT id, from_day, to_day, source, builds FROM eras ORDER BY position")]
-        _rebuild_spans(reader, out, starts, eras, table)
+        difficulty = {(r_player, r_match): r_diff for r_player, r_match, r_diff in (
+            (k[0], k[1], difficulty_of(v[1], (quits.get(k) or (0, {}))[1], starts[k][4]))
+            for k, v in dones.items() if k in starts)}
+        _rebuild_spans(reader, out, starts, eras, table, difficulty)
+        seen_any = {}
+        for player, day in reader.execute("SELECT distinct_id, day FROM events GROUP BY distinct_id, day"):
+            seen_any.setdefault(player, set()).add(day)
+        _rebuild_sessions(reader, out)
+        _rebuild_invites(reader, out, starts, seen_any)
+        _rebuild_frustration(reader, out, seen_any)
+        _rebuild_errors(reader, out)
+        out.execute("INSERT INTO meta VALUES('new_events', ?)", (json.dumps(new_event_health(reader)),))
         out.executemany("INSERT INTO rejects VALUES(?,?,?,?)",
                         reader.execute("SELECT day, reason, event, count FROM rejects").fetchall())
         out.executemany("INSERT INTO meta VALUES(?,?)", [("built_ms", str(now_ms()))])
@@ -1765,7 +1972,7 @@ def play_group_of(play_type):
     return PLAY_GROUP_OF.get(play_type, "multi")
 
 
-def _rebuild_spans(reader, out, starts, eras, table=None):
+def _rebuild_spans(reader, out, starts, eras, table=None, difficulty=None):
     """player_counts, cohort_weeks and cohort_days: distinct players per day, week, last-N-days window and era, split
     by platform, country, play type, mode, vessel and intensity, for every source (any / imported / live). Player ids
     are used here only to count each player once; nothing written to `out` carries one."""
@@ -1784,7 +1991,14 @@ def _rebuild_spans(reader, out, starts, eras, table=None):
              ("game_mode", str(props.get("game_mode") or "unknown")),
              ("vessel_class", str(props.get("vessel_class") or "unknown")),
              ("intensity", str(intensity) if intensity is not None else "unknown"),
-             ("element", element_of(props, table)[0] or "none"), ("setup", setup_of(props)[0])))
+             ("element", element_of(props, table)[0] or "none"), ("setup", setup_of(props)[0]),
+             ("ai_difficulty", (difficulty or {}).get((player, _match)) or "unknown")))
+    # client_exception: who sent one, and from which top frame (the Errors page's players affected)
+    for player, build, day, flag, frame in reader.execute(
+            "SELECT distinct_id, build_kind, day, received_ms = ts_ms, json_extract(props, '$.top_frame') FROM events "
+            "WHERE event = 'client_exception' AND near_dup = 0"):
+        act.setdefault(player, {}).setdefault(build, {}).setdefault(day, {}).setdefault(flag, set()).update(
+            (("error", "any"), ("error_frame", _label(frame, 160) or "unknown")))
     # Freestyle (the Toybox): who entered it, and which vessels they flew there (entered in, ended in, switched to)
     for player, build, day, flag, event, vessel, from_vessel in reader.execute(
             "SELECT distinct_id, build_kind, day, received_ms = ts_ms, event, json_extract(props, '$.vessel_class'), "
@@ -1797,7 +2011,9 @@ def _rebuild_spans(reader, out, starts, eras, table=None):
         if keys:
             act.setdefault(player, {}).setdefault(build, {}).setdefault(day, {}).setdefault(flag, set()).update(keys)
 
-    counts, weeks_out, days_out = {}, {}, {}
+    counts, weeks_out, days_out, rolling = {}, {}, {}, {}
+    today = date.fromisoformat(day_of(now_ms()))
+    oldest = (today - timedelta(days=400)).isoformat()
 
     def bump(span, x, build, source, keys, new):
         for dim, key in keys:
@@ -1822,6 +2038,26 @@ def _rebuild_spans(reader, out, starts, eras, table=None):
                 if not per_day:
                     continue
                 first, last = min(per_day), max(per_day)
+                # DAU / WAU / MAU per day: a player active on day a is in that day's WAU for 7 days, MAU for 30
+                in7, in30 = set(), set()
+                for day in per_day:
+                    if day < oldest:
+                        continue
+                    start_day = date.fromisoformat(day)
+                    for k in range(30):
+                        on = start_day + timedelta(days=k)
+                        if on > today:
+                            break
+                        in30.add(on)
+                        if k < 7:
+                            in7.add(on)
+                for on in in30:
+                    row = rolling.setdefault((on.isoformat(), build, source), [0, 0, 0])
+                    row[2] += 1
+                    if on in in7:
+                        row[1] += 1
+                    if on.isoformat() in per_day:
+                        row[0] += 1
                 weeks = {}
                 for day, keys in per_day.items():
                     bump("day", day, build, source, keys, int(day == first))
@@ -1861,8 +2097,187 @@ def _rebuild_spans(reader, out, starts, eras, table=None):
                 for week, keys in weeks.items():
                     bump("era_week:" + era["id"], week, build, era["source"], keys, int(new and week == week_of(first)))
     out.executemany("INSERT INTO player_counts VALUES(?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in counts.items()])
+    out.executemany("INSERT INTO active_rolling VALUES(?,?,?,?,?,?)", [k + tuple(v) for k, v in sorted(rolling.items())])
     out.executemany("INSERT INTO cohort_weeks VALUES(?,?,?,?,?,?)", [k + (v,) for k, v in weeks_out.items()])
     out.executemany("INSERT INTO cohort_days VALUES(?,?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in days_out.items()])
+
+
+# ---------------------------------------------------------------- round 67: sessions, invites, quits, errors
+
+INVITE_RECEIVE_MS = 10 * 60 * 1000      # an older build's invite: received within 10 min of the send ...
+INVITE_JOIN_MS = 30 * 60 * 1000         # ... and joined within 30 min of the receipt (matched by time, not by id)
+PLAYED_TOGETHER_MS = 24 * 3600 * 1000   # inviter and invitee started the same match within 24 h of the join
+FRUSTRATION_QUIT_MS = 3600 * 1000       # a quit within 1 h of a repeated_game_fail follows from it
+NEW_EVENTS = (("session_started", None), ("session_ended", "session_id"), ("game_completed", "score"),
+              ("game_completed", "ai_difficulty"), ("match_abandoned", None), ("client_exception", None),
+              ("party_invite_sent", "invite_id"), ("party_invite_received", "invite_id"), ("party_joined", "invite_id"),
+              ("party_joined", "inviter_id"))
+
+
+def _days_after(day, n):
+    start = date.fromisoformat(day)
+    return {(start + timedelta(days=k)).isoformat() for k in range(1, n + 1)}
+
+
+def _rebuild_sessions(reader, out):
+    """sessions (one row per app session, no player id) and session_players, from session_started and session_ended
+    (builds after 2026-11-07). A session's length is its session_ended.session_seconds, else the gap between the two
+    events with the same session_id; NULL while it has not ended."""
+    ended = {}
+    for player, ts, raw in reader.execute(
+            "SELECT distinct_id, ts_ms, props FROM events WHERE event = 'session_ended' AND near_dup = 0 ORDER BY ts_ms"):
+        props = json.loads(raw)
+        sid = _label(props.get("session_id"), 80)
+        if sid:
+            ended.setdefault((player, sid), (ts, as_float(props.get("session_seconds"))))
+    seen, players, rows = set(), {}, []
+    for player, ts, day, build, platform, imported, raw in reader.execute(
+            "SELECT distinct_id, ts_ms, day, build_kind, platform, received_ms = ts_ms, props FROM events "
+            "WHERE event = 'session_started' AND near_dup = 0 ORDER BY ts_ms"):
+        props = json.loads(raw)
+        sid = _label(props.get("session_id"), 80)
+        if sid and (player, sid) in seen:
+            continue                                   # one row per session, however often its start was sent
+        if sid:
+            seen.add((player, sid))
+        end = ended.get((player, sid)) if sid else None
+        seconds = None
+        if end:
+            seconds = end[1] if end[1] is not None and end[1] >= 0 else max(0.0, (end[0] - ts) / 1000.0)
+        kind = _label(props.get("launch_kind")) or "unknown"
+        rows.append((day, build, platform or "unknown", imported, kind if kind in ("cold", "resume") else "unknown",
+                     round(seconds, 1) if seconds is not None else None))
+        players.setdefault((day, build, imported), set()).add(player)
+    out.executemany("INSERT INTO sessions VALUES(?,?,?,?,?,?)", rows)
+    out.executemany("INSERT INTO session_players VALUES(?,?,?,?)",
+                    [k + (len(v),) for k, v in sorted(players.items())])
+
+
+def _rebuild_invites(reader, out, starts, seen_any):
+    """invites and invite_roles: each party_invite_sent followed to its receipt, its join, a match played together
+    and the invitee's return. Builds after 2026-11-07 carry invite_id on all three events (matched exactly); older
+    ones are matched by time (the invitee's receipt naming the sender as host within 10 min, a join within 30 min).
+    Player ids are used only to follow an invite; nothing written to `out` carries one."""
+    events = {"party_invite_sent": [], "party_invite_received": [], "party_joined": []}
+    for event, player, ts, day, build, imported, raw in reader.execute(
+            "SELECT event, distinct_id, ts_ms, day, build_kind, received_ms = ts_ms, props FROM events WHERE event IN "
+            "('party_invite_sent', 'party_invite_received', 'party_joined') AND near_dup = 0 ORDER BY ts_ms"):
+        events[event].append((player, ts, day, build, imported, json.loads(raw)))
+    by_id = {"party_invite_received": {}, "party_joined": {}}
+    for event in by_id:
+        for e in events[event]:
+            iid = _label(e[5].get("invite_id"), 80)
+            if iid:
+                by_id[event].setdefault(iid, e)
+    claimed = set()                                    # (event, player, ts) already matched to an invite
+    plays_of = {}
+    for (player, match), start in starts.items():
+        plays_of.setdefault(player, {})[match] = start[0]
+    today = day_of(now_ms())
+    mature_day = (date.fromisoformat(today) - timedelta(days=7)).isoformat()
+    rows, inviters, invitees = {}, {}, {}
+    for player, ts, day, build, imported, props in events["party_invite_sent"]:
+        iid = _label(props.get("invite_id"), 80)
+        target = _label(props.get("target_id"), 80)
+        if iid:
+            method = "invite_id"
+            rec, join = by_id["party_invite_received"].get(iid), by_id["party_joined"].get(iid)
+        else:
+            method = "time"
+            rec = next((e for e in events["party_invite_received"] if e[0] == target and ts <= e[1] <= ts + INVITE_RECEIVE_MS
+                        and e[5].get("host_id") == player and not _label(e[5].get("invite_id"), 80)
+                        and ("r", e[0], e[1]) not in claimed), None) if target else None
+            join = None
+            if rec:
+                claimed.add(("r", rec[0], rec[1]))
+                join = next((e for e in events["party_joined"] if e[0] == rec[0] and rec[1] <= e[1] <= rec[1] + INVITE_JOIN_MS
+                             and not _label(e[5].get("invite_id"), 80) and ("j", e[0], e[1]) not in claimed), None)
+                if join:
+                    claimed.add(("j", join[0], join[1]))
+        invitee = (join or rec or (None,))[0] or target
+        together = mature = back7 = 0
+        if join and invitee:
+            mine, theirs = plays_of.get(player, {}), plays_of.get(invitee, {})
+            together = int(any(m in theirs and join[1] <= min(t, theirs[m]) <= join[1] + PLAYED_TOGETHER_MS
+                               for m, t in mine.items()))
+            if join[2] <= mature_day:
+                mature = 1
+                back7 = int(bool(seen_any.get(invitee, set()) & _days_after(join[2], 7)))
+            inviters.setdefault(player, (day, build, imported))
+            if invitee != player:
+                invitees.setdefault(invitee, (join[2], join[3], join[4]))
+        _add(rows, (day, build, imported, method), 1, int(rec is not None), int(join is not None), together, mature, back7)
+    out.executemany("INSERT INTO invites VALUES(?,?,?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in sorted(rows.items())])
+    roles = {}
+    for role, found in (("inviter", inviters), ("invitee", invitees)):
+        for player, (day, build, imported) in found.items():
+            seen = seen_any.get(player, set())
+            mature = day <= mature_day
+            d1 = int(mature and (date.fromisoformat(day) + timedelta(days=1)).isoformat() in seen)
+            d7 = int(mature and bool(seen & _days_after(day, 7)))
+            _add(roles, (day, build, imported, role), 1, int(mature), d1, d7)
+    out.executemany("INSERT INTO invite_roles VALUES(?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in sorted(roles.items())])
+
+
+def _rebuild_frustration(reader, out, seen_any):
+    """frustration: each player-day with a repeated_game_fail; a match_abandoned within 1 h after it; and whether the
+    player was then gone for the 7 days after (counted only once those 7 days have passed). Counts only."""
+    fails, quits = {}, {}
+    for player, ts, day, build, imported in reader.execute(
+            "SELECT distinct_id, ts_ms, day, build_kind, received_ms = ts_ms FROM events "
+            "WHERE event = 'repeated_game_fail' AND near_dup = 0 ORDER BY ts_ms"):
+        fails.setdefault((player, day), (ts, build, imported))
+    for player, ts, day in reader.execute(
+            "SELECT distinct_id, ts_ms, day FROM events WHERE event = 'match_abandoned' AND near_dup = 0 ORDER BY ts_ms"):
+        quits.setdefault(player, []).append((ts, day))
+    mature_day = (date.fromisoformat(day_of(now_ms())) - timedelta(days=7)).isoformat()
+    rows = {}
+    for (player, day), (ts, build, imported) in fails.items():
+        seen = seen_any.get(player, set())
+        quit = next((q for q in quits.get(player, []) if ts <= q[0] <= ts + FRUSTRATION_QUIT_MS), None)
+        quit_mature = int(bool(quit) and quit[1] <= mature_day)
+        gone = int(quit_mature and not (seen & _days_after(quit[1], 7)))
+        failed_mature = int(day <= mature_day)
+        failed_gone = int(failed_mature and not (seen & _days_after(day, 7)))
+        _add(rows, (day, build, imported), 1, int(quit is not None), quit_mature, gone, failed_mature, failed_gone)
+    out.executemany("INSERT INTO frustration VALUES(?,?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in sorted(rows.items())])
+
+
+def _rebuild_errors(reader, out):
+    """client_errors and client_error_signatures from client_exception (no message text is sent or kept: only a hash
+    of it with the digits stripped)."""
+    rows, players, sigs = {}, {}, {}
+    for player, day, build, imported, platform, version, raw in reader.execute(
+            "SELECT distinct_id, day, build_kind, received_ms = ts_ms, platform, app_version, props FROM events "
+            "WHERE event = 'client_exception' AND near_dup = 0 ORDER BY ts_ms"):
+        props = json.loads(raw)
+        kind = _label(props.get("exception_type"), 80) or "unknown"
+        frame = _label(props.get("top_frame"), 160) or "unknown"
+        mhash = _label(props.get("message_hash"), 40) or "unknown"
+        key = (day, build, imported, platform or "unknown", version or "unknown", kind, frame,
+               _label(props.get("scene"), 80) or "unknown", mhash)
+        _add(rows, key, 1, max(1, _count(props.get("count")) or 1))
+        players.setdefault(key, set()).add(player)
+        sig = sigs.setdefault((kind, frame, mhash), [day, day, 0])
+        sig[0], sig[1], sig[2] = min(sig[0], day), max(sig[1], day), sig[2] + 1
+    out.executemany("INSERT INTO client_errors VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                    [k + (v[0], v[1], len(players[k])) for k, v in sorted(rows.items())])
+    out.executemany("INSERT INTO client_error_signatures VALUES(?,?,?,?,?,?)",
+                    [k + tuple(v) for k, v in sorted(sigs.items())])
+
+
+def new_event_health(reader):
+    """Data health's list of this round's events: when each was last received, how many rows, and (for a field added to
+    an older event) how many carried it. Counts and times only."""
+    out = []
+    for event, field in NEW_EVENTS:
+        if field:
+            row = reader.execute(f"SELECT MAX(received_ms), COUNT(*) FROM events WHERE event = ? AND "
+                                 f"json_extract(props, '$.{field}') IS NOT NULL", (event,)).fetchone()
+        else:
+            row = reader.execute("SELECT MAX(received_ms), COUNT(*) FROM events WHERE event = ?", (event,)).fetchone()
+        out.append({"event": event, "field": field, "last_received_ms": row[0], "rows": row[1] or 0})
+    return out
 
 
 MAX_TABLE_ROWS = 10_000
