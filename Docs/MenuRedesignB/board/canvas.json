@@ -3283,74 +3283,74 @@
     "R61C.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 61 C - On the pads - interactive",
       "w": 1920,
       "x": 0,
-      "y": 46224
+      "y": 560
     },
     "R61E.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 61 E - The map wall - interactive",
       "w": 1920,
       "x": 2100,
-      "y": 46224
+      "y": 560
     },
     "R62A.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 A - The pads (recommended) - interactive",
       "w": 1920,
       "x": 0,
-      "y": 48764
+      "y": 3100
     },
     "R62B.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 B - The map wall - interactive",
       "w": 1920,
       "x": 2100,
-      "y": 48764
+      "y": 3100
     },
     "R62C.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 C - Down the bay - interactive",
       "w": 1920,
       "x": 4200,
-      "y": 48764
+      "y": 3100
     },
     "R62D.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 D - The porthole row - interactive",
       "w": 1920,
       "x": 0,
-      "y": 50024
+      "y": 4360
     },
     "R62E.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 E - Across the bay - interactive",
       "w": 1920,
       "x": 2100,
-      "y": 50024
+      "y": 4360
     },
     "R62F.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 F - At a porthole - interactive",
       "w": 1920,
       "x": 4200,
-      "y": 50024
+      "y": 4360
     },
     "R63A.dc.html": {
       "h": 1080,
@@ -3383,6 +3383,135 @@
       "w": 1920,
       "x": 0,
       "y": 1260
+    },
+    "R64Live.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "ark",
+      "title": "Rev 64 Live - Live scene (animated) - interactive",
+      "w": 1920,
+      "x": 0,
+      "y": 6900
+    },
+    "R65Dashboards.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Dashboards - Dashboards (admins): pin saved queries into your own boards",
+      "w": 1920,
+      "x": 0,
+      "y": 7400
+    },
+    "R65Eras.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Eras - Eras: the plan chart - Old PostHog data, Pre-beta editor testing, the betas ahead - and the eras compared",
+      "w": 1920,
+      "x": 0,
+      "y": 6140
+    },
+    "R65Lifespans.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Lifespans - Cohorts: every player's lifespan as a Gantt, and return by cohort",
+      "w": 1920,
+      "x": 4200,
+      "y": 4880
+    },
+    "R65Notes.dc.html": {
+      "h": 900,
+      "page": "froglet-analytics",
+      "title": "Rev 65 - notes: what each board adds, what the server already answers, what is new",
+      "w": 1920,
+      "x": 0,
+      "y": 8660
+    },
+    "R65PlayTypes.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 PlayTypes - Solo vs AI, Solo, Multiplayer side by side, and the Play filter",
+      "w": 1920,
+      "x": 2100,
+      "y": 6140
+    },
+    "R65Players.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Players - Players: filter bar, sortable columns, each player's play mix and lifespan",
+      "w": 1920,
+      "x": 0,
+      "y": 4880
+    },
+    "R65Profile.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Profile - Player profile: charts, not lists (play-type donut, ranked modes and vessels, match timeline, crystals)",
+      "w": 1920,
+      "x": 2100,
+      "y": 4880
+    },
+    "R65Query.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Query - Query Studio (admins): build a query, save it as a table, chart it",
+      "w": 1920,
+      "x": 4200,
+      "y": 6140
+    },
+    "R66Alerts.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Alerts - Alerts: Claude watches the numbers and raises a card with its chart and why; admins set thresholds",
+      "w": 1920,
+      "x": 4200,
+      "y": 11020
+    },
+    "R66Funnel.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Funnel - Funnel builder: any events in order, conversion and drop-off, split by any dimension",
+      "w": 1920,
+      "x": 0,
+      "y": 12280
+    },
+    "R66Live.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Live - Live now: who is online and in a match right now, the modes, the countries, the event ticker",
+      "w": 1920,
+      "x": 2100,
+      "y": 11020
+    },
+    "R66Notes.dc.html": {
+      "h": 900,
+      "page": "froglet-analytics",
+      "title": "Rev 66 - notes: what each idea adds, what the server has, what is new",
+      "w": 1920,
+      "x": 0,
+      "y": 13540
+    },
+    "R66PlayerCompare.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 PlayerCompare - Player compare: two or three players side by side, and players like this one",
+      "w": 1920,
+      "x": 4200,
+      "y": 12280
+    },
+    "R66Releases.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Releases - Release compare: build A against build B - finish rate, exceptions, launch time, retention",
+      "w": 1920,
+      "x": 2100,
+      "y": 12280
+    },
+    "R66Switches.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Switches - Chart switches close up: one chart as Business, Marketing and Analysis set its form, measure and split",
+      "w": 1920,
+      "x": 0,
+      "y": 11020
     },
     "R6Arcade.dc.html": {
       "h": 1080,
@@ -3885,13 +4014,13 @@
       "x": 22820,
       "y": 86150
     },
-    "R64Live.dc.html": {
+    "R67Ark.dc.html": {
       "x": 0,
-      "y": 52564,
+      "y": 9440,
       "w": 1920,
       "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 64 Live - Live scene (animated) - interactive",
+      "page": "ark",
+      "title": "Rev 67 Ark - The Ark screen - Converter, Squads, Artifacts, Decor (live) - interactive",
       "is_interactive": true
     }
   },
@@ -3901,7 +4030,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "menu-redesign-c",
+    "page": "ark",
     "view": "canvas"
   },
   "noteOrder": [
@@ -4012,6 +4141,9 @@
     "sec-rev62",
     "sec-rev63",
     "sec-rev64",
+    "sec-rev65",
+    "sec-rev66",
+    "sec-rev67",
     "hud_end",
     "hud_flow",
     "hud_match",
@@ -4081,7 +4213,10 @@
     "rev61",
     "rev62",
     "rev63",
-    "rev64"
+    "rev64",
+    "rev65",
+    "rev66",
+    "rev67"
   ],
   "notes": {
     "hud_end": {
@@ -4672,20 +4807,20 @@
     "rev61": {
       "kind": "title1",
       "maxW": 6120,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "text": "Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)",
       "w": 240,
       "x": 0,
-      "y": 45824
+      "y": 160
     },
     "rev62": {
       "kind": "title1",
       "maxW": 6120,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "text": "Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels",
       "w": 240,
       "x": 0,
-      "y": 48364
+      "y": 2700
     },
     "rev63": {
       "kind": "title1",
@@ -4695,6 +4830,33 @@
       "w": 240,
       "x": 0,
       "y": -400
+    },
+    "rev64": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "ark",
+      "text": "Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup",
+      "w": 240,
+      "x": 0,
+      "y": 6500
+    },
+    "rev65": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "froglet-analytics",
+      "text": "Rev 65 - Froglet Analytics, the full tool: filters, charts, cohorts, eras and admin queries",
+      "w": 240,
+      "x": 0,
+      "y": 4480
+    },
+    "rev66": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "froglet-analytics",
+      "text": "Rev 66 - Froglet Analytics, more ideas: chart switches, live now, alerts, funnels, release and player compare",
+      "w": 240,
+      "x": 0,
+      "y": 10620
     },
     "rev7": {
       "kind": "title1",
@@ -6146,10 +6308,10 @@
       },
       "h": 1800,
       "kind": "rect",
-      "page": "menu-redesign-c",
+      "page": "ark",
       "w": 6440,
       "x": -160,
-      "y": 45664
+      "y": 0
     },
     "sec-rev62": {
       "css": {
@@ -6161,10 +6323,10 @@
       },
       "h": 3060,
       "kind": "rect",
-      "page": "menu-redesign-c",
+      "page": "ark",
       "w": 6440,
       "x": -160,
-      "y": 48204
+      "y": 2540
     },
     "sec-rev63": {
       "css": {
@@ -6178,8 +6340,53 @@
       "kind": "rect",
       "page": "phone",
       "w": 6440,
-      "x": -857,
-      "y": -534
+      "x": -256,
+      "y": -536
+    },
+    "sec-rev64": {
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 1800,
+      "kind": "rect",
+      "page": "ark",
+      "w": 6440,
+      "x": -160,
+      "y": 6340
+    },
+    "sec-rev65": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 5400,
+      "kind": "rect",
+      "page": "froglet-analytics",
+      "w": 6440,
+      "x": -160,
+      "y": 4320
+    },
+    "sec-rev66": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4140,
+      "kind": "rect",
+      "page": "froglet-analytics",
+      "w": 6440,
+      "x": -160,
+      "y": 10460
     },
     "sec-rev7": {
       "css": {
@@ -6335,29 +6542,29 @@
       "x": 0,
       "y": 0
     },
-    "rev64": {
+    "rev67": {
       "kind": "title1",
-      "text": "Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup",
+      "text": "Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)",
       "x": 0,
-      "y": 52164,
+      "y": 9040,
       "w": 240,
       "maxW": 6120,
-      "page": "menu-redesign-c"
+      "page": "ark"
     },
-    "sec-rev64": {
+    "sec-rev67": {
       "kind": "rect",
       "x": -160,
-      "y": 52004,
+      "y": 8880,
       "w": 6440,
       "h": 1800,
       "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
+        "background": "rgba(166, 0, 255, 0.06)",
         "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
         "border-width": "3px 3px 3px 3px",
         "border-radius": "40px 40px 40px 40px"
       },
-      "page": "menu-redesign-c"
+      "page": "ark"
     }
   },
   "order": [
@@ -6702,6 +6909,47 @@
     "R42B.dc.html",
     "R42C.dc.html",
     "R42Notes.dc.html",
+    "R45A.dc.html",
+    "R45B.dc.html",
+    "R45Notes.dc.html",
+    "R48A.dc.html",
+    "R48B.dc.html",
+    "R48C.dc.html",
+    "R48Notes.dc.html",
+    "SGReadMe.dc.html",
+    "SGColour.dc.html",
+    "SGThemes.dc.html",
+    "SGType.dc.html",
+    "SGShape.dc.html",
+    "SGButtons.dc.html",
+    "SGWindows.dc.html",
+    "SGMotion.dc.html",
+    "SGDoDont.dc.html",
+    "SGChecklist.dc.html",
+    "SGChart.dc.html",
+    "R50Compare.dc.html",
+    "R50A.dc.html",
+    "R50B.dc.html",
+    "R50C.dc.html",
+    "R50Notes.dc.html",
+    "R58Docked.dc.html",
+    "R58Narrow.dc.html",
+    "R58Notes.dc.html",
+    "R65Players.dc.html",
+    "R65Profile.dc.html",
+    "R65Lifespans.dc.html",
+    "R65Eras.dc.html",
+    "R65PlayTypes.dc.html",
+    "R65Query.dc.html",
+    "R65Dashboards.dc.html",
+    "R65Notes.dc.html",
+    "R66Switches.dc.html",
+    "R66Live.dc.html",
+    "R66Alerts.dc.html",
+    "R66Funnel.dc.html",
+    "R66Releases.dc.html",
+    "R66PlayerCompare.dc.html",
+    "R66Notes.dc.html",
     "R43Compare.dc.html",
     "R43AVoyage.dc.html",
     "R43ACrew.dc.html",
@@ -6760,9 +7008,6 @@
     "R44JQuests.dc.html",
     "R44JEpisodes.dc.html",
     "R44Notes.dc.html",
-    "R45A.dc.html",
-    "R45B.dc.html",
-    "R45Notes.dc.html",
     "R46Prototype.dc.html",
     "R46Cards.dc.html",
     "R46Open.dc.html",
@@ -6770,10 +7015,6 @@
     "R46Crew.dc.html",
     "R46Story.dc.html",
     "R46Notes.dc.html",
-    "R48A.dc.html",
-    "R48B.dc.html",
-    "R48C.dc.html",
-    "R48Notes.dc.html",
     "R49A.dc.html",
     "R49B.dc.html",
     "R49C.dc.html",
@@ -6787,22 +7028,6 @@
     "R49CStory.dc.html",
     "R49DCrew.dc.html",
     "R49DStory.dc.html",
-    "SGReadMe.dc.html",
-    "SGColour.dc.html",
-    "SGThemes.dc.html",
-    "SGType.dc.html",
-    "SGShape.dc.html",
-    "SGButtons.dc.html",
-    "SGWindows.dc.html",
-    "SGMotion.dc.html",
-    "SGDoDont.dc.html",
-    "SGChecklist.dc.html",
-    "SGChart.dc.html",
-    "R50Compare.dc.html",
-    "R50A.dc.html",
-    "R50B.dc.html",
-    "R50C.dc.html",
-    "R50Notes.dc.html",
     "R51Compare.dc.html",
     "R51A.dc.html",
     "R51B.dc.html",
@@ -6818,9 +7043,6 @@
     "R54C.dc.html",
     "R54D.dc.html",
     "R54Notes.dc.html",
-    "R58Docked.dc.html",
-    "R58Narrow.dc.html",
-    "R58Notes.dc.html",
     "R61C.dc.html",
     "R61E.dc.html",
     "R62A.dc.html",
@@ -6829,11 +7051,12 @@
     "R62D.dc.html",
     "R62E.dc.html",
     "R62F.dc.html",
+    "R64Live.dc.html",
     "R63A.dc.html",
     "R63B.dc.html",
     "R63C.dc.html",
     "R63Notes.dc.html",
-    "R64Live.dc.html"
+    "R67Ark.dc.html"
   ],
   "pages": [
     {
@@ -6867,6 +7090,10 @@
     {
       "id": "launch-console",
       "name": "Launch Console"
+    },
+    {
+      "id": "ark",
+      "name": "Ark"
     }
   ],
   "title": "Frogma"

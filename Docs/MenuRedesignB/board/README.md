@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-06 from canvas version `1793991611-8d42` of **Frogma**: Rev 3 to Rev 64, 473 boards on 8 tabs. The canvas opens on the tab `menu-redesign-c`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-07 from canvas version `1794014603-a01c` of **Frogma**: Rev 3 to Rev 67, 489 boards on 9 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -545,24 +545,6 @@ Copied on 2026-11-06 from canvas version `1793991611-8d42` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
-#### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
-
-- [`R64Live.dc.html`](R64Live.dc.html) - Rev 64 Live - Live scene (animated) - interactive
-
-#### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
-
-- [`R62A.dc.html`](R62A.dc.html) - Rev 62 A - The pads (recommended) - interactive
-- [`R62B.dc.html`](R62B.dc.html) - Rev 62 B - The map wall - interactive
-- [`R62C.dc.html`](R62C.dc.html) - Rev 62 C - Down the bay - interactive
-- [`R62D.dc.html`](R62D.dc.html) - Rev 62 D - The porthole row - interactive
-- [`R62E.dc.html`](R62E.dc.html) - Rev 62 E - Across the bay - interactive
-- [`R62F.dc.html`](R62F.dc.html) - Rev 62 F - At a porthole - interactive
-
-#### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
-
-- [`R61C.dc.html`](R61C.dc.html) - Rev 61 C - On the pads - interactive
-- [`R61E.dc.html`](R61E.dc.html) - Rev 61 E - The map wall - interactive
-
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 
 - [`R54Compare.dc.html`](R54Compare.dc.html) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
@@ -691,6 +673,27 @@ Copied on 2026-11-06 from canvas version `1793991611-8d42` of **Frogma**: Rev 3 
 
 ### Tab: Froglet Analytics  (`froglet-analytics`)
 
+#### Rev 66 - Froglet Analytics, more ideas: chart switches, live now, alerts, funnels, release and player compare
+
+- `R66Switches.dc.html` (not copied yet) - Rev 66 Switches - Chart switches close up: one chart as Business, Marketing and Analysis set its form, measure and split
+- `R66Live.dc.html` (not copied yet) - Rev 66 Live - Live now: who is online and in a match right now, the modes, the countries, the event ticker
+- `R66Alerts.dc.html` (not copied yet) - Rev 66 Alerts - Alerts: Claude watches the numbers and raises a card with its chart and why; admins set thresholds
+- `R66Funnel.dc.html` (not copied yet) - Rev 66 Funnel - Funnel builder: any events in order, conversion and drop-off, split by any dimension
+- `R66Releases.dc.html` (not copied yet) - Rev 66 Releases - Release compare: build A against build B - finish rate, exceptions, launch time, retention
+- `R66PlayerCompare.dc.html` (not copied yet) - Rev 66 PlayerCompare - Player compare: two or three players side by side, and players like this one
+- `R66Notes.dc.html` (not copied yet) - Rev 66 - notes: what each idea adds, what the server has, what is new
+
+#### Rev 65 - Froglet Analytics, the full tool: filters, charts, cohorts, eras and admin queries
+
+- `R65Players.dc.html` (not copied yet) - Rev 65 Players - Players: filter bar, sortable columns, each player's play mix and lifespan
+- `R65Profile.dc.html` (not copied yet) - Rev 65 Profile - Player profile: charts, not lists (play-type donut, ranked modes and vessels, match timeline, crystals)
+- `R65Lifespans.dc.html` (not copied yet) - Rev 65 Lifespans - Cohorts: every player's lifespan as a Gantt, and return by cohort
+- `R65Eras.dc.html` (not copied yet) - Rev 65 Eras - Eras: the plan chart - Old PostHog data, Pre-beta editor testing, the betas ahead - and the eras compared
+- `R65PlayTypes.dc.html` (not copied yet) - Rev 65 PlayTypes - Solo vs AI, Solo, Multiplayer side by side, and the Play filter
+- `R65Query.dc.html` (not copied yet) - Rev 65 Query - Query Studio (admins): build a query, save it as a table, chart it
+- `R65Dashboards.dc.html` (not copied yet) - Rev 65 Dashboards - Dashboards (admins): pin saved queries into your own boards
+- `R65Notes.dc.html` (not copied yet) - Rev 65 - notes: what each board adds, what the server already answers, what is new
+
 #### Rev 50 - Froglet Analytics dashboard: our own backend replaces PostHog, three ways to read it
 
 - [`R50Compare.dc.html`](R50Compare.dc.html) - Rev 50 - the top of each option side by side: the overnight read, the console rail, the ask bar
@@ -715,5 +718,29 @@ Copied on 2026-11-06 from canvas version `1793991611-8d42` of **Frogma**: Rev 3 
 - `R58Docked.dc.html` (not copied yet) - Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactiv - interactive
 - `R58Narrow.dc.html` (not copied yet) - Rev 58 Narrow - Narrow, beside the Inspector: the same answers stacked - interactive
 - `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
+
+### Tab: Ark  (`ark`)
+
+#### Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)
+
+- [`R67Ark.dc.html`](R67Ark.dc.html) - Rev 67 Ark - The Ark screen - Converter, Squads, Artifacts, Decor (live) - interactive
+
+#### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
+
+- [`R64Live.dc.html`](R64Live.dc.html) - Rev 64 Live - Live scene (animated) - interactive
+
+#### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
+
+- [`R62A.dc.html`](R62A.dc.html) - Rev 62 A - The pads (recommended) - interactive
+- [`R62B.dc.html`](R62B.dc.html) - Rev 62 B - The map wall - interactive
+- [`R62C.dc.html`](R62C.dc.html) - Rev 62 C - Down the bay - interactive
+- [`R62D.dc.html`](R62D.dc.html) - Rev 62 D - The porthole row - interactive
+- [`R62E.dc.html`](R62E.dc.html) - Rev 62 E - Across the bay - interactive
+- [`R62F.dc.html`](R62F.dc.html) - Rev 62 F - At a porthole - interactive
+
+#### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
+
+- [`R61C.dc.html`](R61C.dc.html) - Rev 61 C - On the pads - interactive
+- [`R61E.dc.html`](R61E.dc.html) - Rev 61 E - The map wall - interactive
 
 <!-- frogma.py readme: end -->
