@@ -25,6 +25,13 @@ import sys
 
 MODEL_LIMITS = {
     "rhino_drive": "point mass; no orbit break-off (a circling AI stalls); proportional stick; no rivals",
+    "rhino_drive@headlong": "point mass; Headlong's gate steering (260 / 300 / 220, fixed commit) and AIPilot's orbit "
+                            "break-off; proportional stick; no nose lag; no rivals",
+    "rhino_drive@headlong_on": "point mass; Headlong's distances with Regatta's gate steering switched on "
+                               "(AICommitFromApproachPoint, a proposal) and AIPilot's orbit break-off; proportional "
+                               "stick; no nose lag; no rivals",
+    "rhino_drive@regatta": "point mass; Regatta's gate steering (approach-point commit, re-latch after a miss) and "
+                           "AIPilot's orbit break-off; proportional stick; no nose lag; no rivals",
     "manta_drive": "point mass; no break-off, no nose lag; Regatta's through-the-centre steering in every mode",
     "dolphin_drive": "point mass; no break-off; the scalar charge economy (DOLPHIN_ENERGY_ECONOMY.md 2)",
     "line": "constant speed (the hull's median AI speed in editor Regatta races); Regatta rails only",
@@ -70,6 +77,9 @@ def race(hull, model, course, intensity=1, drive=None, steering="centre", limit=
         if model == "rhino_drive":
             sim = _sim("rhino_drive_sim")
             sim.THROUGH_CENTRE = steering == "centre"
+            # "headlong" / "regatta": the mode's own gate steering with AIPilot's orbit break-off (rhino_drive_sim
+            # STEERING_PROFILES); "centre" / "axis" stay the legacy model every published number was raced on.
+            sim.STEERING = steering if steering in getattr(sim, "STEERING_PROFILES", {}) else None
             for k, v in drive.items():
                 setattr(sim.Policy, k, v)
             t, rings, top = sim.race("new", intensity, T=limit)

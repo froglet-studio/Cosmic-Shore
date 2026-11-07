@@ -12,6 +12,12 @@ The Python driver below MIRRORS RampBoostAIPolicySO.Driver.Tick: change both tog
 
     python3 Tools/Build/rhino_drive_sim.py            # old vs new on I1-I4
     python3 Tools/Build/rhino_drive_sim.py --sweep    # the corner-speed / payback / release / margin grid
+    python3 Tools/Build/rhino_drive_sim.py --headlong # the drive on Headlong's 12 courses under each gate steering
+    python3 Tools/Build/rhino_drive_sim.py --self-test
+
+STEERING (2026-11-06): the gate steering is now a named profile (STEERING_PROFILES: Headlong's as shipped, Headlong with
+AICommitFromApproachPoint on, Regatta's), each with AIPilot's orbit break-off. STEERING = None is the legacy model.
+Docs/Reports/RHINO_HEADLONG_I4_STALLS.md has what it found: the I4 stall was the steering, not the drive.
 """
 import math, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -119,27 +125,99 @@ class NewDriver:
 
 THROUGH_CENTRE = True   # GateRaceController in Regatta (AICommitFromApproachPoint): through the ring's centre
 
+# The gate steering a race flies (GateRaceController.ArmRacer), per mode. STEERING = None is the model as it stood until
+# 2026-11-06 (Regatta's 480 / 420 / 320 with the approach-point commit, in EVERY mode, no break-off), kept byte for byte so
+# every number the evaluators have published still reproduces. A named profile is the game, line for line:
+#   lead / commit / through   the scene's aiApproachLead / aiCommitDistance / aiThroughDistance
+#   from_approach             GateRaceController.AICommitFromApproachPoint: commit = min(commit, lead + R/2), the lead capped
+#                             at 0.8 x commit (ApproachLeadFor), and a crossing of the ring's plane OUTSIDE the mouth
+#                             re-latches the side and calls AIPilot.BreakOffNow
+#   centre                    the through point on the line through the ring's centre (Regatta) or on its axis (the rest)
+#   break_off                 AIPilot.UpdateOrbitBreak: the turning-circle test (only when not closing, cos 0.5, capture 18)
+#                             and the OrbitDetector (360 deg swept with no 10% gain in range), then an escape leg (heading +
+#                             0.35 x away) until the objective is max(2R - 18, 1.5 s x speed) away, 0.6-6 s
+# Headlong ships with AICommitFromApproachPoint OFF (MinigameHeadlong.unity: 260 / 300 / 220), so after a missed mouth its
+# through point is on the pilot's own side and only the break-off gets it out; the legacy model had neither, and stalled.
+STEERING = None
+STEERING_PROFILES = {
+    "regatta":  {"lead": 480.0, "commit": 420.0, "through": 320.0, "from_approach": True,  "centre": True,  "break_off": True},
+    "headlong": {"lead": 300.0, "commit": 260.0, "through": 220.0, "from_approach": False, "centre": False, "break_off": True},
+    # Headlong with AICommitFromApproachPoint ON (as every other gate race but Headlong has it in code, 2026-11-06): the
+    # proposal this model tests, not what ships.
+    "headlong_on": {"lead": 300.0, "commit": 260.0, "through": 220.0, "from_approach": True, "centre": True, "break_off": True},
+}
+CAPTURE, CLOSING_COS, RUN_S, AWAY, BREAK_MIN, BREAK_MAX = 18.0, 0.5, 1.5, 0.35, 0.6, 6.0   # AIPilot's serialized defaults
+
+
+class Orbit:   # PursuitReachability.OrbitDetector (sweep 360, progress 0.9, jump 1.6), as regatta_line_sim ports it
+    def __init__(s): s.reset()
+    def reset(s): s.has = False; s.swept = 0.0
+    def tick(s, to):
+        d = norm(to)
+        if d < 1e-6: s.reset(); return False
+        b = mul(to, 1 / d)
+        if not s.has:
+            s.has, s.last, s.best, s.lastd, s.swept = True, b, d, d, 0.0; return False
+        if d > s.lastd * 1.6:
+            s.last, s.best, s.lastd, s.swept = b, d, d, 0.0; return False
+        s.swept += ang(s.last, b); s.last, s.lastd = b, d
+        if d < s.best * 0.9:
+            s.best, s.swept = d, 0.0; return False
+        return s.swept >= 360
+
+
+def inside_turning_circle(to, heading, R, capture=CAPTURE):   # PursuitReachability.IsInsideTurningCircle
+    if R <= 0 or norm(to) < 1e-6: return False
+    f = unit(heading)
+    lat = sub(to, mul(f, dot(to, f)))
+    if norm(lat) < 1e-6: return False
+    return norm(sub(to, mul(unit(lat), R))) < max(0.0, R - capture)
+
 def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False):
     C=sf.course_from(sf.load_course_js(), intensity)
     gates=C['gates']; n=len(gates); laps=3; total=n*laps
     P=[g['p'] for g in gates]; A=[unit(g['a']) for g in gates]
     pos=add(P[0], mul(A[0], 1500)); fwd=unit(sub(P[0],pos)); speed=50.0
     pol=Policy(); ex=Exec(); drv=(NewDriver if kind=='new' else OldDriver)(pol,ex)
+    G=STEERING_PROFILES[STEERING] if STEERING else None
     idx=0; locked=-1; side=1; t=0.0; stick=0.0; trace=[]; maxv=0
+    orbit=Orbit(); extending=False; ext_t=0.0; race.breaks=0; race.misses=0
     while t<T and idx<total:
         g=idx%n; ring=P[g]; ax=A[g]
+        omega=(speed*0.2+90)  # deg/s at full stick
+        R=speed/math.radians(omega)
         if idx!=locked:
             locked=idx; side=1 if dot(sub(pos,ring),ax)>=0 else -1
             leg_from=P[(idx-1)%n] if idx>0 else pos
-            lead=min(480,0.4*norm(sub(leg_from,ring)))
-        omega=(speed*0.2+90)  # deg/s at full stick
-        R=speed/math.radians(omega)
-        commit=min(420, lead+0.5*R)
-        approaching=norm(sub(ring,pos))>commit and norm(sub(add(ring, mul(ax, side*lead)),pos))>max(60,0.5*R)
-        through=add(ring, mul(unit(sub(ring,pos)), 320)) if THROUGH_CENTRE else sub(ring, mul(ax, side*320))
+            if G is None: lead=min(480,0.4*norm(sub(leg_from,ring)))
+            else:
+                lead=min(G['lead'],0.4*norm(sub(leg_from,ring)))
+                if G['from_approach']: lead=min(lead,0.8*G['commit'])
+        if G is None:
+            commit=min(420, lead+0.5*R)
+            approaching=norm(sub(ring,pos))>commit and norm(sub(add(ring, mul(ax, side*lead)),pos))>max(60,0.5*R)
+            through=add(ring, mul(unit(sub(ring,pos)), 320)) if THROUGH_CENTRE else sub(ring, mul(ax, side*320))
+        else:
+            commit=min(G['commit'], lead+0.5*R) if G['from_approach'] else G['commit']
+            approaching=norm(sub(ring,pos))>commit
+            through=(add(ring, mul(unit(sub(ring,pos)), G['through'])) if G['centre'] and norm(sub(ring,pos))>1
+                     else sub(ring, mul(ax, side*G['through'])))
         if approaching: target=add(ring, mul(ax, side*lead)); after=through
         else: target=through; after=P[(idx+1)%n] if idx+1<total else None
         to=sub(target,pos)
+        # AIPilot.UpdateOrbitBreak: while it says break off, the stick flies an escape bearing, not the objective
+        steer_to=to
+        if G is not None and G['break_off']:
+            run=max(max(0.0,2*R-CAPTURE), speed*RUN_S)
+            if extending:
+                ext_t+=dt
+                if (norm(to)>=run and ext_t>=BREAK_MIN) or ext_t>=BREAK_MAX: extending=False; orbit.reset()
+            else:
+                closing=dot(unit(to),fwd)>CLOSING_COS
+                unreachable=(not closing) and inside_turning_circle(to,fwd,R)
+                orbiting=orbit.tick(to)
+                if unreachable or orbiting: extending=True; ext_t=0.0; race.breaks+=1; orbit.reset()
+            if extending: steer_to=mul(unit(add(fwd, mul(unit(to), -AWAY))), 2*run if run>1 else 1000)
         nl = sub(after,target) if (after is not None and use_next) else None
         c={'angle':ang(fwd,to),'stick':stick,'dist':norm(to),'speed':speed,
            'corner': ang(to,nl) if nl is not None else -1}
@@ -147,7 +225,7 @@ def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False):
         drv_tracked = getattr(race,'_tracked',speed)
         drv.tick(c,t,dt,drv_tracked)
         # pilot steering: proportional on the angle error
-        err=ang(fwd,to); s=min(1.0, err/20.0)
+        err=ang(fwd,steer_to); s=min(1.0, err/20.0)
         steer=2*s  # XSum + YDiff
         lim=drv.limit()
         if lim>=0 and steer>lim: s*=lim/steer; steer=lim
@@ -168,13 +246,18 @@ def race(kind, intensity, use_next=True, T=400, dt=1/60, verbose=False):
         race._tracked=tgt
         speed=speed+max(-rate*dt,min(rate*dt,tgt-speed))
         maxv=max(maxv,speed)
-        fwd=rotate_toward(fwd, to, math.radians((speed*0.2+90)*s)*dt)
+        fwd=rotate_toward(fwd, steer_to, math.radians((speed*0.2+90)*s)*dt)
         newpos=add(pos,mul(fwd,speed*dt))
         # threading: crossing the plane inside the mouth
         a0=dot(sub(pos,ring),ax); a1=dot(sub(newpos,ring),ax)
         if a0*a1<=0 and a0!=a1:
             k=a0/(a0-a1); hit=add(pos,mul(sub(newpos,pos),k))
             if norm(sub(hit,ring))<=gates[g]['r']: idx+=1
+            else:
+                race.misses+=1
+                if G is not None and G['from_approach']:   # re-latch from where the pilot is, and AIPilot.BreakOffNow
+                    locked=-1
+                    if G['break_off']: extending=True; ext_t=0.0; race.breaks+=1; orbit.reset()
         pos=newpos; t+=dt
     race._tracked=50
     return (round(t,1) if idx>=total else None), idx, round(maxv)
@@ -197,7 +280,68 @@ def sweep():
         print(o)
 
 
+def _headlong_courses():
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Compute", "evaluators"))
+    import course_port as cp
+    return [(i, k, cp.course(cp.headlong_settings(i), cp.seed_for_intensity(20260915 + 104729 * k, i), rails=False))
+            for i in (1, 2, 3, 4) for k in (1, 2, 3)]   # drive_fit's Headlong courses (seeds 1-3)
+
+
+def _race_on(course, intensity, steering, T=400):
+    global STEERING, THROUGH_CENTRE
+    old = (STEERING, THROUGH_CENTRE, sf.load_course_js, sf.course_from)
+    STEERING, THROUGH_CENTRE = steering, False
+    sf.load_course_js, sf.course_from = (lambda *a, **k: {}), (lambda C, i: course)
+    try:
+        r = race('new', intensity, T=T)
+        return r, race.breaks, race.misses
+    finally:
+        STEERING, THROUGH_CENTRE, sf.load_course_js, sf.course_from = old
+
+
+def headlong_table():
+    print("Policy defaults (the job's init) on Headlong I1-I4 x seeds 1-3: seconds / rings of 24 (break-offs, misses)")
+    for steering in (None, "headlong", "headlong_on"):
+        row = []
+        for i, k, c in _headlong_courses():
+            (t, rings, _), b, m = _race_on(c, i, steering)
+            row.append(f"I{i}s{k} {t}/{rings} ({b},{m})")
+        print(f"{str(steering):12s}", "  ".join(row))
+
+
+def self_test():
+    bad = []
+    o = Orbit()
+    if not any(o.tick([100 * math.cos(math.radians(a)), 0, 100 * math.sin(math.radians(a))]) for a in range(0, 400, 2)):
+        bad.append("orbit detector never fires on a constant-range sweep")
+    o = Orbit()
+    if any(o.tick([0, 0, 1000 - 5 * i]) for i in range(150)):
+        bad.append("orbit detector fired on a straight approach")
+    if inside_turning_circle([0, 0, 500], [0, 0, 1], 100) or not inside_turning_circle([60, 0, 40], [0, 0, 1], 100):
+        bad.append("turning-circle test")
+    courses = _headlong_courses()
+    i4s3 = next(c for i, k, c in courses if (i, k) == (4, 3))
+    # the legacy model still reproduces what was published on it (the job's init stalls at ring 2 of I4 seed 3)
+    (t, rings, _), _, _ = _race_on(i4s3, 4, None)
+    if t is not None or rings != 2:
+        bad.append(f"legacy model moved: I4 seed 3 gave {t} / {rings} (published: a stall at 2 rings)")
+    # negative control: Headlong's shipped steering strands the pilot after a missed mouth, break-off and all
+    (t, rings, _), b, m = _race_on(i4s3, 4, "headlong")
+    if t is not None or m == 0:
+        bad.append(f"Headlong's shipped steering no longer stalls after a miss on I4 seed 3 ({t}, {rings} rings, {m} misses)")
+    # the fix: with the approach-point commit and the re-latch, the same drive finishes all twelve courses
+    dnf = [(i, k) for i, k, c in courses if _race_on(c, i, "headlong_on")[0][0] is None]
+    if dnf:
+        bad.append(f"headlong_on did not finish {dnf}")
+    print("rhino_drive_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
+    return 0 if not bad else 1
+
+
 if __name__ == '__main__':
+    if "--self-test" in sys.argv:
+        sys.exit(self_test())
+    if "--headlong" in sys.argv:
+        headlong_table(); sys.exit(0)
     if "--sweep" in sys.argv:
         sweep()
     else:
