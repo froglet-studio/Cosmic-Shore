@@ -1,6 +1,6 @@
 # The skill-training night: what was built, what to review, the questions (2026-11-07 to 11-08)
 
-**For:** Garrett (who asked), and the four. **Branch:** `cece/affectionate-fermi-x1lp81`, 14 commits, pushed;
+**The page:** https://claude.ai/artifact/HA3pa8zrPqcAnEiU2Bg8hS (private until shared from its Share menu). **For:** Garrett (who asked), and the four. **Branch:** `cece/affectionate-fermi-x1lp81`, 14 commits, pushed;
 nothing on bleeding-edge; no pull request opened. **The plan it executes:** `Docs/SKILL_TRAINING_PLAN.md`.
 **The ask (Garrett, 2026-11-07):** "work for the next 10 hours taking everything as far as you can. Give me a full
 report in the morning of everything I need to review, all your questions, etc."
