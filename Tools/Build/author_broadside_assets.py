@@ -269,8 +269,8 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameBroadside.asset", G_ASSET["Arcad
   MaxPlayersAllowed: 6
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
-  MinIntensity: 1
-  MaxIntensity: 4
+  MinIntensity: 2
+  MaxIntensity: 2
   ArenaRules: 1
   Tips:
   - Your hull already has a weapon. The card does not hand you one - it pays for the one you brought.
