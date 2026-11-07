@@ -122,7 +122,12 @@ shared pigment under any light, rim/face contrast, each rim still reading as its
 **vision** (2026-11-05: **Contrast** for typical vision, then **Protanopia**, **Deuteranopia**, **Tritanopia**,
 **Achromatopsia** and **Low Vision**) keeps a fifth rule: as that viewer sees the colours the asset paints, every two
 domains' rims, every two domains' faces, and each rim against its face stay `vision_margin` apart. They sit in the Profile's
-colour-set rail with the other sets; Settings > General > Colour sets is a breadcrumb that opens the rail on them. Shaped in the Colour Sets lab
+colour-set rail with the other sets; Settings > General > Colour sets is a breadcrumb that opens the rail on them.
+
+**Adding or changing a set reaches four writers; run all of them** (each has `--check`): `author_colour_set_assets.py`
+(the palette asset), `author_colour_set_catalog.py` (the Profile's catalog entry), `author_editor_themes.py` (the editor
+windows' themes) and `Tools/Analytics/console/make_themes.py` (the analytics console's themes), after `colour_sets.py
+--check` passes on the definition. The last two read the whole catalog, so a new set changes their output too. Shaped in the Colour Sets lab
 (https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf, source `Docs/Studios/ColourSetsLab.html`). This truth is unchanged
 by them.
 

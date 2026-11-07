@@ -1838,3 +1838,17 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: before tuning colours on a page, render them with the shipped shader's formula, on the real shape, beside what ships today. Weight every colour by the area it covers. Use the rule gate to prove a palette is legal, and the render to judge whether it reads.
 - Evidence: `author_colour_set_assets.py` (face fields take the pigment's own lightness); `colour_sets.json` `nocturne`.
 - Promoted: no
+
+### L-STU-166 — Measure a palette for a viewer on the colours the asset PAINTS, not on the swatches
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `cece/nice-lamport-56824k` · By: the 2026-11-05 vision-sets session · Date: 2026-11-05
+- What happened: the lab's colour-blind report measured swatches at mid L and called two domains apart when EITHER rim or face differed, and put Nocturne at 4.4-4.7 just-noticeable steps for protan, deutan and tritan viewers. But the palette writer pins every rim at the original's bloom-sized brightness (brightest channel about 1), so a rim's lightness comes from its hue and the pigment's L range never reaches the game; and the HUD, trails, danger and pickups read the rim alone. Measured on what is painted, rims alone and faces alone, Nocturne is 0.9-1.1 steps for those viewers and 0.2 with no colour vision.
+- Do instead: before scoring colours for a viewer, run them through the writer's own transform (`colour_sets.painted`) and score each surface a player reads on its own. A searched set then reached 8.8-13.6 steps for its viewer (`colour_sets.py` rule 5).
+- Evidence: `colour_sets.py --report` (the "rule 5 measure" table, every set by every vision); `colour_sets.json` vision sets.
+- Promoted: no
+
+### L-STU-167 — A pigment greyer than its own spread claims grey, and every whitened field falls into it
+- Lab: Colour Sets Lab · Branch: `cece/nice-lamport-56824k` · By: the 2026-11-05 vision-sets session · Date: 2026-11-05
+- What happened: the first search for the vision sets passed rules 1-5 with near-grey faces (sat 0.03-0.08 against rho 0.035), and the palette writer then failed seven fields: the shielded tiers are whitened toward grey, and a pigment whose chroma disc reaches the neutral axis owns that grey, so a Jade shield read as Fire's face.
+- Do instead: keep every pigment's sat at least about 0.1 (grey stays unclaimed), and put the writer's field check (`author_colour_set_assets.field_problems`) inside any search's score, not after it.
+- Evidence: `author_colour_set_assets.py --check` (the failures, then clean on the re-search); the six vision sets' sat values.
+- Promoted: no
