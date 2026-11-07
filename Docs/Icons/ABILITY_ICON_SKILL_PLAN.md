@@ -405,6 +405,15 @@ the omni card, the Soliton Network (three tunnels forking from a mouth). Single 
 `MeerkatHUDView` fills; `MeerkatHUDVariant` (`author_meerkat_assets.py`, the Angler's clone pattern) binds them by the
 guids in `Tools/Build/meerkat_icon_ids.py`. Not reviewed by Garrett yet: the next round is his pick, one card at a time.
 
+**The Stoat (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the shipped
+row still drew the retired kit (the mode switch, the field dipole, the pathfinder). The four cards now draw Yash's
+orbit-only kit from `Stoat.fbx` (dilated; side-on where the legs read) in parts `StoatHUDView.RefreshParts` paints:
+Ripple (the pair meeting throws white arcs at a fauna; Siphon's petals come back), Heavy Launch (the Stoat flung out
+of the orbit, its kick and wake; Armoured Wake rims the wake), Catch Orbit (attractor, repulsor, the Stoat caught on
+the orbit; Accretion pulls a rival prism in), Timed Slingshot (the orbit, the 90-degree window lit while in it, the
+Stoat off the tangent; Foresight's dashed rival path). Omni: Fulmen, a zigzag bolt from an omni crystal. The Time
+card's window colour is the domain, not the lime. Sheets: `Docs/Icons/sheets/stoat_{ripple,launch,orbit,sling,omni}.png`.
+
 **The Shrike (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the four
 glyphs drew a generic chevron; every card now draws the real hull from above (`Shrike.fbx`) in parts
 `ShrikeHUDView.RefreshParts` paints. Targeting Array: the Shrike paints a rival prism inside a reticle (a ring with four
