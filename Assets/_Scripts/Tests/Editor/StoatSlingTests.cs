@@ -741,9 +741,10 @@ namespace CosmicShore.Tests
                          "trampolineAiTurnScale: 100\n" })
                 StringAssert.Contains("  " + row, text);
             // The AI bounces only for a turn of 35 deg or more (stoat_orbit_sim.py --trampoline: 20 bounced it off its line).
-            foreach (var path in new[] { "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
-                         "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset" })
-                StringAssert.Contains("  aiSlingMinTurnDegrees: 35\n", Read(path), path);
+            StringAssert.Contains("  aiSlingMinTurnDegrees: 35\n", text);
+            // Slingshot's own AI rows are the trained ones (2026-11-08, Tools/Build/promote_trained_drives.py): it hardly
+            // presses to turn (148 deg) and presses for the warp on long legs instead.
+            StringAssert.Contains("  aiSlingMinTurnDegrees: 147.951\n", Read("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset"));
             var cfg = ScriptableObject.CreateInstance<StoatSlingConfigSO>();
             try { Assert.IsTrue(cfg.Trampoline, "on by default"); }
             finally { UnityEngine.Object.DestroyImmediate(cfg); }
@@ -769,16 +770,35 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TrampolinePress_TurnsAsBefore_AndPressesForTheWarpOnlyWhenTheRuleIsOn()
+        {
+            // The shipped configs carry aiWarpMinDistance 0: the trampoline AI presses exactly as before (to turn only).
+            Assert.IsFalse(StoatSlingMath.TrampolinePress(new Vector3(0f, 0f, 900f), 50f, 123f, 0f, out _), "dead ahead, rule off");
+            Assert.IsTrue(StoatSlingMath.TrampolinePress(new Vector3(-400f, 0f, 100f), 50f, 123f, 0f, out bool left), "a turn of 76 deg");
+            Assert.IsTrue(left, "the target on the left bounces left");
+            Assert.IsFalse(StoatSlingMath.TrampolinePress(new Vector3(-40f, 0f, 10f), 50f, 123f, 0f, out _), "too near to press");
+            // With the rule on, a long leg dead ahead is a press; a short one is not.
+            Assert.IsTrue(StoatSlingMath.TrampolinePress(new Vector3(0f, 0f, 420f), 50f, 123f, 400f, out bool ahead), "a long leg");
+            Assert.IsFalse(ahead, "dead ahead bounces right (TryAutopilotSide's side for x >= 0)");
+            Assert.IsFalse(StoatSlingMath.TrampolinePress(new Vector3(0f, 0f, 399f), 50f, 123f, 400f, out _), "under the warp distance");
+            // The executor's trampoline autopilot reads it (the source, as the asset tests read the configs).
+            StringAssert.Contains("StoatSlingMath.TrampolinePress(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance,",
+                Read("Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatSlingExecutor.cs"));
+        }
+
+        [Test]
         public void EveryAIStoat_EarnsItsSpeed_NoWarpOnlyPresses_HoldsForTheWindow()
         {
             // Since 2026-11-02 speed is earned by timed launches: an AI that pressed for the warp alone spammed ~20-28 presses a
             // minute and timed almost none (Tools/Build/stoat_orbit_sim.py --earned); holding for the window it times most.
             foreach (var path in new[] { "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
                          "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset" })
-            {
-                StringAssert.Contains("  aiWarpMinDistance: 0\n", Read(path), path);
                 StringAssert.Contains("  aiHoldForWindowDegrees: 120\n", Read(path), path);
-            }
+            StringAssert.Contains("  aiWarpMinDistance: 0\n", Read("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset"));
+            // The one exception, Slingshot's TRAMPOLINE AI (2026-11-08, PR #1792's trained rows, promote_trained_drives.py):
+            // there a warp press on a leg of 310 u or more is the speed (slingshot_fit, bleeding-edge's 60 u kit: 61-70 s a
+            // race against 150-225 s for the old rows that never pressed for it). The orbit-era rule above is the hull's.
+            StringAssert.Contains("  aiWarpMinDistance: 310.106\n", Read("Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset"));
         }
     }
 }

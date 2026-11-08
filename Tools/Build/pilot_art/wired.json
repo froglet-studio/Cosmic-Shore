@@ -1,0 +1,95 @@
+{
+ "note": "which pilot id shows which portrait; written by Tools/Build/pilot_art/author.py, read by author_pilot_assets.py",
+ "portraits": {
+  "pilot.callsign.anvil": {
+   "guid": "2e1297052954c3cd743a89a1eece7bc4",
+   "png": "Assets/_Graphics/Pilots/Portrait_Brikon.png",
+   "spec": "Brikon"
+  },
+  "pilot.callsign.bandit": {
+   "guid": "c860a7a8d79d4175051c2ecf72f07160",
+   "png": "Assets/_Graphics/Pilots/Portrait_Rosh.png",
+   "spec": "Rosh"
+  },
+  "pilot.callsign.citadel": {
+   "guid": "a03f175d425d94c9b4460f94da44a2cd",
+   "png": "Assets/_Graphics/Pilots/Portrait_Nedira.png",
+   "spec": "Nedira"
+  },
+  "pilot.callsign.doe": {
+   "guid": "b66604ff38b66f483096844ba3000c16",
+   "png": "Assets/_Graphics/Pilots/Portrait_Fenlia.png",
+   "spec": "Fenlia"
+  },
+  "pilot.callsign.ensign": {
+   "guid": "7c3387d57eb1a8211259a581df4a1e95",
+   "png": "Assets/_Graphics/Pilots/Portrait_Veliane.png",
+   "spec": "Veliane"
+  },
+  "pilot.callsign.flume": {
+   "guid": "4801bd09da1ca9a48fcfc9cee1e419dd",
+   "png": "Assets/_Graphics/Pilots/Portrait_Ekora.png",
+   "spec": "Ekora"
+  },
+  "pilot.callsign.galleon": {
+   "guid": "99f446d5aebb2747d91ecd81a2703a1f",
+   "png": "Assets/_Graphics/Pilots/Portrait_Haradek.png",
+   "spec": "Haradek"
+  },
+  "pilot.callsign.hornet": {
+   "guid": "9e1a4991c5285a9b4d7f0e6efd3c4882",
+   "png": "Assets/_Graphics/Pilots/Portrait_Zeko.png",
+   "spec": "Zeko"
+  },
+  "pilot.callsign.ivy": {
+   "guid": "ba110b5f3baca6d48e1b7baeecf3cd34",
+   "png": "Assets/_Graphics/Pilots/Portrait_Mathalo.png",
+   "spec": "Mathalo"
+  },
+  "pilot.callsign.manger": {
+   "guid": "4c2f13581c9e4c8bfc6656aff1142b12",
+   "png": "Assets/_Graphics/Pilots/Portrait_Tamako.png",
+   "spec": "Tamako"
+  },
+  "pilot.callsign.needle": {
+   "guid": "2da1c92a86f7276df84180cf04fb161a",
+   "png": "Assets/_Graphics/Pilots/Portrait_Ilia.png",
+   "spec": "Ilia"
+  },
+  "pilot.callsign.opal": {
+   "guid": "769667c08e0beff28e60fd153a7f7c00",
+   "png": "Assets/_Graphics/Pilots/Portrait_Quivera.png",
+   "spec": "Quivera"
+  },
+  "pilot.callsign.rampart": {
+   "guid": "06230fc830d143f6972c6599a1ddaf56",
+   "png": "Assets/_Graphics/Pilots/Portrait_Obelo.png",
+   "spec": "Obelo"
+  },
+  "pilot.callsign.sundial": {
+   "guid": "831080755955379338daf3cc54cd49c3",
+   "png": "Assets/_Graphics/Pilots/Portrait_Delmira.png",
+   "spec": "Delmira"
+  },
+  "pilot.callsign.talon": {
+   "guid": "5d686f06a397c8ea84573649f6fb1061",
+   "png": "Assets/_Graphics/Pilots/Portrait_Wyvendo.png",
+   "spec": "Wyvendo"
+  },
+  "pilot.callsign.volt": {
+   "guid": "78ac1df8933466117de74b25312361b3",
+   "png": "Assets/_Graphics/Pilots/Portrait_Karenth.png",
+   "spec": "Karenth"
+  },
+  "pilot.callsign.wingman": {
+   "guid": "4b62206625ea755c0021d1089b8800f6",
+   "png": "Assets/_Graphics/Pilots/Portrait_Jorin.png",
+   "spec": "Jorin"
+  },
+  "pilot.callsign.zodiac": {
+   "guid": "dae15aa5b81249b22f0853f95008bac8",
+   "png": "Assets/_Graphics/Pilots/Portrait_Ivelia.png",
+   "spec": "Ivelia"
+  }
+ }
+}

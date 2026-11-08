@@ -118,6 +118,11 @@ SOURCES = [
     f"{_AR}/BrittleStarTime/BrittleStarTimeCourse.cs",
     f"{_AR}/LanternRun/LanternRunCourse.cs",
     f"{_AR}/Thornline/ThornlineCourse.cs",
+    f"{_AR}/DecoyRun/DecoyRunCourse.cs",
+    "Assets/_Scripts/Controller/Vessel/JacksRacePlan.cs",
+    f"{_AR}/PerchRun/PerchRunCourse.cs",
+    f"{_AR}/SlipLine/SlipLineCourse.cs",
+    f"{_AR}/Breach/BreachCourse.cs",
     f"{_AR}/Breakwater/BreakwaterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterStationBuilder.cs",
 ]
@@ -752,6 +757,16 @@ CAMERAS = {
     # Thornline: the thorn chain, its cubes on every bend and a ring at the middle of each leg, shot from an angle no
     # other gate race takes so the zig-zag of straight slings reads.
     "Thornline": (200, 30, 0.85, 44),
+    # Decoy Run: the I3 course - skewers on rolled flats, each flat's chalk rails beside its legs - shot low across the
+    # flats so the tilt between two groups reads.
+    "DecoyRun": (290, 22, 0.85, 44),
+    # Perch Run: the I4 reef - hairpins, coral heads on their legs, doubles on one line - shot along the course so a
+    # double's two mouths stack and the heads stand in front of their rings.
+    "PerchRun": (240, 18, 0.85, 44),
+    # Slip Line: the I4 course - rails in the Dynamo's three colours down every leg, the leaning ones off the line, the
+    # chains running on through two rings - shot along the course so the rails read as lanes into their rings.
+    "SlipLine": (230, 20, 0.85, 44),
+    "Breach": (215, 18, 0.85, 44),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
     # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
@@ -819,6 +834,45 @@ def recipe(stem, card_path, pal, ends):
         layers.append({"kind": "thornline", "intensity": INTENSITY, "seed": stable_seed(s), "path": True,
                        "settings": {"InnerRadius": inner, "RingCount": ends.get("thornlineGateTarget", 16)},
                        "tube": 0.14, "color": [1.45, 0.35, 0.6]})
+        nucleus()
+    elif s == "DecoyRun":
+        # COURSE tier: DecoyRunCourseSource.Build, mirrored, at I3 (the first level with flats); the harness lays the
+        # chalk rails too.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "decoyrun", "intensity": 3, "seed": stable_seed(s), "path": False,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("decoyRunGateTarget", 12)},
+                       "tube": 0.14, "color": [0.45, 1.3, 1.5]})
+        nucleus()
+    elif s == "PerchRun":
+        # COURSE tier: PerchRunCourseSource.Build, mirrored, at I4 (every role: hairpins, coral, doubles); the harness
+        # lays the coral too.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "perchrun", "intensity": 4, "seed": stable_seed(s), "path": True,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("perchRunGateTarget", 16)},
+                       "tube": 0.14, "color": [1.5, 0.75, 0.35]})
+        nucleus()
+    elif s == "SlipLine":
+        # COURSE tier: SlipLineCourseSource.Build, mirrored, at I4 (stubs, leaning rails, chains); the harness lays the
+        # rails in their colours.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "slipline", "intensity": 4, "seed": stable_seed(s), "path": True,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("slipLineGateTarget", 16)},
+                       "tube": 0.14, "color": [1.4, 1.2, 0.4]})
+        nucleus()
+    elif s == "Breach":
+        # COURSE tier: BreachCourseSource.Build, mirrored, at I4 (hard turns and walls); the harness lays the danger walls.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "breach", "intensity": 4, "seed": stable_seed(s), "path": True,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("breachGateTarget", 16)},
+                       "tube": 0.14, "color": [0.5, 1.1, 1.5]})
         nucleus()
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
                "WrasseRun", "Breakwater", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun"):
@@ -1093,7 +1147,7 @@ def recipe(stem, card_path, pal, ends):
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "Thornline"):
+               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "Thornline", "DecoyRun", "PerchRun", "SlipLine", "Breach"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)

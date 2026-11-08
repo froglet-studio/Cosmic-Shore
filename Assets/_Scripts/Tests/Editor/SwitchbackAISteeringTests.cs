@@ -38,6 +38,18 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Headlong_FliesTheRegattaSteering_WhateverTheSceneSays()
+        {
+            var go = new GameObject("SwitchbackAISteeringTests_Headlong");
+            try
+            {
+                Assert.IsTrue(CommitsFromApproachPoint(go.AddComponent<HeadlongController>()),
+                    "the AI Rhinos would loiter beside a missed I3-I4 mouth again (Docs/Reports/RHINO_HEADLONG_I4_STALLS.md)");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void Waystation_FliesTheRegattaSteering_WhateverTheSceneSays()
         {
             var go = new GameObject("SwitchbackAISteeringTests_Waystation");

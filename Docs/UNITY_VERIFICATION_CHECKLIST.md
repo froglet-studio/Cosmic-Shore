@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Voyage window's galaxy map draws the cells in 3D (`claude/project-thread-y85rw0`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/Voyages/VOYAGE_BOARD.md` §4c "In the game".
+- `HyperSeaCells`: the board's truncated-octahedron cells on a BCC lattice (the Heart is a nucleus), their sections, the slice's snap, the fades. `HyperSeaSky.ViewOf` slices the deep tiers at the snapped layer plus the reader's offset.
+- `VoyageMapSky` draws the slice's cells (walls, own-sea fill, cytoplasm, nucleus sprite), level tags in the centre cell, a 3D cell's card on a tap, a Lime line on the map's bottom edge. `VoyageCellDraw` paints the nucleus sprite into the map's atlas.
+- `VoyageEdgeGraphic` cuts along the map's bottom edge, draws the cells upright and a draggable Lime slice bar (drag, scroll, tap the handle to reset).
+- New authored lines `MapCellNucleus` ... `EdgeSlice` in `VoyageContent.asset`.
+
+**Verified without the editor:**
+- The reference compile, player and editor configs: 0 errors in changed files (the 21 left are the Moderation package gaps on bleeding-edge). Negative control: an error planted in `HyperSeaCellsTests` failed the editor config.
+- `HyperSeaCellsTests` and `HyperSeaSkyTests` run under .NET 8 with NUnit outside Unity: 12 of 12 pass (the page's goldens).
+- `author_voyage_assets.py --check`, `export_sky.js --check`, `cells_golden.js`, `sky_golden.js`, `ship/gates.sh`.
+
+**Verify in the editor:**
+1. Open the Voyage window and zoom the galaxy map to the Cell tier near Tumult. The cells show as octagons and squares with pale walls, each filled with its own sea; nuclei are lit caged spheres. Nothing shows under about 36 px a cell; walls and nuclei fade in, with no moire.
+2. Zoom to about 200 px a cell: the centre cell tags Nucleus, Cytoplasm and Membrane. At the Heart (dive to the galactic centre) they read Sgr A* and the circumnuclear disk.
+3. The strip under the map: at cell zoom it shows the same cells upright, and the map's bottom row of cells continues into it. Drag the Lime bar: the map's cells change smoothly. Scroll over the strip: 2 ly a notch. Tap the handle: back to the focus layer. A drag elsewhere on the strip still scrolls the page if the strip sits in one.
+4. Tap open water at cell zoom: the 3D cell under the tap is outlined and its card opens; a second tap closes it.
+5. Profiler: the map's mesh stays under 65k vertices at every zoom (cells have a 34k budget); no frame spike while dragging the bar.
+6. Check the nucleus sprite's look against the in-game Nucleus prefab.
+
+**First-pass tuning** (all guesses): walls from 36 px (board 22), fill from 60 px, inner walls from 90 px, tags from 200 px, cell vertex budget 34,000 on the map and 30,000 on the strip.
+
 ### 🔴 The Rhino splits into the Rhino (the plough) and the Swordfish (the sword) (`cece/practical-mendel-cdfsc3`, 2026-11-07, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SWORDFISH.md`, `R_VesselActions/RHINO_PLOUGH.md` § "The plough kit".
@@ -21647,6 +21670,80 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    about 5 s later ONE `client_exception` arrives with its count, top_frame and scene and no message text, and no second
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
+7. **The Web build and the device (2026-11-07, NOT RUN IN EDITOR; `unity_refcompile` player and editor OK, gates OK).**
+   Every Froglet Analytics event's envelope now carries `build_kind`, `device`, `os` and `device_model`
+   (`System/Instrumentation/AnalyticsDevice.cs`, stamped in `BuildSinkEnvelope`; never sent to UGS).
+   - Run `AnalyticsDeviceTests` (9 tests: editor / port / web / development / release, iPad vs iPhone, the 7-inch Android
+     tablet line, web desktop vs mobile, the schema lists the four fields).
+   - In the editor, play one match: Data health shows it as build **Editor**, device **Windows** or **Mac**.
+   - In the **web Toybox** (https://play.froglet.games/toybox) with consent granted: the console's **Web** build shows the
+     visit within a minute, as **Web desktop** (or **Web mobile** on a phone). If nothing arrives, check the browser
+     console for a CORS error on the analytics host.
+   - On an **iPad** build: Device = iPad shows the player; on an Android tablet, Android tablet.
+
+## 🔴 Breach: the Orca's Time race (2026-11-07, branch `claude/orca-convoy`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/breach_harness/run.sh --self-test`:
+10 pass, 6 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from `Arcade/BREACH.md` §8:
+
+1. Open `MinigameBreach` once and save it (a text clone); then `python3 Tools/Build/author_breach_assets.py --check`.
+2. Run the EditMode tests `BreachCourseTests` and `EnumIntegrityTests`.
+3. I1, one Orca with AI crew: hold the burn and the tank empties and stays empty; let go and it refills.
+4. I2: a burn into a hard turn swings wide of the ring; coasting it makes the ring.
+5. I3: walls stand before every other ring, rounded on the inside of the turn; flying into one stops the hull dead. The
+   gunners shoot a breach and it grows back 6 s later. I4: a wall on the ring after each hard turn, never meeting one.
+6. Two AI Orcas burn the straights, coast the turns and the walls, and finish (note any wall an AI hits).
+7. Outside the race: an AI Orca in any other mode flies exactly as before (its coach is null there; it never burns).
+8. MPPM two clients: both see the same walls.
+
+## 🔴 Slip Line: the Honeyguide's Time race (2026-11-07, branch `claude/honeyguide-slip-line`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/slip_line_harness/run.sh
+--self-test`: 10 pass, 6 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/SLIP_LINE.md` §8:
+
+1. Open `MinigameSlipLine` once and save it (a text clone); then `python3 Tools/Build/author_slip_line_assets.py --check`.
+2. Run the EditMode tests `SlipLineCourseTests` and `EnumIntegrityTests`.
+3. I1, one Honeyguide with an AI Ratel: three rails a leg in Ruby, Jade and Gold. With a charge, fly onto that colour's
+   rail nose along it: the hull zips to just past the ring, the ring counts, the charge goes. Ring to ring without a
+   slip never touches a rail.
+4. I2: one rail a leg, stubs visibly short. I3: rails lean off the line; a turn out early catches one inside the cone.
+5. I4: a chain's first ride lands on the second rail and rides on through the next ring when both colours are held.
+6. Two AI Honeyguides ride rails and finish (note any that circles a rail without catching it: `aiRailLead`).
+7. Outside the race: a Honeyguide in the Toybox slips and hunts exactly as before (its coach is null there).
+8. MPPM two clients: both see the same rails in the same colours.
+
+## 🔴 Perch Run: the Goby's Time race (2026-11-07, branch `claude/goby-perch-run`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/perch_run_harness/run.sh
+--self-test`: 10 pass, 7 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/PERCH_RUN.md` §8:
+
+1. Open `MinigamePerchRun` once and save it (a text clone); then `python3 Tools/Build/author_perch_run_assets.py --check`.
+2. Run the EditMode tests `PerchRunCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: hold the dart; the new reach ring slides out along the nose and the Goby stops on it. A dart through a ring
+   counts it.
+4. I2: a full charge through a hairpin leaves the next ring out of reach; a judged charge turns it in one dart.
+5. I3: coral heads stand on their legs; a dart at the centre stops on the head (the reach ring sits on it); a rim shot
+   threads. I4: a double darted on the right line counts both rings.
+6. Two AI Gobys dart ring to ring and finish (note any that turns in place or cruises).
+7. Outside the race: a Goby in the Toybox darts and its AI lays islands exactly as before (the coach is null there);
+   the reach ring shows while charging.
+
+## 🔴 Decoy Run: the Jacks' Time race (2026-11-07, branch `claude/jacks-decoy-run`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/decoy_run_harness/run.sh
+--self-test`: 10 pass, 8 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/DECOY_RUN.md` §8:
+
+1. Open `MinigameDecoyRun` once and save it (a text clone); then `python3 Tools/Build/author_decoy_run_assets.py --check`.
+2. Run the EditMode tests `DecoyRunCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: rings and chalk rails on one flat; herd past a ring, drop the decoy, centre the jacks behind it on the new
+   white take-off mark, take off, travel: the ring counts. Taking off THROUGH a ring does not count it.
+4. I2: one travel down a skewer counts both rings. I3: roll onto the next flat; the skewer lies on the board.
+5. I4: the hull starts with two decoys; the second travel doubles back through the hairpin and counts it.
+6. Two AI Jacks herd, take off and travel cycle by cycle and finish (note any jack that stops short of its waypoint).
+7. Outside the race: a Jacks in the Toybox herds and travels exactly as before (the coach is null there).
 
 ## 🔴 Thornline: the Shrike's Time race (2026-11-07, branch `claude/shrike-sling-race`)
 
@@ -21726,6 +21823,76 @@ Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY
    the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
 5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.
 
+## 🔴 2026-11-07 — Voyages, deep: the living HyperSea, rival crews, a job for every faction type, sagas and relics (unverified: no Unity editor in the session)
+
+**Plan:** `Docs/Voyages/DEPTH.md`. **Files:** `Data/Voyages/*` (`VoyageEnums`, `VoyageContent`, `VoyageState`,
+`VoyageRules`, new `VoyageWorld` and `VoyageRivals`; pure, 41 edit-mode tests green headless in
+`Tools/Build/voyage_depth_harness`), `Controller/Voyages/VoyageRun.cs` (verbs, the leg's pacing, hostile worlds, rival
+hulls at the stop, the race clock, chronicles, relics), `VoyageHarbour.cs` (the crew fills the board; `GalaxyState`),
+`UI/Views/VoyageJobsView.cs` (`{role}`, `{warnings}`, the job's own pay and intensity, the sea-today beat, the map's
+visibility), `VoyageMapGraphic.cs` (`Visible`, `IsDrawn`, colours for the new experiences), `VoyageEdgeGraphic.cs`,
+`VoyageMapSky.cs`, `ScriptableObjects/Voyages/VoyageContentSO.cs` (new lines) and `VoyageToyDefinitionSO.cs` (cull and
+observe radii, rival abeam, colours), `Data/Inventory/FactionCatalog.cs` (every type recruits). Assets from
+`author_voyage_assets.py` (`VoyageContent.asset`, `Toy_Voyage.asset`, the twin `Docs/Voyages/voyage_content.json`).
+Affects: Shombith's Voyage window (tokens and one visibility rule, no layout change), Garrett's squad layer (chronicle
+lines, a relic's name on its record). The reference compile has 0 errors in the changed files (the 21 remaining are
+the compile environment's missing Cinemachine and UGS packages, the same as on `bleeding-edge`).
+
+1. Run `VoyageRulesTests`, `VoyageDepthTests`, `AccountInventoryTests`, `PilotsAndArtifactsTests`. **Pass:** green
+   (`VoyageDepthTests.TheDepthScorecardHoldsItsBars` prints the scorecard to the test output).
+2. Menu_Main, open the Voyage window with a squad of three different faction types seated. **Pass:** about six voyage
+   cards (the seated pilots' first, the crew's after, then the way home when away); 25 places on the map in six marker
+   colours (ports, vaults and the hoard, cores, lairs and the pens, nurseries, shrines and derelicts); Cinder Shoal,
+   the Pale Anchorage and Keeper's Rest are NOT drawn. Open a card: SUITS a role, PAYS the course's price (farther and
+   rougher pays more), and warning lines where the world has them.
+3. Day 0 at a harbour: every faction type on the crew brings a job (seat each type in turn). **Pass:** a pilot of every
+   type has a card somewhere on the board over a few openings; the Leviathan's sighting is in the news of every port
+   (a Known hunter's board offers the hunt first).
+4. Set sail on a hunt to Lantern Reach with the Lantern Keeper's first chapter (the card whose news names half a chart).
+   **Pass:** the leg's open cells are thicker in the middle than at the ends (the lane profile); at the stop the vault
+   shells stand; stow one; "JOB DONE" and the chapter's done line; back in the window the second chapter (an
+   explorer's, to Keeper's Rest) is posted and the place is still not drawn.
+5. Sail the explorer's chapter. **Pass:** the Ark reaches Keeper's Rest; "KEEPER'S REST IS ON YOUR CHART"; the place is
+   drawn from now on and the priest's finale is offered once the Priest type is Known (two priest jobs done).
+6. Sail the finale (a vigil: hold the Ark at the beacon 40 s). **Pass:** "LANTERN OF ORIEL IS ABOARD"; the relic rides
+   in the Ark's hold (GALLEON's sight shows it); dock at home: the Ark's ARTIFACTS tab shows a Hydra named Lantern of
+   Oriel with its lore; the saga is never posted again.
+7. A lair (The Maw or Gnawreach) with a hunter's cull. **Pass:** the lair's world starts under the other domain's colour
+   and thick with creatures; "FELLED n OF 5" counts creatures felled near the Ark; done at 5; pressure eases (the next
+   board's warning for that place is gone).
+8. A nursery with a gatherer's harvest or a sport exhibition. **Pass:** "GATHERED n OF 12 CRYSTALS" counts the whole
+   squad's crystals; done at the goal. A preservationist's tend: "HOLDING" counts down; a kill by any seat undoes it.
+9. A derelict with a first responder's rescue, a shrine with a priest's vigil, a core with an aristocrat's hold.
+   **Pass:** each holds while you stay with the Ark; a convoy ("KEEP THE HULL ABOVE 60 PERCENT") is done on arrival
+   only with the hull above the floor.
+10. Rivals. Sail where a rival crew stands (the board's warning "<crew> WERE SEEN BOUND FOR <place>" names it).
+    **Pass:** three AI hulls in the crew's domain stand abeam of the Ark; "<CREW> ARE HERE" and the relation line; a
+    crew of your colour fights beside you; another colour's grazes your mass. At a vault field with a racing crew a
+    shell is retired every 45 s with "<CREW> OPENED A SHELL BEFORE YOU", and the next board's story says so.
+11. Notoriety: three pirate or thief jobs. **Pass:** every card warns "A PRICE IS ON YOUR ARK"; a bounty-hunter crew
+    (Writ and Hook) sails for your destination within a few days; the price fades three days a point.
+12. Two finds aboard away from home. **Pass:** cards warn "2 FINDS ABOARD AND AT STAKE"; the nearest port's news has
+    the rumour; a pirate crew at that port sails for you. Let the Ark fall to them: "<CREW> TOOK YOUR ARK AT ..."; the
+    logbook's nemesis is set (the story line names them).
+13. Leave the game for a day and come back. **Pass:** the galaxy moved: a picked field is lit again (news at the
+    nearest port), rivals stand elsewhere, blooms ripened.
+14. A record saved before this pass (the slice's). **Pass:** it loads, every place and rival is filled in, the saved
+    job still works (a saved hunt asks a stow), nothing is ticked twice.
+15. The Arkway (Wander > With Ark) and the Ark escort. **Pass:** unchanged (the escort's roles now read their host through
+    `IArkEscortHost`; the escort sim's numbers at d3 and d4 are within the noise of `Docs/Voyages/ARK_ESCORT.md` §4).
+16. Wingmates on a voyage (round 2). Seat a Sparrow and a Squirrel beside you and sail a lair. **Pass:** the Sparrow hunts
+    the hostile creatures nearest the Ark instead of hovering at its flank, the Squirrel cultivates the nucleus when the
+    threats are few, both come back to the flank when they range past the leash, and both are taken back when the voyage
+    ends; the escort sim is unaffected.
+17. Do the same job twice on different days (two hunts at Lantern Reach). **Pass:** the story line reads differently
+    the second time (several authored ways to say it); the open card's brief shows STANDING (a stranger, known or
+    trusted, by the pilot's faction) and its Story level ends with YOUR LOG once a voyage has been sailed.
+18. FrogletTools > Voyages > Depth Scorecard (headless, 40 galaxies). **Pass:** the console prints the scorecard in a few
+    seconds with "BARS: all hold". FrogletTools > Voyages > Forget This Machine's Galaxy (dev), then open the Voyage
+    window. **Pass:** the board is a new galaxy's (the seed news, every rival at home); finds already docked are kept.
+19. Dock at home while a rival crew stands at your harbour (set one there with the Forget tool's new galaxy and a day's
+    sailing, or trust `VoyageDepthTests.NoRivalIsMetInAHarbour`). **Pass:** no rival hulls stand in home water.
+
 ## 🔴 Manta ability icons, round 3 (2026-11-07, Garrett, NOT COMPILED, NOT RUN IN EDITOR)
 
 Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's container (`unity_refcompile` stopped at
@@ -21745,3 +21912,175 @@ Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's c
 6. **Omni card**: the omni crystal card shows the cash-out (three blooms round a crystal).
 7. **Domain**: switch domain (Jade, Ruby, Gold): every Manta on the cards wears it.
 
+## 🔴 Regatta's shuffled course pool (2026-11-07, Garrett, NOT RUN IN EDITOR)
+Branch `claude/project-thread-pnwryl`. `unity_refcompile` (player and editor) has 0 errors in the changed files (the 21
+it reports are already on bleeding-edge: Vivox and Moderation packages); `author_regatta_assets.py --check` OK. The
+new edit-mode tests were compiled, not run. Details: `Docs/Reports/REGATTA_COURSE_POOL.md`.
+
+
+1. **Run the edit-mode tests** `RegattaCoursePoolTests` and `RegattaCourseTests`.
+2. **Play Regatta alone three times** with the ArcadeMatch log channel on (FrogletTools > Toolbox > Logging): each match
+   logs `[Regatta] Course variant k (Label) of 4`, the laid circuit is that entry's, and three matches lay three
+   different circuits. The start line sits behind the laid circuit's first ring.
+3. **Play a two-machine match**: host and client lay the same circuit (same rings, same rails).
+4. **Watch a Regatta replay** in its real scene: it lays the circuit the match was flown on.
+## 🔴 Regatta course features: rail sections, gaps, detours, alternate rings, line crystals (2026-11-06, Garrett's plan brief 10, NOT RUN IN EDITOR)
+Branch `claude/project-thread-d75lky`. `RegattaCourseFeatures` on `SpawnableRegattaRails` (empty on every shipped variant,
+which lays today's course prism for prism: the course harness output, `course.js` and the measurements are byte-identical).
+Compiled with `unity_refcompile` (0 errors in the changed files; the 21 errors it reports are in `UgsRequestPolicy.cs`, untouched
+here) and `RegattaCourseFeaturesTests` RUN offline by `Tools/Build/regatta_course_harness/features.sh` against the harness's
+UnityEngine and NUnit stubs (9/9). Nothing has been played. Set `RegattaCourseFeatures.Override` from a test or fill a variant's
+`courseFeatures` on a scratch copy, never on a shipped variant without Yash.
+1. **Run the edit-mode tests** `RegattaCourseFeaturesTests` and `RegattaCourseTests` in the editor.
+2. **Empty features, any intensity:** play Regatta. The rails, the rings, the AI and the crystals in the nucleus are as before
+   (an AI Urchin rides its own lane; a Squirrel AI skims its own lane; the race-line hulls fly their sides).
+3. **A neutral stretch** (`Sections`: Leg -1, From 0.3, To 0.7, Neutral): the middle of every leg is Blue; an AI Urchin leaves
+   its rail there and re-latches after; a Squirrel AI keeps skimming through it.
+4. **A gap** (Leg 2, From 0.4, To 0.6, Kind Gap): nothing is laid there, an Urchin riding into it launches off the rail end and
+   re-attaches on the far side; no `NullReferenceException` from the lane readers (controller, Skim Race pilot, flight recorder).
+5. **A detour** (Leg -1, From 0.15, To 0.85, Detour 90, DetourBearing 45): the braid bows off the line mid-leg and still passes
+   through every ring at the lane offset; the race-line AIs follow it without missing a mouth.
+6. **Plain / shielded stretches** (Kind Plain / Shielded): a Rhino sword, a Sparrow gun or a Dolphin blast cuts the plain stretch;
+   an Urchin riding a cut stretch keeps going at its destroyed-terrain speed.
+7. **An alternate ring** (`AlternateGates`: Ring 3, Offset 250, Bearing 0): a second ring stands beside ring 4, lights with it,
+   and threading EITHER counts once (the gate count and the scoreboard advance by one); an AI that is not riding takes it when
+   it is the shorter way.
+8. **Line crystals** (`Crystals`: PerLap 3): three crystals sit on the racing line and respawn in place; no AI turns off its line
+   for one; with PerLap 0 the nucleus crystals are back.
+9. **Two machines:** host and client see the same alternate rings, gaps and crystals.
+## 🟡 Stoat: the trampoline autopilot can press for the warp (2026-11-06, Garrett's regatta balancing, NOT PLAYED)
+`StoatSlingMath.TrampolinePress`; `StoatSlingExecutor.AutopilotTrampoline` reads `aiWarpMinDistance` (both shipped configs
+carry 0, so the game is unchanged). Compiled by `unity_refcompile` (player and editor configs, 0 errors in the changed
+files; 21 errors elsewhere on bleeding-edge that predate this). EditMode tests not run (no editor). `Docs/Reports/SLINGSHOT_STOAT_AI.md`.
+- [ ] Run `StoatSlingTests` (the new `TrampolinePress_*` test).
+- [ ] With the trained rows in `StoatSlingConfig_Slingshot` (report section 5, restart C): AI Stoats race Slingshot I1-I4,
+      finish, miss few rings, never fly far off the course (model: 62-71 s).
+
+## 🔴 Look sheet: first run (2026-11-07, `cece/affectionate-fermi-x1lp81`, compiled with `unity_refcompile --config editor`, NOT RUN IN EDITOR)
+
+The look-sheet kit (`Docs/LOOK_SHEET.md`, `Docs/SKILL_TRAINING_PLAN.md` 3.1): `Assets/_Scripts/Editor/Look/LookSheetCapture.cs`
+and `LookSheetLauncher.cs` (editor assembly), `Tools/Build/unity_look/{look,verify,sheet}.py`, `Tools/CI/unity_look_in_container.sh`,
+`.github/workflows/look-sheet.yml`, `.claude/skills/unity-look/SKILL.md`.
+
+**Verification status.** `bash Tools/Build/unity_refcompile/run.sh --config editor` compiled both files later the same
+night (a .NET 8 root assembled from nuget.org packages, `Tools/Build/unity_refcompile/dotnet_from_nuget.py`, after the
+installers were refused by the proxy): `gated: the 2 changed since origin/bleeding-edge: LookSheetLauncher.cs,
+LookSheetCapture.cs` and `0 in files changed since origin/bleeding-edge` (the run's 21 errors are the known Vivox /
+Moderation reference gaps of the sandbox, in files this branch does not touch). Negative control: a `static int
+_negativeControl = "not an int";` planted in the launcher was reported as `CS0029 ... (1 in files changed)`, then
+removed. `check_console_logging.py` and `check_conditional_compilation.py` pass. No editor was open: NOT RUN. The
+refcompile's UnityEditor reference is 2021.1, so a Unity 6 editor-API removal would not show; every UnityEditor member
+used is also used by merged editor files. They were written against the APIs read in `SwitchbackSoakLauncher`, `SwitchbackSoakRunner`,
+`ThresherTimeSoakRunner`, `ScreenSwitcher` (the public `OnClick*Nav` methods), `PrivacyConsentOverlay.Current`,
+`AuthenticationSceneController` (reflection, as the soak runners do), `GameDataSO` (`CosmicShore.Utility`), and the
+`FrogletTool` attribute. The Python kit's `--self-test` passes (verify's blank-frame negative controls, sheet's layout,
+look's command line). The workflow YAML parses.
+
+**The first run** (`Docs/LOOK_SHEET.md` section 4):
+1. Open the project; the reference compile passed, so a compile error here would be a Unity 6 editor-API difference.
+2. `FrogletTools > Build > Look Sheet > Menu screens`. Expect `Logs/LookSheet/menu_<screen>_pc.png`, `_phone.png` and
+   `_gameview.png` for Home, Hangar, Port, Profile and Codex, plus `manifest.jsonl` and `summary.json` with `ok: true`.
+   Compare the render-to-texture capture with the Game view one: the UI must be present on both (if not, the
+   overlay-canvas retargeting needs the children's layers), and the world too (if not, the menu camera is stacked).
+3. Headless, editor closed: `python3 Tools/Build/unity_look/look.py menu HOME` (needs Pillow). Expect `LOOK SHEET: ALL OK`
+   and `sheet.jpg`.
+4. **Negative control:** the same command with `-nographics` added to the Unity line (`--print` shows it). Expect every
+   capture to FAIL the `not-blank` gate and exit 1.
+5. `python3 Tools/Build/unity_look/look.py mode switchback --times 5,15,30`: three frames of the Dolphin's race with the
+   HUD. Then `thresher-time`.
+6. In CI, once the `unity-ci` environment holds the licence: dispatch `Look sheet` (`menu`, `HOME,HANGAR`); expect the
+   artifact with `sheet.jpg`. Black frames under Xvfb mean the image's Mesa cannot run URP at that GL level (section 4.5).
+
+## 🔴 Pilot portraits: the /pilot-art kit's first four callsign portraits (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/sweet-goodall-duyp56`. No C# changed. Four 220x280 sprites were written by `Tools/Build/pilot_art/author.py`
+(`Assets/_Graphics/Pilots/Portrait_{Wyvendo,Karenth,Delmira,Rosh}.png` with the painted set's importer settings) and wired
+as the `portrait` of `Pilot_Talon`, `Pilot_Volt`, `Pilot_Sundial` and `Pilot_Bandit` through `author_pilot_assets.py`.
+Both `--check`s and `bash .claude/skills/ship/gates.sh` are green. The sheet: `Docs/Pilots/art/sheets/round.png`.
+
+1. **Import**: the four PNGs import as single sprites with transparency (no white or green halo round the fur).
+2. **Hangar**: Menu_Main > Hangar > PILOTS: TALON, VOLT, SUNDIAL and BANDIT show their portrait at 44x56 in the card's
+   portrait slot, upright, boots at the bottom, the other fourteen still show an empty portrait slot (noArtWord is authored blank).
+3. **Squads page**: a squad slot with one of those four seated shows the same portrait in its pilot image.
+4. **Legibility**: at the Hangar's size the animal reads first (lynx, axolotl, owl, octopus); if it does not, say which,
+   and the brief's species line is what changes (`Tools/Build/pilot_art/brief.py`).
+
+## 🔴 Pilot portraits, round 2: all eighteen callsigns (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/sweet-goodall-duyp56`. No C# changed. Fourteen more sprites (`Portrait_{Veliane,Tamako,Brikon,Ivelia,Quivera,
+Obelo,Nedira,Zeko,Mathalo,Fenlia,Jorin,Ilia,Haradek,Ekora}.png`) are wired to the fourteen remaining `Pilot_<Callsign>.asset`s,
+so every callsign now references a portrait. Both `--check`s and the ship gates are green. Sheet: `Docs/Pilots/art/sheets/round2.png`.
+
+1. **Hangar**: Menu_Main > Hangar > PILOTS: all eighteen cards show a portrait at 44x56, none shows an empty portrait slot.
+2. **Legibility at 44x56**: the animal reads first on each card; if one does not, name it and the brief's species line changes.
+3. **Transparency**: no green, blue or magenta fringe round any figure (three key colours were used this round).
+
+## 🔴 Arena Vessels row: Pick, Random, Draft, Squad (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-jypklp`. Compiled with `unity_refcompile` (player and editor configs); no Unity editor was
+open, so the `unity` CLI and the EditMode tests (`VesselSelectionRulesTests`, `ArcadeLobbySnapshotTests`,
+`ArenaSeatingTests`) have not run in Unity. Design: `Docs/HomeHub/ARCHITECTURE.md` §3.10. Protocol version 27: both
+machines need this build.
+
+1. **Run the EditMode tests** above. `EveryArenaCard_PlaysTheOneArenaIntensity` must pass for all four arena cards.
+2. **The row**: open each arena card (Regatta, Broadside, Astro League, Brood Rush). Where Intensity was, the section
+   reads **Vessels** with LB / RB either side of the mode name; the line beside the caption says what the mode does.
+   Check the copied buttons sit inside the section and the label does not overlap them (the row is built at runtime).
+   An arcade card still shows its I1-I4 row.
+3. **Pick**: unchanged: claim a hull, CHANGE, pick an ally AI's hull.
+4. **Random**: host steps to Random. Every human is dealt a hull at once (no two the same), every AI chip shows a
+   hull, Start opens. On Regatta the opponent AI stay Squirrels.
+5. **Squad** (needs a saved squad in the Ark): the vessel caption names the squad and its three vessels; the arrows
+   step between your squads; SELECT deals one of that squad's vessels that is on the card. A second machine with no
+   squad is dealt at random. The squad's element is not applied.
+6. **Draft** (two machines, two teams, an AI on each): the line shows whose turn and the seconds left. Only that pilot
+   can claim; on an ally AI's turn a human on its team picks it from the AI's pedestal; an all-AI team picks after
+   about a second; a seat left for 20 s is dealt a random hull. The order is A B B A. Start stays dead until the
+   draft is done. Adding an AI mid-draft restarts it.
+7. **In the match**: every pilot and AI flies the hull the lobby showed; the AI's autopilot follows the difficulty
+   (Easy noticeably softer than Legendary on Broadside and Astro League).
+
+## 🔴 AI nose lead in the Time minigames (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-qzbade`. Plan step: time-arcade. Compiled with `unity_refcompile` (0 errors in the changed
+files; the 21 elsewhere are packages the cloud cannot fetch); no Unity editor was open, so the `unity` CLI and the new
+EditMode tests (`TimeModeNoseLeadTests`) have not run in Unity. Each Time controller now carries an **AI nose lead**
+table (`aiNoseLead`, one `GateRaceController.AINoseLeadRow` per hull) that `GateRaceController.ArmRacer` applies to
+every AI as it is armed (`AIPilot.NoseLeadGain`, `NoseLeadMaxExtraDegrees`, default 40). The values are field defaults,
+so no scene was edited: Thresher Time 2.5, Switchback (Dolphin) 2.5, Slingshot (Stoat) 2.5, Headlong (Rhino) 2.5,
+Breakwater (Sparrow) 2.0, Serpentine (Serpent) 1.0, Redline (Manta) 0, Skein (Urchin) 0. Every number is a model result.
+
+1. **Run the EditMode tests** `TimeModeNoseLeadTests`.
+2. **Inspector**: select each Time scene's controller. The **AI nose lead** section shows one row with the hull and gain
+   above; a scene override would show the row in bold (there should be none).
+3. **Race the AI** at Legendary, I1 and I4, in Thresher Time, Switchback, Slingshot, Headlong and Breakwater: the AI goes
+   through ring mouths it used to clip or miss, with no corkscrewing or circling a ring. Serpentine at gain 1.0 the same.
+4. **Redline and Skein**: AIs race exactly as before (gain 0).
+5. **Regatta**: unchanged (it reads its race-line styles, not this table).
+
+## 🔴 Redline: the AI nose follow rate by difficulty (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+`RedlineController.aiNoseFollowByIntensity` (Switchback's shape) sets each AI Manta's
+`VesselTransformer.AINoseFollowPerSecond` on arming: Easy 2 / Medium 3 / Hard 6 / Legendary 9 per second at I1-I4
+(fleet lag 1.5; `Docs/Reports/REDLINE_MANTA_NOSE.md` §4). Ran: `/ship` gates, `unity_refcompile` player + editor (0
+errors in the changed files). Not run: Unity, the EditMode test `Redline_AINoseLag_TableByIntensityAndDifficulty`.
+
+1. **Run the EditMode tests** in `RedlineAISteeringTests`.
+2. **Legendary AIs, I4**: Redline with AI Mantas on Legendary. The model says ~97-100 s and few missed mouths (was
+   ~540 s with the fleet lag). Check no AI circles a mouth over and over and the time is within ~10% of that.
+3. **Easy vs Legendary**: at I1 and I4, an Easy AI is clearly slower than a Legendary one (Easy also flies
+   `GateRaceHandicap`'s late belief, so it is slower than the model's 156-272 s).
+4. **No carry-over**: race Redline, then another mode with an AI Manta: that mode's AI flies its own lag again.
+## 🔴 Skein: the AI Urchin's Regatta aim, rail seek and genome W (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-rdizqz`. Report: `Docs/Reports/SKEIN_URCHIN_AI.md` § "Shipped". Every expected number is
+from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
+
+1. **Run the EditMode tests** `SkeinRailSeekTests` (they also check `UrchinAutopilotConfig_Skein` loads for Skein and
+   Regatta keeps the shared asset).
+2. **Skein, AI Urchins on every seat, I1-I4.** Watch a free AI Urchin: it should turn toward a rail that runs through
+   its next ring, latch it and ride it, instead of flying straight at the ring. Expected: every race finishes, I4 in
+   roughly 6 minutes (the model's 352 s); before this, AI Urchins finished no I3/I4 race.
+3. **Turn `aiSeekRails` off** on the scene's SkeinController for one race as the control: the AI should go back to
+   flying at the rings and missing the pinned ones.
+4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).

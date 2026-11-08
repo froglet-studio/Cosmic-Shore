@@ -669,6 +669,56 @@ elements plus whatever it saw) - crystal-earned levels the previous owner simula
 There is no toast for a swap yet (a `GameToastSituation` is a per-mode asset edit); the camera
 retarget is the only feedback. None of this has been run in the editor.
 
+### 3.10 The Vessels row: Pick, Random, Draft, Squad (2026-11-07)
+
+Garrett, 2026-11-06: "remove intensities from arena games and replace with 4 new options for vessel selection: draft,
+random, pick (the current) and random from a squad". Arena cards (`ArenaRules`) have no intensity row any more; they
+always play **`SO_ArcadeGame.ArenaIntensity` = 2**, so whatever intensity used to choose on them (Astro League's arena
+scale, a starting-elements row, a per-intensity score target, crystal counts) is frozen at its intensity-2 value. The
+four cards' `MinIntensity`/`MaxIntensity` are 2/2 (`VesselSelectionRulesTests` holds every `ArenaGames` card to it), and
+the modal forces it too, because `LaunchPreferenceRules.ResolveIntensity` would clamp to a player's unlocked ceiling.
+The platform autopilot's skill on an arena card follows the AI difficulty (Easy 0.25 .. Legendary 1) instead of
+intensity x 0.25. Arcade cards keep I1-I4: every AI trains on them (`Docs/AI_SYSTEM/AI_PLAN.md`). Regatta's course no
+longer follows intensity either: it is drawn per match from a course pool (`claude/project-thread-pnwryl`, `REGATTA.md`).
+
+In the intensity section's place the panel shows the **Vessels** row: LB / RB (or the copied arrows) step the mode,
+host only, and the section's hint line says what the mode does or whose draft turn it is. The configure window is a
+generated prefab (`author_menu_configure.py`, which drifts from the committed prefabs as of this writing), so
+`ArenaLaunchPanel.ResolveSelectionRow` builds the row at runtime from parts already there: the stepper's LB / RB
+buttons, copied, and a label in the section caption's font. Every word is a serialized field on the panel or the modal.
+
+| Mode | Humans | AI on a human's team | AI on an all-AI team |
+|---|---|---|---|
+| Pick (1) | claim any free hull (unchanged) | teammates pick, or Auto | dealt at spawn, or the host picks |
+| Random (2) | the server deals each a random free hull | dealt by the host | dealt by the host |
+| Draft (3) | pick on their own turn | a human on that team picks on the seat's turn | random on its turn, after 1 s |
+| Squad (4) | choose a saved squad with the vessel arrows, SELECT deals one of its vessels at random (never its element) | dealt by the host | dealt by the host |
+
+How it is enforced, all on the host:
+
+- **The mode and the draft's turn** ride in `LobbySnapshot` (`VesselSelection`, `DraftTurn`, `DraftSeatIsAi`,
+  `DraftClient`, `DraftAiOrdinal`, `DraftTurnEndsAt`; protocol 27). Changing the mode gives every seat's hull back.
+- **Human claims** pass `Player.ServerArenaClaimGate`, which the modal sets while an arena card is open: a chosen hull
+  only in Pick or on the pilot's own draft turn (and never one a drafted AI holds), a dealt hull only in Random and
+  Squad. A deal is `Player.RequestArenaDealtClaim` (preferred hulls, then the card's), drawn on the server. Each
+  pilot's machine asks for its own deal and adopts whatever claim lands, so the panel shows the server's truth.
+- **AI picks** pass `MaySetAiHullUnderSelection`: any time in Pick, only on that seat's draft turn and from its own team
+  in Draft, never in Random or Squad, where the host deals every AI (and re-deals one a human's deal landed on).
+- **The draft** is a snake (Garrett agreed, 2026-11-06): teams in domain order, A B B A A B, within a team its humans
+  first, then its AI. A seat has 20 s (`draftTurnSeconds`), then it is dealt a random free hull. Adding an AI, a pilot
+  joining or anyone moving team restarts it. Start waits until the draft is done.
+- **Regatta's pinned opponents stay pinned** (`OpponentAIVessel`, the Squirrel): those seats are neither dealt nor
+  drafted until the racing AIs are confirmed well trained (Garrett's plan, 2026-11-06). Lift it by clearing the field
+  on the card.
+
+Squad mode reads the squads from the cloud save (`SquadRepo.Data.Book`), opening on the squad taken in from the Ark
+(`SquadLaunchIntent`) or the active one. Only the vessel comes; the pilot may come later (Garrett: "the element no, but
+we can consider the pilot coming"). A pilot with no saved squad is dealt at random. Arenas and voyages stay separate
+experiences, so nothing here reads or writes voyage state.
+
+**Not run in the editor yet.** The row's look (a runtime copy of the stepper's buttons) and the whole draft flow need a
+hand test in a two-machine lobby; `Docs/UNITY_VERIFICATION_CHECKLIST.md` lists the steps.
+
 ## 4. The Toy Box drives the LIVE toys
 
 `ToyboxModal` (`_Scripts/UI/Modals/ToyboxModal.cs`) is the app-shell face of the freestyle

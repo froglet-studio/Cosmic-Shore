@@ -247,6 +247,7 @@ by the compute job `redline-manta-time`.
 | Time crystals a lap | `RedlineTimeCrystals.PerLapByIntensity` | 0 / 1 / 2 / 3 (on the line at I2-I3, inside the apexes at I4) |
 | Time crystal regrow | `RedlineController.timeCrystalRegrowSeconds` (code default; not in the scene) | 5 s |
 | AI steers for Time crystals | `RedlineController.aiTimeCrystalSlack` (code default) | **0** (off, §4a) |
+| AI nose follow rate by difficulty | `RedlineController.aiNoseFollowByIntensity` (code default; Switchback's shape) | Easy / Medium / Hard / Legendary **2 / 3 / 6 / 9** per second at every intensity (fleet lag 1.5; `Docs/Reports/REDLINE_MANTA_NOSE.md` §4, 2026-11-08; not yet run in Unity) |
 | the cell's omni crystal | scene → `CrystalManager.crystalCountMode` / `fixedCrystalCount` (authored by the generator) | FixedCount / **0** |
 | AI commit / lead / through | scene → `GateRaceController` | 420 / 480 / 320 |
 | AI steering | `RedlineController.AICommitFromApproachPoint` (code) | the Regatta steering (§5.1) |

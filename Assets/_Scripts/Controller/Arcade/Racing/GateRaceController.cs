@@ -453,6 +453,18 @@ namespace CosmicShore.Gameplay
         /// <summary>The per-frame imminent-impact hook installed on every armed AI (<see cref="AIPilot.SetEmergencySteerProvider"/>), or null.</summary>
         protected virtual AIPilot.EmergencySteer AIEmergencySteerFor(IPlayer pilot) => null;
 
+        /// <summary>
+        /// A mode's way onto ring <paramref name="ringNo"/> for a FREE pilot: a point to fly to instead of the gate's
+        /// approach / mouth points, or false (the default) to fly the gate way. Asked after the missed-mouth test and the
+        /// leg latch, so a missed ring still re-latches and breaks off. Skein answers it for a free Urchin: fly to catch
+        /// a rail that threads the ring when the ride beats the straight flight (<see cref="SkeinRailSeek"/>).
+        /// </summary>
+        protected virtual bool TrySeekAim(IPlayer pilot, int ringNo, in RaceGate gate, Vector3 self, out Vector3 aim)
+        {
+            aim = default;
+            return false;
+        }
+
         protected virtual Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) => Vector3.zero;
 
         /// <summary>
@@ -1247,10 +1259,61 @@ namespace CosmicShore.Gameplay
         /// rate by difficulty here. Default: nothing.</summary>
         protected virtual void OnRacerArmed(IPlayer pilot) { }
 
+        /// <summary>
+        /// One hull's AI NOSE LEAD in a mode (<see cref="AIPilot.NoseLeadGain"/>, <see cref="AIPilot.NoseLeadMaxExtraDegrees"/>):
+        /// a mode-side setting, never a vessel change. The Time minigames carry one row per hull they race
+        /// (<see cref="AINoseLeadTable"/>); Regatta reads its race-line styles instead (<c>RegattaController.OnRacerArmed</c>).
+        /// </summary>
+        [System.Serializable]
+        public struct AINoseLeadRow
+        {
+            [Tooltip("The hull this row is for.")]
+            public VesselClassType Hull;
+            [Tooltip("The AI's nose lead gain, stated at the fleet nose lag (1.5/s): 0 = off, the pilot judges its error from " +
+                     "the nose; above 0 it judges from where it commands the nose (AIPilot.NoseLeadGain).")]
+            [Range(0f, 6f)] public float Gain;
+            [Tooltip("How far past the aim the nose lead may place the command, degrees (AIPilot.NoseLeadMaxExtraDegrees).")]
+            [Range(0f, 120f)] public float MaxExtraDegrees;
+
+            public AINoseLeadRow(VesselClassType hull, float gain, float maxExtraDegrees = AIPilot.DefaultNoseLeadMaxExtraDegrees)
+            {
+                Hull = hull;
+                Gain = gain;
+                MaxExtraDegrees = maxExtraDegrees;
+            }
+        }
+
+        /// <summary>This mode's per-hull AI nose lead, or null: the mode leaves <see cref="AIPilot.NoseLeadGain"/> alone
+        /// (Regatta sets it itself). When a table is given, every armed AI gets its hull's row, and a hull with no row
+        /// flies with the lead off, so no pilot carries another mode's value into this race.</summary>
+        protected virtual AINoseLeadRow[] AINoseLeadTable => null;
+
+        /// <summary>The nose lead <paramref name="table"/> gives <paramref name="hull"/>: its row, or off (0) with the
+        /// default max-extra angle when the table has no row for it. The first row for a hull wins.</summary>
+        public static AINoseLeadRow NoseLeadFor(AINoseLeadRow[] table, VesselClassType hull)
+        {
+            if (table != null)
+                foreach (var row in table)
+                    if (row.Hull == hull) return row;
+            return new AINoseLeadRow(hull, 0f);
+        }
+
+        void ArmNoseLead(IPlayer p)
+        {
+            var table = AINoseLeadTable;
+            // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot (HeldByAutopilot).
+            if (table == null || p?.Vessel?.VesselStatus is not Component status || !status ||
+                !status.TryGetComponent(out AIPilot autopilot)) return;
+            var row = NoseLeadFor(table, p.Vessel.VesselStatus.VesselType);
+            autopilot.NoseLeadGain = row.Gain;
+            autopilot.NoseLeadMaxExtraDegrees = row.MaxExtraDegrees;
+        }
+
         void ArmRacer(IPlayer p, Vector3 centre, SkimRaceHandicapLevel handicapLevel)
         {
             var pilot = p.Vessel?.VesselStatus?.AIPilot;
             if (pilot == null) return;
+            ArmNoseLead(p);
             OnRacerArmed(p);
 
             var captured = p;
@@ -1365,6 +1428,15 @@ namespace CosmicShore.Gameplay
                     Vector3 legFrom = index > 0 ? _course[RingIndexFor(index - 1)].Position : self;
                     approachLead = ApproachLeadFor(aiApproachLead, Vector3.Distance(legFrom, gate.Position),
                         aiCommitDistance, AICommitFromApproachPoint);
+                }
+
+                // The mode's own way onto the ring (Skein: a free Urchin flies to catch a rail that threads it), asked
+                // once the leg is latched and only for a pilot flying the ring it really sees (a difficulty mistake is
+                // flown the gate way).
+                if (!misjudged && TrySeekAim(captured, ringNo, gate, self, out Vector3 seekAim))
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.Approach, gate.Position, ringNo, lap);
+                    return seekAim;
                 }
 
                 // A crystal ON THE WAY, only in a mode whose race needs crystals (AIDetoursForCrystals; none

@@ -12,7 +12,13 @@ re-attack the old model never charged.
 
     python3 Tools/Build/manta_line_sim.py              # bands: default / the old Regatta / shipped, and the corner cap
     python3 Tools/Build/manta_line_sim.py --sweep      # the corner cap's corner speed / margin / lead grid
+    python3 Tools/Build/manta_line_sim.py --nose-lead 2.5   # the shipped bands on the game's nose lag: today vs the AI nose lead
     python3 Tools/Build/manta_line_sim.py --self-test
+
+The AI nose lead (AIPilot.NoseLeadGain, PR #1786; Tools/Build/ai_nose_lead.py is the shared piece) is race()'s
+`nose_lead` knob, OFF by default, and only on a lagged nose (nose="nose" / "command" / "pred"): a gain over 0 judges the
+error from the COMMAND and steers it onto the nose turned toward the aim by the gain times its error, past it (at most
+max_extra_deg, 40), where the lagging nose is pulled from. Gain 1 (no pull past the aim) is nose="command".
 """
 import math, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -21,6 +27,7 @@ import manta_drive_sim as md
 import regatta_line_sim as L
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang, rotate_toward
 from scarab_drive_sim import ai_stick
+from ai_nose_lead import NoseLead, effective_gain, judge_and_want   # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 REGATTA_TUNING = os.path.join(ROOT, "Assets/Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset")
@@ -63,7 +70,8 @@ class RailGrid:
         return best
 
 
-def race(intensity, bands=None, cap=None, T=300, dt=1 / 60, own=0, look_s=None, ram_cost=True, stick_lag=0.0, nose=None, blend=0.5, max_look=None):
+def race(intensity, bands=None, cap=None, T=300, dt=1 / 60, own=0, look_s=None, ram_cost=True, stick_lag=0.0, nose=None, blend=0.5, max_look=None,
+         nose_lead=None):
     """look_s: (careful, bold) look-ahead seconds in place of the Manta_Regatta style's. ram_cost: a ram on a rail that is
     not the pilot's colour halves the speed (MantaVesselChangeSpeedByPrism: maxSlowStrength 0.5, which every rail prism
     reaches; its own colour's rail is exempt), as the game does; the line flies the gap opposite its own rail.
@@ -72,7 +80,10 @@ def race(intensity, bands=None, cap=None, T=300, dt=1 / 60, own=0, look_s=None, 
     nose: None (the nose IS the command, the older models), "nose" (the game: the stick turns the COMMANDED heading
     and the nose follows it at VesselTransformer's fleet lag, LERP_AMOUNT 1.5/s, which AI hulls keep; the pilot judges
     its error from the nose, as AIPilot does), "command" (the same lag, the pilot judging from the command), or
-    "pred" (judging from the nose moved blend of the way to the command: where the nose is about to point)."""
+    "pred" (judging from the nose moved blend of the way to the command: where the nose is about to point).
+    nose_lead: the AI nose lead (AIPilot.NoseLeadGain; ai_nose_lead.NoseLead.from_config: None = OFF, today's steering; a
+    gain stated at the fleet lag, a {"gain", "max_extra_deg"} dict or a NoseLead), scaled once to NOSE_FOLLOW; it needs a
+    lagged nose (nose not None) and overrides what the pilot judges from (judged from the command, onto the lead point)."""
     """cap: None (the shipped drive, no corner cap) or md.Tuning-like (corner, mincorner, margin, lead)."""
     band, yband = bands or regatta_bands()
     C = sf.course_from(sf.load_course_js(), intensity)
@@ -88,6 +99,10 @@ def race(intensity, bands=None, cap=None, T=300, dt=1 / 60, own=0, look_s=None, 
     harmful = RailGrid([C['lanes'][(own + 1) % 3], C['lanes'][(own + 2) % 3]])
     s_prev = 0.0
     cmd = list(fwd)
+    lead = NoseLead.from_config(nose_lead)
+    # the lead's gain once a race from THIS model's nose rate (AIPilot.EffectiveNoseLeadGain): 0 with nose=None, where the
+    # nose IS the command and has nothing to lead
+    lead_gain = effective_gain(lead.gain, NOSE_FOLLOW) if nose is not None else 0.0
     v = md.CRUISE; idx = 0; t = 0.0; soar = 0.0; top = 0.0; misses = 0; lost = -1; ram = 0.0; rams = 0; was_in = False
     while t < T and idx < total:
         g = idx % n; ring = P[g]; ax = A[g]
@@ -99,10 +114,14 @@ def race(intensity, bands=None, cap=None, T=300, dt=1 / 60, own=0, look_s=None, 
         else:   # a missed mouth is flown the gate way until threaded (GateRaceController)
             aim = add(ring, mul(unit(sub(ring, pos)), 320))
         to = sub(aim, pos)
-        if nose == "command": judge = cmd
-        elif nose == "pred": judge = rotate_toward(fwd, cmd, math.radians(ang(fwd, cmd)) * blend)   # where the nose is going
-        else: judge = fwd
-        s_want = ai_stick(ang(judge, to))
+        if lead_gain > 0:
+            # the nose lead (AIPilot.NoseLeadGain): judge the error from the COMMAND and steer the command onto the nose turned
+            # toward the aim by the effective gain times its error, past it (capped), where the lagging nose is pulled from
+            judge, want = judge_and_want(fwd, cmd, to, lead_gain, lead.max_extra_deg)
+        elif nose == "command": judge, want = cmd, to
+        elif nose == "pred": judge, want = rotate_toward(fwd, cmd, math.radians(ang(fwd, cmd)) * blend), to   # where the nose is going
+        else: judge, want = fwd, to
+        s_want = ai_stick(ang(judge, want))
         s = s_want if stick_lag <= 0 else s_prev + (s_want - s_prev) * min(1.0, dt / stick_lag)
         s_prev = s
         c_cap = 1.0
@@ -119,7 +138,7 @@ def race(intensity, bands=None, cap=None, T=300, dt=1 / 60, own=0, look_s=None, 
         if nose is None:
             fwd = rotate_toward(fwd, to, turn)
         else:
-            cmd = rotate_toward(cmd, to, turn)
+            cmd = rotate_toward(cmd, want, turn)
             fwd = rotate_toward(fwd, cmd, math.radians(ang(fwd, cmd)) * min(1.0, NOSE_FOLLOW * dt))
         newpos = add(pos, mul(fwd, v * dt))
         a0 = dot(sub(pos, ring), ax); a1 = dot(sub(newpos, ring), ax)
@@ -181,8 +200,22 @@ def self_test():
     if not r["time"] or r["soar"] < 0.5: bad.append(f"the shipped Manta should finish I1 mostly in Soar: {r}")
     never = race(1, bands=(0.0, 1.0))
     if never["top"] > md.CRUISE + 1: bad.append(f"band 0 must never Soar: {never}")
+    # the nose lead is OFF by default: NoseLead() (gain 0) is the unset knob on the game's lag; a lag-free race (nose None)
+    # has nothing to lead and the knob leaves it alone; gain 1 (no pull past the aim) is nose="command"
+    lagged = race(2, nose="nose")
+    if race(2, nose="nose", nose_lead=NoseLead()) != lagged: bad.append("NoseLead() (gain 0) is not the unset lead")
+    if race(2, nose_lead=2.5) != race(2): bad.append("the lead moved a lag-free race (nose None)")
+    one, command = race(2, nose="nose", nose_lead=1.0), race(2, nose="command")
+    if (one["rings"], one["misses"]) != (command["rings"], command["misses"]):
+        bad.append(f"gain 1.0 is not the command-judged steering: {one} vs nose='command' {command}")
     print("manta_line_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
+
+
+def _lead_one(args):
+    """--nose-lead's pool worker: the shipped bands on the game's nose lag, today's steering vs the lead."""
+    I, lead = args
+    return I, race(I, nose="nose"), race(I, nose="nose", nose_lead=lead)
 
 
 if __name__ == "__main__":
@@ -191,6 +224,13 @@ if __name__ == "__main__":
     if "--sweep" in sys.argv:
         sweep(); sys.exit(0)
     from concurrent.futures import ProcessPoolExecutor
+    if "--nose-lead" in sys.argv:   # --nose-lead G[,EXTRA]: the shipped bands with the game's nose lag, today vs the lead
+        lead = NoseLead.from_cli(sys.argv[sys.argv.index("--nose-lead") + 1])
+        print(f"shipped bands {regatta_bands()} on the fleet nose lag (nose='nose'): today | nose lead {lead.gain:g}")
+        with ProcessPoolExecutor() as ex:
+            for I, today, led in ex.map(_lead_one, [(I, lead) for I in (1, 2, 3, 4)]):
+                print(f"I{I}: {today} | {led}")
+        sys.exit(0)
     jobs = [("bands", I, b) for b in (DEFAULT_BANDS, OLD_REGATTA_BANDS, regatta_bands()) for I in (1, 2, 3, 4)]
     jobs += [("cap", I, (520, 80, 0.2)) for I in (1, 2, 3, 4)]
     with ProcessPoolExecutor() as ex:

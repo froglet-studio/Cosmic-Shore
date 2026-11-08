@@ -24,6 +24,13 @@ alone. Until the lock moves into `run.sh`, start ONE run on a cold cache and fan
 Needs a .NET SDK, **8.0 or newer** (8.0 and 10.0 both verified), under `DOTNET_ROOT` (`run.sh` falls
 back to `$HOME/.dotnet`); the helper tools are built for the newest runtime + reference pack it holds.
 
+**No installer reachable (a cloud session whose proxy refuses dot.net and builds.dotnet.microsoft.com)?** The
+compile needs no SDK proper, only a host, a runtime, a reference pack and Roslyn's `csc.dll`, and nuget.org ships
+each as a package: `python3 Tools/Build/unity_refcompile/dotnet_from_nuget.py` fetches the seven packages (about
+65 MB) and lays out `~/.dotnet` the way the installer would (about a minute); `--check` says whether a root runs
+`csc`. First done by hand on 2026-11-07, when it ran this compile end to end in a cloud session. `dotnet build` does
+not exist in such a root; nothing here uses it.
+
 **The `webgl` config** compiles Assets code as the WebGL player of the browser Toybox
 (`Docs/WEBGL_TOYBOX.md`): the standalone platform defines are dropped, `UNITY_WEBGL`, `PLATFORM_WEBGL` and
 `FROGLET_WEB_TOYBOX` are added, and project asmdefs are filtered for the `WebGL` platform. Packages stay

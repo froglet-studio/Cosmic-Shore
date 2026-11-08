@@ -249,30 +249,30 @@
  "Manta": {
   "Charge": {
    "ability": "Sting",
-   "does": "Skimming prisms arms bombs. Graze a rival vessel or creature to plant one without them knowing; it goes off on its own after its fuse runs out unless they scrape it off on prism mass.",
+   "does": "Graze a rival vessel or creature to plant a bomb without them knowing; each costs the energy your skimming gathers. Every bomb shares one fuse and a new plant resets it, so they all go off together, and none can be scraped off.",
    "trigger": "Passive - skim to arm, graze to plant",
-   "scales": "More Charge carries more bombs and arms them faster by skimming.",
+   "scales": "More Charge makes each bloom knock more petals out of a rival.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Mass": {
-   "ability": "Yastri",
-   "does": "A hard, flat turn to one side. The outer edge of your trail flares out as you bank, leaving a wall of prisms behind the turn.",
-   "trigger": "Hold, one side per direction",
-   "scales": "More Mass makes the prisms in your trail bigger; the turn itself stays the same.",
+   "ability": "Decoy",
+   "does": "Every elemental crystal you collect leaves a decoy where it was, one of its effects frozen as the tell. A rival who takes it gets a cluster of danger prisms laid across their course.",
+   "trigger": "Passive - collect a crystal",
+   "scales": "More Mass makes a decoy stand longer.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Space": {
-   "ability": "Kabloom",
-   "does": "Touch a crystal to set off every bomb you have planted at once in big blooms, plus a bloom at your own ship. Pilots caught in a bloom lose Mass and Space.",
-   "trigger": "Passive - touch a crystal",
-   "scales": "More Space widens every bomb's bloom.",
+   "ability": "Skim",
+   "does": "Skimming prisms gathers the energy that plants bombs, and turns rival prisms explosive: destroyed, they take their neighbours with them. Touching a prism with your hull sets off every bomb and loses all the energy.",
+   "trigger": "Passive - skim prisms",
+   "scales": "More Space widens your skimmer.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Time": {
-   "ability": "Soar",
-   "does": "Squeeze both to soar: an analog boost that goes faster the harder you press and the straighter you fly. On a phone, lift both thumbs and steer by tilting.",
-   "trigger": "Hold both",
-   "scales": "More Time raises your top soaring speed.",
+   "ability": "Yastri",
+   "does": "Hard, flat turns on the turn pair, one side per direction. Your trail is a plain trail; Time makes the Manta faster, cruising and soaring.",
+   "trigger": "Hold, one side per direction",
+   "scales": "More Time raises your cruise speed and your soaring speed.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Omni": {

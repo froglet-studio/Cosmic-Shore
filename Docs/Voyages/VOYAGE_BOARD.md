@@ -198,10 +198,29 @@ hypersea ecology regions that are represented in the sea" and "the cellular leve
   `cells.js`, `deepzoom.js` and `lanes.js` into the pre-deep-zoom page (the committed board is byte for byte the
   published artifact, version 11). Never hand-edit `voyage-board.html`.
 - **Goldens**: `sky_golden.js` loads `cells.js` (the board's canvases and state stubbed) so its five views print the
-  page's slab height. **Not yet in Unity**: `HyperSeaSky.ViewOf` still slices at the unsnapped focus height, so its
-  golden "focus height at 900,2100 w 50" (30) differs from the page (35, the layer nearest Tumult's 30 ly) until the
-  cells are ported; the C# change waits for a Unity-verified commit. Courses are still routed and timed on the old
-  pointy-top hexagons (`HyperSea.CellCentre`); the game draws none of the cell levels.
+  page's slab height; `cells_golden.js` prints the cells' own numbers (the nucleus a point is in, the slice's snap,
+  the fades, ten sections polygon by polygon).
+- **In the game** (2026-11-08; Garrett, after testing bleeding-edge: "i didn't see any of the changes", because the
+  first two PRs changed only the board). The Voyage window's galaxy map now draws the same cells:
+  - `HyperSeaCells` (`Assets/_Scripts/Data/Voyages/HyperSeaCells.cs`): `cellAt`, `section`, the slice's snap and the
+    fades ported line for line in doubles; `HyperSeaCellsTests` holds `cells_golden.js`'s output. `HyperSeaSky.ViewOf`
+    now slices the deep tiers at the snapped layer plus the reader's offset (its golden at 900,2100 w 50 is 35, as the
+    page prints).
+  - `VoyageMapSky` draws the slice's cells under the stars: walls fade in from 36 to 58 px a cell (the board starts at
+    22 px; the map is one mesh with a vertex budget, so it starts later), each cell fills with its own sea from 60 px,
+    the cytoplasm's gradient and inner walls show from 90 px, nuclei fade in from a 4 px radius, and the cell at the
+    view's centre names its levels from 200 px. A tap on open water opens the 3D cell under it (its card reads the sea
+    at its nucleus) and outlines its section. A Lime line marks the map's bottom edge.
+  - `VoyageCellDraw` draws a cell's fill, cytoplasm and walls, and the nucleus as one quad of a sprite painted once
+    into the map's atlas (the caged sphere above 16 px radius, a plain one below so the cage never aliases). The
+    sprite does not flatten its rings as the slice moves off the nucleus's middle, as the board's does.
+  - `VoyageEdgeGraphic` cuts the sea along the map's bottom edge; with the cells on show it draws them cut upright and
+    the slice as a Lime bar: drag it or scroll over the strip to move it, tap its handle to put it back.
+  - The level tags, the strip's caption at cell zoom and the bar's handle are authored lines (`MapCellNucleus` ...
+    `EdgeSlice` in `voyage_slice.json`, written by `author_voyage_assets.py`). `MapCellLabel` (a hexagon's name) is no
+    longer drawn.
+  - Still on the hexagons: courses are routed and timed on `HyperSea.CellCentre`, a cell card's name and berth use
+    the hexagon under its nucleus, and the ecology regions' names, rings and the board's slice buttons are not ported.
 
 ## 5. Open decisions (Garrett)
 
@@ -218,5 +237,5 @@ hypersea ecology regions that are represented in the sea" and "the cellular leve
    course heights and so their danger; the game does not fly it yet.
 10. **New with the 3D cells (§4c):** truncated octahedra are the Voronoi cells of BCC, not FCC (FCC gives rhombic
     dodecahedra). The board is BCC; confirm, or switch the lattice to FCC and its cell to the rhombic dodecahedron.
-11. **New with the 3D cells:** route and time courses on the 3D cells instead of the hexagons, and port the cells, the
-    levels and the slice bar to the Voyage window.
+11. **New with the 3D cells:** route and time courses on the 3D cells instead of the hexagons (the cells, levels and
+    slice bar are in the Voyage window since 2026-11-08, §4c).

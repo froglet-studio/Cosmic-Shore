@@ -519,6 +519,10 @@ def cmd_plan(args) -> int:
         if why:
             print(f"ERROR: the round's section: {why} (--no-section plans it without one)", file=sys.stderr)
             return 1
+    # the title note joins noteOrder (a section's make_frame does this; --no-section did not, and `check` then warned
+    # "noteOrder does not list every note once": Rev 69, 2026-11-08)
+    if "noteOrder" in live and note_id not in live["noteOrder"]:
+        live["noteOrder"].append(note_id)
 
     if not only_ours_changed(original, live, [f for f, _ in placed], [note_id] + frame_notes, tab, new_tab):
         print("ERROR: the plan changed a key that is not ours; refusing to write", file=sys.stderr)
