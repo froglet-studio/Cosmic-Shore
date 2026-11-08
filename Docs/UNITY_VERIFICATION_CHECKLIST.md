@@ -21960,3 +21960,21 @@ machines need this build.
    draft is done. Adding an AI mid-draft restarts it.
 7. **In the match**: every pilot and AI flies the hull the lobby showed; the AI's autopilot follows the difficulty
    (Easy noticeably softer than Legendary on Broadside and Astro League).
+
+## 🔴 AI nose lead in the Time minigames (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-qzbade`. Plan step: time-arcade. Compiled with `unity_refcompile` (0 errors in the changed
+files; the 21 elsewhere are packages the cloud cannot fetch); no Unity editor was open, so the `unity` CLI and the new
+EditMode tests (`TimeModeNoseLeadTests`) have not run in Unity. Each Time controller now carries an **AI nose lead**
+table (`aiNoseLead`, one `GateRaceController.AINoseLeadRow` per hull) that `GateRaceController.ArmRacer` applies to
+every AI as it is armed (`AIPilot.NoseLeadGain`, `NoseLeadMaxExtraDegrees`, default 40). The values are field defaults,
+so no scene was edited: Thresher Time 2.5, Switchback (Dolphin) 2.5, Slingshot (Stoat) 2.5, Headlong (Rhino) 2.5,
+Breakwater (Sparrow) 2.0, Serpentine (Serpent) 1.0, Redline (Manta) 0, Skein (Urchin) 0. Every number is a model result.
+
+1. **Run the EditMode tests** `TimeModeNoseLeadTests`.
+2. **Inspector**: select each Time scene's controller. The **AI nose lead** section shows one row with the hull and gain
+   above; a scene override would show the row in bold (there should be none).
+3. **Race the AI** at Legendary, I1 and I4, in Thresher Time, Switchback, Slingshot, Headlong and Breakwater: the AI goes
+   through ring mouths it used to clip or miss, with no corkscrewing or circling a ring. Serpentine at gain 1.0 the same.
+4. **Redline and Skein**: AIs race exactly as before (gain 0).
+5. **Regatta**: unchanged (it reads its race-line styles, not this table).
