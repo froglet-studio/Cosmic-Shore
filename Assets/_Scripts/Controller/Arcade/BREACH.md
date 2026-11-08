@@ -97,9 +97,8 @@ shipped, and a person's burn never asks it.
 
 `BoostTankSeconds` and `Boosting` were added as read-only accessors for the coach.
 
-**Proposed, not done (Garrett's call):** every other Orca mode has the same AI helm that never burns. Breach's
-`BreachCourse.BurnWanted` is general (burn when lined up, coast hard turns and walls); a default coach for the gate races
-would give the Orca's AI its Time card everywhere.
+**Done since (2026-11-07, Garrett: "get everything shipped"):** every other Orca mode now has a default burn
+(`OrcaCrew.HelmAIWantsBurn`, `ORCA_CREW.md`): Breach's rule without its course-specific turns and walls.
 
 ## 5. AI
 
