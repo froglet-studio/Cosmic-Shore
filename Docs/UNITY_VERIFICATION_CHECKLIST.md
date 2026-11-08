@@ -22056,3 +22056,11 @@ from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
 3. **Turn `aiSeekRails` off** on the scene's SkeinController for one race as the control: the AI should go back to
    flying at the rings and missing the pinned ones.
 4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).
+
+## 🔴 Voyages: escort AI no longer steers by a destroyed hull after a pilot swap (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK in the cloud session).
+
+1. Start a voyage or an Ark escort with AI wingmates.
+2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
+3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
