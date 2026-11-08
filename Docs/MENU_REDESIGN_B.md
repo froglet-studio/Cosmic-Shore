@@ -6166,3 +6166,15 @@ labels small and spaced; the move shown once, in the window, not as a separate c
 filmstrip gives way to the switcher (the `#fleet` table stays as its own page), the control map moves into the window
 beside the ability as a scene, the ability cards become rows, and the type becomes Saira Condensed + Saira.
 
+
+**Built (2026-11-08, "Go ahead build it"):** `Docs/FleetCodex/index.html` is now this page, responsive (the desktop
+board above 1100 px, the phone board below), live at https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8. Differences from
+the boards: the move's scene is drawn by the ability's element so every vessel has one (on the Squirrel it is the
+board's scene); the omni ability carries the map's own words ("bursts into a ring of shielded blocks"), the boards'
+"Shield Ring" being a name no asset holds; crews show their abilities under seat headers; the vessel menu (the switcher)
+lists the solo vessels and the crews and links to the whole-fleet table. **Recent updates** replace the board's commit
+list (Shombith: "dont show commit messages", then "show recent changes by when somebody updates a game or a vessel"): one
+line a day naming the parts that changed (abilities and level-5 upgrades, the vessel, its icons, its model...) and the
+games of it that changed, read from git's file lists by `fleet_codex.py` `changes()`; no commit subject reaches the page
+or its data. Checked in Chromium at 1600 px (Squirrel, Wrasse, the fleet table) and 390 px (Squirrel, Wrasse, Orca, the
+fleet): no script error, no sideways scroll.
