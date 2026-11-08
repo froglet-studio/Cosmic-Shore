@@ -21961,6 +21961,37 @@ machines need this build.
 7. **In the match**: every pilot and AI flies the hull the lobby showed; the AI's autopilot follows the difficulty
    (Easy noticeably softer than Legendary on Broadside and Astro League).
 
+## 🔴 AI nose lead in the Time minigames (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-qzbade`. Plan step: time-arcade. Compiled with `unity_refcompile` (0 errors in the changed
+files; the 21 elsewhere are packages the cloud cannot fetch); no Unity editor was open, so the `unity` CLI and the new
+EditMode tests (`TimeModeNoseLeadTests`) have not run in Unity. Each Time controller now carries an **AI nose lead**
+table (`aiNoseLead`, one `GateRaceController.AINoseLeadRow` per hull) that `GateRaceController.ArmRacer` applies to
+every AI as it is armed (`AIPilot.NoseLeadGain`, `NoseLeadMaxExtraDegrees`, default 40). The values are field defaults,
+so no scene was edited: Thresher Time 2.5, Switchback (Dolphin) 2.5, Slingshot (Stoat) 2.5, Headlong (Rhino) 2.5,
+Breakwater (Sparrow) 2.0, Serpentine (Serpent) 1.0, Redline (Manta) 0, Skein (Urchin) 0. Every number is a model result.
+
+1. **Run the EditMode tests** `TimeModeNoseLeadTests`.
+2. **Inspector**: select each Time scene's controller. The **AI nose lead** section shows one row with the hull and gain
+   above; a scene override would show the row in bold (there should be none).
+3. **Race the AI** at Legendary, I1 and I4, in Thresher Time, Switchback, Slingshot, Headlong and Breakwater: the AI goes
+   through ring mouths it used to clip or miss, with no corkscrewing or circling a ring. Serpentine at gain 1.0 the same.
+4. **Redline and Skein**: AIs race exactly as before (gain 0).
+5. **Regatta**: unchanged (it reads its race-line styles, not this table).
+
+## 🔴 Redline: the AI nose follow rate by difficulty (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+`RedlineController.aiNoseFollowByIntensity` (Switchback's shape) sets each AI Manta's
+`VesselTransformer.AINoseFollowPerSecond` on arming: Easy 2 / Medium 3 / Hard 6 / Legendary 9 per second at I1-I4
+(fleet lag 1.5; `Docs/Reports/REDLINE_MANTA_NOSE.md` §4). Ran: `/ship` gates, `unity_refcompile` player + editor (0
+errors in the changed files). Not run: Unity, the EditMode test `Redline_AINoseLag_TableByIntensityAndDifficulty`.
+
+1. **Run the EditMode tests** in `RedlineAISteeringTests`.
+2. **Legendary AIs, I4**: Redline with AI Mantas on Legendary. The model says ~97-100 s and few missed mouths (was
+   ~540 s with the fleet lag). Check no AI circles a mouth over and over and the time is within ~10% of that.
+3. **Easy vs Legendary**: at I1 and I4, an Easy AI is clearly slower than a Legendary one (Easy also flies
+   `GateRaceHandicap`'s late belief, so it is slower than the model's 156-272 s).
+4. **No carry-over**: race Redline, then another mode with an AI Manta: that mode's AI flies its own lag again.
 ## 🔴 Skein: the AI Urchin's Regatta aim, rail seek and genome W (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
 Branch `claude/project-thread-rdizqz`. Report: `Docs/Reports/SKEIN_URCHIN_AI.md` § "Shipped". Every expected number is

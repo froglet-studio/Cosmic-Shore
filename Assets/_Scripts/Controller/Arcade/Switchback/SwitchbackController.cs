@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -26,6 +27,13 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SwitchbackController : GateRaceController
     {
+        [Header("AI nose lead")]
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
+                 "the lead off. Dolphin 2.5: the fleet lead.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Dolphin, 2.5f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
         [Header("Switchback course")]
         [Tooltip("Where gate 1 sits, as a distance along the spawn formation's POLE. Pilots spawn " +
                  "on an equatorial ring, so a point on that ring's axis is the only place every " +
