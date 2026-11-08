@@ -36,8 +36,8 @@
     }
   ],
   "bugs": {
-    "open": 355,
-    "source": "661 branch(es)",
+    "open": 364,
+    "source": "641 branch(es)",
     "top": [
       {
         "id": "E-cdf0c783c1",
@@ -73,20 +73,6 @@
     "validating": 10
   },
   "captures": [
-    {
-      "branch": "bleeding-edge",
-      "commit": "5851933830",
-      "contaminated": [
-        "frame cap active"
-      ],
-      "cpuBusyMs": 5.736590385437012,
-      "gcKB": 41.03079605102539,
-      "key": "Menu_Main|Garland",
-      "timestamp": "2026-11-05 10:24:50",
-      "user": "belac",
-      "valid": true,
-      "verdict": "REGRESSION (WARN contaminated: frame cap active)"
-    },
     {
       "branch": "bleeding-edge",
       "commit": "15f1d3ae0b",
@@ -184,12 +170,26 @@
       "user": "belac",
       "valid": true,
       "verdict": "not adopted as a baseline (frame cap active)"
+    },
+    {
+      "branch": "bleeding-edge",
+      "commit": "92b8178408",
+      "contaminated": [
+        "frame cap active"
+      ],
+      "cpuBusyMs": 10.276504516601562,
+      "gcKB": 41.976375579833984,
+      "key": "MinigameSerpentTime|MinigameSerpentTime",
+      "timestamp": "2026-11-07 21:10:11",
+      "user": "owner",
+      "valid": true,
+      "verdict": "not adopted as a baseline (frame cap active)"
     }
   ],
   "gates": [
     {
       "gate": "mathf params alloc",
-      "ok": true
+      "ok": false
     },
     {
       "gate": "burst MathF (swarm pose)",
@@ -208,9 +208,11 @@
       "ok": true
     }
   ],
-  "gatesOk": true,
-  "generatedUtc": "2026-11-07T11:58:00Z",
+  "gatesOk": false,
+  "generatedUtc": "2026-11-08T12:15:00Z",
   "next": [
+    "Fix the red gate 'mathf params alloc': mathf-params-alloc check: 1 FAILURE(S) (python3 Tools/Build/perf_hunt.py gates)",
+    "Resolve: Performance gate 'mathf params alloc' is red: mathf-params-alloc check: 1 FAILURE(S)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-11-05 15:58:46, commit ?..76c6835e69): gcKB 47.01902389526367 -> 129.4101104736328 (+175%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-11-05 15:58:46, commit ?..76c6835e69): marker Inl_UniversalRenderTotal 0.9318 -> 1.421 ms/frame (+53%)",
     "Resolve: Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-11-05 15:58:46, commit ?..76c6835e69): marker LateBehaviourUpdate 0.1986 -> 1.2582 ms/frame (+534%)",
@@ -256,10 +258,11 @@
     "Capture S5 Wildlife Liberation in Release (no valid baseline yet): Play Arcade > Wildlife Liberation in Release for 2 minutes: the editor captures S5 by itself - the L8 go/no-go",
     "Capture Switchback I2 in Release (no valid baseline yet): Play Arcade > Switchback (Dolphin), intensity 2, 2 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped: the editor captures it by itself",
     "Capture Switchback Blast Run I4 in Release (no valid baseline yet): Play Arcade > Switchback (Dolphin), intensity 4 (densest Blast Run field), 3 AI, in Release for 90 s, AI Diagnose camera and overlays off, fps uncapped",
-    "355 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
+    "364 open console bug(s) on the Bug Ledger: /bug-ledger fixes them (top: [FMODOneShotVolumeHelper] '{59f0cd35-6a01-4476-9879-318f40186599} (event:/SFX/Oneshots/Gameplay sfx/Boost Acti)"
   ],
   "openPerformanceTasks": [],
   "regressions": [
+    "Performance gate 'mathf params alloc' is red: mathf-params-alloc check: 1 FAILURE(S)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-11-05 15:58:46, commit ?..76c6835e69): gcKB 47.01902389526367 -> 129.4101104736328 (+175%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-11-05 15:58:46, commit ?..76c6835e69): marker Inl_UniversalRenderTotal 0.9318 -> 1.421 ms/frame (+53%)",
     "Performance regression in MinigameRegatta|MinigameRegatta (belac, 2026-11-05 15:58:46, commit ?..76c6835e69): marker LateBehaviourUpdate 0.1986 -> 1.2582 ms/frame (+534%)",
