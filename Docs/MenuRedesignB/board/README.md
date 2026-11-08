@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-06 from canvas version `1793993677-e49e` of **Frogma**: Rev 3 to Rev 66, 488 boards on 8 tabs. The canvas opens on the tab `froglet-analytics`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-08 from canvas version `1794138239-7332` of **Frogma**: Rev 3 to Rev 70, 464 boards on 10 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -545,24 +545,6 @@ Copied on 2026-11-06 from canvas version `1793993677-e49e` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
-#### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
-
-- `R64Live.dc.html` (not copied yet) - Rev 64 Live - Live scene (animated) - interactive
-
-#### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
-
-- `R62A.dc.html` (not copied yet) - Rev 62 A - The pads (recommended) - interactive
-- `R62B.dc.html` (not copied yet) - Rev 62 B - The map wall - interactive
-- `R62C.dc.html` (not copied yet) - Rev 62 C - Down the bay - interactive
-- `R62D.dc.html` (not copied yet) - Rev 62 D - The porthole row - interactive
-- `R62E.dc.html` (not copied yet) - Rev 62 E - Across the bay - interactive
-- `R62F.dc.html` (not copied yet) - Rev 62 F - At a porthole - interactive
-
-#### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
-
-- `R61C.dc.html` (not copied yet) - Rev 61 C - On the pads - interactive
-- `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
-
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 
 - [`R54Compare.dc.html`](R54Compare.dc.html) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
@@ -639,55 +621,20 @@ Copied on 2026-11-06 from canvas version `1793993677-e49e` of **Frogma**: Rev 3 
 - [`R44JQuests.dc.html`](R44JQuests.dc.html) - Rev 44 JQuests - On the sea, the Quests tab (the quest tracker)
 - [`R44JEpisodes.dc.html`](R44JEpisodes.dc.html) - Rev 44 JEpisodes - On the sea, the Episodes tab, locked: coming soon
 
-#### Rev 43 - Voyage window: the map left, the voyage card in three levels, Saga | Voyages | Episodes on LB / RB (six ways)
-
-- [`R43Compare.dc.html`](R43Compare.dc.html) - Rev 43 - where the voyage card goes at each level, all six side by side
-- [`R43Notes.dc.html`](R43Notes.dc.html) - Rev 43 - notes: what was asked, what all six share, the recommendation, what differs from the build
-- [`R43AVoyage.dc.html`](R43AVoyage.dc.html) - Rev 43 AVoyage - Drawer, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the card slides in from - interactive
-- [`R43ACrew.dc.html`](R43ACrew.dc.html) - Rev 43 ACrew - Drawer, level 2, Ark crew (the 12 settings, presets)
-- [`R43AStory.dc.html`](R43AStory.dc.html) - Rev 43 AStory - Drawer, level 3, the story (optional)
-- [`R43ASaga.dc.html`](R43ASaga.dc.html) - Rev 43 ASaga - Drawer, Saga tab on LB / RB (content unchanged)
-- [`R43AEpisodes.dc.html`](R43AEpisodes.dc.html) - Rev 43 AEpisodes - Drawer, Episodes tab on LB / RB (content unchanged)
-- [`R43BVoyage.dc.html`](R43BVoyage.dc.html) - Rev 43 BVoyage - Tray, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the arena preview's tray, - interactive
-- [`R43BCrew.dc.html`](R43BCrew.dc.html) - Rev 43 BCrew - Tray, level 2, Ark crew (the 12 settings, presets)
-- [`R43BStory.dc.html`](R43BStory.dc.html) - Rev 43 BStory - Tray, level 3, the story (optional)
-- [`R43BSaga.dc.html`](R43BSaga.dc.html) - Rev 43 BSaga - Tray, Saga tab on LB / RB (content unchanged)
-- [`R43BEpisodes.dc.html`](R43BEpisodes.dc.html) - Rev 43 BEpisodes - Tray, Episodes tab on LB / RB (content unchanged)
-- [`R43CVoyage.dc.html`](R43CVoyage.dc.html) - Rev 43 CVoyage - Level tabs, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - one card, Voyage / A - interactive
-- [`R43CCrew.dc.html`](R43CCrew.dc.html) - Rev 43 CCrew - Level tabs, level 2, Ark crew (the 12 settings, presets)
-- [`R43CStory.dc.html`](R43CStory.dc.html) - Rev 43 CStory - Level tabs, level 3, the story (optional)
-- [`R43CSaga.dc.html`](R43CSaga.dc.html) - Rev 43 CSaga - Level tabs, Saga tab on LB / RB (content unchanged)
-- [`R43CEpisodes.dc.html`](R43CEpisodes.dc.html) - Rev 43 CEpisodes - Level tabs, Episodes tab on LB / RB (content unchanged)
-- [`R43DVoyage.dc.html`](R43DVoyage.dc.html) - Rev 43 DVoyage - Rising sheet, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 ris - interactive
-- [`R43DCrew.dc.html`](R43DCrew.dc.html) - Rev 43 DCrew - Rising sheet, level 2, Ark crew (the 12 settings, presets)
-- [`R43DStory.dc.html`](R43DStory.dc.html) - Rev 43 DStory - Rising sheet, level 3, the story (optional)
-- [`R43DSaga.dc.html`](R43DSaga.dc.html) - Rev 43 DSaga - Rising sheet, Saga tab on LB / RB (content unchanged)
-- [`R43DEpisodes.dc.html`](R43DEpisodes.dc.html) - Rev 43 DEpisodes - Rising sheet, Episodes tab on LB / RB (content unchanged)
-- [`R43EVoyage.dc.html`](R43EVoyage.dc.html) - Rev 43 EVoyage - Dossier, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the three levels as num - interactive
-- [`R43ECrew.dc.html`](R43ECrew.dc.html) - Rev 43 ECrew - Dossier, level 2, Ark crew (the 12 settings, presets)
-- [`R43EStory.dc.html`](R43EStory.dc.html) - Rev 43 EStory - Dossier, level 3, the story (optional)
-- [`R43ESaga.dc.html`](R43ESaga.dc.html) - Rev 43 ESaga - Dossier, Saga tab on LB / RB (content unchanged)
-- [`R43EEpisodes.dc.html`](R43EEpisodes.dc.html) - Rev 43 EEpisodes - Dossier, Episodes tab on LB / RB (content unchanged)
-- [`R43FVoyage.dc.html`](R43FVoyage.dc.html) - Rev 43 FVoyage - Two cards, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 slide - interactive
-- [`R43FCrew.dc.html`](R43FCrew.dc.html) - Rev 43 FCrew - Two cards, level 2, Ark crew (the 12 settings, presets)
-- [`R43FStory.dc.html`](R43FStory.dc.html) - Rev 43 FStory - Two cards, level 3, the story (optional)
-- [`R43FSaga.dc.html`](R43FSaga.dc.html) - Rev 43 FSaga - Two cards, Saga tab on LB / RB (content unchanged)
-- [`R43FEpisodes.dc.html`](R43FEpisodes.dc.html) - Rev 43 FEpisodes - Two cards, Episodes tab on LB / RB (content unchanged)
-
 ### Tab: Fleet Codex  (`fleet-codex`)
 
-#### Rev 48 - Fleet Codex, modern: one page, the kit with its controls, the omni crystal
+#### Rev 69 - Fleet Codex vessel page, C in full: one vessel with every detail, calm - the desktop page and the phone
 
-- [`R48A.dc.html`](R48A.dc.html) - Rev 48 A - Marquee: the hull as a film still, five ability cards with every device's control on each card (recommended) - interactive
-- [`R48B.dc.html`](R48B.dc.html) - Rev 48 B - Bento: a fleet filmstrip on top, the vessel as a grid of tiles, one control map drawing all three devices tog - interactive
-- [`R48C.dc.html`](R48C.dc.html) - Rev 48 C - Ledger: the kit as one table, controller, PC and phone as columns of each ability row, the fleet as an index
-- [`R48Notes.dc.html`](R48Notes.dc.html) - Rev 48 - notes: what changed from Rev 45, the recommendation, what the build reads
+- `R69Desktop.dc.html` (not copied yet) - Rev 69 Desktop - C's flight-deck window, then abilities with their numbers and level 5, missions with filters, flight and every control, docs and changes - interactive
+- `R69Phone.dc.html` (not copied yet) - Rev 69 Phone - the same page at 390, the move under the ability row - interactive
 
-#### Rev 45 - Fleet Codex - a vessel in tabs
+#### Rev 68 - Fleet Codex for the website: four looks, each the whole fleet and one vessel window, the controls playing beside each ability
 
-- [`R45A.dc.html`](R45A.dc.html) - Rev 45 A - Tabs: Elements, Game Modes, Controls across the top; one element at a time; Mobile / PC / Controller as devic - interactive
-- [`R45B.dc.html`](R45B.dc.html) - Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Control - interactive
-- [`R45Notes.dc.html`](R45Notes.dc.html) - Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes
+- `R68A.dc.html` (not copied yet) - Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one - interactive
+- `R68B.dc.html` (not copied yet) - Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own contro - interactive
+- `R68C.dc.html` (not copied yet) - Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the c - interactive
+- `R68D.dc.html` (not copied yet) - Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its contr - interactive
+- `R68Notes.dc.html` (not copied yet) - Rev 68 - notes: what Shombith asked, the four type pairings, what each look changes in the live codex
 
 ### Tab: Froglet Analytics  (`froglet-analytics`)
 
@@ -724,17 +671,53 @@ Copied on 2026-11-06 from canvas version `1793993677-e49e` of **Frogma**: Rev 3 
 
 #### Rev 63 - Portrait menus: the same PC UI with the phone held upright (menus only; matches stay landscape)
 
-- `R63A.dc.html` (not copied yet) - Rev 63 A - Scale to width: the PC layout as it is, shrunk to the phone's width
-- `R63B.dc.html` (not copied yet) - Rev 63 B - Re-flow, band on top: the same PC pieces laid out on a tall 1080-wide canvas (recommended)
-- `R63C.dc.html` (not copied yet) - Rev 63 C - Re-flow, band at the bottom: as B, the nav band a tab bar under the thumb
-- `R63Notes.dc.html` (not copied yet) - Rev 63 - notes: what each costs to build and how big the words are
+- [`R63A.dc.html`](R63A.dc.html) - Rev 63 A - Scale to width: the PC layout as it is, shrunk to the phone's width
+- [`R63B.dc.html`](R63B.dc.html) - Rev 63 B - Re-flow, band on top: the same PC pieces laid out on a tall 1080-wide canvas (recommended)
+- [`R63C.dc.html`](R63C.dc.html) - Rev 63 C - Re-flow, band at the bottom: as B, the nav band a tab bar under the thumb
+- [`R63Notes.dc.html`](R63Notes.dc.html) - Rev 63 - notes: what each costs to build and how big the words are
 
 ### Tab: Launch Console  (`launch-console`)
 
 #### Rev 58 - Launch Console in the Unity editor: the window docked, narrow, and what it reads
 
-- `R58Docked.dc.html` (not copied yet) - Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactiv - interactive
-- `R58Narrow.dc.html` (not copied yet) - Rev 58 Narrow - Narrow, beside the Inspector: the same answers stacked - interactive
-- `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
+- [`R58Docked.dc.html`](R58Docked.dc.html) - Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactiv - interactive
+- [`R58Narrow.dc.html`](R58Narrow.dc.html) - Rev 58 Narrow - Narrow, beside the Inspector: the same answers stacked - interactive
+- [`R58Notes.dc.html`](R58Notes.dc.html) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
+
+### Tab: Ark  (`ark`)
+
+#### Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)
+
+- [`R67Ark.dc.html`](R67Ark.dc.html) - Rev 67 Ark - The Ark screen - Converter, Squads, Artifacts, Decor (live) - interactive
+
+#### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
+
+- [`R64Live.dc.html`](R64Live.dc.html) - Rev 64 Live - Live scene (animated) - interactive
+
+#### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
+
+- [`R62A.dc.html`](R62A.dc.html) - Rev 62 A - The pads (recommended) - interactive
+- [`R62B.dc.html`](R62B.dc.html) - Rev 62 B - The map wall - interactive
+- [`R62C.dc.html`](R62C.dc.html) - Rev 62 C - Down the bay - interactive
+- [`R62D.dc.html`](R62D.dc.html) - Rev 62 D - The porthole row - interactive
+- [`R62E.dc.html`](R62E.dc.html) - Rev 62 E - Across the bay - interactive
+- [`R62F.dc.html`](R62F.dc.html) - Rev 62 F - At a porthole - interactive
+
+#### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
+
+- [`R61C.dc.html`](R61C.dc.html) - Rev 61 C - On the pads - interactive
+- [`R61E.dc.html`](R61E.dc.html) - Rev 61 E - The map wall - interactive
+
+### Tab: Voyages  (`voyages`)
+
+#### Rev 70 - Voyages, redrawn in the Ark's look: a vessel in one press, a course that stays put, and the quest tracker as its own window
+
+- [`R70Compare.dc.html`](R70Compare.dc.html) - Rev 70 - the three fixes side by side: picking a vessel (22 presses, now 2), the course while the squad or domain changes (re-dealt, now pinned), and where the quest tracker lives (a Voyage tab, now its own window)
+- [`R70A.dc.html`](R70A.dc.html) - Rev 70 A - Bridge: the HyperSea map is the room, the voyages a rail along its foot, your squad beside the lit route (recommended) - interactive
+- [`R70B.dc.html`](R70B.dc.html) - Rev 70 B - The sea: the route poster at window size, the voyages along its foot, the open voyage on the right - interactive
+- [`R70C.dc.html`](R70C.dc.html) - Rev 70 C - Showroom: the destination fills the page under its name, as the Profile's Showroom does; the voyages as art cards under it - interactive
+- [`R70Crew.dc.html`](R70Crew.dc.html) - Rev 70 Crew - A's Ark crew: press a seat's vessel and the Hangar's vessel strip opens on that seat; one press picks the hull - interactive
+- [`R70Quests.dc.html`](R70Quests.dc.html) - Rev 70 Quests - Quests, its own window like the Profile: Episode 1's five quests on one track, the next one to play lit - interactive
+- [`R70Notes.dc.html`](R70Notes.dc.html) - Rev 70 - notes: what each option changes in the built window, the two rules the fixes need (the vessel strip, P-ui-21; the pinned board, Garrett's DEPTH.md 4), and the Quests window
 
 <!-- frogma.py readme: end -->

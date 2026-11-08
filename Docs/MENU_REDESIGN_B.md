@@ -33,6 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 | Shombith, 2026-11-08 (section 145) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -5249,6 +5250,10 @@ the next round goes on a new page called Menu Redesign C.
 
 ## 113. Rev 43 mockups: the Voyage window - the map left, the voyage card in three levels, Saga | Voyages | Episodes on LB / RB (2026-11-02, awaiting a pick)
 
+**Off the canvas (2026-11-08, section 145).** None of Rev 43 was picked, and its 32 boards were taken off Frogma to make room
+when the canvas reached its 512-file cap (Shombith's call). Every board is still in `Docs/MenuRedesignB/board/R43*.dc.html`
+and can be published back.
+
 **Asked (Shombith, 2026-11-02):** "design the new voyage page after taking in garrett's new PR ... take inspiration from
 the arena preview slide in slide out ... On the left we can show the whole map preview and the edge on view below ...
 opaque no transparency ... high res ... each voyage is given to you by your crew and the card should show that new
@@ -6081,3 +6086,103 @@ the message and its top frame). Player compare needs `GET /v1/similar?id=` worke
 asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in that order with a legend; play types Jade
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
 a better number. No player id reaches Claude on any of these. Awaiting a pick.
+
+## 145. Rev 70 mockups: Voyages, redrawn in the Ark's look - a vessel in one press, a course that stays put, the quest tracker in its own window (2026-11-08, awaiting a pick)
+
+**Asked (Shombith, 2026-11-08):** "Make new mockups for the Voyages, its not cool none of the designs are good and match
+other better parts of the game. For selecting vessels also what do you mean in order to select a vessel I have to click
+22 times also more when I change domain or team as well the course is changing. Make this better. Create a new page in
+/frogma Voyages or all voyage UI. Move the quest tracker out of the voyages, make it into its seperate window like
+profile and show that mockup as well in the redesign board maybe."
+
+**Design brief** (`Docs/claude/DESIGN_BRIEF.md`):
+
+```
+## Design brief: the Voyage window, redrawn, and the Quests window, 2026-11-08, claude/epic-fermat-6c7n2l
+
+The fundamental it serves      Cells and Domain: a voyage is a course through the HyperSea's cells, flown by a squad of
+                               one domain; the window shows that course and that squad, nothing else
+The principles it obeys        P-ui-21 (one configure card and its vessel strip serve Arcade, Arena and Voyage),
+                               P-ui-11 and P-ui-17 (nothing moves for its own sake; the sea lines are the one
+                               background motion), P-ui-29 (the Codex's element shapes), P-ui-35 (Lime is the one call
+                               to action; Set sail launches, so it is Ruby like Play), P-ui-37 (every word authored),
+                               P-ui-13 (elements have no colour), P-ui-34 (a domain colour only on a team thing)
+The one it comes closest to    P-ui-28 (Shombith, 2026-11-02: the quest tracker is a tab of the Voyage window). This
+                               round moves it out, on Shombith's own word of 2026-11-08 ("Move the quest tracker out
+                               of the voyages, make it into its separate window like profile"); P-ui-28 is his to
+                               restate, and the notes board says so
+What it changes for a player   any hull is one press away on a seat (it took up to 22 presses of a cycling button), the
+                               voyage on screen keeps its course while they change their squad or domain, and their
+                               quests have a window of their own
+The cheapest prototype         this Frogma round
+Who judges it, and where       Shombith (the menus) on Frogma; Garrett (the voyage rules) for the pinned board, since
+                               the board is dealt from the seated pilots and the home domain (Docs/Voyages/DEPTH.md 4,
+                               VoyageHarbour.Board, VoyageRun.LoadOrBegin); Caleb and Shombith (FTUE) for the quests
+The retire condition           a player still has to hunt for a hull, a course still moves under them, or the Quests
+                               window reads as a second Profile nobody opens
+```
+
+**On the canvas:** a new tab, **Voyages** (`voyages`), for all the Voyage UI; its first round is "Rev 70 - Voyages,
+redrawn in the Ark's look" (canvas version `1794138239-7332`). Rev 68 and 69 went to the Fleet Codex while these were
+drawn, so the round took 70. The canvas was at its 512-file cap; Shombith chose to take Rev 43 off it (section 113).
+- Copies: `Docs/MenuRedesignB/board/R70*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r70_voyages.py`.
+- Every board is drawn from the canvas's own art: the Ark's squads room (Rev 67, one per domain), the Rev 46 voyages
+  and their real courses on the HyperSea map, the hull renders, the pilot portraits, the Codex's element shapes and the
+  quest art of Rev 14 / 43.
+- Every board passes `check_mockup.py` on all six gates: token colours only, the type scale, contrast of at least
+  5.0:1, at most one Lime, and 34-60 visual elements a screen against the budget of 60. The picked Rev 49 C had 53, and
+  the Ark's Rev 67 has 114. Every board also passes `frogma.py check`.
+
+**The boards:**
+- **Compare:** the three fixes, now beside Rev 70.
+  - Picking a vessel: the cycling button, then the strip.
+  - The course while the domain changes: replaced today, the same voyage after.
+  - Where the quest tracker lives: a Voyage tab today, its own window opened from Home.
+- **A - Bridge (recommended):**
+  - The window stands inside the Ark: the squad's room, lit by its domain.
+  - The HyperSea chart is the screen, with the real course lit on it.
+  - The voyages are a rail of small cards along the foot.
+  - On the right: the voyage, its three numbers, the squad's presets and formation, Ark crew, and Set sail in Ruby.
+  - Picking a squad changes the room and the formation, never the voyage.
+- **B - The sea:** Rev 49 C's route poster at window size. The open voyage slides in on the right and closes with x.
+  The voyages run along the foot.
+- **C - Showroom:** the Profile's Showroom (Rev 54 A).
+  - The destination's close-up fills a panel under its name.
+  - The voyages are art cards, each with its own course, under it.
+  - The voyage and the squad sit on the right.
+- **Crew:** A's Ark crew.
+  - Three seats, each with its hull and four settings.
+  - Pressing a setting opens a strip on that seat: the hulls, the pilots' portraits, the four element shapes or the
+    artifacts. One press on a tile picks it and shuts the strip, so any hull is two presses away, not up to 22.
+  - The domain chips repaint the room. The voyage stays pinned top right.
+  - Save squad appears once the strip is shut.
+- **Quests:** its own window, like the Profile.
+  - Episode 1 and Episode 2 (locked) on LB / RB, then "The Hypersea" and its progress.
+  - The five quests on one track, with their art: Scurry, Hex Race, Joust, Maelstrom, Vessel Hangar.
+  - Each card says Claimed, Done - claim it, Next to play, or Unlocks after the one before.
+  - The picked quest's bar ends in the one Lime button, Claim or Play quest.
+  - The board starts with Scurry claimed, Hex Race done and Joust next; Claim on Hex Race moves the progress.
+- **Notes:** what each option changes, the two rules the fixes need, and the Quests window.
+
+**Recommended: A.** It wears the newest look the team picked (the Ark tab, Rev 61 C / 67), keeps the map as the hero,
+and puts the squad in its own room. B is the smallest step from what is built (section 119), and C reads quietest.
+
+**Differs from the build** (section 119):
+- **The Ark crew level:** the four cycling buttons per seat (`VoyageOpenCard.ChangeSetting`) give way to one strip per
+  pressed setting. That strip is the configure card's vessel strip (Yash's `ArenaLaunchPanel`, P-ui-21), with a pilot,
+  element and artifact twin.
+- **The tabs:** the Voyage window keeps Voyages, Saga and Episodes. Quests becomes a hub window of its own, opened from
+  Home like the Profile, and the Quests tab leaves `VoyageWindowTabs`.
+- **The pinned voyage:** this one is not a UI change. The board is dealt from the seated pilots (`Docs/Voyages/DEPTH.md`
+  section 4, `VoyageHarbour.Board`), and an unsaved first galaxy is seeded from the home domain
+  (`VoyageRun.LoadOrBegin`). Keeping the voyage on screen when the crew or domain changes is a change to Garrett's
+  voyage rules, so it is a proposal to him before any build.
+- **The look:** A draws the Ark's room behind the window. The game has that room in the Ark screen (Rev 67's build), and
+  the Voyage window would reuse it.
+
+**Owners to ask before a build:**
+- Garrett: the voyage rules and the window's generator (`author_voyage_window.py`).
+- Yash: the vessel strip.
+- Caleb and Shombith: the quests (FTUE).
+- P-ui-28 (Shombith, 2026-11-02) put the quest tracker in the Voyage window. This round moves it, on his word of
+  2026-11-08, and the ledger line is his to restate.
