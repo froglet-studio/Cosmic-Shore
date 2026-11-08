@@ -16,7 +16,13 @@ NOT modelled: rivals, prisms, the look of the catch, the human. It is a model: t
 
     py -3 Tools/Build/stoat_orbit_sim.py               # the table of the shipped and tuned rows
     py -3 Tools/Build/stoat_orbit_sim.py --grid        # the search that chose the tuned row
+    py -3 Tools/Build/stoat_orbit_sim.py --nose-lead 2.5   # every row again with the AI nose lead on
     py -3 Tools/Build/stoat_orbit_sim.py --self-test
+
+The AI nose lead (AIPilot.NoseLeadGain, PR #1786; Tools/Build/ai_nose_lead.py is the shared piece) is race()'s
+`nose_lead` knob, OFF by default: a gain over 0 judges the stick's error from the COMMAND and steers it onto the nose
+turned toward the aim by the gain times its error, past it (at most max_extra_deg, 40), where the lagging nose is pulled
+from; off while the field flies the nose (the orbit, the shell) and on the launch frame, on through the break-off.
 """
 import argparse, math, os, statistics, sys
 
@@ -25,6 +31,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "Compute", "evaluators"))
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang, rotate_toward
 from scarab_drive_sim import ai_stick
+from ai_nose_lead import NoseLead, effective_gain, judge_and_want   # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 import regatta_line_sim as L
 import course_port as CP
 
@@ -192,11 +199,17 @@ def tramp_step(vel, radial, radius, soft, dt):
     return add(vel, mul(radial, k * depth * dt / d))
 
 
-def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
-    """row: StoatSlingConfig's AI numbers. warp=False is the floor: the hull's cruise, never a press."""
+def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None, nose_lead=None):
+    """row: StoatSlingConfig's AI numbers. warp=False is the floor: the hull's cruise, never a press.
+    nose_lead: AIPilot.NoseLeadGain (ai_nose_lead.NoseLead.from_config: None = OFF, today's steering; a gain, a
+    {"gain", "max_extra_deg"} dict or a NoseLead), stated at the fleet lag and scaled once to this model's nose rate."""
     n = len(gates); total = n * laps
     commit_r, lead_r, through_r = row.get("commit", COMMIT), row.get("lead", LEAD), row.get("through", THROUGH)
     warp_top, kick_rate = row.get("warp_top", WARP_TOP), row.get("kick_rate", 1.0)
+    knob = NoseLead.from_config(nose_lead)
+    # AIPilot.EffectiveNoseLeadGain ONCE a race, from this model's own nose rate: L.NOSE_FOLLOW, the fleet's 1.5/s that
+    # turn_with_lag follows the command at (on the flight clock, like the turn), so it is max(1, gain) here and 0 when off
+    lead_gain, lead_extra = effective_gain(knob.gain, L.NOSE_FOLLOW), knob.max_extra_deg
     fwd = unit(gates[0]["p"]); pos = [0.0, 0.0, 0.0]; cmd = list(fwd)   # the hull starts inside the shell, heading to gate 0
     clock = 1.0; R = CRUISE / math.radians(TURN); run = max(max(0.0, 2 * R - 18), CRUISE * 1.5)
     idx = 0; locked = -1; side = 1.0; lead = LEAD; t = 0.0
@@ -218,6 +231,7 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
     last_press = -1e9; warped_t = 0.0; caught_t = 0.0; presses = 0; catches_n = 0; dist = 0.0; timed = 0
     kick = None
     while t < T and idx < total:
+        launched = False   # the frame the sling sets the nose and the command itself: the nose lead stays out of it
         g = gates[idx % n]; ring, ax = g["p"], g["a"]
         if idx != locked:
             locked = idx
@@ -264,10 +278,10 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
                             # StoatSlingExecutor.Slingshot: aimed by the stick (toward the AI's aim), nothing before the minimum
                             # sweep, momentum by the timing, the kick under the cap (StoatSlingMath.CappedKick)
                             if aimed:
-                                fwd = aimed_exit(entry, last_radial, fwd, to); cmd = list(fwd)
+                                fwd = aimed_exit(entry, last_radial, fwd, to); cmd = list(fwd); launched = True
                             else:
                                 reach = min(ang(fwd, to), row["aim_cone"] * ai_stick(ang(fwd, to)))
-                                fwd = rotate_toward(fwd, unit(to), math.radians(reach)); cmd = list(fwd)
+                                fwd = rotate_toward(fwd, unit(to), math.radians(reach)); cmd = list(fwd); launched = True
                             if math.degrees(swept) < row["min_sweep"]:
                                 amount = 0.0
                             else:
@@ -406,8 +420,16 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
                 hull_r = unit(cross([0.0, 1.0, 0.0], fwd)) if abs(fwd[1]) < 0.999 else [1.0, 0.0, 0.0]
                 tramp_aim = tramp_flank(pos, tramp_c, hull_r, orbit_side_left, tramp_line_for(ang(fwd, to), row.get("turn_scale", TRAMP_TURN_SCALE)), t_r)
             steer = sub(tramp_aim, pos)
-        s = ai_stick(ang(fwd, steer))
-        fwd, cmd = L.turn_with_lag(fwd, cmd, steer, math.radians(TURN * s) * dtf, dtf, True)
+        if lead_gain > 0 and not (laid and caught) and not launched:
+            # the nose lead (AIPilot.NoseLeadGain): judge the error from the COMMAND and steer the command onto the nose
+            # turned toward the steer direction by the effective gain times its error, past it (capped) - where the lagging
+            # nose is pulled from. On whatever the steer is (the break-off's escape leg, the flank approach), as the game's
+            # is; OFF while the field flies the nose (the orbit, the shell: laid and caught) and on the launch frame.
+            judge, want = judge_and_want(fwd, cmd, steer, lead_gain, lead_extra)
+        else:
+            judge, want = fwd, steer
+        s = ai_stick(ang(judge, want))
+        fwd, cmd = L.turn_with_lag(fwd, cmd, want, math.radians(TURN * s) * dtf, dtf, True)
         shift = [0.0, 0.0, 0.0]
         if kick is not None:
             age = (t - kick[2]) / BOOST_SECONDS
@@ -440,11 +462,11 @@ def race(gates, row, laps=LAPS, warp=True, T=300.0, dt=1 / 60, orrery=None):
             "anchor_presses": anchor_presses, "bounces": bounces, "tramp_misses": tramp_misses}
 
 
-def score(row, seeds=6, intensities=(1, 2, 3, 4), dt=1 / 30, warp=True):
+def score(row, seeds=6, intensities=(1, 2, 3, 4), dt=1 / 30, warp=True, nose_lead=None):
     """Median race seconds per intensity (an unfinished race counts 300 s + 10 per ring left), misses, finishes."""
     out = {}
     for i in intensities:
-        rs = [race(course(i, 20260000 + 97 * s + i), row, dt=dt, warp=warp) for s in range(seeds)]
+        rs = [race(course(i, 20260000 + 97 * s + i), row, dt=dt, warp=warp, nose_lead=nose_lead) for s in range(seeds)]
         out[i] = {"median": statistics.median(r["time"] if r["time"] else 300 + 10 * (16 - r["rings"]) for r in rs),
                   "finished": sum(1 for r in rs if r["time"]), "misses": statistics.mean(r["misses"] for r in rs),
                   "speed": statistics.mean(r["speed"] for r in rs), "warped": statistics.mean(r["warped"] for r in rs),
@@ -454,12 +476,12 @@ def score(row, seeds=6, intensities=(1, 2, 3, 4), dt=1 / 30, warp=True):
     return out
 
 
-def score_regatta(row, intensities=(1, 2, 3, 4), dt=1 / 30):
+def score_regatta(row, intensities=(1, 2, 3, 4), dt=1 / 30, nose_lead=None):
     """One race per intensity on the shipped Regatta course (three laps), as regatta_balance.py measures it."""
     out = {}
     for i in intensities:
         gates = [{"p": g["p"], "a": unit(g["a"]), "r": g["r"]} for g in CP.regatta_course(i, rails=False)["gates"]]
-        r = race(gates, dict(row, **REGATTA_STEER), laps=3, dt=dt)
+        r = race(gates, dict(row, **REGATTA_STEER), laps=3, dt=dt, nose_lead=nose_lead)
         out[i] = {"median": r["time"] if r["time"] else 300.0 + 10 * (3 * len(gates) - r["rings"]), "finished": int(bool(r["time"])),
                   "misses": r["misses"], "speed": r["speed"], "warped": r["warped"],
                   "ppm": 60 * r["presses"] / max(1.0, r["time"] or 300.0), "timed": r["timed"] / max(1, r["catches"]), "n": 1}
@@ -472,7 +494,7 @@ def line(name, s):
     return f"{name:<34} {cells}"
 
 
-def grid(seeds=4):
+def grid(seeds=4, nose_lead=None):
     rows = []
     for warp_dist in (160.0, 220.0, 280.0, 360.0):
         for min_turn in (7.84, 15.0, 30.0):
@@ -481,7 +503,7 @@ def grid(seeds=4):
                     for cone in (16.0, 30.0):
                         row = {"hold": 1.0, "min_turn": min_turn, "cone": cone, "give_up": 4.0, "interval": interval,
                                "min_dist": min_dist, "warp_dist": warp_dist}
-                        s = score(row, seeds=seeds)
+                        s = score(row, seeds=seeds, nose_lead=nose_lead)
                         loss = sum(math.log(v["median"]) for v in s.values()) / len(s) + 0.05 * sum(v["misses"] for v in s.values()) / len(s)
                         rows.append((loss, row, s))
     rows.sort(key=lambda r: r[0])
@@ -490,7 +512,7 @@ def grid(seeds=4):
         print("    " + line("", s))
 
 
-def score_orrery(row, seeds=8, intensities=(1, 2, 3, 4), dt=1 / 30):
+def score_orrery(row, seeds=8, intensities=(1, 2, 3, 4), dt=1 / 30, nose_lead=None):
     """Slingshot with the Orrery laid (orrery_port.layout): race seconds, prisms hit, moons hit, anchor presses."""
     import orrery_port as O
     out = {}
@@ -498,7 +520,7 @@ def score_orrery(row, seeds=8, intensities=(1, 2, 3, 4), dt=1 / 30):
         rs = []
         for s in range(seeds):
             c = course(i, 20260000 + 97 * s + i)
-            rs.append(race(c, row, dt=dt, orrery=O.layout(c, i)))
+            rs.append(race(c, row, dt=dt, orrery=O.layout(c, i), nose_lead=nose_lead))
         out[i] = {"median": statistics.median(r["time"] if r["time"] else 300 + 10 * (16 - r["rings"]) for r in rs),
                   "finished": sum(1 for r in rs if r["time"]), "misses": statistics.mean(r["misses"] for r in rs),
                   "speed": statistics.mean(r["speed"] for r in rs), "ppm": statistics.mean(60 * r["presses"] / max(1.0, r["time"] or 300.0) for r in rs),
@@ -513,7 +535,7 @@ def line_orrery(name, s):
                                       f"anchor {v['anchor']:4.1f} {100 * v['timed']:3.0f}%t" for i, v in s.items())
 
 
-def grid_earned(seeds=4):
+def grid_earned(seeds=4, nose_lead=None):
     rows = []
     for window_ai in (0, 120.0, 150.0):
         for min_turn in (7.84, 30.0):
@@ -521,7 +543,7 @@ def grid_earned(seeds=4):
                 for momentum_s in (2.5, 4.0):
                     row = dict(EARNED_ROW, warp_dist=0.0, min_turn=min_turn, press_share=press_share, momentum_s=momentum_s)
                     if window_ai: row["window_ai"] = window_ai
-                    sc = score(row, seeds=seeds)
+                    sc = score(row, seeds=seeds, nose_lead=nose_lead)
                     loss = sum(math.log(v["median"]) for v in sc.values()) / len(sc) + 0.05 * sum(v["misses"] for v in sc.values()) / len(sc)
                     rows.append((loss, {k: row[k] for k in ("min_turn", "press_share", "momentum_s")} | {"window_ai": window_ai}, sc))
     rows.sort(key=lambda r: r[0])
@@ -550,6 +572,13 @@ def self_test():
     if still["presses"] != 0: bad.append(f"a straight course should not need a turn press: {still}")
     fast = race(wide, dict(VARIANT_ROW, warp_dist=220.0), laps=1)
     if not fast["time"] or fast["time"] >= floor["time"]: bad.append(f"pressing did not beat cruising: {fast} vs {floor}")
+    # the nose lead is OFF by default: NoseLead() (gain 0) is the unset knob, and a gain changes a turning race (the knob
+    # is live); on the straight course nothing turns, so the lead changes nothing there
+    c = course(2, 20260000 + 2)
+    today = race(c, ORBIT_ROW, dt=1 / 60)
+    if race(c, ORBIT_ROW, dt=1 / 60, nose_lead=NoseLead()) != today: bad.append("NoseLead() (gain 0) is not the unset lead")
+    if race(c, ORBIT_ROW, dt=1 / 60, nose_lead=2.5) == today: bad.append("the nose lead at 2.5 changed nothing (the knob is dead)")
+    if race(wide, HULL_ROW, laps=1, warp=False, nose_lead=2.5) != floor: bad.append("the lead moved a straight cruise")
     print("stoat_orbit_sim self-test:", "FAIL " + "; ".join(bad) if bad else "ok")
     return 1 if bad else 0
 
@@ -559,39 +588,47 @@ if __name__ == "__main__":
     ap.add_argument("--grid", action="store_true"); ap.add_argument("--self-test", action="store_true"); ap.add_argument("--seeds", type=int, default=12)
     ap.add_argument("--earned", action="store_true"); ap.add_argument("--grid-earned", action="store_true")
     ap.add_argument("--orrery", action="store_true"); ap.add_argument("--trampoline", action="store_true")
+    ap.add_argument("--nose-lead", metavar="G[,EXTRA]", default=None,
+                    help="the AI nose lead (AIPilot.NoseLeadGain, stated at the fleet lag; EXTRA = NoseLeadMaxExtraDegrees, 40): "
+                         "every table row is printed again with the lead on; --grid / --grid-earned search with it on")
     a = ap.parse_args()
     if a.self_test: sys.exit(self_test())
-    if a.grid: grid(); sys.exit(0)
-    if a.grid_earned: grid_earned(); sys.exit(0)
+    lead = NoseLead.from_cli(a.nose_lead)
+    if a.grid: grid(nose_lead=lead); sys.exit(0)
+    if a.grid_earned: grid_earned(nose_lead=lead); sys.exit(0)
+
+    def put(name, scored, fmt=line):
+        """Print a row (scored(nose_lead) -> score dict) and, with --nose-lead, the same row with the lead on."""
+        s = scored(None); print(fmt(name, s))
+        if lead is not None: print(fmt(f"  + nose lead {lead.gain:g}", scored(lead)))
+        return s
     if a.trampoline:
-        print(line("floor: no press, cruise only", score(HULL_ROW, seeds=a.seeds, warp=False)))
-        print(line("the aimed exit (shipped 11-03)", score(SHIPPED_ROW, seeds=a.seeds, dt=1 / 60)))
+        put("floor: no press, cruise only", lambda nl: score(HULL_ROW, seeds=a.seeds, warp=False, nose_lead=nl))
+        put("the aimed exit (shipped 11-03)", lambda nl: score(SHIPPED_ROW, seeds=a.seeds, dt=1 / 60, nose_lead=nl))
         for name, extra in (("TRAMP, laid on the straight line", {}), ("TRAMP, laid on the turning line", {"predict": True}),
                             ("TRAMP, straight line, AI aims at the flank", {"aim": True}),
                             ("TRAMP, turning line, AI aims at the flank", {"predict": True, "aim": True})):
             row = dict(SHIPPED_ROW, aimed=False, tramp=True, **extra)
-            print(line(name, score(row, seeds=a.seeds, dt=1 / 60)))
+            put(name, lambda nl, row=row: score(row, seeds=a.seeds, dt=1 / 60, nose_lead=nl))
         for sc_ in (100.0, 160.0, 220.0):
             for mt in (20.0, 35.0, 50.0):
                 row = dict(SHIPPED_ROW, aimed=False, tramp=True, aim=True, aim_turn=True, turn_scale=sc_, min_turn=mt)
-                print(line(f"  aims for its turn, x{sc_:.0f}, turn >= {mt:.0f}", score(row, seeds=a.seeds, dt=1 / 60)))
+                put(f"  aims for its turn, x{sc_:.0f}, turn >= {mt:.0f}", lambda nl, row=row: score(row, seeds=a.seeds, dt=1 / 60, nose_lead=nl))
         sys.exit(0)
     if a.orrery:
         print(line_orrery("no Orrery (the shipped AI)", score(SHIPPED_ROW, seeds=a.seeds) and score_orrery(SHIPPED_ROW, seeds=0) or {}) if False else "")
-        print(line_orrery("Orrery, the shipped AI", score_orrery(SHIPPED_ROW, seeds=a.seeds)))
+        put("Orrery, the shipped AI", lambda nl: score_orrery(SHIPPED_ROW, seeds=a.seeds, nose_lead=nl), line_orrery)
         for w in (15.0, 22.0, 30.0):
-            print(line_orrery(f"Orrery, anchor window {w:.0f} u", score_orrery(dict(SHIPPED_ROW, anchor=w), seeds=a.seeds)))
+            put(f"Orrery, anchor window {w:.0f} u", lambda nl, w=w: score_orrery(dict(SHIPPED_ROW, anchor=w), seeds=a.seeds, nose_lead=nl), line_orrery)
         sys.exit(0)
-    print(line("floor: no press, cruise only", score(HULL_ROW, seeds=a.seeds, warp=False)))
-    print(line("hull's own AI row (30 deg, 3 s)", score(HULL_ROW, seeds=a.seeds)))
-    print(line("the learned variant, no warp press", score(VARIANT_ROW, seeds=a.seeds)))
-    tuned = score(TUNED_ROW, seeds=a.seeds, dt=1 / 60)
-    print(line("SHIPPED: + warp press at 280 u", tuned))
+    put("floor: no press, cruise only", lambda nl: score(HULL_ROW, seeds=a.seeds, warp=False, nose_lead=nl))
+    put("hull's own AI row (30 deg, 3 s)", lambda nl: score(HULL_ROW, seeds=a.seeds, nose_lead=nl))
+    put("the learned variant, no warp press", lambda nl: score(VARIANT_ROW, seeds=a.seeds, nose_lead=nl))
+    tuned = put("SHIPPED: + warp press at 280 u", lambda nl: score(TUNED_ROW, seeds=a.seeds, dt=1 / 60, nose_lead=nl))
     print("  share of the race with a pair held:", {i: round(v["warped"], 2) for i, v in tuned.items()})
-    orbit = score(ORBIT_ROW, seeds=a.seeds, dt=1 / 60)
-    print(line("SHIPPED 11-02: + inner orbit, spin side, steer out", orbit))
-    print(line("Regatta at Time 10, the 11-02 orbit", score_regatta(dict(ORBIT_ROW, warp_top=5.6), dt=1 / 60)))
+    orbit = put("SHIPPED 11-02: + inner orbit, spin side, steer out", lambda nl: score(ORBIT_ROW, seeds=a.seeds, dt=1 / 60, nose_lead=nl))
+    put("Regatta at Time 10, the 11-02 orbit", lambda nl: score_regatta(dict(ORBIT_ROW, warp_top=5.6), dt=1 / 60, nose_lead=nl))
     if a.earned:
         for name, row in (("EARNED, the old AI (press spam)", EARNED_ROW), ("SHIPPED: EARNED, the window AI", SHIPPED_ROW)):
-            print(line(name, score(row, seeds=a.seeds, dt=1 / 60)))
-        print(line("Regatta Time 10, SHIPPED", score_regatta(dict(SHIPPED_ROW, warp_top=5.6), dt=1 / 60)))
+            put(name, lambda nl, row=row: score(row, seeds=a.seeds, dt=1 / 60, nose_lead=nl))
+        put("Regatta Time 10, SHIPPED", lambda nl: score_regatta(dict(SHIPPED_ROW, warp_top=5.6), dt=1 / 60, nose_lead=nl))

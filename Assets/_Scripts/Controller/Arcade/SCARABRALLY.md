@@ -50,7 +50,13 @@ is 420 / 400 / 420 / 360 u.
 ## AI
 
 - The Scarab's AI holds full throttle (`ScarabVesselTransformer`: under autopilot the trigger reads as held) and
-  can snap-dash. It does not drift or juke, so it races the line at 216 u/s on a ~102 u circle.
+  can snap-dash. It does not drift, so it races the line at 216 u/s on a ~102 u circle.
+- **It jukes (2026-11-07).** Each server frame the race projects every AI hull's line onto its next mouth's plane
+  (`ScarabRallyCourse.JukeShove`). If the crossing is 0.6-1.4 s away (`aiJukeMinSeconds` / `aiJukeMaxSeconds`) and outside
+  the mouth by no more than one juke (40 u, aiming `aiJukeMargin` 6 u inside the rim), it fires the hull's juke toward the
+  mouth's centre through `ScarabJukeController.TryAutopilotDash`, the same committed dash a person's stick fires. Nothing
+  about the vessel changed. **The drift is still owed:** the autopilot's drift is the Dolphin's commit loop in
+  `AIPilot`, which Garrett's open #1786 (the nose lead) is changing, so a Scarab drift waits for it.
 - Its approach uses Switchback's numbers (commit 260, lead 300, through 220), all outside twice that circle.
 - Nobody has raced it yet. The learning sweep picks up recorded races automatically (`AUTO_LEARNING.md`).
 

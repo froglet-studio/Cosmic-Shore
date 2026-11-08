@@ -123,5 +123,40 @@ namespace CosmicShore.Tests
                 Assert.GreaterOrEqual(s.MinStep, 360f, "the AI needs ~360 u of approach");
             }
         }
+    
+        // ── The AI's juke (ScarabRallyCourse.JukeShove) ──
+
+        static readonly RaceGate Mouth = new(new Vector3(0f, 0f, 200f), Vector3.forward, 30f);
+
+        [Test]
+        public void The_AI_jukes_toward_a_mouth_its_line_misses_by_less_than_a_juke()
+        {
+            // 200 u/s straight on, 20 u right of the rim (50 u off centre): a crossing 1 s away, outside the mouth.
+            Assert.IsTrue(ScarabRallyCourse.JukeShove(new Vector3(50f, 0f, 0f), Vector3.forward * 200f, Mouth, 0.6f, 1.4f, 6f,
+                out var shove));
+            Assert.Less(Vector3.Dot(shove, Vector3.right), -0.99f, "the shove points back at the mouth's centre");
+        }
+
+        [Test]
+        public void The_AI_does_not_juke_a_line_that_already_threads()
+        {
+            Assert.IsFalse(ScarabRallyCourse.JukeShove(new Vector3(10f, 0f, 0f), Vector3.forward * 200f, Mouth, 0.6f, 1.4f, 6f, out _));
+        }
+
+        [Test]
+        public void The_AI_does_not_juke_a_miss_one_juke_cannot_fix()
+        {
+            float wide = Mouth.Radius - 6f + ScarabRallyCourse.JukeOffset + 5f;
+            Assert.IsFalse(ScarabRallyCourse.JukeShove(new Vector3(wide, 0f, 0f), Vector3.forward * 200f, Mouth, 0.6f, 1.4f, 6f, out _));
+        }
+
+        [Test]
+        public void The_AI_juke_waits_for_the_window_and_never_dashes_too_late()
+        {
+            var at = new Vector3(50f, 0f, 0f);
+            Assert.IsFalse(ScarabRallyCourse.JukeShove(at, Vector3.forward * 100f, Mouth, 0.6f, 1.4f, 6f, out _), "2 s off: the steering's");
+            Assert.IsFalse(ScarabRallyCourse.JukeShove(at, Vector3.forward * 400f, Mouth, 0.6f, 1.4f, 6f, out _), "0.5 s off: too late");
+            Assert.IsFalse(ScarabRallyCourse.JukeShove(at, Vector3.back * 200f, Mouth, 0.6f, 1.4f, 6f, out _), "flying away");
+        }
     }
 }

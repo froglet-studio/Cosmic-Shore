@@ -521,3 +521,10 @@ local workaround.
 Name the fundamentals involved, describe how each candidate solution
 interacts with them, and prefer the solution that leaves the fundamentals
 intact and more expressive for future features.
+
+
+## The principles ledger and the design brief (2026-11-07)
+
+The fundamentals above are the WHY; the owners' stated rules, in their words with their source lines, are the
+ledger `Docs/claude/PRINCIPLES.md` (`Tools/Build/principles.py --area <area>`; drafted, waiting on each owner).
+A feature is designed against both on one page before it is built: `Docs/claude/DESIGN_BRIEF.md`.

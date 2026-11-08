@@ -494,7 +494,8 @@ def build_colour_sets(root):
         art_node(hero, f"{kh}/Pair{d}/Rim", f"Rim{d}", TL(x + 50, y, 20, 20), None)
         art_node(hero, f"{kh}/Pair{d}/Face", f"Face{d}", TL(x + 70, y, 20, 20), None)
         label(hero.child(N(f"{kh}/Pair{d}/Words", f"Words{d}", TL(x + 100, y - 1, 196, 22))), "", "BodySmall", "TextLight")
-    # The rail: < the three sets >. The pad moving onto a tile previews it on the cell.
+    # The rail: < three tiles >, a window onto the whole catalog: < > step the set shown and slide the window, so the
+    # sets made for colour vision sit here beside the others (2026-11-05). The pad moving onto a tile previews it.
     w, h = K.button_size("<", small=True)
     rail_y = H - 152
     hero.children.append(small("ColourPrev", "PreviousButton", "Default", "<", TL(56, rail_y + 42 - h // 2, w, h)))

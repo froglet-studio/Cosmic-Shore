@@ -76,6 +76,7 @@ const CATALOG = {
     "Squirrel": { cost: 0, starter: true },
     "Starlings": { cost: 100, starter: false },
     "Stoat": { cost: 0, starter: true },
+    "Swordfish": { cost: 4000, starter: false },
     "Termite": { cost: 4000, starter: false },
     "Thresher": { cost: 100, starter: false },
     "Tiger Moth": { cost: 100, starter: true },

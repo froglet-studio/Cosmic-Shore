@@ -1,0 +1,38 @@
+{
+  "comment": "The swim lanes /swimlanes ranks (swimlanes.py). A lane is a vessel or a section of the app shell someone can hold in their head, never a task. Vessels come from the roster (every Assets/Resources/ElementalAbilityMaps/<Vessel>.asset) and need no entry here; give one an alias when its files use another name. A shell lane is a key, a name, the tokens a file name or folder carries (matched at a word or CamelCase boundary, so 'Ratel' never matches 'generateLattice') and path prefixes. 'verdicts' is where a PERSON says a lane is polished or rough; a verdict beats the measured polish signals and is written with `swimlanes.py set`. Any collaborator may add a lane or a token; a lane that grows too wide (most commits touch it) stops telling people apart, so keep tokens specific.",
+  "window_days": 7,
+  "landed_days": 14,
+  "ignore_branches": ["bugledger", "compute", "compute-queue", "perf-status", "launch-status", "ai", "ci-scratch/", "scratch/", "security/", "build/", "development", "main", "master", "gh-pages"],
+  "non_occupants": {
+    "dbrutus": "an intern (Garrett, 2026-11-08): their branches never occupy a lane; a fix of theirs goes to the lane's occupant to apply"
+  },
+  "ignore_subjects": "^(chore\\((ai-learn|compute|perf|launch-status|bug-ledger|bugledger)\\)|Merge |merge:? )",
+  "vessels": {
+    "retired": ["Butterfly", "Termite", "Falcon"],
+    "aliases": {
+      "Goby": ["Pistol", "GobyPistol"],
+      "Wrasse": ["Grouper", "KiteNavigator", "Kite_Navigator"],
+      "Honeyguide": ["Ratel"],
+      "TigerMoth": ["Tiger Moth", "Tiger_Moth", "TIGER_MOTH"],
+      "BrittleStar": ["Brittle Star", "Brittle_Star", "Brittlestar"],
+      "Jacks": ["JACKS"],
+      "Orca": ["ORCA_CREW"]
+    }
+  },
+  "shell": [
+    {"key": "voyages", "name": "Voyages map", "tokens": ["Voyage", "VOYAGE", "ArkEscort", "ARK_ESCORT"], "paths": ["Docs/Voyages"]},
+    {"key": "hangar", "name": "Hangar", "tokens": ["Hangar"], "paths": []},
+    {"key": "home-toybox", "name": "Home hub and Toybox", "tokens": ["HomeScreen", "Toybox", "ToyBox", "ToyVessel", "HubWindow", "HubShoulders", "MenuFreestyle", "MenuMiniGameHUD"], "paths": ["Assets/_Scripts/Controller/Toys", "Docs/ToySystem"]},
+    {"key": "arcade-screen", "name": "Arcade screen and launch panel", "tokens": ["ArcadeScreen", "ArcadeExplore", "ArcadeLoadout", "ArcadeLaunch", "ArcadeGameConfigure", "ArcadeGridOrder", "ArcadeLobby"], "paths": ["Assets/_Scripts/UI/View/ArcadeLaunch"]},
+    {"key": "arena-screen", "name": "Arena screen", "tokens": ["ArenaLaunch", "ArenaScreen", "ArenaGames"], "paths": []},
+    {"key": "ark-converter", "name": "Ark (Elemental Converter)", "tokens": ["ElementalConverter", "ArkView", "ArkScreen", "OmniCombine", "ArkSquad"], "paths": []},
+    {"key": "port", "name": "Port (faction messages, leaderboard)", "tokens": ["PortScreen", "PortFaction", "PortSquad", "PortLeaderboard", "FactionMessages", "LeaderboardsMenu", "WeeklyChallengeLeaderboard"], "paths": ["Assets/_Scripts/UI/Elements/Port"]},
+    {"key": "profile", "name": "Profile and pilots", "tokens": ["ProfileScreen", "ProfileIcon", "ProfileRecord", "ProfileColorSets", "FavouritePilot", "PilotPortrait"], "paths": []},
+    {"key": "settings", "name": "Settings", "tokens": ["SettingsModal", "SettingsView", "GameSettingsPanel", "OptionsMenu"], "paths": []},
+    {"key": "start-flow", "name": "Start flow and sign-in", "tokens": ["SignIn", "Splash", "AuthenticationScene", "BootStatus"], "paths": ["Assets/_Scripts/System/PlatformSignIn", "Assets/_Scripts/System/Systems/Authentication"], "note": "Activation is Shombith's (Docs/TEAM.json owners): ask him before changing it."},
+    {"key": "ftue", "name": "FTUE and quests", "tokens": ["FTUE", "QuestTrack", "QuestFrontier", "QuestItem", "QuestGraph"], "paths": ["Assets/FTUE", "Docs/ACTIVATION.md"], "note": "Shombith leads activation and Caleb heads FTUE with him; no one else is on it (2026-10-26). Ask them first."},
+    {"key": "party", "name": "Party, invites and friends", "tokens": ["PartyPanel", "PartyInvite", "Friends", "FriendProfile"], "paths": ["Assets/_Scripts/Controller/Party"]},
+    {"key": "game-hud", "name": "In-game HUD and scoreboard", "tokens": ["GameCanvas", "MiniGameHUD", "Scoreboard", "EndGame", "EndScreen", "GameToast", "ConnectingPanel"], "paths": ["Assets/_Scripts/UI/GameToastSystem"]}
+  ],
+  "verdicts": {}
+}

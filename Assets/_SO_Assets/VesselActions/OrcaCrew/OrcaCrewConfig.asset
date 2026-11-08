@@ -131,6 +131,10 @@ MonoBehaviour:
   bombLitStrength: 1
   aiSkill: 2
   aiRetargetSeconds: 0.4
+  aiBurns: 1
+  aiBurnAlignDegrees: 8
+  aiBurnMinDistance: 250
+  aiBurnMinTank: 1
   turretFov: 75
   sniperScopeFov: 22
   sniperCamBack: 12

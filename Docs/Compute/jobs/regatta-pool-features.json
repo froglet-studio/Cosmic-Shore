@@ -1,0 +1,376 @@
+{
+ "after": [],
+ "algorithm": {
+  "batch": 16,
+  "descriptors": [
+   {
+    "bins": 3,
+    "hi": 180.0,
+    "lo": 0.0,
+    "name": "sharpness"
+   },
+   {
+    "bins": 3,
+    "hi": 1.0,
+    "lo": 0.3,
+    "name": "ridable"
+   },
+   {
+    "bins": 3,
+    "hi": 9,
+    "lo": 0,
+    "name": "alternates"
+   },
+   {
+    "bins": 7,
+    "hi": 7,
+    "lo": 0,
+    "name": "leader"
+   }
+  ],
+  "init_random": 96,
+  "name": "map-elites",
+  "sigma_iso": 0.05,
+  "sigma_line": 0.2,
+  "worst": 0.6
+ },
+ "area_owner": "Yash (Regatta AI and course)",
+ "asked_by": "Garrett 2026-11-06 (the Regatta balancing plan, brief 12)",
+ "convergence": {
+  "min_evals": 4000,
+  "min_improvement": 0.01,
+  "window_evals": 2000
+ },
+ "evaluator": {
+  "args": {
+   "chaos_gate": 1.6,
+   "chaos_seeds": 2,
+   "features": true,
+   "limit": 600,
+   "pass_chaos": 0.06,
+   "pass_spread": 1.25,
+   "ref_neutral": 0.0,
+   "report_only": [
+    "Sparrow"
+   ],
+   "roster": {
+    "Dolphin": {
+     "drive": {
+      "anchor": 97.5,
+      "bal_ref": 41.88,
+      "line_ref": 97.4,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
+      "share": 0.35,
+      "speed": 146.2,
+      "time_levels": {
+       "1": 0,
+       "2": 0,
+       "3": 0,
+       "4": 0
+      }
+     },
+     "model": "measured"
+    },
+    "Manta": {
+     "drive": {
+      "anchor": 67.0,
+      "bal_ref": 23.94,
+      "line_ref": 67.0,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
+      "share": 0.35,
+      "speed": 210.5,
+      "time_levels": {
+       "1": -5,
+       "2": -5,
+       "3": -5,
+       "4": -5
+      }
+     },
+     "model": "measured"
+    },
+    "Rhino": {
+     "drive": {
+      "anchor": 95.0,
+      "bal_ref": 17.82,
+      "line_ref": 95.0,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
+      "share": 0.35,
+      "speed": 148.0,
+      "time_levels": {
+       "1": 0,
+       "2": 0,
+       "3": 0,
+       "4": 0
+      }
+     },
+     "model": "measured"
+    },
+    "Serpent": {
+     "drive": {
+      "anchor": 100.0,
+      "bal_ref": 241.68,
+      "line_ref": 100.0,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
+      "share": 0.35,
+      "speed": 142.4,
+      "time_levels": {
+       "1": 10,
+       "2": 10,
+       "3": 10,
+       "4": 10
+      }
+     },
+     "model": "measured"
+    },
+    "Sparrow": {
+     "drive": {
+      "anchor": 133.0,
+      "bal_ref": 73.62,
+      "line_ref": 133.0,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
+      "share": 0.35,
+      "speed": 107.3,
+      "time_levels": {
+       "1": 10,
+       "2": 10,
+       "3": 10,
+       "4": 10
+      }
+     },
+     "model": "measured"
+    },
+    "Squirrel": {
+     "drive": {
+      "anchor": 75.0,
+      "bal_ref": 48.54,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
+      "time_levels": {
+       "1": 0,
+       "2": 0,
+       "3": 0,
+       "4": 0
+      }
+     },
+     "model": "measured"
+    },
+    "Stoat": {
+     "drive": {
+      "anchor": 70.0,
+      "bal_ref": 75.72,
+      "mouth_alpha": 0.6,
+      "mouth_ref": 110.0,
+      "time_levels": {
+       "1": 3,
+       "2": 3,
+       "3": 3,
+       "4": 3
+      }
+     },
+     "model": "measured"
+    },
+    "Urchin": {
+     "drive": {
+      "free_speed": 112.7,
+      "speed": 288.3
+     },
+     "model": "rail"
+    }
+   }
+  },
+  "module": "regatta_pool",
+  "timeout": 600
+ },
+ "goal": "PROPOSED, run by hand until Froglet Compute is back, and only once brief 10's course features (draft PR #1787, Tools/Compute/evaluators/regatta_features.py) are on the branch it runs from. The regatta-pool archive over geometry, seed and brief 10's features in a compact form (neutral and plain rail shares, gaps on N legs, alternate rings at the N sharpest corners, line crystals), binned by sharpness, ridable rail, alternate rings and which hull leads; Tools/Build/regatta_pool_pick.py picks the pool from it.",
+ "id": "regatta-pool-features",
+ "kind": "search",
+ "paths": [
+  "Assets/Resources/RaceLines/",
+  "Assets/_SO_Assets/Games/",
+  "Assets/_Scripts/Controller/Arcade/Regatta/",
+  "Tools/Build/",
+  "Tools/Build/regatta_course_harness/",
+  "Tools/Compute/evaluators/"
+ ],
+ "plan": "regatta-balance",
+ "plan_step": "time-arena-course",
+ "promote": "A PROPOSAL for Yash (Regatta's course and AI) and Garrett: regatta_pool_pick.py writes the picked pool (each entry a RegattaCourse settings row, generator seed and neutral share) and a still of every course; brief 13's RegattaCoursePool takes the entries Garrett picks. Then regatta_course_harness/run.sh and export_course.sh regenerate the measurements, and the AIs are re-raced in the editor (Docs/UNITY_VERIFICATION_CHECKLIST.md).",
+ "ref": "origin/bleeding-edge",
+ "requires": [
+  "python3"
+ ],
+ "roster_note": "Every Regatta-ready hull anchored at its measured editor race (Regatta Hull Benchmark, I1, 2026-11-03) and moved by the line and lap models (Tools/Build/regatta_measured_roster.py, solved on claude/regatta-overnight-balance with the card's Time levels as promoted there: Stoat 3, Squirrel 0); the Urchin on its rail model with the neutral share flown free. The Sparrow is raced and reported, not scored, until its rail rams are fixed (brief 4). Replace the roster with the trained Time AIs as time-arcade promotes them.",
+ "schema": "froglet-compute/job/1",
+ "space": [
+  {
+   "hi": 150.0,
+   "init": 90.0,
+   "lo": 0.0,
+   "name": "corner0"
+  },
+  {
+   "hi": 150.0,
+   "init": 72.0,
+   "lo": 0.0,
+   "name": "corner1"
+  },
+  {
+   "hi": 150.0,
+   "init": 58.0,
+   "lo": 0.0,
+   "name": "corner2"
+  },
+  {
+   "hi": 150.0,
+   "init": 48.0,
+   "lo": 0.0,
+   "name": "corner3"
+  },
+  {
+   "hi": 150.0,
+   "init": 38.0,
+   "lo": 0.0,
+   "name": "corner4"
+  },
+  {
+   "hi": 150.0,
+   "init": 28.0,
+   "lo": 0.0,
+   "name": "corner5"
+  },
+  {
+   "hi": 150.0,
+   "init": 16.0,
+   "lo": 0.0,
+   "name": "corner6"
+  },
+  {
+   "hi": 150.0,
+   "init": 10.0,
+   "lo": 0.0,
+   "name": "corner7"
+  },
+  {
+   "hi": 130.0,
+   "init": 110.0,
+   "lo": 60.0,
+   "name": "RingRadius"
+  },
+  {
+   "hi": 320.0,
+   "init": 200.0,
+   "lo": 80.0,
+   "name": "CornerFloorRadius"
+  },
+  {
+   "hi": 6.0,
+   "init": 1.2,
+   "lo": 0.5,
+   "name": "AngularSpread"
+  },
+  {
+   "hi": 400.0,
+   "init": 160.0,
+   "lo": 60.0,
+   "name": "LateralPerturbation"
+  },
+  {
+   "hi": 50.0,
+   "init": 20.0,
+   "lo": 0.0,
+   "name": "AxisJitterDegrees"
+  },
+  {
+   "hi": 85.0,
+   "init": 50.0,
+   "lo": 40.0,
+   "name": "MaxPresentDegrees"
+  },
+  {
+   "hi": 0.6,
+   "init": 0.42,
+   "lo": 0.2,
+   "name": "RadialSwing"
+  },
+  {
+   "hi": 4095,
+   "init": 0,
+   "lo": 0,
+   "name": "seed",
+   "type": "int"
+  },
+  {
+   "hi": 0.7,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "NeutralShare"
+  },
+  {
+   "hi": 0.6,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "PlainShare"
+  },
+  {
+   "hi": 240.0,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "GapLength"
+  },
+  {
+   "hi": 8,
+   "init": 0,
+   "lo": 0,
+   "name": "GapLegs",
+   "type": "int"
+  },
+  {
+   "hi": 8,
+   "init": 0,
+   "lo": 0,
+   "name": "AltCount",
+   "type": "int"
+  },
+  {
+   "hi": 420.0,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "AltOffset"
+  },
+  {
+   "hi": 360.0,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "AltBearing"
+  },
+  {
+   "hi": 1.4,
+   "init": 1.0,
+   "lo": 0.6,
+   "name": "AltScale"
+  },
+  {
+   "hi": 4,
+   "init": 0,
+   "lo": 0,
+   "name": "Crystals",
+   "type": "int"
+  },
+  {
+   "hi": 1.0,
+   "init": 0.0,
+   "lo": 0.0,
+   "name": "CrystalPhase"
+  }
+ ],
+ "stage": 2,
+ "status": "proposed",
+ "title": "Regatta's shuffled course pool, with the course features (rail kinds, gaps, alternate rings, line crystals)",
+ "updated": "2026-11-06",
+ "value": 9
+}

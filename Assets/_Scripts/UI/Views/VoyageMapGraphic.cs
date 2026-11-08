@@ -154,7 +154,29 @@ namespace CosmicShore.UI
         static string s_AtlasKey;
         Vector2 _white;
         int _seaTexHeight;
+        int _spriteRow;
         bool _painted;
+
+        /// <summary>The uv corners of the nucleus sprite for a nucleus <paramref name="radiusPx"/> across on screen.</summary>
+        internal (Vector2 lo, Vector2 hi) NucleusUv(float radiusPx) => s_Atlas
+            ? VoyageCellDraw.SpriteUv(radiusPx, s_Atlas.width, s_Atlas.height, 0, _spriteRow)
+            : (Vector2.zero, Vector2.zero);
+
+        /// <summary>How far the reader has moved the cells' slice from its focus, ly (the edge view's slice bar).</summary>
+        public double SliceOffset { get; private set; }
+
+        /// <summary>Move the cells' slice (and the deep tiers' height slab with it) <paramref name="offset"/> ly from
+        /// the focus's layer of nuclei; 0 puts it back.</summary>
+        public void SetSliceOffset(double offset)
+        {
+            double o = Math.Max(-2 * HyperSea.DiskHalf, Math.Min(2 * HyperSea.DiskHalf, offset));
+            if (Math.Abs(o - SliceOffset) < 1e-9) return;
+            SliceOffset = o;
+            _viewDirty = true;
+        }
+
+        /// <summary>The content's lines the map writes with, or null before <see cref="SetLines"/>.</summary>
+        public VoyageLines Lines => _sky?.Lines;
 
         public override Texture mainTexture => _painted && _chart != null && s_Atlas ? s_Atlas : s_WhiteTexture;
 
@@ -213,8 +235,15 @@ namespace CosmicShore.UI
         static Vector2 Pos(VoyageLocation l, bool charted) =>
             charted ? new Vector2(l.GalaxyX, -l.GalaxyY) : new Vector2(l.ChartX, l.ChartZ);
 
-        /// <summary>A charted map draws only the charted locations.</summary>
-        bool Drawn(VoyageLocation l) => l != null && (_chart == null || l.Charted);
+        /// <summary>Which places this crew can see (Docs/Voyages/DEPTH.md §8): an uncharted place is drawn only once the
+        /// crew has found it. Null draws every place. Set by the view with the galaxy's record (VoyageRules.IsVisible).</summary>
+        public System.Func<string, bool> Visible;
+
+        /// <summary>A charted map draws only the charted locations, and only the ones this crew can see.</summary>
+        bool Drawn(VoyageLocation l) => l != null && (_chart == null || l.Charted) && (Visible == null || Visible(l.Id));
+
+        /// <summary>True when the map draws <paramref name="l"/> (the edge view and the sky follow the map).</summary>
+        public bool IsDrawn(VoyageLocation l) => Drawn(l);
 
         void Bounds()
         {
@@ -530,7 +559,9 @@ namespace CosmicShore.UI
             if (r.width < 1f || r.height < 1f) return;
             _lastPaint = Time.unscaledTime;
             _seaTexHeight = Mathf.Clamp(Mathf.RoundToInt(SeaTexWidth * r.height / r.width), 16, 256);
-            int w = SeaTexWidth + InsetTex, h = Mathf.Max(_seaTexHeight, InsetTex) + WhiteRows;
+            // Above the water and the corner, the cells' nucleus sprites (VoyageCellDraw), then the white strip.
+            _spriteRow = Mathf.Max(_seaTexHeight, InsetTex);
+            int w = Mathf.Max(SeaTexWidth + InsetTex, VoyageCellDraw.SpriteColumns), h = _spriteRow + VoyageCellDraw.SpriteRows + WhiteRows;
             _white = new Vector2((w - 0.5f) / w, (h - 0.5f) / h);
 
             // The water around the view, half a view wider on every side, so a pan slides over painted sea.
@@ -586,6 +617,7 @@ namespace CosmicShore.UI
                     byte a = (byte)Mathf.RoundToInt(255f * Mathf.Clamp01((float)(1.0 - rr) * 12f));
                     px[y * w + SeaTexWidth + x] = Sea(HyperSea.Density(gx, gy), a);
                 }
+                VoyageCellDraw.PaintSprites(px, w, 0, _spriteRow);
                 for (int y = h - WhiteRows; y < h; y++)
                 for (int x = 0; x < w; x++)
                     px[y * w + x] = new Color32(255, 255, 255, 255);
@@ -696,8 +728,11 @@ namespace CosmicShore.UI
         /// <summary>A place's marker colour: its experience's, from the harbour's style.</summary>
         public static Color MarkerColor(VoyageToyDefinitionSO style, VoyageLocation l) => l.Experience switch
         {
-            VoyageExperience.VaultField => style.VaultColor,
+            VoyageExperience.VaultField or VoyageExperience.Hoard => style.VaultColor,
             VoyageExperience.Core => style.CoreColor,
+            VoyageExperience.Lair or VoyageExperience.Pen => style.LairColor,
+            VoyageExperience.Nursery => style.NurseryColor,
+            VoyageExperience.Shrine or VoyageExperience.Derelict => style.ShrineColor,
             _ => style.PortColor,
         };
 

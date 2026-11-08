@@ -356,25 +356,25 @@
  },
  "Rhino": {
   "Charge": {
-   "ability": "Energize",
-   "does": "Hold both evenly for a second to light the sword. It stays lit while you hold, then for a few seconds after, followed by a short cooldown. It costs nothing. A sword hit on a rival knocks their petals loose as crystals.",
-   "trigger": "Hold both",
-   "scales": "More Charge knocks more petals off a rival with each sword hit.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
+   "ability": "Carry",
+   "does": "A prism your plough throws keeps flying past where it would land and smashes the next prism in its way - both break.",
+   "trigger": "Passive - plough",
+   "scales": "More Charge lets a thrown prism fly further on to hit another.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md"
   },
   "Mass": {
-   "ability": "Afterimage",
-   "does": "When the lit sword goes out, it keeps leaving prism copies of itself in its own shape and pose for five seconds - walls you swing into place. Your own sword can still cut them.",
-   "trigger": "Passive - after Energize",
-   "scales": "More Mass makes the afterimage prisms bigger.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md"
+   "ability": "Blade",
+   "does": "A plough blade across your nose catches the prisms you fly into and throws them clear of the whole blade.",
+   "trigger": "Passive - plough",
+   "scales": "More Mass makes the plough blade wider.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md"
   },
   "Space": {
-   "ability": "Blade Reach",
-   "does": "Your sword cuts any ordinary or shielded prism it touches, and you swing it by how hard you squeeze each side. Super-shielded mass makes the blade stick unless you have the upgrade.",
-   "trigger": "Always on - swing with both",
-   "scales": "More Space makes the sword longer, and your camera pulls back to match.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
+   "ability": "Furrow",
+   "does": "Every prism your hull hits is shoved aside, never destroyed. Pull a trigger for a little shove that way; hold it and everything you plough is thrown to that side.",
+   "trigger": "Hold LT or RT to steer",
+   "scales": "More Space throws ploughed prisms further aside.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md"
   },
   "Time": {
    "ability": "Ramp Spool",
@@ -382,12 +382,6 @@
    "trigger": "Passive - fly flat out and straight",
    "scales": "More Time winds you up to top speed faster; the top speed itself stays the same.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md"
-  },
-  "Omni": {
-   "ability": "Surge",
-   "does": "For 8 seconds your blade stays energized and a ring of swords surrounds the ship, swinging with your triggers, while the camera pulls back. A blast also breaks prisms round you.",
-   "trigger": "Pick up an omni crystal",
-   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs"
   }
  },
  "Scarab": {
@@ -634,6 +628,42 @@
    "does": "Fires a branching thunderbolt from your cell's centre that sets prisms along it burning; any omni crystal a branch reaches sends off a smaller bolt of its own.",
    "trigger": "Pick up an omni crystal",
    "source": "Assets/_Scripts/Controller/Environment/Fulmen/README.md"
+  }
+ },
+ "Swordfish": {
+  "Charge": {
+   "ability": "Energize",
+   "does": "Hold both evenly for a second to light the sword. It stays lit while you hold, then for a few seconds after, followed by a short cooldown. It costs nothing. A sword hit on a rival knocks their petals loose as crystals.",
+   "trigger": "Hold both",
+   "scales": "More Charge knocks more petals off a rival with each sword hit.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
+  },
+  "Mass": {
+   "ability": "Afterimage",
+   "does": "When the lit sword goes out, it keeps leaving prism copies of itself in its own shape and pose for five seconds - walls you swing into place. Your own sword can still cut them.",
+   "trigger": "Passive - after Energize",
+   "scales": "More Mass makes the afterimage prisms bigger.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md"
+  },
+  "Space": {
+   "ability": "Blade Reach",
+   "does": "Your sword cuts any ordinary or shielded prism it touches, and you swing it by how hard you squeeze each side. Super-shielded mass makes the blade stick unless you have the upgrade.",
+   "trigger": "Always on - swing with both",
+   "scales": "More Space makes the sword longer, and your camera pulls back to match.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
+  },
+  "Time": {
+   "ability": "Ramp Spool",
+   "does": "Fly at full throttle in a straight line and the Swordfish winds up steadily toward a very high top speed. Turning bleeds it off. Its hull breaks the prisms it rams, and ramming costs it no speed.",
+   "trigger": "Passive - fly flat out and straight",
+   "scales": "More Time winds you up to top speed faster; the top speed itself stays the same.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md"
+  },
+  "Omni": {
+   "ability": "Surge",
+   "does": "For 8 seconds your blade stays energized and a ring of swords surrounds the ship, swinging with your triggers, while the camera pulls back. A blast also breaks prisms round you.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs"
   }
  },
  "Thresher": {

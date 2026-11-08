@@ -123,6 +123,14 @@ full history, no commit, line, area owner or role moved credit from another coll
    weight. Tasks are never assigned and nobody is a default taker; there are no standing volunteer offers. Never
    let one person's request override another's area without whoever decides there. Shombith heads tooling: the Amoebius engine, editor tools, the Claude
    skills (`/ship` and the rest) and the hooks.
+12. **Find your lane with `/swimlanes`, and stay out of an occupied one** (Garrett, 2026-11-08: "instead of blocking
+   people because someone else worked on that area in the past, inform people that that swim lane is currently
+   occupied"). A lane is a vessel or an app-shell section someone holds in their head (the Thresher, the Voyages
+   map), never a task. `python3 .claude/skills/swimlanes/swimlanes.py` lists open lanes with obvious work on top,
+   occupied lanes under them (unmerged work pushed in the last 7 days, with who and which branch), then lanes that
+   need polish, then polished ones. **Occupied is the heads-up; past work is not a block.** Rule 3 still holds for
+   re-tuning or replacing what someone built, but who worked in an open lane before is context to build on, not a
+   reason to stay out. A lane opens when its work merges into `bleeding-edge`.
 
 ## What happened without this (2026-10-13, one merge, measured)
 

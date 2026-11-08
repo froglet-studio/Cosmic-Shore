@@ -29,6 +29,8 @@ namespace CosmicShore.Core
         /// <summary>PUBLIC player data: the squads a player made and the seats they hold in friends' (SquadDirectory).</summary>
         public const string SquadsPublic          = "SQUADS_PUBLIC";
         public const string Loadout               = "LOADOUT_DATA";
+        /// <summary>The account's unique pilots and artifacts, its captain and Hangar picks (Docs/Pilots/INVENTORY.md §4).</summary>
+        public const string Inventory             = "ACCOUNT_INVENTORY";
         public const string QuestGraph            = "QUEST_GRAPH_PROGRESS";
         public const string DrillProgress         = "DRILL_PROGRESS";
         public const string ReplayIndex           = "REPLAY_INDEX";

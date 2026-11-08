@@ -37,6 +37,23 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        // The helm AI's burn, wherever no race coaches it (Breach found the shipped AI helm never burned, so an AI Orca flew
+        // every mode at cruise). Burn only with the nose on the pilot's target and that target far enough off that the
+        // burning hull's wide turn is spent on the straight; let go on a low tank so it refills (the tank refills only
+        // while the burn is let go). Breach's coach is the same rule plus its hard turns and walls (BREACH.md 5).
+        bool HelmAIWantsBurn()
+        {
+            if (!_cfg.AIBurns || _status == null) return false;
+            var pilot = _status.AIPilot;
+            if (!pilot || !pilot.AutoPilotEnabled) return false;
+            if (!_boosting && _tank < _cfg.AIBurnMinTank) return false;
+            var hull = transform;
+            var to = pilot.TargetPosition - hull.position;
+            float distance = to.magnitude;
+            if (distance < _cfg.AIBurnMinDistance) return false;
+            return Vector3.Angle(hull.forward, to) <= _cfg.AIBurnAlignDegrees;
+        }
+
         // The bomb seat's AI bursts its bomb (the lab's aiBurst): a rival hull inside the blast, the bomb at its target, or
         // past it - a bomb nobody bursts would hold the seat's only throw.
         bool AIBurstsBomb()

@@ -496,6 +496,22 @@ namespace CosmicShore.UI
                 case GameModes.ScarabRally:
                     // Switchback's answer on the Scarab's ring race: neutral rings, a per-viewer arrow.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_ScarabRally");
+                case GameModes.Thornline:
+                    // Switchback's answer on the Shrike's sling race: neutral rings, a per-viewer arrow (the thorn sits
+                    // straight behind the ring it points at).
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Thornline");
+                case GameModes.DecoyRun:
+                    // the Jacks' Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_DecoyRun");
+                case GameModes.Breach:
+                    // the Orca's Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Breach");
+                case GameModes.SlipLine:
+                    // the Honeyguide's Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SlipLine");
+                case GameModes.PerchRun:
+                    // the Goby's Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_PerchRun");
                 case GameModes.SerpentTime:
                     // The circuit answer once more, on the Serpent's pellet circuit.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SerpentTime");

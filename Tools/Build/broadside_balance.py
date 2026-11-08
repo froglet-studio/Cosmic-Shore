@@ -70,7 +70,9 @@ HULLS = {
     "Urchin": dict(verbs=["spike"], connect=0.30,
         why="a 10-spike shotgun is far more forgiving than a single tracer, but it is a charged "
             "volley on a cooldown rather than a held trigger"),
-    "Rhino": dict(verbs=["strike_sword"], connect=0.38,
+    # The sword hull. Until 2026-11-07 this row was the Rhino; the sword split off into the Swordfish
+    # (R_VesselActions/SWORDFISH.md) and the plough-only Rhino has no vessel-hit verb, so it left the card.
+    "Swordfish": dict(verbs=["strike_sword"], connect=0.38,
         why="the sword needs no ammunition and has real reach, but since the playtest it also "
             "requires being FASTER than its victim (requireFasterThanVictim, the Squirrel "
             "joust's own rule) - so a parked blade scores nothing and the Rhino must keep "
@@ -106,7 +108,7 @@ TIME_REACH = {           # multiplier at normalized level +1 / -0.5, per REGATTA
     # it makes it reach fast sooner, which is what a brawl's short straights actually bound.
     # NOT a speed multiplier - see rhino_speed_multiplier() for the conversion. Stored as the
     # acceleration endpoint the executor actually reads so the model and the asset match.
-    "Rhino":   (2.50, 0.50),   # Time -> ramp acceleration (RhinoRampBoostAction 220/s base)
+    "Swordfish": (2.50, 0.50),   # Time -> ramp acceleration (RhinoRampBoostAction 220/s base)
     "Urchin":  (1.00, 1.00),   # the grind is not elemental
     "Squirrel":(1.00, 1.00),   # skim energy is not elemental
 }
@@ -213,7 +215,7 @@ def _rhino_ramp_constants():
     """
     import regatta_balance as _rb
     c = _rb.read_constants()
-    v = c["vessels"]["Rhino"]
+    v = _rb.read_vessel("Swordfish")              # the sword hull since 2026-11-07; same ramp asset as the Rhino
     cruise = v["ts"] + v["ms"]                       # plain cruise, ramp disengaged
     top = v["ts"] * c["rhino_max_boost"] + v["ms"]   # ramp held at full straightness
     return cruise, top, c["rhino_accel"]
@@ -256,14 +258,14 @@ def rhino_speed_multiplier(level):
         area += top * (T - t_cap)                      # held at the ceiling
         return area / T
 
-    at_full, at_floor = TIME_REACH["Rhino"]
+    at_full, at_floor = TIME_REACH["Swordfish"]
     return mean_speed(base_accel * elemental_multiplier(level, at_full, at_floor)) / \
            mean_speed(base_accel)
 
 
 def speed_multiplier(hull, time_level):
     """What Time is worth to this hull, expressed as a SPEED ratio for every hull alike."""
-    if hull == "Rhino":
+    if hull == "Swordfish":
         return rhino_speed_multiplier(time_level)
     at_full, at_floor = TIME_REACH[hull]
     return elemental_multiplier(time_level, at_full, at_floor)
@@ -308,7 +310,7 @@ def spread(d):
 #
 # It is a CARD-level row (SO_ArcadeGame.StartingElements), never a prefab edit: a per-hull
 # handicap is a fact about the card, so Headlong's Rhino is untouched.
-TIME_FLOOR = {"Rhino": 0.5}
+TIME_FLOOR = {"Swordfish": 0.5}
 
 
 # The element ladder is integers, so a normalized level is a multiple of 0.1 and the solver may

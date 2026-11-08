@@ -381,8 +381,32 @@ namespace CosmicShore.Data
         // and 76 was WaystationPrototype's (folded into Waystation, reserved). See _Scripts/Controller/Arcade/SERPENTGULAG.md.
         SerpentGulag = 77,
 
+        // Thornline (79): the Shrike's TIME race - a chain of THORNS (one big block each) with a ring at the middle of
+        // every leg. The Shrike cruises at 18 u/s, so the race is its Void Sling: dock, aim at the next thorn, sling,
+        // reload; I2 adds plain thorns and rim-line Time crystals, I3 snipes through two rings, I4 the smallest thorns.
+        // 78 was SpeedPainter's for one commit (renamed LanternRun 75 on its branch) and is left alone.
+        // See _Scripts/Controller/Arcade/THORNLINE.md.
+        Thornline = 79,
+
+        // The Jacks' Time race (DECOY_RUN.md): herd the jacks past the rings, take off, fly
+        // to the decoys. Rings in groups a cycle takes; I3-I4 on rolled flats.
+        DecoyRun = 80,
+
+        // The Goby's Time race (PERCH_RUN.md): dart through the rings; a dart costs a second
+        // however far it goes. I2 hairpins (length), I3 coral blockers (line), I4 doubles.
+        PerchRun = 81,
+
+        // The Honeyguide's Time race (SLIP_LINE.md): rings with prism RAILS in the slip colours.
+        // Riding a rail the battery holds a charge for zips the hull down it at the slip's speed; the race is
+        // which rails to spend the Ratel's charges on.
+        SlipLine = 82,
+
+        // The Orca's Time race (BREACH.md): the helm's burn is five times cruise but turns at a fifth of
+        // its sweep, and the tank refills slowly. I2 hard turns, I3 danger walls before a ring, I4 both.
+        Breach = 83,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 71) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 76) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

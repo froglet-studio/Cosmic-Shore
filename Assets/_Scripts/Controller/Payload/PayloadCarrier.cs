@@ -193,11 +193,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // The slot's artifact and the pilot's levels on it, read once per payload taken.
+        // The slot's artifact and its levels, read once per payload taken.
         void Load()
         {
-            _loaded = _status?.PilotLoadout?.Artifact;
-            _loadedLevels = _loaded ? PilotLoadoutStore.Levels(_loaded.Id) : default;
+            var loadout = _status?.PilotLoadout;
+            _loaded = loadout?.Artifact;
+            // The slotted artifact's own levels, as its vessel published them (VesselPilotLoadout, ArtifactWire).
+            _loadedLevels = _loaded ? loadout.ArtifactLevels : default;
             if (_loaded && !_loaded.Transform) _loaded = null;
         }
 

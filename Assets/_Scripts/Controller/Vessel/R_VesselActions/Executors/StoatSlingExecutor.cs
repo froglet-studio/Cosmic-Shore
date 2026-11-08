@@ -210,6 +210,8 @@ namespace CosmicShore.Gameplay
         public float OrbitAngle => _orbitAngle;
         /// <summary>True while either trigger holds this executor's squeeze.</summary>
         public bool IsHoldingAny => _holds[0].Holding || _holds[1].Holding;
+        /// <summary>Seconds since the last slingshot let go (+infinity before the first). The HUD's Mass and Time cards.</summary>
+        public float SinceLaunch => Time.time - _lastLaunchAt;
         /// <summary>The laid pair's attractor (caught or not), or null.</summary>
         public BlackHole Attractor => HasPair ? _pair.Black : null;
         /// <summary>How well a release RIGHT NOW would be timed, 0..1 (0 before a catch) — the rings and the HUD.</summary>
@@ -1220,7 +1222,9 @@ namespace CosmicShore.Gameplay
             if (_tramp || AIConfig.AiSlingMinTurnDegrees <= 0f || Time.time - _aiLastSlingTime < AIConfig.AiSlingIntervalSeconds) return;
             var local = StoatDipoleMath.AutopilotGauge(hull.InverseTransformPoint(ai.TargetPosition),
                                                        (ai.ObjectivePosition - hull.position).magnitude);
-            if (!StoatSlingMath.TryAutopilotSide(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance, out bool turnLeft)) return;
+            // To turn, or for the warp alone on a long leg (aiWarpMinDistance; 0, as both shipped configs carry it, never).
+            if (!StoatSlingMath.TrampolinePress(local, AIConfig.AiSlingMinTurnDegrees, AIConfig.AiSlingMinDistance,
+                                                AIConfig.AiWarpMinDistance, out bool turnLeft)) return;
             var side = turnLeft ? Side.Left : Side.Right;
             if (!ResolveBoundInput(side, handler, out var ie)) return;
             _aiLastSlingTime = Time.time;

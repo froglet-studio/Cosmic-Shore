@@ -210,6 +210,13 @@ def author(spec: dict):
     # controller block. Stands down once applied (the full block is then in the scene).
     if new_fields not in scene and new_fields != base_fields and scene.count(base_fields) == 1:
         scene = scene.replace(base_fields, new_fields)
+    # A donor controller's own fields left behind after the mode's block (a donor that grew fields after the clone).
+    # Unity drops them silently, so they are deleted here, and a tail still in the scene is an error.
+    tail = spec.get("donor_tail")
+    if tail:
+        scene = scene.replace(new_fields + tail, new_fields)
+        if tail in scene:
+            errors.append(f"{os.path.basename(scene_rel)}: the donor's retired controller fields are still in the scene")
     errors += [f"{os.path.basename(scene_rel)}: authored block no longer in the committed scene:\n{block}"
                for block in authored_blocks if block not in scene]
     g.emit_scene(scene_name, g_scene, scene)

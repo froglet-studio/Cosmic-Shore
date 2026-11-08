@@ -1,6 +1,6 @@
 {
   "format": "cosmic-shore-colour-sets/1",
-  "status": "Colour sets. Nocturne is the game's default palette (Garrett, 2026-11-03: \"make the nocturne the new default. It does look amazing.\"); Dart Frog is proposed for the paid track. Each set gives every domain its own regions of OKLab. The six-family truth in colour_domains.json is untouched; its anchors are read from PhoticColorSetSO, the default until 2026-11-03.",
+  "status": "Colour sets. Nocturne is the game's default palette (Garrett, 2026-11-03: \"make the nocturne the new default. It does look amazing.\"); Dart Frog is proposed for the paid track. Each set gives every domain its own regions of OKLab. The six-family truth in colour_domains.json is untouched; its anchors are read from PhoticColorSetSO, the default until 2026-11-03. 2026-11-05: Contrast, then one set per form of colour blindness or visual impairment (Protanopia, Deuteranopia, Tritanopia, Achromatopsia, Low Vision), each keeping rule 5 for its vision; they sit in the Profile's colour-set rail with the others, and Settings > General > Colour sets is a breadcrumb to them.",
   "checker": "python3 Tools/Build/colour_sets.py --check",
   "lab": "Docs/Studios/ColourSetsLab.html",
   "artifact": "https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf",
@@ -99,12 +99,282 @@
           "face": {"name": "Deep Teal", "hue": 232, "sat": 0.203, "L": [0.27, 0.37], "rho": 0.035, "swatch": "#00384E"}
         }
       }
+    },
+    "contrast": {
+      "name": "Contrast",
+      "track": "free",
+      "proposed": "2026-11-05",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "vision": "typical",
+      "vision_margin": 0.27,
+      "summary": "Every domain as far from every other as the rules allow, for typical vision: six rims spread round the hue circle at full strength, and faces that differ from each other in hue AND lightness, so a prism's body names its domain even when its rim is out of sight.",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_hue_contrast": 90,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "as typical vision sees it: #FF032C over #B3C1FC (painted #FF032C over #B3C1FC)",
+          "rim": {"name": "Signal Red", "hue": 25, "sat": 0.404, "L": [0.22, 0.42], "rho": 0.035, "swatch": "#65000B"},
+          "face": {"name": "Periwinkle", "hue": 274, "sat": 0.104, "L": [0.77, 0.87], "rho": 0.035, "swatch": "#B3C1FC"}
+        },
+        "gold": {
+          "inspiration": "as typical vision sees it: #FFB42D over #5F3EF9 (painted #FFB42D over #5F3EF9)",
+          "rim": {"name": "Marigold", "hue": 76, "sat": 0.196, "L": [0.66, 0.86], "rho": 0.035, "swatch": "#E6A228"},
+          "face": {"name": "Electric Violet", "hue": 281, "sat": 0.487, "L": [0.48, 0.58], "rho": 0.035, "swatch": "#5F3EF9"}
+        },
+        "lime": {
+          "inspiration": "as typical vision sees it: #2BFF13 over #DC2E7D (painted #2BFF13 over #DC2E7D)",
+          "rim": {"name": "Neon Lime", "hue": 142, "sat": 0.332, "L": [0.66, 0.86], "rho": 0.035, "swatch": "#23D50E"},
+          "face": {"name": "Raspberry", "hue": 359, "sat": 0.359, "L": [0.55, 0.65], "rho": 0.035, "swatch": "#DC2E7D"}
+        },
+        "jade": {
+          "inspiration": "as typical vision sees it: #34E4FF over #542C4F (painted #34E4FF over #542C4F)",
+          "rim": {"name": "Sky Cyan", "hue": 211, "sat": 0.163, "L": [0.74, 0.94], "rho": 0.035, "swatch": "#33E2FD"},
+          "face": {"name": "Aubergine", "hue": 332, "sat": 0.215, "L": [0.31, 0.41], "rho": 0.035, "swatch": "#542C4F"}
+        },
+        "blue": {
+          "inspiration": "as typical vision sees it: #4B7AFF over #030400 (painted #4B7AFF over #030400)",
+          "rim": {"name": "Ultramarine", "hue": 266, "sat": 0.331, "L": [0.31, 0.51], "rho": 0.035, "swatch": "#274393"},
+          "face": {"name": "Ink", "hue": 123, "sat": 0.225, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#030400"}
+        },
+        "ruby": {
+          "inspiration": "as typical vision sees it: #FE35FF over #138967 (painted #FE35FF over #138967)",
+          "rim": {"name": "Magenta", "hue": 328, "sat": 0.421, "L": [0.59, 0.79], "rho": 0.035, "swatch": "#F232F3"},
+          "face": {"name": "Viridian", "hue": 167, "sat": 0.197, "L": [0.51, 0.61], "rho": 0.035, "swatch": "#138967"}
+        }
+      }
+    },
+    "protanopia": {
+      "name": "Protanopia",
+      "track": "free",
+      "proposed": "2026-11-05",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "vision": "protan",
+      "vision_margin": 0.21,
+      "summary": "Made for eyes without long-wave (red) cones. A protan sees two hues, blue and yellow, so each domain gets its own place on that axis and its own lightness: Fire's and Gold's faces, one just-noticeable step apart for a protan in Nocturne, become navy and steel blue.",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_hue_contrast": 90,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "as a protan sees it: #6A6967 over #00275F (painted #FF2466 over #1A1A5D)",
+          "rim": {"name": "Rose Red", "hue": 12, "sat": 0.377, "L": [0.38, 0.58], "rho": 0.035, "swatch": "#AB1442"},
+          "face": {"name": "Navy", "hue": 275, "sat": 0.43, "L": [0.22, 0.32], "rho": 0.035, "swatch": "#1A1A5D"}
+        },
+        "gold": {
+          "inspiration": "as a protan sees it: #C1AB1E over #829EDB (painted #FFA333 over #4E9CD8)",
+          "rim": {"name": "Tangerine", "hue": 66, "sat": 0.202, "L": [0.69, 0.89], "rho": 0.035, "swatch": "#FEA333"},
+          "face": {"name": "Steel Blue", "hue": 244, "sat": 0.176, "L": [0.62, 0.72], "rho": 0.035, "swatch": "#4E9CD8"}
+        },
+        "lime": {
+          "inspiration": "as a protan sees it: #FFF400 over #005EC0 (painted #FEFF2F over #A32DBC)",
+          "rim": {"name": "Lemon", "hue": 110, "sat": 0.209, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#CFD024"},
+          "face": {"name": "Purple", "hue": 320, "sat": 0.411, "L": [0.49, 0.59], "rho": 0.035, "swatch": "#A32DBC"}
+        },
+        "jade": {
+          "inspiration": "as a protan sees it: #EEF2FC over #5D5212 (painted #28FFFB over #A14118)",
+          "rim": {"name": "Aqua", "hue": 193, "sat": 0.166, "L": [0.74, 0.94], "rho": 0.035, "swatch": "#23E7E3"},
+          "face": {"name": "Rust", "hue": 41, "sat": 0.275, "L": [0.45, 0.55], "rho": 0.035, "swatch": "#A14118"}
+        },
+        "blue": {
+          "inspiration": "as a protan sees it: #8DB3FF over #A18E04 (painted #D1A1FF over #219E23)",
+          "rim": {"name": "Lavender", "hue": 307, "sat": 0.176, "L": [0.64, 0.84], "rho": 0.035, "swatch": "#C094EB"},
+          "face": {"name": "Emerald", "hue": 143, "sat": 0.311, "L": [0.56, 0.66], "rho": 0.035, "swatch": "#219E23"}
+        },
+        "ruby": {
+          "inspiration": "as a protan sees it: #006AFF over #040302 (painted #872AFF over #020402)",
+          "rim": {"name": "Violet", "hue": 295, "sat": 0.5, "L": [0.39, 0.59], "rho": 0.035, "swatch": "#7222D8"},
+          "face": {"name": "Ink", "hue": 137, "sat": 0.109, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#020402"}
+        }
+      }
+    },
+    "deuteranopia": {
+      "name": "Deuteranopia",
+      "track": "free",
+      "proposed": "2026-11-05",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "vision": "deutan",
+      "vision_margin": 0.17,
+      "summary": "Made for eyes without medium-wave (green) cones, the commonest colour blindness. Like a protan, a deutan sees blue against yellow, but sees reds brighter, so the rims sit at different points on that axis and the faces carry the rest in lightness: Lime's and Blue's faces, one step apart for a deutan in Nocturne, become pink and ink.",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_hue_contrast": 90,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "as a deutan sees it: #9A9583 over #104A90 (painted #FF2288 over #214E92)",
+          "rim": {"name": "Neon Rose", "hue": 1, "sat": 0.384, "L": [0.48, 0.68], "rho": 0.035, "swatch": "#D91B72"},
+          "face": {"name": "Cobalt", "hue": 259, "sat": 0.285, "L": [0.38, 0.48], "rho": 0.035, "swatch": "#214E92"}
+        },
+        "gold": {
+          "inspiration": "as a deutan sees it: #D1BA06 over #0067F9 (painted #FF9801 over #8A2FFD)",
+          "rim": {"name": "Orange", "hue": 64, "sat": 0.226, "L": [0.65, 0.85], "rho": 0.035, "swatch": "#F69301"},
+          "face": {"name": "Electric Violet", "hue": 296, "sat": 0.486, "L": [0.51, 0.61], "rho": 0.035, "swatch": "#8A2FFD"}
+        },
+        "lime": {
+          "inspiration": "as a deutan sees it: #FFF94C over #9AA2B7 (painted #FFFD3A over #E178BA)",
+          "rim": {"name": "Lemon", "hue": 109, "sat": 0.203, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#D1CF2E"},
+          "face": {"name": "Pink", "hue": 343, "sat": 0.213, "L": [0.66, 0.76], "rho": 0.035, "swatch": "#E178BA"}
+        },
+        "jade": {
+          "inspiration": "as a deutan sees it: #BDCFFF over #383217 (painted #4DEAFF over #581419)",
+          "rim": {"name": "Sky Cyan", "hue": 208, "sat": 0.151, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#48DEF2"},
+          "face": {"name": "Oxblood", "hue": 21, "sat": 0.318, "L": [0.26, 0.36], "rho": 0.035, "swatch": "#581419"}
+        },
+        "blue": {
+          "inspiration": "as a deutan sees it: #005AFC over #040300 (painted #1D4FFF over #010500)",
+          "rim": {"name": "Ultramarine", "hue": 265, "sat": 0.5, "L": [0.16, 0.36], "rho": 0.035, "swatch": "#051861"},
+          "face": {"name": "Ink", "hue": 137, "sat": 0.299, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#010500"}
+        },
+        "ruby": {
+          "inspiration": "as a deutan sees it: #699BFA over #696450 (painted #FE16FF over #526B4F)",
+          "rim": {"name": "Magenta", "hue": 328, "sat": 0.451, "L": [0.6, 0.8], "rho": 0.035, "swatch": "#FC16FE"},
+          "face": {"name": "Sage", "hue": 142, "sat": 0.108, "L": [0.45, 0.55], "rho": 0.035, "swatch": "#526B4F"}
+        }
+      }
+    },
+    "tritanopia": {
+      "name": "Tritanopia",
+      "track": "free",
+      "proposed": "2026-11-05",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "vision": "tritan",
+      "vision_margin": 0.18,
+      "summary": "Made for eyes without short-wave (blue) cones. A tritan sees red against teal, so the domains are spread along that axis and in lightness: Blue's and Ruby's faces, one step apart for a tritan in Nocturne, become forest and teal.",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_hue_contrast": 90,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "as a tritan sees it: #FF0045 over #010306 (painted #FF3E4B over #03010F)",
+          "rim": {"name": "Tomato", "hue": 23, "sat": 0.344, "L": [0.5, 0.7], "rho": 0.035, "swatch": "#E13641"},
+          "face": {"name": "Ink", "hue": 289, "sat": 0.397, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#03010F"}
+        },
+        "gold": {
+          "inspiration": "as a tritan sees it: #FF9492 over #689BA1 (painted #FFA934 over #7C92BF)",
+          "rim": {"name": "Saffron", "hue": 69, "sat": 0.198, "L": [0.69, 0.89], "rho": 0.035, "swatch": "#FAA633"},
+          "face": {"name": "Slate Blue", "hue": 265, "sat": 0.11, "L": [0.61, 0.71], "rho": 0.035, "swatch": "#7C92BF"}
+        },
+        "lime": {
+          "inspiration": "as a tritan sees it: #FFEBD7 over #7C2B39 (painted #FFFC09 over #733146)",
+          "rim": {"name": "Lemon", "hue": 109, "sat": 0.216, "L": [0.43, 0.63], "rho": 0.035, "swatch": "#727001"},
+          "face": {"name": "Wine", "hue": 2, "sat": 0.232, "L": [0.36, 0.46], "rho": 0.035, "swatch": "#733146"}
+        },
+        "jade": {
+          "inspiration": "as a tritan sees it: #00FDE8 over #FF0061 (painted #3EFFA8 over #F71F9F)",
+          "rim": {"name": "Spearmint", "hue": 158, "sat": 0.217, "L": [0.75, 0.95], "rho": 0.035, "swatch": "#3AF19E"},
+          "face": {"name": "Hot Pink", "hue": 352, "sat": 0.395, "L": [0.6, 0.7], "rho": 0.035, "swatch": "#F71F9F"}
+        },
+        "blue": {
+          "inspiration": "as a tritan sees it: #00A3B6 over #00322A (painted #1A85FF over #003305)",
+          "rim": {"name": "Azure", "hue": 256, "sat": 0.322, "L": [0.47, 0.67], "rho": 0.035, "swatch": "#1574E0"},
+          "face": {"name": "Forest", "hue": 144, "sat": 0.324, "L": [0.23, 0.33], "rho": 0.035, "swatch": "#003305"}
+        },
+        "ruby": {
+          "inspiration": "as a tritan sees it: #9B6A9B over #006866 (painted #AB30FF over #2C656A)",
+          "rim": {"name": "Violet", "hue": 306, "sat": 0.463, "L": [0.5, 0.7], "rho": 0.035, "swatch": "#AB30FF"},
+          "face": {"name": "Teal", "hue": 203, "sat": 0.126, "L": [0.42, 0.52], "rho": 0.035, "swatch": "#2C656A"}
+        }
+      }
+    },
+    "achromatopsia": {
+      "name": "Achromatopsia",
+      "track": "free",
+      "proposed": "2026-11-05",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "vision": "achromat",
+      "vision_margin": 0.09,
+      "summary": "Made for eyes that see no colour at all. Every domain has its own brightness, rim and face, so a domain is told apart by how bright its rim is and how bright its body is. Because it never leans on hue, it is also the one set every vision can read (at least 4.6 steps for each).",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_hue_contrast": 90,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "as no colour vision sees it: #818181 over #040404 (painted #FF1139 over #030311)",
+          "rim": {"name": "Red", "hue": 23, "sat": 0.396, "L": [0.38, 0.58], "rho": 0.035, "swatch": "#B00824"},
+          "face": {"name": "Ink", "hue": 278, "sat": 0.331, "L": [0.06, 0.16], "rho": 0.035, "swatch": "#030311"}
+        },
+        "gold": {
+          "inspiration": "as no colour vision sees it: #B9B9B9 over #5A5A5A (painted #FFA628 over #7B4484)",
+          "rim": {"name": "Amber", "hue": 69, "sat": 0.205, "L": [0.68, 0.88], "rho": 0.035, "swatch": "#F8A227"},
+          "face": {"name": "Plum", "hue": 322, "sat": 0.243, "L": [0.43, 0.53], "rho": 0.035, "swatch": "#7B4484"}
+        },
+        "lime": {
+          "inspiration": "as no colour vision sees it: #F6F6F6 over #353535 (painted #FBFF08 over #30334C)",
+          "rim": {"name": "Lemon", "hue": 111, "sat": 0.219, "L": [0.6, 0.8], "rho": 0.035, "swatch": "#A3A603"},
+          "face": {"name": "Slate", "hue": 278, "sat": 0.132, "L": [0.28, 0.38], "rho": 0.035, "swatch": "#30334C"}
+        },
+        "jade": {
+          "inspiration": "as no colour vision sees it: #D7D7D7 over #A0A0A0 (painted #6AE8FF over #DE8798)",
+          "rim": {"name": "Ice Cyan", "hue": 211, "sat": 0.133, "L": [0.74, 0.94], "rho": 0.035, "swatch": "#65DEF4"},
+          "face": {"name": "Rose", "hue": 8, "sat": 0.15, "L": [0.67, 0.77], "rho": 0.035, "swatch": "#DE8798"}
+        },
+        "blue": {
+          "inspiration": "as no colour vision sees it: #656565 over #191919 (painted #254DFF over #081E03)",
+          "rim": {"name": "Ultramarine", "hue": 266, "sat": 0.5, "L": [0.3, 0.5], "rho": 0.035, "swatch": "#1633B1"},
+          "face": {"name": "Forest", "hue": 139, "sat": 0.276, "L": [0.16, 0.26], "rho": 0.035, "swatch": "#081E03"}
+        },
+        "ruby": {
+          "inspiration": "as no colour vision sees it: #9D9D9D over #757575 (painted #FF56E7 over #148563)",
+          "rim": {"name": "Flamingo", "hue": 334, "sat": 0.348, "L": [0.6, 0.8], "rho": 0.035, "swatch": "#F251DB"},
+          "face": {"name": "Viridian", "hue": 166, "sat": 0.198, "L": [0.5, 0.6], "rho": 0.035, "swatch": "#148563"}
+        }
+      }
+    },
+    "low_vision": {
+      "name": "Low Vision",
+      "track": "free",
+      "proposed": "2026-11-05",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "vision": "low_vision",
+      "vision_margin": 0.13,
+      "summary": "Made for low vision and cataract (reduced contrast sensitivity, a yellowed lens): bright rims over faces at least 0.4 darker, so a prism's edges read through blur, and the domains apart in brightness first and hue second.",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_hue_contrast": 90,
+      "min_lightness_contrast": 0.4,
+      "domains": {
+        "fire": {
+          "inspiration": "as low vision sees it: #D1826C over #1B1531 (painted #FF5B2D over #1E0846)",
+          "rim": {"name": "Flame", "hue": 36, "sat": 0.303, "L": [0.57, 0.77], "rho": 0.035, "swatch": "#F8592B"},
+          "face": {"name": "Midnight", "hue": 292, "sat": 0.476, "L": [0.17, 0.27], "rho": 0.035, "swatch": "#1E0846"}
+        },
+        "gold": {
+          "inspiration": "as low vision sees it: #E1B788 over #50365C (painted #FFAC38 over #5D2374)",
+          "rim": {"name": "Marigold", "hue": 70, "sat": 0.194, "L": [0.68, 0.88], "rho": 0.035, "swatch": "#F4A435"},
+          "face": {"name": "Plum", "hue": 315, "sat": 0.366, "L": [0.33, 0.43], "rho": 0.035, "swatch": "#5D2374"}
+        },
+        "lime": {
+          "inspiration": "as low vision sees it: #F8F9A8 over #41628B (painted #FFFD20 over #045FB4)",
+          "rim": {"name": "Lemon", "hue": 109, "sat": 0.212, "L": [0.79, 0.99], "rho": 0.035, "swatch": "#E6E31C"},
+          "face": {"name": "Cobalt", "hue": 254, "sat": 0.314, "L": [0.44, 0.54], "rho": 0.035, "swatch": "#045FB4"}
+        },
+        "jade": {
+          "inspiration": "as low vision sees it: #B7EAEF over #904962 (painted #81F4FF over #B30761)",
+          "rim": {"name": "Ice", "hue": 204, "sat": 0.117, "L": [0.8, 1.0], "rho": 0.035, "swatch": "#80F3FE"},
+          "face": {"name": "Raspberry", "hue": 359, "sat": 0.4, "L": [0.45, 0.55], "rho": 0.035, "swatch": "#B30761"}
+        },
+        "blue": {
+          "inspiration": "as low vision sees it: #A6AED9 over #223A20 (painted #9CA9FF over #003F03)",
+          "rim": {"name": "Lavender", "hue": 276, "sat": 0.163, "L": [0.63, 0.83], "rho": 0.035, "swatch": "#93A1F2"},
+          "face": {"name": "Forest", "hue": 143, "sat": 0.333, "L": [0.27, 0.37], "rho": 0.035, "swatch": "#003F03"}
+        },
+        "ruby": {
+          "inspiration": "as low vision sees it: #D378D1 over #030403 (painted #FE14FF over #020402)",
+          "rim": {"name": "Magenta", "hue": 328, "sat": 0.452, "L": [0.51, 0.71], "rho": 0.035, "swatch": "#D20FD3"},
+          "face": {"name": "Ink", "hue": 141, "sat": 0.124, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#020402"}
+        }
+      }
     }
   },
   "open": [
     "Nocturne as the default leaves four things on Photic: vessel hull materials, rendered card art, the vessel studio's colours and the Amoebius launcher's accents (Amoebius itself reads the live palette since 2026-11-05). Its dark faces also darken the HUD shielded signal (Docs/PALETTE.md section 1).",
     "Lime as the CTA pair: DarkCTA paints about 93% of a free crystal, so a face pigment there makes free pickups read as oxblood. The Unity asset keeps the CTA lime on both halves for now; the Lime face (Oxblood) has no field.",
     "Fire as danger: danger is a shared rim over each domain's shielded face, so Fire's own face pigment (Denim) has nowhere to go in SO_ColorSet today. The Unity asset paints Danger with the Fire rim (Strawberry) only.",
-    "The free colour-blind sets (protan, deutan, tritan) need the same rules applied to the simulated colours; colour_sets.py --report already prints how each set fares under each."
+    "The vision sets (2026-11-05) are measured on the palette's colours before bloom and ACES, with the Machado 2009 simulation at full severity (protanomaly and deuteranomaly are the milder forms of the same loss). How they look in the game, and whether the low-vision model (chromatic contrast halved) matches players with low vision, is judged by eye and by players: an editor pass per set is owed. They are picked in the Profile's colour-set rail, which now pages through the whole catalog through its three tiles."
   ]
 }

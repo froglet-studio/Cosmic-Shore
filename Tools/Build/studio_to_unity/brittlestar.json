@@ -89,6 +89,21 @@
       "field": "ringTurnRate"
     },
     {
+      "key": "aimSweepThreshold",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "aimSweepThreshold"
+    },
+    {
+      "key": "aimSweepSmoothing",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "aimSweepSmoothing"
+    },
+    {
+      "key": "aimFlickDegrees",
+      "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
+      "field": "aimFlickDegrees"
+    },
+    {
       "key": "ringLaunchSpeed",
       "asset": "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset",
       "field": "ringLaunchSpeed"

@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 3
   Name: Rhino
-  Description: Smash things with your face to gain boost and volume. Hunt down other
-    players to stop them from making volume. Watch out for collateral damage.
+  Description: "A plough. Your hull shoves every prism it hits aside, and a shoved prism
+    that hits another breaks both. Pull a trigger to throw the furrow that way, and run
+    flat out to wind up the ramp."
   PrimaryElement: 0
   Element: {fileID: 0}
   InitialResourceLevels:
@@ -41,7 +42,6 @@ MonoBehaviour:
   TrainingGames: []
   keywords:
   - 1
-  - 4
   - 5
   gameplayParameter1:
     LeftHandLabel: Casual

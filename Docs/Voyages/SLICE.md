@@ -1,7 +1,9 @@
 # The voyage vertical slice: one loop, every system, playable
 
-**Status: BUILDING** (Garrett, 2026-10-28). Branch `claude/voyage-vertical-slice`. Nothing here has been opened in the
-Unity editor yet; §6 is the hand-test list. The design is [`VOYAGES.md`](VOYAGES.md) (owned by the *Design voyages on
+**Status: BUILT, then deepened** (Garrett, 2026-10-28; the depth pass 2026-11-07 is [`DEPTH.md`](DEPTH.md): the living
+galaxy, rival crews, a job for every faction type, sagas and relics, standing and notoriety, uncharted places, the depth
+harness). Branch `claude/voyage-vertical-slice` landed; nothing here has been opened in the Unity editor yet; §6 is the
+hand-test list. The design is [`VOYAGES.md`](VOYAGES.md) (owned by the *Design voyages on
 the hypersea* thread); this file is the slice that tests it, phase V1 of §9 cut down to one loop that uses everything.
 
 > "work backwards from a voyage where we have working pilot vision powers, arks, payloads, a galactic map, a artifact

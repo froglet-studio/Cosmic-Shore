@@ -5940,6 +5940,22 @@ Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
 - **Tabs.** Each tab's word was pinned to the top of its 44-unit row while the keycaps were centred; the words are now
   centred, and the underline sits at the row's foot.
 
+### 126.2 Six colour sets for colour vision join the rail; Settings keeps a breadcrumb (2026-11-05, NOT RUN IN EDITOR)
+
+Garrett: "adding these to the profile is extending with new content, it is following a pattern, it is putting the
+thing where it belongs instead of placing them in different places. we can have an accessibility section that gives a
+breadcrumb to the color sets, but put the thing where it belongs."
+- **The rail is a window onto the whole catalog.** The six new sets (Contrast, Protanopia, Deuteranopia, Tritanopia,
+  Achromatopsia, Low Vision; `Docs/VesselModels/colour_sets.json`) follow Nocturne, Photic and Dart Frog in the
+  catalog. The rail keeps Rev 54 A's three tiles; < and > step the set shown and slide the window one tile at a time
+  (`ProfileColorSetsPanel.WindowStart`), wrapping at the ends, so "4 of 9" reads as before. No prefab change.
+- **Settings > General, first row: Colour sets**, a breadcrumb in place of the Colorblind mode dropdown: "Sets made for
+  colour blindness, low vision and contrast are in your Profile, under Colour sets." Its COLOUR SETS button closes
+  Settings and opens the Profile on Colour sets, showing (and previewing) the first set made for a vision. Main menu
+  only, like Credits. Authored by `author_menu_settings.py` (a new row kind, `go`).
+- **Not drawn on Frogma first:** it extends the picked Rev 54 A and the approved settings board with content and one
+  row, as Garrett asked. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
 ## 137. Rev 50 mockups: the Froglet Analytics dashboard, three ways to read it (2026-11-05; Shombith picked B)
 
 - **Asked** (Shombith, 2026-11-05): "Lets go with our own dashboard and leave posthog. Pull up /frogma create new tab to

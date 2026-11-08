@@ -1,5 +1,7 @@
 # Rhino Shield Swipe — analog trigger swordsmanship
 
+> **2026-11-07: this is the SWORDFISH's now.** The Rhino split in two (Garrett: "the sword fish will be all about the sword. the rhino will be all about the plow"): everything here moved to the Swordfish (`VesselClassType.Swordfish`, `SWORDFISH.md`) unchanged, and the Rhino has no sword. Read "the Rhino" below as "the Swordfish". The code keeps its `Rhino*` names.
+
 > **2026-10-26 (Garrett): the Rhino has NO ENERGY.** The meter, the energy banked per cut, the energize
 > cost and the surge's fill and element buff are gone; **Charge** scales the sword's petal STEAL
 > (×1 → ×2.5); **Space alone** sets the blade length (24 → 40) and the camera follows it; the omni-crystal
