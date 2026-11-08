@@ -38,6 +38,7 @@ LOOP = int(os.environ.get("ARK_LOOP", "40"))
 CONV = int(os.environ.get("ARK_CONV", "48"))
 ONLY = os.environ.get("ARK_ONLY")            # "f0,f1,..." render only these frame numbers (tests)
 RUNS = os.environ.get("ARK_RUNS")            # "loop" / "convert": limit the runs
+DOM = os.environ.get("ARK_DOMAIN", "Jade")   # the squad's domain: the trim, the pads, the squad's prisms, the map's marker
 os.makedirs(OUT, exist_ok=True)
 REPO = os.environ.get("COSMIC_SHORE_REPO") or os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 MODELS = os.path.join(REPO, "Assets/_Models/Vessel Models")
@@ -918,7 +919,7 @@ hz_r = hn.nodes.new("ShaderNodeMapRange"); hz_r.inputs[1].default_value = 0.35; 
 hz_r.inputs[3].default_value = 0.0; hz_r.inputs[4].default_value = 0.014 if SCENE == "squads" else 0.0035   # the rooms: thinner
 hn.links.new(hz_n.outputs["Fac"], hz_r.inputs[0]); hn.links.new(hz_r.outputs[0], hv.inputs["Density"])
 BOARD_TEX = [n for n in board.node_tree.nodes if n.bl_idname == "ShaderNodeTexImage"][0]
-MAPS = [os.path.join(ASSETS, "map", f"map_{i:04d}.png") for i in range(LOOP)]
+MAPS = [os.path.join(ASSETS, "map" if DOM == "Jade" else f"map_{DOM}", f"map_{i:04d}.png") for i in range(LOOP)]
 ENGINE_E = ENGINE.node_tree.nodes["pbr"].inputs["Emission Strength"]
 ENGINE_E0 = ENGINE_E.default_value
 
@@ -932,14 +933,14 @@ def apply_set(name):
         if kind == "danger":
             m.node_tree.nodes["rim"].inputs[0].default_value = (*S["env"]["danger"], 1)
         elif kind in ("plain", "shielded", "super"):
-            b_, r_ = K.PAL["Jade" if pal == SQUAD else pal][kind]
+            b_, r_ = K.PAL[DOM if pal == SQUAD else pal][kind]
             K.recolour(m, b_, r_, K.LOOK[kind])
-    c = S["Jade"]["ship"][1]
+    c = S[DOM]["ship"][1]
     peak = max(c)
     for m in (DOMAIN_ARK, DOMAIN_V):
         m.node_tree.nodes["pbr"].inputs["Emission Color"].default_value = (*[v / peak for v in c], 1)
         m.node_tree.nodes["base"].inputs[6].default_value = (*[0.02 + 0.22 * v / peak for v in c], 1)
-    rim = S["Jade"]["plain"][1]
+    rim = S[DOM]["plain"][1]
     pk = max(rim)
     for Lt in DOMAIN_LIGHTS:
         Lt.data.color = tuple(v / pk for v in rim)
@@ -1034,7 +1035,7 @@ if RUNS:
 for set_name in SETS:
     apply_set(set_name)
     for run, n in runs:
-        od = os.path.join(OUT, f"{SCENE}_{set_name}_{run}")
+        od = os.path.join(OUT, f"{SCENE}_{set_name}{'' if DOM == 'Jade' else '_' + DOM}_{run}")
         os.makedirs(od, exist_ok=True)
         for f in range(n):
             if only is not None and f not in only:

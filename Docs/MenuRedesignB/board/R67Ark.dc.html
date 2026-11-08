@@ -40,6 +40,7 @@ body{margin:0;background:#00010A}
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
 const BG = {"converter": {"Nocturne": {"loop": "/_blob/35a38ed04a34199a9ef84900c5651c53", "convert": "/_blob/0701b3cd43e1dbf84fe098d515bf0af7"}, "Photic": {"loop": "/_blob/08b425ca97a974a886b137f1bd03bd72", "convert": "/_blob/1e8fa4f365763824e2c03b9d16c88a45"}, "DartFrog": {"loop": "/_blob/c699f269129bafa282b5d3740c450b3d", "convert": "/_blob/02789cf7240e71c159dda5bdc9902352"}}, "squads": {"Nocturne": {"loop": "/_blob/c2a9b2634cf0ccae357e84f5a3ff5917", "convert": ""}, "Photic": {"loop": "/_blob/43f64a4b0693cd635e599417375b48fb", "convert": ""}, "DartFrog": {"loop": "/_blob/c10074d79d9ffeff4eb1a5be8fbea11a", "convert": ""}}, "artifacts": {"Nocturne": {"loop": "/_blob/09185c136ff76f5527fc042cbd7d0d0a", "convert": ""}, "Photic": {"loop": "/_blob/237b17c90cf15a257a2cad62fca9dfa6", "convert": ""}, "DartFrog": {"loop": "/_blob/4408e2d2dbfeceeb7d2b7380b178a3a5", "convert": ""}}, "decor": {"Nocturne": {"loop": "/_blob/4041979f299c4471c3b0a0f3b7251b98", "convert": ""}, "Photic": {"loop": "/_blob/e463ac2a056ebe275e048b33443ac58a", "convert": ""}, "DartFrog": {"loop": "/_blob/c3e4896a471700b0f28e15650c335bc6", "convert": ""}}};
+const BGD = {"Nocturne": {"Ruby": "/_blob/cd2a783f5d168b8a448e948e3d67122a", "Gold": "/_blob/48075ef29368f88768c579631ceb3f3d", "Jade": "/_blob/c2a9b2634cf0ccae357e84f5a3ff5917"}, "Photic": {"Ruby": "/_blob/dc208d4ec8a65f0e61592dfbe88962ea", "Gold": "/_blob/36d205e0877a5cceb459982d273a004b", "Jade": "/_blob/43f64a4b0693cd635e599417375b48fb"}, "DartFrog": {"Ruby": "/_blob/59a6293758e7e4596c432529a128545b", "Gold": "/_blob/fc075dc960dcc5bbb6fd99f87011a4e3", "Jade": "/_blob/c10074d79d9ffeff4eb1a5be8fbea11a"}};
 const TABS = [["Converter", "converter"], ["Squads", "squads"], ["Artifacts", "artifacts"], ["Decor", "decor"]];
 const SETS = [["Nocturne", "Nocturne"], ["Photic", "Photic"], ["DartFrog", "Dart Frog"]];
 const DOMC = {"Jade": "#21C0BD", "Ruby": "#BD1BC8", "Gold": "#FF8F11"};
@@ -57,7 +58,7 @@ class Component extends DCLogic {
   const layers = [];
   const B = BG[TABS[st.tab][1]];
   SETS.forEach((s, i) => {
-   layers.push({ src: B[s[0]].loop, op: i === st.set && !st.running ? 1 : 0, alt: i === st.set && !st.running ? 'Inside the Ark, live, ' + s[1] : '' });
+   layers.push({ src: TABS[st.tab][1] === 'squads' ? BGD[s[0]][dom] : B[s[0]].loop, op: i === st.set && !st.running ? 1 : 0, alt: i === st.set && !st.running ? 'Inside the Ark, live, ' + s[1] : '' });
    if (B[s[0]].convert) layers.push({ src: i === st.set && st.running ? B[s[0]].convert + '?run=' + st.run : B[s[0]].convert,
      op: i === st.set && st.running ? 1 : 0, alt: i === st.set && st.running ? 'Converting: the crystals fly into the reactor core' : '' });
   });
@@ -81,7 +82,7 @@ class Component extends DCLogic {
   const domains = ['Jade', 'Ruby', 'Gold'].map((k) => { const on = k === dom; return { name: k, dot: DOMC[k],
    edge: on ? '#00D4FF' : 'rgba(116,123,173,.45)', col: on ? '#E6E9FF' : '#9AA0CC', pressed: on ? 'true' : 'false',
    pick: () => { if (on) return; if (!q.mine) { this.say('Only ' + q.owner + ' changes the squad\'s domain.'); return; }
-    const d = st.doms.slice(); d[st.sq] = k; this.setState({ doms: d }); this.say('The hangar\'s trim and the pads relight ' + k + '.'); } }; });
+    const d = st.doms.slice(); d[st.sq] = k; this.setState({ doms: d }); } }; });
   const elems = ELEMS.map((x, i) => ({ name: x[0], n: String(st.counts[i]), low: st.counts[i] === 0 }));
   const canConvert = st.counts.every((n) => n > 0) && !st.running;
   const arts = ARTS.map((a, i) => ({ name: a[0], on: i === st.art, ring: i === st.art ? '#00D4FF' : 'rgba(116,123,173,.35)',

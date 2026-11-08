@@ -154,7 +154,11 @@ TABS = [("Converter", "converter"), ("Squads", "squads"), ("Artifacts", "artifac
 
 def logic():
     bg = {sc_: {s: {"loop": BL[f"{sc_}_{s}_loop"], "convert": BL.get(f"{sc_}_{s}_convert", "")} for s, _ in SETS} for _, sc_ in TABS}
-    return (f"const BG = {json.dumps(bg)};\nconst TABS = {json.dumps(TABS)};\nconst SETS = {json.dumps(SETS)};\nconst DOMC = {json.dumps(DOMC)};\n"
+    # the hangar in the squad's domain: its trim, pads, prisms, the vessels' trim and the map's marker relight with it
+    bgd = {s: {d: BL.get(f"squads_{s}_{d}_loop", BL[f"squads_{s}_loop"]) for d in ("Ruby", "Gold")} for s, _ in SETS}
+    for s, _ in SETS:
+        bgd[s]["Jade"] = BL[f"squads_{s}_loop"]
+    return (f"const BG = {json.dumps(bg)};\nconst BGD = {json.dumps(bgd)};\nconst TABS = {json.dumps(TABS)};\nconst SETS = {json.dumps(SETS)};\nconst DOMC = {json.dumps(DOMC)};\n"
             f"const BOOK = {json.dumps(BOOK)};\nconst ARTS = {json.dumps(ARTS)};\nconst ELEMS = {json.dumps(ELEMS)};\n" + r"""
 class Component extends DCLogic {
  constructor(props) { super(props); this.state = { tab: 1, set: 0, sq: 0, doms: BOOK.map((b) => b.dom), sel: 0, toast: '', running: false, run: 0,
@@ -166,7 +170,7 @@ class Component extends DCLogic {
   const layers = [];
   const B = BG[TABS[st.tab][1]];
   SETS.forEach((s, i) => {
-   layers.push({ src: B[s[0]].loop, op: i === st.set && !st.running ? 1 : 0, alt: i === st.set && !st.running ? 'Inside the Ark, live, ' + s[1] : '' });
+   layers.push({ src: TABS[st.tab][1] === 'squads' ? BGD[s[0]][dom] : B[s[0]].loop, op: i === st.set && !st.running ? 1 : 0, alt: i === st.set && !st.running ? 'Inside the Ark, live, ' + s[1] : '' });
    if (B[s[0]].convert) layers.push({ src: i === st.set && st.running ? B[s[0]].convert + '?run=' + st.run : B[s[0]].convert,
      op: i === st.set && st.running ? 1 : 0, alt: i === st.set && st.running ? 'Converting: the crystals fly into the reactor core' : '' });
   });
@@ -190,7 +194,7 @@ class Component extends DCLogic {
   const domains = ['Jade', 'Ruby', 'Gold'].map((k) => { const on = k === dom; return { name: k, dot: DOMC[k],
    edge: on ? '#00D4FF' : 'rgba(116,123,173,.45)', col: on ? '#E6E9FF' : '#9AA0CC', pressed: on ? 'true' : 'false',
    pick: () => { if (on) return; if (!q.mine) { this.say('Only ' + q.owner + ' changes the squad\'s domain.'); return; }
-    const d = st.doms.slice(); d[st.sq] = k; this.setState({ doms: d }); this.say('The hangar\'s trim and the pads relight ' + k + '.'); } }; });
+    const d = st.doms.slice(); d[st.sq] = k; this.setState({ doms: d }); } }; });
   const elems = ELEMS.map((x, i) => ({ name: x[0], n: String(st.counts[i]), low: st.counts[i] === 0 }));
   const canConvert = st.counts.every((n) => n > 0) && !st.running;
   const arts = ARTS.map((a, i) => ({ name: a[0], on: i === st.art, ring: i === st.art ? '#00D4FF' : 'rgba(116,123,173,.35)',

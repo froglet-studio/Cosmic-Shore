@@ -6197,7 +6197,7 @@ heaps, the danger blades, the trails) take that set's colours, read from `Assets
   open yet" (section 92's Decor).
 
 **Not in this round:** the pilots walking the hangar (Shombith: later); the Breakers squad's own vessels (its
-backdrop stays Skim Wing's); a loop per domain (the squad's domain is Jade; the domain chips say the trim relights).
+backdrop stays Skim Wing's, lit in its own domain).
 In the 3D the cradles stay full after a conversion (the loop is the room at rest).
 
 **For the build:** this is the live-scene path: `ArkReverse`'s hangar for the Squads and a room per other tab, the squad's real hulls on the floor (powered down when offline), the reactor room's crystals as the game's crystal
@@ -6208,6 +6208,11 @@ Affects: Shombith's Ark screen (`author_menu_ark.py`, `ArkView`, `SquadsPage`, `
 build is picked; Garrett's Ark model, the Sparrow, Dolphin and Serpent models, the crystal models (rendered only); the
 colour sets and the artifacts (read only).
 
+**Domain (Shombith, on the board, 2026-11-07: "changing domain does not affect the environment"):** the Squads
+domain chips now relight the hangar itself - the hull's trim and the tunnel's ripples, the pads' light, the squad's
+prisms, the vessels' domain trim and the map's marker - from loops rendered in Jade, Ruby and Gold for every colour set
+(`ARK_DOMAIN`; `r67_map_frames.py ... <domain>`).
+
 **Status (2026-11-07):** complete on the board: all four rooms' loops in Nocturne, Photic and Dart Frog, and the
-Converter's conversion in all three (15 animated WebPs, ids in `r67_blobs.json`). Rendered at 960 x 540, 10 samples,
+Converter's conversion in all three, and the hangar in all three domains (21 animated WebPs, ids in `r67_blobs.json`). Rendered at 960 x 540, 10 samples,
 32-frame loops and a 40-frame conversion at 10 fps; `r67_map_frames.py` makes the HyperSea map's marker frames.
