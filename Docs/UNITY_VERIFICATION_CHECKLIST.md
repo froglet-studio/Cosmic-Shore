@@ -22028,3 +22028,18 @@ from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
 3. **Turn `aiSeekRails` off** on the scene's SkeinController for one race as the control: the AI should go back to
    flying at the rings and missing the pinned ones.
 4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).
+## 🔴 Voyages: the Ark no longer stalls at a job's stop (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/voyage-stop-stall`. `VoyageRun.StandStop` called `ClearStop()`, which forgets `_arrival`, and then read
+`_arrival.Location`: a `NullReferenceException` on every stop short of home (Garrett's Editor.log, 2026-11-08,
+`VoyageRun.cs:538` from `ArkwayRun.TickCorridor`). The Ark had already been told to hold, so it sat at the stop's core
+with no vaults, no work and no save. Ran: `/ship` gates (all OK). Not run: Unity, `unity_refcompile` (no .NET SDK in
+the session).
+
+1. **Take a job to a stop that is not home** (Voyage window, any pilot's card, Set sail). When the Ark reaches the
+   destination core, the console shows no `NullReferenceException` from `VoyageRun.StandStop`.
+2. **The stop stands**: the arrival banner, then the stop's lines; vault shells around the Ark at a vault field or
+   hoard, a wreck's finds, rival hulls where a crew stands; the job's progress banner moves as you do its work.
+3. **The Ark holds by design** at the stop; leaving freestyle anchors the squad there, and the Voyage window offers
+   the next jobs from that place (the map shows the Ark at the destination, not where it set out).
+4. **Next job sails**: Set sail on one of those jobs and the Ark leaves the stop for the new destination.
