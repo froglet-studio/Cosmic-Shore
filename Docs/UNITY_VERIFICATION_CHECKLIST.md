@@ -22102,3 +22102,11 @@ the session).
 3. **The Ark holds by design** at the stop; leaving freestyle anchors the squad there, and the Voyage window offers
    the next jobs from that place (the map shows the Ark at the destination, not where it set out).
 4. **Next job sails**: Set sail on one of those jobs and the Ark leaves the stop for the new destination.
+
+## 🔴 Voyages: escort AI no longer steers by a destroyed hull after a pilot swap (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK in the cloud session).
+
+1. Start a voyage or an Ark escort with AI wingmates.
+2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
+3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
