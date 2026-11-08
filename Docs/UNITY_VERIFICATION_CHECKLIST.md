@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Arcade Start refuses while no network host is running (`fix/party-offline-host-fallback` into `Ys-bleeding-edge`, 2026-11-08) — NOT EDITOR-VERIFIED
+
+**What landed:** `ArcadeGameConfigureModal.OnStartGameClicked` returns with a warning, without latching ready, when the
+modal has an `arcadeConfigSyncManager` and `NetworkManager.Singleton` is null or not listening. Ready-up is a ServerRpc
+round trip, so with no host the player sat on "Waiting for others..." for good. Taken from dbrutus's `30682778cd` on
+`prototype-level`. Its other half (entering the offline loopback host after a failed recovery) was NOT carried over:
+`OfflineSessionTests.Case4_OnlyTheBootGateEverEntersAnOfflineSession` forbids it, and B48 rebuilds a reaped session
+through the menu reload.
+
+**Verified without the editor:** `check_console_logging.py` 0 problems. NOT run: any compile (no .NET SDK in the
+session), any EditMode test, a play.
+
+**Verify in editor:**
+1. The project compiles; EditMode `OfflineSessionTests` all pass.
+2. In Menu_Main, open an Arcade card's Configure, stop the host (`NetworkManager.Singleton.Shutdown()` from a debug
+   hook, or drop the network until recovery fails), press Start: the button stays, one warning
+   "[ArcadeConfigModal] Start refused - no network host is running" logs, nothing latches.
+3. With a normal host, Start still readies up and launches.
+
 ### 🔴 Meerkat HUD gauges take the UI theme's tokens (`Ys-bleeding-edge`, 2026-11-06) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatHUDView` takes its gauge colours from `UIThemeSO` through `UITheme.Resolve`:
