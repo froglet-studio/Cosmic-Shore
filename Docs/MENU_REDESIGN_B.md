@@ -6184,7 +6184,7 @@ the switch; D: an overlay; B: a counter-rotation; E: a blur volume) and, on the 
 (`GobyPistolDuo`, Garrett's: C grows the Pistol's square, B swings between the seat cameras). Drawn with the Pistol's
 model render and Perch Run's card art; the motion, not the game. Rev 75 was taken by another session meanwhile.
 
-## 147. Rev 78 mockups: the UI moves with the phone - every piece travels to its upright place as the phone turns (2026-11-08, awaiting a pick)
+## 147. Rev 78 mockups: the UI moves with the phone - every piece travels to its upright place as the phone turns (2026-11-08, picked Turn then glide, built)
 
 **Asked** (Shombith, 2026-11-08, on Rev 76's five transitions): "I mean the UI should move with the phone as we rotate I
 guess". So the UI does not go out and come back; it moves, piece by piece, with the turn.
@@ -6204,3 +6204,14 @@ board loops both ways on two phones, the menu (Home) and the Goby turning into t
 **Differs from the build:** the build is Rev 76 A (the fade). Either option replaces `OrientationFade`'s fade with motion
 in `PortraitRect` (and, for the Goby, a tween of the crew's two views in `GobyPistolDuo`, Garrett's). Drawn with
 simplified pieces of Home; the motion, not the game.
+
+**Picked** (Shombith, 2026-11-08): "Turn then glide".
+
+**Built** (`claude/ui-portrait`): `OrientationGlide` replaces `OrientationFade` on Menu_Main's and GameCanvas's roots
+(`author_menu_portrait.py`). While a turn is possible it notes each posed piece's place on the glass (every PortraitRect
+that moves its rect or is a fitted PC block; on GameCanvas the canvas's own children); on the switch the UI is held two
+frames while the layout settles, then each piece is put at its old place carried through the turn (`CarryAcrossTurn`),
+turned by the turn's angle (`TurnAngle`) and scaled to its old size, and glides to rest over 0.35 s (OutCubic), input
+held until it lands. The Goby's turn: `CrewOrientation` asks `CrewPictureInPicture.GlideNextSwap`, so the seat change
+a turn makes grows the new view out of the small square over the old one (smoothstep, 0.35 s); a swap by the D-pad or a
+double tap stays instant. Not run on a device yet (checklist "Portrait menus", step 8).

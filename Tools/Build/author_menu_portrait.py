@@ -7,9 +7,9 @@ matched to the width (AdaptiveCanvasScaler.hasPortraitLayout) and every Portrait
 This script owns Menu_Main's side of that:
     the canvas         AdaptiveCanvasScaler: hasPortraitLayout 1, portraitReferenceResolution 1080 x 1920
     the rotation       MenuOrientation on the MainMenuController's GameObject: portrait only while the menu is Ready
-    the turn           OrientationFade + its own CanvasGroup on the canvas root: the UI goes out the frame the layout
-                       switches and fades back in once it has settled (Shombith, 2026-11-08: "a smooth transition with
-                       almost no breaking"); the same on GameCanvas, which also lays out upright, for a crew seat played
+    the turn           OrientationGlide + its own CanvasGroup on the canvas root: turn, then glide - every posed piece
+                       starts where the turn left it and glides to its new place (Shombith, 2026-11-08: "Turn then glide",
+                       Docs/MENU_REDESIGN_B.md section 147); the same on GameCanvas, gliding its own children, which also lays out upright, for a crew seat played
                        upright (the Goby's Pistol: ScreenOrientationPolicy, CrewOrientation)
     the fallback       every screen and window with no upright pose (all but Home, Arcade, Configure and Hangar, whose
                        generators write their poses) is its PC layout fitted to the width (PortraitRect drawAtPcScale):
@@ -42,9 +42,9 @@ PORTRAIT_GUID = K.meta_guid("Assets/_Scripts/UI/PortraitRect.cs")
 SCALER_GUID = K.meta_guid("Assets/_Scripts/UI/AdaptiveCanvasScaler.cs")
 ORIENTATION_GUID = K.meta_guid("Assets/_Scripts/UI/MenuOrientation.cs")
 MENU_CONTROLLER_GUID = K.meta_guid("Assets/_Scripts/System/MainMenuController.cs")
-FADE_GUID = K.meta_guid("Assets/_Scripts/UI/OrientationFade.cs")
-FADE_HOLD_FRAMES = 2
-FADE_SECONDS = 0.28
+GLIDE_GUID = K.meta_guid("Assets/_Scripts/UI/OrientationGlide.cs")
+GLIDE_HOLD_FRAMES = 2
+GLIDE_SECONDS = 0.35
 PORTRAIT_REFERENCE = (1080, 1920)
 
 # Screens and windows with no upright pose yet: their PC layout fitted to the width. Home, Arcade, Configure (with the
@@ -99,24 +99,25 @@ def canvas_group(ctx, go):
             "  m_Interactable: 1\n  m_BlocksRaycasts: 1\n  m_IgnoreParentGroups: 0\n")
 
 
-def fade(p, label):
-    """The turn's fade on the canvas root, with a CanvasGroup only it drives (both re-added every run)."""
+def glide(p, label, direct_children=False):
+    """The turn's glide on the canvas root, with a CanvasGroup only it drives (both re-added every run; the fade it
+    replaced is removed)."""
     go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", p.doc(scaler_of(p, label))).group(1)
     others = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!225 ") and f"  m_GameObject: {{fileID: {go}}}\n" in d
               and f != str(p.ctx.fid(f"{go}#orientationGroup"))]
     assert not others, f"{label}: the canvas root already has a CanvasGroup; the fade needs one nothing else drives"
-    for key in ("orientationFade", "orientationGroup"):
+    for key in ("orientationFade", "orientationGlide", "orientationGroup"):
         p.remove_comp(go, str(p.ctx.fid(f"{go}#{key}")))
     group = p.add_comp(go, "orientationGroup", 225, canvas_group)
-    p.add_comp(go, "orientationFade", 114, lambda ctx, g: K.mono(
-        g, FADE_GUID, f"  group: {{fileID: {group}}}\n  holdFrames: {FADE_HOLD_FRAMES}\n  fadeSeconds: {FADE_SECONDS}\n"
-                      "  ease: 1\n"))
+    p.add_comp(go, "orientationGlide", 114, lambda ctx, g: K.mono(
+        g, GLIDE_GUID, f"  group: {{fileID: {group}}}\n  holdFrames: {GLIDE_HOLD_FRAMES}\n  glideSeconds: {GLIDE_SECONDS}\n"
+                       f"  ease: 1\n  glideDirectChildren: {1 if direct_children else 0}\n"))
 
 
 def game_canvas_text(text_):
     p = Patch(text_, "GameCanvas/Portrait")
     switch_on(p, "GameCanvas")
-    fade(p, "GameCanvas")
+    glide(p, "GameCanvas", direct_children=True)
     return p.text()
 
 
@@ -133,7 +134,7 @@ def scene_text(text_):
     for name in SCENE_FALLBACK:
         mark(p, unique_go(p, name))
     switch_on(p)
-    fade(p, "Menu_Main")
+    glide(p, "Menu_Main")
     orientation(p)
     return p.text()
 
@@ -143,9 +144,9 @@ def validate(text_):
         "Menu_Main: a fallback screen lost its PortraitRect"
     assert "  hasPortraitLayout: 1\n" in text_, "Menu_Main: the canvas has no portrait layout"
     assert f"guid: {ORIENTATION_GUID}, type: 3}}" in text_, "Menu_Main: no MenuOrientation (portrait would never unlock)"
-    assert f"guid: {FADE_GUID}, type: 3}}" in text_, "Menu_Main: no OrientationFade (a turn would cut)"
+    assert f"guid: {GLIDE_GUID}, type: 3}}" in text_, "Menu_Main: no OrientationGlide (a turn would cut)"
     for m in re.finditer(r"^--- !u!114 &(-?\d+)\n(.*?)(?=^--- |\Z)", text_, re.S | re.M):
-        if any(f"guid: {g}" in m.group(2) for g in (PORTRAIT_GUID, ORIENTATION_GUID, FADE_GUID)):
+        if any(f"guid: {g}" in m.group(2) for g in (PORTRAIT_GUID, ORIENTATION_GUID, GLIDE_GUID)):
             go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", m.group(2)).group(1)
             stripped = re.search(r"^--- !u!1 &%s stripped\n" % go, text_, re.M)
             listed = re.search(r"^--- !u!1 &%s\n(?:.*\n)*?  - component: \{fileID: %s\}" % (go, m.group(1)), text_, re.M)
@@ -164,7 +165,7 @@ def main():
     outs = {MENU: (before, out)}
     b = open(os.path.join(REPO, GAME_CANVAS), encoding="utf-8").read()
     gc = game_canvas_text(b)
-    assert "  hasPortraitLayout: 1\n" in gc and f"guid: {FADE_GUID}, type: 3}}" in gc, "GameCanvas: no upright layout or fade"
+    assert "  hasPortraitLayout: 1\n" in gc and f"guid: {GLIDE_GUID}, type: 3}}" in gc, "GameCanvas: no upright layout or glide"
     outs[GAME_CANVAS] = (b, gc)
     for pf in PREFAB_FALLBACK:
         b = open(os.path.join(REPO, pf), encoding="utf-8").read()

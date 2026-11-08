@@ -76,6 +76,9 @@ namespace CosmicShore.UI
         /// <summary>Whether this block is the PC layout fitted to the width when upright.</summary>
         public bool DrawsAtPcScale => drawAtPcScale;
 
+        /// <summary>Whether this piece moves its own rect when upright (off for a child a LayoutGroup places).</summary>
+        public bool MovesRect => movesRect;
+
         private RectTransform Rect => _rect ? _rect : (_rect = (RectTransform)transform);
 
         private void OnEnable()

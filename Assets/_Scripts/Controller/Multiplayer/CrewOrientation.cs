@@ -23,6 +23,10 @@ namespace CosmicShore.Gameplay
     /// </summary>
     internal sealed class CrewOrientation
     {
+        /// <summary>A turn's seat change glides (the crew's two views trade places, CrewPictureInPicture), the same length
+        /// as the canvas's glide (OrientationGlide; Docs/MENU_REDESIGN_B.md section 147).</summary>
+        public const float GlideSeconds = 0.35f;
+
         bool _allowing;
         bool? _wasUpright;
 
@@ -45,7 +49,9 @@ namespace CosmicShore.Gameplay
             bool isUpright = Screen.height > Screen.width;
             int take = SeatFor(isUpright, _wasUpright, localSeat, upright);
             _wasUpright = isUpright;
-            if (take >= 0) crew.TakeSeat(take);
+            if (take < 0) return;
+            CrewPictureInPicture.GlideNextSwap(GlideSeconds);
+            crew.TakeSeat(take);
         }
 
         /// <summary>The person left their hull, or it went away: the screen goes back to landscape.</summary>

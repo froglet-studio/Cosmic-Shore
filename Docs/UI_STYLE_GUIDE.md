@@ -175,8 +175,11 @@ perform these changes because it needs proper planning". So:
   built 2026-11-06, `Docs/MENU_REDESIGN_B.md` section 138): a piece's upright pose is a `PortraitRect` its generator
   writes, and a screen with no pose yet is its PC layout fitted to the width. `MenuOrientation` allows the turn only
   while the menu is Ready. A new upright pose is drawn on Frogma's Portrait tab first.
-- **A turn is smooth** (Shombith, 2026-11-08): `OrientationFade` on the canvas root takes the UI out the frame the layout
-  switches, holds it two frames while the fitted blocks settle, and fades it back in (0.28 s) over the live scene.
+- **A turn is turn, then glide** (Shombith, 2026-11-08, Rev 78, section 147): the OS turns the screen as always; then every
+  posed piece starts where the turn left it (at its old place on the glass, turned with the phone) and glides level to
+  its new place in 0.35 s (`OrientationGlide` on the canvas root; two frames held while the fitted blocks settle). In
+  the game the Pistol's view grows out of its small square as the Goby's shrinks into it (`CrewPictureInPicture`, a
+  turn's seat change only).
 - **In a game or the Toybox only the Goby and Pistol turn** (2026-11-08): on a phone, holding it upright takes the
   Pistol's view and turning back takes the Goby (`IUprightSeat`, `CrewOrientation`); GameCanvas lays out upright for it
   and fades the same way. Every other vessel keeps the screen landscape and its HUD unchanged.

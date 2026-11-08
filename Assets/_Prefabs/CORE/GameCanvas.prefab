@@ -5894,7 +5894,7 @@ GameObject:
   - component: {fileID: 5497835173863578960}
   - component: {fileID: 7300050084204718159}
   - component: {fileID: 117352990126193135}
-  - component: {fileID: 225908859681884137}
+  - component: {fileID: 275072837942132147}
   m_Layer: 5
   m_Name: GameCanvas
   m_TagString: Untagged
@@ -5902,7 +5902,7 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &225908859681884137
+--- !u!114 &275072837942132147
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5911,13 +5911,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 5497835173863578963}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f369a8408e4241c789b9390fe1afddbe, type: 3}
+  m_Script: {fileID: 11500000, guid: 6604666b36bc42aabb3a4f9c8c7b3d0f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   group: {fileID: 117352990126193135}
   holdFrames: 2
-  fadeSeconds: 0.28
+  glideSeconds: 0.35
   ease: 1
+  glideDirectChildren: 1
 --- !u!225 &117352990126193135
 CanvasGroup:
   m_ObjectHideFlags: 0

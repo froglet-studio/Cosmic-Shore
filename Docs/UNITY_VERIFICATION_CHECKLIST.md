@@ -21559,8 +21559,11 @@ Menu_Main out on a 1080 x 1920 canvas matched to the width. New: `PortraitRect`,
    domain upright: the column grows and START moves down, not off the screen.
 7. **Arcade grid**: 5 across on PC, 3 across upright, every card the same size; filtering or growing the list adds cards
    in the same grid.
-8. **The turn is smooth** (round 2, 2026-11-08): in the Simulator, rotate on Home, Arcade and Configure; the UI fades out
-   and back in over about a third of a second, with no frame of the half-laid-out screen; the cell behind keeps moving.
+8. **Turn, then glide** (2026-11-08, section 147): on a phone (the Simulator shows the layout, a device the real OS turn),
+   rotate on Home, Arcade and Configure: after the OS turns the screen, the windows and cards start at their old places
+   turned with the phone and glide level into the upright layout in about a third of a second; no frame of a half-laid-out
+   screen; taps work again as soon as they land. Rotate back the same. Then the Goby: rotate upright and the Pistol's view
+   grows out of the small square over the Goby's; back to landscape, the Goby's grows back. A D-pad swap stays instant.
 9. **Goby and Pistol turn** (Toybox Vessel Changer, then a Goby game): flying the Goby, rotate upright: the screen turns
    and you are in the Pistol's view; rotate back: the Goby. Swap with the D-pad / double tap while upright and the seat
    stays until you rotate again. Check the Pistol's side view, its buttons round the thumb and GameCanvas's HUD upright.
