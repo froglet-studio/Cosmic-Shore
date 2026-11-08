@@ -6138,3 +6138,25 @@ the message and its top frame). Player compare needs `GET /v1/similar?id=` worke
 asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in that order with a legend; play types Jade
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
 a better number. No player id reaches Claude on any of these. Awaiting a pick.
+
+## 145. Rev 72 mockups: the turn, drawn - the menu fades through a turn, the Goby turns into the Pistol, every other vessel stays landscape (2026-11-08, a storyboard of what is built)
+
+**Asked** (Shombith, 2026-11-08, after the portrait plan was built on `claude/ui-portrait`, section 138): "show me a clip of
+the Goby turning to Pistol ... also the phone transition of the UI". No session can record the real turn yet (Amoebius
+has no Goby & Pistol or portrait UI; the look sheet has not had its first run and cannot turn a phone), so he chose a
+storyboard: "3 is good enough".
+
+**On the canvas:** the Portrait tab, "Rev 72 - The turn, drawn" (copies in `Docs/MenuRedesignB/board/`). Each board is a
+six-frame strip with times, the rule in words, and a phone on the right that plays the turn both ways on a loop (Pause,
+Slow x4):
+- **R72Menu:** Home landscape, the OS turning the last frame, the layout switch with the UI out and the cell still
+  drawing, two frames held, the fade, upright; and back.
+- **R72Goby:** the Goby in Perch Run with the Pistol in the small square; upright, the Pistol's side view fills the screen
+  with the Goby in the square and the Pistol's buttons round the thumb. The Pistol is its model's render
+  (`Docs/VesselModels/sheets/pistol_camera_side.jpg`, cut out); its plane, the trail's blocks and the ring are drawn.
+- **R72Other:** the Squirrel; the phone turns and the game stays landscape, sideways on the upright phone.
+- **R72Notes:** what was asked, the timings, what is built and where it is judged.
+
+**Differs from the build:** a drawing of the built rules (OrientationFade, CrewOrientation, ScreenOrientationPolicy);
+the real turn, the Pistol's real view and GameCanvas upright are judged in the Device Simulator (checklist "Portrait
+menus", steps 8-10). Rev 71 was taken by another session while this round was drawn; this one is 72.
