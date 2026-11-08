@@ -175,6 +175,12 @@ perform these changes because it needs proper planning". So:
   built 2026-11-06, `Docs/MENU_REDESIGN_B.md` section 138): a piece's upright pose is a `PortraitRect` its generator
   writes, and a screen with no pose yet is its PC layout fitted to the width. `MenuOrientation` allows the turn only
   while the menu is Ready. A new upright pose is drawn on Frogma's Portrait tab first.
+- **A turn is smooth** (Shombith, 2026-11-08): `OrientationFade` on the canvas root takes the UI out the frame the layout
+  switches, holds it two frames while the fitted blocks settle, and fades it back in (0.28 s) over the live scene.
+- **In a game or the Toybox only the Goby and Pistol turn** (2026-11-08): on a phone, holding it upright takes the
+  Pistol's view and turning back takes the Goby (`IUprightSeat`, `CrewOrientation`); GameCanvas lays out upright for it
+  and fades the same way. Every other vessel keeps the screen landscape and its HUD unchanged.
+  `ScreenOrientationPolicy` is the one place that decides.
 - **Code that offsets a posed rect re-reads its rest on a turn.** Anything that captures a rect's position once and
   writes offsets from it (`ConfigureCinema`, `ConfigurePilotsFit`) listens to `AdaptiveCanvasScaler.PortraitLayoutChanging`
   (take the offset out while the old pose stands) and `PortraitLayoutChanged` (read the new pose), or it puts the PC pose

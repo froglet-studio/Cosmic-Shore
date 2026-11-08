@@ -1127,6 +1127,14 @@ Reinstall with `dotnet-install.sh --channel 8.0 --install-dir /root/.dotnet` (re
 the first TLS connect to `builds.dotnet.microsoft.com` can drop), and pass `DOTNET_ROOT=/root/.dotnet`
 to `check_generated_assets.py`, which otherwise looks under `/usr/lib/dotnet` and stops.
 
+### Trap: a deleted assembly's .rsp stays in the refcompile output and crashes `generated_assets`
+
+After a merge that deleted a whole asmdef (bleeding-edge removed `Assets/Plugins/Obvious/Soap`, 2026-11-07), both
+refcompile tiers passed and `generated_assets` failed with a bare `DirectoryNotFoundException` on a file under the
+deleted folder: the output directory (`/tmp/unity_refcompile_out/<tree key>/player`) still held `Obvious.Soap.rsp` from
+an earlier build, and the schema tool reads every `*.rsp` there. Delete the `.rsp` files whose listed sources no longer
+exist (or the whole output directory) and re-run; the audit then passes. Not a defect in the branch.
+
 ### Trap: a planted defect that mutates "the first match" silently retargets when the scene grows
 
 `author_start_flow.py --self-test` planted "the retry panel ships shown" by flipping the FIRST

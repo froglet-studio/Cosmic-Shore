@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -9,8 +10,8 @@ namespace CosmicShore.UI
     /// "we do need support for potrait mode unlocked", menus only). While Menu_Main is <see cref="MainMenuState.Ready"/>
     /// the screen auto-rotates between landscape and portrait, and the canvas lays itself out upright
     /// (<see cref="AdaptiveCanvasScaler"/>, <see cref="PortraitRect"/>). Freestyle, a game launch, the boot states and
-    /// leaving the scene lock landscape-left again, the orientation flight, its cameras and the touch controls are built
-    /// for (<c>DeviceOrientationHandler</c> locks the same when input starts).
+    /// leaving the scene take the menu's allowance away, and the screen locks landscape-left again unless the person flies a
+    /// crew seat played upright (<see cref="ScreenOrientationPolicy"/>, the Goby's Pistol).
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI/Menu Orientation")]
     public class MenuOrientation : MonoBehaviour
@@ -31,30 +32,12 @@ namespace CosmicShore.UI
         private void OnDisable()
         {
             if (menu) menu.OnStateChanged -= OnState;
-            LockLandscape();
+            ScreenOrientationPolicy.Allow(ScreenOrientationPolicy.Source.Menu, false);
         }
 
-        private void OnState(MainMenuState state)
-        {
-            if (AllowsPortrait(state)) AllowPortrait();
-            else LockLandscape();
-        }
-
-        private static void AllowPortrait()
-        {
-            Screen.autorotateToPortrait = true;
-            Screen.autorotateToPortraitUpsideDown = false;
-            Screen.autorotateToLandscapeLeft = true;
-            Screen.autorotateToLandscapeRight = true;
-            if (Screen.orientation != ScreenOrientation.AutoRotation) Screen.orientation = ScreenOrientation.AutoRotation;
-        }
-
-        private static void LockLandscape()
-        {
-            Screen.autorotateToPortrait = false;
-            Screen.autorotateToPortraitUpsideDown = false;
-            if (Screen.orientation != ScreenOrientation.LandscapeLeft && Screen.orientation != ScreenOrientation.LandscapeRight)
-                Screen.orientation = ScreenOrientation.LandscapeLeft;
-        }
+        // One policy decides (ScreenOrientationPolicy): a crew seat played upright (the Goby's Pistol in the Toybox) may
+        // still allow portrait while the menu does not.
+        private static void OnState(MainMenuState state) =>
+            ScreenOrientationPolicy.Allow(ScreenOrientationPolicy.Source.Menu, AllowsPortrait(state));
     }
 }

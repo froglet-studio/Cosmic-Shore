@@ -39863,6 +39863,8 @@ GameObject:
   - component: {fileID: 6973837176735388086}
   - component: {fileID: 8159841466275311684}
   - component: {fileID: 8159841466275311685}
+  - component: {fileID: 745455662995971743}
+  - component: {fileID: 364677671129622}
   m_Layer: 5
   m_Name: UI_Refactored
   m_TagString: Untagged
@@ -39870,6 +39872,34 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &364677671129622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3302487075456430998}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f369a8408e4241c789b9390fe1afddbe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  group: {fileID: 745455662995971743}
+  holdFrames: 2
+  fadeSeconds: 0.28
+  ease: 1
+--- !u!225 &745455662995971743
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3302487075456430998}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!224 &3304680125973504833
 RectTransform:
   m_ObjectHideFlags: 0

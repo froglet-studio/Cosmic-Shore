@@ -6038,6 +6038,17 @@ Home, Arcade and Configure on an upright phone (390 x 844 points), with its own 
 size (710 x 1026) beside the list instead of under it; Configure and Maelstrom leave empty space at the bottom on tall
 phones; START sits from x 100. Not judged in the editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Portrait menus").
 
+**The portrait plan, round 2** (Shombith, 2026-11-08: "any time a player changes their orientation in the app shell UI
+from landscape to portrait there should be a smooth transition with almost no breaking ... if in a game or the toybox
+the vessels that are more 2D friendly, just goby and pistol, when you change your orientation the game swaps to pistol's
+view ... vessels which do not support the above, nothing happens, no transition of gameplay UI"). Built:
+- `OrientationFade` (Menu_Main and GameCanvas roots, its own CanvasGroup): out on the switch, two frames held, 0.28 s in.
+- `ScreenOrientationPolicy`: the menu (Ready) or an upright seat allows portrait; otherwise landscape. `MenuOrientation`
+  and `DeviceOrientationHandler` go through it; a new scene clears a seat's allowance.
+- `IUprightSeat` on `GobyPistolDuo` (the Pistol, seat 1) and `CrewOrientation`, ticked by the person's
+  `LocalCrewStation`: on a phone, upright takes the Pistol, landscape takes the Goby, through the crew's own
+  `TakeSeat`. GameCanvas lays out upright (1080 x 1920, no poses: its corner-anchored pieces keep their PC sizes).
+
 ## 141. Rev 65 mockups: Froglet Analytics, the full tool - filters, charts, cohorts, eras, admin queries (2026-11-06, awaiting a pick)
 
 **Asked (Shombith, 2026-11-06, on the live console):** "need filters and sorting for sure"; the player profile "is not

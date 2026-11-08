@@ -7,6 +7,10 @@ matched to the width (AdaptiveCanvasScaler.hasPortraitLayout) and every Portrait
 This script owns Menu_Main's side of that:
     the canvas         AdaptiveCanvasScaler: hasPortraitLayout 1, portraitReferenceResolution 1080 x 1920
     the rotation       MenuOrientation on the MainMenuController's GameObject: portrait only while the menu is Ready
+    the turn           OrientationFade + its own CanvasGroup on the canvas root: the UI goes out the frame the layout
+                       switches and fades back in once it has settled (Shombith, 2026-11-08: "a smooth transition with
+                       almost no breaking"); the same on GameCanvas, which also lays out upright, for a crew seat played
+                       upright (the Goby's Pistol: ScreenOrientationPolicy, CrewOrientation)
     the fallback       every screen and window with no upright pose (all but Home, Arcade, Configure and Hangar, whose
                        generators write their poses) is its PC layout fitted to the width (PortraitRect drawAtPcScale):
                        the scene's own objects here, SettingsModal's prefab root here, and Codex, Port, Replays, Credits
@@ -33,10 +37,14 @@ K, Patch = HUD.K, HUD.Patch
 REPO = K.REPO
 
 MENU = "Assets/_Scenes/Menu_Main.unity"
+GAME_CANVAS = "Assets/_Prefabs/CORE/GameCanvas.prefab"
 PORTRAIT_GUID = K.meta_guid("Assets/_Scripts/UI/PortraitRect.cs")
 SCALER_GUID = K.meta_guid("Assets/_Scripts/UI/AdaptiveCanvasScaler.cs")
 ORIENTATION_GUID = K.meta_guid("Assets/_Scripts/UI/MenuOrientation.cs")
 MENU_CONTROLLER_GUID = K.meta_guid("Assets/_Scripts/System/MainMenuController.cs")
+FADE_GUID = K.meta_guid("Assets/_Scripts/UI/OrientationFade.cs")
+FADE_HOLD_FRAMES = 2
+FADE_SECONDS = 0.28
 PORTRAIT_REFERENCE = (1080, 1920)
 
 # Screens and windows with no upright pose yet: their PC layout fitted to the width. Home, Arcade, Configure (with the
@@ -69,14 +77,47 @@ def prefab_text(path):
     return p.text()
 
 
-def switch_on(p):
+def scaler_of(p, label):
     found = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!114 ") and f"guid: {SCALER_GUID}, type: 3}}" in d]
-    assert len(found) == 1, f"Menu_Main: expected one AdaptiveCanvasScaler, found {len(found)}"
-    d = re.sub(r"  hasPortraitLayout: \d\n  portraitReferenceResolution: \{x: [-\d.]+, y: [-\d.]+\}\n", "", p.doc(found[0]))
-    assert "  safeZoneMaxAspect: " in d, "Menu_Main: the AdaptiveCanvasScaler body changed shape"
+    assert len(found) == 1, f"{label}: expected one AdaptiveCanvasScaler, found {len(found)}"
+    return found[0]
+
+
+def switch_on(p, label="Menu_Main"):
+    found = scaler_of(p, label)
+    d = re.sub(r"  hasPortraitLayout: \d\n  portraitReferenceResolution: \{x: [-\d.]+, y: [-\d.]+\}\n", "", p.doc(found))
+    assert "  safeZoneMaxAspect: " in d, f"{label}: the AdaptiveCanvasScaler body changed shape"
     fields = "  hasPortraitLayout: 1\n  portraitReferenceResolution: {x: %d, y: %d}\n" % PORTRAIT_REFERENCE
     d = re.sub(r"(  safeZoneMaxAspect: [^\n]*\n)", lambda m: m.group(1) + fields, d, count=1)
-    p.replace(found[0], d)
+    p.replace(found, d)
+
+
+def canvas_group(ctx, go):
+    return ("CanvasGroup:\n  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n"
+            "  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
+            f"  m_GameObject: {{fileID: {go}}}\n  m_Enabled: 1\n  m_Alpha: 1\n"
+            "  m_Interactable: 1\n  m_BlocksRaycasts: 1\n  m_IgnoreParentGroups: 0\n")
+
+
+def fade(p, label):
+    """The turn's fade on the canvas root, with a CanvasGroup only it drives (both re-added every run)."""
+    go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", p.doc(scaler_of(p, label))).group(1)
+    others = [f for f, d in p.sc.docs.items() if d.startswith("--- !u!225 ") and f"  m_GameObject: {{fileID: {go}}}\n" in d
+              and f != str(p.ctx.fid(f"{go}#orientationGroup"))]
+    assert not others, f"{label}: the canvas root already has a CanvasGroup; the fade needs one nothing else drives"
+    for key in ("orientationFade", "orientationGroup"):
+        p.remove_comp(go, str(p.ctx.fid(f"{go}#{key}")))
+    group = p.add_comp(go, "orientationGroup", 225, canvas_group)
+    p.add_comp(go, "orientationFade", 114, lambda ctx, g: K.mono(
+        g, FADE_GUID, f"  group: {{fileID: {group}}}\n  holdFrames: {FADE_HOLD_FRAMES}\n  fadeSeconds: {FADE_SECONDS}\n"
+                      "  ease: 1\n"))
+
+
+def game_canvas_text(text_):
+    p = Patch(text_, "GameCanvas/Portrait")
+    switch_on(p, "GameCanvas")
+    fade(p, "GameCanvas")
+    return p.text()
 
 
 def orientation(p):
@@ -92,6 +133,7 @@ def scene_text(text_):
     for name in SCENE_FALLBACK:
         mark(p, unique_go(p, name))
     switch_on(p)
+    fade(p, "Menu_Main")
     orientation(p)
     return p.text()
 
@@ -101,8 +143,9 @@ def validate(text_):
         "Menu_Main: a fallback screen lost its PortraitRect"
     assert "  hasPortraitLayout: 1\n" in text_, "Menu_Main: the canvas has no portrait layout"
     assert f"guid: {ORIENTATION_GUID}, type: 3}}" in text_, "Menu_Main: no MenuOrientation (portrait would never unlock)"
+    assert f"guid: {FADE_GUID}, type: 3}}" in text_, "Menu_Main: no OrientationFade (a turn would cut)"
     for m in re.finditer(r"^--- !u!114 &(-?\d+)\n(.*?)(?=^--- |\Z)", text_, re.S | re.M):
-        if f"guid: {PORTRAIT_GUID}" in m.group(2) or f"guid: {ORIENTATION_GUID}" in m.group(2):
+        if any(f"guid: {g}" in m.group(2) for g in (PORTRAIT_GUID, ORIENTATION_GUID, FADE_GUID)):
             go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", m.group(2)).group(1)
             stripped = re.search(r"^--- !u!1 &%s stripped\n" % go, text_, re.M)
             listed = re.search(r"^--- !u!1 &%s\n(?:.*\n)*?  - component: \{fileID: %s\}" % (go, m.group(1)), text_, re.M)
@@ -119,6 +162,10 @@ def main():
     out = scene_text(before)
     validate(out)
     outs = {MENU: (before, out)}
+    b = open(os.path.join(REPO, GAME_CANVAS), encoding="utf-8").read()
+    gc = game_canvas_text(b)
+    assert "  hasPortraitLayout: 1\n" in gc and f"guid: {FADE_GUID}, type: 3}}" in gc, "GameCanvas: no upright layout or fade"
+    outs[GAME_CANVAS] = (b, gc)
     for pf in PREFAB_FALLBACK:
         b = open(os.path.join(REPO, pf), encoding="utf-8").read()
         outs[pf] = (b, prefab_text(pf))

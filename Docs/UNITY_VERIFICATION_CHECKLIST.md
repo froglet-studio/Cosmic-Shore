@@ -21559,6 +21559,13 @@ Menu_Main out on a 1080 x 1920 canvas matched to the width. New: `PortraitRect`,
    domain upright: the column grows and START moves down, not off the screen.
 7. **Arcade grid**: 5 across on PC, 3 across upright, every card the same size; filtering or growing the list adds cards
    in the same grid.
+8. **The turn is smooth** (round 2, 2026-11-08): in the Simulator, rotate on Home, Arcade and Configure; the UI fades out
+   and back in over about a third of a second, with no frame of the half-laid-out screen; the cell behind keeps moving.
+9. **Goby and Pistol turn** (Toybox Vessel Changer, then a Goby game): flying the Goby, rotate upright: the screen turns
+   and you are in the Pistol's view; rotate back: the Goby. Swap with the D-pad / double tap while upright and the seat
+   stays until you rotate again. Check the Pistol's side view, its buttons round the thumb and GameCanvas's HUD upright.
+10. **Every other vessel turns nothing**: the Squirrel (or any non-crew hull) in the Toybox and in a match; rotating the
+   phone leaves the screen landscape and the HUD unchanged. Leaving a Goby while upright turns the screen back.
 
 ## 🔴 Colour sets for colour vision: six new sets in the Profile's rail, a breadcrumb in Settings (2026-11-05, Garrett, NOT RUN IN EDITOR)
 
