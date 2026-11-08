@@ -153,6 +153,47 @@
   --sea-glow: #96E1BF;
 }
 
+[data-fs-theme="nacre"] {
+  --fs-ground: #090217;
+  --fs-ground-deep: #020008;
+  --fs-surface: #2D2242;
+  --fs-surface-raised: #584879;
+  --fs-line: #584879;
+  --fs-text: #ECE8F7;
+  --fs-text-soft: #958BAC;
+  --fs-text-off: #625D6E;
+  --fs-cta: #D1F68D;
+  --fs-cta-fill: #D1F68D;
+  --fs-danger: #FFD6CC;
+  --fs-selection: #74C6A8;
+  --fs-control: #74C6A8;
+  --fs-jade: #74C6A8;
+  --fs-ruby: #B366CA;
+  --fs-gold: #E1C67E;
+  --fs-gold-fill: #E1C67E;
+  --fs-purchase: #E1C67E;
+  --fs-purchase-fill: #E1C67E;
+  --fs-on-fill: #090217;
+  --cs-jade: #74C6A8;
+  --cs-ruby: #B366CA;
+  --cs-gold: #E1C67E;
+  --cs-blue: #B5D0E1;
+  --series-1: var(--cs-jade);
+  --series-2: var(--cs-ruby);
+  --series-3: var(--cs-gold);
+  --series-4: var(--cs-blue);
+  --data: #B5D0E1;
+  --data-hot: #CEEAFB;
+  --data-text: #B5D0E1;
+  --rim: #74C6A8;
+  --face: #C0A7F7;
+  --sea-1: #74C6A8;
+  --sea-2: #B5D0E1;
+  --sea-3: #B366CA;
+  --sea-wash: #382B52;
+  --sea-glow: #74C6A8;
+}
+
 [data-fs-theme="contrast"] {
   --fs-ground: #11010F;
   --fs-ground-deep: #050004;

@@ -46,6 +46,17 @@ MonoBehaviour:
     - Bumblebee over Indigo
     - Azure over Forest
     vision: 0
+  - id: nacre
+    colorSet: {fileID: 11400000, guid: 5c23989fe41646f5998662aa44c15ffa, type: 2}
+    displayName: Nacre
+    line: 'Light, not bright: pastel rims over pale pastel faces, a sheen instead of a glow.'
+    unlocked: 1
+    pigments:
+    - Mint over Lavender
+    - Orchid over Pearl
+    - Butter over Periwinkle
+    - Ice over Sage
+    vision: 0
   - id: contrast
     colorSet: {fileID: 11400000, guid: a2b69fd4235d40b683d21c958716a7f8, type: 2}
     displayName: Contrast
