@@ -21992,3 +21992,16 @@ errors in the changed files). Not run: Unity, the EditMode test `Redline_AINoseL
 3. **Easy vs Legendary**: at I1 and I4, an Easy AI is clearly slower than a Legendary one (Easy also flies
    `GateRaceHandicap`'s late belief, so it is slower than the model's 156-272 s).
 4. **No carry-over**: race Redline, then another mode with an AI Manta: that mode's AI flies its own lag again.
+## 🔴 Skein: the AI Urchin's Regatta aim, rail seek and genome W (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-rdizqz`. Report: `Docs/Reports/SKEIN_URCHIN_AI.md` § "Shipped". Every expected number is
+from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
+
+1. **Run the EditMode tests** `SkeinRailSeekTests` (they also check `UrchinAutopilotConfig_Skein` loads for Skein and
+   Regatta keeps the shared asset).
+2. **Skein, AI Urchins on every seat, I1-I4.** Watch a free AI Urchin: it should turn toward a rail that runs through
+   its next ring, latch it and ride it, instead of flying straight at the ring. Expected: every race finishes, I4 in
+   roughly 6 minutes (the model's 352 s); before this, AI Urchins finished no I3/I4 race.
+3. **Turn `aiSeekRails` off** on the scene's SkeinController for one race as the control: the AI should go back to
+   flying at the rings and missing the pinned ones.
+4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).
