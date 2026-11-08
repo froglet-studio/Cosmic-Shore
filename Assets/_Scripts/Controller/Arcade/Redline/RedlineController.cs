@@ -67,7 +67,35 @@ namespace CosmicShore.Gameplay
                  "nose rate is decided (AI_PLAN.md decision 7).")]
         [SerializeField, Min(0f)] float aiTimeCrystalSlack;
 
+        [Header("AI nose lag by difficulty")]
+        [Tooltip("The AI nose's follow rate per second, one row per intensity (I1..I4), by difficulty Easy/Medium/Hard/" +
+                 "Legendary: 1.5 = the fleet lag every AI flies with elsewhere, higher = faster, 0 = no lag (as a human). " +
+                 "Switchback's knob (SwitchbackController.aiNoseFollowByIntensity). The lag is the AI Manta's biggest " +
+                 "handicap here: at the fleet lag its I4 takes ~540 s offline, at 9/s ~97 s (Docs/Reports/" +
+                 "REDLINE_MANTA_NOSE.md, the Legendary model: 2/s ~156-272 s, 3/s ~134-160, 6/s ~116-125, 9/s ~97-111 " +
+                 "over I1-I4). A negative entry leaves that level on the fleet lag.")]
+        [SerializeField] SwitchbackNoseFollow[] aiNoseFollowByIntensity =
+        {
+            new(2f, 3f, 6f, 9f),   // I1
+            new(2f, 3f, 6f, 9f),   // I2
+            new(2f, 3f, 6f, 9f),   // I3
+            new(2f, 3f, 6f, 9f),   // I4
+        };
+
         protected override string ModeName => "Redline";
+
+        /// <summary>
+        /// Each AI Manta's nose follow rate for this race's intensity and its seat's difficulty
+        /// (<see cref="aiNoseFollowByIntensity"/>), set on every arming as Switchback does, so a hull never carries another
+        /// mode's rate into this race. A mode setting on the AI's skill: the vessel's own code and assets are untouched.
+        /// </summary>
+        protected override void OnRacerArmed(IPlayer pilot)
+        {
+            var transformer = pilot?.Vessel?.VesselStatus?.VesselTransformer;
+            if (transformer == null) return;
+            transformer.AINoseFollowPerSecond = SwitchbackController.NoseFollowFor(aiNoseFollowByIntensity, Intensity,
+                                                                                    (int)gameData.AIDifficultyFor(pilot));
+        }
 
         /// <summary>
         /// The AI Mantas fly the Regatta steering (commit from the approach point, through the ring's centre, break off
