@@ -525,16 +525,18 @@ def controls(key, elements, one_stick, bindings, atp, profile):
 
 ELEMENT_NUM = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 UI_ART = {
-    # the element marks: the element's upgrade FLOWER at full bloom (Shombith 2026-11-08: "Use upgrade flowers and make
-    # them animated when l5 is clicked we show what happens to the petals"; was the Codex shapes, 2026-11-02)
-    **{f"shape/{el}": f"Assets/_Graphics/ElementIcons/icon_{el.lower()}Upgrade_5_active.png" for el in ("Charge", "Mass", "Space", "Time")},
-    # the flower's six frames, level 0 (no petal lit) to level 5 (every petal lit): the page plays them on L5
-    **{f"flower/{el}/{n}": f"Assets/_Graphics/ElementIcons/icon_{el.lower()}Upgrade_{n}_active.png"
-       for el in ("Charge", "Mass", "Space", "Time") for n in range(6)},
+    # the element marks: the element's FLOWER drawn the way the HUD draws it (KitElementFlower / ElementalBarsView.
+    # ConfigurePetal): its petal sprite five times, each stretched over the flower and turned PetalSpacing (72) degrees
+    # clockwise from the last, tinted by the level's tick colour. Shombith 2026-11-08: "Use upgrade flowers and make them
+    # animated when l5 is clicked"; then "weird orientation" on the ElementIcons PNGs, an older drawing the game does not
+    # use for this, so the page builds the flower from the petal like the game. Copied uncropped (UNCROPPED): the petal
+    # sits in the sprite's upper half and the turn is about the sprite's centre.
+    **{f"petal/{el}": f"Assets/Resources/ElementPetals/{el.lower()}_petal.png" for el in ("Charge", "Mass", "Space", "Time")},
     "omni": "Assets/_Graphics/ElementIcons/OmniCrystal_Active.png",
     # the HUD's level-5 look: the bloom AbilityLockupView puts behind an upgraded card (AbilityLockupStyle.bloomSprite)
     "bloom": "Assets/_Graphics/Design Assests/HUD UI/AbilityLockup/LockupBloom.png",
 }
+UNCROPPED = {k for k in UI_ART if k.startswith("petal/")}
 PAD_ART = {   # a controls row's pad label -> the controller art (Xbox face buttons, the LT / RT trigger art)
     "A": "Assets/_Graphics/Design Assests/HUD UI/Buttons/XBOX/A button.png",
     "B": "Assets/_Graphics/Design Assests/HUD UI/Buttons/XBOX/B button.png",
@@ -558,14 +560,14 @@ class Art:
     def __init__(self, out_dir, enabled=True):
         self.out, self.enabled, self.done = out_dir, enabled, {}
 
-    def png(self, src, rel, box=128):
+    def png(self, src, rel, box=128, crop=True):
         if not self.enabled or not src or not os.path.exists(os.path.join(REPO, src)):
             return None
         rel = "img/" + rel
         if rel not in self.done:
             from PIL import Image
             im = Image.open(os.path.join(REPO, src)).convert("RGBA")
-            bb = im.getbbox()
+            bb = im.getbbox() if crop else None
             if bb:
                 im = im.crop(bb)
             im.thumbnail((box, box), Image.LANCZOS)
@@ -726,8 +728,10 @@ def palette():
         peak = max(ui[:3]) or 1.0
         sh = col(block, "ShieldedOutsideBlockColor")
         out[d] = {"signal": _hex([c / peak for c in ui[:3]]), "shielded": _hex([_linear_to_gamma(c) for c in sh[:3]])}
-    lime = re.search(r"limeColor: \{r: ([-\d.e]+), g: ([-\d.e]+), b: ([-\d.e]+)", open(BARS_CONFIG, encoding="utf-8").read())
-    return {"domains": out, "default": DOMAINS[0], "omni": _hex([float(x) for x in lime.groups()]),
+    bars = open(BARS_CONFIG, encoding="utf-8").read()
+    lime = re.search(r"limeColor: \{r: ([-\d.e]+), g: ([-\d.e]+), b: ([-\d.e]+)", bars)
+    tick = {k: _hex(list(_rgba(bars, k + "Color")[:3])) for k in ("grey", "white")}   # a petal's tick colours (0 and 1)
+    return {"domains": out, "default": DOMAINS[0], "omni": _hex([float(x) for x in lime.groups()]), "petal": tick,
             "sources": [os.path.relpath(COLOR_SET, REPO), os.path.relpath(BARS_CONFIG, REPO)]}
 
 
@@ -1362,7 +1366,8 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
         m = re.search(r"/AbilityIcons/([^/]+)/(?:[^/]+/)*[^/]+\.png$", path.replace(os.sep, "/"))
         if m:
             pngs_by_dir.setdefault(m.group(1), []).append(path)
-    ui = {k: art.png(v, "ui/" + k.replace("/", "_") + ".png", 96) for k, v in UI_ART.items()}
+    ui = {k: art.png(v, "ui/" + k.replace("/", "_") + ".png", 128 if k in UNCROPPED else 96, crop=k not in UNCROPPED)
+          for k, v in UI_ART.items()}
     l5_fields = hud_l5_fields()
     bases, by_guid = script_classes()
     atp, touch_rows = touch_profiles()
@@ -1378,7 +1383,7 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
                             {el: e["ability"] for el, e in elements.items() if not e["open"]}) if maps else {}
         for el, e in elements.items():
             e["icon"] = icons.get(el)
-            e["shape"] = ui.get("shape/" + el)
+            e["shape"] = ui.get("petal/" + el)
             e["upgrade"]["icon"] = icons.get(el + "@L5")
         omni = dict(omni_entry(key, asset_names), icon=icons.get("Omni"), mark=ui.get("omni")) if maps else None
         ability_words(key, elements, omni)
