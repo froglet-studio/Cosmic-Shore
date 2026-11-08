@@ -251,6 +251,20 @@ namespace CosmicShore.Gameplay
         /// of them to fire would silently put the height back. Reset to 1 whenever the follow
         /// target changes — a height belongs to the ship it was set for.</para>
         /// </summary>
+        /// <summary>
+        /// A PAN in the follow frame (vessel-local units, before the warp): the camera and the point it looks at
+        /// both move by it, so the view keeps its direction and whatever sits at that offset from the hull lands
+        /// where the hull would have. Driven only by the Swordfish (<c>SwordfishSwordCamera</c>,
+        /// <c>R_VesselActions/SWORDFISH.md</c>): a sword swung to the side pans along x to centre it, a sword
+        /// raised straight up pans along y. Zero (the default, and every other vessel) changes no line of the
+        /// follow path. Applied at the point of use, never by writing <see cref="_followOffset"/>, for the reason
+        /// <see cref="RearView"/> records. Not applied during a placement (an explicit world point is framed).
+        /// </summary>
+        public Vector3 FramingPan { get; set; }
+
+        private Vector3 PanAt(float warp, Quaternion frame) =>
+            PlacementAnchor.HasValue || FramingPan == Vector3.zero ? Vector3.zero : frame * (FramingPan * warp);
+
         public float FollowHeightScale
         {
             get => _followHeightScale;
@@ -536,14 +550,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private Vector3 LookPoint(Vector3 followPoint, float warp, Quaternion frame)
         {
-            if (PlacementAnchor.HasValue || !_followTarget || (_lookAhead == 0f && _lookLift == 0f)) return followPoint;
+            if (PlacementAnchor.HasValue || !_followTarget || (_lookAhead == 0f && _lookLift == 0f))
+                return followPoint + PanAt(warp, frame);
             float ahead = RearView ? -_lookAhead : _lookAhead;
             // The surround framing looks at the hull itself, so it sits in the middle of the frame.
             Vector3 lookLocal = new Vector3(0f, _lookLift * _followHeightScale, ahead)
                                 * ((1f - _surroundFraming01) * _vesselDistanceScale);
             float s = FramingScale;
             if (!Mathf.Approximately(s, 1f)) lookLocal = FramedLook(SurroundedOffset, lookLocal, s);
-            return followPoint + frame * (lookLocal * warp);
+            return followPoint + frame * (lookLocal * warp) + PanAt(warp, frame);
         }
 
         /// <summary>
@@ -686,7 +701,7 @@ namespace CosmicShore.Gameplay
             // vessel asks for one (MaxFollowTurnRate).
             Quaternion rotation = StepFollowFrame(Time.deltaTime);
             Vector3 frameUp = rotation * Vector3.up;
-            Vector3 desiredPos = followPoint + rotation * (EffectiveOffset * warp);
+            Vector3 desiredPos = followPoint + rotation * (EffectiveOffset * warp) + PanAt(warp, rotation);
 
             if (teleported)
             {
@@ -985,6 +1000,7 @@ namespace CosmicShore.Gameplay
                 _surroundFraming01 = 0f;
                 _surroundDistanceScale = 1f;
                 _vesselDistanceScale = 1f;
+                FramingPan = Vector3.zero;
                 FollowFrameOverride = null;
                 _followFrameOverride01 = 0f;
                 _spectate = null;
@@ -1079,7 +1095,7 @@ namespace CosmicShore.Gameplay
             Vector3 followPoint = FollowPoint;
             _followFrameValid = false;
             Quaternion rotation = FollowFrameTarget();
-            transform.position = followPoint + rotation * EffectiveOffset;
+            transform.position = followPoint + rotation * EffectiveOffset + PanAt(1f, rotation);
 
             _easedLook = LookPoint(followPoint, 1f, rotation);
             _easedLookValid = true;

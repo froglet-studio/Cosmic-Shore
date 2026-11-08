@@ -65,6 +65,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Swordfish looks like a swordfish; its sword is the bill (`cece/lucid-fermi-j80puc`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SWORDFISH.md` § "A swordfish, and the sword is its bill". `Swordfish.fbx` (a new hull
+on the Rhino rig's names, bound by a guid swap in `Swordfish.prefab`), `SwordfishBill.asset` (the blade's mesh), the
+bill pose mapping (`RhinoShieldSwipeConfigSO.poseMapping = Bill`), the camera pan (`CustomCameraController.FramingPan`,
+`SwordfishSwordCamera`), `SwordfishCameraSettingsSO` (no look-ahead lift), and the phone's tilt steer with both thumbs
+off. Checked offline: the reference compile (0 errors in changed files), `/ship` gates, `build.py swordfish --check`,
+`rest_compare.py` (every bone 0.0000 from the Rhino rig), three FBX readers, a Blender render of the three poses.
+Not run: Unity, the EditMode tests (`SwordfishBillPoseTests`).
+
+**Verify in editor:**
+1. Reimport `Swordfish.fbx` and `SwordfishBill.asset`; open `Swordfish.prefab`: the swordfish hull, no Rhino, the bill
+   lying ahead off the snout, flat side level.
+2. Toybox → Vessel Changer → Swordfish. No trigger: the bill points ahead and the hull sits in the middle of the frame.
+3. Pull the right trigger: the bill swings out flat to the right and the camera slides right until the bill is
+   centred; the left trigger mirrors it. Partial pulls hold partial angles.
+4. Pull both: the bill stands straight up, the camera rises to centre it, the blade energizes as before.
+5. The pectoral fins swing with the bill (both sides, all three poses); the pods ride with them.
+6. Combos (tap strings): each flourish plays and ends back on the triggers. They were authored for the raised blade
+   and now start from the bill pointing ahead: judge whether any needs re-authoring (`author_rhino_sword_combos.py`).
+7. An omni crystal: the Surge's ring is of bills and the camera surrounds as before.
+8. Phone: lift one thumb = that side; both thumbs off = bill up and the tilt steers like the Manta's soar.
+9. FrogletTools > Vessels > Audits: Elemental Morphs (four morphs, 4.4-8.9 %), Construction, Tails and Jets.
+10. Crystal hull fusion: the class-30 entries still name the Rhino's bakes, which now read stale (a warning and a
+    runtime solve). Give the Swordfish its own bake assets before running Bake Crystal Hull Fusions, so the Rhino's are
+    not overwritten.
+11. MPPM two clients: a remote Swordfish's bill poses the same.
+
+---
+
 ### 🔴 The Voyage window's galaxy map draws the cells in 3D (`claude/project-thread-y85rw0`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Voyages/VOYAGE_BOARD.md` §4c "In the game".

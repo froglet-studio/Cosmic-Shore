@@ -10,6 +10,20 @@ namespace CosmicShore.Gameplay
     /// triggers together hold the sword centered but fully down. The raised rest
     /// pose is authored on the skimmer transform in the Rhino prefab.
     /// </summary>
+    /// <summary>
+    /// How the two triggers pose the sword. Values are pinned for serialization.
+    /// </summary>
+    public enum SwordPoseMapping
+    {
+        /// <summary>The Rhino's original swordsman: the blade is held raised, the DIFFERENCE sweeps it
+        /// sideways through yaw and roll, the SUM chops it down (both triggers = a centred full chop).</summary>
+        Chop = 0,
+        /// <summary>The Swordfish (Garrett, 2026-11-08): the sword is the BILL. At rest it points straight
+        /// ahead off the nose; one trigger swings it out to that side; both triggers raise it straight up.
+        /// It pivots at its root on the nose, never about the hull's centre.</summary>
+        Bill = 1,
+    }
+
     [CreateAssetMenu(fileName = "RhinoShieldSwipeConfig", menuName = "ScriptableObjects/Vessel Actions/RhinoShieldSwipeConfigSO")]
     public class RhinoShieldSwipeConfigSO : ScriptableObject
     {
@@ -22,6 +36,31 @@ namespace CosmicShore.Gameplay
         [Header("Chop (sum axis: right trigger + left trigger, 0..2)")]
         [Tooltip("Downward pitch when BOTH triggers are fully pulled. A single full pull reaches half of this.")]
         [SerializeField] float chopPitchDegrees = 65f;
+
+        [Header("Pose Mapping")]
+        [Tooltip("Chop: the raised blade sweeps on the difference and chops on the sum (the Rhino's). Bill: the " +
+                 "sword rests pointing straight ahead as the swordfish's bill, a single trigger swings it out to " +
+                 "that side and both raise it straight up (the Swordfish's). The rest pose is the skimmer's " +
+                 "authored transform either way.")]
+        [SerializeField] SwordPoseMapping poseMapping = SwordPoseMapping.Chop;
+        [Tooltip("Bill only. Yaw at a full single-trigger pull, degrees: 90 lays the sword straight out to the side.")]
+        [SerializeField] float billSideYawDegrees = 90f;
+        [Tooltip("Bill only. Roll at a full single-trigger pull, degrees: turns the flat of the bill as it swings " +
+                 "out. 0 keeps it level.")]
+        [SerializeField] float billSideRollDegrees = 0f;
+        [Tooltip("Bill only. Pitch UP when both triggers are fully pulled, degrees: 90 stands the sword straight " +
+                 "up. The raise is the SHARED part of the two pulls (the lesser trigger), so a single trigger " +
+                 "never lifts it.")]
+        [SerializeField] float billRaiseDegrees = 90f;
+
+        [Header("Bill Camera (Swordfish)")]
+        [Tooltip("Bill only. How much of the sword's offset from its rest the local pilot's camera pans by: 1 " +
+                 "centres the sword in the frame (out to the side: an x pan; straight up: a y pan; at rest: " +
+                 "none). 0 never pans.")]
+        [SerializeField, Range(0f, 1f)] float billCameraCentring = 1f;
+        [Tooltip("Bill only. Seconds the camera pan takes to catch up with the sword (an exponential ease), so a " +
+                 "snapped trigger glides the frame instead of cutting it.")]
+        [SerializeField, Min(0f)] float billCameraPanSeconds = 0.12f;
 
         [Header("Analog Tracking")]
         [Tooltip("Time constant for the pose tracking the physical triggers - the finger is the animation. Keep tiny; it only filters sensor jitter.")]
@@ -62,6 +101,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] RhinoSwordComboLibrarySO comboLibrary;
 
         public RhinoSwordComboLibrarySO ComboLibrary => comboLibrary;
+        public SwordPoseMapping PoseMapping => poseMapping;
+        public float BillSideYawDegrees => billSideYawDegrees;
+        public float BillSideRollDegrees => billSideRollDegrees;
+        public float BillRaiseDegrees => billRaiseDegrees;
+        public float BillCameraCentring => Mathf.Clamp01(billCameraCentring);
+        public float BillCameraPanSeconds => Mathf.Max(0f, billCameraPanSeconds);
         public float SwipeYawDegrees => swipeYawDegrees;
         public float SwipeRollDegrees => swipeRollDegrees;
         public float ChopPitchDegrees => chopPitchDegrees;
