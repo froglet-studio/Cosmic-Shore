@@ -22071,3 +22071,16 @@ the session).
 3. **The Ark holds by design** at the stop; leaving freestyle anchors the squad there, and the Voyage window offers
    the next jobs from that place (the map shows the Ark at the destination, not where it set out).
 4. **Next job sails**: Set sail on one of those jobs and the Ark leaves the stop for the new destination.
+
+## 🔴 Voyages: own scene (Voyage.unity) and in-world toys removed (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/voyage-scene-port`. unity_refcompile could not run (no .NET SDK in the cloud session).
+
+1. Let Unity import and compile; fix any errors first.
+2. FrogletTools > Scenes > Build Voyage Scene, then commit `Assets/_Scenes/Voyage.unity`.
+3. Run the EditMode tests in `VoyageShellTests`.
+4. Play Menu_Main, open the Voyage window, take a job and Set sail: Voyage.unity loads and the pilot starts at a harbour berth.
+5. Fly the Ark to the job's stop: it stands, the work counts, and the Ark sails on (no stall).
+6. Leave the voyage from the HUD: back to the menu, and the board offers the next jobs from where the Ark anchored.
+7. Start an escort from the Voyage window: it runs in Voyage.unity.
+8. In menu freestyle, the Toy Box toys still work from the app shell and no in-world toys appear.
