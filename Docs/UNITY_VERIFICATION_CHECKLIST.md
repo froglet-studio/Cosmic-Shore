@@ -21960,3 +21960,17 @@ machines need this build.
    draft is done. Adding an AI mid-draft restarts it.
 7. **In the match**: every pilot and AI flies the hull the lobby showed; the AI's autopilot follows the difficulty
    (Easy noticeably softer than Legendary on Broadside and Astro League).
+
+## 🔴 Redline: the AI nose follow rate by difficulty (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+`RedlineController.aiNoseFollowByIntensity` (Switchback's shape) sets each AI Manta's
+`VesselTransformer.AINoseFollowPerSecond` on arming: Easy 2 / Medium 3 / Hard 6 / Legendary 9 per second at I1-I4
+(fleet lag 1.5; `Docs/Reports/REDLINE_MANTA_NOSE.md` §4). Ran: `/ship` gates, `unity_refcompile` player + editor (0
+errors in the changed files). Not run: Unity, the EditMode test `Redline_AINoseLag_TableByIntensityAndDifficulty`.
+
+1. **Run the EditMode tests** in `RedlineAISteeringTests`.
+2. **Legendary AIs, I4**: Redline with AI Mantas on Legendary. The model says ~97-100 s and few missed mouths (was
+   ~540 s with the fleet lag). Check no AI circles a mouth over and over and the time is within ~10% of that.
+3. **Easy vs Legendary**: at I1 and I4, an Easy AI is clearly slower than a Legendary one (Easy also flies
+   `GateRaceHandicap`'s late belief, so it is slower than the model's 156-272 s).
+4. **No carry-over**: race Redline, then another mode with an AI Manta: that mode's AI flies its own lag again.
