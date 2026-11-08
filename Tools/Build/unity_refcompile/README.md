@@ -154,6 +154,9 @@ Does not prove:
 
 Assets assemblies and their `.rsp` files land in `$TMPDIR/unity_refcompile_out/<tree>-<hash>/<config>/`, one
 directory per working tree, so several worktrees can share a TMPDIR without reading each other's compile.
+Each run first deletes the `.rsp`, `.dll` and `.dll.stamp` there of every assembly it no longer builds
+(`prune_stale_outputs`; only files whose `-out:` is that directory), so a deleted plugin's response file cannot
+outlive it (the `Obvious.Soap.rsp` left after #1771 crashed the asset audit). The shared `_packages/` is not pruned.
 Package assemblies (and the `UnityEngine.UnityConsentModule` stub) are shared in
 `$TMPDIR/unity_refcompile_out/_packages/`. `Schema/` binds the same
 compilation, once with the player defines and once adding `UNITY_EDITOR`, and writes every type's serialized
