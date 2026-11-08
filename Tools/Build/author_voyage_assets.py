@@ -74,6 +74,7 @@ LINES_FIELDS = [
     "MapTypeM", "MapTypeRedSupergiant", "MapTypeGiant", "MapGlobularBody", "MapOpenBody", "MapOpenBodyYoung", "MapOpenAge",
     "MapAgeBillion", "MapAgeMillion", "MapSourceCatalog", "MapSourceModel", "MapSourceTumult", "MapSourceReal",
     "MapSourceProposed", "MapCellLabel", "MapKindCell", "MapCellName", "MapCellBody", "MapCellBerth", "MapSourceCell",
+    "MapCellNucleus", "MapCellNucleusHeart", "MapCellNucleusBody", "MapCellNucleusAbove", "MapCellNucleusBelow", "MapCellCytoplasm", "MapCellCytoplasmBody", "MapCellMembrane", "MapCellMembraneHeart", "MapCellMembraneBody", "EdgeCaptionCells", "EdgeSlice",
     "CardBack", "CardPager", "CardPrevious", "CardNext", "CardLevelVoyage", "CardLevelCrew", "CardLevelStory",
     "CardCourseChip", "CardFoundBy", "CardKicker", "CardCourseLabel", "CardCourseValue", "CardSailLabel", "CardSailValue",
     "CardIntensityLabel", "CardIntensityValue", "CardCells", "CardYourArk", "CardDestination", "CardSquadLabel",
