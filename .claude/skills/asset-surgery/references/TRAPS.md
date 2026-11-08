@@ -1192,3 +1192,18 @@ whose sources is on disk is skipped and named ("an assembly that no longer exist
 setup error that says to rerun `unity_refcompile`, never a .NET stack trace. `check_generated_assets.py --self-test`
 plants a `Ghost.rsp` naming a missing `Assets/...cs` file in a scratch directory and proves both. Deleting by hand is no
 longer needed; if a crash like this comes back, it is a new path, not this one.
+
+### Technique: deleting a subtree that holds NESTED PREFAB INSTANCES from prefab YAML
+
+A nested prefab instance appears in the outer prefab's YAML as more than one document:
+- a `--- !u!1001 &<pi>` PrefabInstance document (its `m_TransformParent` is the outer transform it hangs under);
+- `stripped` GameObject, Transform and component documents whose `m_PrefabInstance: {fileID: <pi>}` names it;
+- any component the OUTER prefab added to one of those stripped objects (`m_GameObject` is a stripped id);
+- any outer objects parented under the stripped transform (its `m_Children`).
+
+A subtree walk that only follows `m_Children` reaches the stripped transform and stops. It either refuses (as
+`author_voyage_window.py`'s `subtree` does for a clone) or leaves the PrefabInstance and its stripped documents behind,
+pointing at a parent that no longer exists. `author_voyage_window.py`'s `subtree_deep` / `delete_deep` collects all four
+kinds. Its `validate` then proves that no local `{fileID: N}` dangles anywhere in the file; that check is what makes the
+delete trustworthy. A copy that keeps the instance (QuestsView from MissionView, 2026-11-08) needs nothing special,
+because fileIDs are local to the file.

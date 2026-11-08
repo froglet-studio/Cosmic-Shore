@@ -396,5 +396,31 @@ namespace CosmicShore.ScriptableObjects
         public string StoryLog = "YOUR LOG";
         [Tooltip("The log beat: {voyages} sailed, {extracted} finds brought home, {relics}, {charted} places charted, {arks} Arks lost, {kaiju} felled.")]
         public string StoryLogLine = "{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost.";
+        [Tooltip("The Set sail button while a voyage is out: dark, saying when it opens. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardSailAfter = "SET SAIL - AFTER THIS VOYAGE";
+        [Tooltip("The Ark escort's card on the voyage carousel. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardEscortPlace = "Escort the Ark";
+        [Tooltip("Over the escort's difficulty: {from} where the Ark lies, {to} the port it sails for. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardEscortKicker = "ARK ESCORT - {from} TO {to}";
+        [Tooltip("The escort's difficulty between its - and +: {difficulty} the level. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardDifficulty = "Difficulty {difficulty}";
+        [Tooltip("One seat in the squad's line under its hulls: {who} who flies it, {vessel} the hull. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardCrewSeat = "{who} - {vessel}";
+        [Tooltip("Between the seats in the squad's line. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardCrewSeparator = "     ";
+        [Tooltip("Over Ark crew: the voyage the squad is being set for. {n} its number, {title} its title. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardCrewVoyage = "VOYAGE {n} - {title}";
+        [Tooltip("Over a seat's strip of choices: {seat} the seat, {setting} what is being picked. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardPickSetting = "{seat} - {setting}: ONE PRESS PICKS";
+        [Tooltip("A seat's head in Ark crew: {role} the seat's role (CardSeatLeader and the two rogues), {who} who flies it. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardSeatWho = "{role} - {who}";
+        [Tooltip("The pilot setting's label in Ark crew with its callsign's word: {setting} the setting's name, {word} the word. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardSettingWord = "{setting} - {word}";
+        [Tooltip("The Jade domain's chip in Ark crew. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardDomainJade = "JADE";
+        [Tooltip("The Ruby domain's chip in Ark crew. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardDomainRuby = "RUBY";
+        [Tooltip("The Gold domain's chip in Ark crew. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardDomainGold = "GOLD";
     }
 }

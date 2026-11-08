@@ -2719,7 +2719,20 @@
   "StoryWorld": "THE SEA TODAY",
   "StoryWorldBy": "{warnings}",
   "StoryLog": "YOUR LOG",
-  "StoryLogLine": "{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost."
+  "StoryLogLine": "{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost.",
+  "CardSailAfter": "SET SAIL - AFTER THIS VOYAGE",
+  "CardEscortPlace": "Escort the Ark",
+  "CardEscortKicker": "ARK ESCORT - {from} TO {to}",
+  "CardDifficulty": "Difficulty {difficulty}",
+  "CardCrewSeat": "{who} - {vessel}",
+  "CardCrewSeparator": "     ",
+  "CardCrewVoyage": "VOYAGE {n} - {title}",
+  "CardPickSetting": "{seat} - {setting}: ONE PRESS PICKS",
+  "CardSeatWho": "{role} - {who}",
+  "CardSettingWord": "{setting} - {word}",
+  "CardDomainJade": "JADE",
+  "CardDomainRuby": "RUBY",
+  "CardDomainGold": "GOLD"
  },
  "toy": {
   "id": "voyage",

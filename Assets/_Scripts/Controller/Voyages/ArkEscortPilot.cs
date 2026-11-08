@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -53,6 +54,7 @@ namespace CosmicShore.Gameplay
         public void Disarm()
         {
             SetSteering(false);
+            ReleaseHook(sweep: true);
             _role?.Disarm();
             _role = null;
             if (_retargeted && _pilot) _pilot.RetargetCell(_homeCell);   // null is fine: the pilot then seeks nothing rather than a dead world
@@ -83,10 +85,29 @@ namespace CosmicShore.Gameplay
         {
             if (on == _steering) return;
             _steering = on;
-            if (!_pilot) return;
-            if (on) _pilot.SetExternalTargetProvider(Target);
-            else _pilot.ClearExternalTargetProvider();
+            if (on) { if (_pilot) _pilot.SetExternalTargetProvider(Target); }
+            else ReleaseHook(sweep: false);
         }
+
+        /// <summary>Take this seat's steering hook back from every pilot that holds it. Usually that is this hull's own
+        /// pilot, but a pilot swap moves the hook to the AI of the hull the person left (<see cref="AIPilot.TakeModeHooksFrom"/>),
+        /// and that pilot kept asking this seat where to fly after this hull was gone: <see cref="Target"/> on a destroyed
+        /// component threw a MissingReferenceException every frame (1,294 in one voyage, 2026-11-08). A pilot holding a
+        /// mode's hook or another seat's is left alone. <paramref name="sweep"/> looks beyond this hull's pilot (a scene search,
+        /// so only when a swap took the hook or the seat is disarmed, never on a role's routine steering toggle).</summary>
+        void ReleaseHook(bool sweep)
+        {
+            Func<Vector3> mine = Target;
+            if (_pilot && _pilot.ExternalTargetProvider == mine) _pilot.ClearExternalTargetProvider();
+            if (!sweep) return;
+            foreach (var other in FindObjectsByType<AIPilot>(FindObjectsSortMode.None))
+                if (other && other != _pilot && other.ExternalTargetProvider == mine) other.ClearExternalTargetProvider();
+        }
+
+        /// <summary>True when this seat thinks it steers but its pilot holds no hook at all: a swap took it
+        /// (<see cref="AIPilot.TakeModeHooksFrom"/> leaves the source with none). A hook someone else set over ours (a crew's)
+        /// is not a swap and is left to them, as before.</summary>
+        bool HookTaken() => _steering && _pilot && _pilot.ExternalTargetProvider == null;
 
         Vector3 Target()
         {
@@ -101,6 +122,9 @@ namespace CosmicShore.Gameplay
             var ctx = _run.Context;
             if (ctx == null || !ctx.Ark) return;
             _role.Tick(ctx);
+            // A swap moved the hook off this hull (it flies on another hull, steering by this one): take it back, and
+            // give it to this hull's pilot again if the role still wants to steer.
+            if (HookTaken()) { _steering = false; ReleaseHook(sweep: true); }
             SetSteering(_role.WantsSteering(ctx));
         }
 
