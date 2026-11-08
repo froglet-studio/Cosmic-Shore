@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-08 from canvas version `1794140334-7809` of **Frogma**: Rev 3 to Rev 77, 486 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-08 from canvas version `1794140749-f17d` of **Frogma**: Rev 3 to Rev 78, 486 boards on 11 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -669,6 +669,12 @@ Copied on 2026-11-08 from canvas version `1794140334-7809` of **Frogma**: Rev 3 
 
 ### Tab: Portrait  (`phone`)
 
+#### Rev 78 - The UI moves with the phone: every piece travels to its upright place as the phone turns
+
+- `R78Follow.dc.html` (not copied yet) - Rev 78 Follow - Follow the turn (recommended): the pieces travel with the phone and stay level - interactive
+- `R78Glide.dc.html` (not copied yet) - Rev 78 Glide - Turn, then glide: the pieces turn with the phone, then glide into place - interactive
+- `R78Notes.dc.html` (not copied yet) - Rev 78 - notes: Follow vs Glide, and what only a device shows
+
 #### Rev 76 - The turn: five transitions, each on the menu and on the Goby turning into the Pistol
 
 - `R76Compare.dc.html` (not copied yet) - Rev 76 - the five transitions side by side, in time: the menu row and the Goby row
@@ -741,10 +747,7 @@ Copied on 2026-11-08 from canvas version `1794140334-7809` of **Frogma**: Rev 3 
 #### Rev 74 - Voyages: C taken forward - the whole-galaxy map and the edge view on the left, the coverflow on the right, four card faces that are not blue
 
 - [`R74Compare.dc.html`](R74Compare.dc.html) - Rev 74 - the four card faces side by side on the same voyage: Graphite, Line, Place, Glass
-- [`R74C1.dc.html`](R74C1.dc.html) - Rev 74 C1 - Graphite: C with the whole-galaxy map and the edge view on the left; the cards the course in greys on a near - interactive
-- [`R74C2.dc.html`](R74C2.dc.html) - Rev 74 C2 - Line: C with the whole-galaxy map and the edge view on the left; the cards no picture: the route drawn as a - interactive
 - [`R74C3.dc.html`](R74C3.dc.html) - Rev 74 C3 - Place: C with the whole-galaxy map and the edge view on the left; the cards a muted close-up of the destinat - interactive
-- [`R74C4.dc.html`](R74C4.dc.html) - Rev 74 C4 - Glass: C with the whole-galaxy map and the edge view on the left; the cards clear glass over the ground, a s - interactive
 - [`R74Notes.dc.html`](R74Notes.dc.html) - Rev 74 - notes: C taken forward, what every option keeps, the four card faces, the recommendation
 
 #### Rev 71 - Voyages, six new ideas on the menu's own ground: a dial, a departures board, a coverflow, a hex board, a journey, a crew's hand; and the Quests window

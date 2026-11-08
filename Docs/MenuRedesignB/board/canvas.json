@@ -3362,24 +3362,6 @@
       "x": 4200,
       "y": 3644
     },
-    "R74C1.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "voyages",
-      "title": "Rev 74 C1 - Graphite: C with the whole-galaxy map and the edge view on the left; the cards the course in greys on a near",
-      "w": 1920,
-      "x": 2100,
-      "y": 6140
-    },
-    "R74C2.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "voyages",
-      "title": "Rev 74 C2 - Line: C with the whole-galaxy map and the edge view on the left; the cards no picture: the route drawn as a",
-      "w": 1920,
-      "x": 4200,
-      "y": 6140
-    },
     "R74C3.dc.html": {
       "h": 1080,
       "is_interactive": true,
@@ -3387,15 +3369,6 @@
       "title": "Rev 74 C3 - Place: C with the whole-galaxy map and the edge view on the left; the cards a muted close-up of the destinat",
       "w": 1920,
       "x": 0,
-      "y": 7400
-    },
-    "R74C4.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "voyages",
-      "title": "Rev 74 C4 - Glass: C with the whole-galaxy map and the edge view on the left; the cards clear glass over the ground, a s",
-      "w": 1920,
-      "x": 2100,
       "y": 7400
     },
     "R74Compare.dc.html": {
@@ -4014,6 +3987,32 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 77 - notes: every other Voyage window in the picked look (C3), the Quests window, what is still a proposal"
+    },
+    "R78Follow.dc.html": {
+      "x": 0,
+      "y": 12144,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 78 Follow - Follow the turn (recommended): the pieces travel with the phone and stay level - interactive",
+      "is_interactive": true
+    },
+    "R78Glide.dc.html": {
+      "x": 2100,
+      "y": 12144,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 78 Glide - Turn, then glide: the pieces turn with the phone, then glide into place - interactive",
+      "is_interactive": true
+    },
+    "R78Notes.dc.html": {
+      "x": 0,
+      "y": 13404,
+      "w": 1920,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 78 - notes: Follow vs Glide, and what only a device shows"
     }
   },
   "createdOnFiles": {
@@ -4022,7 +4021,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "voyages",
+    "page": "phone",
     "view": "canvas"
   },
   "noteOrder": [
@@ -4137,6 +4136,7 @@
     "sec-rev75",
     "sec-rev76",
     "sec-rev77",
+    "sec-rev78",
     "rev71",
     "rev69",
     "hud_end",
@@ -4214,7 +4214,8 @@
     "rev74",
     "rev75",
     "rev76",
-    "rev77"
+    "rev77",
+    "rev78"
   ],
   "notes": {
     "hud_end": {
@@ -6623,6 +6624,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev78": {
+      "kind": "title1",
+      "text": "Rev 78 - The UI moves with the phone: every piece travels to its upright place as the phone turns",
+      "x": 0,
+      "y": 11744,
+      "w": 240,
+      "maxW": 6120,
+      "page": "phone"
+    },
+    "sec-rev78": {
+      "kind": "rect",
+      "x": -160,
+      "y": 11584,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "phone"
     }
   },
   "order": [
@@ -7089,10 +7114,7 @@
     "R42C.dc.html",
     "R42Notes.dc.html",
     "R74Compare.dc.html",
-    "R74C1.dc.html",
-    "R74C2.dc.html",
     "R74C3.dc.html",
-    "R74C4.dc.html",
     "R74Notes.dc.html",
     "R75Codex.dc.html",
     "R75Builder.dc.html",
@@ -7111,7 +7133,10 @@
     "R77Saga.dc.html",
     "R77Episodes.dc.html",
     "R77Quests.dc.html",
-    "R77Notes.dc.html"
+    "R77Notes.dc.html",
+    "R78Follow.dc.html",
+    "R78Glide.dc.html",
+    "R78Notes.dc.html"
   ],
   "pages": [
     {

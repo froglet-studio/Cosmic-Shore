@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 71 C, Rev 74 and Rev 77 on the canvas now) | Shombith, 2026-11-08 (sections 147-149) |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 71 C, Rev 74 C3 and Rev 77 on the canvas now; built in section 151) | Shombith, 2026-11-08 (sections 147-151) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -6374,7 +6374,9 @@ Rev 71 C. Rev 72 and 73 went to other tabs while it was drawn.
 - **C4 - Glass:** clear glass over the ground, a small round course thumbnail and the voyage's title.
 - **Compare:** the four faces side by side on the same voyage.
 
-**Picked (Shombith, 2026-11-08): C3, Place:** "C3 and now show mockups of all other windows" (section 150).
+**Picked (Shombith, 2026-11-08): C3, Place:** "C3 and now show mockups of all other windows" (section 150). Then
+"delete C1 C2 C4 and implement it in the game": C1, C2 and C4 are off the canvas (their copies stay in
+`Docs/MenuRedesignB/board/`), and C3 is built (section 151).
 
 **Recommended: C2.** The map column already shows the course in colour, so the card only has to say which voyage it
 is. A drawn line plus the place reads at a glance and has nothing blue in it. C1 is the closest to C as picked.
@@ -6382,7 +6384,7 @@ is. A drawn line plus the place reads at a glance and has nothing blue in it. C1
 **Next:** the Quests window comes back in the picked look once a card face is picked. The pinned voyage stays a proposal
 to Garrett (section 147).
 
-## 150. Rev 77 mockups: every other Voyage window in the picked look, Rev 74 C3 - and the Quests window (2026-11-08, awaiting board approval)
+## 150. Rev 77 mockups: every other Voyage window in the picked look, Rev 74 C3 - and the Quests window (2026-11-08; built, section 151)
 
 **Asked (Shombith, 2026-11-08):** "C3 and now show mockups of all other windows".
 
@@ -6432,3 +6434,57 @@ to Garrett (section 147).
 - The configure card's vessel strip (Yash's `ArenaLaunchPanel`) for Ark crew.
 - A Quests hub window beside the Profile.
 
+
+## 151. Built: the Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, claude/epic-fermat-6c7n2l, not yet run in the editor)
+
+**Asked (Shombith, 2026-11-08):** "delete C1 C2 C4 and implement it in the game".
+
+**Built:**
+- **The voyage column** (`VoyageOpenCard`, rewritten). It stands in the right column of the Voyages tab (`cardColumn`)
+  and has four views: Voyage, Ark crew, Story and Underway (`Docs/Voyages/VOYAGE_BOARD.md` section 3).
+  - **The coverflow:** `VoyageFlowCard` is one card. It eases to the pose `VoyageCardRules.FlowPose` gives it: the
+    picked card faces front at full size; each step out turns 40 degrees, shrinks by 0.18 (stopping at two) and fades
+    1, 0.7, 0.35. The D-pad's selection picks the card it lands on.
+  - **The card face:** `VoyagePlaceArt` paints the place's close-up from `HyperSea.Density` and the map's colour key
+    (`VoyageMapGraphic.Sea`, now internal), muted to C3's grade (saturation 0.25, then brightness 0.55, as the board's
+    CSS). It paints once per place and keeps the texture, never as a second live map.
+  - **The strips:** vessel, pilot, element (the Codex's element shapes, wired by the generator) and artifact, one press
+    picks. Pilots are filtered by `Requirement.IsMetBy` for the hull; artifacts by what fits.
+  - **The map** opens on the whole galaxy (`VoyageMapGraphic.OpenTier` 0, the deep-zoom ladder's own Dive) and stays
+    there while voyages are picked (`VoyageJobsView.openOnGalaxy`).
+  - **Words:** `VoyageLines` gained `CardSailAfter`, `CardEscortPlace`, `CardEscortKicker`, `CardDifficulty`,
+    `CardCrewSeat`, `CardCrewSeparator`, `CardCrewVoyage`, `CardPickSetting` and the three domain chips
+    (`voyage_slice.json`, `author_voyage_assets.py`). `VoyageRoutePoster` is retired.
+- **The Voyage window** (`author_voyage_window.py`, its third layout): three tabs (Voyages, Saga, Episodes). The
+  Quests tab and page left the window.
+- **The Quests window:** `Assets/Resources/Voyages/QuestsView.prefab`, generated from the window's chrome. It has the
+  header "Quests", the tabs Episode 1 (the quest tracker, `QuestTrackView` as it was) and Episode 2 (locked), and Back.
+  - Its root is a `ModalWindowManager` answering to the new `ScreenSwitcher.ModalWindows.QUESTS = 20` (free on
+    bleeding-edge and the in-flight branches).
+  - `ScreenSwitcher.EnsureQuestsModal` places it beside the Voyage window at start and stands down when a scene
+    authors one.
+  - Home's quest card opens it (`HomeUpNext` calls `OnClickQuests`, which falls back to the Voyage window). Its line
+    now reads "Ready to claim in Quests" (`author_menu_home.py`).
+
+**Not built yet:**
+- The Quests window's quests as place cards on the carousel (Rev 77 "Quests"). The tracker is today's
+  `QuestTrackView` in the new window.
+- The Saga and Episodes tabs in the picked look.
+- The pinned voyage that stays put while the crew or domain changes stays a proposal to Garrett (section 147).
+
+**Verified:**
+- `unity_refcompile` player and editor: 0 errors in project code.
+- `gates.sh`.
+- `author_voyage_window.py --check --self-test` (15 negative controls, among them the map opening on the region, a
+  swapped element shape, the Quests window not a modal, and Episode 2 open at start).
+- `author_voyage_assets.py --check`, `author_menu_home.py --check`, `author_menu_mission.py --check`,
+  `check_console_logging.py` and `check_conditional_compilation.py`.
+- `VoyageCardRulesTests`' pure tests (Wrap, Cycle, Beats, FlowPose, Mute, Tabs) ran outside Unity against a small
+  engine shim, and two planted defects failed them. The `Cover` test needs a real `Texture2D` and did not run.
+
+**Not run in the editor:** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
+
+Affects:
+- Garrett's Voyage window: the generator, MissionView, `VoyageJobsView`, and `VoyageMapGraphic`'s `OpenTier` and `Sea`.
+- Yash's vessel strip pattern (`ArenaLaunchPanel`): the same one-press strip, not shared code.
+- The FTUE quest tracker (Shombith and Caleb): it moved windows unchanged.
