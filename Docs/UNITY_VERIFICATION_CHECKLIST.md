@@ -22060,25 +22060,28 @@ from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
 3. **Turn `aiSeekRails` off** on the scene's SkeinController for one race as the control: the AI should go back to
    flying at the rings and missing the pinned ones.
 4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).
-## 🔴 Voyages: the Ark no longer stalls at a job's stop (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
-Branch `claude/voyage-stop-stall`. `VoyageRun.StandStop` called `ClearStop()`, which forgets `_arrival`, and then read
-`_arrival.Location`: a `NullReferenceException` on every stop short of home (Garrett's Editor.log, 2026-11-08,
-`VoyageRun.cs:538` from `ArkwayRun.TickCorridor`). The Ark had already been told to hold, so it sat at the stop's core
-with no vaults, no work and no save. Ran: `/ship` gates (all OK). Not run: Unity, `unity_refcompile` (no .NET SDK in
-the session).
+## 🔴 Nacre, the light pastel colour set (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
-1. **Take a job to a stop that is not home** (Voyage window, any pilot's card, Set sail). When the Ark reaches the
-   destination core, the console shows no `NullReferenceException` from `VoyageRun.StandStop`.
-2. **The stop stands**: the arrival banner, then the stop's lines; vault shells around the Ark at a vault field or
-   hoard, a wreck's finds, rival hulls where a crew stands; the job's progress banner moves as you do its work.
-3. **The Ark holds by design** at the stop; leaving freestyle anchors the squad there, and the Voyage window offers
-   the next jobs from that place (the map shows the Ark at the destination, not where it set out).
-4. **Next job sails**: Set sail on one of those jobs and the Ark leaves the stop for the new destination.
+Branch `cece/focused-thompson-tj52go`. New palette `Assets/_SO_Assets/Color Palettes/NacreColorSetSO.asset`, written by
+`author_colour_set_assets.py` from `colour_sets.json` (`nacre`), and a catalog entry between Dart Frog and Contrast.
+The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran here: `colour_sets.py --check/--self-test`,
+`author_colour_set_assets.py --check`, `author_colour_set_catalog.py --check/--self-test`, both theme writers' `--check`,
+`/ship` gates, and `unity_refcompile` (0 errors in changed files; 21 elsewhere from packages the sandbox cannot fetch).
+
+1. **Profile > Colour sets**: Nacre is the fourth tile and shows Mint over Lavender, Orchid over Pearl, Butter over
+   Periwinkle, Ice over Sage. Apply it.
+2. **A race or freestyle with all four domains' trails.** Prisms should read as pale pastel bodies under soft rims, light
+   but not glowing. Judge the bloom: the gameplay threshold is 0.2, so the light faces bloom more than Nocturne's. If
+   it reads washed out, lower `rim_brightness` in `colour_sets.json` or the face L ranges, then re-run the writer.
+3. **Shielded and super-shielded prisms** still read as a tier above plain in every domain (Ruby's rim is the brightest).
+4. **Danger (coral) and free crystals (lime CTA)** still stand out against the pale bodies.
 
 ## 🔴 Voyages: own scene (Voyage.unity) and in-world toys removed (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
 Branch `claude/voyage-scene-port`. unity_refcompile could not run (no .NET SDK in the cloud session).
+
+Ran 2026-11-08 on Garrett's PC (Unity 6000.3.17f1, batchmode `verify_unity.sh`): compile clean after one fix (ambiguous `VoyageRun.ActiveSquad(null)`); EditMode 5473 tests, 43 failing, the same 43 that fail on bleeding-edge d83f334e78 (none new); every `VoyageShellTests` test passes; Build Voyage Scene rewrites `Voyage.unity` identically; `RunSmoke` -voyageSmoke: PASS; one escort sim (d1, Sparrow+Rhino+Manta) survived 4 legs with no game exceptions. Steps 1-3 are done; steps 4-8 still need a person.
 
 1. Let Unity import and compile; fix any errors first.
 2. FrogletTools > Scenes > Build Voyage Scene, then commit `Assets/_Scenes/Voyage.unity`.
@@ -22114,3 +22117,27 @@ editor: 0 errors in project code; the rest are packages the cloud cannot fetch).
    and the card's claim line reads "Ready to claim in Quests".
 7. **Console**: no new errors or warnings on Menu_Main load. A warning naming `Resources/Voyages/QuestsView` means the
    prefab did not import.
+
+## 🔴 Voyages: the Ark no longer stalls at a job's stop (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/voyage-stop-stall`. `VoyageRun.StandStop` called `ClearStop()`, which forgets `_arrival`, and then read
+`_arrival.Location`: a `NullReferenceException` on every stop short of home (Garrett's Editor.log, 2026-11-08,
+`VoyageRun.cs:538` from `ArkwayRun.TickCorridor`). The Ark had already been told to hold, so it sat at the stop's core
+with no vaults, no work and no save. Ran: `/ship` gates (all OK). Not run: Unity, `unity_refcompile` (no .NET SDK in
+the session).
+
+1. **Take a job to a stop that is not home** (Voyage window, any pilot's card, Set sail). When the Ark reaches the
+   destination core, the console shows no `NullReferenceException` from `VoyageRun.StandStop`.
+2. **The stop stands**: the arrival banner, then the stop's lines; vault shells around the Ark at a vault field or
+   hoard, a wreck's finds, rival hulls where a crew stands; the job's progress banner moves as you do its work.
+3. **The Ark holds by design** at the stop; leaving freestyle anchors the squad there, and the Voyage window offers
+   the next jobs from that place (the map shows the Ark at the destination, not where it set out).
+4. **Next job sails**: Set sail on one of those jobs and the Ark leaves the stop for the new destination.
+
+## 🔴 Voyages: escort AI no longer steers by a destroyed hull after a pilot swap (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK in the cloud session).
+
+1. Start a voyage or an Ark escort with AI wingmates.
+2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
+3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
