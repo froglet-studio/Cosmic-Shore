@@ -659,6 +659,24 @@ Headless harness and `unity_refcompile` (player and editor) ran; no editor.
 - [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
 - [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
 
+### 🔴 Dolphin omni-crystal morph made subtle: the blast is never covered (`claude/dolphin-morph-subtle`, 2026-11-03) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett's feedback on the morph above ("it occludes the explosion and destroying prism"). The cone is
+no longer hidden while the plates fly (`AOEConicExplosion.SetMorphStandIn` removed). The crystal body draws see-through
+(`CrystalMorphRunner.DrawsSeeThrough`: an alpha-blended, no-depth-write clone of its material via new
+`OmniCrystalFresnelShader` properties whose defaults are the old opaque pass) and thins as (1 − progress)^`fadePower`
+(new field on `DolphinCrystalMorphByCrystal.asset`, default 2). Record: `DOLPHIN_CRYSTAL_MORPH.md` §3a.
+
+**Verified without the editor:** see the PR (harness, `unity_refcompile`). The shader change has not been compiled by
+Unity.
+
+**Test:**
+1. Fly a Dolphin through an omni crystal. Expected: the blast cone and the prisms it breaks are visible from the first
+   frame; the crystal stretches faintly onto the cone and is gone well before ~0.4 s; no husk spray; the shader compiles
+   (no pink).
+2. Tune `fadePower` on the asset if it is still too visible (higher is subtler) or invisible.
+3. Regression: Squirrel, Scarab, Shrike and sphere-blast morphs look as before, and resting omni crystals are unchanged.
+
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
@@ -21655,6 +21673,16 @@ Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data healt
    about 5 s later ONE `client_exception` arrives with its count, top_frame and scene and no message text, and no second
    one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
    `party_invite_*` and `party_joined`, and never the three new events.
+7. **The Web build and the device (2026-11-07, NOT RUN IN EDITOR; `unity_refcompile` player and editor OK, gates OK).**
+   Every Froglet Analytics event's envelope now carries `build_kind`, `device`, `os` and `device_model`
+   (`System/Instrumentation/AnalyticsDevice.cs`, stamped in `BuildSinkEnvelope`; never sent to UGS).
+   - Run `AnalyticsDeviceTests` (9 tests: editor / port / web / development / release, iPad vs iPhone, the 7-inch Android
+     tablet line, web desktop vs mobile, the schema lists the four fields).
+   - In the editor, play one match: Data health shows it as build **Editor**, device **Windows** or **Mac**.
+   - In the **web Toybox** (https://play.froglet.games/toybox) with consent granted: the console's **Web** build shows the
+     visit within a minute, as **Web desktop** (or **Web mobile** on a phone). If nothing arrives, check the browser
+     console for a CORS error on the analytics host.
+   - On an **iPad** build: Device = iPad shows the player; on an Android tablet, Android tablet.
 
 ## 🔴 Breach: the Orca's Time race (2026-11-07, branch `claude/orca-convoy`)
 

@@ -249,6 +249,15 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
   meant to open at 1.25 s shows half open. Either put the timing in keyframe percentages on one shared loop (the
   `phased()` scrubber in Rev 33's kit), or compare options at rest.
 
+- **The canvas holds at most 512 FILES** (the Design type's limit; it counts the type's own ~21 files and every
+  board, not the uploaded `/_blob/` images). Frogma reached it at Rev 68 (2026-11-08): `Artifact list scope=files`
+  printed "512 files" and no board could be added. Count before planning; making room is the owner's call (Rev 68 took
+  the superseded Rev 45 / Rev 48 boards off the canvas on Shombith's word, publishing `"project/<file>": null` with
+  `overwrite_unread`, and their repo copies stayed). Put a round's notes in the title or the doc when only a few files
+  are left, and draw one tall board (fleet over window, 1920 x 2160) rather than two.
+- **Edit the index the way `write_index` writes it** (`json.dump(..., indent=2, ensure_ascii=False)` plus a newline).
+  A hand edit saved compact (`separators=(',',':')`) is valid, publishes fine, and turns the repo copy's
+  `canvas.json` into one line: the PR then shows ~7,000 deleted lines (Rev 68/69, fixed by re-dumping with indent 2).
 - **The canvas holds at most 40 pages (tabs)** (2026-10-31, Rev 40). It filled at Rev 40 because every round took a
   page. Since 2026-11-02 (section 112) a round is a titled section on a tab and costs no page; the 40 old pages were
   folded into the Menu Redesign and Compute Console tabs with `frogma.py fold` (each old page a section, packed

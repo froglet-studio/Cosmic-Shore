@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-08 from canvas version `1794139615-c647` of **Frogma**: Rev 3 to Rev 72, 469 boards on 10 tabs. The canvas opens on the tab `phone`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-08 from canvas version `1794138089-7edc` of **Frogma**: Rev 3 to Rev 69, 489 boards on 9 tabs. The canvas opens on the tab `fleet-codex`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -621,20 +621,55 @@ Copied on 2026-11-08 from canvas version `1794139615-c647` of **Frogma**: Rev 3 
 - [`R44JQuests.dc.html`](R44JQuests.dc.html) - Rev 44 JQuests - On the sea, the Quests tab (the quest tracker)
 - [`R44JEpisodes.dc.html`](R44JEpisodes.dc.html) - Rev 44 JEpisodes - On the sea, the Episodes tab, locked: coming soon
 
+#### Rev 43 - Voyage window: the map left, the voyage card in three levels, Saga | Voyages | Episodes on LB / RB (six ways)
+
+- [`R43Compare.dc.html`](R43Compare.dc.html) - Rev 43 - where the voyage card goes at each level, all six side by side
+- [`R43Notes.dc.html`](R43Notes.dc.html) - Rev 43 - notes: what was asked, what all six share, the recommendation, what differs from the build
+- [`R43AVoyage.dc.html`](R43AVoyage.dc.html) - Rev 43 AVoyage - Drawer, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the card slides in from - interactive
+- [`R43ACrew.dc.html`](R43ACrew.dc.html) - Rev 43 ACrew - Drawer, level 2, Ark crew (the 12 settings, presets)
+- [`R43AStory.dc.html`](R43AStory.dc.html) - Rev 43 AStory - Drawer, level 3, the story (optional)
+- [`R43ASaga.dc.html`](R43ASaga.dc.html) - Rev 43 ASaga - Drawer, Saga tab on LB / RB (content unchanged)
+- [`R43AEpisodes.dc.html`](R43AEpisodes.dc.html) - Rev 43 AEpisodes - Drawer, Episodes tab on LB / RB (content unchanged)
+- [`R43BVoyage.dc.html`](R43BVoyage.dc.html) - Rev 43 BVoyage - Tray, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the arena preview's tray, - interactive
+- [`R43BCrew.dc.html`](R43BCrew.dc.html) - Rev 43 BCrew - Tray, level 2, Ark crew (the 12 settings, presets)
+- [`R43BStory.dc.html`](R43BStory.dc.html) - Rev 43 BStory - Tray, level 3, the story (optional)
+- [`R43BSaga.dc.html`](R43BSaga.dc.html) - Rev 43 BSaga - Tray, Saga tab on LB / RB (content unchanged)
+- [`R43BEpisodes.dc.html`](R43BEpisodes.dc.html) - Rev 43 BEpisodes - Tray, Episodes tab on LB / RB (content unchanged)
+- [`R43CVoyage.dc.html`](R43CVoyage.dc.html) - Rev 43 CVoyage - Level tabs, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - one card, Voyage / A - interactive
+- [`R43CCrew.dc.html`](R43CCrew.dc.html) - Rev 43 CCrew - Level tabs, level 2, Ark crew (the 12 settings, presets)
+- [`R43CStory.dc.html`](R43CStory.dc.html) - Rev 43 CStory - Level tabs, level 3, the story (optional)
+- [`R43CSaga.dc.html`](R43CSaga.dc.html) - Rev 43 CSaga - Level tabs, Saga tab on LB / RB (content unchanged)
+- [`R43CEpisodes.dc.html`](R43CEpisodes.dc.html) - Rev 43 CEpisodes - Level tabs, Episodes tab on LB / RB (content unchanged)
+- [`R43DVoyage.dc.html`](R43DVoyage.dc.html) - Rev 43 DVoyage - Rising sheet, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 ris - interactive
+- [`R43DCrew.dc.html`](R43DCrew.dc.html) - Rev 43 DCrew - Rising sheet, level 2, Ark crew (the 12 settings, presets)
+- [`R43DStory.dc.html`](R43DStory.dc.html) - Rev 43 DStory - Rising sheet, level 3, the story (optional)
+- [`R43DSaga.dc.html`](R43DSaga.dc.html) - Rev 43 DSaga - Rising sheet, Saga tab on LB / RB (content unchanged)
+- [`R43DEpisodes.dc.html`](R43DEpisodes.dc.html) - Rev 43 DEpisodes - Rising sheet, Episodes tab on LB / RB (content unchanged)
+- [`R43EVoyage.dc.html`](R43EVoyage.dc.html) - Rev 43 EVoyage - Dossier, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the three levels as num - interactive
+- [`R43ECrew.dc.html`](R43ECrew.dc.html) - Rev 43 ECrew - Dossier, level 2, Ark crew (the 12 settings, presets)
+- [`R43EStory.dc.html`](R43EStory.dc.html) - Rev 43 EStory - Dossier, level 3, the story (optional)
+- [`R43ESaga.dc.html`](R43ESaga.dc.html) - Rev 43 ESaga - Dossier, Saga tab on LB / RB (content unchanged)
+- [`R43EEpisodes.dc.html`](R43EEpisodes.dc.html) - Rev 43 EEpisodes - Dossier, Episodes tab on LB / RB (content unchanged)
+- [`R43FVoyage.dc.html`](R43FVoyage.dc.html) - Rev 43 FVoyage - Two cards, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 slide - interactive
+- [`R43FCrew.dc.html`](R43FCrew.dc.html) - Rev 43 FCrew - Two cards, level 2, Ark crew (the 12 settings, presets)
+- [`R43FStory.dc.html`](R43FStory.dc.html) - Rev 43 FStory - Two cards, level 3, the story (optional)
+- [`R43FSaga.dc.html`](R43FSaga.dc.html) - Rev 43 FSaga - Two cards, Saga tab on LB / RB (content unchanged)
+- [`R43FEpisodes.dc.html`](R43FEpisodes.dc.html) - Rev 43 FEpisodes - Two cards, Episodes tab on LB / RB (content unchanged)
+
 ### Tab: Fleet Codex  (`fleet-codex`)
 
 #### Rev 69 - Fleet Codex vessel page, C in full: one vessel with every detail, calm - the desktop page and the phone
 
-- `R69Desktop.dc.html` (not copied yet) - Rev 69 Desktop - C's flight-deck window, then abilities with their numbers and level 5, missions with filters, flight an - interactive
-- `R69Phone.dc.html` (not copied yet) - Rev 69 Phone - the same page at 390, the move under the ability row - interactive
+- [`R69Desktop.dc.html`](R69Desktop.dc.html) - Rev 69 Desktop - C's flight-deck window, then abilities with their numbers and level 5, missions with filters, flight and every control, docs and changes - interactive
+- [`R69Phone.dc.html`](R69Phone.dc.html) - Rev 69 Phone - the same page at 390, the move under the ability row - interactive
 
 #### Rev 68 - Fleet Codex for the website: four looks, each the whole fleet and one vessel window, the controls playing beside each ability
 
-- `R68A.dc.html` (not copied yet) - Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one - interactive
-- `R68B.dc.html` (not copied yet) - Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own contro - interactive
-- `R68C.dc.html` (not copied yet) - Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the c - interactive
-- `R68D.dc.html` (not copied yet) - Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its contr - interactive
-- `R68Notes.dc.html` (not copied yet) - Rev 68 - notes: what Shombith asked, the four type pairings, what each look changes in the live codex
+- [`R68A.dc.html`](R68A.dc.html) - Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one - interactive
+- [`R68B.dc.html`](R68B.dc.html) - Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own contro - interactive
+- [`R68C.dc.html`](R68C.dc.html) - Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the c - interactive
+- [`R68D.dc.html`](R68D.dc.html) - Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its contr - interactive
+- [`R68Notes.dc.html`](R68Notes.dc.html) - Rev 68 - notes: what Shombith asked, the four type pairings, what each look changes in the live codex
 
 ### Tab: Froglet Analytics  (`froglet-analytics`)
 
@@ -669,18 +704,11 @@ Copied on 2026-11-08 from canvas version `1794139615-c647` of **Frogma**: Rev 3 
 
 ### Tab: Portrait  (`phone`)
 
-#### Rev 72 - The turn, drawn: the menu fades through a turn, the Goby turns into the Pistol, every other vessel stays landscape (a storyboard, not the build)
-
-- [`R72Menu.dc.html`](R72Menu.dc.html) - Rev 72 Menu - The menu turn: the UI goes out on the switch, two frames held, fades back in (0.28 s); plays on a loop - interactive
-- [`R72Goby.dc.html`](R72Goby.dc.html) - Rev 72 Goby - The Goby turns into the Pistol: upright takes the Pistol's view, landscape the Goby; plays on a loop - interactive
-- [`R72Other.dc.html`](R72Other.dc.html) - Rev 72 Other - Every other vessel: the phone turns, the game does not - interactive
-- [`R72Notes.dc.html`](R72Notes.dc.html) - Rev 72 - notes: the timings, the rules, what only the editor can show
-
 #### Rev 63 - Portrait menus: the same PC UI with the phone held upright (menus only; matches stay landscape)
 
-- [`R63A.dc.html`](R63A.dc.html) - Rev 63 A - Scale to width: the PC layout as it is, shrunk to the phone's width
-- [`R63B.dc.html`](R63B.dc.html) - Rev 63 B - Re-flow, band on top: the same PC pieces laid out on a tall 1080-wide canvas (recommended)
-- [`R63C.dc.html`](R63C.dc.html) - Rev 63 C - Re-flow, band at the bottom: as B, the nav band a tab bar under the thumb
+- `R63A.dc.html` (not copied yet) - Rev 63 A - Scale to width: the PC layout as it is, shrunk to the phone's width
+- `R63B.dc.html` (not copied yet) - Rev 63 B - Re-flow, band on top: the same PC pieces laid out on a tall 1080-wide canvas (recommended)
+- `R63C.dc.html` (not copied yet) - Rev 63 C - Re-flow, band at the bottom: as B, the nav band a tab bar under the thumb
 - `R63Notes.dc.html` (not copied yet) - Rev 63 - notes: what each costs to build and how big the words are
 
 ### Tab: Launch Console  (`launch-console`)
@@ -714,18 +742,5 @@ Copied on 2026-11-08 from canvas version `1794139615-c647` of **Frogma**: Rev 3 
 
 - `R61C.dc.html` (not copied yet) - Rev 61 C - On the pads - interactive
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
-
-### Tab: Voyages  (`voyages`)
-
-#### Rev 71 - Voyages, six new ideas on the menu's own ground: a dial, a departures board, a coverflow, a hex board, a journey, a crew's hand; and the Quests window
-
-- `R71A.dc.html` (not copied yet) - Rev 71 A - Dial: the course through a round lens, the voyages as bearings on its ring - interactive
-- `R71B.dc.html` (not copied yet) - Rev 71 B - Departures: the voyages on a departures board, the open voyage a boarding pass with your squad on its stub - interactive
-- `R71C.dc.html` (not copied yet) - Rev 71 C - Coverflow: the voyages as tilted cards on a carousel, the picked one faced front, LB / RB turn it - interactive
-- `R71D.dc.html` (not copied yet) - Rev 71 D - Hex board: the HyperSea's own cells, the Ark in the middle hex, each voyage a hex holding its course (recommended) - interactive
-- `R71E.dc.html` (not copied yet) - Rev 71 E - Journey: the route as a band of map across the window, its edge-on profile under it - interactive
-- `R71F.dc.html` (not copied yet) - Rev 71 F - Crew's hand: your crew deals the voyages as a hand of cards; the picked card rises - interactive
-- `R71Quests.dc.html` (not copied yet) - Rev 71 Quests - Quests, its own window on the menu's ground: Episode 1's five quests on one trail, the next one lit - interactive
-- `R71Notes.dc.html` (not copied yet) - Rev 71 - notes: six new Voyage windows on the menu's ground, what each is, the recommendation, the two fixes they all carry, and the Quests window
 
 <!-- frogma.py readme: end -->

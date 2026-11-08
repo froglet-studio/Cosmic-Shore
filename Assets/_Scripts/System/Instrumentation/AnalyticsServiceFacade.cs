@@ -618,7 +618,12 @@ namespace CosmicShore.Core
             ["player_id"] = ResolveDistinctId(),
             ["app_version"] = Application.version,
             ["platform"] = Application.platform.ToString(),
-            ["schema_version"] = EventSchemaVersion
+            ["schema_version"] = EventSchemaVersion,
+            // The Web build and the per-device views (AnalyticsDevice): Froglet Analytics only, like the rest.
+            ["build_kind"] = AnalyticsDevice.Current.BuildKind,
+            ["device"] = AnalyticsDevice.Current.Device,
+            ["os"] = AnalyticsDevice.Current.Os,
+            ["device_model"] = AnalyticsDevice.Current.DeviceModel
         };
 
         /// <summary>

@@ -21,6 +21,10 @@
       "Space",
       null
     ],
+    "Breach": [
+      "Time",
+      null
+    ],
     "Breakwater": [
       "Time",
       null
@@ -43,6 +47,10 @@
     ],
     "Cleave": [
       "Space",
+      null
+    ],
+    "DecoyRun": [
+      "Time",
       null
     ],
     "DogFight": [
@@ -78,6 +86,10 @@
       null
     ],
     "Multiplayer2v2CoOpVsAI": [
+      "Time",
+      null
+    ],
+    "PerchRun": [
       "Time",
       null
     ],
@@ -133,6 +145,10 @@
       "Time",
       null
     ],
+    "SlipLine": [
+      "Time",
+      null
+    ],
     "Switchback": [
       "Time",
       null
@@ -147,6 +163,10 @@
     ],
     "Tapestry": [
       "Mass",
+      null
+    ],
+    "Thornline": [
+      "Time",
       null
     ],
     "ThresherTime": [
@@ -216,12 +236,14 @@
     "AstroLeague": "Goals",
     "Bends": "CombatPoints",
     "Bloomrush": "VolumeDestroyed",
+    "Breach": "SwitchesThreaded",
     "Breakwater": "SwitchesThreaded",
     "BrittleStarTime": "SwitchesThreaded",
     "Broadside": "CombatPoints",
     "BroodRush": "Goals",
     "BurrowRun": "SwitchesThreaded",
     "Cleave": "PrismsDestroyed",
+    "DecoyRun": "SwitchesThreaded",
     "DogFight": "CombatPoints",
     "Dustup": "CombatPoints",
     "GrizzlyCharge": "PrismsDestroyed",
@@ -231,6 +253,7 @@
     "Joust": "Jousts",
     "LanternRun": "SwitchesThreaded",
     "Multiplayer2v2CoOpVsAI": "Crystals",
+    "PerchRun": "SwitchesThreaded",
     "Rampage": "PrismsDestroyed",
     "Redline": "SwitchesThreaded",
     "Regatta": "SwitchesThreaded",
@@ -244,10 +267,12 @@
     "Skein": "SwitchesThreaded",
     "SkimRace": "Crystals",
     "Slingshot": "SwitchesThreaded",
+    "SlipLine": "SwitchesThreaded",
     "Switchback": "SwitchesThreaded",
     "Tandava": "LifeformsKilled",
     "TandavaSevering": "LifeformsKilled",
     "Tapestry": "VolumeRemaining",
+    "Thornline": "SwitchesThreaded",
     "ThresherTime": "SwitchesThreaded",
     "Tollway": "Goals",
     "Undertow": "CombatPoints",
@@ -269,6 +294,7 @@
     "BlockBandit",
     "Bloomrush",
     "BotDuel",
+    "Breach",
     "Breakwater",
     "BrittleStarTime",
     "Broadside",
@@ -280,6 +306,7 @@
     "CoOpWildlifeBlitz",
     "Curvatious",
     "DashNGrab",
+    "DecoyRun",
     "Denial",
     "Distraction",
     "DogFight",
@@ -298,6 +325,7 @@
     "MazeRun",
     "Multiplayer2v2CoOpVsAI",
     "ObstacleCourse",
+    "PerchRun",
     "ProtectMission",
     "PumpNDump",
     "Rampage",
@@ -315,12 +343,14 @@
     "Skein",
     "SkimRace",
     "Slingshot",
+    "SlipLine",
     "SlipNStride",
     "Soar",
     "Switchback",
     "Tandava",
     "TandavaSevering",
     "Tapestry",
+    "Thornline",
     "ThresherTime",
     "Tollway",
     "Undertow",
