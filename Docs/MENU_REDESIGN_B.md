@@ -6082,7 +6082,7 @@ asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in tha
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
 a better number. No player id reaches Claude on any of these. Awaiting a pick.
 
-## 143. Rev 68 mockups: the Fleet Codex for the website - four looks, the whole fleet and one vessel window each (2026-11-08, awaiting a pick)
+## 143. Rev 68 mockups: the Fleet Codex for the website - four looks, the whole fleet and one vessel window each (2026-11-08; Shombith picked C, section 144)
 
 **Asked (Shombith, 2026-11-08), on the built Rev 48 B codex:** "I do not like the fleet codex UI at all what do you
 mean select an ability and then scroll down to see the animation and even that is not cool. The texts do not look cool
@@ -6129,3 +6129,40 @@ Solo / Crews), the Squirrel's window under it. In every window:
 **Differs from the build:** the live codex (`Docs/FleetCodex/index.html`, PR #1851) draws the controls as a separate
 tile under the kit and plays only the input; any pick moves the move beside the ability, adds the scene of the ability
 happening, the game filters and the story, and changes the type.
+
+**Picked (Shombith, 2026-11-08): "I like C can you show me whole page how it would look on the mockup before building?"**
+The whole page is Rev 69 (section 144).
+
+## 144. Rev 69 mockups: the Fleet Codex vessel page, C in full - every detail, calm (2026-11-08, awaiting board approval)
+
+**Asked (Shombith, 2026-11-08), after picking Rev 68 C:** "I like C can you show me whole page how it would look on the
+mockup before building?", then "Not all vessels but just how with all details it would look because earlier one was
+pretty detailed too but noisy".
+
+**On the canvas:** the **Fleet Codex** tab, the round "Rev 69 - Fleet Codex vessel page, C in full: one vessel with every
+detail, calm - the desktop page and the phone" under Rev 68 (version `1794138089-7edc`; two boards, the two files Frogma
+had left). Copies `Docs/MenuRedesignB/board/R69*.dc.html`; generator `Docs/MenuRedesignB/rounds/r69_codex_vessel_page.py`
+(Rev 68's kit, the facts from the codex's `fleet.json`).
+
+- **R69Desktop (1920 x 3400), interactive:** the top bar (Fleet Codex; the vessel switcher "Grizzly / Squirrel 6 of 23 /
+  Serpent" in place of a fleet grid; search; the theme, Nocturne; the Jade / Ruby / Gold domain). C's flight-deck window:
+  the hull flying, the pilot briefing (the story, cruise, turn, level 5 wired, games), its element games (Charge Joust,
+  Mass Scurry, Space none yet, Time Skim Race) with the one Lime call to action, the picked ability's move with its three
+  devices, the four-icon row plus the omni. Then calm sections on hairlines: **Abilities** (each row: who and how it
+  fires, what it does, what more of its element does with the authored numbers - stealScale x1 to x2.5, the skimmer
+  Scale x15 to x30, energyMultiplier x1 to x2, ThrottleScalerMultiplier struck as switched off - and its level 5 with
+  WIRED; picking a row plays its move in the window), **Missions** (the eight games with the element filters), **Flight
+  and controls** (the flight numbers and every action on controller, keyboard and phone, with the phone notes), **Docs
+  and changes**, a one-line source footer.
+- **R69Phone (390 x 4040), interactive:** the same page stacked: the switcher, the hull, the story and numbers, the call
+  to action, the ability row with the move under it, the abilities in full, the missions two across with the filters,
+  the flight numbers; the controls table, docs and changes fold under one line.
+
+What keeps it calm against the old codex (Rev 48 B, "pretty detailed too but noisy"): one switcher instead of the fleet
+filmstrip; no boxes round sections, hairlines only; one accent (the Jade selection) and Lime only on PLAY THE SQUIRREL;
+labels small and spaced; the move shown once, in the window, not as a separate control map.
+
+**Differs from the build:** the live codex (`Docs/FleetCodex/index.html`, PR #1851) becomes this layout: the fleet
+filmstrip gives way to the switcher (the `#fleet` table stays as its own page), the control map moves into the window
+beside the ability as a scene, the ability cards become rows, and the type becomes Saira Condensed + Saira.
+

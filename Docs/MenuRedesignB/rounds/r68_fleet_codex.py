@@ -636,6 +636,7 @@ class Component extends DCLogic {{ renderVals() {{ return {{}}; }} }}
 """
 
 
-for name, html in (("R68A", option_a()), ("R68B", option_b()), ("R68C", option_c()), ("R68D", option_d()), ("R68Notes", notes())):
+if __name__ == "__main__":
+  for name, html in (("R68A", option_a()), ("R68B", option_b()), ("R68C", option_c()), ("R68D", option_d()), ("R68Notes", notes())):
     (ROOT / f"{name}.dc.html").write_text(html, encoding="utf-8")
     print(f"wrote {name}.dc.html ({len(html)} bytes)")

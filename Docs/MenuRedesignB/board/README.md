@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-08 from canvas version `1794137568-246d` of **Frogma**: Rev 3 to Rev 68, 487 boards on 9 tabs. The canvas opens on the tab `fleet-codex`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-08 from canvas version `1794138089-7edc` of **Frogma**: Rev 3 to Rev 69, 489 boards on 9 tabs. The canvas opens on the tab `fleet-codex`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -658,12 +658,17 @@ Copied on 2026-11-08 from canvas version `1794137568-246d` of **Frogma**: Rev 3 
 
 ### Tab: Fleet Codex  (`fleet-codex`)
 
+#### Rev 69 - Fleet Codex vessel page, C in full: one vessel with every detail, calm - the desktop page and the phone
+
+- [`R69Desktop.dc.html`](R69Desktop.dc.html) - Rev 69 Desktop - C's flight-deck window, then abilities with their numbers and level 5, missions with filters, flight and every control, docs and changes - interactive
+- [`R69Phone.dc.html`](R69Phone.dc.html) - Rev 69 Phone - the same page at 390, the move under the ability row - interactive
+
 #### Rev 68 - Fleet Codex for the website: four looks, each the whole fleet and one vessel window, the controls playing beside each ability
 
-- [`R68A.dc.html`](R68A.dc.html) - Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one's controls playing on all three devices in place (recommended) - interactive
-- [`R68B.dc.html`](R68B.dc.html) - Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own control - interactive
-- [`R68C.dc.html`](R68C.dc.html) - Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the controls ghosted over the pad - interactive
-- [`R68D.dc.html`](R68D.dc.html) - Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its control looping beside it - interactive
+- [`R68A.dc.html`](R68A.dc.html) - Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one - interactive
+- [`R68B.dc.html`](R68B.dc.html) - Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own contro - interactive
+- [`R68C.dc.html`](R68C.dc.html) - Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the c - interactive
+- [`R68D.dc.html`](R68D.dc.html) - Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its contr - interactive
 - [`R68Notes.dc.html`](R68Notes.dc.html) - Rev 68 - notes: what Shombith asked, the four type pairings, what each look changes in the live codex
 
 ### Tab: Froglet Analytics  (`froglet-analytics`)
