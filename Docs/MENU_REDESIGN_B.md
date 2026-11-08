@@ -6138,3 +6138,13 @@ sketches from the arena family and the repo's intensity facts (`Tools/Build/bone
 
 **Differs from the build:** nothing in Unity. The working version of both screens is the Charge Games Plan artifact's
 Builder page (https://claude.ai/artifact/G48t1GZHuhHEAqochkKi31); the Codex artifact is built from the approved boards.
+
+**Built (2026-11-08):** Shombith: "I dont like the 3D view yet but I am hoping itd be better when I see it live so go
+ahead build". The Game Mode Codex is live at https://claude.ai/artifact/3fwMCmPpkFBcTBggYnqMEH, R75Codex and R75Builder
+as one page: element doors (Time 22, Charge 7, Mass 5, Space 7, Arena 4, Other 1) with the game cards' real art, each
+level as a live 3D sketch (lit prisms with edges, glowing crystals, pulsing danger, a rim-lit membrane, bloom), the
+level's cell config, description and facts, and Copy level prompt / Copy all intensities; the builder with the ladder,
+Show the original, the dials, team-shared saved layouts and Copy layout prompt. Arena cards show I2 only. The data comes
+from `Tools/Build/game_mode_codex_data.py` (a reader: every card, its scene's cell configs per intensity, its facts with
+their source lines); rerun it and republish when cards or cells change. The 3D look has not been approved: it is the
+thing to judge live.
