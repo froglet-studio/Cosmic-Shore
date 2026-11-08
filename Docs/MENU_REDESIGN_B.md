@@ -6082,7 +6082,7 @@ asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in tha
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
 a better number. No player id reaches Claude on any of these. Awaiting a pick.
 
-## 145. Rev 73 mockups: the Game Mode Codex - every elemental game and arena, each level in 3D, the level builder beside it (2026-11-08, awaiting a pick)
+## 145. Rev 73 mockups: the Game Mode Codex - every elemental game and arena, each level in 3D, the level builder beside it (2026-11-08; Shombith: mix A and C, section 146)
 
 **Asked** (Shombith, 2026-11-08): "create 3 on the board, name is game mode codex, it should have all the elemental
 games and arena. Not voyages for now ... we can enter each elemental types and see the games or select a game from the
@@ -6113,3 +6113,28 @@ sketches drawn from each arena family and the intensity facts the repo states (t
 shapes, the I1-I4 ladder side by side, shared saved layouts and a prompt per layout. The picked option is built on it.
 
 **Differs from the build:** nothing in Unity; the Codex is an artifact. The in-game Arcade screen is untouched.
+
+**Removed (Shombith, 2026-11-08):** "Mix A and C, delete old ones". Rev 73's four boards came off the canvas; the copies
+above stay in `Docs/MenuRedesignB/board/` as the record.
+
+## 146. Rev 75 mockups: the Game Mode Codex, A and C as one, and the same level inside the builder (2026-11-08, awaiting board approval)
+
+**Asked** (Shombith, 2026-11-08, on Rev 73): "Mix A and C, delete old ones also show me how it would look inside the
+builder. a builder mockup too."
+
+**On the canvas:** tab **Game Mode Codex**, section "Rev 75 - Game Mode Codex, A and C as one". Copies in
+`Docs/MenuRedesignB/board/R75*.dc.html`. (Rev 74 went to another session's round while this was drawn.)
+- **R75Codex:** A's element doors and the element's games as small card rows on a left rail; C's large 3D level in the
+  middle with the I1-I4 chips over it; on the right the level's line, its facts (24,807 prisms, 139 danger, 4 crystals,
+  first to 40 at Dog Fight I3) and the arena family; Open in builder is the one Lime, then Copy level prompt and Copy all
+  intensities.
+- **R75Builder:** the same game one press away. Back to codex and the trail (Codex > Charge > Dog Fight) at the top; the
+  I1-I4 ladder on the left with the edited intensity outlined; the edited level in the middle ("Edited: clusters, seed
+  48213", Show the original); the dials on the right; saved layouts along the bottom; Copy layout prompt is the one Lime.
+- **R75Notes.**
+
+**What is real:** the card art, hull icons and element petals are the board's existing uploads; the 3D levels are
+sketches from the arena family and the repo's intensity facts (`Tools/Build/boneyard_budget.py`).
+
+**Differs from the build:** nothing in Unity. The working version of both screens is the Charge Games Plan artifact's
+Builder page (https://claude.ai/artifact/G48t1GZHuhHEAqochkKi31); the Codex artifact is built from the approved boards.

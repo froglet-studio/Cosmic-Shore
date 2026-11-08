@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+.chip{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;height:36px;padding:0 14px;border:0;display:inline-flex;align-items:center;gap:8px;cursor:pointer;background:rgba(0,4,31,.78);color:#747BAD;box-shadow:inset 0 0 0 1px #434C89;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.chip.on{color:#E6E9FF;box-shadow:inset 0 -2px 0 #00D4FF,inset 0 0 0 1px #434C89}
+.chip:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<span class="abs" style="left:56px;top:44px;font-size:36px">Rev 75 - notes</span><div class="abs" style="left:56px;top:120px;width:1808px;display:grid;grid-template-columns:1fr 1fr;gap:34px 64px"><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Asked</span><span style="font-size:18px;line-height:1.5">Shombith, 2026-11-08, on Rev 73: mix A and C, delete the old ones, and show how it looks inside the builder, a builder mockup too.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Codex: A and C as one</span><span style="font-size:18px;line-height:1.5">A&#x27;s element doors and the element&#x27;s games (now a list of small card rows on the left), C&#x27;s large 3D level in the middle, and the level&#x27;s facts and three buttons on the right. Open in builder is the one Lime.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Builder</span><span style="font-size:18px;line-height:1.5">The same game, one press away: the I1-I4 ladder on the left (the edited intensity outlined), the level edited in the middle with Show the original beside it, the dials on the right, saved layouts along the bottom, Copy layout prompt the one Lime. Back to codex returns to the same game.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">What is real</span><span style="font-size:18px;line-height:1.5">Card art, hull icons and element petals are the game&#x27;s own uploads. Every 3D level is a sketch drawn from the arena family and the repo&#x27;s intensity facts (here the Boneyard ladder: 24,807 prisms and 139 danger at I3).</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">The engine</span><span style="font-size:18px;line-height:1.5">Both screens already run on the Charge Games Plan artifact&#x27;s Builder page; the Codex adds the element doors around it and data for every arcade and arena game.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Removed</span><span style="font-size:18px;line-height:1.5">Rev 73 (A, B, C and its notes) came off the canvas at Shombith&#x27;s request; their copies stay in the repo under Docs/MenuRedesignB/board.</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-08 from canvas version `1794139765-73ab` of **Frogma**: Rev 3 to Rev 73, 473 boards on 11 tabs. The canvas opens on the tab `game-mode-codex`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-08 from canvas version `1794140074-572e` of **Frogma**: Rev 3 to Rev 75, 471 boards on 11 tabs. The canvas opens on the tab `game-mode-codex`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -671,8 +671,8 @@ Copied on 2026-11-08 from canvas version `1794139765-73ab` of **Frogma**: Rev 3 
 
 #### Rev 72 - The turn, drawn: the menu fades through a turn, the Goby turns into the Pistol, every other vessel stays landscape (a storyboard, not the build)
 
-- `R72Menu.dc.html` (not copied yet) - Rev 72 Menu - The menu turn: the UI goes out on the switch, two frames held, fades back in (0.28 s); plays on a loop - interactive
-- `R72Goby.dc.html` (not copied yet) - Rev 72 Goby - The Goby turns into the Pistol: upright takes the Pistol's view, landscape the Goby; plays on a loop - interactive
+- `R72Menu.dc.html` (not copied yet) - Rev 72 Menu - The menu turn: the UI goes out on the switch, two frames held, fades back in (0.28 s); plays on a loop - i - interactive
+- `R72Goby.dc.html` (not copied yet) - Rev 72 Goby - The Goby turns into the Pistol: upright takes the Pistol's view, landscape the Goby; plays on a loop - int - interactive
 - `R72Other.dc.html` (not copied yet) - Rev 72 Other - Every other vessel: the phone turns, the game does not - interactive
 - `R72Notes.dc.html` (not copied yet) - Rev 72 - notes: the timings, the rules, what only the editor can show
 
@@ -717,24 +717,25 @@ Copied on 2026-11-08 from canvas version `1794139765-73ab` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
+#### Rev 74 - Voyages: C taken forward - the whole-galaxy map and the edge view on the left, the coverflow on the right, four card faces that are not blue
+
+- `R74Compare.dc.html` (not copied yet) - Rev 74 - the four card faces side by side on the same voyage: Graphite, Line, Place, Glass
+- `R74C1.dc.html` (not copied yet) - Rev 74 C1 - Graphite: C with the whole-galaxy map and the edge view on the left; the cards the course in greys on a near - interactive
+- `R74C2.dc.html` (not copied yet) - Rev 74 C2 - Line: C with the whole-galaxy map and the edge view on the left; the cards no picture: the route drawn as a - interactive
+- `R74C3.dc.html` (not copied yet) - Rev 74 C3 - Place: C with the whole-galaxy map and the edge view on the left; the cards a muted close-up of the destinat - interactive
+- `R74C4.dc.html` (not copied yet) - Rev 74 C4 - Glass: C with the whole-galaxy map and the edge view on the left; the cards clear glass over the ground, a s - interactive
+- `R74Notes.dc.html` (not copied yet) - Rev 74 - notes: C taken forward, what every option keeps, the four card faces, the recommendation
+
 #### Rev 71 - Voyages, six new ideas on the menu's own ground: a dial, a departures board, a coverflow, a hex board, a journey, a crew's hand; and the Quests window
 
-- `R71A.dc.html` (not copied yet) - Rev 71 A - Dial: the course through a round lens, the voyages as bearings on its ring - interactive
-- `R71B.dc.html` (not copied yet) - Rev 71 B - Departures: the voyages on a departures board, the open voyage a boarding pass with your squad on its stub - interactive
-- `R71C.dc.html` (not copied yet) - Rev 71 C - Coverflow: the voyages as tilted cards on a carousel, the picked one faced front, LB / RB turn it - interactive
-- `R71D.dc.html` (not copied yet) - Rev 71 D - Hex board: the HyperSea's own cells, the Ark in the middle hex, each voyage a hex holding its course (recommended) - interactive
-- `R71E.dc.html` (not copied yet) - Rev 71 E - Journey: the route as a band of map across the window, its edge-on profile under it - interactive
-- `R71F.dc.html` (not copied yet) - Rev 71 F - Crew's hand: your crew deals the voyages as a hand of cards; the picked card rises - interactive
-- `R71Quests.dc.html` (not copied yet) - Rev 71 Quests - Quests, its own window on the menu's ground: Episode 1's five quests on one trail, the next one lit - interactive
-- `R71Notes.dc.html` (not copied yet) - Rev 71 - notes: six new Voyage windows on the menu's ground, what each is, the recommendation, the two fixes they all carry, and the Quests window
+- `R71C.dc.html` (not copied yet) - Rev 71 C - Coverflow: the voyages as tilted cards on a carousel, the picked one faced front, LB / RB turn it - interacti - interactive
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 
-#### Rev 73 - Game Mode Codex: every elemental game and arena, each level in 3D, and the level builder beside it
+#### Rev 75 - Game Mode Codex, A and C as one: enter an element, open a game, its level in 3D; and the same level inside the builder
 
-- [`R73A.dc.html`](R73A.dc.html) - Rev 73 A - Element doors: enter Time, Charge, Mass, Space or Arena; small cards slide open on the level in 3D (recommended)
-- [`R73B.dc.html`](R73B.dc.html) - Rev 73 B - Arcade menu: the game's own card grid with element chips; a card opens its level and builder in a side panel
-- [`R73C.dc.html`](R73C.dc.html) - Rev 73 C - Builder first: the 3D level fills the screen; games and intensities on rails, the builder's dials on the right
-- [`R73Notes.dc.html`](R73Notes.dc.html) - Rev 73 - notes: what each option is, the recommendation, what is real and what is a sketch, voyages left out
+- [`R75Codex.dc.html`](R75Codex.dc.html) - Rev 75 Codex - Codex: element doors and game cards (A) around a large 3D level (C), the intensities and the prompt beside it
+- [`R75Builder.dc.html`](R75Builder.dc.html) - Rev 75 Builder - Builder: the same game opened in the builder, its I1-I4 ladder, the dials, saved layouts and the layout prompt
+- [`R75Notes.dc.html`](R75Notes.dc.html) - Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed
 
 <!-- frogma.py readme: end -->
