@@ -6,7 +6,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;

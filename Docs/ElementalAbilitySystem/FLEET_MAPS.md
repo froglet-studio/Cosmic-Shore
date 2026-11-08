@@ -331,6 +331,26 @@ Superseded proposal (kept for the record): Charge→charge-boost peak / "Shockwa
 Mass→trail scale while discharging / "Solid Wake", Space→skimmer scale / "Slipstream",
 Time→charge fill rate / "Instant Draw".
 
+### Rhino and Swordfish — the split — APPROVED + SHIPPED 2026-11-07 (unplayed)
+
+Garrett, 2026-11-07: "split the rhino into two vessels: the rhino and a swordfish. the sword fish will be all about
+the sword. the rhino will be all about the plow." The **Swordfish** (class 30) carries the whole sword kit of the
+section below, unchanged (Energize / Sword Steal, Afterimage / Danger Afterimages, Blade Reach / Shield Breaker, Ramp
+Spool / Momentum, the Surge); its hull rams instead of ploughing. The **Rhino** (class 3) is the plough, approved the
+same day from the proposal Garrett picked:
+
+| Element | Ability | Parameter | L5 |
+|---|---|---|---|
+| Charge | **Carry** | how far past its landing point a thrown prism still strikes (0 → 40 u) | **Avalanche** — a strike throws the next prism down the line on, up to 3 more |
+| Mass | **Blade** | the plough blade's width across the nose (14 → 40 u) | **Berm** — ploughed prisms land shielded |
+| Space | **Furrow** | added to every throw (0 → 20 u); LT / RT steer it (a pull shoves, a hold steers) | **Unstoppable** — the plough moves super-shielded mass |
+| Time | **Ramp Spool** | unchanged | **Momentum**, unchanged |
+
+Design + files: `R_VesselActions/RHINO_PLOUGH.md` § "The plough kit", `R_VesselActions/SWORDFISH.md`. Gates
+(`element_ability_table.py Rhino` / `Swordfish`): 4/4 scaling and 4/4 L5 gates on both.
+
+**The section below describes the SWORDFISH since 2026-11-07** (it was written for the Rhino).
+
 ### Rhino — "Bulldozer" (sword + afterimages + plough + ramp) — APPROVED + SHIPPED 2026-10-16
 
 Garrett's design calls, 2026-10-16 (Breaker on Space 5 was approved and shipped first, 2026-10-13).

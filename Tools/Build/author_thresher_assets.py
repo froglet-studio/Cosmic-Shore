@@ -76,7 +76,10 @@ MODEL_META = os.path.join(ROOT, "Assets", "_Models", "Vessel Models", "Thresher.
 MODEL_ROOT_GO = "919132149155446097"
 MODEL_ROOT_TRANSFORM = "-8679921383154817045"
 MODEL_INSTANCE_ID = "8333434907443222190"
-MODEL_TRANSFORM_ID = "1945698819565915686"
+# The stripped Transform's fileID is not ours to choose: Unity derives it as (instance ^ source) & INT64_MAX and
+# rewrites any other value on its next save of the prefab (it did, 2026-11-06, PR #1766).
+MODEL_TRANSFORM_ID = str((int(MODEL_INSTANCE_ID) ^ int(MODEL_ROOT_TRANSFORM)) & 0x7FFFFFFFFFFFFFFF)
+LEGACY_MODEL_TRANSFORM_IDS = ("1945698819565915686",)   # the hand-picked id this pass used before Unity's save
 # The four bakes the 2026-10-13 pass removed: keyed to the Squirrel FBX the clone carried (never the shark).
 SQUIRREL_KEYED_BAKES = ("eb63e1fdbcaca2a4da87e864d4939cb2", "0628d54ba9c99e844a3eae33cca5726d",
                         "724bc06c870361f468d8e75ecda38cc9", "320ec7cbdff541243be27d82e9468bcc")
@@ -135,13 +138,13 @@ def v3(x, y, z) -> str:
 def hull_blocks() -> str:
     """ThresherHull: a Transform that holds the model (nested) and the two kept jets. ThresherAnimation banks and
     sways THIS transform, so the model and the jets move together; the model's bones carry the swim."""
-    model_mods = [
-        (MODEL_ROOT_GO, "m_Name", "Thresher"),
+    model_mods = [   # in the order Unity saves them (by target fileID, so the root GameObject's row comes last)
         (MODEL_ROOT_TRANSFORM, "m_LocalPosition.x", 0), (MODEL_ROOT_TRANSFORM, "m_LocalPosition.y", 0),
         (MODEL_ROOT_TRANSFORM, "m_LocalPosition.z", 0), (MODEL_ROOT_TRANSFORM, "m_LocalRotation.w", 1),
         (MODEL_ROOT_TRANSFORM, "m_LocalRotation.x", 0), (MODEL_ROOT_TRANSFORM, "m_LocalRotation.y", 0),
         (MODEL_ROOT_TRANSFORM, "m_LocalRotation.z", 0), (MODEL_ROOT_TRANSFORM, "m_LocalEulerAnglesHint.x", 0),
         (MODEL_ROOT_TRANSFORM, "m_LocalEulerAnglesHint.y", 0), (MODEL_ROOT_TRANSFORM, "m_LocalEulerAnglesHint.z", 0),
+        (MODEL_ROOT_GO, "m_Name", "Thresher"),
     ]
     mods = "".join(
         f"    - target: {{fileID: {fid}, guid: {MODEL_GUID},\n        type: 3}}\n"
@@ -202,15 +205,32 @@ def hull_blocks() -> str:
     )
 
 
-def animation_block() -> str:
+RETIRED_ANIMATION_FIELDS = ("cruiseSpeed",)   # retired 2026-10-19; a re-run drops it
+
+
+def animation_tuning(existing) -> str:
+    """ThresherAnimation's own tuning rows (cordSampleDistance ... ballEaseRate) as the prefab carries them, minus
+    retired fields. Unity serialises them on its first save (2026-11-06, PR #1766); until then the C# initializers
+    (ThresherSwimMath.Default*) apply. Kept as found, so a re-run never undoes a value tuned in the inspector."""
+    if not existing or ANIMATION_SCRIPT not in existing:
+        return ""
+    m = re.search(r"  smallLerpAmount: .*\n((?:.*\n)*?)  hullRoot: ", existing)
+    if not m:
+        return ""
+    return "".join(line for line in m.group(1).splitlines(keepends=True)
+                   if line.split(":", 1)[0].strip() not in RETIRED_ANIMATION_FIELDS)
+
+
+def animation_block(existing=None) -> str:
     """The root's VesselAnimation, switched to ThresherAnimation on the SAME fileID. The base fields keep their
-    authored values; the tail is the C# initializers (ThresherSwimMath.Default*)."""
+    authored values; the Thresher's own tuning rows are kept as the prefab carries them (animation_tuning)."""
     return (S.mb_header(ANIMATION_ID, ROOT_GO, ANIMATION_SCRIPT) +
             "  SkinnedMeshRenderer: {fileID: 0}\n"
             "  SaveNewPositions: 1\n"
             "  brakeThreshold: 0.65\n"
             "  lerpAmount: 2\n"
-            "  smallLerpAmount: 0.7\n"
+            "  smallLerpAmount: 0.7\n" +
+            animation_tuning(existing) +
             f"  hullRoot: {{fileID: {HULL_TRANSFORM_ID}}}\n")
 
 
@@ -316,11 +336,19 @@ def apply_prefab(text: str) -> str:
         S.add_child(docs, ROOT_TRANSFORM_ID, HULL_TRANSFORM_ID)
     else:
         # the procedural era's MeshFilter / MeshRenderer / ThresherHullBuilder go; the GO, its Transform and the
-        # model instance are re-authored in place (idempotent)
-        S.remove_docs(docs, [HULL_FILTER_ID, HULL_RENDERER_ID, HULL_BUILDER_ID, MODEL_INSTANCE_ID, MODEL_TRANSFORM_ID])
-        start, end = S.doc_index(docs, HULL_GO_ID), S.doc_index(docs, HULL_TRANSFORM_ID)
+        # model instance are re-authored in place (idempotent). Each document stays where Unity last saved it,
+        # so a re-run of a prefab Unity has saved changes nothing.
+        S.remove_docs(docs, [HULL_FILTER_ID, HULL_RENDERER_ID, HULL_BUILDER_ID, *LEGACY_MODEL_TRANSFORM_IDS])
         _, hull = S.split_docs(hull_blocks())
-        docs[start:end + 1] = hull
+        fresh = dict((fid, chunk) for fid, chunk in hull)
+        for fid in (HULL_GO_ID, HULL_TRANSFORM_ID):
+            S.set_doc(docs, fid, fresh[fid])
+        for prev, fid in ((HULL_TRANSFORM_ID, MODEL_INSTANCE_ID), (MODEL_INSTANCE_ID, MODEL_TRANSFORM_ID)):
+            if S.get_doc(docs, fid) is not None:
+                S.set_doc(docs, fid, fresh[fid])
+            else:
+                at = S.doc_index(docs, prev) + 1
+                docs[at:at] = [[fid, fresh[fid]]]
 
     # 2. The Squirrel model and everything added to it.
     if S.get_doc(docs, SQUIRREL_FBX_INSTANCE) is not None:
@@ -353,7 +381,7 @@ def apply_prefab(text: str) -> str:
     anim = S.get_doc(docs, ANIMATION_ID)
     if anim is None or (MANTA_ANIMATION_SCRIPT not in anim and ANIMATION_SCRIPT not in anim):
         raise RuntimeError("Thresher.prefab drifted: the root's VesselAnimation is neither the clone's nor the Thresher's")
-    S.set_doc(docs, ANIMATION_ID, animation_block())
+    S.set_doc(docs, ANIMATION_ID, animation_block(anim))
     return S.join_docs(head, docs)
 
 

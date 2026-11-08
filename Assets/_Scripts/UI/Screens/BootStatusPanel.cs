@@ -1,6 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

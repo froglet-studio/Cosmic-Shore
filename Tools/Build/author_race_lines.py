@@ -30,7 +30,12 @@ FIELDS = ["LaneShare", "HullClearance", "Risk", "RiskSpread", "CarefulLookaheadS
           "MinLookahead", "MaxLookahead"]
 COMMON = {"RiskSpread": 0.15, "CarefulLookaheadSeconds": 0.35, "BoldLookaheadSeconds": 0.8, "MinLookahead": 60,
           "MaxLookahead": 520}
-RANGES = {"LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
+# Written only when a hull sets them (absent, the SO's defaults apply: the nose lead off), so turning one on rewrites one
+# asset. NoseLeadGain is AIPilot's nose lead (2026-11-06, scarab_nose_lead_sim.py): 0 = off. Switched on 2026-11-08
+# (Garrett, for testing): Rhino / Dolphin / Stoat / Scarab 2.5, Sparrow 2.0, Serpent 1.0 (single stick, #1832); the Manta
+# stays off (its fix is a faster nose, #1780/#1829). Lead-on round: Docs/Reports/NOSE_LEAD_ROLL.md.
+OPTIONAL = ["NoseLeadGain", "NoseLeadMaxExtraDegrees"]
+RANGES = {"NoseLeadGain": (0, 6), "NoseLeadMaxExtraDegrees": (0, 120), "LaneShare": (0, 1), "HullClearance": (0, 60), "Risk": (0, 1), "RiskSpread": (0, 0.5),
           "CarefulLookaheadSeconds": (0, 3), "BoldLookaheadSeconds": (0, 3), "MinLookahead": (1, 400),
           "MaxLookahead": (1, 2000)}
 # The starting values, per hull (why, in a word): big and fast flies far out and plays safer; agile flies closer and bolder.
@@ -39,18 +44,18 @@ HULLS = {
     # once the ramp fires on the line it reaches 450-585 u/s and missed I3/I4 mouths chasing a 0.35-0.8 s point
     # (rhino_line_sim.py, lag on: 447.7 s I1-I4, 12 misses; 0.8 / 1.4 s: 405.4 s, none). REGATTA.md section 6.4.1.
     "Rhino":   {"LaneShare": 0.80, "HullClearance": 18, "Risk": 0.40,
-                "CarefulLookaheadSeconds": 0.8, "BoldLookaheadSeconds": 1.4},
+                "CarefulLookaheadSeconds": 0.8, "BoldLookaheadSeconds": 1.4, "NoseLeadGain": 2.5},
     # wide wings, 720 u/s Soar. A longer look-ahead (2026-10-25): an AI hull's nose follows its command at 1.5/s
     # (VesselTransformer.LERP_AMOUNT), and chasing a point 0.35-0.8 s ahead through that lag pinned the Manta's stick,
     # which drops its Soar (Tools/Build/manta_line_sim.py, nose="nose": I1-I4 697 s, I4 unfinished; 0.6 / 1.0 s: 280 s,
     # no miss, fewer rail rams). REGATTA.md section 6.4.1.
     "Manta":   {"LaneShare": 0.70, "HullClearance": 16, "Risk": 0.50,
                 "CarefulLookaheadSeconds": 0.6, "BoldLookaheadSeconds": 1.0},
-    "Dolphin": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50},   # a drift locks its course: room to slide
-    "Stoat":   {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.60},   # a 72 u turning circle at any warp
-    "Serpent": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50},
-    "Sparrow": {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50},
-    "Scarab":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.45},   # cannot slow quickly: a little more care
+    "Dolphin": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 2.5},   # a drift locks its course: room to slide
+    "Stoat":   {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.60, "NoseLeadGain": 2.5},   # a 72 u turning circle at any warp
+    "Serpent": {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.50, "NoseLeadGain": 1.0},   # single stick: 2.5 corkscrews it (#1832)
+    "Sparrow": {"LaneShare": 0.55, "HullClearance": 10, "Risk": 0.50, "NoseLeadGain": 2.0},
+    "Scarab":  {"LaneShare": 0.60, "HullClearance": 12, "Risk": 0.45, "NoseLeadGain": 2.5},   # cannot slow quickly: a little more care
 }
 
 
@@ -75,6 +80,12 @@ def values(hull):
     return v
 
 
+def written(hull):
+    """The fields the hull's asset carries, in the SO's order: every FIELD, then each OPTIONAL one the hull sets."""
+    v = values(hull)
+    return FIELDS + [k for k in OPTIONAL if k in v]
+
+
 def fmt(x):
     return str(int(x)) if float(x).is_integer() else repr(round(float(x), 4))
 
@@ -86,7 +97,7 @@ def asset_text(hull):
             "  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n"
             "  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
             f"  m_Script: {{fileID: 11500000, guid: {script_guid()}, type: 3}}\n  m_Name: {name}\n  m_EditorClassIdentifier: \n"
-            + "".join(f"  {k}: {fmt(v[k])}\n" for k in FIELDS))
+            + "".join(f"  {k}: {fmt(v[k])}\n" for k in written(hull)))
 
 
 def native_meta(g):
@@ -111,7 +122,7 @@ def validate():
     problems = []
     for hull in HULLS:
         v = values(hull)
-        for k in FIELDS:
+        for k in written(hull):
             lo, hi = RANGES[k]
             if not lo <= float(v[k]) <= hi:
                 problems.append(f"{hull}: {k} {v[k]} outside {RANGES[k]}")

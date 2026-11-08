@@ -7,15 +7,15 @@ namespace CosmicShore.Gameplay
     /// switch rings flown in LAPS; the first domain whose lead runner threads the last gate of the
     /// last lap wins, scored on finish TIME.
     ///
-    /// <para><b>The mode is a question about Speed Mode.</b> The Brittle Star cruises at 45 u/s; Speed
-    /// Mode (A) runs it at six times that, 270 u/s (x8 at Time 10), and lights all five arms. Its turn
-    /// barely grows with speed, so Speed Mode flies a ~145 u circle against cruise's ~30 u: a corner
-    /// tighter than that is a choice between swinging wide in Speed Mode and dropping to Cruise to
-    /// turn in. See <see cref="BrittleStarTimeCourse"/> and BRITTLESTARTIME.md.</para>
+    /// <para><b>The mode is four questions about Speed Mode and the turn, one per intensity.</b> The Brittle Star
+    /// cruises at 45 u/s; Speed Mode (A) runs it at six times that, 270 u/s, on a ~145 u circle against cruise's ~30 u.
+    /// I1 Gearbox: hold Speed or shift down. I2 Feather slalom: tap A for a speed between. I3 Coast-in hairpins: let go
+    /// early and coast in. I4 Corkscrew: start at Time 5 and roll (Speed Roll) to hold Speed through a coil. See
+    /// <see cref="BrittleStarTimeCourse"/> and BRITTLESTARTIME.md.</para>
     ///
-    /// <para><b>What the mode does NOT add:</b> no ability, no cell, no metric and no circuit
-    /// generator - Thresher Time's shape (Headlong's solver), with <see cref="BrittleStarTimeCourse"/> supplying
-    /// the cut.</para>
+    /// <para><b>What the mode does NOT add:</b> no ability, no cell, no metric and no vessel change - the course
+    /// source (<see cref="BrittleStarTimeCourseSource"/>) supplies the shapes, Headlong's solver the Gearbox, and the
+    /// card's starting elements the Time 5 start.</para>
     /// </summary>
     public class BrittleStarTimeController : GateRaceController
     {

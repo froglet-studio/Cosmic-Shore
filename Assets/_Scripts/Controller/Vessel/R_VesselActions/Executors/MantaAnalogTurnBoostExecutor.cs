@@ -45,6 +45,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("If > 0, overrides VesselStatus.BoostMultiplier as the base value.")]
         [SerializeField] private float boostMultiplierOverride;
 
+        [Header("Unlock")]
+        [Tooltip("Soar (the trigger-overlap boost) is the Manta's TIME level-5 upgrade (2026-11 overhaul): below it the " +
+                 "triggers still turn the Manta (Yastri) but never boost. None = always boosts.")]
+        [SerializeField] private CosmicShore.Data.Element soarUnlockedBy = CosmicShore.Data.Element.Time;
+
         [Header("AI")]
         [Tooltip("An autopilot has no triggers: it holds both flat (full Soar) while its stick " +
                  "deflection is under this band, and eases the boost off linearly as the stick " +
@@ -123,8 +128,8 @@ namespace CosmicShore.Gameplay
             // Net turn: positive = right, negative = left
             float rawTurn = rt - lt;
 
-            // Boost intensity: overlap of both triggers
-            float boostIntensity = Mathf.Min(lt, rt);
+            // Boost intensity: overlap of both triggers - once Soar is unlocked (Time 5).
+            float boostIntensity = SoarUnlocked ? Mathf.Min(lt, rt) : 0f;
 
             // Apply yaw
             if (Mathf.Abs(rawTurn) > 0.001f && !_status.IsTranslationRestricted)
@@ -133,8 +138,7 @@ namespace CosmicShore.Gameplay
                 vesselTransformer.ApplyRotation(yawDeg, _status.Transform.up);
             }
 
-            // Yastri: the held single-trigger turn shapes the trail — outer-lane flare plus
-            // the Mass-5 Shielded Turn Trails window. Driven every frame (0 clears it), so a
+            // Yastri: the held single-trigger turn shapes the trail — the outer-lane flare. Driven every frame (0 clears it), so a
             // released trigger immediately hands the trail back its straight-line shape.
             var prismController = _status.VesselPrismController;
             if (prismController)
@@ -160,6 +164,11 @@ namespace CosmicShore.Gameplay
                 _wasBoosting = false;
             }
         }
+
+        /// <summary>Soar's upgrade is live (or this executor gates on nothing).</summary>
+        private bool SoarUnlocked =>
+            soarUnlockedBy == CosmicShore.Data.Element.None
+            || _status.ElementalAbilityHandler?.IsUpgradeActive(soarUnlockedBy) == true;
 
         /// <summary>The vessel is flown by its AIPilot right now - a backfill bot, a released
         /// companion, or the menu's lava-lamp autopilot.</summary>

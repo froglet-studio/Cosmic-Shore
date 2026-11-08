@@ -65,6 +65,212 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Voyage window's galaxy map draws the cells in 3D (`claude/project-thread-y85rw0`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/Voyages/VOYAGE_BOARD.md` §4c "In the game".
+- `HyperSeaCells`: the board's truncated-octahedron cells on a BCC lattice (the Heart is a nucleus), their sections, the slice's snap, the fades. `HyperSeaSky.ViewOf` slices the deep tiers at the snapped layer plus the reader's offset.
+- `VoyageMapSky` draws the slice's cells (walls, own-sea fill, cytoplasm, nucleus sprite), level tags in the centre cell, a 3D cell's card on a tap, a Lime line on the map's bottom edge. `VoyageCellDraw` paints the nucleus sprite into the map's atlas.
+- `VoyageEdgeGraphic` cuts along the map's bottom edge, draws the cells upright and a draggable Lime slice bar (drag, scroll, tap the handle to reset).
+- New authored lines `MapCellNucleus` ... `EdgeSlice` in `VoyageContent.asset`.
+
+**Verified without the editor:**
+- The reference compile, player and editor configs: 0 errors in changed files (the 21 left are the Moderation package gaps on bleeding-edge). Negative control: an error planted in `HyperSeaCellsTests` failed the editor config.
+- `HyperSeaCellsTests` and `HyperSeaSkyTests` run under .NET 8 with NUnit outside Unity: 12 of 12 pass (the page's goldens).
+- `author_voyage_assets.py --check`, `export_sky.js --check`, `cells_golden.js`, `sky_golden.js`, `ship/gates.sh`.
+
+**Verify in the editor:**
+1. Open the Voyage window and zoom the galaxy map to the Cell tier near Tumult. The cells show as octagons and squares with pale walls, each filled with its own sea; nuclei are lit caged spheres. Nothing shows under about 36 px a cell; walls and nuclei fade in, with no moire.
+2. Zoom to about 200 px a cell: the centre cell tags Nucleus, Cytoplasm and Membrane. At the Heart (dive to the galactic centre) they read Sgr A* and the circumnuclear disk.
+3. The strip under the map: at cell zoom it shows the same cells upright, and the map's bottom row of cells continues into it. Drag the Lime bar: the map's cells change smoothly. Scroll over the strip: 2 ly a notch. Tap the handle: back to the focus layer. A drag elsewhere on the strip still scrolls the page if the strip sits in one.
+4. Tap open water at cell zoom: the 3D cell under the tap is outlined and its card opens; a second tap closes it.
+5. Profiler: the map's mesh stays under 65k vertices at every zoom (cells have a 34k budget); no frame spike while dragging the bar.
+6. Check the nucleus sprite's look against the in-game Nucleus prefab.
+
+**First-pass tuning** (all guesses): walls from 36 px (board 22), fill from 60 px, inner walls from 90 px, tags from 200 px, cell vertex budget 34,000 on the map and 30,000 on the strip.
+
+### 🔴 The Rhino splits into the Rhino (the plough) and the Swordfish (the sword) (`cece/practical-mendel-cdfsc3`, 2026-11-07, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SWORDFISH.md`, `R_VesselActions/RHINO_PLOUGH.md` § "The plough kit".
+- A new vessel, the **Swordfish** (`VesselClassType.Swordfish = 30`): the Rhino's prefab with the whole sword kit, its hull a ram, registered everywhere a hull is (prefab container, network prefabs, class lists, toybox roster, hull fusion, touch profiles, ProtocolVersion 26).
+- The **Rhino** loses the sword (document-level strip, `author_swordfish_assets.py`) and gains the plough kit: Carry / Avalanche, Blade / Berm, Furrow / Unstoppable, LT / RT steer (a pull shoves, a hold steers). The blade's skimmer stays as a static crystal catcher.
+- Cleave and Astro League seat the Swordfish; Broadside seats it in the Rhino's place; Brood Rush offers both; Regatta and Headlong keep the Rhino.
+
+**Verified without the editor:**
+- The reference compile (editor config): 0 errors in changed files; the 21 left are the Vivox / Moderation package gaps.
+- `author_swordfish_assets.py --check` and `--self-test` (8 planted defects caught); `dangling_refs` clean on both prefabs; `check_network_prefab_hashes.py`, `check_vessel_prefab_container.py`, `author_touch_profiles.py --check`, `author_cleave/broadside/regatta/headlong/pilot_assets --check`, `element_ability_table.py Rhino` / `Swordfish` (4/4 scaling, 4/4 L5 gates each).
+
+**Verify in the editor:**
+1. Reimport. No missing-script or missing-reference warnings on `Rhino.prefab` or `Swordfish.prefab`.
+2. Toybox → Vessel Changer offers both. The Swordfish flies as the Rhino did before (swing, energize, afterimages, Surge); its hull destroys what it rams.
+3. The Rhino: hold RT through a trail and every ploughed prism lands right; a pull alone sidesteps a little. Raise Space / Mass / Charge in the element panel: wider furrow, wider blade, longer strikes. Crystals still collect.
+4. The three Rhino L5s (Unstoppable, Berm, Avalanche) as in `RHINO_PLOUGH.md` steps 9-14.
+5. Cleave and Astro League spawn Swordfish for the player and the AI; Broadside lists the Swordfish, not the Rhino.
+6. MPPM two clients: both hulls spawn on both; a steered plough lands prisms on the same side on both.
+7. Audits: Ability Rows, Skimmers, Elemental Morphs, Construction over both hulls.
+
+**First-pass tuning** (all guesses): furrow 0 → 20 u, carry 0 → 40 u, blade 14 → 40 u, shove 30 u/s for 0.25 s, Avalanche 3 links.
+
+### 🔴 Urchin ability icons, round 6: parts the HUD drives (`claude/urchin-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Urchin's four cards are drawn in parts (`Tools/Build/icon_kit/specs/urchin.py`) seated under each
+slot icon of `UrchinHUDVariant.prefab` and bound to `UrchinVesselHUDView`, which paints them in the pilot's domain colour,
+rival danger and white. `UrchinHUDController` now also reads the vessel's own `UrchinSlipActionExecutor` (wired on
+`Urchin.prefab`) and the Track Projector's ready flag. The omni card sprite is `Core/Urchin_OmniCrystal.png`.
+
+**Verified without the editor:** `author.py urchin --check` no drift; every sprite passes the legibility gates;
+`author_urchin_hud.py --check` and `author_hull_ability_rows.py --check` clean; `check_console_logging.py` 0 problems.
+NOT run: the reference compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `UrchinVesselHUDView.cs` or `UrchinHUDController.cs`.
+2. Fly the Urchin in the Toybox as Jade, then Gold. **Pass:** every Urchin on the four cards wears the domain colour;
+   the rival prism and trail are orange.
+3. Latch onto a trail, then leave it. **Pass:** the Mass card's Urchin sits on the trail while riding, and lifts with
+   the trail fading off it.
+4. Press Slip while riding. **Pass:** the Time card's Urchin lifts clear and leaves a faint ghost until the slip ends.
+5. Press Track Projector. **Pass:** the rail goes faint while it recharges, solid again when ready.
+6. Upgrade each element to 5. **Pass:** Charge shows the long spray and a generation deeper; Mass rims the trail;
+   Space runs the rail further; Time turns the trail orange with speed lines while slipping.
+
+### 🔴 Thresher ability icons in parts, energy gauge in the domain (`claude/thresher-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Thresher's four cards drawn from the real shark in parts under each slot icon of
+`ThresherHUDVariant.prefab`, painted by `ThresherHUDView.RefreshParts` from `ThresherExecutor.IsHot`, the new
+`InMassMode`, `RightTriggerDepth` and `IsPivoting`; the omni card `Core/Thresher_Windmill.png`; the Space plate fills
+toward the domain instead of the CTA lime.
+
+**Verified without the editor:** `author.py thresher --check` no drift; `author_thresher_icons.py --check`,
+`author_hull_ability_rows.py --check`, `check_ui_colors.py` and `check_console_logging.py` clean. NOT run: the reference
+compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `ThresherHUDView.cs`, `ThresherHUDController.cs` or `ThresherExecutor.cs`.
+2. Fly the Thresher in the Toybox (it spawns in Mass Mode). **Pass:** every shark on the cards wears the domain; the
+   Mass card's ball is in the domain over a solid row.
+3. Press A to leave Mass Mode, whip the ball to smash speed. **Pass:** the Mass card's ball turns white and its row
+   faint; the Charge card's ball goes orange and the prism splits round a white blast.
+4. Pull RT, then release. **Pass:** the Space card's chain runs straight with a swing arc, and sags when released; the
+   plate fills toward the domain (no lime).
+5. Hold LT to plant. **Pass:** the Time card's orbit goes solid with the chain to the pivot.
+6. Upgrade Charge, Mass and Space to 5. **Pass:** Magnet's arcs, Armoured Trail's rims and Breaker's square prism show.
+
+### 🔴 Shrike ability icons in parts, the selected mode in the domain (`claude/shrike-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Shrike's four cards drawn from the real hull in parts under each slot icon of
+`ShrikeHUDVariant.prefab`, painted by `ShrikeHUDView.RefreshParts` from `ShrikeExecutor.Painting`/`Locked`, `Docked`,
+`FloraCount`, the new `Lancing`, `Tethering` and `Slinging`; the omni card `Core/Shrike_OmniCrystal.png`; the selected
+mode's gauge and the missile count turn the pilot's domain instead of the CTA lime (`readyColor` white on the prefab).
+
+**Verified without the editor:** `author.py shrike --check` no drift; `author_shrike_icons.py --check`,
+`author_hull_ability_rows.py --check`, `check_ui_colors.py`, `check_console_logging.py` clean; `author_shrike_assets.py
+--check` shows only its three sparse-checkout findings (network prefabs, card metas), as before. NOT run: the reference
+compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `ShrikeHUDView.cs`, `ShrikeHUDController.cs` or `ShrikeExecutor.cs`.
+2. Fly the Shrike as Jade, then Gold. **Pass:** every Shrike on the cards wears the domain; the selected mode's gauge is
+   the domain, never lime.
+3. Charge mode, hold RT on a target with a missile ready. **Pass:** the reticle goes solid and two missiles show.
+4. Touch a block to dock, then press A. **Pass:** the Mass cup goes solid while docked; after the nest is built a flora
+   with a missile stands on it.
+5. Space mode, hold RT. **Pass:** the beam shows and the prism splits; at Space 5 the square block is cut by the beam.
+6. Time mode, RT at an anchor. **Pass:** the tether goes solid and the blocks behind the Shrike show while slinging.
+
+### 🔴 Stoat ability icons for the orbit-only kit (`claude/stoat-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the Stoat's four cards redrawn for Yash's orbit-only kit in parts under each slot icon of
+`StoatHUDVariant.prefab`, painted by `StoatHUDView.RefreshParts` from `StoatSlingExecutor.HasPair`/`IsHoldingAny`,
+`IsOrbiting`, `Timing01` and the new `SinceLaunch`; the omni card `Core/Stoat_Fulmen.png`; the Time card's window colour
+is the pilot's domain, not the CTA lime (`readyColor` white on the prefab). Affects: Yash's Stoat HUD.
+
+**Verified without the editor:** `author.py stoat --check` no drift; `author_hull_ability_rows.py --check`,
+`check_ui_colors.py`, `check_console_logging.py` clean; `author_stoat_assets.py --check` shows only its sparse-checkout
+findings. NOT run: the reference compile (no .NET in the cloud container), Unity, a play.
+
+**Verify in editor:**
+1. Compile. **Pass:** no errors in `StoatHUDView.cs`, `StoatHUDController.cs` or `StoatSlingExecutor.cs`.
+2. Fly the Stoat as Jade, then Gold. **Pass:** every Stoat on the cards wears the domain; the old mode icon does not
+   show on the Mass card.
+3. Hold LT to lay a pair and get caught. **Pass:** the Charge card's ripple and the Space card's pair go solid, the
+   orbit ring shows; the Time card's Stoat rides the orbit and its window lights in the sweet spot.
+4. Let go. **Pass:** the Time card's Stoat flies off the tangent with speed lines; the Mass card's kick and wake show
+   for about a second.
+5. Upgrade each element to 5. **Pass:** Siphon's dots, Armoured Wake's rims, Accretion's prism and Foresight's path show.
+
+### 🔴 Goby & Pistol ability icons, the roster pass (`claude/goby-icons`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** the eight seat icons under `Assets/_Graphics/Icons/AbilityIcons/Goby/` redrawn from the real hulls
+(guids kept), and `GobyHUDVariant.prefab`'s `omniAbilitySprite` set to `Core/Goby_OmniCrystal.png`. No C# changed.
+
+**Verified without the editor:** `author.py goby --check` no drift; `author_goby_hud.py --check` and `--self-test` ok.
+NOT run: Unity, a play. `author_goby_assets.py --check` could not run here (the sparse checkout has no
+`DefaultNetworkPrefabs.asset`).
+
+**Verify in editor:**
+1. Fly the Goby & Pistol in the Toybox. **Pass:** the four cards show the Goby drawings (its hull, not brackets and arrows).
+2. Swap to the Pistol. **Pass:** the four cards show the shrimp drawings; swap back and the Goby's return.
+3. Collect an omni crystal. **Pass:** the omni card shows the omni crystal.
+
+### 🔴 Unique pilots, unique artifacts and the account inventory (`claude/unique-pilots-artifacts-inventory`, 2026-11-07) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/Pilots/INVENTORY.md`.
+- Every artifact is unique: it accepts one element and feeds without limit with diminishing returns.
+- Every pilot is a unique person on a callsign.
+- One `ACCOUNT_INVENTORY` cloud record holds the crew, the hoard, the captain and the Hangar picks.
+- The Ark ARTIFACTS tab, the Hangar PILOTS and ARTIFACTS tabs, the Ark SQUADS tab and the voyage open card list people and artifacts, not callsigns and kinds.
+- `NetArtifacts` carries the artifact whole (`ArtifactWire`).
+- This replaces the 2026-10-27 steps below that read "Mass 0 Space 0 Time 0 Charge 0" or raise four tracks, and "Reset Every Artifact Track", which is now "Reset Every Artifact Feed (dev)".
+
+**Verified without the editor:**
+- The reference compile, player and editor configs: 0 errors in changed files. The 21 errors left are pre-existing package gaps.
+- The 20 `AccountInventoryTests` pass under `dotnet test` outside Unity.
+- `ship/gates.sh` passes.
+
+NOT run: Unity, any EditMode test inside Unity, a play.
+
+**Verify in editor:**
+1. Run the EditMode tests `AccountInventoryTests` and `PilotsAndArtifactsTests`. **Pass:** all green.
+2. Sign in, open the Ark's ARTIFACTS tab. **Pass:**
+   - A Javelin and an Aegis show, each with its own name, serial, one element and aspect.
+   - Row 0 is the attuned track; rows 1-3 are dimmed fixed tracks.
+   - FEED spends 5 of that element and the level rises a little less each time; OMNI pays in omni.
+3. Hangar > PILOTS on any hull. **Pass:**
+   - Eighteen people, each with a name (portraits are their callsign's).
+   - Seating one, relaunching the menu and reopening shows the same person.
+   - LB in the Toybox shows their callsign's sight.
+4. Hangar > ARTIFACTS: slot the Javelin on two hulls in turn. **Pass:** it leaves the first hull's slot.
+5. Ark > SQUADS. **Pass:**
+   - A squad saved before this branch shows people and artifacts, not blanks.
+   - Pilot chips read "Name - CALLSIGN"; shorten `pilotChipWord` to `{name}` if they overflow.
+   - Each vessel gets a different artifact.
+6. With the Javelin slotted, fly the Wander toy "With Ark", grab a payload (RB) and release it. **Pass:** it fires a Javelin. In a two-player session the peer sees the same shot.
+7. Voyages: open the job board. **Pass:** each job names a crew person, and their faction type decides the work.
+8. Quit and relaunch online. **Pass:** the inventory is the same. The cloud record `ACCOUNT_INVENTORY` exists in the UGS dashboard.
+
+### 🔴 Meerkat HUD gauges take the UI theme's tokens (`Ys-bleeding-edge`, 2026-11-06) — NOT EDITOR-VERIFIED
+
+**What landed:** `MeerkatHUDView` takes its gauge colours from `UIThemeSO` through `UITheme.Resolve`:
+- At rest: `gaugeToken` = `NeutralLightest` (#747BAD). It was a hand-picked #97A6C2, so the rest is a little darker and bluer.
+- Ready: `readyToken` = `Cta` (#99FF80). It was #9DFF2E.
+
+`MeerkatHUDVariant.prefab` wires `theme` to `UITheme.asset`. `author_meerkat_assets.py` writes the same lines and checks them. This closes #1733's UI checklist "Theme tokens" line for the Meerkat. The other six vessel HUDs with their own colour pair (Angler, Brittle Star, Goby, Shrike, Starling, Stoat) are unchanged: whether they move too is Shombith's call.
+
+**Verified without the editor:**
+- `MeerkatHUDView.cs` compiled alone with Unity 6000.3.17f1's Roslyn against the editor's current `Assembly-CSharp.dll`: 0 errors. A negative control (a misspelt token) fails with CS0117.
+- The generator's `patch_hud_variant` turns the committed prefab into the new one exactly and is idempotent.
+- `check_hud_variant` passes on the new prefab and flags the old one.
+
+NOT run: the full project compile, any EditMode test, a play.
+
+**Verify in editor:**
+1. Open `MeerkatHUDVariant.prefab`: the view's `theme` is `UITheme`, `gaugeToken` is NeutralLightest, `readyToken` is Cta, and no missing-field warning shows.
+2. Fly the Meerkat from the Toybox Vessel Changer:
+   - The gauges rest in the theme's neutral.
+   - The Charge card turns lime with Sentinel Mode on.
+   - The Space card turns lime once RT would form a soliton.
+   - The Time card turns lime while riding.
+3. Judge the darker resting gauge against the other cards on the row. If it reads too dark, pick another token in the inspector; no code change is needed.
+
 ### 🔴 The Meerkat's own HUD row, icons, omni card and phone controls (`meerkat/ready`, 2026-11-03, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** `MeerkatHUDView` + `MeerkatHUDVariant` (a copy of `StoatHUDVariant` with the same internal fileIDs, built by
@@ -362,6 +568,7 @@ finishes all 24, I4 Legendary 0 of 24 -> median 205 s; `SWITCHBACK.md` "Step 1")
    slower than Easy, and course hits taken while dodging (`emerg=True` in the per-hit log) mostly disappear.
 3. Switchback I3 / I4 against AI Dolphins (AI Diagnose panel, "AI sense" overlay): they fly through plain blocks, swerve
    only for red Danger blocks, and never swerve in the last stretch before a ring.
+
 ### 🔴 Switchback: PilotControl calls guarded so a release build compiles (`claude/switchback-pilotcontrol-guard`, 2026-11-02) — NOT EDITOR-VERIFIED
 
 **What landed:** `PilotControl` is compiled only under `UNITY_EDITOR || DEVELOPMENT_BUILD`, and Switchback's hit counter
@@ -451,6 +658,7 @@ Headless harness and `unity_refcompile` (player and editor) ran; no editor.
 - [ ] Angler with a full school: no creature, the crystal fades quietly (no warning in the console).
 - [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
 - [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
+
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
@@ -677,6 +885,7 @@ player, editor and webgl: 0 errors in project code; planted errors in the overla
 9. Host observations (added 2026-10-26): with low T5 ceilings in a test `MovementPlausibilityConfig` asset, a guest that
    boosts past them raises a signal on the host; after the match its `FAIRPLAY_SIGNALS` shows one `host_observed`
    (sub `speed`, reporter = the host's id). The trust record counts it only after a second host does the same.
+
 ### 🔴 Brittle Star ability row recut (Charge, Mass, Space, Time) and no lime "on" plates (`claude/brittlestar-icons`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `chargeWhipsIcon`, `chargeSabersIcon`,
@@ -913,6 +1122,7 @@ If Play never reaches a match (sign-in, the menu), the run stops after 15 minute
   purple (in the game); a one-match run of each starts, plays and reports gates threaded (`status.json`
   `best_fitness` finite after the match). **These three scenarios were authored from the catalog
   (`author_training_scenarios.py`) and compiled against the Unity references, never played: the first run tells.**
+
 ### 🔴 Serpentine: each intensity a different place, a core that shrinks (`claude/dazzling-ride-dpyvkx`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Not compiled in this session. The Cell now lists Serpentine Cell Config 1-4 (IntensityWise).
@@ -1533,6 +1743,7 @@ Compiled against the Unity reference assemblies (player and editor configs, 0 pr
 - [ ] Console clean through all of the above (no NRE on swap, despawn or re-init mid-drop).
 
 First-pass numbers (`TigerMothDropAction.asset`): drop 900 u/s, 1800 u (×2 at Time 5), ease 0.12 s, landing 0.25 s, camera 0.35 s, recharge 30 s (the Fold's).
+
 ### 🔴 Honeyguide and Ratel: hive mode (`cece/jolly-lovelace-t8y3a1`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Garrett: "this is good lets push these ratel changes to unity including the way the timer subtract from both sides to the
@@ -1565,6 +1776,7 @@ the headless reference compile, player and editor (0 errors in project code); `T
 
 **First-pass numbers to tune:** `raidSeconds` 15, `hiveOffset` 40 u, `hiveCellSpacing` 2.5, `stingSeconds` 1, the
 Medium hive skill (a proposal between the lab's rookie and skilled).
+
 ### 🔴 Bees: a celestial body built from its spec, no up, vanes and a stinger (`cece/jolly-lovelace-t8y3a1`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 Garrett: "it isn't actually a bee. it is a celestial etherion based life form. it doesn't really have a sense of up ...
@@ -1800,6 +2012,7 @@ no reference compile, no dotnet in the session. `/verify-unity` was not availabl
 **First-pass tuning:** `PrismRecycler.MaxPerFrame` 64, `DeathEffectSeconds` 7.5 s.
 
 ---
+
 ### 🔴 Holes on mobile: no warped space, the Meerkat recipe, the Charge ripple shows (`stoat/annihilation-waves`, 2026-10-29) — NOT EDITOR-VERIFIED
 
 `Docs/BLACK_HOLE.md` §5.4, `R_VesselActions/STOAT_DIPOLE.md` §1c. Yash: "make sure we are not warping space … mobile
@@ -3684,6 +3897,7 @@ Toy Box > Vessel Changer → **Honeyguide and Ratel**:
    prism shows on the cursor in its domain.
 8. Things to watch for: the board overlay's sorting (19000) above the HUD; the TMP labels' size on a phone; the frame time
    with the AI Ratel on several AI hulls (`aiCrewEngineers`).
+
 ### 🔴 Orca gunner buttons: Fire and Missile under the right thumb, the seat line retired (`cece/fervent-goodall-8cihle`, 2026-10-21) — NOT EDITOR-VERIFIED
 
 Garrett, 2026-10-21: "each of the orca turrets needs two buttons: fire gun, fire missiles. it does these with the right
@@ -6132,6 +6346,7 @@ prisms, a 50% longer lasso, a small pilot view. Player and editor reference comp
 10. Gather petals of one element on the hull: the motes of that shape come more often.
 11. In the Vessel Changer, swap away from the Wrasse and back, once flying and once while on the kite. Every view comes
     back to normal and the input is live.
+
 ### 🔴 Shrike sight: the Serpent's eyepiece in the mode's petal, lit targets, one axis, sling needs an anchor (`cece/affectionate-clarke-s738vh`, 2026-10-16) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` §3.4 and the Void Sling bullet. **Supersedes step 2 of the entry below.**
@@ -6334,6 +6549,7 @@ League on Easy with the Third Eye open (the AI Diagnose panel (F2)). The AI's st
 reaches the ball later than on Hard. On Hard the strip shows no reaction/mistake line. (4) Repeat in Broadside and
 Brood Rush. (5) Regatta on Easy: the AI threads rings visibly worse than on Hard. (6) Arcade window: the row
 still sits under the intensity row on Skim Race and is still hidden on a card without it.
+
 ### 🔴 The AI Butterfly's fold lands in the ring in Waystation; full throttle; no autopilot on human hulls (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
 **What landed:** `WaystationController`:
@@ -8761,6 +8977,7 @@ the hull cruised straight, the camera sat at `(0, 6.5, -21)` looking 40 u ahead)
 **First-pass tuning (studio-measured, not settled):** `autopilotLetGoNear` 60, `autopilotDrySeconds` 0.5,
 `autopilotMinHoldSeconds` 0.8, `autopilotRelaySeconds` 0.25. The studio's best squeeze was 1.0. Unity's AI
 still squeezes `autopilotHold01` = 0.8, left as shipped until it is flown.
+
 ### 🔴 Third Eye: watch Play mode from a second camera in its own editor window (`Ys-bleeding-edge`, 2026-10-09) — NOT EDITOR-VERIFIED
 
 **What landed** (`.claude/skills/vessel-ai/SKILL.md` §4.1): **the AI Diagnose panel (F2)**
@@ -8884,6 +9101,7 @@ Pitch/Yaw/Roll/RotateShip/MoveShipVector now step on it — 1 for every other hu
    Tune on `StoatDipoleConfig` (the studio's `ft*` row).
 
 ---
+
 ### 🔴 B29 Session case (defect 5): an invite and the `partySession` it names go out in one save (`Ys-bleeding-edge`, 2026-10-09)
 
 **What landed:**
@@ -8982,6 +9200,7 @@ all three configs; `StoatSlingTests` and the bumped `EnumIntegrityTests` are WRI
 `maxStrength 12`, `holdExponent 1.5`, `aheadHorizons 2`, `halfGapHorizons 4→8 (Space)`, `driftSpeed 20`,
 `lifetime 4`. The ~90° swing is the design target, not a measured result — expect to move `maxStrength`
 and `aheadHorizons` first.
+
 ### 🔴 Omni + Mass crystals: Mass hull fusion fixed (thickness baked in), a random pose per crystal, reseat −0.87 (`cece/determined-ride-rqzaeo`, 2026-10-13) — NOT EDITOR-VERIFIED
 
 **Landed** (`Docs/Studios/OMNI_SHEPARD_LAB.md` round 10, `Docs/PALETTE.md §2.10`; generators
@@ -21264,6 +21483,43 @@ errors); `author_menu_profile.py`, `author_colour_set_catalog.py` and `author_lo
    wear it. Note what does not (a vessel hull keeps Photic: its materials read Photic by path).
 7. **Leave the Profile on COLOUR SETS, go Home, open it again.** It opens on RECORD.
 
+## 🔴 Source Control window: GitHub Desktop's work inside Unity, with the push checks (2026-11-06, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/froglet-source-control`; `Docs/SOURCE_CONTROL.md`. Compiled with `unity_refcompile` (editor config,
+0 errors in the 5 changed files; a planted error in the window failed it, as it should). The git operations ran for
+real in a console harness that compiles the same `FrogletGit.cs` / `FrogletSourceControl.cs` / `FrogletPython.cs`
+against throwaway repos (36 checks: commit of ticked files only, names with `[ ] *` and non-ASCII, discard, publish,
+pull, a conflicting update undone and named, a clean update, switching to a GitHub-only branch, the python checks
+through the C# runner). `push_checks.py --self-test` and `ship_gates.py --self-test` pass. Not opened in the editor;
+the new edit-mode tests were compiled, not run. Best done on a Windows machine with only GitHub Desktop installed.
+
+1. **Run the edit-mode tests** `FrogletSourceControlTests` (all).
+2. **Open FrogletTools > Build > Source Control.** The banner, the branch pill, ↓↑, and the bleeding-edge pill show;
+   the board (Froglet Master Tool) has a Source Control card in Build. On a machine with only GitHub Desktop (no git
+   on PATH) the window still works (it uses Desktop's git).
+3. **Change a prefab and a script, add a new image.** Changes lists them; the image and its `.meta` are one row; click
+   a row: its diff shows (+ green, - red); double-click pings it in the Project window.
+4. **Branches > New branch** `yourname/source-control-test` > Create: you are on it, started from bleeding-edge.
+5. **Untick the script, type a summary, Commit.** The checks run, then only the prefab and image commit; the script
+   stays in Changes. History shows the commit as UNPUSHED.
+6. **Drop a `steam_appid.txt` in the project root, tick it, Commit.** A warning dialog names it; Show me opens the
+   Checks tab; Discard these deletes it.
+7. **Push (Publish branch).** It pushes; the pill reads ↓0 ↑0. If it says authentication failed, note it (that is the
+   credential gap in `Docs/SOURCE_CONTROL.md` §4).
+8. **Open pull request.** GitHub's compare page opens for the branch into bleeding-edge, with the template. Close it
+   without opening.
+9. **Checks > Run /ship gates.** Lines stream in; it ends ALL OK or names the failing gate (about 2 minutes); the
+   editor stays responsive the whole time.
+10. **Enter Play mode, press Pull.** It refuses ("Stop Play mode"). Leave Play mode.
+11. **Delete the test branch** on GitHub afterwards.
+12. **The look (Photic, sea lines; added 2026-11-06).** The window is a deep navy sea with three layers of wavy lines
+    drifting slowly right to left (cyan to periwinkle to magenta across the width), faded at top and bottom; panels
+    with cut top-left / bottom-right corners; Commit and Push in lime with dark text; Pull / Switch / Open pull request
+    in cyan outline; Discard in red outline. Labels in Chakra Petch caps. Hover a button: it brightens. Inside the
+    Changes list nothing paints outside its panel when scrolled. Theme > Nocturne and Dart Frog re-colour everything;
+    Theme > Still sea stops the motion. With the window unfocused the editor's CPU is not raised (the sea holds).
+    Text fields show a cyan border when focused; type in Summary, Description and the branch filter.
+
 ## 🔴 Profile Colour sets: the Showroom on the real cell (Rev 54 A) (2026-11-05, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/sleepy-dirac-ytn1ph`; Docs/MENU_REDESIGN_B.md sections 124 and 126. It replaces the Rev 51 A layout in
@@ -21303,3 +21559,493 @@ Menu_Main out on a 1080 x 1920 canvas matched to the width. New: `PortraitRect`,
    domain upright: the column grows and START moves down, not off the screen.
 7. **Arcade grid**: 5 across on PC, 3 across upright, every card the same size; filtering or growing the list adds cards
    in the same grid.
+
+## 🔴 Colour sets for colour vision: six new sets in the Profile's rail, a breadcrumb in Settings (2026-11-05, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nice-lamport-56824k`; `Docs/VesselModels/colour_sets.json` (rule 5), `COLOR_DOMAINS.md`,
+`Docs/SettingsSystem/ARCHITECTURE.md`. Compiled with `unity_refcompile` (0 errors in the changed files; the run's other
+errors are in UGS files whose packages this sandbox could not fetch). `colour_sets.py`, `author_colour_set_assets.py`,
+`author_colour_set_catalog.py`, `author_menu_settings.py` and `author_menu_profile.py` pass `--check` and `--self-test`.
+Not opened in the editor; the edit-mode tests were compiled, not run. Affects Shombith's Settings panel and Profile
+colour sets.
+
+1. **Run the edit-mode tests** `ColorSetCatalogTests` (all six).
+2. **Profile > COLOUR SETS.** "1 of 9 / Wearing Nocturne"; the rail still shows three tiles. Press > past Dart Frog:
+   the rail slides one tile at a time through Contrast, Protanopia, Deuteranopia, Tritanopia, Achromatopsia and Low
+   Vision, each previewed on the cell; < from Nocturne wraps to Low Vision. The pad moving across the tiles previews too.
+3. **APPLY Protanopia**, leave, restart Play: the game starts in Protanopia and the page opens with its tile shown.
+4. **Settings > General: the first row is "Colour sets"** with a COLOUR SETS button (the old Colorblind mode dropdown
+   is gone). Press it in Menu_Main: Settings closes, the Profile opens on COLOUR SETS showing Contrast (the first vision
+   set) on the cell. Leave without applying: the worn set comes back. Open Settings from the Profile and press it again:
+   the same. In a match the button is disabled (menu only, like Credits).
+5. **Judge each vision set by eye**, ideally with a colour-blind simulator or a colour-blind player: can every domain's
+   prism, trail and HUD colour be told from every other's, and do danger (Fire) and the free pickup (Lime) still read?
+   The sets were measured before bloom and ACES.
+
+## 🟡 Our own SOAP replaces the Obvious plugin (2026-11-06, Yash, COMPILED AND EDITMODE-TESTED IN EDITOR, NOT PLAYED)
+
+Branch `Ys-bleeding-edge`; `Docs/claude/ARCHITECTURE_CORE.md` § SOAP. `Assets/Plugins/Obvious` is gone; `Assets/Plugins/CosmicShoreSoap/`
+keeps the plugin's script GUIDs and field names, so no scene, prefab or SOAP asset changed. Compiled in the open editor and
+`SoapCoreTests` / `SoapFormatTests` pass there; nothing has been played.
+
+1. **Boot from Bootstrap into Menu_Main.** Sign-in, the boot status and the menu screens come up as before; the console has no
+   `MissingReferenceException`, "missing script" or `NullReferenceException` from a listener.
+2. **Launch an arcade game and play it to the end.** HUD, boost, scoreboard and toasts update; the end screen appears and the
+   return to the menu works.
+3. **Open Settings and move the music, SFX and haptics sliders.** They change the sound and stay where you left them.
+4. **Invite a friend to a party (two editors or a build).** The invite toast, the party slots and the Friends lists update.
+5. **Stop Play, then check `git status`.** None of `Assets/_SO_Assets/Game Data/Runtime …Selected….asset` shows as changed:
+   values set while playing no longer reach the asset.
+
+## 🔴 Brittle Star Time: four movement rungs (2026-11-06, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/brittle-stars-l5-updates-41j91p`. Verified offline only: `brittle_star_time_course_harness/run.sh
+--self-test` (10 course tests over 400 seeds, four negative controls fire), `/ship` gates ALL OK (unity_refcompile
+player + editor, every generator `--check`). Open `MinigameBrittleStarTime` once and save, then fly each intensity:
+
+1. **I1 Gearbox.** A circuit with about two corners a lap Speed Mode (A) cannot turn: hold it on the rest, drop to
+   Cruise for those two.
+2. **I2 Feather slalom.** Eight rings weaving in and out round a loop. Speed Mode overshoots, Cruise is slow; tapping A
+   in and out should carry ~130 u/s through the weave. Check that feathering really is the fastest line.
+3. **I3 Coast-in hairpins.** Two long straights joined by hairpins. There is no brake: let go of Speed Mode about 100 u
+   before the turn and coast in. Holding it to the turn should overshoot the apex ring.
+4. **I4 Corkscrew.** The hull starts at **Time 5** (check the HUD's Time card shows its L5 state and Speed Roll works).
+   Six rings on a tight coil: holding Speed Mode should thread it ONLY while rolling and pulling with the right stick;
+   then a wide return flown flat out. Expect the AI to be slow here: it cannot roll.
+5. **Every rung:** gate 0 is near the spawn, rings never overlap, nothing sits outside the cell.
+
+## 🔴 Analytics: Toybox (Freestyle) events, match elements, match setups by domain, the UGS Froglet-only filter (2026-11-07, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/sweet-mayer-se51r6`; froglet-studio/Cosmic-Shore#1777 and the match-setups PR after it. Compiled with
+`unity_refcompile` (player and editor RESULT OK) and `gates.sh` ALL OK; the new edit-mode tests were compiled, not run.
+Froglet Analytics console: https://analytics.130-210-34-146.sslip.io (Data health shows events as they arrive).
+
+1. **Run the edit-mode tests** in `AnalyticsFrogletOnlyTests` (all of them: the schema mirror, the UGS filter, the
+   freestyle payloads, the element payloads, the vessel log, the match-setup counts).
+2. **Grant analytics consent** (FrogletTools > Services > Analytics Consent (Dev)), enter Freestyle in Menu_Main, fly,
+   switch vessels twice in the Toybox's Vessel Changer, then start a match. Within about 30 s the console's Overview
+   "Freestyle (Toybox)" section shows the entry, the minutes and the two switches, and the profile lists both switches
+   (from -> to, seconds into the stretch) without "approx.".
+3. **Finish the match.** Matches > "By element" counts it under the mode's element "sent by the build"; Overview >
+   Match setups counts it (solo: by its AI count).
+4. **Play a 2-human match** (two editors or a build) once on one domain and once on two: Match setups shows Teams vs AI
+   and Competitive.
+5. **No `[Analytics]` warnings** in the Console, and the UGS dashboard still receives `game_started` and
+   `game_completed` (the Froglet-only fields are stripped for UGS; an undeclared parameter would make UGS drop the event).
+6. **Round 3 (sessions, balance, quits, invites, errors; 2026-11-07, NOT RUN IN EDITOR; compiled with `unity_refcompile`
+   player and editor RESULT OK and `gates.sh` ALL OK, the `AnalyticsRound3Tests` edit-mode tests compiled, not run).**
+   Run `AnalyticsRound3Tests` and `AnalyticsFrogletOnlyTests`. With consent granted: (a) entering Play sends one
+   `session_started` (launch_kind cold) and pausing sends `session_ended` with the same session_id and its
+   session_seconds; (b) finish a solo match against AI: `game_completed` carries score, placement, players_in_match,
+   ai_difficulty (the card's level) and behind_by (0 on a win); (c) start a match and use the pause menu's Main Menu:
+   one `match_abandoned` with reason quit_to_menu, elapsed_seconds and the game_started fields, and no `game_completed`
+   for that match; stop Play during a match: reason app_quit; (d) between two editors, invite and accept: the sender's
+   `party_invite_sent`, the invitee's `party_invite_received` and `party_joined` show the same invite_id, and
+   party_joined's inviter_id is the sender's UGS id; (e) trigger an error repeatedly (any `Debug.LogError` in Play):
+   about 5 s later ONE `client_exception` arrives with its count, top_frame and scene and no message text, and no second
+   one for the same message in that session; (f) the UGS dashboard still receives `session_ended`, `game_completed`,
+   `party_invite_*` and `party_joined`, and never the three new events.
+
+## 🔴 Breach: the Orca's Time race (2026-11-07, branch `claude/orca-convoy`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/breach_harness/run.sh --self-test`:
+10 pass, 6 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from `Arcade/BREACH.md` §8:
+
+1. Open `MinigameBreach` once and save it (a text clone); then `python3 Tools/Build/author_breach_assets.py --check`.
+2. Run the EditMode tests `BreachCourseTests` and `EnumIntegrityTests`.
+3. I1, one Orca with AI crew: hold the burn and the tank empties and stays empty; let go and it refills.
+4. I2: a burn into a hard turn swings wide of the ring; coasting it makes the ring.
+5. I3: walls stand before every other ring, rounded on the inside of the turn; flying into one stops the hull dead. The
+   gunners shoot a breach and it grows back 6 s later. I4: a wall on the ring after each hard turn, never meeting one.
+6. Two AI Orcas burn the straights, coast the turns and the walls, and finish (note any wall an AI hits).
+7. Outside the race: an AI Orca in any other mode flies exactly as before (its coach is null there; it never burns).
+8. MPPM two clients: both see the same walls.
+
+## 🔴 Slip Line: the Honeyguide's Time race (2026-11-07, branch `claude/honeyguide-slip-line`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/slip_line_harness/run.sh
+--self-test`: 10 pass, 6 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/SLIP_LINE.md` §8:
+
+1. Open `MinigameSlipLine` once and save it (a text clone); then `python3 Tools/Build/author_slip_line_assets.py --check`.
+2. Run the EditMode tests `SlipLineCourseTests` and `EnumIntegrityTests`.
+3. I1, one Honeyguide with an AI Ratel: three rails a leg in Ruby, Jade and Gold. With a charge, fly onto that colour's
+   rail nose along it: the hull zips to just past the ring, the ring counts, the charge goes. Ring to ring without a
+   slip never touches a rail.
+4. I2: one rail a leg, stubs visibly short. I3: rails lean off the line; a turn out early catches one inside the cone.
+5. I4: a chain's first ride lands on the second rail and rides on through the next ring when both colours are held.
+6. Two AI Honeyguides ride rails and finish (note any that circles a rail without catching it: `aiRailLead`).
+7. Outside the race: a Honeyguide in the Toybox slips and hunts exactly as before (its coach is null there).
+8. MPPM two clients: both see the same rails in the same colours.
+
+## 🔴 Perch Run: the Goby's Time race (2026-11-07, branch `claude/goby-perch-run`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/perch_run_harness/run.sh
+--self-test`: 10 pass, 7 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/PERCH_RUN.md` §8:
+
+1. Open `MinigamePerchRun` once and save it (a text clone); then `python3 Tools/Build/author_perch_run_assets.py --check`.
+2. Run the EditMode tests `PerchRunCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: hold the dart; the new reach ring slides out along the nose and the Goby stops on it. A dart through a ring
+   counts it.
+4. I2: a full charge through a hairpin leaves the next ring out of reach; a judged charge turns it in one dart.
+5. I3: coral heads stand on their legs; a dart at the centre stops on the head (the reach ring sits on it); a rim shot
+   threads. I4: a double darted on the right line counts both rings.
+6. Two AI Gobys dart ring to ring and finish (note any that turns in place or cruises).
+7. Outside the race: a Goby in the Toybox darts and its AI lays islands exactly as before (the coach is null there);
+   the reach ring shows while charging.
+
+## 🔴 Decoy Run: the Jacks' Time race (2026-11-07, branch `claude/jacks-decoy-run`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/decoy_run_harness/run.sh
+--self-test`: 10 pass, 8 negative controls fire) ran; the Unity editor and the `unity` CLI did not. Owed, from
+`Arcade/DECOY_RUN.md` §8:
+
+1. Open `MinigameDecoyRun` once and save it (a text clone); then `python3 Tools/Build/author_decoy_run_assets.py --check`.
+2. Run the EditMode tests `DecoyRunCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: rings and chalk rails on one flat; herd past a ring, drop the decoy, centre the jacks behind it on the new
+   white take-off mark, take off, travel: the ring counts. Taking off THROUGH a ring does not count it.
+4. I2: one travel down a skewer counts both rings. I3: roll onto the next flat; the skewer lies on the board.
+5. I4: the hull starts with two decoys; the second travel doubles back through the hairpin and counts it.
+6. Two AI Jacks herd, take off and travel cycle by cycle and finish (note any jack that stops short of its waypoint).
+7. Outside the race: a Jacks in the Toybox herds and travels exactly as before (the coach is null there).
+
+## 🔴 Thornline: the Shrike's Time race (2026-11-07, branch `claude/shrike-sling-race`)
+
+Authored headless. `unity_refcompile` and the offline course tests (`Tools/Build/thornline_course_harness/run.sh
+--self-test`) ran; the Unity editor and the `unity` CLI did not. Owed, from `Arcade/THORNLINE.md` §7:
+
+1. Open `MinigameThornline` once and save it (a text clone); then `python3 Tools/Build/author_thornline_assets.py --check`.
+2. Run the EditMode tests `ThornlineCourseTests` and `EnumIntegrityTests`.
+3. I1 solo: 17 thorns stand where the rings' lines meet; sling start thorn -> thorn 1 -> ...; every ring counts.
+4. The 32 u thorns at I4 can be hit with the eyepiece from ~1,000 u.
+5. I2: a rim shot takes the Time crystal and the sling is ready on docking.
+6. I3: a snipe threads both rings and counts both.
+7. Two AI Shrikes sling thorn to thorn and finish (note the aim error if they crawl).
+## 🔴 Headlong: the stampede, hedges the Rhino ploughs through (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/headlong-stampede`. `HeadlongHedgesTests` run offline (`bash Tools/Build/headlong_course_harness/run.sh
+--self-test`, 9 pass, 4 negative controls fire); the race model is `Tools/Build/headlong_stampede_model.py`
+(`HEADLONG.md` §0).
+
+1. **Open and save `MinigameHeadlong` once** (the controller gained `hedgePrefab` and the stampede fields), then
+   `python3 Tools/Build/author_headlong_assets.py --check` adopts it.
+2. **I1, two Rhinos.** Four hedges stand across the longest straights. Holding the line, a hedge sprays aside and the
+   speed readout does not drop. The log has `[Headlong] STAMPEDE intensity 1: 4 hedges (0 danger), 0 Time crystals.`
+3. **Next lap:** every hedge stands whole again (they re-stand 2.5 s after the last hull leaves).
+4. **I2:** two Time crystals sit just inside the tightest corners; taking one raises the Time card a level.
+5. **I3:** three wide red hedges each have a round plain window off-centre. Ploughing one drops every element a level
+   (one burn per hedge, not one per slab); flying the window costs nothing. An AI Rhino swerves for the window on laps
+   1-4 and ploughs on lap 5.
+6. **I4:** the race starts at Time 5. Leave a hairpin fast and the red hedge after it sprays aside with no burn
+   (Momentum, the Time card flashes); leave it slow and you are burned to Time 4.
+7. **Frame time** with four Rhinos at I3 (about 2000 hedge slabs): no worse than Switchback I2.
+## 🔴 Manta overhaul: shared fuse, prism-impact detonation, explosive prisms, decoy crystals, Yastri and Soar on Time (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/manta-overhaul`. Compiled with `unity_refcompile` (player and editor: 0 errors in changed files; the 21
+remaining are in the Vivox, Moderation and Multiplayer packages the cloud session could not fetch). `gates.sh` ran on a
+sparse checkout: `author_manta_kit_assets.py --check`, `console_logging` and `conditional_compilation` OK; the failures
+are all missing `.asset` files the sparse checkout left out. Design record: `MANTA_STING_KABLOOM.md` §0, §3a, §4a.
+
+1. **Fly the Manta in the Toybox at Time 0.** The boost does nothing (Soar is Time 5); Yastri turns still work. Raise
+   Time to 5: the analog turn-boost and the boost button both work.
+2. **Skim rival prisms.** Energy fills (one bomb per full unit, 3 max) and each skimmed rival prism lifts its colour
+   (explosive). Destroy one: its neighbours in the same trail go too, a beat later, and explosive neighbours carry on.
+   A shielded rival prism is only primed at Space 5, which also pops its shield.
+3. **Plant two bombs on a rival.** One fuse on the Charge card; the second plant resets it. When it runs out, every bomb
+   blooms at once, slowly (about 2.5 s), and none of them hurt the Manta's own side.
+4. **Plant, then brush a prism with the hull.** Every bomb goes off at once and the energy empties.
+5. **Plant three, then take an omni crystal.** The bombs go off nearest first, bigger than a single bloom, growing over
+   about 4 s.
+6. **Collect an elemental crystal.** A decoy stays where it was, with that element's effect frozen (Charge arcs gone,
+   Mass prisms still, Space squares still, Time rhombi still). Fly a rival AI into it: it becomes a field of danger
+   prisms across the rival's heading. At Mass 5 an omni crystal leaves an omni decoy too; one of each at a time.
+7. **Bomb a fauna and kill it.** Its heart crystal keeps the bomb (the marker moves onto it). Pick the crystal up with
+   any vessel, the Manta included: the bomb rides that vessel on the same fuse.
+8. **Two editors (protocol 25):** the blooms show on both, at the same slow growth.
+9. **HUD:** the Space card's new `energyFill` / `energyCountText` are unwired on the prefab (the icon pass wires them).
+10. **Follow-up tuning (branch `claude/manta-tuning`, compiled with `unity_refcompile`, NOT RUN IN EDITOR):** the Manta
+    holds one bomb of energy at a time (skim, plant, skim, plant); the fuse no longer changes with Charge; a Charge 10
+    Manta's bloom knocks twice the petals out of a rival that a Charge 0 one does; the trail is thin and even like the
+    Squirrel's, the same at every Time level and through hard turns.
+    A Time 10 Manta cruises about 1.5x as fast as a Time 0 one (270 against 180 u/s at full throttle).
+
+## 🔴 Brittle Star ring under a spinning stick: forward rule + normalized motion smear (2026-11-03, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/elegant-shannon-e7nrb2`. **Not compiled**: no .NET SDK in the session's container, so `unity_refcompile`
+did not run, and no editor was open. The rule was checked on a line-for-line JS copy (0 difference from the old rule below
+the turn rate; exactly the cap and 0 backward frames above it); the shader and the render pass were not compiled.
+Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY6ykxFy5o7QR5sh).
+
+1. **Compile** (player + editor) and run `BrittleStarRingSpinTests` and `BrittleStarTests`. Check the console for
+   `BrittleStarRingSmear.shader` errors and for `[BrittleStarAnimation] ... no camera drew the ring's motion smear`.
+2. **Spin the right stick** (Toybox Vessel Changer → Brittle Star, any mode but Speed): fast circles both ways. The ring
+   turns the stick's way, up to 3 rev/s, never stutters back or freezes.
+3. **The smear**: while it spins, the ring is drawn smeared and **no brighter** than a still ring on the same background;
+   the moment the stick stops, the plain ring is back with no pop (element morph unchanged, flames still on the pods).
+   Something opaque in front of the ring (your own trail) still hides it. Check the Scene view while playing too.
+4. **Guns and cords while spinning**: Space Mode + RT: rounds leave the drawn turrets; Charge Mode: the cords hang from
+   the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
+5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.
+
+## 🔴 2026-11-07 — Voyages, deep: the living HyperSea, rival crews, a job for every faction type, sagas and relics (unverified: no Unity editor in the session)
+
+**Plan:** `Docs/Voyages/DEPTH.md`. **Files:** `Data/Voyages/*` (`VoyageEnums`, `VoyageContent`, `VoyageState`,
+`VoyageRules`, new `VoyageWorld` and `VoyageRivals`; pure, 41 edit-mode tests green headless in
+`Tools/Build/voyage_depth_harness`), `Controller/Voyages/VoyageRun.cs` (verbs, the leg's pacing, hostile worlds, rival
+hulls at the stop, the race clock, chronicles, relics), `VoyageHarbour.cs` (the crew fills the board; `GalaxyState`),
+`UI/Views/VoyageJobsView.cs` (`{role}`, `{warnings}`, the job's own pay and intensity, the sea-today beat, the map's
+visibility), `VoyageMapGraphic.cs` (`Visible`, `IsDrawn`, colours for the new experiences), `VoyageEdgeGraphic.cs`,
+`VoyageMapSky.cs`, `ScriptableObjects/Voyages/VoyageContentSO.cs` (new lines) and `VoyageToyDefinitionSO.cs` (cull and
+observe radii, rival abeam, colours), `Data/Inventory/FactionCatalog.cs` (every type recruits). Assets from
+`author_voyage_assets.py` (`VoyageContent.asset`, `Toy_Voyage.asset`, the twin `Docs/Voyages/voyage_content.json`).
+Affects: Shombith's Voyage window (tokens and one visibility rule, no layout change), Garrett's squad layer (chronicle
+lines, a relic's name on its record). The reference compile has 0 errors in the changed files (the 21 remaining are
+the compile environment's missing Cinemachine and UGS packages, the same as on `bleeding-edge`).
+
+1. Run `VoyageRulesTests`, `VoyageDepthTests`, `AccountInventoryTests`, `PilotsAndArtifactsTests`. **Pass:** green
+   (`VoyageDepthTests.TheDepthScorecardHoldsItsBars` prints the scorecard to the test output).
+2. Menu_Main, open the Voyage window with a squad of three different faction types seated. **Pass:** about six voyage
+   cards (the seated pilots' first, the crew's after, then the way home when away); 25 places on the map in six marker
+   colours (ports, vaults and the hoard, cores, lairs and the pens, nurseries, shrines and derelicts); Cinder Shoal,
+   the Pale Anchorage and Keeper's Rest are NOT drawn. Open a card: SUITS a role, PAYS the course's price (farther and
+   rougher pays more), and warning lines where the world has them.
+3. Day 0 at a harbour: every faction type on the crew brings a job (seat each type in turn). **Pass:** a pilot of every
+   type has a card somewhere on the board over a few openings; the Leviathan's sighting is in the news of every port
+   (a Known hunter's board offers the hunt first).
+4. Set sail on a hunt to Lantern Reach with the Lantern Keeper's first chapter (the card whose news names half a chart).
+   **Pass:** the leg's open cells are thicker in the middle than at the ends (the lane profile); at the stop the vault
+   shells stand; stow one; "JOB DONE" and the chapter's done line; back in the window the second chapter (an
+   explorer's, to Keeper's Rest) is posted and the place is still not drawn.
+5. Sail the explorer's chapter. **Pass:** the Ark reaches Keeper's Rest; "KEEPER'S REST IS ON YOUR CHART"; the place is
+   drawn from now on and the priest's finale is offered once the Priest type is Known (two priest jobs done).
+6. Sail the finale (a vigil: hold the Ark at the beacon 40 s). **Pass:** "LANTERN OF ORIEL IS ABOARD"; the relic rides
+   in the Ark's hold (GALLEON's sight shows it); dock at home: the Ark's ARTIFACTS tab shows a Hydra named Lantern of
+   Oriel with its lore; the saga is never posted again.
+7. A lair (The Maw or Gnawreach) with a hunter's cull. **Pass:** the lair's world starts under the other domain's colour
+   and thick with creatures; "FELLED n OF 5" counts creatures felled near the Ark; done at 5; pressure eases (the next
+   board's warning for that place is gone).
+8. A nursery with a gatherer's harvest or a sport exhibition. **Pass:** "GATHERED n OF 12 CRYSTALS" counts the whole
+   squad's crystals; done at the goal. A preservationist's tend: "HOLDING" counts down; a kill by any seat undoes it.
+9. A derelict with a first responder's rescue, a shrine with a priest's vigil, a core with an aristocrat's hold.
+   **Pass:** each holds while you stay with the Ark; a convoy ("KEEP THE HULL ABOVE 60 PERCENT") is done on arrival
+   only with the hull above the floor.
+10. Rivals. Sail where a rival crew stands (the board's warning "<crew> WERE SEEN BOUND FOR <place>" names it).
+    **Pass:** three AI hulls in the crew's domain stand abeam of the Ark; "<CREW> ARE HERE" and the relation line; a
+    crew of your colour fights beside you; another colour's grazes your mass. At a vault field with a racing crew a
+    shell is retired every 45 s with "<CREW> OPENED A SHELL BEFORE YOU", and the next board's story says so.
+11. Notoriety: three pirate or thief jobs. **Pass:** every card warns "A PRICE IS ON YOUR ARK"; a bounty-hunter crew
+    (Writ and Hook) sails for your destination within a few days; the price fades three days a point.
+12. Two finds aboard away from home. **Pass:** cards warn "2 FINDS ABOARD AND AT STAKE"; the nearest port's news has
+    the rumour; a pirate crew at that port sails for you. Let the Ark fall to them: "<CREW> TOOK YOUR ARK AT ..."; the
+    logbook's nemesis is set (the story line names them).
+13. Leave the game for a day and come back. **Pass:** the galaxy moved: a picked field is lit again (news at the
+    nearest port), rivals stand elsewhere, blooms ripened.
+14. A record saved before this pass (the slice's). **Pass:** it loads, every place and rival is filled in, the saved
+    job still works (a saved hunt asks a stow), nothing is ticked twice.
+15. The Arkway (Wander > With Ark) and the Ark escort. **Pass:** unchanged (the escort's roles now read their host through
+    `IArkEscortHost`; the escort sim's numbers at d3 and d4 are within the noise of `Docs/Voyages/ARK_ESCORT.md` §4).
+16. Wingmates on a voyage (round 2). Seat a Sparrow and a Squirrel beside you and sail a lair. **Pass:** the Sparrow hunts
+    the hostile creatures nearest the Ark instead of hovering at its flank, the Squirrel cultivates the nucleus when the
+    threats are few, both come back to the flank when they range past the leash, and both are taken back when the voyage
+    ends; the escort sim is unaffected.
+17. Do the same job twice on different days (two hunts at Lantern Reach). **Pass:** the story line reads differently
+    the second time (several authored ways to say it); the open card's brief shows STANDING (a stranger, known or
+    trusted, by the pilot's faction) and its Story level ends with YOUR LOG once a voyage has been sailed.
+18. FrogletTools > Voyages > Depth Scorecard (headless, 40 galaxies). **Pass:** the console prints the scorecard in a few
+    seconds with "BARS: all hold". FrogletTools > Voyages > Forget This Machine's Galaxy (dev), then open the Voyage
+    window. **Pass:** the board is a new galaxy's (the seed news, every rival at home); finds already docked are kept.
+19. Dock at home while a rival crew stands at your harbour (set one there with the Forget tool's new galaxy and a day's
+    sailing, or trust `VoyageDepthTests.NoRivalIsMetInAHarbour`). **Pass:** no rival hulls stand in home water.
+
+## 🔴 Manta ability icons, round 3 (2026-11-07, Garrett, NOT COMPILED, NOT RUN IN EDITOR)
+
+Branch `claude/manta-icons-v2`. **Not compiled**: no .NET SDK in the session's container (`unity_refcompile` stopped at
+"no .NET runtime"), and no editor was open. Changed C#: `MantaVesselHUDView` (part fields, `SetDomainColor`, `SetDecoys`,
+`SetAbilityUpgraded` override), `MantaHUDController` (domain colour, decoy poll), `MantaStingActionExecutor`
+(`HasElementalDecoy`, `HasOmniDecoy`). Prefab: `Manta.prefab`'s four slot icons became containers of parts.
+
+1. **Compile** (player + editor); open `Manta.prefab` and check the view's new part fields are all bound (no Missing).
+2. **Charge card**: fly the Manta in the Toybox; skim a rival to plant: the rival on the card turns full danger, one bomb
+   appears per plant (three drawn at most), the plate drains as the shared fuse burns; at Charge 5 the second rival and
+   its bomb show while anything is planted.
+3. **Mass card**: collect an elemental crystal: the decoy crystal and its danger prisms brighten while the decoy stands,
+   and dim when it is taken or expires; at Mass 5 collect an omni crystal: the small omni decoy appears.
+4. **Space card**: skim prisms: the plate fills with energy (full = one bomb) and the spikes round the prisms brighten;
+   hitting a prism empties both. At Space 5 the knocked-off shell shows.
+5. **Time card**: below Time 5 no chevrons; at Time 5 Soar's chevrons appear ahead of the nose.
+6. **Omni card**: the omni crystal card shows the cash-out (three blooms round a crystal).
+7. **Domain**: switch domain (Jade, Ruby, Gold): every Manta on the cards wears it.
+
+## 🔴 Regatta's shuffled course pool (2026-11-07, Garrett, NOT RUN IN EDITOR)
+Branch `claude/project-thread-pnwryl`. `unity_refcompile` (player and editor) has 0 errors in the changed files (the 21
+it reports are already on bleeding-edge: Vivox and Moderation packages); `author_regatta_assets.py --check` OK. The
+new edit-mode tests were compiled, not run. Details: `Docs/Reports/REGATTA_COURSE_POOL.md`.
+
+
+1. **Run the edit-mode tests** `RegattaCoursePoolTests` and `RegattaCourseTests`.
+2. **Play Regatta alone three times** with the ArcadeMatch log channel on (FrogletTools > Toolbox > Logging): each match
+   logs `[Regatta] Course variant k (Label) of 4`, the laid circuit is that entry's, and three matches lay three
+   different circuits. The start line sits behind the laid circuit's first ring.
+3. **Play a two-machine match**: host and client lay the same circuit (same rings, same rails).
+4. **Watch a Regatta replay** in its real scene: it lays the circuit the match was flown on.
+## 🔴 Regatta course features: rail sections, gaps, detours, alternate rings, line crystals (2026-11-06, Garrett's plan brief 10, NOT RUN IN EDITOR)
+Branch `claude/project-thread-d75lky`. `RegattaCourseFeatures` on `SpawnableRegattaRails` (empty on every shipped variant,
+which lays today's course prism for prism: the course harness output, `course.js` and the measurements are byte-identical).
+Compiled with `unity_refcompile` (0 errors in the changed files; the 21 errors it reports are in `UgsRequestPolicy.cs`, untouched
+here) and `RegattaCourseFeaturesTests` RUN offline by `Tools/Build/regatta_course_harness/features.sh` against the harness's
+UnityEngine and NUnit stubs (9/9). Nothing has been played. Set `RegattaCourseFeatures.Override` from a test or fill a variant's
+`courseFeatures` on a scratch copy, never on a shipped variant without Yash.
+1. **Run the edit-mode tests** `RegattaCourseFeaturesTests` and `RegattaCourseTests` in the editor.
+2. **Empty features, any intensity:** play Regatta. The rails, the rings, the AI and the crystals in the nucleus are as before
+   (an AI Urchin rides its own lane; a Squirrel AI skims its own lane; the race-line hulls fly their sides).
+3. **A neutral stretch** (`Sections`: Leg -1, From 0.3, To 0.7, Neutral): the middle of every leg is Blue; an AI Urchin leaves
+   its rail there and re-latches after; a Squirrel AI keeps skimming through it.
+4. **A gap** (Leg 2, From 0.4, To 0.6, Kind Gap): nothing is laid there, an Urchin riding into it launches off the rail end and
+   re-attaches on the far side; no `NullReferenceException` from the lane readers (controller, Skim Race pilot, flight recorder).
+5. **A detour** (Leg -1, From 0.15, To 0.85, Detour 90, DetourBearing 45): the braid bows off the line mid-leg and still passes
+   through every ring at the lane offset; the race-line AIs follow it without missing a mouth.
+6. **Plain / shielded stretches** (Kind Plain / Shielded): a Rhino sword, a Sparrow gun or a Dolphin blast cuts the plain stretch;
+   an Urchin riding a cut stretch keeps going at its destroyed-terrain speed.
+7. **An alternate ring** (`AlternateGates`: Ring 3, Offset 250, Bearing 0): a second ring stands beside ring 4, lights with it,
+   and threading EITHER counts once (the gate count and the scoreboard advance by one); an AI that is not riding takes it when
+   it is the shorter way.
+8. **Line crystals** (`Crystals`: PerLap 3): three crystals sit on the racing line and respawn in place; no AI turns off its line
+   for one; with PerLap 0 the nucleus crystals are back.
+9. **Two machines:** host and client see the same alternate rings, gaps and crystals.
+## 🟡 Stoat: the trampoline autopilot can press for the warp (2026-11-06, Garrett's regatta balancing, NOT PLAYED)
+`StoatSlingMath.TrampolinePress`; `StoatSlingExecutor.AutopilotTrampoline` reads `aiWarpMinDistance` (both shipped configs
+carry 0, so the game is unchanged). Compiled by `unity_refcompile` (player and editor configs, 0 errors in the changed
+files; 21 errors elsewhere on bleeding-edge that predate this). EditMode tests not run (no editor). `Docs/Reports/SLINGSHOT_STOAT_AI.md`.
+- [ ] Run `StoatSlingTests` (the new `TrampolinePress_*` test).
+- [ ] With the trained rows in `StoatSlingConfig_Slingshot` (report section 5, restart C): AI Stoats race Slingshot I1-I4,
+      finish, miss few rings, never fly far off the course (model: 62-71 s).
+
+## 🔴 Look sheet: first run (2026-11-07, `cece/affectionate-fermi-x1lp81`, compiled with `unity_refcompile --config editor`, NOT RUN IN EDITOR)
+
+The look-sheet kit (`Docs/LOOK_SHEET.md`, `Docs/SKILL_TRAINING_PLAN.md` 3.1): `Assets/_Scripts/Editor/Look/LookSheetCapture.cs`
+and `LookSheetLauncher.cs` (editor assembly), `Tools/Build/unity_look/{look,verify,sheet}.py`, `Tools/CI/unity_look_in_container.sh`,
+`.github/workflows/look-sheet.yml`, `.claude/skills/unity-look/SKILL.md`.
+
+**Verification status.** `bash Tools/Build/unity_refcompile/run.sh --config editor` compiled both files later the same
+night (a .NET 8 root assembled from nuget.org packages, `Tools/Build/unity_refcompile/dotnet_from_nuget.py`, after the
+installers were refused by the proxy): `gated: the 2 changed since origin/bleeding-edge: LookSheetLauncher.cs,
+LookSheetCapture.cs` and `0 in files changed since origin/bleeding-edge` (the run's 21 errors are the known Vivox /
+Moderation reference gaps of the sandbox, in files this branch does not touch). Negative control: a `static int
+_negativeControl = "not an int";` planted in the launcher was reported as `CS0029 ... (1 in files changed)`, then
+removed. `check_console_logging.py` and `check_conditional_compilation.py` pass. No editor was open: NOT RUN. The
+refcompile's UnityEditor reference is 2021.1, so a Unity 6 editor-API removal would not show; every UnityEditor member
+used is also used by merged editor files. They were written against the APIs read in `SwitchbackSoakLauncher`, `SwitchbackSoakRunner`,
+`ThresherTimeSoakRunner`, `ScreenSwitcher` (the public `OnClick*Nav` methods), `PrivacyConsentOverlay.Current`,
+`AuthenticationSceneController` (reflection, as the soak runners do), `GameDataSO` (`CosmicShore.Utility`), and the
+`FrogletTool` attribute. The Python kit's `--self-test` passes (verify's blank-frame negative controls, sheet's layout,
+look's command line). The workflow YAML parses.
+
+**The first run** (`Docs/LOOK_SHEET.md` section 4):
+1. Open the project; the reference compile passed, so a compile error here would be a Unity 6 editor-API difference.
+2. `FrogletTools > Build > Look Sheet > Menu screens`. Expect `Logs/LookSheet/menu_<screen>_pc.png`, `_phone.png` and
+   `_gameview.png` for Home, Hangar, Port, Profile and Codex, plus `manifest.jsonl` and `summary.json` with `ok: true`.
+   Compare the render-to-texture capture with the Game view one: the UI must be present on both (if not, the
+   overlay-canvas retargeting needs the children's layers), and the world too (if not, the menu camera is stacked).
+3. Headless, editor closed: `python3 Tools/Build/unity_look/look.py menu HOME` (needs Pillow). Expect `LOOK SHEET: ALL OK`
+   and `sheet.jpg`.
+4. **Negative control:** the same command with `-nographics` added to the Unity line (`--print` shows it). Expect every
+   capture to FAIL the `not-blank` gate and exit 1.
+5. `python3 Tools/Build/unity_look/look.py mode switchback --times 5,15,30`: three frames of the Dolphin's race with the
+   HUD. Then `thresher-time`.
+6. In CI, once the `unity-ci` environment holds the licence: dispatch `Look sheet` (`menu`, `HOME,HANGAR`); expect the
+   artifact with `sheet.jpg`. Black frames under Xvfb mean the image's Mesa cannot run URP at that GL level (section 4.5).
+
+## 🔴 Pilot portraits: the /pilot-art kit's first four callsign portraits (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/sweet-goodall-duyp56`. No C# changed. Four 220x280 sprites were written by `Tools/Build/pilot_art/author.py`
+(`Assets/_Graphics/Pilots/Portrait_{Wyvendo,Karenth,Delmira,Rosh}.png` with the painted set's importer settings) and wired
+as the `portrait` of `Pilot_Talon`, `Pilot_Volt`, `Pilot_Sundial` and `Pilot_Bandit` through `author_pilot_assets.py`.
+Both `--check`s and `bash .claude/skills/ship/gates.sh` are green. The sheet: `Docs/Pilots/art/sheets/round.png`.
+
+1. **Import**: the four PNGs import as single sprites with transparency (no white or green halo round the fur).
+2. **Hangar**: Menu_Main > Hangar > PILOTS: TALON, VOLT, SUNDIAL and BANDIT show their portrait at 44x56 in the card's
+   portrait slot, upright, boots at the bottom, the other fourteen still show an empty portrait slot (noArtWord is authored blank).
+3. **Squads page**: a squad slot with one of those four seated shows the same portrait in its pilot image.
+4. **Legibility**: at the Hangar's size the animal reads first (lynx, axolotl, owl, octopus); if it does not, say which,
+   and the brief's species line is what changes (`Tools/Build/pilot_art/brief.py`).
+
+## 🔴 Pilot portraits, round 2: all eighteen callsigns (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/sweet-goodall-duyp56`. No C# changed. Fourteen more sprites (`Portrait_{Veliane,Tamako,Brikon,Ivelia,Quivera,
+Obelo,Nedira,Zeko,Mathalo,Fenlia,Jorin,Ilia,Haradek,Ekora}.png`) are wired to the fourteen remaining `Pilot_<Callsign>.asset`s,
+so every callsign now references a portrait. Both `--check`s and the ship gates are green. Sheet: `Docs/Pilots/art/sheets/round2.png`.
+
+1. **Hangar**: Menu_Main > Hangar > PILOTS: all eighteen cards show a portrait at 44x56, none shows an empty portrait slot.
+2. **Legibility at 44x56**: the animal reads first on each card; if one does not, name it and the brief's species line changes.
+3. **Transparency**: no green, blue or magenta fringe round any figure (three key colours were used this round).
+
+## 🔴 Arena Vessels row: Pick, Random, Draft, Squad (2026-11-07, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-jypklp`. Compiled with `unity_refcompile` (player and editor configs); no Unity editor was
+open, so the `unity` CLI and the EditMode tests (`VesselSelectionRulesTests`, `ArcadeLobbySnapshotTests`,
+`ArenaSeatingTests`) have not run in Unity. Design: `Docs/HomeHub/ARCHITECTURE.md` §3.10. Protocol version 27: both
+machines need this build.
+
+1. **Run the EditMode tests** above. `EveryArenaCard_PlaysTheOneArenaIntensity` must pass for all four arena cards.
+2. **The row**: open each arena card (Regatta, Broadside, Astro League, Brood Rush). Where Intensity was, the section
+   reads **Vessels** with LB / RB either side of the mode name; the line beside the caption says what the mode does.
+   Check the copied buttons sit inside the section and the label does not overlap them (the row is built at runtime).
+   An arcade card still shows its I1-I4 row.
+3. **Pick**: unchanged: claim a hull, CHANGE, pick an ally AI's hull.
+4. **Random**: host steps to Random. Every human is dealt a hull at once (no two the same), every AI chip shows a
+   hull, Start opens. On Regatta the opponent AI stay Squirrels.
+5. **Squad** (needs a saved squad in the Ark): the vessel caption names the squad and its three vessels; the arrows
+   step between your squads; SELECT deals one of that squad's vessels that is on the card. A second machine with no
+   squad is dealt at random. The squad's element is not applied.
+6. **Draft** (two machines, two teams, an AI on each): the line shows whose turn and the seconds left. Only that pilot
+   can claim; on an ally AI's turn a human on its team picks it from the AI's pedestal; an all-AI team picks after
+   about a second; a seat left for 20 s is dealt a random hull. The order is A B B A. Start stays dead until the
+   draft is done. Adding an AI mid-draft restarts it.
+7. **In the match**: every pilot and AI flies the hull the lobby showed; the AI's autopilot follows the difficulty
+   (Easy noticeably softer than Legendary on Broadside and Astro League).
+
+## 🔴 AI nose lead in the Time minigames (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-qzbade`. Plan step: time-arcade. Compiled with `unity_refcompile` (0 errors in the changed
+files; the 21 elsewhere are packages the cloud cannot fetch); no Unity editor was open, so the `unity` CLI and the new
+EditMode tests (`TimeModeNoseLeadTests`) have not run in Unity. Each Time controller now carries an **AI nose lead**
+table (`aiNoseLead`, one `GateRaceController.AINoseLeadRow` per hull) that `GateRaceController.ArmRacer` applies to
+every AI as it is armed (`AIPilot.NoseLeadGain`, `NoseLeadMaxExtraDegrees`, default 40). The values are field defaults,
+so no scene was edited: Thresher Time 2.5, Switchback (Dolphin) 2.5, Slingshot (Stoat) 2.5, Headlong (Rhino) 2.5,
+Breakwater (Sparrow) 2.0, Serpentine (Serpent) 1.0, Redline (Manta) 0, Skein (Urchin) 0. Every number is a model result.
+
+1. **Run the EditMode tests** `TimeModeNoseLeadTests`.
+2. **Inspector**: select each Time scene's controller. The **AI nose lead** section shows one row with the hull and gain
+   above; a scene override would show the row in bold (there should be none).
+3. **Race the AI** at Legendary, I1 and I4, in Thresher Time, Switchback, Slingshot, Headlong and Breakwater: the AI goes
+   through ring mouths it used to clip or miss, with no corkscrewing or circling a ring. Serpentine at gain 1.0 the same.
+4. **Redline and Skein**: AIs race exactly as before (gain 0).
+5. **Regatta**: unchanged (it reads its race-line styles, not this table).
+
+## 🔴 Redline: the AI nose follow rate by difficulty (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+`RedlineController.aiNoseFollowByIntensity` (Switchback's shape) sets each AI Manta's
+`VesselTransformer.AINoseFollowPerSecond` on arming: Easy 2 / Medium 3 / Hard 6 / Legendary 9 per second at I1-I4
+(fleet lag 1.5; `Docs/Reports/REDLINE_MANTA_NOSE.md` §4). Ran: `/ship` gates, `unity_refcompile` player + editor (0
+errors in the changed files). Not run: Unity, the EditMode test `Redline_AINoseLag_TableByIntensityAndDifficulty`.
+
+1. **Run the EditMode tests** in `RedlineAISteeringTests`.
+2. **Legendary AIs, I4**: Redline with AI Mantas on Legendary. The model says ~97-100 s and few missed mouths (was
+   ~540 s with the fleet lag). Check no AI circles a mouth over and over and the time is within ~10% of that.
+3. **Easy vs Legendary**: at I1 and I4, an Easy AI is clearly slower than a Legendary one (Easy also flies
+   `GateRaceHandicap`'s late belief, so it is slower than the model's 156-272 s).
+4. **No carry-over**: race Redline, then another mode with an AI Manta: that mode's AI flies its own lag again.
+## 🔴 Skein: the AI Urchin's Regatta aim, rail seek and genome W (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-rdizqz`. Report: `Docs/Reports/SKEIN_URCHIN_AI.md` § "Shipped". Every expected number is
+from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
+
+1. **Run the EditMode tests** `SkeinRailSeekTests` (they also check `UrchinAutopilotConfig_Skein` loads for Skein and
+   Regatta keeps the shared asset).
+2. **Skein, AI Urchins on every seat, I1-I4.** Watch a free AI Urchin: it should turn toward a rail that runs through
+   its next ring, latch it and ride it, instead of flying straight at the ring. Expected: every race finishes, I4 in
+   roughly 6 minutes (the model's 352 s); before this, AI Urchins finished no I3/I4 race.
+3. **Turn `aiSeekRails` off** on the scene's SkeinController for one race as the control: the AI should go back to
+   flying at the rings and missing the pinned ones.
+4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).

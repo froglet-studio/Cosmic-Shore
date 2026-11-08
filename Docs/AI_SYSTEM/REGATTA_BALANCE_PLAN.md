@@ -25,6 +25,46 @@ collaborator's idle machine works on (`Docs/Compute/README.md`); the live state 
 "Time games" are the cards whose genre petal is Time (`ModeGenre.cs`: a race - crystals, goals, switches threaded).
 A hull's OWN Time game is a single-hull arcade card; Regatta is the arena Time game they all share.
 
+## The direction since 2026-11-06 (Garrett): trained AIs first, a wide search, a pool of courses, one Regatta
+
+Garrett played Regatta at I4 twice on 2026-11-06 and the Urchin won by a street both times. Gates threaded when the AI
+Urchin finished its 24: first race Squirrel (AI) 11, Serpent 11, Rhino 7, Manta 6; second race Squirrel (Garrett) 14,
+Serpent 10, Rhino 5, Manta 4, Dolphin 3, AI Squirrel 3. **Both races, and all 183 recorded Regatta flights, were on the
+OLD I4 circuit** (the flight records' rings: 54 u mouths, no neutral rail; `Docs/Reports/REGATTA_GRID_LOSSES.md`), so
+the circuits searched on `claude/regatta-overnight-balance` have never been raced by anyone, and the second race did
+not show them making things worse: the build Garrett played laid the old course. Measured against the roster model on
+that circuit, the real AIs were Urchin 1.00x, Squirrel 0.96x, Serpent 0.81x, Rhino 1.27x (cruising at 50 u/s for 78%
+of the race) and Manta 1.48x (0.36 missed mouths a ring, 9-14 rail rams a race); traffic was not the cause (3 of 389
+slow-downs beside another vessel). The searched circuits stay unshipped until the trained AIs race them. Garrett's
+direction, in order (the plan in full: https://claude.ai/artifact/FdaKFy6jGwwTfcKp16hjE7):
+
+1. **"Step one is making sure that each AI is trained well, otherwise training a course against AI that are so
+   imbalanced will not work."** No course search until every Regatta hull's Time AI passes all four: independent
+   restarts agree within 2% and none improves in its last 20% of evaluations; it beats every existing genome for that
+   hull on the composite over I1-I4 of its own game; it is within 15% of the best human finished time where one
+   exists; in the real game it misses no ring mouths alone AND in a six-AI grid, the model within 10%. Today no hull
+   passes: the Rhino's search has converged (three runs by hand, within 0.1%, about 28 / 31 / 36 s at I1-I3 against
+   the shipped drive's about 101 s mean) but stalls on one of three I4 seeds; the Manta, Dolphin and Squirrel searches
+   are running by hand (Compute is paused); the Urchin, Stoat, Serpent, Sparrow, Scarab and Thresher need models.
+2. **The search space is much more than ring angles and spacing**: rail sections (super-shielded, shielded, plain),
+   gaps, detours, alternate gates, crystals on the racing line ("use sparingly, it is likely noise"), lifeforms. "Other
+   ways of reducing the spread without introducing too much chaos."
+3. **Search for several local minima** and shuffle between them: **arena games lose their intensities**; Regatta is ONE
+   level that draws a course from a pool each match. Arena vessel selection becomes four options (Pick, Random, Draft
+   with snake order, Random from a saved squad: the hull and maybe the pilot, never the element), built in its own
+   thread. Arcade games keep I1-I4; that is where the AIs train.
+4. **A pool passes only if its spreads cancel, never accumulate**: 1.25x on one course "is a lot" and acceptable only
+   when the hull at the top of one course is at the bottom of another; each hull's mean time across the pool is held
+   within about 1.10x of the others, and a hull fastest on every course fails the pool. A chaos penalty (each hull's
+   time varying across seeds) keeps a coin-flip course out.
+5. **Time levels last.** "If they still require tuning then it is probably something the vessel needs": a proposal to
+   Garrett with the numbers, confirmed by him before any push.
+
+Stages 2 and 3 above are read through this: stage 2 is the pool search on the widened space, against the trained AIs;
+stage 3 is the last resort. The work runs as parallel threads, one brief each, in
+`/mnt/project-files/regatta-training/BRIEFS.md` (the project's shared folder); every thread's numbers are model numbers
+until an editor race says otherwise, and the editor is not available in the cloud.
+
 ## Where it starts (the models, today's shipped numbers, 2026-10-26)
 
 `regatta_course` on today's circuits, each hull on its offline model (`Tools/Compute/evaluators/race_models.py`):
@@ -100,3 +140,27 @@ weight (0.02 per level of mean) keeps the tuning as small as the gap allows. **P
 | 2026-10-26 | Plan set (Garrett). Compute system, the three evaluators and the stage 1-3 jobs built (`Docs/Compute/README.md`); today's spread measured (2.05-2.18x) |
 | 2026-11-02 | The Stoat is the next hull, on the orbit alone (Yash). `regatta_balance.py`'s `stoat_model` follows the kit (its Time 10 race 48.5 → 49.4 s at I1; the card's level is unchanged). No compute job yet: it needs Slingshot races first, then a `drive_fit` model from `stoat_orbit_sim.py` |
 | 2026-11-02 | The Thresher is the hull after the Stoat (Yash). The hulls Yash picks to race Regatta: Squirrel, Dolphin, Stoat, Thresher (the Sparrow stays on the card). The rule holds: the Thresher trains in Thresher Time first, and Regatta's card and design wait for that (`MINIGAME_TRAINING_PLAN.md` §12) |
+| 2026-11-06 | Manta nose lag (`time-arcade`, decision 7): in the Redline model the AI nose rate is a pure handicap. At 9/s the composite goes 22.2 to 7.3 on 12 fresh courses an intensity (I4 539 to 97 s). Two `redline-manta-nose` restarts agree within 0.6%, with the rates at the range top; the bands are flat. Proposal for Yash: a per-intensity / difficulty nose row on RedlineController (`Docs/Reports/REDLINE_MANTA_NOSE.md`) |
+| 2026-11-07 | Regatta is one level that shuffles a course POOL (Garrett, 2026-11-06): the host deals a circuit per match from `Regatta Course Pool.asset` (today the four old intensity circuits), every machine lays it, intensity no longer picks it (`REGATTA.md` §4.1; report `Docs/Reports/REGATTA_COURSE_POOL.md`). Plan step: time-arena-course |
+| 2026-11-06 | Why each AI loses in a grid, measured from 183 flights (`regatta_rival_report.py --grid`): Garrett's 11-06 races flew the OLD I4 circuit; Manta (misses, rail rams) and Rhino (50 u/s cruise) lose, traffic does not; three AI faults; MOUTH_ALPHA should be per hull. `Docs/Reports/REGATTA_GRID_LOSSES.md` |
+| 2026-11-06 | Lifeforms became a Regatta course setting, off on every shipped course (sites beside the spine, species, counts, fauna corridor; `regatta_lifeforms.py`, model-blind by design): `Docs/Reports/REGATTA_LIFEFORMS.md` |
+| 2026-11-06 | Scarab (`time-arcade`, brief 7): the AI nose lead (`AIPilot.NoseLeadGain`, off; per hull in `RaceLineStyleSO`) takes the model Scarab at Time 10 from 563-877 s I1-I4 with 2-119 misses a race to 212-221 s with under 2; not raced in Unity (`Docs/Reports/SCARAB_NOSE_LEAD.md`) |
+| 2026-11-06 | Course space widened (brief 10, `Plan step: time-arena-course`): rail sections (kind, neutral colour, detour, gap), alternate rings and line crystals in the C# behind empty defaults, ported and priced per hull in `regatta_features.py`, job `regatta-course-features` proposed; `Docs/Reports/REGATTA_COURSE_FEATURES.md` |
+| 2026-11-07 | Serpent: a Serpentine model and search (`serpenttime-serpent-time`); two restarts agree, 6-11% faster than what the mode flies, in the model; details `Docs/Reports/SERPENT_TIME_AI.md` |
+| 2026-11-07 | Rhino I4 stalls: the cause is Headlong's gate steering (`AICommitFromApproachPoint` off), not the drive; with it on, two restarts finish all 12 courses at ~38 s composite (model; `Docs/Reports/RHINO_HEADLONG_I4_STALLS.md`) |
+| 2026-11-07 | Thresher Time model + `threshertime-thresher-time` (proposed, run by hand): in the MODEL the shipped Thresher Time genome finishes no nest race and a searched "plant beside the nest" genome finishes all 48 fresh courses (best two of six restarts within 0.9%); editor soak pending (`Docs/Reports/THRESHERTIME_MODEL_2026-11-06.md`) |
+| 2026-11-06 | The Stoat's Slingshot AI searched on the trampoline (`slingshot-stoat-time`, run by hand; `slingshot_stoat_sim.py` ports the C#): a warp press on long legs takes the model from 141-153 s to 62-71 s at I1-I4, restarts 0.1% apart; a proposal for Yash, `Docs/Reports/SLINGSHOT_STOAT_AI.md` |
+| 2026-11-07 | The Sparrow (brief 4): not rail rams (0.4-7 s a race since the line) but its base drive letting go of the afterburner every 0.6 s (35 vs 197.5 u/s). Breakwater drive trained (`breakwater-sparrow-time`, by hand): hold the afterburner; model Breakwater 115-124 s vs the variant 158-162, Regatta I1 113.8 → 74.3 s. A proposal for Yash; `Docs/Reports/SPARROW_AI.md` |
+| 2026-11-07 | Urchin: Skein model, `skein_fit` and `skein-urchin-time` (proposed, run by hand). Shipped Skein I3/I4 never finish (the mode's aim misses pinned rings); restart B 19.1 → 16.4 on hold-out cables, still not well trained; Regatta's aim + a rail seek in Skein: 8.8, then 7.9 with a genome. Genome shared with Regatta. `Docs/Reports/SKEIN_URCHIN_AI.md` |
+| 2026-11-07 | The AI nose lead is a knob in every offline race model and compute evaluator (`nose_lead`, and `nose_rate` for the lag-free drive models; `Tools/Build/ai_nose_lead.py`; off by default, today's numbers unchanged byte for byte), draft PR #1826 on the integration branch. Seven lead-on twin jobs (`<job>-lead`, proposed, run by hand) re-search the Manta, Dolphin, Serpent, Urchin, Stoat, Thresher and Rhino drives with the lead on, and the pool search re-runs on the lead-on roster. Model numbers with the lead on (gain 2.5): Scarab line I3 174 → 57 s with 51 → 0 misses, Manta line I4 84 → 48 s, Sparrow Regatta I1 114 → 86 s (gain 2.0). Plan step: time-arcade |
+| 2026-11-07 | The lead-on round (briefs 15-21, draft PRs #1827-#1833, model only): the 2.5 lead alone fixes the Stoat and, at gain 1.0, the Serpent; the Dolphin and Rhino need a re-searched drive with it (the Rhino's lag-free model had over-promised: with the fleet lag its Headlong drive misses ~100 mouths); it TRAPS the Manta (1 of 16 finish) and the Urchin (no I2-I4 finish) through AIPilot's roll stick, so their fix is a faster nose (the #1780 pattern) or a lead with the roll decoupled (brief 22). The pool search on the lead-on roster (#1825 §3b): no pool passes, the closest is 4 courses at 1.106x with four leaders; what is left is the Squirrel 3-12% behind and the Manta 1-9% ahead, not the course. Per-hull table: the results report. Plan step: time-arcade |
+| 2026-11-07 | Stoat with the nose lead on (brief 19, `slingshot-stoat-time-lead`, by hand, model): two restarts 0.13% apart; on fresh courses the parent's rows with the lead go 1.141 → 1.108 composite (I1-I4 60-68 s, fewer I4 misses), and the lead-on rows are no better there (1.116-1.130), so the lead alone closes it and the drive stays. `Docs/Reports/SLINGSHOT_STOAT_AI.md` §8. Plan step: time-arcade |
+| 2026-11-07 | Rhino with the nose lead (brief 21, model): the lag-free assumption was wrong, the fleet lag makes the parent Headlong drive 4-5x slower with ~100 missed mouths and the lead alone does not fix it; re-searched with lag + lead, two restarts agree at 88.7 / 90.3 s composite (1.8%) with 10-12 misses, against 150-170 s for the parent drive with the lead. `Docs/Reports/RHINO_HEADLONG_I4_STALLS.md` |
+| 2026-11-07 | Manta with the nose lead on (brief 15, `redline-manta-time-lead`, by hand, model only): the 2.5 lead TRAPS the Manta in Redline (AIPilot's roll stick corkscrews it; 0 of 4 I2-I4 races finish, best band search 47.5 vs the lead-off winner 16.0) and costs #1780's 9/s nose row 40% (7.29 → 10.24). Keep NoseLeadGain 0 on the Manta; #1780 is its fix. `Docs/Reports/REDLINE_MANTA_NOSE.md` |
+| 2026-11-07 | Thresher with the nose lead (`threshertime-thresher-time-lead`, by hand, MODEL): the lead alone moves the parent's genome <1% (it already finishes 48/48 nests); lead-on restarts 2.736 / 2.794 (2.1% apart, not quite converged) score ~6% better on fresh courses WITH the lead but DNF up to 17/48 without it, so they wait for Yash's switch. `Docs/Reports/THRESHERTIME_MODEL_2026-11-06.md` §7 |
+| 2026-11-07 | Urchin with the nose lead (brief 18, model): the lead at 2.5 traps the AI Urchin through AIPilot's roll stick (no I2-I4 finish in either Skein; what-if Skein 8.77 → 38.55); twin restarts agree but beat nothing; no roll 9.60, lag-free nose 6.19. No lead-on genome proposed; `Docs/Reports/SKEIN_URCHIN_AI.md`. Plan step: time-arcade |
+| 2026-11-07 | Serpent with the nose lead (brief 17, model): the fleet 2.5 lead corkscrews the rolling single stick (half the I3/I4 races DNF, any drive); gain 1.0 finishes every race and with trained C scores 15.24 vs 15.85 lead off (1-4% faster, 2 misses vs 4); the drive need not move. Proposal: the Serpent's NoseLeadGain 1.0; `Docs/Reports/SERPENT_TIME_AI.md`. Plan step: time-arcade |
+| 2026-11-07 | Dolphin with the nose lead on (brief 16, `switchback-dolphin-time-lead`, run by hand): two restarts 1.676 / 1.673 (0.2% apart) vs the parent winner 1.734 and the shipped drive 1.883 with the lead on (1.724 vs 1.742 / 1.894 on 52 fresh courses); the lead alone barely moves the parent winner, I4 is prism contact not misses; model only, `Docs/Reports/SWITCHBACK_DOLPHIN_AI.md`. Plan step: time-arcade |
+| 2026-11-07 | The nose lead flies no roll stick (brief 22, draft PR #1834, off by default): the roll about the nose corkscrewed every dual-stick hull. Model: un-traps Manta and Urchin (all races finish) but their lead-off drives stay best (nose row instead); Thresher gains (2.953 vs 3.195 lead off); Serpent (single stick) unchanged, gain 1.0. `Docs/Reports/NOSE_LEAD_ROLL.md` |
+| 2026-11-07 | Brief 12: the pool search (`regatta_pool` evaluator, `regatta-pool` / `regatta-pool-features` jobs, `regatta_pool_pick.py`, `regatta_pool_render.py`). Measured roster: no course passes, floor 1.43x (Manta / Stoat vs Dolphin / Rhino / Serpent, which no course lever separates in the model); counterfactual even roster: an 8-course pool cancels to 1.045x. `Docs/Reports/REGATTA_POOL.md` |
+| 2026-11-06 | **Garrett's two I4 playtests**: the Urchin far ahead both times; both were on the OLD circuit (the searched circuits of `claude/regatta-overnight-balance` have never been raced; they stay unshipped). The real AIs were 0.8-1.5x the roster model, worst the Manta and Rhino (the section above; `REGATTA_GRID_LOSSES.md`). **Direction reset (Garrett)**: trained AIs first (the four-part test), a much wider course space, several local minima shuffled in ONE Regatta level (arena intensities go), spreads that cancel across the pool, Time levels last and only with his yes. Thirteen threads started on the briefs; `drive-rhino-headlong` run by hand three times (converged at I1-I3, stalls on one I4 seed); the Manta, Dolphin and Squirrel searches running by hand |

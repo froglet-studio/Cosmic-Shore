@@ -12,29 +12,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74a5f56c62b268ee03e09ae3a9e8811b, type: 3}
   m_Name: MantaStingConfig
   m_EditorClassIdentifier:
-  baseCapacity: 3
-  capacityPerChargeLevel: 0.2
-  minCapacity: 1
-  maxCapacity: 5
-  chargePerSkim: 0.34
-  chargeRateAtFullCharge: 2
-  minChargeRateMultiplier: 0.25
-  perPrismChargeCooldown: 1.5
-  fuseSeconds: 25
+  energyCapacity: 1
+  energyPerSkim: 0.34
+  perPrismEnergyCooldown: 1.5
+  skimPrimesExplosive: 1
+  explosiveLift: 0.55
+  explosiveLiftFadeSeconds: 0.25
+  fuseSeconds: 20
   plantSpeedMargin: 0
-  knockOffGraceSeconds: 1
-  ownFreshTrailGraceSeconds: 6
   aoePrefabs:
   - {fileID: 3479271500403630839, guid: 457e8bc651da151132eb1c90adb8b3bb, type: 3}
   bloomMaterial: {fileID: 0}
   fuseBlastScale: 70
   kabloomBlastScale: 140
+  omniScalePerExtraBomb: 0.35
+  omniScaleMultiplierMax: 3
+  bloomGrowSeconds: 2.5
+  omniBloomGrowSeconds: 4
   kabloomSelfBlastScale: 140
-  blastScaleAtFullSpace: 1.6
-  minBlastScaleMultiplier: 0.5
   contagionRadiusFraction: 1
   cascadeStaggerSeconds: 0.09
   cascadeMaxSeconds: 1.2
+  omniCrystalPrefab: {fileID: 5535990081244205914, guid: 54802b89e00a0ed4281025fa5e770811, type: 3}
+  decoyLifetimeSeconds: 45
+  decoyLifetimeAtFullMass: 2
+  minDecoyLifetimeMultiplier: 0.5
+  decoyMorphPrefabs:
+  - {fileID: 3631957846213860199, guid: c3ab658461bdc764ea9f7da47252c0ba, type: 3}
+  decoyMorphScale: 60
+  decoyTriggerRadiusScale: 1
   showFuseMarker: 1
   markerRadius: 14
   markerCalmColor: {r: 0.35, g: 0.8, b: 1, a: 1}

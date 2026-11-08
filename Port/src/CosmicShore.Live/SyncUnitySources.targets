@@ -36,7 +36,8 @@
           new("UnityEngine.Audio", "CosmicShore.Engine.Audio"),
           new("UnityEngine", "CosmicShore.Engine"),
           new("TMPro", "CosmicShore.Engine.UI"),
-          new("Obvious.Soap", "CosmicShore.Engine.Soap"),
+          new("CosmicShore.Soap", "CosmicShore.Engine.Soap"),
+          new("Obvious.Soap", "CosmicShore.Engine.Soap"), // branches written before 2026-11-06
           new("Unity.Netcode", "CosmicShore.Engine.Networking"),
           new("Unity.Services.Multiplayer", "CosmicShore.Engine.Networking"),
           new("Unity.Services.Lobbies", "CosmicShore.Engine.Networking"),

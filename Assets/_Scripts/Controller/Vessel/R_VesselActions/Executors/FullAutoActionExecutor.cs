@@ -4,7 +4,7 @@ using UnityEngine;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Utility;
 using System.Linq;
 

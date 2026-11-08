@@ -310,7 +310,8 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("An autopilot also presses for the WARP alone, its target dead ahead, while its ring is at least this far " +
                  "away: on the orbit-only Stoat a held pair is the hull's only speed (Tools/Build/stoat_orbit_sim.py, " +
-                 "2026-11-02). 0 = it presses only to turn (shipped since speed is earned by the orbit).")]
+                 "2026-11-02). 0 = it presses only to turn (shipped since speed is earned by the orbit). The trampoline's autopilot " +
+                 "reads it too since 2026-11-06: it lays a shell on a long leg and grazes it shallow (slingshot_stoat_sim.py).")]
         [SerializeField, Min(0f)] float aiWarpMinDistance = 0f;
 
         [Tooltip("Once caught, the autopilot HOLDS for the sweet spot and launches there whenever its aim (launchConeDegrees) " +

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 66 - notes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050003}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#A8869A}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#F5E6EE;margin:0;font-weight:400}
+.h2{font-family:'Aldrich',sans-serif;font-size:28px;color:#F5E6EE;margin:0;font-weight:400}
+.h3{font-family:'Aldrich',sans-serif;font-size:20px;color:#F5E6EE;margin:0;font-weight:400}
+.body{font-family:'Aldrich',sans-serif;font-size:17px;line-height:1.45;color:#F5E6EE;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:14px;line-height:1.4;color:#A8869A;margin:0}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.panel{background:linear-gradient(160deg,rgba(112,64,95,.34) 0%,rgba(112,64,95,0) 38%),linear-gradient(180deg,rgba(60,29,49,.92),rgba(52,25,43,.9));box-shadow:inset 0 0 0 1px #7A5068,inset 0 1px 0 rgba(101,225,223,.45)}
+.nav{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:#A8869A;text-decoration:none;display:flex;align-items:center;gap:12px;height:42px;padding:0 16px}
+.nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;flex:none}
+.nav.on{color:#F5E6EE;background:#3C1D31;box-shadow:inset 2px 0 0 #65E1DF}
+.seg{display:flex;padding:0 4px;background:#3C1D31;box-shadow:inset 0 0 0 1px #70405F}
+.seg button{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;border:0;background:transparent;color:#A8869A;height:38px;padding:0 9px;white-space:nowrap}
+.seg button.on{color:#F5E6EE;box-shadow:inset 0 -2px 0 #65E1DF}
+.chip{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:0;background:#3C1D31;color:#F5E6EE;box-shadow:inset 0 0 0 1px #70405F}
+.chip.on{box-shadow:inset 0 0 0 1px #65E1DF,inset 0 -2px 0 #65E1DF}
+.chip i{font-style:normal;color:#A8869A}
+.btn{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:14px;letter-spacing:.12em;text-transform:uppercase;border:0;height:42px;padding:0 20px;display:inline-flex;align-items:center;gap:10px}
+.btn.cta{background:#C4F637;color:#13010C}
+.btn.def{background:#F5E6EE;color:#13010C}
+.btn.ghost{background:transparent;color:#F5E6EE;box-shadow:inset 0 0 0 1px #70405F}
+.th{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#A8869A;text-align:left;padding:8px 10px;border-bottom:1px solid #70405F;white-space:nowrap}
+.th.sort{color:#F5E6EE}
+.td{font-family:'Aldrich',sans-serif;font-size:14px;color:#F5E6EE;padding:8px 10px;border-bottom:1px solid rgba(112,64,95,.6);font-variant-numeric:tabular-nums;white-space:nowrap}
+.field{background:#050003;box-shadow:inset 0 0 0 1px #70405F;height:40px;display:flex;align-items:center;padding:0 14px;color:#A8869A;font-family:'Aldrich',sans-serif;font-size:15px}
+.code{background:#050003;box-shadow:inset 0 0 0 1px #70405F;padding:10px 14px;font-family:'Aldrich',monospace;font-size:13px;line-height:1.45;color:#7BA0FF;white-space:pre;margin:0}
+.tag{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;box-shadow:inset 0 0 0 1px #70405F;color:#A8869A}
+
+.mseg{display:flex;background:#050003;box-shadow:inset 0 0 0 1px #70405F}
+.mseg button{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:0;background:transparent;color:#A8869A;height:28px;padding:0 8px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.mseg button.on{color:#F5E6EE;box-shadow:inset 0 -2px 0 #65E1DF}
+.dd{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;height:28px;padding:0 10px;border:0;background:#050003;color:#F5E6EE;box-shadow:inset 0 0 0 1px #70405F;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.dd i{font-style:normal;color:#A8869A}
+.ib{width:28px;height:28px;border:0;background:#050003;box-shadow:inset 0 0 0 1px #70405F;color:#A8869A;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.tick{font-family:'Aldrich',sans-serif;font-size:13px;color:#F5E6EE;padding:6px 10px;border-bottom:1px solid rgba(112,64,95,.5);white-space:nowrap;font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width:1920px;height:900px;box-sizing:border-box;position:relative;overflow:hidden;background:#13010C;color:#F5E6EE;font-family:'Aldrich',sans-serif;padding:40px 56px;display:flex;flex-direction:column;gap:16px"><span class="lab">Rev 66 · notes</span><h1 class="h1">Froglet Analytics, more ideas</h1><p class="body" style="color:#A8869A;max-width:1600px">Asked (Shombith, 2026-11-06, after picking all seven Rev 65 screens): "If you have more ideas provide mockups lets do that too", and "switches in graphs which helps all these departments". Six new screens of the same console, not options: pick any to build. Rev 65's kit and theme (Nocturne, the sea lines); every number is sample data from Rev 65's set (Dragon, Kes and Halcyon are the same players).</p><table style="border-collapse:collapse;width:100%"><thead><tr><th class="th">Screen</th><th class="th">What it adds</th><th class="th">What the server has, and what is new</th></tr></thead><tbody><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Chart switches</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Every chart carries its own row: Form (Bars, Line, Pie, Table), Measure, Split by, and pin / copy / back. Business, Marketing and Analysis each keep their own setting of the same chart; the page never changes for them.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">In the contract: GET /v1/series (measure x split x over) feeds every switchable chart; a pair the aggregates cannot answer is a 400 and the option is hidden. New: each person's switch settings per chart (a small store); a country-by-day aggregate.</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Live now</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Online now, in a match, in the menus, in the FTUE, parties open; the last hour by play type; what is being played; a tile per country; a ticker of events, paused by hand, never scrolling by itself.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">New: GET /v1/live over events.db's last 5 minutes (received_ms). The client flushes every 30 s, so live is 30 to 60 s behind. Names only for profile keys; readers get counts and countries.</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Alerts</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Rules an admin sets (D1 under 35%, rejects 5x the median, any double payout, a mode under 15% finished, rows per play over 1.05) and anomalies Claude finds; each card shows its chart and why, and opens the page that explains it.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">Has: rejects, double_payouts, returns, daily_plays, plays by mode. New: an alerts table, rules in the store, an hourly job after the rebuild; Claude reads aggregates only. Rejects are per day today; per hour is new.</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Funnel builder</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Any events or FTUE steps in order, within 1 / 7 / 30 days, strict or any order; conversion and drop-off, split by any dimension; time between steps; where the ones who dropped went instead; save as a funnel or a segment.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">Has: the fixed first-day funnel and ftue_steps. New: POST /v1/funnel over events.db per player (profiles key), only counts come back. No real-money purchase event exists: the last step is the first crystal spend.</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Release compare</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Build A against build B over the first N days of each: finished, exceptions, launch time p50 / p90, D1 / D7, rematch, rows per play; a read per measure (better, worse, too early under 30 players), split by platform.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">Has: app_version on plays and events. New: launches and returns split by app_version; an exception event (rate-limited, a hash of the message and its top frame) the game does not send yet.</td></tr><tr><td class="td" style="vertical-align:top;color:#65E1DF;white-space:nowrap">Player compare</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45">Two or three players side by side from the Players page (best per row underlined, matches a week, play types), and players like this one: the nearest six on play mix, modes, hours, finish and lifespan, to compare or save as a segment.</td><td class="td" style="vertical-align:top;white-space:normal;line-height:1.45;color:#A8869A">Has: /v1/people and /v1/person carry every number. New: GET /v1/similar?id= (profiles key), worked out on the server; Claude is not asked.</td></tr></tbody></table><p class="small" style="max-width:1700px">The switch row is the one piece every other board uses, so it would come first. Colour: a split wears Jade, Ruby, Gold, Blue in that order with a legend, so colour is never the only cue; play types keep Rev 65's Jade solo vs AI, Gold solo, Ruby multiplayer; unsplit data is Blue; a heat or map is one hue. On a board where colour means a build or a player, play types are words. Red is only a fault (an alert, a worse number); Lime only a better one. No player id reaches Claude on any of these.</p></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1920, "height": 900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

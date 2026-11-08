@@ -49,6 +49,14 @@ namespace CosmicShore.Gameplay
             if (crystal) crystal.ModelMaterialSettled -= Sync;
         }
 
+        /// <summary>Syncs the accent once, now, even before this component has woken - for a copy of the crystal whose
+        /// <see cref="Crystal"/> is about to be stripped (the Manta's decoy), which will never raise the settle event.</summary>
+        public void SyncNow()
+        {
+            if (!_renderer) _renderer = GetComponent<Renderer>();
+            if (crystal && _renderer) Sync();
+        }
+
         void Sync()
         {
             var models = crystal.CrystalModels;

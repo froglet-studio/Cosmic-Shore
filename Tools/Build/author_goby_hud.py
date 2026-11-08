@@ -186,13 +186,25 @@ def icons():
         yield p
 
 
+# The ability-icon kit owns the PNGs now (Tools/Build/icon_kit/specs/goby.py, the 2026-11-07 roster pass: each seat's
+# cards drawn from the real Goby and Pistol hulls). This generator keeps the guids it gave them (the metas) and the
+# variant's bindings; the placeholder drawings above stay only as the record of what the kit replaced.
+KIT_OWNS_PNGS = True
+OMNI_PNG = "Core/Goby_OmniCrystal.png"
+
+
+def kit_guid(name: str) -> str:
+    """The icon kit's deterministic guid for a NEW icon (icon_kit/author.py guid_for): the omni card's sprite."""
+    return hashlib.md5(f"CosmicShore/IconKit/Goby/{name}".encode()).hexdigest()
+
+
 def icon_writes() -> dict:
-    for png, fn in icons():
-        c = coverage(fn)
-        assert 0.08 <= c <= 0.45, f"{png}: coverage {c:.3f} outside the readable band"
     out = {ICON_DIR + ".meta": folder_meta(guid_for("Goby.folder"))}
     for png, fn in icons():
-        out[f"{ICON_DIR}/{png}"] = render(fn)
+        if not KIT_OWNS_PNGS:
+            c = coverage(fn)
+            assert 0.08 <= c <= 0.45, f"{png}: coverage {c:.3f} outside the readable band"
+            out[f"{ICON_DIR}/{png}"] = render(fn)
         out[f"{ICON_DIR}/{png}.meta"] = sprite_meta(guid_for(png))
     return out
 
@@ -311,7 +323,7 @@ MonoBehaviour:
   highlights: []
   abilityIcons:
 {"".join(bindings)}  coreAbilities: []
-  omniAbilitySprite: {{fileID: 0}}
+  omniAbilitySprite: {{fileID: 21300000, guid: {kit_guid("Goby_OmniCrystal")}, type: 3}}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35
@@ -615,7 +627,7 @@ def main(argv) -> int:
         return 1 if drift or errs else 0
     print(f"wrote {len(drift)} file(s)" + "".join(f"\n  {d}" for d in drift))
     for png, fn in icons():
-        print(f"  {png:20} guid {guid_for(png)}  coverage {coverage(fn):.3f}")
+        print(f"  {png:20} guid {guid_for(png)}  (drawn by icon_kit/specs/goby.py)")
     return 1 if errs else 0
 
 

@@ -15,32 +15,32 @@ MonoBehaviour:
   vesselClass: 3
   entries:
   - Element: 1
-    AbilityLabel: 'Energize'
-    AbilityDescription: 'Hold both triggers to light the blade: it costs nothing and its cooldown is its only limit (the Rhino has no energy meter since 2026-10-26). A lit blade lays the afterimages (Mass) and, with the Space level-5 upgrade, pops super-shielded prisms. Charge also scales how many petals a sword hit takes from a rival vessel - x1 at rest (the price Broadside puts on a Strike), x2.5 at level 10, floored at x1 (RhinoSwordStealBySkimmerEffect.stealScale, read at the thief''s replicated level). Below Charge 5 those petals are knocked loose as crystals at the strike; the level-5 upgrade makes the sword pocket them.'
-    Input: 13
+    AbilityLabel: 'Carry'
+    AbilityDescription: 'A thrown prism flies on past where the furrow lands it to strike the next one in its line, and a thrown prism that strikes another destroys both (prism motion). Charge sets how far it still reaches: 0 at rest (it strikes only what is in its way), 40 u at level 10, floored at 0, read at the replicated level so every peer strikes alike (RhinoPloughPrismEffect.carryDistance). A prism that strikes nothing still lands where the furrow puts it.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Sword Steal'
-    UpgradeDescription: 'A sword hit on a rival vessel STEALS its petals - they land on the Rhino instead of being knocked loose as crystals at the strike (the same verb and numbers as the Squirrel''s joust). RhinoSwordStealBySkimmerEffect.stealUpgradeElement, gated on IsUpgradeActive(Charge) in VesselOvertakeBySkimmerEffectSO.TakeFrom (Garrett, 2026-10-26).'
+    UpgradeLabel: 'Avalanche'
+    UpgradeDescription: 'A strike carries on: the next prism down the line within the carry is thrown on too, and its own strike can throw the next, up to 3 more (RhinoPloughPrismEffectSO.avalancheUpgradeElement, gated on IsUpgradeActive(Charge); Garrett, 2026-11-07).'
   - Element: 2
-    AbilityLabel: 'Afterimage'
-    AbilityDescription: 'When the energized blade goes out, the sword keeps leaving copies of itself - prisms in the blade''s own shape and pose - for 5 s (RhinoSwordAfterimage, RhinoSwordAfterimageConfig). An omni-crystal surge (8 s, a ring of eight trigger-driven swords round the hull) lays them for its whole length, from the pilot's blade. Mass scales their VOLUME: x1 at rest, x2.5 at level 10, floored at x0.25, read at the replicated level so every peer lays the same mass. They are not immune to the Rhino''s own blade: past the 1 s self-trail grace it cuts them like any prism.'
-    Input: 13
+    AbilityLabel: 'Blade'
+    AbilityDescription: 'A plough blade across the nose: one hull collider whose width follows Mass - 14 u at rest (a little wider than the hull), 40 u at level 10, floored at 10, read at the replicated level (RhinoPloughBlade.width). A wider blade catches more mass, and the plough throws what it catches clear of the whole blade.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Danger Afterimages'
-    UpgradeDescription: 'The afterimages are laid as DANGER prisms (RhinoSwordAfterimageConfigSO.dangerUpgradeElement, gated on IsUpgradeActive(Mass), snapshotted per afterimage).'
+    UpgradeLabel: 'Berm'
+    UpgradeDescription: 'A ploughed prism LANDS SHIELDED, so the furrow banks into walls of armour; a prism that strikes another still breaks (RhinoPloughPrismEffectSO.bermUpgradeElement, gated on IsUpgradeActive(Mass); Garrett, 2026-11-07).'
   - Element: 3
-    AbilityLabel: 'Blade Reach'
-    AbilityDescription: 'Space alone grows the sword: the blade runs 24 at rest to 40 at level 10 (Skimmer.Scale on the Rhino''s ForceFieldSkimmer, eased in by ShieldSkimmerScaleDriver), and nothing else resizes it - no energy, no surge burst (2026-10-26). The local pilot''s camera pulls back with it, in proportion (ShieldSkimmerScaleConfig.cameraFollowsBladeLength), so the blade reads the same size on screen. Reach is what the blade cuts, what it strikes an Astro League ball with at the tip, and how far the afterimages and the surge''s sword ring reach.'
-    Input: 13
+    AbilityLabel: 'Furrow'
+    AbilityDescription: 'How far aside the plough throws what the hull hits: Space adds 0 u at rest to 20 u at level 10 to every throw, at any speed, on top of the speed-driven throw (speed x 0.04 s, at most 30 u) (RhinoPloughPrismEffect.furrowDistance, replicated level). Pull a trigger for a little shove that way; HOLD it and everything the hull ploughs is thrown to that side, across the centreline (RhinoPloughSteerAction: LT left, RT right, the last one pulled wins). Let go and each prism goes to the side it already sat on.'
+    Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Shield Breaker'
-    UpgradeDescription: 'The sword can destroy SUPER-SHIELDED prisms: an energized blade pops them. Without the upgrade the blade binds in hardened mass, energized or not. ShieldSkimmerScaleConfigSO.superShieldUpgradeElement, gated on IsUpgradeActive(Space) (Garrett, 2026-10-26).'
+    UpgradeLabel: 'Unstoppable'
+    UpgradeDescription: 'The plough moves SUPER-shielded mass too; without it super-shielded prisms are the immovable tier and only jiggle (RhinoPloughPrismEffectSO.unstoppableUpgradeElement, gated on IsUpgradeActive(Space); Garrett, 2026-11-07). Arena linings and race tracks are super-shielded, so an upgraded Rhino can plough them out of line.'
   - Element: 4
     AbilityLabel: 'Ramp Spool'
     AbilityDescription: 'Time raises how fast the ramp boost winds the Rhino up to its top speed: 220 u/s per second at rest, 550 at level 10, 110 at the -5 floor (RampBoostActionSO.timeAccelerationMultiplier, x1 -> x2.5, floored x0.5, read live). It does not raise the ceiling - cruise 50 x maxBoostMultiplier 16.8 = 840 u/s - only how long the run-up takes. The Rhino is a bulldozer: its hull carries no prism slow, so ramming mass costs it no speed - the plough shoves what it hits aside (RhinoPloughPrismEffectSO) and the ramp keeps climbing through it.'
@@ -50,4 +50,4 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: 'Momentum'
     UpgradeDescription: 'Above 70% of top speed (588 u/s) danger prisms cannot drain the Rhino''s elements - the elemental-debuff ward scoped to DangerPrism alone, so an opposing pilot''s blast still lands (VesselElementalImmunity on the root, condition WhileAboveTopSpeedFraction, upgradeGate Time). The Time card lights while the ward is holding.'
-  omniAbilityLabel: Surge
+  omniAbilityLabel: 

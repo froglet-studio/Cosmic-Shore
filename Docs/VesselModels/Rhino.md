@@ -1,5 +1,7 @@
 # MODEL DOSSIER — Rhino
 
+> **SPLIT, 2026-11-07.** The Rhino became two hulls (`R_VesselActions/SWORDFISH.md`): the **Swordfish** (class 30) draws this same rig and keeps the sword; the **Rhino** keeps the plough. The Charge morph below is "the blade" of the model, not the Swordfish's sword. Until `/vessel-model` gives the Swordfish its own hull, both prefabs draw `rhino_shapekey_with_animations.fbx`, and the four `Rhino_*_HullFusionBake` assets serve both (the Swordfish's `CrystalHullFusionConfig` entries reuse them). The Rhino prefab lost its five blade tracers and gained a `PloughBlade` hull collider across the nose.
+
 > **COLOUR PASS, 2026-10-18 (`COLOR.md`).** The rig's `.meta` now remaps `accent.005` to the domain
 > (GreenAccent), `BASE.005` to the body (BlueBase) and `N.005` to `EngineVesselMaterial`. Before, the domain covered
 > 80 % of the hull and the nozzles wore window glass. Now the artist's neon stripes carry the team colour, as the

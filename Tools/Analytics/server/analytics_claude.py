@@ -91,9 +91,13 @@ def _client():
     except ImportError:
         return None, "the anthropic package is not installed on the server (pip install anthropic)"
     try:
-        return anthropic.Anthropic(), None
+        client = anthropic.Anthropic()
     except Exception as exc:  # no credentials configured
         return None, f"no Claude credentials on the server ({type(exc).__name__})"
+    # Newer SDKs build a client with no key and fail only when a request is sent: treat that as off, here.
+    if not (getattr(client, "api_key", None) or getattr(client, "auth_token", None)):
+        return None, "no Claude credentials on the server (ANTHROPIC_API_KEY is not set)"
+    return client, None
 
 
 def _structured(client, model, effort, system, user, schema, max_tokens=4000):
@@ -116,6 +120,8 @@ def _structured(client, model, effort, system, user, schema, max_tokens=4000):
         return None, f"Claude returned an error ({exc.status_code})"
     except anthropic.APIConnectionError:
         return None, "the server could not reach Claude"
+    except Exception as exc:  # anything else (credentials, the SDK) is a reason too, never a crash
+        return None, f"Claude could not be asked ({type(exc).__name__})"
     if response.stop_reason == "refusal":
         return None, "Claude declined this question"
     if response.stop_reason == "max_tokens":

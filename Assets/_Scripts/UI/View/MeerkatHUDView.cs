@@ -31,13 +31,18 @@ namespace CosmicShore.UI
         [Tooltip("Time card: what is left of the ride through a soliton.")]
         [SerializeField] Image rideGauge;
 
-        [Header("Colours")]
+        [Header("Colours (UI theme tokens, Docs/UI_STYLE_GUIDE.md)")]
+        [Tooltip("The UI theme the gauge tokens resolve against; unwired falls back to the style guide's values.")]
+        [SerializeField] UIThemeSO theme;
         [Tooltip("Every gauge's resting colour.")]
-        [SerializeField] Color gaugeColor = new(0.59f, 0.65f, 0.76f, 1f);
-        [Tooltip("Sentinel Mode on, a soliton RT would form, and the ride under way.")]
-        [SerializeField] Color readyColor = new(157f / 255f, 1f, 46f / 255f, 1f);
+        [SerializeField] UIColorToken gaugeToken = UIColorToken.NeutralLightest;
+        [Tooltip("Sentinel Mode on, a soliton RT would form, and the ride under way: lime is the call to action.")]
+        [SerializeField] UIColorToken readyToken = UIColorToken.Cta;
         [Tooltip("How fast a gauge eases to its colour (1/s, exponential, unscaled time).")]
         [SerializeField, Min(0f)] float colorBlendRate = 15f;
+
+        Color GaugeColor => UITheme.Resolve(theme, gaugeToken);
+        Color ReadyColor => UITheme.Resolve(theme, readyToken);
 
         /// <summary>Seat every readout at rest. Idempotent: it re-runs on a vessel swap.</summary>
         public override void Initialize()
@@ -52,7 +57,7 @@ namespace CosmicShore.UI
         {
             if (!gauge) return;
             gauge.fillAmount = 0f;
-            gauge.color = gaugeColor;
+            gauge.color = GaugeColor;
         }
 
         /// <summary>The Charge card: <paramref name="standing01"/> of the pool, in the ready colour while <paramref name="on"/>.</summary>
@@ -72,7 +77,7 @@ namespace CosmicShore.UI
             if (!gauge) return;
             gauge.fillAmount = Mathf.Clamp01(fill01);
             float k = 1f - Mathf.Exp(-colorBlendRate * Time.unscaledDeltaTime);
-            gauge.color = Color.Lerp(gauge.color, ready ? readyColor : gaugeColor, k);
+            gauge.color = Color.Lerp(gauge.color, ready ? ReadyColor : GaugeColor, k);
         }
 
         /// <summary>

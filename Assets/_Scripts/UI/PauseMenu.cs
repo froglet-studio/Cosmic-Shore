@@ -5,7 +5,7 @@ using CosmicShore.UI;
 using UnityEngine;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine.Serialization;

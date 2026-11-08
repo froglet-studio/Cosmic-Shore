@@ -186,6 +186,12 @@ While the person holds a gunner seat:
 - **Targets**, re-picked every 0.4 s: an omni crystal when the seat's magazine is down to one, else the nearest rival
   hull or hostile prism, else any crystal.
 - **The AI helm** raises the shield when a rival Orca's missile closes on the hull.
+- **The AI helm burns** (2026-11-07; before that it never did, so an AI Orca flew every mode at cruise). A race's coach
+  says when (`RaceCoach`, `IOrcaRaceCoach`, Breach); everywhere else `HelmAIWantsBurn` (`AI/Orca/OrcaCrewAI.cs`) burns
+  with the nose within `aiBurnAlignDegrees` (8) of the AI pilot's target, the target at least `aiBurnMinDistance`
+  (250 u) off, and a burn started only on `aiBurnMinTank` (1 s) of tank. `aiBurns` off restores the cruise-only AI. `BoostTankSeconds` and `Boosting` are read-only accessors for it. Nothing about the tank or the burn changed. Breach
+  (`Arcade/BREACH.md`) also found that **holding the burn on an empty tank keeps it empty** (the tank refills only while
+  the burn is let go), which a person learns at its I1.
 - The default skill is **Hard** (`aiSkill`).
 
 ## The model (round 6)

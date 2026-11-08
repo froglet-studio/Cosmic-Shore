@@ -5,7 +5,7 @@ using CosmicShore.Data;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using FMODUnity;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using UnityEngine;
 

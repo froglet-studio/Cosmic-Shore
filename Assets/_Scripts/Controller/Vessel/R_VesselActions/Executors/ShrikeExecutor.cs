@@ -4,7 +4,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using UnityEngine;
 
@@ -174,6 +174,8 @@ namespace CosmicShore.Gameplay
         public bool Slinging => _slinging;
         public bool Tethering => _tethering;
         public bool Painting => _mode == Mode.Charge && _triggerHeld;
+        /// <summary>RT held in Space mode: the Void Lance is firing. The HUD's Space card.</summary>
+        public bool Lancing => _mode == Mode.Space && _triggerHeld;
         public bool Locked => _lock != ShrikeRules.LockClass.None;
         public bool Zooming => _zoomHeld;
         /// <summary>0 just fired … 1 ready.</summary>
@@ -1559,7 +1561,10 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            if (Docked && _dockedFor >= config.AiDockSeconds && TryResolve(handler, ShrikeControl.Mass, out var massInput))
+            // Detach only once the sling has reloaded: the docked reload is the fast one, and a plain thorn's (3.1 s at
+            // Time 0) outlasts aiDockSeconds, so an AI that left on the timer alone reloaded at the slow undocked rate.
+            if (Docked && _dockedFor >= config.AiDockSeconds && _slingCd <= 0f
+                && TryResolve(handler, ShrikeControl.Mass, out var massInput))
             {
                 handler.PerformShipControllerActionsReplicated(massInput);
                 handler.StopShipControllerActionsReplicated(massInput);

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// An AI seat on an Ark escort (<see cref="ArkEscortRun"/>): the vessel's own <see cref="AIPilot"/> flies, this
+    /// An AI seat on an Ark escort or a voyage (<see cref="IArkEscortHost"/>): the vessel's own <see cref="AIPilot"/> flies, this
     /// dispatches to the hull's <b>role</b> (<see cref="IArkEscortRole"/>, chosen by vessel type in
     /// <see cref="ArkEscortRoles.Create"/>) for where to fly, what to press and how far to roam. The roles share one
     /// <see cref="ArkEscortContext"/> the run keeps: the threats ranked, seat claims, the lane-clear test.
@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
         /// <summary>How far from the Ark a creature counts as a threat to hunt (<c>ai.escort.guardRadius</c>).</summary>
         public static float GuardRadius => EscortGeneRegistry.GuardRadius;
 
-        ArkEscortRun _run;
+        IArkEscortHost _run;
         AIPilot _pilot;
         IVesselStatus _status;
         int _seat;
@@ -29,9 +29,9 @@ namespace CosmicShore.Gameplay
         public AIPilot Ai => _pilot;
         public IVesselStatus Status => _status;
         public IArkEscortRole Role => _role;
-        public ArkEscortRun Run => _run;
+        public IArkEscortHost Run => _run;
 
-        public void Arm(ArkEscortRun run, int seat)
+        public void Arm(IArkEscortHost run, int seat)
         {
             _run = run;
             _seat = seat;
@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
 
             _steering = false;
             SetSteering(true);
-            var cell = run ? run.CurrentCell : null;
+            var cell = run != null ? run.CurrentCell : null;
             if (cell) OnLegChanged(cell);
         }
 
@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
         /// <summary>This seat's leash, given the squad's: a role may let it out (the Squirrel's nucleus run).</summary>
         public float Leash(float leash)
         {
-            var ctx = _run ? _run.Context : null;
+            var ctx = _run != null ? _run.Context : null;
             return _role != null && ctx != null ? _role.Leash(ctx, leash) : leash;
         }
 
@@ -90,14 +90,14 @@ namespace CosmicShore.Gameplay
 
         Vector3 Target()
         {
-            var ctx = _run ? _run.Context : null;
+            var ctx = _run != null ? _run.Context : null;
             if (ctx == null || !ctx.Ark || _role == null) return transform.position + transform.forward * 100f;
             return ctx.AvoidHull(transform.position, _role.Steer(ctx));
         }
 
         void Update()
         {
-            if (!_run || !_run.IsActive || _role == null) return;
+            if (_run == null || !_run.IsActive || _role == null) return;
             var ctx = _run.Context;
             if (ctx == null || !ctx.Ark) return;
             _role.Tick(ctx);

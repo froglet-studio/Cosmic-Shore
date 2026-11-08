@@ -843,8 +843,11 @@ def check(files: "dict[str, str]") -> "list[str]":
         need(f"guid: {SCRIPT['ShrikeHUDView']}" in hud and BRITTLESTAR["BrittleStarHUDView.cs"] not in hud, "the HUD variant's view is not ShrikeHUDView")
         for field in ("chargeGauge", "massGauge", "spaceGauge", "timeGauge"):
             need(re.search(r"  %s: \{fileID: [1-9]\d*\}" % field, hud), f"HUD view field {field} is not wired")
+        # Since the 2026-11-07 icon roster pass the kit (Tools/Build/icon_kit/specs/shrike.py) seats each card's parts
+        # under its slot icon and leaves the slot's own sprite empty, so the Shrike sprite is there OR the kit's parts are.
+        kit_parts = "arrayShrikeIcon:" in hud
         for old, new in ICON_SWAP.items():
-            need(old not in hud and new in hud, f"HUD icon {new} not swapped in")
+            need(old not in hud and (new in hud or kit_parts), f"HUD icon {new} not swapped in")
 
     for path, want in owned_files().items():
         have = files.get(path)

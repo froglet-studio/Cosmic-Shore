@@ -25,7 +25,7 @@ SCRIPT_META = "Assets/_Scripts/Controller/IO/TouchControls/TouchControlProfileLi
 
 VESSEL = dict(Manta=1, Dolphin=2, Rhino=3, Urchin=4, Grizzly=5, Squirrel=6, Serpent=7, Shrike=10, Sparrow=11,
               Scarab=12, Thresher=14, Stoat=15, BrittleStar=16, Angler=17, Goby=18, Wrasse=19, Orca=20, Honeyguide=23,
-              Meerkat=28, TigerMoth=29)
+              Meerkat=28, TigerMoth=29, Swordfish=30)
 INPUT = dict(RightStick=1, LeftStick=2, Flip=3, Idle=4, A=6, B=7, X=8, Y=14)
 ELEMENT = dict(none=0, Charge=1, Mass=2, Space=3, Time=4)
 SCHEME = dict(ThumbLifts=0, TotemButtons=1)
@@ -73,10 +73,15 @@ PROFILES = [
     # flipped with it and put back on 2026-10-25 ("manta gyro has its yaw controls flipped from intended").
     profile("Manta", "ThumbLifts", tiltSteer=True, tiltFlipPitch=True, idleFull=True,
             glyphs=[("Mass", "LiftEitherThumb"), ("Time", "LiftBothThumbs")]),
-    # A lift swings that side's blade; both thumbs off energizes (both triggers fully pulled).
-    profile("Rhino", "ThumbLifts", idleTriggers=True,
+    # The Swordfish (the Rhino's sword, split off 2026-11-07): a lift swings that side's blade; both thumbs off
+    # energizes (both triggers fully pulled).
+    profile("Swordfish", "ThumbLifts", idleTriggers=True,
             glyphs=[("Charge", "LiftBothThumbs"), ("Mass", "LiftEitherThumb"), ("Space", "LiftEitherThumb"),
                     ("Time", "ThumbsApart")]),
+    # The Rhino (the plough, 2026-11-07): a lift is that side's trigger - a little shove that way, and the plough
+    # throws to that side while the thumb stays up. Carry and Blade are passive; nothing energizes any more.
+    profile("Rhino", "ThumbLifts",
+            glyphs=[("Space", "LiftEitherThumb"), ("Time", "ThumbsApart")]),
     # The Tiger Moth (the Butterfly's airframe with the Drop; the Butterfly retired 2026-10-29) keeps its LT binding: lift
     # the right thumb to drop, put it back to land (R_VesselActions/TIGER_MOTH.md).
     profile("TigerMoth", "ThumbLifts",

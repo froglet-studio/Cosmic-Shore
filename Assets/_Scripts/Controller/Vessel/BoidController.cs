@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.UI;
 
 namespace CosmicShore.Gameplay

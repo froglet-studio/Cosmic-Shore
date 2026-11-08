@@ -76,7 +76,7 @@ MonoBehaviour:
     - element: 4
       glyph: 4
     coreGlyphs: []
-  - vessel: 3
+  - vessel: 30
     scheme: 0
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
@@ -96,6 +96,27 @@ MonoBehaviour:
       glyph: 4
     - element: 2
       glyph: 3
+    - element: 3
+      glyph: 3
+    - element: 4
+      glyph: 5
+    coreGlyphs: []
+  - vessel: 3
+    scheme: 0
+    liftDeferSeconds: 0
+    tiltRollOnOneThumb: 0
+    tiltSteersWhileIdle: 0
+    flipTiltSteerPitch: 0
+    flipTiltSteerYaw: 0
+    oneThumbResponseCurve: 0
+    idlePullsBothTriggers: 0
+    idleFullThrottle: 0
+    toggleElements: []
+    displayOnlyElements: []
+    extraButtons: []
+    throttleSlider: 0
+    throttleSliderStart: 0.5
+    glyphs:
     - element: 3
       glyph: 3
     - element: 4

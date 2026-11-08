@@ -254,6 +254,12 @@ The **selected mode's card** turns the ready colour.
 | Space | The lance cooldown | Space is selected |
 | Time | The sling cooldown | Time is selected |
 
+**The cards (2026-11-07 icon roster pass, `Tools/Build/icon_kit/specs/shrike.py`):** each card is drawn from the real
+hull in parts under its slot icon, painted by `ShrikeHUDView.RefreshParts`: the reticle solid and the missiles in while a
+lock is painted with a missile ready; the nest cup solid while docked and a flora once a nest stands; the lance's beam and
+broken prism while RT is held in Space mode (Void Pierce's block at Space 5); the sling's tether and laid blocks. The
+"ready colour" is the pilot's domain now, not the CTA lime.
+
 ## 5. Networking
 
 Like the Brittle Star, the executor runs on every peer, because the presses replicate.
@@ -283,7 +289,8 @@ blocks. The 2026-10-15 control scheme and flora live in Unity only, until the st
   design slots.
 - **FMOD:** every event slot on `ShrikeConfig.asset` ships empty.
 - **Element minigames.** The Shrike's two studio minigames do not yet follow labmaker §1.5, one minigame per element:
-  - Time: race;
+  - Time: race - **Thornline** (`GameModes.Thornline`, 2026-11-07, `Arcade/THORNLINE.md`): thorn to thorn on the Void
+    Sling, a ring a leg; the mode leaves the kit as it is;
   - Space: destruction;
   - Mass: creation;
   - Charge: dogfight.

@@ -65,7 +65,10 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Scale of the unselected ON/OFF button.")] float unselectedScale = 0.95f;
 
         [Header("General")]
-        [SerializeField] TMP_Dropdown colorblindDropdown;
+        [SerializeField, Tooltip("Accessibility's breadcrumb to the colour sets: opens the Profile on its Colour sets " +
+                                 "tab, where the sets made for colour blindness, low vision and contrast live beside " +
+                                 "the others. Main menu only - see ApplyContextLock.")]
+        Button colourSetsButton;
         [SerializeField] OnOffControl subtitles;
         [SerializeField] TMP_Dropdown subtitleScaleDropdown;
         [SerializeField] OnOffControl analyticsConsent;
@@ -126,7 +129,6 @@ namespace CosmicShore.UI
         [SerializeField] string bugReportUrl = "https://www.froglet.games/support";
 
         // Option labels (index == enum value - the controller fills these, never author them in the dropdown)
-        static readonly string[] ColorblindOpts = { "Off", "Protanopia", "Deuteranopia", "Tritanopia" };
         static readonly string[] SubtitleScaleOpts = { "Small", "Medium", "Large" };
         static readonly string[] DisplayModeOpts = { "Fullscreen", "Borderless", "Windowed" };
         static readonly string[] FrameCapOpts = { "30", "60", "120", "144", "240", "Uncapped" };
@@ -240,6 +242,8 @@ namespace CosmicShore.UI
             // but it opens a ScreenSwitcher modal, and the switcher only exists in Menu_Main. So it
             // is locked for a different reason from the four above: there is nothing to open here.
             SetInteractable(creditsButton, menu);
+            // The colour sets live on the Profile, a Menu_Main screen: the same reason as Credits.
+            SetInteractable(colourSetsButton, menu);
 
             UnlockLiveSafeControls();
 
@@ -268,7 +272,6 @@ namespace CosmicShore.UI
             SetInteractable(fovSlider, true);
 
             // GENERAL - accessibility + consent.
-            SetInteractable(colorblindDropdown, true);
             SetInteractable(subtitleScaleDropdown, true);
             SetOnOffInteractable(subtitles, true);
             SetOnOffInteractable(analyticsConsent, true);
@@ -306,7 +309,7 @@ namespace CosmicShore.UI
             if (versionText) versionText.text = TemplateText.Fill(versionLine, "version", Application.version);
 
             // GENERAL
-            BindDropdown(colorblindDropdown, ColorblindOpts, SetColorblindModeIndex);
+            BindButton(colourSetsButton, OpenColourSets);
             BindDropdown(subtitleScaleDropdown, SubtitleScaleOpts, SetSubtitleScaleIndex);
             BindOnOff(subtitles, SetSubtitles, () => SubtitlesOn);
             BindOnOff(analyticsConsent, SetAnalyticsConsent, () => ConsentOn);
@@ -353,7 +356,6 @@ namespace CosmicShore.UI
         /// <summary>Pushes current saved values into every assigned control (no listener changes).</summary>
         void RefreshValues()
         {
-            SetDropdown(colorblindDropdown, ColorblindIndex);
             SetDropdown(subtitleScaleDropdown, SubtitleScaleIndex);
             UpdateOnOff(subtitles, SubtitlesOn);
             UpdateOnOff(analyticsConsent, ConsentOn);
@@ -486,7 +488,6 @@ namespace CosmicShore.UI
 
         // ───────────────────────── setters (listeners call these) ─────────────────────────
 
-        public void SetColorblindModeIndex(int index) => AccessibilitySettings.ColorblindMode = (ColorblindModeSetting)index;
         public void SetSubtitles(bool on) => AccessibilitySettings.Subtitles = on;
         public void SetSubtitleScaleIndex(int index) => AccessibilitySettings.SubtitleScale = SubtitleScales[Mathf.Clamp(index, 0, SubtitleScales.Length - 1)];
         public void SetAnalyticsConsent(bool granted) => analytics?.SetConsent(granted);
@@ -599,7 +600,6 @@ namespace CosmicShore.UI
 
         // ───────────────────────── getters ─────────────────────────
 
-        public int ColorblindIndex => (int)AccessibilitySettings.ColorblindMode;
         public bool SubtitlesOn => AccessibilitySettings.Subtitles;
         public int SubtitleScaleIndex => NearestScaleIndex(AccessibilitySettings.SubtitleScale);
         public bool ConsentOn => analytics != null && analytics.ConsentGranted;
@@ -767,6 +767,26 @@ namespace CosmicShore.UI
             }
 
             screenSwitcher.OpenModal(ScreenSwitcher.ModalWindows.CREDITS);
+        }
+
+        // The breadcrumb: close Settings and open the Profile on Colour sets, the one place a colour set is picked.
+        void OpenColourSets()
+        {
+            if (!screenSwitcher)
+                screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+            var colourSets = FindFirstObjectByType<ProfileColorSetsPanel>(FindObjectsInactive.Include);
+            if (!screenSwitcher || !colourSets)
+            {
+                CSDebug.LogWarningFormat(
+                    "{0} - no ScreenSwitcher or ProfileColorSetsPanel in the scene, so the colour sets cannot be opened.",
+                    nameof(GameSettingsPanelController));
+                return;
+            }
+
+            var modal = GetComponentInParent<ModalWindowManager>();
+            if (modal && modal.IsOpen) modal.ModalWindowOut();
+            colourSets.ShowColourSetsWhenOpen();
+            screenSwitcher.OnClickProfileNav();
         }
     }
 }

@@ -1,0 +1,14 @@
+{
+    "name": "CosmicShore.Soap.Core",
+    "rootNamespace": "CosmicShore.Soap",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

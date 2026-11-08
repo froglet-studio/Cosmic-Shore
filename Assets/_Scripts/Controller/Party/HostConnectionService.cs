@@ -5,7 +5,7 @@ using System.Threading;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
@@ -2194,7 +2194,7 @@ namespace CosmicShore.Gameplay
 
                     if (changed)
                     {
-                        // Obvious.Soap's ScriptableList<T> indexer-set silently mutates
+                        // CosmicShore.Soap's ScriptableList<T> indexer-set silently mutates
                         // without raising any event; RemoveAt + Insert at the same
                         // index fires OnItemRemoved/OnItemAdded so subscribers update.
                         connectionData.OnlinePlayers.RemoveAt(existingIdx);

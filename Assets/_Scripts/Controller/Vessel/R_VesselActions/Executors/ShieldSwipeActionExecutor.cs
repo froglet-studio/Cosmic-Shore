@@ -1,7 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.InputSystem;
 

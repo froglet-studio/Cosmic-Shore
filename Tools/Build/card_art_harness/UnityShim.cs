@@ -182,6 +182,14 @@ namespace UnityEngine
         public static bool operator !=(Vector3Int a, Vector3Int b) => !a.Equals(b);
     }
 
+    // Decoy Run's start poses (DecoyRunCourse.StartPoses) name it.
+    public struct Pose
+    {
+        public Vector3 position;
+        public Quaternion rotation;
+        public Pose(Vector3 position, Quaternion rotation) { this.position = position; this.rotation = rotation; }
+    }
+
     public struct Quaternion
     {
         public float x, y, z, w;

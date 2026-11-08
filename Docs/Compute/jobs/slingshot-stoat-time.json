@@ -1,0 +1,95 @@
+{
+ "schema": "froglet-compute/job/1",
+ "id": "slingshot-stoat-time",
+ "kind": "search",
+ "status": "proposed",
+ "title": "The Stoat's universal Time AI: one set of trampoline autopilot rows for Slingshot I1-I4, grown from every Stoat genome",
+ "goal": "The Stoat's universal Time AI (Docs/AI_SYSTEM/AI_PLAN.md step time-arcade): ONE set of StoatSlingConfig autopilot rows (aiSlingMinTurnDegrees, aiSlingIntervalSeconds, aiSlingMinDistance, trampolineAiTurnScale, autopilotHold01 and, where StoatSlingExecutor.AutopilotTrampoline reads it, aiWarpMinDistance) that races all four Slingshot intensities well on the trampoline kit. Its first generation is every Stoat sling genome (StoatSlingConfig_Slingshot, the hull's StoatSlingConfig, StoatSlingConfig_Regatta where it exists, StoatSlingConfig_Warpline) and mutations of each; the loss is the four intensities' scores together (mean + 0.5 x the worst), raced on Tools/Build/slingshot_stoat_sim.py (the trampoline ported from the C#, every kit number read from the ref). RUN BY HAND until Froglet Compute is switched back on (paused by Shombith, 2026-11-06): /mnt/project-files/regatta-training/local_run.py runs it locally and publishes nothing. Measured 2026-11-06 (Docs/Reports/SLINGSHOT_STOAT_AI.md): on Yash's 30 u shell no turn-press rule beats cruising (about 139-150 s a race), the shipped rows run 145-173 s; with the warp press a hand grid found 65-92 s.",
+ "asked_by": "Garrett 2026-11-06 (regatta balancing, BRIEFS.md section 2): train the Stoat's Slingshot AI. Yash owns the Stoat, its kit and its AI (MINIGAME_TRAINING_PLAN.md section 8).",
+ "area_owner": "Yash (the Stoat, Slingshot and the Stoat's AI)",
+ "plan": "regatta-balance",
+ "stage": 1,
+ "plan_step": "time-arcade",
+ "ref": "origin/bleeding-edge",
+ "requires": [
+  "python3",
+  "numpy"
+ ],
+ "paths": [],
+ "evaluator": {
+  "module": "slingshot_fit",
+  "timeout": 1800,
+  "args": {
+   "hull": "Stoat",
+   "mode": "Slingshot",
+   "intensities": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "seeds": 6,
+   "seedbase": 0,
+   "limit": 300,
+   "warp_press": "auto",
+   "genomes": [
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Slingshot.asset",
+    "Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Regatta.asset",
+    "Assets/Resources/AIBoostPolicies/StoatSlingConfig_Warpline.asset"
+   ],
+   "stay_near_shipped": 0.01
+  }
+ },
+ "space": [
+  {
+   "name": "aiSlingMinTurnDegrees",
+   "lo": 10.0,
+   "hi": 180.0,
+   "init": 35.0
+  },
+  {
+   "name": "aiSlingIntervalSeconds",
+   "lo": 0.5,
+   "hi": 8.0,
+   "init": 0.941
+  },
+  {
+   "name": "aiSlingMinDistance",
+   "lo": 0.0,
+   "hi": 800.0,
+   "init": 123.282
+  },
+  {
+   "name": "trampolineAiTurnScale",
+   "lo": 40.0,
+   "hi": 300.0,
+   "init": 100.0
+  },
+  {
+   "name": "autopilotHold01",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 1.0
+  },
+  {
+   "name": "aiWarpMinDistance",
+   "lo": 0.0,
+   "hi": 1500.0,
+   "init": 0.0
+  }
+ ],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.2
+ },
+ "convergence": {
+  "min_evals": 600,
+  "window_evals": 300,
+  "min_improvement": 0.002
+ },
+ "after": [],
+ "value": 8,
+ "promote": "A PROPOSAL for the AI owner (Yash), any of the core four approving: race the team's best against the shipped rows and every genome on 12 FRESH courses per intensity (seedbase 1001); keep it only if it finishes as many as the best of them on every intensity and its composite is lower. Then it becomes StoatSlingConfig_Slingshot's rows (AIModeTuning.ForPilot), written with the learner's writer (Tools/Build/learn_drives_from_flights.py's asset writer), never by hand, and StoatSlingTests' pinned aiWarpMinDistance 0 moves with it. The editor check goes in Docs/UNITY_VERIFICATION_CHECKLIST.md (AI Stoats race Slingshot at I1-I4; none flies far off the course).",
+ "updated": "2026-11-06"
+}

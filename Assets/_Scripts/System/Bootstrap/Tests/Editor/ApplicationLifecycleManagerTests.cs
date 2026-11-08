@@ -2,7 +2,7 @@
 using System;
 using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 

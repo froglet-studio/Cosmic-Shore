@@ -1625,8 +1625,11 @@ def check_stage6(files, prefab, errors):
                            ("  timeGauge: {fileID: 7700000000000001233}\n", "the Time card's gauge")):
             if need not in hud:
                 errors.append(f"StoatHUDVariant.prefab: {what} missing")
+        # Since the 2026-11-07 icon roster pass the kit (Tools/Build/icon_kit/specs/stoat.py) seats each card's parts under
+        # its slot icon and empties the slot's sprite, so the Stoat sprite is on the row OR the kit's parts are.
+        kit_parts = "rippleStoatIcon:" in hud
         for _, name in ICON_SWAP:
-            if stoat_icon_guid(name) not in hud:
+            if stoat_icon_guid(name) not in hud and not kit_parts:
                 errors.append(f"StoatHUDVariant.prefab: the {name} icon is not on the row")
         if "ThresherHUDView" in hud or THRESHER_HUD_VARIANT in hud:
             errors.append("StoatHUDVariant.prefab: still names the Thresher's view or variant")

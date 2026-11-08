@@ -2,7 +2,7 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using UnityEngine;
 

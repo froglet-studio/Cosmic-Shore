@@ -1,0 +1,98 @@
+{
+ "schema": "froglet-compute/job/1",
+ "id": "serpenttime-serpent-time-lead20",
+ "kind": "search",
+ "status": "proposed",
+ "title": "The Serpent's universal Time AI: one pellet drive for Serpentine I1-I4, grown from every Serpent genome - with the AI nose lead ON, capped at 20 deg past the aim",
+ "goal": "The capped sibling of serpenttime-serpent-time-lead: the same search with the nose lead at gain 2.5 but capped at 20 deg past the aim (RaceLineStyleSO.NoseLeadMaxExtraDegrees, a per-hull setting; #1786 ships 40). serpent_time_sim's self-test 9 measured that the fleet default 2.5/40 DNFs 16 of 36 shipped Serpentine races at I2-I4 (the single stick pins at full x and y and the roll whirls the axes) while 2.5/20 finishes every one; this twin finds the drive for that setting. Run by hand until Compute is back (Shombith paused it 2026-11-06): /mnt/project-files/regatta-training/local_run.py, two independent restarts (labels D, E). Report: Docs/Reports/SERPENT_TIME_AI.md. Lead-on twin's goal: The lead-on twin of serpenttime-serpent-time: the same search, the same seeds and genomes, with the pilot-side AI nose lead switched on in the model (nose_lead 2.5; Tools/Build/ai_nose_lead.py, the model of AIPilot.NoseLeadGain from PR #1786, which the game ships at 0). the Serpent Time model flies the fleet nose lag (serpent_time_sim), so only the lead is added. Garrett's plan (REGATTA_BALANCE_PLAN.md, the direction since 2026-11-06) judges every hull and every course on AIs that do not overshoot ring mouths, so each hull's drive is searched again with the lead on and compared with its lead-off twin on the same courses: the lead-on winner is the drive proposed for the day Yash turns the switch on. Run by hand until Compute is back (Shombith paused it 2026-11-06): /mnt/project-files/regatta-training/local_run.py, two independent restarts (labels B, C). Parent goal: The Serpent's universal Time AI (Docs/AI_SYSTEM/AI_PLAN.md step time-arcade): ONE pellet drive (PelletBoostAIPolicySO's alignDegrees, stickBand, engageRunwaySeconds, maxConcurrentBurns, minSecondsBetweenPellets, reservePellets) that races all four Serpentine (GameModes.SerpentTime) intensities well. Its first generation is every Serpent Time genome (the hull's SerpentAIBoostPolicy and SerpentAIBoostPolicy_SerpentTime, learned from people's flights by the AI learning sweep) and mutations of each; the loss is the four intensities' scores together (mean + 0.5 x the worst), raced on the Serpentine simulator (Tools/Build/serpent_time_sim.py: the shipped two-lap course held to the C# by serpent_time_course_harness, the Regatta steering with the scene's distances, AIPilot's single stick and orbit break-off, the hull's turn law and AI nose lag, the four-pellet tank with no refill (2026-10-31) and PelletBoostAIPolicySO.Driver; the dirty race - shapes, shots, walls, cloak - is OFF, MODEL_LIMITS). Run BY HAND until Froglet Compute is switched back on (Shombith paused it 2026-11-06): /mnt/project-files/regatta-training/local_run.py, two independent restarts. Report: Docs/Reports/SERPENT_TIME_AI.md.",
+ "asked_by": "Garrett 2026-11-06 (the Regatta balance plan's Phase A: train every AI in its own Time game first)",
+ "area_owner": "Yash (vessel AI); the Serpent's kit is Garrett's and is read, never searched",
+ "plan": "regatta-balance",
+ "stage": 1,
+ "plan_step": "time-arcade",
+ "ref": "origin/bleeding-edge",
+ "requires": [
+  "python3",
+  "numpy"
+ ],
+ "paths": [],
+ "evaluator": {
+  "module": "serpent_fit",
+  "timeout": 1800,
+  "args": {
+   "hull": "Serpent",
+   "mode": "SerpentTime",
+   "intensities": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "seeds": 4,
+   "seedbase": 1,
+   "limit": 600,
+   "genomes": [
+    "Assets/_SO_Assets/AI Boost Policies/SerpentAIBoostPolicy.asset",
+    "Assets/Resources/AIBoostPolicies/SerpentAIBoostPolicy_SerpentTime.asset"
+   ],
+   "stay_near_shipped": 0.01,
+   "nose_lead": {
+    "gain": 2.5,
+    "max_extra_deg": 20
+   }
+  }
+ },
+ "space": [
+  {
+   "name": "alignDegrees",
+   "lo": 0.0,
+   "hi": 90.0,
+   "init": 12.0
+  },
+  {
+   "name": "stickBand",
+   "lo": 0.0,
+   "hi": 1.0,
+   "init": 0.35
+  },
+  {
+   "name": "engageRunwaySeconds",
+   "lo": 0.0,
+   "hi": 6.0,
+   "init": 1.5
+  },
+  {
+   "name": "maxConcurrentBurns",
+   "lo": 1,
+   "hi": 4,
+   "init": 3,
+   "type": "int"
+  },
+  {
+   "name": "minSecondsBetweenPellets",
+   "lo": 0.0,
+   "hi": 8.0,
+   "init": 0.75
+  },
+  {
+   "name": "reservePellets",
+   "lo": 0,
+   "hi": 3,
+   "init": 0,
+   "type": "int"
+  }
+ ],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.2
+ },
+ "convergence": {
+  "min_evals": 1200,
+  "window_evals": 300,
+  "min_improvement": 0.002
+ },
+ "after": [],
+ "value": 8,
+ "promote": "Only after Yash turns AIPilot.NoseLeadGain on with the Serpent's NoseLeadMaxExtraDegrees at 20 (PR #1786) and its editor check passes; then as the parent's rule, against the parent's winner raced WITH the lead: A PROPOSAL for the AI owner (Yash), any of the core four approving: race the team's best against both shipped genomes on 12 FRESH courses per intensity (seedbase 1001); keep it only if it finishes as many as the best of them on every intensity and its composite is lower. Then it becomes SerpentAIBoostPolicy_SerpentTime (AIBoostPolicySO.ForMode), written with the learner's writer (Tools/Build/learn_drives_from_flights.py's asset writer), never by hand. The editor check goes in Docs/UNITY_VERIFICATION_CHECKLIST.md (AI Serpents race Serpentine at I1-I4, alone and with the dirty race on).",
+ "updated": "2026-11-07"
+}

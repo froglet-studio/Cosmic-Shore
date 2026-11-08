@@ -1,5 +1,7 @@
 # Broadside — the arena brawl
 
+> **2026-11-07: the SWORDFISH has the Rhino's seat.** The Rhino split in two (`R_VesselActions/SWORDFISH.md`): the plough-only Rhino has no vessel-hit verb, so the sword hull is the Swordfish (`broadside_balance.py`, `author_broadside_assets.py`; its starting Time rows carried over unchanged). Read "the Rhino" below as "the Swordfish".
+
 `GameModes.Broadside = 57` · `MinigameBroadside.unity` · `BroadsideController`
 
 ## Overview

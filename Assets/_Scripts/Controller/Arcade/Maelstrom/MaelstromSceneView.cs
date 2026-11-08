@@ -7,7 +7,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;

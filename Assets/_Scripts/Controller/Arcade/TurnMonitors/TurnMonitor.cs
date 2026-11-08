@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;

@@ -1738,6 +1738,11 @@ namespace CosmicShore.Gameplay
         /// than through a collider overlap (<see cref="VirtualFauna"/>, Docs/SWARM_FAUNA.md §19).</summary>
         public Crystal LivingHeart => crystal && crystal.IsEmbedded ? crystal : null;
 
+        /// <summary>The heart whether it is still embedded or already dropped - what a Manta bomb riding this
+        /// creature moves onto when the creature dies (MANTA_STING_KABLOOM.md §2: a bombed creature drops a bombed
+        /// crystal). Null for a manager-only fauna that never carried one.</summary>
+        public Crystal HeartCrystal => crystal;
+
         // How this creature came apart - see LifeformDeathStyle. Written by the force that
         // killed it (Jousted / the devour overload of Predated); starvation and every other
         // death leave the default.
