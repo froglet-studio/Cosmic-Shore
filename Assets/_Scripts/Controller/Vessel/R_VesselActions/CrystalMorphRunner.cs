@@ -39,6 +39,13 @@ namespace CosmicShore.Gameplay
     /// (<see cref="HandOff"/>); the body then dissolves off the top of it, because the two are
     /// still drawn by different shaders and the object that WINS has to be the real one.
     ///
+    /// ── A SEE-THROUGH runner fades as it travels ──────────────────────────────────────────────
+    /// A target the player has to keep watching (the Dolphin's blast and the prisms it breaks) must
+    /// never be covered by the crystal. Such a runner overrides <see cref="DrawsSeeThrough"/>: at the
+    /// stamp its body swaps to a cached alpha-blended clone of its own material (no depth write, so
+    /// nothing behind it is hidden), and <see cref="BodyOpacityDuringMorph"/> thins it out while it
+    /// flies. The target is never held: it draws from its first frame.
+    ///
     /// ── Every exit is named ──────────────────────────────────────────────────────────────────
     /// Every way this can fail looks identical on screen — the crystal is gone and the target
     /// appears normally — so each refusal says which one it was, and the whole path traces under
@@ -117,6 +124,17 @@ namespace CosmicShore.Gameplay
         /// <summary>Teardown: give back anything held. Idempotent, and called on destroy too — an
         /// unreleased photon hold would leave the target invisible for the rest of its life.</summary>
         protected abstract void ReleaseHold();
+
+        /// <summary>True for a runner whose target must stay visible through the morph: the body draws
+        /// alpha-blended without a depth write from the stamp on, at
+        /// <see cref="BodyOpacityDuringMorph"/>. False (every runner but the Dolphin's) keeps the opaque
+        /// body and its screen-door dissolve, unchanged.</summary>
+        protected virtual bool DrawsSeeThrough => false;
+
+        /// <summary>The body's opacity at geometry progress <paramref name="g"/> (0 at the stamp, 1 at
+        /// the landing). Read only when <see cref="DrawsSeeThrough"/>; the dissolve tail starts from its
+        /// value at 1.</summary>
+        protected virtual float BodyOpacityDuringMorph(float g) => 1f;
 
         /// <summary>The morph gave up waiting for its target; it is fading out. Optional.</summary>
         protected virtual void OnGaveUp() { }
@@ -267,6 +285,8 @@ namespace CosmicShore.Gameplay
                                    "pair, so the morph lands in the CRYSTAL's colours and the hand-off " +
                                    "will show a colour change.");
 
+            if (DrawsSeeThrough) UseSeeThroughMaterials();
+
             _startTime = PrismClock.Now;
             _morphSeconds = Config.Duration * Mathf.Clamp01(Config.MorphFraction);
             _stamped = true;
@@ -322,6 +342,8 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            if (DrawsSeeThrough && !_handedOff) SetBodyOpacity(BodyOpacityDuringMorph(g));
+
             // The hand-off happens where the two states are EQUIVALENT: geometry on the target's
             // faces, normals on its normals, pair and formula on its shading.
             if (!_handedOff && elapsed >= _morphSeconds)
@@ -337,7 +359,8 @@ namespace CosmicShore.Gameplay
             {
                 float tail = Mathf.Max(1e-4f, Config.Duration - _morphSeconds);
                 float d = Mathf.Clamp01((elapsed - _morphSeconds) / tail);
-                SetBodyOpacity(1f - d * d * (3f - 2f * d));
+                float landed = DrawsSeeThrough ? BodyOpacityDuringMorph(1f) : 1f;
+                SetBodyOpacity(landed * (1f - d * d * (3f - 2f * d)));
                 if (d >= 1f) Destroy(gameObject);
             }
         }
@@ -361,6 +384,53 @@ namespace CosmicShore.Gameplay
             SetBodyOpacity(1f - fade);
             SetOverlayOpacity(1f - fade);
             if (fade >= 1f) Destroy(gameObject);
+        }
+
+        static readonly int BlendOpacityId = Shader.PropertyToID("_BlendOpacity");
+        static readonly int SrcBlendId = Shader.PropertyToID("_SrcBlend");
+        static readonly int DstBlendId = Shader.PropertyToID("_DstBlend");
+        static readonly int ZWriteId = Shader.PropertyToID("_ZWrite");
+
+        /// <summary>One alpha-blended clone per source material, shared by every see-through morph
+        /// (the blend state cannot live in a property block). Created on first use, never per pickup.</summary>
+        static readonly Dictionary<Material, Material> SeeThroughClones = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetSeeThroughClones() => SeeThroughClones.Clear();
+
+        /// <summary>Puts the body on see-through clones of its own materials. A material whose shader
+        /// has no <c>_BlendOpacity</c> (not OmniCrystalFresnelShader) is left as it is and keeps its
+        /// screen-door fade, said once in the trace.</summary>
+        void UseSeeThroughMaterials()
+        {
+            for (int i = 0; i < _body.Count; i++)
+            {
+                if (!_body[i]) continue;
+                var shared = _body[i].sharedMaterials;
+                for (int m = 0; m < shared.Length; m++)
+                {
+                    var source = shared[m];
+                    if (!source || !source.HasProperty(BlendOpacityId))
+                    {
+                        CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
+                            $"[CrystalMorph] {Owner}: body material '{(source ? source.name : "null")}' has no " +
+                            "_BlendOpacity, so it fades as a screen-door instead of blending.");
+                        continue;
+                    }
+                    if (!SeeThroughClones.TryGetValue(source, out var clone) || !clone)
+                    {
+                        clone = new Material(source) { name = source.name + " (see-through morph)" };
+                        clone.SetFloat(BlendOpacityId, 1f);
+                        clone.SetFloat(SrcBlendId, (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                        clone.SetFloat(DstBlendId, (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                        clone.SetFloat(ZWriteId, 0f);
+                        clone.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                        SeeThroughClones[source] = clone;
+                    }
+                    shared[m] = clone;
+                }
+                _body[i].sharedMaterials = shared;
+            }
         }
 
         void SetBodyOpacity(float opacity) => SetOpacity(_body, _bodyBlocks, opacity);
