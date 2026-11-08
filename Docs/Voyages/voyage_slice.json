@@ -2728,6 +2728,8 @@
   "CardCrewSeparator": "     ",
   "CardCrewVoyage": "VOYAGE {n} - {title}",
   "CardPickSetting": "{seat} - {setting}: ONE PRESS PICKS",
+  "CardSeatWho": "{role} - {who}",
+  "CardSettingWord": "{setting} - {word}",
   "CardDomainJade": "JADE",
   "CardDomainRuby": "RUBY",
   "CardDomainGold": "GOLD"

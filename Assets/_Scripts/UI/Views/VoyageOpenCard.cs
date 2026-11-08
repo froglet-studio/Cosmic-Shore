@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -93,7 +94,7 @@ namespace CosmicShore.UI
         // Ark crew edits a copy of the active squad, as the Ark does (SquadsPage's draft): Save squad writes it back, and
         // leaving the column or picking another squad drops it.
         SavedSquad _draft;
-        int _draftIndex = -1;
+        string _draftId;   // the squad the draft was copied from: matched by id, never by its place in the book
         bool Drafting => _draft != null;
 
         // Views.
@@ -170,8 +171,25 @@ namespace CosmicShore.UI
             card._elementShapes = elementShapes;
             card._catalog = PilotArtifactCatalogSO.Load();
             card.Build();
+            // Closing the window drops an unsaved crew change, as closing the Ark's edit does.
+            card._window = column.GetComponentInParent<ModalWindowManager>(true);
+            if (card._window) card._window.OnModalClosed += card.WindowClosed;
             go.SetActive(false);
             return card;
+        }
+
+        ModalWindowManager _window;
+
+        void OnDestroy()
+        {
+            if (_window) _window.OnModalClosed -= WindowClosed;
+        }
+
+        void WindowClosed()
+        {
+            DropDraft();
+            CloseStrip();
+            if (_model != null) Draw();
         }
 
         void Build()
@@ -552,6 +570,13 @@ namespace CosmicShore.UI
                 Set(_beatLine, b.Line);
                 Set(_beatBy, b.By);
             }
+            else
+            {
+                // No beats (the Ark escort): nothing of the last voyage's story stays on screen.
+                Set(_beatLabel, string.Empty);
+                Set(_beatLine, string.Empty);
+                Set(_beatBy, string.Empty);
+            }
             for (int i = 0; i < _dots.Count; i++)
             {
                 _dots[i].gameObject.SetActive(i < beats);
@@ -648,7 +673,24 @@ namespace CosmicShore.UI
 
         static SquadBook Book => UGSDataService.Instance?.SquadRepo?.Data?.Book;
 
-        static void SaveBook() => UGSDataService.Instance?.SquadRepo?.MarkDirty();
+        // Never `GetComponent<T>() ?? Add...`: in the Editor a missing component comes back as a fake-null object, which
+        // `??` keeps (Unity overloads ==, not ??), so the add never runs and the next setter throws.
+        static Outline EdgeOf(Button b) => b.TryGetComponent(out Outline e) ? e : b.gameObject.AddComponent<Outline>();
+
+        /// <summary>Who the published squad record names (the Ark's SquadsPage publishes the same record); empty while
+        /// unknown, and then nothing is published from here.</summary>
+        public Func<string> PlayerName;
+
+        /// <summary>Keep the book; with <paramref name="publish"/>, also write the public squad record, as the Ark does, so
+        /// the friends in the squad (or its owner, for a joined one) see the change.</summary>
+        void SaveBook(bool publish = false)
+        {
+            UGSDataService.Instance?.SquadRepo?.MarkDirty();
+            if (!publish || !SquadDirectory.IsReady) return;
+            string name = PlayerName?.Invoke();
+            if (string.IsNullOrEmpty(name)) return;
+            SquadDirectory.PublishAsync(SquadMembership.BuildPublicRecord(Book, name)).Forget();
+        }
 
         void DrawSquad()
         {
@@ -664,7 +706,7 @@ namespace CosmicShore.UI
                 bool on = i == book.ActiveIndex;
                 _presets[i].t.text = s?.Name ?? string.Empty;
                 _presets[i].t.color = on ? Light : Soft;
-                var edge = _presets[i].b.GetComponent<Outline>() ?? _presets[i].b.gameObject.AddComponent<Outline>();
+                var edge = EdgeOf(_presets[i].b);
                 edge.effectDistance = new Vector2(2, -2);
                 edge.effectColor = on ? Selection : Line;
             }
@@ -684,7 +726,7 @@ namespace CosmicShore.UI
                 _domains[i].b.interactable = active != null && !active.IsJoined();
                 _domains[i].t.color = on ? Light : Soft;
                 _domains[i].fill.color = palette ? Color.Lerp(Plate, palette.GetDomainSignalColor(d), on ? 0.35f : 0.12f) : Plate;
-                var edge = _domains[i].b.GetComponent<Outline>() ?? _domains[i].b.gameObject.AddComponent<Outline>();
+                var edge = EdgeOf(_domains[i].b);
                 edge.effectDistance = new Vector2(2, -2);
                 edge.effectColor = on ? Selection : Line;
             }
@@ -709,7 +751,8 @@ namespace CosmicShore.UI
                 }
 
                 var view = _seats[seat];
-                Set(view.Who, active == null ? string.Empty : roles[seat] + " - " + Who(active, seat, slot));
+                Set(view.Who, active == null ? string.Empty
+                    : TemplateText.Fill(_lines.CardSeatWho, "role", roles[seat], "who", Who(active, seat, slot)));
                 view.Hull.sprite = sprite;
                 view.Hull.enabled = sprite;
                 view.Edge.effectColor = !_stripSaves && _stripSeat == seat ? Selection : Line;
@@ -724,7 +767,8 @@ namespace CosmicShore.UI
                 if (editable && pilot && PilotLoadoutStore.TryGetPilot(slot.PilotId, out var p) && p.CallsignOrTemplate() == pilot.Id) person = p;
                 if (editable && artifact && PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var a) && a.Kind() == artifact.Id) held = a;
                 string word = pilot ? Callsigns.WordOf(pilot.Vision) : string.Empty;
-                Set(view.Settings[1].label, string.IsNullOrEmpty(word) ? _lines.CardSettingPilot : _lines.CardSettingPilot + " - " + word);
+                Set(view.Settings[1].label, string.IsNullOrEmpty(word) ? _lines.CardSettingPilot
+                    : TemplateText.Fill(_lines.CardSettingWord, "setting", _lines.CardSettingPilot, "word", word));
                 string[] values =
                 {
                     vessel ? vessel.CardName : string.Empty,
@@ -784,8 +828,9 @@ namespace CosmicShore.UI
         {
             if (_draft == null)
             {
-                _draft = SquadMembership.Copy(book.GetActive());
-                _draftIndex = book.ActiveIndex;
+                var active = book.GetActive();
+                _draft = SquadMembership.Copy(active);
+                _draftId = active?.Id;
             }
             return _draft;
         }
@@ -956,6 +1001,16 @@ namespace CosmicShore.UI
             // Each vessel has its own pilot and artifact: one moved onto this vessel leaves the others (the pilot swaps).
             squad.KeepCardsOwn(seat, previousPilot);
             // Every vessel needs a pilot: an empty or doubled seat takes the next free person of the crew.
+            // A legacy callsign id on one of the player's cards becomes the person it resolves to first, so the
+            // "another seat flies them" test compares people (SquadsPage.FillPilots).
+            for (int s = 0; s < SavedSquad.SlotCount; s++)
+            {
+                if (!CanEdit(squad, s)) continue;
+                var own = squad.GetSlot(s);
+                if (own.UsesDefaultPilot() || !PilotLoadoutStore.TryGetPilot(own.PilotId, out var person) || person.Id == own.PilotId) continue;
+                own.PilotId = person.Id;
+                squad.SetSlot(s, own);
+            }
             PilotLoadoutStore.GetCrew(_crew);
             _ids.Clear();
             foreach (var p in _crew) if (!string.IsNullOrEmpty(p.Id)) _ids.Add(p.Id);
@@ -964,22 +1019,24 @@ namespace CosmicShore.UI
 
         /// <summary>The squad shown: the unsaved copy while one is being edited, else the active squad.</summary>
         SavedSquad Editing(SquadBook book) =>
-            _draft != null && book != null && _draftIndex == book.ActiveIndex ? _draft : book?.GetActive();
+            _draft != null && DraftIsOf(book?.GetActive()) ? _draft : book?.GetActive();
+
+        bool DraftIsOf(SavedSquad squad) => squad != null && !string.IsNullOrEmpty(_draftId) && squad.Id == _draftId;
 
         void DropDraft()
         {
             _draft = null;
-            _draftIndex = -1;
+            _draftId = null;
         }
 
         void SaveSquad()
         {
             var book = Book;
             if (_draft == null || book?.Squads == null) return;
-            if (_draftIndex == book.ActiveIndex && _draftIndex >= 0 && _draftIndex < book.Squads.Count)
-                book.Squads[_draftIndex] = _draft;
+            int at = book.Squads.FindIndex(DraftIsOf);
+            if (at >= 0) book.Squads[at] = _draft;
             DropDraft();
-            SaveBook();
+            SaveBook(publish: at >= 0);
             SquadChanged?.Invoke();
             Draw();
         }

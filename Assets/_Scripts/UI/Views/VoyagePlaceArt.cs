@@ -26,7 +26,13 @@ namespace CosmicShore.UI
         static readonly Dictionary<string, Texture2D> s_Cache = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => s_Cache.Clear();
+        static void ResetStatics()
+        {
+            // The textures are HideAndDontSave: with domain reload off they would outlive the cache that held them.
+            foreach (var t in s_Cache.Values)
+                if (t) Object.DestroyImmediate(t);
+            s_Cache.Clear();
+        }
 
         /// <summary>The close-up of <paramref name="place"/>, painted on first ask; null for no place.</summary>
         public static Texture2D For(VoyageLocation place)

@@ -84,7 +84,7 @@ LINES_FIELDS = [
     "CardSettingArtifact", "CardNoArtifact", "ElementCharge", "ElementMass", "ElementSpace", "ElementTime", "CardStoryHead",
     "CardStoryOptional", "StoryNews", "StoryPlace", "StoryCrew", "StoryCrewBy", "StoryWater", "StoryWaterLine",
     "StoryWaterBy", "StoryWorld", "StoryWorldBy", "StoryLog", "StoryLogLine", "CardSailAfter", "CardEscortPlace",
-    "CardEscortKicker", "CardDifficulty", "CardCrewSeat", "CardCrewSeparator", "CardCrewVoyage", "CardPickSetting",
+    "CardEscortKicker", "CardDifficulty", "CardCrewSeat", "CardCrewSeparator", "CardCrewVoyage", "CardPickSetting", "CardSeatWho", "CardSettingWord",
     "CardDomainJade", "CardDomainRuby", "CardDomainGold",
 ]
 

@@ -412,6 +412,10 @@ namespace CosmicShore.ScriptableObjects
         public string CardCrewVoyage = "VOYAGE {n} - {title}";
         [Tooltip("Over a seat's strip of choices: {seat} the seat, {setting} what is being picked. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
         public string CardPickSetting = "{seat} - {setting}: ONE PRESS PICKS";
+        [Tooltip("A seat's head in Ark crew: {role} the seat's role (CardSeatLeader and the two rogues), {who} who flies it. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardSeatWho = "{role} - {who}";
+        [Tooltip("The pilot setting's label in Ark crew with its callsign's word: {setting} the setting's name, {word} the word. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
+        public string CardSettingWord = "{setting} - {word}";
         [Tooltip("The Jade domain's chip in Ark crew. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]
         public string CardDomainJade = "JADE";
         [Tooltip("The Ruby domain's chip in Ark crew. The open voyage, Docs/MENU_REDESIGN_B.md section 151.")]

@@ -4,6 +4,8 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -79,6 +81,8 @@ namespace CosmicShore.UI
         float _gridWidth;
         int _open = -1;
         string _placeCaption;
+        // Who the squad record the open voyage's column publishes names (scene-injected; null outside Menu_Main).
+        [Inject] HostConnectionDataSO _host;
         ModalWindowManager _window;
         VoyageOpenCard _card;
         int _jobCount;
@@ -266,7 +270,8 @@ namespace CosmicShore.UI
             var voyage = harbour ? harbour.Content : null;
             var place = voyage && voyage.Content != null ? voyage.Content.Location(id) : null;
             if (place == null) return;
-            _open = -1;
+            // The coverflow keeps its pick; the map names the place until the next pick.
+            if (!cardColumn) _open = -1;
             _placeCaption = TemplateText.Fill(voyage.Lines.MapPlace, "name", place.Name, "blurb", place.Blurb);
             Refresh();
         }
@@ -666,7 +671,7 @@ namespace CosmicShore.UI
                 m.SetSail = () => SetSail(job);
                 ShowColumn(m, lines);
                 // The map stays on the whole galaxy with the picked voyage's course drawn on it; the player zooms in.
-                Map(content, lines, style, here, route, CourseLine(content, lines, route), focus: !openOnGalaxy);
+                Map(content, lines, style, here, route, _placeCaption ?? CourseLine(content, lines, route), focus: !openOnGalaxy);
                 return;
             }
 
@@ -684,8 +689,8 @@ namespace CosmicShore.UI
             m.PlaceName = lines.CardEscortPlace;
             m.SetSail = () => SetSailEscort(d);
             ShowColumn(m, lines);
-            Map(content, lines, style, here, escortRoute, escortRoute != null ? CourseLine(content, lines, escortRoute) : null,
-                focus: !openOnGalaxy);
+            Map(content, lines, style, here, escortRoute,
+                _placeCaption ?? (escortRoute != null ? CourseLine(content, lines, escortRoute) : null), focus: !openOnGalaxy);
         }
 
         void ShowColumn(VoyageOpenCard.Model model, VoyageLines lines)
@@ -697,6 +702,7 @@ namespace CosmicShore.UI
                     elementShapes);
                 _card.Pick += PickCard;
                 _card.SquadChanged += Refresh;
+                _card.PlayerName = () => _host ? _host.LocalDisplayName : null;
             }
             // The column stands where the card grid stood.
             if (cardColumn.gameObject.activeSelf) cardColumn.gameObject.SetActive(false);
