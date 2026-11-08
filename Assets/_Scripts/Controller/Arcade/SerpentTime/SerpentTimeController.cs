@@ -56,6 +56,13 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SerpentTimeController : GateRaceController, IPlayerSpawnLine
     {
+        [Header("AI nose lead")]
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
+                 "the lead off. Serpent 1: the fleet 2.5 corkscrews the single-stick Serpent, 1.0 was best in the model.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Serpent, 1.0f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
         [Header("Serpent Time circuit")]
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
                  "length, so the circuit is laid with target/laps rings - one number authored " +
