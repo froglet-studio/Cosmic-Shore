@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 | Shombith, 2026-11-08 (section 145) |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 71 on the canvas now) | Shombith, 2026-11-08 (sections 145-146) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -6087,7 +6087,7 @@ asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in tha
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
 a better number. No player id reaches Claude on any of these. Awaiting a pick.
 
-## 145. Rev 70 mockups: Voyages, redrawn in the Ark's look - a vessel in one press, a course that stays put, the quest tracker in its own window (2026-11-08, awaiting a pick)
+## 145. Rev 70 mockups: Voyages, redrawn in the Ark's look - a vessel in one press, a course that stays put, the quest tracker in its own window (2026-11-08; rejected, off the canvas, section 146)
 
 **Asked (Shombith, 2026-11-08):** "Make new mockups for the Voyages, its not cool none of the designs are good and match
 other better parts of the game. For selecting vessels also what do you mean in order to select a vessel I have to click
@@ -6186,3 +6186,56 @@ and puts the squad in its own room. B is the smallest step from what is built (s
 - Caleb and Shombith: the quests (FTUE).
 - P-ui-28 (Shombith, 2026-11-02) put the quest tracker in the Voyage window. This round moves it, on his word of
   2026-11-08, and the ledger line is his to restate.
+
+## 146. Rev 71 mockups: Voyages, six new ideas on the menu's own ground, and the Quests window (2026-11-08, awaiting a pick)
+
+**Asked (Shombith, 2026-11-08, on Rev 70):** "Dont like any one of them too bland thats. Do something new, delete all
+these give me 6 new, do not use the ark bg use the normal transparent bg like hangar and ecology for example only ark
+gets that treatment."
+
+**Rev 70 is off the canvas.** Its seven boards, title note and section were removed in this round's publish. The copies
+stay in `Docs/MenuRedesignB/board/R70*.dc.html`. The design brief of section 145 still holds.
+
+**A rule this round follows (proposed for `Docs/claude/principles.json`, Shombith's to confirm):** only the Ark wears
+its room behind the window. Every other window stands on the menu's own ground: the menu cell under a Deep Sea window
+with the slow sea lines, as the Hangar and the Codex do.
+
+**On the canvas:** tab **Voyages**, round "Rev 71 - Voyages, six new ideas on the menu's own ground" (canvas version
+`1794139287-ddf3`).
+- Copies: `Docs/MenuRedesignB/board/R71*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r71_voyages.py`; it reuses
+  `r70_voyages.py`'s kit and data.
+- Every board passes all six `check_mockup.py` gates, with 48-55 visual elements a screen against the budget of 60.
+  Every board also passes `frogma.py check`.
+
+**The six ideas** (each a full Voyage window: Voyages | Saga | Episodes, the voyage, the squad, Set sail):
+- **A - Dial:** the course seen through a big round lens, ringed with ticks, with the Ark at its centre. The four
+  voyages sit as numbered bearings on the ring, and a bearing turns the lens to that voyage's course.
+- **B - Departures:** the voyages on a departures board from Tumult; the picked row reads "Boarding". The open voyage
+  is a boarding pass: the destination large, its numbers, its course, then a tear line with the squad on the stub and
+  Set sail.
+- **C - Coverflow:** the voyages as tilted cards, each with its real course. The picked card faces front, and LB / RB
+  or a press on a side card turns the carousel. The voyage's line and numbers sit under it.
+- **D - Hex board (recommended):** the HyperSea's own 20 ly cells as a honeycomb, with the Ark in the middle hex. Each
+  voyage is a big hex holding its course. The picked hex lights, a dashed bearing runs from the Ark to it, and the
+  voyage and squad sit on the right.
+- **E - Journey:** the route as a band of the map across the whole window, with its edge-on profile under it (how the
+  course rises and falls through the disk). The voyages run along the foot as tabs.
+- **F - Crew's hand:** the crew deals the voyages as a fanned hand of cards with their courses on them, and the picked
+  card rises out of the hand.
+- **Quests:** its own window on the same ground.
+  - Episode 1 and Episode 2 (locked) on LB / RB, then "The Hypersea" and its claimed count.
+  - The five quests as octagonal medallions on one trail, lit as far as the player has reached.
+  - The picked quest's bar ends in the one Lime button: Claim or Play quest.
+
+**In every option** (Rev 70's two fixes):
+- A press on a squad hull opens the vessel strip on that seat, and one press picks (P-ui-21).
+- Picking another squad changes the hulls, never the voyage on screen. Pinning the voyage in the game is Garrett's rule
+  to change (section 145).
+
+**Recommended: D.** It is the HyperSea itself: the cells are the game's own 20 ly hexes, the Ark sits in the one it is
+in, and a voyage is a hex you can see the way to. It reads as a game board, not a list. B is the clearest to read, and
+F tells the story that the crew brings the voyages.
+
+**Differs from the build** (section 119): the window's whole layout. The parts every option changes are the same as in
+section 145: the Ark crew strip, Quests out of the Voyage window, and the pinned voyage (a proposal to Garrett).
+
