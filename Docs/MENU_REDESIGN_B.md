@@ -6081,3 +6081,100 @@ the message and its top frame). Player compare needs `GET /v1/similar?id=` worke
 asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in that order with a legend; play types Jade
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
 a better number. No player id reaches Claude on any of these. Awaiting a pick.
+
+## 143. Rev 68 mockups: the Fleet Codex for the website - four looks, the whole fleet and one vessel window each (2026-11-08; Shombith picked C, section 144)
+
+**Asked (Shombith, 2026-11-08), on the built Rev 48 B codex:** "I do not like the fleet codex UI at all what do you
+mean select an ability and then scroll down to see the animation and even that is not cool. The texts do not look cool
+as well with this font maybe change that too. Can you show me 4 mockup designs along with all fleets and a fleet
+window. This should be on our website soon so it should look better and engagable"; then "Every animation should be
+smooth, there should be filters for game modes inside a vessel some story about the vessel as well."
+
+**On the canvas:** the **Fleet Codex** tab, the round "Rev 68 - Fleet Codex for the website: four looks, each the whole
+fleet and one vessel window, the controls playing beside each ability" (version `1794137568-246d`). Frogma was full (512
+files, the canvas maximum), so on Shombith's word the seven boards of Rev 45 and Rev 48 (sections 114, 115; both built
+into the live codex) were taken off the canvas; their copies stay in `Docs/MenuRedesignB/board/`. Copies of the new
+boards: `Docs/MenuRedesignB/board/R68*.dc.html`; generator `Docs/MenuRedesignB/rounds/r68_fleet_codex.py` (it reads the
+codex's `fleet.json` and `Docs/FleetCodex/abilities.json`, so every fact on the boards is the game's).
+
+Each option is ONE tall board (1920 x 2160): the whole fleet on top (23 hulls, the crews badged by seats, filters All /
+Solo / Crews), the Squirrel's window under it. In every window:
+- **The move plays beside the ability, never below the fold:** picking an ability shows a small scene of it happening
+  (Crystal Joust overtaking a crystal, Boost Ring dropping its ring of eight, Steal flipping prisms, Skimming filling the
+  boost bar, the omni crystal opening into the Shield Ring) with the controller button, key and phone touch pressing on
+  the same 3.2 s clock (RT / R-Shift / lift the left thumb for Boost Ring; a passive ability shows the thumbs just flying).
+- **Smooth:** only transform and opacity animate, on one eased curve; reduced motion holds still.
+- **Game filters:** All, Charge, Mass, Space, Time, Arcade, Arena; the element is the game's own (`ModeGenre`); "No Space
+  game seats the Squirrel yet" when a filter is empty.
+- **The story:** the Squirrel's class asset text ("Get in your flow and stay there..."). A longer story per vessel needs
+  a writer; the boards use only what the game holds.
+- **Colours:** the Nocturne colour set (the codex's default theme); **type:** a different Google Fonts pairing per option,
+  departing on purpose from the style guide's Aldrich / Chakra Petch, since the type is what was asked to change.
+
+- **R68A · Showroom (recommended), interactive** (Unbounded + Sora): the fleet as lit hull cards eight across; the window
+  puts the hull and its story left, the five abilities as a list, the picked one's move, devices, words and level 5 in a
+  panel beside it, and the games as tiles with filters. Recommended: the clearest website page, and the move is the
+  biggest thing in the window.
+- **R68B · Trading cards, interactive** (Oxanium + Manrope): every hull a numbered collectible card; the vessel a big
+  card with its story and numbers; the five abilities as cards that rise when picked, the move playing in a strip under
+  them; the games as a card row.
+- **R68C · Flight deck, interactive** (Saira Condensed + Saira): reads like the game. A big selected hull leads the fleet
+  page with a Lime OPEN THE VESSEL, the fleet as a hangar strip; the window is a HUD over the flying hull: the pilot
+  briefing (story), missions (games with filters) and the move as glass panels, the four-icon row bottom right.
+- **R68D · Editorial, interactive** (Space Grotesk + Inter): a magazine. The fleet as a big-type index where each hull
+  slides in on hover; the window as a spread with the story as a pull quote, each ability a numbered line, the move and
+  its devices under the list, the games as a filtered list.
+- **R68Notes:** the brief, the four type pairings, what each look changes.
+
+**Differs from the build:** the live codex (`Docs/FleetCodex/index.html`, PR #1851) draws the controls as a separate
+tile under the kit and plays only the input; any pick moves the move beside the ability, adds the scene of the ability
+happening, the game filters and the story, and changes the type.
+
+**Picked (Shombith, 2026-11-08): "I like C can you show me whole page how it would look on the mockup before building?"**
+The whole page is Rev 69 (section 144).
+
+## 144. Rev 69 mockups: the Fleet Codex vessel page, C in full - every detail, calm (2026-11-08, awaiting board approval)
+
+**Asked (Shombith, 2026-11-08), after picking Rev 68 C:** "I like C can you show me whole page how it would look on the
+mockup before building?", then "Not all vessels but just how with all details it would look because earlier one was
+pretty detailed too but noisy".
+
+**On the canvas:** the **Fleet Codex** tab, the round "Rev 69 - Fleet Codex vessel page, C in full: one vessel with every
+detail, calm - the desktop page and the phone" under Rev 68 (version `1794138089-7edc`; two boards, the two files Frogma
+had left). Copies `Docs/MenuRedesignB/board/R69*.dc.html`; generator `Docs/MenuRedesignB/rounds/r69_codex_vessel_page.py`
+(Rev 68's kit, the facts from the codex's `fleet.json`).
+
+- **R69Desktop (1920 x 3400), interactive:** the top bar (Fleet Codex; the vessel switcher "Grizzly / Squirrel 6 of 23 /
+  Serpent" in place of a fleet grid; search; the theme, Nocturne; the Jade / Ruby / Gold domain). C's flight-deck window:
+  the hull flying, the pilot briefing (the story, cruise, turn, level 5 wired, games), its element games (Charge Joust,
+  Mass Scurry, Space none yet, Time Skim Race) with the one Lime call to action, the picked ability's move with its three
+  devices, the four-icon row plus the omni. Then calm sections on hairlines: **Abilities** (each row: who and how it
+  fires, what it does, what more of its element does with the authored numbers - stealScale x1 to x2.5, the skimmer
+  Scale x15 to x30, energyMultiplier x1 to x2, ThrottleScalerMultiplier struck as switched off - and its level 5 with
+  WIRED; picking a row plays its move in the window), **Missions** (the eight games with the element filters), **Flight
+  and controls** (the flight numbers and every action on controller, keyboard and phone, with the phone notes), **Docs
+  and changes**, a one-line source footer.
+- **R69Phone (390 x 4040), interactive:** the same page stacked: the switcher, the hull, the story and numbers, the call
+  to action, the ability row with the move under it, the abilities in full, the missions two across with the filters,
+  the flight numbers; the controls table, docs and changes fold under one line.
+
+What keeps it calm against the old codex (Rev 48 B, "pretty detailed too but noisy"): one switcher instead of the fleet
+filmstrip; no boxes round sections, hairlines only; one accent (the Jade selection) and Lime only on PLAY THE SQUIRREL;
+labels small and spaced; the move shown once, in the window, not as a separate control map.
+
+**Differs from the build:** the live codex (`Docs/FleetCodex/index.html`, PR #1851) becomes this layout: the fleet
+filmstrip gives way to the switcher (the `#fleet` table stays as its own page), the control map moves into the window
+beside the ability as a scene, the ability cards become rows, and the type becomes Saira Condensed + Saira.
+
+
+**Built (2026-11-08, "Go ahead build it"):** `Docs/FleetCodex/index.html` is now this page, responsive (the desktop
+board above 1100 px, the phone board below), live at https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8. Differences from
+the boards: the move's scene is drawn by the ability's element so every vessel has one (on the Squirrel it is the
+board's scene); the omni ability carries the map's own words ("bursts into a ring of shielded blocks"), the boards'
+"Shield Ring" being a name no asset holds; crews show their abilities under seat headers; the vessel menu (the switcher)
+lists the solo vessels and the crews and links to the whole-fleet table. **Recent updates** replace the board's commit
+list (Shombith: "dont show commit messages", then "show recent changes by when somebody updates a game or a vessel"): one
+line a day naming the parts that changed (abilities and level-5 upgrades, the vessel, its icons, its model...) and the
+games of it that changed, read from git's file lists by `fleet_codex.py` `changes()`; no commit subject reaches the page
+or its data. Checked in Chromium at 1600 px (Squirrel, Wrasse, the fleet table) and 390 px (Squirrel, Wrasse, Orca, the
+fleet): no script error, no sideways scroll.

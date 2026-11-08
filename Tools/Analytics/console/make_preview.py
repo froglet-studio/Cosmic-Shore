@@ -32,7 +32,9 @@ import analytics_store as S  # noqa: E402
 import analytics_views as V  # noqa: E402
 import notebook_sample  # noqa: E402  the Notebook page's sample notebooks
 
-BUILDS = ("release", "editor", "port", "development")
+BUILDS = ("release", "editor", "port", "web", "development", "all")
+# The Device filter's snapshots (every page that takes it), for these builds and ranges only, so the copy stays small
+DEVICE_BUILDS, DEVICE_DAYS = ("release",), (90,)
 PAGE_DAYS = (7, 30, 90, 365)
 HEALTH_DAYS = (14, 30, 90)
 LABELS = {"solo_vs_ai": "Solo vs AI", "solo_alone": "Solo", "coop": "Co-op", "adversarial": "Versus",
@@ -51,6 +53,7 @@ IDENTIFY_DAYS = 25           # builds since 12 Oct re-identify after each Toybox
 DOMAIN_DAYS = 3              # builds this recent send the match setup (domain, humans_on_*_domain(s), ai_on_*_domain(s))
 VESSELS = ["Squirrel", "Sparrow", "Manta", "Dolphin", "Rhino", "Urchin"]
 R67_DAYS = 12                # builds this recent send sessions, score / placement / AI difficulty, quits, errors, invite ids
+DEVICE_SENT_DAYS = 14        # builds this recent send device, os and device_model (older ones: the platform only)
 DIFFICULTIES = ["Easy", "Medium", "Hard"]
 FRAMES = [("NullReferenceException", "CosmicShore.Game.VesselStatus.UpdateBoost", "Minigame_SkimRace"),
           ("NullReferenceException", "CosmicShore.UI.ArcadeScreen.OnCardClicked", "Menu_Main"),
@@ -65,6 +68,24 @@ def sample_events(seed=7):
     rng = random.Random(seed)
     now = datetime.now(timezone.utc)
     players = {}
+    devices = {}
+
+    def device_of(player, platform):
+        """Each sample player's one device (some iPads, Android tablets and phones' browsers), sent by new builds."""
+        if (player, platform) not in devices:
+            pick = {"IPhonePlayer": [("iphone", "iOS 17.5", "iPhone15,2")] * 3 + [("ipad", "iPadOS 17.5", "iPad13,1")] * 2,
+                    "Android": [("android_phone", "Android OS 14 / API-34", "samsung SM-S918B")] * 2
+                               + [("android_tablet", "Android OS 13 / API-33", "samsung SM-X200")],
+                    "WebGLPlayer": [("web_desktop", "Windows 11 (10.0.22631) 64bit", "PC")] * 2
+                                   + [("web_mobile", "iOS 17.5", "iPhone")] * 2,
+                    "WindowsPlayer": [("windows", "Windows 11 (10.0.22631) 64bit", "PC")],
+                    "WindowsEditor": [("windows", "Windows 11 (10.0.22631) 64bit", "PC")]}.get(platform)
+            devices[(player, platform)] = pick[sum(map(ord, player)) % len(pick)] if pick else None   # the same each run
+        found = devices[(player, platform)]
+        out = {"device": found[0], "os": found[1], "device_model": found[2]} if found else {}
+        if platform == "WebGLPlayer":
+            out["build_kind"] = "web"
+        return out
     table = S.mode_elements()
     selected = {}
 
@@ -74,6 +95,8 @@ def sample_events(seed=7):
     def send(player, event, t, platform, version, **props):
         base = {"distinct_id": player, "install_id": "dev-" + player, "player_id": player, "app_version": version,
                 "platform": platform, "schema_version": 1}
+        if t > now - timedelta(days=DEVICE_SENT_DAYS):     # newer builds name the device (older: the platform only)
+            base.update(device_of(player, platform))
         base.update(props)
         players[player][1].append({"event": event, "properties": base, "timestamp": iso(t)})
 
@@ -286,7 +309,9 @@ def sample_events(seed=7):
         for player in (p(i + 18), p(i + 2)):
             session(player, t, "WindowsPlayer", "0.2.1", t < fixed, 0.85, humans=2, wallet=wallets[player])
     for i in range(20, 25):                  # release players on builds that send the solo setup (AI teammates too)
-        session(p(i), now - timedelta(hours=rng.randint(3, 60)), "Android", "0.2.1", False, 0.7, wallet=wallets[p(i)])
+        for hours in (rng.randint(3, 60), rng.randint(70, 200)):     # phones and tablets, on builds that send device
+            session(p(i), now - timedelta(hours=hours), ("Android", "IPhonePlayer")[i % 2], "0.2.1", False, 0.7,
+                    wallet=wallets[p(i)])
     for i in range(25):
         identify(f"sample-player-{i:02d}", CALLSIGNS[i] + " (sample)", wallets[f"sample-player-{i:02d}"])
     for i in range(6):                       # the team in the editor
@@ -297,6 +322,13 @@ def sample_events(seed=7):
             start = now - timedelta(days=d, hours=rng.randint(1, 10))
             session(player, start, "WindowsEditor", "0.2.1", start < fixed, 0.7, first=d == 86, wallet=wallet)
         identify(player, f"Dev {i + 1} (sample)", wallet)
+    for i in range(8):                       # the web Toybox (play.froglet.games): desktop and phone browsers
+        player = f"sample-web-{i}"
+        players[player] = (rng.choice(COUNTRIES), [])
+        visits = sorted(rng.sample(range(0, 30), 3), reverse=True)
+        for d in visits:
+            session(player, now - timedelta(days=d, hours=rng.randint(2, 10)), "WebGLPlayer", "0.2.1", False, 0.5,
+                    first=d == visits[0])
     for i in range(5):                       # the port build
         player = f"sample-port-{i}"
         players[player] = ("US", [])
@@ -344,10 +376,27 @@ def snapshot(store, agg):
             get["/v1/ftue" + q] = V.ftue(agg, build, days)
             get["/v1/economy" + q] = V.economy(agg, build, days)
             get["/v1/social" + q] = V.social(agg, build, days)
-            get["/v1/people" + q] = store.people_list(build, days)       # the page filters a search itself
+            get["/v1/people" + q] = store.people_list(None if build == "all" else build, days)   # searched on the page
             for name, view in (("sessions", V.sessions), ("balance", V.balance), ("quits", V.quits),
                                ("invites", V.invites), ("errors", V.errors)):       # round 67's pages
                 get[f"/v1/{name}" + q] = view(agg, build, days)
+    for build in DEVICE_BUILDS:                    # the Device filter, on every page that takes it
+        for days in DEVICE_DAYS:
+            for device in S.DEVICE_FILTERS[1:]:
+                q = f"?build={build}&days={days}&device={device}"
+                page = V.overview(agg, build, days, device=device)
+                page["digest"] = store.latest_digest()
+                get["/v1/overview" + q] = page
+                for name, view in (("retention", V.retention), ("matches", V.matches), ("sessions", V.sessions),
+                                   ("balance", V.balance), ("quits", V.quits), ("invites", V.invites),
+                                   ("errors", V.errors), ("cohorts", V.cohorts), ("freestyle", V.freestyle)):
+                    get[f"/v1/{name}" + q] = view(agg, build, days, "all", None, device)
+                get["/v1/playtypes" + q] = V.playtypes(agg, build, days, None, device)
+                for name, view in (("audience", V.audience), ("ftue", V.ftue), ("economy", V.economy),
+                                   ("social", V.social)):
+                    get[f"/v1/{name}" + q] = dict(view(agg, build, days), unfiltered=["page"])
+                get["/v1/people" + q] = store.people_list(None if build == "all" else build, days,
+                                                          devices=S.DEVICE_GROUPS[device])
     for days in HEALTH_DAYS:
         get[f"/v1/health?days={days}"] = V.health(agg, store.health_facts(), days)
     for person in store.people_list(None, 365)["people"]:
@@ -365,7 +414,12 @@ def snapshot(store, agg):
                     f"name and number is made up, Erasure is off, and Ask knows its three example questions only."}
 
 
-SERIES_BUILDS, SERIES_DAYS = ("release", "editor"), (30, 90)
+SERIES_BUILDS, SERIES_DAYS = ("release", "editor", "web", "all"), (30, 90)
+# Every switch of every chart for release and editor; for the web build, All builds and a few Device picks only the
+# 90-day range and the common splits (the copy must stay under the artifact's 16 MB). The page says when it has none.
+EXTRA_SERIES_DAYS, EXTRA_SERIES_BY = 90, ("none", "device", "build_kind", "play_type", "setup")
+EXTRA_SERIES_MEASURES = ("matches", "players", "finished_pct", "rematch_pct", "new_players", "freestyle_entries")
+SERIES_DEVICES = ("ipad",)
 SAMPLE_DASHBOARD = {"id": "launch_week", "name": "Launch week", "owner": "preview", "shared": "readers", "email": None,
                     "tiles": [{"id": f"t{i}", "source": f"builtin:{name}", "title": title, "chart": chart, "w": w, "h": h}
                               for i, (name, title, chart, w, h) in enumerate((
@@ -425,8 +479,17 @@ def rev65(store, agg, get):
             for measure in V.SERIES_MEASURES:
                 for by in V.SERIES_ANSWERS[measure]:
                     for over in V.SERIES_OVER:
+                        common = days == EXTRA_SERIES_DAYS and by in EXTRA_SERIES_BY and measure in EXTRA_SERIES_MEASURES
+                        if (build in ("web", "all") and not common) or (build == "editor" and by in ("device", "os")):
+                            continue
                         url = "/v1/series?" + urlencode({"build": build, "days": days, "measure": measure, "by": by, "over": over})
                         get[url] = V.series(agg, measure, by, over, build, days, "all", None, eras)
+                        if build != "release" or not common:
+                            continue
+                        for device in SERIES_DEVICES:
+                            url = "/v1/series?" + urlencode({"build": build, "days": days, "device": device,
+                                                             "measure": measure, "by": by, "over": over})
+                            get[url] = V.series(agg, measure, by, over, build, days, "all", None, eras, device)
     for build in BUILDS:
         for days in PAGE_DAYS:
             get["/v1/freestyle?" + urlencode({"build": build, "days": days})] = V.freestyle(agg, build, days)

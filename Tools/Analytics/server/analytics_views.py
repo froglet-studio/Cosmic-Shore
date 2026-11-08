@@ -11,7 +11,7 @@ import sqlite3
 import time
 from datetime import datetime, timedelta, timezone
 
-from analytics_store import DOMAINS_FROM, SETUP_IDS, SETUPS, difficulty_rank
+from analytics_store import BUILD_KINDS, DEVICE_GROUPS, DOMAINS_FROM, SETUP_IDS, SETUPS, difficulty_rank
 
 PLAY_TYPES = ("solo_vs_ai", "solo_alone", "coop", "adversarial", "mixed", "multi_human_unknown")
 MAX_ASK_ROWS = 200
@@ -57,7 +57,37 @@ def _play(play):
     return f" AND ({PLAYS[play]})" if PLAYS[play] else ""
 
 
-BUILD_KINDS = ("release", "development", "editor", "port")
+# The Build filter (Shombith, 2026-11-07: "Can we have a all button too?"): one build kind, or all of them together.
+# Rows (plays, events) sum across the kinds; distinct players read the rebuild's '*' rows, so nobody counts twice.
+BUILD_FILTERS = ("all",) + BUILD_KINDS
+# The Device filter (Shombith, 2026-11-07: "platform specific views like iOS iPad android etc"): a group of stored
+# devices, as SQL on a table's device column (analytics_store.DEVICE_GROUPS). Distinct players come from the *_device
+# twins of the player tables, counted once inside each group. Tables with no device (economy, mode_signals, invites,
+# the Players / FTUE / Economy / Social pages' tables) are not filtered; a page lists those in "unfiltered".
+DEVICES = {"all": "", **{g: "device IN (" + ", ".join(f"'{d}'" for d in members) + ")"
+                         for g, members in DEVICE_GROUPS.items()}}
+DEVICE_NOTE = ("iPhone and iPad, and Android phone and tablet, are told apart only from builds that send device "
+               "(from 2026-11-07); older iOS builds read iOS (device not recorded), older Android Android (size not "
+               "recorded) and older web builds Web (desktop or mobile not recorded), so iPhone, iPad, Phones and "
+               "Tablets hold only the newer builds")
+
+
+def _device(device):
+    if device not in DEVICES:
+        raise BadRequest(f"device must be one of {list(DEVICES)}")
+    return f" AND ({DEVICES[device]})" if DEVICES[device] else ""
+
+
+def build_where(build, column="build_kind"):
+    """SQL and arguments for a page that reads one build's rows, or every build's (build=all)."""
+    if build == "all":
+        return f"{column} IN ({','.join('?' * len(BUILD_KINDS))})", list(BUILD_KINDS)
+    return f"{column} = ?", [build]
+
+
+def distinct_build(build):
+    """The build_kind to read from a table of distinct players: the build, or '*' (every build, each player once)."""
+    return "*" if build == "all" else build
 
 
 class BadRequest(ValueError):
@@ -73,11 +103,14 @@ class Scope:
     An era (Rev 65) replaces the days window with its own range (to today at most), counts only its source
     (imported = PostHog history, live = sent here) and, when it names builds, only those."""
 
-    def __init__(self, build, days=90, play="all", era=None, builds=None):
+    def __init__(self, build, days=90, play="all", era=None, builds=None, device="all"):
         if days not in WINDOWS:
             raise BadRequest(f"days must be one of {list(WINDOWS)}")
+        if build not in BUILD_FILTERS:
+            raise BadRequest(f"build must be one of {list(BUILD_FILTERS)}")
         _play(play)
-        self.build, self.days, self.play, self.era = build, days, play, era
+        _device(device)
+        self.build, self.days, self.play, self.era, self.device = build, days, play, era, device
         if era:
             self.since, self.until = era["from"], min(era["to"], _today())
             self.source = era["source"]
@@ -85,18 +118,31 @@ class Scope:
         else:
             self.since, self.until, self.source = _since(days), _today(), "any"
             self.span_none, self.span_week = f"window:{days}", "week"
-        chosen = list(builds) if builds is not None else [build]
+        chosen = list(builds) if builds is not None else list(BUILD_KINDS) if build == "all" else [build]
         if era and era.get("builds"):
             chosen = [b for b in chosen if b in era["builds"]]
         self.builds = chosen
+        # build=all reads distinct players from the '*' rows (each player once). player_counts' '*' era rows hold the
+        # era's own builds; the other player tables' '*' rows hold every build, so an era that names builds sums them.
+        everyone = build == "all" and builds is None
+        self.pc_builds = ["*"] if everyone else chosen
+        self.distinct_builds = ["*"] if everyone and not (era and era.get("builds")) else chosen
 
     def with_builds(self, builds):
-        return Scope(self.build, self.days, self.play, self.era, builds)
+        return Scope(self.build, self.days, self.play, self.era, builds, self.device)
 
-    def where(self, day="day", sourced=True, play=True, builds=None):
-        """SQL (and its arguments) for these builds, days, source and play group. `sourced` is False for a table
-        without an imported column; `play` False for one without a play type."""
-        chosen = self.builds if builds is None else builds
+    def counted(self, table):
+        """A table of distinct players for this Device filter: the table itself (every device) or its _device twin,
+        and the SQL that keeps the group's rows."""
+        if self.device == "all":
+            return table, ""
+        return table + "_device", f" AND device = '{self.device}'"
+
+    def where(self, day="day", sourced=True, play=True, builds=None, device=True, distinct=False):
+        """SQL (and its arguments) for these builds, days, source, play group and device. `sourced` is False for a
+        table without an imported column; `play` False for one without a play type; `device` False for one without a
+        device; `distinct` True for a table of distinct players (build=all then reads its '*' rows)."""
+        chosen = builds if builds is not None else self.distinct_builds if distinct else self.builds
         sql = f"build_kind IN ({','.join('?' * len(chosen)) or 'NULL'}) AND {day} BETWEEN ? AND ?"
         args = [*chosen, self.since, self.until]
         if sourced and self.source != "any":
@@ -104,20 +150,24 @@ class Scope:
             args.append(1 if self.source == "imported" else 0)
         if play:
             sql += _play(self.play)
+        if device:
+            sql += _device(self.device)
         return sql, args
 
-    def unfiltered(self, play_ignores=(), source_ignores=(), era_ignores=()):
-        """The names a page lists as ignoring the play filter or the era."""
+    def unfiltered(self, play_ignores=(), source_ignores=(), era_ignores=(), device_ignores=()):
+        """The names a page lists as ignoring the play filter, the era or the device filter."""
         out = list(play_ignores) if self.play != "all" else []
         if self.era:
             out += [n for n in era_ignores if n not in out]
             if self.source != "any":
                 out += [n for n in source_ignores if n not in out]
+        if self.device != "all":
+            out += [n for n in device_ignores if n not in out]
         return out
 
     def describe(self):
         return {"from": self.since, "to": self.until, "source": self.source,
-                "era": self.era["id"] if self.era else None}
+                "era": self.era["id"] if self.era else None, "device": self.device}
 
 
 def _days_between(since, until):
@@ -126,29 +176,31 @@ def _days_between(since, until):
 
 
 def _player_count(db, sc, dim="none", key="", span=None, builds=None):
-    """Distinct players in the scope from player_counts (one build at a time is exact; '*' is every build)."""
-    chosen = sc.builds if builds is None else builds
+    """Distinct players in the scope from player_counts (one build at a time is exact; '*' is every build), or from
+    player_counts_device inside the Device filter's group."""
+    chosen = sc.pc_builds if builds is None else builds
     if not chosen:
         return 0
+    table, dx = sc.counted("player_counts")
     row = db.execute(
-        f"SELECT SUM(players) FROM player_counts WHERE span=? AND source=? AND dim=? AND key=? AND "
-        f"build_kind IN ({','.join('?' * len(chosen))})",
+        f"SELECT SUM(players) FROM {table} WHERE span=? AND source=? AND dim=? AND key=? AND "
+        f"build_kind IN ({','.join('?' * len(chosen))}){dx}",
         (span or sc.span_none, sc.source, dim, key, *chosen)).fetchone()
     return row[0] or 0
 
 
-def overview(agg_path, build="release", days=90, play="all", era=None):
-    sc = Scope(build, days, play, era)
+def overview(agg_path, build="release", days=90, play="all", era=None, device="all"):
+    sc = Scope(build, days, play, era, device=device)
     db = _open(agg_path)
     if db is None:
         return _empty(build, days)
     q = lambda sql, *a: db.execute(sql, a).fetchall()
     w, a = sc.where()
     wd, ad = sc.where(play=False)
-    if era:
+    if era or device != "all":
         distinct_players = _player_count(db, sc)
     else:
-        window = q("SELECT players FROM players_in_window WHERE build_kind=? AND days=?", build, days)
+        window = q("SELECT players FROM players_in_window WHERE build_kind=? AND days=?", distinct_build(build), days)
         distinct_players = window[0][0] if window else 0
     plays = q("SELECT COUNT(*) AS n, SUM(completed) AS done, COUNT(DISTINCT match_id) AS matches, "
               "SUM(CASE WHEN humans>=2 THEN 1 ELSE 0 END) AS multi FROM plays WHERE " + w, *a)[0]
@@ -164,23 +216,29 @@ def overview(agg_path, build="release", days=90, play="all", era=None):
                     q("SELECT build_kind, SUM(rows), SUM(plays) FROM daily_plays WHERE " + wr + " GROUP BY build_kind",
                       *ar)}
     yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+    bw, ba = build_where(build)
     events_24h = [dict(r) for r in db.execute(
         "SELECT event, SUM(rows) AS rows, SUM(near_dup_rows) AS near_duplicates FROM daily_events "
-        "WHERE build_kind=? AND day>=? GROUP BY event ORDER BY rows DESC LIMIT 12", (build, yesterday))]
+        f"WHERE {bw} AND day>=?{_device(device)} GROUP BY event ORDER BY rows DESC LIMIT 12", (*ba, yesterday))]
     # Rev 65: the tiles marketing and business read (counts only)
     marks = ",".join("?" * len(sc.builds)) or "NULL"
+    pmarks = ",".join("?" * len(sc.pc_builds)) or "NULL"
+    pct_table, dx = sc.counted("player_counts")
     new_by_day = {r[0]: r[1] for r in q(
-        f"SELECT x, SUM(new_players) FROM player_counts WHERE span='day' AND source=? AND dim='none' "
-        f"AND build_kind IN ({marks}) AND x BETWEEN ? AND ? GROUP BY x", sc.source, *sc.builds, sc.since, sc.until)}
+        f"SELECT x, SUM(new_players) FROM {pct_table} WHERE span='day' AND source=? AND dim='none' "
+        f"AND build_kind IN ({pmarks}) AND x BETWEEN ? AND ?{dx} GROUP BY x", sc.source, *sc.pc_builds, sc.since,
+        sc.until)}
     split = lambda dim: [{dim: r[0], "players": r[1]} for r in q(
-        f"SELECT key, SUM(players) AS n FROM player_counts WHERE span=? AND source=? AND dim=? "
-        f"AND build_kind IN ({marks}) GROUP BY key ORDER BY n DESC, key", sc.span_none, sc.source, dim, *sc.builds)]
+        f"SELECT key, SUM(players) AS n FROM {pct_table} WHERE span=? AND source=? AND dim=? "
+        f"AND build_kind IN ({pmarks}){dx} GROUP BY key ORDER BY n DESC, key", sc.span_none, sc.source, dim,
+        *sc.pc_builds)]
     event_rows = lambda name: q("SELECT COALESCE(SUM(rows), 0) FROM daily_events WHERE event=? AND " + wd,
                                 name, *ad)[0][0]
     crystals = {r[0]: r[1] or 0 for r in q(
         f"SELECT kind, SUM(amount) FROM economy WHERE build_kind IN ({marks}) AND day BETWEEN ? AND ? GROUP BY kind",
         *sc.builds, sc.since, sc.until)}
-    whales = q("SELECT COALESCE(SUM(players), 0) FROM balances WHERE build_kind=? AND bucket='2,000+'", build)[0][0]
+    whales = q("SELECT COALESCE(SUM(players), 0) FROM balances WHERE build_kind=? AND bucket='2,000+'",
+               distinct_build(build))[0][0]
     setups, setup_history = _setups(db, sc)
     active, _per_day = _active(db, sc)
     session_tiles, _seconds = _session_tiles(db, sc)
@@ -188,7 +246,7 @@ def overview(agg_path, build="release", days=90, play="all", era=None):
         "build": build, "days": days, "play": play, "built_ms": _built_ms(db), **sc.describe(),
         "unfiltered": sc.unfiltered(["players", "rows_per_play", "events_24h", "marketing", "business", "sessions"],
                                     ["business.crystals_earned", "business.crystals_spent"],
-                                    ["events_24h", "business.whales_2000"]),
+                                    ["events_24h", "business.whales_2000"], ["business"]),
         "tiles": {
             "players": distinct_players or 0,
             "matches": plays["matches"] or 0,
@@ -205,7 +263,7 @@ def overview(agg_path, build="release", days=90, play="all", era=None):
         "marketing": {
             "new_players_per_day": [{"day": d, "new_players": new_by_day.get(d, 0)}
                                     for d in _days_between(sc.since, sc.until)],
-            "by_country": split("country"), "by_platform": split("platform"),
+            "by_country": split("country"), "by_platform": split("platform"), "by_device": split("device"),
             "shares": event_rows("share_triggered"), "invites_sent": event_rows("party_invite_sent")},
         "business": {"crystals_earned": crystals.get("earned", 0),
                      "crystals_spent": crystals.get("spent", 0) + crystals.get("unlock", 0),
@@ -214,6 +272,7 @@ def overview(agg_path, build="release", days=90, play="all", era=None):
         "setups": setups, "setup_history": setup_history, "setup_notes": SETUP_NOTES,
         # Sessions (round 67): DAU / WAU / MAU from any event; sessions and their length from builds after 2026-11-07
         "sessions": {**active, **session_tiles},
+        "device_note": DEVICE_NOTE,
     }
     db.close()
     return result
@@ -227,11 +286,12 @@ def _setups(db, sc):
         "SELECT COALESCE(setup, 'multi_unrecorded'), COUNT(DISTINCT match_id), COUNT(*), SUM(completed), "
         "SUM(CASE WHEN rematched=1 THEN 1 ELSE 0 END), SUM(won), COUNT(won) FROM plays WHERE " + w + " GROUP BY 1", a)}
     players = {}
-    if sc.builds:
-        marks = ",".join("?" * len(sc.builds))
+    if sc.pc_builds:
+        marks = ",".join("?" * len(sc.pc_builds))
+        table, dx = sc.counted("player_counts")
         players = dict(db.execute(
-            f"SELECT key, SUM(players) FROM player_counts WHERE span=? AND source=? AND dim='setup' "
-            f"AND build_kind IN ({marks}) GROUP BY key", (sc.span_none, sc.source, *sc.builds)).fetchall())
+            f"SELECT key, SUM(players) FROM {table} WHERE span=? AND source=? AND dim='setup' "
+            f"AND build_kind IN ({marks}){dx} GROUP BY key", (sc.span_none, sc.source, *sc.pc_builds)).fetchall())
     allowed = set(PLAY_SETUPS.get(sc.play, SETUP_IDS))      # the Play filter: a setup outside its group has no one
     out = []
     for setup, group, label in SETUPS:
@@ -257,7 +317,7 @@ def retention_by_play_type(db, build, since, play="all", scope=None):
         rwhere, rargs = "build_kind=? AND first_day>=?" + pf, [build, since]
     else:
         where, args = scope.where()
-        rwhere, rargs = scope.where(day="first_day")
+        rwhere, rargs = scope.where(day="first_day", distinct=True)
     rows = db.execute(
         "SELECT play_type, COUNT(*) AS plays, COUNT(DISTINCT match_id) AS matches, SUM(completed) AS completed, "
         "SUM(CASE WHEN rematched=1 THEN 1 ELSE 0 END) AS rematches FROM plays "
@@ -278,12 +338,12 @@ def retention_by_play_type(db, build, since, play="all", scope=None):
     return out
 
 
-def retention(agg_path, build="release", days=90, play="all", era=None):
-    sc = Scope(build, days, play, era)
+def retention(agg_path, build="release", days=90, play="all", era=None, device="all"):
+    sc = Scope(build, days, play, era, device=device)
     db = _open(agg_path)
     if db is None:
         return _empty(build, days)
-    rw, ra = sc.where(day="first_day")
+    rw, ra = sc.where(day="first_day", distinct=True)
     result = {"build": build, "days": days, "play": play, "built_ms": _built_ms(db), **sc.describe(),
               "unfiltered": [],
               "by_play_type": retention_by_play_type(db, build, sc.since, play, scope=sc),
@@ -302,15 +362,15 @@ def _every_day(since, days, by_day, until=None):
             for day in _days_between(since, until)]
 
 
-def matches(agg_path, build="release", days=90, play="all", era=None):
-    sc = Scope(build, days, play, era)
+def matches(agg_path, build="release", days=90, play="all", era=None, device="all"):
+    sc = Scope(build, days, play, era, device=device)
     db = _open(agg_path)
     if db is None:
         return _empty(build, days)
     w, a = sc.where()
     result = {
         "build": build, "days": days, "play": play, "built_ms": _built_ms(db), **sc.describe(),
-        "unfiltered": sc.unfiltered(["signals"], ["signals"]),
+        "unfiltered": sc.unfiltered(["signals"], ["signals"], (), ["signals"]),
         "per_day": _every_day(sc.since, days, {r["day"]: dict(r) for r in db.execute(
             "SELECT day, COUNT(DISTINCT match_id) AS matches, COUNT(*) AS plays, SUM(completed) AS completed "
             "FROM plays WHERE " + w + " GROUP BY day ORDER BY day", a)}, sc.until),
@@ -320,14 +380,21 @@ def matches(agg_path, build="release", days=90, play="all", era=None):
             "ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1) AS win_pct, "
             "ROUND(AVG(flight_time_seconds), 1) AS avg_flight_s FROM plays "
             "WHERE " + w + " GROUP BY game_mode ORDER BY plays DESC", a)],
+        "by_device": [dict(r) for r in db.execute(
+            "SELECT COALESCE(device, 'other') AS device, COUNT(*) AS plays, COUNT(DISTINCT match_id) AS matches, "
+            "ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct, "
+            "ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1) AS win_pct, ROUND(AVG(flight_time_seconds), 1) AS avg_flight_s "
+            "FROM plays WHERE " + w + " GROUP BY 1 ORDER BY plays DESC", a)],
+        "device_note": DEVICE_NOTE,
         "by_vessel": [dict(r) for r in db.execute(
             "SELECT vessel_class, COUNT(*) AS plays, ROUND(100.0 * SUM(completed) / COUNT(*), 1) AS finished_pct, "
             "ROUND(100.0 * SUM(won) / NULLIF(COUNT(won), 0), 1) AS win_pct, ROUND(AVG(flight_time_seconds), 1) AS avg_flight_s "
             "FROM plays WHERE " + w + " GROUP BY vessel_class ORDER BY plays DESC", a)],
         "signals": [dict(r) for r in db.execute(
             "SELECT game_mode, SUM(favorited) AS favorited, SUM(unfavorited) AS unfavorited, SUM(fails) AS fails, "
-            "SUM(shares) AS shares FROM mode_signals WHERE " + sc.where(sourced=False, play=False)[0] +
-            " GROUP BY game_mode ORDER BY favorited - unfavorited DESC", sc.where(sourced=False, play=False)[1])],
+            "SUM(shares) AS shares FROM mode_signals WHERE " + sc.where(sourced=False, play=False, device=False)[0] +
+            " GROUP BY game_mode ORDER BY favorited - unfavorited DESC",
+            sc.where(sourced=False, play=False, device=False)[1])],
         "pause": dict(db.execute(
             "SELECT ROUND(AVG(pause_seconds), 1) AS avg_pause_s, ROUND(AVG(duration_seconds), 1) AS avg_duration_s, "
             "ROUND(100.0 * SUM(CASE WHEN pause_seconds > 30 THEN 1 ELSE 0 END) / NULLIF(COUNT(pause_seconds), 0), 1) "
@@ -388,6 +455,15 @@ def health(agg_path, store_facts, days=30):
     total = sum(n for _, n in split)
     editor = sum(n for b, n in split if b == "editor")
     result["editor_share_pct"] = _pct(editor, total)
+    # Every build kind (the web build included, zeros listed) and every device seen: events in the window, last day.
+    by_build = {r[0]: r[1:] for r in db.execute(
+        "SELECT build_kind, SUM(CASE WHEN day>=? THEN rows ELSE 0 END), MAX(day) FROM daily_events GROUP BY 1", (since,))}
+    result["events_by_build"] = [{"build_kind": b, "events": (by_build.get(b) or (0, None))[0] or 0,
+                                  "last_day": (by_build.get(b) or (0, None))[1]} for b in BUILD_KINDS]
+    result["events_by_device"] = [{"device": r[0], "events": r[1] or 0, "last_day": r[2]} for r in db.execute(
+        "SELECT COALESCE(device, 'other'), SUM(CASE WHEN day>=? THEN rows ELSE 0 END) AS n, MAX(day) FROM daily_events "
+        "GROUP BY 1 ORDER BY n DESC, 1", (since,))]
+    result["device_note"] = DEVICE_NOTE
     meta = db.execute("SELECT value FROM meta WHERE key='modes_without_element'").fetchone()
     result["modes_without_element"] = json.loads(meta[0]) if meta else []      # every match ever, by game_mode
     meta = db.execute("SELECT value FROM meta WHERE key='new_events'").fetchone()
@@ -403,28 +479,30 @@ def audience(agg_path, build="release", days=90):
     if db is None:
         return _empty(build, days)
     since = _since(days)
+    one = distinct_build(build)                  # tables of distinct players: build=all reads '*' (each player once)
+    bw, ba = build_where(build)                  # tables of rows: build=all sums every build
     funnel = db.execute(
         "SELECT SUM(players), SUM(reached_menu), SUM(started_match), SUM(finished_match), SUM(finished_ftue), "
-        "SUM(came_back) FROM funnel WHERE build_kind=? AND first_day>=?", (build, since)).fetchone()
+        "SUM(came_back) FROM funnel WHERE build_kind=? AND first_day>=?", (one, since)).fetchone()
     steps = ["New players", "Reached the menu", "Started a match", "Finished a match", "Finished the FTUE",
              "Came back another day"]
     result = {
         "build": build, "days": days, "built_ms": _built_ms(db),
         "per_day": _every_day_players(since, days, {r["day"]: dict(r) for r in db.execute(
-            "SELECT day, players, new_players FROM daily_players WHERE build_kind=? AND day>=?", (build, since))}),
+            "SELECT day, players, new_players FROM daily_players WHERE build_kind=? AND day>=?", (one, since))}),
         "platforms": [dict(r) for r in db.execute(
             "SELECT platform, players FROM players_by_platform WHERE build_kind=? AND days=? ORDER BY players DESC",
-            (build, days))],
+            (one, days))],
         "countries": [dict(r) for r in db.execute(
             "SELECT country, players FROM players_by_country WHERE build_kind=? AND days=? ORDER BY players DESC",
-            (build, days))],
+            (one, days))],
         "funnel": [{"step": name, "players": funnel[i] or 0} for i, name in enumerate(steps)] if funnel[0] else [],
         "launches": [dict(r) for r in db.execute(
             "SELECT platform, launches, p50_seconds, p90_seconds FROM launches WHERE build_kind=? AND days=? "
-            "ORDER BY launches DESC", (build, days))],
+            "ORDER BY launches DESC", (one, days))],
         "session_ends": [dict(r) for r in db.execute(
-            "SELECT reason, SUM(count) AS count FROM session_ends WHERE build_kind=? AND day>=? GROUP BY reason "
-            "ORDER BY count DESC", (build, since))],
+            f"SELECT reason, SUM(count) AS count FROM session_ends WHERE {bw} AND day>=? GROUP BY reason "
+            "ORDER BY count DESC", (*ba, since))],
     }
     db.close()
     return result
@@ -442,13 +520,14 @@ def ftue(agg_path, build="release", days=90):
     if db is None:
         return _empty(build, days)
     since = _since(days)
+    one = distinct_build(build)
     cohort = db.execute("SELECT SUM(players), SUM(finished_ftue) FROM funnel WHERE build_kind=? AND first_day>=?",
-                        (build, since)).fetchone()
+                        (one, since)).fetchone()
     steps = [dict(r) for r in db.execute(
         "SELECT quest_id, phase_index, step_id, MAX(step_name) AS step_name, SUM(players) AS players, "
         "ROUND(SUM(seconds_sum) / NULLIF(SUM(seconds_n), 0), 0) AS avg_seconds FROM ftue_steps "
         "WHERE build_kind=? AND first_day>=? GROUP BY quest_id, phase_index, step_id "
-        "ORDER BY quest_id, phase_index, avg_seconds", (build, since))]
+        "ORDER BY quest_id, phase_index, avg_seconds", (one, since))]
     for step in steps:
         step["pct_of_new"] = _pct(step["players"], cohort[0] or 0)
     db.close()
@@ -464,9 +543,10 @@ def economy(agg_path, build="release", days=90):
     if db is None:
         return _empty(build, days)
     since = _since(days)
+    bw, ba = build_where(build)
     by_day = {}
-    for r in db.execute("SELECT day, kind, SUM(amount) AS amount FROM economy WHERE build_kind=? AND day>=? "
-                        "GROUP BY day, kind", (build, since)):
+    for r in db.execute(f"SELECT day, kind, SUM(amount) AS amount FROM economy WHERE {bw} AND day>=? "
+                        "GROUP BY day, kind", (*ba, since)):
         by_day.setdefault(r["day"], {})[r["kind"]] = r["amount"]
     start = datetime.strptime(since, "%Y-%m-%d")
     per_day = []
@@ -475,25 +555,25 @@ def economy(agg_path, build="release", days=90):
         entry = by_day.get(day, {})
         per_day.append({"day": day, "earned": entry.get("earned", 0), "spent": entry.get("spent", 0) + entry.get("unlock", 0)})
     totals = {r["kind"]: dict(r) for r in db.execute(
-        "SELECT kind, SUM(events) AS events, SUM(amount) AS amount FROM economy WHERE build_kind=? AND day>=? "
-        "GROUP BY kind", (build, since))}
+        f"SELECT kind, SUM(events) AS events, SUM(amount) AS amount FROM economy WHERE {bw} AND day>=? "
+        "GROUP BY kind", (*ba, since))}
     result = {
         "build": build, "days": days, "built_ms": _built_ms(db), "per_day": per_day, "totals": totals,
         "sources": [dict(r) for r in db.execute(
             "SELECT kind, source, SUM(events) AS events, SUM(amount) AS amount FROM economy "
-            "WHERE build_kind=? AND day>=? AND kind IN ('earned', 'spent', 'unlock') GROUP BY kind, source "
-            "ORDER BY kind, amount DESC", (build, since))],
+            f"WHERE {bw} AND day>=? AND kind IN ('earned', 'spent', 'unlock') GROUP BY kind, source "
+            "ORDER BY kind, amount DESC", (*ba, since))],
         "blocked": [dict(r) for r in db.execute(
             "SELECT source AS item, SUM(events) AS events, SUM(amount) AS short_by FROM economy "
-            "WHERE build_kind=? AND day>=? AND kind='blocked' GROUP BY source ORDER BY events DESC", (build, since))],
+            f"WHERE {bw} AND day>=? AND kind='blocked' GROUP BY source ORDER BY events DESC", (*ba, since))],
         "unlocks": [dict(r) for r in db.execute(
-            "SELECT kind, name, SUM(count) AS count FROM unlocks WHERE build_kind=? AND day>=? GROUP BY kind, name "
-            "ORDER BY kind, count DESC", (build, since))],
+            f"SELECT kind, name, SUM(count) AS count FROM unlocks WHERE {bw} AND day>=? GROUP BY kind, name "
+            "ORDER BY kind, count DESC", (*ba, since))],
         "balances": [dict(r) for r in db.execute(
-            "SELECT bucket, players FROM balances WHERE build_kind=? ORDER BY bucket_order", (build,))],
+            "SELECT bucket, players FROM balances WHERE build_kind=? ORDER BY bucket_order", (distinct_build(build),))],
         "double_payouts": dict(db.execute(
             "SELECT COALESCE(SUM(count), 0) AS count, COALESCE(SUM(amount), 0) AS amount FROM double_payouts "
-            "WHERE build_kind=? AND day>=?", (build, since)).fetchone()),
+            f"WHERE {bw} AND day>=?", (*ba, since)).fetchone()),
     }
     db.close()
     return result
@@ -508,15 +588,16 @@ def social(agg_path, build="release", days=90):
     if db is None:
         return _empty(build, days)
     since = _since(days)
+    bw, ba = build_where(build)
     marks = ",".join("?" * len(SOCIAL_EVENTS))
     totals = {r["event"]: dict(r) for r in db.execute(
         f"SELECT event, SUM(rows) AS count, MAX(players) AS peak_daily_players FROM daily_events "
-        f"WHERE build_kind=? AND day>=? AND event IN ({marks}) GROUP BY event", (build, since, *SOCIAL_EVENTS))}
+        f"WHERE {bw} AND day>=? AND event IN ({marks}) GROUP BY event", (*ba, since, *SOCIAL_EVENTS))}
     get = lambda e: (totals.get(e) or {}).get("count") or 0
     per_day = {}
-    for r in db.execute(f"SELECT day, event, SUM(rows) AS rows FROM daily_events WHERE build_kind=? AND day>=? "
+    for r in db.execute(f"SELECT day, event, SUM(rows) AS rows FROM daily_events WHERE {bw} AND day>=? "
                         f"AND event IN ('party_invite_sent', 'party_joined', 'friend_added') GROUP BY day, event",
-                        (build, since)):
+                        (*ba, since)):
         per_day.setdefault(r["day"], {"day": r["day"], "party_invite_sent": 0, "party_joined": 0, "friend_added": 0})[r["event"]] = r["rows"]
     db.close()
     return {"build": build, "days": days, "built_ms": None, "totals": {e: get(e) for e in SOCIAL_EVENTS},
@@ -532,7 +613,7 @@ FREESTYLE_MEASURES = ("freestyle_entries", "freestyle_players", "freestyle_minut
 SERIES_MEASURES = ("matches", "players", "finished_pct", "rematch_pct", "flight_min", "new_players", "events") + \
     FREESTYLE_MEASURES + ("score", "placement", "win_pct", "abandon_pct")
 MATCH_BY = ("none", "play_type", "era", "platform", "country", "game_mode", "vessel_class", "build_kind", "intensity",
-            "element", "setup", "ai_difficulty")
+            "element", "setup", "ai_difficulty", "device", "os")
 SERIES_BY = MATCH_BY + ("from_vessel_class", "switch_source")
 SERIES_OVER = ("day", "week", "none")
 # score, placement, win_pct, abandon_pct (round 67): the Balance and Quits pages' measures, from the plays table
@@ -544,11 +625,14 @@ ELEMENT_ORDER = ("Charge", "Mass", "Space", "Time", "Omni", "none")
 # platform on them, so only these three splits are answerable; the console hides the rest. Freestyle (the Toybox) is
 # not a match: no mode, play type or element; its vessel comes from builds after 2026-11-06.
 FREESTYLE_BY = ("none", "era", "build_kind", "vessel_class")
-SERIES_ANSWERS = {**{m: MATCH_BY for m in PLAY_MEASURES + ("players", "new_players")},
-                  "events": ("none", "era", "build_kind"),
-                  "freestyle_entries": FREESTYLE_BY, "freestyle_players": FREESTYLE_BY,
-                  "freestyle_minutes": FREESTYLE_BY,
-                  "freestyle_switches": FREESTYLE_BY + ("from_vessel_class", "switch_source")}
+# device: every table these measures read has one. os (the OS family and version, from builds that send os) is on the
+# plays only; players are not counted by it.
+SERIES_ANSWERS = {**{m: MATCH_BY for m in PLAY_MEASURES},
+                  **{m: tuple(b for b in MATCH_BY if b != "os") for m in ("players", "new_players")},
+                  "events": ("none", "era", "build_kind", "device"),
+                  "freestyle_entries": FREESTYLE_BY + ("device",), "freestyle_players": FREESTYLE_BY,
+                  "freestyle_minutes": FREESTYLE_BY + ("device",),
+                  "freestyle_switches": FREESTYLE_BY + ("from_vessel_class", "switch_source", "device")}
 FREESTYLE_NOTES = {
     "freestyle_entries": "entries go back to the PostHog history; an entry names its vessel only from builds after "
                          "2026-11-06 (older ones read unknown)",
@@ -566,7 +650,8 @@ PLAYS_KEY = {"play_type": "play_type", "setup": "COALESCE(setup, 'multi_unrecord
              "country": "COALESCE(country, 'unknown')", "game_mode": "COALESCE(game_mode, 'unknown')",
              "vessel_class": "COALESCE(vessel_class, 'unknown')",
              "intensity": "COALESCE(CAST(intensity AS TEXT), 'unknown')", "build_kind": "build_kind",
-             "ai_difficulty": "COALESCE(ai_difficulty, 'unknown')"}
+             "ai_difficulty": "COALESCE(ai_difficulty, 'unknown')", "device": "COALESCE(device, 'other')",
+             "os": "COALESCE(os_family, 'not recorded')"}
 GROUP_TYPES = {"solo_vs_ai": ("solo_vs_ai",), "solo": ("solo_alone",),
                "multi": ("coop", "adversarial", "mixed", "multi_human_unknown")}
 # The setups inside each Play filter group (a play's setup and its play type read the same player_count_human and
@@ -660,10 +745,11 @@ def _player_cells(db, sc, measure, by, over, era_key):
         span, x_col = sc.span_none, "NULL"
     else:
         span, x_col = "day", _x_of(over, "x")
-    marks = ",".join("?" * len(sc.builds)) or "NULL"
+    marks = ",".join("?" * len(sc.pc_builds)) or "NULL"
+    table, dx = sc.counted("player_counts")
     sql = (f"SELECT {x_col} AS xx, {('build_kind' if by == 'build_kind' else 'key')} AS kk, SUM({column}) "
-           f"FROM player_counts WHERE span=? AND source=? AND dim=? AND build_kind IN ({marks})")
-    args = [span, sc.source, dim, *sc.builds]
+           f"FROM {table} WHERE span=? AND source=? AND dim=? AND build_kind IN ({marks}){dx}")
+    args = [span, sc.source, dim, *sc.pc_builds]
     if span == "day":
         sql += " AND x BETWEEN ? AND ?"
         args += [sc.since, sc.until]
@@ -684,11 +770,12 @@ def _freestyle_cells(db, sc, measure, by, over, era_key):
     w, a = sc.where(play=False)
     if measure == "freestyle_switches":
         table, value = "freestyle_switches", "switches"
-        keys = {"vessel_class": "vessel_class", "from_vessel_class": "from_vessel_class", "switch_source": "origin"}
+        keys = {"vessel_class": "vessel_class", "from_vessel_class": "from_vessel_class", "switch_source": "origin",
+                "device": "device"}
     else:
         table = "freestyle_vessels"
         value = {"freestyle_entries": "entries", "freestyle_minutes": "seconds / 60.0"}[measure]
-        keys = {"vessel_class": "vessel_class"}
+        keys = {"vessel_class": "vessel_class", "device": "device"}
     key = f"'{era_key}'" if era_key else ("build_kind" if by == "build_kind" else keys.get(by, "NULL"))
     return {(x, k): [n or 0, None] for x, k, n in db.execute(
         f"SELECT {_x_of(over)} AS x, {key} AS key, SUM({value}) FROM {table} WHERE {w} GROUP BY x, key", a)}
@@ -696,7 +783,7 @@ def _freestyle_cells(db, sc, measure, by, over, era_key):
 
 def _event_cells(db, sc, over, by, era_key):
     w, a = sc.where(play=False)
-    key = f"'{era_key}'" if era_key else ("build_kind" if by == "build_kind" else "NULL")
+    key = f"'{era_key}'" if era_key else {"build_kind": "build_kind", "device": "device"}.get(by, "NULL")
     return {(x, k): [n or 0, None] for x, k, n in db.execute(
         f"SELECT {_x_of(over)} AS x, {key} AS key, SUM(rows) FROM daily_events WHERE {w} GROUP BY x, key", a)}
 
@@ -719,11 +806,11 @@ def _value(measure, num, den):
 
 
 def series(agg_path, measure="matches", by="none", over="day", build="release", days=90, play="all", era=None,
-           eras=()):
+           eras=(), device="all"):
     """One switchable chart (Rev 65): a measure over time (day / week / none), split by one dimension. Points carry
     x (a day, a week's Monday or null) and key (a split value or null); keys are the split's top 8 and "other"."""
     check_series(measure, by, over)
-    sc = Scope(build, days, play, era, BUILD_KINDS if by == "build_kind" else None)
+    sc = Scope(build, days, play, era, BUILD_KINDS if by == "build_kind" else None, device)
     db = _open(agg_path)
     base = {"measure": measure, "by": by, "over": over, "build": build, "days": days, "play": play, **sc.describe(),
             # the splits this measure can take, so the console offers only those (no 400 to find out)
@@ -731,7 +818,7 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
     if db is None:
         return {**base, "points": [], "keys": [], "unfiltered": [], "empty": True}
     if by == "era":
-        parts = [(e["id"], Scope(build, days, play, e, BUILD_KINDS if by == "build_kind" else None))
+        parts = [(e["id"], Scope(build, days, play, e, BUILD_KINDS if by == "build_kind" else None, device))
                  for e in ([era] if era else eras)]
     else:
         parts = [(None, sc)]
@@ -823,6 +910,10 @@ def series(agg_path, measure="matches", by="none", over="day", build="release", 
         notes.append(SETUP_SERIES_NOTE)
     if by == "ai_difficulty":
         notes.append(DIFFICULTY_NOTE)
+    if by in ("device", "os") or device != "all":
+        notes.append(DEVICE_NOTE if by != "os" else
+                     "the OS family and version come from builds that send os (from 2026-11-07); older matches read "
+                     "not recorded")
     if measure in BALANCE_NOTES:
         notes.append(BALANCE_NOTES[measure])
     if measure in FREESTYLE_NOTES:
@@ -846,21 +937,23 @@ def _secondary_elements(agg_path, sc, parts):
     return [{"key": k, "value": n} for k, n in sorted(found.items(), key=lambda kv: -kv[1])]
 
 
-def cohorts(agg_path, build="release", days=90, play="all", era=None):
+def cohorts(agg_path, build="release", days=90, play="all", era=None, device="all"):
     """Weekly cohorts (Rev 65): players by the week of their first day, the share active each week after, and the
     lifespan tiles. Player lifespans themselves come from the raw store (profile readers only)."""
-    sc = Scope(build, days, play, era)
+    sc = Scope(build, days, play, era, device=device)
     db = _open(agg_path)
     if db is None:
         return {**_empty(build, days), "weekly": [], "tiles": {}}
     group = play if play != "all" else "all"
-    marks = ",".join("?" * len(sc.builds)) or "NULL"
+    marks = ",".join("?" * len(sc.distinct_builds)) or "NULL"
+    weeks_table, dx = sc.counted("cohort_weeks")
+    days_table, _dx = sc.counted("cohort_days")
     first_week = _week(sc.since)
     sizes, active = {}, {}
     for cohort, k, n in db.execute(
-            f"SELECT cohort, week_index, SUM(players) FROM cohort_weeks WHERE build_kind IN ({marks}) AND source=? "
-            f"AND play_group=? AND cohort BETWEEN ? AND ? GROUP BY cohort, week_index",
-            (*sc.builds, sc.source, group, first_week, sc.until)):
+            f"SELECT cohort, week_index, SUM(players) FROM {weeks_table} WHERE build_kind IN ({marks}) AND source=? "
+            f"AND play_group=? AND cohort BETWEEN ? AND ?{dx} GROUP BY cohort, week_index",
+            (*sc.distinct_builds, sc.source, group, first_week, sc.until)):
         active.setdefault(cohort, {})[k] = n
         if k == 0:
             sizes[cohort] = n
@@ -883,9 +976,9 @@ def cohorts(agg_path, build="release", days=90, play="all", era=None):
     yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
     week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
     for first_day, life, n, r1, r7, gone in db.execute(
-            f"SELECT first_day, lifespan_days, players, returned_d1, returned_d7, lapsed_14d FROM cohort_days "
-            f"WHERE build_kind IN ({marks}) AND source=? AND play_group=? AND first_day BETWEEN ? AND ?",
-            (*sc.builds, sc.source, group, sc.since, sc.until)):
+            f"SELECT first_day, lifespan_days, players, returned_d1, returned_d7, lapsed_14d FROM {days_table} "
+            f"WHERE build_kind IN ({marks}) AND source=? AND play_group=? AND first_day BETWEEN ? AND ?{dx}",
+            (*sc.distinct_builds, sc.source, group, sc.since, sc.until)):
         hist[life] = hist.get(life, 0) + n
         players += n
         lapsed += gone
@@ -919,20 +1012,20 @@ FUNNEL_NOTE = ("Party invites sent: party_invite_sent events. Accepted: party_jo
                "necessarily the same one).")
 
 
-def playtypes(agg_path, build="release", days=90, era=None):
+def playtypes(agg_path, build="release", days=90, era=None, device="all"):
     """Play types page (Rev 65): solo vs AI, solo and multiplayer side by side, and the party funnel."""
-    sc = Scope(build, days, "all", era)
+    sc = Scope(build, days, "all", era, device=device)
     db = _open(agg_path)
     if db is None:
         return {**_empty(build, days), "groups": {}, "share": {}, "funnel": []}
     groups = {}
     for group in GROUP_TYPES:
-        gs = Scope(build, days, group, era)
+        gs = Scope(build, days, group, era, device=device)
         w, a = gs.where()
         row = db.execute(
             "SELECT COUNT(DISTINCT match_id), COUNT(*), SUM(completed), SUM(CASE WHEN rematched=1 THEN 1 ELSE 0 END), "
             "AVG(flight_time_seconds) FROM plays WHERE " + w, a).fetchone()
-        rw, ra = gs.where(day="first_day")
+        rw, ra = gs.where(day="first_day", distinct=True)
         ret = db.execute("SELECT SUM(players), SUM(returned_d1), SUM(returned_d7) FROM returns WHERE " + rw,
                          ra).fetchone()
         per_day = {d: n for d, n in db.execute(
@@ -966,18 +1059,18 @@ def playtypes(agg_path, build="release", days=90, era=None):
             "funnel": funnel, "funnel_note": FUNNEL_NOTE}
 
 
-def _era_scope(era, build):
+def _era_scope(era, build, device="all"):
     """An era's scope for the eras pages: one build, or every build (players then from '*', each player once)."""
-    return Scope(build or "release", 90, "all", era, None if build else BUILD_KINDS)
+    return Scope(build or "release", 90, "all", era, None if build else BUILD_KINDS, device)
 
 
-def eras_page(agg_path, eras, milestones, build=None):
+def eras_page(agg_path, eras, milestones, build=None, device="all"):
     """Eras page (Rev 65): each era with its events, players and matches; events per week coloured by era (an event
     belongs to the first era, in list order, whose range, source and builds hold it); the milestones."""
     db = _open(agg_path)
     out = []
     for era in eras:
-        sc = _era_scope(era, build)
+        sc = _era_scope(era, build, device)
         counts = {"events": 0, "players": 0, "matches": 0}
         if db is not None and sc.since <= sc.until:
             wd, ad = sc.where(play=False)
@@ -990,6 +1083,7 @@ def eras_page(agg_path, eras, milestones, build=None):
     weekly = {}
     if db is not None:
         where, args = ("build_kind = ?", [build]) if build else ("1", [])
+        where += _device(device)
         for day, imported, n in db.execute(
                 f"SELECT day, imported, SUM(rows) FROM daily_events WHERE {where} GROUP BY day, imported", args):
             src = "imported" if imported else "live"
@@ -998,18 +1092,18 @@ def eras_page(agg_path, eras, milestones, build=None):
             key = (_week(day), owner)
             weekly[key] = weekly.get(key, 0) + n
         db.close()
-    return {"build": build, "eras": out, "milestones": milestones,
+    return {"build": build, "device": device, "eras": out, "milestones": milestones,
             "weekly": [{"week": w, "era": e, "events": n} for (w, e), n in
                        sorted(weekly.items(), key=lambda kv: (kv[0][0], str(kv[0][1])))],
             "notes": ["an era's days run from its from to its to (today at most); imported = PostHog history, "
                       "live = sent to this server; era null in weekly = events in no era"]}
 
 
-def eras_compare(agg_path, a, b, build=None):
+def eras_compare(agg_path, a, b, build=None, device="all"):
     db = _open(agg_path)
 
     def one(era):
-        sc = _era_scope(era, build)
+        sc = _era_scope(era, build, device)
         if db is None or sc.since > sc.until:
             return {"id": era["id"], "name": era["name"], "players": 0, "new_players": 0, "matches": 0,
                     "editor_share_pct": None, "finished_pct": None, "rematch_pct": None, "d1_pct": None,
@@ -1022,40 +1116,43 @@ def eras_compare(agg_path, a, b, build=None):
         we, ae = every.where()
         split = dict(db.execute("SELECT build_kind, COUNT(DISTINCT match_id) FROM plays WHERE " + we +
                                 " GROUP BY build_kind", ae).fetchall())
-        rw, ra = sc.where(day="first_day")
+        rw, ra = sc.where(day="first_day", builds=[build] if build else ["*"] if not era.get("builds") else None)
         ret = db.execute("SELECT SUM(players), SUM(returned_d1) FROM returns WHERE " + rw, ra).fetchone()
         wd, ad = sc.where(play=False)
         rpp = db.execute("SELECT SUM(rows), SUM(plays) FROM daily_plays WHERE " + wd, ad).fetchone()
-        new = db.execute(f"SELECT COALESCE(SUM(new_players), 0) FROM player_counts WHERE span=? AND source=? AND "
-                         f"dim='none' AND build_kind=?", (sc.span_none, sc.source, who[0])).fetchone()[0]
+        table, dx = sc.counted("player_counts")
+        new = db.execute(f"SELECT COALESCE(SUM(new_players), 0) FROM {table} WHERE span=? AND source=? AND "
+                         f"dim='none' AND build_kind=?{dx}", (sc.span_none, sc.source, who[0])).fetchone()[0]
         return {"id": era["id"], "name": era["name"], **sc.describe(),
                 "players": _player_count(db, sc, builds=who), "new_players": new, "matches": row[0] or 0,
                 "editor_share_pct": _pct(split.get("editor", 0), sum(split.values())),
                 "finished_pct": _pct(row[2] or 0, row[1] or 0), "rematch_pct": _pct(row[3] or 0, row[2] or 0),
                 "d1_pct": _pct(ret[1] or 0, ret[0] or 0), "rows_per_play": round(rpp[0] / rpp[1], 2) if rpp[1] else None}
-    result = {"build": build, "a": one(a), "b": one(b),
+    result = {"build": build, "device": device, "a": one(a), "b": one(b),
               "notes": ["editor_share_pct counts every build; the rest count the build asked for (none = every build)"]}
     if db is not None:
         db.close()
     return result
 
 
-def builtin_tile(agg_path, name, build="release", days=90, play="all", era=None):
+def builtin_tile(agg_path, name, build="release", days=90, play="all", era=None, device="all"):
     """A Dashboards built-in tile as {columns, rows}."""
-    sc = Scope(build, days, play, era)
+    sc = Scope(build, days, play, era, device=device)
     db = _open(agg_path)
     if db is None:
         return {"columns": [], "rows": [], "unfiltered": [], "empty": True}
-    marks = ",".join("?" * len(sc.builds)) or "NULL"
+    marks = ",".join("?" * len(sc.distinct_builds)) or "NULL"
+    pmarks = ",".join("?" * len(sc.pc_builds)) or "NULL"
     unfiltered = []
     if name == "new_players":
-        got = dict(db.execute(f"SELECT x, SUM(new_players) FROM player_counts WHERE span='day' AND source=? AND "
-                              f"dim='none' AND build_kind IN ({marks}) AND x BETWEEN ? AND ? GROUP BY x",
-                              (sc.source, *sc.builds, sc.since, sc.until)).fetchall())
+        table, dx = sc.counted("player_counts")
+        got = dict(db.execute(f"SELECT x, SUM(new_players) FROM {table} WHERE span='day' AND source=? AND "
+                              f"dim='none' AND build_kind IN ({pmarks}) AND x BETWEEN ? AND ?{dx} GROUP BY x",
+                              (sc.source, *sc.pc_builds, sc.since, sc.until)).fetchall())
         columns, rows = ["day", "new_players"], [[d, got.get(d, 0)] for d in _days_between(sc.since, sc.until)]
         unfiltered = sc.unfiltered(["new_players"])
     elif name == "d1_return":
-        rw, ra = sc.where(day="first_day")
+        rw, ra = sc.where(day="first_day", distinct=True)
         columns = ["day", "players", "d1_pct"]
         rows = [[d, n, _pct(r1 or 0, n)] for d, n, r1 in db.execute(
             "SELECT first_day, SUM(players), SUM(returned_d1) FROM returns WHERE " + rw +
@@ -1064,8 +1161,8 @@ def builtin_tile(agg_path, name, build="release", days=90, play="all", era=None)
         columns = ["day", "new_players", "finished_ftue", "finished_pct"]
         rows = [[d, n, f, _pct(f or 0, n)] for d, n, f in db.execute(
             f"SELECT first_day, SUM(players), SUM(finished_ftue) FROM funnel WHERE build_kind IN ({marks}) AND "
-            f"first_day BETWEEN ? AND ? GROUP BY first_day ORDER BY first_day", (*sc.builds, sc.since, sc.until))]
-        unfiltered = sc.unfiltered(["ftue_finished"], ["ftue_finished"])
+            f"first_day BETWEEN ? AND ? GROUP BY first_day ORDER BY first_day", (*sc.distinct_builds, sc.since, sc.until))]
+        unfiltered = sc.unfiltered(["ftue_finished"], ["ftue_finished"], (), ["ftue_finished"])
     elif name == "rows_per_play":
         wd, ad = sc.where(play=False)
         columns = ["day", "rows_per_play"]
@@ -1095,11 +1192,11 @@ def builtin_tile(agg_path, name, build="release", days=90, play="all", era=None)
     return {"columns": columns, "rows": rows, **sc.describe(), "unfiltered": unfiltered}
 
 
-def freestyle(agg_path, build="release", days=90, play="all", era=None):
+def freestyle(agg_path, build="release", days=90, play="all", era=None, device="all"):
     """Freestyle (the Toybox), Shombith 2026-11-06: who went in and flew vessels there. Entries go back to the PostHog
     history; minutes and stretches come from freestyle_ended, exact switches from freestyle_vessel_changed (builds
     after 2026-11-06), recovered switches from the identify history (builds since 2026-10-12, approximate time)."""
-    sc = Scope(build, days, "all", era)
+    sc = Scope(build, days, "all", era, device=device)
     db = _open(agg_path)
     base = {"build": build, "days": days, "play": play, **sc.describe(), "unfiltered": ["play"] if play != "all" else []}
     if db is None:
@@ -1119,10 +1216,11 @@ def freestyle(agg_path, build="release", days=90, play="all", era=None):
                                    " GROUP BY day, origin", a):
         row = per.setdefault(d, {"day": d, "entries": 0, "minutes": 0.0, "switches": 0, "recovered_switches": 0})
         row["recovered_switches" if origin == "recovered" else "switches"] += n or 0
+    pc_table, dx = sc.counted("player_counts")
     players_by_day = {x: n for x, n in db.execute(
-        f"SELECT x, SUM(players) FROM player_counts WHERE span='day' AND source=? AND dim='freestyle' AND key='entered' "
-        f"AND build_kind IN ({','.join('?' * len(sc.builds)) or 'NULL'}) AND x BETWEEN ? AND ? GROUP BY x",
-        (sc.source, *sc.builds, sc.since, sc.until))}
+        f"SELECT x, SUM(players) FROM {pc_table} WHERE span='day' AND source=? AND dim='freestyle' AND key='entered' "
+        f"AND build_kind IN ({','.join('?' * len(sc.pc_builds)) or 'NULL'}) AND x BETWEEN ? AND ?{dx} GROUP BY x",
+        (sc.source, *sc.pc_builds, sc.since, sc.until))}
     per_day = []
     for d in _days_between(sc.since, sc.until):
         row = per.get(d, {"day": d, "entries": 0, "minutes": 0.0, "switches": 0, "recovered_switches": 0})
@@ -1136,7 +1234,8 @@ def freestyle(agg_path, build="release", days=90, play="all", era=None):
         "SELECT from_vessel_class AS from_vessel, vessel_class AS to_vessel, SUM(switches) AS switches, "
         "SUM(CASE WHEN origin = 'recovered' THEN switches ELSE 0 END) AS recovered FROM freestyle_switches WHERE " + w +
         " GROUP BY 1, 2 ORDER BY switches DESC, 1, 2 LIMIT 20", a)]
-    hw, ha = "build_kind = ?", [build]                                   # history: all time, this build
+    hw, ha = build_where(build)                                          # history: all time, this build
+    hw += _device(device)
     first = lambda col, table="freestyle_vessels", extra="": db.execute(
         f"SELECT MIN(day) FROM {table} WHERE {hw} AND {col} > 0 {extra}", ha).fetchone()[0]
     history = {"first_entry_day": first("entries"),
@@ -1167,13 +1266,14 @@ def preset_tile(agg_path, preset, era=None, eras=()):
     if not preset.get("series") or settings.get("measure") not in SERIES_MEASURES:
         raise BadRequest("this saved view is not a series chart, so it cannot be a tile")
     out = series(agg_path, settings["measure"], settings.get("by") or "none", settings.get("over") or "day",
-                 filters.get("build", "release"), filters.get("days", 90), filters.get("play", "all"), era, eras)
+                 filters.get("build", "release"), filters.get("days", 90), filters.get("play", "all"), era, eras,
+                 filters.get("device", "all"))
     if out["by"] == "none":
         columns, rows = ["x", out["measure"]], [[p["x"], p["value"]] for p in out["points"]]
     else:
         columns, rows = ["x", out["by"], out["measure"]], [[p["x"], p["key"], p["value"]] for p in out["points"]]
     return {"columns": columns, "rows": rows, "series": out, "preset": {"id": preset["id"], "name": preset["name"]},
-            "form": settings.get("form"), "unfiltered": ["build", "days", "play", "era"]}
+            "form": settings.get("form"), "unfiltered": ["build", "days", "play", "era", "device"]}
 
 
 def schema(agg_path, saved_tables=()):
@@ -1233,10 +1333,11 @@ def _range_days(sc):
 
 def _active(db, sc):
     """DAU / WAU / MAU per day from active_rolling, and the tiles."""
-    marks = ",".join("?" * len(sc.builds)) or "NULL"
+    marks = ",".join("?" * len(sc.distinct_builds)) or "NULL"
+    table, dx = sc.counted("active_rolling")
     got = {r[0]: r[1:] for r in db.execute(
-        f"SELECT day, SUM(dau), SUM(wau), SUM(mau) FROM active_rolling WHERE build_kind IN ({marks}) AND source=? "
-        f"AND day BETWEEN ? AND ? GROUP BY day", (*sc.builds, sc.source, sc.since, sc.until))}
+        f"SELECT day, SUM(dau), SUM(wau), SUM(mau) FROM {table} WHERE build_kind IN ({marks}) AND source=? "
+        f"AND day BETWEEN ? AND ?{dx} GROUP BY day", (*sc.distinct_builds, sc.source, sc.since, sc.until))}
     per_day = []
     for d in _range_days(sc):
         dau, wau, mau = got.get(d, (0, 0, 0))
@@ -1255,7 +1356,9 @@ def _session_tiles(db, sc):
     w, a = sc.where(play=False)
     seconds = [r[0] for r in db.execute("SELECT seconds FROM sessions WHERE seconds IS NOT NULL AND " + w, a)]
     n = db.execute("SELECT COUNT(*) FROM sessions WHERE " + w, a).fetchone()[0]
-    player_days = db.execute("SELECT COALESCE(SUM(players), 0) FROM session_players WHERE " + w, a).fetchone()[0]
+    table, dx = sc.counted("session_players")
+    pw, pa = sc.where(play=False, device=False, distinct=True)
+    player_days = db.execute(f"SELECT COALESCE(SUM(players), 0) FROM {table} WHERE {pw}{dx}", pa).fetchone()[0]
     med, p90 = _percentile(seconds, 0.5), _percentile(seconds, 0.9)
     return {"sessions": n, "ended": len(seconds),
             "sessions_per_player_day": round(n / player_days, 2) if player_days else None,
@@ -1272,10 +1375,10 @@ def _percentile(values, q):
     return values[lo] + (values[hi] - values[lo]) * (k - lo)
 
 
-def sessions(agg_path, build="release", days=90, play="all", era=None):
+def sessions(agg_path, build="release", days=90, play="all", era=None, device="all"):
     """Sessions page: DAU, WAU, MAU and stickiness per day (any event, so the PostHog history too), and from builds
     that send session_started / session_ended: sessions, their length, sessions per player per day."""
-    sc = Scope(build, days, "all", era)
+    sc = Scope(build, days, "all", era, device=device)
     db = _open(agg_path)
     base = {"build": build, "days": days, "play": play, **sc.describe(), "unfiltered": ["page"] if play != "all" else [],
             "notes": SESSION_NOTES}
@@ -1313,10 +1416,10 @@ def _difficulty_sorted(rows, field="ai_difficulty"):
     return sorted(rows, key=lambda r: difficulty_rank(r[field]))
 
 
-def balance(agg_path, build="release", days=90, play="all", era=None):
+def balance(agg_path, build="release", days=90, play="all", era=None, device="all"):
     """Balance page: score and placement, wins against AI difficulty, the intensity x difficulty grid. From
     game_completed's score, placement, players_in_match, ai_difficulty and behind_by (builds after 2026-11-07)."""
-    sc = Scope(build, days, play, era)
+    sc = Scope(build, days, play, era, device=device)
     db = _open(agg_path)
     base = {"build": build, "days": days, "play": play, **sc.describe(), "unfiltered": []}
     if db is None:
@@ -1359,13 +1462,14 @@ def balance(agg_path, build="release", days=90, play="all", era=None):
     return out
 
 
-def quits(agg_path, build="release", days=90, play="all", era=None):
+def quits(agg_path, build="release", days=90, play="all", era=None, device="all"):
     """Quits page: mid-match quits (match_abandoned) by reason and by how far in, the rate over the plays of builds
     that send it, and the frustration chain (repeated fails -> a quit -> gone 7 days), counts only."""
-    sc = Scope(build, days, play, era)
+    sc = Scope(build, days, play, era, device=device)
     db = _open(agg_path)
     base = {"build": build, "days": days, "play": play, **sc.describe(), "notes": QUIT_NOTES,
-            "unfiltered": ["chain"] if play != "all" else []}     # the chain is per player-day, not per play
+            # the chain is per player-day, not per play, and has no device
+            "unfiltered": ["chain"] if play != "all" or device != "all" else []}
     if db is None:
         return {**base, "empty": True}
     w, a = sc.where()
@@ -1390,7 +1494,7 @@ def quits(agg_path, build="release", days=90, play="all", era=None):
         for r in rows:
             r["quit_pct"] = _pct(r["quits"] or 0, r["plays"] or 0)
         return rows
-    fw, fa = sc.where(play=False)
+    fw, fa = sc.where(play=False, device=False)
     c = db.execute("SELECT COALESCE(SUM(failed), 0), COALESCE(SUM(quit_after), 0), COALESCE(SUM(quit_mature), 0), "
                    "COALESCE(SUM(gone_7d), 0), COALESCE(SUM(failed_mature), 0), COALESCE(SUM(failed_gone_7d), 0) "
                    "FROM frustration WHERE " + fw, fa).fetchone()
@@ -1413,16 +1517,18 @@ def quits(agg_path, build="release", days=90, play="all", era=None):
     return out
 
 
-def invites(agg_path, build="release", days=90, play="all", era=None):
+def invites(agg_path, build="release", days=90, play="all", era=None, device="all"):
     """Invites: sent -> received -> joined -> played together -> invitee back within 7 days; inviters' and invitees'
     D1 / D7 against the first-match cohorts of the same range. Counts only: who invited whom stays in events.db."""
-    sc = Scope(build, days, "all", era)
+    sc = Scope(build, days, "all", era, device=device)
     db = _open(agg_path)
     base = {"build": build, "days": days, "play": play, **sc.describe(), "notes": INVITE_NOTES,
-            "unfiltered": ["page"] if play != "all" else []}
+            # invites carry no device: the Device filter reaches only the Everyone row (from the first-match cohorts)
+            "unfiltered": ["page"] if play != "all" else ["funnel", "by_method", "per_day", "roles"] if device != "all"
+            else []}
     if db is None:
         return {**base, "empty": True}
-    w, a = sc.where(play=False)
+    w, a = sc.where(play=False, device=False)
     totals = {r[0]: r[1:] for r in db.execute(
         "SELECT method, SUM(sent), SUM(received), SUM(joined), SUM(played_together), SUM(joined_mature), "
         "SUM(invitee_d7) FROM invites WHERE " + w + " GROUP BY method", a)}
@@ -1442,7 +1548,7 @@ def invites(agg_path, build="release", days=90, play="all", era=None):
                        "COALESCE(SUM(returned_d7), 0) FROM invite_roles WHERE role=? AND " + w, (role, *a)).fetchone()
         roles.append({"role": role, "label": label, "players": r[0], "mature": r[1], "d1_pct": _pct(r[2], r[1]),
                       "d7_pct": _pct(r[3], r[1])})
-    rw, ra = sc.where(day="first_day", play=False)
+    rw, ra = sc.where(day="first_day", play=False, distinct=True)
     r = db.execute("SELECT COALESCE(SUM(players), 0), COALESCE(SUM(returned_d1), 0), COALESCE(SUM(returned_d7), 0) "
                    "FROM returns WHERE " + rw, ra).fetchone()
     roles.append({"role": "everyone", "label": "Everyone (first match)", "players": r[0], "mature": r[0],
@@ -1459,10 +1565,10 @@ def invites(agg_path, build="release", days=90, play="all", era=None):
     return out
 
 
-def errors(agg_path, build="release", days=90, play="all", era=None):
+def errors(agg_path, build="release", days=90, play="all", era=None, device="all"):
     """Errors page: client_exception by top frame, type, build, platform and version, what is new this week, and the
     players affected (a count)."""
-    sc = Scope(build, days, "all", era)
+    sc = Scope(build, days, "all", era, device=device)
     db = _open(agg_path)
     base = {"build": build, "days": days, "play": play, **sc.describe(), "notes": ERROR_NOTES,
             "unfiltered": ["page"] if play != "all" else []}
@@ -1477,9 +1583,11 @@ def errors(agg_path, build="release", days=90, play="all", era=None):
     t = db.execute("SELECT COALESCE(SUM(events), 0), COALESCE(SUM(occurrences), 0) FROM client_errors WHERE " + w,
                    a).fetchone()
     sigs = db.execute("SELECT DISTINCT exception_type, top_frame, message_hash FROM client_errors WHERE " + w, a).fetchall()
+    pc_table, dx = sc.counted("player_counts")
     frame_players = dict(db.execute(
-        f"SELECT key, SUM(players) FROM player_counts WHERE span=? AND source=? AND dim='error_frame' AND build_kind IN "
-        f"({','.join('?' * len(sc.builds)) or 'NULL'}) GROUP BY key", (sc.span_none, sc.source, *sc.builds)).fetchall())
+        f"SELECT key, SUM(players) FROM {pc_table} WHERE span=? AND source=? AND dim='error_frame' AND build_kind IN "
+        f"({','.join('?' * len(sc.pc_builds)) or 'NULL'}){dx} GROUP BY key",
+        (sc.span_none, sc.source, *sc.pc_builds)).fetchall())
     frames = []
     for r in db.execute("SELECT top_frame, exception_type, SUM(events) AS events, SUM(occurrences) AS occurrences, "
                         "MAX(day) AS last_day, COUNT(DISTINCT message_hash) AS messages FROM client_errors WHERE " + w +
@@ -1498,7 +1606,7 @@ def errors(agg_path, build="release", days=90, play="all", era=None):
            "tiles": {"events": t[0], "occurrences": t[1], "signatures": len(sigs),
                      "players": _player_count(db, sc, "error", "any"),
                      "new_this_week": sum(1 for x in sigs if tuple(x) in sig_new)},
-           "by_frame": frames, "by_type": by("exception_type"), "by_platform": by("platform"),
+           "by_frame": frames, "by_type": by("exception_type"), "by_platform": by("platform"), "by_device": by("device"),
            "by_version": by("app_version"), "by_scene": by("scene"),
            "by_build": by("build_kind", sc.with_builds(BUILD_KINDS)),
            "per_day": [{"day": d, "occurrences": per.get(d, 0)} for d in _range_days(sc)],
