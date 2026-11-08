@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 71 on the canvas now) | Shombith, 2026-11-08 (sections 145-146) |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 71 C and Rev 74 on the canvas now) | Shombith, 2026-11-08 (sections 147-149) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -5250,7 +5250,7 @@ the next round goes on a new page called Menu Redesign C.
 
 ## 113. Rev 43 mockups: the Voyage window - the map left, the voyage card in three levels, Saga | Voyages | Episodes on LB / RB (2026-11-02, awaiting a pick)
 
-**Off the canvas (2026-11-08, section 145).** None of Rev 43 was picked, and its 32 boards were taken off Frogma to make room
+**Off the canvas (2026-11-08, section 147).** None of Rev 43 was picked, and its 32 boards were taken off Frogma to make room
 when the canvas reached its 512-file cap (Shombith's call). Every board is still in `Docs/MenuRedesignB/board/R43*.dc.html`
 and can be published back.
 
@@ -6087,7 +6087,7 @@ asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in tha
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
 a better number. No player id reaches Claude on any of these. Awaiting a pick.
 
-## 145. Rev 70 mockups: Voyages, redrawn in the Ark's look - a vessel in one press, a course that stays put, the quest tracker in its own window (2026-11-08; rejected, off the canvas, section 146)
+## 147. Rev 70 mockups: Voyages, redrawn in the Ark's look - a vessel in one press, a course that stays put, the quest tracker in its own window (2026-11-08; rejected, off the canvas, section 148)
 
 **Asked (Shombith, 2026-11-08):** "Make new mockups for the Voyages, its not cool none of the designs are good and match
 other better parts of the game. For selecting vessels also what do you mean in order to select a vessel I have to click
@@ -6187,14 +6187,14 @@ and puts the squad in its own room. B is the smallest step from what is built (s
 - P-ui-28 (Shombith, 2026-11-02) put the quest tracker in the Voyage window. This round moves it, on his word of
   2026-11-08, and the ledger line is his to restate.
 
-## 146. Rev 71 mockups: Voyages, six new ideas on the menu's own ground, and the Quests window (2026-11-08, awaiting a pick)
+## 148. Rev 71 mockups: Voyages, six new ideas on the menu's own ground, and the Quests window (2026-11-08; Shombith picked C, taken forward in section 149)
 
 **Asked (Shombith, 2026-11-08, on Rev 70):** "Dont like any one of them too bland thats. Do something new, delete all
 these give me 6 new, do not use the ark bg use the normal transparent bg like hangar and ecology for example only ark
 gets that treatment."
 
 **Rev 70 is off the canvas.** Its seven boards, title note and section were removed in this round's publish. The copies
-stay in `Docs/MenuRedesignB/board/R70*.dc.html`. The design brief of section 145 still holds.
+stay in `Docs/MenuRedesignB/board/R70*.dc.html`. The design brief of section 147 still holds.
 
 **A rule this round follows (proposed for `Docs/claude/principles.json`, Shombith's to confirm):** only the Ark wears
 its room behind the window. Every other window stands on the menu's own ground: the menu cell under a Deep Sea window
@@ -6230,12 +6230,56 @@ with the slow sea lines, as the Hangar and the Codex do.
 **In every option** (Rev 70's two fixes):
 - A press on a squad hull opens the vessel strip on that seat, and one press picks (P-ui-21).
 - Picking another squad changes the hulls, never the voyage on screen. Pinning the voyage in the game is Garrett's rule
-  to change (section 145).
+  to change (section 147).
+
+**Picked (Shombith, 2026-11-08): C**, the Coverflow: "Only one I like is C but still we should have the old whole
+galaxy view on the left along with the bottom edge point view that we liked. Also the background of the cards tooo blue",
+then "delete all keep C and make more". A, B, D, E, F, the Quests board and the notes are off the canvas (copies in
+`Docs/MenuRedesignB/board/R71*.dc.html`). C stays, and section 149 takes it forward.
 
 **Recommended: D.** It is the HyperSea itself: the cells are the game's own 20 ly hexes, the Ark sits in the one it is
 in, and a voyage is a hex you can see the way to. It reads as a game board, not a list. B is the clearest to read, and
 F tells the story that the crew brings the voyages.
 
 **Differs from the build** (section 119): the window's whole layout. The parts every option changes are the same as in
-section 145: the Ark crew strip, Quests out of the Voyage window, and the pinned voyage (a proposal to Garrett).
+section 147: the Ark crew strip, Quests out of the Voyage window, and the pinned voyage (a proposal to Garrett).
+
+## 149. Rev 74 mockups: C taken forward - the whole-galaxy map and the edge view on the left, four card faces that are not blue (2026-11-08, awaiting a pick)
+
+**Asked (Shombith, 2026-11-08, picking Rev 71 C):** "Only one I like is C but still we should have the old whole galaxy
+view on the left along with the bottom edge point view that we liked. Also the background of the cards tooo blue",
+then "delete all keep C and make more".
+
+**On the canvas:** tab **Voyages**, round "Rev 74 - Voyages: C taken forward" (canvas version `1794139870-433b`), beside
+Rev 71 C. Rev 72 and 73 went to other tabs while it was drawn.
+- Copies: `Docs/MenuRedesignB/board/R74*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r74_voyages.py`; it reuses
+  `r71_voyages.py`.
+- Every board passes all six `check_mockup.py` gates (56 visual elements on each option) and `frogma.py check`.
+
+**What every option keeps:**
+- The menu's ground.
+- On the left, the HyperSea map column of the built window (section 119).
+  - It opens on the whole galaxy.
+  - + and - zoom from Galaxy to System through Rev 46's seven renders, with the ladder showing the tier.
+  - Region shows the picked voyage's own course.
+  - The edge-on view of the picked voyage sits at the column's foot.
+- On the right:
+  - C's coverflow; LB / RB or a side card turns it.
+  - The voyage's numbers.
+  - The squad: a hull opens the vessel strip on its seat, one press picks, and another squad never changes the voyage.
+  - Set sail in Ruby.
+
+**The four card faces** (every card's ground is near-black or clear glass, never a blue panel):
+- **C1 - Graphite:** the course in greys.
+- **C2 - Line (recommended):** no picture. The route is drawn as a white line with its waypoints, and the destination's
+  name is large.
+- **C3 - Place:** a muted close-up of the destination, with its name over it.
+- **C4 - Glass:** clear glass over the ground, a small round course thumbnail and the voyage's title.
+- **Compare:** the four faces side by side on the same voyage.
+
+**Recommended: C2.** The map column already shows the course in colour, so the card only has to say which voyage it
+is. A drawn line plus the place reads at a glance and has nothing blue in it. C1 is the closest to C as picked.
+
+**Next:** the Quests window comes back in the picked look once a card face is picked. The pinned voyage stays a proposal
+to Garrett (section 147).
 

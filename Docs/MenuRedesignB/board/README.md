@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-08 from canvas version `1794139287-ddf3` of **Frogma**: Rev 3 to Rev 71, 465 boards on 10 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-08 from canvas version `1794139920-ef53` of **Frogma**: Rev 3 to Rev 74, 472 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -669,6 +669,13 @@ Copied on 2026-11-08 from canvas version `1794139287-ddf3` of **Frogma**: Rev 3 
 
 ### Tab: Portrait  (`phone`)
 
+#### Rev 72 - The turn, drawn: the menu fades through a turn, the Goby turns into the Pistol, every other vessel stays landscape (a storyboard, not the build)
+
+- `R72Menu.dc.html` (not copied yet) - Rev 72 Menu - The menu turn: the UI goes out on the switch, two frames held, fades back in (0.28 s); plays on a loop - interactive
+- `R72Goby.dc.html` (not copied yet) - Rev 72 Goby - The Goby turns into the Pistol: upright takes the Pistol's view, landscape the Goby; plays on a loop - interactive
+- `R72Other.dc.html` (not copied yet) - Rev 72 Other - Every other vessel: the phone turns, the game does not - interactive
+- `R72Notes.dc.html` (not copied yet) - Rev 72 - notes: the timings, the rules, what only the editor can show
+
 #### Rev 63 - Portrait menus: the same PC UI with the phone held upright (menus only; matches stay landscape)
 
 - `R63A.dc.html` (not copied yet) - Rev 63 A - Scale to width: the PC layout as it is, shrunk to the phone's width
@@ -710,15 +717,26 @@ Copied on 2026-11-08 from canvas version `1794139287-ddf3` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
+#### Rev 74 - Voyages: C taken forward - the whole-galaxy map and the edge view on the left, the coverflow on the right, four card faces that are not blue
+
+- [`R74Compare.dc.html`](R74Compare.dc.html) - Rev 74 - the four card faces side by side on the same voyage: Graphite, Line, Place, Glass
+- [`R74C1.dc.html`](R74C1.dc.html) - Rev 74 C1 - Graphite: C with the whole-galaxy map and the edge view on the left; the cards the course in greys on a near-black card - interactive
+- [`R74C2.dc.html`](R74C2.dc.html) - Rev 74 C2 - Line: C with the whole-galaxy map and the edge view on the left; the cards no picture: the route drawn as a line with its waypoints, the destination large (recommended) - interactive
+- [`R74C3.dc.html`](R74C3.dc.html) - Rev 74 C3 - Place: C with the whole-galaxy map and the edge view on the left; the cards a muted close-up of the destination, its name over it - interactive
+- [`R74C4.dc.html`](R74C4.dc.html) - Rev 74 C4 - Glass: C with the whole-galaxy map and the edge view on the left; the cards clear glass over the ground, a small round course thumbnail and the words - interactive
+- [`R74Notes.dc.html`](R74Notes.dc.html) - Rev 74 - notes: C taken forward, what every option keeps, the four card faces, the recommendation
+
 #### Rev 71 - Voyages, six new ideas on the menu's own ground: a dial, a departures board, a coverflow, a hex board, a journey, a crew's hand; and the Quests window
 
-- [`R71A.dc.html`](R71A.dc.html) - Rev 71 A - Dial: the course through a round lens, the voyages as bearings on its ring - interactive
-- [`R71B.dc.html`](R71B.dc.html) - Rev 71 B - Departures: the voyages on a departures board, the open voyage a boarding pass with your squad on its stub - interactive
 - [`R71C.dc.html`](R71C.dc.html) - Rev 71 C - Coverflow: the voyages as tilted cards on a carousel, the picked one faced front, LB / RB turn it - interactive
-- [`R71D.dc.html`](R71D.dc.html) - Rev 71 D - Hex board: the HyperSea's own cells, the Ark in the middle hex, each voyage a hex holding its course (recommended) - interactive
-- [`R71E.dc.html`](R71E.dc.html) - Rev 71 E - Journey: the route as a band of map across the window, its edge-on profile under it - interactive
-- [`R71F.dc.html`](R71F.dc.html) - Rev 71 F - Crew's hand: your crew deals the voyages as a hand of cards; the picked card rises - interactive
-- [`R71Quests.dc.html`](R71Quests.dc.html) - Rev 71 Quests - Quests, its own window on the menu's ground: Episode 1's five quests on one trail, the next one lit - interactive
-- [`R71Notes.dc.html`](R71Notes.dc.html) - Rev 71 - notes: six new Voyage windows on the menu's ground, what each is, the recommendation, the two fixes they all carry, and the Quests window
+
+### Tab: Game Mode Codex  (`game-mode-codex`)
+
+#### Rev 73 - Game Mode Codex: every elemental game and arena, each level in 3D, and the level builder beside it
+
+- `R73A.dc.html` (not copied yet) - Rev 73 A - Element doors: enter Time, Charge, Mass, Space or Arena; small cards slide open on the level in 3D (recommended)
+- `R73B.dc.html` (not copied yet) - Rev 73 B - Arcade menu: the game's own card grid with element chips; a card opens its level and builder in a side panel
+- `R73C.dc.html` (not copied yet) - Rev 73 C - Builder first: the 3D level fills the screen; games and intensities on rails, the builder's dials on the right
+- `R73Notes.dc.html` (not copied yet) - Rev 73 - notes: what each option is, the recommendation, what is real and what is a sketch, voyages left out
 
 <!-- frogma.py readme: end -->
