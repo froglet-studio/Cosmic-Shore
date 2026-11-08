@@ -1,0 +1,76 @@
+{
+ "after": [],
+ "area_owner": "Garrett (NCA Ecology Lab: the Notion backlog 'NCA Ecology Lab - Experiment Backlog')",
+ "asked_by": "Garrett 2026-11-08",
+ "blocked_reason": "proposed only: Froglet Compute is paused (Shombith 2026-11-06) and this needs his yes (Docs/Compute/NCA_LAB.md §8)",
+ "command": {
+  "argv": [
+   "{python}",
+   "Tools/NCA/lab/nca3d_trainer.py",
+   "--config",
+   "{unit.config}",
+   "--out",
+   "{out}",
+   "--threads",
+   "{threads}",
+   "--require-gpu"
+  ],
+  "keep": [
+   "ckpt.pt",
+   "state.json",
+   "status.json",
+   "result.json",
+   "growth.gif",
+   "model.pt"
+  ],
+  "lease_hours": 3,
+  "max_mb": 20,
+  "paths": [
+   "Tools/NCA/lab/"
+  ],
+  "progress": {
+   "file": "status.json",
+   "key": "step",
+   "of": "steps"
+  },
+  "resume": [
+   "--resume"
+  ],
+  "resume_if": [
+   "ckpt.pt"
+  ],
+  "score": {
+   "file": "status.json",
+   "key": "loss"
+  },
+  "units": [
+   {
+    "args": {
+     "config": "job nca3d | target sphere | channels 16 | hidden 128 | iters 4000",
+     "notion_page": "3fb40e33b3f581028459fc3bedef8f95",
+     "row": "A1"
+    },
+    "id": "lab-a1"
+   }
+  ],
+  "version": "1"
+ },
+ "goal": "The lab's flora prong (Docs/Compute/NCA_LAB.md): a 3D growing NCA that grows a target from one cell and holds it - measured by voxel IoU, IoU after twice the training horizon, and a growth GIF - written back onto the backlog row.",
+ "id": "nca-lab-nca3d",
+ "kind": "command",
+ "lab_job": "nca3d",
+ "plan": "bioforms",
+ "promote": "Nothing reaches the game from this job: its result is a number and a GIF on the Notion row (Tools/NCA/lab/notion_writeback.py push, run where the Notion token lives). Garrett reads it and sets Your call.",
+ "requires": [
+  "python3",
+  "numpy",
+  "torch",
+  "cuda"
+ ],
+ "schema": "froglet-compute/job/1",
+ "stage": 3,
+ "status": "proposed",
+ "title": "NCA Ecology Lab: grow a 3D NCA to a procedural target (A1 sphere; A2, A6 are units of the same trainer)",
+ "updated": "2026-11-08",
+ "value": 6
+}

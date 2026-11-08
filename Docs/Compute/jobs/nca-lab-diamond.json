@@ -1,0 +1,75 @@
+{
+ "after": [],
+ "area_owner": "Garrett (NCA Ecology Lab: the Notion backlog 'NCA Ecology Lab - Experiment Backlog')",
+ "asked_by": "Garrett 2026-11-08",
+ "blocked_reason": "proposed only: Froglet Compute is paused (Shombith 2026-11-06) and this needs his yes (Docs/Compute/NCA_LAB.md §8)",
+ "command": {
+  "argv": [
+   "{python}",
+   "Tools/NCA/lab/diamond_nca.py",
+   "--config",
+   "{unit.config}",
+   "--out",
+   "{out}",
+   "--threads",
+   "{threads}",
+   "--require-gpu"
+  ],
+  "keep": [
+   "evals.json",
+   "archive.json",
+   "status.json",
+   "result.json",
+   "growth.gif"
+  ],
+  "lease_hours": 3,
+  "max_mb": 10,
+  "paths": [
+   "Tools/NCA/lab/"
+  ],
+  "progress": {
+   "file": "status.json",
+   "key": "step",
+   "of": "steps"
+  },
+  "resume": [
+   "--resume"
+  ],
+  "resume_if": [
+   "evals.json"
+  ],
+  "score": {
+   "file": "status.json",
+   "key": "loss"
+  },
+  "units": [
+   {
+    "args": {
+     "config": "job diamond_nca | complexity params",
+     "notion_page": "3fb40e33b3f5812c8b93e6a9c1cd8a1b",
+     "row": "A4"
+    },
+    "id": "lab-a4"
+   }
+  ],
+  "version": "1"
+ },
+ "goal": "The smallest 3D NCA that still grows the target: pareto_complexity's diamond optimizer grows (channels, hidden) until the score plateaus, then compresses while a leaky floor holds it. Every evaluation is cached, so the hours-long search survives the person coming back and relays between computers.",
+ "id": "nca-lab-diamond",
+ "kind": "command",
+ "lab_job": "diamond_nca",
+ "plan": "bioforms",
+ "promote": "The Pareto front (archive.json) and the chosen size go onto the A4 row. A size reaches a trainer default only with Garrett's yes; nothing here touches the game.",
+ "requires": [
+  "python3",
+  "numpy",
+  "torch",
+  "cuda"
+ ],
+ "schema": "froglet-compute/job/1",
+ "stage": 3,
+ "status": "proposed",
+ "title": "NCA Ecology Lab: A4 capacity search - the diamond optimizer over the 3D NCA's size (hours, resumable)",
+ "updated": "2026-11-08",
+ "value": 5
+}
