@@ -6183,3 +6183,24 @@ and Slow x4; the Compare board plays all five side by side:
 the switch; D: an overlay; B: a counter-rotation; E: a blur volume) and, on the game side, the Goby's seat change
 (`GobyPistolDuo`, Garrett's: C grows the Pistol's square, B swings between the seat cameras). Drawn with the Pistol's
 model render and Perch Run's card art; the motion, not the game. Rev 75 was taken by another session meanwhile.
+
+## 147. Rev 78 mockups: the UI moves with the phone - every piece travels to its upright place as the phone turns (2026-11-08, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-08, on Rev 76's five transitions): "I mean the UI should move with the phone as we rotate I
+guess". So the UI does not go out and come back; it moves, piece by piece, with the turn.
+
+**On the canvas:** the Portrait tab, "Rev 78 - The UI moves with the phone" (copies in `Docs/MenuRedesignB/board/`). Each
+board loops both ways on two phones, the menu (Home) and the Goby turning into the Pistol, with Pause and Slow x4:
+- **Follow the turn (recommended):** every piece travels from its landscape place to its upright place WHILE the phone
+  turns and stays level in the hand: the nav band slides to the top, the cards stretch to the width, the four hubs fold
+  into a 2 x 2; in the game the Goby's view shrinks into the small square as the Pistol's grows out of it, in step.
+  Built by reading the tilt (the accelerometer touch tilt already enables), blending each PortraitRect's pose by the
+  angle with the canvas turned against the tilt, and setting the orientation itself at the end. Risk: whether iOS and
+  Android then swap without their own rotation animation - a one-day device prototype answers it.
+- **Turn, then glide:** the OS turns the screen as today, then each piece glides from where it was to its upright place
+  in 0.35 s (PortraitRect tweens instead of jumping; the crew's two views tween their rects). Cheaper and certain.
+- **Notes:** the ask, Follow vs Glide, what only a device shows.
+
+**Differs from the build:** the build is Rev 76 A (the fade). Either option replaces `OrientationFade`'s fade with motion
+in `PortraitRect` (and, for the Goby, a tween of the crew's two views in `GobyPistolDuo`, Garrett's). Drawn with
+simplified pieces of Home; the motion, not the game.
