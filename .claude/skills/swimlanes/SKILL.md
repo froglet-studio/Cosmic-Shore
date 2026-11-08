@@ -54,12 +54,18 @@ Options:
 
 - Every `origin/*` branch updated in the window, minus the bots' branches (`bugledger/*`, `compute*`, `perf-status`,
   `launch-status`, `ai`, scratch and build branches; `lanes.json` `ignore_branches`), and minus a branch whose head a
-  merged pull request already carries (a squash merge).
+  CLOSED pull request carries - merged (a squash merge) or closed without merging (abandoned: Shombith's phone-UI
+  stack, #1744). A push after the close counts again.
+- A branch whose last push about a lane is OLDER than the lane's newest merge has been overtaken and holds nothing
+  (`claude/manta-icons`, a 11-01 draft, after the 11-07 Manta cards landed).
+- People in `lanes.json` `non_occupants` (interns: dbrutus, Garrett 2026-11-08) never hold a lane. A fix of theirs goes
+  to the lane's occupant to apply (it went to Yash as #1849).
 - Its own commits that `bleeding-edge` lacks, minus the sweeps' commits (`chore(ai-learn)`, ...; `ignore_subjects`).
 - A commit is **about** a lane when a quarter of its files (or three of them) are the lane's. A commit about three or
   more lanes at once is a sweep (a fleet re-bake, a rename) and occupies none. A one-file brush with a Hangar prefab
   inside a party fix does not occupy the Hangar.
-- The person: the branch prefix in `Docs/TEAM.json` (`Ys-` is Yash), the author of its open pull request, then the
+- The person: the branch prefix in `Docs/TEAM.json` (`Ys-` is Yash), the author of its pull request (open, else the
+  newest closed one), then the
   people in its commits (`who_works_where.py`'s `Team`, the one place a git identity becomes a person). A Claude
   branch with none of those reads as "a Claude session (no person on record)" - open its PR or ask.
 
