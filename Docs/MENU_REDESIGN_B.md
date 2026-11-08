@@ -6471,6 +6471,11 @@ to Garrett (section 147).
   `QuestTrackView` in the new window.
 - The Saga and Episodes tabs in the picked look.
 - The pinned voyage that stays put while the crew or domain changes stays a proposal to Garrett (section 147).
+- The open voyage column's colours are the style guide's token values written as constants in `VoyageOpenCard` (as
+  `VoyageWindowTabs` does), not read from `UIThemeSO`. A colour-set repaint does not reach them yet.
+- QuestsView's header and tab row are a COPY of the Voyage window's, made once by the generator's third layout, which
+  then stands down. A later restyle of the Voyage window's chrome has to be repeated on QuestsView (re-check with
+  `author_voyage_window.py --check`; it validates both).
 
 **Verified:**
 - `unity_refcompile` player and editor: 0 errors in project code.

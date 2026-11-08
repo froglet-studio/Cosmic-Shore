@@ -21381,6 +21381,10 @@ Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `
    queries (correct, but the speed-up is lost): send it.
 
 ## 🔴 Voyage window: four tabs, the HyperSea map left, the open voyage card (Rev 49 C) (2026-11-02, Shombith, NOT RUN IN EDITOR)
+> **Superseded in part (2026-11-08):** the open voyage card, `VoyageRoutePoster`, the pager and the cycling crew settings
+> were replaced by the Rev 74 C3 column, and Quests became its own window. Test those with the entry "The Voyages tab as
+> Rev 74 C3, and the Quests window" below; the tab, LB / RB, map, Saga, Set sail and gamepad lines here still apply.
+
 `VoyageWindowTabs`, `HubShoulders`, `VoyageOpenCard`, `VoyageRoutePoster`, `VoyageCardRules` (new), `VoyageJobsView`, `MissionView.prefab` (by `author_voyage_window.py`), `VoyageLines` (+ `VoyageContent.asset`); `VoyageWindowModals` retired. Record: `Docs/MENU_REDESIGN_B.md` section 119. Ran here: `unity_refcompile` player and editor, `gates.sh` ALL OK, the generators' `--check` / `--self-test`, and `VoyageCardRulesTests` outside Unity. No Unity editor ran, so nothing below was seen.
 - [ ] The project compiles in the editor; `VoyageCardRulesTests` pass.
 - [ ] Menu_Main > Voyage: the window opens on VOYAGES; the tabs read VOYAGES | SAGA | QUESTS | EPISODES, Episodes locked and "Coming soon".
