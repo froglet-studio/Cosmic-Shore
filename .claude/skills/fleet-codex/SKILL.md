@@ -92,7 +92,12 @@ touched a vessel (`/ship` §5.6, all modes).
    Read its stderr: an `abilities.json:` warning means an ability was renamed or replaced; read the entry's `source`, rewrite the entry, and commit it with the refresh.
 3. **Skip when nothing changed.** Read the published data (`Artifact` `action: "read"`, `url` the codex,
    `path: "fleet.json"`) and compare its `contentHash`. Equal and the page file unchanged: stop, and report "no
-   change". (The read also satisfies the rule that a session reads an artifact before publishing to it.)
+   change". **Reading `fleet.json` does NOT count as reading the page** (2026-11-08: the publish was refused twice):
+   when `index.html` changed, also `Artifact` `action: "read"` the codex with no `path`, Read the saved source to its
+   LAST line, and diff it against the committed `Docs/FleetCodex/index.html` you built on (`git show <base>:...`). The
+   only difference should be the publish wrapper (a `<!doctype html>...<body>` first line and a closing
+   `</body></html>`); anything else is someone's edit to merge. When a refusal hands you the live source and yours
+   already includes it, it says to resend unchanged; do.
 4. **Publish** to the SAME url: `Artifact` with `url: https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8`,
    `file_path: $SCRATCH/codex-index.html`, `root: $SCRATCH/codex`, `files:` the printed `FILES` list. No `icon`
    (it keeps "ship"). Report the content hash, the commit read and what changed (vessels added, L5 wired counts).
@@ -108,6 +113,8 @@ element question `python3 Tools/Build/element_ability_table.py <Vessel>` is fast
 
 - **A wrong or missing fact:** fix its SOURCE (the table above), never the page or `fleet.json`. A doc that disagrees
   with the codex is the doc's bug (`/vessel` §2: assets and code are the record).
+- **Text from an asset:** Unity writes a double-quoted YAML scalar with escapes (`You’re`); `yaml_scalar` decodes
+  them (`_yaml_unescape`). A literal `\uXXXX` on the page means a reader bypassed it.
 - **A new field:** add it in `fleet_codex.py` (read it from an asset or code, never type it), draw it in
   `index.html`, run the generator, look at one vessel and the matrix once, republish (§1), commit both files.
 - **A new vessel** needs nothing here: its enum member, class asset and map put it on the page at the next refresh.
