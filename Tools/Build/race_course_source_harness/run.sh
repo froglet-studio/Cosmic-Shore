@@ -59,6 +59,7 @@ printf '%s\n' "$HERE/UnityMath.cs" "$HERE/Platform.cs" "$HERE/Driver.cs" "$OUT/G
   "$A/Controller/Arcade/Waystation/WaystationCourseSource.cs" \
   "$A/Controller/Arcade/Skein/SkeinCourse.cs" \
   "$A/Controller/Arcade/Skein/SkeinCourseSource.cs" \
+  "$A/Controller/Arcade/Regatta/RegattaCourseFeatures.cs" \
   "$A/Controller/Arcade/Regatta/RegattaCourse.cs" \
   "$A/Controller/Arcade/Regatta/RegattaCourseSource.cs" \
   | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
