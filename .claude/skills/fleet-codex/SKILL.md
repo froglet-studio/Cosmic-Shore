@@ -1,6 +1,6 @@
 ---
 name: fleet-codex
-description: The Fleet Codex - the ONE claude.ai artifact (https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8) that shows every Cosmic Shore vessel's four abilities, controls, what each element scales (with the authored numbers), its level-5 upgrades and whether each is really wired, flight numbers, the game cards that seat it, its docs and its recent changes - all read from the shipped assets by Tools/Build/fleet_codex.py, never typed by hand. Use on "/fleet-codex", "open / show the fleet codex", "refresh / update / republish the codex", "the codex is out of date", "tell me everything about <vessel>", "which vessels have open L5s", "what does <element> do on <vessel>", after any change to a vessel's abilities, ElementalAbilityMap, prefab flight numbers, class asset or game cards, and from the daily scheduled refresh. Never publishes a second codex.
+description: The Fleet Codex - the ONE claude.ai artifact (https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8) that shows every Cosmic Shore vessel's four abilities, controls, what each element scales (with the authored numbers), its level-5 upgrades and whether each is really wired, flight numbers, its game for each element (Charge game, Mass game, Space game, Time game) and the arena cards that seat it, its docs and its recent changes, in the game's colour-set themes (Nocturne, Photic, Dart Frog) - all read from the shipped assets by Tools/Build/fleet_codex.py, never typed by hand. Use on "/fleet-codex", "open / show the fleet codex", "refresh / update / republish the codex", "the codex is out of date", "tell me everything about <vessel>", "which vessels have open L5s", "what does <element> do on <vessel>", "what is <vessel>'s <element> game", the codex's themes, look or animated controls, after any change to a vessel's abilities, ElementalAbilityMap, prefab flight numbers, class asset or game cards, and from the daily scheduled refresh. Never publishes a second codex.
 ---
 
 # Fleet Codex
@@ -11,8 +11,10 @@ menu). It is the ONLY codex: always republish to that URL, never create another.
 | Piece | Path |
 |---|---|
 | Generator (a READER: writes only its `--out`, touches no asset) | `Tools/Build/fleet_codex.py` |
-| The page: design B of the board's **Rev 48** (picked 2026-11-02; section 115 of `Docs/MENU_REDESIGN_B.md`), in the website's Silver Screen look: a top bar, a filmstrip of the fleet (crew vessels as wider posters with their seats), and the vessel as a bento: the hull, its five abilities (four elements and the omni crystal), ONE control map drawing controller, keyboard and phone with the picked ability lit, its games, the picked ability's full text, docs and changes. `#fleet` is the whole fleet as one table, `#<VesselKey>` one vessel | `Docs/FleetCodex/index.html` |
-| Themes | five, picked from the top-right menu and remembered per viewer (`localStorage` `fleetCodexTheme`): Silver Screen (the default, follows light/dark), Tesseract, Endurance, Gargantua, HyperSea. A theme is only tokens on `html[data-skin]` (`--still`, `--display`, `--dscale`...); a new one is one token block plus one row in `THEMES` |
+| The page: design B of the board's **Rev 48** (picked 2026-11-02; section 115 of `Docs/MENU_REDESIGN_B.md`), drawn to the **Froglet UI style guide** (`Docs/UI_STYLE_GUIDE.md`; Frogma's Style Guide tab) the way the analytics console draws it: Aldrich to read, Chakra Petch to press, the corner sliver and nothing rounded, panels like the game's prisms, the sea lines behind the page. A top bar, a filmstrip of the fleet (crew vessels as wider posters with their seats), and the vessel as a bento: the hull, its five abilities (four elements and the omni crystal), its **games one element at a time**, ONE control map drawing controller, keyboard and phone with the picked ability's control **playing its gesture**, the picked ability's full text, docs and changes. `#fleet` is the whole fleet as one table, `#<VesselKey>` one vessel | `Docs/FleetCodex/index.html` |
+| Themes | **three, the game's colour sets: Nocturne, Photic, Dart Frog** (Shombith, 2026-11-08; the film-named Silver Screen / Tesseract / Endurance / Gargantua / HyperSea moved to these, as the style guide's Themes board says). The generator writes `themes.css` and `theme.js` into `--out` with the analytics console's own builder (`make_themes.build(sets=...)`, from `ColorSetCatalog.asset` and the Deep Sea lightness steps), so the codex and the console are one look; the page maps its own names (`--bg`, `--ink`, `--accent`...) onto the `--fs-*` tokens. Picked from the top-right menu, remembered per viewer (`localStorage` `fleetCodexColourSet`), the game's live set by default. Never type a theme colour into the page: a new theme is a colour set in the game's catalog and a row in `THEME_SETS` |
+| Games by element | each card's element is the game's own answer, `ModeGenre.TryElementsFor` (the mode's row, else its scoring metric), read by `Tools/Analytics/server/mode_elements.py` `build()`. The page shows the vessel's element game per element ("Squirrel, Charge game: Joust; Mass game: Scurry; Time game: Skim Race"), an arcade card (`ArcadeGames` roster) as the element game, arena cards beneath with their element, a mode with no element under "also". An element with no arcade card says "None yet". A wrong element is fixed in `ModeGenre.cs`, never in the page |
+| Controls and their gestures | the picked ability's button (controller), key (keyboard, on a drawn board) and touch (phone: a button, a thumb lift, thumbs apart, the slider) play ONE gesture on one 2.4 s clock: tap, hold, hold then release, tap on / tap off, read from its `abilities.json` `trigger` words (`gesture()` in the page); Steer sweeps a stick. The style guide allows this motion ("the hint that teaches the next control"); nothing else idles (no floats, no glows), and reduced motion holds the pressed pose still. Clicking a drawn control or a legend row picks its ability |
 | The two hand tables (the only typed facts; each entry cites the doc or code it was read from) | `Docs/FleetCodex/abilities.json` (what each ability DOES, how it fires, what more of its element does, and what an omni crystal does: the maps record only what an element scales) and `Docs/FleetCodex/seats.json` (which seat of a crew vessel owns which ability) |
 | Generated data, git-ignored | `Docs/FleetCodex/build/` (`fleet.json`, `img/<Key>.webp`) |
 | What it reads and why | `Docs/FleetCodex/README.md` |
@@ -85,7 +87,8 @@ touched a vessel (`/ship` §5.6, all modes).
    **Publish in batches of at most 255 files, `fleet.json` in the LAST batch**, each batch with the page as `file_path`
    (2026-11-03: 387 files). Later batches add to what is there, and the data goes last so no published version points
    at art that has not arrived yet.
-   It prints a `contentHash` (it ignores the timestamp and commit) and a `FILES [...]` line.
+   It prints a `contentHash` (it ignores the timestamp and commit; it covers the themes' hash, so a colour-set change
+   republishes) and a `FILES [...]` line, which includes `themes.css` and `theme.js`.
    Read its stderr: an `abilities.json:` warning means an ability was renamed or replaced; read the entry's `source`, rewrite the entry, and commit it with the refresh.
 3. **Skip when nothing changed.** Read the published data (`Artifact` `action: "read"`, `url` the codex,
    `path: "fleet.json"`) and compare its `contentHash`. Equal and the page file unchanged: stop, and report "no
@@ -108,8 +111,9 @@ element question `python3 Tools/Build/element_ability_table.py <Vessel>` is fast
 - **A new field:** add it in `fleet_codex.py` (read it from an asset or code, never type it), draw it in
   `index.html`, run the generator, look at one vessel and the matrix once, republish (§1), commit both files.
 - **A new vessel** needs nothing here: its enum member, class asset and map put it on the page at the next refresh.
-- The page follows the artifact page contract: tokens for both themes, no colour per element (elements have no
-  colour, `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md`), ASCII-only source (entities for symbols), phone width.
+- The page follows the artifact page contract and the UI style guide: colours only from the colour-set tokens
+  (`themes.css`), no colour per element (elements have no colour, `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md`), the corner
+  sliver and nothing rounded, ASCII-only source (entities for symbols), phone width.
 
 ## 4. The daily refresh
 

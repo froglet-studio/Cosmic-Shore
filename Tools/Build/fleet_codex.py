@@ -35,10 +35,19 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
 import vessel_mode_chart as vmc  # noqa: E402
+# The two readers the analytics console already keeps from the game: each mode's genre element (ModeGenre.cs) and the
+# colour-set themes (ColorSetCatalog: Nocturne, Photic, Dart Frog). The codex reads the same ones, never its own copy.
+sys.path.insert(0, os.path.join(REPO, "Tools", "Analytics", "server"))
+sys.path.insert(0, os.path.join(REPO, "Tools", "Analytics", "console"))
+import mode_elements  # noqa: E402
+import make_themes  # noqa: E402
 
 DEFAULT_OUT = os.path.join(REPO, "Docs", "FleetCodex", "build")
 GITHUB = "https://github.com/froglet-studio/Cosmic-Shore/blob/bleeding-edge/"
 ELEMENTS = ["Charge", "Mass", "Space", "Time"]   # the HUD's order (LOCKED four-icon row)
+# The codex's themes: the game's own colour sets (Docs/UI_STYLE_GUIDE.md section 14; Shombith 2026-11-08: "three themes:
+# Nocturne, Photic and Dart Frog"). The film-named themes (Silver Screen ... HyperSea) moved to these (Frogma, Style Guide).
+THEME_SETS = ("nocturne", "photic", "dartfrog")
 CHANGES_PER_VESSEL = 8
 
 
@@ -193,14 +202,37 @@ def card_facts():
             "golf": yaml_scalar(text, "GolfScoring") == "1",
             "asset": os.path.relpath(path, REPO),
         }
+    # What kind of game each mode is, as the game answers it (ModeGenre.TryElementsFor: the mode's own row, else its
+    # scoring metric's element): Joust a Charge game, Scurry a Mass game, Skim Race a Time game. A mode the game has no
+    # answer for carries no element and the page lists it under "other games".
+    genre = mode_elements.build()["modes"]
     out = {}
     for c in vmc.cards():
         facts = extra.get(c["name"], {})
+        elements = [e for e in genre.get(c["mode"]) or [] if e in ELEMENTS]
         for hull in c["hulls"]:
             out.setdefault(hull, []).append({
                 "name": c["name"], "mode": c["mode"], "rosters": c["lists"], "hullsOnCard": len(c["hulls"]),
-                **facts})
+                "elements": elements, **facts})
     return out
+
+
+def write_themes(out_dir):
+    """themes.css and theme.js for the page, from the analytics console's own theme builder (make_themes.build), limited
+    to the three colour sets players pick in the game. Returns a hash of both, so a palette change republishes."""
+    sets = [x for x in make_themes.catalog() if x["id"] in THEME_SETS]
+    missing = sorted(set(THEME_SETS) - {x["id"] for x in sets})
+    if missing:
+        sys.exit(f"fleet_codex: ColorSetCatalog has no colour set {', '.join(missing)}")
+    css, js, _ = make_themes.build(sets=sets)
+    css = css.replace("Tools/Analytics/console/make_themes.py", "Tools/Analytics/console/make_themes.py via Tools/Build/fleet_codex.py")
+    js = (js.replace("'fa-theme'", "'fleetCodexColourSet'").replace("window.FA_THEMES", "window.FC_THEMES")
+            .replace("Tools/Analytics/console/make_themes.py", "Tools/Analytics/console/make_themes.py via Tools/Build/fleet_codex.py"))
+    os.makedirs(out_dir, exist_ok=True)
+    for name, body in (("themes.css", css), ("theme.js", js)):
+        with open(os.path.join(out_dir, name), "w", encoding="utf-8") as fh:
+            fh.write(body)
+    return hashlib.sha256((css + js).encode()).hexdigest()[:16]
 
 
 def norm(s):
@@ -1369,6 +1401,7 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
         "elements": ELEMENTS,
         "ui": ui,
         "palette": palette(),
+        "themes": write_themes(out_dir),
         "vessels": vessels,
     }
     # The content hash ignores the stamp, so a run that found nothing new says so.
