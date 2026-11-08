@@ -270,6 +270,16 @@ def repo_slug(root):
     return m.group(1) if m else 'froglet-studio/Cosmic-Shore'
 
 
+def pr_person(team, pr):
+    """A PR's author as a person: TEAM.json's names hold most GitHub logins; an email's local part catches the rest
+    (gradies@gmail.com is Garrett's login)."""
+    login = (pr.get('user') or {}).get('login', '')
+    person = team.by_name.get(login.lower()) if hasattr(team, 'by_name') else None
+    if not person and hasattr(team, 'by_email'):
+        person = next((who for e, who in team.by_email.items() if e.split('@')[0] == login.lower()), None)
+    return person or login
+
+
 def pull_requests(root, team):
     """Open PRs by head branch (their author is the person behind a Claude branch) and the head sha of every PR merged
     recently or closed without merging (a squash-merged branch is never in bleeding-edge's history, and an abandoned
@@ -281,11 +291,7 @@ def pull_requests(root, team):
         if not rows:
             break
         for p in rows:
-            login = (p.get('user') or {}).get('login', '')
-            person = team.by_name.get(login.lower()) if hasattr(team, 'by_name') else None
-            if not person and hasattr(team, 'by_email'):
-                person = next((p for e, p in team.by_email.items() if e.split('@')[0] == login.lower()), None)
-            open_prs[p['head']['ref']] = {'number': p['number'], 'person': person or login}
+            open_prs[p['head']['ref']] = {'number': p['number'], 'person': pr_person(team, p)}
     for page in (1, 2, 3):
         rows = gh_json(['api', f'repos/{slug}/pulls?state=closed&sort=updated&direction=desc&per_page=100&page={page}'])
         if not rows:
@@ -294,6 +300,9 @@ def pull_requests(root, team):
             # Merged, or closed without merging (abandoned: Shombith closed the phone-UI stack #1744 on 2026-11-06).
             # Either way the work at that head is finished with and occupies nothing; a push after it does.
             merged.setdefault(p['head']['ref'], p['head']['sha'])
+            # A closed PR still says who drove the branch: a later push to it is that person's (claude/ui-phone-menus
+            # read as "no person on record" once Shombith closed #1744, 2026-11-08).
+            open_prs.setdefault(p['head']['ref'], {'number': None, 'person': pr_person(team, p)})
     return open_prs, merged
 
 
