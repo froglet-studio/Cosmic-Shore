@@ -6081,3 +6081,35 @@ the message and its top frame). Player compare needs `GET /v1/similar?id=` worke
 asked. Charts keep Rev 65's colours: a split wears Jade, Ruby, Gold, Blue in that order with a legend; play types Jade
 solo vs AI, Gold solo, Ruby multiplayer; unsplit data Blue; a heat or map one hue; red only for a fault, Lime only for
 a better number. No player id reaches Claude on any of these. Awaiting a pick.
+
+## 145. Rev 73 mockups: the Game Mode Codex - every elemental game and arena, each level in 3D, the level builder beside it (2026-11-08, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-08): "create 3 on the board, name is game mode codex, it should have all the elemental
+games and arena. Not voyages for now ... we can enter each elemental types and see the games or select a game from the
+arcade menu there and check the level in 3D a version of it not actually the original and also use the level builder
+along with that." Voyages, when they come, show their real map, not a 3D view.
+
+**On the canvas:** tab **Game Mode Codex** (new), section "Rev 73 - Game Mode Codex: every elemental game and arena, each
+level in 3D, and the level builder beside it". Copies in `Docs/MenuRedesignB/board/R73*.dc.html`.
+- **R73A, Element doors (recommended):** five doors (Time, Charge, Mass, Space, Arena) on the left, the element's games as
+  small cards, the opened game on the right with its I1-I4 chips, the level in 3D, Open in builder (the one Lime) and
+  Copy level prompt. Drawn on Charge with Dog Fight at I3 (the Boneyard's Graveyard).
+- **R73B, Arcade menu:** the game's own card grid with element chips across the top; a card opens a side panel with
+  Level / Builder / Rules tabs, I1-I4, the level in 3D, and the prompt buttons. Drawn on Charge with Undertow at I2.
+- **R73C, Builder first:** the level fills the screen; elements and their games on a rail, the builder's dials (arena
+  family, arrangement, piece shape, density, height, crystals, danger, pilots, seed) on the right, Copy layout prompt
+  the one Lime. Drawn on Arena with Broadside's I2 bowl.
+- **R73Notes:** the ask, the three options, the recommendation, what is real and what is a sketch, voyages left out.
+
+A is recommended because entering by element is the language the cards already speak (the genre petal), the games stay
+small cards that open, and the level is the large picture. B is the most familiar; C suits whoever is shaping levels.
+
+**What is real:** the card art, hull icons and element petals are the board's existing uploads. The 3D levels are
+sketches drawn from each arena family and the intensity facts the repo states (the Boneyard ladder in
+`Tools/Build/boneyard_budget.py`, Serpent Gulag's nests and screens), labelled as sketches.
+
+**The engine:** the 3D view and level builder already run in the Charge Games Plan artifact
+(https://claude.ai/artifact/G48t1GZHuhHEAqochkKi31, Builder page): 23 arena families, seven arrangements, eight piece
+shapes, the I1-I4 ladder side by side, shared saved layouts and a prompt per layout. The picked option is built on it.
+
+**Differs from the build:** nothing in Unity; the Codex is an artifact. The in-game Arcade screen is untouched.

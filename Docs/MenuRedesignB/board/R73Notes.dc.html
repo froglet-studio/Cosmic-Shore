@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 73 - notes: what each option is, the recommendation, what is real and what is a sketch, voyages left out</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+.chip{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;height:36px;padding:0 14px;border:0;display:inline-flex;align-items:center;gap:8px;cursor:pointer;background:rgba(0,4,31,.78);color:#747BAD;box-shadow:inset 0 0 0 1px #434C89;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.chip.on{color:#E6E9FF;box-shadow:inset 0 -2px 0 #00D4FF,inset 0 0 0 1px #434C89}
+.chip:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<span class="abs" style="left:56px;top:44px;font-size:36px">Rev 73 - notes</span><div class="abs" style="left:56px;top:120px;width:1808px;display:grid;grid-template-columns:1fr 1fr;gap:34px 64px"><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Asked</span><span style="font-size:18px;line-height:1.5">Shombith, 2026-11-08: a Game Mode Codex with all the elemental games and the arena games; enter an element or pick a game from the arcade menu; check each level in 3D (a version of it, not the original) and use the level builder with it. Voyages left out for now.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Three options</span><span style="font-size:18px;line-height:1.5">A Element doors: five doors (Time, Charge, Mass, Space, Arena), the games as small cards, the opened game on the right in 3D with its I1-I4. B Arcade menu: the game&#x27;s own card grid and element chips; the side panel holds Level, Builder and Rules. C Builder first: the level fills the screen, games on a rail, the dials on the right.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Recommended: A</span><span style="font-size:18px;line-height:1.5">It is the codex the element language asks for: you enter by element, the cards stay small and slide open, and the level is the big picture. B is the most familiar (it is the Arcade screen); C is the best for whoever is shaping levels.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">What is real</span><span style="font-size:18px;line-height:1.5">Card art, hull icons and element petals are the game&#x27;s own. The 3D is a sketch drawn from each arena family and the intensity facts (the Boneyard&#x27;s prism counts, Serpent Gulag&#x27;s nests); it is labelled as a sketch, never as the shipped arena.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">The engine</span><span style="font-size:18px;line-height:1.5">The 3D view and builder already run on the Charge Games Plan artifact (Builder page): 23 arena families, seven arrangements, eight piece shapes, the I1-I4 ladder side by side, saved layouts, a prompt per layout. The codex reuses it.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Voyages</span><span style="font-size:18px;line-height:1.5">Not in this codex. When they come, a voyage shows its real map (the HyperSea), not a 3D level.</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
