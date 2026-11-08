@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 71 C and Rev 74 on the canvas now) | Shombith, 2026-11-08 (sections 147-149) |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 71 C, Rev 74 and Rev 77 on the canvas now) | Shombith, 2026-11-08 (sections 147-149) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -6341,7 +6341,7 @@ F tells the story that the crew brings the voyages.
 **Differs from the build** (section 119): the window's whole layout. The parts every option changes are the same as in
 section 147: the Ark crew strip, Quests out of the Voyage window, and the pinned voyage (a proposal to Garrett).
 
-## 149. Rev 74 mockups: C taken forward - the whole-galaxy map and the edge view on the left, four card faces that are not blue (2026-11-08, awaiting a pick)
+## 149. Rev 74 mockups: C taken forward - the whole-galaxy map and the edge view on the left, four card faces that are not blue (2026-11-08; Shombith picked C3, section 150)
 
 **Asked (Shombith, 2026-11-08, picking Rev 71 C):** "Only one I like is C but still we should have the old whole galaxy
 view on the left along with the bottom edge point view that we liked. Also the background of the cards tooo blue",
@@ -6374,9 +6374,61 @@ Rev 71 C. Rev 72 and 73 went to other tabs while it was drawn.
 - **C4 - Glass:** clear glass over the ground, a small round course thumbnail and the voyage's title.
 - **Compare:** the four faces side by side on the same voyage.
 
+**Picked (Shombith, 2026-11-08): C3, Place:** "C3 and now show mockups of all other windows" (section 150).
+
 **Recommended: C2.** The map column already shows the course in colour, so the card only has to say which voyage it
 is. A drawn line plus the place reads at a glance and has nothing blue in it. C1 is the closest to C as picked.
 
 **Next:** the Quests window comes back in the picked look once a card face is picked. The pinned voyage stays a proposal
 to Garrett (section 147).
+
+## 150. Rev 77 mockups: every other Voyage window in the picked look, Rev 74 C3 - and the Quests window (2026-11-08, awaiting board approval)
+
+**Asked (Shombith, 2026-11-08):** "C3 and now show mockups of all other windows".
+
+**On the canvas:** tab **Voyages**, round "Rev 77 - Voyages: every other window in the picked look" (canvas version
+`1794140334-7809`). Rev 75 and 76 went to other tabs while it was drawn.
+- Copies: `Docs/MenuRedesignB/board/R77*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r77_voyages.py`; it reuses
+  `r74_voyages.py` (the map column, the C3 card face) and `r71_voyages.py` (the ground, the squad and the vessel strip).
+- Every board passes all six `check_mockup.py` gates (35-59 visual elements a screen) and `frogma.py check`.
+
+**The picked look, everywhere:**
+- The menu's ground.
+- The HyperSea map column on the left wherever a voyage is on screen: the whole galaxy, + / - through seven tiers,
+  and the edge-on view at its foot.
+- The muted place close-up as the card face.
+- The carousel for every choice of one among many.
+
+**The windows** (the Voyages tab itself is Rev 74 C3):
+- **Crew (Ark crew):**
+  - Three seats, each with its hull and four settings (vessel, pilot, element, artifact).
+  - A press opens that setting's strip over the map column: the hulls, the pilots' portraits, the Codex's element
+    shapes or the artifacts. One press picks.
+  - The domain chips, and Save squad as the screen's one Lime button.
+  - The voyage it is for is pinned at the top and stays as it is.
+- **Story:** the voyage over its place, one beat at a time (the news, the place, who brought it, the water), with < >
+  and dots. The words are Rev 46's.
+- **Underway:** a voyage that is out.
+  - The map opens on the Region view of its course.
+  - The place, then "Under way to Lantern Reach" and the game's own progress line ("Stowed 1 of 3") with a bar.
+  - The squad flying it.
+  - Set sail dark: "Set sail - after this voyage".
+- **Escort:** the Ark escort as the first card in the carousel ("Escort the Ark", Tumult to Tollmoor) with its
+  difficulty stepper (- Difficulty 2 +), then the squad and Set sail. The other cards are the voyages.
+- **Saga:** Tandava's art fills the left with its four forms.
+  - The carousel holds its two parts; 02 The Severing is locked: "After Tandava".
+  - Set sail for part 1.
+- **Episodes:** Episode 2 locked over the muted galaxy: "Coming soon", and a way back to the Saga.
+- **Quests:** its own window, opened from Home like the Profile.
+  - Episode 1 and Episode 2 (locked) on LB / RB, then "The Hypersea" and its claimed count with a bar.
+  - The five quests as place cards on the carousel.
+  - The picked quest's line ends in the one Lime button: Claim or Play quest.
+
+**Still a proposal:** the voyage that stays put while the crew or domain changes is Garrett's voyage rules to change
+(section 147).
+
+**After approval, the build:**
+- The Voyage window's generator (`Tools/Build/author_voyage_window.py`, Garrett's) and `VoyageOpenCard`.
+- The configure card's vessel strip (Yash's `ArenaLaunchPanel`) for Ark crew.
+- A Quests hub window beside the Profile.
 

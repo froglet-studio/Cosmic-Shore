@@ -3318,6 +3318,126 @@
       "x": 4200,
       "y": 47810
     },
+    "R71C.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "voyages",
+      "title": "Rev 71 C - Coverflow: the voyages as tilted cards on a carousel, the picked one faced front, LB / RB turn it - interacti",
+      "w": 1920,
+      "x": 4200,
+      "y": 0
+    },
+    "R72Goby.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "phone",
+      "title": "Rev 72 Goby - The Goby turns into the Pistol: upright takes the Pistol's view, landscape the Goby; plays on a loop - int",
+      "w": 1920,
+      "x": 2100,
+      "y": 3644
+    },
+    "R72Menu.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "phone",
+      "title": "Rev 72 Menu - The menu turn: the UI goes out on the switch, two frames held, fades back in (0.28 s); plays on a loop - i",
+      "w": 1920,
+      "x": 0,
+      "y": 3644
+    },
+    "R72Notes.dc.html": {
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 72 - notes: the timings, the rules, what only the editor can show",
+      "w": 1920,
+      "x": 0,
+      "y": 4904
+    },
+    "R72Other.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "phone",
+      "title": "Rev 72 Other - Every other vessel: the phone turns, the game does not - interactive",
+      "w": 1920,
+      "x": 4200,
+      "y": 3644
+    },
+    "R74C1.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "voyages",
+      "title": "Rev 74 C1 - Graphite: C with the whole-galaxy map and the edge view on the left; the cards the course in greys on a near",
+      "w": 1920,
+      "x": 2100,
+      "y": 6140
+    },
+    "R74C2.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "voyages",
+      "title": "Rev 74 C2 - Line: C with the whole-galaxy map and the edge view on the left; the cards no picture: the route drawn as a",
+      "w": 1920,
+      "x": 4200,
+      "y": 6140
+    },
+    "R74C3.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "voyages",
+      "title": "Rev 74 C3 - Place: C with the whole-galaxy map and the edge view on the left; the cards a muted close-up of the destinat",
+      "w": 1920,
+      "x": 0,
+      "y": 7400
+    },
+    "R74C4.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "voyages",
+      "title": "Rev 74 C4 - Glass: C with the whole-galaxy map and the edge view on the left; the cards clear glass over the ground, a s",
+      "w": 1920,
+      "x": 2100,
+      "y": 7400
+    },
+    "R74Compare.dc.html": {
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 74 - the four card faces side by side on the same voyage: Graphite, Line, Place, Glass",
+      "w": 1920,
+      "x": 0,
+      "y": 6140
+    },
+    "R74Notes.dc.html": {
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 74 - notes: C taken forward, what every option keeps, the four card faces, the recommendation",
+      "w": 1920,
+      "x": 0,
+      "y": 8660
+    },
+    "R75Builder.dc.html": {
+      "h": 1080,
+      "page": "game-mode-codex",
+      "title": "Rev 75 Builder - Builder: the same game opened in the builder, its I1-I4 ladder, the dials, saved layouts and the layout",
+      "w": 1920,
+      "x": 2100,
+      "y": 0
+    },
+    "R75Codex.dc.html": {
+      "h": 1080,
+      "page": "game-mode-codex",
+      "title": "Rev 75 Codex - Codex: element doors and game cards (A) around a large 3D level (C), the intensities and the prompt besid",
+      "w": 1920,
+      "x": 0,
+      "y": 0
+    },
+    "R75Notes.dc.html": {
+      "h": 900,
+      "page": "game-mode-codex",
+      "title": "Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed",
+      "w": 1920,
+      "x": 0,
+      "y": 1260
+    },
     "R7AIDifficulty.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
@@ -3763,133 +3883,137 @@
       "x": 22820,
       "y": 86150
     },
-    "R71C.dc.html": {
-      "x": 4200,
-      "y": 0,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 71 C - Coverflow: the voyages as tilted cards on a carousel, the picked one faced front, LB / RB turn it - interactive",
-      "is_interactive": true
-    },
-    "R72Menu.dc.html": {
+    "R76Compare.dc.html": {
       "x": 0,
-      "y": 3644,
+      "y": 7264,
       "w": 1920,
       "h": 1080,
       "page": "phone",
-      "title": "Rev 72 Menu - The menu turn: the UI goes out on the switch, two frames held, fades back in (0.28 s); plays on a loop - interactive",
-      "is_interactive": true
+      "title": "Rev 76 - the five transitions side by side, in time: the menu row and the Goby row"
     },
-    "R72Goby.dc.html": {
+    "R76A.dc.html": {
       "x": 2100,
-      "y": 3644,
+      "y": 7264,
       "w": 1920,
       "h": 1080,
       "page": "phone",
-      "title": "Rev 72 Goby - The Goby turns into the Pistol: upright takes the Pistol's view, landscape the Goby; plays on a loop - interactive",
+      "title": "Rev 76 A - Fade through (built) - interactive",
       "is_interactive": true
     },
-    "R72Other.dc.html": {
+    "R76B.dc.html": {
       "x": 4200,
-      "y": 3644,
+      "y": 7264,
       "w": 1920,
       "h": 1080,
       "page": "phone",
-      "title": "Rev 72 Other - Every other vessel: the phone turns, the game does not - interactive",
+      "title": "Rev 76 B - Hold steady: the UI stays level while the phone turns; the Goby's camera swings to the side - interactive",
       "is_interactive": true
     },
-    "R72Notes.dc.html": {
+    "R76C.dc.html": {
       "x": 0,
-      "y": 4904,
+      "y": 8524,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 76 C - Re-form (recommended): the UI re-forms in three bands; the Pistol's square grows to fill the screen - interactive",
+      "is_interactive": true
+    },
+    "R76D.dc.html": {
+      "x": 2100,
+      "y": 8524,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 76 D - Sliver wipe: a cut-corner slab sweeps across on the turn - interactive",
+      "is_interactive": true
+    },
+    "R76E.dc.html": {
+      "x": 4200,
+      "y": 8524,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 76 E - Focus pull: the world softens through the turn and sharpens with the UI - interactive",
+      "is_interactive": true
+    },
+    "R76Notes.dc.html": {
+      "x": 0,
+      "y": 9784,
       "w": 1920,
       "h": 900,
       "page": "phone",
-      "title": "Rev 72 - notes: the timings, the rules, what only the editor can show"
+      "title": "Rev 76 - notes: the recommendation and the cost of each"
     },
-    "R73A.dc.html": {
+    "R77Crew.dc.html": {
       "x": 0,
-      "y": 0,
+      "y": 11020,
       "w": 1920,
       "h": 1080,
-      "page": "game-mode-codex",
-      "title": "Rev 73 A - Element doors: enter Time, Charge, Mass, Space or Arena; small cards slide open on the level in 3D (recommended)"
+      "page": "voyages",
+      "title": "Rev 77 Crew - Ark crew in the picked look: three seats and their 12 settings; a press opens that setting's strip, one press picks - interactive",
+      "is_interactive": true
     },
-    "R73B.dc.html": {
+    "R77Story.dc.html": {
       "x": 2100,
-      "y": 0,
+      "y": 11020,
       "w": 1920,
       "h": 1080,
-      "page": "game-mode-codex",
-      "title": "Rev 73 B - Arcade menu: the game's own card grid with element chips; a card opens its level and builder in a side panel"
+      "page": "voyages",
+      "title": "Rev 77 Story - the open voyage's story in the picked look: one beat at a time over the place - interactive",
+      "is_interactive": true
     },
-    "R73C.dc.html": {
+    "R77Underway.dc.html": {
       "x": 4200,
-      "y": 0,
-      "w": 1920,
-      "h": 1080,
-      "page": "game-mode-codex",
-      "title": "Rev 73 C - Builder first: the 3D level fills the screen; games and intensities on rails, the builder's dials on the right"
-    },
-    "R73Notes.dc.html": {
-      "x": 0,
-      "y": 1260,
-      "w": 1920,
-      "h": 900,
-      "page": "game-mode-codex",
-      "title": "Rev 73 - notes: what each option is, the recommendation, what is real and what is a sketch, voyages left out"
-    },
-    "R74Compare.dc.html": {
-      "x": 0,
-      "y": 6140,
+      "y": 11020,
       "w": 1920,
       "h": 1080,
       "page": "voyages",
-      "title": "Rev 74 - the four card faces side by side on the same voyage: Graphite, Line, Place, Glass"
-    },
-    "R74C1.dc.html": {
-      "x": 2100,
-      "y": 6140,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 74 C1 - Graphite: C with the whole-galaxy map and the edge view on the left; the cards the course in greys on a near-black card - interactive",
+      "title": "Rev 77 Underway - a voyage that is out, in the picked look: the place, how far the work is, the squad flying it, Set sail dark - interactive",
       "is_interactive": true
     },
-    "R74C2.dc.html": {
+    "R77Escort.dc.html": {
+      "x": 0,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 77 Escort - the Ark escort as a card in the picked coverflow, its difficulty stepper under it - interactive",
+      "is_interactive": true
+    },
+    "R77Saga.dc.html": {
+      "x": 2100,
+      "y": 12280,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 77 Saga - the Saga tab in the picked look: Tandava and its forms, part 2 The Severing locked - interactive",
+      "is_interactive": true
+    },
+    "R77Episodes.dc.html": {
       "x": 4200,
-      "y": 6140,
+      "y": 12280,
       "w": 1920,
       "h": 1080,
       "page": "voyages",
-      "title": "Rev 74 C2 - Line: C with the whole-galaxy map and the edge view on the left; the cards no picture: the route drawn as a line with its waypoints, the destination large (recommended) - interactive",
+      "title": "Rev 77 Episodes - the Episodes tab in the picked look: coming soon - interactive",
       "is_interactive": true
     },
-    "R74C3.dc.html": {
+    "R77Quests.dc.html": {
       "x": 0,
-      "y": 7400,
+      "y": 13540,
       "w": 1920,
       "h": 1080,
       "page": "voyages",
-      "title": "Rev 74 C3 - Place: C with the whole-galaxy map and the edge view on the left; the cards a muted close-up of the destination, its name over it - interactive",
+      "title": "Rev 77 Quests - the Quests window, its own window, in the picked look: the five quests as place cards on the carousel - interactive",
       "is_interactive": true
     },
-    "R74C4.dc.html": {
-      "x": 2100,
-      "y": 7400,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 74 C4 - Glass: C with the whole-galaxy map and the edge view on the left; the cards clear glass over the ground, a small round course thumbnail and the words - interactive",
-      "is_interactive": true
-    },
-    "R74Notes.dc.html": {
+    "R77Notes.dc.html": {
       "x": 0,
-      "y": 8660,
+      "y": 14800,
       "w": 1920,
       "h": 900,
       "page": "voyages",
-      "title": "Rev 74 - notes: C taken forward, what every option keeps, the four card faces, the recommendation"
+      "title": "Rev 77 - notes: every other Voyage window in the picked look (C3), the Quests window, what is still a proposal"
     }
   },
   "createdOnFiles": {
@@ -4009,8 +4133,11 @@
     "sec-rev68",
     "sec-rev71",
     "sec-rev72",
-    "sec-rev73",
     "sec-rev74",
+    "sec-rev75",
+    "sec-rev76",
+    "sec-rev77",
+    "rev71",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4083,10 +4210,11 @@
     "rev66",
     "rev67",
     "rev68",
-    "rev71",
     "rev72",
-    "rev73",
-    "rev74"
+    "rev74",
+    "rev75",
+    "rev76",
+    "rev77"
   ],
   "notes": {
     "hud_end": {
@@ -4737,6 +4865,42 @@
       "w": 240,
       "x": 18840,
       "y": 40630
+    },
+    "rev71": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "voyages",
+      "text": "Rev 71 - Voyages, six new ideas on the menu's own ground: a dial, a departures board, a coverflow, a hex board, a journey, a crew's hand; and the Quests window",
+      "w": 240,
+      "x": 0,
+      "y": -400
+    },
+    "rev72": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "phone",
+      "text": "Rev 72 - The turn, drawn: the menu fades through a turn, the Goby turns into the Pistol, every other vessel stays landscape (a storyboard, not the build)",
+      "w": 240,
+      "x": 0,
+      "y": 3244
+    },
+    "rev74": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "voyages",
+      "text": "Rev 74 - Voyages: C taken forward - the whole-galaxy map and the edge view on the left, the coverflow on the right, four card faces that are not blue",
+      "w": 240,
+      "x": 0,
+      "y": 5740
+    },
+    "rev75": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "game-mode-codex",
+      "text": "Rev 75 - Game Mode Codex, A and C as one: enter an element, open a game, its level in 3D; and the same level inside the builder",
+      "w": 240,
+      "x": 0,
+      "y": -400
     },
     "rev8": {
       "kind": "title1",
@@ -6228,6 +6392,66 @@
       "x": 22950,
       "y": 40470
     },
+    "sec-rev71": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 5400,
+      "kind": "rect",
+      "page": "voyages",
+      "w": 6440,
+      "x": -160,
+      "y": -560
+    },
+    "sec-rev72": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 2880,
+      "kind": "rect",
+      "page": "phone",
+      "w": 6440,
+      "x": -160,
+      "y": 3084
+    },
+    "sec-rev74": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4140,
+      "kind": "rect",
+      "page": "voyages",
+      "w": 6440,
+      "x": -160,
+      "y": 5580
+    },
+    "sec-rev75": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 2880,
+      "kind": "rect",
+      "page": "game-mode-codex",
+      "w": 6440,
+      "x": -3570,
+      "y": -863
+    },
     "sec-rev8": {
       "css": {
         "background": "rgba(255, 174, 0, 0.06)",
@@ -6352,93 +6576,45 @@
       "x": 0,
       "y": 0
     },
-    "rev71": {
+    "rev76": {
       "kind": "title1",
-      "text": "Rev 71 - Voyages, six new ideas on the menu's own ground: a dial, a departures board, a coverflow, a hex board, a journey, a crew's hand; and the Quests window",
+      "text": "Rev 76 - The turn: five transitions, each on the menu and on the Goby turning into the Pistol",
       "x": 0,
-      "y": -400,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev71": {
-      "kind": "rect",
-      "x": -160,
-      "y": -560,
-      "w": 6440,
-      "h": 5400,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
-    },
-    "rev72": {
-      "kind": "title1",
-      "text": "Rev 72 - The turn, drawn: the menu fades through a turn, the Goby turns into the Pistol, every other vessel stays landscape (a storyboard, not the build)",
-      "x": 0,
-      "y": 3244,
+      "y": 6864,
       "w": 240,
       "maxW": 6120,
       "page": "phone"
     },
-    "sec-rev72": {
+    "sec-rev76": {
       "kind": "rect",
       "x": -160,
-      "y": 3084,
-      "w": 6440,
-      "h": 2880,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "phone"
-    },
-    "rev73": {
-      "kind": "title1",
-      "text": "Rev 73 - Game Mode Codex: every elemental game and arena, each level in 3D, and the level builder beside it",
-      "x": 0,
-      "y": -400,
-      "w": 240,
-      "maxW": 6120,
-      "page": "game-mode-codex"
-    },
-    "sec-rev73": {
-      "kind": "rect",
-      "x": -160,
-      "y": -560,
-      "w": 6440,
-      "h": 2880,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "game-mode-codex"
-    },
-    "rev74": {
-      "kind": "title1",
-      "text": "Rev 74 - Voyages: C taken forward - the whole-galaxy map and the edge view on the left, the coverflow on the right, four card faces that are not blue",
-      "x": 0,
-      "y": 5740,
-      "w": 240,
-      "maxW": 6120,
-      "page": "voyages"
-    },
-    "sec-rev74": {
-      "kind": "rect",
-      "x": -160,
-      "y": 5580,
+      "y": 6704,
       "w": 6440,
       "h": 4140,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "phone"
+    },
+    "rev77": {
+      "kind": "title1",
+      "text": "Rev 77 - Voyages: every other window in the picked look (Rev 74 C3, Place) - Ark crew, Story, under way, the Ark escort, Saga, Episodes, and the Quests window",
+      "x": 0,
+      "y": 10620,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev77": {
+      "kind": "rect",
+      "x": -160,
+      "y": 10460,
+      "w": 6440,
+      "h": 5400,
       "css": {
         "background": "rgba(0, 212, 255, 0.06)",
         "border-style": "solid",
@@ -6767,12 +6943,6 @@
     "R37HostLeft.dc.html",
     "R37Rejoin.dc.html",
     "R37Notes.dc.html",
-    "R38Home.dc.html",
-    "R38Computers.dc.html",
-    "R38Runs.dc.html",
-    "R38Searches.dc.html",
-    "R38NewRun.dc.html",
-    "R38Notes.dc.html",
     "R39Compare.dc.html",
     "R39A.dc.html",
     "R39B.dc.html",
@@ -6782,15 +6952,6 @@
     "R40E.dc.html",
     "R40F.dc.html",
     "R40Notes.dc.html",
-    "R41Runs.dc.html",
-    "R41NewRun.dc.html",
-    "R41Computers.dc.html",
-    "R41Notes.dc.html",
-    "R42Compare.dc.html",
-    "R42A.dc.html",
-    "R42B.dc.html",
-    "R42C.dc.html",
-    "R42Notes.dc.html",
     "SGReadMe.dc.html",
     "SGColour.dc.html",
     "SGThemes.dc.html",
@@ -6912,16 +7073,45 @@
     "R72Goby.dc.html",
     "R72Other.dc.html",
     "R72Notes.dc.html",
-    "R73A.dc.html",
-    "R73B.dc.html",
-    "R73C.dc.html",
-    "R73Notes.dc.html",
+    "R38Home.dc.html",
+    "R38Computers.dc.html",
+    "R38Runs.dc.html",
+    "R38Searches.dc.html",
+    "R38NewRun.dc.html",
+    "R38Notes.dc.html",
+    "R41Runs.dc.html",
+    "R41NewRun.dc.html",
+    "R41Computers.dc.html",
+    "R41Notes.dc.html",
+    "R42Compare.dc.html",
+    "R42A.dc.html",
+    "R42B.dc.html",
+    "R42C.dc.html",
+    "R42Notes.dc.html",
     "R74Compare.dc.html",
     "R74C1.dc.html",
     "R74C2.dc.html",
     "R74C3.dc.html",
     "R74C4.dc.html",
-    "R74Notes.dc.html"
+    "R74Notes.dc.html",
+    "R75Codex.dc.html",
+    "R75Builder.dc.html",
+    "R75Notes.dc.html",
+    "R76Compare.dc.html",
+    "R76A.dc.html",
+    "R76B.dc.html",
+    "R76C.dc.html",
+    "R76D.dc.html",
+    "R76E.dc.html",
+    "R76Notes.dc.html",
+    "R77Crew.dc.html",
+    "R77Story.dc.html",
+    "R77Underway.dc.html",
+    "R77Escort.dc.html",
+    "R77Saga.dc.html",
+    "R77Episodes.dc.html",
+    "R77Quests.dc.html",
+    "R77Notes.dc.html"
   ],
   "pages": [
     {
