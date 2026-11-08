@@ -453,6 +453,18 @@ namespace CosmicShore.Gameplay
         /// <summary>The per-frame imminent-impact hook installed on every armed AI (<see cref="AIPilot.SetEmergencySteerProvider"/>), or null.</summary>
         protected virtual AIPilot.EmergencySteer AIEmergencySteerFor(IPlayer pilot) => null;
 
+        /// <summary>
+        /// A mode's way onto ring <paramref name="ringNo"/> for a FREE pilot: a point to fly to instead of the gate's
+        /// approach / mouth points, or false (the default) to fly the gate way. Asked after the missed-mouth test and the
+        /// leg latch, so a missed ring still re-latches and breaks off. Skein answers it for a free Urchin: fly to catch
+        /// a rail that threads the ring when the ride beats the straight flight (<see cref="SkeinRailSeek"/>).
+        /// </summary>
+        protected virtual bool TrySeekAim(IPlayer pilot, int ringNo, in RaceGate gate, Vector3 self, out Vector3 aim)
+        {
+            aim = default;
+            return false;
+        }
+
         protected virtual Vector3 AILaneOffset(IPlayer pilot, int ringNo, in RaceGate gate) => Vector3.zero;
 
         /// <summary>
@@ -1365,6 +1377,15 @@ namespace CosmicShore.Gameplay
                     Vector3 legFrom = index > 0 ? _course[RingIndexFor(index - 1)].Position : self;
                     approachLead = ApproachLeadFor(aiApproachLead, Vector3.Distance(legFrom, gate.Position),
                         aiCommitDistance, AICommitFromApproachPoint);
+                }
+
+                // The mode's own way onto the ring (Skein: a free Urchin flies to catch a rail that threads it), asked
+                // once the leg is latched and only for a pilot flying the ring it really sees (a difficulty mistake is
+                // flown the gate way).
+                if (!misjudged && TrySeekAim(captured, ringNo, gate, self, out Vector3 seekAim))
+                {
+                    pilot.ReportObjective(AIPilot.ObjectivePhase.Approach, gate.Position, ringNo, lap);
+                    return seekAim;
                 }
 
                 // A crystal ON THE WAY, only in a mode whose race needs crystals (AIDetoursForCrystals; none

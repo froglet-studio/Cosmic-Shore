@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -62,7 +63,51 @@ namespace CosmicShore.Gameplay
                  "(which holds LookingAtCrystal, so the authored ram keeps the grind at 150 u/s).")]
         [SerializeField, Min(1f)] float aiRailLeadDistance = 260f;
 
+        [Header("Skein AI: the rail seek")]
+        [Tooltip("A FREE AI Urchin flies to catch a rail that threads its next ring when the flight to the rail plus " +
+                 "the ride from it beats this share of the straight flight to the ring. Off (the shipped steering " +
+                 "before 2026-11-08) the Urchin only rides what it happens to touch and never finishes I3/I4 in the " +
+                 "model (Docs/Reports/SKEIN_URCHIN_AI.md).")]
+        [SerializeField] bool aiSeekRails = true;
+
+        [Tooltip("The seek must beat this fraction of the straight flight's time to the ring.")]
+        [SerializeField, Range(0.1f, 1f)] float aiSeekGain = 0.9f;
+
+        [Tooltip("Rail arc (units) a seek candidate may ride to the ring.")]
+        [SerializeField, Min(50f)] float aiSeekArc = 1600f;
+
+        [Tooltip("Fraction of the ring's mouth inside which a rail counts as threading it.")]
+        [SerializeField, Range(0.1f, 1f)] float aiSeekCaptureFraction = 0.8f;
+
+        [Tooltip("The pilot flies to the rail no more than acos(this) off the rail's own heading, so it latches it " +
+                 "riding the race's way.")]
+        [SerializeField, Range(-1f, 1f)] float aiSeekApproachCos = 0.3f;
+
+        [Tooltip("Prisms past the chosen rail point the pilot aims at, so it joins the rail going its way.")]
+        [SerializeField, Min(0)] int aiSeekAheadPrisms = 3;
+
+        [Tooltip("Seconds between seek decisions (and at once on a new ring).")]
+        [SerializeField, Min(0.05f)] float aiSeekIntervalSeconds = 0.25f;
+
+        [Tooltip("The free speed floor (u/s) the seek prices the flight at: the hull's cruise.")]
+        [SerializeField, Min(1f)] float aiSeekCruiseSpeed = 65f;
+
+        [Tooltip("The own-colour grind speed (u/s) the seek prices the ride at.")]
+        [SerializeField, Min(1f)] float aiSeekRideSpeed = 300f;
+
+        [Tooltip("Seconds after leaving a rail during which the seek does not pick it again (the game's re-latch " +
+                 "grace).")]
+        [SerializeField, Min(0f)] float aiSeekReattachGraceSeconds = 0.35f;
+
         protected override string ModeName => "Skein";
+
+        /// <summary>
+        /// Skein flies Regatta's gate aim (commit from the approach point, through the centre, re-attack at once after a
+        /// missed mouth). With the shipped aim an AI Urchin orbits the approach point 300 u out and crosses the pinned
+        /// rings' 27-40 u mouths off-centre; with this and the rail seek every modelled race finishes (hold-out
+        /// composite 19.13 -> 8.77, Docs/Reports/SKEIN_URCHIN_AI.md). Garrett, 2026-11-08.
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
 
         protected override RaceCourseSource CreateCourseSource() => new SkeinCourseSource();
 
@@ -130,7 +175,8 @@ namespace CosmicShore.Gameplay
         /// main thread during play rather than while Unity deserialises the scene.
         /// </summary>
         UrchinAutopilotDriver _urchinAI;
-        UrchinAutopilotDriver UrchinAI => _urchinAI ??= new UrchinAutopilotDriver();
+        UrchinAutopilotDriver UrchinAI =>
+            _urchinAI ??= new UrchinAutopilotDriver(UrchinAutopilotConfigSO.LoadForMode(GameModes.Skein));
 
         /// <summary>
         /// While ATTACHED, ride the cable toward this pilot's next ring; while FREE, fly at it the
@@ -164,6 +210,8 @@ namespace CosmicShore.Gameplay
 
             if (status.IsAttached && status.AttachedPrism != null)
             {
+                SeekStateFor(pilot).LastAttachedAt = status.AttachedPrism.transform.position;
+                SeekStateFor(pilot).WasAttached = true;
                 // Finished, or the course has not landed: ride on down the strand.
                 if (!hasGate)
                 {
@@ -192,8 +240,113 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        // ── the rail seek ────────────────────────────────────────────────
+
+        sealed class SeekState
+        {
+            public bool WasAttached;
+            public Vector3 LastAttachedAt;
+            public int LeftRail = -1;
+            public float ReattachUntil = -1f;
+            public int Ring = -1;
+            public float NextDecision;
+            public bool HasAim;
+            public Vector3 Aim;
+        }
+
+        readonly Dictionary<IPlayer, SeekState> _seek = new();
+        List<Vector3[]> _seekRails;
+        List<float[]> _seekArcs;
+        bool _seekRailsTried;
+        int _candidatesRing = -1;
+        readonly List<SkeinRailSeek.Candidate> _candidates = new();
+
+        SeekState SeekStateFor(IPlayer pilot)
+        {
+            if (!_seek.TryGetValue(pilot, out var state)) _seek[pilot] = state = new SeekState();
+            return state;
+        }
+
+        /// <summary>
+        /// A free AI Urchin flies to catch a rail that threads its next ring when that beats the straight flight
+        /// (<see cref="SkeinRailSeek"/>); the gate aim otherwise. The model's seek line for line, re-decided every
+        /// <see cref="aiSeekIntervalSeconds"/> and at once on a new ring.
+        /// </summary>
+        protected override bool TrySeekAim(IPlayer pilot, int ringNo, in RaceGate gate, Vector3 self, out Vector3 aim)
+        {
+            aim = default;
+            if (!aiSeekRails) return false;
+            var status = pilot?.Vessel?.VesselStatus;
+            if (status == null || status.VesselType != VesselClassType.Urchin || status.IsAttached) return false;
+            if (!TryResolveSeekRails()) return false;
+
+            var state = SeekStateFor(pilot);
+            float now = Time.time;
+            if (state.WasAttached)
+            {
+                // Just left a rail: the game will not re-latch it for a moment, so neither does the seek.
+                state.WasAttached = false;
+                state.LeftRail = SkeinRailSeek.RailAt(_seekRails, state.LastAttachedAt, 2f);
+                state.ReattachUntil = now + aiSeekReattachGraceSeconds;
+            }
+
+            if (now >= state.NextDecision || state.Ring != ringNo)
+            {
+                state.NextDecision = now + aiSeekIntervalSeconds;
+                state.Ring = ringNo;
+                if (_candidatesRing != ringNo)
+                {
+                    _candidatesRing = ringNo;
+                    SkeinRailSeek.Candidates(_seekRails, _seekArcs, gate.Position,
+                        gate.Radius * aiSeekCaptureFraction, aiSeekArc, 2, _candidates);
+                }
+                int exclude = now < state.ReattachUntil ? state.LeftRail : -1;
+                state.HasAim = SkeinRailSeek.TryPick(_candidates, _seekRails, self, gate.Position,
+                    Mathf.Max(aiSeekCruiseSpeed, status.Speed), aiSeekRideSpeed, aiSeekGain, aiSeekApproachCos,
+                    aiSeekAheadPrisms, exclude, out state.Aim);
+            }
+
+            aim = state.Aim;
+            return state.HasAim;
+        }
+
+        /// <summary>The cable's rails in world space, rebuilt once from the arena's own seed and settings (the arena
+        /// is a prefab that lays prisms, never an instance to read them from) - the retry
+        /// <c>SpawnableSkein.BuildEnvironment</c> and <see cref="SkeinCourseSource"/> both run.</summary>
+        bool TryResolveSeekRails()
+        {
+            if (_seekRails != null) return true;
+            if (_seekRailsTried) return false;
+            _seekRailsTried = true;
+            if (!TryResolveArena(out var arena, out _)) return false;
+
+            var settings = arena.CourseSettings;
+            for (int attempt = 0; attempt < 6; attempt++)
+            {
+                var build = SkeinCourse.BuildAll(unchecked(arena.CableSeed + attempt * 7919), settings);
+                if (build == null) continue;
+                Vector3 centre = ResolveCellCentre();
+                _seekRails = new List<Vector3[]>(build.Positions.Count);
+                _seekArcs = new List<float[]>(build.Positions.Count);
+                foreach (var local in build.Positions)
+                {
+                    var world = new Vector3[local.Length];
+                    for (int k = 0; k < local.Length; k++) world[k] = local[k] + centre;
+                    _seekRails.Add(world);
+                    _seekArcs.Add(SkeinRailSeek.ArcLengths(world));
+                }
+                return true;
+            }
+            return false;
+        }
+
         public override void OnNetworkDespawn()
         {
+            _seek.Clear();
+            _seekRails = null;
+            _seekArcs = null;
+            _seekRailsTried = false;
+            _candidatesRing = -1;
             _urchinAI?.Clear();
             base.OnNetworkDespawn();
         }

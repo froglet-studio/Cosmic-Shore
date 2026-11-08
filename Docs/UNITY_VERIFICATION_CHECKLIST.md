@@ -21960,3 +21960,17 @@ machines need this build.
    draft is done. Adding an AI mid-draft restarts it.
 7. **In the match**: every pilot and AI flies the hull the lobby showed; the AI's autopilot follows the difficulty
    (Easy noticeably softer than Legendary on Broadside and Astro League).
+
+## 🔴 Skein: the AI Urchin's Regatta aim, rail seek and genome W (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-rdizqz`. Report: `Docs/Reports/SKEIN_URCHIN_AI.md` § "Shipped". Every expected number is
+from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
+
+1. **Run the EditMode tests** `SkeinRailSeekTests` (they also check `UrchinAutopilotConfig_Skein` loads for Skein and
+   Regatta keeps the shared asset).
+2. **Skein, AI Urchins on every seat, I1-I4.** Watch a free AI Urchin: it should turn toward a rail that runs through
+   its next ring, latch it and ride it, instead of flying straight at the ring. Expected: every race finishes, I4 in
+   roughly 6 minutes (the model's 352 s); before this, AI Urchins finished no I3/I4 race.
+3. **Turn `aiSeekRails` off** on the scene's SkeinController for one race as the control: the AI should go back to
+   flying at the rings and missing the pinned ones.
+4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).

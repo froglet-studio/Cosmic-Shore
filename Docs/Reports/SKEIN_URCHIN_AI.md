@@ -192,3 +192,30 @@ Parent W with no roll: 8.59 against its 7.94 lead off; with a lag-free nose: **5
 Nothing. The twin's winners are worse than the parent's on every cell, so no lead-on Urchin genome is proposed. The job stays `proposed`; re-run it only if AIPilot's roll rule changes or the Urchin gets its own nose rate. The editor check that matters is unchanged: AI Urchins in Skein with `NoseLeadGain` 0 against 2.5, expecting the corkscrew at 2.5 (add to `Docs/UNITY_VERIFICATION_CHECKLIST.md` with #1786's check).
 
 Reproduce: `RUN_DIR=$HOME/rt python3 /mnt/project-files/regatta-training/local_run.py skein-urchin-time-lead B 700 1`; the hold-out table: `python3 /mnt/project-files/regatta-training/results/urchin-lead/check2x2.py 4 out.json` (genome sets are filtered in its `keys` line).
+
+## Shipped: the aim, the seek and genome W (2026-11-08)
+
+Garrett, 2026-11-08: "stop gating things through yash he is busy. Get things merged and ready to test." So the what-if
+is now Skein as it ships. Plan step: `time-arcade`. Affects: Yash's Skein AI and Urchin autopilot.
+
+- **The aim.** `SkeinController.AICommitFromApproachPoint` is on in code, as Regatta and Switchback have it: commit
+  from the approach point, through the centre, and re-attack at once after a missed mouth (the model's
+  `steering="regatta"`).
+- **The seek.** `SkeinRailSeek` is the model's `seek_candidates` and `race(seek=True)` line for line. A free AI Urchin
+  re-decides every 0.25 s (and at once on a new ring) whether flying to a rail that threads its next ring (within 1600 u
+  of rail, 0.8 of the mouth) and riding it at 300 u/s beats 0.9 of the straight flight at max(cruise 65, speed). It joins
+  no more than acos(0.3) off the rail's heading and aims 3 prisms past the chosen one. It is asked through a new hook,
+  `GateRaceController.TrySeekAim`, after the missed-mouth test and the leg latch, and not while a difficulty belief is
+  misjudging the ring. Every number is a field under **Skein AI: the rail seek** on the controller; `aiSeekRails` off
+  restores the old free flight. The rails are rebuilt once a match from the arena's seed (`SkeinCourse.BuildAll`, the
+  same retry the arena and the course source run).
+  - One difference from the model: the model blocks the rail it LAUNCHED off for the 0.35 s re-latch grace; the game
+    blocks whichever rail the pilot last left (a launch or a slip), found by position.
+  - Like the model, the seek prices every rail as own-colour (300 u/s). The model had no rivals and no repainting.
+- **Genome W** is `Resources/UrchinAutopilotConfig_Skein.asset`, loaded by the new
+  `UrchinAutopilotConfigSO.LoadForMode(GameModes.Skein)` (the `MantaSoarAITuningSO.LoadForMode` pattern). Regatta and
+  Hijack still load the shared `UrchinAutopilotConfig.asset`, which is unchanged, so the Regatta Urchin is untouched.
+- **Expected, from the model** (hold-out composite): 19.13 as Skein shipped, 7.94 now, every I1-I4 race finishing. Not
+  yet run in the editor. `NoseLeadGain` stays 0 for the Urchin (the lead traps it, above).
+- Tests: `SkeinRailSeekTests` (the candidates, the pick, the heading and left-rail rules, and that Skein has its own
+  genome while Regatta keeps the default).
