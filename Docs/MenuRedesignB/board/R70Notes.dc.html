@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 70 - notes: what each option changes in the built window, the two rules the fixes need (the vessel strip, P-ui-21; the pinned board, Garrett's DEPTH.md 4), and the Quests window</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<span class="abs" style="left:56px;top:44px;font-size:36px">Rev 70 - notes</span><div class="abs" style="left:56px;top:120px;width:1808px;display:grid;grid-template-columns:1fr 1fr;gap:34px 64px"><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Asked</span><span style="font-size:18px;line-height:1.5">Shombith, 2026-11-08: none of the Voyage designs are good or match the better parts of the game; picking a vessel takes up to 22 presses; changing domain or team changes the course; move the quest tracker into its own window like the Profile.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">The look</span><span style="font-size:18px;line-height:1.5">A stands the window inside the Ark (the room of Rev 61 C and Rev 67, lit by the squad's domain) with the HyperSea chart as its screen. B is Rev 49 C's route poster at window size. C is the Profile's Showroom. All three keep Rev 46's small cards and the three levels.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Recommended: A</span><span style="font-size:18px;line-height:1.5">It is the newest look the team picked (the Ark tab), it keeps the map as the hero, and the squad stands in its own room. B is the safest step from what is built; C reads quietest.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Picking a vessel</span><span style="font-size:18px;line-height:1.5">A seat's vessel, pilot, element or artifact opens a strip on that seat, and one press picks (P-ui-21: the configure card's vessel strip, Yash's ArenaLaunchPanel). The cycling buttons go. Elements use the Codex's shapes (P-ui-29).</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">The course stays put</span><span style="font-size:18px;line-height:1.5">Today the board is dealt from the seated pilots (DEPTH.md section 4, VoyageHarbour.Board) and a first galaxy is seeded from the home domain (VoyageRun.LoadOrBegin). Pinning the voyage on screen is Garrett's rule to change: a proposal to him before any build.</span></div><div style="display:flex;flex-direction:column;gap:10px"><span class="lab">Quests, its own window</span><span style="font-size:18px;line-height:1.5">Opened from Home like the Profile, Episode 1 and Episode 2 (locked) on LB / RB, the five quests on one track, one Lime button: Claim or Play quest. P-ui-28 put the tracker in the Voyage window; this round moves it, on Shombith's word. FTUE is Shombith's and Caleb's.</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
