@@ -1247,10 +1247,61 @@ namespace CosmicShore.Gameplay
         /// rate by difficulty here. Default: nothing.</summary>
         protected virtual void OnRacerArmed(IPlayer pilot) { }
 
+        /// <summary>
+        /// One hull's AI NOSE LEAD in a mode (<see cref="AIPilot.NoseLeadGain"/>, <see cref="AIPilot.NoseLeadMaxExtraDegrees"/>):
+        /// a mode-side setting, never a vessel change. The Time minigames carry one row per hull they race
+        /// (<see cref="AINoseLeadTable"/>); Regatta reads its race-line styles instead (<c>RegattaController.OnRacerArmed</c>).
+        /// </summary>
+        [System.Serializable]
+        public struct AINoseLeadRow
+        {
+            [Tooltip("The hull this row is for.")]
+            public VesselClassType Hull;
+            [Tooltip("The AI's nose lead gain, stated at the fleet nose lag (1.5/s): 0 = off, the pilot judges its error from " +
+                     "the nose; above 0 it judges from where it commands the nose (AIPilot.NoseLeadGain).")]
+            [Range(0f, 6f)] public float Gain;
+            [Tooltip("How far past the aim the nose lead may place the command, degrees (AIPilot.NoseLeadMaxExtraDegrees).")]
+            [Range(0f, 120f)] public float MaxExtraDegrees;
+
+            public AINoseLeadRow(VesselClassType hull, float gain, float maxExtraDegrees = AIPilot.DefaultNoseLeadMaxExtraDegrees)
+            {
+                Hull = hull;
+                Gain = gain;
+                MaxExtraDegrees = maxExtraDegrees;
+            }
+        }
+
+        /// <summary>This mode's per-hull AI nose lead, or null: the mode leaves <see cref="AIPilot.NoseLeadGain"/> alone
+        /// (Regatta sets it itself). When a table is given, every armed AI gets its hull's row, and a hull with no row
+        /// flies with the lead off, so no pilot carries another mode's value into this race.</summary>
+        protected virtual AINoseLeadRow[] AINoseLeadTable => null;
+
+        /// <summary>The nose lead <paramref name="table"/> gives <paramref name="hull"/>: its row, or off (0) with the
+        /// default max-extra angle when the table has no row for it. The first row for a hull wins.</summary>
+        public static AINoseLeadRow NoseLeadFor(AINoseLeadRow[] table, VesselClassType hull)
+        {
+            if (table != null)
+                foreach (var row in table)
+                    if (row.Hull == hull) return row;
+            return new AINoseLeadRow(hull, 0f);
+        }
+
+        void ArmNoseLead(IPlayer p)
+        {
+            var table = AINoseLeadTable;
+            // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot (HeldByAutopilot).
+            if (table == null || p?.Vessel?.VesselStatus is not Component status || !status ||
+                !status.TryGetComponent(out AIPilot autopilot)) return;
+            var row = NoseLeadFor(table, p.Vessel.VesselStatus.VesselType);
+            autopilot.NoseLeadGain = row.Gain;
+            autopilot.NoseLeadMaxExtraDegrees = row.MaxExtraDegrees;
+        }
+
         void ArmRacer(IPlayer p, Vector3 centre, SkimRaceHandicapLevel handicapLevel)
         {
             var pilot = p.Vessel?.VesselStatus?.AIPilot;
             if (pilot == null) return;
+            ArmNoseLead(p);
             OnRacerArmed(p);
 
             var captured = p;

@@ -39,6 +39,13 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class RedlineController : GateRaceController
     {
+        [Header("AI nose lead")]
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
+                 "the lead off. Manta 0: off, the lead does not help the Manta (its fix is a faster nose).")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Manta, 0.0f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
         [Header("Redline circuit")]
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
                  "length, so the circuit is laid with target/laps rings - one number authored " +
