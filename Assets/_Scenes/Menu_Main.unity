@@ -54066,6 +54066,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5866104262863291742}
   - component: {fileID: 1892651069}
+  - component: {fileID: 489457345925507603}
   m_Layer: 5
   m_Name: NavBar
   m_TagString: Untagged
@@ -54073,6 +54074,33 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &489457345925507603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5207005607390993568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 1, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: -42}
+  sizeDelta: {x: 0, y: 84}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &5209491534943714247
 GameObject:
   m_ObjectHideFlags: 0

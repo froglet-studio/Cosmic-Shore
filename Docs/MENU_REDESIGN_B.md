@@ -6311,4 +6311,5 @@ frames while the layout settles, then each piece is put at its old place carried
 turned by the turn's angle (`TurnAngle`) and scaled to its old size, and glides to rest over 0.35 s (OutCubic), input
 held until it lands. The Goby's turn: `CrewOrientation` asks `CrewPictureInPicture.GlideNextSwap`, so the seat change
 a turn makes grows the new view out of the small square over the old one (smoothstep, 0.35 s); a swap by the D-pad or a
-double tap stays instant. Not run on a device yet (checklist "Portrait menus", step 8).
+double tap stays instant. Not run on a device yet (checklist "Portrait menus", step 8). The nav band has a pose too (Shombith, 2026-11-08: "give the nav band a pose too"): its own rect, across the
+top upright as on PC, so it glides with the rest (`author_menu_portrait.py` SCENE_POSED).

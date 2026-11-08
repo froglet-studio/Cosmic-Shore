@@ -52,6 +52,14 @@ PORTRAIT_REFERENCE = (1080, 1920)
 SCENE_FALLBACK = ["ArkScreen", "PortScreen", "ProfileScreen", "MissionScreenModal", "ToyboxScreenModal",
                   "ArenaScreenModal", "ToyboxGameConfigureModal", "ProfileModal", "LeaderboardConfigureModal",
                   "PlayerDataSelectModal"]
+# Scene pieces posed here (their generators patch, they do not re-emit them). The nav band: across the top upright as on
+# PC (author_menu_topnav.py measured the row to fit 1080), so its pose is its own rect; posed, it glides on a turn
+# with the rest (OrientationGlide, Docs/MENU_REDESIGN_B.md section 147; Shombith 2026-11-08: "give the nav band a pose too").
+_tspec = importlib.util.spec_from_file_location("author_menu_topnav", os.path.join(HERE, "author_menu_topnav.py"))
+TOPNAV = importlib.util.module_from_spec(_tspec)
+_tspec.loader.exec_module(TOPNAV)
+SCENE_POSED = {"NavBar": K.rect((0, 1), (1, 1), (0, -TOPNAV.BAND_H / 2), (0, TOPNAV.BAND_H))}
+
 # Screens whose own generators write their fallback on their root (they re-emit it): Codex, Port, Replays, Credits and
 # the hub window strip. SettingsModal is not re-emitted by its generator, so this script patches its prefab's root.
 PREFAB_FALLBACK = ["Assets/_Prefabs/UI Elements/Panels/SettingsModal.prefab"]
@@ -63,9 +71,9 @@ def unique_go(p, name):
     return gos[0]
 
 
-def mark(p, go):
+def mark(p, go, pose=None):
     p.remove_comp(go, str(p.ctx.fid(f"{go}#portrait")))
-    p.add_comp(go, "portrait", 114, K.portrait_rect(pc_block=True))
+    p.add_comp(go, "portrait", 114, K.portrait_rect(pose=pose) if pose else K.portrait_rect(pc_block=True))
 
 
 def prefab_text(path):
@@ -133,6 +141,8 @@ def scene_text(text_):
     p = Patch(text_, "Menu_Main/Portrait")
     for name in SCENE_FALLBACK:
         mark(p, unique_go(p, name))
+    for name, pose in SCENE_POSED.items():
+        mark(p, unique_go(p, name), pose)
     switch_on(p)
     glide(p, "Menu_Main")
     orientation(p)
@@ -140,7 +150,7 @@ def scene_text(text_):
 
 
 def validate(text_):
-    assert text_.count(f"guid: {PORTRAIT_GUID}, type: 3}}") >= len(SCENE_FALLBACK), \
+    assert text_.count(f"guid: {PORTRAIT_GUID}, type: 3}}") >= len(SCENE_FALLBACK) + len(SCENE_POSED), \
         "Menu_Main: a fallback screen lost its PortraitRect"
     assert "  hasPortraitLayout: 1\n" in text_, "Menu_Main: the canvas has no portrait layout"
     assert f"guid: {ORIENTATION_GUID}, type: 3}}" in text_, "Menu_Main: no MenuOrientation (portrait would never unlock)"
