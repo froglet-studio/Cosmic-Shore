@@ -268,11 +268,23 @@ REPORT_ONLY = {
                  "(ButterflyAutopilotModeDriver) in code, and the recorder logs no Dust-mode bit: nothing to learn into yet",
 }
 
+# A hull's drive in ONE mode that is reported, not written: the mode's own AI decides what the learner would measure
+# against something else. Serpent Gulag (Shombith's mode, GameModes 77) flies its Serpents with SerpentGulagMarksman, which
+# steers to a sniper POST (SetExternalTargetProvider), so the pellet drive's angle and runway are to that post; the
+# learner measures a mode without rings against the nearest CRYSTAL, so its numbers (the person lit pellets 127 deg off
+# the crystal, written clamped as alignDegrees 90 on 2026-11-08) would retune his AI with a measure it does not read.
+REPORT_ONLY_MODES = {
+    ("Serpent", "SerpentGulag"): "SerpentGulagMarksman steers its Serpents to a sniper post, not the crystal the learner "
+                                 "measures against, and the mode's AI is Shombith's: reported, never written",
+}
+
 
 def coverage(hull, mode):
     """What learns this hull in this mode: ("drives", why-or-None), ("report", reason) or (None, None)."""
     if hull in REPORT_ONLY:
         return "report", REPORT_ONLY[hull]
+    if (hull, mode) in REPORT_ONLY_MODES:
+        return "report", REPORT_ONLY_MODES[(hull, mode)]
     spec = HULLS.get(hull) or resolve_hull(hull)
     if not spec:
         return None, None
@@ -980,6 +992,8 @@ def learn_hull(hull, flights, each_intensity=False):
             learned["releaseStickBand"] = max(learned.get("releaseStickBand", 0), learned.get("stickBand", 0))
             learned["releaseRunwaySeconds"] = min(learned["releaseRunwaySeconds"], learned.get("engageRunwaySeconds", 6))
     apply_floors(hull, MODE, learned)
+    if why is None and (hull, MODE) in REPORT_ONLY_MODES:
+        why = "report only: " + REPORT_ONLY_MODES[(hull, MODE)]
     if why is None and len(done) < MIN_FINISHED:
         why = f"{len(done)} finished race(s) or complete match(es); nothing is written below {MIN_FINISHED}"
     elif why is None and not learned:
@@ -1341,6 +1355,8 @@ def self_test_rocket_and_rings():
     assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (0, 50, 100)) - 0.0) < 1e-6, "a ring above the nose is no turn"
     assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (100, 0, 100)) - 45.0) < 1e-6, "a ring 45 deg to the right"
     assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (-1, 0, -100)) - 180.0) < 1.0, "a ring behind is a full turn"
+    assert coverage("Serpent", "SerpentGulag")[0] == "report", "Serpent Gulag's marksman is reported, never written"
+    assert coverage("Serpent", "SerpentTime")[0] == "drives", "negative control: Serpent Time still learns"
     assert [ring_index(k, 20, 20) for k in (0, 19)] == [0, 19], "Switchback: open, in order"
     S = [{"t": i * 0.1, "held": False, "dist": 100.0 + 10 * i, "nose": float(i % 10)} for i in range(100)]
     events = [[i * 0.1, 2, 1] for i in range(0, 100, 10)] + [[i * 0.1 + 0.05, 2, 0] for i in range(0, 100, 10)]
