@@ -22076,7 +22076,9 @@ editor: 0 errors in project code; the rest are packages the cloud cannot fetch).
    not blue: the colour is a quiet grey-violet with a light diamond at the centre.
 4. **One press picks**: press a hull under the flow. The vessel strip opens over the column, and one press picks and
    saves. In Ark crew, each seat's vessel, pilot, element (the Codex's shapes) and artifact open a strip the same way,
-   and Save squad keeps the draft. Changing the domain chip changes the draft only.
+   and Save squad keeps the draft. Changing the domain chip changes the draft only. Change a seat without saving, close
+   the window and reopen it: the change is gone. With a friend in the squad, Save squad reaches them (their Ark shows
+   the change after its refresh), as a save in the Ark does.
 5. **Story**: the beats step with < > and the dots. **Underway**: send a voyage out, reopen the window, and the column
    shows the place, the underway line and a dark "Set sail - after this voyage".
 6. **The Quests window**: on Home, press the quest card. The Quests window opens (not the Voyage window), titled
