@@ -1,432 +1,325 @@
 <title>Fleet Codex</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&family=Saira:wght@400;500;600&display=swap">
 <script src="theme.js"></script>
 <link rel="stylesheet" href="themes.css">
 <style>
-/* Layout: design B of the board's Rev 48 (picked by Shombith, 2026-11-02). A top bar with the theme picker at its right,
-   a filmstrip of the whole fleet (crew vessels as wider posters with their seats), then the picked vessel as a bento:
-   the hull, its abilities as cards that flip to their level-5 face (a crew vessel's split into one card per seat), ONE
-   control map drawing controller, keyboard and phone with the picked ability lit and PLAYING its gesture (tap, hold,
-   hold and release, toggle, a stick's sweep), its games one element at a time (its Charge game, its Mass game ...),
-   the picked ability's full text, docs and changes. #fleet is the whole fleet as one table. Data: fleet.json, generated
-   from the shipped assets by Tools/Build/fleet_codex.py; every icon is the game's own art.
-   Look: the Froglet UI style guide (Docs/UI_STYLE_GUIDE.md; Frogma's Style Guide tab) as the analytics console draws
-   it - Aldrich to read, Chakra Petch to press, the corner sliver and nothing rounded, panels drawn like the game's
-   prisms, the sea lines behind the page. Themes (Shombith 2026-11-08): the game's three colour sets, Nocturne, Photic
-   and Dart Frog, written by Tools/Analytics/console/make_themes.py into themes.css / theme.js (the --fs-* tokens on
-   html[data-fs-theme]); the film-named themes moved to these. Below, the page's own names map onto those tokens. */
+/* The Fleet Codex, design C of the board's Rev 68 drawn whole as Rev 69 (Shombith picked it 2026-11-08, "Go ahead build
+   it"; Docs/MENU_REDESIGN_B.md sections 143-144). One vessel at a time, every detail, calm: a switcher in the top bar
+   instead of a fleet grid; the flight-deck window (the hull flying, the pilot briefing, its element games, the picked
+   ability's MOVE playing with the controller button, key and phone touch pressing in time, the ability row); then
+   hairline sections: Abilities (what each does, what more of its element does with the authored numbers, its level 5),
+   Missions (the games, filtered by element, Arcade, Arena), Flight and controls, Docs. #fleet is the whole fleet as one
+   table. Data: fleet.json from Tools/Build/fleet_codex.py (the game's own files); every icon is the game's art.
+   Themes: the game's colour sets Nocturne, Photic, Dart Frog (theme.js / themes.css, written by the generator with the
+   analytics console's make_themes.py). Type: Saira Condensed and Saira, picked on the board for the website.
+   Motion: only transform and opacity, on one eased curve; one 3.2 s clock for a move and its devices; reduced motion
+   holds the pressed pose still. */
 :root{
-  --bg:var(--fs-ground); --surface:color-mix(in srgb,var(--fs-surface) 88%,var(--fs-ground-deep)); --raise:var(--fs-surface);
-  --ink:var(--fs-text); --muted:var(--fs-text-soft); --faint:var(--fs-text-off); --line:color-mix(in srgb,var(--fs-line) 72%,transparent);
-  --edge:var(--fs-line); --tile:var(--fs-ground-deep); --accent:var(--fs-selection); --warn:var(--fs-danger); --good:var(--fs-cta);
-  --display:"Aldrich","Chakra Petch",system-ui,sans-serif; --dscale:.74; --dcase:none; --dtrack:0;
-  --mono:"Chakra Petch","Aldrich",system-ui,sans-serif; --body:"Aldrich","Chakra Petch",system-ui,sans-serif;
-  --still:saturate(.7) contrast(1.05); --still-on:none; --still-op:.55; --ground:none; --radius:0px;
-  --sl:14px; --sls:10px; --micro:120ms; --std:200ms; --panel:320ms; color-scheme:dark;
+  --ease:cubic-bezier(.45,0,.2,1);
+  --ink:var(--fs-text); --soft:var(--fs-text-soft); --off:var(--fs-text-off); --line:var(--fs-line);
+  --hair:color-mix(in srgb,var(--fs-line) 60%,transparent); --panel:var(--fs-surface); --deep:var(--fs-ground-deep);
+  --sel:var(--fs-selection); --cta:var(--fs-cta-fill); --warn:var(--fs-danger);
+  --disp:"Saira Condensed","Arial Narrow",sans-serif; --body:"Saira",system-ui,sans-serif;
+  --dom:#2cfffb; --dom-sh:#552345; --omni:#96eb29;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);background-image:var(--ground);background-attachment:fixed;color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;transition:background-color .3s,color .3s}
+html,body{margin:0}
+body{background:var(--fs-ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
 a{color:inherit}
 button{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.hd{font-family:var(--display);font-weight:600;letter-spacing:var(--dtrack);text-transform:var(--dcase);line-height:.95}
-:root .hd{font-weight:400}
-.mo{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
-.num{font-variant-numeric:tabular-nums}
-.wrap{padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
-/* top bar */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:20px;min-height:60px;flex-wrap:wrap;padding-block:8px}
-.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
-.logo img{width:22px;height:22px}
-.logo span{font-size:calc(26px * var(--dscale))}
-.top nav a{text-decoration:none;color:var(--muted);font-weight:500}
-.top nav a[aria-current="page"]{color:var(--ink)}
-.search{display:flex;align-items:center;gap:8px;height:36px;flex:0 1 300px;min-width:170px;padding:0 14px;border:1px solid var(--edge);border-radius:0;background:var(--surface);margin-left:auto}
-.search input{all:unset;font-size:13px;color:var(--ink);width:100%}
-.themes{position:relative}
-.dompick{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:0;background:var(--surface)}
-.dompick button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 6px;border-radius:0;font-size:12.5px;color:var(--muted)}
-.dompick button i{width:14px;height:14px;border-radius:0;background:var(--c);box-shadow:0 0 0 1px rgba(0,0,0,.35) inset}
-.dompick button[aria-checked="true"]{background:var(--raise);color:var(--ink);box-shadow:0 0 0 1px var(--edge)}
-.dompick button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.ico{position:relative;display:block;width:80px;height:80px;transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
-.ico>*{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-.ico .lay{-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;transition:background-color .35s}
-.l5t .ico{width:20px;height:20px;background:var(--tile);border-radius:0;align-self:center;flex:none}
-.l5t .ico>*{inset:1px;width:calc(100% - 2px);height:calc(100% - 2px)}
-.l5t .ico img{background:none;padding:0;border-radius:0}
-.cell .ic .ico{width:100%;height:100%}
-.tbtn{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border:1px solid var(--edge);border-radius:0;background:var(--surface);cursor:pointer;font-size:13px}
-.tbtn:hover{border-color:var(--ink)}
-.sw{display:inline-flex;width:22px;height:14px;border-radius:0;overflow:hidden;border:1px solid rgba(128,128,128,.5);flex:none}
-.sw i{flex:1}
-.tmenu{position:absolute;right:0;top:44px;width:290px;background:var(--surface);border:1px solid var(--edge);border-radius:0;padding:6px;box-shadow:0 18px 50px rgba(0,0,0,.45);z-index:9}
-.titem{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:0;border-radius:0;padding:9px 10px;cursor:pointer}
-.titem:hover,.titem[aria-checked="true"]{background:var(--raise)}
-.titem .sw{width:30px;height:20px;border-radius:0}
-.titem b{display:block;font-size:13px}
-.titem span.d{display:block;font-size:11.5px;color:var(--muted);line-height:15px}
-/* filmstrip */
-.strip{display:flex;gap:12px;overflow-x:auto;padding-block:16px 12px;scrollbar-width:thin}
-.poster{display:flex;flex-direction:column;gap:6px;flex:none;width:128px;text-decoration:none;color:var(--muted);font-size:12.5px;line-height:16px}
-.poster.crew{width:176px}
-.poster .ph{position:relative;display:block;height:72px;border-radius:0;overflow:hidden;background:var(--surface)}
-.poster img{width:100%;height:100%;object-fit:cover;opacity:.72;display:block;transition:opacity .2s,transform .3s}
-.poster.crew .ph{box-shadow:inset 0 0 0 1px var(--edge)}
-.poster[aria-current="page"]{color:var(--ink)}
-.poster[aria-current="page"] img{opacity:1}
-.poster[aria-current="page"] .ph{box-shadow:0 0 0 2px var(--ink)}
-.poster:hover img{opacity:.85;transform:scale(1.05)}
-.seats{position:absolute;right:6px;top:6px;font-family:var(--mono);font-size:9.5px;color:var(--ink);background:color-mix(in srgb,var(--fs-ground-deep) 85%,transparent);border:1px solid #555;border-radius:0;padding:0 6px}
-.poster.all .ph{display:flex;align-items:center;justify-content:center;border:1px dashed var(--edge);background:transparent}
-/* bento */
-.bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;padding-block:6px 40px}
-.tile{background:var(--surface);border:1px solid var(--line);border-radius:0;min-width:0;position:relative;overflow:hidden}
-.pad{padding:18px 20px}
-.span5{grid-column:span 5}.span7{grid-column:span 7}.span9{grid-column:span 9}.span3{grid-column:span 3}.span12{grid-column:span 12}
-.hero{min-height:400px;display:flex;align-items:flex-end}
-.hero .still{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.hero.wide{min-height:340px}.hero.wide .still{object-position:center 40%;left:28%;width:72%}
-.hero.wide::after{background:linear-gradient(90deg,var(--surface) 30%,color-mix(in srgb,var(--surface) 55%,transparent) 48%,transparent 78%)}
-.hero.wide .copy{max-width:min(760px,62%)}
-.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--surface) 16%,transparent 72%)}
-.hero .copy{position:relative;z-index:1;padding:22px 24px;display:flex;flex-direction:column;gap:8px;width:100%}
-.hero h1{font-size:calc(clamp(52px,6vw,88px) * var(--dscale));margin:0}
-.crewline{font-family:var(--display);font-size:24px;color:var(--muted)}
-.stats{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:6px}
-.stats .n{font-family:var(--display);font-size:calc(28px * var(--dscale))}
-/* the kit: ability cards that flip to their level-5 face */
-.kit{min-width:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-content:start}
-.ab{perspective:1100px;min-width:0;animation:rise .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms)}
-@keyframes rise{from{opacity:.25;transform:translateY(14px)}to{opacity:1;transform:none}}
-.ab .inner{display:grid;transition:transform .6s cubic-bezier(.3,.9,.25,1);transform-style:preserve-3d;height:100%}
-.ab.flip .inner{transform:rotateY(180deg)}
-.face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px;border-radius:0;background:var(--surface);border:1px solid var(--line);min-height:440px;min-width:0;transition:border-color .2s,box-shadow .25s,transform .2s}
-.face.back{transform:rotateY(180deg);background:var(--raise)}
-.ab:hover .face.front{border-color:var(--edge);transform:translateY(-4px);box-shadow:0 14px 34px rgba(0,0,0,.28)}
-.ab.sel .face{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink),0 16px 38px rgba(0,0,0,.3)}
-.pickbtn{all:unset;display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;cursor:pointer;flex:1;min-width:0}
-.pickbtn:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:0}
-.pickbtn:active .icontile{transform:scale(.94)}
-.el{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted)}
-.chip{width:22px;height:22px;border-radius:0;background:var(--tile);display:inline-flex;align-items:center;justify-content:center;flex:none}
-.chip img{width:15px;height:15px;object-fit:contain}
-.icontile{position:relative;width:96px;height:96px;border-radius:0;background:var(--tile);display:flex;align-items:center;justify-content:center;margin:14px 0 10px;transition:transform .25s cubic-bezier(.3,1.4,.5,1),box-shadow .25s}
-.icontile img{position:relative;width:80px;height:80px;object-fit:contain;transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
-.icontile.none img{width:44px;height:44px;opacity:.6}
-.ab:hover .icontile img,.ab:hover .icontile .ico{transform:scale(1.08) rotate(-3deg)}
-.ab.sel .icontile{box-shadow:inset 0 0 0 1px var(--edge)}
-.icontile .bloom{position:absolute;inset:-26px;width:auto;height:auto;opacity:0;transition:opacity .5s;pointer-events:none}
-.icontile .bloom{display:none}
-.ab.flip .back .icontile{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rim) 55%,transparent)}
-.name{font-family:var(--display);font-weight:600;font-size:calc(30px * var(--dscale) * var(--fit,1));line-height:1;letter-spacing:var(--dtrack);text-transform:var(--dcase);overflow-wrap:normal;hyphens:manual;max-width:100%}
-:root .name{font-weight:400}
-.sum{width:100%;font-size:12.5px;line-height:18px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden;margin-top:8px;color:var(--ink);overflow-wrap:anywhere}
-.face .mo{overflow-wrap:anywhere}
-.how{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 9px 3px 4px;border:1px solid var(--line);border-radius:0;background:var(--raise);font-family:var(--mono);font-size:10.5px;line-height:14px;color:var(--ink);max-width:100%}
-.how:not(:has(.g)){padding-left:9px}
-.how .g{display:inline-flex;gap:2px;background:var(--tile);border-radius:0;padding:1px 2px}.how .g img{width:18px;height:18px;object-fit:contain}.how .g .cap{font-size:10px}
-.scl{display:flex;gap:7px;align-items:flex-start;width:100%;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:11.5px;line-height:16px;color:var(--muted)}
-.scl .chip{width:18px;height:18px}.scl .chip img{width:12px;height:12px}
-.l5t{display:flex;gap:7px;align-items:baseline;width:100%;font-size:12px;color:var(--ink)}
-.l5t b{font-family:var(--display);font-size:calc(17px * var(--dscale));letter-spacing:var(--dtrack)}
-.l5t span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.l5t img{width:20px;height:20px;object-fit:contain;align-self:center;background:var(--tile);border-radius:0;padding:1px}
-.detail .what{border-left:2px solid var(--edge);padding-left:14px;margin:10px 0 16px}
-.detail .big{font-size:16px;line-height:24px;color:var(--ink);max-width:75ch}
-.grow{flex:1}
-.foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;min-width:0;margin-top:10px}
-.foot .l5{flex:none;margin-left:auto}
-.foot .sp{flex:1}
-.pill{font-family:var(--mono);font-size:10px;border:1px solid var(--edge);border-radius:0;padding:1px 8px;color:var(--muted);white-space:nowrap}
-.pill.good{color:var(--good);border-color:currentColor}.pill.warn{color:var(--warn);border-color:currentColor}
-.l5{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:0;border:1px solid var(--edge);background:var(--raise);cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.06em;transition:transform .15s,border-color .2s,background .2s,box-shadow .25s}
-.l5:hover{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
-.l5:active{transform:scale(.93)}
-.l5 svg{transition:transform .4s}
-.l5:hover svg{transform:rotate(180deg)}
-.back .lvl{font-family:var(--display);font-size:calc(54px * var(--dscale));line-height:.9;color:var(--ink);letter-spacing:var(--dtrack)}
-.back .ul{font-weight:600;font-size:15px;line-height:19px}
-.back .gate{font-family:var(--mono);font-size:10.5px;color:var(--muted);overflow-wrap:anywhere}
-/* a crew vessel: one card per seat, the seat's abilities inside it */
-.kit.crew{display:flex;flex-wrap:wrap;gap:12px}
-.kit.crew .seat{flex:var(--n,1) 1 calc(var(--n,1) * 196px + 30px);min-width:0;max-width:100%}
-.kit.crew>p{flex-basis:100%}
-.seat{border:1px solid var(--edge);border-radius:0;padding:14px;background:color-mix(in srgb,var(--surface) 70%,transparent);animation:rise .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms)}
-.seat-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:2px 4px 12px}
-.seat-head .hd{font-size:calc(34px * var(--dscale))}
-.seat-head p{margin:0;flex:1 1 320px;color:var(--muted);font-size:13px;line-height:18px}
-.seat-kit{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-.seat-kit .face{min-height:360px}
-.doc .face{min-height:0;background:transparent;border-style:dashed}
-.hullrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-/* controls: one drawing per device, the picked ability's control PLAYING its gesture on all three at once (the style
-   guide's one allowed motion here: "the hint that teaches the next control"). The gesture is read from the ability's
-   own trigger words (abilities.json): tap, hold, hold then release, tap on / tap off, a stick's sweep. One 2.4 s loop,
-   the same clock on every device; reduced motion holds the pressed pose still. */
-.ctl-head{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-bottom:14px}
-.ctl-head .hd{font-size:calc(30px * var(--dscale))}
-.gest{display:inline-flex;align-items:center;gap:10px;min-height:32px;padding:4px 14px 4px 10px;background:var(--raise);box-shadow:inset 0 0 0 1px var(--edge);font-family:var(--mono);font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
-.gest.lit{box-shadow:inset 0 0 0 1px var(--accent),inset 3px 0 0 var(--accent)}
-.gest .tl{position:relative;width:64px;height:6px;background:var(--tile);box-shadow:inset 0 0 0 1px var(--edge);flex:none;overflow:hidden}
-.gest .tl i{position:absolute;inset:0;background:var(--accent);transform-origin:left;transform:scaleX(0)}
-.gest .what2{font-weight:500;letter-spacing:.04em;text-transform:none;color:var(--muted)}
-.devices{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);gap:16px}
-.dev{display:flex;flex-direction:column;gap:10px;min-width:0;padding:14px 14px 12px;background:color-mix(in srgb,var(--tile) 55%,transparent);box-shadow:inset 0 0 0 1px var(--line)}
-.dev h3{margin:0;display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-weight:600;font-size:11px;letter-spacing:.16em;color:var(--muted)}
-.dev h3 b{font-weight:600;color:var(--ink);letter-spacing:.08em}
-.dev svg.draw{display:block;width:100%;height:auto;overflow:visible}
-.draw text{font-family:var(--mono);font-weight:700;font-size:11px;fill:var(--muted);text-anchor:middle;dominant-baseline:central;pointer-events:none}
-.draw .body{fill:color-mix(in srgb,var(--fs-surface) 70%,var(--tile));stroke:var(--edge);stroke-width:1.5}
-.draw .body2{fill:none;stroke:color-mix(in srgb,var(--rim) 30%,transparent);stroke-width:1}
-.draw .well,.draw .cap{fill:var(--tile);stroke:var(--edge);stroke-width:1.2}
-.draw .knob,.draw .rip,.draw .ring,.draw .bar,.draw .latch{transform-box:fill-box;transform-origin:center}
-.draw .rip{fill:none;stroke:var(--accent);stroke-width:2;opacity:0}
-.draw .ring{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:100;stroke-dashoffset:100;opacity:0}
-.draw .bar{fill:var(--accent);transform-origin:left center;transform:scaleX(0)}
-.draw .latch{fill:var(--accent);opacity:0}
-.pp{transition:opacity var(--std)}
-.pp.st-off{opacity:.35}
-.pp.st-on .cap{stroke:var(--muted)}
-.pp.st-on text{fill:var(--ink)}
-.pp.st-lit .cap{fill:color-mix(in srgb,var(--accent) 26%,var(--tile));stroke:var(--accent);stroke-width:2}
-.pp.st-lit text{fill:var(--ink)}
-.pp.st-lit .well{stroke:var(--accent)}
-.pp.tap{cursor:pointer}
-.pp.tap:hover .cap{stroke:var(--ink)}
-/* the thumbs on the phone: a soft pad of light where a thumb rests */
-.draw .thumb{fill:color-mix(in srgb,var(--ink) 22%,transparent);stroke:color-mix(in srgb,var(--ink) 55%,transparent);stroke-width:1.2;transform-box:fill-box;transform-origin:center}
-.draw .zone{fill:none;stroke:var(--edge);stroke-dasharray:3 4}
-.draw .screen{fill:color-mix(in srgb,var(--fs-ground) 80%,var(--tile));stroke:var(--line)}
-.draw .frame{fill:var(--tile);stroke:var(--edge);stroke-width:2}
-/* the gestures */
-.st-lit.g-tap .knob{animation:g-tap 2.4s infinite}
-.st-lit.g-tap .rip{animation:g-rip 2.4s infinite}
-.st-lit.g-hold .knob{animation:g-hold 2.4s infinite}
-.st-lit.g-hold .ring{animation:g-ring 2.4s infinite}
-.st-lit.g-hold .bar{animation:g-bar 2.4s infinite}
-.st-lit.g-release .knob{animation:g-charge 2.4s infinite}
-.st-lit.g-release .ring{animation:g-ring2 2.4s infinite}
-.st-lit.g-release .bar{animation:g-bar2 2.4s infinite}
-.st-lit.g-release .rip{animation:g-burst 2.4s infinite}
-.st-lit.g-toggle .knob{animation:g-toggle 2.4s infinite}
-.st-lit.g-toggle .latch{animation:g-latch 2.4s infinite}
-.st-lit.g-toggle .rip{animation:g-rip2 2.4s infinite}
-.st-lit.kind-stick .knob,.st-lit.g-stick .knob{animation:g-stick 2.4s ease-in-out infinite}
-.st-on.kind-stick.steer .knob{animation:g-drift 7.2s ease-in-out infinite}
-.st-lit.kind-trig.g-tap .knob,.st-lit.kind-trig.g-toggle .knob{animation:g-pull-tap 2.4s infinite}
-.st-lit.kind-trig.g-hold .knob{animation:g-pull 2.4s infinite}
-.st-lit.kind-trig.g-release .knob{animation:g-pull2 2.4s infinite}
-.st-lit.kind-key.g-tap .knob,.st-lit.kind-key.g-toggle .knob{animation:g-key-tap 2.4s infinite}
-.st-lit.kind-key.g-hold .knob{animation:g-key 2.4s infinite}
-.st-lit.kind-key.g-release .knob{animation:g-key2 2.4s infinite}
-.st-lit.kind-thumb.g-tap .thumb,.st-lit.kind-thumb.g-toggle .thumb{animation:g-lift-tap 2.4s infinite}
-.st-lit.kind-thumb.g-hold .thumb,.st-lit.kind-thumb.g-release .thumb,.st-lit.kind-thumb.g-passive .thumb{animation:g-lift 2.4s infinite}
-.st-lit.kind-apart .thumb.l{animation:g-apart-l 2.4s infinite}.st-lit.kind-apart .thumb.r{animation:g-apart-r 2.4s infinite}
-.st-lit.kind-slide .knob{animation:g-slide 2.4s ease-in-out infinite}
-.st-lit .finger{animation:g-finger 2.4s infinite}
-.st-lit.g-hold .finger,.st-lit.g-release .finger{animation:g-finger-hold 2.4s infinite}
-.finger{opacity:0;transform-box:fill-box;transform-origin:center}
-.gest.g-tap .tl i,.gest.g-toggle .tl i{animation:t-tap 2.4s infinite}
-.gest.g-hold .tl i{animation:t-hold 2.4s infinite}.gest.g-release .tl i{animation:t-rel 2.4s infinite}
-.gest.g-stick .tl i{animation:t-hold 2.4s ease-in-out infinite}
-@keyframes g-tap{0%,8%{transform:scale(1)}12%,20%{transform:scale(.8)}26%,100%{transform:scale(1)}}
-@keyframes g-rip{0%,11%{opacity:0;transform:scale(1)}14%{opacity:.9;transform:scale(1)}48%,100%{opacity:0;transform:scale(2.3)}}
-@keyframes g-hold{0%,8%{transform:scale(1)}13%,72%{transform:scale(.8)}78%,100%{transform:scale(1)}}
-@keyframes g-ring{0%,12%{stroke-dashoffset:100;opacity:0}13%{opacity:1;stroke-dashoffset:100}72%{stroke-dashoffset:0;opacity:1}80%,100%{stroke-dashoffset:0;opacity:0}}
-@keyframes g-bar{0%,12%{transform:scaleX(0);opacity:1}72%{transform:scaleX(1);opacity:1}80%,100%{transform:scaleX(1);opacity:0}}
-@keyframes g-charge{0%,8%{transform:scale(1)}13%,58%{transform:scale(.8)}60%{transform:scale(1.18)}68%,100%{transform:scale(1)}}
-@keyframes g-ring2{0%,12%{stroke-dashoffset:100;opacity:0}13%{opacity:1;stroke-dashoffset:100}58%{stroke-dashoffset:0;opacity:1}62%,100%{stroke-dashoffset:0;opacity:0}}
-@keyframes g-bar2{0%,12%{transform:scaleX(0);opacity:1}58%{transform:scaleX(1);opacity:1}62%,100%{transform:scaleX(1);opacity:0}}
-@keyframes g-burst{0%,58%{opacity:0;transform:scale(1)}60%{opacity:1;transform:scale(1)}92%,100%{opacity:0;transform:scale(2.8)}}
-@keyframes g-toggle{0%,8%{transform:scale(1)}11%,15%{transform:scale(.8)}19%,54%{transform:scale(1)}57%,61%{transform:scale(.8)}65%,100%{transform:scale(1)}}
-@keyframes g-latch{0%,14%{opacity:0}16%,58%{opacity:1}60%,100%{opacity:0}}
-@keyframes g-rip2{0%,10%{opacity:0;transform:scale(1)}13%{opacity:.9}36%{opacity:0;transform:scale(2.1)}56%{opacity:0;transform:scale(1)}59%{opacity:.6}82%,100%{opacity:0;transform:scale(1.8)}}
-@keyframes g-stick{0%,6%{transform:translate(0,0)}22%{transform:translate(7px,-7px)}40%{transform:translate(-8px,-5px)}58%{transform:translate(-6px,7px)}76%{transform:translate(7px,6px)}92%,100%{transform:translate(0,0)}}
-@keyframes g-drift{0%,100%{transform:translate(0,0)}30%{transform:translate(3px,-2px)}65%{transform:translate(-3px,2px)}}
-@keyframes g-pull-tap{0%,8%{transform:translateY(0)}12%,20%{transform:translateY(6px)}26%,100%{transform:translateY(0)}}
-@keyframes g-pull{0%,8%{transform:translateY(0)}14%,72%{transform:translateY(7px)}78%,100%{transform:translateY(0)}}
-@keyframes g-pull2{0%,8%{transform:translateY(0)}14%,58%{transform:translateY(7px)}61%{transform:translateY(-2px)}68%,100%{transform:translateY(0)}}
-@keyframes g-key-tap{0%,8%{transform:translateY(0)}12%,20%{transform:translateY(3px)}26%,100%{transform:translateY(0)}}
-@keyframes g-key{0%,8%{transform:translateY(0)}13%,72%{transform:translateY(3px)}78%,100%{transform:translateY(0)}}
-@keyframes g-key2{0%,8%{transform:translateY(0)}13%,58%{transform:translateY(3px)}61%{transform:translateY(-1px)}66%,100%{transform:translateY(0)}}
-@keyframes g-lift-tap{0%,8%{transform:none;opacity:1}13%,22%{transform:translateY(-10px) scale(1.25);opacity:.25}30%,100%{transform:none;opacity:1}}
-@keyframes g-lift{0%,8%{transform:none;opacity:1}16%,68%{transform:translateY(-10px) scale(1.25);opacity:.25}78%,100%{transform:none;opacity:1}}
-@keyframes g-apart-l{0%,8%{transform:none}28%,68%{transform:translateX(-22px)}84%,100%{transform:none}}
-@keyframes g-apart-r{0%,8%{transform:none}28%,68%{transform:translateX(22px)}84%,100%{transform:none}}
-@keyframes g-slide{0%,8%{transform:translateY(0)}40%,70%{transform:translateY(-34px)}92%,100%{transform:translateY(0)}}
-@keyframes g-finger{0%,4%{opacity:0;transform:translate(10px,14px) scale(1.2)}10%{opacity:.9;transform:none}22%{opacity:.9;transform:none}32%,100%{opacity:0;transform:translate(10px,14px) scale(1.2)}}
-@keyframes g-finger-hold{0%,4%{opacity:0;transform:translate(10px,14px) scale(1.2)}10%{opacity:.9;transform:none}66%{opacity:.9;transform:none}80%,100%{opacity:0;transform:translate(10px,14px) scale(1.2)}}
-@keyframes t-tap{0%,10%{transform:scaleX(0)}12%,20%{transform:scaleX(.12)}26%,100%{transform:scaleX(0)}}
-@keyframes t-hold{0%,12%{transform:scaleX(0)}72%{transform:scaleX(1)}80%,100%{transform:scaleX(0)}}
-@keyframes t-rel{0%,12%{transform:scaleX(0)}58%{transform:scaleX(1)}62%,100%{transform:scaleX(0)}}
-.legend{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
-.legend li{display:flex;align-items:center;gap:8px;min-height:28px;padding:2px 6px;font-size:12.5px;line-height:15px;color:var(--muted);transition:color var(--micro),background var(--micro)}
-.legend li .k{font-family:var(--mono);font-weight:600;font-size:11px;letter-spacing:.06em;min-width:58px;color:var(--ink)}
-.legend li.on{color:var(--ink)}
-.legend li.lit{background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:inset 2px 0 0 var(--accent);color:var(--ink)}
-.legend li button{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%}
-.legend li button:focus-visible{box-shadow:inset 0 0 0 2px var(--accent)}
-.legend li:hover{background:color-mix(in srgb,var(--raise) 60%,transparent)}
-.notes{margin:10px 0 0;padding-left:16px;color:var(--muted);font-size:12px;line-height:17px}
-/* plays in, detail, docs */
-.col{display:flex;flex-direction:column;gap:14px;min-width:0}.col>.tile{flex:none}
-.play{display:flex;flex-direction:column;gap:8px}
-.game.row{min-height:64px}.game.row .copy{padding:8px 12px}.game.row .copy .hd{font-size:calc(21px * var(--dscale))}
-.games-head{display:flex;align-items:baseline;gap:8px 14px;flex-wrap:wrap;margin-bottom:6px}
-.games-head .hd{font-size:calc(30px * var(--dscale))}
-.lab2{font-family:var(--mono);font-weight:600;font-size:11.5px;letter-spacing:.16em;color:var(--ink)}
-.egrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.eg{display:flex;flex-direction:column;gap:8px;min-width:0;animation:rise .45s cubic-bezier(.2,.8,.2,1) both;animation-delay:var(--d,0ms)}
-.eg-head{display:flex;align-items:center;gap:8px}
-.eg .game{min-height:178px}
-.eg .game.row{min-height:72px}
-.eg.none .eg-head{opacity:.6}
-.game.empty-game{min-height:178px;background:transparent;box-shadow:inset 0 0 0 1px var(--line);background-image:repeating-linear-gradient(135deg,transparent 0 10px,color-mix(in srgb,var(--line) 40%,transparent) 10px 11px)}
-.game.empty-game::after{display:none}
-.hd.soft{color:var(--muted)}
-.arenas{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
-.arenas .lab2{margin-right:4px;color:var(--muted)}
-.ar{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:3px 12px 3px 4px;background:var(--raise);box-shadow:inset 0 0 0 1px var(--line)}
-.ar b{font-weight:400;font-size:13px}
-.ar .chip+.chip{margin-left:-2px}
-.fg{display:flex;flex-direction:column;gap:3px}
-.fgr{display:flex;align-items:center;gap:6px;font-size:12.5px;white-space:nowrap}
-.fgr .chip{width:18px;height:18px}.fgr .chip img{width:12px;height:12px}
-.game{position:relative;border-radius:0;overflow:hidden;min-height:150px;display:flex;align-items:flex-end;background:var(--raise)}
-.game img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:var(--still);opacity:.5;transition:transform .6s}
-.game:hover img{transform:scale(1.04)}
-.game::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--surface) 12%,transparent 80%)}
-.game .copy{position:relative;z-index:1;padding:12px 14px;display:flex;flex-direction:column;gap:3px}
-.game .copy .hd{font-size:calc(28px * var(--dscale))}
-.game .copy p{margin:0;font-size:12.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.detail h2{margin:0;font-size:calc(34px * var(--dscale))}
-.detail p{margin:8px 0 0;max-width:110ch}
-.dials{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:14px}
-.dial{border:1px solid var(--line);border-radius:0;padding:10px 12px;background:var(--raise)}
-.dial .top2{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:12px}
-.dial .v{white-space:nowrap}
-.dial .src{font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
-.dial.off{opacity:.5}
-.l5box{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
-.l5box .t{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.l5box .gate{font-family:var(--mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
-ul.list{list-style:none;margin:8px 0 0;padding:0}
-ul.list li{padding:8px 0;border-top:1px solid var(--line);font-size:13px;overflow-wrap:anywhere}
-ul.list .dt{font-family:var(--mono);font-size:11px;color:var(--muted);margin-right:6px}
-/* fleet table */
-.tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-.tally .tile{padding:16px 18px}
-.tally .n{font-family:var(--display);font-size:calc(44px * var(--dscale))}
-.scroll{overflow-x:auto}
-table.mx{border-collapse:collapse;width:100%;min-width:1100px}
-.mx th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:400;white-space:nowrap}
-.mx th .chip{margin-right:6px;vertical-align:middle}
-.mx td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
-.mx tbody tr{cursor:pointer;transition:background .15s}
-.mx tbody tr:hover td{background:var(--raise)}
-.cell{display:flex;align-items:center;gap:8px;min-width:0}
-.cell .ic{width:34px;height:34px;border-radius:0;background:var(--tile);display:flex;align-items:center;justify-content:center;flex:none}
-.cell .ic img{width:28px;height:28px;object-fit:contain}
-.cell .nm{font-weight:600;font-size:13px;line-height:16px}
-.cell .gl{height:18px;width:auto;vertical-align:middle;margin-right:4px}
-.hull{display:flex;gap:10px;align-items:center}
-.hull img{width:64px;height:36px;object-fit:cover;border-radius:0}
-.hull .nm{font-family:var(--display);font-size:calc(22px * var(--dscale));letter-spacing:var(--dtrack);text-transform:var(--dcase)}
-footer{padding-block:6px 40px;color:var(--muted);font-size:12.5px;max-width:110ch}
-footer code{font-family:var(--mono);font-size:11.5px}
-.empty{color:var(--muted);font-style:italic}
-/* The style guide's shape (Docs/UI_STYLE_GUIDE.md section 4): two opposite corners cut, 14 on surfaces and 10 on
-   buttons and chips, nothing rounded; panels drawn like the game's prisms, a faint rim over the face with a light sheen
-   (the analytics console's .panel). A cut corner clips an outside focus ring, so those take the ring inside. */
-.tile,.face,.seat,.dev,.game,.tmenu{clip-path:polygon(var(--sl) 0,100% 0,100% calc(100% - var(--sl)),calc(100% - var(--sl)) 100%,0 100%,0 var(--sl))}
-.search,.dompick,.dompick button,.tbtn,.titem,.pill,.l5,.how,.icontile,.dial,.cap,.poster .ph,.gest,.ar,.cell .ic,.hull img,.chip,.seats{border-radius:0;clip-path:polygon(var(--sls) 0,100% 0,100% calc(100% - var(--sls)),calc(100% - var(--sls)) 100%,0 100%,0 var(--sls))}
-.chip,.pill,.seats,.cap,.cell .ic{clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
-.tile,.face,.seat{border:0;background:
-    linear-gradient(160deg,color-mix(in srgb,var(--fs-surface-raised) 30%,transparent) 0%,transparent 38%),
-    linear-gradient(180deg,color-mix(in srgb,var(--fs-surface) 90%,transparent),color-mix(in srgb,var(--fs-surface) 82%,var(--fs-ground-deep)));
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rim) 26%,var(--fs-line)),inset 0 1px 0 color-mix(in srgb,var(--rim) 42%,transparent)}
-.face.back{background:linear-gradient(160deg,color-mix(in srgb,var(--rim) 16%,transparent),transparent 45%),var(--raise)}
-.ab:hover .face.front{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rim) 50%,var(--fs-line)),0 14px 34px rgba(0,0,0,.28)}
-.ab.sel .face{box-shadow:inset 0 0 0 2px var(--accent),0 16px 38px rgba(0,0,0,.3)}
-.dompick,.search,.tbtn{border:0;box-shadow:inset 0 0 0 1px var(--edge);background:var(--surface)}
-.dompick button i{border-radius:0;transform:rotate(45deg) scale(.8)}
-.dompick button[aria-checked="true"]{box-shadow:inset 0 0 0 1px var(--accent)}
-.tbtn{font-family:var(--mono);font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:12px}
-.tbtn:hover{box-shadow:inset 0 0 0 1px var(--ink)}
-.l5{border:0;box-shadow:inset 0 0 0 1px var(--edge);font-family:var(--mono);font-weight:600}
-.l5:hover{box-shadow:inset 0 0 0 1px var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--raise))}
-.pill{border:0;box-shadow:inset 0 0 0 1px currentColor;font-family:var(--mono);font-weight:600;letter-spacing:.06em}
-.pill:not(.good):not(.warn){color:var(--muted)}
-.how{border:0;box-shadow:inset 0 0 0 1px var(--line);font-family:var(--mono);font-weight:600}
-.dial{border:0;box-shadow:inset 0 0 0 1px var(--line)}
-.poster[aria-current="page"] .ph{box-shadow:inset 0 0 0 2px var(--accent)}
-.poster.all .ph{border:0;box-shadow:inset 0 0 0 1px var(--edge)}
-.cap{border:0;box-shadow:inset 0 0 0 1px var(--edge),inset 0 -3px 0 var(--edge)}
-.mo{font-family:var(--mono);letter-spacing:.04em}
-.top{background:color-mix(in srgb,var(--fs-ground) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:0;box-shadow:0 1px 0 var(--line)}
-.top nav a{font-family:var(--mono);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:13px}
-.top nav a[aria-current="page"]{box-shadow:inset 0 -2px 0 var(--accent)}
-.pickbtn:focus-visible,.l5:focus-visible,.tbtn:focus-visible,.titem:focus-visible,.dompick button:focus-visible,.moregames:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--accent)}
-.titem .sw{display:grid;grid-template-columns:repeat(4,1fr);width:56px;height:22px;border:0}
-.titem .sw i{display:flex;flex-direction:column}
-.titem .sw i b,.titem .sw i s{flex:1;display:block;text-decoration:none}
-.tbtn .sw{display:grid;grid-template-columns:repeat(4,1fr);width:30px;height:14px;border:0;border-radius:0}
-.tbtn .sw i{display:flex;flex-direction:column}.tbtn .sw i b,.tbtn .sw i s{flex:1;display:block}
-.titem[aria-checked="true"]{box-shadow:inset 2px 0 0 var(--accent)}
-.titem span.p{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--faint);margin-top:2px}
-/* the sea behind the page: the menu's SeaLines in the theme's rims (the analytics console's, the same maths) */
+:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
+.disp{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.lab{font-size:12px;letter-spacing:.22em;color:var(--soft);text-transform:uppercase}
+.wrap{max-width:1760px;margin:0 auto;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.empty{color:var(--soft)}
+/* the sea behind the page (the menu's SeaLines in the theme's rims) */
 .sea{position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(ellipse 70% 55% at 50% 22%,color-mix(in srgb,var(--sea-glow) 14%,transparent),transparent 70%),
+  background:radial-gradient(ellipse 70% 55% at 50% 22%,color-mix(in srgb,var(--sea-glow) 12%,transparent),transparent 70%),
     linear-gradient(180deg,var(--sea-wash) 0%,color-mix(in srgb,var(--sea-wash) 40%,var(--fs-ground)) 50%,var(--fs-ground) 100%)}
 .sea-lines{position:absolute;inset:0;-webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 14%,#000 86%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0%,#000 14%,#000 86%,transparent 100%)}
 .sea-layer{position:absolute;inset:0;background:linear-gradient(90deg,var(--sea-1),var(--sea-2) 50%,var(--sea-3));-webkit-mask-repeat:repeat-x;mask-repeat:repeat-x;animation:sea-slide 90s linear infinite}
 @keyframes sea-slide{from{-webkit-mask-position:0 0;mask-position:0 0}to{-webkit-mask-position:-480px 0;mask-position:-480px 0}}
-body{background:var(--fs-ground)}
-@media (max-width:1280px){
-  .span5,.span7,.span9,.span3{grid-column:span 12}
-  .egrid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .kit{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
-  .face{min-height:0}
-  .devices{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--fs-ground) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 1px 0 var(--hair)}
+.top .wrap{display:flex;align-items:center;gap:20px;min-height:72px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.brand{font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;display:flex;align-items:center;gap:10px}
+.brand img{width:24px;height:24px}
+.navl{font-size:13px;color:var(--soft);text-decoration:none;letter-spacing:.08em;text-transform:uppercase}
+.navl:hover,.navl[aria-current="page"]{color:var(--ink)}
+.switch{display:flex;align-items:center;gap:6px;margin:0 auto;position:relative}
+.step{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;font-size:13px;color:var(--soft);text-decoration:none;transition:color .2s var(--ease)}
+.step:hover{color:var(--ink)}
+.cur{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:0;cursor:pointer;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line)}
+.cur img{width:46px;height:26px;object-fit:cover}
+.cur .disp{font-size:22px}
+.cur small{font-size:12px;color:var(--soft)}
+.menu{position:absolute;top:52px;left:50%;transform:translateX(-50%);width:min(560px,92vw);max-height:70vh;overflow:auto;z-index:30;padding:10px;background:var(--fs-ground);box-shadow:inset 0 0 0 1px var(--line),0 24px 60px rgba(0,0,0,.5)}
+.menu h4{margin:8px 6px;font-weight:500}
+.menu .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}
+.menu a{display:flex;align-items:center;gap:8px;padding:6px;text-decoration:none;font-size:14px;transition:background .2s var(--ease)}
+.menu a:hover,.menu a[aria-current="page"]{background:var(--panel)}
+.menu a img{width:52px;height:30px;object-fit:cover;flex:none}
+.tools{display:flex;align-items:center;gap:10px}
+.search{display:flex;align-items:center;gap:8px;height:40px;width:240px;padding:0 12px;color:var(--soft);box-shadow:inset 0 0 0 1px var(--line)}
+.search input{all:unset;font-size:13px;width:100%;color:var(--ink)}
+.tbtn{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:0;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px var(--line);font-size:13px}
+.sw{display:inline-flex;gap:2px}.sw i{display:block;width:7px;height:14px}
+.themes{position:relative}
+.tmenu{position:absolute;right:0;top:48px;width:320px;padding:8px;z-index:30;background:var(--fs-ground);box-shadow:inset 0 0 0 1px var(--line),0 24px 60px rgba(0,0,0,.5)}
+.titem{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;cursor:pointer;background:none;padding:10px}
+.titem:hover,.titem[aria-checked="true"]{background:var(--panel)}
+.titem[aria-checked="true"]{box-shadow:inset 2px 0 0 var(--sel)}
+.titem .sw i{width:10px;height:22px}
+.titem b{display:block;font-family:var(--disp);font-size:20px;text-transform:uppercase}
+.titem span.d{display:block;font-size:12px;color:var(--soft);line-height:1.4}
+.dompick{display:flex;gap:4px}
+.dompick button{width:30px;height:30px;border:0;cursor:pointer;background:transparent;display:flex;align-items:center;justify-content:center}
+.dompick i{display:block;width:16px;height:16px;background:var(--c);transform:rotate(45deg);transition:box-shadow .2s var(--ease)}
+.dompick button[aria-checked="true"] i{box-shadow:0 0 0 3px var(--fs-ground),0 0 0 5px var(--c)}
+
+/* ---------- the window ---------- */
+.win{position:relative;height:860px;margin-top:28px;overflow:hidden;background:radial-gradient(ellipse at 52% 46%,var(--face),var(--fs-ground) 74%);box-shadow:inset 0 0 0 1px var(--line)}
+.hullbox{position:absolute;inset:0;pointer-events:none}
+.hullbox img{position:absolute;left:27%;top:8%;width:52%;-webkit-mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%);animation:glide 9s ease-in-out infinite}
+@keyframes glide{0%,100%{transform:translate(0,0) rotate(-2deg)}50%{transform:translate(18px,-14px) rotate(1.5deg)}}
+.hud{position:absolute;padding:22px 24px;background:color-mix(in srgb,var(--fs-ground) 84%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.brief{left:40px;top:40px;width:520px}
+.brief h1{font-size:96px;margin:6px 0 0}
+.brief p{margin:12px 0 0;font-size:17px;line-height:1.55}
+.stats{display:flex;gap:26px;margin-top:18px;flex-wrap:wrap}
+.stats .disp{font-size:30px}
+.stats small{display:block;font-size:11px;color:var(--soft)}
+.egs{right:40px;top:40px;width:400px}
+.eg{display:grid;grid-template-columns:18px 76px 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--hair);font-size:15px}
+.eg img{width:16px;height:16px}
+.eg span{font-size:11px;letter-spacing:.16em;color:var(--soft)}
+.eg.none{color:var(--off)}
+.cta{display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 22px;margin-top:18px;background:var(--cta);color:var(--fs-ground);font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:.1em;text-decoration:none;text-transform:uppercase}
+.move{left:40px;bottom:40px;width:660px}
+.move .mhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.move .mhead .disp{font-size:34px}
+.trig{color:var(--sel);font-size:14px}
+.abrow{position:absolute;right:40px;bottom:40px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 780px)}
+.ab{display:flex;flex-direction:column;align-items:center;gap:6px;width:96px;border:0;cursor:pointer;background:transparent;padding:0;transition:transform .3s var(--ease)}
+.ab .i{width:84px;height:84px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--deep) 72%,transparent);box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .3s var(--ease)}
+.ab .i img,.ab .i .ico{width:58px;height:58px;object-fit:contain}
+.ab small{font-size:12px;color:var(--soft);text-align:center;line-height:1.2}
+.ab:hover{transform:translateY(-4px)}
+.ab[aria-pressed="true"]{transform:translateY(-8px)}
+.ab[aria-pressed="true"] .i{box-shadow:inset 0 0 0 2px var(--sel)}
+.ab[aria-pressed="true"] small{color:var(--ink)}
+/* an icon as the HUD tints it: domain parts (d) and shielded parts (s) are masks filled with the picked domain */
+.ico{position:relative;display:block}
+.ico>*{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.ico .lay{-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
+
+/* ---------- the move: a scene of the ability happening, and the devices pressing on its clock ---------- */
+.stage{position:relative;overflow:hidden;height:150px;margin-top:12px;background:color-mix(in srgb,var(--deep) 72%,transparent);box-shadow:inset 0 0 0 1px var(--line)}
+.stage .lane{position:absolute;left:0;right:0;top:50%;height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent)}
+.shull{position:absolute;top:50%;left:0;width:46px;height:26px;margin-top:-13px;animation:fly 3.2s var(--ease) infinite;will-change:transform}
+.shull svg{width:100%;height:100%;display:block}
+@keyframes fly{0%{transform:translateX(-60px)}100%{transform:translateX(720px)}}
+.shull.low{top:40%}
+.crys{position:absolute;left:52%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border:2px solid var(--ink);transform:rotate(45deg);animation:crys 3.2s var(--ease) infinite}
+@keyframes crys{0%,40%{transform:translateX(0) rotate(45deg) scale(1);opacity:1}52%{transform:translateX(12px) rotate(45deg) scale(1.35);opacity:1}62%,100%{transform:translateX(14px) rotate(45deg) scale(0);opacity:0}}
+.plus{position:absolute;left:54%;top:26%;font-weight:600;font-size:14px;color:var(--sel);opacity:0;animation:plus 3.2s var(--ease) infinite}
+@keyframes plus{0%,52%{opacity:0;transform:translateY(8px)}62%{opacity:1;transform:translateY(0)}86%,100%{opacity:0;transform:translateY(-14px)}}
+.ringwrap{position:absolute;left:58%;top:50%;width:0;height:0}
+.blk{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;background:var(--fs-ruby);opacity:0;animation:blk 3.2s var(--ease) infinite}
+@keyframes blk{0%,16%{transform:rotate(var(--a)) translateX(10px) scale(0);opacity:0}28%,70%{transform:rotate(var(--a)) translateX(34px) scale(1);opacity:1}84%,100%{transform:rotate(var(--a)) translateX(40px) scale(0);opacity:0}}
+.streak{position:absolute;left:30%;top:50%;width:46%;height:2px;margin-top:-1px;background:linear-gradient(90deg,transparent,var(--sel));transform-origin:left;transform:scaleX(0);opacity:0;animation:streak 3.2s var(--ease) infinite}
+@keyframes streak{0%,50%{transform:scaleX(0);opacity:0}60%{transform:scaleX(1);opacity:1}80%,100%{transform:scaleX(1);opacity:0}}
+.prow{position:absolute;left:8%;right:8%;top:62%;display:flex;justify-content:space-between}
+.pr{position:relative;width:22px;height:22px}
+.pr i,.pr b{position:absolute;inset:0;transform:rotate(45deg) scale(.8)}
+.pr i{background:var(--fs-ruby);animation:prA 3.2s var(--ease) infinite;animation-delay:var(--d)}
+.pr b{background:var(--fs-jade);opacity:0;animation:prB 3.2s var(--ease) infinite;animation-delay:var(--d)}
+@keyframes prA{0%,10%{opacity:1}20%,88%{opacity:0}100%{opacity:1}}
+@keyframes prB{0%,10%{opacity:0;transform:rotate(45deg) scale(.8)}18%{opacity:1;transform:rotate(45deg) scale(1.05)}26%,88%{opacity:1;transform:rotate(45deg) scale(.8)}100%{opacity:0}}
+.pr.g i{background:var(--line);animation:none}.pr.g b{display:none}
+.meter{position:absolute;left:8%;right:8%;bottom:12%;height:6px;background:var(--deep);box-shadow:inset 0 0 0 1px var(--line)}
+.meter i{position:absolute;inset:0;background:var(--sel);transform-origin:left;animation:meter 3.2s var(--ease) infinite}
+@keyframes meter{0%{transform:scaleX(.18)}90%{transform:scaleX(1)}100%{transform:scaleX(.18)}}
+.burst{position:absolute;left:50%;top:50%;width:0;height:0}
+.oc{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border:2px solid var(--omni);transform:rotate(45deg);animation:oc 3.2s var(--ease) infinite}
+@keyframes oc{0%,10%{transform:rotate(45deg) scale(1);opacity:1}24%{transform:rotate(45deg) scale(1.3);opacity:1}32%,100%{transform:rotate(45deg) scale(0);opacity:0}}
+.sb{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;background:var(--ink);box-shadow:0 0 0 2px var(--sel);opacity:0;animation:sb 3.2s var(--ease) infinite}
+@keyframes sb{0%,26%{transform:rotate(var(--a)) translateX(0) scale(.2);opacity:0}40%,78%{transform:rotate(var(--a)) translateX(44px) scale(1);opacity:1}92%,100%{transform:rotate(var(--a)) translateX(48px) scale(.6);opacity:0}}
+.dev{display:flex;gap:10px;margin-top:12px}
+.dv{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 8px;background:var(--deep);box-shadow:inset 0 0 0 1px var(--line);min-width:0}
+.dl{font-size:10px;letter-spacing:.16em;color:var(--soft)}
+.dg{height:44px;display:flex;align-items:center;justify-content:center;gap:4px}
+.dg img{width:40px;height:40px;object-fit:contain}
+.dc{font-size:12px;text-align:center;line-height:1.3}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:56px;height:34px;padding:0 10px;font-size:13px;font-weight:600;background:var(--panel);box-shadow:inset 0 -4px 0 var(--line),inset 0 0 0 1px var(--line);white-space:nowrap}
+.ph{display:inline-flex;align-items:center;justify-content:space-between;width:74px;height:40px;padding:0 9px;border:2px solid var(--line);border-radius:9px}
+.th{width:14px;height:18px;border-radius:50%;background:var(--soft)}
+.tbtn2{width:40px;height:40px;border-radius:50%;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line);display:flex;align-items:center;justify-content:center}
+.tbtn2 img{width:28px;height:28px}
+/* the gestures: tap, hold, hold then release, tap on / tap off; a passive ability just flies */
+.g-tap .pp{animation:p-tap 3.2s var(--ease) infinite}
+.g-hold .pp{animation:p-hold 3.2s var(--ease) infinite}
+.g-release .pp{animation:p-rel 3.2s var(--ease) infinite}
+.g-toggle .pp{animation:p-tog 3.2s var(--ease) infinite}
+.g-tap .kp{animation:k-tap 3.2s var(--ease) infinite}
+.g-hold .kp{animation:k-hold 3.2s var(--ease) infinite}
+.g-release .kp{animation:k-rel 3.2s var(--ease) infinite}
+.g-toggle .kp{animation:k-tog 3.2s var(--ease) infinite}
+.g-tap .lf,.g-toggle .lf{animation:l-tap 3.2s var(--ease) infinite}
+.g-hold .lf,.g-release .lf{animation:l-hold 3.2s var(--ease) infinite}
+.dr{animation:drift 3.2s var(--ease) infinite}
+@keyframes p-tap{0%,16%{transform:scale(1)}20%,24%{transform:scale(.84)}30%,100%{transform:scale(1)}}
+@keyframes p-hold{0%,12%{transform:scale(1)}16%,70%{transform:scale(.84)}76%,100%{transform:scale(1)}}
+@keyframes p-rel{0%,12%{transform:scale(1)}16%,56%{transform:scale(.84)}60%{transform:scale(1.12)}68%,100%{transform:scale(1)}}
+@keyframes p-tog{0%,12%{transform:scale(1)}15%,19%{transform:scale(.84)}23%,52%{transform:scale(1)}55%,59%{transform:scale(.84)}63%,100%{transform:scale(1)}}
+@keyframes k-tap{0%,16%{transform:translateY(0)}20%,24%{transform:translateY(3px)}30%,100%{transform:translateY(0)}}
+@keyframes k-hold{0%,12%{transform:translateY(0)}16%,70%{transform:translateY(3px)}76%,100%{transform:translateY(0)}}
+@keyframes k-rel{0%,12%{transform:translateY(0)}16%,56%{transform:translateY(3px)}60%{transform:translateY(-1px)}66%,100%{transform:translateY(0)}}
+@keyframes k-tog{0%,12%{transform:translateY(0)}15%,19%{transform:translateY(3px)}23%,52%{transform:translateY(0)}55%,59%{transform:translateY(3px)}63%,100%{transform:translateY(0)}}
+@keyframes l-tap{0%,14%{transform:translateY(0) scale(1);opacity:1}20%,30%{transform:translateY(-9px) scale(1.2);opacity:.3}38%,100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes l-hold{0%,12%{transform:translateY(0) scale(1);opacity:1}18%,66%{transform:translateY(-9px) scale(1.2);opacity:.3}74%,100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes drift{0%,100%{transform:translate(0,0)}30%{transform:translate(4px,-3px)}65%{transform:translate(-3px,3px)}}
+
+/* ---------- sections ---------- */
+.sec{display:flex;align-items:center;gap:18px;margin:56px 0 8px;flex-wrap:wrap}
+.sec .disp{font-size:30px}
+.sec .rule{flex:1;height:1px;background:var(--line);min-width:40px}
+.row{display:grid;grid-template-columns:minmax(260px,400px) minmax(0,1fr) minmax(220px,380px) minmax(220px,330px);gap:36px;align-items:start;width:100%;text-align:left;border:0;cursor:pointer;padding:26px 0 26px 20px;background:transparent;border-bottom:1px solid var(--hair);transition:background .3s var(--ease),box-shadow .3s var(--ease)}
+.row:hover{background:color-mix(in srgb,var(--panel) 35%,transparent)}
+.row[aria-pressed="true"]{background:color-mix(in srgb,var(--panel) 55%,transparent);box-shadow:inset 3px 0 0 var(--sel)}
+.who{display:grid;grid-template-columns:72px 1fr;gap:16px;align-items:center}
+.who .ic{width:72px;height:72px;padding:6px;background:var(--deep)}
+.who .ic img,.who .ic .ico{width:60px;height:60px;object-fit:contain}
+.row b.n{display:block;font-family:var(--disp);font-size:30px;text-transform:uppercase;line-height:1}
+.row p{margin:0;font-size:16px;line-height:1.55}
+.k{display:block;font-size:11px;letter-spacing:.2em;color:var(--soft);margin-bottom:6px;text-transform:uppercase}
+.dial{display:block;font-size:13px;margin-top:6px}
+.dial i{display:block;font-style:normal;font-size:11px;color:var(--off)}
+.dial.off{color:var(--off);text-decoration:line-through}
+.l5 b{font-family:var(--disp);font-size:22px;text-transform:uppercase}
+.l5 p{font-size:14px;color:var(--soft);margin-top:4px}
+.pill{display:inline-block;margin-top:8px;font-size:11px;letter-spacing:.16em;padding:2px 8px;box-shadow:inset 0 0 0 1px currentColor;color:var(--soft)}
+.pill.good{color:var(--cta)}.pill.warn{color:var(--warn)}
+.seat{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:26px 0 0;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.seat .disp{font-size:26px}
+.seat p{margin:0;color:var(--soft);font-size:14px;flex:1 1 360px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:0;cursor:pointer;height:34px;padding:0 14px;background:transparent;color:var(--soft);box-shadow:inset 0 0 0 1px var(--line);font-size:13px;letter-spacing:.06em;transition:color .2s var(--ease),background .2s var(--ease)}
+.chip:hover{color:var(--ink)}
+.chip[aria-pressed="true"]{color:var(--fs-ground);background:var(--sel);box-shadow:none}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:14px}
+.gm{position:relative;height:210px;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;overflow:hidden;background:var(--panel);transition:transform .35s var(--ease)}
+.gm:hover{transform:translateY(-4px)}
+.gm>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s var(--ease)}
+.gm:hover>img{transform:scale(1.05)}
+.gm::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,var(--fs-ground) 8%,transparent 72%)}
+.gm>*:not(img){position:relative;z-index:1}
+.gm .disp{font-size:26px}
+.gm span{font-size:12px;color:var(--soft)}
+.gm span img{width:13px;height:13px;vertical-align:-2px;margin-right:4px}
+.gm p{margin:4px 0 0;font-size:13px;color:var(--soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fc2{display:grid;grid-template-columns:minmax(220px,420px) minmax(0,1fr);gap:56px;margin-top:20px}
+.flight{display:grid;grid-template-columns:1fr 1fr;gap:26px 30px;align-content:start}
+.flight .disp{font-size:44px}
+.flight small{font-size:13px;color:var(--soft)}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th{font-size:11px;letter-spacing:.2em;color:var(--soft);font-weight:400;text-align:left;padding:10px 12px 10px 0;border-bottom:1px solid var(--hair)}
+.tbl td{padding:12px 12px 12px 0;border-bottom:1px solid var(--hair);vertical-align:middle}
+.tbl td img{width:24px;height:24px;vertical-align:middle;margin-right:4px}
+.notes{margin:14px 0 0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--soft)}
+.fc3{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+.fc2>*{min-width:0}
+.upd{margin:6px 0 0;padding:0;list-style:none}
+.upd li{display:flex;gap:16px;padding:11px 0;border-bottom:1px solid var(--hair);font-size:15px;overflow-wrap:anywhere;min-width:0}
+.upd li span{flex:none;width:110px;color:var(--soft);font-size:13px}
+.upd a{text-decoration:none}.upd a:hover{color:var(--sel)}
+footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
+/* ---------- the fleet table (#fleet) ---------- */
+.ftop{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-top:40px}
+.ftop h1{font-size:96px;margin:0}
+.scroll{overflow-x:auto;margin-top:20px}
+.mx{border-collapse:collapse;width:100%;min-width:1100px}
+.mx th{font-size:11px;letter-spacing:.18em;color:var(--soft);text-align:left;font-weight:400;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.mx th img{width:14px;height:14px;vertical-align:-2px;margin-right:6px}
+.mx td{padding:10px 12px;border-bottom:1px solid var(--hair);vertical-align:middle}
+.mx tbody tr{cursor:pointer;transition:background .2s var(--ease)}
+.mx tbody tr:hover td{background:color-mix(in srgb,var(--panel) 50%,transparent)}
+.cell{display:flex;align-items:center;gap:8px}
+.cell .ic{width:36px;height:36px;padding:3px;background:var(--deep);flex:none}
+.cell .ic img,.cell .ic .ico{width:30px;height:30px;object-fit:contain}
+.cell .nm{font-size:14px;font-weight:500;line-height:1.2}
+.hull{display:flex;gap:10px;align-items:center}
+.hull img{width:72px;height:40px;object-fit:cover}
+.hull .disp{font-size:22px}
+.hull small{display:block;font-size:12px;color:var(--soft)}
+/* ---------- phone ---------- */
+@media (max-width:1100px){
+  .win{height:auto;display:flex;flex-direction:column;gap:22px;background:none;box-shadow:none;overflow:visible}
+  .hullbox{position:relative;height:280px;margin:0 -24px;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,var(--face),var(--fs-ground) 72%)}
+  .hullbox img{left:-4%;top:2%;width:108%}
+  .hud{position:static;width:auto;padding:0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .brief{order:1}.abrow{order:2;position:static;max-width:none;justify-content:space-between;gap:6px}.move{order:3;padding:16px;background:color-mix(in srgb,var(--panel) 50%,transparent);box-shadow:inset 0 0 0 1px var(--line)}.egs{order:4}
+  .brief h1{font-size:60px}
+  .abrow{gap:4px}.ab{width:60px}.ab .i{width:56px;height:56px}.ab .i img,.ab .i .ico{width:40px;height:40px}.ab small{font-size:10px}
+  .row{grid-template-columns:1fr;gap:12px;padding:20px 0 20px 14px}
+  .who{grid-template-columns:56px 1fr}.who .ic{width:56px;height:56px}.who .ic img,.who .ic .ico{width:44px;height:44px}
+  .row b.n{font-size:24px}.row p{font-size:14px}
+  .games{grid-template-columns:1fr 1fr;gap:8px}.gm{height:150px}.gm .disp{font-size:20px}.gm p{display:none}
+  .fc2{grid-template-columns:1fr;gap:28px}
+  .fc3{grid-template-columns:1fr}
+  .switch{order:3;width:100%;margin:0}.cur{flex:1;justify-content:center}
+  .search{width:auto;flex:1}
+  .ftop h1{font-size:60px}
 }
-@media (max-width:640px){.egrid{grid-template-columns:minmax(0,1fr)}.top .stamp{display:none}.dompick button{padding:4px 6px}.dompick button span{display:none}.tmenu{position:fixed;left:12px;right:12px;width:auto;top:70px}}
+@media (max-width:640px){.dc{font-size:11px}.kc{min-width:48px;font-size:11px}.dv{padding:8px 4px}.step span{display:none}.stats{gap:16px}}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
-  .st-lit .knob{transform:scale(.84)}.st-lit.kind-trig .knob{transform:translateY(6px)}.st-lit.kind-key .knob{transform:translateY(3px)}
-  .st-lit .ring{opacity:1;stroke-dashoffset:0}.st-lit .bar{transform:scaleX(1)}.st-lit .finger{opacity:.9}.st-lit .latch{opacity:1}
-  .st-lit.kind-thumb .thumb{transform:translateY(-10px) scale(1.25);opacity:.3}.gest .tl i{transform:scaleX(1)}
-  .ab.flip .inner{transform:none}.ab.flip .face.front{visibility:hidden}.face.back{transform:none}.ab:not(.flip) .face.back{visibility:hidden}
+  .g-tap .pp,.g-hold .pp,.g-release .pp,.g-toggle .pp{transform:scale(.84)}
+  .g-tap .kp,.g-hold .kp,.g-release .kp,.g-toggle .kp{transform:translateY(3px)}
+  .lf{transform:translateY(-9px) scale(1.2);opacity:.3}
 }
 </style>
 
 <div class="sea" aria-hidden="true"><div class="sea-lines"><div class="sea-layer"></div><div class="sea-layer"></div><div class="sea-layer"></div></div></div>
-<header class="top wrap">
-  <a class="logo" href="#fleet"><img id="logo" alt=""><span class="hd">Fleet Codex</span></a>
-  <nav aria-label="Sections"><a href="#fleet" id="navFleet">Fleet</a></nav>
-  <label class="search"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" aria-label="Search the fleet" placeholder="Search vessels, abilities, games"></label>
-  <div class="dompick" id="dompick" role="radiogroup" aria-label="Domain"></div>
-  <span class="mo stamp" id="stamp">Loading&hellip;</span>
-  <div class="themes">
-    <button class="tbtn" id="tbtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="tmenu"><span class="sw" id="tsw"></span><span id="tname">Nocturne</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
-    <div class="tmenu" id="tmenu" role="menu" aria-label="Theme" hidden></div>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#fleet"><img id="logo" alt="">Fleet Codex</a>
+    <a class="navl" href="#fleet" id="navFleet">The fleet</a>
+    <div class="switch" id="switch"></div>
+    <div class="tools">
+      <label class="search"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" aria-label="Search the fleet" placeholder="Search vessels, abilities, games"></label>
+      <div class="themes">
+        <button class="tbtn" id="tbtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="tmenu"><span class="sw" id="tsw"></span><span id="tname">Nocturne</span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5l3 3 3-3"/></svg></button>
+        <div class="tmenu" id="tmenu" role="menu" aria-label="Theme" hidden></div>
+      </div>
+      <div class="dompick" id="dompick" role="radiogroup" aria-label="Domain"></div>
+    </div>
   </div>
 </header>
-<div class="wrap"><nav class="strip" id="strip" aria-label="The fleet"></nav></div>
 <main class="wrap" id="app"><p class="empty">Reading the fleet&hellip;</p></main>
 <footer class="wrap" id="foot"></footer>
 
 <script>
 (function(){
-  /* the themes: the game's three colour sets (theme.js + themes.css, written by the generator from make_themes.py);
-     theme.js already set html[data-fs-theme] before the first paint */
   var TH = window.FC_THEMES || {themes:[], current:function(){ return ""; }, pick:function(){}};
-  var D = null, query = "", pick = null, flipped = {}, dom = "Jade";
-  /* an icon as the HUD tints it: the parts the HUD paints in the pilot's domain (d) and in the domain's shielded
-     signal (s) are masks filled with the picked domain's colour; fixed-colour parts (f) keep theirs */
+  var D = null, query = "", pick = null, filt = "All", dom = "Jade", menuOpen = false;
+  var app = document.getElementById("app"), q = document.getElementById("q"), sw = document.getElementById("switch");
+  var L5 = {wired:["good","WIRED"], open:["","OPEN"], off:["warn","SWITCHED OFF"], "label-only":["warn","NAMED, NOT GATED"], "gate-only":["warn","GATED, NOT NAMED"]};
+  var HULL_SVG = '<svg viewBox="0 0 46 26" aria-hidden="true"><path d="M2 13 L16 4 L44 13 L16 22 Z" fill="currentColor"/><path d="M2 13 L16 9 L16 17 Z" fill="var(--sel)"/></svg>';
+  var CARET = '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4.5l3 3 3-3"/></svg>';
+  var ARROW_L = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3L5 8l5 5"/></svg>';
+  var ARROW_R = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3l5 5-5 5"/></svg>';
+
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function num(v){ return v == null ? "&ndash;" : String(Math.round(v * 100) / 100); }
+  function file(p){ return (p || "").split("/").pop(); }
+  function cap(s){ s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
+  var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function day(d){ var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ""); return m ? (+m[3]) + " " + MONTHS[+m[2] - 1] + " " + m[1] : d; }
+  function img(src, alt, cls){ return src ? '<img src="' + esc(src) + '" alt="' + esc(alt || "") + '"' + (cls ? ' class="' + cls + '"' : '') + ' loading="lazy">' : ''; }
   function ico(src, layers, alt, tint){
     if(!layers) return img(src, alt);
     var fill = tint === "omni" ? "var(--omni)" : "var(--dom)";
@@ -434,6 +327,38 @@ body{background:var(--fs-ground)}
     return '<span class="ico" role="img" aria-label="' + esc(alt || "") + '">' + lay(layers.d, fill) + lay(layers.s, "var(--dom-sh)") + (layers.f ? '<img src="' + esc(layers.f) + '" alt="">' : '') + '</span>';
   }
   function vimg(v){ return v.domainImages && v.domainImages[dom] || v.image; }
+  function isCrew(v){ return v.crew && v.crew.seats > 1; }
+  function crewName(v){ return v.crew && v.crew.names && v.crew.names.length ? v.crew.names.join(" & ") : v.name; }
+  function listed(){ var vs = D.vessels.filter(function(v){ return v.status.hasMap; }); vs.sort(function(a, b){ return (isCrew(a) - isCrew(b)) || a.id - b.id; }); return vs; }
+  function current(){ var k = decodeURIComponent(location.hash.slice(1)); return D.vessels.filter(function(v){ return v.key === k; })[0] || null; }
+  function matches(v){
+    if(!query) return true;
+    var hay = [v.name, crewName(v), v.key, v.description].concat(
+      Object.keys(v.elements).map(function(n){ var e = v.elements[n]; return e.ability + " " + e.upgrade.label; }),
+      v.cards.map(function(c){ return c.name; }), v.omni ? [v.omni.label] : []).join(" ").toLowerCase();
+    return query.split(/\s+/).every(function(w){ return hay.indexOf(w) >= 0; });
+  }
+
+  /* ---------- themes and domains ---------- */
+  function swatch(t){ return (t.swatch || []).map(function(p){ return '<i style="background:' + p[0] + '"></i>'; }).join(""); }
+  function applyTheme(id){
+    if(id) TH.pick(id);
+    var cur = TH.current(), t = TH.themes.filter(function(x){ return x.id === cur; })[0] || TH.themes[0];
+    if(!t) return;
+    document.getElementById("tname").textContent = t.name;
+    document.getElementById("tsw").innerHTML = swatch(t);
+    var m = document.getElementById("tmenu");
+    m.innerHTML = '<p class="lab" style="margin:6px 10px 8px;letter-spacing:.12em">A colour set changes how you see the HyperSea</p>' + TH.themes.map(function(x){
+      return '<button class="titem" type="button" role="menuitemradio" aria-checked="' + (x.id === t.id) + '" data-t="' + x.id + '"><span class="sw">' + swatch(x) + '</span><span><b>' + esc(x.name) + '</b><span class="d">' + esc(x.line) + '</span></span></button>'; }).join("");
+    Array.prototype.forEach.call(m.querySelectorAll(".titem"), function(b){ b.addEventListener("click", function(){ applyTheme(b.dataset.t); openTheme(false); document.getElementById("tbtn").focus(); }); });
+  }
+  function openTheme(open){
+    var m = document.getElementById("tmenu"), b = document.getElementById("tbtn");
+    m.hidden = !open; b.setAttribute("aria-expanded", String(open));
+    if(open){ var c = m.querySelector('[aria-checked="true"]'); if(c) c.focus(); }
+  }
+  document.getElementById("tbtn").addEventListener("click", function(e){ e.stopPropagation(); openTheme(document.getElementById("tmenu").hidden); });
+  applyTheme(null);
   function applyDomain(name){
     var P = D && D.palette; if(!P) return;
     if(!P.domains[name]) name = P["default"];
@@ -443,81 +368,11 @@ body{background:var(--fs-ground)}
     try { localStorage.setItem("fleetCodexDomain", name); } catch(e){}
     var box = document.getElementById("dompick");
     box.innerHTML = Object.keys(P.domains).map(function(k){
-      return '<button type="button" role="radio" aria-checked="' + (k === name) + '" data-dom="' + k + '" title="' + k + ': ' + P.domains[k].signal + '" style="--c:' + P.domains[k].signal + '"><i></i><span>' + k + '</span></button>'; }).join("");
+      return '<button type="button" role="radio" aria-checked="' + (k === name) + '" aria-label="' + k + ' domain" title="' + k + '" data-dom="' + k + '" style="--c:' + P.domains[k].signal + '"><i></i></button>'; }).join("");
     Array.prototype.forEach.call(box.querySelectorAll("[data-dom]"), function(b){ b.addEventListener("click", function(){ applyDomain(b.dataset.dom); route(true); }); });
   }
-  var EL_WORD = {Charge:"threat", Mass:"size", Space:"reach", Time:"rate"};
-  var L5 = {wired:["good","L5 wired"], open:["","L5 open"], off:["warn","L5 switched off"], "label-only":["warn","L5 named, not gated"], "gate-only":["warn","L5 gated, not named"]};
-  var app = document.getElementById("app"), strip = document.getElementById("strip"), q = document.getElementById("q");
-  var FLIP_ICON = '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>';
 
-  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
-  function num(v){ return v == null ? "&ndash;" : String(Math.round(v * 100) / 100); }
-  function gh(p){ return D.github + p.split("/").map(encodeURIComponent).join("/"); }
-  function commit(sha){ return D.github.replace(/blob\/[^\/]+\/$/, "commit/") + sha; }
-  function file(p){ return (p || "").split("/").pop(); }
-  function img(src, alt, cls){ return src ? '<img src="' + esc(src) + '" alt="' + esc(alt || "") + '"' + (cls ? ' class="' + cls + '"' : '') + ' loading="lazy">' : ''; }
-  function pill(st){ var s = L5[st] || L5.open; return '<span class="pill ' + s[0] + '">' + s[1] + '</span>'; }
-  function crewName(v){ return v.crew && v.crew.names && v.crew.names.length ? v.crew.names.join(" and ") : v.name; }
-  function isCrew(v){ return v.crew && v.crew.seats > 1; }
-  function current(){ var k = decodeURIComponent(location.hash.slice(1)); return D.vessels.filter(function(v){ return v.key === k; })[0] || null; }
-  function matches(v){
-    if(!query) return true;
-    var hay = [v.name, crewName(v), v.key, v.description].concat(
-      Object.keys(v.elements).map(function(n){ var e = v.elements[n]; return e.ability + " " + e.upgrade.label; }),
-      v.cards.map(function(c){ return c.name; }), v.omni ? [v.omni.label].concat(v.omni.effects) : [],
-      v.seats ? v.seats.list.map(function(s){ return s.name + " " + s.abilities.map(function(a){ return a.name; }).join(" "); }) : []).join(" ").toLowerCase();
-    return query.split(/\s+/).every(function(w){ return hay.indexOf(w) >= 0; });
-  }
-
-  /* ---------- themes ---------- */
-  /* a colour set's swatch: each domain's glowing rim over its deep face, Jade Ruby Gold Blue */
-  function swatch(t){ return (t.swatch || []).map(function(p){ return '<i><b style="background:' + p[0] + '"></b><s style="background:' + p[1] + '"></s></i>'; }).join(""); }
-  function fitNames(){   /* a name whose longest word is wider than its card steps down until it fits (the theme's display face sets the width) */
-    Array.prototype.forEach.call(document.querySelectorAll(".name"), function(n){
-      n.style.removeProperty("font-size");
-      var fs = parseFloat(getComputedStyle(n).fontSize), w = n.clientWidth;
-      if(!w) return;
-      while(n.scrollWidth > w + 1 && fs > 11){ fs -= 1; n.style.fontSize = fs + "px"; }
-    });
-  }
-  var fitTimer;
-  window.addEventListener("resize", function(){ clearTimeout(fitTimer); fitTimer = setTimeout(fitNames, 120); });
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ fitNames(); });
-  function applyTheme(id){
-    if(id) TH.pick(id);
-    var cur = TH.current(), t = TH.themes.filter(function(x){ return x.id === cur; })[0] || TH.themes[0];
-    if(!t) return;
-    document.getElementById("tname").textContent = t.name;
-    document.getElementById("tsw").innerHTML = swatch(t);
-    drawThemeMenu(t.id);
-    fitNames();
-  }
-  function drawThemeMenu(active){
-    var m = document.getElementById("tmenu");
-    m.innerHTML = '<p class="mo" style="margin:6px 10px 8px">A colour set changes how you see the HyperSea: the same three the game offers.</p>' + TH.themes.map(function(t){
-      return '<button class="titem" type="button" role="menuitemradio" aria-checked="' + (t.id === active) + '" data-t="' + t.id + '"><span class="sw">' + swatch(t) + '</span><span><b>' + esc(t.name) + (t.id === TH["default"] ? ' <span class="mo">&middot; the game&rsquo;s</span>' : '') + '</b><span class="d">' + esc(t.line) + '</span><span class="p">' + esc((t.pigments || []).join(" / ")) + '</span></span></button>';
-    }).join("");
-    Array.prototype.forEach.call(m.querySelectorAll(".titem"), function(b){ b.addEventListener("click", function(){ applyTheme(b.dataset.t); openMenu(false); document.getElementById("tbtn").focus(); }); });
-  }
-  function openMenu(open){
-    var m = document.getElementById("tmenu"), b = document.getElementById("tbtn");
-    m.hidden = !open; b.setAttribute("aria-expanded", String(open));
-    if(open){ var c = m.querySelector('[aria-checked="true"]') || m.querySelector(".titem"); if(c) c.focus(); }
-  }
-  document.getElementById("tbtn").addEventListener("click", function(e){ e.stopPropagation(); openMenu(document.getElementById("tmenu").hidden); });
-  document.addEventListener("click", function(e){ if(!e.target.closest(".themes")) openMenu(false); });
-  document.addEventListener("keydown", function(e){
-    if(e.key === "Escape" && !document.getElementById("tmenu").hidden){ openMenu(false); document.getElementById("tbtn").focus(); }
-    if((e.key === "ArrowDown" || e.key === "ArrowUp") && e.target.classList && e.target.classList.contains("titem")){
-      e.preventDefault(); var items = Array.prototype.slice.call(document.querySelectorAll(".titem")), i = items.indexOf(e.target);
-      items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length].focus();
-    }
-  });
-  applyTheme(null);
-  /* The sea lines: the menu's SeaLines shader as one mask tile per layer, one loop wide (the analytics console's sea(),
-     Tools/Analytics/console/console.js). Line i rests at i * spacing, lives in layer i mod 3, and is two sines whose
-     periods divide the loop. */
+  /* ---------- the sea lines (the analytics console's sea(), the menu's SeaLines maths) ---------- */
   (function sea(){
     var layers = document.querySelectorAll(".sea-layer");
     if(!TH.sea || layers.length !== 3) return;
@@ -539,395 +394,220 @@ body{background:var(--fs-ground)}
     });
   })();
 
-  /* ---------- the fleet strip ---------- */
-  function drawStrip(){
-    var cur = current();
-    var vs = D.vessels.filter(function(v){ return v.status.hasMap && matches(v); });
-    vs.sort(function(a, b){ return (isCrew(a) - isCrew(b)) || a.id - b.id; });
-    strip.innerHTML = '<a class="poster all" href="#fleet"' + (cur ? '' : ' aria-current="page"') + '><span class="ph"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="7" height="7"/><rect x="14" y="4" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>The whole fleet</a>' +
-      vs.map(function(v){
-        return '<a class="poster' + (isCrew(v) ? ' crew' : '') + '" href="#' + esc(v.key) + '"' + (cur && cur.key === v.key ? ' aria-current="page"' : '') + '><span class="ph">' + img(vimg(v), "") +
-          (isCrew(v) ? '<span class="seats">' + v.crew.seats + ' SEATS</span>' : '') + '</span>' + esc(crewName(v)) + '</a>';
-      }).join("") + (vs.length ? '' : '<span class="empty">No vessel matches.</span>');
-    var sel = strip.querySelector('[aria-current="page"]');
-    if(sel && sel.scrollIntoView) try { sel.scrollIntoView({block:"nearest", inline:"center"}); } catch(e){}
+  /* ---------- the switcher: previous, the vessel (opens the whole fleet), next ---------- */
+  function drawSwitch(){
+    var vs = listed(), cur = current();
+    if(!cur){ sw.innerHTML = ''; return; }
+    var i = vs.indexOf(cur), prev = vs[(i + vs.length - 1) % vs.length], next = vs[(i + 1) % vs.length];
+    var shown = vs.filter(matches);
+    function entry(v){ return '<a href="#' + esc(v.key) + '"' + (v === cur ? ' aria-current="page"' : '') + '>' + img(vimg(v), "") + '<span>' + esc(crewName(v)) + '</span></a>'; }
+    sw.innerHTML = '<a class="step" href="#' + esc(prev.key) + '" aria-label="Previous vessel: ' + esc(crewName(prev)) + '">' + ARROW_L + '<span>' + esc(crewName(prev)) + '</span></a>' +
+      '<button class="cur" type="button" id="curbtn" aria-haspopup="true" aria-expanded="' + menuOpen + '">' + img(vimg(cur), "") + '<span class="disp">' + esc(crewName(cur)) + '</span><small>' + (i + 1) + ' of ' + vs.length + '</small>' + CARET + '</button>' +
+      '<a class="step" href="#' + esc(next.key) + '" aria-label="Next vessel: ' + esc(crewName(next)) + '"><span>' + esc(crewName(next)) + '</span>' + ARROW_R + '</a>' +
+      (menuOpen ? '<div class="menu" role="menu" aria-label="The fleet"><p class="lab" style="margin:6px">Solo vessels</p><div class="grid">' + shown.filter(function(v){ return !isCrew(v); }).map(entry).join("") +
+        '</div><p class="lab" style="margin:14px 6px 6px">Crews</p><div class="grid">' + shown.filter(isCrew).map(entry).join("") + '</div>' +
+        (shown.length ? '' : '<p class="empty" style="margin:6px">No vessel matches.</p>') + '<p style="margin:12px 6px 4px"><a class="navl" href="#fleet" style="display:inline;padding:0">Every vessel in one table</a></p></div>' : '');
+    document.getElementById("curbtn").addEventListener("click", function(e){ e.stopPropagation(); menuOpen = !menuOpen; drawSwitch(); });
   }
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".themes")) openTheme(false);
+    if(menuOpen && !e.target.closest(".switch")){ menuOpen = false; drawSwitch(); }
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key !== "Escape") return;
+    if(!document.getElementById("tmenu").hidden){ openTheme(false); document.getElementById("tbtn").focus(); }
+    if(menuOpen){ menuOpen = false; drawSwitch(); var b = document.getElementById("curbtn"); if(b) b.focus(); }
+  });
 
-  /* ---------- the kit ---------- */
-  /* one picked thing: "el:<Element>", "omni", or "doc:<seat>:<n>" for a seat ability the map does not carry */
-  function resolve(v, key){
-    if(!key) return null;
-    if(key === "omni") return v.omni ? {kind:"omni", key:key, e:v.omni} : null;
-    var m = key.match(/^el:(\w+)$/);
-    if(m) return v.elements[m[1]] ? {kind:"element", key:key, el:m[1], e:v.elements[m[1]]} : null;
-    m = key.match(/^doc:(\d+):(\d+)$/);
-    if(m && v.seats){ var s = v.seats.list[+m[1]], a = s && s.abilities[+m[2]]; if(a) return {kind:"doc", key:key, el:a.element, a:a, seat:s}; }
-    return null;
-  }
-  function firstKey(v){
-    if(v.seats){ for(var i = 0; i < v.seats.list.length; i++){ var s = v.seats.list[i]; for(var j = 0; j < s.abilities.length; j++) return s.abilities[j].linked ? "el:" + s.abilities[j].element : "doc:" + i + ":" + j; } }
-    for(var k = 0; k < D.elements.length; k++) if(v.elements[D.elements[k]]) return "el:" + D.elements[k];
-    return v.omni ? "omni" : null;
-  }
-  function fit(name){   /* shrink a name whose longest word would not fit the card at the theme's display size */
-    var w = String(name || "").split(/\s+/).reduce(function(m, x){ return Math.max(m, x.length); }, 0);
-    return w > 8 ? ' style="--fit:' + (8 / w).toFixed(2) + '"' : '';
-  }
-  function howLine(v, el, w){
-    var r = v.controls ? v.controls.rows.filter(function(x){ return x.element === el; })[0] : null;
-    var btn = r && r.pad && r.pad !== "no button" ? padGlyph(r.pad) : "";
-    var t = w.trigger || (btn ? "" : "Passive");
-    if(!btn && !t) return "";
-    return '<span class="how">' + (btn ? '<span class="g">' + btn + '</span>' : '') + (t ? '<span>' + esc(t) + '</span>' : '') + '</span>';
-  }
-  function elementCard(v, el, delay, nameOverride){
-    var e = v.elements[el], key = "el:" + el, u = e.upgrade, isSel = pick === key, isFlip = !!flipped[v.key + key];
-    var name = e.open ? "Open slot" : e.ability;
-    var live = e.scaling.filter(function(s){ return s.on; });
-    var scales = live.length ? live[0].field + " &times;" + num(live[0].min) + " &ndash; &times;" + num(live[0].max) + (live.length > 1 ? " +" + (live.length - 1) : "") : "scales no number";
-    var icon = e.icon || e.shape, l5icon = u.icon || icon, w = e.words || {}, tint = w.tint || {};
-    return '<article class="ab' + (isSel ? ' sel' : '') + (isFlip ? ' flip' : '') + '" data-k="' + key + '" style="--d:' + delay + 'ms"><div class="inner">' +
-      '<div class="face front" aria-hidden="' + isFlip + '">' +
-        '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="' + key + '"' + (isFlip ? ' tabindex="-1"' : '') + '>' +
-          '<span class="el"><span class="chip">' + img(e.shape, "") + '</span>' + el.toUpperCase() + '</span>' +
-          '<span class="icontile' + (e.icon ? '' : ' none') + '">' + ico(icon, e.icon ? e.layers : null, name, tint.rest) + '</span>' +
-          '<span class="name"' + fit(nameOverride || name) + '>' + esc(nameOverride || name) + '</span>' + howLine(v, el, w) +
-          '<span class="sum">' + esc(w.does || e.description) + '</span>' +
-          (w.scales ? '<span class="scl"><span class="chip">' + img(e.shape, "") + '</span><span>' + esc(w.scales) + '</span></span>' : '<span class="mo">' + scales + '</span>') +
-          '<span class="grow"></span>' +
-          '<span class="l5t"><b>L5</b>' + (u.icon ? ico(u.icon, u.layers, "", tint.l5) : '') + '<span>' + esc(u.label || (u.status === "open" ? "not designed yet" : "unnamed")) + '</span></span></button>' +
-        '<span class="foot">' + pill(u.status) + '<span class="sp"></span><button class="l5" type="button" data-flip="' + key + '" aria-label="Show the level 5 upgrade of ' + esc(name) + '"' + (isFlip ? ' tabindex="-1"' : '') + '>' + FLIP_ICON + 'L5</button></span>' +
-      '</div>' +
-      '<div class="face back" aria-hidden="' + !isFlip + '">' +
-        '<span class="el"><span class="chip">' + img(e.shape, "") + '</span>' + el.toUpperCase() + ' &middot; LEVEL 5</span>' +
-        '<span class="icontile' + (l5icon === e.shape ? ' none' : '') + '">' + img(D.ui.bloom, "", "bloom") + ico(l5icon, u.icon ? u.layers : (e.icon ? e.layers : null), (u.label || name) + " at level 5", tint.l5) + '</span>' +
-        '<span class="lvl">L5</span>' +
-        '<span class="ul">' + esc(u.label || (u.status === "open" ? "Not designed yet" : "Unnamed upgrade")) + '</span>' +
-        '<span class="sum" style="-webkit-line-clamp:6">' + esc(u.description || (u.status === "open" ? "No level-5 upgrade is designed for " + name + ". It unlocks at level " + u.unlockLevel + " and relocks below " + u.relockBelow + "." : "")) + '</span>' +
-        '<span class="grow"></span>' + u.gates.slice(0, 1).map(function(g){ return '<span class="gate">gated at ' + esc(g.site) + (g.offBecause ? ' &middot; off: ' + esc(g.offBecause) : '') + '</span>'; }).join("") +
-        '<span class="foot">' + pill(u.status) + '<span class="sp"></span><button class="l5" type="button" data-flip="' + key + '" aria-label="Back to ' + esc(name) + '"' + (isFlip ? '' : ' tabindex="-1"') + '>' + FLIP_ICON + 'Back</button></span>' +
-      '</div></div></article>';
-  }
-  function omniCard(v, delay){
-    var o = v.omni, key = "omni", isSel = pick === key;
-    var ow = o.words || {};
-    var name = ow.ability || (o.label ? o.label.charAt(0).toUpperCase() + o.label.slice(1) : (o.effects[0] || "Omni crystal"));
-    var sum = ow.does || (o.label ? "What this hull does when it flies into an omni crystal." : (o.effects.length ? "Its crystal effects: " + o.effects.join(", ") + "." : "No omni crystal effect of its own."));
-    return '<article class="ab' + (isSel ? ' sel' : '') + '" data-k="omni" style="--d:' + delay + 'ms"><div class="inner"><div class="face front">' +
-      '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="omni">' +
-        '<span class="el"><span class="chip">' + img(o.mark, "") + '</span>OMNI CRYSTAL</span>' +
-        '<span class="icontile' + (o.icon ? '' : ' none') + '">' + (o.icon ? ico(o.icon, o.layers, name) : img(o.mark, name)) + '</span>' +
-        '<span class="name"' + fit(name) + '>' + esc(name) + '</span><span class="how"><span>' + esc(ow.trigger || "Fly into an omni crystal") + '</span></span><span class="sum">' + esc(sum) + '</span><span class="grow"></span></button>' +
-      '<span class="foot"><span class="pill">no level 5</span></span></div></div></article>';
-  }
-  function docCard(v, si, ai, a, delay){
-    var key = "doc:" + si + ":" + ai, isSel = pick === key, shape = D.ui["shape/" + a.element];
-    return '<article class="ab doc' + (isSel ? ' sel' : '') + '" data-k="' + key + '" style="--d:' + delay + 'ms"><div class="inner"><div class="face front">' +
-      '<button class="pickbtn" type="button" aria-pressed="' + isSel + '" data-pick="' + key + '">' +
-        '<span class="el"><span class="chip">' + img(shape, "") + '</span>' + esc(a.element.toUpperCase()) + '</span>' +
-        '<span class="name"' + (fit(a.name) ? fit(a.name).replace('"--fit', '"margin-top:10px;--fit') : ' style="margin-top:10px"') + '>' + esc(a.name) + '</span><span class="sum">' + esc(a.text) + '</span></button>' +
-      '<span class="foot"><span class="pill">seat control</span></span></div></div></article>';
-  }
-  function kitTile(v){
-    var d = 0;
+  /* ---------- what the page can pick: "el:<Element>", "omni", "doc:<seat>:<n>" ---------- */
+  function picks(v){
+    var out = [];
     if(v.seats){
-      return '<div class="kit crew span12" role="group" aria-label="The crew">' + v.seats.list.map(function(s, si){
-        return '<section class="seat" style="--d:' + (si * 90) + 'ms;--n:' + s.abilities.length + '" aria-label="' + esc(s.name) + '"><div class="seat-head"><span class="hd">' + esc(s.name) + '</span><span class="mo">' + (s.seats > 1 ? s.seats + ' SEATS' : 'SEAT ' + (si + 1)) + '</span><p>' + esc(s.role) + '</p></div><div class="seat-kit">' +
-          s.abilities.map(function(a, ai){ d += 50; return a.linked ? elementCard(v, a.element, d, a.name) : docCard(v, si, ai, a, d); }).join("") + '</div></section>';
-      }).join("") + (v.omni ? '<section class="seat" style="--d:' + (v.seats.list.length * 90) + 'ms" aria-label="The hull"><div class="seat-head"><span class="hd">The hull</span><span class="mo">EVERY SEAT</span><p>Shared by the whole crew.</p></div><div class="hullrow">' + omniCard(v, d + 50) + '</div></section>' : '') +
-        '<p class="mo" style="margin:2px 4px">Seats read from <a href="' + esc(v.seats.url) + '">' + esc(file(v.seats.source)) + '</a> through <code>Docs/FleetCodex/seats.json</code>.</p></div>';
+      v.seats.list.forEach(function(s, si){ s.abilities.forEach(function(a, ai){
+        if(a.linked && v.elements[a.element]) out.push({key:"el:" + a.element, el:a.element, e:v.elements[a.element], name:a.name, seat:si});
+        else out.push({key:"doc:" + si + ":" + ai, el:a.element, doc:a, name:a.name, seat:si});
+      }); });
+    } else {
+      D.elements.forEach(function(el){ var e = v.elements[el]; if(e) out.push({key:"el:" + el, el:el, e:e, name:e.open ? "Open slot" : e.ability}); });
     }
-    var cards = D.elements.filter(function(n){ return v.elements[n]; }).map(function(n, i){ return elementCard(v, n, i * 60); });
-    if(v.omni) cards.push(omniCard(v, cards.length * 60));
-    return '<div class="kit span7" role="group" aria-label="The kit">' + (cards.length ? cards.join("") : '<p class="empty">No ability map for this vessel.</p>') + '</div>';
+    if(v.omni) out.push({key:"omni", el:"Omni", omni:v.omni, name:(v.omni.words && v.omni.words.ability) || v.omni.label || "Omni crystal"});
+    return out;
   }
-
-  /* ---------- controls ---------- */
-  var PADMAP = {};
-  function padGlyph(pad){
-    if(pad === "LT+RT") return img(PADMAP["LT"], "LT") + img(PADMAP["RT"], "RT");
-    return PADMAP[pad] ? img(PADMAP[pad], pad) : '<span class="cap">' + esc(pad) + '</span>';
-  }
-  /* The gesture a control plays, from the ability's own trigger words (abilities.json, each entry citing its source):
-     "Hold, release to fire" holds then lets go, "Tap to toggle" latches, "Hold" holds, "Tap" taps. Steer sweeps a stick. */
-  var GWORD = {tap:"Tap", hold:"Hold", release:"Hold, then release", toggle:"Tap on, tap off", stick:"Sweep the stick", passive:"No press"};
-  function gesture(v, row){
-    if(!row) return "passive";
-    if(row.action === "Steer") return "stick";
-    var e = row.element && v.elements[row.element], t = String((e && e.words && e.words.trigger) || "").toLowerCase();
+  function rowOf(v, el){ return v.controls ? v.controls.rows.filter(function(r){ return r.element === el; })[0] : null; }
+  function pressable(s){ return s && s !== "no button" && s !== "passive"; }
+  /* the gesture, from the ability's own trigger words (abilities.json, each entry citing its source) */
+  function gesture(p, r){
+    var w = p.e && p.e.words || p.omni && p.omni.words || {};
+    var t = String(w.trigger || "").toLowerCase();
+    if(!r || !(pressable(r.pad) || pressable(r.pc) || pressable(r.touch))) return "passive";
     if(/release|throw|flick|launch/.test(t)) return "release";
-    if(/toggle|switch mode|cycle|tap to stop|latch/.test(t) || /latches|toggle/.test(row.touch || "")) return "toggle";
+    if(/toggle|switch mode|cycle|tap to stop|latch/.test(t) || /latches|toggle/.test(r.touch || "")) return "toggle";
     if(/hold|squeeze|pull|deeper/.test(t)) return "hold";
-    if(/tap|press/.test(t)) return "tap";
-    if(/passive|always|pick up|switched off/.test(t)) return "passive";
     return "tap";
   }
-  function pressable(s){ return s && s !== "no button" && s !== "passive"; }
-  /* one control drawn at (x, y): kind is btn, stick, trig, bump, key or tb (a phone button); st is lit, on or off */
-  function part(kind, x, y, st, g, label, extra){
-    var o = '<g class="pp kind-' + kind + ' st-' + st + (st === "lit" ? ' g-' + g : '') + (extra && extra.cls ? ' ' + extra.cls : '') + '" transform="translate(' + x + ' ' + y + ')"' + (extra && extra.pick ? ' data-pick="' + extra.pick + '" role="button" tabindex="-1"' : '') + '>';
-    if(kind === "btn") o += '<circle class="rip" r="12"/><circle class="ring" r="17" pathLength="100" transform="rotate(-90)"/><circle class="latch" cx="13" cy="-13" r="3"/><g class="knob"><circle class="cap" r="12"/><text>' + esc(label) + '</text></g>';
-    else if(kind === "stick") o += '<circle class="well" r="22"/><circle class="rip" r="22"/><circle class="ring" r="27" pathLength="100" transform="rotate(-90)"/><g class="knob"><circle class="cap" r="14"/><circle r="8" fill="none" stroke="currentColor" stroke-opacity=".25"/></g><text y="36" style="font-size:9px">' + esc(label) + '</text>';
-    else if(kind === "trig") o += '<rect class="well" x="-25" y="-13" width="50" height="26"/><rect class="bar" x="-25" y="11" width="50" height="4"/><circle class="latch" cx="29" cy="-12" r="3"/><g class="knob"><rect class="cap" x="-23" y="-11" width="46" height="20"/><text y="-1">' + esc(label) + '</text></g><rect class="rip" x="-25" y="-13" width="50" height="26"/>';
-    else if(kind === "bump") o += '<rect class="rip" x="-28" y="-6" width="56" height="12"/><g class="knob"><rect class="cap" x="-28" y="-6" width="56" height="12"/><text style="font-size:9px">' + esc(label) + '</text></g>';
-    else if(kind === "key"){
-      var w = extra.w;
-      o += '<rect class="well" x="0" y="0" width="' + w + '" height="20"/><rect class="rip" x="0" y="0" width="' + w + '" height="20"/><g class="knob"><rect class="cap" x="1" y="0" width="' + (w - 2) + '" height="17"/><text x="' + (w / 2) + '" y="8.5" style="font-size:' + (label.length > 3 ? 7 : 9) + 'px">' + esc(label) + '</text></g><rect class="bar" x="1" y="18" width="' + (w - 2) + '" height="2"/><circle class="latch" cx="' + (w - 3) + '" cy="3" r="2"/>';
-    }
-    else if(kind === "tb") o += '<circle class="rip" r="15"/><circle class="ring" r="20" pathLength="100" transform="rotate(-90)"/><circle class="latch" cx="15" cy="-15" r="3"/><g class="knob"><circle class="cap" r="15"/>' + (extra.art ? '<image href="' + esc(extra.art) + '" x="-10" y="-10" width="20" height="20"/>' : '<text style="font-size:8px">' + esc(label) + '</text>') + '</g><circle class="finger thumb" r="11" cx="0" cy="0"/>';
-    return o + '</g>';
+  var GWORD = {tap:"Tap", hold:"Hold", release:"Hold, then release", toggle:"Tap on, tap off", passive:"No press: fly"};
+
+  /* a scene of the ability happening, by its element, on the 3.2 s clock its devices press on */
+  function scene(el){
+    var hull = '<span class="shull' + (el === "Space" || el === "Time" ? ' low' : '') + '" style="color:var(--ink)">' + HULL_SVG + '</span>', body = '', n;
+    if(el === "Charge") body = '<span class="crys"></span><span class="plus">+ petals</span>' + hull;
+    else if(el === "Mass"){ body = '<span class="ringwrap">'; for(n = 0; n < 360; n += 45) body += '<i class="blk" style="--a:' + n + 'deg"></i>'; body += '</span><span class="streak"></span>' + hull; }
+    else if(el === "Space"){ body = '<span class="prow">'; for(n = 0; n < 6; n++) body += '<span class="pr" style="--d:' + (0.42 * n + 0.15).toFixed(2) + 's"><i></i><b></b></span>'; body += '</span>' + hull; }
+    else if(el === "Time"){ body = '<span class="prow">'; for(n = 0; n < 6; n++) body += '<span class="pr g"><i></i></span>'; body += '</span>' + hull + '<span class="meter"><i></i></span>'; }
+    else { body = '<span class="burst"><span class="oc"></span>'; for(n = 0; n < 360; n += 45) body += '<i class="sb" style="--a:' + n + 'deg"></i>'; body += '</span>'; }
+    return '<div class="stage" aria-hidden="true"><span class="lane"></span>' + body + '</div>';
   }
-  function stateOf(rs, litRow){ return !rs.length ? "off" : rs.indexOf(litRow) >= 0 ? "lit" : "on"; }
-  function pickOf(rs){ var r = rs.filter(function(x){ return x.element; })[0]; return r ? "el:" + r.element : null; }
-  /* the controller: each pad label sits on its control; the picked ability's control plays its gesture */
-  function padSvg(v, rows, litRow, g){
-    var at = {};
-    rows.forEach(function(r){
-      var ps = r.pad === "LT+RT" ? ["LT","RT"] : r.pad === "Both sticks" ? ["Left stick","Right stick"] : [r.pad];
-      ps.forEach(function(p){ (at[p] = at[p] || []).push(r); });
-    });
-    function P(kind, name, x, y, label, cls){
-      var rs = at[name] || [], st = stateOf(rs, litRow);
-      return part(kind, x, y, st, st === "lit" ? (rs.indexOf(litRow) >= 0 && litRow.action === "Steer" ? "stick" : g) : g, label, {pick:pickOf(rs), cls:(cls || "") + (rs.some(function(r){ return r.action === "Steer"; }) ? " steer" : "")});
-    }
-    return '<svg class="draw" viewBox="0 0 340 236" role="img" aria-label="Controller">' +
-      P("trig", "LT", 82, 20, "LT") + P("trig", "RT", 258, 20, "RT") + P("bump", "LB", 82, 48, "LB") + P("bump", "RB", 258, 48, "RB") +
-      '<path class="body" d="M86 58 C58 58 40 74 30 112 C18 160 14 206 40 220 C62 231 82 207 100 180 C110 166 122 160 138 160 L202 160 C218 160 230 166 240 180 C258 207 278 231 300 220 C326 206 322 160 310 112 C300 74 282 58 254 58 Z"/>' +
-      '<path class="body2" d="M104 66 L236 66"/>' +
-      '<rect class="well" x="152" y="92" width="12" height="8"/><rect class="well" x="176" y="92" width="12" height="8"/>' +
-      '<path class="well" d="M127 125 h10 v-10 h10 v10 h10 v10 h-10 v10 h-10 v-10 h-10 z"/>' +
-      P("stick", "Left stick", 94, 106, "L") + P("stick", "Right stick", 212, 142, "R") +
-      P("btn", "Y", 254, 86, "Y") + P("btn", "X", 232, 108, "X") + P("btn", "B", 276, 108, "B") + P("btn", "A", 254, 130, "A") +
-      '</svg>';
+  function thumbs(touch){
+    var t = String(touch || "").toLowerCase(), l = /left|both|either/.test(t), r = /right|both/.test(t);
+    return '<span class="ph"><span class="th' + (l ? ' lf' : '') + '"></span><span class="th' + (r ? ' lf' : '') + '"></span></span>';
   }
-  /* the keyboard: the board's real rows, the steering keys and every bound key where it sits */
-  var KB = [
-    [["Tab",1.5],"Q","W","E","R","T","Y","U","I","O","P"],
-    [["Caps",1.8],"A","S","D","F","G","H","J","K","L",";","'"],
-    [["L-Shift",2.3],"Z","X","C","V","B","N","M",",",".",["R-Shift",2.4]],
-    [["Ctrl",1.6],["Alt",1.4],["Space",6.2],["Alt",1.4],["Ctrl",1.6]]
-  ];
-  function keysOf(pc){
-    if(!pressable(pc)) return [];
-    if(pc === "Both shifts") return ["L-Shift","R-Shift"];
-    return pc.replace("+", " ").split(/\s+/).filter(Boolean);
-  }
-  function kbSvg(rows, litRow, g){
-    var at = {}, unknown = [], known = {};
-    KB.forEach(function(r){ r.forEach(function(k){ known[Array.isArray(k) ? k[0] : k] = 1; }); });
-    rows.forEach(function(r){ keysOf(r.pc).forEach(function(k){ (at[k] = at[k] || []).push(r); if(!known[k] && unknown.indexOf(k) < 0) unknown.push(k); }); });
-    var u = 20, o = "";
-    KB.forEach(function(r, ri){
-      var x = ri === 1 ? 4 : 0;
-      r.forEach(function(k){
-        var name = Array.isArray(k) ? k[0] : k, w = (Array.isArray(k) ? k[1] : 1) * u, rs = at[name] || [], st = stateOf(rs, litRow);
-        o += part("key", 4 + x, 6 + ri * 24, st, st === "lit" ? (litRow.action === "Steer" ? "hold" : g) : g, name.replace("-Shift", "Shift").replace("L-", "").replace("R-", ""), {w:w - 2, pick:pickOf(rs)});
-        x += w;
-      });
-    });
-    unknown.forEach(function(k, i){ var rs = at[k], st = stateOf(rs, litRow); o += part("key", 4 + i * 58, 104, st, g, k, {w:54, pick:pickOf(rs)}); });
-    return '<svg class="draw" viewBox="0 0 268 ' + (unknown.length ? 130 : 106) + '" role="img" aria-label="Keyboard">' + o + '</svg>';
-  }
-  /* the phone, held sideways: a thumb on each side; a thumb-lift hull fires by lifting one, a button hull taps round
-     the right thumb, a slider hull slides */
-  function phoneSvg(v, rows, litRow, g){
-    var c = v.controls, one = c.oneStick, btns = [], lifts = {}, slider = null, apart = null;
-    rows.forEach(function(r){
-      if(r.action === "Steer" || !pressable(r.touch)) return;
-      var t = r.touch;
-      if(/^Lift (left|right|either|both)/i.test(t)){ var side = /left/i.test(t) ? "l" : /right/i.test(t) ? "r" : /both/i.test(t) ? "b" : "e"; (lifts[side] = lifts[side] || []).push(r); }
-      else if(/apart/i.test(t)) apart = r;
-      else if(/slider/i.test(t)) slider = r;
-      else btns.push(r);
-    });
-    function thumb(x, y, side){
-      var rs = (lifts[side] || []).concat(lifts.b || []).concat(side === "r" ? lifts.e || [] : []);
-      var st = rs.indexOf(litRow) >= 0 ? "lit" : "on";
-      return '<g class="pp kind-thumb st-' + st + (st === "lit" ? ' g-' + g : '') + '"' + (pickOf(rs) ? ' data-pick="' + pickOf(rs) + '"' : '') + '><ellipse class="thumb" cx="' + x + '" cy="' + y + '" rx="15" ry="19"/></g>';
-    }
-    var o = '<rect class="frame" x="4" y="4" width="332" height="176" rx="22"/><rect class="screen" x="22" y="14" width="296" height="156" rx="8"/>' +
-      '<circle class="zone" cx="78" cy="120" r="38"/>' + (one ? '' : '<circle class="zone" cx="262" cy="120" r="38"/>');
-    if(apart){
-      var st = apart === litRow ? "lit" : "on";
-      o += '<g class="pp kind-apart st-' + st + (st === "lit" ? ' g-' + g : '') + '"' + (apart.element ? ' data-pick="el:' + apart.element + '"' : '') + '><ellipse class="thumb l" cx="78" cy="120" rx="15" ry="19"/><ellipse class="thumb r" cx="262" cy="120" rx="15" ry="19"/></g>';
+  function devices(v, p){
+    var r = p.e ? rowOf(v, p.el) : null, g = gesture(p, r), cells;
+    if(p.doc) cells = [["CONTROLLER", '<span class="kc">Seat</span>', "Seat control"], ["KEYBOARD", '<span class="kc">Seat</span>', "Seat control"], ["PHONE", '<span class="kc">Seat</span>', "Seat control"]];
+    else if(g === "passive"){
+      var how = p.omni ? "Fly into an omni crystal" : "Just fly";
+      cells = [["CONTROLLER", '<span class="ph dr" style="width:56px"><span class="th"></span><span class="th"></span></span>', how], ["KEYBOARD", '<span class="kc dr" style="opacity:.6">W A S D</span>', how], ["PHONE", '<span class="ph"><span class="th dr"></span><span class="th dr"></span></span>', how]];
     } else {
-      o += thumb(78, 120, "l") + (one && !btns.length && !(lifts.r || lifts.e) ? '' : thumb(262, 120, "r"));
+      var pad = r.pad === "LT+RT" ? img(PADMAP.LT, "LT", "pp") + img(PADMAP.RT, "RT", "pp") : PADMAP[r.pad] ? img(PADMAP[r.pad], r.pad, "pp") : '<span class="kc pp">' + esc(r.pad) + '</span>';
+      var keys = (r.pc === "Both shifts" ? ["L-Shift", "R-Shift"] : [r.pc]).map(function(k){ return '<span class="kc kp">' + esc(k) + '</span>'; }).join("");
+      var touch = /^lift|thumb/i.test(r.touch || "") ? thumbs(r.touch) : r.touchArt ? '<span class="tbtn2 pp">' + img(r.touchArt, r.touch) + '</span>' : '<span class="kc pp">' + esc(r.touch || "-") + '</span>';
+      cells = [["CONTROLLER", pressable(r.pad) ? pad : '<span class="kc" style="opacity:.5">-</span>', pressable(r.pad) ? r.pad : "No button"],
+               ["KEYBOARD", pressable(r.pc) ? keys : '<span class="kc" style="opacity:.5">-</span>', pressable(r.pc) ? r.pc : "No key"],
+               ["PHONE", pressable(r.touch) ? touch : '<span class="kc" style="opacity:.5">-</span>', pressable(r.touch) ? r.touch : "No touch"]];
     }
-    var arc = [[214,72],[246,46],[290,44],[300,84],[178,92],[206,140]];
-    btns.slice(0, arc.length).forEach(function(r, i){
-      var st = r === litRow ? "lit" : "on";
-      o += part("tb", arc[i][0], arc[i][1], st, g, r.action, {art:r.touchArt, pick:r.element ? "el:" + r.element : null});
-    });
-    if(slider){
-      var ss = slider === litRow ? "lit" : "on";
-      o += '<g class="pp kind-slide st-' + ss + (ss === "lit" ? ' g-' + g : '') + '" transform="translate(304 128)"><rect class="well" x="-5" y="-42" width="10" height="56"/><g class="knob"><rect class="cap" x="-10" y="4" width="20" height="10"/></g></g>';
-    }
-    return '<svg class="draw" viewBox="0 0 340 184" role="img" aria-label="Phone">' + o + '</svg>';
+    return {g:g, html:'<div class="dev g-' + g + '">' + cells.map(function(c){ return '<div class="dv"><span class="dl">' + c[0] + '</span><span class="dg">' + c[1] + '</span><span class="dc">' + esc(c[2]) + '</span></div>'; }).join("") + '</div>'};
   }
-  function legend(rows, field, litRow, show){
-    return '<ul class="legend">' + rows.filter(function(r){ return pressable(r[field]); }).map(function(r){
-      var st = r === litRow ? "lit" : "on", inner = '<span class="k">' + esc(show ? show(r) : r[field]) + '</span><span>' + esc(r.action) + '</span>';
-      return '<li class="' + st + '">' + (r.element ? '<button type="button" data-pick="el:' + r.element + '">' + inner + '</button>' : inner) + '</li>';
-    }).join("") + '</ul>';
+  function iconOf(p, size){
+    if(p.omni) return p.omni.icon ? ico(p.omni.icon, p.omni.layers, p.name) : img(p.omni.mark, p.name);
+    if(p.doc) return img(D.ui["shape/" + p.el], p.name);
+    var e = p.e, tint = (e.words && e.words.tint) || {};
+    return e.icon ? ico(e.icon, e.layers, p.name, tint.rest) : img(e.shape, p.name);
   }
-  function controlsTile(v, sel){
-    var c = v.controls;
-    if(!c) return '<p class="empty">No controls: this vessel has no ability map.</p>';
-    var rows = c.rows, litRow = sel && sel.kind === "element" ? rows.filter(function(r){ return r.element === sel.el; })[0] : null;
-    if(litRow && !pressable(litRow.pad) && !pressable(litRow.pc) && !pressable(litRow.touch)) litRow = null;
-    var g = litRow ? gesture(v, litRow) : "passive";
-    if(g === "passive" && litRow) g = "tap";
-    var e = sel && sel.kind === "element" ? sel.e : null, trig = e && e.words && e.words.trigger;
-    var head = !sel ? "" : sel.kind === "omni" ? "The omni crystal is flown into, never pressed." : sel.kind === "doc" ? sel.a.name + " is a seat control: the seat's own buttons, in " + file(v.seats.source) + "." :
-      litRow ? (trig || GWORD[g]) : (sel.e.ability + " has no button" + (trig ? ": " + trig : ": it is passive or a gesture") + ".");
-    return '<div class="ctl-head"><span class="hd">Controls</span>' +
-      '<span class="gest' + (litRow ? ' lit g-' + g : '') + '">' + (litRow ? '<span class="tl"><i></i></span>' + esc(GWORD[g]) : 'Nothing to press') + (sel && sel.kind === "element" ? '<span class="what2">' + esc(e.ability) + '</span>' : '') + '</span>' +
-      '<span class="mo">' + esc(head) + '</span></div><div class="devices">' +
-      '<section class="dev" aria-label="Controller"><h3>CONTROLLER' + (litRow && pressable(litRow.pad) ? '<b>' + esc(litRow.pad) + '</b>' : '') + '</h3>' + padSvg(v, rows, litRow, g) + legend(rows, "pad", litRow) + '</section>' +
-      '<section class="dev" aria-label="Keyboard"><h3>KEYBOARD' + (litRow && pressable(litRow.pc) ? '<b>' + esc(litRow.pc) + '</b>' : '') + '</h3>' + kbSvg(rows, litRow, g) + legend(rows, "pc", litRow) + '</section>' +
-      '<section class="dev" aria-label="Phone"><h3>PHONE' + (c.touchScheme === "TotemButtons" ? " &middot; BUTTONS" : c.touchScheme ? " &middot; THUMB LIFTS" : "") + (litRow && pressable(litRow.touch) ? '<b>' + esc(litRow.touch) + '</b>' : '') + '</h3>' + phoneSvg(v, rows, litRow, g) + legend(rows, "touch", litRow) +
-        (c.notes.length ? '<ul class="notes">' + c.notes.map(function(n){ return '<li>' + esc(n) + '</li>'; }).join("") + '</ul>' : '') +
-      '</section></div>';
+  function trigOf(p){
+    if(p.doc) return "Seat control";
+    var w = p.e ? p.e.words || {} : p.omni.words || {};
+    return w.trigger || (p.omni ? "Fly into an omni crystal" : "Passive");
   }
-  /* ---------- detail, games, docs ---------- */
-  function detailTile(v, sel){
-    if(!sel) return '';
-    if(sel.kind === "doc"){
-      return '<span class="mo">' + esc(sel.seat.name.toUpperCase()) + ' &middot; ' + esc(sel.el.toUpperCase()) + '</span><h2 class="hd">' + esc(sel.a.name) + '</h2><p>' + esc(sel.a.text) + '</p>' +
-        '<p class="mo">The ability map carries one ability per element for the whole hull, so this seat ability is read from <a href="' + esc(v.seats.url) + '">' + esc(file(v.seats.source)) + '</a>.</p>';
-    }
-    var e = sel.e;
-    if(sel.kind === "omni"){
-      return '<span class="mo">OMNI CRYSTAL &middot; ' + esc(crewName(v)) + '</span><h2 class="hd">' + esc((e.words && e.words.ability) || e.label || e.effects[0] || "Omni crystal") + '</h2>' +
-        (e.words && e.words.does ? '<div class="what"><span class="how"><span>' + esc(e.words.trigger || "Fly into an omni crystal") + '</span></span><p class="big">' + esc(e.words.does) + '</p>' + (e.words.source ? '<p class="mo">Read from <a href="' + gh(e.words.source) + '">' + esc(file(e.words.source)) + '</a> through <code>Docs/FleetCodex/abilities.json</code>.</p>' : '') + '</div>' : '') +
-        '<p>' + esc(e.label ? "In the ability map's own words: " + e.label + "." : "The map names no omni ability (its omniAbilityLabel is empty), so this is read from the vessel's crystal effects.") + '</p>' +
-        (e.effects.length ? '<div class="dials">' + e.effects.map(function(x){ return '<div class="dial"><div class="top2"><span>' + esc(x) + '</span></div><div class="src">crystal effect on the vessel&rsquo;s container</div></div>'; }).join("") + '</div>' : '');
-    }
-    var u = e.upgrade, eg = elementGames(v).by[sel.el];
-    return '<span class="mo">' + sel.el.toUpperCase() + ' &middot; ' + EL_WORD[sel.el].toUpperCase() + ' &middot; ' + (eg.length ? esc(sel.el.toUpperCase()) + ' GAME: ' + esc(eg.map(function(c){ return c.name; }).join(", ").toUpperCase()) : 'NO ' + esc(sel.el.toUpperCase()) + ' GAME YET') + '</span><h2 class="hd">' + esc(e.open ? "Open design slot" : e.ability) + '</h2>' +
-      (e.words ? '<div class="what">' + howLine(v, sel.el, e.words) + '<p class="big">' + esc(e.words.does) + '</p>' +
-        (e.words.scales ? '<p><strong>' + esc(sel.el) + ':</strong> ' + esc(e.words.scales) + '</p>' : '') +
-        (e.words.source ? '<p class="mo">Read from <a href="' + gh(e.words.source) + '">' + esc(file(e.words.source)) + '</a> through <code>Docs/FleetCodex/abilities.json</code>.</p>' : '') + '</div>' : '') +
-      (e.description ? '<p class="mo">In the ability map&rsquo;s words</p><p>' + esc(e.description) + '</p>' : '') +
-      '<div class="dials">' + (e.scaling.length ? e.scaling.map(function(s){
-        return '<div class="dial' + (s.on ? '' : ' off') + '"><div class="top2"><span>' + esc(s.field) + '</span><span class="v">&times;' + num(s.min) + ' &rarr; &times;' + num(s.max) + '</span></div><div class="src">' + (s.on ? '' : 'switched off (' + esc(s.offBecause || 'disabled') + ') &middot; ') + esc(file(s.asset || s.script) || s.where) + '</div></div>'; }).join("")
-        : '<span class="mo">This element changes no number.</span>') + '</div>' +
-      '<div class="l5box"><div class="t"><span class="hd" style="font-size:22px">Level 5</span>' + pill(u.status) + (u.label ? '<strong>' + esc(u.label) + '</strong>' : '') + '</div>' +
-        (u.description ? '<p>' + esc(u.description) + '</p>' : u.status === "open" ? '<p class="mo">Not designed yet. Unlocks at level ' + u.unlockLevel + ', relocks below ' + u.relockBelow + '.</p>' : '') +
-        u.gates.map(function(g){ return '<div class="gate">gated at ' + (g.script ? '<a href="' + gh(g.script) + '">' + esc(g.site) + '</a>' : esc(g.site)) + (g.offBecause ? ' &middot; switched off: ' + esc(g.offBecause) : '') + '</div>'; }).join("") +
-      '</div>';
-  }
-  /* Games, one element at a time (Shombith 2026-11-08: "Squirrel, Charge game, Joust. Squirrel, Mass game, Scurry.
-     Squirrel, Time game, Skim Race"). A card's element is the game's own answer (ModeGenre.TryElementsFor, read by the
-     generator); an arcade card is the vessel's own element game, an arena card seats several hulls. */
+
+  /* ---------- the games, by element ---------- */
   function isArcade(c){ return (c.rosters || []).indexOf("ArcadeGames") >= 0 || !(c.rosters || []).length; }
   function elementGames(v){
-    var by = {}, arenas = [], other = [];
+    var by = {};
     D.elements.forEach(function(el){ by[el] = []; });
-    v.cards.forEach(function(c){
-      var els = c.elements || [];
-      if(!els.length) other.push(c);
-      else if(isArcade(c)) by[els[0]].push(c);
-      else arenas.push(c);
+    v.cards.forEach(function(c){ var els = c.elements || []; if(els.length && isArcade(c)) by[els[0]].push(c); });
+    return by;
+  }
+  function gameLabel(c){ var els = c.elements || []; return els.length ? els.join(" + ") + (isArcade(c) ? " game" : " arena") : "Party game"; }
+
+  /* ---------- the vessel page ---------- */
+  function vesselView(v, keep){
+    var ps = picks(v);
+    var sel = ps.filter(function(p){ return p.key === pick; })[0];
+    if(!sel){ sel = ps.filter(function(p){ return p.e && gesture(p, rowOf(v, p.el)) !== "passive"; })[0] || ps[0]; pick = sel ? sel.key : null; }
+    var f = v.flight, s = v.status, by = elementGames(v), dv = sel ? devices(v, sel) : null;
+    var tag = "VESSEL " + v.id + (isCrew(v) ? " &middot; CREW &middot; " + v.crew.seats + " SEATS" : v.controls ? (v.controls.oneStick ? " &middot; ONE-STICK" : " &middot; TWO-STICK") : "") + (s.inToybox ? " &middot; IN THE VESSEL CHANGER" : "");
+    var stats = f ? [[num(f.cruise), "u/s cruise"], [num(f.pitch), "deg/s turn"], [s.upgradesWired + " / 4", "level 5 wired"], [v.cards.length, "games"]] : [[s.upgradesWired + " / 4", "level 5 wired"], [v.cards.length, "games"]];
+    var html = '<section class="win" aria-label="' + esc(crewName(v)) + '">' +
+      '<div class="hullbox">' + img(vimg(v), crewName(v) + " in the " + dom + " domain's livery") + '</div>' +
+      '<div class="hud brief"><div class="lab" style="color:var(--sel)">' + tag + '</div><h1 class="disp">' + esc(crewName(v)) + '</h1>' + (v.description ? '<p>' + esc(v.description) + '</p>' : '') +
+        '<div class="stats">' + stats.map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") + '</div></div>' +
+      '<div class="hud egs"><div class="lab">Its element games</div><div style="margin-top:8px">' + D.elements.map(function(el){
+          var cs = by[el]; return '<div class="eg' + (cs.length ? '' : ' none') + '">' + img(D.ui["shape/" + el], "") + '<span>' + el.toUpperCase() + '</span>' + esc(cs.length ? cs.map(function(c){ return c.name; }).join(", ") : "None yet") + '</div>'; }).join("") +
+        '</div>' + (v.cards.length ? '<a class="cta" href="#missions" data-jump="missions">Play the ' + esc(crewName(v)) + '</a>' : '') + '</div>' +
+      (sel ? '<div class="hud move"><div class="mhead"><span class="disp">' + esc(sel.name) + '</span><span class="trig">' + esc(trigOf(sel)) + '</span><span class="lab" style="margin-left:auto">' + GWORD[dv.g] + '</span></div>' + scene(sel.el) + dv.html + '</div>' : '') +
+      '<div class="abrow" role="group" aria-label="Abilities">' + ps.map(function(p){
+          return '<button type="button" class="ab" data-pick="' + p.key + '" aria-pressed="' + (p === sel) + '"><span class="i">' + iconOf(p) + '</span><small>' + esc(p.name) + '</small></button>'; }).join("") + '</div>' +
+      '</section>';
+
+    /* abilities, in full */
+    html += '<div class="sec"><span class="disp">Abilities</span><span class="lab">' + (v.omni ? "The four elements and the omni crystal" : "The four elements") + ' &middot; pick one to play its move above</span><span class="rule"></span></div>';
+    var lastSeat = -1;
+    ps.forEach(function(p){
+      if(v.seats && p.seat != null && p.seat !== lastSeat){
+        lastSeat = p.seat; var st = v.seats.list[p.seat];
+        html += '<div class="seat"><span class="disp">' + esc(st.name) + '</span><span class="lab">' + (st.seats > 1 ? st.seats + " seats" : "Seat " + (p.seat + 1)) + '</span><p>' + esc(st.role) + '</p></div>';
+      } else if(v.seats && p.omni){ html += '<div class="seat"><span class="disp">The hull</span><span class="lab">Every seat</span></div>'; }
+      html += abilityRow(v, p, p === sel);
     });
-    return {by:by, arenas:arenas, other:other};
+
+    /* missions */
+    var shown = v.cards.filter(function(c){ var els = c.elements || []; return filt === "All" || (filt === "Arcade" && isArcade(c)) || (filt === "Arena" && !isArcade(c)) || els.indexOf(filt) >= 0; });
+    shown.sort(function(a, b){ return (isArcade(b) - isArcade(a)) || D.elements.indexOf((a.elements || [])[0]) - D.elements.indexOf((b.elements || [])[0]); });
+    html += '<div class="sec" id="missions"><span class="disp">Missions</span><span class="lab">Every game that seats it</span><span class="rule"></span><div class="filters" role="group" aria-label="Filter the games">' +
+      ["All"].concat(D.elements, ["Arcade", "Arena"]).map(function(x){ return '<button type="button" class="chip" data-filt="' + x + '" aria-pressed="' + (x === filt) + '">' + x + '</button>'; }).join("") + '</div></div>' +
+      (shown.length ? '<div class="games">' + shown.map(function(c){
+        var els = c.elements || [];
+        return '<div class="gm">' + img(c.art, "") + '<span>' + (els.length ? img(D.ui["shape/" + els[0]], "") : '') + esc(gameLabel(c)) + ' &middot; ' + (c.hullsOnCard > 1 ? c.hullsOnCard + ' hulls' : 'this hull only') + (c.intensity ? ' &middot; I' + c.intensity[0] + '&ndash;I' + c.intensity[1] : '') + '</span><span class="disp">' + esc(c.name) + '</span>' +
+          (c.description && c.description.split(" ").length > 4 ? '<p>' + esc(c.description) + '</p>' : '') + '</div>'; }).join("") + '</div>'
+        : '<p class="empty">' + (v.cards.length ? 'No ' + esc(filt) + ' game seats the ' + esc(crewName(v)) + ' yet.' : 'No game card seats this vessel yet.') + '</p>');
+
+    /* flight and controls */
+    var c = v.controls;
+    html += '<div class="sec"><span class="disp">Flight and controls</span><span class="rule"></span></div><div class="fc2">' +
+      '<div class="flight">' + (f ? [[num(f.cruise), "u/s cruise"], [num(f.pitch) + " / " + num(f.yaw), "pitch / yaw deg/s"], [num(f.minimum), "minimum speed"], ["x" + num(f.boost), "boost"]].map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") : '<p class="empty">No flight numbers on the prefab.</p>') + '</div>' +
+      '<div>' + (c ? '<table class="tbl"><thead><tr><th>ACTION</th><th>CONTROLLER</th><th>KEYBOARD</th><th>PHONE</th></tr></thead><tbody>' + c.rows.map(function(r){
+          return '<tr><td>' + esc(r.action) + '</td><td>' + (r.padArt ? img(r.padArt, "") : '') + esc(r.pad) + '</td><td>' + esc(r.pc) + '</td><td>' + (r.touchArt ? img(r.touchArt, "") : '') + esc(r.touch || "-") + '</td></tr>'; }).join("") + '</tbody></table>' +
+        (c.notes.length ? '<ul class="notes">' + c.notes.map(function(n){ return '<li>' + esc(n) + '</li>'; }).join("") + '</ul>' : '') : '<p class="empty">No controls: this vessel has no ability map.</p>') + '</div></div>';
+
+    /* recent updates (what changed, in plain words: never a commit message) and docs */
+    var ups = (v.changes || []).filter(function(u){ return u.parts && (u.parts.length || u.games.length); }).slice(0, 6);
+    html += '<div class="sec"><span class="disp">Recent updates and docs</span><span class="rule"></span></div><div class="fc2 fc3">' +
+      '<div><div class="lab">Recent updates</div>' + (ups.length ? '<ul class="upd">' + ups.map(function(u){
+        var bits = [];
+        if(u.parts.length) bits.push(cap(u.parts.join(", ")) + ' updated');
+        if(u.games.length) bits.push((u.games.length > 1 ? 'Games updated: ' : 'Game updated: ') + u.games.join(", "));
+        return '<li><span>' + esc(day(u.date)) + '</span>' + esc(bits.join(". ")) + '.</li>'; }).join("") + '</ul>' : '<p class="empty">No update in the history read.</p>') + '</div>' +
+      '<div><div class="lab">Docs</div>' + (v.docs.length ? '<ul class="upd">' + v.docs.slice(0, 6).map(function(d){ return '<li><a href="' + esc(d.url) + '">' + esc(file(d.path)) + '</a></li>'; }).join("") + '</ul>' : '<p class="empty">No doc found by name.</p>') + '</div></div>';
+
+    app.innerHTML = html;
+    Array.prototype.forEach.call(app.querySelectorAll("[data-pick]"), function(b){ b.addEventListener("click", function(){
+      pick = b.dataset.pick; var y = window.scrollY, inRow = b.classList.contains("row"); vesselView(v, true); window.scrollTo(0, y);
+      var w = app.querySelector(".win"); if(inRow && w && w.getBoundingClientRect().bottom < 120) w.scrollIntoView({behavior:"smooth", block:"start"});
+      var n = app.querySelector((inRow ? '.row' : '.ab') + '[data-pick="' + pick + '"]'); if(n) n.focus({preventScroll:true}); }); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-filt]"), function(b){ b.addEventListener("click", function(){
+      filt = b.dataset.filt; var y = window.scrollY; vesselView(v, true); window.scrollTo(0, y); var n = app.querySelector('[data-filt="' + filt + '"]'); if(n) n.focus({preventScroll:true}); }); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-jump]"), function(a){ a.addEventListener("click", function(e){ e.preventDefault(); var t = document.getElementById(a.dataset.jump); if(t) t.scrollIntoView({behavior:"smooth", block:"start"}); }); });
   }
-  function gameMeta(c){
-    return (c.intensity ? 'I' + c.intensity[0] + '&ndash;I' + c.intensity[1] : '') + (c.hullsOnCard > 1 ? ' &middot; ' + c.hullsOnCard + ' hulls' : ' &middot; this hull only') + (c.golf ? ' &middot; lowest wins' : '');
-  }
-  function elChip(el){ return '<span class="chip" title="' + esc(el) + '">' + img(D.ui["shape/" + el], el) + '</span>'; }
-  function playsTile(v){
-    var G = elementGames(v), name = crewName(v);
-    if(!v.cards.length) return '<div class="games-head"><span class="hd">Games</span></div><p class="empty">No game card seats this vessel yet.</p>';
-    var cols = D.elements.map(function(el, i){
-      var cs = G.by[el];
-      return '<article class="eg' + (cs.length ? '' : ' none') + '" style="--d:' + (i * 50) + 'ms"><div class="eg-head">' + elChip(el) + '<span class="lab2">' + esc(el.toUpperCase()) + ' GAME</span></div>' +
-        (cs.length ? cs.map(function(c, j){
-          return '<div class="game' + (j ? ' row' : '') + '">' + img(c.art, "") + '<div class="copy"><span class="mo">' + esc(name) + ' &middot; ' + esc(el) + ' game</span><span class="hd">' + esc(c.name) + '</span>' +
-            '<span class="mo">' + gameMeta(c) + '</span>' + (j === 0 && c.description && c.description.length > 24 ? '<p>' + esc(c.description) + '</p>' : '') + '</div></div>';
-        }).join("") : '<div class="game empty-game"><div class="copy"><span class="mo">' + esc(name) + ' &middot; ' + esc(el) + ' game</span><span class="hd soft">None yet</span><span class="mo">No arcade card for this element seats it.</span></div></div>') + '</article>';
-    }).join("");
-    function chips(list, label){
-      if(!list.length) return '';
-      return '<div class="arenas"><span class="lab2">' + label + '</span>' + list.map(function(c){
-        return '<span class="ar">' + (c.elements || []).map(elChip).join("") + '<b>' + esc(c.name) + '</b><span class="mo">' + ((c.elements || []).join(" + ") || "no element") + ' &middot; ' + c.hullsOnCard + ' hull' + (c.hullsOnCard > 1 ? 's' : '') + '</span></span>';
-      }).join("") + '</div>';
+  function abilityRow(v, p, on){
+    var head = '<span class="who"><span class="ic">' + iconOf(p) + '</span><span><span class="k">' + esc(p.el.toUpperCase()) + '</span><b class="n">' + esc(p.name) + '</b><span class="trig">' + esc(trigOf(p)) + '</span></span></span>';
+    var does, more, l5;
+    if(p.doc){
+      does = '<span><span class="k">What it does</span><p>' + esc(p.doc.text || "A control of this seat, in " + file(v.seats.source) + ".") + '</p></span>';
+      more = '<span><span class="k">Seat control</span><p style="font-size:14px;color:var(--soft)">Read from ' + esc(file(v.seats.source)) + '.</p></span>';
+      l5 = '<span class="l5"><span class="k">Level 5</span><p>The ability map carries one ability per element for the hull; this seat ability has no level 5 of its own.</p></span>';
+    } else if(p.omni){
+      var ow = p.omni.words || {};
+      does = '<span><span class="k">What it does</span><p>' + esc(ow.does || (p.omni.effects.length ? "Its crystal effects: " + p.omni.effects.join(", ") + "." : "No omni crystal effect of its own.")) + '</p></span>';
+      more = '<span><span class="k">Omni crystal</span><p style="font-size:15px">Flown into, never pressed.</p></span>';
+      l5 = '<span class="l5"><span class="k">Level 5</span><b>No level 5</b><p>The omni crystal has no level-5 upgrade.</p></span>';
+    } else {
+      var e = p.e, w = e.words || {}, u = e.upgrade, st = L5[u.status] || L5.open;
+      does = '<span><span class="k">What it does</span><p>' + esc(w.does || e.description) + '</p></span>';
+      more = '<span><span class="k">More ' + esc(p.el) + '</span>' + (w.scales ? '<p style="font-size:15px">' + esc(w.scales) + '</p>' : '') + e.scaling.filter(function(x){ return x.field && x.min != null; }).map(function(x){
+          return '<span class="dial' + (x.on ? '' : ' off') + '">' + esc(x.field) + ' &times;' + num(x.min) + ' to &times;' + num(x.max) + (x.on ? '' : ' (switched off)') + '<i>' + esc(file(x.asset || x.script)) + '</i></span>'; }).join("") +
+        (!w.scales && !e.scaling.length ? '<p style="font-size:14px;color:var(--soft)">This element changes no number.</p>' : '') + '</span>';
+      l5 = '<span class="l5"><span class="k">Level 5</span><b>' + esc(u.label || (u.status === "open" ? "Not designed yet" : "Unnamed")) + '</b><p>' + esc(u.description || (u.status === "open" ? "Unlocks at level " + u.unlockLevel + ", relocks below " + u.relockBelow + "." : "")) + '</p><span class="pill ' + st[0] + '">' + st[1] + '</span></span>';
     }
-    return '<div class="games-head"><span class="hd">Games</span><span class="mo">' + esc(name) + '&rsquo;s game for each element, as the game files it (ModeGenre)</span></div>' +
-      '<div class="egrid">' + cols + '</div>' + chips(G.arenas, "ARENAS") + chips(G.other, "ALSO");
-  }
-  function docsTile(v){
-    return '<span class="mo">DOCS</span>' + (v.docs.length ? '<ul class="list">' + v.docs.slice(0, 6).map(function(d){ return '<li><a href="' + esc(d.url) + '">' + esc(file(d.path)) + '</a></li>'; }).join("") + '</ul>' : '<p class="empty">No doc found by name.</p>') +
-      '<span class="mo" style="display:block;margin-top:14px">RECENT CHANGES</span>' + (v.changes.length ? '<ul class="list">' + v.changes.slice(0, 5).map(function(c){ return '<li><span class="dt">' + esc(c.date) + '</span><a href="' + commit(c.sha) + '">' + esc(c.subject) + '</a></li>'; }).join("") + '</ul>' : '<p class="empty">None in the history read.</p>');
+    return '<button type="button" class="row" data-pick="' + p.key + '" aria-pressed="' + on + '">' + head + does + more + l5 + '</button>';
   }
 
-  /* ---------- the vessel ---------- */
-  function vesselView(v, keepScroll){
-    if(!resolve(v, pick)) pick = firstKey(v);
-    var sel = resolve(v, pick), f = v.flight, s = v.status;
-    app.innerHTML = '<div class="bento">' +
-      '<section class="tile hero ' + (v.seats ? 'span12 wide' : 'span5') + '" aria-label="' + esc(crewName(v)) + '">' + img(vimg(v), "", "still") +
-        '<div class="copy"><span class="mo" style="letter-spacing:.12em">VESSEL ' + v.id + (isCrew(v) ? ' &middot; CREW VESSEL &middot; ' + v.crew.seats + ' SEATS' : v.controls ? (v.controls.oneStick ? ' &middot; ONE-STICK FLYER' : ' &middot; TWO-STICK FLYER') : '') + (s.inToybox ? ' &middot; IN THE VESSEL CHANGER' : '') + '</span>' +
-        '<h1 class="hd">' + esc(isCrew(v) && v.crew.names.length ? v.crew.names.join(" & ") : v.name) + '</h1>' +
-        (isCrew(v) && !v.crew.names.length ? '<span class="crewline">' + v.crew.seats + ' seats on one hull</span>' : '') +
-        (v.description ? '<span style="color:var(--muted);max-width:70ch">' + esc(v.description) + '</span>' : '') +
-        (f ? '<div class="stats"><span><span class="n num">' + num(f.cruise) + '</span> <span class="mo">u/s cruise</span></span><span><span class="n num">' + num(f.pitch) + '/' + num(f.yaw) + '</span> <span class="mo">pitch / yaw</span></span><span><span class="n num">' + s.upgradesWired + '/4</span> <span class="mo">level 5 wired</span></span><span><span class="n num">' + v.cards.length + '</span> <span class="mo">games</span></span></div>' : '') +
-        '</div></section>' +
-      kitTile(v) +
-      '<section class="tile pad play span12" aria-label="Games">' + playsTile(v) + '</section>' +
-      '<section class="tile pad span12" aria-label="Controls">' + controlsTile(v, sel) + '</section>' +
-      '<section class="tile pad detail span9" aria-label="Ability detail">' + detailTile(v, sel) + '</section>' +
-      '<section class="tile pad span3" aria-label="Docs and changes">' + docsTile(v) + '</section>' +
-      '</div>';
-    if(keepScroll) Array.prototype.forEach.call(app.querySelectorAll(".ab,.seat"), function(el){ el.style.animation = "none"; });
-    fitNames();
-    Array.prototype.forEach.call(app.querySelectorAll("[data-pick]"), function(b){ b.addEventListener("click", function(){ pick = b.dataset.pick; var y = window.scrollY; vesselView(v, true); window.scrollTo(0, y); var n = app.querySelector('.pickbtn[data-pick="' + pick + '"]'); if(n && b.classList.contains("pickbtn")) n.focus({preventScroll:true}); }); });
-    Array.prototype.forEach.call(app.querySelectorAll("[data-flip]"), function(b){ b.addEventListener("click", function(){
-      var k = b.dataset.flip, card = b.closest(".ab"), on = !flipped[v.key + k];
-      flipped[v.key + k] = on;
-      card.classList.toggle("flip", on);
-      card.querySelector(".front").setAttribute("aria-hidden", String(on));
-      card.querySelector(".back").setAttribute("aria-hidden", String(!on));
-      Array.prototype.forEach.call(card.querySelectorAll(".front button"), function(x){ x.tabIndex = on ? -1 : 0; });
-      Array.prototype.forEach.call(card.querySelectorAll(".back button"), function(x){ x.tabIndex = on ? 0 : -1; });
-      var to = card.querySelector(on ? ".back .l5" : ".front .l5"); if(to) setTimeout(function(){ to.focus({preventScroll:true}); }, 60);
-    }); });
-  }
-
-  /* ---------- the fleet ---------- */
-  function fleetGames(v){
-    if(!v.cards.length) return '<span class="mo">none</span>';
-    var G = elementGames(v);
-    return '<span class="fg">' + D.elements.filter(function(el){ return G.by[el].length; }).map(function(el){
-      return '<span class="fgr">' + elChip(el) + '<span class="mo">' + esc(el) + '</span> ' + esc(G.by[el].map(function(c){ return c.name; }).join(", ")) + '</span>'; }).join("") +
-      (G.arenas.length ? '<span class="mo">+ ' + G.arenas.length + ' arena' + (G.arenas.length > 1 ? 's' : '') + '</span>' : '') + '</span>';
-  }
+  /* ---------- the whole fleet ---------- */
   function fleetView(){
-    var vs = D.vessels.filter(function(v){ return v.status.hasMap && matches(v); });
-    vs.sort(function(a, b){ return (isCrew(a) - isCrew(b)) || a.id - b.id; });
-    var all = D.vessels.filter(function(v){ return v.status.hasMap; }), slots = all.length * 4;
-    var wired = all.reduce(function(a, v){ return a + v.status.upgradesWired; }, 0);
-    var games = {}; all.forEach(function(v){ v.cards.forEach(function(c){ games[c.name] = 1; }); });
+    var vs = listed().filter(matches);
     function cell(e){
-      if(!e) return '<td class="mo">no map</td>';
-      var pad = PADMAP[e.pad] || null;
-      return '<td><span class="cell"><span class="ic">' + (e.icon ? ico(e.icon, e.layers, "", (e.words && e.words.tint || {}).rest) : img(e.shape, "")) + '</span><span style="min-width:0"><span class="nm">' + esc(e.open ? "open slot" : e.ability) + '</span><br>' +
-        (e.pad === "LT+RT" ? '<img class="gl" src="' + esc(PADMAP["LT"]) + '" alt="LT"><img class="gl" src="' + esc(PADMAP["RT"]) + '" alt="RT">' : pad ? '<img class="gl" src="' + esc(pad) + '" alt="' + esc(e.pad) + '">' : '') +
-        (e.key ? '<span class="mo">' + esc(e.key) + '</span> ' : '') + pill(e.upgrade.status) + '</span></span></td>';
+      if(!e) return '<td class="empty">no map</td>';
+      var tint = (e.words && e.words.tint) || {};
+      return '<td><span class="cell"><span class="ic">' + (e.icon ? ico(e.icon, e.layers, "", tint.rest) : img(e.shape, "")) + '</span><span><span class="nm">' + esc(e.open ? "Open slot" : e.ability) + '</span><br><span class="pill ' + (L5[e.upgrade.status] || L5.open)[0] + '" style="margin-top:4px">L5 ' + (L5[e.upgrade.status] || L5.open)[1] + '</span></span></span></td>';
     }
-    app.innerHTML = '<div class="bento">' +
-      '<section class="tile pad span12"><span class="mo" style="letter-spacing:.12em">THE WHOLE FLEET</span><h1 class="hd" style="font-size:calc(64px * var(--dscale));margin:4px 0 14px">Every vessel, every ability</h1>' +
-        '<div class="tally"><div class="tile"><div class="n">' + all.length + '</div><div class="mo">vessels, ' + all.filter(isCrew).length + ' of them crews</div></div><div class="tile"><div class="n">' + wired + '<span class="mo"> / ' + slots + '</span></div><div class="mo">level-5 upgrades wired</div></div>' +
-        '<div class="tile"><div class="n">' + Object.keys(games).length + '</div><div class="mo">game cards that seat them</div></div><div class="tile"><div class="n">' + all.filter(function(v){ return v.status.inToybox; }).length + '</div><div class="mo">in the Vessel Changer</div></div></div></section>' +
-      '<section class="tile span12 scroll"><table class="mx"><thead><tr><th>Vessel</th>' + D.elements.map(function(el){ return '<th><span class="chip">' + img(D.ui["shape/" + el], "") + '</span>' + el.toUpperCase() + '</th>'; }).join("") +
-        '<th><span class="chip">' + img(D.ui.omni, "") + '</span>OMNI CRYSTAL</th><th>GAMES</th></tr></thead><tbody>' +
-        vs.map(function(v){
-          var o = v.omni || {};
-          return '<tr tabindex="0" data-k="' + esc(v.key) + '"><td><span class="hull">' + img(vimg(v), "") + '<span><span class="nm">' + esc(crewName(v)) + '</span><br><span class="mo">' + (isCrew(v) ? v.crew.seats + ' seats' + (v.seats ? ': ' + esc(v.seats.list.map(function(s){ return s.name; }).join(", ")) : '') : 'vessel ' + v.id) + '</span></span></span></td>' +
-            D.elements.map(function(el){ return cell(v.elements[el]); }).join("") +
-            '<td><span class="cell"><span class="ic">' + (o.icon ? ico(o.icon, o.layers, "") : img(o.mark, "")) + '</span><span class="nm">' + esc(o.label || (o.effects || [])[0] || "fly into it") + '</span></span></td>' +
-            '<td>' + fleetGames(v) + '</td></tr>';
-        }).join("") + '</tbody></table></section></div>';
+    function games(v){ var by = elementGames(v); return D.elements.filter(function(el){ return by[el].length; }).map(function(el){ return '<div style="white-space:nowrap;font-size:13px">' + img(D.ui["shape/" + el], "") + ' ' + esc(by[el].map(function(c){ return c.name; }).join(", ")) + '</div>'; }).join("") || '<span class="empty">none</span>'; }
+    app.innerHTML = '<div class="ftop"><div><div class="lab" style="color:var(--sel)">' + listed().length + ' vessels &middot; ' + listed().filter(isCrew).length + ' crews</div><h1 class="disp">The fleet</h1></div></div>' +
+      '<div class="scroll"><table class="mx"><thead><tr><th>VESSEL</th>' + D.elements.map(function(el){ return '<th>' + img(D.ui["shape/" + el], "") + el.toUpperCase() + '</th>'; }).join("") + '<th>' + img(D.ui.omni, "") + 'OMNI CRYSTAL</th><th>ELEMENT GAMES</th></tr></thead><tbody>' +
+      vs.map(function(v){
+        var o = v.omni || {};
+        return '<tr tabindex="0" data-k="' + esc(v.key) + '"><td><span class="hull">' + img(vimg(v), "") + '<span><span class="disp">' + esc(crewName(v)) + '</span><small>' + (isCrew(v) ? v.crew.seats + ' seats' : 'vessel ' + v.id) + '</small></span></span></td>' +
+          D.elements.map(function(el){ return cell(v.elements[el]); }).join("") +
+          '<td><span class="cell"><span class="ic">' + (o.icon ? ico(o.icon, o.layers, "") : img(o.mark, "")) + '</span><span class="nm">' + esc((o.words && o.words.ability) || o.label || "Fly into it") + '</span></span></td><td>' + games(v) + '</td></tr>';
+      }).join("") + '</tbody></table></div>' + (vs.length ? '' : '<p class="empty">No vessel matches.</p>');
     Array.prototype.forEach.call(app.querySelectorAll("tbody tr[data-k]"), function(tr){
       function go(){ location.hash = tr.dataset.k; }
       tr.addEventListener("click", go);
@@ -935,29 +615,24 @@ body{background:var(--fs-ground)}
     });
   }
 
+  var PADMAP = {};
   function route(keep){
     if(!D) return;
-    var v = current(), y = window.scrollY;
-    drawStrip();
+    var v = current();
+    drawSwitch();
     document.getElementById("navFleet").setAttribute("aria-current", v ? "false" : "page");
-    if(keep === true) setTimeout(function(){ window.scrollTo(0, y); }, 0);
     if(v){ vesselView(v, keep === true); document.title = crewName(v) + " - Fleet Codex"; } else { fleetView(); document.title = "Fleet Codex"; }
   }
-
-  q.addEventListener("input", function(){ query = q.value.trim().toLowerCase(); drawStrip(); if(!current()) fleetView(); });
+  q.addEventListener("input", function(){ query = q.value.trim().toLowerCase(); if(current()){ menuOpen = !!query; drawSwitch(); } else fleetView(); });
   fetch("fleet.json", {cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); }).then(function(d){
     D = d;
     var saved = null; try { saved = localStorage.getItem("fleetCodexDomain"); } catch(e){}
     applyDomain(saved || (d.palette && d.palette["default"]));
     D.vessels.forEach(function(v){ if(v.controls) v.controls.rows.forEach(function(r){ if(r.padArt && !PADMAP[r.pad]) PADMAP[r.pad] = r.padArt; }); });
     document.getElementById("logo").src = d.ui.omni || "";
-    var pending = (d.pending || []).length
-      ? ' &middot; includes unmerged: ' + d.pending.map(esc).join(', ')
-      : '';
-    document.getElementById("stamp").innerHTML = esc(d.branch) + ' &middot; <a href="' + commit(d.commit) + '">' + esc(d.commit) + '</a> &middot; ' + esc(d.commitDate) + pending;
-    document.getElementById("foot").innerHTML = 'Only two tables here are typed by hand, each entry citing the doc or code it was read from: what each ability does (<code>Docs/FleetCodex/abilities.json</code>) and the crew seats (<code>Docs/FleetCodex/seats.json</code>). <code>Tools/Build/fleet_codex.py</code> reads the ability maps, the vessel prefabs and their HUDs, the class assets, the touch profiles, the game cards and git history, and a scheduled job republishes this page from bleeding-edge every day when anything changed. The icons are the game&rsquo;s own: each ability&rsquo;s HUD card and its level-5 state from the icon kit or the HUD, the Codex&rsquo;s element shapes, the controller glyphs and the phone&rsquo;s touch icons. Where a HUD draws an icon only at runtime, its element&rsquo;s shape stands in. The skill: <code>/fleet-codex</code>.';
+    document.getElementById("foot").innerHTML = 'Read from the game&rsquo;s own files every day: the ability maps, the vessel prefabs and their HUDs, the class assets, the touch profiles and the game cards. Every icon is the game&rsquo;s own.';
     route();
   }).catch(function(err){ app.innerHTML = '<p class="empty">The fleet data did not load (' + esc(err.message) + '). Reload the page.</p>'; });
-  window.addEventListener("hashchange", function(){ pick = null; route(); window.scrollTo(0, 0); });
+  window.addEventListener("hashchange", function(){ pick = null; filt = "All"; menuOpen = false; route(); window.scrollTo(0, 0); });
 })();
 </script>

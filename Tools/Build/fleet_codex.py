@@ -286,16 +286,58 @@ def vessel_paths(key):
     return [p for p in paths if os.path.exists(os.path.join(REPO, p))]
 
 
-def changes(key):
-    paths = vessel_paths(key)
-    if not paths:
+def changes(key, class_asset=None, cards=()):
+    """What changed lately, in plain words, never a commit message (Shombith 2026-11-08: "dont show commit messages",
+    then "show recent changes by when somebody updates a game or a vessel"). Each entry is a date with the PARTS of the
+    vessel whose files changed that day (its abilities, the vessel, its model, its icons...) and the games of it that
+    changed (a card asset or its scene), read from git's file lists, so the words come from what was touched."""
+    watch = [(f"Assets/Resources/ElementalAbilityMaps/{key}.asset", "abilities and level-5 upgrades"),
+             (f"Assets/_Prefabs/Spacevessels/{key}.prefab", "the vessel"),
+             (f"Assets/_SO_Assets/VesselActions/{key}", "how its abilities fire"),
+             (f"Assets/_Graphics/Icons/AbilityIcons/{key}", "its ability icons")]
+    if class_asset:
+        watch.append((class_asset, "its description and card"))
+    for p in glob.glob(os.path.join(REPO, "Assets", "_Scripts", "**", f"*{key}*.cs"), recursive=True):
+        watch.append((os.path.relpath(p, REPO), "how it plays"))
+    for p in glob.glob(os.path.join(REPO, "Assets", "_Models", "Vessel Models", "**", f"*{key}*"), recursive=True):
+        if not p.endswith(".meta"):
+            watch.append((os.path.relpath(p, REPO), "its model"))
+    games = []
+    for c in cards:
+        if not c.get("asset"):
+            continue
+        games.append((c["asset"], c["name"]))
+        scene = yaml_scalar(open(os.path.join(REPO, c["asset"]), encoding="utf-8").read(), "SceneName")
+        for sp in glob.glob(os.path.join(REPO, "Assets", "_Scenes", "**", f"{scene}.unity"), recursive=True) if scene else []:
+            games.append((os.path.relpath(sp, REPO), c["name"]))
+    watch = [(w, l) for w, l in watch if os.path.exists(os.path.join(REPO, w))]
+    games = [(w, n) for w, n in games if os.path.exists(os.path.join(REPO, w))]
+    if not watch and not games:
         return []
-    log = git("log", f"-n{CHANGES_PER_VESSEL}", "--no-merges", "--date=short", "--format=%h%x1f%ad%x1f%s", "--", *paths)
-    out = []
-    for line in log.splitlines():
-        sha, date, subject = (line.split("\x1f") + ["", "", ""])[:3]
-        out.append({"sha": sha, "date": date, "subject": subject})
-    return out
+    # a shallow clone's oldest commits look like they add every file: they are the history's edge, not an update
+    shallow_file = os.path.join(REPO, git("rev-parse", "--git-dir"), "shallow")
+    edge = set(open(shallow_file).read().split()) if os.path.exists(shallow_file) else set()
+    log = git("log", "-n40", "--no-merges", "--date=short", "--name-only", "--format=\x1e%H %ad", "--",
+              *[w for w, _ in watch], *[w for w, _ in games])
+    days = {}
+    for block in log.split("\x1e")[1:]:
+        lines = [x for x in block.splitlines() if x.strip()]
+        if not lines:
+            continue
+        sha, _, date = lines[0].partition(" ")
+        if sha in edge:
+            continue
+        day = days.setdefault(date, {"parts": [], "games": []})
+        for f in lines[1:]:
+            for w, label in watch:
+                if (f == w or f.startswith(w.rstrip("/") + "/")) and label not in day["parts"]:
+                    day["parts"].append(label)
+            for w, name in games:
+                if f == w and name not in day["games"]:
+                    day["games"].append(name)
+    out = [{"date": d, "parts": v["parts"], "games": v["games"]} for d, v in sorted(days.items(), reverse=True)
+           if v["parts"] or v["games"]]
+    return out[:CHANGES_PER_VESSEL]
 
 
 def write_image(guid, previews, key, out_dir):
@@ -1359,7 +1401,7 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
             "seats": seats_of(key, c.get("crew", []), elements) if maps else None,
             "cards": sorted(cards.get(name, []) + (cards.get(key, []) if key != name else []), key=lambda x: x["name"]),
             "docs": docs_for(key, name, note),
-            "changes": changes(key),
+            "changes": changes(key, c.get("asset"), cards.get(name, []) + (cards.get(key, []) if key != name else [])),
             "image": write_image(c.get("previewGuid"), previews, key, out_dir) if images else None,
             "classAsset": c.get("asset"),
         })
