@@ -68,8 +68,8 @@ roll, the negative control, it settles on 4 of 6 (worst 87.7°).
 |---|---|---|---|
 | `redline-manta-time-lead-noroll` (2.5 / 40, no roll, 540 evals) | B 16.425 / C 16.453 | yes (0.2%) | 15.97 (3,042 evals) |
 | `skein-urchin-time-whatif-lead-noroll` (2.5 / 40, no roll, 700 evals) | B 7.132 / C 6.994 | 2.0% | W 7.37 (1,500 evals) |
-| `redline-manta-time-lead1-noroll` (1.0, no roll) | see §5 | | |
-| `skein-urchin-time-whatif-lead1-noroll` (1.0, no roll) | see §5 | | |
+| `redline-manta-time-lead1-noroll` (1.0, no roll, 540 evals) | B 28.054 / C 28.016 | yes (0.1%) | 15.97 |
+| `skein-urchin-time-whatif-lead1-noroll` (1.0, no roll, 700 evals) | B 7.598 / C 7.804 | no (2.7%) | W 7.37 |
 
 The 2x2 on fresh courses (`holdout.py`; Manta: 12 Redline courses an intensity, seedbase 1001; Urchin: the what-if
 Skein hold-out, 9 races an intensity). Composite, then finished and misses per intensity:
@@ -98,9 +98,26 @@ What it says:
    of #1830 now scores 2.953 against 2.985 with the old roll. That genome still needs the lead (13.47 with it off),
    so it ships only with the switch.
 
-## 5. Gain 1.0 twins
+## 5. Gain 1.0 twins (added 2026-11-08)
 
-(Appended when the restarts finish.)
+Both twins, re-searched with gain 1.0 and no roll, on the same fresh courses as §4 (`holdout.py ... lead1-noroll`).
+Composite; misses per intensity in brackets:
+
+| Genome | Lead off | 2.5 / 40, no roll | 1.0, no roll |
+|---|---|---|---|
+| Manta lead1 twin B | 20.87 | 22.75 | 30.94 (1 / 42 / 1,405 / 1,021) |
+| Manta lead1 twin C | 20.62 | 23.76 | 32.59 (3 / 92 / 1,543 / 1,045) |
+| Urchin lead1 twin B | 8.44 | 9.46 | 9.00 (19 / 39 / 95 / 155) |
+| Urchin lead1 twin C | 8.20 | 8.52 | 8.22 (18 / 42 / 93 / 56) |
+
+Even with a drive searched for it, **gain 1.0 helps neither hull**:
+- The Manta at 1.0 spirals at I3 / I4. Its races finish, but with 1,000+ missed mouths and 650-680 s medians, and the
+  two restarts agree that 28.0 on training courses is as good as gain 1.0 gets (2.5 reaches 16.4, the lead-off winner 15.97).
+- The Urchin's best gain-1.0 cell (twin C, 8.22) is still behind its lead-off winner W (7.94), and its two restarts
+  are 2.7% apart, so that search has not converged.
+
+§1 stands: for the Manta and the Urchin, the nose row instead.
+
 
 ## 6. Not verified
 
