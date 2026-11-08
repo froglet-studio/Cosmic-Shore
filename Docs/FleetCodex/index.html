@@ -83,8 +83,7 @@ button{font:inherit;color:inherit}
 /* ---------- the window ---------- */
 .win{position:relative;height:860px;margin-top:28px;overflow:hidden;background:radial-gradient(ellipse at 52% 46%,var(--face),var(--fs-ground) 74%);box-shadow:inset 0 0 0 1px var(--line)}
 .hullbox{position:absolute;inset:0;pointer-events:none}
-.hullbox img{position:absolute;left:27%;top:8%;width:52%;-webkit-mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%);animation:glide 9s ease-in-out infinite}
-@keyframes glide{0%,100%{transform:translate(0,0) rotate(-2deg)}50%{transform:translate(18px,-14px) rotate(1.5deg)}}
+.hullbox img{position:absolute;left:27%;top:8%;width:52%;-webkit-mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%)}
 .hud{position:absolute;padding:22px 24px;background:color-mix(in srgb,var(--fs-ground) 84%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .brief{left:40px;top:40px;width:520px}
 .brief h1{font-size:96px;margin:6px 0 0}
@@ -104,7 +103,7 @@ button{font:inherit;color:inherit}
 .trig{color:var(--sel);font-size:14px}
 .abrow{position:absolute;right:40px;bottom:40px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 780px)}
 .ab{display:flex;flex-direction:column;align-items:center;gap:6px;width:96px;border:0;cursor:pointer;background:transparent;padding:0;transition:transform .3s var(--ease)}
-.ab .i{width:84px;height:84px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--deep) 72%,transparent);box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .3s var(--ease)}
+.ab .i{width:84px;height:84px;display:flex;align-items:center;justify-content:center;background:transparent;box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .3s var(--ease)}
 .ab .i img,.ab .i .ico{width:58px;height:58px;object-fit:contain}
 .ab small{font-size:12px;color:var(--soft);text-align:center;line-height:1.2}
 .ab:hover{transform:translateY(-4px)}
@@ -187,11 +186,11 @@ button{font:inherit;color:inherit}
 .sec{display:flex;align-items:center;gap:18px;margin:56px 0 8px;flex-wrap:wrap}
 .sec .disp{font-size:30px}
 .sec .rule{flex:1;height:1px;background:var(--line);min-width:40px}
-.row{display:grid;grid-template-columns:minmax(260px,400px) minmax(0,1fr) minmax(220px,380px) minmax(220px,330px);gap:36px;align-items:start;width:100%;text-align:left;border:0;cursor:pointer;padding:26px 0 26px 20px;background:transparent;border-bottom:1px solid var(--hair);transition:background .3s var(--ease),box-shadow .3s var(--ease)}
-.row:hover{background:color-mix(in srgb,var(--panel) 35%,transparent)}
-.row[aria-pressed="true"]{background:color-mix(in srgb,var(--panel) 55%,transparent);box-shadow:inset 3px 0 0 var(--sel)}
+.row{position:relative;display:grid;grid-template-columns:minmax(260px,400px) minmax(0,1fr) minmax(220px,380px) minmax(220px,330px);gap:36px;align-items:start;width:100%;text-align:left;border:0;cursor:pointer;padding:26px 0 26px 20px;background:transparent;border-bottom:1px solid var(--hair);transition:background .3s var(--ease),box-shadow .3s var(--ease)}
+.row:hover{cursor:pointer;background:color-mix(in srgb,var(--panel) 35%,transparent)}
+.row.on{background:color-mix(in srgb,var(--panel) 55%,transparent);box-shadow:inset 3px 0 0 var(--sel)}
 .who{display:grid;grid-template-columns:72px 1fr;gap:16px;align-items:center}
-.who .ic{width:72px;height:72px;padding:6px;background:var(--deep)}
+.who .ic{width:72px;height:72px;padding:6px}
 .who .ic img,.who .ic .ico{width:60px;height:60px;object-fit:contain}
 .row b.n{display:block;font-family:var(--disp);font-size:30px;text-transform:uppercase;line-height:1}
 .row p{margin:0;font-size:16px;line-height:1.55}
@@ -200,6 +199,20 @@ button{font:inherit;color:inherit}
 .dial i{display:block;font-style:normal;font-size:11px;color:var(--off)}
 .dial.off{color:var(--off);text-decoration:line-through}
 .l5 b{font-family:var(--disp);font-size:22px;text-transform:uppercase}
+.pickhead{all:unset;cursor:pointer;display:block}
+.pickhead:focus-visible{outline:2px solid var(--sel);outline-offset:4px}
+/* the level-5 flower: the element's upgrade icon lighting one petal at a time, level 0 to level 5 */
+.l5top{display:flex;align-items:center;gap:12px}
+.l5go{display:inline-flex;align-items:center;gap:10px;border:0;cursor:pointer;background:transparent;padding:4px 12px 4px 4px;box-shadow:inset 0 0 0 1px var(--line);font-family:var(--disp);font-size:16px;letter-spacing:.08em;text-transform:uppercase;transition:box-shadow .2s var(--ease),color .2s var(--ease)}
+.l5go:hover{box-shadow:inset 0 0 0 1px var(--sel)}
+.flw{position:relative;width:40px;height:40px;flex:none}
+.flw img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0}
+.flw img.f5{opacity:1}
+.flw.go img{animation:petal 3.6s var(--ease) forwards;animation-delay:var(--d)}
+.flw.go img.f5{opacity:0;animation-name:petal-last}
+@keyframes petal{0%{opacity:0;transform:scale(.9)}6%{opacity:1;transform:scale(1.06)}12%,100%{opacity:1;transform:scale(1)}}
+@keyframes petal-last{0%{opacity:0;transform:scale(.9)}6%{opacity:1;transform:scale(1.18)}14%,100%{opacity:1;transform:scale(1)}}
+.l5.lit b{color:var(--cta);transition:color .4s var(--ease) 1.8s}
 .l5 p{font-size:14px;color:var(--soft);margin-top:4px}
 .pill{display:inline-block;margin-top:8px;font-size:11px;letter-spacing:.16em;padding:2px 8px;box-shadow:inset 0 0 0 1px currentColor;color:var(--soft)}
 .pill.good{color:var(--cta)}.pill.warn{color:var(--warn)}
@@ -237,24 +250,28 @@ button{font:inherit;color:inherit}
 .upd li span{flex:none;width:110px;color:var(--soft);font-size:13px}
 .upd a{text-decoration:none}.upd a:hover{color:var(--sel)}
 footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
-/* ---------- the fleet table (#fleet) ---------- */
-.ftop{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-top:40px}
-.ftop h1{font-size:96px;margin:0}
-.scroll{overflow-x:auto;margin-top:20px}
-.mx{border-collapse:collapse;width:100%;min-width:1100px}
-.mx th{font-size:11px;letter-spacing:.18em;color:var(--soft);text-align:left;font-weight:400;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
-.mx th img{width:14px;height:14px;vertical-align:-2px;margin-right:6px}
-.mx td{padding:10px 12px;border-bottom:1px solid var(--hair);vertical-align:middle}
-.mx tbody tr{cursor:pointer;transition:background .2s var(--ease)}
-.mx tbody tr:hover td{background:color-mix(in srgb,var(--panel) 50%,transparent)}
-.cell{display:flex;align-items:center;gap:8px}
-.cell .ic{width:36px;height:36px;padding:3px;background:var(--deep);flex:none}
-.cell .ic img,.cell .ic .ico{width:30px;height:30px;object-fit:contain}
-.cell .nm{font-size:14px;font-weight:500;line-height:1.2}
-.hull{display:flex;gap:10px;align-items:center}
-.hull img{width:72px;height:40px;object-fit:cover}
-.hull .disp{font-size:22px}
-.hull small{display:block;font-size:12px;color:var(--soft)}
+/* ---------- the whole fleet (#fleet): one card per vessel ---------- */
+.fhead{display:flex;align-items:flex-end;gap:20px 40px;flex-wrap:wrap;margin-top:32px}
+.fhead h1{font-size:72px;margin:4px 0 0}
+.fstats{display:flex;gap:28px;margin-left:auto}
+.fstats .disp{font-size:30px}.fstats small{display:block;font-size:11px;color:var(--soft)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:20px}
+.fcard{display:flex;flex-direction:column;text-decoration:none;overflow:hidden;background:color-mix(in srgb,var(--panel) 42%,transparent);box-shadow:inset 0 0 0 1px var(--hair);transition:transform .3s var(--ease),box-shadow .3s var(--ease)}
+.fcard:hover,.fcard:focus-visible{transform:translateY(-4px);box-shadow:inset 0 0 0 1px var(--sel)}
+.fcard .pic{position:relative;height:140px;overflow:hidden;background:radial-gradient(ellipse at 50% 55%,var(--face),transparent 72%)}
+.fcard .pic img{width:100%;height:100%;object-fit:cover;-webkit-mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 50%,transparent 100%);transition:transform .5s var(--ease)}
+.fcard:hover .pic img{transform:scale(1.06)}
+.seats{position:absolute;right:10px;top:10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:2px 8px;color:var(--fs-ruby);box-shadow:inset 0 0 0 1px currentColor}
+.fbody{display:flex;flex-direction:column;gap:10px;padding:10px 14px 14px}
+.fname{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.fname .disp{font-size:26px}.fname small{font-size:12px;color:var(--soft)}
+.fab{display:flex;gap:8px}
+.fab span{width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+.fab img,.fab .ico{width:30px;height:30px;object-fit:contain}
+.fels{display:flex;align-items:center;gap:6px}
+.fel img{width:22px;height:22px;display:block}
+.fel.none{opacity:.28}
+.fels small{margin-left:auto;font-size:12px;color:var(--soft)}
 /* ---------- phone ---------- */
 @media (max-width:1100px){
   .win{height:auto;display:flex;flex-direction:column;gap:22px;background:none;box-shadow:none;overflow:visible}
@@ -272,7 +289,7 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
   .fc3{grid-template-columns:1fr}
   .switch{order:3;width:100%;margin:0}.cur{flex:1;justify-content:center}
   .search{width:auto;flex:1}
-  .ftop h1{font-size:60px}
+  .fhead h1{font-size:52px}.fstats{margin-left:0}.fgrid{grid-template-columns:1fr 1fr;gap:8px}.fcard .pic{height:100px}.fname .disp{font-size:20px}.fab span{width:26px;height:26px}.fab img,.fab .ico{width:24px;height:24px}
 }
 @media (max-width:640px){.dc{font-size:11px}.kc{min-width:48px;font-size:11px}.dv{padding:8px 4px}.step span{display:none}.stats{gap:16px}}
 @media (prefers-reduced-motion:reduce){
@@ -549,21 +566,23 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
           return '<tr><td>' + esc(r.action) + '</td><td>' + (r.padArt ? img(r.padArt, "") : '') + esc(r.pad) + '</td><td>' + esc(r.pc) + '</td><td>' + (r.touchArt ? img(r.touchArt, "") : '') + esc(r.touch || "-") + '</td></tr>'; }).join("") + '</tbody></table>' +
         (c.notes.length ? '<ul class="notes">' + c.notes.map(function(n){ return '<li>' + esc(n) + '</li>'; }).join("") + '</ul>' : '') : '<p class="empty">No controls: this vessel has no ability map.</p>') + '</div></div>';
 
-    /* recent updates (what changed, in plain words: never a commit message) and docs */
+    /* recent updates: what changed, in plain words, never a commit message */
     var ups = (v.changes || []).filter(function(u){ return u.parts && (u.parts.length || u.games.length); }).slice(0, 6);
-    html += '<div class="sec"><span class="disp">Recent updates and docs</span><span class="rule"></span></div><div class="fc2 fc3">' +
-      '<div><div class="lab">Recent updates</div>' + (ups.length ? '<ul class="upd">' + ups.map(function(u){
+    html += '<div class="sec"><span class="disp">Recent updates</span><span class="rule"></span></div>' + (ups.length ? '<ul class="upd">' + ups.map(function(u){
         var bits = [];
         if(u.parts.length) bits.push(cap(u.parts.join(", ")) + ' updated');
         if(u.games.length) bits.push((u.games.length > 1 ? 'Games updated: ' : 'Game updated: ') + u.games.join(", "));
-        return '<li><span>' + esc(day(u.date)) + '</span>' + esc(bits.join(". ")) + '.</li>'; }).join("") + '</ul>' : '<p class="empty">No update in the history read.</p>') + '</div>' +
-      '<div><div class="lab">Docs</div>' + (v.docs.length ? '<ul class="upd">' + v.docs.slice(0, 6).map(function(d){ return '<li><a href="' + esc(d.url) + '">' + esc(file(d.path)) + '</a></li>'; }).join("") + '</ul>' : '<p class="empty">No doc found by name.</p>') + '</div></div>';
+        return '<li><span>' + esc(day(u.date)) + '</span>' + esc(bits.join(". ")) + '.</li>'; }).join("") + '</ul>' : '<p class="empty">No update in the history read.</p>');
 
     app.innerHTML = html;
     Array.prototype.forEach.call(app.querySelectorAll("[data-pick]"), function(b){ b.addEventListener("click", function(){
-      pick = b.dataset.pick; var y = window.scrollY, inRow = b.classList.contains("row"); vesselView(v, true); window.scrollTo(0, y);
+      pick = b.dataset.pick; var y = window.scrollY, inRow = b.classList.contains("pickhead"); vesselView(v, true); window.scrollTo(0, y);
       var w = app.querySelector(".win"); if(inRow && w && w.getBoundingClientRect().bottom < 120) w.scrollIntoView({behavior:"smooth", block:"start"});
-      var n = app.querySelector((inRow ? '.row' : '.ab') + '[data-pick="' + pick + '"]'); if(n) n.focus({preventScroll:true}); }); });
+      var n = app.querySelector((inRow ? '.pickhead' : '.ab') + '[data-pick="' + pick + '"]'); if(n) n.focus({preventScroll:true}); }); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-row]"), function(r){ r.addEventListener("click", function(e){
+      if(e.target.closest("button,a")) return; var h = r.querySelector(".pickhead"); if(h) h.click(); }); });
+    Array.prototype.forEach.call(app.querySelectorAll("[data-l5]"), function(b){ b.addEventListener("click", function(){
+      var f = b.querySelector(".flw"), l = b.closest(".l5"); f.classList.remove("go"); if(l) l.classList.remove("lit"); void f.offsetWidth; f.classList.add("go"); if(l) l.classList.add("lit"); }); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-filt]"), function(b){ b.addEventListener("click", function(){
       filt = b.dataset.filt; var y = window.scrollY; vesselView(v, true); window.scrollTo(0, y); var n = app.querySelector('[data-filt="' + filt + '"]'); if(n) n.focus({preventScroll:true}); }); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-jump]"), function(a){ a.addEventListener("click", function(e){ e.preventDefault(); var t = document.getElementById(a.dataset.jump); if(t) t.scrollIntoView({behavior:"smooth", block:"start"}); }); });
@@ -586,33 +605,34 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
       more = '<span><span class="k">More ' + esc(p.el) + '</span>' + (w.scales ? '<p style="font-size:15px">' + esc(w.scales) + '</p>' : '') + e.scaling.filter(function(x){ return x.field && x.min != null; }).map(function(x){
           return '<span class="dial' + (x.on ? '' : ' off') + '">' + esc(x.field) + ' &times;' + num(x.min) + ' to &times;' + num(x.max) + (x.on ? '' : ' (switched off)') + '<i>' + esc(file(x.asset || x.script)) + '</i></span>'; }).join("") +
         (!w.scales && !e.scaling.length ? '<p style="font-size:14px;color:var(--soft)">This element changes no number.</p>' : '') + '</span>';
-      l5 = '<span class="l5"><span class="k">Level 5</span><b>' + esc(u.label || (u.status === "open" ? "Not designed yet" : "Unnamed")) + '</b><p>' + esc(u.description || (u.status === "open" ? "Unlocks at level " + u.unlockLevel + ", relocks below " + u.relockBelow + "." : "")) + '</p><span class="pill ' + st[0] + '">' + st[1] + '</span></span>';
+      var frames = ''; for(var n = 0; n <= 5; n++) frames += img(D.ui["flower/" + p.el + "/" + n], n === 5 ? p.el + " at level 5" : "", "f" + n).replace('<img ', '<img style="--d:' + (n * 0.5).toFixed(1) + 's" ');
+      l5 = '<span class="l5"><span class="l5top"><span class="k" style="margin:0">Level 5</span><button type="button" class="l5go" data-l5="' + p.key + '" aria-label="Play level 5 of ' + esc(p.name) + '"><span class="flw">' + frames + '</span>Play L5</button></span><b>' + esc(u.label || (u.status === "open" ? "Not designed yet" : "Unnamed")) + '</b><p>' + esc(u.description || (u.status === "open" ? "Unlocks at level " + u.unlockLevel + ", relocks below " + u.relockBelow + "." : "")) + '</p><span class="pill ' + st[0] + '">' + st[1] + '</span></span>';
     }
-    return '<button type="button" class="row" data-pick="' + p.key + '" aria-pressed="' + on + '">' + head + does + more + l5 + '</button>';
+    return '<div class="row' + (on ? ' on' : '') + '" data-row="' + p.key + '"><button type="button" class="pickhead" data-pick="' + p.key + '" aria-pressed="' + on + '" aria-label="Play the move of ' + esc(p.name) + '">' + head + '</button>' + does + more + l5 + '</div>';
   }
 
-  /* ---------- the whole fleet ---------- */
+  /* ---------- the whole fleet: one card per vessel, every vessel on a screen or two ---------- */
+  var fleetFilt = "All";
   function fleetView(){
-    var vs = listed().filter(matches);
-    function cell(e){
-      if(!e) return '<td class="empty">no map</td>';
-      var tint = (e.words && e.words.tint) || {};
-      return '<td><span class="cell"><span class="ic">' + (e.icon ? ico(e.icon, e.layers, "", tint.rest) : img(e.shape, "")) + '</span><span><span class="nm">' + esc(e.open ? "Open slot" : e.ability) + '</span><br><span class="pill ' + (L5[e.upgrade.status] || L5.open)[0] + '" style="margin-top:4px">L5 ' + (L5[e.upgrade.status] || L5.open)[1] + '</span></span></span></td>';
+    var all = listed(), vs = all.filter(matches).filter(function(v){ return fleetFilt === "All" || (fleetFilt === "Crews") === !!isCrew(v); });
+    var wired = all.reduce(function(a, v){ return a + v.status.upgradesWired; }, 0);
+    function card(v){
+      var by = elementGames(v), ps = picks(v);
+      var flowers = D.elements.map(function(el){
+        var g = by[el]; return '<span class="fel' + (g.length ? '' : ' none') + '" title="' + esc(el + ': ' + (g.length ? g.map(function(c){ return c.name; }).join(", ") : 'no game yet')) + '">' + img(D.ui["shape/" + el], el) + '</span>'; }).join("");
+      return '<a class="fcard" href="#' + esc(v.key) + '"><span class="pic">' + img(vimg(v), "") + (isCrew(v) ? '<span class="seats">' + v.crew.seats + ' seats</span>' : '') + '</span>' +
+        '<span class="fbody"><span class="fname"><span class="disp">' + esc(crewName(v)) + '</span><small>' + (isCrew(v) ? 'Crew' : 'Vessel ' + v.id) + ' &middot; L5 ' + v.status.upgradesWired + '/4</small></span>' +
+        '<span class="fab">' + ps.slice(0, 6).map(function(p){ return '<span title="' + esc(p.name) + '">' + iconOf(p) + '</span>'; }).join("") + '</span>' +
+        '<span class="fels">' + flowers + '<small>' + v.cards.length + ' game' + (v.cards.length === 1 ? '' : 's') + '</small></span></span></a>';
     }
-    function games(v){ var by = elementGames(v); return D.elements.filter(function(el){ return by[el].length; }).map(function(el){ return '<div style="white-space:nowrap;font-size:13px">' + img(D.ui["shape/" + el], "") + ' ' + esc(by[el].map(function(c){ return c.name; }).join(", ")) + '</div>'; }).join("") || '<span class="empty">none</span>'; }
-    app.innerHTML = '<div class="ftop"><div><div class="lab" style="color:var(--sel)">' + listed().length + ' vessels &middot; ' + listed().filter(isCrew).length + ' crews</div><h1 class="disp">The fleet</h1></div></div>' +
-      '<div class="scroll"><table class="mx"><thead><tr><th>VESSEL</th>' + D.elements.map(function(el){ return '<th>' + img(D.ui["shape/" + el], "") + el.toUpperCase() + '</th>'; }).join("") + '<th>' + img(D.ui.omni, "") + 'OMNI CRYSTAL</th><th>ELEMENT GAMES</th></tr></thead><tbody>' +
-      vs.map(function(v){
-        var o = v.omni || {};
-        return '<tr tabindex="0" data-k="' + esc(v.key) + '"><td><span class="hull">' + img(vimg(v), "") + '<span><span class="disp">' + esc(crewName(v)) + '</span><small>' + (isCrew(v) ? v.crew.seats + ' seats' : 'vessel ' + v.id) + '</small></span></span></td>' +
-          D.elements.map(function(el){ return cell(v.elements[el]); }).join("") +
-          '<td><span class="cell"><span class="ic">' + (o.icon ? ico(o.icon, o.layers, "") : img(o.mark, "")) + '</span><span class="nm">' + esc((o.words && o.words.ability) || o.label || "Fly into it") + '</span></span></td><td>' + games(v) + '</td></tr>';
-      }).join("") + '</tbody></table></div>' + (vs.length ? '' : '<p class="empty">No vessel matches.</p>');
-    Array.prototype.forEach.call(app.querySelectorAll("tbody tr[data-k]"), function(tr){
-      function go(){ location.hash = tr.dataset.k; }
-      tr.addEventListener("click", go);
-      tr.addEventListener("keydown", function(ev){ if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); go(); } });
-    });
+    var solo = vs.filter(function(v){ return !isCrew(v); }), crews = vs.filter(isCrew);
+    app.innerHTML = '<div class="fhead"><div><div class="lab" style="color:var(--sel)">The fleet</div><h1 class="disp">Pick a vessel</h1></div>' +
+      '<div class="fstats">' + [[all.length, "vessels"], [all.filter(isCrew).length, "crews"], [wired + " / " + all.length * 4, "level 5 wired"]].map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") + '</div>' +
+      '<div class="filters" role="group" aria-label="Show">' + ["All", "Solo", "Crews"].map(function(x){ return '<button type="button" class="chip" data-ff="' + x + '" aria-pressed="' + (x === fleetFilt) + '">' + x + '</button>'; }).join("") + '</div></div>' +
+      (solo.length ? '<div class="fgrid">' + solo.map(card).join("") + '</div>' : '') +
+      (crews.length ? '<div class="sec" style="margin-top:36px"><span class="disp">Crews</span><span class="lab">Two or more pilots, one hull</span><span class="rule"></span></div><div class="fgrid">' + crews.map(card).join("") + '</div>' : '') +
+      (vs.length ? '' : '<p class="empty">No vessel matches.</p>');
+    Array.prototype.forEach.call(app.querySelectorAll("[data-ff]"), function(b){ b.addEventListener("click", function(){ fleetFilt = b.dataset.ff; fleetView(); var n = app.querySelector('[data-ff="' + fleetFilt + '"]'); if(n) n.focus(); }); });
   }
 
   var PADMAP = {};

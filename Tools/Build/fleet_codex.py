@@ -525,11 +525,12 @@ def controls(key, elements, one_stick, bindings, atp, profile):
 
 ELEMENT_NUM = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 UI_ART = {
-    # the element marks: the Codex's shapes, never the HUD petal ("check codex for that")
-    "shape/Charge": "Assets/_Graphics/ElementShapes/charge_pentagon_label.png",
-    "shape/Mass": "Assets/_Graphics/ElementShapes/mass_triangle_label.png",
-    "shape/Space": "Assets/_Graphics/ElementShapes/space_kite_label.png",
-    "shape/Time": "Assets/_Graphics/ElementShapes/time_diamond_label.png",
+    # the element marks: the element's upgrade FLOWER at full bloom (Shombith 2026-11-08: "Use upgrade flowers and make
+    # them animated when l5 is clicked we show what happens to the petals"; was the Codex shapes, 2026-11-02)
+    **{f"shape/{el}": f"Assets/_Graphics/ElementIcons/icon_{el.lower()}Upgrade_5_active.png" for el in ("Charge", "Mass", "Space", "Time")},
+    # the flower's six frames, level 0 (no petal lit) to level 5 (every petal lit): the page plays them on L5
+    **{f"flower/{el}/{n}": f"Assets/_Graphics/ElementIcons/icon_{el.lower()}Upgrade_{n}_active.png"
+       for el in ("Charge", "Mass", "Space", "Time") for n in range(6)},
     "omni": "Assets/_Graphics/ElementIcons/OmniCrystal_Active.png",
     # the HUD's level-5 look: the bloom AbilityLockupView puts behind an upgraded card (AbilityLockupStyle.bloomSprite)
     "bloom": "Assets/_Graphics/Design Assests/HUD UI/AbilityLockup/LockupBloom.png",
