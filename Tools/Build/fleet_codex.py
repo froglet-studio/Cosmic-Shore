@@ -97,8 +97,20 @@ def yaml_scalar(text, key):
         return ""
     raw = " ".join(part.strip() for part in m.group(1).split("\n")).strip()
     if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "'\"":
-        raw = raw[1:-1].replace("''", "'") if raw[0] == "'" else raw[1:-1]
+        raw = raw[1:-1].replace("''", "'") if raw[0] == "'" else _yaml_unescape(raw[1:-1])
     return raw
+
+
+_YAML_ESC = {"n": "\n", "t": "\t", '"': '"', "\\": "\\", "/": "/", "0": "\0"}
+
+
+def _yaml_unescape(body):
+    """A double-quoted YAML scalar's escapes: Unity writes typographic characters as \\uXXXX ("You\\u2019re")."""
+    def one(m):
+        if m.group(1):
+            return chr(int(m.group(1), 16))
+        return _YAML_ESC.get(m.group(2), m.group(0))
+    return re.sub(r"\\(?:u([0-9a-fA-F]{4})|(.))", one, body)
 
 
 def guid_paths(roots, ext):

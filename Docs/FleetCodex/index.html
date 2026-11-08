@@ -749,7 +749,7 @@ body{background:var(--fs-ground)}
       '<circle class="zone" cx="78" cy="120" r="38"/>' + (one ? '' : '<circle class="zone" cx="262" cy="120" r="38"/>');
     if(apart){
       var st = apart === litRow ? "lit" : "on";
-      o += '<g class="pp kind-apart st-' + st + (st === "lit" ? ' g-' + g : '') + '" data-pick="' + (apart.element ? "el:" + apart.element : "") + '"><ellipse class="thumb l" cx="78" cy="120" rx="15" ry="19"/><ellipse class="thumb r" cx="262" cy="120" rx="15" ry="19"/></g>';
+      o += '<g class="pp kind-apart st-' + st + (st === "lit" ? ' g-' + g : '') + '"' + (apart.element ? ' data-pick="el:' + apart.element + '"' : '') + '><ellipse class="thumb l" cx="78" cy="120" rx="15" ry="19"/><ellipse class="thumb r" cx="262" cy="120" rx="15" ry="19"/></g>';
     } else {
       o += thumb(78, 120, "l") + (one && !btns.length && !(lifts.r || lifts.e) ? '' : thumb(262, 120, "r"));
     }
