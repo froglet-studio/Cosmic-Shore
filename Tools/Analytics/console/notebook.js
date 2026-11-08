@@ -66,6 +66,7 @@
     if (f.build) state.build = f.build;
     if (f.days) state.days = f.days;
     state.play = f.play || "all";
+    state.device = F.DEVICES.some(([k]) => k === f.device) ? f.device : "all";
     state.era = f.era && F.eraById(f.era) ? f.era : "";
   }
   async function loadList() {
@@ -420,8 +421,9 @@
     const era = f.era && F.eraById(f.era);
     return { title: (b.name || "").trim() || "Untitled notebook",
              date: b.updated_ms ? `${when(b.updated_ms)} UTC` : `${when(Date.now())} UTC (not saved)`,
-             filters: [f.build ? `${f.build} builds` : null, era ? `${era.name} (${era.from} to ${era.to})` : f.days ? `last ${f.days} days` : null,
-                       f.play && f.play !== "all" ? ({ solo_vs_ai: "solo vs AI", solo: "solo", multi: "multiplayer" })[f.play] : "every play type"].filter(Boolean).join(" · "),
+             filters: [f.build ? (f.build === "all" ? "every build" : `${f.build} builds`) : null, era ? `${era.name} (${era.from} to ${era.to})` : f.days ? `last ${f.days} days` : null,
+                       f.play && f.play !== "all" ? ({ solo_vs_ai: "solo vs AI", solo: "solo", multi: "multiplayer" })[f.play] : "every play type",
+                       f.device && f.device !== "all" ? F.deviceFilterLabel(f.device) : "every device"].filter(Boolean).join(" · "),
              owner: b.owner || state.me };
   }
 
@@ -485,7 +487,7 @@
 
   // ------------------------------------------------------------------ the page
 
-  const META = { title: "Notebook", build: true, days: F.DAYS, play: true, era: true };
+  const META = { title: "Notebook", build: true, days: F.DAYS, play: true, era: true, device: true };
 
   async function page() {
     F.setUpdated(null);
