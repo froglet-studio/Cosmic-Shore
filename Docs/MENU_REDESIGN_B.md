@@ -6160,3 +6160,26 @@ Slow x4):
 **Differs from the build:** a drawing of the built rules (OrientationFade, CrewOrientation, ScreenOrientationPolicy);
 the real turn, the Pistol's real view and GameCanvas upright are judged in the Device Simulator (checklist "Portrait
 menus", steps 8-10). Rev 71 was taken by another session while this round was drawn; this one is 72.
+
+## 146. Rev 76 mockups: the turn, five transitions - each on the menu and on the Goby turning into the Pistol (2026-11-08, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-08, after Rev 72's storyboard): "Can you show some alternatives cooler ones?" - "transitions I
+meant".
+
+**On the canvas:** the Portrait tab, "Rev 76 - The turn: five transitions" (copies in `Docs/MenuRedesignB/board/`). Each
+option board loops the turn both ways on two phones, the menu (Home) and the Goby turning into the Pistol, with Pause
+and Slow x4; the Compare board plays all five side by side:
+- **A Fade through (built):** out on the switch, two frames held, 0.28 s in (section 138, round 2).
+- **B Hold steady:** the UI turns against the phone so it stays level in the hand, then settles upright with a small
+  scale-in; in the game the camera swings from behind the Goby to the Pistol's side view.
+- **C Re-form (recommended):** the UI re-forms upright in three bands, top to bottom, 40 ms apart (the kit's own
+  KitEntrance Rise with KitMotion.Stagger); in the game the Pistol's small square grows to fill the screen over the
+  Goby's view (the crew's two views trading places, laid out by CrewPictureInPicture), then the HUD re-forms.
+  Recommended because it is the menu's own motion and both game pieces exist; quiet enough for the Rev 29 rule.
+- **D Sliver wipe:** a dark slab with the style guide's cut corner sweeps across; the new layout is behind it. The bold end.
+- **E Focus pull:** the world softens through the turn and sharpens as the UI comes back; needs a blur pass for ~0.4 s.
+
+**Differs from the build:** A is built. B-E would change `OrientationFade` (C: replay the entrances under the canvas after
+the switch; D: an overlay; B: a counter-rotation; E: a blur volume) and, on the game side, the Goby's seat change
+(`GobyPistolDuo`, Garrett's: C grows the Pistol's square, B swings between the seat cameras). Drawn with the Pistol's
+model render and Perch Run's card art; the motion, not the game. Rev 75 was taken by another session meanwhile.
