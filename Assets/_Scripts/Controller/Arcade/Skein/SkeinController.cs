@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -39,6 +40,13 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SkeinController : GateRaceController, IPlayerSpawnLine
     {
+        [Header("AI nose lead")]
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
+                 "the lead off. Urchin 0: off, the lead-off Urchin was faster in the model.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Urchin, 0.0f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
         [Header("Skein arena")]
         [Tooltip("The scene Cell whose config carries the cable. Left empty this falls back to a " +
                  "scene search; the reference is preferred because a satellite Cell (the arcade " +

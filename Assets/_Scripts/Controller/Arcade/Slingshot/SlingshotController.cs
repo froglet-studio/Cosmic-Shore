@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -32,6 +33,13 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SlingshotController : GateRaceController
     {
+        [Header("AI nose lead")]
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
+                 "the lead off. Stoat 2.5: the fleet lead, which alone fixed the Stoat in the model.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Stoat, 2.5f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
         [Header("Slingshot circuit")]
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
                  "length, so the circuit is laid with target/laps rings - one number authored " +
