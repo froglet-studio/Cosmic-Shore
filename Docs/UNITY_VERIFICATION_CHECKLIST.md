@@ -22056,3 +22056,19 @@ from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
 3. **Turn `aiSeekRails` off** on the scene's SkeinController for one race as the control: the AI should go back to
    flying at the rings and missing the pinned ones.
 4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).
+
+## 🔴 Nacre, the light pastel colour set (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/focused-thompson-tj52go`. New palette `Assets/_SO_Assets/Color Palettes/NacreColorSetSO.asset`, written by
+`author_colour_set_assets.py` from `colour_sets.json` (`nacre`), and a catalog entry between Dart Frog and Contrast.
+The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran here: `colour_sets.py --check/--self-test`,
+`author_colour_set_assets.py --check`, `author_colour_set_catalog.py --check/--self-test`, both theme writers' `--check`,
+`/ship` gates, and `unity_refcompile` (0 errors in changed files; 21 elsewhere from packages the sandbox cannot fetch).
+
+1. **Profile > Colour sets**: Nacre is the fourth tile and shows Mint over Lavender, Orchid over Pearl, Butter over
+   Periwinkle, Ice over Sage. Apply it.
+2. **A race or freestyle with all four domains' trails.** Prisms should read as pale pastel bodies under soft rims, light
+   but not glowing. Judge the bloom: the gameplay threshold is 0.2, so the light faces bloom more than Nocturne's. If
+   it reads washed out, lower `rim_brightness` in `colour_sets.json` or the face L ranges, then re-run the writer.
+3. **Shielded and super-shielded prisms** still read as a tier above plain in every domain (Ruby's rim is the brightest).
+4. **Danger (coral) and free crystals (lime CTA)** still stand out against the pale bodies.

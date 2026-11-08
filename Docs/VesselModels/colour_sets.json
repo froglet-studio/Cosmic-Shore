@@ -1,6 +1,6 @@
 {
   "format": "cosmic-shore-colour-sets/1",
-  "status": "Colour sets. Nocturne is the game's default palette (Garrett, 2026-11-03: \"make the nocturne the new default. It does look amazing.\"); Dart Frog is proposed for the paid track. Each set gives every domain its own regions of OKLab. The six-family truth in colour_domains.json is untouched; its anchors are read from PhoticColorSetSO, the default until 2026-11-03. 2026-11-05: Contrast, then one set per form of colour blindness or visual impairment (Protanopia, Deuteranopia, Tritanopia, Achromatopsia, Low Vision), each keeping rule 5 for its vision; they sit in the Profile's colour-set rail with the others, and Settings > General > Colour sets is a breadcrumb to them.",
+  "status": "Colour sets. 2026-11-08: Nacre, a light pastel set to complement Nocturne and Photic (rim_brightness keeps its rims below the original's glow). Nocturne is the game's default palette (Garrett, 2026-11-03: \"make the nocturne the new default. It does look amazing.\"); Dart Frog is proposed for the paid track. Each set gives every domain its own regions of OKLab. The six-family truth in colour_domains.json is untouched; its anchors are read from PhoticColorSetSO, the default until 2026-11-03. 2026-11-05: Contrast, then one set per form of colour blindness or visual impairment (Protanopia, Deuteranopia, Tritanopia, Achromatopsia, Low Vision), each keeping rule 5 for its vision; they sit in the Profile's colour-set rail with the others, and Settings > General > Colour sets is a breadcrumb to them.",
   "checker": "python3 Tools/Build/colour_sets.py --check",
   "lab": "Docs/Studios/ColourSetsLab.html",
   "artifact": "https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf",
@@ -97,6 +97,50 @@
           "inspiration": "an orchid in a dark aquarium: orchid over deep teal",
           "rim": {"name": "Orchid", "hue": 326, "sat": 0.328, "L": [0.59, 0.79], "rho": 0.035, "swatch": "#DF5CE4"},
           "face": {"name": "Deep Teal", "hue": 232, "sat": 0.203, "L": [0.27, 0.37], "rho": 0.035, "swatch": "#00384E"}
+        }
+      }
+    },
+    "nacre": {
+      "name": "Nacre",
+      "track": "free",
+      "proposed": "2026-11-08",
+      "by": "Claude, asked by Garrett for a pastel set to complement Nocturne and Photic: light, not bright, keeping the hue contrasts; found by search (lowest chroma and highest lightness under rules 1-4, then rounded and re-checked)",
+      "summary": "The inside of a shell. Light, not bright: five faces are pale pastels (mid L 0.70 to 0.79, chroma 0.06 to 0.12) under lighter pastel rims of a different hue (mid L 0.83 to 0.92); Ruby turns it over, a pearl face (mid L 0.93) under the one clearer rim the six-family truth requires, an orchid. Rims are painted at three quarters of Photic's brightness (rim_brightness) so they read as a sheen, not a glow. Nocturne's complement: pale bodies under soft edges where Nocturne is dark bodies under lanterns.",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_hue_contrast": 90,
+      "min_lightness_contrast": 0.12,
+      "rim_brightness": 0.75,
+      "domains": {
+        "fire": {
+          "inspiration": "coral polyp over sea glass: Fire stays warm enough to warn",
+          "rim": {"name": "Coral", "hue": 26, "sat": 0.109, "L": [0.8, 0.86], "rho": 0.012, "swatch": "#FDB1A9"},
+          "face": {"name": "Sea Glass", "hue": 204, "sat": 0.114, "L": [0.64, 0.76], "rho": 0.012, "swatch": "#5CADB5"}
+        },
+        "gold": {
+          "inspiration": "a cowrie's butter-yellow lip over the periwinkle snail",
+          "rim": {"name": "Butter", "hue": 90, "sat": 0.115, "L": [0.88, 0.94], "rho": 0.012, "swatch": "#FCDF8E"},
+          "face": {"name": "Periwinkle", "hue": 257, "sat": 0.119, "L": [0.72, 0.84], "rho": 0.012, "swatch": "#91BAF3"}
+        },
+        "lime": {
+          "inspiration": "new kelp over a mauve anemone",
+          "rim": {"name": "Pistachio", "hue": 125, "sat": 0.149, "L": [0.86, 0.96], "rho": 0.012, "swatch": "#CDF18A"},
+          "face": {"name": "Mauve", "hue": 330, "sat": 0.07, "L": [0.72, 0.84], "rho": 0.012, "swatch": "#CCABC8"}
+        },
+        "jade": {
+          "inspiration": "mint sea foam over a lavender abalone shell",
+          "rim": {"name": "Mint", "hue": 168, "sat": 0.133, "L": [0.85, 0.97], "rho": 0.012, "swatch": "#89FBD2"},
+          "face": {"name": "Lavender", "hue": 298, "sat": 0.147, "L": [0.75, 0.81], "rho": 0.012, "swatch": "#C0A7F7"}
+        },
+        "blue": {
+          "inspiration": "ice-blue sky on the water over sage sea grass",
+          "rim": {"name": "Ice", "hue": 235, "sat": 0.046, "L": [0.89, 0.95], "rho": 0.012, "swatch": "#CAEAFD"},
+          "face": {"name": "Sage", "hue": 138, "sat": 0.074, "L": [0.75, 0.82], "rho": 0.012, "swatch": "#A7C29E"}
+        },
+        "ruby": {
+          "inspiration": "an orchid sea slug on pearl, the one rim the six-family truth keeps clear: it gives every pale lavender to Blue, so Ruby's rim is an orchid at sat 0.256 (rule 4)",
+          "rim": {"name": "Orchid", "hue": 318, "sat": 0.256, "L": [0.72, 0.79], "rho": 0.012, "swatch": "#E182FE"},
+          "face": {"name": "Pearl", "hue": 57, "sat": 0.039, "L": [0.89, 0.96], "rho": 0.012, "swatch": "#FAE1CF"}
         }
       }
     },
