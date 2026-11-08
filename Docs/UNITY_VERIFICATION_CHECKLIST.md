@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Voyage window's galaxy map draws the cells in 3D (`claude/project-thread-y85rw0`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/Voyages/VOYAGE_BOARD.md` §4c "In the game".
+- `HyperSeaCells`: the board's truncated-octahedron cells on a BCC lattice (the Heart is a nucleus), their sections, the slice's snap, the fades. `HyperSeaSky.ViewOf` slices the deep tiers at the snapped layer plus the reader's offset.
+- `VoyageMapSky` draws the slice's cells (walls, own-sea fill, cytoplasm, nucleus sprite), level tags in the centre cell, a 3D cell's card on a tap, a Lime line on the map's bottom edge. `VoyageCellDraw` paints the nucleus sprite into the map's atlas.
+- `VoyageEdgeGraphic` cuts along the map's bottom edge, draws the cells upright and a draggable Lime slice bar (drag, scroll, tap the handle to reset).
+- New authored lines `MapCellNucleus` ... `EdgeSlice` in `VoyageContent.asset`.
+
+**Verified without the editor:**
+- The reference compile, player and editor configs: 0 errors in changed files (the 21 left are the Moderation package gaps on bleeding-edge). Negative control: an error planted in `HyperSeaCellsTests` failed the editor config.
+- `HyperSeaCellsTests` and `HyperSeaSkyTests` run under .NET 8 with NUnit outside Unity: 12 of 12 pass (the page's goldens).
+- `author_voyage_assets.py --check`, `export_sky.js --check`, `cells_golden.js`, `sky_golden.js`, `ship/gates.sh`.
+
+**Verify in the editor:**
+1. Open the Voyage window and zoom the galaxy map to the Cell tier near Tumult. The cells show as octagons and squares with pale walls, each filled with its own sea; nuclei are lit caged spheres. Nothing shows under about 36 px a cell; walls and nuclei fade in, with no moire.
+2. Zoom to about 200 px a cell: the centre cell tags Nucleus, Cytoplasm and Membrane. At the Heart (dive to the galactic centre) they read Sgr A* and the circumnuclear disk.
+3. The strip under the map: at cell zoom it shows the same cells upright, and the map's bottom row of cells continues into it. Drag the Lime bar: the map's cells change smoothly. Scroll over the strip: 2 ly a notch. Tap the handle: back to the focus layer. A drag elsewhere on the strip still scrolls the page if the strip sits in one.
+4. Tap open water at cell zoom: the 3D cell under the tap is outlined and its card opens; a second tap closes it.
+5. Profiler: the map's mesh stays under 65k vertices at every zoom (cells have a 34k budget); no frame spike while dragging the bar.
+6. Check the nucleus sprite's look against the in-game Nucleus prefab.
+
+**First-pass tuning** (all guesses): walls from 36 px (board 22), fill from 60 px, inner walls from 90 px, tags from 200 px, cell vertex budget 34,000 on the map and 30,000 on the strip.
+
 ### 🔴 The Rhino splits into the Rhino (the plough) and the Swordfish (the sword) (`cece/practical-mendel-cdfsc3`, 2026-11-07, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SWORDFISH.md`, `R_VesselActions/RHINO_PLOUGH.md` § "The plough kit".

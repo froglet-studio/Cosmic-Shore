@@ -174,7 +174,7 @@ namespace CosmicShore.ScriptableObjects
         public string MapTierSectorWhat = "star clusters and the brightest stars";
         public string MapTierRegionWhat = "clusters, clouds and the stars you see by eye";
         public string MapTierNeighbourhoodWhat = "a slab of nearby stars around one height";
-        public string MapTierCellWhat = "one 20 ly cell and the stars inside it";
+        public string MapTierCellWhat = "one 20 ly cell: membrane, cytoplasm, nucleus, and its stars";
         public string MapTierSystemWhat = "single star systems a few ly apart";
         [Tooltip("The ladder's dives: a press flies from wherever the map is down to Sol's star system, or Tumult's.")]
         public string MapDiveSol = "SOL";
@@ -248,6 +248,32 @@ namespace CosmicShore.ScriptableObjects
         public string MapCellBerth = " Inside the berth of {place}.";
         [Tooltip("{source} on a cell's card.")]
         public string MapSourceCell = "M - the sea model at the cell's centre";
+
+        [Header("Galaxy map: the cells in 3D (Docs/Voyages/VOYAGE_BOARD.md 4c)")]
+        [Tooltip("The nucleus's tag inside the cell at the view's centre (once a cell is 200 px wide).")]
+        public string MapCellNucleus = "Nucleus";
+        [Tooltip("The nucleus's tag in the central cell, whose nucleus is Sgr A*.")]
+        public string MapCellNucleusHeart = "Nucleus - Sgr A*, the Heart";
+        [Tooltip("Under the nucleus's tag when the slice cuts the nucleus.")]
+        public string MapCellNucleusBody = "6.5 ly across - omni regrows here";
+        [Tooltip("Under the nucleus's tag when the slice passes under it: {ly} how far (MapLy).")]
+        public string MapCellNucleusAbove = "{ly} above this slice - 6.5 ly across";
+        [Tooltip("Under the nucleus's tag when the slice passes over it: {ly} how far (MapLy).")]
+        public string MapCellNucleusBelow = "{ly} below this slice - 6.5 ly across";
+        [Tooltip("The cytoplasm's tag.")]
+        public string MapCellCytoplasm = "Cytoplasm";
+        [Tooltip("Under the cytoplasm's tag: {sea} the cell's sea, {density} its perceived density.")]
+        public string MapCellCytoplasmBody = "{sea}, {density} g/cc - flora and fauna live here";
+        [Tooltip("The membrane's tag.")]
+        public string MapCellMembrane = "Membrane";
+        [Tooltip("The membrane's tag in the central cell.")]
+        public string MapCellMembraneHeart = "Membrane - the circumnuclear disk";
+        [Tooltip("Under the membrane's tag.")]
+        public string MapCellMembraneBody = "14 faces - 20 ly across the square ones";
+        [Tooltip("The edge view's caption once the map shows cells: {height} the slice's height (MapAbove, MapBelow or MapMidplane).")]
+        public string EdgeCaptionCells = "THE CELLS CUT UPRIGHT ALONG THE MAP'S BOTTOM EDGE - DRAG THE GREEN BAR OR SCROLL HERE TO SLICE THE MAP AT ANOTHER HEIGHT - SLICED {height}";
+        [Tooltip("The label on the slice bar's handle in the edge view.")]
+        public string EdgeSlice = "SLICE";
 
         // The open voyage card (Rev 49 C, Docs/MENU_REDESIGN_B.md section 119): three levels, the voyage, its Ark crew, its story.
         [Tooltip("The open card's way back to the voyage cards (B).")]
