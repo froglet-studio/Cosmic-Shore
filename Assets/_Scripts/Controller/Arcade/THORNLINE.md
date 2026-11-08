@@ -90,7 +90,8 @@ tight enough to put a zero-radius ray on a 32 u block at 1,000 u (2°). If it is
 in the AI's aim, not in bigger thorns.
 
 Two autopilot habits a race may show (both the vessel's, reported, not changed here):
-- it presses Mass after 3 s docked (`aiDockSeconds`), which detaches before a plain thorn's 3.1 s reload is up;
+- it pressed Mass after 3 s docked (`aiDockSeconds`), detaching before a plain thorn's 3.1 s reload was up. **Fixed
+  2026-11-07:** it now also waits for the sling to reload before it detaches;
 - it lances when two or more rival blocks are on its line (`aiLanceMinTargets` 2), which clears rival trails but
   never a thorn (one block).
 

@@ -1561,7 +1561,10 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            if (Docked && _dockedFor >= config.AiDockSeconds && TryResolve(handler, ShrikeControl.Mass, out var massInput))
+            // Detach only once the sling has reloaded: the docked reload is the fast one, and a plain thorn's (3.1 s at
+            // Time 0) outlasts aiDockSeconds, so an AI that left on the timer alone reloaded at the slow undocked rate.
+            if (Docked && _dockedFor >= config.AiDockSeconds && _slingCd <= 0f
+                && TryResolve(handler, ShrikeControl.Mass, out var massInput))
             {
                 handler.PerformShipControllerActionsReplicated(massInput);
                 handler.StopShipControllerActionsReplicated(massInput);
