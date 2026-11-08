@@ -175,7 +175,7 @@ perform these changes because it needs proper planning". So:
   built 2026-11-06, `Docs/MENU_REDESIGN_B.md` section 138): a piece's upright pose is a `PortraitRect` its generator
   writes, and a screen with no pose yet is its PC layout fitted to the width. `MenuOrientation` allows the turn only
   while the menu is Ready. A new upright pose is drawn on Frogma's Portrait tab first.
-- **A turn is turn, then glide** (Shombith, 2026-11-08, Rev 78, section 147): the OS turns the screen as always; then every
+- **A turn is turn, then glide** (Shombith, 2026-11-08, Rev 78, section 154): the OS turns the screen as always; then every
   posed piece starts where the turn left it (at its old place on the glass, turned with the phone) and glides level to
   its new place in 0.35 s (`OrientationGlide` on the canvas root; two frames held while the fitted blocks settle). In
   the game the Pistol's view grows out of its small square as the Goby's shrinks into it (`CrewPictureInPicture`, a

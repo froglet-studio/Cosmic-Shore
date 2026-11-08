@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Turn, then glide (Docs/MENU_REDESIGN_B.md section 147, picked by Shombith 2026-11-08: "Turn then glide"). The phone
+    /// Turn, then glide (Docs/MENU_REDESIGN_B.md section 154, picked by Shombith 2026-11-08: "Turn then glide"). The phone
     /// turns the screen as it always has; then every posed piece of this canvas starts where the turn left it - at its old
     /// place on the glass, turned with the phone - and glides to its new place, level, over <see cref="glideSeconds"/>.
     ///

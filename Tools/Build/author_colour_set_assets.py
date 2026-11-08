@@ -12,6 +12,9 @@ shielded tiers. So the writer keeps everything the original tuned and takes only
     field's brightness over the original plain face's, so the tiers keep their steps. The face is most of a prism's
     surface, so the set, not the original, decides how bright the body is (2026-11-03: Dart Frog's faces at the
     original's brightness made each prism read as its face hue);
+  * a set may name `rim_brightness` (default 1): every rim field's brightness is the original's times it, so a light
+    set (Nacre, 2026-11-08) keeps its rims at paper white instead of the original's HDR bloom, the tiers keeping their
+    steps. Danger and the CTA pair are signals and keep the original's brightness;
   * its alpha is the original's;
   * its whiteness is the original's whiteness beyond its domain's plain tier (InsideBlockColor for rim fields,
     OutsideBlockColor for face fields), so a shielded rim is as much paler than a plain rim as it was before.
@@ -129,12 +132,15 @@ def palette(s, orig):
         src, fields = orig[block], {}
         face = s["domains"][dom]["face"]
         face_peak = max(cs.linear_of(*cs.at(face, cs.mid(face))))
+        rim_k = s.get("rim_brightness", 1.0)
         for field, role in FIELD_ROLE.items():
             p = s["domains"][dom][role]
             c = paint(src[field], src[PLAIN[role]], p, field in SRGB_FIELDS)
             if role == "face" and field not in SRGB_FIELDS and max(c[:3]) > 1e-6:
                 k = face_peak / max(src[PLAIN["face"]][:3])
                 c = tuple(round(v * k, 6) for v in c[:3]) + (c[3],)
+            elif role == "rim" and field not in SRGB_FIELDS and rim_k != 1.0:
+                c = tuple(round(v * rim_k, 6) for v in c[:3]) + (c[3],)
             fields[field] = c
         out[block] = fields
     env = dict(orig["EnvironmentColors"])

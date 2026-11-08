@@ -1127,14 +1127,6 @@ Reinstall with `dotnet-install.sh --channel 8.0 --install-dir /root/.dotnet` (re
 the first TLS connect to `builds.dotnet.microsoft.com` can drop), and pass `DOTNET_ROOT=/root/.dotnet`
 to `check_generated_assets.py`, which otherwise looks under `/usr/lib/dotnet` and stops.
 
-### Trap: a deleted assembly's .rsp stays in the refcompile output and crashes `generated_assets`
-
-After a merge that deleted a whole asmdef (bleeding-edge removed `Assets/Plugins/Obvious/Soap`, 2026-11-07), both
-refcompile tiers passed and `generated_assets` failed with a bare `DirectoryNotFoundException` on a file under the
-deleted folder: the output directory (`/tmp/unity_refcompile_out/<tree key>/player`) still held `Obvious.Soap.rsp` from
-an earlier build, and the schema tool reads every `*.rsp` there. Delete the `.rsp` files whose listed sources no longer
-exist (or the whole output directory) and re-run; the audit then passes. Not a defect in the branch.
-
 ### Trap: a planted defect that mutates "the first match" silently retargets when the scene grows
 
 `author_start_flow.py --self-test` planted "the retry panel ships shown" by flipping the FIRST
@@ -1192,3 +1184,28 @@ uniform branch, and keep `[Toggle]` for a real keyword variant. Seen 2026-10-28 
   generator ADDS a component to a nested object from the outer prefab (`m_AddedComponents` with
   `targetCorrespondingSourceObject` = the id as the source sees it, plus a `stripped` GameObject stand-in -
   `author_ingame_hud.add_instance_phone`).
+
+### Trap: a stale `.rsp` in the refcompile output makes `generated_assets` crash, not fail
+
+`unity_refcompile` writes one `<Assembly>.rsp` per assembly into `$TMPDIR/unity_refcompile_out/<tree>/player/` and never
+deletes the ones for assemblies that are gone. `check_generated_assets.py` reads every `*.rsp` there whose sources sit
+under `Assets/`. After a merge that deleted a plugin (the Obvious SOAP plugin, 2026-11-07), the old `Obvious.Soap.rsp`
+still listed its files, and the Schema tool died with `DirectoryNotFoundException ... BindComparisonToUnityEvent.cs`.
+`gates.sh` printed that as `FAIL generated_assets`, on a branch that had not touched the plugin. Check the `.rsp` times
+(`ls -la --time-style=+%F_%T`): one older than the rest and naming files that are not on disk is stale. Delete it and
+re-run the gate. It is scratch output, not the repo (`claude/epic-fermat-6c7n2l`, 2026-11-08).
+
+### Technique: deleting a subtree that holds NESTED PREFAB INSTANCES from prefab YAML
+
+A nested prefab instance appears in the outer prefab's YAML as more than one document:
+- a `--- !u!1001 &<pi>` PrefabInstance document (its `m_TransformParent` is the outer transform it hangs under);
+- `stripped` GameObject, Transform and component documents whose `m_PrefabInstance: {fileID: <pi>}` names it;
+- any component the OUTER prefab added to one of those stripped objects (`m_GameObject` is a stripped id);
+- any outer objects parented under the stripped transform (its `m_Children`).
+
+A subtree walk that only follows `m_Children` reaches the stripped transform and stops. It either refuses (as
+`author_voyage_window.py`'s `subtree` does for a clone) or leaves the PrefabInstance and its stripped documents behind,
+pointing at a parent that no longer exists. `author_voyage_window.py`'s `subtree_deep` / `delete_deep` collects all four
+kinds. Its `validate` then proves that no local `{fileID: N}` dangles anywhere in the file; that check is what makes the
+delete trustworthy. A copy that keeps the instance (QuestsView from MissionView, 2026-11-08) needs nothing special,
+because fileIDs are local to the file.

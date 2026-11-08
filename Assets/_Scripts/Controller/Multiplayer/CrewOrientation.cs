@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
     internal sealed class CrewOrientation
     {
         /// <summary>A turn's seat change glides (the crew's two views trade places, CrewPictureInPicture), the same length
-        /// as the canvas's glide (OrientationGlide; Docs/MENU_REDESIGN_B.md section 147).</summary>
+        /// as the canvas's glide (OrientationGlide; Docs/MENU_REDESIGN_B.md section 154).</summary>
         public const float GlideSeconds = 0.35f;
 
         bool _allowing;

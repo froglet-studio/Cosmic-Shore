@@ -107,7 +107,7 @@ GAP = 56
 # stays across the top as on PC. The centred row of LT, the five tabs and RT is measured against that width with the
 # 40-unit content margins; at its PC spacing it fits (865 of 1000), so its row needs no upright change. NavBar itself
 # carries a PortraitRect whose pose is its own rect (author_menu_portrait.py SCENE_POSED), so a turn glides it with the
-# rest (section 147). If a tab is added or renamed past the width, give NavBarButtons a PortraitRect (layout_spacing /
+# rest (section 154). If a tab is added or renamed past the width, give NavBarButtons a PortraitRect (layout_spacing /
 # scale) instead of shrinking the PC row.
 PORTRAIT_W, PORTRAIT_MARGIN = 1080, 40
 

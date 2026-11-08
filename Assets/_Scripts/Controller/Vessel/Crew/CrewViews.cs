@@ -159,7 +159,7 @@ namespace CosmicShore.Gameplay
         bool _pilotLifted;
         readonly PipViewFrame _frame = new();
         readonly PilotCameraPark _park = new();
-        // a seat change a phone turn made glides (CrewOrientation, Docs/MENU_REDESIGN_B.md section 147): the view the person
+        // a seat change a phone turn made glides (CrewOrientation, Docs/MENU_REDESIGN_B.md section 154): the view the person
         // moves into grows out of the small square while the other shrinks into it. Every other seat change is instant.
         static float s_glideSeconds, s_glideUntil;
         bool _laidOut, _lastHuman;

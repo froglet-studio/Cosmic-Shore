@@ -9,7 +9,7 @@ This script owns Menu_Main's side of that:
     the rotation       MenuOrientation on the MainMenuController's GameObject: portrait only while the menu is Ready
     the turn           OrientationGlide + its own CanvasGroup on the canvas root: turn, then glide - every posed piece
                        starts where the turn left it and glides to its new place (Shombith, 2026-11-08: "Turn then glide",
-                       Docs/MENU_REDESIGN_B.md section 147); the same on GameCanvas, gliding its own children, which also lays out upright, for a crew seat played
+                       Docs/MENU_REDESIGN_B.md section 154); the same on GameCanvas, gliding its own children, which also lays out upright, for a crew seat played
                        upright (the Goby's Pistol: ScreenOrientationPolicy, CrewOrientation)
     the fallback       every screen and window with no upright pose (all but Home, Arcade, Configure and Hangar, whose
                        generators write their poses) is its PC layout fitted to the width (PortraitRect drawAtPcScale):
@@ -54,7 +54,7 @@ SCENE_FALLBACK = ["ArkScreen", "PortScreen", "ProfileScreen", "MissionScreenModa
                   "PlayerDataSelectModal"]
 # Scene pieces posed here (their generators patch, they do not re-emit them). The nav band: across the top upright as on
 # PC (author_menu_topnav.py measured the row to fit 1080), so its pose is its own rect; posed, it glides on a turn
-# with the rest (OrientationGlide, Docs/MENU_REDESIGN_B.md section 147; Shombith 2026-11-08: "give the nav band a pose too").
+# with the rest (OrientationGlide, Docs/MENU_REDESIGN_B.md section 154; Shombith 2026-11-08: "give the nav band a pose too").
 _tspec = importlib.util.spec_from_file_location("author_menu_topnav", os.path.join(HERE, "author_menu_topnav.py"))
 TOPNAV = importlib.util.module_from_spec(_tspec)
 _tspec.loader.exec_module(TOPNAV)
