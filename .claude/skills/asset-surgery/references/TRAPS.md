@@ -1195,6 +1195,16 @@ still listed its files, and the Schema tool died with `DirectoryNotFoundExceptio
 (`ls -la --time-style=+%F_%T`): one older than the rest and naming files that are not on disk is stale. Delete it and
 re-run the gate. It is scratch output, not the repo (`claude/epic-fermat-6c7n2l`, 2026-11-08).
 
+### Trap: a prefab re-saved by an older editor drops the fields its generator authors, and the base goes red
+
+A bleeding-edge commit ("Thresher", 2026-11-06) re-saved `ConfigureView`, `ConfigureArenaView` and
+`ConfigureMaelstromView` from an editor whose scripts were older than the generator's: every serialized field those
+scripts did not have was dropped (the weekly eyebrow line, the seat and pilot lines, `focusRingToken`, `shrinkToFit` on
+30+ labels) and every fileID re-minted, so `author_menu_configure.py --check` was red on bleeding-edge itself. Merging
+it into a branch conflicts on all three. Resolve by regenerating with the owning generator (it restores the fields),
+never by taking the re-save: filter out the fileID lines and diff the sorted remainder of both sides to see that the
+change is lost fields, not intent. Name the commit in the merge message (`claude/ui-portrait`, 2026-11-08).
+
 ### Technique: deleting a subtree that holds NESTED PREFAB INSTANCES from prefab YAML
 
 A nested prefab instance appears in the outer prefab's YAML as more than one document:
