@@ -72,8 +72,10 @@ below, and nothing else. The tables hold aggregates only; there are no player id
 
 {schema}
 
-Notes on the data: build_kind is release (real players), editor (team playtests in the Unity editor), port, or \
-development; answer for release unless the question names another. play_type multi_human_unknown means a \
+Notes on the data: build_kind is release (real players), editor (team playtests in the Unity editor), port, web \
+(the browser Toybox), or development; answer for release unless the question names another. device is iphone, ipad, \
+android_phone, android_tablet, windows, mac, linux, web_desktop, web_mobile or other; builds before 2026-11-07 read \
+ios, android or web (phone or tablet not recorded). play_type multi_human_unknown means a \
 multi-human match recorded before the team fields existed. rematched is NULL for plays that were not completed. \
 Days are 'YYYY-MM-DD' strings in UTC; today is {today}.
 
