@@ -154,6 +154,38 @@ def build_guid_index(tree):
 # --------------------------------------------------------------------------------------------
 # schema (Roslyn, via Tools/Build/unity_refcompile/Schema)
 # --------------------------------------------------------------------------------------------
+def rsp_sources(rsp):
+    with open(rsp, errors="replace") as f:
+        return [s for s in (l.strip().strip('"') for l in f) if s.endswith(".cs") and not s.startswith("-")]
+
+
+def schema_rsps(rsp):
+    """Sort the response files beside `rsp` (Assembly-CSharp's) before any reaches the Schema tool,
+    which dies with DirectoryNotFoundException on the first source a response file names that is not
+    on disk. Returns (others, gone, outdated):
+      others   the other assemblies whose sources live under Assets/, every source present: parsed;
+      gone     none of its sources exists - an assembly that was deleted (the Obvious.Soap.rsp left
+               behind by froglet-studio/Cosmic-Shore#1771): skipped, and named;
+      outdated `rsp` itself, or another assembly, lists SOME missing sources - the refcompile output
+               predates the tree, so every schema read from it would be wrong: a setup error.
+    gone and outdated are lists of (path, [missing sources])."""
+    assets = os.path.join(ROOT, "Assets") + os.sep
+    others, gone, outdated = [], [], []
+    for o in [rsp] + [p for p in sorted(glob.glob(os.path.join(os.path.dirname(rsp), "*.rsp"))) if p != rsp]:
+        srcs = rsp_sources(o)
+        if o != rsp and not any(s.startswith(assets) for s in srcs):
+            continue
+        missing = [s for s in srcs if not os.path.exists(s)]
+        if not missing:
+            if o != rsp:
+                others.append(o)
+        elif o != rsp and len(missing) == len(srcs):
+            gone.append((o, missing))
+        else:
+            outdated.append((o, missing))
+    return others, gone, outdated
+
+
 def load_schema(rsp):
     sys.path.insert(0, os.path.join(ROOT, "Tools", "Build", "unity_refcompile"))
     import build as refcompile  # noqa: E402  (the toolchain helpers; importing has no side effects)
@@ -183,10 +215,15 @@ def load_schema(rsp):
     out = os.path.join(os.path.dirname(rsp), "schema.json")
     # Assembly-CSharp first (its references bring the package types), then every other assembly
     # whose sources live in Assets/ - parsed from SOURCE so their editor-only fields are seen too
-    others = []
-    for o in sorted(glob.glob(os.path.join(os.path.dirname(rsp), "*.rsp"))):
-        if o != rsp and any(l.strip().strip('"').startswith(os.path.join(ROOT, "Assets") + os.sep) for l in open(o)):
-            others.append(o)
+    others, gone, outdated = schema_rsps(rsp)
+    for o, missing in gone:
+        print("check_generated_assets: skipping %s - none of its %d source file(s) is on disk (e.g. %s): an "
+              "assembly that no longer exists; the next unity_refcompile run deletes it"
+              % (os.path.basename(o), len(missing), os.path.relpath(missing[0], ROOT)))
+    if outdated:
+        return None, "the refcompile output is older than the tree - %s - rerun `bash Tools/Build/unity_refcompile/run.sh`" % (
+            "; ".join("%s lists %d source file(s) that are not on disk (e.g. %s)"
+                      % (os.path.basename(o), len(m), os.path.relpath(m[0], ROOT)) for o, m in outdated))
     r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), dll, out, rsp] + others, stdout=subprocess.PIPE,
                        stderr=subprocess.STDOUT, text=True)
     if r.returncode != 0:
@@ -959,8 +996,55 @@ def self_test(schema, base):
     print("  [%s] %-60s" % ("ok" if derived_ok else "MISSED", "variant-derived fileID resolves"))
     print("  [%s] %-60s" % ("ok" if bogus_ok else "MISSED", "a fileID derivable from nothing is still missing"))
     ok &= derived_ok and bogus_ok
+    ok &= stale_rsp_controls()
     print("self-test " + ("passed" if ok else "FAILED"))
     return 0 if ok else 1
+
+
+def stale_rsp_controls():
+    """A response file left by an assembly that is gone (the Obvious.Soap.rsp after #1771) must neither
+    reach the Schema tool nor survive the next refcompile run. Planted in a scratch directory, never in
+    the shared refcompile output."""
+    import tempfile
+    sys.path.insert(0, os.path.join(ROOT, "Tools", "Build", "unity_refcompile"))
+    import build as refcompile  # noqa: E402
+    real = os.path.join(ROOT, "Assets", "_Scripts", "Data", "TemplateText.cs")
+    ghost_cs = os.path.join(ROOT, "Assets", "Plugins", "Ghost", "Runtime", "GhostBinding.cs")
+    assert os.path.exists(real) and not os.path.exists(ghost_cs), "self-test fixture drifted: " + real
+    ok = True
+    with tempfile.TemporaryDirectory() as d:
+        def plant(name, sources, own_out=True):
+            with open(os.path.join(d, name + ".rsp"), "w") as f:
+                f.write("-nologo -target:library\n")
+                if own_out:
+                    f.write('-out:"%s"\n' % os.path.join(d, name + ".dll"))
+                f.writelines('"%s"\n' % s for s in sources)
+            for ext in ([".dll", ".dll.stamp"] if own_out else []):
+                open(os.path.join(d, name + ext), "w").close()
+        plant("Assembly-CSharp", [real])
+        plant("Ghost", [ghost_cs])
+        plant("Live", [real])
+        main_rsp = os.path.join(d, "Assembly-CSharp.rsp")
+        others, gone, outdated = schema_rsps(main_rsp)
+        hit = ([os.path.basename(o) for o, _ in gone] == ["Ghost.rsp"] and not outdated
+               and [os.path.basename(o) for o in others] == ["Live.rsp"])
+        print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "Ghost.rsp naming a missing source is skipped, not parsed",
+                                   [os.path.basename(o) for o in others]))
+        ok &= hit
+        plant("Partial", [real, ghost_cs])
+        _, _, outdated = schema_rsps(main_rsp)
+        hit = [os.path.basename(o) for o, _ in outdated] == ["Partial.rsp"]
+        print("  [%s] %-60s" % ("ok" if hit else "MISSED", "an assembly with SOME sources missing is a setup error"))
+        ok &= hit
+        os.remove(os.path.join(d, "Partial.rsp"))
+        plant("Foreign", [ghost_cs], own_out=False)   # not written by build.py: never deleted
+        removed = refcompile.prune_stale_outputs(d, {"Assembly-CSharp", "Live"})
+        left = sorted(os.listdir(d))
+        hit = (removed == ["Ghost"] and "Ghost.rsp" not in left and "Ghost.dll" not in left
+               and "Ghost.dll.stamp" not in left and {"Live.rsp", "Live.dll", "Foreign.rsp"} <= set(left))
+        print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "refcompile deletes Ghost's outputs, keeps the rest", left))
+        ok &= hit
+    return ok
 
 
 if __name__ == "__main__":
