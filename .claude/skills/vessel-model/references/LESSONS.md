@@ -642,3 +642,41 @@ Append one entry per lesson, newest at the bottom. State what was measured, not 
       only when the mesh, shapes or takes change.
     - **The omni crystal is always one size** (Garrett, 2026-10-28). No shape key and no game code may scale it. The
       Ark's Charge shape now lengthens only the lance. (Concept A, `specs/ark.py`, was retired the same day.)
+
+55. **The Meerkat (2026-11-03, `specs/meerkat.py`): a borrowed rig whose donor is itself a NEW hull, and a lope that
+    lifts as it bends.** The Meerkat wore the Stoat's model, so its hull keeps the Stoat's names and rest (LESSONS 48) and
+    `StoatAnimation` lopes it unchanged. Five rounds; what was new:
+    - **Pin the donor by commit, not by the working tree.** The Stoat is our own hull and still being worked on, so the
+      spec imports it with `build.artist_path(RIG_FROM, RIG_REF)` (`git show <commit>:<path>`, cached). A later Stoat
+      edit then never moves the Meerkat, and `rest_compare` / take parity have a fixed reference.
+    - **Retargeted takes need `use_fake_user` to get their rest lead.** `build.run` adds the leading `rest` take
+      (LESSONS 51) only when the first fake-user action deflects. `takes.retarget_from` leaves its actions without a
+      fake user, so the file led with `arch` and verify refused it. Set `act.use_fake_user = True` on the retargeted
+      actions and the pipeline's own rest lead applies. Retarget only the deflecting takes (`only=`), so the donor's
+      `rest` does not collide with the one the build adds.
+    - **`pose_clearance.py --combos` composes rotations only; a lope also LIFTS.** It zeroes every bone's location,
+      which suits a rotation-only rig such as the Ark. `StoatAnimation` raises the plates, the head and the tail as it
+      tilts them. So `land+turnright` there is a landing with the chest NOT raised: it reported the claws inside the
+      chest, a pose the game never plays. A blend that keeps the lifts (rotations composed, translations summed) cleared
+      the claws at 0.51 %. It found the real near-touches: the rump swings the nacelle lips 0.1 inward in a full turn
+      while the first tail sleeve stays near its pivot, and the neck base sits in the bending chest. Check a translating
+      rig's blends with the translations. The tool should grow a flag for it (Shombith heads tooling: a proposal, not
+      done here).
+    - **A conformal plate with any outline is a parametric slab.** `offset_shell` lofts stations across y, so its edges
+      are straight across the body. A chevron stripe, a carapace with chevron edges and a visor that slants from the
+      nose bridge back to the sides all need y to vary across the plate. `slab(grid(u, v, outer))` builds the outer and
+      inner skins over any (u, v) patch of the body's surface, plus four walls, and keeps the even gap underneath.
+    - **To raise a head over the back, lower the body, not the head.** The height budget was the Stoat's (1.43). A head
+      pushed up hit the ceiling and still barely cleared the back from the side. Dropping the core 6 cm under the bones'
+      line (the plates still turn about their bones) let the head stand clear, and the legs got shorter.
+    - **A banded back on a smooth body needs plates, not paint.** Thick domain bands read as a bee. Thin stripes read as
+      clips on a tube. Dark carapace plates, one per plate bone, each carrying a chevron, read as banded armour and
+      broke the tube's silhouette.
+    - **A pale ring on a snout tip reads as a pig's nose.** The wormhole former became a dark ring with a hot inner wall.
+    - **Render the standing pose when the game stands the hull up.** The sentinel is this hull baked mid-lope and stood
+      nose to the sky. That view showed the paws held before the chest and the tail as the prop, which the flight views
+      cannot show. When rotating an imported FBX for such a view, turn only the root objects: the importer parents the
+      mesh to the armature, so rotating both turns the mesh twice.
+    - **A path inside `python -c "..."` is not converted by Git Bash on Windows.** A `/c/Users/...` path embedded in the
+      code string became `C:\c\Users\...` for Blender's render output and `B:\c\...` for `os.makedirs`. Pass paths as
+      arguments, or write them as Windows paths.

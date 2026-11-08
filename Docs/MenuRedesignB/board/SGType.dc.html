@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Type and numbers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#E6E9FF;margin:0}
+.h2{font-family:'Aldrich',sans-serif;font-size:28px;color:#E6E9FF;margin:0}
+.h3{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;margin:0}
+.body{font-family:'Aldrich',sans-serif;font-size:18px;line-height:1.45;color:#E6E9FF;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.4;color:#747BAD;margin:0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.panel{background:#222645;box-shadow:inset 0 0 0 1px #434C89}
+.btn{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase;border:0;padding:0 28px;height:52px;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.src{font-family:'Aldrich',sans-serif;font-size:14px;color:#747BAD;margin:0}
+.do{color:#99FF80}
+.dont{color:#FF4B3A}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; padding: 64px 72px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px"><span class="lab">3 · Type</span><h1 class="h1">Aldrich to read, Chakra Petch to press</h1><p class="body" style="color: #747BAD; max-width: 1500px">Headings and body in Aldrich. Buttons in Chakra Petch SemiBold, always capitals. Emphasis is a colour shift, never italics. Any number that changes while you watch is tabular, so it never jitters.</p></div><div style="display: flex; flex-direction: column"><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">Display</span><span class="small">Aldrich</span><span class="small num">48</span><span class="num" style="font-family: 'Aldrich',sans-serif; font-size: 48px; color: #E6E9FF; white-space: nowrap">Victory</span></div><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">H1</span><span class="small">Aldrich</span><span class="small num">36</span><span class="num" style="font-family: 'Aldrich',sans-serif; font-size: 36px; color: #E6E9FF; white-space: nowrap">The Hangar</span></div><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">H2</span><span class="small">Aldrich</span><span class="small num">28</span><span class="num" style="font-family: 'Aldrich',sans-serif; font-size: 28px; color: #E6E9FF; white-space: nowrap">Weekly leaderboard</span></div><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">H3</span><span class="small">Aldrich</span><span class="small num">22</span><span class="num" style="font-family: 'Aldrich',sans-serif; font-size: 22px; color: #E6E9FF; white-space: nowrap">Squad presets</span></div><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">Body</span><span class="small">Aldrich</span><span class="small num">18</span><span class="num" style="font-family: 'Aldrich',sans-serif; font-size: 18px; color: #E6E9FF; white-space: nowrap">Three laps of the Lantern Reach. Fastest time wins.</span></div><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">Body small</span><span class="small">Aldrich</span><span class="small num">15</span><span class="num" style="font-family: 'Aldrich',sans-serif; font-size: 15px; color: #E6E9FF; white-space: nowrap">Unlocks at clout 4</span></div><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">Button</span><span class="small">Chakra Petch 600</span><span class="small num">18</span><span class="num" style="font-family: 'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.1em; font-size: 18px; color: #E6E9FF; white-space: nowrap">PLAY</span></div><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">Button small</span><span class="small">Chakra Petch 600</span><span class="small num">14</span><span class="num" style="font-family: 'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.1em; font-size: 14px; color: #E6E9FF; white-space: nowrap">CONFIGURE</span></div><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">Data large</span><span class="small">Aldrich, tabular</span><span class="small num">44</span><span class="num" style="font-family: 'Aldrich',sans-serif; font-size: 44px; color: #E6E9FF; white-space: nowrap">01:12.48</span></div><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">Data</span><span class="small">Aldrich, tabular</span><span class="small num">20</span><span class="num" style="font-family: 'Aldrich',sans-serif; font-size: 20px; color: #E6E9FF; white-space: nowrap">12,480</span></div><div style="display: grid; grid-template-columns: 200px 220px 80px minmax(0, 1fr); align-items: baseline; gap: 20px; padding: 8px 0; box-shadow: inset 0 -1px 0 #222645"><span class="lab" style="color: #E6E9FF">Data small</span><span class="small">Aldrich, tabular</span><span class="small num">15</span><span class="num" style="font-family: 'Aldrich',sans-serif; font-size: 15px; color: #E6E9FF; white-space: nowrap">x3</span></div></div><p class="src">Sizes are canvas units at 1920 wide (STYLE_FOUNDATION.md section 4). Phones scale the canvas; never author a second, smaller set.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

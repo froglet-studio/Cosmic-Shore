@@ -91,6 +91,7 @@ VESSELS = {
     "Scarab": {"fbx": MODELS + "Scarab.fbx", "roles": FLEET_SLOTS},
     "Shrike": {"fbx": MODELS + "Shrike.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_shrike_assets.py"},
     "Stoat": {"fbx": MODELS + "Stoat.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_stoat_assets.py"},
+    "Meerkat": {"fbx": MODELS + "Meerkat.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_meerkat_assets.py"},
     "Honeyguide": {"fbx": MODELS + "Honeyguide.fbx", "roles": FLEET_SLOTS, "class_owner": "Tools/Build/author_honeyguide_assets.py"},
     "Thresher": {"fbx": MODELS + "Thresher.fbx", "roles": FLEET_SLOTS},
     "Grizzly": {"fbx": MODELS + "Grizzly.fbx", "roles": FLEET_SLOTS},
@@ -121,7 +122,7 @@ RENDER = 1024
 CARD_DOMAIN = "Class"
 HANGAR_GLOW = (150, 175, 230)         # the preview's glow: cool silver, the neutral family (was gold)
 OUTLINE_LINEAR = (0.0012, 0.0014, 0.0035)
-SKY_SRGB = (0.0, 0.0, 0.102)          # OriginalColorSetSO.EnvironmentColors.SkyColor: what a ship is seen against
+SKY_SRGB = (0.0, 0.0, 0.102)          # PhoticColorSetSO.EnvironmentColors.SkyColor: what a ship is seen against
 
 
 _BPY = r'''

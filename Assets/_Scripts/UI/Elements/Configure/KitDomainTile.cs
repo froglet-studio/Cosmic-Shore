@@ -64,7 +64,9 @@ namespace CosmicShore.UI
         /// <summary>The open-seat row under the chips (ConfigurePilotsFit tightens it with the seat rows).</summary>
         public RectTransform OpenSeatRect => openSeatGroup ? (RectTransform)openSeatGroup.transform : null;
 
-        private Color DomainColour => colorSet ? colorSet.GetDomainSignalColor(Domain) : UITheme.Resolve(theme, UIColorToken.TextLight);
+        // The player's colour set when the theme is up (section 123), else the palette this tile was authored with.
+        private SO_ColorSet Palette => CosmicShore.Gameplay.ThemeManager.LiveOr(colorSet);
+        private Color DomainColour => Palette ? Palette.GetDomainSignalColor(Domain) : UITheme.Resolve(theme, UIColorToken.TextLight);
 
         private void OnEnable()
         {

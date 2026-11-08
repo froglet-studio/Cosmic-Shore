@@ -2,7 +2,7 @@
 """domain_colors.py - the Vessel Studio's domain colours, taken from the GAME's palette so the studios, the project
 and Amoebius show the same Jade, Ruby, Gold and Blue (the user, 2026-10-09; /vessel-studio section 1.5.5).
 
-Source of truth: Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset, the live SO_ColorSet (Docs/PALETTE.md).
+Source of truth: Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset, the live SO_ColorSet (Docs/PALETTE.md).
 Per domain it reads TrailHighlightColor, which is SO_ColorSet.GetDomainUIColor, "the palette's answer to what colour
 is this team", and derives GetDomainSignalColor (the brightest channel driven to 1, hue kept), which the game uses
 to say "this belongs to domain X" on a surface that must be unmistakable. A UI float maps 1:1 to a display byte
@@ -19,7 +19,7 @@ the engine, and its TrailHighlightColor per domain must equal the asset's.
 import re
 import sys
 
-ASSET = 'Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset'
+ASSET = 'Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset'
 AMOEBIUS = 'Port/src/CosmicShore.Client/SkimRaceTheme.cs'
 LAUNCHER = 'Port/src/CosmicShore.Launcher/Neon.cs'   # its JADE / RUBY / GOLD accent themes lead with the signal colour
 LAUNCHER_THEME = {'jade': 1, 'ruby': 2, 'gold': 3}

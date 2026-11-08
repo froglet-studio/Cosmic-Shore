@@ -11,7 +11,7 @@ to have a distinguishing color difference."
 
 THE COLOURS are the Wrasse's four lasso shades (Tools/Build/kite_mote_colors.py derives them inside lime's boundary
 against Jade, Ruby, Gold, Blue and Fire, with distinct hue, saturation and value) and live in the palette,
-OriginalColorSetSO.asset `EnvironmentColors.ElementalCrystalColors` (Charge, Mass, Space, Time; index = Element - 1).
+PhoticColorSetSO.asset `EnvironmentColors.ElementalCrystalColors` (Charge, Mass, Space, Time; index = Element - 1).
 This script reads them from there and never derives them itself.
 
 WHERE EACH CRYSTAL GETS ITS COLOUR in the free (lime, anyone collects) state:

@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace CosmicShore.Gameplay
 {
     /// <summary>
@@ -21,6 +23,46 @@ namespace CosmicShore.Gameplay
     {
         protected override string ModeName => "Scarab Rally";
 
+        /// <summary>The I4 gauntlet is built for the Dolphin's key blast (sealed eyes, plugged tunnels): Scarab Rally keeps
+        /// I4 as it was before it (SWITCHBACK.md "The I4 gauntlet").</summary>
+        protected override bool BlastRunGauntlet => false;
+
         protected override RaceCourseSource CreateCourseSource() => new ScarabRallyCourseSource();
+
+        [Header("AI juke")]
+        [Tooltip("The AI jukes when, flying on as it is, it would cross the next mouth's plane outside the mouth by no " +
+                 "more than one juke (~40 u), and that crossing is at least this many seconds away (the dash takes 0.5 s).")]
+        [SerializeField, Min(0f)] float aiJukeMinSeconds = 0.6f;
+        [Tooltip("...and at most this many seconds away: further off, the steering still has time to fix the line.")]
+        [SerializeField, Min(0f)] float aiJukeMaxSeconds = 1.4f;
+        [Tooltip("How far inside the rim (u) the AI wants to cross: a line that grazes the rim counts as a miss.")]
+        [SerializeField, Min(0f)] float aiJukeMargin = 6f;
+
+        /// <summary>The Scarab AI holds full throttle and steers, so a mouth twisted off its line at I3 was a lift or a
+        /// miss (TIME_GAME_FUN_SCORES.md round 3). The juke is the Scarab's own fix for that, and the autopilot can press
+        /// it (<see cref="ScarabJukeController.TryAutopilotDash"/>, the same committed dash a person's stick fires), so
+        /// the race tells its AI when. Server only, AI hulls only.</summary>
+        protected override void OnServerTick()
+        {
+            base.OnServerTick();
+            if (gameData == null || !gameData.IsTurnRunning || _course.Count == 0) return;
+            var players = gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var p = players[i];
+                var vessel = p?.Vessel;
+                var status = vessel?.VesselStatus;
+                // TryGetComponent, not VesselStatus.AIPilot: that getter ADDS an autopilot to a person's hull.
+                if (status is not Component c || !c || !c.TryGetComponent(out AIPilot autopilot) || !autopilot.AutoPilotEnabled)
+                    continue;
+                if (!vessel.Transform.TryGetComponent(out ScarabJukeController juke) || !juke.IsJukeArmed) continue;
+                int index = p.RoundStats?.SwitchesThreaded ?? 0;
+                if (index < 0 || index >= RaceLength) continue;
+                var gate = _course[RingIndexFor(index)];
+                if (ScarabRallyCourse.JukeShove(vessel.Transform.position, status.Course * status.Speed, gate,
+                        aiJukeMinSeconds, aiJukeMaxSeconds, aiJukeMargin, out var shove))
+                    juke.TryAutopilotDash(shove);
+            }
+        }
     }
 }

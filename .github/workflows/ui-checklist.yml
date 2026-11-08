@@ -1,0 +1,42 @@
+# The UI checklist (Docs/UI_STYLE_GUIDE.md section 11): a pull request that touches a UI path (Assets/_Prefabs/UI*,
+# Menu_Main, GameCanvas, the UI theme, Assets/_Scripts/UI/) answers the "UI checklist" section of the PR template.
+# This fails while a box is neither ticked nor marked N/A with a reason; it passes every PR that touches no UI path.
+# It reads the PR body and its file list and writes nothing. Whether it is a REQUIRED check is decision D7 in the guide.
+name: UI checklist
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+    branches: [bleeding-edge, development]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ui-checklist-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checklist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            Tools/Build/check_ui_pr.py
+            .github/pull_request_template.md
+          sparse-checkout-cone-mode: false
+      - name: Read the PR body and its changed files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/body.md"
+          gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename' > "$RUNNER_TEMP/files.txt"
+          wc -l < "$RUNNER_TEMP/files.txt"
+      - name: Check the UI checklist
+        run: python3 Tools/Build/check_ui_pr.py --body-file "$RUNNER_TEMP/body.md" --files "$RUNNER_TEMP/files.txt"

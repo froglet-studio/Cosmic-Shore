@@ -1,4 +1,4 @@
-using Obvious.Soap;
+using CosmicShore.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

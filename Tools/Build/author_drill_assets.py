@@ -146,9 +146,17 @@ TIP_LISTS = {
         dict(id="headlong-corners", tier="WinFaster", prio=50, moment=GATE_SOON,
              prompt="Every corner has a top speed. Lift just enough to make it, then wind back up."),
     ]),
+    # Redline teaches the Manta's Time ability alone (2026-11-04, REDLINE.md section 1): hold Soar, ease BOTH triggers
+    # for a corner (one alone is the Yastri yaw, which no corner needs), wind it back early, and what a Time crystal does.
     f"{TIP_DIR}/Tips_Redline.asset": ("mode", "Redline", [
+        dict(id="redline-hold", tier="WinTheMode", prio=40, moment=STRAIGHT,
+             prompt="Keep {glyph:Time} held. {ability:Time} is four times cruise, and most corners take it flat out."),
         dict(id="redline-soar", tier="WinTheMode", prio=50, moment=GATE_SOON,
-             prompt="Easing off {ability:Time} turns you harder. Every corner asks how much speed it is worth."),
+             prompt="Too tight for full {ability:Time}? Ease both triggers together. Let go of one and you swing off the line."),
+        dict(id="redline-wind-up", tier="WinFaster", prio=50, moment=THREADED,
+             prompt="{ability:Time} takes two seconds to wind back up. Lift late, then bury both triggers again early."),
+        dict(id="redline-time-crystals", tier="WinFaster", prio=60,
+             prompt="From intensity 2, Time crystals make {ability:Time} faster for the rest of the race. Every corner after one asks for a little more lift."),
     ]),
     f"{TIP_DIR}/Tips_Breakwater.asset": ("mode", "Breakwater", [
         dict(id="breakwater-doors", tier="WinTheMode", prio=50, moment=GATE_SOON,

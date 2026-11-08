@@ -20,12 +20,12 @@ MonoBehaviour:
   releaseRunwaySeconds: 0.5
   disabledInModes: []
   requireAIPlayer: 1
-  plantMinTurnDegrees: 6.691
-  plantMinDistance: 115.249
-  slingIntervalSeconds: 2.866
-  releaseConeDegrees: 15
-  maxPlantSeconds: 3.156
+  plantMinTurnDegrees: 93.007
+  plantMinDistance: 21.373
+  slingIntervalSeconds: 0.586
+  releaseConeDegrees: 7.346
+  maxPlantSeconds: 1.738
   windWhilePlanted: 1
   aimedLaunch: 1
-  aimedHoldSeconds: 1.54
-  aimToleranceDegrees: 3
+  aimedHoldSeconds: 1.279
+  aimToleranceDegrees: 9.485

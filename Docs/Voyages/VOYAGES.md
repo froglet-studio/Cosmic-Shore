@@ -1,6 +1,8 @@
 # Voyages: squads on the HyperSea
 
-**Status: DESIGN DRAFT** (Garrett, 2026-10-28; first draft written the same day). Nothing in this document is built.
+**Status: DESIGN, phase V1 built** (Garrett, 2026-10-28; first draft written the same day). V1 shipped as the slice
+([`SLICE.md`](SLICE.md)) and was deepened on 2026-11-07 ([`DEPTH.md`](DEPTH.md): the living galaxy, rival crews on the
+device, every faction type's work, sagas and relics, standing and notoriety, uncharted places). V2-V4 are not built.
 It is the plan that `Docs/Pilots/ARTIFACTS.md` §8.5 asks for before vaults, hunting and extraction can be built.
 Every default marked **(default)** is a guess waiting for Garrett's answer; §11 lists them.
 Sources beyond the repo, and what in them is out of date: [`SOURCES.md`](SOURCES.md). In short: the FigJam board *How players get, do, and learn things*, the Figma file *Cosmic Shore for Alpha* (page *UI for vLater*: the old Port faction boards), the Notion design docs *Mission Overview*, *Initial Onboarding*, *Ark Design Document* and
@@ -307,6 +309,11 @@ prey on them:
 - **What GTC gets out of it.** Faction membership is a meeting preference: squads of the same faction are matched
   as co-op where their jobs allow it, and a faction's own rival factions (a pirate faction and the bounty hunters
   hunting it) are what the hostile pairings feed on.
+
+**Built 2026-11-07** ([`Docs/Pilots/INVENTORY.md`](../Pilots/INVENTORY.md) §3): the person record (`PilotRecord`: name,
+human plus two animals, faction, homeworld, backstory, chronicle), founding factions per type with ids, captain and
+allies (`AccountInventory`), and the job board reading the player's real crew. Not built: the backend faction roster
+(optimal size, spawning), emissaries, ranks, and any UI to promote a captain.
 
 What the old Port boards in Figma (*Cosmic Shore for Alpha*, page *UI for vLater*, 2024) already drew for factions,
 for reference: a **primary** faction and **ally** faction slots (buy a slot, replace a faction, "You will always be

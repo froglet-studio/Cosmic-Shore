@@ -1,5 +1,7 @@
 # Rhino Energy Sword — ungated blade, the energize ritual, energy meter, the omni-crystal surge
 
+> **2026-11-07: this is the SWORDFISH's now.** The Rhino split in two (Garrett: "the sword fish will be all about the sword. the rhino will be all about the plow"): everything here moved to the Swordfish (`VesselClassType.Swordfish`, `SWORDFISH.md`) unchanged, and the Rhino has no sword. Read "the Rhino" below as "the Swordfish". The code keeps its `Rhino*` names.
+
 > **2026-10-26 (Garrett), third round: the two L5s are the sword's two keys.** "Have the sword only
 > destroy supershielded prisms as the space L5 upgrade. Have the sword only steal as the charge L5
 > upgrade." So: **Space L5 = Shield Breaker** — the sword can pop super-shielded prisms at all
@@ -422,7 +424,7 @@ v2's code-built `RhinoSwordVisualizer` (deleted). Four layers:
    IGNITION blends it fully (`energizedColor` × `visibilityMultiplier` over
    `colorTransitionSeconds`) and detonates `igniteCrackleSites` (5) crackle bursts spread
    hilt→tip (`igniteCrackleIntensity` / `igniteCrackleSeconds`). `energizedColor` is the shared
-   **danger colour** — `SO_ColorSet.Danger` from the live `OriginalColorSetSO`, the same
+   **danger colour** — `SO_ColorSet.Danger` from the live `PhoticColorSetSO`, the same
    domain-independent red a danger prism wears on its rim. An energized blade tears apart
    hardened mass and still friendly-fires, so it speaks the platform's existing "this hurts"
    language instead of inventing a private one, and white→red is legible at a glance where

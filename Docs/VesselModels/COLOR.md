@@ -1,7 +1,7 @@
 # Vessel colour: the language, the scheme, the cards
 
 One page for how a vessel is coloured: in flight, in the hangar, on its card and in an advertisement. The numbers
-live in `Tools/Build/vessel_model/vessel_colors.py` (the scheme) and `OriginalColorSetSO.asset` (the domains). The
+live in `Tools/Build/vessel_model/vessel_colors.py` (the scheme) and `PhoticColorSetSO.asset` (the domains). The
 game and the card renderer (`render_cards.py`) both read them, so a card is the ship the player flies.
 
 ## 1. The colour language (Garrett, 2026-10-18)
@@ -226,7 +226,7 @@ in lightness, about 8.4 just-noticeable differences apart.
 Against the 2026-10-21 shades, the closest pair moved from 1.6 JND apart in lightness (0.5 JND for a protan viewer, where
 two were effectively one colour) to 8.4 JND for every kind of vision. `Tools/Build/kite_mote_colors.py` now writes this
 ladder (`--check` holds it in Lime, one hue, evenly spaced and in order) to the Wrasse's kite view
-(`KiteNavigatorConfig.asset`), the Wrasse Lasso Lab and the palette (`OriginalColorSetSO.ElementalCrystalColors`), and
+(`KiteNavigatorConfig.asset`), the Wrasse Lasso Lab and the palette (`PhoticColorSetSO.ElementalCrystalColors`), and
 the crystal generators carry the palette onto the elemental crystals, the omni crystal's element shapes and the elemental
 converter's animation.
 
@@ -241,7 +241,7 @@ converter's animation.
   (1.22, 0.61, 0.03) over a dark `ShipColor2` (0.47, 0.24, 0.04), the reverse of Ruby and Jade. Gold ships
   therefore glowed at the edge and darkened face-on. The HUD chip was inverted too: `DomainScorePanel` reads
   `ShipColor1` as "the muted hull tone" for its backdrop and `ShipColor2` as "the bright pop". The two values are
-  swapped in `OriginalColorSetSO.GoldColors`, with Gold's own numbers kept. The unused Gold materials
+  swapped in `PhoticColorSetSO.GoldColors`, with Gold's own numbers kept. The unused Gold materials
   (`YellowAccentVesselMaterial`, `YellowVesselMaterial`) carried the same reversal and are swapped too.
 - **An Editor look is owed** (`/verify-unity` was not available in the session that made this change). Fly each
   domain at the chase camera and in the hangar. Then:

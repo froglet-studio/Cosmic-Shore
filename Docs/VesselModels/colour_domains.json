@@ -73,7 +73,7 @@
             0.0039,
             0.0046
           ],
-          "source": "OriginalColorSetSO · EnvironmentColors.Danger, brightest channel 1"
+          "source": "PhoticColorSetSO · EnvironmentColors.Danger, brightest channel 1"
         },
         {
           "id": "fire-1",
@@ -137,7 +137,7 @@
             0.6565,
             0
           ],
-          "source": "OriginalColorSetSO · GoldColors.TrailHighlightColor"
+          "source": "PhoticColorSetSO · GoldColors.TrailHighlightColor"
         }
       ],
       "shaping": {
@@ -169,7 +169,7 @@
             1,
             0.1562
           ],
-          "source": "OriginalColorSetSO · DarkCTA, brightest channel 1"
+          "source": "PhoticColorSetSO · DarkCTA, brightest channel 1"
         },
         {
           "id": "lime-1",
@@ -180,7 +180,7 @@
             0.92,
             0.16
           ],
-          "source": "OriginalColorSetSO · BrightCTA; ElementalBarsConfig · limeColor"
+          "source": "PhoticColorSetSO · BrightCTA; ElementalBarsConfig · limeColor"
         },
         {
           "id": "lime-2",
@@ -233,7 +233,7 @@
             0.7529,
             0.7137
           ],
-          "source": "OriginalColorSetSO · JadeColors.TrailHighlightColor"
+          "source": "PhoticColorSetSO · JadeColors.TrailHighlightColor"
         },
         {
           "id": "jade-1",
@@ -283,7 +283,7 @@
             0.5,
             1
           ],
-          "source": "OriginalColorSetSO · BlueColors.TrailHighlightColor"
+          "source": "PhoticColorSetSO · BlueColors.TrailHighlightColor"
         },
         {
           "id": "blue-1",
@@ -394,7 +394,7 @@
             0,
             0.7647
           ],
-          "source": "OriginalColorSetSO · RubyColors.TrailHighlightColor"
+          "source": "PhoticColorSetSO · RubyColors.TrailHighlightColor"
         },
         {
           "id": "ruby-1",

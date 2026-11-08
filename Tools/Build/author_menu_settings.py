@@ -79,10 +79,14 @@ PROMPT_W, PROMPT_H, PROMPT_CONFIRM_H = 1180, 680, 330
 PACKAGE = P.PACKAGE | {DROPDOWN, TOGGLE, SCROLL}
 
 # The rows, as the approved board draws them (revision 2: a one-line description under every label).
-# kind: dd (dropdown) / tg (ON-OFF pair) / sl (slider + value); field: the controller field it fills.
+# kind: dd (dropdown) / tg (ON-OFF pair) / sl (slider + value) / go (a button that goes where the thing lives);
+# field: the controller field it fills.
+# Colour sets (2026-11-05, Garrett): the sets made for colour blindness, low vision and contrast live in the Profile's
+# colour-set rail with every other set ("put the thing where it belongs"); General keeps only a breadcrumb to them.
 PAGES = [
     ("General", "chrome_gear", [
-        ("dd", "Colorblind mode", "Adjusts team colours for colour vision deficiency.", "colorblindDropdown"),
+        ("go", "Colour sets", "Sets made for colour blindness, low vision and contrast are in your Profile, under Colour sets.",
+         "colourSetsButton"),
         ("tg", "Subtitles", "Captions for spoken lines.", "subtitles"),
         ("dd", "Subtitle size", "How large the captions are.", "subtitleScaleDropdown"),
         ("tg", "Analytics and crash reports", "Share anonymous usage and crash reports so bugs get fixed.", "analyticsConsent"),
@@ -114,6 +118,7 @@ PAGES = [
     ("Account", "chrome_person", []),
 ]
 READOUTS = {"fovSlider": "fovValueText", "musicSlider": "musicValueText", "sfxSlider": "sfxValueText"}
+GO_BUTTONS = {"colourSetsButton": ("ColourSets", "COLOUR SETS")}   # field: (instance key, caption)
 LINKS = (("BugReport", "BUG REPORT", "Default", "bugReportButton"), ("Privacy", "PRIVACY POLICY", "Default", "privacyPolicyButton"),
          ("DeleteData", "DELETE MY DATA", "Danger", "deleteDataButton"), ("Credits", "CREDITS", "Default", "creditsButton"),
          ("Quit", "QUIT GAME", "Cancel", "quitGameButton"))
@@ -264,6 +269,12 @@ def row_node(page, pk, i, kind, caption, desc, field, top):
     wiring = {}
     if kind == "dd":
         wiring[field] = ("dd", dropdown(r, k))
+    elif kind == "go":
+        key, cap = GO_BUTTONS[field]
+        w, h = K.button_size(cap, small=True)
+        r.children.append(P.Inst(f"{key}Button", "KitButtonSmall", f"{key}Button", TL(CTRL_X, (ROW_H - h) // 2, w, h),
+                                 K.button_mods("KitButtonSmall", "Default", False, cap, small=True)))
+        wiring[field] = ("go", key)
     elif kind == "tg":
         on, x = word_tab(r, k, "On", "ON", CTRL_X)
         off, _ = word_tab(r, k, "Off", "OFF", x)
@@ -495,7 +506,7 @@ def controller_body(ctx, wiring):
             f"  restartRequiredNotice: {ref(ctx.go('Window/Performance/Restart'))}\n"
             "  selectedColor: {r: 1, g: 1, b: 1, a: 1}\n  unselectedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}\n"
             "  selectedScale: 1.1\n  unselectedScale: 0.95\n"
-            + dd("colorblindDropdown") + onoff("subtitles") + dd("subtitleScaleDropdown") + onoff("analyticsConsent")
+            + btn("colourSetsButton", GO_BUTTONS["colourSetsButton"][0]) + onoff("subtitles") + dd("subtitleScaleDropdown") + onoff("analyticsConsent")
             + btn("bugReportButton", links["bugReportButton"]) + btn("privacyPolicyButton", links["privacyPolicyButton"])
             + btn("deleteDataButton", links["deleteDataButton"]) + btn("creditsButton", links["creditsButton"])
             + "  screenSwitcher: {fileID: 0}\n" + btn("quitGameButton", links["quitGameButton"])
@@ -778,7 +789,8 @@ def validate(files):
                     fid = re.search(r"%s: \{fileID: (-?\d+)" % side, block.group(1)).group(1)
                     assert fid != "0" and A.kind_of(view, fid)[1] == S["tab"], f"controller.{field}.{side} is not a KitTextTab"
             else:
-                C.wired(view, ctl, field, DROPDOWN if kind == "dd" else SLIDER, "GameSettingsPanelController")
+                want = {"dd": DROPDOWN, "go": S["button"]}.get(kind, SLIDER)
+                C.wired(view, ctl, field, want, "GameSettingsPanelController")
     for f in READOUTS.values():
         C.wired(view, ctl, f, TMP, "GameSettingsPanelController")
     for k, _, _, f in LINKS:
@@ -883,6 +895,7 @@ def self_test(files):
         ("an Account row missing", lambda f: f.__setitem__(view, re.sub(r"  - provider: 4\n    root: .*\n    mark: .*\n    line: .*\n    linkButton: .*\n    linkedMark: .*\n", "", f[view]))),
         ("the Account window ships shown", lambda f: f.__setitem__(view, _show_prompt(f[view]))),
         ("a settings link back on the old site", lambda f: f.__setitem__(view, f[view].replace(STORE_SITE, "https://cosmicshore.com", 1))),
+        ("the colour-sets breadcrumb unwired", lambda f: f.__setitem__(view, re.sub(r"(  colourSetsButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),
         ("OptionsMenuContent left nested", lambda f: f.__setitem__(MODAL_PREFAB, f[MODAL_PREFAB] + f"# guid: {OPTIONS_GUID}\n")),
     ]
     ok = all(expect(l, m) for l, m in cases)

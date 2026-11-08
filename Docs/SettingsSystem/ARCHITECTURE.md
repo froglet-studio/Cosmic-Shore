@@ -23,7 +23,7 @@ is respected.
 
 | Tab | Settings | Store / method |
 |---|---|---|
-| **GENERAL** | Colorblind mode · Subtitles · Subtitle scale · Analytics+crash consent · Bug Report / Privacy Policy / Delete My Data · Version | `AccessibilitySettings`, `AnalyticsServiceFacade.SetConsent`, `Application.OpenURL` |
+| **GENERAL** | Colour sets (a breadcrumb to Profile › Colour sets) · Subtitles · Subtitle scale · Analytics+crash consent · Bug Report / Privacy Policy / Delete My Data · Version | `AccessibilitySettings`, `AnalyticsServiceFacade.SetConsent`, `Application.OpenURL` |
 | **DISPLAY** | Display mode · Resolution · Frame Rate Limit · V-Sync · Field of View | `DisplayGraphicsSettings` (device-local) |
 | **PERFORMANCE** | Quality preset · Anti-aliasing · Texture quality · Upscaling · Adaptive performance · Physics detail · Auto-Detect · Benchmark | `DisplayGraphicsSettings` |
 | **OTHER** | Invert Y · Invert Throttle · Music+vol · SFX+vol · Haptics+vol | `GameSetting` (cloud-roaming) |
@@ -182,7 +182,14 @@ Auto-Detect also logs via `CSDebug`. Wire `menuOnlyHint` + `restartRequiredNotic
 These settings are stored and broadcast change events; the systems that *read* them need a small
 hook (each is its own follow-up, some are ecology-sensitive — use the `/ecology` skill):
 
-- **Colorblind / Reduce-flashing** → a screen-space color/flash post-process.
+- **Colorblind** → REPLACED 2026-11-05 by colour sets, not a post-process (Garrett: "put the thing where it
+  belongs"). The sets made for colour blindness, low vision and contrast (Contrast, Protanopia, Deuteranopia,
+  Tritanopia, Achromatopsia, Low Vision; `Docs/VesselModels/colour_sets.json`, rule 5) sit in the Profile's colour-set
+  rail with every other set. General's first row is a breadcrumb, **Colour sets**, whose button closes Settings and
+  opens the Profile on Colour sets showing the first vision set (`ProfileColorSetsPanel.ShowColourSetsWhenOpen`; main
+  menu only, like Credits). The colorblind dropdown is gone, so nothing writes `AccessibilitySettings.ColorblindMode`
+  any more; it and `ColorblindModeSetting` are vestigial and can be removed by the settings owner.
+- **Reduce-flashing** → a screen-space flash post-process.
 - **Subtitles / scale** → Dialogue System (`DialogueManager`) subtitle rendering.
 - **Ecosystem density / physics detail / AI crowd / VFX density** → spawn profile scaling, collider
   LOD, AI count, explosion-VFX budget (ecology-sensitive: tune production, never add decay).

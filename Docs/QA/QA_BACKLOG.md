@@ -4182,7 +4182,7 @@ face**), #707 (gold's shielded prism brought into the pastel family; the danger 
 un-inverted). Colorimetry verified by simulation only — the engine has never rendered
 any of it. Reference: `Docs/PALETTE.md` §6.
 
-1. Pull and let `OriginalColorSetSO.asset` **reimport**. If nothing looks different,
+1. Pull and let `PhoticColorSetSO.asset` **reimport**. If nothing looks different,
    suspect a stale Library and Reimport before suspecting the values.
 2. **Shielded prisms** — any cell with lifeforms in Menu_Main freestyle (every
    flora/fauna health prism is shielded — the densest sample in the game). Confirm

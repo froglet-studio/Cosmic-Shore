@@ -17,8 +17,11 @@ namespace CosmicShore.UI
     /// <item><b>Creation</b>, <b>Speed</b> — each mode's switch, eased 0..1: a SWITCH moving between its ends, never a
     /// meter being spent (the Stoat's Mass card).</item>
     /// </list>
-    /// Colour here is a GAUGE channel; the upgrade lives on the lockup's card, so this view only re-anchors its captured
-    /// rest scales in <see cref="SetAbilityUpgraded"/> (vessel rule 9).
+    /// Colour here is a GAUGE channel. <see cref="SetAbilityUpgraded"/> re-anchors the captured rest scales (vessel rule 9)
+    /// and keeps the four level-5 flags: each card's level-5 state is the ACT the upgrade unlocks, a part that appears
+    /// only once the upgrade is live (Garrett's icon rule, ability-icon LESSONS 46, 47, 67) - the sabers thrown
+    /// (Thrown Sabers), the blocks as shielded prisms (Shielded Trail), a burst where the rounds meet (Explosive
+    /// Rounds), the trail swept round a turn under a roll arc (Speed Roll).
     /// </summary>
     public class BrittleStarHUDView : VesselHUDView
     {
@@ -76,6 +79,27 @@ namespace CosmicShore.UI
         [Tooltip("Alpha of the cruise trail while Speed Mode is off.")]
         [SerializeField, Range(0f, 1f)] float cruiseTrailAlpha = 0.4f;
 
+        [Header("Level-5 states (icon_kit specs/brittlestar.py, 2026-11-03; each shown only while its upgrade is live)")]
+        [Tooltip("Charge 5 Thrown Sabers: the five sabers thrown out past their turrets, tumbling (BrittleStar_ChargeSabersFree), white: " +
+                 "takes the sabers' alpha while the upgrade is live.")]
+        [SerializeField] Image chargeSabersFreeIcon;
+        [Tooltip("Mass 5 Shielded Trail: each corner's line as shielded prisms (BrittleStar_MassTrailsShielded), white.")]
+        [SerializeField] Image massTrailsShieldedIcon;
+        [Tooltip("Mass 5 Shielded Trail with Mass's fat blocks (BrittleStar_MassTrailsShieldedFat), white.")]
+        [SerializeField] Image massTrailsShieldedFatIcon;
+        [Tooltip("Space 5 Explosive Rounds: the burst where the rounds meet (BrittleStar_SpaceBurst), white.")]
+        [SerializeField] Image spaceBurstIcon;
+        [Tooltip("Space 5: the splayed rounds cleared round the burst (BrittleStar_SpaceRoundsBurst).")]
+        [SerializeField] Sprite spaceRoundsBurstSprite;
+        [Tooltip("Space 5: the meeting rounds cleared round the burst (BrittleStar_SpaceRoundsMeetBurst).")]
+        [SerializeField] Sprite spaceRoundsMeetBurstSprite;
+        [Tooltip("Space 5: the far rounds cleared round the burst (BrittleStar_SpaceRoundsFarBurst).")]
+        [SerializeField] Sprite spaceRoundsFarBurstSprite;
+        [Tooltip("Time 5 Speed Roll: the stretched trail swept round a turn (BrittleStar_TimeTrailTurn), white.")]
+        [SerializeField] Image timeTrailTurnIcon;
+        [Tooltip("Time 5 Speed Roll: the roll arc over the star (BrittleStar_TimeRoll), white.")]
+        [SerializeField] Image timeRollIcon;
+
         [Header("Omni card: the spare-ring stock (icon_kit specs/brittlestar.py, Garrett picked C 2026-11-01)")]
         [Tooltip("The omni card with no spare ring held (BrittleStar_OmniStock0): two empty slots under the star.")]
         [SerializeField] Sprite omniStock0Sprite;
@@ -95,6 +119,10 @@ namespace CosmicShore.UI
         /// <summary>Seat every readout at rest (no spare rings, cold guns, every mode off). Idempotent: it re-runs on a swap.</summary>
         public override void Initialize()
         {
+            // The level-5 flags are NOT reset here: the controller seeds them through SetAbilityUpgraded after the
+            // first Initialize, and a re-run on a swap must not drop a live upgrade.
+            CaptureRoundSprites();
+            ApplyRoundSprites();
             Seat(ringGauge, 0f);
             Seat(creationGauge, 0f);
             Seat(destructionGauge, 0f);
@@ -130,7 +158,9 @@ namespace CosmicShore.UI
             float out01 = Mathf.Clamp01(cordsOut01), pull = Mathf.Clamp01(pull01) * out01;
             float cords = Mathf.Lerp(cordsOffAlpha, 1f, out01);
             if (chargeWhipsIcon) chargeWhipsIcon.color = new Color(1f, 1f, 1f, cords * (1f - pull));
-            if (chargeSabersIcon) chargeSabersIcon.color = new Color(1f, 1f, 1f, cords * pull);
+            // Charge 5: the rigid sabers are the ones LT can throw - drawn thrown, tumbling past their turrets.
+            if (chargeSabersIcon) chargeSabersIcon.color = new Color(1f, 1f, 1f, _chargeUpgraded ? 0f : cords * pull);
+            if (chargeSabersFreeIcon) chargeSabersFreeIcon.color = new Color(1f, 1f, 1f, _chargeUpgraded ? cords * pull : 0f);
             if (chargeStarIcon) chargeStarIcon.color = _domain;
         }
 
@@ -143,8 +173,12 @@ namespace CosmicShore.UI
         {
             if (domain.a > 0f) _domain = domain;
             float trails = Mathf.Lerp(trailsOffAlpha, 1f, Mathf.Clamp01(on01)), fat = Mathf.Clamp01(girth01);
-            if (massTrailsIcon) massTrailsIcon.color = new Color(1f, 1f, 1f, trails * (1f - fat));
-            if (massTrailsFatIcon) massTrailsFatIcon.color = new Color(1f, 1f, 1f, trails * fat);
+            // Mass 5: every block laid arrives shielded - the same lines drawn as shielded prisms.
+            float plain = _massUpgraded ? 0f : 1f, shielded = 1f - plain;
+            if (massTrailsIcon) massTrailsIcon.color = new Color(1f, 1f, 1f, plain * trails * (1f - fat));
+            if (massTrailsFatIcon) massTrailsFatIcon.color = new Color(1f, 1f, 1f, plain * trails * fat);
+            if (massTrailsShieldedIcon) massTrailsShieldedIcon.color = new Color(1f, 1f, 1f, shielded * trails * (1f - fat));
+            if (massTrailsShieldedFatIcon) massTrailsShieldedFatIcon.color = new Color(1f, 1f, 1f, shielded * trails * fat);
             if (massStarIcon) massStarIcon.color = _domain;
         }
 
@@ -161,6 +195,8 @@ namespace CosmicShore.UI
             if (spaceRoundsMeetIcon) spaceRoundsMeetIcon.color = new Color(1f, 1f, 1f, a * (1f - splay));
             if (spaceRoundsIcon) spaceRoundsIcon.color = new Color(1f, 1f, 1f, a * splay * (1f - far));
             if (spaceRoundsFarIcon) spaceRoundsFarIcon.color = new Color(1f, 1f, 1f, a * splay * far);
+            // Space 5: a round a prism stops bursts - the burst where the rounds meet, at the rounds' own alpha.
+            if (spaceBurstIcon) spaceBurstIcon.color = new Color(1f, 1f, 1f, _spaceUpgraded ? a : 0f);
             if (spaceStarIcon) spaceStarIcon.color = _domain;
         }
 
@@ -174,8 +210,13 @@ namespace CosmicShore.UI
             if (domain.a > 0f) _domain = domain;
             float on = Mathf.Clamp01(on01), boost = Mathf.Clamp01(boost01);
             if (timeTrailCruiseIcon) timeTrailCruiseIcon.color = new Color(1f, 1f, 1f, cruiseTrailAlpha * (1f - on));
-            if (timeTrailFastIcon) timeTrailFastIcon.color = new Color(1f, 1f, 1f, on * (1f - boost));
-            if (timeTrailFasterIcon) timeTrailFasterIcon.color = new Color(1f, 1f, 1f, on * boost);
+            // Time 5: in Speed Mode the right stick rolls and pulls - the stretched trail swept round a turn, the roll arc.
+            float straight = _timeUpgraded ? 0f : 1f;
+            if (timeTrailFastIcon) timeTrailFastIcon.color = new Color(1f, 1f, 1f, straight * on * (1f - boost));
+            if (timeTrailFasterIcon) timeTrailFasterIcon.color = new Color(1f, 1f, 1f, straight * on * boost);
+            float turn = _timeUpgraded ? on : 0f;
+            if (timeTrailTurnIcon) timeTrailTurnIcon.color = new Color(1f, 1f, 1f, turn);
+            if (timeRollIcon) timeRollIcon.color = new Color(1f, 1f, 1f, turn);
             if (timeStarIcon) timeStarIcon.color = _domain;
         }
 
@@ -187,6 +228,32 @@ namespace CosmicShore.UI
             SetOmniAbilitySprite(spares >= 2 ? omniStock2Sprite : spares == 1 ? omniStock1Sprite : omniStock0Sprite);
 
         Color _domain = Color.white;
+        bool _chargeUpgraded, _massUpgraded, _spaceUpgraded, _timeUpgraded;
+        Sprite _roundsSprite, _roundsMeetSprite, _roundsFarSprite;   // the round parts' base sprites, captured once
+
+        /// <summary>Remember the Space card's base round sprites the first time, so Space 5 can swap them and swap back.</summary>
+        void CaptureRoundSprites()
+        {
+            if (!_roundsSprite && spaceRoundsIcon) _roundsSprite = spaceRoundsIcon.sprite;
+            if (!_roundsMeetSprite && spaceRoundsMeetIcon) _roundsMeetSprite = spaceRoundsMeetIcon.sprite;
+            if (!_roundsFarSprite && spaceRoundsFarIcon) _roundsFarSprite = spaceRoundsFarIcon.sprite;
+        }
+
+        /// <summary>Space 5 draws the rounds cleared round the burst; below it, the base rounds. A missing upgraded sprite
+        /// keeps the base one.</summary>
+        void ApplyRoundSprites()
+        {
+            Swap(spaceRoundsIcon, _roundsSprite, spaceRoundsBurstSprite);
+            Swap(spaceRoundsMeetIcon, _roundsMeetSprite, spaceRoundsMeetBurstSprite);
+            Swap(spaceRoundsFarIcon, _roundsFarSprite, spaceRoundsFarBurstSprite);
+        }
+
+        void Swap(Image image, Sprite baseSprite, Sprite upgradedSprite)
+        {
+            if (!image) return;
+            var sprite = _spaceUpgraded && upgradedSprite ? upgradedSprite : baseSprite;
+            if (sprite && image.sprite != sprite) image.sprite = sprite;
+        }
 
         void Push(Image gauge, float fill01, Color color)
         {
@@ -203,6 +270,17 @@ namespace CosmicShore.UI
         public override void SetAbilityUpgraded(Element element, bool upgraded)
         {
             base.SetAbilityUpgraded(element, upgraded);
+            switch (element)
+            {
+                case Element.Charge: _chargeUpgraded = upgraded; break;
+                case Element.Mass: _massUpgraded = upgraded; break;
+                case Element.Space:
+                    _spaceUpgraded = upgraded;
+                    CaptureRoundSprites();
+                    ApplyRoundSprites();
+                    break;
+                case Element.Time: _timeUpgraded = upgraded; break;
+            }
             var gauge = element switch
             {
                 Element.Charge => ringGauge,

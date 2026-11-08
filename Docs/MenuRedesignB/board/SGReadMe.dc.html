@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Frogma style guide</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#E6E9FF;margin:0}
+.h2{font-family:'Aldrich',sans-serif;font-size:28px;color:#E6E9FF;margin:0}
+.h3{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;margin:0}
+.body{font-family:'Aldrich',sans-serif;font-size:18px;line-height:1.45;color:#E6E9FF;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.4;color:#747BAD;margin:0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.panel{background:#222645;box-shadow:inset 0 0 0 1px #434C89}
+.btn{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase;border:0;padding:0 28px;height:52px;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.src{font-family:'Aldrich',sans-serif;font-size:14px;color:#747BAD;margin:0}
+.do{color:#99FF80}
+.dont{color:#FF4B3A}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; padding: 64px 72px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px"><span class="lab">Frogma style guide · start here</span><h1 class="h1">One look for everything Froglet makes</h1><p class="body" style="color: #747BAD; max-width: 1500px">The rules every new screen, board, deck and page is checked against. The guide in words is Docs/UI_STYLE_GUIDE.md; the colours come from Garrett&#x27;s colour chart (colour_domains.json) and the game&#x27;s UITheme.</p></div><div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px"><div class="sl panel" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 10px"><span class="lab" style="color: #99FF80">Rule 1</span><h3 class="h3">Colour is information</h3><p class="small">Six colour families, one meaning each. Nothing is coloured to look nice.</p></div><div class="sl panel" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 10px"><span class="lab" style="color: #99FF80">Rule 2</span><h3 class="h3">Elements have no colour</h3><p class="small">Charge, Mass, Space and Time are told by shape and motion, never by a hue.</p></div><div class="sl panel" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 10px"><span class="lab" style="color: #99FF80">Rule 3</span><h3 class="h3">One shape</h3><p class="small">Two opposite corners cut. Nothing is rounded. Hexagons only for icon tiles and handles.</p></div><div class="sl panel" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 10px"><span class="lab" style="color: #99FF80">Rule 4</span><h3 class="h3">Still unless it means something</h3><p class="small">The sea lines and the card drift are the only idle motion.</p></div><div class="sl panel" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 10px"><span class="lab" style="color: #99FF80">Rule 5</span><h3 class="h3">Every word is authored</h3><p class="small">All text a player reads lives in a field a person can edit.</p></div><div class="sl panel" style="padding: 24px 28px; display: flex; flex-direction: column; gap: 10px"><span class="lab" style="color: #99FF80">Rule 6</span><h3 class="h3">Shared prefabs stay shared</h3><p class="small">Change the prefab or make a variant. Never park overrides in a scene.</p></div></div><div style="display: flex; flex-direction: column; gap: 12px"><span class="lab">Where it applies</span><div style="display: flex; flex-wrap: wrap; gap: 12px"><span class="sls lab" style="padding: 10px 16px; background: #222645; color: #E6E9FF">The game: Menu_Main, GameCanvas, the start flow</span><span class="sls lab" style="padding: 10px 16px; background: #222645; color: #E6E9FF">Frogma boards</span><span class="sls lab" style="padding: 10px 16px; background: #222645; color: #E6E9FF">Artifacts and diagrams</span><span class="sls lab" style="padding: 10px 16px; background: #222645; color: #E6E9FF">Decks and presentations</span><span class="sls lab" style="padding: 10px 16px; background: #222645; color: #E6E9FF">The website</span><span class="sls lab" style="padding: 10px 16px; background: #222645; color: #E6E9FF">The Fleet Codex and every studio</span></div></div><p class="src">Read in order: colour, themes, type, shape and space, buttons, cards and windows, motion, do and don't, the PR checklist. Web pages load Docs/UI/froglet.css for the same tokens.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

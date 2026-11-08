@@ -14,7 +14,7 @@
       the graph and held to its own dataflow evaluation by parity.py
     - every number: PrismInteractionLodConfig.asset, PrismMotionConfig.asset, PrismCollisionBurstMaterial.mat,
       ExplodingBlockMaterial.mat, PrismExplosion.prefab, Prism.asset (the 72-vertex prism),
-      OriginalColorSetSO.asset, MaterialPropertyAnimator.DefaultTransitionSeconds
+      PhoticColorSetSO.asset, MaterialPropertyAnimator.DefaultTransitionSeconds
   Write-up: Docs/Studios/COLLISION_BURST_LAB.md. Verify:
     python3 Tools/Build/prism_collision_burst_lab/build.py --check
     python3 Tools/Build/prism_collision_burst_lab/parity.py
@@ -2174,13 +2174,13 @@ void main() {
     const box = document.createElement('div');
     if (group === 'Scene') {
       const row = document.createElement('div'); row.className = 'row';
-      row.innerHTML = '<label for="domainSel"><span>Domain</span><span class="key">OriginalColorSetSO</span></label><span></span><select id="domainSel"></select><div class="tip">The Plain-tier pair the factory hands both the burst and the explosion (InsideBlockColor / OutsideBlockColor).</div>';
+      row.innerHTML = '<label for="domainSel"><span>Domain</span><span class="key">PhoticColorSetSO</span></label><span></span><select id="domainSel"></select><div class="tip">The Plain-tier pair the factory hands both the burst and the explosion (InsideBlockColor / OutsideBlockColor).</div>';
       const sel = row.querySelector('select'); sel.style.gridColumn = '1 / -1';
       for (const k of Object.keys(DATA.domains)) { const o = document.createElement('option'); o.value = k; o.textContent = k[0].toUpperCase() + k.slice(1); sel.appendChild(o); }
       sel.value = domain; sel.onchange = () => { domain = sel.value; lsSet('domain', domain); };
       box.appendChild(row);
       const row2 = document.createElement('div'); row2.className = 'row';
-      row2.innerHTML = '<label for="thiefSel"><span>Stolen by</span><span class="key">OriginalColorSetSO</span></label><span></span><select id="thiefSel"></select><div class="tip">Stealing: the domain that takes the prism. The shed\'s inside, and the prism under it, wear its colours.</div>';
+      row2.innerHTML = '<label for="thiefSel"><span>Stolen by</span><span class="key">PhoticColorSetSO</span></label><span></span><select id="thiefSel"></select><div class="tip">Stealing: the domain that takes the prism. The shed\'s inside, and the prism under it, wear its colours.</div>';
       const sel2 = row2.querySelector('select'); sel2.style.gridColumn = '1 / -1';
       for (const k of Object.keys(DATA.domains)) { const o = document.createElement('option'); o.value = k; o.textContent = k[0].toUpperCase() + k.slice(1); sel2.appendChild(o); }
       sel2.value = thief; sel2.onchange = () => { thief = sel2.value; lsSet('thief', thief); };

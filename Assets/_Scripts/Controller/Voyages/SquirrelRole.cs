@@ -88,13 +88,13 @@ namespace CosmicShore.Gameplay
             if (ctx.Threats.Count >= EscortGeneRegistry.SquirrelCultivateWhenThreatsBelow.Int) return false;
             // The escort pacifies a world only on a real claim (escort.pacifyMinVolume): lay on until it has, then stop.
             var run = ctx.Run;
-            if (run && run.IsPacified(cell))
+            if (run != null && run.IsPacified(cell))
             {
                 if (_mode == Mode.Cultivate) _nucleiWon++;   // the world turned while we were laying
                 return false;
             }
             float own = cell.GetNucleusDomainVolume(ctx.Domain);
-            float need = run ? run.PacifyMinVolume : 0f;
+            float need = run != null ? run.PacifyMinVolume : 0f;
             var dominant = cell.DominantDomain;
             bool keepGoing;
             if (dominant == ctx.Domain) keepGoing = own < need;

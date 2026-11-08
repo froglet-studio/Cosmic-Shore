@@ -1,0 +1,71 @@
+{
+  "_about": "Which seat of a crew vessel owns which ability, for the Fleet Codex's seat cards. The ability maps record one ability per element for the whole hull and nothing per seat, so this table is the one thing the codex reads that a person wrote: each seat cites the crew doc it was read from. Tools/Build/fleet_codex.py links a seat ability to the map's card (its icon, scaling and level 5) when its name is the map's AbilityLabel for that element, and fails the build when a seat name is not in the class asset's CrewNames or an element is not in the map. Re-read the source doc and update this table whenever a crew's seats change.",
+  "Wrasse": {
+    "source": "Assets/_Scripts/Controller/Vessel/Crew/KITE_NAVIGATOR.md",
+    "seats": [
+      {"name": "Grouper", "seats": 1, "role": "The pilot. Flies the hull on two sticks: the Sparrow's hull with its guns, missiles and buttons removed.",
+       "abilities": [
+         {"element": "Time", "name": "Saved Boosts", "text": "RT spends a boost the Wrasse saved."}
+       ]},
+      {"name": "Wrasse", "seats": 1, "role": "The navigator. A kite on the hull's own plane, held on an invisible rope by every input; its tail lassos motes of one element and a closed loop fires that element.",
+       "abilities": [
+         {"element": "Charge", "name": "Kite Ram"},
+         {"element": "Mass", "name": "Mass Cluster"},
+         {"element": "Space", "name": "Space Blast"},
+         {"element": "Time", "name": "Time loops", "text": "A loop of Time motes saves boosts for the Grouper to spend."}
+       ]}
+    ]
+  },
+  "Goby": {
+    "source": ".claude/skills/duo-vessel/references/designs/goby-and-pistol.md",
+    "seats": [
+      {"name": "Goby", "seats": 1, "role": "The 3D flier. Two thumbs; lays the path the Pistol rides and perches at its ends.",
+       "abilities": [
+         {"element": "Charge", "name": "Lock", "text": "Locks the best target in the nose's cone, rival vessels first, then fauna; while the lock is on the Pistol's screen its rings home on it."},
+         {"element": "Mass", "name": "Perches", "text": "Passive: a dart's end becomes a perch once it is 900 u from the last one; the Pistol builds its den there."},
+         {"element": "Space", "name": "Undertow"},
+         {"element": "Time", "name": "Dart", "text": "Hold to charge the distance (140 to 600 u over 0.8 s), let go to dart; it stops on the first block on its line."}
+       ]},
+      {"name": "Pistol", "seats": 1, "role": "The 2D sidescroller. Rides the islands side on, bound to the Goby's path, and breaks through every block but the Goby's trail.",
+       "abilities": [
+         {"element": "Charge", "name": "Vortex Sting"},
+         {"element": "Mass", "name": "Dens"},
+         {"element": "Space", "name": "Ghost", "text": "A moment of passing through prisms, then a cooldown."},
+         {"element": "Time", "name": "Quick Jump"}
+       ]}
+    ]
+  },
+  "Honeyguide": {
+    "source": "Assets/_Scripts/Controller/Vessel/Crew/HONEYGUIDE.md",
+    "seats": [
+      {"name": "Honeyguide", "seats": 1, "role": "Flies the hull on the Sparrow's airframe. Its ride is the Slip; its two triggers are its own.",
+       "abilities": [
+         {"element": "Time", "name": "Slip"},
+         {"element": "Charge", "name": "Flit"},
+         {"element": "Space", "name": "Peck"}
+       ]},
+      {"name": "Ratel", "seats": 1, "role": "Plays the Dynamo, a hex puzzle: a made pattern sends a prism to the battery as a slip charge and fires its card's effect; every four patterns the Ratel picks one of three abilities.",
+       "abilities": [
+         {"element": "Mass", "name": "Hive"}
+       ]}
+    ]
+  },
+  "Orca": {
+    "source": "Assets/_Scripts/Controller/Vessel/Crew/ORCA_CREW.md",
+    "seats": [
+      {"name": "Helm", "seats": 1, "role": "Flies the hull with two thumbs. RT boosts while the tank lasts; LT raises the shield.",
+       "abilities": [
+         {"element": "Time", "name": "Boost Tank"},
+         {"element": "Mass", "name": "Danger Shield"}
+       ]},
+      {"name": "Gunners", "seats": 3, "role": "Three gunners, each on a gyro-stabilised turret on an outrigger, each with Fire and Missile. Every empty seat is an AI.",
+       "abilities": [
+         {"element": "Space", "name": "Sniper", "text": "The Serpent's sniper shot from the dorsal mast, the pip scope always open."},
+         {"element": "Mass", "name": "Fast gun", "text": "The Brittle Star's rounds from the port boom, 30 rounds/s while held."},
+         {"element": "Charge", "name": "Bomb", "text": "The Grizzly's trigger bomb from the starboard boom, one at a time."},
+         {"element": "Charge", "name": "Flown Missiles"},
+         {"element": "Space", "name": "Burst"}
+       ]}
+    ]
+  }
+}

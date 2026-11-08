@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
@@ -113,6 +113,16 @@ namespace CosmicShore.Utility
         /// authored; cleared on every runtime reset so a replay or a new scene re-arms the gate.
         /// </summary>
         [NonSerialized] public bool GameConfigSynced;
+
+        /// <summary>
+        /// Which entry of the mode's course POOL this match lays (0-based), or -1 when none has been drawn - a mode
+        /// with no pool keeps -1 for good. SERVER authority: the host draws it once per match
+        /// (<c>MultiplayerMiniGameControllerBase.DrawCourseVariant</c>, Regatta's <c>RegattaCoursePoolSO</c>) and
+        /// <c>SyncGameConfigToClients_ClientRpc</c> carries it, so a Cell choosing by it
+        /// (<c>CellTypeChoiceOptions.CourseVariantWise</c>) builds the same circuit on every machine. Cleared on every
+        /// runtime reset, like <see cref="GameConfigSynced"/>, so each match draws afresh.
+        /// </summary>
+        [NonSerialized] public int CourseVariant = -1;
 
         /// <summary>
         /// True while a Maelstrom session is in progress (set by
@@ -919,6 +929,7 @@ namespace CosmicShore.Utility
         {
             IsTurnRunning = false;
             GameConfigSynced = false;
+            CourseVariant = -1;
 
             // Scene teardown / mid-game exit: abandon the flight clock without publishing a
             // time, so an abandoned game cannot leak its seconds into the next one.
@@ -979,6 +990,7 @@ namespace CosmicShore.Utility
         {
             IsTurnRunning = false;
             GameConfigSynced = false;
+            CourseVariant = -1;
             FlightClock.AbortGame();
             TurnStartTime = 0f;
             RoundsPlayed = 0;

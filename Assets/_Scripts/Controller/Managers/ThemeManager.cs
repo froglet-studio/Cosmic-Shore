@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.ECS;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
@@ -22,8 +24,33 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static ThemeManagerDataContainerSO Data { get; private set; }
 
+        /// <summary>The live manager, for the Profile's colour-set picker. Null until it wakes.</summary>
+        public static ThemeManager Instance { get; private set; }
+
+        /// <summary>Raised after a colour set is applied and every domain material is repainted (§123).</summary>
+        public static event System.Action<SO_ColorSet> ColorSetApplied;
+
+        /// <summary>
+        /// The palette a surface should paint with: the live one (the player's pick) when the manager is up, else
+        /// the one the surface was authored with. For the few menu views that hold a palette of their own.
+        /// </summary>
+        public static SO_ColorSet LiveOr(SO_ColorSet authored) =>
+            Data && Data.ColorSet ? Data.ColorSet : authored;
+
+        // The palette the container was authored with. The player's pick goes into the container's slot at run time
+        // (that slot is what every reader follows), and this is put back when the manager goes, so a play session in
+        // the editor never leaves the asset in memory pointing at another set.
+        SO_ColorSet _authoredColorSet;
+
         void Awake()
         {
+            Instance = this;
+            _authoredColorSet = _dataContainer.ColorSet;
+            // The player's pick, if it is in the catalog and unlocked; else the authored palette (Nocturne).
+            var picked = PickedColorSet(_dataContainer.Catalog, ColorSetPreference.Load());
+            if (picked) _dataContainer.ColorSet = picked;
+            Equipped = _dataContainer.ColorSet;
+
             var GreenTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.JadeColors, Domains.Jade, "Green");
             var RedTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.RubyColors, Domains.Ruby, "Red");
             var GoldTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.GoldColors, Domains.Gold, "Gold");
@@ -36,6 +63,87 @@ namespace CosmicShore.Gameplay
                 { Domains.Blue,  BlueTeamMaterialSet },
             };
 
+            HandOffColorSet();
+
+            // Last, so Data is never observable before the material sets above are in it.
+            Data = _dataContainer;
+        }
+
+        void OnDestroy()
+        {
+            if (_dataContainer && _authoredColorSet) _dataContainer.ColorSet = _authoredColorSet;
+            if (Instance == this) Instance = null;
+        }
+
+        /// <summary>The catalog entry saved under <paramref name="savedId"/>, if it is there and unlocked.</summary>
+        public static SO_ColorSet PickedColorSet(ColorSetCatalogSO catalog, string savedId)
+        {
+            if (!catalog) return null;
+            var entry = catalog.Get(catalog.IndexOfId(savedId));
+            return entry != null && entry.unlocked ? entry.colorSet : null;
+        }
+
+        /// <summary>The set the player wears: the saved pick, or the authored palette. What a preview returns to.</summary>
+        public SO_ColorSet Equipped { get; private set; }
+
+        /// <summary>
+        /// Wears <paramref name="set"/>: shows it (<see cref="PreviewColorSet"/>, a no-op when it is already showing),
+        /// saves the pick under <paramref name="savedId"/>, makes it <see cref="Equipped"/> and raises
+        /// <see cref="ColorSetApplied"/>. Returns false when there is nothing to apply.
+        /// </summary>
+        public bool ApplyColorSet(SO_ColorSet set, string savedId)
+        {
+            if (!PreviewColorSet(set)) return false;
+            ColorSetPreference.Save(savedId);
+            Equipped = set;
+            ColorSetApplied?.Invoke(set);
+            return true;
+        }
+
+        /// <summary>
+        /// Shows <paramref name="set"/> without saving it - the Profile's Colour sets tab previews the set being browsed
+        /// on the real cell behind it (Rev 54 A, §126), and puts <see cref="Equipped"/> back when the player leaves
+        /// without applying. Puts the set in the container's slot and repaints the four domain material sets IN PLACE,
+        /// so every prism, vessel and effect drawn with them takes the new colours at once - no cell rebuild - then
+        /// hands it to the statics again. Returns false when it cannot (no set, the manager not up).
+        /// </summary>
+        public bool PreviewColorSet(SO_ColorSet set)
+        {
+            if (!set || _dataContainer.TeamMaterialSets == null) return false;
+            if (set == _dataContainer.ColorSet) return true;
+
+            _dataContainer.ColorSet = set;
+            var repainted = new List<Material>(64);
+            foreach (var pair in _dataContainer.TeamMaterialSets)
+                if (pair.Value && set.TryGetColorSetByDomain(pair.Key, out var domainColors))
+                {
+                    PaintDomainMaterialSet(pair.Value, domainColors, pair.Key);
+                    CollectMaterials(pair.Value, repainted);
+                }
+            HandOffColorSet();
+            // What copied its colours out of a material when it spawned does not see a repaint in place: the prism
+            // render entities and the crystals' tint blocks (§124). Vessels and settled MeshRenderer prisms draw the
+            // shared material itself and change with it.
+            PrismRenderService.RestampColors(repainted);
+            Crystal.RetintAll();
+            return true;
+        }
+
+        static void CollectMaterials(SO_MaterialSet set, List<Material> into)
+        {
+            foreach (var m in new[]
+                     {
+                         set.BlockMaterial, set.TransparentBlockMaterial, set.ShieldedBlockMaterial,
+                         set.TransparentShieldedBlockMaterial, set.SuperShieldedBlockMaterial,
+                         set.TransparentSuperShieldedBlockMaterial, set.DangerousBlockMaterial,
+                         set.TransparentDangerousBlockMaterial, set.ExplodingBlockMaterial, set.CrystalMaterial,
+                         set.CrystalMaterial1, set.CrystalMaterial2, set.CrystalMaterial3, set.CrystalMaterial4,
+                     })
+                if (m) into.Add(m);
+        }
+
+        void HandOffColorSet()
+        {
             // Hand the ColorSet to the static game-toast API so it colors domain names
             // from the same single source the vessels and prisms use (R5).
             GameToastAPI.ColorSet = _dataContainer.ColorSet;
@@ -44,9 +152,6 @@ namespace CosmicShore.Gameplay
             // tint and cannot be injected. Until this line runs a light falls back to white, and
             // this manager is a Bootstrap DI singleton, so nothing that can fire has woken yet.
             PrismLit.ColorSet = _dataContainer.ColorSet;
-
-            // Last, so Data is never observable before the material sets above are in it.
-            Data = _dataContainer;
         }
 
         static Material CloneOrNull(Material material) => material ? new Material(material) : null;
@@ -81,6 +186,17 @@ namespace CosmicShore.Gameplay
             materialSet.SpikeMaterial = new Material(_dataContainer.BaseMaterialSet.SpikeMaterial);
             materialSet.SkimmerMaterial = new Material(_dataContainer.BaseMaterialSet.SkimmerMaterial);
 
+            PaintDomainMaterialSet(materialSet, colorSet, domain);
+            return materialSet;
+        }
+
+        /// <summary>
+        /// Paints one domain's material set from its colours. Run once on the fresh clones at Awake and again on the
+        /// SAME clones when a colour set is applied (<see cref="ApplyColorSet"/>), which is what lets live prisms
+        /// change colour without being rebuilt.
+        /// </summary>
+        void PaintDomainMaterialSet(SO_MaterialSet materialSet, DomainColorSet colorSet, Domains domain)
+        {
             // Set colors for materials that use domain-specific colors.
             //
             // The four prism TIERS are painted from SO_ColorSet.GetPrismKindColors - the single
@@ -137,8 +253,6 @@ namespace CosmicShore.Gameplay
             materialSet.SpikeMaterial.SetColor("_DarkColor", colorSet.SpikeDarkColor);
 
             materialSet.SkimmerMaterial.SetColor("_Color", colorSet.SkimmerColor);
-
-            return materialSet;
         }
 
         /// <summary>

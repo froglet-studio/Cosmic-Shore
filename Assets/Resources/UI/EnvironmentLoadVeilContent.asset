@@ -44,6 +44,13 @@ MonoBehaviour:
   - Rest on a pilot's picture in the friends panel to see where they are.
   - On Home, press Y to fly the cell yourself, and Y again to come back.
   - The Toy Box's shuffle re-rolls the world, your domain and your hull.
+  colourSetWord: Changing colour set
+  colourSetSteps:
+  - Mixing the palette
+  - Repainting prisms
+  - Recolouring vessels and trails
+  - Opening the cell
+  colourSetTip: A colour set changes how you see the HyperSea. Other pilots keep theirs.
   background: {fileID: 2100000, guid: a718859f761b339d50cf8da837ec360e, type: 2}
   stepGlyphs: []
   displayFont: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}

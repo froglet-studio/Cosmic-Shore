@@ -687,8 +687,8 @@ MAP_ENTRIES = (
      "The right stick turns them with the ring and opens them out. Using them cools the guns. "
      "LT throws the ring - only with a SPARE ring in stock (one per crystal, two at most); the mounted ring then regrows "
      "on its own. It blows on contact or its fuse in a disk as wide as the cell's nucleus, bursting out of the ring as "
-     "faceted volumes - five coiling arms led by crystals, five crests and the ring's own pentagon - still spinning, destroying every prism in its "
-     "plane and stripping petals from every rival hull it crosses (petals only - nothing is moved). The card shows the "
+     "faceted volumes - five coiling arms led by crystals, five crests and the ring's own pentagon - still spinning, destroying every prism within 40 u of the "
+     "blast and every prism in its plane and stripping petals from every rival hull it crosses (petals only - nothing is moved). The card shows the "
      "spare stock. Charge is threat - one dial: the cords' cut width and the rounds' size x1 -> x1.8 at level 10 "
      "(projectileScaleMultiplier), the disk's thickness x1 -> x4 on top of its x4 base, 4 to 16 times the ring's (blastScale)."),
     (2, "Creation Mode", 7,
@@ -713,6 +713,29 @@ MAP_ENTRIES = (
 )
 
 
+# The level-5 upgrades (Shombith, 2026-11-03; Docs/Studios/BRITTLE_STAR.md "Level-5 upgrades"), each gated on
+# IsUpgradeActive(Element.X) in BrittleStarExecutor.
+UPGRADES = {
+    1: ("Thrown Sabers",
+        "With the cords held RIGID (RT held, the cords fully out), LT cuts all five off and throws them along the lines "
+        "they point - the right stick aims them as it aims the cords: centred they converge ahead, pushed they fan out. "
+        "Each flies on tumbling end over end, cutting every prism it crosses and striking rival hulls for petals, then is "
+        "gone; new cords grow back after a moment. The ring is thrown only when the sabers cannot be "
+        "(BrittleStarConfigSO.thrownSaber*)."),
+    2: ("Shielded Trail",
+        "Every ordinary prism the hull lays arrives SHIELDED - the base trail's and Creation Mode's five corner trails' "
+        "alike (danger prisms stay danger prisms)."),
+    3: ("Explosive Rounds",
+        "Every round a prism stops BURSTS, destroying the prisms within 10 u of where it struck (any domain - friendly "
+        "fire; your own fresh trail is spared; a shield pops first). The round's own hit on a hull is the scored hit, as "
+        "before (BrittleStarConfigSO.explosiveRoundRadius)."),
+    4: ("Speed Roll",
+        "In Speed Mode the right stick ROLLS the hull instead of turning the ring: its x rolls about the nose (220 "
+        "deg/s), its y pulls the nose (90 deg/s), so the hull can roll and pull to change direction at Speed Mode's "
+        "speed (BrittleStarConfigSO.speedRoll*)."),
+}
+
+
 def map_asset() -> str:
     out = header(MAP_SCRIPT, "BrittleStar").replace("  m_EditorClassIdentifier: \n", "  m_EditorClassIdentifier:\n")
     out += f"  vesselClass: {CLASS_ID}\n  entries:\n"
@@ -724,10 +747,8 @@ def map_asset() -> str:
                 "    UnlockLevel: 5\n"
                 "    RelockBelowLevel: 4\n"
                 "    LatchPolicy: 0\n"
-                # Level-5 upgrades are OPEN design slots: the class document names none, and the vessel skill's design
-                # gate forbids inventing one (BRITTLE_STAR.md §5 carries proposals for Garrett).
-                "    UpgradeLabel: \n"
-                "    UpgradeDescription: \n")
+                f"    UpgradeLabel: {UPGRADES[element][0]}\n"
+                f"    UpgradeDescription: {quote(UPGRADES[element][1])}\n")
     return out
 
 

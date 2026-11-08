@@ -316,6 +316,12 @@ holds the lab page's solver to this C# frame by frame on 4 digital and 5 analog 
   `HapticController.PlaySkim(lerp(0.45, 1, heat))`. **Combo**: one world counter `x2, x3…` per whip.
 - **Audio** (all **shipped EMPTY**, LOCKED FMOD convention): `smashEvent`, `crushEvent`,
   `bounceEvent`, `sliceEvent`, `plantEvent`, `yankEvent` on `ThresherExecutor`.
+  The abilities' own sounds live on `ThresherAudioController` (root of `Thresher.prefab`, 2026-11-04):
+  `morningStarLoop` (passive loop positioned on the ball every frame with its velocity; drives `Ball Speed`
+  = `Gauge01` and `Ball Hot` = smash speed), and for each trigger a press event (`leftTriggerEvent` /
+  `rightTriggerEvent`, stopped with fade-out on release; drives `Trigger Depth`) plus a release one-shot
+  (`leftTriggerReleaseEvent` / `rightTriggerReleaseEvent`). Edges come from the executor's
+  `PlantPressed/PlantReleased/WinchPressed/WinchReleased` events; local pilot only by default.
 - **Look**: a studded ball that rolls — since 2026-10-13 a faceted **morning star**
   (`ThresherBallForm`: an 80-facet core at the gameplay radius and twelve five-sided spikes on the
   icosahedron's axes, one shared mesh, one renderer; it replaced a runtime sphere and six cube studs) on
@@ -744,6 +750,17 @@ renders of the shark hull in the house card look. Since 2026-10-18 they are rend
 `Tools/Build/vessel_model/render_cards.py Thresher` (`--check`), which also writes the large, silhouette and
 hangar-preview images and wires them into the class asset; the placeholder-era `render_thresher_card_icon.py`
 was retired with it, because it drew the procedural hull over them.
+
+**The parts pass (2026-11-07, `Tools/Build/icon_kit/specs/thresher.py`):** the four cards are now drawn from the
+real shark (`Thresher.fbx`, its whip tail cut where the chain takes over) in parts seated under each slot icon of
+`ThresherHUDVariant.prefab`; the slot sprites above stay as the holders' sprites, transparent. `ThresherHUDView.
+RefreshParts` paints them from the ball's live state (`IsHot`, `InMassMode`, `RightTriggerDepth`, `IsPivoting`) and
+the upgrades: Wrecking Ball (white ball and a standing rival prism; red-hot ball, split prism and blast at smash
+speed; Magnet's field arcs at Charge 5), Mass Mode (the ball in the domain laying a solid row; white and faint while
+breaking; Armoured Trail's shield rims), Winch (a sagging chain released, a straight one and the ball's swing pulled;
+Breaker's super-shielded prism at Space 5), Plant (the shark on its orbit round the ball, solid with the chain while
+planted). The omni card is `Core/Thresher_Windmill.png`. The Space plate fills toward the pilot's domain, no longer
+the CTA lime.
 
 **Authored by** `Tools/Build/author_thresher_assets.py` (idempotent; `--check` validates the shipped
 prefab — no Squirrel FBX / DriftJet / Manta animation left, the hull, colliders, paint, animation and two

@@ -1,0 +1,58 @@
+{
+ "schema": "froglet-compute/job/1",
+ "id": "threshertime-thresher-time",
+ "kind": "search",
+ "status": "proposed",
+ "title": "The Thresher's universal Time AI: one sling genome for Thresher Time I1-I4 (the nests), grown from every Thresher genome",
+ "goal": "The Thresher's universal Time AI (Docs/AI_SYSTEM/AI_PLAN.md step time-arcade): ONE ThresherSlingAIPolicySO genome (when to plant, when to let go, the aimed launch's hold and tolerance) that races all four Thresher Time intensities well now that every gate is a NEST to break (2026-11-04, THRESHERTIME.md section 0, which says the genome has to be learned again). Its first generation is every Thresher sling genome (ThresherAIBoostPolicy_ThresherTime, learned 2026-11-02 from people's ring races, and the base ThresherAIBoostPolicy); the loss is the four intensities' scores together (mean + 0.5 x the worst), raced on the Thresher Time MODEL (Tools/Build/thresher_time_sim.py: the shipped course and nests, the gate aim, AIPilot, the sling driver line for line, and the planted orbit and aimed launch measured from the shipped ThresherChainSolver at ThresherConfig.asset's dials). Run BY HAND until Froglet Compute is switched back on (Shombith paused it 2026-11-06): /mnt/project-files/regatta-training/local_run.py, labels B and C. Lowest priority of the AI briefs; Yash's order puts the Thresher after the Stoat (MINIGAME_TRAINING_PLAN.md section 12), and it joins Regatta's card only with Garrett's yes. Report: Docs/Reports/THRESHERTIME_MODEL_2026-11-06.md.",
+ "asked_by": "Garrett 2026-11-06 (the Regatta balancing project's brief 8: model Thresher Time for the Thresher AI). The Thresher is Garrett's vessel; the AI is Yash's.",
+ "area_owner": "Yash (vessel AI and the Thresher's AI); Garrett (the Thresher kit)",
+ "plan": "regatta-balance",
+ "stage": 1,
+ "plan_step": "time-arcade",
+ "ref": "origin/bleeding-edge",
+ "requires": [
+  "python3"
+ ],
+ "paths": [],
+ "evaluator": {
+  "module": "threshertime_fit",
+  "timeout": 1800,
+  "args": {
+   "hull": "Thresher",
+   "mode": "ThresherTime",
+   "intensities": [1, 2, 3, 4],
+   "seeds": 3,
+   "seedbase": 1,
+   "limit": 600,
+   "nests": true,
+   "genomes": [
+    "Assets/Resources/AIBoostPolicies/ThresherAIBoostPolicy_ThresherTime.asset",
+    "Assets/_SO_Assets/AI Boost Policies/ThresherAIBoostPolicy.asset"
+   ],
+   "stay_near_shipped": 0.01
+  }
+ },
+ "space": [
+  {"name": "plantMinTurnDegrees", "lo": 0.0, "hi": 180.0, "init": 6.691},
+  {"name": "plantMinDistance", "lo": 0.0, "hi": 600.0, "init": 115.249},
+  {"name": "slingIntervalSeconds", "lo": 0.0, "hi": 8.0, "init": 2.866},
+  {"name": "releaseConeDegrees", "lo": 1.0, "hi": 90.0, "init": 15.0},
+  {"name": "maxPlantSeconds", "lo": 0.2, "hi": 6.0, "init": 3.156},
+  {"name": "aimedHoldSeconds", "lo": 0.0, "hi": 4.0, "init": 1.54},
+  {"name": "aimToleranceDegrees", "lo": 0.5, "hi": 45.0, "init": 3.0}
+ ],
+ "algorithm": {
+  "name": "sep-cmaes",
+  "sigma0": 0.2
+ },
+ "convergence": {
+  "min_evals": 300,
+  "window_evals": 240,
+  "min_improvement": 0.002
+ },
+ "after": [],
+ "value": 3,
+ "promote": "A PROPOSAL for the AI owner (Yash), any of the core four approving, and Garrett for his vessel: race the team's best against the shipped genome and the base one on 12 FRESH courses per intensity (seedbase 1001); keep it only if it finishes as many as the best of them on every intensity and its composite is lower. Then THE EDITOR decides: ThresherTimeSoakRunner (THRESHERTIME.md section 4) races it at I1-I4 on the nests, since the model is a model. Only then does it become ThresherAIBoostPolicy_ThresherTime, written with the learner's writer (Tools/Build/learn_drives_from_flights.py's asset writer), never by hand. The editor check goes in Docs/UNITY_VERIFICATION_CHECKLIST.md.",
+ "updated": "2026-11-06"
+}

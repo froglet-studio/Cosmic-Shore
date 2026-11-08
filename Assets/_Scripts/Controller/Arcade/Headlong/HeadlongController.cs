@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -28,8 +29,15 @@ namespace CosmicShore.Gameplay
     /// wrapping an index the race was already keeping. The Rhino's shipped kit supplies the
     /// racing; its sword is the interference.</para>
     /// </summary>
-    public class HeadlongController : GateRaceController
+    public partial class HeadlongController : GateRaceController
     {
+        [Header("AI nose lead")]
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
+                 "the lead off. Rhino 2.5: the fleet lead.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Rhino, 2.5f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
         [Header("Headlong circuit")]
         [Tooltip("Laps of the ring set that make one race. The authored gate target is the RACE " +
                  "length, so the circuit is laid with target/laps rings - one number authored " +
@@ -40,5 +48,18 @@ namespace CosmicShore.Gameplay
 
         protected override RaceCourseSource CreateCourseSource() =>
             new HeadlongCourseSource { Laps = laps };
+
+        /// <summary>
+        /// Headlong flies Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>), as every
+        /// other gate race already does: commit no earlier than the approach point, which then always lies inside the
+        /// commit radius; aim through the ring's CENTRE from where the pilot is; re-attack at once after a missed mouth.
+        /// With the shipped steering (the scene's 300 / 260 / 220, the switch off) the offline Rhino model stalled on 7
+        /// of the 12 Headlong courses whatever its drive (Docs/Reports/RHINO_HEADLONG_I4_STALLS.md): on a leg over 650 u
+        /// the 300 u approach point sits outside the 260 u commit radius and the AI circles it, and after a missed I3-I4
+        /// mouth the far-side point lies on the pilot's own side, so it loiters there and the orbit break-off never
+        /// fires (each swap between the two points reads as a new target). Switched on, the same drive finishes all 12
+        /// (<c>python3 Tools/Build/rhino_drive_sim.py --headlong</c>). A model, not the game: playtest before shipping.
+        /// </summary>
+        protected override bool AICommitFromApproachPoint => true;
     }
 }

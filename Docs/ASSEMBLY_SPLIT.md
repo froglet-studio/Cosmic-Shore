@@ -232,7 +232,7 @@ Measured on the tree, runtime files only (no `Editor/` or `Tests/` folders):
 |---|---|---:|---:|---|
 | `CosmicShore.Data` | `Data/` | 81 | 5,667 | none |
 | `CosmicShore.DisplayName` | `Utility/DisplayName/` | 2 | 744 | `CosmicShore.Data` |
-| `CosmicShore.SOAP` | `ScriptableObjects/SOAP/` | 56 | 1,340 | `CosmicShore.Data`, `CosmicShore.DisplayName`, `Obvious.Soap` |
+| `CosmicShore.SOAP` | `ScriptableObjects/SOAP/` | 56 | 1,340 | `CosmicShore.Data`, `CosmicShore.DisplayName`, `CosmicShore.Soap.Core` (was `Obvious.Soap` until 2026-11-06) |
 | `Assembly-CSharp` (what is left) | everything else | 2,338 | 565,921 | all of the above (auto-referenced) |
 
 Every move is a `git mv` of the file **and** its `.meta` (guid kept, so no scene, prefab or asset

@@ -10,11 +10,13 @@ namespace CosmicShore.UI
     /// <b>Targeting Array (charge) · Nest (mass) · Void Lance (space) · Void Sling (time)</b>.
     /// <list type="number">
     /// <item><b>Charge</b> — the missiles left across every nest flora, as a NUMBER on the card (Garrett, 2026-10-15) and
-    /// a gauge full while any is ready; the ready colour while Charge is the selected mode.</item>
+    /// a gauge full while any is ready; the domain colour while Charge is the selected mode.</item>
     /// <item><b>Mass</b> — the nest's cooldown filling; the ready colour while docked (A detaches and leaves a nest).</item>
     /// <item><b>Space</b> — the lance's cooldown filling; the ready colour while Space is the selected mode.</item>
     /// <item><b>Time</b> — the sling's cooldown filling; the ready colour while Time is the selected mode.</item>
     /// </list>
+    /// The four cards are drawn in parts (<c>Tools/Build/icon_kit/specs/shrike.py</c>) that <c>RefreshParts</c> paints
+    /// from the kit's live state; the selected mode's colour is the pilot's domain (it was the CTA lime until 2026-11-07).
     /// The count is GENERATED into the Charge card at runtime (the Squirrel's steal count is the pattern), so the HUD
     /// prefab carries no extra object. Colour here is a GAUGE channel; the upgrade lives on the lockup's card, so this
     /// view only re-anchors its captured rest scales in <see cref="SetAbilityUpgraded"/> (vessel rule 9).
@@ -34,8 +36,9 @@ namespace CosmicShore.UI
         [Header("Colours")]
         [Tooltip("Every gauge's resting colour.")]
         [SerializeField] Color gaugeColor = new(0.59f, 0.65f, 0.76f, 1f);
-        [Tooltip("The selected mode's card (and Mass while docked) — the palette's CTA lime.")]
-        [SerializeField] Color readyColor = new(157f / 255f, 1f, 46f / 255f, 1f);
+        [Tooltip("The selected mode's card (and Mass while docked) until the domain resolves; then the pilot's domain. It " +
+                 "was the palette's CTA lime until 2026-11-07: the lime is never a card's \"on\" colour.")]
+        [SerializeField] Color readyColor = Color.white;
         [Tooltip("How fast a gauge eases to its colour (1/s, exponential, unscaled time).")]
         [SerializeField, Min(0f)] float colorBlendRate = 15f;
 
@@ -43,6 +46,55 @@ namespace CosmicShore.UI
         [SerializeField, Min(8f)] float missileCountFontSize = 30f;
         [Tooltip("Where the count sits, as a fraction of the icon's height from its centre (negative = below).")]
         [SerializeField] float missileCountOffset = -0.62f;
+
+        [Header("Ability parts (icon kit: Tools/Build/icon_kit/specs/shrike.py)")]
+        [Tooltip("Charge card: the Shrike painting (domain).")]
+        [SerializeField] Image arrayShrikeIcon;
+        [Tooltip("Charge card: the reticle on the target (white; faint until painted and locked).")]
+        [SerializeField] Image arrayReticleIcon;
+        [Tooltip("Charge card: the rival prism painted (danger).")]
+        [SerializeField] Image arrayTargetIcon;
+        [Tooltip("Charge card: the flora's missiles coming in (white; painted with a missile ready).")]
+        [SerializeField] Image arrayMissilesIcon;
+        [Tooltip("Mass card: the Shrike docked (domain).")]
+        [SerializeField] Image nestShrikeIcon;
+        [Tooltip("Mass card: the nest's super-shielded cup (white; faint undocked).")]
+        [SerializeField] Image nestCupIcon;
+        [Tooltip("Mass card: a nest flora with its missile (white; once a nest stands).")]
+        [SerializeField] Image nestFloraIcon;
+        [Tooltip("Space card: the Shrike (domain).")]
+        [SerializeField] Image lanceShrikeIcon;
+        [Tooltip("Space card: the Void Lance (white; firing).")]
+        [SerializeField] Image lanceBeamIcon;
+        [Tooltip("Space card: the prism in its line (danger; whole at rest).")]
+        [SerializeField] Image lancePrismsIcon;
+        [Tooltip("Space card: the prism broken (danger; firing).")]
+        [SerializeField] Image lanceSplitIcon;
+        [Tooltip("Space card, Void Pierce (Space 5): a super-shielded block on the line (white; at rest).")]
+        [SerializeField] Image lancePierceIcon;
+        [Tooltip("Space card, Void Pierce (Space 5): that block cut by the beam (white; firing).")]
+        [SerializeField] Image lancePierceCutIcon;
+        [Tooltip("Time card: the Shrike (domain).")]
+        [SerializeField] Image slingShrikeIcon;
+        [Tooltip("Time card: the anchor block (white).")]
+        [SerializeField] Image slingAnchorIcon;
+        [Tooltip("Time card: the tether (white; faint until shot).")]
+        [SerializeField] Image slingTetherIcon;
+        [Tooltip("Time card: the blocks it lays slinging (domain).")]
+        [SerializeField] Image slingBlocksIcon;
+        [Tooltip("Rival colour on the parts (the fleet danger orange).")]
+        [SerializeField] Color dangerColor = new(1f, 0.3294f, 0.1020f, 1f);
+        [Tooltip("Alpha of a part that is there but not in play (the reticle before a lock, the cup undocked, the tether).")]
+        [SerializeField, Range(0f, 1f)] float idlePartAlpha = 0.35f;
+
+        Color _domain = Color.white;
+        bool _domainKnown;
+        bool _painted;
+        bool _docked;
+        bool _nestBuilt;
+        bool _lancing;
+        bool _tethered;
+        bool _slinging;
 
         TMP_Text _missileCount;
         int _shownCount = -1;
@@ -56,6 +108,66 @@ namespace CosmicShore.UI
             Seat(timeGauge, 1f);
             EnsureMissileCount();
             SetMissileCount(0);
+            _painted = _docked = _nestBuilt = _lancing = _tethered = _slinging = false;
+            RefreshParts();
+        }
+
+        /// <summary>The pilot's domain colour (alpha 0 = keep the last): every Shrike on the cards, and the selected
+        /// mode's gauge, wear it.</summary>
+        public void SetDomainColor(Color domain)
+        {
+            if (domain.a <= 0f || (_domainKnown && domain == _domain)) return;
+            _domain = domain;
+            _domainKnown = true;
+            readyColor = domain;
+            _shownCount = -1;   // repaint the count in the new colour
+            RefreshParts();
+        }
+
+        /// <summary>The kit's live state, read off the executor each frame.</summary>
+        public void SetKit(bool paintedWithMissiles, bool docked, bool nestBuilt, bool lancing, bool tethered, bool slinging)
+        {
+            if (paintedWithMissiles == _painted && docked == _docked && nestBuilt == _nestBuilt && lancing == _lancing &&
+                tethered == _tethered && slinging == _slinging) return;
+            _painted = paintedWithMissiles;
+            _docked = docked;
+            _nestBuilt = nestBuilt;
+            _lancing = lancing;
+            _tethered = tethered;
+            _slinging = slinging;
+            RefreshParts();
+        }
+
+        void RefreshParts()
+        {
+            Paint(arrayShrikeIcon, _domain, 1f);
+            Paint(arrayReticleIcon, Color.white, _painted ? 1f : idlePartAlpha);
+            Paint(arrayTargetIcon, dangerColor, 1f);
+            Paint(arrayMissilesIcon, Color.white, _painted ? 1f : 0f);
+
+            Paint(nestShrikeIcon, _domain, 1f);
+            Paint(nestCupIcon, Color.white, _docked ? 1f : idlePartAlpha);
+            Paint(nestFloraIcon, Color.white, _nestBuilt ? 1f : 0f);
+
+            bool pierce = IsAbilityUpgraded(Element.Space);
+            Paint(lanceShrikeIcon, _domain, 1f);
+            Paint(lanceBeamIcon, Color.white, _lancing ? 1f : 0f);
+            Paint(lancePrismsIcon, dangerColor, _lancing ? 0f : 1f);
+            Paint(lanceSplitIcon, dangerColor, _lancing ? 1f : 0f);
+            Paint(lancePierceIcon, Color.white, pierce && !_lancing ? 1f : 0f);
+            Paint(lancePierceCutIcon, Color.white, pierce && _lancing ? 1f : 0f);
+
+            Paint(slingShrikeIcon, _domain, 1f);
+            Paint(slingAnchorIcon, Color.white, 1f);
+            Paint(slingTetherIcon, Color.white, _tethered || _slinging ? 1f : idlePartAlpha);
+            Paint(slingBlocksIcon, _domain, _slinging ? 1f : 0f);
+        }
+
+        static void Paint(Image part, Color color, float alpha)
+        {
+            if (!part) return;
+            var c = new Color(color.r, color.g, color.b, color.a * alpha);
+            if (part.color != c) part.color = c;
         }
 
         void Seat(Image gauge, float fill)
@@ -109,6 +221,7 @@ namespace CosmicShore.UI
         public override void SetAbilityUpgraded(Element element, bool upgraded)
         {
             base.SetAbilityUpgraded(element, upgraded);
+            RefreshParts();
             var gauge = element switch
             {
                 Element.Charge => chargeGauge,

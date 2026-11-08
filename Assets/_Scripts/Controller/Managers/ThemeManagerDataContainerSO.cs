@@ -11,6 +11,10 @@ namespace CosmicShore.Gameplay
         public SO_MaterialSet BaseMaterialSet;
         public SO_ColorSet ColorSet;
 
+        [Tooltip("The colour sets a player can pick in the Profile. ThemeManager puts the saved pick into ColorSet " +
+                 "at start-up and when one is applied (Docs/MENU_REDESIGN_B.md section 123). Empty: ColorSet as authored.")]
+        public ColorSetCatalogSO Catalog;
+
         public Dictionary<Domains, SO_MaterialSet> TeamMaterialSets { get; set; }
 
         /// <summary>

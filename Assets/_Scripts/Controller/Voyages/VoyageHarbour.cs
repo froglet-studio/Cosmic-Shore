@@ -93,7 +93,21 @@ namespace CosmicShore.Gameplay
             var content = Content;
             if (!content || content.Content == null || IsUnderway) return new List<VoyageJob>();
             state = VoyageRun.LoadOrBegin(content.Content, LiveDomain());
-            return VoyageRules.Board(state, content.Content, VoyageRun.SeatedPilots(VoyageRun.ActiveSquad(_context)));
+            // The seated pilots lead the board; the rest of the Ark's crew fills it (DEPTH.md §4).
+            return VoyageRules.Board(state, content.Content, VoyageRun.SeatedPilots(VoyageRun.ActiveSquad(_context)), VoyageRun.CrewPilots());
+        }
+
+        /// <summary>The galaxy as this crew knows it: the running voyage's record, else the saved one (a new one, unsaved,
+        /// before the first voyage). Null without content.</summary>
+        public VoyageState GalaxyState
+        {
+            get
+            {
+                var content = Content;
+                if (!content || content.Content == null) return null;
+                if (_run && _run.IsActive && _run.State != null) return _run.State;
+                return VoyageRun.LoadOrBegin(content.Content, LiveDomain());
+            }
         }
 
         /// <summary>

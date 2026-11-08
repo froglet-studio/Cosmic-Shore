@@ -33,6 +33,7 @@ EFFECT = EFFECT_DIR + '/PayloadCrackPrismEffect.asset'
 EFFECT_GUID = '21b48b5625e24e20b6d2edca3495fcc3'
 PICKUP_MAT = 'Assets/_Graphics/Materials/ArtifactPickup.mat'
 PICKUP_MAT_GUID = '15b92e56815b4aa19c8047de1bc2d75d'
+URP_ASSET_VERSION_GUID = 'd0353a89b1f911e48b9e16bdc9f2e058'   # UnityEditor.Rendering.Universal.AssetVersion
 URP_LIT_GUID = '933532a4fcc9baf4fa0491de14d08ed7'  # Packages/com.unity.render-pipelines.universal Lit.shader
 
 # The tuning and the authored text. Starting values: a payload is six plates of an Ark's ~150,
@@ -138,7 +139,15 @@ def pickup_material():
             '  m_LockedProperties: \n  m_SavedProperties:\n    serializedVersion: 3\n    m_TexEnvs: []\n    m_Ints: []\n'
             '    m_Floats:\n    - _Metallic: 0.7\n    - _Smoothness: 0.8\n    - _Surface: 0\n    - _WorkflowMode: 1\n'
             '    m_Colors:\n    - _BaseColor: {r: 0.92, g: 0.92, b: 0.9, a: 1}\n    - _Color: {r: 0.92, g: 0.92, b: 0.9, a: 1}\n'
-            '    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}\n  m_BuildTextureStacks: []\n  m_AllowLocalizedText: 1\n')
+            '    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}\n  m_BuildTextureStacks: []\n  m_AllowLocking: 1\n'
+            # The URP material-version stamp Unity appends on its first save of a URP material. Emitted as Unity
+            # wrote it (2026-11-06, PR #1766) so re-running this script leaves the saved material byte-identical.
+            '--- !u!114 &3574423534965623073\nMonoBehaviour:\n  m_ObjectHideFlags: 11\n  m_CorrespondingSourceObject: {fileID: 0}\n'
+            '  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n'
+            '  m_EditorHideFlags: 0\n'
+            f'  m_Script: {{fileID: 11500000, guid: {URP_ASSET_VERSION_GUID}, type: 3}}\n'
+            '  m_Name: \n  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion\n'
+            '  version: 10\n')
 
 
 def material_meta(guid):

@@ -65,7 +65,8 @@ Concept art saved beside this file in `BrittleStar/`.
   with a charge the ring rebuilds at once; without, the vessel has **no ring and none of its three modes** until a crystal.
   A crystal taken while a charge is held activates **all three modes at once for a short time**. No cooldown: two rings in
   quick succession with a stored charge.
-- **Elements** (parameter + persona + AI behaviour; *no level-5 upgrades are designed*):
+- **Elements** (parameter + persona + AI behaviour; the level-5 upgrades were designed by Shombith on 2026-11-03 - see
+  "Level-5 upgrades" below):
   | Element | Persona | Parameter | Look | AI behaviour |
   |---|---|---|---|---|
   | Mass | Fabricator (robot) | larger blocks in Creation | larger cockpit | builds mass, clears enemy volume |
@@ -397,9 +398,64 @@ section planned, for the record:
   `GlobalObjectIdHash`).
 - **Abilities:** per-vessel stateless action SOs. The mode state lives in an executor, never on the SO.
 - **Ability map and HUD:** the design maps the four icons to the three modes and Ring Detonation, but **elements → abilities and the
-  level-5 upgrades are not designed** (vessel skill §3: do not invent them).
+  level-5 upgrades were not designed** at port time; Shombith designed them on 2026-11-03 ("Level-5 upgrades" below).
 - **Code to port:** `GunRingTransformer` (with the direct-children fix) and `FullAutoActionExecutor.SetGuns`. Its signature
   changed on HEAD, so merge by hand. `FullAutoActionSO.speedValue` is a plain float on HEAD now, so re-author the branch's
   ElementalFloat by hand.
 - **Registrations:** the class SO and class lists, `ToyVesselRoster`, Vessel Prefab Container, DefaultNetworkPrefabs, a camera asset, and the tests that enumerate `VesselClassType`.
 - **Hull model:** the studio's procedural pentagon hull is ready to port, or the fauna `Brittlestar_Export.fbx` with its damped arm rig could serve.
+
+## Level-5 upgrades (Shombith, 2026-11-03)
+
+Each is gated on its element's replicated unlock bit (`IsUpgradeActive(Element.X)` in `BrittleStarExecutor`), named in
+`Assets/Resources/ElementalAbilityMaps/BrittleStar.asset`, and tuned in `BrittleStarConfig.asset` ("Level-5 upgrades").
+
+| Element | Upgrade | What it does | Where |
+|---|---|---|---|
+| Mass | Shielded Trail | every ordinary prism the hull lays arrives shielded: the base trail (the spawner's `ForceShielded`) and Creation Mode's five corner trails (`IsShielded` at lay time); danger prisms stay danger prisms | `ApplyBlockGirth`, `LayCornerPrism` |
+| Space | Explosive Rounds | a round a prism stops bursts, destroying the prisms within `explosiveRoundRadius` (10 u); any domain, own fresh trail spared, a shield pops first; at most `explosiveRoundMaxPerFrame` bursts a frame; prisms only (the round's hull hit is the scored hit) | `FireAlong` (`Projectile.FlightEnded`), `UpdateRoundBursts` |
+| Charge | Thrown Sabers | with the cords held rigid (RT held, cords fully out) LT cuts all five off and throws them along their arm lines (the right stick aims them); each tumbles, cuts what it crosses and strikes rival hulls (the cords' Strike), for `thrownSaberSeconds`; new cords regrow after `thrownSaberRegrowSeconds`; the ring is thrown only when the sabers cannot be | `DetonateRing`, `ThrowSabers`, `UpdateSabers` |
+| Time | Speed Roll | in Speed Mode the right stick rolls the hull (x, `speedRollDegreesPerSecond`) and pulls the nose (y, `speedRollPullDegreesPerSecond`) instead of turning the ring, so it can change direction at speed | `ApplySpeedRoll`, `BrittleStarVesselTransformer.RotateShip` |
+
+**Ring explosion fix (same day):** the thrown ring's disk lies flat in the ring's plane and is only ~2-7 u thick, so it
+broke only the prisms lying in that plane; a trail met head-on lost a block or two and the blast read as doing nothing.
+The detonation now also has a CORE: every prism within `ringBlastCoreRadius` (40 u) of where the ring blows is destroyed
+at once, and every rival hull inside it is scored as the disk scores one (`BlastCore`).
+
+Untested in the Unity editor (no editor was open for the session that wrote them): the feel of the roll rates, the
+saber throw's speed and look, the burst and core radii.
+
+
+## The ring's wagon-wheel stutter (Garrett, 2026-11-03)
+
+**The bug:** spinning the right stick fast makes the ring look like a wagon wheel turning backward, and faster still it
+freezes into a static jitter. **The cause** is `BrittleStarExecutor.AimRing`. Every frame it re-picks the turret
+nearest the stick (`BrittleStarRules.NearestPoint`, never more than 36° away) and turns toward it at `ringTurnRate`
+(540°/s, 1.5 rev/s). When the stick outruns the ring, the ring falls 36° behind, the next turret becomes the nearest,
+and that turret sits behind the aim, so the ring turns backward. Measured headless, line for line, at 60 fps:
+
+| Stick spin (rev/s) | 1 | 1.5 | 2 | 3 | 4 | 6 |
+|---|---|---|---|---|---|---|
+| Ring net speed (rev/s) | 1.00 | 1.50 | 0.94 | 0.03 | 0.00 | 0.00 |
+| Frames per second turning backward | 0 | 0 | 11 | 29 | 20 | 30 |
+
+At 30 fps the ring settles into turning the wrong way (−0.67 rev/s at 4 rev/s).
+
+**The lab:** `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY6ykxFy5o7QR5sh). It shows the
+shipped rule as a control beside four candidate fixes, all fed one stick (auto spin, drag pad or a real gamepad) on one
+frame clock (display, 120, 60 or 30 fps), with a headless scorecard:
+- **Keep turning forward:** while the stick sweeps, the ring only hands over to the turret ahead.
+- **Faster ring:** `ringTurnRate` alone. At 1800°/s it fails again at 6 rev/s, where 60 fps strobes the pentagon.
+- **Forward + motion smear:** kept by Garrett (2026-11-03), with the smear normalized to add no brightness. The copies'
+  weights sum to one and are averaged in float (WebGL2, a float render target), so a smeared ring spreads the still
+  ring's light and never brightens it. Measured on the page's own canvas: the smeared ring is within −1.2%..−0.3% of
+  the still ring at 5-60° a frame. The first cut summed the copies with weights adding to 1.5 (+25..+58%), and plain 8-bit
+  canvas averaging still brightens (+9% at 15 copies, +18% at 24), because every small contribution rounds up. A Unity
+  port must average the same way: a rotational blur whose taps sum to 1, in a float or HDR target.
+- **Flywheel.**
+
+**Ported 2026-11-03** (Garrett picked Forward + motion smear: "push to unity"): `BrittleStarRules.ForwardTurn` and
+`AimSweep` in `AimRing`, `ringTurnRate` 1080, and the normalized smear as `BrittleStarRingSmearPass` +
+`BrittleStarRingSmear.shader` (the Unity contract: `R_VesselActions/BRITTLE_STAR.md` §2, "The ring under a spinning
+stick"). The studio's `AimRing` port (`VesselStudio/brittlestar.html`) runs the same forward rule, so
+`studio_to_unity.py --check` maps the three new sweep numbers too.

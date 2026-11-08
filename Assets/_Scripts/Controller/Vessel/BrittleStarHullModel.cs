@@ -51,6 +51,11 @@ namespace CosmicShore.Gameplay
         static readonly string[] ShapeNames = { "Charge", "Mass", "Space", "Time" };
 
         List<int>[] _ringTriangles;
+        List<int>[] _otherTriangles;   // every triangle that is not the ring's (the plumes included)
+        int[] _ringVertices;           // the vertices the ring's triangles use (the smear's reach)
+        Mesh _sharedMesh;              // the imported mesh, as the renderer had it
+        Mesh _ringlessMesh;            // the same mesh without the ring's triangles (drawn while the smear draws it)
+        bool _ringHidden;
         readonly List<Mesh> _thrownMeshes = new();
         readonly List<Vector3> _vertexScratch = new();
         readonly List<Vector3> _normalScratch = new();
@@ -89,6 +94,7 @@ namespace CosmicShore.Gameplay
             _resolved = true;
             _model = GetComponentInChildren<SkinnedMeshRenderer>(true);
             if (_model) _model.updateWhenOffscreen = true;   // the ring spins and the barrels grow past the bind bounds
+            _sharedMesh = _model ? _model.sharedMesh : null;
             _ring = FindPart(transform, "ring");
             if (_ring)
             {
@@ -274,8 +280,10 @@ namespace CosmicShore.Gameplay
         void CollectRingTriangles()
         {
             _ringTriangles = null;
+            _otherTriangles = null;
+            _ringVertices = null;
             if (!_model || !_ring) return;
-            var mesh = _model.sharedMesh;
+            var mesh = _sharedMesh ? _sharedMesh : _model.sharedMesh;
             if (!mesh || !mesh.isReadable)
             {
                 CSDebug.LogWarning($"[BrittleStarHullModel] '{name}': the model's mesh is not readable, so a thrown ring " +
@@ -288,22 +296,112 @@ namespace CosmicShore.Gameplay
                 inRing[b] = bones[b] && bones[b].IsChildOf(_ring) && !bones[b].name.EndsWith(".flame");
             var weights = mesh.boneWeights;
             var tris = new List<int>();
+            var ringVertices = new HashSet<int>();
             _ringTriangles = new List<int>[mesh.subMeshCount];
+            _otherTriangles = new List<int>[mesh.subMeshCount];
             for (int s = 0; s < mesh.subMeshCount; s++)
             {
                 var keep = new List<int>();
+                var rest = new List<int>();
                 mesh.GetTriangles(tris, s);
                 for (int t = 0; t + 2 < tris.Count; t += 3)
                 {
                     int v = tris[t];
                     int bone = v < weights.Length ? weights[v].boneIndex0 : -1;
-                    if (bone < 0 || bone >= inRing.Length || !inRing[bone]) continue;
-                    keep.Add(tris[t]);
-                    keep.Add(tris[t + 1]);
-                    keep.Add(tris[t + 2]);
+                    var into = bone < 0 || bone >= inRing.Length || !inRing[bone] ? rest : keep;
+                    into.Add(tris[t]);
+                    into.Add(tris[t + 1]);
+                    into.Add(tris[t + 2]);
+                    if (into == keep)
+                    {
+                        ringVertices.Add(tris[t]);
+                        ringVertices.Add(tris[t + 1]);
+                        ringVertices.Add(tris[t + 2]);
+                    }
                 }
                 _ringTriangles[s] = keep;
+                _otherTriangles[s] = rest;
             }
+            _ringVertices = new int[ringVertices.Count];
+            ringVertices.CopyTo(_ringVertices);
+        }
+
+        // ------------------------------------------------------------------ the ring's motion smear
+
+        public override bool CanSmearRing
+        {
+            get
+            {
+                if (!_resolved) Resolve();
+                return _model && _ring && _sharedMesh && _ringTriangles != null && _ringVertices is { Length: > 0 };
+            }
+        }
+
+        /// <summary>The ring is hidden by drawing a copy of the mesh WITHOUT its triangles (the same vertices, bones and
+        /// blend shapes), so the ring bone, the muzzles that ride it and the plumes are untouched: nothing a gun, a cord
+        /// or a thrown ring reads moves. The copy is made once, the first time it is needed.</summary>
+        public override void SetRingHidden(bool hidden)
+        {
+            if (!_resolved) Resolve();
+            if (hidden == _ringHidden || !_model || !_sharedMesh) return;
+            if (hidden)
+            {
+                if (!CanSmearRing) return;
+                if (!_ringlessMesh)
+                {
+                    _ringlessMesh = Instantiate(_sharedMesh);
+                    _ringlessMesh.name = _sharedMesh.name + " (no ring)";
+                    for (int s = 0; s < _otherTriangles.Length && s < _ringlessMesh.subMeshCount; s++)
+                        _ringlessMesh.SetTriangles(_otherTriangles[s], s, false);
+                }
+                SwapMesh(_ringlessMesh);
+            }
+            else SwapMesh(_sharedMesh);
+            _ringHidden = hidden;
+        }
+
+        readonly List<float> _weightScratch = new();
+
+        /// <summary>Give the renderer <paramref name="mesh"/>, carrying the blend-shape weights across: a mesh swap may
+        /// reset them, and the element morph is written earlier in the frame (VesselAnimation.LateUpdate).</summary>
+        void SwapMesh(Mesh mesh)
+        {
+            int shapes = _model.sharedMesh ? _model.sharedMesh.blendShapeCount : 0;
+            _weightScratch.Clear();
+            for (int i = 0; i < shapes; i++) _weightScratch.Add(_model.GetBlendShapeWeight(i));
+            _model.sharedMesh = mesh;
+            int count = Mathf.Min(_weightScratch.Count, mesh ? mesh.blendShapeCount : 0);
+            for (int i = 0; i < count; i++) _model.SetBlendShapeWeight(i, _weightScratch[i]);
+        }
+
+        public override bool BakeRing(Mesh into, out Matrix4x4 toWorld, out Renderer renderer, out Vector3 centre,
+                                      out Vector3 axis, out float reach)
+        {
+            toWorld = Matrix4x4.identity;
+            renderer = _model;
+            centre = transform.TransformPoint(new Vector3(0f, 0f, RingPlaneZ));
+            axis = transform.TransformDirection(Vector3.forward).normalized;
+            reach = 0f;
+            if (!into || !CanSmearRing) return false;
+            // Baked WITH the renderer's scale, so the mesh is in its unscaled frame; every vertex is baked (the copy
+            // without the ring keeps them all), then only the ring's triangles are kept.
+            var source = _model.transform;
+            _model.BakeMesh(into, true);
+            toWorld = Matrix4x4.TRS(source.position, source.rotation, Vector3.one);
+            int subMeshes = Mathf.Min(into.subMeshCount, _ringTriangles.Length);
+            for (int s = 0; s < subMeshes; s++) into.SetTriangles(_ringTriangles[s], s, false);
+            into.GetVertices(_vertexScratch);
+            float reachSq = 0f;
+            for (int i = 0; i < _ringVertices.Length; i++)
+            {
+                int v = _ringVertices[i];
+                if (v >= _vertexScratch.Count) continue;
+                Vector3 off = toWorld.MultiplyPoint3x4(_vertexScratch[v]) - centre;
+                reachSq = Mathf.Max(reachSq, Vector3.ProjectOnPlane(off, axis).sqrMagnitude);
+            }
+            into.RecalculateBounds();
+            reach = Mathf.Sqrt(reachSq);
+            return reach > 0f;
         }
 
         public override void DressThrownRing(GameObject body)
@@ -360,6 +458,8 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy()
         {
+            if (_model && _ringHidden) _model.sharedMesh = _sharedMesh;
+            if (_ringlessMesh) Destroy(_ringlessMesh);
             for (int i = 0; i < _thrownMeshes.Count; i++)
                 if (_thrownMeshes[i]) Destroy(_thrownMeshes[i]);
             _thrownMeshes.Clear();

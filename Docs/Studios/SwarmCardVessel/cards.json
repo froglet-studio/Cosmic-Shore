@@ -856,15 +856,15 @@
     {
      "label": "Dart speed",
      "kind": "lin",
-     "a": 2,
-     "b": 0.15,
+     "a": 1.35,
+     "b": 0.1,
      "unit": "×",
      "dec": 2,
      "key": [
-      "2.00×",
-      "2.60×",
-      "3.35×",
-      "4.10×"
+      "1.35×",
+      "1.75×",
+      "2.25×",
+      "2.75×"
      ]
     },
     {
@@ -904,15 +904,15 @@
     {
      "label": "Cruise speed",
      "kind": "lin",
-     "a": 4,
-     "b": 4,
+     "a": 1,
+     "b": 1.25,
      "unit": "%",
      "dec": 0,
      "key": [
-      "4%",
-      "20%",
-      "40%",
-      "60%"
+      "1%",
+      "6%",
+      "12%",
+      "18%"
      ]
     }
    ],
@@ -933,15 +933,15 @@
     {
      "label": "Draft bonus",
      "kind": "lin",
-     "a": 5,
-     "b": 3,
+     "a": 16,
+     "b": 10,
      "unit": "%",
      "dec": 0,
      "key": [
-      "5%",
-      "17%",
-      "32%",
-      "47%"
+      "16%",
+      "56%",
+      "106%",
+      "156%"
      ]
     }
    ],
@@ -962,15 +962,15 @@
     {
      "label": "Speed per skim",
      "kind": "lin",
-     "a": 3,
-     "b": 1,
+     "a": 75,
+     "b": 25,
      "unit": "%",
      "dec": 0,
      "key": [
-      "3%",
-      "7%",
-      "12%",
-      "17%"
+      "75%",
+      "175%",
+      "300%",
+      "425%"
      ]
     }
    ],
@@ -996,15 +996,15 @@
     {
      "label": "Turn rate",
      "kind": "lin",
-     "a": 90,
-     "b": 15,
+     "a": 72,
+     "b": 5.5,
      "unit": "°/s",
      "dec": 0,
      "key": [
-      "90°/s",
-      "150°/s",
-      "225°/s",
-      "300°/s"
+      "72°/s",
+      "94°/s",
+      "121°/s",
+      "149°/s"
      ]
     }
    ],
@@ -1030,29 +1030,29 @@
     {
      "label": "Sip radius",
      "kind": "lin",
-     "a": 60,
-     "b": 8,
+     "a": 18,
+     "b": 2.5,
      "unit": "u",
      "dec": 0,
      "key": [
-      "60 u",
-      "92 u",
-      "132 u",
-      "172 u"
+      "18 u",
+      "28 u",
+      "40 u",
+      "53 u"
      ]
     },
     {
      "label": "Turn rate",
      "kind": "lin",
-     "a": 180,
-     "b": 30,
+     "a": 72,
+     "b": 4.5,
      "unit": "°/s",
      "dec": 0,
      "key": [
-      "180°/s",
-      "300°/s",
-      "450°/s",
-      "600°/s"
+      "72°/s",
+      "90°/s",
+      "112°/s",
+      "135°/s"
      ]
     }
    ],
@@ -1068,20 +1068,20 @@
    "name": "Lead Time",
    "kind": "Aim",
    "objective": "Opposing vessels",
-   "text": "The swarm flies to where its objective will be in a moment, not where it is now, so it meets moving targets head on.",
+   "text": "The swarm flies to where its objective will be when it gets there, not where it is now, so it meets moving targets head on.",
    "stats": [
     {
      "label": "Looks ahead",
      "kind": "lin",
-     "a": 0.2,
-     "b": 0.1,
+     "a": 10,
+     "b": 2,
      "unit": "s",
      "dec": 1,
      "key": [
-      "0.2 s",
-      "0.6 s",
-      "1.1 s",
-      "1.6 s"
+      "10.0 s",
+      "18.0 s",
+      "28.0 s",
+      "38.0 s"
      ]
     }
    ],
@@ -1107,15 +1107,15 @@
     {
      "label": "Cooldown",
      "kind": "geo",
-     "a": 24,
+     "a": 54,
      "b": 0.89,
      "unit": "s",
      "dec": 1,
      "key": [
-      "24.0 s",
-      "15.1 s",
-      "8.4 s",
-      "4.7 s"
+      "54.0 s",
+      "33.9 s",
+      "18.9 s",
+      "10.6 s"
      ]
     },
     {
@@ -1145,20 +1145,20 @@
    "name": "Blink Step",
    "kind": "Dodge",
    "objective": "Opposing vessels",
-   "text": "A member about to be hit skips a fraction of a second ahead and is not there when the shot lands.",
+   "text": "A member about to be shot or bitten skips a fraction of a second ahead and is not there when the hit lands.",
    "stats": [
     {
      "label": "Chance",
      "kind": "lin",
-     "a": 10,
-     "b": 4,
+     "a": 14,
+     "b": 5.7,
      "unit": "%",
      "dec": 0,
      "key": [
-      "10%",
-      "26%",
-      "46%",
-      "66%"
+      "14%",
+      "36%",
+      "65%",
+      "93%"
      ]
     }
    ],
@@ -1174,20 +1174,20 @@
    "name": "Out of Phase",
    "kind": "Pass",
    "objective": "Any",
-   "text": "Every 15 s the swarm slips out of phase with the world and passes through prisms and vessels.",
+   "text": "Every 15 s the swarm slips out of phase with the world and passes through prisms, vessels and their shots.",
    "stats": [
     {
      "label": "Phase lasts",
      "kind": "lin",
-     "a": 1,
-     "b": 0.3,
+     "a": 22,
+     "b": 6.6,
      "unit": "s",
      "dec": 1,
      "key": [
-      "1.0 s",
-      "2.2 s",
-      "3.7 s",
-      "5.2 s"
+      "22.0 s",
+      "48.4 s",
+      "81.4 s",
+      "114.4 s"
      ]
     }
    ],
@@ -1208,15 +1208,15 @@
     {
      "label": "Fling distance",
      "kind": "lin",
-     "a": 200,
-     "b": 40,
+     "a": 1000,
+     "b": 200,
      "unit": "u",
      "dec": 0,
      "key": [
-      "200 u",
-      "360 u",
-      "560 u",
-      "760 u"
+      "1000 u",
+      "1800 u",
+      "2800 u",
+      "3800 u"
      ]
     },
     {
@@ -1246,20 +1246,20 @@
    "name": "Save Point",
    "kind": "Rewind",
    "objective": "Any",
-   "text": "Once per cycle, when the swarm is knocked down to its minimum size, it rewinds to where it was and how big it was a few seconds ago.",
+   "text": "Once per cycle, when the swarm is knocked down to its minimum size or is left without the key it just held, it rewinds to how big it was and what it held a few seconds ago.",
    "stats": [
     {
      "label": "Rewinds",
      "kind": "lin",
-     "a": 3,
-     "b": 0.5,
+     "a": 40,
+     "b": 5,
      "unit": "s",
      "dec": 1,
      "key": [
-      "3.0 s",
-      "5.0 s",
-      "7.5 s",
-      "10.0 s"
+      "40.0 s",
+      "60.0 s",
+      "85.0 s",
+      "110.0 s"
      ]
     }
    ],
@@ -1285,15 +1285,15 @@
     {
      "label": "Double time lasts",
      "kind": "lin",
-     "a": 2,
-     "b": 0.4,
+     "a": 1.1,
+     "b": 0.22,
      "unit": "s",
      "dec": 1,
      "key": [
+      "1.1 s",
       "2.0 s",
-      "3.6 s",
-      "5.6 s",
-      "7.6 s"
+      "3.1 s",
+      "4.2 s"
      ]
     }
    ],
@@ -1328,15 +1328,15 @@
     {
      "label": "Surge speed",
      "kind": "lin",
-     "a": 1.5,
-     "b": 0.1,
+     "a": 1.1,
+     "b": 0.074,
      "unit": "×",
-     "dec": 1,
+     "dec": 2,
      "key": [
-      "1.5×",
-      "1.9×",
-      "2.4×",
-      "2.9×"
+      "1.10×",
+      "1.40×",
+      "1.77×",
+      "2.14×"
      ]
     }
    ],
@@ -1376,15 +1376,15 @@
     {
      "label": "Burst speed",
      "kind": "lin",
-     "a": 1.3,
-     "b": 0.05,
+     "a": 1.39,
+     "b": 0.053,
      "unit": "×",
      "dec": 2,
      "key": [
-      "1.30×",
-      "1.50×",
-      "1.75×",
-      "2.00×"
+      "1.39×",
+      "1.60×",
+      "1.87×",
+      "2.13×"
      ]
     }
    ],
@@ -1419,15 +1419,15 @@
     {
      "label": "Courier speed",
      "kind": "lin",
-     "a": 150,
-     "b": 15,
+     "a": 54,
+     "b": 5.4,
      "unit": "u/s",
      "dec": 0,
      "key": [
-      "150 u/s",
-      "210 u/s",
-      "285 u/s",
-      "360 u/s"
+      "54 u/s",
+      "75 u/s",
+      "102 u/s",
+      "129 u/s"
      ]
     }
    ],
@@ -1443,20 +1443,20 @@
    "name": "Rewind",
    "kind": "Survive",
    "objective": "Opposing vessels",
-   "text": "A member that is killed may rewind 2 s and come back.",
+   "text": "A member that is killed, or a key that is spent, may rewind 2 s and come back.",
    "stats": [
     {
      "label": "Chance",
      "kind": "lin",
-     "a": 10,
-     "b": 5,
+     "a": 12,
+     "b": 5.9,
      "unit": "%",
      "dec": 0,
      "key": [
-      "10%",
-      "30%",
-      "55%",
-      "80%"
+      "12%",
+      "35%",
+      "65%",
+      "94%"
      ]
     }
    ],
@@ -1477,15 +1477,15 @@
     {
      "label": "Ghost strength",
      "kind": "lin",
-     "a": 20,
-     "b": 4,
+     "a": 7,
+     "b": 1.4,
      "unit": "%",
      "dec": 0,
      "key": [
-      "20%",
-      "36%",
-      "56%",
-      "76%"
+      "7%",
+      "12%",
+      "19%",
+      "26%"
      ]
     }
    ],
@@ -1510,20 +1510,20 @@
    "name": "Stopwatch",
    "kind": "Field",
    "objective": "Opposing vessels",
-   "text": "Shots and vessels near the swarm move slower in its time bubble, so it can slip past them.",
+   "text": "Shots, vessels and drifting objectives near the swarm move slower in its time bubble, so it can slip past them or catch them.",
    "stats": [
     {
      "label": "Slow",
      "kind": "lin",
-     "a": 10,
-     "b": 3,
+     "a": 18,
+     "b": 5.5,
      "unit": "%",
      "dec": 0,
      "key": [
-      "10%",
-      "22%",
-      "37%",
-      "52%"
+      "18%",
+      "40%",
+      "67%",
+      "95%"
      ]
     },
     {
@@ -1553,20 +1553,20 @@
    "name": "Hurry Up",
    "kind": "Phase",
    "objective": "Any",
-   "text": "Every phase timer runs shorter, so the cycle comes round and new hands arrive sooner.",
+   "text": "Every phase timer runs shorter (in a race, the omnicrystals lie closer), so new hands arrive sooner.",
    "stats": [
     {
      "label": "Phase time cut",
      "kind": "lin",
-     "a": 3,
-     "b": 2,
+     "a": 6,
+     "b": 3.85,
      "unit": "%",
      "dec": 0,
      "key": [
-      "3%",
-      "11%",
+      "6%",
       "21%",
-      "31%"
+      "40%",
+      "59%"
      ]
     }
    ],

@@ -1221,7 +1221,7 @@ replicated. It is therefore only available where the geometry already belongs to
 Switchback builds its course independently on every machine, so a gate object is already
 per-viewer and nothing shared is repainted. It makes no domain claim, so `ToyFactory.SwitchDomain`
 keeps it on `Domains.Blue` and the reservation below is untouched: **lime is not a playable
-domain's colour and never can be** (measured against the shipped `OriginalColorSetSO`: 0.94 summed
+domain's colour and never can be** (measured against the shipped `PhoticColorSetSO`: 0.94 summed
 channel distance to the nearest domain UI colour, against a 0.5 gate `ToySwitchVocabularyTests`
 now asserts for *every* non-`Domain` signal rather than for `Neutral` alone — a reservation test
 that names the members it knows about stops testing the law the moment one is added).

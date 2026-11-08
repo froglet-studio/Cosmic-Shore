@@ -17,7 +17,7 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 | A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5, and keeps §3.55's minimum (the lab's CATALOG row plus any costly lesson). |
 | A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, a doc-drift sweep, a mechanical refactor-opportunity sweep (D8) over §3.6, and a lab audit (D9) over §3.55. |
 | Only to land an editor tool's OUTPUT (no PR) | `/ship-tools` | Runs §2.5 alone, then retires the tool and pushes. |
-| PROMOTE an integration branch that was already reviewed PR by PR (Yash's `Ys-bleeding-edge`) | `/ship promote [branch]` | Runs §1.5 (merge bleeding-edge in, resolve, gates, push) and §5-§5.5 (the PR, CI) and nothing else - no review, no go/no-go. Was `/to-bleeding-edge`, folded in 2026-10-26 (Garrett: one shipping process, "to avoid confusion, drift"); that name stays as an alias. |
+| PROMOTE an integration branch that was already reviewed PR by PR (Yash's `Ys-bleeding-edge`) | `/ship promote [branch]` | Runs §1.5 (merge bleeding-edge in, resolve, gates, push) and §5-§5.6 (the PR, CI, the Fleet Codex) and nothing else - no review, no go/no-go. Was `/to-bleeding-edge`, folded in 2026-10-26 (Garrett: one shipping process, "to avoid confusion, drift"); that name stays as an alias. |
 
 `/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`, `/ship promote <branch>`).
 
@@ -36,6 +36,12 @@ What it means in practice:
 - **`gates.sh` runs `unity_refcompile` for you when `~/.dotnet/dotnet` exists, and prints `SKIP`
   when it does not.** A `SKIP` means refcompile did NOT run — it is not a pass. First run needs
   network and about ten minutes; how to run it and its false positives: `/asset-surgery` §4.
+  **No `~/.dotnet` and the installers refused by the proxy** (dot.net, builds.dotnet.microsoft.com and GitHub releases
+  are, in cloud sessions): `python3 Tools/Build/unity_refcompile/dotnet_from_nuget.py` lays one out from nuget.org
+  packages in about a minute, and the SKIP becomes a real compile (2026-11-07). In such a sandbox the player config
+  reports 21 errors in `FactionChatService.cs` and `PlayerReports.cs` (Vivox and Moderation cannot be fetched) and
+  `0 in files changed`: identical on a clean bleeding-edge worktree, so the gate's FAIL there is the sandbox's, not the
+  branch's. A/B it once and say so; anything beyond those two files is real.
 - **Most sessions here have no Unity Editor**, so the `unity` CLI step usually does not apply. When
   neither refcompile nor the CLI ran, the verification line in the PR body and ship report reads
   "not compiled — <why>", followed by what a human must do at the editor, and the change gets a
@@ -197,6 +203,8 @@ git diff --name-only --diff-filter=U        # the conflicted files
 ```bash
 bash .claude/skills/ship/gates.sh
 ```
+The gate LIST is `Tools/Build/ship_gates.py` (since 2026-11-06; `gates.sh` only calls it, and the Unity Source Control
+window runs the same file on Windows, `Docs/SOURCE_CONTROL.md`): add a gate there, never to `gates.sh`.
 It runs the static checks `bleeding-edge-guard.yml` runs, every `author_*` generator's `--check`, and the
 headless reference compile only when a .NET SDK is already present (it prints SKIP otherwise - §0.05 stands:
 never stand a compiler up for a ship, and a SKIP is not a failure). Player config must report `RESULT: OK`;
@@ -1076,6 +1084,10 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   §6, 2026-10-19) and Shombith asked sessions to stop. Keep Vessel Studio work out of `Port/`.
 - Check for a PR template (`.github/pull_request_template.md` and variants); mirror its
   structure if present.
+- **UI changes answer the UI checklist** (`Docs/UI_STYLE_GUIDE.md` §11): when the branch touches `Assets/_Prefabs/UI*`,
+  `Assets/_Scenes/Menu_Main.unity`, `GameCanvas`, `Assets/_SO_Assets/UI/` or `Assets/_Scripts/UI/`, the PR body carries the
+  template's `## UI checklist` with every box ticked or `N/A - <why>` (`python3 Tools/Build/check_ui_pr.py --body-file
+  <body> --files <changed>` before opening; the `UI checklist` workflow runs the same check on the PR).
 - PR body: what & why, per-system summary, **verification status** (what a human must
   still verify in-editor, with steps), **Tool output** (every tool the branch touched,
   reader vs writer, which commit carries its output, which tools were retired and which
@@ -1136,10 +1148,51 @@ mcp__github__actions_run_trigger
 - **Never push an empty commit, or close and reopen the PR, to make CI fire.** The dispatch is
   the only trigger.
 
+## 5.6 Refresh the Fleet Codex (every mode that pushes - `/ship`, `/ship-quick`, `/ship-deep`, `/ship promote`, `/ship-tools`)
+
+The Fleet Codex (https://claude.ai/artifact/JDvgFqu1bCfgcHVfCdXaA8, `/fleet-codex`) is the page the team reads to learn
+what every vessel does: its abilities, level-5 upgrades and whether each is wired, scaling numbers, controls, cards
+and docs. A ship that changes a vessel and leaves the codex stale has shipped half the change. Shombith, 2026-11-03:
+"make sure /ship includes changes push to fleet codex artifact" - and "codex should also read from bleeding edge".
+
+**When.** After §5.5, on a GO (and after a `/ship-tools` push), whenever the branch touched anything the codex reads:
+
+```sh
+git diff --name-only <merge-base>..HEAD | grep -E \
+  'ElementalAbilityMaps/|Spacevessels/|SO_Class_|VesselClassType\.cs|ToyVesselRoster|R_VesselActions/|/Vessel/|AbilityIcons/|VesselHUD/|icon_kit/specs/|_SO_Assets/Games/|author_touch_profiles|fleet_codex|FleetCodex/'
+```
+
+No hit: one report line, "no codex surface touched". A NO-GO publishes nothing.
+
+**How: always on bleeding-edge, never the feature branch alone.** `fleet_codex.py` refuses a tree that does not
+contain `origin/bleeding-edge`. Build in a detached worktree of bleeding-edge with every shipped-but-unmerged branch
+merged on top - this branch, plus each branch the published page already lists as pending and that has not landed:
+
+```sh
+git fetch origin bleeding-edge
+git worktree add --detach "$SCRATCH/be" origin/bleeding-edge
+# pending = this branch + the published fleet.json's "pending" entries still not in bleeding-edge
+#   (Artifact read, path fleet.json; drop a branch once `git merge-base --is-ancestor origin/<it> origin/bleeding-edge`)
+git -C "$SCRATCH/be" merge --no-ff --no-edit origin/<each pending branch>    # local only, never pushed
+python3 "$SCRATCH/be/Tools/Build/fleet_codex.py" --out "$SCRATCH/codex" --files-json \
+  --branch-label "bleeding-edge + <pending, comma-separated>" --pending <branch> [--pending <branch> ...]
+cp "$SCRATCH/be/Docs/FleetCodex/index.html" "$SCRATCH/codex-index.html"
+```
+
+A pending branch that no longer merges cleanly onto bleeding-edge is left out (abort that merge) and named in the
+report. Then generate and publish exactly as `/fleet-codex` §1 steps 2-5 (its `--render-domains` rule, `img/dom/*`
+in its own publish call first, compare `contentHash`, publish to the SAME url with `root` and the printed `FILES`,
+remove the worktree). The `--pending` stamp is what lets the daily refresh keep a
+shipped branch's facts until its PR merges instead of reverting them overnight.
+
+**Report:** the content hash, the tree read (the stamp), the pending list, and what changed for the vessels this branch
+touched (L5 wired counts, new abilities). If the publish is refused, say so in one line; it never holds a GO.
+
 ## 6. Report
 
 Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), whether
-the §5.5 CI dispatch went out, the
+the §5.5 CI dispatch went out, the §5.6 Fleet Codex refresh (published hash and pending list, or "no codex surface
+touched"), the
 **§2.5 tool-output verdict** (every tool classified, whose output landed in which commit,
 what was retired), the follow-ups you recorded, the §3.5 skill-capture outcome
 (skills created/extended, or the explicit "nothing reusable this session"), the §3.55

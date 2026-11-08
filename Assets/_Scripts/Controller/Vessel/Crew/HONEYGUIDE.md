@@ -145,6 +145,11 @@ acquired, but not at such a high frequency." `HoneyguideCrew.Hunt.cs`:
   objective); a trail it turns down is not slipped for `aiSlipSkipSeconds`; `aiSlipLoopCount` slips inside
   `aiSlipLoopWindow` rest its slips `aiSlipRest` s. Every slip ride has a watchdog (`rideWatchdog`). A person's slips are
   the lab's, untouched.
+- **A race's coach (Slip Line, 2026-11-07).** `RaceCoach` (`IHoneyguideRaceCoach`) lets a race say where the AI is going,
+  and the slip guard measures against it before the pilot's objective. Slip Line (`Arcade/SLIP_LINE.md`) steers the AI
+  onto the rail it chose, so the objective is a point on that rail and every ride looked like a step backwards; its
+  coach answers the ring after the rail. Null (everywhere else) is the shipped AI. `BatteryCap` and `RaceHull` are
+  read-only accessors for it. Nothing about the slip, the battery or the Ratel changed.
 
 ## Very Low: one view, the Ratel first (Garrett, 2026-10-22)
 

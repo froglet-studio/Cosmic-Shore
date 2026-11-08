@@ -22,7 +22,7 @@ along a lightness axis within a yellow-green hue within the LIME family."
 
 It writes KiteNavigatorConfig.asset's `elementColors` (the Wrasse's kite view motes; sRGB, Charge, Mass, Space, Time -
 index = Element - 1), the Wrasse Lasso Lab's LIME_E line, and the palette's `EnvironmentColors.ElementalCrystalColors`
-(OriginalColorSetSO.asset), which every other lime element reads: the four elemental crystals
+(PhoticColorSetSO.asset), which every other lime element reads: the four elemental crystals
 (author_elemental_crystal_colors.py, author_mass_crystal_look.py), the omni crystal's element shapes
 (author_omni_crystal_triangles.py, Docs/PALETTE.md §2.12) and the elemental converter's animation
 (author_elemental_converter.py). Run those after this. The tail, the saved-boost dots and every other CTA lime stay
@@ -44,7 +44,7 @@ sys.path.insert(0, os.path.join(REPO, ".claude", "skills", "vessel-studio"))
 import domain_colors  # noqa: E402  (the domains' UI and signal colours, read the way the studios read them)
 import vessel_colors  # noqa: E402  (the vessel body, glass and engine)
 
-PALETTE = os.path.join(REPO, "Assets", "_SO_Assets", "Color Palettes", "OriginalColorSetSO.asset")
+PALETTE = os.path.join(REPO, "Assets", "_SO_Assets", "Color Palettes", "PhoticColorSetSO.asset")
 LADDER = os.path.join(REPO, "Assets", "Resources", "ElementalBarsConfig.asset")
 VIEW = os.path.join(REPO, "Assets", "_Scripts", "Controller", "Vessel", "Crew", "KiteNavigatorView.cs")
 ASSET = os.path.join(REPO, "Assets", "_SO_Assets", "VesselActions", "KiteNavigator", "KiteNavigatorConfig.asset")
@@ -224,7 +224,7 @@ def write_palette(text, colors):
         return PALETTE_RE.sub(lambda _: block, text, count=1)
     m = re.search(r"^    ElementalCrystalDimming: .*\n", text, re.M)
     if not m:
-        raise SystemExit("kite_mote_colors: OriginalColorSetSO.asset has no ElementalCrystalDimming line to follow")
+        raise SystemExit("kite_mote_colors: PhoticColorSetSO.asset has no ElementalCrystalDimming line to follow")
     return text[:m.end()] + block + text[m.end():]
 
 
@@ -259,11 +259,11 @@ def check(asset_text, lab_text, colors, fam, palette_text=None):
     if palette_text is not None:
         have = palette_colors(palette_text)
         if have is None:
-            errs.append("OriginalColorSetSO.asset has no ElementalCrystalColors (run Tools/Build/kite_mote_colors.py)")
+            errs.append("PhoticColorSetSO.asset has no ElementalCrystalColors (run Tools/Build/kite_mote_colors.py)")
         else:
             for e, h, w in zip(ELEMENTS, have, colors):
                 if max(abs(a - b) for a, b in zip(h, w)) > 0.002:
-                    errs.append("OriginalColorSetSO.asset crystal %s is %s, the derivation says %s" % (e, hexof(h), hexof(w)))
+                    errs.append("PhoticColorSetSO.asset crystal %s is %s, the derivation says %s" % (e, hexof(h), hexof(w)))
     m = ASSET_RE.search(asset_text)
     if not m:
         errs.append("KiteNavigatorConfig.asset has no elementColors (run Tools/Build/kite_mote_colors.py)")

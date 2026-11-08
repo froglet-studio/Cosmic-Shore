@@ -119,7 +119,8 @@ namespace CosmicShore.UI
                 avatar.sprite = portrait;
                 avatar.enabled = portrait;
             }
-            var colour = colorSet ? colorSet.GetDomainSignalColor(domain) : UITheme.Resolve(theme, UIColorToken.TextLight);
+            var palette = CosmicShore.Gameplay.ThemeManager.LiveOr(colorSet);   // the player's colour set (section 123)
+            var colour = palette ? palette.GetDomainSignalColor(domain) : UITheme.Resolve(theme, UIColorToken.TextLight);
             if (pool) pool.color = new Color(colour.r, colour.g, colour.b, pool.color.a);
             if (poolRim) poolRim.color = new Color(colour.r, colour.g, colour.b, poolRim.color.a);
             if (podiumGlow) podiumGlow.color = new Color(colour.r, colour.g, colour.b, podiumGlow.color.a);
@@ -130,7 +131,7 @@ namespace CosmicShore.UI
             if (teamText)
             {
                 teamText.text = team ?? string.Empty;
-                teamText.color = colorSet ? colorSet.GetDomainUIColor(domain) : colour;
+                teamText.color = palette ? palette.GetDomainUIColor(domain) : colour;
             }
             if (teamStepper) teamStepper.SetChangeable(canChangeTeam);
             KitVisibility.SetShown(kickGroup, isAi && canKick);

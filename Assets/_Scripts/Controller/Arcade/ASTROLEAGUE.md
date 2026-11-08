@@ -1,5 +1,7 @@
 # Astro League Game Mode — Technical Documentation
 
+> **2026-11-07: the SWORDFISH plays here in the Rhino's place.** The Rhino split in two (`R_VesselActions/SWORDFISH.md`); the blade that strikes the ball is the Swordfish's. The card, the mode preview and the training scenario seat it. Read "the Rhino" below as "the Swordfish".
+
 ## Overview
 
 Astro League is hypersea soccer **played with a sword** — the spirit of Rocket League

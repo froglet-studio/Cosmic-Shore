@@ -18,7 +18,7 @@ assets. These rules hold for every UI surface: Menu_Main, the in-match HUD and c
 | Call to action (lime) | `Cta`, the `Play` / `Cta` button variants | categorically good, no caution: launch, join, accept, confirm, earned rewards, "online", a done tick | an eyebrow, a heading or decoration |
 | Danger (fire) | `Danger`, the `Danger` button variant | danger, caution, a problem: delete my data, a guest-account warning, why a game cannot launch | anything merely important |
 | Spend (gold) | `Purchase`, the `Purchase` button variant | spending something: a purchase, an upgrade, any button that confirms using a resource; the crystal glyph (the currency) | a first place, a highlight, a reward amount |
-| Selection (sky blue) | `Selection`, the SelectionRim material | the one thing that is actually selected (a picked tile, the open tab's still underline) and the keyboard / pad focus ring (decided 2026-10-24: focus keeps the selection blue, no look of its own) | a playing track, your own row, a favourite, a spinner, a "featured" card |
+| Selection (sky blue; **moving to Jade**: Shombith, 2026-11-05, `Docs/UI_STYLE_GUIDE.md` D3) | `Selection`, the SelectionRim material | the one thing that is actually selected (a picked tile, the open tab's still underline) and the keyboard / pad focus ring (decided 2026-10-24: focus keeps the selection blue, no look of its own) | a playing track, your own row, a favourite, a spinner, a "featured" card |
 
 Domain colour notes from Garrett: Ruby can mean risk-taking. Jade is open and may trend toward order, control and
 arrangement.

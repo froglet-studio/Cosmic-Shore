@@ -419,7 +419,7 @@ The shell's palette:
 |---|---|---|
 | `_FresnelRimColor` (always-on shell) | `(0.25, 0.55, 1.0)` | **neutral** — a saturated blue |
 | `_CrackleColorB` (arc body) | `(0.10, 0.35, 1.0)` | **neutral** — a deeper saturated blue |
-| `_CrackleColorA` (arc core) | `(1.4979111, 0.0058463, 0.0068495)` | **danger** — `EnvironmentColors.Danger` from `OriginalColorSetSO`, **verbatim** |
+| `_CrackleColorA` (arc core) | `(1.4979111, 0.0058463, 0.0068495)` | **danger** — `EnvironmentColors.Danger` from `PhoticColorSetSO`, **verbatim** |
 
 The danger colour is taken from the live colour set rather than eyeballed, because it is the one
 shared, domain-independent red the arena already uses for danger mass — so a round's hot core is
@@ -973,7 +973,7 @@ parameter, and because the shell is a general `Projectile` capability rather tha
 | `_ArcSharpness` | **0.12** | Arc width in radians. Lower reads as lightning, higher as a smear. |
 | `_ArcIntensity` | **1** | Arc brightness. At the shipped values arcs are ~34% of the shell's light and the rest is the rim. |
 | `_CoreThreshold` | **0.75** | Where the arc stops being neutral blue and becomes danger red. **Lower it and the two colours blend into magenta** — this is a separation dial, not a blend dial. Measured hue split at 0.75: 78% blue / 15% red / 7% magenta. |
-| `_CrackleColorA` | **`EnvironmentColors.Danger`** | The hot core. Taken verbatim from `OriginalColorSetSO` so a round's core is the same red as the arena's danger mass. |
+| `_CrackleColorA` | **`EnvironmentColors.Danger`** | The hot core. Taken verbatim from `PhoticColorSetSO` so a round's core is the same red as the arena's danger mass. |
 | `_CrackleColorB` / `_FresnelRimColor` | **(0.10,0.35,1) / (0.25,0.55,1)** | The neutral blues — the arc body and the always-on shell. |
 | `_CrackleRate` | **6** | Discharges per second per seed. Also what spreads consecutive volleys' phases apart — drop it far and a burst starts flashing in unison. |
 | `_FresnelRimIntensity` | **0.18** | The always-on rim. **This is the see-through dial**: it sets the shell's floor alpha (0.036 at the muzzle, 0.079 fully charged). Raise it far and an enormous round starts hiding the arena. |

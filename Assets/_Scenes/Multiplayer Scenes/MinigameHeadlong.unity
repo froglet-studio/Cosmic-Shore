@@ -823,6 +823,7 @@ MonoBehaviour:
   courseInnerRadiusFallback: 480
   innerRadiusNucleusFactor: 1.22
   laps: 5
+  hedgePrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   gateBloomSeconds: 0.9
   courseSeed: 0
   aiCommitDistance: 260

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Froglet Analytics, C: Ask first</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:#747BAD}
+.h1{font-family:'Aldrich',sans-serif;font-size:36px;color:#E6E9FF;margin:0}
+.h2{font-family:'Aldrich',sans-serif;font-size:28px;color:#E6E9FF;margin:0}
+.h3{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;margin:0}
+.body{font-family:'Aldrich',sans-serif;font-size:18px;line-height:1.45;color:#E6E9FF;margin:0}
+.small{font-family:'Aldrich',sans-serif;font-size:15px;line-height:1.4;color:#747BAD;margin:0}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.panel{background:#222645;box-shadow:inset 0 0 0 1px #434C89}
+.btn{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase;border:0;padding:0 28px;height:52px;cursor:pointer}
+.btn:focus-visible,.chip:focus-visible,.ask:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.chip{font-family:'Aldrich',sans-serif;font-size:15px;color:#E6E9FF;background:#222645;border:0;padding:10px 16px;cursor:pointer;text-align:left}
+.ask{font-family:'Aldrich',sans-serif;font-size:22px;color:#E6E9FF;background:transparent;border:0;flex:1;min-width:0;height:64px;padding:0 4px}
+.ask::placeholder{color:#747BAD}
+.code{font-family:'Aldrich',sans-serif;font-size:14px;line-height:1.6;color:#B9C9FA;white-space:pre;margin:0}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; box-sizing: border-box; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', sans-serif; padding: 44px 64px; display: flex; flex-direction: column; gap: 22px">
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span class="lab">Froglet Analytics · ask</span>
+    <h1 class="h1">What do you want to know?</h1>
+  </div>
+  <span class="small num">Release builds · 90 days · updated 06:00 UTC</span>
+</div>
+
+<div class="sl panel" style="padding: 8px 8px 8px 28px; display: flex; align-items: center; gap: 16px">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#747BAD" stroke-width="1.8"><path d="M4 5h16v11H10l-5 4v-4H4z"></path></svg>
+  <label for="ask-q" class="lab" style="position: absolute; left: -9999px">Question</label>
+  <input id="ask-q" class="ask" type="text" placeholder="Ask in plain words, for example: which mode do players leave after?" value="{{ draft }}" onChange="{{ onType }}">
+  <button class="btn sls" type="button" onClick="{{ onAsk }}" style="background: #E6E9FF; color: #00041F">Ask</button>
+</div>
+
+<div style="display: flex; gap: 12px; flex-wrap: wrap">
+  <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+    <button class="chip sls" type="button" onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.text }}</button>
+  </sc-for>
+</div>
+
+<div class="sl panel" style="padding: 26px 30px; display: grid; grid-template-columns: minmax(0, 1fr) 620px; gap: 32px; flex: 1; min-height: 0">
+  <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+    <span class="lab">Answer · Claude</span>
+    <h2 class="h2">{{ answer.q }}</h2>
+    <p class="body">{{ answer.text }}</p>
+    <sc-if value="{{ answer.hasBars }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 12px; max-width: 760px">
+        <sc-for list="{{ answer.bars }}" as="b" hint-placeholder-count="3">
+          <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 110px; gap: 16px; align-items: center" title="{{ b.tip }}">
+            <span class="small" style="color: #E6E9FF">{{ b.label }}</span>
+            <div style="height: 16px; background: #00041F"><div style="{{ b.bar }}"></div></div>
+            <span class="small num" style="color: #E6E9FF; text-align: right">{{ b.value }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <p class="small" style="margin-top: auto">{{ answer.caveat }}</p>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0">
+    <div style="display: flex; justify-content: space-between"><span class="lab">The query it ran</span><span class="small num">{{ answer.ran }}</span></div>
+    <div class="sls" style="background: #00010A; box-shadow: inset 0 0 0 1px #434C89; padding: 18px 20px; overflow: hidden; flex: 1">
+      <pre class="code">{{ answer.sql }}</pre>
+    </div>
+    <span class="small">It reads totals by day, mode and play type only. Raw events and player ids are not open to it.</span>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 2fr); gap: 16px">
+  <div class="sl panel" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 4px"><span class="lab">Players</span><span class="num" style="font-size: 32px">25</span></div>
+  <div class="sl panel" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 4px"><span class="lab">Matches</span><span class="num" style="font-size: 32px">117</span></div>
+  <div class="sl panel" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 4px"><span class="lab">Finished</span><span class="num" style="font-size: 32px">63%</span></div>
+  <div class="sl panel" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 4px"><span class="lab">Rows per play</span><span class="num" style="font-size: 32px; color: #FF4B3A">2.0</span></div>
+  <div class="sl panel" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; box-shadow: inset 3px 0 0 #FF4B3A, inset 0 0 0 1px #434C89">
+    <span class="lab" style="color: #E6E9FF">Overnight read</span>
+    <span class="small" style="color: #E6E9FF">Every event still arrives twice. The port build finishes 2% of matches. Only 2 multi-human matches.</span>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+const DATA = '#758FFB';
+const ANSWERS = [
+  {
+    q: 'Which play type brings players back for a rematch?',
+    text: 'Solo vs AI. 64% of those matches were followed by another, against 50% for solo. Multi-human play had 2 matches and neither was rematched, which is too few to say anything.',
+    bars: [['Solo vs AI', 64, '64%'], ['Solo', 50, '50%'], ['Multi-human', 0, '0 of 2']],
+    caveat: 'Release builds only. Editor and port builds are left out. Co-op and versus cannot be told apart until game_started carries the team fields.',
+    ran: '41 ms',
+    sql: "SELECT play_type,\n       COUNT(*)                 AS matches,\n       AVG(rematched)           AS rematch_rate\nFROM   match_summary\nWHERE  build_kind = 'release'\n  AND  day >= DATE('now', '-90 day')\nGROUP  BY play_type\nORDER  BY rematch_rate DESC;"
+  },
+  {
+    q: 'Does the port build finish its matches?',
+    text: 'Almost never. 1 of 43 plays on builds stamped -port sent game_completed (2%). The regular Windows build finishes 63%. Bloomrush finished 0 of 13 on the port build.',
+    bars: [['Windows 0.2.x', 63, '63%'], ['Port (-port)', 2, '2%']],
+    caveat: 'This is a Unity build stamped -port, not Amoebius, which sends no analytics. The likely cause is the match end event not firing in that build.',
+    ran: '29 ms',
+    sql: "SELECT CASE WHEN app_version LIKE '%-port'\n            THEN 'port' ELSE 'windows' END AS build,\n       SUM(started)               AS starts,\n       SUM(completed) * 1.0\n         / SUM(started)           AS finished\nFROM   match_summary\nWHERE  platform = 'WindowsPlayer'\nGROUP  BY build;"
+  },
+  {
+    q: 'How much of our traffic is the editor?',
+    text: 'About 91% of matches. 1,284 of roughly 1,400 matches in 90 days came from the Unity editor, and 117 from release builds. The editor rows are kept in their own table.',
+    bars: [['Editor', 91, '1,284'], ['Release builds', 8, '117']],
+    caveat: 'Share of matches, 90 days. The editor rows also carry the Play, Stop, Play duplicates that #1639 fixes.',
+    ran: '18 ms',
+    sql: "SELECT build_kind,\n       COUNT(DISTINCT match_id)   AS matches\nFROM   events_all\nWHERE  event = 'game_started'\n  AND  day >= DATE('now', '-90 day')\nGROUP  BY build_kind;"
+  }
+];
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { picked: 0, draft: '', custom: '' };
+  }
+  renderVals() {
+    const st = this.state;
+    const chips = ANSWERS.map((a, i) => ({
+      text: a.q,
+      style: st.picked === i && !st.custom ? 'box-shadow: inset 0 0 0 2px #00D4FF;' : 'box-shadow: inset 0 0 0 1px #434C89;',
+      pick: () => this.setState({ picked: i, custom: '', draft: '' })
+    }));
+    let answer;
+    if (st.custom) {
+      answer = {
+        q: st.custom,
+        text: 'On the real page Claude turns this question into a query over the daily totals, runs it on our server and answers here, with the query beside it.',
+        hasBars: false, bars: [],
+        caveat: 'This mockup only knows the three questions above.',
+        ran: '-',
+        sql: '-- written by Claude for this question'
+      };
+    } else {
+      const a = ANSWERS[st.picked];
+      answer = Object.assign({}, a, {
+        hasBars: true,
+        bars: a.bars.map((b) => ({
+          label: b[0], value: b[2], tip: b[0] + ': ' + b[2],
+          bar: 'height: 16px; width: ' + b[1] + '%; background: ' + DATA + ';'
+        }))
+      });
+    }
+    return {
+      chips, answer, draft: st.draft,
+      onType: (e) => this.setState({ draft: e && e.target ? e.target.value : '' }),
+      onAsk: () => {
+        const q = (st.draft || '').trim();
+        if (q) this.setState({ custom: q });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

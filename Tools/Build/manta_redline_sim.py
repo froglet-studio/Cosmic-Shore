@@ -5,33 +5,76 @@ plan's time-arcade step (Docs/AI_SYSTEM/AI_PLAN.md section 5; the search is Tool
 manta_drive_sim.py is Regatta's model: a point mass on Regatta's steering at full throttle with no nose lag. Redline
 differs on all three (measured 2026-11-03), so this one ports, line for line, what an AI Manta does there:
 
-    the course    RedlineCourse.ForIntensity through HeadlongCircuit.Generate (course_port.py, the float32 port)
+    the course    RedlineCourse.ForIntensity through HeadlongCircuit.Generate (course_port.py, the float32 port), the
+                  race's laps read from RedlineCourseSource.DefaultLaps (5), and the Time crystals of
+                  RedlineTimeCrystals (crystals_for): both held to the shipped C# by redline_course_harness's
+                  redline_parity.jsonl in --self-test
     the gate aim  GateRaceController.ArmRacers' aim provider with the Regatta steering, which RedlineController turns
                   on (AICommitFromApproachPoint, 2026-11-03): commit from the approach point, through the ring's
                   centre, break off and re-attack after a missed mouth. `regatta=False` is the old steering Redline
-                  flew before (commit at 420 u, a fly-through point on the axis, no re-attack): 4 of 12 races
-                  finished here against 12 of 12 (REDLINE.md section 5)
+                  flew before (commit at 420 u, a fly-through point on the axis, no re-attack). RedlineController's
+                  TryOverrideAim (a live Time crystal on the way, within aiTimeCrystalSlack; 0 as shipped) is asked first
     the pilot     AIPilot: the stick from the nose-to-target cross product (asin(2 sin^2 e) x sin e, TurnHardIfBehind),
                   roll stick = yaw stick, the SKILL THROTTLE (Lerp(0.2, 0.9, skill) + its creep, skill = intensity x
                   0.25 from ServerPlayerVesselInitializerWithAI; Redline sets no AIThrottleFloor, Regatta's is 1), the
-                  orbit break-off (turning-circle test, OrbitDetector, the escape point); no crystals
-                  (GateRaceController.AIDetoursForCrystals is false)
+                  orbit break-off (turning-circle test, OrbitDetector, the escape point); the platform's crystal detour
+                  never fires (GateRaceController.AIDetoursForCrystals is false, and it reads managed crystals only)
     the triggers  MantaAnalogTurnBoostExecutor.AutopilotTriggers (the Soar bands, MantaSoarAITuningSO), Soar = boost
                   multiplier 1 + 3 x min(LT, RT), Yastri yaw 60 deg/s x (RT - LT) about the hull's up
     the hull      VesselTransformer: roll (0.2 v + 100), yaw (0.2 v + 30), pitch (0.2 v + 50) deg/s about the NOSE's
                   axes onto the commanded rotation; the AI nose follows the command at LERP_AMOUNT 1.5/s; speed lerps
-                  1.5/s toward throttle x 180 x Soar (Manta.prefab: DefaultThrottleScaler 180, boostMultiplier 4,
-                  RotationThrottleScaler 0.2, Pitch 50, Yaw 30, Roll 100; AIPilot throttle 0.2-0.9, ram off)
+                  1.5/s toward throttle x 180 x Soar x the Time level's BoostSpeedMultiplier (Manta.prefab:
+                  DefaultThrottleScaler 180, boostMultiplier 4, RotationThrottleScaler 0.2, Pitch 50, Yaw 30, Roll 100;
+                  AIPilot throttle 0.2-0.9, ram off); a Time crystal is taken within its 10 u skimmer + 3.55 u
 
-triggers() MIRRORS MantaAnalogTurnBoostExecutor.AutopilotTriggers and stick() AIPilot's steering: change both together.
+triggers() MIRRORS MantaAnalogTurnBoostExecutor.AutopilotTriggers, stick() AIPilot's steering and crystals_for()
+RedlineTimeCrystals.Place: change both together.
 
-NOT modelled (LIMITS): rivals and their Yastri trails; crystals and the Kabloom; element levels (a Time level is speed on
-this hull); the lobby difficulty (GateRaceHandicap: Easy-Hard fly a late or misjudged BELIEF of the ring and the genome
-is the same; Legendary is this pilot); the spawn ring (a pilot starts 400 u before gate 0 on its axis, at rest, facing
-it); frame hitches. The editor is the measurement.
+THE AI NOSE LEAD (AIPilot.NoseLeadGain, PR #1786; Tools/Build/ai_nose_lead.py is the one shared piece) is race()'s
+`nose_lead` knob: None (OFF, today's steering, so every number above and every caller is as it was), a gain, a
+{"gain", "max_extra_deg"} dict or a NoseLead. With a gain the pilot judges its stick error from the COMMAND's forward
+and wants the NOSE turned toward the aim by the effective gain times its error, past the aim when that gain is over 1
+(at most max_extra_deg past it, never past 170 deg: ai_nose_lead.slerp_beyond = AIPilot.NoseLeadDirection); the cross
+product still lands in the nose's frame and the stick still turns the command about the nose's axes (stick(judged=)).
+The effective gain is AIPilot.EffectiveNoseLeadGain computed ONCE a race from THIS race's nose rate (`follow`, the
+fleet 1.5/s or `nose_rate`): max(1, gain x 1.5 / rate), and 0 on a nose with no lag (nose_lag=False, nose_rate=0, or
+a rate that closes the gap in one step), so a lag-free race is the same race with the lead on or off. Redline has no
+drift, rail or shell mode; the orbit break-off keeps the lead (its stick is still computed, aimed at the escape
+point). Redline sets no NoseLeadGain; Regatta carries it per hull on RaceLineStyleSO (shipped 0 until the AI owner's
+yes), and `--nose-lead G` prints the lead-on rows beside the shipped ones.
+MEASURED 2026-11-07 (`--nose-lead 2.5 --seeds 2`, a gain 1-3 x max_extra 10-40 deg scan, self-test check 11): the lead
+does NOT work on the Manta here as the game applies it. At I1, where the lag costs today's Manta 70-80 s a race (course
+2: 188.8 s, 107.5 s with no lag; a lagged nose never holds the straight stick the Soar wants), judging from the command
+helps: gain 1 finishes every I1 course in 114-128 s against today's 179-198 s, and 2.5 finishes courses 2 and 6 in
+121-127 s; but the pull past the aim buys nothing (gain 1 beats 2.5 wherever both finish) and 2.5 does not finish I1
+courses 1, 3, 4 and 5. From I2 up the lead TRAPS the hull: at I4 every gain from 1 to 3 at every max_extra from 10 to 40
+deg passes 1-8 of 40 rings in 900 s (today: 40/40 in 400-430 s with 32-33 missed mouths). Read off the race: the roll
+stick is the yaw stick (AIPilot: YDiff = XSum without a belly target) and turns the command about the NOSE's forward.
+Judged from the nose the roll never moves the nose's own forward; but a command the lead places 40-90 deg from the nose
+is swung round the nose's forward by it, the nose chases a command whirling about a body-fixed axis (the gap settles at
+~86 deg) and the hull corkscrews away from the course with the stick pinned full. A diagnostic copy with the roll stick
+zeroed while the lead is on finished every race at 2.5 (I4 courses 1-2: 533 s / 19 misses and 272 s / 10 misses against
+today's 428.6 / 33 and 400.65 / 32), so the lead would need its roll decoupled from the judged stick before it can help
+a rolling hull. That was AIPilot's roll rule to change, and it changed (below).
+THE ROLL DECOUPLING (2026-11-07, brief 22): AIPilot now flies NO roll stick while the lead steers
+(NoseLeadSteering.RollStick; ai_nose_lead.roll_stick, roll law "zero", the default), and so does this model; the
+lead as first built is the law "led" ({"gain": 2.5, "roll": "led"}), which the checks above use to keep the
+corkscrew measured, and "unled" (the lead-off yaw stick as the roll) is a rejected what-if. On 12 fresh courses an
+intensity (seedbase 1001) the decoupled 2.5 lead finishes 48 of 48 (shipped bands 23.34, the parent's winner 24.15)
+against the led roll's 6 and 11 and the lead off's 22.19 and 18.80: un-trapped, not better; the Manta's fix stays
+the nose row (#1780).
+Numbers: /mnt/project-files/regatta-training/results/lead-roll-decoupled/.
+
+NOT modelled (LIMITS): rivals and their Yastri trails; the Sting and Kabloom; the comeback's element levels; the lobby
+difficulty (GateRaceHandicap: Easy-Hard fly a late or misjudged BELIEF of the ring and the genome is the same; Legendary
+is this pilot); the spawn ring (a pilot starts 400 u before gate 0 on its axis, at rest, facing it); frame hitches; the
+Time level's speed is taken as linear in BoostSpeedMultiplier. The editor is the measurement.
 
     python3 Tools/Build/manta_redline_sim.py                  # the shipped AI, I1-I4 x 6 courses
-    python3 Tools/Build/manta_redline_sim.py --what-ifs       # against the old steering, full throttle, no nose lag
+    python3 Tools/Build/manta_redline_sim.py --what-ifs       # against the old steering, full throttle, no nose lag,
+                                                              # and the AI nose lead at the Scarab reference's 2.5
+    python3 Tools/Build/manta_redline_sim.py --nose-lead 2.5  # the shipped rows and the same races with the nose lead on
+                                                              # (a gain, or gain,max_extra_deg); --trace takes it too
     python3 Tools/Build/manta_redline_sim.py --bands 1,0.63   # one pair of Soar bands
     python3 Tools/Build/manta_redline_sim.py --trace 4 1      # one race (intensity, course seed), a line a second
     python3 Tools/Build/manta_redline_sim.py --self-test
@@ -42,6 +85,9 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "Compute", "evaluators"))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+from ai_nose_lead import NoseLead, roll_stick, slerp_beyond            # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 
 # Manta.prefab
 CRUISE, BOOST_MULT, ROT_THROTTLE = 180.0, 4.0, 0.2
@@ -57,16 +103,40 @@ REGATTA_STEERING = True                             # RedlineController.AICommit
 THROTTLE_FLOOR = 0.0                                # RedlineController sets no AIThrottleFloor (Regatta's is 1)
 COMMIT, LEAD, THROUGH = 420.0, 480.0, 320.0
 LEAD_SHARE_OF_LEG, LEAD_SHARE_OF_COMMIT = 0.4, 0.8
-LAPS = 3
+REPO = os.path.dirname(os.path.dirname(HERE))
+
+
+def _shipped_laps():
+    """RedlineCourseSource.DefaultLaps, read from the C# (5 since the 2026-10-26 ~90 s target pass; it was 3)."""
+    import re
+    path = os.path.join(REPO, "Assets", "_Scripts", "Controller", "Arcade", "Redline", "RedlineCourseSource.cs")
+    with open(path, encoding="utf-8") as fh:
+        m = re.search(r"DefaultLaps\s*=\s*(\d+)\s*;", fh.read())
+    if not m:
+        raise RuntimeError(f"RedlineCourseSource.DefaultLaps not found in {path}")
+    return int(m.group(1))
+
+
+LAPS = _shipped_laps()
+# Time crystals (RedlineTimeCrystals.cs, ported in crystals_for): one Time level each; on the Manta a Time level is Soar's
+# top speed, BoostSpeedMultiplier 1 -> 1.3 across levels 0-10 (the ability map; linear here). A crystal is taken when the
+# hull's near-field skimmer (Manta.prefab: Skimmer scale 20 x radius 0.5 = 10 u) touches the crystal (3.55 u,
+# ElementalCrystalSetSO.CrystalWorldScale), and grows back RedlineController.timeCrystalRegrowSeconds later.
+PER_LAP = (0, 1, 2, 3)
+ON_LINE_FRACTION, APEX_ALONG_EXIT, APEX_INSET = 0.5, 0.25, 70.0
+TIME_PER_LEVEL, MAX_LEVEL = 0.03, 10
+PICKUP = 10.0 + 3.55
+REGROW = 5.0
+AI_CRYSTAL_SLACK = 0.0                              # RedlineController.aiTimeCrystalSlack (off as shipped)
 # AIPilot's orbit break-off
 CAPTURE, RUN_SECONDS, BREAK_MIN, BREAK_MAX, CLOSING_COS, AWAY_BIAS = 18.0, 1.5, 0.6, 6.0, 0.5, 0.35
 SWEEP, PROGRESS, JUMP = 360.0, 0.9, 1.6
 MAX_DISTANCE = 50.0                                 # AIPilot._maxDistance (the stick's denominator floor)
 START_BACK = 400.0
 
-LIMITS = ("Redline offline (manta_redline_sim.py): the shipped course, gate aim, AIPilot stick / skill throttle / orbit "
-          "break-off, the Soar triggers and the hull's turn law and AI nose lag; one AI, no rivals or trails, no crystals, "
-          "no element levels, no lobby handicap (Legendary), a fixed start 400 u before gate 0")
+LIMITS = ("Redline offline (manta_redline_sim.py): the shipped course and Time crystals, gate aim, AIPilot stick / skill "
+          "throttle / orbit break-off, the Soar triggers, the hull's turn law and AI nose lag; one AI, no rivals or trails, "
+          "no lobby handicap (Legendary), a fixed start 400 u before gate 0, Time levels linear in BoostSpeedMultiplier")
 
 
 # ── vectors and quaternions (Unity's formulas: AngleAxis(90, up) * forward = right) ─────────────────────────────
@@ -188,10 +258,14 @@ def triggers(yaw, deflection, band, yband):
     return lt, rt
 
 
-def stick(q, desired, dist_sqr):
+def stick(q, desired, dist_sqr, judged=None):
     """AIPilot's stick (XSum, YSum): the cross product of nose and desired direction in the hull's frame, scaled by
-    asin(|cross|^2 x 100 / min(d^2, _maxDistance)) degrees, full and on its own axis when the target is behind."""
-    f = q_rot(q, FWD)
+    asin(|cross|^2 x 100 / min(d^2, _maxDistance)) degrees, full and on its own axis when the target is behind.
+    With the nose lead (AIPilot.NoseLeadGain, Tools/Build/ai_nose_lead.py) the error is judged from the COMMAND's
+    forward instead of the nose: pass it as judged (a unit vector) and the lead's wanted direction as desired; the
+    cross product still lands in the NOSE's frame (transform.InverseTransformDirection) and the stick still turns the
+    command about the nose's axes, as the game does. judged None is today's steering, judged from the nose."""
+    f = q_rot(q, FWD) if judged is None else judged
     local = q_inv_rot(q, cross(f, desired))
     a = math.degrees(math.asin(max(-1.0, min(1.0, dot(local, local) * 100.0 / min(dist_sqr, MAX_DISTANCE)))))
     if dot(f, desired) < 0.0:                                  # TurnHardIfBehind
@@ -242,6 +316,45 @@ class Orbit:
         return self.swept >= SWEEP
 
 
+def corner_radius(prev, p, nxt):
+    """RaceCourseGeometry.CornerRadius: half the shorter leg over tan(half the turn)."""
+    inbound, outbound = sub(p, prev), sub(nxt, p)
+    turn = angle(inbound, outbound)
+    if turn < 1e-4:
+        return float("inf")
+    return min(norm(inbound), norm(outbound)) * 0.5 / math.tan(math.radians(turn * 0.5))
+
+
+def crystals_for(course, intensity):
+    """RedlineTimeCrystals.Place, line for line: the lap's Time crystals, tightest corner first."""
+    gates = [tuple(g["p"]) for g in course["gates"]]
+    n = len(gates)
+    count = min(PER_LAP[max(1, min(4, int(intensity))) - 1], n) if n >= 3 else 0
+    if count <= 0:
+        return []
+    radius = [corner_radius(gates[(i - 1) % n], gates[i], gates[(i + 1) % n]) for i in range(n)]
+    order = sorted(range(n), key=lambda i: (radius[i], i))
+    out = []
+    for c in order[:count]:
+        prev, at, nxt = gates[(c - 1) % n], gates[c], gates[(c + 1) % n]
+        if intensity >= 4:
+            exit_ = sub(nxt, at)
+            along = add(at, mul(exit_, APEX_ALONG_EXIT))
+            inside = sub(mul(add(prev, nxt), 0.5), at)
+            d = unit(exit_)
+            inside = sub(inside, mul(d, dot(inside, d)))
+            out.append(add(along, mul(unit(inside), APEX_INSET)) if dot(inside, inside) > 1e-6 else along)
+        else:
+            out.append(add(prev, mul(sub(at, prev), ON_LINE_FRACTION)))
+    return out
+
+
+def seg_point(a, b, p):
+    ab = sub(b, a)
+    t = max(0.0, min(1.0, dot(sub(p, a), ab) / dot(ab, ab))) if dot(ab, ab) > 1e-12 else 0.0
+    return norm(sub(p, add(a, mul(ab, t))))
+
+
 def plane_crossing(prev, cur, centre, axis, radius):
     """RaceGateRing.PlaneCrossing: 0 none, 1 inside the mouth, -1 outside it."""
     a0, a1 = dot(sub(prev, centre), axis), dot(sub(cur, centre), axis)
@@ -253,14 +366,54 @@ def plane_crossing(prev, cur, centre, axis, radius):
 
 # ── one race ────────────────────────────────────────────────────────────────────────────────────────────────────
 
+def crystal_aim(pos, heading, ring, field, back_at, slack):
+    """RedlineController.TryOverrideAim: the live Time crystal ahead of the nose that costs least on the way to the next
+    ring, if that costs no more than `slack` over flying straight there; else None."""
+    if slack <= 0:
+        return None
+    direct = norm(sub(ring, pos))
+    best, aim = float("inf"), None
+    for c, p in enumerate(field):
+        if back_at[c] >= 0 or dot(sub(p, pos), heading) <= 0:
+            continue
+        cost = norm(sub(p, pos)) + norm(sub(ring, p))
+        if cost > direct + slack or cost >= best:
+            continue
+        best, aim = cost, p
+    return aim
+
+
 def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor=THROTTLE_FLOOR, nose_lag=True,
-         limit=400.0, dt=1 / 60, laps=LAPS, trace=None):
-    """One AI Manta flies `laps` laps of `course` ({gates: [{p, a, r}]}). Returns {time (None = not finished), rings,
-    of, top, mean_speed, soar (mean boost), misses, breakoffs}."""
+         limit=900.0, dt=1 / 60, laps=LAPS, crystals=True, crystal_slack=AI_CRYSTAL_SLACK, trace=None, nose_rate=None,
+         nose_lead=None):
+    """One AI Manta flies `laps` laps of `course` ({gates: [{p, a, r}]}), steering for a Time crystal on its way when it
+    costs under `crystal_slack` u (RedlineController.TryOverrideAim; `crystals`: True = RedlineTimeCrystals' field,
+    False = none, or a list of positions). Returns {time (None = not finished), rings, of, top, mean_speed, soar (mean
+    boost), misses, breakoffs, level (Time level at the end)}.
+    `nose_rate` is VesselTransformer.AINoseFollowPerSecond, the rate a mode may set for an AI's nose (Switchback's lag by
+    difficulty): None = unset (the fleet lag, LERP 1.5/s), 0 = no lag (the nose IS the command, as a human's), > 0 = that
+    rate per second, applied as Mathf.Min(1, rate x dt). `nose_lag=False` is the same as `nose_rate=0`.
+    `nose_lead` is AIPilot.NoseLeadGain (ai_nose_lead.NoseLead.from_config: None = off, a gain, {"gain", "max_extra_deg"}
+    or a NoseLead), stated at the fleet lag and scaled to this race's nose rate once; 0 with no nose lag.
+    The roll stick while the lead is on is the NoseLead's `roll` law ({"gain": 2.5, "roll": "zero" | "led" | "unled"},
+    ai_nose_lead.roll_stick): "zero" (the game's law since the roll decoupling: no roll stick while leading), "led" (the
+    lead's judged yaw stick as the roll, which corkscrews a rolling hull) or "unled" (today's lead-off yaw stick). It
+    has no effect with the lead off."""
     band, yband = bands or (BOOST_BAND, YASTRI_BAND)
+    follow = (LERP if nose_rate is None or nose_rate < 0 else float(nose_rate)) if nose_lag else 0.0
+    follow_step = min(1.0, follow * dt) if follow > 0 else 1.0
+    lead_knob = NoseLead.from_config(nose_lead)
+    # AIPilot.EffectiveNoseLeadGain, once a race, from THIS race's nose rate (`follow`): max(1, gain x 1.5 / rate), and
+    # 0 when the nose has no lag (nose_lag=False, nose_rate=0, or a rate that closes the whole gap in one step)
+    g_lead = lead_knob.effective(follow) if follow_step < 1.0 else 0.0
+    lead_extra = lead_knob.max_extra_deg
+    lead_roll = lead_knob.roll                                # AIPilot's roll law while the lead is on (ai_nose_lead)
     gates = [(tuple(g["p"]), unit(tuple(g["a"])), float(g["r"])) for g in course["gates"]]
     n = len(gates)
     total = n * max(1, laps)
+    field = crystals_for(course, intensity) if crystals is True else list(crystals or [])
+    back_at = [-1.0] * len(field)                                   # when a taken crystal is back (-1 = standing)
+    level = 0
     skill = max(0.0, min(1.0, intensity * 0.25))
     throttle = THROTTLE_LOW + (THROTTLE_HIGH - THROTTLE_LOW) * skill
     creep = CREEP_LOW + (CREEP_HIGH - CREEP_LOW) * skill
@@ -281,8 +434,9 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
     while t < limit and idx < total:
         ring, ax, rad = gates[idx % n]
 
-        # GateRaceController's aim provider
-        if regatta and prev is not None and plane_crossing(prev, pos, ring, ax, rad) == -1:
+        # GateRaceController's aim provider: the mode's override first (RedlineController.TryOverrideAim)
+        aim = crystal_aim(pos, q_rot(q, FWD), ring, field, back_at, crystal_slack) if field else None
+        if aim is None and regatta and prev is not None and plane_crossing(prev, pos, ring, ax, rad) == -1:
             locked = -1                                             # re-latch the side, and AIPilot.BreakOffNow
             breakoffs += not extending
             extending, ext_t = True, 0.0
@@ -299,7 +453,9 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         commit = min(COMMIT, lead + 0.5 * r_min) if regatta else COMMIT
         to_ring = sub(ring, pos)
         approaching = dot(to_ring, to_ring) > commit * commit
-        if approaching:
+        if aim is not None:
+            target = aim
+        elif approaching:
             target = add(ring, mul(ax, side * lead))
         elif regatta and dot(to_ring, to_ring) > 1.0:
             target = add(ring, mul(unit(to_ring), THROUGH))
@@ -330,8 +486,21 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
             steer = target
         dist = sub(steer, pos)
         dsq = dot(dist, dist)
-        xs, ys = stick(q, unit(dist), dsq) if dsq > 1e-12 else (0.0, 0.0)
-        yd = xs                                                     # the roll stick (no belly target in Redline)
+        yd = None
+        if dsq <= 1e-12:
+            xs, ys = 0.0, 0.0
+        elif g_lead > 0.0:
+            # the nose lead (AIPilot.TryNoseLead): want the NOSE turned toward the aim by g_lead times its error, past it
+            # (NoseLeadDirection), and judge the error from the COMMAND's forward; the stick's frame, the triggers and
+            # the command update below are untouched, and the break-off's escape steer takes the lead like any aim
+            want = tuple(slerp_beyond(q_rot(q, FWD), unit(dist), g_lead, lead_extra))
+            xs, ys = stick(q, want, dsq, judged=unit(q_rot(cmd, FWD)))
+            # the roll stick with the lead on (AIPilot's roll law): the unled error's yaw stick by default
+            yd = roll_stick(xs, stick(q, unit(dist), dsq)[0] if lead_roll == "unled" else xs, lead_roll)
+        else:
+            xs, ys = stick(q, unit(dist), dsq)
+        if yd is None:
+            yd = xs                                                 # the roll stick (no belly target in Redline)
         thr = max(0.0, min(1.0, max(throttle, throttle_floor)))
         throttle += creep * dt
 
@@ -341,14 +510,15 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         nose_up = q_rot(q, UP)
         if abs(rt - lt) > 0.001:
             cmd = q_mul(q_axis((rt - lt) * YASTRI_YAW * dt, nose_up), cmd)
-        mult = 1 + (BOOST_MULT - 1) * boost if boost > 0.01 else 1.0
+        # VesselTransformer.CurrentBoostAmount: the Soar multiplier x the Time level's BoostSpeedMultiplier while boosting
+        mult = (1 + (BOOST_MULT - 1) * boost) * (1 + TIME_PER_LEVEL * level) if boost > 0.01 else 1.0
 
         # VesselTransformer.RotateShip: roll, yaw, pitch about the nose's axes onto the command; the nose follows
         k = v * ROT_THROTTLE
         cmd = q_mul(q_axis(yd * (k + ROLL) * dt, q_rot(q, FWD)), cmd)
         cmd = q_mul(q_axis(xs * (k + YAW) * dt, nose_up), cmd)
         cmd = q_mul(q_axis(ys * (k + PITCH) * dt, q_rot(q, RIGHT)), cmd)
-        q = q_slerp(q, cmd, LERP * dt) if nose_lag else cmd
+        q = q_slerp(q, cmd, follow_step) if follow_step < 1.0 else cmd
 
         # MoveShipScalar: speed lerps toward throttle x scaler x boost (+ the minimum, 0), along the nose
         v += (thr * CRUISE * mult - v) * LERP * dt
@@ -358,6 +528,12 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
             idx += 1
         elif crossing == -1:
             misses += 1
+        for c, p in enumerate(field):
+            if back_at[c] < 0 and seg_point(pos, newpos, p) <= PICKUP:
+                back_at[c] = t + REGROW
+                level = min(MAX_LEVEL, level + 1)
+            elif 0 <= back_at[c] <= t:
+                back_at[c] = -1.0
         prev, pos = pos, newpos
         top = max(top, v)
         soar_sum += boost
@@ -367,10 +543,11 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         if trace is not None and t >= next_trace:
             next_trace += 1.0
             trace.append(f"{t:6.1f}s ring {idx:2d}/{total} v {v:5.0f} thr {thr:.2f} soar {boost:.2f} stick {xs:+.2f},{ys:+.2f} "
-                         f"{'APPROACH' if approaching else 'through '} {'BREAK' if extending else ''} d {norm(to_ring):5.0f}")
+                         f"{'APPROACH' if approaching else 'through '} {'BREAK' if extending else ''} d {norm(to_ring):5.0f} "
+                         f"Time {level}")
     return {"time": round(t, 3) if idx >= total else None, "rings": idx, "of": total, "top": round(top),
             "mean_speed": round(speed_sum / max(1, frames), 1), "soar": round(soar_sum / max(1, frames), 3),
-            "misses": misses, "breakoffs": breakoffs}
+            "misses": misses, "breakoffs": breakoffs, "level": level}
 
 
 # ── courses ─────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -387,7 +564,8 @@ def table(label, rows):
     med = f"{fin[len(fin) // 2]:6.1f}" if fin else "     -"
     return (f"{label:<34} {len(fin):2d}/{len(rows)}  median {med} s  top {max(r['top'] for r in rows):4d}  "
             f"mean v {sum(r['mean_speed'] for r in rows) / len(rows):5.0f}  soar {sum(r['soar'] for r in rows) / len(rows):.2f}  "
-            f"misses {sum(r['misses'] for r in rows):3d}  breakoffs {sum(r['breakoffs'] for r in rows):3d}")
+            f"misses {sum(r['misses'] for r in rows):3d}  breakoffs {sum(r['breakoffs'] for r in rows):3d}  "
+            f"Time {sum(r['level'] for r in rows) / len(rows):.1f}")
 
 
 def self_test():
@@ -405,6 +583,10 @@ def self_test():
         bad.append("triggers: a 0 band boosts")
     # 2. the stick: dead ahead none, 90 deg right a full yaw, above a pitch up (negative YSum), behind full
     q = q_look(FWD)
+    if stick(q, FWD, 1e6, judged=q_rot(q, FWD)) != stick(q, FWD, 1e6) or stick(q, RIGHT, 1e6, judged=q_rot(q, FWD)) != stick(q, RIGHT, 1e6):
+        bad.append("stick judged from the nose's own forward is today's stick")
+    if stick(q, RIGHT, 1e6, judged=RIGHT) != (0.0, 0.0) or stick(q, FWD, 1e6, judged=RIGHT)[0] != -1.0:
+        bad.append("stick judged from a command that already points right: no error, and FWD reads as left of it")
     if stick(q, FWD, 1e6) != (0.0, 0.0) or stick(q, RIGHT, 1e6)[0] != 1.0 or stick(q, UP, 1e6)[1] != -1.0:
         bad.append("stick: the AIPilot cross-product signs are wrong")
     # 3. the shipped AI finishes every course at I1 and I4, and the same race twice is the same race
@@ -429,19 +611,133 @@ def self_test():
     old, now = race(c, 3, regatta=False), race(c, 3)
     if now["time"] is None or (old["time"] is not None and old["time"] < now["time"] * 1.5):
         bad.append(f"the old steering raced I3 course 1 about as well as the Regatta steering ({old['time']} vs {now['time']})")
+    # 6. parity with the SHIPPED C# (Tools/Build/redline_course_harness/redline_parity.jsonl, `run.sh --parity`): the
+    #    course port lays the same gates, and crystals_for places the same Time crystals on them
+    import json
+    import course_port as cp
+    parity = os.path.join(HERE, "redline_course_harness", "redline_parity.jsonl")
+    with open(parity, encoding="utf-8") as fh:
+        rows = [json.loads(line) for line in fh if line.strip()]
+    if not rows:
+        bad.append(f"no parity rows in {parity}")
+    for row in rows:
+        i, seed = row["intensity"], row["seed"]
+        ours = cp.course(cp.redline_settings(i), seed, rails=False)
+        off = max(norm(sub(tuple(a["p"]), tuple(b["p"]))) for a, b in zip(ours["gates"], row["gates"]))
+        if len(ours["gates"]) != len(row["gates"]) or off > 1.0:
+            bad.append(f"course_port: I{i} seed {seed} gates are {off:.2f} u off the C# (re-port RedlineCourse.ForIntensity)")
+        placed = crystals_for({"gates": row["gates"]}, i)
+        if len(placed) != len(row["crystals"]) or any(norm(sub(p, tuple(c))) > 0.05 for p, c in zip(placed, row["crystals"])):
+            bad.append(f"crystals_for: I{i} seed {seed} does not place RedlineTimeCrystals' crystals {placed} vs {row['crystals']}")
+    # 7. a Time crystal is a Time level: an AI that steers for them (RedlineController.aiTimeCrystalSlack 150) gains
+    #    levels, one with no field none, and the shipped AI (slack 0) takes only what its line crosses
+    c = course_for(3, 2)
+    with_field, without = race(c, 3, crystal_slack=150.0), race(c, 3, crystals=False)
+    if not (with_field["level"] > 0 and without["level"] == 0):
+        bad.append(f"the Time crystals fed no level ({with_field['level']} vs {without['level']})")
+    # 8. the AI nose rate (VesselTransformer.AINoseFollowPerSecond): unset and 1.5 are the fleet lag, 0 is no lag (the
+    #    same race as nose_lag=False), and a different rate is a different race (the negative control)
+    c = course_for(1, 1)
+    fleet = race(c, 1)
+    if race(c, 1, nose_rate=1.5) != fleet or race(c, 1, nose_rate=-1) != fleet:
+        bad.append("nose_rate 1.5 / -1 is not the fleet lag")
+    if race(c, 1, nose_rate=0) != race(c, 1, nose_lag=False):
+        bad.append("nose_rate 0 is not the no-lag race")
+    if race(c, 1, nose_rate=4.0) == fleet:
+        bad.append("nose_rate 4 raced the fleet lag's race (the rate is not applied)")
+    # 9. the AI nose lead (AIPilot.NoseLeadGain, ai_nose_lead.py) is OFF unless asked: unset, NoseLead(), 0, {}, {"gain": 0}
+    #    and False are today's race, and today's race is the recorded baseline (`--seeds 2`, 2026-11-07) to the digit. A
+    #    port that changes the model re-measures and updates these eight (the table's numbers are their aggregates).
+    baseline = {
+        (1, 1): {"time": 180.25, "rings": 40, "of": 40, "top": 268, "mean_speed": 146.6, "soar": 0.301, "misses": 0, "breakoffs": 0, "level": 0},
+        (1, 2): {"time": 188.817, "rings": 40, "of": 40, "top": 264, "mean_speed": 139.2, "soar": 0.266, "misses": 0, "breakoffs": 0, "level": 0},
+        (2, 1): {"time": 158.667, "rings": 40, "of": 40, "top": 364, "mean_speed": 178.7, "soar": 0.207, "misses": 0, "breakoffs": 3, "level": 1},
+        (2, 2): {"time": 174.583, "rings": 40, "of": 40, "top": 390, "mean_speed": 176.6, "soar": 0.202, "misses": 0, "breakoffs": 3, "level": 0},
+        (3, 1): {"time": 179.017, "rings": 40, "of": 40, "top": 454, "mean_speed": 194.5, "soar": 0.117, "misses": 0, "breakoffs": 6, "level": 0},
+        (3, 2): {"time": 172.45, "rings": 40, "of": 40, "top": 530, "mean_speed": 202.3, "soar": 0.138, "misses": 3, "breakoffs": 7, "level": 0},
+        (4, 1): {"time": 428.6, "rings": 40, "of": 40, "top": 701, "mean_speed": 302.8, "soar": 0.235, "misses": 33, "breakoffs": 48, "level": 0},
+        (4, 2): {"time": 400.65, "rings": 40, "of": 40, "top": 701, "mean_speed": 291.2, "soar": 0.213, "misses": 32, "breakoffs": 48, "level": 0},
+    }
+    for (i, s), want in baseline.items():
+        got = race(course_for(i, s), i)
+        if got != want:
+            bad.append(f"I{i} course {s} drifted from the 2026-11-07 baseline (re-measure): {got} vs {want}")
+    c = course_for(1, 1)
+    fleet = baseline[(1, 1)]
+    for form in (NoseLead(), 0, {}, {"gain": 0}, False):
+        if race(c, 1, nose_lead=form) != fleet:
+            bad.append(f"nose_lead={form!r} is not today's race")
+    # 10. the lead is applied as AIPilot applies it and only through the nose lag: a gain changes a lagged race (a dict
+    #     with the config key is the same gain); the gain is scaled to the race's own nose rate once (on a 9/s nose 2.5
+    #     floors to 1: the same race as gain 1, and judging from the command still changes that race); max_extra_deg 0
+    #     is gain 1 (the command placed ON the aim); and on a lag-free nose (nose_lag=False, nose_rate=0, or a rate that
+    #     closes the whole gap in one step) the lead changes nothing
+    led = race(c, 1, nose_lead=2.5)
+    if led == fleet:
+        bad.append("nose_lead 2.5 raced today's race (the lead is not applied)")
+    if race(c, 1, nose_lead={"nose_lead": 2.5}) != led:
+        bad.append("{'nose_lead': 2.5} is not the 2.5 lead")
+    quick, quick_led = race(c, 1, nose_rate=9.0), race(c, 1, nose_rate=9.0, nose_lead=2.5)
+    if quick_led != race(c, 1, nose_rate=9.0, nose_lead=1.0) or quick_led == quick:
+        bad.append("on a 9/s nose the 2.5 lead is not gain 1 judged from the command (effective_gain from the race's rate)")
+    if race(c, 1, nose_lead=NoseLead(2.5, 0.0)) != race(c, 1, nose_lead=1.0):
+        bad.append("max_extra_deg 0 is not gain 1 (the command on the aim)")
+    for kw in ({"nose_lag": False}, {"nose_rate": 0}, {"nose_rate": 60.0}):
+        if race(c, 1, nose_lead=2.5, **kw) != race(c, 1, **kw):
+            bad.append(f"the lead changed a lag-free race ({kw})")
+    # 11. what the lead measured here (2026-11-07, the docstring): at I1 course 2 today's lagged Manta needs 188.8 s and
+    #     the 2.5 lead finishes it in 127.2 s; the control is inverted against the Scarab's: judging from the command
+    #     alone (gain 1, 115.2 s) is faster still, so the pull past the aim is not what helps a Manta. And at I4 course 1,
+    #     where today's steering misses 33 mouths through the lag, the 2.5 lead does NOT finish (3 of 40 rings in 900
+    #     s): the roll stick about the nose's forward whirls a command placed far from the nose and the hull corkscrews
+    #     away. A port that changes any of this re-measures.
+    #     (Checks 11 fly the lead as first built, its roll law "led"; check 12 the game's law since the decoupling.)
+    LED = "led"
+    c = course_for(1, 2)
+    today = baseline[(1, 2)]
+    led, judged = race(c, 1, nose_lead={"gain": 2.5, "roll": LED}), race(c, 1, nose_lead={"gain": 1.0, "roll": LED})
+    if not (led["time"] and led["time"] < 0.8 * today["time"]):
+        bad.append(f"the 2.5 lead no longer finishes I1 course 2 well under today's {today['time']} s: {led}")
+    if not (judged["time"] and judged["time"] < led["time"]):
+        bad.append(f"gain 1 (judged from the command, no pull) no longer beats the 2.5 lead on I1 course 2: {judged} vs {led}")
+    trapped = race(course_for(4, 1), 4, nose_lead={"gain": 2.5, "roll": LED})
+    if not (baseline[(4, 1)]["misses"] >= 20 and trapped["time"] is None and trapped["rings"] < 10):
+        bad.append(f"the 2.5 lead's corkscrew on I4 course 1 has changed (re-measure the docstring): {trapped}")
+    # 12. the roll decoupling (AIPilot's NoseLeadSteering.RollStick, ai_nose_lead.roll_stick, 2026-11-07): the game's law
+    #     ("zero", the default) flies no roll stick while leading and finishes I4 course 1 (check 11, the "led" law, is
+    #     its negative control); "unled" (the lead-off yaw stick as the roll) is a measured what-if; no law touches a
+    #     race with the lead off
+    free = race(course_for(4, 1), 4, nose_lead=2.5)
+    if free != race(course_for(4, 1), 4, nose_lead={"gain": 2.5, "roll": "zero"}) or free["time"] is None:
+        bad.append(f"the decoupled 2.5 lead (no roll while leading, the default) no longer finishes I4 course 1: {free}")
+    for law in ("led", "unled", "zero"):
+        if race(c, 1, nose_lead={"gain": 0, "roll": law}) != race(c, 1):
+            bad.append(f"roll law {law} changed a race with the lead off")
+    if race(c, 1, nose_lead={"gain": 2.5, "roll": "unled"}) in (race(c, 1, nose_lead=2.5), led):
+        bad.append("the unled roll what-if is the same race as another law (is roll_stick wired?)")
     print("manta_redline_sim self-test: " + ("ok" if not bad else "FAILED\n  " + "\n  ".join(bad)))
     return 0 if not bad else 1
+
+
+def nose_lead_arg(argv):
+    """--nose-lead G[,EXTRA]: the AI nose lead a run adds (AIPilot.NoseLeadGain at the fleet lag, and how far past the
+    aim it may place the command, 40 deg unless given), or None: off, today's steering."""
+    if "--nose-lead" not in argv:
+        return None
+    parts = argv[argv.index("--nose-lead") + 1].split(",")
+    return NoseLead(float(parts[0]), float(parts[1]) if len(parts) > 1 else None)
 
 
 def main(argv):
     if "--self-test" in argv:
         return self_test()
+    lead = nose_lead_arg(argv)
     if "--trace" in argv:
         k = argv.index("--trace")
         i, s = int(argv[k + 1]), int(argv[k + 2])
         log = []
         r = race(course_for(i, s), i, regatta="--old-steering" not in argv,
-                 throttle_floor=1.0 if "--floor" in argv else THROTTLE_FLOOR, trace=log)
+                 throttle_floor=1.0 if "--floor" in argv else THROTTLE_FLOOR, trace=log, nose_lead=lead)
         print("\n".join(log))
         print(r)
         return 0
@@ -450,10 +746,14 @@ def main(argv):
         bands = tuple(float(x) for x in argv[argv.index("--bands") + 1].split(","))
     seeds = range(1, 1 + (int(argv[argv.index("--seeds") + 1]) if "--seeds" in argv else 6))
     variants = [("shipped (Regatta steering, skill thr)", {})]
+    if lead is not None:
+        variants.append((f"AI nose lead {lead.gain:g} (+{lead.max_extra_deg:g} deg max)", {"nose_lead": lead}))
     if "--what-ifs" in argv:
         variants += [("old steering (before 2026-11-03)", {"regatta": False}),
                      ("full throttle (AIThrottleFloor 1)", {"throttle_floor": 1.0}),
                      ("no nose lag", {"nose_lag": False})]
+        if lead is None:
+            variants.append(("AI nose lead 2.5 (the Scarab's gain)", {"nose_lead": 2.5}))
     print(f"Redline offline, the AI Manta, {len(seeds)} courses an intensity, bands {bands or (BOOST_BAND, YASTRI_BAND)}")
     for i in (1, 2, 3, 4):
         courses = [course_for(i, s) for s in seeds]

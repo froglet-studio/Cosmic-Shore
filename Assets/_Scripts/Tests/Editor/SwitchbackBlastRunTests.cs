@@ -11,7 +11,9 @@ namespace CosmicShore.Tests
     /// Breakwater door and a 3D block field on the leg in, with clock-driven sliders (I2+), rotors (I3+), opposed
     /// slider pairs and a second door (I4). Swept over the shipped shell and the picker's own seeds (45_501-45_504),
     /// like SwitchbackFeaturesTests: determinism, the open bore, no clipping (laid, and movers over a cycle), the
-    /// keys and mouths, and the 100 fps budgets.
+    /// keys and mouths, and the 100 fps budgets. I4 is the GAUNTLET (SWITCHBACK.md "The I4 gauntlet"): zig-zag keys,
+    /// plugged tunnels, sealed eyes, no bore, the rays; the I4 of before it (gauntlet off, Scarab Rally) is held too.
+    /// Headless outside Unity: <c>bash Tools/Build/switchback_sim_harness/run.sh tests</c>.
     /// </summary>
     public class SwitchbackBlastRunTests
     {
@@ -32,8 +34,8 @@ namespace CosmicShore.Tests
             return SwitchbackCourse.Generate(seed, s);
         }
 
-        static SwitchbackFeatureLayout Layout(List<RaceGate> course, int intensity) =>
-            SwitchbackBlastRun.Layout(course, intensity, Vector3.zero, ClearRadius);
+        static SwitchbackFeatureLayout Layout(List<RaceGate> course, int intensity, bool gauntlet = true) =>
+            SwitchbackBlastRun.Layout(course, intensity, Vector3.zero, ClearRadius, gauntlet);
 
         static IEnumerable<int> SeedsFor(int intensity)
         {
@@ -138,7 +140,7 @@ namespace CosmicShore.Tests
             }
             Assert.Greater(stations[1], stations[0]);
             Assert.Greater(stations[2], stations[1]);
-            Assert.Greater(stations[3], stations[1], "I4 trades a few gates (station spacing) for double doors");
+            Assert.Greater(stations[3], stations[1], "I4: two or three keys a gate");
         }
 
         [Test]
@@ -150,10 +152,16 @@ namespace CosmicShore.Tests
                 foreach (var st in Layout(c, intensity).Stations)
                 {
                     Vector3 a = c[st.Gate - 1].Position, b = c[st.Gate].Position;
-                    Assert.Less(SwitchbackFeatures.DistanceToSegment(st.Key, a, b), 0.01f, $"seed {seed}: key off its leg");
-                    Assert.That(st.KeyLead, Is.InRange(SwitchbackBlastRun.KeyMinLead, SwitchbackBlastRun.KeyLeadMax));
-                    // The blast's shortest reach (400 u) passes the door from the key.
+                    // On the leg's line; an I4 gauntlet's earlier keys step off it by their zig-zag.
+                    float off = SwitchbackBlastRun.GauntletOffset(st.Stage, st.Stages) * SwitchbackBlastRun.GauntletZigZag;
+                    Assert.Less(SwitchbackFeatures.DistanceToSegment(st.Key, a, b), Mathf.Abs(off) + 0.01f, $"seed {seed}: key off its leg");
+                    if (st.Stage == 0)
+                        Assert.That(st.KeyLead, Is.InRange(SwitchbackBlastRun.KeyMinLead, SwitchbackBlastRun.KeyLeadMax));
+                    else
+                        Assert.That(st.KeyLead, Is.InRange(SwitchbackBlastRun.GauntletFinalLead - 0.01f, SwitchbackBlastRun.KeyLeadMax));
+                    // The blast's shortest reach (400 u) passes the door from the key, and its target (the door, or the next key).
                     Assert.Less((st.Door - st.Key).magnitude, 400f, $"seed {seed}: door beyond the blast");
+                    Assert.Less((st.Target - st.Key).magnitude, 400f, $"seed {seed}: target beyond the blast");
                     for (int k = 0; k + 1 < c.Count; k++)
                         if (k != st.Gate - 1)
                             Assert.GreaterOrEqual(SwitchbackFeatures.DistanceToSegment(st.Key, c[k].Position, c[k + 1].Position),
@@ -184,7 +192,7 @@ namespace CosmicShore.Tests
             int worldDanger = 0, world = 0;
             int tail = L.Prisms.Count;
             foreach (var st in L.Stations) world += st.WorldPrisms;
-            Assert.AreEqual(DoorCount(intensity) * L.Stations.Count + world, L.Prisms.Count, "doors, then the fields");
+            Assert.AreEqual(DoorCount(intensity) * Doored(L) + world, L.Prisms.Count, "doors, then the fields");
             for (int i = tail - world; i < tail; i++) if (L.Prisms[i].Kind == PrismKind.Danger) worldDanger++;
             Assert.LessOrEqual(worldDanger, 0.15f * Mathf.Max(1, world), $"seed {seed}: field danger share");
         }
@@ -202,7 +210,7 @@ namespace CosmicShore.Tests
                     Assert.Greater(p.Position.magnitude, ClearRadius - 0.01f, $"seed {seed}: in the nucleus");
                 }
                 // Every non-door prism keeps out of every ring's mouth (a door hangs over its own ring by design).
-                int doorPrisms = DoorCount(intensity) * L.Stations.Count;
+                int doorPrisms = DoorCount(intensity) * Doored(L);
                 for (int i = doorPrisms; i < L.Prisms.Count; i++)
                     for (int g = 0; g < c.Count; g++)
                         Assert.GreaterOrEqual((L.Prisms[i].Position - c[g].Position).magnitude, c[g].Radius,
@@ -211,20 +219,22 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>No field prism - laid, or anywhere on its mover's cycle - comes inside the bore round the leg's line,
-        /// so the eye is always reachable down a straight line (the AI's lane).</summary>
+        /// so the eye is always reachable down a straight line (the AI's lane). I1-I3, and I4 without the gauntlet (Scarab
+        /// Rally's): the gauntlet has no bore - its way through is blasted (<see cref="TheGauntletRouteIsPluggedNotFilled"/>).</summary>
         [Test]
         public void TheBoreStaysClear([Values(1, 2, 3, 4)] int intensity)
         {
-            float bore = SwitchbackBlastRun.BoreRadius(intensity);
+            bool gauntlet = intensity < 4;
+            float bore = SwitchbackBlastRun.BoreRadius(intensity, gauntlet);
             Assert.GreaterOrEqual(bore, BreakwaterCourseSettings.EyeRadius);
             foreach (int seed in SeedsFor(intensity))
             {
                 var c = Course(intensity, seed);
-                var L = Layout(c, intensity);
+                var L = Layout(c, intensity, gauntlet);
                 for (int step = 0; step < 8; step++)
                 {
                     var posed = PosedAt(L, step * 0.37f);
-                    int first = DoorCount(intensity) * L.Stations.Count;
+                    int first = DoorCount(intensity, gauntlet) * Doored(L);
                     foreach (var st in L.Stations)
                     {
                         Vector3 gate = c[st.Gate].Position;
@@ -308,9 +318,8 @@ namespace CosmicShore.Tests
             foreach (int seed in seeds)
             {
                 var L = Layout(Course(intensity, seed), intensity);
-                int perStation = DoorCount(intensity);
-                int single = perStation / (intensity >= 4 ? 2 : 1);
-                var clips = ClipPairs(L.Prisms, single, perStation * L.Stations.Count);
+                int single = SwitchbackBlastRun.DoorPrisms(intensity);
+                var clips = ClipPairs(L.Prisms, single, DoorCount(intensity) * Doored(L));
                 Assert.IsEmpty(clips, $"seed {seed}: {clips.Count} clipping pairs, first {(clips.Count > 0 ? clips[0].ToString() : "")}");
             }
         }
@@ -326,12 +335,11 @@ namespace CosmicShore.Tests
                 if (L.Movers.Count == 0) continue;
                 float T = 0f;
                 foreach (var m in L.Movers) T = Mathf.Max(T, Period(m));
-                int perStation = DoorCount(intensity);
-                int single = perStation / (intensity >= 4 ? 2 : 1);
+                int single = SwitchbackBlastRun.DoorPrisms(intensity);
                 for (int k = 0; k < 16; k++)
                 {
                     var posed = PosedAt(L, k * T / 16f + 0.11f);
-                    var clips = ClipPairs(posed, single, perStation * L.Stations.Count);
+                    var clips = ClipPairs(posed, single, DoorCount(intensity) * Doored(L));
                     Assert.IsEmpty(clips, $"seed {seed} t {k}: {clips.Count} clipping pairs, first {(clips.Count > 0 ? clips[0].ToString() : "")}");
                 }
             }
@@ -343,25 +351,253 @@ namespace CosmicShore.Tests
         public void TheFieldsMixShapesAndSizes([Values(1, 2, 3, 4)] int intensity)
         {
             bool smallCube = false, bigCube = false, cuboid = false, sphere = false, bigSphere = false, beam = false;
+            bool frame = false, jack = false, hoop = false, ziggurat = false;
             foreach (int seed in SeedsFor(intensity))
             {
                 var L = Layout(Course(intensity, seed), intensity);
-                int first = DoorCount(intensity) * L.Stations.Count;
-                for (int i = first; i < L.Prisms.Count; i++)
+                int at = DoorCount(intensity) * Doored(L);
+                foreach (var st in L.Stations)
                 {
-                    Vector3 s = L.Prisms[i].Scale;
-                    float lo = Mathf.Min(s.x, Mathf.Min(s.y, s.z)), hi = Mathf.Max(s.x, Mathf.Max(s.y, s.z));
-                    if (Mathf.Approximately(lo, hi) && hi <= 14f && hi >= 8f) smallCube = true;
-                    if (Mathf.Approximately(lo, hi) && hi >= 40f) bigCube = true;
-                    if (hi - lo > 10f) cuboid = true;
-                    if (Mathf.Approximately(lo, 6.2f) && Mathf.Approximately(hi, 6.2f)) sphere = true;
-                    if (Mathf.Approximately(lo, 8.4f) && Mathf.Approximately(hi, 8.4f)) bigSphere = true;
-                    if (Mathf.Approximately(s.z, 6f) && hi >= 69f) beam = true;   // beams run across the leg
+                    // The field only: past the station's tunnel (I4).
+                    for (int i = at + st.TunnelPrisms; i < at + st.WorldPrisms; i++)
+                    {
+                        Vector3 s = L.Prisms[i].Scale;
+                        float lo = Mathf.Min(s.x, Mathf.Min(s.y, s.z)), hi = Mathf.Max(s.x, Mathf.Max(s.y, s.z));
+                        float mid = s.x + s.y + s.z - lo - hi;
+                        if (Mathf.Approximately(lo, hi) && hi <= 14f && hi >= 8f) smallCube = true;
+                        if (Mathf.Approximately(lo, hi) && hi >= 40f) bigCube = true;
+                        if (hi - lo > 10f) cuboid = true;
+                        if (Mathf.Approximately(lo, 6.2f) && Mathf.Approximately(hi, 6.2f)) sphere = true;
+                        if (Mathf.Approximately(lo, 8.4f) && Mathf.Approximately(hi, 8.4f)) bigSphere = true;
+                        if (Mathf.Approximately(s.z, 6f) && hi >= 69f) beam = true;   // beams run across the leg
+                        if (Mathf.Approximately(lo, 4f) && Mathf.Approximately(mid, 4f) && Mathf.Approximately(hi, 46f)) frame = true;
+                        if (Mathf.Approximately(lo, 5f) && Mathf.Approximately(mid, 5f) && Mathf.Approximately(hi, 18f)) jack = true;
+                        if (Mathf.Approximately(lo, 4f) && Mathf.Approximately(mid, 6f) && hi > 7f && hi < 8f) hoop = true;
+                        if (Mathf.Approximately(lo, 4f) && Mathf.Approximately(mid, 34f) && Mathf.Approximately(hi, 34f)) ziggurat = true;
+                    }
+                    at += st.WorldPrisms;
                 }
             }
             Assert.IsTrue(smallCube && bigCube && cuboid && sphere, $"I{intensity}: {smallCube} {bigCube} {cuboid} {sphere}");
             Assert.AreEqual(intensity >= 2, bigSphere, "big spheres from I2");
             Assert.AreEqual(intensity >= 3, beam, "beams from I3");
+            Assert.AreEqual(intensity >= 4, frame && jack && hoop && ziggurat,
+                            $"I{intensity}: frames {frame}, jacks {jack}, hoops {hoop}, ziggurats {ziggurat} (I4 only)");
+        }
+
+        // ── the I4 gauntlet (SWITCHBACK.md "The I4 gauntlet") ─────────────
+
+        /// <summary>An I4 blocked gate is a row of keys (two or three; one only where no zig-zag fits): consecutive stations
+        /// upstream first, each aimed at the next key and the last at the door, the last on the leg's line
+        /// <see cref="SwitchbackBlastRun.GauntletFinalLead"/> out, and every key's segment turned from the one before it -
+        /// so each blast wants the nose swung onto the next segment as the key is taken (a drift). Every key has a tunnel.</summary>
+        [Test]
+        public void TheGauntletZigZagsKeyToKeyToTheDoor()
+        {
+            int gates = 0, keys = 0, oneKey = 0;
+            float minTurn = float.MaxValue;
+            foreach (int seed in SeedsFor(4))
+            {
+                var c = Course(4, seed);
+                var L = Layout(c, 4);
+                var st = L.Stations;
+                for (int s = 0; s < st.Count; s++)
+                {
+                    Assert.AreNotEqual(BlastRunTunnel.None, st[s].Tunnel, $"seed {seed}: an I4 key without a tunnel");
+                    Assert.AreEqual(s > 0 && st[s - 1].Gate == st[s].Gate ? st[s - 1].Stage + 1 : 0, st[s].Stage, $"seed {seed}: keys out of order");
+                    if (!st[s].Final)
+                    {
+                        Assert.AreEqual(st[s].Gate, st[s + 1].Gate);
+                        Assert.IsTrue(st[s].Target.Equals(st[s + 1].Key), $"seed {seed}: a key not aimed at the next");
+                        Assert.Greater(st[s].KeyLead, st[s + 1].KeyLead, $"seed {seed}: keys not in order down the leg");
+                        continue;
+                    }
+                    gates++;
+                    keys += st[s].Stages;
+                    if (st[s].Stages == 1) { oneKey++; continue; }
+                    Assert.IsTrue(st[s].Target.Equals(st[s].Door), $"seed {seed}: the last key not aimed at the door");
+                    Assert.AreEqual(SwitchbackBlastRun.GauntletFinalLead, st[s].KeyLead, 0.01f);
+                    Vector3 a = c[st[s].Gate - 1].Position, b = c[st[s].Gate].Position;
+                    Assert.Less(SwitchbackFeatures.DistanceToSegment(st[s].Key, a, b), 0.01f, $"seed {seed}: the last key off the line");
+                    // Every turn at a key: the leg (or the segment before) into it, against its own segment.
+                    for (int j = s - st[s].Stage; j <= s; j++)
+                    {
+                        Vector3 into = st[j].Stage == 0 ? (b - a).normalized : (st[j].Key - st[j - 1].Key).normalized;
+                        minTurn = Mathf.Min(minTurn, Vector3.Angle(into, st[j].Target - st[j].Key));
+                    }
+                }
+            }
+            Assert.Greater(gates, 0);
+            Assert.GreaterOrEqual(keys, 2 * gates, "about two keys a gate or more");
+            Assert.Less(oneKey, 0.05f * gates, $"{oneKey} of {gates} gauntlet gates fell back to one key");
+            Assert.Greater(minTurn, SwitchbackBlastPlanner.DriftFreeDegrees * 0.5f,
+                           $"a gauntlet key turns only {minTurn:F1} deg: no drift needed there");
+        }
+
+        /// <summary>The way through is blasted, never open: every tunnel's walls stand outside the flight tube
+        /// (<see cref="SwitchbackBlastRun.TunnelRadius"/>), plug walls fill it (most tunnels at least two), and no field
+        /// prism enters any route segment's tube - so the field fills round the route, and the route holds only plugs.</summary>
+        [Test]
+        public void TheGauntletRouteIsPluggedNotFilled()
+        {
+            int tunnels = 0, plugged = 0;
+            foreach (int seed in SeedsFor(4))
+            {
+                var c = Course(4, seed);
+                var L = Layout(c, 4);
+                int at = DoorCount(4) * Doored(L);
+                foreach (var st in L.Stations)
+                {
+                    Vector3 ax = (st.Target - st.Key).normalized;
+                    var plugDepths = new HashSet<int>();
+                    for (int i = at; i < at + st.TunnelPrisms; i++)
+                    {
+                        var p = L.Prisms[i];
+                        float along = Vector3.Dot(p.Position - st.Key, ax);
+                        Across(p, st.Key, ax, out float near, out float far);
+                        if (far < SwitchbackBlastRun.TunnelRadius)
+                            plugDepths.Add(Mathf.RoundToInt(along));   // a plug cube: wholly inside the tube
+                        else Assert.GreaterOrEqual(near, SwitchbackBlastRun.TunnelRadius - 0.05f,
+                                                   $"seed {seed} gate {st.Gate}: a {st.Tunnel} wall inside the flight tube");
+                    }
+                    if (st.TunnelPrisms > 0) { tunnels++; if (plugDepths.Count >= 2 || st.Final && plugDepths.Count >= 1) plugged++; }
+                    at += st.WorldPrisms;
+                }
+                // The field (every prism past a station's tunnel) keeps out of every route segment's tube.
+                at = DoorCount(4) * Doored(L);
+                foreach (var st in L.Stations)
+                {
+                    for (int i = at + st.TunnelPrisms; i < at + st.WorldPrisms; i++)
+                        foreach (var rt in L.Stations)
+                            Assert.GreaterOrEqual(SwitchbackFeatures.DistanceToSegment(L.Prisms[i].Position, rt.Key, rt.Target),
+                                                  SwitchbackBlastRun.TunnelRadius, $"seed {seed}: field prism {i} in gate {rt.Gate}'s route");
+                    at += st.WorldPrisms;
+                }
+            }
+            Assert.Greater(tunnels, 0);
+            Assert.GreaterOrEqual(plugged, 0.8f * tunnels, $"only {plugged} of {tunnels} tunnels are plugged");
+        }
+
+        /// <summary>Every I4 door's eye is SEALED: a 3 x 3 of cubes inside the 18 u eye, its middle a Danger heart, clear of the
+        /// door's own bars and collar; I4 without the gauntlet (Scarab Rally's) keeps the open eye.</summary>
+        [Test]
+        public void TheEyesAreSealed()
+        {
+            float port = SwitchbackBlastRun.PortFor(4);
+            Assert.AreEqual(SwitchbackBlastRun.DoorPrisms(4, false) + SwitchbackBlastRun.SealPrisms, SwitchbackBlastRun.DoorPrisms(4));
+            Assert.AreEqual(SwitchbackBlastRun.DoorPrisms(3), SwitchbackBlastRun.DoorPrisms(3, false), "no seal below I4");
+            var door = new List<SwitchbackFeaturePrism>();
+            Vector3 at = new(10f, -40f, 300f), axis = new Vector3(0.3f, 0.2f, 1f).normalized;
+            SwitchbackBlastRun.EmitDoorPrisms(at, axis, port, true, (p, r, s, k) => door.Add(new SwitchbackFeaturePrism(p, r, s, k)));
+            int bars = door.Count - SwitchbackBlastRun.SealPrisms, danger = 0;
+            for (int i = bars; i < door.Count; i++)
+            {
+                var seal = door[i];
+                if (seal.Kind == PrismKind.Danger) { danger++; Assert.Less((seal.Position - at).magnitude, 0.01f, "the heart is the middle"); }
+                Across(seal, at, axis, out _, out float far);
+                Assert.Less(far, BreakwaterCourseSettings.EyeRadius, "a seal cube reaches out of the eye");
+                for (int j = 0; j < bars; j++)
+                    Assert.IsFalse(Overlap(seal, door[j], 0.05f), $"seal cube {i - bars} clips door prism {j}");
+            }
+            Assert.AreEqual(1, danger);
+        }
+
+        [Test]
+        public void TheTunnelsMixKinds()
+        {
+            var seen = new HashSet<BlastRunTunnel>();
+            foreach (int seed in SeedsFor(4))
+                foreach (var st in Layout(Course(4, seed), 4).Stations)
+                    if (st.TunnelPrisms > 0) seen.Add(st.Tunnel);
+            foreach (BlastRunTunnel k in System.Enum.GetValues(typeof(BlastRunTunnel)))
+                if (k != BlastRunTunnel.None) Assert.IsTrue(seen.Contains(k), $"no {k} tunnel was laid");
+        }
+
+        /// <summary>The rays light the gauntlet's way and nothing else: a lead-in to each gate's first key, every key to its
+        /// target, the door on through the ring; nothing below I4, nothing without the gauntlet.</summary>
+        [Test]
+        public void TheRaysFollowTheRoute([Values(1, 2, 3, 4)] int intensity)
+        {
+            var c = Course(intensity, SwitchbackBlastRun.FixedSeed(intensity));
+            var L = Layout(c, intensity);
+            var rays = new List<Vector3>();
+            SwitchbackBlastRun.RaySegments(L, c, rays);
+            if (intensity < 4)
+            {
+                Assert.IsEmpty(rays, "rays below I4");
+                return;
+            }
+            SwitchbackBlastRun.RaySegments(Layout(c, 4, false), c, rays);
+            Assert.IsEmpty(rays, "rays without the gauntlet");
+            SwitchbackBlastRun.RaySegments(L, c, rays);
+            Assert.AreEqual(0, rays.Count % 2);
+            foreach (var st in L.Stations)
+            {
+                bool found = false;
+                for (int i = 0; i + 1 < rays.Count && !found; i += 2)
+                    found = rays[i].Equals(st.Key) && rays[i + 1].Equals(st.Target);
+                Assert.IsTrue(found, $"gate {st.Gate} key {st.Stage}: no ray to its target");
+            }
+            for (int i = 0; i + 1 < rays.Count; i += 2)
+                Assert.Greater((rays[i + 1] - rays[i]).magnitude, 1f, "a ray of no length");
+        }
+
+        /// <summary>A ray is a lit, faceted volume, never a flat line: <see cref="SwitchbackRayMesh.Sides"/> flat side faces
+        /// and two caps, every triangle wound to face out along its own (flat) normal, nothing for a ray of no length.</summary>
+        [Test]
+        public void ARayIsAFacetedVolumeFacingOut()
+        {
+            var verts = new List<Vector3>(); var normals = new List<Vector3>(); var tris = new List<int>();
+            Vector3 a = new(5f, -20f, 300f), b = new(60f, 10f, 180f);
+            int n = SwitchbackRayMesh.AppendBeam(a, b, 1.2f, verts, normals, tris);
+            Assert.AreEqual(SwitchbackRayMesh.Sides * 4, n, "two triangles a face and one a cap at each end, per facet");
+            Assert.AreEqual(3 * n, tris.Count);
+            Vector3 axis = (b - a).normalized;
+            for (int t = 0; t < tris.Count; t += 3)
+            {
+                Vector3 p0 = verts[tris[t]], p1 = verts[tris[t + 1]], p2 = verts[tris[t + 2]];
+                Vector3 nrm = normals[tris[t]];
+                Assert.IsTrue(nrm.Equals(normals[tris[t + 1]]) && nrm.Equals(normals[tris[t + 2]]), "a facet is flat-shaded");
+                Assert.Greater(Vector3.Dot(Vector3.Cross(p1 - p0, p2 - p0), nrm), 0f, "a triangle winds away from its normal");
+                Vector3 c = (p0 + p1 + p2) / 3f, w = c - a;
+                Vector3 outward = w - axis * Vector3.Dot(w, axis);
+                bool cap = Mathf.Abs(Vector3.Dot(nrm, axis)) > 0.99f;
+                if (cap) Assert.Greater(Vector3.Dot(nrm, Vector3.Dot(w, axis) > 0.5f * (b - a).magnitude ? axis : -axis), 0.99f, "a cap faces in");
+                else Assert.Greater(Vector3.Dot(nrm, outward.normalized), 0.8f, "a side faces in");
+            }
+            Assert.AreEqual(0, SwitchbackRayMesh.AppendBeam(a, a + Vector3.up * 0.1f, 1.2f, verts, normals, tris), "a ray of no length");
+            Assert.AreEqual(0, SwitchbackRayMesh.AppendBeam(a, b, 0f, verts, normals, tris), "a ray of no width");
+        }
+
+        /// <summary>Without the gauntlet (a mode reusing Switchback's course for a hull without the key blast: Scarab
+        /// Rally) I4 is the Fortress of before 2026-11-03: one key a gate on the line, open eyes, the 18 u bore, its own
+        /// budgets. I1-I3 do not depend on the switch.</summary>
+        [Test]
+        public void WithoutTheGauntlet_I4IsTheFortressOfBefore()
+        {
+            Assert.AreEqual(18f, SwitchbackBlastRun.BoreRadius(4, false));
+            Assert.AreEqual(3400, SwitchbackBlastRun.TotalCap(4, false));
+            Assert.AreEqual(400, SwitchbackBlastRun.ColliderCap(4, false));
+            Assert.AreEqual(140, SwitchbackBlastRun.MovingPrismCap(4, false));
+            Assert.AreEqual(5100, SwitchbackBlastRun.TotalCap(4), "the gauntlet's I4: 1.5x");
+            Assert.AreEqual(600, SwitchbackBlastRun.ColliderCap(4));
+            foreach (int seed in new[] { 3, 11, SwitchbackBlastRun.FixedSeed(4) })
+            {
+                var c = Course(4, seed);
+                var L = Layout(c, 4, false);
+                Assert.LessOrEqual(L.Prisms.Count, SwitchbackBlastRun.TotalCap(4, false));
+                foreach (var st in L.Stations)
+                {
+                    Assert.AreEqual(1, st.Stages);
+                    Assert.AreEqual(BlastRunTunnel.None, st.Tunnel);
+                    Assert.IsTrue(st.Target.Equals(st.Door));
+                }
+                for (int i = 1; i <= 3; i++)
+                {
+                    var ci = Course(i, seed);
+                    Assert.AreEqual(Layout(ci, i).Prisms.Count, Layout(ci, i, false).Prisms.Count, $"I{i} depends on the switch");
+                }
+            }
         }
 
         [Test]
@@ -378,12 +614,31 @@ namespace CosmicShore.Tests
 
         // ── helpers ──────────────────────────────────────────────────────
 
-        static int DoorCount(int intensity)
+        /// <summary>The prisms a blocked gate's door(s) lay: two doors at I4, each sealed where the gauntlet is.</summary>
+        static int DoorCount(int intensity, bool gauntlet = true) =>
+            SwitchbackBlastRun.DoorPrisms(intensity, gauntlet) * (intensity >= 4 ? 2 : 1);
+
+        /// <summary>The gates that carry doors: one per gate, on its last station.</summary>
+        static int Doored(SwitchbackFeatureLayout L)
         {
             int n = 0;
-            BreakwaterStationBuilder.BuildDoor(new BreakwaterStation(Vector3.zero, Vector3.forward, SwitchbackBlastRun.PortFor(intensity)),
-                                               (p, r, s, k) => n++);
-            return n * (intensity >= 4 ? 2 : 1);
+            foreach (var st in L.Stations) if (st.Final) n++;
+            return n;
+        }
+
+        /// <summary>The nearest and farthest a prism's box comes to the line through <paramref name="origin"/> along
+        /// <paramref name="axis"/>, for a box whose own z runs along that line (every tunnel piece, plug and seal cube):
+        /// exact, from its cross-section rectangle.</summary>
+        static void Across(in SwitchbackFeaturePrism p, Vector3 origin, Vector3 axis, out float near, out float far)
+        {
+            Assert.Greater(Mathf.Abs(Vector3.Dot(p.Rotation * Vector3.forward, axis)), 0.999f, "the piece is not square to its axis");
+            Vector3 w = p.Position - origin;
+            w -= axis * Vector3.Dot(w, axis);
+            float x = Mathf.Abs(Vector3.Dot(w, p.Rotation * Vector3.right)), y = Mathf.Abs(Vector3.Dot(w, p.Rotation * Vector3.up));
+            float hx = 0.5f * p.Scale.x, hy = 0.5f * p.Scale.y;
+            float qx = Mathf.Max(x - hx, 0f), qy = Mathf.Max(y - hy, 0f);
+            near = Mathf.Sqrt(qx * qx + qy * qy);
+            far = Mathf.Sqrt((x + hx) * (x + hx) + (y + hy) * (y + hy));
         }
 
         /// <summary>The most laid prisms within <paramref name="r"/> of any laid prism (itself included) - exact.</summary>

@@ -336,3 +336,12 @@ always when `/ship` §3.55 sends you here:
    §8 to traps that recur; one-offs stay in LEARNINGS.
 4. If the lab adds a reusable check, extend `verify_lab.cjs`, add a planted defect to its
    `--self-test`, and run both.
+
+
+## The design brief comes first (2026-11-07)
+
+Before a new lab, write the one-page design brief (`Docs/claude/DESIGN_BRIEF.md`): the fundamental it serves,
+the principles it obeys by id (`python3 Tools/Build/principles.py --area other`; `Docs/claude/PRINCIPLES.md` holds
+the owners' rules in their words, drafted on 2026-11-07 and waiting on each owner to confirm or strike), the one it
+comes closest to breaking, the cheapest prototype, who judges it and where, and the retire condition. A design that
+breaks a drafted principle is a proposal to that principle's owner first, not a build. A lab is itself the cheapest prototype; its brief says what decision the lab exists to make and the retire condition for the mechanic it tests.

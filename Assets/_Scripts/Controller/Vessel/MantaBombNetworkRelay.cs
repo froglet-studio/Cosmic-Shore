@@ -35,22 +35,23 @@ namespace CosmicShore.Gameplay
 
         // ── Blooms ───────────────────────────────────────────────────────────
 
-        /// <summary>Owner machine → everyone else: one bomb bloomed at <paramref name="position"/>.</summary>
-        public void BroadcastBloom(Vector3 position, float maxScale, bool affectSelf)
+        /// <summary>Owner machine → everyone else: one bomb bloomed at <paramref name="position"/>, growing over
+        /// <paramref name="growSeconds"/> (blooms are slow on purpose, and every screen must grow them alike).</summary>
+        public void BroadcastBloom(Vector3 position, float maxScale, float growSeconds)
         {
             if (!IsSpawned) return;
-            ReportBloom_ServerRpc(position, maxScale, affectSelf);
+            ReportBloom_ServerRpc(position, maxScale, growSeconds);
         }
 
         [ServerRpc]
-        void ReportBloom_ServerRpc(Vector3 position, float maxScale, bool affectSelf,
+        void ReportBloom_ServerRpc(Vector3 position, float maxScale, float growSeconds,
                                    ServerRpcParams rpcParams = default)
         {
-            Bloom_ClientRpc(position, maxScale, affectSelf, rpcParams.Receive.SenderClientId);
+            Bloom_ClientRpc(position, maxScale, growSeconds, rpcParams.Receive.SenderClientId);
         }
 
         [ClientRpc]
-        void Bloom_ClientRpc(Vector3 position, float maxScale, bool affectSelf, ulong senderClientId)
+        void Bloom_ClientRpc(Vector3 position, float maxScale, float growSeconds, ulong senderClientId)
         {
             // The originator already bloomed locally — replaying there would double the blast.
             if (NetworkManager != null && NetworkManager.LocalClientId == senderClientId) return;
@@ -59,8 +60,8 @@ namespace CosmicShore.Gameplay
             // Domain is a default interface member on IVesselStatus — unreachable through the
             // concrete class, so the read must go through the interface.
             IVesselStatus status = vesselStatus;
-            MantaBomb.SpawnBloom(stingConfig, null, position, Quaternion.identity, maxScale,
-                status.Domain, vesselStatus.Vessel, affectSelf,
+            MantaBomb.SpawnBloom(stingConfig, null, position, Quaternion.identity, maxScale, growSeconds,
+                status.Domain, vesselStatus.Vessel,
                 _vesselImpactor ? _vesselImpactor.DIContainer : null);
         }
     }

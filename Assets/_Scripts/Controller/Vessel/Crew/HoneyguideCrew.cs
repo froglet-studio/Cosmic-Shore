@@ -95,6 +95,18 @@ namespace CosmicShore.Gameplay
         /// <summary>The battery the two seats share: slip charges, colours 1 Ruby, 2 Jade, 3 Gold, oldest first.</summary>
         public IReadOnlyList<int> Battery => _core != null ? _core.Battery : System.Array.Empty<int>();
 
+        /// <summary>How many charges the battery holds before a new one pushes the oldest out.</summary>
+        public int BatteryCap => _core != null ? _core.BatteryCap(_s) : 0;
+
+        /// <summary>The hull this crew flies (null while unbound).</summary>
+        public Transform RaceHull => _vessel?.Transform;
+
+        /// <summary>
+        /// A race's coach for this hull's AI (Slip Line). Set: the AI's slip guard measures a slip against the coach's
+        /// goal instead of the pilot's objective. Null: the shipped AI. A person's slips never ask it.
+        /// </summary>
+        public IHoneyguideRaceCoach RaceCoach { get; set; }
+
         // ------------------------------------------------------------------ binding
 
         // The local pilot's own hull, flown by a human - or handed to the AI by this component's own swap - or an AI crew: a

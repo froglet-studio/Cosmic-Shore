@@ -13,7 +13,7 @@ namespace CosmicShore.Tests
     /// </summary>
     public class ElementalCrystalShadeTests
     {
-        const string PalettePath = "Assets/_SO_Assets/Color Palettes/OriginalColorSetSO.asset";
+        const string PalettePath = "Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset";
 
         [Test]
         public void WithHueOf_TakesTheHueAtTheColoursBrightestChannel_AndKeepsAlpha()

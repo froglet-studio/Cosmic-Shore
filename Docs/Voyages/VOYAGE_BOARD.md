@@ -163,6 +163,65 @@ Voyage window's map now zooms as the board does: from the whole galaxy (140,000 
   function, the column, colours, seven tiles star by star, five views).
 - Not ported: lanes by heading and the course profile (§5 decision 9, pending), crew's-eye units, pre-cut tiles on R2.
 
+## 4c. Cells in 3D: truncated octahedra, the levels and the ecology regions (2026-11-07)
+
+Garrett, 2026-11-07: "right now we have a 2d honeycomb and a thickness that is lacking any representation of cells.
+when we zoom into cells the semantic zoom should see nuclei and membranes and represent the actual cell. cells should
+nest in truncated octahedrons ... these things should be visible from both plane and thickness views"; then "include
+hypersea ecology regions that are represented in the sea" and "the cellular levels".
+
+- **The lattice** (`deepzoom/cells.js`, module `CELLS`): every cell grows round a nucleus; the nuclei sit on a
+  body-centred cubic (BCC) lattice (two cubic sublattices 20 ly apart, offset by half a cell) and each cell is the space
+  nearer its nucleus than any other. That Voronoi cell is the truncated octahedron (6 square faces 10 ly from the
+  nucleus, 8 hexagonal faces 15 ly out), Kelvin's foam cell. The lattice is anchored so the central cell's nucleus is
+  Sgr A*, the Heart [A]. Garrett asked for "the Voronoi of FCC packing"; FCC's Voronoi cell is the rhombic dodecahedron
+  and the truncated octahedron is BCC's, so BCC is built and the FCC-or-BCC choice is decision 10 below.
+- **The levels**: nucleus (392 u = 3.3 ly in radius, the game's `Nucleus.prefab`: a lit translucent caged sphere,
+  halo, great-circle cage rings, fresnel rim), cytoplasm (the radial fill), membrane (the blue walls, deepening at the
+  faces). From 200 px a cell tags its three levels; the Heart's read "Nucleus · Sgr A*, the Heart [A]" and "Membrane ·
+  the circumnuclear disk [A]".
+- **Both views**: the chart is a plane section at one height (octagons and squares on a nucleus layer, diamonds between
+  layers); the side view is a true-scale cut upright along the chart's bottom edge at every zoom (Garrett, 2026-11-07:
+  "the bottom edge of the plane [is] the slice for the thickness so they always have a nice lock up"; a Lime line marks
+  the edge), and shows the course
+  profile only while sailing (`lanes.js` draws the cut cells on it). A **green slice bar** in the side view is dragged
+  (pointer-relative, the panel's centre frozen during the drag, one redraw a frame), scrolled (2 ly a notch) or stepped
+  (Slice ▲▼ 5 ly, Reset) and moves the chart's slice; the slice snaps to the nearest nucleus layer when it is reset.
+  The deep tiers' star slab follows the slice (`DZ.viewState().zf = CELLS.sliceZ()`).
+- **No moiré**: polygons above 40 px a cell, a per-pixel pass below; membranes fade in from 22 to 44 px a cell, nuclei
+  from 4 to 8 px of radius, and below 14 px a cell the smooth sea draws with the ecology-zone edges only.
+- **Ecology regions** (the HyperSea Fact Sheet, https://claude.ai/artifact/8bvB2BA3AoUWmkt89wwGB2, its perceived densities): hot bubble = spray (< 0.1), warm medium =
+  froth (< 0.6), open water (< 5), cold cloud = thick (< 100), molecular cloud = reef; the named bubbles and clouds;
+  the centre's rings (the central cell 10 ly, the circumnuclear disk 30 ly, the Central Molecular Zone 650 ly). The
+  hover tip names the region; the key and readout sit on dark plates.
+- **Build**: `python3 Docs/Voyages/VoyageBoard/deepzoom/assemble.py Docs/Voyages/VoyageBoard/voyage-board.html` splices
+  `cells.js`, `deepzoom.js` and `lanes.js` into the pre-deep-zoom page (the committed board is byte for byte the
+  published artifact, version 11). Never hand-edit `voyage-board.html`.
+- **Goldens**: `sky_golden.js` loads `cells.js` (the board's canvases and state stubbed) so its five views print the
+  page's slab height; `cells_golden.js` prints the cells' own numbers (the nucleus a point is in, the slice's snap,
+  the fades, ten sections polygon by polygon).
+- **In the game** (2026-11-08; Garrett, after testing bleeding-edge: "i didn't see any of the changes", because the
+  first two PRs changed only the board). The Voyage window's galaxy map now draws the same cells:
+  - `HyperSeaCells` (`Assets/_Scripts/Data/Voyages/HyperSeaCells.cs`): `cellAt`, `section`, the slice's snap and the
+    fades ported line for line in doubles; `HyperSeaCellsTests` holds `cells_golden.js`'s output. `HyperSeaSky.ViewOf`
+    now slices the deep tiers at the snapped layer plus the reader's offset (its golden at 900,2100 w 50 is 35, as the
+    page prints).
+  - `VoyageMapSky` draws the slice's cells under the stars: walls fade in from 36 to 58 px a cell (the board starts at
+    22 px; the map is one mesh with a vertex budget, so it starts later), each cell fills with its own sea from 60 px,
+    the cytoplasm's gradient and inner walls show from 90 px, nuclei fade in from a 4 px radius, and the cell at the
+    view's centre names its levels from 200 px. A tap on open water opens the 3D cell under it (its card reads the sea
+    at its nucleus) and outlines its section. A Lime line marks the map's bottom edge.
+  - `VoyageCellDraw` draws a cell's fill, cytoplasm and walls, and the nucleus as one quad of a sprite painted once
+    into the map's atlas (the caged sphere above 16 px radius, a plain one below so the cage never aliases). The
+    sprite does not flatten its rings as the slice moves off the nucleus's middle, as the board's does.
+  - `VoyageEdgeGraphic` cuts the sea along the map's bottom edge; with the cells on show it draws them cut upright and
+    the slice as a Lime bar: drag it or scroll over the strip to move it, tap its handle to put it back.
+  - The level tags, the strip's caption at cell zoom and the bar's handle are authored lines (`MapCellNucleus` ...
+    `EdgeSlice` in `voyage_slice.json`, written by `author_voyage_assets.py`). `MapCellLabel` (a hexagon's name) is no
+    longer drawn.
+  - Still on the hexagons: courses are routed and timed on `HyperSea.CellCentre`, a cell card's name and berth use
+    the hexagon under its nucleus, and the ecology regions' names, rings and the board's slice buttons are not ported.
+
 ## 5. Open decisions (Garrett)
 
 1. Tumult 2,300 ly from the galactic centre toward Sol (23,900 ly from Sol).
@@ -176,3 +235,7 @@ Voyage window's map now zooms as the board does: from the whole galaxy (140,000 
    Keep the short legs for play and show the real distance (as now), or make a leg's length its real cells.
 9. **New with the lanes:** courses fly lanes by heading (§4a), a law of the sea or a custom crews keep. It changes
    course heights and so their danger; the game does not fly it yet.
+10. **New with the 3D cells (§4c):** truncated octahedra are the Voronoi cells of BCC, not FCC (FCC gives rhombic
+    dodecahedra). The board is BCC; confirm, or switch the lattice to FCC and its cell to the rhombic dodecahedron.
+11. **New with the 3D cells:** route and time courses on the 3D cells instead of the hexagons (the cells, levels and
+    slice bar are in the Voyage window since 2026-11-08, §4c).

@@ -396,7 +396,7 @@ domain-bearing and neither is a legitimate neutral. Measured, not inferred:
 | | `_Color1` (base face) | `_Color2` (fresnel rim — the part that glows) |
 |---|---|---|
 | `GreenAccentVesselMaterial` | (0, 0.0941, 0.1882) | (0, **0.7765**, **1.4980**) |
-| `OriginalColorSetSO.JadeColors.ShipColor1/2` | (0, 0.0490, 0.0941) | (0, **0.3882**, **0.7490**) |
+| `PhoticColorSetSO.JadeColors.ShipColor1/2` | (0, 0.0490, 0.0941) | (0, **0.3882**, **0.7490**) |
 | ratio | ×1.92, ×2.00 | **×2.00, ×2.00, exact to 7 dp** |
 
 `GreenAccentVesselMaterial` is the **Jade ship colour at 2× intensity, welded into the prefab** —

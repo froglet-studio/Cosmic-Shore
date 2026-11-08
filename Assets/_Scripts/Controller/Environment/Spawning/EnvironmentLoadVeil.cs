@@ -80,6 +80,15 @@ namespace CosmicShore.Gameplay
         int _growPeak;
         float _progress;
 
+        // A colour-set change (Profile > Colour sets, Docs/MENU_REDESIGN_B.md section 123): the same screen with its own
+        // words, no build and no gate. The repaint runs once the screen is opaque, then the four steps light in turn.
+        static bool s_pendingColourSet;
+        bool _colourSet;
+        System.Action _repaint;
+        bool _repainted;
+        float _colourClock;
+        const float ColourStepSeconds = 0.3f;
+
         const int StepCount = 4;
         const float StepPendingAlpha = 0.22f;
         const float StepDoneAlpha = 0.7f;
@@ -129,6 +138,26 @@ namespace CosmicShore.Gameplay
             s_active.SetCell(environmentName);
         }
 
+        /// <summary>
+        /// Raise the veil for a COLOUR-SET change: "Changing colour set", the set's name and line, and the repaint's four
+        /// steps (<see cref="EnvironmentLoadVeilContentSO.colourSetSteps"/>). <paramref name="repaint"/> runs once,
+        /// when the screen is fully covered, so the player never sees the colours swap; the veil then lights its steps
+        /// and lifts on the repainted world. Returns false (and runs nothing) while another veil or a gated scene holds
+        /// the screen, so the caller can say it could not change now.
+        /// </summary>
+        public static bool ShowColourSetChange(string setName, string line, System.Action repaint)
+        {
+            if (s_active != null || PrismTrailBuilder.IsLoadGateHolding) return false;
+            s_pendingColourSet = true;
+            var go = new GameObject("EnvironmentLoadVeil");
+            try { s_active = go.AddComponent<EnvironmentLoadVeil>(); }
+            finally { s_pendingColourSet = false; }
+            s_active._repaint = repaint;
+            if (s_active._cellName) s_active._cellName.text = setName ?? string.Empty;
+            if (s_active._cellLine) s_active._cellLine.text = line ?? string.Empty;
+            return true;
+        }
+
         /// <summary>Gate slice while the veil holds: enough for a fast build (~10x the ungated
         /// pace) while leaving most of each frame for the services still running under the menu
         /// (Netcode heartbeats, Relay/session traffic, audio) - the full 250ms connecting-screen
@@ -147,6 +176,7 @@ namespace CosmicShore.Gameplay
 
         void Awake()
         {
+            _colourSet = s_pendingColourSet;
             var canvas = gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 30000; // above every menu canvas, under the transition fade
@@ -208,7 +238,8 @@ namespace CosmicShore.Gameplay
             Centre(crystalGo.GetComponent<RectTransform>(), new Vector2(0f, 150f), new Vector2(300f, 300f));
 
             var neutral = UITheme.Resolve(null, UIColorToken.NeutralLightest);
-            var entering = Label(_content, "Entering", _words.captionFont, 14f, 50f, neutral, _words.enteringWord);
+            var entering = Label(_content, "Entering", _words.captionFont, 14f, 50f, neutral,
+                                 _colourSet ? _words.colourSetWord : _words.enteringWord);
             Centre(entering.rectTransform, new Vector2(0f, -36f), new Vector2(600f, 22f));
             _cellName = Label(_content, "CellName", _words.displayFont, 72f, 0f, UITheme.Resolve(null, UIColorToken.TextLight), string.Empty);
             _cellName.fontStyle = FontStyles.UpperCase;
@@ -239,10 +270,11 @@ namespace CosmicShore.Gameplay
                     var le = g.GetComponent<LayoutElement>();
                     le.preferredWidth = le.preferredHeight = 26f;
                 }
-                Label(step.transform, "Label", _words.captionFont, 13f, 12f, colour, _words.StepLabel(i)).fontStyle = FontStyles.UpperCase;
+                Label(step.transform, "Label", _words.captionFont, 13f, 12f, colour,
+                      _colourSet ? _words.ColourSetStep(i) : _words.StepLabel(i)).fontStyle = FontStyles.UpperCase;
             }
 
-            string tip = _words.TipAt(Random.value);
+            string tip = _colourSet ? _words.colourSetTip : _words.TipAt(Random.value);
             if (string.IsNullOrEmpty(tip)) return;
             var tipRow = Row(_content, "Tip", 12f);
             Centre((RectTransform)tipRow.transform, new Vector2(0f, -310f), new Vector2(0f, 26f));
@@ -336,11 +368,35 @@ namespace CosmicShore.Gameplay
             int step = StepFor(_phase, _gated, _released, laying, grow, _sawBuild);
             _progress = CrystalLevel(_progress, step, PrismTrailBuilder.LayProgress, grow, _growPeak);
             if (_crystal) _crystal.Level = _progress;
+            ShowStep(step);
+        }
+
+        void ShowStep(int step)
+        {
             if (step == _phase) return;
             _phase = step;
             for (int i = 0; i < StepCount; i++)
                 if (_steps[i])
                     _steps[i].alpha = step == 3 || i == step ? 1f : i < step ? StepDoneAlpha : StepPendingAlpha;
+        }
+
+        /// <summary>A colour-set change: repaint once the screen is opaque, light the steps in turn, then lift.</summary>
+        void UpdateColourSet(float dt)
+        {
+            if (_fade < 1f) return;
+            if (!_repainted)
+            {
+                _repainted = true;
+                _repaint?.Invoke();
+            }
+            _colourClock += dt;
+            float total = ColourStepSeconds * StepCount;
+            ShowStep(Mathf.Min(StepCount - 1, (int)(_colourClock / ColourStepSeconds)));
+            _progress = Mathf.Clamp01(_colourClock / total);
+            if (_crystal) _crystal.Level = _progress;
+            _fill.anchoredPosition = Vector2.zero;
+            _fill.sizeDelta = new Vector2(_progress * BarWidth, 0f);
+            if (_colourClock >= total) Release();
         }
 
         /// <summary>The subtle readout: a "Loading" caption over a slim bar, bottom centre.</summary>
@@ -425,6 +481,11 @@ namespace CosmicShore.Gameplay
                 {
                     _fade = Mathf.Min(1f, _fade + dt / FadeInSeconds);
                     _group.alpha = _fade;
+                }
+                if (_colourSet)
+                {
+                    UpdateColourSet(dt);
+                    return;
                 }
                 // Opaque from here: the gate may settle grow-ins nobody can see
                 // (PrismTrailBuilder.LoadGateCovered).

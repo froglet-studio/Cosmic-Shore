@@ -24,6 +24,13 @@ alone. Until the lock moves into `run.sh`, start ONE run on a cold cache and fan
 Needs a .NET SDK, **8.0 or newer** (8.0 and 10.0 both verified), under `DOTNET_ROOT` (`run.sh` falls
 back to `$HOME/.dotnet`); the helper tools are built for the newest runtime + reference pack it holds.
 
+**No installer reachable (a cloud session whose proxy refuses dot.net and builds.dotnet.microsoft.com)?** The
+compile needs no SDK proper, only a host, a runtime, a reference pack and Roslyn's `csc.dll`, and nuget.org ships
+each as a package: `python3 Tools/Build/unity_refcompile/dotnet_from_nuget.py` fetches the seven packages (about
+65 MB) and lays out `~/.dotnet` the way the installer would (about a minute); `--check` says whether a root runs
+`csc`. First done by hand on 2026-11-07, when it ran this compile end to end in a cloud session. `dotnet build` does
+not exist in such a root; nothing here uses it.
+
 **The `webgl` config** compiles Assets code as the WebGL player of the browser Toybox
 (`Docs/WEBGL_TOYBOX.md`): the standalone platform defines are dropped, `UNITY_WEBGL`, `PLATFORM_WEBGL` and
 `FROGLET_WEB_TOYBOX` are added, and project asmdefs are filtered for the `WebGL` platform. Packages stay
@@ -48,7 +55,7 @@ runtime file, not as missing types in the Editor files. The references are the n
 **non-publicized `UnityEditor.dll` obtainable, 2021.1**, and the 6000.0 engine DLLs. Those engine
 DLLs are player builds, so their own `#if UNITY_EDITOR` members are missing: for example,
 `UIBehaviour.OnValidate` and `Reset` are reported as "unverified", not as errors. Packages stay
-player-compiled, and editor-only asmdefs (`Obvious.Soap.Editor`, `FMODUnityEditor`, package editor
+player-compiled, and editor-only asmdefs (`FMODUnityEditor`, package editor
 assemblies) and the test framework are not compiled. Use it to catch errors in editor branches. A
 green editor run is weaker evidence than a green player run.
 
@@ -127,7 +134,7 @@ references (one today: `GPUDrivenPackedMaterialData.hasTessellation`). Never app
 ## What a green run proves, and what it does not
 
 Proves: every project `.cs` compiled into the player assemblies (Assembly-CSharp, -firstpass,
-CosmicShore.Data, Obvious.Soap, FMOD, NiceVibrations, ...) type-checks against the real package
+CosmicShore.Data, CosmicShore.Soap.Core, FMOD, NiceVibrations, ...) type-checks against the real package
 sources at their locked versions and the real (6000.0.75) engine API — including source generators.
 
 Does not prove:

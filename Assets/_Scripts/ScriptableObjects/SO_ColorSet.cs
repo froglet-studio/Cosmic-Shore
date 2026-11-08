@@ -47,8 +47,8 @@ namespace CosmicShore.ScriptableObjects
         /// mass around it.
         ///
         /// <para><b>Do not reach for a crystal colour to say "this belongs to domain X".</b>
-        /// <c>DullCrystalColor</c> is authored (0,0,0) on Jade, Ruby AND Gold in the shipped
-        /// <c>OriginalColorSetSO</c> — the domain crystals are deliberately near-black bodies with a
+        /// <c>DullCrystalColor</c> is authored (0,0,0) on Jade, Ruby AND Gold in the
+        /// <c>PhoticColorSetSO</c> — the domain crystals are deliberately near-black bodies with a
         /// bright fresnel rim, which is right on a faceted crystal in the world and renders as a
         /// black square in a UI slot. <c>BrightCrystalColor</c> tops out at 0.75 value. The domain UI
         /// colour is the palette's answer to "what colour is this team", and this is that colour at
@@ -75,7 +75,7 @@ namespace CosmicShore.ScriptableObjects
         /// (<c>Docs/PALETTE.md §2.2</c>). Anything that is NOT a crystal — a prism, a UI chip —
         /// has no such composition, so painting it with the dull half alone gives it a dark olive
         /// where the player expects the free-pickup lime. The shipped
-        /// <c>OriginalColorSetSO</c> authors <c>DarkCTA</c> at (0.28, 0.50, 0.08).</para>
+        /// <c>PhoticColorSetSO</c> authors <c>DarkCTA</c> at (0.28, 0.50, 0.08).</para>
         ///
         /// <para>Returns the CTA hue with its brightest channel driven to 1, exactly as the domain
         /// sibling does. Alpha 0 when the palette does not author a CTA at all (both inactive
@@ -100,8 +100,8 @@ namespace CosmicShore.ScriptableObjects
         /// <para><b>The danger tier has no colour fields of its own</b> (see
         /// <see cref="GetPrismKindColors"/>): it is the domain's SHIELDED base face under the
         /// shared, domain-independent <see cref="EnvironmentColorSet.Danger"/> rim, and the RIM is
-        /// the half that says dangerous. So this returns that rim - which the shipped
-        /// <c>OriginalColorSetSO</c> authors HDR at (1.498, 0.006, 0.007) with <b>alpha 0</b>, the
+        /// the half that says dangerous. So this returns that rim - which the
+        /// <c>PhoticColorSetSO</c> authors HDR at (1.498, 0.006, 0.007) with <b>alpha 0</b>, the
         /// same trap <see cref="GetCtaSignalColor"/> records. Normalised here to the hue with its
         /// brightest channel driven to 1 and alpha 1.</para>
         ///

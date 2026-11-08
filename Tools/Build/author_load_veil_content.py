@@ -74,6 +74,11 @@ TIPS = (
     "On Home, press Y to fly the cell yourself, and Y again to come back.",       # ScreenSwitcher Y (crystalClickHandler)
     "The Toy Box's shuffle re-rolls the world, your domain and your hull.",       # ToyboxShuffleCard
 )
+# A colour-set change from the Profile (Rev 51 A, section 123): the same screen, its own words. The steps say what
+# ThemeManager.ApplyColorSet does in order; the veil lights them in turn while it holds.
+COLOUR_SET_WORD = "Changing colour set"
+COLOUR_SET_STEPS = ("Mixing the palette", "Repainting prisms", "Recolouring vessels and trails", "Opening the cell")
+COLOUR_SET_TIP = "A colour set changes how you see the HyperSea. Other pilots keep theirs."
 MAX_LINE = 72   # characters: one line at the screen's 16-17 px sizes inside 1200 units
 
 
@@ -92,7 +97,7 @@ def ref(fid, guid, kind):
     return f"{{fileID: {fid}, guid: {guid}, type: {kind}}}"
 
 
-def asset_text(words=WORDS, steps=STEPS, lines=CELL_LINES, tips=TIPS, glyph_order=()):
+def asset_text(words=WORDS, steps=STEPS, lines=CELL_LINES, tips=TIPS, glyph_order=(), colour_steps=COLOUR_SET_STEPS):
     out = ["%YAML 1.1", "%TAG !u! tag:unity3d.com,2011:", "--- !u!114 &11400000", "MonoBehaviour:",
            "  m_ObjectHideFlags: 0", "  m_CorrespondingSourceObject: {fileID: 0}", "  m_PrefabInstance: {fileID: 0}",
            "  m_PrefabAsset: {fileID: 0}", "  m_GameObject: {fileID: 0}", "  m_Enabled: 1", "  m_EditorHideFlags: 0",
@@ -107,6 +112,10 @@ def asset_text(words=WORDS, steps=STEPS, lines=CELL_LINES, tips=TIPS, glyph_orde
         out += [f"  - cellName: {q(name)}", f"    line: {q(line)}"]
     out.append("  tips:")
     out += [f"  - {q(t)}" for t in tips]
+    out.append(f"  colourSetWord: {q(COLOUR_SET_WORD)}")
+    out.append("  colourSetSteps:")
+    out += [f"  - {q(s)}" for s in colour_steps]
+    out.append(f"  colourSetTip: {q(COLOUR_SET_TIP)}")
     out.append(f"  background: {ref(2100000, M.SEA_WINDOW_MAT, 2)}")
     out.append("  stepGlyphs:" + ("" if glyph_order else " []"))
     out += [f"  - {K.sprite_ref(H.element_glyph(e))}" for e in glyph_order]
@@ -175,6 +184,8 @@ def validate(files, known=None):
     for name, line in lines:
         assert unq(name) in known, f"a line names the cell {unq(name)!r}, which no CellConfigDataSO carries (it would never show)"
         assert len(unq(line)) <= MAX_LINE, f"{unq(name)}'s line is longer than one line ({len(unq(line))} > {MAX_LINE})"
+    colour_steps = [unq(s[4:]) for s in block(text, "colourSetSteps").splitlines()]
+    assert len(colour_steps) == 4 and all(colour_steps), f"a colour-set change needs four named steps, found {colour_steps}"
     tips = [unq(s[4:]) for s in block(text, "tips").splitlines()]
     assert tips, "no tips"
     for t in tips:
@@ -197,6 +208,7 @@ def self_test(files):
         "a tip the font cannot draw": asset_text(tips=TIPS[:1] + ("Fly to the core — then turn.",)),
         "an element glyph back on a build step": asset_text(glyph_order=("Mass",)),
         "the loading word blanked": asset_text(words=dict(WORDS, loadingWord="")),
+        "a blank colour-set step": asset_text(colour_steps=COLOUR_SET_STEPS[:3] + ("",)),
     }
     for label, bad in plants.items():
         try:

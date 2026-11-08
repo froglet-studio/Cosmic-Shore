@@ -32,8 +32,10 @@ namespace CosmicShore.Tests
         // what its absence cost - the pre-fix answer sat 8 degrees away at 217.3 and that gap was
         // written down as an ACES hue shift. Brightness deliberately is NOT asserted: the prisms
         // read brighter because a bright HDR rim sits over the base and blooms, and inventing a
-        // lift to match it is the mistake this test exists to prevent.
+        // lift to match it is the mistake this test exists to prevent. The screenshot is of PHOTIC's
+        // prisms (the default until 2026-11-03), so this one assertion reads that palette by path.
         const float MeasuredRenderedHue = 209.4f;
+        const string MeasuredPalettePath = "Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset";
         const float HueTolerance = 5f;
 
         // Below this the icon and a petal read as the same colour at the ~60px the row draws at.
@@ -121,7 +123,9 @@ namespace CosmicShore.Tests
         [Test]
         public void JadeMatchesTheHueShieldedPrismsRenderAs()
         {
-            float h = Hue(Palette().GetShieldedSignalColor(Domains.Jade));
+            var measured = UnityEditor.AssetDatabase.LoadAssetAtPath<SO_ColorSet>(MeasuredPalettePath);
+            Assert.IsNotNull(measured, MeasuredPalettePath);
+            float h = Hue(measured.GetShieldedSignalColor(Domains.Jade));
             Assert.Less(Mathf.Abs(Mathf.DeltaAngle(h, MeasuredRenderedHue)), HueTolerance,
                 $"Jade's shielded signal is hue {h:F1}; shielded prisms MEASURE {MeasuredRenderedHue:F1} " +
                 "on screen. A gap here means the linear->gamma conversion is missing or has been " +

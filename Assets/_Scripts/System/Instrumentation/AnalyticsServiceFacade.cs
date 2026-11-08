@@ -1,13 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
+using Unity.Netcode;
 using Unity.Services.Core;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Core
 {
@@ -68,11 +72,30 @@ namespace CosmicShore.Core
         /// <summary>
         /// Every destination. One payload is built per event and fanned out unchanged, so the
         /// destinations cannot drift apart. Consent and the age gate are enforced here, above
-        /// the sinks, so adding a destination can never widen collection.
+        /// the sinks, so adding a destination can never widen collection. The one exception is
+        /// narrowing: the UGS sink drops what the schema marks Froglet-only
+        /// (<see cref="UgsAnalyticsSink.FrogletOnlyFields"/>).
         /// </summary>
         readonly List<IAnalyticsSink> _sinks = new();
 
-        readonly PostHogAnalyticsSink _postHogSink;
+        readonly FrogletAnalyticsSink _frogletSink;
+
+        /// <summary>
+        /// The one instance currently subscribed to every persistent SOAP/static event below.
+        /// This is a Resolution.Lazy Reflex singleton, but Reflex has no disposal hook that runs
+        /// when a container is rebuilt - and with this project's Enter Play Mode settings
+        /// (Domain Reload + Scene Reload both off, see ProjectSettings/EditorSettings.asset),
+        /// re-entering Bootstrap constructs a SECOND facade without ever tearing down the first
+        /// one's subscriptions (same class of risk ReconnectService's own doc comment calls out:
+        /// "re-loading that scene would spawn a duplicate of every other [persistent root]").
+        /// Confirmed in production PostHog data: every subscribed handler below fired at ~2x the
+        /// rate of every directly-called Record* method, with distinct event uuids and identical
+        /// match_id/distinct_id pairs a few milliseconds apart.
+        ///
+        /// Tearing down whatever instance came before guarantees exactly one live subscriber
+        /// regardless of how many times this gets constructed in one process.
+        /// </summary>
+        static AnalyticsServiceFacade _liveInstance;
 
         bool _collecting;
         bool _isConnected = true;
@@ -89,6 +112,51 @@ namespace CosmicShore.Core
         int _consecutiveLosses;
         int _droppedEvents;
         bool _warnedNotCollecting;
+
+        /// <summary>The vessels flown in the current Freestyle (Toybox) stretch - see <see cref="FreestyleVesselLog"/>.</summary>
+        readonly FreestyleVesselLog _freestyleVessels = new();
+
+        // ── Sessions (session_started / session_ended) ──
+        readonly AnalyticsSessionClock _session = new(DateTime.UtcNow);
+
+        // ── The running match, for match_abandoned ──
+        /// <summary>game_started's payload for the match in progress: match_abandoned repeats its fields.</summary>
+        Dictionary<string, object> _matchStartParameters;
+        /// <summary>The active scene when the match started; leaving it while the match runs is an abandon.</summary>
+        string _matchSceneName;
+        DateTime _matchStartUtc;
+        bool _networkLostDuringMatch;
+
+        // ── Invite attribution (party_invite_* / party_joined) ──
+        readonly InviteAttribution _invites = new();
+
+        // ── client_exception ──
+        /// <summary>
+        /// Seconds a new fault is held before it is sent, so an error repeating every frame folds into
+        /// one event with its count instead of being sent on its first sighting with a count of 1.
+        /// Pause and quit send whatever is held at once.
+        /// </summary>
+        const float ExceptionFoldWindowSeconds = 5f;
+
+        readonly ClientExceptionLog _exceptions = new();
+
+        /// <summary>The main thread's context, captured at construction; faults seen off it are sent from it.</summary>
+        readonly SynchronizationContext _mainContext;
+
+        /// <summary>1 while a fold window is running (Interlocked: set from any thread).</summary>
+        int _exceptionFlushScheduled;
+
+        /// <summary>Mirrors _collecting for the log callback, which runs on any thread.</summary>
+        volatile bool _captureExceptions;
+
+        /// <summary>The active scene's name, kept on the main thread for the log callback to read.</summary>
+        volatile string _activeSceneName = string.Empty;
+
+        /// <summary>
+        /// True on a thread while it is inside analytics (a sink recording, the exception send). An error
+        /// logged there is NOT captured: client_exception must never produce another client_exception.
+        /// </summary>
+        [ThreadStatic] static bool t_inAnalytics;
 
         AuthenticationData AuthData => _authVariable.Value;
         NetworkMonitorData NetworkData => _networkVariable.Value;
@@ -131,13 +199,19 @@ namespace CosmicShore.Core
             _hostConnectionData = hostConnectionData;
             _allowLog = allowLog;
 
+            // Must run before a single subscription is wired - see _liveInstance.
+            _liveInstance?.Unsubscribe();
+            _liveInstance = this;
+
             _sinks.Add(new UgsAnalyticsSink(Log));
 
-            var postHogConfig = Resources.Load<PostHogConfigSO>("PostHogConfig");
-            if (postHogConfig != null && postHogConfig.Enabled)
+            // Our own analytics server (Tools/Analytics/server/), which replaced PostHog on
+            // 2026-11-06. The asset ships pointed at the server; nothing is filled in by hand.
+            var frogletConfig = Resources.Load<FrogletAnalyticsConfigSO>("FrogletAnalyticsConfig");
+            if (frogletConfig != null && frogletConfig.Enabled)
             {
-                _postHogSink = new PostHogAnalyticsSink(postHogConfig, Log, BuildSinkEnvelope);
-                _sinks.Add(_postHogSink);
+                _frogletSink = new FrogletAnalyticsSink(frogletConfig, Log, BuildSinkEnvelope);
+                _sinks.Add(_frogletSink);
             }
 
             AuthData.OnSignedIn.OnRaised += HandleSignedIn;
@@ -145,6 +219,8 @@ namespace CosmicShore.Core
             NetworkData.OnNetworkLost.OnRaised += HandleNetworkLost;
             _gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
             _gameData.OnMiniGameEnd.OnRaised += HandleMiniGameEnd;
+            _gameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
+            _gameData.OnSceneTransition.OnRaised += HandleSceneTransition;
             _lifecycleEvents.OnAppPaused.OnRaised += HandleAppPaused;
             _lifecycleEvents.OnAppQuitting.OnRaised += HandleAppQuitting;
             TryWireUiActions();
@@ -164,20 +240,34 @@ namespace CosmicShore.Core
             _hostConnectionData.OnPartyJoinCompleted.OnRaised += HandlePartyJoined;
 
             // ── Phase 2: static C# events (exist regardless of scene) ──
-            GameSetting.OnChangeMusicEnabledStatus      += v => HandleSettingChanged("music_enabled", v);
-            GameSetting.OnChangeSFXEnabledStatus        += v => HandleSettingChanged("sfx_enabled", v);
-            GameSetting.OnChangeHapticsEnabledStatus    += v => HandleSettingChanged("haptics_enabled", v);
-            GameSetting.OnChangeInvertYEnabledStatus    += v => HandleSettingChanged("invert_y", v);
-            GameSetting.OnChangeInvertThrottleEnabledStatus += v => HandleSettingChanged("invert_throttle", v);
-            GameSetting.OnChangeJoystickVisualsStatus   += v => HandleSettingChanged("joystick_visuals", v);
-            GameSetting.OnChangeMusicLevel              += v => HandleSettingChanged("music_level", v);
-            GameSetting.OnChangeSFXLevel                += v => HandleSettingChanged("sfx_level", v);
-            GameSetting.OnChangeHapticsLevel            += v => HandleSettingChanged("haptics_level", v);
+            // Named handlers rather than inline lambdas: Unsubscribe() below needs the exact
+            // same delegate it subscribed with, and a freshly-written lambda expression at the
+            // unsubscribe site is not guaranteed to compare equal to the one used at subscribe
+            // time (relying on compiler delegate-caching for correctness is fragile).
+            GameSetting.OnChangeMusicEnabledStatus      += HandleMusicEnabledChanged;
+            GameSetting.OnChangeSFXEnabledStatus        += HandleSfxEnabledChanged;
+            GameSetting.OnChangeHapticsEnabledStatus    += HandleHapticsEnabledChanged;
+            GameSetting.OnChangeInvertYEnabledStatus    += HandleInvertYChanged;
+            GameSetting.OnChangeInvertThrottleEnabledStatus += HandleInvertThrottleChanged;
+            GameSetting.OnChangeJoystickVisualsStatus   += HandleJoystickVisualsChanged;
+            GameSetting.OnChangeMusicLevel              += HandleMusicLevelChanged;
+            GameSetting.OnChangeSFXLevel                += HandleSfxLevelChanged;
+            GameSetting.OnChangeHapticsLevel            += HandleHapticsLevelChanged;
             FavoriteSystem.OnFavoriteChanged            += HandleFavoriteChanged;
             UGSCloudSaveProvider.OnSaveFailed           += HandleCloudSaveFailed;
             FTUEEventManager.OnQuestNodeCompleted       += HandleFtueStepCompleted;
             FTUEEventManager.OnQuestPhaseCompleted      += HandleFtuePhaseCompleted;
             FTUEEventManager.OnQuestCompleted           += HandleFtueCompleted;
+            SubscribeFreestyleClock();
+
+            // match_abandoned's backstop and client_exception's scene: Unity's own scene event.
+            _activeSceneName = SceneManager.GetActiveScene().name ?? string.Empty;
+            SceneManager.activeSceneChanged += HandleActiveSceneChanged;
+
+            // client_exception. The facade is built on the main thread, so this is its context; the
+            // threaded log callback posts every send back onto it.
+            _mainContext = SynchronizationContext.Current;
+            Application.logMessageReceivedThreaded += HandleLogMessageThreaded;
 
             // Adopt what the one-shot events have ALREADY announced. This facade is a LAZY DI
             // singleton, so it is constructed whenever something first injects it - which is
@@ -194,6 +284,80 @@ namespace CosmicShore.Core
             // the handlers only set a flag and re-run the guarded StartCollectionIfReady, so a
             // genuine event arriving afterwards is a no-op.
             ReconcileWithAlreadyAnnouncedState();
+        }
+
+        /// <summary>
+        /// Mirror image of the constructor's subscription block - every <c>+=</c> above has its
+        /// matching <c>-=</c> here. Called on the OUTGOING instance by the next constructor,
+        /// never by this one; see <see cref="_liveInstance"/>.
+        /// </summary>
+        void Unsubscribe()
+        {
+            var auth = AuthData;
+            if (auth != null) auth.OnSignedIn.OnRaised -= HandleSignedIn;
+
+            var network = NetworkData;
+            if (network != null)
+            {
+                network.OnNetworkFound.OnRaised -= HandleNetworkFound;
+                network.OnNetworkLost.OnRaised -= HandleNetworkLost;
+            }
+
+            if (_gameData != null)
+            {
+                _gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStarted;
+                _gameData.OnMiniGameEnd.OnRaised -= HandleMiniGameEnd;
+                _gameData.OnPlayerPairInitialized.OnRaised -= HandlePlayerPairInitialized;
+                _gameData.OnSceneTransition.OnRaised -= HandleSceneTransition;
+            }
+
+            if (_lifecycleEvents != null)
+            {
+                _lifecycleEvents.OnAppPaused.OnRaised -= HandleAppPaused;
+                _lifecycleEvents.OnAppQuitting.OnRaised -= HandleAppQuitting;
+            }
+
+            if (_menuFreestyleEvents != null)
+                _menuFreestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleFreestyleEntered;
+
+            if (_friendsData != null)
+            {
+                _friendsData.OnFriendRequestSent.OnRaised -= HandleFriendRequestSent;
+                _friendsData.OnFriendRequestReceived.OnRaised -= HandleFriendRequestReceived;
+                _friendsData.OnFriendAdded.OnRaised -= HandleFriendAdded;
+            }
+
+            if (_hostConnectionData != null)
+            {
+                _hostConnectionData.OnInviteSent.OnRaised -= HandlePartyInviteSent;
+                _hostConnectionData.OnInviteReceived.OnRaised -= HandlePartyInviteReceived;
+                _hostConnectionData.OnPartyJoinCompleted.OnRaised -= HandlePartyJoined;
+            }
+
+            GameSetting.OnChangeMusicEnabledStatus      -= HandleMusicEnabledChanged;
+            GameSetting.OnChangeSFXEnabledStatus        -= HandleSfxEnabledChanged;
+            GameSetting.OnChangeHapticsEnabledStatus    -= HandleHapticsEnabledChanged;
+            GameSetting.OnChangeInvertYEnabledStatus    -= HandleInvertYChanged;
+            GameSetting.OnChangeInvertThrottleEnabledStatus -= HandleInvertThrottleChanged;
+            GameSetting.OnChangeJoystickVisualsStatus   -= HandleJoystickVisualsChanged;
+            GameSetting.OnChangeMusicLevel               -= HandleMusicLevelChanged;
+            GameSetting.OnChangeSFXLevel                 -= HandleSfxLevelChanged;
+            GameSetting.OnChangeHapticsLevel             -= HandleHapticsLevelChanged;
+            FavoriteSystem.OnFavoriteChanged            -= HandleFavoriteChanged;
+            UGSCloudSaveProvider.OnSaveFailed           -= HandleCloudSaveFailed;
+            FTUEEventManager.OnQuestNodeCompleted       -= HandleFtueStepCompleted;
+            FTUEEventManager.OnQuestPhaseCompleted      -= HandleFtuePhaseCompleted;
+            FTUEEventManager.OnQuestCompleted           -= HandleFtueCompleted;
+            FlightClock.OnFreestyleSegmentCompleted     -= HandleFreestyleSegmentCompleted;
+            SceneManager.activeSceneChanged             -= HandleActiveSceneChanged;
+            Application.logMessageReceivedThreaded      -= HandleLogMessageThreaded;
+            _captureExceptions = false;
+
+            if (_uiActionsWired && UserActionSystem.Instance != null)
+                UserActionSystem.Instance.OnUserActionCompleted -= HandleUserAction;
+
+            if (_profileRefreshWired && PlayerDataService.Instance != null)
+                PlayerDataService.Instance.OnProfileChanged -= HandleProfileChanged;
         }
 
         /// <summary>
@@ -309,7 +473,12 @@ namespace CosmicShore.Core
         // The SDK caches events (up to 5MB memory, persisted on shutdown) while
         // offline, so collection stays on - we only track the flag so a
         // first-time StartDataCollection waits for connectivity.
-        void HandleNetworkLost() => _isConnected = false;
+        void HandleNetworkLost()
+        {
+            _isConnected = false;
+            if (_gameInProgress)
+                _networkLostDuringMatch = true;
+        }
 
         void StartCollectionIfReady()
         {
@@ -326,10 +495,13 @@ namespace CosmicShore.Core
                 sink.StartCollection();
 
             _collecting = true;
+            _captureExceptions = true;
             Log("Data collection started.");
 
             TryWireProfileRefresh();
             IdentifyPlayer();
+            // After the identify: the Froglet sink drops events until it knows who the player is.
+            MaybeRecordSessionStarted();
             MaybeRecordFirstLaunch();
         }
 
@@ -342,6 +514,7 @@ namespace CosmicShore.Core
                 sink.StopCollection();
 
             _collecting = false;
+            _captureExceptions = false;
 
             // Forget what we last identified. StopCollection DISCARDS the sink's pending queue,
             // so an identify sent before a revoke may never have uploaded - and if consent is
@@ -375,8 +548,19 @@ namespace CosmicShore.Core
                 ? new Dictionary<string, object>(parameters)
                 : new Dictionary<string, object>();
 
-            foreach (var sink in _sinks)
-                sink.RecordEvent(eventName, payload);
+            // Inside the sinks an error must not come back as a client_exception (t_inAnalytics).
+            bool outermost = !t_inAnalytics;
+            t_inAnalytics = true;
+            try
+            {
+                foreach (var sink in _sinks)
+                    sink.RecordEvent(eventName, payload);
+            }
+            finally
+            {
+                if (outermost)
+                    t_inAnalytics = false;
+            }
 
             Log($"Recorded '{eventName}'.");
         }
@@ -386,7 +570,7 @@ namespace CosmicShore.Core
         ///
         /// Collection is opt-in: both the COPPA age gate and consent default to denied, so an
         /// unanswered privacy flow silently drops every event before it reaches any sink - both
-        /// UGS and PostHog go quiet at once, which looks like a backend or key problem and is
+        /// UGS and Froglet Analytics go quiet at once, which looks like a backend or key problem and is
         /// not. That failure has already cost this project one debugging session, so it warns
         /// rather than whispering behind a verbose-logging flag.
         /// </summary>
@@ -406,7 +590,7 @@ namespace CosmicShore.Core
                 : "collection has not started yet";
 
             Debug.LogWarning(
-                $"[Analytics] DROPPING EVENTS - {why}. Nothing will reach UGS or PostHog until this " +
+                $"[Analytics] DROPPING EVENTS - {why}. Nothing will reach UGS or Froglet Analytics until this " +
                 $"is resolved. First dropped event: '{eventName}'. " +
                 (NeedsPrivacyFlow
                     ? "No privacy consent UI is reachable in this scene; in the editor use " +
@@ -418,7 +602,7 @@ namespace CosmicShore.Core
         public int DroppedEventCount => _droppedEvents;
 
         /// <summary>
-        /// Identity + build context that PostHog has no way to collect on its own.
+        /// Identity + build context that Froglet Analytics has no way to collect on its own.
         ///
         /// This is deliberately NOT applied to every event in the facade. UGS Analytics
         /// already auto-collects the player id, platform and app version as core data, and it
@@ -426,7 +610,7 @@ namespace CosmicShore.Core
         /// Event Manager - where events and parameters, once created, can never be deleted and
         /// count against a 1,500-per-environment cap. Stamping six redundant fields onto 28
         /// events would have cost 168 permanent, unnecessary schema rows for data UGS already
-        /// has. So the envelope is a PostHog concern and lives in the PostHog sink.
+        /// has. So the envelope is a Froglet Analytics concern and lives in the Froglet Analytics sink.
         /// See Docs/Analytics/DATA_ARCHITECTURE.md §7.1.
         /// </summary>
         public IDictionary<string, object> BuildSinkEnvelope() => new Dictionary<string, object>
@@ -439,7 +623,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// The canonical identity: the UGS player id. Immutable, and the same key as Cloud
-        /// Save and Leaderboards, so PostHog joins to both with no mapping table. Display name
+        /// Save and Leaderboards, so Froglet Analytics joins to both with no mapping table. Display name
         /// is a person PROPERTY (see <see cref="IdentifyPlayer"/>), never the identity - it is
         /// mutable and two players can choose the same one.
         /// </summary>
@@ -488,7 +672,7 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Mirrors cloud-save state onto the PostHog person, so events can be segmented by
+        /// Mirrors cloud-save state onto the Froglet Analytics person, so events can be segmented by
         /// player state without a join. Grouped exactly like PLAYER_PROFILE, which is what
         /// makes this mapping mechanical rather than a hand-maintained list.
         ///
@@ -547,7 +731,7 @@ namespace CosmicShore.Core
                 properties["unlocked_mode_count"] = progression.UnlockedModes.Count;
 
             // Send only when something actually CHANGED. Every identify is a billable event on
-            // the PostHog side, and OnProfileChanged is raised by things that do not always move
+            // the Froglet Analytics side, and OnProfileChanged is raised by things that do not always move
             // a person property - RefreshProfileVisuals raises it for a pure UI repaint. Before
             // the profile-change hook existed every caller was a segment boundary (collection
             // start, pause, quit, freestyle exit) and this could not matter; now it can.
@@ -625,6 +809,13 @@ namespace CosmicShore.Core
 
             var parameters = BuildGameParameters();
             AddMatchEnvelope(parameters);
+
+            // What match_abandoned repeats if this match is left before its end.
+            _matchStartParameters = new Dictionary<string, object>(parameters);
+            _matchSceneName = SceneManager.GetActiveScene().name ?? string.Empty;
+            _matchStartUtc = DateTime.UtcNow;
+            _networkLostDuringMatch = false;
+
             RecordEvent(UGSKeys.EventGameStarted, parameters);
         }
 
@@ -634,6 +825,7 @@ namespace CosmicShore.Core
                 return;
 
             _gameInProgress = false;
+            _matchStartParameters = null;
             var parameters = BuildGameParameters();
 
             // Wall-clock, pause included. Kept alongside flight_time_seconds because the
@@ -652,7 +844,11 @@ namespace CosmicShore.Core
 
             AddCompletionTimestamp(parameters);
 
-            if (TryResolveLocalWin(out bool won))
+            bool resolved = TryResolveLocalWin(out bool won);
+
+            AddBalanceFields(parameters, resolved ? won : (bool?)null);
+
+            if (resolved)
             {
                 parameters["player_won"] = won;
                 if (won)
@@ -710,6 +906,234 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
+        /// Balance (Froglet Analytics only): where the player finished and against which AI level. Each
+        /// field is left out when the game cannot say, never guessed. Reading a roster that is being torn
+        /// down must never cost the match its game_completed, so a failure here drops only these fields,
+        /// the same way <see cref="TryResolveLocalWin"/> drops player_won.
+        /// </summary>
+        void AddBalanceFields(IDictionary<string, object> parameters, bool? localWon)
+        {
+            try
+            {
+                if (TryCollectScores(out var scores, out int localIndex))
+                {
+                    parameters[UGSKeys.ParamPlayersInMatch] = scores.Count;
+                    if (MatchStanding.TryResolve(scores, localIndex, localWon, out var standing))
+                        standing.AddTo(parameters);
+                }
+
+                string aiDifficulty = ResolveOpponentAiDifficulty();
+                if (aiDifficulty != null)
+                    parameters[UGSKeys.ParamAiDifficulty] = aiDifficulty;
+            }
+            catch (Exception)
+            {
+                // Roster not readable at this moment - send the match without its balance fields.
+            }
+        }
+
+        /// <summary>
+        /// Every pilot's final score, best first, and the local player's row in it: the mode's ranked
+        /// <see cref="GameDataSO.Results"/> when it produced them, else the round stats, which every base
+        /// controller sorts best-first just before it ends the game. False when there are no rows.
+        /// <paramref name="localIndex"/> is -1 when the local player is not among them.
+        /// </summary>
+        bool TryCollectScores(out List<float> scores, out int localIndex)
+        {
+            scores = null;
+            localIndex = -1;
+            var local = _gameData.LocalPlayer;
+
+            var results = _gameData.Results;
+            if (results is { Count: > 0 })
+            {
+                scores = new List<float>(results.Count);
+                for (int i = 0; i < results.Count; i++)
+                {
+                    if (localIndex < 0 && local != null && results[i].Name == local.Name)
+                        localIndex = i;
+                    scores.Add(results[i].Score);
+                }
+                return true;
+            }
+
+            var stats = _gameData.RoundStatsList;
+            if (stats is not { Count: > 0 })
+                return false;
+
+            var localStats = _gameData.LocalRoundStats;
+            scores = new List<float>(stats.Count);
+            foreach (var row in stats)
+            {
+                if (!UnityLiveness.Alive(row))
+                    continue;
+                if (localIndex < 0 && (ReferenceEquals(row, localStats) || (local != null && row.Name == local.Name)))
+                    localIndex = scores.Count;
+                scores.Add(row.Score);
+            }
+
+            return scores.Count > 0;
+        }
+
+        /// <summary>
+        /// <c>ai_difficulty</c>: the level the AI OPPONENTS (AI on another domain than the local player's)
+        /// flew, or null when none opposed the player. Only the machine that seated the bots knows it - the
+        /// server stamps each pilot's level (<see cref="GameDataSO.AIDifficultyFor"/>), and the launch
+        /// panel writes the match's level on the launching machine only - so a guest in someone else's
+        /// match sends nothing rather than its own stale default.
+        /// </summary>
+        string ResolveOpponentAiDifficulty()
+        {
+            if (!IsMatchAuthority())
+                return null;
+
+            var local = _gameData.LocalPlayer;
+            var players = _gameData.Players;
+            if (players == null)
+                return null;
+
+            var levels = new List<AIDifficulty>();
+            foreach (var player in players)
+            {
+                if (!UnityLiveness.Alive(player) || !player.IsInitializedAsAI)
+                    continue;
+                if (local != null && player.Domain == local.Domain)
+                    continue;
+                levels.Add(_gameData.AIDifficultyFor(player));
+            }
+
+            return MatchStanding.AiDifficultyLabel(levels);
+        }
+
+        /// <summary>True on the host or server, and in a game with no network session at all.</summary>
+        static bool IsMatchAuthority()
+        {
+            var nm = NetworkManager.Singleton;
+            return nm == null || !nm.IsListening || nm.IsServer;
+        }
+
+        // ── match_abandoned ──
+
+        /// <summary>
+        /// A scene change is starting (SceneLoader raises false when it leaves a scene). Raised before the
+        /// loader resets the round data, so the score and flight time are still there to read.
+        /// </summary>
+        void HandleSceneTransition(bool entered)
+        {
+            if (!entered)
+                MaybeRecordMatchAbandoned(SceneExitReason());
+        }
+
+        /// <summary>
+        /// The backstop for routes that leave a match without the loader's transition (a guest's bounce
+        /// when its link to the host breaks, the host taking the party to the menu): the active scene
+        /// moved off the match's scene while the match was running.
+        /// </summary>
+        void HandleActiveSceneChanged(Scene previous, Scene next)
+        {
+            _activeSceneName = next.name ?? string.Empty;
+            if (_gameInProgress && !string.Equals(next.name, _matchSceneName, StringComparison.Ordinal))
+                MaybeRecordMatchAbandoned(SceneExitReason());
+        }
+
+        string SceneExitReason() =>
+            MatchAbandonReason.ForSceneExit(LinkDroppedThisMatch(), _networkLostDuringMatch);
+
+        /// <summary>The guest's bounce marks the remembered match dropped (MatchRejoin.MarkDropped) before it leaves.</summary>
+        bool LinkDroppedThisMatch() =>
+            MatchRejoin.TryLoad(out var record) && record.Dropped && record.droppedAtUtcTicks >= _matchStartUtc.Ticks;
+
+        /// <summary>
+        /// One match_abandoned for a match left before its end. It ends the match for analytics, so it
+        /// fires once at most and never together with game_completed (both clear _gameInProgress).
+        /// </summary>
+        void MaybeRecordMatchAbandoned(string reason)
+        {
+            if (!_gameInProgress)
+                return;
+
+            _gameInProgress = false;
+
+            var start = _matchStartParameters;
+            _matchStartParameters = null;
+            if (start == null)
+            {
+                start = BuildGameParameters();
+                AddMatchEnvelope(start);
+            }
+
+            float? flightSeconds = FlightClock.IsGameActive ? FlightClock.CurrentGameSeconds : (float?)null;
+
+            float? scoreAtQuit = null;
+            int? placementAtQuit = null;
+            string aiDifficulty = null;
+            try
+            {
+                var localStats = _gameData.LocalRoundStats;
+                if (localStats != null)
+                {
+                    scoreAtQuit = localStats.Score;
+                    placementAtQuit = PlacementAtQuit(localStats);
+                }
+
+                aiDifficulty = ResolveOpponentAiDifficulty();
+            }
+            catch (Exception)
+            {
+                // A roster mid-teardown: the abandon is still recorded, without these fields.
+            }
+
+            RecordEvent(UGSKeys.EventMatchAbandoned, BuildMatchAbandonedParameters(start,
+                Mathf.RoundToInt(Time.realtimeSinceStartup - _gameStartTime), flightSeconds, reason,
+                aiDifficulty, scoreAtQuit, placementAtQuit));
+        }
+
+        /// <summary>
+        /// The local player's rank by score at the moment of the quit, only where that means something:
+        /// a mode whose scoring rule ranks higher scores first, with some score already on the board.
+        /// A golf mode (finish times) scores nobody until they finish, so it sends nothing.
+        /// </summary>
+        int? PlacementAtQuit(IRoundStats localStats)
+        {
+            var rule = _gameData.ScoringRule;
+            if (rule == null || rule.GolfRules)
+                return null;
+
+            var scores = new List<float>();
+            foreach (var row in _gameData.RoundStatsList)
+                if (UnityLiveness.Alive(row))
+                    scores.Add(row.Score);
+
+            return MatchStanding.PlacementAmong(scores, localStats.Score);
+        }
+
+        /// <summary>
+        /// The <c>match_abandoned</c> payload (Docs/Analytics/EVENT_SCHEMA.json): game_started's fields
+        /// for the match (without player_ids, which only game_started carries), then how far it got.
+        /// </summary>
+        public static Dictionary<string, object> BuildMatchAbandonedParameters(
+            IDictionary<string, object> gameStartedParameters, int elapsedSeconds, float? flightTimeSeconds,
+            string reason, string aiDifficulty, float? scoreAtQuit, int? placementAtQuit)
+        {
+            var p = gameStartedParameters != null
+                ? new Dictionary<string, object>(gameStartedParameters)
+                : new Dictionary<string, object>();
+            p.Remove("player_ids");
+
+            p[UGSKeys.ParamElapsedSeconds] = Math.Max(0, elapsedSeconds);
+            if (flightTimeSeconds.HasValue)
+                p[UGSKeys.ParamFlightTimeSeconds] = flightTimeSeconds.Value;
+            p[UGSKeys.ParamReason] = string.IsNullOrEmpty(reason) ? MatchAbandonReason.QuitToMenu : reason;
+            if (aiDifficulty != null)
+                p[UGSKeys.ParamAiDifficulty] = aiDifficulty;
+            if (scoreAtQuit.HasValue)
+                p[UGSKeys.ParamScoreAtQuit] = scoreAtQuit.Value;
+            if (placementAtQuit.HasValue)
+                p[UGSKeys.ParamPlacementAtQuit] = placementAtQuit.Value;
+            return p;
+        }
+
+        /// <summary>
         /// Adds the identifiers that let us group players who played together, and separate
         /// organic rematches from re-invited ones.
         ///
@@ -721,6 +1145,9 @@ namespace CosmicShore.Core
         /// that dropped during scene load); deriving it from replicated state and sorting is
         /// deterministic on every peer. AI is excluded and counted separately.
         /// See Docs/Analytics/DATA_ARCHITECTURE.md §6.
+        ///
+        /// The same loop counts the match setup per domain from the local player's side
+        /// (<see cref="DomainComposition"/>); game_started only, game_completed joins back on match_id.
         /// </summary>
         void AddMatchEnvelope(IDictionary<string, object> parameters)
         {
@@ -730,6 +1157,12 @@ namespace CosmicShore.Core
 
             var humanIds = new List<string>();
             int aiCount = 0;
+
+            // The match setup from the LOCAL player's side: every pilot counted below (each AI, each
+            // human in player_ids) with its domain and whether an AI flies it. Only collected when
+            // there is a local player - see DomainComposition.
+            var local = _gameData.LocalPlayer;
+            var seats = local != null ? new List<(Domains Domain, bool IsAI)>() : null;
 
             var players = _gameData.Players;
             if (players != null)
@@ -742,19 +1175,26 @@ namespace CosmicShore.Core
                     if (player.IsInitializedAsAI)
                     {
                         aiCount++;
+                        seats?.Add((player.Domain, true));
                         continue;
                     }
 
                     string id = player.UgsPlayerId;
-                    if (!string.IsNullOrEmpty(id) && !humanIds.Contains(id))
-                        humanIds.Add(id);
+                    if (string.IsNullOrEmpty(id) || humanIds.Contains(id))
+                        continue;
+
+                    humanIds.Add(id);
+                    seats?.Add((player.Domain, false));
                 }
             }
 
             humanIds.Sort(StringComparer.Ordinal);
 
+            if (local != null)
+                DomainComposition.Count(local.Domain, seats).AddTo(parameters, local.Domain);
+
             // Comma-joined, not an array: UGS Analytics parameters accept only scalar values.
-            // The PostHog sink splits this back into a real array (commit 4).
+            // The Froglet Analytics sink splits this back into a real array (commit 4).
             parameters["player_ids"] = string.Join(",", humanIds);
             parameters["player_count_human"] = humanIds.Count;
             parameters["player_count_ai"] = aiCount;
@@ -763,7 +1203,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// Stamps the client's completion time in both forms: epoch milliseconds for
         /// arithmetic, ISO-8601 for day/week/month bucketing without a per-query conversion.
-        /// UGS and PostHog both stamp their own ingest time; this is the CLIENT time, which is
+        /// UGS and Froglet Analytics both stamp their own ingest time; this is the CLIENT time, which is
         /// what "timestamp at completion" means.
         /// </summary>
         static void AddCompletionTimestamp(IDictionary<string, object> parameters)
@@ -773,15 +1213,40 @@ namespace CosmicShore.Core
             parameters["timestamp_utc_iso"] = nowUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
         }
 
-        Dictionary<string, object> BuildGameParameters() => new()
+        Dictionary<string, object> BuildGameParameters()
         {
-            { "game_mode", _gameData.GameMode.ToString() },
-            { "intensity", _gameData.SelectedIntensity.Value },
-            { "vessel_class", _gameData.selectedVesselClass.Value.ToString() },
-            { "player_count", _gameData.SelectedPlayerCount.Value },
-            { "ai_count", _gameData.RequestedAIBackfillCount },
-            { "is_multiplayer", _gameData.IsMultiplayerMode }
-        };
+            var parameters = new Dictionary<string, object>
+            {
+                { "game_mode", _gameData.GameMode.ToString() },
+                { "intensity", _gameData.SelectedIntensity.Value },
+                { "vessel_class", _gameData.selectedVesselClass.Value.ToString() },
+                { "player_count", _gameData.SelectedPlayerCount.Value },
+                { "ai_count", _gameData.RequestedAIBackfillCount },
+                { "is_multiplayer", _gameData.IsMultiplayerMode }
+            };
+
+            // The match's element: the same answer the card's genre flower draws (the mode's row,
+            // else its preview's scoring metric). Froglet Analytics only - the UGS sink strips it.
+            if (ArcadeGridOrder.TryGenres(_gameData.GameMode, out var primary, out var secondary))
+                AddGenreElements(parameters, primary, secondary);
+
+            return parameters;
+        }
+
+        /// <summary>
+        /// Adds <c>element</c> and, for a two-element genre, <c>element_secondary</c>. A mode with
+        /// no genre (<see cref="Element.None"/>) gets neither key - absent, never an empty string or
+        /// "None", so a dashboard's element split has no fake bucket.
+        /// </summary>
+        public static void AddGenreElements(IDictionary<string, object> parameters, Element primary, Element secondary)
+        {
+            if (primary == Element.None)
+                return;
+
+            parameters[UGSKeys.ParamElement] = primary.ToString();
+            if (secondary != Element.None)
+                parameters[UGSKeys.ParamElementSecondary] = secondary.ToString();
+        }
 
         #endregion
 
@@ -791,25 +1256,70 @@ namespace CosmicShore.Core
         {
             if (paused)
             {
+                _session.EnterBackground(DateTime.UtcNow);
+                FlushHeldExceptions();
                 RecordSessionEnded("pause");
                 IdentifyPlayer();
                 Flush();
-                _postHogSink?.SaveQueue();
+                _frogletSink?.SaveQueue();
             }
             else
             {
                 // Resumed: the next pause/quit counts as a fresh session end.
                 _sessionEndRecorded = false;
+
+                // Back after more than 30 minutes away: a new session, and every fault may be sent again.
+                if (_session.ReturnToForeground(DateTime.UtcNow))
+                {
+                    _exceptions.Reset();
+                    MaybeRecordSessionStarted();
+                }
             }
         }
 
         void HandleAppQuitting()
         {
+            // A match still running when the app closes was left before its end.
+            MaybeRecordMatchAbandoned(MatchAbandonReason.AppQuit);
+            _session.EnterBackground(DateTime.UtcNow);
+            FlushHeldExceptions();
             RecordSessionEnded("quit");
             IdentifyPlayer();
             Flush();
-            _postHogSink?.SaveQueue();
+            _frogletSink?.SaveQueue();
         }
+
+        /// <summary>One session_started per session, once collection runs (consent and sign-in can come late).</summary>
+        void MaybeRecordSessionStarted()
+        {
+            if (!_collecting || _session.StartRecorded)
+                return;
+
+            _session.StartRecorded = true;
+            RecordEvent(UGSKeys.EventSessionStarted,
+                BuildSessionStartedParameters(_session.SessionId, _session.LaunchKind));
+        }
+
+        /// <summary>The <c>session_started</c> payload (Docs/Analytics/EVENT_SCHEMA.json).</summary>
+        public static Dictionary<string, object> BuildSessionStartedParameters(string sessionId, string launchKind) => new()
+        {
+            { UGSKeys.ParamSessionId, sessionId ?? string.Empty },
+            { UGSKeys.ParamLaunchKind, string.IsNullOrEmpty(launchKind) ? AnalyticsSessionClock.LaunchCold : launchKind }
+        };
+
+        /// <summary>
+        /// The <c>session_ended</c> payload. session_id and session_seconds (foreground seconds in the
+        /// session so far) are Froglet Analytics only: the UGS sink strips them.
+        /// </summary>
+        public static Dictionary<string, object> BuildSessionEndedParameters(string reason, string lastUiAction,
+            string appState, string sessionId, double sessionSeconds) => new()
+        {
+            { "reason", reason },
+            { "last_ui_action", lastUiAction ?? string.Empty },
+            { "app_state", appState ?? string.Empty },
+            { UGSKeys.ParamSessionId, sessionId ?? string.Empty },
+            { UGSKeys.ParamSessionSeconds, (int)Math.Round(Math.Max(0d, sessionSeconds)) }
+        };
 
         void RecordSessionEnded(string reason)
         {
@@ -817,12 +1327,9 @@ namespace CosmicShore.Core
                 return;
 
             _sessionEndRecorded = true;
-            RecordEvent(UGSKeys.EventSessionEnded, new Dictionary<string, object>
-            {
-                { "reason", reason },
-                { "last_ui_action", _lastUiAction },
-                { "app_state", _appStateVariable.Value.State.ToString() }
-            });
+            RecordEvent(UGSKeys.EventSessionEnded, BuildSessionEndedParameters(reason, _lastUiAction,
+                _appStateVariable.Value.State.ToString(), _session.SessionId,
+                _session.ForegroundSeconds(DateTime.UtcNow)));
 
             // Crystal balance at session end (hoarding vs. spending). PlayerDataService
             // is the sole holder of the balance; read it defensively.
@@ -967,12 +1474,102 @@ namespace CosmicShore.Core
         {
             bool isFirst = !_freestyleEnteredThisSession;
             _freestyleEnteredThisSession = true;
+
+            // A new stretch starts in the vessel the player just took. Re-subscribing here as well
+            // as in the constructor keeps the clock's handler alive whatever order the
+            // BeforeSceneLoad reset (FlightClock.Initialize clears its event) and this lazy
+            // singleton's construction ran in; a stretch can only end after it has begun.
+            SubscribeFreestyleClock();
+            string vessel = LocalVesselClassName() ?? UnknownVessel;
+            _freestyleVessels.Begin(vessel);
+
             RecordEvent(UGSKeys.EventFreestyleEntered, new Dictionary<string, object>
             {
                 { "is_first", isFirst },
-                { "seconds_since_launch", SecondsSinceLaunch }
+                { UGSKeys.ParamSecondsSinceLaunch, SecondsSinceLaunch },
+                { UGSKeys.ParamVesselClass, vessel }
             });
         }
+
+        void SubscribeFreestyleClock()
+        {
+            FlightClock.OnFreestyleSegmentCompleted -= HandleFreestyleSegmentCompleted;
+            FlightClock.OnFreestyleSegmentCompleted += HandleFreestyleSegmentCompleted;
+        }
+
+        /// <summary>
+        /// One <c>freestyle_ended</c> per stretch: FlightClock closes a freestyle segment when the
+        /// player leaves freestyle (back to the menu, into a game, out of Menu_Main) and on pause or
+        /// backgrounding. The next stretch, if the player keeps flying, starts in the vessel flown now.
+        /// </summary>
+        void HandleFreestyleSegmentCompleted(float seconds)
+        {
+            // The vessel can already be gone (Menu_Main tearing down banks its segment from
+            // OnDisable), so the stretch's own record of what was flown answers then.
+            string vessel = LocalVesselClassName() ?? _freestyleVessels.Current ?? UnknownVessel;
+            _freestyleVessels.Observe(vessel);
+
+            RecordEvent(UGSKeys.EventFreestyleEnded, BuildFreestyleEndedParameters(
+                seconds, vessel, _freestyleVessels.VesselsFlown, SecondsSinceLaunch));
+
+            _freestyleVessels.Begin(vessel);
+        }
+
+        /// <summary>
+        /// A vessel swap in Freestyle. The Toybox's Vessel Changer raises nothing of its own; every
+        /// swap re-initialises the local player's pair (<c>ClientPlayerVesselInitializer.ReInitializePair</c>
+        /// raises <see cref="GameDataSO.OnPlayerPairInitialized"/> on the host and on a client), so this
+        /// observes that and reports a change of the local hull's class while freestyle is flying.
+        /// </summary>
+        void HandlePlayerPairInitialized(ulong playerNetId)
+        {
+            if (!FlightClock.IsFreestyleActive)
+                return;
+
+            var local = _gameData.LocalPlayer;
+            if (local == null || local.PlayerNetId != playerNetId)
+                return;
+
+            string vessel = LocalVesselClassName();
+            if (vessel == null || !_freestyleVessels.TryChange(vessel, out string from))
+                return;
+
+            RecordEvent(UGSKeys.EventFreestyleVesselChanged, BuildFreestyleVesselChangedParameters(
+                vessel, from, FlightClock.CurrentFreestyleSeconds));
+        }
+
+        /// <summary>The <c>freestyle_ended</c> payload (Docs/Analytics/EVENT_SCHEMA.json).</summary>
+        public static Dictionary<string, object> BuildFreestyleEndedParameters(
+            float seconds, string vesselClass, int vesselsFlown, int secondsSinceLaunch) => new()
+        {
+            { UGSKeys.ParamSeconds, seconds },
+            { UGSKeys.ParamVesselClass, string.IsNullOrEmpty(vesselClass) ? UnknownVessel : vesselClass },
+            { UGSKeys.ParamVesselsFlown, Math.Max(1, vesselsFlown) },
+            { UGSKeys.ParamSecondsSinceLaunch, secondsSinceLaunch }
+        };
+
+        /// <summary>The <c>freestyle_vessel_changed</c> payload (Docs/Analytics/EVENT_SCHEMA.json).</summary>
+        public static Dictionary<string, object> BuildFreestyleVesselChangedParameters(
+            string vesselClass, string fromVesselClass, float secondsInFreestyle) => new()
+        {
+            { UGSKeys.ParamVesselClass, string.IsNullOrEmpty(vesselClass) ? UnknownVessel : vesselClass },
+            { UGSKeys.ParamFromVesselClass, string.IsNullOrEmpty(fromVesselClass) ? UnknownVessel : fromVesselClass },
+            { UGSKeys.ParamSecondsInFreestyle, secondsInFreestyle }
+        };
+
+        /// <summary>The local player's live hull class as its VesselClassType name, or null when there is none.</summary>
+        string LocalVesselClassName()
+        {
+            var vessel = _gameData.LocalPlayer?.Vessel;
+            if (!vessel.IsAlive())
+                return null;
+
+            var status = vessel.VesselStatus;
+            return status.IsAlive() ? status.VesselType.ToString() : null;
+        }
+
+        /// <summary>What a vessel field says when no hull can be read, like the other "unknown" fields.</summary>
+        const string UnknownVessel = "unknown";
 
         void HandleSettingChanged(string setting, object value) =>
             RecordEvent(UGSKeys.EventSettingChanged, new Dictionary<string, object>
@@ -981,6 +1578,17 @@ namespace CosmicShore.Core
                 { "value", value?.ToString() ?? string.Empty },
                 { "seconds_since_launch", SecondsSinceLaunch }
             });
+
+        // One named handler per GameSetting static event - see the subscription comment above.
+        void HandleMusicEnabledChanged(bool v) => HandleSettingChanged("music_enabled", v);
+        void HandleSfxEnabledChanged(bool v) => HandleSettingChanged("sfx_enabled", v);
+        void HandleHapticsEnabledChanged(bool v) => HandleSettingChanged("haptics_enabled", v);
+        void HandleInvertYChanged(bool v) => HandleSettingChanged("invert_y", v);
+        void HandleInvertThrottleChanged(bool v) => HandleSettingChanged("invert_throttle", v);
+        void HandleJoystickVisualsChanged(bool v) => HandleSettingChanged("joystick_visuals", v);
+        void HandleMusicLevelChanged(float v) => HandleSettingChanged("music_level", v);
+        void HandleSfxLevelChanged(float v) => HandleSettingChanged("sfx_level", v);
+        void HandleHapticsLevelChanged(float v) => HandleSettingChanged("haptics_level", v);
 
         void HandleFriendRequestSent(FriendData f) =>
             RecordEvent(UGSKeys.EventFriendRequestSent, new Dictionary<string, object>
@@ -1000,19 +1608,141 @@ namespace CosmicShore.Core
                 { "friend_id", f.PlayerId ?? string.Empty }
             });
 
+        // Invite attribution: both ends derive the same invite_id from sender, target and party session
+        // (InviteAttribution - the invite's wire line carries no id of its own).
         void HandlePartyInviteSent(PartyPlayerData p) =>
-            RecordEvent(UGSKeys.EventPartyInviteSent, new Dictionary<string, object>
-            {
-                { "target_id", p.PlayerId ?? string.Empty }
-            });
+            RecordEvent(UGSKeys.EventPartyInviteSent, BuildPartyInviteParameters("target_id", p.PlayerId,
+                InviteAttribution.InviteIdFor(LocalPartyPlayerId(), p.PlayerId, ActiveSessionId())));
 
-        void HandlePartyInviteReceived(PartyInviteData p) =>
-            RecordEvent(UGSKeys.EventPartyInviteReceived, new Dictionary<string, object>
-            {
-                { "host_id", p.HostPlayerId ?? string.Empty }
-            });
+        void HandlePartyInviteReceived(PartyInviteData p)
+        {
+            string inviteId = InviteAttribution.InviteIdFor(p.HostPlayerId, LocalPartyPlayerId(), p.PartySessionId);
+            _invites.RememberReceived(p.PartySessionId, inviteId, p.HostPlayerId);
+            RecordEvent(UGSKeys.EventPartyInviteReceived, BuildPartyInviteParameters("host_id", p.HostPlayerId, inviteId));
+        }
 
-        void HandlePartyJoined() => RecordEvent(UGSKeys.EventPartyJoined);
+        /// <summary>
+        /// party_joined names the invite that led to it when the party joined is one an invite named; a
+        /// join no remembered invite led to (a presence join, a rejoin) carries nothing, as before.
+        /// </summary>
+        void HandlePartyJoined()
+        {
+            var parameters = BuildPartyJoinedParameters(
+                _invites.TryTakeForJoin(ActiveSessionId(), out string inviteId, out string inviterId) ? inviteId : null,
+                inviterId);
+            RecordEvent(UGSKeys.EventPartyJoined, parameters.Count > 0 ? parameters : null);
+        }
+
+        /// <summary>party_invite_sent / party_invite_received: the other player's id, and the invite id when known.</summary>
+        public static Dictionary<string, object> BuildPartyInviteParameters(string idKey, string otherPlayerId, string inviteId)
+        {
+            var p = new Dictionary<string, object> { { idKey, otherPlayerId ?? string.Empty } };
+            if (!string.IsNullOrEmpty(inviteId))
+                p[UGSKeys.ParamInviteId] = inviteId;
+            return p;
+        }
+
+        /// <summary>party_joined: invite_id and inviter_id when an invite led to the join, else empty.</summary>
+        public static Dictionary<string, object> BuildPartyJoinedParameters(string inviteId, string inviterId)
+        {
+            var p = new Dictionary<string, object>();
+            if (string.IsNullOrEmpty(inviteId))
+                return p;
+
+            p[UGSKeys.ParamInviteId] = inviteId;
+            if (!string.IsNullOrEmpty(inviterId))
+                p[UGSKeys.ParamInviterId] = inviterId;
+            return p;
+        }
+
+        /// <summary>This player's id as the party layer writes it into an invite line (its UGS id).</summary>
+        string LocalPartyPlayerId() =>
+            _hostConnectionData != null && !string.IsNullOrEmpty(_hostConnectionData.LocalPlayerId)
+                ? _hostConnectionData.LocalPlayerId
+                : ResolveDistinctId();
+
+        /// <summary>The party session this machine is in (GameDataSO.ActiveSession is the party session's one field).</summary>
+        string ActiveSessionId()
+        {
+            try
+            {
+                return _gameData.ActiveSession?.Id;
+            }
+            catch (Exception)
+            {
+                return null; // a torn-down session object
+            }
+        }
+
+        // ── client_exception ──
+
+        /// <summary>
+        /// Application.logMessageReceivedThreaded: any thread. Reads the line (pure string work), keeps
+        /// its type, first project frame and message hash, and asks the main thread to send it after
+        /// the fold window. Never logs, never throws, never touches a UnityEngine.Object.
+        /// </summary>
+        void HandleLogMessageThreaded(string condition, string stackTrace, LogType type)
+        {
+            if (type != LogType.Exception && type != LogType.Error)
+                return;
+            if (!_captureExceptions || t_inAnalytics)
+                return;
+
+            t_inAnalytics = true;
+            try
+            {
+                bool isNew = _exceptions.Observe(
+                    ClientExceptionLog.ExceptionTypeOf(condition, type == LogType.Exception),
+                    ClientExceptionLog.TopFrameOf(stackTrace),
+                    _activeSceneName,
+                    ClientExceptionLog.MessageHashOf(condition));
+
+                if (isNew && _mainContext != null && Interlocked.CompareExchange(ref _exceptionFlushScheduled, 1, 0) == 0)
+                    _mainContext.Post(_ => FlushExceptionsAfterWindowAsync().Forget(), null);
+            }
+            catch (Exception)
+            {
+                // A fault while reading a fault is dropped: logging it would come straight back here.
+            }
+            finally
+            {
+                t_inAnalytics = false;
+            }
+        }
+
+        /// <summary>Main thread: waits out the fold window (real time, so a paused game still sends), then sends.</summary>
+        async UniTaskVoid FlushExceptionsAfterWindowAsync()
+        {
+            try
+            {
+                await UniTask.Delay(TimeSpan.FromSeconds(ExceptionFoldWindowSeconds), DelayType.Realtime);
+            }
+            finally
+            {
+                FlushHeldExceptions();
+            }
+        }
+
+        /// <summary>Main thread: sends every held fault with its count so far. Pause and quit call it too.</summary>
+        void FlushHeldExceptions()
+        {
+            // Re-arm first: a fault seen from here on starts a window of its own.
+            Interlocked.Exchange(ref _exceptionFlushScheduled, 0);
+
+            var held = _exceptions.TakeHeld();
+            foreach (var entry in held)
+                RecordEvent(UGSKeys.EventClientException, BuildClientExceptionParameters(entry));
+        }
+
+        /// <summary>The <c>client_exception</c> payload. No message text: only its hash.</summary>
+        public static Dictionary<string, object> BuildClientExceptionParameters(ClientExceptionLog.Entry entry) => new()
+        {
+            { UGSKeys.ParamExceptionType, string.IsNullOrEmpty(entry.ExceptionType) ? ClientExceptionLog.Unknown : entry.ExceptionType },
+            { UGSKeys.ParamTopFrame, string.IsNullOrEmpty(entry.TopFrame) ? ClientExceptionLog.Unknown : entry.TopFrame },
+            { UGSKeys.ParamScene, string.IsNullOrEmpty(entry.Scene) ? ClientExceptionLog.Unknown : entry.Scene },
+            { UGSKeys.ParamMessageHash, entry.MessageHash ?? string.Empty },
+            { UGSKeys.ParamCount, Math.Max(1, entry.Count) }
+        };
 
         void HandleFavoriteChanged(GameModes mode, bool favorited) =>
             RecordEvent(UGSKeys.EventMinigameFavorited, new Dictionary<string, object>
@@ -1086,6 +1816,123 @@ namespace CosmicShore.Core
         {
             if (_allowLog)
                 CSDebug.LogVerbose(CSLogChannel.CloudData, $"[Analytics] {message}");
+        }
+
+        /// <summary>
+        /// A match's setup from the LOCAL player's side, for game_started's <c>domain</c>,
+        /// <c>humans_on_my_domain</c>, <c>humans_on_other_domains</c>, <c>ai_on_my_domain</c> and
+        /// <c>ai_on_other_domains</c> (Shombith 2026-11-07: the Overview's split of solo, co-op,
+        /// competitive and teams vs AI, in multiplayer and solo alike). Froglet Analytics only - the
+        /// UGS sink strips all five.
+        ///
+        /// <para>The seats are the pilots <see cref="AddMatchEnvelope"/> already counts: every AI
+        /// (as in <c>player_count_ai</c>) and every human once by UGS id (as in <c>player_ids</c>), so
+        /// humans_on_my_domain + humans_on_other_domains = player_count_human and the two AI counts sum
+        /// to player_count_ai. The local player is one of those humans, so it is in humans_on_my_domain.
+        /// The fields are omitted when there is no local player: with no side to stand on, every
+        /// pilot would read as an opponent.</para>
+        ///
+        /// Pure counting on domains; no Unity calls, so the edit-mode tests drive it directly.
+        /// </summary>
+        public readonly struct DomainComposition
+        {
+            public readonly int HumansOnMyDomain;
+            public readonly int HumansOnOtherDomains;
+            public readonly int AiOnMyDomain;
+            public readonly int AiOnOtherDomains;
+
+            public DomainComposition(int humansOnMyDomain, int humansOnOtherDomains, int aiOnMyDomain, int aiOnOtherDomains)
+            {
+                HumansOnMyDomain = humansOnMyDomain;
+                HumansOnOtherDomains = humansOnOtherDomains;
+                AiOnMyDomain = aiOnMyDomain;
+                AiOnOtherDomains = aiOnOtherDomains;
+            }
+
+            /// <summary>Counts <paramref name="seats"/> (the local player's own seat included) against <paramref name="localDomain"/>.</summary>
+            public static DomainComposition Count(Domains localDomain, IEnumerable<(Domains Domain, bool IsAI)> seats)
+            {
+                int humansMine = 0, humansOther = 0, aiMine = 0, aiOther = 0;
+                if (seats != null)
+                {
+                    foreach (var (domain, isAI) in seats)
+                    {
+                        bool mine = domain == localDomain;
+                        if (isAI)
+                        {
+                            if (mine) aiMine++;
+                            else aiOther++;
+                        }
+                        else
+                        {
+                            if (mine) humansMine++;
+                            else humansOther++;
+                        }
+                    }
+                }
+
+                return new DomainComposition(humansMine, humansOther, aiMine, aiOther);
+            }
+
+            /// <summary>Writes the five game_started fields; <c>domain</c> is the Domains enum name.</summary>
+            public void AddTo(IDictionary<string, object> parameters, Domains localDomain)
+            {
+                parameters[UGSKeys.ParamDomain] = localDomain.ToString();
+                parameters[UGSKeys.ParamHumansOnMyDomain] = HumansOnMyDomain;
+                parameters[UGSKeys.ParamHumansOnOtherDomains] = HumansOnOtherDomains;
+                parameters[UGSKeys.ParamAiOnMyDomain] = AiOnMyDomain;
+                parameters[UGSKeys.ParamAiOnOtherDomains] = AiOnOtherDomains;
+            }
+        }
+
+        /// <summary>
+        /// The distinct vessels flown in one Freestyle (Toybox) stretch, for <c>freestyle_ended</c>'s
+        /// <c>vessels_flown</c> and <c>freestyle_vessel_changed</c>'s <c>from_vessel_class</c>.
+        /// Pure bookkeeping on vessel names; no Unity calls, so the edit-mode tests drive it directly.
+        /// </summary>
+        public sealed class FreestyleVesselLog
+        {
+            readonly HashSet<string> _flown = new(StringComparer.Ordinal);
+
+            /// <summary>The vessel flown now in this stretch, or null before the first one is seen.</summary>
+            public string Current { get; private set; }
+
+            /// <summary>Distinct vessels flown in this stretch; 1 when the player never switched.</summary>
+            public int VesselsFlown => Math.Max(1, _flown.Count);
+
+            /// <summary>Starts a stretch in <paramref name="vessel"/>, forgetting the last one.</summary>
+            public void Begin(string vessel)
+            {
+                _flown.Clear();
+                Current = null;
+                Observe(vessel);
+            }
+
+            /// <summary>Records <paramref name="vessel"/> as flown now, without calling it a change.</summary>
+            public void Observe(string vessel)
+            {
+                if (string.IsNullOrEmpty(vessel))
+                    return;
+
+                Current = vessel;
+                _flown.Add(vessel);
+            }
+
+            /// <summary>
+            /// True when <paramref name="vessel"/> differs from the vessel flown until now, with that
+            /// one in <paramref name="from"/>. A first sighting (nothing flown yet) and the same hull
+            /// again are not changes; both are still recorded.
+            /// </summary>
+            public bool TryChange(string vessel, out string from)
+            {
+                from = Current;
+                if (string.IsNullOrEmpty(vessel) || vessel == Current)
+                    return false;
+
+                bool changed = Current != null;
+                Observe(vessel);
+                return changed;
+            }
         }
     }
 }

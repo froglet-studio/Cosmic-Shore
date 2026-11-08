@@ -451,7 +451,7 @@ Three playtest findings, all of them cases where a change was *correct* and stil
 ### The Mass slot rendered black
 
 `DullCrystalColor` is authored **(0, 0, 0)** on Jade, Ruby and Gold in the live
-`OriginalColorSetSO`. §9 picked it on the reasoning that the icon should wear the colour the crystal
+`PhoticColorSetSO`. §9 picked it on the reasoning that the icon should wear the colour the crystal
 wears, and that reasoning was sound — the near-black body with a bright fresnel rim is exactly what
 makes a faceted domain crystal read as a dark gem. It is simply not a colour a UI element can be.
 

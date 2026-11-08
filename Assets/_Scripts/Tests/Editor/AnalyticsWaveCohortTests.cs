@@ -170,7 +170,7 @@ namespace CosmicShore.Tests
         //
         // IdentifyPlayer now fires on every cloud-profile change, not just at session
         // boundaries, so it drops payloads identical to the last one sent. That is a
-        // SILENT mechanism in both directions: too sensitive and it spends PostHog events
+        // SILENT mechanism in both directions: too sensitive and it spends analytics events
         // on no-op repaints, not sensitive enough and it swallows an update nobody will
         // ever notice is missing. These pin both edges.
 
