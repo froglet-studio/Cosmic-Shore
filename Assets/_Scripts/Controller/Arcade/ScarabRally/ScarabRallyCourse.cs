@@ -60,6 +60,28 @@ namespace CosmicShore.Gameplay
         /// <summary>Turn rate at <paramref name="speed"/>, deg/s - VesselTransformer's own formula.</summary>
         public static float TurnRateDegPerSec(float speed) => speed * RotationThrottleScaler + TurnScaler;
 
+        /// <summary>
+        /// The AI's juke (SCARABRALLY.md, the AI): flying on as it is, where does the hull cross the next mouth's plane?
+        /// If that is outside the mouth by no more than one juke, and the crossing is between
+        /// <paramref name="minSeconds"/> and <paramref name="maxSeconds"/> away (room for the dash, too late for the
+        /// steering at full throttle), juke toward the mouth's centre. Pure, so it is unit-tested.
+        /// </summary>
+        public static bool JukeShove(Vector3 position, Vector3 velocity, in RaceGate gate, float minSeconds,
+                                     float maxSeconds, float margin, out Vector3 shove)
+        {
+            shove = default;
+            float closing = Vector3.Dot(velocity, gate.Axis);
+            if (closing < 1f) return false;                                   // not flying through it
+            float t = Vector3.Dot(gate.Position - position, gate.Axis) / closing;
+            if (t < minSeconds || t > maxSeconds) return false;
+            Vector3 off = position + velocity * t - gate.Position;
+            off -= gate.Axis * Vector3.Dot(off, gate.Axis);
+            float miss = off.magnitude - Mathf.Max(0f, gate.Radius - margin);
+            if (miss <= 0f || miss > JukeOffset) return false;                // threads it already / a juke cannot fix it
+            shove = -off.normalized;
+            return true;
+        }
+
         /// <summary>The steady circle at <paramref name="speed"/>.</summary>
         public static float CornerRadiusAt(float speed) =>
             speed / (TurnRateDegPerSec(speed) * Mathf.Deg2Rad);
