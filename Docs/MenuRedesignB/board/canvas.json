@@ -2776,32 +2776,6 @@
       "x": 2100,
       "y": 9940
     },
-    "R45A.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "fleet-codex",
-      "title": "Rev 45 A - Tabs: Elements, Game Modes, Controls across the top; one element at a time; Mobile / PC / Controller as devic",
-      "w": 1920,
-      "x": 0,
-      "y": 0
-    },
-    "R45B.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "fleet-codex",
-      "title": "Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Control",
-      "w": 1920,
-      "x": 2100,
-      "y": 0
-    },
-    "R45Notes.dc.html": {
-      "h": 900,
-      "page": "fleet-codex",
-      "title": "Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes",
-      "w": 1920,
-      "x": 0,
-      "y": 1260
-    },
     "R46Cards.dc.html": {
       "h": 1080,
       "is_interactive": true,
@@ -2863,40 +2837,6 @@
       "w": 1920,
       "x": 4200,
       "y": 18620
-    },
-    "R48A.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "fleet-codex",
-      "title": "Rev 48 A - Marquee: the hull as a film still, five ability cards with every device's control on each card (recommended)",
-      "w": 1920,
-      "x": 0,
-      "y": 3460
-    },
-    "R48B.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "fleet-codex",
-      "title": "Rev 48 B - Bento: a fleet filmstrip on top, the vessel as a grid of tiles, one control map drawing all three devices tog",
-      "w": 1920,
-      "x": 2100,
-      "y": 3460
-    },
-    "R48C.dc.html": {
-      "h": 1080,
-      "page": "fleet-codex",
-      "title": "Rev 48 C - Ledger: the kit as one table, controller, PC and phone as columns of each ability row, the fleet as an index",
-      "w": 1920,
-      "x": 4200,
-      "y": 3460
-    },
-    "R48Notes.dc.html": {
-      "h": 900,
-      "page": "fleet-codex",
-      "title": "Rev 48 - notes: what changed from Rev 45, the recommendation, what the build reads",
-      "w": 1920,
-      "x": 0,
-      "y": 4720
     },
     "R49A.dc.html": {
       "h": 868,
@@ -3283,74 +3223,74 @@
     "R61C.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 61 C - On the pads - interactive",
       "w": 1920,
       "x": 0,
-      "y": 46224
+      "y": 560
     },
     "R61E.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 61 E - The map wall - interactive",
       "w": 1920,
       "x": 2100,
-      "y": 46224
+      "y": 560
     },
     "R62A.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 A - The pads (recommended) - interactive",
       "w": 1920,
       "x": 0,
-      "y": 48764
+      "y": 3100
     },
     "R62B.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 B - The map wall - interactive",
       "w": 1920,
       "x": 2100,
-      "y": 48764
+      "y": 3100
     },
     "R62C.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 C - Down the bay - interactive",
       "w": 1920,
       "x": 4200,
-      "y": 48764
+      "y": 3100
     },
     "R62D.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 D - The porthole row - interactive",
       "w": 1920,
       "x": 0,
-      "y": 50024
+      "y": 4360
     },
     "R62E.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 E - Across the bay - interactive",
       "w": 1920,
       "x": 2100,
-      "y": 50024
+      "y": 4360
     },
     "R62F.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 62 F - At a porthole - interactive",
       "w": 1920,
       "x": 4200,
-      "y": 50024
+      "y": 4360
     },
     "R63A.dc.html": {
       "h": 1080,
@@ -3387,11 +3327,184 @@
     "R64Live.dc.html": {
       "h": 1080,
       "is_interactive": true,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "title": "Rev 64 Live - Live scene (animated) - interactive",
       "w": 1920,
       "x": 0,
-      "y": 52564
+      "y": 6900
+    },
+    "R65Dashboards.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Dashboards - Dashboards (admins): pin saved queries into your own boards",
+      "w": 1920,
+      "x": 0,
+      "y": 7400
+    },
+    "R65Eras.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Eras - Eras: the plan chart - Old PostHog data, Pre-beta editor testing, the betas ahead - and the eras compared",
+      "w": 1920,
+      "x": 0,
+      "y": 6140
+    },
+    "R65Lifespans.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Lifespans - Cohorts: every player's lifespan as a Gantt, and return by cohort",
+      "w": 1920,
+      "x": 4200,
+      "y": 4880
+    },
+    "R65Notes.dc.html": {
+      "h": 900,
+      "page": "froglet-analytics",
+      "title": "Rev 65 - notes: what each board adds, what the server already answers, what is new",
+      "w": 1920,
+      "x": 0,
+      "y": 8660
+    },
+    "R65PlayTypes.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 PlayTypes - Solo vs AI, Solo, Multiplayer side by side, and the Play filter",
+      "w": 1920,
+      "x": 2100,
+      "y": 6140
+    },
+    "R65Players.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Players - Players: filter bar, sortable columns, each player's play mix and lifespan",
+      "w": 1920,
+      "x": 0,
+      "y": 4880
+    },
+    "R65Profile.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Profile - Player profile: charts, not lists (play-type donut, ranked modes and vessels, match timeline, crystals)",
+      "w": 1920,
+      "x": 2100,
+      "y": 4880
+    },
+    "R65Query.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 65 Query - Query Studio (admins): build a query, save it as a table, chart it",
+      "w": 1920,
+      "x": 4200,
+      "y": 6140
+    },
+    "R66Alerts.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Alerts - Alerts: Claude watches the numbers and raises a card with its chart and why; admins set thresholds",
+      "w": 1920,
+      "x": 4200,
+      "y": 11020
+    },
+    "R66Funnel.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Funnel - Funnel builder: any events in order, conversion and drop-off, split by any dimension",
+      "w": 1920,
+      "x": 0,
+      "y": 12280
+    },
+    "R66Live.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Live - Live now: who is online and in a match right now, the modes, the countries, the event ticker",
+      "w": 1920,
+      "x": 2100,
+      "y": 11020
+    },
+    "R66Notes.dc.html": {
+      "h": 900,
+      "page": "froglet-analytics",
+      "title": "Rev 66 - notes: what each idea adds, what the server has, what is new",
+      "w": 1920,
+      "x": 0,
+      "y": 13540
+    },
+    "R66PlayerCompare.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 PlayerCompare - Player compare: two or three players side by side, and players like this one",
+      "w": 1920,
+      "x": 4200,
+      "y": 12280
+    },
+    "R66Releases.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Releases - Release compare: build A against build B - finish rate, exceptions, launch time, retention",
+      "w": 1920,
+      "x": 2100,
+      "y": 12280
+    },
+    "R66Switches.dc.html": {
+      "h": 1080,
+      "page": "froglet-analytics",
+      "title": "Rev 66 Switches - Chart switches close up: one chart as Business, Marketing and Analysis set its form, measure and split",
+      "w": 1920,
+      "x": 0,
+      "y": 11020
+    },
+    "R67Ark.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "ark",
+      "title": "Rev 67 Ark - The Ark screen - Converter, Squads, Artifacts, Decor (live) - interactive",
+      "w": 1920,
+      "x": 0,
+      "y": 9440
+    },
+    "R68A.dc.html": {
+      "h": 2160,
+      "is_interactive": true,
+      "page": "fleet-codex",
+      "title": "Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one",
+      "w": 1920,
+      "x": 0,
+      "y": 0
+    },
+    "R68B.dc.html": {
+      "h": 2160,
+      "is_interactive": true,
+      "page": "fleet-codex",
+      "title": "Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own contro",
+      "w": 1920,
+      "x": 2100,
+      "y": 0
+    },
+    "R68C.dc.html": {
+      "h": 2160,
+      "is_interactive": true,
+      "page": "fleet-codex",
+      "title": "Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the c",
+      "w": 1920,
+      "x": 4200,
+      "y": 0
+    },
+    "R68D.dc.html": {
+      "h": 2160,
+      "is_interactive": true,
+      "page": "fleet-codex",
+      "title": "Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its contr",
+      "w": 1920,
+      "x": 0,
+      "y": 2340
+    },
+    "R68Notes.dc.html": {
+      "h": 900,
+      "page": "fleet-codex",
+      "title": "Rev 68 - notes: what Shombith asked, the four type pairings, what each look changes in the live codex",
+      "w": 1920,
+      "x": 0,
+      "y": 4680
     },
     "R6Arcade.dc.html": {
       "h": 1080,
@@ -3894,125 +4007,23 @@
       "x": 22820,
       "y": 86150
     },
-    "R65Players.dc.html": {
+    "R69Desktop.dc.html": {
       "x": 0,
-      "y": 4880,
+      "y": 6977,
       "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 65 Players - Players: filter bar, sortable columns, each player's play mix and lifespan"
+      "h": 3400,
+      "page": "fleet-codex",
+      "title": "Rev 69 Desktop - C's flight-deck window, then abilities with their numbers and level 5, missions with filters, flight and every control, docs and changes",
+      "is_interactive": true
     },
-    "R65Profile.dc.html": {
+    "R69Phone.dc.html": {
       "x": 2100,
-      "y": 4880,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 65 Profile - Player profile: charts, not lists (play-type donut, ranked modes and vessels, match timeline, crystals)"
-    },
-    "R65Lifespans.dc.html": {
-      "x": 4200,
-      "y": 4880,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 65 Lifespans - Cohorts: every player's lifespan as a Gantt, and return by cohort"
-    },
-    "R65Eras.dc.html": {
-      "x": 0,
-      "y": 6140,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 65 Eras - Eras: the plan chart - Old PostHog data, Pre-beta editor testing, the betas ahead - and the eras compared"
-    },
-    "R65PlayTypes.dc.html": {
-      "x": 2100,
-      "y": 6140,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 65 PlayTypes - Solo vs AI, Solo, Multiplayer side by side, and the Play filter"
-    },
-    "R65Query.dc.html": {
-      "x": 4200,
-      "y": 6140,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 65 Query - Query Studio (admins): build a query, save it as a table, chart it"
-    },
-    "R65Dashboards.dc.html": {
-      "x": 0,
-      "y": 7400,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 65 Dashboards - Dashboards (admins): pin saved queries into your own boards"
-    },
-    "R65Notes.dc.html": {
-      "x": 0,
-      "y": 8660,
-      "w": 1920,
-      "h": 900,
-      "page": "froglet-analytics",
-      "title": "Rev 65 - notes: what each board adds, what the server already answers, what is new"
-    },
-    "R66Switches.dc.html": {
-      "x": 0,
-      "y": 11020,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 66 Switches - Chart switches close up: one chart as Business, Marketing and Analysis set its form, measure and split"
-    },
-    "R66Live.dc.html": {
-      "x": 2100,
-      "y": 11020,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 66 Live - Live now: who is online and in a match right now, the modes, the countries, the event ticker"
-    },
-    "R66Alerts.dc.html": {
-      "x": 4200,
-      "y": 11020,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 66 Alerts - Alerts: Claude watches the numbers and raises a card with its chart and why; admins set thresholds"
-    },
-    "R66Funnel.dc.html": {
-      "x": 0,
-      "y": 12280,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 66 Funnel - Funnel builder: any events in order, conversion and drop-off, split by any dimension"
-    },
-    "R66Releases.dc.html": {
-      "x": 2100,
-      "y": 12280,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 66 Releases - Release compare: build A against build B - finish rate, exceptions, launch time, retention"
-    },
-    "R66PlayerCompare.dc.html": {
-      "x": 4200,
-      "y": 12280,
-      "w": 1920,
-      "h": 1080,
-      "page": "froglet-analytics",
-      "title": "Rev 66 PlayerCompare - Player compare: two or three players side by side, and players like this one"
-    },
-    "R66Notes.dc.html": {
-      "x": 0,
-      "y": 13540,
-      "w": 1920,
-      "h": 900,
-      "page": "froglet-analytics",
-      "title": "Rev 66 - notes: what each idea adds, what the server has, what is new"
+      "y": 6977,
+      "w": 390,
+      "h": 4040,
+      "page": "fleet-codex",
+      "title": "Rev 69 Phone - the same page at 390, the move under the ability row",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -4021,10 +4032,11 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "froglet-analytics",
+    "page": "fleet-codex",
     "view": "canvas"
   },
   "noteOrder": [
+    "rev69",
     "sec-rev34",
     "sec-rev35",
     "sec-rev36",
@@ -4075,8 +4087,6 @@
     "sec-rev46",
     "sec-rev47",
     "sec-rev49",
-    "sec-rev45",
-    "sec-rev48",
     "sec-hud_flow",
     "sec-hud_match",
     "sec-hud_vessels",
@@ -4134,6 +4144,8 @@
     "sec-rev64",
     "sec-rev65",
     "sec-rev66",
+    "sec-rev67",
+    "sec-rev68",
     "hud_end",
     "hud_flow",
     "hud_match",
@@ -4191,9 +4203,7 @@
     "rev38",
     "rev43",
     "rev44",
-    "rev45",
     "rev46",
-    "rev48",
     "rev49",
     "style-guide",
     "rev50",
@@ -4205,7 +4215,9 @@
     "rev63",
     "rev64",
     "rev65",
-    "rev66"
+    "rev66",
+    "rev67",
+    "rev68"
   ],
   "notes": {
     "hud_end": {
@@ -4701,15 +4713,6 @@
       "x": 0,
       "y": 9540
     },
-    "rev45": {
-      "kind": "title1",
-      "maxW": 6120,
-      "page": "fleet-codex",
-      "text": "Rev 45 - Fleet Codex - a vessel in tabs",
-      "w": 240,
-      "x": 0,
-      "y": -400
-    },
     "rev46": {
       "kind": "title1",
       "maxW": 6120,
@@ -4718,15 +4721,6 @@
       "w": 240,
       "x": 0,
       "y": 16960
-    },
-    "rev48": {
-      "kind": "title1",
-      "maxW": 6120,
-      "page": "fleet-codex",
-      "text": "Rev 48 - Fleet Codex, modern: one page, the kit with its controls, the omni crystal",
-      "w": 240,
-      "x": 0,
-      "y": 3060
     },
     "rev49": {
       "kind": "title1",
@@ -4796,20 +4790,20 @@
     "rev61": {
       "kind": "title1",
       "maxW": 6120,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "text": "Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)",
       "w": 240,
       "x": 0,
-      "y": 45824
+      "y": 160
     },
     "rev62": {
       "kind": "title1",
       "maxW": 6120,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "text": "Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels",
       "w": 240,
       "x": 0,
-      "y": 48364
+      "y": 2700
     },
     "rev63": {
       "kind": "title1",
@@ -4823,11 +4817,47 @@
     "rev64": {
       "kind": "title1",
       "maxW": 6120,
-      "page": "menu-redesign-c",
+      "page": "ark",
       "text": "Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup",
       "w": 240,
       "x": 0,
-      "y": 52164
+      "y": 6500
+    },
+    "rev65": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "froglet-analytics",
+      "text": "Rev 65 - Froglet Analytics, the full tool: filters, charts, cohorts, eras and admin queries",
+      "w": 240,
+      "x": 0,
+      "y": 4480
+    },
+    "rev66": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "froglet-analytics",
+      "text": "Rev 66 - Froglet Analytics, more ideas: chart switches, live now, alerts, funnels, release and player compare",
+      "w": 240,
+      "x": 0,
+      "y": 10620
+    },
+    "rev67": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "ark",
+      "text": "Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)",
+      "w": 240,
+      "x": 0,
+      "y": 9040
+    },
+    "rev68": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "fleet-codex",
+      "text": "Rev 68 - Fleet Codex for the website: four looks, each the whole fleet and one vessel window, the controls playing beside each ability",
+      "w": 240,
+      "x": 0,
+      "y": -400
     },
     "rev7": {
       "kind": "title1",
@@ -6089,21 +6119,6 @@
       "x": 6210,
       "y": 9380
     },
-    "sec-rev45": {
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-radius": "40px 40px 40px 40px",
-        "border-style": "solid",
-        "border-width": "3px 3px 3px 3px"
-      },
-      "h": 2880,
-      "kind": "rect",
-      "page": "fleet-codex",
-      "w": 6440,
-      "x": -160,
-      "y": -560
-    },
     "sec-rev46": {
       "css": {
         "background": "rgba(64, 120, 255, 0.06)",
@@ -6133,21 +6148,6 @@
       "w": 6440,
       "x": -160,
       "y": 21700
-    },
-    "sec-rev48": {
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-radius": "40px 40px 40px 40px",
-        "border-style": "solid",
-        "border-width": "3px 3px 3px 3px"
-      },
-      "h": 2880,
-      "kind": "rect",
-      "page": "fleet-codex",
-      "w": 6440,
-      "x": -160,
-      "y": 2900
     },
     "sec-rev49": {
       "css": {
@@ -6279,10 +6279,10 @@
       },
       "h": 1800,
       "kind": "rect",
-      "page": "menu-redesign-c",
+      "page": "ark",
       "w": 6440,
       "x": -160,
-      "y": 45664
+      "y": 0
     },
     "sec-rev62": {
       "css": {
@@ -6294,10 +6294,10 @@
       },
       "h": 3060,
       "kind": "rect",
-      "page": "menu-redesign-c",
+      "page": "ark",
       "w": 6440,
       "x": -160,
-      "y": 48204
+      "y": 2540
     },
     "sec-rev63": {
       "css": {
@@ -6311,8 +6311,8 @@
       "kind": "rect",
       "page": "phone",
       "w": 6440,
-      "x": -857,
-      "y": -534
+      "x": -256,
+      "y": -536
     },
     "sec-rev64": {
       "css": {
@@ -6324,10 +6324,70 @@
       },
       "h": 1800,
       "kind": "rect",
-      "page": "menu-redesign-c",
+      "page": "ark",
       "w": 6440,
       "x": -160,
-      "y": 52004
+      "y": 6340
+    },
+    "sec-rev65": {
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 5400,
+      "kind": "rect",
+      "page": "froglet-analytics",
+      "w": 6440,
+      "x": -160,
+      "y": 4320
+    },
+    "sec-rev66": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 4140,
+      "kind": "rect",
+      "page": "froglet-analytics",
+      "w": 6440,
+      "x": -160,
+      "y": 10460
+    },
+    "sec-rev67": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 1800,
+      "kind": "rect",
+      "page": "ark",
+      "w": 6440,
+      "x": -8139,
+      "y": 8871
+    },
+    "sec-rev68": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 6300,
+      "kind": "rect",
+      "page": "fleet-codex",
+      "w": 6440,
+      "x": -7225,
+      "y": -623
     },
     "sec-rev7": {
       "css": {
@@ -6483,53 +6543,14 @@
       "x": 0,
       "y": 0
     },
-    "rev65": {
+    "rev69": {
       "kind": "title1",
-      "text": "Rev 65 - Froglet Analytics, the full tool: filters, charts, cohorts, eras and admin queries",
+      "text": "Rev 69 - Fleet Codex vessel page, C in full: one vessel with every detail, calm - the desktop page and the phone",
       "x": 0,
-      "y": 4480,
+      "y": 6577,
       "w": 240,
       "maxW": 6120,
-      "page": "froglet-analytics"
-    },
-    "sec-rev65": {
-      "kind": "rect",
-      "x": -160,
-      "y": 4320,
-      "w": 6440,
-      "h": 5400,
-      "css": {
-        "background": "rgba(255, 92, 168, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(255, 92, 168, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "froglet-analytics"
-    },
-    "rev66": {
-      "kind": "title1",
-      "text": "Rev 66 - Froglet Analytics, more ideas: chart switches, live now, alerts, funnels, release and player compare",
-      "x": 0,
-      "y": 10620,
-      "w": 240,
-      "maxW": 6120,
-      "page": "froglet-analytics"
-    },
-    "sec-rev66": {
-      "kind": "rect",
-      "x": -160,
-      "y": 10460,
-      "w": 6440,
-      "h": 4140,
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "froglet-analytics"
+      "page": "fleet-codex"
     }
   },
   "order": [
@@ -6874,13 +6895,6 @@
     "R42B.dc.html",
     "R42C.dc.html",
     "R42Notes.dc.html",
-    "R45A.dc.html",
-    "R45B.dc.html",
-    "R45Notes.dc.html",
-    "R48A.dc.html",
-    "R48B.dc.html",
-    "R48C.dc.html",
-    "R48Notes.dc.html",
     "SGReadMe.dc.html",
     "SGColour.dc.html",
     "SGThemes.dc.html",
@@ -6900,10 +6914,21 @@
     "R58Docked.dc.html",
     "R58Narrow.dc.html",
     "R58Notes.dc.html",
-    "R63A.dc.html",
-    "R63B.dc.html",
-    "R63C.dc.html",
-    "R63Notes.dc.html",
+    "R65Players.dc.html",
+    "R65Profile.dc.html",
+    "R65Lifespans.dc.html",
+    "R65Eras.dc.html",
+    "R65PlayTypes.dc.html",
+    "R65Query.dc.html",
+    "R65Dashboards.dc.html",
+    "R65Notes.dc.html",
+    "R66Switches.dc.html",
+    "R66Live.dc.html",
+    "R66Alerts.dc.html",
+    "R66Funnel.dc.html",
+    "R66Releases.dc.html",
+    "R66PlayerCompare.dc.html",
+    "R66Notes.dc.html",
     "R43Compare.dc.html",
     "R43AVoyage.dc.html",
     "R43ACrew.dc.html",
@@ -6997,6 +7022,10 @@
     "R54C.dc.html",
     "R54D.dc.html",
     "R54Notes.dc.html",
+    "R63A.dc.html",
+    "R63B.dc.html",
+    "R63C.dc.html",
+    "R63Notes.dc.html",
     "R61C.dc.html",
     "R61E.dc.html",
     "R62A.dc.html",
@@ -7006,21 +7035,14 @@
     "R62E.dc.html",
     "R62F.dc.html",
     "R64Live.dc.html",
-    "R65Players.dc.html",
-    "R65Profile.dc.html",
-    "R65Lifespans.dc.html",
-    "R65Eras.dc.html",
-    "R65PlayTypes.dc.html",
-    "R65Query.dc.html",
-    "R65Dashboards.dc.html",
-    "R65Notes.dc.html",
-    "R66Switches.dc.html",
-    "R66Live.dc.html",
-    "R66Alerts.dc.html",
-    "R66Funnel.dc.html",
-    "R66Releases.dc.html",
-    "R66PlayerCompare.dc.html",
-    "R66Notes.dc.html"
+    "R67Ark.dc.html",
+    "R68A.dc.html",
+    "R68B.dc.html",
+    "R68C.dc.html",
+    "R68D.dc.html",
+    "R68Notes.dc.html",
+    "R69Desktop.dc.html",
+    "R69Phone.dc.html"
   ],
   "pages": [
     {
@@ -7054,6 +7076,10 @@
     {
       "id": "launch-console",
       "name": "Launch Console"
+    },
+    {
+      "id": "ark",
+      "name": "Ark"
     }
   ],
   "title": "Frogma"

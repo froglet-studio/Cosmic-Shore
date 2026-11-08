@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-06 from canvas version `1793993677-e49e` of **Frogma**: Rev 3 to Rev 66, 488 boards on 8 tabs. The canvas opens on the tab `froglet-analytics`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-08 from canvas version `1794138089-7edc` of **Frogma**: Rev 3 to Rev 69, 489 boards on 9 tabs. The canvas opens on the tab `fleet-codex`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -545,24 +545,6 @@ Copied on 2026-11-06 from canvas version `1793993677-e49e` of **Frogma**: Rev 3 
 
 ### Tab: Menu Redesign A  (`menu-redesign-c`)
 
-#### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
-
-- `R64Live.dc.html` (not copied yet) - Rev 64 Live - Live scene (animated) - interactive
-
-#### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
-
-- `R62A.dc.html` (not copied yet) - Rev 62 A - The pads (recommended) - interactive
-- `R62B.dc.html` (not copied yet) - Rev 62 B - The map wall - interactive
-- `R62C.dc.html` (not copied yet) - Rev 62 C - Down the bay - interactive
-- `R62D.dc.html` (not copied yet) - Rev 62 D - The porthole row - interactive
-- `R62E.dc.html` (not copied yet) - Rev 62 E - Across the bay - interactive
-- `R62F.dc.html` (not copied yet) - Rev 62 F - At a porthole - interactive
-
-#### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
-
-- `R61C.dc.html` (not copied yet) - Rev 61 C - On the pads - interactive
-- `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
-
 #### Rev 54 - Colour sets in the Profile, more modern: the set's world leads
 
 - [`R54Compare.dc.html`](R54Compare.dc.html) - Rev 54 - the three sets in the new scene drawn in depth, and the four ways to pick one
@@ -676,18 +658,18 @@ Copied on 2026-11-06 from canvas version `1793993677-e49e` of **Frogma**: Rev 3 
 
 ### Tab: Fleet Codex  (`fleet-codex`)
 
-#### Rev 48 - Fleet Codex, modern: one page, the kit with its controls, the omni crystal
+#### Rev 69 - Fleet Codex vessel page, C in full: one vessel with every detail, calm - the desktop page and the phone
 
-- [`R48A.dc.html`](R48A.dc.html) - Rev 48 A - Marquee: the hull as a film still, five ability cards with every device's control on each card (recommended) - interactive
-- [`R48B.dc.html`](R48B.dc.html) - Rev 48 B - Bento: a fleet filmstrip on top, the vessel as a grid of tiles, one control map drawing all three devices tog - interactive
-- [`R48C.dc.html`](R48C.dc.html) - Rev 48 C - Ledger: the kit as one table, controller, PC and phone as columns of each ability row, the fleet as an index
-- [`R48Notes.dc.html`](R48Notes.dc.html) - Rev 48 - notes: what changed from Rev 45, the recommendation, what the build reads
+- [`R69Desktop.dc.html`](R69Desktop.dc.html) - Rev 69 Desktop - C's flight-deck window, then abilities with their numbers and level 5, missions with filters, flight and every control, docs and changes - interactive
+- [`R69Phone.dc.html`](R69Phone.dc.html) - Rev 69 Phone - the same page at 390, the move under the ability row - interactive
 
-#### Rev 45 - Fleet Codex - a vessel in tabs
+#### Rev 68 - Fleet Codex for the website: four looks, each the whole fleet and one vessel window, the controls playing beside each ability
 
-- [`R45A.dc.html`](R45A.dc.html) - Rev 45 A - Tabs: Elements, Game Modes, Controls across the top; one element at a time; Mobile / PC / Controller as devic - interactive
-- [`R45B.dc.html`](R45B.dc.html) - Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Control - interactive
-- [`R45Notes.dc.html`](R45Notes.dc.html) - Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes
+- [`R68A.dc.html`](R68A.dc.html) - Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one - interactive
+- [`R68B.dc.html`](R68B.dc.html) - Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own contro - interactive
+- [`R68C.dc.html`](R68C.dc.html) - Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the c - interactive
+- [`R68D.dc.html`](R68D.dc.html) - Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its contr - interactive
+- [`R68Notes.dc.html`](R68Notes.dc.html) - Rev 68 - notes: what Shombith asked, the four type pairings, what each look changes in the live codex
 
 ### Tab: Froglet Analytics  (`froglet-analytics`)
 
@@ -736,5 +718,29 @@ Copied on 2026-11-06 from canvas version `1793993677-e49e` of **Frogma**: Rev 3 
 - `R58Docked.dc.html` (not copied yet) - Rev 58 Docked - Docked at a typical size: go/no-go header, the platform panel, quality gates, Needs a human - interactiv - interactive
 - `R58Narrow.dc.html` (not copied yet) - Rev 58 Narrow - Narrow, beside the Inspector: the same answers stacked - interactive
 - `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
+
+### Tab: Ark  (`ark`)
+
+#### Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)
+
+- `R67Ark.dc.html` (not copied yet) - Rev 67 Ark - The Ark screen - Converter, Squads, Artifacts, Decor (live) - interactive
+
+#### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
+
+- `R64Live.dc.html` (not copied yet) - Rev 64 Live - Live scene (animated) - interactive
+
+#### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
+
+- `R62A.dc.html` (not copied yet) - Rev 62 A - The pads (recommended) - interactive
+- `R62B.dc.html` (not copied yet) - Rev 62 B - The map wall - interactive
+- `R62C.dc.html` (not copied yet) - Rev 62 C - Down the bay - interactive
+- `R62D.dc.html` (not copied yet) - Rev 62 D - The porthole row - interactive
+- `R62E.dc.html` (not copied yet) - Rev 62 E - Across the bay - interactive
+- `R62F.dc.html` (not copied yet) - Rev 62 F - At a porthole - interactive
+
+#### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
+
+- `R61C.dc.html` (not copied yet) - Rev 61 C - On the pads - interactive
+- `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 <!-- frogma.py readme: end -->
