@@ -183,10 +183,11 @@ def occupancy(root, lanes, team, cfg, days, base, prs, merged_heads):
     """lane key -> [{branch, people, last, commits, subjects}] for every branch whose recent own work is about it."""
     skip = re.compile(cfg.get('ignore_subjects') or r'^$')
     prefixes = cfg.get('ignore_branches', [])
+    never = {n.lower() for n in cfg.get('non_occupants', {})}
     occ = collections.defaultdict(list)
     for branch, date, sha in remote_branches(root, days, base):
         if ignored_branch(branch, prefixes) or merged_heads.get(branch) == sha:
-            continue                                     # a bot's branch, or work already merged (by squash, say)
+            continue                                     # a bot's branch, or a head whose PR merged or was closed
         rows = [c for c in commits(root, f'origin/{branch}', days, base) if not skip.search(c['subject'])]
         if not rows:
             continue
@@ -208,6 +209,9 @@ def occupancy(root, lanes, team, cfg, days, base, prs, merged_heads):
         if pr and pr.get('person') and pr['person'] not in people:
             people.append(pr['person'])
         people += [w for w, _ in humans.most_common() if w not in people]
+        if people and all(p.lower() in never for p in people):
+            continue                                     # an intern's branch never holds a lane (lanes.json non_occupants)
+        people = [p for p in people if p.lower() not in never]
         for k, cs in per.items():
             cs.sort(key=lambda c: c['date'], reverse=True)
             occ[k].append({'branch': branch, 'people': people, 'last': cs[0]['date'][:10], 'commits': len(cs),
@@ -237,6 +241,12 @@ def landed(root, lanes, team, days, base, skip_rx):
     return last
 
 
+def superseded(occupant, landed_row):
+    """A branch whose last push about a lane is OLDER than the newest work that merged about it has been overtaken: the
+    lane moved on without it (claude/manta-icons, a 2026-11-01 draft, after #1805 and the 11-07 Manta cards landed)."""
+    return bool(landed_row) and landed_row['date'] > occupant['last']
+
+
 # --- GitHub (optional) --------------------------------------------------------------------------------------------
 
 def gh_json(args):
@@ -262,7 +272,8 @@ def repo_slug(root):
 
 def pull_requests(root, team):
     """Open PRs by head branch (their author is the person behind a Claude branch) and the head sha of every PR merged
-    recently (a squash-merged branch is never in bleeding-edge's history, but it is done)."""
+    recently or closed without merging (a squash-merged branch is never in bleeding-edge's history, and an abandoned
+    one never will be; both are done)."""
     slug = repo_slug(root)
     open_prs, merged = {}, {}
     for page in (1, 2):
@@ -275,10 +286,14 @@ def pull_requests(root, team):
             if not person and hasattr(team, 'by_email'):
                 person = next((p for e, p in team.by_email.items() if e.split('@')[0] == login.lower()), None)
             open_prs[p['head']['ref']] = {'number': p['number'], 'person': person or login}
-    rows = gh_json(['api', f'repos/{slug}/pulls?state=closed&sort=updated&direction=desc&per_page=100']) or []
-    for p in rows:
-        if p.get('merged_at'):
-            merged[p['head']['ref']] = p['head']['sha']
+    for page in (1, 2, 3):
+        rows = gh_json(['api', f'repos/{slug}/pulls?state=closed&sort=updated&direction=desc&per_page=100&page={page}'])
+        if not rows:
+            break
+        for p in rows:
+            # Merged, or closed without merging (abandoned: Shombith closed the phone-UI stack #1744 on 2026-11-06).
+            # Either way the work at that head is finished with and occupies nothing; a push after it does.
+            merged.setdefault(p['head']['ref'], p['head']['sha'])
     return open_prs, merged
 
 
@@ -431,6 +446,10 @@ def build(root, args):
     occ = occupancy(root, lanes, team, catalog, days, BASE, prs, merged)
     last = landed(root, lanes, team, catalog.get('landed_days', 14), BASE,
                   re.compile(catalog.get('ignore_subjects') or r'^$'))
+    for k in list(occ):
+        occ[k] = [o for o in occ[k] if not superseded(o, last.get(k))]
+        if not occ[k]:
+            del occ[k]
     found = assess(root, lanes, files, ticket_rows, bug_rows, l5, catalog.get('verdicts', {}))
     owners = {}
     for ln in lanes:
@@ -641,6 +660,10 @@ def self_test():
         last = landed(work, lanes, T(), 14, BASE, re.compile(cfg['ignore_subjects']))
         if (last.get('voyages') or {}).get('pr') != 9:
             bad.append(f'the merge that opened the Voyages lane was not found: {last}')
+        if occupancy(work, lanes, T(), dict(cfg, non_occupants={'Yash': 'test'}), 7, BASE, {}, {}):
+            bad.append('a non-occupant still held a lane')
+        if not superseded({'last': '2026-11-01'}, {'date': '2026-11-07'}) or superseded({'last': '2026-11-07'}, {'date': '2026-11-07'}):
+            bad.append('a draft older than the lane\'s newest merge still holds it, or a same-day push was dropped')
         tip = git('rev-parse', 'origin/Ys-bleeding-edge', cwd=work).strip()
         if occupancy(work, lanes, T(), cfg, 7, BASE, {}, {'Ys-bleeding-edge': tip}):
             bad.append('a branch whose head was merged (squash) still occupied a lane')

@@ -3,6 +3,9 @@
   "window_days": 7,
   "landed_days": 14,
   "ignore_branches": ["bugledger", "compute", "compute-queue", "perf-status", "launch-status", "ai", "ci-scratch/", "scratch/", "security/", "build/", "development", "main", "master", "gh-pages"],
+  "non_occupants": {
+    "dbrutus": "an intern (Garrett, 2026-11-08): their branches never occupy a lane; a fix of theirs goes to the lane's occupant to apply"
+  },
   "ignore_subjects": "^(chore\\((ai-learn|compute|perf|launch-status|bug-ledger|bugledger)\\)|Merge |merge:? )",
   "vessels": {
     "retired": ["Butterfly", "Termite", "Falcon"],
