@@ -462,7 +462,7 @@ namespace CosmicShore.UI
         /// <summary>The active squad as its seats: each one's vessel and pilot, through the authored seat line.</summary>
         string Squad(VoyageLines lines)
         {
-            var squad = VoyageRun.ActiveSquad(null);
+            var squad = VoyageRun.ActiveSquad((CosmicShore.Utility.GameDataSO)null);
             if (squad == null || string.IsNullOrEmpty(lines.CardSquadSeat)) return string.Empty;
             var catalog = PilotArtifactCatalogSO.Load();
             var seats = new List<string>();
