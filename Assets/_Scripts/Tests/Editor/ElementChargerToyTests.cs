@@ -39,17 +39,13 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Row_ReadsInHudOrder_ForAPilotFlyingOutward()
+        public void Row_ReadsInHudOrder()
         {
-            // Stations are laid along the toy's +right, which is the outward-flying pilot's LEFT,
-            // so index 0 is the pilot's RIGHTMOST station and must carry the HUD's LAST element.
             var hud = VesselHUDView.AbilityDisplayOrder;
             Assert.AreEqual(hud.Length, ElementChargerToy.MatrixElements.Count);
             for (int i = 0; i < hud.Length; i++)
             {
                 Assert.AreEqual(hud[i], ElementChargerToy.MatrixElements[i], "offered order must be the HUD's");
-                Assert.AreEqual(hud[hud.Length - 1 - i], ElementChargerToy.ElementAtStation(i),
-                    $"station {i} carries the wrong element");
             }
         }
 

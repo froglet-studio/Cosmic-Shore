@@ -12,11 +12,11 @@ nothing, --self-test proves the checks fire. It owns:
                                                     numbers): the headless depth harness and the edit-mode depth tests load
                                                     it (Tools/Build/voyage_depth_harness), so the asset and the tests can
                                                     never disagree about what ships
-  * Assets/_SO_Assets/Toys/Toy_Voyage.asset         the voyage harbour (the spec's "toy" block; no station, not in the Toy Box)
-  * Assets/Resources/Toybox.asset                   one line: the harbour on the toybox's list, so freestyle stands it (nothing else touched)
+  * Assets/Resources/Voyages/Voyage.asset           the voyage settings (the spec's "toy" block; VoyageToyDefinitionSO.Load)
+  * Assets/Resources/Toybox.asset                   one line kept OFF: voyages have their own scene, freestyle stands no harbour
 
-The asset's `cellPool` (which worlds the locations and lanes are) is the one hand-authored field: the generator
-keeps whatever the asset already holds there, so a designer can drag worlds in without the next run undoing it.
+The content asset's `cellPool` (which worlds the locations and lanes are) and the settings' `arkEscort` (the escort asset)
+are hand-authored: the generator keeps whatever the assets already hold there.
 
 The model (`to_model`) is built once from the spec with the C# field names, and both the YAML and the JSON are
 written from it, so the two outputs are one table.
@@ -46,7 +46,7 @@ OUT = OUT_DIR + "/VoyageContent.asset"
 TWIN = "Docs/Voyages/voyage_content.json"
 SO_CS = "Assets/_Scripts/ScriptableObjects/Voyages/VoyageContentSO.cs"
 TOY_CS = "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs"
-TOY = "Assets/_SO_Assets/Toys/Toy_Voyage.asset"
+TOY = "Assets/Resources/Voyages/Voyage.asset"
 TOYBOX = "Assets/Resources/Toybox.asset"
 ARKWAY_SETTINGS_META = "Assets/_SO_Assets/Toys/Wander_WithArk.asset.meta"
 ARK_ESCORT_META = "Assets/_SO_Assets/Toys/ArkEscort.asset.meta"
@@ -645,15 +645,12 @@ def meta_guid(rel):
 
 def emit_toy(spec):
     t = spec["toy"]
-    out = SO_HEADER.format(script=script_guid(TOY_CS), name="Toy_Voyage")
-    out += (f"  id: {t['id']}\n  displayName: {yaml_any(t['displayName'])}\n  description: {yaml_any(t['description'])}\n"
-            f"  unlockedByDefault: 1\n  placementAngleDegrees: {fnum(t['placementAngleDegrees'])}\n"
+    out = SO_HEADER.format(script=script_guid(TOY_CS), name="Voyage")
+    out += (f"  displayName: {yaml_any(t['displayName'])}\n  description: {yaml_any(t['description'])}\n"
             f"  accentColor: {color(t['accent'])}\n"
             f"  withArk: {{fileID: 11400000, guid: {meta_guid(ARKWAY_SETTINGS_META)}, type: 2}}\n"
             f"  content: {{fileID: 11400000, guid: {guid_for('VoyageContent.asset')}, type: 2}}\n")
-    # The Ark escort (ArkEscort.asset, its own hand-tuned SO) is wired here too: emitting the toy without it unwired it.
-    if os.path.exists(os.path.join(ROOT, ARK_ESCORT_META)):
-        out += f"  arkEscort: {{fileID: 11400000, guid: {meta_guid(ARK_ESCORT_META)}, type: 2}}\n"
+    out += current_ark_escort()
     out += f"  seedElementLevel: {fnum(t['seedElementLevel'])}\n  wingmateLeash: {fnum(t['wingmateLeash'])}\n"
     out += f"  findDistance: {fnum(t['findDistance'])}\n  vaultRadius: {fnum(t['vaultRadius'])}\n"
     out += f"  vaultPrisms: {int(t['vaultPrisms'])}\n  vaultPrismScale: {vec3(t['vaultPrismScale'])}\n"
@@ -664,14 +661,23 @@ def emit_toy(spec):
     return out
 
 
-def with_toy(toybox_text):
-    """The toybox asset with the Voyage toy on its list (appended once); everything else unchanged."""
-    entry = f"  - {{fileID: 11400000, guid: {guid_for('Toy_Voyage.asset')}, type: 2}}\n"
-    if entry in toybox_text:
-        return toybox_text
-    m = re.search(r"^  toys:\n(?:  - .*\n)*", toybox_text, re.M)
-    assert m, "Toybox.asset has no toys list"
-    return toybox_text[:m.end()] + entry + toybox_text[m.end():]
+def without_toy(toybox_text):
+    """The toybox asset with the voyage settings OFF its list (freestyle stands no harbour); everything else unchanged.
+    The guid is still the one the settings asset was first authored under, as Toy_Voyage."""
+    entry = "  - {fileID: 11400000, guid: " + guid_for("Toy_Voyage.asset") + ", type: 2}\n"
+    return toybox_text.replace(entry, "")
+
+
+ARK_ESCORT = re.compile(r"^  arkEscort: .*\n", re.M)
+
+
+def current_ark_escort():
+    full = os.path.join(ROOT, TOY)
+    if os.path.exists(full):
+        m = ARK_ESCORT.search(read(TOY))
+        if m:
+            return m.group(0)
+    return "  arkEscort: {fileID: 0}\n"
 
 
 def current_cell_pool():
@@ -692,7 +698,7 @@ def build(spec=None):
         TWIN: emit_twin(spec),
         TOY: emit_toy(spec),
         TOY + ".meta": ASSET_META.format(guid=guid_for("Toy_Voyage.asset")),
-        TOYBOX: with_toy(read(TOYBOX)),
+        TOYBOX: without_toy(read(TOYBOX)),
     }
 
 
@@ -776,10 +782,10 @@ def self_test():
     m = CELL_POOL.search(text)
     if not m or m.group(0) != pool:
         failures.append("the cell pool block is not kept as authored")
-    if with_toy(with_toy(read(TOYBOX))) != with_toy(read(TOYBOX)):
+    if without_toy(without_toy(read(TOYBOX))) != without_toy(read(TOYBOX)):
         failures.append("the toybox line is not idempotent")
-    if with_toy(read(TOYBOX)).count(guid_for("Toy_Voyage.asset")) != 1:
-        failures.append("the Voyage toy is not on the toybox list exactly once")
+    if without_toy(read(TOYBOX)).count(guid_for("Toy_Voyage.asset")) != 0:
+        failures.append("the voyage settings are still on the toybox list")
     if emit(spec, current_cell_pool()) != emit(spec, current_cell_pool()):
         failures.append("emit is not deterministic")
     # The twin is the model: every top-level C# field, enums as numbers, and it round-trips.

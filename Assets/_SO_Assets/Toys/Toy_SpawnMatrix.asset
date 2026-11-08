@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   id: spawn-matrix
   displayName: Spawn Matrix
-  description: The release bench. Fly through for the three kingdoms - Fauna, Flora,
+  description: The release bench: the three kingdoms - Fauna, Flora,
     Vessels. A kingdom opens its species row; a species opens its four elements; a
     variant spawns it live. A vessel releases an AI companion in your domain.
   unlockedByDefault: 1
