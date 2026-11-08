@@ -9,11 +9,14 @@ selftest.py -- the NCA Ecology Lab's Compute bridge, checked offline.
        that survives fails), push writes Running once then Done with the GIF, steer keeps an existing unit's id
     4. the job files: they validate under Froglet Compute's own rules, are on a declared plan, are not runnable
        (Compute is paused), their argv names files that exist, and what they resume from is relayed
-    5. with torch: the trainer is interrupted by SIGINT, exits 0 with a checkpoint, and resumes to the end
-    6. with torch: Froglet Compute's own worker (worker.command_session) runs the A1 job's argv on a tiny config,
+    5. Froglet Compute's own worker (worker.command_session) on the A4 job file with a synthetic score (no torch): the
+       person comes back part-way, only the unit's KEPT files reach a fresh folder (what another computer receives),
+       and a second session resumes from them and finishes
+    6. with torch: the trainer is interrupted by SIGINT, exits 0 with a checkpoint, and resumes to the end
+    7. with torch: Froglet Compute's own worker (worker.command_session) runs the A1 job's argv on a tiny config,
        is sent away by a fake "person came back", and a second session resumes and finishes the unit
 
-    python3 Tools/NCA/lab/selftest.py            # 1-4 always; 5-6 when torch imports
+    python3 Tools/NCA/lab/selftest.py            # 1-5 always; 6-7 when torch imports
 """
 from __future__ import annotations
 
@@ -237,6 +240,53 @@ def _worker_sessions(W, L, job):
     return f
 
 
+def worker_relay_stub(tmp):
+    """Froglet Compute's own command_session on the A4 job file, no torch (diamond_nca --stub): the person comes back
+    part-way, the unit's KEPT files alone are put in a fresh run folder (exactly what worker._pull_unit_files writes on
+    another computer), and a second session resumes from them and finishes."""
+    os.environ["FROGLET_COMPUTE_HOME"] = os.path.join(tmp, "home-relay")
+    import importlib
+    import compute_lib as L
+    importlib.reload(L)
+    import worker as W
+    importlib.reload(W)
+    job = json.load(open(os.path.join(REPO, "Docs", "Compute", "jobs", "nca-lab-diamond.json")))
+    c = job["command"]
+    c["units"][0]["args"]["config"] += " | generations 24 | stub_secs 0.15"
+    c["argv"] = [a for a in c["argv"] if a != "--require-gpu"] + ["--stub"]
+    real_sleep = time.sleep
+    time.sleep = lambda s: real_sleep(min(s, 0.5))
+    f = []
+    try:
+        out1 = W.command_session(job, REPO, "selftest", ("selftest", "a"), [], _Away(3), 30, 1, quiet=True)
+        folder = os.path.join(L.results_folder("selftest", "a"), "jobs", job["id"], out1["epoch"])
+        u1 = _read(os.path.join(folder, "unit-lab-a4.json")) or {}
+        if out1.get("stopped") != "the person came back" or out1.get("rc") != 0 or not 0 < u1.get("progress", 0) < 1:
+            f.append(f"relay: first session should stop part-way, exit 0 ({out1}, {u1})")
+        if "evals.json" not in u1.get("files", []):
+            f.append(f"relay: evals.json not kept ({u1.get('files')})")
+        run_dir = os.path.join(L.cache_dir(), "runs", job["id"], "lab-a4")
+        shutil.rmtree(run_dir)                                   # "another computer": only the kept files arrive
+        os.makedirs(run_dir)
+        for name in u1.get("files", []):
+            shutil.copy2(os.path.join(folder, "files", "lab-a4", name), run_dir)
+        cached = len(_read(os.path.join(run_dir, "evals.json")) or {})
+        out2 = W.command_session(job, REPO, "selftest", ("selftest", "a"), [], _Away(600), 30, 1, quiet=True)
+        u2 = _read(os.path.join(folder, "unit-lab-a4.json")) or {}
+        log = open(os.path.join(run_dir, "worker.log")).read()
+        if out2.get("stopped") != "finished" or not u2.get("done"):
+            f.append(f"relay: second session should finish ({out2}, {u2})")
+        if f'"resumed_with_cached_evals": {cached}' not in log:
+            f.append(f"relay: second session did not resume from the {cached} relayed evaluations")
+        res = _read(os.path.join(run_dir, "result.json")) or {}
+        print(f"  relay: session 1 stopped at {u1.get('progress', 0):.2f} with {cached} evaluations kept; session 2 "
+              f"{out2.get('stopped')} at {res.get('metrics', {}).get('evals')} evaluations, chosen "
+              f"{res.get('metrics', {}).get('channels')}x{res.get('metrics', {}).get('hidden')}, score {out2.get('best')}")
+    finally:
+        time.sleep = real_sleep
+    return f
+
+
 def _read(p):
     try:
         return json.load(open(p))
@@ -254,7 +304,8 @@ def main():
         steps = [("diamond optimizer (toy)", diamond_toy, ()),
                  ("diamond_nca resume (stub score)", diamond_resume, (os.path.join(tmp, "d"),)),
                  ("notion writeback + steer (dry)", notion_dry, (tmp,)),
-                 ("job files", job_files, ())]
+                 ("job files", job_files, ()),
+                 ("froglet compute worker: A4 interrupted, relayed, resumed (stub score)", worker_relay_stub, (tmp,))]
         if has_torch:
             steps += [("trainer interrupt + resume (torch, cpu)", trainer_interrupt, (tmp, py)),
                       ("froglet compute worker dry run (torch, cpu)", worker_dry_run, (tmp, py))]

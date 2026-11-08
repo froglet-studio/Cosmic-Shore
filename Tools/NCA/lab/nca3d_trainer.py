@@ -304,7 +304,7 @@ def _save_ckpt(out_dir, it, model, opt, sched, pool, rng, best_iou, history, cfg
 # Training                                                                    #
 # --------------------------------------------------------------------------- #
 def run(config: dict, resume: bool = False, device_pref: str = "auto", ckpt_every: int = 100,
-        threads: int = 0) -> dict:
+        threads: int = 0, install_signals: bool = True) -> dict:
     cfg = NCAConfig(**{**asdict(NCAConfig()), **(config or {})})
     os.makedirs(cfg.out_dir, exist_ok=True)
     if threads:
@@ -343,7 +343,8 @@ def run(config: dict, resume: bool = False, device_pref: str = "auto", ckpt_ever
         print(json.dumps({"resumed_at": start, "note": note}), flush=True)
 
     t0 = time.time() - (history[-1]["secs"] if history else 0.0)
-    _Stop.install()
+    if install_signals:          # diamond_nca installs one handler for itself and this
+        _Stop.install()
     status = dict(step=start, steps=cfg.iters, phase="training", device=device, best_iou=round(best_iou, 4),
                   loss=round(1.0 - best_iou, 4), note=note)
     _status(cfg.out_dir, **status)

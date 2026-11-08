@@ -115,7 +115,7 @@ Notion token in `.env` on Garrett's PC is the only thing between today and A1 ru
 `runner.py`, `jobs.py`, `notion_client.py` and `bootstrap.ps1` stay in Drive: they are the lab's, not Compute's.
 Nothing under `Tools/Compute/` changed.
 
-Checks (`python3 Tools/NCA/lab/selftest.py`; set `NCA_LAB_PYTHON` to an interpreter with torch for steps 5-6):
+Checks (`python3 Tools/NCA/lab/selftest.py`; set `NCA_LAB_PYTHON` to an interpreter with torch for steps 6-7):
 1. The diamond optimizer on its toy problem: it grows past 12 features, then compresses to exactly 12.
 2. `diamond_nca` with a synthetic score: a run stopped half way and resumed ends where an unbroken run ends, with no
    cached evaluation re-run. Negative control: clearing the cache fails it.
@@ -123,10 +123,19 @@ Checks (`python3 Tools/NCA/lab/selftest.py`; set `NCA_LAB_PYTHON` to an interpre
    fails); `push` writes Running once, then Done once with the GIF; `steer` keeps a unit's id.
 4. The job files validate under Compute's own rules, are on a declared plan, are not `ready`, name scripts that
    exist, require `cuda`, and keep every file they resume from.
-5. torch: the trainer, interrupted by SIGINT, exits 0 with a checkpoint and resumes to the end.
-6. torch: **Compute's own `worker.command_session`** runs the A1 job's argv (tiny config, CPU), is stopped by a fake
+5. **Compute's own `worker.command_session` on the A4 job file**, with a synthetic score and no torch. A fake
+   "person came back" stops session 1 part-way (exit 0, progress 0.29, 19 evaluations kept). Only the kept files are
+   copied into a fresh run folder, which is what another computer receives. Session 2 resumes from those 19
+   evaluations and finishes at 22. Negative control: with `evals.json` taken out of `keep`, it fails.
+6. torch: the trainer, interrupted by SIGINT, exits 0 with a checkpoint and resumes to the end.
+7. torch: **Compute's own `worker.command_session`** runs the A1 job's argv (tiny config, CPU), is stopped by a fake
    "person came back", then a second session resumes and finishes the unit with `result.json`, `growth.gif` and
    `model.pt` kept. No agent is installed, nothing is pushed, and `FROGLET_COMPUTE_HOME` is a temporary folder.
+
+**Not run yet: steps 6-7 and any real training.** The session that wrote this could not install torch: pytorch.org
+is blocked from its container, and PyPI gave about 235 KB/s against several GB of CUDA wheels. The first run on a
+machine with torch is `NCA_LAB_PYTHON=<python> python3 Tools/NCA/lab/selftest.py`, then A1 at full size on a GPU
+(`nca3d_trainer.py --config "<A1's Config>" --out runs/a1`). That run also gives the wall time A4's estimate needs.
 
 ## 8. Open questions (only Shombith can answer; nothing moves until he does)
 

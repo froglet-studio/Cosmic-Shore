@@ -44,11 +44,34 @@ import pareto_complexity as P  # noqa: E402
 
 DEFAULTS = dict(target="sphere", size=24, eval_iters=600, generations=30, children=4, patience=4, seed=0,
                 score="stability_iou", channels=8, hidden=32, max_channels=32, max_hidden=256, min_channels=5,
-                min_hidden=16, retain_fraction=0.98, complexity_budget=float("inf"))
+                min_hidden=16, retain_fraction=0.98, complexity_budget=float("inf"), stub_secs=0.0)
 
 
 class Interrupted(Exception):
     pass
+
+
+class _Stop:
+    """SIGINT / SIGTERM / SIGBREAK: stop at the next evaluation boundary and exit 0 (the trainer has its own, for the
+    evaluation in flight). Here so the stub needs no torch."""
+    requested = False
+
+    @classmethod
+    def install(cls, also=None):
+        """`also`: the trainer's own _Stop, so one signal stops both the evaluation in flight and the search."""
+        import signal
+
+        def handler(*_):
+            cls.requested = True
+            if also is not None:
+                also.requested = True
+        for name in ("SIGINT", "SIGTERM", "SIGBREAK"):
+            sig = getattr(signal, name, None)
+            if sig is not None:
+                try:
+                    signal.signal(sig, handler)
+                except (ValueError, OSError):
+                    pass
 
 
 def nca_params(c: int, h: int) -> int:
@@ -108,7 +131,12 @@ class NcaCapacity:
         if key in self.cache:
             r = self.cache[key]
             return r["score"], r["complexity"]
+        if _Stop.requested:
+            raise Interrupted(f"c{g[0]}_h{g[1]}")
         if self.stub:
+            time.sleep(float(self.cfg.get("stub_secs") or 0))     # a stand-in for the training's wall time (tests)
+            if _Stop.requested:
+                raise Interrupted(f"c{g[0]}_h{g[1]}")
             r = self._stub(g)
         else:
             r = self._train(g)
@@ -135,7 +163,7 @@ class NcaCapacity:
         params = {"target": self.cfg["target"], "size": int(self.cfg["size"]), "channels": c, "hidden": h,
                   "iters": int(self.cfg["eval_iters"]), "seed": int(self.cfg["seed"]), "out_dir": run_dir}
         res = T.run(params, resume=os.path.isfile(os.path.join(run_dir, "ckpt.pt")), device_pref=self.device,
-                    threads=self.threads)
+                    threads=self.threads, install_signals=False)
         if res.get("interrupted"):
             raise Interrupted(f"c{c}_h{h}")
         m, gif = res["metrics"], res["artifacts"].get("gif")
@@ -171,10 +199,14 @@ def _write(path, data):
 
 def search(cfg: dict, out_dir: str, stub=False, device="auto", threads=0) -> dict:
     os.makedirs(out_dir, exist_ok=True)
-    if not stub:
+    if stub:
+        _Stop.install()
+    else:
         import nca3d_trainer as T
-        T._Stop.install()
+        _Stop.install(also=T._Stop)
     problem = NcaCapacity(cfg, out_dir, stub=stub, device=device, threads=threads)
+    if problem.cache:
+        print(json.dumps({"resumed_with_cached_evals": len(problem.cache)}), flush=True)
     dc = P.DiamondConfig(generations=int(cfg["generations"]), children=int(cfg["children"]),
                          patience=int(cfg["patience"]), seed=int(cfg["seed"]),
                          retain_fraction=float(cfg["retain_fraction"]),
