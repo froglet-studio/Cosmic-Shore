@@ -12,6 +12,8 @@ This file holds only the rules every session needs. Everything else moved verbat
 
 - [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **Froglet Tasks, the team's hand-off tickets** - tests, playtests, setup, content and decisions one collaborator's session leaves for another: GitHub issues labelled `team-task`, read on the Froglet Tasks page, written only through the `/team-tasks` skill (`Tools/Build/team_tasks.py`). Tickets are nobody's until someone takes one.
   Sections: a pointer to the tickets (the board moved to GitHub Issues)
+- [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels and app-shell sections are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the tickets, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`).
+  Sections: Run it; How occupancy is read; Answer the person; Polished or rough is a person's call; Adding or fixing a lane
 - [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
   Sections: The people; The rules for every session; What happened without this; The map (generated); Decisions about our tools
 - [`Docs/TOOLING_DECISIONS.md`](Docs/TOOLING_DECISIONS.md): **DECIDED 2026-10-19 (§6)**: Amoebius stays (Shombith drives it), the Vessel Studio is an artifact and not part of the engine, no single unifying tool. The evidence, options and recommendation that led there. Volunteered feedback: `Docs/TOOLING_FEEDBACK.md`.
@@ -126,6 +128,10 @@ Cosmic Shore is built by **Garrett, Caleb, Shombith and Yash** (the core four) p
 all of it goes through Claude sessions, so git rarely says which person drove a change. On 2026-10-13 one merge
 needed about 110 conflict fixes because work had been done twice: the Stoat in two places, enum value 14 taken twice,
 the engine renamed twice, retired tools brought back. **Every session:**
+- **Find your lane: `/swimlanes`** (Garrett, 2026-11-08). A lane is a vessel or an app-shell section (the Thresher,
+  the Voyages map), not a task. It shows the open lanes with obvious work first, the OCCUPIED ones (unmerged work
+  pushed in the last 7 days: who, which branch), then the ones that need polish. Occupied is the heads-up: tell the
+  person and take another lane or talk to the occupant. Work that merged earlier is context, not a block. `Docs/TEAM.md` rule 12.
 - **Look before you touch.** Run `git fetch origin`, then `python3 Tools/Build/who_works_where.py query <the paths you
   will change>` (about 10 s). It shows who has unmerged work in flight there and who landed what.
 - **Say who else works there**, in a line or two. Read their branch, docs and skill, and build on them.
