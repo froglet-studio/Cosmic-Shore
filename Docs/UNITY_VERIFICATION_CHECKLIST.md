@@ -21381,6 +21381,10 @@ Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `
    queries (correct, but the speed-up is lost): send it.
 
 ## 🔴 Voyage window: four tabs, the HyperSea map left, the open voyage card (Rev 49 C) (2026-11-02, Shombith, NOT RUN IN EDITOR)
+> **Superseded in part (2026-11-08):** the open voyage card, `VoyageRoutePoster`, the pager and the cycling crew settings
+> were replaced by the Rev 74 C3 column, and Quests became its own window. Test those with the entry "The Voyages tab as
+> Rev 74 C3, and the Quests window" below; the tab, LB / RB, map, Saga, Set sail and gamepad lines here still apply.
+
 `VoyageWindowTabs`, `HubShoulders`, `VoyageOpenCard`, `VoyageRoutePoster`, `VoyageCardRules` (new), `VoyageJobsView`, `MissionView.prefab` (by `author_voyage_window.py`), `VoyageLines` (+ `VoyageContent.asset`); `VoyageWindowModals` retired. Record: `Docs/MENU_REDESIGN_B.md` section 119. Ran here: `unity_refcompile` player and editor, `gates.sh` ALL OK, the generators' `--check` / `--self-test`, and `VoyageCardRulesTests` outside Unity. No Unity editor ran, so nothing below was seen.
 - [ ] The project compiles in the editor; `VoyageCardRulesTests` pass.
 - [ ] Menu_Main > Voyage: the window opens on VOYAGES; the tabs read VOYAGES | SAGA | QUESTS | EPISODES, Episodes locked and "Coming soon".
@@ -22056,6 +22060,32 @@ from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
 3. **Turn `aiSeekRails` off** on the scene's SkeinController for one race as the control: the AI should go back to
    flying at the rings and missing the pinned ones.
 4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).
+
+## 🔴 The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 151. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code; the rest are packages the cloud cannot fetch). No Unity editor was open, so the
+`unity` CLI and the EditMode tests have not run in Unity. `VoyageCardRulesTests`' pure tests ran outside Unity;
+`Cover_CropsToTheFramesShape_Centred` needs a real `Texture2D` and has not run.
+
+1. **Run the EditMode tests** `VoyageCardRulesTests` and `VoyageShellTests`.
+2. **Open the Voyage window** from Home. It shows three tabs, Voyages, Saga and Episodes (locked), on LB / RB. Voyages
+   opens first, with the HyperSea map on the whole galaxy and the edge view under it.
+3. **The coverflow**: the voyages, with the Ark escort first, are muted place cards. The picked one faces front, and its
+   neighbours turn away and fade. Pressing a card, or moving onto it with the D-pad, picks it in one ease. The cards are
+   not blue: the colour is a quiet grey-violet with a light diamond at the centre.
+4. **One press picks**: press a hull under the flow. The vessel strip opens over the column, and one press picks and
+   saves. In Ark crew, each seat's vessel, pilot, element (the Codex's shapes) and artifact open a strip the same way,
+   and Save squad keeps the draft. Changing the domain chip changes the draft only. Change a seat without saving, close
+   the window and reopen it: the change is gone. With a friend in the squad, Save squad reaches them (their Ark shows
+   the change after its refresh), as a save in the Ark does.
+5. **Story**: the beats step with < > and the dots. **Underway**: send a voyage out, reopen the window, and the column
+   shows the place, the underway line and a dark "Set sail - after this voyage".
+6. **The Quests window**: on Home, press the quest card. The Quests window opens (not the Voyage window), titled
+   Quests, with Episode 1 (the quest tracker as before) and Episode 2 (locked) on LB / RB. Gamepad B and Back close it,
+   and the card's claim line reads "Ready to claim in Quests".
+7. **Console**: no new errors or warnings on Menu_Main load. A warning naming `Resources/Voyages/QuestsView` means the
+   prefab did not import.
 
 ## 🔴 Voyages: escort AI no longer steers by a destroyed hull after a pilot swap (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
