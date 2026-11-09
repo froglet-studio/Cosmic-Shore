@@ -118,6 +118,7 @@ namespace CosmicShore.Gameplay
         public Trail() { }
         public Trail(bool isLoop) { }
         public void Add(Prism p) { }
+        public List<Prism> TrailList { get; } = new();
     }
 
     /// <summary>Lay-path stand-in. Unreachable from the harness; loud if that ever changes.</summary>
@@ -252,6 +253,8 @@ namespace CosmicShore.Gameplay
 
         public IReadOnlyList<PrismLay> CachedLays => _cachedLays;
         public IReadOnlyList<FloraPlantingSite> PlantingSites => _plantingSites;
+        /// <summary>Mirrors the real base: true when the environment sows planting sites (SpawnableRegattaRails).</summary>
+        public virtual bool PreparesPlantingSites => false;
 
         protected override SpawnTrailData[] GenerateTrailData()
         {

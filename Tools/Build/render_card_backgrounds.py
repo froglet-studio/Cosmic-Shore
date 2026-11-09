@@ -105,6 +105,11 @@ SOURCES = [
     f"{_MG}/SpawnableSpherene.cs",
     f"{_AR}/Skein/SkeinCourse.cs",
     f"{_AR}/Regatta/RegattaCourse.cs",
+    # SpawnableRegattaRails reads these since the Regatta lifeform-site / corridor work (f7231d035c); without them the
+    # whole harness (card art, the layout bake, the clip audit) stopped compiling.
+    f"{_AR}/Regatta/RegattaCourseFeatures.cs",
+    f"{_AR}/Regatta/RegattaLifeformSites.cs",
+    f"{_SP}/ICellFaunaCorridorSource.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
     f"{_AR}/Headlong/HeadlongCircuit.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",
