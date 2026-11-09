@@ -6663,3 +6663,18 @@ top upright as on PC, so it glides with the rest (`author_menu_portrait.py` SCEN
 
 Affects: the FTUE quest graph (Shombith and Caleb). It reads and claims through the same service and frontier as
 the Profile's track and Home's card; nothing about the graph changed.
+
+**Fixed after the first look in the editor (2026-11-09, Shombith's screenshots):** the Voyages tab's column ran but
+was broken.
+- **Buttons were 0 px high.** Every button in a row (the squad presets, the three hulls, Ark crew, Story, the strip's
+  Back) was invisible. The rows sized their children's height without stretching them, and a button has no height of
+  its own. Rows now stretch their children.
+- **Set sail is the column's own Lime button**, full width beside Ark crew and Story. It was a copy of the old card's
+  keycap and kept that keycap's small size.
+- **The voyage's title** shows under the kicker.
+- **The views fit the column** (about 750 px on a 1080p canvas): a shorter flow, hull row, seat rows and story panel.
+- **The card faces were near black.** The muted open sea is dark around most places. `VoyagePlaceArt` now spreads
+  each face's tones across a grey range (`Floor` 34 to `Ceiling` 150), in float, and rounds once, so it has no
+  banding. `VoyageMapGraphic.Sea` is private again; the art reads `HyperSea.SeaColor` directly.
+- **The Quests window opened on quest 1** for a player with four claimed: progress loads after the window is built.
+  The pick now follows the frontier until the player picks a card.

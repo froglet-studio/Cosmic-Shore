@@ -104,6 +104,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void PlaceArt_Spread_LiftsDarkWaterIntoTheRange_KeepingEachTexelsTint()
+        {
+            // Two near-black texels of thin open sea, one slightly bluer: the darker lands on the floor, the lighter on
+            // the ceiling, and the blue one stays bluer than it is red.
+            var px = new[] { new Color32(10, 10, 12, 255), new Color32(14, 16, 30, 255) };
+            VoyagePlaceArt.Spread(px, 34, 150);
+            float Luma(Color32 c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+            Assert.AreEqual(34f, Luma(px[0]), 1.5f, "the darkest texel sits on the floor");
+            Assert.AreEqual(150f, Luma(px[1]), 1.5f, "the brightest on the ceiling");
+            Assert.Greater(px[1].b, px[1].r, "a texel keeps its tint");
+            Assert.AreEqual(255, px[1].a);
+            var flat = new[] { new Color32(5, 5, 5, 255), new Color32(5, 5, 5, 255) };
+            VoyagePlaceArt.Spread(flat, 34, 150);
+            Assert.AreEqual(92f, Luma(flat[0]), 1.5f, "a flat picture is lifted to the middle of the range");
+        }
+
+        [Test]
         public void SpriteCover_StaysInsideTheSpritesOwnRect_InAnAtlas()
         {
             // A 200 x 100 sprite in the top-right of a 400 x 400 atlas, shown on a square card.

@@ -630,7 +630,7 @@ namespace CosmicShore.UI
 
         /// <summary>The water's colour at column density <paramref name="n"/> (the colour key the map paints with); the
         /// open voyage's place cards paint their close-ups with it too (<see cref="VoyagePlaceArt"/>).</summary>
-        internal static Color32 Sea(double n, byte alpha)
+        static Color32 Sea(double n, byte alpha)
         {
             var (r, g, b) = HyperSea.SeaColor(n);
             return new Color32((byte)r, (byte)g, (byte)b, alpha);

@@ -81,6 +81,9 @@ namespace CosmicShore.UI
         Button _cta;
         bool _built;
         int _picked = -1;
+        // The pick follows the frontier until the player picks a card: progress loads after the window is built, so the
+        // first frontier read can be quest 1 for a player with four claimed (seen 2026-11-09).
+        bool _chosen;
         ModalWindowManager _window;
         ScreenSwitcher _switcher;
         GameModeProgressionService _service;
@@ -92,8 +95,7 @@ namespace CosmicShore.UI
             _window = GetComponentInParent<ModalWindowManager>(true);
             if (_window) _window.OnModalOpened += Opened;
             Subscribe();
-            _picked = -1;
-            Refresh();
+            FollowFrontier();
         }
 
         void OnDisable()
@@ -108,6 +110,12 @@ namespace CosmicShore.UI
         void Opened()
         {
             Subscribe();
+            FollowFrontier();
+        }
+
+        void FollowFrontier()
+        {
+            _chosen = false;
             _picked = -1;
             Refresh();
         }
@@ -121,7 +129,11 @@ namespace CosmicShore.UI
             if (_service != null) _service.OnProgressionChanged += Changed;
         }
 
-        void Changed(GameModeProgressionData _) => Refresh();
+        void Changed(GameModeProgressionData _)
+        {
+            if (!_chosen) _picked = -1;
+            Refresh();
+        }
 
         int Count => questList && questList.Quests != null ? questList.Quests.Count : 0;
 
@@ -135,6 +147,7 @@ namespace CosmicShore.UI
         public void Refresh()
         {
             if (!_built) Build();
+            if (isActiveAndEnabled) Subscribe();
             int count = Count;
             if (_picked < 0 || _picked >= count) _picked = QuestFrontier.FrontierIndex(questList, GameModeProgressionService.Instance);
 
@@ -209,6 +222,7 @@ namespace CosmicShore.UI
         void Pick(int index)
         {
             if (index == _picked || index < 0 || index >= Count) return;
+            _chosen = true;
             _picked = index;
             Refresh();
         }
@@ -223,8 +237,7 @@ namespace CosmicShore.UI
                 case QuestItemState.ReadyToClaim:
                     // The service raises OnProgressionChanged, which redraws; the pick moves on to the next quest.
                     GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(quest.GameMode);
-                    _picked = -1;
-                    Refresh();
+                    FollowFrontier();
                     break;
                 case QuestItemState.Unlocked:
                     if (!_switcher) _switcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);

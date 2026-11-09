@@ -75,7 +75,8 @@ namespace CosmicShore.UI
         static readonly Element[] Elements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
         static readonly Domains[] DomainOrder = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
-        const float FlowHeight = 360f, CardWidth = 340f, CardHeight = 300f;
+        // Sized so the voyage view fits the window's right column (about 640 px on a 1080p canvas, seen 2026-11-09).
+        const float FlowHeight = 300f, CardWidth = 320f, CardHeight = 270f;
 
         /// <summary>A card on the coverflow was picked (by a press, or the D-pad's selection landing on it).</summary>
         public event Action<int> Pick;
@@ -101,7 +102,7 @@ namespace CosmicShore.UI
         GameObject _l0, _l1, _l2, _l3;
         RectTransform _flow;
         readonly List<VoyageFlowCard> _cards = new();
-        TMP_Text _kicker, _course, _sail, _intensity, _escortKicker, _difficulty, _crewLine, _crewLine0;
+        TMP_Text _kicker, _title1, _course, _sail, _intensity, _escortKicker, _difficulty, _crewLine, _crewLine0;
         GameObject _numbers, _escort;
         readonly List<(Button b, TMP_Text t, Image fill)> _presets = new();
         TMP_Text _noSquad;
@@ -222,8 +223,11 @@ namespace CosmicShore.UI
             Height(_flow, FlowHeight);
             _flow.gameObject.AddComponent<RectMask2D>();
 
+            Spacer(l, 8f);
             _kicker = Text(l, 14, Soft, TextAlignmentOptions.Left);
             Height(_kicker, 22);
+            _title1 = Text(l, 28, Light, TextAlignmentOptions.Left);
+            Height(_title1, 38);
             var nums = Row(l, 40, 34);
             _numbers = nums.gameObject;
             _course = Text(nums, 28, Light, TextAlignmentOptions.Left, 180);
@@ -237,7 +241,7 @@ namespace CosmicShore.UI
             MakeButton(esc, _lines.CardPrevious, 22, Plate, () => _model?.StepDifficulty?.Invoke(-1), 52);
             _difficulty = Text(esc, 22, Light, TextAlignmentOptions.Center, 200);
             MakeButton(esc, _lines.CardNext, 22, Plate, () => _model?.StepDifficulty?.Invoke(+1), 52);
-            Spacer(l, 14f);
+            Spacer(l, 6f);
 
             var presets = Row(l, 40, 10);
             for (int i = 0; i < SquadBook.MaxSquads; i++)
@@ -249,7 +253,7 @@ namespace CosmicShore.UI
             _noSquad.text = _lines.CardNoSquad ?? string.Empty;
             Flex(_noSquad);
             Spacer(l, 10f);
-            var form = Row(l, 104, 10);
+            var form = Row(l, 76, 10);
             for (int i = 0; i < 3; i++)
             {
                 int seat = i;
@@ -269,12 +273,13 @@ namespace CosmicShore.UI
             }
             _crewLine = Text(l, 15, Light, TextAlignmentOptions.Left);
             Height(_crewLine, 24);
-            Spacer(l, 16f);
-            var buttons = Row(l, 44, 10);
+            Spacer(l, true);
+            // Ark crew, Story and the one call to action share the foot.
+            var buttons = Row(l, 56, 10);
             Flex(MakeButton(buttons, _lines.CardCrew, 14, Plate, () => ShowLevel(2), 0).b);
             Flex(MakeButton(buttons, _lines.CardStory, 14, Plate, () => ShowLevel(3), 0).b);
-            Spacer(l, true);
-            _sail1 = BigButton(l, _lines.CardSetSail, () => _model?.SetSail?.Invoke());
+            _sail1 = BigButton(buttons, _lines.CardSetSail, () => _model?.SetSail?.Invoke());
+            Le(_sail1).flexibleWidth = 2f;
         }
 
         void BuildUnderway(Transform l)
@@ -288,7 +293,7 @@ namespace CosmicShore.UI
             _underwayCourse = Text(l, 15, Soft, TextAlignmentOptions.Left);
             Height(_underwayCourse, 24);
             Spacer(l, 18f);
-            var form = Row(l, 104, 10);
+            var form = Row(l, 76, 10);
             for (int i = 0; i < 3; i++)
             {
                 var h = Node("Hull", form);
@@ -327,7 +332,7 @@ namespace CosmicShore.UI
             for (int s = 0; s < 3; s++)
             {
                 var row = Node("Seat" + s, l);
-                Height(row, 196);
+                Height(row, 154);
                 Fill(row, Plate);
                 var seat = _seats[s] = new Seat();
                 seat.Edge = row.gameObject.AddComponent<Outline>();
@@ -354,8 +359,8 @@ namespace CosmicShore.UI
                 grid.offsetMin = new Vector2(8f, 14f);
                 grid.offsetMax = new Vector2(-14f, -14f);
                 var g = grid.gameObject.AddComponent<GridLayoutGroup>();
-                g.cellSize = new Vector2(220f, 76f);
-                g.spacing = new Vector2(10f, 10f);
+                g.cellSize = new Vector2(220f, 60f);
+                g.spacing = new Vector2(10f, 6f);
                 g.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
                 g.constraintCount = 2;
                 for (int k = 0; k < 4; k++)
@@ -373,7 +378,7 @@ namespace CosmicShore.UI
                     edge.effectColor = Line;
                     seat.Settings[k] = (b.b, label, b.t, edge);
                 }
-                if (s < 2) Spacer(l, 10f);
+                if (s < 2) Spacer(l, 6f);
             }
             Spacer(l, true);
             var buttons = Row(l, 56, 10);
@@ -392,7 +397,7 @@ namespace CosmicShore.UI
             _storyTitle = Text(l, 36, Light, TextAlignmentOptions.Left);
             Height(_storyTitle, 46);
             Spacer(l, 12f);
-            PlacePanel(l, 500, out _placeArt3, out var words);
+            PlacePanel(l, 440, out _placeArt3, out var words);
             _beatLabel = Text(words, 14, Soft, TextAlignmentOptions.Left);
             Height(_beatLabel, 20);
             _beatLine = Text(words, 28, Light, TextAlignmentOptions.BottomLeft);
@@ -541,6 +546,7 @@ namespace CosmicShore.UI
 
             DrawFlow();
             Set(_kicker, _model.Kicker);
+            Set(_title1, _model.Escort ? string.Empty : _model.Title);
             _numbers.SetActive(!_model.Escort);
             _escort.SetActive(_model.Escort);
             Set(_course, _model.CourseValue);
@@ -1118,7 +1124,11 @@ namespace CosmicShore.UI
             h.spacing = spacing;
             h.childAlignment = TextAnchor.MiddleLeft;
             h.childControlWidth = h.childControlHeight = true;
-            h.childForceExpandWidth = h.childForceExpandHeight = false;
+            // A button has no height of its own (its Image's preferred height is 0), so a row that controls its
+            // children's height without stretching them drew every button 0 px high: the presets, the hulls, Ark crew
+            // and Story never showed (2026-11-09, seen in the editor).
+            h.childForceExpandWidth = false;
+            h.childForceExpandHeight = true;
             Height(r, height);
             return r;
         }
@@ -1169,23 +1179,14 @@ namespace CosmicShore.UI
             return (b, t, img);
         }
 
+        /// <summary>The column's one call to action (Set sail): a Lime button the width of its place. Not a copy of the
+        /// old card's keycap, which kept its own fixed size and drew small in the middle (2026-11-09).</summary>
         Button BigButton(Transform parent, string label, Action onClick)
         {
-            Button b;
-            if (_buttonFrom)
-            {
-                b = Instantiate(_buttonFrom, parent);
-                b.name = "SetSail";
-                b.onClick.RemoveAllListeners();
-                b.gameObject.SetActive(true);
-                var rt = (RectTransform)b.transform;
-                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-                b.interactable = true;
-                var t = b.GetComponentInChildren<TMP_Text>(true);
-                if (t) t.text = label ?? string.Empty;
-                b.onClick.AddListener(() => onClick());
-            }
-            else b = MakeButton(parent, label, 18, Plate, onClick, 0).b;
+            var made = MakeButton(parent, label, 20, Lime, onClick, 0);
+            made.t.color = OnLime;
+            made.b.name = "SetSail";
+            var b = made.b;
             var le = Le(b);
             le.flexibleWidth = 1f;
             le.minHeight = le.preferredHeight = 56f;
