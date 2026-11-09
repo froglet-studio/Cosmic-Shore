@@ -2200,15 +2200,19 @@ Each element's game meaning (`Docs/ElementalAbilitySystem/ARCHITECTURE.md`) give
 
 The owner chose option A, "Orb". The FRIENDS tab on the left edge (rev 3's handle) is gone.
 
-- **The orb.** A 92 x 92 orb sits in the bottom-left corner over every screen (`Drawer/Orb` in Menu_Main). It is the
+- **The orb.** An 80 x 80 orb (was 92, moved off the wall 2026-11-09) sits in the bottom-left corner over every screen (`Drawer/Orb` in Menu_Main). It is the
   friends drawer's handle: pressing it opens the party panel. What it shows:
   - you at the centre, your avatar in a ring of your domain colour;
   - up to three party members on the inner ring (top-left, top-right, bottom), each in their domain colour, with a
     flowing bond from you to them;
   - the slowly turning dashed orbit, carrying one dot per player online (up to 8);
   - "N online" under it, or "Friends" while nobody else is online. Both lines are authored fields on the orb.
-- **Why 92 px and not the board's 150.** The orb draws over the windows too. At 92 it fits the 100 px left gutter the
-  windows keep (`author_menu_arcade.ORB_*`); the board's size would sit over the windows' cards. The windows' gutter
+- **Why 80 px and not the board's 150.** The orb draws over the windows too. At 80, 16 px in (`ORB_X` 16, `ORB_Y` 44),
+  it fits the 100 px left gutter the windows keep (`author_menu_arcade.ORB_*`); the board's size would sit over the
+  windows' cards. It was 92 px at x 4 until 2026-11-09, when the 4 px wall margin and the 18 px count line (now the top
+  menu's `Button` size, left-aligned, 104 px wide so "99 ONLINE" fits) were too tight. Whatever sits beside it keeps the
+  orb's 16 px margin: the Codex Field Guide strip starts at `author_menu_codex.STRIP_LEFT` (160, which includes the
+  strip mask's 24 px bleed) and the Hangar list and Codex orbit stop 32 px above it (`author_menu_hangar.ORB_TOP`). The windows' gutter
   gate (`check_window_inset`) and Home's docked-card gate now measure against the orb.
 - **The shader.** `CosmicShore/UI/Presence` (`Presence.shader` + `UIPresence.cginc`) draws the glow, the inner ring,
   the orbit with its dots and the three bonds on one sprite-less Image. Every radius is a fraction of the half-size.

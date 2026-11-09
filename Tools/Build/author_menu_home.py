@@ -421,26 +421,40 @@ def settings_nodes():
 HINT_W, HINT_H, HINT_X = 300, 36, 28     # the fly hint, and its × (rev 3)
 
 
-def icon_button(parent, k, name, glyph, r, glyph_node=None):
+def icon_button(parent, k, name, glyph, r, glyph_node=None, plate=0):
     """A flat glyph control (the hint's x, a docked card's - and x): no plate and no border (2026-10-17, the
     owner on the boxed versions: "i dont like the designs"). The glyph rests dim, brightens under the
     pointer and lights in the accent colour when pressed or focused by the pad (a ColorTint on the glyph);
-    a transparent hit area keeps it easy to press. `glyph` None draws the minimise bar."""
+    a transparent hit area keeps it easy to press. `glyph` None draws the minimise bar.
+    `plate` (px, 0 = none, the default every other caller keeps): a visible square plate of that size centred in the
+    hit area, a dark fill with a hairline that lights under the pointer and in the accent when pressed, and a larger
+    glyph (the friends drawer's minimise, which was too small to hit, 2026-11-09)."""
     b = parent.child(N(k, name, r))
     b.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True))
-    g = b.child(N(f"{k}/Glyph", "Glyph", R(size=(14, 14)) if glyph else R(size=(12, 2))))
+    if plate:
+        pl = b.child(N(f"{k}/Plate", "Plate", R(size=(plate, plate))))
+        pl.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_sliver10_fill"), True))
+        bd = b.child(N(f"{k}/PlateBorder", "PlateBorder", R(size=(plate, plate))))
+        bd.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight"), K.kit_sprite("kit_sliver10_line1"), True))
+    gsize = (20, 3) if plate else (12, 2)
+    g = b.child(N(f"{k}/Glyph", "Glyph", R(size=(14, 14)) if glyph else R(size=gsize)))
     g.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.chrome_sprite(glyph) if glyph else None,
                                                                     preserve=bool(glyph)))
+    # With a plate the tint drives the PLATE (resting dark, lighter under the pointer, accent when pressed or focused);
+    # the glyph stays white. Without one it drives the glyph, as before.
+    rest, hover, down = ((tok("SurfaceDark", 0.7), tok("SurfaceLight", 0.9), tok("ControlActive")) if plate
+                         else (tok("NeutralLightest"), tok("TextLight"), tok("ControlActive")))
     tint = (A.selectable().replace("  m_Transition: 0\n", "  m_Transition: 1\n")
-            .replace("    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}\n", f"    m_NormalColor: {K.col(tok('NeutralLightest'))}\n")
+            .replace("    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}\n", f"    m_NormalColor: {K.col(rest)}\n")
             .replace("    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
-                     f"    m_HighlightedColor: {K.col(tok('TextLight'))}\n")
+                     f"    m_HighlightedColor: {K.col(hover)}\n")
             .replace("    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}\n",
-                     f"    m_PressedColor: {K.col(tok('ControlActive'))}\n")
+                     f"    m_PressedColor: {K.col(down)}\n")
             .replace("    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}\n",
-                     f"    m_SelectedColor: {K.col(tok('ControlActive'))}\n"))
+                     f"    m_SelectedColor: {K.col(down)}\n"))
+    target = f"{k}/Plate" if plate else f"{k}/Glyph"
     b.add("button", 114, lambda ctx, go: C.mono(go, A.BUTTON,
-          tint + f"  m_TargetGraphic: {C.ref(ctx.c(f'{k}/Glyph', 'img'))}\n" + A.calls([])))
+          tint + f"  m_TargetGraphic: {C.ref(ctx.c(target, 'img'))}\n" + A.calls([])))
     b.add("audio", 114, A.menu_audio(11))
     return b
 

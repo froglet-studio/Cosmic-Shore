@@ -372,7 +372,7 @@ LIST_W = 230                                # the vessel list, on the left
 # Every top offset below is measured from the content's top, just under the top bar.
 CONTENT_SCALE, TOP_BAR = 0.88, 84
 CONTENT_H = round((1080 - TOP_BAR) / CONTENT_SCALE)
-ORB_TOP = 44 + 92 + 14          # author_menu_arcade.ORB_Y + ORB_SIZE, plus air: the friends orb, bottom left (screen px)
+ORB_TOP = 44 + 80 + 32          # author_menu_arcade.ORB_Y + ORB_SIZE, plus air (32, was 14: more room above the orb): the friends orb, bottom left (screen px)
 LIST_BOTTOM = ORB_TOP / CONTENT_SCALE    # the vessel list stops above the orb (content units)
 DOSSIER_W, DOSSIER_TOP = 710, 66
 DOSSIER_H = CONTENT_H - DOSSIER_TOP - 40    # author_ui_kit_sprites.CRADLE_W / _H: the open cradle's fill
@@ -663,18 +663,18 @@ def upgrades_page(panel):
     label(page.child(N(f"{U}/Element", "Element", TLr(0, 34, 96, 18))), "CHARGE", "Label", "TextLight")
     label(page.child(N(f"{U}/Step", "Step", TLr(96, 34, 300, 18))), "LEVEL 1 TO 2", "Label", "NeutralLightest")
     # Section 97: the focused element's crystals, held and spent (the cloud profile's ElementalCrystals).
-    label(page.child(N(f"{U}/Crystals", "Crystals", main_r(34, 18))), "CHARGE CRYSTALS  0 HELD - 0 SPENT", "Label",
-          "NeutralLightest", align="right")
-    ellipsize(label(page.child(N(f"{U}/Ability", "Ability", main_r(60, 40))), "", "H2", "TextLight"))
-    ellipsize(label(page.child(N(f"{U}/Desc", "Desc", main_r(106, 64))), "", "BodySmall", "NeutralLightest", valign="top", wrap=True))
-    element_flower(page, f"{U}/Now", "NowFlower", TLr(0, 182, 112, 112))
-    label(page.child(N(f"{U}/NowLabel", "NowLabel", TLr(0, 298, 112, 18))), "NOW 1", "Label", "NeutralLightest", align="center")
-    label(page.child(N(f"{U}/Arrow", "Arrow", TLr(124, 222, 30, 32))), ">", "H2", "NeutralLightest", align="center")
-    nxt = page.child(N(f"{U}/Next", "Next", TLr(166, 182, 112, 134)))
+    label(page.child(N(f"{U}/Crystals", "Crystals", main_r(56, 18))), "CHARGE CRYSTALS  0 HELD - 0 SPENT", "Label",
+          "NeutralLightest", align="left")
+    ellipsize(label(page.child(N(f"{U}/Ability", "Ability", main_r(82, 40))), "", "H2", "TextLight"))
+    ellipsize(label(page.child(N(f"{U}/Desc", "Desc", main_r(128, 64))), "", "BodySmall", "NeutralLightest", valign="top", wrap=True))
+    element_flower(page, f"{U}/Now", "NowFlower", TLr(0, 204, 112, 112))
+    label(page.child(N(f"{U}/NowLabel", "NowLabel", TLr(0, 320, 112, 18))), "NOW 1", "Label", "NeutralLightest", align="center")
+    label(page.child(N(f"{U}/Arrow", "Arrow", TLr(124, 244, 30, 32))), ">", "H2", "NeutralLightest", align="center")
+    nxt = page.child(N(f"{U}/Next", "Next", TLr(166, 204, 112, 134)))
     nxt.add("cg", 225, canvas_group(True))
     element_flower(nxt, f"{U}/Next/Flower", "NextFlower", TLr(0, 0, 112, 112), level=START_LEVEL + 1)
     label(nxt.child(N(f"{U}/Next/Label", "NextLabel", TLr(0, 116, 112, 18))), "NEXT 2", "Label", "TextLight", align="center")
-    box = page.child(N(f"{U}/L5", "LevelFive", main_r(340, 112)))
+    box = page.child(N(f"{U}/L5", "LevelFive", main_r(362, 112)))
     box.add("cg", 225, canvas_group(True))
     box.child(N(f"{U}/L5/Fill", "Fill", STRETCH)).add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceLight", 0.14)))
     box.child(N(f"{U}/L5/Accent", "Accent", R((0, 0), (0, 1), (1, 0), (2, 0), (0.5, 0.5)))).add("cr", 222, K.canvas_renderer()) \
