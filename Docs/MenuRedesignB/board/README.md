@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-09 from canvas version `1794259825-c678` of **Frogma**: Rev 3 to Rev 79, 434 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-09 from canvas version `1794263800-c2dc` of **Frogma**: Rev 3 to Rev 80, 440 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -677,6 +677,15 @@ Copied on 2026-11-09 from canvas version `1794259825-c678` of **Frogma**: Rev 3 
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 80 - Voyage window, B Logbook taken further - the list, the course and the squad, four ways better
+
+- [`R80Compare.dc.html`](R80Compare.dc.html) - Rev 80 - What each option changes from B: the row, the squad bar, the seat card, the quiet row
+- [`R80B1.dc.html`](R80B1.dc.html) - Rev 80 B1 - Refined: each row a course thumbnail and who brought it, seats with their pilot (recommended) - interactive
+- [`R80B2.dc.html`](R80B2.dc.html) - Rev 80 B2 - Wide sea: a narrow list, the course map wide with the voyage over it, the squad a bar along the foot - interactive
+- [`R80B3.dc.html`](R80B3.dc.html) - Rev 80 B3 - Crew: the squad as three tall seat cards, the hull and its pilot large - interactive
+- [`R80B4.dc.html`](R80B4.dc.html) - Rev 80 B4 - Quiet: no pictures in the list, the maps muted so only the course is bright, the most air - interactive
+- [`R80Notes.dc.html`](R80Notes.dc.html) - Rev 80 - notes: what B keeps, what each option changes, the recommendation
 
 #### Rev 79 - Voyage window, four new directions - the whole window redrawn: its tabs, the HyperSea map and edge view, the voyages, and picking the squad's vessels
 

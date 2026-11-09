@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79 on the canvas now; Rev 70-77 were reverted and taken off, section 158) | Shombith, 2026-11-08 (sections 147-151, 158-159) |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79 and Rev 80 on the canvas now; Rev 70-77 were reverted and taken off, section 158) | Shombith, 2026-11-08 (sections 147-151, 158-160) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -6774,7 +6774,7 @@ The records of sections 151 and 155-157 stay as history.
 and picked before anything is built. Each pick is built and then checked against a render before it is called done.
 
 
-## 159. Rev 79 mockups: the Voyage window, four new directions - the whole window redrawn (2026-11-09, awaiting a pick)
+## 159. Rev 79 mockups: the Voyage window, four new directions - the whole window redrawn (2026-11-09; Shombith picked B, taken forward in section 160)
 
 **Asked (Shombith, 2026-11-09):** "These are still old UI's ... remove it create new ideas completely", "The quality is
 very very bad", "Revert all, redesign window". So every option redraws the WHOLE window - its tabs, the HyperSea map
@@ -6807,9 +6807,47 @@ Rev 44, 46, 49, 71, 74 and 77 came off the canvas with their title notes and sec
   once, and one press picks. Six hull renders are on the canvas; the game's grid would scroll for more.
 - **Notes.**
 
+**Picked (Shombith, 2026-11-09): B, Logbook:** "B looks good make it better more mockus inspired from B" (section 160).
+
 **Recommended: A.** It keeps the map in view while you pick, which is what Garrett built the window around, and it
 redraws the parts the build left old: the tabs and the map.
 
 **Differs from the build:** any pick replaces the whole Voyage window: `MissionView` through its generator, and
 `VoyageJobsView`'s layout. Garrett's voyage scene launch (`VoyageLaunch`) and the voyage rules stay as they are. The
 build will be checked against a render before it is called done (section 158).
+
+
+## 160. Rev 80 mockups: the Voyage window, B Logbook taken further (2026-11-09, awaiting a pick)
+
+**Asked (Shombith, 2026-11-09, on Rev 79):** "B looks good make it better more mockus inspired from B".
+
+**On the canvas:** tab **Voyages**, round "Rev 80 - Voyage window, B Logbook taken further" (canvas version
+`1794263800-c2dc`).
+- Copies: `Docs/MenuRedesignB/board/R80*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r80_voyages.py`, built on Rev
+  79's.
+- All six boards pass `check_mockup.py` (noise 58-59 of 60) and `frogma.py check`. They were rendered locally with the
+  real art and looked at before publishing, B1's open vessel picker included.
+- B1 first drew at 74 visual elements, the kind of screen rejected before as noisy. It was trimmed to 59 by merging
+  lines, not by dropping what B1 is for.
+
+**Kept from B:** the order - the voyages as a list on the left, the picked voyage's course in the middle with the edge
+view under it, the squad on the right, one Set sail - the tabs as large words, and the vessel grid where one press
+picks.
+
+**The options:**
+- **B1 - Refined (recommended):** each row has its course as a thumbnail, who brought it, and its numbers, so a voyage
+  is recognised at a glance. The voyage's place line fills the gap above the squad. Each seat shows its pilot's
+  portrait beside the hull. The maps' colour is turned down, so the course line reads first.
+- **B2 - Wide sea:** a narrow list, and the course map across most of the window with the voyage written over it. The
+  edge view is a strip under the map, and the squad a bar along the foot beside Set sail.
+- **B3 - Crew:** the squad leads. Three tall seat cards show each pilot full length over their hull. The course is
+  smaller, between the list and the cards.
+- **B4 - Quiet:** the calmest. The list is words only with thin rules, the maps are muted, and there is the most space.
+- **Compare:** each option's changed piece beside the others: B1's row, B2's squad bar, B3's seat card, B4's quiet
+  row and muted course.
+- **Notes.**
+
+The seats use the four pilot portraits on the canvas (Shrapnel, Feist, Longshift, Flux).
+
+**Recommended: B1.** It answers what B left plain (rows you can't tell apart, seats with no pilot, a loud map) without
+adding a new region to the window.

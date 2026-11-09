@@ -3570,6 +3570,58 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 79 - notes: what each direction is, what it redraws, the recommendation, what it would change in the game"
+    },
+    "R80Compare.dc.html": {
+      "x": 0,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 80 - What each option changes from B: the row, the squad bar, the seat card, the quiet row"
+    },
+    "R80B1.dc.html": {
+      "x": 2100,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 80 B1 - Refined: each row a course thumbnail and who brought it, seats with their pilot (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R80B2.dc.html": {
+      "x": 4200,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 80 B2 - Wide sea: a narrow list, the course map wide with the voyage over it, the squad a bar along the foot - interactive",
+      "is_interactive": true
+    },
+    "R80B3.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 80 B3 - Crew: the squad as three tall seat cards, the hull and its pilot large - interactive",
+      "is_interactive": true
+    },
+    "R80B4.dc.html": {
+      "x": 2100,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 80 B4 - Quiet: no pictures in the list, the maps muted so only the course is bright, the most air - interactive",
+      "is_interactive": true
+    },
+    "R80Notes.dc.html": {
+      "x": 0,
+      "y": 7400,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 80 - notes: what B keeps, what each option changes, the recommendation"
     }
   },
   "createdOnFiles": {
@@ -3688,6 +3740,7 @@
     "sec-rev76",
     "sec-rev78",
     "sec-rev79",
+    "sec-rev80",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -3761,7 +3814,8 @@
     "rev75",
     "rev76",
     "rev78",
-    "rev79"
+    "rev79",
+    "rev80"
   ],
   "notes": {
     "hud_end": {
@@ -6059,6 +6113,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev80": {
+      "kind": "title1",
+      "text": "Rev 80 - Voyage window, B Logbook taken further - the list, the course and the squad, four ways better",
+      "x": 0,
+      "y": 4480,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev80": {
+      "kind": "rect",
+      "x": -160,
+      "y": 4320,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -6495,7 +6573,13 @@
     "R79B.dc.html",
     "R79C.dc.html",
     "R79D.dc.html",
-    "R79Notes.dc.html"
+    "R79Notes.dc.html",
+    "R80Compare.dc.html",
+    "R80B1.dc.html",
+    "R80B2.dc.html",
+    "R80B3.dc.html",
+    "R80B4.dc.html",
+    "R80Notes.dc.html"
   ],
   "pages": [
     {
