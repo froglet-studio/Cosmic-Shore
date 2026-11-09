@@ -8,6 +8,11 @@ using UnityEngine.InputSystem;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
+    /// The SWORDFISH's config sets <see cref="SwordPoseMapping.Bill"/> (2026-11-08): the blade is the fish's bill,
+    /// resting straight ahead off the snout; the difference lays it out to a side and the shared pull stands it up,
+    /// pivoting at its mount (<see cref="BillChannels"/>), and the local pilot's camera pans to keep it centred
+    /// (<see cref="SwordfishSwordCamera"/>). The paragraph below is the <see cref="SwordPoseMapping.Chop"/> model.
+    ///
     /// Drives the Rhino shield swipe from the analog triggers, reparameterized like the
     /// Manta's turn boost: the DIFFERENCE (right - left) sweeps the sword laterally
     /// through yaw+roll (full pulls are the +/-1 stances) and the SUM pitches it down

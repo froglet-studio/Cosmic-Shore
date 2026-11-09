@@ -3,14 +3,6 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Shared tuning for the Rhino shield swipe. One asset serves both trigger
-    /// directions and the analog drive, so left/right can never drift apart.
-    /// The analog triggers are reparameterized: the DIFFERENCE (right - left)
-    /// drives the lateral swipe and the SUM drives the downward chop, so both
-    /// triggers together hold the sword centered but fully down. The raised rest
-    /// pose is authored on the skimmer transform in the Rhino prefab.
-    /// </summary>
-    /// <summary>
     /// How the two triggers pose the sword. Values are pinned for serialization.
     /// </summary>
     public enum SwordPoseMapping
@@ -24,6 +16,14 @@ namespace CosmicShore.Gameplay
         Bill = 1,
     }
 
+    /// <summary>
+    /// Shared tuning for the sword swipe (the Swordfish's since the 2026-11-07 split). One asset serves both
+    /// trigger directions and the analog drive, so left/right can never drift apart. How the triggers pose the
+    /// blade is <see cref="PoseMapping"/>: <see cref="SwordPoseMapping.Chop"/> sweeps a raised blade on the
+    /// DIFFERENCE and chops it down on the SUM; <see cref="SwordPoseMapping.Bill"/> (the Swordfish) swings the
+    /// bill out to a side on the difference and stands it up on the shared pull. The rest pose is authored on
+    /// the skimmer transform in the vessel's prefab.
+    /// </summary>
     [CreateAssetMenu(fileName = "RhinoShieldSwipeConfig", menuName = "ScriptableObjects/Vessel Actions/RhinoShieldSwipeConfigSO")]
     public class RhinoShieldSwipeConfigSO : ScriptableObject
     {

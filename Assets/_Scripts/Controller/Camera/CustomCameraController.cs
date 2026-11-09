@@ -238,20 +238,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// How much of the follow offset's HEIGHT (y) the camera keeps: 1 = the authored offset,
-        /// 0 = level with the vessel, directly behind it. Driven by the Butterfly's
-        /// <c>SpreadWingsActionExecutor</c> — Mass mode drops the camera to directly behind the
-        /// hull, Dust mode keeps the authored height (<c>R_VesselActions/BUTTERFLY.md</c> §2.0) —
-        /// and by <c>ToggleTranslationModeActionExecutor</c>: the Sparrow flies level and keeps its
-        /// authored height only in the turret stance (<c>SPARROW_TURRET_STANCE.md</c>).
-        ///
-        /// <para>Applied at the point of use (<see cref="EffectiveOffset"/>), never by writing
-        /// <see cref="_followOffset"/>, for the same reason as <see cref="RearView"/>: every
-        /// re-applied <c>CameraSettingsSO</c> and zoom ability writes that field, and the first
-        /// of them to fire would silently put the height back. Reset to 1 whenever the follow
-        /// target changes — a height belongs to the ship it was set for.</para>
-        /// </summary>
-        /// <summary>
         /// A PAN in the follow frame (vessel-local units, before the warp): the camera and the point it looks at
         /// both move by it, so the view keeps its direction and whatever sits at that offset from the hull lands
         /// where the hull would have. Driven only by the Swordfish (<c>SwordfishSwordCamera</c>,
@@ -265,6 +251,20 @@ namespace CosmicShore.Gameplay
         private Vector3 PanAt(float warp, Quaternion frame) =>
             PlacementAnchor.HasValue || FramingPan == Vector3.zero ? Vector3.zero : frame * (FramingPan * warp);
 
+        /// <summary>
+        /// How much of the follow offset's HEIGHT (y) the camera keeps: 1 = the authored offset,
+        /// 0 = level with the vessel, directly behind it. Driven by the Butterfly's
+        /// <c>SpreadWingsActionExecutor</c> — Mass mode drops the camera to directly behind the
+        /// hull, Dust mode keeps the authored height (<c>R_VesselActions/BUTTERFLY.md</c> §2.0) —
+        /// and by <c>ToggleTranslationModeActionExecutor</c>: the Sparrow flies level and keeps its
+        /// authored height only in the turret stance (<c>SPARROW_TURRET_STANCE.md</c>).
+        ///
+        /// <para>Applied at the point of use (<see cref="EffectiveOffset"/>), never by writing
+        /// <see cref="_followOffset"/>, for the same reason as <see cref="RearView"/>: every
+        /// re-applied <c>CameraSettingsSO</c> and zoom ability writes that field, and the first
+        /// of them to fire would silently put the height back. Reset to 1 whenever the follow
+        /// target changes — a height belongs to the ship it was set for.</para>
+        /// </summary>
         public float FollowHeightScale
         {
             get => _followHeightScale;
