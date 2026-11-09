@@ -55,7 +55,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 157
-    messageTemplate: 'Sit in a hood's cup - LT to scope, RT to fire. The crystal heart reloads you faster'
+    messageTemplate: 'Sit in a hood''s cup - LT to scope, RT to fire. The crystal heart reloads you faster'
     tintWithDomainColor: 0
     useDomainColoredNames: 0
     alpha: 1
