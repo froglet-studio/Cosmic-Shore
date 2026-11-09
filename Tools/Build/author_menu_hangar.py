@@ -372,7 +372,7 @@ LIST_W = 230                                # the vessel list, on the left
 # Every top offset below is measured from the content's top, just under the top bar.
 CONTENT_SCALE, TOP_BAR = 0.88, 84
 CONTENT_H = round((1080 - TOP_BAR) / CONTENT_SCALE)
-ORB_TOP = 44 + 92 + 14          # author_menu_arcade.ORB_Y + ORB_SIZE, plus air: the friends orb, bottom left (screen px)
+ORB_TOP = 44 + 80 + 32          # author_menu_arcade.ORB_Y + ORB_SIZE, plus air (32, was 14: more room above the orb): the friends orb, bottom left (screen px)
 LIST_BOTTOM = ORB_TOP / CONTENT_SCALE    # the vessel list stops above the orb (content units)
 DOSSIER_W, DOSSIER_TOP = 710, 66
 DOSSIER_H = CONTENT_H - DOSSIER_TOP - 40    # author_ui_kit_sprites.CRADLE_W / _H: the open cradle's fill

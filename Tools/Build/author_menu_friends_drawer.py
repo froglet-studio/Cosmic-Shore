@@ -80,7 +80,8 @@ MIN_HIT, MIN_PLATE = 48, 36        # the friends drawer minimise: hit area, visi
 ORB = AR.ORB_SIZE
 YOU = 30            # your avatar's ring
 MEMBER = 22         # a member's ring
-COUNT_H = 18
+COUNT_H = 24         # the count line is the top menu's size (Button, 18); "99 ONLINE" is ~101 wide: wider than the orb
+COUNT_W = 104
 MAX_DOTS = 8
 
 
@@ -132,8 +133,9 @@ def orb_node(parent):
         seat_nodes(m, f"Drawer/Orb/Member{i + 1}", MEMBER)
     you = o.child(N("Drawer/Orb/You", "You", R(size=(YOU, YOU))))
     seat_nodes(you, "Drawer/Orb/You", YOU)
-    count = o.child(N("Drawer/Orb/Count", "Count", R((0, 0), (1, 0), (0, -4), (0, COUNT_H), (0.5, 1))))
-    AR.label_e(count, "Friends", "Label", "NeutralLightest", driven=True, align="center")
+    # Left-aligned on the orb's left edge and wider than the orb (the 16 px margin to the wall stays the margin).
+    count = o.child(N("Drawer/Orb/Count", "Count", R((0, 0), None, (0, -4), (COUNT_W, COUNT_H), (0, 1))))
+    AR.label_e(count, "Friends", "Button", "NeutralLightest", driven=True, align="left")
     o.add("button", 114, lambda ctx, go: mono(go, A.BUTTON,
           orb_tint() + f"  m_TargetGraphic: {ref(ctx.c('Drawer/Orb/Field', 'img'))}\n" + A.calls([])))
     o.add("audio", 114, A.menu_audio(11))

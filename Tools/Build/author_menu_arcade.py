@@ -812,8 +812,9 @@ WINDOW_BACKDROP_ALPHA = 0.95
 # below); the right keeps 60. Vertical: 196 under the top (nav + header), 40 over the bottom.
 WINDOW_LEFT, WINDOW_RIGHT = 100, 60
 # Rev 6 (§45.4): the friends drawer's presence orb (author_menu_friends_drawer.py) sits in the bottom-left corner over
-# every window, inside the 100 px left gutter above: x 4 .. 96, y 44 .. 136 up from the bottom, its count under it.
-ORB_X, ORB_Y, ORB_SIZE = 4, 44, 92
+# every window, inside the 100 px left gutter above: x 16 .. 96, y 44 .. 124 up from the bottom, its count under it
+# (2026-11-09: was x 4 .. 96, 4 px off the wall; 16 in, the orb 92 -> 80 so the gutter and every window stay put).
+ORB_X, ORB_Y, ORB_SIZE = 16, 44, 80
 WINDOW_BODY = R((0, 0), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -78), (-(WINDOW_LEFT + WINDOW_RIGHT), -236))
 WINDOW_HEADER = R((0, 1), (1, 1), ((WINDOW_LEFT - WINDOW_RIGHT) / 2, -108), (-(WINDOW_LEFT + WINDOW_RIGHT), 64), (0.5, 1))
 EXPLORE_W = 1920 - WINDOW_LEFT - WINDOW_RIGHT      # at the 1920 reference width
