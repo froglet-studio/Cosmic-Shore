@@ -101,6 +101,13 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
   `SwitchbackCourse.cs` began naming `SwitchbackFunType` (2026-10-28) and the harness stopped compiling (CS0246) until
   the enum joined `SOURCES` (2026-10-31, rendering Serpent Gulag). `audit_prism_clipping.py` had fixed the same break
   in its own source list: when one harness breaks on a new type, grep the others' source lists for it.
+- **The harness broke again on 2026-11-09 the same way**: Regatta's rails began naming `RegattaCourseFeatures`,
+  `RegattaLifeformSiteSettings`, `ICellFaunaCorridorSource`, `CellEnvironmentSpawnableBase.PreparesPlantingSites` and
+  `Trail.TrailList`, and every card failed to render until the three sources joined `SOURCES` and `PlatformShim.cs` gained
+  the two members (Hood's branch). When the harness stops with CS0246, grep the named types and add their files first.
+- **A MODEL tier can come from a parity-held Python mirror** (Hood, 2026-11-09): a controller-laid arena has no
+  `EnvironmentPrefab` to RUN, so the recipe imports the mode's mirror (`serpent_hood_budget.py`, whose `--parity`
+  compares it to the compiled C#) and emits a `prisms` layer; Waystation's tower mirror is the same shape.
 - **A named run (`render_card_backgrounds.py <Stem>`) writes the PNG but not `card_backgrounds_manifest.json`**, so a
   card rendered while the full roster cannot run (S95) is missing from the manifest until the next full run.
 
