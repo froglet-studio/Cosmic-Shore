@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: RhinoPloughSteerRightAction
   m_EditorClassIdentifier: 
   side: 0
-  shoveSpeed: 30
+  shoveSpeed: 90
   shoveSeconds: 0.25
