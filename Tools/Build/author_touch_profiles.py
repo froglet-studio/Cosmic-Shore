@@ -73,9 +73,11 @@ PROFILES = [
     # flipped with it and put back on 2026-10-25 ("manta gyro has its yaw controls flipped from intended").
     profile("Manta", "ThumbLifts", tiltSteer=True, tiltFlipPitch=True, idleFull=True,
             glyphs=[("Mass", "LiftEitherThumb"), ("Time", "LiftBothThumbs")]),
-    # The Swordfish (the Rhino's sword, split off 2026-11-07): a lift swings that side's blade; both thumbs off
-    # energizes (both triggers fully pulled).
-    profile("Swordfish", "ThumbLifts", idleTriggers=True,
+    # The Swordfish (the Rhino's sword, split off 2026-11-07): a lift swings that side's blade out to the side; both
+    # thumbs off raises the sword straight up and energizes it (both triggers fully pulled), and the phone's tilt
+    # steers meanwhile, as the Manta's soar does (Garrett, 2026-11-08: "mobile will need to do what the manta does and
+    # allow gyro controls while both thumbs are lifted to raise the sword").
+    profile("Swordfish", "ThumbLifts", idleTriggers=True, tiltSteer=True, tiltFlipPitch=True,
             glyphs=[("Charge", "LiftBothThumbs"), ("Mass", "LiftEitherThumb"), ("Space", "LiftEitherThumb"),
                     ("Time", "ThumbsApart")]),
     # The Rhino (the plough, 2026-11-07): a lift is that side's trigger - a little shove that way, and the plough

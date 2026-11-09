@@ -206,6 +206,7 @@ Since 2026-10-25 `/vessel` §4.ac3 (LOCKED, Garrett) says a vessel draws no cont
 | Move | Mobile | Gamepad | Mouse / keyboard |
 |---|---|---|---|
 | Swap seats | two-finger swipe, or double tap the small view | D-pad left / right | left / right arrows |
+| Pistol / Goby by turning the phone | hold the phone upright: the Pistol's view; back to landscape: the Goby (Shombith, 2026-11-08; `IUprightSeat`, `CrewOrientation`) | - | - |
 
 **Status (2026-10-18):** in the game as a prototype, not yet flown in the editor. The Goby is vessel class 18 (card
 "Goby and Pistol"), flyable from the Toybox's Vessel Changer, built from the shared crew pieces (SKILL.md "One notion
