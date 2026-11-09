@@ -396,5 +396,45 @@ namespace CosmicShore.ScriptableObjects
         public string StoryLog = "YOUR LOG";
         [Tooltip("The log beat: {voyages} sailed, {extracted} finds brought home, {relics}, {charted} places charted, {arks} Arks lost, {kaiju} felled.")]
         public string StoryLogLine = "{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost.";
+        [Tooltip("A voyage's row on the Voyages list (Rev 81 B5): its number and where it goes.")]
+        public string BoardRowTitle = "{n}  {place}";
+        [Tooltip("Under a row's place: the pilot who brought the voyage.")]
+        public string BoardRowBy = "Brought by {pilot}";
+        [Tooltip("Under a row's place: the voyage's three numbers.")]
+        public string BoardRowMeta = "{ly} ly - {minutes} min - Intensity {intensity}";
+        [Tooltip("Over the open voyage's distance, in the right panel.")]
+        public string BoardDistanceLabel = "DISTANCE";
+        [Tooltip("Over the open voyage's sailing time.")]
+        public string BoardSailLabel = "SAIL";
+        [Tooltip("Over the open voyage's intensity.")]
+        public string BoardIntensityLabel = "INTENSITY";
+        [Tooltip("The open voyage's intensity.")]
+        public string BoardIntensityValue = "{intensity}";
+        [Tooltip("Beside the squad chips over the seat cards.")]
+        public string BoardSquadLabel = "SQUAD";
+        [Tooltip("A squad chip for a squad the player joined.")]
+        public string BoardSquadJoined = "{name} - {owner}'s";
+        [Tooltip("A seat card's first line: who flies it and the pilot.")]
+        public string BoardSeatWho = "{who} - {pilot}";
+        [Tooltip("A seat card's second line on a seat the player may change.")]
+        public string BoardSeatKit = "{element} - {artifact}";
+        [Tooltip("A seat card's second line on a seat the player may not change.")]
+        public string BoardSeatNotYours = "{owner}'s seat";
+        [Tooltip("Over the seat editor (Rev 83 S2): the seat being changed.")]
+        public string BoardEditorTitle = "{role} - {who} - {squad}";
+        [Tooltip("Under the seat editor's pilot.")]
+        public string BoardPilotLine = "Flies the {vessel} for {squad}";
+        [Tooltip("Under a pilot in the editor's list who flies another seat now.")]
+        public string BoardPilotSwaps = "Flies the {vessel} - swaps";
+        [Tooltip("Under the pilot in the editor's list who flies this seat.")]
+        public string BoardPilotFlying = "Flying";
+        [Tooltip("Under the seat editor's element.")]
+        public string BoardElementLine = "The element this seat flies with";
+        [Tooltip("Under the seat editor's artifact when the seat carries none.")]
+        public string BoardNoArtifactLine = "This seat carries no artifact";
+        [Tooltip("The seat editor's close button.")]
+        public string BoardDone = "DONE";
+        [Tooltip("The Set sail button while the voyage is out.")]
+        public string BoardUnderway = "UNDER WAY";
     }
 }

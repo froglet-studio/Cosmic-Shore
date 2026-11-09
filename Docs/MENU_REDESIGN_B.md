@@ -6920,7 +6920,7 @@ in the same publish.
 **Not decided here:** whether a change saves to the squad at once (as drawn) or waits for a Save squad press. As
 drawn, every pick saves, which is what the 22-press complaint asked for.
 
-## 163. Rev 83 mockups: the seat editor in the game's own look (2026-11-09, awaiting a pick)
+## 163. Rev 83 mockups: the seat editor in the game's own look (2026-11-09; Shombith picked S2 Hangar bay, built in section 164)
 
 **Asked (Shombith, 2026-11-09, on Rev 82):** "Bro it looks soooo bad the selection UI, make it modern sleek and with
 our cosmic shore UI, what even is this, mockups for this now".
@@ -6953,7 +6953,61 @@ and the seats you may not change):
   Pilot, Element and Artifact as four rows at once. Four presses change everything.
 
 **Real content:** the hull lines are the game's (the Serpent's "sheilded" is the game's own typo). The artifacts are
-the game's: Aegis, Aftershock, Hydra and Javelin (`Assets/_SO_Assets/Pilots/Artifacts`). Their descriptions are empty in
-the game data, so none are shown. The pilots carry no invented biography.
+the game's: Aegis, Aftershock, Hydra and Javelin (`Assets/_SO_Assets/Pilots/Artifacts`). The pilots carry no invented
+biography. (Corrected in section 164: the artifacts' descriptions are not empty, `Artifact_Aegis.asset` has one, and the
+built editor shows them; the pilots' `PilotSO` descriptions are the ones that are empty.)
 
 **Still open from section 162:** whether a change saves at once or waits for Save squad.
+
+**Picked (Shombith, 2026-11-09):** S2 Hangar bay, "I like this one build everything": the B5 window with the S2 seat
+editor, built in the game.
+
+## 164. Built: the Voyages tab as the board - Rev 81 B5 with the Rev 83 S2 seat editor (2026-11-09, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-09, on Rev 83):** "I like this one build everything" (S2 Hangar bay).
+Affects: Garrett's Voyage window (`VoyageJobsView`, his voyage data, launch and Ark escort, all kept).
+
+**What was built:**
+- `VoyageBoard` (`Assets/_Scripts/UI/Views/VoyageBoard.cs`) builds the Voyages tab at runtime over the page.
+  `VoyageJobsView` drives it when its new `board` toggle is on (the default). Off, the old map column and cards draw as
+  before.
+- **The list (left).** One row per voyage on offer, plus the Ark escort:
+  - each row shows its course on the HyperSea's water (`VoyageRoutePoster`), "01  Lantern Reach", who brought it, and
+    its three numbers;
+  - a press opens that voyage, and one voyage is always open.
+- **The course (middle).** The window's own galaxy map stands over its edge view in the board's course column. It
+  frames the open voyage's course.
+- **The right panel:**
+  - the open voyage's title and line (`VoyageJob.Summary`);
+  - Distance, Sail and Intensity;
+  - the squads as chips, the active one lit cyan;
+  - the active squad's three seat cards (the pilot's portrait, the hull, the vessel's name, who flies it and the pilot,
+    and the element and artifact), with seats you may not change dimmed and saying whose they are;
+  - the Lime Set sail, a copy of the window's own call to action.
+  - For the Ark escort, the panel also carries its difficulty stepper.
+- **The seat editor (S2 Hangar bay).** A press on a seat card you may change opens the editor over the list and the
+  course, and outlines that card in Jade. The editor has:
+  - Vessel, Pilot, Element and Artifact tabs;
+  - the choice large over a Jade-lit floor (`kit_pool`), with its name at 36 and its line: the hull's own description,
+    "Flies the Sparrow for Skim Wing", or the artifact's own description;
+  - the options as a list of plate rows on the right, the picked one with a Jade top line and a Jade mark;
+  - Done straddling the editor's foot.
+- **One press picks and saves.** The card behind changes at once, under the Ark's rules (`SquadsPage.CanEdit`,
+  `KeepCardsOwn` for the pilot swap, `FillPilots`). This settles the section 162 question as drawn: changes save at
+  once, with no Save squad press.
+- **Words** are 20 new `VoyageLines` (Board*), in the voyage spec (`Docs/Voyages/voyage_slice.json`), written by
+  `author_voyage_assets.py`.
+- **Look** comes from one asset, `Assets/Resources/VoyageBoardStyle.asset` (`VoyageBoardStyleSO`), written and checked
+  by `Tools/Build/author_voyage_board.py` (`--check`, `--self-test`): the kit's sliver sprites, the style guide's colour
+  tokens (checked against `Docs/UI/froglet-tokens.json`), and the B5 column proportions.
+
+**Differs from the boards:**
+- The hulls are each class's own large render (`SO_Vessel.SquadImage`). The canvas's lit renders are not in the game.
+- The window keeps its four tabs (Voyages, Saga, Quests, Episodes), as section 119 asked; the boards draw three.
+- B on a pad does not close the seat editor yet: Done does (the window's Back closes the window).
+
+**Verified:**
+- `unity_refcompile`, player and editor configurations: 0 errors in project code.
+- `VoyageBoardTests` (edit mode): written and compiled, not run.
+- The ship gates, `author_voyage_assets.py --check` and `author_voyage_board.py --check`.
+- **No Unity editor ran.** The hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

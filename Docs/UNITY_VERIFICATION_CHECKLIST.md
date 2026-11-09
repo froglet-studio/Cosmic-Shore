@@ -22266,3 +22266,28 @@ Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generato
 3. **Codex > Ecology (Field Guide):** scroll the bottom strip left; tiles stop 16 px short of the "Friends" text, never over it.
 4. **Hangar > Upgrades, any hull:** "CHARGE CRYSTALS 0 HELD - 0 SPENT" is on its own row under the step line; nothing overlaps.
 
+## 🔴 The Voyages tab as the board: Rev 81 B5 with the Rev 83 S2 seat editor (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 164. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran. Compare against Frogma's Voyages tab, boards R81B5 and R83S2.
+
+1. **Open the Voyage window.** The Voyages tab shows three columns:
+   - the voyage list on the left, each row with its course on the water, "01  <place>", "Brought by <pilot>" and its
+     numbers;
+   - the galaxy map over its edge view in the middle;
+   - the right panel: title, line, Distance / Sail / Intensity, the squad chips, three seat cards and a Lime Set sail.
+   The first voyage is open (its row lit with a cyan bar), and the map frames its course.
+2. **Press another row.** It lights, and the map and the right panel change to it.
+3. **Press your own seat card.** The seat editor opens over the list and the map, and the card's edge turns Jade.
+   - The Vessel tab shows the hull large on a lit floor, with its name and its description, and the six hulls listed
+     on the right, the current one marked in Jade.
+   - Done straddles the editor's bottom edge.
+4. **Pick another hull.** The hero, the list mark and the seat card behind change at once.
+   - Pilot tab: pick a pilot who flies another seat. The two swap, and the other card changes too.
+   - Element and Artifact tabs: one press each.
+5. **Done** closes the editor. Reopen the window: the changes are still there (they save at once).
+6. **Squad chips.** Pick the other squad: the cards change. In a squad you joined, only your seat opens; the others
+   are dimmed and say whose seat they are.
+7. **Set sail** launches the open voyage, as before. With the Ark escort open, its stepper changes the difficulty.
+8. **Look:** no part overflows its column at 1920x1080 or at the phone's aspect. The text is the game's face, and the
+   labels are Chakra Petch in capitals.

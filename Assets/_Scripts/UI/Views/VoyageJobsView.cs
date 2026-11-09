@@ -51,6 +51,10 @@ namespace CosmicShore.UI
         [SerializeField] RectTransform cardColumn;
         [Tooltip("The space between the map and the edge view under it, in the map column.")]
         [SerializeField] float edgeGap = 12f;
+        [Tooltip("The Voyages tab as Shombith picked it (Docs/MENU_REDESIGN_B.md sections 161-164): the voyage list, the " +
+                 "course and the right panel with the squad's seat cards (Rev 81 B5), and the seat editor (Rev 83 S2), built " +
+                 "by VoyageBoard over this page. Off: the map column and the voyage cards as before.")]
+        [SerializeField] bool board = true;
 
         const string MapName = "GalaxyMap";
         const string EdgeName = "EdgeView";
@@ -69,6 +73,8 @@ namespace CosmicShore.UI
         ModalWindowManager _window;
         VoyageOpenCard _card;
         int _jobCount;
+        VoyageBoard _board;
+        readonly List<VoyageBoard.Row> _boardRows = new();
 
         void OnEnable()
         {
@@ -89,6 +95,7 @@ namespace CosmicShore.UI
 
         void OnDestroy()
         {
+            if (_board) _board.SquadChanged -= Refresh;
             if (!_card) return;
             _card.Closed -= CloseCard;
             _card.Step -= StepCard;
@@ -134,6 +141,7 @@ namespace CosmicShore.UI
             var lines = voyage.Lines;
 
             var escort = style ? style.ArkEscort : null;
+            if (board && RefreshBoard(content, lines, style, harbour, escort)) return;
             if (harbour && harbour.IsEscorting && escort)
             {
                 var card = Use(1)[0];
@@ -228,6 +236,215 @@ namespace CosmicShore.UI
             Stand(slide && jobOpen ? -1 : _open);
             if (!slide || !jobOpen) HideCard();
             if (!focused) Map(content, lines, style, here, null, _placeCaption);
+        }
+
+        // ── The board (Rev 81 B5 with the Rev 83 S2 seat editor) ─────────────
+
+        /// <summary>
+        /// Draw the Voyages tab as the board: one row per voyage on offer (and the Ark escort), the open one framed on the
+        /// course column's map and shown in the right panel with the squad. A voyage is always open while any is offered.
+        /// False when the board cannot stand (no page to build it on): the old layout draws instead.
+        /// </summary>
+        bool RefreshBoard(VoyageContent content, VoyageLines lines, VoyageToyDefinitionSO style, VoyageHarbour harbour,
+            ArkEscortSO escort)
+        {
+            if (!EnsureBoard(lines)) return false;
+            HideCard();
+            if (cardColumn) cardColumn.gameObject.SetActive(false);
+            // The cards' grid stands down (never the page itself, which the board stands on).
+            var grid = template ? template.transform.parent : null;
+            if (grid && grid != transform) grid.gameObject.SetActive(false);
+            _boardRows.Clear();
+            var map = EnsureMap();
+            FitBoardColumn();
+
+            // The escort or a job under way: its one row, open, Set sail dark.
+            if (harbour && harbour.IsEscorting && escort)
+            {
+                var course = harbour.EscortCourse;
+                var shown = EscortVoyage(content, lines, escort, harbour.EscortDifficulty, course, sail: false);
+                _boardRows.Add(EscortRow(content, lines, escort, harbour.EscortDifficulty, course));
+                if (course != null) Map(content, lines, style, course[0], course, CourseLine(content, lines, course));
+                else Map(content, lines, style, null, null, null);
+                _board.Show(_boardRows, 0, _ => { }, shown, map, null);
+                return true;
+            }
+            if (harbour && harbour.IsUnderway)
+            {
+                var job = harbour.CurrentJob;
+                if (job == null)
+                {
+                    Map(content, lines, style, null, null, null);
+                    _board.Show(_boardRows, -1, _ => { }, null, map, lines.VoyageName);
+                    return true;
+                }
+                var underway = VoyageRules.Route(content, job.From, job.To);
+                var model = OpenModel(content, lines, job, underway, 0, 1, null);
+                _boardRows.Add(BoardRow(lines, model, 0, content.Person(job.PilotId)));
+                var voyage = BoardVoyage(lines, job, model, null);
+                voyage.SailLabel = lines.BoardUnderway;
+                Map(content, lines, style, job.From, underway, CourseLine(content, lines, underway));
+                _board.Show(_boardRows, 0, _ => { }, voyage, map, null);
+                return true;
+            }
+
+            var gameData = VoyageLaunch.ResolveGameData();
+            var jobs = harbour ? harbour.Board(out VoyageState state)
+                : VoyageHarbour.Board(style, VoyageRun.ActiveSquad(gameData), VoyageRun.LiveDomain(gameData), out state);
+            string here = state?.At;
+            int count = jobs.Count + (escort ? 1 : 0);
+            _destinations.Clear();
+            if (count == 0)
+            {
+                Map(content, lines, style, here, null, _placeCaption);
+                _board.Show(_boardRows, -1, _ => { }, null, map, lines.NoWork);
+                return true;
+            }
+            if (_open < 0 || _open >= count) _open = 0;
+            VoyageBoard.Voyage open = null;
+            for (int i = 0; i < jobs.Count; i++)
+            {
+                var job = jobs[i];
+                _destinations.Add(job.To);
+                var route = VoyageRules.Route(content, job.From, job.To);
+                var taken = job;
+                var model = OpenModel(content, lines, job, route, i, jobs.Count, () => SetSail(taken));
+                _boardRows.Add(BoardRow(lines, model, i, content.Person(job.PilotId)));
+                if (i != _open) continue;
+                open = BoardVoyage(lines, job, model, model.SetSail);
+                Map(content, lines, style, here, route, CourseLine(content, lines, route));
+            }
+            if (escort)
+            {
+                var course = VoyageRules.EscortRoute(state, content);
+                _boardRows.Add(EscortRow(content, lines, escort, Difficulty, course));
+                if (_open == jobs.Count)
+                {
+                    open = EscortVoyage(content, lines, escort, Difficulty, course, sail: true);
+                    if (course is { Count: >= 2 }) Map(content, lines, style, course[0], course, CourseLine(content, lines, course));
+                    else Map(content, lines, style, here, null, null);
+                }
+            }
+            _board.Show(_boardRows, _open, PickBoardRow, open, map, null);
+            return true;
+        }
+
+        void PickBoardRow(int index)
+        {
+            if (index == _open) return;
+            _open = index;
+            _placeCaption = null;
+            Refresh();
+        }
+
+        bool EnsureBoard(VoyageLines lines)
+        {
+            if (_board) return true;
+            if (lines == null || transform is not RectTransform page) return false;
+            _board = VoyageBoard.Create(page, template ? template.LabelTemplate : null, template ? template.SetSailButton : null,
+                vessels, lines);
+            _board.SquadChanged += Refresh;
+            // The map and its edge view stand in the board's course column.
+            if (mapColumn)
+            {
+                var course = _board.CourseColumn;
+                mapColumn.anchorMin = course.anchorMin;
+                mapColumn.anchorMax = course.anchorMax;
+                mapColumn.pivot = new Vector2(0.5f, 0.5f);
+                mapColumn.offsetMin = mapColumn.offsetMax = Vector2.zero;
+                mapColumn.SetAsLastSibling();
+                _board.transform.SetAsLastSibling();
+            }
+            return true;
+        }
+
+        /// <summary>The map over the edge view in the course column, the edge view a share of its height (Rev 81 B5).</summary>
+        void FitBoardColumn()
+        {
+            if (!mapColumn) return;
+            float share = VoyageBoardStyleSO.Load().EdgeShare;
+            if (_mapHost)
+            {
+                _mapHost.anchorMin = new Vector2(0f, share);
+                _mapHost.anchorMax = Vector2.one;
+                _mapHost.offsetMin = new Vector2(0f, edgeGap * 0.5f);
+                _mapHost.offsetMax = Vector2.zero;
+            }
+            var edge = EnsureEdge();
+            if (edge && _edgeHost)
+            {
+                _edgeHost.anchorMin = Vector2.zero;
+                _edgeHost.anchorMax = new Vector2(1f, share);
+                _edgeHost.pivot = new Vector2(0.5f, 0.5f);
+                _edgeHost.offsetMin = Vector2.zero;
+                _edgeHost.offsetMax = new Vector2(0f, -edgeGap * 0.5f);
+            }
+        }
+
+        static VoyageBoard.Row BoardRow(VoyageLines lines, VoyageOpenCard.Model model, int index, CrewPerson person)
+        {
+            var row = new VoyageBoard.Row
+            {
+                Title = TemplateText.Fill(lines.BoardRowTitle, "n", (index + 1).ToString("00", CultureInfo.InvariantCulture),
+                    "place", model.To),
+                By = person != null ? TemplateText.Fill(lines.BoardRowBy, "pilot", person.Name) : null,
+                Meta = BoardMeta(lines, model),
+            };
+            row.Course.AddRange(model.Course);
+            return row;
+        }
+
+        static string BoardMeta(VoyageLines lines, VoyageOpenCard.Model model) =>
+            string.IsNullOrEmpty(model.LightYears) ? null
+                : TemplateText.Fill(lines.BoardRowMeta, "ly", model.LightYears, "minutes", model.Minutes, "intensity", model.Intensity);
+
+        static VoyageBoard.Voyage BoardVoyage(VoyageLines lines, VoyageJob job, VoyageOpenCard.Model model, System.Action setSail) => new()
+        {
+            Title = job.Title,
+            Line = job.Summary,
+            Distance = model.CourseValue,
+            Sail = model.SailValue,
+            Intensity = string.IsNullOrEmpty(model.Intensity) ? null
+                : TemplateText.Fill(lines.BoardIntensityValue, "intensity", model.Intensity),
+            SetSail = setSail,
+        };
+
+        VoyageBoard.Row EscortRow(VoyageContent content, VoyageLines lines, ArkEscortSO escort, int difficulty,
+            IReadOnlyList<string> course)
+        {
+            string legs = escort.Legs.Count.ToString(CultureInfo.InvariantCulture);
+            var row = new VoyageBoard.Row
+            {
+                Title = TemplateText.Fill(escort.CardTitle, "difficulty", difficulty.ToString(CultureInfo.InvariantCulture), "legs", legs),
+                By = TemplateText.Fill(escort.CardLine, "legs", legs, "difficulty", difficulty.ToString(CultureInfo.InvariantCulture)),
+                Meta = course is { Count: >= 2 } ? CourseLine(content, lines, course) : null,
+            };
+            if (course is { Count: >= 2 })
+            {
+                var sea = VoyageChart.For(content)?.Along(course);
+                if (sea != null) foreach (var p in sea.Points) row.Course.Add(VoyageMapGraphic.MapPoint(p));
+            }
+            return row;
+        }
+
+        /// <summary>The Ark escort in the right panel: its title and line at the picked difficulty, and, before it sails, the
+        /// difficulty stepper and Set sail.</summary>
+        VoyageBoard.Voyage EscortVoyage(VoyageContent content, VoyageLines lines, ArkEscortSO escort, int difficulty,
+            IReadOnlyList<string> course, bool sail)
+        {
+            var row = EscortRow(content, lines, escort, difficulty, course);
+            var voyage = new VoyageBoard.Voyage { Title = row.Title, Line = row.By };
+            if (!sail)
+            {
+                voyage.SailLabel = lines.BoardUnderway;
+                return voyage;
+            }
+            voyage.SetSail = () => SetSailEscort(difficulty);
+            voyage.LowerLabel = escort.LowerLabel;
+            voyage.RaiseLabel = escort.RaiseLabel;
+            voyage.Lower = () => { Difficulty = difficulty - 1; Refresh(); };
+            voyage.Raise = () => { Difficulty = difficulty + 1; Refresh(); };
+            return voyage;
         }
 
         /// <summary>Open card <paramref name="index"/> (closing any other), or close it if it is the open one.</summary>
@@ -626,6 +843,9 @@ namespace CosmicShore.UI
                 : string.Empty;
             m.From = from?.Name;
             m.To = to?.Name;
+            m.LightYears = voyage != null ? ly : null;
+            m.Minutes = voyage != null ? minutes : null;
+            m.Intensity = intensity;
             if (voyage != null)
                 foreach (var p in voyage.Points) m.Course.Add(VoyageMapGraphic.MapPoint(p));
             m.Beats.AddRange(VoyageCardRules.Beats(

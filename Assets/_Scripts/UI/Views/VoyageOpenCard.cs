@@ -40,6 +40,8 @@ namespace CosmicShore.UI
         {
             public string Pager, Kicker, Title, CourseChip, FoundBy;
             public string CourseValue, SailValue, IntensityValue, Cells, From, To;
+            /// <summary>The raw numbers (no template), for the Voyages board's rows.</summary>
+            public string LightYears, Minutes, Intensity;
             public readonly List<Vector2> Course = new();
             public readonly List<VoyageCardRules.Beat> Beats = new();
             public Action SetSail;
@@ -582,9 +584,9 @@ namespace CosmicShore.UI
         }
 
         // The Ark's rules (SquadsPage.IsMySeat / CanEdit): your own card, and the AI or open cards of a squad you made.
-        static bool IsMySeat(SavedSquad squad, int seat) => squad.IsJoined() ? seat == squad.MySeat : seat == 0;
+        internal static bool IsMySeat(SavedSquad squad, int seat) => squad.IsJoined() ? seat == squad.MySeat : seat == 0;
 
-        static bool CanEdit(SavedSquad squad, int seat) =>
+        internal static bool CanEdit(SavedSquad squad, int seat) =>
             squad != null && (IsMySeat(squad, seat) || (!squad.IsJoined() && seat > 0 && !squad.GetSlot(seat).IsPlayer()));
 
         string Who(SavedSquad squad, int seat, SquadSlot slot)

@@ -84,6 +84,7 @@ LINES_FIELDS = [
     "CardSettingArtifact", "CardNoArtifact", "ElementCharge", "ElementMass", "ElementSpace", "ElementTime", "CardStoryHead",
     "CardStoryOptional", "StoryNews", "StoryPlace", "StoryCrew", "StoryCrewBy", "StoryWater", "StoryWaterLine",
     "StoryWaterBy", "StoryWorld", "StoryWorldBy", "StoryLog", "StoryLogLine",
+    "BoardRowTitle", "BoardRowBy", "BoardRowMeta", "BoardDistanceLabel", "BoardSailLabel", "BoardIntensityLabel", "BoardIntensityValue", "BoardSquadLabel", "BoardSquadJoined", "BoardSeatWho", "BoardSeatKit", "BoardSeatNotYours", "BoardEditorTitle", "BoardPilotLine", "BoardPilotSwaps", "BoardPilotFlying", "BoardElementLine", "BoardNoArtifactLine", "BoardDone", "BoardUnderway",
 ]
 
 # The world's rates (VoyageWorldRules in VoyageContent.cs): spec key -> (C# field, kind). Every one is written.
