@@ -110,6 +110,9 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
 - **The shim has no `Vector4`** (nor much else of UnityEngine's surface). A new Spawnable's PUBLIC API that returns one
   fails only here; a small `readonly struct` of its own (Jackstraw's `Clearing`) costs nothing and avoids widening a
   shim every harness shares.
+- **A MODEL tier can come from a parity-held Python mirror** (Hood, 2026-11-09): a controller-laid arena has no
+  `EnvironmentPrefab` to RUN, so the recipe imports the mode's mirror (`serpent_hood_budget.py`, whose `--parity`
+  compares it to the compiled C#) and emits a `prisms` layer; Waystation's tower mirror is the same shape.
 - **A named run (`render_card_backgrounds.py <Stem>`) writes the PNG but not `card_backgrounds_manifest.json`**, so a
   card rendered while the full roster cannot run (S95) is missing from the manifest until the next full run.
 

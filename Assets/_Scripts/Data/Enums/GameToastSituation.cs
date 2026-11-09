@@ -215,9 +215,10 @@ namespace CosmicShore.Data
         // changes the vessel's kit. Do not reuse them.
         SerpentTimeWallHint = 156,      // once, at the start: how the dirty race is played
 
-        // Serpent Gulag, the sniper duel (_Scripts/Controller/Arcade/SERPENTGULAG.md). Its race beats are the shared
-        // 128-130 (DomainRaceToasts); a snipe is 82 (DebuffHitsLanded rose). Posted to the LOCAL pilot only.
-        SerpentGulagScopeHint = 157,    // once, at the start: hold LT to scope, RT to fire; the field reloads you
+        // Hood (SerpentHood, was Serpent Gulag), the sniper duel (_Scripts/Controller/Arcade/SERPENTHOOD.md). Its race
+        // beats are the shared 128-130 (DomainRaceToasts); a snipe is 82 (DebuffHitsLanded rose). Posted to the LOCAL
+        // pilot only.
+        SerpentHoodScopeHint = 157,     // once, at the start: hold LT to scope, RT to fire; the heart reloads you
 
         // LanternRun, the Angler's Time race (_Scripts/Controller/Arcade/LANTERNRUN.md). Its race beats are the shared
         // 129-132 (DomainRaceToasts). Posted to the LOCAL pilot only.

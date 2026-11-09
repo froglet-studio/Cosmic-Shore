@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     /// <para><b>Time crystals</b> (<see cref="RedlineTimeCrystals"/>, from intensity 2): one Time
     /// level each, which on the Manta is Soar's top speed. On the line at I2-I3, inside the apexes
     /// at I4. They are laid on every peer from the broadcast course (the elemental set's Time
-    /// prefab, Serpent Gulag's recipe) and grow back in place; the cell's omni crystal is off
+    /// prefab, Serpent Gulag's recipe, now Hood's) and grow back in place; the cell's omni crystal is off
     /// (the scene's CrystalManager spawns none), so no other element is ever fed.</para>
     ///
     /// <para><b>Why the Manta and not another hull.</b> Cruise 180, x4 on Soar to 720 (x1.3
@@ -149,7 +149,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The elemental set's Time crystal at <paramref name="slot"/>, sized and collected like every
-        /// elemental crystal (one petal), exactly as <c>SerpentGulagController.Mint</c> lays its field.</summary>
+        /// elemental crystal (one petal), exactly as <c>SerpentHoodController.Mint</c> lays its field.</summary>
         void Mint(CrystalSlot slot)
         {
             var set = ElementalCrystalSetSO.Load();

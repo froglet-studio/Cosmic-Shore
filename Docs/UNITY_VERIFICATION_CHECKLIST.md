@@ -997,6 +997,38 @@ No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `c
       `VesselHUDView.SetOmniAbilitySprite` (protected, additive; no other hull calls it).
 
 
+### 🔴 Hood (GameModes 77, was Serpent Gulag): hoods round a crystal heart (`claude/festive-ptolemy-mtm5mx`, 2026-11-09) — NOT EDITOR-VERIFIED
+
+Serpent Gulag rebuilt in place as **Hood** (Shombith): the nests, cell blocks and rubble are gone; the covers are
+Serpentine's ring shapes bent into hoods, on a sphere round a crystal heart (`Assets/_Scripts/Controller/Arcade/SERPENTHOOD.md`).
+Compiled against Unity references (`unity_refcompile`, player and editor configs: 0 errors in project code). The 9
+`SerpentHoodLayoutTests` ran outside Unity (`Tools/Build/serpent_hood_harness/run.sh --self-test`, negative control
+fires) and the Python mirror matches the compiled C# prism for prism (`serpent_hood_budget.py --self-test`). Not opened
+in the editor, not flown.
+
+1. Open the project once after pulling: the scene, card, settings, cell configs and preview were RENAMED (same guids).
+   FrogletTools > Game Modes > Reconcile Build Scene List shows `MinigameSerpentHood` in the list (the old path is gone).
+2. Arcade grid: the card reads **Hood**, its art is the hoods round the crystal heart with a tracer across, its text
+   names hoods and the heart (no nests, no gulag).
+3. Play Hood with 2-4 pilots (AI fill) at each intensity. PASS = hoods round the heart, mouths (the red weave) to the
+   heart, a cup behind each: I1 8 hoods far out, I2 12, I3 18 plus six turned-across shutters near the heart, I4 20 plus
+   six. No hood touches the crystal heart, another hood or a spawn. The arena is ready only once the hoods are laid
+   (the connecting panel waits for them).
+4. Fly into a hood's cup from behind (B to stop): you sit hidden from the heart side, and can scope (LT) and fire (RT)
+   out through the exits (a round also passes through the plates).
+5. Shoot a hood's core (the plain block in the middle of its mouth). PASS = the whole hood blows apart core outward
+   within about a second, and grows back about 25 s later once nobody is inside its reach. A rival hiding in it is left
+   in the open.
+6. Snipe a rival pilot: one snipe, toast 82; three snipes for a domain ends the match, the reveal reads HOOD TIME /
+   SNIPES LEFT. The start toast (157) says to sit in a hood's cup.
+7. AI (Easy-Hard): each flies to a hood's cup at its range from you, going round the hood's rim rather than through the
+   red weave when it comes from the heart side, stops there and snipes; it backs off if you close in. Legendary pushes
+   closer and moves often. Watch: does an AI clip a hood's weave on the way in at I4?
+8. Watch for a Serpent slipping through a hood's weave anywhere but an exit (the stretched weave's largest gap is held
+   under 9.5 u; Serpentine's flat one is 6.5 u).
+9. End Game Conditions window: the row reads "Hood (Serpent) - Snipe Target", value 3 (the old serpentGulag value was
+   migrated).
+
 ### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
 
 Compiled against Unity references (`unity_refcompile`, player + editor: 0 errors in project code); not opened in the editor.

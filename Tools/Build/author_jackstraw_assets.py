@@ -68,7 +68,8 @@ EXISTING["CellIcon"] = lib.CELL_VISUALS["CellIcon"]
 THRESHER_EXECUTOR = "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ThresherExecutor.cs"
 THRESHER_CONFIG = "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset"
 # The donor scene's identity, minted by author_serpent_gulag_assets.py with the same guid function.
-DONOR_SCENE = f"{lib.SCENES_DIR}/MinigameSerpentGulag.unity"
+# Serpent Gulag was rebuilt in place as Hood on 2026-11-09 (same scene, same guids: Hood keeps the Gulag seeds below).
+DONOR_SCENE = f"{lib.SCENES_DIR}/MinigameSerpentHood.unity"
 DONOR = {
     "SerpentGulagController":       guid("script/SerpentGulagController"),
     "SerpentGulagSnipeTurnMonitor": guid("script/SerpentGulagSnipeTurnMonitor"),
@@ -407,8 +408,8 @@ g.emit_scene("MinigameJackstraw", G_ASSET["MinigameJackstraw.unity"], scene)
 # ── 9. Registries ────────────────────────────────────────────────────────────
 g.register_arcade_card(G_ASSET["ArcadeGameJackstraw"])
 g.register_always_unlocked()
-g.register_build_scene("MinigameSerpentGulag", "MinigameJackstraw", G_ASSET["MinigameJackstraw.unity"])
-g.set_end_condition("jackstrawStrikeTarget", after="serpentGulagSnipeTarget", value=STRIKE_TARGET)
+g.register_build_scene("MinigameSerpentHood", "MinigameJackstraw", G_ASSET["MinigameJackstraw.unity"])
+g.set_end_condition("jackstrawStrikeTarget", after="serpentHoodSnipeTarget", value=STRIKE_TARGET)
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
 if 0.25 * STRIKE_TARGET * COMEBACK_RATE < 1.0:

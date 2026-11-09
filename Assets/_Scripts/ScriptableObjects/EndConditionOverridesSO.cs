@@ -96,10 +96,10 @@ namespace CosmicShore.ScriptableObjects
         /// editor match had not reached it by 211 s).</summary>
         public const int DefaultDustupPointTarget = 4;
 
-        /// <summary>Serpent Gulag snipe target used when <see cref="serpentGulagSnipeTarget"/> is 0. One
+        /// <summary>Hood snipe target used when <see cref="serpentHoodSnipeTarget"/> is 0. One
         /// SNIPE - a Sniper Shot that strips a rival pilot (a Debuff-class combat hit) - is one point
-        /// (SerpentGulagScoringRuleSO), summed across the domain's pilots.</summary>
-        public const int DefaultSerpentGulagSnipeTarget = 3;
+        /// (SerpentHoodScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultSerpentHoodSnipeTarget = 3;
 
         /// <summary>Jackstraw strike target used when <see cref="jackstrawStrikeTarget"/> is 0. One STRIKE - the
         /// Thresher's ball or chain reaching a rival hull (a Strike-class combat hit) - is one point
@@ -504,9 +504,10 @@ namespace CosmicShore.ScriptableObjects
                  "domain's pilots. 0 = default (4).")]
         [Min(0)] public int dustupPointTarget = 4;
 
-        [Tooltip("Serpent Gulag: SNIPES a DOMAIN needs to win (race to N). One Sniper Shot that " +
+        [Tooltip("Hood: SNIPES a DOMAIN needs to win (race to N). One Sniper Shot that " +
                  "strips a rival pilot is one snipe, summed across the domain's pilots. 0 = default (3).")]
-        [Min(0)] public int serpentGulagSnipeTarget = 3;
+        [FormerlySerializedAs("serpentGulagSnipeTarget")]
+        [Min(0)] public int serpentHoodSnipeTarget = 3;
 
         [Tooltip("Jackstraw: STRIKES a DOMAIN needs to win (race to N). The Thresher's ball or chain reaching " +
                  "a rival hull is one strike, summed across the domain's pilots. 0 = default (8).")]
@@ -586,7 +587,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int wreckingBallPrismTargetBuild = 650;
         [Min(0)] public int undertowPointTargetBuild = 12;
         [Min(0)] public int dustupPointTargetBuild = 4;
-        [Min(0)] public int serpentGulagSnipeTargetBuild = 3;
+        [FormerlySerializedAs("serpentGulagSnipeTargetBuild")]
+        [Min(0)] public int serpentHoodSnipeTargetBuild = 3;
         [Min(0)] public int jackstrawStrikeTargetBuild = 8;
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
@@ -968,12 +970,12 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget > 0 ? dustupPointTarget : DefaultDustupPointTarget;
 
         /// <summary>
-        /// Serpent Gulag snipe target ("first domain to N snipes"): the configured value when &gt; 0,
-        /// otherwise <see cref="DefaultSerpentGulagSnipeTarget"/>. Compared against a DOMAIN's summed
+        /// Hood snipe target ("first domain to N snipes"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultSerpentHoodSnipeTarget"/>. Compared against a DOMAIN's summed
         /// CombatPoints.
         /// </summary>
-        public int GetSerpentGulagSnipeTarget() =>
-            serpentGulagSnipeTarget > 0 ? serpentGulagSnipeTarget : DefaultSerpentGulagSnipeTarget;
+        public int GetSerpentHoodSnipeTarget() =>
+            serpentHoodSnipeTarget > 0 ? serpentHoodSnipeTarget : DefaultSerpentHoodSnipeTarget;
 
         /// <summary>
         /// Jackstraw strike target ("first domain to N strikes"): the configured value when &gt; 0, otherwise
@@ -1090,7 +1092,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
                 GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
                 GameModes.Dustup                    => GetDustupPointTarget(),
-                GameModes.SerpentGulag              => GetSerpentGulagSnipeTarget(),
+                GameModes.SerpentHood              => GetSerpentHoodSnipeTarget(),
                 GameModes.Jackstraw                 => GetJackstrawStrikeTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
@@ -1167,7 +1169,7 @@ namespace CosmicShore.ScriptableObjects
             wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
             undertowPointTarget == undertowPointTargetBuild &&
             dustupPointTarget == dustupPointTargetBuild &&
-            serpentGulagSnipeTarget == serpentGulagSnipeTargetBuild &&
+            serpentHoodSnipeTarget == serpentHoodSnipeTargetBuild &&
             jackstrawStrikeTarget == jackstrawStrikeTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
@@ -1222,7 +1224,7 @@ namespace CosmicShore.ScriptableObjects
             wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
             undertowPointTarget = undertowPointTargetBuild;
             dustupPointTarget = dustupPointTargetBuild;
-            serpentGulagSnipeTarget = serpentGulagSnipeTargetBuild;
+            serpentHoodSnipeTarget = serpentHoodSnipeTargetBuild;
             jackstrawStrikeTarget = jackstrawStrikeTargetBuild;
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
@@ -1278,7 +1280,7 @@ namespace CosmicShore.ScriptableObjects
             wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
             undertowPointTargetBuild = undertowPointTarget;
             dustupPointTargetBuild = dustupPointTarget;
-            serpentGulagSnipeTargetBuild = serpentGulagSnipeTarget;
+            serpentHoodSnipeTargetBuild = serpentHoodSnipeTarget;
             jackstrawStrikeTargetBuild = jackstrawStrikeTarget;
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;

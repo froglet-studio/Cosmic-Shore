@@ -687,10 +687,18 @@ def check_swarm(audit, changed):
 # driver
 # --------------------------------------------------------------------------------------------
 def changed_assets(base):
-    rows = git("diff", "--name-status", "--no-renames", base + "...HEAD", "--", "Assets", ":!*.cs").splitlines()
-    added, modified, deleted = [], [], []
+    """(added, modified, deleted, renames). A RENAME (git's -M) is a modification of the file at its old path, judged
+    against that base copy: `git mv` keeps the guid, so a renamed scene is not a new asset, and auditing it as added
+    reported every reference it already had (the Input System's UI actions on every arena scene) as new (2026-11-09,
+    Serpent Gulag renamed to Hood). `renames` maps each new path to its old one, for the base read."""
+    rows = git("diff", "--name-status", "-M", base + "...HEAD", "--", "Assets", ":!*.cs").splitlines()
+    added, modified, deleted, renames = [], [], [], {}
     for r in rows:
         st, path = r.split("\t", 1)
+        if st.startswith("R"):
+            old, path = path.split("\t", 1)
+            renames[path] = old
+            st = "M"
         # Unity never imports a folder/file whose name ends in "~" or starts with "." (no .meta needed)
         if any(seg.endswith("~") or seg.startswith(".") for seg in path.split("/")):
             continue
@@ -699,7 +707,7 @@ def changed_assets(base):
                 deleted.append(path)
             continue
         (added if st == "A" else modified if st == "M" else deleted if st == "D" else added).append(path)
-    return added, modified, deleted
+    return added, modified, deleted, renames
 
 
 def external_script_guids(base, guids):
@@ -805,7 +813,7 @@ def main():
     schema = setup(args)
     if args.self_test:
         return self_test(schema, args.base)
-    added, modified, deleted = changed_assets(args.base)
+    added, modified, deleted, renames = changed_assets(args.base)
     deleted_metas = []
     for m in deleted:
         if m.endswith(".meta"):
@@ -814,7 +822,7 @@ def main():
                 deleted_metas.append((m, g.group(1)))
 
     def base_text(rel):
-        r = subprocess.run(["git", "show", "%s:%s" % (args.base, rel)], cwd=ROOT, stdout=subprocess.PIPE,
+        r = subprocess.run(["git", "show", "%s:%s" % (args.base, renames.get(rel, rel))], cwd=ROOT, stdout=subprocess.PIPE,
                            stderr=subprocess.DEVNULL)
         return r.stdout.decode("utf-8-sig", "replace") if r.returncode == 0 else None
 
