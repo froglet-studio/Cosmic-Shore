@@ -347,6 +347,10 @@ Hood (Serpent Gulag rebuilt in place, 2026-11-09, `claude/festive-ptolemy-mtm5mx
   Python port; parity against the compiled C# (`serpent_hood_budget.py --parity`, every prism's position and axes)
   found a loop variable in the port shadowing the bar thickness, and the layout tests found the drawn I3/I4 shutters
   reaching into the crystal heart. Both were wrong in the drawings the person approved: say what moved and why.
+- **Run `gates.sh` AFTER the first commit.** `check_generated_assets.py` audits `origin/bleeding-edge...HEAD`, so before
+  anything is committed it audits nothing and passes; Hood's first ALL OK hid an unparseable toast config (an apostrophe,
+  now escaped by `lib.toast`) and a renamed scene the audit read as new (it follows renames since). The compile half of
+  the gates reads the working tree, so only the asset half was vacuous.
 - **A warp of a shape bends its prisms' AXES too**: carry each part's forward and up through the warp's derivative
   (a central difference) and rebuild the rotation; the frame `Cross(axis, up)` is a reflection, so map the basis vectors
   and `LookRotation` them rather than composing quaternions.
