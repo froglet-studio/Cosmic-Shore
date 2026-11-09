@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 71 C, Rev 74 C3 and Rev 77 on the canvas now; built in section 151) | Shombith, 2026-11-08 (sections 147-151) |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79 on the canvas now; Rev 70-77 were reverted and taken off, section 158) | Shombith, 2026-11-08 (sections 147-151, 158-159) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -6772,3 +6772,44 @@ The records of sections 151 and 155-157 stay as history.
 
 **Next:** completely new ideas for the whole Voyage window (tabs, map, voyage cards, picking vessels), drawn on Frogma
 and picked before anything is built. Each pick is built and then checked against a render before it is called done.
+
+
+## 159. Rev 79 mockups: the Voyage window, four new directions - the whole window redrawn (2026-11-09, awaiting a pick)
+
+**Asked (Shombith, 2026-11-09):** "These are still old UI's ... remove it create new ideas completely", "The quality is
+very very bad", "Revert all, redesign window". So every option redraws the WHOLE window - its tabs, the HyperSea map
+and the edge view, the voyages, and picking the squad's vessels - and none is a variation of Rev 70, 71, 74 or 77.
+
+**Made room:** Frogma was at 510 of its 512 files. On Shombith's word ("rev71,74,77,44,46,49 remove") the 58 boards of
+Rev 44, 46, 49, 71, 74 and 77 came off the canvas with their title notes and sections. Their copies stay in
+`Docs/MenuRedesignB/board/`.
+
+**On the canvas:** tab **Voyages**, round "Rev 79 - Voyage window, four new directions" (canvas version
+`1794259825-c678`).
+- Copies: `Docs/MenuRedesignB/board/R79*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r79_voyages.py` (it reuses
+  Rev 71's kit and Rev 74's map tiers).
+- Every board is the real window inside the menu: the nav band, the hub row with VOYAGE lit, the title and Back, on the
+  menu's ground, with the canvas's own art.
+- All six pass `check_mockup.py` (noise 56-60 of 60) and `frogma.py check`. They were rendered locally with the real
+  art and looked at before publishing, the open vessel picker included.
+
+**The options** (the same content in all four: four voyages, the Skim Wing squad, one Set sail):
+- **A - Chart (recommended):** the map is the window. The voyages are pins with their names on the galaxy map, and the
+  course from the Ark is a dashed line. The edge view is a band at the map's foot. The picked voyage docks on the right:
+  its title, line and numbers, the place, the squad's three hulls and Set sail. The tabs are small pills over the map.
+- **B - Logbook:** application-like. A list of voyages on the left, the course large in the middle with the edge view
+  under it, and the squad as three seat rows on the right.
+- **C - Formation:** the squad is the hero, like the Hangar. The destinations are a ribbon across the top, the map is a
+  small round scope, and the edge view is a band beside Set sail.
+- **D - Route:** the voyage as a journey. One line runs from Tumult to the destination and rises and falls with the
+  course's height through the disk, so the map and the edge view become one picture.
+- **Compare:** picking a vessel, the four ways side by side. In every option a press on a hull opens every hull at
+  once, and one press picks. Six hull renders are on the canvas; the game's grid would scroll for more.
+- **Notes.**
+
+**Recommended: A.** It keeps the map in view while you pick, which is what Garrett built the window around, and it
+redraws the parts the build left old: the tabs and the map.
+
+**Differs from the build:** any pick replaces the whole Voyage window: `MissionView` through its generator, and
+`VoyageJobsView`'s layout. Garrett's voyage scene launch (`VoyageLaunch`) and the voyage rules stay as they are. The
+build will be checked against a render before it is called done (section 158).
