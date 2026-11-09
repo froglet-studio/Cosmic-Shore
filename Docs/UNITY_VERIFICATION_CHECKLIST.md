@@ -22108,7 +22108,7 @@ The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran 
 3. **Shielded and super-shielded prisms** still read as a tier above plain in every domain (Ruby's rim is the brightest).
 4. **Danger (coral) and free crystals (lime CTA)** still stand out against the pale bodies.
 
-## 🔴 The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
+## ⚪ REVERTED (section 158, nothing to test) - The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 151. Compiled with `unity_refcompile` (player and
 editor: 0 errors in project code; the rest are packages the cloud cannot fetch). No Unity editor was open, so the
@@ -22158,7 +22158,7 @@ Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK i
 2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
 3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
 
-## 🔴 The Quests window's carousel, Rev 77 "Quests" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+## ⚪ REVERTED (section 158, nothing to test) - The Quests window's carousel, Rev 77 "Quests" (2026-11-09, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 155. Compiled with `unity_refcompile` (player and
 editor: 0 errors in project code). No Unity editor ran.
@@ -22174,7 +22174,7 @@ editor: 0 errors in project code). No Unity editor ran.
 5. **The Profile's quest track** still works as before (it is a separate view).
 6. **The Voyages tab**: the first open with five voyages no longer stalls (the place art is a quarter of the work).
 
-## 🔴 The Saga tab, Rev 77 "Saga" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+## ⚪ REVERTED (section 158, nothing to test) - The Saga tab, Rev 77 "Saga" (2026-11-09, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 156. Compiled with `unity_refcompile` (player and
 editor: 0 errors in project code). No Unity editor ran.
@@ -22188,7 +22188,7 @@ editor: 0 errors in project code). No Unity editor ran.
    Start. It must not open an empty shell (the Arena or Maelstrom window's copy of the modal).
 4. **Back** from the launch window returns to the Saga tab.
 
-## 🔴 The Episodes tab, Rev 77 "Episodes" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+## ⚪ REVERTED (section 158, nothing to test) - The Episodes tab, Rev 77 "Episodes" (2026-11-09, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 157. Compiled with `unity_refcompile` (player and
 editor: 0 errors in project code). No Unity editor ran.

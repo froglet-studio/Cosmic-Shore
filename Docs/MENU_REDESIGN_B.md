@@ -6738,3 +6738,33 @@ what "Tandava done" means (a win, a finish, a play) and where it is recorded.
 - The galaxy picture was rendered offline from the same code (the spiral reads; white words over it read).
 
 **Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
+
+
+## 158. Reverted: the in-game builds of sections 151, 155, 156 and 157 (2026-11-09, claude/epic-fermat-6c7n2l)
+
+**Asked (Shombith, 2026-11-09), after screenshots of the build:** "These are still old UI's ... What the hell is this,
+remove it create new ideas completely ... This is so bad", "The quality is very very bad", and then "Revert all,
+redesign window".
+
+**What went wrong:**
+- The build was never seen before it reached him. It was written as runtime-built UI with no editor and no render, and
+  it failed in ways a single look would have caught:
+  - the vessel strip squeezed about twenty hulls into one row, so each name wrapped one letter per line;
+  - every button in a row drew 0 px high;
+  - the card faces were near black.
+- Only the right column was redrawn. The tab row and the map stayed in the old look, so the window as a whole still
+  read as the old UI.
+
+**Reverted** (the six build commits, `59da71f631`, `b21c9cd767`, `d468b43343`, `3b1ce69446`, `68441a8d5f`,
+`758910be33`): the Voyage window, the Quests window, `VoyageOpenCard`, `VoyageJobsView`, `VoyageMapGraphic`, the
+`VoyageLines` added for them, `ScreenSwitcher`'s `QUESTS` modal and Home's quest card are back as they were before
+section 151. The quest tracker is the Voyage window's Quests tab again. Every Voyage file now matches the tree before
+`59da71f631`.
+
+**Kept:** `ArcadeGameConfigureModal.CanOpen` and `VoyageView`'s use of it (cherry-picked from
+`claude/tandava-arena-mode`), so the Saga cards' Set sail never opens the empty host copy of the launch window.
+
+The records of sections 151 and 155-157 stay as history.
+
+**Next:** completely new ideas for the whole Voyage window (tabs, map, voyage cards, picking vessels), drawn on Frogma
+and picked before anything is built. Each pick is built and then checked against a render before it is called done.

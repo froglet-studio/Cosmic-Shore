@@ -126,6 +126,30 @@ namespace CosmicShore.UI
         public VoyageMapSky Sky => _chart != null ? _sky : null;
         VoyageMapSky SkyOf => _sky ??= new VoyageMapSky(this);
 
+        /// <summary>
+        /// The water this map last painted, for another view to show the same sea (the open voyage card's ground,
+        /// <see cref="VoyageRoutePoster"/>): the texture, the uv rectangle holding the water, and the map points at that
+        /// rectangle's lower-left and upper-right corners (<see cref="MapPoint"/>'s space). False before the first paint
+        /// or on an uncharted map. Read only: it changes nothing on this map.
+        /// </summary>
+        public bool TrySeaView(out Texture texture, out Rect uv, out Vector2 lo, out Vector2 hi)
+        {
+            texture = null;
+            uv = default;
+            lo = _paintLo;
+            hi = _paintHi;
+            if (!_painted || _chart == null || !s_Atlas) return false;
+            texture = s_Atlas;
+            uv = new Rect(0f, 0f, (float)SeaTexWidth / s_Atlas.width, (float)_seaTexHeight / s_Atlas.height);
+            return true;
+        }
+
+        /// <summary>The uv of a white texel in the painted texture, for lines drawn over the water with it.</summary>
+        public Vector2 WhiteUv => _white;
+
+        /// <summary>A course point (light years on the board, <see cref="VoyageChart.Voyage.Points"/>) as a map point.</summary>
+        public static Vector2 MapPoint((double x, double y) p) => Galaxy(p);
+
         static Texture2D s_Atlas;
         static string s_AtlasKey;
         Vector2 _white;
@@ -196,7 +220,6 @@ namespace CosmicShore.UI
             if (key != _frameKey)
             {
                 _frameKey = key;
-                _openPending = OpenTier >= 0;
                 _pan = Vector2.zero;
                 _zoom = 1f;
                 _flying = false;
@@ -206,28 +229,6 @@ namespace CosmicShore.UI
             Caption();
             _placedFor = Vector2.zero;
             Relayout();
-            ApplyOpenTier();
-        }
-
-        /// <summary>
-        /// The ladder tier a new frame opens on (0 the whole galaxy, 6 a single system, as the ladder's rows), or -1 to
-        /// open framed on the places or the course. The Voyage window opens on the whole galaxy (Shombith, 2026-11-08,
-        /// Docs/MENU_REDESIGN_B.md section 149: "we should have the old whole galaxy view on the left"); the player zooms
-        /// from there as before.
-        /// </summary>
-        public int OpenTier { get; set; } = -1;
-        bool _openPending;
-
-        /// <summary>Open the frame on <see cref="OpenTier"/>, once, as soon as the map has a size (the ladder's own dive,
-        /// shown at once rather than flown).</summary>
-        void ApplyOpenTier()
-        {
-            if (!_openPending || _chart == null) return;
-            var r = rectTransform.rect;
-            if (r.width < 1f || r.height < 1f) return;
-            _openPending = false;
-            var (centre, width) = SkyOf.Dive(OpenTier, r.height / Mathf.Max(1f, r.width));
-            SetView(centre ?? Vector2.zero, width);
         }
 
         // On a charted map the board's y runs toward Sol and the screen's up, so it flips.
@@ -302,7 +303,6 @@ namespace CosmicShore.UI
             if (rectTransform.rect.size != _placedFor)
             {
                 Relayout();
-                ApplyOpenTier();
                 return;
             }
             if (_chart != null && SkyOf.Tick()) _viewDirty = true;
@@ -628,8 +628,6 @@ namespace CosmicShore.UI
             s_AtlasKey = key;
         }
 
-        /// <summary>The water's colour at column density <paramref name="n"/> (the colour key the map paints with); the
-        /// open voyage's place cards paint their close-ups with it too (<see cref="VoyagePlaceArt"/>).</summary>
         static Color32 Sea(double n, byte alpha)
         {
             var (r, g, b) = HyperSea.SeaColor(n);
