@@ -159,7 +159,7 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameDustup.unity
     guid: e22eb90422d763de08d219612851e916
   - enabled: 1
-    path: Assets/_Scenes/Multiplayer Scenes/MinigameSerpentGulag.unity
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameSerpentHood.unity
     guid: f1dafdd792e362cf255b47c56fcc1ffd
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTapestry.unity

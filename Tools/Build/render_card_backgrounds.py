@@ -95,7 +95,6 @@ SOURCES = [
     f"{_MG}/SpawnableSwell.cs",
     f"{_MG}/SpawnableWildlifeCage.cs",
     f"{_MG}/SpawnableBoneyard.cs",
-    f"{_MG}/SpawnableSerpentGulag.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
     f"{_MG}/SpawnableSkein.cs",
     f"{_MG}/SpawnableRegattaRails.cs",
@@ -105,6 +104,9 @@ SOURCES = [
     f"{_MG}/SpawnableSpherene.cs",
     f"{_AR}/Skein/SkeinCourse.cs",
     f"{_AR}/Regatta/RegattaCourse.cs",
+    f"{_AR}/Regatta/RegattaCourseFeatures.cs",
+    f"{_AR}/Regatta/RegattaLifeformSites.cs",
+    f"{_SP}/ICellFaunaCorridorSource.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
     f"{_AR}/Headlong/HeadlongCircuit.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",
@@ -769,9 +771,9 @@ CAMERAS = {
     "Breach": (215, 18, 0.85, 44),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
-    # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
-    # tracer crossing the middle (the one thing that scores) reads against it.
-    "SerpentGulag": (50, 26, 0.62, 46),
+    # Hood: from just outside the hoods' sphere, so the hoods round the crystal heart read as the arena, and the
+    # tracer crossing the heart (the one thing that scores) reads against it.
+    "SerpentHood": (50, 22, 0.6, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -916,6 +918,21 @@ def recipe(stem, card_path, pal, ends):
                                      "BrittleStarTime": [0.85, 0.35, 1.6],
                                      "LanternRun": [0.35, 1.1, 1.35]}[s]})
             nucleus()
+    elif s == "SerpentHood":
+        # MODEL tier through the OFFLINE MIRROR (Tools/Build/serpent_hood_budget.py, whose --parity proves it prism for
+        # prism against the shipped SerpentHoodLayout.cs): the controller lays the hoods on every peer, so the cell has no
+        # environment to run. Intensity 2: twelve Coil hoods round the crystal heart, every mouth turned to it.
+        tier = "MODEL"
+        sys.path.insert(0, str(ROOT / "Tools/Build"))
+        import serpent_hood_budget as shb           # noqa: E402
+        rows = []
+        for index, c, ax, _ in shb.covers(INTENSITY):
+            parts, _ = shb.build_cover(index, c, ax, INTENSITY)
+            for pos, fwd, up, sc, kind, _core in parts:
+                rows.append(prism(pos, fwd, up, list(sc), BLUE, DANGER if kind == "danger" else PLAIN))
+        layers.append({"kind": "prisms", "rows": rows})
+        for k in range(24):
+            crystal(shb.field_slot(k, 24, 380.0), 16.0)
     elif s == "Waystation":
         # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_tower_course.py), whose own --compile proves
         # it gate for gate and tile for tile against the shipped WaystationTower.cs: the clusters, the Drop Towers'
@@ -1304,23 +1321,25 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             glow(p, span * 0.006, JADE, 1.2, 0.6)
         glow(v_add(top, [0, -span * 0.3, 0]), span * 0.05, JADE, 0.9, 0.35)
         stage["vessels"] = vessels([(JADE, 0.25, 10, 30, 70), (RUBY, 0.3, -10, 200, 70)])
-    elif s == "SerpentGulag":
-        # The crystal field in the middle (every intensity), and a SNIPE across it: a Sniper Shot's tracer from
-        # a nest on one side to a rival pilot on the other, who takes the hit (a glow in the shooter's colour).
-        for k in range(14):
-            crystal(v_add(centre, v_mul(rng.unit(), span * 0.12 * rng.u() ** 0.33)), span * 0.012)
-        a = v_add(centre, v_mul(v_norm([0.8, 0.12, -0.55]), span * 0.85))
-        b = v_add(centre, v_mul(v_norm([-0.75, -0.05, 0.6]), span * 0.7))
+    elif s == "SerpentHood":
+        # A SNIPE across the crystal heart: a Sniper Shot's tracer from one hood's cup to a rival pilot by a hood on the
+        # far side, who takes the hit (a glow in the shooter's colour). The hoods and the heart are the arena's own.
+        sys.path.insert(0, str(ROOT / "Tools/Build"))
+        import serpent_hood_budget as shb           # noqa: E402
+        cs = shb.covers(INTENSITY)
+        a = v_add(cs[2][1], v_mul(cs[2][2], -45.0))          # in the cup, behind the mouth
+        far = min(cs, key=lambda c: v_dot(v_norm(c[1]), v_norm(cs[2][1])))
+        b = v_add(far[1], v_mul(far[2], 160.0))               # a rival out in front of the far hood
         d = v_norm(v_sub(b, a))
         side = v_norm(v_cross([0, 1, 0], d)); u = v_cross(d, side)
-        w = span * 0.0025   # a hitscan line, not a beam
+        w = 3.0   # a hitscan line, not a beam
         sig = domain_signal(pal, JADE, 1.4)
         layers.append({"kind": "box", "c": v_mul(v_add(a, b), 0.5), "ax": v_mul(side, w), "ay": v_mul(u, w),
                        "az": v_mul(d, math.sqrt(v_dot(v_sub(b, a), v_sub(b, a))) / 2),
                        "base": sig, "rim": sig, "emissive": sig, "edge": 0})
-        glow(a, span * 0.02, JADE, 1.0, 0.4)
-        glow(b, span * 0.035, JADE, 1.1, 0.45)
-        stage["vessels"] = vessels([(JADE, 0.85, 8, 330, 20), (RUBY, 0.7, -4, 140, 25), (GOLD, 0.8, 12, 230, 25)])
+        glow(a, 30.0, JADE, 1.0, 0.4)
+        glow(b, 55.0, JADE, 1.1, 0.45)
+        stage["vessels"] = vessels([(JADE, 0.55, 8, 330, 20), (RUBY, 0.5, -4, 140, 25), (GOLD, 0.55, 12, 230, 25)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)

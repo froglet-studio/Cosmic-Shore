@@ -121,7 +121,7 @@
       "Mass",
       null
     ],
-    "SerpentGulag": [
+    "SerpentHood": [
       "Charge",
       null
     ],
@@ -261,7 +261,7 @@
     "ScarabRally": "SwitchesThreaded",
     "ScarabScramble": "Goals",
     "Scurry": "Crystals",
-    "SerpentGulag": "CombatPoints",
+    "SerpentHood": "CombatPoints",
     "SerpentTime": "SwitchesThreaded",
     "Sirocco": "PrismsDestroyed",
     "Skein": "SwitchesThreaded",
@@ -336,7 +336,7 @@
     "ScarabRally",
     "ScarabScramble",
     "Scurry",
-    "SerpentGulag",
+    "SerpentHood",
     "SerpentTime",
     "ShootingGallery",
     "Sirocco",

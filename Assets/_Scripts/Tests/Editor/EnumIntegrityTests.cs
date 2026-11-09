@@ -185,7 +185,7 @@ namespace CosmicShore.Tests
             // three hulls that had none (merged with BurrowRun from Ys-bleeding-edge).
             // 69 -> 70 on 2026-10-31: WaystationPrototype (76), the Tiger Moth's Drop Tower race beside Waystation
             // (72-74 are ScarabRally, SerpentTime and BrittleStarTime; 75 is LanternRun's, in flight).
-            // 70 -> 71 on 2026-10-31: SerpentGulag (77), the Serpent's sniper duel (67 is still SerpentCharge's and
+            // 70 -> 71 on 2026-10-31: SerpentGulag (77, renamed SerpentHood 2026-11-09), the Serpent's sniper duel (67 is still SerpentCharge's and
             // 75 LanternRun's, both in flight).
             // 71 -> 70 on 2026-11-01: WaystationPrototype (76) folded into Waystation (58); 76 is retired and reserved.
             // 70 -> 71 on 2026-11-01: LanternRun (75), the Angler's Time race.
