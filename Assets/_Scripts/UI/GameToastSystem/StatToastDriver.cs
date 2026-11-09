@@ -51,6 +51,7 @@ namespace CosmicShore.UI
             new(GameToastSituation.CrystalCollected,         s => s.CrystalsCollected),
             new(GameToastSituation.RocketHit,                s => s.MissileHitsLanded),
             new(GameToastSituation.BendLanded,               s => s.DebuffHitsLanded),
+            new(GameToastSituation.StrikeLanded,             s => s.StrikeHitsLanded),
             new(GameToastSituation.PrismsDestroyedMilestone, s => s.HostilePrismsDestroyed),
             new(GameToastSituation.LifeformKilled,           s => s.LifeformsKilled),
             new(GameToastSituation.PrismsStolenMilestone,    s => s.PrismStolen),

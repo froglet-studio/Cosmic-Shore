@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Jackstraw
+  m_EditorClassIdentifier:
+  Mode: 84
+  Notes: 'The heap at each intensity - loose sticks, then jacks, red tips and ironwood. OPEN-ENDED -
+    it scores on striking rival pilots and a solo preview has none; what it teaches is the whip
+    through the sticks and the clearings. Vessel pinned to Thresher(14).'
+  PreviewCell: {fileID: 11400000, guid: 7abd842e8115e8dc15821598513030d5, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 7abd842e8115e8dc15821598513030d5, type: 2}
+  - {fileID: 11400000, guid: 0cfcfdad3b660ddde75fa198af1f6031, type: 2}
+  - {fileID: 11400000, guid: 6976e1020638a6f34c27fbccb200001a, type: 2}
+  - {fileID: 11400000, guid: ae2d4f7f1f8090103ca6bbe41da0254b, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 14
+  ObjectiveText: Swing your ball through a rival pilot to strike them
+  ObjectiveMetric: 8
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 450
+  SpawnRingRadiusFloorByIntensity:
+  - 450
+  - 560
+  - 660
+  - 770
+  SpawnFormation: 0
+  SpawnPoints: []
