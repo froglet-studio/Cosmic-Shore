@@ -100,6 +100,7 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameDustup** | `_Scenes/Multiplayer Scenes/` | `Dustup (59)` | `DustupController` |
 | **MinigameSerpentHood** | `_Scenes/Multiplayer Scenes/` | `SerpentHood (77)` | `SerpentHoodController` |
 | **MinigameJackstraw** | `_Scenes/Multiplayer Scenes/` | `Jackstraw (85)` | `JackstrawController` |
+| **MinigameKelpwood** | `_Scenes/Multiplayer Scenes/` | `Kelpwood (86)` | `KelpwoodController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
 | **MinigameTandava** | `_Scenes/Multiplayer Scenes/` | `Tandava (69)` | `TandavaController` |
@@ -347,6 +348,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 59 | `Dustup` | MP | MinigameDustup | `DustupController` (Butterfly dust duel, Charge — a pass OVER a rival is one Strike point; Boneyard. See `DUSTUP.md`) |
 | 77 | `SerpentHood` | MP | MinigameSerpentHood | `SerpentHoodController` (Hood, the Serpent sniper duel, Charge - a snipe on a rival pilot is one Debuff point; a 3,600 u cell, a crystal heart in the middle, Serpentine's ring shapes bent into hoods as perches round it, shutters at I3-I4, a hood falls when its core breaks; was Serpent Gulag. See `SERPENTHOOD.md`) |
 | 85 | `Jackstraw` | MP | MinigameJackstraw | `JackstrawController` (Thresher brawl, Charge - the ball or chain on a rival pilot is one Strike point; a 0G heap of pick-up sticks in the standard cell, crystals in its clearings; I1-I4 grow the heap 34 -> 230 sticks, add jacks, red tips and ironwood; JACKSTRAW.md) |
+| 86 | `Kelpwood` | MP | MinigameKelpwood | `KelpwoodController` (Angler hunt, Charge - sweep the eraser onto a rival to lock it, one creature hunts it, each bite is one Strike point; a 0G ball of kelp strands in the standard cell, tadpole herds and omni crystals for the school; I1-I4 grow the kelp 28 -> 88 strands, thin the herds and crystals, add danger tips and collars) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
 | 69 | `Tandava` | MP | MinigameTandava | `TandavaController` (UNLISTED since 2026-10-25: on no roster, card in `Games/_Archive`; co-op ARENA hunt in a closed cell - Rhino / Squirrel / Sparrow on one domain against one creature that forages where it likes, rolls up round its meal behind a ring of guards while it feeds, and evolves Great Serpent -> Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion; a variant of each form per match; the cell glows gold for the dance alone. See `TANDAVA.md`) |
@@ -598,6 +600,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DustupPointTurnMonitor` | `TurnMonitors/` | A domain's summed dustings (Strike-class CombatPoints) reach the Dustup target (on `CombatPointTurnMonitorBase`) |
 | `SerpentHoodSnipeTurnMonitor` | `TurnMonitors/` | A domain's summed snipes (Debuff-class CombatPoints) reach the Hood target (on `CombatPointTurnMonitorBase`) |
 | `JackstrawStrikeTurnMonitor` | `TurnMonitors/` | A domain's summed strikes (Strike-class CombatPoints) reach the Jackstraw target (on `CombatPointTurnMonitorBase`) |
+| `KelpwoodBiteTurnMonitor` | `TurnMonitors/` | A domain's summed bites (Strike-class CombatPoints) reach the Kelpwood target (on `CombatPointTurnMonitorBase`) |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |
 | `TandavaTurnMonitor` | `TurnMonitors/` | Server-side: the turn ends the moment the swarm's outcome stops being Running (the cycle completed, or it was shattered, starved, or its dance broken - there is no clock), read off `TandavaScoringRuleSO`; the goal stack draws the mode's own rows (`TandavaController` is its `IGoalSource`: the form and its progress, what it is doing and its body, the halo and the drum) and this monitor's display is what rebuilds it each tick |

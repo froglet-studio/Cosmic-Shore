@@ -65,6 +65,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Kelpwood, the Angler's Charge game (GameModes 86) (`claude/sweet-wozniak-tk48pb`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/KELPWOOD.md`. An Angler hunt through a 0G ball of kelp (`SpawnableKelpwood`, four
+baked prefabs), scored on bites (a creature an Angler locked on a rival biting its hull, Strike-class CombatPoints,
+target 12), tadpole herds grazing the kelp (four Kelpwood-owned spawn profiles) and omni crystals round the core (the
+scene's CrystalManager), AI hunters that steer and hold the eraser (`KelpwoodHunter`). New platform rows:
+`GameModes.Kelpwood = 86`, `kelpwoodBiteTarget`, toast situation 161. Checked offline: `author_kelpwood_assets.py
+--check` (watched it fail on a mutated cell config and a mutated C# constant), the reference compile (0 errors in
+project code), the `/ship` gates (all OK), the clip audit (0 clipping; the C# lays 560 / 880 / 1,280 / 2,024 prisms
+and the mirror's volumes), the bake, the card render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now
+expects 78 modes).
+
+**Verify in editor:**
+1. Arcade → Kelpwood card: the kelp card art, Angler only, 2-4 players, intensities 1-4, the Charge badge.
+2. Launch I1 with one AI (any difficulty), as the HOST: you spawn just outside a ball of kelp strands radiating in every
+   direction; the arrow points at the rival; the hint toast (161) shows once. Tadpoles appear in the kelp after ~5 s;
+   three omni crystals float round the core.
+3. Tame: hold the lure (A) on a tadpole until it joins; take an omni crystal: one creature joins.
+4. Lock: hold LT with the rival under the nose: one creature leaves the school and chases them; the hunted ring shows.
+   On the bite: "<b>you</b> drew blood..." (86), the score goes up 1, the rival is silenced and loses petals. At most
+   one bite a second on one rival, however many hunters are on them.
+5. Be hunted: a creature chases you at ~64 u/s; dash (B) to your other group to shake it. While silenced your own
+   hunters bite but do not score.
+6. AI: at Easy it presses LT wide of you and locks rarely; at Hard / Legendary it locks often, keeps up to 3-4 hunters
+   out, runs for an omni crystal when its school is under 2 or when silenced. Watch for the AI holding LT forever (it
+   must release after 0.3 s) and for the leapfrog fighting the hunter over the nose.
+7. First team to 12 bites wins: results show "N bites" and "N Bites Left"; the reveal says HUNT TIME / BITES LEFT.
+   Replay works.
+8. I2, I3, I4: more strands (44, 64, 88); danger tips on every third strand from I3 (they take petals on contact);
+   danger collars mid-strand at I4; fewer tadpoles (18, 15, 12) and omni crystals (2, 2, 1).
+9. Time a full match at I2 with 1v1 Medium AI. The plan wants 3-5 min; 12 is a first cut (FrogletTools > Game Modes >
+   End Game Conditions → Kelpwood).
+10. Known gap, confirm it: a CLIENT Angler (MPPM second player) cannot lock, dash or tame (ANGLER.md follow-up 7).
+11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameKelpwood.unity`, and Reconcile Build Scene
+    List if the scene is reported missing from the build list. FrogletTools > Ecology > Measure Cell Environment
+    Baselines should agree with the census above.
+
+**First-pass tuning:** target 12, comeback 0.4, the herd and omni counts in `kelpwood_budget.RUNGS`, the AI ladders in
+`KELPWOOD.md`.
+
+---
+
 ### 🔴 Jackstraw, the Thresher's Charge game (GameModes 85) (`claude/ecstatic-heisenberg-21lpmu`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/JACKSTRAW.md`. A Thresher brawl in a 0G heap of pick-up sticks

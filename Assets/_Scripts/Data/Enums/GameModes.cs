@@ -411,6 +411,11 @@ namespace CosmicShore.Data
         // (34 -> 230 sticks), add crossed jacks, red-tipped and ironwood sticks, and shrink the clearings.
         Jackstraw = 85,
 
+        // The Angler's CHARGE game (KELPWOOD.md): kelp strands radiate from a core in every direction. Sweep the eraser
+        // onto a rival to LOCK: one creature leaves your school and hunts them; each BITE is one point. I1-I4 grow the
+        // kelp (28 -> 88 strands), thin the herds and omni crystals, and add danger tips and collars.
+        Kelpwood = 86,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 77) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.

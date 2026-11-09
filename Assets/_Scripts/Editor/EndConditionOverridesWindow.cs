@@ -109,6 +109,8 @@ namespace CosmicShore.Editor
                 "pilot is 1, default " + EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget + ".\n" +
                 "  • Jackstraw: strikes a DOMAIN needs - one Thresher ball or chain reaching a " +
                 "rival hull is 1, default " + EndConditionOverridesSO.DefaultJackstrawStrikeTarget + ".\n" +
+                "  • Kelpwood: bites a DOMAIN needs - one creature an Angler locked on a rival biting its " +
+                "hull is 1, default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget + ".\n" +
                 "  • Tapestry: round length in SECONDS (timed - most mass STANDING at the whistle " +
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
@@ -295,6 +297,7 @@ namespace CosmicShore.Editor
             int du  = Mathf.Max(0, EditorGUILayout.IntField("Dustup - Point Target", _config.dustupPointTarget));
             int sg  = Mathf.Max(0, EditorGUILayout.IntField("Hood (Serpent) - Snipe Target", _config.serpentHoodSnipeTarget));
             int js  = Mathf.Max(0, EditorGUILayout.IntField("Jackstraw - Strike Target", _config.jackstrawStrikeTarget));
+            int kw  = Mathf.Max(0, EditorGUILayout.IntField("Kelpwood - Bite Target", _config.kelpwoodBiteTarget));
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
@@ -349,6 +352,7 @@ namespace CosmicShore.Editor
                     _config.dustupPointTarget = du;
                     _config.serpentHoodSnipeTarget = sg;
                     _config.jackstrawStrikeTarget = js;
+                    _config.kelpwoodBiteTarget = kw;
                     _config.tapestryRoundSeconds = tp;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
@@ -410,6 +414,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Dustup", du > 0 ? du.ToString() : EndConditionOverridesSO.DefaultDustupPointTarget + " (default)");
             EditorGUILayout.LabelField("Hood (Serpent)", sg > 0 ? sg.ToString() : EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget + " (default)");
             EditorGUILayout.LabelField("Jackstraw", js > 0 ? js.ToString() : EndConditionOverridesSO.DefaultJackstrawStrikeTarget + " (default)");
+            EditorGUILayout.LabelField("Kelpwood", kw > 0 ? kw.ToString() : EndConditionOverridesSO.DefaultKelpwoodBiteTarget + " (default)");
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
@@ -489,6 +494,7 @@ namespace CosmicShore.Editor
                    "Dustup: " + Fmt(_config.dustupPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDustupPointTarget) + "\n" +
                    "Hood (Serpent): " + Fmt(_config.serpentHoodSnipeTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget) + "\n" +
                    "Jackstraw: " + Fmt(_config.jackstrawStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultJackstrawStrikeTarget) + "\n" +
+                   "Kelpwood: " + Fmt(_config.kelpwoodBiteTargetBuild, "default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget) + "\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +
