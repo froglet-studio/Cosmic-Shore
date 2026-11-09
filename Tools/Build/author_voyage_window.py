@@ -75,7 +75,17 @@ QUESTS_PREFAB = "Assets/Resources/Voyages/QuestsView.prefab"   # ScreenSwitcher.
 QUESTS_GUID = "38580c6477d2474db47619950c18ce94"   # QuestsView.prefab's guid
 QUESTS_ROOT, QUESTS_TITLE, QUESTS_MODAL = "QuestsView", "Quests", 20   # ScreenSwitcher.ModalWindows.QUESTS
 QUEST_TABS, QUEST_TAB_LABELS = ("Quests", "Episodes"), ("Episode 1", "Episode 2")
-QUEST_TRACK = "1566c719842df27479dce3e1fc98d76f"   # QuestTrackView, the quest tracker
+QUEST_TRACK = "1566c719842df27479dce3e1fc98d76f"   # QuestTrackView, the quest tracker (the Profile's; left the Quests window)
+CAROUSEL_SCRIPT = os.path.join(REPO, "Assets/_Scripts/UI/Views/QuestCarouselView.cs.meta")
+QUEST_LIST = "5eee61facaac4bb46b9e9892512f74cb"   # GameModeQuestList.asset, Episode 1's quests
+# The Quests carousel's words (Rev 77 "Quests", section 155): authored here, edited in the inspector.
+CAROUSEL_WORDS = (
+    ("episodeTitle", "The Hypersea"), ("progressLine", "'{claimed} of {total} claimed'"), ("cardLine", "'{n}  {name}'"),
+    ("focusLine", "'{n}  {name} - {state}'"), ("claimedWord", "Claimed"), ("doneWord", "Done - claim it"),
+    ("openWord", "Next to play"), ("lockedWord", "'After {previous}'"), ("lockedLine", "'Unlocks after {previous}'"),
+    ("comingSoonLine", "Coming soon"), ("claimLabel", "Claim"), ("playLabel", "Play quest"), ("goLabel", "Open the Hangar"),
+)
+CAROUSEL_MARGIN = (40, 24, 40, 32)   # left, top, right, bottom inside the Quests page, px
 MODAL_SCRIPT = os.path.join(REPO, "Assets/_Scripts/UI/Modals/ModalWindowManager.cs.meta")
 ELEMENTS = ("Charge", "Mass", "Space", "Time")   # VoyageJobsView.elementShapes' order (the Element enum's)
 ELEMENT_SHAPES = dict(   # the Codex's element shapes (CodexView.prefab elementShapes)
@@ -673,6 +683,22 @@ def build_quests(text):
     return p.text()
 
 
+def lay_carousel(p):
+    """The Quests window's Episode 1 page as Rev 77 "Quests" (section 155): the old tracker column goes, and a
+    QuestCarouselView fills the page (the episode's head, the quests on a coverflow, the picked quest's line)."""
+    panel = p.find(f"{QUESTS_ROOT}/{MARKER2}/QuestsPage/Panel")
+    delete_deep(p, p.child(panel, "Episodes"))
+    l, t, r, b = CAROUSEL_MARGIN
+    p.place(panel, (0, 0), (1, 1), ((l - r) / 2, (b - t) / 2), (-(l + r), -(t + b)), (0.5, 0.5))
+    guid = re.search(r"^guid: (\w+)$", open(CAROUSEL_SCRIPT, encoding="utf-8").read(), re.M).group(1)
+    font = tmp_of(p, p.find(f"{QUESTS_ROOT}/Header/Title"))
+    words = "".join(f"  {k}: {v}\n" for k, v in CAROUSEL_WORDS)
+    node(p, "Carousel", panel, comps=(("114", lambda go: mono_head(go, guid)
+        + f"  questList: {{fileID: 11400000, guid: {QUEST_LIST}, type: 2}}\n  fontFrom: {{fileID: {font}}}\n" + words
+        + "  cardSize: {x: 420, y: 400}\n  artTint: {r: 0.55, g: 0.56, b: 0.62, a: 1}\n"
+        + "  lockedTint: {r: 0.28, g: 0.29, b: 0.34, a: 1}\n"),))
+
+
 def rewrite3(p):
     """The Voyage window without the Quests tab and page (they are the Quests window now): three tabs."""
     delete_deep(p, p.find("MissionView/Body/Top/QuestsTab"))
@@ -790,8 +816,17 @@ def validate_quests(text):
     assert p.has(f"{QUESTS_ROOT}/Body/Top/EpisodesTab/Lock"), "Episode 2 is not shown locked"
     pages = [p.name(e[3]) for e in tab_pages(p, p.find(f"{QUESTS_ROOT}/Body"))]
     assert pages == ["QuestsPage", "EpisodesPage"], f"the Quests window's tabs show {pages}"
-    assert p.has(f"{QUESTS_ROOT}/{MARKER2}/QuestsPage/Panel/Episodes/Episode1/Quests"), "the quest tracker is not in the Quests window"
-    assert f"guid: {QUEST_TRACK}" in text, "the quest tracker lost its QuestTrackView"
+    carousel = p.find(f"{QUESTS_ROOT}/{MARKER2}/QuestsPage/Panel/Carousel")
+    cguid = re.search(r"^guid: (\w+)$", open(CAROUSEL_SCRIPT, encoding="utf-8").read(), re.M).group(1)
+    view = p.comp(carousel, cguid)
+    assert view, "the Quests page has no QuestCarouselView"
+    vb = p.by[view].body
+    assert f"  questList: {{fileID: 11400000, guid: {QUEST_LIST}, type: 2}}\n" in vb, "the carousel does not read Episode 1's quests"
+    assert Prefab.field(vb, "fontFrom") == tmp_of(p, p.find(f"{QUESTS_ROOT}/Header/Title")), "the carousel's words do not take the title's font"
+    for k, v in CAROUSEL_WORDS:
+        assert f"  {k}: {v}\n" in vb, f"the carousel's {k} is not authored as {v}"
+    assert not p.has(f"{QUESTS_ROOT}/{MARKER2}/QuestsPage/Panel/Episodes"), "the old quest tracker column is back on the Quests page"
+    assert f"guid: {QUEST_TRACK}" not in text, "a QuestTrackView is back in the Quests window (the carousel replaced it)"
     for gone in ("Body/Voyages", f"{MARKER2}/SagaPage"):
         assert not p.has(f"{QUESTS_ROOT}/{gone}"), f"the Quests window still carries {gone}"
     assert f"guid: {GUID['jobs']}" not in text, "the Quests window carries a VoyageJobsView"
@@ -826,7 +861,10 @@ def self_test(text, quests):
         ("the Quests window not a modal", first(f"  ModalType: {QUESTS_MODAL}\n", "  ModalType: 15\n")),
         ("the Quests window titled Voyage", lambda t: t.replace(f"  m_text: {QUESTS_TITLE}\n", "  m_text: Voyage\n")),
         ("Episode 2 open at start", lambda t: re.sub(r"(m_Name: EpisodesPage\n(?:.*\n){4}  m_IsActive: )0", r"\g<1>1", t, count=1)),
-        ("the tracker's script gone", lambda t: t.replace(f"guid: {QUEST_TRACK}", "guid: " + "6" * 32)),
+        ("the carousel's script gone", lambda t: t.replace(
+            "guid: " + re.search(r"^guid: (\w+)$", open(CAROUSEL_SCRIPT, encoding="utf-8").read(), re.M).group(1), "guid: " + "6" * 32)),
+        ("a carousel word retuned", first("  claimLabel: Claim\n", "  claimLabel: Collect\n")),
+        ("the old tracker back", lambda t: t + f"--- !u!114 &1\nMonoBehaviour:\n  m_Script: {{fileID: 11500000, guid: {QUEST_TRACK}, type: 3}}\n"),
         ("a dangling reference", lambda t: re.sub(r"(    page: \{fileID: )-?\d+", r"\g<1>12345", t, count=1)),
     ]
     ok = all([expect(label, m) for label, m in cases]
@@ -867,6 +905,10 @@ def main():
             p = Prefab(p.text())
         random.seed(20261108)
         quests = build_quests(p.text())
+        qp = Prefab(quests)
+        random.seed(20261109)
+        lay_carousel(qp)
+        quests = qp.text()
         validate_quests(quests)
         rewrite3(p)
         text = p.text()
@@ -880,10 +922,22 @@ def main():
         print(f"FAIL: {QUESTS_PREFAB} is missing (it is made with the third layout; restore it from git)")
         return 1
     quests = open(qpath, encoding="utf-8").read()
+    if "m_Name: Carousel\n" not in quests:
+        # The fourth step (Rev 77 "Quests", section 155): the carousel takes the old tracker's place. It too stands
+        # down once on disk.
+        if args.check or args.self_test:
+            print(f"FAIL: {QUESTS_PREFAB} still holds the old quest tracker; run without --check to lay the carousel")
+            return 1
+        qp = Prefab(quests)
+        random.seed(20261109)
+        lay_carousel(qp)
+        quests = qp.text()
+        validate_quests(quests)
+        write(QUESTS_PREFAB, quests)
     validate(text)
     validate_quests(quests)
     print("OK: the Voyage window is laid out as picked (three tabs, the HyperSea map left, the voyage cards right), "
-          "and the Quests window is its own modal")
+          "and the Quests window is its own modal with the quests on a coverflow")
     if args.self_test:
         return 0 if self_test(text, quests) else 1
     return 0

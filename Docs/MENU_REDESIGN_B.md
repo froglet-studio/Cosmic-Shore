@@ -6524,8 +6524,7 @@ to Garrett (section 147).
     now reads "Ready to claim in Quests" (`author_menu_home.py`).
 
 **Not built yet:**
-- The Quests window's quests as place cards on the carousel (Rev 77 "Quests"). The tracker is today's
-  `QuestTrackView` in the new window.
+- ~~The Quests window's quests as place cards on the carousel (Rev 77 "Quests").~~ Built in section 155.
 - The Saga and Episodes tabs in the picked look.
 - The pinned voyage that stays put while the crew or domain changes stays a proposal to Garrett (section 147).
 - The open voyage column's colours are the style guide's token values written as constants in `VoyageOpenCard` (as
@@ -6628,3 +6627,39 @@ held until it lands. The Goby's turn: `CrewOrientation` asks `CrewPictureInPictu
 a turn makes grows the new view out of the small square over the old one (smoothstep, 0.35 s); a swap by the D-pad or a
 double tap stays instant. Not run on a device yet (checklist "Portrait menus", step 8). The nav band has a pose too (Shombith, 2026-11-08: "give the nav band a pose too"): its own rect, across the
 top upright as on PC, so it glides with the rest (`author_menu_portrait.py` SCENE_POSED).
+
+
+## 155. Built: the Quests window's carousel, Rev 77 "Quests" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
+
+**Asked (Shombith, 2026-11-09):** "now build the quests place-card carousel".
+
+**Built:** `QuestCarouselView` (new) fills the Quests window's Episode 1 page in place of the old tracker column.
+- **The head:** the episode's name ("The Hypersea") and "{claimed} of {total} claimed" with a bar.
+- **The coverflow:** the five quests as cards (`VoyageFlowCard`, posed by `VoyageCardRules.FlowPose` as the Voyages
+  tab's are). Each card shows its game's own card art (the Arcade's roster, `ArcadeExploreView.FindGameByMode`;
+  the Hangar quest falls back to its icon), muted by a multiply. Locked cards are darker. The window opens on the
+  frontier quest (`QuestFrontier`). A press, or the D-pad landing on a card, picks it.
+- **The picked quest's line:** "01  Scurry - Next to play", its goal, and one Lime button:
+  - Claim when it is done (`GameModeProgressionService.ClaimQuestAndUnlockNext`; the pick moves to the next quest);
+  - Play quest when it is next (`ScreenSwitcher.OpenGame` opens that game's configure);
+  - Open the Hangar for the Hangar quest.
+  A locked quest shows "Unlocks after <the quest before>" and a claimed one "Claimed" instead of a button.
+- **The words** are serialized on `QuestCarouselView` and authored by `author_voyage_window.py`'s fourth step, which
+  then stands down (`--check` validates every word, the quest list, the font and that no `QuestTrackView` is back).
+- `QuestTrackView` itself is unchanged: the Profile screen still uses it.
+- `VoyagePlaceArt` now paints at 128 x 80, not 256 x 160. Measured here: about 80 ms a place at the old size, so five
+  voyages stalled the first open for about a second (more on a phone); now about a quarter of that.
+
+**Verified:**
+- `unity_refcompile` player and editor: 0 errors in project code.
+- `author_voyage_window.py --check --self-test`, with three new negative controls (the carousel's script gone, a
+  word retuned, the old tracker back).
+- The new EditMode test `SpriteCover_StaysInsideTheSpritesOwnRect_InAnAtlas` compiles; its numbers were checked by
+  hand. It has not run in Unity.
+
+**Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
+
+**Still not built:** the Saga and Episodes tabs in the picked look.
+
+Affects: the FTUE quest graph (Shombith and Caleb). It reads and claims through the same service and frontier as
+the Profile's track and Home's card; nothing about the graph changed.

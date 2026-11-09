@@ -14,8 +14,11 @@ namespace CosmicShore.UI
     /// </summary>
     public static class VoyagePlaceArt
     {
-        /// <summary>The close-up's size, texels.</summary>
-        public const int Width = 256, Height = 160;
+        /// <summary>The close-up's size, texels. Small on purpose: the muted sea is soft and the card scales it up
+        /// bilinearly, and each texel is one <see cref="HyperSea.Density"/> sample (measured 2026-11-09: about 80 ms a place
+        /// at 256 x 160 on a desktop CPU under .NET, so a window of five voyages stalled for a second on first open; 128 x
+        /// 80 is a quarter of that).</summary>
+        public const int Width = 128, Height = 80;
 
         /// <summary>The water a close-up shows, ly across.</summary>
         public const float SpanLy = 260f;
@@ -75,7 +78,7 @@ namespace CosmicShore.UI
         {
             var light = new Color32(230, 233, 255, 255);
             int cx = Width / 2, cy = Height / 2;
-            const int r = 5;
+            const int r = 3;
             for (int dy = -r; dy <= r; dy++)
             for (int dx = -r; dx <= r; dx++)
                 if (Mathf.Abs(dx) + Mathf.Abs(dy) <= r)

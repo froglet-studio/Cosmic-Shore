@@ -60,7 +60,9 @@ closed to every Ark (proposed).
     (`HubShoulders`), so they do not slide the hub as well.
   - **The quest tracker is its own window, Quests** (2026-11-08, Rev 77 "Quests", section 151):
     `Assets/Resources/Voyages/QuestsView.prefab`, made by the same generator from this window's chrome. Its tabs are
-    Episode 1 (the quests) and Episode 2 (locked). `ScreenSwitcher.EnsureQuestsModal` places it beside this window as
+    Episode 1 and Episode 2 (locked). Episode 1 is the quests on a coverflow of their games' card art
+    (`QuestCarouselView`, `Docs/MENU_REDESIGN_B.md` section 155): the picked quest's line ends in Claim, Play quest or
+    Open the Hangar. `ScreenSwitcher.EnsureQuestsModal` places it beside this window as
     the `QUESTS` modal (20), and Home's quest card opens it (`OnClickQuests`).
   - **The galaxy map** (`VoyageMapGraphic`), named HyperSea map in the window, fills the left column (`mapColumn`) over
     the edge view. It shows the sea around the places,

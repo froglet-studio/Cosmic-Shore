@@ -22157,3 +22157,19 @@ Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK i
 1. Start a voyage or an Ark escort with AI wingmates.
 2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
 3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
+
+## 🔴 The Quests window's carousel, Rev 77 "Quests" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 155. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran.
+
+1. **Run the EditMode test** `VoyageCardRulesTests.SpriteCover_StaysInsideTheSpritesOwnRect_InAnAtlas`.
+2. **Home > the quest card**: the Quests window opens on Episode 1. "The Hypersea" and "N of 5 claimed" with its bar
+   sit at the top. The five quests stand on a coverflow, each its game's card art, muted, with the frontier quest in
+   front.
+3. **Pick** with a press or the D-pad: the picked card turns to face front, and the line under the cards follows it.
+4. **The button**: on a done quest it reads Claim and claims it (the count and bar go up, the pick moves on). On the
+   next quest it reads Play quest and opens that game's configure; on the Hangar quest it reads Open the Hangar.
+   Locked quests show "Unlocks after ..." and claimed ones "Claimed", with no button.
+5. **The Profile's quest track** still works as before (it is a separate view).
+6. **The Voyages tab**: the first open with five voyages no longer stalls (the place art is a quarter of the work).
