@@ -5,6 +5,10 @@ Documents ▸ Sparrow Chain). `VesselClassType.BrittleStar = 16`. Redesigned 202
 **played by Garrett the same day** ("one of the most fun things we've ever made"); the step-by-step walk in
 [In-editor verification](#in-editor-verification) has not been reported item by item.
 
+> Its games: **Brittle Star Time** (`GameModes.BrittleStarTime = 74`, the Time race, `Arcade/BRITTLESTARTIME.md`) and
+> **Flatline** (`GameModes.Flatline = 84`, the Charge game: a duel through thin panes where only rounds and cord
+> Strikes score, `Arcade/FLATLINE.md`). Neither changes anything on this page.
+
 > Research, the design document transcribed, the studio and its scorecards: `Docs/Studios/BRITTLE_STAR.md`. Fly it first in
 > the Vessel Studio (`Docs/Studios/VesselStudio/brittlestar.html`, the Unity build set).
 

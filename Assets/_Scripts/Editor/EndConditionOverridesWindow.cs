@@ -28,6 +28,9 @@ namespace CosmicShore.Editor
         /// SliceArenaGeometry's intensity 1..4.</summary>
         static readonly string[] CleaveArenaNames = { "Panes", "Swell", "Cage", "Twistbands" };
 
+        /// <summary>Flatline's four rungs, labelled with the pane arrangement each one sizes (SpawnableFlatline).</summary>
+        static readonly string[] FlatlineArenaNames = { "Three Planes", "Five Pages", "Icosa Panes", "Pane Geode" };
+
         EndConditionOverridesSO _config;
 
         [MenuItem("FrogletTools/Game Modes/End Game Conditions", false, 160)]
@@ -109,6 +112,9 @@ namespace CosmicShore.Editor
                 "pilot is 1, default " + EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget + ".\n" +
                 "  • Jackstraw: strikes a DOMAIN needs - one Thresher ball or chain reaching a " +
                 "rival hull is 1, default " + EndConditionOverridesSO.DefaultJackstrawStrikeTarget + ".\n" +
+                "  • Flatline: points a DOMAIN needs, PER INTENSITY - a Brittle Star round on a rival " +
+                "hull is 1, a cord or thrown-saber Strike 8, the ring blast 0. A rung left at 0 falls back " +
+                "to the mode scalar (default " + EndConditionOverridesSO.DefaultFlatlinePointTarget + ").\n" +
                 "  • Tapestry: round length in SECONDS (timed - most mass STANDING at the whistle " +
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
@@ -295,6 +301,19 @@ namespace CosmicShore.Editor
             int du  = Mathf.Max(0, EditorGUILayout.IntField("Dustup - Point Target", _config.dustupPointTarget));
             int sg  = Mathf.Max(0, EditorGUILayout.IntField("Hood (Serpent) - Snipe Target", _config.serpentHoodSnipeTarget));
             int js  = Mathf.Max(0, EditorGUILayout.IntField("Jackstraw - Strike Target", _config.jackstrawStrikeTarget));
+            int fl  = Mathf.Max(0, EditorGUILayout.IntField("Flatline - Point Target", _config.flatlinePointTarget));
+            // Per-intensity, like Cleave's: the denser panes put more fights inside cord reach. 0 falls back to the scalar.
+            var flByIntensity = new List<int>(4);
+            EditorGUI.indentLevel++;
+            for (int i = 0; i < 4; i++)
+            {
+                int authored = _config.flatlinePointTargetByIntensity != null
+                               && i < _config.flatlinePointTargetByIntensity.Count
+                    ? _config.flatlinePointTargetByIntensity[i] : 0;
+                flByIntensity.Add(Mathf.Max(0, EditorGUILayout.IntField(
+                    $"Intensity {i + 1} ({FlatlineArenaNames[i]})", authored)));
+            }
+            EditorGUI.indentLevel--;
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
@@ -349,6 +368,8 @@ namespace CosmicShore.Editor
                     _config.dustupPointTarget = du;
                     _config.serpentHoodSnipeTarget = sg;
                     _config.jackstrawStrikeTarget = js;
+                    _config.flatlinePointTarget = fl;
+                    _config.flatlinePointTargetByIntensity = flByIntensity;
                     _config.tapestryRoundSeconds = tp;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
@@ -410,6 +431,10 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Dustup", du > 0 ? du.ToString() : EndConditionOverridesSO.DefaultDustupPointTarget + " (default)");
             EditorGUILayout.LabelField("Hood (Serpent)", sg > 0 ? sg.ToString() : EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget + " (default)");
             EditorGUILayout.LabelField("Jackstraw", js > 0 ? js.ToString() : EndConditionOverridesSO.DefaultJackstrawStrikeTarget + " (default)");
+            string flatlineEffective = fl > 0 ? fl.ToString()
+                : EndConditionOverridesSO.DefaultFlatlinePointTarget + " (default)";
+            EditorGUILayout.LabelField("Flatline", string.Join(" / ", flByIntensity.ConvertAll(
+                v => v > 0 ? v.ToString() : flatlineEffective)));
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
@@ -489,6 +514,8 @@ namespace CosmicShore.Editor
                    "Dustup: " + Fmt(_config.dustupPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDustupPointTarget) + "\n" +
                    "Hood (Serpent): " + Fmt(_config.serpentHoodSnipeTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget) + "\n" +
                    "Jackstraw: " + Fmt(_config.jackstrawStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultJackstrawStrikeTarget) + "\n" +
+                   "Flatline: " + Fmt(_config.flatlinePointTargetBuild, "default " + EndConditionOverridesSO.DefaultFlatlinePointTarget) +
+                   " (per intensity " + string.Join(" / ", _config.flatlinePointTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +

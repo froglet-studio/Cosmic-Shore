@@ -113,6 +113,8 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
 - **A MODEL tier can come from a parity-held Python mirror** (Hood, 2026-11-09): a controller-laid arena has no
   `EnvironmentPrefab` to RUN, so the recipe imports the mode's mirror (`serpent_hood_budget.py`, whose `--parity`
   compares it to the compiled C#) and emits a `prisms` layer; Waystation's tower mirror is the same shape.
+- **A new card's pure arena helper goes in `SOURCES` beside its Spawnable** (Flatline's `FlatlinePanes`, 2026-11-09):
+  the bake, clip-audit and card harnesses share that list, so an unlisted helper fails all three with CS0246.
 - **A named run (`render_card_backgrounds.py <Stem>`) writes the PNG but not `card_backgrounds_manifest.json`**, so a
   card rendered while the full roster cannot run (S95) is missing from the manifest until the next full run.
 

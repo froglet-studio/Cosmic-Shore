@@ -105,6 +105,11 @@ namespace CosmicShore.ScriptableObjects
         /// Thresher's ball or chain reaching a rival hull (a Strike-class combat hit) - is one point
         /// (JackstrawScoringRuleSO), summed across the domain's pilots.</summary>
         public const int DefaultJackstrawStrikeTarget = 8;
+        /// <summary>Flatline point target used when <see cref="flatlinePointTarget"/> is 0 and the rung authors
+        /// nothing. Points are the fleet price (CombatHitDrain.PointsFor): a round on a rival hull is 1, a cord or
+        /// thrown-saber Strike 8, ten points to the petal; the ring blast pays nothing (FlatlineScoringRuleSO),
+        /// summed across the domain's pilots.</summary>
+        public const int DefaultFlatlinePointTarget = 200;
 
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
@@ -512,6 +517,17 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Jackstraw: STRIKES a DOMAIN needs to win (race to N). The Thresher's ball or chain reaching " +
                  "a rival hull is one strike, summed across the domain's pilots. 0 = default (8).")]
         [Min(0)] public int jackstrawStrikeTarget = 8;
+        [Tooltip("Flatline: POINTS a DOMAIN needs to win (race to N), the Brittle Star's charge game. A round " +
+                 "on a rival hull is 1 point, a cord or thrown-saber Strike 8 (the fleet price, ten points to " +
+                 "the petal); the ring blast scores nothing. 0 = default (200). The per-intensity list below " +
+                 "overrides it.")]
+        [Min(0)] public int flatlinePointTarget = 200;
+
+        [Tooltip("Flatline: per-INTENSITY override of the target above - element 0 is intensity 1. Empty, a 0 " +
+                 "entry, or an intensity past the end falls back to the scalar. It rises up the ladder because " +
+                 "the denser panes put more fights inside cord reach, and a Strike is worth eight rounds, so " +
+                 "points come faster at the top; the four targets hold a 1v1 match near four minutes.")]
+        public List<int> flatlinePointTargetByIntensity = new() { 180, 200, 220, 240 };
 
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
@@ -590,6 +606,8 @@ namespace CosmicShore.ScriptableObjects
         [FormerlySerializedAs("serpentGulagSnipeTargetBuild")]
         [Min(0)] public int serpentHoodSnipeTargetBuild = 3;
         [Min(0)] public int jackstrawStrikeTargetBuild = 8;
+        [Min(0)] public int flatlinePointTargetBuild = 200;
+        [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 180, 200, 220, 240 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
@@ -985,6 +1003,28 @@ namespace CosmicShore.ScriptableObjects
             jackstrawStrikeTarget > 0 ? jackstrawStrikeTarget : DefaultJackstrawStrikeTarget;
 
         /// <summary>
+        /// Flatline point target ("first domain to N points"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultFlatlinePointTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetFlatlinePointTarget() =>
+            flatlinePointTarget > 0 ? flatlinePointTarget : DefaultFlatlinePointTarget;
+
+        /// <summary>
+        /// Flatline target for a given INTENSITY (1-based), falling back to <see cref="GetFlatlinePointTarget()"/>
+        /// when that rung authors nothing - Cleave's fallback chain (<see cref="GetCleavePrismTarget(int)"/>), and
+        /// resolved on the server for the same reason (<c>FlatlinePointTurnMonitor</c> replicates the number).
+        /// </summary>
+        public int GetFlatlinePointTarget(int intensity)
+        {
+            if (flatlinePointTargetByIntensity == null || flatlinePointTargetByIntensity.Count == 0)
+                return GetFlatlinePointTarget();
+
+            int i = Mathf.Clamp(intensity - 1, 0, flatlinePointTargetByIntensity.Count - 1);
+            int v = flatlinePointTargetByIntensity[i];
+            return v > 0 ? v : GetFlatlinePointTarget();
+        }
+
+        /// <summary>
         /// Tapestry round length in seconds: the configured value when &gt; 0, otherwise
         /// <see cref="DefaultTapestryRoundSeconds"/>. Read by TapestryTimeTurnMonitor at
         /// StartMonitor on every peer, so the clock and the whistle cannot disagree.
@@ -1094,6 +1134,8 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Dustup                    => GetDustupPointTarget(),
                 GameModes.SerpentHood              => GetSerpentHoodSnipeTarget(),
                 GameModes.Jackstraw                 => GetJackstrawStrikeTarget(),
+                // Scalar only, as for Cleave: the real answer is per-intensity (GetFlatlinePointTarget(int)).
+                GameModes.Flatline                  => GetFlatlinePointTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush.
@@ -1171,6 +1213,8 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget == dustupPointTargetBuild &&
             serpentHoodSnipeTarget == serpentHoodSnipeTargetBuild &&
             jackstrawStrikeTarget == jackstrawStrikeTargetBuild &&
+            flatlinePointTarget == flatlinePointTargetBuild &&
+            SameInts(flatlinePointTargetByIntensity, flatlinePointTargetByIntensityBuild) &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
@@ -1226,6 +1270,8 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget = dustupPointTargetBuild;
             serpentHoodSnipeTarget = serpentHoodSnipeTargetBuild;
             jackstrawStrikeTarget = jackstrawStrikeTargetBuild;
+            flatlinePointTarget = flatlinePointTargetBuild;
+            flatlinePointTargetByIntensity = CopyInts(flatlinePointTargetByIntensityBuild);
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
@@ -1282,6 +1328,8 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTargetBuild = dustupPointTarget;
             serpentHoodSnipeTargetBuild = serpentHoodSnipeTarget;
             jackstrawStrikeTargetBuild = jackstrawStrikeTarget;
+            flatlinePointTargetBuild = flatlinePointTarget;
+            flatlinePointTargetByIntensityBuild = CopyInts(flatlinePointTargetByIntensity);
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;

@@ -411,8 +411,13 @@ namespace CosmicShore.Data
         // (34 -> 230 sticks), add crossed jacks, red-tipped and ironwood sticks, and shrink the clearings.
         Jackstraw = 85,
 
+        // The Brittle Star's CHARGE game (FLATLINE.md): thin panes of prisms crossing the cell. A pane stops rounds,
+        // the cords cut straight through it, and a ring thrown face-on into it bursts flat along it. Only rounds (1)
+        // and cord / thrown-saber Strikes (8) on rival hulls score; the ring blast pays nothing. Per-intensity target.
+        Flatline = 84,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 77) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 78) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
