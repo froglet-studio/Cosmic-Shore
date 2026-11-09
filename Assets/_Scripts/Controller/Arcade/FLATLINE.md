@@ -1,4 +1,4 @@
-# Flatline (`GameModes.Flatline = 85`)
+# Flatline (`GameModes.Flatline = 84`)
 
 The Brittle Star's **CHARGE** game: a duel through thin **panes** of prisms. Picked by Shombith on 2026-11-09 from
 three drawn ideas (Saber Ring, Flatline, Tangle), with the rule "only the bullets and chords should score points".
@@ -112,11 +112,11 @@ will come from fights near panes. Both are AI-side follow-ups that need no vesse
 
 | Role | Path |
 |---|---|
-| Controller | `Arcade/Flatline/FlatlineController.cs` (sibling of `SerpentGulagController`; the crystal field on the seams) |
+| Controller | `Arcade/Flatline/FlatlineController.cs` (sibling of `SerpentHoodController`, Hood, formerly Serpent Gulag; the crystal field on the seams) |
 | Rule / monitor / settings / AI | `FlatlineScoringRuleSO.cs`, `TurnMonitors/FlatlinePointTurnMonitor.cs`, `FlatlineSettingsSO.cs`, `FlatlineHunter.cs` |
 | Arena | `Environment/MiniGameObjects/SpawnableFlatline.cs`, `FlatlinePanes.cs` (pure) |
 | Census twin | `Tools/Build/flatline_budget.py` |
 | Generator | `Tools/Build/author_flatline_assets.py` (`--check`) |
 | Assets | `_SO_Assets/Games/ArcadeGameFlatline.asset`, `FlatlineSettings.asset`, `Scoring Rules/FlatlineScoringRule.asset`, `Cell Configs/Flatline Cell/`, `_Prefabs/Spawnables/SpawnableFlatline1-4.prefab`, `Game Toasts/GameToastConfig_Flatline.asset`, `Mode Previews/ModePreview_Flatline.asset`, `_Scenes/Multiplayer Scenes/MinigameFlatline.unity` (cloned from Serpent Gulag's) |
 | Tests | `Tests/Editor/FlatlineTests.cs` |
-| Platform rows | `GameModes.Flatline = 85` (84 on the branch until Jackstraw landed 84 first, 2026-11-09), `GameToastSituation.FlatlineHint = 160`; a cord or saber Strike posts the shared `StrikeLanded` 86 toast, `EndConditionOverridesSO` (+ window), `MiniGameHUD` (the Bends' provider: the nearest rival), `author_preview_spawns.py` |
+| Platform rows | `GameModes.Flatline = 84` and `GameToastSituation.FlatlineHint = 159` (Jackstraw claimed the same two the same evening; Shombith gave them to Flatline and Jackstraw moved to 85 / 160, #1866); a cord or saber Strike posts the shared `StrikeLanded` 86 toast, `EndConditionOverridesSO` (+ window), `MiniGameHUD` (the Bends' provider: the nearest rival), `author_preview_spawns.py` |

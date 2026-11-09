@@ -154,9 +154,9 @@ g.emit_asset(
     G_ASSET["GameToastConfig_Waystation"],
     lib.header_for(EXISTING["GameToastConfigSO"], "GameToastConfig_Waystation")
     + f"  gameMode: {MODE_ID}\n  toasts:\n"
-    + lib.toast(117, sq("The tower's rings hang under the plates - fly over one and TAP the Drop through it"),
+    + lib.toast(117, "The tower's rings hang under the plates - fly over one and TAP the Drop through it",
                 tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=25)
-    + lib.toast(118, sq("Short lands on the plate, long meets the pipe - a quick tap, then roll for the next"),
+    + lib.toast(118, "Short lands on the plate, long meets the pipe - a quick tap, then roll for the next",
                 tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=40)
     + lib.toast(129, "{0} is halfway home - ring {1}/{2}", tint_domain=1, domain_names=0)
     + lib.toast(130, "{0} takes the lead - ring {1}/{2}", tint_domain=1, domain_names=0)

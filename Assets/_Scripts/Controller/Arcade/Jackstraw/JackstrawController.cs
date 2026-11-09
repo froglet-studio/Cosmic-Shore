@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
     /// cover and a price: every one the ball breaks costs it speed, so the clean line to a rival is the hot one, and
     /// the heap thins as the match goes on. See JACKSTRAW.md.
     ///
-    /// <para>Structurally a sibling of <see cref="SerpentGulagController"/> (1 round / 1 turn, HasEndGame=false,
+    /// <para>Structurally a sibling of <see cref="SerpentHoodController"/> (1 round / 1 turn, HasEndGame=false,
     /// server winner detection, a snapshot SyncFinalScores_ClientRpc carrying the breakdown, the hit latch cleared per
     /// match). It changes nothing about the Thresher: every hull contact is already a Strike-class combat hit, and
     /// <see cref="JackstrawScoringRuleSO"/> is the rule that pays for it.</para>

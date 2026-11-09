@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-The Heap - Jackstraw's arena (GameModes.Jackstraw = 84, the Thresher's CHARGE game) - as a MIRROR of
+The Heap - Jackstraw's arena (GameModes.Jackstraw = 85, the Thresher's CHARGE game) - as a MIRROR of
 SpawnableJackstraw.cs, not an estimate. author_jackstraw_assets.py imports it for the census, the laid
 volume and the PhaseThresholds, and the stills and the card art are drawn from it, so the picture, the
 numbers and the build cannot drift apart. That is possible because the C# was written for it:

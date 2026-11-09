@@ -98,9 +98,9 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameBroadside** | `_Scenes/Multiplayer Scenes/` | `Broadside (57)` | `BroadsideController` |
 | **MinigameWaystation** | `_Scenes/Multiplayer Scenes/` | `Waystation (58)` | `WaystationController` |
 | **MinigameDustup** | `_Scenes/Multiplayer Scenes/` | `Dustup (59)` | `DustupController` |
-| **MinigameSerpentGulag** | `_Scenes/Multiplayer Scenes/` | `SerpentGulag (77)` | `SerpentGulagController` |
-| **MinigameJackstraw** | `_Scenes/Multiplayer Scenes/` | `Jackstraw (84)` | `JackstrawController` |
-| **MinigameFlatline** | `_Scenes/Multiplayer Scenes/` | `Flatline (85)` | `FlatlineController` |
+| **MinigameSerpentHood** | `_Scenes/Multiplayer Scenes/` | `SerpentHood (77)` | `SerpentHoodController` |
+| **MinigameJackstraw** | `_Scenes/Multiplayer Scenes/` | `Jackstraw (85)` | `JackstrawController` |
+| **MinigameFlatline** | `_Scenes/Multiplayer Scenes/` | `Flatline (84)` | `FlatlineController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
 | **MinigameTandava** | `_Scenes/Multiplayer Scenes/` | `Tandava (69)` | `TandavaController` |
@@ -339,7 +339,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 81 | `PerchRun` | MP | MinigamePerchRun | `PerchRunController` (see `PERCH_RUN.md`) |
 | 82 | `SlipLine` | MP | MinigameSlipLine | `SlipLineController` (see `SLIP_LINE.md`) |
 | 83 | `Breach` | MP | MinigameBreach | `BreachController` (see `BREACH.md`) |
-| 85 | `Flatline` | MP | MinigameFlatline | `FlatlineController` (Brittle Star duel through thin panes, Charge - a round on a rival is 1, a cord Strike 8, the ring 0; per-intensity target. See `FLATLINE.md`) |
+| 84 | `Flatline` | MP | MinigameFlatline | `FlatlineController` (Brittle Star duel through thin panes, Charge - a round on a rival is 1, a cord Strike 8, the ring 0; per-intensity target. See `FLATLINE.md`) |
 | 73 | `SerpentTime` | MP | MinigameSerpentTime | `SerpentTimeController` (see `SERPENTTIME.md`) |
 | 74 | `BrittleStarTime` | MP | MinigameBrittleStarTime | `BrittleStarTimeController` (see `BRITTLESTARTIME.md`) |
 | 75 | `LanternRun` | MP | MinigameLanternRun | `LanternRunController` (the Angler's Time race - two regrowing prism mass clusters a leg, one per group; paint, throw, dash through the ring. See `LANTERNRUN.md`) |
@@ -347,8 +347,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 | 58 | `Waystation` | MP | MinigameWaystation | `WaystationController` (the Tiger Moth's Time race — clusters you weave, a Drop Tower of short hops through plain/danger plates in every gap but the last, one long drop to finish. See `WAYSTATION.md`; 76 was its prototype, retired and reserved) |
 | 59 | `Dustup` | MP | MinigameDustup | `DustupController` (Butterfly dust duel, Charge — a pass OVER a rival is one Strike point; Boneyard. See `DUSTUP.md`) |
-| 77 | `SerpentGulag` | MP | MinigameSerpentGulag | `SerpentGulagController` (Serpent sniper duel, Charge - a snipe on a rival pilot is one Debuff point; a 3,600 u cell, a crystal field in the middle, nests and cell blocks at I2-I4. See `SERPENTGULAG.md`) |
-| 84 | `Jackstraw` | MP | MinigameJackstraw | `JackstrawController` (Thresher brawl, Charge - the ball or chain on a rival pilot is one Strike point; a 0G heap of pick-up sticks in the standard cell, crystals in its clearings; I1-I4 grow the heap 34 -> 230 sticks, add jacks, red tips and ironwood; JACKSTRAW.md) |
+| 77 | `SerpentHood` | MP | MinigameSerpentHood | `SerpentHoodController` (Hood, the Serpent sniper duel, Charge - a snipe on a rival pilot is one Debuff point; a 3,600 u cell, a crystal heart in the middle, Serpentine's ring shapes bent into hoods as perches round it, shutters at I3-I4, a hood falls when its core breaks; was Serpent Gulag. See `SERPENTHOOD.md`) |
+| 85 | `Jackstraw` | MP | MinigameJackstraw | `JackstrawController` (Thresher brawl, Charge - the ball or chain on a rival pilot is one Strike point; a 0G heap of pick-up sticks in the standard cell, crystals in its clearings; I1-I4 grow the heap 34 -> 230 sticks, add jacks, red tips and ironwood; JACKSTRAW.md) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
 | 69 | `Tandava` | MP | MinigameTandava | `TandavaController` (UNLISTED since 2026-10-25: on no roster, card in `Games/_Archive`; co-op ARENA hunt in a closed cell - Rhino / Squirrel / Sparrow on one domain against one creature that forages where it likes, rolls up round its meal behind a ring of guards while it feeds, and evolves Great Serpent -> Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion; a variant of each form per match; the cell glows gold for the dance alone. See `TANDAVA.md`) |
@@ -598,7 +598,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `UndertowPointTurnMonitor` | `TurnMonitors/` | A domain's bends (CombatPoints) plus creature kills reach the Undertow target (on `CombatPointTurnMonitorBase`) |
 | `BroadsidePointTurnMonitor` | `TurnMonitors/` | A domain's summed CombatPoints reach the Broadside target, every hull paying in through its own verb (on `CombatPointTurnMonitorBase`) |
 | `DustupPointTurnMonitor` | `TurnMonitors/` | A domain's summed dustings (Strike-class CombatPoints) reach the Dustup target (on `CombatPointTurnMonitorBase`) |
-| `SerpentGulagSnipeTurnMonitor` | `TurnMonitors/` | A domain's summed snipes (Debuff-class CombatPoints) reach the Serpent Gulag target (on `CombatPointTurnMonitorBase`) |
+| `SerpentHoodSnipeTurnMonitor` | `TurnMonitors/` | A domain's summed snipes (Debuff-class CombatPoints) reach the Hood target (on `CombatPointTurnMonitorBase`) |
 | `JackstrawStrikeTurnMonitor` | `TurnMonitors/` | A domain's summed strikes (Strike-class CombatPoints) reach the Jackstraw target (on `CombatPointTurnMonitorBase`) |
 | `FlatlinePointTurnMonitor` | `TurnMonitors/` | A domain's summed CombatPoints (rounds 1, cord Strikes 8) reach Flatline's PER-INTENSITY target (on `CombatPointTurnMonitorBase`) |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |

@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     /// report a <c>Strike</c> through <c>CombatHitDrain.TryAdmit</c> (0.5 s per victim). Counted everywhere
     /// (<c>BulletHitsLanded</c>, <c>StrikeHitsLanded</c>), scored here.</para>
     ///
-    /// Golf-timed like Dustup and Serpent Gulag: the winning domain's pilots carry their finish time, losers a
+    /// Golf-timed like Dustup and Hood: the winning domain's pilots carry their finish time, losers a
     /// sentinel encoding their domain's deficit. Every line the player reads is an authored template.
     /// </summary>
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Flatline", fileName = "FlatlineScoringRule")]

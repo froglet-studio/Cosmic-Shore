@@ -10,7 +10,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Flatline (GameModes.Flatline = 85), the Brittle Star's charge game: the arena each shipped prefab lays
+    /// Flatline (GameModes.Flatline = 84), the Brittle Star's charge game: the arena each shipped prefab lays
     /// (<see cref="FlatlinePanes"/> read with the prefab's own fields), the flush rule where panes cross, the crystal
     /// sites on the seams, the scoring (only rounds and cords pay; the ring blast pays nothing) and the per-intensity
     /// target. The census rows are the numbers <c>Tools/Build/flatline_budget.py</c> prints; the generator fails if

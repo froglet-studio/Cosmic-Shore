@@ -105,11 +105,14 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
   it.** `audit_prism_clipping.py` and `bake_prism_layouts.py` compile `rcb.SOURCES` and the platform shim too, so the
   Regatta merge `f7231d035c` (new `RegattaCourseFeatures`, `RegattaLifeformSites`, `ICellFaunaCorridorSource`,
   `PreparesPlantingSites`, `Trail.TrailList`) stopped card art, the bake AND the clip audit at once (fixed 2026-11-09,
-  `b2e1e3a4b0`; REFACTOR_BACKLOG S108). Skipping the broken Spawnable in one tool's glob does not help: the others pull it
+  `b2e1e3a4b0`; REFACTOR_BACKLOG S112; the Flatline branch `claude/great-rubin-rur3xs` made the same fix the same day). Skipping the broken Spawnable in one tool's glob does not help: the others pull it
   in through `SOURCES`. Add the new files to `SOURCES` and the missing members to `PlatformShim.cs`, then run all three.
 - **The shim has no `Vector4`** (nor much else of UnityEngine's surface). A new Spawnable's PUBLIC API that returns one
   fails only here; a small `readonly struct` of its own (Jackstraw's `Clearing`) costs nothing and avoids widening a
   shim every harness shares.
+- **A MODEL tier can come from a parity-held Python mirror** (Hood, 2026-11-09): a controller-laid arena has no
+  `EnvironmentPrefab` to RUN, so the recipe imports the mode's mirror (`serpent_hood_budget.py`, whose `--parity`
+  compares it to the compiled C#) and emits a `prisms` layer; Waystation's tower mirror is the same shape.
 - **A new card's pure arena helper goes in `SOURCES` beside its Spawnable** (Flatline's `FlatlinePanes`, 2026-11-09):
   the bake, clip-audit and card harnesses share that list, so an unlisted helper fails all three with CS0246.
 - **A named run (`render_card_backgrounds.py <Stem>`) writes the PNG but not `card_backgrounds_manifest.json`**, so a

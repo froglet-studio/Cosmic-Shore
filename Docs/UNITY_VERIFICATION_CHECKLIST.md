@@ -65,12 +65,12 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Jackstraw, the Thresher's Charge game (GameModes 84) (`claude/ecstatic-heisenberg-21lpmu`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
+### 🔴 Jackstraw, the Thresher's Charge game (GameModes 85) (`claude/ecstatic-heisenberg-21lpmu`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/JACKSTRAW.md`. A Thresher brawl in a 0G heap of pick-up sticks
 (`SpawnableJackstraw`, four baked prefabs), scored on strikes (the ball or chain on a rival hull, Strike-class
 CombatPoints, target 8), crystals in the heap's clearings, AI hunters that only steer (`JackstrawHunter`). New
-platform rows: `GameModes.Jackstraw = 84`, `jackstrawStrikeTarget`, toast situations 86 (`StrikeLanded`) and 159.
+platform rows: `GameModes.Jackstraw = 85`, `jackstrawStrikeTarget`, toast situations 86 (`StrikeLanded`) and 160.
 Checked offline: `author_jackstraw_assets.py --check`, the reference compile (0 errors), the `/ship` gates, the clip
 audit (0 clipping; the C# lays 408 / 1,122 / 2,114 / 3,566 prisms, as the Python mirror does), the bake, the card
 render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 77 modes).
@@ -78,7 +78,7 @@ render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 77 
 **Verify in editor:**
 1. Arcade → Jackstraw card: the heap card art, Thresher only, 2-4 players, intensities 1-4, the Charge badge.
 2. Launch I1 with one AI (any difficulty): you spawn just outside a loose heap; the arrow points at the rival; the
-   hint toast (159) shows once. The sticks are straight 120 u rods in every direction, no floor, no up.
+   hint toast (160) shows once. The sticks are straight 120 u rods in every direction, no floor, no up.
 3. Swing the ball or chain through the rival: "<b>you</b> struck a rival!" (86), the score goes up by 1, the rival is
    silenced (vignette) and loses petals. A second strike on the same rival inside 1 s does not count.
 4. Swing through sticks: each stick prism breaks and the ball slows; a red-hot ball cracks through. Ironwood (I2+)
@@ -996,6 +996,38 @@ No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `c
       one. New: `omniStock0Sprite`..`omniStock2Sprite`, `SetSpareRings`, and on the shared base
       `VesselHUDView.SetOmniAbilitySprite` (protected, additive; no other hull calls it).
 
+
+### 🔴 Hood (GameModes 77, was Serpent Gulag): hoods round a crystal heart (`claude/festive-ptolemy-mtm5mx`, 2026-11-09) — NOT EDITOR-VERIFIED
+
+Serpent Gulag rebuilt in place as **Hood** (Shombith): the nests, cell blocks and rubble are gone; the covers are
+Serpentine's ring shapes bent into hoods, on a sphere round a crystal heart (`Assets/_Scripts/Controller/Arcade/SERPENTHOOD.md`).
+Compiled against Unity references (`unity_refcompile`, player and editor configs: 0 errors in project code). The 9
+`SerpentHoodLayoutTests` ran outside Unity (`Tools/Build/serpent_hood_harness/run.sh --self-test`, negative control
+fires) and the Python mirror matches the compiled C# prism for prism (`serpent_hood_budget.py --self-test`). Not opened
+in the editor, not flown.
+
+1. Open the project once after pulling: the scene, card, settings, cell configs and preview were RENAMED (same guids).
+   FrogletTools > Game Modes > Reconcile Build Scene List shows `MinigameSerpentHood` in the list (the old path is gone).
+2. Arcade grid: the card reads **Hood**, its art is the hoods round the crystal heart with a tracer across, its text
+   names hoods and the heart (no nests, no gulag).
+3. Play Hood with 2-4 pilots (AI fill) at each intensity. PASS = hoods round the heart, mouths (the red weave) to the
+   heart, a cup behind each: I1 8 hoods far out, I2 12, I3 18 plus six turned-across shutters near the heart, I4 20 plus
+   six. No hood touches the crystal heart, another hood or a spawn. The arena is ready only once the hoods are laid
+   (the connecting panel waits for them).
+4. Fly into a hood's cup from behind (B to stop): you sit hidden from the heart side, and can scope (LT) and fire (RT)
+   out through the exits (a round also passes through the plates).
+5. Shoot a hood's core (the plain block in the middle of its mouth). PASS = the whole hood blows apart core outward
+   within about a second, and grows back about 25 s later once nobody is inside its reach. A rival hiding in it is left
+   in the open.
+6. Snipe a rival pilot: one snipe, toast 82; three snipes for a domain ends the match, the reveal reads HOOD TIME /
+   SNIPES LEFT. The start toast (157) says to sit in a hood's cup.
+7. AI (Easy-Hard): each flies to a hood's cup at its range from you, going round the hood's rim rather than through the
+   red weave when it comes from the heart side, stops there and snipes; it backs off if you close in. Legendary pushes
+   closer and moves often. Watch: does an AI clip a hood's weave on the way in at I4?
+8. Watch for a Serpent slipping through a hood's weave anywhere but an exit (the stretched weave's largest gap is held
+   under 9.5 u; Serpentine's flat one is 6.5 u).
+9. End Game Conditions window: the row reads "Hood (Serpent) - Snipe Target", value 3 (the old serpentGulag value was
+   migrated).
 
 ### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
 
@@ -22249,10 +22281,10 @@ Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generato
 4. **Hangar > Upgrades, any hull:** "CHARGE CRYSTALS 0 HELD - 0 SPENT" is on its own row under the step line; nothing overlaps.
 
 
-## 🔴 Flatline, the Brittle Star's charge game (GameModes 85) (2026-11-09, Shombith, NOT RUN IN EDITOR)
+## 🔴 Flatline, the Brittle Star's charge game (GameModes 84) (2026-11-09, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/great-rubin-rur3xs`. Everything is generated by `Tools/Build/author_flatline_assets.py` (`--check`):
-the card, scene (cloned from Serpent Gulag's), rule, settings, toasts, preview, four cell configs, four
+the card, scene (cloned from Serpent Gulag's, now Hood), rule, settings, toasts, preview, four cell configs, four
 `SpawnableFlatline` prefabs and their bakes, the per-intensity end targets. Doc: `Assets/_Scripts/Controller/Arcade/FLATLINE.md`.
 Ran here: the generator `--check` (and two negative controls), `flatline_budget.py` against the shipped C# compiled and
 run (equal on every count and crystal site), `bake_prism_layouts.py --check`, `audit_prism_clipping.py SpawnableFlatline`

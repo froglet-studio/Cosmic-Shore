@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
     /// Strike 8 (<see cref="FlatlineScoringRuleSO"/>); the ring blast scores nothing. First DOMAIN to the target wins
     /// (golf-timed); the target is per intensity (<see cref="FlatlinePointTurnMonitor"/>). See FLATLINE.md.
     ///
-    /// <para>Structurally a sibling of <see cref="SerpentGulagController"/> (1 round / 1 turn, HasEndGame=false, server
+    /// <para>Structurally a sibling of <see cref="SerpentHoodController"/> (Hood, formerly Serpent Gulag) (1 round / 1 turn, HasEndGame=false, server
     /// winner detection, a snapshot SyncFinalScores_ClientRpc carrying the breakdown, the hit latch cleared per match).
     /// It changes nothing about the Brittle Star.</para>
     ///
@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
     /// <see cref="FlatlineSettingsSO.fieldSeed"/>, and each collected crystal grows back in its own place after
     /// <see cref="FlatlineSettingsSO.fieldRegrowSeconds"/>. A crystal is a spare ring for the Brittle Star (every crystal
     /// list on its impactor container), so the seams are where the ring is re-armed: the most exposed places in the
-    /// cell. Collection is per-peer, as in Dog Fight and Serpent Gulag, which is tolerable because a crystal scores
+    /// cell. Collection is per-peer, as in Dog Fight and Hood, which is tolerable because a crystal scores
     /// nothing.</para>
     ///
     /// BRITTLE-STAR-ONLY is enforced by the arcade card's Vessels list - no mode-local vessel check.
