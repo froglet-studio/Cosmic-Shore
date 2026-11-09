@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79, 80 and 81 on the canvas now; Rev 70-77 were reverted and taken off, section 158) | Shombith, 2026-11-08 (sections 147-151, 158-161) |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79-82 on the canvas now, Rev 81 B5 picked; Rev 70-77 were reverted and taken off, section 158) | Shombith, 2026-11-08 (sections 147-151, 158-162) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -6856,7 +6856,7 @@ right panel looks a bit dull" (section 161).
 adding a new region to the window.
 
 
-## 161. Rev 81 mockups: B1 with B3's seat cards, a livelier right panel (2026-11-09, awaiting a pick)
+## 161. Rev 81 mockups: B1 with B3's seat cards, a livelier right panel (2026-11-09; Shombith picked B5, section 162)
 
 **Asked (Shombith, 2026-11-09, on Rev 80):** "I like b1 but I want that 3 card information still and the right panel
 looks a bit dull".
@@ -6886,5 +6886,36 @@ and the element. A press on a card opens the hull grid; one press picks.
   under it.
 - **Notes.** No compare board: only the right panel differs, and the three boards stand side by side on the canvas.
 
+**Picked (Shombith, 2026-11-09): B5, Cards:** "B5 delete others and show me how the squad selection and changing
+works, create a live playable mockup" (section 162). B6 and B7 are off the canvas; their copies stay in the repo.
+
 **Recommended: B5.** It adds B3's cards with the least change to B1, and the large pilots and the labelled numbers are
 what lift the panel out of plain text.
+
+
+## 162. Rev 82: B5 playable - choosing the squad and changing its seats (2026-11-09, awaiting board approval)
+
+**Asked (Shombith, 2026-11-09):** "B5 delete others and show me how the squad selection and changing works, create a
+live playable mockup".
+
+**On the canvas:** tab **Voyages**, board `R82Squad` (canvas version `1794264576-0be8`). B6 and B7 came off the canvas
+in the same publish.
+- Copy: `Docs/MenuRedesignB/board/R82Squad.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r82_voyages.py`.
+- It passes `frogma.py check` (every handler pressed) and `check_mockup.py` against B5 (69 of 88).
+- It was pressed through locally, step by step, and filmed (a 20-second clip, shown in the chat, not committed).
+
+**How it plays** (the whole window as B5 draws it):
+- **The squads** are chips over the cards: Skim Wing (yours) and Breakers (Kestrel's, which you joined). A press
+  switches the squad, and its three seats with it.
+- **A seat you may change:** a press on its card opens the seat editor over the course, with four tabs: Vessel (the
+  hull renders), Pilot (the portraits, each noting who they fly now), Element and Artifact. One press on a choice picks
+  it, and the card behind changes at once. Done (or B) closes the editor.
+- **The swap:** a pilot flies one seat, so picking one who already flies another seat swaps the two (the Ark's rule,
+  `SavedSquad.KeepCardsOwn`).
+- **A seat you may not change** is dimmed and says whose it is: a friend's seat in your squad, and every seat but yours
+  in a squad you joined (the Ark's rule, `SquadsPage.CanEdit`).
+- **The measured case:** changing the Leader's vessel, pilot, element and artifact takes five presses after opening the
+  seat (one per choice, plus a tab). The built window this replaces took 22.
+
+**Not decided here:** whether a change saves to the squad at once (as drawn) or waits for a Save squad press. As
+drawn, every pick saves, which is what the 22-press complaint asked for.

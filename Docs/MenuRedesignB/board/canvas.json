@@ -3632,24 +3632,6 @@
       "title": "Rev 81 B5 - Cards: B1 with labelled numbers and B3's three seat cards in the right panel (recommended) - interactive",
       "is_interactive": true
     },
-    "R81B6.dc.html": {
-      "x": 2100,
-      "y": 9760,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 81 B6 - Manifest: each seat card is its pilot, full height like a poster, the hull over its foot - interactive",
-      "is_interactive": true
-    },
-    "R81B7.dc.html": {
-      "x": 4200,
-      "y": 9760,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 81 B7 - Banner: the destination's picture heads the right panel, the title and numbers over it, the seat cards below - interactive",
-      "is_interactive": true
-    },
     "R81Notes.dc.html": {
       "x": 0,
       "y": 11020,
@@ -3657,6 +3639,15 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 81 - notes: what B1 keeps, B3's cards, the three right panels, the recommendation"
+    },
+    "R82Squad.dc.html": {
+      "x": 0,
+      "y": 13380,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 82 Squad - B5 playable: choosing the squad and changing its seats - interactive",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -3777,6 +3768,7 @@
     "sec-rev79",
     "sec-rev80",
     "sec-rev81",
+    "sec-rev82",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -3852,7 +3844,8 @@
     "rev78",
     "rev79",
     "rev80",
-    "rev81"
+    "rev81",
+    "rev82"
   ],
   "notes": {
     "hud_end": {
@@ -6198,6 +6191,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev82": {
+      "kind": "title1",
+      "text": "Rev 82 - B5 playable - choosing the squad and changing its seats",
+      "x": 0,
+      "y": 12980,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev82": {
+      "kind": "rect",
+      "x": -160,
+      "y": 12820,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -6642,9 +6659,8 @@
     "R80B4.dc.html",
     "R80Notes.dc.html",
     "R81B5.dc.html",
-    "R81B6.dc.html",
-    "R81B7.dc.html",
-    "R81Notes.dc.html"
+    "R81Notes.dc.html",
+    "R82Squad.dc.html"
   ],
   "pages": [
     {
