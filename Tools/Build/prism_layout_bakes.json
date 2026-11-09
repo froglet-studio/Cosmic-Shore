@@ -1,6 +1,6 @@
 {
  "_doc": "Written by Tools/Build/bake_prism_layouts.py - do not edit. One row per baked prefab: the bake it reads, its size, and the load time it saves (generate_ms, the live generation, against decode_ms, reading the bake; .NET 8 on the build container, a phone is slower). --check compares the bakes, not these timings.",
- "total_bytes": 23115885,
+ "total_bytes": 22620021,
  "bakes": [
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableAtlantis.prefab",
@@ -199,39 +199,6 @@
    "sha256": "f37d90553f48bd43491e7c05dad80d997425d81d1cd213c09fc2413cd674e3be",
    "generate_ms": 22.12,
    "decode_ms": 0.53
-  },
-  {
-   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSerpentGulag2.prefab",
-   "shape": "SpawnableSerpentGulag",
-   "stem": "SpawnableSerpentGulag_3b410504d1c5bbb1",
-   "prisms": 1568,
-   "sites": 0,
-   "bytes": 65888,
-   "sha256": "df1cc26f900eb1f111478990f94485ccdf000d6f6875918af74bf30a8c396b8d",
-   "generate_ms": 0.21,
-   "decode_ms": 0.07
-  },
-  {
-   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSerpentGulag3.prefab",
-   "shape": "SpawnableSerpentGulag",
-   "stem": "SpawnableSerpentGulag_7df486f7a5253f67",
-   "prisms": 4228,
-   "sites": 0,
-   "bytes": 177608,
-   "sha256": "808d4c264d27c5bcebe91979fc2fbc129e56f7aa3d8c55e62660920669df33ed",
-   "generate_ms": 0.89,
-   "decode_ms": 0.09
-  },
-  {
-   "prefab": "Assets/_Prefabs/Spawnables/SpawnableSerpentGulag4.prefab",
-   "shape": "SpawnableSerpentGulag",
-   "stem": "SpawnableSerpentGulag_f4098a635461f9fb",
-   "prisms": 6008,
-   "sites": 0,
-   "bytes": 252368,
-   "sha256": "845bf56d46f96bad4e0b90ce5164711317f334a018f18caafcbb336de29f407b",
-   "generate_ms": 1.13,
-   "decode_ms": 0.19
   },
   {
    "prefab": "Assets/_Prefabs/Spawnables/SpawnableSwell.prefab",

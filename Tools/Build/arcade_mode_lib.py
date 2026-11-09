@@ -309,9 +309,12 @@ def wrap_yaml_scalar(text: str, width: int = 88, indent: str = "    ") -> str:
 
 def toast(situation: int, template: str, tint_domain: int = 0, domain_names: int = 1,
           every_n: int = 1, idle: int = 0, idle_seconds: int = 60, alpha=1) -> str:
-    """One GameToastDefinition entry (the field set GameToastConfigSO serializes today)."""
+    """One GameToastDefinition entry (the field set GameToastConfigSO serializes today). The template is a
+    single-quoted YAML scalar, so an apostrophe is doubled: unescaped, "a hood's cup" ended the scalar and the whole
+    toast config stopped parsing (2026-11-09, Hood; the /arcadegame trap Waystation hit first)."""
+    quoted = template.replace("'", "''")
     return (f"  - situation: {situation}\n"
-            f"    messageTemplate: '{template}'\n"
+            f"    messageTemplate: '{quoted}'\n"
             f"    tintWithDomainColor: {tint_domain}\n"
             f"    useDomainColoredNames: {domain_names}\n"
             f"    alpha: {num(alpha)}\n"
@@ -620,6 +623,12 @@ def _self_test() -> int:
         print(("  ok    " if cond else "  FAIL  ") + what)
         if not cond:
             fails.append(what)
+
+    # A toast template with an apostrophe still parses as YAML (the single-quoted scalar doubles it).
+    import yaml
+    entry = yaml.safe_load("toasts:\n" + toast(157, "Sit in a hood's cup"))
+    expect(entry["toasts"][0]["messageTemplate"] == "Sit in a hood's cup",
+           "toast() doubles an apostrophe, so the template round-trips through YAML")
 
     rel = f"{CARDS_DIR}/ArcadeGameBreakwater.asset"
     with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:

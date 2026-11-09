@@ -373,13 +373,14 @@ namespace CosmicShore.Data
         // turn - you paint your path and zoom along it. See _Scripts/Controller/Arcade/LANTERNRUN.md.
         LanternRun = 75,
 
-        // SerpentGulag (77): the Serpent's CHARGE game, a SNIPER DUEL at range in a 3,600 u cell. Pilots spawn far
-        // apart; a field of elemental crystals floats in the middle (Charge shortens the rifle's recovery, so the
-        // field is the risk and the reward); intensities 2-4 add sniper nests and barred cell blocks. A snipe (a
-        // Sniper Shot that strips a rival pilot) is one point; first DOMAIN to the target wins. Beside Garrett's
-        // in-flight SerpentCharge (67, cece/vibrant-archimedes-n3xn3x), which it does not touch. 75 is LanternRun's
-        // and 76 was WaystationPrototype's (folded into Waystation, reserved). See _Scripts/Controller/Arcade/SERPENTGULAG.md.
-        SerpentGulag = 77,
+        // SerpentHood (77): "Hood", the Serpent's CHARGE game, a SNIPER DUEL across a crystal heart in a 3,600 u cell.
+        // Perches (Serpentine's ring shapes bent into hoods, mouths to the heart) stand on a sphere round it; a sniper
+        // sits in a hood's cup and fires out through its exits, and breaking a hood's core brings it down. Charge
+        // shortens the rifle's recovery, so the heart is the risk and the reward. A snipe (a Sniper Shot that strips a
+        // rival pilot) is one point; first DOMAIN to the target wins. Was SerpentGulag (same id, renamed and rebuilt in
+        // place 2026-11-09, Shombith). Beside Garrett's in-flight SerpentCharge (67, cece/vibrant-archimedes-n3xn3x),
+        // which it does not touch. See _Scripts/Controller/Arcade/SERPENTHOOD.md.
+        SerpentHood = 77,
 
         // Thornline (79): the Shrike's TIME race - a chain of THORNS (one big block each) with a ring at the middle of
         // every leg. The Shrike cruises at 18 u/s, so the race is its Void Sling: dock, aim at the next thorn, sling,
@@ -408,10 +409,15 @@ namespace CosmicShore.Data
         // The Thresher's CHARGE game (JACKSTRAW.md): a 0G heap of pick-up sticks, each about a chain long. A STRIKE -
         // the ball or chain reaching a rival hull - is one point; first domain to the target wins. I1-I4 grow the heap
         // (34 -> 230 sticks), add crossed jacks, red-tipped and ironwood sticks, and shrink the clearings.
-        Jackstraw = 84,
+        Jackstraw = 85,
+
+        // The Brittle Star's CHARGE game (FLATLINE.md): thin panes of prisms crossing the cell. A pane stops rounds,
+        // the cords cut straight through it, and a ring thrown face-on into it bursts flat along it. Only rounds (1)
+        // and cord / thrown-saber Strikes (8) on rival hulls score; the ring blast pays nothing. Per-intensity target.
+        Flatline = 84,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 77) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 78) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

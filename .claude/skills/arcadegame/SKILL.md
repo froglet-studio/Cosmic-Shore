@@ -327,6 +327,34 @@ Brittle Star Time's movement ladder (2026-11-06, `claude/brittle-stars-l5-update
   output folder (`/tmp/unity_refcompile_out/<repo>-*`) still holds the removed assembly's `.rsp`: delete that folder
   and re-run (a stale local cache, not a defect in the tree).
 
+Hood (Serpent Gulag rebuilt in place, 2026-11-09, `claude/festive-ptolemy-mtm5mx`, `SERPENTHOOD.md`) taught five:
+- **Renaming a LANDED mode in place keeps every guid's old SEED.** Lantern Run's "rename is a regenerate" is for a mode
+  that has not landed; once rosters, previews, the build list and a scene point at it, `git mv` every file with its
+  `.meta` and have the generator mint `guid(f"script/{OldName}")` under the new name, so no reference moves. The
+  build-list path and the `EndConditionOverrides` key move as one-shot migrations in the generator that stand down once
+  applied, plus `[FormerlySerializedAs]` on the C# field. A generated doc written by another system's sweep
+  (`LEARNED_DRIVES_<Mode>.md`) is that sweep's output: leave its name, and say the analytics history keeps the old one.
+- **A file you only READ can be deleted by someone else's unmerged branch with no conflict.** Hood builds from
+  `SerpentineGate.cs` and never edits it; `claude/dazzling-ride-dpyvkx` deletes it. Before the PR, run
+  `git merge-tree --write-tree --name-only HEAD origin/<in-flight branch>` for every live branch that touches the files
+  you depend on (not only the ones you change). Moving the file into the mode that owns it (same guid) turned the
+  silent delete into a rename/delete conflict.
+- **A mode structure with a CORE RULE cannot be a cell environment.** A baked `CellEnvironmentSpawnableBase` lays
+  anonymous prisms; a rule that watches which prisms are whose needs `PrismTrailBuilder.LayOne` with an owner id from
+  the controller, on every peer, closed form (Serpentine's pattern). The cell configs then carry no environment, and
+  their PhaseThresholds ride the census of what the controller lays.
+- **Draw the ideas from the geometry code you ship, then make the mirror a parity gate.** The drawings came from a
+  Python port; parity against the compiled C# (`serpent_hood_budget.py --parity`, every prism's position and axes)
+  found a loop variable in the port shadowing the bar thickness, and the layout tests found the drawn I3/I4 shutters
+  reaching into the crystal heart. Both were wrong in the drawings the person approved: say what moved and why.
+- **Run `gates.sh` AFTER the first commit.** `check_generated_assets.py` audits `origin/bleeding-edge...HEAD`, so before
+  anything is committed it audits nothing and passes; Hood's first ALL OK hid an unparseable toast config (an apostrophe,
+  now escaped by `lib.toast`) and a renamed scene the audit read as new (it follows renames since). The compile half of
+  the gates reads the working tree, so only the asset half was vacuous.
+- **A warp of a shape bends its prisms' AXES too**: carry each part's forward and up through the warp's derivative
+  (a central difference) and rebuild the rotation; the frame `Cross(axis, up)` is a reflection, so map the basis vectors
+  and `LookRotation` them rather than composing quaternions.
+
 Jackstraw (the Thresher's Charge game, 2026-11-09, `claude/ecstatic-heisenberg-21lpmu`, `JACKSTRAW.md`) taught four:
 - **Draw the ideas from the generator you will ship, and the stills come free.** The three pitches were drawn from a
   Python mirror of each planned Spawnable; the approved one became `jackstraw_budget.py`, and the "approved vs built"
@@ -342,6 +370,26 @@ Jackstraw (the Thresher's Charge game, 2026-11-09, `claude/ecstatic-heisenberg-2
 - **A charge mode can score a hull's existing hit with no vessel code at all.** Grep the executor for its `TryAdmit`
   class and the `onCombatHitLanded` channel its config wires (the generator asserts both), then pay that class in the
   rule. The AI can be steering only when the hull hits by contact; the hull's own boost policy keeps its presses.
+Flatline (the Brittle Star's charge game, 2026-11-09, `claude/great-rubin-rur3xs`, `FLATLINE.md`) taught five:
+- **An EXACT twin is cheap when the geometry is integer first.** Decide which tiles exist on an integer grid
+  (`a*a + b*b <= R*R`), keep every float comparison that can move a count in one place (the seam test), and compute that
+  one in numpy float32 in the C#'s operation order. `flatline_budget.py` then matched the C# prism for prism and site for
+  site on all four rungs at the first run. Put the geometry in a PURE static class (`FlatlinePanes`) so the tests, the
+  twin and the Spawnable all call one thing.
+- **A pure helper a Spawnable calls must join `render_card_backgrounds.SOURCES`**, or `bake_prism_layouts.py --check`,
+  the clip audit and the card render all fail to compile (CS0246) - they share that list. When the harness fails on files
+  you never touched, it is upstream drift (REFACTOR_BACKLOG S95, S112): list the missing helper or add the shim member
+  (`PlatformShim.cs`); `--check` compares pixels, so a longer SOURCES list stales no committed card.
+- **A hull that already runs its own autopilot gets a mode AI that only STEERS.** `BrittleStarExecutor.Autopilot` presses
+  fire, modes and the ring itself; a second presser fights it every few seconds. `SetExternalTargetProvider` and nothing
+  else, and the generator fails if the hunter calls `PerformShipControllerActions`.
+- **An ability that reads the WORLD changes with the arena, and that is the arena's lever, not a vessel change.** The ring
+  blast's disk is the cell's nucleus radius, falling back to `ringBlastFallbackRadius` when the cell has none, so a
+  no-nucleus arena shrinks it from ~780 u to 400 u across. Read the executor for every world read before quoting an
+  ability's size in a mode doc (the first FLATLINE.md quoted the nucleus number).
+- **A per-intensity target is Cleave's shape** (scalar + `...ByIntensity` list, the `Build` twins, `SameInts` / `CopyInts`
+  rows, the window's per-rung rows, the monitor resolving `SelectedIntensity` on the server). `set_end_condition`
+  authors scalars only; the list rides beside it (`author_flatline_assets.py` §9).
 
 ## 4. Gates (no Unity needed; run them all)
 

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Serpent Hood Cell Config 1
+  m_EditorClassIdentifier:
+  CellName: Hood
+  Description: 'Wide Hood - intensity 1 of Hood: eight Coil hoods on a 1,500 u sphere round the crystal
+    heart, every mouth turned to it; shots across reach for the rifle''s 3,000 u. 1908
+    prisms in 8 hoods (940 of them the danger weave), all neutral, laid by
+    SerpentHoodController on every peer (SerpentHoodLayout), not by this cell. Membrane
+    radius 3600 (Cleave''s x3 shell), spawn sphere 2200, the crystal heart (radius 380) at
+    every rung. NO NUCLEUS, no flora, no fauna. Authored by
+    Tools/Build/author_serpent_hood_assets.py - re-run it rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 1
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6eb45784f9024cbb879f94c23ae46bd9, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 360
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: 4274990af07285946858242555f45bfb, type: 2}
+  EnvironmentPrefab: {fileID: 0}
+  EnvironmentIntensity: 1
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 2608
+    RestlessExit: 2408
+    FrenzyEnter: 5508
+    FrenzyExit: 4908
+    RestlessEnterVolume: 253573
+    RestlessExitVolume: 250373
+    FrenzyEnterVolume: 299973
+    FrenzyExitVolume: 290373

@@ -1,4 +1,4 @@
-# Jackstraw (`GameModes.Jackstraw = 84`)
+# Jackstraw (`GameModes.Jackstraw = 85`)
 
 The Thresher's **CHARGE** game: a brawl in a 0G heap of pick-up sticks. Shombith asked for a charge game for the
 Thresher on 2026-11-09 and picked this one from three drawn ideas (the others were Hammer Throw, reefs you sling
@@ -23,7 +23,7 @@ always about to clip one. A **strike**, the ball or any chain link reaching a ri
 | Environment | `SpawnableJackstraw`, one prefab per rung, baked (`Assets/Resources/PrismLayouts/SpawnableJackstraw_*.bytes`) |
 | Census | `Tools/Build/jackstraw_budget.py`, an exact mirror of the C# |
 | Objective arrow | `BendsObjectiveProvider`: the nearest rival pilot |
-| Toasts | 86 (a strike, new: `StrikeHitsLanded` rose), 128-130 (shared race beats via `DomainRaceToasts`), 159 (the hint, new), 30 (comeback) |
+| Toasts | 86 (a strike, new: `StrikeHitsLanded` rose), 128-130 (shared race beats via `DomainRaceToasts`), 160 (the hint, new), 30 (comeback) |
 | Generator | `Tools/Build/author_jackstraw_assets.py` (`--check`) |
 | Card art | `Assets/_Graphics/ARCADE/CardBackgrounds/Jackstraw.png` (`/cardart`, RUN tier: the shipped generator at intensity 2) |
 
@@ -107,13 +107,14 @@ No offline race model exists for this mode, so `/compute-scout` cannot teach it 
 
 ## Platform changes (all additive)
 
-- `GameModes.Jackstraw = 84`, `EnumIntegrityTests` count 76 -> 77. 84 was checked free on bleeding-edge and all 643
-  remote branches on 2026-11-09.
+- `GameModes.Jackstraw = 85`, `EnumIntegrityTests` count 76 -> 77. It first took 84 (checked free on bleeding-edge and
+  all 643 remote branches on 2026-11-09); the Brittle Star's Flatline (`claude/great-rubin-rur3xs`, PR #1863) claimed 84
+  and 159 forty minutes later, and Shombith gave both to Flatline, so Jackstraw moved to 85 and its hint to 160.
 - `EndConditionOverridesSO.jackstrawStrikeTarget` (+ `Build` twin, getter, `TryGetAuthoredTurnTarget` row, the three
   build-value rows) and its row in the End Game Conditions window.
 - `GameToastSituation.StrikeLanded = 86` with its `StatToastDriver` watch on `StrikeHitsLanded`: any mode can now toast
   a strike (Dustup's dustings and Broadside's sword strikes are Strike-class too, but neither config asks for 86, so
-  nothing changes for them). `JackstrawHint = 159`.
+  nothing changes for them). `JackstrawHint = 160`.
 - `MiniGameHUD`: Jackstraw reuses `BendsObjectiveProvider`.
 - Tooling (`Affects: Shombith's tooling`): the card-art harness had stopped compiling after the Regatta merge
   (`f7231d035c`) taught `SpawnableRegattaRails` new types. `render_card_backgrounds.SOURCES` gained
