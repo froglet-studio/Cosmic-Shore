@@ -194,8 +194,10 @@ namespace CosmicShore.Tests
             // 73 -> 74 on 2026-11-07: PerchRun (81), the Goby's Time race.
             // 74 -> 75 on 2026-11-07: SlipLine (82), the Honeyguide's Time race.
             // 75 -> 76 on 2026-11-07: Breach (83), the Orca's Time race.
+            // 76 -> 77 on 2026-11-09: Jackstraw (84), the Thresher's Charge game (84 checked free on bleeding-edge and
+            // every remote branch).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(76, values.Length,
+            Assert.AreEqual(77, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

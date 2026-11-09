@@ -99,6 +99,8 @@ the PNG) before writing; the gates are a floor, not a judgement.
    `pilot-art-stranger-test` in the session's workflows folder; its shape is in `references/PAINTERS.md` section 6.
 4. **Write** (`author.py <spec>`): the PNG, its `.meta` with the kit's guid, `wired.json`, and the pilot asset
    through `author_pilot_assets.py`. Then `author.py --check` and `author_pilot_assets.py --check` are green.
+   A new or repainted portrait also re-cuts its player avatar: run `author_pilot_avatar_assets.py` (one avatar per
+   callsign, ids = callsign values, written into `SO_DefaultProfileIcons`) and commit the avatar PNG with it.
    Never hand-edit a PNG, a `.meta` or a pilot asset's `portrait:` line.
 5. **Commit** the spec, the source, the PNG + meta, `wired.json`, the pilot asset, the sheet and the lessons
    together: `feat(pilots): portrait of <Person> (<CALLSIGN>)`, "Affects: Garrett's pilots". No C# changes, so no

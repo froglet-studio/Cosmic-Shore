@@ -96,6 +96,7 @@ namespace CosmicShore.Data
         PrismsDestroyedMilestone = 83,  // HostilePrismsDestroyed crossed a multiple of everyN
         LifeformKilled = 84,            // LifeformsKilled rose
         PrismsStolenMilestone = 85,     // PrismStolen crossed a multiple of everyN (Hijack)
+        StrikeLanded = 86,              // StrikeHitsLanded rose - a ball, sword or plate reached a pilot (Jackstraw)
 
         // Bloomrush. The cash-out is the mode's whole payoff, so it is the one thing worth
         // announcing: {0} = the pilot, {1} = how many bombs the crystal just cashed. 90/91
@@ -221,6 +222,10 @@ namespace CosmicShore.Data
         // LanternRun, the Angler's Time race (_Scripts/Controller/Arcade/LANTERNRUN.md). Its race beats are the shared
         // 129-132 (DomainRaceToasts). Posted to the LOCAL pilot only.
         LanternRunPaintHint = 158,    // once, at the start: paint the two clusters, throw both groups, dash after them
+
+        // Jackstraw, the Thresher's charge game (_Scripts/Controller/Arcade/JACKSTRAW.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a strike is 86 (StrikeHitsLanded rose). Posted to the LOCAL pilot only.
+        JackstrawHint = 159,            // once, at the start: strike a rival with the ball or chain; fuel is in the clearings
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
