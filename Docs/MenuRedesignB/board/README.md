@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-09 from canvas version `1794264576-0be8` of **Frogma**: Rev 3 to Rev 82, 443 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-09 from canvas version `1794265064-6300` of **Frogma**: Rev 3 to Rev 83, 448 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -677,6 +677,14 @@ Copied on 2026-11-09 from canvas version `1794264576-0be8` of **Frogma**: Rev 3 
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 83 - the seat editor in the game's own look
+
+- [`R83Compare.dc.html`](R83Compare.dc.html) - Rev 83 - Rev 82 Squad: the outlined-square editor this replaces
+- [`R83S1.dc.html`](R83S1.dc.html) - Rev 83 S1 - Showroom: the choice as the hero, its render and name large, the options a slim strip along the foot (recommended) - interactive
+- [`R83S2.dc.html`](R83S2.dc.html) - Rev 83 S2 - Hangar bay: the choice large on a lit podium, the options a sleek list beside it - interactive
+- [`R83S3.dc.html`](R83S3.dc.html) - Rev 83 S3 - Seat sheet: the seat's card opens into a sheet with all four choices as rows - interactive
+- [`R83Notes.dc.html`](R83Notes.dc.html) - Rev 83 - What was wrong with Rev 82's editor, what the three draw from, the recommendation
 
 #### Rev 82 - B5 playable - choosing the squad and changing its seats
 

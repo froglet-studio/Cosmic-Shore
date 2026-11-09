@@ -6893,7 +6893,7 @@ works, create a live playable mockup" (section 162). B6 and B7 are off the canva
 what lift the panel out of plain text.
 
 
-## 162. Rev 82: B5 playable - choosing the squad and changing its seats (2026-11-09, awaiting board approval)
+## 162. Rev 82: B5 playable - choosing the squad and changing its seats (2026-11-09; the editor's look was rejected, redrawn in section 163)
 
 **Asked (Shombith, 2026-11-09):** "B5 delete others and show me how the squad selection and changing works, create a
 live playable mockup".
@@ -6919,3 +6919,41 @@ in the same publish.
 
 **Not decided here:** whether a change saves to the squad at once (as drawn) or waits for a Save squad press. As
 drawn, every pick saves, which is what the 22-press complaint asked for.
+
+## 163. Rev 83 mockups: the seat editor in the game's own look (2026-11-09, awaiting a pick)
+
+**Asked (Shombith, 2026-11-09, on Rev 82):** "Bro it looks soooo bad the selection UI, make it modern sleek and with
+our cosmic shore UI, what even is this, mockups for this now".
+
+**What was wrong with Rev 82's editor:** a black box of outlined squares over the course, with cyan rings for the
+picked tile. Nothing in it came from the style guide, and no choice was large enough to read.
+
+**On the canvas:** tab **Voyages**, section `sec-rev83`: `R83Compare` (Rev 82's editor, opened on the Leader), `R83S1`,
+`R83S2`, `R83S3` and `R83Notes` (canvas version `1794265064-6300`).
+- Copies: `Docs/MenuRedesignB/board/R83*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r83_voyages.py` (builds on
+  r82's logic).
+- Every board passes `frogma.py check` and `check_mockup.py` against B5 (69 of 88).
+- Each was rendered locally with the real art and pressed through: open a seat, change tab, pick, the pilot swap, an AI
+  seat.
+
+**What all three draw from:**
+- The style guide (`Docs/UI_STYLE_GUIDE.md`): the corner sliver, filled plate tiles, Jade (#21C0BD) for the picked
+  thing (a top line and a check), and a popup on #00010A with a 1-unit light border and Done straddling its foot.
+- Rev 54 A, the Showroom Shombith picked as modern: the choice is the hero and the options are a slim strip.
+- The seat being changed is outlined in Jade.
+
+**The three options** (all keep Rev 82's behaviour: one press picks, the card behind changes at once, the pilot swap,
+and the seats you may not change):
+- **S1 Showroom (recommended).** The current choice is the hero: the hull render large with the game's own line for it
+  (`SO_Class_<hull>.asset` Description), or the pilot full length. Its name is at 48, with "Vessel 1 of 6" over it. The
+  options are a strip of plate tiles along the foot.
+- **S2 Hangar bay.** The choice stands large over a lit floor, with its name and line under it. The options are sleek
+  rows on the right, each with its render.
+- **S3 Seat sheet.** No tabs. The seat's own panel opens into a sheet with its pilot and name at the head, and Vessel,
+  Pilot, Element and Artifact as four rows at once. Four presses change everything.
+
+**Real content:** the hull lines are the game's (the Serpent's "sheilded" is the game's own typo). The artifacts are
+the game's: Aegis, Aftershock, Hydra and Javelin (`Assets/_SO_Assets/Pilots/Artifacts`). Their descriptions are empty in
+the game data, so none are shown. The pilots carry no invented biography.
+
+**Still open from section 162:** whether a change saves at once or waits for Save squad.

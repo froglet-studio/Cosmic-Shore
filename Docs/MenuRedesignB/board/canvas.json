@@ -3648,6 +3648,49 @@
       "page": "voyages",
       "title": "Rev 82 Squad - B5 playable: choosing the squad and changing its seats - interactive",
       "is_interactive": true
+    },
+    "R83Compare.dc.html": {
+      "x": 0,
+      "y": 15920,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 83 - Rev 82 Squad: the outlined-square editor this replaces"
+    },
+    "R83S1.dc.html": {
+      "x": 2100,
+      "y": 15920,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 83 S1 - Showroom: the choice as the hero, its render and name large, the options a slim strip along the foot (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R83S2.dc.html": {
+      "x": 4200,
+      "y": 15920,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 83 S2 - Hangar bay: the choice large on a lit podium, the options a sleek list beside it - interactive",
+      "is_interactive": true
+    },
+    "R83S3.dc.html": {
+      "x": 0,
+      "y": 17180,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 83 S3 - Seat sheet: the seat's card opens into a sheet with all four choices as rows - interactive",
+      "is_interactive": true
+    },
+    "R83Notes.dc.html": {
+      "x": 0,
+      "y": 18440,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 83 - What was wrong with Rev 82's editor, what the three draw from, the recommendation"
     }
   },
   "createdOnFiles": {
@@ -3769,6 +3812,7 @@
     "sec-rev80",
     "sec-rev81",
     "sec-rev82",
+    "sec-rev83",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -3845,7 +3889,8 @@
     "rev79",
     "rev80",
     "rev81",
-    "rev82"
+    "rev82",
+    "rev83"
   ],
   "notes": {
     "hud_end": {
@@ -6215,6 +6260,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev83": {
+      "kind": "title1",
+      "text": "Rev 83 - the seat editor in the game's own look",
+      "x": 0,
+      "y": 15520,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev83": {
+      "kind": "rect",
+      "x": -160,
+      "y": 15360,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -6660,7 +6729,12 @@
     "R80Notes.dc.html",
     "R81B5.dc.html",
     "R81Notes.dc.html",
-    "R82Squad.dc.html"
+    "R82Squad.dc.html",
+    "R83Compare.dc.html",
+    "R83S1.dc.html",
+    "R83S2.dc.html",
+    "R83S3.dc.html",
+    "R83Notes.dc.html"
   ],
   "pages": [
     {
