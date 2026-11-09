@@ -188,7 +188,10 @@ After #1771 removed the Obvious SOAP plugin, a checkout that had compiled earlie
 deleted sources, so `gates.sh` printed `FAIL generated_assets` for a tree that was fine. A clean worktree of the base
 passed only because it had nothing to audit, which is why A/B against the base did not settle it. Fix: delete the
 output folder and re-run (`rm -rf $TMPDIR/unity_refcompile_out/<tree>`). The tool should prune what it no longer
-builds (a follow-up in PR #1775).
+builds (a follow-up in PR #1775). **Fixed 2026-11-08 (froglet-studio/Cosmic-Shore#1858):** `build.py` now prunes the
+`.rsp`/`.dll`/`.dll.stamp` of every assembly it no longer builds before it compiles, and `check_generated_assets.py`
+skips and names an `.rsp` none of whose sources exist (and exits 2 with "rerun unity_refcompile" when only some are
+missing), so neither the hand delete nor the crash is needed any more. TRAPS.md has the same entry.
 
 **But a REAL type check of the files you actually wrote is still available, and it is worth the
 20 minutes** on new code (as opposed to a small edit inside a large existing file). Build a stub

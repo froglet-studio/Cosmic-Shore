@@ -154,6 +154,38 @@ def build_guid_index(tree):
 # --------------------------------------------------------------------------------------------
 # schema (Roslyn, via Tools/Build/unity_refcompile/Schema)
 # --------------------------------------------------------------------------------------------
+def rsp_sources(rsp):
+    with open(rsp, errors="replace") as f:
+        return [s for s in (l.strip().strip('"') for l in f) if s.endswith(".cs") and not s.startswith("-")]
+
+
+def schema_rsps(rsp):
+    """Sort the response files beside `rsp` (Assembly-CSharp's) before any reaches the Schema tool,
+    which dies with DirectoryNotFoundException on the first source a response file names that is not
+    on disk. Returns (others, gone, outdated):
+      others   the other assemblies whose sources live under Assets/, every source present: parsed;
+      gone     none of its sources exists - an assembly that was deleted (the Obvious.Soap.rsp left
+               behind by froglet-studio/Cosmic-Shore#1771): skipped, and named;
+      outdated `rsp` itself, or another assembly, lists SOME missing sources - the refcompile output
+               predates the tree, so every schema read from it would be wrong: a setup error.
+    gone and outdated are lists of (path, [missing sources])."""
+    assets = os.path.join(ROOT, "Assets") + os.sep
+    others, gone, outdated = [], [], []
+    for o in [rsp] + [p for p in sorted(glob.glob(os.path.join(os.path.dirname(rsp), "*.rsp"))) if p != rsp]:
+        srcs = rsp_sources(o)
+        if o != rsp and not any(s.startswith(assets) for s in srcs):
+            continue
+        missing = [s for s in srcs if not os.path.exists(s)]
+        if not missing:
+            if o != rsp:
+                others.append(o)
+        elif o != rsp and len(missing) == len(srcs):
+            gone.append((o, missing))
+        else:
+            outdated.append((o, missing))
+    return others, gone, outdated
+
+
 def load_schema(rsp):
     sys.path.insert(0, os.path.join(ROOT, "Tools", "Build", "unity_refcompile"))
     import build as refcompile  # noqa: E402  (the toolchain helpers; importing has no side effects)
@@ -183,10 +215,15 @@ def load_schema(rsp):
     out = os.path.join(os.path.dirname(rsp), "schema.json")
     # Assembly-CSharp first (its references bring the package types), then every other assembly
     # whose sources live in Assets/ - parsed from SOURCE so their editor-only fields are seen too
-    others = []
-    for o in sorted(glob.glob(os.path.join(os.path.dirname(rsp), "*.rsp"))):
-        if o != rsp and any(l.strip().strip('"').startswith(os.path.join(ROOT, "Assets") + os.sep) for l in open(o)):
-            others.append(o)
+    others, gone, outdated = schema_rsps(rsp)
+    for o, missing in gone:
+        print("check_generated_assets: skipping %s - none of its %d source file(s) is on disk (e.g. %s): an "
+              "assembly that no longer exists; the next unity_refcompile run deletes it"
+              % (os.path.basename(o), len(missing), os.path.relpath(missing[0], ROOT)))
+    if outdated:
+        return None, "the refcompile output is older than the tree - %s - rerun `bash Tools/Build/unity_refcompile/run.sh`" % (
+            "; ".join("%s lists %d source file(s) that are not on disk (e.g. %s)"
+                      % (os.path.basename(o), len(m), os.path.relpath(m[0], ROOT)) for o, m in outdated))
     r = subprocess.run([os.path.join(DOTNET_ROOT, "dotnet"), dll, out, rsp] + others, stdout=subprocess.PIPE,
                        stderr=subprocess.STDOUT, text=True)
     if r.returncode != 0:
@@ -795,9 +832,9 @@ def main():
 def self_test(schema, base):
     cfg = "Assets/_SO_Assets/Swarm Fauna/SwarmFaunaConfig.asset"
     tad = "Assets/_Prefabs/FloraAndFauna/SwarmTadpole.prefab"
+    species = "Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Inner Mass Swarm Fauna Config Data.asset"
     tree0 = Tree(ROOT)
-    added = [cfg, tad, SWARM_PROFILE, SWARM_CELL,
-             "Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Inner Mass Swarm Fauna Config Data.asset"]
+    added = [cfg, tad, SWARM_PROFILE, SWARM_CELL, species]
     plain_cs = None  # a script file whose same-named class is NOT a MonoBehaviour/ScriptableObject
     for full, t in schema.types.items():
         if t["kind"] == "Class" and t["files"] and UNITY_OBJECT not in t["bases"] and not t["isGeneric"]:
@@ -806,14 +843,31 @@ def self_test(schema, base):
                 plain_cs = f
                 break
     plain_guid = META_GUID.search(open(os.path.join(ROOT, plain_cs + ".meta")).read()).group(1)
-    first_member = re.search(r"^  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n",
-                             tree0.read(SWARM_PROFILE).split("SupportedFaunas:")[1], re.M).group(0)
+    member = "  - {fileID: 11400000, guid: %s, type: 2}\n" % meta_guid(tree0, species)
     cell_guid = meta_guid(tree0, SWARM_CELL)
 
     def sub(rel, old, new, count=1):
         t = tree0.read(rel)
         assert old in t, "self-test fixture drifted: %r not in %s" % (old, rel)
         return {rel: t.replace(old, new, count)}
+
+    # Every spawn path check_swarm reads for `species`: each SupportedFaunas block that lists it and its
+    # Spawn Matrix row. Other cells' profiles copy the Swarm cell's species (the Ark Escort cell's Escort
+    # Swarm Spawn Profile lists this one), so dropping it from the Swarm profile alone leaves a real
+    # spawn path and is rightly no finding; the control drops it from all of them.
+    fauna_profiles = []
+    for dirpath, _, names in os.walk(os.path.join(ROOT, "Assets", "_SO_Assets")):
+        fauna_profiles += [os.path.relpath(os.path.join(dirpath, n), ROOT) for n in names if n.endswith(".asset")]
+    fauna_profiles = sorted(r for r in fauna_profiles if "SupportedFaunas:" in tree0.read(r))
+    unlisted, row = {}, "\n" + member.rstrip("\n")
+    for rel in fauna_profiles:
+        head, rest = tree0.read(rel).split("SupportedFaunas:", 1)
+        block = re.match(r"(?:\n  [- ] .*)*", rest).group(0)
+        if row in block:
+            unlisted[rel] = head + "SupportedFaunas:" + block.replace(row, "", 1) + rest[len(block):]
+    assert SWARM_PROFILE in unlisted, "self-test fixture drifted: %s does not list %s" % (SWARM_PROFILE, species)
+    if ("  " + member) in tree0.read(SPAWN_MATRIX_TOY):
+        unlisted[SPAWN_MATRIX_TOY] = tree0.read(SPAWN_MATRIX_TOY).replace("  " + member, "")
 
     controls = [
         ("field", "renamed serialized key", sub(cfg, "  TickHz:", "  TickHertz:")),
@@ -828,10 +882,8 @@ def self_test(schema, base):
         ("yaml", "broken YAML", sub(cfg, re.search(r"  UnitScale: [^\n]*\n", tree0.read(cfg)).group(0), "  UnitScale: [2\n")),
         ("yaml", "missing %TAG header", sub(cfg, "%TAG !u! tag:unity3d.com,2011:\n", "")),
         ("meta", "duplicate guid", {"Assets/_SO_Assets/Swarm Fauna/Dup.asset.meta": tree0.read(cfg + ".meta")}),
-        # Dropped from BOTH: a Spawn Matrix row is a spawn path too, and every Swarm-cell species is on it.
-        ("swarm", "species config dropped from the spawn profile and the Spawn Matrix",
-         {**sub(SWARM_PROFILE, first_member, ""),
-          SPAWN_MATRIX_TOY: tree0.read(SPAWN_MATRIX_TOY).replace("  " + first_member, "")}),
+        # Dropped from every spawn profile AND the Spawn Matrix: a matrix row is a spawn path too.
+        ("swarm", "species config dropped from the spawn profile and the Spawn Matrix", unlisted),
         ("swarm", "Swarm cell removed from the Cell Selector", sub(CELL_SELECTOR_SCENE, "guid: " + cell_guid, "guid: " + "f" * 32)),
     ]
     ok = True
@@ -846,6 +898,15 @@ def self_test(schema, base):
         hit = [f for f in found if f[0] == kind]
         print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", label, (hit[0][2][:110] if hit else "")))
         ok &= bool(hit)
+    # ...and the same species still on ANOTHER cell's spawn profile does spawn, so it is not a finding
+    other = next(r for r in fauna_profiles if r != SWARM_PROFILE and "SupportedFaunas:\n  - " in tree0.read(r))
+    relisted = {**unlisted, other: unlisted.get(other, tree0.read(other)).replace(
+        "SupportedFaunas:\n", "SupportedFaunas:\n" + member, 1)}
+    found, _ = run_audit(Tree(ROOT, relisted), schema, base, added, [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "swarm" and f[1] == species]
+    print("  [%s] %-60s %s" % ("FALSE HIT" if hit else "ok", "species another cell's spawn profile lists is NOT a finding",
+                               hit[0][2][:110] if hit else ""))
+    ok &= not hit
     # a scene override (modified file, so the per-document baseline path) naming no field
     def base_scene(rel):
         r = subprocess.run(["git", "show", "%s:%s" % (base, rel)], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -959,8 +1020,55 @@ def self_test(schema, base):
     print("  [%s] %-60s" % ("ok" if derived_ok else "MISSED", "variant-derived fileID resolves"))
     print("  [%s] %-60s" % ("ok" if bogus_ok else "MISSED", "a fileID derivable from nothing is still missing"))
     ok &= derived_ok and bogus_ok
+    ok &= stale_rsp_controls()
     print("self-test " + ("passed" if ok else "FAILED"))
     return 0 if ok else 1
+
+
+def stale_rsp_controls():
+    """A response file left by an assembly that is gone (the Obvious.Soap.rsp after #1771) must neither
+    reach the Schema tool nor survive the next refcompile run. Planted in a scratch directory, never in
+    the shared refcompile output."""
+    import tempfile
+    sys.path.insert(0, os.path.join(ROOT, "Tools", "Build", "unity_refcompile"))
+    import build as refcompile  # noqa: E402
+    real = os.path.join(ROOT, "Assets", "_Scripts", "Data", "TemplateText.cs")
+    ghost_cs = os.path.join(ROOT, "Assets", "Plugins", "Ghost", "Runtime", "GhostBinding.cs")
+    assert os.path.exists(real) and not os.path.exists(ghost_cs), "self-test fixture drifted: " + real
+    ok = True
+    with tempfile.TemporaryDirectory() as d:
+        def plant(name, sources, own_out=True):
+            with open(os.path.join(d, name + ".rsp"), "w") as f:
+                f.write("-nologo -target:library\n")
+                if own_out:
+                    f.write('-out:"%s"\n' % os.path.join(d, name + ".dll"))
+                f.writelines('"%s"\n' % s for s in sources)
+            for ext in ([".dll", ".dll.stamp"] if own_out else []):
+                open(os.path.join(d, name + ext), "w").close()
+        plant("Assembly-CSharp", [real])
+        plant("Ghost", [ghost_cs])
+        plant("Live", [real])
+        main_rsp = os.path.join(d, "Assembly-CSharp.rsp")
+        others, gone, outdated = schema_rsps(main_rsp)
+        hit = ([os.path.basename(o) for o, _ in gone] == ["Ghost.rsp"] and not outdated
+               and [os.path.basename(o) for o in others] == ["Live.rsp"])
+        print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "Ghost.rsp naming a missing source is skipped, not parsed",
+                                   [os.path.basename(o) for o in others]))
+        ok &= hit
+        plant("Partial", [real, ghost_cs])
+        _, _, outdated = schema_rsps(main_rsp)
+        hit = [os.path.basename(o) for o, _ in outdated] == ["Partial.rsp"]
+        print("  [%s] %-60s" % ("ok" if hit else "MISSED", "an assembly with SOME sources missing is a setup error"))
+        ok &= hit
+        os.remove(os.path.join(d, "Partial.rsp"))
+        plant("Foreign", [ghost_cs], own_out=False)   # not written by build.py: never deleted
+        removed = refcompile.prune_stale_outputs(d, {"Assembly-CSharp", "Live"})
+        left = sorted(os.listdir(d))
+        hit = (removed == ["Ghost"] and "Ghost.rsp" not in left and "Ghost.dll" not in left
+               and "Ghost.dll.stamp" not in left and {"Live.rsp", "Live.dll", "Foreign.rsp"} <= set(left))
+        print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "refcompile deletes Ghost's outputs, keeps the rest", left))
+        ok &= hit
+    return ok
 
 
 if __name__ == "__main__":

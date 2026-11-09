@@ -1195,6 +1195,15 @@ still listed its files, and the Schema tool died with `DirectoryNotFoundExceptio
 (`ls -la --time-style=+%F_%T`): one older than the rest and naming files that are not on disk is stale. Delete it and
 re-run the gate. It is scratch output, not the repo (`claude/epic-fermat-6c7n2l`, 2026-11-08).
 
+**Fixed (2026-11-08, `claude/stoic-tesla-kordbh`):** `build.py` now deletes, before it compiles anything, the `.rsp`,
+`.dll` and `.dll.stamp` of every assembly it will not build this run (`prune_stale_outputs`; only a response file whose
+`-out:` is that directory's own `<name>.dll`, so nothing else in a hand-picked `--out` is touched). And
+`check_generated_assets.py` sorts the response files before the Schema tool sees one (`schema_rsps`): an `.rsp` none of
+whose sources is on disk is skipped and named ("an assembly that no longer exists"), and one with only SOME missing is a
+setup error that says to rerun `unity_refcompile`, never a .NET stack trace. `check_generated_assets.py --self-test`
+plants a `Ghost.rsp` naming a missing `Assets/...cs` file in a scratch directory and proves both. Deleting by hand is no
+longer needed; if a crash like this comes back, it is a new path, not this one.
+
 ### Trap: a prefab re-saved by an older editor drops the fields its generator authors, and the base goes red
 
 A bleeding-edge commit ("Thresher", 2026-11-06) re-saved `ConfigureView`, `ConfigureArenaView` and
