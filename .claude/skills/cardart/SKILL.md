@@ -101,10 +101,15 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
   `SwitchbackCourse.cs` began naming `SwitchbackFunType` (2026-10-28) and the harness stopped compiling (CS0246) until
   the enum joined `SOURCES` (2026-10-31, rendering Serpent Gulag). `audit_prism_clipping.py` had fixed the same break
   in its own source list: when one harness breaks on a new type, grep the others' source lists for it.
-- **The harness broke again on 2026-11-09 the same way**: Regatta's rails began naming `RegattaCourseFeatures`,
-  `RegattaLifeformSiteSettings`, `ICellFaunaCorridorSource`, `CellEnvironmentSpawnableBase.PreparesPlantingSites` and
-  `Trail.TrailList`, and every card failed to render until the three sources joined `SOURCES` and `PlatformShim.cs` gained
-  the two members (Hood's branch). When the harness stops with CS0246, grep the named types and add their files first.
+- **The harness breaks again on every merge that teaches a compiled Spawnable a new type, and three tools fall with
+  it.** `audit_prism_clipping.py` and `bake_prism_layouts.py` compile `rcb.SOURCES` and the platform shim too, so the
+  Regatta merge `f7231d035c` (new `RegattaCourseFeatures`, `RegattaLifeformSites`, `ICellFaunaCorridorSource`,
+  `PreparesPlantingSites`, `Trail.TrailList`) stopped card art, the bake AND the clip audit at once (fixed 2026-11-09,
+  `b2e1e3a4b0`; REFACTOR_BACKLOG S112; the Flatline branch `claude/great-rubin-rur3xs` made the same fix the same day). Skipping the broken Spawnable in one tool's glob does not help: the others pull it
+  in through `SOURCES`. Add the new files to `SOURCES` and the missing members to `PlatformShim.cs`, then run all three.
+- **The shim has no `Vector4`** (nor much else of UnityEngine's surface). A new Spawnable's PUBLIC API that returns one
+  fails only here; a small `readonly struct` of its own (Jackstraw's `Clearing`) costs nothing and avoids widening a
+  shim every harness shares.
 - **A MODEL tier can come from a parity-held Python mirror** (Hood, 2026-11-09): a controller-laid arena has no
   `EnvironmentPrefab` to RUN, so the recipe imports the mode's mirror (`serpent_hood_budget.py`, whose `--parity`
   compares it to the compiled C#) and emits a `prisms` layer; Waystation's tower mirror is the same shape.
