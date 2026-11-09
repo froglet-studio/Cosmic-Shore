@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
     /// <para>It lives on <c>Goby.prefab</c> and wakes only on the LOCAL pilot's hull while a human flies it (CrewSeat):
     /// the Pistol, the dens, the pull and the rings are simulated on that one machine until the crew is networked.</para>
     /// </summary>
-    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations, ICrewRelay
+    public sealed class GobyPistolDuo : MonoBehaviour, ICrewSeat, ICrewButtons, IHullParkAware, ICrewStations, ICrewRelay, IUprightSeat
     {
         enum Half { Goby = 0, Pistol = 1 }
 
@@ -1791,6 +1791,10 @@ namespace CosmicShore.Gameplay
 
         /// <inheritdoc cref="ICrewStations.LocalSeat"/>
         public int LocalSeat => _goby != null && !_rider && !_aiCrew ? (_human == Half.Pistol ? 1 : 0) : -1;
+
+        /// <inheritdoc cref="IUprightSeat.UprightSeat"/>: the Pistol. Its side view is the one played with the phone held
+        /// upright (Shombith, 2026-11-08); turning the phone back to landscape returns the person to the Goby.
+        public int UprightSeat => 1;
 
         /// <inheritdoc cref="ICrewStations.HostsRiders"/>: the Pistol seat. It runs on the rider's machine, on the perches
         /// and the lock the hull's machine sends (<see cref="ICrewRelay"/>).

@@ -159,6 +159,25 @@ namespace CosmicShore.Gameplay
         bool _pilotLifted;
         readonly PipViewFrame _frame = new();
         readonly PilotCameraPark _park = new();
+        // a seat change a phone turn made glides (CrewOrientation, Docs/MENU_REDESIGN_B.md section 154): the view the person
+        // moves into grows out of the small square while the other shrinks into it. Every other seat change is instant.
+        static float s_glideSeconds, s_glideUntil;
+        bool _laidOut, _lastHuman;
+        float _glideStart = -1f, _glideFor;
+
+        /// <summary>The next seat change in the coming half second glides over <paramref name="seconds"/> (a phone turn's).</summary>
+        public static void GlideNextSwap(float seconds)
+        {
+            s_glideSeconds = seconds;
+            s_glideUntil = Time.unscaledTime + 0.5f;
+        }
+
+        /// <summary>How far a glide of <paramref name="seconds"/> is, <paramref name="elapsed"/> in (smoothstep, 0..1).</summary>
+        public static float GlideAt(float elapsed, float seconds)
+        {
+            float t = seconds <= 0f ? 1f : Mathf.Clamp01(elapsed / seconds);
+            return t * t * (3f - 2f * t);
+        }
 
         /// <summary>The pilot's camera the layout last saw.</summary>
         public Camera Pilot => _pilot;
@@ -186,16 +205,28 @@ namespace CosmicShore.Gameplay
             var square = new Rect(margin / aspect, margin, pipSize / aspect, pipSize);   // a square in the lower left
             bool single = CrewSingleView.On;
             seat.enabled = humanInSeat || !single;   // one view: a seat nobody sits in draws nothing
+            if (_laidOut && humanInSeat != _lastHuman && s_glideSeconds > 0f && Time.unscaledTime <= s_glideUntil && !single)
+            {
+                _glideStart = Time.unscaledTime;
+                _glideFor = s_glideSeconds;
+                s_glideSeconds = 0f;
+            }
+            _laidOut = true;
+            _lastHuman = humanInSeat;
+            float g = _glideStart >= 0f ? GlideAt(Time.unscaledTime - _glideStart, _glideFor) : 1f;
+            if (g >= 1f) _glideStart = -1f;
+            bool gliding = g < 1f;
+            var full = new Rect(0f, 0f, 1f, 1f);
             if (humanInSeat)
             {
-                seat.rect = new Rect(0f, 0f, 1f, 1f);
-                seat.depth = baseDepth + 1f;
+                seat.rect = gliding ? Lerp(square, full, g) : full;
+                seat.depth = baseDepth + (gliding ? 2f : 1f);   // the growing view rides on top while it grows
                 if (single) { RestorePilot(); _park.Park(_pilot, Color.black); }
                 else if (_pilot)
                 {
                     _park.Release();
-                    _pilot.rect = square;   // the pilot's view in the seat view's own small square
-                    _pilot.depth = baseDepth + 2f;
+                    _pilot.rect = gliding ? Lerp(full, square, g) : square;   // the pilot's view in the seat view's own small square
+                    _pilot.depth = baseDepth + (gliding ? 1f : 2f);
                     _pilotLifted = true;
                 }
             }
@@ -203,10 +234,16 @@ namespace CosmicShore.Gameplay
             {
                 RestorePilot();
                 _park.Release();
-                seat.rect = square;
-                seat.depth = baseDepth + 1f;
+                if (gliding && _pilot)
+                {
+                    _pilot.rect = Lerp(square, _pilotRect, g);   // back to the helm: its view grows out of the square
+                    _pilotLifted = true;
+                }
+                seat.rect = gliding ? Lerp(full, square, g) : square;
+                seat.depth = baseDepth + (gliding ? -1f : 1f);
             }
-            _frame.Show(SmallView(seat, humanInSeat));
+            if (gliding) _frame.Hide();
+            else _frame.Show(SmallView(seat, humanInSeat));
         }
 
         /// <summary>Give the pilot's camera back its own rect and depth (and wake it), and take the small square's frame
@@ -224,6 +261,9 @@ namespace CosmicShore.Gameplay
             Restore();
             _frame.Dispose();
         }
+
+        static Rect Lerp(Rect a, Rect b, float t) =>
+            new(Mathf.Lerp(a.x, b.x, t), Mathf.Lerp(a.y, b.y, t), Mathf.Lerp(a.width, b.width, t), Mathf.Lerp(a.height, b.height, t));
 
         void RestorePilot()
         {

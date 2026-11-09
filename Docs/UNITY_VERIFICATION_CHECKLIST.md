@@ -65,6 +65,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Swordfish looks like a swordfish; its sword is the bill (`cece/lucid-fermi-j80puc`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SWORDFISH.md` § "A swordfish, and the sword is its bill". `Swordfish.fbx` (a new hull
+on the Rhino rig's names, bound by a guid swap in `Swordfish.prefab`), `SwordfishBill.asset` (the blade's mesh), the
+bill pose mapping (`RhinoShieldSwipeConfigSO.poseMapping = Bill`), the camera pan (`CustomCameraController.FramingPan`,
+`SwordfishSwordCamera`), `SwordfishCameraSettingsSO` (no look-ahead lift), and the phone's tilt steer with both thumbs
+off. Checked offline: the reference compile (0 errors in changed files), `/ship` gates, `build.py swordfish --check`,
+`rest_compare.py` (every bone 0.0000 from the Rhino rig), three FBX readers, a Blender render of the three poses.
+Not run: Unity, the EditMode tests (`SwordfishBillPoseTests`).
+
+**Verify in editor:**
+1. Reimport `Swordfish.fbx` and `SwordfishBill.asset`; open `Swordfish.prefab`: the swordfish hull, no Rhino, the bill
+   lying ahead off the snout, flat side level.
+2. Toybox → Vessel Changer → Swordfish. No trigger: the bill points ahead and the hull sits in the middle of the frame.
+3. Pull the right trigger: the bill swings out flat to the right and the camera slides right until the bill is
+   centred; the left trigger mirrors it. Partial pulls hold partial angles.
+4. Pull both: the bill stands straight up, the camera rises to centre it, the blade energizes as before.
+5. The pectoral fins swing with the bill (both sides, all three poses); the pods ride with them.
+6. Combos (tap strings): each flourish plays and ends back on the triggers. They were authored for the raised blade
+   and now start from the bill pointing ahead: judge whether any needs re-authoring (`author_rhino_sword_combos.py`).
+7. An omni crystal: the Surge's ring is of bills and the camera surrounds as before.
+8. Phone: lift one thumb = that side; both thumbs off = bill up and the tilt steers like the Manta's soar.
+9. FrogletTools > Vessels > Audits: Elemental Morphs (four morphs, 4.4-8.9 %), Construction, Tails and Jets.
+10. Crystal hull fusion: the class-30 entries still name the Rhino's bakes, which now read stale (a warning and a
+    runtime solve). Give the Swordfish its own bake assets before running Bake Crystal Hull Fusions, so the Rhino's are
+    not overwritten.
+11. MPPM two clients: a remote Swordfish's bill poses the same.
+
+---
+
 ### 🔴 The Voyage window's galaxy map draws the cells in 3D (`claude/project-thread-y85rw0`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Voyages/VOYAGE_BOARD.md` §4c "In the game".
@@ -21560,6 +21590,37 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
 6. **Readable and level (126.1):** the name, pigments and rail sit on a dark band; the cell shows dimmed behind the
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
+
+## 🟡 Portrait menus (`claude/ui-portrait`, 2026-11-06) — COMPILED (unity_refcompile), NOT RUN IN EDITOR
+
+Rev 63 B (`Docs/MENU_REDESIGN_B.md` section 138): every device shows the PC UI; a phone held upright in the menus lays
+Menu_Main out on a 1080 x 1920 canvas matched to the width. New: `PortraitRect`, `AdaptiveCanvasScaler.hasPortraitLayout`
+(Menu_Main only), `MenuOrientation`; tests `PortraitRectTests`.
+
+1. **Compile, then run** `PortraitRectTests`.
+2. **PC and landscape phones unchanged**: Menu_Main at 16:9 and an iPhone sideways look exactly as before.
+3. **Upright, Device Simulator (iPhone, rotate to portrait) in play mode**: the menu turns; Home, Arcade, Configure
+   (Arcade, Arena, Maelstrom) and Hangar are laid out top to bottom in the PC pieces; every other screen and window is its
+   PC layout fitted to the width; nothing spills off the sides.
+4. **The lock**: tap the cell to fly (freestyle) and the screen goes back to landscape; leave freestyle and it may turn
+   upright again; start a match from Configure and the match is landscape; back in the menu it turns again.
+5. **Turning while a window is open**: open Arcade and Configure, rotate back and forth; each takes its pose and gives it
+   back.
+6. **Configure while turning**: fly the preview, press FULL SCREEN (upright it grows to the window, landscape it opens the
+   tray), rotate mid-flight; the frame, the objective bar and START come back to the right place. Add three pilots to a
+   domain upright: the column grows and START moves down, not off the screen.
+7. **Arcade grid**: 5 across on PC, 3 across upright, every card the same size; filtering or growing the list adds cards
+   in the same grid.
+8. **Turn, then glide** (2026-11-08, section 154): on a phone (the Simulator shows the layout, a device the real OS turn),
+   rotate on Home, Arcade and Configure: after the OS turns the screen, the windows and cards start at their old places
+   turned with the phone and glide level into the upright layout in about a third of a second; no frame of a half-laid-out
+   screen; taps work again as soon as they land. Rotate back the same. Then the Goby: rotate upright and the Pistol's view
+   grows out of the small square over the Goby's; back to landscape, the Goby's grows back. A D-pad swap stays instant.
+9. **Goby and Pistol turn** (Toybox Vessel Changer, then a Goby game): flying the Goby, rotate upright: the screen turns
+   and you are in the Pistol's view; rotate back: the Goby. Swap with the D-pad / double tap while upright and the seat
+   stays until you rotate again. Check the Pistol's side view, its buttons round the thumb and GameCanvas's HUD upright.
+10. **Every other vessel turns nothing**: the Squirrel (or any non-crew hull) in the Toybox and in a match; rotating the
+   phone leaves the screen landscape and the HUD unchanged. Leaving a Goby while upright turns the screen back.
 
 ## 🔴 Colour sets for colour vision: six new sets in the Profile's rail, a breadcrumb in Settings (2026-11-05, Garrett, NOT RUN IN EDITOR)
 

@@ -30,6 +30,13 @@ GameObject, its fileID and its name; only its look, its rect and its children ch
         its ControllerButtonPress (bound to North, a second Settings opener) is removed.
     Freestyle hint: "Tap the cell to fly" breathing at the centre; the tap target leaves pad navigation.
 
+    Upright (Docs/MENU_REDESIGN_B.md section 138, the picked Rev 63 B; PortraitRect): the same pieces at their PC
+    sizes on the 1080-wide canvas. The pilot chip, Settings, the Up next cards (stacked, 480 wide) and the party invite
+    keep their PC places, which already fit under the band; the fly hint moves to the middle; the hub row becomes the
+    hubs 2 x 2, each 488 wide, along the bottom above the friends orb. The row is a GridLayoutGroup (one row of four
+    210 x 66 cells, 30 apart: exactly the HorizontalLayoutGroup it replaced, since every hub sat at its 210 minimum)
+    so the upright pose can turn it into two columns.
+
 STANDING DOWN: everything is re-derived on each run from the objects above (the legacy deletion runs
 while the legacy object exists); a re-run is a no-op (--check).
 
@@ -99,6 +106,20 @@ HUBS = [  # key, go, rt, root img, button, hub comp, avail comp, label go, label
     ("Mission", "895856520", "895856521", "895856524", "895856523", "895856527", "895856526", "25247041", "25247042", "25247043", "Voyage", "chrome_globe", "Default"),
 ]
 HUB_PAD, HUB_MIN_W, HUB_H = (28, 28, 18, 18), 210, 66
+HUB_GAP = 30                  # between hubs on PC
+GRID = W.GRID                 # UnityEngine.UI.GridLayoutGroup
+PORTRAIT = K.meta_guid("Assets/_Scripts/UI/PortraitRect.cs")
+
+# Upright (section 138, Rev 63 B): Menu_Main's canvas is 1080 wide; content keeps 40 from each side. The hubs go 2 x 2
+# along the bottom, lifted clear of the friends orb in the bottom-left corner (author_menu_arcade.ORB_*); the fly hint
+# sits in the middle. Every other Home piece keeps its PC place (it fits under the band as it is).
+UP_W, UP_MARGIN = 1080, 40
+UP_HEIGHTS = (1800, 2080, 2337)          # safe heights checked: a short phone, a notched phone's safe area, 390 x 844
+UP_HUB_COLS = 2
+UP_HUB_GAP = (24, 20)
+UP_HUB_CELL = ((UP_W - 2 * UP_MARGIN - UP_HUB_GAP[0]) / UP_HUB_COLS, HUB_H)
+UP_HUB_Y = A.ORB_Y + A.ORB_SIZE + 20     # the row's bottom, over the orb's top
+UP_HUB_H = 2 * HUB_H + UP_HUB_GAP[1]
 
 # 6b
 OUT_DIR = "Assets/_Prefabs/UI Elements/Main Menu Screens/Home"
@@ -279,11 +300,17 @@ def kit_button_doc(old, ctx, key, variant, label_tmp):
 def patch_hubs(p):
     I = IDS
     p.rect(I["row_rt"], R((0, 0), (1, 0), (0, 56), (0, HUB_H + 20), (0.5, 0)))
-    hlg = p.doc(I["row_hlg"])
-    for f, v in (("m_ChildAlignment", "4"), ("m_Spacing", "30"), ("m_ChildControlWidth", "1"), ("m_ChildControlHeight", "1"),
-                 ("m_ChildForceExpandWidth", "0"), ("m_ChildForceExpandHeight", "0")):
-        hlg = C.field_set(hlg, f, v)
-    p.replace(I["row_hlg"], hlg)
+    # One row of four 210 x 66 cells, centred, 30 apart: what the HorizontalLayoutGroup it replaces drew (each hub at its
+    # 210 minimum, 66 tall, centred in the 86-tall row). A grid, so the upright pose can make it two columns.
+    p.body(I["row_hlg"], lambda ctx, go: mono(go, GRID,
+           "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
+           f"  m_ChildAlignment: 4\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
+           f"  m_CellSize: {K.v2(HUB_MIN_W, HUB_H)}\n  m_Spacing: {K.v2(HUB_GAP, 0)}\n"
+           f"  m_Constraint: 1\n  m_ConstraintCount: {len(HUBS)}\n"), I["row_go"])
+    p.remove_comp(I["row_go"], str(p.ctx.fid(f"{I['row_go']}#portrait")))
+    p.add_comp(I["row_go"], "portrait", 114, K.portrait_rect(
+        R((0, 0), (1, 0), (0, UP_HUB_Y), (-2 * UP_MARGIN, UP_HUB_H), (0.5, 0)),
+        grid=dict(columns=UP_HUB_COLS, cell=UP_HUB_CELL, spacing=UP_HUB_GAP)))
     for key, go, rt, img, btn, hub, avail, lgo, lrt, ltmp, caption, glyph, variant in HUBS:
         p.body(img, img_body((1.0, 1.0, 1.0, 0.0), raycast=True), go)
         nodes, content = hub_children(key, glyph, variant)
@@ -431,6 +458,7 @@ def hint_node():
     dock.add("cg", 225, H.canvas_group(True))
     n = dock.child(N("Hint", "FlyHint", R((0.5, 1), None, (0, -500), (HINT_W, HINT_H), (0.5, 1))))
     n.add("cg", 225, H.canvas_group(True)).add("breathe", 114, M.ambient("Breathe", period=3.2, amplitude=0.45))
+    n.add("portrait", 114, K.portrait_rect(R((0.5, 0.5), None, (0, 0), (HINT_W, HINT_H), (0.5, 0.5))))   # upright: the middle
     n.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceVeryDark", 0.6), K.kit_sprite("kit_sliver10_fill"), True))
     lab = n.child(N("Hint/Label", "Label", R((0, 0), (1, 1), (-(HINT_X + 8) / 2, 0), (-(HINT_X + 8), 0))))
@@ -941,6 +969,7 @@ def validate(files):
     for f in ("inviterNameText", "inviterAvatarImage", "acceptButton", "declineButton", "canvasGroup", "partyCountText", "timerBar",
               "entrance"):
         assert re.search(r"^  %s: \{fileID: [1-9-]" % f, panel, re.M), f"PartyInvitePopup: {f} is not wired"
+    check_upright(sc)
     anchors = set(re.findall(r"^--- !u!\d+ &(-?\d+)", sc_text, re.M)) | {"0"}
     for m in re.finditer(r"\{fileID: (-?\d+)\}", sc_text):
         assert m.group(1) in anchors, f"Menu_Main: dangling local fileID {m.group(1)}"
@@ -948,6 +977,118 @@ def validate(files):
     for rt in [I["row_rt"], I["avatar_rt"], I["name_rt"], I["bar_rt"], I["settings_rt"], I["panel_rt"]] + [h[2] for h in HUBS]:
         for kid in re.findall(r"\{fileID: (-?\d+)\}", re.search(r"^  m_Children:\n((?:  - .*\n)*)|^  m_Children: \[\]", sc.docs[rt], re.M).group(0)):
             assert f"  m_Father: {{fileID: {rt}}}" in sc.docs[kid], f"child {kid} of {rt} names another father"
+
+
+# --------------------------------------------------------------------------------------------
+# Upright (section 138): every Home block's place on the 1080-wide canvas
+# --------------------------------------------------------------------------------------------
+
+BAND_TOP = 84 + 20          # the nav band (84) plus air: nothing on Home starts above it
+
+
+def _v2(doc, name):
+    m = re.search(r"^  %s: \{x: (-?[\d.e+-]+), y: (-?[\d.e+-]+)\}" % name, doc, re.M)
+    return (float(m.group(1)), float(m.group(2))) if m else None
+
+
+def portrait_of(sc, go):
+    """The PortraitRect on a GameObject (its document), or None."""
+    comps = re.findall(r"  - component: \{fileID: (-?\d+)\}", sc.docs[go]) if sc.has(go) else []
+    found = [c for c in comps if sc.has(c) and sc.script(c) == PORTRAIT]
+    assert len(found) <= 1, f"{go}: more than one PortraitRect"
+    return sc.docs[found[0]] if found else None
+
+
+def box(r, w, h):
+    """A rect's (left, bottom, right, top) in a parent w x h, origin bottom-left."""
+    (ax0, ay0), (ax1, ay1) = r["amin"], r["amax"]
+    (px, py), (x, y), (sx, sy) = r["pivot"], r["pos"], r["size"]
+    bw, bh = (ax1 - ax0) * w + sx, (ay1 - ay0) * h + sy
+    cx, cy = (ax0 + (ax1 - ax0) * px) * w + x, (ay0 + (ay1 - ay0) * py) * h + y
+    return (cx - bw * px, cy - bh * py, cx - bw * px + bw, cy - bh * py + bh)
+
+
+def rect_of_doc(doc, unity=True):
+    names = ("m_AnchorMin", "m_AnchorMax", "m_Pivot", "m_AnchoredPosition", "m_SizeDelta") if unity else \
+        ("anchorMin", "anchorMax", "pivot", "anchoredPosition", "sizeDelta")
+    v = [_v2(doc, n) for n in names]
+    assert all(v), "a rect field is missing"
+    return dict(amin=v[0], amax=v[1], pivot=v[2], pos=v[3], size=v[4])
+
+
+def upright_blocks(sc):
+    """{block: (rect, PortraitRect doc or None)} on Main_Menu_Panel upright: the pose where the block has one, else its
+    PC rect (a block with no pose stays where it is)."""
+    I, ctx = IDS, ctx_new()
+    gos = dict(chip=str(ctx.go("Chip")), settings=I["settings_go"], upnext=str(ctx.go("UpNext")), bar=I["bar_go"],
+               hint=str(ctx.go("Hint")), hubs=I["row_go"])
+    out = {}
+    for key, go in gos.items():
+        pr = portrait_of(sc, go)
+        if pr is not None:
+            assert "  drawAtPcScale: 0\n" in pr, f"Home {key}: a Home block must not be a PC-scale fallback block"
+            if "  movesRect: 1\n" in pr:
+                out[key] = (rect_of_doc(pr, unity=False), pr)
+                continue
+        out[key] = (rect_of_doc(sc.docs[sc.rect_of(go)]), pr)
+    # The party invite (a prefab instance; its rect is this script's) and the friends orb (author_menu_friends_drawer).
+    out["invite"] = (R((1, 1), None, (-40, -INVITE_TOP), (520, 132), (1, 1)), None)
+    out["orb"] = (R((0, 0), None, (A.ORB_X, A.ORB_Y), (A.ORB_SIZE, A.ORB_SIZE), (0, 0)), None)
+    return out
+
+
+def check_upright(sc):
+    blocks = upright_blocks(sc)
+    for key in ("hint", "hubs"):
+        assert blocks[key][1] is not None and "  movesRect: 1\n" in blocks[key][1], f"Home {key}: no upright pose (PortraitRect)"
+    hub_pr = blocks["hubs"][1]
+    assert f"  gridColumns: {UP_HUB_COLS}\n" in hub_pr, "Home hubs: the upright grid is not 2 columns"
+    cell, gap = _v2(hub_pr, "gridCellSize"), _v2(hub_pr, "gridSpacing")
+    # PC is unchanged: the grid draws one row of four 210 x 66 cells, 30 apart, centred - every hub's preferred width (its
+    # padding, glyph, gap, caption and, on Arcade, the A keycap) is within the 210 minimum the old row gave each one.
+    grid = sc.docs[IDS["row_hlg"]]
+    assert sc.script(IDS["row_hlg"]) == GRID and f"  m_CellSize: {K.v2(HUB_MIN_W, HUB_H)}\n" in grid \
+        and f"  m_Spacing: {K.v2(HUB_GAP, 0)}\n" in grid and "  m_Constraint: 1\n" in grid \
+        and f"  m_ConstraintCount: {len(HUBS)}\n" in grid and "  m_ChildAlignment: 4\n" in grid, \
+        "Home hubs: the PC grid no longer draws the one row of four the HorizontalLayoutGroup drew"
+    for key, *rest in HUBS:
+        caption = rest[9]
+        want = HUB_PAD[0] + 22 + 10 + K.label_width(caption.upper(), "Button") + HUB_PAD[1] \
+            + ((K.label_width("A", "Label") + 24 + 10) if key == "Arcade" else 0)
+        assert want <= HUB_MIN_W, f"{key} hub wants {want:g} wide, over its {HUB_MIN_W} cell: the grid would clip it on PC"
+    for h in UP_HEIGHTS:
+        boxes = {k: box(r, UP_W, h) for k, (r, _) in blocks.items()}
+        for k, (l, b, r, t) in boxes.items():
+            if k == "orb":
+                continue
+            assert l >= UP_MARGIN - 0.01 and r <= UP_W - UP_MARGIN + 0.01, \
+                f"Home {k} upright spans x {l:g}..{r:g}: outside the 1080 canvas's 40 margins"
+            assert t <= h - BAND_TOP + 0.01 and b >= 0, \
+                f"Home {k} upright spans y {b:g}..{t:g} of {h}: under the nav band or off the bottom"
+        hl, hb, hr, ht = boxes["hubs"]
+        assert UP_HUB_COLS * cell[0] + (UP_HUB_COLS - 1) * gap[0] <= hr - hl + 0.01 \
+            and 2 * cell[1] + gap[1] <= ht - hb + 0.01, "Home hubs: the 2 x 2 grid does not fit its upright row"
+        # The question bar covers the Up next cards when it is asked (it draws after them, as on PC); every other pair
+        # of blocks stays apart.
+        keys = sorted(boxes)
+        for i, a in enumerate(keys):
+            for b_ in keys[i + 1:]:
+                if {a, b_} == {"bar", "upnext"}:
+                    continue
+                (l1, b1, r1, t1), (l2, b2, r2, t2) = boxes[a], boxes[b_]
+                assert r1 <= l2 + 0.01 or r2 <= l1 + 0.01 or t1 <= b2 + 0.01 or t2 <= b1 + 0.01, \
+                    f"Home upright at height {h}: {a} {boxes[a]} overlaps {b_} {boxes[b_]}"
+    return blocks
+
+
+def upright_table(sc):
+    """Each block's upright rect on a 390 x 844 phone (1080 x 2337), top-down y: for the report."""
+    h = UP_HEIGHTS[-1]
+    rows = []
+    for k, (r, _) in upright_blocks(sc).items():
+        l, b, rr, t = box(r, UP_W, h)
+        rows.append((h - t, k, l, rr, h - t, h - b))
+    return [f"{k:9s} x {l:7.1f}..{rr:7.1f}  y {t:7.1f}..{bt:7.1f} (from top)" for _, k, l, rr, t, bt in sorted(rows)]
 
 
 def drift(files):
@@ -1023,6 +1164,20 @@ def self_test(files):
         ("pad Y on Home unwired from the freestyle toggle", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  crystalClickHandler: {{fileID: {CRYSTAL_HANDLER}}}\n  freestyleToggleCooldown:",
             "  crystalClickHandler: {fileID: 0}\n  freestyleToggleCooldown:", 1))),
+        ("the hubs with no upright pose", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  - component: {{fileID: {ctx_new().fid(IDS['row_go'] + '#portrait')}}}\n", "", 1))),
+        ("the upright hub cells too wide for 1080", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  gridCellSize: {K.v2(*UP_HUB_CELL)}\n", "  gridCellSize: {x: 560, y: 66}\n", 1))),
+        ("the upright hint dropped onto the hubs", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  anchorMin: {K.v2(0.5, 0.5)}\n  anchorMax: {K.v2(0.5, 0.5)}\n  pivot: {K.v2(0.5, 0.5)}\n"
+            f"  anchoredPosition: {K.v2(0, 0)}\n  sizeDelta: {K.v2(HINT_W, HINT_H)}\n",
+            f"  anchorMin: {K.v2(0.5, 0)}\n  anchorMax: {K.v2(0.5, 0)}\n  pivot: {K.v2(0.5, 0.5)}\n"
+            f"  anchoredPosition: {K.v2(0, 200)}\n  sizeDelta: {K.v2(HINT_W, HINT_H)}\n", 1))),
+        ("the PC hub grid cells narrower than the old row's hubs", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            f"  m_CellSize: {K.v2(HUB_MIN_W, HUB_H)}\n", "  m_CellSize: {x: 180, y: 66}\n", 1))),
+        ("Home carrying the PC-scale fallback", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
+            "  drawAtPcScale: 0\n  pcWidth: 1920\n  movesRect: 1\n  anchorMin: {x: 0, y: 0}\n  anchorMax: {x: 1, y: 0}\n",
+            "  drawAtPcScale: 1\n  pcWidth: 1920\n  movesRect: 1\n  anchorMin: {x: 0, y: 0}\n  anchorMax: {x: 1, y: 0}\n", 1))),
     ]
     ok = all(expect(l, m) for l, m in cases)
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
