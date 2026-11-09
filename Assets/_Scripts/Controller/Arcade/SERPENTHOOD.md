@@ -86,6 +86,15 @@ the largest hole is held under **9.5 u** (`The_warped_weave_leaves_no_hull_sized
 keeps at least 16 u clear (`Every_exit_stays_open_through_the_warp`). Whether 9.5 u admits a Serpent where it should
 not is a playtest question.
 
+## Hood owns the shape code
+
+`SerpentineGate.cs` lives in `SerpentHood/` (moved from `SerpentTime/` on 2026-11-09, same class and guid, Shombith's
+call). Serpentine still stands one at every ring. The move is there because the unmerged `claude/dazzling-ride-dpyvkx`
+("no shapes - rings far apart on a switchback ladder of hairpins", 2026-10-31) deletes the file at its old path: had it
+merged after Hood, git would have deleted it without a conflict and Hood would have stopped compiling. Now that merge
+raises a rename/delete conflict; resolve it by keeping the file here, and take that branch's Serpent Time changes
+around it.
+
 ## Why the controller lays the hoods (not a cell environment)
 
 Serpent Gulag's nests were a `CellEnvironmentSpawnableBase`, baked. A baked environment's prisms are anonymous once

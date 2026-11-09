@@ -23,6 +23,10 @@ namespace CosmicShore.Gameplay
     /// spiral in to the core, a horn of scale rings behind), <see cref="Shape.Maw"/> at I3 (fangs from the rim, a web of
     /// rings behind them, a wide cobra hood), <see cref="Shape.Iris"/> at I4 (nine wide blades swept in like a camera
     /// iris, a housing ring of blocks).</para>
+    /// <para><b>Two modes build from it</b>: Serpentine stands one at every ring, and Hood (<see cref="SerpentHoodLayout"/>)
+    /// bends it into its covers. It moved from <c>SerpentTime/</c> to <c>SerpentHood/</c> on 2026-11-09 (same class, same
+    /// guid; Shombith) because an unmerged Serpent Time branch (<c>claude/dazzling-ride-dpyvkx</c>, "no shapes") deletes the
+    /// old path: merging it now raises a visible rename/delete conflict instead of silently breaking Hood. Hood owns it.</para>
     /// <para><b>Closed form, zero random draws</b>, Breakwater's rule (<see cref="BreakwaterStationBuilder"/>): every peer
     /// builds the same shape from the broadcast course, the gate's index turning each gate's pattern so neighbouring
     /// gates differ. Every part is <see cref="PrismKind.Plain"/> or <see cref="PrismKind.Danger"/> (a shield's reach

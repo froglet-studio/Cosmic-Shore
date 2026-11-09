@@ -86,7 +86,7 @@ EXISTING["Cytoplasm_prefab"] = lib.CELL_VISUALS["CytoplasmPrefab"]
 EXISTING["CellIcon"] = lib.CELL_VISUALS["CellIcon"]
 SNIPER_SHOT = "Assets/_SO_Assets/VesselActions/Serpent/SniperShotAction.asset"
 EXISTING["SniperShotAction"] = lib.existing_guid(SNIPER_SHOT)
-EXISTING["SerpentineGate"] = lib.existing_guid(f"{AR}/SerpentTime/SerpentineGate.cs")
+EXISTING["SerpentineGate"] = lib.existing_guid(f"{AR}/SerpentHood/SerpentineGate.cs")
 # The donor scene's identity, minted by author_dustup_assets.py with the same guid function.
 DONOR_SCENE = f"{lib.SCENES_DIR}/MinigameDustup.unity"
 DONOR = {

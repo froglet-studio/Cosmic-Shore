@@ -36,7 +36,7 @@ build() {   # $1 = layout source, $2 = output name
   : > "$OUT/files.rsp"
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/Vector2Shim.cs" "$HERE/NUnitShim.cs" \
     "$HERE/Runner.cs" "$A/Data/Enums/PrismKind.cs" "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" \
-    "$A/Controller/Arcade/SerpentTime/SerpentTimeCluster.cs" "$A/Controller/Arcade/SerpentTime/SerpentineGate.cs" \
+    "$A/Controller/Arcade/SerpentTime/SerpentTimeCluster.cs" "$A/Controller/Arcade/SerpentHood/SerpentineGate.cs" \
     "$1" "$A/Tests/Editor/SerpentHoodLayoutTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
