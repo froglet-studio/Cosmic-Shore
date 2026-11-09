@@ -22126,3 +22126,13 @@ Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK i
 1. Start a voyage or an Ark escort with AI wingmates.
 2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
 3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
+
+## 🔴 Menu: friends orb, its minimise button, the Codex strip and the Hangar Upgrades text (2026-11-09, NOT COMPILED, generated assets only)
+
+Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generators' `--check` and `--self-test` pass (arcade's `--check` already failed before this branch: `ArcadeView.prefab` lacks the Swordfish content). Hand-checked by one person on a desktop editor (Hangar Upgrades, minimise button, orb, Codex strip). Still to check:
+
+1. **Phone (390x844) and iPad:** the friends orb is 16 px off the left edge with "Friends" / "N online" fully readable (up to "99 ONLINE") and not clipped.
+2. **Friends window:** the minimise square is easy to tap on a phone; it lightens under the pointer and takes the accent when pressed; the party panel under the title row is not covered.
+3. **Codex > Ecology (Field Guide):** scroll the bottom strip left; tiles stop 16 px short of the "Friends" text, never over it.
+4. **Hangar > Upgrades, any hull:** "CHARGE CRYSTALS 0 HELD - 0 SPENT" is on its own row under the step line; nothing overlaps.
+
