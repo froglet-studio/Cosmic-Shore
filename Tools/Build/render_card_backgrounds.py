@@ -96,6 +96,7 @@ SOURCES = [
     f"{_MG}/SpawnableWildlifeCage.cs",
     f"{_MG}/SpawnableBoneyard.cs",
     f"{_MG}/SpawnableSerpentGulag.cs",
+    f"{_MG}/SpawnableJackstraw.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
     f"{_MG}/SpawnableSkein.cs",
     f"{_MG}/SpawnableRegattaRails.cs",
@@ -777,6 +778,9 @@ CAMERAS = {
     # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
     # tracer crossing the middle (the one thing that scores) reads against it.
     "SerpentGulag": (50, 26, 0.62, 46),
+    # Jackstraw: close into the heap, so the sticks cross the whole plate and the red-hot ball swinging through
+    # them onto a rival (the strike, the one thing that scores) sits in the middle of it.
+    "Jackstraw": (40, 18, 0.7, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1326,6 +1330,34 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         glow(a, span * 0.02, JADE, 1.0, 0.4)
         glow(b, span * 0.035, JADE, 1.1, 0.45)
         stage["vessels"] = vessels([(JADE, 0.85, 8, 330, 20), (RUBY, 0.7, -4, 140, 25), (GOLD, 0.8, 12, 230, 25)])
+    elif s == "Jackstraw":
+        # A STRIKE through the heap: a Thresher's chain swung in an arc from its pilot, the ball at its end red-hot
+        # (smash speed reads red, THRESHER.md section 2) and on a rival pilot, who takes the hit (a glow in the
+        # striker's colour). The crystals float in the centre clearing.
+        for k in range(6):
+            crystal(v_add(centre, v_mul(rng.unit(), span * 0.08 * rng.u() ** 0.33)), span * 0.012)
+        pilot = v_add(centre, v_mul(v_norm([0.75, 0.15, -0.6]), span * 0.42))
+        hit = v_add(centre, v_mul(v_norm([-0.35, -0.05, 0.25]), span * 0.3))
+        chord = v_sub(hit, pilot)
+        bow = v_mul(v_norm(v_cross([0, 1, 0], chord)), math.sqrt(v_dot(chord, chord)) * 0.28)
+        links = 18
+        prev = pilot
+        for k in range(1, links + 1):
+            t = k / links
+            q = v_add(v_add(pilot, v_mul(chord, t)), v_mul(bow, 4 * t * (1 - t)))
+            d = v_norm(v_sub(q, prev))
+            side = v_norm(v_cross([0, 1, 0] if abs(d[1]) < 0.9 else [1, 0, 0], d)); u = v_cross(d, side)
+            w = span * 0.004
+            sig = domain_signal(pal, JADE, 1.3)
+            layers.append({"kind": "box", "c": v_mul(v_add(prev, q), 0.5), "ax": v_mul(side, w), "ay": v_mul(u, w),
+                           "az": v_mul(d, math.sqrt(v_dot(v_sub(q, prev), v_sub(q, prev))) * 0.42),
+                           "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+            prev = q
+        glow(hit, span * 0.075, JADE, 0.9, 0.25)
+        hot = [c * 1.6 for c in pal["danger"][:3]]   # the palette's danger red: the hot ball's own colour
+        layers.append({"kind": "sphere", "c": list(hit), "r": span * 0.03, "base": [c * 0.6 for c in hot],
+                       "rim": hot, "emissive": hot, "unbound": True})
+        stage["vessels"] = vessels([(JADE, 0.42, 8, 320, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)

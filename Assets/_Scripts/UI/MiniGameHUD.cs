@@ -542,6 +542,10 @@ namespace CosmicShore.UI
                     // duel is won by whoever FINDS the other first, then lines them up - the arrow answers the
                     // first half; the scope, the nests and the cloak are the second.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_SerpentGulag");
+                case GameModes.Jackstraw:
+                    // The Bends' provider again: the nearest pilot this player may strike. In the heap the hard half
+                    // is finding a line through the sticks to them; the arrow answers where, the whip answers how.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Jackstraw");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's
