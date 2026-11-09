@@ -15,6 +15,12 @@ MonoBehaviour:
   swipeYawDegrees: 90
   swipeRollDegrees: 90
   chopPitchDegrees: 65
+  poseMapping: 1
+  billSideYawDegrees: 90
+  billSideRollDegrees: 0
+  billRaiseDegrees: 90
+  billCameraCentring: 1
+  billCameraPanSeconds: 0.12
   analogSmoothingSeconds: 0.04
   swipeOutSeconds: 0.18
   returnSeconds: 0.3

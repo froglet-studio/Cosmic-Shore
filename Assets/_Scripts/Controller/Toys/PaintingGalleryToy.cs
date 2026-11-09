@@ -6,19 +6,14 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The "Connect the Dots" gallery: <b>one toy that opens into the whole collection</b>. Fly it
-    /// and a matrix of paintings blooms out ahead - each station a miniature of its own canvas
-    /// with its name and live progress. Fly a painting and its <see cref="PaintingRunner"/> starts
-    /// (or resumes) at a fixed world anchor.
-    ///
-    /// Sixteen permanently-visible stations fanned around the membrane was clutter; unfolding them
-    /// on demand makes the gallery one thing you can pick up and put down. **A run outlives the
-    /// matrix**: the runner is parented to the toybox root, not the grid, and
-    /// <see cref="PaintingToy"/> re-adopts a live run when the matrix is re-opened - so folding the
-    /// gallery away mid-painting never abandons or duplicates a canvas.
+    /// The "Connect the Dots" gallery, in the Toy Box: one row per canvas, previewed in miniature
+    /// with its live progress. Starting one begins (or resumes) its <see cref="PaintingRunner"/> at
+    /// a fixed world anchor - the run, its stroke gates and its rides are play, flown in the world.
+    /// A finished masterpiece opens into two choices, Share and Repaint.
     ///
     /// Monument anchors (where each painting is actually flown, out past the membrane) come from
-    /// the definition's proximity-first sphere packing, computed once on the first open and reused.
+    /// the definition's proximity-first sphere packing, computed once and reused. Runs are filed in
+    /// one run book (<see cref="LiveRun"/>), so a canvas is never painted twice at once.
     /// </summary>
     public sealed class PaintingGalleryToy : MatrixToy
     {
@@ -30,108 +25,46 @@ namespace CosmicShore.Gameplay
 
         public void Configure(PaintingToyDefinitionSO definition) => _def = definition;
 
-        // ── The toy's own emblem: the gallery in four canvases ───────────────
+        protected override void OnInitialized() => ResolveGalleryList();
 
-        int[] _emblemOrder;
+        // ── The run book ─────────────────────────────────────────────────────
 
-        protected override void OnInitialized()
+        /// <summary>Live runs, keyed by painting id.</summary>
+        static readonly Dictionary<string, PaintingRunner> ActiveRuns = new();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => ActiveRuns.Clear();
+
+        /// <summary>This painting's live run, or null.</summary>
+        internal static PaintingRunner LiveRun(string paintingId)
         {
-            ResolveGalleryList();
-            AttachEmblem(new EmblemSource(this), 6f);
+            if (string.IsNullOrEmpty(paintingId)) return null;
+            if (!ActiveRuns.TryGetValue(paintingId, out var live) || !live)
+            {
+                ActiveRuns.Remove(paintingId);
+                return null;
+            }
+            return live;
         }
 
-        /// <summary>
-        /// The gallery in one glyph: the CORE is the on-ramp painting you have taken furthest,
-        /// the SATELLITES are the rest of the on-ramp - four real canvases in signature strokes,
-        /// each in its own domain colours. This is the only multi-coloured emblem in the toybox,
-        /// which is itself an identity channel.
-        ///
-        /// Deliberately restricted to the four on-ramp entries: the late gallery (Phoenix's 260
-        /// strokes, Peacock's 236, Starry Night's 173) pays a real curl-noise generation on first
-        /// stroke access, and an icon is never a reason to pay it.
-        /// </summary>
-        sealed class EmblemSource : ToyEmblem.IEmblemSource
+        /// <summary>Start a painting's run under the toybox root and file it in the run book.</summary>
+        PaintingRunner CreateRun(int index, int resumeFromStroke)
         {
-            readonly PaintingGalleryToy _toy;
-            public EmblemSource(PaintingGalleryToy toy) => _toy = toy;
-
-            public int SatelliteCount => 3;
-
-            // Strokes carry their own domain colours through ToyFactory's shared line material.
-            public bool UsesSharedMaterial => false;
-
-            public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
+            var painting = _gallery[index];
+            var go = new GameObject($"PaintingRunner_{painting.PaintingId}");
+            go.transform.SetParent(transform.parent, false);
+            var runner = go.AddComponent<PaintingRunner>();
+            string id = painting.PaintingId;
+            ActiveRuns[id] = runner;
+            // The runner destroys itself right after Finished: drop it from the book.
+            runner.Finished += () =>
             {
-                // Slot 0 also forces the on-ramp's stroke generation (which the gallery pays
-                // anyway on first open - this is a prepay, not an addition).
-                heavy = slot == 0;
-
-                var painting = _toy.EmblemPainting(slot);
-                if (!painting) return false;
-
-                // Parents itself under the holder, brings its own turntable, and paints with the
-                // shared vertex-coloured line material - so it allocates nothing and ignores
-                // `shared`, keeping every stroke's own domain colour.
-                return MiniaturePaintingBuilder.TryBuild(holder, painting, radius, _toy.Context);
-            }
-
-            public bool TryGetLiveKey(out object key)
-            {
-                key = null;
-                return false; // the gallery's line-up doesn't change while the toy exists
-            }
-
-            public bool TryGetLiveTint(out Color tint)
-            {
-                tint = default;
-                return false; // per-stroke domain colours, never one tint
-            }
+                if (ActiveRuns.TryGetValue(id, out var r) && r == runner) ActiveRuns.Remove(id);
+            };
+            runner.Begin(painting, Definition, Context, _anchorPositions[index], _anchorRotations[index],
+                resumeFromStroke);
+            return runner;
         }
-
-        /// <summary>
-        /// Which on-ramp painting goes in which emblem slot. Core = the one with the most strokes
-        /// completed (ties to the earliest in ladder order); satellites = the others, in order.
-        /// </summary>
-        PaintingDefinitionSO EmblemPainting(int slot)
-        {
-            _emblemOrder ??= BuildEmblemOrder();
-            return slot >= 0 && slot < _emblemOrder.Length ? _gallery[_emblemOrder[slot]] : null;
-        }
-
-        int[] BuildEmblemOrder()
-        {
-            const int onRamp = 4;
-            int count = Mathf.Min(onRamp, _gallery.Count);
-            if (count <= 0) return System.Array.Empty<int>();
-
-            int best = 0, bestProgress = -1;
-            for (int i = 0; i < count; i++)
-            {
-                var painting = _gallery[i];
-                if (!painting) continue;
-                int total = painting.Strokes?.Count ?? 0;
-                int done = total > 0 ? PaintingProgressStore.GetStrokesCompleted(painting.PaintingId, total) : 0;
-                if (done <= bestProgress) continue;
-                bestProgress = done;
-                best = i;
-            }
-
-            var order = new int[count];
-            order[0] = best;
-            int next = 1;
-            for (int i = 0; i < count && next < count; i++)
-                if (i != best) order[next++] = i;
-            return order;
-        }
-
-        // ── Layout ───────────────────────────────────────────────────────────
-
-        protected override float StationRadius =>
-            (Placement.BodyRadius > 0.01f ? Placement.BodyRadius : 20f) * Mathf.Max(0.25f, _def.IconScaleBodies);
-        protected override float MatrixDistanceFactor => _def.MatrixDistanceFactor;
-
-        protected override float StationSpacing =>
-            Mathf.Max(Placement.TriggerRadius * 2.2f, StationRadius * _def.ClusterSpacingBodies);
 
         bool ResolveGallery()
         {
@@ -150,8 +83,7 @@ namespace CosmicShore.Gameplay
         /// Fill the gallery list once, at init. Hoisted out of <see cref="ResolveGallery"/> so
         /// <c>ResolvePaintings()</c> is called EXACTLY once for the toy's life: with no authored
         /// list it returns 16 freshly-created definition instances with cold stroke caches every
-        /// call, so a second call would silently double the gallery's generation cost and hand the
-        /// emblem different objects than the stations use.
+        /// call, so a second call would silently double the gallery's generation cost.
         /// </summary>
         void ResolveGalleryList()
         {
@@ -187,9 +119,6 @@ namespace CosmicShore.Gameplay
 
         // ── App-shell face ───────────────────────────────────────────────────
 
-        // There is no second option list here: MatrixToy answers the window with this toy's own
-        // BuildOptions below.
-
         protected override bool ShellAvailable
         {
             get
@@ -200,20 +129,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The whole gallery, one row per canvas - the flat twin of the matrix of miniatures.
+        /// The whole gallery, one row per canvas.
         ///
         /// <para><b>No stroke is generated to draw this list.</b> The late gallery pays a real
-        /// curl-noise generation on first stroke access (Phoenix's 260 strokes, Peacock's 236),
-        /// which is why the toy's own emblem is restricted to the four on-ramp canvases - and
-        /// paying it for all sixteen just to open a menu would be worse than paying it to fly in.
-        /// So the detail line is read from the progress STORE and from any live run, never from
-        /// <c>EnsureStrokes</c>; the strokes are generated in <see cref="BeginFromShell"/>, at the
-        /// same moment flying the gallery would have generated them.</para>
+        /// curl-noise generation on first stroke access (Phoenix's 260 strokes, Peacock's 236), and
+        /// paying it for all sixteen just to open a menu is the wrong trade. So the detail line is
+        /// read from the progress STORE and from any live run, never from <c>EnsureStrokes</c>; the
+        /// strokes are generated in <see cref="BeginFromShell"/>.</para>
         /// </summary>
         protected override void BuildOptions(List<ToyShellOption> into)
         {
-            // The declaration resolves its own source: the gallery list and its packed anchor
-            // poses, which the stations then read back out of.
             ResolveGalleryList();
             if (_anchorPositions == null) PackAnchors();
 
@@ -223,9 +148,25 @@ namespace CosmicShore.Gameplay
                 if (!painting) continue;
 
                 int index = i;
-                var live = PaintingToy.LiveRun(painting.PaintingId);
+                var live = LiveRun(painting.PaintingId);
 
                 var captured = painting;
+                if (!live && PaintingProgressStore.IsFinished(painting.PaintingId))
+                {
+                    // A finished masterpiece: share it or paint it again, never repaint it silently.
+                    into.Add(new ToyShellOption
+                    {
+                        Payload = captured,
+                        Label = painting.DisplayName,
+                        Detail = DescribeForShell(painting, null),
+                        Description = "Finished. Share it, or clear the canvas and paint it again.",
+                        Accent = Definition ? Definition.AccentColor : Color.white,
+                        BuildPreview = parent => BuildShellPreview(captured, parent),
+                        Expand = () => FinishedChoices(index),
+                    });
+                    continue;
+                }
+
                 into.Add(new ToyShellOption
                 {
                     Payload = captured,
@@ -244,33 +185,79 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>A finished canvas's two choices: Share (export the web reconstruction) and Repaint.</summary>
+        List<ToyShellOption> FinishedChoices(int index)
+        {
+            var painting = index >= 0 && index < _gallery.Count ? _gallery[index] : null;
+            if (!painting) return new List<ToyShellOption>();
+            Color accent = Definition ? Definition.AccentColor : Color.white;
+            return new List<ToyShellOption>
+            {
+                new()
+                {
+                    Label = "Share",
+                    Detail = "export the masterpiece",
+                    Accent = accent,
+                    CommitVerb = "Share",
+                    Repeatable = true,
+                    Apply = () =>
+                    {
+                        if (PaintingShareExporter.TryExport(painting, Context, out string path))
+                            PaintingShareExporter.Share(path, painting.DisplayName);
+                    },
+                    BuildPreview = parent => BuildShellPreview(painting, parent),
+                },
+                new()
+                {
+                    Label = "Repaint",
+                    Detail = "clear the canvas and start again",
+                    Accent = accent,
+                    RequiresFreestyle = true,
+                    CommitVerb = "Start",
+                    Apply = () => Repaint(index),
+                    BuildPreview = parent => BuildShellPreview(painting, parent),
+                    Arrival = () => ArrivalFor(painting),
+                },
+            };
+        }
+
+        void Repaint(int index)
+        {
+            if (!ResolveGallery() || index < 0 || index >= _gallery.Count) return;
+            var painting = _gallery[index];
+            if (!painting || LiveRun(painting.PaintingId)) return;
+            PaintingProgressStore.ResetProgress(painting.PaintingId);
+            PaintingPrismStore.Clear(painting.PaintingId);
+            painting.EnsureStrokes();
+            if (painting.Strokes.Count == 0) return;
+            CreateRun(index, 0);
+        }
+
         /// <summary>
         /// Where to fly to paint <paramref name="painting"/>: its live run's next ring (the start
-        /// gate, or the ride checkpoint it is on). With no run to fly to - a finished masterpiece
-        /// opens the gallery instead of starting one, and a benched run is put down - it is this
-        /// gallery, threaded from inside the cell outward (the toybox faces its toys at the centre).
+        /// gate, or the ride checkpoint it is on). Invalid with no run to fly to.
         /// </summary>
         ToyArrival ArrivalFor(PaintingDefinitionSO painting)
         {
             if (!this || painting == null) return default;
-            var live = PaintingToy.LiveRun(painting.PaintingId);
-            if (live && live.TryGetArrival(out var arrival)) return arrival;
-            return new ToyArrival(transform.position, -transform.forward, SwitchRingRadius);
+            var live = LiveRun(painting.PaintingId);
+            return live && live.TryGetArrival(out var arrival) ? arrival : default;
         }
 
+        float PreviewRadius =>
+            (Placement.BodyRadius > 0.01f ? Placement.BodyRadius : 20f) * Mathf.Max(0.25f, _def.IconScaleBodies);
+
         /// <summary>
-        /// The painting in miniature for the window's picture - the SAME builder the gallery
-        /// station and the emblem use, at the station's own radius, so the flat preview and the
-        /// station a player flies to cannot drift apart. Pays the stroke generation the gallery
-        /// would pay on first open; a preview is asked for one painting at a time, never the
-        /// whole late gallery at once.
+        /// The painting in miniature for the window's picture. Pays the stroke generation for that
+        /// one painting; a preview is asked for one painting at a time, never the whole late
+        /// gallery at once.
         /// </summary>
         GameObject BuildShellPreview(PaintingDefinitionSO painting, Transform parent)
         {
             if (!painting || !parent) return null;
             var body = new GameObject($"{painting.DisplayName} Preview");
             body.transform.SetParent(parent, false);
-            if (MiniaturePaintingBuilder.TryBuild(body.transform, painting, StationRadius, Context))
+            if (MiniaturePaintingBuilder.TryBuild(body.transform, painting, PreviewRadius, Context))
                 return body;
             Destroy(body);
             return null;
@@ -291,13 +278,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Start, resume or bench a canvas from the app shell - the same decision tree
-        /// <see cref="PaintingToy.OnActivated"/> walks, against the same run book, so the two
-        /// surfaces cannot disagree about what a press does.
-        ///
-        /// <para>The one case that cannot be answered flat is a FINISHED masterpiece: its SHARE
-        /// and REPAINT choices are fly-through gates in the world, so the shell opens the gallery
-        /// matrix and lets the player fly the station that carries them.</para>
+        /// Start, resume or bench a canvas from the app shell. A finished masterpiece is listed as
+        /// a branch (<see cref="FinishedChoices"/>), so it is never repainted from here.
         /// </summary>
         void BeginFromShell(int index)
         {
@@ -307,7 +289,7 @@ namespace CosmicShore.Gameplay
             var painting = _gallery[index];
             if (!painting) return;
 
-            var live = PaintingToy.LiveRun(painting.PaintingId);
+            var live = LiveRun(painting.PaintingId);
             if (live)
             {
                 if (!live.IsCelebrating) live.ToggleBench();
@@ -319,56 +301,9 @@ namespace CosmicShore.Gameplay
             if (total == 0) return;
 
             int resume = PaintingProgressStore.GetStrokesCompleted(painting.PaintingId, total);
-            if (resume >= total)
-            {
-                // Finished: the choice gates are world objects on the station, so hand the player
-                // the gallery rather than silently repainting over a masterpiece.
-                OpenMatrix();
-                return;
-            }
+            if (resume >= total) return; // finished: Share / Repaint (FinishedChoices)
 
-            PaintingToy.CreateRun(painting, Definition, Context,
-                _anchorPositions[index], _anchorRotations[index], ToyboxRoot, resume);
-        }
-
-        // ── Stations: the painting, and nothing but the painting ─────────────
-
-        protected override void BuildStation(ToyShellOption option, Transform parent, Vector3 position, float radius)
-        {
-            var painting = (PaintingDefinitionSO)option.Payload;
-
-            // The anchor is this painting's own packed pose. Looked up in the gallery the
-            // declaration itself walked, never in a list kept alongside the options - a second
-            // list indexed in step with the first is exactly the coupling MatrixToy removed.
-            int index = _gallery.IndexOf(painting);
-            if (index < 0 || _anchorPositions == null || index >= _anchorPositions.Length) return;
-
-            var root = ToyFactory.CreateBareRoot($"{Definition.Id}_{painting.PaintingId}", parent,
-                position, transform.position, radius * 1.6f);
-
-            // The station IS its painting in miniature; anonymous sphere only as fallback.
-            var body = new GameObject("Body");
-            body.transform.SetParent(root.transform, false);
-            if (!MiniaturePaintingBuilder.TryBuild(body.transform, painting, radius, Context))
-                ToyFactory.AddSphereBody(body.transform, radius, Definition.AccentColor);
-
-            float ringRadius = StationRingRadius(radius * 1.6f);
-
-            // A full Toy, not a light matrix station: a painting station owns its own bloom, its
-            // exit-gated re-arm (so a bench/resume toggle can't double-fire), and a per-frame
-            // Update for the completion choice gates.
-            // This station is a full Toy rather than a light ToyMatrixStation, so MatrixToy
-            // cannot wire the option's Apply for it (see MatrixToy.BuildStation). PaintingToy's
-            // own activation and that Apply are the SAME call - BeginFromShell and
-            // PaintingToy.OnActivated walk one run book - which is the condition the base states
-            // for building a station any other way.
-            var toy = root.AddComponent<PaintingToy>();
-            toy.Configure(painting, _anchorPositions[index], _anchorRotations[index], ToyboxRoot);
-            // Its switch ring comes from the base like every other toy's - only the radius is ours,
-            // because a gallery station's trigger overruns half the gap to its neighbour.
-            toy.ConfigureSwitchRing(ringRadius);
-            toy.Initialize(_def, Context,
-                new ToyPlacement(position, transform.position, radius, radius * 1.6f));
+            CreateRun(index, resume);
         }
     }
 }

@@ -31,7 +31,8 @@ namespace CosmicShore.Gameplay
             Screen.autorotateToPortraitUpsideDown = false;
             Screen.autorotateToLandscapeLeft = false;
             Screen.autorotateToLandscapeRight = false;
-            
+            // a crew seat played upright (the Goby's Pistol) or the menu may still allow portrait
+            ScreenOrientationPolicy.Reassert();
         }
 
         /// <summary>
