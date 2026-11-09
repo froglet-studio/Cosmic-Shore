@@ -106,8 +106,8 @@ the hull, so a Rhino at rest ploughs almost exactly as it did before the kit (th
 pad and touch overrides to `LeftStickAction` / `RightStickAction`, the inputs the sword swing used) and
 `RhinoPloughSteerExecutor` (the swing executor's slot, same fileID):
 
-- **Press**: a small sideways shove toward that trigger, `ModifyVelocity(right × ±30 u/s, 0.25 s)` — about 5 u of
-  sidestep, well under the fleet's 100 u/s displacement ceiling (vessel skill §4.ab2).
+- **Press**: a small sideways shove toward that trigger, `ModifyVelocity(right × ±90 u/s, 0.25 s)` — about 14 u of
+  sidestep (tripled 2026-11-09), still under the fleet's 100 u/s displacement ceiling (vessel skill §4.ab2).
 - **Hold**: every prism the hull ploughs is thrown to that side, across the centreline if it sat on the other one
   (`RhinoPlough.ShoveToward`). Both held: the last one pulled wins; letting it go hands back to the one still held.
 - **Release**: each prism goes to the side it already sat on again.
@@ -159,17 +159,17 @@ pair bounces as before, and a bounce ends the chain.
 | Field | Shipped | Meaning |
 |---|---|---|
 | `clearanceMargin` | 1 u | Air between the hull's side and the prism's near face, on top of just-touching |
-| `throwSecondsOfSpeed` | 0.04 s | Extra sideways throw per unit of ram speed (`min(maxThrowDistance, speed × 0.04)`): 2.0 u at cruise (50), 3.6 u at 90 |
-| `maxThrowDistance` | 30 u | Ceiling on that throw — reached from 750 u/s, so a ramp-boosted Rhino at top speed (840 u/s) throws 30, not 33.6 |
+| `throwSecondsOfSpeed` | 0.12 s | Extra sideways throw per unit of ram speed (`min(maxThrowDistance, speed × 0.12)`): 6 u at cruise (50), 10.8 u at 90. Tripled from 0.04 on 2026-11-09 (Garrett) |
+| `maxThrowDistance` | 90 u | Ceiling on that throw — reached from 750 u/s, so a ramp-boosted Rhino at top speed (840 u/s) throws 90, not 100.8. Tripled from 30 on 2026-11-09 |
 | `slideSeconds` | 0.25 s | How long the visual takes to slide out. Animation only |
 | `skipWhileAttached` | on | A riding vessel does not plough the trail it rides |
-| `furrowDistance` | 0 → 20 u (Space), floor 0 | The Furrow: added to every throw |
+| `furrowDistance` | 0 → 60 u (Space), floor 0 | The Furrow: added to every throw. Tripled from 20 on 2026-11-09 |
 | `unstoppableUpgradeElement` | Space | Unstoppable's gate (None = never) |
 | `carryDistance` | 0 → 40 u (Charge), floor 0 | The Carry: how far past landing a thrown prism still strikes |
 | `avalancheUpgradeElement` / `avalancheLinks` | Charge / 3 | Avalanche's gate and how many more prisms one chain throws |
 | `bermUpgradeElement` | Mass | Berm's gate |
 | `RhinoPloughBlade.width` (prefab) | 14 → 40 u (Mass), floor 10 | The Blade |
-| `RhinoPloughSteer*Action.shoveSpeed` / `shoveSeconds` | 30 u/s / 0.25 s | The trigger's little shove |
+| `RhinoPloughSteer*Action.shoveSpeed` / `shoveSeconds` | 90 u/s / 0.25 s | The trigger's shove (tripled from 30 on 2026-11-09) |
 
 ## What this changes elsewhere
 
@@ -242,3 +242,13 @@ No `unity` binary was available in the authoring session, so none of this has be
   next frame, so they snap back. Decide whether creatures should be immovable to the hull.
 - **Per-peer landing divergence** near the clearance edge (above). If it shows in play, the fix
   shape is an owner-decided shove (or quantizing the throw), not a change to the side rule.
+
+## 2026-11-09 tune (Garrett: "the movement of prisms from the plow should triple")
+
+- The throw is not mass-based (it is geometry plus a speed term), so the push was tripled at its knobs:
+  `throwSecondsOfSpeed` 0.04 → 0.12, `maxThrowDistance` 30 → 90, the Space furrow 0–20 → 0–60. The hull clearance
+  is still measured from the colliders, so the prism always lands just clear plus three times the old throw.
+- Trigger shove 30 → 90 u/s (still under the 100 u/s displacement ceiling).
+- Camera (`RhinoCameraSettingsSO`): follow 70 → 90 u back, `lookAheadLift` 18 → 0 (no vertical offset).
+- Impact feel (`CameraFeelConfig` Rhino weight 1.25 → 0.42): a third, the camera reading of "triple the mass",
+  so ram shakes land lighter. The Rigidbody mass was left at 1 since nothing in the plough reads it.
