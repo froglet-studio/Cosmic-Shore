@@ -1173,3 +1173,58 @@ so its `--check` goes red for a change nobody made on purpose. Use `[ToggleUI]` 
 uniform branch, and keep `[Toggle]` for a real keyword variant. Seen 2026-10-28 on `OmniCrystalFresnelShader`'s
 `_ElementShades` (`cece/serene-cannon-93olp5`), caught before it shipped.
 
+
+- **An instance override whose `target` fileID is not a document of the source prefab is NOT necessarily dead.**
+  An object inside a prefab NESTED in that source is addressed by its derived id (`(srcFid ^ nestedInstanceFid) &
+  0x7FFFFFFFFFFFFFFF`), and the source file holds a document for it only when something there references it
+  (a `stripped` stand-in). Pruning "overrides that target nothing in the prefab" on `GameCanvas`'s pause instance
+  (2026-11-05, `claude/ui-phone-menus`) would have deleted **60 live overrides** (the nested `Options_Menu_Panel`
+  toggles) and kept only 1 truly dead one. Liveness = the source's documents UNION the derived ids of every nested
+  instance's objects, recursively; compute that set before deleting any override. The same derived id is how a
+  generator ADDS a component to a nested object from the outer prefab (`m_AddedComponents` with
+  `targetCorrespondingSourceObject` = the id as the source sees it, plus a `stripped` GameObject stand-in -
+  `author_ingame_hud.add_instance_phone`).
+
+### Trap: a stale `.rsp` in the refcompile output makes `generated_assets` crash, not fail
+
+`unity_refcompile` writes one `<Assembly>.rsp` per assembly into `$TMPDIR/unity_refcompile_out/<tree>/player/` and never
+deletes the ones for assemblies that are gone. `check_generated_assets.py` reads every `*.rsp` there whose sources sit
+under `Assets/`. After a merge that deleted a plugin (the Obvious SOAP plugin, 2026-11-07), the old `Obvious.Soap.rsp`
+still listed its files, and the Schema tool died with `DirectoryNotFoundException ... BindComparisonToUnityEvent.cs`.
+`gates.sh` printed that as `FAIL generated_assets`, on a branch that had not touched the plugin. Check the `.rsp` times
+(`ls -la --time-style=+%F_%T`): one older than the rest and naming files that are not on disk is stale. Delete it and
+re-run the gate. It is scratch output, not the repo (`claude/epic-fermat-6c7n2l`, 2026-11-08).
+
+**Fixed (2026-11-08, `claude/stoic-tesla-kordbh`):** `build.py` now deletes, before it compiles anything, the `.rsp`,
+`.dll` and `.dll.stamp` of every assembly it will not build this run (`prune_stale_outputs`; only a response file whose
+`-out:` is that directory's own `<name>.dll`, so nothing else in a hand-picked `--out` is touched). And
+`check_generated_assets.py` sorts the response files before the Schema tool sees one (`schema_rsps`): an `.rsp` none of
+whose sources is on disk is skipped and named ("an assembly that no longer exists"), and one with only SOME missing is a
+setup error that says to rerun `unity_refcompile`, never a .NET stack trace. `check_generated_assets.py --self-test`
+plants a `Ghost.rsp` naming a missing `Assets/...cs` file in a scratch directory and proves both. Deleting by hand is no
+longer needed; if a crash like this comes back, it is a new path, not this one.
+
+### Trap: a prefab re-saved by an older editor drops the fields its generator authors, and the base goes red
+
+A bleeding-edge commit ("Thresher", 2026-11-06) re-saved `ConfigureView`, `ConfigureArenaView` and
+`ConfigureMaelstromView` from an editor whose scripts were older than the generator's: every serialized field those
+scripts did not have was dropped (the weekly eyebrow line, the seat and pilot lines, `focusRingToken`, `shrinkToFit` on
+30+ labels) and every fileID re-minted, so `author_menu_configure.py --check` was red on bleeding-edge itself. Merging
+it into a branch conflicts on all three. Resolve by regenerating with the owning generator (it restores the fields),
+never by taking the re-save: filter out the fileID lines and diff the sorted remainder of both sides to see that the
+change is lost fields, not intent. Name the commit in the merge message (`claude/ui-portrait`, 2026-11-08).
+
+### Technique: deleting a subtree that holds NESTED PREFAB INSTANCES from prefab YAML
+
+A nested prefab instance appears in the outer prefab's YAML as more than one document:
+- a `--- !u!1001 &<pi>` PrefabInstance document (its `m_TransformParent` is the outer transform it hangs under);
+- `stripped` GameObject, Transform and component documents whose `m_PrefabInstance: {fileID: <pi>}` names it;
+- any component the OUTER prefab added to one of those stripped objects (`m_GameObject` is a stripped id);
+- any outer objects parented under the stripped transform (its `m_Children`).
+
+A subtree walk that only follows `m_Children` reaches the stripped transform and stops. It either refuses (as
+`author_voyage_window.py`'s `subtree` does for a clone) or leaves the PrefabInstance and its stripped documents behind,
+pointing at a parent that no longer exists. `author_voyage_window.py`'s `subtree_deep` / `delete_deep` collects all four
+kinds. Its `validate` then proves that no local `{fileID: N}` dangles anywhere in the file; that check is what makes the
+delete trustworthy. A copy that keeps the instance (QuestsView from MissionView, 2026-11-08) needs nothing special,
+because fileIDs are local to the file.
