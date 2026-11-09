@@ -126,12 +126,12 @@ namespace CosmicShore.Tests
             // A 200 x 100 sprite in the top-right of a 400 x 400 atlas, shown on a square card.
             var atlas = new Texture2D(400, 400);
             var sprite = Sprite.Create(atlas, new Rect(200f, 300f, 200f, 100f), new Vector2(0.5f, 0.5f));
-            var r = QuestCarouselView.SpriteCover(sprite, 1f);
+            var r = FlowUi.SpriteCover(sprite, 1f);
             Assert.AreEqual(100f / 400f, r.height, 1e-4f, "the whole height of the sprite, in atlas uv");
             Assert.AreEqual(100f / 400f, r.width, 1e-4f, "a square of it");
             Assert.AreEqual(0.5f + 50f / 400f, r.x, 1e-4f, "centred across the sprite, not the atlas");
             Assert.AreEqual(300f / 400f, r.y, 1e-4f);
-            Assert.AreEqual(new Rect(0f, 0f, 1f, 1f), QuestCarouselView.SpriteCover(null, 1f), "no sprite, the whole rectangle");
+            Assert.AreEqual(new Rect(0f, 0f, 1f, 1f), FlowUi.SpriteCover(null, 1f), "no sprite, the whole rectangle");
             UnityEngine.Object.DestroyImmediate(sprite);
             UnityEngine.Object.DestroyImmediate(atlas);
         }

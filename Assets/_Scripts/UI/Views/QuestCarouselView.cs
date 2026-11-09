@@ -64,17 +64,6 @@ namespace CosmicShore.UI
         [Tooltip("A locked quest's art multiply.")]
         [SerializeField] Color lockedTint = new(0.28f, 0.29f, 0.34f, 1f);
 
-        // The style guide's tokens (Docs/UI_STYLE_GUIDE.md), as VoyageOpenCard draws them.
-        static readonly Color Light = new(0.902f, 0.914f, 1f, 1f);
-        static readonly Color Soft = new(0.455f, 0.482f, 0.678f, 1f);
-        static readonly Color Line = new(0.263f, 0.298f, 0.537f, 1f);
-        static readonly Color Deep = new(0.039f, 0.047f, 0.110f, 1f);
-        static readonly Color Plate = new(0.075f, 0.086f, 0.180f, 0.92f);
-        static readonly Color Track = new(0.133f, 0.149f, 0.271f, 1f);
-        static readonly Color Selection = new(0f, 0.831f, 1f, 1f);
-        static readonly Color Lime = new(0.6f, 1f, 0.502f, 1f);
-        static readonly Color OnLime = new(0.039f, 0.047f, 0.110f, 1f);
-
         readonly List<VoyageFlowCard> _cards = new();
         RectTransform _flow, _barFill;
         TMP_Text _title, _progress, _focus, _goal, _wait, _ctaLabel;
@@ -159,28 +148,14 @@ namespace CosmicShore.UI
             _barFill.anchorMax = new Vector2(count > 0 ? (float)claimed / count : 0f, 1f);
 
             while (_cards.Count < count) _cards.Add(MakeCard(_cards.Count));
-            float step = cardSize.x * 0.8f;
-            for (int i = 0; i < _cards.Count; i++)
+            for (int i = 0; i < count; i++)
             {
                 var c = _cards[i];
-                bool shown = i < count;
-                c.gameObject.SetActive(shown);
-                if (!shown) continue;
-                var quest = questList.Quests[i];
-                var state = StateOf(i);
-                c.Index = i;
                 c.Name.text = TemplateText.Fill(cardLine, "n", Number(i), "name", NameOf(i));
-                Art(c.Art, quest);
-                c.Art.color = state == QuestItemState.Locked ? lockedTint : artTint;
-                int offset = i - _picked;
-                c.Pose(offset, step);
-                if (c.Edge && c.Edge.TryGetComponent(out Outline edge)) edge.effectColor = offset == 0 ? Selection : Line;
+                Art(c.Art, questList.Quests[i]);
+                c.Art.color = StateOf(i) == QuestItemState.Locked ? lockedTint : artTint;
             }
-            // The picked card stands in front.
-            var order = new List<VoyageFlowCard>();
-            for (int i = 0; i < count; i++) order.Add(_cards[i]);
-            order.Sort((a, b) => Mathf.Abs(b.Index - _picked).CompareTo(Mathf.Abs(a.Index - _picked)));
-            foreach (var c in order) c.transform.SetAsLastSibling();
+            FlowUi.Stand(_cards, count, _picked, cardSize.x * 0.8f);
 
             DrawFocus();
         }
@@ -276,30 +251,7 @@ namespace CosmicShore.UI
             return quest.Icon;
         }
 
-        void Art(RawImage img, SO_UnlockData quest)
-        {
-            var sprite = ArtOf(quest);
-            img.texture = sprite ? sprite.texture : null;
-            img.enabled = sprite;
-            if (!sprite) return;
-            img.uvRect = SpriteCover(sprite, cardSize.x / Mathf.Max(1f, cardSize.y));
-        }
-
-        /// <summary>The uv rectangle of <paramref name="sprite"/>'s own rect in its texture (an atlas too), cropped centred
-        /// to fill an <paramref name="aspect"/>-shaped frame (CSS object-fit: cover).</summary>
-        public static Rect SpriteCover(Sprite sprite, float aspect)
-        {
-            if (!sprite || !sprite.texture) return new Rect(0f, 0f, 1f, 1f);
-            var r = sprite.textureRect;
-            float tw = sprite.texture.width, th = sprite.texture.height;
-            var own = new Rect(r.x / tw, r.y / th, r.width / tw, r.height / th);
-            float t = r.height > 0f ? r.width / r.height : 1f;
-            Rect crop;
-            if (aspect <= 0f) crop = new Rect(0f, 0f, 1f, 1f);
-            else if (t > aspect) { float w = aspect / t; crop = new Rect((1f - w) * 0.5f, 0f, w, 1f); }
-            else { float h = t / aspect; crop = new Rect(0f, (1f - h) * 0.5f, 1f, h); }
-            return new Rect(own.x + crop.x * own.width, own.y + crop.y * own.height, crop.width * own.width, crop.height * own.height);
-        }
+        void Art(RawImage img, SO_UnlockData quest) => FlowUi.Art(img, ArtOf(quest), cardSize.x / Mathf.Max(1f, cardSize.y));
 
         // ── Building (once) ──────────────────────────────────────────────────────────────────────────────────────────
 
@@ -310,116 +262,52 @@ namespace CosmicShore.UI
             var root = (RectTransform)transform;
 
             // The head: the episode's name on the left, the claimed count and its bar on the right.
-            var head = Node("Head", root);
-            Anchor(head, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -56f), new Vector2(0f, 0f));
-            _title = Text(head, 48, Light, TextAlignmentOptions.BottomLeft);
-            Anchor(_title.rectTransform, Vector2.zero, new Vector2(0.6f, 1f), Vector2.zero, Vector2.zero);
-            var bar = Node("Bar", head);
-            Anchor(bar, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-320f, 10f), new Vector2(0f, 18f));
-            Fill(bar, Track);
-            _barFill = Node("Fill", bar);
-            Anchor(_barFill, Vector2.zero, new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
-            Fill(_barFill, Light);
-            _progress = Text(head, 20, Light, TextAlignmentOptions.BottomRight);
-            Anchor(_progress.rectTransform, new Vector2(0.6f, 0f), new Vector2(1f, 1f), Vector2.zero, new Vector2(-340f, 0f));
+            var head = FlowUi.Node("Head", root);
+            FlowUi.Anchor(head, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -56f), new Vector2(0f, 0f));
+            _title = Text(head, 48, FlowUi.Light, TextAlignmentOptions.BottomLeft);
+            FlowUi.Anchor(_title.rectTransform, Vector2.zero, new Vector2(0.6f, 1f), Vector2.zero, Vector2.zero);
+            var bar = FlowUi.Node("Bar", head);
+            FlowUi.Anchor(bar, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-320f, 10f), new Vector2(0f, 18f));
+            FlowUi.Fill(bar, FlowUi.Track);
+            _barFill = FlowUi.Node("Fill", bar);
+            FlowUi.Anchor(_barFill, Vector2.zero, new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
+            FlowUi.Fill(_barFill, FlowUi.Light);
+            _progress = Text(head, 20, FlowUi.Light, TextAlignmentOptions.BottomRight);
+            FlowUi.Anchor(_progress.rectTransform, new Vector2(0.6f, 0f), new Vector2(1f, 1f), Vector2.zero, new Vector2(-340f, 0f));
 
             // The coverflow.
-            _flow = Node("Flow", root);
-            Anchor(_flow, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 200f), new Vector2(0f, -76f));
+            _flow = FlowUi.Node("Flow", root);
+            FlowUi.Anchor(_flow, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 200f), new Vector2(0f, -76f));
             _flow.gameObject.AddComponent<RectMask2D>();
 
             // The picked quest's line: its state, its goal and the one call to action.
-            var focus = Node("Focus", root);
-            Anchor(focus, Vector2.zero, new Vector2(1f, 0f), Vector2.zero, new Vector2(0f, 180f));
-            Fill(focus, Plate).raycastTarget = false;
+            var focus = FlowUi.Node("Focus", root);
+            FlowUi.Anchor(focus, Vector2.zero, new Vector2(1f, 0f), Vector2.zero, new Vector2(0f, 180f));
+            FlowUi.Fill(focus, FlowUi.Plate).raycastTarget = false;
             var fe = focus.gameObject.AddComponent<Outline>();
-            fe.effectColor = Line;
+            fe.effectColor = FlowUi.Line;
             fe.effectDistance = new Vector2(1f, -1f);
-            _focus = Text(focus, 28, Light, TextAlignmentOptions.BottomLeft);
-            Anchor(_focus.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(36f, 0f), new Vector2(-360f, -28f));
-            _goal = Text(focus, 18, Light, TextAlignmentOptions.TopLeft);
+            _focus = Text(focus, 28, FlowUi.Light, TextAlignmentOptions.BottomLeft);
+            FlowUi.Anchor(_focus.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(36f, 0f), new Vector2(-360f, -28f));
+            _goal = Text(focus, 18, FlowUi.Light, TextAlignmentOptions.TopLeft);
             _goal.textWrappingMode = TextWrappingModes.Normal;
-            Anchor(_goal.rectTransform, Vector2.zero, new Vector2(1f, 0.5f), new Vector2(36f, 28f), new Vector2(-360f, -10f));
-            _wait = Text(focus, 18, Light, TextAlignmentOptions.Right);
-            Anchor(_wait.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-340f, 0f), new Vector2(-36f, 0f));
+            FlowUi.Anchor(_goal.rectTransform, Vector2.zero, new Vector2(1f, 0.5f), new Vector2(36f, 28f), new Vector2(-360f, -10f));
+            _wait = Text(focus, 18, FlowUi.Light, TextAlignmentOptions.Right);
+            FlowUi.Anchor(_wait.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-340f, 0f), new Vector2(-36f, 0f));
 
-            var cta = Node("Act", focus);
-            Anchor(cta, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-316f, -32f), new Vector2(-36f, 32f));
-            var ctaFill = Fill(cta, Lime);
+            var cta = FlowUi.Node("Act", focus);
+            FlowUi.Anchor(cta, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-316f, -32f), new Vector2(-36f, 32f));
+            var ctaFill = FlowUi.Fill(cta, FlowUi.Lime);
             _cta = cta.gameObject.AddComponent<Button>();
             _cta.targetGraphic = ctaFill;
             _cta.onClick.AddListener(Act);
-            _ctaLabel = Text(cta, 20, OnLime, TextAlignmentOptions.Center);
-            Anchor(_ctaLabel.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            _ctaLabel = Text(cta, 20, FlowUi.OnLime, TextAlignmentOptions.Center);
+            FlowUi.Anchor(_ctaLabel.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
         }
 
-        VoyageFlowCard MakeCard(int index)
-        {
-            var rt = Node("Card" + index, _flow);
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = cardSize;
-            var bg = rt.gameObject.AddComponent<Image>();
-            bg.color = Deep;
-            var b = rt.gameObject.AddComponent<Button>();
-            b.targetGraphic = bg;
-            var edge = rt.gameObject.AddComponent<Outline>();
-            edge.effectDistance = new Vector2(2f, -2f);
-            edge.effectColor = Line;
-            var a = Node("Art", rt);
-            Anchor(a, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            var art = a.gameObject.AddComponent<RawImage>();
-            art.raycastTarget = false;
-            var name = Text(rt, 28, Light, TextAlignmentOptions.BottomLeft);
-            Anchor(name.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            name.margin = new Vector4(24f, 0f, 20f, 22f);
-            name.textWrappingMode = TextWrappingModes.Normal;
-            var card = rt.gameObject.AddComponent<VoyageFlowCard>();
-            card.Init(b, art, name, bg);
-            card.Index = index;
-            card.Picked = Pick;
-            return card;
-        }
+        VoyageFlowCard MakeCard(int index) => FlowUi.Card(_flow, index, cardSize, fontFrom, Pick);
 
-        static RectTransform Node(string name, Transform parent)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.layer = parent.gameObject.layer;
-            var rt = (RectTransform)go.transform;
-            rt.SetParent(parent, false);
-            return rt;
-        }
-
-        static void Anchor(RectTransform rt, Vector2 min, Vector2 max, Vector2 offsetMin, Vector2 offsetMax)
-        {
-            rt.anchorMin = min;
-            rt.anchorMax = max;
-            rt.offsetMin = offsetMin;
-            rt.offsetMax = offsetMax;
-        }
-
-        static Image Fill(RectTransform rt, Color color)
-        {
-            var img = rt.gameObject.AddComponent<Image>();
-            img.color = color;
-            return img;
-        }
-
-        TMP_Text Text(Transform parent, float size, Color color, TextAlignmentOptions align)
-        {
-            var rt = Node("Text", parent);
-            var t = rt.gameObject.AddComponent<TextMeshProUGUI>();
-            if (fontFrom)
-            {
-                t.font = fontFrom.font;
-                t.fontSharedMaterial = fontFrom.fontSharedMaterial;
-            }
-            t.fontSize = size;
-            t.color = color;
-            t.alignment = align;
-            t.textWrappingMode = TextWrappingModes.NoWrap;
-            t.overflowMode = TextOverflowModes.Ellipsis;
-            t.raycastTarget = false;
-            return t;
-        }
+        TMP_Text Text(Transform parent, float size, Color color, TextAlignmentOptions align) =>
+            FlowUi.Text(parent, fontFrom, size, color, align);
     }
 }

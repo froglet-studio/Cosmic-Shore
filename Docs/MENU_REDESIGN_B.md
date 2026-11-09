@@ -6659,7 +6659,7 @@ top upright as on PC, so it glides with the rest (`author_menu_portrait.py` SCEN
 
 **Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
 
-**Still not built:** the Saga and Episodes tabs in the picked look.
+**Still not built:** the Episodes tab in the picked look (the Saga tab is section 156).
 
 Affects: the FTUE quest graph (Shombith and Caleb). It reads and claims through the same service and frontier as
 the Profile's track and Home's card; nothing about the graph changed.
@@ -6678,3 +6678,36 @@ was broken.
   banding. `VoyageMapGraphic.Sea` is private again; the art reads `HyperSea.SeaColor` directly.
 - **The Quests window opened on quest 1** for a player with four claimed: progress loads after the window is built.
   The pick now follows the frontier until the player picks a card.
+
+
+## 156. Built: the Saga tab, Rev 77 "Saga" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
+
+**Asked (Shombith, 2026-11-09):** "build the saga in the picked look too".
+
+**Built:** `SagaView` (new) fills the Voyage window's Saga tab in place of the two side-by-side `VoyageView` cards.
+- **The left:** the picked part's card art, muted by a multiply, with "Saga - part 1 of 2", its name (48) and its
+  forms at the foot. The forms are the old cards' own lines: Tandava has four, the Severing five.
+- **The right:** the two parts on the coverflow (`VoyageFlowCard`, as the Voyages tab and the Quests window pose
+  them), the picked part's line (the card's own description), and one Lime Set sail the width of the column.
+- **Set sail** opens the part's launch window through `ArcadeGameConfigureModal.OpenFor`. It picks the copy of the
+  modal that can launch the part (`CanOpen`). Menu_Main carries three copies, and two are hosts with no launch panels,
+  so "find any" could open a dead window. `CanOpen` is cherry-picked whole from `claude/tandava-arena-mode`
+  (`e438e0e6d8`, 2026-10-29), which fixed exactly that and has not merged; its checklist entry stays with its branch.
+- **The words** (`partLine`, `cardLine`, `setSailLabel`, each part's forms) are serialized on `SagaView` and authored
+  by `author_voyage_window.py`'s Saga step, which stands down once on disk. `--check` validates the two parts and
+  their order, the forms, the words and the font, and three new negative controls fire.
+- **`FlowUi`** (new) is the small kit the Quests and Saga pages share (tokens, rect, fill, text, card, cover crop,
+  posing); `QuestCarouselView` now uses it and lost its own copies.
+- `VoyageView` has no user left on the Voyage window. It is kept (with the cherry-picked fix), not retired.
+
+**Not built: the lock.** The board draws part 2 locked ("After Tandava"). The game has no record of finishing
+Tandava (progress counts plays only for the quest chain's modes), so a lock would be a new progression rule and, as a
+guess, could leave the Severing unplayable. Both parts stay playable, as they are today. **Decision for Shombith:**
+what "Tandava done" means (a win, a finish, a play) and where it is recorded.
+
+**Verified:**
+- `unity_refcompile` player and editor: 0 errors in project code.
+- `author_voyage_window.py --check --self-test`: every negative control fires.
+- Menu_Main holds no reference to the 224 removed documents.
+
+**Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.

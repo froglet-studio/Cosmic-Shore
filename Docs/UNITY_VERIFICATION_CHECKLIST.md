@@ -22173,3 +22173,17 @@ editor: 0 errors in project code). No Unity editor ran.
    Locked quests show "Unlocks after ..." and claimed ones "Claimed", with no button.
 5. **The Profile's quest track** still works as before (it is a separate view).
 6. **The Voyages tab**: the first open with five voyages no longer stalls (the place art is a quarter of the work).
+
+## 🔴 The Saga tab, Rev 77 "Saga" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 156. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran.
+
+1. **Voyage window > Saga** (RB from Voyages). The left shows Tandava's art, muted, with "Saga - part 1 of 2",
+   "Tandava" and its four forms at the foot. The right shows the two parts on a coverflow, Tandava in front, its line
+   under them, and a full-width Lime Set sail.
+2. **Pick the Severing** (press it or move onto it with the D-pad). The left changes to its art, "part 2 of 2",
+   "Tandava: Severing" and its five forms.
+3. **Set sail** on each part opens its launch window with the hull carousel, your pilot, the seat line and a live
+   Start. It must not open an empty shell (the Arena or Maelstrom window's copy of the modal).
+4. **Back** from the launch window returns to the Saga tab.

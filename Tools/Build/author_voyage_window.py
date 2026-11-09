@@ -76,6 +76,10 @@ QUESTS_GUID = "38580c6477d2474db47619950c18ce94"   # QuestsView.prefab's guid
 QUESTS_ROOT, QUESTS_TITLE, QUESTS_MODAL = "QuestsView", "Quests", 20   # ScreenSwitcher.ModalWindows.QUESTS
 QUEST_TABS, QUEST_TAB_LABELS = ("Quests", "Episodes"), ("Episode 1", "Episode 2")
 QUEST_TRACK = "1566c719842df27479dce3e1fc98d76f"   # QuestTrackView, the quest tracker (the Profile's; left the Quests window)
+SAGA_SCRIPT = os.path.join(REPO, "Assets/_Scripts/UI/Views/SagaView.cs.meta")
+SAGA_CARDS = ("Featured", "Voyage2")   # the Saga page's two VoyageView cards before the picked look (Tandava, the Severing)
+SAGA_PARTS = ("a7460784ce7229f7440d35280ae4b04f", "b6df7010e0f34e18798473f6c68f26a4")   # Tandava, Tandava: Severing
+SAGA_WORDS = (("partLine", "'Saga - part {n} of {total}'"), ("cardLine", "'{n}  {name}'"), ("setSailLabel", "Set sail"))
 CAROUSEL_SCRIPT = os.path.join(REPO, "Assets/_Scripts/UI/Views/QuestCarouselView.cs.meta")
 QUEST_LIST = "5eee61facaac4bb46b9e9892512f74cb"   # GameModeQuestList.asset, Episode 1's quests
 # The Quests carousel's words (Rev 77 "Quests", section 155): authored here, edited in the inspector.
@@ -699,6 +703,41 @@ def lay_carousel(p):
         + "  lockedTint: {r: 0.28, g: 0.29, b: 0.34, a: 1}\n"),))
 
 
+def script_of(meta):
+    return re.search(r"^guid: (\w+)$", open(meta, encoding="utf-8").read(), re.M).group(1)
+
+
+def lay_saga(p):
+    """The Saga tab as Rev 77 "Saga" (section 156): the two VoyageView cards go, and a SagaView fills the page (the
+    picked part's art on the left with its name and forms, the parts on a coverflow, Set sail). Each part keeps its card
+    and the forms its old card listed, read off the cards before they go."""
+    panel = p.find(f"MissionView/{MARKER2}/SagaPage/Panel")
+    parts = []
+    for name in SAGA_CARDS:
+        card = p.child(panel, name)
+        game = re.search(r"^  voyage: (\{fileID: 11400000, guid: \w+, type: 2\})$", p.by[p.comp(card, GUID["voyage"])].body, re.M).group(1)
+        forms = []
+        for ch in p.children(p.rt(card)):
+            if p.by[ch].stripped:
+                continue
+            n = p.name(p.go_of(ch))
+            if n.startswith("Form"):
+                label = p.child(p.go_of(ch), "Name")
+                forms.append((int(n[4:]), re.search(r"^  m_text: (.*)$", p.by[tmp_of(p, label)].body, re.M).group(1)))
+        parts.append((game, " - ".join(t for _, t in sorted(forms))))
+    for name in SAGA_CARDS:
+        delete_deep(p, p.child(panel, name))
+    l, t, r, b = CAROUSEL_MARGIN
+    p.place(panel, (0, 0), (1, 1), ((l - r) / 2, (b - t) / 2), (-(l + r), -(t + b)), (0.5, 0.5))
+    font = tmp_of(p, p.find("MissionView/Header/Title"))
+    body = "  parts:\n" + "".join(f"  - game: {g}\n    forms: {f}\n" for g, f in parts)
+    body += f"  configureModal: {{fileID: 0}}\n  fontFrom: {{fileID: {font}}}\n"
+    body += "".join(f"  {k}: {v}\n" for k, v in SAGA_WORDS)
+    body += ("  cardSize: {x: 300, y: 280}\n  featureTint: {r: 0.6, g: 0.6, b: 0.66, a: 1}\n"
+             "  artTint: {r: 0.7, g: 0.7, b: 0.76, a: 1}\n")
+    node(p, "SagaFlow", panel, comps=(("114", lambda go: mono_head(go, script_of(SAGA_SCRIPT)) + body),))
+
+
 def rewrite3(p):
     """The Voyage window without the Quests tab and page (they are the Quests window now): three tabs."""
     delete_deep(p, p.find("MissionView/Body/Top/QuestsTab"))
@@ -762,9 +801,17 @@ def validate(text):
         page = p.find(f"MissionView/{MARKER2}/{name}")
         assert "  m_IsActive: 0\n" in p.by[page].body, f"{name} opens with the window (Voyages opens first)"
         assert not p.child(page, "Dim"), f"{name} still has a modal's dim"
-    for k in ("Featured", "Voyage2"):
-        assert p.has(f"MissionView/{MARKER2}/SagaPage/Panel/{k}"), f"the Saga page does not hold {k}"
-    assert p.comp(p.find(f"MissionView/{MARKER2}/SagaPage/Panel/Featured"), GUID["voyage"]), "Tandava's card lost its VoyageView"
+    saga = p.comp(p.find(f"MissionView/{MARKER2}/SagaPage/Panel/SagaFlow"), script_of(SAGA_SCRIPT))
+    assert saga, "the Saga page has no SagaView"
+    sb = p.by[saga].body
+    games = re.findall(r"^  - game: \{fileID: 11400000, guid: (\w+), type: 2\}\n    forms: (.+)$", sb, re.M)
+    assert [g for g, _ in games] == list(SAGA_PARTS), f"the Saga's parts are not Tandava then the Severing: {games}"
+    assert all(f.count(" - ") >= 3 for _, f in games), f"a part lost its forms: {games}"
+    for k, v in SAGA_WORDS:
+        assert f"  {k}: {v}\n" in sb, f"the Saga's {k} is not authored as {v}"
+    assert Prefab.field(sb, "fontFrom") == tmp_of(p, p.find("MissionView/Header/Title")), "the Saga's words do not take the title's font"
+    for k in SAGA_CARDS:
+        assert not p.has(f"MissionView/{MARKER2}/SagaPage/Panel/{k}"), f"the old Saga card {k} is back"
     assert p.has(f"MissionView/{MARKER2}/EpisodesPage/Panel/Episode2"), "the Episodes page does not hold Episode 2"
 
     content = "MissionView/Body/Voyages/Scroll/Viewport/Content"
@@ -854,6 +901,9 @@ def self_test(text, quests):
         ("the edge gap retuned", first(f"  edgeGap: {EDGE_GAP}\n", f"  edgeGap: {EDGE_GAP + 1}\n")),
         ("the modals' behaviour back", first(f"guid: {script_guid()}", f"guid: {MODALS_GUID}")),
         ("the map opening on the region", first("  openOnGalaxy: 1\n", "  openOnGalaxy: 0\n")),
+        ("the Saga's parts swapped", lambda t: t.replace(SAGA_PARTS[0], "X" * 32).replace(SAGA_PARTS[1], SAGA_PARTS[0]).replace("X" * 32, SAGA_PARTS[1])),
+        ("a Saga part without its forms", lambda t: re.sub(r"(    forms: )[^\n]+", r"\g<1>Antlion", t, count=1)),
+        ("the Saga's Set sail renamed", first("  setSailLabel: Set sail\n", "  setSailLabel: Go\n")),
         ("an element shape swapped", first(f"guid: {ELEMENT_SHAPES['Charge']}, type: 3}}\n  - {{fileID: 21300000, guid: {ELEMENT_SHAPES['Mass']}",
                                            f"guid: {ELEMENT_SHAPES['Mass']}, type: 3}}\n  - {{fileID: 21300000, guid: {ELEMENT_SHAPES['Charge']}")),
     ]
@@ -918,6 +968,17 @@ def main():
         if not os.path.exists(qpath + ".meta"):
             write(QUESTS_PREFAB + ".meta", f"fileFormatVersion: 2\nguid: {QUESTS_GUID}\nPrefabImporter:\n"
                   "  externalObjects: {}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+    if "m_Name: SagaFlow\n" not in text:
+        # The Saga tab in the picked look (Rev 77 "Saga", section 156). It too stands down once on disk.
+        if args.check or args.self_test:
+            print(f"FAIL: {PREFAB}'s Saga tab still holds the old cards; run without --check to lay it out")
+            return 1
+        p = Prefab(text)
+        random.seed(20261110)
+        lay_saga(p)
+        text = p.text()
+        validate(text)
+        write(PREFAB, text)
     if not os.path.exists(qpath):
         print(f"FAIL: {QUESTS_PREFAB} is missing (it is made with the third layout; restore it from git)")
         return 1

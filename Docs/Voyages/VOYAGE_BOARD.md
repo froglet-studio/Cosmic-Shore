@@ -55,7 +55,7 @@ closed to every Ark (proposed).
   where you want your voyages to take you"). Laid out by `Tools/Build/author_voyage_window.py`:
   - **Three tabs at the top, VOYAGES | SAGA | EPISODES** (`VoyageWindowTabs`, rebuilt 2026-11-02 to Shombith's
     pick, `Docs/MENU_REDESIGN_B.md` section 119, and again on 2026-11-08, section 151; `VoyageWindowModals` and its
-    modals retired). Voyages opens first. Saga holds Tandava and its Severing, and Episodes is locked ("coming soon",
+    modals retired). Voyages opens first. Saga holds Tandava and its Severing (`SagaView`, Rev 77 "Saga": the picked part's art on the left, the parts on a coverflow, one Set sail; `Docs/MENU_REDESIGN_B.md` section 156), and Episodes is locked ("coming soon",
     Episode 2). LB / RB step through the tabs and stop at either end; while the window is open it holds the bumpers
     (`HubShoulders`), so they do not slide the hub as well.
   - **The quest tracker is its own window, Quests** (2026-11-08, Rev 77 "Quests", section 151):
