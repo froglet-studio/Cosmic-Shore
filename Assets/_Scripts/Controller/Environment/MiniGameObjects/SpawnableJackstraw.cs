@@ -25,8 +25,8 @@ namespace CosmicShore.Gameplay
     /// sphere, not a ring.</para>
     ///
     /// <para><b>Mirrored exactly by <c>Tools/Build/jackstraw_budget.py</c></b>, which the generator imports for the
-    /// census, the volume and the PhaseThresholds. That is possible because every draw is <see
-    /// CellEnvironmentSpawnableBase.Hash01"/> of an integer key (never the shared System.Random), every per-unit count
+    /// census, the volume and the PhaseThresholds. That is possible because every draw is
+    /// <see cref="CellEnvironmentSpawnableBase.Hash01"/> of an integer key (never the shared System.Random), every per-unit count
     /// is a const, and the only count-affecting rejections are deterministic geometry: a stick whose segment enters
     /// a clearing or comes within <see cref="StickGap"/> of another re-draws, at most <see cref="StickTries"/> times,
     /// then is skipped.</para>
