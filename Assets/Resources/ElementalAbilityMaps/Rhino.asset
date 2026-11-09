@@ -34,7 +34,7 @@ MonoBehaviour:
     UpgradeDescription: 'A ploughed prism LANDS SHIELDED, so the furrow banks into walls of armour; a prism that strikes another still breaks (RhinoPloughPrismEffectSO.bermUpgradeElement, gated on IsUpgradeActive(Mass); Garrett, 2026-11-07).'
   - Element: 3
     AbilityLabel: 'Furrow'
-    AbilityDescription: 'How far aside the plough throws what the hull hits: Space adds 0 u at rest to 20 u at level 10 to every throw, at any speed, on top of the speed-driven throw (speed x 0.04 s, at most 30 u) (RhinoPloughPrismEffect.furrowDistance, replicated level). Pull a trigger for a little shove that way; HOLD it and everything the hull ploughs is thrown to that side, across the centreline (RhinoPloughSteerAction: LT left, RT right, the last one pulled wins). Let go and each prism goes to the side it already sat on.'
+    AbilityDescription: 'How far aside the plough throws what the hull hits: Space adds 0 u at rest to 60 u at level 10 to every throw, at any speed, on top of the speed-driven throw (speed x 0.12 s, at most 90 u) (RhinoPloughPrismEffect.furrowDistance, replicated level). Pull a trigger for a little shove that way; HOLD it and everything the hull ploughs is thrown to that side, across the centreline (RhinoPloughSteerAction: LT left, RT right, the last one pulled wins). Let go and each prism goes to the side it already sat on.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4

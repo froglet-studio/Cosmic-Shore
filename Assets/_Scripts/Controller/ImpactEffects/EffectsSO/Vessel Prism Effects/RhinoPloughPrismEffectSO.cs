@@ -44,17 +44,17 @@ namespace CosmicShore.Gameplay
         [Header("Throw")]
         [Tooltip("Extra sideways distance per unit of ram speed, in seconds (distance = speed x this). " +
                  "A faster Rhino throws the furrow wider. 0 = every prism lands just clear of the hull.")]
-        [SerializeField, Min(0f)] float throwSecondsOfSpeed = 0.04f;
+        [SerializeField, Min(0f)] float throwSecondsOfSpeed = 0.12f;   // tripled 2026-11-09 (Garrett)
 
         [Tooltip("Ceiling on the speed-driven extra throw, in world units, so a ramp-boosted Rhino " +
                  "(~1,200 u/s) does not fling mass across the arena.")]
-        [SerializeField, Min(0f)] float maxThrowDistance = 30f;
+        [SerializeField, Min(0f)] float maxThrowDistance = 90f;   // tripled 2026-11-09 (Garrett)
 
         [Header("Furrow (Space)")]
         [Tooltip("SPACE: how much WIDER the furrow is - world units added to every throw, at any speed, on top of " +
-                 "the speed-driven throw above. 0 at rest (the plough as it shipped), 20 at Space 10, floored at 0 " +
+                 "the speed-driven throw above. 0 at rest (the plough as it shipped), 60 at Space 10, floored at 0 " +
                  "in the deficit band. Read at the Rhino's replicated level, so every peer lands the prism alike.")]
-        [SerializeField] ElementalFloat furrowDistance = ElementalFloat.Multiplier(0f, 20f, Element.Space, 0f);
+        [SerializeField] ElementalFloat furrowDistance = ElementalFloat.Multiplier(0f, 60f, Element.Space, 0f);   // tripled 2026-11-09 (Garrett)
 
         [Tooltip("SPACE level-5 'Unstoppable': with this element's upgrade active the plough moves SUPER-shielded " +
                  "mass too (without it super-shielded prisms are the immovable tier and only jiggle). None = never.")]
