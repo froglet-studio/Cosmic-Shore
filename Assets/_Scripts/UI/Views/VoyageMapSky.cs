@@ -788,6 +788,13 @@ namespace CosmicShore.UI
             var r = _map.rectTransform.rect;
             _tier = HyperSeaSky.TierOf(_view.W);
             _ladderRects.Clear();
+            if (_map.Plain)
+            {
+                // The Voyages board's map shows no ladder or readout (VoyageMapGraphic.Plain).
+                foreach (var t in _ladder) if (t) t.gameObject.SetActive(false);
+                if (_readout) _readout.gameObject.SetActive(false);
+                return;
+            }
             float size = VoyageMapText.Ladder;
             float y = r.yMax - LadderTop;
             for (int i = 0; i < Rows; i++)

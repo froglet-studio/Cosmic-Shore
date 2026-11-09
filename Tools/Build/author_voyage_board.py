@@ -15,6 +15,7 @@ Docs/UI/froglet-tokens.json, so a token change in the game fails --check here.
 """
 
 import argparse
+import glob
 import hashlib
 import json
 import os
@@ -38,8 +39,10 @@ SPRITES = [  # field, kit file
 COLOURS = [
     ("Light", "#E6E9FF", 1.0), ("Sub", "#747BAD", 1.0), ("Jade", "#21C0BD", 1.0), ("Cyan", "#00D4FF", 1.0),
     ("Plate", "#222645", 0.72), ("CardFoot", "#222645", 0.92), ("Outline", "#434C89", 1.0), ("Popup", "#00010A", 1.0),
-    ("RowPicked", "#00041F", 0.86),
+    ("RowPicked", "#00041F", 0.86), ("CtaFill", "#99FF80", 1.0), ("CtaText", "#00041F", 1.0),
 ]
+CLASSES = "Assets/_SO_Assets/Classes"
+HULL_PAD = 6  # px of air kept round each measured hull
 NUMBERS = [
     ("ListRight", "0.2935"), ("CourseLeft", "0.315"), ("CourseRight", "0.674"), ("PanelLeft", "0.696"), ("EdgeShare", "0.38"),
     ("RowHeight", "176"), ("SeatCardShare", "0.41"),
@@ -104,7 +107,46 @@ def asset(style_guid):
         out.append(f"  {field}: {value}")
     out.append("  OptionHeights: {x: 84, y: 104, z: 72}")
     out.append("  EditorFade: 0.2")
+    crops = hull_crops()
+    out.append("  HullCrops:" + ("" if crops else " []"))
+    for guid, (x, y, w, h) in crops:
+        out += [f"  - Sprite: {{fileID: 21300000, guid: {guid}, type: 3}}", "    Uv:", "      serializedVersion: 2",
+                f"      x: {x:.4f}", f"      y: {y:.4f}", f"      width: {w:.4f}", f"      height: {h:.4f}"]
     return "\n".join(out) + "\n"
+
+
+def png_by_guid():
+    found = {}
+    for meta in glob.glob(os.path.join(REPO, "Assets/_Graphics/**/*.png.meta"), recursive=True):
+        with open(meta, encoding="utf-8", errors="replace") as f:
+            m = re.search(r"^guid: ([0-9a-f]{32})$", f.read(), re.M)
+        if m:
+            found[m.group(1)] = meta[:-5]
+    return found
+
+
+def hull_crops():
+    """Every class's SquadImage, measured: the box its opaque pixels fill, padded, as 0-1 from the bottom left."""
+    from PIL import Image
+    pngs = png_by_guid()
+    crops = {}
+    for asset_path in sorted(glob.glob(os.path.join(REPO, CLASSES, "SO_Class_*.asset"))):
+        with open(asset_path, encoding="utf-8") as f:
+            m = re.search(r"^  SquadImage: \{fileID: 21300000, guid: ([0-9a-f]{32})", f.read(), re.M)
+        if not m or m.group(1) in crops or m.group(1) not in pngs:
+            continue
+        png = pngs[m.group(1)]
+        with open(png + ".meta", encoding="utf-8") as f:
+            if not re.search(r"^  spriteMode: 1$", f.read(), re.M):
+                continue
+        im = Image.open(png).convert("RGBA")
+        bb = im.getchannel("A").point(lambda a: 255 if a > 20 else 0).getbbox()
+        if not bb:
+            continue
+        W, H = im.size
+        l, t, r, b = max(0, bb[0] - HULL_PAD), max(0, bb[1] - HULL_PAD), min(W, bb[2] + HULL_PAD), min(H, bb[3] + HULL_PAD)
+        crops[m.group(1)] = (l / W, 1 - b / H, (r - l) / W, (b - t) / H)
+    return sorted(crops.items())
 
 
 def problems():
@@ -127,6 +169,8 @@ def problems():
     for _, kit in SPRITES:
         if not os.path.exists(os.path.join(REPO, KIT, kit + ".png")):
             errors.append(f"{KIT}/{kit}.png is missing")
+    if len(hull_crops()) < 6:
+        errors.append("fewer than six hull renders measured (SO_Class_*.asset SquadImage)")
     left, cl, cr, pl = (float(v) for _, v in NUMBERS[:4])
     if not (0 < left < cl < cr < pl < 1):
         errors.append("the columns must run list < course < panel")

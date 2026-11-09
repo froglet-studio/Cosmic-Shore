@@ -58,6 +58,15 @@ namespace CosmicShore.ScriptableObjects
         public Color Popup = new(0f, 0.004f, 0.039f, 1f);
         [Tooltip("The open voyage's row (#00041F at 86%).")]
         public Color RowPicked = new(0f, 0.016f, 0.122f, 0.86f);
+        [Tooltip("Set sail's fill: the call to action (#99FF80, the theme's cta).")]
+        public Color CtaFill = new(0.6f, 1f, 0.502f, 1f);
+        [Tooltip("Set sail's words and keycap (#00041F).")]
+        public Color CtaText = new(0f, 0.016f, 0.122f, 1f);
+
+        [Header("Hull renders")]
+        [Tooltip("Each class's large render (SO_Vessel.SquadImage) cropped to the hull itself, so it reads large in a wide " +
+                 "box: measured from the PNG by Tools/Build/author_voyage_board.py.")]
+        public HullCrop[] HullCrops = System.Array.Empty<HullCrop>();
 
         [Header("Columns (fractions of the Voyages page's width, Rev 81 B5)")]
         [Tooltip("The voyage list's right edge.")]
@@ -83,10 +92,28 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The editor opening and closing, in seconds (the panel token).")]
         public float EditorFade = 0.2f;
 
+        /// <summary>The part of <paramref name="sprite"/> its hull fills (0-1, from the bottom left); the whole sprite when
+        /// it was not measured.</summary>
+        public Rect CropOf(Sprite sprite)
+        {
+            if (sprite && HullCrops != null)
+                foreach (var c in HullCrops)
+                    if (c.Sprite == sprite) return c.Uv;
+            return new Rect(0f, 0f, 1f, 1f);
+        }
+
         public static VoyageBoardStyleSO Load()
         {
             var style = Resources.Load<VoyageBoardStyleSO>(ResourcePath);
             return style ? style : CreateInstance<VoyageBoardStyleSO>();
         }
+    }
+
+    /// <summary>A hull render and the part of it the hull fills.</summary>
+    [System.Serializable]
+    public struct HullCrop
+    {
+        public Sprite Sprite;
+        public Rect Uv;
     }
 }

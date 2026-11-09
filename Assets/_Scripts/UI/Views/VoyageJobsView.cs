@@ -256,6 +256,8 @@ namespace CosmicShore.UI
             if (grid && grid != transform) grid.gameObject.SetActive(false);
             _boardRows.Clear();
             var map = EnsureMap();
+            // The board's map is the course: no tier ladder or readout over it.
+            if (map) map.Plain = true;
             FitBoardColumn();
 
             // The escort or a job under way: its one row, open, Set sail dark.
@@ -266,6 +268,7 @@ namespace CosmicShore.UI
                 _boardRows.Add(EscortRow(content, lines, escort, harbour.EscortDifficulty, course));
                 if (course != null) Map(content, lines, style, course[0], course, CourseLine(content, lines, course));
                 else Map(content, lines, style, null, null, null);
+                if (map) map.FrameOn(_boardRows[0].Course);
                 _board.Show(_boardRows, 0, _ => { }, shown, map, null);
                 return true;
             }
@@ -284,6 +287,7 @@ namespace CosmicShore.UI
                 var voyage = BoardVoyage(lines, job, model, null);
                 voyage.SailLabel = lines.BoardUnderway;
                 Map(content, lines, style, job.From, underway, CourseLine(content, lines, underway));
+                if (map) map.FrameOn(model.Course);
                 _board.Show(_boardRows, 0, _ => { }, voyage, map, null);
                 return true;
             }
@@ -313,6 +317,7 @@ namespace CosmicShore.UI
                 if (i != _open) continue;
                 open = BoardVoyage(lines, job, model, model.SetSail);
                 Map(content, lines, style, here, route, CourseLine(content, lines, route));
+                if (map) map.FrameOn(model.Course);
             }
             if (escort)
             {
@@ -323,6 +328,7 @@ namespace CosmicShore.UI
                     open = EscortVoyage(content, lines, escort, Difficulty, course, sail: true);
                     if (course is { Count: >= 2 }) Map(content, lines, style, course[0], course, CourseLine(content, lines, course));
                     else Map(content, lines, style, here, null, null);
+                    if (map) map.FrameOn(_boardRows[^1].Course);
                 }
             }
             _board.Show(_boardRows, _open, PickBoardRow, open, map, null);
@@ -341,9 +347,12 @@ namespace CosmicShore.UI
         {
             if (_board) return true;
             if (lines == null || transform is not RectTransform page) return false;
-            _board = VoyageBoard.Create(page, template ? template.LabelTemplate : null, template ? template.SetSailButton : null,
-                vessels, lines);
+            _board = VoyageBoard.Create(page, template ? template.LabelTemplate : null, vessels, lines);
             _board.SquadChanged += Refresh;
+            // The window's tabs as the board draws them: plain words, the shown one underlined (Rev 79-83).
+            var style = VoyageBoardStyleSO.Load();
+            var tabs = GetComponentInParent<VoyageWindowTabs>(true);
+            if (tabs) tabs.Plain(style.LabelFont, 22f, 40f);
             // The map and its edge view stand in the board's course column.
             if (mapColumn)
             {

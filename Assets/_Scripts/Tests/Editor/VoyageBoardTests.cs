@@ -52,7 +52,7 @@ namespace CosmicShore.Tests
             {
                 ((RectTransform)host.transform).sizeDelta = new Vector2(1760f, 780f);
                 var lines = new VoyageLines();
-                var board = VoyageBoard.Create((RectTransform)host.transform, null, null, null, lines);
+                var board = VoyageBoard.Create((RectTransform)host.transform, null, null, lines);
                 var rows = new List<VoyageBoard.Row>
                 {
                     new() { Title = "01  Tollmoor", By = "Brought by Merrin Tal", Meta = "540 ly - 27 min - Intensity 1" },

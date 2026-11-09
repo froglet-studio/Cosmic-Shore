@@ -69,7 +69,6 @@ namespace CosmicShore.UI
         SO_VesselList _vessels;
         PilotArtifactCatalogSO _catalog;
         TMP_Text _font;
-        Button _ctaFrom;
         VoyageMapGraphic _map;
 
         RectTransform _root, _listContent, _courseColumn, _panel;
@@ -87,6 +86,7 @@ namespace CosmicShore.UI
         CanvasGroup _editorGroup;
         TMP_Text _editorTitle, _heroName, _heroLine;
         Image _hero;
+        HullView _heroHull;
         RectTransform _options;
         readonly TabView[] _tabs = new TabView[4];
         readonly List<OptionView> _optionViews = new();
@@ -118,8 +118,16 @@ namespace CosmicShore.UI
         {
             public Button Button;
             public CanvasGroup Group;
-            public Image Edge, Face, Hull;
-            public TMP_Text Name, Lines;
+            public Image Edge, Face;
+            public HullView Hull;
+            public TMP_Text Name, Who, Kit;
+        }
+
+        /// <summary>A hull render cropped to the hull (<see cref="VoyageBoardStyleSO.CropOf"/>), fitted in its box.</summary>
+        sealed class HullView
+        {
+            public RawImage Image;
+            public AspectRatioFitter Fit;
         }
 
         sealed class TabView
@@ -134,6 +142,7 @@ namespace CosmicShore.UI
             public Button Button;
             public LayoutElement Size;
             public Image Top, Icon, Mark;
+            public HullView Hull;
             public RectTransform IconRect, Words;
             public TMP_Text Name, Note;
         }
@@ -152,8 +161,8 @@ namespace CosmicShore.UI
         // ── Building ─────────────────────────────────────────────────────────
 
         /// <summary>The board, built once over <paramref name="host"/> (the Voyages page), its text in
-        /// <paramref name="font"/>'s face and its Set sail a copy of <paramref name="cta"/>.</summary>
-        public static VoyageBoard Create(RectTransform host, TMP_Text font, Button cta, SO_VesselList vessels, VoyageLines lines)
+        /// <paramref name="font"/>'s face.</summary>
+        public static VoyageBoard Create(RectTransform host, TMP_Text font, SO_VesselList vessels, VoyageLines lines)
         {
             var go = new GameObject("VoyageBoard", typeof(RectTransform));
             go.transform.SetParent(host, false);
@@ -163,7 +172,6 @@ namespace CosmicShore.UI
             var board = go.AddComponent<VoyageBoard>();
             board._root = rt;
             board._font = font;
-            board._ctaFrom = cta;
             board._vessels = vessels;
             board._lines = lines;
             board._style = VoyageBoardStyleSO.Load();
@@ -215,13 +223,13 @@ namespace CosmicShore.UI
 
             _title = Text(_panel, 28, s.Light, TextAlignmentOptions.TopLeft);
             _title.textWrappingMode = TextWrappingModes.Normal;
-            Top(_title.rectTransform, 0f, 72f);
+            Top(_title.rectTransform, 0f, 84f);
             _line = Text(_panel, 18, s.Light, TextAlignmentOptions.TopLeft);
             _line.textWrappingMode = TextWrappingModes.Normal;
-            Top(_line.rectTransform, 80f, 56f);
+            Top(_line.rectTransform, 92f, 56f);
 
             var stats = Node("Numbers", _panel);
-            Top(stats, 160f, 64f);
+            Top(stats, 172f, 64f);
             var h = stats.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.spacing = 16f;
             h.childControlWidth = h.childControlHeight = true;
@@ -233,7 +241,7 @@ namespace CosmicShore.UI
 
             // The Ark escort's difficulty stepper, under the numbers.
             var stepper = Node("Stepper", _panel);
-            Top(stepper, 236f, 40f);
+            Top(stepper, 248f, 40f);
             var sh = stepper.gameObject.AddComponent<HorizontalLayoutGroup>();
             sh.spacing = 8f;
             sh.childControlWidth = sh.childControlHeight = true;
@@ -296,13 +304,14 @@ namespace CosmicShore.UI
             Anchor(face, 0.04f, 0.52f, 0.96f, 0.98f);
             view.Face = Picture(face);
             var hull = Node("Hull", rt);
-            Anchor(hull, 0.06f, 0.30f, 0.94f, 0.52f);
-            view.Hull = Picture(hull);
+            Anchor(hull, 0.04f, 0.29f, 0.96f, 0.52f);
+            view.Hull = HullBox(hull);
             view.Name = Text(rt, 18, s.Light, TextAlignmentOptions.Center);
-            Anchor(view.Name.rectTransform, 0f, 0.19f, 1f, 0.30f);
-            view.Lines = Text(rt, 15, s.Light, TextAlignmentOptions.Top);
-            view.Lines.textWrappingMode = TextWrappingModes.Normal;
-            Anchor(view.Lines.rectTransform, 0.03f, 0.02f, 0.97f, 0.19f);
+            Anchor(view.Name.rectTransform, 0f, 0.19f, 1f, 0.29f);
+            view.Who = Text(rt, 15, s.Light, TextAlignmentOptions.Center);
+            Anchor(view.Who.rectTransform, 0.03f, 0.11f, 0.97f, 0.19f);
+            view.Kit = Text(rt, 15, s.Light, TextAlignmentOptions.Center);
+            Anchor(view.Kit.rectTransform, 0.03f, 0.03f, 0.97f, 0.11f);
 
             var edge = Node("Edge", rt);
             Stretch(edge);
@@ -346,6 +355,7 @@ namespace CosmicShore.UI
             var hero = Node("Choice", _editor);
             Anchor(hero, 0.065f, 0.29f, 0.6f, 0.80f);
             _hero = Picture(hero);
+            _heroHull = HullBox(hero);
 
             var words = Node("Words", _editor);
             words.anchorMin = Vector2.zero;
@@ -389,10 +399,7 @@ namespace CosmicShore.UI
             var doneButton = done.gameObject.AddComponent<Button>();
             doneButton.targetGraphic = doneFill;
             doneButton.onClick.AddListener(CloseEditor);
-            var doneText = Label(done, 18, s.Light);
-            Stretch(doneText.rectTransform);
-            doneText.alignment = TextAlignmentOptions.Center;
-            doneText.text = _lines?.BoardDone ?? string.Empty;
+            KeyedLabel(done, _lines?.BoardDoneKey, _lines?.BoardDone, s.Light);
         }
 
         TabView Tab(Transform parent, int index)
@@ -441,6 +448,7 @@ namespace CosmicShore.UI
             view.IconRect.anchorMax = new Vector2(0f, 1f);
             view.IconRect.pivot = new Vector2(0f, 0.5f);
             view.Icon = Picture(view.IconRect);
+            view.Hull = HullBox(view.IconRect);
             view.Words = Node("Words", rt);
             view.Words.anchorMin = Vector2.zero;
             view.Words.anchorMax = Vector2.one;
@@ -495,6 +503,7 @@ namespace CosmicShore.UI
                 var poster = Node("Water", thumb);
                 Stretch(poster);
                 view.Poster = poster.gameObject.AddComponent<VoyageRoutePoster>();
+                view.Poster.LineScale = 0.45f;
                 var words = Node("Words", rt);
                 words.anchorMin = Vector2.zero;
                 words.anchorMax = Vector2.one;
@@ -674,13 +683,14 @@ namespace CosmicShore.UI
                 var keywords = vessel ? vessel.Keywords : null;
                 var pilot = _catalog ? _catalog.ResolvePilot(slot, keywords) : null;
                 Show(view.Face, pilot ? pilot.Portrait : null);
-                Show(view.Hull, Hull(vessel));
+                SetHull(view.Hull, Hull(vessel));
                 Set(view.Name, vessel ? vessel.CardName : null);
                 string who = TemplateText.Fill(_lines?.BoardSeatWho, "who", Who(active, seat, slot), "pilot", PilotName(slot, pilot, editable));
                 string second = editable
                     ? TemplateText.Fill(_lines?.BoardSeatKit, "element", ElementName(slot.Element), "artifact", ArtifactName(slot, vessel, editable))
                     : TemplateText.Fill(_lines?.BoardSeatNotYours, "owner", slot.IsPlayer() ? slot.MemberName : active.OwnerName);
-                Set(view.Lines, who + "\n" + second);
+                Set(view.Who, who);
+                Set(view.Kit, second);
                 view.Group.alpha = editable ? 1f : 0.55f;
                 view.Button.interactable = editable;
                 bool open = seat == _openSeat;
@@ -777,7 +787,9 @@ namespace CosmicShore.UI
                 view.IconRect.gameObject.SetActive(icon);
                 view.IconRect.sizeDelta = new Vector2(iconW, -12f);
                 view.IconRect.anchoredPosition = new Vector2(18f, 0f);
-                Show(view.Icon, option.Icon);
+                // A hull is its render cropped to the hull; a pilot or an artifact its whole picture.
+                SetHull(view.Hull, _tab == 0 ? option.Icon : null);
+                Show(view.Icon, _tab == 0 ? null : option.Icon);
                 view.Words.offsetMin = new Vector2(icon ? 18f + iconW + 16f : 24f, 0f);
                 view.Words.offsetMax = new Vector2(-48f, 0f);
                 Set(view.Name, option.Name);
@@ -798,7 +810,8 @@ namespace CosmicShore.UI
                 3 => picked.Icon,
                 _ => null,
             };
-            Show(_hero, hero);
+            SetHull(_heroHull, _tab == 0 ? hero : null);
+            Show(_hero, _tab == 0 ? null : hero);
             Set(_heroName, picked.Name);
             Set(_heroLine, _tab switch
             {
@@ -1073,36 +1086,86 @@ namespace CosmicShore.UI
             return (b, t);
         }
 
-        /// <summary>Set sail: a copy of the window's own call to action (the Lime CTA), filling <paramref name="rt"/>.</summary>
+        /// <summary>Set sail: the call to action (style guide section 5, Lime), as wide as the panel, its keycap before its
+        /// words.</summary>
         (Button b, TMP_Text t) Cta(RectTransform rt)
         {
-            Button b;
-            TMP_Text t;
-            if (_ctaFrom)
-            {
-                b = Instantiate(_ctaFrom, rt);
-                b.name = "SetSail";
-                b.onClick.RemoveAllListeners();
-                b.gameObject.SetActive(true);
-                var brt = (RectTransform)b.transform;
-                brt.anchorMin = Vector2.zero;
-                brt.anchorMax = Vector2.one;
-                brt.pivot = new Vector2(0.5f, 0.5f);
-                brt.offsetMin = brt.offsetMax = Vector2.zero;
-                brt.localScale = Vector3.one;
-                t = b.GetComponentInChildren<TMP_Text>(true);
-            }
-            else
-            {
-                var fill = Sliced(rt, _style.Sliver10Fill, _style.Plate);
-                fill.raycastTarget = true;
-                b = rt.gameObject.AddComponent<Button>();
-                b.targetGraphic = fill;
-                t = Text(rt, 18, _style.Light, TextAlignmentOptions.Center);
-                Stretch(t.rectTransform);
-            }
+            var fill = Sliced(rt, _style.Sliver10Fill, _style.CtaFill);
+            fill.raycastTarget = true;
+            var b = rt.gameObject.AddComponent<Button>();
+            b.targetGraphic = fill;
+            var colors = b.colors;
+            colors.disabledColor = new Color(0.55f, 0.55f, 0.6f, 0.6f);
+            b.colors = colors;
+            var t = KeyedLabel(rt, _lines?.BoardSailKey, _lines?.CardSetSail, _style.CtaText);
             b.onClick.AddListener(() => _voyage?.SetSail?.Invoke());
             return (b, t);
+        }
+
+        /// <summary>A button's words in the label face with its keycap before them (an outlined box, the style guide's
+        /// <c>.kc</c>), centred in <paramref name="rt"/>. An empty key shows no keycap.</summary>
+        TMP_Text KeyedLabel(RectTransform rt, string key, string words, Color color)
+        {
+            var row = Node("Label", rt);
+            Stretch(row);
+            var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.spacing = 12f;
+            h.childAlignment = TextAnchor.MiddleCenter;
+            h.childControlWidth = h.childControlHeight = true;
+            h.childForceExpandWidth = h.childForceExpandHeight = false;
+            if (!string.IsNullOrEmpty(key))
+            {
+                var cap = Node("Key", row);
+                var le = Le(cap);
+                le.minWidth = le.preferredWidth = 28f;
+                le.minHeight = le.preferredHeight = 24f;
+                var edge = cap.gameObject.AddComponent<Image>();
+                edge.sprite = _style.Sliver10Line;
+                edge.type = Image.Type.Sliced;
+                edge.color = color;
+                edge.raycastTarget = false;
+                var k = Label(cap, 14, color);
+                Stretch(k.rectTransform);
+                k.alignment = TextAlignmentOptions.Center;
+                k.characterSpacing = 0f;
+                k.text = key;
+            }
+            var t = Label(row, 18, color);
+            t.fontStyle = FontStyles.UpperCase | FontStyles.Bold;
+            t.alignment = TextAlignmentOptions.Center;
+            t.text = words ?? string.Empty;
+            return t;
+        }
+
+        HullView HullBox(RectTransform host)
+        {
+            var rt = Node("Render", host);
+            Stretch(rt);
+            var view = new HullView { Image = rt.gameObject.AddComponent<RawImage>() };
+            view.Image.raycastTarget = false;
+            view.Image.enabled = false;
+            view.Fit = rt.gameObject.AddComponent<AspectRatioFitter>();
+            view.Fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            return view;
+        }
+
+        /// <summary>Show <paramref name="sprite"/> cropped to its hull (the style's measured crop), as large as its box
+        /// allows.</summary>
+        void SetHull(HullView view, Sprite sprite)
+        {
+            if (!sprite || !sprite.texture)
+            {
+                view.Image.enabled = false;
+                return;
+            }
+            var crop = _style.CropOf(sprite);
+            var tex = sprite.texture;
+            var tr = sprite.textureRect;
+            view.Image.texture = tex;
+            view.Image.uvRect = new Rect((tr.x + crop.x * tr.width) / tex.width, (tr.y + crop.y * tr.height) / tex.height,
+                crop.width * tr.width / tex.width, crop.height * tr.height / tex.height);
+            view.Fit.aspectRatio = crop.width * tr.width / Mathf.Max(1f, crop.height * tr.height);
+            view.Image.enabled = true;
         }
     }
 }

@@ -2829,3 +2829,5 @@ MonoBehaviour:
     BoardNoArtifactLine: This seat carries no artifact
     BoardDone: DONE
     BoardUnderway: UNDER WAY
+    BoardSailKey: A
+    BoardDoneKey: B

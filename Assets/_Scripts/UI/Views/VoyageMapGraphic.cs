@@ -220,6 +220,7 @@ namespace CosmicShore.UI
             if (key != _frameKey)
             {
                 _frameKey = key;
+                _fixWidth = 0f;
                 _pan = Vector2.zero;
                 _zoom = 1f;
                 _flying = false;
@@ -238,6 +239,45 @@ namespace CosmicShore.UI
         /// <summary>Which places this crew can see (Docs/Voyages/DEPTH.md §8): an uncharted place is drawn only once the
         /// crew has found it. Null draws every place. Set by the view with the galaxy's record (VoyageRules.IsVisible).</summary>
         public System.Func<string, bool> Visible;
+
+        /// <summary>
+        /// The Voyages board's map (Rev 81 B5, Docs/MENU_REDESIGN_B.md section 164): the course with the sea and its places,
+        /// without the explorer's tier ladder and readout. Drag, pinch and wheel still explore.
+        /// </summary>
+        public bool Plain;
+
+        // A view the board asked for (FrameOn): kept across a resize until the player explores.
+        Vector2 _fixCentre;
+        float _fixWidth;
+
+        /// <summary>
+        /// Frame the view on <paramref name="points"/> (map points, <see cref="MapPoint"/>), <paramref name="margin"/> wider
+        /// than they span and at least <paramref name="minWidth"/> ly across, at once. The frame holds when the map is resized
+        /// (a first draw before the layout settles) until the player drags, pinches or scrolls.
+        /// </summary>
+        public void FrameOn(IReadOnlyList<Vector2> points, float margin = 1.35f, float minWidth = 360f)
+        {
+            if (points == null || points.Count == 0) return;
+            Vector2 lo = points[0], hi = points[0];
+            foreach (var p in points)
+            {
+                lo = Vector2.Min(lo, p);
+                hi = Vector2.Max(hi, p);
+            }
+            var r = rectTransform.rect;
+            float aspect = r.height > 1f ? r.width / r.height : 1.4f;
+            float width = Mathf.Max(minWidth, (hi.x - lo.x) * margin, (hi.y - lo.y) * margin * aspect);
+            _fixCentre = (lo + hi) * 0.5f;
+            _fixWidth = width;
+            _flying = false;
+            ApplyFix();
+        }
+
+        void ApplyFix()
+        {
+            if (_fixWidth <= 0f || float.IsInfinity(_minX)) return;
+            SetView(_fixCentre, _fixWidth);
+        }
 
         /// <summary>A charted map draws only the charted locations, and only the ones this crew can see.</summary>
         bool Drawn(VoyageLocation l) => l != null && (_chart == null || l.Charted) && (Visible == null || Visible(l.Id));
@@ -335,6 +375,7 @@ namespace CosmicShore.UI
 
         void Relayout()
         {
+            ApplyFix();
             _placedFor = rectTransform.rect.size;
             _insetPainted = false;
             PaintSea();
@@ -357,6 +398,7 @@ namespace CosmicShore.UI
         public void OnPointerUp(PointerEventData e) => _pointers.Remove(e.pointerId);
         public void OnBeginDrag(PointerEventData e)
         {
+            _fixWidth = 0f;
             _flying = false;
             _pointers[e.pointerId] = Local(e, e.position);
         }
@@ -391,6 +433,7 @@ namespace CosmicShore.UI
         public void OnScroll(PointerEventData e)
         {
             if (float.IsInfinity(_minX) || Mathf.Approximately(e.scrollDelta.y, 0f)) return;
+            _fixWidth = 0f;
             _flying = false;
             ZoomAbout(Local(e, e.position), Mathf.Pow(WheelZoom, e.scrollDelta.y));
         }

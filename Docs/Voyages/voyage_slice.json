@@ -2739,7 +2739,9 @@
   "BoardElementLine": "The element this seat flies with",
   "BoardNoArtifactLine": "This seat carries no artifact",
   "BoardDone": "DONE",
-  "BoardUnderway": "UNDER WAY"
+  "BoardUnderway": "UNDER WAY",
+  "BoardSailKey": "A",
+  "BoardDoneKey": "B"
  },
  "toy": {
   "id": "voyage",

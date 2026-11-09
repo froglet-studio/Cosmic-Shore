@@ -7011,3 +7011,25 @@ Affects: Garrett's Voyage window (`VoyageJobsView`, his voyage data, launch and 
 - `VoyageBoardTests` (edit mode): written and compiled, not run.
 - The ship gates, `author_voyage_assets.py --check` and `author_voyage_board.py --check`.
 - **No Unity editor ran.** The hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Second pass (Shombith, 2026-11-09, with a screenshot of the build: "it looks nothing like frogmas design").** What
+differed from R81B5, and what changed:
+- **The tabs** were the window's four framed buttons. They are now plain words in Chakra Petch capitals, 22 and 40
+  apart, the shown one light and underlined (`VoyageWindowTabs.Plain`).
+- **The course map** showed the whole galaxy explorer, with its tier ladder ("GALAXY ARM SECTOR ...") and its readout,
+  at galaxy scale: the tier ladder lit GALAXY, so the course was not framed. On the board the map is now plain
+  (`VoyageMapGraphic.Plain`: no ladder, no readout). `FrameOn` sets the view straight onto the open course, and the
+  frame holds through a resize until the player explores.
+- **The rows' thumbnails** drew the course as thick as the open card's. They now draw it at 45%
+  (`VoyageRoutePoster.LineScale`).
+- **The title** was cut to one line (two lines of Aldrich at 28 did not fit 72 units). It now has 84 units.
+- **Set sail** was a copy of the window's own button, which kept its own small size. It is now built full width:
+  #99FF80 on the sliver, the A keycap before the words. Done carries the B keycap. The keycaps are two new lines,
+  `BoardSailKey` and `BoardDoneKey`, which an empty field hides.
+- **The hulls** were the class's square 512 render, drawn small in a wide box. Each render is now cropped to the hull,
+  measured from the PNG by `author_voyage_board.py` (`HullCrops` on the style), so it fills the box.
+- **A seat card's lines** wrapped to three and clipped. Who flies it, and the element and artifact, are now one line
+  each.
+
+Not changed: the menu's own ground (the blue waves) is the Menu_Main background behind every window. The boards drew
+it darker.

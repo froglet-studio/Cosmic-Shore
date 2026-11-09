@@ -20,6 +20,8 @@ namespace CosmicShore.UI
         Color _ark = new(1f, 0.78f, 0.25f, 1f);
         Color _sea = new(0.75f, 0.75f, 0.8f, 1f);
         Texture _texture;
+        /// <summary>How thick the course and its ends draw (1: the open card's; the Voyages board's small rows draw thinner).</summary>
+        public float LineScale = 1f;
         // The map's view the mesh was last built for: the poster rebuilds only when the map repaints or moves.
         Vector2 _drawnLo, _drawnHi;
         Rect _drawnRect;
@@ -76,10 +78,10 @@ namespace CosmicShore.UI
             var white = _source.WhiteUv;
             // A soft wide line under a thin bright one: the course lit on the water.
             var glow = new Color(_route.r, _route.g, _route.b, 0.22f);
-            for (int i = 1; i < _course.Count; i++) Segment(vh, At(_course[i - 1]), At(_course[i]), 12f, glow, white);
-            for (int i = 1; i < _course.Count; i++) Segment(vh, At(_course[i - 1]), At(_course[i]), 3f, _route, white);
-            Diamond(vh, At(_course[0]), 9f, _ark, white);
-            Diamond(vh, At(_course[^1]), 9f, _route, white);
+            for (int i = 1; i < _course.Count; i++) Segment(vh, At(_course[i - 1]), At(_course[i]), 12f * LineScale, glow, white);
+            for (int i = 1; i < _course.Count; i++) Segment(vh, At(_course[i - 1]), At(_course[i]), 3f * LineScale, _route, white);
+            Diamond(vh, At(_course[0]), 9f * LineScale, _ark, white);
+            Diamond(vh, At(_course[^1]), 9f * LineScale, _route, white);
         }
 
         static void Segment(VertexHelper vh, Vector2 a, Vector2 b, float width, Color c, Vector2 uv)

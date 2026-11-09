@@ -436,5 +436,9 @@ namespace CosmicShore.ScriptableObjects
         public string BoardDone = "DONE";
         [Tooltip("The Set sail button while the voyage is out.")]
         public string BoardUnderway = "UNDER WAY";
+        [Tooltip("The keycap before Set sail (empty: none).")]
+        public string BoardSailKey = "A";
+        [Tooltip("The keycap before the seat editor's Done (empty: none).")]
+        public string BoardDoneKey = "B";
     }
 }
