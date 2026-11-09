@@ -22138,6 +22138,21 @@ The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran 
 3. **Shielded and super-shielded prisms** still read as a tier above plain in every domain (Ruby's rim is the brightest).
 4. **Danger (coral) and free crystals (lime CTA)** still stand out against the pale bodies.
 
+## 🔴 Voyages: own scene (Voyage.unity) and in-world toys removed (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/voyage-scene-port`. unity_refcompile could not run (no .NET SDK in the cloud session).
+
+Ran 2026-11-08 on Garrett's PC (Unity 6000.3.17f1, batchmode `verify_unity.sh`): compile clean after one fix (ambiguous `VoyageRun.ActiveSquad(null)`); EditMode 5473 tests, 43 failing, the same 43 that fail on bleeding-edge d83f334e78 (none new); every `VoyageShellTests` test passes; Build Voyage Scene rewrites `Voyage.unity` identically; `RunSmoke` -voyageSmoke: PASS; one escort sim (d1, Sparrow+Rhino+Manta) survived 4 legs with no game exceptions. Steps 1-3 are done; steps 4-8 still need a person.
+
+1. Let Unity import and compile; fix any errors first.
+2. FrogletTools > Scenes > Build Voyage Scene, then commit `Assets/_Scenes/Voyage.unity`.
+3. Run the EditMode tests in `VoyageShellTests`.
+4. Play Menu_Main, open the Voyage window, take a job and Set sail: Voyage.unity loads and the pilot starts at a harbour berth.
+5. Fly the Ark to the job's stop: it stands, the work counts, and the Ark sails on (no stall).
+6. Leave the voyage from the HUD: back to the menu, and the board offers the next jobs from where the Ark anchored.
+7. Start an escort from the Voyage window: it runs in Voyage.unity.
+8. In menu freestyle, the Toy Box toys still work from the app shell and no in-world toys appear.
+
 ## 🔴 The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 151. Compiled with `unity_refcompile` (player and

@@ -11,7 +11,10 @@ namespace CosmicShore.Editor
     /// a tuning session can play escorts with nobody at the keyboard:
     /// <code>Unity.exe -projectPath . -executeMethod CosmicShore.Editor.ArkEscortSimLauncher.Run
     ///   -arkEscortSim "5:Sparrow,Rhino,Manta" -arkEscortOut Logs/escort.jsonl -arkEscortTimeScale 3 -arkEscortQuit</code>
-    /// It opens Bootstrap and enters Play; the sim does the rest. A reader of the game, it writes no assets.
+    /// It opens Bootstrap and enters Play; the sim does the rest: from the menu, each run sets sail into the voyage scene
+    /// (<c>Voyage.unity</c>) the way the Voyage window does, and the scene returns to the menu when the escort is over.
+    /// <see cref="RunSmoke"/> (with <c>-voyageSmoke</c>) plays the voyage scene's smoke test (<see cref="VoyageSmoke"/>)
+    /// the same way. A reader of the game, it writes no assets.
     /// </summary>
     [InitializeOnLoad]
     public static class ArkEscortSimLauncher
@@ -22,6 +25,8 @@ namespace CosmicShore.Editor
         {
             ArkEscortSim.AllDone -= OnDone;
             ArkEscortSim.AllDone += OnDone;
+            VoyageSmoke.Done -= OnDone;
+            VoyageSmoke.Done += OnDone;
         }
 
         /// <summary>The <c>-executeMethod</c> entry: Bootstrap, then Play.</summary>
@@ -30,6 +35,10 @@ namespace CosmicShore.Editor
             EditorSceneManager.OpenScene("Assets/_Scenes/Bootstrap.unity", OpenSceneMode.Single);
             EditorApplication.isPlaying = true;
         }
+
+        /// <summary>The <c>-executeMethod</c> entry for the smoke test (pass <c>-voyageSmoke</c> and <c>-arkEscortQuit</c>):
+        /// Bootstrap, then Play.</summary>
+        public static void RunSmoke() => Run();
 
         static void OnDone(bool ok)
         {

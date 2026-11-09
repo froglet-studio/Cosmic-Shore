@@ -10,9 +10,11 @@
 ## 1. What it is
 
 A voyage card of its own in the Voyage window (beside the pilots' jobs): **Escort the Ark**, with a difficulty
-stepper (1 to 9, remembered per device) and Set sail. Setting sail enters freestyle, deploys the active squad (you
-fly your seat, AI wingmates fly the others, each in its slot's vessel, pilot, artifact and element) and the Ark sails
-five worlds in order. The escort ends when the Ark reaches the last world's core (made it through) or is overrun.
+stepper (1 to 9, remembered per device) and Set sail. Setting sail loads the voyage scene (`Voyage.unity`, its own
+scene since 2026-11-01, Docs/Voyages/SLICE.md §5), deploys the active squad at the harbour's berths (you fly the
+vessel you were flying, AI wingmates fly the others, each in its slot's vessel, pilot, artifact and element) and the Ark sails
+five worlds in order. The escort ends when the Ark reaches the last world's core (made it through) or is overrun, and
+the scene returns to the menu a few seconds later.
 
 | # | World | Cell config | Its creatures |
 |---|---|---|---|
