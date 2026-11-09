@@ -5893,6 +5893,8 @@ GameObject:
   - component: {fileID: 5497835173863578961}
   - component: {fileID: 5497835173863578960}
   - component: {fileID: 7300050084204718159}
+  - component: {fileID: 117352990126193135}
+  - component: {fileID: 275072837942132147}
   m_Layer: 5
   m_Name: GameCanvas
   m_TagString: Untagged
@@ -5900,6 +5902,35 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &275072837942132147
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5497835173863578963}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6604666b36bc42aabb3a4f9c8c7b3d0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  group: {fileID: 117352990126193135}
+  holdFrames: 2
+  glideSeconds: 0.35
+  ease: 1
+  glideDirectChildren: 1
+--- !u!225 &117352990126193135
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5497835173863578963}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!224 &5497835173863578975
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6081,6 +6112,8 @@ MonoBehaviour:
   blendRange: 0.15
   safeZone: {fileID: 0}
   safeZoneMaxAspect: 1.7777778
+  hasPortraitLayout: 1
+  portraitReferenceResolution: {x: 1080, y: 1920}
 --- !u!1 &5497835173978931473
 GameObject:
   m_ObjectHideFlags: 0

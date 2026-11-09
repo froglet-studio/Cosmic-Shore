@@ -21561,6 +21561,37 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
 
+## 🟡 Portrait menus (`claude/ui-portrait`, 2026-11-06) — COMPILED (unity_refcompile), NOT RUN IN EDITOR
+
+Rev 63 B (`Docs/MENU_REDESIGN_B.md` section 138): every device shows the PC UI; a phone held upright in the menus lays
+Menu_Main out on a 1080 x 1920 canvas matched to the width. New: `PortraitRect`, `AdaptiveCanvasScaler.hasPortraitLayout`
+(Menu_Main only), `MenuOrientation`; tests `PortraitRectTests`.
+
+1. **Compile, then run** `PortraitRectTests`.
+2. **PC and landscape phones unchanged**: Menu_Main at 16:9 and an iPhone sideways look exactly as before.
+3. **Upright, Device Simulator (iPhone, rotate to portrait) in play mode**: the menu turns; Home, Arcade, Configure
+   (Arcade, Arena, Maelstrom) and Hangar are laid out top to bottom in the PC pieces; every other screen and window is its
+   PC layout fitted to the width; nothing spills off the sides.
+4. **The lock**: tap the cell to fly (freestyle) and the screen goes back to landscape; leave freestyle and it may turn
+   upright again; start a match from Configure and the match is landscape; back in the menu it turns again.
+5. **Turning while a window is open**: open Arcade and Configure, rotate back and forth; each takes its pose and gives it
+   back.
+6. **Configure while turning**: fly the preview, press FULL SCREEN (upright it grows to the window, landscape it opens the
+   tray), rotate mid-flight; the frame, the objective bar and START come back to the right place. Add three pilots to a
+   domain upright: the column grows and START moves down, not off the screen.
+7. **Arcade grid**: 5 across on PC, 3 across upright, every card the same size; filtering or growing the list adds cards
+   in the same grid.
+8. **Turn, then glide** (2026-11-08, section 154): on a phone (the Simulator shows the layout, a device the real OS turn),
+   rotate on Home, Arcade and Configure: after the OS turns the screen, the windows and cards start at their old places
+   turned with the phone and glide level into the upright layout in about a third of a second; no frame of a half-laid-out
+   screen; taps work again as soon as they land. Rotate back the same. Then the Goby: rotate upright and the Pistol's view
+   grows out of the small square over the Goby's; back to landscape, the Goby's grows back. A D-pad swap stays instant.
+9. **Goby and Pistol turn** (Toybox Vessel Changer, then a Goby game): flying the Goby, rotate upright: the screen turns
+   and you are in the Pistol's view; rotate back: the Goby. Swap with the D-pad / double tap while upright and the seat
+   stays until you rotate again. Check the Pistol's side view, its buttons round the thumb and GameCanvas's HUD upright.
+10. **Every other vessel turns nothing**: the Squirrel (or any non-crew hull) in the Toybox and in a match; rotating the
+   phone leaves the screen landscape and the HUD unchanged. Leaving a Goby while upright turns the screen back.
+
 ## 🔴 Colour sets for colour vision: six new sets in the Profile's rail, a breadcrumb in Settings (2026-11-05, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/nice-lamport-56824k`; `Docs/VesselModels/colour_sets.json` (rule 5), `COLOR_DOMAINS.md`,
