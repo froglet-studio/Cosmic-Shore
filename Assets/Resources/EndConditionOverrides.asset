@@ -40,6 +40,12 @@ MonoBehaviour:
   undertowPointTarget: 12
   dustupPointTarget: 4
   serpentGulagSnipeTarget: 3
+  flatlinePointTarget: 200
+  flatlinePointTargetByIntensity:
+  - 180
+  - 200
+  - 220
+  - 240
   tapestryRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
@@ -98,6 +104,12 @@ MonoBehaviour:
   undertowPointTargetBuild: 12
   dustupPointTargetBuild: 4
   serpentGulagSnipeTargetBuild: 3
+  flatlinePointTargetBuild: 200
+  flatlinePointTargetByIntensityBuild:
+  - 180
+  - 200
+  - 220
+  - 240
   tapestryRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100

@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameFlatline
+  m_EditorClassIdentifier:
+  Mode: 84
+  IsMultiplayer: 1
+  DisplayName: Flatline
+  Description: 'Brittle Stars only - a duel through thin panes of prisms. A pane stops your rounds, but
+    your cords cut straight through it, so nobody is safe behind one. Throw your ring
+    face-on into a pane and it bursts flat along it - get off a pane when a ring comes
+    spinning at you. A round on a rival is one point and a cord strike is eight; the ring
+    scores nothing. Crystals on the seams give you spare rings. First team to the target
+    wins.'
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: 543b9f7634624276b7a624d47b5b5533, type: 3}
+  GolfScoring: 1
+  SceneName: MinigameFlatline
+  Vessels:
+  - {fileID: 11400000, guid: d8ebb29f2d63ad7eb488fdcb97145cfe, type: 2}
+  MinPlayersAllowed: 2
+  MaxPlayersAllowed: 4
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  ViewUserAction: 0
+  PlayUserAction: 0
+  ComebackRatePerScoreDeficit: 0.03

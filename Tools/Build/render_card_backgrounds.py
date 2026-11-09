@@ -91,11 +91,15 @@ SOURCES = [
     f"{_SP}/SpawnPoint.cs",
     f"{_SP}/SpawnTrailData.cs",
     f"{_SP}/FloraPlantingSite.cs",
+    # SpawnableRegattaRails implements it (2026-11-07); without it the harness stopped compiling (CS0246).
+    f"{_SP}/ICellFaunaCorridorSource.cs",
     f"{_MG}/SliceArenaGeometry.cs",
     f"{_MG}/SpawnableSwell.cs",
     f"{_MG}/SpawnableWildlifeCage.cs",
     f"{_MG}/SpawnableBoneyard.cs",
     f"{_MG}/SpawnableSerpentGulag.cs",
+    f"{_MG}/FlatlinePanes.cs",
+    f"{_MG}/SpawnableFlatline.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
     f"{_MG}/SpawnableSkein.cs",
     f"{_MG}/SpawnableRegattaRails.cs",
@@ -105,6 +109,10 @@ SOURCES = [
     f"{_MG}/SpawnableSpherene.cs",
     f"{_AR}/Skein/SkeinCourse.cs",
     f"{_AR}/Regatta/RegattaCourse.cs",
+    # The course's features and lifeform sites joined RegattaCourse / SpawnableRegattaRails on 2026-11-07 (the
+    # balance merges); unlisted, the harness stopped compiling (CS0246) and the bake and card checks with it.
+    f"{_AR}/Regatta/RegattaCourseFeatures.cs",
+    f"{_AR}/Regatta/RegattaLifeformSites.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
     f"{_AR}/Headlong/HeadlongCircuit.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",
@@ -772,6 +780,9 @@ CAMERAS = {
     # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
     # tracer crossing the middle (the one thing that scores) reads against it.
     "SerpentGulag": (50, 26, 0.62, 46),
+    # Flatline: the I2 Five Pages from off the spine, so the pages read as thin planes fanning round it and the cords
+    # crossing one page (the act that scores) read against its face.
+    "Flatline": (12, 20, 1.2, 44),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1321,6 +1332,43 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         glow(a, span * 0.02, JADE, 1.0, 0.4)
         glow(b, span * 0.035, JADE, 1.1, 0.45)
         stage["vessels"] = vessels([(JADE, 0.85, 8, 330, 20), (RUBY, 0.7, -4, 140, 25), (GOLD, 0.8, 12, 230, 25)])
+    elif s == "Flatline":
+        # The seam crystals (the controller lays them where the panes cross; flatline_budget's sites at this rung), and
+        # a CORD STRIKE through a pane: a Jade Brittle Star's five cords reach from its ring corners straight through
+        # page 0 (the x = 0 plane) to a Ruby pilot in the next room, who takes the hit. A pane stops rounds, never cords.
+        import flatline_budget as fb
+        rung = fb.RUNGS[INTENSITY - 1]
+        for site in fb.crystal_sites(fb.panes(rung["arrangement"], rung["radiusTiles"], rung["offset"]),
+                                     rung["crystalCount"], rung["crystalSpacing"]):
+            crystal(site, 10.0)
+        phi = math.radians(18)
+        jade = [-150 * math.sin(phi), 40, 150 * math.cos(phi)]
+        ruby = [150 * math.sin(phi), 52, 150 * math.cos(phi)]
+        d = v_norm(v_sub(ruby, jade))
+        side = v_norm(v_cross([0, 1, 0], d)); up = v_cross(d, side)
+        sig = domain_signal(pal, JADE, 1.4)
+        for k in range(5):
+            a = 2 * math.pi * k / 5
+            root = v_add(jade, v_add(v_mul(side, 6 * math.cos(a)), v_mul(up, 6 * math.sin(a))))
+            tip = v_add(ruby, v_add(v_mul(side, 2.5 * math.cos(a)), v_mul(up, 2.5 * math.sin(a))))
+            n = 14
+            prev = root
+            for j in range(1, n + 1):
+                t = j / n
+                bow = math.sin(math.pi * t) * 7   # a whip's give, bowed outward from the cord's own corner
+                q = v_add(v_add(root, v_mul(v_sub(tip, root), t)),
+                          v_add(v_mul(side, bow * math.cos(a)), v_mul(up, bow * math.sin(a))))
+                seg = v_sub(q, prev)
+                L = math.sqrt(v_dot(seg, seg))
+                sd = v_norm(seg); sx = v_norm(v_cross([0, 1, 0] if abs(sd[1]) < 0.9 else [1, 0, 0], sd))
+                sy = v_cross(sd, sx)
+                layers.append({"kind": "box", "c": v_mul(v_add(prev, q), 0.5), "ax": v_mul(sx, 1.6),
+                               "ay": v_mul(sy, 1.6), "az": v_mul(sd, L / 2), "base": sig, "rim": sig,
+                               "emissive": sig, "edge": 0})
+                prev = q
+        glow(jade, 9, JADE, 1.0, 0.45)
+        glow(ruby, 14, JADE, 1.2, 0.5)
+        glow(ruby, 6, RUBY, 1.0, 0.6)
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)
