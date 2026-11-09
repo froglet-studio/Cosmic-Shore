@@ -101,6 +101,10 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
   `SwitchbackCourse.cs` began naming `SwitchbackFunType` (2026-10-28) and the harness stopped compiling (CS0246) until
   the enum joined `SOURCES` (2026-10-31, rendering Serpent Gulag). `audit_prism_clipping.py` had fixed the same break
   in its own source list: when one harness breaks on a new type, grep the others' source lists for it.
+- **It broke again on 2026-11-07** (Regatta's balance merges: `RegattaCourseFeatures`, `RegattaLifeformSites`,
+  `ICellFaunaCorridorSource`, plus `PreparesPlantingSites` and `Trail.TrailList` missing from `PlatformShim.cs`) and stayed
+  broken for two days; `claude/great-rubin-rur3xs` repaired it while rendering Flatline (REFACTOR_BACKLOG S108). A new
+  card's arena helper (`FlatlinePanes`) goes in `SOURCES` beside its Spawnable.
 - **A named run (`render_card_backgrounds.py <Stem>`) writes the PNG but not `card_backgrounds_manifest.json`**, so a
   card rendered while the full roster cannot run (S95) is missing from the manifest until the next full run.
 

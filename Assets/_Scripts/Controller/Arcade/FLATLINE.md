@@ -16,7 +16,7 @@ Nothing about the Brittle Star changes (the LOCKED vessel rule). Every pane has 
 |---|---|
 | **Rounds** (one turret, or Space Mode's five; the Sparrow's round, stopped by the first prism) | A pane is **cover**: a pilot behind one cannot be shot. |
 | **Cords** (Charge Mode; 120 u whips, 80 u sabers while RT is held; they slice every prism they sweep) | A pane is **no cover at all**: the cords reach through it and strike the pilot hiding behind it. |
-| **The ring** (LT with a spare; flies ~264 u, bursts in a flat disk across its own line of flight, ~780 u across) | A ring thrown **face-on** into a pane bursts on contact, flat along the pane: it erases the pane's plain tiles in that plane and catches whoever hugs it. The tell is the spinning ring coming at you; the answer is to **get off the pane's plane**. |
+| **The ring** (LT with a spare; flies ~264 u, bursts in a flat disk across its own line of flight: 400 u across here, because the cell has no nucleus and `BrittleStarExecutor.NucleusRadiusAt` falls back to `ringBlastFallbackRadius` 200) | A ring thrown **face-on** into a pane bursts on contact, flat along the pane: it erases the pane's plain tiles within 200 u of the burst and catches whoever hugs it there. The tell is the spinning ring coming at you; the answer is to **get off the pane's plane**. |
 | **Crystals** (every crystal list on the hull's impactor adds one spare ring, up to two) | Crystals sit on the **seams** where panes cross: the places a ring thrown along either pane reaches. Re-arming is the risk. |
 
 **Ribs.** Every Nth grid line of every pane is **super-shielded** (nothing breaks it). The plain tiles between the ribs
