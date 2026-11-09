@@ -39,6 +39,7 @@ SETS = (
     ("nocturne", "NocturneColorSetSO", "Nocturne", "Every prism a lantern: a glowing rim over a deep jewel face.", 0),
     ("photic", "PhoticColorSetSO", "Photic", "The original sunlit sea: one bright hue per domain.", 0),
     ("dartfrog", "DartFrogColorSetSO", "Dart Frog", "Two frog pigments per domain: mint over bronze, bumblebee over indigo.", 0),
+    ("nacre", "NacreColorSetSO", "Nacre", "Light, not bright: pastel rims over pale pastel faces, a sheen instead of a glow.", 0),
     ("contrast", "ContrastColorSetSO", "Contrast",
      "Every domain as far from every other as the rules allow, for anyone who wants the board to read at a glance.", 6),
     ("protanopia", "ProtanopiaColorSetSO", "Protanopia",
@@ -103,14 +104,22 @@ def add_pigments(text):
 
 
 def add_entries(text, palette_guids):
-    """Migration (2026-11-05): a set in SETS the catalog does not have yet is appended, in SETS order. Stands down
-    once every set is present."""
+    """Migration (2026-11-05): a set in SETS the catalog does not have yet is added at its place in SETS order (before
+    the next SETS entry the catalog has, else at the end; 2026-11-08, so Nacre sits beside the other looks and not
+    after the vision sets). Stands down once every set is present."""
     ids = set(re.findall(r"^  - id: (\S+)$", text, re.M))
-    missing = [s for s in SETS if s[0] not in ids]
-    if not missing:
+    if all(s[0] in ids for s in SETS):
         return text
-    return text.rstrip("\n") + "\n" + "".join(entry_text(sid, palette_guids[sid], name, line)
-                                              for sid, _, name, line, _ in missing)
+    text = text.rstrip("\n") + "\n"
+    for i, (sid, _, name, line, _) in enumerate(SETS):
+        if sid in ids:
+            continue
+        entry = entry_text(sid, palette_guids[sid], name, line)
+        after = next((s[0] for s in SETS[i + 1:] if s[0] in ids), None)
+        m = re.search(r"^  - id: %s$" % re.escape(after), text, re.M) if after else None
+        text = text[:m.start()] + entry + text[m.start():] if m else text + entry
+        ids.add(sid)
+    return text
 
 
 def read(path):
@@ -214,6 +223,7 @@ def self_test():
         "two sets made for one vision": (good_cat.replace("    vision: 3\n", "    vision: 2\n", 1), good_con),
     }
     old_shape = re.sub(r"^    vision: \d+\n", "", good_cat.split("  - id: contrast", 1)[0], flags=re.M)
+    old_shape = re.sub(r"^  - id: nacre\n(?:    .*\n)+", "", old_shape, flags=re.M)   # a set added mid-catalog
     assert add_entries(add_pigments(old_shape), guids) == good_cat, "the migration does not reach the authored catalog"
     for name, (cat, con) in planted.items():
         assert validate(cat, con, guids, script_guid), f"self-test: '{name}' was not caught"

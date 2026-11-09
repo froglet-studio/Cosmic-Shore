@@ -527,7 +527,12 @@ namespace CosmicShore.Gameplay
 
         void StandStop(Vector3 ark)
         {
+            // Clear whatever an earlier stop left standing, but keep the arrival OnRouteEnded just read: ClearStop forgets
+            // it, and reading it back as null here threw on every stop short of home, mid-RouteEnded, so the stop never
+            // stood, the job's work never counted, the arrival was never saved and the Ark held at the core for good.
+            var arrival = _arrival;
             ClearStop();
+            _arrival = arrival;
             _stowedHere = 0;
             _heldFor = 0f;
             _held = false;

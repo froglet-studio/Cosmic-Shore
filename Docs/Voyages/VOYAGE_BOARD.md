@@ -53,29 +53,38 @@ closed to every Ark (proposed).
   voyages are ... arranged in a matrix like the different arcade games. Then the episodes and saga are top level above
   the fold modals that contain their own content"; "the map divides them as a fun interactive galaxy explorer deciding
   where you want your voyages to take you"). Laid out by `Tools/Build/author_voyage_window.py`:
-  - **Four tabs at the top, VOYAGES | SAGA | QUESTS | EPISODES** (`VoyageWindowTabs`, rebuilt 2026-11-02 to Shombith's
-    pick, `Docs/MENU_REDESIGN_B.md` section 119; `VoyageWindowModals` and its modals retired). Voyages opens first.
-    Saga holds Tandava and its Severing, Quests holds Episode 1's quests, and Episodes is locked ("coming soon", Episode
-    2). LB / RB step through the tabs and stop at either end; while the window is open it holds the bumpers
+  - **Three tabs at the top, VOYAGES | SAGA | EPISODES** (`VoyageWindowTabs`, rebuilt 2026-11-02 to Shombith's
+    pick, `Docs/MENU_REDESIGN_B.md` section 119, and again on 2026-11-08, section 151; `VoyageWindowModals` and its
+    modals retired). Voyages opens first. Saga holds Tandava and its Severing, and Episodes is locked ("coming soon",
+    Episode 2). LB / RB step through the tabs and stop at either end; while the window is open it holds the bumpers
     (`HubShoulders`), so they do not slide the hub as well.
+  - **The quest tracker is its own window, Quests** (2026-11-08, Rev 77 "Quests", section 151):
+    `Assets/Resources/Voyages/QuestsView.prefab`, made by the same generator from this window's chrome. Its tabs are
+    Episode 1 (the quests) and Episode 2 (locked). `ScreenSwitcher.EnsureQuestsModal` places it beside this window as
+    the `QUESTS` modal (20), and Home's quest card opens it (`OnClickQuests`).
   - **The galaxy map** (`VoyageMapGraphic`), named HyperSea map in the window, fills the left column (`mapColumn`) over
     the edge view. It shows the sea around the places,
     painted from the density field, the galaxy in a corner with Sol and where you are looking. It is an explorer: drag
     to pan, pinch or wheel to zoom (120 to 20,000 ly across), tap a place to open the voyage that sails there, or, if
-    none does, to read its line (`MapPlace`).
+    none does, to read its line (`MapPlace`). With the open voyage's column on (`openOnGalaxy`) it opens on the whole
+    galaxy (`OpenTier` 0, the ladder's own Galaxy tier) and stays there while the voyages are picked.
   - **The edge view** under it (`VoyageEdgeGraphic`): the disk edge-on at the map's own scale both ways, as the board's
     side view (true 1,000 ly thickness, a depth gauge, the places and the course at their heights, `EdgeCaption`).
-  - **The voyage cards**, small and two across in the right column: route and pilot, title and the course line
-    `CardCourse` (`{ly}`, `{years}`, `{minutes}`, `{sea}`, `{intensity}`). OPEN (a press on the card, or on its place on
-    the map) slides the **open voyage** (`VoyageOpenCard`) over the cards, and the map frames that job's course. Its
-    ground is the course on the map's own painted water (`VoyageRoutePoster`). It has three levels:
-    - the voyage: the pager (< >, going round), title, three numbers, the route's two ends, and the squad with its
-      presets beside it (`SquadBook`). It also has Configure the squad, Set sail, Ark crew and Story.
-    - Ark crew: three seats, each with its vessel, pilot, element and artifact, under the Ark's own edit rules, on a copy of
-      the squad. Save squad writes it back; closing the card drops an unsaved change.
-    - Story: one beat at a time (the news, the place, who brought it, the water).
-    Its words are `VoyageLines` (`Card*`, `Story*`, `Element*`). The Ark escort's card still opens in place to its
-    difficulty stepper.
+  - **The voyage column** on the right (Rev 74 C3 "Place", picked 2026-11-08, section 151; `VoyageOpenCard`, built at
+    runtime in place of the cards' column). It has four views:
+    - **Voyage:** the voyages on a coverflow (`VoyageFlowCard`, poses from `VoyageCardRules.FlowPose`). Each card's
+      face is its place's muted close-up (`VoyagePlaceArt`: the map's own density field and colour key, kept a quarter
+      of its colour at 0.55 brightness, painted once per place). The Ark escort is the first card. Under the flow are
+      the picked voyage's title and numbers (or the escort's difficulty stepper), the squad's presets, three hull
+      buttons, the crew line, Ark crew, Story and Set sail.
+    - **Ark crew:** the domain chips, then three seats, each with its hull and four settings (vessel, pilot, element,
+      artifact). A press opens that setting's strip over the column, and one press picks. A hull picked from the
+      voyage view saves at once; the crew view's picks are a draft that Save squad writes back. This replaces stepping
+      a setting through its options one press at a time.
+    - **Story:** the voyage over its place, one beat at a time (the news, the place, who brought it, the water).
+    - **Underway:** a voyage or escort that is out shows its place, the underway line, its course, the squad and a dark
+      Set sail ("Set sail - after this voyage").
+    Its words are `VoyageLines` (`Card*`, `Story*`, `Element*`). With no column wired, the cards still open in place.
   Uncharted content draws the old flat chart, with no edge view.
 - The lanes' `cells` still set how long a leg sails in the Arkway; the card shows the real distance (§5 decision 8).
 - **The Ark escort** sails between charted places too (`ARK_ESCORT.md` §5): `VoyageRules.EscortRoute` picks the

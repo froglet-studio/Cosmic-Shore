@@ -659,6 +659,24 @@ Headless harness and `unity_refcompile` (player and editor) ran; no editor.
 - [ ] The heart is drawn again after the morph (never left invisible), including when the creature dies at once.
 - [ ] MPPM two clients: on the host the morph plays; on a client a replicated species is born on the host only, so the client's crystal fades.
 
+### 🔴 Dolphin omni-crystal morph made subtle: the blast is never covered (`claude/dolphin-morph-subtle`, 2026-11-03) — NOT EDITOR-VERIFIED
+
+**What landed:** Garrett's feedback on the morph above ("it occludes the explosion and destroying prism"). The cone is
+no longer hidden while the plates fly (`AOEConicExplosion.SetMorphStandIn` removed). The crystal body draws see-through
+(`CrystalMorphRunner.DrawsSeeThrough`: an alpha-blended, no-depth-write clone of its material via new
+`OmniCrystalFresnelShader` properties whose defaults are the old opaque pass) and thins as (1 − progress)^`fadePower`
+(new field on `DolphinCrystalMorphByCrystal.asset`, default 2). Record: `DOLPHIN_CRYSTAL_MORPH.md` §3a.
+
+**Verified without the editor:** see the PR (harness, `unity_refcompile`). The shader change has not been compiled by
+Unity.
+
+**Test:**
+1. Fly a Dolphin through an omni crystal. Expected: the blast cone and the prisms it breaks are visible from the first
+   frame; the crystal stretches faintly onto the cone and is gone well before ~0.4 s; no husk spray; the shader compiles
+   (no pink).
+2. Tune `fadePower` on the asset if it is still too visible (higher is subtler) or invisible.
+3. Regression: Squirrel, Scarab, Shrike and sphere-blast morphs look as before, and resting omni crystals are unchanged.
+
 ### 🔴 Dolphin omni-crystal morph: the crystal becomes the Echo Obliteration cone (`claude/dolphin-omnicrystal-morph`, 2026-11-01) — NOT EDITOR-VERIFIED
 
 **What landed:** `DolphinCrystalMorph` + `DolphinCrystalMorphByCrystalEffectSO` (wired as the Dolphin's
@@ -21409,6 +21427,10 @@ Branch `claude/festive-ptolemy-gsap7o`, follows the entry above. Compiled with `
    queries (correct, but the speed-up is lost): send it.
 
 ## 🔴 Voyage window: four tabs, the HyperSea map left, the open voyage card (Rev 49 C) (2026-11-02, Shombith, NOT RUN IN EDITOR)
+> **Superseded in part (2026-11-08):** the open voyage card, `VoyageRoutePoster`, the pager and the cycling crew settings
+> were replaced by the Rev 74 C3 column, and Quests became its own window. Test those with the entry "The Voyages tab as
+> Rev 74 C3, and the Quests window" below; the tab, LB / RB, map, Saga, Set sail and gamepad lines here still apply.
+
 `VoyageWindowTabs`, `HubShoulders`, `VoyageOpenCard`, `VoyageRoutePoster`, `VoyageCardRules` (new), `VoyageJobsView`, `MissionView.prefab` (by `author_voyage_window.py`), `VoyageLines` (+ `VoyageContent.asset`); `VoyageWindowModals` retired. Record: `Docs/MENU_REDESIGN_B.md` section 119. Ran here: `unity_refcompile` player and editor, `gates.sh` ALL OK, the generators' `--check` / `--self-test`, and `VoyageCardRulesTests` outside Unity. No Unity editor ran, so nothing below was seen.
 - [ ] The project compiles in the editor; `VoyageCardRulesTests` pass.
 - [ ] Menu_Main > Voyage: the window opens on VOYAGES; the tabs read VOYAGES | SAGA | QUESTS | EPISODES, Episodes locked and "Coming soon".
@@ -22084,3 +22106,69 @@ from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
 3. **Turn `aiSeekRails` off** on the scene's SkeinController for one race as the control: the AI should go back to
    flying at the rings and missing the pinned ones.
 4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).
+
+## 🔴 Nacre, the light pastel colour set (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/focused-thompson-tj52go`. New palette `Assets/_SO_Assets/Color Palettes/NacreColorSetSO.asset`, written by
+`author_colour_set_assets.py` from `colour_sets.json` (`nacre`), and a catalog entry between Dart Frog and Contrast.
+The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran here: `colour_sets.py --check/--self-test`,
+`author_colour_set_assets.py --check`, `author_colour_set_catalog.py --check/--self-test`, both theme writers' `--check`,
+`/ship` gates, and `unity_refcompile` (0 errors in changed files; 21 elsewhere from packages the sandbox cannot fetch).
+
+1. **Profile > Colour sets**: Nacre is the fourth tile and shows Mint over Lavender, Orchid over Pearl, Butter over
+   Periwinkle, Ice over Sage. Apply it.
+2. **A race or freestyle with all four domains' trails.** Prisms should read as pale pastel bodies under soft rims, light
+   but not glowing. Judge the bloom: the gameplay threshold is 0.2, so the light faces bloom more than Nocturne's. If
+   it reads washed out, lower `rim_brightness` in `colour_sets.json` or the face L ranges, then re-run the writer.
+3. **Shielded and super-shielded prisms** still read as a tier above plain in every domain (Ruby's rim is the brightest).
+4. **Danger (coral) and free crystals (lime CTA)** still stand out against the pale bodies.
+
+## 🔴 The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 151. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code; the rest are packages the cloud cannot fetch). No Unity editor was open, so the
+`unity` CLI and the EditMode tests have not run in Unity. `VoyageCardRulesTests`' pure tests ran outside Unity;
+`Cover_CropsToTheFramesShape_Centred` needs a real `Texture2D` and has not run.
+
+1. **Run the EditMode tests** `VoyageCardRulesTests` and `VoyageShellTests`.
+2. **Open the Voyage window** from Home. It shows three tabs, Voyages, Saga and Episodes (locked), on LB / RB. Voyages
+   opens first, with the HyperSea map on the whole galaxy and the edge view under it.
+3. **The coverflow**: the voyages, with the Ark escort first, are muted place cards. The picked one faces front, and its
+   neighbours turn away and fade. Pressing a card, or moving onto it with the D-pad, picks it in one ease. The cards are
+   not blue: the colour is a quiet grey-violet with a light diamond at the centre.
+4. **One press picks**: press a hull under the flow. The vessel strip opens over the column, and one press picks and
+   saves. In Ark crew, each seat's vessel, pilot, element (the Codex's shapes) and artifact open a strip the same way,
+   and Save squad keeps the draft. Changing the domain chip changes the draft only. Change a seat without saving, close
+   the window and reopen it: the change is gone. With a friend in the squad, Save squad reaches them (their Ark shows
+   the change after its refresh), as a save in the Ark does.
+5. **Story**: the beats step with < > and the dots. **Underway**: send a voyage out, reopen the window, and the column
+   shows the place, the underway line and a dark "Set sail - after this voyage".
+6. **The Quests window**: on Home, press the quest card. The Quests window opens (not the Voyage window), titled
+   Quests, with Episode 1 (the quest tracker as before) and Episode 2 (locked) on LB / RB. Gamepad B and Back close it,
+   and the card's claim line reads "Ready to claim in Quests".
+7. **Console**: no new errors or warnings on Menu_Main load. A warning naming `Resources/Voyages/QuestsView` means the
+   prefab did not import.
+
+## 🔴 Voyages: the Ark no longer stalls at a job's stop (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/voyage-stop-stall`. `VoyageRun.StandStop` called `ClearStop()`, which forgets `_arrival`, and then read
+`_arrival.Location`: a `NullReferenceException` on every stop short of home (Garrett's Editor.log, 2026-11-08,
+`VoyageRun.cs:538` from `ArkwayRun.TickCorridor`). The Ark had already been told to hold, so it sat at the stop's core
+with no vaults, no work and no save. Ran: `/ship` gates (all OK). Not run: Unity, `unity_refcompile` (no .NET SDK in
+the session).
+
+1. **Take a job to a stop that is not home** (Voyage window, any pilot's card, Set sail). When the Ark reaches the
+   destination core, the console shows no `NullReferenceException` from `VoyageRun.StandStop`.
+2. **The stop stands**: the arrival banner, then the stop's lines; vault shells around the Ark at a vault field or
+   hoard, a wreck's finds, rival hulls where a crew stands; the job's progress banner moves as you do its work.
+3. **The Ark holds by design** at the stop; leaving freestyle anchors the squad there, and the Voyage window offers
+   the next jobs from that place (the map shows the Ark at the destination, not where it set out).
+4. **Next job sails**: Set sail on one of those jobs and the Ark leaves the stop for the new destination.
+
+## 🔴 Voyages: escort AI no longer steers by a destroyed hull after a pilot swap (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK in the cloud session).
+
+1. Start a voyage or an Ark escort with AI wingmates.
+2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
+3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
