@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-09 from canvas version `1794263800-c2dc` of **Frogma**: Rev 3 to Rev 80, 440 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-09 from canvas version `1794264128-4c72` of **Frogma**: Rev 3 to Rev 81, 444 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -677,6 +677,13 @@ Copied on 2026-11-09 from canvas version `1794263800-c2dc` of **Frogma**: Rev 3 
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 81 - Voyage window, B1 with B3's seat cards - a livelier right panel, three ways
+
+- [`R81B5.dc.html`](R81B5.dc.html) - Rev 81 B5 - Cards: B1 with labelled numbers and B3's three seat cards in the right panel (recommended) - interactive
+- [`R81B6.dc.html`](R81B6.dc.html) - Rev 81 B6 - Manifest: each seat card is its pilot, full height like a poster, the hull over its foot - interactive
+- [`R81B7.dc.html`](R81B7.dc.html) - Rev 81 B7 - Banner: the destination's picture heads the right panel, the title and numbers over it, the seat cards below - interactive
+- [`R81Notes.dc.html`](R81Notes.dc.html) - Rev 81 - notes: what B1 keeps, B3's cards, the three right panels, the recommendation
 
 #### Rev 80 - Voyage window, B Logbook taken further - the list, the course and the squad, four ways better
 

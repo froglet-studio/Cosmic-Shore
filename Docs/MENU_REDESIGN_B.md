@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79 and Rev 80 on the canvas now; Rev 70-77 were reverted and taken off, section 158) | Shombith, 2026-11-08 (sections 147-151, 158-160) |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79, 80 and 81 on the canvas now; Rev 70-77 were reverted and taken off, section 158) | Shombith, 2026-11-08 (sections 147-151, 158-161) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -6817,7 +6817,7 @@ redraws the parts the build left old: the tabs and the map.
 build will be checked against a render before it is called done (section 158).
 
 
-## 160. Rev 80 mockups: the Voyage window, B Logbook taken further (2026-11-09, awaiting a pick)
+## 160. Rev 80 mockups: the Voyage window, B Logbook taken further (2026-11-09; Shombith picked B1 with B3's cards, section 161)
 
 **Asked (Shombith, 2026-11-09, on Rev 79):** "B looks good make it better more mockus inspired from B".
 
@@ -6849,5 +6849,42 @@ picks.
 
 The seats use the four pilot portraits on the canvas (Shrapnel, Feist, Longshift, Flux).
 
+**Picked (Shombith, 2026-11-09): B1, with B3's cards:** "I like b1 but I want that 3 card information still and the
+right panel looks a bit dull" (section 161).
+
 **Recommended: B1.** It answers what B left plain (rows you can't tell apart, seats with no pilot, a loud map) without
 adding a new region to the window.
+
+
+## 161. Rev 81 mockups: B1 with B3's seat cards, a livelier right panel (2026-11-09, awaiting a pick)
+
+**Asked (Shombith, 2026-11-09, on Rev 80):** "I like b1 but I want that 3 card information still and the right panel
+looks a bit dull".
+
+**On the canvas:** tab **Voyages**, round "Rev 81 - Voyage window, B1 with B3's seat cards" (canvas version
+`1794264128-4c72`).
+- Copies: `Docs/MenuRedesignB/board/R81*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r81_voyages.py`, built on Rev
+  80's.
+- All boards pass `frogma.py check`. They pass `check_mockup.py` measured against the picked board
+  (`--baseline Docs/MenuRedesignB/board/R80B1.dc.html`, a budget of 78), at 65-68 visual elements. Adding B3's cards to
+  B1, which was already at 59, takes each option past the default budget of 60; the baseline is the gate's own rule
+  for a round built on a pick.
+- They were rendered locally with the real art and looked at before publishing.
+
+**Kept from B1:** the list (each course's picture and who brought it), the muted course map and the edge view. The
+course column is 660 wide instead of 740, so the right panel has room for three cards.
+
+**B3's cards, in all three:** each seat shows its pilot large, the hull under them, the vessel's name, who flies it,
+and the element. A press on a card opens the hull grid; one press picks.
+
+**The options:**
+- **B5 - Cards (recommended):** the title, the line, the numbers labelled (Distance, Sail, Intensity), the place line,
+  then the three cards and Set sail.
+- **B6 - Manifest:** each card is its pilot, full height like a poster, with the hull over the foot of the card. The
+  most character.
+- **B7 - Banner:** the destination's own picture heads the panel with the title and numbers over it; the cards sit
+  under it.
+- **Notes.** No compare board: only the right panel differs, and the three boards stand side by side on the canvas.
+
+**Recommended: B5.** It adds B3's cards with the least change to B1, and the large pilots and the labelled numbers are
+what lift the panel out of plain text.
