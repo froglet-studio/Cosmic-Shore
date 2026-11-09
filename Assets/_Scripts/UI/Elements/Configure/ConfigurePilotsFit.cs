@@ -69,12 +69,44 @@ namespace CosmicShore.UI
         float _seat;
         bool _compact;
 
+        AdaptiveCanvasScaler _scaler;
+        bool _capturedUpright;
+
         void Awake() => Capture();
+
+        // The launch row and the sections below are posed per orientation (PortraitRect, Docs/MENU_REDESIGN_B.md section
+        // 138): take the growth out while the old pose stands, then read the new pose as the rest the growth is added to.
+        void OnEnable()
+        {
+            if (!_scaler) _scaler = GetComponentInParent<AdaptiveCanvasScaler>(true);
+            if (!_scaler) return;
+            _scaler.PortraitLayoutChanging += OnPortraitChanging;
+            _scaler.PortraitLayoutChanged += OnPortraitChanged;
+        }
+
+        void OnDisable()
+        {
+            if (!_scaler) return;
+            _scaler.PortraitLayoutChanging -= OnPortraitChanging;
+            _scaler.PortraitLayoutChanged -= OnPortraitChanged;
+        }
+
+        void OnPortraitChanging(bool upright)
+        {
+            if (_captured && _growth != 0f) ApplyGrowth(0f);
+        }
+
+        void OnPortraitChanged(bool upright)
+        {
+            _captured = false;
+            _growth = 0f;
+        }
 
         void Capture()
         {
-            if (_captured) return;
+            if (_captured && !(_scaler && _scaler.UsesPortraitLayout != _capturedUpright)) return;
             _captured = true;
+            _capturedUpright = _scaler && _scaler.UsesPortraitLayout;
             _steps = transform as RectTransform;
             _stepsHeight = _steps ? _steps.sizeDelta.y : 0f;
             _pilotsHeight = pilotsSection ? pilotsSection.sizeDelta.y : 0f;

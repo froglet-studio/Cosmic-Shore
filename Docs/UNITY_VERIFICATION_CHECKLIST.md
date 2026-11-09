@@ -21591,6 +21591,37 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
 
+## 🟡 Portrait menus (`claude/ui-portrait`, 2026-11-06) — COMPILED (unity_refcompile), NOT RUN IN EDITOR
+
+Rev 63 B (`Docs/MENU_REDESIGN_B.md` section 138): every device shows the PC UI; a phone held upright in the menus lays
+Menu_Main out on a 1080 x 1920 canvas matched to the width. New: `PortraitRect`, `AdaptiveCanvasScaler.hasPortraitLayout`
+(Menu_Main only), `MenuOrientation`; tests `PortraitRectTests`.
+
+1. **Compile, then run** `PortraitRectTests`.
+2. **PC and landscape phones unchanged**: Menu_Main at 16:9 and an iPhone sideways look exactly as before.
+3. **Upright, Device Simulator (iPhone, rotate to portrait) in play mode**: the menu turns; Home, Arcade, Configure
+   (Arcade, Arena, Maelstrom) and Hangar are laid out top to bottom in the PC pieces; every other screen and window is its
+   PC layout fitted to the width; nothing spills off the sides.
+4. **The lock**: tap the cell to fly (freestyle) and the screen goes back to landscape; leave freestyle and it may turn
+   upright again; start a match from Configure and the match is landscape; back in the menu it turns again.
+5. **Turning while a window is open**: open Arcade and Configure, rotate back and forth; each takes its pose and gives it
+   back.
+6. **Configure while turning**: fly the preview, press FULL SCREEN (upright it grows to the window, landscape it opens the
+   tray), rotate mid-flight; the frame, the objective bar and START come back to the right place. Add three pilots to a
+   domain upright: the column grows and START moves down, not off the screen.
+7. **Arcade grid**: 5 across on PC, 3 across upright, every card the same size; filtering or growing the list adds cards
+   in the same grid.
+8. **Turn, then glide** (2026-11-08, section 154): on a phone (the Simulator shows the layout, a device the real OS turn),
+   rotate on Home, Arcade and Configure: after the OS turns the screen, the windows and cards start at their old places
+   turned with the phone and glide level into the upright layout in about a third of a second; no frame of a half-laid-out
+   screen; taps work again as soon as they land. Rotate back the same. Then the Goby: rotate upright and the Pistol's view
+   grows out of the small square over the Goby's; back to landscape, the Goby's grows back. A D-pad swap stays instant.
+9. **Goby and Pistol turn** (Toybox Vessel Changer, then a Goby game): flying the Goby, rotate upright: the screen turns
+   and you are in the Pistol's view; rotate back: the Goby. Swap with the D-pad / double tap while upright and the seat
+   stays until you rotate again. Check the Pistol's side view, its buttons round the thumb and GameCanvas's HUD upright.
+10. **Every other vessel turns nothing**: the Squirrel (or any non-crew hull) in the Toybox and in a match; rotating the
+   phone leaves the screen landscape and the HUD unchanged. Leaving a Goby while upright turns the screen back.
+
 ## 🔴 Colour sets for colour vision: six new sets in the Profile's rail, a breadcrumb in Settings (2026-11-05, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/nice-lamport-56824k`; `Docs/VesselModels/colour_sets.json` (rule 5), `COLOR_DOMAINS.md`,
@@ -22091,6 +22122,22 @@ from `Tools/Build/skein_urchin_sim.py`; nothing has run in Unity.
    flying at the rings and missing the pinned ones.
 4. **Regatta with an AI Urchin**: unchanged from before (it loads the shared config).
 
+## 🔴 Nacre, the light pastel colour set (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/focused-thompson-tj52go`. New palette `Assets/_SO_Assets/Color Palettes/NacreColorSetSO.asset`, written by
+`author_colour_set_assets.py` from `colour_sets.json` (`nacre`), and a catalog entry between Dart Frog and Contrast.
+The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran here: `colour_sets.py --check/--self-test`,
+`author_colour_set_assets.py --check`, `author_colour_set_catalog.py --check/--self-test`, both theme writers' `--check`,
+`/ship` gates, and `unity_refcompile` (0 errors in changed files; 21 elsewhere from packages the sandbox cannot fetch).
+
+1. **Profile > Colour sets**: Nacre is the fourth tile and shows Mint over Lavender, Orchid over Pearl, Butter over
+   Periwinkle, Ice over Sage. Apply it.
+2. **A race or freestyle with all four domains' trails.** Prisms should read as pale pastel bodies under soft rims, light
+   but not glowing. Judge the bloom: the gameplay threshold is 0.2, so the light faces bloom more than Nocturne's. If
+   it reads washed out, lower `rim_brightness` in `colour_sets.json` or the face L ranges, then re-run the writer.
+3. **Shielded and super-shielded prisms** still read as a tier above plain in every domain (Ruby's rim is the brightest).
+4. **Danger (coral) and free crystals (lime CTA)** still stand out against the pale bodies.
+
 ## 🔴 The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 151. Compiled with `unity_refcompile` (player and
@@ -22116,3 +22163,27 @@ editor: 0 errors in project code; the rest are packages the cloud cannot fetch).
    and the card's claim line reads "Ready to claim in Quests".
 7. **Console**: no new errors or warnings on Menu_Main load. A warning naming `Resources/Voyages/QuestsView` means the
    prefab did not import.
+
+## 🔴 Voyages: the Ark no longer stalls at a job's stop (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/voyage-stop-stall`. `VoyageRun.StandStop` called `ClearStop()`, which forgets `_arrival`, and then read
+`_arrival.Location`: a `NullReferenceException` on every stop short of home (Garrett's Editor.log, 2026-11-08,
+`VoyageRun.cs:538` from `ArkwayRun.TickCorridor`). The Ark had already been told to hold, so it sat at the stop's core
+with no vaults, no work and no save. Ran: `/ship` gates (all OK). Not run: Unity, `unity_refcompile` (no .NET SDK in
+the session).
+
+1. **Take a job to a stop that is not home** (Voyage window, any pilot's card, Set sail). When the Ark reaches the
+   destination core, the console shows no `NullReferenceException` from `VoyageRun.StandStop`.
+2. **The stop stands**: the arrival banner, then the stop's lines; vault shells around the Ark at a vault field or
+   hoard, a wreck's finds, rival hulls where a crew stands; the job's progress banner moves as you do its work.
+3. **The Ark holds by design** at the stop; leaving freestyle anchors the squad there, and the Voyage window offers
+   the next jobs from that place (the map shows the Ark at the destination, not where it set out).
+4. **Next job sails**: Set sail on one of those jobs and the Ark leaves the stop for the new destination.
+
+## 🔴 Voyages: escort AI no longer steers by a destroyed hull after a pilot swap (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK in the cloud session).
+
+1. Start a voyage or an Ark escort with AI wingmates.
+2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
+3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.

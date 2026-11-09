@@ -235,6 +235,11 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
   locally before publishing (`node .claude/skills/frogma/render_local.cjs <dir> <out> <boards...>`: a stand-in for the
   canvas runtime, holes / `sc-for` / `sc-if` / handlers, `CLICK=` presses through a flow; `/_blob/` images show broken) and look for an overlay covering the
   very control it points at. Rev 36's `clear_of()` moves a panel off its target.
+- **A `<button>` inside a `<button>` splits the board** (Rev 60, 2026-11-06). A tappable card holding its own Claim / Play
+  button is the natural markup, and the HTML parser closes the outer button at the inner one, so the card's other
+  children fall out and land elsewhere on the board (cards drawn above the phone frame). `check` passes it; only a local
+  render shows it. Make the card a `<div>`, put a transparent `<button class="pick" style="position:absolute;inset:0">`
+  as its first child for the pick, and give the content above it `pointer-events:none` except the inner button's row.
 - **The sliver clips what straddles it** (Rev 51, 2026-11-05). `.sl` is a `clip-path`, so a window's buttons placed to
   straddle its foot (style guide §6) are cut in half when they are children of the `.sl` element: the check passes,
   the board shows half a button. Put the sliver on a background layer (`<div class="abs sl panel" style="inset:0">`)
@@ -289,3 +294,10 @@ the principles it obeys by id (`python3 Tools/Build/principles.py --area ui`; `D
 the owners' rules in their words, drafted on 2026-11-07 and waiting on each owner to confirm or strike), the one it
 comes closest to breaking, the cheapest prototype, who judges it and where, and the retire condition. A design that
 breaks a drafted principle is a proposal to that principle's owner first, not a build. Read `references/UI_LESSONS.md` first (what Shombith picked and rejected, in his words), and run `python3 Tools/Build/check_mockup.py <board.html>` on every mockup before it is shown.
+
+- **A clip of an animated board** (Rev 72, 76, 78, 2026-11-08: "show me a clip"). A board whose motion is CSS keyframes
+  can be filmed: load it with `render_local.cjs`'s shim, route every `/_blob/<id>` to a repo image of the same thing
+  (unknown ids to a 1x1 PNG: `Artifact read` cannot fetch canvas assets), then for each frame pause every
+  `document.getAnimations()` and set its `currentTime`, screenshot a clip box, and `ffmpeg` the PNGs at 30 fps.
+  Seeking is exact, so slowed passes (`setpts=4*PTS`) cost nothing more. Rev 76's three rounds were each taken by another
+  session while drawn (71, 75): re-read the index right before publishing, every time. Say the clip is the drawing.
