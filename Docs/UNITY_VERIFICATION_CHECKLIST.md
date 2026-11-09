@@ -65,12 +65,12 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Jackstraw, the Thresher's Charge game (GameModes 84) (`claude/ecstatic-heisenberg-21lpmu`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
+### 🔴 Jackstraw, the Thresher's Charge game (GameModes 85) (`claude/ecstatic-heisenberg-21lpmu`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/JACKSTRAW.md`. A Thresher brawl in a 0G heap of pick-up sticks
 (`SpawnableJackstraw`, four baked prefabs), scored on strikes (the ball or chain on a rival hull, Strike-class
 CombatPoints, target 8), crystals in the heap's clearings, AI hunters that only steer (`JackstrawHunter`). New
-platform rows: `GameModes.Jackstraw = 84`, `jackstrawStrikeTarget`, toast situations 86 (`StrikeLanded`) and 159.
+platform rows: `GameModes.Jackstraw = 85`, `jackstrawStrikeTarget`, toast situations 86 (`StrikeLanded`) and 160.
 Checked offline: `author_jackstraw_assets.py --check`, the reference compile (0 errors), the `/ship` gates, the clip
 audit (0 clipping; the C# lays 408 / 1,122 / 2,114 / 3,566 prisms, as the Python mirror does), the bake, the card
 render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 77 modes).
@@ -78,7 +78,7 @@ render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 77 
 **Verify in editor:**
 1. Arcade → Jackstraw card: the heap card art, Thresher only, 2-4 players, intensities 1-4, the Charge badge.
 2. Launch I1 with one AI (any difficulty): you spawn just outside a loose heap; the arrow points at the rival; the
-   hint toast (159) shows once. The sticks are straight 120 u rods in every direction, no floor, no up.
+   hint toast (160) shows once. The sticks are straight 120 u rods in every direction, no floor, no up.
 3. Swing the ball or chain through the rival: "<b>you</b> struck a rival!" (86), the score goes up by 1, the rival is
    silenced (vignette) and loses petals. A second strike on the same rival inside 1 s does not count.
 4. Swing through sticks: each stick prism breaks and the ball slows; a red-hot ball cracks through. Ironwood (I2+)
