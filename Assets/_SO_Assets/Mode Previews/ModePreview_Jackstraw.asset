@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
   m_Name: ModePreview_Jackstraw
   m_EditorClassIdentifier:
-  Mode: 84
+  Mode: 85
   Notes: 'The heap at each intensity - loose sticks, then jacks, red tips and ironwood. OPEN-ENDED -
     it scores on striking rival pilots and a solo preview has none; what it teaches is the whip
     through the sticks and the clearings. Vessel pinned to Thresher(14).'

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Jackstraw game mode needs (GameModes.Jackstraw = 84).
+Authors every serialized asset the Jackstraw game mode needs (GameModes.Jackstraw = 85; it first took 84, which Shombith gave to the Brittle Star's Flatline on
+2026-11-09).
 
 Jackstraw is the Thresher's CHARGE game, picked by Shombith on 2026-11-09 from three drawn ideas: a 0G heap of
 pick-up sticks with no table, each stick about a chain long (120 u against the Thresher's 22-140 u chain), so a
@@ -28,7 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib  # noqa: E402
 import jackstraw_budget as budget  # noqa: E402
 
-MODE_ID = 84
+MODE_ID = 85
 g = lib.Generator(MODE_ID, "Jackstraw")
 guid = lib.guid
 
@@ -202,7 +203,7 @@ g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Jackstraw.asset", G_
              lib.toast(128, "{0} is a quarter of the way to {2} strikes", tint_domain=1, domain_names=0) +
              lib.toast(129, "{0} is halfway - {1}/{2} strikes", tint_domain=1, domain_names=0) +
              lib.toast(130, "{0} takes the lead - {1}/{2}", tint_domain=1, domain_names=0) +
-             lib.toast(159, "Run your ball or chain through a rival to strike - crystals float in the clearings",
+             lib.toast(160, "Run your ball or chain through a rival to strike - crystals float in the clearings",
                        domain_names=0) +
              lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9))
 g.register_toast_config(G_ASSET["GameToastConfigJackstraw"])

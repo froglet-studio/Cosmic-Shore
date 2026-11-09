@@ -225,7 +225,7 @@ namespace CosmicShore.Data
 
         // Jackstraw, the Thresher's charge game (_Scripts/Controller/Arcade/JACKSTRAW.md). Its race beats are the shared
         // 128-130 (DomainRaceToasts); a strike is 86 (StrikeHitsLanded rose). Posted to the LOCAL pilot only.
-        JackstrawHint = 159,            // once, at the start: strike a rival with the ball or chain; fuel is in the clearings
+        JackstrawHint = 160,            // once, at the start: strike a rival with the ball or chain; fuel is in the clearings
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

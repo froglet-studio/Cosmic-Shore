@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameJackstraw
   m_EditorClassIdentifier:
-  Mode: 84
+  Mode: 85
   IsMultiplayer: 1
   DisplayName: Jackstraw
   Description: 'Threshers only - a brawl in a heap of pick-up sticks floating in every direction. Each

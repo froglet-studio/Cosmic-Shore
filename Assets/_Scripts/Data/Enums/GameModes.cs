@@ -408,7 +408,7 @@ namespace CosmicShore.Data
         // The Thresher's CHARGE game (JACKSTRAW.md): a 0G heap of pick-up sticks, each about a chain long. A STRIKE -
         // the ball or chain reaching a rival hull - is one point; first domain to the target wins. I1-I4 grow the heap
         // (34 -> 230 sticks), add crossed jacks, red-tipped and ironwood sticks, and shrink the clearings.
-        Jackstraw = 84,
+        Jackstraw = 85,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 77) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
