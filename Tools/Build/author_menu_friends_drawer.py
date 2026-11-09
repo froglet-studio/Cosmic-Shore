@@ -73,13 +73,15 @@ NORMAL_W = 460
 DOCK_TOP, DOCK_BOTTOM = 84, 0
 INSET = 0
 BTN = 28
+MIN_HIT, MIN_PLATE = 48, 36        # the friends drawer minimise: hit area, visible plate
 
 # The presence orb (section 45.4). Its place is author_menu_arcade.ORB_* (the windows' gutter gate reads it too);
 # its member seats sit on the shader's inner ring at author_ui_lattice.ORB_MEMBER_ANGLES.
 ORB = AR.ORB_SIZE
 YOU = 30            # your avatar's ring
 MEMBER = 22         # a member's ring
-COUNT_H = 18
+COUNT_H = 24         # the count line is the top menu's size (Button, 18); "99 ONLINE" is ~101 wide: wider than the orb
+COUNT_W = 104
 MAX_DOTS = 8
 
 
@@ -131,8 +133,9 @@ def orb_node(parent):
         seat_nodes(m, f"Drawer/Orb/Member{i + 1}", MEMBER)
     you = o.child(N("Drawer/Orb/You", "You", R(size=(YOU, YOU))))
     seat_nodes(you, "Drawer/Orb/You", YOU)
-    count = o.child(N("Drawer/Orb/Count", "Count", R((0, 0), (1, 0), (0, -4), (0, COUNT_H), (0.5, 1))))
-    AR.label_e(count, "Friends", "Label", "NeutralLightest", driven=True, align="center")
+    # Left-aligned on the orb's left edge and wider than the orb (the 16 px margin to the wall stays the margin).
+    count = o.child(N("Drawer/Orb/Count", "Count", R((0, 0), None, (0, -4), (COUNT_W, COUNT_H), (0, 1))))
+    AR.label_e(count, "Friends", "Button", "NeutralLightest", driven=True, align="left")
     o.add("button", 114, lambda ctx, go: mono(go, A.BUTTON,
           orb_tint() + f"  m_TargetGraphic: {ref(ctx.c('Drawer/Orb/Field', 'img'))}\n" + A.calls([])))
     o.add("audio", 114, A.menu_audio(11))
@@ -179,9 +182,11 @@ def window_node(parent):
     glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_people"), preserve=True))
     label(w.child(N("Drawer/Window/Title", "Title", TL(52, 18, 200, 22))), "Friends", "Label", "NeutralLightest")
     # Minimise (a bar): slides the window back to the handle. No maximise (Shombith, 2026-10-26).
-    HM.icon_button(w, "Drawer/Window/Minimise", "Minimise", None, TR(16, 14, BTN, BTN))
+    # The panel starts below the title row; the minimise (drawn after it, so it keeps the clicks) is a 48 hit area round
+    # a 36 square plate: too small and plateless before, hard to hit on a phone (2026-11-09).
     w.children.append(K.Instance("Drawer/Window/PartyPanel", "PartyPanel", PARTY_GUID, "PartyPanel",
-                                 R((0, 0), (1, 1), (0, -28), (-40, -76)), ()))
+                                 R((0, 0), (1, 1), (0, -48), (-40, -96)), ()))
+    HM.icon_button(w, "Drawer/Window/Minimise", "Minimise", None, TR(8, 6, MIN_HIT, MIN_HIT), plate=MIN_PLATE)
     return w
 
 

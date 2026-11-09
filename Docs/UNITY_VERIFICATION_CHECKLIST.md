@@ -65,6 +65,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Swordfish looks like a swordfish; its sword is the bill (`cece/lucid-fermi-j80puc`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SWORDFISH.md` § "A swordfish, and the sword is its bill". `Swordfish.fbx` (a new hull
+on the Rhino rig's names, bound by a guid swap in `Swordfish.prefab`), `SwordfishBill.asset` (the blade's mesh), the
+bill pose mapping (`RhinoShieldSwipeConfigSO.poseMapping = Bill`), the camera pan (`CustomCameraController.FramingPan`,
+`SwordfishSwordCamera`), `SwordfishCameraSettingsSO` (no look-ahead lift), and the phone's tilt steer with both thumbs
+off. Checked offline: the reference compile (0 errors in changed files), `/ship` gates, `build.py swordfish --check`,
+`rest_compare.py` (every bone 0.0000 from the Rhino rig), three FBX readers, a Blender render of the three poses.
+Not run: Unity, the EditMode tests (`SwordfishBillPoseTests`).
+
+**Verify in editor:**
+1. Reimport `Swordfish.fbx` and `SwordfishBill.asset`; open `Swordfish.prefab`: the swordfish hull, no Rhino, the bill
+   lying ahead off the snout, flat side level.
+2. Toybox → Vessel Changer → Swordfish. No trigger: the bill points ahead and the hull sits in the middle of the frame.
+3. Pull the right trigger: the bill swings out flat to the right and the camera slides right until the bill is
+   centred; the left trigger mirrors it. Partial pulls hold partial angles.
+4. Pull both: the bill stands straight up, the camera rises to centre it, the blade energizes as before.
+5. The pectoral fins swing with the bill (both sides, all three poses); the pods ride with them.
+6. Combos (tap strings): each flourish plays and ends back on the triggers. They were authored for the raised blade
+   and now start from the bill pointing ahead: judge whether any needs re-authoring (`author_rhino_sword_combos.py`).
+7. An omni crystal: the Surge's ring is of bills and the camera surrounds as before.
+8. Phone: lift one thumb = that side; both thumbs off = bill up and the tilt steers like the Manta's soar.
+9. FrogletTools > Vessels > Audits: Elemental Morphs (four morphs, 4.4-8.9 %), Construction, Tails and Jets.
+10. Crystal hull fusion: the class-30 entries still name the Rhino's bakes, which now read stale (a warning and a
+    runtime solve). Give the Swordfish its own bake assets before running Bake Crystal Hull Fusions, so the Rhino's are
+    not overwritten.
+11. MPPM two clients: a remote Swordfish's bill poses the same.
+
+---
+
 ### 🔴 The Voyage window's galaxy map draws the cells in 3D (`claude/project-thread-y85rw0`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Voyages/VOYAGE_BOARD.md` §4c "In the game".
@@ -22110,29 +22140,20 @@ The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran 
 
 ## ⚪ REVERTED (section 158, nothing to test) - The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
 
-Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 151. Compiled with `unity_refcompile` (player and
-editor: 0 errors in project code; the rest are packages the cloud cannot fetch). No Unity editor was open, so the
-`unity` CLI and the EditMode tests have not run in Unity. `VoyageCardRulesTests`' pure tests ran outside Unity;
-`Cover_CropsToTheFramesShape_Centred` needs a real `Texture2D` and has not run.
+## 🔴 Voyages: own scene (Voyage.unity) and in-world toys removed (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
-1. **Run the EditMode tests** `VoyageCardRulesTests` and `VoyageShellTests`.
-2. **Open the Voyage window** from Home. It shows three tabs, Voyages, Saga and Episodes (locked), on LB / RB. Voyages
-   opens first, with the HyperSea map on the whole galaxy and the edge view under it.
-3. **The coverflow**: the voyages, with the Ark escort first, are muted place cards. The picked one faces front, and its
-   neighbours turn away and fade. Pressing a card, or moving onto it with the D-pad, picks it in one ease. The cards are
-   not blue: the colour is a quiet grey-violet with a light diamond at the centre.
-4. **One press picks**: press a hull under the flow. The vessel strip opens over the column, and one press picks and
-   saves. In Ark crew, each seat's vessel, pilot, element (the Codex's shapes) and artifact open a strip the same way,
-   and Save squad keeps the draft. Changing the domain chip changes the draft only. Change a seat without saving, close
-   the window and reopen it: the change is gone. With a friend in the squad, Save squad reaches them (their Ark shows
-   the change after its refresh), as a save in the Ark does.
-5. **Story**: the beats step with < > and the dots. **Underway**: send a voyage out, reopen the window, and the column
-   shows the place, the underway line and a dark "Set sail - after this voyage".
-6. **The Quests window**: on Home, press the quest card. The Quests window opens (not the Voyage window), titled
-   Quests, with Episode 1 (the quest tracker as before) and Episode 2 (locked) on LB / RB. Gamepad B and Back close it,
-   and the card's claim line reads "Ready to claim in Quests".
-7. **Console**: no new errors or warnings on Menu_Main load. A warning naming `Resources/Voyages/QuestsView` means the
-   prefab did not import.
+Branch `claude/voyage-scene-port`. unity_refcompile could not run (no .NET SDK in the cloud session).
+
+Ran 2026-11-08 on Garrett's PC (Unity 6000.3.17f1, batchmode `verify_unity.sh`): compile clean after one fix (ambiguous `VoyageRun.ActiveSquad(null)`); EditMode 5473 tests, 43 failing, the same 43 that fail on bleeding-edge d83f334e78 (none new); every `VoyageShellTests` test passes; Build Voyage Scene rewrites `Voyage.unity` identically; `RunSmoke` -voyageSmoke: PASS; one escort sim (d1, Sparrow+Rhino+Manta) survived 4 legs with no game exceptions. Steps 1-3 are done; steps 4-8 still need a person.
+
+1. Let Unity import and compile; fix any errors first.
+2. FrogletTools > Scenes > Build Voyage Scene, then commit `Assets/_Scenes/Voyage.unity`.
+3. Run the EditMode tests in `VoyageShellTests`.
+4. Play Menu_Main, open the Voyage window, take a job and Set sail: Voyage.unity loads and the pilot starts at a harbour berth.
+5. Fly the Ark to the job's stop: it stands, the work counts, and the Ark sails on (no stall).
+6. Leave the voyage from the HUD: back to the menu, and the board offers the next jobs from where the Ark anchored.
+7. Start an escort from the Voyage window: it runs in Voyage.unity.
+8. In menu freestyle, the Toy Box toys still work from the app shell and no in-world toys appear.
 
 ## 🔴 Voyages: the Ark no longer stalls at a job's stop (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
@@ -22199,3 +22220,13 @@ editor: 0 errors in project code). No Unity editor ran.
 2. **Back to the Saga** under the panel shows the Saga tab (its tab lights, the page changes).
 3. **Quests window > Episode 2**: the same panel with its own line, and **Back to Episode 1** shows the quests.
 4. **D-pad / gamepad**: the button is reachable and A presses it.
+
+## 🔴 Menu: friends orb, its minimise button, the Codex strip and the Hangar Upgrades text (2026-11-09, NOT COMPILED, generated assets only)
+
+Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generators' `--check` and `--self-test` pass (arcade's `--check` already failed before this branch: `ArcadeView.prefab` lacks the Swordfish content). Hand-checked by one person on a desktop editor (Hangar Upgrades, minimise button, orb, Codex strip). Still to check:
+
+1. **Phone (390x844) and iPad:** the friends orb is 16 px off the left edge with "Friends" / "N online" fully readable (up to "99 ONLINE") and not clipped.
+2. **Friends window:** the minimise square is easy to tap on a phone; it lightens under the pointer and takes the accent when pressed; the party panel under the title row is not covered.
+3. **Codex > Ecology (Field Guide):** scroll the bottom strip left; tiles stop 16 px short of the "Friends" text, never over it.
+4. **Hangar > Upgrades, any hull:** "CHARGE CRYSTALS 0 HELD - 0 SPENT" is on its own row under the step line; nothing overlaps.
+

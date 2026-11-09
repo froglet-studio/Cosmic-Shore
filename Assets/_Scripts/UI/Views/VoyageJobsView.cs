@@ -16,9 +16,9 @@ namespace CosmicShore.UI
     /// (and the way home when it is away, and the Ark escort). The map is a galaxy explorer ("the map divides them as a
     /// fun interactive galaxy explorer deciding where you want your voyages to take you"): drag, pinch or scroll it, and
     /// tap a place to open the voyage that sails there. OPEN on a card, or a press on it, expands it over the others to its
-    /// brief and focuses the map on its course; the map stays. Set sail, on the open card, enters freestyle and sails that
-    /// job (<see cref="VoyageHarbour.SetSail"/>). When the job is done the player leaves freestyle and this window offers
-    /// the next jobs, from the job's destination, grown from the news the last outcome wrote.
+    /// brief and focuses the map on its course; the map stays. Set sail, on the open card, loads the voyage scene with that
+    /// job (<see cref="VoyageLaunch"/>; freestyle is not involved). When the voyage is over the scene returns to the menu and
+    /// this window offers the next jobs, from where the squad anchored, grown from the news the last outcome wrote.
     ///
     /// <para>The first card is the prefab's own (<see cref="template"/>), in the grid; the rest are copies of it, made here.
     /// The map and its edge view stand just before the grid. While a voyage is out the one card is the job under way,
@@ -113,11 +113,14 @@ namespace CosmicShore.UI
             if (!template) return;
             Grid();
             _destinations.Clear();
+            // In the menu no harbour stands (it stands in the voyage scene, VoyageScene): the board is read from the voyage
+            // settings and the saved galaxy. A harbour, where one stands, still says what is out.
             var harbour = VoyageHarbour.Current;
-            var voyage = harbour ? harbour.Content : null;
-            if (!harbour || !voyage || voyage.Content == null)
+            var style = harbour ? harbour.Definition : VoyageToyDefinitionSO.Load();
+            var voyage = harbour ? harbour.Content : style ? style.Content : VoyageContentSO.Load();
+            if (!voyage || voyage.Content == null)
             {
-                // No harbour stands yet (the toybox is built once the menu's client is ready): a plain card, no map.
+                // No voyage content: a plain card, no map.
                 var shelf = voyage ? voyage : VoyageContentSO.Load();
                 var card = Use(0)[0];
                 card.ShowStepper(null, null, null, null);
@@ -129,10 +132,9 @@ namespace CosmicShore.UI
             }
             var content = voyage.Content;
             var lines = voyage.Lines;
-            var style = harbour.Definition;
 
             var escort = style ? style.ArkEscort : null;
-            if (harbour.IsEscorting && escort)
+            if (harbour && harbour.IsEscorting && escort)
             {
                 var card = Use(1)[0];
                 var course = harbour.EscortCourse;
@@ -145,7 +147,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            if (harbour.IsUnderway)
+            if (harbour && harbour.IsUnderway)
             {
                 HideCard();
                 var job = harbour.CurrentJob;
@@ -169,7 +171,10 @@ namespace CosmicShore.UI
                 return;
             }
 
-            var jobs = harbour.Board(out var state);
+            VoyageState state;
+            var gameData = VoyageLaunch.ResolveGameData();
+            var jobs = harbour ? harbour.Board(out state)
+                : VoyageHarbour.Board(style, VoyageRun.ActiveSquad(gameData), VoyageRun.LiveDomain(gameData), out state);
             string here = state?.At;
             int extra = escort ? 1 : 0;
             if (jobs.Count == 0)
@@ -246,7 +251,8 @@ namespace CosmicShore.UI
                 return;
             }
             var harbour = VoyageHarbour.Current;
-            var voyage = harbour ? harbour.Content : null;
+            var settings = harbour ? null : VoyageToyDefinitionSO.Load();
+            var voyage = harbour ? harbour.Content : settings ? settings.Content : VoyageContentSO.Load();
             var place = voyage && voyage.Content != null ? voyage.Content.Location(id) : null;
             if (place == null) return;
             _open = -1;
@@ -294,8 +300,7 @@ namespace CosmicShore.UI
             ShowMap(true);
             map.SetLines(lines);
             // A place this crew has not found yet is not on its chart (DEPTH.md §8).
-            var harbour = VoyageHarbour.Current;
-            var galaxy = harbour ? harbour.GalaxyState : null;
+            var galaxy = VoyageHarbour.Galaxy(style);
             map.Visible = galaxy != null ? id => VoyageRules.IsVisible(galaxy, content, id) : null;
             map.Show(content, style, here, route, caption, focus: route != null);
             var edge = EnsureEdge();
@@ -417,7 +422,7 @@ namespace CosmicShore.UI
             // The job's own intensity (the sea's plus the place's pressure) and its own pay, as the board priced it.
             int intensity = job.Intensity > 0 ? job.Intensity : sea?.Intensity ?? 1;
             int pay = job.Pay > 0 ? job.Pay : kind?.Reward ?? 0;
-            var galaxy = VoyageHarbour.Current ? VoyageHarbour.Current.GalaxyState : null;
+            var galaxy = VoyageHarbour.Galaxy(null);
             string standing = person != null && galaxy != null
                 ? VoyageRules.TierName(content, VoyageRules.Tier(galaxy, content, person.Faction)) : string.Empty;
             return TemplateText.Fill(text,
@@ -442,7 +447,7 @@ namespace CosmicShore.UI
         /// <summary>The crew's own record (Docs/Voyages/DEPTH.md §9), through the authored log line; empty before a voyage.</summary>
         static string LogLine(VoyageLines lines)
         {
-            var galaxy = VoyageHarbour.Current ? VoyageHarbour.Current.GalaxyState : null;
+            var galaxy = VoyageHarbour.Galaxy(null);
             if (galaxy?.Log == null || galaxy.Log.Voyages == 0 || string.IsNullOrEmpty(lines.StoryLogLine)) return null;
             var log = galaxy.Log;
             return TemplateText.Fill(lines.StoryLogLine,
@@ -457,7 +462,7 @@ namespace CosmicShore.UI
         /// <summary>The active squad as its seats: each one's vessel and pilot, through the authored seat line.</summary>
         string Squad(VoyageLines lines)
         {
-            var squad = VoyageRun.ActiveSquad(null);
+            var squad = VoyageRun.ActiveSquad((CosmicShore.Utility.GameDataSO)null);
             if (squad == null || string.IsNullOrEmpty(lines.CardSquadSeat)) return string.Empty;
             var catalog = PilotArtifactCatalogSO.Load();
             var seats = new List<string>();
@@ -546,19 +551,12 @@ namespace CosmicShore.UI
             else card.ShowStepper(null, null, null, null);
         }
 
-        static void SetSailEscort(int difficulty)
-        {
-            var harbour = VoyageHarbour.Current;
-            if (!harbour) return;
-            harbour.SetSailEscort(difficulty, FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include));
-        }
+        // Set sail loads the voyage scene with the choice (VoyageLaunch); freestyle is not involved.
+        static void SetSailEscort(int difficulty) =>
+            VoyageLaunch.Begin(VoyageLaunchRequest.ForEscort(difficulty));
 
-        static void SetSail(VoyageJob job)
-        {
-            var harbour = VoyageHarbour.Current;
-            if (!harbour) return;
-            harbour.SetSail(job, FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include));
-        }
+        static void SetSail(VoyageJob job) =>
+            VoyageLaunch.Begin(VoyageLaunchRequest.ForJob(job));
 
         // ── The open voyage (slides over the cards) ──────────────────────────
 

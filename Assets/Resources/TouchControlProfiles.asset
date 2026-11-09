@@ -80,8 +80,8 @@ MonoBehaviour:
     scheme: 0
     liftDeferSeconds: 0
     tiltRollOnOneThumb: 0
-    tiltSteersWhileIdle: 0
-    flipTiltSteerPitch: 0
+    tiltSteersWhileIdle: 1
+    flipTiltSteerPitch: 1
     flipTiltSteerYaw: 0
     oneThumbResponseCurve: 0
     idlePullsBothTriggers: 1

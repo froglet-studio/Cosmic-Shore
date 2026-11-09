@@ -6,10 +6,9 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The "connect the dots" painting toy - <b>one station that opens into the whole gallery</b>.
-    /// Fly it and a matrix of paintings blooms out ahead, one per <see cref="PaintingDefinitionSO"/>,
-    /// each a miniature of its own canvas showing its name + live progress. Fly a painting and it
-    /// runs at a fixed world anchor out past the membrane: multi-stroke, multi-domain (start gates
+    /// The "connect the dots" painting toy - <b>the whole gallery</b>, in the Toy Box: one row per
+    /// <see cref="PaintingDefinitionSO"/>, each previewed in miniature with its live progress.
+    /// Start a painting and it runs at a fixed world anchor out past the membrane: multi-stroke, multi-domain (start gates
     /// recolour the trail via the server-authoritative pick RPC), pen-up between strokes, resumable
     /// across sessions.
     ///
@@ -21,7 +20,7 @@ namespace CosmicShore.ScriptableObjects
     public class PaintingToyDefinitionSO : ToyDefinitionSO
     {
         [Header("Painting (Connect the Dots)")]
-        [SerializeField, Tooltip("The gallery: one painting station spawns per entry. Leave empty for the " +
+        [SerializeField, Tooltip("The gallery: one Toy Box row per entry. Leave empty for the " +
                                  "built-in 16-painting default gallery (see DefaultGalleryCatalog).")]
         List<PaintingDefinitionSO> paintings = new();
 
@@ -30,25 +29,11 @@ namespace CosmicShore.ScriptableObjects
                                  "half this margin in the anchor packing), world units.")]
         float paintingClearance = 150f;
 
-        [SerializeField, Tooltip("Gap between gallery stations in the matrix, as a multiple of the body radius.")]
-        float clusterSpacingBodies = 3.2f;
-
-        [SerializeField, Min(0.5f), Tooltip("How far out the gallery matrix blooms, in multiples of the station " +
-                                            "spacing, measured from the toy along the outward radial (away from " +
-                                            "the cell centre). You fly AT the toy and keep going, so this is the " +
-                                            "gap you cross before the paintings.")]
-        float matrixDistanceFactor = 4f;
-
-        [SerializeField, Min(0.25f), Tooltip("Station size as a multiple of the toy's own body radius. The " +
-                                             "station IS a miniature of its painting, so it has to be big " +
-                                             "enough to identify on sight - toys carry no text labels. " +
-                                             "Spacing rides along (it is derived from " +
-                                             "this radius).")]
+        [SerializeField, Min(0.25f), Tooltip("Toy Box preview size, as a multiple of the toy's reference " +
+                                             "body radius.")]
         float iconScaleBodies = 2f;
 
         public float PaintingClearance => paintingClearance;
-        public float ClusterSpacingBodies => clusterSpacingBodies;
-        public float MatrixDistanceFactor => matrixDistanceFactor;
         public float IconScaleBodies => iconScaleBodies;
 
         /// <summary>It leaves conserved PRISM MASS behind - a painting drawn in your own trail, which stays
@@ -57,9 +42,8 @@ namespace CosmicShore.ScriptableObjects
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
-            // ONE toy. It unfolds into the gallery matrix on a pass and folds it away on the next -
-            // the station layout and the monument anchor packing both live on the runtime toy now.
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
+            // ONE toy: the gallery list and the monument anchor packing live on the runtime toy.
+            var go = ToyFactory.CreateToyRoot(Id, parent, placement);
             var toy = go.AddComponent<PaintingGalleryToy>();
             toy.Configure(this);
             toy.Initialize(this, context, placement);
