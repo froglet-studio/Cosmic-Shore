@@ -73,6 +73,7 @@ NORMAL_W = 460
 DOCK_TOP, DOCK_BOTTOM = 84, 0
 INSET = 0
 BTN = 28
+MIN_HIT, MIN_PLATE = 48, 36        # the friends drawer minimise: hit area, visible plate
 
 # The presence orb (section 45.4). Its place is author_menu_arcade.ORB_* (the windows' gutter gate reads it too);
 # its member seats sit on the shader's inner ring at author_ui_lattice.ORB_MEMBER_ANGLES.
@@ -179,9 +180,11 @@ def window_node(parent):
     glyph.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_people"), preserve=True))
     label(w.child(N("Drawer/Window/Title", "Title", TL(52, 18, 200, 22))), "Friends", "Label", "NeutralLightest")
     # Minimise (a bar): slides the window back to the handle. No maximise (Shombith, 2026-10-26).
-    HM.icon_button(w, "Drawer/Window/Minimise", "Minimise", None, TR(16, 14, BTN, BTN))
+    # The panel starts below the title row; the minimise (drawn after it, so it keeps the clicks) is a 48 hit area round
+    # a 36 square plate: too small and plateless before, hard to hit on a phone (2026-11-09).
     w.children.append(K.Instance("Drawer/Window/PartyPanel", "PartyPanel", PARTY_GUID, "PartyPanel",
-                                 R((0, 0), (1, 1), (0, -28), (-40, -76)), ()))
+                                 R((0, 0), (1, 1), (0, -48), (-40, -96)), ()))
+    HM.icon_button(w, "Drawer/Window/Minimise", "Minimise", None, TR(8, 6, MIN_HIT, MIN_HIT), plate=MIN_PLATE)
     return w
 
 
@@ -428,7 +431,8 @@ def validate_dock(sc, ctx, hub):
             rt = re.search(r"^--- !u!224 &%s\n(?:(?!--- ).*\n)*?  m_GameObject: \{fileID: (-?\d+)\}" % fid, text_, re.M)
             go = rt and re.search(r"^--- !u!1 &%s\n(?:(?!--- ).*\n)*?  m_Name: (\w+)" % rt.group(1), text_, re.M)
             names.add(go.group(1) if go else None)
-        assert names == {"Header", "Body"}, f"{path}: the dock must push the Header and the Body, pushes {names}"
+        # The Voyage window's second layout (2026-11-02) also pushes its VoyagePages, so it is allowed beside the two.
+        assert names - {"VoyagePages"} == {"Header", "Body"}, f"{path}: the dock must push the Header and the Body, pushes {names}"
 
 
 def validate_profile(sc, ctx):
