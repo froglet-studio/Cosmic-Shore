@@ -110,6 +110,8 @@ namespace CosmicShore.Editor
                 "Scale Dust is 1, default " + EndConditionOverridesSO.DefaultDustupPointTarget + ".\n" +
                 "  • Serpent Gulag: snipes a DOMAIN needs - one Sniper Shot that strips a rival " +
                 "pilot is 1, default " + EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget + ".\n" +
+                "  • Jackstraw: strikes a DOMAIN needs - one Thresher ball or chain reaching a " +
+                "rival hull is 1, default " + EndConditionOverridesSO.DefaultJackstrawStrikeTarget + ".\n" +
                 "  • Flatline: points a DOMAIN needs, PER INTENSITY - a Brittle Star round on a rival " +
                 "hull is 1, a cord or thrown-saber Strike 8, the ring blast 0. A rung left at 0 falls back " +
                 "to the mode scalar (default " + EndConditionOverridesSO.DefaultFlatlinePointTarget + ").\n" +
@@ -298,6 +300,7 @@ namespace CosmicShore.Editor
             int ut  = Mathf.Max(0, EditorGUILayout.IntField("Undertow - Point Target", _config.undertowPointTarget));
             int du  = Mathf.Max(0, EditorGUILayout.IntField("Dustup - Point Target", _config.dustupPointTarget));
             int sg  = Mathf.Max(0, EditorGUILayout.IntField("Serpent Gulag - Snipe Target", _config.serpentGulagSnipeTarget));
+            int js  = Mathf.Max(0, EditorGUILayout.IntField("Jackstraw - Strike Target", _config.jackstrawStrikeTarget));
             int fl  = Mathf.Max(0, EditorGUILayout.IntField("Flatline - Point Target", _config.flatlinePointTarget));
             // Per-intensity, like Cleave's: the denser panes put more fights inside cord reach. 0 falls back to the scalar.
             var flByIntensity = new List<int>(4);
@@ -364,6 +367,7 @@ namespace CosmicShore.Editor
                     _config.undertowPointTarget = ut;
                     _config.dustupPointTarget = du;
                     _config.serpentGulagSnipeTarget = sg;
+                    _config.jackstrawStrikeTarget = js;
                     _config.flatlinePointTarget = fl;
                     _config.flatlinePointTargetByIntensity = flByIntensity;
                     _config.tapestryRoundSeconds = tp;
@@ -426,6 +430,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Undertow", ut > 0 ? ut.ToString() : EndConditionOverridesSO.DefaultUndertowPointTarget + " (default)");
             EditorGUILayout.LabelField("Dustup", du > 0 ? du.ToString() : EndConditionOverridesSO.DefaultDustupPointTarget + " (default)");
             EditorGUILayout.LabelField("Serpent Gulag", sg > 0 ? sg.ToString() : EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget + " (default)");
+            EditorGUILayout.LabelField("Jackstraw", js > 0 ? js.ToString() : EndConditionOverridesSO.DefaultJackstrawStrikeTarget + " (default)");
             string flatlineEffective = fl > 0 ? fl.ToString()
                 : EndConditionOverridesSO.DefaultFlatlinePointTarget + " (default)";
             EditorGUILayout.LabelField("Flatline", string.Join(" / ", flByIntensity.ConvertAll(
@@ -508,6 +513,7 @@ namespace CosmicShore.Editor
                    "Undertow: " + Fmt(_config.undertowPointTargetBuild, "default " + EndConditionOverridesSO.DefaultUndertowPointTarget) + "\n" +
                    "Dustup: " + Fmt(_config.dustupPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDustupPointTarget) + "\n" +
                    "Serpent Gulag: " + Fmt(_config.serpentGulagSnipeTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget) + "\n" +
+                   "Jackstraw: " + Fmt(_config.jackstrawStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultJackstrawStrikeTarget) + "\n" +
                    "Flatline: " + Fmt(_config.flatlinePointTargetBuild, "default " + EndConditionOverridesSO.DefaultFlatlinePointTarget) +
                    " (per intensity " + string.Join(" / ", _config.flatlinePointTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +

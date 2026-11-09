@@ -91,13 +91,12 @@ SOURCES = [
     f"{_SP}/SpawnPoint.cs",
     f"{_SP}/SpawnTrailData.cs",
     f"{_SP}/FloraPlantingSite.cs",
-    # SpawnableRegattaRails implements it (2026-11-07); without it the harness stopped compiling (CS0246).
-    f"{_SP}/ICellFaunaCorridorSource.cs",
     f"{_MG}/SliceArenaGeometry.cs",
     f"{_MG}/SpawnableSwell.cs",
     f"{_MG}/SpawnableWildlifeCage.cs",
     f"{_MG}/SpawnableBoneyard.cs",
     f"{_MG}/SpawnableSerpentGulag.cs",
+    f"{_MG}/SpawnableJackstraw.cs",
     f"{_MG}/FlatlinePanes.cs",
     f"{_MG}/SpawnableFlatline.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
@@ -109,10 +108,11 @@ SOURCES = [
     f"{_MG}/SpawnableSpherene.cs",
     f"{_AR}/Skein/SkeinCourse.cs",
     f"{_AR}/Regatta/RegattaCourse.cs",
-    # The course's features and lifeform sites joined RegattaCourse / SpawnableRegattaRails on 2026-11-07 (the
-    # balance merges); unlisted, the harness stopped compiling (CS0246) and the bake and card checks with it.
+    # SpawnableRegattaRails reads these since the Regatta lifeform-site / corridor work (f7231d035c); without them the
+    # whole harness (card art, the layout bake, the clip audit) stopped compiling.
     f"{_AR}/Regatta/RegattaCourseFeatures.cs",
     f"{_AR}/Regatta/RegattaLifeformSites.cs",
+    f"{_SP}/ICellFaunaCorridorSource.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
     f"{_AR}/Headlong/HeadlongCircuit.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",
@@ -780,6 +780,9 @@ CAMERAS = {
     # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
     # tracer crossing the middle (the one thing that scores) reads against it.
     "SerpentGulag": (50, 26, 0.62, 46),
+    # Jackstraw: close into the heap, so the sticks cross the whole plate and the red-hot ball swinging through
+    # them onto a rival (the strike, the one thing that scores) sits in the middle of it.
+    "Jackstraw": (40, 18, 0.7, 46),
     # Flatline: the I2 Five Pages from off the spine, so the pages read as thin planes fanning round it and the cords
     # crossing one page (the act that scores) read against its face.
     "Flatline": (12, 20, 1.2, 44),
@@ -1332,6 +1335,34 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         glow(a, span * 0.02, JADE, 1.0, 0.4)
         glow(b, span * 0.035, JADE, 1.1, 0.45)
         stage["vessels"] = vessels([(JADE, 0.85, 8, 330, 20), (RUBY, 0.7, -4, 140, 25), (GOLD, 0.8, 12, 230, 25)])
+    elif s == "Jackstraw":
+        # A STRIKE through the heap: a Thresher's chain swung in an arc from its pilot, the ball at its end red-hot
+        # (smash speed reads red, THRESHER.md section 2) and on a rival pilot, who takes the hit (a glow in the
+        # striker's colour). The crystals float in the centre clearing.
+        for k in range(6):
+            crystal(v_add(centre, v_mul(rng.unit(), span * 0.08 * rng.u() ** 0.33)), span * 0.012)
+        pilot = v_add(centre, v_mul(v_norm([0.75, 0.15, -0.6]), span * 0.42))
+        hit = v_add(centre, v_mul(v_norm([-0.35, -0.05, 0.25]), span * 0.3))
+        chord = v_sub(hit, pilot)
+        bow = v_mul(v_norm(v_cross([0, 1, 0], chord)), math.sqrt(v_dot(chord, chord)) * 0.28)
+        links = 18
+        prev = pilot
+        for k in range(1, links + 1):
+            t = k / links
+            q = v_add(v_add(pilot, v_mul(chord, t)), v_mul(bow, 4 * t * (1 - t)))
+            d = v_norm(v_sub(q, prev))
+            side = v_norm(v_cross([0, 1, 0] if abs(d[1]) < 0.9 else [1, 0, 0], d)); u = v_cross(d, side)
+            w = span * 0.004
+            sig = domain_signal(pal, JADE, 1.3)
+            layers.append({"kind": "box", "c": v_mul(v_add(prev, q), 0.5), "ax": v_mul(side, w), "ay": v_mul(u, w),
+                           "az": v_mul(d, math.sqrt(v_dot(v_sub(q, prev), v_sub(q, prev))) * 0.42),
+                           "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+            prev = q
+        glow(hit, span * 0.075, JADE, 0.9, 0.25)
+        hot = [c * 1.6 for c in pal["danger"][:3]]   # the palette's danger red: the hot ball's own colour
+        layers.append({"kind": "sphere", "c": list(hit), "r": span * 0.03, "base": [c * 0.6 for c in hot],
+                       "rim": hot, "emissive": hot, "unbound": True})
+        stage["vessels"] = vessels([(JADE, 0.42, 8, 320, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
     elif s == "Flatline":
         # The seam crystals (the controller lays them where the panes cross; flatline_budget's sites at this rung), and
         # a CORD STRIKE through a pane: a Jade Brittle Star's five cords reach from its ring corners straight through

@@ -327,6 +327,21 @@ Brittle Star Time's movement ladder (2026-11-06, `claude/brittle-stars-l5-update
   output folder (`/tmp/unity_refcompile_out/<repo>-*`) still holds the removed assembly's `.rsp`: delete that folder
   and re-run (a stale local cache, not a defect in the tree).
 
+Jackstraw (the Thresher's Charge game, 2026-11-09, `claude/ecstatic-heisenberg-21lpmu`, `JACKSTRAW.md`) taught four:
+- **Draw the ideas from the generator you will ship, and the stills come free.** The three pitches were drawn from a
+  Python mirror of each planned Spawnable; the approved one became `jackstraw_budget.py`, and the "approved vs built"
+  sheet is the same projector run over the mirror, beside the card renderer's still per rung. Nothing was redrawn.
+- **An EXACT mirror needs every draw to be `Hash01(integer key)`, never the shared `System.Random`.** Then a rejection
+  loop (a stick that enters a clearing or touches another re-draws, up to 8 tries) is mirrored too, and the clip audit
+  confirmed the C# laid the same 408 / 1,122 / 2,114 / 3,566 prisms and volumes. Float32 against float64 can still flip
+  a draw that lands on a boundary: assert in the generator that every accepted piece clears its boundaries by a margin
+  (`MIN_MARGIN`), so the census cannot silently describe a different heap.
+- **Random sticks interpenetrate; give them a gap test and a knot.** A segment-segment distance check (Ericson 5.1.9,
+  line for line in both languages) keeps rods apart, and a jack's three arms start at a shielded knot cube's faces, so
+  the clip audit reads 0 without any fitting pass.
+- **A charge mode can score a hull's existing hit with no vessel code at all.** Grep the executor for its `TryAdmit`
+  class and the `onCombatHitLanded` channel its config wires (the generator asserts both), then pay that class in the
+  rule. The AI can be steering only when the hull hits by contact; the hull's own boost policy keeps its presses.
 Flatline (the Brittle Star's charge game, 2026-11-09, `claude/great-rubin-rur3xs`, `FLATLINE.md`) taught five:
 - **An EXACT twin is cheap when the geometry is integer first.** Decide which tiles exist on an integer grid
   (`a*a + b*b <= R*R`), keep every float comparison that can move a count in one place (the seam test), and compute that

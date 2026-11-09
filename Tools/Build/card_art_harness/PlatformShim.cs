@@ -118,7 +118,6 @@ namespace CosmicShore.Gameplay
         public Trail() { }
         public Trail(bool isLoop) { }
         public void Add(Prism p) { }
-        // Read by SpawnableRegattaRails.LanePrisms (2026-11-07); the harness never lays, so it stays empty.
         public List<Prism> TrailList { get; } = new();
     }
 
@@ -254,7 +253,7 @@ namespace CosmicShore.Gameplay
 
         public IReadOnlyList<PrismLay> CachedLays => _cachedLays;
         public IReadOnlyList<FloraPlantingSite> PlantingSites => _plantingSites;
-        // The real base's twin (2026-11-07, SpawnableRegattaRails overrides it); without it the harness stopped compiling.
+        /// <summary>Mirrors the real base: true when the environment sows planting sites (SpawnableRegattaRails).</summary>
         public virtual bool PreparesPlantingSites => false;
 
         protected override SpawnTrailData[] GenerateTrailData()

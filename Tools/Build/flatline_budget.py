@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Analytic prism budget for Flatline - the Brittle Star's charge arena (GameModes.Flatline = 84).
+Analytic prism budget for Flatline - the Brittle Star's charge arena (GameModes.Flatline = 85).
 
 This is the model of `FlatlinePanes.cs` (and so of `SpawnableFlatline.cs`), and it is a MIRROR, not an estimate
 (boneyard_budget.py's contract): `author_flatline_assets.py` imports it, so the arena's PhaseThresholds come from the

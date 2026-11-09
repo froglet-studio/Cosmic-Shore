@@ -101,6 +101,10 @@ namespace CosmicShore.ScriptableObjects
         /// (SerpentGulagScoringRuleSO), summed across the domain's pilots.</summary>
         public const int DefaultSerpentGulagSnipeTarget = 3;
 
+        /// <summary>Jackstraw strike target used when <see cref="jackstrawStrikeTarget"/> is 0. One STRIKE - the
+        /// Thresher's ball or chain reaching a rival hull (a Strike-class combat hit) - is one point
+        /// (JackstrawScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultJackstrawStrikeTarget = 8;
         /// <summary>Flatline point target used when <see cref="flatlinePointTarget"/> is 0 and the rung authors
         /// nothing. Points are the fleet price (CombatHitDrain.PointsFor): a round on a rival hull is 1, a cord or
         /// thrown-saber Strike 8, ten points to the petal; the ring blast pays nothing (FlatlineScoringRuleSO),
@@ -509,6 +513,9 @@ namespace CosmicShore.ScriptableObjects
                  "strips a rival pilot is one snipe, summed across the domain's pilots. 0 = default (3).")]
         [Min(0)] public int serpentGulagSnipeTarget = 3;
 
+        [Tooltip("Jackstraw: STRIKES a DOMAIN needs to win (race to N). The Thresher's ball or chain reaching " +
+                 "a rival hull is one strike, summed across the domain's pilots. 0 = default (8).")]
+        [Min(0)] public int jackstrawStrikeTarget = 8;
         [Tooltip("Flatline: POINTS a DOMAIN needs to win (race to N), the Brittle Star's charge game. A round " +
                  "on a rival hull is 1 point, a cord or thrown-saber Strike 8 (the fleet price, ten points to " +
                  "the petal); the ring blast scores nothing. 0 = default (200). The per-intensity list below " +
@@ -596,6 +603,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int undertowPointTargetBuild = 12;
         [Min(0)] public int dustupPointTargetBuild = 4;
         [Min(0)] public int serpentGulagSnipeTargetBuild = 3;
+        [Min(0)] public int jackstrawStrikeTargetBuild = 8;
         [Min(0)] public int flatlinePointTargetBuild = 200;
         [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 180, 200, 220, 240 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
@@ -986,6 +994,13 @@ namespace CosmicShore.ScriptableObjects
             serpentGulagSnipeTarget > 0 ? serpentGulagSnipeTarget : DefaultSerpentGulagSnipeTarget;
 
         /// <summary>
+        /// Jackstraw strike target ("first domain to N strikes"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultJackstrawStrikeTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetJackstrawStrikeTarget() =>
+            jackstrawStrikeTarget > 0 ? jackstrawStrikeTarget : DefaultJackstrawStrikeTarget;
+
+        /// <summary>
         /// Flatline point target ("first domain to N points"): the configured value when &gt; 0, otherwise
         /// <see cref="DefaultFlatlinePointTarget"/>. Compared against a DOMAIN's summed CombatPoints.
         /// </summary>
@@ -1116,6 +1131,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
                 GameModes.Dustup                    => GetDustupPointTarget(),
                 GameModes.SerpentGulag              => GetSerpentGulagSnipeTarget(),
+                GameModes.Jackstraw                 => GetJackstrawStrikeTarget(),
                 // Scalar only, as for Cleave: the real answer is per-intensity (GetFlatlinePointTarget(int)).
                 GameModes.Flatline                  => GetFlatlinePointTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
@@ -1194,6 +1210,7 @@ namespace CosmicShore.ScriptableObjects
             undertowPointTarget == undertowPointTargetBuild &&
             dustupPointTarget == dustupPointTargetBuild &&
             serpentGulagSnipeTarget == serpentGulagSnipeTargetBuild &&
+            jackstrawStrikeTarget == jackstrawStrikeTargetBuild &&
             flatlinePointTarget == flatlinePointTargetBuild &&
             SameInts(flatlinePointTargetByIntensity, flatlinePointTargetByIntensityBuild) &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
@@ -1250,6 +1267,7 @@ namespace CosmicShore.ScriptableObjects
             undertowPointTarget = undertowPointTargetBuild;
             dustupPointTarget = dustupPointTargetBuild;
             serpentGulagSnipeTarget = serpentGulagSnipeTargetBuild;
+            jackstrawStrikeTarget = jackstrawStrikeTargetBuild;
             flatlinePointTarget = flatlinePointTargetBuild;
             flatlinePointTargetByIntensity = CopyInts(flatlinePointTargetByIntensityBuild);
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
@@ -1307,6 +1325,7 @@ namespace CosmicShore.ScriptableObjects
             undertowPointTargetBuild = undertowPointTarget;
             dustupPointTargetBuild = dustupPointTarget;
             serpentGulagSnipeTargetBuild = serpentGulagSnipeTarget;
+            jackstrawStrikeTargetBuild = jackstrawStrikeTarget;
             flatlinePointTargetBuild = flatlinePointTarget;
             flatlinePointTargetByIntensityBuild = CopyInts(flatlinePointTargetByIntensity);
             tapestryRoundSecondsBuild = tapestryRoundSeconds;

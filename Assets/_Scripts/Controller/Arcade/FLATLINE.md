@@ -1,4 +1,4 @@
-# Flatline (`GameModes.Flatline = 84`)
+# Flatline (`GameModes.Flatline = 85`)
 
 The Brittle Star's **CHARGE** game: a duel through thin **panes** of prisms. Picked by Shombith on 2026-11-09 from
 three drawn ideas (Saber Ring, Flatline, Tangle), with the rule "only the bullets and chords should score points".
@@ -119,4 +119,4 @@ will come from fights near panes. Both are AI-side follow-ups that need no vesse
 | Generator | `Tools/Build/author_flatline_assets.py` (`--check`) |
 | Assets | `_SO_Assets/Games/ArcadeGameFlatline.asset`, `FlatlineSettings.asset`, `Scoring Rules/FlatlineScoringRule.asset`, `Cell Configs/Flatline Cell/`, `_Prefabs/Spawnables/SpawnableFlatline1-4.prefab`, `Game Toasts/GameToastConfig_Flatline.asset`, `Mode Previews/ModePreview_Flatline.asset`, `_Scenes/Multiplayer Scenes/MinigameFlatline.unity` (cloned from Serpent Gulag's) |
 | Tests | `Tests/Editor/FlatlineTests.cs` |
-| Platform rows | `GameModes.Flatline = 84`, `GameToastSituation.FlatlineHint = 159`, `EndConditionOverridesSO` (+ window), `MiniGameHUD` (the Bends' provider: the nearest rival), `author_preview_spawns.py` |
+| Platform rows | `GameModes.Flatline = 85` (84 on the branch until Jackstraw landed 84 first, 2026-11-09), `GameToastSituation.FlatlineHint = 160`; a cord or saber Strike posts the shared `StrikeLanded` 86 toast, `EndConditionOverridesSO` (+ window), `MiniGameHUD` (the Bends' provider: the nearest rival), `author_preview_spawns.py` |

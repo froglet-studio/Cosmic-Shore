@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
   m_Name: ModePreview_Flatline
   m_EditorClassIdentifier:
-  Mode: 84
+  Mode: 85
   Notes: 'The Flatline cell at each intensity - three planes, five pages, six crossing panes, then the
     geode. OPEN-ENDED - it scores on rounds and cord strikes on rival pilots and a solo preview has none;
     what it teaches is the panes, the cords and the ring. Vessel pinned to BrittleStar(16).'

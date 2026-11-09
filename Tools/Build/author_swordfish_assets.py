@@ -309,7 +309,7 @@ def strip_rhino(rhino: str) -> str:
 # ----------------------------------------------------------------------------- the small assets
 def steer_asset(name: str, side: int) -> str:
     return mono_asset(guid_of(STEER_SO_META), name,
-                      f"  side: {side}\n  shoveSpeed: 30\n  shoveSeconds: 0.25\n")
+                      f"  side: {side}\n  shoveSpeed: 90\n  shoveSeconds: 0.25\n")
 
 
 def rhino_skimmer_container() -> str:
@@ -358,7 +358,7 @@ RHINO_PLOUGH_ENTRIES = """  - Element: 1
     UpgradeDescription: 'A ploughed prism LANDS SHIELDED, so the furrow banks into walls of armour; a prism that strikes another still breaks (RhinoPloughPrismEffectSO.bermUpgradeElement, gated on IsUpgradeActive(Mass); Garrett, 2026-11-07).'
   - Element: 3
     AbilityLabel: 'Furrow'
-    AbilityDescription: 'How far aside the plough throws what the hull hits: Space adds 0 u at rest to 20 u at level 10 to every throw, at any speed, on top of the speed-driven throw (speed x 0.04 s, at most 30 u) (RhinoPloughPrismEffect.furrowDistance, replicated level). Pull a trigger for a little shove that way; HOLD it and everything the hull ploughs is thrown to that side, across the centreline (RhinoPloughSteerAction: LT left, RT right, the last one pulled wins). Let go and each prism goes to the side it already sat on.'
+    AbilityDescription: 'How far aside the plough throws what the hull hits: Space adds 0 u at rest to 60 u at level 10 to every throw, at any speed, on top of the speed-driven throw (speed x 0.12 s, at most 90 u) (RhinoPloughPrismEffect.furrowDistance, replicated level). Pull a trigger for a little shove that way; HOLD it and everything the hull ploughs is thrown to that side, across the centreline (RhinoPloughSteerAction: LT left, RT right, the last one pulled wins). Let go and each prism goes to the side it already sat on.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4

@@ -101,10 +101,17 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
   `SwitchbackCourse.cs` began naming `SwitchbackFunType` (2026-10-28) and the harness stopped compiling (CS0246) until
   the enum joined `SOURCES` (2026-10-31, rendering Serpent Gulag). `audit_prism_clipping.py` had fixed the same break
   in its own source list: when one harness breaks on a new type, grep the others' source lists for it.
-- **It broke again on 2026-11-07** (Regatta's balance merges: `RegattaCourseFeatures`, `RegattaLifeformSites`,
-  `ICellFaunaCorridorSource`, plus `PreparesPlantingSites` and `Trail.TrailList` missing from `PlatformShim.cs`) and stayed
-  broken for two days; `claude/great-rubin-rur3xs` repaired it while rendering Flatline (REFACTOR_BACKLOG S108). A new
-  card's arena helper (`FlatlinePanes`) goes in `SOURCES` beside its Spawnable.
+- **The harness breaks again on every merge that teaches a compiled Spawnable a new type, and three tools fall with
+  it.** `audit_prism_clipping.py` and `bake_prism_layouts.py` compile `rcb.SOURCES` and the platform shim too, so the
+  Regatta merge `f7231d035c` (new `RegattaCourseFeatures`, `RegattaLifeformSites`, `ICellFaunaCorridorSource`,
+  `PreparesPlantingSites`, `Trail.TrailList`) stopped card art, the bake AND the clip audit at once (fixed 2026-11-09,
+  `b2e1e3a4b0`; REFACTOR_BACKLOG S108). Skipping the broken Spawnable in one tool's glob does not help: the others pull it
+  in through `SOURCES`. Add the new files to `SOURCES` and the missing members to `PlatformShim.cs`, then run all three.
+- **The shim has no `Vector4`** (nor much else of UnityEngine's surface). A new Spawnable's PUBLIC API that returns one
+  fails only here; a small `readonly struct` of its own (Jackstraw's `Clearing`) costs nothing and avoids widening a
+  shim every harness shares.
+- **A new card's pure arena helper goes in `SOURCES` beside its Spawnable** (Flatline's `FlatlinePanes`, 2026-11-09):
+  the bake, clip-audit and card harnesses share that list, so an unlisted helper fails all three with CS0246.
 - **A named run (`render_card_backgrounds.py <Stem>`) writes the PNG but not `card_backgrounds_manifest.json`**, so a
   card rendered while the full roster cannot run (S95) is missing from the manifest until the next full run.
 

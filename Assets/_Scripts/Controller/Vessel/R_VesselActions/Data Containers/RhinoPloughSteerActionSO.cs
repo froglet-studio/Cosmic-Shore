@@ -31,10 +31,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Sideways speed the press adds to the hull, u/s, toward this side. A LITTLE shove: under the " +
                  "fleet's shared displacement ceiling (VesselTransformer.velocityModifierMax, 100 u/s), so it never " +
                  "saturates it. 0 = no shove, the trigger only steers.")]
-        [SerializeField, Min(0f)] float shoveSpeed = 30f;
+        [SerializeField, Min(0f)] float shoveSpeed = 90f;   // tripled 2026-11-09 (Garrett)
 
         [Tooltip("Seconds the shove lasts; it eases out over this (ShipVelocityModifier's cosine). With the speed " +
-                 "this sets the sidestep: about speed x seconds x 2/pi, ~5 u at the shipped 30 u/s over 0.25 s.")]
+                 "this sets the sidestep: about speed x seconds x 2/pi, ~14 u at the shipped 90 u/s over 0.25 s.")]
         [SerializeField, Min(0.01f)] float shoveSeconds = 0.25f;
 
         /// <summary>+1 for the right trigger, -1 for the left, along the hull's right axis.</summary>

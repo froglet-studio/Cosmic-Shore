@@ -405,13 +405,17 @@ namespace CosmicShore.Data
         // its sweep, and the tank refills slowly. I2 hard turns, I3 danger walls before a ring, I4 both.
         Breach = 83,
 
+        // The Thresher's CHARGE game (JACKSTRAW.md): a 0G heap of pick-up sticks, each about a chain long. A STRIKE -
+        // the ball or chain reaching a rival hull - is one point; first domain to the target wins. I1-I4 grow the heap
+        // (34 -> 230 sticks), add crossed jacks, red-tipped and ironwood sticks, and shrink the clearings.
+        Jackstraw = 84,
         // The Brittle Star's CHARGE game (FLATLINE.md): thin panes of prisms crossing the cell. A pane stops rounds,
         // the cords cut straight through it, and a ring thrown face-on into it bursts flat along it. Only rounds (1)
         // and cord / thrown-saber Strikes (8) on rival hulls score; the ring blast pays nothing. Per-intensity target.
-        Flatline = 84,
+        Flatline = 85,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 77) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 78) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

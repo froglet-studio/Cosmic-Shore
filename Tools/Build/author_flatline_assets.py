@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Flatline game mode needs (GameModes.Flatline = 84).
+Authors every serialized asset the Flatline game mode needs (GameModes.Flatline = 85).
 
 Flatline is the Brittle Star's CHARGE game (Shombith, 2026-11-09: "Go with Flatline, build all four intensities ...
 only the bullets and chords should score points"). Thin PANES of prisms cross the cell. A pane stops a round, the cords
@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib  # noqa: E402
 import flatline_budget as fb  # noqa: E402
 
-MODE_ID = 84
+MODE_ID = 85
 g = lib.Generator(MODE_ID, "Flatline")
 guid = lib.guid
 
@@ -214,10 +214,11 @@ g.emit_asset(CARD_REL, G_ASSET["ArcadeGameFlatline"],
 g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Flatline.asset", G_ASSET["GameToastConfigFlatline"],
              lib.header_for(EXISTING["GameToastConfigSO"], "GameToastConfig_Flatline") +
              f"  gameMode: {MODE_ID}\n  toasts:\n" +
+             lib.toast(86, "<b>{0}</b> cut a rival with the cords!", tint_domain=1, domain_names=0) +
              lib.toast(128, "{0} is a quarter of the way to {2} points", tint_domain=1, domain_names=0) +
              lib.toast(129, "{0} is halfway - {1}/{2} points", tint_domain=1, domain_names=0) +
              lib.toast(130, "{0} takes the lead - {1}/{2}", tint_domain=1, domain_names=0) +
-             lib.toast(159, "Panes stop your rounds - your cords cut through them. A ring bursts flat along a pane, "
+             lib.toast(160, "Panes stop your rounds - your cords cut through them. A ring bursts flat along a pane, "
                             "so get off it", domain_names=0) +
              lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9))
 g.register_toast_config(G_ASSET["GameToastConfigFlatline"])

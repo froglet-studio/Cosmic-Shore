@@ -194,9 +194,12 @@ namespace CosmicShore.Tests
             // 73 -> 74 on 2026-11-07: PerchRun (81), the Goby's Time race.
             // 74 -> 75 on 2026-11-07: SlipLine (82), the Honeyguide's Time race.
             // 75 -> 76 on 2026-11-07: Breach (83), the Orca's Time race.
-            // 76 -> 77 on 2026-11-09: Flatline (84), the Brittle Star's charge game.
+            // 76 -> 77 on 2026-11-09: Jackstraw (84), the Thresher's Charge game (84 checked free on bleeding-edge and
+            // every remote branch).
+            // 77 -> 78 on 2026-11-09: Flatline (85), the Brittle Star's charge game (took 84 first on its branch; Jackstraw landed
+            // 84 before it merged, so Flatline moved to 85).
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(77, values.Length,
+            Assert.AreEqual(78, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -247,7 +250,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.PerchRun, 81)]
         [TestCase(GameModes.SlipLine, 82)]
         [TestCase(GameModes.Breach, 83)]
-        [TestCase(GameModes.Flatline, 84)]
+        [TestCase(GameModes.Flatline, 85)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,
