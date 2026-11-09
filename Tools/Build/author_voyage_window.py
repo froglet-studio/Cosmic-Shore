@@ -76,6 +76,16 @@ QUESTS_GUID = "38580c6477d2474db47619950c18ce94"   # QuestsView.prefab's guid
 QUESTS_ROOT, QUESTS_TITLE, QUESTS_MODAL = "QuestsView", "Quests", 20   # ScreenSwitcher.ModalWindows.QUESTS
 QUEST_TABS, QUEST_TAB_LABELS = ("Quests", "Episodes"), ("Episode 1", "Episode 2")
 QUEST_TRACK = "1566c719842df27479dce3e1fc98d76f"   # QuestTrackView, the quest tracker (the Profile's; left the Quests window)
+EPISODES_SCRIPT = os.path.join(REPO, "Assets/_Scripts/UI/Views/EpisodesView.cs.meta")
+# The locked episode in each window (Rev 77 "Episodes", section 157): root, the tab its button goes back to, its words.
+EPISODES = {
+    "MissionView": (1, (("episodeTitle", "Episode 2"), ("soonLine", "Coming soon"),
+                        ("bodyLine", "New episodes arrive here. Voyages and the Saga are open now."),
+                        ("backLabel", "Back to the Saga"))),
+    "QuestsView": (0, (("episodeTitle", "Episode 2"), ("soonLine", "Coming soon"),
+                       ("bodyLine", "New episodes arrive here. Episode 1's quests are open now."),
+                       ("backLabel", "Back to Episode 1"))),
+}
 SAGA_SCRIPT = os.path.join(REPO, "Assets/_Scripts/UI/Views/SagaView.cs.meta")
 SAGA_CARDS = ("Featured", "Voyage2")   # the Saga page's two VoyageView cards before the picked look (Tandava, the Severing)
 SAGA_PARTS = ("a7460784ce7229f7440d35280ae4b04f", "b6df7010e0f34e18798473f6c68f26a4")   # Tandava, Tandava: Severing
@@ -738,6 +748,39 @@ def lay_saga(p):
     node(p, "SagaFlow", panel, comps=(("114", lambda go: mono_head(go, script_of(SAGA_SCRIPT)) + body),))
 
 
+def lay_episodes(p, root):
+    """A window's locked Episode 2 as Rev 77 "Episodes" (section 157): the old bar and "Coming soon" go, and an
+    EpisodesView fills the page (the muted galaxy, the lock and the name, one button back to another tab)."""
+    back, words = EPISODES[root]
+    panel = p.find(f"{root}/{MARKER2}/EpisodesPage/Panel")
+    bar = p.child(panel, "Episode2")
+    lock = p.child(bar, "Lock")
+    sprite = next(re.search(r"^  m_Sprite: (.*)$", p.by[c].body, re.M).group(1) for c in p.comps(lock) if "m_Sprite:" in p.by[c].body)
+    for name in ("Episode2", "Soon"):
+        delete_deep(p, p.child(panel, name))
+    l, t, r, b = CAROUSEL_MARGIN
+    p.place(panel, (0, 0), (1, 1), ((l - r) / 2, (b - t) / 2), (-(l + r), -(t + b)), (0.5, 0.5))
+    tabs = p.comp(p.find(f"{root}/Body"), script_guid())
+    font = tmp_of(p, p.find(f"{root}/Header/Title"))
+    body = (f"  tabs: {{fileID: {tabs}}}\n  backTab: {back}\n  lockIcon: {sprite}\n  fontFrom: {{fileID: {font}}}\n"
+            + "".join(f"  {k}: {v}\n" for k, v in words) + "  panelSize: {x: 1000, y: 600}\n")
+    node(p, "EpisodesFlow", panel, comps=(("114", lambda go: mono_head(go, script_of(EPISODES_SCRIPT)) + body),))
+
+
+def check_episodes(p, root):
+    back, words = EPISODES[root]
+    view = p.comp(p.find(f"{root}/{MARKER2}/EpisodesPage/Panel/EpisodesFlow"), script_of(EPISODES_SCRIPT))
+    assert view, f"{root}'s Episodes page has no EpisodesView"
+    vb = p.by[view].body
+    assert Prefab.field(vb, "tabs") == p.comp(p.find(f"{root}/Body"), script_guid()), f"{root}'s Episodes button is not wired to the window's tabs"
+    assert re.search(rf"^  backTab: {back}$", vb, re.M), f"{root}'s Episodes button does not go back to tab {back}"
+    assert re.search(r"^  lockIcon: \{fileID: 21300000, guid: \w+, type: 3\}$", vb, re.M), f"{root}'s Episode 2 has no lock"
+    for k, v in words:
+        assert f"  {k}: {v}\n" in vb, f"{root}'s Episodes {k} is not authored as {v}"
+    for gone in ("Episode2", "Soon"):
+        assert not p.has(f"{root}/{MARKER2}/EpisodesPage/Panel/{gone}"), f"{root}'s old Episode 2 {gone} is back"
+
+
 def rewrite3(p):
     """The Voyage window without the Quests tab and page (they are the Quests window now): three tabs."""
     delete_deep(p, p.find("MissionView/Body/Top/QuestsTab"))
@@ -812,7 +855,7 @@ def validate(text):
     assert Prefab.field(sb, "fontFrom") == tmp_of(p, p.find("MissionView/Header/Title")), "the Saga's words do not take the title's font"
     for k in SAGA_CARDS:
         assert not p.has(f"MissionView/{MARKER2}/SagaPage/Panel/{k}"), f"the old Saga card {k} is back"
-    assert p.has(f"MissionView/{MARKER2}/EpisodesPage/Panel/Episode2"), "the Episodes page does not hold Episode 2"
+    check_episodes(p, "MissionView")
 
     content = "MissionView/Body/Voyages/Scroll/Viewport/Content"
     g = p.find(content + "/Grid")
@@ -874,6 +917,7 @@ def validate_quests(text):
         assert f"  {k}: {v}\n" in vb, f"the carousel's {k} is not authored as {v}"
     assert not p.has(f"{QUESTS_ROOT}/{MARKER2}/QuestsPage/Panel/Episodes"), "the old quest tracker column is back on the Quests page"
     assert f"guid: {QUEST_TRACK}" not in text, "a QuestTrackView is back in the Quests window (the carousel replaced it)"
+    check_episodes(p, QUESTS_ROOT)
     for gone in ("Body/Voyages", f"{MARKER2}/SagaPage"):
         assert not p.has(f"{QUESTS_ROOT}/{gone}"), f"the Quests window still carries {gone}"
     assert f"guid: {GUID['jobs']}" not in text, "the Quests window carries a VoyageJobsView"
@@ -903,6 +947,8 @@ def self_test(text, quests):
         ("the map opening on the region", first("  openOnGalaxy: 1\n", "  openOnGalaxy: 0\n")),
         ("the Saga's parts swapped", lambda t: t.replace(SAGA_PARTS[0], "X" * 32).replace(SAGA_PARTS[1], SAGA_PARTS[0]).replace("X" * 32, SAGA_PARTS[1])),
         ("a Saga part without its forms", lambda t: re.sub(r"(    forms: )[^\n]+", r"\g<1>Antlion", t, count=1)),
+        ("the Episodes button going back to Voyages", first("  backTab: 1\n", "  backTab: 0\n")),
+        ("the Episodes line retuned", first("  backLabel: Back to the Saga\n", "  backLabel: Back\n")),
         ("the Saga's Set sail renamed", first("  setSailLabel: Set sail\n", "  setSailLabel: Go\n")),
         ("an element shape swapped", first(f"guid: {ELEMENT_SHAPES['Charge']}, type: 3}}\n  - {{fileID: 21300000, guid: {ELEMENT_SHAPES['Mass']}",
                                            f"guid: {ELEMENT_SHAPES['Mass']}, type: 3}}\n  - {{fileID: 21300000, guid: {ELEMENT_SHAPES['Charge']}")),
@@ -913,6 +959,7 @@ def self_test(text, quests):
         ("Episode 2 open at start", lambda t: re.sub(r"(m_Name: EpisodesPage\n(?:.*\n){4}  m_IsActive: )0", r"\g<1>1", t, count=1)),
         ("the carousel's script gone", lambda t: t.replace(
             "guid: " + re.search(r"^guid: (\w+)$", open(CAROUSEL_SCRIPT, encoding="utf-8").read(), re.M).group(1), "guid: " + "6" * 32)),
+        ("Episode 2 going back to itself", first("  backTab: 0\n", "  backTab: 1\n")),
         ("a carousel word retuned", first("  claimLabel: Claim\n", "  claimLabel: Collect\n")),
         ("the old tracker back", lambda t: t + f"--- !u!114 &1\nMonoBehaviour:\n  m_Script: {{fileID: 11500000, guid: {QUEST_TRACK}, type: 3}}\n"),
         ("a dangling reference", lambda t: re.sub(r"(    page: \{fileID: )-?\d+", r"\g<1>12345", t, count=1)),
@@ -979,6 +1026,17 @@ def main():
         text = p.text()
         validate(text)
         write(PREFAB, text)
+    if "m_Name: EpisodesFlow\n" not in text:
+        # The locked Episode 2 in the picked look (Rev 77 "Episodes", section 157); stands down once on disk.
+        if args.check or args.self_test:
+            print(f"FAIL: {PREFAB}'s Episodes tab still holds the old bar; run without --check to lay it out")
+            return 1
+        p = Prefab(text)
+        random.seed(20261111)
+        lay_episodes(p, "MissionView")
+        text = p.text()
+        validate(text)
+        write(PREFAB, text)
     if not os.path.exists(qpath):
         print(f"FAIL: {QUESTS_PREFAB} is missing (it is made with the third layout; restore it from git)")
         return 1
@@ -992,6 +1050,16 @@ def main():
         qp = Prefab(quests)
         random.seed(20261109)
         lay_carousel(qp)
+        quests = qp.text()
+        validate_quests(quests)
+        write(QUESTS_PREFAB, quests)
+    if "m_Name: EpisodesFlow\n" not in quests:
+        if args.check or args.self_test:
+            print(f"FAIL: {QUESTS_PREFAB}'s Episode 2 still holds the old bar; run without --check to lay it out")
+            return 1
+        qp = Prefab(quests)
+        random.seed(20261112)
+        lay_episodes(qp, QUESTS_ROOT)
         quests = qp.text()
         validate_quests(quests)
         write(QUESTS_PREFAB, quests)

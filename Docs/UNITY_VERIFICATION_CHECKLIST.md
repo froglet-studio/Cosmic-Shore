@@ -22187,3 +22187,15 @@ editor: 0 errors in project code). No Unity editor ran.
 3. **Set sail** on each part opens its launch window with the hull carousel, your pilot, the seat line and a live
    Start. It must not open an empty shell (the Arena or Maelstrom window's copy of the modal).
 4. **Back** from the launch window returns to the Saga tab.
+
+## 🔴 The Episodes tab, Rev 77 "Episodes" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 157. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran.
+
+1. **Voyage window > Episodes** (RB twice from Voyages). One panel over the whole galaxy, dark and muted: the lock,
+   "Episode 2", "Coming soon" and "New episodes arrive here. Voyages and the Saga are open now." at its foot.
+   The first open may hitch briefly while the galaxy paints (about 140 ms measured offline); later opens do not.
+2. **Back to the Saga** under the panel shows the Saga tab (its tab lights, the page changes).
+3. **Quests window > Episode 2**: the same panel with its own line, and **Back to Episode 1** shows the quests.
+4. **D-pad / gamepad**: the button is reachable and A presses it.

@@ -23,6 +23,13 @@ namespace CosmicShore.UI
         /// <summary>The water a close-up shows, ly across.</summary>
         public const float SpanLy = 260f;
 
+        /// <summary>The whole galaxy's picture (the Episodes tab): ly across, its size in texels (5:3, the board's frame)
+        /// and its darker grey range, so the light words over it read. Measured offline 2026-11-09: 200 x 120 took about
+        /// 200 ms (the core is the costly part of the density field), so it is 160 x 96, once a session.</summary>
+        public const float GalaxySpanLy = 110000f;
+        public const int GalaxyWidth = 160, GalaxyHeight = 96;
+        public const byte GalaxyFloor = 8, GalaxyCeiling = 96;
+
         /// <summary>The C3 grade: how much colour is kept, and how bright what is left is.</summary>
         public const float Saturation = 0.25f, Brightness = 0.55f;
 
@@ -47,34 +54,47 @@ namespace CosmicShore.UI
             if (place == null || string.IsNullOrEmpty(place.Id)) return null;
             string key = $"{place.Id}:{place.GalaxyX:F0},{place.GalaxyY:F0}";
             if (s_Cache.TryGetValue(key, out var cached) && cached) return cached;
-            var tex = Paint(place.GalaxyX, place.GalaxyY);
+            var tex = Paint(place.GalaxyX, place.GalaxyY, SpanLy, Width, Height, Saturation, Brightness, Floor, Ceiling, mark: true);
             tex.name = "VoyagePlace_" + place.Id;
             s_Cache[key] = tex;
             return tex;
         }
 
-        static Texture2D Paint(double cx, double cy)
+        /// <summary>The whole galaxy, wide (<see cref="GalaxySpanLy"/> across), graded as the Episodes board drew it
+        /// (saturate .2, brightness .5) and spread like a place's close-up; no mark. Painted once and kept.</summary>
+        public static Texture2D Galaxy()
+        {
+            const string key = "galaxy";
+            if (s_Cache.TryGetValue(key, out var cached) && cached) return cached;
+            var tex = Paint(0, 0, GalaxySpanLy, GalaxyWidth, GalaxyHeight, 0.2f, 0.5f, GalaxyFloor, GalaxyCeiling, mark: false);
+            tex.name = "VoyageGalaxy";
+            s_Cache[key] = tex;
+            return tex;
+        }
+
+        static Texture2D Paint(double cx, double cy, float spanLy, int width, int height, float saturation, float brightness,
+            byte floor, byte ceiling, bool mark)
         {
             // Graded and stretched in float, rounded once at the end: the open sea's colours sit within a few levels of
             // each other, and stretching them after rounding drew hard bands (seen in a render of Tollmoor, 2026-11-09).
-            var rgb = new float[Width * Height * 3];
-            double spanY = SpanLy * Height / (double)Width;
-            for (int y = 0; y < Height; y++)
-            for (int x = 0; x < Width; x++)
+            var rgb = new float[width * height * 3];
+            double spanY = spanLy * height / (double)width;
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
             {
                 // Texel rows run up the screen, and the board's y runs the other way (VoyageMapGraphic.Galaxy).
-                double gx = cx + SpanLy * ((x + 0.5) / Width - 0.5);
-                double gy = cy - spanY * ((y + 0.5) / Height - 0.5);
+                double gx = cx + spanLy * ((x + 0.5) / width - 0.5);
+                double gy = cy - spanY * ((y + 0.5) / height - 0.5);
                 var (r, g, b) = HyperSea.SeaColor(HyperSea.Density(gx, gy));
-                int i = (y * Width + x) * 3;
-                MuteInto(rgb, i, (float)r, (float)g, (float)b, Saturation, Brightness);
+                int i = (y * width + x) * 3;
+                MuteInto(rgb, i, (float)r, (float)g, (float)b, saturation, brightness);
             }
-            Spread(rgb, Floor, Ceiling);
-            var px = new Color32[Width * Height];
+            Spread(rgb, floor, ceiling);
+            var px = new Color32[width * height];
             for (int i = 0; i < px.Length; i++)
                 px[i] = new Color32(Byte(rgb[i * 3]), Byte(rgb[i * 3 + 1]), Byte(rgb[i * 3 + 2]), 255);
-            Mark(px);
-            var tex = new Texture2D(Width, Height, TextureFormat.RGBA32, false)
+            if (mark) Mark(px, width, height);
+            var tex = new Texture2D(width, height, TextureFormat.RGBA32, false)
             {
                 wrapMode = TextureWrapMode.Clamp,
                 filterMode = FilterMode.Bilinear,
@@ -86,15 +106,15 @@ namespace CosmicShore.UI
         }
 
         /// <summary>The place: a small diamond in the style guide's light text colour, at the centre.</summary>
-        static void Mark(Color32[] px)
+        static void Mark(Color32[] px, int width, int height)
         {
             var light = new Color32(230, 233, 255, 255);
-            int cx = Width / 2, cy = Height / 2;
+            int cx = width / 2, cy = height / 2;
             const int r = 3;
             for (int dy = -r; dy <= r; dy++)
             for (int dx = -r; dx <= r; dx++)
                 if (Mathf.Abs(dx) + Mathf.Abs(dy) <= r)
-                    px[(cy + dy) * Width + cx + dx] = light;
+                    px[(cy + dy) * width + cx + dx] = light;
         }
 
         /// <summary>

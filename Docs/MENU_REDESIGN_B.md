@@ -6659,7 +6659,7 @@ top upright as on PC, so it glides with the rest (`author_menu_portrait.py` SCEN
 
 **Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
 
-**Still not built:** the Episodes tab in the picked look (the Saga tab is section 156).
+**Still not built:** nothing of Rev 77: the Saga tab is section 156, the Episodes tab section 157.
 
 Affects: the FTUE quest graph (Shombith and Caleb). It reads and claims through the same service and frontier as
 the Profile's track and Home's card; nothing about the graph changed.
@@ -6709,5 +6709,32 @@ what "Tandava done" means (a win, a finish, a play) and where it is recorded.
 - `unity_refcompile` player and editor: 0 errors in project code.
 - `author_voyage_window.py --check --self-test`: every negative control fires.
 - Menu_Main holds no reference to the 224 removed documents.
+
+**Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
+
+
+## 157. Built: the Episodes tab, Rev 77 "Episodes" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
+
+**Asked (Shombith, 2026-11-09):** "build the episodes tab in the picked look too".
+
+**Built:** `EpisodesView` (new) replaces the old Episode 2 bar and "Coming soon" in both windows that have one.
+- **The panel** (the board's 1000 x 600): the whole galaxy, muted (`VoyagePlaceArt.Galaxy()`: the same density
+  field and colour key as the map, 110,000 ly across, graded saturate .2 and brightness .5 as the board drew it,
+  then spread across a dark grey range, 8 to 96, so the light words over it read). At its foot: the lock (the old
+  bar's own sprite), "Episode 2", "Coming soon", and one line.
+- **One button under it** goes back to another tab of the same window (`VoyageWindowTabs.Show`): "Back to the Saga"
+  in the Voyage window, "Back to Episode 1" in the Quests window, each with its own line.
+- **The galaxy is painted on the first show** of the tab, not at load, and kept: about 140 ms on a desktop CPU,
+  measured offline (the core is the costly part of the field), so 160 x 96 texels.
+- **The words, the lock, the back tab and the tabs component** are serialized on `EpisodesView` and authored by
+  `author_voyage_window.py`'s Episodes step for each window, which stands down once on disk. `--check` validates
+  them, and three new negative controls fire (a button going back to the wrong tab in either window, a retuned label).
+- Rev 77 is now built in full: Voyages (151), Quests (155), Saga (156), Episodes (157).
+
+**Verified:**
+- `unity_refcompile` player and editor: 0 errors in project code.
+- `author_voyage_window.py --check --self-test`: every negative control fires.
+- Menu_Main holds no reference to the 49 removed documents.
+- The galaxy picture was rendered offline from the same code (the spiral reads; white words over it read).
 
 **Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
