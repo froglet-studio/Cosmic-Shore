@@ -354,8 +354,9 @@ class Renderer:
         if name in prog:
             prog[name].value = value
 
-    def render(self, g, n_frames=60, return_state=False, t0=None):
-        """Render genome g to uint8 [n_frames, H, W, 3] at 15 fps of game time."""
+    def render(self, g, n_frames=60, return_state=False, t0=None, t_shift=0.0):
+        """Render genome g to uint8 [n_frames, H, W, 3] at 15 fps of game time, starting at its warmup (or t0) plus
+        t_shift seconds (a later window of the same phenotype, for judging more than its first 4 seconds)."""
         g = g.copy().ensure_root()
         cs, ct = g.cost()
         if cs > MAX_SHAPE_COST or ct > MAX_TEX_COST:
@@ -378,7 +379,7 @@ class Renderer:
         post = _d(g.nodes[p_idx]) if p_idx is not None else _d(type("N", (), {"op": "post.grade", "params": [p.default for p in OPS["post.grade"].params]})())
         hud = hud_list(g, h_idx)
         dt = 1.0 / (FPS * SUBSTEPS)
-        warm = rd["warmup"] if t0 is None else t0
+        warm = (rd["warmup"] if t0 is None else t0) + float(t_shift)
         steps_warm = int(warm / dt)
         for _ in range(min(steps_warm, 3600)):
             world.step(dt)

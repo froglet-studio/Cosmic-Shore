@@ -54,7 +54,8 @@ def _init(stats_path, hold_path, lp_threads, mem_gb=3.0):
 
 def _eval(payload):
     from .features import window_features
-    gj, n_frames, n_judge = payload
+    gj, n_frames, n_judge = payload[:3]
+    n_win, hop = (payload[3], payload[4]) if len(payload) > 4 else (1, 8.0)
     t0 = time.time()
     try:
         g = Genome.from_json(gj)
@@ -68,7 +69,10 @@ def _eval(payload):
         if _HOLD is not None:
             res["hold"] = _HOLD.distance(f)["total"]
         if n_judge:
-            res["jframes"] = fr[np.linspace(0, len(fr) - 1, n_judge).round().astype(int)].copy()
+            pick = np.linspace(0, len(fr) - 1, n_judge).round().astype(int)
+            res["jframes"] = [fr[pick].copy()]
+            for k in range(1, n_win):  # later windows of the same phenotype, judged too (see --judge-windows)
+                res["jframes"].append(_R.render(g, n_frames, t_shift=k * hop)[pick].copy())
     except Exception as e:
         res = {"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"{type(e).__name__}: {e}"[:300],
                "nodes": 0, "luma": 0.0, "motion": 0.0}
@@ -225,12 +229,25 @@ class JudgeState:
             return
         live = [c for c in cands if c.get("ok") and "jframes" in c]
         if live:
-            per = [J.score_many([c["jframes"] for c in live]) for J in self.Js]
+            clips, owner = [], []
             for k, c in enumerate(live):
-                c["judge"] = round(float(self.agg([p[k]["judge"] for p in per])), 4)
-                c["judge_hold"] = round(float(self.agg([p[k]["judge_hold"] for p in per])), 4)
-                c["judges"] = [round(p[k]["judge"], 3) for p in per]
-                c["judges_hold"] = [round(p[k]["judge_hold"], 3) for p in per]
+                ws = c["jframes"] if isinstance(c["jframes"], list) else [c["jframes"]]
+                clips += ws
+                owner += [k] * len(ws)
+            per = [J.score_many(clips) for J in self.Js]  # per[net][clip]
+            for k, c in enumerate(live):
+                idx = [i for i, o in enumerate(owner) if o == k]
+                # in each judged window the nets combine (v3: the worse of the two), then the windows average: the
+                # same order the footage calibration uses (calibration_max_native_v3.json), so the numbers compare
+                win = [float(self.agg([p[i]["judge"] for p in per])) for i in idx]
+                win_h = [float(self.agg([p[i]["judge_hold"] for p in per])) for i in idx]
+                c["judge"] = round(float(np.mean(win)), 4)
+                c["judge_hold"] = round(float(np.mean(win_h)), 4)
+                c["judges"] = [round(float(np.mean([p[i]["judge"] for i in idx])), 3) for p in per]
+                c["judges_hold"] = [round(float(np.mean([p[i]["judge_hold"] for i in idx])), 3) for p in per]
+                if len(idx) > 1:
+                    c["judge_windows"] = [round(x, 3) for x in win]
+                c["judge_nwin"] = len(idx)
                 c["judge_v"] = self.version
         for c in cands:
             c.pop("jframes", None)
@@ -332,10 +349,10 @@ def run(args):
     new_pool()
 
     def evaluate(gs):
-        payload = [(g.to_json(), args.frames, judge.n) for g in gs]
+        payload = [(g.to_json(), args.frames, judge.n, args.judge_windows, args.judge_hop) for g in gs]
         jobs = [state["pool"].apply_async(_eval, (p,)) for p in payload]
         res = []
-        deadline = time.time() + 60 + 6.0 * len(jobs) / max(1, args.workers)
+        deadline = time.time() + 60 + 6.0 * max(1, args.judge_windows) * len(jobs) / max(1, args.workers)
         broken = False
         for j in jobs:
             try:
@@ -543,6 +560,12 @@ def main(argv=None):
                     help="how the nets' scores combine: max (v3, default; the mean was ridden by pleasing one net) or "
                          "mean (v2)")
     ap.add_argument("--judge-n", type=int, default=12, help="frames per clip the judge sees")
+    ap.add_argument("--judge-windows", type=int, default=1,
+                    help="4-second windows of each phenotype the judge scores (window k starts k * --judge-hop seconds "
+                         "after the first); the score is their mean. 2 or more stop a genome from fitting only the frames "
+                         "it is judged on: best genomes judged 1.13 to 1.70 on their first window read 1.21 to 2.48 on "
+                         "the next three (2026-11-10), and each extra window costs one more render")
+    ap.add_argument("--judge-hop", type=float, default=8.0, help="seconds between judged windows")
     ap.add_argument("--stat-w", type=float, default=1.0, help="weight of the fixed statistics in dist")
     ap.add_argument("--critic-every", type=int, default=6)
     ap.add_argument("--critic-steps", type=int, default=120)
