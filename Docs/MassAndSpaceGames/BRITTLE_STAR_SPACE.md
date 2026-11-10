@@ -90,10 +90,13 @@ the ring erases it whole. The first domain to break the target wins.*
 
 | Rung | Name | The question | Content (first cut, to be modelled) |
 |---|---|---|---|
-| I1 | Billboards | Can you square up at all? | About 6 big plates (radius ~200 u) facing the spawn ring; crystals 2× players, one on each plate's axis |
+| I1 | Billboards | Can you square up at all? | About 6 big plates (radius ~200 u) facing the spawn ring; crystals 2× players, **every one on a plate's axis** (two plates carry two) |
 | I2 | Gallery | Can you swing round to square up? | About 8 plates at mixed orientations, so most need a turn to face square; crystals = players |
-| I3 | Shelves | Front plate first | Stacks of 2-3 parallel plates about 40 u apart. Rounds stop at the first prism, so the guns eat the front plate; a square ring takes one plate at a time. Peel the stack. Crystals = players |
-| I4 | Reliquary | Find the square line through the frame | Plates braced by super-shielded frames (Flatline's ribs: neither guns nor ring break them, and they never score), danger rims, some plates half behind frames; crystals = players − 1 |
+| I3 | Shelves | Front plate first | Stacks of 2-3 parallel plates **60-80 u apart** (at 40 u a stack reads as one blob from most angles). Rounds stop at the first prism, so the guns eat the front plate; a square ring takes one plate at a time. Peel the stack. Crystals = players |
+| I4 | Reliquary | Find the square line through the frame | Plates braced by super-shielded frames (Flatline's ribs: neither guns nor ring break them, and they never score), **a rib every 6th lattice line** (every 4th hid most of the plate), danger rims, some plates half behind frames; crystals = players − 1 |
+
+**On every rung, a clear zone of at least 250 u round each spawn**: no plate, frame or rim inside it. A randomly placed
+I2 plate landed almost on a spawn in the first render.
 
 ## 4. What gets built (the `/arcadegame` recipe, once the design is agreed)
 
@@ -112,10 +115,11 @@ the ring erases it whole. The first domain to break the target wins.*
 | Generator | `Tools/Build/author_shatterplane_assets.py` on `arcade_mode_lib`, with `--check`, watched to fail once |
 | Budget | `Tools/Build/shatterplane_budget.py`: prisms per rung under Flatline's / Rampage I4's envelope (about 12k), plus the worst case: one square ring kills a whole plate (about 2k prisms) in its 0.7 s sweep. Profile that kill burst in the editor |
 
-## 5. Decisions (for the person planning, before the build)
+## 5. Decisions (D1 decided; D2-D5 open)
 
-- **D1, the verb.** Is "square up and the ring erases the plate" the Brittle Star's Space game? The alternative, if
-  not, is a pure gun race on dense wreckage, which is Salvo's game on another hull.
+- **D1, the verb. DECIDED 2026-11-10 (Shombith): plates.** "Square up and the ring erases the plate" is the Brittle
+  Star's Space game. The alternative was a pure gun race on dense wreckage (Salvo's game on another hull). It was
+  rendered and dropped: on a solid clump the ring takes one thin slice, about 11%, whatever the angle (§7).
 - **D2, the disk's reach (P-modes-08, ask Shombith).** The disk's radius is the cell's nucleus radius. Choosing the
   arena's nucleus therefore sets how far the ring reaches. Options:
   - keep the standard nucleus (about 392 u), the cleanest;
@@ -127,10 +131,24 @@ the ring erases it whole. The first domain to break the target wins.*
 - **D5, prototype first?** Recommended: the studio page first (§2). Unity directly is possible; then the model in §6
   sets the targets.
 
-## 6. Next steps once D1-D5 are answered
+## 6. Next steps once D2-D5 are answered
 
 1. Model the yields per rung in `shatterplane_budget.py`: gun yield per overheat cycle against a lattice plate, ring
    yield against tilt, and the expected 90 s total. Then set the four targets from the model.
 2. Optionally a studio minigame to fly it and measure the ring's share.
 3. Build to §4, run the `/arcadegame` §4 gates, `unity_refcompile` and the `/ship` gates.
 4. Write the mode doc and the `PLAN.md` §7 row, and add the mode to `GAME_MODES_AND_CONTROLLERS.md`.
+
+## 7. What the concept renders showed (2026-11-10)
+
+These are offline renders of the planned geometry (Three.js, lit boxes), not the game. They are not committed. The
+geometry used the plan's numbers: 4 u prisms on an 8 u lattice, a ±0.88 u disk at Charge 0, and a nucleus radius of
+392 u.
+
+| | Prisms | Ring, square | Ring, off square |
+|---|---|---|---|
+| Plates (this plan) | I1 11,766 · I2 8,808 · I3 9,948 · I4 6,606 + 4,245 frame | one plate: 1,961 of 1,961 (100%) | 443 (23%) at 5°, 149 (8%) at 20° |
+| Wreckage clumps (the alternative) | I1 8,468 · I2 6,330 · I3 6,880 · I4 5,192 + 3,682 cage | one clump: 151 of 1,408 (11%) | 100 (7%) at 30°, 153 (11%) at 90° |
+
+The fixes in §3 came from these renders: the spawn clear zone, the wider I3 shelves, the sparser I4 ribs and the I1
+crystal placement.
