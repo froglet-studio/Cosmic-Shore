@@ -23,8 +23,9 @@ judged but 1.50 -> 1.47 on the windows it never saw): every CMA generation draws
 --window-span s on a --window-step grid, the same draw for every candidate and for the current best (common random
 windows: candidates are compared on equal terms, and no window stays long enough to be fitted). The best is replaced
 only by a candidate that beats it on that generation's windows; its score is the mean over every window it has been
-judged on. The check then uses --check-offsets (default 22,24,26,28 s, outside the grid, so selection never saw
-them), and a genome is written only when it is better there than the genome it started from.
+judged on. The check then uses --check-offsets (default: four windows from the end of the grid's last window, 24, 26,
+28 and 30 s, so they share no frame with any window selection saw), and a genome is written only when it is better
+there than the genome it started from.
 
 Writes OUT_DIR/<file stem>__cma.json (meta.name <lineage>__cma) when the climb improved (the best genome, meta.cma =
 before/after/unseen/evals), OUT_DIR/pareto.json (those genomes as island rows; in random mode the row's numbers are
@@ -102,9 +103,14 @@ class SepCMA:
         self.gen = 0
 
     def ask(self):
-        self.z = self.rng.standard_normal((self.lam, self.n))
-        self.y = self.z * np.sqrt(self.C)
-        return np.clip(self.m + self.sigma * self.y, self.lo, self.hi)
+        """Samples clipped to the box and rounded to bytes; the stored steps are the ones actually evaluated, so a
+        sample pushed past a bound is not a free step that inflates sigma and C (code review 2026-11-10: about one
+        byte per 24-byte block sits on 0 or 255, and post.bandgain's tailcut and chroma default to 0)."""
+        z = self.rng.standard_normal((self.lam, self.n))
+        X = np.round(np.clip(self.m + self.sigma * z * np.sqrt(self.C), self.lo, self.hi))
+        self.y = (X - self.m) / self.sigma
+        self.z = self.y / np.sqrt(self.C)
+        return X
 
     def tell(self, f):
         order = np.argsort(f)[: self.mu]
@@ -145,7 +151,7 @@ def main(argv=None):
     ap.add_argument("--check-n", type=int, default=6, help="windows for the after-tune check (0: no check)")
     ap.add_argument("--check-hop", type=float, default=4.0)
     ap.add_argument("--check-offsets", default=None,
-                    help="comma list of check windows in seconds (random mode default 22,24,26,28: never drawn)")
+                    help="comma list of check windows in seconds (random mode default 24,26,28,30: no frame drawn)")
     ap.add_argument("--publish", default=None, help="copy pareto.json and an island args.json here (runs/tuned)")
     ap.add_argument("--frames", type=int, default=60)
     ap.add_argument("--stat-w", type=float, default=0.5)
@@ -158,8 +164,27 @@ def main(argv=None):
     os.makedirs(a.out, exist_ok=True)
     from .search import JudgeState, _eval, _init
     judge = JudgeState(_Args())
-    pool = mp.get_context("spawn").Pool(a.workers, initializer=_init,
-                                        initargs=(a.stats, a.hold, a.lp_threads, a.mem_gb))
+    ctx = mp.get_context("spawn")
+    pool = [ctx.Pool(a.workers, initializer=_init, initargs=(a.stats, a.hold, a.lp_threads, a.mem_gb))]
+
+    def pmap(payloads, per=180.0):
+        """A map over the pool with a deadline: a worker killed mid-render or a render that never returns would block
+        it forever (code review 2026-11-10); on timeout the pool is rebuilt and the missing results fail."""
+        jobs = [pool[0].apply_async(_eval, (p,)) for p in payloads]
+        deadline = time.time() + per * (1 + len(payloads) // max(1, a.workers))
+        out, dead = [], False
+        for j in jobs:
+            try:
+                out.append(j.get(timeout=max(1.0, deadline - time.time())) if not dead else None)
+            except mp.TimeoutError:
+                dead = True
+                out.append(None)
+        if dead:
+            print("evaluation timed out; restarting the worker pool", flush=True)
+            pool[0].terminate()
+            pool[0] = ctx.Pool(a.workers, initializer=_init, initargs=(a.stats, a.hold, a.lp_threads, a.mem_gb))
+        return [r if r is not None else {"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": "timeout",
+                                         "nodes": 0, "luma": 0.0, "motion": 0.0} for r in out]
     log = open(os.path.join(a.out, "log.jsonl"), "a")
     cache = {}
 
@@ -170,7 +195,7 @@ def main(argv=None):
         todo = [(k, g) for k, g in zip(keys, gs) if k not in cache]
         uniq = {k: g for k, g in todo}
         wins = list(offsets) if offsets is not None else a.windows
-        res = pool.map(_eval, [(g.to_json(), a.frames, judge.n, wins, a.hop) for g in uniq.values()])
+        res = pmap([(g.to_json(), a.frames, judge.n, wins, a.hop) for g in uniq.values()])
         for c in res:
             c.pop("frames", None)
         judge.score(res)
@@ -183,14 +208,18 @@ def main(argv=None):
     grid = [round(k * a.window_step, 3) for k in range(int(a.window_span / a.window_step + 1e-9) + 1)]
     if rand and a.windows > len(grid):
         ap.error(f"--windows {a.windows} > the {len(grid)} offsets of the window grid")
+    L = a.frames / 15.0  # a window spans (t, t + L] seconds
+    climbed = list(grid) if rand else [k * a.hop for k in range(max(1, a.windows))]
     if a.check_offsets:
         times = [round(float(t), 3) for t in a.check_offsets.split(",") if t.strip()]
     elif rand:
-        times = [22.0, 24.0, 26.0, 28.0]
+        end = max(climbed) + L  # after the last window the climb can draw (24 s on the default 0-20 s grid)
+        times = [round(end + k * 2.0, 3) for k in range(4)]
     else:
         times = [round(k * a.check_hop, 3) for k in range(a.check_n)]
-    seen = set(grid) if rand else {round(k * a.hop, 3) for k in range(a.windows)}
-    unseen = [i for i, t in enumerate(times) if t not in seen]
+    # unseen = sharing no frame with any climbed window (code review 2026-11-10: comparing start times alone let a
+    # check window overlap a climbed one by 2-4 s with a finer hop or longer clips)
+    unseen = [i for i, t in enumerate(times) if all(t + L <= c + 1e-6 or t >= c + L - 1e-6 for c in climbed)]
     checks = {}  # genome hex -> its check result (the check of g0 is shared by every graft of it)
 
     def check(gs):
@@ -199,7 +228,7 @@ def main(argv=None):
         if len(times) < 1 or not unseen or (not a.check_offsets and not rand and a.check_n < 2):
             return [(None, None, None, None)] * len(gs)
         todo = [g for g in gs if g.to_bytes().hex() not in checks]
-        res = pool.map(_eval, [(g.to_json(), a.frames, judge.n, list(times), a.hop) for g in todo])
+        res = pmap([(g.to_json(), a.frames, judge.n, list(times), a.hop) for g in todo])
         for c in res:
             c.pop("frames", None)
         judge.score(res)
@@ -226,6 +255,11 @@ def main(argv=None):
 
     rng = np.random.default_rng(a.seed)
     rows = []
+    try:  # merge with an earlier invocation's rows into the same OUT_DIR (deduped by genome bytes below)
+        rows.extend(json.load(open(os.path.join(a.out, "pareto.json"))))
+    except Exception:
+        pass
+    stems_used = {}
 
     def draw():
         return sorted(float(t) for t in rng.choice(grid, size=a.windows, replace=False)) if rand else None
@@ -245,6 +279,9 @@ def main(argv=None):
     for path in a.genome:
         g0 = Genome.from_json(json.load(open(path))).ensure_root()
         stem = os.path.splitext(os.path.basename(path))[0]
+        if stem in stems_used:  # runs/islandA/best.json and runs/islandD/best.json: keep both outputs
+            stem = f"{stem}_{os.path.basename(os.path.dirname(os.path.abspath(path)))}_{len(stems_used)}"
+        stems_used[stem] = path
         name = (g0.meta or {}).get("name") or stem  # the lineage name (the islands' cap reads the part before "__")
         (c0,), _ = evaluate([g0], draw())
         best_g, hist = g0, [c0]
@@ -299,7 +336,7 @@ def main(argv=None):
                     best = merged(hist)
                 elif f[k] < best["dist"]:
                     best_g, best, improved = cands[k], res[k], True
-                log.write(json.dumps({"genome": name, "spent": spent, "gen": es.gen, "sigma": round(es.sigma, 2),
+                log.write(json.dumps({"genome": name, "input": path, "spent": spent, "gen": es.gen, "sigma": round(es.sigma, 2),
                                       "gen_best": round(float(f[k]), 4), "best": round(best["dist"], 4),
                                       "best_judge": best.get("judge"), "best_nwin": best.get("judge_nwin"),
                                       "windows": offs, "t": round(time.time() - t0, 1)}) + "\n")
@@ -313,7 +350,7 @@ def main(argv=None):
             print(f"{name}: no gain in {spent} evals (dist {c0['dist']:.3f}); nothing written", flush=True)
             continue
         (jb, ub, wb, cb), (ja, ua, wa, ca) = check([g0, best_g])
-        log.write(json.dumps({"genome": name, "check": {"times": times, "unseen": [times[i] for i in unseen],
+        log.write(json.dumps({"genome": name, "input": path, "check": {"times": times, "unseen": [times[i] for i in unseen],
                                                          "before": wb, "after": wa, "unseen_before": ub,
                                                          "unseen_after": ua,
                                                          "dist_before": cb and cb.get("dist"),
@@ -347,13 +384,20 @@ def main(argv=None):
                                          "judge_windows", "judge_nwin", "judge_v", "stat_windows", "stat_nwin",
                                          "win_t", "zbytes", "nodes", "luma", "motion", "dist") if k in src})
         rows[-1].update({"unseen_before": ub, "unseen_after": ua, "genome": g.to_json()})
+        keep = {}
+        for r in rows:  # one row per genome, the newest
+            try:
+                keep[Genome.from_json(r["genome"]).to_bytes()] = r
+            except Exception:
+                continue
+        rows[:] = list(keep.values())
         with open(os.path.join(a.out, "pareto.json.tmp"), "w") as f:
             json.dump(sorted(rows, key=lambda r: r["zbytes"]), f)
         os.replace(os.path.join(a.out, "pareto.json.tmp"), os.path.join(a.out, "pareto.json"))
         publish()
         print(f"wrote {out}: dist {before:.3f} -> {after:.3f}; judge {g.meta['cma']['judge_before']} -> "
               f"{g.meta['cma']['judge_after']}; unseen windows {ub} -> {ua}", flush=True)
-    pool.terminate()
+    pool[0].terminate()
 
 
 if __name__ == "__main__":
