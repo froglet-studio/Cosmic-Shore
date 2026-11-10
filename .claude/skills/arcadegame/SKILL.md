@@ -467,7 +467,7 @@ Harvest (the Thresher's Space game, 2026-11-10, `claude/keen-rubin-rw7p6q`, `HAR
   `_own_cell_assets` pattern): regex-replace only `m_Name` and the three population numbers, fail if any key is not
   found exactly once, and mint the guid from the new name. Editing the shared asset retunes every mode that uses it.
 
-Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-ol600q`, `SHATTERPLANE.md`) taught six:
+Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-ol600q`, `SHATTERPLANE.md`) taught seven:
 - **A mode may SIZE an ability that reads the world, through the world.** The ring blast is as wide as the nucleus of the
   cell it blows in, so "make the ring reach a little further" is an ARENA change: give the cell configs the standard
   `NucleusPrefab` (a cell with none cannot be sized, and the blast falls back to the vessel's own constant), then call
@@ -493,6 +493,11 @@ Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-
   (its own enum, generator `MODE_ID`, toast id, preview mapping, test case, docs; the generator re-emits the card, toast
   config, preview and unlock list), skipping ids a third in-flight branch claims (Glasshouse, 89 / 164). Run a duplicate-
   value check over every enum after the merge, and scan EVERY branch for the next free id right before the PR.
+- **...and they get the same FOLLOW-UP too, so a platform hook gets built twice.** "I3 team crystals, I4 fauna" reached
+  Harvest's and Shatterplane's sessions alike; each added its own team gate (`ElementalCrystalImpactor.RestrictTo` and a
+  `TeamElementalCrystalImpactor` subclass). Harvest merged first, so Shatterplane adopted `RestrictTo` and deleted its
+  class. Before adding a hook to a platform class, `git log origin/bleeding-edge -- <that class>` and read the sibling
+  mode's newest commits; when two sessions work one plan, assume the other one is building the same thing.
 
 ## 4. Gates (no Unity needed; run them all)
 
