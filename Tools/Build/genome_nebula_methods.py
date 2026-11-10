@@ -326,7 +326,8 @@ def main():
     sheets = {}
     for name, fn, args in methods:
         render, draw, info = fn(*args)
-        ms = B.timed(draw)
+        render(*VIEWS[0][1:])   # sets the camera first: timing a pass with unset uniforms measures a degenerate ray
+        ms = B.timed(draw, reps=6)
         errs = {}
         imgs = []
         for vname, y, p in VIEWS:
