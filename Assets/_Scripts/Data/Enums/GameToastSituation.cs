@@ -234,6 +234,9 @@ namespace CosmicShore.Data
         // Kelpwood, the Angler's charge game (_Scripts/Controller/Arcade/KELPWOOD.md). Its race beats are the shared
         // 128-130 (DomainRaceToasts); a bite is 86 (StrikeHitsLanded rose). Posted to the LOCAL pilot only.
         KelpwoodHint = 161,             // once, at the start: lock a rival with the eraser; tame the herds in the kelp
+        // Corona, the Manta's charge game (_Scripts/Controller/Arcade/CORONA.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a bloom hit is 82 (DebuffHitsLanded rose). Posted to the LOCAL pilot only.
+        CoronaHint = 162,               // once, at the start: skim a shell to arm, graze to plant, cash at the heart
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

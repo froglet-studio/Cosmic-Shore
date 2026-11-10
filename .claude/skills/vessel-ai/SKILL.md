@@ -111,8 +111,8 @@ Copy this list into the AI's doc and tick it.
   for a mode that reuses Switchback's course without the gauntlet (Scarab Rally).
   It breaks two rules above on purpose: Legendary is faster than the shipped pilot, and the setting is per intensity.
   The hull's kit is unchanged (the nose rate is a per-pilot dial, as people's pad / touch / keyboard rates are), and
-  every other mode leaves it unset. Do not copy it to another mode without the AI owner's yes; `AI_PLAN.md` §7 holds
-  the question.
+  every other mode leaves it unset. Copying it to another mode goes into the AI owner's `/approve` queue (`Docs/TEAM.md` rule 13);
+  `AI_PLAN.md` §7 holds the question.
 - **Level colours**, the same in the game tools and the studios: Hard red, Medium amber, Easy green
   (`ai_race_panel.js` `data-lv`).
 

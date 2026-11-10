@@ -7,8 +7,8 @@ description: ALIAS of `/ship promote [branch]` - promote an integration branch (
 
 Folded into `/ship` on 2026-10-26 (Garrett: one shipping process, so two skills cannot drift apart). This file
 is the alias; **read `.claude/skills/ship/SKILL.md` and run its §1.5 (fetch, merge bleeding-edge in, resolve
-every conflict on the branch, `bash .claude/skills/ship/gates.sh`, push) and §5-§5.5 (the PR, in the
-`/ship promote` shape; fire CI once).** No review pass and no go/no-go: a promote carries work that was reviewed
+every conflict on the branch, `bash .claude/skills/ship/gates.sh`, push) and §5-§5.7 (the PR, in the
+`/ship promote` shape; fire CI once; merge it).** No review pass and no go/no-go: a promote carries work that was reviewed
 PR by PR on its way into the integration branch.
 
 The argument is the branch to promote; with none, the current branch. Past runs of this lane: `Ys-bleeding-edge`

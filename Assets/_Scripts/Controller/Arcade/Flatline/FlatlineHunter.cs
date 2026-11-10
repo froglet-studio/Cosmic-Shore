@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
     ///     crystal (a crystal is a spare ring);
     ///   • otherwise at the chosen rival, led by <see cref="FlatlineSettingsSO.aiLeadSeconds"/> of its flight, so the
     ///     rival ends up on the nose (where the rounds go) and inside cord reach (where a Strike pays eight rounds);
-    ///   • with no rival in the cell, at the centre, where the seams cross.
+    ///   • with no rival in the cell, at the centre of the field.
     ///
     /// <para><b>Difficulty is the seat's AI level</b> (<see cref="GameDataSO.AIDifficultyFor"/>), never the intensity.</para>
     /// </summary>

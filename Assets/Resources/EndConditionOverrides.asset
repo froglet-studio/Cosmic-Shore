@@ -40,14 +40,15 @@ MonoBehaviour:
   undertowPointTarget: 12
   dustupPointTarget: 4
   serpentHoodSnipeTarget: 3
-  flatlinePointTarget: 200
+  flatlinePointTarget: 90
   flatlinePointTargetByIntensity:
-  - 180
-  - 200
-  - 220
-  - 240
+  - 90
+  - 90
+  - 90
+  - 90
   jackstrawStrikeTarget: 3
   kelpwoodBiteTarget: 12
+  coronaBloomTarget: 15
   tapestryRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
@@ -106,14 +107,15 @@ MonoBehaviour:
   undertowPointTargetBuild: 12
   dustupPointTargetBuild: 4
   serpentHoodSnipeTargetBuild: 3
-  flatlinePointTargetBuild: 200
+  flatlinePointTargetBuild: 90
   flatlinePointTargetByIntensityBuild:
-  - 180
-  - 200
-  - 220
-  - 240
+  - 90
+  - 90
+  - 90
+  - 90
   jackstrawStrikeTargetBuild: 3
   kelpwoodBiteTargetBuild: 12
+  coronaBloomTargetBuild: 15
   tapestryRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100

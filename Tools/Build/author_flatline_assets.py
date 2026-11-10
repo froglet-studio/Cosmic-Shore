@@ -3,19 +3,22 @@
 Authors every serialized asset the Flatline game mode needs (GameModes.Flatline = 84).
 
 Flatline is the Brittle Star's CHARGE game (Shombith, 2026-11-09: "Go with Flatline, build all four intensities ...
-only the bullets and chords should score points"). Thin PANES of prisms cross the cell. A pane stops a round, the cords
-cut straight through it, and a ring thrown face-on into it bursts flat along it. Only hull-on-hull hits score, at the
+only the bullets and chords should score points"; 2026-11-10: "These shapes should be scattered or open designed where
+we can go inside ... make the score to win at 90"). An OPEN field of thin-paned structures is scattered through the
+cell: loose panes, tunnels to fly through and windowed cages to fly into. A pane stops a round, the cords cut straight
+through it, and a ring thrown face-on into it bursts flat along it. Only hull-on-hull hits score, at the
 fleet price (CombatHitDrain.PointsFor, ten points to the petal): a ROUND on a rival hull is 1 (Bullet), a CORD or a
 thrown saber across one is 8 (Strike). The ring blast scores NOTHING (it still bursts, breaks panes and takes petals:
-the mode never changes the vessel). First DOMAIN to the per-intensity target wins, golf-timed.
+the mode never changes the vessel). First DOMAIN to the per-intensity target wins, golf-timed: 90 points at every intensity.
 
 THE LADDER (one SpawnableFlatline prefab and one cell config per intensity; flatline_budget.py is the census):
-  I1 Three Planes - three panes on the axes, eight open rooms, six crystals on the seams.
-  I2 Five Pages   - five panes round one spine, ten narrow rooms, five crystals up the spine.
-  I3 Icosa Panes  - six panes crossing at every angle, danger on every rim.
-  I4 Pane Geode   - ten panes standing off the centre as a hollow shell, holes punched through, danger rims,
-                    four crystals in the cracks.
-Every pane's every Nth grid line is a super-shielded RIB, so a pane the match wears down stays a readable lattice.
+  I1 Scattered Panes - twenty-four loose panes scattered through open space, crystals in front of panes.
+  I2 Tunnels         - twenty panes and five open-ended tunnels to fly through, a crystal inside every tunnel.
+  I3 Cages           - four windowed cages to fly into, four tunnels, eighteen panes, danger rims on every third pane.
+  I4 Maze            - six cages, four tunnels and twenty-two holed panes, danger on every other pane and every
+                       third room, five crystals deep inside the rooms.
+No two structures touch: each stands at least FlatlinePanes.Gap clear of every other, so there is always a way round.
+Every wall's every Nth interior grid line is a super-shielded RIB, so a wall the match wears down stays a lattice.
 
 NOTHING ABOUT THE BRITTLE STAR CHANGES (the LOCKED vessel rule, Shombith 2026-10-31). The mode's levers are the arena,
 the scoring and the AI (a hunter that steers; the hull's own autopilot keeps the triggers).
@@ -104,20 +107,18 @@ SPAWNABLE_GO, SPAWNABLE_TR, SPAWNABLE_MB = 8400000000000201, 8400000000000202, 8
 ROUND_POINTS = 1          # CombatHitDrain.PointsFor(Bullet)
 STRIKE_POINTS = 8         # CombatHitDrain.PointsFor(Strike)
 BULLET_CLASS, STRIKE_CLASS = 0, 5
-# The end target, per intensity (Shombith, 2026-11-09: "what is your endgame score for each intensities"). An
-# ESTIMATE until the ledger measures a match: a 1v1 near four minutes on the model in FLATLINE.md ("The targets"):
-# pts/s = engaged x ((1 - cord share) x line-of-sight x 3 rounds/s + cord share x 8 / 3 s a pass). Denser panes put
-# more of each fight inside cord reach, where a Strike pays eight rounds, so the target RISES up the ladder.
-TARGET_BY_INTENSITY = [180, 200, 220, 240]
-TARGET_SCALAR = 200       # the fallback for a rung that authors nothing; kept in sync with DefaultFlatlinePointTarget
-# Comeback - a FUNCTION OF THE TARGET (bonusLevels = deficit x rate). A quarter of the SMALLEST target behind (45
-# points) buys 1.35 element levels; a quarter of the largest (60) buys 1.8.
-COMEBACK_RATE = 0.03
+# The end target: 90 at every intensity (Shombith, 2026-11-10: "make the score to win at 90"). The per-intensity list
+# stays (Cleave's shape) so a rung can be re-tuned on its own once timed matches say so.
+TARGET_BY_INTENSITY = [90, 90, 90, 90]
+TARGET_SCALAR = 90        # the fallback for a rung that authors nothing; kept in sync with DefaultFlatlinePointTarget
+# Comeback - a FUNCTION OF THE TARGET (bonusLevels = deficit x rate). A quarter of the target behind (22.5 points,
+# about three cord strikes) buys 1.125 element levels.
+COMEBACK_RATE = 0.05
 
 # ── The arena (the standard 1,200 u shell at every rung) ─────────────────────
 MEMBRANE_RADIUS = lib.MEMBRANE_RADIUS
 CYTOPLASM_SHARD_DISTANCE = round(120 * MEMBRANE_RADIUS / 1200)
-SPAWN_RING = 420          # outside every pane (I1-I4 reach 240 at most), facing the centre
+SPAWN_RING = 680          # outside every structure (I1-I4 reach 549 at most), facing the centre
 OMNI_RADIUS = 200         # the cell's own omni crystal spawns inside this (noNucleusSpawnRadius)
 CORD_REACH_WHIP, CORD_REACH_SABER = 120.0, 80.0
 
@@ -185,10 +186,11 @@ g.emit_asset("Assets/_SO_Assets/Games/FlatlineSettings.asset", G_ASSET["Flatline
 # ── 4. Arcade card ───────────────────────────────────────────────────────────
 # MinPlayers 2 / MinDomains 2 is a RULE: rounds and cords never score on a team-mate, so a solo lobby scores nothing.
 DESCRIPTION = ("Brittle Stars only - a duel through thin panes of prisms. A pane stops your rounds, but your cords "
-               "cut straight through it, so nobody is safe behind one. Throw your ring face-on into a pane and it "
+               "cut straight through it, so nobody is safe behind one. Fly round the loose panes, through the tunnels and "
+               "into the cages. Throw your ring face-on into a pane and it "
                "bursts flat along it - get off a pane when a ring comes spinning at you. A round on a rival is one "
-               "point and a cord strike is eight; the ring scores nothing. Crystals on the seams give you spare "
-               "rings. First team to the target wins.")
+               "point and a cord strike is eight; the ring scores nothing. Crystals inside the rooms give you spare "
+               "rings. First team to 90 wins.")
 g.emit_asset(CARD_REL, G_ASSET["ArcadeGameFlatline"],
              lib.header_for(EXISTING["SO_ArcadeGame"], "ArcadeGameFlatline") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
@@ -284,15 +286,20 @@ MonoBehaviour:
   density: 1
   spawnClearRadius: 0
   spawnClearPoints: []
-  arrangement: {r['arrangement']}
-  paneRadiusTiles: {r['radiusTiles']}
-  paneOffset: {lib.num(r['offset'])}
+  innerRadius: {lib.num(r['innerRadius'])}
+  outerRadius: {lib.num(r['outerRadius'])}
+  paneCount: {r['paneCount']}
+  paneHalfMin: {r['paneHalfMin']}
+  paneHalfMax: {r['paneHalfMax']}
+  tunnelCount: {r['tunnelCount']}
+  cageCount: {r['cageCount']}
+  roomHalf: {r['roomHalf']}
   ribEvery: {r['ribEvery']}
-  dangerRimTiles: {r['dangerRimTiles']}
+  dangerPaneEvery: {r['dangerPaneEvery']}
+  dangerRoomEvery: {r['dangerRoomEvery']}
   holeShare: {lib.num(r['holeShare'])}
   holeCellTiles: {r['holeCellTiles']}
   crystalCount: {r['crystalCount']}
-  crystalSpacing: {lib.num(r['crystalSpacing'])}
 """)
 
 CENSUS = {}
@@ -304,7 +311,7 @@ for r in RUNGS:
     env = f"{{fileID: {SPAWNABLE_MB}, guid: {G_ASSET[f'prefab/SpawnableFlatline{i}']}, type: 3}}"
     desc = (f"{r['label']} - intensity {i} of Flatline: {r['blurb']}. {c['total']} prisms, all neutral "
             f"({c['super']} super-shielded ribs, {c['danger']} danger). Membrane radius {int(MEMBRANE_RADIUS)}, "
-            f"spawn ring {SPAWN_RING}, the crystal field laid by the controller on the seams. NO NUCLEUS, no flora, "
+            f"spawn ring {SPAWN_RING}, the crystal field laid by the controller inside the rooms and in front of panes. NO NUCLEUS, no flora, "
             f"no fauna. Authored by Tools/Build/author_flatline_assets.py - re-run it rather than hand-editing.")
     g.emit_asset(f"{CELL_DIR}/Flatline Cell Config {i}.asset", G_ASSET[f"FlatlineCellConfig{i}"],
                  lib.header_for(EXISTING["CellConfigDataSO"], f"Flatline Cell Config {i}") + f"""  CellName: Flatline
@@ -371,8 +378,7 @@ NO_NUCLEUS = f"  noNucleusSpawnRadius: {OMNI_RADIUS}\n"
 # ── 7. Mode preview ──────────────────────────────────────────────────────────
 g.emit_asset("Assets/_SO_Assets/Mode Previews/ModePreview_Flatline.asset", G_ASSET["ModePreviewFlatline"],
              lib.header_for(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Flatline") + f"""  Mode: {MODE_ID}
-  Notes: 'The Flatline cell at each intensity - three planes, five pages, six crossing panes, then the
-    geode. OPEN-ENDED - it scores on rounds and cord strikes on rival pilots and a solo preview has none;
+  Notes: 'The Flatline cell at each intensity - scattered panes, then tunnels, cages, and the maze. OPEN-ENDED - it scores on rounds and cord strikes on rival pilots and a solo preview has none;
     what it teaches is the panes, the cords and the ring. Vessel pinned to BrittleStar({BRITTLESTAR_ID}).'
   PreviewCell: {{fileID: 11400000, guid: {CELLS[0]}, type: 2}}
   PreviewCellsByIntensity:
@@ -415,6 +421,13 @@ def build_clone():
 AUTHORED_BLOCKS = ["  CellConfigs:\n" + cell_list(CELLS) + "  cellTypeChoiceOptions: 1\n", SPAWN, NO_NUCLEUS]
 SCENE_REL = f"{lib.SCENES_DIR}/MinigameFlatline.unity"
 scene, scene_errs = lib.committed_scene(SCENE_REL, build_clone, AUTHORED_BLOCKS)
+# The spawn ring is a block this generator OWNS: when the arena is re-laid (2026-11-10, the open scattered field reaches
+# 549 u, so the ring moved out from 420), the committed scene's block is re-tuned in place, and nothing else in it.
+for old_ring in (420,):
+    old = SPAWN.replace(f"spawnRingRadiusFloor: {SPAWN_RING}\n", f"spawnRingRadiusFloor: {old_ring}\n")
+    if scene is not None and old != SPAWN and scene.count(old) == 1:
+        scene = scene.replace(old, SPAWN)
+        scene_errs = [e for e in scene_errs if SPAWN not in e]
 errors += scene_errs
 g.emit_scene("MinigameFlatline", G_ASSET["MinigameFlatline.unity"], scene)
 
@@ -500,12 +513,21 @@ if "PerformShipControllerActions" in hunter:
 # The C# twin of this census stays the C#: its constants and rules must still be the ones counted here.
 panes_cs = g.read(SCRIPT_PATHS["FlatlinePanes"])
 for needle in (f"const float Tile = {lib.num(fb.TILE)}f;", f"const float Thickness = {lib.num(fb.THICKNESS)}f;",
-               f"const float Flush = {fb.FLUSH}f;", f"const float SeamHalfWidth = {fb.SEAM_HALF_WIDTH}f;",
-               "const float SeamReachMargin = Tile;", f"const int HoleSalt = {fb.HOLE_SALT};",
-               "Hash01(j * 7919 + cx * 131 + cy * 17 + HoleSalt)", "a % ribEvery == 0 || b % ribEvery == 0",
+               f"const float Flush = {fb.FLUSH}f;", f"const float Gap = {lib.num(fb.GAP)}f;",
+               f"const int MaxAttempts = {fb.MAX_ATTEMPTS};", f"const float CrystalOffset = {lib.num(fb.CRYSTAL_OFFSET)}f;",
+               f"const int WindowHalf = {fb.WINDOW_HALF};", f"const int HoleSalt = {fb.HOLE_SALT};",
+               f"int key = s.Seed * {fb.KEY_SEED} + k * {fb.KEY_STRUCTURE} + t * {fb.KEY_ATTEMPT};",
+               "Hash01(st.Index * 7919 + cx * 131 + cy * 17 + HoleSalt)",
+               "i % s.RibEvery == 0 && Mathf.Abs(i) < h || j % s.RibEvery == 0 && Mathf.Abs(j) < h",
                "Mathf.Abs(n.x) < 0.9f ? new Vector3(1f, 0f, 0f) : new Vector3(0f, 1f, 0f)"):
     if needle not in panes_cs:
         errors.append(f"FlatlinePanes no longer declares '{needle}' - update flatline_budget.py")
+spawnable_cs = g.read(SCRIPT_PATHS["SpawnableFlatline"])
+for field in ("innerRadius", "outerRadius", "paneCount", "paneHalfMin", "paneHalfMax", "tunnelCount", "cageCount",
+              "roomHalf", "ribEvery", "dangerPaneEvery", "dangerRoomEvery", "holeShare", "holeCellTiles",
+              "crystalCount"):
+    if not re.search(rf"\] (?:float|int) {field} = ", spawnable_cs):
+        errors.append(f"SpawnableFlatline no longer serializes '{field}' - the prefabs write it")
 tests_cs = g.read(SCRIPT_PATHS["FlatlineTests"])
 for r in RUNGS:
     c = CENSUS[r["i"]]
@@ -513,25 +535,35 @@ for r in RUNGS:
     if want not in tests_cs:
         errors.append(f"FlatlineTests does not pin I{r['i']}'s census {want} - the C# and the twin may have drifted")
 
-# The geometry the duel promises.
-if fb.SEAM_HALF_WIDTH <= ((fb.TILE / 2) ** 2 * 2 + (fb.THICKNESS / 2) ** 2) ** 0.5 + fb.THICKNESS / 2:
-    errors.append("the seam slot is narrower than a tile's reach - crossing panes would interpenetrate")
+# The geometry the duel promises: an OPEN field (every structure placed, a gap round each), rooms you can fly into,
+# crystals inside it and clear of the spawn ring.
 for r in RUNGS:
-    ps = fb.panes(r["arrangement"], r["radiusTiles"], r["offset"])
-    sites = fb.crystal_sites(ps, r["crystalCount"], r["crystalSpacing"])
+    c = CENSUS[r["i"]]
+    if c["missed"]:
+        errors.append(f"I{r['i']}: {c['missed']} structures found no room - widen the field or lay fewer")
+    if c["reach"] > SPAWN_RING - 100:
+        errors.append(f"I{r['i']}: structures reach {c['reach']:.0f} u, within 100 u of the spawn ring {SPAWN_RING}")
+    structs, _ = fb.layout(r)
+    sites = fb.crystal_sites(structs, r["crystalCount"])
     if len(sites) != r["crystalCount"]:
         errors.append(f"I{r['i']}: {len(sites)} crystal sites for {r['crystalCount']} wanted")
-    for s in sites:
-        d = sum(x * x for x in s) ** 0.5
+    for st in sites:
+        d = sum(x * x for x in st) ** 0.5
         if d > SPAWN_RING - 100:
             errors.append(f"I{r['i']}: a crystal site {d:.0f} u out sits within 100 u of the spawn ring")
-    if len({tuple(round(x, 1) for x in s) for s in sites}) != len(sites):
+    if len({tuple(round(x, 1) for x in st) for st in sites}) != len(sites):
         errors.append(f"I{r['i']}: two crystal sites coincide")
-    if fb.extent(r) > SPAWN_RING - 120:
-        errors.append(f"I{r['i']}: panes reach {fb.extent(r):.0f} u, within 120 u of the spawn ring {SPAWN_RING}")
-    room = r["radiusTiles"] * fb.TILE
-    if room < CORD_REACH_WHIP:
-        errors.append(f"I{r['i']}: panes {room:.0f} u across are shorter than the whip's reach - nothing to hide behind")
+    if r["paneHalfMax"] * 2 * fb.TILE < CORD_REACH_SABER * 0.5:
+        errors.append(f"I{r['i']}: the largest pane is too small to hide behind")
+    # A room's opening (the inside of a tunnel, a cage's window) must take a hull: 2 x (half - 1) tiles of clear bore.
+    if (r["tunnelCount"] or r["cageCount"]) and (2 * fb.WINDOW_HALF + 1) * fb.TILE < 25:
+        errors.append(f"I{r['i']}: a cage window is too narrow to fly through")
+if fb.GAP < 30:
+    errors.append(f"the gap between structures ({fb.GAP} u) is too tight to fly between")
+if CENSUS[1]["structures"] and any(s["kind"] != fb.PANE for s in fb.layout(RUNGS[0])[0]):
+    errors.append("I1 is loose panes only")
+if not (RUNGS[1]["tunnelCount"] and RUNGS[2]["cageCount"] and RUNGS[3]["cageCount"]):
+    errors.append("the ladder adds tunnels at I2 and cages at I3")
 counts = [CENSUS[i]["total"] for i in (1, 2, 3, 4)]
 if max(counts) > 12000:
     errors.append(f"a rung lays {max(counts)} prisms - keep the duel arena light")

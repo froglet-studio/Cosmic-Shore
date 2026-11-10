@@ -83,7 +83,7 @@ renderer, so it plays the real modes, AIs, HUD and replay system with no Unity. 
 **All-AI matches need one engine verb that is not in the engine yet**: `do arcade autopilot`, which hands the local
 seat to the AI through the game's own `PilotControl.TrySetAIFlies` (the Third Eye's You / AI toggle). The 2026-10-27
 run used it as an uncommitted local patch to `Port/src/CosmicShore.Player/Inspector.cs`; adding it (and a committed
-`Port/tools/amoebius_video.py` for steps 2-5) is engine tooling and goes through Shombith. Without it the local seat
+`Port/tools/amoebius_video.py` for steps 2-5) is engine tooling: Shombith's, so it goes into his `/approve` queue. Without it the local seat
 idles and the camera watches an idle hull. With it, the 2026-10-27 run's handed-over seat finished with 0 crystals
 while the three AI seats took 13, 9 and 8: the handed-over Squirrel flies, but whether it races like an AI seat is
 `PilotControl`'s question (the Third Eye's toggle), not the video's.

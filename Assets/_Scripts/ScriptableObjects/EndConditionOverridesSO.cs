@@ -109,12 +109,17 @@ namespace CosmicShore.ScriptableObjects
         /// nothing. Points are the fleet price (CombatHitDrain.PointsFor): a round on a rival hull is 1, a cord or
         /// thrown-saber Strike 8, ten points to the petal; the ring blast pays nothing (FlatlineScoringRuleSO),
         /// summed across the domain's pilots.</summary>
-        public const int DefaultFlatlinePointTarget = 200;
+        public const int DefaultFlatlinePointTarget = 90;
 
         /// <summary>Kelpwood bite target used when <see cref="kelpwoodBiteTarget"/> is 0. One BITE - a creature an
         /// Angler locked on a rival reaching its hull (a Strike-class combat hit) - is one point
         /// (KelpwoodScoringRuleSO), summed across the domain's pilots.</summary>
         public const int DefaultKelpwoodBiteTarget = 12;
+
+        /// <summary>Corona bloom target used when <see cref="coronaBloomTarget"/> is 0. One BLOOM HIT - a rival pilot
+        /// caught in a bloom of a bomb a Manta planted (a Debuff-class combat hit) - is one point
+        /// (CoronaScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultCoronaBloomTarget = 15;
 
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
@@ -524,19 +529,22 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int jackstrawStrikeTarget = 3;
         [Tooltip("Flatline: POINTS a DOMAIN needs to win (race to N), the Brittle Star's charge game. A round " +
                  "on a rival hull is 1 point, a cord or thrown-saber Strike 8 (the fleet price, ten points to " +
-                 "the petal); the ring blast scores nothing. 0 = default (200). The per-intensity list below " +
+                 "the petal); the ring blast scores nothing. 0 = default (90). The per-intensity list below " +
                  "overrides it.")]
-        [Min(0)] public int flatlinePointTarget = 200;
+        [Min(0)] public int flatlinePointTarget = 90;
 
         [Tooltip("Flatline: per-INTENSITY override of the target above - element 0 is intensity 1. Empty, a 0 " +
-                 "entry, or an intensity past the end falls back to the scalar. It rises up the ladder because " +
-                 "the denser panes put more fights inside cord reach, and a Strike is worth eight rounds, so " +
-                 "points come faster at the top; the four targets hold a 1v1 match near four minutes.")]
-        public List<int> flatlinePointTargetByIntensity = new() { 180, 200, 220, 240 };
+                 "entry, or an intensity past the end falls back to the scalar. 90 at every rung (Shombith, " +
+                 "2026-11-10); a rung can be re-tuned on its own once timed matches say so.")]
+        public List<int> flatlinePointTargetByIntensity = new() { 90, 90, 90, 90 };
 
         [Tooltip("Kelpwood: BITES a DOMAIN needs to win (race to N). A creature an Angler locked on a rival biting " +
                  "its hull is one bite, summed across the domain's pilots. 0 = default (12).")]
         [Min(0)] public int kelpwoodBiteTarget = 12;
+
+        [Tooltip("Corona: BLOOM HITS a DOMAIN needs to win (race to N). A rival pilot caught in a bloom of a bomb a " +
+                 "Manta planted is one bloom hit, summed across the domain's pilots. 0 = default (15).")]
+        [Min(0)] public int coronaBloomTarget = 15;
 
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
@@ -615,9 +623,10 @@ namespace CosmicShore.ScriptableObjects
         [FormerlySerializedAs("serpentGulagSnipeTargetBuild")]
         [Min(0)] public int serpentHoodSnipeTargetBuild = 3;
         [Min(0)] public int jackstrawStrikeTargetBuild = 3;
-        [Min(0)] public int flatlinePointTargetBuild = 200;
-        [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 180, 200, 220, 240 };
+        [Min(0)] public int flatlinePointTargetBuild = 90;
+        [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 90, 90, 90, 90 };
         [Min(0)] public int kelpwoodBiteTargetBuild = 12;
+        [Min(0)] public int coronaBloomTargetBuild = 15;
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
@@ -1042,6 +1051,13 @@ namespace CosmicShore.ScriptableObjects
             kelpwoodBiteTarget > 0 ? kelpwoodBiteTarget : DefaultKelpwoodBiteTarget;
 
         /// <summary>
+        /// Corona bloom target ("first domain to N bloom hits"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultCoronaBloomTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetCoronaBloomTarget() =>
+            coronaBloomTarget > 0 ? coronaBloomTarget : DefaultCoronaBloomTarget;
+
+        /// <summary>
         /// Tapestry round length in seconds: the configured value when &gt; 0, otherwise
         /// <see cref="DefaultTapestryRoundSeconds"/>. Read by TapestryTimeTurnMonitor at
         /// StartMonitor on every peer, so the clock and the whistle cannot disagree.
@@ -1154,6 +1170,7 @@ namespace CosmicShore.ScriptableObjects
                 // Scalar only, as for Cleave: the real answer is per-intensity (GetFlatlinePointTarget(int)).
                 GameModes.Flatline                  => GetFlatlinePointTarget(),
                 GameModes.Kelpwood                  => GetKelpwoodBiteTarget(),
+                GameModes.Corona                    => GetCoronaBloomTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush.
@@ -1234,6 +1251,7 @@ namespace CosmicShore.ScriptableObjects
             flatlinePointTarget == flatlinePointTargetBuild &&
             SameInts(flatlinePointTargetByIntensity, flatlinePointTargetByIntensityBuild) &&
             kelpwoodBiteTarget == kelpwoodBiteTargetBuild &&
+            coronaBloomTarget == coronaBloomTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
@@ -1292,6 +1310,7 @@ namespace CosmicShore.ScriptableObjects
             flatlinePointTarget = flatlinePointTargetBuild;
             flatlinePointTargetByIntensity = CopyInts(flatlinePointTargetByIntensityBuild);
             kelpwoodBiteTarget = kelpwoodBiteTargetBuild;
+            coronaBloomTarget = coronaBloomTargetBuild;
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
@@ -1351,6 +1370,7 @@ namespace CosmicShore.ScriptableObjects
             flatlinePointTargetBuild = flatlinePointTarget;
             flatlinePointTargetByIntensityBuild = CopyInts(flatlinePointTargetByIntensity);
             kelpwoodBiteTargetBuild = kelpwoodBiteTarget;
+            coronaBloomTargetBuild = coronaBloomTarget;
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;

@@ -9,8 +9,10 @@ A swim lane is a **vessel** or a **section of the app shell** (the Voyages map, 
 the in-game HUD, ...) that someone can hold in their head. It is **not a task**. Yash clearly working on the Thresher
 Time games means the Thresher lane is occupied: someone else should pick another lane, or talk to Yash first.
 
-**Occupied is the only thing that says "not now".** Work that already merged never blocks anyone: who built a lane
-before is context (read it and build on it, `Docs/TEAM.md` rule 3), not a reason to stay out. A lane opens by itself
+**Occupied is the only thing that says "not now"** - and the only thing that slows a change down anywhere (Garrett,
+2026-11-10; `Tools/Build/approvals.py check` exits 2 on it). Work that already merged never blocks anyone: who built
+a lane before is context (read it and build on it, `Docs/TEAM.md` rule 3), not a reason to stay out; a change to what
+they built goes into their `/approve` queue instead of waiting for them. A lane opens by itself
 the moment its work merges into `bleeding-edge`, or when the branch goes quiet for the window (7 days).
 
 `swimlanes.py` is a READER: it writes nothing except a person's verdict (section 4).
@@ -36,7 +38,7 @@ About 15-20 s. It prints four groups, in this order:
 
 Each open lane also says when it last opened ("last landed": the newest merge about it), and a lane with a declared
 owner (`Docs/TEAM.json` owners, or a note in `lanes.json`) carries a `!` line: FTUE and the start flow are Shombith's
-and Caleb's - ask them before taking one.
+and Caleb's - tell them when you take one, and queue what you change for their `/approve`.
 
 Options:
 
@@ -79,7 +81,14 @@ Options:
   heads-up, not a lock.
 - **Before you start work on a vessel or an app-shell section** (any session): run `--lane <key>` for it. If it is
   occupied, tell the person in one line before changing anything. If the person still wants to go ahead, go ahead -
-  and say in the commit "Affects: <occupant>'s <lane> work on <branch>" (`Docs/TEAM.md` rule 7).
+  say in the commit "Affects: <occupant>'s <lane> work on <branch>" (`Docs/TEAM.md` rule 7) and queue the occupant an
+  entry (`/approve` §7).
+- **Before you commit** (any session, any files): `python3 Tools/Build/approvals.py check --me <person>` reads the
+  lanes of the change itself. A change ABOUT an occupied lane (a quarter of its files, or three) is a collision and
+  waits for the person's decision; a brush, and everything outside the lanes, goes through with a heads-up and
+  `/approve` entries.
+- **"What's waiting for me?"**: alongside the board, `python3 Tools/Build/approvals.py list --person <them>` is their
+  approval queue (`/approve`): mention how many entries wait, in one line.
 - **After you push**: nothing to do. The lane shows you as its occupant while your branch is unmerged; when it merges
   the lane opens, and whatever your work left (a hand test in the checklist, a ticket) puts it back on top for the
   next person.

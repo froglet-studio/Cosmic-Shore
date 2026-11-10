@@ -55,12 +55,17 @@ MonoBehaviour:
   density: 1
   spawnClearRadius: 0
   spawnClearPoints: []
-  arrangement: 1
-  paneRadiusTiles: 24
-  paneOffset: 0
-  ribEvery: 6
-  dangerRimTiles: 0
+  innerRadius: 80
+  outerRadius: 420
+  paneCount: 20
+  paneHalfMin: 3
+  paneHalfMax: 4
+  tunnelCount: 5
+  cageCount: 0
+  roomHalf: 4
+  ribEvery: 4
+  dangerPaneEvery: 0
+  dangerRoomEvery: 0
   holeShare: 0
-  holeCellTiles: 4
-  crystalCount: 5
-  crystalSpacing: 60
+  holeCellTiles: 2
+  crystalCount: 6
