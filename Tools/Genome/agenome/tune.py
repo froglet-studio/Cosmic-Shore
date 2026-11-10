@@ -18,8 +18,10 @@ The tuned genome is then judged on --check-n windows --check-hop seconds apart (
 windows the climb never saw (4, 12, 16, 20 s by default) are reported before and after as meta.cma.unseen_before/after:
 the honest read of whether the tune generalised or only fitted the judged windows.
 
-Writes OUT_DIR/<file stem>__cma.json (meta.name <lineage>__cma) when the climb improved (the best genome, meta.cma = before/after/unseen/evals) and
-OUT_DIR/log.jsonl (one line per CMA generation, plus one "check" line per genome).
+Writes OUT_DIR/<file stem>__cma.json (meta.name <lineage>__cma) when the climb improved (the best genome, meta.cma =
+before/after/unseen/evals), OUT_DIR/pareto.json (those genomes as island rows: copy it to runs/<name>/ and every
+island resumes from it and draws immigrants out of it) and OUT_DIR/log.jsonl (one line per CMA generation, plus one
+"check" line per genome).
 """
 import argparse
 import json
@@ -157,6 +159,7 @@ def main(argv=None):
         return out
 
     rng = np.random.default_rng(a.seed)
+    rows = []
     for path in a.genome:
         g0 = Genome.from_json(json.load(open(path))).ensure_root()
         stem = os.path.splitext(os.path.basename(path))[0]
@@ -217,6 +220,15 @@ def main(argv=None):
                                "evals": spent, "stat_w": a.stat_w}})
         out = os.path.join(a.out, f"{stem}__cma.json")
         g.save(out)
+        # a pareto.json of the tuned genomes, in the islands' row format: copied to runs/<name>/ it reaches every
+        # island (they resume from and draw immigrants out of runs/*/pareto.json); dist here has no critic term
+        rows.append({k: best[k] for k in ("ok", "stat", "hold", "judge", "judge_hold", "judges", "judges_hold",
+                                          "judge_windows", "judge_nwin", "judge_v", "stat_windows", "stat_nwin",
+                                          "zbytes", "nodes", "luma", "motion", "dist") if k in best})
+        rows[-1].update({"unseen_before": ub, "unseen_after": ua, "genome": g.to_json()})
+        with open(os.path.join(a.out, "pareto.json.tmp"), "w") as f:
+            json.dump(sorted(rows, key=lambda r: r["zbytes"]), f)
+        os.replace(os.path.join(a.out, "pareto.json.tmp"), os.path.join(a.out, "pareto.json"))
         print(f"wrote {out}: dist {c0['dist']:.3f} -> {best['dist']:.3f}; judge {c0.get('judge')} -> "
               f"{best.get('judge')}; unseen windows {ub} -> {ua}", flush=True)
     pool.terminate()
