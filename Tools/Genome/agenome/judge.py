@@ -103,15 +103,20 @@ class Judge:
         os.makedirs(cache_dir, exist_ok=True)
         np.savez(self.cache, train=self.train, hold=self.hold, level=self.level, level_hold=self.level_hold)
 
-    def embed(self, frames, batch=64):
-        """uint8 (N, 144, 256, 3) -> float32 (N, d)."""
-        x = np.asarray(frames)
-        if x.shape[1:] != self.shape:
-            from PIL import Image
-            x = np.stack([np.asarray(Image.fromarray(np.ascontiguousarray(f)).resize(self.shape[1::-1], Image.BILINEAR))
-                          for f in x])
-        x = x.astype(np.float32) / 127.5 - 1.0  # inception_v3 / mobilenet_v2 preprocess_input
-        return np.asarray(self.model.predict(x, batch_size=batch, verbose=0), np.float32)
+    def embed(self, frames, batch=64, chunk=256):
+        """uint8 (N, 144, 256, 3) -> float32 (N, d), a chunk at a time: a whole first generation at once (433 clips x
+        12 frames as float32) took 2.3 GB and got the main island killed for memory on 2026-11-10."""
+        frames = np.asarray(frames)
+        out = []
+        for i in range(0, len(frames), chunk):
+            x = frames[i:i + chunk]
+            if x.shape[1:] != self.shape:
+                from PIL import Image
+                x = np.stack([np.asarray(Image.fromarray(np.ascontiguousarray(f)).resize(self.shape[1::-1],
+                                                                                         Image.BILINEAR)) for f in x])
+            x = x.astype(np.float32) / 127.5 - 1.0  # inception_v3 / mobilenet_v2 preprocess_input
+            out.append(np.asarray(self.model.predict(x, batch_size=batch, verbose=0), np.float32))
+        return np.concatenate(out) if out else np.zeros((0, self.model.output_shape[-1]), np.float32)
 
     def score_feats(self, F):
         kt, kh = kid(F, self.train), kid(F, self.hold)

@@ -11,6 +11,9 @@ An island is name=dir[,dir...]: the dirs are its runs in order (a restart contin
 rendered again here and re-scored with the fixed statistics, so the numbers on the page are comparable across
 islands and restarts (the search's own fitness also has the critic term, which moves as the critic retrains).
 
+Every genome is also judged (agenome.judge: InceptionV3 and MobileNetV2 KID against the reels, 1.0 = Amoebius' own
+held-out reel), and the page ranks by the judge since the statistics proved gameable on 2026-11-10.
+
 Writes OUT_DIR/index.html, OUT_DIR/strips/<id>.jpg (4 frames) and OUT_DIR/clips/<id>.mp4. Publish index.html with
 strips/ and clips/ as its files; re-run and republish to the same URL to refresh. Videos are never committed.
 """
@@ -124,7 +127,7 @@ def load_island(name, dirs):
                 continue
             data = _json(os.path.join(d, fname), []) or []
             if kind == "pop":
-                data = sorted(data, key=lambda c: c.get("stat", 99))[:10]
+                data = sorted(data, key=lambda c: c.get("judge", c.get("stat", 99)))[:10]
             for c in data:
                 cands.append((kind, c))
         if last:
@@ -173,7 +176,7 @@ def main(argv=None):
     ap.add_argument("--holdout", default="reel05")
     ap.add_argument("--stats", required=True)
     ap.add_argument("--hold", required=True)
-    ap.add_argument("--max-genomes", type=int, default=84)
+    ap.add_argument("--max-genomes", type=int, default=100)
     ap.add_argument("--clips", type=int, default=14)
     ap.add_argument("--ss", type=int, default=1, help="supersampling factor, as the islands use (AGENOME_SS)")
     a = ap.parse_args(argv)
@@ -193,7 +196,7 @@ def main(argv=None):
         islands.append(isl)
         pool += [(name, k, c) for k, c in cands]
     if a.seedbank and os.path.exists(a.seedbank):
-        for c in (_json(a.seedbank, []) or [])[:8]:
+        for c in (_json(a.seedbank, []) or [])[:40]:
             pool.append(("seed bank", "seed", c))
 
     # dedupe by genome bytes; fronts and bests first so the cap keeps them
@@ -219,7 +222,15 @@ def main(argv=None):
             s["cells"].append(c["cell"])
 
     from .render import Renderer
+    from .judge import Judge, sample, calibration as judge_calibration, SHARED
     R = Renderer()
+    Js = [Judge(net, "native", 12) for net in ("inception", "mobilenet")]
+
+    def judged(fr):
+        per = [J.score_many([sample(fr, 12)])[0] for J in Js]
+        return (round(float(np.mean([p["judge"] for p in per])), 4), round(float(np.mean([p["judge_hold"] for p in per])), 4),
+                [round(p["judge"], 3) for p in per])
+
     genomes, frames_of = [], {}
     t0 = time.time()
     for gid, s in shown.items():
@@ -231,6 +242,7 @@ def main(argv=None):
             continue
         d = stats.distance(window_features(fr))
         dh = hold.distance(window_features(fr))
+        jd, jdh, jdn = judged(fr)
         _strip(fr, os.path.join(a.out, "strips", gid + ".jpg"))
         frames_of[gid] = fr
         c = s["search"]
@@ -239,6 +251,7 @@ def main(argv=None):
             "id": gid, "name": m.get("name") or "unnamed", "lineage": _lineage(g),
             "src": m.get("src") or "", "from": m.get("immigrant_from"),
             "islands": s["islands"], "kinds": s["kinds"],
+            "d": jd, "dh": jdh, "dn": jdn,
             "stat": round(d["total"], 4), "hold": round(dh["total"], 4),
             "groups": {k: round(d[k], 3) for k in GROUPS},
             "fit": round(c["dist"], 4) if "dist" in c and "stat" in c and c.get("crit") is not None else None,
@@ -249,7 +262,7 @@ def main(argv=None):
     print(f"rendered {len(genomes)} genomes in {time.time() - t0:.0f}s", flush=True)
 
     # clips for the closest genomes and for each island's closest
-    genomes.sort(key=lambda r: r["stat"])
+    genomes.sort(key=lambda r: r["d"])
     want = [r["id"] for r in genomes[:a.clips]]
     for isl in [i["name"] for i in islands] + ["seed bank"]:
         mine = [r for r in genomes if isl in r["islands"]]
@@ -259,12 +272,12 @@ def main(argv=None):
         if r["id"] in want and _mp4(frames_of[r["id"]], os.path.join(a.out, "clips", r["id"] + ".mp4")):
             r["clip"] = f"clips/{r['id']}.mp4"
 
-    # the front over (bytes, fixed-statistics distance) among the genomes shown
+    # the front over (bytes, judge distance) among the genomes shown
     front, best_so_far = [], 1e9
-    for r in sorted(genomes, key=lambda r: (r["zbytes"], r["stat"])):
-        if r["stat"] < best_so_far:
+    for r in sorted(genomes, key=lambda r: (r["zbytes"], r["d"])):
+        if r["d"] < best_so_far:
             front.append(r["id"])
-            best_so_far = r["stat"]
+            best_so_far = r["d"]
 
     # MAP-Elites cells (log2 bytes x mean luma, as the search bins them), closest genome per cell over all islands
     cells = {}
@@ -272,8 +285,8 @@ def main(argv=None):
         zb = min(9, max(0, int(np.log2(max(32, r["zbytes"])) - 5)))
         lu = min(7, max(0, int(r["luma"] * 16)))
         k = f"{zb},{lu}"
-        if k not in cells or r["stat"] < cells[k]["stat"]:
-            cells[k] = {"zb": zb, "lu": lu, "id": r["id"], "stat": r["stat"]}
+        if k not in cells or r["d"] < cells[k]["d"]:
+            cells[k] = {"zb": zb, "lu": lu, "id": r["id"], "d": r["d"]}
 
     # Amoebius reels: a 4 s window from the middle of each
     reels = []
@@ -290,9 +303,17 @@ def main(argv=None):
             hold_frames = np.asarray(fr)
         reels.append({"name": name, "held": held, "strip": f"strips/{name}.jpg", "clip": clip,
                       "window": [int(s0), int(s0 + 60)], "frames": int(len(fr)),
-                      "stat": round(stats.distance(window_features(w))["total"], 3)})
+                      "stat": round(stats.distance(window_features(w))["total"], 3), "d": judged(w)[0]})
 
     calib = calibration(hold_frames, stats) if hold_frames is not None else []
+    # the judge's calibration: cached per net beside the reference features, else computed (a few minutes each)
+    per_net = []
+    for J in Js:
+        cp = os.path.join(SHARED, f"calibration_{J.net}_native.json")
+        cj = _json(cp)
+        per_net.append(cj["cases"] if cj else judge_calibration(J))
+    jcal = [{"label": rows[0]["label"], "judge": round(float(np.mean([r["judge"] for r in rows])), 3),
+             "judge_hold": round(float(np.mean([r["judge_hold"] for r in rows])), 3)} for rows in zip(*per_net)]
     hold_all = [stats.distance(window_features(w)) for w in windows(hold_frames)] if hold_frames is not None else []
     hold_groups = {g: round(float(np.mean([d[g] for d in hold_all])), 3) for g in GROUPS} if hold_all else {}
     hold_total = round(float(np.mean([d["total"] for d in hold_all])), 3) if hold_all else None
@@ -302,8 +323,8 @@ def main(argv=None):
         L = lineages.setdefault(r["lineage"], {"name": r["lineage"], "n": 0, "best": 99, "best_id": None,
                                                "smallest": 1 << 30})
         L["n"] += 1
-        if r["stat"] < L["best"]:
-            L["best"], L["best_id"] = r["stat"], r["id"]
+        if r["d"] < L["best"]:
+            L["best"], L["best_id"] = r["d"], r["id"]
         L["smallest"] = min(L["smallest"], r["zbytes"])
 
     types = {}
@@ -313,7 +334,7 @@ def main(argv=None):
     data = {
         "updated": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()),
         "islands": islands, "genomes": genomes, "front": front, "best": genomes[0]["id"] if genomes else None,
-        "cells": list(cells.values()), "reels": reels, "calibration": calib,
+        "cells": list(cells.values()), "reels": reels, "calibration": calib, "jcal": jcal, "level": 1.0,
         "hold_groups": hold_groups, "hold_total": hold_total, "groups": list(GROUPS),
         "lineages": sorted(lineages.values(), key=lambda L: L["best"]),
         "n_ops": len(OPS), "op_types": types,

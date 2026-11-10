@@ -158,7 +158,7 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
   <header class="top">
     <div class="label">Amoebius genome lab</div>
     <h1>A .kkrieger-style genome, judged by Amoebius footage</h1>
-    <p class="lede">Every phenotype on this page is a few hundred bytes: an operator graph in the spirit of farbrausch's .kkrieger that compiles to a raymarched world, a flock of vessels laying prism trails, a camera, a grade and a HUD. Each one renders a 4-second clip at 256×144, and its distance to Amoebius gameplay footage is its fitness. On that scale 1.0 is how much Amoebius differs from itself.</p>
+    <p class="lede">Every phenotype on this page is a few hundred bytes: an operator graph in the spirit of farbrausch's .kkrieger that compiles to a raymarched world, a flock of vessels laying prism trails, a camera, a grade and a HUD. Each one renders a 4-second clip at 256×144, and a fixed judge measures how far it looks from Amoebius gameplay footage: the kernel inception distance of ImageNet CNN features, scaled so that 1.0 is how far Amoebius' own held-out reel sits from the training reels.</p>
     <div class="chips" id="chips"></div>
   </header>
 
@@ -179,7 +179,7 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
       </div></div>
     </div>
     <div class="panel"><div class="in">
-      <div class="row"><span class="label">Distance to Amoebius, log scale</span><span class="cap">lower is closer</span></div>
+      <div class="row"><span class="label">Judge: distance to Amoebius, log scale</span><span class="cap">lower is closer</span></div>
       <div id="scale"></div>
     </div></div>
   </section>
@@ -191,7 +191,7 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
         <div class="facts" id="facts"></div>
         <div class="legend"><span><i class="sw" style="background:var(--data)"></i>selected phenotype</span><span><i class="sw" style="background:var(--ref)"></i>Amoebius, held-out reel</span><span>dashed line: 1.0, Amoebius' own spread</span></div>
         <div id="groups"></div>
-        <p class="cap">Per feature group, how far the phenotype sits from the Amoebius training reels. The largest bar is what still gives it away.</p>
+        <p class="cap">The fixed statistics, per feature group: how far the phenotype sits from the Amoebius training reels. They are a second opinion now, because a genome can be tuned to fool them (see How it works).</p>
       </div></div>
       <div class="panel"><div class="in">
         <span class="label">Operators</span>
@@ -209,7 +209,7 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
     <div class="panel"><div class="in">
       <div class="legend" id="shapelegend"></div>
       <div id="scatter"></div>
-      <p class="cap">Each mark is a genome the search kept, re-rendered and re-scored for this page with the fixed statistics. The line steps through the front. Select a mark to put it on the bench. Marks drawn hollow sit above the top of the chart.</p>
+      <p class="cap">Each mark is a genome the search kept, re-rendered and re-judged for this page. The line steps through the front. Select a mark to put it on the bench. Marks drawn hollow sit above the top of the chart.</p>
     </div></div>
     <div class="gallery" id="gallery"></div>
   </section>
@@ -217,7 +217,7 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
   <section aria-labelledby="h-land">
     <div class="label" id="h-land">The landscape</div>
     <h2>One genome per niche: size across, brightness down</h2>
-    <p class="lede">The search keeps the closest genome for every cell of genome size by mean brightness (its MAP-Elites side archive), so it explores the whole space instead of one look. Each cell shows that genome's second frame and its distance.</p>
+    <p class="lede">The search keeps the closest genome for every cell of genome size by mean brightness (its MAP-Elites side archive), so it explores the whole space instead of one look. Each cell shows that genome's second frame and its judge score.</p>
     <div class="panel"><div class="in land"><div class="landgrid" id="land"></div></div></div>
   </section>
 
@@ -233,9 +233,9 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
     <div class="label" id="h-how">How it works</div>
     <div class="how" id="how"></div>
     <div class="panel"><div class="in">
-      <span class="label">What the statistics say about broken Amoebius footage</span>
+      <span class="label">What the judge and the statistics say about Amoebius and broken Amoebius footage</span>
       <div class="tablewrap"><table id="calib"></table></div>
-      <p class="cap">Each row is the held-out Amoebius reel after one change, scored against the training reels. A good metric keeps the first rows near 1 and pushes the broken ones far away.</p>
+      <p class="cap">Each row is the held-out Amoebius reel after one change, scored against the training reels (the second row is the training reels scored against the held-out one). A good metric keeps the first rows near 1 and pushes the broken ones far away. Both are blind to mirroring and to frame order.</p>
     </div></div>
   </section>
 
@@ -305,7 +305,7 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
     if (r.clip) st.appendChild(video(r.clip)); else { const im = document.createElement('img'); im.className = 'big'; im.src = r.strip; st.appendChild(im); }
     $('reelstrip').src = r.strip;
     $('reelcap').innerHTML = `Reel ${esc(r.name.replace('reel', ''))}, frames ${r.window[0]} to ${r.window[1]} of ${r.frames} at 256×144, 15 fps. ` +
-      (r.held ? `Held out: the search never trains on it. This window scores <span class="num">${f2(r.stat)}</span>; the whole reel averages <span class="num">${f2(D.hold_total)}</span>.` : `A training reel; this window scores <span class="num">${f2(r.stat)}</span>.`);
+      (r.held ? `Held out: the search never trains on it. This window judges <span class="num">${f2(r.d)}</span>; the reel's windows average 1.00, which sets the scale.` : `A training reel, part of the judge's reference, so it judges low: <span class="num">${f2(r.d)}</span>.`);
   }
   function bench() {
     const g = G.get(sel); if (!g) return;
@@ -314,7 +314,7 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
     const st = $('selstage'); st.innerHTML = '';
     if (g.clip) st.appendChild(video(g.clip)); else { const fr = frameEl(g, 1); fr.style.aspectRatio = 'auto'; fr.style.height = '100%'; st.appendChild(fr); }
     $('selstrip').src = g.strip;
-    $('selcap').innerHTML = `Distance <b class="num">${f2(g.stat)}</b> to the training reels and <span class="num">${f2(g.hold)}</span> to the held-out reel. ` +
+    $('selcap').innerHTML = `Judge <b class="num">${f2(g.d)}</b> against the training reels and <span class="num">${f2(g.dh)}</span> against the held-out reel, where 1.0 is Amoebius itself. Statistics <span class="num">${f2(g.stat)}</span>. ` +
       `${esc(g.lineage)} lineage, ${g.nodes} operators, ${g.zbytes} bytes compressed (${g.raw} raw). ` + (g.clip ? '' : 'No clip was rendered for this one; the frames are below.');
   }
 
@@ -322,14 +322,14 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
   function scale() {
     const host = $('scale'); host.innerHTML = '';
     const W = Math.max(300, host.clientWidth), H = 112, L = 12, R = 12, y0 = 52;
-    const lo = Math.log(1), hi = Math.log(24);
-    const x = v => L + (Math.log(Math.max(1, Math.min(24, v))) - lo) / (hi - lo) * (W - L - R);
+    const lo = Math.log(0.5), hi = Math.log(8);
+    const x = v => L + (Math.log(Math.max(0.5, Math.min(8, v))) - lo) / (hi - lo) * (W - L - R);
     const svg = S('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Distance to Amoebius on a log scale' }, host);
     S('line', { x1: L, x2: W - R, y1: y0, y2: y0, class: 'axl' }, svg);
-    [1, 2, 4, 8, 16].forEach(v => { S('line', { x1: x(v), x2: x(v), y1: y0 - 4, y2: y0 + 4, class: 'axl' }, svg); T(svg, x(v), y0 + 16, String(v), 'ax', 'middle'); });
-    const C = D.calibration.reduce((m, c) => (m[c.label] = c.total, m), {});
+    [0.5, 1, 2, 4, 8].forEach(v => { S('line', { x1: x(v), x2: x(v), y1: y0 - 4, y2: y0 + 4, class: 'axl' }, svg); T(svg, x(v), y0 + 16, String(v), 'ax', 'middle'); });
+    const C = D.jcal.reduce((m, c) => (m[c.label] = c.judge, m), {});
     const below = [
-      ['Amoebius, held-out', D.hold_total], ['blurred', C['Blurred 9 px']], ['noise', C['Uniform noise']], ['black', C['Black']]
+      ['Amoebius, held-out', 1.0], ['blurred', C['Blurred 9 px']], ['noise', C['Uniform noise']], ['black', C['Black']]
     ].filter(m => m[1] != null);
     const g = G.get(sel);
     const rows = [-Infinity, -Infinity];
@@ -341,9 +341,9 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
       T(svg, px, y0 + 34 + row * 16, text, 'lab', anchor);
     });
     if (g) {
-      const px = x(g.stat); S('rect', { x: px - 5, y: y0 - 5, width: 10, height: 10, class: 'mk sel' }, svg);
+      const px = x(g.d); S('rect', { x: px - 5, y: y0 - 5, width: 10, height: 10, class: 'mk sel' }, svg);
       S('line', { x1: px, x2: px, y1: y0 - 8, y2: y0 - 24, class: 'cross' }, svg);
-      const text = `${nice(g.name)} ${f2(g.stat)}`; const w = text.length * 6.2;
+      const text = `${nice(g.name)} ${f2(g.d)}`; const w = text.length * 6.2;
       const anchor = px - w / 2 < L ? 'start' : (px + w / 2 > W - R ? 'end' : 'middle');
       T(svg, px, y0 - 30, text, 'lab', anchor);
     }
@@ -353,7 +353,8 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
   function detail() {
     const g = G.get(sel); if (!g) return;
     const facts = [
-      ['Distance, training reels', f2(g.stat)], ['Distance, held-out reel', f2(g.hold)],
+      ['Judge, training reels', f2(g.d)], ['Judge, held-out reel', f2(g.dh)],
+      ['Judge per net', g.dn ? g.dn.map(f2).join(' · ') : '–'], ['Statistics, train · held-out', f2(g.stat) + ' · ' + f2(g.hold)],
       ['Compressed size', g.zbytes + ' B'], ['Raw size', g.raw + ' B'], ['Operators', g.nodes],
       ['Lineage', g.lineage], ['Found by', g.islands.map(n => n === 'seed bank' ? n : 'island ' + iname(n)).join(', ')],
       ['Search fitness', g.fit == null ? '–' : f2(g.fit)], ['Critic logit', g.crit == null ? '–' : f2(g.crit)]
@@ -410,30 +411,30 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
     const gs = D.genomes;
     const zs = gs.map(g => g.zbytes);
     const x0 = Math.pow(2, Math.floor(Math.log2(Math.max(16, Math.min(...zs))))), x1 = Math.pow(2, Math.ceil(Math.log2(Math.max(...zs) * 1.05)));
-    const sorted = gs.map(g => g.stat).sort((a, b) => a - b);
-    const y0 = Math.min(1, Math.floor(sorted[0] * 2) / 2), y1 = Math.max(4, Math.min(9, Math.ceil(sorted[Math.floor(sorted.length * 0.9)] || 4)));
+    const sorted = gs.map(g => g.d).sort((a, b) => a - b);
+    const y0 = Math.min(1, Math.floor(sorted[0] * 2) / 2), y1 = Math.max(3, Math.min(9, Math.ceil(sorted[Math.floor(sorted.length * 0.9)] || 3)));
     const X = v => m.l + (Math.log2(v) - Math.log2(x0)) / (Math.log2(x1) - Math.log2(x0)) * (W - m.l - m.r);
     const Y = v => m.t + (1 - (Math.min(v, y1) - y0) / (y1 - y0)) * (H - m.t - m.b);
-    const svg = S('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Genome size against distance to Amoebius' }, host);
+    const svg = S('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Genome size against the judge distance to Amoebius' }, host);
     for (let v = Math.ceil(y0); v <= y1; v++) { S('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), class: 'grid' }, svg); T(svg, m.l - 6, Y(v) + 4, String(v), 'ax', 'end'); }
     for (let v = x0; v <= x1; v *= 2) { S('line', { x1: X(v), x2: X(v), y1: m.t, y2: H - m.b, class: 'grid' }, svg); T(svg, X(v), H - m.b + 16, v >= 1024 ? (v / 1024) + 'k' : String(v), 'ax', 'middle'); }
     T(svg, (m.l + W - m.r) / 2, H - 6, 'compressed genome size, bytes (log scale)', 'ax', 'middle');
-    if (D.hold_total != null) { S('line', { x1: m.l, x2: W - m.r, y1: Y(D.hold_total), y2: Y(D.hold_total), class: 'base' }, svg); T(svg, W - m.r, Y(D.hold_total) - 6, 'Amoebius, held-out reel ' + f2(D.hold_total), 'ax', 'end'); }
+    S('line', { x1: m.l, x2: W - m.r, y1: Y(1), y2: Y(1), class: 'base' }, svg); T(svg, W - m.r, Y(1) - 6, 'Amoebius, held-out reel 1.00', 'ax', 'end');
     const fr = D.front.map(id => G.get(id)).filter(Boolean).sort((a, b) => a.zbytes - b.zbytes);
     if (fr.length) {
-      let d = `M${X(fr[0].zbytes)},${Y(fr[0].stat)}`;
-      for (let i = 1; i < fr.length; i++) d += `H${X(fr[i].zbytes)}V${Y(fr[i].stat)}`;
+      let d = `M${X(fr[0].zbytes)},${Y(fr[0].d)}`;
+      for (let i = 1; i < fr.length; i++) d += `H${X(fr[i].zbytes)}V${Y(fr[i].d)}`;
       d += `H${W - m.r}`;
       S('path', { d, class: 'frontline' }, svg);
     }
     const order = gs.slice().sort((a, b) => (a.id === sel) - (b.id === sel));
     order.forEach(g => {
-      const cx = X(g.zbytes), cy = Y(g.stat), off = g.stat > y1;
+      const cx = X(g.zbytes), cy = Y(g.d), off = g.d > y1;
       mark(svg, shapeOf(g), cx, cy, g.id === sel ? 6.5 : 4.5, 'pt' + (off ? ' off' : '') + (g.id === sel ? ' sel' : ''));
     });
     order.forEach(g => {
-      const h = S('circle', { cx: X(g.zbytes), cy: Y(g.stat), r: 11, class: 'hit' }, svg);
-      h.addEventListener('mousemove', ev => showTip(`<b>${esc(nice(g.name))}</b><br>${esc(g.lineage)} · ${esc(g.islands.map(iname).join(', '))}<br><span class="num">${g.zbytes} B · distance ${f2(g.stat)}</span>`, ev));
+      const h = S('circle', { cx: X(g.zbytes), cy: Y(g.d), r: 11, class: 'hit' }, svg);
+      h.addEventListener('mousemove', ev => showTip(`<b>${esc(nice(g.name))}</b><br>${esc(g.lineage)} · ${esc(g.islands.map(iname).join(', '))}<br><span class="num">${g.zbytes} B · judge ${f2(g.d)} · statistics ${f2(g.stat)}</span>`, ev));
       h.addEventListener('mouseleave', hideTip);
       h.addEventListener('click', () => select(g.id));
     });
@@ -445,7 +446,7 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
       b.setAttribute('aria-pressed', g.id === sel ? 'true' : 'false');
       b.appendChild(frameEl(g, 1));
       const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = nice(g.name); b.appendChild(nm);
-      const mt = document.createElement('div'); mt.className = 'meta num'; mt.innerHTML = `<span>${g.zbytes} B</span><span>distance ${f2(g.stat)}</span>`; b.appendChild(mt);
+      const mt = document.createElement('div'); mt.className = 'meta num'; mt.innerHTML = `<span>${g.zbytes} B</span><span>judge ${f2(g.d)}</span>`; b.appendChild(mt);
       b.onclick = () => select(g.id);
       host.appendChild(b);
     });
@@ -464,9 +465,9 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
         const c = byKey.get(zb + ',' + lu), g = c && G.get(c.id);
         if (!g) { host.appendChild(Object.assign(document.createElement('div'), { className: 'empty' })); continue; }
         const b = document.createElement('button'); b.type = 'button'; b.className = 'cell'; b.id = 'cell-' + zb + '-' + lu;
-        b.setAttribute('aria-pressed', g.id === sel ? 'true' : 'false'); b.title = `${nice(g.name)}, ${g.zbytes} B, distance ${f2(g.stat)}`;
+        b.setAttribute('aria-pressed', g.id === sel ? 'true' : 'false'); b.title = `${nice(g.name)}, ${g.zbytes} B, judge ${f2(g.d)}`;
         b.appendChild(frameEl(g, 1));
-        const d = document.createElement('span'); d.className = 'd'; d.textContent = f2(g.stat); b.appendChild(d);
+        const d = document.createElement('span'); d.className = 'd'; d.textContent = f2(g.d); b.appendChild(d);
         b.onclick = () => select(g.id);
         host.appendChild(b);
       }
@@ -522,15 +523,16 @@ footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-s
     const blocks = [
       ['Genome', [`A typed operator graph stored as bytes, the way werkkzeug3 stored .kkrieger: a header, then for each operator its opcode, one back-reference per input and one byte per parameter. ${D.n_ops} operators in seven types: ${t.T || 0} textures, ${t.S || 0} shapes and materials (signed distance fields), ${t.A || 0} agent operators (spawn, boids, wander, attract, bound, trail, body, scatter), ${t.C || 0} cameras, a grade, ${t.H || 0} HUD operators and the output.`, 'Compactness is the zlib size of those bytes, standing in for kkrunchy. Grouping parameters by operator type, as .kx files do, compressed about 4% worse at these sizes, so the plain layout stays.']],
       ['Phenotype', ['The graph compiles to one GLSL raymarching shader for the world and a small agent simulation whose vessels lay prism trails, drawn as instanced meshes with neon edges, then bloom, the grade and the HUD. moderngl renders it on the CPU at 256×144, 15 frames a second, for 4 seconds after a warm-up.']],
-      ['Fitness', ['Eight groups of statistics per 4-second window: colour, brightness, spectrum, gradients, screen layout, motion, a texture filter bank and blobs. Each is scaled by how much the Amoebius reels vary among themselves, so 1.0 is a typical Amoebius window.', 'A small CNN critic, retrained during the search on Amoebius frames against the frames the population just rendered, adds whatever the statistics miss. The held-out reel checks that it is not learning the training reels by heart.']],
+      ['Fitness', ['The judge: 12 frames of the clip go through two ImageNet networks (InceptionV3 and MobileNetV2), and the kernel inception distance of their features to the Amoebius training reels, over the distance Amoebius\' own held-out reel reaches, is averaged. It never retrains, so a score means the same thing tomorrow.', 'Eight groups of fixed statistics per window (colour, brightness, spectrum, gradients, screen layout, motion, a texture filter bank and blobs) add half their distance, and a small CNN critic retrained during the search adds a little more. The statistics led until 2026-11-10, when a 10-operator genome tuned on them reached Amoebius\' own level (1.05) while the judge put it at 4.1, worse than a blurred reel; across 82 genomes the judge ranked against the statistics and with the critic.']],
       ['Search', ['The diamond search from the NCA lab\'s pareto_complexity.py: COMPLEXIFY grows structure, COMPRESS strips it while a leaky floor holds the score, with a Pareto archive over distance and bytes and a MAP-Elites archive over size and brightness. A quarter of each generation tunes parameters around the best. Islands run in separate containers and trade their fronts every 10 generations; a seed bank of hand-tuned seeds feeds them all.']]
     ];
     $('how').innerHTML = blocks.map(([h, ps]) => `<div class="panel"><div class="in"><h3>${h}</h3>${ps.map(p => `<p>${esc(p)}</p>`).join('')}</div></div>`).join('');
     const c = $('calib');
-    c.innerHTML = `<thead><tr><th>Footage</th><th class="r">Distance</th>${D.groups.map(g => `<th class="r">${esc(g)}</th>`).join('')}</tr></thead><tbody>` +
-      D.calibration.map(r => `<tr><td>${esc(r.label)}</td><td class="r">${f2(r.total)}</td>${D.groups.map(g => `<td class="r">${f2(r.groups[g])}</td>`).join('')}</tr>`).join('') + '</tbody>';
+    const SC = D.calibration.reduce((m, r) => (m[r.label] = r, m), {});
+    c.innerHTML = `<thead><tr><th>Footage</th><th class="r">Judge</th><th class="r">Judge, vs reel 5</th><th class="r">Statistics</th>${D.groups.map(g => `<th class="r">${esc(g)}</th>`).join('')}</tr></thead><tbody>` +
+      D.jcal.map(r => { const st = SC[r.label]; return `<tr><td>${esc(r.label)}</td><td class="r">${f2(r.judge)}</td><td class="r">${f2(r.judge_hold)}</td><td class="r">${st ? f2(st.total) : '–'}</td>${D.groups.map(g => `<td class="r">${st ? f2(st.groups[g]) : '–'}</td>`).join('')}</tr>`; }).join('') + '</tbody>';
     const l = $('lineages');
-    l.innerHTML = '<thead><tr><th>Lineage</th><th class="r">Genomes shown</th><th class="r">Closest distance</th><th class="r">Smallest size</th></tr></thead><tbody>' +
+    l.innerHTML = '<thead><tr><th>Lineage</th><th class="r">Genomes shown</th><th class="r">Closest (judge)</th><th class="r">Smallest size</th></tr></thead><tbody>' +
       D.lineages.map(L => `<tr class="pick" data-id="${esc(L.best_id)}" tabindex="0"><td>${esc(L.name)}</td><td class="r">${L.n}</td><td class="r">${f2(L.best)}</td><td class="r">${L.smallest} B</td></tr>`).join('') + '</tbody>';
     l.querySelectorAll('tr.pick').forEach(tr => { const go = () => { select(tr.dataset.id); document.getElementById('h-bench').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); }; tr.onclick = go; tr.onkeydown = e => { if (e.key === 'Enter') go(); }; });
   }
