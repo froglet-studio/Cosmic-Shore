@@ -179,7 +179,7 @@ MonoBehaviour:
     icon: {fileID: 7700000000000001135}
     upgradedSprite: {fileID: 0}
     gauge: {fileID: 7700000000000001233}
-  omniAbilitySprite: {fileID: 21300000, guid: 2406050d754027aa2701fb652339957a, type: 3}
+  omniAbilitySprite: {fileID: 21300000, guid: 765ce4af4495cbc8f4dc73bac4a1b5ff, type: 3}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35

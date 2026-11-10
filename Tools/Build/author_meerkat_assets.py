@@ -89,6 +89,9 @@ HUD_DONOR = os.path.join(HUD_DIR, "StoatHUDVariant.prefab")
 HUD_VARIANT = os.path.join(HUD_DIR, "MeerkatHUDVariant.prefab")
 ICONS_DIR = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "AbilityIcons", "Meerkat")
 MODEL = os.path.join(ROOT, "Assets", "_Models", "Vessel Models", "Meerkat.fbx")
+IMPACTOR = os.path.join(ROOT, "Assets", "_SO_Assets", "Effects", "Effect Containers", "VesselContainers",
+                        "MeerkatImpactorDataContainer.asset")
+FULMEN_ICON_META = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "AbilityIcons", "Stoat", "Core", "Stoat_Fulmen.png.meta")
 
 # 24 Flea (claude/flea-vessel), 25-27 Warden / Bulwark / Tempest (cece/keen-feynman-unrdda): checked across every origin
 # branch 2026-10-27, so the Meerkat is 28.
@@ -110,6 +113,13 @@ CAMERA_GUID = "5e1e0cd061ab49dbbb24bf9c1080387b"        # MeerkatCameraSettingsS
 HUD_VARIANT_GUID = "5d49e3f0fa4f801553ac3c6de6f80713"   # MeerkatHUDVariant (its own row, 2026-11-03)
 STOAT_FBX_GUID = "0ef0b84d93774ac39ddc699c59d0821a"     # Stoat.fbx, the hull the clone draws
 MEERKAT_FBX_GUID = "81b9ac1e02714f0fa49b1eef2bb2d9f5"   # Meerkat.fbx, its own hull on the Stoat's rig (2026-11-03)
+# 2026-11-11 (Yash: "replace this ability with current fulmen omni crystal ability. Replace meerkat's networked tunnel with
+# this fulmen ... Archive the networked wormhole for now, maybe we modify and use it in future somewhere else"): the
+# omnicrystal is FULMEN (the Stoat's omni ability until its giant white hole), a container entry like any vessel's; the
+# soliton's own omni abilities (the Rift, the network) are parked behind omniOn = 0, code and assets kept
+FULMEN_EFFECT_GUID = "a45807f7b21b4c898e6646a9865c0bba"  # FulmenByCrystalEffect (Environment/Fulmen/README.md)
+FULMEN_ICON_GUID = "765ce4af4495cbc8f4dc73bac4a1b5ff"    # Stoat/Core/Stoat_Fulmen.png, the Fulmen omni card
+OMNI_LABEL = "  omniAbilityLabel: Fulmen\n"
 STOAT_HUD_VARIANT_GUID = "1f9b41e6fa58494599674753191b495b"
 STOAT_HUD_VIEW_GUID = "c120940f60a14c2aa390446ea0791b5a"
 
@@ -568,6 +578,31 @@ def designed_entries() -> str:
         f"    UpgradeLabel: {yaml_quote(u)}\n    UpgradeDescription: {yaml_quote(ud)}\n" for e, a, d, i, u, ud in DESIGNED)
 
 
+def fulmen_container(text: str) -> str:
+    """The Meerkat's impactor container fires Fulmen on an omni crystal (Environment/Fulmen/README.md, "Swapping the
+    ability"): FulmenByCrystalEffect joins vesselCrystalEffects. Idempotent."""
+    if FULMEN_EFFECT_GUID in text:
+        return text
+    m = re.search(r"^  vesselCrystalEffects:(?: \[\])?\n((?:  - \{[^}]*\}\n)*)", text, re.M)
+    if not m:
+        raise RuntimeError("MeerkatImpactorDataContainer: vesselCrystalEffects not found")
+    entry = f"  - {{fileID: 11400000, guid: {FULMEN_EFFECT_GUID}, type: 2}}\n"
+    head = text[:m.start()] + "  vesselCrystalEffects:\n"
+    return head + m.group(1) + entry + text[m.end():]
+
+
+def park_omni_tunnels(cfg: str) -> str:
+    """2026-11-11: the omnicrystal is Fulmen's, so the soliton's omni abilities (the Rift, the network) are parked: omniOn
+    0, their code, assets and numbers kept for reuse (MEERKAT.md section 7c). Idempotent."""
+    return re.sub(r"^  omniOn: 1\n", "  omniOn: 0\n", cfg, count=1, flags=re.M)
+
+
+def omni_label(text: str) -> str:
+    """The element map's omni card label (ElementalAbilityMapSO.omniAbilityLabel): Fulmen. Idempotent."""
+    text = re.sub(r"^  omniAbilityLabel: .*\n", "", text, flags=re.M)
+    return text.rstrip("\n") + "\n" + OMNI_LABEL
+
+
 def map_designed(text: str) -> str:
     """The map's open slots become Garrett's four rows (once: a row already designed is never rewritten). Idempotent."""
     if "(open design slot)" not in text:
@@ -582,7 +617,7 @@ def map_asset(donor_map: str) -> str:
         f"  - Element: {e}\n    AbilityLabel: '(open design slot)'\n    AbilityDescription: '{OPEN_SLOT_YAML}'\n"
         "    Input: 0\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
         "    UpgradeLabel: \n    UpgradeDescription: \n" for e in (3, 4, 2, 1))
-    return map_designed(text[:text.index("  entries:\n")] + entries)
+    return omni_label(map_designed(text[:text.index("  entries:\n")] + entries))   # 2026-11-11: the omni card is Fulmen
 
 
 def fusion_entries(text: str, vessel: int):
@@ -633,7 +668,7 @@ def build_hud_variant(donor: str) -> str:
     return patch_hud_variant(text)
 
 
-OMNI_LINE = f"  omniAbilitySprite: {{fileID: 21300000, guid: {I.guid_for(I.OMNI)}, type: 3}}\n"
+OMNI_LINE = f"  omniAbilitySprite: {{fileID: 21300000, guid: {FULMEN_ICON_GUID}, type: 3}}\n"   # Fulmen (2026-11-11)
 # The gauges' colours are UI theme tokens (Docs/UI_STYLE_GUIDE.md, the PR UI checklist's "Theme tokens"), not the raw Color
 # pair the Stoat's view carries: NeutralLightest (7) at rest, Cta (8) when ready, resolved against UITheme.asset.
 UI_THEME_GUID = "0aef6398681c4ec98118cc9b9740060a"
@@ -644,7 +679,7 @@ THEME_LINES = (f"  theme: {{fileID: 11400000, guid: {UI_THEME_GUID}, type: 2}}\n
 
 def patch_hud_variant(text: str) -> str:
     """Idempotent edits the committed variant takes too (its clone is a spent one-shot): the omni crystal card's sprite,
-    the Soliton Network (VesselHUDView.omniAbilitySprite; empty, the card draws LOCKED), and the gauges' theme tokens
+    Fulmen since 2026-11-11 (VesselHUDView.omniAbilitySprite; empty, the card draws LOCKED), and the gauges' theme tokens
     (THEME_LINES), written in the view's own block."""
     m = re.search(r"--- !u!114 &%s\n(?:.*\n)*?(?=--- !u!|\Z)" % HUD_VIEW_DOC, text)
     if not m:
@@ -685,9 +720,11 @@ def check_hud_variant(text: str):
         want(not re.search(r"^  %s: " % field, view, re.M), f"MeerkatHUDVariant: the Stoat's view field {field} is still there")
     want(THEME_LINES in view and not re.search(r"^  (?:gaugeColor|readyColor): ", view, re.M),
          "MeerkatHUDVariant: the gauge colours are not the UI theme's tokens (theme, gaugeToken 7, readyToken 8)")
-    want(OMNI_LINE in view, "MeerkatHUDVariant: the omni card is not the Soliton Network (an empty omniAbilitySprite draws LOCKED)")
-    for old, name in list(zip(STOAT_ICONS, I.ICONS)) + [(None, I.OMNI)]:
-        want(old is None or old not in text, f"MeerkatHUDVariant: the Stoat's sprite {old} is still on a card")
+    want(OMNI_LINE in view, "MeerkatHUDVariant: the omni card is not Fulmen (an empty omniAbilitySprite draws LOCKED)")
+    want(os.path.exists(FULMEN_ICON_META) and guid_of(FULMEN_ICON_META) == FULMEN_ICON_GUID,
+         "Stoat_Fulmen.png (+ .meta): missing, or not the guid the Meerkat's omni card binds")
+    for old, name in zip(STOAT_ICONS, I.ICONS):
+        want(old not in text, f"MeerkatHUDVariant: the Stoat's sprite {old} is still on a card")
         want(text.count(f"guid: {I.guid_for(name)}, type: 3}}") == 1, f"MeerkatHUDVariant: {name} is not on its card once")
         meta = os.path.join(ICONS_DIR, name + ".png.meta")
         want(os.path.exists(meta) and guid_of(meta) == I.guid_for(name),
@@ -795,7 +832,7 @@ def check_registrations(container, network, lists, cls, kmap, fusion):
          "SO_Class_Meerkat: wrong class, locked, or not owned from the start")
     want(f"  vesselClass: {MEERKAT_CLASS_ID}\n" in kmap and "Field Dipole" not in kmap and "(open design slot)" not in kmap,
          "ElementalAbilityMaps/Meerkat: not the Meerkat's own map, or a slot is still open (Garrett's kit designs all four)")
-    want(kmap.endswith(designed_entries()),
+    want(kmap.endswith(designed_entries() + OMNI_LABEL),
          "ElementalAbilityMaps/Meerkat: the four rows are not Garrett's design (Space Soliton on RT, Time Faster Ride, Mass Exit "
          "Portal, Charge Sentinel Mode on Y, their L5s)")
     want(len(fusion_entries(fusion, MEERKAT_CLASS_ID)) == 4, "CrystalHullFusionConfig: not 4 Meerkat entries")
@@ -832,6 +869,17 @@ def check_all():
         errs.append("MeerkatSolitonFormAction / ShortenAction: not the RT Form (0) and LT Shorten (1) triggers")
     errs += check_registrations(read(CONTAINER), read(NETWORK_PREFABS), [(os.path.basename(p), read(p)) for p in CLASS_LISTS],
                                 read(CLASS_ASSET), read(MAP), read(FUSION))
+    errs += check_omni(read(IMPACTOR), read(CONFIG))
+    return errs
+
+
+def check_omni(impactor: str, cfg: str):
+    """2026-11-11: the omnicrystal fires Fulmen from the Meerkat's own container, and the soliton's omni abilities are parked."""
+    errs = []
+    if f"guid: {FULMEN_EFFECT_GUID}, type: 2}}" not in impactor:
+        errs.append("MeerkatImpactorDataContainer: FulmenByCrystalEffect is not in vesselCrystalEffects (an omni crystal fires nothing)")
+    if not re.search(r"^  omniOn: 0\n", cfg, re.M):
+        errs.append("MeerkatSolitonConfig: omniOn is not 0 (the Rift or the network would open beside Fulmen on one crystal)")
     return errs
 
 
@@ -841,11 +889,14 @@ def author():
         os.makedirs(ACTIONS)
         write(ACTIONS + ".meta", folder_meta(ACTIONS_DIR_GUID))
     if not os.path.exists(CONFIG):   # a one-shot: after it exists only studio_to_unity.py writes its numbers
-        write(CONFIG, config_asset(values)); write(CONFIG + ".meta", native_meta(CONFIG_GUID))
+        write(CONFIG, park_omni_tunnels(config_asset(values))); write(CONFIG + ".meta", native_meta(CONFIG_GUID))
     else:
-        old = read(CONFIG); new = kit_retrofit(config_retrofit(old, values), values)
+        old = read(CONFIG); new = park_omni_tunnels(kit_retrofit(config_retrofit(old, values), values))
         if new != old:
             write(CONFIG, new)
+    old = read(IMPACTOR); new = fulmen_container(old)   # 2026-11-11: the omnicrystal is Fulmen
+    if new != old:
+        write(IMPACTOR, new)
     for path, guid, name, k in ((FORM, FORM_GUID, "MeerkatSolitonFormAction", 0), (SHORTEN, SHORTEN_GUID, "MeerkatSolitonShortenAction", 1)):
         if not os.path.exists(path) or read(path) != action_asset(name, k):
             write(path, action_asset(name, k)); write(path + ".meta", native_meta(guid))
@@ -872,7 +923,7 @@ def author():
     if not os.path.exists(MAP):
         write(MAP, map_asset(read(DONOR_MAP))); write(MAP + ".meta", native_meta(MAP_GUID))
     else:
-        old = read(MAP); new = map_designed(old)
+        old = read(MAP); new = omni_label(map_designed(old))
         if new != old:
             write(MAP, new)
     for path, fn in [(CONTAINER, register_container), (NETWORK_PREFABS, register_network), (FUSION, register_fusion)] + \
@@ -907,7 +958,13 @@ def self_test():
     expect(check_prefab(good.replace(MEERKAT_FBX_GUID, STOAT_FBX_GUID)), 1, "the Stoat's hull")
     expect(check_prefab(good.replace("CosmicShore.UI.MeerkatHUDView", "CosmicShore.UI.StoatHUDView").replace(
         script_guid("MeerkatHUDView"), STOAT_HUD_VIEW_GUID)), 1, "the Stoat's HUD view")
-    hud = build_hud_variant(read(HUD_DONOR))
+    # The clone is a spent one-shot (CLAUDE.md): the Stoat's own row moved on (3fda3cad06, its orbit-only icons), so the
+    # donor no longer carries the four sprites the clone swaps. It stands down to the SHIPPED variant, which the checks
+    # below then describe, rather than aborting every check after it.
+    try:
+        hud = build_hud_variant(read(HUD_DONOR))
+    except RuntimeError:
+        hud = patch_hud_variant(read(HUD_VARIANT))
     hud_errs = [e for e in check_hud_variant(hud) if ".png (+ .meta)" not in e]   # the icons are the kit's, checked on disk
     expect(hud_errs, 0, "a fresh HUD variant passes")
     expect(check_hud_variant(hud.replace(script_guid("MeerkatHUDView"), STOAT_HUD_VIEW_GUID)), 1, "the Stoat's view in the variant")
@@ -921,6 +978,13 @@ def self_test():
     expect(check_camera(cam.replace("  followOffset: {x: 0, y: 0, z: -21}", "  followOffset: {x: 0, y: 6.5, z: -21}")), 1, "a height offset")
     expect(check_camera(cam.replace("  chaseEaseRate: 0\n", "  chaseEaseRate: 7\n")), 1, "an eased chase")
     expect(check_camera(read(DONOR_CAMERA)), 2, "the Stoat's camera")
+    imp = fulmen_container(read(IMPACTOR))
+    parked = park_omni_tunnels(config_asset(shipped(read(STUDIO))))
+    expect(check_omni(imp, parked), 0, "Fulmen in the container, the tunnels parked")
+    expect(check_omni(imp.replace(FULMEN_EFFECT_GUID, "0" * 32), parked), 1, "no Fulmen in the container")
+    expect(check_omni(imp, parked.replace("  omniOn: 0\n", "  omniOn: 1\n")), 1, "the Rift still on the omnicrystal")
+    if fulmen_container(imp) != imp or omni_label(omni_label("x\n")) != omni_label("x\n"):
+        fails.append("the Fulmen retrofits are not idempotent")
     if retrofit(good) != good:
         fails.append("the retrofit is not idempotent")
     tuned = good.replace("\n  RollScaler: 15.6\n", "\n  RollScaler: 20\n")
@@ -978,7 +1042,7 @@ def self_test():
         "    Input: 0\n    UnlockLevel: 5\n    RelockBelowLevel: 4\n    LatchPolicy: 0\n"
         "    UpgradeLabel: \n    UpgradeDescription: \n" for e in (3, 4, 2, 1))
     expect(check_registrations(container, network, lists, cls, open_map, fusion), 1, "the open slots")
-    if map_designed(open_map) != kmap or map_designed(kmap) != kmap:
+    if omni_label(map_designed(open_map)) != kmap or omni_label(map_designed(kmap)) != kmap:
         fails.append("the map retrofit does not turn the open slots into Garrett's rows, idempotently")
     if register_container(container) != container or register_fusion(fusion) != fusion or register_network(network) != network:
         fails.append("registration is not idempotent")
