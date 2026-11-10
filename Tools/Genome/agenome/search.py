@@ -410,8 +410,11 @@ def run(args):
     with open(os.path.join(args.run, "args.json"), "w") as f:
         json.dump(vars(args), f, indent=1)
     seeds = load_seeds(args.seeds, rng)
-    from .handmade import amoebius_like, amoebius_v2
-    seeds += [amoebius_like(), amoebius_v2(), amoebius_v2(seed=9)]
+    if not (args.no_handmade or os.environ.get("AGENOME_NO_HANDMADE") == "1"):
+        # the hand-built Amoebius scaffolds join every run's seeds unless asked not to: an "isolated" island (a
+        # werkkzeug-only or novelty run, island C's reservoir) otherwise carries these lineages whatever --seeds says
+        from .handmade import amoebius_like, amoebius_v2
+        seeds += [amoebius_like(), amoebius_v2(), amoebius_v2(seed=9)]
     if args.resume:
         skipped = 0
         for p in args.resume:
@@ -781,6 +784,9 @@ def main(argv=None):
     ap.add_argument("--critic-every", type=int, default=6)
     ap.add_argument("--critic-steps", type=int, default=120)
     ap.add_argument("--seeds", nargs="*", default=[])
+    ap.add_argument("--no-handmade", action="store_true",
+                    help="do not add the hand-built amoebius_like / amoebius_v2 scaffolds to the seeds (also "
+                         "AGENOME_NO_HANDMADE=1)")
     ap.add_argument("--resume", nargs="*", default=[], help="population/pareto/elites json files to add as seeds")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--lp-threads", type=int, default=1)
