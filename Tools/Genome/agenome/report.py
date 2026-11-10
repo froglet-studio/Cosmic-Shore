@@ -175,7 +175,9 @@ def main(argv=None):
     ap.add_argument("--hold", required=True)
     ap.add_argument("--max-genomes", type=int, default=84)
     ap.add_argument("--clips", type=int, default=14)
+    ap.add_argument("--ss", type=int, default=1, help="supersampling factor, as the islands use (AGENOME_SS)")
     a = ap.parse_args(argv)
+    os.environ["AGENOME_SS"] = str(a.ss)
 
     os.makedirs(os.path.join(a.out, "strips"), exist_ok=True)
     os.makedirs(os.path.join(a.out, "clips"), exist_ok=True)

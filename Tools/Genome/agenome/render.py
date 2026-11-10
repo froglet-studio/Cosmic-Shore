@@ -263,11 +263,17 @@ def perspective(fovy, aspect, n, fr):
 
 
 class Renderer:
-    def __init__(self, w=W, h=H):
+    def __init__(self, w=W, h=H, ss=None):
+        """ss = supersampling factor: render at (w*ss, h*ss) and box-filter down to (w, h), the way the Amoebius
+        reels were downscaled from 1280x720. Default from AGENOME_SS (1). Measured 2026-11-10: 2x cuts the gradient
+        distance by 1 to 2 for genomes not tuned at 1x and costs 2 to 2.7x the render time."""
         ensure_display()
         import moderngl
         self.mgl = moderngl
         self.ctx = moderngl.create_standalone_context()
+        self.ss = max(1, int(os.environ.get("AGENOME_SS", "1") if ss is None else ss))
+        self.out_w, self.out_h = w, h
+        w, h = w * self.ss, h * self.ss
         self.w, self.h = w, h
         ctx = self.ctx
         self.quad = ctx.buffer(np.array([-1, -1, 1, -1, -1, 1, 1, 1], np.float32))
@@ -464,6 +470,10 @@ class Renderer:
                 states.append({"f": fi, "t": t, "camera": {"pos": eye.tolist(), "tgt": tgt.tolist(), "fov": fov},
                                "instances": n_inst_total,
                                "movers": [len(p.pos) for p in world.movers]})
+        if self.ss > 1:
+            k = self.ss
+            frames = frames.reshape(n_frames, self.out_h, k, self.out_w, k, 3).mean(axis=(2, 4), dtype=np.float32)
+            frames = np.clip(np.round(frames), 0, 255).astype(np.uint8)
         if return_state:
             return frames, states
         return frames

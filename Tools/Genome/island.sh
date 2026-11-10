@@ -5,7 +5,8 @@
 # learned critic, publishing its Pareto front under runs/<island-name>/ and importing other islands' best every
 # 10 generations. Stop it with: pkill -f agenome.search
 # Optional: SEEDS="glob glob ..." picks the starting lineages (default: every seed folder but the raw wz3 ones);
-# RESUME=none starts without the other islands' fronts; WORKERS=n; TUNE=0.25 (share of parameter-only steps).
+# RESUME=none starts without the other islands' fronts; WORKERS=n; TUNE=0.25 (share of parameter-only steps);
+# SS=2 renders every clip at 2x and filters it down (closer to the downscaled reels, 2 to 2.7x slower).
 set -euo pipefail
 NAME=${1:?island name}
 HOURS=${2:-6}
@@ -32,7 +33,7 @@ cd "$WORK"
 nohup python3 -m agenome.search --run "$WORK/run_$NAME" \
   --stats "$F/target_stats_reels_train.npz" --hold "$F/target_stats_reel05_hold.npz" \
   --real "$WORK/reels/reel0[1-4]/frames.npy" --real-hold "$WORK/reels/reel05/frames.npy" \
-  --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" \
+  --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
   --share "$SHARE/runs" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM \
   > "$WORK/run_$NAME.out" 2>&1 &
 echo "island $NAME running: tail -f $WORK/run_$NAME.out ; results in $SHARE/runs/$NAME/"

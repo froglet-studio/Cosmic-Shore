@@ -455,6 +455,7 @@ def main(argv=None):
     ap.add_argument("--real", nargs="*", default=[], help="frames.npy globs: Amoebius frames the critic calls real")
     ap.add_argument("--real-hold", default=None, help="frames.npy glob: held-out Amoebius frames (critic check)")
     ap.add_argument("--tune", type=float, default=0.25, help="share of each generation spent on parameter-only steps around the best")
+    ap.add_argument("--ss", type=int, default=None, help="supersampling factor for every render (sets AGENOME_SS; default 1)")
     ap.add_argument("--critic-w", type=float, default=0.5)
     ap.add_argument("--critic-every", type=int, default=6)
     ap.add_argument("--critic-steps", type=int, default=120)
@@ -478,7 +479,10 @@ def main(argv=None):
     ap.add_argument("--island", default=None, help="this island's name under --share")
     ap.add_argument("--migrate-every", type=int, default=10)
     ap.add_argument("--migrants", type=int, default=4)
-    run(ap.parse_args(argv))
+    args = ap.parse_args(argv)
+    if args.ss:
+        os.environ["AGENOME_SS"] = str(args.ss)  # workers inherit it; every Renderer reads it
+    run(args)
 
 
 if __name__ == "__main__":
