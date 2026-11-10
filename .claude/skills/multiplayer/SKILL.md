@@ -6,8 +6,8 @@ description: The one skill for ANY Cosmic Shore multiplayer work - the party (in
 # Multiplayer: the owner's game, its rules, its ledger, its tests
 
 Multiplayer's owner is **Yash**. The UGS layer and the backend (Cloud Code, the live project, its environments) are
-**Shombith's**: ask him before touching them (Yash does the Cloud Code work for now; anything posted to the backend
-goes through Shombith first). Never assign a task to anyone (`Docs/TEAM.md`). Before the first edit:
+**Shombith's**: tell him and queue code changes there for his `/approve` (`Docs/TEAM.md` rule 13; Yash does the Cloud
+Code work for now); anything POSTED to the live backend still goes through Shombith first. Never assign a task to anyone (`Docs/TEAM.md`). Before the first edit:
 `python3 Tools/Build/who_works_where.py query <paths>`. On 2026-11-07 it names `claude/mp-plan-p0` (2026-11-02: B47
 round 2, B48/B49, `mp_auto.py`; its `verify_unity.sh` has since landed on `bleeding-edge`) in flight on these docs;
 build on it, never beside it.

@@ -51,6 +51,7 @@ STATIC = [
     ('crew_vessels_self_test', 'Tools/Build/check_crew_vessels.py', ['--self-test']),
     ('ship_gates_self_test', 'Tools/Build/ship_gates.py', ['--self-test']),
     ('push_checks_self_test', 'Tools/Build/push_checks.py', ['--self-test']),
+    ('approvals_self_test', 'Tools/Build/approvals.py', ['--self-test']),
     ('editor_themes', 'Tools/Build/author_editor_themes.py', ['--check']),
     ('editor_themes_self_test', 'Tools/Build/author_editor_themes.py', ['--self-test']),
 ]

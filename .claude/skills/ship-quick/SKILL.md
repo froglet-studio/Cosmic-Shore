@@ -58,6 +58,8 @@ one fired.
    branch. Not trimmed by fast mode; it is the branch's only pre-merge CI.
 10. **Refresh the Fleet Codex** — `/ship` §5.6: when the branch touched a vessel, rebuild the codex on bleeding-edge
    with this branch merged on top (`--pending`) and republish it. Not trimmed by fast mode.
+11. **Merge** — `/ship` §5.7: on the GO, merge the PR into `bleeding-edge` with a merge commit (auto-merge when a
+   review is required), unless the person said "PR only". Not trimmed by fast mode.
 
 ## What you skip
 
@@ -74,6 +76,6 @@ one fired.
 
 ## Report
 
-Two paragraphs: what shipped and the PR link, then the §2.5 verdict (tools classified,
+Two paragraphs: what shipped, the PR link and whether it merged (§5.7), then the §2.5 verdict (tools classified,
 where their output landed), the §3.55 lab line ("no lab touched", or the CATALOG/LEARNINGS
 changes), and anything you deliberately skipped so the prompter can call it back.
