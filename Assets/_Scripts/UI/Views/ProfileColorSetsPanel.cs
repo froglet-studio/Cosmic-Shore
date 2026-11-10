@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -19,11 +20,12 @@ namespace CosmicShore.UI
     /// (<see cref="ThemeManager.ApplyColorSet"/>). Leaving the tab or the Profile without applying puts the equipped set
     /// back. LB / RB step between the Record and Colour sets tabs.
     ///
-    /// <para>The rail is a window onto the whole catalog: its tiles show the sets from <c>_first</c> on, and the previous
-    /// and next buttons step the set shown and slide the window, so a catalog of any length is browsed through the same
-    /// tiles. The sets made for a vision (colour blindness, low vision, Contrast) sit in it beside the
-    /// others; Settings > General > Colour sets is only a breadcrumb that opens this page on them
-    /// (<see cref="ShowColourSetsWhenOpen"/>).</para>
+    /// <para>Two rails (Shombith, 2026-11-09): the looks on the left, and apart on the right the sets made for a vision
+    /// (colour blindness, low vision, Contrast), which are free because they are accessibility
+    /// (<see cref="ColorSetCatalogSO.IsPickable"/>). Each rail is a window onto its own sets: its tiles show them from the
+    /// rail's first on, and its previous and next buttons step the set shown and slide the window, so any number of sets
+    /// is browsed through the same tiles. Settings > General > Colour sets is a breadcrumb that opens this page on the
+    /// vision rail (<see cref="ShowColourSetsWhenOpen"/>).</para>
     ///
     /// <para>Every word is a field here, authored in the prefab, or the catalog's (<see cref="ColorSetCatalogSO"/>).</para>
     /// </summary>
@@ -64,14 +66,21 @@ namespace CosmicShore.UI
         [Header("Sets")]
         [Tooltip("Used when the theme manager is not up (a test scene). In the game, ThemeManagerDataContainer's catalog.")]
         [SerializeField] private ColorSetCatalogSO catalog;
+        [Tooltip("The left rail: the sets picked for their looks (vision None).")]
         [SerializeField] private Thumb[] thumbs = Array.Empty<Thumb>();
         [SerializeField] private Button previousButton;
         [SerializeField] private Button nextButton;
 
+        [Header("Colour vision (free)")]
+        [Tooltip("The right rail: only the sets made for a vision (colour blindness, low vision, Contrast). Always free.")]
+        [SerializeField] private Thumb[] visionThumbs = Array.Empty<Thumb>();
+        [SerializeField] private Button visionPreviousButton;
+        [SerializeField] private Button visionNextButton;
+
         [Header("The set shown")]
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text lineText;
-        [Tooltip("\"2 of 3\".")]
+        [Tooltip("\"2 of 3\": the set's place in its own rail.")]
         [SerializeField] private TMP_Text positionText;
         [Tooltip("\"Wearing Nocturne\".")]
         [SerializeField] private TMP_Text wearingText;
@@ -91,9 +100,21 @@ namespace CosmicShore.UI
 
         static readonly Domains[] DomainOrder = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
 
+        /// <summary>One rail at run time: its tiles, buttons, the catalog indices it shows and its window.</summary>
+        sealed class Rail
+        {
+            public Thumb[] Thumbs;
+            public readonly List<int> Sets = new();   // catalog indices, in card order
+            public int First;                          // the place in Sets on the first tile
+            public bool Vision;
+        }
+
+        readonly Rail _looks = new() { Vision = false };
+        readonly Rail _vision = new() { Vision = true };
+        ColorSetCatalogSO _railsBuiltFor;
+
         bool _showing;
         int _picked = -1;      // the catalog index of the set shown
-        int _first;            // the catalog index on the rail's first tile
         bool _openOnVisionSets;
         float _veilAlpha = -1f;
         GameObject _lastSelected;
@@ -107,13 +128,19 @@ namespace CosmicShore.UI
             if (recordTab) recordTab.onClick.AddListener(ShowRecord);
             if (colourSetsTab) colourSetsTab.onClick.AddListener(ShowColourSets);
             if (applyButton) applyButton.onClick.AddListener(Apply);
-            if (previousButton) previousButton.onClick.AddListener(() => Step(-1));
-            if (nextButton) nextButton.onClick.AddListener(() => Step(+1));
-            for (int i = 0; i < thumbs.Length; i++)
-            {
-                int tile = i;
-                if (thumbs[i].tile) thumbs[i].tile.onClick.AddListener(() => Pick(_first + tile));
-            }
+            _looks.Thumbs = thumbs ?? Array.Empty<Thumb>();
+            _vision.Thumbs = visionThumbs ?? Array.Empty<Thumb>();
+            if (previousButton) previousButton.onClick.AddListener(() => Step(_looks, -1));
+            if (nextButton) nextButton.onClick.AddListener(() => Step(_looks, +1));
+            if (visionPreviousButton) visionPreviousButton.onClick.AddListener(() => Step(_vision, -1));
+            if (visionNextButton) visionNextButton.onClick.AddListener(() => Step(_vision, +1));
+            foreach (var rail in new[] { _looks, _vision })
+                for (int i = 0; i < rail.Thumbs.Length; i++)
+                {
+                    int tile = i;
+                    var r = rail;
+                    if (rail.Thumbs[i].tile) rail.Thumbs[i].tile.onClick.AddListener(() => PickTile(r, tile));
+                }
             if (record)
             {
                 record.Opened += OnRecordOpened;
@@ -174,8 +201,14 @@ namespace CosmicShore.UI
             var selected = events.currentSelectedGameObject;
             if (selected == _lastSelected) return;
             _lastSelected = selected;
-            for (int i = 0; i < thumbs.Length; i++)
-                if (thumbs[i].tile && thumbs[i].tile.gameObject == selected && _first + i != _picked) { Pick(_first + i); break; }
+            foreach (var rail in new[] { _looks, _vision })
+                for (int i = 0; i < rail.Thumbs.Length; i++)
+                    if (rail.Thumbs[i].tile && rail.Thumbs[i].tile.gameObject == selected)
+                    {
+                        int index = SetAt(rail, rail.First + i);
+                        if (index >= 0 && index != _picked) Pick(index);
+                        return;
+                    }
         }
 
         public void ShowRecord()
@@ -187,13 +220,14 @@ namespace CosmicShore.UI
         public void ShowColourSets()
         {
             var cat = Catalog;
+            BuildRails(cat);
             int vision = _openOnVisionSets && cat ? cat.IndexOfFirstVisionSet() : -1;
             _openOnVisionSets = false;
             SetPage(true);
             if (vision >= 0)
             {
-                // The breadcrumb's sets lead the rail and the first is shown (and previewed) on the cell.
-                _first = vision;
+                // The breadcrumb opens the vision rail on its first set, shown (and previewed) on the cell.
+                _vision.First = 0;
                 Pick(vision);
             }
             else
@@ -203,6 +237,45 @@ namespace CosmicShore.UI
                 Refresh();
             }
             SelectTile(_picked);
+        }
+
+        /// <summary>
+        /// Splits the catalog into the two rails: the looks (vision None) and the sets made for a vision. The catalog's
+        /// card order is kept inside each rail.
+        /// </summary>
+        public static void SplitRails(ColorSetCatalogSO cat, List<int> looks, List<int> vision)
+        {
+            looks.Clear();
+            vision.Clear();
+            int n = cat ? cat.Count : 0;
+            for (int i = 0; i < n; i++)
+            {
+                var entry = cat.Get(i);
+                if (entry == null) continue;
+                (entry.vision == ColourVision.None ? looks : vision).Add(i);
+            }
+        }
+
+        void BuildRails(ColorSetCatalogSO cat)
+        {
+            if (_railsBuiltFor == cat && cat) return;
+            _railsBuiltFor = cat;
+            SplitRails(cat, _looks.Sets, _vision.Sets);
+            _looks.First = _vision.First = 0;
+        }
+
+        Rail RailOf(int catalogIndex)
+        {
+            var entry = Catalog ? Catalog.Get(catalogIndex) : null;
+            return entry != null && entry.vision != ColourVision.None ? _vision : _looks;
+        }
+
+        static int SetAt(Rail rail, int place) => place >= 0 && place < rail.Sets.Count ? rail.Sets[place] : -1;
+
+        void PickTile(Rail rail, int tile)
+        {
+            int index = SetAt(rail, rail.First + tile);
+            if (index >= 0) Pick(index);
         }
 
         /// <summary>
@@ -219,18 +292,23 @@ namespace CosmicShore.UI
 
         void Reveal(int index)
         {
-            var cat = Catalog;
-            _first = WindowStart(_first, Mathf.Max(0, index), thumbs.Length, cat ? cat.Count : 0);
+            if (index < 0) return;
+            var rail = RailOf(index);
+            int place = rail.Sets.IndexOf(index);
+            if (place < 0) return;
+            rail.First = WindowStart(rail.First, place, rail.Thumbs.Length, rail.Sets.Count);
         }
 
         void SelectTile(int index)
         {
             var events = EventSystem.current;
-            int tile = index - _first;
-            if (events && tile >= 0 && tile < thumbs.Length && thumbs[tile].tile)
+            if (!events || index < 0) return;
+            var rail = RailOf(index);
+            int tile = rail.Sets.IndexOf(index) - rail.First;
+            if (tile >= 0 && tile < rail.Thumbs.Length && rail.Thumbs[tile].tile)
             {
-                events.SetSelectedGameObject(thumbs[tile].tile.gameObject);
-                _lastSelected = thumbs[tile].tile.gameObject;
+                events.SetSelectedGameObject(rail.Thumbs[tile].tile.gameObject);
+                _lastSelected = rail.Thumbs[tile].tile.gameObject;
             }
         }
 
@@ -262,14 +340,16 @@ namespace CosmicShore.UI
             if (colourSetsTab) colourSetsTab.IsSelected = colourSets;
         }
 
-        void Step(int by)
+        // A rail's < > step through that rail's own sets; from a set in the other rail they start at its first.
+        void Step(Rail rail, int by)
         {
-            var cat = Catalog;
-            int n = cat ? cat.Count : 0;
+            BuildRails(Catalog);
+            int n = rail.Sets.Count;
             if (n == 0) return;
-            int next = ((_picked < 0 ? 0 : _picked) + by % n + n) % n;
-            Pick(next);
-            SelectTile(next);
+            int place = rail.Sets.IndexOf(_picked);
+            int next = place < 0 ? (by > 0 ? 0 : n - 1) : ((place + by) % n + n) % n;
+            Pick(rail.Sets[next]);
+            SelectTile(rail.Sets[next]);
         }
 
         // Browsing previews the set on the real cell; nothing is saved until APPLY.
@@ -278,7 +358,7 @@ namespace CosmicShore.UI
             _picked = index;
             Reveal(index);
             var entry = Catalog ? Catalog.Get(index) : null;
-            if (entry != null && entry.unlocked && entry.colorSet && Manager) Manager.PreviewColorSet(entry.colorSet);
+            if (ColorSetCatalogSO.IsPickable(entry) && Manager) Manager.PreviewColorSet(entry.colorSet);
             Refresh();
         }
 
@@ -293,7 +373,7 @@ namespace CosmicShore.UI
         {
             var entry = Catalog ? Catalog.Get(_picked) : null;
             var manager = Manager;
-            if (entry == null || !entry.unlocked || !entry.colorSet || !manager || entry.colorSet == Equipped) return;
+            if (!ColorSetCatalogSO.IsPickable(entry) || !manager || entry.colorSet == Equipped) return;
             // The cell already wears the set (the preview); the veil is the moment it becomes yours. While another
             // load holds the screen no veil can rise, so the set is worn straight away.
             if (!EnvironmentLoadVeil.ShowColourSetChange(entry.displayName, entry.line,
@@ -304,39 +384,19 @@ namespace CosmicShore.UI
         void Refresh()
         {
             var cat = Catalog;
+            BuildRails(cat);
             var equipped = Equipped;
-            int count = cat ? cat.Count : 0;
-            for (int i = 0; i < thumbs.Length; i++)
-            {
-                var t = thumbs[i];
-                var entry = cat ? cat.Get(_first + i) : null;
-                if (t.group)
-                {
-                    t.group.alpha = entry != null ? 1f : 0f;
-                    t.group.interactable = t.group.blocksRaycasts = entry != null;
-                }
-                if (entry == null) continue;
-                if (t.nameText) t.nameText.text = entry.displayName ?? string.Empty;
-                if (t.equippedMark) t.equippedMark.SetActive(entry.colorSet && entry.colorSet == equipped);
-                if (t.tile)
-                {
-                    t.tile.IsSelected = _first + i == _picked;
-                    t.tile.IsLocked = !entry.unlocked;
-                }
-                for (int d = 0; d < DomainOrder.Length; d++)
-                    if (entry.colorSet && entry.colorSet.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var rim, out var face))
-                    {
-                        Paint(t.faces, d, face);
-                        Paint(t.rims, d, rim);
-                    }
-            }
+            RefreshRail(_looks, cat, equipped);
+            RefreshRail(_vision, cat, equipped);
 
             var shown = cat ? cat.Get(_picked) : null;
             if (nameText) nameText.text = shown?.displayName ?? string.Empty;
             if (lineText) lineText.text = shown?.line ?? string.Empty;
+            var shownRail = RailOf(_picked);
+            int shownPlace = shownRail.Sets.IndexOf(_picked);
             if (positionText)
-                positionText.text = shown != null
-                    ? TemplateText.Fill(positionTemplate, "index", (_picked + 1).ToString(), "count", count.ToString())
+                positionText.text = shown != null && shownPlace >= 0
+                    ? TemplateText.Fill(positionTemplate, "index", (shownPlace + 1).ToString(), "count", shownRail.Sets.Count.ToString())
                     : string.Empty;
             var worn = cat ? cat.Get(cat.IndexOf(equipped)) : null;
             if (wearingText) wearingText.text = worn != null ? TemplateText.Fill(wearingTemplate, "name", worn.displayName ?? string.Empty) : string.Empty;
@@ -351,8 +411,37 @@ namespace CosmicShore.UI
             }
 
             bool isEquipped = shown?.colorSet && shown.colorSet == equipped;
-            if (applyButton) applyButton.gameObject.SetActive(shown != null && shown.unlocked && shown.colorSet && !isEquipped);
+            if (applyButton) applyButton.gameObject.SetActive(ColorSetCatalogSO.IsPickable(shown) && !isEquipped);
             if (equippedMark) equippedMark.SetActive(isEquipped);
+        }
+
+        void RefreshRail(Rail rail, ColorSetCatalogSO cat, SO_ColorSet equipped)
+        {
+            for (int i = 0; i < rail.Thumbs.Length; i++)
+            {
+                var t = rail.Thumbs[i];
+                int index = SetAt(rail, rail.First + i);
+                var entry = cat && index >= 0 ? cat.Get(index) : null;
+                if (t.group)
+                {
+                    t.group.alpha = entry != null ? 1f : 0f;
+                    t.group.interactable = t.group.blocksRaycasts = entry != null;
+                }
+                if (entry == null) continue;
+                if (t.nameText) t.nameText.text = entry.displayName ?? string.Empty;
+                if (t.equippedMark) t.equippedMark.SetActive(entry.colorSet && entry.colorSet == equipped);
+                if (t.tile)
+                {
+                    t.tile.IsSelected = index == _picked;
+                    t.tile.IsLocked = !ColorSetCatalogSO.IsPickable(entry);
+                }
+                for (int d = 0; d < DomainOrder.Length; d++)
+                    if (entry.colorSet && entry.colorSet.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var rim, out var face))
+                    {
+                        Paint(t.faces, d, face);
+                        Paint(t.rims, d, rim);
+                    }
+            }
         }
 
         static void Paint(Image[] images, int index, Color linear)

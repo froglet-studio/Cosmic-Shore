@@ -5965,6 +5965,33 @@ breadcrumb to the color sets, but put the thing where it belongs."
 - **Not drawn on Frogma first:** it extends the picked Rev 54 A and the approved settings board with content and one
   row, as Garrett asked. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+### 126.3 Colour vision gets its own rail, free; the worn set themes the whole UI (2026-11-09, NOT RUN IN EDITOR)
+
+Shombith: "both the theme colors and color blindness accessibility colors are on the same lineup. Make a separate
+color blind section just on the right which contains only the color blind themes since they will be free as they are
+accessibility features. [...] I want the theme to also affect the UI how it does in the analytics or fleet codex
+artifacts with all UI".
+- **Two rails.** The left rail ("Colour sets") holds only the sets picked for their looks (Nocturne, Photic, Dart Frog,
+  Nacre); a hairline, then the right rail ("Colour vision, always free") holds only the sets made for a vision
+  (Contrast and the five colour-vision sets). Each rail keeps three tiles and its own < >, a window onto its own sets;
+  "2 of 6" counts inside the rail of the set shown. To give the rails the band, the words moved up 28 units and APPLY /
+  Equipped moved level with the set's name, right. The Settings breadcrumb opens the right rail on its first set.
+  Authored by `author_menu_profile.py` (`COLOUR_RAILS`); every existing node keeps its fileID.
+- **Free.** `ColorSetCatalogSO.IsPickable`: a set made for a vision is worn whatever its `unlocked` says (accessibility
+  is never a reward); the panel, the saved pick (`ThemeManager.PickedColorSet`) and the breadcrumb all ask it.
+- **The worn set themes the whole UI**, as on the analytics console and the Fleet Codex: `ColorSetUITheme` is a
+  line-for-line port of `Tools/Analytics/console/make_themes.py` (ground, panels, lines and text keep the Deep Sea
+  lightness and take the set's Jade face hue; CTA and danger are the set's; selection and control its Jade rim,
+  purchase its Gold rim; contrast fitted to 3:1 / 4.5:1; elements and tooltip stay authored). `UITheme.Resolve` answers
+  from it while worn (`UIThemeLive`), and wearing or previewing a set repaints the UI on screen: the kit repaints from
+  its tokens, any other graphic whose colour is a theme token moves to that token in the new theme, and the sea lines
+  draw with a run-time copy of their material in the set's Jade, Blue and Ruby rims (the assets are never written).
+  New UI paints itself on enable; a root canvas whose hierarchy changed is swept again once a second, and every canvas
+  of a loaded scene. `ColorSetUIThemeTests` holds every shipped set to the console's `themes.css` (checked outside
+  Unity too: 80 values, all within 1/255).
+- **Not drawn on Frogma first**: it splits the picked Rev 54 A's rail as asked. Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
 ## 137. Rev 50 mockups: the Froglet Analytics dashboard, three ways to read it (2026-11-05; Shombith picked B)
 
 - **Asked** (Shombith, 2026-11-05): "Lets go with our own dashboard and leave posthog. Pull up /frogma create new tab to
