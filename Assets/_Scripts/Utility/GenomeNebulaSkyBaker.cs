@@ -54,6 +54,21 @@ namespace CosmicShore.Utility
         static readonly int Noise3DId = Shader.PropertyToID("_Noise3D");
         static readonly int SliceId = Shader.PropertyToID("_Slice");
         static readonly int Noise3DSizeId = Shader.PropertyToID("_Noise3DSize");
+        static readonly int FaceXId = Shader.PropertyToID("_FaceX");
+        static readonly int FaceYId = Shader.PropertyToID("_FaceY");
+        static readonly int FaceZId = Shader.PropertyToID("_FaceZ");
+        const int BakeCubeFacePass = 3;
+
+        // Per face (Unity's +X..-Z order): the s axis, the t axis and the face normal of the GL / D3D cube table.
+        static readonly Vector3[] FaceAxes =
+        {
+            new(0, 0, -1), new(0, -1, 0), new(1, 0, 0),
+            new(0, 0, 1), new(0, -1, 0), new(-1, 0, 0),
+            new(1, 0, 0), new(0, 0, 1), new(0, 1, 0),
+            new(1, 0, 0), new(0, 0, -1), new(0, -1, 0),
+            new(1, 0, 0), new(0, -1, 0), new(0, 0, 1),
+            new(-1, 0, 0), new(0, -1, 0), new(0, 0, -1),
+        };
         const int BakeEquirectPass = 1;
         const int BakeNoise3DPass = 2;
         const string Equirect = "_MAPPING_EQUIRECT", Sphere = "_MAPPING_SPHERE", Noise3DKeyword = "_MAPPING_NOISE3D";
@@ -134,13 +149,39 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>Renders the procedural sky into the chosen cube faces (bit i = face i, Unity's +X..-Z order).
-        /// Camera.RenderToCubemap draws RenderSettings.skybox, so the procedural sky is swapped in for the call.</summary>
+        /// Camera.RenderToCubemap draws RenderSettings.skybox, so the procedural sky is swapped in for the call. Where
+        /// the pipeline refuses it, each face is drawn with the shader's own face pass instead (no camera).</summary>
         void RenderFaces(int faceMask)
         {
             var shown = RenderSettings.skybox;
             RenderSettings.skybox = _sky;
-            _bakeCamera.RenderToCubemap(_target, faceMask);
+            bool rendered = _bakeCamera.RenderToCubemap(_target, faceMask);
             RenderSettings.skybox = shown;
+            if (!rendered) BlitFaces(faceMask);
+        }
+
+        void BlitFaces(int faceMask)
+        {
+            var previous = RenderTexture.active;
+            for (int f = 0; f < 6; f++)
+            {
+                if ((faceMask & (1 << f)) == 0) continue;
+                _sky.SetVector(FaceXId, FaceAxes[f * 3]);
+                _sky.SetVector(FaceYId, FaceAxes[f * 3 + 1]);
+                _sky.SetVector(FaceZId, FaceAxes[f * 3 + 2]);
+                Graphics.SetRenderTarget(_target, 0, (CubemapFace)f);
+                GL.PushMatrix();
+                GL.LoadOrtho();
+                _sky.SetPass(BakeCubeFacePass);
+                GL.Begin(GL.QUADS);
+                GL.TexCoord2(0, 0); GL.Vertex3(0, 0, 0);
+                GL.TexCoord2(1, 0); GL.Vertex3(1, 0, 0);
+                GL.TexCoord2(1, 1); GL.Vertex3(1, 1, 0);
+                GL.TexCoord2(0, 1); GL.Vertex3(0, 1, 0);
+                GL.End();
+                GL.PopMatrix();
+            }
+            RenderTexture.active = previous;
         }
 
         Camera NewBakeCamera()

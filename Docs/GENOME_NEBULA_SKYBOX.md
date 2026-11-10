@@ -167,8 +167,10 @@ noise (cubemap, 3D noise) does not, which is the safer shape for Mali and Adreno
   filaments that make the look).
 
 Not yet verified in Unity: `Camera.RenderToCubemap` under URP (the cubemap methods use it so Unity owns the face
-orientation; if URP refuses it, render the faces with a direction pass instead), and `Graphics.Blit` into 3D slices on
-every target API.
+orientation). Where it returns false, the baker now draws each face itself with the shader's `BakeCubeFace` pass and
+no camera; that pass's face orientation (the GL/D3D cube table, flipped where UVs start at the top) is reasoned, not
+seen, so the first editor run should look at a cube baked both ways. Also unverified: `Graphics.Blit` into 3D slices
+on every target API.
 
 ## 6b. The same question for the shipped HyperSea sky (stars, cell net and all)
 

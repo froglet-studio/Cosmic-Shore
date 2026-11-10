@@ -7,6 +7,8 @@
 // Pass 0 "Sky"         : the skybox itself (RenderSettings.skybox).
 // Pass 1 "BakeEquirect": the sky into an equirect target laid out like StaticSkyPanorama.shader.
 // Pass 2 "BakeNoise3D" : the two raw noise fields into one slice (_Slice) of a wrapping RGHalf 3D texture.
+// Pass 3 "BakeCubeFace": the sky into one cube face (_FaceX/_FaceY/_FaceZ); the baker's fallback when
+//                        Camera.RenderToCubemap refuses (face orientation not yet verified on device).
 // GenomeNebulaSkyBaker drives the bakes and the cubemap modes.
 //
 // Mapping:
@@ -68,6 +70,7 @@ Shader "CosmicShore/GenomeNebulaSkybox"
     #include "GenomeNebula.hlsl"
 
     float _Slice, _Noise3DSize;
+    float4 _FaceX, _FaceY, _FaceZ;
 
     struct appdata { float4 vertex : POSITION; float2 uv : TEXCOORD0; };
     struct v2f { float4 pos : SV_POSITION; float3 viewDir : TEXCOORD0; float2 uv : TEXCOORD1; };
@@ -147,6 +150,30 @@ Shader "CosmicShore/GenomeNebulaSkybox"
                 float3 q = float3(i.uv, (_Slice + 0.5) / _Noise3DSize);
                 return float4(gn_fbm3(q * (_Period.x / _Noise0.x), _Noise0, _Period.x),
                               gn_fbm3(q * (_Period.y / _Noise1.x), _Noise1, _Period.y), 0, 1);
+            }
+            ENDCG
+        }
+
+        Pass
+        {
+            Name "BakeCubeFace"
+            ZTest Always
+            CGPROGRAM
+            #pragma vertex vert_sky
+            #pragma fragment frag
+            #pragma target 3.0
+            #pragma multi_compile_local _MAPPING_EQUIRECT _MAPPING_SPHERE _MAPPING_NOISE3D
+
+            // The GL / D3D cube face table: direction = Z + s*X + t*Y with s, t in -1..1 from the face's first texel.
+            // Unity renders into a texture upside down where UVs start at the top, so t is flipped there.
+            half4 frag(v2f i) : SV_Target
+            {
+                float s = i.uv.x * 2 - 1;
+                float t = i.uv.y * 2 - 1;
+            #if UNITY_UV_STARTS_AT_TOP
+                t = -t;
+            #endif
+                return half4(gn_sky(normalize(_FaceZ.xyz + _FaceX.xyz * s + _FaceY.xyz * t)), 1);
             }
             ENDCG
         }
