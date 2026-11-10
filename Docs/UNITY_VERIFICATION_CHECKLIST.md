@@ -65,6 +65,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 B50: a rejoiner joins the running turn instead of landing on READY (`Ys-bleeding-edge`, 2026-11-10, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/PartySystem/BUGS.md` B50. `ServerPlayerVesselInitializer.TryReclaimSeat` sends the turn state
+with the seat (`SeatReclaimed_ClientRpc`: running, seconds in, rounds, turns); the client joins the running turn
+(`GameDataSO.JoinRunningTurn`: no countdown, no stat zeroing) and unpauses input; `MiniGameHUD` skips the intro and
+READY when the turn is already running; the host ignores a Ready press during a turn. Compiled with the editor's
+Roslyn and response files (0 errors). Not run: EditMode, a play.
+
+**Verify in editor:**
+1. The project compiles; EditMode `GameDataSOTests` passes, the three `JoinRunningTurn_*` included.
+2. Two players (main editor + MPPM Player 2, or the editor + a dev build), a party match of any arcade mode, both press
+   READY, the race starts. Drop Player 2 mid-race (stop its Play, or kill the build) and wait for "handed to the AI".
+3. Player 2 comes back and presses REJOIN. **Pass:** after the connecting panel, Player 2 is flying its old ship at
+   once: no intro, no READY button, the HUD shows its score as it was (not 0), the race timer reads the same as on
+   Player 1 (within a second), input works. The net log has `seatReclaimed` on the host and `rejoinedRunningTurn` on
+   Player 2.
+4. Player 1 sees no "ready" toast and no second countdown at any point.
+5. The match ends normally for both; the scoreboard has Player 2's whole score.
+6. Mode check, one each if time allows: a race (Skim Race or a Time mode: gate progress after the rejoin), a score mode
+   (Serpent), a multi-turn mode. Note anything that restarted from zero on Player 2 only.
+
+---
+
 ### 🔴 Kelpwood, the Angler's Charge game (GameModes 86) (`claude/sweet-wozniak-tk48pb`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/KELPWOOD.md`. An Angler hunt through a 0G ball of kelp (`SpawnableKelpwood`, four

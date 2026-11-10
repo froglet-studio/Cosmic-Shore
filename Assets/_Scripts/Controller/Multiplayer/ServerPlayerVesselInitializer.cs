@@ -952,9 +952,14 @@ namespace CosmicShore.Gameplay
             }
 
             // Tell the returning client which pair is now its own (it may have paired it as someone else's), then
-            // send the roster so every other pair resolves too.
+            // send the roster so every other pair resolves too. The turn state rides along: the client loaded the
+            // scene after the countdown's StartTurn went out, so without it the client would start the match over
+            // (cinematic, Ready) while everyone else is racing.
+            bool turnRunning = gameData.IsTurnRunning;
+            float turnElapsed = turnRunning ? Time.time - gameData.TurnStartTime : 0f;
             if (clientPlayerVesselInitializer != null && clientPlayerVesselInitializer.IsSpawned)
-                clientPlayerVesselInitializer.SeatReclaimed_ClientRpc(player.NetworkObjectId, new ClientRpcParams
+                clientPlayerVesselInitializer.SeatReclaimed_ClientRpc(player.NetworkObjectId, turnRunning, turnElapsed,
+                    gameData.RoundsPlayed, gameData.TurnsTakenThisRound, new ClientRpcParams
                 {
                     Send = new ClientRpcSendParams { TargetClientIds = new[] { clientId } }
                 });
