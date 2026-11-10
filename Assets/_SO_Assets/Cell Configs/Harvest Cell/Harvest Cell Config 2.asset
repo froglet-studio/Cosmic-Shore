@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: Harvest Cell Config 2
   m_EditorClassIdentifier:
   CellName: Harvest
-  Description: 'Sheaves - intensity 2 of Harvest: twelve sheaves with shielded cores; one in four wears
-    a domain colour. 3408 prisms in 12 sheaves (1680 core, 1728 stalk, 1680 shielded, 0
-    danger), field radius 880 inside the standard 1200 u cell, spawn ring 960. The omni
+  Description: 'Sheaves - intensity 2 of Harvest: twelve wheel sheaves with shielded cores, chaff and
+    six neutral bales; one sheaf in four wears a domain colour. 4129 prisms - 12 wheel
+    sheaves (1440 core, 2160 stalk), 10 chaff clouds (367), 6 bales (162); 1440 shielded, 0
+    danger; field radius 880 inside the standard 1200 u cell, spawn ring 960. The omni
     crystals spawn in the clear centre. NO NUCLEUS, no flora, no fauna. Authored by
     Tools/Build/author_harvest_assets.py from harvest_budget.py - re-run it rather than
     hand-editing.'
@@ -32,11 +33,11 @@ MonoBehaviour:
   EnvironmentIntensity: 2
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 4108
-    RestlessExit: 3908
-    FrenzyEnter: 7008
-    FrenzyExit: 6408
-    RestlessEnterVolume: 683565
-    RestlessExitVolume: 680365
-    FrenzyEnterVolume: 729965
-    FrenzyExitVolume: 720365
+    RestlessEnter: 4829
+    RestlessExit: 4629
+    FrenzyEnter: 7729
+    FrenzyExit: 7129
+    RestlessEnterVolume: 809818
+    RestlessExitVolume: 806618
+    FrenzyEnterVolume: 856218
+    FrenzyExitVolume: 846618
