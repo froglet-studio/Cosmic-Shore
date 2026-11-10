@@ -13,7 +13,7 @@
 # JUDGE=1.0 adds the fixed perceptual judge (agenome/judge.py, ImageNet features vs the reels) to the fitness,
 # with STATW (weight of the statistics, default 1.0) and CRITICW (the online critic, default 0.5) beside it.
 # SURVIVAL=diamond TUNER=random runs the search as it was before 2026-11-10 (defaults: pareto survival and the CMA
-# tuner; PARENTS=lexicase, OPERATORS=adaptive are the A/B's washes; agenome/search.py, SEARCH.md); SPAN=0.05 = band.
+# tuner; PARENTS=lexicase, OPERATORS=adaptive are the A/B's washes; agenome/search.py, SEARCH.md); BAND=0.05 = band.
 # It runs in the FOREGROUND (a cloud container kills detached processes once it idles after a turn): start it as a
 # tracked background task (Bash run_in_background, 2 h timeout) and start it again when that ends - it resumes from
 # its own population. BG=1 detaches it with nohup instead (only on a machine that stays up).
@@ -49,7 +49,7 @@ set -f; read -r -a SEED_ARGS <<< "$SEEDS"; set +f
 RESUME_ARGS=()
 OWN=()
 for f in "$WORK/run_$NAME/population.json" "$WORK/run_$NAME/pareto.json"; do [ -f "$f" ] && OWN+=("$f"); done
-if [ "${RESUME:-all}" != none ]; then RESUME_ARGS=(--resume ${OWN[@]+"${OWN[@]}"} $(ls "$SHARE"/runs/*/pareto.json 2>/dev/null | head -16))
+if [ "${RESUME:-all}" != none ]; then RESUME_ARGS=(--resume ${OWN[@]+"${OWN[@]}"} $(ls "$SHARE"/runs/*/pareto.json 2>/dev/null | head -16 || true))
 elif [ ${#OWN[@]} -gt 0 ]; then RESUME_ARGS=(--resume "${OWN[@]}"); fi
 GENS=$(( HOURS * 90 ))
 cd "$WORK"
@@ -62,7 +62,7 @@ CMD=(python3 -m ops_ext.run_search "${EXTARGS[@]}" --run "$WORK/run_$NAME" \
   --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
   --judge-w "${JUDGE:-0}" --stat-w "${STATW:-1.0}" --critic-w "${CRITICW:-0.5}" \
   --survival "${SURVIVAL:-pareto}" --parents "${PARENTS:-tournament}" --operators "${OPERATORS:-fixed}" \
-  --tuner "${TUNER:-cma}" --span "${SPAN:-0.05}" \
+  --tuner "${TUNER:-cma}" --span "${BAND:-0.05}" \
   --share "${RUNS:-$SHARE/ops_ext/runs}" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
 echo "island $NAME: log $WORK/run_$NAME.out ; results in ${RUNS:-$SHARE/ops_ext/runs}/$NAME/ ; resuming from ${#OWN[@]} own file(s)"
 if [ "${BG:-0}" = 1 ]; then nohup "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1 & exit 0; fi

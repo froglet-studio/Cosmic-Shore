@@ -19,7 +19,9 @@ Four pieces, each switchable so any run can be compared with the search it repla
 The A/B that chose the defaults: SEARCH.md beside this package.
 
 Distance to Amoebius = stat (features.py, fixed) + critic_w * softplus(-critic logit) (critic.py, retrained every
---critic-every generations on Amoebius train frames vs the frames the search just rendered) + judge_w * judge.
+--critic-every generations on Amoebius train frames vs the frames the search just rendered) + judge_w * judge (the fixed
+perceptual judge, agenome.judge) + lab_w * lab (the fitness lab's element-aware scorer, agenome.labscore; off unless
+--lab-w > 0, scored on the same windows as the judge by --lab-workers processes while the pool renders the rest).
 
 Run:  python3 -m agenome.search --run RUN_DIR --stats STATS.npz --hold HOLD.npz --real 'frames.npy globs'
                                 --seeds 'GLOB' [--workers 4] [--gens 200]
@@ -70,11 +72,15 @@ def _init(stats_path, hold_path, lp_threads, mem_gb=3.0):
 
 
 def _eval(payload):
-    """Render and score one genome. payload = (genome json, frames, judge frames, windows[, hop]): windows is either a
-    list of start offsets in seconds (each window renders with t_shift = offset) or a count n, meaning offsets
-    0, hop, 2 hop, ... (the older form, still used by agenome.tune). The stat and held-out stat are the means over the
-    windows, each window's judge frames go to the judge, and groups, luma, motion and the critic's 4 frames come from
-    the first window."""
+    """Render and score one genome. payload = (genome json, frames, judge frames, windows[, hop[, full]]): windows is
+    either a list of start offsets in seconds (each window renders with t_shift = offset) or a count n, meaning offsets
+    0, hop, 2 hop, ... (the older form, still used by agenome.tune). full (default False) also returns every window's
+    whole clip as res['lframes'], for the lab scorer (its optical flow needs all 60 frames, not the judge's 12).
+    The stat, held-out stat, groups, luma and motion
+    are means over the windows, each window's judge frames go to the judge, and the critic's 4 frames are spread over
+    the windows (one window: frames 0, 1/3, 2/3 and the end, as before; two: the first and last frame of each), so no
+    term of the fitness is measured on one stretch of time (code review 2026-11-10: groups and the critic were still
+    window 0 only, so a row's groups described window 0 while its stat was the mean)."""
     from .features import window_features
     gj, n_frames, n_judge = payload[:3]
     wins = payload[3] if len(payload) > 3 else 1
@@ -83,11 +89,14 @@ def _eval(payload):
     else:
         hop = float(payload[4]) if len(payload) > 4 else 8.0
         offsets = [k * hop for k in range(max(1, int(wins)))]
+    full = bool(payload[5]) if len(payload) > 5 else False
     t0 = time.time()
     try:
         g = Genome.from_json(gj)
-        stats, holds, jfr, first = [], [], [], None
-        for ts in offsets:
+        stats, holds, jfr, dks, lumas, motions, cfr, lfr = [], [], [], [], [], [], [], []
+        nw = len(offsets)
+        slots = [4 // nw + (1 if w < 4 % nw else 0) for w in range(nw)]  # the critic's 4 frames over the windows
+        for w, ts in enumerate(offsets):
             # later windows of the same phenotype: judged, and the stat averages over them too, so neither term can be
             # met by fitting one stretch of time (2026-11-10: genomes judged 0.87 on the first window read 2.0 to 3.9
             # later, and genomes climbed on two fixed windows read 0.3 to 0.6 worse on windows they never saw)
@@ -100,14 +109,19 @@ def _eval(payload):
             if n_judge:
                 pick = np.linspace(0, len(frk) - 1, n_judge).round().astype(int)
                 jfr.append(frk[pick].copy())
-            if first is None:
-                first = (frk, dk)
-        fr, d = first
-        res = {"ok": True, "stat": float(np.mean(stats)),
-               "groups": {k: round(v, 4) for k, v in d.items() if k != "total"},
-               "zbytes": g.size(), "nodes": len(g.nodes), "luma": float(fr.mean() / 255.0),
-               "motion": float(np.abs(np.diff(fr[::4].astype(np.int16), axis=0)).mean() / 255.0) if len(fr) > 4 else 0.0,
-               "frames": fr[np.linspace(0, len(fr) - 1, 4).astype(int)].copy(),
+            dks.append(dk)
+            lumas.append(float(frk.mean() / 255.0))
+            motions.append(float(np.abs(np.diff(frk[::4].astype(np.int16), axis=0)).mean() / 255.0) if len(frk) > 4 else 0.0)
+            if slots[w] > 0:
+                ci = np.linspace(0, len(frk) - 1, slots[w]).astype(int) if slots[w] > 1 else [len(frk) // 2]
+                cfr.append(frk[ci].copy())
+            if full:
+                lfr.append(frk)
+        groups = {k: round(float(np.mean([dk[k] for dk in dks])), 4) for k in dks[0] if k != "total"}
+        res = {"ok": True, "stat": float(np.mean(stats)), "groups": groups,
+               "zbytes": g.size(), "nodes": len(g.nodes), "luma": float(np.mean(lumas)),
+               "motion": float(np.mean(motions)),
+               "frames": np.concatenate(cfr, axis=0),
                "stat_windows": [round(x, 4) for x in stats], "stat_nwin": len(offsets),
                "win_t": [round(t, 3) for t in offsets]}
         if holds:
@@ -115,11 +129,42 @@ def _eval(payload):
             res["hold_windows"] = [round(x, 4) for x in holds]
         if n_judge:
             res["jframes"] = jfr
+        if full:
+            res["lframes"] = lfr
     except Exception as e:
         res = {"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"{type(e).__name__}: {e}"[:300],
                "nodes": 0, "luma": 0.0, "motion": 0.0}
     res["sec"] = time.time() - t0
     return res
+
+
+# ---------------------------------------------------------------------- lab scorer side (only when --lab-w > 0)
+def _lab_init():
+    """A lab-scoring process: one numpy/OpenCV thread, no X display; loads the scorer once (about 20 s: the reference
+    pickle plus Keras' InceptionV3 for its crit and dist axes, with the judge's weights from ~/.keras/models)."""
+    for k in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ[k] = "1"
+    os.environ.setdefault("KERAS_BACKEND", "jax")
+    os.environ.pop("DISPLAY", None)
+    try:
+        import cv2
+        cv2.setNumThreads(1)
+    except Exception:
+        pass
+    from . import labscore
+    labscore.scorer()
+
+
+def _lab_eval(frames_list):
+    """Lab score of one candidate's windows (each a whole uint8 [60,144,256,3] clip): per-window scores, 1.0 = Amoebius'
+    held-out source."""
+    t0 = time.time()
+    try:
+        from . import labscore
+        _, per, _ = labscore.windows(frames_list)
+        return {"ok": True, "per": [float(x) for x in per], "sec": time.time() - t0}
+    except Exception as e:
+        return {"ok": False, "err": f"{type(e).__name__}: {e}"[:300], "sec": time.time() - t0}
 
 
 def window_grid(args):
@@ -147,7 +192,8 @@ def draw_offsets(args, rng, exclude=()):
 def merge_windows(c, r):
     """Fold r, a re-evaluation of c's genome on other windows, into c: every score becomes the window-weighted mean
     over all the windows judged so far, so a long-lived genome converges on its look over the whole span instead of
-    the luck of its first draw. The critic frames, groups, luma and motion stay those of c's first evaluation."""
+    the luck of its first draw. Groups, luma and motion are merged the same way; the critic frames stay those of c's
+    first evaluation (a fixed 4 per genome)."""
     n0, n1 = int(c.get("judge_nwin", 1)), int(r.get("judge_nwin", 1))
     m0, m1 = int(c.get("stat_nwin", 1)), int(r.get("stat_nwin", 1))
 
@@ -160,14 +206,22 @@ def merge_windows(c, r):
     for k in ("judges", "judges_hold"):
         if k in c and k in r and len(c[k]) == len(r[k]):
             c[k] = [round(wavg(x, y, n0, n1), 3) for x, y in zip(c[k], r[k])]
-    for k in ("stat", "hold"):
+    for k in ("stat", "hold", "luma", "motion"):
         if k in c and k in r:
             c[k] = wavg(c[k], r[k], m0, m1)
+    if isinstance(c.get("groups"), dict) and isinstance(r.get("groups"), dict):
+        c["groups"] = {k: round(wavg(v, r["groups"][k], m0, m1), 4) if k in r["groups"] else v
+                       for k, v in c["groups"].items()}
     for k in ("judge_windows", "judge_hold_windows", "stat_windows", "hold_windows", "win_t"):
         if k in c and k in r:
             c[k] = list(c[k]) + list(r[k])
     if "judge_nwin" in c and "judge_nwin" in r:
         c["judge_nwin"] = n0 + n1
+    if "lab" in r:  # the lab scorer (--lab-w > 0) is merged over its own window count
+        l0, l1 = int(c.get("lab_nwin", 0)) if "lab" in c else 0, int(r.get("lab_nwin", 1))
+        c["lab"] = round(wavg(c["lab"], r["lab"], l0, l1), 4) if l0 else r["lab"]
+        c["lab_windows"] = (list(c.get("lab_windows", [])) if l0 else []) + list(r.get("lab_windows", []))
+        c["lab_nwin"] = l0 + l1
     c["stat_nwin"] = m0 + m1
     c["rejudged"] = int(c.get("rejudged", 0)) + 1
     return c
@@ -397,11 +451,84 @@ class JudgeState:
             c.pop("jframes", None)
 
 
+class LabState:
+    """The fitness lab's element-aware scorer (agenome.labscore; 1.0 = Amoebius' held-out source, about 9 a typical
+    phenotype) as a search term, on the same windows as the judge. Off unless --lab-w > 0, so the default fitness and
+    every running island stay as they were. Each render result's whole clips go to a pool of --lab-workers processes
+    as soon as it arrives (submit), so the lab scores finished candidates while the render pool works on the rest;
+    collect() waits for them. A candidate whose lab scoring failed has no 'lab' and dist reads it as LAB_MISSING."""
+    LAB_MISSING = 10.0
+
+    def __init__(self, args, ctx):
+        self.on = getattr(args, "lab_w", 0.0) > 0
+        self.w = getattr(args, "lab_w", 0.0)
+        self.n = max(1, int(getattr(args, "lab_workers", 2)))
+        self.ctx, self.pool, self.jobs = ctx, None, {}
+        self.errors, self.wait, self.scored = 0, 0.0, 0
+        if self.on:
+            from .labscore import LAB
+            self.new_pool()
+            print(f"lab: weight {self.w}, {self.n} scoring processes, scorer {LAB}", flush=True)
+
+    def new_pool(self):
+        if self.pool is not None:
+            self.pool.terminate()
+        self.pool = self.ctx.Pool(self.n, initializer=_lab_init)
+        self.jobs = {}
+
+    def submit(self, r):
+        fr = r.pop("lframes", None)
+        if self.on and fr is not None and r.get("ok"):
+            try:
+                self.jobs[id(r)] = (r, self.pool.apply_async(_lab_eval, (fr,)))
+            except Exception as e:  # a broken pool: this candidate goes unscored (LAB_MISSING), the run goes on
+                self.errors += 1
+                print("lab submit failed:", f"{type(e).__name__}: {e}"[:200], flush=True)
+
+    def collect(self, res):
+        if not self.on:
+            return
+        t0 = time.time()
+        todo = [self.jobs.pop(id(r)) for r in res if id(r) in self.jobs]
+        nwin = max([len(r.get("win_t") or [0]) for r, _ in todo] or [1])
+        # the first call in each process loads the scorer (about 20 s); after that about 1.5 s a window on a free core
+        deadline = time.time() + 120 + 8.0 * nwin * len(todo) / self.n
+        broken = False
+        for r, j in todo:
+            try:
+                if broken:
+                    raise mp.TimeoutError()
+                out = j.get(timeout=max(1.0, deadline - time.time()))
+            except mp.TimeoutError:
+                broken = True
+                out = {"ok": False, "err": "lab timeout"}
+            except Exception as e:
+                out = {"ok": False, "err": f"lab worker: {e}"[:200]}
+            if out.get("ok") and out.get("per"):
+                r["lab"] = round(float(np.mean(out["per"])), 4)
+                r["lab_windows"] = [round(x, 3) for x in out["per"]]
+                r["lab_nwin"] = len(out["per"])
+                self.scored += 1
+            else:
+                self.errors += 1
+                if self.errors <= 5:
+                    print("lab error:", out.get("err"), flush=True)
+        if broken:
+            print("lab scoring timed out; restarting the lab pool", flush=True)
+            self.new_pool()
+        self.wait += time.time() - t0
+
+    def close(self):
+        if self.pool is not None:
+            self.pool.close()
+
+
 class CriticState:
     def __init__(self, args):
         self.on = bool(args.real) and args.critic_w > 0
         self.w = args.critic_w
         self.stat_w, self.judge_w = args.stat_w, args.judge_w
+        self.lab_w = getattr(args, "lab_w", 0.0)
         self.c = None
         self.buf = []
         self.real = None
@@ -452,6 +579,8 @@ class CriticState:
             cd = critic_distance(c["crit"]) if (self.on and self.trained and "crit" in c) else 0.0
             jd = c.get("judge", 10.0) if self.judge_w > 0 else 0.0
             c["dist"] = self.stat_w * c["stat"] + self.w * cd + self.judge_w * jd
+            if self.lab_w > 0:  # never used alone: the red team climbed the lab while the judge got worse (MERGE.md)
+                c["dist"] += self.lab_w * c.get("lab", LabState.LAB_MISSING)
 
 
 def run(args):
@@ -462,8 +591,11 @@ def run(args):
     with open(os.path.join(args.run, "args.json"), "w") as f:
         json.dump(vars(args), f, indent=1)
     seeds = load_seeds(args.seeds, rng)
-    from .handmade import amoebius_like, amoebius_v2
-    seeds += [amoebius_like(), amoebius_v2(), amoebius_v2(seed=9)]
+    if not (args.no_handmade or os.environ.get("AGENOME_NO_HANDMADE") == "1"):
+        # the hand-built Amoebius scaffolds join every run's seeds unless asked not to: an "isolated" island (a
+        # werkkzeug-only or novelty run, island C's reservoir) otherwise carries these lineages whatever --seeds says
+        from .handmade import amoebius_like, amoebius_v2
+        seeds += [amoebius_like(), amoebius_v2(), amoebius_v2(seed=9)]
     if args.resume:
         skipped = 0
         for p in args.resume:
@@ -484,6 +616,11 @@ def run(args):
     state = {"pool": None}
     crit = CriticState(args)
     judge = JudgeState(args)
+    lab = LabState(args, ctx)
+
+    def job(gj, offsets):
+        """One evaluation's payload; with the lab on, the workers also return every window's whole clip."""
+        return (gj, args.frames, judge.n, offsets, 8.0, True) if lab.on else (gj, args.frames, judge.n, offsets)
 
     def new_pool():
         if state["pool"] is not None:
@@ -511,18 +648,20 @@ def run(args):
             except Exception as e:
                 res.append({"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"worker: {e}"[:200], "nodes": 0,
                             "luma": 0.0, "motion": 0.0, "sec": 0.0})
+            lab.submit(res[-1])  # the lab scores this one while the pool renders the rest (never raises)
         if broken:
             print("evaluation timed out; restarting the worker pool", flush=True)
             new_pool()
         return res
 
     def evaluate(gs):
-        payload = [(g.to_json(), args.frames, judge.n, draw_offsets(args, rng)) for g in gs]
+        payload = [job(g.to_json(), draw_offsets(args, rng)) for g in gs]
         res = run_payload(payload)
         for g, r in zip(gs, res):
             r["genome"] = g
         crit.add_fakes(res)
         judge.score(res)
+        lab.collect(res)
         crit.score(res)
         return res
 
@@ -537,8 +676,9 @@ def run(args):
                     todo.append((c, o))
         if not todo:
             return 0
-        res = run_payload([(c["genome"].to_json(), args.frames, judge.n, o) for c, o in todo])
+        res = run_payload([job(c["genome"].to_json(), o) for c, o in todo])
         judge.score(res)
+        lab.collect(res)
         n = 0
         for (c, _), r in zip(todo, res):
             if r.get("ok"):
@@ -555,10 +695,13 @@ def run(args):
             return None
         key = c["genome"].to_bytes()
         if key not in audits:
-            (r,) = run_payload([(c["genome"].to_json(), args.frames, judge.n, list(args.audit_offsets))])
+            (r,) = run_payload([job(c["genome"].to_json(), list(args.audit_offsets))])
             judge.score([r])
+            lab.collect([r])
             audits[key] = ({"judge": r.get("judge"), "judge_windows": r.get("judge_windows"), "t": r.get("win_t"),
-                            "stat": round(r["stat"], 4)} if r.get("ok") else {"err": r.get("err")})
+                            "stat": round(r["stat"], 4),
+                            **({"lab": r.get("lab"), "lab_windows": r.get("lab_windows")} if lab.on else {})}
+                           if r.get("ok") else {"err": r.get("err")})
         c["audit"] = audits[key]
         return c["audit"]
 
@@ -599,6 +742,7 @@ def run(args):
     for gen in range(args.gens):
         cinfo = {}
         moved = False
+        lab.wait = 0.0
         if args.rejudge_every > 0 and gen > 0 and gen % args.rejudge_every == 0:
             # random windows: survivors and the published front get fresh windows folded into their scores, so a lucky
             # first draw does not keep a genome on top (each is judged at most once per window offset)
@@ -617,7 +761,8 @@ def run(args):
         extra_c = archive.members + list(elites.cells.values())
         kids, tags, pdist, pcand = [], [], [], []
         if args.share and args.migrate_every > 0 and gen > 0 and gen % args.migrate_every == 0:
-            imm = immigrants(args, rng, k=args.migrants, have={lineage_of(c) for c in pop})
+            held = {c["genome"].to_bytes() for c in pop + archive.members + list(elites.cells.values())}
+            imm = immigrants(args, rng, k=args.migrants, have={lineage_of(c) for c in pop}, held=held)
             kids += imm
             tags += ["imm"] * len(imm)
             pdist += [None] * len(imm)
@@ -748,6 +893,11 @@ def run(args):
                    "best_judge_nwin": best.get("judge_nwin"),
                    "top_judge": min((c.get("judge", 99) for c in allc), default=None)} if judge.on else {}),
                **({"best_audit": aud.get("judge"), "best_audit_windows": aud.get("judge_windows")} if aud else {}),
+               **({"best_lab": best.get("lab"), "best_lab_nwin": best.get("lab_nwin"),
+                   "top_lab": min((c.get("lab", 99) for c in allc), default=None),
+                   "lab_wait": round(lab.wait, 1), "lab_errors": lab.errors} if lab.on else {}),
+               **({"best_audit_lab": aud.get("lab"), "best_audit_lab_windows": aud.get("lab_windows")}
+                  if aud and lab.on else {}),
                "best_zbytes": best["zbytes"], "simplest_ok_zbytes": simplest_ok["zbytes"],
                "median_zbytes": med_size, "archive": len(archive.members), "elites": len(elites.cells),
                "errors": nerr, "sec_per_eval": round(float(np.mean([c["sec"] for c in res])), 3),
@@ -767,41 +917,84 @@ def run(args):
             save_state(args.run, pop, archive, elites, gen)
             publish(args, args.run)
     state["pool"].close()
+    lab.close()
     save_state(args.run, pop, archive, elites, args.gens)
 
 
-def immigrants(args, rng, k=4, have=()):
-    """Genomes other islands published under --share (their pareto.json and elites.json), re-evaluated here: the best
-    one overall, then the best of each other lineage (root seed), lineages this island lacks first. Process mining
-    (2026-11-10): the top k of the fronts by distance were all one seed (min+cellnet), so migration only spread the
-    leader; the survivor cap limits a lineage inside an island, this keeps the exchange between islands diverse."""
+def immigrants(args, rng, k=4, have=(), held=()):
+    """Genomes other islands published under --share (their pareto.json and elites.json), re-evaluated here.
+
+    Each front is ranked only against itself: islands score on different windows, weights and judge versions, so a
+    dist from one folder says nothing about a dist from another. Code review, 2026-11-10: ranking the pooled rows by
+    raw dist let the static seedbank (one window, judge v2, no critic term) supply nearly every migrant to every island,
+    the same four at every migration, and no island's front reached another. Only folders whose args.json names an
+    island count (islands publish one; the seedbank and tuner copies are --resume / --seeds inputs). The first
+    immigrant is the best row of one other island picked at random, any lineage, so a leader's gains still spread; the
+    rest go round the other islands taking each one's best row of a lineage this island lacks (have), then of any
+    lineage not taken yet. Rows whose bytes are in held (what this island already holds) are skipped. k <= 0 imports
+    nothing (it used to return the lead anyway)."""
+    if k <= 0:
+        return []
     me = os.path.abspath(os.path.join(args.share, args.island)) if args.island else None
-    best = {}  # lineage -> (dist, genome, island)
-    for p in glob.glob(os.path.join(args.share, "*", "pareto.json")) + glob.glob(os.path.join(args.share, "*", "elites.json")):
-        if me and os.path.abspath(os.path.dirname(p)) == me:
+    held, fronts = set(held), []
+    # --import-from reads another folder's islands while this one publishes under --share: a trial island kept out of
+    # runs/ (its dist has other terms) still gets the same immigrants as the islands it is compared with
+    for folder in sorted(glob.glob(os.path.join(getattr(args, "import_from", None) or args.share, "*", ""))):
+        folder = os.path.abspath(folder)
+        if me and folder == me:
             continue
         try:
-            data = json.load(open(p))
+            if not json.load(open(os.path.join(folder, "args.json"))).get("island"):
+                continue
         except Exception:
             continue
-        for d in data:
+        rows, seen = [], set()
+        for name in ("pareto.json", "elites.json"):
             try:
-                g = Genome.from_json(d["genome"])
-            except Exception:  # ops this code does not know yet (an island on newer code): skip, never crash
+                data = json.load(open(os.path.join(folder, name)))
+            except Exception:
                 continue
-            L, dist = lineage_name(g), float(d.get("dist", 99.0))
-            if L not in best or dist < best[L][0]:
-                best[L] = (dist, g, os.path.basename(os.path.dirname(p)))
-    if not best:
+            for d in data:
+                try:
+                    g = Genome.from_json(d["genome"])
+                    b = g.to_bytes()
+                except Exception:  # ops this code does not know yet (an island on newer code): skip, never crash
+                    continue
+                if b in held or b in seen:
+                    continue
+                seen.add(b)
+                rows.append((float(d.get("dist", 99.0)), b, g))
+        if rows:
+            rows.sort(key=lambda r: r[0])
+            fronts.append((os.path.basename(folder), rows))
+    if not fronts:
         return []
-    have = set(have)
-    lead = min(best, key=lambda L: best[L][0])
-    rest = sorted((L for L in best if L != lead), key=lambda L: (L in have, best[L][0] + 0.01 * rng.random()))
-    out = []
-    for L in [lead] + rest[:max(0, k - 1)]:
-        g = best[L][1]
-        g.meta["immigrant_from"] = best[L][2]
+    out, taken, used = [], set(), set()
+
+    def take(name, b, g):
+        g.meta["immigrant_from"] = name
         out.append(g)
+        taken.add(lineage_name(g))
+        used.add(b)
+
+    name, rows = fronts[rng.randrange(len(fronts))]
+    take(name, rows[0][1], rows[0][2])
+    order = list(fronts)
+    rng.shuffle(order)
+    for lacking in (True, False):
+        moved = True
+        while len(out) < k and moved:
+            moved = False
+            for name, rows in order:
+                if len(out) >= k:
+                    break
+                for _, b, g in rows:
+                    L = lineage_name(g)
+                    if b in used or L in taken or (lacking and L in have):
+                        continue
+                    take(name, b, g)
+                    moved = True
+                    break
     return out
 
 
@@ -824,7 +1017,7 @@ def publish(args, run_dir):
 
 def save_state(run_dir, pop, archive, elites, gen):
     def pack(c):
-        d = {k: v for k, v in c.items() if k not in ("genome", "frames")}
+        d = {k: v for k, v in c.items() if k not in ("genome", "frames", "jframes", "lframes")}
         d["genome"] = c["genome"].to_json()
         return d
     tmp = lambda n: os.path.join(run_dir, n + ".tmp")
@@ -875,9 +1068,19 @@ def main(argv=None):
                     help="window starts (s) never used for selection on which each generation's best is judged and "
                          "logged as best_audit (comma list; 'none' = off). Keep warmup + offset under 60 s")
     ap.add_argument("--stat-w", type=float, default=1.0, help="weight of the fixed statistics in dist")
+    ap.add_argument("--lab-w", type=float, default=0.0,
+                    help="weight of the fitness lab's element-aware scorer (agenome.labscore; 1.0 = Amoebius' held-out "
+                         "source, about 9 a typical phenotype), scored on the judged windows and added to dist beside "
+                         "the judge, never alone; 0 = off (the default, so the merged code changes no running island). "
+                         "About 1.5 s a window on a free core")
+    ap.add_argument("--lab-workers", type=int, default=2,
+                    help="processes that score the lab while the render pool works (each loads it once, about 20 s)")
     ap.add_argument("--critic-every", type=int, default=6)
     ap.add_argument("--critic-steps", type=int, default=120)
     ap.add_argument("--seeds", nargs="*", default=[])
+    ap.add_argument("--no-handmade", action="store_true",
+                    help="do not add the hand-built amoebius_like / amoebius_v2 scaffolds to the seeds (also "
+                         "AGENOME_NO_HANDMADE=1)")
     ap.add_argument("--resume", nargs="*", default=[], help="population/pareto/elites json files to add as seeds")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--lp-threads", type=int, default=1)
@@ -928,6 +1131,9 @@ def main(argv=None):
     ap.add_argument("--lineage-cap", type=float, default=0.25,
                     help="largest share of the mu survivors one lineage (root seed) may hold; 0 = no cap")
     ap.add_argument("--migrants", type=int, default=4)
+    ap.add_argument("--import-from", default=None,
+                    help="folder of islands to draw immigrants from (default: --share); lets a trial island publish to a "
+                         "folder of its own and still import what the compared islands import")
     args = ap.parse_args(argv)
     args.audit_offsets = [] if str(args.audit_offsets).strip().lower() in ("", "none", "0", "off") else \
         [float(x) for x in str(args.audit_offsets).split(",") if x.strip()]

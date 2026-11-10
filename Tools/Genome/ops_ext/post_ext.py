@@ -165,45 +165,18 @@ def install_hooks(sim, render):
         return eye, tgt
     C.update = update
 
-    R = render.Renderer
-    orig_render = R.render
+    # post.bandgain runs in the one post-chain executor (agenome/postchain.py), which cuts every family's numpy ops
+    # out of the chain in one walk and applies them in chain order. Until 2026-11-10 this module wrapped
+    # Renderer.render itself and cut only bandgain, so a chain mixed with hier's post.hx_* ops ran in the order the
+    # hooks were installed (bandgain first under agenome.search, last under ops_ext.run_search; code review finding)
+    from agenome import postchain
 
-    def r_render(self, g, n_frames=60, *a, **kw):
-        g2 = g.copy().ensure_root()
-        r = g2.root()
-        rn = g2.nodes[r]
-        if len(rn.inputs) < 4:
-            return orig_render(self, g, n_frames, *a, **kw)
-        # merge note (genome thread, 2026-11-10): walk every P node down to the post.grade and cut out only the
-        # bandgain nodes, so other families' post ops (hier's post.hx_*) stay linked for their own hook, whatever
-        # order the hooks wrap the renderer in
-        from agenome.ops import OPS as _OPS
-        seq, seen, j = [], set(), rn.inputs[3]
-        while j is not None and j not in seen and g2.nodes[j].op != "post.grade" and \
-                getattr(_OPS.get(g2.nodes[j].op), "out", "P") == "P":
-            seen.add(j)
-            seq.append(j)
-            j = g2.nodes[j].inputs[0] if g2.nodes[j].inputs else None
-        tail = j if (j is not None and g2.nodes[j].op == "post.grade") else None
-        mine = [i for i in seq if g2.nodes[i].op == "post.bandgain"]
-        if not mine:
-            return orig_render(self, g, n_frames, *a, **kw)
-        chain = [dict(_named(g2.nodes[i])) for i in mine]
-        rest = [i for i in seq if g2.nodes[i].op != "post.bandgain"]
-        link = rest + ([tail] if tail is not None else [])
-        rn.inputs[3] = link[0] if link else None
-        for k, i in enumerate(rest):
-            nxt = link[k + 1] if k + 1 < len(link) else None
-            if g2.nodes[i].inputs:
-                g2.nodes[i].inputs[0] = nxt
-            else:
-                g2.nodes[i].inputs = [nxt]
-        res = orig_render(self, g2, n_frames, *a, **kw)
-        frames, rest = (res[0], res[1:]) if isinstance(res, tuple) else (res, None)
-        for d in reversed(chain):  # innermost first
-            frames = bandgain(frames, d)
-        return (frames,) + tuple(rest) if rest is not None else frames
-    R.render = r_render
+    def _batch(frames, nodes):
+        for n in nodes:  # application order (innermost first)
+            frames = bandgain(frames, dict(_named(n)))
+        return frames
+    postchain.register("bandgain", ("post.bandgain",), _batch)
+    postchain.install(render)
 
 
 def _named(n):

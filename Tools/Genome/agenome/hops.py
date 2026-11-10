@@ -497,9 +497,9 @@ def apply_post_chain(frames, nodes):
 def split_post_chain(g):
     """On a copy of g: cut the numpy post ops out of the root's p chain. Returns (g2, [nodes outermost first]).
 
-    Merge note (genome thread, 2026-11-10): the chain is walked through every P node down to the post.grade, and only
-    the hx nodes are cut out; other families' post ops (ops_ext's post.bandgain) stay linked in order for their own
-    render hook, so the result does not depend on which hook wraps the renderer last."""
+    Kept for callers that want the hx nodes alone; rendering goes through agenome/postchain.py, which cuts every
+    family's numpy ops in one walk and applies them in chain order (the code review of 2026-11-10 measured that two
+    family hooks, each cutting only its own ops, ran a mixed chain in the order the hooks were installed)."""
     from agenome.ops import OPS as _OPS
     g2 = g.copy().ensure_root()
     r = g2.root()
@@ -534,9 +534,33 @@ def split_post_chain(g):
 RENAMES = {'tex.fbm_warp': 'tex.hx_fbm_warp', 'tex.spectral': 'tex.hx_spectral', 'tex.hexgrid': 'tex.hx_hexgrid', 'tex.chladni': 'tex.hx_chladni', 'tex.sph': 'tex.hx_sph', 'tex.beam': 'tex.hx_beam', 'tex.stars': 'tex.hx_stars', 'tex.gabor': 'tex.hx_gabor', 'sdf.pyramidfield': 'sdf.hx_pyramidfield', 'post.fft': 'post.hx_fft', 'post.pca': 'post.hx_pca', 'post.dog': 'post.hx_dog', 'post.histeq': 'post.hx_histeq'}
 
 
+# a legacy name that is ALSO a live op of another family: ops_ext's tex.spectral (0xA0, the FFT-baked texture) shares
+# the old name of tex.hx_spectral. Renamed only when the node's parameters are the hx op's (code review 2026-11-10:
+# renaming every tex.spectral on load silently turned ops_ext genomes into a different phenotype, and the worker
+# scored that one while the parent archived the original)
+_HX_ONLY = {"tex.spectral": ({"K", "fmin", "fmax", "spread", "map", "speed", "contrast"},
+                             {"fc", "bw", "aniso", "levels", "drift"})}
+
+
+def _legacy(n):
+    new = RENAMES.get(n.get("op"))
+    if new is None:
+        return None
+    if n.get("op") in _HX_ONLY:
+        mine, theirs = _HX_ONLY[n["op"]]
+        p = n.get("p")
+        if not isinstance(p, dict) or not (set(p) & mine) or (set(p) & theirs):
+            return None  # the live op of that name (or no way to tell): keep it
+    return new
+
+
 def fix_json(d):
-    for n in d.get("nodes", []):
-        n["op"] = RENAMES.get(n["op"], n["op"])
+    """d with the part-by-part ops' pre-18:15 names mapped to the hx_ namespace. Returns a copy when anything is
+    renamed (the caller's rows are never mutated) and d itself otherwise."""
+    if not isinstance(d, dict) or not any(_legacy(n) for n in d.get("nodes", []) if isinstance(n, dict)):
+        return d
+    d = dict(d)
+    d["nodes"] = [dict(n, op=_legacy(n)) if isinstance(n, dict) and _legacy(n) else n for n in d["nodes"]]
     return d
 
 
@@ -592,19 +616,10 @@ def install():
     aglsl.compile_textures = compile_textures
     aglsl.compile_shapes = compile_shapes
 
-    orig_render = arender.Renderer.render
-
-    def render(self, g, n_frames=60, *a, **kw):  # merge note: forwards every argument (t_shift for judged windows)
-        return_state = kw.get("return_state", a[0] if a else False)
-        g2, chain = split_post_chain(g)
-        res = orig_render(self, g2, n_frames, *a, **kw)
-        if not chain:
-            return res
-        if return_state:
-            fr, st = res
-            return apply_post_chain(fr, chain[::-1]), st
-        return apply_post_chain(res, chain[::-1])
-
-    render._hops_orig = orig_render
-    arender.Renderer.render = render
+    # numpy post ops: registered with the one post-chain executor (agenome/postchain.py), which cuts every family's
+    # numpy ops out of the chain in one walk and applies them in chain order (until 2026-11-10 this module wrapped
+    # Renderer.render itself, so in a chain mixed with ops_ext's post.bandgain the inner hook's family ran first)
+    from agenome import postchain
+    postchain.register("hx", NP_FUNCS, apply_post_chain)
+    postchain.install(arender)
     _INSTALLED = True
