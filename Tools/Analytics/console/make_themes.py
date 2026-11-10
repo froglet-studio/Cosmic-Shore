@@ -299,10 +299,13 @@ def self_test():
         bad.append(f"Dart Frog's panels are hue {reports['dartfrog']['surface-hue']:.0f}, not bronze")
     if len({round(r["surface-hue"]) for r in reports.values()}) < len(reports):
         bad.append("two themes share one panel colour: the whole UI must change with the theme")
-    # the linear assets must reach the screen as the palette doc's swatches (Dart Frog Jade: Mint over Bronze #774325)
+    # the linear assets must reach the screen as the palette doc's swatches (Dart Frog Jade: Mint over Bronze, whose
+    # swatch colour_sets.json holds; it was #774325 until the 2026-11-10 rules took the bronze into the night)
+    with open(os.path.join(REPO, "Docs", "VesselModels", "colour_sets.json"), encoding="utf-8") as fh:
+        bronze = json.load(fh)["sets"]["dart_frog"]["domains"]["jade"]["face"]["swatch"].upper()
     for x in catalog():
-        if x["id"] == "dartfrog" and to_hex(x["colours"]["face"]["jade"]) != "#774325":
-            bad.append(f"Dart Frog's Jade face reads {to_hex(x['colours']['face']['jade'])}, not Bronze #774325")
+        if x["id"] == "dartfrog" and to_hex(x["colours"]["face"]["jade"]) != bronze:
+            bad.append(f"Dart Frog's Jade face reads {to_hex(x['colours']['face']['jade'])}, not Bronze {bronze}")
         if f'data-fs-theme="{x["id"]}"' not in css or f'"id":"{x["id"]}"' not in js:
             bad.append(f"theme {x['id']} missing from the output")
     if any(w in css for w in ("hypersea", "cosmic-shore")):

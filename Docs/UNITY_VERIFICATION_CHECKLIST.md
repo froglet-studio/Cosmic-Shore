@@ -22417,3 +22417,36 @@ rail and are always free).
    a view that paints only when its data changes. Note the screen and object.
 6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
 
+
+## 🔴 Colour sets under seven rules: Dart Frog, Nacre, Contrast and the vision sets re-derived, Nocturne's Gold 4° yellower (2026-11-10, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nifty-cray-41hy43`. `colour_sets.json` now holds every set to seven rules (`Tools/Build/colour_sets.py`,
+the `/colour-set` skill) so each domain stays distinguishable and looks like its four-letter name. Rewritten by
+`author_colour_set_assets.py`: the Dart Frog, Nocturne, Nacre, Contrast, Protanopia, Deuteranopia, Tritanopia,
+Achromatopsia and Low Vision palettes in `Assets/_SO_Assets/Color Palettes/`; regenerated: `FrogletSeaTheme.Themes.cs`,
+the console's `themes.css` / `theme.js`, `Docs/UI/froglet-tokens.json`; catalog words edited in `ColorSetCatalog.asset`.
+Ran here: `colour_sets.py --check/--self-test`, `colour_set_maker.py --self-test`, `author_colour_set_assets.py
+--check/--self-test`, `author_colour_set_catalog.py --check/--self-test`, both theme writers' `--check/--self-test`,
+`froglet_style.py --check`, every palette reader's `--check`, `/ship` gates, and `unity_refcompile` in the player and
+editor configs (0 errors in the changed file `FrogletSeaTheme.Themes.cs`; 21 elsewhere, in multiplayer and party code whose
+packages the sandbox cannot fetch). The stills come from a numpy model of the block shader with the gameplay bloom
+(`colour_set_maker.py preview` / `hero`), not from Unity.
+
+1. **Let Unity import the nine palettes**, then run the edit-mode tests `ColorSetCatalogTests` and `ColorSetUIThemeTests`
+   (the latter compares the C# theme maths to the regenerated `themes.css`).
+2. **Nocturne (the default), Gold on a team**: the Gold score panel, HUD colour and trail read honey-gold, not orange.
+   Nothing else in Nocturne moved.
+3. **Profile > Colour sets > Dart Frog**: the tile reads Mint over Bronze, Orchid over Petrol, Bumblebee over Coal, Azure
+   over Cobalt. Apply it and race with all four domains: each prism reads as its rim's colour over a dark ground (Jade
+   mint over dark bronze, no longer tan; Gold yellow over coal; Ruby orchid over petrol) and Blue prisms are wholly blue.
+   The UI theme stays bronze-hued.
+4. **Nacre**: the tile reads Aqua over Seafoam, Orchid over Amethyst, Butter over Champagne, Periwinkle over Powder.
+   Prisms should be soft bodies in their own domain's colour (seafoam Jade, champagne Gold, powder Blue, amethyst Ruby),
+   light but not white. Judge the bloom: if the faces still wash out, lower the faces' `L` in `colour_sets.json` (the Nacre
+   style allows mid L 0.50-0.74) and re-run the writer. Shielded tiers keep a tint; danger (a coral rim over a pale body)
+   still warns. The UI theme turns mint-hued (its Jade face is seafoam).
+5. **Contrast**: every prism is one domain's colour at two lightnesses (a crimson-bodied Fire, an amber-bodied Gold); the
+   board reads at a glance.
+6. **The five colour-blind sets**: Gold's HUD colour no longer reads as Fire, and the HUD colours are further apart for
+   each set's own viewer (`colour_sets.py --report`, rule 5). A colour-blind player's look at their set is the real test.
+7. **The Nacre entry above (2026-11-08)** names its old pigments in step 1; they changed here.

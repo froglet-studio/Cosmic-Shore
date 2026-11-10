@@ -1866,3 +1866,24 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: keep every pigment's sat at least about 0.1 (grey stays unclaimed), and put the writer's field check (`author_colour_set_assets.field_problems`) inside any search's score, not after it.
 - Evidence: `author_colour_set_assets.py --check` (the failures, then clean on the re-search); the six vision sets' sat values.
 - Promoted: no
+
+### L-STU-168 — The HUD reads a rim's numbers as sRGB: measure every rim as light AND as paint
+- Lab: Colour Sets Lab (`Docs/Studios/ColourSetsLab.html`) · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-set rules session · Date: 2026-11-10
+- What happened: the palette writer paints `TrailHighlightColor` in linear light, but `GetDomainUIColor`, the score panels and the vessel tails (`TailGradient`) read those floats as sRGB, which darkens the middle channel and turns an orange gold into Fire. Nocturne's honey showed on the HUD as `#FF8F11` (the Gold/Fire band), and every vision set's Gold read as Fire. Rule 5 had measured the rims only as light, so an achromat could tell Gold's and Ruby's HUD colours apart by 1.5 JND and a deutan Fire's and Gold's by 2.4.
+- Do instead: judge a rim in every reading the game shows it (`colour_sets.readings`: swatch, light, paint) and count the HUD in any per-viewer measure. The window that survives both readings for Gold is hue 82-96 (`colour_set_maker.py atlas`).
+- Evidence: `colour_sets.py` rules 4 and 5; Nocturne's Gold hue 83 to 87; the vision sets' rule 5 before and after in `colour_sets.json`.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §1, §2, §8
+
+### L-STU-169 — A face above the night line names its domain: make it its family's, its rim's paint, or quiet
+- Lab: Colour Sets Lab · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-set rules session · Date: 2026-11-10
+- What happened: every set passed the old four rules, yet Dart Frog's faces (mid L 0.39-0.45, bronze, indigo, forest, petrol) made a Jade prism read as bronze, a Blue one as green, and Nacre's light faces (a lavender Jade, a periwinkle Gold) named other domains outright. Below L 0.40 the six-family truth holds only Fire and Blue, which is why Nocturne's dark jewel faces of any hue read as night under their rims.
+- Do instead: give each face a voice (rule 6): its family's own colour, its rim's own paint (the two cones overlap, as Photic does), or quiet, wholly at or below L 0.40 (as Nocturne does). A contrasting second colour from an inspiration goes quiet; a light body must be its family's.
+- Evidence: `colour_sets.py voices`; `colour_set_maker.py preview` sheets of the old and new Dart Frog and Nacre.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §3
+
+### L-STU-170 — The gameplay bloom turns light faces white: paint a pastel set's faces at L 0.5-0.7 and let the bloom lift them
+- Lab: Colour Sets Lab · Branch: `cece/nifty-cray-41hy43` · By: the 2026-11-10 colour-set rules session · Date: 2026-11-10
+- What happened: Nacre's first faces were painted at L 0.70-0.79 (brightest channel up to 0.93). The gameplay profile blooms from 0.2, clamped at 0.5, intensity 2.5, so a model of the block shader with that bloom drew every Nacre prism, and every shielded tier, as near-white: the domains vanished. The writer's face fields take the pigment's own L, so the pigment decides it.
+- Do instead: render a set with the bloom before judging it (`colour_set_maker.py preview`, `hero`), and keep a light set's faces at mid L 0.50-0.74 (the Nacre style) so the bloom carries them to pastel; check the shielded tiers too, which the writer paints brighter and whiter.
+- Evidence: `colour_set_maker.py preview photic nacre`; `colour_sets.json` `styles.nacre`.
+- Promoted: `.claude/skills/colour-set/SKILL.md` §4, §8
