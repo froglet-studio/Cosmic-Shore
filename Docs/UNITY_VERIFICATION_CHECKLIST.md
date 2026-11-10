@@ -151,6 +151,10 @@ expects 82 modes).
    cruise fuses before it arrives). Watch for an AI circling a plate it never lines up on.
 8. First team to the target wins: results "N Prisms" / "N Prisms Left", the reveal SHATTERPLANE TIME / PRISMS LEFT.
    Replay works.
+9a. I3 crystals: every site shows one Space crystal per team present, side by side, each in its team's colour; a pilot
+    can take only their own team's (fly through another team's: nothing happens); the AI goes only for its own.
+9b. I4 fauna: tadpoles and sharks appear after about 10 s, each in one of the four element looks; tadpoles graze the plates
+    and sharks hunt them; breaking a rival-coloured creature's body scores; a dead creature drops a crystal.
 9. I2: plates at mixed angles. I3: stacks of three 70 u apart (the front plate shields the next from the guns). I4: white
    super-shielded ribs on every sixth line, red danger rims, and grilles in front of every other plate (a ring thrown
    through a grille blows on it and takes little).
