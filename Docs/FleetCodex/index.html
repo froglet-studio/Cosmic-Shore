@@ -101,11 +101,16 @@ button{font:inherit;color:inherit}
 .move .mhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .move .mhead .disp{font-size:34px}
 .trig{color:var(--sel);font-size:14px}
-.abrow{position:absolute;right:40px;bottom:40px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 780px)}
+.l5tog{margin-left:auto;display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;height:32px;padding:0 12px;background:transparent;color:var(--soft);box-shadow:inset 0 0 0 1px var(--line);font-family:var(--disp);font-size:15px;letter-spacing:.1em;text-transform:uppercase;transition:color .2s var(--ease),background .2s var(--ease)}
+.l5tog:hover{color:var(--ink)}
+.l5tog[aria-pressed="true"]{background:var(--cta);color:var(--fs-ground);box-shadow:none}
+.mhead .mic{display:inline-flex;align-self:center;width:40px;height:40px}
+.mhead .mic img,.mhead .mic .ico{width:40px;height:40px;object-fit:contain}
+.abrow{position:absolute;right:40px;bottom:40px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 780px)}
 .ab{display:flex;flex-direction:column;align-items:center;gap:6px;width:96px;border:0;cursor:pointer;background:transparent;padding:0;transition:transform .3s var(--ease)}
 .ab .i{width:84px;height:84px;display:flex;align-items:center;justify-content:center;background:transparent;box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .3s var(--ease)}
 .ab .i img,.ab .i .ico{width:58px;height:58px;object-fit:contain}
-.ab small{font-size:12px;color:var(--soft);text-align:center;line-height:1.2}
+.ab small{font-size:12px;color:var(--soft);text-align:center;line-height:1.2;min-height:2.4em}
 .ab:hover{transform:translateY(-4px)}
 .ab[aria-pressed="true"]{transform:translateY(-8px)}
 .ab[aria-pressed="true"] .i{box-shadow:inset 0 0 0 2px var(--sel)}
@@ -157,7 +162,7 @@ button{font:inherit;color:inherit}
 .ph{display:inline-flex;align-items:center;justify-content:space-between;width:74px;height:40px;padding:0 9px;border:2px solid var(--line);border-radius:9px}
 .th{width:14px;height:18px;border-radius:50%;background:var(--soft)}
 .tbtn2{width:40px;height:40px;border-radius:50%;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line);display:flex;align-items:center;justify-content:center}
-.tbtn2 img{width:28px;height:28px}
+.tbtn2 img,.tbtn2 .ico{width:28px;height:28px}
 /* the gestures: tap, hold, hold then release, tap on / tap off; a passive ability just flies */
 .g-tap .pp{animation:p-tap 3.2s var(--ease) infinite}
 .g-hold .pp{animation:p-hold 3.2s var(--ease) infinite}
@@ -325,7 +330,7 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
 <script>
 (function(){
   var TH = window.FC_THEMES || {themes:[], current:function(){ return ""; }, pick:function(){}};
-  var D = null, query = "", pick = null, filt = "All", dom = "Jade", menuOpen = false;
+  var D = null, query = "", pick = null, filt = "All", dom = "Jade", menuOpen = false, lv5 = false;
   var app = document.getElementById("app"), q = document.getElementById("q"), sw = document.getElementById("switch");
   var L5 = {wired:["good","WIRED"], open:["","OPEN"], off:["warn","SWITCHED OFF"], "label-only":["warn","NAMED, NOT GATED"], "gate-only":["warn","GATED, NOT NAMED"]};
   var HULL_SVG = '<svg viewBox="0 0 46 26" aria-hidden="true"><path d="M2 13 L16 4 L44 13 L16 22 Z" fill="currentColor"/><path d="M2 13 L16 9 L16 17 Z" fill="var(--sel)"/></svg>';
@@ -497,14 +502,16 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
     } else {
       var pad = r.pad === "LT+RT" ? img(PADMAP.LT, "LT", "pp") + img(PADMAP.RT, "RT", "pp") : PADMAP[r.pad] ? img(PADMAP[r.pad], r.pad, "pp") : '<span class="kc pp">' + esc(r.pad) + '</span>';
       var keys = (r.pc === "Both shifts" ? ["L-Shift", "R-Shift"] : [r.pc]).map(function(k){ return '<span class="kc kp">' + esc(k) + '</span>'; }).join("");
-      var touch = /^lift|thumb/i.test(r.touch || "") ? thumbs(r.touch) : r.touchArt ? '<span class="tbtn2 pp">' + img(r.touchArt, r.touch) + '</span>' : '<span class="kc pp">' + esc(r.touch || "-") + '</span>';
+      var touch = /^lift|thumb/i.test(r.touch || "") ? thumbs(r.touch) : (lv5 && hasL5(p) && /card/i.test(r.touch || "")) ? '<span class="tbtn2 pp">' + iconOf(p) + '</span>' : r.touchArt ? '<span class="tbtn2 pp">' + img(r.touchArt, r.touch) + '</span>' : '<span class="kc pp">' + esc(r.touch || "-") + '</span>';
       cells = [["CONTROLLER", pressable(r.pad) ? pad : '<span class="kc" style="opacity:.5">-</span>', pressable(r.pad) ? r.pad : "No button"],
                ["KEYBOARD", pressable(r.pc) ? keys : '<span class="kc" style="opacity:.5">-</span>', pressable(r.pc) ? r.pc : "No key"],
                ["PHONE", pressable(r.touch) ? touch : '<span class="kc" style="opacity:.5">-</span>', pressable(r.touch) ? r.touch : "No touch"]];
     }
     return {g:g, html:'<div class="dev g-' + g + '">' + cells.map(function(c){ return '<div class="dv"><span class="dl">' + c[0] + '</span><span class="dg">' + c[1] + '</span><span class="dc">' + esc(c[2]) + '</span></div>'; }).join("") + '</div>'};
   }
+  function hasL5(p){ return !!(p.e && p.e.upgrade && p.e.upgrade.icon); }
   function iconOf(p, size){
+    if(lv5 && hasL5(p)){ var u = p.e.upgrade, t5 = (p.e.words && p.e.words.tint) || {}; return ico(u.icon, u.layers, p.name + " level 5", t5.rest); }
     if(p.omni) return p.omni.icon ? ico(p.omni.icon, p.omni.layers, p.name) : img(p.omni.mark, p.name);
     if(p.doc) return flower(p.el, 5, "big");
     var e = p.e, tint = (e.words && e.words.tint) || {};
@@ -541,7 +548,7 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
       '<div class="hud egs"><div class="lab">Its element games</div><div style="margin-top:8px">' + D.elements.map(function(el){
           var cs = by[el]; return '<div class="eg' + (cs.length ? '' : ' none') + '">' + flower(el, 5) + '<span>' + el.toUpperCase() + '</span>' + esc(cs.length ? cs.map(function(c){ return c.name; }).join(", ") : "None yet") + '</div>'; }).join("") +
         '</div>' + (v.cards.length ? '<a class="cta" href="#missions" data-jump="missions">Play the ' + esc(crewName(v)) + '</a>' : '') + '</div>' +
-      (sel ? '<div class="hud move"><div class="mhead"><span class="disp">' + esc(sel.name) + '</span><span class="trig">' + esc(trigOf(sel)) + '</span><span class="lab" style="margin-left:auto">' + GWORD[dv.g] + '</span></div>' + scene(sel.el) + dv.html + '</div>' : '') +
+      (sel ? '<div class="hud move"><div class="mhead"><span class="mic">' + iconOf(sel) + '</span><span class="disp">' + esc(lv5 && sel.e && sel.e.upgrade.label ? sel.e.upgrade.label : sel.name) + '</span><span class="trig">' + esc(trigOf(sel)) + '</span><span class="lab">' + GWORD[dv.g] + '</span>' + (sel.e && !sel.e.open ? '<button type="button" class="l5tog" id="l5tog" aria-pressed="' + lv5 + '" aria-label="Show the level 5 upgrade"' + (hasL5(sel) ? '' : ' title="Level 5 reuses this icon (lockup bloom and plate lift)"') + '>Level 5</button>' : '') + '</div>' + scene(sel.el) + dv.html + '</div>' : '') +
       '<div class="abrow" role="group" aria-label="Abilities">' + ps.map(function(p){
           return '<button type="button" class="ab" data-pick="' + p.key + '" aria-pressed="' + (p === sel) + '"><span class="i">' + iconOf(p) + '</span><small>' + esc(p.name) + '</small></button>'; }).join("") + '</div>' +
       '</section>';
@@ -591,6 +598,8 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
       var n = app.querySelector((inRow ? '.pickhead' : '.ab') + '[data-pick="' + pick + '"]'); if(n) n.focus({preventScroll:true}); }); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-row]"), function(r){ r.addEventListener("click", function(e){
       if(e.target.closest("button,a")) return; var h = r.querySelector(".pickhead"); if(h) h.click(); }); });
+    var tg = document.getElementById("l5tog");
+    if(tg) tg.addEventListener("click", function(){ lv5 = !lv5; var y = window.scrollY; vesselView(v, true); window.scrollTo(0, y); var n = document.getElementById("l5tog"); if(n) n.focus({preventScroll:true}); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-l5]"), function(b){ b.addEventListener("click", function(){
       var f = b.querySelector(".flw .flower"), l = b.closest(".l5"); f.classList.remove("go"); if(l) l.classList.remove("lit"); void f.offsetWidth; f.classList.add("go"); if(l) l.classList.add("lit"); }); });
     Array.prototype.forEach.call(app.querySelectorAll("[data-filt]"), function(b){ b.addEventListener("click", function(){
@@ -663,6 +672,6 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
     document.getElementById("foot").innerHTML = 'Read from the game&rsquo;s own files every day: the ability maps, the vessel prefabs and their HUDs, the class assets, the touch profiles and the game cards. Every icon is the game&rsquo;s own.';
     route();
   }).catch(function(err){ app.innerHTML = '<p class="empty">The fleet data did not load (' + esc(err.message) + '). Reload the page.</p>'; });
-  window.addEventListener("hashchange", function(){ pick = null; filt = "All"; menuOpen = false; route(); window.scrollTo(0, 0); });
+  window.addEventListener("hashchange", function(){ pick = null; filt = "All"; lv5 = false; menuOpen = false; route(); window.scrollTo(0, 0); });
 })();
 </script>
