@@ -86,7 +86,8 @@ SCENE_FOR_MODE = {
     85: 'MinigameJackstraw',
     86: 'MinigameKelpwood',
     87: 'MinigameCorona',
-    88: 'MinigameShatterplane',
+    88: 'MinigameHarvest',
+    90: 'MinigameShatterplane',
 }
 
 

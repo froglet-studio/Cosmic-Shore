@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Shatterplane game mode needs (GameModes.Shatterplane = 88).
+Authors every serialized asset the Shatterplane game mode needs (GameModes.Shatterplane = 90; it took 88 first, which Harvest landed with).
 
 Shatterplane is the Brittle Star's SPACE game (Shombith, 2026-11-10; Docs/MassAndSpaceGames/BRITTLE_STAR_SPACE.md): wide,
 thin round PLATES of neutral prisms hang in the cell. Square up to a plate and the thrown ring's flat blast erases it
@@ -40,7 +40,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib  # noqa: E402
 import shatterplane_budget as sb  # noqa: E402
 
-MODE_ID = 88
+MODE_ID = 90
 g = lib.Generator(MODE_ID, "Shatterplane")
 guid = lib.guid
 
@@ -222,7 +222,7 @@ g.emit_asset("Assets/_SO_Assets/Game Toasts/GameToastConfig_Shatterplane.asset",
              lib.toast(128, "{0} is a quarter of the way to {2} prisms", tint_domain=1, domain_names=0) +
              lib.toast(129, "{0} is halfway - {1}/{2} prisms", tint_domain=1, domain_names=0) +
              lib.toast(130, "{0} takes the lead - {1}/{2}", tint_domain=1, domain_names=0) +
-             lib.toast(163, "Square up to a plate and throw your ring - its blast erases the whole plate. Crystals "
+             lib.toast(165, "Square up to a plate and throw your ring - its blast erases the whole plate. Crystals "
                             "on a plate's axis line you up", domain_names=0) +
              lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9))
 g.register_toast_config(G_ASSET["GameToastConfigShatterplane"])

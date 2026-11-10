@@ -10,7 +10,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Shatterplane (GameModes.Shatterplane = 88), the Brittle Star's Space game: the plates each shipped prefab lays
+    /// Shatterplane (GameModes.Shatterplane = 90), the Brittle Star's Space game: the plates each shipped prefab lays
     /// (<see cref="ShatterplanePlates"/> read with the prefab's own fields), the open field and the spawn clear zone,
     /// the crystal sites on the plates' axes, the ring's square-versus-tilted yield through the Brittle Star's OWN disk
     /// rule (<see cref="BrittleStarRules.DiskReaches"/>), the AI's line-up, the scoring and the per-intensity target. The

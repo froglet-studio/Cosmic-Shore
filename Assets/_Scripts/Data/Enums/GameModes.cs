@@ -425,14 +425,21 @@ namespace CosmicShore.Data
         // catches is one point. I1-I4 add shells (1 -> 4), narrow and rim the gates, and thin the heart's crystals.
         Corona = 87,
 
+        // The Thresher's SPACE game (HARVEST.md): a field of sheaves - a core of blocks with stalks standing out of it.
+        // Mow the stalks with the chain to charge the ball, smash it into the core for one big blast. Hostile prisms
+        // destroyed score; first domain to the target wins. I1-I4 shrink and multiply the sheaves, shield the cores,
+        // colour them by domain and add danger stalks.
+        Harvest = 88,
+
         // The Brittle Star's SPACE game (SHATTERPLANE.md): wide, thin round plates of neutral prisms hang in the cell.
         // Square up to a plate and the thrown ring's flat blast erases it whole; the guns chew what it misses. First
         // domain to break the per-intensity prism target wins. I1-I4: plates facing the spawn, plates at mixed angles,
         // stacks of three, plates braced by super-shielded ribs and half behind grilles.
-        Shatterplane = 88,
+        // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
+        Shatterplane = 90,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 81) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 82) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

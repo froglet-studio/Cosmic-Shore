@@ -1,6 +1,6 @@
 # Shatterplane - the Brittle Star's Space game
 
-`GameModes.Shatterplane = 88`. Brittle Star only. Built 2026-11-10 on `claude/fervent-edison-ol600q`, from the plan in
+`GameModes.Shatterplane = 90` (it took 88 first; Harvest, the Thresher's Space game, landed with it). Brittle Star only. Built 2026-11-10 on `claude/fervent-edison-ol600q`, from the plan in
 [`Docs/MassAndSpaceGames/BRITTLE_STAR_SPACE.md`](../../../../Docs/MassAndSpaceGames/BRITTLE_STAR_SPACE.md), which holds
 the design brief, the decisions and the concept renders.
 
@@ -168,7 +168,7 @@ Space arcade game). Froglet Compute is paused, so no job was queued.
 - the plates (`ShatterplanePlates`, `SpawnableShatterplane`, twinned in `Tools/Build/shatterplane_budget.py`);
 - the nucleus size;
 - the squarer AI;
-- the hint toast (`ShatterplaneHint` = 163);
+- the hint toast (`ShatterplaneHint` = 165);
 - the prism-milestone toast (83, every 200).
 
 **Sounds:** the mode adds no sound slot. Everything a player hears is the vessel's and the platform's.

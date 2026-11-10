@@ -171,6 +171,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameJackstraw.unity
     guid: 377da40cea7b5aa539c2e26f322ed79a
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameHarvest.unity
+    guid: 2e26345893828d0fd7d69132808c3728
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameKelpwood.unity
     guid: 750b1dc75ea9084b39ab73f51caa180b
   - enabled: 1

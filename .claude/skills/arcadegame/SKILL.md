@@ -446,7 +446,20 @@ Corona (the Manta's Charge game, 2026-11-10, `claude/amazing-goldberg-7zn80e`, `
   render the new card by name, and know a named run skips the manifest. Add the new scene to
   `author_preview_spawns.SCENE_FOR_MODE` too: Kelpwood shipped without it and its preview went unchecked.
 
-Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-ol600q`, `SHATTERPLANE.md`) taught five:
+Harvest (the Thresher's Space game, 2026-11-10, `claude/keen-rubin-rw7p6q`, `HARVEST.md`) taught three:
+- **Fly the vessel's own solver round the arena before laying the arena.** The sheaves were built, baked and gated on
+  a premise nobody had flown: that a circling Thresher's chain sweeps a sheaf's stalks. Its chain TRAILS (21-60 u behind
+  at cruise) and cuts only its own path, so the stalks starved the loop (0-11 cuts a lap). Compiling the shipped
+  `ThresherChainSolver.cs` against `card_art_harness/UnityShim.cs` in a console project, with the dials read from the
+  asset, answered it in an hour (`Tools/Build/harvest_stalk_lab/`). Do that at the brief, when the arena is still a
+  drawing.
+- **A destruction race on a field that never regrows must fit three domains' targets in the smallest hostile pool**,
+  or the field can run dry with nobody at the target. Rampage restocks through flora; a baked field does not. Assert
+  it per rung (`author_harvest_assets.py`); it cut Harvest's target from 1,500 to 750.
+- **A colour rule over N sheaves must be fair at each rung's N.** "One in three" gave 2 / 1 / 1 among twelve; check
+  the counts per domain in the mirror and pin them in a test.
+
+Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-ol600q`, `SHATTERPLANE.md`) taught six:
 - **A mode may SIZE an ability that reads the world, through the world.** The ring blast is as wide as the nucleus of the
   cell it blows in, so "make the ring reach a little further" is an ARENA change: give the cell configs the standard
   `NucleusPrefab` (a cell with none cannot be sized, and the blast falls back to the vessel's own constant), then call
@@ -466,6 +479,12 @@ Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-
 - **Never `git stash -u` while a background reference compile reads the tree** (it hides the untracked new files mid-run);
   merge another branch from a clean tree or after the compile ends. And the card accent belongs on a structure the camera
   sees face-on: turning the `CAMERAS` row was faster than scoring structures by view.
+- **Two sessions working ONE plan will take the same id, and only one of the two collisions conflicts.** Harvest (the
+  Thresher's Space game, from the same `PLAN.md`) landed `GameModes` 88 and toast 163 an hour before this PR merged.
+  `GameModes` conflicted; `GameToastSituation` auto-merged into two members worth 163 with NO marker. The loser renumbers
+  (its own enum, generator `MODE_ID`, toast id, preview mapping, test case, docs; the generator re-emits the card, toast
+  config, preview and unlock list), skipping ids a third in-flight branch claims (Glasshouse, 89 / 164). Run a duplicate-
+  value check over every enum after the merge, and scan EVERY branch for the next free id right before the PR.
 
 ## 4. Gates (no Unity needed; run them all)
 

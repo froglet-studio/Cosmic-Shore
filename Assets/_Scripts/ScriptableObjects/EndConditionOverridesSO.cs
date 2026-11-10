@@ -121,6 +121,10 @@ namespace CosmicShore.ScriptableObjects
         /// (CoronaScoringRuleSO), summed across the domain's pilots.</summary>
         public const int DefaultCoronaBloomTarget = 15;
 
+        /// <summary>Harvest hostile-prism target used when <see cref="harvestPrismTarget"/> is 0. The Thresher's
+        /// sheaves never grow back, so three domains' worth of it must fit in the smallest field (the generator,
+        /// author_harvest_assets.py, asserts it); Wrecking Ball's 650 is the nearest played number.</summary>
+        public const int DefaultHarvestPrismTarget = 750;
         /// <summary>Shatterplane prism target used when <see cref="shatterplanePrismTarget"/> is 0 and the rung authors
         /// nothing. Hostile prisms a DOMAIN breaks (the neutral plates), summed across its pilots (ShatterplaneScoringRuleSO,
         /// Rampage's rule). An ESTIMATE pending a timed match: about 30% of a rung's breakable plate mass
@@ -552,6 +556,10 @@ namespace CosmicShore.ScriptableObjects
                  "Manta planted is one bloom hit, summed across the domain's pilots. 0 = default (15).")]
         [Min(0)] public int coronaBloomTarget = 15;
 
+        [Tooltip("Harvest: hostile prisms (other domains' sheaves and neutral ones, rival trails, fauna) a DOMAIN " +
+                 "must destroy between them to win (race to N) - with the Thresher's chain, ball or blast; your own " +
+                 "colour never counts. 0 = default (750).")]
+        [Min(0)] public int harvestPrismTarget = 750;
         [Tooltip("Shatterplane: hostile PRISMS a DOMAIN must break to win (race to N), the Brittle Star's space game. The " +
                  "plates are neutral, so every plate tile a round, a cord or a ring breaks counts; ribs and screens never " +
                  "break. 0 = default (1600).")]
@@ -642,6 +650,7 @@ namespace CosmicShore.ScriptableObjects
         [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 90, 90, 90, 90 };
         [Min(0)] public int kelpwoodBiteTargetBuild = 12;
         [Min(0)] public int coronaBloomTargetBuild = 15;
+        [Min(0)] public int harvestPrismTargetBuild = 750;
         [Min(0)] public int shatterplanePrismTargetBuild = 1600;
         [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
@@ -1075,6 +1084,11 @@ namespace CosmicShore.ScriptableObjects
             coronaBloomTarget > 0 ? coronaBloomTarget : DefaultCoronaBloomTarget;
 
         /// <summary>
+        /// Harvest prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultHarvestPrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
+        /// </summary>
+        public int GetHarvestPrismTarget() =>
+            harvestPrismTarget > 0 ? harvestPrismTarget : DefaultHarvestPrismTarget;
         /// Shatterplane prism target ("first domain to N hostile prisms broken"): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultShatterplanePrismTarget"/>. Compared against a DOMAIN's summed
         /// HostilePrismsDestroyed.
@@ -1210,6 +1224,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Flatline                  => GetFlatlinePointTarget(),
                 GameModes.Kelpwood                  => GetKelpwoodBiteTarget(),
                 GameModes.Corona                    => GetCoronaBloomTarget(),
+                GameModes.Harvest                   => GetHarvestPrismTarget(),
                 // Scalar only, as for Cleave and Flatline: the real answer is per-intensity (GetShatterplanePrismTarget(int)).
                 GameModes.Shatterplane              => GetShatterplanePrismTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
@@ -1293,6 +1308,7 @@ namespace CosmicShore.ScriptableObjects
             SameInts(flatlinePointTargetByIntensity, flatlinePointTargetByIntensityBuild) &&
             kelpwoodBiteTarget == kelpwoodBiteTargetBuild &&
             coronaBloomTarget == coronaBloomTargetBuild &&
+            harvestPrismTarget == harvestPrismTargetBuild &&
             shatterplanePrismTarget == shatterplanePrismTargetBuild &&
             SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
@@ -1354,6 +1370,7 @@ namespace CosmicShore.ScriptableObjects
             flatlinePointTargetByIntensity = CopyInts(flatlinePointTargetByIntensityBuild);
             kelpwoodBiteTarget = kelpwoodBiteTargetBuild;
             coronaBloomTarget = coronaBloomTargetBuild;
+            harvestPrismTarget = harvestPrismTargetBuild;
             shatterplanePrismTarget = shatterplanePrismTargetBuild;
             shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
@@ -1416,6 +1433,7 @@ namespace CosmicShore.ScriptableObjects
             flatlinePointTargetByIntensityBuild = CopyInts(flatlinePointTargetByIntensity);
             kelpwoodBiteTargetBuild = kelpwoodBiteTarget;
             coronaBloomTargetBuild = coronaBloomTarget;
+            harvestPrismTargetBuild = harvestPrismTarget;
             shatterplanePrismTargetBuild = shatterplanePrismTarget;
             shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
             tapestryRoundSecondsBuild = tapestryRoundSeconds;

@@ -1,6 +1,6 @@
 # The Brittle Star's Space game: the plan (**Shatterplane**)
 
-**Built 2026-11-10 as `GameModes.Shatterplane = 88`** on `claude/fervent-edison-ol600q`: see
+**Built 2026-11-10 as `GameModes.Shatterplane = 90`** on `claude/fervent-edison-ol600q`: see
 `Assets/_Scripts/Controller/Arcade/SHATTERPLANE.md` for what shipped. This page is the plan and the decisions that led there. This belongs to
 `Docs/MassAndSpaceGames/PLAN.md`, which is on `claude/serene-euler-g7crrw` and not yet on bleeding-edge.
 
