@@ -49,6 +49,23 @@ def param_slots(g):
     return [(i, j) for i in sorted(live) for j in range(len(OPS[g.nodes[i].op].params))]
 
 
+def graft_post(g, op):
+    """g with a P op (one "p" input, such as post.bandgain) spliced in at the top of the root's post chain, at its
+    default bytes (bandgain's are the identity), and the index of the new node."""
+    o = OPS[op]
+    if o.out != "P" or tuple(o.inputs) != ("p",):
+        raise ValueError(f"--graft takes a P op with one p input, not {op}")
+    g = g.copy()
+    r = g.root()
+    slot = list(OPS["out"].inputs).index("p")
+    top = g.nodes[r].inputs[slot]
+    g.nodes.insert(r, type(g.nodes[r])(op, [top], [q.default for q in o.params]))
+    for n in g.nodes:
+        n.inputs = [j + 1 if (j is not None and j >= r) else j for j in n.inputs]
+    g.nodes[r + 1].inputs[slot] = r
+    return g, r
+
+
 class SepCMA:
     """Separable CMA-ES (diagonal covariance) on a box, minimising."""
 
@@ -107,6 +124,9 @@ def main(argv=None):
     ap.add_argument("--gens-per-block", type=int, default=8)
     ap.add_argument("--sigma", type=float, default=12.0, help="initial step in byte units")
     ap.add_argument("--sigma-min", type=float, default=2.0, help="smallest block start step after fruitless blocks")
+    ap.add_argument("--graft", default=None,
+                    help="splice this P op (e.g. post.bandgain) onto the top of each genome's post chain first; its "
+                         "parameters are the first block, and the output is named <stem>__<op>__cma")
     ap.add_argument("--windows", type=int, default=2)
     ap.add_argument("--hop", type=float, default=8.0)
     ap.add_argument("--check-n", type=int, default=6, help="windows for the after-tune check (0: no check)")
@@ -167,11 +187,22 @@ def main(argv=None):
         (c0,), _ = evaluate([g0])
         best_g, best = g0, c0
         print(f"{name}: start dist {c0['dist']:.3f} judge {c0.get('judge')} stat {c0['stat']:.3f}", flush=True)
-        slots = param_slots(g0)
+        focus = []
+        if a.graft:
+            # the grafted genome starts as the identity (or close to it); its parameters go first, then every block
+            # draws from all parameters. The before/after numbers stay those of the ungrafted genome.
+            gg, k = graft_post(g0, a.graft)
+            (cg,), _ = evaluate([gg])
+            best_g, best = gg, cg  # climbed from the graft; written only if it ends below the ungrafted genome
+            focus = [(k, j) for j in range(len(OPS[a.graft].params))]
+            stem = f"{stem}__{a.graft.replace('.', '_')}"
+            print(f"{name}: grafted {a.graft} at node {k}: dist {cg['dist']:.3f} judge {cg.get('judge')}", flush=True)
+        slots = param_slots(best_g)
         spent, t0 = 1, time.time()
         sigma0 = a.sigma
         while spent < a.evals and slots:
-            block = [slots[k] for k in rng.permutation(len(slots))[: a.block]]
+            block = focus or [slots[k] for k in rng.permutation(len(slots))[: a.block]]
+            focus = []
             x0 = [best_g.nodes[i].params[j] for i, j in block]
             es = SepCMA(x0, sigma0, seed=int(rng.integers(1 << 30)))
             before_block = best["dist"]
