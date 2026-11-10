@@ -120,6 +120,12 @@ namespace CosmicShore.Gameplay
         public static float MouthRadiusFor(float intensityOneRadius, float intensityFourFraction, int intensity) =>
             intensityOneRadius * Mathf.Lerp(1f, intensityFourFraction, (Mathf.Clamp(intensity, 1, 4) - 1) / 3f);
 
+        /// <summary>This ring's authored mouth radius at <paramref name="intensity"/> (what <see cref="MouthRadius"/> will be
+        /// once it stands at that intensity). Read off the PREFAB by Skim Race's hoop placement, which stands the hoop on
+        /// the rail by its own mouth.</summary>
+        public float MouthRadiusAt(int intensity) =>
+            MouthRadiusFor(intensityOneMouthRadius, intensityFourMouthFraction, intensity);
+
         /// <summary>The ring currently standing for this crystal, or null before it is raised.</summary>
         public RaceGateRing Ring => _ring;
 

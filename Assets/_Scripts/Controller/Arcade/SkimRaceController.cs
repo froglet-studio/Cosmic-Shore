@@ -12,7 +12,7 @@ using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
-    public class SkimRaceController : MultiplayerDomainGamesController
+    public partial class SkimRaceController : MultiplayerDomainGamesController
     {
         [Header("Course")]
         [SerializeField] SegmentSpawner segmentSpawner;
@@ -110,6 +110,7 @@ namespace CosmicShore.Gameplay
         {
             CancelSeedPoll();
             ReleaseArenaBuildAnnouncement();
+            ClearCoursePieces();
             _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
             base.OnNetworkDespawn();
         }
@@ -237,6 +238,7 @@ namespace CosmicShore.Gameplay
             ApplyHelixIntensity();
             segmentSpawner.Initialize();
             _trackSpawned = true;
+            LayCoursePieces();   // SkimRaceController.Hoops.cs: Time crystals (I3+) and live wires (I4)
             // The build has executed — laid prisms are now covered by the gate's grow watch.
             ReleaseArenaBuildAnnouncement();
         }

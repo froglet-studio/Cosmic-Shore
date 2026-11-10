@@ -244,7 +244,18 @@ namespace CosmicShore.Gameplay
             // Ensure runtime lists exist
             cellData.CellItems = new List<CellItem>();
             cellData.Crystals ??= new List<Crystal>();
+            // A mode that owns WHERE round an anchor its crystals stand (Skim Race's hoops) sits on this GameObject.
+            TryGetComponent(out _anchorPlacement);
         }
+
+        /// <summary>The mode's placement round an anchor (<see cref="ICrystalAnchorPlacement"/>), or null for the
+        /// platform's random shell. Found on this GameObject in <see cref="Awake"/>.</summary>
+        ICrystalAnchorPlacement _anchorPlacement;
+
+        /// <summary>The current intensity's authored anchors, in traversal order (empty when none are authored). Read
+        /// by a mode that lays course pieces against them on every peer (Skim Race's Time crystals and live wires).</summary>
+        public bool TryGetAnchors(out Vector3[] anchors) =>
+            TryGetCrystalPositionListByIntensity(out anchors) && anchors != null && anchors.Length > 0;
 
         /// <summary>
         /// Asks the machine that OWNS a collecting vessel to run that crystal's vessel-side
@@ -727,6 +738,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Vector3 GetSpawnPointAroundAnchor(Vector3 anchor)
         {
+            if (_anchorPlacement != null && _anchorPlacement.TryPlaceAroundAnchor(anchor, crystalPrefab, out var placed))
+                return placed;
             return anchor + Random.onUnitSphere * anchorJitterRadius;
         }
 

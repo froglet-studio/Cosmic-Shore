@@ -246,6 +246,14 @@ namespace CosmicShore.Data
         // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
         ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
 
+        // Skim Race, the Squirrel's Time game (_Scripts/Controller/Arcade/SKIMRACE.md §0). One hint per rung, posted
+        // once at the start to the LOCAL pilot (SkimRaceController.HintFor). Its race beats are the shared 129/131/132.
+        // 310-319 reserved for Skim Race (2026-11-11 round 5).
+        SkimRaceHintRail = 310,         // I1: skim the rail - every hoop hangs on the skim line
+        SkimRaceHintFace = 311,         // I2: each hoop stands on one face of the rail - skim that face
+        SkimRaceHintTime = 312,         // I3: skim the Time crystals on the line
+        SkimRaceHintLiveWire = 313,     // I4: skim under a live wire to refill, never touch it
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

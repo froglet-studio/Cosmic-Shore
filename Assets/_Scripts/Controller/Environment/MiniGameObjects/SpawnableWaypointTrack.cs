@@ -122,6 +122,22 @@ public class SpawnableWaypointTrack : SpawnableBase
         return list is { Count: > 0 } ? new HashSet<int>(list) : null;
     }
 
+    /// <summary>
+    /// The rail a 1-based intensity lays, as authored: its waypoints, its ribbon normals (null = world up) and whether
+    /// it is laid as a Catmull-Rom spline. Read-only - Skim Race's hoops (<c>SkimRaceHoops.Ribbon</c>) are placed on it
+    /// on the server before the plates are laid, and its course pieces on every peer.
+    /// </summary>
+    public bool TryGetRail(int intensity, out List<Vector3> positions, out List<Vector3> ups, out bool spline)
+    {
+        positions = null; ups = null; spline = false;
+        if (!IsValidIntensityLevel(intensity)) return false;
+        positions = waypoints[intensity - 1].positions;
+        if (positions == null || positions.Count < 2) return false;
+        ups = ResolveUps(intensity, positions);
+        spline = UseSpline(intensity);
+        return true;
+    }
+
     /// <summary>Crystals one lap of the given 1-based intensity is worth (see <see cref="crystalsPerLap"/>).</summary>
     public int CrystalsPerLap(int intensity)
     {
