@@ -111,7 +111,7 @@ expects 78 modes).
 
 **What landed:** `Controller/Arcade/JACKSTRAW.md`. A Thresher brawl in a 0G heap of pick-up sticks
 (`SpawnableJackstraw`, four baked prefabs), scored on strikes (the ball or chain on a rival hull, Strike-class
-CombatPoints, target 8), crystals in the heap's clearings, AI hunters that only steer (`JackstrawHunter`). New
+CombatPoints, target 3 since 2026-11-09, 8 before), crystals in the heap's clearings, AI hunters that only steer (`JackstrawHunter`). New
 platform rows: `GameModes.Jackstraw = 85`, `jackstrawStrikeTarget`, toast situations 86 (`StrikeLanded`) and 160.
 Checked offline: `author_jackstraw_assets.py --check`, the reference compile (0 errors), the `/ship` gates, the clip
 audit (0 clipping; the C# lays 408 / 1,122 / 2,114 / 3,566 prisms, as the Python mirror does), the bake, the card
@@ -129,17 +129,17 @@ render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 77 
    in the centre clearing.
 6. AI: at Easy it chases straight; at Hard / Legendary it leads, runs through you and past, and runs to a clearing
    when silenced. It never presses A (stays in Mass Mode) and still strikes. Watch whether it gets stuck on sticks.
-7. First team to 8 strikes wins: the results show "N strikes" per pilot and "N Strikes Left" for the losers; the
+7. First team to 3 strikes wins, at every intensity: the results show "N strikes" per pilot and "N Strikes Left" for the losers; the
    reveal says HEAP TIME / STRIKES LEFT. Replay works.
 8. I2, I3, I4: the heap grows (6, 14, 26 jacks), the clearings shrink; the spawn ring stays just outside the heap.
-9. Time a full match at I2 with 1v1 Medium AI. The plan wants 3-5 min; 8 is a first cut (FrogletTools > Game Modes >
+9. Time a full match at I2 with 1v1 Medium AI. The plan wants 3-5 min; the target is 3 strikes (Shombith's call; FrogletTools > Game Modes >
    End Game Conditions → Jackstraw).
 10. MPPM two clients: a client's strike scores once (forwarded through `ReportCombatHit_ServerRpc`), both peers see the
     same heap and the same crystals.
 11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameJackstraw.unity`, and Reconcile Build Scene
     List if the scene is reported missing from the build list.
 
-**First-pass tuning:** target 8, comeback 0.6, `aiOvershoot` 60, the AI ladders in `JACKSTRAW.md`.
+**First-pass tuning:** target 3, comeback 1.5, `aiOvershoot` 60, the AI ladders in `JACKSTRAW.md`.
 
 ---
 

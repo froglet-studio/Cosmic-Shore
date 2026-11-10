@@ -104,7 +104,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Jackstraw strike target used when <see cref="jackstrawStrikeTarget"/> is 0. One STRIKE - the
         /// Thresher's ball or chain reaching a rival hull (a Strike-class combat hit) - is one point
         /// (JackstrawScoringRuleSO), summed across the domain's pilots.</summary>
-        public const int DefaultJackstrawStrikeTarget = 8;
+        public const int DefaultJackstrawStrikeTarget = 3;
         /// <summary>Flatline point target used when <see cref="flatlinePointTarget"/> is 0 and the rung authors
         /// nothing. Points are the fleet price (CombatHitDrain.PointsFor): a round on a rival hull is 1, a cord or
         /// thrown-saber Strike 8, ten points to the petal; the ring blast pays nothing (FlatlineScoringRuleSO),
@@ -520,8 +520,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int serpentHoodSnipeTarget = 3;
 
         [Tooltip("Jackstraw: STRIKES a DOMAIN needs to win (race to N). The Thresher's ball or chain reaching " +
-                 "a rival hull is one strike, summed across the domain's pilots. 0 = default (8).")]
-        [Min(0)] public int jackstrawStrikeTarget = 8;
+                 "a rival hull is one strike, summed across the domain's pilots. 0 = default (3).")]
+        [Min(0)] public int jackstrawStrikeTarget = 3;
         [Tooltip("Flatline: POINTS a DOMAIN needs to win (race to N), the Brittle Star's charge game. A round " +
                  "on a rival hull is 1 point, a cord or thrown-saber Strike 8 (the fleet price, ten points to " +
                  "the petal); the ring blast scores nothing. 0 = default (200). The per-intensity list below " +
@@ -614,7 +614,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int dustupPointTargetBuild = 4;
         [FormerlySerializedAs("serpentGulagSnipeTargetBuild")]
         [Min(0)] public int serpentHoodSnipeTargetBuild = 3;
-        [Min(0)] public int jackstrawStrikeTargetBuild = 8;
+        [Min(0)] public int jackstrawStrikeTargetBuild = 3;
         [Min(0)] public int flatlinePointTargetBuild = 200;
         [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 180, 200, 220, 240 };
         [Min(0)] public int kelpwoodBiteTargetBuild = 12;
