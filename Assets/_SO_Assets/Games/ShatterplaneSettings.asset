@@ -16,6 +16,17 @@ MonoBehaviour:
   progressSampleSeconds: 0.5
   fieldRegrowSeconds: 8
   fieldSeed: 88
+  fieldElementByIntensity:
+  - 0
+  - 0
+  - 3
+  - 0
+  fieldPerTeamByIntensity:
+  - 0
+  - 0
+  - 1
+  - 0
+  teamCrystalSpacing: 30
   aiRetargetSeconds:
   - 2.4
   - 1.8
