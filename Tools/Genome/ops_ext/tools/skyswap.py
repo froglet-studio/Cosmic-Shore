@@ -68,7 +68,18 @@ ARMS = {
     "spectral_eigen": [("tex.spectral", [], {}), ("tex.eigen", [], {"dom": 220, "render": 60}), ("tex.blend", [0, 1], {"mode": 0, "amount": 60})],
     "orig_plus_flame": "plus:tex.flame",
     "orig_fftfilter": "filter:tex.fftfilter",
+    "agents_ribbon": "afilter:ag.ribbon",
+    "agents_flow": "afilter:ag.flow",
+    "agents_curl": "afilter:ag.curl",
+    "agents_fourier_ribbon": "afilter:ag.fourier+ag.ribbon",
+    "sky_palette": "filter:tex.palette",
+    "sky_galaxy": "filter:tex.galaxy",
+    "sky_lines": "filter:tex.lines",
+    "post_bandgain": "pfilter:post.bandgain",
+    "cam_kick": "cfilter:cam.kick",
+    "lines_bandgain_kick": "filter:tex.lines|pfilter:post.bandgain|cfilter:cam.kick",
 }
+SLOT = {"afilter": 1, "cfilter": 2, "pfilter": 3}
 
 
 def make_arm(g, arm):
@@ -80,6 +91,33 @@ def make_arm(g, arm):
     r = g.root()
     if spec is None:
         return g, sorted(sky_nodes(g))
+    if isinstance(spec, str) and "|" in spec:  # several edits in sequence; tune the union of their nodes
+        idx_all = []
+        for k, part in enumerate(spec.split("|")):
+            ARMS["_tmp"] = part
+            g, idx = make_arm(g, "_tmp")
+            if g is None:
+                return None, []
+            # every insert lands just before the root, so earlier indices stay valid
+            idx_all = idx_all + idx
+        del ARMS["_tmp"]
+        return g, sorted(set(idx_all))
+    if isinstance(spec, str) and spec.split(":")[0] in SLOT:
+        slot = SLOT[spec.split(":")[0]]
+        a = g.nodes[r].inputs[slot]
+        if a is None and slot == 1:
+            return None, []
+        idx = []
+        prev = a
+        for op in spec.split(":")[1].split("+"):
+            o = OPS[op]
+            node = Node(op, [prev] + [None] * (len(o.inputs) - 1), [p.default for p in o.params])
+            _insert(g, r, node)
+            prev = r
+            idx.append(r)
+            r += 1
+        g.nodes[r].inputs[slot] = prev
+        return g.repair(), idx
     if isinstance(spec, str):
         kind, op = spec.split(":")
         s = g.nodes[r].inputs[4]
@@ -142,7 +180,8 @@ class Scorer:
         sel = fr[np.linspace(0, 59, 12).round().astype(int)]
         js = [J.raw(sel)["judge"] for J in self.Js]
         st = self.ST.distance(window_features(fr, sub=2))["total"]
-        return {"judge": float(np.mean(js)), "judges": [round(x, 3) for x in js], "stat": round(float(st), 4),
+        jv = float(max(js)) if os.environ.get("JUDGE_V", "3") == "3" else float(np.mean(js))  # v3 = worse net
+        return {"judge": jv, "judges": [round(x, 3) for x in js], "stat": round(float(st), 4),
                 "zbytes": g.size(), "nodes": len(g.nodes), "frames": fr}
 
 

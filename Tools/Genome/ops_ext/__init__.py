@@ -11,6 +11,8 @@ Families (one module each; every op is a normal byte-coded agenome Op):
                 heightfields from any texture
   agents_ext    agents / cameras: curl-noise flow, Fourier (epicycle) pilots, normal-mode (eigen) spring bodies,
                 texture flow fields, Fourier camera rails
+  post_ext      fitness-lab requests: tex.lines (beams, vanishing-point fans), post.bandgain (Laplacian band gains,
+                denoise, chroma low-pass), cam.kick (power-law bursty camera impulses)
 See docs/OPS_EXT.md for the measurements.
 """
 import importlib
@@ -19,7 +21,7 @@ import os
 from .registry import EXT, register  # noqa: F401
 
 _INSTALLED = False
-FAMILIES = ["tex_spectral", "tex_glsl", "sdf_ext", "agents_ext"]
+FAMILIES = ["tex_spectral", "tex_glsl", "sdf_ext", "agents_ext", "post_ext"]
 
 
 def _load_families():
@@ -169,9 +171,10 @@ def install(families=None):
 
     # ---------------------------------------------------------------- agents / cameras (hooks live in agents_ext)
     import sys as _sys
-    agents_ext = _sys.modules.get("ops_ext.agents_ext")
-    if agents_ext is not None and hasattr(agents_ext, "install_hooks"):
-        agents_ext.install_hooks(sim, render)
+    for _m in FAMILIES:  # agents_ext (agent / camera hooks), post_ext (cam.kick modifier, post.bandgain frame pass)
+        _mod = _sys.modules.get(f"ops_ext.{_m}")
+        if _mod is not None and hasattr(_mod, "install_hooks"):
+            _mod.install_hooks(sim, render)
     _INSTALLED = True
     return EXT
 

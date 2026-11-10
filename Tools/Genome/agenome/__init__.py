@@ -3,6 +3,10 @@
 Extension operators (ops_ext/, next to this package: FFT / SVD / PCA / Laplacian eigenmodes / reaction-diffusion /
 flames / KIFS / curl flows / prism ribbons ...) install themselves on import, so the search, its workers, the CLI,
 the report and the judge all know them. AGENOME_EXT=0 runs the core set alone.
+
+The part-by-part thread's 13 hx_ operators (agenome/hops.py: hex lattices, spherical harmonics, sky beams and stars,
+Gabor noise, pyramid fields, and FFT / PCA / difference-of-Gaussians / histogram post passes) install the same way;
+AGENOME_HOPS=0 leaves them out.
 """
 import os as _os
 import sys as _sys
@@ -16,3 +20,8 @@ if _os.environ.get("AGENOME_EXT", "1") != "0" and "ops_ext" not in _sys.modules:
         _ext = None
     if _ext is not None and hasattr(_ext, "install"):
         _ext.install()
+
+if _os.environ.get("AGENOME_HOPS", "1") != "0":
+    from . import hops as _hops
+
+    _hops.install()  # idempotent; asserts that no opcode or name is taken twice

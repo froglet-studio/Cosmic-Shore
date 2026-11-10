@@ -3,6 +3,7 @@
   python3 -m ops_ext.run_search [--ext-off] [--ext-families spectral,linalg,...] <agenome.search args>
 
 --ext-off runs the identical code path without registering any ext op: the control arm of an A/B search.
+--prior-init P gives a mutation-inserted node its op's default bytes + noise with probability P (search_ext.py).
 --ext-weight W scales how often mutation picks an ext op relative to a core op of the same type (default 1 = uniform
 over all ops; the ext set roughly doubles the texture op count, so 0.5 keeps the core/ext mix near 50/50).
 """
@@ -17,13 +18,16 @@ def main():
     argv = [a for a in argv if a != "--ext-off"]
     fams = None
     w = 1.0
-    for flag in ("--ext-families", "--ext-weight"):
+    prior = 0.0
+    for flag in ("--ext-families", "--ext-weight", "--prior-init"):
         if flag in argv:
             k = argv.index(flag)
             val = argv[k + 1]
             del argv[k:k + 2]
             if flag == "--ext-families":
                 fams = val.split(",")
+            elif flag == "--prior-init":
+                prior = float(val)
             else:
                 w = float(val)
     os.environ["OPS_EXT_OFF"] = "1" if off else "0"
@@ -37,6 +41,9 @@ def main():
     if not off:
         ops_ext.install(fams)
         ops_ext.apply_weight(w)
+    if prior > 0:
+        from ops_ext.search_ext import install_prior_init
+        install_prior_init(prior)
     search._orig_init = search._init
     search._init = ops_ext.worker_init
     search.main(argv)

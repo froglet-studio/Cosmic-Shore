@@ -18,7 +18,7 @@ import numpy as np
 SHARE = "/mnt/project-files/amoebius-genome"
 
 
-def random_sky(g, rng, pool, k):
+def random_sky(g, rng, pool, k, init="uniform"):
     """Append k random T nodes (each wired to earlier T nodes at random) and point the sky at the last."""
     from agenome.genome import Node, _insert
     from agenome.ops import OPS
@@ -30,7 +30,9 @@ def random_sky(g, rng, pool, k):
         for s in o.inputs:
             cands = list(range(first, r + j)) if j else []
             ins.append(rng.choice(cands) if cands else None)
-        node = Node(o.name, ins, [rng.randrange(256) for _ in o.params])
+        prm = [rng.randrange(256) for _ in o.params] if init == "uniform" else [
+            int(max(0, min(255, round(p.default + rng.gauss(0, 18))))) for p in o.params]
+        node = Node(o.name, ins, prm)
         _insert(g, r + j, node)
     g.nodes[g.root()].inputs[4] = g.root() - 1
     return g.repair()
@@ -43,6 +45,7 @@ def main(argv=None):
     ap.add_argument("--arm", default="ext")
     ap.add_argument("--shard", default="0/1")
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--init", default="uniform", help="uniform | default (op default bytes + N(0,18))")
     a = ap.parse_args(argv)
     import ops_ext
     ops_ext.install()
@@ -57,13 +60,13 @@ def main(argv=None):
     pool = [o for o in T if o.name not in EXT] if a.arm == "core" else T
     S = Scorer()
     rng = random.Random(a.seed * 1000 + si)
-    path = os.path.join(a.out, f"{a.arm}_{si}.jsonl")
+    path = os.path.join(a.out, f"{a.arm}{'' if a.init == 'uniform' else '_' + a.init}_{si}.jsonl")
     for t in range(si, a.n, sk):
-        g = random_sky(base.copy(), rng, pool, rng.choice([1, 2, 2, 3]))
+        g = random_sky(base.copy(), rng, pool, rng.choice([1, 2, 2, 3]), a.init)
         g.prune()
         t0 = time.time()
         s = S(g)
-        rec = {"arm": a.arm, "i": t, "judge": round(s["judge"], 4), "stat": s.get("stat"), "zbytes": g.size(),
+        rec = {"arm": a.arm + ("" if a.init == "uniform" else "_" + a.init), "i": t, "judge": round(s["judge"], 4), "stat": s.get("stat"), "zbytes": g.size(),
                "ops": [n.op for n in g.nodes if n.op.startswith("tex.")], "sec": round(time.time() - t0, 2),
                "err": s.get("err"), "genome": g.to_json()}
         with open(path, "a") as f:

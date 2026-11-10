@@ -140,8 +140,24 @@ candidate for an honest size measure. Operator proposals: seeds/OP_PROPOSALS.md.
 | 0xE0 | `cam.fourier` | C | - | K:int[1,4], radius:exp[0.5,1000], hamp:lin[0,1], speed:exp[0.005,2], lookahead:exp[0.05,20], aim:lin[0,1], bank:lin[0,1], fov:lin[20,120], seed:int[0,255], phase:lin[0,6.28319] | demo camera spline |
 | 0xE1 | `cam.track` | C | A | dist:exp[0.3,8], height:scub[0,1], speed:scub[0,2], fov:lin[20,120], lag:lin[0,0.98], phase:lin[0,6.28319] | game camera |
 | 0xD5 | `ag.flow` | A | A | field:enum4, scale:exp[2,500], a:lin[0,2], b:lin[0,2], c:lin[0,2], gain:exp[0.05,20], drift:scub[0,2] | Arnold-Beltrami-Childress flow |
+| 0xB7 | `tex.lines` | T | t | mode:enum3, n:exp[1,256], vpx:lin[0,1], vpy:lin[0,1], theta:lin[0,3.14159], spread:lin[0,1], width:exp[0.3,8], profile:enum3, grow:exp[0.01,8], taper:exp[0.01,1], fill:lin[0,1], dashf:exp[0.5,40], duty:lin[0.05,1], speed:scub[0,40], halo:exp[0.05,4], gain:exp[0.05,8], seed:int[0,255], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | fitness lab tex.lines |
+| 0xE8 | `post.bandgain` | P | p | g1:exp[0.25,4], g2:exp[0.25,4], g3:exp[0.25,4], g4:exp[0.25,4], tailcut:lin[0,1], chroma:exp[0.25,12] | fitness lab post.bandgain |
+| 0xE2 | `cam.kick` | C | C | rate:exp[0.05,4], alpha:lin[1.05,3], amp:exp[0.002,1], decay:exp[0.5,20], freq:exp[0.3,20], tilt:lin[0,1], seed:int[0,255] | fitness lab cam.kick |
+| 0x18 | `tex.hx_fbm_warp` | T | - | freq:exp[1,16], oct:int[1,6], warp:lin[0,8], seed:int[0,255], speed:scub[0,0.05], contrast:exp[1,8], gamma:exp[0.25,4], streak:lin[0,4], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4], ch:hue, cs:lin[0,1], cv:exp[0.01,4] | hops |
+| 0x19 | `tex.hx_spectral` | T | - | K:int[1,24], beta:lin[0,3], fmin:exp[0.5,32], fmax:exp[1,128], angle:lin[0,3.14159], spread:lin[0,1], seed:int[0,255], map:enum2, speed:scub[0,2], contrast:exp[0.5,8], gamma:exp[0.25,4], mode:enum3, ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | hops (inverse FFT synthesis) |
+| 0x1A | `tex.hx_hexgrid` | T | t | kind:enum3, scale:exp[2,96], width:exp[0.005,0.3], glow:lin[0,1], falloff:exp[2,200], h:hue, s:lin[0,1], v:exp[0.01,4], asp:lin[0.5,3], angle:lin[0,3.14159], mode:enum3, pulse:lin[0,1] | hops |
+| 0x1B | `tex.hx_chladni` | T | - | n:int[1,12], m:int[1,12], mix:lin[-1,1], sharp:exp[2,200], rep:int[1,8], morph:exp[0.01,2], asp:lin[0.5,3], fill:lin[0,1], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | hops |
+| 0x1C | `tex.hx_sph` | T | - | l:int[0,8], m:int[-8,8], sharp:exp[1,100], tilt:lin[0,3.14159], spin:scub[0,1], contrast:exp[0.5,8], line:lin[0,2], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4], ch:hue, cs:lin[0,1], cv:exp[0.01,4] | hops |
+| 0x1D | `tex.hx_beam` | T | t | count:int[1,4], az:lin[0,6.28319], el:lin[-1.5708,1.5708], spacing:lin[0,1.5], width:exp[0.002,0.2], halo:exp[1,40], length:exp[0.2,6.3], intensity:exp[0.05,20], drift:scub[0,0.5], phase:lin[0,6.28319], ch:hue, cs:lin[0,1], cv:exp[0.01,4], gh:hue, gs:lin[0,1], gv:exp[0.01,4] | hops |
+| 0x1E | `tex.hx_stars` | T | t | density:exp[8,300], prob:lin[0,1], size:exp[0.02,0.5], bright:exp[0.1,20], bvar:lin[0,1], h:hue, s:lin[0,1], v:exp[0.01,4], huevar:lin[0,1], twinkle:lin[0,1], seed:int[0,255] | hops |
+| 0x1F | `tex.hx_gabor` | T | - | freq:exp[0.5,8], cells:exp[2,64], angle:lin[0,3.14159], spread:lin[0,1], density:int[1,4], seed:int[0,255], asp:lin[0.5,3], contrast:exp[0.5,8], gamma:exp[0.25,4], speed:scub[0,3], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | hops |
+| 0x2D | `sdf.hx_pyramidfield` | S | - | pitch:exp[0.2,60], height:lin[0,2], fill:lin[0.3,1], jitter:lin[0,1], thick:exp[0.05,100], seed:int[0,255], axis:enum3, gap:exp[0.5,400] | hops |
+| 0x8C | `post.hx_fft` | P | p | slope:lin[-1.5,1.5], f0:exp[0.01,0.5], bgain:lin[-1,3], fb:exp[0.01,0.5], bw:exp[0.005,0.3], oamt:lin[0,1], oang:lin[0,3.14159], chan:enum2, amount:lin[0,1] | hops |
+| 0x8D | `post.hx_pca` | P | p | mode:enum2, amount:lin[0,1], mh:hue, ms:lin[0,1], mv:exp[0.01,4], s1:exp[0.01,0.5], s2:exp[0.01,0.5], s3:exp[0.01,0.5], ah:hue, tilt:lin[0,1], roll:lin[0,3.14159] | hops (Monge-Kantorovich linear) |
+| 0x8E | `post.hx_dog` | P | p | s1:exp[0.5,16], s2:exp[1,32], gain:lin[-1,3], chan:enum2, amount:lin[0,1] | hops |
+| 0x8F | `post.hx_histeq` | P | p | a:exp[0.3,10], b:exp[0.3,10], amount:lin[0,1], mode:enum2 | hops |
 
-98 operators: 58 core and 40 extension ops (opcodes 0xA0-0xEF, `ops_ext/`, installed on import; `AGENOME_EXT=0` leaves them out). The table is `agenome.ops.spec_markdown()` after that install.
+114 operators: 58 core, 43 extension ops (opcodes 0xA0-0xEF, `ops_ext/`) and 13 `hx_` ops from the part-by-part thread (0x18-0x1F, 0x2D, 0x8C-0x8F, `agenome/hops.py`), all installed on import; `AGENOME_EXT=0` and `AGENOME_HOPS=0` leave them out. The table is `agenome.ops.spec_markdown()` after that install.
 
 ## Variation operators (for the search)
 param tweak (gaussian in byte space), op swap within a type, insert filter, delete node, rewire input, duplicate

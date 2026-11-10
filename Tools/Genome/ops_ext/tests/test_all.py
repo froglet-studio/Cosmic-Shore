@@ -17,7 +17,7 @@ for name, e in sorted([kv for kv in EXT.items() if kv[0] in _OPS], key=lambda kv
     t = g.add("tex.perlin")
     s = g.add("sdf.sphere")
     a = g.add("ag.spawn", n=60)
-    ins = {"T": t, "S": s, "A": a}
+    ins = {"T": t, "S": s, "A": a, "P": g.add("post.grade") if o.out == "P" else None}
     me = g.add(name, *[ins.get(x.upper()) for x in o.inputs])
     if o.out == "T":
         root = g.add("out", None, a, None, None, me)
@@ -27,6 +27,8 @@ for name, e in sorted([kv for kv in EXT.items() if kv[0] in _OPS], key=lambda kv
     elif o.out == "A":
         tr = g.add("ag.trail", me)
         root = g.add("out", None, tr, None, None, t)
+    elif o.out == "P":
+        root = g.add("out", None, a, None, me, t)
     else:
         root = g.add("out", None, a, me, None, t)
     try:
