@@ -25,7 +25,8 @@ the root `out` wires scene S, agents A, camera C, post P, sky T and hud H. Rende
   chosen) — use whichever is natural; translators from real data should prefer `values`.
 - `in` = node ids, one per input slot of the op (null = none). Inputs must point to EARLIER nodes. Wrong types
   are repaired to the nearest earlier node of the right type, so a seed never fails to load.
-- Lowercase input types in the table are optional.
+- Lowercase input types in the table are optional. A stored genome keeps an optional input that is null (no sky
+  stays no sky); mutation wires a new node's inputs to the nearest earlier node of the right type.
 
 ## Byte form (what compactness measures)
 `A6 00 seed` then per node `opcode, ref per input slot (distance back 1..255, 0 = none), byte per param`.
@@ -53,6 +54,7 @@ candidate for an honest size measure. Operator proposals: seeds/OP_PROPOSALS.md.
 | 0x0A | `tex.twirl` | T | T | strength:scub[0,10], radius:exp[0.05,1] | Bitmap_Twirl |
 | 0x0B | `tex.glowrect` | T | T | cx:lin[0,1], cy:lin[0,1], rx:exp[0.01,1], ry:exp[0.01,1], power:exp[0.25,8], h:hue, s:lin[0,1], v:exp[0.01,4] | Bitmap_GlowRect |
 | 0x0C | `tex.bricks` | T | - | tx:int[1,32], ty:int[1,32], fuge:lin[0,0.3], seed:int[0,255], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | Bitmap_Bricks |
+| 0x0D | `tex.mirror` | T | T | axes:enum3 | Bitmap_Flip |
 | 0x20 | `sdf.sphere` | S | - | r:exp[0.05,200] | Mesh_Sphere |
 | 0x21 | `sdf.box` | S | - | sx:exp[0.02,100], sy:exp[0.02,100], sz:exp[0.02,100], round:lin[0,0.5] | Mesh_Cube |
 | 0x22 | `sdf.torus` | S | - | R:exp[0.05,100], r:lin[0.01,0.9] | Mesh_Torus |
@@ -75,6 +77,7 @@ candidate for an honest size measure. Operator proposals: seeds/OP_PROPOSALS.md.
 | 0x3F | `sdf.mirror` | S | S | axes:bits7 |  |
 | 0x40 | `sdf.spin` | S | S | axis:enum3, speed:scub[0,3] | anim |
 | 0x41 | `sdf.bob` | S | S | axis:enum3, amp:exp[0.001,20], freq:exp[0.05,5] | anim |
+| 0x49 | `sdf.rim` | S | S | fh:hue, fs:lin[0,1], fv:exp[0.01,4], rh:hue, rs:lin[0,1], rv:exp[0.01,4], power:exp[0.5,16], emit:exp[0.05,10] | Cosmic Shore prism shader |
 | 0x48 | `sdf.material` | S | S,t | ah:hue, as:lin[0,1], av:exp[0.01,4], eh:hue, es:lin[0,1], ev:exp[0.01,4], emit:exp[0.001,10], glow:exp[0.0001,2], falloff:exp[0.2,50], texscale:exp[0.005,10], texmix:lin[0,1], spec:lin[0,1] | Material_Add |
 | 0x50 | `ag.spawn` | A | - | n:exp[1,512], radius:exp[0.5,300], shape:enum4, speed:exp[0.1,200], seed:int[0,255], teams:int[1,4], hue0:hue, huestep:lin[0,1], sat:lin[0,1], val:exp[0.05,4] | boids |
 | 0x51 | `ag.boids` | A | A | coh:exp[0.001,10], ali:exp[0.001,10], sep:exp[0.001,10], radius:exp[0.1,100], turn:exp[0.05,20] | boids |
@@ -88,6 +91,7 @@ candidate for an honest size measure. Operator proposals: seeds/OP_PROPOSALS.md.
 | 0x70 | `cam.chase` | C | A | agent:int[0,15], dist:exp[0.1,200], height:scub[0,100], lag:lin[0,0.98], fov:lin[20,120], look:exp[0.01,20] | game camera |
 | 0x71 | `cam.orbit` | C | - | radius:exp[0.5,1000], height:scub[0,400], speed:scub[0,2], fov:lin[20,120], phase:lin[0,6.28319] | demo camera |
 | 0x72 | `cam.fly` | C | - | radius:exp[0.5,1000], speed:exp[0.01,5], fov:lin[20,120], seed:int[0,255] | demo camera |
+| 0x74 | `cam.lens` | C | C | panini:lin[0,1], crop:lin[0,1] | URP PaniniProjection |
 | 0x73 | `cam.shake` | C | C | amp:exp[0.0001,2], freq:exp[0.5,30] |  |
 | 0x80 | `post.grade` | P | - | exposure:exp[0.25,8], thresh:lin[0,2], bloom:exp[0.001,4], bloomrad:exp[0.5,8], fh:hue, fs:lin[0,1], fv:exp[0.01,4], fog:exp[1e-05,1], vignette:lin[0,1.5], sat:exp[0.25,4], contrast:exp[0.5,2], feedback:lin[0,0.95], grain:lin[0,0.2], aberr:lin[0,0.02] | GenIPP |
 | 0x90 | `hud.rect` | H | h | anchor:enum9, x:lin[-0.5,0.5], y:lin[-0.5,0.5], w:exp[0.003,1], hh:exp[0.003,1], h:hue, s:lin[0,1], v:exp[0.01,4], alpha:lin[0,1], outline:lin[0,0.03] | overlay |

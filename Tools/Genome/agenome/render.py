@@ -165,19 +165,25 @@ void main(){ vec2 uv = gl_FragCoord.xy/uRes; vec3 c = vec3(0.0); float ws = 0.0;
 FS_COMP = """#version 330
 uniform sampler2D uScene, uBloom, uPrev; uniform vec2 uRes; uniform float uExposure, uBloomK, uSat, uContrast,
   uVignette, uFeedback, uGrain, uAberr, uTime;
+uniform vec4 uPanini; // distance, crop scale, view extents x, y (URP PaniniProjection, Panini_Generic); x = 0: off
 out vec4 oCol;
 float h21(vec2 p){ vec3 p3 = fract(vec3(p.xyx)*0.1031); p3 += dot(p3, p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
-void main(){ vec2 uv = gl_FragCoord.xy/uRes; vec2 cc = uv-0.5;
+vec2 panini(vec2 uv){ if(uPanini.x <= 0.0) return uv;
+  float d = uPanini.x; vec2 vp = (2.0*uv-1.0)*uPanini.zw*uPanini.y; float vd = 1.0+d;
+  float hyp = vp.x*vp.x + vd*vd; float iD = vp.x*d; float disc = max(hyp - iD*iD, 0.0);
+  float cdm = (-iD*vp.x + vd*sqrt(disc))/hyp; float cd = cdm + d;
+  vec2 pp = vp*(cd/vd)/(cd - d); return pp/uPanini.zw*0.5+0.5; }
+void main(){ vec2 so = gl_FragCoord.xy/uRes; vec2 uv = panini(so); vec2 cc = uv-0.5;
   vec3 c;
   c.r = texture(uScene, uv + cc*uAberr).r; c.g = texture(uScene, uv).g; c.b = texture(uScene, uv - cc*uAberr).b;
   c = c*uExposure + texture(uBloom, uv).rgb*uBloomK;
   c = c*(2.51*c+0.03)/(c*(2.43*c+0.59)+0.14); // ACES fit
   float l = dot(c, vec3(0.299,0.587,0.114)); c = mix(vec3(l), c, uSat);
   c = clamp((c-0.5)*uContrast+0.5, 0.0, 1.0);
-  c *= 1.0 - uVignette*dot(cc, cc)*1.6;
+  vec2 vc = so-0.5; c *= 1.0 - uVignette*dot(vc, vc)*1.6;
   c += (h21(gl_FragCoord.xy + fract(uTime*7.13)*97.0)-0.5)*uGrain;
   c = pow(clamp(c, 0.0, 1.0), vec3(1.0/2.2));
-  c = mix(c, texture(uPrev, uv).rgb, uFeedback);
+  c = mix(c, texture(uPrev, so).rgb, uFeedback);
   oCol = vec4(c, 1.0); }"""
 
 FS_HUD = """#version 330
@@ -249,6 +255,21 @@ def look_at(eye, tgt):
     r /= np.linalg.norm(r) + 1e-9
     u = np.cross(r, f)
     return r, u, f
+
+
+def panini_params(d, crop, fovy, aspect):
+    """URP PaniniProjection: (distance, crop scale, view extents) for the composite shader; distance 0 = off."""
+    ey = math.tan(math.radians(fovy) / 2)
+    ex = aspect * ey
+    if d <= 0:
+        return (0.0, 1.0, ex, ey)
+    hyp = math.sqrt(ex * ex + 1.0)
+    cdm = 1.0 / hyp
+    cd = cdm + d
+    cx, cy = ex * cdm * (1.0 + d) / cd, ey * cdm * (1.0 + d) / cd
+    sf = min(cx / ex, cy / ey)
+    s = 1.0 + (min(1.0, max(0.0, sf)) - 1.0) * crop
+    return (float(d), float(s), float(ex), float(ey))
 
 
 def perspective(fovy, aspect, n, fr):
@@ -377,6 +398,8 @@ class Renderer:
                           ("uFeedback", float(post["feedback"])), ("uGrain", float(post["grain"])),
                           ("uAberr", float(post["aberr"]))):
             self._set(pc, name, val)
+        pd, crop = cam.panini()
+        self._set(pc, "uPanini", panini_params(pd, crop, fov, self.w / self.h))
         self._set(self.p_bright, "uThresh", float(post["thresh"]))
         self._set(self.p_bright, "uRes", tuple(float(x) for x in self.bsize))
         self._set(self.p_blur, "uRes", tuple(float(x) for x in self.bsize))

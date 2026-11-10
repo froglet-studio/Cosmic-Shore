@@ -38,6 +38,7 @@ uniform vec3 uLightDir, uLightCol, uFogCol;
 uniform float uFog;
 out vec4 oCol;
 struct Mat { vec3 alb; vec3 emi; float spec; };
+vec3 gN = vec3(0.0, 0.0, 1.0); vec3 gV = vec3(0.0, 0.0, 1.0); // world normal and view direction at the shaded hit
 float gGlowOn = 0.0;
 vec3 gGlow = vec3(0.0);
 const float PI = 3.14159265;
@@ -127,6 +128,12 @@ def compile_textures(g, live):
             z = d["zoom"]
             body = (f"vec2 q = (uv-0.5); q = mat2({f(c)},{f(s)},{f(-s)},{f(c)})*q*{f(z)} + 0.5 + vec2({f(d['tx'])},{f(d['ty'])});"
                     f" return {A('q')};")
+        elif op == "tex.mirror":
+            A = T(0)
+            ax = int(d["axes"])
+            fx = "1.0-abs(2.0*fract(uv.x)-1.0)" if ax in (0, 2) else "uv.x"
+            fy = "1.0-abs(2.0*fract(uv.y)-1.0)" if ax in (1, 2) else "uv.y"
+            body = f"vec2 q = vec2({fx}, {fy}); return {A('q')};"
         elif op == "tex.hscb":
             A = T(0)
             body = (f"vec3 c = rgb2hsv(max({A('uv')}, vec3(0.0))); c.x = fract(c.x + {f(d['hue'])}); c.y = clamp(c.y*{f(d['sat'])}, 0.0, 1.0);"
@@ -275,6 +282,12 @@ def compile_shapes(g, live):
             lines = f"vec3 q = p - {off}*{f(d['amp'])}*sin(6.2831853*{f(d['freq'])}*uTime);"
             sd = f"{lines} return {SA('q')};"
             mt = f"{lines} return {MA('q')};"
+        elif op == "sdf.rim":
+            face, rim = hsv(d, "f"), hsv(d, "r")
+            em = d["emit"]
+            sd = f"return {SA('p')};"
+            mt = (f"float fr = pow(1.0-clamp(dot(gN, gV), 0.0, 1.0), {f(d['power'])});"
+                  f" return Mat(vec3(0.0), mix({v3(face)}, {v3(rim)}, fr)*{f(em)}, 0.0);")
         elif op == "sdf.material":
             alb = hsv(d, "a")
             emi = hsv(d, "e")
@@ -324,7 +337,7 @@ void main(){{
     t += max(h*0.9, 0.0008*t); if(t>uFar) break; }}
   gGlowOn = 0.0;
   vec3 col; float depth = 1.0;
-  if(hit>0.5){{ vec3 p = uEye+rd*t; vec3 n = NRM(p, 0.0007*t+0.0005); Mat m = MT(p, n);
+  if(hit>0.5){{ vec3 p = uEye+rd*t; vec3 n = NRM(p, 0.0007*t+0.0005); gN = n; gV = -rd; Mat m = MT(p, n);
     float dif = max(dot(n, uLightDir), 0.0); float fr = pow(1.0-max(dot(n,-rd),0.0), 3.0);
     vec3 sp = uLightCol*pow(max(dot(reflect(-uLightDir, n), -rd), 0.0), 24.0)*m.spec;
     col = m.alb*(uLightCol*dif + uAmbient*(0.6+0.4*n.y)) + sp + m.emi + fr*0.15*uAmbient*m.alb;

@@ -111,6 +111,9 @@ OPS_LIST = [
     Op(0x0C, "tex.bricks", "T", (), (P("tx", "int", 1, 32, 30), P("ty", "int", 1, 32, 60), P("fuge", "lin", 0, 0.3, 40),
                                     P("seed", "int", 0, 255, 0)) + _hsv("a", 0, 0, 60) + _hsv("b", 0, 0, 200), "",
        "Bitmap_Bricks"),
+    Op(0x0D, "tex.mirror", "T", ("T",), (P("axes", "enum", 0, 3, 0),),
+       "fold uv into a triangle wave on x, y or both: tiles without seams; as a sky it hides the equirect wrap",
+       "Bitmap_Flip"),
     # ---------------------------------------------------------------- shapes (werkkzeug3 genmesh.cpp, as SDFs)
     Op(0x20, "sdf.sphere", "S", (), (P("r", "exp", 0.05, 200, 100),), "", "Mesh_Sphere"),
     Op(0x21, "sdf.box", "S", (), (P("sx", "exp", 0.02, 100, 100), P("sy", "exp", 0.02, 100, 100),
@@ -148,6 +151,10 @@ OPS_LIST = [
        "rotate over time", "anim"),
     Op(0x41, "sdf.bob", "S", ("S",), (P("axis", "enum", 0, 3, 1), P("amp", "exp", 0.001, 20, 80),
                                      P("freq", "exp", 0.05, 5, 100)), "oscillate over time", "anim"),
+    Op(0x49, "sdf.rim", "S", ("S",), _hsv("f", 170, 200, 15) + _hsv("r", 140, 160, 200) + (
+        P("power", "exp", 0.5, 16, 150), P("emit", "exp", 0.05, 10, 140)),
+       "unlit fresnel rim: mix(face, rim, (1-N.V)^power), how the game shades prisms and crystals",
+       "Cosmic Shore prism shader"),
     Op(0x48, "sdf.material", "S", ("S", "t"), _hsv("a", 0, 0, 120) + _hsv("e", 0, 0, 0) + (
         P("emit", "exp", 0.001, 10, 0), P("glow", "exp", 0.0001, 2, 0), P("falloff", "exp", 0.2, 50, 128),
         P("texscale", "exp", 0.005, 10, 128), P("texmix", "lin", 0, 1, 255), P("spec", "lin", 0, 1, 60)),
@@ -198,6 +205,9 @@ OPS_LIST = [
     Op(0x72, "cam.fly", "C", (), (P("radius", "exp", 0.5, 1000, 128), P("speed", "exp", 0.01, 5, 100),
                                  P("fov", "lin", 20, 120, 128), P("seed", "int", 0, 255, 0)),
        "smooth noise fly-through", "demo camera"),
+    Op(0x74, "cam.lens", "C", ("C",), (P("panini", "lin", 0, 1, 179), P("crop", "lin", 0, 1, 255)),
+       "Panini projection over the camera's image, as URP's post effect (the game uses distance 0.7, crop to fit)",
+       "URP PaniniProjection"),
     Op(0x73, "cam.shake", "C", ("C",), (P("amp", "exp", 0.0001, 2, 60), P("freq", "exp", 0.5, 30, 128)), "", ""),
     # ---------------------------------------------------------------- post (werkkzeug IPP)
     Op(0x80, "post.grade", "P", (), (

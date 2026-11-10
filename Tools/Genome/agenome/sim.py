@@ -313,6 +313,9 @@ class World:
 
 
 # ---------------------------------------------------------------------- cameras
+MODIFIERS = ("cam.shake", "cam.lens")  # camera ops that sit over a rig (input C) instead of being one
+
+
 class Camera:
     def __init__(self, g, idx, world, seed=0):
         self.chain = []
@@ -320,12 +323,12 @@ class Camera:
         while j is not None:
             n = g.nodes[j]
             self.chain.append((n.op, _d(n)))
-            j = n.inputs[0] if (n.op == "cam.shake" and n.inputs) else None
+            j = n.inputs[0] if (n.op in MODIFIERS and n.inputs) else None
             if n.op == "cam.chase":
                 break
-        self.chain.reverse()  # base rig first, then shakes
-        if not self.chain:
-            self.chain = [("cam.orbit", {"radius": 30.0, "height": 8.0, "speed": 0.1, "fov": 60.0, "phase": 0.0})]
+        self.chain.reverse()  # base rig first, then shakes and lenses
+        if not self.chain or self.chain[0][0] in MODIFIERS:  # no rig under the modifiers: the default orbit
+            self.chain.insert(0, ("cam.orbit", {"radius": 30.0, "height": 8.0, "speed": 0.1, "fov": 60.0, "phase": 0.0}))
         self.world = world
         self.eye = None
         self.tgt = None
@@ -334,6 +337,13 @@ class Camera:
 
     def fov(self):
         return float(self.chain[0][1].get("fov", 60.0))
+
+    def panini(self):
+        """(distance, crop to fit) of the first cam.lens over the rig; (0, 1) without one (rectilinear)."""
+        for op, d in self.chain[1:]:
+            if op == "cam.lens":
+                return float(d["panini"]), float(d["crop"])
+        return 0.0, 1.0
 
     def update(self, t, dt):
         op, d = self.chain[0]
