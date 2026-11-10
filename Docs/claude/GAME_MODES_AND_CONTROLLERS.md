@@ -998,12 +998,14 @@ burned. `BreachController : GateRaceController`, `BreachCourse`, `BreachCourseTe
 `Tools/Build/breach_harness/`), generator `author_breach_assets.py`. See `_Scripts/Controller/Arcade/BREACH.md`.
 Authored headless.
 
-`Flatline(84)` is the **Brittle Star's CHARGE game** (Shombith, 2026-11-09): thin panes of prisms cross the cell. A pane
-stops a round, the cords cut straight through it, and a ring thrown face-on into it bursts flat along it. **Only rounds
+`Flatline(84)` is the **Brittle Star's CHARGE game** (Shombith, 2026-11-09; re-laid 2026-11-10): an OPEN field of thin-paned
+structures scattered through the cell (loose panes, tunnels to fly through, windowed cages to fly into, a 40 u gap
+round each). A pane stops a round, the cords cut straight through it, and a ring thrown face-on into it bursts flat along it. **Only rounds
 (1) and cord / thrown-saber Strikes (8) on rival hulls score** (`FlatlineScoringRuleSO`, the fleet price); the ring
-blast pays nothing. The target is PER INTENSITY (180 / 200 / 220 / 240, `flatlinePointTargetByIntensity`, Cleave's
-shape). Four rungs: Three Planes, Five Pages, Icosa Panes (danger rims), Pane Geode (a hollow shell, holes). Every pane's
-grid carries super-shielded ribs so a worn pane stays a lattice; crystals (spare rings) sit on the seams.
+blast pays nothing. The target is 90 at every intensity (`flatlinePointTargetByIntensity`, Cleave's shape, so a rung
+can be re-tuned alone). Four rungs: Scattered Panes, Tunnels, Cages (danger rims), Maze (cages, tunnels, holed panes,
+more danger). Every wall's grid carries super-shielded ribs so a worn wall stays a lattice; crystals (spare rings) sit
+inside the rooms.
 `FlatlineController` (Hood's sibling, formerly Serpent Gulag), `SpawnableFlatline` + pure `FlatlinePanes` (twin
 `flatline_budget.py`, exact), AI `FlatlineHunter` (steers only; the hull's own autopilot keeps the triggers), generator
 `author_flatline_assets.py`. See `_Scripts/Controller/Arcade/FLATLINE.md`. Authored headless.
@@ -1483,7 +1485,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         └── DustupController                    — Butterfly-only dust duel in the Boneyard; a pass OVER a rival is a Strike point (CombatPoints)
         └── SerpentHoodController               — Hood: Serpent-only sniper duel across a crystal heart, hoods (Serpentine's shapes) as perches; a snipe on a rival pilot is a Debuff point (CombatPoints)
         └── JackstrawController                 — Thresher-only brawl in a 0G heap of pick-up sticks; a ball or chain on a rival pilot is a Strike point (CombatPoints)
-        └── FlatlineController                  — Brittle Star-only duel through thin panes; a round is 1, a cord Strike 8, the ring 0 (CombatPoints, per-intensity target)
+        └── FlatlineController                  — Brittle Star-only duel through a scattered field of panes, tunnels and cages; a round is 1, a cord Strike 8, the ring 0 (CombatPoints, first to 90)
         └── TapestryController                  — Butterfly-only timed painting war in the Barren cell; volume standing at the whistle (VolumeRemaining)
         └── SiroccoController                   — Butterfly-only erosion race through Rampage's forest; prisms-destroyed scoring
         └── TandavaController                   — the first CO-OP ARENA card, UNLISTED since 2026-10-25 (on no roster; card parked in `Games/_Archive`, `TANDAVA.md`) (Rhino / Squirrel / Sparrow, one domain): one scripted swarm hunts flora through a small CLOSED cell crowded with a seven-fork reef, its speed set by how threatened it feels - healthy it LUNGES at pilots, hurt it flees; feeding, a serpent rolls up round its meal in a formation drawn each meal (coil, wrap, figure-eight), its plates go out as danger guards round it and it cannot heal. Banked, the Great Serpent becomes a Many-Headed Serpent, rises into the Lord of the Dance inside a halo of switch rings (the one time the cell changes colour, gold), and becomes the Antlion, whose last feast completes the cycle; every match draws one of three variants of each form; the match ends on the swarm's outcome, never on a clock (`TANDAVA.md`)

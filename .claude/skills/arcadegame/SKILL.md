@@ -370,10 +370,18 @@ Jackstraw (the Thresher's Charge game, 2026-11-09, `claude/ecstatic-heisenberg-2
 - **A charge mode can score a hull's existing hit with no vessel code at all.** Grep the executor for its `TryAdmit`
   class and the `onCombatHitLanded` channel its config wires (the generator asserts both), then pay that class in the
   rule. The AI can be steering only when the hull hits by contact; the hull's own boost policy keeps its presses.
-Flatline (the Brittle Star's charge game, 2026-11-09, `claude/great-rubin-rur3xs`, `FLATLINE.md`) taught five:
+Flatline (the Brittle Star's charge game, 2026-11-09, `claude/great-rubin-rur3xs`, `FLATLINE.md`) taught six:
+- **An arena is something you fly ROUND, THROUGH and INTO, not a diagram.** The first Flatline crossed big planes at the
+  centre (three on the axes, five pages round a spine): exact, clip-free and, in Shombith's words, "not fun". The
+  re-lay scatters small structures (loose panes, open-ended tunnels, windowed cages) through the volume, rooms first,
+  each the first of 64 hashed draws whose bounding sphere clears every earlier one by a fixed gap. Openness is then a
+  property of construction (no carving, no clipping by design), the generator fails if anything finds no room, and the
+  ladder grows by adding KINDS of place (panes, then tunnels, then cages), not by thickening one shape. Draw the field
+  from a pilot's eye before building the geometry.
 - **An EXACT twin is cheap when the geometry is integer first.** Decide which tiles exist on an integer grid
   (`a*a + b*b <= R*R`), keep every float comparison that can move a count in one place (the seam test), and compute that
-  one in numpy float32 in the C#'s operation order. `flatline_budget.py` then matched the C# prism for prism and site for
+  one in numpy float32 in the C#'s operation order (the scattered re-lay kept this: the placement hashes, cube-root
+  radius and sphere test are float32 in order too). `flatline_budget.py` then matched the C# prism for prism and site for
   site on all four rungs at the first run. Put the geometry in a PURE static class (`FlatlinePanes`) so the tests, the
   twin and the Spawnable all call one thing.
 - **A pure helper a Spawnable calls must join `render_card_backgrounds.SOURCES`**, or `bake_prism_layouts.py --check`,

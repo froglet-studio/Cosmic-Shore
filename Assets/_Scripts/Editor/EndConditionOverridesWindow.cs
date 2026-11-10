@@ -28,8 +28,8 @@ namespace CosmicShore.Editor
         /// SliceArenaGeometry's intensity 1..4.</summary>
         static readonly string[] CleaveArenaNames = { "Panes", "Swell", "Cage", "Twistbands" };
 
-        /// <summary>Flatline's four rungs, labelled with the pane arrangement each one sizes (SpawnableFlatline).</summary>
-        static readonly string[] FlatlineArenaNames = { "Three Planes", "Five Pages", "Icosa Panes", "Pane Geode" };
+        /// <summary>Flatline's four rungs, labelled with the structures each one scatters (SpawnableFlatline).</summary>
+        static readonly string[] FlatlineArenaNames = { "Scattered Panes", "Tunnels", "Cages", "Maze" };
 
         EndConditionOverridesSO _config;
 

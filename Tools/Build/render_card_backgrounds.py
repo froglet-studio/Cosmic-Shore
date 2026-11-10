@@ -782,9 +782,10 @@ CAMERAS = {
     # Jackstraw: close into the heap, so the sticks cross the whole plate and the red-hot ball swinging through
     # them onto a rival (the strike, the one thing that scores) sits in the middle of it.
     "Jackstraw": (40, 18, 0.7, 46),
-    # Flatline: the I2 Five Pages from off the spine, so the pages read as thin planes fanning round it and the cords
-    # crossing one page (the act that scores) read against its face.
-    "Flatline": (12, 20, 1.2, 44),
+    # Flatline: the I2 Tunnels from just inside the field, so the loose panes read as thin plates scattered with room
+    # round each, a tunnel's crystal reads through its bore, and the cords crossing a pane (the act that scores) read
+    # against its face.
+    "Flatline": (12, 20, 0.72, 44),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1380,17 +1381,19 @@ def accents(s, layers, stage, cam, pal, R, card_path):
                        "rim": hot, "emissive": hot, "unbound": True})
         stage["vessels"] = vessels([(JADE, 0.42, 8, 320, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
     elif s == "Flatline":
-        # The seam crystals (the controller lays them where the panes cross; flatline_budget's sites at this rung), and
-        # a CORD STRIKE through a pane: a Jade Brittle Star's five cords reach from its ring corners straight through
-        # page 0 (the x = 0 plane) to a Ruby pilot in the next room, who takes the hit. A pane stops rounds, never cords.
+        # The crystals (the controller lays them inside the rooms first, then in front of panes; flatline_budget's sites
+        # at this rung), and a CORD STRIKE through a pane: a Jade Brittle Star's five cords reach from its ring corners
+        # straight through the loose pane nearest the centre to a Ruby pilot hiding behind it, who takes the hit. A pane
+        # stops rounds, never cords.
         import flatline_budget as fb
         rung = fb.RUNGS[INTENSITY - 1]
-        for site in fb.crystal_sites(fb.panes(rung["arrangement"], rung["radiusTiles"], rung["offset"]),
-                                     rung["crystalCount"], rung["crystalSpacing"]):
+        structs, _ = fb.layout(rung)
+        for site in fb.crystal_sites(structs, rung["crystalCount"]):
             crystal(site, 10.0)
-        phi = math.radians(18)
-        jade = [-150 * math.sin(phi), 40, 150 * math.cos(phi)]
-        ruby = [150 * math.sin(phi), 52, 150 * math.cos(phi)]
+        pane = min((st for st in structs if st["kind"] == fb.PANE), key=lambda st: float(v_dot(st["c"], st["c"])))
+        pc, pn, pu = [float(x) for x in pane["c"]], [float(x) for x in pane["n"]], [float(x) for x in pane["u"]]
+        jade = v_add(v_add(pc, v_mul(pn, 55)), v_mul(pu, -12))
+        ruby = v_add(v_add(pc, v_mul(pn, -22)), v_mul(pu, 8))
         d = v_norm(v_sub(ruby, jade))
         side = v_norm(v_cross([0, 1, 0], d)); up = v_cross(d, side)
         sig = domain_signal(pal, JADE, 1.4)

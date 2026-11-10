@@ -109,7 +109,7 @@ namespace CosmicShore.ScriptableObjects
         /// nothing. Points are the fleet price (CombatHitDrain.PointsFor): a round on a rival hull is 1, a cord or
         /// thrown-saber Strike 8, ten points to the petal; the ring blast pays nothing (FlatlineScoringRuleSO),
         /// summed across the domain's pilots.</summary>
-        public const int DefaultFlatlinePointTarget = 200;
+        public const int DefaultFlatlinePointTarget = 90;
 
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
@@ -519,15 +519,14 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int jackstrawStrikeTarget = 8;
         [Tooltip("Flatline: POINTS a DOMAIN needs to win (race to N), the Brittle Star's charge game. A round " +
                  "on a rival hull is 1 point, a cord or thrown-saber Strike 8 (the fleet price, ten points to " +
-                 "the petal); the ring blast scores nothing. 0 = default (200). The per-intensity list below " +
+                 "the petal); the ring blast scores nothing. 0 = default (90). The per-intensity list below " +
                  "overrides it.")]
-        [Min(0)] public int flatlinePointTarget = 200;
+        [Min(0)] public int flatlinePointTarget = 90;
 
         [Tooltip("Flatline: per-INTENSITY override of the target above - element 0 is intensity 1. Empty, a 0 " +
-                 "entry, or an intensity past the end falls back to the scalar. It rises up the ladder because " +
-                 "the denser panes put more fights inside cord reach, and a Strike is worth eight rounds, so " +
-                 "points come faster at the top; the four targets hold a 1v1 match near four minutes.")]
-        public List<int> flatlinePointTargetByIntensity = new() { 180, 200, 220, 240 };
+                 "entry, or an intensity past the end falls back to the scalar. 90 at every rung (Shombith, " +
+                 "2026-11-10); a rung can be re-tuned on its own once timed matches say so.")]
+        public List<int> flatlinePointTargetByIntensity = new() { 90, 90, 90, 90 };
 
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
@@ -606,8 +605,8 @@ namespace CosmicShore.ScriptableObjects
         [FormerlySerializedAs("serpentGulagSnipeTargetBuild")]
         [Min(0)] public int serpentHoodSnipeTargetBuild = 3;
         [Min(0)] public int jackstrawStrikeTargetBuild = 8;
-        [Min(0)] public int flatlinePointTargetBuild = 200;
-        [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 180, 200, 220, 240 };
+        [Min(0)] public int flatlinePointTargetBuild = 90;
+        [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 90, 90, 90, 90 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
