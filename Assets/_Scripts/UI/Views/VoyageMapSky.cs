@@ -614,6 +614,14 @@ namespace CosmicShore.UI
         void Labels()
         {
             _candidates.Clear();
+            if (_map.Plain)
+            {
+                // The board's plain map: no star, cluster or landmark names, and no card.
+                foreach (var t in _labels) if (t && t.gameObject.activeSelf) t.gameObject.SetActive(false);
+                _backs.Clear();
+                if (Selected != null) Select(null);
+                return;
+            }
             bool sys = SystemTier;
             foreach (var m in _stars)
             {

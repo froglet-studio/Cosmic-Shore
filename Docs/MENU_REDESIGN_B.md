@@ -7033,3 +7033,14 @@ differed from R81B5, and what changed:
 
 Not changed: the menu's own ground (the blue waves) is the Menu_Main background behind every window. The boards drew
 it darker.
+
+**Third pass (Shombith, 2026-11-10, two screenshots: "What the hell? You are messing with me?").** The second pass was
+pushed without being seen in Unity, against this round's own rule (section 158: checked against a render before it is
+called done). Its screenshots showed what was still wrong:
+- **The tabs** kept dark boxes and mixed-case Aldrich labels. The cause: the tabs' kit components (`KitThemedGraphic` on
+  Fill, Border and the brackets; `KitText` on the label) put the kit's look back every time the window is enabled.
+  `VoyageWindowTabs.Plain` now stands those components down on the tabs before restyling them.
+- **The course map** was framed on the course, which `FrameOn` fixed. But every star, cluster and landmark was named, and
+  a tapped star's card covered the course. The plain map now names only the course's two ends, draws no sky names, and
+  opens no card.
+- **The Quests tab** is the old quest track, untouched by this round: the B boards drew no Quests tab.

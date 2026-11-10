@@ -468,7 +468,8 @@ namespace CosmicShore.UI
                 return;
             }
             if (_chart == null) return;
-            // A star, a cluster or a landmark opens its card; a tap on open water closes it.
+            // A star, a cluster or a landmark opens its card; a tap on open water closes it. The board's plain map has none.
+            if (Plain) return;
             var hit = SkyOf.HitAt(at);
             if (hit == null && SkyOf.Selected == null) return;
             SkyOf.Select(hit);
@@ -851,7 +852,9 @@ namespace CosmicShore.UI
             for (int i = 0; i < _labels.Count; i++)
             {
                 var l = i < n ? _content.Locations[i] : null;
-                _labelShown.Add(Drawn(l));
+                // The board's plain map names only the course's two ends.
+                bool named = !Plain || (l != null && _route.Count > 0 && (l.Id == _route[0] || l.Id == _route[^1]));
+                _labelShown.Add(Drawn(l) && named);
             }
             string end = _route.Count > 0 ? _route[^1] : null;
             for (int i = 0; i < n; i++)

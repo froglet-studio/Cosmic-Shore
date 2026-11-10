@@ -134,6 +134,10 @@ namespace CosmicShore.UI
             {
                 if (!t.button) continue;
                 var rt = (RectTransform)t.button.transform;
+                // The kit's theming (KitThemedGraphic, KitText and their kin) puts the frames and the label's face back
+                // every time the window is enabled: on these tabs it stands down, so the plain look stays.
+                foreach (var mb in t.button.GetComponentsInChildren<MonoBehaviour>(true))
+                    if (mb is not Graphic && mb is not Selectable && mb.GetType().Name.StartsWith("Kit")) mb.enabled = false;
                 foreach (var img in t.button.GetComponentsInChildren<Image>(true))
                 {
                     if (t.mark && img.transform.IsChildOf(t.mark.transform)) continue;
