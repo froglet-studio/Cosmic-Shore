@@ -162,7 +162,7 @@ Quoted from `Docs/FleetCodex/abilities.json` on 2026-11-10. The session re-reads
 | Vessel | Element | Branch | Mode | State |
 | --- | --- | --- | --- | --- |
 | Dolphin | Space | - | Rampage | shipped |
-| Thresher | Space | `claude/keen-rubin-rw7p6q` | Harvest (working name), id 88 to claim | planning: brief and decisions in [`THRESHER_SPACE.md`](THRESHER_SPACE.md) |
+| Thresher | Space | `claude/keen-rubin-rw7p6q` | Harvest (`GameModes.Harvest = 88`) | built headless, not yet run in the editor ([`THRESHER_SPACE.md`](THRESHER_SPACE.md), `Controller/Arcade/HARVEST.md`) |
 | Brittle Star | Space | | | not started |
 | Serpent | Mass | | | not started |
 | Swordfish | Mass | | | not started |

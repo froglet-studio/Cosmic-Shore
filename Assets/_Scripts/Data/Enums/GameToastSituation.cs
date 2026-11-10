@@ -238,6 +238,10 @@ namespace CosmicShore.Data
         // 128-130 (DomainRaceToasts); a bloom hit is 82 (DebuffHitsLanded rose). Posted to the LOCAL pilot only.
         CoronaHint = 162,               // once, at the start: skim a shell to arm, graze to plant, cash at the heart
 
+        // Harvest, the Thresher's space game (_Scripts/Controller/Arcade/HARVEST.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a prism milestone is 83 (HostilePrismsDestroyed). Posted to the LOCAL pilot only.
+        HarvestHint = 163,              // once, at the start: press A to break; mow the stalks, smash the core
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

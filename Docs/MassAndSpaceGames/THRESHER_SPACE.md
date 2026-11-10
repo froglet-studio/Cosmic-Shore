@@ -1,8 +1,9 @@
 # The Thresher's Space game: the plan (2026-11-10, `claude/keen-rubin-rw7p6q`)
 
-Status: **planning.** Nothing is built yet. This page holds the design brief, the facts it rests on (read from the
-code, not the docs), the ladder, the AI and the build list. The working name is **Harvest**: a thresher is the machine
-that beats the grain out of the sheaf. The name is the owner's call (§7).
+Status: **built headless, not yet run in the Unity editor** (`GameModes.Harvest = 88`, the mode doc is
+`Assets/_Scripts/Controller/Arcade/HARVEST.md`). Shombith picked plan A on 2026-11-10 and answered §7 the same day.
+This page keeps the design brief, the facts it rests on (read from the code, not the docs) and the plans set aside;
+where the build moved a number, the table below says the built value and §9 says why.
 
 Plan: [`PLAN.md`](PLAN.md) §4 (the seed) and §6 (the rules). Hull: `R_VesselActions/THRESHER.md`. Siblings read:
 Rampage, Wrecking Ball (destruction races), Jackstraw (its Charge game), Thresher Time (its Time game).
@@ -35,7 +36,7 @@ The retire condition           the bank never gets spent on a core: pilots' blas
 ```
 
 **The sentence a player understands:** *mow the stalks with your chain to charge the ball, smash it into the sheaf's
-heart to blow the whole thing apart; first team to break 1,500 rival prisms wins.*
+heart to blow the whole thing apart; first team to break 750 rival prisms wins.*
 
 ## 2. What the kit already does (read from `ThresherExecutor.cs` and the hit paths)
 
@@ -71,14 +72,12 @@ Colour is the target choice (Rampage's rule): a domain's sheaves score only for 
 
 | | I1 Stubble | I2 Sheaves | I3 Stooks | I4 Granary |
 |---|---|---|---|---|
-| Sheaves | 8, large | 14 | 20 | 26, small |
-| Colour | all neutral | neutral, 1 in 3 domain | a third each domain + neutral | a third each domain + neutral |
-| Core rind | none | shielded (pop, then kill) | shielded | shielded, the innermost shell super-shielded* |
-| Stalks a sheaf | dense (easy fuel) | dense | sparser | sparse, every 4th stalk danger |
+| Sheaves (built) | 8, large | 12 | 16 | 22, small |
+| Colour | all neutral | neutral, 1 in 4 a domain (one each) | a quarter each Jade, Ruby, Gold, neutral | the same |
+| Core rind | none | shielded (pop, then kill) | shielded | shielded (no super-shields: §7, decision 2 was no) |
+| Stalks a sheaf | 40 x 6 prisms | 24 x 6 | 16 x 5 | 12 x 5, every 4th stalk danger |
+| Prisms (built) | 3,200 | 3,408 | 3,040 | 3,300 |
 | Omni crystals | 2 × roster | roster | roster − 1 | 1 for the lobby, at the centre |
-
-\* Only if the I4 card starts the hull at Space 5 (Breaker live). Otherwise I4 keeps the shielded rind and adds no
-super-shields: a mode never asks for an upgrade the pilot cannot have (§7, decision 2).
 
 **The budget.** The numbers above are a shape, not yet measured. The mirror sets them so that (a) a core is at most
 ~250 prisms, so one blast at the rest cap never asks the prism damage pass for more than that (it is deferred over
@@ -88,9 +87,8 @@ sheaves at once. A blast near one core must not take the next sheaf with it: the
 than the full-Space blast radius (180 u). The flora and fauna stay at the standard cell's spawn profile (P-modes-12):
 they score as hostile mass like everything else.
 
-**The target.** 1,500 hostile prisms, one value for every rung (Wrecking Ball's), in `EndConditionOverridesSO`. That is
-an estimate for 90 s (P-modes-02): about nine mow-and-slam cycles of ~10 s, each ~30 stalk prisms plus a ~150-prism
-core. The first timed playtest replaces it.
+**The target (built: 750).** One value for every rung, in `EndConditionOverridesSO`. The plan said 1,500; the build
+cut it to 750 (§9). It is an estimate for 90 s (P-modes-02); the first timed playtest replaces it.
 
 ## 4. The question to answer first
 
@@ -120,7 +118,7 @@ cores. That is the first idea in §8.
 
 ## 6. The build (the `/arcadegame` recipe, once §4 and §7 are answered)
 
-- `GameModes.Harvest = 88`: 87 is the highest on bleeding-edge and no in-flight branch claims 88 or above (scanned
+- `GameModes.Harvest = 88` (built): 87 is the highest on bleeding-edge and no in-flight branch claims 88 or above (scanned
   2026-11-10, 200 most recent branches). Re-scan at commit, then `check_switch_label_collisions.py`.
 - `HarvestController : MultiplayerDomainGamesController`, a structural copy of `RampageController` (1 round, golf,
   server winner, `SyncFinalScores_ClientRpc`, `DomainRaceToasts`).
@@ -136,14 +134,14 @@ cores. That is the first idea in §8.
 - Card art through `/cardart`; edit-mode tests for the rule and the sheaf geometry; a still of I2 from the card renderer.
 - Docs: `Controller/Arcade/HARVEST.md`, `PLAN.md` §7, `GAME_MODES_AND_CONTROLLERS.md`.
 
-## 7. Decisions for Shombith
+## 7. Decisions (answered by Shombith, 2026-11-10)
 
-1. **The name.** Harvest (working), or Chaff, or Threshing Floor.
-2. **I4's Space 5 start.** Card row `StartingElements` Space 5 at I4 so Breaker is live and the core's last shell is
-   super-shielded (a hot ball's direct hit is the only way in). Or no super-shields and no start level.
-3. **The AI's A press** at the whistle (§5). The alternative is an AI that scores only chain cuts.
-4. **Prototype first or build.** The §4 question in the Vessel Studio's Thresher sandbox first (recommended), or
-   straight to the Python mirror and stills of all four rungs.
+1. **The name**: Harvest.
+2. **I4's Space 5 start**: no. No starting level and no super-shields; I4 is smaller, sparser, shielded sheaves with
+   danger stalks.
+3. **The AI's A press**: yes, once, through the replicated path (`HarvestReaper`).
+4. **Prototype first or build**: build now. The §4 question is checked in the editor playtest.
+5. **The plan**: A (sheaves), from the three drawn plans (A sheaves, B stalk fields with bare cores, C one monument).
 
 ## 8. Ideas set aside (so the next session does not re-pitch them)
 
@@ -153,3 +151,18 @@ cores. That is the first idea in §8.
   Thresher's mow-then-slam.
 - **One big monument to demolish, shared.** The race is then decided by who arrives charged first; there is no route
   choice and no colour reading.
+
+## 9. What the build changed, and why (2026-11-10)
+
+- **Sheaf counts 14 / 20 / 26 became 12 / 16 / 22**, and the stalks per sheaf fell: the drawings laid 4,591 and 4,450
+  prisms at I2 and I3, past Jackstraw's 3,600 (the Thresher's other arena). The built ladder lays 3,200 / 3,408 /
+  3,040 / 3,300, measured from the shipped C# by the layout bake and equal to the mirror on every rung.
+- **I2's colour rule became one in four**: one in three gave 2 Jade, 1 Ruby, 1 Gold among twelve sheaves. One in four
+  gives one each; a test holds every rung within one sheaf of fair.
+- **The target 1,500 became 750.** The sheaves never grow back, so three domains' worth of the target must fit in the
+  smallest hostile pool, or the field could run dry before anyone wins: at 1,500 it could not (I3's pool is 2,280).
+  Wrecking Ball, the nearest played number, went from 1,500 to 650 after a solo run had not reached 1,500 in 178 s.
+- **Ecology is off** (no flora, no fauna; P-modes-12 lets a mode opt out on purpose). The brief said the standard
+  spawn profile; grazers eating sheaves would score for nobody and empty the field early.
+- **The objective arrow** is Rampage's (the nearest omni crystal, in the clear centre), not a new sheaf finder.
+- **No new sound slot.** The mode has no event of its own: every blast, crush and smash is the Thresher's.
