@@ -86,12 +86,13 @@ CYTOPLASM_FILEID = 639495419069806261
 SPAWNABLE_GO, SPAWNABLE_TR, SPAWNABLE_MB = 8400000000000201, 8400000000000202, 8400000000000203
 
 # ── The brawl ────────────────────────────────────────────────────────────────
-STRIKE_TARGET = 8         # first cut, unplayed: kept in sync with EndConditionOverridesSO.DefaultJackstrawStrikeTarget
+STRIKE_TARGET = 3         # Shombith, 2026-11-09: "make the score to win at 3 for all intensities"; kept in sync with EndConditionOverridesSO.DefaultJackstrawStrikeTarget
 STRIKE_POINTS = 1
 STRIKE_CLASS = 5          # CombatHitClass.Strike - what ThresherExecutor.TryHitVessel reports
-# Comeback - a FUNCTION OF THE TARGET (bonusLevels = deficit x rate). A quarter of the race behind (2 strikes) buys
-# 1.2 element levels; on this hull a Charge level is more petals per strike.
-COMEBACK_RATE = 0.6
+# Comeback - a FUNCTION OF THE TARGET (bonusLevels = deficit x rate). A quarter of the race behind (0.75 strikes) buys
+# 1.125 element levels (Serpent Gulag's rate at the same target); on this hull a Charge level is more petals per
+# strike. Was 0.6 against the first target of 8, which at 3 would have bought 0.45 of a level - the re-target trap.
+COMEBACK_RATE = 1.5
 
 MEMBRANE_RADIUS = 1200.0
 CHAIN_MAX = 140.0          # the Thresher's chain let out (THRESHER.md §4, maxLen)
