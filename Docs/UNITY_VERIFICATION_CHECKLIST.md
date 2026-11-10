@@ -22523,3 +22523,12 @@ rail and are always free).
    a view that paints only when its data changes. Note the screen and object.
 6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
 
+
+## 🔴 Switch-ring wire mesh built at load, SpindleWireRingMesh (2026-11-10, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/genome-mesh-at-load`; `Docs/GENOME_MESH_AT_LOAD.md`. Compiled with `unity_refcompile` (player and editor
+configs, 0 errors in changed files; 21 pre-existing errors elsewhere). The generator port was run outside Unity by
+`Tools/Build/genome_mesh_parity/run.sh`: all three wire meshes bit-identical to the shipped assets, negative control
+caught. Nothing is rewired: the profile still references the assets.
+
+1. **Run the edit-mode tests** `SpindleWireRingMeshTests` (three asset comparisons and the sharing test).
