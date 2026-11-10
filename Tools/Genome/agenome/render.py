@@ -8,10 +8,12 @@ Pipeline per frame (all OpenGL 3.3 on llvmpipe, offscreen):
   4. composite    - exposure, bloom, tonemap, saturation, contrast, vignette, grain, aberration, feedback
   5. hud          - 2D overlay primitives
 """
+import atexit
 import math
 import os
 import shutil
 import subprocess
+import threading
 import time
 
 import numpy as np
@@ -37,9 +39,24 @@ def ensure_display():
         return
     num = 90 + (os.getpid() % 500)
     _XVFB = subprocess.Popen(["Xvfb", f":{num}", "-screen", "0", "64x64x24", "-nolisten", "tcp"],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             # tied to the starting THREAD: only the main thread's server may die with it
+                             preexec_fn=_die_with_parent if threading.current_thread() is threading.main_thread()
+                             else None)
+    atexit.register(_XVFB.terminate)
     os.environ["DISPLAY"] = f":{num}"
     time.sleep(0.4)
+
+
+def _die_with_parent():
+    """Xvfb gets SIGTERM when the process that started it dies: a pool worker killed on a timeout or a restart left
+    its server running (146 orphans holding 1.4 GB in the genome thread's container, 2026-11-10)."""
+    try:
+        import ctypes
+        import signal
+        ctypes.CDLL("libc.so.6", use_errno=True).prctl(1, int(signal.SIGTERM))  # PR_SET_PDEATHSIG
+    except Exception:
+        pass
 
 
 def _mesh(name):

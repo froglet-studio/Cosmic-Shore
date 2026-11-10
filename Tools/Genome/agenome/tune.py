@@ -268,7 +268,19 @@ def main(argv=None):
         if not a.publish:
             return
         os.makedirs(a.publish, exist_ok=True)
-        for name, data in (("pareto.json", sorted(rows, key=lambda r: r["zbytes"])),
+        # ADD to the published front, never replace it: a tune into a new OUT must not drop the rows earlier tunes
+        # put there (audit 2026-11-10). One row per genome, this tune's row winning.
+        keep = {}
+        try:
+            prev = json.load(open(os.path.join(a.publish, "pareto.json")))
+        except Exception:
+            prev = []
+        for r in list(prev) + list(rows):
+            try:
+                keep[Genome.from_json(r["genome"]).to_bytes()] = r
+            except Exception:
+                continue
+        for name, data in (("pareto.json", sorted(keep.values(), key=lambda r: r["zbytes"])),
                            ("args.json", dict(vars(a), island=os.path.basename(os.path.normpath(a.publish)),
                                               kind="tuner"))):
             tmp = os.path.join(a.publish, name + ".tmp")
