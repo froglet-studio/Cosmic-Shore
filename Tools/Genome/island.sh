@@ -9,6 +9,9 @@
 # SS=2 renders every clip at 2x and filters it down (closer to the downscaled reels, 2 to 2.7x slower);
 # JUDGE=1.0 adds the fixed perceptual judge (agenome/judge.py, ImageNet features vs the reels) to the fitness,
 # with STATW (weight of the statistics, default 1.0) and CRITICW (the online critic, default 0.5) beside it.
+# The judge is v3 since 18:30 (the worse of its two networks; the mean was ridden by pleasing one of them).
+# MIGRATE=0 stops importing other islands' best (default every 10 generations; a diversity reservoir uses 0 with
+# RESUME=none); LINEAGE=0.25 caps the share of survivors one root seed's descendants may hold (0 = no cap).
 # The reels are three sources (reel05 re-cuts reel03, reel04 re-cuts reel02): reels 1, 2, 4 train every measure and
 # reels 3, 5 are held out (v2 fitness, 2026-11-10 18:00).
 # It runs in the FOREGROUND (a cloud container kills detached processes once it idles after a turn): start it as a
@@ -52,6 +55,7 @@ CMD=(python3 -m agenome.search --run "$WORK/run_$NAME" \
   --real "$WORK/reels/reel0[124]/frames.npy" --real-hold "$WORK/reels/reel0[35]/frames.npy" \
   --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
   --judge-w "${JUDGE:-0}" --stat-w "${STATW:-1.0}" --critic-w "${CRITICW:-0.5}" \
+  --migrate-every "${MIGRATE:-10}" --lineage-cap "${LINEAGE:-0.25}" \
   --share "${RUNS:-$SHARE/runs}" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
 echo "island $NAME: log $WORK/run_$NAME.out ; results in $SHARE/runs/$NAME/ ; resuming from ${#OWN[@]} own file(s)"
 if [ "${BG:-0}" = 1 ]; then nohup "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1 & exit 0; fi

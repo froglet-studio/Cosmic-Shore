@@ -126,6 +126,37 @@ class Archive:
         return True
 
 
+def lineage_of(c):
+    """The root seed a genome descends from: children copy their parent's meta, so the seed's name survives (tuning
+    suffixes such as __tuned or __jt are dropped, so a tuned seed and its descendants count as one lineage)."""
+    m = c["genome"].meta or {}
+    name = m.get("name") or os.path.splitext(os.path.basename(m.get("src", "") or ""))[0] or "?"
+    return name.split("__")[0]
+
+
+def survivors(cands, key, mu, cap_share):
+    """The mu best by key, unique by bytes, with at most ceil(cap_share * mu) from any one lineage (0 = no cap); the
+    cap is filled from the overflow only when too few lineages remain. Process mining (2026-11-10) found the 12
+    genomes closest to Amoebius on six islands all descended from one tuned seed: cross-island resume and immigrants
+    had collapsed the population to a monoculture."""
+    cap = max(1, int(np.ceil(cap_share * mu))) if cap_share > 0 else None
+    seen, out, spill, count = set(), [], [], {}
+    for c in sorted(cands, key=key):
+        b = c["genome"].to_bytes()
+        if b in seen:
+            continue
+        seen.add(b)
+        L = lineage_of(c)
+        if cap and count.get(L, 0) >= cap:
+            spill.append(c)
+            continue
+        count[L] = count.get(L, 0) + 1
+        out.append(c)
+        if len(out) >= mu:
+            return out
+    return out + spill[:mu - len(out)]
+
+
 def leaky(x, leak=0.1):
     return x if x > 0 else leak * x
 
@@ -351,8 +382,7 @@ def run(args):
     for c in pop:
         archive.add(c)
         elites.add(c)
-    pop.sort(key=lambda c: c["dist"])
-    pop = pop[:args.mu]
+    pop = survivors(pop, lambda c: c["dist"], args.mu, args.lineage_cap)
     regime = COMPLEXIFY
     peak = min(c["dist"] for c in pop)
     since = 0
@@ -367,7 +397,7 @@ def run(args):
         parents = [c["genome"] for c in pop]
         extra = [m["genome"] for m in archive.members] + [m["genome"] for m in elites.cells.values()]
         kids = []
-        if args.share and gen > 0 and gen % args.migrate_every == 0:
+        if args.share and args.migrate_every > 0 and gen > 0 and gen % args.migrate_every == 0:
             kids += immigrants(args, rng, k=args.migrants)
         n_tune = int(round(args.lam * args.tune))
         best_first = sorted(pop, key=lambda c: c["dist"])
@@ -411,17 +441,7 @@ def run(args):
             prev_min = min(ok_pop) if ok_pop else 1e9
             new_min = min((c["zbytes"] for c in allc if c["dist"] <= floor), default=1e9)
             since = 0 if new_min < prev_min else since + 1
-        allc.sort(key=key)
-        seen, nxt = set(), []
-        for c in allc:
-            b = c["genome"].to_bytes()
-            if b in seen:
-                continue
-            seen.add(b)
-            nxt.append(c)
-            if len(nxt) >= args.mu:
-                break
-        pop = nxt
+        pop = survivors(allc, key, args.mu, args.lineage_cap)
         med_size = float(np.median([c["zbytes"] for c in pop]))
         flipped = False
         if regime == COMPLEXIFY and (since >= args.patience or med_size > args.budget):
@@ -544,7 +564,9 @@ def main(argv=None):
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--share", default=None, help="shared folder of islands, e.g. /mnt/project-files/amoebius-genome/runs")
     ap.add_argument("--island", default=None, help="this island's name under --share")
-    ap.add_argument("--migrate-every", type=int, default=10)
+    ap.add_argument("--migrate-every", type=int, default=10, help="generations between immigrant draws (0 = none)")
+    ap.add_argument("--lineage-cap", type=float, default=0.25,
+                    help="largest share of the mu survivors one lineage (root seed) may hold; 0 = no cap")
     ap.add_argument("--migrants", type=int, default=4)
     args = ap.parse_args(argv)
     if args.ss:
