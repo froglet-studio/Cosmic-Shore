@@ -204,6 +204,10 @@ def main(argv=None):
     ap.add_argument("--front", action="append", default=[], help="name=pareto.json (any island's or the seedbank's)")
     ap.add_argument("--genome", nargs="*", default=[])
     ap.add_argument("--frames", type=int, default=60)
+    ap.add_argument("--windows", type=int, default=1,
+                    help="`score`: judge N 4-second windows of each genome, --hop seconds apart, and report the mean "
+                         "and each window's v3 score (does a genome hold up past the frames the search judged?)")
+    ap.add_argument("--hop", type=float, default=8.0)
     a = ap.parse_args(argv)
     J = Judge(a.net, a.res, a.n, a.reels)
     if a.cmd == "calibrate":
@@ -227,23 +231,29 @@ def main(argv=None):
     for name, r in items:
         try:
             g = Genome.from_json(r["genome"])
-            fr = sample(R.render(g, a.frames), a.n)
-            j = J.score_many([fr])[0]
-            j2 = J2.score_many([fr])[0] if J2 else {}
+            frs = [sample(R.render(g, a.frames, t_shift=k * a.hop), a.n) for k in range(max(1, a.windows))]
+            js = J.score_many(frs)
+            j2s = J2.score_many(frs) if J2 else []
         except Exception as e:  # a genome that no longer renders is reported, not fatal
             print(f"{name}: {type(e).__name__}: {e}", file=sys.stderr)
             continue
+        j = {k: float(np.mean([x[k] for x in js])) for k in js[0]}  # each net: the mean over the windows
+        j2 = {k: float(np.mean([x[k] for x in j2s])) for k in j2s[0]} if j2s else {}
         meta = (r.get("genome", {}).get("meta", {}) or {})
         row = {"front": name, "zbytes": g.size(), "nodes": len(g.nodes), "stat": r.get("stat"), "hold": r.get("hold"),
                "crit": r.get("crit"), "dist": r.get("dist"), "src": meta.get("name") or r.get("src") or r.get("name"),
                **j, **{f"{a.also}_{k}": v for k, v in j2.items()}}
         out.append(row)
-        if j2:  # v3: the larger of the two nets
-            row["judge_v3"] = max(j["judge"], j2["judge"])
-            row["judge_hold_v3"] = max(j["judge_hold"], j2["judge_hold"])
+        if j2:  # v3: the larger of the two nets in each window, then the mean over windows (as search.py scores)
+            wins = [max(x["judge"], y["judge"]) for x, y in zip(js, j2s)]
+            row["judge_v3"] = float(np.mean(wins))
+            row["judge_hold_v3"] = float(np.mean([max(x["judge_hold"], y["judge_hold"]) for x, y in zip(js, j2s)]))
+            if len(wins) > 1:
+                row["windows_v3"] = [round(w, 3) for w in wins]
         print(f"{name:10s} z {row['zbytes']:5d} stat {row['stat'] or 0:6.3f} judge {j['judge']:5.2f} "
               f"judge_hold {j['judge_hold']:5.2f}" + (f"  {a.also} {j2['judge']:5.2f}/{j2['judge_hold']:5.2f}"
                                                       f"  v3 {row['judge_v3']:5.2f}/{row['judge_hold_v3']:5.2f}" if j2 else "")
+              + (f"  windows {' '.join(f'{w:.2f}' for w in row['windows_v3'])}" if "windows_v3" in row else "")
               + f"  {str(row['src'])[:40]}", flush=True)
     json.dump(out, open(a.out, "w"), indent=1)
 
