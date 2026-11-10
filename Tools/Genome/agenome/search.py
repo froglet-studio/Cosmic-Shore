@@ -1,14 +1,25 @@
-"""Population search: regime-switching Pareto ("diamond") over (distance to Amoebius down, genome bytes down),
-with a MAP-Elites side archive for diversity and a learned critic retrained as the population moves.
+"""Population search over (distance to Amoebius down, genome bytes down), with a MAP-Elites side archive for
+diversity and a learned critic retrained as the population moves.
 
-The regimes are Garrett's pareto_complexity.py (NCA Ecology Lab) lifted from a (1+lambda) climber to a population:
-  COMPLEXIFY - select on distance to Amoebius; growth mutations (insert, duplicate, swap, crossover) dominate.
-  COMPRESS   - hold distance with a leaky-ReLU floor (peak / retain), minimise compressed bytes; shrink mutations
-               (delete, prune, param -> default) dominate.
-Flips on plateau (patience) or when the population's median size exceeds the byte budget.
+Four pieces, each switchable so any run can be compared with the search it replaced (agenome/selection.py):
+  --survival pareto   (default) non-dominated sorting inside a region of interest (dist within --span of the best,
+                      bytes under --budget), each front ordered by hypervolume contribution (SMS-EMOA): the best
+                      genome and the smallest genome near it survive together, every generation.
+             diamond  the regime switch of Garrett's pareto_complexity.py (NCA Ecology Lab) lifted to a population:
+                      COMPLEXIFY selects on distance with growth mutations; COMPRESS holds distance above a leaky-ReLU
+                      floor (peak / retain) and minimises bytes with shrink mutations; flips on plateau (--patience)
+                      or when the median size passes --budget.
+  --parents tournament  (default) a tournament of 3 on distance (bytes in COMPRESS);
+            lexicase    epsilon-lexicase over the feature groups, judge nets, critic and size.
+  --operators fixed     (default) the regime's mix (COMPLEXIFY grows, COMPRESS shrinks 70%, PARETO shrinks --shrink);
+              adaptive  probability matching over param / struct / xover / shrink, credited by each child's gain
+                        over its parent.
+  --tuner cma         (default) the --tune share is a sep-CMA-ES emitter on the best genome's parameter bytes;
+          random      the --tune share is random byte tweaks around the best few.
+The A/B that chose the defaults: SEARCH.md beside this package.
 
 Distance to Amoebius = stat (features.py, fixed) + critic_w * softplus(-critic logit) (critic.py, retrained every
---critic-every generations on Amoebius train frames vs the frames the search just rendered).
+--critic-every generations on Amoebius train frames vs the frames the search just rendered) + judge_w * judge.
 
 Run:  python3 -m agenome.search --run RUN_DIR --stats STATS.npz --hold HOLD.npz --real 'frames.npy globs'
                                 --seeds 'GLOB' [--workers 4] [--gens 200]
@@ -26,8 +37,13 @@ import numpy as np
 
 from .genome import Genome, mutate, crossover, _delete
 from .ops import OPS
+from .selection import CMAEmitter, Lexicase, Matching, hypervolume, roi_bound, roi_order
 
-COMPLEXIFY, COMPRESS = "COMPLEXIFY", "COMPRESS"
+COMPLEXIFY, COMPRESS, PARETO = "COMPLEXIFY", "COMPRESS", "PARETO"
+ARMS = ("param", "struct", "xover", "shrink")
+# the fixed search's mix, roughly: grow() is 15% crossover and otherwise one or two mutations at 30% structural, and
+# the PARETO fixed mix shrinks a quarter of the time
+PRIOR_MIX = {"param": 0.40, "struct": 0.25, "xover": 0.12, "shrink": 0.23}
 
 # ---------------------------------------------------------------------- worker side
 _R = None
@@ -184,6 +200,52 @@ def grow(g, rng, pool):
     for _ in range(1 + int(rng.random() < 0.4)):
         h = mutate(h, rng, structural=0.3)
     return h.ensure_root().prune()
+
+
+def vary(p, rng, regime, donors, parents, aos=None, shrink_p=0.25):
+    """One child of p and the name of the operator that made it. Adaptive (aos given): the arm aos picks, i.e. one or
+    two parameter tweaks, a structural mutation (swap, insert, delete, rewire, dup), a typed subgraph crossover with a
+    donor, or a shrink. Fixed: COMPLEXIFY grows; COMPRESS shrinks 70% of the time; PARETO shrinks shrink_p of the
+    time and grows otherwise."""
+    if aos is not None:
+        arm = aos.pick(rng)
+        if arm == "param":
+            h = p
+            for _ in range(1 + int(rng.random() < 0.4)):
+                h = mutate(h, rng, structural=0.0)
+            return h.ensure_root().prune(), arm
+        if arm == "struct":
+            h = mutate(p, rng, structural=1.0)
+            if rng.random() < 0.4:
+                h = mutate(h, rng, structural=0.3)
+            return h.ensure_root().prune(), arm
+        if arm == "xover" and donors:
+            return crossover(p, rng.choice(donors), rng).ensure_root().prune(), arm
+        return shrink(p, rng), "shrink"
+    if regime == COMPLEXIFY:
+        return grow(p, rng, donors), "grow"
+    if regime == COMPRESS:
+        return (shrink(p, rng), "shrink") if rng.random() < 0.7 else (grow(p, rng, parents), "grow")
+    return (shrink(p, rng), "shrink") if rng.random() < shrink_p else (grow(p, rng, donors), "grow")
+
+
+def lexicase_matrix(cands, critic_on=False):
+    """The cases epsilon-lexicase selects parents on: each feature group's distance (features.GROUPS, first window),
+    each judge net's score, the critic's term and log bytes. A case a candidate lacks is nan (never best)."""
+    from .features import GROUPS
+    from .critic import critic_distance
+    rows = []
+    nj = max((len(c.get("judges") or []) for c in cands), default=0)
+    for c in cands:
+        g = c.get("groups") or {}
+        row = [float(g.get(k, np.nan)) for k in GROUPS]
+        js = list(c.get("judges") or [])
+        row += [float(x) for x in js] + [np.nan] * (nj - len(js))
+        if critic_on:
+            row.append(critic_distance(c["crit"]) if "crit" in c else np.nan)
+        row.append(math.log(max(1, c["zbytes"])))
+        rows.append(row)
+    return np.asarray(rows, float)
 
 
 # ---------------------------------------------------------------------- pareto utilities
@@ -523,10 +585,15 @@ def run(args):
         archive.add(c)
         elites.add(c)
     pop = survivors(pop, lambda c: c["dist"], args.mu, args.lineage_cap)
-    regime = COMPLEXIFY
+    pareto = args.survival == "pareto"
+    regime = PARETO if pareto else COMPLEXIFY
     peak = min(c["dist"] for c in pop)
     since = 0
     evals = len(seeds)
+    aos = Matching(ARMS, p0=PRIOR_MIX, p_min=args.aos_min, alpha=args.aos_rate) \
+        if args.operators == "adaptive" else None
+    emitter = CMAEmitter(block=args.cma_block, gens_per_block=args.cma_gens, sigma=args.cma_sigma,
+                         sigma_min=args.cma_sigma_min, seed=args.seed) if args.tuner == "cma" else None
     for gen in range(args.gens):
         cinfo = {}
         moved = False
@@ -545,51 +612,82 @@ def run(args):
             peak = min(c["dist"] for c in pop)  # the yardstick moved: re-anchor the floor
         parents = [c["genome"] for c in pop]
         extra = [m["genome"] for m in archive.members] + [m["genome"] for m in elites.cells.values()]
-        kids = []
+        extra_c = archive.members + list(elites.cells.values())
+        kids, tags, pdist = [], [], []
         if args.share and args.migrate_every > 0 and gen > 0 and gen % args.migrate_every == 0:
-            kids += immigrants(args, rng, k=args.migrants, have={lineage_of(c) for c in pop})
-        n_tune = int(round(args.lam * args.tune))
+            imm = immigrants(args, rng, k=args.migrants, have={lineage_of(c) for c in pop})
+            kids += imm
+            tags += ["imm"] * len(imm)
+            pdist += [None] * len(imm)
+        n_tune = min(int(round(args.lam * args.tune)), max(0, args.lam - len(kids)))
         best_first = sorted(pop, key=lambda c: c["dist"])
-        for k in range(max(0, args.lam - len(kids))):
-            if k < n_tune:
-                # TUNE: parameter-only steps around the current best few (a hill climb inside the population);
-                # the seed thread's 150-eval param climb took a seed from 4.40 to 1.57 where structural search stalled
-                p = best_first[min(int(rng.expovariate(0.7)), len(best_first) - 1)]["genome"]
-                kids.append(mutate(p, rng, structural=0.0).ensure_root().prune())
-                continue
+        n_cma, i_cma = 0, len(kids)
+        if emitter is not None and n_tune:
+            # TUNE as sep-CMA-ES on the leader's parameter bytes: the offline tuner's optimiser (agenome.tune) run as
+            # an emitter inside the loop, so every structure that takes the lead is tuned while the structural search
+            # goes on
+            ck = emitter.ask(best_first[0], n_tune)
+            n_cma = len(ck)
+            kids += ck
+            tags += ["cma"] * n_cma
+            pdist += [emitter.anchor_dist] * n_cma
+        for _ in range(n_tune - n_cma):
+            # TUNE: parameter-only steps around the current best few (a hill climb inside the population);
+            # the seed thread's 150-eval param climb took a seed from 4.40 to 1.57 where structural search stalled
+            pc = best_first[min(int(rng.expovariate(0.7)), len(best_first) - 1)]
+            kids.append(mutate(pc["genome"], rng, structural=0.0).ensure_root().prune())
+            tags.append("tune")
+            pdist.append(pc["dist"])
+        lex = Lexicase(lexicase_matrix(pop, crit.on and crit.trained)) if args.parents == "lexicase" else None
+        donors = parents + extra
+        while len(kids) < args.lam:
             if rng.random() < 0.6:
-                p = min(rng.sample(pop, min(3, len(pop))),
-                        key=lambda c: c["dist"] if regime == COMPLEXIFY else c["zbytes"])["genome"]
+                if lex is not None:
+                    pc = pop[lex.select(rng)]
+                else:
+                    pc = min(rng.sample(pop, min(3, len(pop))),
+                             key=lambda c: c["zbytes"] if regime == COMPRESS else c["dist"])
             else:
-                p = rng.choice(extra) if extra else rng.choice(parents)
-            if regime == COMPLEXIFY:
-                kids.append(grow(p, rng, parents + extra))
-            else:
-                kids.append(shrink(p, rng) if rng.random() < 0.7 else grow(p, rng, parents))
+                pc = rng.choice(extra_c) if extra_c else rng.choice(pop)
+            child, tag = vary(pc["genome"], rng, regime, donors, parents, aos, args.shrink)
+            kids.append(child)
+            tags.append(tag)
+            pdist.append(pc["dist"])
         res = evaluate(kids)
         evals += len(kids)
+        for c, t in zip(res, tags):
+            c["op"] = t
+        if n_cma:
+            emitter.tell([c["dist"] for c in res[i_cma:i_cma + n_cma]])
         nerr = sum(1 for c in res if not c["ok"])
         for c in res:
             archive.add(c)
             elites.add(c)
         allc = pop + [c for c in res if c["ok"]]
         best_now = min(c["dist"] for c in allc)
-        floor = peak / args.retain
-        if regime == COMPLEXIFY:
-            if best_now < peak - 1e-4:
-                peak = best_now
-                since = 0
-            else:
-                since += 1
-            key = lambda c: c["dist"] + args.tiebreak * c["zbytes"]
+        if pareto:
+            peak = best_now
+            floor = roi_bound(peak, args.span)
+            order = roi_order([(c["dist"], c["zbytes"]) for c in allc], args.span, args.budget)
+            rank = {id(allc[i]): r for r, i in enumerate(order)}
+            key = lambda c: rank[id(c)]
         else:
-            key = lambda c: c["zbytes"] + args.beta * leaky(c["dist"] - floor)
-            if best_now < peak - 1e-4:
-                peak = best_now
-            ok_pop = [c["zbytes"] for c in pop if c["dist"] <= floor]
-            prev_min = min(ok_pop) if ok_pop else 1e9
-            new_min = min((c["zbytes"] for c in allc if c["dist"] <= floor), default=1e9)
-            since = 0 if new_min < prev_min else since + 1
+            floor = peak / args.retain
+            if regime == COMPLEXIFY:
+                if best_now < peak - 1e-4:
+                    peak = best_now
+                    since = 0
+                else:
+                    since += 1
+                key = lambda c: c["dist"] + args.tiebreak * c["zbytes"]
+            else:
+                key = lambda c: c["zbytes"] + args.beta * leaky(c["dist"] - floor)
+                if best_now < peak - 1e-4:
+                    peak = best_now
+                ok_pop = [c["zbytes"] for c in pop if c["dist"] <= floor]
+                prev_min = min(ok_pop) if ok_pop else 1e9
+                new_min = min((c["zbytes"] for c in allc if c["dist"] <= floor), default=1e9)
+                since = 0 if new_min < prev_min else since + 1
         pop = survivors(allc, key, args.mu, args.lineage_cap)
         med_size = float(np.median([c["zbytes"] for c in pop]))
         flipped = False
@@ -597,9 +695,29 @@ def run(args):
             regime, since, flipped = COMPRESS, 0, True
         elif regime == COMPRESS and since >= args.patience:
             regime, since, flipped = COMPLEXIFY, 0, True
+        # per operator: children, survivors, and the mean relative gain over the parent's dist (clipped at 25%, 0 for
+        # a child that is worse or failed). The gain is the adaptive operator choice's credit: survival credit was
+        # measured paying shrink for filling the compact end of the band while the best dist stalled (2026-11-10)
+        alive = {id(c) for c in pop}
+        opstat, gains = {}, {}
+        for c, pd in zip(res, pdist):
+            t = c.get("op", "?")
+            s = opstat.setdefault(t, [0, 0, 0.0])
+            s[0] += 1
+            s[1] += int(id(c) in alive)
+            gain = 0.0
+            if pd is not None and c.get("ok"):
+                gain = min(0.25, max(0.0, (pd - c["dist"]) / max(abs(pd), 1e-9)))
+            s[2] += gain
+            gains.setdefault(t, []).append(gain)
+        for s in opstat.values():
+            s[2] = round(s[2] / max(1, s[0]), 4)
+        if aos is not None:
+            aos.update({t: g for t, g in gains.items() if t in aos.arms})
         best = min(pop, key=lambda c: c["dist"])
         aud = audit(best) if judge.on else None
         simplest_ok = min((m for m in archive.members if m["dist"] <= floor), key=lambda m: m["zbytes"], default=best)
+        front = [(m["dist"], m["zbytes"]) for m in archive.members]
         rec = {"gen": gen, "t": round(time.time() - t_start, 1), "evals": evals, "regime": regime, "flip": flipped,
                "peak": round(peak, 4), "best_dist": round(best["dist"], 4), "best_stat": round(best["stat"], 4),
                "best_crit": round(best.get("crit", 0.0), 3), "best_hold": round(best.get("hold", -1), 4),
@@ -611,10 +729,17 @@ def run(args):
                "median_zbytes": med_size, "archive": len(archive.members), "elites": len(elites.cells),
                "errors": nerr, "sec_per_eval": round(float(np.mean([c["sec"] for c in res])), 3),
                "best_src": best["genome"].meta.get("src", best["genome"].meta.get("name", "")),
+               # the front inside the band (dist <= floor, bytes < budget): how many survivors live there and the
+               # area the archive covers there
+               "floor": round(floor, 4), "in_band": sum(1 for c in pop if c["dist"] <= floor),
+               "hv_band": round(hypervolume(front, (floor, args.budget)), 3),
+               "ops": opstat, "best_op": best.get("op"), **({"aos": aos.state()} if aos is not None else {}),
+               **(emitter.state() if emitter is not None else {}),
+               **({"front": [[round(d, 4), z] for d, z in sorted(front)]} if args.log_front else {}),
                **cinfo, "best_groups": best.get("groups")}
         log.write(json.dumps(rec) + "\n")
         log.flush()
-        print(json.dumps({k: v for k, v in rec.items() if k != "best_groups"}), flush=True)
+        print(json.dumps({k: v for k, v in rec.items() if k not in ("best_groups", "front", "ops")}), flush=True)
         if gen % args.save_every == 0 or gen == args.gens - 1:
             save_state(args.run, pop, archive, elites, gen)
             publish(args, args.run)
@@ -737,10 +862,36 @@ def main(argv=None):
     ap.add_argument("--mu", type=int, default=32)
     ap.add_argument("--lam", type=int, default=32)
     ap.add_argument("--frames", type=int, default=60)
+    ap.add_argument("--survival", default="pareto", choices=["pareto", "diamond"],
+                    help="pareto: non-dominated fronts inside the band (dist within --span of the best, bytes under "
+                         "--budget) ordered by hypervolume contribution, every generation; diamond: the COMPLEXIFY / "
+                         "COMPRESS regime switch (--patience, --retain, --beta, --tiebreak)")
+    ap.add_argument("--span", type=float, default=0.05,
+                    help="pareto: the band is dist <= best + span * |best| (0.05 = give up at most 5%% of fidelity "
+                         "for bytes)")
+    ap.add_argument("--parents", default="tournament", choices=["lexicase", "tournament"],
+                    help="how the 60%% of parents drawn from the population are chosen: a tournament of 3 on dist "
+                         "(default), or epsilon-lexicase over the feature groups, judge nets, critic and bytes (a wash "
+                         "in the 2026-11-10 A/B: SEARCH.md)")
+    ap.add_argument("--operators", default="fixed", choices=["adaptive", "fixed"],
+                    help="fixed (default): the regime's mix; adaptive: probability matching over param / struct / "
+                         "xover / shrink, credited by each child's gain over its parent (a wash in the A/B: SEARCH.md)")
+    ap.add_argument("--shrink", type=float, default=0.25, help="pareto + fixed operators: share of shrink children")
+    ap.add_argument("--aos-min", type=float, default=0.1, help="adaptive operators: smallest probability of an arm")
+    ap.add_argument("--aos-rate", type=float, default=0.2, help="adaptive operators: learning rate per generation")
+    ap.add_argument("--tuner", default="cma", choices=["cma", "random"],
+                    help="the --tune share: a sep-CMA-ES emitter on the leader's parameter bytes, or random byte "
+                         "tweaks around the best few")
+    ap.add_argument("--cma-block", type=int, default=24, help="cma tuner: parameter bytes tuned together")
+    ap.add_argument("--cma-gens", type=int, default=8, help="cma tuner: generations per block")
+    ap.add_argument("--cma-sigma", type=float, default=12.0, help="cma tuner: first block's step, byte units")
+    ap.add_argument("--cma-sigma-min", type=float, default=2.0, help="cma tuner: smallest block start step")
+    ap.add_argument("--log-front", action="store_true", help="write the archive's (dist, bytes) front every generation")
     ap.add_argument("--patience", type=int, default=8)
     ap.add_argument("--retain", type=float, default=0.97)
     ap.add_argument("--beta", type=float, default=300.0)
-    ap.add_argument("--budget", type=float, default=1500.0)
+    ap.add_argument("--budget", type=float, default=1500.0,
+                    help="bytes: diamond, the median size that forces COMPRESS; pareto, the band's size limit")
     ap.add_argument("--tiebreak", type=float, default=2e-5)
     ap.add_argument("--save-every", type=int, default=5)
     ap.add_argument("--seed", type=int, default=0)

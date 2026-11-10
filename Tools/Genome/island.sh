@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run one search island of the Amoebius genome search on this machine (any Linux box with python3 >= 3.10).
 #   bash island.sh <island-name> [hours]
-# It copies the code from the shared project folder, installs what it needs, and runs the diamond search with the
+# It copies the code from the shared project folder, installs what it needs, and runs the Pareto search with the
 # learned critic, publishing its Pareto front under runs/<island-name>/ and importing other islands' best every
 # 10 generations. Stop it with: pkill -f agenome.search
 # Optional: SEEDS="glob glob ..." picks the starting lineages (default: every seed folder but the raw wz3 ones);
@@ -18,6 +18,10 @@
 # every REJUDGE generations (default 6) judges the survivors and the front again on windows they have not seen and
 # folds them in: two FIXED windows get fitted too (climbed genomes read 0.3-0.6 worse on windows they never saw).
 # AUDIT="24,28" (default) judges each generation's best on windows selection never uses, logged as best_audit.
+# The search (agenome/search.py, SEARCH.md) defaults to pareto survival and the CMA tuner, the two pieces that won the
+# 2026-11-10 A/B; SURVIVAL=diamond TUNER=random runs the search as it was before (set one of them for an A/B island),
+# PARENTS=lexicase and OPERATORS=adaptive switch on the two pieces that were a wash; SPAN=0.05 is the pareto band
+# (fidelity given up for bytes).
 # The reels are three sources (reel05 re-cuts reel03, reel04 re-cuts reel02): reels 1, 2, 4 train every measure and
 # reels 3, 5 are held out (v2 fitness, 2026-11-10 18:00).
 # It runs in the FOREGROUND (a cloud container kills detached processes once it idles after a turn): start it as a
@@ -69,6 +73,8 @@ CMD=(python3 -m agenome.search --run "$WORK/run_$NAME" \
   --judge-windows "${WINDOWS:-1}" --judge-hop "${HOP:-8}" --window-mode "${WINMODE:-fixed}" \
   --window-span "${SPAN:-20}" --window-step "${STEP:-2}" --audit-offsets "${AUDIT:-24,28}" \
   --rejudge-every "$( [ "${WINMODE:-fixed}" = random ] && echo "${REJUDGE:-6}" || echo 0 )" \
+  --survival "${SURVIVAL:-pareto}" --parents "${PARENTS:-tournament}" --operators "${OPERATORS:-fixed}" \
+  --tuner "${TUNER:-cma}" --span "${SPAN:-0.05}" \
   --share "${RUNS:-$SHARE/runs}" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
 echo "island $NAME: log $WORK/run_$NAME.out ; results in $SHARE/runs/$NAME/ ; resuming from ${#OWN[@]} own file(s)"
 if [ "${BG:-0}" = 1 ]; then nohup "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1 & exit 0; fi
