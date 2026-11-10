@@ -38,7 +38,7 @@ F=$SHARE/fitness
 mkdir -p "$WORK/reels"
 for d in "$F"/reels_256x144/*/; do n=$(basename "$d"); mkdir -p "$WORK/reels/$n"; cp -n "$d/frames.npy" "$WORK/reels/$n/" ; done
 WORKERS=${WORKERS:-$(nproc)}
-SEEDS=${SEEDS:-"$SHARE/seeds/[!wt]*/*.json $SHARE/seeds/theta/*.json $SHARE/designs/*/*.json $SHARE/genome/handmade/*.json"}
+SEEDS=${SEEDS:-"$SHARE/seeds/[!wt]*/*.json $SHARE/seeds/theta/*.json $SHARE/seeds/designed/*/*.json $SHARE/hier/seeds/*.json $SHARE/genome/handmade/*.json"}
 set -f; read -r -a SEED_ARGS <<< "$SEEDS"; set +f
 RESUME_ARGS=()
 OWN=()
