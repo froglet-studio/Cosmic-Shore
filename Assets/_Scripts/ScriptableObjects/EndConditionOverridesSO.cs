@@ -111,6 +111,11 @@ namespace CosmicShore.ScriptableObjects
         /// summed across the domain's pilots.</summary>
         public const int DefaultFlatlinePointTarget = 90;
 
+        /// <summary>Kelpwood bite target used when <see cref="kelpwoodBiteTarget"/> is 0. One BITE - a creature an
+        /// Angler locked on a rival reaching its hull (a Strike-class combat hit) - is one point
+        /// (KelpwoodScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultKelpwoodBiteTarget = 12;
+
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
         /// "most standing at the whistle" is the only honest end condition.</summary>
@@ -528,6 +533,10 @@ namespace CosmicShore.ScriptableObjects
                  "2026-11-10); a rung can be re-tuned on its own once timed matches say so.")]
         public List<int> flatlinePointTargetByIntensity = new() { 90, 90, 90, 90 };
 
+        [Tooltip("Kelpwood: BITES a DOMAIN needs to win (race to N). A creature an Angler locked on a rival biting " +
+                 "its hull is one bite, summed across the domain's pilots. 0 = default (12).")]
+        [Min(0)] public int kelpwoodBiteTarget = 12;
+
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
         [Min(0)] public int tapestryRoundSeconds = 90;
@@ -607,6 +616,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int jackstrawStrikeTargetBuild = 3;
         [Min(0)] public int flatlinePointTargetBuild = 90;
         [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 90, 90, 90, 90 };
+        [Min(0)] public int kelpwoodBiteTargetBuild = 12;
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
@@ -1024,6 +1034,13 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
+        /// Kelpwood bite target ("first domain to N bites"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultKelpwoodBiteTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetKelpwoodBiteTarget() =>
+            kelpwoodBiteTarget > 0 ? kelpwoodBiteTarget : DefaultKelpwoodBiteTarget;
+
+        /// <summary>
         /// Tapestry round length in seconds: the configured value when &gt; 0, otherwise
         /// <see cref="DefaultTapestryRoundSeconds"/>. Read by TapestryTimeTurnMonitor at
         /// StartMonitor on every peer, so the clock and the whistle cannot disagree.
@@ -1135,6 +1152,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Jackstraw                 => GetJackstrawStrikeTarget(),
                 // Scalar only, as for Cleave: the real answer is per-intensity (GetFlatlinePointTarget(int)).
                 GameModes.Flatline                  => GetFlatlinePointTarget(),
+                GameModes.Kelpwood                  => GetKelpwoodBiteTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush.
@@ -1214,6 +1232,7 @@ namespace CosmicShore.ScriptableObjects
             jackstrawStrikeTarget == jackstrawStrikeTargetBuild &&
             flatlinePointTarget == flatlinePointTargetBuild &&
             SameInts(flatlinePointTargetByIntensity, flatlinePointTargetByIntensityBuild) &&
+            kelpwoodBiteTarget == kelpwoodBiteTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
@@ -1271,6 +1290,7 @@ namespace CosmicShore.ScriptableObjects
             jackstrawStrikeTarget = jackstrawStrikeTargetBuild;
             flatlinePointTarget = flatlinePointTargetBuild;
             flatlinePointTargetByIntensity = CopyInts(flatlinePointTargetByIntensityBuild);
+            kelpwoodBiteTarget = kelpwoodBiteTargetBuild;
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
@@ -1329,6 +1349,7 @@ namespace CosmicShore.ScriptableObjects
             jackstrawStrikeTargetBuild = jackstrawStrikeTarget;
             flatlinePointTargetBuild = flatlinePointTarget;
             flatlinePointTargetByIntensityBuild = CopyInts(flatlinePointTargetByIntensity);
+            kelpwoodBiteTargetBuild = kelpwoodBiteTarget;
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;

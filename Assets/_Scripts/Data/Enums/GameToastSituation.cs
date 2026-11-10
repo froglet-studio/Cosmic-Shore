@@ -231,6 +231,9 @@ namespace CosmicShore.Data
         // Flatline, the Brittle Star's charge game (_Scripts/Controller/Arcade/FLATLINE.md). Its race beats are the shared
         // 128-130 (DomainRaceToasts); a cord or saber Strike is 86 (StrikeLanded). Posted to the LOCAL pilot only.
         FlatlineHint = 159,           // once, at the start: panes stop rounds, cords cut through, get off a ring's plane
+        // Kelpwood, the Angler's charge game (_Scripts/Controller/Arcade/KELPWOOD.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a bite is 86 (StrikeHitsLanded rose). Posted to the LOCAL pilot only.
+        KelpwoodHint = 161,             // once, at the start: lock a rival with the eraser; tame the herds in the kelp
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

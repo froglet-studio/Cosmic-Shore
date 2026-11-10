@@ -550,6 +550,10 @@ namespace CosmicShore.UI
                     // The Bends' provider: the nearest pilot this player may hit. The panes hide pilots from rounds
                     // and the cords reach through them, so the question every second is where the rival is.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Flatline");
+                case GameModes.Kelpwood:
+                    // The Bends' provider again: the nearest pilot this player may bite. In the kelp the hard half is
+                    // keeping them under the nose long enough to lock; the arrow answers where.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Kelpwood");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's
