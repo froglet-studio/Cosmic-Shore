@@ -6,7 +6,9 @@
 # 10 generations. Stop it with: pkill -f agenome.search
 # Optional: SEEDS="glob glob ..." picks the starting lineages (default: every seed folder but the raw wz3 ones);
 # RESUME=none starts without the other islands' fronts; WORKERS=n; TUNE=0.25 (share of parameter-only steps);
-# SS=2 renders every clip at 2x and filters it down (closer to the downscaled reels, 2 to 2.7x slower).
+# SS=2 renders every clip at 2x and filters it down (closer to the downscaled reels, 2 to 2.7x slower);
+# JUDGE=1.0 adds the fixed perceptual judge (agenome/judge.py, ImageNet features vs the reels) to the fitness,
+# with STATW (weight of the statistics, default 1.0) and CRITICW (the online critic, default 0.5) beside it.
 set -euo pipefail
 NAME=${1:?island name}
 HOURS=${2:-6}
@@ -19,6 +21,11 @@ python3 -c "import moderngl, scipy, PIL, jax" 2>/dev/null || {
   python3 -m pip install --quiet scipy 2>/dev/null & python3 -m pip install --quiet jaxlib 2>/dev/null &
   python3 -m pip install --quiet moderngl pillow numpy 2>/dev/null & wait
   python3 -m pip install --quiet "jax[cpu]" 2>/dev/null || true; }
+if [ "${JUDGE:-0}" != 0 ]; then
+  KERAS_BACKEND=jax python3 -c "import keras, h5py" 2>/dev/null || python3 -m pip install --quiet keras h5py 2>/dev/null
+  mkdir -p "$HOME/.keras/models" && cp -n "$SHARE"/fitness/judge/*.h5 "$HOME/.keras/models/" 2>/dev/null || true
+fi
+export KERAS_BACKEND=jax
 command -v Xvfb >/dev/null || { echo "need Xvfb (apt-get install -y xvfb)"; exit 1; }
 F=$SHARE/fitness
 mkdir -p "$WORK/reels"
@@ -34,6 +41,7 @@ nohup python3 -m agenome.search --run "$WORK/run_$NAME" \
   --stats "$F/target_stats_reels_train.npz" --hold "$F/target_stats_reel05_hold.npz" \
   --real "$WORK/reels/reel0[1-4]/frames.npy" --real-hold "$WORK/reels/reel05/frames.npy" \
   --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
+  --judge-w "${JUDGE:-0}" --stat-w "${STATW:-1.0}" --critic-w "${CRITICW:-0.5}" \
   --share "$SHARE/runs" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM \
   > "$WORK/run_$NAME.out" 2>&1 &
 echo "island $NAME running: tail -f $WORK/run_$NAME.out ; results in $SHARE/runs/$NAME/"

@@ -54,7 +54,7 @@ def _init(stats_path, hold_path, lp_threads, mem_gb=3.0):
 
 def _eval(payload):
     from .features import window_features
-    gj, n_frames = payload
+    gj, n_frames, n_judge = payload
     t0 = time.time()
     try:
         g = Genome.from_json(gj)
@@ -67,6 +67,8 @@ def _eval(payload):
                "frames": fr[np.linspace(0, len(fr) - 1, 4).astype(int)].copy()}
         if _HOLD is not None:
             res["hold"] = _HOLD.distance(f)["total"]
+        if n_judge:
+            res["jframes"] = fr[np.linspace(0, len(fr) - 1, n_judge).round().astype(int)].copy()
     except Exception as e:
         res = {"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"{type(e).__name__}: {e}"[:300],
                "nodes": 0, "luma": 0.0, "motion": 0.0}
@@ -166,10 +168,42 @@ def load_seeds(patterns, rng, limit=None):
     return out[:limit] if limit else out
 
 
+class JudgeState:
+    """The fixed perceptual judge (agenome.judge): KID of the clip's CNN features against the training reels, over
+    the level Amoebius' own held-out reel reaches (1.0). It never retrains, so a judged candidate keeps its score."""
+
+    def __init__(self, args):
+        self.on = args.judge_w > 0
+        self.n = args.judge_n if self.on else 0
+        self.Js = []
+        if self.on:
+            from .judge import Judge
+            # several nets, averaged: InceptionV3 and MobileNetV2 rank 30 genomes alike only at Spearman 0.79 (each has
+            # its own quirks, frame sampling is not the cause: 12 of 60 frames rank at 0.992), so the search climbs
+            # their mean and cannot ride one network's blind spot
+            self.Js = [Judge(net, "native", args.judge_n) for net in args.judge_net.split("+")]
+            print(f"judge: {args.judge_net}, {args.judge_n} frames, levels "
+                  f"{[round(J.level, 1) for J in self.Js]}", flush=True)
+
+    def score(self, cands):
+        if not self.on:
+            return
+        live = [c for c in cands if c.get("ok") and "jframes" in c]
+        if live:
+            per = [J.score_many([c["jframes"] for c in live]) for J in self.Js]
+            for k, c in enumerate(live):
+                c["judge"] = round(float(np.mean([p[k]["judge"] for p in per])), 4)
+                c["judge_hold"] = round(float(np.mean([p[k]["judge_hold"] for p in per])), 4)
+                c["judges"] = [round(p[k]["judge"], 3) for p in per]
+        for c in cands:
+            c.pop("jframes", None)
+
+
 class CriticState:
     def __init__(self, args):
         self.on = bool(args.real) and args.critic_w > 0
         self.w = args.critic_w
+        self.stat_w, self.judge_w = args.stat_w, args.judge_w
         self.c = None
         self.buf = []
         self.real = None
@@ -218,7 +252,8 @@ class CriticState:
                 c["dist"] = 99.0
                 continue
             cd = critic_distance(c["crit"]) if (self.on and self.trained and "crit" in c) else 0.0
-            c["dist"] = c["stat"] + self.w * cd
+            jd = c.get("judge", 10.0) if self.judge_w > 0 else 0.0
+            c["dist"] = self.stat_w * c["stat"] + self.w * cd + self.judge_w * jd
 
 
 def run(args):
@@ -239,6 +274,7 @@ def run(args):
     ctx = mp.get_context("spawn")
     state = {"pool": None}
     crit = CriticState(args)
+    judge = JudgeState(args)
 
     def new_pool():
         if state["pool"] is not None:
@@ -248,7 +284,7 @@ def run(args):
     new_pool()
 
     def evaluate(gs):
-        payload = [(g.to_json(), args.frames) for g in gs]
+        payload = [(g.to_json(), args.frames, judge.n) for g in gs]
         jobs = [state["pool"].apply_async(_eval, (p,)) for p in payload]
         res = []
         deadline = time.time() + 60 + 6.0 * len(jobs) / max(1, args.workers)
@@ -271,6 +307,7 @@ def run(args):
         for g, r in zip(gs, res):
             r["genome"] = g
         crit.add_fakes(res)
+        judge.score(res)
         crit.score(res)
         return res
 
@@ -379,6 +416,8 @@ def run(args):
         rec = {"gen": gen, "t": round(time.time() - t_start, 1), "evals": evals, "regime": regime, "flip": flipped,
                "peak": round(peak, 4), "best_dist": round(best["dist"], 4), "best_stat": round(best["stat"], 4),
                "best_crit": round(best.get("crit", 0.0), 3), "best_hold": round(best.get("hold", -1), 4),
+               **({"best_judge": best.get("judge"), "best_judge_hold": best.get("judge_hold"),
+                   "top_judge": min((c.get("judge", 99) for c in allc), default=None)} if judge.on else {}),
                "best_zbytes": best["zbytes"], "simplest_ok_zbytes": simplest_ok["zbytes"],
                "median_zbytes": med_size, "archive": len(archive.members), "elites": len(elites.cells),
                "errors": nerr, "sec_per_eval": round(float(np.mean([c["sec"] for c in res])), 3),
@@ -457,6 +496,11 @@ def main(argv=None):
     ap.add_argument("--tune", type=float, default=0.25, help="share of each generation spent on parameter-only steps around the best")
     ap.add_argument("--ss", type=int, default=None, help="supersampling factor for every render (sets AGENOME_SS; default 1)")
     ap.add_argument("--critic-w", type=float, default=0.5)
+    ap.add_argument("--judge-w", type=float, default=0.0,
+                    help="weight of the fixed perceptual judge (agenome.judge; 1.0 = Amoebius' own level); 0 = off")
+    ap.add_argument("--judge-net", default="inception+mobilenet", help="nets averaged by the judge, joined by +")
+    ap.add_argument("--judge-n", type=int, default=12, help="frames per clip the judge sees")
+    ap.add_argument("--stat-w", type=float, default=1.0, help="weight of the fixed statistics in dist")
     ap.add_argument("--critic-every", type=int, default=6)
     ap.add_argument("--critic-steps", type=int, default=120)
     ap.add_argument("--seeds", nargs="*", default=[])
