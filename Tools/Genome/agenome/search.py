@@ -267,9 +267,20 @@ def run(args):
     from .handmade import amoebius_like, amoebius_v2
     seeds += [amoebius_like(), amoebius_v2(), amoebius_v2(seed=9)]
     if args.resume:
+        skipped = 0
         for p in args.resume:
-            for d in json.load(open(p)):
-                seeds.append(Genome.from_json(d["genome"]))
+            try:
+                rows = json.load(open(p))
+            except Exception as e:
+                print("resume skip", p, type(e).__name__, e, flush=True)
+                continue
+            for d in rows:
+                try:
+                    seeds.append(Genome.from_json(d["genome"]))
+                except Exception:  # ops this code does not know yet
+                    skipped += 1
+        if skipped:
+            print(f"resume: skipped {skipped} genomes this code cannot decode", flush=True)
     print(f"{len(seeds)} seeds", flush=True)
     ctx = mp.get_context("spawn")
     state = {"pool": None}
@@ -446,7 +457,10 @@ def immigrants(args, rng, k=4):
             continue
         data = sorted(data, key=lambda d: d.get("dist", 99))[:max(1, k)]
         for d in data:
-            g = Genome.from_json(d["genome"])
+            try:
+                g = Genome.from_json(d["genome"])
+            except Exception:  # ops this code does not know yet (an island on newer code): skip, never crash
+                continue
             g.meta["immigrant_from"] = os.path.basename(os.path.dirname(p))
             out.append(g)
     rng.shuffle(out)

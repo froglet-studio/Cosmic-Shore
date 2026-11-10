@@ -12,13 +12,15 @@
 # It runs in the FOREGROUND (a cloud container kills detached processes once it idles after a turn): start it as a
 # tracked background task (Bash run_in_background, 2 h timeout) and start it again when that ends - it resumes from
 # its own population. BG=1 detaches it with nohup instead (only on a machine that stays up).
+# Testing unmerged code: CODE=<your checkout>/Tools/Genome/agenome runs it, and RUNS=<your folder>/runs keeps its
+# front out of runs/ (islands on the merged code cannot decode ops they do not have yet).
 set -euo pipefail
 NAME=${1:?island name}
 HOURS=${2:-6}
 SHARE=/mnt/project-files/amoebius-genome
 WORK=${WORK:-$HOME/amoebius-island}
 mkdir -p "$WORK"
-rm -rf "$WORK/agenome" && cp -r "$SHARE/genome/agenome" "$WORK/agenome"
+rm -rf "$WORK/agenome" && cp -r "${CODE:-$SHARE/genome/agenome}" "$WORK/agenome"
 # separate installs in parallel: one serial install crawled at ~40 KB/s in a fresh container (island A, 2026-11-10)
 python3 -c "import moderngl, scipy, PIL, jax" 2>/dev/null || {
   python3 -m pip install --quiet scipy 2>/dev/null & python3 -m pip install --quiet jaxlib 2>/dev/null &
@@ -48,7 +50,7 @@ CMD=(python3 -m agenome.search --run "$WORK/run_$NAME" \
   --real "$WORK/reels/reel0[1-4]/frames.npy" --real-hold "$WORK/reels/reel05/frames.npy" \
   --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
   --judge-w "${JUDGE:-0}" --stat-w "${STATW:-1.0}" --critic-w "${CRITICW:-0.5}" \
-  --share "$SHARE/runs" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
+  --share "${RUNS:-$SHARE/runs}" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
 echo "island $NAME: log $WORK/run_$NAME.out ; results in $SHARE/runs/$NAME/ ; resuming from ${#OWN[@]} own file(s)"
 if [ "${BG:-0}" = 1 ]; then nohup "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1 & exit 0; fi
 exec "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1
