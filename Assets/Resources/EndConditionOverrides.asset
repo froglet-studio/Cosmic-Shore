@@ -46,7 +46,7 @@ MonoBehaviour:
   - 200
   - 220
   - 240
-  jackstrawStrikeTarget: 8
+  jackstrawStrikeTarget: 3
   tapestryRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
@@ -111,7 +111,7 @@ MonoBehaviour:
   - 200
   - 220
   - 240
-  jackstrawStrikeTargetBuild: 8
+  jackstrawStrikeTargetBuild: 3
   tapestryRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
