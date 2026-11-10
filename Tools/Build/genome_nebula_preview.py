@@ -60,9 +60,10 @@ def material_values() -> dict:
 
 
 def inits(vals: dict) -> str:
+    declared = INC.read_text()
     out = []
     for n, v in vals.items():
-        if n == "_Mapping":
+        if not re.search(r"\b" + n + r"\b", declared):   # pass-only properties (_Slice, ...) live in the .shader
             continue
         out.append(f"  {n} = float4({v[0]}f,{v[1]}f,{v[2]}f,{v[3]}f);" if len(v) == 4 else f"  {n} = {v[0]}f;")
     return "\n".join(out)

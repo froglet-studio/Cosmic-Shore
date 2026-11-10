@@ -1,79 +1,184 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// Bakes the genome nebula sky (<c>CosmicShore/GenomeNebulaSkybox</c>, pass "Bake") ONCE into an equirect
-    /// render target and draws it through <c>CosmicShore/StaticSkyPanorama</c>, so the per-frame cost is one texture
-    /// sample per pixel - the same runtime cost as the MobileLow baked HyperSea sky - while the build ships no
-    /// texture at all: the sky is ~30 numbers on a material, generated on the GPU in well under a frame at load.
+    /// Puts the genome nebula sky (<c>CosmicShore/GenomeNebulaSkybox</c>) on screen by one of the production methods
+    /// measured in <c>Docs/GENOME_NEBULA_SKYBOX.md</c> section 6. Every method is made from the ~30 numbers on the
+    /// material at load, so the build ships no sky texture.
     ///
-    /// Prototype for <c>Docs/GENOME_NEBULA_SKYBOX.md</c>; nothing references it yet. Put it on any object in a
-    /// scene to try the sky there. The baked sky is static: the drift animation needs the procedural pass.
+    /// Prototype; nothing references it yet. Add it to any object in a scene to try the sky there. It replaces
+    /// <c>RenderSettings.skybox</c> while enabled and puts the previous sky back when disabled.
     /// </summary>
     public sealed class GenomeNebulaSkyBaker : MonoBehaviour
     {
+        public enum Method
+        {
+            [Tooltip("The procedural sky every frame, in the material's own mapping. Desktop.")]
+            Procedural = 0,
+            [Tooltip("Baked once into an equirect panorama drawn by StaticSkyPanorama (the MobileLow HyperSea layout).")]
+            Panorama = 1,
+            [Tooltip("Baked once into a cubemap. Best static method: one sample, no seam, no pole, smallest for its quality.")]
+            Cubemap = 2,
+            [Tooltip("A cubemap re-baked one face per frame, so the drift animates at a sixth of the frame rate.")]
+            CubemapTimeSliced = 3,
+            [Tooltip("The two noise fields baked once into a half-float 3D texture; warp and colour run live (3 fetches). Animates every frame.")]
+            Noise3D = 4,
+        }
+
         [Header("Materials")]
-        [Tooltip("A material using CosmicShore/GenomeNebulaSkybox (the genome's numbers live here).")]
+        [Tooltip("A material using CosmicShore/GenomeNebulaSkybox (the genome's numbers live here). It is copied, never edited.")]
         [SerializeField] Material genomeSky;
 
-        [Tooltip("A material using CosmicShore/StaticSkyPanorama; its _MainTex is replaced by the bake.")]
+        [Tooltip("Panorama method only: a material using CosmicShore/StaticSkyPanorama.")]
         [SerializeField] Material panorama;
 
-        [Header("Bake")]
-        [Tooltip("Width of the equirect bake; height is half. 2048 is ~16 MB of RGBA8 with no mips, 1024 is ~4 MB.")]
-        [SerializeField] int width = 2048;
+        [Tooltip("Cubemap methods only: a material using CosmicShore/GenomeNebulaCubeSky.")]
+        [SerializeField] Material cubeSky;
 
-        [Tooltip("Off: bake once and draw the panorama (cheapest). On: draw the procedural sky every frame (drift animates).")]
-        [SerializeField] bool procedural;
+        [Header("Method")]
+        [SerializeField] Method method = Method.Cubemap;
+
+        [Tooltip("Panorama width (height is half). 2048 = 8 MB RGBA8.")]
+        [SerializeField] int panoramaWidth = 2048;
+
+        [Tooltip("Cubemap face size. 512 = 6 MB RGBA8 (measured mean error 0.8/255 against the per-pixel sky), 256 = 1.5 MB (1.3/255).")]
+        [SerializeField] int cubeFace = 512;
+
+        [Tooltip("Noise3D texture size per side. 96 = 3.4 MB RGHalf (mean error 1.7/255), 128 = 8 MB (1.1/255).")]
+        [SerializeField] int noise3DSize = 96;
 
         static readonly int MainTex = Shader.PropertyToID("_MainTex");
-        const int BakePass = 1;
+        static readonly int CubeId = Shader.PropertyToID("_Cube");
+        static readonly int Noise3DId = Shader.PropertyToID("_Noise3D");
+        static readonly int SliceId = Shader.PropertyToID("_Slice");
+        static readonly int Noise3DSizeId = Shader.PropertyToID("_Noise3DSize");
+        const int BakeEquirectPass = 1;
+        const int BakeNoise3DPass = 2;
+        const string Equirect = "_MAPPING_EQUIRECT", Sphere = "_MAPPING_SPHERE", Noise3DKeyword = "_MAPPING_NOISE3D";
 
-        RenderTexture _baked;
-        Material _panoramaInstance;
         Material _previousSky;
+        Material _sky;          // our copy of genomeSky, in the mapping the method needs
+        Material _drawn;        // what RenderSettings.skybox shows
+        RenderTexture _target;  // panorama, cubemap or 3D texture
+        Camera _bakeCamera;
+        int _nextFace;
 
         void OnEnable()
         {
             _previousSky = RenderSettings.skybox;
-            if (procedural)
+            _sky = new Material(genomeSky) { name = genomeSky.name + " (baker copy)" };
+
+            switch (method)
             {
-                RenderSettings.skybox = genomeSky;
-                return;
+                case Method.Procedural:
+                    _drawn = _sky;
+                    break;
+                case Method.Panorama:
+                    SetMapping(_sky, Sphere);
+                    _target = NewTarget(Mathf.Max(64, panoramaWidth), Mathf.Max(32, panoramaWidth / 2), RenderTextureFormat.ARGB32,
+                                        TextureDimension.Tex2D, 1);
+                    Graphics.Blit(null, _target, _sky, BakeEquirectPass);
+                    _drawn = new Material(panorama);
+                    _drawn.SetTexture(MainTex, _target);
+                    break;
+                case Method.Cubemap:
+                case Method.CubemapTimeSliced:
+                    SetMapping(_sky, Sphere);
+                    int face = Mathf.Max(16, cubeFace);
+                    _target = NewTarget(face, face, RenderTextureFormat.ARGB32, TextureDimension.Cube, 1);
+                    _bakeCamera = NewBakeCamera();
+                    RenderFaces(63);
+                    _drawn = new Material(cubeSky);
+                    _drawn.SetTexture(CubeId, _target);
+                    break;
+                case Method.Noise3D:
+                    int n = Mathf.Max(8, noise3DSize);
+                    _target = NewTarget(n, n, RenderTextureFormat.RGHalf, TextureDimension.Tex3D, n);
+                    _target.wrapMode = TextureWrapMode.Repeat;
+                    _sky.SetFloat(Noise3DSizeId, n);
+                    for (int z = 0; z < n; z++)
+                    {
+                        _sky.SetFloat(SliceId, z);
+                        Graphics.Blit(null, _target, _sky, BakeNoise3DPass, z);
+                    }
+                    SetMapping(_sky, Noise3DKeyword);
+                    _sky.SetTexture(Noise3DId, _target);
+                    _drawn = _sky;
+                    break;
             }
 
-            int w = Mathf.Max(64, width);
-            _baked = new RenderTexture(w, w / 2, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
-            {
-                useMipMap = false,
-                wrapMode = TextureWrapMode.Repeat,
-                filterMode = FilterMode.Bilinear,
-                name = "GenomeNebulaSkyBake",
-            };
-            _baked.Create();
-            Graphics.Blit(null, _baked, genomeSky, BakePass);
+            RenderSettings.skybox = _drawn;
+        }
 
-            _panoramaInstance = new Material(panorama) { name = "GenomeNebulaSkyPanorama (baked)" };
-            _panoramaInstance.SetTexture(MainTex, _baked);
-            RenderSettings.skybox = _panoramaInstance;
+        void Update()
+        {
+            if (method != Method.CubemapTimeSliced || !_bakeCamera) return;
+            RenderFaces(1 << _nextFace);
+            _nextFace = (_nextFace + 1) % 6;
         }
 
         void OnDisable()
         {
             RenderSettings.skybox = _previousSky;
-            if (_baked)
+            if (_bakeCamera) Destroy(_bakeCamera.gameObject);
+            if (_target)
             {
-                _baked.Release();
-                Destroy(_baked);
-                _baked = null;
+                _target.Release();
+                Destroy(_target);
             }
+            if (_drawn && _drawn != _sky) Destroy(_drawn);
+            if (_sky) Destroy(_sky);
+            _bakeCamera = null; _target = null; _drawn = null; _sky = null;
+        }
 
-            if (_panoramaInstance)
+        /// <summary>Renders the procedural sky into the chosen cube faces (bit i = face i, Unity's +X..-Z order).
+        /// Camera.RenderToCubemap draws RenderSettings.skybox, so the procedural sky is swapped in for the call.</summary>
+        void RenderFaces(int faceMask)
+        {
+            var shown = RenderSettings.skybox;
+            RenderSettings.skybox = _sky;
+            _bakeCamera.RenderToCubemap(_target, faceMask);
+            RenderSettings.skybox = shown;
+        }
+
+        Camera NewBakeCamera()
+        {
+            var go = new GameObject("GenomeNebulaSkyBaker camera") { hideFlags = HideFlags.HideAndDontSave };
+            go.transform.SetParent(transform, false);
+            var cam = go.AddComponent<Camera>();
+            cam.enabled = false;
+            cam.cullingMask = 0;               // the sky only
+            cam.clearFlags = CameraClearFlags.Skybox;
+            cam.allowHDR = false;
+            cam.allowMSAA = false;
+            return cam;
+        }
+
+        static RenderTexture NewTarget(int w, int h, RenderTextureFormat format, TextureDimension dim, int depth)
+        {
+            var rt = new RenderTexture(w, h, 0, format,
+                                       format == RenderTextureFormat.ARGB32 ? RenderTextureReadWrite.sRGB : RenderTextureReadWrite.Linear)
             {
-                Destroy(_panoramaInstance);
-                _panoramaInstance = null;
-            }
+                dimension = dim,
+                volumeDepth = depth,
+                useMipMap = false,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                name = "GenomeNebulaSky " + dim,
+            };
+            if (dim == TextureDimension.Tex2D) rt.wrapModeU = TextureWrapMode.Repeat;
+            rt.Create();
+            return rt;
+        }
+
+        static void SetMapping(Material m, string keyword)
+        {
+            m.DisableKeyword(Equirect);
+            m.DisableKeyword(Sphere);
+            m.DisableKeyword(Noise3DKeyword);
+            m.EnableKeyword(keyword);
         }
     }
 }

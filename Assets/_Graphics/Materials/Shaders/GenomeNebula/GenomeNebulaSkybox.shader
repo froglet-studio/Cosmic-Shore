@@ -1,23 +1,28 @@
 // An ALTERNATIVE skybox: the dark-blue marbled nebula that the Amoebius genome search evolved
 // (seed amoebius_like/minimal__tuned, 118 zlib bytes for the whole genome, its sky is 4 nodes).
 // Prototype on branch claude/genome-nebula-skybox; nothing in the game uses it yet.
-// Doc: Docs/GENOME_NEBULA_SKYBOX.md. Preview / parity tool: Tools/Build/genome_nebula_preview.py.
+// Doc: Docs/GENOME_NEBULA_SKYBOX.md. Tools: Tools/Build/genome_nebula_preview.py (preview, lab parity),
+// Tools/Build/genome_nebula_methods.py (every way to produce it, scored).
 //
-// Pass 0 "Sky"   : the skybox itself (Lighting > Environment > Skybox Material, or RenderSettings.skybox).
-// Pass 1 "Bake"  : draws the same sky into an equirect render target laid out like StaticSkyPanorama.shader,
-//                  so GenomeNebulaSkyBaker can bake it ONCE at load and the frame cost drops to one texture
-//                  sample per pixel with no texture shipped in the build.
+// Pass 0 "Sky"         : the skybox itself (RenderSettings.skybox).
+// Pass 1 "BakeEquirect": the sky into an equirect target laid out like StaticSkyPanorama.shader.
+// Pass 2 "BakeNoise3D" : the two raw noise fields into one slice (_Slice) of a wrapping RGHalf 3D texture.
+// GenomeNebulaSkyBaker drives the bakes and the cubemap modes.
 //
-// Mapping: EQUIRECT is the lab's own mapping (pixel-exact with the lab, seamless in longitude, pinches at the
-// two poles, as the lab's frames do). SPHERE runs the same genome on 3D noise over the view direction: no seam,
-// no poles, about 2x the ALU; the marbling reads the same but is not pixel-identical to the lab.
+// Mapping:
+//   EQUIRECT  the lab's own mapping, pixel-exact with the lab. Pinches at the two poles (the lab's frames do too).
+//   SPHERE    the same genome on 3D noise over the view direction: no seam, no poles. Reference for every bake.
+//   NOISE3D   SPHERE with the two noise fields read from _Noise3D (3 fetches) and only the warp and colour run per
+//             pixel: animates like SPHERE at a fraction of the cost, and needs no 32-bit floats.
 //
-// Precision: the hashes need 32-bit floats. Do not change float to half here (Mali/Adreno mediump breaks them).
+// Precision: EQUIRECT and SPHERE hash in 32-bit floats; never change float to half there (in fp16 89% of hash
+// values come out wrong, measured). NOISE3D's per-pixel math is fp16-safe; its texture must be half float
+// (RG8 terraces visibly: the double warp magnifies 8-bit steps).
 Shader "CosmicShore/GenomeNebulaSkybox"
 {
     Properties
     {
-        [KeywordEnum(Equirect, Sphere)] _Mapping ("Mapping", Float) = 0
+        [KeywordEnum(Equirect, Sphere, Noise3D)] _Mapping ("Mapping", Float) = 0
 
         [Header(Node 0 tex.perlin  the nebula colour)]
         _ColA0 ("Colour A (linear RGB)", Vector) = (0.007902, 0.01931, 0.004392, 0)
@@ -42,12 +47,27 @@ Shader "CosmicShore/GenomeNebulaSkybox"
         _FogColor ("Fog colour (linear RGB)", Vector) = (0.015805, 0.025055, 0.07197, 0)
         _FogMix ("Fog mix", Range(0, 1)) = 0.12454
         _Grade ("Exposure, Saturation, Contrast, Bake grade (1/0)", Vector) = (0.88487, 1.02756, 1.09981, 1)
+
+        [Header(Sphere and Noise3D)]
         _SphereScale ("Sphere mapping scale", Range(0.05, 1)) = 0.2387
+        _Period ("Tile cells (field 0, field 1)", Vector) = (2, 4, 0, 0)
+        [NoScaleOffset] _Noise3D ("Baked fields (RGHalf 3D, set by GenomeNebulaSkyBaker)", 3D) = "" {}
+        _Slice ("Bake slice (set by the baker)", Float) = 0
+        _Noise3DSize ("Bake size (set by the baker)", Float) = 96
     }
 
     CGINCLUDE
     #include "UnityCG.cginc"
+
+    #if defined(_MAPPING_NOISE3D)
+    sampler3D _Noise3D;
+    // texture coordinate = p / tile length; tile length = cells per tile / base frequency
+    #define GN_FIELD0(p) tex3Dlod(_Noise3D, float4((p) * (_Noise0.x / _Period.x), 0)).r
+    #define GN_FIELD1(p) tex3Dlod(_Noise3D, float4((p) * (_Noise1.x / _Period.y), 0)).g
+    #endif
     #include "GenomeNebula.hlsl"
+
+    float _Slice, _Noise3DSize;
 
     struct appdata { float4 vertex : POSITION; float2 uv : TEXCOORD0; };
     struct v2f { float4 pos : SV_POSITION; float3 viewDir : TEXCOORD0; float2 uv : TEXCOORD1; };
@@ -55,11 +75,20 @@ Shader "CosmicShore/GenomeNebulaSkybox"
     float3 gn_sky(float3 rd)
     {
         float t = _Time.y;
-    #if defined(_MAPPING_SPHERE)
+    #if defined(_MAPPING_SPHERE) || defined(_MAPPING_NOISE3D)
         return gn_finish(gn_sky_sphere(rd, t));
     #else
         return gn_finish(gn_sky_uv(gn_equirect(rd), t));
     #endif
+    }
+
+    v2f vert_sky(appdata v)
+    {
+        v2f o;
+        o.pos = UnityObjectToClipPos(v.vertex);
+        o.viewDir = v.vertex.xyz;
+        o.uv = v.uv;
+        return o;
     }
     ENDCG
 
@@ -72,45 +101,24 @@ Shader "CosmicShore/GenomeNebulaSkybox"
         {
             Name "Sky"
             CGPROGRAM
-            #pragma vertex vert
+            #pragma vertex vert_sky
             #pragma fragment frag
             #pragma target 3.0
-            #pragma multi_compile_local _MAPPING_EQUIRECT _MAPPING_SPHERE
+            #pragma multi_compile_local _MAPPING_EQUIRECT _MAPPING_SPHERE _MAPPING_NOISE3D
 
-            v2f vert(appdata v)
-            {
-                v2f o;
-                o.pos = UnityObjectToClipPos(v.vertex);
-                o.viewDir = v.vertex.xyz;
-                o.uv = v.uv;
-                return o;
-            }
-
-            half4 frag(v2f i) : SV_Target
-            {
-                return half4(gn_sky(normalize(i.viewDir)), 1);
-            }
+            half4 frag(v2f i) : SV_Target { return half4(gn_sky(normalize(i.viewDir)), 1); }
             ENDCG
         }
 
         Pass
         {
-            Name "Bake"
+            Name "BakeEquirect"
             ZTest Always
             CGPROGRAM
-            #pragma vertex vert
+            #pragma vertex vert_sky
             #pragma fragment frag
             #pragma target 3.0
-            #pragma multi_compile_local _MAPPING_EQUIRECT _MAPPING_SPHERE
-
-            v2f vert(appdata v)
-            {
-                v2f o;
-                o.pos = UnityObjectToClipPos(v.vertex);
-                o.viewDir = 0;
-                o.uv = v.uv;
-                return o;
-            }
+            #pragma multi_compile_local _MAPPING_EQUIRECT _MAPPING_SPHERE _MAPPING_NOISE3D
 
             // Inverse of StaticSkyPanorama.shader: u = 0.5 - atan2(z,x)/2pi, v = 1 - acos(y)/pi.
             half4 frag(v2f i) : SV_Target
@@ -119,6 +127,26 @@ Shader "CosmicShore/GenomeNebulaSkybox"
                 float lat = (1.0 - i.uv.y) * UNITY_PI;
                 float3 d = float3(sin(lat) * cos(lon), cos(lat), sin(lat) * sin(lon));
                 return half4(gn_sky(d), 1);
+            }
+            ENDCG
+        }
+
+        Pass
+        {
+            Name "BakeNoise3D"
+            ZTest Always
+            CGPROGRAM
+            #pragma vertex vert_sky
+            #pragma fragment frag
+            #pragma target 3.0
+
+            // One slice of the tile: texel centres, both fields always procedural here (this pass has no NOISE3D).
+            // A platform that flips render targets mirrors the noise, which is still the same kind of noise.
+            float4 frag(v2f i) : SV_Target
+            {
+                float3 q = float3(i.uv, (_Slice + 0.5) / _Noise3DSize);
+                return float4(gn_fbm3(q * (_Period.x / _Noise0.x), _Noise0, _Period.x),
+                              gn_fbm3(q * (_Period.y / _Noise1.x), _Noise1, _Period.y), 0, 1);
             }
             ENDCG
         }

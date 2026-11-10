@@ -33,12 +33,14 @@ on screen: the stars, the Voronoi cell net, the teal nebula colour, the galactic
 | `Assets/_Graphics/Materials/Shaders/GenomeNebula/GenomeNebula.hlsl` | the four nodes, line for line from `agenome/glsl.py`, plus a pole-free 3D variant and an optional drift |
 | `Assets/_Graphics/Materials/Shaders/GenomeNebula/GenomeNebulaSkybox.shader` | pass 0 the skybox, pass 1 an equirect bake laid out like `StaticSkyPanorama.shader` |
 | `Assets/_Graphics/Skyboxes/GenomeNebulaSkybox.mat` | the genome's numbers (Vectors, so Unity never sRGB-converts them) |
-| `Assets/_Scripts/Utility/GenomeNebulaSkyBaker.cs` | bakes the sky ONCE at load into a render target and draws it with `StaticSkyPanorama` |
+| `Assets/_Graphics/Materials/Shaders/GenomeNebula/GenomeNebulaCubeSky.shader` | draws a baked cubemap: one sample per pixel |
+| `Assets/_Scripts/Utility/GenomeNebulaSkyBaker.cs` | puts the sky on screen by one of five methods (§6): procedural, panorama, cubemap, time-sliced cubemap, 3D noise |
+| `Tools/Build/genome_nebula_methods.py` | the §6 bench: every production method rendered on a real GL pipeline and scored against one reference |
 | `Tools/Build/genome_nebula_preview.py` | compiles the `.hlsl` as C++: previews, seam check, lab parity, CPU cost against HyperSea |
 
 To try it in the editor: put `GenomeNebulaSkybox.mat` in Lighting > Environment > Skybox Material (procedural), or
-add `GenomeNebulaSkyBaker` to any object with that material and `Resources/PlatformSkyboxes/StaticHyperSeaSkybox.mat`
-as the panorama (baked). Nothing here has been opened in a Unity editor yet: **the shader has not been compiled by
+add `GenomeNebulaSkyBaker` to any object, give it that material (plus a `GenomeNebulaCubeSky` material for the cubemap
+methods, or `Resources/PlatformSkyboxes/StaticHyperSeaSkybox.mat` for the panorama) and pick a method. Nothing here has been opened in a Unity editor yet: **the shader has not been compiled by
 Unity** (see §5).
 
 ## 3. Measured
@@ -107,7 +109,61 @@ tonemapping. If the scene's URP volume tonemaps, set `_Grade.w = 0` or the curve
 - Whether the team wants the look: it is a crop of the HyperSea look, brighter. That is an art call (Garrett, and
   whoever owns the world look).
 
-## 6. Next steps, cheapest first
+## 6. Producing the nebula on a phone, and the poles
+
+Garrett (2026-11-10): the lab's sky warps at the poles, a common spherical artefact; could the nebula alone be made
+another way that improves the skybox on mobile? The pole warp is the lab's mapping, not the nebula: it lays 2D noise
+over longitude and latitude, so every column meets at the poles. Any method that evaluates the nebula from the 3D view
+direction has no pole and no seam. That is SPHERE mode, and every bake below is made from it.
+
+**The bench** (`Tools/Build/genome_nebula_methods.py`, 2026-11-10): each method draws the same nebula in real GLSL on a
+real GL pipeline (moderngl/llvmpipe: real bilinear, cubemap and 3D-texture filtering), four 1280x720 views (horizon,
+below, both poles), scored against SPHERE supersampled 2x2. Error is the mean and 99th-percentile absolute difference
+in 8-bit sRGB, averaged over the views. Bakes are stored as linear 8-bit in the bench (Unity's sRGB targets band less),
+so bake errors here are pessimistic. Per-pixel cost is counted, not timed: llvmpipe timings do not rank a phone's
+texture unit against its ALU, so they are left out.
+
+| method | mean / p99 err | at the poles | per pixel each frame | memory | made at load | animates |
+|---|---|---|---|---|---|---|
+| procedural, lab equirect | (other pattern) | **pinch** | 40 2D hashes + atan/asin, fp32 | 0 | - | yes |
+| procedural, sphere (reference) | 0.06 / 1 | clean | 80 3D hashes, fp32 (~0.2x HyperSea) | 0 | - | yes |
+| bake equirect 2048 | 1.16 / 8.2 | clean (texels squeezed) | 1 fetch | 8 MB | 0.8M px | no |
+| bake equirect 4096 (today's HyperSea layout) | 1.02 / 6.0 | clean | 1 fetch | 32 MB raw | 8.4M px | no |
+| **bake cubemap 256** | 1.34 / 13.5 | clean | 1 fetch | 1.5 MB | 0.4M px | no |
+| **bake cubemap 512** | **0.81 / 5.5** | clean | 1 fetch | 6 MB | 1.6M px | no |
+| bake cubemap 1024 | 0.71 / 4.8 | clean | 1 fetch | 24 MB | 6.3M px | no |
+| cubemap 512, one face re-baked per frame | as 512 | clean | 1 fetch + 262k procedural px per frame (about a tenth of a 1080x2400 screen) | 6 MB | 1.6M px | yes, refreshed every 6 frames |
+| 3D noise RG8 64^3, live warp | 4.35 / 36.8 | clean | 3 fetches + ~40 ALU | 0.5 MB | 0.26M texels | yes |
+| **3D noise RGHalf 96^3, live warp** | **1.68 / 16.2** | clean | 3 fetches + ~40 ALU, fp16-safe | 3.4 MB | 0.9M texels | **yes, every frame** |
+| 3D noise RGHalf 128^3, live warp | 1.08 / 10.5 | clean | 3 fetches + ~40 ALU, fp16-safe | 8 MB | 2.1M texels | yes |
+| vertex-shaded dome, 40k / 164k vertices | 3.99 / 32.8, 1.67 / 19.0 | clean | 0 per pixel; the procedural sky per vertex | 0 | - | yes |
+| procedural at 1/2 res, upscaled | 1.42 / 12.2 | clean | a quarter of the procedural pixels + 1 fetch | 0.9 MB | - | yes |
+| procedural at 1/4 res, upscaled | 2.08 / 19.0 | clean | a sixteenth + 1 fetch | 0.2 MB | - | yes |
+
+What the pictures show (`/mnt/project-files/amoebius-genome/docs/nebula_methods_sheet.png`, `nebula_pole_crops.png`):
+the lab equirect's pinch is gone in every other method; the cubemaps are indistinguishable from the reference; RG8
+3D noise TERRACES (the double warp magnifies 8-bit steps into contour lines), which half floats remove; the dome and
+1/4-res versions go soft and stair-step along the sharp warp filaments.
+
+**Precision, measured:** the value-noise hash in fp16 differs from fp32 by 0.48 on average (of 0..1), and 89% of hash
+values are off by more than 0.1. So the procedural sky needs `highp` on every phone GPU; any method that bakes the
+noise (cubemap, 3D noise) does not, which is the safer shape for Mali and Adreno parts that run mediump fast.
+
+**Recommendation per tier:**
+- **MobileLow and Web: bake a cubemap at load** (`Method.Cubemap`, 512, or 256 where memory is tight). One fetch per
+  pixel, no seam or pole, better than a 4096x2048 panorama at a fifth of its memory, no texture in the build. This is
+  also the right shape for HyperSea's own low-tier bake (its stars need more resolution than the nebula; measure).
+- **MobileHigh: 3D noise at RGHalf 96^3** (`Method.Noise3D`) for a drift that moves every frame at three fetches a
+  pixel, or the time-sliced cubemap where one fetch matters more than smooth motion.
+- **Desktop: the procedural sphere.**
+- Not worth it: the dome (needs ~164k vertices for the quality of a 2048 panorama) and low-res upscaling (softens the
+  filaments that make the look).
+
+Not yet verified in Unity: `Camera.RenderToCubemap` under URP (the cubemap methods use it so Unity owns the face
+orientation; if URP refuses it, render the faces with a direction pass instead), and `Graphics.Blit` into 3D slices on
+every target API.
+
+## 7. Next steps, cheapest first
 
 1. Open the material in an editor, look at it in a mode scene beside HyperSea.
 2. Bake HyperSea at load with `GenomeNebulaSkyBaker` and drop the 6.7 MB PNG (a size win independent of the genome).

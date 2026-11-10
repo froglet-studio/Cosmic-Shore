@@ -28,6 +28,7 @@ float4 _FogColor;           // post.grade fog colour
 float  _FogMix;             // 1 - exp(-fog * far * 0.5), as the lab's scene pass mixes the sky
 float4 _Grade;              // x exposure, y saturation, z contrast, w 1 = bake the lab's grade, 0 = leave it to URP post
 float  _SphereScale;        // sphere mapping only: uv units per unit of direction
+float4 _Period;             // sphere/noise3d: base-lattice cells per tile of field 0 (x) and field 1 (y); 0 = no tiling
 
 // ---- hashes and noise, exactly as agenome/glsl.py PRELUDE ----
 float gn_h21(float2 p)
@@ -73,32 +74,43 @@ float gn_fbm2(float2 uv, float4 n)
     return s / w;
 }
 
-// 3D value noise for the seam- and pole-free sphere mapping (not in the lab; same octave rules)
-float gn_vn3(float3 p)
+// 3D value noise for the seam- and pole-free sphere mapping (not in the lab; same octave rules). Tiles every `per`
+// lattice cells (per <= 0: never), so the same fields can be baked into a wrapping 3D texture (the NOISE3D mapping).
+float3 gn_wrap(float3 c, float per) { return per > 0.0 ? c - per * floor(c / per) : c; }
+
+float gn_vn3(float3 p, float per)
 {
     float3 i = floor(p);
     float3 fr = p - i;
     float3 u = fr * fr * (3.0 - 2.0 * fr);
-    float x00 = lerp(gn_h31(i), gn_h31(i + float3(1, 0, 0)), u.x);
-    float x10 = lerp(gn_h31(i + float3(0, 1, 0)), gn_h31(i + float3(1, 1, 0)), u.x);
-    float x01 = lerp(gn_h31(i + float3(0, 0, 1)), gn_h31(i + float3(1, 0, 1)), u.x);
-    float x11 = lerp(gn_h31(i + float3(0, 1, 1)), gn_h31(i + float3(1, 1, 1)), u.x);
+    float x00 = lerp(gn_h31(gn_wrap(i, per)), gn_h31(gn_wrap(i + float3(1, 0, 0), per)), u.x);
+    float x10 = lerp(gn_h31(gn_wrap(i + float3(0, 1, 0), per)), gn_h31(gn_wrap(i + float3(1, 1, 0), per)), u.x);
+    float x01 = lerp(gn_h31(gn_wrap(i + float3(0, 0, 1), per)), gn_h31(gn_wrap(i + float3(1, 0, 1), per)), u.x);
+    float x11 = lerp(gn_h31(gn_wrap(i + float3(0, 1, 1), per)), gn_h31(gn_wrap(i + float3(1, 1, 1), per)), u.x);
     return lerp(lerp(x00, x10, u.y), lerp(x01, x11, u.y), u.z);
 }
 
-float gn_fbm3(float3 p, float4 n)
+// tile length in p is per / n.x for every octave (each octave doubles both the frequency and the lattice period)
+float gn_fbm3(float3 p, float4 n, float per)
 {
-    float s = 0.0, a = 1.0, w = 0.0, fq = n.x;
+    float s = 0.0, a = 1.0, w = 0.0, fq = n.x, pk = per;
     [unroll] for (int i = 0; i < 8; i++)
     {
         if (i < (int)n.y)
         {
-            s += a * gn_vn3(p * fq + n.w * 0.013 + i * 17.0);
-            w += a; a *= n.z; fq *= 2.0;
+            s += a * gn_vn3(p * fq + n.w * 0.013 + i * 17.0, pk);
+            w += a; a *= n.z; fq *= 2.0; pk *= 2.0;
         }
     }
     return s / w;
 }
+
+// The two raw fields (before their colour ramps). A shader that has them baked (the NOISE3D mapping) defines
+// GN_FIELD0/GN_FIELD1 as texture fetches before including this file.
+#ifndef GN_FIELD0
+#define GN_FIELD0(p) gn_fbm3(p, _Noise0, _Period.x)
+#define GN_FIELD1(p) gn_fbm3(p, _Noise1, _Period.y)
+#endif
 
 float3 gn_ramp(float x, float g, float4 a, float4 b)
 {
@@ -120,8 +132,8 @@ float3 gn_sky_uv(float2 uv, float t)
     return gn_t0(uv2 + float2(_Drift.z * t, 0.0));
 }
 
-float3 gn_s0(float3 p) { return gn_ramp(gn_fbm3(p, _Noise0), _Gamma0, _ColA0, _ColB0); }
-float3 gn_s1(float3 p) { return gn_ramp(gn_fbm3(p, _Noise1), _Gamma1, _ColA1, _ColB1); }
+float3 gn_s0(float3 p) { return gn_ramp(GN_FIELD0(p), _Gamma0, _ColA0, _ColB0); }
+float3 gn_s1(float3 p) { return gn_ramp(GN_FIELD1(p), _Gamma1, _ColA1, _ColB1); }
 
 float3 gn_sky_sphere(float3 dir, float t)
 {
