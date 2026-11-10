@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The loop.</b></para>
     /// <list type="number">
-    /// <item><b>Take a crystal</b> when one is within the rung's reach: its own team's Mass crystal (I3, a Mass level)
+    /// <item><b>Take a crystal</b> when one is within the rung's reach: its own team's Space crystal (I3, a Space level)
     /// first, then a managed omni crystal, whose windmill (12 s of a red-hot ball circling the ship) mows and smashes
     /// at once.</item>
     /// <item><b>Choose a sheaf</b>: the nearest one not in its own colour (it would score nothing) that it has not
@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
         public bool IsArmed => _reapers.Count > 0;
 
         /// <summary>Arms every AI pilot on the roster against <paramref name="sheaves"/> (world space).
-        /// <paramref name="nearestTeamCrystal"/> answers the nearest live Mass crystal of a team (I3), or null.</summary>
+        /// <paramref name="nearestTeamCrystal"/> answers the nearest live Space crystal of a team (I3), or null.</summary>
         public void Arm(GameDataSO gameData, HarvestSettingsSO settings, Vector3 centre,
                         IReadOnlyList<SpawnableHarvest.Sheaf> sheaves,
                         System.Func<Vector3, Domains, Vector3?> nearestTeamCrystal = null)
@@ -239,7 +239,7 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        /// <summary>Its own team's nearest Mass crystal (I3), within its rung's reach; null when none.</summary>
+        /// <summary>Its own team's nearest Space crystal (I3), within its rung's reach; null when none.</summary>
         Vector3? NearestTeamCrystal(Reaper r, Vector3 from)
         {
             if (_nearestTeamCrystal == null) return null;

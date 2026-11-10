@@ -155,10 +155,11 @@ LADDERS = {
 }
 SHARED = {"aiMowLeadDegrees": 40, "aiStrikeOvershoot": 120, "aiStrikeSeconds": 2.5, "aiClimbSeconds": 3,
           "aiAxleArrive": 60, "aiAxleReachFactor": 1.4, "aiMassModeCheckSeconds": 1.5}  # the SO's field order
-# The team Mass crystals (I3 only, Shombith 2026-11-10: "for intensities 3 make elemental crystals of mass just for teams
-# present there"): per team, per intensity, and how they sit and grow back.
-MASS_CRYSTALS_PER_TEAM = [0, 0, 4, 0]
-CRYSTAL_FIELDS = {"massCrystalClearance": 30, "massCrystalRegrowSeconds": 12, "crystalCheckSeconds": 0.5}
+# The team Space crystals (I3 only, Shombith 2026-11-10: "for intensities 3 make elemental crystals of mass just for teams
+# present there", corrected the same day: "crystals of space I meant"): per team, per intensity, and how they sit and
+# grow back.
+TEAM_CRYSTALS_PER_TEAM = [0, 0, 4, 0]
+CRYSTAL_FIELDS = {"teamCrystalClearance": 30, "teamCrystalRegrowSeconds": 12, "crystalCheckSeconds": 0.5}
 
 
 def ladder_yaml(name):
@@ -167,7 +168,8 @@ def ladder_yaml(name):
 
 g.emit_asset("Assets/_SO_Assets/Games/HarvestSettings.asset", G_ASSET["HarvestSettings"],
              lib.header_for(G_SCRIPT["HarvestSettingsSO"], "HarvestSettings") +
-             "  massCrystalsPerTeamByIntensity:\n" + "".join(f"  - {v}\n" for v in MASS_CRYSTALS_PER_TEAM) +
+             "  teamCrystalElement: 3\n"
+             "  teamCrystalsPerTeamByIntensity:\n" + "".join(f"  - {v}\n" for v in TEAM_CRYSTALS_PER_TEAM) +
              "".join(f"  {k}: {lib.num(float(v))}\n" for k, v in CRYSTAL_FIELDS.items()) +
              "".join(ladder_yaml(n) for n in LADDERS) +
              "".join(f"  {k}: {lib.num(float(v))}\n" for k, v in SHARED.items()))
@@ -652,10 +654,12 @@ for r in RUNGS:
 for field, value in CRYSTAL_FIELDS.items():
     if f"{field} = {lib.num(float(value))}f;" not in settings_cs:
         errors.append(f"HarvestSettingsSO.{field} initializer differs from the authored {value}")
-if "massCrystalsPerTeamByIntensity = { " + ", ".join(str(v) for v in MASS_CRYSTALS_PER_TEAM) + " };" not in settings_cs:
-    errors.append("HarvestSettingsSO.massCrystalsPerTeamByIntensity differs from MASS_CRYSTALS_PER_TEAM")
-if "RestrictTo(" not in controller or "Element.Mass" not in controller:
-    errors.append("HarvestController no longer mints team-only Mass crystals")
+if "teamCrystalsPerTeamByIntensity = { " + ", ".join(str(v) for v in TEAM_CRYSTALS_PER_TEAM) + " };" not in settings_cs:
+    errors.append("HarvestSettingsSO.teamCrystalsPerTeamByIntensity differs from TEAM_CRYSTALS_PER_TEAM")
+if "teamCrystalElement = Element.Space;" not in settings_cs:
+    errors.append("HarvestSettingsSO.teamCrystalElement is no longer Space (asset authors 3)")
+if "RestrictTo(" not in controller or "GetPrefab(settings.teamCrystalElement)" not in controller:
+    errors.append("HarvestController no longer mints team-only Space crystals")
 impactor = g.read("Assets/_Scripts/Controller/ImpactEffects/Impactors/ElementalCrystalImpactor.cs")
 if "_onlyFor" not in impactor:
     errors.append("ElementalCrystalImpactor lost its team gate - I3's team crystals would feed every domain")

@@ -8,7 +8,7 @@ plans. The plan, the brief and the plans set aside are in `Docs/MassAndSpaceGame
 > first team to the harvest target wins.*
 
 A **sheaf** is a core of blocks with stalks laid flat round it as a **wheel** (2026-11-10, the stalk lab's fix). Between
-the sheaves drift clouds of **chaff** (loose straws) and solid **bales**; I3 adds **Mass crystals for each team present**
+the sheaves drift clouds of **chaff** (loose straws) and solid **bales**; I3 adds **Space crystals for each team present**
 and I4 adds **live elemental creatures** (Shombith, 2026-11-10: "its too empty right now"). Every prism the Thresher destroys
 that is not in its own colour scores (`ScoringMetric.PrismsDestroyed`, so the card reads **Space** through
 `ModeGenre`'s metric fallback). The first **domain** to the target wins, golf-timed.
@@ -47,9 +47,9 @@ that is not in its own colour scores (`ScoringMetric.PrismsDestroyed`, so the ca
    other target worth a full bank.
 4. **Crystals.** The omni crystals spawn in the field's clear centre. One is the Thresher's windmill: for 12 s the
    red-hot ball circles the ship at chain length. Fly a sheaf's rim and it mows and smashes at once.
-5. **Team Mass crystals (I3).** Each team present gets its own Mass crystals (4 a team) in the open water between the
+5. **Team Space crystals (I3).** Each team present gets its own Space crystals (4 a team) in the open water between the
    sheaves. Only that team's vessels can take one (a rival flies through it); each grows back 12 s after it is taken.
-   Mass on the Thresher is its chain (THRESHER.md), so a team that keeps its crystals mows more per lap.
+   Space on the Thresher is its blast (x4 at rest Space, x8 at full), so a team that keeps its crystals hits harder.
 6. **Creatures (I4).** Tadpoles, piranhas, brittlestars and sharks, each rolling one of the four elements. The grazers
    eat sheaf prisms, the sharks eat the grazers, and every creature drops its element's crystal as its heart.
 7. **Colour.** A sheaf in your colour scores nothing for you, and a red-hot ball or a blast destroys it all the same
@@ -63,7 +63,7 @@ Nothing about the Thresher changes (the LOCKED vessel rule): the mode's levers a
 |---|---|---:|---:|---|---|---|---:|---|---|---|---:|---:|---|---:|
 | I1 | Stubble | r 820 | 10 | 60 u, 150 | 36 x 6 | 8 x 24 | 4 | no | none | all neutral | 4,058 | 8 | | 900 |
 | I2 | Sheaves | r 880 | 12 | 52 u, 120 | 30 x 6 | 10 x 24 | 6 | yes | none | 1 sheaf in 4 a domain; bales neutral | 4,129 | 4 | | 960 |
-| I3 | Stooks | r 940 | 16 | 46 u, 100 | 28 x 5 | 12 x 22 | 8 | yes | none | sheaves and bales a quarter each | 4,448 | 3 | 4 Mass crystals a team | 1,020 |
+| I3 | Stooks | r 940 | 16 | 46 u, 100 | 28 x 5 | 12 x 22 | 8 | yes | none | sheaves and bales a quarter each | 4,448 | 3 | 4 Space crystals a team | 1,020 |
 | I4 | Granary | r 1000 | 20 | 42 u, 80 | 24 x 5 | 12 x 20 (r 100) | 8 | yes | every 4th | as I3 | 4,561 | 1 | 23 live creatures at most | 1,080 |
 
 Chaff is always neutral (one or two 20 u straws, never closer than 7.5 u to another). Each wheel's axis is drawn per
@@ -111,9 +111,9 @@ element's crystal as its heart (the lifeform-to-crystal invariant). They are see
 reproduction and starvation; the mode never culls them. Grazers eat opposing environment prisms, which here are the
 sheaves. A creature's body is rival mass too: a Thresher that destroys it scores its prisms like any other.
 
-**Team Mass crystals (I3).** `HarvestController` lays `massCrystalsPerTeamByIntensity` (0, 0, 4, 0) Mass crystals for
+**Team Space crystals (I3).** `HarvestController` lays `teamCrystalsPerTeamByIntensity` (0, 0, 4, 0) Space crystals for
 every domain with a seat (Blue never counts), at open points of the field `SpawnableHarvest.CollectOpenPoints` draws
-per team (30 u clear of every piece). Each is the Mass crystal of the scene's `ElementalCrystalSetSO` with an
+per team (30 u clear of every piece). Each is the Space crystal of the scene's `ElementalCrystalSetSO` with an
 `ElementalCrystalImpactor` that answers only that team's vessels (`RestrictTo`); a taken one grows back after 12 s
 (checked every 0.5 s). Every peer lays them from the same draws, so nothing is replicated.
 
@@ -125,7 +125,7 @@ It finds the input from the hull's own binding maps (`ThresherActionSO.Control =
 presses only while the hull is still building, so a lost press is pressed again and a landed one is never undone. The
 hull's own `ThresherSlingAIPolicySO` keeps planting and winching on the corners.
 
-1. **Take a crystal**: its own team's Mass crystal first (I3), else a managed omni crystal, when within the rung's
+1. **Take a crystal**: its own team's Space crystal first (I3), else a managed omni crystal, when within the rung's
    reach.
 2. **Choose a sheaf**: the nearest not in its own colour that it has not worked in the last `aiRevisitSeconds`.
 3. **Mow**: lap the wheel in its own plane, at the spoke tips plus `aiMowStandoff` (negative: inside the tips, so the
@@ -166,7 +166,7 @@ would need the controller to know a core is gone, which it does not track.
 - `MiniGameHUD`: Harvest reuses `RampageObjectiveProvider`.
 - `ModeGenreTests.Harvest_IsTheThreshersSpaceGame` pins the card to Space through its shipped preview definition.
 - `ElementalCrystalImpactor.RestrictTo(Domains)` (2026-11-10): an optional team gate, off unless called. Its one
-  caller is `HarvestController`'s team Mass crystals; every other crystal is unchanged. Affects Shombith's crystal
+  caller is `HarvestController`'s team Space crystals; every other crystal is unchanged. Affects Shombith's crystal
   impactor (#1654).
 
 ## Verification status

@@ -325,7 +325,7 @@ RUNGS = [
          coreRadius=46, coreBlocks=100, shieldedCores=True, stalkCount=28, stalkPrisms=5, wheelStalks=True,
          dangerStalkEveryNth=0, chaffClouds=12, chaffCloudRadius=100, strawsPerCloud=22, baleCount=8, baleSize=3,
          colourPattern=2, spawnRing=1020,
-         blurb="sixteen wheel sheaves and eight bales, a quarter each Jade, Ruby, Gold and neutral, with Mass crystals "
+         blurb="sixteen wheel sheaves and eight bales, a quarter each Jade, Ruby, Gold and neutral, with Space crystals "
                "for every team in the match"),
     dict(i=4, label="Granary", seed=8804, fieldRadius=1000, centreClearingRadius=200, sheafCount=20, coreGap=180,
          coreRadius=42, coreBlocks=80, shieldedCores=True, stalkCount=24, stalkPrisms=5, wheelStalks=True,

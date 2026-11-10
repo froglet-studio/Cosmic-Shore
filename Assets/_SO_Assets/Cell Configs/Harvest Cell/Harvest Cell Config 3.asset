@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   CellName: Harvest
   Description: 'Stooks - intensity 3 of Harvest: sixteen wheel sheaves and eight bales, a quarter each
-    Jade, Ruby, Gold and neutral, with Mass crystals for every team in the match. 4448
+    Jade, Ruby, Gold and neutral, with Space crystals for every team in the match. 4448
     prisms - 16 wheel sheaves (1600 core, 2240 stalk), 12 chaff clouds (392), 8 bales (216);
     1600 shielded, 0 danger; field radius 940 inside the standard 1200 u cell, spawn ring
     1020. The omni crystals spawn in the clear centre. NO NUCLEUS, no flora, no fauna.

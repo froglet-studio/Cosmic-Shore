@@ -136,15 +136,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TeamMassCrystals_AreLaidAtIntensityThreeOnly()
+        public void TeamSpaceCrystals_AreLaidAtIntensityThreeOnly()
         {
             var settings = ScriptableObject.CreateInstance<HarvestSettingsSO>();
             try
             {
-                Assert.AreEqual(0, settings.MassCrystalsPerTeam(1));
-                Assert.AreEqual(0, settings.MassCrystalsPerTeam(2));
-                Assert.Greater(settings.MassCrystalsPerTeam(3), 0, "I3 lays Mass crystals for each team present");
-                Assert.AreEqual(0, settings.MassCrystalsPerTeam(4), "I4's extra is its creatures, not crystals");
+                Assert.AreEqual(Element.Space, settings.teamCrystalElement, "the team crystals are Space");
+                Assert.AreEqual(0, settings.TeamCrystalsPerTeam(1));
+                Assert.AreEqual(0, settings.TeamCrystalsPerTeam(2));
+                Assert.Greater(settings.TeamCrystalsPerTeam(3), 0, "I3 lays Space crystals for each team present");
+                Assert.AreEqual(0, settings.TeamCrystalsPerTeam(4), "I4's extra is its creatures, not crystals");
             }
             finally { Object.DestroyImmediate(settings); }
         }

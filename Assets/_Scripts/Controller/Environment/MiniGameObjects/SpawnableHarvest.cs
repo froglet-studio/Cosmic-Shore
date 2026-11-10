@@ -183,7 +183,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Points in this structure's local space where something may float clear of every sheaf, cloud and bale:
         /// <paramref name="count"/> draws of the stream <paramref name="stream"/>, each at least
-        /// <paramref name="clearance"/> from every piece. The controller floats a team's Mass crystals at them (I3).
+        /// <paramref name="clearance"/> from every piece. The controller floats a team's Space crystals at them (I3).
         /// Pure and deterministic, so every peer answers the same points.
         /// </summary>
         public void CollectOpenPoints(int stream, int count, float clearance, List<Vector3> into)

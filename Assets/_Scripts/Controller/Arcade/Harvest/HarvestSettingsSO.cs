@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -16,17 +17,20 @@ namespace CosmicShore.Gameplay
         menuName = "ScriptableObjects/Arcade/HarvestSettings")]
     public class HarvestSettingsSO : ScriptableObject
     {
-        [Header("Team Mass crystals (index = intensity - 1)")]
-        [Tooltip("Mass elemental crystals floated for EACH team in the match, per intensity (I1, I2, I3, I4). Each " +
+        [Header("Team Space crystals (index = intensity - 1)")]
+        [Tooltip("The element of the team crystals. Space grows the Thresher's blast (Shombith, 2026-11-10).")]
+        public Element teamCrystalElement = Element.Space;
+
+        [Tooltip("Space elemental crystals floated for EACH team in the match, per intensity (I1, I2, I3, I4). Each " +
                  "wears its team's colour and only that team's pilots can take it (ElementalCrystalImpactor.RestrictTo). " +
                  "0 = none at that intensity.")]
-        public int[] massCrystalsPerTeamByIntensity = { 0, 0, 4, 0 };
+        public int[] teamCrystalsPerTeamByIntensity = { 0, 0, 4, 0 };
 
         [Tooltip("Least air (u) between a team crystal and any sheaf, cloud, bale or other crystal.")]
-        [Min(5f)] public float massCrystalClearance = 30f;
+        [Min(5f)] public float teamCrystalClearance = 30f;
 
         [Tooltip("Seconds before a taken team crystal grows back in its place.")]
-        [Min(0.5f)] public float massCrystalRegrowSeconds = 12f;
+        [Min(0.5f)] public float teamCrystalRegrowSeconds = 12f;
 
         [Tooltip("Seconds between the regrowth checks.")]
         [Min(0.1f)] public float crystalCheckSeconds = 0.5f;
@@ -73,10 +77,10 @@ namespace CosmicShore.Gameplay
         [Min(0.5f)] public float aiMassModeCheckSeconds = 1.5f;
 
         /// <summary>The team crystals each team gets at <paramref name="intensity"/> (1-4, clamped).</summary>
-        public int MassCrystalsPerTeam(int intensity)
+        public int TeamCrystalsPerTeam(int intensity)
         {
-            if (massCrystalsPerTeamByIntensity == null || massCrystalsPerTeamByIntensity.Length == 0) return 0;
-            return Mathf.Max(0, massCrystalsPerTeamByIntensity[Mathf.Clamp(intensity - 1, 0, massCrystalsPerTeamByIntensity.Length - 1)]);
+            if (teamCrystalsPerTeamByIntensity == null || teamCrystalsPerTeamByIntensity.Length == 0) return 0;
+            return Mathf.Max(0, teamCrystalsPerTeamByIntensity[Mathf.Clamp(intensity - 1, 0, teamCrystalsPerTeamByIntensity.Length - 1)]);
         }
 
         /// <summary>The rung for AI level <paramref name="level"/> (1 Easy - 4 Legendary, clamped) of a ladder.</summary>

@@ -109,7 +109,7 @@ the reference compile (player and editor: 0 errors in project code) and the full
 
 **Second pass, the fuller field (2026-11-10, same branch, not editor-verified):** wheel sheaves (stalks flat round the
 core, axis drawn per sheaf), chaff clouds and 3x3x3 bales at every rung (4,058 / 4,129 / 4,448 / 4,561 prisms, baked,
-0 clipping); I3 lays 4 Mass crystals per team present that only that team can take (`ElementalCrystalImpactor.RestrictTo`,
+0 clipping); I3 lays 4 Space crystals per team present that only that team can take (`ElementalCrystalImpactor.RestrictTo`,
 regrow 12 s); I4 runs Harvest's own copies of shark, piranha, brittlestar and tadpole (elemental, 23 live at most); the
 reaper laps a wheel in its plane, climbs the axle and dives down it. Offline: `--check`, bake, clip audit, card,
 `unity_refcompile` 0 errors in project code. Not run: Unity, the EditMode tests (`HarvestTests` gained two).
@@ -118,13 +118,13 @@ reaper laps a wheel in its plane, climbs the axle and dives down it. Offline: `-
 14. **The question again, on wheels**: lap a wheel in its own plane. Does the chain cut many spokes a lap (the lab says
     38-92)? Then climb out along the axle and dive down it: does the ball reach the core with the bank intact, and does
     one blast take about half the core? A bale hit with a full bank should vanish.
-15. I3 with Jade vs Ruby: Jade sees 4 Jade-tinted Mass crystals and Ruby 4 Ruby ones, away from the sheaves. A Ruby
+15. I3 with Jade vs Ruby: Jade sees 4 Jade-tinted Space crystals and Ruby 4 Ruby ones, away from the sheaves. A Ruby
     vessel flies through a Jade one without taking it; a Jade vessel takes it (its Mass rises) and it grows back
     about 12 s later. A lone team (solo practice) gets only its own. On a client, the crystals sit in the same places.
 16. I4: creatures appear a few seconds in (sharks, piranhas, brittlestars, tadpoles) in element colours; grazers eat
     sheaf prisms, sharks eat grazers, a dead creature drops its element's crystal. Killing one scores its body prisms.
     Count stays at or under 23.
-17. AI at I3/I4: it takes its own team's Mass crystals, laps wheels in plane rather than orbiting at the tips, climbs and
+17. AI at I3/I4: it takes its own team's Space crystals, laps wheels in plane rather than orbiting at the tips, climbs and
     dives along the axle. Watch whether it ever gets stuck at the axle point.
 
 ---

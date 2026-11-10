@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The one team a skim may take this crystal for, or null (the default) for anyone. Set only by a mode that lays a
-        /// team its OWN crystals: Harvest's I3 Mass crystals (<c>HarvestController.LayTeamCrystals</c>, the sole caller,
+        /// team its OWN crystals: Harvest's I3 Space crystals (<c>HarvestController.LayTeamCrystals</c>, the sole caller,
         /// Assets/_Scripts/Controller/Arcade/HARVEST.md). Every other elemental crystal - a lifeform's heart, an arena
         /// scatter, a toy's pickup - leaves it null and is collected by whoever touches it, exactly as before.
         /// </summary>

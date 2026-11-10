@@ -21,11 +21,12 @@ namespace CosmicShore.Gameplay
     /// increments itself (StatsManager.PrismDestroyed), so no per-event listener is needed. The omni crystals are the
     /// cell's own (its CrystalManager, in the field's clear centre): a crystal is the Thresher's 12 s windmill.</para>
     ///
-    /// <para><b>Team Mass crystals</b> (I3, <see cref="HarvestSettingsSO.massCrystalsPerTeamByIntensity"/>): for each
-    /// team in the match the controller floats Mass elemental crystals in that team's colour, at open points of the
+    /// <para><b>Team Space crystals</b> (I3, <see cref="HarvestSettingsSO.teamCrystalsPerTeamByIntensity"/>): for each
+    /// team in the match the controller floats Space elemental crystals in that team's colour, at open points of the
     /// field (<see cref="SpawnableHarvest.CollectOpenPoints"/>), laid identically on every peer, which only that team
-    /// can take (<see cref="ElementalCrystalImpactor.RestrictTo"/>) and which grow back after a while. A Mass level is
-    /// the Thresher's own scaling (bigger Mass Mode trail prisms): the environment hands it out, the kit is unchanged.
+    /// can take (<see cref="ElementalCrystalImpactor.RestrictTo"/>) and which grow back after a while. A Space level
+    /// is the Thresher's own scaling (a bigger blast, x4 at rest Space up to x8 at full): the environment hands it out,
+    /// the kit is unchanged. The element is <see cref="HarvestSettingsSO.teamCrystalElement"/>.
     /// The I4 creatures are the cell's own (its spawn profile), not this controller's.</para>
     ///
     /// <para><b>Nothing about the Thresher changes</b> (the LOCKED vessel rule): the mode's levers are the sheaves,
@@ -164,7 +165,7 @@ namespace CosmicShore.Gameplay
             return env ? env : FindAnyObjectByType<SpawnableHarvest>();
         }
 
-        // ── The team Mass crystals (every peer) ──
+        // ── The team Space crystals (every peer) ──
 
         /// <summary>The teams in the match, in enum order (Jade, Ruby, Gold), so every peer lays the same crystals.</summary>
         List<Domains> TeamsPresent()
@@ -186,7 +187,7 @@ namespace CosmicShore.Gameplay
         {
             if (settings == null || gameData == null) return;
             int intensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1;
-            int perTeam = settings.MassCrystalsPerTeam(intensity);
+            int perTeam = settings.TeamCrystalsPerTeam(intensity);
             if (perTeam <= 0 || ElementalCrystalSetSO.Load() == null) return;
             var env = Environment();
             if (!env) return;
@@ -195,7 +196,7 @@ namespace CosmicShore.Gameplay
             {
                 _points.Clear();
                 // One stream per team (its enum value), so a team's places do not move when another team joins.
-                env.CollectOpenPoints((int)team, perTeam, settings.massCrystalClearance, _points);
+                env.CollectOpenPoints((int)team, perTeam, settings.teamCrystalClearance, _points);
                 for (int i = 0; i < _points.Count; i++)
                 {
                     var slot = new CrystalSlot { Position = env.transform.TransformPoint(_points[i]), Domain = team };
@@ -208,7 +209,7 @@ namespace CosmicShore.Gameplay
         void MintTeamCrystal(CrystalSlot slot)
         {
             var set = ElementalCrystalSetSO.Load();
-            var prefab = set != null ? set.GetPrefab(Element.Mass) : null;
+            var prefab = set != null ? set.GetPrefab(settings.teamCrystalElement) : null;
             if (prefab == null) return;
 
             var crystal = Instantiate(prefab, slot.Position, Quaternion.identity);
@@ -241,7 +242,7 @@ namespace CosmicShore.Gameplay
             {
                 var slot = _teamCrystals[i];
                 if (IsLive(slot)) continue;
-                if (slot.RegrowAt < 0f) { slot.RegrowAt = now + settings.massCrystalRegrowSeconds; continue; }
+                if (slot.RegrowAt < 0f) { slot.RegrowAt = now + settings.teamCrystalRegrowSeconds; continue; }
                 if (now < slot.RegrowAt) continue;
                 // A collected crystal destroys itself at the end of its capture; one still flying is left to finish.
                 if (slot.Crystal) continue;
@@ -249,7 +250,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The nearest live crystal of <paramref name="team"/>'s on this machine (the AI's Mass target).</summary>
+        /// <summary>The nearest live crystal of <paramref name="team"/>'s on this machine (the AI's team-crystal target).</summary>
         Vector3? NearestTeamCrystal(Vector3 from, Domains team)
         {
             Vector3? best = null;
