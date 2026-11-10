@@ -52,7 +52,7 @@ elif [ ${#OWN[@]} -gt 0 ]; then RESUME_ARGS=(--resume "${OWN[@]}"); fi
 GENS=$(( HOURS * 90 ))
 cd "$WORK"
 EXTARGS=(--ext-weight "${EXTW:-0.5}")
-[ "${EXT:-on}" = off ] && EXTARGS=(--ext-off)
+[ "${EXT:-on}" = off ] && EXTARGS=(--ext-off) && export AGENOME_EXT=0
 [ -n "${EXTFAM:-}" ] && EXTARGS+=(--ext-families "$EXTFAM")
 CMD=(python3 -m ops_ext.run_search "${EXTARGS[@]}" --run "$WORK/run_$NAME" \
   --stats "$F/target_stats_reels_train.npz" --hold "$F/target_stats_reel05_hold.npz" \

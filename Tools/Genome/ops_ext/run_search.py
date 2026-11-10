@@ -27,6 +27,8 @@ def main():
             else:
                 w = float(val)
     os.environ["OPS_EXT_OFF"] = "1" if off else "0"
+    if off:
+        os.environ["AGENOME_EXT"] = "0"  # the merged agenome/__init__ auto-installs ops_ext otherwise
     if fams:
         os.environ["OPS_EXT_FAMILIES"] = ",".join(fams)
     os.environ["OPS_EXT_WEIGHT"] = str(w)
