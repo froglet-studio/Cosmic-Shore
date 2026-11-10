@@ -45,8 +45,8 @@ not a vessel's own element game.
 | Tiger Moth | Waystation | Dustup | Tapestry | Sirocco | complete |
 | Urchin | Skein | - | Hijack | - | has its Mass game |
 | Dolphin | Switchback | The Bends | - (no mass ability worth a game) | **Rampage** | **already done**: Rampage is its Space game |
-| **Thresher** | Thresher Time | Jackstraw | - | - | **Space game** |
-| **Brittle Star** | Brittle Star Time | Flatline | - | - | **Space game** |
+| **Thresher** | Thresher Time | Jackstraw | - | Harvest | **Space game** (built, `claude/keen-rubin-rw7p6q`) |
+| **Brittle Star** | Brittle Star Time | Flatline | - | Shatterplane | **Space game** (built, `claude/fervent-edison-ol600q`) |
 | **Serpent** | Serpentine | Hood | - | - | **Mass game** (wave 1) |
 | **Swordfish** | - | - | - | Cleave | **Mass game** (wave 1) |
 | **Orca** | Breach | - | - | - | **Mass game** (wave 1) |
@@ -163,7 +163,7 @@ Quoted from `Docs/FleetCodex/abilities.json` on 2026-11-10. The session re-reads
 | --- | --- | --- | --- | --- |
 | Dolphin | Space | - | Rampage | shipped |
 | Thresher | Space | `claude/keen-rubin-rw7p6q` | Harvest (`GameModes.Harvest = 88`) | built headless, not yet run in the editor ([`THRESHER_SPACE.md`](THRESHER_SPACE.md), `Controller/Arcade/HARVEST.md`) |
-| Brittle Star | Space | | | not started |
+| Brittle Star | Space | claude/fervent-edison-ol600q | Shatterplane (90) | authored headless 2026-11-10; editor playtest pending (`SHATTERPLANE.md`) |
 | Serpent | Mass | | | not started |
 | Swordfish | Mass | | | not started |
 | Orca | Mass | | | not started |

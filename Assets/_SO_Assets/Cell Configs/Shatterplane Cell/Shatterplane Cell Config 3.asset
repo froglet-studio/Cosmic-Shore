@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Shatterplane Cell Config 3
+  m_EditorClassIdentifier:
+  CellName: Shatterplane
+  Description: 'Shelves - intensity 3 of Shatterplane: five stacks of three parallel plates 70 u apart
+    - a square ring peels the front one and the guns eat it from the face - five crystals on
+    their axes. 6615 prisms, all neutral (6615 breakable, 0 super-shielded, 0 danger).
+    Membrane radius 1200, spawn ring 780, the standard nucleus resized to 470 u by the
+    controller (the ring blast is as wide as the nucleus; play geometry, not a claim), the
+    crystal field laid by the controller on the plates'' axes. No flora, no fauna. Authored
+    by Tools/Build/author_shatterplane_assets.py - re-run it rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 3
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 120
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: a5648314df28373fbbb13472a5c3d361, type: 2}
+  EnvironmentPrefab: {fileID: 8800000000000203, guid: 4d15ff95bffd9804494475075cfe97ff, type: 3}
+  EnvironmentIntensity: 3
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 7315
+    RestlessExit: 7115
+    FrenzyEnter: 10215
+    FrenzyExit: 9615
+    RestlessEnterVolume: 341950
+    RestlessExitVolume: 338750
+    FrenzyEnterVolume: 388350
+    FrenzyExitVolume: 378750
