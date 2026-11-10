@@ -9,6 +9,9 @@
 # SS=2 renders every clip at 2x and filters it down (closer to the downscaled reels, 2 to 2.7x slower);
 # JUDGE=1.0 adds the fixed perceptual judge (agenome/judge.py, ImageNet features vs the reels) to the fitness,
 # with STATW (weight of the statistics, default 1.0) and CRITICW (the online critic, default 0.5) beside it.
+# It runs in the FOREGROUND (a cloud container kills detached processes once it idles after a turn): start it as a
+# tracked background task (Bash run_in_background, 2 h timeout) and start it again when that ends - it resumes from
+# its own population. BG=1 detaches it with nohup instead (only on a machine that stays up).
 set -euo pipefail
 NAME=${1:?island name}
 HOURS=${2:-6}
@@ -34,14 +37,18 @@ WORKERS=${WORKERS:-$(nproc)}
 SEEDS=${SEEDS:-"$SHARE/seeds/[!wt]*/*.json $SHARE/seeds/theta/*.json $SHARE/genome/handmade/*.json"}
 set -f; read -r -a SEED_ARGS <<< "$SEEDS"; set +f
 RESUME_ARGS=()
-if [ "${RESUME:-all}" != none ]; then RESUME_ARGS=(--resume $(ls "$SHARE"/runs/*/pareto.json 2>/dev/null | head -8)); fi
+OWN=()
+for f in "$WORK/run_$NAME/population.json" "$WORK/run_$NAME/pareto.json"; do [ -f "$f" ] && OWN+=("$f"); done
+if [ "${RESUME:-all}" != none ]; then RESUME_ARGS=(--resume ${OWN[@]+"${OWN[@]}"} $(ls "$SHARE"/runs/*/pareto.json 2>/dev/null | head -16))
+elif [ ${#OWN[@]} -gt 0 ]; then RESUME_ARGS=(--resume "${OWN[@]}"); fi
 GENS=$(( HOURS * 90 ))
 cd "$WORK"
-nohup python3 -m agenome.search --run "$WORK/run_$NAME" \
+CMD=(python3 -m agenome.search --run "$WORK/run_$NAME" \
   --stats "$F/target_stats_reels_train.npz" --hold "$F/target_stats_reel05_hold.npz" \
   --real "$WORK/reels/reel0[1-4]/frames.npy" --real-hold "$WORK/reels/reel05/frames.npy" \
   --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
   --judge-w "${JUDGE:-0}" --stat-w "${STATW:-1.0}" --critic-w "${CRITICW:-0.5}" \
-  --share "$SHARE/runs" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM \
-  > "$WORK/run_$NAME.out" 2>&1 &
-echo "island $NAME running: tail -f $WORK/run_$NAME.out ; results in $SHARE/runs/$NAME/"
+  --share "$SHARE/runs" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
+echo "island $NAME: log $WORK/run_$NAME.out ; results in $SHARE/runs/$NAME/ ; resuming from ${#OWN[@]} own file(s)"
+if [ "${BG:-0}" = 1 ]; then nohup "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1 & exit 0; fi
+exec "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1
