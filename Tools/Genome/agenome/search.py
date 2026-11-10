@@ -66,13 +66,28 @@ def _eval(payload):
                "zbytes": g.size(), "nodes": len(g.nodes), "luma": float(fr.mean() / 255.0),
                "motion": float(np.abs(np.diff(fr[::4].astype(np.int16), axis=0)).mean() / 255.0) if len(fr) > 4 else 0.0,
                "frames": fr[np.linspace(0, len(fr) - 1, 4).astype(int)].copy()}
-        if _HOLD is not None:
-            res["hold"] = _HOLD.distance(f)["total"]
+        holds = [_HOLD.distance(f)["total"]] if _HOLD is not None else []
         if n_judge:
             pick = np.linspace(0, len(fr) - 1, n_judge).round().astype(int)
             res["jframes"] = [fr[pick].copy()]
-            for k in range(1, n_win):  # later windows of the same phenotype, judged too (see --judge-windows)
-                res["jframes"].append(_R.render(g, n_frames, t_shift=k * hop)[pick].copy())
+        if n_win > 1:
+            # later windows of the same phenotype (see --judge-windows): judged, and the stat averages over them too,
+            # so neither term can be met by fitting the first 4 seconds (2026-11-10: genomes judged 0.87 on the first
+            # window read 2.0 to 3.9 later)
+            stats = [d["total"]]
+            for k in range(1, n_win):
+                frk = _R.render(g, n_frames, t_shift=k * hop)
+                fk = window_features(frk, sub=2)
+                stats.append(_ST.distance(fk)["total"])
+                if _HOLD is not None:
+                    holds.append(_HOLD.distance(fk)["total"])
+                if n_judge:
+                    res["jframes"].append(frk[pick].copy())
+            res["stat"] = float(np.mean(stats))
+            res["stat_windows"] = [round(x, 4) for x in stats]
+        if holds:
+            res["hold"] = float(np.mean(holds))
+        res["stat_nwin"] = max(1, n_win)
     except Exception as e:
         res = {"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"{type(e).__name__}: {e}"[:300],
                "nodes": 0, "luma": 0.0, "motion": 0.0}
@@ -133,7 +148,12 @@ class Archive:
 def lineage_of(c):
     """The root seed a genome descends from: children copy their parent's meta, so the seed's name survives (tuning
     suffixes such as __tuned or __jt are dropped, so a tuned seed and its descendants count as one lineage)."""
-    m = c["genome"].meta or {}
+    return lineage_name(c["genome"])
+
+
+def lineage_name(g):
+    """lineage_of for a bare Genome."""
+    m = g.meta or {}
     name = m.get("name") or os.path.splitext(os.path.basename(m.get("src", "") or ""))[0] or "?"
     return name.split("__")[0]
 
@@ -415,7 +435,7 @@ def run(args):
         extra = [m["genome"] for m in archive.members] + [m["genome"] for m in elites.cells.values()]
         kids = []
         if args.share and args.migrate_every > 0 and gen > 0 and gen % args.migrate_every == 0:
-            kids += immigrants(args, rng, k=args.migrants)
+            kids += immigrants(args, rng, k=args.migrants, have={lineage_of(c) for c in pop})
         n_tune = int(round(args.lam * args.tune))
         best_first = sorted(pop, key=lambda c: c["dist"])
         for k in range(max(0, args.lam - len(kids))):
@@ -487,27 +507,39 @@ def run(args):
     save_state(args.run, pop, archive, elites, args.gens)
 
 
-def immigrants(args, rng, k=4):
-    """Best genomes other islands published under --share (their pareto.json), re-evaluated here."""
-    out = []
+def immigrants(args, rng, k=4, have=()):
+    """Genomes other islands published under --share (their pareto.json and elites.json), re-evaluated here: the best
+    one overall, then the best of each other lineage (root seed), lineages this island lacks first. Process mining
+    (2026-11-10): the top k of the fronts by distance were all one seed (min+cellnet), so migration only spread the
+    leader; the survivor cap limits a lineage inside an island, this keeps the exchange between islands diverse."""
     me = os.path.abspath(os.path.join(args.share, args.island)) if args.island else None
-    for p in glob.glob(os.path.join(args.share, "*", "pareto.json")):
+    best = {}  # lineage -> (dist, genome, island)
+    for p in glob.glob(os.path.join(args.share, "*", "pareto.json")) + glob.glob(os.path.join(args.share, "*", "elites.json")):
         if me and os.path.abspath(os.path.dirname(p)) == me:
             continue
         try:
             data = json.load(open(p))
         except Exception:
             continue
-        data = sorted(data, key=lambda d: d.get("dist", 99))[:max(1, k)]
         for d in data:
             try:
                 g = Genome.from_json(d["genome"])
             except Exception:  # ops this code does not know yet (an island on newer code): skip, never crash
                 continue
-            g.meta["immigrant_from"] = os.path.basename(os.path.dirname(p))
-            out.append(g)
-    rng.shuffle(out)
-    return out[:k]
+            L, dist = lineage_name(g), float(d.get("dist", 99.0))
+            if L not in best or dist < best[L][0]:
+                best[L] = (dist, g, os.path.basename(os.path.dirname(p)))
+    if not best:
+        return []
+    have = set(have)
+    lead = min(best, key=lambda L: best[L][0])
+    rest = sorted((L for L in best if L != lead), key=lambda L: (L in have, best[L][0] + 0.01 * rng.random()))
+    out = []
+    for L in [lead] + rest[:max(0, k - 1)]:
+        g = best[L][1]
+        g.meta["immigrant_from"] = best[L][2]
+        out.append(g)
+    return out
 
 
 def publish(args, run_dir):
