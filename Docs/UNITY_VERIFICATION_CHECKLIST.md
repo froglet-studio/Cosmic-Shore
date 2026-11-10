@@ -22142,6 +22142,23 @@ Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY
    the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
 5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.
 
+**2026-11-10, step 3 FAILED in the editor (Garrett: "it was too dark to see").** Cause, found by reading the code and
+URP 17.3's source (not yet seen in the editor): `BrittleStarRingSmearPass.ForwardPass` picked each material's pass by
+its LightMode tag, and the hull's `VesselGraph` is an Unlit Shader Graph whose forward pass has NO LightMode tag
+(UniversalUnlitSubTarget sets none; ShaderGraph writes `// LightMode: <None>`). No pass matched, so the ring layer was
+empty, the smear averaged nothing, and the ring the hull had hidden vanished whenever it turned more than
+`ringSmearMinDegrees` a frame (1.5° in `BrittleStarConfig.asset`). The fallback missed it because the request was marked drawn when the pass was recorded. Fixed on branch
+`claude/brittlestar-smear-empty-layer`. **Compiled, not run in Unity** (ship pass, 2026-11-10): `unity_refcompile`'s
+player and editor configs report 0 errors in the changed files, and a planted error in `BrittleStarRingSmearPass.cs`
+and in `BrittleStarRingSpinTests.cs` was each named; their only errors are the sandbox's 21 in `FactionChatService.cs`
+and `PlayerReports.cs` (Vivox and Moderation cannot be fetched), identical on bleeding-edge `5b13c396a`.
+`BrittleStarRingSpinTests` has not run. Re-run steps 1-3, plus:
+
+6. **The layer draws**: Frame Debugger during a spin: `BrittleStar ring layer` shows one draw per ring submesh (Body,
+   the domain ship material, Engine), and `BrittleStarRingSpinTests.TheSmearLayer_FindsTheForwardPassOnEveryHullMaterial`
+   passes. The ring is visible the whole time it spins; compare it with the lab's round 3 game look
+   (`Docs/Studios/BrittleStarRingLab.html`, Framing 1:1 at 1080p, same frame rate).
+
 ## 🔴 2026-11-07 — Voyages, deep: the living HyperSea, rival crews, a job for every faction type, sagas and relics (unverified: no Unity editor in the session)
 
 **Plan:** `Docs/Voyages/DEPTH.md`. **Files:** `Data/Voyages/*` (`VoyageEnums`, `VoyageContent`, `VoyageState`,
