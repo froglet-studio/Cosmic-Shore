@@ -178,11 +178,15 @@ class JudgeState:
         self.Js = []
         if self.on:
             from .judge import Judge
-            # several nets, averaged: InceptionV3 and MobileNetV2 rank 30 genomes alike only at Spearman 0.79 (each has
-            # its own quirks, frame sampling is not the cause: 12 of 60 frames rank at 0.992), so the search climbs
-            # their mean and cannot ride one network's blind spot
+            # several nets: InceptionV3 and MobileNetV2 rank 30 genomes alike only at Spearman 0.79 (each has its own
+            # quirks; frame sampling is not the cause: 12 of 60 frames rank at 0.992). Their MEAN was ridden anyway: by
+            # 18:20 on 2026-11-10 the 13 best of 325 judged genomes read 0.86 on Inception and 1.21 on MobileNet (the
+            # search learned to please one net), while genomes judged 2.2-4 read the same on both (ratio 1.02). So the
+            # score is the LARGER of the two (v3): a genome has to look like Amoebius to both nets
             self.Js = [Judge(net, "native", args.judge_n) for net in args.judge_net.split("+")]
-            print(f"judge: {args.judge_net}, {args.judge_n} frames, levels "
+            self.agg = np.max if args.judge_agg == "max" else np.mean
+            self.version = 3 if args.judge_agg == "max" else self.Js[0].version
+            print(f"judge v{self.version}: {args.judge_net} ({args.judge_agg}), {args.judge_n} frames, levels "
                   f"{[round(J.level, 1) for J in self.Js]}", flush=True)
 
     def score(self, cands):
@@ -192,10 +196,11 @@ class JudgeState:
         if live:
             per = [J.score_many([c["jframes"] for c in live]) for J in self.Js]
             for k, c in enumerate(live):
-                c["judge"] = round(float(np.mean([p[k]["judge"] for p in per])), 4)
-                c["judge_hold"] = round(float(np.mean([p[k]["judge_hold"] for p in per])), 4)
+                c["judge"] = round(float(self.agg([p[k]["judge"] for p in per])), 4)
+                c["judge_hold"] = round(float(self.agg([p[k]["judge_hold"] for p in per])), 4)
                 c["judges"] = [round(p[k]["judge"], 3) for p in per]
-                c["judge_v"] = self.Js[0].version
+                c["judges_hold"] = [round(p[k]["judge_hold"], 3) for p in per]
+                c["judge_v"] = self.version
         for c in cands:
             c.pop("jframes", None)
 
@@ -513,7 +518,10 @@ def main(argv=None):
     ap.add_argument("--critic-w", type=float, default=0.5)
     ap.add_argument("--judge-w", type=float, default=0.0,
                     help="weight of the fixed perceptual judge (agenome.judge; 1.0 = Amoebius' own level); 0 = off")
-    ap.add_argument("--judge-net", default="inception+mobilenet", help="nets averaged by the judge, joined by +")
+    ap.add_argument("--judge-net", default="inception+mobilenet", help="the judge's nets, joined by +")
+    ap.add_argument("--judge-agg", default="max", choices=["max", "mean"],
+                    help="how the nets' scores combine: max (v3, default; the mean was ridden by pleasing one net) or "
+                         "mean (v2)")
     ap.add_argument("--judge-n", type=int, default=12, help="frames per clip the judge sees")
     ap.add_argument("--stat-w", type=float, default=1.0, help="weight of the fixed statistics in dist")
     ap.add_argument("--critic-every", type=int, default=6)

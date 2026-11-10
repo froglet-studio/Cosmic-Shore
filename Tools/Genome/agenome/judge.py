@@ -21,6 +21,13 @@ there. Version 2 (2026-11-10 18:00): the five reels are three sources (reel05 re
 median nearest-frame distance 0.07 and 0.09 against ~1.1 between unrelated reels), so v1's held-out reel 5 was mostly
 reel 3, which was in training. v2 holds out the whole source (reels 3 and 5); v1 caches stay on disk under their names.
 
+Version 3 (2026-11-10 18:30) keeps v2's references and levels and changes how the two nets combine: the search used
+to climb their mean and learned to please InceptionV3 alone (the 13 best of 325 judged genomes read 0.86 on it and
+1.21 on MobileNetV2, while genomes judged 2.2-4 read alike on both). v3 scores the LARGER of the two, so a genome has
+to look like Amoebius to both; calibration_max_native_v3.json holds the table, taken window by window.
+Known blind spot (fitness lab, 2026-11-10): real footage with the HUD or the bright game elements inpainted away
+scores the same as the original (AUC 0.44-0.51), so the judge sees the look, not the game's elements.
+
   python3 -m agenome.judge calibrate OUT.json [--net inception|mobilenet] [--res native|299]
   python3 -m agenome.judge score OUT.json --front main=pareto.json --front seedbank=... [--genome g.json ...]
 
@@ -231,8 +238,12 @@ def main(argv=None):
                "crit": r.get("crit"), "dist": r.get("dist"), "src": meta.get("name") or r.get("src") or r.get("name"),
                **j, **{f"{a.also}_{k}": v for k, v in j2.items()}}
         out.append(row)
+        if j2:  # v3: the larger of the two nets
+            row["judge_v3"] = max(j["judge"], j2["judge"])
+            row["judge_hold_v3"] = max(j["judge_hold"], j2["judge_hold"])
         print(f"{name:10s} z {row['zbytes']:5d} stat {row['stat'] or 0:6.3f} judge {j['judge']:5.2f} "
-              f"judge_hold {j['judge_hold']:5.2f}" + (f"  {a.also} {j2['judge']:5.2f}/{j2['judge_hold']:5.2f}" if j2 else "")
+              f"judge_hold {j['judge_hold']:5.2f}" + (f"  {a.also} {j2['judge']:5.2f}/{j2['judge_hold']:5.2f}"
+                                                      f"  v3 {row['judge_v3']:5.2f}/{row['judge_hold_v3']:5.2f}" if j2 else "")
               + f"  {str(row['src'])[:40]}", flush=True)
     json.dump(out, open(a.out, "w"), indent=1)
 

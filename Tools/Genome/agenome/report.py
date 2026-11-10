@@ -4,15 +4,16 @@
       --island main=/home/user/work/runs/run2,/home/user/work/runs/run3,/home/user/work/runs/run4 \
       --island A=/mnt/project-files/amoebius-genome/runs/A --island B=/mnt/project-files/amoebius-genome/runs/B \
       --seedbank /mnt/project-files/amoebius-genome/runs/seedbank/pareto.json \
-      --reels '/home/user/work/targets/reel0*/frames.npy' --holdout reel05 \
+      --reels '/home/user/work/targets/reel0*/frames.npy' --holdout reel03,reel05 \
       --stats /mnt/project-files/amoebius-genome/fitness/target_stats_train_v2.npz --hold /mnt/project-files/amoebius-genome/fitness/target_stats_hold_v2.npz
 
 An island is name=dir[,dir...]: the dirs are its runs in order (a restart continues the curve). Every genome shown is
 rendered again here and re-scored with the fixed statistics, so the numbers on the page are comparable across
 islands and restarts (the search's own fitness also has the critic term, which moves as the critic retrains).
 
-Every genome is also judged (agenome.judge: InceptionV3 and MobileNetV2 KID against the reels, 1.0 = Amoebius' own
-held-out reel), and the page ranks by the judge since the statistics proved gameable on 2026-11-10.
+Every genome is also judged (agenome.judge v2: InceptionV3 and MobileNetV2 KID against the training reels 1, 2, 4,
+1.0 = the held-out Amoebius source, reels 3 and 5), and the page ranks by the judge since the statistics proved
+gameable on 2026-11-10.
 
 Writes OUT_DIR/index.html, OUT_DIR/strips/<id>.jpg (4 frames) and OUT_DIR/clips/<id>.mp4. Publish index.html with
 strips/ and clips/ as its files; re-run and republish to the same URL to refresh. Videos are never committed.
@@ -173,7 +174,7 @@ def main(argv=None):
     ap.add_argument("--island", action="append", default=[], help="name=dir[,dir...]")
     ap.add_argument("--seedbank", default=None)
     ap.add_argument("--reels", default="/mnt/project-files/amoebius-genome/fitness/reels_256x144/reel0*/frames.npy")
-    ap.add_argument("--holdout", default="reel05")
+    ap.add_argument("--holdout", default="reel03,reel05", help="held-out reels (one source: reel05 re-cuts reel03)")
     ap.add_argument("--stats", required=True)
     ap.add_argument("--hold", required=True)
     ap.add_argument("--max-genomes", type=int, default=100)
@@ -227,8 +228,9 @@ def main(argv=None):
     Js = [Judge(net, "native", 12) for net in ("inception", "mobilenet")]
 
     def judged(fr):
+        """judge v3: the larger of the two nets' scores (the search climbs the same number; see search.JudgeState)"""
         per = [J.score_many([sample(fr, 12)])[0] for J in Js]
-        return (round(float(np.mean([p["judge"] for p in per])), 4), round(float(np.mean([p["judge_hold"] for p in per])), 4),
+        return (round(float(max(p["judge"] for p in per)), 4), round(float(max(p["judge_hold"] for p in per)), 4),
                 [round(p["judge"], 3) for p in per])
 
     genomes, frames_of = [], {}
@@ -291,6 +293,7 @@ def main(argv=None):
     # Amoebius reels: a 4 s window from the middle of each
     reels = []
     hold_frames = None
+    holdouts = set(a.holdout.split(","))
     for p in sorted(glob.glob(a.reels)):
         name = os.path.basename(os.path.dirname(p))
         fr = np.load(p, mmap_mode="r")
@@ -298,9 +301,9 @@ def main(argv=None):
         w = np.asarray(fr[s0:s0 + 60])
         _strip(w, os.path.join(a.out, "strips", name + ".jpg"))
         clip = f"clips/{name}.mp4" if _mp4(w, os.path.join(a.out, "clips", name + ".mp4")) else None
-        held = name == a.holdout
+        held = name in holdouts
         if held:
-            hold_frames = np.asarray(fr)
+            hold_frames = np.asarray(fr) if hold_frames is None else np.concatenate([hold_frames, np.asarray(fr)])
         reels.append({"name": name, "held": held, "strip": f"strips/{name}.jpg", "clip": clip,
                       "window": [int(s0), int(s0 + 60)], "frames": int(len(fr)),
                       "stat": round(stats.distance(window_features(w))["total"], 3), "d": judged(w)[0]})
@@ -312,8 +315,16 @@ def main(argv=None):
         cp = os.path.join(SHARED, f"calibration_{J.net}_native_v{J.version}.json")
         cj = _json(cp)
         per_net.append(cj["cases"] if cj else judge_calibration(J))
-    jcal = [{"label": rows[0]["label"], "judge": round(float(np.mean([r["judge"] for r in rows])), 3),
-             "judge_hold": round(float(np.mean([r["judge_hold"] for r in rows])), 3)} for rows in zip(*per_net)]
+    # v3 calibration: per window, the larger of the two nets (fitness/judge/calibration_max_native_v3.json); without
+    # it, the larger of the nets' window means (a little lower than the mean of window maxima)
+    c3 = _json(os.path.join(SHARED, "calibration_max_native_v3.json"))
+    if c3:
+        jcal = [{"label": r["label"], "judge": round(r["judge"], 3), "judge_hold": round(r["judge_hold"], 3),
+                 "nets": [round(x, 3) for x in r["per_net"]]} for r in c3["cases"]]
+    else:
+        jcal = [{"label": rows[0]["label"], "judge": round(float(max(r["judge"] for r in rows)), 3),
+                 "judge_hold": round(float(max(r["judge_hold"] for r in rows)), 3),
+                 "nets": [round(r["judge"], 3) for r in rows]} for rows in zip(*per_net)]
     hold_all = [stats.distance(window_features(w)) for w in windows(hold_frames)] if hold_frames is not None else []
     hold_groups = {g: round(float(np.mean([d[g] for d in hold_all])), 3) for g in GROUPS} if hold_all else {}
     hold_total = round(float(np.mean([d["total"] for d in hold_all])), 3) if hold_all else None
