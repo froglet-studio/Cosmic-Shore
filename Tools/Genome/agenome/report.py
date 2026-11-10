@@ -180,6 +180,10 @@ def main(argv=None):
     ap.add_argument("--max-genomes", type=int, default=100)
     ap.add_argument("--clips", type=int, default=14)
     ap.add_argument("--ss", type=int, default=1, help="supersampling factor, as the islands use (AGENOME_SS)")
+    ap.add_argument("--windows", type=int, default=2,
+                    help="4-second windows judged per genome, --hop seconds apart (2 = what the islands climb since "
+                         "2026-11-10 19:15): each window scores the worse of the two nets, then the windows average")
+    ap.add_argument("--hop", type=float, default=8.0)
     a = ap.parse_args(argv)
     os.environ["AGENOME_SS"] = str(a.ss)
 
@@ -227,11 +231,17 @@ def main(argv=None):
     R = Renderer()
     Js = [Judge(net, "native", 12) for net in ("inception", "mobilenet")]
 
-    def judged(fr):
-        """judge v3: the larger of the two nets' scores (the search climbs the same number; see search.JudgeState)"""
-        per = [J.score_many([sample(fr, 12)])[0] for J in Js]
-        return (round(float(max(p["judge"] for p in per)), 4), round(float(max(p["judge_hold"] for p in per)), 4),
-                [round(p["judge"], 3) for p in per])
+    def judged(frs):
+        """judge v3 on each window: the larger of the two nets' scores, then the mean over the windows (the number
+        the search climbs; see search.JudgeState). Returns judge, judge_hold, per-net judge, per-window judge."""
+        frs = [frs] if isinstance(frs, np.ndarray) else frs  # one clip (a reel window) or a genome's windows
+        clips = [sample(fr, 12) for fr in frs]
+        per = [J.score_many(clips) for J in Js]  # per[net][window]
+        win = [max(p[k]["judge"] for p in per) for k in range(len(clips))]
+        win_h = [max(p[k]["judge_hold"] for p in per) for k in range(len(clips))]
+        nets = [float(np.mean([w["judge"] for w in p])) for p in per]
+        return (round(float(np.mean(win)), 4), round(float(np.mean(win_h)), 4), [round(x, 3) for x in nets],
+                [round(float(x), 3) for x in win])
 
     genomes, frames_of = [], {}
     t0 = time.time()
@@ -244,7 +254,12 @@ def main(argv=None):
             continue
         d = stats.distance(window_features(fr))
         dh = hold.distance(window_features(fr))
-        jd, jdh, jdn = judged(fr)
+        try:
+            later = [R.render(g, 60, t_shift=k * a.hop) for k in range(1, max(1, a.windows))]
+        except Exception as e:
+            print("skip", gid, e, flush=True)
+            continue
+        jd, jdh, jdn, jdw = judged([fr] + later)
         _strip(fr, os.path.join(a.out, "strips", gid + ".jpg"))
         frames_of[gid] = fr
         c = s["search"]
@@ -253,7 +268,7 @@ def main(argv=None):
             "id": gid, "name": m.get("name") or "unnamed", "lineage": _lineage(g),
             "src": m.get("src") or "", "from": m.get("immigrant_from"),
             "islands": s["islands"], "kinds": s["kinds"],
-            "d": jd, "dh": jdh, "dn": jdn,
+            "d": jd, "dh": jdh, "dn": jdn, "dw": jdw,
             "stat": round(d["total"], 4), "hold": round(dh["total"], 4),
             "groups": {k: round(d[k], 3) for k in GROUPS},
             "fit": round(c["dist"], 4) if "dist" in c and "stat" in c and c.get("crit") is not None else None,
