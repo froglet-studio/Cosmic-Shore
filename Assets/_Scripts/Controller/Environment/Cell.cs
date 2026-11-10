@@ -238,6 +238,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The nucleus radius a cell built from <paramref name="config"/> would report through
+        /// <see cref="ExpectedNucleusWorldRadius"/> at the shipped scale multiplier of 1 - for a
+        /// caller with a config and no cell. The arcade card's scale model is that caller: it
+        /// builds a gate race's course before any cell exists, and the course's inner wall is a
+        /// multiple of this, so a model built at 0 would draw a different course from the one the
+        /// tap flies. 0 when the config has no nucleus.
+        /// </summary>
+        public static float MeasureNucleusRadius(CellConfigDataSO config) =>
+            config ? MeasurePrefabRadius(config.NucleusPrefab) : 0f;
+
+        /// <summary>
         /// Max half-extent of a prefab ASSET's meshes about its root, at the authored scale — the
         /// asset-time counterpart of <see cref="RefreshNucleusControlRadius"/>'s
         /// <c>Renderer.bounds</c> read, and equal to it for a centred mesh.
