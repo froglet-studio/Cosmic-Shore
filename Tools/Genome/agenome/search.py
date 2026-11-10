@@ -315,7 +315,15 @@ def run(args):
         kids = []
         if args.share and gen > 0 and gen % args.migrate_every == 0:
             kids += immigrants(args, rng, k=args.migrants)
+        n_tune = int(round(args.lam * args.tune))
+        best_first = sorted(pop, key=lambda c: c["dist"])
         for k in range(max(0, args.lam - len(kids))):
+            if k < n_tune:
+                # TUNE: parameter-only steps around the current best few (a hill climb inside the population);
+                # the seed thread's 150-eval param climb took a seed from 4.40 to 1.57 where structural search stalled
+                p = best_first[min(int(rng.expovariate(0.7)), len(best_first) - 1)]["genome"]
+                kids.append(mutate(p, rng, structural=0.0).ensure_root().prune())
+                continue
             if rng.random() < 0.6:
                 p = min(rng.sample(pop, min(3, len(pop))),
                         key=lambda c: c["dist"] if regime == COMPLEXIFY else c["zbytes"])["genome"]
@@ -446,6 +454,7 @@ def main(argv=None):
     ap.add_argument("--hold", default=None)
     ap.add_argument("--real", nargs="*", default=[], help="frames.npy globs: Amoebius frames the critic calls real")
     ap.add_argument("--real-hold", default=None, help="frames.npy glob: held-out Amoebius frames (critic check)")
+    ap.add_argument("--tune", type=float, default=0.25, help="share of each generation spent on parameter-only steps around the best")
     ap.add_argument("--critic-w", type=float, default=0.5)
     ap.add_argument("--critic-every", type=int, default=6)
     ap.add_argument("--critic-steps", type=int, default=120)

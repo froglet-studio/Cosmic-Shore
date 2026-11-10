@@ -1,0 +1,544 @@
+<title>Amoebius Genome Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
+<style>
+/* Layout: a lab bench. Amoebius on the left, the search's pick on the right, the instruments stacked below in one
+   column (max 1180px). Colours, type, spacing and the corner sliver are the Froglet style guide's (Docs/UI/froglet.css):
+   Deep Sea by default, Shore when the viewer is in light mode. Jade marks the selection, Lime only "running". */
+:root {
+  --bg: #00041F; --panel: #00010A; --raise: #222645; --line: #434C89;
+  --fg: #E6E9FF; --soft: #747BAD; --sel: #00D4FF; --live: #99FF80;
+  --data: #758FFB; --data2: #B9C9FA; --ref: #747BAD; --media: #000000;
+  --f-read: 'Aldrich', 'Chakra Petch', system-ui, sans-serif;
+  --f-press: 'Chakra Petch', 'Aldrich', system-ui, sans-serif;
+  --f-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --t-display: clamp(26px, 4.2vw, 40px); --t-h2: 22px; --t-h3: 16px; --t-body: 15px; --t-small: 13px; --t-label: 12px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
+  --cut: 14px; --cut-s: 10px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F4F5FF; --panel: #FFFFFF; --raise: #DDE1F7; --line: #B8C0F0;
+    --fg: #00041F; --soft: #434C89; --sel: #007D73; --live: #487C1F;
+    --data: #404EEC; --data2: #230BB0; --ref: #8A8FAE;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #F4F5FF; --panel: #FFFFFF; --raise: #DDE1F7; --line: #B8C0F0;
+  --fg: #00041F; --soft: #434C89; --sel: #007D73; --live: #487C1F;
+  --data: #404EEC; --data2: #230BB0; --ref: #8A8FAE;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-read); font-size: var(--t-body); line-height: 1.55; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: var(--s7);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: var(--s6) var(--s8); }
+section { display: grid; gap: var(--s4); min-width: 0; }
+h1, h2, h3 { font-family: var(--f-read); font-weight: 400; margin: 0; text-wrap: balance; }
+h1 { font-size: var(--t-display); line-height: 1.12; max-width: 22ch; }
+h2 { font-size: var(--t-h2); line-height: 1.25; }
+h3 { font-size: var(--t-h3); }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--soft); }
+.label { font-family: var(--f-press); font-weight: 600; font-size: var(--t-label); letter-spacing: .12em; text-transform: uppercase; color: var(--soft); }
+.num { font-variant-numeric: tabular-nums; }
+code, .mono { font-family: var(--f-mono); font-size: 12.5px; }
+code { color: var(--data2); word-break: break-word; }
+a { color: var(--sel); }
+
+/* the corner sliver: two opposite corners cut, nothing rounded */
+.panel { background: var(--line); padding: 1px; min-width: 0;
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+.panel > .in { background: var(--panel); height: 100%; padding: var(--s4); display: grid; gap: var(--s3); align-content: start; min-width: 0;
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+
+header.top { display: grid; gap: var(--s4); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.chip { font-family: var(--f-press); font-weight: 600; font-size: var(--t-label); letter-spacing: .06em;
+  display: inline-flex; align-items: center; gap: var(--s2); padding: 5px 10px; background: var(--raise); color: var(--fg);
+  clip-path: polygon(var(--cut-s) 0, 100% 0, 100% calc(100% - var(--cut-s)), calc(100% - var(--cut-s)) 100%, 0 100%, 0 var(--cut-s)); }
+.dot { width: 8px; height: 8px; background: var(--soft); display: inline-block; }
+.dot.live { background: var(--live); }
+
+.bench { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
+@media (max-width: 760px) { .bench { grid-template-columns: 1fr; } }
+.stage { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--media); overflow: hidden; }
+.stage video, .stage img.big { width: 100%; height: 100%; display: block; object-fit: cover; image-rendering: pixelated; }
+.strip { width: 100%; display: block; aspect-ratio: 1024 / 144; image-rendering: pixelated; background: var(--media); }
+.frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: var(--media); max-width: 100%; }
+.frame img { position: absolute; top: 0; height: 100%; width: 400%; max-width: none; left: calc(var(--k, 1) * -100%); image-rendering: pixelated; }
+.row { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; justify-content: space-between; }
+.tabs { display: flex; flex-wrap: wrap; gap: var(--s1); }
+.tab { font-family: var(--f-press); font-weight: 600; font-size: var(--t-label); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--soft); background: transparent; border: 1px solid var(--line); padding: 4px 8px; cursor: pointer; }
+.tab[aria-pressed="true"] { color: var(--sel); border-color: var(--sel); }
+.tab:focus-visible, button:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+.cap { color: var(--soft); font-size: var(--t-small); }
+.big-num { font-family: var(--f-read); font-size: 28px; line-height: 1; }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--s3) var(--s4); }
+.fact { display: grid; gap: 2px; min-width: 0; }
+.fact .v { font-size: 18px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.trio { display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--s4); }
+@media (max-width: 900px) { .trio { grid-template-columns: 1fr; } }
+.opchips { display: flex; flex-wrap: wrap; gap: var(--s1); }
+.op { font-family: var(--f-mono); font-size: 12px; padding: 2px 6px; background: var(--raise); color: var(--fg); }
+.op b { font-weight: 400; color: var(--soft); }
+.hex { font-family: var(--f-mono); font-size: 11.5px; line-height: 1.6; color: var(--soft); white-space: pre-wrap; word-break: break-all; max-height: 9.6em; overflow: auto; margin: 0; }
+.btn { font-family: var(--f-press); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--fg); background: var(--raise); border: 0; padding: 8px 14px; cursor: pointer;
+  clip-path: polygon(var(--cut-s) 0, 100% 0, 100% calc(100% - var(--cut-s)), calc(100% - var(--cut-s)) 100%, 0 100%, 0 var(--cut-s)); }
+.btn:hover { color: var(--sel); }
+
+.chart { width: 100%; display: block; overflow: visible; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); font-size: var(--t-small); color: var(--soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; display: inline-block; }
+svg text { font-family: var(--f-press); font-size: 11px; }
+.ax { fill: var(--soft); }
+.axl { stroke: var(--line); stroke-width: 1; }
+.grid { stroke: var(--raise); stroke-width: 1; }
+.base { stroke: var(--soft); stroke-width: 1; stroke-dasharray: 4 4; }
+.lab { fill: var(--fg); }
+.pt { fill: var(--data); stroke: var(--panel); stroke-width: 2; }
+.pt.off { fill: none; stroke: var(--data); stroke-width: 1.5; }
+.pt.sel { fill: var(--sel); }
+.frontline { fill: none; stroke: var(--data2); stroke-width: 2; }
+.hit { fill: transparent; cursor: pointer; }
+.l1 { fill: none; stroke: var(--data); stroke-width: 2; }
+.l2 { fill: none; stroke: var(--data2); stroke-width: 2; stroke-dasharray: 5 3; }
+.cmp { fill: var(--raise); }
+.cross { stroke: var(--soft); stroke-width: 1; }
+.bar1 { fill: var(--data); }
+.bar2 { fill: var(--ref); }
+.mk { fill: var(--fg); }
+.mk.sel { fill: var(--sel); }
+
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+  padding: 8px 10px; font-size: var(--t-small); max-width: 260px; line-height: 1.4; }
+.tip b { font-weight: 400; color: var(--sel); }
+
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--s3); }
+.card { all: unset; cursor: pointer; display: grid; gap: 6px; min-width: 0; }
+.card .meta { font-size: var(--t-small); color: var(--soft); display: flex; justify-content: space-between; gap: var(--s2); }
+.card .nm { font-size: var(--t-small); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card[aria-pressed="true"] .frame { outline: 2px solid var(--sel); outline-offset: 2px; }
+
+.land { overflow-x: auto; }
+.landgrid { display: grid; grid-template-columns: 64px repeat(6, minmax(92px, 1fr)); gap: 4px; min-width: 620px; }
+.landgrid .hd { font-family: var(--f-press); font-size: 11px; color: var(--soft); align-self: end; text-align: center; padding-bottom: 2px; }
+.landgrid .rl { font-family: var(--f-press); font-size: 11px; color: var(--soft); align-self: center; text-align: right; padding-right: 6px; }
+.cell { all: unset; cursor: pointer; position: relative; display: block; }
+.cell .frame { aspect-ratio: 16 / 9; }
+.cell .d { position: absolute; left: 0; bottom: 0; background: var(--panel); color: var(--fg); font-size: 11px; padding: 1px 5px; font-variant-numeric: tabular-nums; }
+.cell[aria-pressed="true"] .frame { outline: 2px solid var(--sel); outline-offset: 1px; }
+.empty { aspect-ratio: 16 / 9; border: 1px dashed var(--raise); }
+
+.multiples { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s4); }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--s4); }
+.how p { font-size: var(--t-small); color: var(--soft); }
+.how p + p { margin-top: var(--s2); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+th { font-family: var(--f-press); font-weight: 600; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--soft); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--raise); font-variant-numeric: tabular-nums; }
+td.r, th.r { text-align: right; }
+tr.pick { cursor: pointer; }
+tr.pick:hover td { color: var(--sel); }
+footer { display: grid; gap: var(--s2); color: var(--soft); font-size: var(--t-small); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="label">Amoebius genome lab</div>
+    <h1>A .kkrieger-style genome, judged by Amoebius footage</h1>
+    <p class="lede">Every phenotype on this page is a few hundred bytes: an operator graph in the spirit of farbrausch's .kkrieger that compiles to a raymarched world, a flock of vessels laying prism trails, a camera, a grade and a HUD. Each one renders a 4-second clip at 256×144, and its distance to Amoebius gameplay footage is its fitness. On that scale 1.0 is how much Amoebius differs from itself.</p>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <section aria-labelledby="h-bench">
+    <div class="label" id="h-bench">Amoebius beside the selected phenotype</div>
+    <div class="bench">
+      <div class="panel"><div class="in">
+        <div class="row"><h3>Amoebius</h3><div class="tabs" id="reeltabs"></div></div>
+        <div class="stage" id="reelstage"></div>
+        <img class="strip" id="reelstrip" alt="Four frames from the Amoebius reel">
+        <div class="cap" id="reelcap"></div>
+      </div></div>
+      <div class="panel"><div class="in">
+        <div class="row"><h3 id="selname">Selected phenotype</h3><span class="label" id="selbytes"></span></div>
+        <div class="stage" id="selstage"></div>
+        <img class="strip" id="selstrip" alt="Four frames from the selected phenotype">
+        <div class="cap" id="selcap"></div>
+      </div></div>
+    </div>
+    <div class="panel"><div class="in">
+      <div class="row"><span class="label">Distance to Amoebius, log scale</span><span class="cap">lower is closer</span></div>
+      <div id="scale"></div>
+    </div></div>
+  </section>
+
+  <section aria-labelledby="h-detail">
+    <div class="label" id="h-detail">The selected genome</div>
+    <div class="trio">
+      <div class="panel"><div class="in">
+        <div class="facts" id="facts"></div>
+        <div class="legend"><span><i class="sw" style="background:var(--data)"></i>selected phenotype</span><span><i class="sw" style="background:var(--ref)"></i>Amoebius, held-out reel</span><span>dashed line: 1.0, Amoebius' own spread</span></div>
+        <div id="groups"></div>
+        <p class="cap">Per feature group, how far the phenotype sits from the Amoebius training reels. The largest bar is what still gives it away.</p>
+      </div></div>
+      <div class="panel"><div class="in">
+        <span class="label">Operators</span>
+        <div class="opchips" id="ops"></div>
+        <div class="row"><span class="label" id="hexlabel">The genome</span><button class="btn" id="copy" type="button">Copy genome bytes</button></div>
+        <pre class="hex" id="hex"></pre>
+        <p class="cap" id="copynote">These bytes are the whole phenotype. <code>Genome.from_bytes(bytes.fromhex(...))</code> in <code>Tools/Genome/agenome</code> rebuilds it.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-front">
+    <div class="label" id="h-front">Size against likeness</div>
+    <h2>The front: the closest phenotype at each genome size</h2>
+    <div class="panel"><div class="in">
+      <div class="legend" id="shapelegend"></div>
+      <div id="scatter"></div>
+      <p class="cap">Each mark is a genome the search kept, re-rendered and re-scored for this page with the fixed statistics. The line steps through the front. Select a mark to put it on the bench. Marks drawn hollow sit above the top of the chart.</p>
+    </div></div>
+    <div class="gallery" id="gallery"></div>
+  </section>
+
+  <section aria-labelledby="h-land">
+    <div class="label" id="h-land">The landscape</div>
+    <h2>One genome per niche: size across, brightness down</h2>
+    <p class="lede">The search keeps the closest genome for every cell of genome size by mean brightness (its MAP-Elites side archive), so it explores the whole space instead of one look. Each cell shows that genome's second frame and its distance.</p>
+    <div class="panel"><div class="in land"><div class="landgrid" id="land"></div></div></div>
+  </section>
+
+  <section aria-labelledby="h-prog">
+    <div class="label" id="h-prog">Progress</div>
+    <h2>How each island's best has moved</h2>
+    <div class="legend"><span><i class="sw" style="background:var(--data)"></i>search fitness (statistics plus critic)</span><span><i class="sw" style="background:var(--data2)"></i>statistics alone, dashed</span><span><i class="sw" style="background:var(--raise)"></i>compress regime</span></div>
+    <div class="multiples" id="multiples"></div>
+    <p class="cap">The fitness has a learned critic in it that is retrained every few generations on Amoebius frames against the population's latest frames, so it gets stricter as the population improves. A rising fitness line can mean the critic caught up, not that the phenotypes got worse.</p>
+  </section>
+
+  <section aria-labelledby="h-how">
+    <div class="label" id="h-how">How it works</div>
+    <div class="how" id="how"></div>
+    <div class="panel"><div class="in">
+      <span class="label">What the statistics say about broken Amoebius footage</span>
+      <div class="tablewrap"><table id="calib"></table></div>
+      <p class="cap">Each row is the held-out Amoebius reel after one change, scored against the training reels. A good metric keeps the first rows near 1 and pushes the broken ones far away.</p>
+    </div></div>
+  </section>
+
+  <section aria-labelledby="h-lin">
+    <div class="label" id="h-lin">Lineages</div>
+    <h2>Where the genomes came from</h2>
+    <div class="panel"><div class="in"><div class="tablewrap"><table id="lineages"></table></div></div></div>
+  </section>
+
+  <footer>
+    <div class="label">Where it lives</div>
+    <div>Code: branch <code>claude/amoebius-genome</code>, folder <code>Tools/Genome/agenome</code>. Seeds, targets and every island's results: the project folder <code>amoebius-genome/</code>.</div>
+    <div>This page: <code>python3 -m agenome.report OUT --island main=… --seedbank …</code>, then republish. <span id="updated"></span></div>
+    <div>Handoff notes for the next session: <a href="https://claude.ai/artifact/2ieZ3JGfBJNS2JpDzj69x6">Amoebius Genome handoff</a>.</div>
+  </footer>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const G = new Map(D.genomes.map(g => [g.id, g]));
+  const NS = 'http://www.w3.org/2000/svg';
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let sel = D.best;
+  let reelIx = Math.max(0, D.reels.findIndex(r => r.held));
+  const $ = id => document.getElementById(id);
+  const f2 = x => (x == null || !isFinite(x)) ? '–' : Number(x).toFixed(2);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const nice = s => String(s).replace(/__/g, ' ').replace(/_/g, ' ');
+  const iname = n => (String(n).replace(/^island/i, '') || String(n));
+  function S(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  function T(parent, x, y, text, cls, anchor) { const t = S('text', { x, y, class: cls || 'ax', 'text-anchor': anchor || 'start' }, parent); t.textContent = text; return t; }
+  const tip = $('tip');
+  function showTip(html, ev) { tip.innerHTML = html; tip.hidden = false; const pad = 14; let x = ev.clientX + pad, y = ev.clientY + pad; const w = tip.offsetWidth, h = tip.offsetHeight; if (x + w > innerWidth - 8) x = ev.clientX - w - pad; if (y + h > innerHeight - 8) y = ev.clientY - h - pad; tip.style.left = x + 'px'; tip.style.top = y + 'px'; }
+  function hideTip() { tip.hidden = true; }
+  function frameEl(g, k) { const d = document.createElement('div'); d.className = 'frame'; const im = document.createElement('img'); im.loading = 'lazy'; im.src = g.strip; im.alt = ''; im.style.setProperty('--k', k); d.appendChild(im); return d; }
+  function video(src, poster) { const v = document.createElement('video'); v.src = src; v.muted = true; v.loop = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'metadata'; if (reduce) { v.controls = true; } else { v.autoplay = true; } return v; }
+
+  /* header chips */
+  function chips() {
+    const c = $('chips'); c.innerHTML = '';
+    D.islands.forEach(i => {
+      const s = document.createElement('span'); s.className = 'chip num';
+      s.innerHTML = `<i class="dot ${i.running ? 'live' : ''}"></i>Island ${esc(iname(i.name))} · gen ${i.gens.toLocaleString()} · ${i.evals.toLocaleString()} renders${i.running ? '' : ' · stopped'}`;
+      c.appendChild(s);
+    });
+    const u = document.createElement('span'); u.className = 'chip'; u.textContent = 'Page built ' + D.updated; c.appendChild(u);
+    $('updated').textContent = 'Built ' + D.updated + '.';
+  }
+
+  /* the bench */
+  function reelTabs() {
+    const t = $('reeltabs'); t.innerHTML = '';
+    D.reels.forEach((r, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.id = 'reel-' + r.name;
+      b.textContent = r.name.replace('reel', '') + (r.held ? ' held out' : '');
+      b.setAttribute('aria-pressed', i === reelIx ? 'true' : 'false');
+      b.onclick = () => { reelIx = i; reelTabs(); reel(); };
+      t.appendChild(b);
+    });
+  }
+  function reel() {
+    const r = D.reels[reelIx]; if (!r) return;
+    const st = $('reelstage'); st.innerHTML = '';
+    if (r.clip) st.appendChild(video(r.clip)); else { const im = document.createElement('img'); im.className = 'big'; im.src = r.strip; st.appendChild(im); }
+    $('reelstrip').src = r.strip;
+    $('reelcap').innerHTML = `Reel ${esc(r.name.replace('reel', ''))}, frames ${r.window[0]} to ${r.window[1]} of ${r.frames} at 256×144, 15 fps. ` +
+      (r.held ? `Held out: the search never trains on it. This window scores <span class="num">${f2(r.stat)}</span>; the whole reel averages <span class="num">${f2(D.hold_total)}</span>.` : `A training reel; this window scores <span class="num">${f2(r.stat)}</span>.`);
+  }
+  function bench() {
+    const g = G.get(sel); if (!g) return;
+    $('selname').textContent = nice(g.name);
+    $('selbytes').textContent = g.zbytes + ' bytes';
+    const st = $('selstage'); st.innerHTML = '';
+    if (g.clip) st.appendChild(video(g.clip)); else { const fr = frameEl(g, 1); fr.style.aspectRatio = 'auto'; fr.style.height = '100%'; st.appendChild(fr); }
+    $('selstrip').src = g.strip;
+    $('selcap').innerHTML = `Distance <b class="num">${f2(g.stat)}</b> to the training reels and <span class="num">${f2(g.hold)}</span> to the held-out reel. ` +
+      `${esc(g.lineage)} lineage, ${g.nodes} operators, ${g.zbytes} bytes compressed (${g.raw} raw). ` + (g.clip ? '' : 'No clip was rendered for this one; the frames are below.');
+  }
+
+  /* distance scale */
+  function scale() {
+    const host = $('scale'); host.innerHTML = '';
+    const W = Math.max(300, host.clientWidth), H = 112, L = 12, R = 12, y0 = 52;
+    const lo = Math.log(1), hi = Math.log(24);
+    const x = v => L + (Math.log(Math.max(1, Math.min(24, v))) - lo) / (hi - lo) * (W - L - R);
+    const svg = S('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Distance to Amoebius on a log scale' }, host);
+    S('line', { x1: L, x2: W - R, y1: y0, y2: y0, class: 'axl' }, svg);
+    [1, 2, 4, 8, 16].forEach(v => { S('line', { x1: x(v), x2: x(v), y1: y0 - 4, y2: y0 + 4, class: 'axl' }, svg); T(svg, x(v), y0 + 16, String(v), 'ax', 'middle'); });
+    const C = D.calibration.reduce((m, c) => (m[c.label] = c.total, m), {});
+    const below = [
+      ['Amoebius, held-out', D.hold_total], ['blurred', C['Blurred 9 px']], ['noise', C['Uniform noise']], ['black', C['Black']]
+    ].filter(m => m[1] != null);
+    const g = G.get(sel);
+    const rows = [-Infinity, -Infinity];
+    below.forEach(([label, v]) => {
+      const px = x(v); S('rect', { x: px - 3, y: y0 - 3, width: 6, height: 6, class: 'mk' }, svg);
+      const text = `${label} ${f2(v)}`; const w = text.length * 6.2;
+      let row = (px - w / 2 > rows[0] + 8) ? 0 : 1; rows[row] = px + w / 2;
+      const anchor = px - w / 2 < L ? 'start' : (px + w / 2 > W - R ? 'end' : 'middle');
+      T(svg, px, y0 + 34 + row * 16, text, 'lab', anchor);
+    });
+    if (g) {
+      const px = x(g.stat); S('rect', { x: px - 5, y: y0 - 5, width: 10, height: 10, class: 'mk sel' }, svg);
+      S('line', { x1: px, x2: px, y1: y0 - 8, y2: y0 - 24, class: 'cross' }, svg);
+      const text = `${nice(g.name)} ${f2(g.stat)}`; const w = text.length * 6.2;
+      const anchor = px - w / 2 < L ? 'start' : (px + w / 2 > W - R ? 'end' : 'middle');
+      T(svg, px, y0 - 30, text, 'lab', anchor);
+    }
+  }
+
+  /* facts + group bars + ops + hex */
+  function detail() {
+    const g = G.get(sel); if (!g) return;
+    const facts = [
+      ['Distance, training reels', f2(g.stat)], ['Distance, held-out reel', f2(g.hold)],
+      ['Compressed size', g.zbytes + ' B'], ['Raw size', g.raw + ' B'], ['Operators', g.nodes],
+      ['Lineage', g.lineage], ['Found by', g.islands.map(n => n === 'seed bank' ? n : 'island ' + iname(n)).join(', ')],
+      ['Search fitness', g.fit == null ? '–' : f2(g.fit)], ['Critic logit', g.crit == null ? '–' : f2(g.crit)]
+    ];
+    $('facts').innerHTML = facts.map(([k, v]) => `<div class="fact"><span class="label">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('');
+    const host = $('groups'); host.innerHTML = '';
+    const W = Math.max(280, host.clientWidth), rowH = 28, top = 6, labW = 74, H = top + D.groups.length * rowH + 8;
+    const vmax = Math.max(4, ...D.groups.map(k => g.groups[k] || 0), ...D.groups.map(k => D.hold_groups[k] || 0));
+    const xm = Math.min(9, Math.ceil(vmax));
+    const x = v => labW + Math.min(v, xm) / xm * (W - labW - 44);
+    const svg = S('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Distance per feature group' }, host);
+    D.groups.forEach((k, i) => {
+      const y = top + i * rowH;
+      T(svg, 0, y + 14, k, 'ax');
+      const v = g.groups[k] || 0, h = D.hold_groups[k] || 0;
+      S('rect', { x: labW, y: y + 2, width: Math.max(1, x(v) - labW), height: 10, class: 'bar1' }, svg);
+      S('rect', { x: labW, y: y + 14, width: Math.max(1, x(h) - labW), height: 6, class: 'bar2' }, svg);
+      T(svg, x(v) + 6, y + 12, f2(v) + (v > xm ? '+' : ''), 'lab');
+    });
+    S('line', { x1: x(1), x2: x(1), y1: 0, y2: H - 4, class: 'base' }, svg);
+    $('ops').innerHTML = g.ops.map(([o, n]) => `<span class="op">${esc(o)}${n > 1 ? ` <b>×${n}</b>` : ''}</span>`).join('');
+    $('hexlabel').textContent = `The genome, ${g.raw} bytes`;
+    $('hex').textContent = g.hex.match(/.{1,2}/g).join(' ');
+  }
+  $('copy').addEventListener('click', () => {
+    const g = G.get(sel); if (!g) return;
+    const note = $('copynote');
+    const done = () => { note.textContent = `Copied ${g.raw} bytes of ${nice(g.name)} as hex.`; };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents($('hex')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); note.textContent = 'Copying is blocked here, so the bytes are selected: copy them with your keyboard.'; };
+    try { navigator.clipboard.writeText(g.hex).then(done, fallback); } catch (e) { fallback(); }
+  });
+
+  /* scatter: bytes (log) x distance */
+  const SHAPES = ['circle', 'square', 'diamond', 'triangle', 'circle'];
+  const islandNames = [...D.islands.map(i => i.name), 'seed bank'];
+  function shapeOf(g) { const i = islandNames.indexOf(g.islands[0]); return SHAPES[Math.max(0, i) % SHAPES.length]; }
+  function mark(svg, shape, cx, cy, r, cls) {
+    if (shape === 'square') return S('rect', { x: cx - r, y: cy - r, width: 2 * r, height: 2 * r, class: cls }, svg);
+    if (shape === 'diamond') return S('path', { d: `M${cx},${cy - r * 1.3}L${cx + r * 1.3},${cy}L${cx},${cy + r * 1.3}L${cx - r * 1.3},${cy}Z`, class: cls }, svg);
+    if (shape === 'triangle') return S('path', { d: `M${cx},${cy - r * 1.3}L${cx + r * 1.2},${cy + r}L${cx - r * 1.2},${cy + r}Z`, class: cls }, svg);
+    return S('circle', { cx, cy, r, class: cls }, svg);
+  }
+  function shapeLegend() {
+    const used = islandNames.filter(n => D.genomes.some(g => g.islands[0] === n));
+    $('shapelegend').innerHTML = used.map(n => {
+      const sh = SHAPES[islandNames.indexOf(n) % SHAPES.length];
+      const path = sh === 'square' ? '<rect x="2" y="2" width="10" height="10"/>' : sh === 'diamond' ? '<path d="M7,0L14,7L7,14L0,7Z"/>' : sh === 'triangle' ? '<path d="M7,1L13,12L1,12Z"/>' : '<circle cx="7" cy="7" r="5.5"/>';
+      return `<span><svg width="14" height="14" viewBox="0 0 14 14" style="fill:var(--data)">${path}</svg>${n === 'seed bank' ? 'seed bank (tuned seeds)' : 'island ' + esc(iname(n))}</span>`;
+    }).join('') + '<span><svg width="22" height="10"><line x1="0" y1="5" x2="22" y2="5" style="stroke:var(--data2);stroke-width:2"/></svg>front</span><span><svg width="22" height="10"><line x1="0" y1="5" x2="22" y2="5" style="stroke:var(--soft);stroke-dasharray:4 4"/></svg>Amoebius, held-out reel</span>';
+  }
+  function scatter() {
+    const host = $('scatter'); host.innerHTML = '';
+    const W = Math.max(300, host.clientWidth), H = W < 520 ? 300 : 380, m = { l: 40, r: 14, t: 14, b: 40 };
+    const gs = D.genomes;
+    const zs = gs.map(g => g.zbytes);
+    const x0 = Math.pow(2, Math.floor(Math.log2(Math.max(16, Math.min(...zs))))), x1 = Math.pow(2, Math.ceil(Math.log2(Math.max(...zs) * 1.05)));
+    const sorted = gs.map(g => g.stat).sort((a, b) => a - b);
+    const y0 = Math.min(1, Math.floor(sorted[0] * 2) / 2), y1 = Math.max(4, Math.min(9, Math.ceil(sorted[Math.floor(sorted.length * 0.9)] || 4)));
+    const X = v => m.l + (Math.log2(v) - Math.log2(x0)) / (Math.log2(x1) - Math.log2(x0)) * (W - m.l - m.r);
+    const Y = v => m.t + (1 - (Math.min(v, y1) - y0) / (y1 - y0)) * (H - m.t - m.b);
+    const svg = S('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Genome size against distance to Amoebius' }, host);
+    for (let v = Math.ceil(y0); v <= y1; v++) { S('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), class: 'grid' }, svg); T(svg, m.l - 6, Y(v) + 4, String(v), 'ax', 'end'); }
+    for (let v = x0; v <= x1; v *= 2) { S('line', { x1: X(v), x2: X(v), y1: m.t, y2: H - m.b, class: 'grid' }, svg); T(svg, X(v), H - m.b + 16, v >= 1024 ? (v / 1024) + 'k' : String(v), 'ax', 'middle'); }
+    T(svg, (m.l + W - m.r) / 2, H - 6, 'compressed genome size, bytes (log scale)', 'ax', 'middle');
+    if (D.hold_total != null) { S('line', { x1: m.l, x2: W - m.r, y1: Y(D.hold_total), y2: Y(D.hold_total), class: 'base' }, svg); T(svg, W - m.r, Y(D.hold_total) - 6, 'Amoebius, held-out reel ' + f2(D.hold_total), 'ax', 'end'); }
+    const fr = D.front.map(id => G.get(id)).filter(Boolean).sort((a, b) => a.zbytes - b.zbytes);
+    if (fr.length) {
+      let d = `M${X(fr[0].zbytes)},${Y(fr[0].stat)}`;
+      for (let i = 1; i < fr.length; i++) d += `H${X(fr[i].zbytes)}V${Y(fr[i].stat)}`;
+      d += `H${W - m.r}`;
+      S('path', { d, class: 'frontline' }, svg);
+    }
+    const order = gs.slice().sort((a, b) => (a.id === sel) - (b.id === sel));
+    order.forEach(g => {
+      const cx = X(g.zbytes), cy = Y(g.stat), off = g.stat > y1;
+      mark(svg, shapeOf(g), cx, cy, g.id === sel ? 6.5 : 4.5, 'pt' + (off ? ' off' : '') + (g.id === sel ? ' sel' : ''));
+    });
+    order.forEach(g => {
+      const h = S('circle', { cx: X(g.zbytes), cy: Y(g.stat), r: 11, class: 'hit' }, svg);
+      h.addEventListener('mousemove', ev => showTip(`<b>${esc(nice(g.name))}</b><br>${esc(g.lineage)} · ${esc(g.islands.map(iname).join(', '))}<br><span class="num">${g.zbytes} B · distance ${f2(g.stat)}</span>`, ev));
+      h.addEventListener('mouseleave', hideTip);
+      h.addEventListener('click', () => select(g.id));
+    });
+  }
+  function gallery() {
+    const host = $('gallery'); host.innerHTML = '';
+    D.front.map(id => G.get(id)).filter(Boolean).sort((a, b) => a.zbytes - b.zbytes).forEach(g => {
+      const b = document.createElement('button'); b.className = 'card'; b.type = 'button'; b.id = 'card-' + g.id;
+      b.setAttribute('aria-pressed', g.id === sel ? 'true' : 'false');
+      b.appendChild(frameEl(g, 1));
+      const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = nice(g.name); b.appendChild(nm);
+      const mt = document.createElement('div'); mt.className = 'meta num'; mt.innerHTML = `<span>${g.zbytes} B</span><span>distance ${f2(g.stat)}</span>`; b.appendChild(mt);
+      b.onclick = () => select(g.id);
+      host.appendChild(b);
+    });
+  }
+
+  /* MAP-Elites landscape */
+  function land() {
+    const host = $('land'); host.innerHTML = '';
+    const cols = ['under 64 B', '64–127 B', '128–255 B', '256–511 B', '512–1023 B', '1 kB +'];
+    host.appendChild(Object.assign(document.createElement('div'), { className: 'hd', textContent: '' }));
+    cols.forEach(c => host.appendChild(Object.assign(document.createElement('div'), { className: 'hd', textContent: c })));
+    const byKey = new Map(D.cells.map(c => [Math.min(5, c.zb) + ',' + c.lu, c]));
+    for (let lu = 7; lu >= 0; lu--) {
+      host.appendChild(Object.assign(document.createElement('div'), { className: 'rl', textContent: (lu === 7 ? 'bright ' : lu === 0 ? 'dark ' : '') + (lu / 16).toFixed(2) }));
+      for (let zb = 0; zb < 6; zb++) {
+        const c = byKey.get(zb + ',' + lu), g = c && G.get(c.id);
+        if (!g) { host.appendChild(Object.assign(document.createElement('div'), { className: 'empty' })); continue; }
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'cell'; b.id = 'cell-' + zb + '-' + lu;
+        b.setAttribute('aria-pressed', g.id === sel ? 'true' : 'false'); b.title = `${nice(g.name)}, ${g.zbytes} B, distance ${f2(g.stat)}`;
+        b.appendChild(frameEl(g, 1));
+        const d = document.createElement('span'); d.className = 'd'; d.textContent = f2(g.stat); b.appendChild(d);
+        b.onclick = () => select(g.id);
+        host.appendChild(b);
+      }
+    }
+  }
+
+  /* progress small multiples */
+  function multiples() {
+    const host = $('multiples'); host.innerHTML = '';
+    D.islands.forEach(isl => {
+      const p = document.createElement('div'); p.className = 'panel'; const inn = document.createElement('div'); inn.className = 'in'; p.appendChild(inn); host.appendChild(p);
+      const hd = document.createElement('div'); hd.className = 'row';
+      hd.innerHTML = `<h3>Island ${esc(iname(isl.name))}</h3><span class="cap num">${isl.evals.toLocaleString()} renders${isl.updated ? ' · last ' + esc(isl.updated) : ''}</span>`;
+      inn.appendChild(hd);
+      const box = document.createElement('div'); inn.appendChild(box);
+      const Lg = isl.log; if (!Lg.length) { box.textContent = 'No generations logged yet.'; return; }
+      requestAnimationFrame(() => {
+        const W = Math.max(260, box.clientWidth), H = 190, m = { l: 34, r: 66, t: 10, b: 34 };
+        const ex = Math.max(1, Lg[Lg.length - 1][0]);
+        const vals = Lg.flatMap(r => [r[1], r[2]]);
+        const y0 = Math.min(1, Math.floor(Math.min(...vals) * 2) / 2), y1 = Math.max(3, Math.ceil(Math.max(...vals)));
+        const X = v => m.l + v / ex * (W - m.l - m.r), Y = v => m.t + (1 - (v - y0) / (y1 - y0)) * (H - m.t - m.b - 10);
+        const svg = S('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Best distance against renders for island ' + isl.name }, box);
+        const bandY = H - m.b - 6;
+        for (let i = 0; i < Lg.length; i++) if (Lg[i][3] === 1) { const a = i ? Lg[i - 1][0] : 0; S('rect', { x: X(a), y: m.t, width: Math.max(1, X(Lg[i][0]) - X(a)), height: bandY - m.t, class: 'cmp' }, svg); }
+        for (let v = Math.ceil(y0); v <= y1; v++) { S('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), class: 'grid' }, svg); T(svg, m.l - 6, Y(v) + 4, String(v), 'ax', 'end'); }
+        isl.segments.slice(1).forEach(e => { S('line', { x1: X(e), x2: X(e), y1: m.t, y2: bandY, class: 'base' }, svg); T(svg, X(e) + 3, m.t + 10, 'restart', 'ax'); });
+        if (D.hold_total != null && D.hold_total >= y0) S('line', { x1: m.l, x2: W - m.r, y1: Y(D.hold_total), y2: Y(D.hold_total), class: 'base' }, svg);
+        const path = k => Lg.map((r, i) => (i ? 'L' : 'M') + X(r[0]).toFixed(1) + ',' + Y(r[k]).toFixed(1)).join('');
+        S('path', { d: path(1), class: 'l1' }, svg); S('path', { d: path(2), class: 'l2' }, svg);
+        const last = Lg[Lg.length - 1];
+        let ya = Y(last[1]), yb = Y(last[2]); if (Math.abs(ya - yb) < 13) { if (ya < yb) { ya -= 6; yb += 6; } else { ya += 6; yb -= 6; } }
+        T(svg, W - m.r + 6, ya + 4, 'fitness ' + f2(last[1]), 'lab'); T(svg, W - m.r + 6, yb + 4, 'stats ' + f2(last[2]), 'lab');
+        [0, Math.round(ex / 2), ex].forEach(v => T(svg, X(v), H - m.b + 16, v >= 1000 ? (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : String(v), 'ax', 'middle'));
+        T(svg, (m.l + W - m.r) / 2, H - 4, 'renders', 'ax', 'middle');
+        const cross = S('line', { x1: 0, x2: 0, y1: m.t, y2: bandY, class: 'cross', visibility: 'hidden' }, svg);
+        const hit = S('rect', { x: m.l, y: m.t, width: W - m.l - m.r, height: bandY - m.t, class: 'hit' }, svg);
+        hit.addEventListener('mousemove', ev => {
+          const r = svg.getBoundingClientRect(); const ev0 = (ev.clientX - r.left) * (W / r.width);
+          const v = (ev0 - m.l) / (W - m.l - m.r) * ex; let best = Lg[0];
+          for (const row of Lg) if (Math.abs(row[0] - v) < Math.abs(best[0] - v)) best = row;
+          cross.setAttribute('x1', X(best[0])); cross.setAttribute('x2', X(best[0])); cross.setAttribute('visibility', 'visible');
+          showTip(`<b>Generation ${best[5]}</b><br><span class="num">${best[0].toLocaleString()} renders<br>fitness ${f2(best[1])} · stats ${f2(best[2])}<br>best genome ${best[6]} B · ${best[3] ? 'compress' : 'complexify'}</span>`, ev);
+        });
+        hit.addEventListener('mouseleave', () => { cross.setAttribute('visibility', 'hidden'); hideTip(); });
+      });
+    });
+  }
+
+  /* how it works, calibration, lineages */
+  function how() {
+    const t = D.op_types;
+    const blocks = [
+      ['Genome', [`A typed operator graph stored as bytes, the way werkkzeug3 stored .kkrieger: a header, then for each operator its opcode, one back-reference per input and one byte per parameter. ${D.n_ops} operators in seven types: ${t.T || 0} textures, ${t.S || 0} shapes and materials (signed distance fields), ${t.A || 0} agent operators (spawn, boids, wander, attract, bound, trail, body, scatter), ${t.C || 0} cameras, a grade, ${t.H || 0} HUD operators and the output.`, 'Compactness is the zlib size of those bytes, standing in for kkrunchy. Grouping parameters by operator type, as .kx files do, compressed about 4% worse at these sizes, so the plain layout stays.']],
+      ['Phenotype', ['The graph compiles to one GLSL raymarching shader for the world and a small agent simulation whose vessels lay prism trails, drawn as instanced meshes with neon edges, then bloom, the grade and the HUD. moderngl renders it on the CPU at 256×144, 15 frames a second, for 4 seconds after a warm-up.']],
+      ['Fitness', ['Eight groups of statistics per 4-second window: colour, brightness, spectrum, gradients, screen layout, motion, a texture filter bank and blobs. Each is scaled by how much the Amoebius reels vary among themselves, so 1.0 is a typical Amoebius window.', 'A small CNN critic, retrained during the search on Amoebius frames against the frames the population just rendered, adds whatever the statistics miss. The held-out reel checks that it is not learning the training reels by heart.']],
+      ['Search', ['The diamond search from the NCA lab\'s pareto_complexity.py: COMPLEXIFY grows structure, COMPRESS strips it while a leaky floor holds the score, with a Pareto archive over distance and bytes and a MAP-Elites archive over size and brightness. A quarter of each generation tunes parameters around the best. Islands run in separate containers and trade their fronts every 10 generations; a seed bank of hand-tuned seeds feeds them all.']]
+    ];
+    $('how').innerHTML = blocks.map(([h, ps]) => `<div class="panel"><div class="in"><h3>${h}</h3>${ps.map(p => `<p>${esc(p)}</p>`).join('')}</div></div>`).join('');
+    const c = $('calib');
+    c.innerHTML = `<thead><tr><th>Footage</th><th class="r">Distance</th>${D.groups.map(g => `<th class="r">${esc(g)}</th>`).join('')}</tr></thead><tbody>` +
+      D.calibration.map(r => `<tr><td>${esc(r.label)}</td><td class="r">${f2(r.total)}</td>${D.groups.map(g => `<td class="r">${f2(r.groups[g])}</td>`).join('')}</tr>`).join('') + '</tbody>';
+    const l = $('lineages');
+    l.innerHTML = '<thead><tr><th>Lineage</th><th class="r">Genomes shown</th><th class="r">Closest distance</th><th class="r">Smallest size</th></tr></thead><tbody>' +
+      D.lineages.map(L => `<tr class="pick" data-id="${esc(L.best_id)}" tabindex="0"><td>${esc(L.name)}</td><td class="r">${L.n}</td><td class="r">${f2(L.best)}</td><td class="r">${L.smallest} B</td></tr>`).join('') + '</tbody>';
+    l.querySelectorAll('tr.pick').forEach(tr => { const go = () => { select(tr.dataset.id); document.getElementById('h-bench').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }); }; tr.onclick = go; tr.onkeydown = e => { if (e.key === 'Enter') go(); }; });
+  }
+
+  function select(id) { if (!G.has(id)) return; sel = id; bench(); scale(); detail(); scatter(); gallery(); land(); }
+  function all() { chips(); reelTabs(); reel(); bench(); scale(); detail(); shapeLegend(); scatter(); gallery(); land(); multiples(); how(); }
+  all();
+  let raf = 0, lastW = innerWidth;
+  addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) < 2) return; lastW = innerWidth; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { scale(); detail(); scatter(); multiples(); }); });
+})();
+</script>

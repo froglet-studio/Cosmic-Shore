@@ -29,8 +29,10 @@ the root `out` wires scene S, agents A, camera C, post P, sky T and hud H. Rende
 
 ## Byte form (what compactness measures)
 `A6 00 seed` then per node `opcode, ref per input slot (distance back 1..255, 0 = none), byte per param`.
-Compactness objective = `len(zlib.compress(bytes, 9))` (kkrunchy stand-in). v1 may adopt the .kx layout (op-type
-table + params grouped per op type), which compresses better — proposals welcome in seeds/OP_PROPOSALS.md.
+Compactness objective = `len(zlib.compress(bytes, 9))` (kkrunchy stand-in). The .kx layout (op-type table + params
+grouped per op type) was measured by the seed thread on 2026-11-10: about 4% WORSE at these sizes, so this layout
+stays. The population concatenated compresses 5x, so a shared-scaffold dictionary (`zlib` `zdict`) is the next
+candidate for an honest size measure. Operator proposals: seeds/OP_PROPOSALS.md.
 
 ## Param kinds
 `lin lo..hi`, `exp lo..hi` (geometric), `int lo..hi`, `enum n` (byte*n/256), `hue` (0..1), `scub hi`
@@ -96,4 +98,5 @@ table + params grouped per op type), which compresses better — proposals welco
 
 ## Variation operators (for the search)
 param tweak (gaussian in byte space), op swap within a type, insert filter, delete node, rewire input, duplicate
-node, typed subgraph crossover at a root slot. All followed by `repair()`.
+node, typed subgraph crossover at a root slot. All followed by `repair()`. The search also spends `--tune` (default
+0.25) of each generation on parameter-only steps around its best few genomes.

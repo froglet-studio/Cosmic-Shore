@@ -8,10 +8,15 @@ Search a space that keeps the procedural compactness of .kkrieger while reproduc
 - `agenome/genome.py`: the typed op DAG, its byte form (compactness = zlib size), JSON form, repair, mutation and
   crossover.
 - `agenome/glsl.py`, `sim.py`, `render.py`: the compiler to GLSL, the numpy agent sim, and the headless moderngl/llvmpipe
-  renderer (about 0.5 s per 4 s clip at 256x144).
+  renderer (0.5 to 1.3 s per 4 s clip at 256x144 on one core).
 - `agenome/features.py`: the fitness, i.e. distributional distance to Amoebius clips (colour, luma, spectrum,
   gradients, layout, motion, random-filter texture, blobs), normalised by the target set's own spread.
-- `agenome/search.py`: the diamond (COMPLEXIFY/COMPRESS) Pareto search with a MAP-Elites side archive.
+- `agenome/critic.py`: a small JAX CNN retrained during the search on Amoebius frames against the population's latest
+  frames; the fitness is the statistics distance plus its term.
+- `agenome/search.py`: the diamond (COMPLEXIFY/COMPRESS) Pareto search with a MAP-Elites side archive, a
+  parameter-tuning share (`--tune`) and islands that trade fronts through a shared folder (`--share`, `--island`).
+- `agenome/report.py` + `report_page.html`: the Amoebius Genome Lab page (re-renders and re-scores every genome shown).
 - `agenome/cli.py`: render, sheet and score commands.
+- `island.sh`: start one island in a fresh Linux container.
 
 Shared data lives in `/mnt/project-files/amoebius-genome/` (project files): CONTRACT.md, targets, seeds and runs.
