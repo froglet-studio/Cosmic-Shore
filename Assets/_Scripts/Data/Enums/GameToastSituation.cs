@@ -235,6 +235,13 @@ namespace CosmicShore.Data
         // 128-130 (DomainRaceToasts); a bite is 86 (StrikeHitsLanded rose). Posted to the LOCAL pilot only.
         KelpwoodHint = 161,             // once, at the start: lock a rival with the eraser; tame the herds in the kelp
 
+        // Thresher Time, the Thresher's Time race (_Scripts/Controller/Arcade/THRESHERTIME.md section 0b, the Carillon).
+        // Its race beats are the shared 129-132 (DomainRaceToasts). 370-379 are this mode's band (2026-11-11, round 5 of
+        // the Time games). Posted to the LOCAL pilot only.
+        ThresherTimeCarillonHint = 370, // once, at the start: yoked rings swing together - one launch can ring both
+        ThresherTimeDoublePeal = 371,   // one launch rang a second (or third) bell. {0} = bells on that launch
+        ThresherTimeCarillon = 372,     // a streak of peals (rings threaded at sling speed). {0} = peals in a row
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

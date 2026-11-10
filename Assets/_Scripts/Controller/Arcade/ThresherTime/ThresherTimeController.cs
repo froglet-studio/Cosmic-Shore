@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using Unity.Netcode;
 using Unity.Profiling;
@@ -107,9 +108,31 @@ namespace CosmicShore.Gameplay
         [Tooltip("No ducking within this distance (u) of the next ring: the ring comes first.")]
         [SerializeField, Min(0f)] float belfryAINoDuckNearRing = 120f;
 
+        [Header("The Carillon (ThresherCarillon, 2026-11-11)")]
+        [Tooltip("On (shipped): on every lap the two gentlest corners hang their ring and the next in UNISON under a yoke, " +
+                 "so one aimed launch on the pair's line rings both (a double peal). Off: every ring on its own beat.")]
+        [SerializeField] bool carillon = true;
+        [Tooltip("The AI aims a launch THROUGH a unison pair (at the second ring, threading the first on the way) when the " +
+                 "straight line from where it is passes the first ring's mouth by the margin below. Input only: it is the " +
+                 "objective the sling's aimed launch is pointed at.")]
+        [SerializeField] bool carillonAIThrough = true;
+        [Tooltip("How far (u) inside the first ring's rim the AI's through-line must cross before it aims a double.")]
+        [SerializeField, Min(0f)] float carillonThroughMargin = 12f;
+
         [Header("Rewards")]
         [Tooltip("A crystal sits in the core of every Nth nest (crack it open to take it); 0 = the cell's own crystals.")]
         [SerializeField, Min(0)] int crystalEveryNthTarget = 3;
+
+        [Header("Peals (local feedback only)")]
+        [Tooltip("A ring you thread at sling speed (twice cruise) swells to this scale and settles back: the bell rang.")]
+        [SerializeField, Min(1f)] float pealPunchScale = 1.3f;
+        [Tooltip("Seconds the rung ring takes to swell and settle.")]
+        [SerializeField, Min(0.05f)] float pealPunchSeconds = 0.45f;
+        [Tooltip("Played for the local pilot when a ring is threaded at sling speed. Shipped EMPTY (the FMOD convention): " +
+                 "audio authors the event and wires it on MinigameThresherTime.")]
+        [SerializeField] FMODUnity.EventReference pealEvent;
+        [Tooltip("Played for the local pilot when one launch rings a second (or third) bell. Shipped EMPTY.")]
+        [SerializeField] FMODUnity.EventReference doublePealEvent;
 
         protected override string ModeName => "Thresher Time";
 
@@ -157,6 +180,7 @@ namespace CosmicShore.Gameplay
         {
             ClearNests();
             ClearBelfry();
+            ResetPeals();
             if (belfry) RaiseBelfry();
             if (!nestsAtGates) return;   // the rings are the gates
             if (!nestPrefab)
@@ -229,6 +253,7 @@ namespace CosmicShore.Gameplay
         // A subclass must not declare Update (GateRaceController.Update runs the race); LateUpdate is free.
         void LateUpdate()
         {
+            TickPeals();
             if (_belfry.Parts.Count > 0 || _belfry.Rings.Count > 0)
                 using (s_belfryMarker.Auto()) TickBelfry();
             if (_nests.Count == 0) return;
@@ -257,7 +282,7 @@ namespace CosmicShore.Gameplay
 
         void RaiseBelfry()
         {
-            ThresherBelfry.Build(_course, Intensity, _belfry);
+            ThresherBelfry.Build(_course, Intensity, _belfry, carillon);
             IndexMacesByLeg();
             if (!belfryPrismPrefab)
             {
@@ -314,6 +339,7 @@ namespace CosmicShore.Gameplay
                     }
                     continue;
                 }
+                if (_belfry.Parts[k].Role == ThresherBelfry.Role.Yoke) continue;   // a yoke never moves
                 ThresherBelfry.PoseAt(_belfry, _belfry.Parts[k], t, out var position, out var rotation);
                 prism.transform.SetPositionAndRotation(position, rotation);
                 prism.NotifyPositionChanged();
@@ -448,8 +474,15 @@ namespace CosmicShore.Gameplay
                 bool aimed = AimedLaunchComing(state, status, out float launchSpeedFactor);
                 ThresherBelfryAI.LeadInputs(aimed, status.Speed, tf.forward, launchSpeedFactor,
                                             belfryAILeadMinSpeed, belfryAILeadMaxSpeed, ClockScale, out float v, out Vector3 nose);
-                return ThresherBelfryAI.Aim(state, _belfry, ring, tf.position, nose, v, now, Time.unscaledDeltaTime,
-                                            belfryAILatchRadius, belfryAIRelatchSeconds);
+                Vector3 led = ThresherBelfryAI.Aim(state, _belfry, ring, tf.position, nose, v, now, Time.unscaledDeltaTime,
+                                                   belfryAILatchRadius, belfryAIRelatchSeconds);
+                // The Carillon: with a launch coming at the first ring of a unison pair, aim it THROUGH that ring at the
+                // second one when the straight line threads both (one launch, two bells).
+                if (aimed && carillonAIThrough &&
+                    ThresherCarillon.TryThroughAim(_belfry, ring, tf.position, led, v, now, carillonThroughMargin,
+                                                   out Vector3 through))
+                    return through;
+                return led;
             }
         }
 
@@ -613,11 +646,106 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override void OnLocalNextGateChanged(int previousRing, int nextRing)
         {
+            // A forward step of the local pilot's progress is a thread of the ring that was lit (a rollback is not).
+            int threaded = gameData.LocalPlayer?.RoundStats != null ? gameData.LocalPlayer.RoundStats.SwitchesThreaded : -1;
+            if (carillon && _localThreaded >= 0 && threaded > _localThreaded) OnLocalThread(previousRing);
+            _localThreaded = threaded;
+
             if (_nests.Count == 0) return;   // no nests: the rings were never hidden
             if (previousRing >= 0 && previousRing < _rings.Count && _rings[previousRing])
                 _rings[previousRing].SetVisualShown(false, nextTargetBloomSeconds);
             if (nextRing >= 0 && nextRing < _rings.Count && _rings[nextRing])
                 _rings[nextRing].SetVisualShown(true, nextTargetBloomSeconds);
+        }
+
+        // ── Peals: the local pilot's feedback (never replicated) ──────────
+
+        readonly ThresherCarillon.PealTracker _peals = new();
+        ThresherExecutor _localThresher;
+        bool _plantedSinceThread, _hintPosted;
+        int _localThreaded = -1;
+        RaceGateRing _punchRing;
+        Vector3 _punchBaseScale;
+        float _punchStartedAt = -1f;
+
+        void ResetPeals()
+        {
+            _peals.Reset();
+            _plantedSinceThread = false;
+            _localThreaded = -1;
+            _hintPosted = false;
+            EndPunch();
+        }
+
+        /// <summary>Every frame: post the Carillon's hint once, note whether the local Thresher planted since its last
+        /// thread (a plant ends a launch, so the next bell is not the same swing), and play the rung ring's punch.</summary>
+        void TickPeals()
+        {
+            if (!carillon || gameData == null) return;
+            var local = gameData.LocalPlayer;
+            if (!_hintPosted && gameData.IsTurnRunning && local != null && _belfry.Pairs.Count > 0)
+            {
+                _hintPosted = true;
+                GameToastAPI.Post(GameToastSituation.ThresherTimeCarillonHint, local.Domain);
+            }
+            if (!_localThresher)
+            {
+                var handler = local?.Vessel?.VesselStatus?.ActionHandler;
+                var executors = handler ? handler.Executors : null;
+                _localThresher = executors ? executors.Get<ThresherExecutor>() : null;
+            }
+            if (_localThresher && _localThresher.IsPivoting) _plantedSinceThread = true;
+            TickPunch();
+        }
+
+        /// <summary>A forward thread by the local pilot: did it peal, was it the second bell of one launch, is the streak a
+        /// milestone? A sound, the ring's punch and a toast follow; the race's scoring is untouched.</summary>
+        void OnLocalThread(int ringThreaded)
+        {
+            var local = gameData.LocalPlayer;
+            float speed = local?.Vessel?.VesselStatus != null ? local.Vessel.VesselStatus.Speed : 0f;
+            bool pealed = _peals.OnThread(Time.time, speed, _plantedSinceThread);
+            _plantedSinceThread = false;
+            if (!pealed || local == null) return;
+
+            bool second = _peals.OnThisLaunch >= 2;
+            var sound = second && !doublePealEvent.IsNull ? doublePealEvent : pealEvent;
+            if (!sound.IsNull) CosmicShore.Core.AudioSystem.Instance.PlaySFXEvent(sound);
+            if (ringThreaded >= 0 && ringThreaded < _rings.Count) StartPunch(_rings[ringThreaded]);
+            if (second)
+                GameToastAPI.Post(GameToastSituation.ThresherTimeDoublePeal, local.Domain, _peals.OnThisLaunch.ToString());
+            else if (_peals.StreakMilestone)
+                GameToastAPI.Post(GameToastSituation.ThresherTimeCarillon, local.Domain, _peals.Streak.ToString());
+        }
+
+        /// <summary>The bell rang: the threaded ring swells and settles, a fact shown on the ring itself (in the world, not
+        /// on the HUD). Cosmetic: the race reads the mouth from the gate, never from the ring's scale.</summary>
+        void StartPunch(RaceGateRing ring)
+        {
+            EndPunch();
+            if (!ring) return;
+            _punchRing = ring;
+            _punchBaseScale = ring.transform.localScale;
+            _punchStartedAt = Time.time;
+        }
+
+        void TickPunch()
+        {
+            if (!_punchRing || _punchStartedAt < 0f) return;
+            float k = (Time.time - _punchStartedAt) / pealPunchSeconds;
+            if (k >= 1f)
+            {
+                EndPunch();
+                return;
+            }
+            _punchRing.transform.localScale = _punchBaseScale * Mathf.Lerp(1f, pealPunchScale, Mathf.Sin(k * Mathf.PI));
+        }
+
+        void EndPunch()
+        {
+            if (_punchRing) _punchRing.transform.localScale = _punchBaseScale;
+            _punchRing = null;
+            _punchStartedAt = -1f;
         }
 
         // ── Clearing a gate ───────────────────────────────────────────────

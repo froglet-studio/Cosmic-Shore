@@ -69,6 +69,9 @@ namespace CosmicShore.Gameplay
         public const float SpikeReach = 12f;
         public const float ShutterCube = 6f;
         public const float ShutterSpacing = 8f;
+        /// <summary>The Carillon's yoke (a unison pair's headstock): a beam of prisms between the pair's two pivots.</summary>
+        public const float YokeSpacing = 24f;
+        public const float YokeCube = 5f;
         /// <summary>How far a mace head reaches from its centre: the spike's centre plus half its cube.</summary>
         public const float HeadReach = SpikeReach + SpikeCube * 0.5f;
         /// <summary>Where along a straight a mace hangs: away from both gates.</summary>
@@ -103,7 +106,7 @@ namespace CosmicShore.Gameplay
             public Quaternion Frame => Quaternion.LookRotation(Forward, Up);
         }
 
-        public enum Role : byte { RingChain = 0, MaceChain = 1, MaceHead = 2, Shutter = 3 }
+        public enum Role : byte { RingChain = 0, MaceChain = 1, MaceHead = 2, Shutter = 3, Yoke = 4 }
 
         /// <summary>One prism of the clockwork, posed by <see cref="PoseAt"/>.</summary>
         public readonly struct Part
@@ -112,7 +115,8 @@ namespace CosmicShore.Gameplay
             /// <summary>Index into <see cref="Layout.Rings"/> (ring chain, shutter) or <see cref="Layout.Maces"/>.</summary>
             public readonly int Group;
             /// <summary>Chain: distance from the pivot. Head: offset in the pendulum's (side, up, forward) frame.
-            /// Shutter: x = which bar (-1 / +1), y = height along the mouth.</summary>
+            /// Shutter: x = which bar (-1 / +1), y = height along the mouth. Yoke: its fixed world position (a yoke
+            /// never moves: it joins two pivots).</summary>
             public readonly Vector3 Local;
             public readonly float Size;
             public readonly PrismKind Kind;
@@ -132,15 +136,20 @@ namespace CosmicShore.Gameplay
             public readonly List<Pendulum> Maces = new();
             public readonly List<Part> Parts = new();
             public readonly List<float> ShutterPhases = new();
+            /// <summary>The Carillon's unison pairs, by first ring (<see cref="ThresherCarillon.PairsFor"/>): the ring
+            /// after each swings on its beat. Empty = every ring on its own beat (the Belfry before 2026-11-11).</summary>
+            public readonly List<int> Pairs = new();
 
             public void Clear()
             {
-                Gates.Clear(); Rings.Clear(); Maces.Clear(); Parts.Clear(); ShutterPhases.Clear();
+                Gates.Clear(); Rings.Clear(); Maces.Clear(); Parts.Clear(); ShutterPhases.Clear(); Pairs.Clear();
             }
         }
 
-        /// <summary>Build the clockwork for a closed lap of <paramref name="course"/> gates. Closed form.</summary>
-        public static void Build(IReadOnlyList<RaceGate> course, int intensity, Layout into)
+        /// <summary>Build the clockwork for a closed lap of <paramref name="course"/> gates. Closed form. With
+        /// <paramref name="carillon"/>, the lap's unison pairs (<see cref="ThresherCarillon.PairsFor"/>) swing as one under
+        /// a yoke.</summary>
+        public static void Build(IReadOnlyList<RaceGate> course, int intensity, Layout into, bool carillon = false)
         {
             into.Clear();
             into.Intensity = Mathf.Clamp(intensity, 1, 4);
@@ -151,6 +160,7 @@ namespace CosmicShore.Gameplay
             Vector3 centre = Vector3.zero;
             for (int i = 0; i < n; i++) centre += course[i].Position;
             centre /= n;
+            if (carillon) ThresherCarillon.PairsFor(course, intensity, into.Pairs);
 
             float ringOmega = 2f * Mathf.PI / spec.RingPeriod;
             for (int i = 0; i < n; i++)
@@ -161,6 +171,9 @@ namespace CosmicShore.Gameplay
                 Vector3 up = OutwardUp(gate.Position, centre, forward);
                 Vector3 side = Vector3.Cross(forward, up).normalized;
                 float phase = Mathf.Repeat(i * GoldenAngle, 2f * Mathf.PI);
+                // The second ring of a unison pair swings on its partner's beat (the partner is built first: a pair that
+                // wraps, last ring to first, is the one exception, and takes ring 0's golden phase below).
+                if (i > 0 && ThresherCarillon.IsPairSecond(into.Pairs, i, n)) phase = into.Rings[i - 1].Phase;
                 var ring = new Pendulum(i, gate.Position + up * spec.RingLength, up, side, forward, spec.RingLength,
                                         spec.RingSwingDeg * Mathf.Deg2Rad, ringOmega, phase);
                 into.Rings.Add(ring);
@@ -168,6 +181,17 @@ namespace CosmicShore.Gameplay
                 into.ShutterPhases.Add(Mathf.Repeat(phase + 1.3f, 2f * Mathf.PI));
                 if (spec.HasShutters) AddShutters(into, i, gate.Radius);
             }
+            // A pair that wraps (last ring, first ring): the last ring takes the first one's beat.
+            for (int k = 0; k < into.Pairs.Count; k++)
+            {
+                int a = into.Pairs[k], b = (a + 1) % n;
+                if (b != 0) continue;
+                var r = into.Rings[a];
+                into.Rings[a] = new Pendulum(r.Gate, r.Pivot, r.Up, r.Side, r.Forward, r.Length, r.Swing, r.Omega,
+                                             into.Rings[0].Phase);
+                into.ShutterPhases[a] = into.ShutterPhases[0];
+            }
+            for (int k = 0; k < into.Pairs.Count; k++) AddYoke(into, into.Pairs[k], (into.Pairs[k] + 1) % n);
 
             if (!spec.HasMaces) return;
             float maceOmega = 2f * Mathf.PI / spec.MacePeriod;
@@ -206,6 +230,18 @@ namespace CosmicShore.Gameplay
                 into.Parts.Add(new Part(role, group, new Vector3(0f, 0f, d), LinkCube, PrismKind.Plain));
         }
 
+        /// <summary>The yoke of a unison pair: a straight beam of prisms between the two rings' pivots, out past the line,
+        /// so the pair reads as one bell frame from anywhere on the lap. It never moves.</summary>
+        static void AddYoke(Layout into, int a, int b)
+        {
+            Vector3 from = into.Rings[a].Pivot, to = into.Rings[b].Pivot;
+            float length = (to - from).magnitude;
+            if (length < YokeSpacing) return;
+            Vector3 dir = (to - from) / length;
+            for (float d = YokeSpacing * 0.5f; d < length; d += YokeSpacing)
+                into.Parts.Add(new Part(Role.Yoke, a, from + dir * d, YokeCube, PrismKind.Plain));
+        }
+
         static void AddShutters(Layout into, int gate, float radius)
         {
             float half = radius - ShutterCube;
@@ -233,8 +269,12 @@ namespace CosmicShore.Gameplay
             return 0.5f + 0.5f * Mathf.Sin(w * seconds + layout.ShutterPhases[gate]);
         }
 
-        /// <summary>The fraction of a shutter's travel the bars stay out from the middle when shut.</summary>
-        public const float ShutterMinOpen = 0.15f;
+        /// <summary>The fraction of the mouth's radius each bar stays out from the middle when shut. 0.4 since
+        /// 2026-11-11 (0.15 before): at 0.15 an I4 mouth shut to a 7.8 u slot, which a hull 2.2 u wide threads only within
+        /// 2.8 u of the centre, so a launch that was a good read still broke the bars (the AI broke ~890 Belfry prisms an
+        /// I4 race). At 0.4 the shut mouth still halves the target (a 31 u slot) but a hull within 14 u of the centre is
+        /// never blocked: the beat decides how much mouth you get, not whether you get any.</summary>
+        public const float ShutterMinOpen = 0.4f;
 
         /// <summary>The gate at <paramref name="seconds"/>: the ring's live centre, its axis and mouth unchanged.</summary>
         public static RaceGate GateAt(Layout layout, int gate, float seconds)
@@ -256,6 +296,15 @@ namespace CosmicShore.Gameplay
                     Vector3 down = (bob - p.Pivot) / p.Length;
                     position = p.Pivot + down * part.Local.z;
                     rotation = Quaternion.LookRotation(down, p.Forward);
+                    return;
+                }
+                case Role.Yoke:
+                {
+                    var a = layout.Rings[part.Group];
+                    var b = layout.Rings[(part.Group + 1) % layout.Rings.Count];
+                    position = part.Local;
+                    Vector3 along = b.Pivot - a.Pivot;
+                    rotation = along.sqrMagnitude > 1e-6f ? Quaternion.LookRotation(along, a.Up) : a.Frame;
                     return;
                 }
                 case Role.MaceHead:
