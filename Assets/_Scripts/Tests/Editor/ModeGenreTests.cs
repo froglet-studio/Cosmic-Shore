@@ -87,7 +87,7 @@ namespace CosmicShore.Tests
         [TestCase(ScoringMetric.PrismsRemaining,   Element.Mass)]
         [TestCase(ScoringMetric.PrismsStolen,      Element.Mass)]   // Hijack - nothing is destroyed to score it
         [TestCase(ScoringMetric.VolumeRemaining,   Element.Mass)]   // Tapestry - the mass you hold standing
-        [TestCase(ScoringMetric.PrismsDestroyed,   Element.Space)]  // Rampage, Cleave, Salvo, Wrecking Ball
+        [TestCase(ScoringMetric.PrismsDestroyed,   Element.Space)]  // Rampage, Cleave, Salvo, Wrecking Ball, Harvest
         [TestCase(ScoringMetric.VolumeDestroyed,   Element.Space)]  // Bloomrush
         [TestCase(ScoringMetric.LifeformsKilled,   Element.Space)]  // Wildlife Liberation
         [TestCase(ScoringMetric.Jousts,            Element.Charge)] // Joust
@@ -137,6 +137,19 @@ namespace CosmicShore.Tests
                 "weight - delete the row, or the row is no longer saying what it was added to say.");
         }
 
+        // A Space game reads Space through its METRIC, with no row of its own: Shatterplane (90), the Brittle Star's
+        // Space game, scores the prisms it breaks. If a row is ever added for it, or its rule moves off PrismsDestroyed,
+        // the Fleet Codex would show it as another element's game - this pins it (Docs/MassAndSpaceGames/PLAN.md §6).
+        [Test]
+        [TestCase(GameModes.Shatterplane, ScoringMetric.PrismsDestroyed)]
+        public void SpaceGame_ReadsSpaceThroughItsMetric(GameModes mode, ScoringMetric metric)
+        {
+            Assert.IsTrue(ModeGenre.TryElementsFor(mode, metric, out var first, out var second),
+                $"GameModes.{mode} has no genre.");
+            Assert.AreEqual(Element.Space, first, $"GameModes.{mode} is the Brittle Star's SPACE game.");
+            Assert.AreEqual(Element.None, second, $"GameModes.{mode} is a Space game only - never quietly a Mass game.");
+        }
+
         [Test]
         public void ASecondGenre_IsNeverTheFirstOneTwice()
         {
@@ -170,6 +183,23 @@ namespace CosmicShore.Tests
                     "is not in this list. Add it here and to Mode_OverridesItsMetricsGenre, so a " +
                     "shipped card's genre is pinned rather than merely present.");
             }
+        }
+
+        // Harvest is the Thresher's SPACE game (Docs/MassAndSpaceGames/PLAN.md): it has no row of its own, so it is
+        // Space through its metric. Pinned through the SHIPPED preview definition, so a definition that drifts to a
+        // stolen or remaining metric (Mass) fails here rather than quietly turning the card into a Mass game.
+        [Test]
+        public void Harvest_IsTheThreshersSpaceGame()
+        {
+            var library = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+            Assert.IsNotNull(library, $"Resources/{ModePreviewLibrarySO.ResourcePath} is missing");
+            var definition = library.Resolve(GameModes.Harvest);
+            Assert.IsNotNull(definition, "Harvest has no preview definition in the library");
+            Assert.AreEqual(ScoringMetric.PrismsDestroyed, definition.ObjectiveMetric);
+            Assert.IsTrue(ModeGenre.TryElementsFor(GameModes.Harvest, definition.ObjectiveMetric,
+                                                   out var first, out var second));
+            Assert.AreEqual(Element.Space, first, "Harvest's card must read Space: its score is mass destroyed");
+            Assert.AreEqual(Element.None, second);
         }
 
         // The end-to-end guard, and the one that catches the failure nobody would notice: a card

@@ -1245,6 +1245,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `gen_hesperides_assets.py` (ladder Mass/Charge rungs -> 1, shield Mass 1 / Charge 0); Docs/ECOSYSTEM.md §65.6.
 - Promoted: no
 
+### L-SIM-6 — Fly the SHIPPED solver round the arena before you lay it: a trailing weapon cuts only its own path
+- Lab: Harvest Stalk Lab (`Tools/Build/harvest_stalk_lab/`) · Branch: `claude/keen-rubin-rw7p6q` · By: the Harvest session · Date: 2026-11-10
+- What happened: Harvest's arena (sheaves: a core with stalks in every direction) was designed on the premise that a Thresher circling a sheaf sweeps its stalks with the chain while the ball swings clear. The mode was built, gated and merged-ready before anyone flew it. Compiling `ThresherChainSolver.cs` against the card harness's `UnityShim.cs` in a 40-line console project and flying it round one sheaf with the executor's contact rules showed the chain TRAILS (21-60 u behind at cruise), so it cuts only what the path crosses: 0-11 cuts a lap, a blast clearing 2-11 of 160 core blocks. The same harness found the fix in minutes (stalks as a wheel, strike down the axle: 38-92 cuts, half a core in one blast).
+- Do instead: when a mode's loop rests on how a vessel's verb meets the arena, compile the vessel's pure solver (most hulls have one) into a console harness and fly the arena's geometry BEFORE writing the spawnable; load the dials from the shipped asset by reflection, not from the class initializers. Put the arena's question in the brief as a measurable number (cuts a lap, bank at the core) and run it.
+- Evidence: `bash Tools/Build/harvest_stalk_lab/run.sh` vs `run.sh wheel 0 axis`; THRESHER_SPACE.md section 10.
+- Promoted: no
+
 ## EDT — in-editor lab windows
 
 ### L-EDT-1 — A lab window's preview must run the SHIPPED GPU code, and Measure must run the shipped metric

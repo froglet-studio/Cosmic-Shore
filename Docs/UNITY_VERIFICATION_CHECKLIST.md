@@ -65,6 +65,112 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Harvest, the Thresher's Space game (GameModes 88) (`claude/keen-rubin-rw7p6q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/HARVEST.md` (plan: `Docs/MassAndSpaceGames/THRESHER_SPACE.md`). A Thresher
+destruction race through a field of sheaves (`SpawnableHarvest`, four baked prefabs): mow a sheaf's stalks with the
+chain to charge the ball, smash it into the core for one blast. Scored on hostile prisms destroyed (PrismsDestroyed,
+Space), target 750, golf-timed. AI reapers (`HarvestReaper`) steer and press A once to leave Mass Mode. New platform
+rows: `GameModes.Harvest = 88`, `harvestPrismTarget`, toast situation 163 (`HarvestHint`). Checked offline:
+`author_harvest_assets.py --check` (and watched it fail three ways), the `/arcadegame` gates, the clip audit (0
+clipping; the C# lays 3,200 / 3,408 / 3,040 / 3,300 prisms, as the Python mirror does), the bake, the card render,
+the reference compile (player and editor: 0 errors in project code) and the full `/ship` gates (ALL OK). Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 81 modes; `HarvestTests`,
+`ModeGenreTests.Harvest_IsTheThreshersSpaceGame`).
+
+**Verify in editor:**
+1. Arcade → Harvest card: the sheaves card art, Thresher only, 1-4 players, 2-3 domains, intensities 1-4, the
+   **Space** badge.
+2. Launch I1 with one AI: you spawn just outside a field of eight big blue sheaves; the arrow points at an omni
+   crystal in the clear centre; the hint toast (163) shows once ("Press A to break ...").
+3. Before pressing A (Mass Mode): the ball steals and lays trail, nothing explodes, and the score moves only on chain
+   cuts. Press A: the ball breaks and explodes.
+4. **The question the mode stands on**: circle a sheaf with it inside your turn. Does the chain cut stalks while the
+   ball swings outside the tips (the ball's rim whitens as the bank grows)? Then whip the ball into the core: does one
+   blast clear most of it? If the ball keeps touching stalks and every blast is small, say so (the brief's retire
+   condition).
+5. Scoring: chain cuts, ball hits and blast kills all raise your count; a sheaf in your own colour (I2+) never does,
+   and a toast every 150 prisms (83) shows the count.
+6. Crystals: 8 / 4 / 3 / 1 for a lobby of four at I1-I4, in the clear centre; taking one windmills the red-hot ball
+   round you for 12 s.
+7. AI: it presses A within a couple of seconds of the start (its ball starts exploding), circles a sheaf not in its
+   colour, then turns in through the core; at Hard / Legendary it mows longer and wider. Watch whether it stalls in a
+   sheaf or orbits forever.
+8. First team to 750 wins: results show "N Prisms" per pilot and "N Prisms Left" for losers; the reveal says
+   HARVEST TIME / PRISMS LEFT. Replay works.
+9. I2, I3, I4: shielded cores (two hits), team-coloured sheaves, every fourth stalk danger at I4; the spawn ring stays
+   just outside the field.
+10. Time a full match at I2, 1v1 Medium AI: P-modes-02 wants about 90 s for an experienced pilot (FrogletTools > Game
+    Modes > End Game Conditions → Harvest).
+11. MPPM two clients: a client's chain, ball and blast kills score once each on both peers; both see the same field.
+12. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameHarvest.unity`, and Reconcile Build Scene
+    List if the scene is reported missing from the build list.
+
+**First-pass tuning:** target 750, comeback 0.012, the AI ladders in `HARVEST.md`.
+
+---
+
+### 🔴 Shatterplane, the Brittle Star's Space game (GameModes 90) (`claude/fervent-edison-ol600q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/SHATTERPLANE.md` (plan and decisions: `Docs/MassAndSpaceGames/BRITTLE_STAR_SPACE.md`).
+Wide, thin round plates of neutral prisms (`SpawnableShatterplane`, four baked prefabs). The ring blast erases a plate
+it lies in, and the guns chew the rest. Scored on `PrismsDestroyed` (Rampage's rule, so the card reads Space), first
+domain to 1600 / 1600 / 2000 / 1000 by intensity. The crystal field sits on the plates' axes. The arena's nucleus is
+sized to 470 u (D2), so every ring blast in this cell is 940 u across. The AI squarer only steers.
+
+New platform rows: `GameModes.Shatterplane = 90`, `shatterplanePrismTarget` + per-intensity list, toast situation 165,
+the HUD arrow (`HostileMassObjectiveProvider`).
+
+**Checked offline:**
+- `author_shatterplane_assets.py --check`, watched failing on a mutated settings asset and on a mutated C# default.
+- The reference compile: player 0 errors; editor config run as well.
+- The `/ship` gates.
+- The clip audit: 0 clipping on all 16 runs.
+- The bake: the C# lays 5,290 / 5,292 / 6,615 / 4,588 prisms, exactly the twin's.
+- The card render.
+
+**Not run:** Unity, and the EditMode tests (`ShatterplaneTests`, `ModeGenreTests`, `EnumIntegrityTests`, which now
+expects 82 modes).
+
+**Verify in editor:**
+1. Arcade → Shatterplane card: the plates-and-square-blast art, Brittle Star only, 1-4 players, intensities 1-4, the
+   **Space** badge (genre through `PrismsDestroyed`).
+2. Launch I1 with one AI, as the HOST:
+   - you spawn on a 780 u ring;
+   - ten round plates face you;
+   - a crystal floats in front of each plate;
+   - the nucleus sphere in the middle is about 470 u (`ShatterplaneSettings.nucleusRadius`);
+   - the hint toast (163) shows once;
+   - the arrow points at standing plate mass.
+3. Take a crystal (the Charge card's spare-ring slot fills), fly on along the plate's axis, throw (LT): the blast lies
+   in the plate and erases it whole; the score jumps by about 529.
+4. Throw at a slant: only a band goes.
+5. Space Mode (X + RT): the five guns chip a plate.
+6. Lay a Creation trail and shoot it: your own prisms never score.
+7. AI: it takes crystals and lines up on a plate's axis before flying in. **Count how many of its ring throws land square
+   versus fuse short in front of the plate** (the executor decides when to throw; a throw from beyond about 313 u at
+   cruise fuses before it arrives). Watch for an AI circling a plate it never lines up on.
+8. First team to the target wins: results "N Prisms" / "N Prisms Left", the reveal SHATTERPLANE TIME / PRISMS LEFT.
+   Replay works.
+9. I2: plates at mixed angles. I3: stacks of three 70 u apart (the front plate shields the next from the guns). I4: white
+   super-shielded ribs on every sixth line, red danger rims, and grilles in front of every other plate (a ring thrown
+   through a grille blows on it and takes little).
+10. Profile a square ring at I1 (`prof`): one blast kills a plate in its 0.7 s sweep.
+11. Time a 2v2 at I2 with Medium AI against P-modes-02 (about 90 s for an experienced player); retune in FrogletTools >
+    Game Modes > End Game Conditions → Shatterplane.
+12. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameShatterplane.unity`, and Reconcile Build
+    Scene List if the scene is reported missing. FrogletTools > Ecology > Measure Cell Environment Baselines should
+    agree with the census above.
+
+**First-pass tuning:**
+- targets 1600 / 1600 / 2000 / 1000 (30% of each rung's breakable mass);
+- comeback rate 0.005;
+- nucleus 470;
+- crystal regrow 8 s;
+- the plates in `shatterplane_budget.RUNGS`;
+- the AI ladders in `ShatterplaneSettings`.
+
+---
+
 ### 🔴 Corona, the Manta's Charge game (GameModes 87) (`claude/amazing-goldberg-7zn80e`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/CORONA.md`. Manta stings round a crystal heart in nested prism shells

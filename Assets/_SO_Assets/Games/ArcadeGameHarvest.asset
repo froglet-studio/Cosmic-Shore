@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameHarvest
+  m_EditorClassIdentifier:
+  Mode: 88
+  IsMultiplayer: 1
+  DisplayName: Harvest
+  Description: 'Threshers only - a field of sheaves floating in every direction, each a core of blocks
+    bristling with stalks. Press A to leave Mass Mode and break. Mow the stalks with your
+    chain to charge the ball, then whip it into the core and the charge goes off as one
+    blast. Only prisms that are not your colour count. Crystals in the clear centre windmill
+    your red-hot ball round you. Higher intensities shield the cores, colour the sheaves by
+    team and add danger stalks. First team to the harvest target wins.'
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: 35e22475497d4117880ad86315824fa5, type: 3}
+  GolfScoring: 1
+  SceneName: MinigameHarvest
+  Vessels:
+  - {fileID: 11400000, guid: 8e4f2a9c1b3d4e6f7a8b9c0d1e2f3a4b, type: 2}
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 4
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  ViewUserAction: 0
+  PlayUserAction: 0
+  ComebackRatePerScoreDeficit: 0.012
