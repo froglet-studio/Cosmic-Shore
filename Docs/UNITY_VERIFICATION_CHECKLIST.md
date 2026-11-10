@@ -22124,8 +22124,11 @@ its LightMode tag, and the hull's `VesselGraph` is an Unlit Shader Graph whose f
 (UniversalUnlitSubTarget sets none; ShaderGraph writes `// LightMode: <None>`). No pass matched, so the ring layer was
 empty, the smear averaged nothing, and the ring the hull had hidden vanished whenever it turned more than
 `ringSmearMinDegrees` a frame (1.5° in `BrittleStarConfig.asset`). The fallback missed it because the request was marked drawn when the pass was recorded. Fixed on branch
-`claude/brittlestar-smear-empty-layer` (**not compiled**: nuget.org is refused in the session's container, so
-`unity_refcompile` could not fetch its references; a Roslyn syntax pass ran clean). Re-run steps 1-3, plus:
+`claude/brittlestar-smear-empty-layer`. **Compiled, not run in Unity** (ship pass, 2026-11-10): `unity_refcompile`'s
+player and editor configs report 0 errors in the changed files, and a planted error in `BrittleStarRingSmearPass.cs`
+and in `BrittleStarRingSpinTests.cs` was each named; their only errors are the sandbox's 21 in `FactionChatService.cs`
+and `PlayerReports.cs` (Vivox and Moderation cannot be fetched), identical on bleeding-edge `5b13c396a`.
+`BrittleStarRingSpinTests` has not run. Re-run steps 1-3, plus:
 
 6. **The layer draws**: Frame Debugger during a spin: `BrittleStar ring layer` shows one draw per ring submesh (Body,
    the domain ship material, Engine), and `BrittleStarRingSpinTests.TheSmearLayer_FindsTheForwardPassOnEveryHullMaterial`

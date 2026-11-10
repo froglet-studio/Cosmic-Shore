@@ -465,7 +465,7 @@ The smear pass redraws the ring into a layer with the hull's own materials, choo
 LightMode tag, and the hull's `VesselGraph` is an Unlit Shader Graph whose forward pass has no LightMode tag at all. The
 layer came out empty and the ring, which the hull hides while it smears, vanished whenever it turned more than
 `ringSmearMinDegrees` a frame (1.5° in `BrittleStarConfig.asset`). Fixed on `claude/brittlestar-smear-empty-layer` (the lookup takes the untagged pass, and an empty layer is never
-counted as drawn), not yet compiled. The lab's round 3 now draws every scope the game's way: the shipped hull mesh
+counted as drawn), compiled against Unity's reference assemblies but not yet run in Unity. The lab's round 3 now draws every scope the game's way: the shipped hull mesh
 (`BrittleStar.fbx`), `VesselGraph`'s formula on the shipped materials and the colour set's domain colours, the gameplay
 bloom (`GamePlay PostProcessing Profile`, LQ) with no tonemapping, from the 38-unit chase camera. In that look the
 averaged smear keeps about 90% of the ring's brightest light at the 1080°/s cap at 60 fps (83% at 30 fps), so the smear itself was not
