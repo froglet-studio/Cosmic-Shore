@@ -188,6 +188,7 @@ def arrow_node(host, side):
 def host_node():
     host = N("Host", "HubWindowNavHost", STRETCH)
     host.add("cg", 225, H.canvas_group(False))
+    host.add("portrait", 114, K.portrait_rect(pc_block=True))   # no upright pose yet: the PC layout fitted to the width (author_menu_portrait.py, section 138)
     strip_node(host)
     arrow_node(host, "Left")
     arrow_node(host, "Right")

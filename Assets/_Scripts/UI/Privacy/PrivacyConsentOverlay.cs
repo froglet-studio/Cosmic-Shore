@@ -278,6 +278,13 @@ namespace CosmicShore.UI
             Finish();
         }
 
+        /// <summary>
+        /// Close the overlay without an answer (a tool with no person at the keyboard: the escort sim, the voyage smoke
+        /// test). Nothing is granted or recorded, so analytics stays off and the overlay asks again on the next launch;
+        /// the boot it was holding is released, as an answer would release it.
+        /// </summary>
+        public void CloseUnanswered() => Finish();
+
         void Finish()
         {
             OnPrivacyFlowCompleted?.Invoke();

@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: RhinoPloughPrismEffect
   m_EditorClassIdentifier: 
   clearanceMargin: 1
-  throwSecondsOfSpeed: 0.04
-  maxThrowDistance: 30
+  throwSecondsOfSpeed: 0.12
+  maxThrowDistance: 90
   furrowDistance:
     Enabled: 1
     Value: 0
     Min: 0
-    Max: 20
+    Max: 60
     element: 3
     UseFloor: 1
     Floor: 0

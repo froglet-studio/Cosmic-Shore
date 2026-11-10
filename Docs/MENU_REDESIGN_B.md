@@ -2206,15 +2206,19 @@ Each element's game meaning (`Docs/ElementalAbilitySystem/ARCHITECTURE.md`) give
 
 The owner chose option A, "Orb". The FRIENDS tab on the left edge (rev 3's handle) is gone.
 
-- **The orb.** A 92 x 92 orb sits in the bottom-left corner over every screen (`Drawer/Orb` in Menu_Main). It is the
+- **The orb.** An 80 x 80 orb (was 92, moved off the wall 2026-11-09) sits in the bottom-left corner over every screen (`Drawer/Orb` in Menu_Main). It is the
   friends drawer's handle: pressing it opens the party panel. What it shows:
   - you at the centre, your avatar in a ring of your domain colour;
   - up to three party members on the inner ring (top-left, top-right, bottom), each in their domain colour, with a
     flowing bond from you to them;
   - the slowly turning dashed orbit, carrying one dot per player online (up to 8);
   - "N online" under it, or "Friends" while nobody else is online. Both lines are authored fields on the orb.
-- **Why 92 px and not the board's 150.** The orb draws over the windows too. At 92 it fits the 100 px left gutter the
-  windows keep (`author_menu_arcade.ORB_*`); the board's size would sit over the windows' cards. The windows' gutter
+- **Why 80 px and not the board's 150.** The orb draws over the windows too. At 80, 16 px in (`ORB_X` 16, `ORB_Y` 44),
+  it fits the 100 px left gutter the windows keep (`author_menu_arcade.ORB_*`); the board's size would sit over the
+  windows' cards. It was 92 px at x 4 until 2026-11-09, when the 4 px wall margin and the 18 px count line (now the top
+  menu's `Button` size, left-aligned, 104 px wide so "99 ONLINE" fits) were too tight. Whatever sits beside it keeps the
+  orb's 16 px margin: the Codex Field Guide strip starts at `author_menu_codex.STRIP_LEFT` (160, which includes the
+  strip mask's 24 px bleed) and the Hangar list and Codex orbit stop 32 px above it (`author_menu_hangar.ORB_TOP`). The windows' gutter
   gate (`check_window_inset`) and Home's docked-card gate now measure against the orb.
 - **The shader.** `CosmicShore/UI/Presence` (`Presence.shader` + `UIPresence.cginc`) draws the glow, the inner ring,
   the orbit with its dots and the three bonds on one sprite-less Image. Every radius is a fraction of the half-size.
@@ -5967,6 +5971,33 @@ breadcrumb to the color sets, but put the thing where it belongs."
 - **Not drawn on Frogma first:** it extends the picked Rev 54 A and the approved settings board with content and one
   row, as Garrett asked. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+### 126.3 Colour vision gets its own rail, free; the worn set themes the whole UI (2026-11-09, NOT RUN IN EDITOR)
+
+Shombith: "both the theme colors and color blindness accessibility colors are on the same lineup. Make a separate
+color blind section just on the right which contains only the color blind themes since they will be free as they are
+accessibility features. [...] I want the theme to also affect the UI how it does in the analytics or fleet codex
+artifacts with all UI".
+- **Two rails.** The left rail ("Colour sets") holds only the sets picked for their looks (Nocturne, Photic, Dart Frog,
+  Nacre); a hairline, then the right rail ("Colour vision, always free") holds only the sets made for a vision
+  (Contrast and the five colour-vision sets). Each rail keeps three tiles and its own < >, a window onto its own sets;
+  "2 of 6" counts inside the rail of the set shown. To give the rails the band, the words moved up 28 units and APPLY /
+  Equipped moved level with the set's name, right. The Settings breadcrumb opens the right rail on its first set.
+  Authored by `author_menu_profile.py` (`COLOUR_RAILS`); every existing node keeps its fileID.
+- **Free.** `ColorSetCatalogSO.IsPickable`: a set made for a vision is worn whatever its `unlocked` says (accessibility
+  is never a reward); the panel, the saved pick (`ThemeManager.PickedColorSet`) and the breadcrumb all ask it.
+- **The worn set themes the whole UI**, as on the analytics console and the Fleet Codex: `ColorSetUITheme` is a
+  line-for-line port of `Tools/Analytics/console/make_themes.py` (ground, panels, lines and text keep the Deep Sea
+  lightness and take the set's Jade face hue; CTA and danger are the set's; selection and control its Jade rim,
+  purchase its Gold rim; contrast fitted to 3:1 / 4.5:1; elements and tooltip stay authored). `UITheme.Resolve` answers
+  from it while worn (`UIThemeLive`), and wearing or previewing a set repaints the UI on screen: the kit repaints from
+  its tokens, any other graphic whose colour is a theme token moves to that token in the new theme, and the sea lines
+  draw with a run-time copy of their material in the set's Jade, Blue and Ruby rims (the assets are never written).
+  New UI paints itself on enable; a root canvas whose hierarchy changed is swept again once a second, and every canvas
+  of a loaded scene. `ColorSetUIThemeTests` holds every shipped set to the console's `themes.css` (checked outside
+  Unity too: 80 values, all within 1/255).
+- **Not drawn on Frogma first**: it splits the picked Rev 54 A's rail as asked. Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
 ## 137. Rev 50 mockups: the Froglet Analytics dashboard, three ways to read it (2026-11-05; Shombith picked B)
 
 - **Asked** (Shombith, 2026-11-05): "Lets go with our own dashboard and leave posthog. Pull up /frogma create new tab to
@@ -6002,6 +6033,63 @@ breadcrumb to the color sets, but put the thing where it belongs."
 - **Picked (Shombith, 2026-11-05): "go with B, start building the server."** The Console: a rail of pages (Overview,
   Retention, Matches, Data health, Ask Claude, Erasure). The server it reads is `Tools/Analytics/server/` (README
   there); the page itself is not built yet.
+
+## 138. Rev 63 mockups: portrait menus, the same PC UI with the phone held upright (2026-11-06, picked B, built)
+
+**Asked** (Shombith, 2026-11-06, after trying the phone layouts in the Device Simulator): "I think we should rather stick
+to PC UI how it is and delete the boards mobile UI ... this is too time costly to perform these changes because it needs
+proper planning but we do need support for potrait mode unlocked as well so lets just work on that same UI just
+potrait". Decided with him the same day:
+- the phone layouts are removed completely: #1739 (phone scale), #1741 (sign-in, finish, HUD) and #1744 (every menu,
+  the HUD and Maelstrom, Rev 60) closed without merging; their branches stay on origin as the record;
+- Frogma's Phone tab boards (Rev 52-60, 22 boards) deleted from the canvas; the tab is now **Portrait**;
+- portrait is unlocked for the **menus only**; matches stay landscape;
+- the portrait look is drawn first and picked before anything is built.
+`Docs/UI_STYLE_GUIDE.md` section 8 and D6 now say every device shows the PC UI.
+
+**On the canvas:** the Portrait tab, "Rev 63 - Portrait menus" (copies in `Docs/MenuRedesignB/board/`). Each board shows
+Home, Arcade and Configure on an upright phone (390 x 844 points), with its own words beside them:
+- **R63A Scale to width:** the PC layout as it is, the 1920-wide screen shrunk to the phone's width; body text about
+  3.7 pt. No screen changes; not readable.
+- **R63B Re-flow, band on top (recommended):** the same PC pieces at their PC sizes on a 1080-wide canvas: the nav band
+  on top as on PC, panels stacked, grids 3 across, the hubs 2 x 2; body text about 6.5 pt, the size the PC UI already has
+  on a phone held sideways. A portrait pose per screen: Home, Arcade, Configure and Hangar first, the rest as A.
+- **R63C Re-flow, band at the bottom:** as B, the nav band a tab bar under the thumb; moves the band away from the PC
+  place.
+- **R63Notes:** what each costs, how big the words are, the rotation lock (menus allow portrait; a match locks landscape
+  before it loads).
+
+**Picked:** B (Shombith, 2026-11-06: "go with B, build it").
+
+**Built** (`claude/ui-portrait`):
+- The mechanism: `PortraitRect` holds a piece's upright pose (or marks a screen as its PC layout fitted to the width,
+  Draw At PC Scale); `AdaptiveCanvasScaler.hasPortraitLayout` switches Menu_Main to 1080 x 1920 matched to the width
+  when the screen is taller than wide, in play mode, and raises `PortraitLayoutChanging` / `PortraitLayoutChanged`;
+  `MenuOrientation` allows auto-rotation only while the menu is Ready and locks landscape-left otherwise.
+- The poses, each written by its own generator (`K.portrait_rect`): the nav band needs none (its row is 865 wide); Home's
+  four hubs became a GridLayoutGroup, 4 across on PC and 2 x 2 upright; Arcade's header and body stack, its game grid is
+  one flat GridLayoutGroup (5 across PC, 3 across upright) and the featured cards stack; Configure (Arcade, Arena,
+  Maelstrom) stacks the preview (1000 x 562), the steps card (widened to 1000) and START; Hangar stacks header, balance and
+  Selected, with the list and the dossier side by side below.
+- The rest (Ark, Port, Profile, Codex, Replays, Credits, Settings, the hub windows and the small modals) is its PC layout
+  fitted to the width (`author_menu_portrait.py` and the screens' own generators).
+- `ConfigureCinema` and `ConfigurePilotsFit` re-read their rest poses on a turn; FULL SCREEN grows the frame to the
+  window upright instead of opening the tray; an entrance playing during a turn lands first.
+
+**Differs from the board:** Arcade keeps a 100-unit left gutter (the friends drawer's dock); Hangar's dossier keeps its PC
+size (710 x 1026) beside the list instead of under it; Configure and Maelstrom leave empty space at the bottom on tall
+phones; START sits from x 100. Not judged in the editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Portrait menus").
+
+**The portrait plan, round 2** (Shombith, 2026-11-08: "any time a player changes their orientation in the app shell UI
+from landscape to portrait there should be a smooth transition with almost no breaking ... if in a game or the toybox
+the vessels that are more 2D friendly, just goby and pistol, when you change your orientation the game swaps to pistol's
+view ... vessels which do not support the above, nothing happens, no transition of gameplay UI"). Built:
+- `OrientationFade` (Menu_Main and GameCanvas roots, its own CanvasGroup): out on the switch, two frames held, 0.28 s in.
+- `ScreenOrientationPolicy`: the menu (Ready) or an upright seat allows portrait; otherwise landscape. `MenuOrientation`
+  and `DeviceOrientationHandler` go through it; a new scene clears a seat's allowance.
+- `IUprightSeat` on `GobyPistolDuo` (the Pistol, seat 1) and `CrewOrientation`, ticked by the person's
+  `LocalCrewStation`: on a phone, upright takes the Pistol, landscape takes the Goby, through the crew's own
+  `TakeSeat`. GameCanvas lays out upright (1080 x 1920, no poses: its corner-anchored pieces keep their PC sizes).
 
 ## 141. Rev 65 mockups: Froglet Analytics, the full tool - filters, charts, cohorts, eras, admin queries (2026-11-06, awaiting a pick)
 
@@ -6499,3 +6587,81 @@ Affects:
 - Garrett's Voyage window: the generator, MissionView, `VoyageJobsView`, and `VoyageMapGraphic`'s `OpenTier` and `Sea`.
 - Yash's vessel strip pattern (`ArenaLaunchPanel`): the same one-press strip, not shared code.
 - The FTUE quest tracker (Shombith and Caleb): it moved windows unchanged.
+
+## 152. Rev 72 mockups: the turn, drawn - the menu fades through a turn, the Goby turns into the Pistol, every other vessel stays landscape (2026-11-08, a storyboard of what is built)
+
+**Asked** (Shombith, 2026-11-08, after the portrait plan was built on `claude/ui-portrait`, section 138): "show me a clip of
+the Goby turning to Pistol ... also the phone transition of the UI". No session can record the real turn yet (Amoebius
+has no Goby & Pistol or portrait UI; the look sheet has not had its first run and cannot turn a phone), so he chose a
+storyboard: "3 is good enough".
+
+**On the canvas:** the Portrait tab, "Rev 72 - The turn, drawn" (copies in `Docs/MenuRedesignB/board/`). Each board is a
+six-frame strip with times, the rule in words, and a phone on the right that plays the turn both ways on a loop (Pause,
+Slow x4):
+- **R72Menu:** Home landscape, the OS turning the last frame, the layout switch with the UI out and the cell still
+  drawing, two frames held, the fade, upright; and back.
+- **R72Goby:** the Goby in Perch Run with the Pistol in the small square; upright, the Pistol's side view fills the screen
+  with the Goby in the square and the Pistol's buttons round the thumb. The Pistol is its model's render
+  (`Docs/VesselModels/sheets/pistol_camera_side.jpg`, cut out); its plane, the trail's blocks and the ring are drawn.
+- **R72Other:** the Squirrel; the phone turns and the game stays landscape, sideways on the upright phone.
+- **R72Notes:** what was asked, the timings, what is built and where it is judged.
+
+**Differs from the build:** a drawing of the built rules (OrientationFade, CrewOrientation, ScreenOrientationPolicy);
+the real turn, the Pistol's real view and GameCanvas upright are judged in the Device Simulator (checklist "Portrait
+menus", steps 8-10). Rev 71 was taken by another session while this round was drawn; this one is 72.
+
+## 153. Rev 76 mockups: the turn, five transitions - each on the menu and on the Goby turning into the Pistol (2026-11-08, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-08, after Rev 72's storyboard): "Can you show some alternatives cooler ones?" - "transitions I
+meant".
+
+**On the canvas:** the Portrait tab, "Rev 76 - The turn: five transitions" (copies in `Docs/MenuRedesignB/board/`). Each
+option board loops the turn both ways on two phones, the menu (Home) and the Goby turning into the Pistol, with Pause
+and Slow x4; the Compare board plays all five side by side:
+- **A Fade through (built):** out on the switch, two frames held, 0.28 s in (section 138, round 2).
+- **B Hold steady:** the UI turns against the phone so it stays level in the hand, then settles upright with a small
+  scale-in; in the game the camera swings from behind the Goby to the Pistol's side view.
+- **C Re-form (recommended):** the UI re-forms upright in three bands, top to bottom, 40 ms apart (the kit's own
+  KitEntrance Rise with KitMotion.Stagger); in the game the Pistol's small square grows to fill the screen over the
+  Goby's view (the crew's two views trading places, laid out by CrewPictureInPicture), then the HUD re-forms.
+  Recommended because it is the menu's own motion and both game pieces exist; quiet enough for the Rev 29 rule.
+- **D Sliver wipe:** a dark slab with the style guide's cut corner sweeps across; the new layout is behind it. The bold end.
+- **E Focus pull:** the world softens through the turn and sharpens as the UI comes back; needs a blur pass for ~0.4 s.
+
+**Differs from the build:** A is built. B-E would change `OrientationFade` (C: replay the entrances under the canvas after
+the switch; D: an overlay; B: a counter-rotation; E: a blur volume) and, on the game side, the Goby's seat change
+(`GobyPistolDuo`, Garrett's: C grows the Pistol's square, B swings between the seat cameras). Drawn with the Pistol's
+model render and Perch Run's card art; the motion, not the game. Rev 75 was taken by another session meanwhile.
+
+## 154. Rev 78 mockups: the UI moves with the phone - every piece travels to its upright place as the phone turns (2026-11-08, picked Turn then glide, built)
+
+**Asked** (Shombith, 2026-11-08, on Rev 76's five transitions): "I mean the UI should move with the phone as we rotate I
+guess". So the UI does not go out and come back; it moves, piece by piece, with the turn.
+
+**On the canvas:** the Portrait tab, "Rev 78 - The UI moves with the phone" (copies in `Docs/MenuRedesignB/board/`). Each
+board loops both ways on two phones, the menu (Home) and the Goby turning into the Pistol, with Pause and Slow x4:
+- **Follow the turn (recommended):** every piece travels from its landscape place to its upright place WHILE the phone
+  turns and stays level in the hand: the nav band slides to the top, the cards stretch to the width, the four hubs fold
+  into a 2 x 2; in the game the Goby's view shrinks into the small square as the Pistol's grows out of it, in step.
+  Built by reading the tilt (the accelerometer touch tilt already enables), blending each PortraitRect's pose by the
+  angle with the canvas turned against the tilt, and setting the orientation itself at the end. Risk: whether iOS and
+  Android then swap without their own rotation animation - a one-day device prototype answers it.
+- **Turn, then glide:** the OS turns the screen as today, then each piece glides from where it was to its upright place
+  in 0.35 s (PortraitRect tweens instead of jumping; the crew's two views tween their rects). Cheaper and certain.
+- **Notes:** the ask, Follow vs Glide, what only a device shows.
+
+**Differs from the build:** the build is Rev 76 A (the fade). Either option replaces `OrientationFade`'s fade with motion
+in `PortraitRect` (and, for the Goby, a tween of the crew's two views in `GobyPistolDuo`, Garrett's). Drawn with
+simplified pieces of Home; the motion, not the game.
+
+**Picked** (Shombith, 2026-11-08): "Turn then glide".
+
+**Built** (`claude/ui-portrait`): `OrientationGlide` replaces `OrientationFade` on Menu_Main's and GameCanvas's roots
+(`author_menu_portrait.py`). While a turn is possible it notes each posed piece's place on the glass (every PortraitRect
+that moves its rect or is a fitted PC block; on GameCanvas the canvas's own children); on the switch the UI is held two
+frames while the layout settles, then each piece is put at its old place carried through the turn (`CarryAcrossTurn`),
+turned by the turn's angle (`TurnAngle`) and scaled to its old size, and glides to rest over 0.35 s (OutCubic), input
+held until it lands. The Goby's turn: `CrewOrientation` asks `CrewPictureInPicture.GlideNextSwap`, so the seat change
+a turn makes grows the new view out of the small square over the old one (smoothstep, 0.35 s); a swap by the D-pad or a
+double tap stays instant. Not run on a device yet (checklist "Portrait menus", step 8). The nav band has a pose too (Shombith, 2026-11-08: "give the nav band a pose too"): its own rect, across the
+top upright as on PC, so it glides with the rest (`author_menu_portrait.py` SCENE_POSED).

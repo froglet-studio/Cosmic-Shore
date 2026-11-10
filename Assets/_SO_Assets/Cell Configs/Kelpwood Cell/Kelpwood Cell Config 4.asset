@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Kelpwood Cell Config 4
+  m_EditorClassIdentifier:
+  CellName: Kelpwood
+  Description: 'Kelp Snare - intensity 4 of Kelpwood: 88 strands, danger tips and danger collars
+    mid-strand; four herds and one omni crystal. 2024 prisms, all neutral (384 danger), kelp
+    radius 384 inside the standard 1200 u cell, spawn ring 464. 12 tameable tadpoles graze
+    the kelp; 1 omni crystals float round the core (the scene''s CrystalManager). NO
+    NUCLEUS, no flora. Authored by Tools/Build/author_kelpwood_assets.py from
+    kelpwood_budget.py - re-run it rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 4
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 0
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: cdc89e0b2c1f1cd27aee7ba2f346cade, type: 2}
+  EnvironmentPrefab: {fileID: 8600000000000203, guid: 13259a4cb6658d3a578390040ddce9cf, type: 3}
+  EnvironmentIntensity: 4
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 2724
+    RestlessExit: 2524
+    FrenzyEnter: 5624
+    FrenzyExit: 5024
+    RestlessEnterVolume: 280677
+    RestlessExitVolume: 277477
+    FrenzyEnterVolume: 327077
+    FrenzyExitVolume: 317477

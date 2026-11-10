@@ -399,6 +399,10 @@ def build_view():
 # words a set shows come from the catalog (Tools/Build/author_colour_set_catalog.py); every other word is authored here.
 
 COLOUR_SET_CARDS = 3
+# The two rails, left to right: (node prefix, eyebrow, < key, > key). Set keeps the first rail's shipped node names.
+COLOUR_RAILS = (("Set", "Colour sets", "ColourPrev", "ColourNext"),
+                ("Vision", "Colour vision, always free", "VisionPrev", "VisionNext"))
+COLOUR_RAIL_GAP = 80
 COLOUR_CATALOG = "Assets/_SO_Assets/Color Palettes/ColorSetCatalog.asset"
 DOMAIN_NAMES = ("Jade", "Ruby", "Gold", "Blue")
 COLOUR_WORDS = (("positionTemplate", "'{index} of {count}'"), ("wearingTemplate", "Wearing {name}"))
@@ -475,7 +479,7 @@ def build_colour_sets(root):
     # A window onto the cell, with a backing under the words and the rail: the real cell is far busier than the
     # board's drawn sea, so a fade alone left the words on the world ("missing background"). A fade into a solid band,
     # and the Profile's veil dimmed rather than off (ProfileColorSetsPanel.veilWhileShowing).
-    BAND = 300
+    BAND = 330
     fade = hero.child(N(f"{kh}/Fade", "Fade", TL(0, H - BAND - 220, W, 220)))
     fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.88), K.kit_sprite("kit_fade_v"), False))
     band = hero.child(N(f"{kh}/Band", "Band", TL(0, H - BAND, W, BAND)))
@@ -485,54 +489,77 @@ def build_colour_sets(root):
     label(hero.child(N(f"{kh}/Wearing", "Wearing", TL(200, 40, 600, 18))), "", "Label", "TextLight")
     label(hero.child(N(f"{kh}/Private", "Private", TR(48, 38, 600, 20))), "Only you see your colour set", "BodySmall",
           "NeutralLightest", align="right")
-    label(hero.child(N(f"{kh}/Eyebrow", "Eyebrow", TL(56, H - 350, 300, 18))), "Colour set", "Label", "NeutralLightest")
-    big_name(hero.child(N(f"{kh}/Name", "Name", TL(56, H - 330, 1240, 104))))
-    label(hero.child(N(f"{kh}/Line", "Line", TL(56, H - 218, 1240, 28))), "", "Body", "TextLight")
+    label(hero.child(N(f"{kh}/Eyebrow", "Eyebrow", TL(56, H - 378, 300, 18))), "Colour set", "Label", "NeutralLightest")
+    big_name(hero.child(N(f"{kh}/Name", "Name", TL(56, H - 358, 1240, 104))))
+    label(hero.child(N(f"{kh}/Line", "Line", TL(56, H - 246, 1240, 28))), "", "Body", "TextLight")
     for d, dom in enumerate(DOMAIN_NAMES):
-        x, y = 56 + d * 300, H - 178
+        x, y = 56 + d * 300, H - 206
         label(hero.child(N(f"{kh}/Pair{d}/Domain", f"Domain{d}", TL(x, y + 3, 44, 16))), dom, "Label", "NeutralLightest")
         art_node(hero, f"{kh}/Pair{d}/Rim", f"Rim{d}", TL(x + 50, y, 20, 20), None)
         art_node(hero, f"{kh}/Pair{d}/Face", f"Face{d}", TL(x + 70, y, 20, 20), None)
         label(hero.child(N(f"{kh}/Pair{d}/Words", f"Words{d}", TL(x + 100, y - 1, 196, 22))), "", "BodySmall", "TextLight")
-    # The rail: < three tiles >, a window onto the whole catalog: < > step the set shown and slide the window, so the
-    # sets made for colour vision sit here beside the others (2026-11-05). The pad moving onto a tile previews it.
-    w, h = K.button_size("<", small=True)
-    rail_y = H - 152
-    hero.children.append(small("ColourPrev", "PreviousButton", "Default", "<", TL(56, rail_y + 42 - h // 2, w, h)))
-    x0 = 56 + w + 16
-    for i in range(COLOUR_SET_CARDS):
-        k = f"{kh}/Set{i}"
-        x = x0 + i * 224
-        t = hero.child(N(k, f"Set{i}", TL(x, rail_y, 204, 84)))
-        t.add("cg", 225, canvas_group(True))
-        tile_nodes(t, k, 10)
-        for d in range(4):
-            swatch(t, f"{k}/Swatch{d}", TL(20 + d * 44, 24, 36, 32))
-        label(hero.child(N(f"{k}Name", f"Set{i}Name", TL(x, rail_y + 96, 170, 18))), "", "Label", "TextLight")
-        tick_node(hero, f"{k}Tick", TL(x + 184, rail_y + 96, 18, 18))
-        t.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"), 10))
-        t.add("audio", 114, A.menu_audio(11))
-    hero.children.append(small("ColourNext", "NextButton", "Default", ">", TL(x0 + COLOUR_SET_CARDS * 224, rail_y + 42 - h // 2, w, h)))
-    # APPLY, or Equipped when the set shown is the one worn.
+    # Two rails (Shombith, 2026-11-09): the looks on the left, and on the right, apart, the sets made for colour vision
+    # (colour blindness, low vision, Contrast), which are free because they are accessibility. Each rail is a window onto
+    # its own sets: its < > step the set shown and slide the window. The pad moving onto a tile previews it.
+    rail_y = H - 146
+    x = 56
+    for rail in COLOUR_RAILS:
+        x = colour_rail(hero, kh, rail, x, rail_y) + COLOUR_RAIL_GAP
+    # The hairline between the rails.
+    div_x = colour_rail_width() + 56 + COLOUR_RAIL_GAP // 2
+    div = hero.child(N(f"{kh}/RailDivider", "RailDivider", TL(div_x, rail_y - 24, 1, 138)))
+    div.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, C.H.themed("SurfaceDark"))
+    # APPLY, or Equipped when the set shown is the one worn: level with the name, right, so the rails have the band.
     aw, ah = K.button_size("APPLY")
-    hero.children.append(kit_button("ApplyColourSet", "ApplyButton", "Cta", "APPLY", TL(W - 48 - aw, H - 56 - ah, aw, ah)))
-    eq = hero.child(N(f"{kh}/Equipped", "Equipped", TL(W - 48 - 220, H - 56 - 30, 220, 30), active=False))
+    hero.children.append(kit_button("ApplyColourSet", "ApplyButton", "Cta", "APPLY", TL(W - 48 - aw, H - 358 + (104 - ah) / 2, aw, ah)))
+    eq = hero.child(N(f"{kh}/Equipped", "Equipped", TL(W - 48 - 220, H - 358 + 37, 220, 30), active=False))
     tick_node(eq, f"{kh}/Equipped/Tick", TL(120, 6, 18, 18)).active = True
     label(eq.child(N(f"{kh}/Equipped/Word", "Word", TL(146, 4, 74, 22))), "Equipped", "Label", "TextLight")
     pg.add("colours", 114, lambda ctx, go: mono(go, S["colours"], colour_sets_body(ctx)))
 
 
+def colour_rail_width():
+    w, _ = K.button_size("<", small=True)
+    return w + 16 + COLOUR_SET_CARDS * 224 + w
+
+
+def colour_rail(hero, kh, rail, x, rail_y):
+    """One rail: its eyebrow, < , COLOUR_SET_CARDS set tiles and >, from `x`. Returns where it ends."""
+    prefix, eyebrow, prev_key, next_key = rail
+    w, h = K.button_size("<", small=True)
+    names = ("PreviousButton", "NextButton") if prefix == "Set" else (f"{prefix}PreviousButton", f"{prefix}NextButton")
+    label(hero.child(N(f"{kh}/{prefix}Eyebrow", f"{prefix}Eyebrow", TL(x, rail_y - 24, 600, 18))), eyebrow, "Label",
+          "NeutralLightest")
+    hero.children.append(small(prev_key, names[0], "Default", "<", TL(x, rail_y + 42 - h // 2, w, h)))
+    x0 = x + w + 16
+    for i in range(COLOUR_SET_CARDS):
+        k = f"{kh}/{prefix}{i}"
+        tx = x0 + i * 224
+        t = hero.child(N(k, f"{prefix}{i}", TL(tx, rail_y, 204, 84)))
+        t.add("cg", 225, canvas_group(True))
+        tile_nodes(t, k, 10)
+        for d in range(4):
+            swatch(t, f"{k}/Swatch{d}", TL(20 + d * 44, 24, 36, 32))
+        label(hero.child(N(f"{k}Name", f"{prefix}{i}Name", TL(tx, rail_y + 96, 170, 18))), "", "Label", "TextLight")
+        tick_node(hero, f"{k}Tick", TL(tx + 184, rail_y + 96, 18, 18))
+        t.add("tile", 114, A.tile_body(c(f"{k}/FocusRing", "img"), c(f"{k}/Frame/Fill", "img"), c(f"{k}/Frame/Border", "img"), 10))
+        t.add("audio", 114, A.menu_audio(11))
+    hero.children.append(small(next_key, names[1], "Default", ">", TL(x0 + COLOUR_SET_CARDS * 224, rail_y + 42 - h // 2, w, h)))
+    return x0 + COLOUR_SET_CARDS * 224 + w
+
+
 def colour_sets_body(ctx):
     k0, kh = "ColourSets", "ColourSets/Hero"
     seq = lambda name, ids, ind="  ": f"{ind}{name}:\n" + "".join(f"{ind}- {ref(x)}\n" for x in ids)
-    thumbs = "".join(
-        f"  - group: {ref(ctx.c(f'{kh}/Set{i}', 'cg'))}\n"
-        f"    tile: {ref(ctx.c(f'{kh}/Set{i}', 'tile'))}\n"
-        f"    nameText: {ref(ctx.c(f'{kh}/Set{i}Name', 'tmp'))}\n"
-        f"    equippedMark: {ref(ctx.go(f'{kh}/Set{i}Tick'))}\n"
-        + seq("faces", [ctx.c(f"{kh}/Set{i}/Swatch{d}/Face", "img") for d in range(4)], "    ")
-        + seq("rims", [ctx.c(f"{kh}/Set{i}/Swatch{d}/Rim", "img") for d in range(4)], "    ")
-        for i in range(COLOUR_SET_CARDS))
+    def thumbs(prefix):
+        return "".join(
+            f"  - group: {ref(ctx.c(f'{kh}/{prefix}{i}', 'cg'))}\n"
+            f"    tile: {ref(ctx.c(f'{kh}/{prefix}{i}', 'tile'))}\n"
+            f"    nameText: {ref(ctx.c(f'{kh}/{prefix}{i}Name', 'tmp'))}\n"
+            f"    equippedMark: {ref(ctx.go(f'{kh}/{prefix}{i}Tick'))}\n"
+            + seq("faces", [ctx.c(f"{kh}/{prefix}{i}/Swatch{d}/Face", "img") for d in range(4)], "    ")
+            + seq("rims", [ctx.c(f"{kh}/{prefix}{i}/Swatch{d}/Rim", "img") for d in range(4)], "    ")
+            for i in range(COLOUR_SET_CARDS))
     words = "".join(f"  {k}: {v}\n" for k, v in COLOUR_WORDS)
     return (f"  recordTab: {ref(ctx.c('Tabs/RecordTab', 'tab'))}\n"
             f"  colourSetsTab: {ref(ctx.c('Tabs/ColourSetsTab', 'tab'))}\n"
@@ -542,9 +569,12 @@ def colour_sets_body(ctx):
             + f"  veil: {ref(ctx.c('Veil', 'img'))}\n  veilWhileShowing: 0.55\n"
             + seq("hideWhileShowing", [ctx.c("VeilSea", "img")])
             + f"  catalog: {asset_ref(COLOUR_CATALOG)}\n"
-            "  thumbs:\n" + thumbs
+            "  thumbs:\n" + thumbs("Set")
             + f"  previousButton: {ref(ctx.iref('ColourPrev', 'root#button'))}\n"
             f"  nextButton: {ref(ctx.iref('ColourNext', 'root#button'))}\n"
+            "  visionThumbs:\n" + thumbs("Vision")
+            + f"  visionPreviousButton: {ref(ctx.iref('VisionPrev', 'root#button'))}\n"
+            f"  visionNextButton: {ref(ctx.iref('VisionNext', 'root#button'))}\n"
             f"  nameText: {ref(ctx.c(f'{kh}/Name', 'tmp'))}\n"
             f"  lineText: {ref(ctx.c(f'{kh}/Line', 'tmp'))}\n"
             f"  positionText: {ref(ctx.c(f'{kh}/Position', 'tmp'))}\n"
@@ -643,7 +673,7 @@ def build_record(root):
         art_node(row, f"{k}/Icon", "Icon", R((0, 0.5), None, (16, 0), (28, 28)), None, preserve=True)
         label(row.child(N(f"{k}/Name", "Name", R((0, 0.5), None, (52, 0), (200, 26), (0, 0.5)))), "", "Body", "TextLight")
         track = row.child(N(f"{k}/Track", "Track", R((0, 0.5), (1, 0.5), (110, 0), (-420, 6))))
-        track.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
+        track.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, C.H.themed("SurfaceDark"))
         fill = track.child(N(f"{k}/Track/Fill", "Fill", R((0, 0), (0.5, 1), (0, 0), (0, 0), (0, 0.5))))
         fill.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive")))
         label(row.child(N(f"{k}/Time", "Time", R((1, 0.5), None, (0, 0), (160, 26), (1, 0.5)))), "", "Data", "TextLight", align="right")
@@ -661,7 +691,7 @@ def build_studio(rec, x, y):
     label(st.child(N(f"{k0}/Title", "Title", TL(24, 52, 750, 40))), "", "H2", "TextLight")
     label(st.child(N(f"{k0}/Artist", "Artist", TL(24, 94, 750, 20))), "", "BodySmall", "NeutralLightest")
     tr = st.child(N(f"{k0}/Progress", "Progress", TL(24, 126, 752, 3)))
-    tr.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
+    tr.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, C.H.themed("SurfaceDark"))
     pf = tr.child(N(f"{k0}/Progress/Fill", "Fill", R((0, 0), (0, 1), (0, 0), (0, 0), (0, 0.5))))
     pf.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"))).add("th", 114, H.themed("ControlActive"))
     row = st.child(N(f"{k0}/Transport", "Transport", TL(24, 146, 752, 40)))
@@ -826,7 +856,7 @@ def build_now_playing():
     label(pn.child(N("Panel/Title", "Title", TL(90, 36, 330, 28))), "", "H3", "TextLight")
     label(pn.child(N("Panel/Artist", "Artist", TL(90, 66, 330, 18))), "", "BodySmall", "NeutralLightest")
     tr = pn.child(N("Panel/Progress", "Progress", TL(18, 92, 404, 2)))
-    tr.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, H.themed("SurfaceDark"))
+    tr.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceDark"))).add("th", 114, C.H.themed("SurfaceDark"))
     pf = tr.child(N("Panel/Progress/Fill", "Fill", R((0, 0), (0, 1), (0, 0), (0, 0), (0, 0.5))))
     pf.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("ControlActive"))).add("th", 114, H.themed("ControlActive"))
     ctl = pn.child(N("Panel/Controls", "Controls", TL(18, 104, 404, 36)))

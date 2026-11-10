@@ -96,10 +96,25 @@ namespace CosmicShore.ScriptableObjects
         /// editor match had not reached it by 211 s).</summary>
         public const int DefaultDustupPointTarget = 4;
 
-        /// <summary>Serpent Gulag snipe target used when <see cref="serpentGulagSnipeTarget"/> is 0. One
+        /// <summary>Hood snipe target used when <see cref="serpentHoodSnipeTarget"/> is 0. One
         /// SNIPE - a Sniper Shot that strips a rival pilot (a Debuff-class combat hit) - is one point
-        /// (SerpentGulagScoringRuleSO), summed across the domain's pilots.</summary>
-        public const int DefaultSerpentGulagSnipeTarget = 3;
+        /// (SerpentHoodScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultSerpentHoodSnipeTarget = 3;
+
+        /// <summary>Jackstraw strike target used when <see cref="jackstrawStrikeTarget"/> is 0. One STRIKE - the
+        /// Thresher's ball or chain reaching a rival hull (a Strike-class combat hit) - is one point
+        /// (JackstrawScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultJackstrawStrikeTarget = 3;
+        /// <summary>Flatline point target used when <see cref="flatlinePointTarget"/> is 0 and the rung authors
+        /// nothing. Points are the fleet price (CombatHitDrain.PointsFor): a round on a rival hull is 1, a cord or
+        /// thrown-saber Strike 8, ten points to the petal; the ring blast pays nothing (FlatlineScoringRuleSO),
+        /// summed across the domain's pilots.</summary>
+        public const int DefaultFlatlinePointTarget = 90;
+
+        /// <summary>Kelpwood bite target used when <see cref="kelpwoodBiteTarget"/> is 0. One BITE - a creature an
+        /// Angler locked on a rival reaching its hull (a Strike-class combat hit) - is one point
+        /// (KelpwoodScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultKelpwoodBiteTarget = 12;
 
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
@@ -499,9 +514,28 @@ namespace CosmicShore.ScriptableObjects
                  "domain's pilots. 0 = default (4).")]
         [Min(0)] public int dustupPointTarget = 4;
 
-        [Tooltip("Serpent Gulag: SNIPES a DOMAIN needs to win (race to N). One Sniper Shot that " +
+        [Tooltip("Hood: SNIPES a DOMAIN needs to win (race to N). One Sniper Shot that " +
                  "strips a rival pilot is one snipe, summed across the domain's pilots. 0 = default (3).")]
-        [Min(0)] public int serpentGulagSnipeTarget = 3;
+        [FormerlySerializedAs("serpentGulagSnipeTarget")]
+        [Min(0)] public int serpentHoodSnipeTarget = 3;
+
+        [Tooltip("Jackstraw: STRIKES a DOMAIN needs to win (race to N). The Thresher's ball or chain reaching " +
+                 "a rival hull is one strike, summed across the domain's pilots. 0 = default (3).")]
+        [Min(0)] public int jackstrawStrikeTarget = 3;
+        [Tooltip("Flatline: POINTS a DOMAIN needs to win (race to N), the Brittle Star's charge game. A round " +
+                 "on a rival hull is 1 point, a cord or thrown-saber Strike 8 (the fleet price, ten points to " +
+                 "the petal); the ring blast scores nothing. 0 = default (90). The per-intensity list below " +
+                 "overrides it.")]
+        [Min(0)] public int flatlinePointTarget = 90;
+
+        [Tooltip("Flatline: per-INTENSITY override of the target above - element 0 is intensity 1. Empty, a 0 " +
+                 "entry, or an intensity past the end falls back to the scalar. 90 at every rung (Shombith, " +
+                 "2026-11-10); a rung can be re-tuned on its own once timed matches say so.")]
+        public List<int> flatlinePointTargetByIntensity = new() { 90, 90, 90, 90 };
+
+        [Tooltip("Kelpwood: BITES a DOMAIN needs to win (race to N). A creature an Angler locked on a rival biting " +
+                 "its hull is one bite, summed across the domain's pilots. 0 = default (12).")]
+        [Min(0)] public int kelpwoodBiteTarget = 12;
 
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
@@ -577,7 +611,12 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int wreckingBallPrismTargetBuild = 650;
         [Min(0)] public int undertowPointTargetBuild = 12;
         [Min(0)] public int dustupPointTargetBuild = 4;
-        [Min(0)] public int serpentGulagSnipeTargetBuild = 3;
+        [FormerlySerializedAs("serpentGulagSnipeTargetBuild")]
+        [Min(0)] public int serpentHoodSnipeTargetBuild = 3;
+        [Min(0)] public int jackstrawStrikeTargetBuild = 3;
+        [Min(0)] public int flatlinePointTargetBuild = 90;
+        [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 90, 90, 90, 90 };
+        [Min(0)] public int kelpwoodBiteTargetBuild = 12;
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
@@ -958,12 +997,48 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget > 0 ? dustupPointTarget : DefaultDustupPointTarget;
 
         /// <summary>
-        /// Serpent Gulag snipe target ("first domain to N snipes"): the configured value when &gt; 0,
-        /// otherwise <see cref="DefaultSerpentGulagSnipeTarget"/>. Compared against a DOMAIN's summed
+        /// Hood snipe target ("first domain to N snipes"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultSerpentHoodSnipeTarget"/>. Compared against a DOMAIN's summed
         /// CombatPoints.
         /// </summary>
-        public int GetSerpentGulagSnipeTarget() =>
-            serpentGulagSnipeTarget > 0 ? serpentGulagSnipeTarget : DefaultSerpentGulagSnipeTarget;
+        public int GetSerpentHoodSnipeTarget() =>
+            serpentHoodSnipeTarget > 0 ? serpentHoodSnipeTarget : DefaultSerpentHoodSnipeTarget;
+
+        /// <summary>
+        /// Jackstraw strike target ("first domain to N strikes"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultJackstrawStrikeTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetJackstrawStrikeTarget() =>
+            jackstrawStrikeTarget > 0 ? jackstrawStrikeTarget : DefaultJackstrawStrikeTarget;
+
+        /// <summary>
+        /// Flatline point target ("first domain to N points"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultFlatlinePointTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetFlatlinePointTarget() =>
+            flatlinePointTarget > 0 ? flatlinePointTarget : DefaultFlatlinePointTarget;
+
+        /// <summary>
+        /// Flatline target for a given INTENSITY (1-based), falling back to <see cref="GetFlatlinePointTarget()"/>
+        /// when that rung authors nothing - Cleave's fallback chain (<see cref="GetCleavePrismTarget(int)"/>), and
+        /// resolved on the server for the same reason (<c>FlatlinePointTurnMonitor</c> replicates the number).
+        /// </summary>
+        public int GetFlatlinePointTarget(int intensity)
+        {
+            if (flatlinePointTargetByIntensity == null || flatlinePointTargetByIntensity.Count == 0)
+                return GetFlatlinePointTarget();
+
+            int i = Mathf.Clamp(intensity - 1, 0, flatlinePointTargetByIntensity.Count - 1);
+            int v = flatlinePointTargetByIntensity[i];
+            return v > 0 ? v : GetFlatlinePointTarget();
+        }
+
+        /// <summary>
+        /// Kelpwood bite target ("first domain to N bites"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultKelpwoodBiteTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetKelpwoodBiteTarget() =>
+            kelpwoodBiteTarget > 0 ? kelpwoodBiteTarget : DefaultKelpwoodBiteTarget;
 
         /// <summary>
         /// Tapestry round length in seconds: the configured value when &gt; 0, otherwise
@@ -1073,7 +1148,11 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
                 GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
                 GameModes.Dustup                    => GetDustupPointTarget(),
-                GameModes.SerpentGulag              => GetSerpentGulagSnipeTarget(),
+                GameModes.SerpentHood              => GetSerpentHoodSnipeTarget(),
+                GameModes.Jackstraw                 => GetJackstrawStrikeTarget(),
+                // Scalar only, as for Cleave: the real answer is per-intensity (GetFlatlinePointTarget(int)).
+                GameModes.Flatline                  => GetFlatlinePointTarget(),
+                GameModes.Kelpwood                  => GetKelpwoodBiteTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush.
@@ -1149,7 +1228,11 @@ namespace CosmicShore.ScriptableObjects
             wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
             undertowPointTarget == undertowPointTargetBuild &&
             dustupPointTarget == dustupPointTargetBuild &&
-            serpentGulagSnipeTarget == serpentGulagSnipeTargetBuild &&
+            serpentHoodSnipeTarget == serpentHoodSnipeTargetBuild &&
+            jackstrawStrikeTarget == jackstrawStrikeTargetBuild &&
+            flatlinePointTarget == flatlinePointTargetBuild &&
+            SameInts(flatlinePointTargetByIntensity, flatlinePointTargetByIntensityBuild) &&
+            kelpwoodBiteTarget == kelpwoodBiteTargetBuild &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
@@ -1203,7 +1286,11 @@ namespace CosmicShore.ScriptableObjects
             wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
             undertowPointTarget = undertowPointTargetBuild;
             dustupPointTarget = dustupPointTargetBuild;
-            serpentGulagSnipeTarget = serpentGulagSnipeTargetBuild;
+            serpentHoodSnipeTarget = serpentHoodSnipeTargetBuild;
+            jackstrawStrikeTarget = jackstrawStrikeTargetBuild;
+            flatlinePointTarget = flatlinePointTargetBuild;
+            flatlinePointTargetByIntensity = CopyInts(flatlinePointTargetByIntensityBuild);
+            kelpwoodBiteTarget = kelpwoodBiteTargetBuild;
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
@@ -1258,7 +1345,11 @@ namespace CosmicShore.ScriptableObjects
             wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
             undertowPointTargetBuild = undertowPointTarget;
             dustupPointTargetBuild = dustupPointTarget;
-            serpentGulagSnipeTargetBuild = serpentGulagSnipeTarget;
+            serpentHoodSnipeTargetBuild = serpentHoodSnipeTarget;
+            jackstrawStrikeTargetBuild = jackstrawStrikeTarget;
+            flatlinePointTargetBuild = flatlinePointTarget;
+            flatlinePointTargetByIntensityBuild = CopyInts(flatlinePointTargetByIntensity);
+            kelpwoodBiteTargetBuild = kelpwoodBiteTarget;
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;

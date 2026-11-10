@@ -65,6 +65,114 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Kelpwood, the Angler's Charge game (GameModes 86) (`claude/sweet-wozniak-tk48pb`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/KELPWOOD.md`. An Angler hunt through a 0G ball of kelp (`SpawnableKelpwood`, four
+baked prefabs), scored on bites (a creature an Angler locked on a rival biting its hull, Strike-class CombatPoints,
+target 12), tadpole herds grazing the kelp (four Kelpwood-owned spawn profiles) and omni crystals round the core (the
+scene's CrystalManager), AI hunters that steer and hold the eraser (`KelpwoodHunter`). New platform rows:
+`GameModes.Kelpwood = 86`, `kelpwoodBiteTarget`, toast situation 161. Checked offline: `author_kelpwood_assets.py
+--check` (watched it fail on a mutated cell config and a mutated C# constant), the reference compile (0 errors in
+project code), the `/ship` gates (all OK), the clip audit (0 clipping; the C# lays 560 / 880 / 1,280 / 2,024 prisms
+and the mirror's volumes), the bake, the card render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now
+expects 78 modes).
+
+**Verify in editor:**
+1. Arcade → Kelpwood card: the kelp card art, Angler only, 2-4 players, intensities 1-4, the Charge badge.
+2. Launch I1 with one AI (any difficulty), as the HOST: you spawn just outside a ball of kelp strands radiating in every
+   direction; the arrow points at the rival; the hint toast (161) shows once. Tadpoles appear in the kelp after ~5 s;
+   three omni crystals float round the core.
+3. Tame: hold the lure (A) on a tadpole until it joins; take an omni crystal: one creature joins.
+4. Lock: hold LT with the rival under the nose: one creature leaves the school and chases them; the hunted ring shows.
+   On the bite: "<b>you</b> drew blood..." (86), the score goes up 1, the rival is silenced and loses petals. At most
+   one bite a second on one rival, however many hunters are on them.
+5. Be hunted: a creature chases you at ~64 u/s; dash (B) to your other group to shake it. While silenced your own
+   hunters bite but do not score.
+6. AI: at Easy it presses LT wide of you and locks rarely; at Hard / Legendary it locks often, keeps up to 3-4 hunters
+   out, runs for an omni crystal when its school is under 2 or when silenced. Watch for the AI holding LT forever (it
+   must release after 0.3 s) and for the leapfrog fighting the hunter over the nose.
+7. First team to 12 bites wins: results show "N bites" and "N Bites Left"; the reveal says HUNT TIME / BITES LEFT.
+   Replay works.
+8. I2, I3, I4: more strands (44, 64, 88); danger tips on every third strand from I3 (they take petals on contact);
+   danger collars mid-strand at I4; fewer tadpoles (18, 15, 12) and omni crystals (2, 2, 1).
+9. Time a full match at I2 with 1v1 Medium AI. The plan wants 3-5 min; 12 is a first cut (FrogletTools > Game Modes >
+   End Game Conditions → Kelpwood).
+10. Known gap, confirm it: a CLIENT Angler (MPPM second player) cannot lock, dash or tame (ANGLER.md follow-up 7).
+11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameKelpwood.unity`, and Reconcile Build Scene
+    List if the scene is reported missing from the build list. FrogletTools > Ecology > Measure Cell Environment
+    Baselines should agree with the census above.
+
+**First-pass tuning:** target 12, comeback 0.4, the herd and omni counts in `kelpwood_budget.RUNGS`, the AI ladders in
+`KELPWOOD.md`.
+
+---
+
+### 🔴 Jackstraw, the Thresher's Charge game (GameModes 85) (`claude/ecstatic-heisenberg-21lpmu`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/JACKSTRAW.md`. A Thresher brawl in a 0G heap of pick-up sticks
+(`SpawnableJackstraw`, four baked prefabs), scored on strikes (the ball or chain on a rival hull, Strike-class
+CombatPoints, target 3 since 2026-11-09, 8 before), crystals in the heap's clearings, AI hunters that only steer (`JackstrawHunter`). New
+platform rows: `GameModes.Jackstraw = 85`, `jackstrawStrikeTarget`, toast situations 86 (`StrikeLanded`) and 160.
+Checked offline: `author_jackstraw_assets.py --check`, the reference compile (0 errors), the `/ship` gates, the clip
+audit (0 clipping; the C# lays 408 / 1,122 / 2,114 / 3,566 prisms, as the Python mirror does), the bake, the card
+render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 77 modes).
+
+**Verify in editor:**
+1. Arcade → Jackstraw card: the heap card art, Thresher only, 2-4 players, intensities 1-4, the Charge badge.
+2. Launch I1 with one AI (any difficulty): you spawn just outside a loose heap; the arrow points at the rival; the
+   hint toast (160) shows once. The sticks are straight 120 u rods in every direction, no floor, no up.
+3. Swing the ball or chain through the rival: "<b>you</b> struck a rival!" (86), the score goes up by 1, the rival is
+   silenced (vignette) and loses petals. A second strike on the same rival inside 1 s does not count.
+4. Swing through sticks: each stick prism breaks and the ball slows; a red-hot ball cracks through. Ironwood (I2+)
+   takes two hits; red tips (I2+) are danger.
+5. Crystals: 3 float in each clearing (1 at I1, 9 at I4), grow back 8 s after you take one; the omni crystal sits
+   in the centre clearing.
+6. AI: at Easy it chases straight; at Hard / Legendary it leads, runs through you and past, and runs to a clearing
+   when silenced. It never presses A (stays in Mass Mode) and still strikes. Watch whether it gets stuck on sticks.
+7. First team to 3 strikes wins, at every intensity: the results show "N strikes" per pilot and "N Strikes Left" for the losers; the
+   reveal says HEAP TIME / STRIKES LEFT. Replay works.
+8. I2, I3, I4: the heap grows (6, 14, 26 jacks), the clearings shrink; the spawn ring stays just outside the heap.
+9. Time a full match at I2 with 1v1 Medium AI. The plan wants 3-5 min; the target is 3 strikes (Shombith's call; FrogletTools > Game Modes >
+   End Game Conditions → Jackstraw).
+10. MPPM two clients: a client's strike scores once (forwarded through `ReportCombatHit_ServerRpc`), both peers see the
+    same heap and the same crystals.
+11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameJackstraw.unity`, and Reconcile Build Scene
+    List if the scene is reported missing from the build list.
+
+**First-pass tuning:** target 3, comeback 1.5, `aiOvershoot` 60, the AI ladders in `JACKSTRAW.md`.
+
+---
+
+### 🔴 The Swordfish looks like a swordfish; its sword is the bill (`cece/lucid-fermi-j80puc`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SWORDFISH.md` § "A swordfish, and the sword is its bill". `Swordfish.fbx` (a new hull
+on the Rhino rig's names, bound by a guid swap in `Swordfish.prefab`), `SwordfishBill.asset` (the blade's mesh), the
+bill pose mapping (`RhinoShieldSwipeConfigSO.poseMapping = Bill`), the camera pan (`CustomCameraController.FramingPan`,
+`SwordfishSwordCamera`), `SwordfishCameraSettingsSO` (no look-ahead lift), and the phone's tilt steer with both thumbs
+off. Checked offline: the reference compile (0 errors in changed files), `/ship` gates, `build.py swordfish --check`,
+`rest_compare.py` (every bone 0.0000 from the Rhino rig), three FBX readers, a Blender render of the three poses.
+Not run: Unity, the EditMode tests (`SwordfishBillPoseTests`).
+
+**Verify in editor:**
+1. Reimport `Swordfish.fbx` and `SwordfishBill.asset`; open `Swordfish.prefab`: the swordfish hull, no Rhino, the bill
+   lying ahead off the snout, flat side level.
+2. Toybox → Vessel Changer → Swordfish. No trigger: the bill points ahead and the hull sits in the middle of the frame.
+3. Pull the right trigger: the bill swings out flat to the right and the camera slides right until the bill is
+   centred; the left trigger mirrors it. Partial pulls hold partial angles.
+4. Pull both: the bill stands straight up, the camera rises to centre it, the blade energizes as before.
+5. The pectoral fins swing with the bill (both sides, all three poses); the pods ride with them.
+6. Combos (tap strings): each flourish plays and ends back on the triggers. They were authored for the raised blade
+   and now start from the bill pointing ahead: judge whether any needs re-authoring (`author_rhino_sword_combos.py`).
+7. An omni crystal: the Surge's ring is of bills and the camera surrounds as before.
+8. Phone: lift one thumb = that side; both thumbs off = bill up and the tilt steers like the Manta's soar.
+9. FrogletTools > Vessels > Audits: Elemental Morphs (four morphs, 4.4-8.9 %), Construction, Tails and Jets.
+10. Crystal hull fusion: the class-30 entries still name the Rhino's bakes, which now read stale (a warning and a
+    runtime solve). Give the Swordfish its own bake assets before running Bake Crystal Hull Fusions, so the Rhino's are
+    not overwritten.
+11. MPPM two clients: a remote Swordfish's bill poses the same.
+
+---
+
 ### 🔴 The Voyage window's galaxy map draws the cells in 3D (`claude/project-thread-y85rw0`, 2026-11-08, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/Voyages/VOYAGE_BOARD.md` §4c "In the game".
@@ -930,6 +1038,38 @@ No Unity or .NET in the session; nothing compiled. `BrittleStarHUDView` gains `c
       one. New: `omniStock0Sprite`..`omniStock2Sprite`, `SetSpareRings`, and on the shared base
       `VesselHUDView.SetOmniAbilitySprite` (protected, additive; no other hull calls it).
 
+
+### 🔴 Hood (GameModes 77, was Serpent Gulag): hoods round a crystal heart (`claude/festive-ptolemy-mtm5mx`, 2026-11-09) — NOT EDITOR-VERIFIED
+
+Serpent Gulag rebuilt in place as **Hood** (Shombith): the nests, cell blocks and rubble are gone; the covers are
+Serpentine's ring shapes bent into hoods, on a sphere round a crystal heart (`Assets/_Scripts/Controller/Arcade/SERPENTHOOD.md`).
+Compiled against Unity references (`unity_refcompile`, player and editor configs: 0 errors in project code). The 9
+`SerpentHoodLayoutTests` ran outside Unity (`Tools/Build/serpent_hood_harness/run.sh --self-test`, negative control
+fires) and the Python mirror matches the compiled C# prism for prism (`serpent_hood_budget.py --self-test`). Not opened
+in the editor, not flown.
+
+1. Open the project once after pulling: the scene, card, settings, cell configs and preview were RENAMED (same guids).
+   FrogletTools > Game Modes > Reconcile Build Scene List shows `MinigameSerpentHood` in the list (the old path is gone).
+2. Arcade grid: the card reads **Hood**, its art is the hoods round the crystal heart with a tracer across, its text
+   names hoods and the heart (no nests, no gulag).
+3. Play Hood with 2-4 pilots (AI fill) at each intensity. PASS = hoods round the heart, mouths (the red weave) to the
+   heart, a cup behind each: I1 8 hoods far out, I2 12, I3 18 plus six turned-across shutters near the heart, I4 20 plus
+   six. No hood touches the crystal heart, another hood or a spawn. The arena is ready only once the hoods are laid
+   (the connecting panel waits for them).
+4. Fly into a hood's cup from behind (B to stop): you sit hidden from the heart side, and can scope (LT) and fire (RT)
+   out through the exits (a round also passes through the plates).
+5. Shoot a hood's core (the plain block in the middle of its mouth). PASS = the whole hood blows apart core outward
+   within about a second, and grows back about 25 s later once nobody is inside its reach. A rival hiding in it is left
+   in the open.
+6. Snipe a rival pilot: one snipe, toast 82; three snipes for a domain ends the match, the reveal reads HOOD TIME /
+   SNIPES LEFT. The start toast (157) says to sit in a hood's cup.
+7. AI (Easy-Hard): each flies to a hood's cup at its range from you, going round the hood's rim rather than through the
+   red weave when it comes from the heart side, stops there and snipes; it backs off if you close in. Legendary pushes
+   closer and moves often. Watch: does an AI clip a hood's weave on the way in at I4?
+8. Watch for a Serpent slipping through a hood's weave anywhere but an exit (the stretched weave's largest gap is held
+   under 9.5 u; Serpentine's flat one is 6.5 u).
+9. End Game Conditions window: the row reads "Hood (Serpent) - Snipe Target", value 3 (the old serpentGulag value was
+   migrated).
 
 ### 🔴 Serpent Gulag: a sniper AI that keeps its distance and digs in; denser arenas; the opponents' score column (`claude/funny-fermat-9m75dr`, 2026-10-31) — NOT EDITOR-VERIFIED
 
@@ -21607,6 +21747,37 @@ the entry above; that entry's steps 1, 5 and 7 still hold. Compiled with `unity_
    page; RECORD and COLOUR SETS sit level with the LB / RB keycaps.
 
 
+## 🟡 Portrait menus (`claude/ui-portrait`, 2026-11-06) — COMPILED (unity_refcompile), NOT RUN IN EDITOR
+
+Rev 63 B (`Docs/MENU_REDESIGN_B.md` section 138): every device shows the PC UI; a phone held upright in the menus lays
+Menu_Main out on a 1080 x 1920 canvas matched to the width. New: `PortraitRect`, `AdaptiveCanvasScaler.hasPortraitLayout`
+(Menu_Main only), `MenuOrientation`; tests `PortraitRectTests`.
+
+1. **Compile, then run** `PortraitRectTests`.
+2. **PC and landscape phones unchanged**: Menu_Main at 16:9 and an iPhone sideways look exactly as before.
+3. **Upright, Device Simulator (iPhone, rotate to portrait) in play mode**: the menu turns; Home, Arcade, Configure
+   (Arcade, Arena, Maelstrom) and Hangar are laid out top to bottom in the PC pieces; every other screen and window is its
+   PC layout fitted to the width; nothing spills off the sides.
+4. **The lock**: tap the cell to fly (freestyle) and the screen goes back to landscape; leave freestyle and it may turn
+   upright again; start a match from Configure and the match is landscape; back in the menu it turns again.
+5. **Turning while a window is open**: open Arcade and Configure, rotate back and forth; each takes its pose and gives it
+   back.
+6. **Configure while turning**: fly the preview, press FULL SCREEN (upright it grows to the window, landscape it opens the
+   tray), rotate mid-flight; the frame, the objective bar and START come back to the right place. Add three pilots to a
+   domain upright: the column grows and START moves down, not off the screen.
+7. **Arcade grid**: 5 across on PC, 3 across upright, every card the same size; filtering or growing the list adds cards
+   in the same grid.
+8. **Turn, then glide** (2026-11-08, section 154): on a phone (the Simulator shows the layout, a device the real OS turn),
+   rotate on Home, Arcade and Configure: after the OS turns the screen, the windows and cards start at their old places
+   turned with the phone and glide level into the upright layout in about a third of a second; no frame of a half-laid-out
+   screen; taps work again as soon as they land. Rotate back the same. Then the Goby: rotate upright and the Pistol's view
+   grows out of the small square over the Goby's; back to landscape, the Goby's grows back. A D-pad swap stays instant.
+9. **Goby and Pistol turn** (Toybox Vessel Changer, then a Goby game): flying the Goby, rotate upright: the screen turns
+   and you are in the Pistol's view; rotate back: the Goby. Swap with the D-pad / double tap while upright and the seat
+   stays until you rotate again. Check the Pistol's side view, its buttons round the thumb and GameCanvas's HUD upright.
+10. **Every other vessel turns nothing**: the Squirrel (or any non-crew hull) in the Toybox and in a match; rotating the
+   phone leaves the screen landscape and the HUD unchanged. Leaving a Goby while upright turns the screen back.
+
 ## 🔴 Colour sets for colour vision: six new sets in the Profile's rail, a breadcrumb in Settings (2026-11-05, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/nice-lamport-56824k`; `Docs/VesselModels/colour_sets.json` (rule 5), `COLOR_DOMAINS.md`,
@@ -22123,6 +22294,21 @@ The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran 
 3. **Shielded and super-shielded prisms** still read as a tier above plain in every domain (Ruby's rim is the brightest).
 4. **Danger (coral) and free crystals (lime CTA)** still stand out against the pale bodies.
 
+## 🔴 Voyages: own scene (Voyage.unity) and in-world toys removed (2026-11-08, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/voyage-scene-port`. unity_refcompile could not run (no .NET SDK in the cloud session).
+
+Ran 2026-11-08 on Garrett's PC (Unity 6000.3.17f1, batchmode `verify_unity.sh`): compile clean after one fix (ambiguous `VoyageRun.ActiveSquad(null)`); EditMode 5473 tests, 43 failing, the same 43 that fail on bleeding-edge d83f334e78 (none new); every `VoyageShellTests` test passes; Build Voyage Scene rewrites `Voyage.unity` identically; `RunSmoke` -voyageSmoke: PASS; one escort sim (d1, Sparrow+Rhino+Manta) survived 4 legs with no game exceptions. Steps 1-3 are done; steps 4-8 still need a person.
+
+1. Let Unity import and compile; fix any errors first.
+2. FrogletTools > Scenes > Build Voyage Scene, then commit `Assets/_Scenes/Voyage.unity`.
+3. Run the EditMode tests in `VoyageShellTests`.
+4. Play Menu_Main, open the Voyage window, take a job and Set sail: Voyage.unity loads and the pilot starts at a harbour berth.
+5. Fly the Ark to the job's stop: it stands, the work counts, and the Ark sails on (no stall).
+6. Leave the voyage from the HUD: back to the menu, and the board offers the next jobs from where the Ark anchored.
+7. Start an escort from the Voyage window: it runs in Voyage.unity.
+8. In menu freestyle, the Toy Box toys still work from the app shell and no in-world toys appear.
+
 ## 🔴 The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 151. Compiled with `unity_refcompile` (player and
@@ -22172,3 +22358,66 @@ Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK i
 1. Start a voyage or an Ark escort with AI wingmates.
 2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
 3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
+
+## 🔴 Menu: friends orb, its minimise button, the Codex strip and the Hangar Upgrades text (2026-11-09, NOT COMPILED, generated assets only)
+
+Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generators' `--check` and `--self-test` pass (arcade's `--check` already failed before this branch: `ArcadeView.prefab` lacks the Swordfish content). Hand-checked by one person on a desktop editor (Hangar Upgrades, minimise button, orb, Codex strip). Still to check:
+
+1. **Phone (390x844) and iPad:** the friends orb is 16 px off the left edge with "Friends" / "N online" fully readable (up to "99 ONLINE") and not clipped.
+2. **Friends window:** the minimise square is easy to tap on a phone; it lightens under the pointer and takes the accent when pressed; the party panel under the title row is not covered.
+3. **Codex > Ecology (Field Guide):** scroll the bottom strip left; tiles stop 16 px short of the "Friends" text, never over it.
+4. **Hangar > Upgrades, any hull:** "CHARGE CRYSTALS 0 HELD - 0 SPENT" is on its own row under the step line; nothing overlaps.
+
+
+## 🔴 Flatline, the Brittle Star's charge game (GameModes 84) (2026-11-09, re-laid as an open scattered field 2026-11-10, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/great-rubin-rur3xs`. Everything is generated by `Tools/Build/author_flatline_assets.py` (`--check`):
+the card, scene (cloned from Serpent Gulag's, now Hood), rule, settings, toasts, preview, four cell configs, four
+`SpawnableFlatline` prefabs and their bakes, the end target (90 at every intensity). Doc: `Assets/_Scripts/Controller/Arcade/FLATLINE.md`.
+Ran here: the generator `--check` (and two negative controls), `flatline_budget.py` against the shipped C# compiled and
+run (equal on every count and crystal site), `bake_prism_layouts.py --check`, `audit_prism_clipping.py SpawnableFlatline`
+(0 clipping), `render_card_backgrounds.py Flatline --check`, `author_card_backgrounds.py --strict` (Flatline OK), the
+`/arcadegame` gates, `/ship` gates (ALL OK) and `unity_refcompile` (0 errors in project code; 4 unverified Cinemachine
+missing-type errors in camera files this branch does not touch). `FlatlineTests` were NOT run (no editor).
+
+1. **Run `FlatlineTests` and `EnumIntegrityTests`** (EditMode). Census rows 1,560 / 2,280 / 2,914 / 3,194.
+2. **The card**: Arcade grid shows Flatline with the Charge petal and its pane art; Brittle Star is the only vessel.
+3. **I1 to I4 each load** with AI backfill (2-4 players). Look for an OPEN field with room round every structure:
+   I1 twenty-four loose panes / I2 adds five open-ended tunnels you can fly through / I3 adds four cages whose windows
+   you can fly into, magenta rims on some panes / I4 the maze: more cages, holed panes, more danger. No two structures
+   touch. Pilots spawn on a 680 u ring facing the centre. **Is it fun to fly round, through and into?** Note it here.
+4. **Crystals sit inside the rooms** (I1 in front of panes, I2 one in every tunnel, I3 and I4 all inside rooms) and grow
+   back about 10 s after you take one. Each adds a spare ring (the Charge card's gauge).
+5. **Scoring**: a round on a rival adds 1, a cord across a rival adds 8, a ring blast that catches a rival adds 0 (it
+   still takes their petals). The results column reads "N strikes, M rounds". A team-mate never scores you anything.
+6. **Panes**: rounds stop on a pane; cords slice through one and strike the pilot behind it. A ring thrown face-on into
+   a pane erases its plain tiles in that plane and leaves the white ribs standing (super-shielded).
+7. **The end**: the match ends when a domain reaches 90 (every intensity); the HUD counts down from 90. **Time a 1v1
+   match at each intensity** and write the times here; re-tune a rung in FrogletTools > Game Modes > End Game Conditions
+   if one runs long or short.
+8. **AI**: an AI Brittle Star chases a rival, detours to a near crystal when it has no spare ring, fires when a rival is
+   on its nose and uses its cords near walls. Watch whether it ever lands a Strike; if not, note it (FLATLINE.md "Known limits").
+9. **Toasts**: the start hint ("Panes stop your rounds...") once, then quarter / halfway / lead-change beats.
+10. **Replay** (Play Again) resets every count and lays the crystals again.
+
+## 🔴 Colour sets: a separate free Colour vision rail; the worn set themes the whole UI (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/quirky-ride-qv15s8`; `Docs/MENU_REDESIGN_B.md` section 126.3. Compiled with `unity_refcompile` (player and
+editor configs, 0 errors in project code); `.claude/skills/ship/gates.sh` all OK; `author_menu_profile.py --check` /
+`--self-test` pass. The C# theme maths was run outside Unity against `themes.css` (80 values, all within 1/255). Not opened
+in the editor; the edit-mode tests were compiled, not run. Affects Garrett's colour-vision sets (they now sit on their own
+rail and are always free).
+
+1. **Run the edit-mode tests** `ColorSetCatalogTests` and `ColorSetUIThemeTests`.
+2. **Profile > COLOUR SETS.** Left rail "Colour sets": Nocturne, Photic, Dart Frog, Nacre (three tiles, > slides to
+   Nacre). A hairline, then the right rail "Colour vision, always free": Contrast, Protanopia, Deuteranopia, Tritanopia,
+   Achromatopsia, Low Vision, with their own < >. "1 of 4" / "1 of 6" counts within the rail. APPLY sits right of the
+   name; nothing overlaps the rails at 16:9 and on a phone.
+3. **The pad**: left / right moves across both rails; each tile previews its set.
+4. **The UI follows the set**: browse Dart Frog: the panels, frames, text, tabs, focus ring, sea lines and APPLY turn
+   bronze-hued with Dart Frog's lime; leave without applying and the UI comes back with the worn set. APPLY it, open the
+   Arcade, Hangar, Settings and a match HUD: all of it in Dart Frog's theme. Restart Play: it starts in Dart Frog.
+5. **Look for anything left behind** (a panel still navy on a bronze theme): it is a colour that is not a theme token, or
+   a view that paints only when its data changes. Note the screen and object.
+6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
+

@@ -159,6 +159,9 @@ namespace CosmicShore.UI
             base.OnDisable();
         }
 
+        /// <summary>Paints every owned graphic again at once: the worn colour set's UI theme changed (UIThemeLive).</summary>
+        public void RepaintTheme() => Refresh(true);
+
         /// <summary>Re-evaluate every owned graphic. Subclasses call this when their own state
         /// (variant, selected, locked) changes.</summary>
         protected void Refresh(bool instant)

@@ -185,7 +185,7 @@ namespace CosmicShore.Tests
             // three hulls that had none (merged with BurrowRun from Ys-bleeding-edge).
             // 69 -> 70 on 2026-10-31: WaystationPrototype (76), the Tiger Moth's Drop Tower race beside Waystation
             // (72-74 are ScarabRally, SerpentTime and BrittleStarTime; 75 is LanternRun's, in flight).
-            // 70 -> 71 on 2026-10-31: SerpentGulag (77), the Serpent's sniper duel (67 is still SerpentCharge's and
+            // 70 -> 71 on 2026-10-31: SerpentGulag (77, renamed SerpentHood 2026-11-09), the Serpent's sniper duel (67 is still SerpentCharge's and
             // 75 LanternRun's, both in flight).
             // 71 -> 70 on 2026-11-01: WaystationPrototype (76) folded into Waystation (58); 76 is retired and reserved.
             // 70 -> 71 on 2026-11-01: LanternRun (75), the Angler's Time race.
@@ -194,8 +194,13 @@ namespace CosmicShore.Tests
             // 73 -> 74 on 2026-11-07: PerchRun (81), the Goby's Time race.
             // 74 -> 75 on 2026-11-07: SlipLine (82), the Honeyguide's Time race.
             // 75 -> 76 on 2026-11-07: Breach (83), the Orca's Time race.
+            // 76 -> 77 on 2026-11-09: Jackstraw (85), the Thresher's Charge game. It first took 84, which the Brittle Star's
+            // Flatline (84, claude/great-rubin-rur3xs, in flight) had claimed; Shombith gave 84 to Flatline. When both land
+            // this becomes 78.
+            // 77 -> 78 on 2026-11-09: Flatline (84), the Brittle Star's charge game (Shombith gave it 84 after both claimed it).
+            // 78 -> 79 on 2026-11-09: Kelpwood (86), the Angler's Charge game.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(76, values.Length,
+            Assert.AreEqual(79, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -246,6 +251,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.PerchRun, 81)]
         [TestCase(GameModes.SlipLine, 82)]
         [TestCase(GameModes.Breach, 83)]
+        [TestCase(GameModes.Flatline, 84)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Kelpwood
+  m_EditorClassIdentifier:
+  Mode: 86
+  Notes: 'The kelp ball at each intensity - more strands, fewer herds, then danger tips and collars. OPEN-ENDED -
+    it scores on biting rival pilots and a solo preview has none; what it teaches is the kelp, the herds
+    to tame and the omni crystals at the core. Vessel pinned to Angler(17).'
+  PreviewCell: {fileID: 11400000, guid: 9532d6fb8a19dcb9a65ffb07d58dc45e, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 9532d6fb8a19dcb9a65ffb07d58dc45e, type: 2}
+  - {fileID: 11400000, guid: 063dcff6418c05bbff7e1fbd38c83234, type: 2}
+  - {fileID: 11400000, guid: 2ed7acd061378002ba50495334cdb462, type: 2}
+  - {fileID: 11400000, guid: abc1033e5483dacf9b6daf19f731ae13, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 17
+  ObjectiveText: Hold the eraser on a rival pilot to set a hunter on them
+  ObjectiveMetric: 8
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 368
+  SpawnRingRadiusFloorByIntensity:
+  - 368
+  - 400
+  - 432
+  - 464
+  SpawnFormation: 0
+  SpawnPoints: []
