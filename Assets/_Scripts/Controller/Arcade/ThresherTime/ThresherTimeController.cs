@@ -31,6 +31,13 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class ThresherTimeController : GateRaceController
     {
+        [Header("AI nose lead")]
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
+                 "the lead off. Thresher 2.5: best in the model, 2.953 vs 3.195 lead off.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Thresher, 2.5f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
         [Header("Thresher Time circuit")]
         [Tooltip("Laps of the gate set that make one race. The authored gate target is the RACE " +
                  "length, so the circuit is laid with target/laps gates - one number authored " +

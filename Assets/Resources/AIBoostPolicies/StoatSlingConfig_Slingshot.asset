@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   holdExponent: 1.5
   holdRampSeconds: 3
-  autopilotHold01: 1.0
+  autopilotHold01: 0.012
   catchAhead: 150
   catchSide: 45
   catchReach: 2
@@ -70,12 +70,12 @@ MonoBehaviour:
     element: 3
     UseFloor: 1
     Floor: 1.5
-  aiSlingMinTurnDegrees: 50
+  aiSlingMinTurnDegrees: 147.951
   aiReleaseConeDegrees: 15.999
   aiCatchGiveUpSeconds: 4
-  aiSlingIntervalSeconds: 0.941
-  aiSlingMinDistance: 123.282
-  aiWarpMinDistance: 0
+  aiSlingIntervalSeconds: 2.896
+  aiSlingMinDistance: 13.329
+  aiWarpMinDistance: 310.106
   aiHoldForWindowDegrees: 120
   holdStartEvent:
     Guid:
@@ -91,3 +91,4 @@ MonoBehaviour:
       Data3: 0
       Data4: 0
     Path: 
+  trampolineAiTurnScale: 96.362

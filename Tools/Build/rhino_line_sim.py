@@ -21,7 +21,13 @@ own stick law and break-off, but at a constant speed. This one joins them:
 
     python3 Tools/Build/rhino_line_sim.py              # the Regatta drive on I1-I4: time, rings, share of the race ramping
     python3 Tools/Build/rhino_line_sim.py --sweep      # the drive's gates against race time
+    python3 Tools/Build/rhino_line_sim.py --nose-lead 2.5   # the drive on I1-I4 today vs with the AI nose lead
     python3 Tools/Build/rhino_line_sim.py --self-test
+
+The AI nose lead (AIPilot.NoseLeadGain, PR #1786; Tools/Build/ai_nose_lead.py is the shared piece) is race()'s
+`nose_lead` knob, OFF by default: a gain over 0 judges the stick's error from the COMMAND and steers it onto the nose
+turned toward the line's aim by the gain times its error, past it (at most max_extra_deg, 40), where the lagging nose is
+pulled from; the drive keeps judging the nose's angle (AIBoostContext.Forward); 0 with lag=False (nothing to lead).
 """
 import math, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -30,6 +36,7 @@ import rhino_drive_sim as rd
 import regatta_line_sim as L
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang, rotate_toward
 from scarab_drive_sim import ai_stick
+from ai_nose_lead import NoseLead, effective_gain, judge_and_want   # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 REGATTA_POLICY = os.path.join(ROOT, "Assets/Resources/AIBoostPolicies/RhinoAIBoostPolicy_Regatta.asset")
@@ -56,7 +63,11 @@ def regatta_policy():
     return p
 
 
-def race(intensity, pol=None, T=420, dt=1 / 60, own=0, drive=True, path_angle=True, lag=True, look_s=None):
+def race(intensity, pol=None, T=420, dt=1 / 60, own=0, drive=True, path_angle=True, lag=True, look_s=None, nose_lead=None):
+    """Three laps of the shipped course at `intensity` with the Regatta drive (pol: a rhino_drive_sim.Policy).
+    nose_lead: the AI nose lead (AIPilot.NoseLeadGain; ai_nose_lead.NoseLead.from_config: None = OFF, today's steering; a
+    gain stated at the fleet lag, a {"gain", "max_extra_deg"} dict or a NoseLead), scaled once to regatta_line_sim.NOSE_FOLLOW;
+    0 with lag=False, where the nose IS the command."""
     C = sf.course_from(sf.load_course_js(), intensity)
     gates = C['gates']; n = len(gates); total = 3 * n
     P = [g['p'] for g in gates]; A = [unit(g['a']) for g in gates]
@@ -69,6 +80,8 @@ def race(intensity, pol=None, T=420, dt=1 / 60, own=0, drive=True, path_angle=Tr
     hint = L.nearest(line, P[0], -1)
     pos = line[(hint - 40) % len(line)]; fwd = unit(sub(line[(hint - 38) % len(line)], pos)); hint = -1
     speed = rd.CRUISE; tracked = speed; stick = 0.0; cmd = list(fwd)
+    lead = NoseLead.from_config(nose_lead)
+    lead_gain = effective_gain(lead.gain, L.NOSE_FOLLOW) if lag else 0.0   # AIPilot.EffectiveNoseLeadGain, once a race
     careful, bold = look_s or L.authored_look_seconds("Rhino") or (L.CAREFUL, L.BOLD); lost = -1
     idx = 0; t = 0.0; ramping = 0.0; braking = 0.0; maxv = 0.0; misses = 0
     while t < T and idx < total:
@@ -87,8 +100,13 @@ def race(intensity, pol=None, T=420, dt=1 / 60, own=0, drive=True, path_angle=Tr
              'corner': ang(to_ring, sub(after, ring))}
         if drive:
             drv.tick(c, t, dt, tracked)
-        # AIPilot: the stick toward the line's aim, then the drive's rotation limit (LimitRotation over the two axes)
-        s = ai_stick(ang(fwd, sub(aim, pos)))
+        # AIPilot: the stick toward the line's aim, then the drive's rotation limit (LimitRotation over the two axes). With
+        # the nose lead (AIPilot.NoseLeadGain) the error is judged from the COMMAND and the command steered onto the nose
+        # turned toward the aim by the effective gain times its error, past it (capped), where the lagging nose is pulled
+        # from; the drive's angle above stays the nose's (AIBoostContext.Forward is transform.forward).
+        if lead_gain > 0: judge, want = judge_and_want(fwd, cmd, sub(aim, pos), lead_gain, lead.max_extra_deg)
+        else: judge, want = fwd, sub(aim, pos)
+        s = ai_stick(ang(judge, want))
         steer = 2 * s
         lim = drv.limit() if drive else -1
         if lim >= 0 and steer > lim:
@@ -105,7 +123,7 @@ def race(intensity, pol=None, T=420, dt=1 / 60, own=0, drive=True, path_angle=Tr
         if ex.on: ramping += dt
         if drive and drv.mode == 'brake': braking += dt
         maxv = max(maxv, speed)
-        fwd, cmd = L.turn_with_lag(fwd, cmd, sub(aim, pos), math.radians((speed * RTS + BASE) * s) * dt, dt, lag)
+        fwd, cmd = L.turn_with_lag(fwd, cmd, want, math.radians((speed * RTS + BASE) * s) * dt, dt, lag)
         newpos = add(pos, mul(fwd, speed * dt))
         a0 = dot(sub(pos, ring), ax); a1 = dot(sub(newpos, ring), ax)
         if a0 * a1 <= 0 and a0 != a1:
@@ -149,6 +167,13 @@ def self_test():
     if abs(p.corner - 333) > 1: bad.append(f"Regatta variant not read (cornerSpeed {p.corner})")
     cruise = race(1, drive=False)
     if cruise["rings"] < 12 or cruise["top"] > rd.CRUISE + 1: bad.append(f"no-drive race should cruise at 50: {cruise}")
+    # the nose lead is OFF by default: NoseLead() (gain 0) is the unset knob; a lag-free race has nothing to lead and the
+    # knob leaves it alone; with the lag a gain changes the race (the knob is live)
+    today = race(2)
+    if race(2, nose_lead=NoseLead()) != today: bad.append("NoseLead() (gain 0) is not the unset lead")
+    free = race(2, lag=False)
+    if race(2, lag=False, nose_lead=2.5) != free: bad.append(f"the lead moved a lag-free race: {free}")
+    if race(2, nose_lead=2.5) == today: bad.append("the nose lead at 2.5 changed nothing (the knob is dead)")
     print("rhino_line_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
     return 0 if not bad else 1
 
@@ -159,6 +184,7 @@ if __name__ == "__main__":
     if "--sweep" in sys.argv:
         sweep(); sys.exit(0)
     print("(seconds for 3 laps or None, rings of 24, top u/s, share ramping, share braking, mouths missed)")
+    lead = NoseLead.from_cli(sys.argv[sys.argv.index("--nose-lead") + 1]) if "--nose-lead" in sys.argv else None
     for I in (1, 2, 3, 4):
         print(f"I{I}: cruise {race(I, drive=False)['time']} s | judged by the ring (before) {race(I, path_angle=False)} | "
-              f"by the path {race(I)}")
+              f"by the path {race(I)}" + (f" | + nose lead {lead.gain:g} {race(I, nose_lead=lead)}" if lead is not None else ""))

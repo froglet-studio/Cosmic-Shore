@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -31,6 +32,13 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class BreakwaterController : GateRaceController
     {
+        [Header("AI nose lead")]
+        [Tooltip("Each AI's nose lead by hull (AIPilot.NoseLeadGain), set as it is armed. A hull with no row flies with " +
+                 "the lead off. Sparrow 2: the Sparrow lead.")]
+        [SerializeField] AINoseLeadRow[] aiNoseLead = { new AINoseLeadRow(VesselClassType.Sparrow, 2.0f) };
+
+        protected override AINoseLeadRow[] AINoseLeadTable => aiNoseLead;
+
         [Header("Breakwater")]
         [Tooltip("The station geometry — dishes, collars, danger plugs and the shoals strung " +
                  "along the legs. INSTANTIATED rather than spawned off the asset, because this " +

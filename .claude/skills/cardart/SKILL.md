@@ -101,6 +101,20 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
   `SwitchbackCourse.cs` began naming `SwitchbackFunType` (2026-10-28) and the harness stopped compiling (CS0246) until
   the enum joined `SOURCES` (2026-10-31, rendering Serpent Gulag). `audit_prism_clipping.py` had fixed the same break
   in its own source list: when one harness breaks on a new type, grep the others' source lists for it.
+- **The harness breaks again on every merge that teaches a compiled Spawnable a new type, and three tools fall with
+  it.** `audit_prism_clipping.py` and `bake_prism_layouts.py` compile `rcb.SOURCES` and the platform shim too, so the
+  Regatta merge `f7231d035c` (new `RegattaCourseFeatures`, `RegattaLifeformSites`, `ICellFaunaCorridorSource`,
+  `PreparesPlantingSites`, `Trail.TrailList`) stopped card art, the bake AND the clip audit at once (fixed 2026-11-09,
+  `b2e1e3a4b0`; REFACTOR_BACKLOG S112; the Flatline branch `claude/great-rubin-rur3xs` made the same fix the same day). Skipping the broken Spawnable in one tool's glob does not help: the others pull it
+  in through `SOURCES`. Add the new files to `SOURCES` and the missing members to `PlatformShim.cs`, then run all three.
+- **The shim has no `Vector4`** (nor much else of UnityEngine's surface). A new Spawnable's PUBLIC API that returns one
+  fails only here; a small `readonly struct` of its own (Jackstraw's `Clearing`) costs nothing and avoids widening a
+  shim every harness shares.
+- **A MODEL tier can come from a parity-held Python mirror** (Hood, 2026-11-09): a controller-laid arena has no
+  `EnvironmentPrefab` to RUN, so the recipe imports the mode's mirror (`serpent_hood_budget.py`, whose `--parity`
+  compares it to the compiled C#) and emits a `prisms` layer; Waystation's tower mirror is the same shape.
+- **A new card's pure arena helper goes in `SOURCES` beside its Spawnable** (Flatline's `FlatlinePanes`, 2026-11-09):
+  the bake, clip-audit and card harnesses share that list, so an unlisted helper fails all three with CS0246.
 - **A named run (`render_card_backgrounds.py <Stem>`) writes the PNG but not `card_backgrounds_manifest.json`**, so a
   card rendered while the full roster cannot run (S95) is missing from the manifest until the next full run.
 
@@ -111,3 +125,31 @@ palette (`PhoticColorSetSO` — base face lerped to rim by fresnel, the prism sh
 read, `Docs/PALETTE.md` §2) with ACES and a bloom. A MODEL-tier plant is a glyph and a staged
 pilot is staging — say so when showing a card. What stays editor-only is whether it LOOKS right
 in the grid beside the others; that is the one playtest this needs.
+
+
+## Round status and what each gate still owes (2026-11-07, measured for Docs/SKILL_TRAINING_PLAN.md 3.7)
+
+**Rounds so far:** the card backgrounds of the arcade and arena cards rendered from each mode's own arena (PR #911,
+2026-09-26, 22 of 25 cards had shared four legacy images); re-renders recorded per mode in the checklist (Slingshot
+10-08, Thresher Time 10-13, Wrasse Run 10-20, Switchback 10-26, Lantern Run 11-01). **Today's state on this
+branch:** `render_card_backgrounds.py --check` reports `STALE ['Headlong']` and `author_card_backgrounds.py` stops on
+`BurrowRun: no recipe` (REFACTOR_BACKLOG S87, S95, S99: half fixed). **Next unit proposed:** the BurrowRun recipe and
+the Headlong re-render, then the Tandava pair (Shombith's). No declared owner for the kit: ask Shombith (tooling).
+
+**Gates and their negative controls:**
+
+| Gate | Script | Negative control today |
+|---|---|---|
+| every committed card re-renders byte-equal | `render_card_backgrounds.py --check` | owed |
+| every live card wears its own render | `author_card_backgrounds.py --strict` | owed |
+| an unknown card RAISES (section 2.4) | `render_card_backgrounds.py` | owed: never asserted |
+| every lay-path stand-in is LOUD (section 2.2) | `card_art_harness/UnityShim.cs` | owed |
+| fidelity by prism COUNT (section 2.3) | `render_card_backgrounds.py` + `Program.cs` | owed |
+| the card-wiring rules a mode generator must keep | `arcade_mode_lib.py --self-test` | yes: 14/14 |
+
+**The sheet today:** a transient contact sheet and a hand count, nothing committed. The look sheet adds the card as
+the Arcade grid draws it.
+
+**To promote to A:** a `--self-test` on `render_card_backgrounds.py` that plants one stale render, one unknown stem
+and one count mismatch and asserts each fails; a references/LESSONS.md seeded from section 3's traps (each one
+shipped a wrong picture first); the round table above kept per card.

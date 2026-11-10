@@ -44,6 +44,12 @@ Known effects of the switch to Nocturne, measured 2026-11-03 and still open:
   the live palette since 2026-11-05 (`Tools/Build/froglet_style.py`, `Docs/UI_STYLE_GUIDE.md`) and report it as open
   rather than failing; moving the colour or reshaping Gold is Garrett's decision.
 
+**`NacreColorSetSO`** (2026-11-08) is the light set, Nocturne's complement: pastel rims over pale pastel faces, written
+like the others from `colour_sets.json` (`nacre`) and offered in the Profile's colour-set rail. It is the one set with
+`rim_brightness` (0.75): its rim fields are Photic's brightness times 0.75, so they sit below the other sets' glow. The
+gameplay bloom threshold is 0.2, so its rims still bloom, and its light faces bloom more than Nocturne's dark ones; how
+light it reads on screen is an editor call. It does not replace `PastelColorSetSO`, which is older and still unwired.
+
 `CosmicWaveColorSetSO`, `PastelColorSetSO` and `Default Color Palette` exist but are
 **not wired to anything** — editing them changes nothing at runtime. The per-domain
 `Shielded*SpreadFresnelMaterial.mat` files under `_Graphics/Materials/` are likewise

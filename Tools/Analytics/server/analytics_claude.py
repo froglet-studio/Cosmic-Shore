@@ -72,8 +72,10 @@ below, and nothing else. The tables hold aggregates only; there are no player id
 
 {schema}
 
-Notes on the data: build_kind is release (real players), editor (team playtests in the Unity editor), port, or \
-development; answer for release unless the question names another. play_type multi_human_unknown means a \
+Notes on the data: build_kind is release (real players), editor (team playtests in the Unity editor), port, web \
+(the browser Toybox), or development; answer for release unless the question names another. device is iphone, ipad, \
+android_phone, android_tablet, windows, mac, linux, web_desktop, web_mobile or other; builds before 2026-11-07 read \
+ios, android or web (phone or tablet not recorded). play_type multi_human_unknown means a \
 multi-human match recorded before the team fields existed. rematched is NULL for plays that were not completed. \
 Days are 'YYYY-MM-DD' strings in UTC; today is {today}.
 
@@ -91,9 +93,13 @@ def _client():
     except ImportError:
         return None, "the anthropic package is not installed on the server (pip install anthropic)"
     try:
-        return anthropic.Anthropic(), None
+        client = anthropic.Anthropic()
     except Exception as exc:  # no credentials configured
         return None, f"no Claude credentials on the server ({type(exc).__name__})"
+    # Newer SDKs build a client with no key and fail only when a request is sent: treat that as off, here.
+    if not (getattr(client, "api_key", None) or getattr(client, "auth_token", None)):
+        return None, "no Claude credentials on the server (ANTHROPIC_API_KEY is not set)"
+    return client, None
 
 
 def _structured(client, model, effort, system, user, schema, max_tokens=4000):
@@ -116,6 +122,8 @@ def _structured(client, model, effort, system, user, schema, max_tokens=4000):
         return None, f"Claude returned an error ({exc.status_code})"
     except anthropic.APIConnectionError:
         return None, "the server could not reach Claude"
+    except Exception as exc:  # anything else (credentials, the SDK) is a reason too, never a crash
+        return None, f"Claude could not be asked ({type(exc).__name__})"
     if response.stop_reason == "refusal":
         return None, "Claude declined this question"
     if response.stop_reason == "max_tokens":

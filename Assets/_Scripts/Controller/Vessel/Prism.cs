@@ -1030,6 +1030,9 @@ namespace CosmicShore.Gameplay
             // IsShielded/IsDangerous are NOT cleared: spawners set those pre-Initialize
             // as the requested state for this life.
             if (prismProperties != null) prismProperties.IsSuperShielded = false;
+            // Pool reuse: EXPLOSIVE is never requested by a spawner (only a skim primes it, on a live prism), so a set
+            // flag here is always the previous life's - left set, this life would detonate its neighbours on death.
+            if (prismProperties != null) prismProperties.IsExplosive = false;
             // Pool reuse: this is also what INVALIDATES any super-shield deflection settle
             // still scheduled from the previous life. That callback compares its captured
             // stamp time against LastSuperShieldJiggleTime and no-ops on a mismatch, so
@@ -1695,6 +1698,14 @@ namespace CosmicShore.Gameplay
             destroyed = true;
             DestroyerName = attackerPlayerName;
             DestroyedAt = Time.time;
+
+            // EXPLOSIVE: this death takes its prismscape neighbours with it, a beat later (PrismExplosiveChain). Spent
+            // here - read and cleared before anything else can run - so one prism fires its chain exactly once.
+            if (prismProperties.IsExplosive)
+            {
+                prismProperties.IsExplosive = false;
+                PrismExplosiveChain.Fire(this, _lastDestructionPosition, destructionScale, domain, attackerPlayerName);
+            }
             _creationQueued = false;   // as the waiting coroutine did: killed while waiting never completes (a Restore registers itself)
             devastated = devastate;
 
@@ -2089,6 +2100,26 @@ namespace CosmicShore.Gameplay
         }
 
         // State Management Methods
+
+        /// <summary>True while this prism is primed to take its prismscape neighbours with it when it dies.</summary>
+        public bool IsExplosive => prismProperties is { IsExplosive: true };
+
+        /// <summary>
+        /// Primes this prism EXPLOSIVE (the Manta's Space skim): its death destroys the prisms adjacent to it in its
+        /// prismscape, which carries on through every explosive neighbour (<see cref="PrismExplosiveChain"/>). The prism
+        /// is lit by <paramref name="lift"/> so a primed run reads before it goes - a look on the machine that primed it,
+        /// like every colour lift. False when the prism is dead, already explosive, or the primer is silenced.
+        /// </summary>
+        public bool MakeExplosive(string primerName, float lift, float fadeSeconds)
+        {
+            if (destroyed || prismProperties == null || prismProperties.IsExplosive) return false;
+            // A silenced pilot's abilities arm nothing (VesselSilence) - the same gate danger uses.
+            if (VesselSilence.SuppressesDanger(primerName)) return false;
+            prismProperties.IsExplosive = true;
+            if (lift > 0f) SetColorLift(Mathf.Max(_colorLift, lift), fadeSeconds);
+            return true;
+        }
+
         public void MakeDangerous()
         {
             // A silenced pilot's abilities turn nothing dangerous (VesselSilence). Danger that is

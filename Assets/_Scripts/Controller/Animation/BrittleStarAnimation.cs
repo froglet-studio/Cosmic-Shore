@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -64,6 +65,16 @@ namespace CosmicShore.Gameplay
         float _yaw;
         float _clock;
 
+        // ---- the ring's motion smear (BrittleStarRingSmearPass) ----
+        float _drawnPhase, _lastDrawnPhase, _drawnPresence;
+        bool _hasDrawnPhase, _drewThisFrame;
+        readonly BrittleStarRingSmearPass.Request _smear = new();
+        readonly List<MaterialPropertyBlock> _smearBlocks = new();
+        Mesh _smearRing;
+        bool _smearing;
+        float _smearRetryAt;
+        bool _smearWarned;
+
         // ---- procedural element morphs (the StoatAnimation plumbing, verbatim in shape) ----
         readonly float[] _morphWeights = new float[4];      // BrittleStarHullForm.MorphElements order
         readonly Tween[] _morphTweens = new Tween[4];
@@ -123,6 +134,9 @@ namespace CosmicShore.Gameplay
                 float presence = executor ? executor.RingPresence01 : 1f;
                 float bloom = presence >= 1f ? 1f : DOVirtual.EasedValue(0f, 1f, presence, Ease.OutBack);
                 _hull.SetRingPose(phase, Mathf.Max(0.001f, bloom));
+                _drawnPhase = phase;
+                _drawnPresence = presence;
+                _drewThisFrame = true;
             }
 
             // The cockpit's own thruster: always lit, longer with Speed Mode.
@@ -201,24 +215,137 @@ namespace CosmicShore.Gameplay
                 .SetLink(gameObject);
         }
 
-        /// <summary>Single writer for the morph push, after the base's shape-key write.</summary>
+        /// <summary>Single writer for the morph push, after the base's shape-key write; then the ring's smear, once the
+        /// frame's pose and morph are final.</summary>
         protected override void LateUpdate()
         {
             base.LateUpdate();
-            if (!_morphDirty || !_hull) return;
-            _morphDirty = false;
-            _hull.ApplyElementMorphWeights(_morphWeights[0], _morphWeights[1], _morphWeights[2], _morphWeights[3]);
+            if (_morphDirty && _hull)
+            {
+                _morphDirty = false;
+                _hull.ApplyElementMorphWeights(_morphWeights[0], _morphWeights[1], _morphWeights[2], _morphWeights[3]);
+            }
+            UpdateRingSmear();
+        }
+
+        // ---- the ring's motion smear ------------------------------------------------------
+
+        /// <summary>
+        /// THE RING'S MOTION SMEAR (Garrett, 2026-11-03; lab <c>Docs/Studios/BrittleStarRingLab.html</c>, "Forward +
+        /// motion smear", normalized so it adds no brightness). When the drawn ring turned more than
+        /// <c>ringSmearMinDegrees</c> this frame, the hull stops drawing it and <see cref="BrittleStarRingSmearPass"/>
+        /// draws the AVERAGE of copies spread back over the angle it turned (<c>ringSmear</c> of it), one copy per
+        /// <c>ringSmearStepDegrees</c>. Slower, the hull draws it as it stands. A thrown or regrowing ring never
+        /// smears. A smear no camera drew (no URP renderer took the pass) shows the ring again at once and retries
+        /// later, so the ring can never be left undrawn.
+        /// </summary>
+        void UpdateRingSmear()
+        {
+            float swept = _hasDrawnPhase && _drewThisFrame
+                ? Mathf.DeltaAngle(_lastDrawnPhase * Mathf.Rad2Deg, _drawnPhase * Mathf.Rad2Deg) : 0f;
+            if (_drewThisFrame)
+            {
+                _lastDrawnPhase = _drawnPhase;
+                _hasDrawnPhase = true;
+            }
+            _drewThisFrame = false;
+
+            // A smear submitted last frame that no camera drew: show the ring, warn once, retry in a while.
+            if (_smearing && _smear.SubmittedFrame == Time.frameCount - 1 && _smear.DrawnFrame < _smear.SubmittedFrame)
+            {
+                if (!_smearWarned)
+                {
+                    _smearWarned = true;
+                    CSDebug.LogWarning($"[BrittleStarAnimation] '{name}': no camera drew the ring's motion smear " +
+                                       "(BrittleStarRingSmearPass), so the ring is drawn unsmeared.");
+                }
+                _smearRetryAt = Time.unscaledTime + 2f;
+                StopRingSmear();
+                return;
+            }
+
+            var config = executor ? executor.Config : null;
+            int copies = config && _hull && _drawnPresence >= 1f && Time.unscaledTime >= _smearRetryAt
+                ? BrittleStarRules.SmearCopies(swept, config.RingSmear, config.RingSmearMinDegrees,
+                                               config.RingSmearStepDegrees,
+                                               Mathf.Min(config.RingSmearMaxCopies, BrittleStarRingSmearPass.MaxCopies))
+                : 0;
+            if (copies < 2 || !_hull.CanSmearRing || !BrittleStarRingSmearPass.CanDraw(config.RingSmearShader))
+            {
+                StopRingSmear();
+                return;
+            }
+
+            if (!_smearRing)
+            {
+                _smearRing = new Mesh { name = "BrittleStarSmearRing" };
+                _smearRing.MarkDynamic();
+            }
+            _hull.SetRingHidden(true);
+            if (!_hull.BakeRing(_smearRing, out var toWorld, out var renderer, out var centre, out var axis, out float reach)
+                || !renderer)
+            {
+                StopRingSmear();
+                return;
+            }
+
+            _smear.Ring = _smearRing;
+            _smear.RingMatrix = toWorld;
+            _smear.Layer = renderer.gameObject.layer;
+            renderer.GetSharedMaterials(_smear.Materials);
+            // The renderer's per-slot property blocks (the flares, the vision band) go with each material.
+            while (_smearBlocks.Count < _smear.Materials.Count) _smearBlocks.Add(new MaterialPropertyBlock());
+            if (_smear.Blocks.Length != _smear.Materials.Count) _smear.Blocks = new MaterialPropertyBlock[_smear.Materials.Count];
+            for (int i = 0; i < _smear.Materials.Count; i++)
+            {
+                _smearBlocks[i].Clear();
+                renderer.GetPropertyBlock(_smearBlocks[i], i);
+                _smear.Blocks[i] = _smearBlocks[i].isEmpty ? null : _smearBlocks[i];
+            }
+            // A disc in the ring's plane, a little wider than the ring reaches (the pods stand off the plane).
+            Vector3 up = Vector3.ProjectOnPlane(transform.up, axis);
+            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.up, axis);
+            if (up.sqrMagnitude < 1e-6f) up = Vector3.ProjectOnPlane(Vector3.right, axis);
+            _smear.DiscMatrix = Matrix4x4.TRS(centre, Quaternion.LookRotation(axis, up), Vector3.one * (reach * 1.1f + 0.5f));
+            // Copy k sits BACK by `back` degrees about the nose axis; its points turn forward by that much onto the
+            // ring as drawn (the hull turns the ring by +phase about the nose, BrittleStarHullModel.SetRingPose).
+            float amount = config.RingSmear;
+            for (int k = 0; k < copies; k++)
+            {
+                float back = BrittleStarRules.SmearCopyBack(k, copies, swept, amount);
+                _smear.Back[k] = Matrix4x4.Translate(centre) * Matrix4x4.Rotate(Quaternion.AngleAxis(back, axis))
+                               * Matrix4x4.Translate(-centre);
+            }
+            for (int k = copies; k < _smear.Back.Length; k++) _smear.Back[k] = Matrix4x4.identity;
+            _smear.Copies = copies;
+            BrittleStarRingSmearPass.Submit(_smear, config.RingSmearShader);
+            _smearing = true;
+        }
+
+        void StopRingSmear()
+        {
+            if (!_smearing) return;
+            _smearing = false;
+            BrittleStarRingSmearPass.Withdraw(_smear);
+            if (_hull) _hull.SetRingHidden(false);
         }
 
         protected override void OnDestroy()
         {
             base.OnDestroy();
+            StopRingSmear();
+            if (_smearRing) Destroy(_smearRing);
             for (int i = 0; i < _morphTweens.Length; i++) _morphTweens[i]?.Kill();
             if (VesselStatus?.ResourceSystem != null)
                 VesselStatus.ResourceSystem.OnElementLevelChange -= HandleElementLevelForMorph;
         }
 
         // A pooled or swapped-away vessel must not carry a mid-turn pose into its next life.
-        void OnDisable() => ResetPose();
+        void OnDisable()
+        {
+            StopRingSmear();
+            _hasDrawnPhase = false;
+            ResetPose();
+        }
     }
 }

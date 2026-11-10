@@ -113,11 +113,13 @@ class Erasure(StoreCase):
         self.store.ingest([started("p1", "m1", T0), started("p2", "m2", T0),
                            {"event": "$identify", "properties": {"distinct_id": "p1", "$set": {"display_name": "Kes"}},
                             "timestamp": iso(T0)}])
+        self.assertEqual(self.rows("SELECT COUNT(*) FROM person_snapshots WHERE distinct_id='p1'")[0][0], 1)
         out = self.store.ingest([{"event": "$identify", "timestamp": iso(T0 + 5),
                                   "properties": {"distinct_id": "p1", "$set": {"gdpr_deletion_requested": True}}}])
         self.assertEqual(out["erased"], 1)
         self.assertEqual(self.rows("SELECT COUNT(*) FROM events WHERE distinct_id='p1'")[0][0], 0)
         self.assertEqual(self.rows("SELECT COUNT(*) FROM people WHERE distinct_id='p1'")[0][0], 0)
+        self.assertEqual(self.rows("SELECT COUNT(*) FROM person_snapshots WHERE distinct_id='p1'")[0][0], 0)  # the history too
         self.assertEqual(self.rows("SELECT COUNT(*) FROM events WHERE distinct_id='p2'")[0][0], 1)
         log = self.rows("SELECT player_hash, source FROM erasures")
         self.assertEqual(log[0][1], "in_game_request")
@@ -547,11 +549,107 @@ class LiveKeys(unittest.TestCase):
         self.assertGreater(z(".gate"), z(".shell"))
 
 
+class KeyCommand(unittest.TestCase):
+    """2026-11-06: `key read admin` made a READ key named "admin"; Garrett signed in with it and saw no Admin pages."""
+
+    def config(self):
+        return dict(A.DEFAULTS, admin_keys={"admin": "fa_admin_x"}, read_keys={}, profile_readers=["garrett"],
+                    all_keys_admin=False)
+
+    def test_with_every_key_an_admins_the_message_says_so(self):
+        c = dict(self.config(), all_keys_admin=True)
+        message, _ = A.key_command(c, ["read", "ian"])
+        self.assertIn("admin's", message)
+        self.assertIn("an admin's too", A.key_command(c, ["list"])[0])
+
+    def test_a_read_key_cannot_be_named_admin_or_reuse_another_kinds_name(self):
+        c = self.config()
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["read", "admin"])
+        lone = dict(self.config(), admin_keys={"shombith": "fa_admin_y"})   # no admin key named "admin" at all:
+        with self.assertRaises(ValueError):                                # the name itself is refused
+            A.key_command(lone, ["read", "admin"])
+        self.assertEqual(lone["read_keys"], {})
+        A.key_command(c, ["admin", "shombith"])
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["read", "shombith"])
+        self.assertEqual(c["read_keys"], {})
+
+    def test_make_list_and_delete(self):
+        c = self.config()
+        message, changed = A.key_command(c, ["read", "Garrett"])
+        self.assertTrue(changed and c["read_keys"]["garrett"].startswith("fa_read_") and "opens player profiles" in message)
+        listing, changed = A.key_command(c, ["list"])
+        self.assertFalse(changed)
+        self.assertIn("garrett", listing)
+        self.assertNotIn(c["read_keys"]["garrett"], listing)         # list never prints a secret
+        self.assertNotIn("fa_admin_x", listing)
+        A.key_command(c, ["delete", "garrett"])
+        self.assertNotIn("garrett", c["read_keys"])
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["delete", "garrett"])
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["read", "bad name!"])
+
+    def test_deleting_a_name_that_is_both_kinds_asks_which_and_never_drops_the_last_admin(self):
+        c = self.config()
+        c["read_keys"]["admin"] = "fa_read_stray"                    # what `key read admin` left on the VM
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["delete", "admin"])
+        self.assertEqual((c["admin_keys"], c["read_keys"]), ({"admin": "fa_admin_x"}, {"admin": "fa_read_stray"}))
+        A.key_command(c, ["delete", "read", "admin"])
+        self.assertEqual((c["admin_keys"], c["read_keys"]), ({"admin": "fa_admin_x"}, {}))
+        with self.assertRaises(ValueError):
+            A.key_command(c, ["delete", "admin", "admin"])            # the only admin key stays
+
+
+class EveryKeyIsAdmin(unittest.TestCase):
+    """Shombith, 2026-11-06: "Give everyone who has a key an admin access there is no seperation between us." The
+    default; the split tests above run with all_keys_admin false."""
+
+    def test_with_the_default_a_read_key_is_an_admin_and_a_wrong_key_is_still_refused(self):
+        self.assertTrue(A.DEFAULTS["all_keys_admin"])
+        work = tempfile.mkdtemp()
+        try:
+            config = dict(A.DEFAULTS, data_dir=work, ingest_keys=["in-key"], read_keys={"garrett": "g-key"},
+                          admin_keys={"admin": "admin-key"})
+            app = A.App(config)
+            app.rebuild()                                                      # an (empty) aggregates db to query
+            server = ThreadingHTTPServer(("127.0.0.1", 0), A.make_handler(app))
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            base = f"http://127.0.0.1:{server.server_address[1]}"
+
+            def call(method, path, key, body=None):
+                request = urllib.request.Request(base + path, method=method, headers={"Authorization": "Bearer " + key,
+                                                 "Content-Type": "application/json"},
+                                                 data=json.dumps(body).encode() if body is not None else None)
+                try:
+                    with urllib.request.urlopen(request) as response:
+                        return response.status, json.loads(response.read())
+                except urllib.error.HTTPError as err:
+                    return err.code, json.loads(err.read() or b"{}")
+            status, me = call("GET", "/v1/me", "g-key")
+            self.assertEqual((status, me["name"], me["admin"], me["profiles"]), (200, "garrett", True, True))
+            self.assertEqual(call("POST", "/v1/query", "g-key", {"sql": "SELECT 1 AS one"})[0], 200)
+            self.assertEqual(call("GET", "/v1/people?build=release&days=7", "g-key")[0], 200)
+            self.assertEqual(call("GET", "/v1/me", "not-a-key")[0], 401)       # no key, no access, as before
+            app.config["all_keys_admin"] = False                               # the split comes back
+            status, me = call("GET", "/v1/me", "g-key")
+            self.assertEqual((me["admin"], me["profiles"]), (False, False))
+            self.assertEqual(call("POST", "/v1/query", "g-key", {"sql": "SELECT 1 AS one"})[0], 403)
+            server.shutdown()
+            server.server_close()
+            app.store.db.close()
+        finally:
+            shutil.rmtree(work)
+
+
 class Http(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()
+        # These tests guard the read / admin split, which comes back when all_keys_admin is false.
         config = dict(A.DEFAULTS, data_dir=self.dir, ingest_keys=["in-key"], read_keys={"ian": "read-key"},
-                      admin_keys={"admin": "admin-key"}, allowed_origins=["https://dash.example"])
+                      admin_keys={"admin": "admin-key"}, allowed_origins=["https://dash.example"], all_keys_admin=False)
         self.app = A.App(config)
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), A.make_handler(self.app))
         self.base = f"http://127.0.0.1:{self.server.server_address[1]}"
@@ -864,7 +962,7 @@ class Rev65Http(unittest.TestCase):
         self.assertEqual((status, {p["key"]: p["value"] for p in out["points"]}),
                          (200, {"solo_vs_ai": 1, "multi_human_unknown": 1}))
         self.assertEqual(set(out), {"measure", "by", "over", "build", "days", "play", "from", "to", "source", "era",
-                                    "points", "keys", "unfiltered", "notes", "answerable_by"})
+                                    "device", "points", "keys", "unfiltered", "notes", "answerable_by"})
         status, out, _ = self.call("GET", "/v1/series?measure=events&by=country", key="read-key")
         self.assertEqual(status, 400)                               # negative control: events have no country
         self.assertIn("cannot be split by country", out["error"])
@@ -983,6 +1081,1213 @@ class Rev65Http(unittest.TestCase):
         self.assertEqual(overview["unfiltered"], [])
         _, _, headers = self.call("GET", "/v1/eras", key="read-key", origin="https://dash.example")
         self.assertIn("PUT", headers.get("Access-Control-Allow-Methods"))
+
+
+
+# ---------------------------------------------------------------- 2026-11-06: elements, the Toybox, saved views
+
+import mode_elements as M  # noqa: E402
+
+
+def identify(player, ms, **person):
+    return {"event": "$identify", "timestamp": iso(ms), "properties": {"distinct_id": player, "$set": person}}
+
+
+class ModeElements(unittest.TestCase):
+    """Shombith, 2026-11-06: "the matches over time should also have element support". The table is generated from
+    the game's own ModeGenre.cs; a test keeps it current."""
+
+    def test_the_committed_table_is_current_and_its_known_answers_hold(self):
+        if not M.have_sources():
+            self.skipTest("no Unity sources in this checkout (the VM's sparse checkout)")
+        self.assertEqual(M.check(), 0, "run python3 Tools/Analytics/server/mode_elements.py")
+        self.assertEqual(M.self_test(), 0)
+
+    def test_the_server_reads_the_table(self):
+        table = M.load()
+        self.assertEqual(table.get("BroodRush"), ("Mass", "Space"))      # the two-element mode
+        self.assertEqual(table.get("Scurry"), ("Mass", None))            # a gather, scored on crystals
+        self.assertEqual(table.get("Tollway"), ("Mass", None))           # scored on goals, an acquisition
+        self.assertNotIn("Maelstrom", table)                             # draws other modes: no genre
+        self.assertEqual(M.load("/nonexistent/mode_elements.json"), {})
+
+
+class Elements(StoreCase):
+    def seed(self):
+        old = S.now_ms() - 30 * DAY
+        self.store.ingest([started("h1", "o1", old, game_mode="BroodRush"), completed("h1", "o1", old + 60_000),
+                           started("h2", "o2", old, game_mode="CrystalCapture")], trusted=True, max_age_days=365)
+        self.store.ingest([
+            started("p1", "m1", T0, element="Space"),                     # a new build: its own element wins
+            started("p1", "m2", T0 + 120_000, game_mode="Scurry"),        # no element sent: the mode's row
+            started("p2", "m3", T0, game_mode="Joust", element="charge", element_secondary="nonsense"),
+            started("p3", "m4", T0, game_mode="BroodRush", element="Mass", element_secondary="Space"),
+        ])
+        self.store.rebuild_aggregates()
+
+    def test_a_match_takes_its_own_element_else_its_modes(self):
+        self.seed()
+        agg = sqlite3.connect(self.store.agg_path)
+        rows = {r[0]: r[1:] for r in agg.execute("SELECT match_id, element, element_secondary, element_source FROM plays")}
+        self.assertEqual(rows["m1"], ("Space", None, "event"))
+        self.assertEqual(rows["m2"], ("Mass", None, "table"))
+        self.assertEqual(rows["m3"], ("Charge", None, "event"))           # names normalised; a bad second dropped
+        self.assertEqual(rows["m4"], ("Mass", "Space", "event"))
+        self.assertEqual(rows["o1"], ("Mass", "Space", "table"))          # the PostHog history has one too
+        self.assertEqual(rows["o2"], (None, None, None))                  # an old name with no genre: honest none
+        health = V.health(self.store.agg_path, {}, 90)["modes_without_element"]
+        self.assertEqual(health, [{"game_mode": "CrystalCapture", "plays": 1, "imported_plays": 1}])
+
+    def test_series_splits_by_element_and_lists_the_second_apart(self):
+        self.seed()
+        agg = self.store.agg_path
+        out = V.series(agg, "matches", "element", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in out["points"]}, {"Charge": 1, "Mass": 3, "Space": 1, "none": 1})
+        self.assertEqual(out["keys"], ["Charge", "Mass", "Space", "none"])              # the elements' own order
+        self.assertEqual(out["secondary"], [{"key": "Space", "value": 2}])               # never added into the split
+        self.assertTrue(any("two-element mode" in n for n in out["notes"]))
+        for measure in V.PLAY_MEASURES + ("players", "new_players"):
+            self.assertIn("element", V.series(agg, measure, "none", "day", "release", 7)["answerable_by"])
+            V.series(agg, measure, "element", "week", "release", 30)
+        with self.assertRaises(V.BadRequest):                                            # negative control
+            V.series(agg, "events", "element", "day", "release", 7)
+        players = V.series(agg, "players", "element", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in players["points"]}["Mass"], 3)   # h1, p1, p3
+        page = V.matches(agg, "release", 90)
+        self.assertEqual({r["element"]: r["matches"] for r in page["by_element"]}, {"Charge": 1, "Mass": 3, "Space": 1, "none": 1})
+        self.assertEqual(page["element_secondary"][0]["element"], "Space")
+        self.assertEqual(next(r for r in page["by_mode"] if r["game_mode"] == "Scurry")["element"], "Mass")
+
+
+class Freestyle(StoreCase):
+    """Shombith, 2026-11-06: players who "went inside freestyle/toybox and played vessels ... can we bring it for the
+    old one?" Entries come from the PostHog history; minutes, vessels and switches from builds after 2026-11-06; older
+    switches are recovered from the identify history."""
+
+    def seed(self):
+        old = S.now_ms() - 30 * DAY
+        self.store.ingest([
+            ev("freestyle_entered", "h1", old, is_first=True, seconds_since_launch=30),
+            ev("freestyle_entered", "h1", old + 600_000, is_first=False, seconds_since_launch=640),
+            ev("freestyle_entered", "h2", old, is_first=True, seconds_since_launch=12),
+            identify("h1", old + 1000, selected_vessel="Squirrel", total_flight_time_seconds=10),
+            identify("h1", old + 2000, selected_vessel="Squirrel", total_flight_time_seconds=40),
+            identify("h1", old + 3000, selected_vessel="Manta", total_flight_time_seconds=90),
+            identify("h1", old + 4000, selected_vessel="Rhino", total_flight_time_seconds=120),
+        ], trusted=True, max_age_days=365)
+        self.store.ingest([
+            ev("freestyle_entered", "p1", T0, is_first=True, seconds_since_launch=8, vessel_class="Squirrel"),
+            ev("freestyle_vessel_changed", "p1", T0 + 30_000, vessel_class="Manta", from_vessel_class="Squirrel",
+               seconds_in_freestyle=30.5),
+            ev("freestyle_vessel_changed", "p1", T0 + 60_000, vessel_class="Sparrow", from_vessel_class="Manta",
+               seconds_in_freestyle=60),
+            ev("freestyle_ended", "p1", T0 + 90_000, seconds=90, vessel_class="Sparrow", vessels_flown=3),
+            ev("freestyle_ended", "p1", T0 + 90_002, seconds=90, vessel_class="Sparrow", vessels_flown=3),  # double-send
+            # p1's identify history after its first live switch is not recovered again (the event counts)
+            identify("p1", T0 + 1000, selected_vessel="Squirrel"), identify("p1", T0 + 70_000, selected_vessel="Sparrow"),
+        ])
+        self.store.rebuild_aggregates()
+
+    def test_snapshots_are_kept_once_and_erased_with_the_player(self):
+        row = identify("h9", T0, selected_vessel="Manta", preferred_vessel="Squirrel", total_flight_time_seconds=61.5)
+        self.store.ingest([row], trusted=True, max_age_days=365)
+        self.store.ingest([row], trusted=True, max_age_days=365)        # import-posthog run again: stored once
+        self.store.ingest([identify("h9", T0 + 5, selected_vessel="Rhino")])   # a live one adds a row
+        rows = self.rows("SELECT ts_ms, imported, selected_vessel, preferred_vessel, total_flight_time_seconds "
+                         "FROM person_snapshots WHERE distinct_id='h9' ORDER BY ts_ms")
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0][1:], (1, "Manta", "Squirrel", 61.5))
+        self.assertEqual(rows[1][2], "Rhino")
+        self.assertEqual(self.store.erase("h9", "admin"), 3)            # two snapshots and the person
+        self.assertEqual(self.rows("SELECT COUNT(*) FROM person_snapshots WHERE distinct_id='h9'")[0][0], 0)
+        self.assertNotIn("'h9'", "\n".join(self.store.db.iterdump()))
+
+    def test_switches_are_derived_where_the_selected_vessel_changes(self):
+        snaps = [(1, "A", 1), (2, "A", 1), (3, "B", 1), (4, "", 1), (5, "C", 0)]
+        self.assertEqual(S.derive_switches(snaps), [(3, "A", "B", 1), (5, "B", "C", 0)])
+        self.assertEqual(S.derive_switches([(1, "A", 1), (2, "A", 1)]), [])      # negative control: no change
+
+    def test_the_toybox_aggregates_count_entries_minutes_and_switches(self):
+        self.seed()
+        agg = self.store.agg_path
+        page = V.freestyle(agg, "release", 90)
+        t = page["tiles"]
+        self.assertEqual((t["entries"], t["first_entries"], t["players"]), (4, 3, 3))
+        self.assertEqual((t["stretches"], t["minutes"], t["avg_vessels_flown"]), (1, 1.5, 3.0))   # the double-send once
+        self.assertEqual((t["switches"], t["recovered_switches"]), (2, 2))                       # h1: S->M, M->R
+        pairs = {(p["from_vessel"], p["to_vessel"]): (p["switches"], p["recovered"]) for p in page["switch_pairs"]}
+        self.assertEqual(pairs, {("Squirrel", "Manta"): (2, 1), ("Manta", "Sparrow"): (1, 0), ("Manta", "Rhino"): (1, 1)})
+        self.assertEqual(page["history"]["first_imported_entry_day"], day(S.now_ms() - 30 * DAY))
+        self.assertEqual(page["history"]["first_minutes_day"], day(T0))
+        entries = V.series(agg, "freestyle_entries", "vessel_class", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in entries["points"]}, {"unknown": 3, "Squirrel": 1})
+        switches = V.series(agg, "freestyle_switches", "switch_source", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in switches["points"]}, {"event": 2, "recovered": 2})
+        to = V.series(agg, "freestyle_switches", "vessel_class", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in to["points"]}, {"Manta": 2, "Sparrow": 1, "Rhino": 1})
+        players = V.series(agg, "freestyle_players", "none", "none", "release", 90)
+        self.assertEqual(players["points"][0]["value"], 3)
+        minutes = V.series(agg, "freestyle_minutes", "vessel_class", "none", "release", 90)
+        self.assertEqual({p["key"]: p["value"] for p in minutes["points"]}, {"Sparrow": 1.5})
+        self.assertTrue(any("freestyle_ended" in n for n in minutes["notes"]))
+        for measure, by in (("freestyle_entries", "platform"), ("freestyle_minutes", "element"),
+                            ("freestyle_players", "game_mode"), ("freestyle_entries", "from_vessel_class")):
+            with self.assertRaises(V.BadRequest, msg=(measure, by)):                         # negative controls
+                V.series(agg, measure, by, "day", "release", 7)
+        self.assertEqual(sum(r[1] for r in V.builtin_tile(agg, "freestyle_entries", "release", 90)["rows"]), 4)
+
+    def test_profiles_and_the_players_list_carry_the_toybox(self):
+        self.seed()
+        p = self.store.person("p1")["freestyle"]
+        self.assertEqual((p["entries"], p["stretches"], p["minutes"], p["switch_count"]), (1, 1, 1.5, 2))
+        self.assertEqual([(x["from"], x["to"], x["approx"]) for x in p["switches"]],
+                         [("Squirrel", "Manta", False), ("Manta", "Sparrow", False)])
+        self.assertEqual(p["switches"][0]["seconds_in_freestyle"], 30.5)
+        self.assertEqual(p["switched_to"], {"Manta": 1, "Sparrow": 1})
+        h = self.store.person("h1")["freestyle"]
+        self.assertEqual((h["entries"], h["recovered_switches"]), (2, 2))
+        self.assertEqual([(x["from"], x["to"], x["approx"]) for x in h["switches"]],
+                         [("Squirrel", "Manta", True), ("Manta", "Rhino", True)])
+        people = {x["distinct_id"]: x for x in self.store.people_list("release", 90)["people"]}
+        self.assertEqual((people["h1"]["freestyle_entries"], people["p1"]["freestyle_seconds"]), (2, 90.0))
+
+    def test_the_toybox_aggregates_hold_no_player_ids(self):
+        self.seed()
+        dump = "\n".join(sqlite3.connect(self.store.agg_path).iterdump())
+        for player in ("h1", "h2", "p1"):
+            self.assertNotIn(f"'{player}'", dump)
+
+
+class PresetsHttp(unittest.TestCase):
+    """Shombith, 2026-11-06: "save our own view as well and make it public and that will saved in saved presets under
+    dashboards". Every key is an admin's (all_keys_admin), so a saved view belongs to its key's name."""
+    tearDown = Http.tearDown
+    call = Http.call
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        config = dict(A.DEFAULTS, data_dir=self.dir, ingest_keys=["in-key"], read_keys={"ian": "ian-key", "kim": "kim-key"},
+                      admin_keys={"admin": "admin-key"})
+        self.app = A.App(config)
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), A.make_handler(self.app))
+        self.base = f"http://127.0.0.1:{self.server.server_address[1]}"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            started("p1", "m1", T0, element="Time"), completed("p1", "m1", T0 + 60_000),
+            ev("freestyle_entered", "p1", T0 + 70_000, is_first=True, vessel_class="Manta")]})
+        self.app.rebuild()
+
+    def view(self, **extra):
+        return dict({"name": "Matches by element", "page": "overview", "chart_id": "overview.series", "series": True,
+                     "settings": {"form": "bars", "measure": "matches", "by": "element", "over": "week"},
+                     "filters": {"build": "release", "days": 30, "play": "all"}, "public": False}, **extra)
+
+    def test_saved_views_are_their_owners_and_public_ones_are_everyones(self):
+        status, mine, _ = self.call("POST", "/v1/presets", self.view(), key="ian-key")
+        self.assertEqual((status, mine["owner"], mine["public"]), (200, "ian", False))
+        shared = self.call("POST", "/v1/presets", self.view(name="Toybox", public=True, chart_id="overview.freestyle",
+                           settings={"measure": "freestyle_entries", "by": "vessel_class", "over": "day"}), key="ian-key")[1]
+        self.assertEqual({p["name"] for p in self.call("GET", "/v1/presets", key="ian-key")[1]["presets"]},
+                         {"Matches by element", "Toybox"})
+        # negative controls: a private view is not listed to another key, and another key cannot delete or change it
+        self.assertEqual([p["id"] for p in self.call("GET", "/v1/presets", key="kim-key")[1]["presets"]], [shared["id"]])
+        self.assertEqual(self.call("DELETE", "/v1/presets?id=" + mine["id"], key="kim-key")[0], 404)
+        self.assertEqual(self.call("POST", "/v1/presets", self.view(id=mine["id"], name="mine now"), key="kim-key")[0], 400)
+        self.assertEqual(self.call("POST", "/v1/presets", self.view(id=shared["id"]), key="kim-key")[0], 403)
+        self.assertEqual(self.call("DELETE", "/v1/presets?id=" + shared["id"], key="kim-key")[0], 403)
+        self.assertEqual(self.call("GET", "/v1/dashboards/tile?source=preset:" + mine["id"], key="kim-key")[0], 404)
+        # the owner changes and deletes; a real admin key (admin_keys) may remove a public one
+        status, renamed, _ = self.call("POST", "/v1/presets", self.view(id=mine["id"], name="Elements"), key="ian-key")
+        self.assertEqual((status, renamed["name"], renamed["created_ms"]), (200, "Elements", mine["created_ms"]))
+        self.assertEqual(self.call("DELETE", "/v1/presets?id=" + mine["id"], key="ian-key")[0], 200)
+        self.assertEqual(self.call("DELETE", "/v1/presets?id=" + shared["id"], key="admin-key")[0], 200)
+        self.assertEqual(self.call("GET", "/v1/presets", key="kim-key")[1]["presets"], [])
+
+    def test_bad_views_are_400_with_a_reason(self):
+        for bad in (self.view(page="nowhere"), self.view(chart_id="bad id!"), self.view(name=""),
+                    self.view(settings={"measure": "Matches; DROP"}), self.view(settings={"colour": "jade"}),
+                    self.view(filters={"build": "mobile"}), self.view(filters={"days": 5}), self.view(filters={"era": "nope"}),
+                    self.view(filters={"play": "everyone"}), self.view(public="yes"), self.view(extra=1), ["not", "an", "object"]):
+            status, out, _ = self.call("POST", "/v1/presets", bad, key="ian-key")
+            self.assertEqual(status, 400, bad)
+            self.assertTrue(out["error"])
+        self.assertEqual(self.call("DELETE", "/v1/presets?id=p_gone", key="ian-key")[0], 404)
+        self.assertEqual(self.call("GET", "/v1/presets")[0], 401)
+
+    def test_a_saved_view_is_a_dashboard_tile_running_its_own_series(self):
+        view = self.call("POST", "/v1/presets", self.view(public=True), key="ian-key")[1]
+        status, tile, _ = self.call("GET", "/v1/dashboards/tile?source=preset:" + view["id"] + "&days=7", key="kim-key")
+        self.assertEqual(status, 200)
+        self.assertEqual((tile["series"]["by"], tile["series"]["days"], tile["columns"]), ("element", 30, ["x", "element", "matches"]))
+        self.assertEqual(sum(r[2] for r in tile["rows"]), 1)
+        self.assertEqual(tile["unfiltered"], ["build", "days", "play", "era", "device"])  # its own filters, not the page's
+        flat = self.call("POST", "/v1/presets", self.view(name="Health", chart_id="overview.health", series=False), key="ian-key")[1]
+        self.assertEqual(self.call("GET", "/v1/dashboards/tile?source=preset:" + flat["id"], key="ian-key")[0], 400)
+        board = {"name": "Views", "shared": "readers", "tiles": [{"id": "a", "source": "preset:" + view["id"], "title": "x",
+                                                                    "chart": "bars", "w": 2, "h": 1}]}
+        self.assertEqual(self.call("PUT", "/v1/dashboards", board, key="kim-key")[0], 200)
+        self.assertEqual(self.call("PUT", "/v1/dashboards", {**board, "tiles": [{**board["tiles"][0], "source": "preset:" + flat["id"]}]},
+                                   key="ian-key")[0], 400)                              # not a series view
+        private = self.call("POST", "/v1/presets", self.view(name="Mine"), key="ian-key")[1]
+        self.assertEqual(self.call("PUT", "/v1/dashboards", {**board, "tiles": [{**board["tiles"][0], "source": "preset:" + private["id"]}]},
+                                   key="kim-key")[0], 400)                              # someone else's private view
+
+    def test_the_toybox_routes_answer(self):
+        status, page, _ = self.call("GET", "/v1/freestyle?days=7", key="kim-key")
+        self.assertEqual((status, page["tiles"]["entries"], page["tiles"]["players"]), (200, 1, 1))
+        self.assertEqual(self.call("GET", "/v1/freestyle?days=5", key="kim-key")[0], 400)
+        status, out, _ = self.call("GET", "/v1/series?measure=freestyle_entries&by=vessel_class&over=none&days=7", key="kim-key")
+        self.assertEqual((status, out["points"]), (200, [{"x": None, "key": "Manta", "value": 1}]))
+        self.assertEqual(self.call("GET", "/v1/series?measure=freestyle_entries&by=country", key="kim-key")[0], 400)
+        self.assertEqual(self.call("GET", "/v1/series?measure=matches&by=element&over=none&days=7", key="kim-key")[1]["points"],
+                         [{"x": None, "key": "Time", "value": 1}])
+        person = self.call("GET", "/v1/person?id=p1", key="kim-key")[1]
+        self.assertEqual(person["freestyle"]["entries"], 1)
+        people = self.call("GET", "/v1/people?days=7", key="kim-key")[1]["people"]
+        self.assertEqual(people[0]["freestyle_entries"], 1)
+
+
+
+# ---------------------------------------------------------------- 2026-11-07: match setups
+
+# (props, setup) - every rule of analytics_store.setup_of, old builds' props included (no domain fields)
+SETUP_TABLE = (
+    # multiplayer, with the domain fields (builds from 2026-11-07)
+    ({"player_count_human": 2, "humans_on_my_domain": 1, "humans_on_other_domains": 1}, "competitive"),
+    ({"player_count_human": 4, "humans_on_my_domain": 1, "humans_on_other_domains": 3}, "competitive"),
+    ({"player_count_human": 4, "humans_on_my_domain": 2, "humans_on_other_domains": 2}, "teams"),
+    ({"player_count_human": 3, "humans_on_my_domain": 2, "humans_on_other_domains": 1}, "teams"),
+    ({"player_count_human": 2, "humans_on_my_domain": 2, "humans_on_other_domains": 0, "ai_on_other_domains": 3},
+     "teams_vs_ai"),
+    ({"player_count_human": 3, "humans_on_my_domain": 3, "humans_on_other_domains": 0}, "teams_vs_ai"),
+    ({"player_count_human": "2", "humans_on_my_domain": "1", "humans_on_other_domains": "1"}, "competitive"),
+    # multiplayer without them: older builds and the PostHog history, never guessed
+    ({"player_count_human": 2, "player_count_ai": 2}, "multi_unrecorded"),
+    ({"player_count_human": 2, "humans_on_other_domains": 1}, "multi_unrecorded"),          # no side of my own
+    ({"player_count_human": 2, "humans_on_my_domain": 1, "humans_on_other_domains": -1}, "multi_unrecorded"),
+    ({"player_count_human": 2, "humans_on_my_domain": True, "humans_on_other_domains": True}, "multi_unrecorded"),
+    # solo, old props: by the AI count (player_count_ai, else ai_count)
+    ({"player_count_human": 1, "player_count_ai": 0}, "solo_alone"),
+    ({"player_count_human": 1}, "solo_alone"),
+    ({}, "solo_alone"),
+    ({"player_count_human": 1, "player_count_ai": 1}, "solo_vs_1_ai"),
+    ({"player_count_human": 1, "player_count_ai": 2}, "solo_vs_2_ai"),
+    ({"player_count_human": 1, "player_count_ai": 3}, "solo_vs_3plus_ai"),
+    ({"player_count_human": 1, "player_count_ai": 7}, "solo_vs_3plus_ai"),
+    ({"player_count_human": 1, "ai_count": 2}, "solo_vs_2_ai"),                                # ai_count stands in
+    ({"player_count_human": 1, "player_count_ai": 0, "ai_count": 3}, "solo_alone"),            # the real count wins
+    ({"player_count_human": 1, "player_count_ai": "nonsense", "ai_count": 1}, "solo_vs_1_ai"),
+    # solo, new props: opponents are the AI on other domains; AI teammates are a slice of their own
+    ({"player_count_human": 1, "player_count_ai": 3, "humans_on_my_domain": 1, "humans_on_other_domains": 0,
+      "ai_on_my_domain": 0, "ai_on_other_domains": 3}, "solo_vs_3plus_ai"),
+    ({"player_count_human": 1, "player_count_ai": 3, "humans_on_my_domain": 1, "humans_on_other_domains": 0,
+      "ai_on_my_domain": 1, "ai_on_other_domains": 2}, "solo_with_ai_team"),
+    ({"player_count_human": 1, "player_count_ai": 1, "ai_on_my_domain": 1, "ai_on_other_domains": 0}, "solo_with_ai_team"),
+    ({"player_count_human": 1, "player_count_ai": 0, "ai_on_my_domain": 0, "ai_on_other_domains": 0}, "solo_alone"),
+)
+
+
+def check_setup_table(classify):
+    """Every row of SETUP_TABLE through `classify`; raises AssertionError naming the first row it gets wrong."""
+    for props, want in SETUP_TABLE:
+        got = classify(props)[0]
+        if got != want:
+            raise AssertionError(f"{props} -> {got}, expected {want}")
+
+
+class Setups(StoreCase):
+    """Shombith, 2026-11-07: "a sliced grouping in overview with competitive, teams, teams vs ai as per the domains in
+    both multiplayer and for solo like the same how many AIs"."""
+
+    def seed(self):
+        old = S.now_ms() - 30 * DAY
+        team = lambda mine, other, **ai: dict(humans_on_my_domain=mine, humans_on_other_domains=other, domain="Jade", **ai)
+        # the PostHog history: no domain fields, so its multiplayer reads not recorded; solo still has its AI count
+        self.store.ingest([started("u1", "o1", old, humans=2, ai=0), started("u2", "o1", old, humans=2, ai=0),
+                           completed("u1", "o1", old + 60_000),
+                           ev("game_started", "u3", old, match_id="o2", player_count_human=1, ai_count=1,
+                              game_mode="SkimRace")], trusted=True, max_age_days=365)
+        self.store.ingest([
+            started("p1", "m1", T0, ai=0), completed("p1", "m1", T0 + 60_000),
+            started("p1", "m2", T0 + 120_000, ai=1),
+            started("p2", "m3", T0, ai=2), started("p2", "m4", T0 + 300_000, ai=5),
+            started("p3", "m5", T0, ai=3, **team(1, 0, ai_on_my_domain=1, ai_on_other_domains=2)),
+            started("p3", "m6", T0 + 300_000, ai=2, **team(1, 0, ai_on_my_domain=0, ai_on_other_domains=2)),
+            started("q1", "c1", T0, humans=2, ai=0, **team(1, 1)), started("q2", "c1", T0, humans=2, ai=0, **team(1, 1)),
+            completed("q1", "c1", T0 + 60_000, player_won=False), completed("q2", "c1", T0 + 60_000, player_won=True),
+            *[started(f"t{i}", "k1", T0, humans=4, ai=0, **team(2, 2)) for i in range(4)],
+            started("v1", "a1", T0, humans=2, ai=3, **team(2, 0, ai_on_my_domain=0, ai_on_other_domains=3)),
+            started("v2", "a1", T0, humans=2, ai=3, **team(2, 0, ai_on_my_domain=0, ai_on_other_domains=3)),
+            # uneven: the pair are Teams, the one is Competitive, so the match counts in both
+            started("x1", "e1", T0, humans=3, ai=0, **team(2, 1)), started("x2", "e1", T0, humans=3, ai=0, **team(2, 1)),
+            started("x3", "e1", T0, humans=3, ai=0, **team(1, 2)),
+        ])
+        self.store.rebuild_aggregates()
+
+    def test_each_setup_comes_from_its_props_and_old_props_are_never_guessed(self):
+        check_setup_table(S.setup_of)
+        self.assertEqual(S.setup_of({"player_count_human": 2, "humans_on_my_domain": 2, "humans_on_other_domains": 0,
+                                     "ai_on_my_domain": 1, "ai_on_other_domains": 3}), ("teams_vs_ai", 2, 0, 1, 3))
+        self.assertEqual(S.setup_of({"player_count_human": 2}), ("multi_unrecorded", None, None, None, None))
+        for props, want in SETUP_TABLE:                     # a setup's group always matches the play type's
+            group = "multi" if (S.as_int(props.get("player_count_human")) or 0) >= 2 else None
+            self.assertEqual(V.SETUP_GROUP[want] == "multiplayer", group == "multi", props)
+        self.assertEqual(S.SETUP_IDS[:4], ("competitive", "teams", "teams_vs_ai", "multi_unrecorded"))  # multiplayer first
+
+    def test_a_broken_classification_fails_the_table(self):
+        # negative control: swap Competitive and Teams, and the same check must fail
+        def broken(props):
+            got = S.setup_of(props)
+            swap = {"competitive": "teams", "teams": "competitive"}
+            return (swap.get(got[0], got[0]),) + got[1:]
+        with self.assertRaisesRegex(AssertionError, "expected competitive"):
+            check_setup_table(broken)
+        with self.assertRaisesRegex(AssertionError, "expected solo_vs_2_ai"):     # and with ai_count ignored
+            check_setup_table(lambda props: S.setup_of({k: v for k, v in props.items() if k != "ai_count"}))
+
+    def test_plays_store_the_setup_and_the_counts(self):
+        self.seed()
+        agg = sqlite3.connect(self.store.agg_path)
+        rows = {r[0]: r[1:] for r in agg.execute(
+            "SELECT match_id || ':' || COALESCE(humans_mine, -1), setup, humans_mine, humans_other, ai_mine, ai_other "
+            "FROM plays")}
+        self.assertEqual(rows["o1:-1"], ("multi_unrecorded", None, None, None, None))
+        self.assertEqual(rows["o2:-1"], ("solo_vs_1_ai", None, None, None, None))     # ai_count, the old fallback
+        self.assertEqual(rows["m5:1"], ("solo_with_ai_team", 1, 0, 1, 2))
+        self.assertEqual(rows["a1:2"], ("teams_vs_ai", 2, 0, 0, 3))
+        self.assertEqual(rows["e1:2"][0], "teams")
+        self.assertEqual(rows["e1:1"][0], "competitive")
+        play_types = dict(agg.execute("SELECT match_id, play_type FROM plays WHERE match_id IN ('o1', 'c1', 'm1')"))
+        self.assertEqual(play_types, {"o1": "multi_human_unknown", "c1": "adversarial", "m1": "solo_alone"})  # as it was
+
+    def test_overview_lists_every_setup_in_order_with_its_counts(self):
+        self.seed()
+        page = V.overview(self.store.agg_path, "release", 90)
+        setups = page["setups"]
+        self.assertEqual([s["setup"] for s in setups], list(S.SETUP_IDS))
+        self.assertEqual([s["group"] for s in setups], ["multiplayer"] * 4 + ["solo"] * 5)
+        got = {s["setup"]: (s["matches"], s["plays"], s["players"]) for s in setups}
+        self.assertEqual(got, {"competitive": (2, 3, 3), "teams": (2, 6, 6), "teams_vs_ai": (1, 2, 2),
+                               "multi_unrecorded": (1, 2, 2), "solo_alone": (1, 1, 1), "solo_vs_1_ai": (2, 2, 2),
+                               "solo_vs_2_ai": (2, 2, 2), "solo_vs_3plus_ai": (1, 1, 1), "solo_with_ai_team": (1, 1, 1)})
+        one = {s["setup"]: s for s in setups}
+        self.assertEqual((one["competitive"]["finished_pct"], one["competitive"]["win_pct"]), (66.7, 50.0))
+        self.assertEqual((one["teams"]["finished_pct"], one["teams"]["win_pct"]), (0.0, None))
+        self.assertEqual(one["solo_with_ai_team"]["label"], "With AI teammates")
+        self.assertEqual(page["setup_history"]["first_domain_day"], day(T0))
+        self.assertEqual((page["setup_history"]["multi_plays"], page["setup_history"]["multi_unrecorded_pct"]), (13, 15.4))
+        self.assertTrue(any("Teams not recorded" in n for n in page["setup_notes"]))
+        solo = {s["setup"]: s["matches"] for s in V.overview(self.store.agg_path, "release", 90, "solo")["setups"]}
+        # the Play filter reaches the setups. Its Solo is play_type solo_alone (player_count_ai 0 or missing), so the
+        # PostHog play that sent only ai_count is in it, and its setup says what it really was: vs 1 AI
+        self.assertEqual({k: n for k, n in solo.items() if n}, {"solo_alone": 1, "solo_vs_1_ai": 1})
+        multi = {s["setup"]: s["players"] for s in V.overview(self.store.agg_path, "release", 90, "multi")["setups"]}
+        self.assertEqual((multi["teams"], multi["solo_vs_1_ai"]), (6, 0))
+        history = V.overview(self.store.agg_path, "release", 90, "all",
+                             {"id": "h", "from": day(S.now_ms() - 40 * DAY), "to": day(T0), "source": "imported", "builds": []})
+        self.assertEqual({s["setup"]: s["matches"] for s in history["setups"] if s["matches"]},
+                         {"multi_unrecorded": 1, "solo_vs_1_ai": 1})          # the history: solo yes, teams not recorded
+
+    def test_series_splits_every_plays_measure_by_setup(self):
+        self.seed()
+        agg = self.store.agg_path
+        out = V.series(agg, "matches", "setup", "none", "release", 90)
+        self.assertEqual(out["keys"], list(S.SETUP_IDS))                       # the setups' own order
+        self.assertEqual({p["key"]: p["value"] for p in out["points"]}["teams"], 2)
+        self.assertTrue(any("Teams not recorded" in n for n in out["notes"]))
+        for measure in V.PLAY_MEASURES + ("players", "new_players"):
+            self.assertIn("setup", V.series(agg, measure, "none", "day", "release", 7)["answerable_by"])
+            V.series(agg, measure, "setup", "week", "release", 30)
+        for measure in ("events",) + V.FREESTYLE_MEASURES:                      # negative control: not a match
+            with self.assertRaises(V.BadRequest):
+                V.series(agg, measure, "setup", "day", "release", 7)
+        players = {p["key"]: p["value"] for p in V.series(agg, "players", "setup", "none", "release", 90)["points"]}
+        self.assertEqual((players["teams"], players["competitive"]), (6, 3))
+        solo = V.series(agg, "players", "setup", "none", "release", 90, "solo_vs_ai")
+        self.assertEqual(solo["keys"], ["solo_vs_1_ai", "solo_vs_2_ai", "solo_vs_3plus_ai", "solo_with_ai_team"])
+        self.assertNotIn("play", solo["unfiltered"])
+        pct = {p["key"]: p["value"] for p in V.series(agg, "finished_pct", "setup", "none", "release", 90)["points"]}
+        self.assertEqual((pct["competitive"], pct["solo_alone"]), (66.7, 100.0))
+
+    def test_the_setups_hold_no_player_ids(self):
+        self.seed()
+        dump = "\n".join(sqlite3.connect(self.store.agg_path).iterdump())
+        for player in ("u1", "p1", "q1", "t0", "v1", "x3"):
+            self.assertNotIn(f"'{player}'", dump)
+
+
+class SetupsHttp(unittest.TestCase):
+    tearDown = Http.tearDown
+    call = Http.call
+
+    def setUp(self):
+        Http.setUp(self)
+        team = dict(humans_on_my_domain=1, humans_on_other_domains=1)
+        self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            started("p1", "m1", T0, ai=2), started("q1", "c1", T0, humans=2, ai=0, **team),
+            started("q2", "c1", T0, humans=2, ai=0, **team)]})
+        self.app.rebuild()
+
+    def test_overview_and_series_carry_the_setups_and_bad_input_is_400(self):
+        status, page, _ = self.call("GET", "/v1/overview?days=7", key="read-key")
+        self.assertEqual(status, 200)
+        self.assertEqual([(s["setup"], s["matches"]) for s in page["setups"] if s["matches"]],
+                         [("competitive", 1), ("solo_vs_2_ai", 1)])
+        status, out, _ = self.call("GET", "/v1/series?measure=matches&by=setup&over=none&days=7", key="read-key")
+        self.assertEqual((status, {p["key"]: p["value"] for p in out["points"]}), (200, {"competitive": 1, "solo_vs_2_ai": 1}))
+        for bad in ("measure=events&by=setup", "measure=freestyle_entries&by=setup", "by=setups", "by=setup&days=5",
+                    "by=setup&play=teams"):
+            status, out, _ = self.call("GET", "/v1/series?" + bad, key="read-key")
+            self.assertEqual(status, 400, bad)
+            self.assertTrue(out["error"])
+
+
+
+# ---------------------------------------------------------------- round 67: sessions, balance, quits, invites, errors,
+# backups, the Ask door end to end (Shombith, 2026-11-07)
+
+R67_EVENTS = ("session_started", "match_abandoned", "client_exception")
+
+
+def r67_extra():
+    """The round's new events the schema does not list yet (the game's half lands them in EVENT_SCHEMA.json)."""
+    have = set(A.schema_events(A.REPO_SCHEMA))
+    return sorted({"client_exception"} | {e for e in R67_EVENTS if e not in have})
+
+
+def write(path, content):
+    with open(path, "wb" if isinstance(content, bytes) else "w") as handle:
+        handle.write(content)
+
+
+def days_ago(n, hour=12):
+    from datetime import datetime, timedelta, timezone
+    d = datetime.now(timezone.utc).replace(hour=hour, minute=0, second=0, microsecond=0) - timedelta(days=n)
+    return int(d.timestamp() * 1000)
+
+
+class R67Case(StoreCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.store = S.Store(self.dir, A.schema_events(A.REPO_SCHEMA), r67_extra())
+
+    def dump(self):
+        return "\n".join(sqlite3.connect(self.store.agg_path).iterdump())
+
+
+class Sessions(R67Case):
+    def test_dau_wau_mau_and_session_lengths(self):
+        d10, d3 = days_ago(10), days_ago(3)
+        self.store.ingest([
+            ev("menu_ready", "zq-p1", d10), ev("menu_ready", "zq-p1", d3), ev("menu_ready", "zq-p2", d3 + 1000),
+            ev("session_started", "zq-p1", d3, session_id="s1", launch_kind="cold"),
+            ev("session_started", "zq-p1", d3 + 50, session_id="s1", launch_kind="cold"),       # sent again: once
+            ev("session_ended", "zq-p1", d3 + 600_000, session_id="s1", session_seconds=600, reason="quit"),
+            ev("session_started", "zq-p1", d3 + 3_600_000, session_id="s2", launch_kind="resume"),
+            ev("session_ended", "zq-p1", d3 + 3_720_000, session_id="s2", reason="pause"),      # no seconds: the gap
+            ev("session_started", "zq-p1", d3 + 7_200_000, session_id="s3", launch_kind="cold"),   # never ended
+            ev("session_started", "zq-p2", d3 + 1000, session_id="t1", launch_kind="cold"),
+        ])
+        self.store.rebuild_aggregates()
+        page = V.sessions(self.store.agg_path, "release", 30)
+        per = {r["day"]: r for r in page["per_day"]}
+        self.assertEqual((per[S.day_of(d3)]["dau"], per[S.day_of(d3)]["wau"], per[S.day_of(d3)]["mau"]), (2, 2, 2))
+        five = S.day_of(days_ago(5))
+        self.assertEqual((per[five]["dau"], per[five]["wau"], per[five]["mau"]), (0, 1, 1))   # p1's day 10 is 5 days back
+        self.assertEqual(per[S.day_of(days_ago(1))]["wau"], 2)
+        self.assertEqual(per[S.day_of(days_ago(0))]["wau"], 2)
+        self.assertEqual(per[S.day_of(days_ago(0))]["mau"], 2)
+        t = page["tiles"]
+        self.assertEqual((t["sessions"], t["ended"], t["sessions_per_player_day"]), (4, 2, 2.0))
+        self.assertEqual(t["median_session_min"], 6.0)          # 600 s and 120 s
+        self.assertEqual({r["bucket"]: r["sessions"] for r in page["lengths"]}["5-15 min"], 1)
+        self.assertEqual(sum(r["cold"] for r in page["sessions_per_day"]), 3)
+        self.assertEqual((t["wau"], t["mau"]), (2, 2))
+        ov = V.overview(self.store.agg_path, "release", 30)["sessions"]
+        self.assertEqual((ov["mau"], ov["sessions"]), (2, 4))
+        self.assertNotIn("zq-p", self.dump())
+
+
+class Balance(R67Case):
+    def seed(self):
+        rows = []
+        for i, (diff, intensity, won, place, score) in enumerate([
+                ("Easy", 1, True, 1, 900), ("Easy", 1, False, 2, 700), ("Hard", 3, False, 3, 400),
+                ("Hard", 3, False, 4, 300), (None, 2, True, None, None)]):
+            m = f"bm{i}"
+            extra = {"score": score, "placement": place, "players_in_match": 4, "behind_by": 0 if won else 100}
+            extra = {k: v for k, v in extra.items() if v is not None}
+            if diff:
+                extra["ai_difficulty"] = diff
+            rows += [started("zq-b", m, T0 + i * 600_000, intensity=intensity, ai=3),
+                     completed("zq-b", m, T0 + i * 600_000 + 100_000, player_won=won, **extra)]
+        self.store.ingest(rows)
+        self.store.rebuild_aggregates()
+
+    def test_score_placement_and_difficulty(self):
+        self.seed()
+        page = V.balance(self.store.agg_path, "release", 7)
+        self.assertEqual([r["ai_difficulty"] for r in page["by_difficulty"]], ["Easy", "Hard", "unknown"])
+        easy = page["by_difficulty"][0]
+        self.assertEqual((easy["plays"], easy["win_pct"], easy["avg_placement"], easy["avg_score"]), (2, 50.0, 1.5, 800.0))
+        self.assertEqual(page["by_difficulty"][1]["avg_behind_by"], 100.0)
+        cell = {(r["intensity"], r["ai_difficulty"]): r for r in page["grid"]}
+        self.assertEqual(cell[("3", "Hard")]["win_pct"], 0.0)
+        self.assertEqual({r["placement"]: r["plays"] for r in page["placements"]}, {1: 1, 2: 1, 3: 1, 4: 1})
+        self.assertEqual((page["tiles"]["scored"], page["tiles"]["with_difficulty"]), (4, 4))
+        out = V.series(self.store.agg_path, "score", "ai_difficulty", "none", "release", 7)
+        self.assertEqual([(p["key"], p["value"]) for p in out["points"]], [("Easy", 800.0), ("Hard", 350.0), ("unknown", None)])
+        self.assertEqual({p["key"]: p["value"] for p in V.series(
+            self.store.agg_path, "placement", "intensity", "none", "release", 7)["points"]}["3"], 3.5)
+        self.assertEqual(V.series(self.store.agg_path, "win_pct", "none", "none", "release", 7)["points"][0]["value"], 40.0)
+        players = V.series(self.store.agg_path, "players", "ai_difficulty", "none", "release", 7)
+        self.assertEqual({p["key"]: p["value"] for p in players["points"]}, {"Easy": 1, "Hard": 1, "unknown": 1})
+        self.assertTrue(any("2026-11-07" in n for n in out["notes"]))
+        with self.assertRaises(V.BadRequest):
+            V.series(self.store.agg_path, "events", "ai_difficulty", "none", "release", 7)
+
+
+class Quits(R67Case):
+    def test_only_builds_that_send_quits_count_and_the_chain_follows_a_fail(self):
+        f = days_ago(9)
+        new = dict(app_version="0.3.0")
+        self.store.ingest([
+            started("zq-q1", "old1", T0, app_version="0.2.1"),                     # an older build: not in the rate
+            ev("session_started", "zq-q1", T0 - 1000, session_id="x", launch_kind="cold", **new),
+            started("zq-q1", "n1", T0, **new), completed("zq-q1", "n1", T0 + 90_000, **new),
+            started("zq-q1", "n2", T0 + 200_000, **new),
+            ev("match_abandoned", "zq-q1", T0 + 245_000, match_id="n2", game_mode="SkimRace", reason="quit_to_menu",
+               elapsed_seconds=45, score_at_quit=10, **new),
+            # the chain: a fail, a quit 20 minutes later, then nothing for 7 days
+            ev("session_started", "zq-q2", f - 1000, session_id="y", launch_kind="cold", **new),
+            started("zq-q2", "f1", f, **new),
+            ev("repeated_game_fail", "zq-q2", f + 60_000, game_mode="SkimRace", fail_count=3, **new),
+            ev("match_abandoned", "zq-q2", f + 1_260_000, match_id="f1", reason="app_quit", elapsed_seconds=400, **new),
+            # a fail followed by a quit only after 2 hours: not part of the chain (negative control)
+            started("zq-q3", "g1", f, **new),
+            ev("repeated_game_fail", "zq-q3", f + 60_000, game_mode="Joust", fail_count=4, **new),
+            ev("match_abandoned", "zq-q3", f + 7_400_000, match_id="g1", reason="disconnect", elapsed_seconds=700, **new),
+            ev("menu_ready", "zq-q3", days_ago(6), **new),
+        ])
+        self.store.rebuild_aggregates()
+        page = V.quits(self.store.agg_path, "release", 30)
+        t = page["tiles"]
+        self.assertEqual((t["plays"], t["tracked_plays"], t["quits"]), (5, 4, 3))   # old1 is from a build that never says
+        self.assertEqual(t["quit_pct"], 75.0)
+        self.assertEqual({r["reason"]: r["quits"] for r in page["reasons"]},
+                         {"quit_to_menu": 1, "app_quit": 1, "disconnect": 1})
+        self.assertEqual({r["bucket"]: r["quits"] for r in page["by_elapsed"]}["30-60 s"], 1)
+        c = page["chain"]
+        self.assertEqual((c["failed"], c["quit_after"], c["quit_mature"], c["gone_7d"]), (2, 1, 1, 1))
+        self.assertEqual((c["failed_mature"], c["failed_gone_7d"]), (2, 1))          # q3 came back on day 6 before now
+        self.assertEqual(self.rows("SELECT COUNT(*) FROM events WHERE event='match_abandoned'")[0][0], 3)
+        out = V.series(self.store.agg_path, "abandon_pct", "game_mode", "none", "release", 30)
+        self.assertEqual({p["key"]: p["value"] for p in out["points"]}["SkimRace"], 75.0)
+        self.assertEqual(sqlite3.connect(self.store.agg_path).execute(
+            "SELECT abandoned FROM plays WHERE match_id='n1'").fetchone()[0], 0)
+        self.assertNotIn("zq-q", self.dump())
+
+
+class Invites(R67Case):
+    def test_an_invite_id_is_followed_exactly_and_older_invites_by_time(self):
+        j = days_ago(9)
+        minute = 60_000
+        self.store.ingest([
+            ev("party_invite_sent", "zq-a", j, target_id="zq-b", invite_id="inv1"),
+            ev("party_invite_received", "zq-b", j + 5_000, host_id="zq-a", invite_id="inv1"),
+            ev("party_joined", "zq-b", j + 20_000, invite_id="inv1", inviter_id="zq-a"),
+            started("zq-a", "pt1", j + 5 * minute, humans=2, ai=0), started("zq-b", "pt1", j + 5 * minute, humans=2, ai=0),
+            ev("menu_ready", "zq-b", days_ago(6)),                                   # back on day 3
+            ev("menu_ready", "zq-a", days_ago(8)),                                   # the inviter back on day 1
+            # an older build: no invite id, matched by time
+            ev("party_invite_sent", "zq-c", j, target_id="zq-d"),
+            ev("party_invite_received", "zq-d", j + 2 * minute, host_id="zq-c"),
+            ev("party_joined", "zq-d", j + 4 * minute),
+            # received 20 minutes after the send: too late to be this invite (negative control)
+            ev("party_invite_sent", "zq-e", j, target_id="zq-f"),
+            ev("party_invite_received", "zq-f", j + 20 * minute, host_id="zq-e"),
+            ev("party_joined", "zq-f", j + 21 * minute),
+        ])
+        self.store.rebuild_aggregates()
+        page = V.invites(self.store.agg_path, "release", 30)
+        self.assertEqual([s["count"] for s in page["funnel"]], [3, 2, 2, 1, 1])
+        self.assertEqual(page["funnel"][-1]["of"], 2)
+        method = {m["method"]: m for m in page["by_method"]}
+        self.assertEqual((method["invite_id"]["joined"], method["time"]["sent"], method["time"]["joined"]), (1, 2, 1))
+        roles = {r["role"]: r for r in page["roles"]}
+        self.assertEqual((roles["inviter"]["players"], roles["inviter"]["d1_pct"]), (2, 50.0))
+        self.assertEqual((roles["invitee"]["players"], roles["invitee"]["d7_pct"], roles["invitee"]["d1_pct"]), (2, 50.0, 0.0))
+        self.assertEqual(page["history"]["first_invite_id_day"], S.day_of(j))
+        dump = self.dump()
+        self.assertNotIn("zq-", dump)
+        self.assertNotIn("inv1", dump)
+
+
+class Errors(R67Case):
+    def test_errors_group_by_frame_count_players_and_keep_no_text(self):
+        boom = dict(exception_type="NullReferenceException", top_frame="CosmicShore.Game.VesselStatus.Update",
+                    scene="Minigame_SkimRace", message_hash="a1b2c3", message="Kestrel's vessel was null")
+        self.store.ingest([
+            ev("client_exception", "zq-e1", T0, count=3, **boom), ev("client_exception", "zq-e2", T0 + 1000, count=1, **boom),
+            ev("client_exception", "zq-e1", days_ago(20), exception_type="ArgumentException", top_frame="CosmicShore.UI.Menu.Open",
+               scene="Menu_Main", message_hash="ffff00", count=1, platform="Android"),
+        ])
+        self.store.rebuild_aggregates()
+        page = V.errors(self.store.agg_path, "release", 30)
+        t = page["tiles"]
+        self.assertEqual((t["events"], t["occurrences"], t["signatures"], t["players"], t["new_this_week"]), (3, 5, 2, 2, 1))
+        top = page["by_frame"][0]
+        self.assertEqual((top["top_frame"], top["occurrences"], top["players"], top["new"]),
+                         ("CosmicShore.Game.VesselStatus.Update", 4, 2, True))
+        self.assertFalse(page["by_frame"][1]["new"])
+        self.assertEqual({r["key"]: r["occurrences"] for r in page["by_platform"]}, {"WindowsPlayer": 4, "Android": 1})
+        dump = self.dump()
+        self.assertNotIn("Kestrel", dump)
+        self.assertNotIn("zq-e", dump)
+
+    def test_data_health_lists_this_rounds_events(self):
+        self.store.ingest([ev("session_started", "zq-h", T0, session_id="s", launch_kind="cold"),
+                           completed("zq-h", "m", T0, score=5)])
+        self.store.rebuild_aggregates()
+        listed = {(r["event"], r["field"]): r for r in V.health(self.store.agg_path, {}, 30)["new_events"]}
+        self.assertEqual(listed[("session_started", None)]["rows"], 1)
+        self.assertIsNotNone(listed[("session_started", None)]["last_received_ms"])
+        self.assertEqual(listed[("game_completed", "score")]["rows"], 1)
+        self.assertEqual(listed[("game_completed", "ai_difficulty")]["rows"], 0)
+        self.assertIsNone(listed[("match_abandoned", None)]["last_received_ms"])
+
+
+class Backups(R67Case):
+    def test_a_backup_is_a_snapshot_of_both_databases_and_restores(self):
+        import tarfile
+        self.store.ingest([started("zq-k", "m1", T0), completed("zq-k", "m1", T0 + 1000)])
+        self.store.rebuild_aggregates()
+        path, size = self.store.backup()
+        self.assertTrue(path.endswith(".tar.gz") and size > 0)
+        self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+        with tarfile.open(path) as tar:
+            self.assertEqual(sorted(tar.getnames()), ["aggregates.db", "events.db"])
+        self.store.ingest([started("zq-k", "m2", T0 + 5000)])        # after the backup: gone after a restore
+        target = tempfile.mkdtemp()
+        try:
+            write(os.path.join(target, "events.db"), "the database it replaces")
+            out = S.restore_backup(path, target)
+            self.assertEqual(out["restored"], ["aggregates.db", "events.db"] if out["restored"][0] == "aggregates.db"
+                             else ["events.db", "aggregates.db"])
+            db = sqlite3.connect(os.path.join(target, "events.db"))
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM events").fetchone()[0], 2)
+            db.close()
+            with open(os.path.join(out["kept_in"], "events.db")) as kept:
+                self.assertEqual(kept.read(), "the database it replaces")
+            # not one of ours: refused, nothing moved
+            bad = os.path.join(target, "bad.tar.gz")
+            with tarfile.open(bad, "w:gz") as tar:
+                tar.add(os.path.join(target, "events.db"), arcname="../events.db")
+            with self.assertRaises(S.Invalid):
+                S.restore_backup(bad, target)
+            broken = os.path.join(target, "broken.tar.gz")
+            junk = os.path.join(target, "junk")
+            write(junk, b"SQLite format 3\x00" + b"\xff" * 4000)
+            with tarfile.open(broken, "w:gz") as tar:
+                tar.add(junk, arcname="events.db")
+            with self.assertRaises(S.Invalid):
+                S.restore_backup(broken, target)
+            db = sqlite3.connect(os.path.join(target, "events.db"))
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM events").fetchone()[0], 2)    # still the restored one
+            db.close()
+        finally:
+            shutil.rmtree(target)
+
+    def test_the_newest_fourteen_are_kept(self):
+        folder = os.path.join(self.dir, "backups")
+        os.makedirs(folder)
+        for i in range(15):
+            write(os.path.join(folder, f"froglet-analytics-20260101-0000{i:02d}-000000.tar.gz"), "x")
+        write(os.path.join(folder, "events-20260101.db"), "an older kind: left alone")
+        path, _ = self.store.backup()
+        kept = sorted(f for f in os.listdir(folder) if f.endswith(".tar.gz"))
+        self.assertEqual(len(kept), 14)
+        self.assertEqual(kept[-1], os.path.basename(path))
+        self.assertNotIn("froglet-analytics-20260101-000000-000000.tar.gz", kept)
+        self.assertNotIn("froglet-analytics-20260101-000001-000000.tar.gz", kept)
+        self.assertTrue(os.path.exists(os.path.join(folder, "events-20260101.db")))
+        facts = self.store.health_facts()["backups"]
+        self.assertEqual((facts["local_kept"], facts["local_file"]), (14, os.path.basename(path)))
+        self.assertIn("Oracle", facts["off_vm"])
+
+
+def verify_sigv4(method, path, query, headers, body, secrets_by_access):
+    """An S3 server's side of Signature Version 4, written apart from the server's signer: rebuild the canonical
+    request from what arrived and compare. Returns None when it holds, else the reason."""
+    import hashlib
+    import hmac as hm
+    from urllib.parse import parse_qsl, quote
+    auth = headers.get("Authorization") or ""
+    m = re.match(r"AWS4-HMAC-SHA256 Credential=([^/]+)/(\d{8})/([^/]+)/s3/aws4_request, "
+                 r"SignedHeaders=([a-z0-9;-]+), Signature=([0-9a-f]{64})$", auth)
+    if not m:
+        return "no signature"
+    access, day, region, names, signature = m.groups()
+    if access not in secrets_by_access:
+        return "unknown access key"
+    if hashlib.sha256(body).hexdigest() != headers.get("x-amz-content-sha256"):
+        return "the body does not match its hash"
+    canon_headers = "".join(f"{n}:{(headers.get(n) or '').strip()}\n" for n in names.split(";"))
+    canon_query = "&".join(f"{quote(k, safe='-_.~')}={quote(v, safe='-_.~')}" for k, v in sorted(parse_qsl(query, True)))
+    canonical = "\n".join([method, path, canon_query, canon_headers, names, headers["x-amz-content-sha256"]])
+    amz_date = headers.get("x-amz-date") or ""
+    scope = f"{day}/{region}/s3/aws4_request"
+    string = "\n".join(["AWS4-HMAC-SHA256", amz_date, scope, hashlib.sha256(canonical.encode()).hexdigest()])
+    k = hm.new(("AWS4" + secrets_by_access[access]).encode(), day.encode(), hashlib.sha256).digest()
+    for part in (region, "s3", "aws4_request"):
+        k = hm.new(k, part.encode(), hashlib.sha256).digest()
+    expected = hm.new(k, string.encode(), hashlib.sha256).hexdigest()
+    return None if hm.compare_digest(expected, signature) else "signature mismatch"
+
+
+class BucketUpload(unittest.TestCase):
+    def setUp(self):
+        from http.server import BaseHTTPRequestHandler
+        stored = self.stored = {}
+
+        class FakeS3(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_PUT(self):
+                body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                path, _, query = self.path.partition("?")
+                why = verify_sigv4("PUT", path, query, {k: v for k, v in self.headers.items()} | {
+                    k.lower(): v for k, v in self.headers.items()}, body, {"AKFROGLET": "right-secret"})
+                if why:
+                    self.send_response(403)
+                    self.end_headers()
+                    self.wfile.write(why.encode())
+                    return
+                stored[path] = body
+                self.send_response(200)
+                self.end_headers()
+
+        self.s3 = ThreadingHTTPServer(("127.0.0.1", 0), FakeS3)
+        threading.Thread(target=self.s3.serve_forever, daemon=True).start()
+        self.env = {"FA_BACKUP_ENDPOINT": f"http://127.0.0.1:{self.s3.server_address[1]}", "FA_BACKUP_BUCKET": "fa-backups",
+                    "FA_BACKUP_ACCESS_KEY": "AKFROGLET", "FA_BACKUP_SECRET_KEY": "right-secret"}
+
+    def tearDown(self):
+        self.s3.shutdown()
+        self.s3.server_close()
+
+    def test_the_signer_matches_aws_published_example(self):
+        h = A.sigv4_headers("GET", "https://examplebucket.s3.amazonaws.com/test.txt", {"range": "bytes=0-9"},
+                            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "AKIAIOSFODNN7EXAMPLE",
+                            "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "us-east-1", "20130524T000000Z")
+        self.assertTrue(h["authorization"].endswith(
+            "Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41"))
+
+    def test_a_signed_put_is_accepted_and_a_wrong_secret_is_refused(self):
+        settings = A.backup_settings(self.env)
+        self.assertEqual(settings["region"], "us-ashburn-1")
+        self.assertEqual(A.s3_put(settings, "froglet-analytics/x.tar.gz", b"snapshot"), 200)
+        self.assertEqual(self.stored["/fa-backups/froglet-analytics/x.tar.gz"], b"snapshot")
+        wrong = dict(settings, secret="wrong-secret")
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            A.s3_put(wrong, "froglet-analytics/y.tar.gz", b"snapshot")
+        self.assertEqual(caught.exception.code, 403)
+        self.assertNotIn("/fa-backups/froglet-analytics/y.tar.gz", self.stored)
+        self.assertIsNone(A.backup_settings(dict(self.env, FA_BACKUP_SECRET_KEY="")))   # a key missing: dormant
+
+    def test_the_nightly_backup_uploads_only_when_the_bucket_is_set(self):
+        work = tempfile.mkdtemp()
+        app = A.App(dict(A.DEFAULTS, data_dir=work, extra_events=r67_extra()))
+        saved = {k: os.environ.get(k) for k in self.env}
+        try:
+            for k in self.env:
+                os.environ.pop(k, None)
+            out = app.backup()
+            self.assertIsNone(out["uploaded"])
+            self.assertEqual(self.stored, {})
+            os.environ.update(self.env)
+            out = app.backup()
+            self.assertEqual(out["uploaded"], "fa-backups/froglet-analytics/" + os.path.basename(out["file"]))
+            self.assertEqual(len(self.stored), 1)
+            facts = json.dumps(app.store.health_facts())
+            self.assertIn("fa-backups", facts)
+            self.assertNotIn("right-secret", facts)
+            self.assertNotIn("AKFROGLET", facts)
+            app.store.mark_job("backup", "made a minute ago")
+            real = C._client
+            C._client = lambda: (None, "Claude is off in this test")             # a test never asks the real Claude
+            try:
+                self.assertIn("skipped", json.dumps(app.nightly()["backup"]))      # the 04:40 timer made tonight's
+            finally:
+                C._client = real
+        finally:
+            for k, v in saved.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+            app.store.db.close()
+            shutil.rmtree(work)
+
+
+class R67Http(unittest.TestCase):
+    tearDown = Http.tearDown
+    call = Http.call
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        config = dict(A.DEFAULTS, data_dir=self.dir, ingest_keys=["in-key"], read_keys={"ian": "read-key"},
+                      admin_keys={"admin": "admin-key"}, extra_events=r67_extra())
+        self.app = A.App(config)
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), A.make_handler(self.app))
+        self.base = f"http://127.0.0.1:{self.server.server_address[1]}"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            ev("session_started", "zq-player-7", T0, session_id="s", launch_kind="cold"),
+            started("zq-player-7", "m1", T0), completed("zq-player-7", "m1", T0 + 60_000, score=12, placement=1,
+                                                       ai_difficulty="Medium"),
+            ev("client_exception", "zq-player-7", T0, exception_type="E", top_frame="A.B.C", message_hash="h", count=1)]})
+        self.app.rebuild()
+
+    def test_the_new_pages_answer_readers_and_refuse_bad_input(self):
+        for path in ("/v1/sessions", "/v1/balance", "/v1/quits", "/v1/invites", "/v1/errors"):
+            status, page, _ = self.call("GET", path + "?days=7", key="read-key")
+            self.assertEqual(status, 200, path)
+            self.assertNotIn("zq-player-7", json.dumps(page), path)
+            self.assertEqual(self.call("GET", path)[0], 401, path)
+            self.assertEqual(self.call("GET", path + "?days=5", key="read-key")[0], 400, path)
+            self.assertEqual(self.call("GET", path + "?era=nope", key="read-key")[0], 400, path)
+        status, page, _ = self.call("GET", "/v1/balance?days=7&play=solo_vs_ai", key="read-key")
+        self.assertEqual((status, page["by_difficulty"][0]["ai_difficulty"]), (200, "Medium"))
+        status, page, _ = self.call("GET", "/v1/errors?days=7", key="read-key")
+        self.assertEqual(page["tiles"]["players"], 1)
+        status, out, _ = self.call("GET", "/v1/series?measure=score&by=ai_difficulty&over=none&days=7", key="read-key")
+        self.assertEqual((status, out["points"][0]["value"]), (200, 12.0))
+        for bad in ("measure=abandon_pcts", "measure=score&by=difficulty"):
+            self.assertEqual(self.call("GET", "/v1/series?" + bad, key="read-key")[0], 400, bad)
+        status, health, _ = self.call("GET", "/v1/health?days=30", key="read-key")
+        self.assertEqual(status, 200)
+        self.assertIn("Oracle", health["backups"]["off_vm"])
+        self.assertTrue(any(r["event"] == "session_started" and r["rows"] == 1 for r in health["new_events"]))
+
+    def test_ask_and_query_studio_send_claude_no_player_id_end_to_end(self):
+        sent = []
+
+        def fake_structured(client, model, effort, system, user, schema, max_tokens=4000):
+            sent.append(system + "\n" + user)
+            if schema is C.SQL_SCHEMA:
+                return {"sql": "SELECT ai_difficulty, COUNT(*) AS plays, AVG(score) AS score FROM plays GROUP BY 1",
+                        "can_answer": True, "why_not": ""}, None
+            return {"answer": "Medium: 1 play, score 12.", "caveat": ""}, None
+
+        real = (C._client, C._structured)
+        C._client, C._structured = (lambda: (object(), None)), fake_structured
+        try:
+            status, answer, _ = self.call("POST", "/v1/ask", {"question": "How do players score by AI difficulty?"},
+                                          key="read-key")
+            # Query Studio's Ask: the same door, then the SQL it wrote run again through /v1/query
+            status2, ran, _ = self.call("POST", "/v1/query", {"sql": answer["sql"]}, key="admin-key")
+        finally:
+            C._client, C._structured = real
+        self.assertEqual((status, answer["rows"]), (200, [["Medium", 1, 12.0]]))
+        self.assertEqual((status2, ran["rows"]), (200, [["Medium", 1, 12.0]]))
+        self.assertEqual(len(sent), 2)
+        text = "\n".join(sent)
+        self.assertIn("client_errors", text)                 # the new tables are in the schema Claude is shown
+        for forbidden in ("distinct_id", "zq-player-7", "player_id"):
+            self.assertNotIn(forbidden, text, forbidden)
+        # the ids exist in events.db: the door is what keeps them out (negative control of the assertion itself)
+        self.assertEqual(self.app.store.db.execute("SELECT COUNT(*) FROM events WHERE distinct_id='zq-player-7'").fetchone()[0], 4)
+        self.assertNotIn("zq-player-7", "\n".join(sqlite3.connect(self.app.agg).iterdump()))
+
+
+
+class ClaudeWithoutAKey(unittest.TestCase):
+    """2026-11-07: the VM's self-update refused #1789 because its venv has the anthropic SDK and no key. Newer SDKs build
+    a client without a key and raise TypeError only when the request is sent, which nothing caught, so the nightly job
+    died before marking itself done. Each of the three guards is held here on its own."""
+
+    def setUp(self):
+        import types
+        self.saved = sys.modules.get("anthropic")
+
+        class _Err(Exception):
+            pass
+
+        class Keyless:
+            api_key = None
+            auth_token = None
+
+            class beta:
+                class messages:
+                    @staticmethod
+                    def create(**_):
+                        raise TypeError("Could not resolve authentication method")
+
+        fake = types.ModuleType("anthropic")
+        fake.Anthropic = Keyless
+        fake.RateLimitError = fake.APIStatusError = fake.APIConnectionError = _Err
+        sys.modules["anthropic"] = fake
+        self.keyless = Keyless
+
+    def tearDown(self):
+        if self.saved is None:
+            sys.modules.pop("anthropic", None)
+        else:
+            sys.modules["anthropic"] = self.saved
+
+    def test_a_client_without_a_key_is_off(self):
+        client, why = C._client()
+        self.assertIsNone(client)
+        self.assertIn("ANTHROPIC_API_KEY", why)
+
+    def test_an_unexpected_error_from_the_sdk_is_a_reason_not_a_crash(self):
+        parsed, why = C._structured(self.keyless(), "m", "low", "sys", "user", {"type": "object"})
+        self.assertIsNone(parsed)
+        self.assertIn("TypeError", why)
+
+    def test_the_nightly_job_survives_a_failing_read(self):
+        tmp = tempfile.mkdtemp()
+        app = A.App(dict(A.DEFAULTS, data_dir=tmp, extra_events=r67_extra()))
+        real = C.write_digest
+
+        def boom(*_):
+            raise TypeError("Could not resolve authentication method")
+        C.write_digest = boom
+        try:
+            out = app.nightly()
+            self.assertIn("TypeError", out["digest"]["author"])
+            self.assertTrue(app.store.job("nightly"))       # marked done, so it does not rerun every few minutes
+        finally:
+            C.write_digest = real
+            app.store.db.close()
+            shutil.rmtree(tmp)
+
+
+# ---------------------------------------------------------------- the web build, devices and build=all (2026-11-07)
+
+def on(device_props, event_fn, *args, **kw):
+    """An event from a build that sends the new envelope (device_props: platform, device, os...), or an older one."""
+    out = event_fn(*args, **kw)
+    out["properties"].update(device_props)
+    return out
+
+
+IPHONE = {"platform": "IPhonePlayer", "device": "iphone", "os": "iOS 17.1", "device_model": "iPhone15,2"}
+IPAD = {"platform": "IPhonePlayer", "device": "ipad", "os": "iPadOS 17.1", "device_model": "iPad13,1"}
+OLD_IOS = {"platform": "IPhonePlayer"}                       # a build from before device was sent
+ANDROID_TABLET = {"platform": "Android", "device": "android_tablet", "os": "Android OS 14 / API-34"}
+WEB_MOBILE = {"platform": "WebGLPlayer", "device": "web_mobile", "build_kind": "web"}
+OLD_WEB = {"platform": "WebGLPlayer"}                        # no build_kind, no device: read as web from the platform
+
+
+class DeviceAndWeb(StoreCase):
+    def seed(self):
+        t = T0
+        batch = [on(IPHONE, started, "a1", "m1", t), on(IPHONE, started, "a1", "m2", t + 1000),
+                 on(IPAD, started, "a2", "m3", t), on(OLD_IOS, started, "a3", "m4", t),
+                 on(IPHONE, started, "a8", "m5", t), on(IPAD, started, "a8", "m6", t + 1000),   # one player, two devices
+                 on(ANDROID_TABLET, started, "a4", "m7", t), on(WEB_MOBILE, started, "a5", "m8", t),
+                 on(OLD_WEB, started, "a6", "m9", t),
+                 started("a7", "m10", t), on({"platform": "WindowsEditor"}, started, "a7", "m11", t)]  # release + editor
+        self.assertEqual(self.store.ingest(batch)["accepted"], len(batch))
+        self.store.rebuild_aggregates()
+
+    def test_the_build_and_device_come_from_the_client_else_from_the_platform(self):
+        self.assertEqual(S.build_kind_of({"platform": "WebGLPlayer"}), "web")
+        self.assertEqual(S.build_kind_of({"platform": "WebGLPlayer", "build_kind": "development"}), "development")
+        self.assertEqual(S.build_kind_of({"platform": "WindowsEditor"}), "editor")         # the old rules still hold
+        self.assertEqual(S.build_kind_of({"platform": "Android", "app_version": "1.0-port"}), "port")
+        self.assertEqual(S.device_of(IPAD), "ipad")
+        self.assertEqual(S.device_of(OLD_IOS), "ios")                      # old iOS: iPhone or iPad is not known
+        self.assertEqual(S.device_of(OLD_WEB), "web")
+        self.assertEqual(S.device_of({"platform": "Android"}), "android")
+        self.assertEqual(S.device_of({"platform": "OSXEditor"}), "mac")
+        self.assertEqual(S.device_of({"platform": "PS5"}), "other")
+        self.assertEqual(S.device_of({"platform": "IPhonePlayer", "device": "toaster"}), "ios")   # a bad value is not kept
+        self.assertEqual(S.os_family_of({"os": "Android OS 14 / API-34"}), "Android 14")
+        self.assertEqual(S.os_family_of({}), "not recorded")
+        self.assertEqual(S.os_family_of({"os": "iPhone OS 17_1"}), "iOS 17")            # a phone's browser (WebGL)
+        self.assertEqual(S.os_family_of({"os": "Mac OS X 10_15_7"}), "macOS 10.15")
+        self.assertEqual(S.os_family_of({"os": "PlayStation 5"}), "other")
+        for group, members in S.DEVICE_GROUPS.items():
+            self.assertTrue(set(members) <= set(S.DEVICES), group)
+
+    def test_older_rows_get_a_device_and_old_webgl_rows_become_web_once(self):
+        self.store.ingest([on(OLD_WEB, started, "w1", "m1", T0), on(IPAD, started, "w2", "m2", T0)])
+        # make the database look like one from before the device column (the column empty, WebGL read as release)
+        self.store.db.execute("UPDATE events SET device = NULL")
+        self.store.db.execute("UPDATE events SET build_kind = 'release' WHERE platform = 'WebGLPlayer'")
+        self.store.db.execute("DELETE FROM store_meta WHERE key = 'devices_filled'")
+        self.store.db.commit()
+        self.store.db.close()
+        self.store = S.Store(self.dir, A.schema_events(A.REPO_SCHEMA), ["client_exception"])
+        self.assertEqual(sorted(self.rows("SELECT distinct_id, device, build_kind FROM events")),
+                         [("w1", "web", "web"), ("w2", "ipad", "release")])
+        # negative control: once done it is not redone (a row changed by hand afterwards stays as it is)
+        self.store.db.execute("UPDATE events SET device = NULL WHERE distinct_id = 'w2'")
+        self.store.db.commit()
+        self.store.db.close()
+        self.store = S.Store(self.dir, A.schema_events(A.REPO_SCHEMA), ["client_exception"])
+        self.assertEqual(self.rows("SELECT device FROM events WHERE distinct_id = 'w2'"), [(None,)])
+
+    def test_the_device_filter_counts_each_player_once_inside_a_group(self):
+        self.seed()
+        agg = self.store.agg_path
+        ipad = V.overview(agg, "release", 7, device="ipad")
+        self.assertEqual((ipad["tiles"]["matches"], ipad["tiles"]["players"], ipad["device"]), (2, 2, "ipad"))
+        ios = V.overview(agg, "release", 7, device="ios")
+        self.assertEqual(ios["tiles"]["matches"], 6)
+        # a1, a2, a3 and a8: a8 flew an iPhone and an iPad and is ONE player of iOS (negative control: summing the
+        # devices would say 5)
+        self.assertEqual(ios["tiles"]["players"], 4)
+        by_device = {r["device"]: r["players"] for r in V.overview(agg, "release", 7)["marketing"]["by_device"]}
+        self.assertEqual(by_device["iphone"] + by_device["ipad"] + by_device["ios"], 5)
+        self.assertEqual(V.overview(agg, "release", 7, device="tablet")["tiles"]["players"], 3)    # a2, a4, a8
+        self.assertEqual(V.overview(agg, "release", 7, device="phone")["tiles"]["players"], 2)     # a1, a8
+        self.assertEqual(V.overview(agg, "release", 7, device="android_phone")["tiles"]["players"], 0)
+        self.assertEqual(V.overview(agg, "release", 7)["tiles"]["players"], 6)   # a5 and a6 are on the web build
+        self.assertIn("business", ipad["unfiltered"])                 # crystals carry no device: listed, not filtered
+        self.assertNotIn("business", V.overview(agg, "release", 7)["unfiltered"])
+        out = V.series(agg, "matches", "device", "none", "release", 7)
+        self.assertEqual({p["key"]: p["value"] for p in out["points"]},
+                         {"iphone": 3, "ipad": 2, "ios": 1, "android_tablet": 1, "windows": 1})
+        self.assertTrue(any("not recorded" in n for n in out["notes"]))
+        players = V.series(agg, "players", "device", "none", "release", 7)
+        self.assertEqual({p["key"]: p["value"] for p in players["points"]}["ipad"], 2)
+        os_split = {p["key"]: p["value"] for p in V.series(agg, "matches", "os", "none", "release", 7)["points"]}
+        self.assertEqual((os_split["iOS 17"], os_split["iPadOS 17"], os_split["not recorded"]), (3, 2, 2))
+        with self.assertRaises(V.BadRequest):
+            V.series(agg, "players", "os", "none", "release", 7)    # players are not counted by OS
+        with self.assertRaises(V.BadRequest):
+            V.overview(agg, "release", 7, device="toaster")
+        for page in (V.retention, V.matches, V.cohorts, V.sessions, V.balance, V.quits, V.invites, V.errors,
+                     V.freestyle):
+            self.assertEqual(page(agg, "release", 7, "all", None, "ipad")["device"], "ipad", page.__name__)
+
+    def test_the_web_build_and_build_all_add_up_without_counting_anyone_twice(self):
+        self.seed()
+        agg = self.store.agg_path
+        web = V.overview(agg, "web", 7)
+        self.assertEqual((web["tiles"]["matches"], web["tiles"]["players"]), (2, 2))      # a5 (sent web) and a6 (WebGL)
+        kinds = {b: V.overview(agg, b, 7)["tiles"] for b in S.BUILD_KINDS}
+        every = V.overview(agg, "all", 7)["tiles"]
+        self.assertEqual(every["matches"], sum(t["matches"] for t in kinds.values()))   # rows add up, no kind dropped
+        self.assertEqual(every["matches"], 11)
+        # a7 played on release AND in the editor: one player of All (negative control: the kinds sum to one more)
+        self.assertEqual(sum(t["players"] for t in kinds.values()), every["players"] + 1)
+        self.assertEqual(every["players"], 8)
+        self.assertEqual(V.series(agg, "players", "none", "none", "all", 7)["points"][0]["value"], 8)
+        split = V.series(agg, "matches", "build_kind", "none", "all", 7)
+        self.assertEqual({p["key"]: p["value"] for p in split["points"]}, {"release": 8, "web": 2, "editor": 1})
+        health = {r["build"]: r["starts"] for r in V.overview(agg, "all", 7)["match_health_by_build"]}
+        self.assertEqual(sum(health.values()), 11)                         # by build: each play under its own kind
+        self.assertEqual(V.audience(agg, "all", 7)["funnel"][0]["players"], 8)
+        self.assertEqual(V.retention(agg, "all", 7)["build"], "all")
+        h = V.health(agg, self.store.health_facts(), 30)
+        builds = {r["build_kind"]: r["events"] for r in h["events_by_build"]}
+        self.assertEqual((builds["web"], builds["editor"], builds["port"]), (2, 1, 0))      # every kind, zeros listed
+        self.assertEqual({r["device"] for r in h["events_by_device"]},
+                         {"iphone", "ipad", "ios", "android_tablet", "web_mobile", "web", "windows"})
+        with self.assertRaises(V.BadRequest):
+            V.overview(agg, "mobile", 7)
+
+    def test_the_device_tables_hold_no_player_ids(self):
+        self.seed()
+        db = sqlite3.connect(self.store.agg_path)
+        for table in ("player_counts_device", "active_rolling_device", "session_players_device", "cohort_weeks_device",
+                      "cohort_days_device", "plays", "daily_events"):
+            dump = json.dumps(db.execute(f"SELECT * FROM {table}").fetchall())
+            for player in ("a1", "a2", "a8"):
+                self.assertNotIn(f'"{player}"', dump, table)
+        self.assertGreater(db.execute("SELECT COUNT(*) FROM player_counts_device WHERE device='ios'").fetchone()[0], 0)
+        db.close()
+
+    def test_saved_views_and_notebooks_keep_a_device_and_build_all(self):
+        made = self.store.save_preset({"name": "iPad", "page": "overview", "chart_id": "overview.series", "series": True,
+                                       "settings": {"measure": "matches"}, "filters": {"build": "all", "device": "ipad"}},
+                                      "ian")
+        self.assertEqual(made["filters"], {"build": "all", "device": "ipad"})
+        for bad in ({"device": "toaster"}, {"build": "mobile"}):
+            with self.assertRaises(S.Invalid):
+                self.store.save_preset({"name": "x", "page": "overview", "chart_id": "overview.series",
+                                        "settings": {}, "filters": bad}, "ian")
+        import analytics_notebook as NB
+        self.assertEqual(NB.check_filters({"device": "tablet", "build": "all"}), {"device": "tablet", "build": "all"})
+        with self.assertRaises(NB.Refused):
+            NB.check_filters({"device": "toaster"})
+        self.seed()
+        out = NB.run_series(self.store, self.store.agg_path, {"measure": "matches", "by": "none", "over": "none"},
+                            {"build": "all", "days": 7, "device": "ipad"})
+        self.assertEqual(out["points"][0]["value"], 2)
+
+
+class DeviceHttp(unittest.TestCase):
+    tearDown = Http.tearDown
+    call = Http.call
+
+    def setUp(self):
+        Http.setUp(self)
+        self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            on(IPAD, started, "d1", "m1", T0), on(OLD_WEB, started, "d2", "m2", T0), started("d3", "m3", T0)]})
+        self.app.rebuild()
+
+    def preflight(self, path, origin):
+        request = urllib.request.Request(self.base + path, method="OPTIONS")
+        request.add_header("Origin", origin)
+        request.add_header("Access-Control-Request-Method", "POST")
+        with urllib.request.urlopen(request) as response:
+            return response.headers
+
+    def test_every_read_route_takes_device_and_build_all_and_refuses_bad_values(self):
+        routes = ("/v1/overview", "/v1/retention", "/v1/matches", "/v1/health", "/v1/audience", "/v1/ftue",
+                  "/v1/economy", "/v1/social", "/v1/cohorts", "/v1/playtypes", "/v1/freestyle", "/v1/sessions",
+                  "/v1/balance", "/v1/quits", "/v1/invites", "/v1/errors", "/v1/people", "/v1/eras",
+                  "/v1/series?measure=players&by=device&over=week",
+                  "/v1/series?measure=matches&by=os&over=none", "/v1/dashboards/tile?source=builtin:new_players")
+        for path in routes:
+            sep = "&" if "?" in path else "?"
+            for good in ("device=ipad", "device=web", "build=all", "build=web", "build=all&device=tablet"):
+                status, page, _ = self.call("GET", path + sep + good + "&days=7", key="admin-key")
+                self.assertEqual(status, 200, (path, good, page))
+            for bad in ("device=toaster", "device=iPad", "build=mobile"):
+                self.assertEqual(self.call("GET", path + sep + bad, key="admin-key")[0], 400, (path, bad))
+        page = self.call("GET", "/v1/audience?days=7&device=ipad", key="read-key")[1]
+        self.assertEqual(page["unfiltered"], ["page"])                          # the Players page has no device yet
+        page = self.call("GET", "/v1/overview?days=7&device=ipad", key="read-key")[1]
+        self.assertEqual((page["tiles"]["matches"], page["device"]), (1, "ipad"))
+        page = self.call("GET", "/v1/overview?days=7&build=web", key="read-key")[1]
+        self.assertEqual(page["tiles"]["matches"], 1)
+        people = self.call("GET", "/v1/people?days=7&device=ipad&build=all", key="admin-key")[1]
+        self.assertEqual([(p["distinct_id"], p["devices"]) for p in people["people"]], [("d1", ["ipad"])])
+        status, cmp, _ = self.call("GET", "/v1/eras/compare?a=pre_beta&b=posthog&build=all&device=ios", key="read-key")
+        self.assertEqual((status, cmp["device"]), (200, "ios"))
+
+    def test_the_toybox_origin_may_send_events_but_never_read(self):
+        toybox = "https://play.froglet.games"
+        headers = self.preflight("/batch/", toybox)
+        self.assertEqual(headers.get("Access-Control-Allow-Origin"), toybox)
+        self.assertIn("POST", headers.get("Access-Control-Allow-Methods"))
+        self.assertNotIn("GET", headers.get("Access-Control-Allow-Methods"))
+        self.assertEqual(self.preflight("/v1/batch", "https://www.froglet.games").get("Access-Control-Allow-Origin"),
+                         "https://www.froglet.games")
+        status, out, headers = self.call("POST", "/batch/", {"api_key": "in-key", "batch": [
+            on(WEB_MOBILE, started, "d4", "m4", T0)]}, origin=toybox)
+        self.assertEqual((status, out["accepted"], headers.get("Access-Control-Allow-Origin")), (200, 1, toybox))
+        # negative controls: the Toybox origin gets no CORS on a read route (preflight or answer) ...
+        self.assertIsNone(self.preflight("/v1/overview", toybox).get("Access-Control-Allow-Origin"))
+        _, _, headers = self.call("GET", "/v1/overview?days=7", key="read-key", origin=toybox)
+        self.assertIsNone(headers.get("Access-Control-Allow-Origin"))
+        # ... an unknown origin gets none anywhere ...
+        self.assertIsNone(self.preflight("/batch/", "https://evil.example").get("Access-Control-Allow-Origin"))
+        _, _, headers = self.call("POST", "/batch/", {"api_key": "in-key", "batch": []}, origin="https://evil.example")
+        self.assertIsNone(headers.get("Access-Control-Allow-Origin"))
+        # ... and the console's read origin still reads, as before
+        _, _, headers = self.call("GET", "/v1/overview?days=7", key="read-key", origin="https://dash.example")
+        self.assertEqual(headers.get("Access-Control-Allow-Origin"), "https://dash.example")
+        self.assertIn("ingest_origins", A.LIVE_FIELDS)
+        self.assertEqual(A.DEFAULTS["ingest_origins"], ["https://play.froglet.games", "https://www.froglet.games"])
 
 
 if __name__ == "__main__":

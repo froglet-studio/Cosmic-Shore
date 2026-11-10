@@ -24,13 +24,18 @@ the set's Unassigned Sight is now only a tester's override for an empty seat. Th
 in a scrolled column. FLUME (18) has its sight too: `FlumeSight` traces every live Meerkat tunnel mouth to mouth
 (`MeerkatSolitonExecutor.Live`, read only). Hand tests: "The callsign pilots" in the checklist.
 
+**Built 2026-11-07 ([`INVENTORY.md`](INVENTORY.md) §3).** Every pilot is now a unique person (`PilotRecord`) in the
+account's crew: a name, human plus two animals, a faction, a homeworld, a backstory and a growing chronicle, on one
+callsign. A squad seat and the Hangar seat hold the person; the match still plays the callsign.
+
 **Decided since (Garrett, 2026-10-28): a pilot is a person layered on a callsign.** The eighteen `PilotSO`s above are
 the **callsigns**: the ability and the sight, shared by every crew. A pilot in your Ark crew is a unique person (name,
 story, race, faction) who carries one callsign, so two crews can each have a VOLT who are different people. A crew
 holds **at most one pilot of each callsign**. Recruiting a pilot adds their faction's jobs to what your crew finds at
 port, seating them in a squad brings their sight, and promoting one to **captain** is how you join a faction. Full
-rules: [`Docs/Voyages/VOYAGES.md`](../Voyages/VOYAGES.md) §6.2.1. Not built yet: the person record, factions and
-captains. Today a squad seat still holds a callsign `PilotSO` directly.
+rules: [`Docs/Voyages/VOYAGES.md`](../Voyages/VOYAGES.md) §6.2.1. The person record, founding factions and
+the captain were built 2026-11-07 ([`INVENTORY.md`](INVENTORY.md)). The backend faction roster and the UI to promote a
+captain are not built yet.
 
 **What this replaces:**
 - `Docs/PILOTS_AND_ARTIFACTS.md` §2 (2026-10-12), where a pilot swaps part of a vessel's kit. That section now points

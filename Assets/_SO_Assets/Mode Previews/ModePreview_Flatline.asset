@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Flatline
+  m_EditorClassIdentifier:
+  Mode: 84
+  Notes: 'The Flatline cell at each intensity - scattered panes, then tunnels, cages, and the maze. OPEN-ENDED - it scores on rounds and cord strikes on rival pilots and a solo preview has none;
+    what it teaches is the panes, the cords and the ring. Vessel pinned to BrittleStar(16).'
+  PreviewCell: {fileID: 11400000, guid: 70fe26f3a460e5d28696ff928a8c322a, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 70fe26f3a460e5d28696ff928a8c322a, type: 2}
+  - {fileID: 11400000, guid: 2494d47f3aa820ecaf65dfdeca1cf6a6, type: 2}
+  - {fileID: 11400000, guid: afe4d65212ebee5afb292696582fde64, type: 2}
+  - {fileID: 11400000, guid: 1380b1c3c17b7b823750c68e306fd4ab, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 16
+  ObjectiveText: Cut a rival through a pane with your cords
+  ObjectiveMetric: 8
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 680
+  SpawnFormation: 0
+  SpawnPoints: []

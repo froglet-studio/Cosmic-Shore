@@ -1,5 +1,7 @@
 # Rhino Ramp Boost + Speed-Tunnel Quasi Dolly Zoom
 
+> **2026-11-07: both the Rhino and the Swordfish fly this ramp.** The Rhino split in two (`SWORDFISH.md`): the Swordfish took the sword, the Rhino kept the plough, and both kept the same `RhinoRampBoostAction` asset, Ramp Spool and Momentum.
+
 > **2026-10-16:** every peer now grades the ramp from `InputStatus`' replicated sticks (replicas
 > used to hold `IsBoosting` + ×16.8 forever after the first ramp); Time is read live; climb/bleed
 > compares against `VesselTransformer.TrackedSpeed`. The AI now ramps (`RampBoostAIPolicySO`).

@@ -83,10 +83,14 @@ namespace CosmicShore.Editor.Froglet
     {
         const int TimeoutMs = 120000;
 
+        /// <summary>Long enough for a push of large assets or a first fetch over a slow line.</summary>
+        public const int NetworkTimeoutMs = 15 * 60 * 1000;
+
         static string _repoRoot;
         static string _topLevel;
         static string _projectPrefix;
         static int _available = -1; // -1 unknown, 0 no, 1 yes
+        static string _gitExe;
 
         /// <summary>The folder that contains <c>Assets/</c>. Also the working directory git runs in.</summary>
         public static string RepoRoot
@@ -186,7 +190,8 @@ namespace CosmicShore.Editor.Froglet
             return p.Length == 0 ? null : p;
         }
 
-        /// <summary>Is a usable <c>git</c> on PATH? Cached — this shells out on first read.</summary>
+        /// <summary>Is a usable <c>git</c> on PATH or bundled with GitHub Desktop? Cached — this shells out
+        /// on first read.</summary>
         public static bool IsAvailable
         {
             get
@@ -198,6 +203,68 @@ namespace CosmicShore.Editor.Froglet
                 }
                 return _available == 1;
             }
+        }
+
+        /// <summary>
+        /// The git this runs: the one on PATH, else the copy GitHub Desktop ships inside itself (Desktop does not
+        /// put its git on PATH, so a collaborator who only ever installed Desktop has no <c>git</c> command at
+        /// all), else a standard install location. Resolved once.
+        /// </summary>
+        public static string GitExecutable
+        {
+            get
+            {
+                if (_gitExe != null) return _gitExe;
+                _gitExe = "git";
+                foreach (var candidate in GitCandidates())
+                    if (Probe(candidate)) { _gitExe = candidate; break; }
+                return _gitExe;
+            }
+        }
+
+        static IEnumerable<string> GitCandidates()
+        {
+            yield return "git";
+            var local = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+            if (!string.IsNullOrEmpty(local))
+            {
+                // GitHub Desktop: %LOCALAPPDATA%\GitHubDesktop\app-<version>\resources\app\git\cmd\git.exe, newest first.
+                var desktop = Path.Combine(local, "GitHubDesktop");
+                if (Directory.Exists(desktop))
+                {
+                    var apps = new List<string>(Directory.GetDirectories(desktop, "app-*"));
+                    apps.Sort((a, b) => string.CompareOrdinal(b, a));
+                    foreach (var app in apps)
+                        yield return Path.Combine(app, "resources", "app", "git", "cmd", "git.exe");
+                }
+            }
+            foreach (var pf in new[] { Environment.GetEnvironmentVariable("ProgramFiles"),
+                                       Environment.GetEnvironmentVariable("ProgramW6432") })
+                if (!string.IsNullOrEmpty(pf))
+                    yield return Path.Combine(pf, "Git", "cmd", "git.exe");
+            yield return "/Applications/GitHub Desktop.app/Contents/Resources/app/git/bin/git";
+            yield return "/opt/homebrew/bin/git";
+            yield return "/usr/local/bin/git";
+            yield return "/usr/bin/git";
+        }
+
+        static bool Probe(string exe)
+        {
+            if (exe != "git" && !File.Exists(exe)) return false;
+            try
+            {
+                using var p = Process.Start(new ProcessStartInfo(exe, "--version")
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                });
+                if (p == null) return false;
+                p.StandardOutput.ReadToEnd();
+                return p.WaitForExit(10000) && p.ExitCode == 0;
+            }
+            catch (Exception) { return false; }
         }
 
         /// <summary>Branches a tool refuses to push to. Tool output belongs on a feature branch.</summary>
@@ -215,6 +282,11 @@ namespace CosmicShore.Editor.Froglet
         public static FrogletGitResult RunIn(string workingDirectory, params string[] args)
             => RunInWithEnv(workingDirectory, null, args);
 
+        /// <summary><see cref="Run"/> with its own timeout — fetch, pull and push use
+        /// <see cref="NetworkTimeoutMs"/>.</summary>
+        public static FrogletGitResult RunTimed(int timeoutMs, params string[] args)
+            => RunInWithEnv(RepoRoot, null, timeoutMs, args);
+
         /// <summary>
         /// <see cref="RunIn"/> plus environment variables — the only way to reach the
         /// handful of git behaviours that have no command-line equivalent, chiefly
@@ -225,18 +297,30 @@ namespace CosmicShore.Editor.Froglet
         public static FrogletGitResult RunInWithEnv(string workingDirectory,
                                                     IEnumerable<KeyValuePair<string, string>> env,
                                                     params string[] args)
+            => RunInWithEnv(workingDirectory, env, TimeoutMs, args);
+
+        public static FrogletGitResult RunInWithEnv(string workingDirectory,
+                                                    IEnumerable<KeyValuePair<string, string>> env,
+                                                    int timeoutMs,
+                                                    params string[] args)
         {
             var argString = BuildArguments(args);
             var display = "git " + argString;
 
-            var psi = new ProcessStartInfo("git", argString)
+            var psi = new ProcessStartInfo(GitExecutable, argString)
             {
                 WorkingDirectory = workingDirectory,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 CreateNoWindow = true,
+                // git writes UTF-8; left to the console codepage, a non-ASCII path arrives as mojibake.
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8,
             };
+            // No window means no terminal to type a password into: fail at once instead of waiting out the
+            // timeout on a prompt nobody can see. A credential manager's own sign-in window still opens.
+            psi.EnvironmentVariables["GIT_TERMINAL_PROMPT"] = "0";
             if (env != null)
                 foreach (var kv in env)
                     psi.EnvironmentVariables[kv.Key] = kv.Value;
@@ -254,12 +338,12 @@ namespace CosmicShore.Editor.Froglet
                 p.BeginOutputReadLine();
                 p.BeginErrorReadLine();
 
-                if (!p.WaitForExit(TimeoutMs))
+                if (!p.WaitForExit(timeoutMs))
                 {
                     try { p.Kill(); }
                     catch (Exception) { /* already gone */ }
                     return new FrogletGitResult(display, -1, so.ToString(),
-                        se + "\ngit timed out after " + (TimeoutMs / 1000) + "s.");
+                        se + "\ngit timed out after " + (timeoutMs / 1000) + "s.");
                 }
 
                 p.WaitForExit(); // second, argument-less call flushes the async readers

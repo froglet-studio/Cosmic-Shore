@@ -75,6 +75,17 @@ namespace CosmicShore.Gameplay
         public static bool WantsWarp(Vector3 targetLocal, float warpDistance) =>
             warpDistance > 0f && targetLocal.magnitude >= warpDistance;
 
+        /// <summary>
+        /// Whether the trampoline's autopilot presses, and on which side it bounces: for a turn it wants
+        /// (<see cref="TryAutopilotSide"/>), or for the warp alone on a long leg (<see cref="WantsWarp"/>; 0 = never). A laid
+        /// shell warps the flight while it is up and its bounce keeps the warp as momentum, so on a straight the AI lays one
+        /// and grazes it as shallow as its turn allows (<see cref="TrampolineLineFor"/> of a small turn is the 0.92 cap).
+        /// <c>Tools/Build/slingshot_stoat_sim.py</c>, 2026-11-06: on Slingshot's courses no turn rule alone beats cruising.
+        /// </summary>
+        public static bool TrampolinePress(Vector3 targetLocal, float minTurnDegrees, float minDistance, float warpDistance,
+            out bool turnLeft) =>
+            TryAutopilotSide(targetLocal, minTurnDegrees, minDistance, out turnLeft) | WantsWarp(targetLocal, warpDistance);
+
         // ------------------------------------------------------------------ the orbit's spin and exit (2026-11-02)
 
         /// <summary>

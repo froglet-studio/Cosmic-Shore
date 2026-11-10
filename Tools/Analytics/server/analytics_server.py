@@ -6,6 +6,11 @@
     python3 analytics_server.py nightly              retention, backup, aggregates, the overnight read (the server
                                                      also runs this itself once a day at nightly_hour_utc)
     python3 analytics_server.py rebuild              rebuild aggregates.db now
+    python3 analytics_server.py backup               a consistent, gzipped snapshot of events.db and aggregates.db into
+                                                     <data_dir>/backups/ (14 kept); the VM's timer runs it at 04:40 UTC
+    python3 analytics_server.py backup --restore <file> [--force]
+                                                     put a backup back (stop the service first; the databases it
+                                                     replaces are kept in <data_dir>/before-restore-<time>/)
     python3 analytics_server.py erase <player id>    delete everything about one player
     python3 analytics_server.py key read <name>      add a dashboard read key for a person (printed once)
     python3 analytics_server.py import-posthog --project <id> [--days 365] [--dry-run]
@@ -46,6 +51,32 @@ HTTP:
     GET  /v1/dashboards/tile?source=query:<id>|builtin:<name>&build&days&play&era
     GET  /v1/segments | POST | DELETE ?id= (profile readers)     saved player filters
 
+  2026-11-06 (Shombith): elements, the Toybox, saved views.
+    GET  /v1/series?...&by=element         a match's element (its own, else its mode's genre: mode_elements.json)
+    GET  /v1/series?measure=freestyle_entries|freestyle_players|freestyle_minutes|freestyle_switches
+    GET  /v1/freestyle?build&days&era      Freestyle (Toybox): tiles, per day, vessels, switch pairs, what history exists
+    GET  /v1/presets | POST {id?, name, page, chart_id, series, settings, filters, public} | DELETE ?id=
+                                           saved chart views: own + public; the owner (or a key in admin_keys) deletes
+    GET  /v1/dashboards/tile?source=preset:<id>   a saved view's own series as a tile
+
+  2026-11-07 (Shombith): match setups.
+    GET  /v1/overview                      adds setups (multiplayer then solo), setup_history, setup_notes
+    GET  /v1/series?...&by=setup           every plays measure (and players, new players) by match setup
+
+  2026-11-07 (Shombith): the web build, build=all and devices (README.md, The web build, All builds and devices).
+    build=all|release|editor|port|web|development and device=all|ios|iphone|ipad|android|android_phone|android_tablet|
+    windows|mac|linux|web|web_desktop|web_mobile|phone|tablet|desktop on every read route (a bad value is 400)
+    GET  /v1/series?...&by=device|os       by device (every measure but Toybox players), by OS family (plays)
+    OPTIONS/POST the ingest routes         CORS for ingest_origins (the browser Toybox); read routes: allowed_origins only
+
+  2026-11-07 (Shombith): sessions, balance, quits, invites, errors; backups.
+    GET  /v1/sessions|balance|quits|invites|errors?build&days&play&era    the five round-67 pages (README.md)
+    GET  /v1/series?measure=score|placement|win_pct|abandon_pct, by=ai_difficulty
+    GET  /v1/health                        adds new_events and backups (the last local copy; off-VM is Oracle's policy)
+
+  The Notebook (a chat, a report and a notebook in one page; analytics_notebook.py holds its routes and rules):
+    GET|POST|PUT|DELETE /v1/notebooks    POST /v1/notebooks/run (one cell)    POST /v1/notebooks/ask (Claude)
+
 Data lives in data_dir (events.db raw, aggregates.db for reading). Standard library only, except the two Claude
 features, which need `pip install anthropic` and ANTHROPIC_API_KEY. Run behind Caddy for HTTPS
 (setup-analytics-vm.sh). README.md beside this file has the whole picture.
@@ -54,6 +85,7 @@ import gzip
 import hmac
 import json
 import os
+import re
 import secrets
 import sys
 import threading
@@ -61,7 +93,7 @@ import time
 import traceback
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, parse_qsl, urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -70,6 +102,7 @@ import analytics_claude as C  # noqa: E402
 import analytics_geo as G  # noqa: E402
 import analytics_store as S  # noqa: E402
 import analytics_views as V  # noqa: E402
+import analytics_notebook as NB  # noqa: E402  the Notebook page's routes
 
 CONFIG_PATH = os.path.expanduser(os.environ.get("FROGLET_ANALYTICS_CONFIG", "~/.froglet-analytics/config.json"))
 CONSOLE_DIR = os.path.normpath(os.path.join(HERE, "..", "console"))
@@ -78,7 +111,9 @@ CONSOLE_FILES = {"/": ("index.html", "text/html; charset=utf-8"),
                  "/console.css": ("console.css", "text/css; charset=utf-8"),
                  "/console.js": ("console.js", "text/javascript; charset=utf-8"),
                  "/themes.css": ("themes.css", "text/css; charset=utf-8"),
-                 "/theme.js": ("theme.js", "text/javascript; charset=utf-8")}
+                 "/theme.js": ("theme.js", "text/javascript; charset=utf-8"),
+                 "/notebook.js": ("notebook.js", "text/javascript; charset=utf-8"),
+                 "/notebook.css": ("notebook.css", "text/css; charset=utf-8")}
 CONSOLE_CSP = ("default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                "font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:; "
                "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
@@ -96,7 +131,10 @@ DEFAULTS = {
     "ingest_keys": [],
     "read_keys": {},
     "admin_keys": {},
-    "allowed_origins": [],
+    "allowed_origins": [],             # origins that may READ (the console on another host): every read route
+    # Origins whose pages may SEND events from a browser (the WebGL Toybox on play.froglet.games, embedded in
+    # www.froglet.games): CORS on the ingest routes only, never on a read route. The ingest key is public anyway.
+    "ingest_origins": ["https://play.froglet.games", "https://www.froglet.games"],
     "retention_days": 395,
     "nightly_hour_utc": 5,
     "claude_model": C.DEFAULT_MODEL,
@@ -104,6 +142,10 @@ DEFAULTS = {
     "ask_daily_limit": 50,
     "ingest_per_minute": 600,
     "profile_readers": [],             # read-key names that may open player profiles (admin keys always may)
+    # Shombith, 2026-11-06: "Give everyone who has a key an admin access there is no seperation between us." While
+    # true, every read key is an admin key too (Admin pages, eras, saved queries, dashboards, Erasure, every profile).
+    # Set it false in config.json to bring the read / admin split back; profile_readers then applies again.
+    "all_keys_admin": True,
     "geo_csv": "",                     # DB-IP country lite file; default <data_dir>/dbip-country-lite.csv.gz
 }
 
@@ -173,7 +215,8 @@ class RateLimit:
 
 
 # What `key read|admin <name>` and a hand edit of config.json can change while the server runs.
-LIVE_FIELDS = ("read_keys", "admin_keys", "profile_readers", "ingest_keys", "allowed_origins")
+LIVE_FIELDS = ("read_keys", "admin_keys", "profile_readers", "ingest_keys", "allowed_origins", "ingest_origins",
+               "all_keys_admin")
 
 
 class App:
@@ -237,13 +280,39 @@ class App:
             except Exception as exc:   # no network, or the month's file is not out yet: keep the old one
                 self.store.mark_job("geo", f"refresh failed: {type(exc).__name__}")
 
+    def backup(self):
+        """The nightly backup: a consistent snapshot of both databases, gzipped, 14 kept on the VM; the Oracle
+        boot-volume policy copies the disk off the VM at 05:00 UTC. When FA_BACKUP_* are set (they are not, today),
+        the snapshot is also PUT to that S3-compatible bucket."""
+        target, size = self.store.backup()
+        self.store.mark_job("backup", f"{os.path.basename(target)} ({size} bytes)")
+        upload = backup_settings()
+        result = {"file": target, "bytes": size, "uploaded": None}
+        if upload:
+            key = upload["prefix"] + os.path.basename(target)
+            try:
+                with open(target, "rb") as handle:
+                    s3_put(upload, key, handle.read())
+                result["uploaded"] = f"{upload['bucket']}/{key}"
+                self.store.mark_job("backup_upload", f"uploaded to bucket {upload['bucket']} as {key}")
+            except Exception as exc:          # the local copy stands; the next night tries again
+                result["upload_error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
+                self.store.mark_job("backup_upload", f"upload failed ({type(exc).__name__}); the local copy is kept")
+        return result
+
     def nightly(self):
         self.refresh_geo()
         gone = self.store.apply_retention(self.config["retention_days"])
-        target = self.store.backup()
-        self.store.mark_job("backup", os.path.basename(target))
+        last = self.store.job("backup")
+        if last and S.now_ms() - last["last_ms"] < 20 * 3600 * 1000:
+            target = {"skipped": "the 04:40 UTC backup timer already made tonight's"}
+        else:
+            target = self.backup()                 # no timer on this machine (a local run): back up here
         self.rebuild()
-        digest = C.write_digest(self.store, self.agg, self.config["claude_model"], self.config["claude_effort"])
+        try:                                       # Claude's read never costs the night its retention, backup or rebuild
+            digest = C.write_digest(self.store, self.agg, self.config["claude_model"], self.config["claude_effort"])
+        except Exception as exc:
+            digest = {"author": f"nobody (the read failed: {type(exc).__name__})"}
         self.store.mark_job("nightly", f"retention removed {gone}; read by {digest['author']}")
         return {"retention_removed": gone, "backup": target, "digest": digest}
 
@@ -262,6 +331,64 @@ class App:
             self.stop.wait(REBUILD_EVERY_S)
 
 
+# ---------------------------------------------------------------- backups to an S3-compatible bucket (dormant)
+# Shombith, 2026-11-07: off-VM copies come from the Oracle boot-volume backup policy, with no key on the VM. This upload
+# stays for the day a bucket is wanted: it runs only when FA_BACKUP_ENDPOINT, FA_BACKUP_BUCKET, FA_BACKUP_ACCESS_KEY and
+# FA_BACKUP_SECRET_KEY are all set (in /etc/froglet-analytics.env, never config.json). Nothing logs or returns a key.
+
+BACKUP_ENV = ("FA_BACKUP_ENDPOINT", "FA_BACKUP_BUCKET", "FA_BACKUP_ACCESS_KEY", "FA_BACKUP_SECRET_KEY")
+
+
+def backup_settings(env=None):
+    env = os.environ if env is None else env
+    if not all(env.get(k) for k in BACKUP_ENV):
+        return None
+    return {"endpoint": env["FA_BACKUP_ENDPOINT"].rstrip("/"), "bucket": env["FA_BACKUP_BUCKET"],
+            "access": env["FA_BACKUP_ACCESS_KEY"], "secret": env["FA_BACKUP_SECRET_KEY"],
+            "region": env.get("FA_BACKUP_REGION") or "us-ashburn-1",
+            "prefix": env.get("FA_BACKUP_PREFIX", "froglet-analytics/")}
+
+
+def sigv4_headers(method, url, headers, payload_hash, access, secret, region, amz_date, service="s3"):
+    """AWS Signature Version 4 (header form), standard library only. `headers` are the ones to sign besides host,
+    x-amz-content-sha256 and x-amz-date, which this adds. Returns the headers to send, Authorization included."""
+    import hashlib
+    from urllib.parse import quote, urlsplit
+    parts = urlsplit(url)
+    signed = {k.lower(): str(v).strip() for k, v in headers.items()}
+    signed.update({"host": parts.netloc, "x-amz-content-sha256": payload_hash, "x-amz-date": amz_date})
+    names = sorted(signed)
+    pairs = sorted((quote(k, safe="-_.~"), quote(v, safe="-_.~")) for k, v in parse_qsl(parts.query, keep_blank_values=True))
+    # the path is sent as the caller encoded it (s3_put quotes the key once), as S3 signs it: no second encoding
+    canonical = "\n".join([method, parts.path or "/", "&".join(f"{k}={v}" for k, v in pairs),
+                           "".join(f"{n}:{signed[n]}\n" for n in names), ";".join(names), payload_hash])
+    scope = f"{amz_date[:8]}/{region}/{service}/aws4_request"
+    to_sign = "\n".join(["AWS4-HMAC-SHA256", amz_date, scope, hashlib.sha256(canonical.encode()).hexdigest()])
+    key = ("AWS4" + secret).encode()
+    for part in (amz_date[:8], region, service, "aws4_request"):
+        key = hmac.new(key, part.encode(), hashlib.sha256).digest()
+    signature = hmac.new(key, to_sign.encode(), hashlib.sha256).hexdigest()
+    out = dict(signed)
+    out["authorization"] = (f"AWS4-HMAC-SHA256 Credential={access}/{scope}, SignedHeaders={';'.join(names)}, "
+                            f"Signature={signature}")
+    out.pop("host")
+    return out
+
+
+def s3_put(settings, key, body, now=None):
+    """PUT one object, path style ({endpoint}/{bucket}/{key}), as Oracle Object Storage's S3 endpoint wants it."""
+    import hashlib
+    import urllib.request
+    from urllib.parse import quote
+    url = f"{settings['endpoint']}/{quote(settings['bucket'], safe='')}/{quote(key, safe='/-_.~')}"
+    amz_date = (now or datetime.now(timezone.utc)).strftime("%Y%m%dT%H%M%SZ")
+    headers = sigv4_headers("PUT", url, {"content-type": "application/gzip"}, hashlib.sha256(body).hexdigest(),
+                            settings["access"], settings["secret"], settings["region"], amz_date)
+    request = urllib.request.Request(url, data=body, method="PUT", headers=headers)
+    with urllib.request.urlopen(request, timeout=120) as response:
+        return response.status
+
+
 # ---------------------------------------------------------------- Rev 65 routes: (status, payload) from a handler
 
 ADMIN_ONLY = (403, {"error": "That needs an admin key."})
@@ -275,8 +402,10 @@ def _app(h):
 def _people(h):
     q = h._params()
     build = q.get("build") or None
-    if build and build not in S.BUILD_KINDS:
-        raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
+    if build and build not in V.BUILD_FILTERS:
+        raise S.Invalid(f"build must be one of {list(V.BUILD_FILTERS)}")
+    build = None if build == "all" else build
+    device = h._device_param(q)
     days = int(q["days"]) if (q.get("days") or "").isdigit() else 90
     play = q.get("play") or "all"
     if play not in V.PLAYS:
@@ -286,19 +415,27 @@ def _people(h):
     if era:
         extra = {"since": era["from"], "until": min(era["to"], S.day_of(S.now_ms())), "source": era["source"],
                  "builds": era["builds"] or None}
-    page = _app(h).store.people_list(build, min(max(days, 1), 400), q.get("q") or "", play=play, **extra)
+    page = _app(h).store.people_list(build, min(max(days, 1), 400), q.get("q") or "", play=play,
+                                     devices=S.DEVICE_GROUPS.get(device), **extra)
     page["era"] = era["id"] if era else None
+    page["device"] = device
     page["unfiltered"] = []
     return 200, page
 
 
+def _build_or_every(q):
+    """The eras pages' build: one kind, or None for every build (no build, or build=all)."""
+    build = q.get("build") or None
+    if build and build not in V.BUILD_FILTERS:
+        raise S.Invalid(f"build must be one of {list(V.BUILD_FILTERS)}")
+    return None if build == "all" else build
+
+
 def _eras_get(h):
     q = h._params()
-    build = q.get("build") or None
-    if build and build not in S.BUILD_KINDS:
-        raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
+    build = _build_or_every(q)
     store = _app(h).store
-    return 200, V.eras_page(_app(h).agg, store.eras(), store.milestones(), build)
+    return 200, V.eras_page(_app(h).agg, store.eras(), store.milestones(), build, h._device_param(q))
 
 
 def _eras_put(h):
@@ -317,27 +454,25 @@ def _eras_compare(h):
     a, b = h._era_param(q, "a"), h._era_param(q, "b")
     if not a or not b:
         raise S.Invalid("name two eras: ?a=<era id>&b=<era id>")
-    build = q.get("build") or None
-    if build and build not in S.BUILD_KINDS:
-        raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
-    return 200, V.eras_compare(_app(h).agg, a, b, build)
+    return 200, V.eras_compare(_app(h).agg, a, b, _build_or_every(q), h._device_param(q))
 
 
 def _cohorts(h):
-    build, days, play, era = h._scope_params(h._params())
-    page = V.cohorts(_app(h).agg, build, days, play, era)
+    build, days, play, era, device = h._scope_params(h._params())
+    page = V.cohorts(_app(h).agg, build, days, play, era, device)
     if h._profiles_allowed():
-        sc = V.Scope(build, days, play, era)
-        page["lifespans"] = _app(h).store.lifespans(build, sc.since, sc.until, sc.source,
-                                                    era["builds"] or None if era else None, play)
+        sc = V.Scope(build, days, play, era, device=device)
+        page["lifespans"] = _app(h).store.lifespans(None if build == "all" else build, sc.since, sc.until, sc.source,
+                                                    era["builds"] or None if era else None, play,
+                                                    devices=S.DEVICE_GROUPS.get(device))
     else:
         page["unfiltered"] = page.get("unfiltered", []) + ["lifespans"]
     return 200, page
 
 
 def _playtypes(h):
-    build, days, play, era = h._scope_params(h._params())
-    page = V.playtypes(_app(h).agg, build, days, era)
+    build, days, play, era, device = h._scope_params(h._params())
+    page = V.playtypes(_app(h).agg, build, days, era, device)
     if play != "all":
         page["unfiltered"] = ["play"]           # this page is the play types side by side
     return 200, page
@@ -345,9 +480,36 @@ def _playtypes(h):
 
 def _series(h):
     q = h._params()
-    build, days, play, era = h._scope_params(q)
+    build, days, play, era, device = h._scope_params(q)
     return 200, V.series(_app(h).agg, q.get("measure") or "matches", q.get("by") or "none", q.get("over") or "day",
-                         build, days, play, era, _app(h).store.eras())
+                         build, days, play, era, _app(h).store.eras(), device)
+
+
+def _freestyle(h):
+    build, days, play, era, device = h._scope_params(h._params())
+    return 200, V.freestyle(_app(h).agg, build, days, play, era, device)
+
+
+def _moderator(h):
+    """A key in admin_keys itself. all_keys_admin makes every key an admin for the pages, but a saved view stays its
+    owner's: only a real admin key may delete someone else's public one."""
+    return _match_key(h._bearer(), _app(h).config["admin_keys"]) is not None
+
+
+def _presets_get(h):
+    return 200, {"presets": _app(h).store.presets(h._reader())}
+
+
+def _presets_post(h):
+    store = _app(h).store
+    return 200, store.save_preset(h._body(), h._reader(), store.eras())
+
+
+def _presets_delete(h):
+    done = _app(h).store.delete_preset(h._params().get("id") or "", h._reader(), _moderator(h))
+    if done is None:
+        return 404, {"error": "No saved view with that id that this key may see."}
+    return 200, {"deleted": h._params()["id"]}
 
 
 def _saved_tables(store):
@@ -405,7 +567,7 @@ def _dashboards_get(h):
 def _dashboards_put(h):
     if not h._admin():
         return ADMIN_ONLY
-    return 200, _app(h).store.save_dashboard(h._body(), h._admin())
+    return 200, _app(h).store.save_dashboard(h._body(), h._reader())
 
 
 def _dashboards_delete(h):
@@ -418,13 +580,22 @@ def _dashboards_delete(h):
 
 def _tile(h):
     q = h._params()
-    build, days, play, era = h._scope_params(q)
+    build, days, play, era, device = h._scope_params(q)
     source = q.get("source") or ""
     app = _app(h)
     if source.startswith("builtin:"):
         if source[8:] not in S.BUILTIN_TILES:
             raise S.Invalid(f"builtin tiles are {', '.join(S.BUILTIN_TILES)}")
-        return 200, V.builtin_tile(app.agg, source[8:], build, days, play, era)
+        return 200, V.builtin_tile(app.agg, source[8:], build, days, play, era, device)
+    if source.startswith("preset:"):
+        found = app.store.preset(source[7:], h._reader())
+        if not found:
+            return 404, {"error": "No saved view with that id that this key may see."}
+        era_id = found["filters"].get("era")
+        era = app.store.era(era_id) if era_id else None
+        if era_id and era is None:
+            raise S.Invalid(f"this saved view's era {era_id} no longer exists")
+        return 200, V.preset_tile(app.agg, found, era, app.store.eras())
     if source.startswith("query:"):
         admin = h._admin()
         visible = {x["id"]: x for x in app.store.queries(None if admin else h._reader(), bool(admin))}
@@ -434,8 +605,8 @@ def _tile(h):
         out = V.run_readonly_sql(app.agg, found["sql"])
         # a saved query is its own SQL: the page's build, days, play and era do not reach it
         return 200, {"columns": out["columns"], "rows": out["rows"], "truncated": out["truncated"],
-                     "unfiltered": ["build", "days", "play", "era"]}
-    raise S.Invalid("source must be query:<saved query id> or builtin:<name>")
+                     "unfiltered": ["build", "days", "play", "era", "device"]}
+    raise S.Invalid("source must be query:<saved query id>, preset:<saved view id> or builtin:<name>")
 
 
 def _segments_get(h):
@@ -460,13 +631,33 @@ def _segments_delete(h):
     return 200, {"deleted": h._params()["id"]}
 
 
+def _r67_page(view):
+    """A round-67 page (Shombith, 2026-11-07): sessions, balance, quits, invites, errors. Same filters as the rest."""
+    def route(h):
+        build, days, play, era, device = h._scope_params(h._params())
+        return 200, view(_app(h).agg, build, days, play, era, device)
+    return route
+
+
+R67_GET = {"/v1/sessions": _r67_page(V.sessions), "/v1/balance": _r67_page(V.balance), "/v1/quits": _r67_page(V.quits),
+           "/v1/invites": _r67_page(V.invites), "/v1/errors": _r67_page(V.errors)}
+
 REV65_GET = {"/v1/eras": _eras_get, "/v1/eras/compare": _eras_compare, "/v1/cohorts": _cohorts,
              "/v1/playtypes": _playtypes, "/v1/series": _series, "/v1/schema": _schema, "/v1/queries": _queries_get,
-             "/v1/dashboards": _dashboards_get, "/v1/dashboards/tile": _tile, "/v1/segments": _segments_get}
-REV65_POST = {"/v1/query": _query_run, "/v1/queries": _queries_post, "/v1/segments": _segments_post}
+             "/v1/dashboards": _dashboards_get, "/v1/dashboards/tile": _tile, "/v1/segments": _segments_get,
+             "/v1/freestyle": _freestyle, "/v1/presets": _presets_get}
+REV65_POST = {"/v1/query": _query_run, "/v1/queries": _queries_post, "/v1/segments": _segments_post,
+              "/v1/presets": _presets_post}
 REV65_PUT = {"/v1/eras": _eras_put, "/v1/dashboards": _dashboards_put}
 REV65_DELETE = {"/v1/queries": _queries_delete, "/v1/dashboards": _dashboards_delete,
-                "/v1/segments": _segments_delete}
+                "/v1/segments": _segments_delete, "/v1/presets": _presets_delete}
+REV65_GET.update(R67_GET)
+# The Notebook (analytics_notebook.py) mounts its routes into the tables above.
+for _routes, _nb in ((REV65_GET, NB.GET), (REV65_POST, NB.POST), (REV65_PUT, NB.PUT), (REV65_DELETE, NB.DELETE)):
+    _routes.update(_nb)
+
+
+INGEST_PATHS = ("/batch", "/v1/batch", "/capture", "/e")
 
 
 def make_handler(app):
@@ -480,12 +671,25 @@ def make_handler(app):
         # ------------------------------------------------ plumbing
 
         def _cors(self):
+            """Read routes answer CORS for allowed_origins (a console on another host); the ingest routes answer it
+            for ingest_origins too (the browser Toybox posting its events). An ingest origin never reads."""
             origin = self.headers.get("Origin")
-            if origin and origin in app.config["allowed_origins"]:
+            if not origin:
+                return
+            if origin in app.config["allowed_origins"]:
                 self.send_header("Access-Control-Allow-Origin", origin)
                 self.send_header("Vary", "Origin")
                 self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+            elif origin in (app.config.get("ingest_origins") or []) and self._is_ingest():
+                self.send_header("Access-Control-Allow-Origin", origin)
+                self.send_header("Vary", "Origin")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type, Content-Encoding")
+                self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+                self.send_header("Access-Control-Max-Age", "86400")
+
+        def _is_ingest(self):
+            return urlparse(self.path).path.rstrip("/") in INGEST_PATHS
 
         def _send(self, status, payload):
             body = json.dumps(payload, default=str).encode()
@@ -520,28 +724,35 @@ def make_handler(app):
                 _match_key(self._bearer(), app.config["admin_keys"])
 
         def _profiles_allowed(self):
-            admin = _match_key(self._bearer(), app.config["admin_keys"])
             reader = _match_key(self._bearer(), app.config["read_keys"])
-            return bool(admin or (reader and reader in app.config["profile_readers"]))
+            return bool(self._admin() or (reader and reader in app.config["profile_readers"]))
 
         def _admin(self):
-            return _match_key(self._bearer(), app.config["admin_keys"])
+            """The admin's name, or None. With all_keys_admin (the default) any valid key is an admin's."""
+            return _match_key(self._bearer(), app.config["admin_keys"]) or \
+                (_match_key(self._bearer(), app.config["read_keys"]) if app.config.get("all_keys_admin") else None)
 
         def _params(self):
             return {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
 
         def _scope_params(self, q):
-            """build, days, play and era from the query string; S.Invalid (400) on any bad value."""
+            """build, days, play, era and device from the query string; S.Invalid (400) on any bad value."""
             build = q.get("build") or "release"
-            if build not in S.BUILD_KINDS:
-                raise S.Invalid(f"build must be one of {list(S.BUILD_KINDS)}")
+            if build not in V.BUILD_FILTERS:
+                raise S.Invalid(f"build must be one of {list(V.BUILD_FILTERS)}")
             days = q.get("days") or "90"
             if not days.isdigit() or int(days) not in V.WINDOWS:
                 raise S.Invalid(f"days must be one of {list(V.WINDOWS)}")
             play = q.get("play") or "all"
             if play not in V.PLAYS:
                 raise S.Invalid(f"play must be one of {list(V.PLAYS)}")
-            return build, int(days), play, self._era_param(q)
+            return build, int(days), play, self._era_param(q), self._device_param(q)
+
+        def _device_param(self, q):
+            device = q.get("device") or "all"
+            if device not in V.DEVICES:
+                raise S.Invalid(f"device must be one of {list(V.DEVICES)}")
+            return device
 
         def _era_param(self, q, name="era"):
             if not q.get(name):
@@ -592,7 +803,7 @@ def make_handler(app):
             if self._reader() is None:
                 return self._send(401, {"error": "A read key is needed (Authorization: Bearer <key>)."})
             if path == "/v1/me":
-                admin = _match_key(self._bearer(), app.config["admin_keys"])
+                admin = self._admin()
                 return self._send(200, {"name": admin or self._reader(), "admin": bool(admin),
                                         "profiles": self._profiles_allowed()})
             if path in REV65_GET:
@@ -606,8 +817,8 @@ def make_handler(app):
                     return self._send(200, found) if found else self._send(404, {"error": "No player with that id."})
                 return self._guarded(_people, self)
             build, days = self._query()
-            if build not in S.BUILD_KINDS:
-                return self._send(400, {"error": f"build must be one of {list(S.BUILD_KINDS)}"})
+            if build not in V.BUILD_FILTERS:
+                return self._send(400, {"error": f"build must be one of {list(V.BUILD_FILTERS)}"})
             if days not in V.WINDOWS:
                 return self._send(400, {"error": f"days must be one of {list(V.WINDOWS)}"})
             play = (parse_qs(urlparse(self.path).query).get("play") or ["all"])[0] or "all"
@@ -615,26 +826,28 @@ def make_handler(app):
                 return self._send(400, {"error": f"play must be one of {list(V.PLAYS)}"})
             try:
                 era = self._era_param(self._params())
+                device = self._device_param(self._params())
             except S.Invalid as exc:
                 return self._send(400, {"error": str(exc)})
             try:
                 if path == "/v1/overview":
-                    page = V.overview(app.agg, build, days, play, era)
+                    page = V.overview(app.agg, build, days, play, era, device)
                     page["digest"] = app.store.latest_digest()
                     return self._send(200, page)
                 if path == "/v1/retention":
-                    return self._send(200, V.retention(app.agg, build, days, play, era))
+                    return self._send(200, V.retention(app.agg, build, days, play, era, device))
                 if path == "/v1/matches":
-                    return self._send(200, V.matches(app.agg, build, days, play, era))
+                    return self._send(200, V.matches(app.agg, build, days, play, era, device))
                 if path == "/v1/health":
                     page = V.health(app.agg, app.store.health_facts(), days)
-                    page["unfiltered"] = ["page"] if (play != "all" or era) else []
+                    page["unfiltered"] = ["page"] if (play != "all" or era or device != "all") else []
                     return self._send(200, page)
                 if path in ("/v1/audience", "/v1/ftue", "/v1/economy", "/v1/social"):
                     view = {"/v1/audience": V.audience, "/v1/ftue": V.ftue, "/v1/economy": V.economy,
                             "/v1/social": V.social}[path]
                     page = view(app.agg, build, days)
-                    page["unfiltered"] = ["page"] if (play != "all" or era) else []   # these pages read neither
+                    # these pages read no play type, era or device
+                    page["unfiltered"] = ["page"] if (play != "all" or era or device != "all") else []
                     return self._send(200, page)
                 if path == "/v1/digest":
                     return self._send(200, app.store.latest_digest() or {})
@@ -646,7 +859,7 @@ def make_handler(app):
         def do_POST(self):
             app.reload_keys()
             path = urlparse(self.path).path.rstrip("/")
-            if path in ("/batch", "/v1/batch", "/capture", "/e"):
+            if path in INGEST_PATHS:
                 return self._ingest()
             if path == "/v1/ask":
                 return self._ask()
@@ -715,7 +928,7 @@ def make_handler(app):
             return self._send(200, result)
 
         def _erase(self):
-            if _match_key(self._bearer(), app.config["admin_keys"]) is None:
+            if self._admin() is None:
                 return self._send(401, {"error": "An admin key is needed to erase a player."})
             body = self._body() or {}
             player = body.get("player_id")
@@ -726,6 +939,83 @@ def make_handler(app):
             return self._send(200, {"rows_deleted": deleted})
 
     return Handler
+
+
+KEY_NAME = re.compile(r"^[a-z0-9_.-]{1,40}$")
+
+
+def key_command(config, args):
+    """`key read <name>` | `key admin <name>` | `key delete <name>` | `key list`. Returns (what to print, whether the
+    config changed). A read key may not be named "admin" and a name is one kind of key only: a read key named "admin"
+    (made by `key read admin` while looking for the admin key) signed Garrett in as a reader called "admin", with no
+    Admin pages and no profiles (2026-11-06). Secrets are printed once, when made, and never by `list`."""
+    action = args[0]
+    if action == "list" and len(args) == 1:
+        rows = [(n, "admin") for n in sorted(config["admin_keys"])] + [(n, "read") for n in sorted(config["read_keys"])]
+        readers = set(config.get("profile_readers") or [])
+        everyone = config.get("all_keys_admin")
+        lines = [f"  {n:<20} {kind} key" + ("" if kind == "admin" else
+                 " (an admin's too: all_keys_admin)" if everyone else (", opens profiles" if n in readers else ", no profiles"))
+                 for n, kind in rows]
+        return "Keys (names only; a secret is shown once, when it is made):\n" + ("\n".join(lines) or "  none"), False
+    usage = "use: key read <name> | key admin <name> | key delete [read|admin] <name> | key list"
+    if action == "delete" and len(args) == 3 and args[1] in ("read", "admin"):
+        kinds, args = [args[1] + "_keys"], [action, args[2]]
+    else:
+        kinds = ["read_keys", "admin_keys"]
+    if len(args) != 2 or action not in ("read", "admin", "delete"):
+        raise ValueError(usage)
+    name = args[1].strip().lower()
+    if not KEY_NAME.match(name):
+        raise ValueError("a name is 1-40 of a-z, 0-9, '.', '_' or '-' (use the person's name, e.g. garrett)")
+    if action == "delete":
+        found = [k for k in kinds if name in config[k]]
+        if not found:
+            raise ValueError(f"no key named {name} (see: key list)")
+        if len(found) > 1:      # e.g. the admin key and a stray read key both named "admin": never delete both at once
+            raise ValueError(f"{name} is both a read key and an admin key; say which: key delete read {name} or key delete admin {name}")
+        if found[0] == "admin_keys" and len(config["admin_keys"]) == 1:
+            raise ValueError("that is the only admin key; make another first (key admin <name>) so nobody is locked out")
+        del config[found[0]][name]
+        return f"deleted the {found[0].split('_')[0]} key named {name}; it stops working at its next request", True
+    field, other = ("read_keys", "admin_keys") if action == "read" else ("admin_keys", "read_keys")
+    if action == "read" and name == "admin":
+        raise ValueError("'admin' is not a reader's name: the admin key was printed by init and is in config.json "
+                         "under admin_keys; for a person, use their name (key read garrett, or key admin garrett)")
+    if name in config[other]:
+        raise ValueError(f"{name} already has a {other.split('_')[0]} key; delete it first (key delete {name})")
+    key = ("fa_read_" if action == "read" else "fa_admin_") + secrets.token_urlsafe(24)
+    config[field][name] = key
+    note = "" if action == "admin" else (
+        " Every key is an admin's while all_keys_admin is on (the default), so this one is too." if config.get("all_keys_admin")
+        else " It opens player profiles." if name in (config.get("profile_readers") or [])
+        else " It cannot open player profiles: add the name to profile_readers for that.")
+    return f"{action.upper()} key for {name} (shown once): {key}{note}", True
+
+
+def server_answers(config, timeout=1.0):
+    """True when a server on this config's port answers /healthz (a restore under a running server would be lost)."""
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"http://{config['listen']}:{config['port']}/healthz", timeout=timeout) as response:
+            return response.status == 200
+    except Exception:
+        return False
+
+
+def restore_command(config, archive, force=False):
+    if server_answers(config) and not force:
+        print("restore: the server is running on this data; stop it first (sudo systemctl stop froglet-analytics), "
+              "then run this again, then start it")
+        return 2
+    try:
+        out = S.restore_backup(os.path.abspath(archive), config["data_dir"])
+    except S.Invalid as exc:
+        print(f"restore: {exc}")
+        return 2
+    print(f"restored {', '.join(out['restored'])} into {config['data_dir']}; the databases it replaced are in "
+          f"{out['kept_in']}. Start the server again: sudo systemctl start froglet-analytics")
+    return 0
 
 
 def serve(config):
@@ -746,7 +1036,7 @@ def main(argv):
     command = argv[0]
     if command == "--self-test":
         import unittest
-        suite = unittest.defaultTestLoader.discover(HERE, pattern="test_analytics_server.py")
+        suite = unittest.defaultTestLoader.discover(HERE, pattern="test_analytics_*.py")   # the server's and the Notebook's
         return 0 if unittest.TextTestRunner(verbosity=1).run(suite).wasSuccessful() else 1
     config = load_config()
     if command == "init":
@@ -762,17 +1052,25 @@ def main(argv):
         print("Admin key (erasure; keep it private):")
         print("  " + config["admin_keys"]["admin"])
         return 0
-    if command == "key" and len(argv) == 3 and argv[1] in ("read", "admin"):
-        field = "read_keys" if argv[1] == "read" else "admin_keys"
-        key = ("fa_read_" if argv[1] == "read" else "fa_admin_") + secrets.token_urlsafe(24)
-        config[field][argv[2]] = key
-        save_config(config)
-        print(f"{argv[1]} key for {argv[2]} (shown once): {key}")
+    if command == "key" and len(argv) >= 2:
+        try:
+            message, changed = key_command(config, argv[1:])
+        except ValueError as err:
+            print(f"key: {err}")
+            return 2
+        if changed:
+            save_config(config)
+        print(message)
         return 0
     if command == "serve":
         serve(config)
         return 0
+    if command == "backup" and len(argv) >= 3 and argv[1] == "--restore":
+        return restore_command(config, argv[2], "--force" in argv[3:])
     app = App(config)
+    if command == "backup" and len(argv) == 1:
+        print(json.dumps(app.backup(), indent=2))
+        return 0
     if command == "rebuild":
         print(f"{app.rebuild()} plays")
         return 0

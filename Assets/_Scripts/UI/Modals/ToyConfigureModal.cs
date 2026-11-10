@@ -15,20 +15,14 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The Toy Box's <b>second window</b>: one toy, what it does, its variants, and two verbs —
-    /// <b>Navigate</b> (go and fly it) and a <b>commit</b> button captioned by the toy itself
+    /// <b>Navigate</b> (fly to what a toy made) and a <b>commit</b> button captioned by the toy itself
     /// (SWITCH for a world, SPAWN for a lifeform, START for a run - <see cref="ToyShellOption.CommitVerb"/>).
     ///
-    /// <para><b>Both verbs, deliberately.</b> This window shipped with Navigate alone, on the
-    /// argument that a menu which applied a toy's actions was a second authority on what a toy
-    /// does. Half of that argument survives and half of it was wrong. What survives: the menu
-    /// still calls the toy's OWN <see cref="ToyShellOption.Apply"/>, so "change your domain" here
-    /// is literally <c>DomainChangerToySet.Apply</c> — one implementation with two surfaces, which
-    /// is the whole point of <see cref="IToyShellSurface"/> and is not a second authority on
-    /// anything. What was wrong: a player who does not want to fly had no way to change their
-    /// domain at all, and telling them to go and fly for it is not a design principle, it is a
-    /// tax. So this is an <b>in-UI toybox</b>, and Navigate is still there for everyone who would
-    /// rather go to the ring. (<c>Docs/HomeHub/ARCHITECTURE.md</c> §4.1.1, which held this open as
-    /// a real decision, is closed in the wire-it-in direction.)</para>
+    /// <para><b>The window IS the toybox.</b> Toys have no world body (2026-11-01): every toy is
+    /// chosen here, and the window calls the toy's OWN <see cref="ToyShellOption.Apply"/>, so
+    /// "change your domain" is literally the toy's own call - one implementation, never a second
+    /// authority. Navigate is lit only for a row with a live place in the world
+    /// (<see cref="ToyShellOption.WorldAnchor"/>: a creature the Spawn Matrix released).</para>
     ///
     /// <para><b>A row SELECTS; Switch COMMITS — except where the toy says otherwise.</b> A cell
     /// swap suctions the world away and grows another behind a veil, so firing one from a stray
@@ -47,16 +41,15 @@ namespace CosmicShore.UI
     /// <c>Expand</c>, which no longer exists once its parent list is rebuilt, and they are trees of
     /// authored content rather than live state.</para>
     ///
-    /// <para><b>The picture is the live toy</b> (<see cref="ToyPreviewCamera"/>) — a camera on the
-    /// object standing out by the cell membrane, not authored art. So it cannot go stale, and the
-    /// player recognises the thing they are about to fly at.</para>
+    /// <para><b>The picture</b> (<see cref="ToyPreviewCamera"/>) is the selected option's own
+    /// model, or the live thing a press just made.</para>
     ///
     /// <para><b>Navigate places the vessel BEFORE the transition, not after it — that ordering is
     /// the whole of why the arrival reads smoothly.</b> Entering freestyle is a single eased
     /// camera blend (<see cref="MainMenuCameraController"/>, smootherstep over
     /// <see cref="MenuCrystalClickHandler.TransitionDuration"/>) whose FAR endpoint is recomputed
     /// every frame from the vessel's live pose. Teleport first and that one blend simply arrives at
-    /// the toy: the player watches the camera fly there. Teleport after
+    /// the target: the player watches the camera fly there. Teleport after
     /// <c>OnGameStateTransitionEnd</c> — which is what this did at first — and the blend eases all
     /// the way to wherever the autopilot happened to leave the ship, hands over to the gameplay
     /// camera, and only THEN does the world jump: a hard cut at the end of a two-second ease, which
@@ -64,12 +57,8 @@ namespace CosmicShore.UI
     ///
     /// <para><b>The arrival distance carries the COAST, because the ship is already flying.</b>
     /// <c>TransitionToFreestyle</c> drops the autopilot and holds input paused for the whole blend,
-    /// so the vessel cruises forward at its minimum speed for those seconds — pointed, by
-    /// construction, straight at the toy. So Navigate stands the vessel off by the intended
-    /// distance PLUS that coast, and the pilot is handed the stick at exactly the stand-off. The
-    /// coast is the approach. Without it the ship drifts into the ring mid-blend and trips the toy
-    /// before the player has ever touched a control — <see cref="Toy"/> arms on
-    /// <c>OnGameStateTransitionStart</c>, at the top of the transition, not at its end.</para>
+    /// so the vessel cruises forward at its minimum speed for those seconds, pointed at the target.
+    /// So Navigate stands the vessel off by the intended distance PLUS that coast.</para>
     /// </summary>
     public class ToyConfigureModal : ModalWindowManager
     {
@@ -80,7 +69,7 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Which fundamental this toy changes - Pilot / World / Creation.")]
         TMP_Text categoryText;
 
-        [SerializeField, Tooltip("Live window onto the toy standing in the lava lamp. Sits where " +
+        [SerializeField, Tooltip("The selected option's model, or what a press just made. Sits where " +
                  "the arcade card puts its arena preview.")]
         ToyPreviewCamera preview;
 
@@ -96,8 +85,8 @@ namespace CosmicShore.UI
         ToyVariantCard variantCardPrefab;
 
         [Header("Controls")]
-        [SerializeField, Tooltip("Takes the player to the toy. Disabled while the toy cannot " +
-                 "answer - mid cell-swap, mid vessel-swap.")]
+        [SerializeField, Tooltip("Takes the player to what the selected row made (a released " +
+                 "creature). Disabled while no selected row has a live place in the world.")]
         Button navigateButton;
 
         [SerializeField, Tooltip("Commits the SELECTED variant without flying anywhere - the " +
@@ -143,11 +132,8 @@ namespace CosmicShore.UI
         MenuCrystalClickHandler crystalClickHandler;
 
         [Header("Arrival")]
-        [SerializeField, Min(1f), Tooltip("How far in front of the toy the vessel arrives, as a " +
-                 "multiple of the toy's own switch-ring radius. Must be > 1 or the player spawns " +
-                 "INSIDE the ring and trips the toy on the first frame. Kept well clear (7.2, three " +
-                 "times the old 2.4): the player already chose in this window and usually just wants " +
-                 "to fly freestyle, so they need room to steer AROUND the switch, not into it.")]
+        [SerializeField, Min(1f), Tooltip("How far in front of the target the vessel arrives, as a " +
+                 "multiple of the row's WorldAnchorRadius.")]
         float arrivalDistanceFactor = 7.2f;
 
         [SerializeField, Min(1f), Tooltip("Seconds to wait for the freestyle transition to " +
@@ -518,27 +504,10 @@ namespace CosmicShore.UI
             // to describe a toy, and it would drift from the toy's own assets.
             UpdateDescription();
 
-            if (preview) preview.Show(ResolveToy());
-
-            // A toy that cannot answer right now is shown, not hidden - the player should see the
-            // Toy Box has this toy in it, and that it is momentarily busy.
-            if (navigateButton) navigateButton.interactable = ready;
+            if (preview) preview.Show();
 
             RebuildFromSurface();
-        }
-
-        /// <summary>
-        /// The live toy behind this surface, or null. Every surface is a MonoBehaviour (a
-        /// <see cref="Toy"/>, or a <see cref="SwapToySetCoordinator{T}"/> that speaks for a set of
-        /// them), so the transform is always reachable; only a real <c>Toy</c> carries a ring
-        /// radius, which is why the preview and the arrival both degrade gracefully without one.
-        /// </summary>
-        Toy ResolveToy()
-        {
-            var surface = LiveSurface;
-            if (surface is Toy toy) return toy;
-            if (surface is MonoBehaviour mb) return mb.GetComponentInChildren<Toy>();
-            return null;
+            UpdateNavigateButton();
         }
 
         // ── Variants ─────────────────────────────────────────────────────────
@@ -764,6 +733,7 @@ namespace CosmicShore.UI
         /// </summary>
         void UpdateSwitchButton()
         {
+            UpdateNavigateButton();
             if (!switchButton) return;
 
             bool anyToCommit = false;
@@ -823,10 +793,7 @@ namespace CosmicShore.UI
             {
                 if (option.Apply == null) return;
                 PlayMenuAudio(MenuAudioCategory.Confirmed);
-                // The picture turns onto where the option LIVES before the act - the domain
-                // changer's switch for that colour - so the player sees the switch they just
-                // "flew through" rather than a recoloured toy. Resolved before Apply, because a
-                // flip-set re-homes its slots the moment the current option changes.
+                // The picture turns onto where the option LIVES before the act, when it has one.
                 var anchor = option.WorldAnchor?.Invoke();
                 if (anchor && preview) preview.Watch(anchor, option.WorldAnchorRadius);
                 ApplyOption(option);
@@ -845,10 +812,7 @@ namespace CosmicShore.UI
         {
             _selected = index;
 
-            // The picture answers "what IS that" for a name the player has never seen. Most
-            // options build nothing, and the window then keeps showing the toy rather than
-            // blanking - the honest picture, since the toy is still what Navigate would take
-            // them to.
+            // The picture answers "what IS that" for a name the player has never seen.
             if (preview) preview.ShowVariant(_rows[index].BuildPreview);
 
             for (int i = 0; i < _variantCards.Count && i < _rows.Count; i++)
@@ -936,6 +900,7 @@ namespace CosmicShore.UI
             // The press changed live state the rows describe, so the layer is re-asked rather than
             // left showing what was true before it.
             RebuildTopLayer();
+            UpdateNavigateButton();
         }
 
         /// <summary>
@@ -1076,18 +1041,32 @@ namespace CosmicShore.UI
 
         // ── Navigate ─────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Navigate is lit only while the SELECTED row has a live place in the world - a toy has no
+        /// world body to fly to, so with nothing made there is nowhere to go.
+        /// </summary>
+        void UpdateNavigateButton()
+        {
+            if (!navigateButton) return;
+            var surface = LiveSurface;
+            navigateButton.interactable = surface != null && surface.ShellAvailable
+                                          && ResolveDestination().HasValue;
+        }
+
         void Navigate()
         {
             CSDebug.LogVerbose(CSLogChannel.ToyBox, "[ToyBox] Navigate pressed.");
 
-            var toy = ResolveToy();
-            if (!toy)
+            // Resolved BEFORE the window closes: closing deselects the row.
+            var found = ResolveDestination();
+            if (!found.HasValue)
             {
-                CSDebug.LogWarning("[ToyConfigureModal] Navigate pressed with no live toy behind " +
-                                   "this card - the toybox has not built it, or it was torn down " +
-                                   "by a cell swap. Nothing happened.");
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    "[ToyBox] Navigate: the selected row has no live place in the world - nothing to fly to.");
+                UpdateNavigateButton();
                 return;
             }
+            var destination = found.Value;
 
             if (!crystalClickHandler)
             {
@@ -1096,10 +1075,6 @@ namespace CosmicShore.UI
                                    "toggle on this modal.");
                 return;
             }
-
-            // Resolved BEFORE the window closes: closing deselects the row, and the selection is
-            // what says "take me to what I spawned" rather than "take me to the toy".
-            var destination = ResolveDestination(toy);
 
             // Already flying (the player opened the Toy Box mid-freestyle): there is no blend to
             // ride and no coast to allow for, so this is a straight teleport to the stand-off.
@@ -1112,23 +1087,20 @@ namespace CosmicShore.UI
 
             OnCloseModal();
 
-            // ToggleTransition runs synchronously up to its first await, and `_isInFreestyle = true`
-            // plus OnGameStateTransitionStart are both on that side of it - so by the time this
-            // returns, the camera has already started its blend and IsInFreestyle is the honest
-            // answer to "did the toggle take?". It refuses while a transition is in flight or
-            // before the local vessel exists, and a refusal must not leave the ship teleported
-            // across the menu with the autopilot still driving it.
+            // ToggleTransition runs synchronously up to its first await, so by the time this
+            // returns IsInFreestyle is the honest answer to "did the toggle take?". A refusal must
+            // not leave the ship teleported across the menu with the autopilot still driving it.
             crystalClickHandler.ToggleTransition();
             if (!crystalClickHandler.IsInFreestyle)
             {
                 CSDebug.LogWarning("[ToyConfigureModal] The freestyle toggle declined (already " +
                                    "transitioning, or no local vessel yet) - the player was not " +
-                                   $"moved to '{toy.DisplayName}'.");
+                                   $"moved to '{destination.Label}'.");
                 return;
             }
 
             // Placed inside the SAME frame the blend started, and before the camera's LateUpdate,
-            // so the very first blend frame already aims at the toy.
+            // so the very first blend frame already aims at the target.
             PlaceVesselAt(destination, crystalClickHandler.TransitionDuration);
         }
 
@@ -1148,43 +1120,23 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Where Navigate goes: the SELECTED row's live place in the world when it has one
-        /// (<see cref="ToyShellOption.WorldAnchor"/>), otherwise the toy. A spawner's variant row
-        /// anchors on what it last released, so after a Spawn, Navigate takes the player to the
-        /// creature or plant they made rather than back to the bench that made it.
+        /// Where Navigate goes: the SELECTED row's live place in the world
+        /// (<see cref="ToyShellOption.WorldAnchor"/>), or null. A spawner's variant row anchors on
+        /// what it last released, so after a Spawn, Navigate takes the player to it.
         /// </summary>
-        NavigateDestination ResolveDestination(Toy toy)
+        NavigateDestination? ResolveDestination()
         {
-            if (_selected >= 0 && _selected < _rows.Count)
-            {
-                var option = _rows[_selected];
-                var anchor = option.WorldAnchor?.Invoke();
-                if (anchor) return new NavigateDestination(anchor, option.WorldAnchorRadius, option.Label);
-            }
-            return new NavigateDestination(toy.transform, toy.SwitchRingRadius, toy.DisplayName);
+            if (_selected < 0 || _selected >= _rows.Count) return null;
+            var option = _rows[_selected];
+            var anchor = option.WorldAnchor?.Invoke();
+            return anchor ? new NavigateDestination(anchor, option.WorldAnchorRadius, option.Label) : null;
         }
 
         /// <summary>
-        /// Put the vessel in front of the target (a toy's ring, or the thing a toy made), facing it.
-        ///
-        /// <para>Placed OUTSIDE the ring (<see cref="arrivalDistanceFactor"/> &gt; 1) and pointed
-        /// at it, so the player arrives looking at the thing they chose and flies THROUGH the ring
-        /// to use it. Arriving inside the ring would trip the toy on the first frame — the player
-        /// would use it without ever seeing it.</para>
-        ///
-        /// <para>Approached from <b>INSIDE the cell</b> — the toy's INWARD radial — so the arrival
-        /// looks back at the toy with the whole environment behind it and the player flies the same
-        /// way they would have flown there themselves. The toybox rings its toys around the
-        /// membrane facing inward, so this is also the toy's own front. Standing off on the OUTWARD
-        /// radial (which this did first) is geometrically the same shot and reads completely
-        /// differently: it parks the player <i>outside</i> the membrane looking at a toy against
-        /// empty space, with the world they are about to enter hidden behind it.</para>
-        ///
-        /// <para><paramref name="coastSeconds"/> is how long the vessel will fly itself before the
-        /// pilot is handed the stick — the enter-freestyle blend. The ship is pointed at the toy,
-        /// so that coast eats straight into the stand-off; it is added back here (measured from the
-        /// vessel's own live speed, so a fast hull is not under-allowed and a stationary one costs
-        /// nothing) and the pilot takes over at the intended distance.</para>
+        /// Put the vessel in front of the target (the thing a toy made), facing it, approached from
+        /// INSIDE the cell so the arrival looks at the target with the world behind it.
+        /// <paramref name="coastSeconds"/> is how long the vessel flies itself before the pilot is
+        /// handed the stick (the enter-freestyle blend); that coast is added to the stand-off.
         /// </summary>
         void PlaceVesselAt(NavigateDestination destination, float coastSeconds)
         {
@@ -1202,11 +1154,8 @@ namespace CosmicShore.UI
 
             var toyPos = target.position;
 
-            // The toybox places toys on a ring around the cell centre facing inward, so the lane
-            // that keeps the player inside the world is the toy's INWARD radial - the direction
-            // the toy is already looking. Falls back to the toy's own forward when it sits exactly
-            // on the centre, which no placement produces but which would otherwise yield a
-            // zero-length direction.
+            // The lane that keeps the player inside the world is the target's INWARD radial. Falls
+            // back to the target's own forward when it sits exactly on the centre.
             var cellCentre = ResolveCellCentre(toyPos);
             var approach = cellCentre - toyPos;
             approach = approach.sqrMagnitude > 0.001f ? approach.normalized : target.forward;
@@ -1218,8 +1167,8 @@ namespace CosmicShore.UI
             float coast = speed * Mathf.Max(0f, coastSeconds);
 
             // Inward is a BOUNDED direction in a way outward was not: run far enough along it and
-            // the arrival is past the core and out the other side, facing the toy across the whole
-            // cell. A fast hull's coast is the realistic way to get there, so the whole lane is
+            // the arrival is past the core and out the other side, facing the target across the
+            // whole cell. A fast hull's coast is the realistic way to get there, so the whole lane is
             // capped short of the centre rather than trusting the numbers to stay small.
             float lane = Vector3.Distance(toyPos, cellCentre);
             float reach = standOff + coast;
@@ -1228,7 +1177,7 @@ namespace CosmicShore.UI
             var stand = toyPos + approach * reach;
             player.SetPoseOfVessel(new Pose(stand, Quaternion.LookRotation(toyPos - stand, Vector3.up)));
 
-            // The platform's own off-screen arrow, for the frames after the arrival: the toy is
+            // The platform's own off-screen arrow, for the frames after the arrival: the target is
             // dead ahead on the frame the player lands, so the indicator hides itself immediately
             // and only speaks up once they have turned away. It takes itself down on arrival.
             ToyNavigationBeacon.PointAt(target, radius, label, player, crystalClickHandler);

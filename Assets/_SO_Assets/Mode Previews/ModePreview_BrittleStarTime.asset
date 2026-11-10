@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_BrittleStarTime
   m_EditorClassIdentifier:
   Mode: 74
-  Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut for the Brittle Star, laid as rings at match start, so a preview has no gates. It teaches Speed Mode.'
+  Notes: 'OPEN-ENDED, shell-only: four course shapes cut for the Brittle Star (BrittleStarTimeCourse), laid as rings at match start, so a preview has no gates. It teaches Speed Mode and the turn.'
   PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
   PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
@@ -21,7 +21,7 @@ MonoBehaviour:
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 16
-  ObjectiveText: Speed Mode down the straights, Cruise for the tight corners
+  ObjectiveText: One question of Speed Mode per intensity - shift, feather, coast, roll
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

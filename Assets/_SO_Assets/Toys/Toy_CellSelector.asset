@@ -14,9 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.CellSelectorToyDefinitionSO
   id: cell_selector
   displayName: Cell Selector
-  description: The freestyle world picker - and the freestyle reset. Fly through for
-    a matrix of mini-cells; fly a mini-cell to become that world. Fly the one you are
-    already in to reset it.
+  description: The freestyle world picker - and the freestyle reset. Pick a world
+    to become it; pick the one you are already in to reset it.
   unlockedByDefault: 1
   placementAngleDegrees: 300
   accentColor: {r: 0.55, g: 0.75, b: 1, a: 1}

@@ -1,0 +1,426 @@
+[
+ {
+  "skill": "fauna-creation (/home/user/Cosmic-Shore/.claude/skills/fauna-creation/SKILL.md, 181 lines, no references/ folder)",
+  "kit_scripts": [
+   "/home/user/Cosmic-Shore/Tools/Build/fauna_kit/celestial.py (the laws L1-L10 on a SPEC; a reader; --self-test, --all)",
+   "/home/user/Cosmic-Shore/Tools/Build/fauna_kit/build.py (build_body: spec -> prefab YAML; read_back: prefab -> spec drift; no __main__, no CLI)",
+   "/home/user/Cosmic-Shore/Tools/Build/fauna_kit/preview.py (four-view sheet of the SPEC)",
+   "/home/user/Cosmic-Shore/Tools/Build/fauna_kit/render_prefab.py (four-view sheet of the BUILT prefab from the real bonita.fbx braid mesh)",
+   "/home/user/Cosmic-Shore/Tools/Build/fauna_kit/specs/bee.py (the one species spec; documents the schema)",
+   "/home/user/Cosmic-Shore/Tools/Build/author_bee_assets.py (the species generator: emits the prefab from the spec via build.build_body, --check holds it to the spec via build.read_back, --self-test)"
+  ],
+  "gates": [
+   {
+    "name": "celestial.py: the ten celestial laws on the spec (exit 1 on any break)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/fauna_kit/celestial.py",
+    "has_negative_control": true,
+    "evidence": "self_test() lines 345-381: planted(label, mutate, law) (352-357) deep-copies the bee spec, applies a mutation and fails unless an error starting with the named law comes back; 15 planted defects at lines 362-380 (a one-sided part L6, a stubby stinger L5, no stinger L5, a prism off its limb L3, the body ahead of the heart L1, a solid model skin L2, steering with world up L6, Space not eroded L8, Time not faster L8, Time resized L8, stinger keeps size on Space L8, Mass heart inside its shields L8, a leg by name L9, two prisms in one place L7, a limb floating free L2). L4 (3 health prisms) and L10 (premise/role) have NO planted defect. Ran: --self-test -> 'celestial self-test: ok' exit 0; --all -> 'bee: celestial' exit 0."
+   },
+   {
+    "name": "author_bee_assets.py --check: the built prefab, configs, Netcode hash and lists held to the spec (build.read_back + celestial.check)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/author_bee_assets.py",
+    "has_negative_control": true,
+    "evidence": "self_test() lines 495-525: emit() then verify() must pass clean, then 8 planted defects (lines 502-516: tadpole hash kept, a dangling fileID reference, forager on, a prism moved off the spec via moved_prism() 486-493 which nudges one prism instance's m_LocalPosition.x by 0.5, the stinger made a health prism (guid swap), Space not eroded, Time not faster, hive unlisted from the Hesperides profile) each asserted to be caught by verify(). verify() lines 436-441 runs celestial.check(spec) and body_kit().read_back(bee, spec). Ran: --self-test -> 'self-test: 8/8 planted defects caught' exit 0; --check -> 'OK - every bee asset matches the model and Hesperides lists the hive.' exit 0."
+   },
+   {
+    "name": "build.read_back: the kit's own prefab-to-spec drift reader (every part's world pose, size, kind, direct-child parenting)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/fauna_kit/build.py",
+    "has_negative_control": false,
+    "evidence": "build.py has no __main__ and no argv handling (grep: none), so 'python3 Tools/Build/fauna_kit/build.py --self-test' prints nothing and exits 0: a gate-shaped command that passes by doing nothing. read_back() lines 298-367 reports five problem shapes (part missing, not a child of its parent, pose off > 1e-3, size off, wrong prism kind); only 'pose off' is ever planted, and only indirectly by author_bee_assets.py's defect #4 (line 508). Ran: --self-test -> (no output) exit 0."
+   },
+   {
+    "name": "render_prefab.py: refuses to draw a prefab that is not its spec (SystemExit on read_back problems)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/fauna_kit/render_prefab.py",
+    "has_negative_control": false,
+    "evidence": "scene() lines 73-75: 'if problems: raise SystemExit(\"the prefab is not its spec: ...\")'. No --self-test (the flag prints the docstring, exit 2); the stop is never asserted to fire. Ran on the shipped bee: 'python3 Tools/Build/fauna_kit/render_prefab.py bee Assets/_Prefabs/FloraAndFauna/Bees/BeeFauna.prefab --out <scratch>/bee_built.png' -> printed the png path, exit 0."
+   },
+   {
+    "name": "verify_fauna_heart_seat.py (the heart clears the body; /fauna section 8 step 2)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/verify_fauna_heart_seat.py",
+    "has_negative_control": true,
+    "evidence": "SPECIES[0]['negative_control_z'] = [(1.32, 'mouth'), (-4.07, 'depth')] at line 85 (two shipped-and-rejected Clawfish seats asserted to FAIL, each naming the rule it must break); checked at lines 380-392 ('NEGATIVE CONTROL DID NOT FIRE ... This check is not measuring what it claims to.'). No --self-test flag; the control runs inline. BUT the skill's own section 5 says this gate 'does not see a spindle body' (it walks model-instance bodies; only the Clawfish is listed), so it does not cover a kit-built species. Ran: 'OK: every measured heart is seated in its own cavity.' exit 0."
+   },
+   {
+    "name": "author_lifeform_heart_sizes.py --check (the heart is the size the band says; /fauna section 8 step 3)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/author_lifeform_heart_sizes.py",
+    "has_negative_control": false,
+    "evidence": "No --self-test (argparse: 'unrecognized arguments: --self-test', exit 2). --check prints 'RETIRED: lifeform hearts are one size (ElementalCrystalSetSO.CrystalWorldScale) and the authored HeartWorldScale band is read by nothing (Docs/ECOSYSTEM.md 64) - standing down, nothing checked or written.' and exits 0: a retired gate /fauna section 8 still lists, green by standing down."
+   },
+   {
+    "name": "author_lifeform_heart_collection.py --check (every heart carries its collection pair; the 'heart collection' gate the skill names)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/author_lifeform_heart_collection.py",
+    "has_negative_control": false,
+    "evidence": "No --self-test (argparse rejects it, exit 2); no planted defect anywhere in the file (grep self-test/planted/negative: none). Ran --check: 'OK: 31 lifeform prefab(s) scanned, every heart carries its collection pair' exit 0."
+   },
+   {
+    "name": "Tools/Shaders/verify_spindle_sway.py (the sway HLSL holds its 8 properties)",
+    "script": "/home/user/Cosmic-Shore/Tools/Shaders/verify_spindle_sway.py",
+    "has_negative_control": true,
+    "evidence": "Line 22: 'T2 carries its own negative control (a non-zero Amplitude must differ)'; line 130: '# negative control: the function must actually be doing something otherwise'. The control runs inline on every invocation (no --self-test flag; passing the flag is ignored). Ran: last line 'OK' exit 0."
+   },
+   {
+    "name": "field_parity.py (serialized-field parity for every MonoBehaviour on the prefab; /fauna section 8 step 1)",
+    "script": "/home/user/Cosmic-Shore/.claude/skills/asset-surgery/field_parity.py",
+    "has_negative_control": false,
+    "evidence": "No --self-test, no planted defect (grep: none). Ran on Assets/_Prefabs/FloraAndFauna/Bees/BeeFauna.prefab: 0 lines of output, exit 0 (a silent pass; nothing says what was compared)."
+   },
+   {
+    "name": "check_console_logging.py (the console-logging gate: raw Debug.Log and rich text in runtime code)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/check_console_logging.py",
+    "has_negative_control": true,
+    "evidence": "self_test() lines 154-179: 13 source snippets with an expected hit count each, 7 must fire (bare raw Debug.Log, UnityEngine.Debug.Log, rich text, multi-line rich text, rich text on a warning, emoji) and 6 must not (CSDebug info, a channelled LogVerbose, commented out, block-commented, a raw warning, inside a string literal, a different class); any mismatch fails. Ran --self-test: 'self-test passed' exit 0."
+   },
+   {
+    "name": "check_conditional_compilation.py (standing C# gate)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/check_conditional_compilation.py",
+    "has_negative_control": true,
+    "evidence": "SELF_TESTS list at line 248 with expected violation codes per snippet, run_self_test() line 273 prints 'expected X, got Y' on a miss (line 282). Ran --self-test: 'self-test: 8/8 passed' exit 0."
+   },
+   {
+    "name": "check_enum_member_references.py (standing C# gate)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/check_enum_member_references.py",
+    "has_negative_control": true,
+    "evidence": "self_test() line 287, docstring line 288: 'Negative control: a gate nobody has watched FAIL is a gate nobody should trust.' Ran --self-test: 'self-test: OK (16 checks)' exit 0."
+   },
+   {
+    "name": "check_switch_label_collisions.py (standing C# gate)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/check_switch_label_collisions.py",
+    "has_negative_control": true,
+    "evidence": "Line 37 '--self-test # negative control'; cases at lines 152-176 each state 'expected a hit' / 'expected no hit'. Ran --self-test: 'self-test: OK' exit 0."
+   },
+   {
+    "name": "check_using_directives.py (standing C# gate)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/check_using_directives.py",
+    "has_negative_control": true,
+    "evidence": "self_test() line 249 with per-case '(expected N, got N)' lines (line 326). Ran --self-test: last line '[ok ] `==` is a comparison, not an assignment target  (expected 1, got 1)' exit 0."
+   },
+   {
+    "name": "check_self_referential_locals.py (standing C# gate)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/check_self_referential_locals.py",
+    "has_negative_control": true,
+    "evidence": "self_test() line 203; docstring line 37: each measured false positive 'is a self-test case now'; cases print 'fires=... want=...'. Ran --self-test: 'self-test: OK' exit 0."
+   },
+   {
+    "name": "The reference compile (Tools/Build/unity_refcompile/run.sh; the verify rule)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/unity_refcompile/run.sh",
+    "has_negative_control": false,
+    "evidence": "run.sh has no --self-test and no planted input (grep: none). README.md line 31 records a one-off negative control dated 2026-10-14 (an undefined-method call inside #if FROGLET_WEB_TOYBOX) that nothing re-asserts on a run. Not run here: no self-test exists and no C# was changed; dotnet is present at /root/.dotnet (run.sh falls back to $HOME/.dotnet), so it is runnable."
+   },
+   {
+    "name": "The collider-budget delta (/fauna section 8: 'This is a HARD gate'; /ecology section 4)",
+    "script": "none - stated by hand in the hand-back; author_bee_assets.py report() prints the numbers",
+    "has_negative_control": false,
+    "evidence": "No script enforces it: /ecology SKILL.md section 4 (line 531) names no checker, the Tools/Build/*_budget.py scripts are per-mode (boneyard, cleave, hijack, skein, wildlife_cage), none for a fauna cell. author_bee_assets.py --check prints 'colliders at the caps: 228 comb prisms + 4 hive hearts (flora), 224 bee prisms (7 a bee) + 32 bee hearts (32 bees)' as a report, never against a budget; ECOSYSTEM.md 66.4 records '+128 prism colliders at the cap' by hand."
+   }
+  ],
+  "has_lessons_file": false,
+  "has_round_table": false,
+  "has_sheet": "Two four-view sheets and one measured number, no yardstick. preview.py draws the SPEC (from ahead / side / three-quarters / from behind; idealised three-strand braids, health boxes, danger red, the heart octahedron) to be LOOKED at and shown to the person with SendUserFile before building (SKILL section 4 step 3); render_prefab.py draws the BUILT prefab the same four ways from the real bonita.fbx braid mesh at the prefab's own poses (section 4 steps 4 and 8), written after the spec preview failed to show the fat-ribbon braids of the first build (section 5). Both auto-fit the body to the frame (preview.py line 74 'sc = size * 0.82 / span'; render_prefab.py line 120 '0.84 / span'), so there is no yardstick set, no game-size plate and no shipped species beside the new one, unlike the icon lockup sheet or the Cycles contact sheet. The measured half of the loop is celestial.py's numbers rather than a sheet metric (shield_dist lines 171-182: the Mass swing floor 3.812 that caught the first spec's 2.5). The loop ran once, on the bee (2026-11-01), and nothing has been judged in the editor (Docs/UNITY_VERIFICATION_CHECKLIST.md lines 1628, 1656, 1677 are all red). Both sheets rendered here: /tmp/claude-0/-home-user-Cosmic-Shore/b7688438-7f7a-54b4-9e21-e7cfb8fd2c20/scratchpad/bee_preview.png and /tmp/claude-0/-home-user-Cosmic-Shore/b7688438-7f7a-54b4-9e21-e7cfb8fd2c20/scratchpad/bee_built.png.",
+  "self_test_commands": [
+   "python3 Tools/Build/fauna_kit/celestial.py --self-test",
+   "python3 Tools/Build/fauna_kit/celestial.py --all",
+   "python3 Tools/Build/fauna_kit/build.py --self-test",
+   "python3 Tools/Build/fauna_kit/preview.py --self-test",
+   "python3 Tools/Build/fauna_kit/render_prefab.py --self-test",
+   "python3 Tools/Build/fauna_kit/preview.py bee --out <scratchpad>/bee_preview.png",
+   "python3 Tools/Build/fauna_kit/render_prefab.py bee Assets/_Prefabs/FloraAndFauna/Bees/BeeFauna.prefab --out <scratchpad>/bee_built.png",
+   "python3 Tools/Build/author_bee_assets.py --self-test",
+   "python3 Tools/Build/author_bee_assets.py --check",
+   "python3 Tools/Build/verify_fauna_heart_seat.py --self-test (no such flag; runs the plain check)",
+   "python3 Tools/Build/author_lifeform_heart_sizes.py --self-test",
+   "python3 Tools/Build/author_lifeform_heart_sizes.py --check",
+   "python3 Tools/Build/author_lifeform_heart_collection.py --self-test",
+   "python3 Tools/Build/author_lifeform_heart_collection.py --check",
+   "python3 Tools/Shaders/verify_spindle_sway.py --self-test (flag ignored; the inline control runs)",
+   "python3 .claude/skills/asset-surgery/field_parity.py Assets/_Prefabs/FloraAndFauna/Bees/BeeFauna.prefab",
+   "python3 Tools/Build/check_console_logging.py --self-test",
+   "python3 Tools/Build/check_conditional_compilation.py --self-test",
+   "python3 Tools/Build/check_enum_member_references.py --self-test",
+   "python3 Tools/Build/check_switch_label_collisions.py --self-test",
+   "python3 Tools/Build/check_using_directives.py --self-test",
+   "python3 Tools/Build/check_self_referential_locals.py --self-test",
+   "python3 Tools/Build/check_shield_collider_claims.py --self-test (not named by the skill; run for the collider area)",
+   "python3 Tools/Build/who_works_where.py query Tools/Build/fauna_kit",
+   "python3 Tools/Build/who_works_where.py query Tools/Build/author_bee_assets.py Assets/_Prefabs/FloraAndFauna/Bees"
+  ],
+  "self_test_results": [
+   "celestial self-test: ok  (exit 0)",
+   "bee: celestial  (exit 0)",
+   "(no output)  (exit 0: build.py has no main; the flag is a silent no-op)",
+   "(prints the docstring, last line 'and from behind. A READER: it writes only the PNG it is told to.')  (exit 2: no self-test)",
+   "(prints the docstring, last line 'the game's shaders. A READER: it writes only the PNG.')  (exit 2: no self-test)",
+   "/tmp/claude-0/-home-user-Cosmic-Shore/b7688438-7f7a-54b4-9e21-e7cfb8fd2c20/scratchpad/bee_preview.png  (exit 0)",
+   "/tmp/claude-0/-home-user-Cosmic-Shore/b7688438-7f7a-54b4-9e21-e7cfb8fd2c20/scratchpad/bee_built.png  (exit 0)",
+   "self-test: 8/8 planted defects caught  (exit 0)",
+   "OK - every bee asset matches the model and Hesperides lists the hive.  (exit 0)",
+   "OK: every measured heart is seated in its own cavity.  (exit 0; the inline Clawfish negative controls fired)",
+   "author_lifeform_heart_sizes.py: error: unrecognized arguments: --self-test  (exit 2)",
+   "RETIRED: lifeform hearts are one size (ElementalCrystalSetSO.CrystalWorldScale) and the authored HeartWorldScale band is read by nothing (Docs/ECOSYSTEM.md 64) - standing down, nothing checked or written.  (exit 0)",
+   "author_lifeform_heart_collection.py: error: unrecognized arguments: --self-test  (exit 2)",
+   "OK: 31 lifeform prefab(s) scanned, every heart carries its collection pair  (exit 0)",
+   "OK  (exit 0)",
+   "(no output)  (exit 0: a silent pass)",
+   "self-test passed  (exit 0)",
+   "self-test: 8/8 passed  (exit 0)",
+   "self-test: OK (16 checks)  (exit 0)",
+   "self-test: OK  (exit 0)",
+   "[ok ] `==` is a comparison, not an assignment target  (expected 1, got 1)  (exit 0)",
+   "self-test: OK  (exit 0)",
+   "self-test: OK (5 must-fire, 2 must-fire-once, 10 must-not-fire)  (exit 0)",
+   "TALK TO: Garrett (1)  - their work is here; build on it, and ask before replacing it (Docs/TEAM.md).  [no declared-owner line; LANDED: 2026-11-01 #1671 cece/jolly-lovelace-t8y3a1 merged by Garrett; IN FLIGHT: none]",
+   "TALK TO: Garrett (3)  - their work is here; build on it, and ask before replacing it (Docs/TEAM.md).  [LANDED: #1699 claude/voyage-ship (commits by Garrett) and #1671, both merged by Garrett 2026-11-01; IN FLIGHT: none]"
+  ],
+  "lessons_sources": [
+   "/home/user/Cosmic-Shore/Docs/ECOSYSTEM.md - section 66.4 'The body: a celestial lifeform, built from its spec (Garrett, 2026-11-01)' lines 12861-12906 (the verbatim brief 'fauna have rules like bodies made of spindles ... it doesn't really have a sense of up'; 'the stinger can thin on space. the stinger is just a danger prism. danger prisms are left behind without need for exceptions'; 'time makes them faster, but it is the base essentially'; the retired Earth insect; +128 colliders at the cap), 66.7 round 1 / round 2 lines 12944-12949 ('a fine start'), sections 64-65 the element forms (Garrett 2026-10-27/28 at lines 12339, 12472, 12493: 'the space spindle needs to be universally scaled', 'you stretched it such that the crystal inside is also'), line 3841 (danger prisms, 2026-11-01), line 12164 (Garrett 2026-10-21, spindles that wither morph into a shard); 25 dated-quote lines in all",
+   "/home/user/Cosmic-Shore/.claude/skills/fauna-creation/SKILL.md - section 0 (Garrett 2026-11-01 verbatim, the mistake never to repeat), section 5 'Traps the bee and the survey found' (18 bullets, the dated ones 2026-11-01: resolved 'Space does not thin a stinger', measure the Mass swing to the SHIELDS 3.812 not the boxes, roll every repeated part radially, a braid is stretched along its length never scaled evenly, one hook not five call sites), section 6 decided by Garrett 2026-11-01 (Time is the base body faster; the stinger thins on Space; a skeleton leaves danger prisms) - the inline LESSONS, no file",
+   "/home/user/Cosmic-Shore/Docs/SPINDLE_LOD.md - the spindle-as-wire language the laws cite (lines 23-26 'the skeleton made beautiful', 169-171 moving spindles show mass is alive), Garrett 2026-10-21 at line 357 ('Let's also apply this to all spindles including fauna like sharks') and line 460 ('Make a synthetic spindle geometry that is more like a wire instead of a root'), the living-braid / synthetic-wire line L2 rests on",
+   "/home/user/Cosmic-Shore/Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md - the LOCKED invariants the laws point at (the spindle path, 'living mass is the mass that moves', wither outside-in, no interpenetration, no pop-in); the designer 2026-10-21 at line 50 (shielded prisms are food only in a frenzy), Garrett 2026-10-28 at line 919 (shift the shielding effect from Charge to Mass - the L8 element table's origin); 4 dated-quote lines",
+   "/home/user/Cosmic-Shore/Docs/SUBSTRATE_FAUNA.md - L10's source for a premise and a feeling (Garrett 2026-10-08, 'surrounded ... scary') and SubstrateArms.Frame, the only shipped up-free frame L6 names; 1 dated-quote line",
+   "/home/user/Cosmic-Shore/Docs/SWARM_FAUNA.md - the sibling kingdom's ROUND record (rounds 3-7: 'Findings from round 5' 7.3 line 592, 'Findings from round 6' 12.6 line 1254, round 7 section 14 line 1348; 'the crystal sheets the lead disliked' line 1258-1259), the nearest thing in the area to the round table the plan asks for; 0 dated owner quotes by the plan's grep, so its lessons are measured findings, not the owner's words"
+  ],
+  "owner": "Garrett - who_works_where.py query Tools/Build/fauna_kit prints no declared-owner line (Docs/TEAM.json 'owners' declares only Activation and UGS/the backend, both Shombith; nothing for fauna, ecology or Tools/Build) and ends 'TALK TO: Garrett (1) - their work is here; build on it, and ask before replacing it (Docs/TEAM.md)' (#1671 merged by Garrett 2026-11-01; no branch in flight). The second query (the bee generator + the Bees prefabs) says 'TALK TO: Garrett (3)'. TEAM.json's role line for Garrett: 'Owner of bleeding-edge: reviews and merges most pull requests (vessels, tests, environment / ecology, arcade modes, impact effects)'. The laws and every dated decision in the skill are his words (2026-10-21, 10-27/28, 11-01).",
+  "notes": "Six-part verdict against Docs/SKILL_TRAINING_PLAN.md section 1. (1) KIT: yes. Tools/Build/fauna_kit/ (celestial.py 407 lines, build.py 367, preview.py 107, render_prefab.py 147, specs/bee.py 84) plus author_bee_assets.py (571): spec in, prefab YAML out, guids and the Netcode hash minted deterministically (make_ids line 145), read back from the prefab's own transforms. One species spec exists against nine fauna models; build.py is a library with no CLI. (2) GATE: yes, two real ones that ran green: celestial.py exits 1 on any of L1-L10 and the generator's --check holds prefab, four element configs, speed bands, ErodeSpindle, the hash, the retired Bee.fbx and the Hesperides lists to the spec. (3) SHEET / MEASURED LOOP: partial - two four-view sheets (spec and built prefab) looked at before building, no yardstick set, no game-size plate, no shipped species beside the new one, no sheet metric; the measured critique is celestial.py's numbers (shield_dist, the 3.812 Mass floor that caught the first spec's 2.5). The loop has run once, on the bee; nothing judged in the editor (three red checklist sections, lines 1628/1656/1677). (4) LESSONS: inline only - SKILL section 5 'Traps the bee and the survey found' (18 bullets, dated 2026-11-01 entries, two marked resolved/superseded the same day) and section 7.5 'Every species adds what it taught to section 5 here, the way /labmaker LEARNINGS does'; no LESSONS file, no references/ folder, no owner-words language doc separate from the laws table (section 2's Source column plays that part). (5) NEGATIVE CONTROLS: present and strong on the two primary gates - celestial.py plants 15 defects (lines 362-380) and the generator plants 8 (lines 502-516), each asserted to be caught - which means the plan's Appendix A row ('fauna-creation ... B+ ... lacks a negative control', lines 118, 127, 478) understates this skill on that half. What is genuinely missing: no planted defect for L4 (3 health prisms) or L10 (premise/role); nothing of the kit's own proves build.read_back's four other problem shapes (missing part, wrong parent, wrong size, wrong kind) or render_prefab.py's 'not its spec' stop; 'python3 build.py --self-test' is a silent no-op that exits 0 (no main) - a gate-shaped command that passes by doing nothing; of the delegated /fauna section 8 gates, heart-seat carries a real negative control but does not see spindle bodies (Clawfish only), heart-sizes is RETIRED yet exits 0 'standing down', heart-collection and field_parity have none and field_parity passes silently, the reference compile's negative control is a one-off in its README (2026-10-14), and the 'HARD' collider-budget gate is a hand-written number with no script. The five standing C# gates and the console-logging gate all carry self-tests with negative controls and all passed. (6) PLAN WITH A ROUND TABLE: no. Section 7 'Extending this to other lifeforms (the plan)' is five prose steps (retrofit one shipped species per round, Garrett's pick first; swarm/substrate/NCA members; a flora kingdom switch; the generic builder - done; learnings); 'round' appears in the skill only as 'the bee round 2 list is the template' (line 84) and 'one species per round' (line 173); ECOSYSTEM.md 66 narrates round 1 (10-31) and round 2 (11-01) in prose, the kit took three further same-day fix commits (d3e293fa5a, 4886de458f, f54ee31b7c on 2026-11-01); no *FAUNA*PLAN*.md exists; the only round-table-shaped table in reach is the icon plan's (Docs/Icons/ABILITY_ICON_SKILL_PLAN.md:422 '| Round | What | Why first |'), the shape plan section 3.7 asks for; the plan's own status row '3.7 Near-A skills | fauna-creation first | proposed 2026-11-07' (line 456) is the only row anywhere. Method notes: no file was edited and no git write ran; the two PNGs went to the scratchpad; 'git status' shows untracked .claude/skills/multiplayer/, .claude/skills/world-look/ and Tools/Build/look_kit/ that predate this task and are not mine. check_shield_collider_claims.py was run as the nearest collider gate but the skill does not name it. The plan's section 9 owner-quote grep (name immediately followed by a date and a quote) finds only 7 lines in ECOSYSTEM.md and 0 in the other docs; the looser 'date near a quote' count used for lessons_sources is 25 / 12 (PRISM_ANIMATION.md) / 4 / 2 / 3 / 1 lines per doc, so a LESSONS seed for this skill would be mined mostly from ECOSYSTEM.md 64-66 and SPINDLE_LOD.md."
+ },
+ {
+  "skill": "/cardart (.claude/skills/cardart/SKILL.md; no references/ folder)",
+  "kit_scripts": [
+   "/home/user/Cosmic-Shore/Tools/Build/render_card_backgrounds.py (the driver: roster read off ArcadeGames.asset + ArenaGames.asset, recipe() per card in four tiers RUN/COURSE/MODEL/MONTAGE, CAMERAS, accents(), montage(), contact_sheet(); flags --check / --report / --sheet / --list-sources; HAND_CAPTURED opt-out; calls author_card_backgrounds.py after a write run; 30 commits on bleeding-edge since PR #911, 2026-09-26)",
+   "/home/user/Cosmic-Shore/Tools/Build/card_art_harness/run.sh (compiles the shipped generators + the shims with Roslyn csc from a dotnet 8 SDK into $TMPDIR, no .csproj; runs cardart.exe on the spec)",
+   "/home/user/Cosmic-Shore/Tools/Build/card_art_harness/Program.cs, Renderer.cs, UnityShim.cs, PlatformShim.cs (the faithful UnityEngine/platform shims, the rasterizer with fresnel palette read, ACES, bloom; a shim Debug.LogError increments Harness.Faults and the card is refused)",
+   "/home/user/Cosmic-Shore/Tools/Build/author_card_backgrounds.py (the IMPORT half: writes each PNG's .meta as a Sprite, rewires the card's CardBackground, deterministic folder/README guids; flags --check / --strict; landed 2026-09-26, 2 commits)",
+   "/home/user/Cosmic-Shore/Tools/Build/card_backgrounds_manifest.json (the record of the last FULL run: source_hash, tier, cell, environment, prism and triangle count per card; 36 cards)",
+   "/home/user/Cosmic-Shore/Tools/Build/arcade_mode_lib.py (adjacent, owned by /arcadegame: card_background(), card_errors(), check_cards(), drift() - the one place a mode generator gets the card's render guid; --self-test)"
+  ],
+  "gates": [
+   {
+    "name": "render_card_backgrounds.py --check (re-render every committed card and byte-compare)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/render_card_backgrounds.py",
+    "has_negative_control": false,
+    "evidence": "No --self-test and no test function in the file (grep for self-test / unittest / def test_ finds nothing; the only asserts are runtime guards at lines 64, 156, 390, 1386). The gate is main() lines 1497-1509: `if not target.exists() or target.read_bytes() != fresh.read_bytes(): stale.append(name)` then prints `STALE [...]` and returns 1. Nothing anywhere asserts that a deliberately altered card or source FAILS it. What exists instead are live firings: today's named run `--check Breakwater Headlong Cleave` printed `render_card_backgrounds --check: STALE ['Headlong']` (Headlong now 0 prisms / 6124 triangles against the manifest's 8908; Cleave reproduced 14,277 prisms), and SKILL \u00a73 records a merge staling Headlong. The FULL roster cannot run on this branch: `--report` raises `AssertionError: BurrowRun: no recipe` at recipe() line 1078 (REFACTOR_BACKLOG S95, 'half fixed' since 2026-10-31), and the manifest's source_hash (3739...) differs from the current source_hash() (a4c6...), so the committed roster is stale by the kit's own definition. Not wired into .claude/skills/ship/gates.sh, any hook or any workflow in .github/ (grep finds it only in the arcadegame/arenagame skills, OFFLINE_PROOFS.md, audit_prism_clipping.py, author_tandava_assets.py, bake_prism_layouts.py)."
+   },
+   {
+    "name": "author_card_backgrounds.py --strict (every live card wears its own render; --check: wiring consistency)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/author_card_backgrounds.py",
+    "has_negative_control": false,
+    "evidence": "No --self-test and no test function. main() lines 250-333 collects `problems` for a CardBackground guid that resolves to no asset (line 271), a capture present while the card points elsewhere (lines 288-290), a capture no live card is named for (lines 303-311) and a missing .meta (line 284); --strict adds `wired < len(cards)` (line 327). None of these is proven on a bad input in code. It fires live today: `--check --strict` ends `card-backgrounds: FAIL - Assets/_Graphics/ARCADE/CardBackgrounds/Tandava.png: no live card is named for this file` with 41/42 live cards wearing their own screenshot (REFACTOR_BACKLOG S87, red since 2026-10-28, 'the Tandava pair is Shombith's'). Trap found while measuring: `check` is set only by `--check` (line 251), so `--strict` ALONE - the form SKILL \u00a70 and \u00a72.6 write - is a WRITE run that imports .meta files and rewires cards; the read-only gate is `--check --strict`."
+   },
+   {
+    "name": "unknown card RAISES (SKILL \u00a72.4: 'Unknown stems RAISE, so a new card cannot silently ship blank')",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/render_card_backgrounds.py",
+    "has_negative_control": false,
+    "evidence": "recipe() line 1078: `raise AssertionError(f\"{s}: no recipe - add a branch to recipe() and a CAMERAS row (see the /cardart skill)\")`. No test feeds a made-up stem and asserts the raise; the proof is accidental - it fires on the live roster today (BurrowRun), which also blocks every full-roster run and the manifest."
+   },
+   {
+    "name": "LOUD shim stand-in (SKILL \u00a72.2: 'every lay-path stand-in is LOUD, Debug.LogError -> the run refuses to photograph')",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/card_art_harness/UnityShim.cs + Program.cs",
+    "has_negative_control": false,
+    "evidence": "UnityShim.cs:423 `LogError(...) { Console.Error.WriteLine(...); Harness.Faults++; }`, UnityShim.cs:450 Instantiate logs an error, Program.cs:64-75 snapshots Faults before each card and `if (UnityEngine.Harness.Faults != faultsBefore) { ... refusing to photograph it; return 1; }`, Program.cs:76 an empty scene returns 1, Program.cs:485 a generator type not in SOURCES logs an error. No spec or test deliberately reaches a lay path / names an uncompiled generator and asserts the non-zero exit."
+   },
+   {
+    "name": "prove fidelity by COUNT (SKILL \u00a72.3: the harness's prism count must equal the number the mode's doc or budget tool states)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/render_card_backgrounds.py (counts printed by Program.cs into stats.json and the manifest)",
+    "has_negative_control": false,
+    "evidence": "A hand comparison, never asserted: the counts live in card_backgrounds_manifest.json (Cleave 14277 line 54, Hijack 3978 line 102, Scurry 24966 line 171) and in Docs/ECOSYSTEM.md's budget table (lines 11855, 11860), but no code compares the two; a drifted count would pass --check as long as the image re-rendered byte-identically to itself. Today's run reproduced Cleave at 14,277."
+   },
+   {
+    "name": "arcade_mode_lib.py --self-test (the card-wiring negative controls a mode generator's --check runs; named by /arcadegame \u00a73, not by /cardart's SKILL.md)",
+    "script": "/home/user/Cosmic-Shore/Tools/Build/arcade_mode_lib.py",
+    "has_negative_control": true,
+    "evidence": "_self_test() lines 609-674: line 633 `regressed = card.replace(rendered, placeholder)`; lines 634-635 `expect(any(\"CardBackground\" in e for e in card_errors(rel, regressed)), \"a card emitted with the legacy placeholder over its render is a validation error\")`; lines 643-644 `expect(drift({rel: regressed}) != [], \"drift: a CardBackground regression ON DISK fails --check (the generator emits the render)\")`; line 629 `card_background(\"NoSuchModeEver\") == placeholder`; lines 652-653 a .meta with a different guid IS drift. Ran today: 14/14 ok, `self-test: OK`, exit 0. This guards the generator side (a mode generator re-emitting the placeholder), not the renderer's or the author's own gates."
+   }
+  ],
+  "has_lessons_file": false,
+  "has_round_table": false,
+  "has_sheet": "PARTIAL - a transient contact sheet plus a hand count, nothing committed and no owner on record. The sheet: contact_sheet() at render_card_backgrounds.py line 1403, written by `--check --sheet` to $CARD_SHEET (else the temp dir) at half size in roster order, touching nothing in Assets/; the loop is SKILL \u00a70 'render to temp + contact sheet ... Read the sheet (judge at CARD size), tune the recipe, repeat' and \u00a72.6 'Judge the sheet at card size: the plate is 313x208 behind a title, an avatar row, a star and a genre petal; a card reads first as a colour and a silhouette'. Evidence it was used: line 707 `CAMERAS ... Tuned by eye on the contact sheet`, line 1297 `SKIMRACE_RING_GLYPH = 3.6 ... the size approved on the sheet`. The measured half is SKILL \u00a72.3 'prove fidelity by COUNT' (Cleave's Swell 14,277, Hijack's Switchyard 3,978, Scurry's shells 24,966 reproduced to the prism; the harness prints prisms/triangles per card into stats.json and the manifest) - a number, but compared by hand and asserted nowhere. Against the plan's shape it lacks: a committed audit sheet (no PNG under Docs; `ls Docs | grep -i card` is empty), a yardstick set, the card shown on the real grid beside its neighbours (the skill itself says 'whether it LOOKS right in the grid beside the others ... is the one playtest this needs' and stays editor-only), any legibility number at card size, and any record of an owner looking at a sheet.",
+  "self_test_commands": [
+   "python3 Tools/Build/arcade_mode_lib.py --self-test",
+   "python3 Tools/Build/author_card_backgrounds.py --check --strict   (the read-only form; --strict alone writes)",
+   "python3 Tools/Build/render_card_backgrounds.py --report   (read-only; the full-roster entry point)",
+   "TMPDIR=/tmp/claude-0/-home-user-Cosmic-Shore/b7688438-7f7a-54b4-9e21-e7cfb8fd2c20/scratchpad/cardart_tmp python3 Tools/Build/render_card_backgrounds.py --check Breakwater Headlong Cleave   (named run; the harness built into the scratchpad with the dotnet 8 SDK at /root/.dotnet; about 7 s)",
+   "(no --self-test exists on render_card_backgrounds.py or author_card_backgrounds.py)"
+  ],
+  "self_test_results": [
+   "self-test: OK   [exit 0; 14/14 ok]",
+   "card-backgrounds: FAIL / - Assets/_Graphics/ARCADE/CardBackgrounds/Tandava.png: no live card is named for this file - check the spelling against the report above   [exit 1; 41/42 live cards wear their own screenshot]",
+   "AssertionError: BurrowRun: no recipe - add a branch to recipe() and a CAMERAS row (see the /cardart skill)   [exit 1; the full roster cannot render on this branch, S95]",
+   "render_card_backgrounds --check: STALE ['Headlong'] - re-run without --check   [returns 1; Cleave 14277 prisms, Breakwater 3165, Headlong 0 prisms / 6124 triangles vs the manifest's 8908; git status unchanged]",
+   "manifest source_hash 3739933571a53e1f0faea1cb9d69463ef071f7e18d568885270643ca739619f2 != current a4c60917070911def98c02b0657d1cde8fbaccb7081002cdcae1a16984eba11a; 36 cards in the manifest, 42 PNGs on disk (6 named-run cards never entered the manifest, Tandava.png is the orphan)"
+  ],
+  "lessons_sources": [
+   "/home/user/Cosmic-Shore/.claude/skills/cardart/SKILL.md \u00a73 'Traps already paid for (each one shipped a wrong picture first)' - 10 bullets, 2 dated (2026-10-28 SwitchbackFunType broke the harness's second compile; 2026-10-31 a named run writes the PNG but not the manifest); the rest undated (membrane radius is a field, hex-blob arrays, the glass nucleus, frame the mass, controllers mutate the arena, course generators need the controller's inputs, a base-branch merge stales a card you never touched, int32 seeds)",
+   "/home/user/Cosmic-Shore/.claude/skills/arcadegame/SKILL.md \u00a73 line 112 (and line 127): the card's CardBackground is owned by /cardart, not the mode generator - twelve generators emitted the placeholder until #969 (2026-10), Waystation clobbered its rendered card; 'a generator that rewrites a whole asset owns every field in it unless it derives the ones another tool owns from that tool's output'",
+   "/home/user/Cosmic-Shore/Docs/REFACTOR_BACKLOG.md S87 (2026-10-28: author_card_backgrounds red on bleeding-edge itself, Tandava.png names no live card, 'the Tandava pair is Shombith's'), S95 (2026-10-31: the harness did not compile and the roster raises on BurrowRun; half fixed), S99 (2026-10-31: Serpent Gulag's card missing from the manifest)",
+   "/home/user/Cosmic-Shore/Docs/HomeHub/ARCHITECTURE.md \u00a73.8 'The card background: each mode's own arena, RENDERED from its data' - the design record, landed with PR #911 on 2026-09-26: 'The first cut of this section called the capture play-testing and built only the import half; that was the wrong line. An arena is data'; 22 of 25 cards shared four legacy images",
+   "/home/user/Cosmic-Shore/Docs/UNITY_VERIFICATION_CHECKLIST.md - the per-mode ship entries that record the gate's runs and re-renders: Slingshot 2026-10-08 (line 8990, '32/32 wired'), Thresher Time 2026-10-13 (7886), Wrasse Run 2026-10-20 (6071), Switchback 2026-10-26 (3261, 'card art re-rendered'), Tandava 2026-10-06 (16416), Lantern Run 2026-11-01 (21047, '--check stops on BurrowRun: no recipe; bleeding-edge fails the same way')",
+   "/home/user/Cosmic-Shore/Docs/PALETTE.md lines 20-34 (2026-11-03: Nocturne became the default; the rendered card art still reads Photic, 'Not moved by the switch') and /home/user/Cosmic-Shore/Docs/ECOSYSTEM.md \u00a765 (Garrett, 2026-10-28: 'Intensity 2, which the card art renders, is unchanged'). NOTE: no dated quote from Garrett, Shombith or Yash about an arcade card RENDER exists anywhere in Docs or the skill; the nearest owner words are Shombith 2026-10-25 on the card chrome ('The game cards are still noisy', MENU_REDESIGN_B \u00a772) and 2026-10-26 on the Hangar's class-card renders ('Go ahead with the colourful card renders', \u00a782 - a different kit, author_hangar_card_art.py). Every lesson in this area is session-written; no owner judgement of a card is on record."
+  ],
+  "owner": "No declared owner: `python3 Tools/Build/who_works_where.py query Tools/Build/render_card_backgrounds.py Tools/Build/card_art_harness Tools/Build/author_card_backgrounds.py` printed no OWNER line (Docs/TEAM.json `owners` declares only Activation and UGS/backend, both Shombith). Its measured line: \"TALK TO: Shombith (8), Garrett (3), Yash (2), aradia1 (1)\". In flight on these paths: claude/jacks-decoy-run (2026-11-07), cece/confident-goodall-6cpxan (2026-10-29), cece/vibrant-archimedes-n3xn3x (2026-10-16), claude/jolly-maxwell-dgwdpz (2026-10-14), claude/duel-humans-gate-wip (2026-10-08). Shombith heads tooling (CLAUDE.md \u00a7 Team, 2026-10-23), so the kit and skill go through him; S87 names the Tandava orphan as his.",
+  "notes": "Verdict against the six-part shape (Docs/SKILL_TRAINING_PLAN.md \u00a71): (1) KIT - yes: one kit, one command, byte-deterministic, guids kept, roster read never typed; landed PR #911 2026-09-26, 30 commits to the driver since, 42 cards on disk. (2) GATE - exists but is red and unread: the full-roster --check cannot run (BurrowRun: no recipe, S95 half fixed since 2026-10-31), the manifest's source hash no longer matches the sources, the named --check fires on Headlong today, author --check --strict fails on the orphan Tandava.png (S87 since 2026-10-28), and neither gate is wired into /ship gates.sh, a hook or CI - the CLAUDE.md lesson 'a gate that aborts looks exactly like a gate that passes if nobody reads its output' applies. (3) SHEET - partial: a transient contact sheet judged by the session at card size plus a hand prism count; no committed audit sheet, no yardstick, no grid view, no measured legibility, no owner look on record. (4) LESSONS - no file, no owner's words: a 10-bullet Traps section (2 dated) in SKILL.md, with the rest scattered across /arcadegame \u00a73, REFACTOR_BACKLOG S87/S95/S99 and the checklist. (5) NEGATIVE CONTROL - none for either named gate (no --self-test on render_card_backgrounds.py or author_card_backgrounds.py); only the adjacent arcade_mode_lib.py --self-test asserts the card-wiring regressions (14/14 ok). (6) PLAN WITH A ROUND TABLE - none (no Docs/*CARD*_PLAN.md; 'round' in the skill matches only the word 'background'); the plan's \u00a73.7 already lists cardart among the near-A skills lacking a negative control and a round table, and Appendix A grades it B+ on '\u00a73 traps' and 'renders looked at'. Two traps found while measuring, for the owner: SKILL \u00a70/\u00a72.6 write `author_card_backgrounds.py --strict` alone, which is a WRITE run (check is set only by --check, line 251) - a CI or session gate must be `--check --strict`; and 6 cards rendered by named runs since 2026-10-31 (Brittle Star Time, Lantern Run, Scarab Rally, Serpent Gulag, Serpentine, Thornline) are absent from the manifest until a Burrow Run recipe lets the full roster run once (which will re-hash and likely re-stale every card). Nothing was edited; the harness was built in the scratchpad; git status is unchanged."
+ },
+ {
+  "skill": "prism-morph (/home/user/Cosmic-Shore/.claude/skills/prism-morph/SKILL.md, 47,699 bytes, 13 sections; the skill folder holds ONLY SKILL.md, there is no references/ directory)",
+  "kit_scripts": [
+   "Tools/Shaders/wire_prism_cradle.py (the ShaderGraph splice of PrismCradleDeform into BlockGraph + ExplodingBlockGraph; idempotent, --check exits 1 if not wired)",
+   "Tools/Shaders/verify_prism_cradle.py (the clang++ proof-by-convergence harness over the SHIPPED PrismCradle.hlsl, 9 properties + a -D negative control; no --self-test flag, the control is test 10 of every run)",
+   "Tools/Shaders/prism_vertex_chain.py (morph_slots / walk_past_morphs: the structural definition of a vertex morph every sibling wirer walks past; a library with no main, no --check and no self-test)",
+   "Tools/Shaders/wire_prism_gravity_warp.py + Tools/Shaders/verify_prism_gravity_warp.py (the second member, the black hole's warp: splice before the cradle, harness with a -D negative control)",
+   "Assets/_Graphics/Materials/Graphs/PrismCradle.hlsl, Assets/_Scripts/Utility/PrismCradle.cs, Assets/_Scripts/Utility/Foundation/HighPolyPrismMesh.cs, Assets/Resources/PrismCradleConfig (the runtime kit the skill calls the reference implementation)",
+   "Neighbours the skill names: Tools/Shaders/verify_prism_slice.py, Tools/Shaders/verify_prism_collision_burst.py (clang++ + glslang front-end tier), Tools/Shaders/verify_spindle_lod.py (the abs() mutant), Tools/Build/prism_collision_burst_lab/build.py + parity.py (the only piece under Tools/Build, and it is the burst's lab, not the cradle's)",
+   "NOTE: the kit lives under Tools/Shaders/, not Tools/Build/ as the six-part shape names it; there is no one-command author.py and no sheet/render step for the cradle or the warp (no Tools/Shaders/render_* exists for either)"
+  ],
+  "gates": [
+   {
+    "name": "The cradle harness (SKILL.md section 7: 'HARD GATE', 'Always carry a NEGATIVE CONTROL ... assert that it FAILS')",
+    "script": "Tools/Shaders/verify_prism_cradle.py",
+    "has_negative_control": true,
+    "evidence": "Docstring lines 46-47 ('10. NEGATIVE CONTROL: rebuilt with the Jacobian's RADIAL term neutered (-D override of the file's own #ifndef dial), test 6's error STOPS CONVERGING'); CONTROL_MAIN at line 510; main() line 624 build_and_run(work, CONTROL_MAIN, ['-DPRISM_CRADLE_MIN_RADIAL=1.0'], 'control'); lines 563-566 assert the error PLATEAUS ('PLATEAUS (control fires)' vs 'converged anyway (control failed)'); line 626 'FAILED: the negative control did not fire'. No --self-test flag; the control runs inside every invocation. Watched firing here: 'radial Jacobian neutered, 2576 trials: worst 1-dot 0.02xd:0.761 0.01xd:0.751 0.005xd:0.746 0.0025xd:0.744 -> PLATEAUS (control fires)'."
+   },
+   {
+    "name": "The gravity-warp harness (SKILL.md section 13: 'a negative control that switches the normal correction off')",
+    "script": "Tools/Shaders/verify_prism_gravity_warp.py",
+    "has_negative_control": true,
+    "evidence": "Docstring lines 37-38 ('13. NEGATIVE CONTROL: rebuilt with the normal correction switched off (-D override of the file's own #ifndef dial), test 9 FAILS'); CONTROL_MAIN line 531; line 606 build_and_run(work, CONTROL_MAIN, ['-DPRISM_GRAVITY_WARP_NORMAL_CORRECTION=0'], 'control'); line 608 'FAILED: the negative control did not fire'. Watched firing here: 'normal correction off: worst |cos| 0.945 -> FIRES'."
+   },
+   {
+    "name": "The sight-composition harness (SKILL.md section 7 names it as the shape to copy)",
+    "script": "Tools/Shaders/verify_prism_sight_composition.py",
+    "has_negative_control": true,
+    "evidence": "In-test inverted inputs rather than a -D mutant of the shipped file: line 22 'The gate's negative control is the same light with the gate cleared, which has to light everything again'; line 257/277 (test 3c clears _PrismLitPeerShape and asserts all three domains light, else FAIL); line 301 'Four properties, each with its negative control built in' (5b unmarked, 5c outside the cone, 5d peer-only). No --self-test flag. Ran clean: 'All composition properties hold for the shipped file.'"
+   },
+   {
+    "name": "The slice harness (SKILL.md section 13: 'adds a second proof tier ... glslang front-end-compiles every pass')",
+    "script": "Tools/Shaders/verify_prism_slice.py",
+    "has_negative_control": true,
+    "evidence": "Docstring line 34 'NEGATIVE CONTROLS, each must FAIL the test it guards'; main() lines 470-478: -DPRISM_SLICE_CAP_FLAG=2.0 ('cap-flag control'), -DPRISM_SLICE_DISSOLVE_OVERSHOOT=0.0 ('overshoot control'), the 'broken-centre' build, each with `ok &= fired`. NOT watched firing here: main() lines 450-452 `for tool in ('clang++', 'glslangValidator'): if shutil.which(tool) is None: raise SystemExit` and glslangValidator is not installed, so the run ended before the C++ tier: last line 'glslangValidator not found', rc=1."
+   },
+   {
+    "name": "The collision-burst harness (SKILL.md section 7 'Collision Burst round 9' and section 13)",
+    "script": "Tools/Shaders/verify_prism_collision_burst.py",
+    "has_negative_control": true,
+    "evidence": "Docstring line 57 'NEGATIVE CONTROLS, each must FAIL the test it guards'; main() lines 1192-1209: fifteen -D controls (PRISM_BURST_DISSOLVE_OVERSHOOT=0.0, PRISM_BURST_UNIFORM_VALUE=0, PRISM_BURST_ENVELOPE_BASE=1.0, PRISM_BURST_BEND_NORMAL=0 'cheap-normal control', PRISM_BURST_GRADE_SMOOTH=0, PRISM_BURST_PIVOT_BIAS=0.0, ... PRISM_BURST_SUCTION_WHOLE_FACE=1) each printed FIRED / DID NOT FIRE. NOT watched firing here: same glslang refusal at lines 1172-1174; last line 'glslangValidator not found', rc=1."
+   },
+   {
+    "name": "The spindle LOD harness (SKILL.md section 5: 'keep removing the abs() as a mutant (verify_spindle_lod.py)')",
+    "script": "Tools/Shaders/verify_spindle_lod.py",
+    "has_negative_control": true,
+    "evidence": "self_test() lines 588-662: a `mutants` dict (line 590) applied to the shipped shader text, each asserted to be caught, including line 599 'a flipped projection reads as a negative width' (the abs(UNITY_MATRIX_P._m11) mutant the skill names) and `inc_mutants` for IncorporealDepth.hlsl (line 631); line 625 asserts each mutant still matches the shader. Ran: 'self-test: OK (31 mutants caught)', rc=0."
+   },
+   {
+    "name": "The sibling wirers' drift gate (SKILL.md section 6/9: 'for w in Tools/Shaders/wire_*.py; do python3 $w --check; done')",
+    "script": "Tools/Shaders/wire_prism_cradle.py, wire_prism_gravity_warp.py, wire_prism_flight_clock.py, wire_prism_jiggle_clock.py, wire_prism_suction_clock.py and the other 11 wire_*.py (17 in all)",
+    "has_negative_control": false,
+    "evidence": "Every wirer is an assert-laden --check (wire_prism_cradle.py:58 '--check validates without writing (exit 1 if not wired)', asserts at 253-351; wire_prism_gravity_warp.py:506-516), but `grep -l self.test Tools/Shaders/wire_*.py` matches only wire_spindle_lod.py: no wire_prism_*.py has a self-test, a mutant graph or any proof that --check exits 1 on an unwired or mis-spliced graph. All 17 ran clean (cradle: 'BlockGraph.shadergraph: wired / ExplodingBlockGraph.shadergraph: wired / done.' rc=0; warp the same; the rest 'OK', 'already wired (validated)', 'wired and valid')."
+   },
+   {
+    "name": "wire_spindle_lod.py (the one wirer with a self-test; covered by the skill's 'every wire_*.py --check')",
+    "script": "Tools/Shaders/wire_spindle_lod.py",
+    "has_negative_control": true,
+    "evidence": "Has --self-test; ran: 'self-test: OK (12 negative controls fire)', rc=0. --check: 'spindle LOD graphs and templates: OK (in step with SpindleGraph)'."
+   },
+   {
+    "name": "prism_vertex_chain.py (SKILL.md section 13 rule 3: 'the shared definition ... walk_past_morphs')",
+    "script": "Tools/Shaders/prism_vertex_chain.py",
+    "has_negative_control": false,
+    "evidence": "A 90-line library (MORPH_SLOT_NAMES, morph_slots(), walk_past_morphs() with a cycle guard `limit=16`); no __main__, no --check, no self-test, no malformed-graph fixture; exercised only indirectly by the three clock wirers' --check."
+   },
+   {
+    "name": "The edit-mode tests and the section 8 budget gate (SKILL.md section 9: Config_IsSaneWhenAuthored, Config_ResidencySwapIsInvisible, HighPolyPrismMesh_IsTheSameSolidAtHigherDensity)",
+    "script": "Assets/_Scripts/Tests/Editor/PrismCradleTests.cs",
+    "has_negative_control": false,
+    "evidence": "Config_ResidencySwapIsInvisible (lines 195-223) asserts the SHIPPED asset: ResidencyMargin > 0, 0 < MaxResidentPrisms <= 64, tris = residents*s*s*12 < 200000; Config_IsSaneWhenAuthored (169-192) asserts config.IsSane, reach > 0, exponent >= 1, 0 < MaxStrength <= 1; HighPolyPrismMesh_IsTheSameSolidAtHigherDensity (226-268) asserts counts, hard normals, outward winding. No test constructs a BAD config and asserts IsSane is false (grep 'IsSane' + IsFalse across Tests/Editor hits only VesselVisionLawTests.cs:177-251, another area); the only negative-shaped assert is line 268 IsHighPoly(null) == false. Not runnable here (no Unity); PRISM_ANIMATION.md section 4.7.2: 'nothing here has been run in the editor'; UNITY_VERIFICATION_CHECKLIST.md:16859 the collision burst 'NOT EDITOR-VERIFIED'."
+   },
+   {
+    "name": "check_conditional_compilation.py (SKILL.md section 9 hand-back list)",
+    "script": "Tools/Build/check_conditional_compilation.py",
+    "has_negative_control": true,
+    "evidence": "SELF_TESTS lines 248-270 include bad inputs expected to be flagged: 'A: guarded using + unguarded MonoBehaviour decl' expected 'A', 'B: unguarded using UnityEditor in runtime file' expected 'B'; run_self_test (273-284) fails if codes != [expected]. Ran: 'self-test: 8/8 passed'."
+   },
+   {
+    "name": "check_console_logging.py",
+    "script": "Tools/Build/check_console_logging.py",
+    "has_negative_control": true,
+    "evidence": "self_test lines 154-179: 'Debug.Log(\"x\");' expected 1 ('bare raw'), 'UnityEngine.Debug.Log' expected 1, rich text expected 1, multi-line rich text 1, emoji 1, beside the must-not-fire cases. Ran: 'self-test passed'."
+   },
+   {
+    "name": "check_enum_member_references.py",
+    "script": "Tools/Build/check_enum_member_references.py",
+    "has_negative_control": true,
+    "evidence": "self_test docstring line 288 'Negative control: a gate nobody has watched FAIL is a gate nobody should trust'; lines 319-321 'the escaped bug is caught': classify('[SerializeField] CombatHitClass h = CombatHitClass.Missile;', ...) == ['Missile'] (the renamed member that escaped in 2026-09). Ran: 'self-test: OK (16 checks)'."
+   },
+   {
+    "name": "check_switch_label_collisions.py",
+    "script": "Tools/Build/check_switch_label_collisions.py",
+    "has_negative_control": true,
+    "evidence": "Line 37 '--self-test # negative control'; cases lines 155-161: two should_fire=True sources ('enum E { A = 1, B = 1 }' switched on both labels, statement and expression forms) beside three must-NOT-fire; line 170 fails on fired != should. Ran: 'self-test: OK'."
+   },
+   {
+    "name": "check_self_referential_locals.py",
+    "script": "Tools/Build/check_self_referential_locals.py",
+    "has_negative_control": true,
+    "evidence": "self_test lines 203-215: ('int seed = cableSeed != 0 ? cableSeed : (seed != 0 ? seed : DefaultSeed);', True, 'the shipped bug'), ('int x = x + 1;', True), ('var node = node.Next;', True) beside six must-not-fire shapes. Ran: 'self-test: OK'."
+   },
+   {
+    "name": "check_using_directives.py",
+    "script": "Tools/Build/check_using_directives.py",
+    "has_negative_control": true,
+    "evidence": "self_test docstring line 250 'A gate nobody has watched FAIL is a gate nobody should trust'; cases line 254-255 'missing using is reported' expected 1, line 266-267 '...but a real reference in the same file is still caught' expected 1, beside the silent cases. Ran; last printed line: '[ok] `==` is a comparison, not an assignment target  (expected 1, got 1)' with no failures."
+   },
+   {
+    "name": "The Collision Burst Lab (not named in SKILL.md; the neighbour's sheet, Docs/Studios/COLLISION_BURST_LAB.md)",
+    "script": "Tools/Build/prism_collision_burst_lab/build.py --check; parity.py",
+    "has_negative_control": true,
+    "evidence": "parity.py docstring 'NEGATIVE CONTROLS (each must FAIL)' with five controls printed FIRED / DID NOT FIRE at lines 624-652 (next kind, next depth's cut, next silver depth, face coordinates as UV0, noise-window); needs Playwright + headless Chromium, not run. build.py --check ran: 'OK: Docs/Studios/PrismCollisionBurstLab.html is the build of the shipped sources', rc=0."
+   }
+  ],
+  "has_lessons_file": false,
+  "has_round_table": false,
+  "has_sheet": "None for the family itself. Nothing renders a cradle or warp frame (no Tools/Shaders/render_* for either, no Amoebius clip, no Playwright sheet); PRISM_ANIMATION.md section 4.7.2: 'Neither the look nor the residency cost has been seen on screen: nothing here has been run in the editor ... the LOOK is a playtest away', and section 4.7.4 'not yet playtested'. The measured critique loop is NUMERIC, not looked at: the clang++ harness proves the normal by CONVERGENCE RATE (shipped 0.323 -> 0.103 -> 0.0262 -> 0.00581, quartering; the neutered control plateaus 0.761 -> 0.744), no-fold, no-seam, affinity in the weight, slot authority; the 17 wirers' --check hold the splice; the budget is three numbers stated in the PR (73,728 triangles, zero colliders, zero draw calls). The loop then goes to the owner's playtest in prose: cradle rounds 1-2 rejected on look ('this looks terrible', 'really bad to the point i put this down and let this branch go stale'), the re-cut 'easily one of the greatest things we have ever made'; the ripple's six playtests (SKILL.md section 13). The ONE looked-at loop in the family is the neighbour's Collision Burst Lab (Docs/Studios/COLLISION_BURST_LAB.md: a WebGL2 reader page running the shipped HLSL with a 'Look scorecard' per round, rounds 1-13 each ending 'Decision needed (designer)', held to the C++ execution by parity.py) - for the burst, not the cradle or the warp.",
+  "self_test_commands": [
+   "python3 Tools/Shaders/verify_prism_cradle.py  (no --self-test flag; the negative control is test 10 of the run)",
+   "python3 Tools/Shaders/verify_prism_gravity_warp.py  (no --self-test flag; the negative control is test 13)",
+   "python3 Tools/Shaders/verify_prism_sight_composition.py  (no --self-test flag)",
+   "python3 Tools/Shaders/verify_prism_slice.py  (no --self-test flag)",
+   "python3 Tools/Shaders/verify_prism_collision_burst.py  (no --self-test flag)",
+   "python3 Tools/Shaders/verify_spindle_lod.py --self-test",
+   "python3 Tools/Shaders/wire_spindle_lod.py --self-test",
+   "for w in Tools/Shaders/wire_*.py; do python3 $w --check; done  (17 wirers; none but wire_spindle_lod.py has a --self-test)",
+   "python3 Tools/Build/check_conditional_compilation.py --self-test",
+   "python3 Tools/Build/check_console_logging.py --self-test",
+   "python3 Tools/Build/check_enum_member_references.py --self-test",
+   "python3 Tools/Build/check_switch_label_collisions.py --self-test",
+   "python3 Tools/Build/check_self_referential_locals.py --self-test",
+   "python3 Tools/Build/check_using_directives.py --self-test",
+   "python3 Tools/Build/prism_collision_burst_lab/build.py --check",
+   "python3 Tools/Build/who_works_where.py query Tools/Shaders/verify_prism_cradle.py Tools/Shaders/wire_prism_cradle.py Assets/_Graphics/Materials/Graphs/PrismCradle.hlsl Assets/_Scripts/Utility/PrismCradle.cs  (and again by directory: Tools/Shaders Assets/_Graphics/Materials/Graphs Assets/_Scripts/Utility/Foundation)"
+  ],
+  "self_test_results": [
+   "verify_prism_cradle.py: 'All cradle properties hold for the shipped file.' rc=0; the control line before it: 'radial Jacobian neutered, 2576 trials: worst 1-dot 0.02xd:0.761 0.01xd:0.751 0.005xd:0.746 0.0025xd:0.744 -> PLATEAUS (control fires)'",
+   "verify_prism_gravity_warp.py: 'All gravity-warp properties hold for the shipped file.' rc=0; control: 'normal correction off: worst |cos| 0.945 -> FIRES'",
+   "verify_prism_sight_composition.py: 'All composition properties hold for the shipped file.' rc=0",
+   "verify_prism_slice.py: 'glslangValidator not found' rc=1 (refused at main() lines 450-452 before any tier ran; glslang is not installed in this container, clang++ is)",
+   "verify_prism_collision_burst.py: 'glslangValidator not found' rc=1 (same refusal, lines 1172-1174)",
+   "verify_spindle_lod.py --self-test: 'self-test: OK (31 mutants caught)' rc=0",
+   "wire_spindle_lod.py --self-test: 'self-test: OK (12 negative controls fire)' rc=0",
+   "wire_*.py --check x17: wire_prism_cradle.py 'done.' (BlockGraph wired, ExplodingBlockGraph wired) rc=0; wire_prism_gravity_warp.py 'done.' rc=0; wire_prism_flight_clock.py 'ExplodingBlockGraph.shadergraph: OK'; wire_prism_jiggle_clock.py 'done.'; wire_prism_suction_clock.py 'done.'; wire_crystal_morph.py 'ShepardGraph.shadergraph: OK'; wire_prism_backface_fade / destruction_sight / explosion_erosion / occlusion_corridor 'already wired (validated).'; wire_prism_face_pivot.py 'wired and valid'; wire_prism_shield_morph.py 'OK'; wire_prism_spindle_death_clock.py 'done.'; wire_prism_sway.py 'OK'; wire_spindle_lod.py 'spindle LOD graphs and templates: OK (in step with SpindleGraph)'; wire_spindle_sway.py 'OK'; wire_vessel_vision_shading.py 'VesselGraph.shadergraph: already wired (validated).'",
+   "check_conditional_compilation.py --self-test: 'self-test: 8/8 passed'",
+   "check_console_logging.py --self-test: 'self-test passed'",
+   "check_enum_member_references.py --self-test: 'self-test: OK (16 checks)'",
+   "check_switch_label_collisions.py --self-test: 'self-test: OK'",
+   "check_self_referential_locals.py --self-test: 'self-test: OK'",
+   "check_using_directives.py --self-test: last line '[ok] `==` is a comparison, not an assignment target  (expected 1, got 1)', every case ok",
+   "prism_collision_burst_lab/build.py --check: 'OK: Docs/Studios/PrismCollisionBurstLab.html is the build of the shipped sources' rc=0",
+   "who_works_where.py query (exact kit paths): 'IN FLIGHT ... none' / 'LANDED on bleeding-edge: none', no declared-owner line printed; by directory: 'TALK TO: Yash (9), Garrett (4), Shombith (2), aradia1 (1)'"
+  ],
+  "lessons_sources": [
+   "Docs/PRISM_ANIMATION.md (155 dated lines): section 4.7.2 (shipped 2026-09-16, re-cut 2026-09-22) 'The two rounds this replaced are the finding' with the owner's verdicts 'this looks terrible' and 'this effect looks really bad to the point i put this down and let this branch go stale', the 'Six properties worth carrying'; section 4.7.3 (2026-09-24 -> 09-25) the ripple's retirement; section 4.7.4 (2026-10-07, superseded 2026-10-08) 'Three things worth carrying'; section 4.12 Round 4-15 prose entries with dated quotes ('Round 15 (Garrett, 2026-10-25)', 'Round 14 (Garrett, 2026-10-23)', 'Round 13 (the designer, 2026-10-17): triple the amount that they spread', 'Round 9 (the designer, 2026-10-16)'); the C17 tracker row at line 3057",
+   ".claude/skills/prism-morph/SKILL.md section 13 (the retirement record): the ripple's six playtests 2026-09-23 -> 09-25 ('i could not detect the shockwave at all', 'it is very fast and very subtle', 'awesome effect, but it will be overused as a wake on every vessel', 'I could see the pulses as a wake') and its eleven findings (a)-(k); the cradle's 'easily one of the greatest things we have ever made'; the trail ripple 'Saved by request (2026-09-25)'; the spindle hold 'blew up to very large proportions ... until 2026-10-21'",
+   "Docs/Studios/COLLISION_BURST_LAB.md (13 dated lines): '## Round 13 - 2026-10-17', '## Round 12 - 2026-10-17', '## Round 11 - 2026-10-17', '## Round 10 - 2026-10-16', '## Round 9 - 2026-10-16: Your decision applied (the designer): \"i see that the squint test was steering things to do exactly what i am ... we do not need to do the squint test anymore\"', each round with a Look scorecard and 'Decision needed (designer)'",
+   "Docs/BLACK_HOLE.md (41 dated lines): line 477 Garrett, 2026-10-24: 'make the vortex ring loose the flat effect and replace it with a cool warping effect like the ...'; line 528 Yash, 2026-10-29: 'make sure we are not warping space, we need to make the shaders mobile friendly'; line 910 the Amplitude dial (2026-10-13) feeding BlackHoleWarp",
+   "Docs/SPINDLE_LOD.md (7 dated lines): line 357 Garrett, 2026-10-21: 'Let's also apply this to all spindles including fauna like sharks'; line 460 Garrett, 2026-10-21: 'Make a synthetic spindle geometry that is more like a wire instead of a root' (the IncorporealDepthBloom seam rule the skill's section 5 cites)",
+   "Docs/PRISM_MOTION.md (8 dated lines): line 3 Garrett, 2026-10-14: 'the rhino and stoat have introduced prism movement. prism movement should be a ...'; line 11 Garrett, 2026-10-27: 'change the fundamental movement interaction of prisms (effecting all shielded prism ...'; line 27 Garrett, 2026-10-25: 'lets have prisms move and be dragged by the net. they should only be destroyed when they collide with other prisms' (the LOCKED moving-prism rule the collision burst serves)",
+   "Assets/_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md (0 dated lines, 80 'round' mentions): '## The cradle (rounds 23-24): the mass drapes over the hull while you ride', the dial table (maxStrength 1, maxResidentPrisms 24, PRISM_CRADLE_MIN_RADIAL), and line 1307 '### The CRADLE (never run - this is its only gate)' - the hand test the owner still owes"
+  ],
+  "owner": "No declared owner: `who_works_where.py query` on the kit's main paths (Tools/Shaders/verify_prism_cradle.py, wire_prism_cradle.py, PrismCradle.hlsl, PrismCradle.cs) printed no owner line (Docs/TEAM.json `owners` declares only Activation and UGS/backend), IN FLIGHT none, LANDED none in 30 days. By directory (Tools/Shaders, Assets/_Graphics/Materials/Graphs, Assets/_Scripts/Utility/Foundation): 'TALK TO: Yash (9), Garrett (4), Shombith (2), aradia1 (1)'; the one in-flight branch there is cece/charming-cerf-alf1j1 (2026-10-09, the wormhole tune, Assets/_Graphics/Materials). The look is Garrett's call (every cradle/burst verdict is his or 'the designer's'; SKILL_TRAINING_PLAN.md section 3.2 'Ask: Garrett (the look)'); changes to the skill itself go through Shombith (heads tooling). git log on the kit shows only merge #1597 (Shombith03, 2026-10-28) because this checkout is shallow.",
+  "notes": "Measured against SKILL_TRAINING_PLAN.md section 1's six parts: (1) KIT - yes, but under Tools/Shaders (wire + verify per member, prism_vertex_chain.py shared), never Tools/Build, and no single author command or sheet step. (2) GATE - yes: the clang++ harness per member, 17 wirer --check drift gates, the six Tools/Build check_*.py self-tests, the edit-mode tests; everything runnable here ran clean except the slice and burst harnesses, which refuse to start without glslangValidator (not installed; clang++ is). (3) SHEET / MEASURED LOOP - numeric only (convergence rates, no-fold, budgets); nothing is looked at before the owner, which is exactly the plan's 2.2 finding ('two rounds replaced, both proven by a harness and both wrong on screen'); the burst neighbour has a real looked-at loop (the Collision Burst Lab with its Look scorecard). (4) LESSONS - no references/LESSONS.md and no 'Traps'/'Lessons' heading; the lessons are inline (section 5 'each one is a specific artefact somebody saw on screen', section 6 'The trap that costs an hour every time', section 7.1 'the meta-lesson', section 13's retirement record (a)-(k) and 'Three family-wide rules') and in PRISM_ANIMATION.md 4.7.2/4.7.4 'worth carrying' lists - the owner's words are there but undated inside the skill. (5) NEGATIVE CONTROL - present and watched firing on the cradle and warp harnesses (a -D override of the file's own #ifndef dial, asserted to plateau / fail), present on the slice/burst/spindle harnesses and all six check_*.py; ABSENT on the 16 wire_prism_*.py --check gates (no proof --check exits 1 on an unwired graph), on prism_vertex_chain.py (no test at all), and on the edit-mode budget gate (no bad config asserted insane). So the plan's 'no negative control' for prism-morph is only half right: the harnesses have one, the wirers and the budget gate do not. (6) PLAN WITH A ROUND TABLE - none: rounds exist as prose (PRISM_ANIMATION.md 4.12 Round 4-15, 4.7.2 'the two rounds this replaced', COLLISION_BURST_LAB.md '## Round N - date' sections, URCHIN_TRAIL_RIDER.md 'rounds 23-24') but no `| Round | Date | ... |` table for this area (the only such table in Docs is SERPENT_TIME.md:130, another area) and no PRISM_MORPH_SKILL_PLAN.md. Caveats: no Unity here, so the edit-mode tests were read, not run; the cradle has never been run in the editor by anyone (URCHIN_TRAIL_RIDER.md:1307 'never run - this is its only gate'); nothing was edited, committed or fixed."
+ }
+]

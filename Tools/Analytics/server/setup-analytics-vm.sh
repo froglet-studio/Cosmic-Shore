@@ -28,11 +28,11 @@ BRANCH="${ANALYTICS_BRANCH:-$(sudo cat "$BASE/branch" 2>/dev/null || echo bleedi
 PORT=8787
 APT="sudo DEBIAN_FRONTEND=noninteractive apt-get"
 
-say "1/7 packages: git, python3, python3-venv, caddy"
+say "1/8 packages: git, python3, python3-venv, caddy"
 $APT update -qq >/dev/null
 $APT install -y -qq git python3 python3-venv caddy curl ca-certificates sqlite3 >/dev/null
 
-say "2/7 a service user and a sparse checkout (the server and the event schema only)"
+say "2/8 a service user and a sparse checkout (the server and the event schema only)"
 id "$SVC" >/dev/null 2>&1 || sudo useradd --system --create-home --home-dir "$BASE" --shell /usr/sbin/nologin "$SVC"
 sudo chown "$SVC:$SVC" "$BASE" && sudo chmod 700 "$BASE"
 as() { sudo -u "$SVC" -H "$@"; }
@@ -56,11 +56,11 @@ if [ -n "$GITHUB_TOKEN" ]; then
   sudo chmod 600 "$BASE/github-token"
 fi
 
-say "3/7 the Claude SDK in its own environment (only the overnight read and the Ask box use it)"
+say "3/8 the Claude SDK in its own environment (only the overnight read and the Ask box use it)"
 as test -x "$BASE/venv/bin/python" || as python3 -m venv "$BASE/venv"
 as "$BASE/venv/bin/pip" install --quiet --upgrade anthropic
 
-say "4/7 the config and the keys (kept if they exist)"
+say "4/8 the config and the keys (kept if they exist)"
 IP="$(curl -fsS https://api.ipify.org || curl -fsS https://ifconfig.me)"
 DOMAIN="${ANALYTICS_DOMAIN:-analytics.${IP//./-}.sslip.io}"
 export FROGLET_ANALYTICS_CONFIG="$BASE/config.json"
@@ -93,7 +93,7 @@ if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
 fi
 sudo touch /etc/froglet-analytics.env && sudo chmod 600 /etc/froglet-analytics.env
 
-say "5/7 the service"
+say "5/8 the service"
 sudo tee /etc/systemd/system/froglet-analytics.service >/dev/null <<UNIT
 [Unit]
 Description=Froglet Analytics (ingest, the console's read API, the overnight read)
@@ -120,7 +120,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now froglet-analytics.service >/dev/null
 sudo systemctl restart froglet-analytics.service
 
-say "6/7 HTTPS: Caddy at https://$DOMAIN (its own file, beside the Compute console)"
+say "6/8 HTTPS: Caddy at https://$DOMAIN (its own file, beside the Compute console)"
 sudo mkdir -p /etc/caddy/conf.d
 sudo tee /etc/caddy/conf.d/froglet-analytics.caddy >/dev/null <<CADDY
 $DOMAIN {
@@ -136,7 +136,7 @@ grep -q 'import /etc/caddy/conf.d/\*.caddy' /etc/caddy/Caddyfile 2>/dev/null \
 sudo systemctl enable --now caddy >/dev/null
 sudo systemctl reload caddy || sudo systemctl restart caddy
 
-say "7/7 the nightly self-update (04:20 UTC; follows bleeding-edge once this branch merges)"
+say "7/8 the nightly self-update (04:20 UTC; follows bleeding-edge once this branch merges)"
 sudo install -m 755 "$REPO/Tools/Analytics/server/self-update.sh" /usr/local/bin/froglet-analytics-update
 sudo tee /etc/systemd/system/froglet-analytics-update.service >/dev/null <<UNIT
 [Unit]
@@ -163,8 +163,43 @@ UNIT
 sudo systemctl daemon-reload
 sudo systemctl enable --now froglet-analytics-update.timer >/dev/null
 
+say "8/8 the nightly backup (04:40 UTC, after the self-update and before Oracle's 05:00 boot-volume backup)"
+# A consistent, gzipped snapshot of events.db and aggregates.db in $BASE/data/backups/ (14 kept). Off the VM, the
+# Oracle boot-volume backup policy (daily 05:00 UTC, 5 kept, set in the Oracle console) copies the disk with that
+# night's snapshot on it. A bucket upload runs only if FA_BACKUP_* are in /etc/froglet-analytics.env (none today).
+sudo tee /etc/systemd/system/froglet-analytics-backup.service >/dev/null <<UNIT
+[Unit]
+Description=Froglet Analytics nightly backup (a gzipped snapshot of both databases)
+
+[Service]
+Type=oneshot
+User=$SVC
+WorkingDirectory=$REPO
+Environment=FROGLET_ANALYTICS_CONFIG=$BASE/config.json
+EnvironmentFile=-/etc/froglet-analytics.env
+ExecStart=$BASE/venv/bin/python $REPO/Tools/Analytics/server/analytics_server.py backup
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=$BASE
+PrivateTmp=true
+UNIT
+sudo tee /etc/systemd/system/froglet-analytics-backup.timer >/dev/null <<UNIT
+[Unit]
+Description=Froglet Analytics nightly backup, 04:40 UTC
+
+[Timer]
+OnCalendar=*-*-* 04:40:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+sudo systemctl daemon-reload
+sudo systemctl enable --now froglet-analytics-backup.timer >/dev/null
+
 sleep 3
 curl -fsS "http://127.0.0.1:$PORT/healthz" >/dev/null && echo "server: up on 127.0.0.1:$PORT" || echo "server: NOT answering; journalctl -u $SVC"
 echo "address: https://$DOMAIN   (the console page, the dashboard API, and the game's analytics host)"
 echo "branch:  $BRANCH   (nightly self-update: systemctl list-timers froglet-analytics-update; log: journalctl -u froglet-analytics-update)"
+echo "backups: $BASE/data/backups (04:40 UTC: systemctl list-timers froglet-analytics-backup; now: sudo systemctl start froglet-analytics-backup)"
 echo "keys:    sudo cat $BASE/config.json   (a reader's key: sudo -u $SVC env FROGLET_ANALYTICS_CONFIG=$BASE/config.json $BASE/venv/bin/python $REPO/Tools/Analytics/server/analytics_server.py key read ian)"

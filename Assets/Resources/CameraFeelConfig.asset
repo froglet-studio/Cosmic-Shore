@@ -89,7 +89,7 @@ MonoBehaviour:
     weight: 1
   - vessel: 3
     gForce: 0.85
-    weight: 1.25
+    weight: 0.42
   - vessel: 5
     gForce: 0.85
     weight: 1.25

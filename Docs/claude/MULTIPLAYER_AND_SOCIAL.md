@@ -56,6 +56,16 @@ tunnel (`R_VesselActions/MEERKAT.md` §9.5).
 **24** (2026-10-28, `cece/keen-lovelace-cyci91`; 21-23 are taken on in-flight branches) - the Tiger Moth: a new network
 prefab (`TigerMoth.prefab`, `R_VesselActions/TIGER_MOTH.md`); on 2026-10-29, same build, `Butterfly.prefab` left the
 network prefab list (the Butterfly retired).
+**27** (2026-11-07, `claude/project-thread-jypklp`) - `LobbySnapshot.VesselSelection` and the draft's turn
+(`DraftTurn`, `DraftSeatIsAi`, `DraftClient`, `DraftAiOrdinal`, `DraftTurnEndsAt`), and `Player.RequestArenaDealtClaim_ServerRpc`:
+the arena cards' Vessels row (Pick, Random, Draft, Squad), `Docs/HomeHub/ARCHITECTURE.md` §3.10. The course-pool branch
+(`claude/project-thread-pnwryl`) changes `SyncGameConfigToClients_ClientRpc` and should take 28.
+**28** (2026-11-07, `claude/project-thread-pnwryl`; 25-26 are on bleeding-edge without a history line here, 27 is reserved by
+`claude/project-thread-jypklp`, the arena vessel-selection modes) - `SyncGameConfigToClients_ClientRpc` gains `courseVariant`
+(appended last before the rpc params): the Regatta course-pool entry the host drew (`REGATTA.md` §4.1).
+**29** (2026-11-07, `claude/regatta-integration`; 29 was free on bleeding-edge and every in-flight branch, checked
+that day) - no wire change of its own: the build that carries both 27 (the Vessels row) and 28 (the course pool), so a
+28 build without the Vessels row, or a 27 build without the drawn course, cannot join one that has both (as with 20 above).
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.

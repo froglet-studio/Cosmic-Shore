@@ -126,35 +126,33 @@ namespace CosmicShore.UI
         public VoyageMapSky Sky => _chart != null ? _sky : null;
         VoyageMapSky SkyOf => _sky ??= new VoyageMapSky(this);
 
-        /// <summary>
-        /// The water this map last painted, for another view to show the same sea (the open voyage card's ground,
-        /// <see cref="VoyageRoutePoster"/>): the texture, the uv rectangle holding the water, and the map points at that
-        /// rectangle's lower-left and upper-right corners (<see cref="MapPoint"/>'s space). False before the first paint
-        /// or on an uncharted map. Read only: it changes nothing on this map.
-        /// </summary>
-        public bool TrySeaView(out Texture texture, out Rect uv, out Vector2 lo, out Vector2 hi)
-        {
-            texture = null;
-            uv = default;
-            lo = _paintLo;
-            hi = _paintHi;
-            if (!_painted || _chart == null || !s_Atlas) return false;
-            texture = s_Atlas;
-            uv = new Rect(0f, 0f, (float)SeaTexWidth / s_Atlas.width, (float)_seaTexHeight / s_Atlas.height);
-            return true;
-        }
-
-        /// <summary>The uv of a white texel in the painted texture, for lines drawn over the water with it.</summary>
-        public Vector2 WhiteUv => _white;
-
-        /// <summary>A course point (light years on the board, <see cref="VoyageChart.Voyage.Points"/>) as a map point.</summary>
-        public static Vector2 MapPoint((double x, double y) p) => Galaxy(p);
-
         static Texture2D s_Atlas;
         static string s_AtlasKey;
         Vector2 _white;
         int _seaTexHeight;
+        int _spriteRow;
         bool _painted;
+
+        /// <summary>The uv corners of the nucleus sprite for a nucleus <paramref name="radiusPx"/> across on screen.</summary>
+        internal (Vector2 lo, Vector2 hi) NucleusUv(float radiusPx) => s_Atlas
+            ? VoyageCellDraw.SpriteUv(radiusPx, s_Atlas.width, s_Atlas.height, 0, _spriteRow)
+            : (Vector2.zero, Vector2.zero);
+
+        /// <summary>How far the reader has moved the cells' slice from its focus, ly (the edge view's slice bar).</summary>
+        public double SliceOffset { get; private set; }
+
+        /// <summary>Move the cells' slice (and the deep tiers' height slab with it) <paramref name="offset"/> ly from
+        /// the focus's layer of nuclei; 0 puts it back.</summary>
+        public void SetSliceOffset(double offset)
+        {
+            double o = Math.Max(-2 * HyperSea.DiskHalf, Math.Min(2 * HyperSea.DiskHalf, offset));
+            if (Math.Abs(o - SliceOffset) < 1e-9) return;
+            SliceOffset = o;
+            _viewDirty = true;
+        }
+
+        /// <summary>The content's lines the map writes with, or null before <see cref="SetLines"/>.</summary>
+        public VoyageLines Lines => _sky?.Lines;
 
         public override Texture mainTexture => _painted && _chart != null && s_Atlas ? s_Atlas : s_WhiteTexture;
 
@@ -198,6 +196,7 @@ namespace CosmicShore.UI
             if (key != _frameKey)
             {
                 _frameKey = key;
+                _openPending = OpenTier >= 0;
                 _pan = Vector2.zero;
                 _zoom = 1f;
                 _flying = false;
@@ -207,14 +206,43 @@ namespace CosmicShore.UI
             Caption();
             _placedFor = Vector2.zero;
             Relayout();
+            ApplyOpenTier();
+        }
+
+        /// <summary>
+        /// The ladder tier a new frame opens on (0 the whole galaxy, 6 a single system, as the ladder's rows), or -1 to
+        /// open framed on the places or the course. The Voyage window opens on the whole galaxy (Shombith, 2026-11-08,
+        /// Docs/MENU_REDESIGN_B.md section 149: "we should have the old whole galaxy view on the left"); the player zooms
+        /// from there as before.
+        /// </summary>
+        public int OpenTier { get; set; } = -1;
+        bool _openPending;
+
+        /// <summary>Open the frame on <see cref="OpenTier"/>, once, as soon as the map has a size (the ladder's own dive,
+        /// shown at once rather than flown).</summary>
+        void ApplyOpenTier()
+        {
+            if (!_openPending || _chart == null) return;
+            var r = rectTransform.rect;
+            if (r.width < 1f || r.height < 1f) return;
+            _openPending = false;
+            var (centre, width) = SkyOf.Dive(OpenTier, r.height / Mathf.Max(1f, r.width));
+            SetView(centre ?? Vector2.zero, width);
         }
 
         // On a charted map the board's y runs toward Sol and the screen's up, so it flips.
         static Vector2 Pos(VoyageLocation l, bool charted) =>
             charted ? new Vector2(l.GalaxyX, -l.GalaxyY) : new Vector2(l.ChartX, l.ChartZ);
 
-        /// <summary>A charted map draws only the charted locations.</summary>
-        bool Drawn(VoyageLocation l) => l != null && (_chart == null || l.Charted);
+        /// <summary>Which places this crew can see (Docs/Voyages/DEPTH.md §8): an uncharted place is drawn only once the
+        /// crew has found it. Null draws every place. Set by the view with the galaxy's record (VoyageRules.IsVisible).</summary>
+        public System.Func<string, bool> Visible;
+
+        /// <summary>A charted map draws only the charted locations, and only the ones this crew can see.</summary>
+        bool Drawn(VoyageLocation l) => l != null && (_chart == null || l.Charted) && (Visible == null || Visible(l.Id));
+
+        /// <summary>True when the map draws <paramref name="l"/> (the edge view and the sky follow the map).</summary>
+        public bool IsDrawn(VoyageLocation l) => Drawn(l);
 
         void Bounds()
         {
@@ -274,6 +302,7 @@ namespace CosmicShore.UI
             if (rectTransform.rect.size != _placedFor)
             {
                 Relayout();
+                ApplyOpenTier();
                 return;
             }
             if (_chart != null && SkyOf.Tick()) _viewDirty = true;
@@ -530,7 +559,9 @@ namespace CosmicShore.UI
             if (r.width < 1f || r.height < 1f) return;
             _lastPaint = Time.unscaledTime;
             _seaTexHeight = Mathf.Clamp(Mathf.RoundToInt(SeaTexWidth * r.height / r.width), 16, 256);
-            int w = SeaTexWidth + InsetTex, h = Mathf.Max(_seaTexHeight, InsetTex) + WhiteRows;
+            // Above the water and the corner, the cells' nucleus sprites (VoyageCellDraw), then the white strip.
+            _spriteRow = Mathf.Max(_seaTexHeight, InsetTex);
+            int w = Mathf.Max(SeaTexWidth + InsetTex, VoyageCellDraw.SpriteColumns), h = _spriteRow + VoyageCellDraw.SpriteRows + WhiteRows;
             _white = new Vector2((w - 0.5f) / w, (h - 0.5f) / h);
 
             // The water around the view, half a view wider on every side, so a pan slides over painted sea.
@@ -586,6 +617,7 @@ namespace CosmicShore.UI
                     byte a = (byte)Mathf.RoundToInt(255f * Mathf.Clamp01((float)(1.0 - rr) * 12f));
                     px[y * w + SeaTexWidth + x] = Sea(HyperSea.Density(gx, gy), a);
                 }
+                VoyageCellDraw.PaintSprites(px, w, 0, _spriteRow);
                 for (int y = h - WhiteRows; y < h; y++)
                 for (int x = 0; x < w; x++)
                     px[y * w + x] = new Color32(255, 255, 255, 255);
@@ -596,7 +628,9 @@ namespace CosmicShore.UI
             s_AtlasKey = key;
         }
 
-        static Color32 Sea(double n, byte alpha)
+        /// <summary>The water's colour at column density <paramref name="n"/> (the colour key the map paints with); the
+        /// open voyage's place cards paint their close-ups with it too (<see cref="VoyagePlaceArt"/>).</summary>
+        internal static Color32 Sea(double n, byte alpha)
         {
             var (r, g, b) = HyperSea.SeaColor(n);
             return new Color32((byte)r, (byte)g, (byte)b, alpha);
@@ -696,8 +730,11 @@ namespace CosmicShore.UI
         /// <summary>A place's marker colour: its experience's, from the harbour's style.</summary>
         public static Color MarkerColor(VoyageToyDefinitionSO style, VoyageLocation l) => l.Experience switch
         {
-            VoyageExperience.VaultField => style.VaultColor,
+            VoyageExperience.VaultField or VoyageExperience.Hoard => style.VaultColor,
             VoyageExperience.Core => style.CoreColor,
+            VoyageExperience.Lair or VoyageExperience.Pen => style.LairColor,
+            VoyageExperience.Nursery => style.NurseryColor,
+            VoyageExperience.Shrine or VoyageExperience.Derelict => style.ShrineColor,
             _ => style.PortColor,
         };
 

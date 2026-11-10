@@ -13,57 +13,57 @@ MonoBehaviour:
   m_Name: SO_DefaultProfileIcons
   m_EditorClassIdentifier: 
   profileIcons:
-  - Name: 
+  - Name: ENSIGN
     Id: 1
-    IconSprite: {fileID: 21300000, guid: cd2f05a67ee6cb34bb6887c9ba512f83, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 980feda988d5964febf179f7d737f212, type: 3}
+  - Name: MANGER
     Id: 2
-    IconSprite: {fileID: 21300000, guid: 49ce90fcabce082488bb900105e718de, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: dc9eb1ae245a8dde1016ce7ef7b89510, type: 3}
+  - Name: ANVIL
     Id: 3
-    IconSprite: {fileID: 21300000, guid: 6557982951e82b24b9f93d1ddce0b957, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: ce13b70217b5b47dfd532c41e04d7cdc, type: 3}
+  - Name: VOLT
     Id: 4
-    IconSprite: {fileID: 21300000, guid: fafff9c4cae848040a1ceb019e5ceb61, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 0566f35f5349973c38ab12bb4389a542, type: 3}
+  - Name: ZODIAC
     Id: 5
-    IconSprite: {fileID: 21300000, guid: 4ea3e5980c37961468e849a9691ecd58, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 3b11b8dcdfc3b921a34897e25c6e35be, type: 3}
+  - Name: SUNDIAL
     Id: 6
-    IconSprite: {fileID: 21300000, guid: 0134afca35e6a0f43b259d9a00c054d5, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 9f6be8126f01c90dff0f7e90639ff1e9, type: 3}
+  - Name: OPAL
     Id: 7
-    IconSprite: {fileID: 21300000, guid: f9209bb41bdf49c4881f8be09ab4a7f3, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 204b82eef2b454d3b3187633409f7df6, type: 3}
+  - Name: RAMPART
     Id: 8
-    IconSprite: {fileID: 21300000, guid: b2908a9d820b08a4a9d502f3dbb80bcd, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 29a61d769ede32d1caecd4ebe5224115, type: 3}
+  - Name: CITADEL
     Id: 9
-    IconSprite: {fileID: 21300000, guid: f1bcb0dcaf489e440b4c3ad8da0d5b37, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 206b7156919cf4119499158882b746a3, type: 3}
+  - Name: HORNET
     Id: 10
-    IconSprite: {fileID: 21300000, guid: 2f75cdad5b4b4fd4bbe839779272e9d9, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 15f49e30e7a0bf308bce70710d070190, type: 3}
+  - Name: IVY
     Id: 11
-    IconSprite: {fileID: 21300000, guid: 50ae7208eb14eeb4ea65d311901e939a, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 668cfdc53523a7636a785bb2973305e8, type: 3}
+  - Name: TALON
     Id: 12
-    IconSprite: {fileID: 21300000, guid: bff5ba33e85fcee4793032d8ed4d6168, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 9a061d435d17162092748a2047be496c, type: 3}
+  - Name: DOE
     Id: 13
-    IconSprite: {fileID: 21300000, guid: 9f7930f2665d1fc459ac3d8d9a39a3c4, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: c541c59175e718b1310806c6f0cb82d8, type: 3}
+  - Name: WINGMAN
     Id: 14
-    IconSprite: {fileID: 21300000, guid: 841c5c2ed6e53a040ac58187b3708e33, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 1cdd196f10fdc37c0ade1f14da8ed30e, type: 3}
+  - Name: BANDIT
     Id: 15
-    IconSprite: {fileID: 21300000, guid: 1dcc01f1e8aa76f488ccfd0541d8ce8d, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: ba09e353706319c9b36e4d86d90880fb, type: 3}
+  - Name: NEEDLE
     Id: 16
-    IconSprite: {fileID: 21300000, guid: eec265dfa9b67ce428e7fc1f5c206bca, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: 864557a982b2c90e0afba3d1f26d92c1, type: 3}
+  - Name: GALLEON
     Id: 17
-    IconSprite: {fileID: 21300000, guid: b23b40f7dbb5d234f890f6e50b9558fd, type: 3}
-  - Name: 
+    IconSprite: {fileID: 21300000, guid: f4c614d0da5b0afecdc4e32c9156f0c1, type: 3}
+  - Name: FLUME
     Id: 18
-    IconSprite: {fileID: 21300000, guid: 03720279c080e854b9e257e15cd2a330, type: 3}
+    IconSprite: {fileID: 21300000, guid: a3396d4c3b67a83e7ca63dc18d260023, type: 3}

@@ -13,7 +13,10 @@ import json
 import os
 import re
 import secrets
+import shutil
 import sqlite3
+import tarfile
+import tempfile
 import threading
 import time
 from datetime import date, datetime, timedelta, timezone
@@ -25,7 +28,27 @@ MAX_EVENT_NAME = 64
 OLDEST_ACCEPTED_DAYS = 90       # an offline queue can hold old events; older than this is rejected
 FUTURE_SLACK_MS = 24 * 3600 * 1000
 WINDOWS = (1, 7, 14, 30, 90, 365)
-BUILD_KINDS = ("release", "development", "editor", "port")
+BUILD_KINDS = ("release", "development", "editor", "port", "web")
+# Devices (Shombith, 2026-11-07: "platform specific views like iOS iPad android etc"). Builds from 2026-11-07 send
+# `device` on every event; for older ones (the PostHog history included) it is read from `platform`, which cannot tell
+# an iPhone from an iPad, an Android phone from a tablet, or a desktop browser from a phone's: those read ios, android
+# and web ("not recorded"), never guessed.
+DEVICES_SENT = ("iphone", "ipad", "android_phone", "android_tablet", "android", "windows", "mac", "linux",
+                "web_desktop", "web_mobile", "other")
+DEVICE_OF_PLATFORM = {"IPhonePlayer": "ios", "Android": "android", "WindowsPlayer": "windows",
+                      "WindowsEditor": "windows", "OSXPlayer": "mac", "OSXEditor": "mac", "LinuxPlayer": "linux",
+                      "LinuxEditor": "linux", "WebGLPlayer": "web"}
+DEVICES = ("iphone", "ipad", "ios", "android_phone", "android_tablet", "android", "windows", "mac", "linux",
+           "web_desktop", "web_mobile", "web", "other")          # every value events.device can hold
+# The console's Device filter: each group and the stored devices it holds ("all" holds every one).
+DEVICE_GROUPS = {"ios": ("iphone", "ipad", "ios"), "iphone": ("iphone",), "ipad": ("ipad",),
+                 "android": ("android_phone", "android_tablet", "android"), "android_phone": ("android_phone",),
+                 "android_tablet": ("android_tablet",), "windows": ("windows",), "mac": ("mac",), "linux": ("linux",),
+                 "web": ("web_desktop", "web_mobile", "web"), "web_desktop": ("web_desktop",),
+                 "web_mobile": ("web_mobile",), "phone": ("iphone", "android_phone", "web_mobile"),
+                 "tablet": ("ipad", "android_tablet"), "desktop": ("windows", "mac", "linux", "web_desktop")}
+DEVICE_FILTERS = ("all",) + tuple(DEVICE_GROUPS)
+GROUPS_OF_DEVICE = {d: tuple(g for g, members in DEVICE_GROUPS.items() if d in members) for d in DEVICES}
 TIMESTAMP_KEYS = ("timestamp_utc_ms", "timestamp_utc_iso", "completed_utc_ms", "completed_utc_iso")
 SOURCES = ("any", "imported", "live")   # imported = PostHog history: stored by ingest(trusted=True), received_ms == ts_ms
 PLAY_GROUP_OF = {"solo_vs_ai": "solo_vs_ai", "solo_alone": "solo"}  # every other play type is "multi"
@@ -54,10 +77,59 @@ DEFAULT_MILESTONES = [{"name": "Server live, PostHog off", "day": "2026-11-06"},
                       {"name": "Activation ready", "day": "2027-01-11"}, {"name": "GDC", "day": "2027-03-16"}]
 QUERY_CHARTS = ("bars", "line", "donut", "gantt", "table", "number")
 VISIBILITIES = ("me", "readers", "admins")
-BUILTIN_TILES = ("new_players", "d1_return", "ftue_finished", "rows_per_play", "matches_per_day", "play_mix")
+BUILTIN_TILES = ("new_players", "d1_return", "ftue_finished", "rows_per_play", "matches_per_day", "play_mix",
+                 "freestyle_entries")
 MAX_SAVED = 200
 MAX_TILES = 24
 MAX_FILTERS_BYTES = 8 * 1024
+# Saved views ("presets", Shombith 2026-11-06: "save our own view as well and make it public"): a chart's switches and
+# the page's filters under a name. Ownership is by key name; a private one is its owner's alone.
+PRESET_PAGES = ("overview", "players", "cohorts", "eras", "playtypes", "retention", "matches", "ftue", "economy",
+                "social", "health", "query", "dashboards", "sessions", "balance", "quits", "errors")
+PRESET_SETTINGS = ("form", "measure", "by", "over")
+PRESET_FILTERS = ("build", "days", "play", "era", "device")
+PRESET_PLAYS = ("all", "solo_vs_ai", "solo", "multi")
+MAX_PRESETS = 500
+CHART_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,80}$")
+SETTING_VALUE = re.compile(r"^[a-z0-9_]{1,40}$")
+
+# Elements (Shombith, 2026-11-06: "the matches over time should also have element support"). A match's element is
+# the mode's genre (ModeGenre.TryElementsFor in the game). Builds from 2026-11-06 send it on game_started; for every
+# match before that (the PostHog history included) it comes from mode_elements.json, generated from the game's files.
+ELEMENTS = ("Charge", "Mass", "Space", "Time", "Omni")
+MODE_ELEMENTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mode_elements.json")
+_mode_elements = {"stamp": None, "table": {}}
+
+
+def mode_elements(path=MODE_ELEMENTS_PATH):
+    """{game_mode: (primary, secondary|None)} from mode_elements.json, re-read when the file changes."""
+    try:
+        stamp = os.stat(path).st_mtime_ns
+    except OSError:
+        return {}
+    if stamp != _mode_elements["stamp"]:
+        import mode_elements as M
+        _mode_elements.update(stamp=stamp, table=M.load(path))
+    return _mode_elements["table"]
+
+
+def _element_name(value):
+    if not isinstance(value, str):
+        return None
+    return next((e for e in ELEMENTS if e.lower() == value.strip().lower()), None)
+
+
+def element_of(props, table=None):
+    """(primary, secondary, source) for a game_started's properties: the event's own element when it sent one
+    ("event"), else the mode's row in mode_elements.json ("table"), else (None, None, None)."""
+    own = _element_name(props.get("element"))
+    if own:
+        second = _element_name(props.get("element_secondary"))
+        return own, (second if second != own else None), "event"
+    found = (mode_elements() if table is None else table).get(str(props.get("game_mode") or ""))
+    if found:
+        return found[0], found[1], "table"
+    return None, None, None
 
 
 class Invalid(ValueError):
@@ -155,6 +227,7 @@ CREATE TABLE IF NOT EXISTS events(
     platform TEXT,
     country TEXT,                -- two-letter code from the sender's IP at ingest; the IP is never stored
     schema_version INTEGER,
+    device TEXT,                 -- device_of(props): sent from 2026-11-07, else read from the platform
     props TEXT NOT NULL,
     content_hash TEXT NOT NULL,
     shape_hash TEXT NOT NULL,
@@ -216,10 +289,28 @@ CREATE TABLE IF NOT EXISTS dashboards(
     id TEXT PRIMARY KEY, name TEXT NOT NULL, shared TEXT NOT NULL, tiles TEXT NOT NULL, email TEXT,
     owner TEXT NOT NULL, created_ms INTEGER NOT NULL, updated_ms INTEGER NOT NULL
 );
+-- Every $identify, kept (2026-11-06): its $set carries selected_vessel, preferred_vessel and
+-- total_flight_time_seconds, so the identify history is where the Toybox vessel picks before freestyle_vessel_changed
+-- live. One row per (player, time, content): re-importing the PostHog history adds it once.
+CREATE TABLE IF NOT EXISTS person_snapshots(
+    id INTEGER PRIMARY KEY, distinct_id TEXT NOT NULL, ts_ms INTEGER NOT NULL, day TEXT NOT NULL,
+    imported INTEGER NOT NULL, selected_vessel TEXT, preferred_vessel TEXT, total_flight_time_seconds REAL,
+    props TEXT NOT NULL, content_hash TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS person_snapshots_key ON person_snapshots(distinct_id, ts_ms, content_hash);
+CREATE TABLE IF NOT EXISTS presets(
+    id TEXT PRIMARY KEY, name TEXT NOT NULL, owner TEXT NOT NULL, public INTEGER NOT NULL, page TEXT NOT NULL,
+    chart_id TEXT NOT NULL, series INTEGER NOT NULL, settings TEXT NOT NULL, filters TEXT NOT NULL,
+    created_ms INTEGER NOT NULL, updated_ms INTEGER NOT NULL
+);
 """
 
 # The aggregates the dashboard and the Ask box read. Kept in one string so Claude is shown exactly this schema.
 AGG_SCHEMA = """
+-- build_kind '*' (the Build filter's All: every build, each player once) appears ONLY in the tables of distinct
+-- players: player_counts, active_rolling, session_players, daily_players, players_in_window, returns, players_by_platform,
+-- players_by_country, funnel, ftue_steps, launches, balances, settings, cohort_weeks, cohort_days and their _device
+-- twins. Leave it out (build_kind <> '*') when summing those across builds; every other table is rows, summed as is.
 CREATE TABLE plays(              -- one row per (player, match) from game_started; NO player id
     match_id TEXT, day TEXT, start_ms INTEGER, build_kind TEXT, platform TEXT, app_version TEXT,
     game_mode TEXT, intensity INTEGER, vessel_class TEXT,
@@ -231,13 +322,77 @@ CREATE TABLE plays(              -- one row per (player, match) from game_starte
     won INTEGER,                 -- player_won from game_completed; NULL if not completed
     pause_seconds REAL,          -- duration_seconds - flight_time_seconds: paused or away from the controls
     imported INTEGER,            -- 1: PostHog history (import_posthog.py, stored with its own time); 0: sent here live
-    country TEXT                 -- two-letter code of the game_started event (from IP at ingest); NULL if unknown
+    country TEXT,                -- two-letter code of the game_started event (from IP at ingest); NULL if unknown
+    element TEXT,                -- the mode's genre element (Charge | Mass | Space | Time | Omni); NULL: the mode has none
+    element_secondary TEXT,      -- the second element of a two-element mode (Brood Rush: Space); else NULL
+    element_source TEXT,         -- event: the match sent it (builds from 2026-11-06) | table: mode_elements.json by game_mode
+    setup TEXT,                  -- the match setup from this player's side (analytics_store.setup_of): competitive |
+                                 -- teams | teams_vs_ai | multi_unrecorded (2+ humans, no domain fields: older builds) |
+                                 -- solo_alone | solo_vs_1_ai | solo_vs_2_ai | solo_vs_3plus_ai | solo_with_ai_team
+    humans_mine INTEGER, humans_other INTEGER,   -- humans on this player's domain (them included) / on every other;
+    ai_mine INTEGER, ai_other INTEGER,           -- AI on it / on every other. NULL: the build did not send it (before 2026-11-07)
+    -- Balance and quits (round 67): from game_completed / match_abandoned of builds after 2026-11-07; NULL before
+    score REAL,                  -- the player's own final score (game_completed.score)
+    placement INTEGER,           -- 1 = best, among every player in the match, AI included
+    players_in_match INTEGER,    -- players in the match, AI included
+    ai_difficulty TEXT,          -- the AI skill the opponents were set to, as the game names it
+    behind_by REAL,              -- gap to the winner's score at the end; 0 when the player won
+    abandoned INTEGER,           -- 1: match_abandoned arrived for this play (and no game_completed)
+    abandon_reason TEXT,         -- quit_to_menu | app_quit | disconnect
+    abandon_elapsed REAL,        -- seconds into the match when they left
+    quit_tracked INTEGER,        -- 1: this play's build and version sends match_abandoned (the quit rate counts only these)
+    device TEXT,                 -- iphone | ipad | android_phone | android_tablet | windows | mac | linux | web_desktop |
+                                 -- web_mobile | other, sent from 2026-11-07; older builds read ios | android | web
+                                 -- (the platform cannot tell a phone from a tablet), never guessed
+    os_family TEXT               -- 'iOS 17', 'Android 14', 'Windows 11', 'macOS 14' from builds that send os; else 'not recorded'
 );
-CREATE TABLE daily_events(       -- rows received per day, build, event and source (imported 1 = PostHog history)
-    day TEXT, build_kind TEXT, event TEXT, rows INTEGER, near_dup_rows INTEGER, players INTEGER, imported INTEGER
+CREATE TABLE sessions(           -- one row per app session (session_started, builds after 2026-11-07); NO player id
+    day TEXT, build_kind TEXT, platform TEXT, imported INTEGER,
+    launch_kind TEXT,            -- cold | resume (back after 30+ min in the background)
+    seconds REAL,                -- session_ended.session_seconds, else the gap to its session_ended; NULL: not ended
+    device TEXT                  -- as plays.device
+);
+CREATE TABLE session_players(day TEXT, build_kind TEXT, imported INTEGER, players INTEGER);  -- players with a session that day
+CREATE TABLE active_rolling(     -- DAU, WAU (7 days to that day) and MAU (30 days) from ANY event, so the PostHog history too
+    day TEXT, build_kind TEXT,   -- or '*': every build, each player once
+    source TEXT,                 -- any | imported | live
+    dau INTEGER, wau INTEGER, mau INTEGER
+);
+CREATE TABLE invites(            -- party invites by the day sent, followed through; counts only
+    day TEXT, build_kind TEXT, imported INTEGER,
+    method TEXT,                 -- invite_id: matched by the invite's own id (builds after 2026-11-07) | time: older
+                                 -- builds, the invitee's received and joined within minutes of the send
+    sent INTEGER, received INTEGER, joined INTEGER,
+    played_together INTEGER,     -- inviter and invitee started the same match within 24 h of the join
+    joined_mature INTEGER,       -- joins 7+ days old (the day-7 step counts only these)
+    invitee_d7 INTEGER           -- of those, the invitee was seen on any of the 7 days after the join
+);
+CREATE TABLE invite_roles(       -- inviters (from their first joined invite) and invitees (from their first join)
+    day TEXT, build_kind TEXT, imported INTEGER, role TEXT,   -- inviter | invitee
+    players INTEGER, mature INTEGER, returned_d1 INTEGER, returned_d7 INTEGER   -- d1/d7 of the mature ones
+);
+CREATE TABLE frustration(        -- player-days with a repeated_game_fail, followed: a quit within 1 h, then gone 7 days
+    day TEXT, build_kind TEXT, imported INTEGER,
+    failed INTEGER, quit_after INTEGER, quit_mature INTEGER, gone_7d INTEGER,
+    failed_mature INTEGER, failed_gone_7d INTEGER          -- every fail 7+ days old, and of those gone 7 days
+);
+CREATE TABLE client_errors(      -- client_exception per day; NO message text, only its hash
+    day TEXT, build_kind TEXT, imported INTEGER, platform TEXT, app_version TEXT, exception_type TEXT,
+    top_frame TEXT, scene TEXT, message_hash TEXT,
+    events INTEGER,              -- client_exception rows
+    occurrences INTEGER,         -- sum of their count (repeats folded in by the game)
+    players INTEGER,             -- players that day with this row's error
+    device TEXT                  -- as plays.device
+);
+CREATE TABLE client_error_signatures(  -- each (type, frame, hash) ever: when it was first and last seen
+    exception_type TEXT, top_frame TEXT, message_hash TEXT, first_day TEXT, last_day TEXT, events INTEGER
+);
+CREATE TABLE daily_events(       -- rows received per day, build, event, source (imported 1 = PostHog history) and device
+    day TEXT, build_kind TEXT, event TEXT, rows INTEGER, near_dup_rows INTEGER, players INTEGER, imported INTEGER,
+    device TEXT                  -- as plays.device; players is distinct within the row (day, build, event, source, device)
 );
 CREATE TABLE daily_plays(        -- game_started rows against distinct (player, match) pairs: 1.0 is healthy
-    day TEXT, build_kind TEXT, rows INTEGER, plays INTEGER, rows_per_play REAL, imported INTEGER
+    day TEXT, build_kind TEXT, rows INTEGER, plays INTEGER, rows_per_play REAL, imported INTEGER, device TEXT
 );
 CREATE TABLE daily_players(day TEXT, build_kind TEXT, players INTEGER, new_players INTEGER);
 CREATE TABLE players_in_window(  -- distinct players seen in the last N days (N = 1, 7, 14, 30, 90, 365)
@@ -245,7 +400,8 @@ CREATE TABLE players_in_window(  -- distinct players seen in the last N days (N 
 );
 CREATE TABLE returns(            -- players by the play type of their first play; only cohorts 7+ days old
     first_day TEXT, build_kind TEXT, play_type TEXT, players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER,
-    imported INTEGER             -- the source of that first play (1 = PostHog history)
+    imported INTEGER,            -- the source of that first play (1 = PostHog history)
+    device TEXT                  -- the device of that first play (as plays.device)
 );
 CREATE TABLE players_by_platform(  -- distinct players per platform seen in the last N days
     build_kind TEXT, platform TEXT, days INTEGER, players INTEGER
@@ -288,11 +444,23 @@ CREATE TABLE player_counts(      -- distinct players per span, counted once each
     x TEXT,                      -- the day, or the week's Monday, for day and week spans; '' otherwise
     build_kind TEXT,             -- or '*': every build, each player once
     source TEXT,                 -- any | imported (PostHog history) | live; an era's spans carry the era's source
-    dim TEXT, key TEXT,          -- none/'' | play_group | play_type | platform | country | game_mode | vessel_class | intensity
+    dim TEXT, key TEXT,          -- none/'' | play_group | play_type | platform | device | country | game_mode | vessel_class | intensity
+                                 -- | element | setup (the match setup) | freestyle/'entered' (entered the Toybox)
+                                 -- | freestyle_vessel (a vessel flown there) | ai_difficulty (from game_completed)
+                                 -- | error/'any' and error_frame (sent a client_exception; its top frame)
     players INTEGER,             -- players active in the span with that key (a player on two platforms counts in both)
     new_players INTEGER          -- of those, players whose first day (in this source) falls inside the span
 );
 CREATE INDEX player_counts_span ON player_counts(span, source, dim);
+-- The same distinct players counted again inside each Device filter group (device: ios | iphone | ipad | android |
+-- android_phone | android_tablet | windows | mac | linux | web | web_desktop | web_mobile | phone | tablet | desktop),
+-- so a player on an iPhone and an iPad is one player of ios. player_counts itself is every device.
+CREATE TABLE player_counts_device(span TEXT, x TEXT, build_kind TEXT, source TEXT, dim TEXT, key TEXT, players INTEGER,
+    new_players INTEGER, device TEXT);
+CREATE INDEX player_counts_device_span ON player_counts_device(device, span, source, dim);
+CREATE TABLE active_rolling_device(day TEXT, build_kind TEXT, source TEXT, dau INTEGER, wau INTEGER, mau INTEGER,
+    device TEXT);                -- active_rolling inside one Device filter group
+CREATE TABLE session_players_device(day TEXT, build_kind TEXT, imported INTEGER, players INTEGER, device TEXT);
 CREATE TABLE cohort_weeks(       -- players by the week of their first day, active k weeks later (week_index 0 = that week)
     cohort TEXT, build_kind TEXT, source TEXT, play_group TEXT, week_index INTEGER, players INTEGER
 );
@@ -301,6 +469,31 @@ CREATE TABLE cohort_days(        -- players by first day and lifespan (first day
     play_group TEXT,             -- all | solo_vs_ai | solo | multi (played at least one match of that group)
     lifespan_days INTEGER, players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER,
     lapsed_14d INTEGER           -- not seen in the last 14 days
+);
+CREATE TABLE cohort_weeks_device(cohort TEXT, build_kind TEXT, source TEXT, play_group TEXT, week_index INTEGER,
+    players INTEGER, device TEXT);   -- cohort_weeks inside one Device filter group
+CREATE TABLE cohort_days_device(first_day TEXT, build_kind TEXT, source TEXT, play_group TEXT, lifespan_days INTEGER,
+    players INTEGER, returned_d1 INTEGER, returned_d7 INTEGER, lapsed_14d INTEGER, device TEXT);
+CREATE TABLE freestyle_vessels(  -- Freestyle (the Toybox) per day, build, source and vessel; NO player id
+    day TEXT, build_kind TEXT, imported INTEGER, vessel_class TEXT,   -- 'unknown' when the event named none
+    entries INTEGER,             -- freestyle_entered (in this vessel: builds from 2026-11-06 name it; older read unknown)
+    first_entries INTEGER,       -- of those, is_first (the first entry of that app session)
+    stretches INTEGER,           -- freestyle_ended ending in this vessel (builds from 2026-11-06 only)
+    seconds REAL,                -- freestyle seconds of those stretches (the vessel at the end of the stretch)
+    vessels_flown INTEGER,       -- sum of vessels_flown over those stretches
+    switches_to INTEGER,         -- freestyle_vessel_changed into this vessel (builds from 2026-11-06 only)
+    switches_from INTEGER,       -- freestyle_vessel_changed out of this vessel
+    recovered_to INTEGER,        -- recovered switches into this vessel (the identify history; see freestyle_switches)
+    recovered_from INTEGER,      -- recovered switches out of this vessel
+    device TEXT                  -- as plays.device (a recovered switch: the device the player sent most from that day)
+);
+CREATE TABLE freestyle_switches( -- Toybox vessel switches by day, build, source, from and to; NO player id
+    day TEXT, build_kind TEXT, imported INTEGER, from_vessel_class TEXT, vessel_class TEXT, switches INTEGER,
+    origin TEXT,                 -- event: freestyle_vessel_changed (builds after 2026-11-06, exact time) | recovered:
+                                 -- selected_vessel changed between two $identify of the player (builds since
+                                 -- 2026-10-12; time approximate, when the profile was sent), only before that
+                                 -- player's first freestyle_vessel_changed, so nothing counts twice
+    device TEXT                  -- as freestyle_vessels.device
 );
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
 -- Saved query tables (Query Studio, "as table") are added after these as t_<name>, rebuilt with the rest.
@@ -338,18 +531,53 @@ def player_hash(distinct_id):
 
 
 def build_kind_of(props):
-    """Release / development / editor / port. The client's own build_kind wins; until it sends one, the build is read
-    from the platform (…Editor) and the version (…-port), exactly as Ian's queries split them."""
+    """Release / development / editor / port / web. The client's own build_kind wins; until it sends one, the build is
+    read from the platform (WebGLPlayer is the browser Toybox; …Editor) and the version (…-port), exactly as Ian's
+    queries split them."""
     stated = props.get("build_kind")
     if isinstance(stated, str) and stated in BUILD_KINDS:
         return stated
     platform = str(props.get("platform") or "")
     version = str(props.get("app_version") or "")
+    if platform == "WebGLPlayer":
+        return "web"
     if platform.endswith("Editor"):
         return "editor"
     if version.endswith("-port"):
         return "port"
     return "release"
+
+
+def device_of(props):
+    """The device an event came from: the client's own `device` wins (builds from 2026-11-07); until it sends one, the
+    platform says which family (ios, android, web) or desktop (windows, mac, linux), and anything else is other."""
+    stated = props.get("device")
+    if isinstance(stated, str) and stated in DEVICES_SENT:
+        return stated
+    return DEVICE_OF_PLATFORM.get(str(props.get("platform") or ""), "other")
+
+
+OS_FAMILY = re.compile(r"^\s*(iOS|iPhone OS|iPadOS|Android|Windows|Mac ?OS(?: X)?|macOS|Linux)[^\d]*(\d+)?", re.I)
+
+
+def os_family_of(props):
+    """'iOS 17', 'Android 14', 'Windows 11', 'macOS 14', 'Linux' from SystemInfo.operatingSystem (sent from
+    2026-11-07); 'not recorded' before that, 'other' for a string it does not know."""
+    text = props.get("os")
+    if not isinstance(text, str) or not text.strip():
+        return "not recorded"
+    found = OS_FAMILY.match(text)
+    if not found:
+        return "other"
+    name = found.group(1)
+    name = {"ios": "iOS", "iphone os": "iOS", "ipados": "iPadOS", "android": "Android", "windows": "Windows",
+            "linux": "Linux"}.get(
+        name.lower(), "macOS")
+    major = found.group(2)
+    if name == "macOS" and major == "10":            # "Mac OS X 10.15.7": the minor is the release people know
+        minor = re.search(r"10[._](\d+)", text)
+        major = f"10.{minor.group(1)}" if minor else major
+    return f"{name} {major}" if major and name != "Linux" else name
 
 
 def as_int(value):
@@ -383,6 +611,142 @@ def play_type_of(props):
     return "solo_vs_ai" if ai >= 1 else "solo_alone"
 
 
+# Match setups (Shombith, 2026-11-07: "a sliced grouping in overview with competitive, teams, teams vs ai as per the
+# domains in both multiplayer and for solo like the same how many AIs"). One setup per play, from the LOCAL player's
+# side of game_started; play_type above stays as it is. (id, group, label), in the order the console draws them.
+SETUPS = (("competitive", "multiplayer", "Competitive"), ("teams", "multiplayer", "Teams"),
+          ("teams_vs_ai", "multiplayer", "Teams vs AI"), ("multi_unrecorded", "multiplayer", "Teams not recorded"),
+          ("solo_alone", "solo", "Alone"), ("solo_vs_1_ai", "solo", "vs 1 AI"), ("solo_vs_2_ai", "solo", "vs 2 AI"),
+          ("solo_vs_3plus_ai", "solo", "vs 3+ AI"), ("solo_with_ai_team", "solo", "With AI teammates"))
+SETUP_IDS = tuple(s[0] for s in SETUPS)
+DOMAINS_FROM = "2026-11-07"     # the first builds that send domain, humans_on_*_domain(s) and ai_on_*_domain(s)
+
+
+def _count(value):
+    """A head count from an event: a whole number 0 or more, else None (missing, text, negative)."""
+    if isinstance(value, bool):
+        return None
+    n = as_int(value)
+    return n if n is not None and n >= 0 else None
+
+
+def setup_of(props):
+    """(setup, humans_mine, humans_other, ai_mine, ai_other) for a game_started's properties.
+
+    Multiplayer is 2+ humans (player_count_human, as play_type_of reads it):
+      competitive       humans_on_my_domain == 1 and humans_on_other_domains >= 1 (every human for themselves, 1v1)
+      teams             humans_on_my_domain >= 2 and humans_on_other_domains >= 1 (humans together against humans)
+      teams_vs_ai       humans_on_other_domains == 0 (every human on one domain; the opponents are AI)
+      multi_unrecorded  the domain fields are missing (builds before 2026-11-07 and the PostHog history), or
+                        humans_on_other_domains >= 1 without humans_on_my_domain: never guessed
+    Solo is 1 human (or none recorded). The opponents are ai_on_other_domains when the build sent it, else
+    player_count_ai, else ai_count, else 0, so old data has these too:
+      solo_with_ai_team ai_on_my_domain >= 1 (AI teammates; only builds from 2026-11-07 can say so) - a slice of
+                        its own, whatever the opponents, so the pie stays one level
+      solo_alone        0 AI;  solo_vs_1_ai, solo_vs_2_ai;  solo_vs_3plus_ai  3 or more"""
+    humans = as_int(props.get("player_count_human")) or 0
+    mine, other = _count(props.get("humans_on_my_domain")), _count(props.get("humans_on_other_domains"))
+    ai_mine, ai_other = _count(props.get("ai_on_my_domain")), _count(props.get("ai_on_other_domains"))
+    counts = (mine, other, ai_mine, ai_other)
+    if humans >= 2:
+        if other is None:
+            return ("multi_unrecorded",) + counts
+        if other == 0:
+            return ("teams_vs_ai",) + counts
+        if mine is None or mine < 1:
+            return ("multi_unrecorded",) + counts
+        return ("competitive" if mine == 1 else "teams",) + counts
+    if ai_mine is not None and ai_mine >= 1:
+        return ("solo_with_ai_team",) + counts
+    opponents = next((n for n in (ai_other, _count(props.get("player_count_ai")), _count(props.get("ai_count")))
+                      if n is not None), 0)
+    return (("solo_alone", "solo_vs_1_ai", "solo_vs_2_ai")[opponents] if opponents < 3 else "solo_vs_3plus_ai",) + counts
+
+
+BACKUP_MEMBERS = ("events.db", "aggregates.db")
+# Shombith, 2026-11-07: off-VM copies are the Oracle boot-volume backup policy (daily 05:00 UTC, 5 kept), set in the
+# Oracle console with no key on the VM; the server cannot see them.
+BACKUP_OFF_VM = "Oracle boot-volume policy (check in the Oracle console)"
+
+
+def restore_backup(archive, data_dir):
+    """Put a backup made by Store.backup back into data_dir. Each database in it is checked (PRAGMA integrity_check)
+    before anything moves; the databases it replaces are kept in <data_dir>/before-restore-<time>/. Stop the server
+    first. Returns {restored: [names], kept_in: folder}. Raises Invalid for an archive that is not one of ours."""
+    if not os.path.isfile(archive):
+        raise Invalid(f"no file {archive}")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    work = tempfile.mkdtemp(prefix=".restore-", dir=data_dir)
+    try:
+        with tarfile.open(archive, "r:gz") as tar:
+            members = tar.getmembers()
+            names = [m.name for m in members]
+            if "events.db" not in names or any(n not in BACKUP_MEMBERS for n in names) or \
+                    any(not m.isfile() for m in members):
+                raise Invalid("not a Froglet Analytics backup (it must hold events.db, and aggregates.db at most)")
+            for m in members:
+                with tar.extractfile(m) as src, open(os.path.join(work, m.name), "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+        for name in names:
+            db = sqlite3.connect(os.path.join(work, name))
+            try:
+                ok = db.execute("PRAGMA integrity_check").fetchone()[0]
+            except sqlite3.DatabaseError as exc:
+                ok = str(exc)
+            finally:
+                db.close()
+            if ok != "ok":
+                raise Invalid(f"{name} in the backup fails its integrity check: {ok}")
+        kept = os.path.join(data_dir, f"before-restore-{stamp}")
+        os.makedirs(kept, exist_ok=True)
+        for name in BACKUP_MEMBERS:
+            for suffix in ("", "-wal", "-shm"):
+                path = os.path.join(data_dir, name + suffix)
+                if os.path.exists(path):
+                    os.replace(path, os.path.join(kept, name + suffix))
+        for name in names:
+            os.replace(os.path.join(work, name), os.path.join(data_dir, name))
+            os.chmod(os.path.join(data_dir, name), 0o600)
+        return {"restored": names, "kept_in": kept}
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def _label(value, limit=40):
+    """A short text value from an event (a reason, a difficulty name, a frame), else None. Numbers become text."""
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        value = str(int(value)) if float(value).is_integer() else str(value)
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.strip()[:limit]
+
+
+def difficulty_of(*props_list):
+    """The AI difficulty the opponents were set to, as the game names it: game_completed's, else match_abandoned's,
+    else game_started's. None when no event of the play sent one (every build before 2026-11-07)."""
+    for props in props_list:
+        found = _label((props or {}).get("ai_difficulty"))
+        if found:
+            return found
+    return None
+
+
+DIFFICULTY_ORDER = ("easy", "normal", "medium", "hard", "expert", "insane")
+
+
+def difficulty_rank(name):
+    """Sort key for difficulty names: the usual words in order, then numbers, then the rest by name."""
+    text = str(name or "")
+    low = text.lower()
+    if low in DIFFICULTY_ORDER:
+        return (0, DIFFICULTY_ORDER.index(low), "")
+    if text.isdigit():
+        return (1, int(text), "")
+    return (2 if text not in ("unknown", "") else 3, 0, low)
+
+
 class Store:
     """The raw store. One writer lock; SQLite in WAL mode so the aggregates rebuild can read while ingest writes."""
 
@@ -400,8 +764,24 @@ class Store:
             columns = {row[1] for row in self.db.execute(f"PRAGMA table_info({table})")}
             if "country" not in columns:
                 self.db.execute(f"ALTER TABLE {table} ADD COLUMN country TEXT")
+        self._migrate_devices()
         self.db.commit()
         self._seed_eras()
+
+    def _migrate_devices(self):
+        """Databases made before the device column (2026-11-07): add it and fill it from each row's own properties,
+        and tag WebGL rows that sent no build_kind as web (they were read as release before the web build). Once."""
+        columns = {row[1] for row in self.db.execute("PRAGMA table_info(events)")}
+        if "device" not in columns:
+            self.db.execute("ALTER TABLE events ADD COLUMN device TEXT")
+        if self.db.execute("SELECT 1 FROM store_meta WHERE key='devices_filled'").fetchone():
+            return
+        rows = self.db.execute("SELECT id, props FROM events WHERE device IS NULL").fetchall()
+        self.db.executemany("UPDATE events SET device=? WHERE id=?",
+                            [(device_of(json.loads(raw)), row_id) for row_id, raw in rows])
+        self.db.execute("UPDATE events SET build_kind='web' WHERE platform='WebGLPlayer' AND build_kind='release' "
+                        "AND json_extract(props, '$.build_kind') IS NULL")
+        self.db.execute("INSERT INTO store_meta(key, value) VALUES('devices_filled', ?)", (str(now_ms()),))
 
     def _seed_eras(self):
         """The four eras of the launch plan, written once. A later empty list is the admins' choice and stays."""
@@ -576,6 +956,7 @@ class Store:
         return [d for d in out if _visible(d["shared"], d["owner"], name, admin)]
 
     def save_dashboard(self, body, owner):
+        """`owner` is the saving key's name; a preset:<id> tile must name a saved view that key can see."""
         if not isinstance(body, dict):
             raise Invalid("send {id?, name, shared, tiles}")
         label = _text(body.get("name"), "name")
@@ -586,6 +967,7 @@ class Store:
         if not isinstance(tiles, list) or len(tiles) > MAX_TILES:
             raise Invalid(f"tiles must be a list of at most {MAX_TILES}")
         known = {q["id"] for q in self.queries()}
+        views = {p["id"] for p in self.presets(owner) if p["series"]}
         checked, ids = [], set()
         for i, tile in enumerate(tiles):
             if not isinstance(tile, dict):
@@ -597,9 +979,10 @@ class Store:
             source = tile.get("source")
             if not isinstance(source, str) or not (
                     (source.startswith("builtin:") and source[8:] in BUILTIN_TILES)
-                    or (source.startswith("query:") and source[6:] in known)):
-                raise Invalid(f"tile {tile_id}: source must be query:<saved query id> or builtin:<one of "
-                              f"{', '.join(BUILTIN_TILES)}>")
+                    or (source.startswith("query:") and source[6:] in known)
+                    or (source.startswith("preset:") and source[7:] in views)):
+                raise Invalid(f"tile {tile_id}: source must be query:<saved query id>, preset:<id of a saved chart "
+                              f"view you can see> or builtin:<one of {', '.join(BUILTIN_TILES)}>")
             chart = tile.get("chart", "bars")
             if chart not in QUERY_CHARTS:
                 raise Invalid(f"tile {tile_id}: chart must be one of {list(QUERY_CHARTS)}")
@@ -636,6 +1019,105 @@ class Store:
             gone = self.db.execute("DELETE FROM dashboards WHERE id=?", (dash_id,)).rowcount
             self.db.commit()
         return bool(gone)
+
+    # ---------------------------------------------------------------- saved views (presets)
+
+    @staticmethod
+    def _preset_row(r):
+        return {"id": r[0], "name": r[1], "owner": r[2], "public": bool(r[3]), "page": r[4], "chart_id": r[5],
+                "series": bool(r[6]), "settings": json.loads(r[7]), "filters": json.loads(r[8]), "created_ms": r[9],
+                "updated_ms": r[10]}
+
+    def presets(self, name):
+        """The saved views this key name may see: its own and every public one (never someone else's private one,
+        whoever asks)."""
+        with self.lock:
+            rows = self.db.execute("SELECT id, name, owner, public, page, chart_id, series, settings, filters, "
+                                   "created_ms, updated_ms FROM presets WHERE owner = ? OR public = 1 "
+                                   "ORDER BY page, chart_id, name", (name,)).fetchall()
+        return [self._preset_row(r) for r in rows]
+
+    def preset(self, preset_id, name):
+        """One saved view this key name may see, or None (a private one of someone else's is None too)."""
+        return next((p for p in self.presets(name) if p["id"] == preset_id), None)
+
+    def save_preset(self, body, owner, eras=()):
+        """Create, or (with the id of one's own) replace, a saved view. Raises Invalid (400) or PermissionError (403)."""
+        if not isinstance(body, dict):
+            raise Invalid("send {id?, name, page, chart_id, settings, filters, public}")
+        unknown = set(body) - {"id", "name", "page", "chart_id", "settings", "filters", "public", "series"}
+        if unknown:
+            raise Invalid(f"unknown fields: {', '.join(sorted(unknown))}")
+        label = _text(body.get("name"), "name")
+        page = body.get("page")
+        if page not in PRESET_PAGES:
+            raise Invalid(f"page must be one of {list(PRESET_PAGES)}")
+        chart_id = body.get("chart_id")
+        if not isinstance(chart_id, str) or not CHART_ID.match(chart_id):
+            raise Invalid("chart_id must match [A-Za-z0-9_.:-]{1,80}")
+        settings = body.get("settings")
+        if not isinstance(settings, dict) or set(settings) - set(PRESET_SETTINGS):
+            raise Invalid(f"settings must be an object with only {list(PRESET_SETTINGS)}")
+        for k, v in settings.items():
+            if v is not None and (not isinstance(v, str) or not SETTING_VALUE.match(v)):
+                raise Invalid(f"settings.{k} must be null or match [a-z0-9_]{{1,40}}")
+        filters = body.get("filters", {})
+        if not isinstance(filters, dict) or set(filters) - set(PRESET_FILTERS):
+            raise Invalid(f"filters must be an object with only {list(PRESET_FILTERS)}")
+        if "build" in filters and filters["build"] not in ("all",) + BUILD_KINDS:
+            raise Invalid(f"filters.build must be one of {['all', *BUILD_KINDS]}")
+        if "device" in filters and filters["device"] not in DEVICE_FILTERS:
+            raise Invalid(f"filters.device must be one of {list(DEVICE_FILTERS)}")
+        if "days" in filters and (not isinstance(filters["days"], int) or isinstance(filters["days"], bool)
+                                  or filters["days"] not in WINDOWS):
+            raise Invalid(f"filters.days must be one of {list(WINDOWS)}")
+        if "play" in filters and filters["play"] not in PRESET_PLAYS:
+            raise Invalid(f"filters.play must be one of {list(PRESET_PLAYS)}")
+        if filters.get("era"):
+            if not isinstance(filters["era"], str) or not ID_PATTERN.match(filters["era"]):
+                raise Invalid("filters.era must be an era id or empty")
+            if eras and filters["era"] not in {e["id"] for e in eras}:
+                raise Invalid(f"no era with id {filters['era']}")
+        public = body.get("public", False)
+        series = body.get("series", False)
+        if not isinstance(public, bool) or not isinstance(series, bool):
+            raise Invalid("public and series must be true or false")
+        preset_id = body.get("id")
+        if preset_id is not None and (not isinstance(preset_id, str) or not ID_PATTERN.match(preset_id)):
+            raise Invalid("id must match [a-z0-9_]{1,40}")
+        now = now_ms()
+        with self.lock:
+            existing = self.db.execute("SELECT owner, public, created_ms FROM presets WHERE id=?",
+                                       (preset_id,)).fetchone() if preset_id else None
+            if preset_id and not existing:
+                raise Invalid("no saved view with that id; leave id out to make a new one")
+            if existing and existing[0] != owner:
+                if not existing[1]:
+                    raise Invalid("no saved view with that id; leave id out to make a new one")   # private: not shown
+                raise PermissionError("Only its owner can change a saved view; save it under a new name instead.")
+            if not existing and self.db.execute("SELECT COUNT(*) FROM presets").fetchone()[0] >= MAX_PRESETS:
+                raise Invalid(f"at most {MAX_PRESETS} saved views; delete one first")
+            preset_id = preset_id or _new_id("p_")
+            made = existing[2] if existing else now
+            clean_filters = {k: filters[k] for k in PRESET_FILTERS if k in filters and filters[k] not in (None, "")}
+            self.db.execute("INSERT OR REPLACE INTO presets VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                            (preset_id, label, owner, int(public), page, chart_id, int(series),
+                             json.dumps(settings, sort_keys=True), json.dumps(clean_filters, sort_keys=True), made, now))
+            self.db.commit()
+        return self.preset(preset_id, owner)
+
+    def delete_preset(self, preset_id, name, moderator=False):
+        """True when deleted. None when this key may not see it (no such id, or someone else's private view).
+        PermissionError for someone else's public view, unless `moderator` (a key in admin_keys)."""
+        with self.lock:
+            row = self.db.execute("SELECT owner, public FROM presets WHERE id=?", (preset_id,)).fetchone()
+            if not row or (row[0] != name and not row[1]):
+                return None
+            if row[0] != name and not moderator:
+                raise PermissionError("Only its owner (or a key in admin_keys) can delete a saved view.")
+            self.db.execute("DELETE FROM presets WHERE id=?", (preset_id,))
+            self.db.commit()
+        return True
 
     # ---------------------------------------------------------------- ingest
 
@@ -689,7 +1171,7 @@ class Store:
             received = ts                   # history keeps its own time, so "last event received" stays true
 
         if event == "$identify":
-            return self._identify(distinct_id, props, received, country)
+            return self._identify(distinct_id, props, received, country, ts, trusted)
 
         props_json = json.dumps(props, sort_keys=True, separators=(",", ":"), default=str)
         if len(props_json.encode()) > MAX_PROPS_BYTES:
@@ -706,11 +1188,11 @@ class Store:
         match_id = props.get("match_id") if isinstance(props.get("match_id"), str) else None
         cur = self.db.execute(
             "INSERT OR IGNORE INTO events(received_ms, ts_ms, day, event, distinct_id, install_id, match_id, build_kind,"
-            " app_version, platform, country, schema_version, props, content_hash, shape_hash, near_dup)"
-            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " app_version, platform, country, schema_version, device, props, content_hash, shape_hash, near_dup)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (received, ts, day_of(ts), event, distinct_id, props.get("install_id"), match_id, build_kind_of(props),
-             props.get("app_version"), props.get("platform"), country, as_int(props.get("schema_version")), props_json,
-             content_hash, shape_hash, 1 if near else 0))
+             props.get("app_version"), props.get("platform"), country, as_int(props.get("schema_version")),
+             device_of(props), props_json, content_hash, shape_hash, 1 if near else 0))
         if cur.rowcount == 0:
             # The same event sent again (the client re-sends a batch whose response it never saw): stored once.
             self.db.execute("INSERT INTO resent(day, count) VALUES(?,1) "
@@ -718,13 +1200,14 @@ class Store:
             return "resent"
         return "near_duplicates" if near else "accepted"
 
-    def _identify(self, distinct_id, props, received, country=None):
+    def _identify(self, distinct_id, props, received, country=None, ts=None, trusted=False):
         person = props.get("$set") if isinstance(props.get("$set"), dict) else {}
         if person.get("gdpr_deletion_requested") is True:
             # The in-game "delete my data" button flags the person (PostHogAnalyticsSink.RequestDataDeletion).
             # PostHog could not finish that from the client; here it is finished at once.
             self._erase_locked(distinct_id, "in_game_request", received)
             return "erased"
+        self._snapshot(distinct_id, person, ts or received, trusted)
         row = self.db.execute("SELECT props FROM people WHERE distinct_id=?", (distinct_id,)).fetchone()
         merged = json.loads(row[0]) if row else {}
         merged.update(person)
@@ -734,6 +1217,18 @@ class Store:
             "country=COALESCE(excluded.country, people.country)",
             (distinct_id, json.dumps(merged, sort_keys=True), country, received, received))
         return "accepted"
+
+    def _snapshot(self, distinct_id, person, ts, imported):
+        """Keep this $identify as one row of the player's history (the people table holds only the latest values)."""
+        raw = json.dumps(person, sort_keys=True, separators=(",", ":"), default=str)
+        if len(raw.encode()) > MAX_PROPS_BYTES:
+            return
+        text = lambda k: str(person[k]).strip()[:64] if isinstance(person.get(k), str) and person[k].strip() else None
+        self.db.execute(
+            "INSERT OR IGNORE INTO person_snapshots(distinct_id, ts_ms, day, imported, selected_vessel, preferred_vessel,"
+            " total_flight_time_seconds, props, content_hash) VALUES(?,?,?,?,?,?,?,?,?)",
+            (distinct_id, ts, day_of(ts), 1 if imported else 0, text("selected_vessel"), text("preferred_vessel"),
+             as_float(person.get("total_flight_time_seconds")), raw, hashlib.sha256(raw.encode()).hexdigest()))
 
     # ---------------------------------------------------------------- erasure, retention, backup
 
@@ -746,6 +1241,7 @@ class Store:
     def _erase_locked(self, distinct_id, source, requested):
         deleted = self.db.execute("DELETE FROM events WHERE distinct_id=?", (distinct_id,)).rowcount
         deleted += self.db.execute("DELETE FROM people WHERE distinct_id=?", (distinct_id,)).rowcount
+        deleted += self.db.execute("DELETE FROM person_snapshots WHERE distinct_id=?", (distinct_id,)).rowcount
         # The log keeps a salted hash, never the id itself, so the record of a deletion is not a record of the player.
         self.db.execute("INSERT INTO erasures(player_hash, requested_ms, done_ms, rows_deleted, source)"
                         " VALUES(?,?,?,?,?)", (player_hash(distinct_id), requested, now_ms(), deleted, source))
@@ -755,24 +1251,57 @@ class Store:
         cutoff = day_of(now_ms() - retention_days * 86400 * 1000)
         with self.lock:
             gone = self.db.execute("DELETE FROM events WHERE day < ?", (cutoff,)).rowcount
+            self.db.execute("DELETE FROM person_snapshots WHERE day < ?", (cutoff,))
             self.db.execute("DELETE FROM rejects WHERE day < ?", (cutoff,))
             self.db.execute("DELETE FROM resent WHERE day < ?", (cutoff,))
             self.db.commit()
         return gone
 
     def backup(self, keep=14):
+        """A consistent snapshot of events.db and aggregates.db (SQLite's online backup API, so ingest and the rebuild
+        may keep running), packed into one gzipped tar in <data_dir>/backups/ (600). The newest `keep` are kept.
+        Returns (path, bytes). `restore_backup` puts one back."""
         folder = os.path.join(self.data_dir, "backups")
         os.makedirs(folder, exist_ok=True)
-        target = os.path.join(folder, "events-" + datetime.now(timezone.utc).strftime("%Y%m%d") + ".db")
-        dest = sqlite3.connect(target)
-        with self.lock:
-            self.db.backup(dest)
-        dest.close()
-        os.chmod(target, 0o600)
-        old = sorted(f for f in os.listdir(folder) if f.startswith("events-") and f.endswith(".db"))
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")     # sorts by time; two in a second differ
+        target = os.path.join(folder, f"froglet-analytics-{stamp}.tar.gz")
+        work = tempfile.mkdtemp(prefix=".snapshot-", dir=folder)
+        try:
+            names = []
+            for name, source in (("events.db", None), ("aggregates.db", self.agg_path)):
+                if source is not None and not os.path.exists(source):
+                    continue                            # no rebuild yet: the raw store alone
+                dest = sqlite3.connect(os.path.join(work, name))
+                if source is None:
+                    with self.lock:
+                        self.db.backup(dest)
+                else:
+                    src = sqlite3.connect(f"file:{source}?mode=ro", uri=True)
+                    src.backup(dest)
+                    src.close()
+                dest.close()
+                names.append(name)
+            partial = target + ".part"
+            with tarfile.open(partial, "w:gz") as tar:
+                for name in names:
+                    tar.add(os.path.join(work, name), arcname=name)
+            os.chmod(partial, 0o600)
+            os.replace(partial, target)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+        old = sorted(f for f in os.listdir(folder) if f.startswith("froglet-analytics-") and f.endswith(".tar.gz"))
         for name in old[:-keep]:
             os.remove(os.path.join(folder, name))
-        return target
+        return target, os.path.getsize(target)
+
+    def backups(self):
+        """The local backups, newest first: [{file, bytes, ms}]."""
+        folder = os.path.join(self.data_dir, "backups")
+        if not os.path.isdir(folder):
+            return []
+        found = [f for f in os.listdir(folder) if f.startswith("froglet-analytics-") and f.endswith(".tar.gz")]
+        return [{"file": f, "bytes": os.path.getsize(os.path.join(folder, f)),
+                 "ms": int(os.path.getmtime(os.path.join(folder, f)) * 1000)} for f in sorted(found, reverse=True)]
 
     def mark_job(self, name, detail=""):
         with self.lock:
@@ -811,8 +1340,16 @@ class Store:
     def health_facts(self):
         last = self.db.execute("SELECT MAX(received_ms) FROM events").fetchone()[0]
         erasures = self.db.execute("SELECT COUNT(*), MAX(done_ms) FROM erasures").fetchone()
+        local = self.backups()
+        upload = self.job("backup_upload")
         return {"last_event_ms": last, "erasures_done": erasures[0], "last_erasure_ms": erasures[1],
-                "backup": self.job("backup"), "nightly": self.job("nightly"), "rebuild": self.job("rebuild")}
+                "backup": self.job("backup"), "nightly": self.job("nightly"), "rebuild": self.job("rebuild"),
+                # where the backups are: the newest local copy (the file name and size only, never a path or a key)
+                "backups": {"local_last_ms": local[0]["ms"] if local else None,
+                            "local_file": local[0]["file"] if local else None,
+                            "local_bytes": local[0]["bytes"] if local else None, "local_kept": len(local),
+                            "off_vm": BACKUP_OFF_VM,
+                            "bucket_upload": upload}}
 
     # ---------------------------------------------------------------- players (raw data; profile readers only)
 
@@ -822,8 +1359,11 @@ class Store:
         return db
 
     @staticmethod
-    def _range_where(build, since, until, source, builds):
+    def _range_where(build, since, until, source, builds, devices=None):
         where, args = "day >= ?", [since]
+        if devices:
+            where += f" AND device IN ({','.join('?' * len(devices))})"
+            args += list(devices)
         if until:
             where += " AND day <= ?"
             args.append(until)
@@ -840,12 +1380,12 @@ class Store:
         return where, args
 
     def people_list(self, build=None, days=90, search="", limit=500, play="all", since=None, until=None,
-                    source="any", builds=None):
+                    source="any", builds=None, devices=None):
         """One row per player seen in the range (the last `days`, or since..until for an era): who, where, on what,
         how much, and the days they were active (at most the latest 120). `play` keeps players who played at least
         one match of that group. Newest first."""
         since = since or day_of(now_ms() - (days - 1) * 86400 * 1000)
-        where, args = self._range_where(build, since, until, source, builds)
+        where, args = self._range_where(build, since, until, source, builds, devices)
         db = self._read()
         rows = db.execute(
             "SELECT distinct_id, MIN(ts_ms) AS first_ms, MAX(ts_ms) AS last_ms, COUNT(*) AS events, "
@@ -860,9 +1400,14 @@ class Store:
             ">= 1 THEN match_id END) AS solo_vs_ai, "
             "COUNT(DISTINCT CASE WHEN event='game_completed' AND json_extract(props, '$.player_won') IN (1, 'true') "
             "THEN match_id END) AS won, "
-            "GROUP_CONCAT(DISTINCT platform) AS platforms, GROUP_CONCAT(DISTINCT country) AS countries, "
+            "GROUP_CONCAT(DISTINCT platform) AS platforms, GROUP_CONCAT(DISTINCT device) AS devices, "
+            "GROUP_CONCAT(DISTINCT country) AS countries, "
             "GROUP_CONCAT(DISTINCT build_kind) AS builds, MAX(app_version) AS app_version, "
-            "GROUP_CONCAT(DISTINCT day) AS active_days "
+            "GROUP_CONCAT(DISTINCT day) AS active_days, "
+            # Freestyle (the Toybox): entries since the PostHog history; seconds from builds that send freestyle_ended
+            "SUM(CASE WHEN event='freestyle_entered' AND near_dup=0 THEN 1 ELSE 0 END) AS freestyle_entries, "
+            "ROUND(SUM(CASE WHEN event='freestyle_ended' AND near_dup=0 THEN COALESCE(CAST(json_extract(props, "
+            "'$.seconds') AS REAL), 0) ELSE 0 END), 1) AS freestyle_seconds "
             f"FROM events WHERE {where} GROUP BY distinct_id", args).fetchall()
         people = {r["distinct_id"]: (json.loads(r["props"]), r["country"]) for r in db.execute(
             "SELECT distinct_id, props, country FROM people")}
@@ -881,15 +1426,16 @@ class Store:
             row["active_days"] = sorted(filter(None, (r["active_days"] or "").split(",")))[-ACTIVE_DAYS_MAX:]
             out.append({**row, "display_name": name, "crystal_balance": props.get("crystal_balance"),
                         "platforms": sorted(filter(None, (r["platforms"] or "").split(","))),
+                        "devices": sorted(filter(None, (r["devices"] or "").split(","))),
                         "countries": sorted(filter(None, (r["countries"] or "").split(",")))})
         out.sort(key=lambda p: p["last_ms"], reverse=True)
         return {"days": days, "build": build, "play": play, "since": since, "until": until, "total": len(out),
                 "people": out[:limit]}
 
-    def lifespans(self, build, since, until=None, source="any", builds=None, play="all", limit=500):
-        """Cohorts page, profile readers only: each player whose first day (in this build and source) falls in the
-        range, with their first and last day, active days and the play group they played most."""
-        where, args = self._range_where(build, "0000-00-00", None, source, builds)
+    def lifespans(self, build, since, until=None, source="any", builds=None, play="all", limit=500, devices=None):
+        """Cohorts page, profile readers only: each player whose first day (in this build, source and devices) falls
+        in the range, with their first and last day, active days and the play group they played most."""
+        where, args = self._range_where(build, "0000-00-00", None, source, builds, devices)
         db = self._read()
         rows = db.execute(
             "SELECT distinct_id, MIN(day) AS first_day, MAX(day) AS last_day, GROUP_CONCAT(DISTINCT day) AS days, "
@@ -923,10 +1469,11 @@ class Store:
         """Everything stored about one player, arranged for their profile page."""
         db = self._read()
         events = db.execute("SELECT ts_ms, day, event, match_id, build_kind, app_version, platform, country, "
-                            "install_id, near_dup, props FROM events WHERE distinct_id=? ORDER BY ts_ms",
+                            "install_id, near_dup, props, device FROM events WHERE distinct_id=? ORDER BY ts_ms",
                             (distinct_id,)).fetchall()
         row = db.execute("SELECT props, country, first_seen_ms, last_seen_ms FROM people WHERE distinct_id=?",
                          (distinct_id,)).fetchone()
+        recovered = recovered_switches(db, distinct_id).get(distinct_id, [])
         db.close()
         if not events and not row:
             return None
@@ -1005,13 +1552,14 @@ class Store:
                 earned_by[str(x["source"] or "unknown")] = earned_by.get(str(x["source"] or "unknown"), 0) + (x["amount"] or 0)
         lifespan = ((date.fromisoformat(events[-1]["day"]) - date.fromisoformat(events[0]["day"])).days + 1
                     if events else None)
+        freestyle = _freestyle_profile(events, props_of, recovered)
         return {
             "player_id": distinct_id,
             "display_name": person_props.get("display_name") or "",
             "person": person_props,
             "first_ms": events[0]["ts_ms"] if events else (row["first_seen_ms"] if row else None),
             "last_ms": events[-1]["ts_ms"] if events else (row["last_seen_ms"] if row else None),
-            "where": {"countries": count("country"), "platforms": count("platform"),
+            "where": {"countries": count("country"), "platforms": count("platform"), "devices": count("device"),
                       "app_versions": count("app_version"), "builds": count("build_kind"),
                       "installs": count("install_id"), "latest_country": (row["country"] if row else None)
                       or next((e["country"] for e in reversed(events) if e["country"]), None)},
@@ -1036,6 +1584,7 @@ class Store:
                         "recent": list(reversed(economy))[:60], "unlocks": unlocks,
                         "by_source": [{"source": k, "earned": v} for k, v in
                                       sorted(earned_by.items(), key=lambda kv: -kv[1])]},
+            "freestyle": freestyle,
             "ftue": ftue, "settings": settings, "social": social,
             "recent_events": [{"ts_ms": e["ts_ms"], "event": e["event"], "build": e["build_kind"],
                                "platform": e["platform"], "country": e["country"],
@@ -1058,18 +1607,30 @@ class Store:
         # plays: one per (player, match) from game_started, first start wins (duplicates collapse here)
         # imported: PostHog history is exactly the rows ingest(trusted=True) stored with received_ms == ts_ms
         starts = {}
-        for distinct_id, match_id, ts, build, platform, version, props, imported, country in reader.execute(
+        for distinct_id, match_id, ts, build, platform, version, props, imported, country, device in reader.execute(
                 "SELECT distinct_id, match_id, ts_ms, build_kind, platform, app_version, props, received_ms = ts_ms, "
-                "country FROM events WHERE event='game_started' AND match_id IS NOT NULL ORDER BY ts_ms"):
+                "country, COALESCE(device, 'other') FROM events WHERE event='game_started' AND match_id IS NOT NULL "
+                "ORDER BY ts_ms"):
             key = (distinct_id, match_id)
             if key not in starts:
-                starts[key] = (ts, build, platform, version, json.loads(props), imported, country)
+                starts[key] = (ts, build, platform, version, json.loads(props), imported, country, device)
         dones = {}
         for distinct_id, match_id, ts, props in reader.execute(
                 "SELECT distinct_id, match_id, ts_ms, props FROM events "
                 "WHERE event='game_completed' AND match_id IS NOT NULL ORDER BY ts_ms"):
             dones.setdefault((distinct_id, match_id), (ts, json.loads(props)))
+        quits = {}
+        for distinct_id, match_id, ts, props in reader.execute(
+                "SELECT distinct_id, match_id, ts_ms, props FROM events "
+                "WHERE event='match_abandoned' AND match_id IS NOT NULL ORDER BY ts_ms"):
+            quits.setdefault((distinct_id, match_id), (ts, json.loads(props)))
+        # The builds that send match_abandoned: a (build, version) from the first day it sent it or session_started
+        # (both arrive together, from the same builds). Only their plays count in the quit rate's denominator.
+        tracked_from = {(b, v): d for b, v, d in reader.execute(
+            "SELECT build_kind, COALESCE(app_version, ''), MIN(day) FROM events "
+            "WHERE event IN ('match_abandoned', 'session_started') GROUP BY 1, 2")}
 
+        table = mode_elements()
         by_player = {}
         for (distinct_id, match_id), start in starts.items():
             by_player.setdefault(distinct_id, []).append((start[0], match_id))
@@ -1077,7 +1638,7 @@ class Store:
         for distinct_id, plays in by_player.items():
             plays.sort()
             for index, (start_ts, match_id) in enumerate(plays):
-                ts, build, platform, version, props, imported, country = starts[(distinct_id, match_id)]
+                ts, build, platform, version, props, imported, country, device = starts[(distinct_id, match_id)]
                 done = dones.get((distinct_id, match_id))
                 rematched = None
                 if done:
@@ -1087,29 +1648,53 @@ class Store:
                 flight = as_float(done_props.get("flight_time_seconds"))
                 duration = as_float(done_props.get("duration_seconds"))
                 won = done_props.get("player_won")
+                element, second, element_source = element_of(props, table)
+                quit = quits.get((distinct_id, match_id)) if not done else None
+                quit_props = quit[1] if quit else {}
+                since = tracked_from.get((build, version or ""))
                 rows.append((match_id, day_of(ts), ts, build, platform, version, props.get("game_mode"),
                              as_int(props.get("intensity")), props.get("vessel_class"), play_type_of(props),
                              as_int(props.get("player_count_human")), as_int(props.get("player_count_ai")),
                              1 if done else 0, rematched, flight, duration,
                              (1 if won is True or won == "true" else 0) if done and won is not None else None,
                              max(0.0, duration - flight) if flight is not None and duration is not None else None,
-                             imported, country))
-        out.executemany("INSERT INTO plays VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+                             imported, country, element, second, element_source) + setup_of(props) + (
+                             as_float(done_props.get("score")), _count(done_props.get("placement")) or None,
+                             _count(done_props.get("players_in_match")) or None,
+                             difficulty_of(done_props, quit_props, props),
+                             as_float(done_props.get("behind_by")),
+                             1 if quit else 0, _label(quit_props.get("reason")), as_float(quit_props.get("elapsed_seconds")),
+                             1 if since is not None and day_of(ts) >= since else 0, device, os_family_of(props)))
+        out.executemany(f"INSERT INTO plays VALUES({','.join('?' * 39)})", rows)
+        # which modes had no element (old names, modes with no genre): Data health lists them
+        missing = {}
+        for r in rows:
+            if r[20] is None:
+                entry = missing.setdefault(str(r[6] or "unknown"), [0, 0])
+                entry[0] += 1
+                entry[1] += 1 if r[18] else 0
+        out.execute("INSERT INTO meta VALUES('modes_without_element', ?)", (json.dumps(
+            [{"game_mode": k, "plays": v[0], "imported_plays": v[1]} for k, v in
+             sorted(missing.items(), key=lambda kv: (-kv[1][0], kv[0]))]),))
 
-        out.executemany("INSERT INTO daily_events VALUES(?,?,?,?,?,?,?)", reader.execute(
-            "SELECT day, build_kind, event, COUNT(*), SUM(near_dup), COUNT(DISTINCT distinct_id), received_ms = ts_ms "
-            "FROM events GROUP BY day, build_kind, event, received_ms = ts_ms").fetchall())
-        out.executemany("INSERT INTO daily_plays VALUES(?,?,?,?,?,?)", reader.execute(
+        out.executemany("INSERT INTO daily_events VALUES(?,?,?,?,?,?,?,?)", reader.execute(
+            "SELECT day, build_kind, event, COUNT(*), SUM(near_dup), COUNT(DISTINCT distinct_id), received_ms = ts_ms, "
+            "COALESCE(device, 'other') FROM events GROUP BY day, build_kind, event, received_ms = ts_ms, 8").fetchall())
+        out.executemany("INSERT INTO daily_plays VALUES(?,?,?,?,?,?,?)", reader.execute(
             "SELECT day, build_kind, COUNT(*), COUNT(DISTINCT distinct_id || '|' || match_id), "
-            "ROUND(1.0 * COUNT(*) / COUNT(DISTINCT distinct_id || '|' || match_id), 2), received_ms = ts_ms FROM events "
-            "WHERE event='game_started' AND match_id IS NOT NULL GROUP BY day, build_kind, received_ms = ts_ms").fetchall())
+            "ROUND(1.0 * COUNT(*) / COUNT(DISTINCT distinct_id || '|' || match_id), 2), received_ms = ts_ms, "
+            "COALESCE(device, 'other') FROM events WHERE event='game_started' AND match_id IS NOT NULL "
+            "GROUP BY day, build_kind, received_ms = ts_ms, 7").fetchall())
 
+        # A player per build, and per '*' (every build, each player once: the Build filter's All). Tables keyed by a
+        # player's build carry '*' rows for the distinct counts; tables of rows (plays, events) do not need them.
         first_day = {}
         days_seen = {}
         for distinct_id, build, day in reader.execute(
                 "SELECT distinct_id, build_kind, day FROM events GROUP BY distinct_id, build_kind, day ORDER BY day"):
-            first_day.setdefault((distinct_id, build), day)
-            days_seen.setdefault((distinct_id, build), set()).add(day)
+            for b in (build, "*"):
+                first_day.setdefault((distinct_id, b), day)
+                days_seen.setdefault((distinct_id, b), set()).add(day)
         players = {}
         for (distinct_id, build), seen in days_seen.items():
             for day in seen:
@@ -1132,26 +1717,39 @@ class Store:
 
         first_play = {}
         for (distinct_id, match_id), start in sorted(starts.items(), key=lambda kv: kv[1][0]):
-            first_play.setdefault((distinct_id, start[1]), (day_of(start[0]), play_type_of(start[4]), start[5]))
+            for b in (start[1], "*"):
+                first_play.setdefault((distinct_id, b), (day_of(start[0]), play_type_of(start[4]), start[5], start[7]))
         mature = day_of(now_ms() - 7 * 86400 * 1000)
         cohorts = {}
-        for (distinct_id, build), (day, play_type, imported) in first_play.items():
+        for (distinct_id, build), (day, play_type, imported, device) in first_play.items():
             if day > mature:
                 continue
             seen = days_seen.get((distinct_id, build), set())
             start = datetime.strptime(day, "%Y-%m-%d")
             next_day = (start + timedelta(days=1)).strftime("%Y-%m-%d")
             week = {(start + timedelta(days=n)).strftime("%Y-%m-%d") for n in range(1, 8)}
-            entry = cohorts.setdefault((day, build, play_type, imported), [0, 0, 0])
+            entry = cohorts.setdefault((day, build, play_type, imported, device), [0, 0, 0])
             entry[0] += 1
             entry[1] += 1 if next_day in seen else 0
             entry[2] += 1 if seen & week else 0
-        out.executemany("INSERT INTO returns VALUES(?,?,?,?,?,?,?)",
-                        [(d, b, p, v[0], v[1], v[2], i) for (d, b, p, i), v in sorted(cohorts.items())])
+        out.executemany("INSERT INTO returns VALUES(?,?,?,?,?,?,?,?)",
+                        [(d, b, p, v[0], v[1], v[2], i, dv) for (d, b, p, i, dv), v in sorted(cohorts.items())])
         _rebuild_details(reader, out, first_day, days_seen)
+        _rebuild_freestyle(reader, out)
         eras = [dict(id=r[0], start=r[1], end=r[2], source=r[3], builds=json.loads(r[4])) for r in reader.execute(
             "SELECT id, from_day, to_day, source, builds FROM eras ORDER BY position")]
-        _rebuild_spans(reader, out, starts, eras)
+        difficulty = {(r_player, r_match): r_diff for r_player, r_match, r_diff in (
+            (k[0], k[1], difficulty_of(v[1], (quits.get(k) or (0, {}))[1], starts[k][4]))
+            for k, v in dones.items() if k in starts)}
+        _rebuild_spans(reader, out, starts, eras, table, difficulty)
+        seen_any = {}
+        for player, day in reader.execute("SELECT distinct_id, day FROM events GROUP BY distinct_id, day"):
+            seen_any.setdefault(player, set()).add(day)
+        _rebuild_sessions(reader, out)
+        _rebuild_invites(reader, out, starts, seen_any)
+        _rebuild_frustration(reader, out, seen_any)
+        _rebuild_errors(reader, out)
+        out.execute("INSERT INTO meta VALUES('new_events', ?)", (json.dumps(new_event_health(reader)),))
         out.executemany("INSERT INTO rejects VALUES(?,?,?,?)",
                         reader.execute("SELECT day, reason, event, count FROM rejects").fetchall())
         out.executemany("INSERT INTO meta VALUES(?,?)", [("built_ms", str(now_ms()))])
@@ -1180,8 +1778,69 @@ def _counts(values):
     return dict(sorted(out.items(), key=lambda kv: -kv[1]))
 
 
-SUMMARY_KEYS = ("game_mode", "intensity", "vessel_class", "amount", "source", "balance", "setting", "value", "reason",
-                "step_name", "action_type", "action_label", "vessel", "quest", "key", "display_name")
+SUMMARY_KEYS = ("game_mode", "intensity", "vessel_class", "from_vessel_class", "element", "seconds", "vessels_flown",
+                "amount", "source", "balance", "setting", "value", "reason", "step_name", "action_type", "action_label",
+                "vessel", "quest", "key", "display_name")
+FREESTYLE_NOTE = ("Entries go back to the PostHog history (August 2026). Minutes and exact switches exist only from "
+                  "builds that send freestyle_ended and freestyle_vessel_changed (after 2026-11-06). Switches marked "
+                  "approx. are recovered from the identify history (builds since 2026-10-12): the selected vessel "
+                  "changed between two profile updates, at about that time.")
+
+
+def _freestyle_profile(events, props_of, recovered=()):
+    """One player's Freestyle (Toybox) block for their profile: visits, minutes, the vessels flown there, and every
+    switch in order (when, from, to, seconds into the stretch). `recovered` switches (from the identify history) are
+    marked approx: their time is when the profile was sent, not the click."""
+    entries = first = stretches = 0
+    seconds, flown, switched_to, switches, recent, per_day = 0.0, {}, {}, [], [], {}
+    first_ms = last_ms = first_minutes_ms = None
+    for e, p in zip(events, props_of):
+        name = e["event"]
+        if name not in ("freestyle_entered", "freestyle_ended", "freestyle_vessel_changed") or e["near_dup"]:
+            continue
+        first_ms = first_ms or e["ts_ms"]
+        last_ms = e["ts_ms"]
+        day = per_day.setdefault(e["day"], {"day": e["day"], "entries": 0, "seconds": 0.0, "switches": 0})
+        vessel = p.get("vessel_class") if isinstance(p.get("vessel_class"), str) and p.get("vessel_class") else None
+        if name == "freestyle_entered":
+            entries += 1
+            day["entries"] += 1
+            first += 1 if p.get("is_first") in (True, "true", "True", 1) else 0
+            if vessel:
+                flown[vessel] = flown.get(vessel, 0) + 1
+        elif name == "freestyle_ended":
+            stretches += 1
+            sec = max(0.0, as_float(p.get("seconds")) or 0.0)
+            seconds += sec
+            day["seconds"] = round(day["seconds"] + sec, 1)
+            first_minutes_ms = first_minutes_ms or e["ts_ms"]
+            recent.append({"ts_ms": e["ts_ms"], "seconds": round(sec, 1), "vessel_class": vessel,
+                           "vessels_flown": as_int(p.get("vessels_flown"))})
+        else:
+            day["switches"] += 1
+            if vessel:
+                flown[vessel] = flown.get(vessel, 0) + 1
+                switched_to[vessel] = switched_to.get(vessel, 0) + 1
+            switches.append({"ts_ms": e["ts_ms"], "from": p.get("from_vessel_class") or None, "to": vessel,
+                             "seconds_in_freestyle": as_float(p.get("seconds_in_freestyle")), "approx": False})
+    for ts, source, vessel, _imported in recovered:
+        switched_to[vessel] = switched_to.get(vessel, 0) + 1
+        flown[vessel] = flown.get(vessel, 0) + 1
+        switches.append({"ts_ms": ts, "from": source, "to": vessel, "seconds_in_freestyle": None, "approx": True})
+        first_ms = min(first_ms or ts, ts)
+        last_ms = max(last_ms or ts, ts)
+    switches.sort(key=lambda x: x["ts_ms"])
+    return {"entries": entries, "first_entries": first, "stretches": stretches, "seconds": round(seconds, 1),
+            "minutes": round(seconds / 60.0, 1), "vessels_flown": _counts_dict(flown),
+            "switched_to": _counts_dict(switched_to), "switch_count": len(switches),
+            "recovered_switches": sum(1 for x in switches if x["approx"]),
+            "switches": switches[-200:], "stretches_recent": list(reversed(recent))[:50],
+            "per_day": sorted(per_day.values(), key=lambda d: d["day"])[-90:],
+            "first_ms": first_ms, "last_ms": last_ms, "first_minutes_ms": first_minutes_ms, "note": FREESTYLE_NOTE}
+
+
+def _counts_dict(counts):
+    return dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
 
 
 def _summary(event, props):
@@ -1221,27 +1880,37 @@ def _rebuild_details(reader, out, first_day, days_seen):
     country_seen = {}
     for player, build, day, country in reader.execute(
             "SELECT distinct_id, build_kind, MAX(day), country FROM events GROUP BY distinct_id, build_kind, country"):
-        country_seen.setdefault((build, country or "unknown"), {})[player] = day
+        for b in (build, "*"):                   # '*': every build, each player once (the Build filter's All)
+            seen = country_seen.setdefault((b, country or "unknown"), {})
+            seen[player] = max(day, seen.get(player, day))
     for player, build, day, ts, event, platform, raw in reader.execute(
             f"SELECT distinct_id, build_kind, day, ts_ms, event, platform, props FROM events "
             f"WHERE event IN ({placeholders}) ORDER BY ts_ms", DETAIL_EVENTS):
         props = json.loads(raw)
         who = (player, build)
-        if platform:
-            platform_seen.setdefault((build, platform), {})[player] = max(
-                day, platform_seen.get((build, platform), {}).get(player, day))
-        if event in marks:
-            reached.setdefault(who, set()).add(event)
-        if event == "menu_ready" and as_float(props.get("seconds_since_launch")) is not None:
-            launch_times.setdefault((build, platform or "unknown"), []).append(
-                (day, as_float(props.get("seconds_since_launch"))))
-        elif event == "ftue_step_completed":
-            key = (who, props.get("quest_id") or "unknown", as_int(props.get("phase_index")),
-                   props.get("step_id") or "unknown")
-            if key not in ftue:
-                ftue[key] = (props.get("step_name") or props.get("step_id") or "unknown",
-                             as_float(props.get("seconds_since_launch")))
-        elif event == "session_ended":
+        # the distinct counts (players, funnels, launches, balances, settings) also go under '*', each player once;
+        # the counts of events (economy, unlocks, signals, session ends) are rows, summed across builds instead
+        for b in (build, "*"):
+            if platform:
+                platform_seen.setdefault((b, platform), {})[player] = max(
+                    day, platform_seen.get((b, platform), {}).get(player, day))
+            if event in marks:
+                reached.setdefault((player, b), set()).add(event)
+            if event == "menu_ready" and as_float(props.get("seconds_since_launch")) is not None:
+                launch_times.setdefault((b, platform or "unknown"), []).append(
+                    (day, as_float(props.get("seconds_since_launch"))))
+            elif event == "ftue_step_completed":
+                key = ((player, b), props.get("quest_id") or "unknown", as_int(props.get("phase_index")),
+                       props.get("step_id") or "unknown")
+                if key not in ftue:
+                    ftue[key] = (props.get("step_name") or props.get("step_id") or "unknown",
+                                 as_float(props.get("seconds_since_launch")))
+            if event in ("crystals_earned", "crystals_spent", "crystal_spend_blocked", "vessel_unlocked",
+                         "crystal_balance_snapshot") and as_int(props.get("balance")) is not None:
+                last_balance[(player, b)] = (day, as_int(props.get("balance")))
+            if event == "setting_changed" and day >= recent90:
+                setting_last[((player, b), str(props.get("setting") or "unknown"))] = str(props.get("value"))
+        if event == "session_ended":
             _add(session_ends, (day, build, str(props.get("reason") or "unknown")), 1)
         elif event in ("crystals_earned", "crystals_spent", "crystal_spend_blocked", "vessel_unlocked"):
             kind = {"crystals_earned": "earned", "crystals_spent": "spent", "crystal_spend_blocked": "blocked",
@@ -1254,9 +1923,6 @@ def _rebuild_details(reader, out, first_day, days_seen):
                 if previous and previous[1] == source and previous[2] == amount and ts - previous[0] <= DOUBLE_PAYOUT_MS:
                     _add(doubles, (day, build, source), 1, amount)
                 last_earn[who] = (ts, source, amount)
-        if event in ("crystals_earned", "crystals_spent", "crystal_spend_blocked", "vessel_unlocked",
-                     "crystal_balance_snapshot") and as_int(props.get("balance")) is not None:
-            last_balance[who] = (day, as_int(props.get("balance")))
         if event == "vessel_unlocked":
             _add(unlock_rows, (day, build, "vessel", str(props.get("vessel") or "unknown")), 1)
         elif event == "mode_unlocked":
@@ -1271,8 +1937,6 @@ def _rebuild_details(reader, out, first_day, days_seen):
             _add(signals, (day, build, str(props.get("game_mode") or "unknown")), 0, 0, 1, 0)
         elif event == "share_triggered":
             _add(signals, (day, build, str(props.get("game_mode") or "unknown")), 0, 0, 0, 1)
-        elif event == "setting_changed" and day >= recent90:
-            setting_last[(who, str(props.get("setting") or "unknown"))] = str(props.get("value"))
         elif event == "cloud_save_failed":
             _add(save_failures, (day, build, str(props.get("key") or "unknown")), 1)
 
@@ -1337,35 +2001,181 @@ def _rebuild_details(reader, out, first_day, days_seen):
     out.executemany("INSERT INTO cloud_save_failures VALUES(?,?,?,?)", [k + tuple(v) for k, v in save_failures.items()])
 
 
+RECOVERED_NOTE = ("recovered switches come from the identify history: the player's selected vessel changed between two "
+                  "$identify (the Toybox's Vessel Changer sets it, builds since 2026-10-12); the time is when the "
+                  "profile was sent, not the click, and several switches between two identifies read as one")
+
+
+def derive_switches(snapshots):
+    """[(ts_ms, from, to, imported)] from one player's [(ts_ms, selected_vessel, imported)] in time order: a switch
+    wherever the selected vessel differs from the last one seen. Empty values are skipped, not a change."""
+    out, last = [], None
+    for ts, vessel, imported in snapshots:
+        if not vessel:
+            continue
+        if last is not None and vessel != last:
+            out.append((ts, last, vessel, imported))
+        last = vessel
+    return out
+
+
+def recovered_switches(reader, distinct_id=None):
+    """{player: [(ts_ms, from, to, imported)]} recovered from person_snapshots, only before the player's first live
+    freestyle_vessel_changed (from then on the event itself counts)."""
+    where, args = ("WHERE distinct_id = ?", (distinct_id,)) if distinct_id else ("", ())
+    live = dict(reader.execute(f"SELECT distinct_id, MIN(ts_ms) FROM events {'WHERE distinct_id = ? AND' if distinct_id else 'WHERE'} "
+                               "event = 'freestyle_vessel_changed' GROUP BY distinct_id", args).fetchall())
+    per = {}
+    for player, ts, vessel, imported in reader.execute(
+            f"SELECT distinct_id, ts_ms, selected_vessel, imported FROM person_snapshots {where} ORDER BY distinct_id, ts_ms, id",
+            args):
+        per.setdefault(player, []).append((ts, vessel, imported))
+    out = {}
+    for player, snaps in per.items():
+        cut = live.get(player)
+        found = [x for x in derive_switches(snaps) if cut is None or x[0] < cut]
+        if found:
+            out[player] = found
+    return out
+
+
+def _rebuild_freestyle(reader, out):
+    """freestyle_vessels and freestyle_switches: the Toybox counted per day, build, source and vessel. Near-duplicate
+    rows (the October double-send) are left out. Recovered switches (derive_switches over the identify history) carry
+    origin 'recovered'. Player ids are used only to group a player's history; nothing written to `out` carries one."""
+    vessels, switches = {}, {}
+    for day, build, imported, event, raw, device in reader.execute(
+            "SELECT day, build_kind, received_ms = ts_ms, event, props, COALESCE(device, 'other') FROM events WHERE "
+            "event IN ('freestyle_entered', 'freestyle_ended', 'freestyle_vessel_changed') AND near_dup = 0"):
+        props = json.loads(raw)
+        vessel = str(props.get("vessel_class") or "unknown")
+        if event == "freestyle_entered":
+            first = props.get("is_first") in (True, "true", "True", 1)
+            _add(vessels, (day, build, imported, vessel, device), 1, int(first), 0, 0.0, 0, 0, 0, 0, 0)
+        elif event == "freestyle_ended":
+            seconds = max(0.0, as_float(props.get("seconds")) or 0.0)
+            flown = max(1, as_int(props.get("vessels_flown")) or 1)
+            _add(vessels, (day, build, imported, vessel, device), 0, 0, 1, seconds, flown, 0, 0, 0, 0)
+        else:
+            source = str(props.get("from_vessel_class") or "unknown")
+            _add(vessels, (day, build, imported, vessel, device), 0, 0, 0, 0.0, 0, 1, 0, 0, 0)
+            _add(vessels, (day, build, imported, source, device), 0, 0, 0, 0.0, 0, 0, 1, 0, 0)
+            _add(switches, (day, build, imported, source, vessel, "event", device), 1)
+    # A snapshot has no build or device of its own: it takes the (build, device) its player sent most events from
+    # that day (else ever).
+    builds_by_day, builds_ever = {}, {}
+    for player, day, build, device, n in reader.execute(
+            "SELECT distinct_id, day, build_kind, COALESCE(device, 'other'), COUNT(*) FROM events "
+            "GROUP BY distinct_id, day, build_kind, 4"):
+        if n > builds_by_day.get((player, day), ("", "", 0))[2]:
+            builds_by_day[(player, day)] = (build, device, n)
+        _add(builds_ever, (player, build, device), n)
+    best = {}
+    for (player, build, device), (n,) in builds_ever.items():
+        if n > best.get(player, ("", "", 0))[2]:
+            best[player] = (build, device, n)
+    for player, found in recovered_switches(reader).items():
+        for ts, source, vessel, imported in found:
+            day = day_of(ts)
+            build, device, _n = builds_by_day.get((player, day)) or best.get(player) or ("release", "other", 0)
+            _add(vessels, (day, build, imported, vessel, device), 0, 0, 0, 0.0, 0, 0, 0, 1, 0)
+            _add(vessels, (day, build, imported, source, device), 0, 0, 0, 0.0, 0, 0, 0, 0, 1)
+            _add(switches, (day, build, imported, source, vessel, "recovered", device), 1)
+    out.executemany("INSERT INTO freestyle_vessels VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    [k[:4] + (v[0], v[1], v[2], round(v[3], 1), v[4], v[5], v[6], v[7], v[8], k[4])
+                     for k, v in sorted(vessels.items())])
+    out.executemany("INSERT INTO freestyle_switches VALUES(?,?,?,?,?,?,?,?)",
+                    [k[:5] + (v[0], k[5], k[6]) for k, v in sorted(switches.items())])
+
+
 def play_group_of(play_type):
     return PLAY_GROUP_OF.get(play_type, "multi")
 
 
-def _rebuild_spans(reader, out, starts, eras):
+def _merged(parts):
+    """One build -> day -> flag -> keys map from several devices' (a Device filter group's)."""
+    if len(parts) == 1:
+        return parts[0]
+    out = {}
+    for by_build in parts:
+        for build, days in by_build.items():
+            for day, flags in days.items():
+                for flag, keys in flags.items():
+                    out.setdefault(build, {}).setdefault(day, {}).setdefault(flag, set()).update(keys)
+    return out
+
+
+def _rebuild_spans(reader, out, starts, eras, table=None, difficulty=None):
     """player_counts, cohort_weeks and cohort_days: distinct players per day, week, last-N-days window and era, split
-    by platform, country, play type, mode, vessel and intensity, for every source (any / imported / live). Player ids
-    are used here only to count each player once; nothing written to `out` carries one."""
+    by platform, device, country, play type, mode, vessel and intensity, for every source (any / imported / live), and
+    each again inside every Device filter group (the *_device tables). Player ids are used here only to count each
+    player once; nothing written to `out` carries one."""
     since = {n: day_of(now_ms() - (n - 1) * 86400 * 1000) for n in WINDOWS}
-    act = {}   # player -> build -> day -> imported flag -> {(dim, key)}
-    for player, build, day, flag, platform, country in reader.execute(
-            "SELECT distinct_id, build_kind, day, received_ms = ts_ms, platform, country FROM events "
-            "GROUP BY distinct_id, build_kind, day, received_ms = ts_ms, platform, country"):
-        act.setdefault(player, {}).setdefault(build, {}).setdefault(day, {}).setdefault(flag, set()).update(
-            (("none", ""), ("platform", platform or "unknown"), ("country", country or "unknown")))
-    for (player, _match), (ts, build, _platform, _version, props, flag, _country) in starts.items():
+    act = {}   # player -> device -> build -> day -> imported flag -> {(dim, key)}
+
+    def mark(player, device, build, day, flag, keys):
+        act.setdefault(player, {}).setdefault(device or "other", {}).setdefault(build, {}).setdefault(
+            day, {}).setdefault(flag, set()).update(keys)
+
+    for player, build, day, flag, platform, country, device in reader.execute(
+            "SELECT distinct_id, build_kind, day, received_ms = ts_ms, platform, country, COALESCE(device, 'other') "
+            "FROM events GROUP BY distinct_id, build_kind, day, received_ms = ts_ms, platform, country, 7"):
+        mark(player, device, build, day, flag, (("none", ""), ("platform", platform or "unknown"),
+                                                ("country", country or "unknown"), ("device", device)))
+    for (player, _match), (ts, build, _platform, _version, props, flag, _country, device) in starts.items():
         play_type = play_type_of(props)
         intensity = as_int(props.get("intensity"))
-        act.setdefault(player, {}).setdefault(build, {}).setdefault(day_of(ts), {}).setdefault(flag, set()).update(
-            (("play_type", play_type), ("play_group", play_group_of(play_type)),
-             ("game_mode", str(props.get("game_mode") or "unknown")),
-             ("vessel_class", str(props.get("vessel_class") or "unknown")),
-             ("intensity", str(intensity) if intensity is not None else "unknown")))
+        mark(player, device, build, day_of(ts), flag, (
+            ("play_type", play_type), ("play_group", play_group_of(play_type)),
+            ("game_mode", str(props.get("game_mode") or "unknown")),
+            ("vessel_class", str(props.get("vessel_class") or "unknown")),
+            ("intensity", str(intensity) if intensity is not None else "unknown"),
+            ("element", element_of(props, table)[0] or "none"), ("setup", setup_of(props)[0]),
+            ("ai_difficulty", (difficulty or {}).get((player, _match)) or "unknown")))
+    # client_exception: who sent one, and from which top frame (the Errors page's players affected)
+    for player, build, day, flag, frame, device in reader.execute(
+            "SELECT distinct_id, build_kind, day, received_ms = ts_ms, json_extract(props, '$.top_frame'), "
+            "COALESCE(device, 'other') FROM events WHERE event = 'client_exception' AND near_dup = 0"):
+        mark(player, device, build, day, flag, (("error", "any"), ("error_frame", _label(frame, 160) or "unknown")))
+    # Freestyle (the Toybox): who entered it, and which vessels they flew there (entered in, ended in, switched to)
+    for player, build, day, flag, event, vessel, from_vessel, device in reader.execute(
+            "SELECT distinct_id, build_kind, day, received_ms = ts_ms, event, json_extract(props, '$.vessel_class'), "
+            "json_extract(props, '$.from_vessel_class'), COALESCE(device, 'other') FROM events WHERE event IN "
+            "('freestyle_entered', 'freestyle_ended', 'freestyle_vessel_changed') AND near_dup = 0"):
+        keys = {("freestyle", "entered")} if event == "freestyle_entered" else set()
+        for v in (vessel, from_vessel):
+            if isinstance(v, str) and v:
+                keys.add(("freestyle_vessel", v))
+        if keys:
+            mark(player, device, build, day, flag, keys)
 
-    counts, weeks_out, days_out = {}, {}, {}
+    counts, weeks_out, days_out, rolling = {}, {}, {}, {}
+    today = date.fromisoformat(day_of(now_ms()))
+    oldest = (today - timedelta(days=400)).isoformat()
+    today_o = today.toordinal()
+    ordinals, isos, weeks_of = {}, {}, {}
 
-    def bump(span, x, build, source, keys, new):
+    def ordinal(day):
+        found = ordinals.get(day)
+        if found is None:
+            found = ordinals[day] = date.fromisoformat(day).toordinal()
+        return found
+
+    def iso_of(o):
+        found = isos.get(o)
+        if found is None:
+            found = isos[o] = date.fromordinal(o).isoformat()
+        return found
+
+    def monday(day):
+        found = weeks_of.get(day)
+        if found is None:
+            found = weeks_of[day] = week_of(day)
+        return found
+
+    def bump(group, span, x, build, source, keys, new):
         for dim, key in keys:
-            row = counts.setdefault((span, x, build, source, dim, key), [0, 0])
+            row = counts.setdefault((span, x, build, source, dim, key, group), [0, 0])
             row[0] += 1
             row[1] += new
 
@@ -1378,55 +2188,267 @@ def _rebuild_spans(reader, out, starts, eras):
                         per_day.setdefault(day, set()).update(keys)
         return per_day
 
-    for player, by_build in act.items():
-        for build in list(by_build) + ["*"]:
-            builds = [build] if build != "*" else list(by_build)
-            for source in SOURCES:
-                per_day = view(builds, by_build, source)
-                if not per_day:
-                    continue
-                first, last = min(per_day), max(per_day)
-                weeks = {}
-                for day, keys in per_day.items():
-                    bump("day", day, build, source, keys, int(day == first))
-                    weeks.setdefault(week_of(day), set()).update(keys)
-                for week, keys in weeks.items():
-                    bump("week", week, build, source, keys, int(week == week_of(first)))
-                for n, start in since.items():
-                    keys = set().union(*(k for d, k in per_day.items() if d >= start))
-                    if keys:
-                        bump(f"window:{n}", "", build, source, keys, int(first >= start))
-                if build == "*":
-                    continue
-                cohort = week_of(first)
-                indexes = {(date.fromisoformat(w) - date.fromisoformat(cohort)).days // 7 for w in weeks}
-                groups = {"all"} | {k for keys in per_day.values() for dim, k in keys if dim == "play_group"}
-                start = date.fromisoformat(first)
-                d1 = int((start + timedelta(days=1)).isoformat() in per_day)
-                d7 = int(any((start + timedelta(days=n)).isoformat() in per_day for n in range(1, 8)))
-                life = (date.fromisoformat(last) - start).days + 1
-                for group in groups:
-                    for k in indexes:
-                        weeks_out[(cohort, build, source, group, k)] = weeks_out.get((cohort, build, source, group, k), 0) + 1
-                    _add(days_out, (first, build, source, group, life), 1, d1, d7, int(last < since[14]))
-        for era in eras:
-            allowed = [b for b in by_build if not era["builds"] or b in era["builds"]]
-            for build in allowed + (["*"] if allowed else []):
-                per_day = view([build] if build != "*" else allowed, by_build, era["source"])
-                inside = {d: k for d, k in per_day.items() if era["start"] <= d <= era["end"]}
-                if not inside:
-                    continue
-                first = min(per_day)
-                new = era["start"] <= first <= era["end"]
-                bump("era:" + era["id"], "", build, era["source"], set().union(*inside.values()), int(new))
-                weeks = {}
-                for day, keys in inside.items():
-                    weeks.setdefault(week_of(day), set()).update(keys)
-                for week, keys in weeks.items():
-                    bump("era_week:" + era["id"], week, build, era["source"], keys, int(new and week == week_of(first)))
-    out.executemany("INSERT INTO player_counts VALUES(?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in counts.items()])
-    out.executemany("INSERT INTO cohort_weeks VALUES(?,?,?,?,?,?)", [k + (v,) for k, v in weeks_out.items()])
-    out.executemany("INSERT INTO cohort_days VALUES(?,?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in days_out.items()])
+    for player, by_device in act.items():
+        # "all" is every device; each Device filter group the player's devices fall in is counted again on its own
+        groups = {"all": _merged(list(by_device.values()))}
+        for group in sorted({g for d in by_device for g in GROUPS_OF_DEVICE.get(d, ())}):
+            groups[group] = _merged([by_device[d] for d in by_device if d in DEVICE_GROUPS[group]])
+        for group, by_build in groups.items():
+            for build in list(by_build) + ["*"]:
+                builds = [build] if build != "*" else list(by_build)
+                for source in SOURCES:
+                    per_day = view(builds, by_build, source)
+                    if not per_day:
+                        continue
+                    first, last = min(per_day), max(per_day)
+                    # DAU / WAU / MAU per day: a player active on day a is in that day's WAU for 7 days, MAU for 30
+                    # (day numbers as ordinals: this loop runs per player, build, source and device group)
+                    active = {ordinal(day) for day in per_day if day >= oldest}
+                    in7, in30 = set(), set()
+                    for o in active:
+                        in30.update(range(o, min(o + 30, today_o + 1)))
+                        in7.update(range(o, min(o + 7, today_o + 1)))
+                    for on in in30:
+                        row = rolling.setdefault((iso_of(on), build, source, group), [0, 0, 0])
+                        row[2] += 1
+                        if on in in7:
+                            row[1] += 1
+                        if on in active:
+                            row[0] += 1
+                    weeks = {}
+                    for day, keys in per_day.items():
+                        bump(group, "day", day, build, source, keys, int(day == first))
+                        weeks.setdefault(monday(day), set()).update(keys)
+                    for week, keys in weeks.items():
+                        bump(group, "week", week, build, source, keys, int(week == monday(first)))
+                    for n, start in since.items():
+                        keys = set().union(*(k for d, k in per_day.items() if d >= start))
+                        if keys:
+                            bump(group, f"window:{n}", "", build, source, keys, int(first >= start))
+                    # cohorts per build and under '*' (every build, each player once: the Build filter's All)
+                    cohort = monday(first)
+                    indexes = {(date.fromisoformat(w) - date.fromisoformat(cohort)).days // 7 for w in weeks}
+                    play_groups = {"all"} | {k for keys in per_day.values() for dim, k in keys if dim == "play_group"}
+                    start = date.fromisoformat(first)
+                    d1 = int((start + timedelta(days=1)).isoformat() in per_day)
+                    d7 = int(any((start + timedelta(days=n)).isoformat() in per_day for n in range(1, 8)))
+                    life = (date.fromisoformat(last) - start).days + 1
+                    for pg in play_groups:
+                        for k in indexes:
+                            wk = (cohort, build, source, pg, k, group)
+                            weeks_out[wk] = weeks_out.get(wk, 0) + 1
+                        _add(days_out, (first, build, source, pg, life, group), 1, d1, d7, int(last < since[14]))
+            for era in eras:
+                allowed = [b for b in by_build if not era["builds"] or b in era["builds"]]
+                for build in allowed + (["*"] if allowed else []):
+                    per_day = view([build] if build != "*" else allowed, by_build, era["source"])
+                    inside = {d: k for d, k in per_day.items() if era["start"] <= d <= era["end"]}
+                    if not inside:
+                        continue
+                    first = min(per_day)
+                    new = era["start"] <= first <= era["end"]
+                    bump(group, "era:" + era["id"], "", build, era["source"], set().union(*inside.values()), int(new))
+                    weeks = {}
+                    for day, keys in inside.items():
+                        weeks.setdefault(monday(day), set()).update(keys)
+                    for week, keys in weeks.items():
+                        bump(group, "era_week:" + era["id"], week, build, era["source"], keys,
+                             int(new and week == monday(first)))
+
+    def write(table, rows, width):
+        everyone = [k[:-1] + tuple(v) for k, v in rows if k[-1] == "all"]
+        grouped = [k[:-1] + tuple(v) + (k[-1],) for k, v in rows if k[-1] != "all"]
+        out.executemany(f"INSERT INTO {table} VALUES({','.join('?' * width)})", everyone)
+        out.executemany(f"INSERT INTO {table}_device VALUES({','.join('?' * (width + 1))})", grouped)
+
+    write("player_counts", counts.items(), 8)
+    write("active_rolling", sorted(rolling.items()), 6)
+    write("cohort_weeks", [(k, (v,)) for k, v in weeks_out.items()], 6)
+    write("cohort_days", days_out.items(), 9)
+
+
+# ---------------------------------------------------------------- round 67: sessions, invites, quits, errors
+
+INVITE_RECEIVE_MS = 10 * 60 * 1000      # an older build's invite: received within 10 min of the send ...
+INVITE_JOIN_MS = 30 * 60 * 1000         # ... and joined within 30 min of the receipt (matched by time, not by id)
+PLAYED_TOGETHER_MS = 24 * 3600 * 1000   # inviter and invitee started the same match within 24 h of the join
+FRUSTRATION_QUIT_MS = 3600 * 1000       # a quit within 1 h of a repeated_game_fail follows from it
+NEW_EVENTS = (("session_started", None), ("session_ended", "session_id"), ("game_completed", "score"),
+              ("game_completed", "ai_difficulty"), ("match_abandoned", None), ("client_exception", None),
+              ("party_invite_sent", "invite_id"), ("party_invite_received", "invite_id"), ("party_joined", "invite_id"),
+              ("party_joined", "inviter_id"))
+
+
+def _days_after(day, n):
+    start = date.fromisoformat(day)
+    return {(start + timedelta(days=k)).isoformat() for k in range(1, n + 1)}
+
+
+def _rebuild_sessions(reader, out):
+    """sessions (one row per app session, no player id) and session_players, from session_started and session_ended
+    (builds after 2026-11-07). A session's length is its session_ended.session_seconds, else the gap between the two
+    events with the same session_id; NULL while it has not ended."""
+    ended = {}
+    for player, ts, raw in reader.execute(
+            "SELECT distinct_id, ts_ms, props FROM events WHERE event = 'session_ended' AND near_dup = 0 ORDER BY ts_ms"):
+        props = json.loads(raw)
+        sid = _label(props.get("session_id"), 80)
+        if sid:
+            ended.setdefault((player, sid), (ts, as_float(props.get("session_seconds"))))
+    seen, players, rows = set(), {}, []
+    grouped = {}
+    for player, ts, day, build, platform, imported, raw, device in reader.execute(
+            "SELECT distinct_id, ts_ms, day, build_kind, platform, received_ms = ts_ms, props, COALESCE(device, 'other') "
+            "FROM events WHERE event = 'session_started' AND near_dup = 0 ORDER BY ts_ms"):
+        props = json.loads(raw)
+        sid = _label(props.get("session_id"), 80)
+        if sid and (player, sid) in seen:
+            continue                                   # one row per session, however often its start was sent
+        if sid:
+            seen.add((player, sid))
+        end = ended.get((player, sid)) if sid else None
+        seconds = None
+        if end:
+            seconds = end[1] if end[1] is not None and end[1] >= 0 else max(0.0, (end[0] - ts) / 1000.0)
+        kind = _label(props.get("launch_kind")) or "unknown"
+        rows.append((day, build, platform or "unknown", imported, kind if kind in ("cold", "resume") else "unknown",
+                     round(seconds, 1) if seconds is not None else None, device))
+        for b in (build, "*"):                   # '*': every build, each player once (the Build filter's All)
+            players.setdefault((day, b, imported), set()).add(player)
+            for group in GROUPS_OF_DEVICE.get(device, ()):
+                grouped.setdefault((day, b, imported, group), set()).add(player)
+    out.executemany("INSERT INTO sessions VALUES(?,?,?,?,?,?,?)", rows)
+    out.executemany("INSERT INTO session_players VALUES(?,?,?,?)",
+                    [k + (len(v),) for k, v in sorted(players.items())])
+    out.executemany("INSERT INTO session_players_device VALUES(?,?,?,?,?)",
+                    [k[:3] + (len(v), k[3]) for k, v in sorted(grouped.items())])
+
+
+def _rebuild_invites(reader, out, starts, seen_any):
+    """invites and invite_roles: each party_invite_sent followed to its receipt, its join, a match played together
+    and the invitee's return. Builds after 2026-11-07 carry invite_id on all three events (matched exactly); older
+    ones are matched by time (the invitee's receipt naming the sender as host within 10 min, a join within 30 min).
+    Player ids are used only to follow an invite; nothing written to `out` carries one."""
+    events = {"party_invite_sent": [], "party_invite_received": [], "party_joined": []}
+    for event, player, ts, day, build, imported, raw in reader.execute(
+            "SELECT event, distinct_id, ts_ms, day, build_kind, received_ms = ts_ms, props FROM events WHERE event IN "
+            "('party_invite_sent', 'party_invite_received', 'party_joined') AND near_dup = 0 ORDER BY ts_ms"):
+        events[event].append((player, ts, day, build, imported, json.loads(raw)))
+    by_id = {"party_invite_received": {}, "party_joined": {}}
+    for event in by_id:
+        for e in events[event]:
+            iid = _label(e[5].get("invite_id"), 80)
+            if iid:
+                by_id[event].setdefault(iid, e)
+    claimed = set()                                    # (event, player, ts) already matched to an invite
+    plays_of = {}
+    for (player, match), start in starts.items():
+        plays_of.setdefault(player, {})[match] = start[0]
+    today = day_of(now_ms())
+    mature_day = (date.fromisoformat(today) - timedelta(days=7)).isoformat()
+    rows, inviters, invitees = {}, {}, {}
+    for player, ts, day, build, imported, props in events["party_invite_sent"]:
+        iid = _label(props.get("invite_id"), 80)
+        target = _label(props.get("target_id"), 80)
+        if iid:
+            method = "invite_id"
+            rec, join = by_id["party_invite_received"].get(iid), by_id["party_joined"].get(iid)
+        else:
+            method = "time"
+            rec = next((e for e in events["party_invite_received"] if e[0] == target and ts <= e[1] <= ts + INVITE_RECEIVE_MS
+                        and e[5].get("host_id") == player and not _label(e[5].get("invite_id"), 80)
+                        and ("r", e[0], e[1]) not in claimed), None) if target else None
+            join = None
+            if rec:
+                claimed.add(("r", rec[0], rec[1]))
+                join = next((e for e in events["party_joined"] if e[0] == rec[0] and rec[1] <= e[1] <= rec[1] + INVITE_JOIN_MS
+                             and not _label(e[5].get("invite_id"), 80) and ("j", e[0], e[1]) not in claimed), None)
+                if join:
+                    claimed.add(("j", join[0], join[1]))
+        invitee = (join or rec or (None,))[0] or target
+        together = mature = back7 = 0
+        if join and invitee:
+            mine, theirs = plays_of.get(player, {}), plays_of.get(invitee, {})
+            together = int(any(m in theirs and join[1] <= min(t, theirs[m]) <= join[1] + PLAYED_TOGETHER_MS
+                               for m, t in mine.items()))
+            if join[2] <= mature_day:
+                mature = 1
+                back7 = int(bool(seen_any.get(invitee, set()) & _days_after(join[2], 7)))
+            inviters.setdefault(player, (day, build, imported))
+            if invitee != player:
+                invitees.setdefault(invitee, (join[2], join[3], join[4]))
+        _add(rows, (day, build, imported, method), 1, int(rec is not None), int(join is not None), together, mature, back7)
+    out.executemany("INSERT INTO invites VALUES(?,?,?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in sorted(rows.items())])
+    roles = {}
+    for role, found in (("inviter", inviters), ("invitee", invitees)):
+        for player, (day, build, imported) in found.items():
+            seen = seen_any.get(player, set())
+            mature = day <= mature_day
+            d1 = int(mature and (date.fromisoformat(day) + timedelta(days=1)).isoformat() in seen)
+            d7 = int(mature and bool(seen & _days_after(day, 7)))
+            _add(roles, (day, build, imported, role), 1, int(mature), d1, d7)
+    out.executemany("INSERT INTO invite_roles VALUES(?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in sorted(roles.items())])
+
+
+def _rebuild_frustration(reader, out, seen_any):
+    """frustration: each player-day with a repeated_game_fail; a match_abandoned within 1 h after it; and whether the
+    player was then gone for the 7 days after (counted only once those 7 days have passed). Counts only."""
+    fails, quits = {}, {}
+    for player, ts, day, build, imported in reader.execute(
+            "SELECT distinct_id, ts_ms, day, build_kind, received_ms = ts_ms FROM events "
+            "WHERE event = 'repeated_game_fail' AND near_dup = 0 ORDER BY ts_ms"):
+        fails.setdefault((player, day), (ts, build, imported))
+    for player, ts, day in reader.execute(
+            "SELECT distinct_id, ts_ms, day FROM events WHERE event = 'match_abandoned' AND near_dup = 0 ORDER BY ts_ms"):
+        quits.setdefault(player, []).append((ts, day))
+    mature_day = (date.fromisoformat(day_of(now_ms())) - timedelta(days=7)).isoformat()
+    rows = {}
+    for (player, day), (ts, build, imported) in fails.items():
+        seen = seen_any.get(player, set())
+        quit = next((q for q in quits.get(player, []) if ts <= q[0] <= ts + FRUSTRATION_QUIT_MS), None)
+        quit_mature = int(bool(quit) and quit[1] <= mature_day)
+        gone = int(quit_mature and not (seen & _days_after(quit[1], 7)))
+        failed_mature = int(day <= mature_day)
+        failed_gone = int(failed_mature and not (seen & _days_after(day, 7)))
+        _add(rows, (day, build, imported), 1, int(quit is not None), quit_mature, gone, failed_mature, failed_gone)
+    out.executemany("INSERT INTO frustration VALUES(?,?,?,?,?,?,?,?,?)", [k + tuple(v) for k, v in sorted(rows.items())])
+
+
+def _rebuild_errors(reader, out):
+    """client_errors and client_error_signatures from client_exception (no message text is sent or kept: only a hash
+    of it with the digits stripped)."""
+    rows, players, sigs = {}, {}, {}
+    for player, day, build, imported, platform, version, raw, device in reader.execute(
+            "SELECT distinct_id, day, build_kind, received_ms = ts_ms, platform, app_version, props, "
+            "COALESCE(device, 'other') FROM events WHERE event = 'client_exception' AND near_dup = 0 ORDER BY ts_ms"):
+        props = json.loads(raw)
+        kind = _label(props.get("exception_type"), 80) or "unknown"
+        frame = _label(props.get("top_frame"), 160) or "unknown"
+        mhash = _label(props.get("message_hash"), 40) or "unknown"
+        key = (day, build, imported, platform or "unknown", version or "unknown", kind, frame,
+               _label(props.get("scene"), 80) or "unknown", mhash, device)
+        _add(rows, key, 1, max(1, _count(props.get("count")) or 1))
+        players.setdefault(key, set()).add(player)
+        sig = sigs.setdefault((kind, frame, mhash), [day, day, 0])
+        sig[0], sig[1], sig[2] = min(sig[0], day), max(sig[1], day), sig[2] + 1
+    out.executemany("INSERT INTO client_errors VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    [k[:-1] + (v[0], v[1], len(players[k]), k[-1]) for k, v in sorted(rows.items())])
+    out.executemany("INSERT INTO client_error_signatures VALUES(?,?,?,?,?,?)",
+                    [k + tuple(v) for k, v in sorted(sigs.items())])
+
+
+def new_event_health(reader):
+    """Data health's list of this round's events: when each was last received, how many rows, and (for a field added to
+    an older event) how many carried it. Counts and times only."""
+    out = []
+    for event, field in NEW_EVENTS:
+        if field:
+            row = reader.execute(f"SELECT MAX(received_ms), COUNT(*) FROM events WHERE event = ? AND "
+                                 f"json_extract(props, '$.{field}') IS NOT NULL", (event,)).fetchone()
+        else:
+            row = reader.execute("SELECT MAX(received_ms), COUNT(*) FROM events WHERE event = ?", (event,)).fetchone()
+        out.append({"event": event, "field": field, "last_received_ms": row[0], "rows": row[1] or 0})
+    return out
 
 
 MAX_TABLE_ROWS = 10_000

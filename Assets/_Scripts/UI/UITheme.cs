@@ -86,8 +86,15 @@ namespace CosmicShore.UI
 
         // ── Accessors ─────────────────────────────────────────────────────────────────
 
-        /// <summary>Resolves a chrome colour role, falling back to the §11 value when unwired.</summary>
-        public static Color Resolve(UIThemeSO theme, UIColorToken token)
+        /// <summary>
+        /// Resolves a chrome colour role: the worn colour set's UI theme while one is live (<see cref="UIThemeLive"/>,
+        /// set by ThemeManager in play), else the authored value, falling back to the §11 value when unwired.
+        /// </summary>
+        public static Color Resolve(UIThemeSO theme, UIColorToken token) =>
+            UIThemeLive.TryGet(token, out var live) ? live : ResolveAuthored(theme, token);
+
+        /// <summary>The authored value of a role, ignoring any worn colour set (the §11 value when unwired).</summary>
+        public static Color ResolveAuthored(UIThemeSO theme, UIColorToken token)
         {
             switch (token)
             {

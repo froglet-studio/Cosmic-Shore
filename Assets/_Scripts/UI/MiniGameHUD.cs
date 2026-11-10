@@ -496,6 +496,22 @@ namespace CosmicShore.UI
                 case GameModes.ScarabRally:
                     // Switchback's answer on the Scarab's ring race: neutral rings, a per-viewer arrow.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_ScarabRally");
+                case GameModes.Thornline:
+                    // Switchback's answer on the Shrike's sling race: neutral rings, a per-viewer arrow (the thorn sits
+                    // straight behind the ring it points at).
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Thornline");
+                case GameModes.DecoyRun:
+                    // the Jacks' Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_DecoyRun");
+                case GameModes.Breach:
+                    // the Orca's Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Breach");
+                case GameModes.SlipLine:
+                    // the Honeyguide's Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SlipLine");
+                case GameModes.PerchRun:
+                    // the Goby's Time race: neutral rings, a per-viewer arrow.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_PerchRun");
                 case GameModes.SerpentTime:
                     // The circuit answer once more, on the Serpent's pellet circuit.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_SerpentTime");
@@ -521,11 +537,23 @@ namespace CosmicShore.UI
                     // check is the whole point - the dust spares teammates - and a duel between
                     // the fleet's two slowest-turning hulls is won by whoever FINDS the other.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Dustup");
-                case GameModes.SerpentGulag:
+                case GameModes.SerpentHood:
                     // The Bends' provider again: the nearest pilot this player may snipe. In a 3,600 u cell the
                     // duel is won by whoever FINDS the other first, then lines them up - the arrow answers the
                     // first half; the scope, the nests and the cloak are the second.
-                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_SerpentGulag");
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_SerpentHood");
+                case GameModes.Jackstraw:
+                    // The Bends' provider again: the nearest pilot this player may strike. In the heap the hard half
+                    // is finding a line through the sticks to them; the arrow answers where, the whip answers how.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Jackstraw");
+                case GameModes.Flatline:
+                    // The Bends' provider: the nearest pilot this player may hit. The panes hide pilots from rounds
+                    // and the cords reach through them, so the question every second is where the rival is.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Flatline");
+                case GameModes.Kelpwood:
+                    // The Bends' provider again: the nearest pilot this player may bite. In the kelp the hard half is
+                    // keeping them under the nose long enough to lock; the arrow answers where.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Kelpwood");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's

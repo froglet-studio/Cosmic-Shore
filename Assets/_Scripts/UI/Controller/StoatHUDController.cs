@@ -1,4 +1,6 @@
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -28,11 +30,17 @@ namespace CosmicShore.UI
         [Tooltip("This vessel's flight clock (the warp) and rings.")]
         [SerializeField] StoatPathfinderExecutor pathfinder;
 
+        [Tooltip("Seconds after a let-go that the Mass and Time cards show the launch.")]
+        [SerializeField, Min(0f)] float launchShownSeconds = 1.2f;
+
+        [Inject] GameDataSO _gameData;
+        IVesselStatus _status;
         bool _isLocalPilotHud;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
+            _status = vesselStatus;
 
             if (!view) view = GetComponentInChildren<StoatHUDView>(true);
 
@@ -60,7 +68,7 @@ namespace CosmicShore.UI
             // The Mass card is Heavy Launch now: it keeps its authored icon (no mode swap) and its gauge rests.
             if (mode) view.SetMode(0f);
 
-            // Time: progress to the sweet spot while the orbit holds the hull, lime in the window.
+            // Time: progress to the sweet spot while the orbit holds the hull, the domain in the window.
             if (sling && sling.IsOrbiting) view.SetTime(sling.SweetProgress01, sling.Timing01 >= 0.999f);
             else view.SetTime(0f, false);
 
@@ -74,6 +82,20 @@ namespace CosmicShore.UI
                 view.SetSkip(riding ? sling.SkipCount : sling.SkipFxCount, alpha, sling.SkipFxPerfect);
             }
             else view.SetSkip(0, 0f, false);
+
+            view.SetDomainColor(ResolveDomainSignalColor());
+            if (sling)
+                view.SetOrbitState(sling.HasPair || sling.IsHoldingAny, sling.IsOrbiting, sling.Timing01 >= 0.999f,
+                                   sling.SinceLaunch < launchShownSeconds);
+        }
+
+        /// <summary>The pilot's domain at full brightness (<c>SO_ColorSet.GetDomainSignalColor</c>), as the Manta's and
+        /// the Brittle Star's HUDs read it; alpha 0 until the palette resolves (the view keeps its last colour).</summary>
+        Color ResolveDomainSignalColor()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (colorSet == null || _status == null) return new Color(0f, 0f, 0f, 0f);
+            return colorSet.GetDomainSignalColor(_status.Domain);
         }
     }
 }

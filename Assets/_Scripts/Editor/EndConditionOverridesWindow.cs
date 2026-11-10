@@ -28,6 +28,9 @@ namespace CosmicShore.Editor
         /// SliceArenaGeometry's intensity 1..4.</summary>
         static readonly string[] CleaveArenaNames = { "Panes", "Swell", "Cage", "Twistbands" };
 
+        /// <summary>Flatline's four rungs, labelled with the structures each one scatters (SpawnableFlatline).</summary>
+        static readonly string[] FlatlineArenaNames = { "Scattered Panes", "Tunnels", "Cages", "Maze" };
+
         EndConditionOverridesSO _config;
 
         [MenuItem("FrogletTools/Game Modes/End Game Conditions", false, 160)]
@@ -105,8 +108,15 @@ namespace CosmicShore.Editor
                 "a creature the plate kills is 1, default " + EndConditionOverridesSO.DefaultUndertowPointTarget + ".\n" +
                 "  • Dustup: dustings a DOMAIN needs - one opposing Butterfly passing through your " +
                 "Scale Dust is 1, default " + EndConditionOverridesSO.DefaultDustupPointTarget + ".\n" +
-                "  • Serpent Gulag: snipes a DOMAIN needs - one Sniper Shot that strips a rival " +
-                "pilot is 1, default " + EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget + ".\n" +
+                "  • Hood (Serpent): snipes a DOMAIN needs - one Sniper Shot that strips a rival " +
+                "pilot is 1, default " + EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget + ".\n" +
+                "  • Jackstraw: strikes a DOMAIN needs - one Thresher ball or chain reaching a " +
+                "rival hull is 1, default " + EndConditionOverridesSO.DefaultJackstrawStrikeTarget + ".\n" +
+                "  • Flatline: points a DOMAIN needs, PER INTENSITY - a Brittle Star round on a rival " +
+                "hull is 1, a cord or thrown-saber Strike 8, the ring blast 0. A rung left at 0 falls back " +
+                "to the mode scalar (default " + EndConditionOverridesSO.DefaultFlatlinePointTarget + ").\n" +
+                "  • Kelpwood: bites a DOMAIN needs - one creature an Angler locked on a rival biting its " +
+                "hull is 1, default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget + ".\n" +
                 "  • Tapestry: round length in SECONDS (timed - most mass STANDING at the whistle " +
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
@@ -198,6 +208,21 @@ namespace CosmicShore.Editor
                 "  • Lantern Run: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
                 "finish the Angler's paint-and-dash circuit; the controller lays target/laps rings. Default " +
                 EndConditionOverridesSO.DefaultLanternRunGateTarget + ".\n" +
+                "  • Thornline: RINGS a DOMAIN's lead runner needs to thread to finish the Shrike's sling race - " +
+                "an open chain of thorns, one ring a leg, flown once. The course is proven at this count. Default " +
+                EndConditionOverridesSO.DefaultThornlineGateTarget + ".\n" +
+                "  • Decoy Run: RINGS a DOMAIN's lead runner needs to thread to finish the Jacks' Time race - " +
+                "a cycle is the take-off jump plus a fast travel to each decoy, so the rings come in groups (1 / 2 / 2 / 3). Default " +
+                EndConditionOverridesSO.DefaultDecoyRunGateTarget + ".\n" +
+                "  • Breach: RINGS a DOMAIN's lead runner needs to thread to finish the Orca's Time race - " +
+                "the helm burns its tank down the straights and coasts the hard turns and the danger walls that stand before some rings. Default " +
+                EndConditionOverridesSO.DefaultBreachGateTarget + ".\n" +
+                "  • Slip Line: RINGS a DOMAIN's lead runner needs to thread to finish the Honeyguide's Time race - " +
+                "the rings run along prism rails in the slip colours, and a slip down a rail the battery holds a charge for crosses a leg at the zip's speed. Default " +
+                EndConditionOverridesSO.DefaultSlipLineGateTarget + ".\n" +
+                "  • Perch Run: RINGS a DOMAIN's lead runner needs to thread to finish the Goby's Time race - " +
+                "dart through rings, judging each dart's length round hairpins and its line round coral. Default " +
+                EndConditionOverridesSO.DefaultPerchRunGateTarget + ".\n" +
                 "  • Regatta: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
                 "finish the mixed-fleet rail circuit. The arena lays eight rings a lap with the " +
                 "rails threaded through them, so this must be a multiple of eight. Default " +
@@ -267,11 +292,31 @@ namespace CosmicShore.Editor
             int spt = Mathf.Max(0, EditorGUILayout.IntField("Serpent Time - Gate Target (laps x rings)", _config.serpentTimeGateTarget));
             int bst = Mathf.Max(0, EditorGUILayout.IntField("Brittle Star Time - Gate Target (laps x rings)", _config.brittleStarTimeGateTarget));
             int spp = Mathf.Max(0, EditorGUILayout.IntField("Lantern Run - Gate Target (laps x rings)", _config.lanternRunGateTarget));
+            int thl = Mathf.Max(0, EditorGUILayout.IntField("Thornline - Gate Target (rings, an open chain)", _config.thornlineGateTarget));
+            int g80 = Mathf.Max(0, EditorGUILayout.IntField("Decoy Run - Gate Target (rings)", _config.decoyRunGateTarget));
+            int g83 = Mathf.Max(0, EditorGUILayout.IntField("Breach - Gate Target (rings)", _config.breachGateTarget));
+            int g82 = Mathf.Max(0, EditorGUILayout.IntField("Slip Line - Gate Target (rings)", _config.slipLineGateTarget));
+            int g81 = Mathf.Max(0, EditorGUILayout.IntField("Perch Run - Gate Target (rings)", _config.perchRunGateTarget));
             int rg  = Mathf.Max(0, EditorGUILayout.IntField("Regatta - Gate Target (laps x 8 rings)", _config.regattaGateTarget));
             int wb  = Mathf.Max(0, EditorGUILayout.IntField("Wrecking Ball - Prism Target", _config.wreckingBallPrismTarget));
             int ut  = Mathf.Max(0, EditorGUILayout.IntField("Undertow - Point Target", _config.undertowPointTarget));
             int du  = Mathf.Max(0, EditorGUILayout.IntField("Dustup - Point Target", _config.dustupPointTarget));
-            int sg  = Mathf.Max(0, EditorGUILayout.IntField("Serpent Gulag - Snipe Target", _config.serpentGulagSnipeTarget));
+            int sg  = Mathf.Max(0, EditorGUILayout.IntField("Hood (Serpent) - Snipe Target", _config.serpentHoodSnipeTarget));
+            int js  = Mathf.Max(0, EditorGUILayout.IntField("Jackstraw - Strike Target", _config.jackstrawStrikeTarget));
+            int fl  = Mathf.Max(0, EditorGUILayout.IntField("Flatline - Point Target", _config.flatlinePointTarget));
+            // Per-intensity, like Cleave's: the denser panes put more fights inside cord reach. 0 falls back to the scalar.
+            var flByIntensity = new List<int>(4);
+            EditorGUI.indentLevel++;
+            for (int i = 0; i < 4; i++)
+            {
+                int authored = _config.flatlinePointTargetByIntensity != null
+                               && i < _config.flatlinePointTargetByIntensity.Count
+                    ? _config.flatlinePointTargetByIntensity[i] : 0;
+                flByIntensity.Add(Mathf.Max(0, EditorGUILayout.IntField(
+                    $"Intensity {i + 1} ({FlatlineArenaNames[i]})", authored)));
+            }
+            EditorGUI.indentLevel--;
+            int kw  = Mathf.Max(0, EditorGUILayout.IntField("Kelpwood - Bite Target", _config.kelpwoodBiteTarget));
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
@@ -315,11 +360,20 @@ namespace CosmicShore.Editor
                     _config.serpentTimeGateTarget = spt;
                     _config.brittleStarTimeGateTarget = bst;
                     _config.lanternRunGateTarget = spp;
+                    _config.thornlineGateTarget = thl;
+                    _config.decoyRunGateTarget = g80;
+                    _config.breachGateTarget = g83;
+                    _config.slipLineGateTarget = g82;
+                    _config.perchRunGateTarget = g81;
                     _config.regattaGateTarget = rg;
                     _config.wreckingBallPrismTarget = wb;
                     _config.undertowPointTarget = ut;
                     _config.dustupPointTarget = du;
-                    _config.serpentGulagSnipeTarget = sg;
+                    _config.serpentHoodSnipeTarget = sg;
+                    _config.jackstrawStrikeTarget = js;
+                    _config.flatlinePointTarget = fl;
+                    _config.flatlinePointTargetByIntensity = flByIntensity;
+                    _config.kelpwoodBiteTarget = kw;
                     _config.tapestryRoundSeconds = tp;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
@@ -370,11 +424,22 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Serpent Time", spt > 0 ? spt.ToString() : EndConditionOverridesSO.DefaultSerpentTimeGateTarget + " (default)");
             EditorGUILayout.LabelField("Brittle Star Time", bst > 0 ? bst.ToString() : EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget + " (default)");
             EditorGUILayout.LabelField("Lantern Run", spp > 0 ? spp.ToString() : EndConditionOverridesSO.DefaultLanternRunGateTarget + " (default)");
+            EditorGUILayout.LabelField("Thornline", thl > 0 ? thl.ToString() : EndConditionOverridesSO.DefaultThornlineGateTarget + " (default)");
+            EditorGUILayout.LabelField("Decoy Run", g80 > 0 ? g80.ToString() : EndConditionOverridesSO.DefaultDecoyRunGateTarget + " (default)");
+            EditorGUILayout.LabelField("Breach", g83 > 0 ? g83.ToString() : EndConditionOverridesSO.DefaultBreachGateTarget + " (default)");
+            EditorGUILayout.LabelField("Slip Line", g82 > 0 ? g82.ToString() : EndConditionOverridesSO.DefaultSlipLineGateTarget + " (default)");
+            EditorGUILayout.LabelField("Perch Run", g81 > 0 ? g81.ToString() : EndConditionOverridesSO.DefaultPerchRunGateTarget + " (default)");
             EditorGUILayout.LabelField("Regatta", rg > 0 ? rg.ToString() : EndConditionOverridesSO.DefaultRegattaGateTarget + " (default)");
             EditorGUILayout.LabelField("Wrecking Ball", wb > 0 ? wb.ToString() : EndConditionOverridesSO.DefaultWreckingBallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Undertow", ut > 0 ? ut.ToString() : EndConditionOverridesSO.DefaultUndertowPointTarget + " (default)");
             EditorGUILayout.LabelField("Dustup", du > 0 ? du.ToString() : EndConditionOverridesSO.DefaultDustupPointTarget + " (default)");
-            EditorGUILayout.LabelField("Serpent Gulag", sg > 0 ? sg.ToString() : EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget + " (default)");
+            EditorGUILayout.LabelField("Hood (Serpent)", sg > 0 ? sg.ToString() : EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget + " (default)");
+            EditorGUILayout.LabelField("Jackstraw", js > 0 ? js.ToString() : EndConditionOverridesSO.DefaultJackstrawStrikeTarget + " (default)");
+            string flatlineEffective = fl > 0 ? fl.ToString()
+                : EndConditionOverridesSO.DefaultFlatlinePointTarget + " (default)";
+            EditorGUILayout.LabelField("Flatline", string.Join(" / ", flByIntensity.ConvertAll(
+                v => v > 0 ? v.ToString() : flatlineEffective)));
+            EditorGUILayout.LabelField("Kelpwood", kw > 0 ? kw.ToString() : EndConditionOverridesSO.DefaultKelpwoodBiteTarget + " (default)");
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
@@ -443,11 +508,20 @@ namespace CosmicShore.Editor
                    "Serpent Time: " + Fmt(_config.serpentTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentTimeGateTarget) + "\n" +
                    "Brittle Star Time: " + Fmt(_config.brittleStarTimeGateTargetBuild, "default " + EndConditionOverridesSO.DefaultBrittleStarTimeGateTarget) + "\n" +
                    "Lantern Run: " + Fmt(_config.lanternRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultLanternRunGateTarget) + "\n" +
+                   "Thornline: " + Fmt(_config.thornlineGateTargetBuild, "default " + EndConditionOverridesSO.DefaultThornlineGateTarget) + "\n" +
+                   "Decoy Run: " + Fmt(_config.decoyRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultDecoyRunGateTarget) + "\n" +
+                   "Breach: " + Fmt(_config.breachGateTargetBuild, "default " + EndConditionOverridesSO.DefaultBreachGateTarget) + "\n" +
+                   "Slip Line: " + Fmt(_config.slipLineGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSlipLineGateTarget) + "\n" +
+                   "Perch Run: " + Fmt(_config.perchRunGateTargetBuild, "default " + EndConditionOverridesSO.DefaultPerchRunGateTarget) + "\n" +
                    "Regatta: " + Fmt(_config.regattaGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRegattaGateTarget) + "\n" +
                    "Wrecking Ball: " + Fmt(_config.wreckingBallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultWreckingBallPrismTarget) + "\n" +
                    "Undertow: " + Fmt(_config.undertowPointTargetBuild, "default " + EndConditionOverridesSO.DefaultUndertowPointTarget) + "\n" +
                    "Dustup: " + Fmt(_config.dustupPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDustupPointTarget) + "\n" +
-                   "Serpent Gulag: " + Fmt(_config.serpentGulagSnipeTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentGulagSnipeTarget) + "\n" +
+                   "Hood (Serpent): " + Fmt(_config.serpentHoodSnipeTargetBuild, "default " + EndConditionOverridesSO.DefaultSerpentHoodSnipeTarget) + "\n" +
+                   "Jackstraw: " + Fmt(_config.jackstrawStrikeTargetBuild, "default " + EndConditionOverridesSO.DefaultJackstrawStrikeTarget) + "\n" +
+                   "Flatline: " + Fmt(_config.flatlinePointTargetBuild, "default " + EndConditionOverridesSO.DefaultFlatlinePointTarget) +
+                   " (per intensity " + string.Join(" / ", _config.flatlinePointTargetByIntensityBuild ?? new List<int>()) + ")\n" +
+                   "Kelpwood: " + Fmt(_config.kelpwoodBiteTargetBuild, "default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget) + "\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +

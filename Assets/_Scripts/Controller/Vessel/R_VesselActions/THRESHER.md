@@ -751,6 +751,17 @@ renders of the shark hull in the house card look. Since 2026-10-18 they are rend
 hangar-preview images and wires them into the class asset; the placeholder-era `render_thresher_card_icon.py`
 was retired with it, because it drew the procedural hull over them.
 
+**The parts pass (2026-11-07, `Tools/Build/icon_kit/specs/thresher.py`):** the four cards are now drawn from the
+real shark (`Thresher.fbx`, its whip tail cut where the chain takes over) in parts seated under each slot icon of
+`ThresherHUDVariant.prefab`; the slot sprites above stay as the holders' sprites, transparent. `ThresherHUDView.
+RefreshParts` paints them from the ball's live state (`IsHot`, `InMassMode`, `RightTriggerDepth`, `IsPivoting`) and
+the upgrades: Wrecking Ball (white ball and a standing rival prism; red-hot ball, split prism and blast at smash
+speed; Magnet's field arcs at Charge 5), Mass Mode (the ball in the domain laying a solid row; white and faint while
+breaking; Armoured Trail's shield rims), Winch (a sagging chain released, a straight one and the ball's swing pulled;
+Breaker's super-shielded prism at Space 5), Plant (the shark on its orbit round the ball, solid with the chain while
+planted). The omni card is `Core/Thresher_Windmill.png`. The Space plate fills toward the pilot's domain, no longer
+the CTA lime.
+
 **Authored by** `Tools/Build/author_thresher_assets.py` (idempotent; `--check` validates the shipped
 prefab — no Squirrel FBX / DriftJet / Manta animation left, the hull, colliders, paint, animation and two
 jets wired, zero dangling local references, the fusion entries bake-free — and `--self-test` proves six

@@ -318,9 +318,11 @@ namespace CosmicShore.Data
         static readonly double[,] SigmaProbe = { { 0, 0 }, { -.25, -.2 }, { .25, -.2 }, { -.25, .2 }, { .25, .2 } };
 
         /// <summary>The view state of a view <paramref name="w"/> ly across centred on (cx, cy), <paramref name="aspect"/>
-        /// its height over its width; the deep tiers slice at the height of the nearest of <paramref name="places"/>
-        /// (deepzoom.js <c>viewState</c> and <c>focusZ</c>).</summary>
-        public static View ViewOf(double cx, double cy, double w, double aspect, IReadOnlyList<SkyObject> places)
+        /// its height over its width; the deep tiers slice at the layer of cells' nuclei nearest the height of the nearest
+        /// of <paramref name="places"/>, moved by <paramref name="sliceOffset"/> ly (deepzoom.js <c>viewState</c>, whose
+        /// height is cells.js <c>sliceZ</c>; <see cref="HyperSeaCells.SliceZ"/>).</summary>
+        public static View ViewOf(double cx, double cy, double w, double aspect, IReadOnlyList<SkyObject> places,
+            double sliceOffset = 0)
         {
             double zwin = Math.Max(30, w * 2.5);
             bool slab = zwin < 1200;
@@ -331,7 +333,8 @@ namespace CosmicShore.Data
             double A = w * w * aspect;
             double Fcut = Math.Min(1, 900 / Math.Max(1e-6, sEff * A));
             double Lcut = Math.Min(LMax + 1, Math.Max(0.3, Math.Log(Fcut * NA / K) / Ln4));
-            return new View(cx, cy, w, aspect, Lcut, zwin, slab, slab ? FocusZ(cx, cy, w, places) : 0);
+            return new View(cx, cy, w, aspect, Lcut, zwin, slab,
+                slab ? HyperSeaCells.SliceZ(FocusZ(cx, cy, w, places), sliceOffset) : 0);
         }
 
         static double FocusZ(double cx, double cy, double w, IReadOnlyList<SkyObject> places)

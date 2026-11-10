@@ -405,6 +405,89 @@ the omni card, the Soliton Network (three tunnels forking from a mouth). Single 
 `MeerkatHUDView` fills; `MeerkatHUDVariant` (`author_meerkat_assets.py`, the Angler's clone pattern) binds them by the
 guids in `Tools/Build/meerkat_icon_ids.py`. Not reviewed by Garrett yet: the next round is his pick, one card at a time.
 
+**The Stoat (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the shipped
+row still drew the retired kit (the mode switch, the field dipole, the pathfinder). The four cards now draw Yash's
+orbit-only kit from `Stoat.fbx` (dilated; side-on where the legs read) in parts `StoatHUDView.RefreshParts` paints:
+Ripple (the pair meeting throws white arcs at a fauna; Siphon's petals come back), Heavy Launch (the Stoat flung out
+of the orbit, its kick and wake; Armoured Wake rims the wake), Catch Orbit (attractor, repulsor, the Stoat caught on
+the orbit; Accretion pulls a rival prism in), Timed Slingshot (the orbit, the 90-degree window lit while in it, the
+Stoat off the tangent; Foresight's dashed rival path). Omni: Fulmen, a zigzag bolt from an omni crystal. The Time
+card's window colour is the domain, not the lime. Sheets: `Docs/Icons/sheets/stoat_{ripple,launch,orbit,sling,omni}.png`.
+
+**The Shrike (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the four
+glyphs drew a generic chevron; every card now draws the real hull from above (`Shrike.fbx`) in parts
+`ShrikeHUDView.RefreshParts` paints. Targeting Array: the Shrike paints a rival prism inside a reticle (a ring with four
+ticks, never the rhombus), solid once locked with the flora's missiles coming in. Nest: the Shrike docked in a cup of
+super-shielded blocks (squares with a negative-space X), a nest flora with its missile once one stands. Void Lance:
+the beam breaks the prism in its line; Void Pierce adds a super-shielded block the beam cuts. Void Sling: the tether to
+the anchor block, the thick blocks laid behind while slinging. Omni: the plain crystal. The selected mode's colour is
+the pilot's domain, not the CTA lime. Sheets: `Docs/Icons/sheets/shrike_{array,nest,lance,sling,omni}.png`.
+
+**The Urchin (2026-11-07, round 6, the roster pass; picks made by the session on Garrett's go-ahead to choose):**
+every card redrawn from the real mesh nose-on and in parts the HUD drives. Chain Spikes (A): the Urchin (domain) throws
+a spike into a rival prism (danger) that sprays the next generation; Overcharge swaps in the full-length spray and a
+generation deeper. Trail Rider (B, steal): riding a rival's trail, theirs ahead (danger), made its own under and behind
+(domain); off the trail the Urchin lifts and the trail fades; Reinforced Wake rims what it made. Track Projector (A):
+the Urchin from behind, its rail (white) running to the horizon, faint while recharging, Long Haul runs it further.
+Slip (A): riding, the Urchin sits on its trail; slipping (the executor's `IsGhosted`), it lifts clear and leaves its
+ghost; Slipstream turns the trail rival (danger) and adds the speed lines. The omni card is the plain omni crystal (the
+Urchin's only omni effect is haptics). `UrchinVesselHUDView.RefreshParts` paints them; `author_urchin_hud.py` stands
+down on the variant now that the kit owns its cards. Sheets: `Docs/Icons/sheets/urchin_{chain,rider,track,slip,omni}.png`.
+
+**The roster pass (2026-11-07, Garrett):** "do all of the icons. put the full care and attention into each one. and do
+this for all the remaining vessels ... so i can review the entire roster of remain icon revisions after". From here each
+card still gets an options sheet (the record of what was weighed), and the option recommended on it is built in full
+without waiting for a pick; Garrett reviews the whole roster at the end. **The Manta** (round 3, after Garrett's kit
+overhaul #1803 / #1804): every card is parts in its slot's container on `Manta.prefab` (`specs/manta.py`), tinted and
+shown by `MantaVesselHUDView`. Sting (Charge, A): the Manta and a rival wearing one bomb per plant (three drawn), the
+plate the ONE shared fuse, Contagion's second rival at Charge 5. Decoy (Mass, B): the decoy crystal with its heart
+plate frozen (the tell) over the danger prisms it springs, the omni decoy beside it while one stands (Mass 5;
+`MantaStingActionExecutor.HasElementalDecoy` / `HasOmniDecoy`). Skim (Space, A): the Manta skimming rival prisms that
+wear a crown of explosive spikes, brighter as the energy gathers; the plate is the energy (`energyFill`, bound as the
+card's gauge, full = one bomb); Shield Breaker's knocked-off shell at Space 5. Yastri (Time, A): the Manta and the hard
+corner its turn pair cuts, Soar's chevrons once Time 5 unlocks the boost. Omni: the cash-out, three blooms round an omni
+crystal. Option sheets: `Docs/Icons/sheets/manta_{sting,decoy,skim,yastri}_options.png`.
+
+**The Thresher (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the
+2026-10-13 glyphs were decent but drew no shark; every card now draws the real hull (`Thresher.fbx`, the whip tail cut
+where the chain takes over) in parts `ThresherHUDView.RefreshParts` paints. Wrecking Ball: the shark (domain) tows the
+ball into a rival prism; at smash speed the ball goes red-hot and the prism splits round a blast; Magnet adds field
+arcs. Mass Mode: the ball (domain) lays its own row; breaking, it is white and the row faint; Armoured Trail rims the
+row. Winch: released the chain sags, pulled it runs straight and the ball swings; Breaker shows a super-shielded
+prism ahead. Plant: the shark on its orbit round the stopped ball. Omni: Windmill. The Space plate's lime fill became
+the domain (the CTA lime is never an "on" colour). Sheets: `Docs/Icons/sheets/thresher_{wreck,massmode,winch,plant,omni}.png`.
+**The Goby & Pistol (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** both
+seats' cards were `author_goby_hud.py`'s placeholders (brackets, arrows, a pac-man). Every card now draws the hull that
+flies it (`specs/goby.py`; the Goby from just above, the Pistol three-quarter side-on so its claw, legs and antennae
+read), as single white sprites `GobyPistolHUDView.SetSeat` swaps per seat, guids kept. Goby: Lock (its nose on a rival
+held in four brackets), Perch (the Goby over the den its perch starts), Undertow (the plane, prisms pulled in beside it
+from their ghosts), Dart (its ghost, the Goby, the block it stops on). Pistol: Snap (the claw shut in its `snap` take,
+the vortex ring leaving it), Den (resting by the den its energy built), Ghost (the Pistol, faint, through a wall of
+prisms), the dive (nose-down over a hill). The HUD had no omni card: it now shows the omni crystal
+(`Core/Goby_OmniCrystal`). `author_goby_hud.py` keeps the metas and the variant and no longer writes the PNGs.
+Sheet: `Docs/Icons/sheets/goby.png`.
+
+**The Honeyguide (2026-11-07, the roster pass):** the rhombus recut changed `motifs.prism` to two close triangles but
+never re-authored the Honeyguide's set, so eight committed sprites still drew the rhombus and `author.py honeyguide
+--check` reported them as drift (and the new halves failed the piece-count gate). The spec's prisms are now a square
+with a negative-space X that stops short of the corners (one piece, not the Time petal's shape), and the eight are
+re-authored: Peck, Genesis Lance, Particle Harmonizer, Sepia Drone, Hexapod Eyelet Jet, Rosen Bridge, FTL Chromatool,
+Monte Cannon. Still unbound: the Honeyguide flies the Sparrow's HUD (its cards draw the Sparrow's kit), so a Honeyguide
+HUD variant that binds these is the open follow-up (`HONEYGUIDE.md`). Sheets: `Docs/Icons/sheets/honeyguide*.png`.
+
+**The Meerkat (2026-11-07, the roster pass; Yash's round-1 set kept):** the set already drew the real hull and
+passed every gate; two fixes only. The Exit Portal's six prisms were `prism_halves`, which read as rhombi at 40 px, so
+they are `prism_square_x` now; and the hull (`Meerkat.fbx`, a thin stick side-on) is dilated 2.6 px instead of 1.4 so
+Sentinel Mode and Faster Ride hold at 40 px. Guids kept (`meerkat_icon_ids.py`). Sheet: `Docs/Icons/sheets/meerkat.png`.
+**The Jacks (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** three of
+`author_jacks_icons.py`'s glyphs still drew the kit before round 10 (Breeding, a Herding Ring, Herd Speed). The kit
+now draws the round-10 cards from the real `Jack.fbx` side-on (`specs/jacks.py`): The Call (the two jacks facing in,
+the herd called into a knot between them), Wide (the whole cell's corner brackets round the herding view's, the herd
+inside), Decoys (a jack and its ghost decoy up and ahead). The files were renamed to the cards (`Jacks_TheCall`,
+`Jacks_Wide`, `Jacks_Decoys`) with their metas, so `Jacks.prefab`'s guids hold; Danger Share keeps its fish and bolt
+(a spiked creature stinging a rival was drawn and read worse at 40 px). `author_jacks_icons.py` now only guards the
+guids. Sheet: `Docs/Icons/sheets/jacks.png`.
+
 | Round | What | Why first |
 |---|---|---|
 | 0 | `ICON_LANGUAGE.md` draft (section 4) to Garrett and Shombith; settle round vs angular | everything downstream draws with it |

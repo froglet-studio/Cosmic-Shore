@@ -67,20 +67,38 @@ namespace CosmicShore.Gameplay
 
             // Last, so Data is never observable before the material sets above are in it.
             Data = _dataContainer;
+            WearUITheme();
         }
+
+        // The worn set's UI sweeps: windows and rows instantiated after a repaint (UIThemeLive.Tick, once a second).
+        void Update() => UIThemeLive.Tick(Time.unscaledTime);
 
         void OnDestroy()
         {
             if (_dataContainer && _authoredColorSet) _dataContainer.ColorSet = _authoredColorSet;
-            if (Instance == this) Instance = null;
+            if (Instance == this)
+            {
+                Instance = null;
+                UIThemeLive.Clear();
+            }
         }
 
-        /// <summary>The catalog entry saved under <paramref name="savedId"/>, if it is there and unlocked.</summary>
+        /// <summary>
+        /// The whole UI in the colour set's theme (Shombith, 2026-11-09), as the analytics console and the Fleet Codex
+        /// wear it: <see cref="ColorSetUITheme.Build"/> from the authored UI theme, then every UI on screen repainted.
+        /// </summary>
+        void WearUITheme() =>
+            UIThemeLive.Wear(ColorSetUITheme.Build(_dataContainer.UITheme, _dataContainer.ColorSet), _dataContainer.UITheme);
+
+        /// <summary>
+        /// The catalog entry saved under <paramref name="savedId"/>, if it is there and the player may wear it (unlocked,
+        /// or made for a vision, which is always free: <see cref="ColorSetCatalogSO.IsPickable"/>).
+        /// </summary>
         public static SO_ColorSet PickedColorSet(ColorSetCatalogSO catalog, string savedId)
         {
             if (!catalog) return null;
             var entry = catalog.Get(catalog.IndexOfId(savedId));
-            return entry != null && entry.unlocked ? entry.colorSet : null;
+            return ColorSetCatalogSO.IsPickable(entry) ? entry.colorSet : null;
         }
 
         /// <summary>The set the player wears: the saved pick, or the authored palette. What a preview returns to.</summary>
@@ -126,6 +144,7 @@ namespace CosmicShore.Gameplay
             // shared material itself and change with it.
             PrismRenderService.RestampColors(repainted);
             Crystal.RetintAll();
+            WearUITheme();
             return true;
         }
 

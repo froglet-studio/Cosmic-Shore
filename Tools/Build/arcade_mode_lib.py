@@ -96,6 +96,9 @@ VESSELS = {
     "Wrasse":   "db96e34a6c3b4cb1b498f0529f765db1",
     # The Meerkat joined with Burrow Run (2026-10-27): the wormhole vessel (R_VesselActions/MEERKAT.md, author_meerkat_assets.py).
     "Meerkat":  "8d3f1a2b4c5e4d6f9a7b8c9d0e1f2a3b",
+    # The Swordfish split off the Rhino with the sword on 2026-11-07 (R_VesselActions/SWORDFISH.md): Cleave and
+    # Astro League fly it; the Rhino keeps the plough and Headlong.
+    "Swordfish": "a7e14c2b9d3f4a6c8b5e0d1f2c3a4b96",
 }
 
 # VesselClassType enum ids (Assets/_Scripts/Data/Enums/VesselClassType.cs) - a card's
@@ -103,7 +106,8 @@ VESSELS = {
 VESSEL_CLASS_ID = {
     "Manta": 1, "Dolphin": 2, "Rhino": 3, "Urchin": 4, "Grizzly": 5, "Squirrel": 6,
     "Serpent": 7, "Termite": 8, "Falcon": 9, "Shrike": 10, "Sparrow": 11, "Scarab": 12,
-    "Thresher": 14, "Stoat": 15, "Wrasse": 19, "Meerkat": 28, "TigerMoth": 29,
+    "Thresher": 14, "Stoat": 15, "BrittleStar": 16, "Angler": 17, "Goby": 18, "Wrasse": 19, "Orca": 20,
+    "Jacks": 22, "Honeyguide": 23, "Meerkat": 28, "TigerMoth": 29, "Swordfish": 30,
 }
 
 # ── Arcade card art shared by the pure-aggression party games (Rampage, Dog Fight, Bends) ──
@@ -305,9 +309,12 @@ def wrap_yaml_scalar(text: str, width: int = 88, indent: str = "    ") -> str:
 
 def toast(situation: int, template: str, tint_domain: int = 0, domain_names: int = 1,
           every_n: int = 1, idle: int = 0, idle_seconds: int = 60, alpha=1) -> str:
-    """One GameToastDefinition entry (the field set GameToastConfigSO serializes today)."""
+    """One GameToastDefinition entry (the field set GameToastConfigSO serializes today). The template is a
+    single-quoted YAML scalar, so an apostrophe is doubled: unescaped, "a hood's cup" ended the scalar and the whole
+    toast config stopped parsing (2026-11-09, Hood; the /arcadegame trap Waystation hit first)."""
+    quoted = template.replace("'", "''")
     return (f"  - situation: {situation}\n"
-            f"    messageTemplate: '{template}'\n"
+            f"    messageTemplate: '{quoted}'\n"
             f"    tintWithDomainColor: {tint_domain}\n"
             f"    useDomainColoredNames: {domain_names}\n"
             f"    alpha: {num(alpha)}\n"
@@ -616,6 +623,12 @@ def _self_test() -> int:
         print(("  ok    " if cond else "  FAIL  ") + what)
         if not cond:
             fails.append(what)
+
+    # A toast template with an apostrophe still parses as YAML (the single-quoted scalar doubles it).
+    import yaml
+    entry = yaml.safe_load("toasts:\n" + toast(157, "Sit in a hood's cup"))
+    expect(entry["toasts"][0]["messageTemplate"] == "Sit in a hood's cup",
+           "toast() doubles an apostrophe, so the template round-trips through YAML")
 
     rel = f"{CARDS_DIR}/ArcadeGameBreakwater.asset"
     with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:

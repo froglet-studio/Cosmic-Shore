@@ -291,12 +291,13 @@ namespace CosmicShore.Gameplay
             if (_goal == HuntGoal.Crystal || _goal == HuntGoal.Hive) _huntThinkAt = 0f;
         }
 
-        /// <summary>Where the AI is going: the hunt's goal, or the pilot's own objective. False when no AI flies.</summary>
+        /// <summary>Where the AI is going: the hunt's goal, a race coach's goal, or the pilot's own objective. False when no AI flies.</summary>
         bool AIGoal(out Vector3 goal)
         {
             goal = default;
             if (!AIFlies) return false;
             if (_steering) { goal = _goalAt; return true; }
+            if (RaceCoach != null && RaceCoach.TryRaceGoal(this, out goal)) return true;   // Slip Line: the race says where
             var pilot = _status?.AIPilot;
             if (!pilot || !pilot.AutoPilotEnabled) return false;
             goal = pilot.ObjectivePosition;

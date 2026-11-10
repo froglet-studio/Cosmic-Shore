@@ -5,9 +5,10 @@ GameModes.cs). The shared work is hull_time_race.author; this file is the Brittl
 
 Run from the repo root:  python3 Tools/Build/author_brittle_star_time_assets.py [--check]
 
-WHAT THIS MODE IS. The Brittle Star's TIME card (it had none). Thresher Time's shape cut by
-BrittleStarTimeCourse against Speed Mode: x6 cruise (270 u/s) on a turn that barely grows with speed,
-a ~145 u circle, so each level adds corners Speed Mode cannot hold (0 / 1 / 2 / 3 a lap). See
+WHAT THIS MODE IS. The Brittle Star's TIME card: four intensities, four MOVEMENT questions about Speed Mode and the
+turn (BrittleStarTimeCourse; Shombith, 2026-11-06): I1 Gearbox (hold Speed or shift down), I2 Feather slalom (tap A
+for a speed between), I3 Coast-in hairpins (let go early, coast in), I4 Corkscrew (roll to hold Speed - the hull starts
+I4 at Time 5, the card's StartingElements row, where Speed Roll is live). See
 Assets/_Scripts/Controller/Arcade/BRITTLESTARTIME.md.
 
 THE DONOR IS THRESHER TIME'S SCENE. The clone swaps the controller script, the scoring rule asset, the AI
@@ -57,11 +58,23 @@ htr.author(dict(
     target=16, laps=2, target_key="brittleStarTimeGateTarget", target_after="serpentTimeGateTarget",
     # 4 gates behind x 0.45 = 1.8 levels; the Brittle Star's Time raises Speed Mode x6 -> x8.
     comeback=0.45,
-    description="""Brittle Stars only, against the clock. Speed Mode lights all five arms
-    and runs you at six times cruise - but it turns wide. Hold it through the corners
-    you can, drop back to Cruise for the ones you cannot, and thread the rings. Two
-    laps. Fastest domain home wins.""",
-    preview_objective="Speed Mode down the straights, Cruise for the tight corners",
-    preview_notes="OPEN-ENDED, shell-only: Headlong''s solver cut for the Brittle Star, laid as rings at match start, so a preview has no gates. It teaches Speed Mode.",
+    description="""Brittle Stars only, against the clock. Speed Mode runs you at six times
+    cruise - but it turns wide. Every intensity asks one question of it. Gearbox - hold
+    Speed or shift down. Feather slalom - tap it in and out to weave. Coast-in hairpins -
+    let go early and coast into the turn. Corkscrew - start at Time 5 and roll to hold
+    Speed through the coil. Two laps. Fastest domain home wins.""",
+    preview_objective="One question of Speed Mode per intensity - shift, feather, coast, roll",
+    preview_notes="OPEN-ENDED, shell-only: four course shapes cut for the Brittle Star (BrittleStarTimeCourse), laid as rings at match start, so a preview has no gates. It teaches Speed Mode and the turn.",
+    # I4 Corkscrew starts the hull at Time 5 (0.5): Speed Roll unlocks at level 5 (BrittleStar.asset), and Speed Mode
+    # runs x7 there. Every other rung starts at rest.
+    card_extra="""  StartingElements:
+  - Class: 16
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.5
+""",
     build_after="MinigameSerpentTime",
 ))

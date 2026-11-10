@@ -10,8 +10,8 @@ namespace CosmicShore.Gameplay
     ///
     /// A Dolphin that strikes an omni crystal fires a conic blast down its nose. Until now the
     /// crystal also burst into the shared spray, so the pickup read as two unrelated events:
-    /// something shattered, and separately a cone went off. It now reads as one — the cage bursts
-    /// open down-range and lands on the cone's surface, and the cone takes the surface over.
+    /// something shattered, and separately a cone went off. It now reads as one — the cage
+    /// stretches out onto the cone's surface and thins to nothing as it goes.
     ///
     /// ── The mapping is the Scarab's hull cast, read around the CRYSTAL'S middle ─────────────────
     /// The blast cone (<c>PrimitiveCone</c>, a closed 20-sided cone) is convex, so the cage needs no
@@ -27,14 +27,16 @@ namespace CosmicShore.Gameplay
     /// land on. Its container is static in the world for the blast's life and its growth curve is
     /// deterministic, so the target is read from the blast's own curve at the moment the morph
     /// will hand off (<see cref="AOEConicExplosion.TryGetConeLocalToWorldAt"/>): where the plates
-    /// land is where the cone is drawn when it reappears. No second authority — retune the
+    /// land is where the cone is drawn at that moment. No second authority — retune the
     /// blast's scales, duration or Space reach and the morph follows.
     ///
-    /// ── MECHANICALLY INSTANT, VISUALLY GRADUAL ─────────────────────────────────────────────────
-    /// Only the cone's PHOTONS wait (<see cref="AOEConicExplosion.SetMorphStandIn"/>). Its sweep,
-    /// trigger and prism damage run from the frame it detonates, exactly as before, so nothing the
-    /// blast does to the world changes — the vessel kit stays as designed. The crystal plates race
-    /// out over the first ~0.37 s of the sweep and the cone takes the surface where they land.
+    /// ── SUBTLE: THE BLAST IS NEVER COVERED ───────────────────────────────────────────────────
+    /// Garrett, 2026-11-03: the first version hid the cone until the plates landed and drew them
+    /// opaque, so it covered the explosion and the prisms it breaks — the part that already looked
+    /// great. Now the cone draws from its first frame, untouched, and the crystal is a see-through
+    /// layer over it (<see cref="CrystalMorphRunner.DrawsSeeThrough"/>): its plates stretch out onto
+    /// the cone's surface and thin to nothing as they go (<see cref="BodyOpacityDuringMorph"/>), so
+    /// the crystal's energy reads as becoming the blast without drawing the eye.
     ///
     /// Adoption, colour convergence, overlays, hand-off and dissolve are
     /// <see cref="CrystalMorphRunner"/>'s, shared with the Squirrel and the Scarab.
@@ -47,6 +49,16 @@ namespace CosmicShore.Gameplay
         AOEConicExplosion _cone;
         bool _subscribed;
         int _conesSeen;
+        float _fadePower = DefaultFadePower;
+
+        /// <summary>How fast the plates thin out: opacity = (1 − progress)^power. 2 is a quarter left
+        /// halfway out; higher is subtler.</summary>
+        public const float DefaultFadePower = 2f;
+
+        protected override bool DrawsSeeThrough => true;
+
+        protected override float BodyOpacityDuringMorph(float g) =>
+            Mathf.Pow(1f - Mathf.Clamp01(g), Mathf.Max(0.1f, _fadePower));
 
         protected override string Owner => "Dolphin";
 
@@ -55,7 +67,8 @@ namespace CosmicShore.Gameplay
         /// renderers, and waits for the blast the same dispatch is about to fire. Runs on every peer
         /// — the vessel's crystal effects are broadcast — and each peer lands on its own cone.
         /// </summary>
-        public static DolphinCrystalMorph Begin(in CrystalForgeOrigin origin, IVessel vessel)
+        public static DolphinCrystalMorph Begin(in CrystalForgeOrigin origin, IVessel vessel,
+                                                float fadePower = DefaultFadePower)
         {
             if (vessel == null) return null;
             if (!origin.Valid)
@@ -97,6 +110,7 @@ namespace CosmicShore.Gameplay
 
             morph._vessel = vessel;
             morph._collectPosition = origin.Position;
+            morph._fadePower = fadePower;
             morph.BeginWaiting();
             AOEConicExplosion.Initialized += morph.OnConeInitialized;
             morph._subscribed = true;
@@ -142,8 +156,7 @@ namespace CosmicShore.Gameplay
             Unsubscribe();
             _cone = cone;
 
-            // Photons only: the blast sweeps, damages and triggers from this frame, as before.
-            _cone.SetMorphStandIn(true);
+            // The cone is never hidden: it draws from this frame and the crystal fades over it.
             Stamp(mesh);
 
             CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
@@ -222,16 +235,12 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        protected override void HandOff() => ReleaseHold();
+        /// <summary>Nothing to hand over: the cone has drawn itself all along, and by now the plates
+        /// have thinned to nothing on its surface.</summary>
+        protected override void HandOff() { }
 
-        /// <summary>Gives the cone its photons back. Idempotent and called from teardown — an
-        /// unreleased hold would leave the rest of the sweep invisible. A blast that ended or was
-        /// blocked mid-morph is simply gone; the crystal lands and dissolves where it was.</summary>
-        protected override void ReleaseHold()
-        {
-            if (_cone != null) _cone.SetMorphStandIn(false);
-            _cone = null;
-        }
+        /// <summary>Nothing is held on the cone; only the colour source is dropped.</summary>
+        protected override void ReleaseHold() => _cone = null;
 
         protected override void OnGaveUp()
         {

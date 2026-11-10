@@ -303,7 +303,8 @@ namespace CosmicShore.Gameplay
             new() { vessel = VesselClassType.Manta, gForce = 1.1f, weight = 1f },
             new() { vessel = VesselClassType.Urchin, gForce = 1f, weight = 0.9f },
             new() { vessel = VesselClassType.Sparrow, gForce = 1f, weight = 1f },
-            new() { vessel = VesselClassType.Rhino, gForce = 0.85f, weight = 1.25f },
+            new() { vessel = VesselClassType.Rhino, gForce = 0.85f, weight = 0.42f },   // a third: the plough Rhino reads as triple the mass (2026-11-09, Garrett)
+            new() { vessel = VesselClassType.Swordfish, gForce = 0.85f, weight = 1.25f },   // the Rhino's airframe and ramp (2026-11-07 split)
             new() { vessel = VesselClassType.Grizzly, gForce = 0.85f, weight = 1.25f },
             new() { vessel = VesselClassType.Serpent, gForce = 0.9f, weight = 1.1f },
             new() { vessel = VesselClassType.Orca, gForce = 0.9f, weight = 1.3f },
