@@ -1,0 +1,6 @@
+# Tools/Build/author_sdf_crystal_meshes.py (offline only; nothing in the game needs these)
+numpy
+scipy>=1.10
+scikit-image>=0.21
+fast_simplification>=0.1.7
+Pillow

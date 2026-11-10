@@ -1,0 +1,12 @@
+{
+  "name": "GenomeGyroidOrb",
+  "about": "A gyroid sheet bounded by a sphere: tunnels all the way through, so it takes the marching-cubes path.",
+  "source": "hand-written (the mesh study's gyroid_orb, opened up: scale 1.6 -> 1.1, thick 0.35 -> 0.5, bound 4 -> 3.6)",
+  "bounds": 4.0,
+  "res": 72,
+  "lod_tris": [700, 450, 300],
+  "guids": {"lod0": "bda277b8f94a4dfa847f17824bdaebf1", "lod1": "af53f9cdd7c845169f90e3fe3d5d39e3", "lod2": "0170d5009c2f49afbccc6779e596b738"},
+  "nodes": [
+    {"id": 0, "op": "sdf.gyroid", "in": [], "values": {"scale": 1.1, "thick": 0.5, "bound": 3.6}}
+  ]
+}

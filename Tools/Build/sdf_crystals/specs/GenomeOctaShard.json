@@ -1,0 +1,11 @@
+{
+  "name": "GenomeOctaShard",
+  "about": "A tall shard: an octahedron cut by a thin box (octa intersect box, sharp).",
+  "source": "hand-written",
+  "guids": {"lod0": "5bd8110a8ba0415caef944db38b7fe75", "lod1": "f80c135871ab4d49b9b31eef760a8f7e", "lod2": "0bdb4f60e85741a4b8cde570ebdbd77e"},
+  "nodes": [
+    {"id": 0, "op": "sdf.octa", "in": [], "values": {"r": 3.0}},
+    {"id": 1, "op": "sdf.box", "in": [], "values": {"sx": 0.6, "sy": 3.0, "sz": 0.6}},
+    {"id": 2, "op": "sdf.intersect", "in": [0, 1], "values": {"k": 0.001}}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "GenomeRingCrown",
+  "about": "Two crossed rings of 24 cubes (sdf.polar 24 about y, unioned with itself turned 90 degrees), scaled to 1/4.",
+  "source": "seeds/sdf4k/ring_world.json nodes 8-12, box round 0.1 -> 0 (sharp cubes), plus a scale 0.25",
+  "guids": {"lod0": "ae1c5b4789844e6ebab98b235cc05f8d", "lod1": "7fa5f1fc8d5d4210a505e9884be32ba8", "lod2": "877e0baccfdf41b99c5c405454d2a666"},
+  "nodes": [
+    {"id": 0, "op": "sdf.box", "in": [], "values": {"sx": 0.6, "sy": 0.6, "sz": 0.6, "round": 0.0}},
+    {"id": 1, "op": "sdf.translate", "in": [0], "values": {"x": 12.0, "y": 0.0, "z": 0.0}},
+    {"id": 2, "op": "sdf.polar", "in": [1], "values": {"count": 24, "axis": 1}},
+    {"id": 3, "op": "sdf.rotate", "in": [2], "values": {"ax": 1.5708, "ay": 0.0, "az": 0.0}},
+    {"id": 4, "op": "sdf.union", "in": [2, 3], "values": {"k": 0.001}},
+    {"id": 5, "op": "sdf.scale", "in": [4], "values": {"s": 0.25}}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "GenomePolarCluster",
+  "about": "A central shard with five smaller tilted shards round it (sdf.polar count 5 about y).",
+  "source": "hand-written (the mesh study's crystal_cluster)",
+  "guids": {"lod0": "9203ca1d3ece4b1480d047e0688a5723", "lod1": "5b32cf63ca9e47ff9068323e959ddf6d", "lod2": "44f3767f35264174ad50c96f61cbbf68"},
+  "nodes": [
+    {"id": 0, "op": "sdf.octa", "in": [], "values": {"r": 3.0}},
+    {"id": 1, "op": "sdf.box", "in": [], "values": {"sx": 0.6, "sy": 3.0, "sz": 0.6}},
+    {"id": 2, "op": "sdf.intersect", "in": [0, 1], "values": {"k": 0.001}},
+    {"id": 3, "op": "sdf.scale", "in": [2], "values": {"s": 0.6}},
+    {"id": 4, "op": "sdf.rotate", "in": [3], "values": {"ax": 0.0, "ay": 0.0, "az": -0.7}},
+    {"id": 5, "op": "sdf.translate", "in": [4], "values": {"x": 1.9, "y": -1.0, "z": 0.0}},
+    {"id": 6, "op": "sdf.polar", "in": [5], "values": {"count": 5, "axis": 1}},
+    {"id": 7, "op": "sdf.union", "in": [2, 6], "values": {"k": 0.001}}
+  ]
+}

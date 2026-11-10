@@ -1,0 +1,15 @@
+{
+  "name": "GenomeKifsOcta",
+  "about": "A kaleidoscopic (KIFS) octahedron: two fold-translate-rotate iterations of the sdf4k seed.",
+  "source": "seeds/sdf4k/kifs_octa.json nodes 8-14 (the seed runs four iterations; two keep the copy count at 64)",
+  "guids": {"lod0": "c79ba52613d94a27af7eb11e16abf640", "lod1": "3b8dacce6bc24006a98176950782f402", "lod2": "0e714693fa7d488ab77887e203c98733"},
+  "nodes": [
+    {"id": 0, "op": "sdf.octa", "in": [], "values": {"r": 1.5}},
+    {"id": 1, "op": "sdf.translate", "in": [0], "values": {"x": 1.2, "y": 0.6, "z": 0.0}},
+    {"id": 2, "op": "sdf.mirror", "in": [1], "values": {"axes": 7}},
+    {"id": 3, "op": "sdf.rotate", "in": [2], "values": {"ax": 0.4, "ay": 0.7, "az": 0.2}},
+    {"id": 4, "op": "sdf.translate", "in": [3], "values": {"x": 1.2, "y": 0.6, "z": 0.0}},
+    {"id": 5, "op": "sdf.mirror", "in": [4], "values": {"axes": 7}},
+    {"id": 6, "op": "sdf.rotate", "in": [5], "values": {"ax": 0.4, "ay": 0.8, "az": 0.2}}
+  ]
+}

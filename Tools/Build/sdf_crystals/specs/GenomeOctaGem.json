@@ -1,0 +1,9 @@
+{
+  "name": "GenomeOctaGem",
+  "about": "One regular octahedron: the lab's sdf.octa, the smallest crystal a genome can say (5 bytes).",
+  "source": "hand-written",
+  "guids": {"lod0": "e8abb00a598342d68879123a6af1937f", "lod1": "f532270c313d475ca7800031a2cd75fd", "lod2": "5ff2afbce928448da09fd41991c45668"},
+  "nodes": [
+    {"id": 0, "op": "sdf.octa", "in": [], "values": {"r": 1.5}}
+  ]
+}
