@@ -197,9 +197,10 @@ namespace CosmicShore.Tests
             // 76 -> 77 on 2026-11-09: Jackstraw (85), the Thresher's Charge game. It first took 84, which the Brittle Star's
             // Flatline (84, claude/great-rubin-rur3xs, in flight) had claimed; Shombith gave 84 to Flatline. When both land
             // this becomes 78.
-            // 77 -> 78 on 2026-11-09: Kelpwood (86), the Angler's Charge game (84 and 85 were both claimed).
+            // 77 -> 78 on 2026-11-09: Flatline (84), the Brittle Star's charge game (Shombith gave it 84 after both claimed it).
+            // 78 -> 79 on 2026-11-09: Kelpwood (86), the Angler's Charge game.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(78, values.Length,
+            Assert.AreEqual(79, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -250,6 +251,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.PerchRun, 81)]
         [TestCase(GameModes.SlipLine, 82)]
         [TestCase(GameModes.Breach, 83)]
+        [TestCase(GameModes.Flatline, 84)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

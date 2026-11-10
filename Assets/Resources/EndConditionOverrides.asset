@@ -40,6 +40,12 @@ MonoBehaviour:
   undertowPointTarget: 12
   dustupPointTarget: 4
   serpentHoodSnipeTarget: 3
+  flatlinePointTarget: 200
+  flatlinePointTargetByIntensity:
+  - 180
+  - 200
+  - 220
+  - 240
   jackstrawStrikeTarget: 8
   kelpwoodBiteTarget: 12
   tapestryRoundSeconds: 90
@@ -100,6 +106,12 @@ MonoBehaviour:
   undertowPointTargetBuild: 12
   dustupPointTargetBuild: 4
   serpentHoodSnipeTargetBuild: 3
+  flatlinePointTargetBuild: 200
+  flatlinePointTargetByIntensityBuild:
+  - 180
+  - 200
+  - 220
+  - 240
   jackstrawStrikeTargetBuild: 8
   kelpwoodBiteTargetBuild: 12
   tapestryRoundSecondsBuild: 90

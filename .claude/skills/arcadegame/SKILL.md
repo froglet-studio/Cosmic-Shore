@@ -370,6 +370,26 @@ Jackstraw (the Thresher's Charge game, 2026-11-09, `claude/ecstatic-heisenberg-2
 - **A charge mode can score a hull's existing hit with no vessel code at all.** Grep the executor for its `TryAdmit`
   class and the `onCombatHitLanded` channel its config wires (the generator asserts both), then pay that class in the
   rule. The AI can be steering only when the hull hits by contact; the hull's own boost policy keeps its presses.
+Flatline (the Brittle Star's charge game, 2026-11-09, `claude/great-rubin-rur3xs`, `FLATLINE.md`) taught five:
+- **An EXACT twin is cheap when the geometry is integer first.** Decide which tiles exist on an integer grid
+  (`a*a + b*b <= R*R`), keep every float comparison that can move a count in one place (the seam test), and compute that
+  one in numpy float32 in the C#'s operation order. `flatline_budget.py` then matched the C# prism for prism and site for
+  site on all four rungs at the first run. Put the geometry in a PURE static class (`FlatlinePanes`) so the tests, the
+  twin and the Spawnable all call one thing.
+- **A pure helper a Spawnable calls must join `render_card_backgrounds.SOURCES`**, or `bake_prism_layouts.py --check`,
+  the clip audit and the card render all fail to compile (CS0246) - they share that list. When the harness fails on files
+  you never touched, it is upstream drift (REFACTOR_BACKLOG S95, S112): list the missing helper or add the shim member
+  (`PlatformShim.cs`); `--check` compares pixels, so a longer SOURCES list stales no committed card.
+- **A hull that already runs its own autopilot gets a mode AI that only STEERS.** `BrittleStarExecutor.Autopilot` presses
+  fire, modes and the ring itself; a second presser fights it every few seconds. `SetExternalTargetProvider` and nothing
+  else, and the generator fails if the hunter calls `PerformShipControllerActions`.
+- **An ability that reads the WORLD changes with the arena, and that is the arena's lever, not a vessel change.** The ring
+  blast's disk is the cell's nucleus radius, falling back to `ringBlastFallbackRadius` when the cell has none, so a
+  no-nucleus arena shrinks it from ~780 u to 400 u across. Read the executor for every world read before quoting an
+  ability's size in a mode doc (the first FLATLINE.md quoted the nucleus number).
+- **A per-intensity target is Cleave's shape** (scalar + `...ByIntensity` list, the `Build` twins, `SameInts` / `CopyInts`
+  rows, the window's per-rung rows, the monitor resolving `SelectedIntensity` on the server). `set_end_condition`
+  authors scalars only; the list rides beside it (`author_flatline_assets.py` §9).
 
 ## 4. Gates (no Unity needed; run them all)
 

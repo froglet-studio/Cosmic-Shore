@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Flatline Cell Config 4
+  m_EditorClassIdentifier:
+  CellName: Flatline
+  Description: 'Pane Geode - intensity 4 of Flatline: ten panes standing off the centre as a hollow
+    shell with two open faces and holes punched through, danger on every rim, four crystals
+    in the cracks. 5440 prisms, all neutral (1710 super-shielded ribs, 1568 danger).
+    Membrane radius 1200, spawn ring 420, the crystal field laid by the controller on the
+    seams. NO NUCLEUS, no flora, no fauna. Authored by Tools/Build/author_flatline_assets.py
+    - re-run it rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 4
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 120
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: 024051436d39c1790b13abcbe0d4d445, type: 2}
+  EnvironmentPrefab: {fileID: 8400000000000203, guid: 454b2bf3f2bd433d67a7900d6611c548, type: 3}
+  EnvironmentIntensity: 4
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 6140
+    RestlessExit: 5940
+    FrenzyEnter: 9040
+    FrenzyExit: 8440
+    RestlessEnterVolume: 1088347
+    RestlessExitVolume: 1085147
+    FrenzyEnterVolume: 1134747
+    FrenzyExitVolume: 1125147
