@@ -58,6 +58,19 @@ void PrismSway_float(
     float3 Timing,       // (Frequency rad/s, Phase rad, Z0 = the prism origin's limb height)
     out float3 Out)
 {
+    // The idle path, taken by every prism that is not living mass (the default above, so
+    // nearly all of them): skip the two sines and the Axis/Timing loads. Exact, not a
+    // tolerance: with both spans exactly zero the full path below adds (+-0) to each
+    // component of PositionOS, which returns PositionOS unchanged (equal under ==; only
+    // a -0 coordinate can come back as +0, which transforms and rasterizes identically).
+    // Compared with == rather than a squared length so a tiny non-zero span cannot
+    // underflow into the early-out. verify_prism_sway.py T2b checks it against the full path.
+    if (all(SpanX == 0.0) && all(SpanY == 0.0))
+    {
+        Out = PositionOS;
+        return;
+    }
+
     float freq  = Timing.x;
     float phase = Timing.y;
     float t = Clock * freq + phase;

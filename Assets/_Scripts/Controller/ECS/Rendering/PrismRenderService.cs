@@ -1370,6 +1370,22 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = new float3(1f) });
         }
 
+        /// <summary>
+        /// <see cref="ClearGrowStamp"/>, but only while the entity still carries the grow stamp that started at
+        /// <paramref name="startTime"/>: the scheduled settle of one bloom (<c>PrismScaleAnimator</c>). A newer
+        /// stamp (a retarget, a restore) or a pool reuse that already cleared it leaves this a no-op, so a stale
+        /// timer can never cut a later bloom short. The compare is exact on purpose: the value read back is the
+        /// float this same stamp wrote.
+        /// </summary>
+        public static void ClearGrowStampIfStartedAt(in PrismRenderHandle handle, float startTime)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismGrowStartTimeOverride>(handle.Entity)) return;
+            if (em.GetComponentData<PrismGrowStartTimeOverride>(handle.Entity).Value != startTime) return;
+            ClearGrowStamp(in handle);
+        }
+
         /// <summary>Settles just the color-transition stamp (visual snaps to the bound
         /// material's colors — the scheduled settle, or an interruption reset).</summary>
         public static void ClearColorTransitionStamp(in PrismRenderHandle handle)

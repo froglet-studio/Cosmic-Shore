@@ -13,6 +13,7 @@ shaders and demands bit-identical output:
 
   T1  the pair compiles clean, with the include resolved
   T2  SpanX = SpanY = 0 is a BIT-IDENTICAL passthrough         <- the blast-radius control
+  T2b the zero-span early-out returns what the full path does  <- the idle skip is exact
   T3  degenerate basis == SpindleSway, BIT-IDENTICALLY         <- one field, not two
   T4  the offset is exactly linear in the limb height          <- it is still a pure shear
   T5  a ROTATED, non-uniformly SCALED prism lands on the limb  <- the change of basis
@@ -42,6 +43,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 GRAPHS = os.path.join(ROOT, "Assets/_Graphics/Materials/Graphs")
 PRISM = os.path.join(GRAPHS, "PrismSway.hlsl")
 SPINDLE = os.path.join(GRAPHS, "SpindleSway.hlsl")
+
+# HLSL's all() over a component-wise comparison: clang's vector == yields an int3 mask.
+SHIM_EXTRA = r"""
+using bool3_mask = int __attribute__((ext_vector_type(3)));
+static inline bool all(bool3_mask v) { return v.x && v.y && v.z; }
+"""
 
 ABI = r"""
 extern "C" void prism_sway(float px, float py, float pz, float clock,
@@ -83,8 +90,18 @@ def resolve_includes(text, folder):
     return re.sub(r'^\s*#include\s+"([^"]+)"\s*$', sub, text, flags=re.M)
 
 
-def build():
+# The zero-span early-out at the top of PrismSway_float. T2b strips it to rebuild the full
+# path and compares the two, so the skip can never drift from what it skips.
+EARLY_OUT = re.compile(
+    r"\n[ \t]*if \(all\(SpanX == 0\.0\) && all\(SpanY == 0\.0\)\)\s*\{[^}]*\}")
+
+
+def build(strip_early_out=False):
     src = resolve_includes(open(PRISM).read(), GRAPHS)
+    if strip_early_out:
+        src, n = EARLY_OUT.subn("", src)
+        if n != 1:
+            raise SystemExit("T2b FAIL: the zero-span early-out was not found exactly once")
     assert "PrismSway_float" in src, "entry point renamed — the graph node would not bind"
     assert "SpindleSway_float" in src, "the include did not resolve"
     tmp = tempfile.mkdtemp(prefix="prismsway_")
@@ -92,6 +109,7 @@ def build():
     so = os.path.join(tmp, "harness.so")
     with open(cpp, "w") as fh:
         fh.write(H.SHIM)
+        fh.write(SHIM_EXTRA)
         fh.write(S.translate(src))
         fh.write(ABI)
     r = subprocess.run(H.clang_cmd() + ["-shared", "-fPIC", cpp, "-o", so],
@@ -150,6 +168,47 @@ def main():
         fails.append("T2 FAIL  negative control did not move either — nothing was called")
     else:
         print(f"T2 PASS  zero span is bit-identical (control moved {ctl:.4f})")
+
+    # ---- T2b: the early-out returns exactly what the full path returns ----------
+    # The full path with zero spans adds (+-0) per component, so it equals PositionOS
+    # under ==; the only possible bit difference is a -0 input coming back as +0.
+    import random
+    full = build(strip_early_out=True)
+    rng = random.Random(7)
+    def rnd():
+        return rng.choice([0.0, -0.0, rng.uniform(-300, 300), rng.uniform(-1e-3, 1e-3),
+                           rng.uniform(-1e6, 1e6)])
+    neq = signed0 = 0
+    for _ in range(20000):
+        p = (rnd(), rnd(), rnd())
+        axis = (rnd(), rnd(), rnd())
+        args = (rng.uniform(-1e4, 1e5), (0.0, -0.0, 0.0) if rng.random() < .5 else (0, 0, 0),
+                (-0.0, 0.0, -0.0) if rng.random() < .5 else (0, 0, 0), axis,
+                rng.uniform(-10, 10), rng.uniform(-7, 7), rnd())
+        a = prism(lib, p, *args)
+        b = prism(full, p, *args)
+        for i in range(3):
+            if a[i] != b[i]:
+                neq += 1
+            elif math.copysign(1, a[i]) != math.copysign(1, b[i]):
+                signed0 += 1
+    # Non-zero spans: the shipped file must still take the full path, bit for bit.
+    live_diff = 0
+    for _ in range(5000):
+        p = (rnd(), rnd(), rnd())
+        args = (rng.uniform(0, 1e4), (rnd(), rnd(), rnd()), (rnd(), rnd(), rnd()),
+                (rnd(), rnd(), rnd()), rng.uniform(-10, 10), rng.uniform(-7, 7), rnd())
+        a = prism(lib, p, *args)
+        b = prism(full, p, *args)
+        live_diff += sum(1 for i in range(3)
+                         if a[i] != b[i] and not (a[i] != a[i] and b[i] != b[i]))
+    if neq:
+        fails.append(f"T2b FAIL  the early-out differs from the full path on {neq} components")
+    elif live_diff:
+        fails.append(f"T2b FAIL  a non-zero span no longer takes the full path ({live_diff} diffs)")
+    else:
+        print(f"T2b PASS  early-out == full path on 60000 zero-span components "
+              f"({signed0} differ only in the sign of a zero); non-zero spans unchanged")
 
     # ---- T3: the degenerate basis IS SpindleSway ------------------------------
     amp, freq, phase = 0.12, 1.4, 2.1
