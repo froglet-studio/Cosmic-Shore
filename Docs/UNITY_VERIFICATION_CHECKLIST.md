@@ -65,6 +65,68 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Shatterplane, the Brittle Star's Space game (GameModes 88) (`claude/fervent-edison-ol600q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/SHATTERPLANE.md` (plan and decisions: `Docs/MassAndSpaceGames/BRITTLE_STAR_SPACE.md`).
+Wide, thin round plates of neutral prisms (`SpawnableShatterplane`, four baked prefabs). The ring blast erases a plate
+it lies in, and the guns chew the rest. Scored on `PrismsDestroyed` (Rampage's rule, so the card reads Space), first
+domain to 1600 / 1600 / 2000 / 1000 by intensity. The crystal field sits on the plates' axes. The arena's nucleus is
+sized to 470 u (D2), so every ring blast in this cell is 940 u across. The AI squarer only steers.
+
+New platform rows: `GameModes.Shatterplane = 88`, `shatterplanePrismTarget` + per-intensity list, toast situation 163,
+the HUD arrow (`HostileMassObjectiveProvider`).
+
+**Checked offline:**
+- `author_shatterplane_assets.py --check`, watched failing on a mutated settings asset and on a mutated C# default.
+- The reference compile: player 0 errors; editor config run as well.
+- The `/ship` gates.
+- The clip audit: 0 clipping on all 16 runs.
+- The bake: the C# lays 5,290 / 5,292 / 6,615 / 4,588 prisms, exactly the twin's.
+- The card render.
+
+**Not run:** Unity, and the EditMode tests (`ShatterplaneTests`, `ModeGenreTests`, `EnumIntegrityTests`, which now
+expects 81 modes).
+
+**Verify in editor:**
+1. Arcade → Shatterplane card: the plates-and-square-blast art, Brittle Star only, 1-4 players, intensities 1-4, the
+   **Space** badge (genre through `PrismsDestroyed`).
+2. Launch I1 with one AI, as the HOST:
+   - you spawn on a 780 u ring;
+   - ten round plates face you;
+   - a crystal floats in front of each plate;
+   - the nucleus sphere in the middle is about 470 u (`ShatterplaneSettings.nucleusRadius`);
+   - the hint toast (163) shows once;
+   - the arrow points at standing plate mass.
+3. Take a crystal (the Charge card's spare-ring slot fills), fly on along the plate's axis, throw (LT): the blast lies
+   in the plate and erases it whole; the score jumps by about 529.
+4. Throw at a slant: only a band goes.
+5. Space Mode (X + RT): the five guns chip a plate.
+6. Lay a Creation trail and shoot it: your own prisms never score.
+7. AI: it takes crystals and lines up on a plate's axis before flying in. **Count how many of its ring throws land square
+   versus fuse short in front of the plate** (the executor decides when to throw; a throw from beyond about 313 u at
+   cruise fuses before it arrives). Watch for an AI circling a plate it never lines up on.
+8. First team to the target wins: results "N Prisms" / "N Prisms Left", the reveal SHATTERPLANE TIME / PRISMS LEFT.
+   Replay works.
+9. I2: plates at mixed angles. I3: stacks of three 70 u apart (the front plate shields the next from the guns). I4: white
+   super-shielded ribs on every sixth line, red danger rims, and grilles in front of every other plate (a ring thrown
+   through a grille blows on it and takes little).
+10. Profile a square ring at I1 (`prof`): one blast kills a plate in its 0.7 s sweep.
+11. Time a 2v2 at I2 with Medium AI against P-modes-02 (about 90 s for an experienced player); retune in FrogletTools >
+    Game Modes > End Game Conditions → Shatterplane.
+12. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameShatterplane.unity`, and Reconcile Build
+    Scene List if the scene is reported missing. FrogletTools > Ecology > Measure Cell Environment Baselines should
+    agree with the census above.
+
+**First-pass tuning:**
+- targets 1600 / 1600 / 2000 / 1000 (30% of each rung's breakable mass);
+- comeback rate 0.005;
+- nucleus 470;
+- crystal regrow 8 s;
+- the plates in `shatterplane_budget.RUNGS`;
+- the AI ladders in `ShatterplaneSettings`.
+
+---
+
 ### 🔴 Corona, the Manta's Charge game (GameModes 87) (`claude/amazing-goldberg-7zn80e`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/CORONA.md`. Manta stings round a crystal heart in nested prism shells

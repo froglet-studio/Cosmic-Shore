@@ -31,6 +31,9 @@ namespace CosmicShore.Editor
         /// <summary>Flatline's four rungs, labelled with the structures each one scatters (SpawnableFlatline).</summary>
         static readonly string[] FlatlineArenaNames = { "Scattered Panes", "Tunnels", "Cages", "Maze" };
 
+        /// <summary>Shatterplane's four rungs, labelled with the plates each one hangs (SpawnableShatterplane).</summary>
+        static readonly string[] ShatterplaneArenaNames = { "Billboards", "Gallery", "Shelves", "Reliquary" };
+
         EndConditionOverridesSO _config;
 
         [MenuItem("FrogletTools/Game Modes/End Game Conditions", false, 160)]
@@ -119,6 +122,9 @@ namespace CosmicShore.Editor
                 "hull is 1, default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget + ".\n" +
                 "  • Corona: bloom hits a DOMAIN needs - a rival pilot caught in a bloom of a bomb a Manta " +
                 "planted is 1, default " + EndConditionOverridesSO.DefaultCoronaBloomTarget + ".\n" +
+                "  • Shatterplane: hostile prisms a DOMAIN must break, PER INTENSITY - every neutral plate tile a " +
+                "Brittle Star breaks with a round, a cord or a ring. A rung left at 0 falls back to the mode scalar " +
+                "(default " + EndConditionOverridesSO.DefaultShatterplanePrismTarget + ").\n" +
                 "  • Tapestry: round length in SECONDS (timed - most mass STANDING at the whistle " +
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
@@ -320,6 +326,19 @@ namespace CosmicShore.Editor
             EditorGUI.indentLevel--;
             int kw  = Mathf.Max(0, EditorGUILayout.IntField("Kelpwood - Bite Target", _config.kelpwoodBiteTarget));
             int cr  = Mathf.Max(0, EditorGUILayout.IntField("Corona - Bloom Target", _config.coronaBloomTarget));
+            int sp  = Mathf.Max(0, EditorGUILayout.IntField("Shatterplane - Prism Target", _config.shatterplanePrismTarget));
+            // Per-intensity, like Flatline's: each rung hangs a different amount of plate. 0 falls back to the scalar.
+            var spByIntensity = new List<int>(4);
+            EditorGUI.indentLevel++;
+            for (int i = 0; i < 4; i++)
+            {
+                int authored = _config.shatterplanePrismTargetByIntensity != null
+                               && i < _config.shatterplanePrismTargetByIntensity.Count
+                    ? _config.shatterplanePrismTargetByIntensity[i] : 0;
+                spByIntensity.Add(Mathf.Max(0, EditorGUILayout.IntField(
+                    $"Intensity {i + 1} ({ShatterplaneArenaNames[i]})", authored)));
+            }
+            EditorGUI.indentLevel--;
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
@@ -378,6 +397,8 @@ namespace CosmicShore.Editor
                     _config.flatlinePointTargetByIntensity = flByIntensity;
                     _config.kelpwoodBiteTarget = kw;
                     _config.coronaBloomTarget = cr;
+                    _config.shatterplanePrismTarget = sp;
+                    _config.shatterplanePrismTargetByIntensity = spByIntensity;
                     _config.tapestryRoundSeconds = tp;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
@@ -445,6 +466,10 @@ namespace CosmicShore.Editor
                 v => v > 0 ? v.ToString() : flatlineEffective)));
             EditorGUILayout.LabelField("Kelpwood", kw > 0 ? kw.ToString() : EndConditionOverridesSO.DefaultKelpwoodBiteTarget + " (default)");
             EditorGUILayout.LabelField("Corona", cr > 0 ? cr.ToString() : EndConditionOverridesSO.DefaultCoronaBloomTarget + " (default)");
+            string shatterplaneEffective = sp > 0 ? sp.ToString()
+                : EndConditionOverridesSO.DefaultShatterplanePrismTarget + " (default)";
+            EditorGUILayout.LabelField("Shatterplane", string.Join(" / ", spByIntensity.ConvertAll(
+                v => v > 0 ? v.ToString() : shatterplaneEffective)));
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
@@ -528,6 +553,8 @@ namespace CosmicShore.Editor
                    " (per intensity " + string.Join(" / ", _config.flatlinePointTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Kelpwood: " + Fmt(_config.kelpwoodBiteTargetBuild, "default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget) + "\n" +
                    "Corona: " + Fmt(_config.coronaBloomTargetBuild, "default " + EndConditionOverridesSO.DefaultCoronaBloomTarget) + "\n" +
+                   "Shatterplane: " + Fmt(_config.shatterplanePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultShatterplanePrismTarget) +
+                   " (per intensity " + string.Join(" / ", _config.shatterplanePrismTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +

@@ -137,6 +137,19 @@ namespace CosmicShore.Tests
                 "weight - delete the row, or the row is no longer saying what it was added to say.");
         }
 
+        // A Space game reads Space through its METRIC, with no row of its own: Shatterplane (88), the Brittle Star's
+        // Space game, scores the prisms it breaks. If a row is ever added for it, or its rule moves off PrismsDestroyed,
+        // the Fleet Codex would show it as another element's game - this pins it (Docs/MassAndSpaceGames/PLAN.md §6).
+        [Test]
+        [TestCase(GameModes.Shatterplane, ScoringMetric.PrismsDestroyed)]
+        public void SpaceGame_ReadsSpaceThroughItsMetric(GameModes mode, ScoringMetric metric)
+        {
+            Assert.IsTrue(ModeGenre.TryElementsFor(mode, metric, out var first, out var second),
+                $"GameModes.{mode} has no genre.");
+            Assert.AreEqual(Element.Space, first, $"GameModes.{mode} is the Brittle Star's SPACE game.");
+            Assert.AreEqual(Element.None, second, $"GameModes.{mode} is a Space game only - never quietly a Mass game.");
+        }
+
         [Test]
         public void ASecondGenre_IsNeverTheFirstOneTwice()
         {

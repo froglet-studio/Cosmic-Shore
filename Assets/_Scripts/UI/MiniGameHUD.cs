@@ -573,6 +573,11 @@ namespace CosmicShore.UI
                     // there still a LOT of it" does, and on the 2,160-unit open rungs it is far
                     // from obvious. Densest hostile mass, the query Cleave's AI raids with.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Cleave");
+                case GameModes.Shatterplane:
+                    // Densest standing hostile mass again: the plates are the only breakable mass in the cell, so the
+                    // arrow names the nearest big plate still standing. Not a crystal: a crystal is a spare ring, and
+                    // it already floats on a plate's axis in front of it.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Shatterplane");
                 case GameModes.Sirocco:
                     // Same provider, same reason: the forest rings the cell, so the arrow names
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs

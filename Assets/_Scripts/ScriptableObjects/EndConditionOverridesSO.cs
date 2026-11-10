@@ -121,6 +121,12 @@ namespace CosmicShore.ScriptableObjects
         /// (CoronaScoringRuleSO), summed across the domain's pilots.</summary>
         public const int DefaultCoronaBloomTarget = 15;
 
+        /// <summary>Shatterplane prism target used when <see cref="shatterplanePrismTarget"/> is 0 and the rung authors
+        /// nothing. Hostile prisms a DOMAIN breaks (the neutral plates), summed across its pilots (ShatterplaneScoringRuleSO,
+        /// Rampage's rule). An ESTIMATE pending a timed match: about 30% of a rung's breakable plate mass
+        /// (shatterplane_budget.py).</summary>
+        public const int DefaultShatterplanePrismTarget = 1600;
+
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
         /// "most standing at the whistle" is the only honest end condition.</summary>
@@ -546,6 +552,15 @@ namespace CosmicShore.ScriptableObjects
                  "Manta planted is one bloom hit, summed across the domain's pilots. 0 = default (15).")]
         [Min(0)] public int coronaBloomTarget = 15;
 
+        [Tooltip("Shatterplane: hostile PRISMS a DOMAIN must break to win (race to N), the Brittle Star's space game. The " +
+                 "plates are neutral, so every plate tile a round, a cord or a ring breaks counts; ribs and screens never " +
+                 "break. 0 = default (1600).")]
+        [Min(0)] public int shatterplanePrismTarget = 1600;
+
+        [Tooltip("Shatterplane: per-INTENSITY override of the target above - element 0 is intensity 1. Empty, a 0 " +
+                 "entry or a missing rung falls back to the scalar.")]
+        public List<int> shatterplanePrismTargetByIntensity = new() { 1600, 1600, 2000, 1000 };
+
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
         [Min(0)] public int tapestryRoundSeconds = 90;
@@ -627,6 +642,8 @@ namespace CosmicShore.ScriptableObjects
         [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 90, 90, 90, 90 };
         [Min(0)] public int kelpwoodBiteTargetBuild = 12;
         [Min(0)] public int coronaBloomTargetBuild = 15;
+        [Min(0)] public int shatterplanePrismTargetBuild = 1600;
+        [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
@@ -1058,6 +1075,28 @@ namespace CosmicShore.ScriptableObjects
             coronaBloomTarget > 0 ? coronaBloomTarget : DefaultCoronaBloomTarget;
 
         /// <summary>
+        /// Shatterplane prism target ("first domain to N hostile prisms broken"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultShatterplanePrismTarget"/>. Compared against a DOMAIN's summed
+        /// HostilePrismsDestroyed.
+        /// </summary>
+        public int GetShatterplanePrismTarget() =>
+            shatterplanePrismTarget > 0 ? shatterplanePrismTarget : DefaultShatterplanePrismTarget;
+
+        /// <summary>
+        /// Shatterplane target for a given INTENSITY (1-based), falling back to <see cref="GetShatterplanePrismTarget()"/>
+        /// for an empty list, a 0 entry or a missing rung. Resolved on the server (<c>ShatterplanePrismTurnMonitor</c>
+        /// replicates the number), Cleave's rule.
+        /// </summary>
+        public int GetShatterplanePrismTarget(int intensity)
+        {
+            if (shatterplanePrismTargetByIntensity == null || shatterplanePrismTargetByIntensity.Count == 0)
+                return GetShatterplanePrismTarget();
+            int i = Mathf.Clamp(intensity - 1, 0, shatterplanePrismTargetByIntensity.Count - 1);
+            int v = shatterplanePrismTargetByIntensity[i];
+            return v > 0 ? v : GetShatterplanePrismTarget();
+        }
+
+        /// <summary>
         /// Tapestry round length in seconds: the configured value when &gt; 0, otherwise
         /// <see cref="DefaultTapestryRoundSeconds"/>. Read by TapestryTimeTurnMonitor at
         /// StartMonitor on every peer, so the clock and the whistle cannot disagree.
@@ -1171,6 +1210,8 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Flatline                  => GetFlatlinePointTarget(),
                 GameModes.Kelpwood                  => GetKelpwoodBiteTarget(),
                 GameModes.Corona                    => GetCoronaBloomTarget(),
+                // Scalar only, as for Cleave and Flatline: the real answer is per-intensity (GetShatterplanePrismTarget(int)).
+                GameModes.Shatterplane              => GetShatterplanePrismTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
                 // deliberately absent here and reads as "no target", like Bloomrush.
@@ -1252,6 +1293,8 @@ namespace CosmicShore.ScriptableObjects
             SameInts(flatlinePointTargetByIntensity, flatlinePointTargetByIntensityBuild) &&
             kelpwoodBiteTarget == kelpwoodBiteTargetBuild &&
             coronaBloomTarget == coronaBloomTargetBuild &&
+            shatterplanePrismTarget == shatterplanePrismTargetBuild &&
+            SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
@@ -1311,6 +1354,8 @@ namespace CosmicShore.ScriptableObjects
             flatlinePointTargetByIntensity = CopyInts(flatlinePointTargetByIntensityBuild);
             kelpwoodBiteTarget = kelpwoodBiteTargetBuild;
             coronaBloomTarget = coronaBloomTargetBuild;
+            shatterplanePrismTarget = shatterplanePrismTargetBuild;
+            shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
@@ -1371,6 +1416,8 @@ namespace CosmicShore.ScriptableObjects
             flatlinePointTargetByIntensityBuild = CopyInts(flatlinePointTargetByIntensity);
             kelpwoodBiteTargetBuild = kelpwoodBiteTarget;
             coronaBloomTargetBuild = coronaBloomTarget;
+            shatterplanePrismTargetBuild = shatterplanePrismTarget;
+            shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;

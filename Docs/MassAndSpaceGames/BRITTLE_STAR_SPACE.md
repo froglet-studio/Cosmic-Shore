@@ -1,6 +1,7 @@
-# The Brittle Star's Space game: the plan (working title **Shatterplane**)
+# The Brittle Star's Space game: the plan (**Shatterplane**)
 
-Planning only, 2026-11-10, branch `claude/fervent-edison-ol600q`. Nothing is built yet. This belongs to
+**Built 2026-11-10 as `GameModes.Shatterplane = 88`** on `claude/fervent-edison-ol600q`: see
+`Assets/_Scripts/Controller/Arcade/SHATTERPLANE.md` for what shipped. This page is the plan and the decisions that led there. This belongs to
 `Docs/MassAndSpaceGames/PLAN.md`, which is on `claude/serene-euler-g7crrw` and not yet on bleeding-edge.
 
 ## 0. What was checked before designing
@@ -115,27 +116,22 @@ I2 plate landed almost on a spawn in the first render.
 | Generator | `Tools/Build/author_shatterplane_assets.py` on `arcade_mode_lib`, with `--check`, watched to fail once |
 | Budget | `Tools/Build/shatterplane_budget.py`: prisms per rung under Flatline's / Rampage I4's envelope (about 12k), plus the worst case: one square ring kills a whole plate (about 2k prisms) in its 0.7 s sweep. Profile that kill burst in the editor |
 
-## 5. Decisions (D1 decided; D2-D5 open)
+## 5. Decisions (all decided 2026-11-10)
 
 - **D1, the verb. DECIDED 2026-11-10 (Shombith): plates.** "Square up and the ring erases the plate" is the Brittle
   Star's Space game. The alternative was a pure gun race on dense wreckage (Salvo's game on another hull). It was
   rendered and dropped: on a solid clump the ring takes one thin slice, about 11%, whatever the angle (§7).
-- **D2, the disk's reach (P-modes-08, ask Shombith).** The disk's radius is the cell's nucleus radius. Choosing the
-  arena's nucleus therefore sets how far the ring reaches. Options:
-  - keep the standard nucleus (about 392 u), the cleanest;
-  - accept that the environment sets it, and use it as a ladder lever.
+- **D2, the disk's reach. DECIDED (Shombith): "you can make it a little bigger".** The arena's nucleus is 470 u (a
+  standard cell's is about 392 u), sized by the controller on every peer; the ring reads its reach from it.
+- **D3, ecology. DECIDED: none at all.**
+- **D4, the name. DECIDED: Shatterplane.**
+- **D5, prototype first? DECIDED: straight to Unity.** The model in `Tools/Build/shatterplane_budget.py` set the targets.
 
-  The plan assumes the standard nucleus on every rung.
-- **D3, ecology.** Thin wildlife at I1-I2 and none above, or none at all?
-- **D4, the name.** Shatterplane is a working title. Alternatives: Pane Breaker, Square One, Flat Out.
-- **D5, prototype first?** Recommended: the studio page first (§2). Unity directly is possible; then the model in §6
-  sets the targets.
+## 6. Next steps (done 2026-11-10 except the editor run)
 
-## 6. Next steps once D2-D5 are answered
-
-1. Model the yields per rung in `shatterplane_budget.py`: gun yield per overheat cycle against a lattice plate, ring
-   yield against tilt, and the expected 90 s total. Then set the four targets from the model.
-2. Optionally a studio minigame to fly it and measure the ring's share.
+1. Model the yields per rung in `shatterplane_budget.py`: the ring's yield against tilt, the census, and the targets
+   (about 30% of each rung's breakable mass, an estimate until a timed match). Done; the gun yield waits on the editor.
+2. A studio minigame: skipped (D5).
 3. Build to §4, run the `/arcadegame` §4 gates, `unity_refcompile` and the `/ship` gates.
 4. Write the mode doc and the `PLAN.md` §7 row, and add the mode to `GAME_MODES_AND_CONTROLLERS.md`.
 
@@ -152,3 +148,9 @@ geometry used the plan's numbers: 4 u prisms on an 8 u lattice, a ±0.88 u disk 
 
 The fixes in §3 came from these renders: the spawn clear zone, the wider I3 shelves, the sparser I4 ribs and the I1
 crystal placement.
+
+**What changed in the build** (measured by the twin, `shatterplane_budget.py --ring`): one degree off square on a 19-tile
+plate already lost 18% of it, and the big I1 plates did not all fit, so the shipped plates are smaller and more numerous
+(radius 12-13 tiles, 10 / 12 / 5 stacks of 3 / 8). Within 1 degree of square a ring now takes the whole plate, at 2
+degrees about 70%, at 5 degrees about a third. The shelves are 70 u apart and the spawn ring is 780 u with a 250 u clear
+zone.

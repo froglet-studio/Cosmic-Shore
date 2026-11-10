@@ -46,7 +46,7 @@ not a vessel's own element game.
 | Urchin | Skein | - | Hijack | - | has its Mass game |
 | Dolphin | Switchback | The Bends | - (no mass ability worth a game) | **Rampage** | **already done**: Rampage is its Space game |
 | **Thresher** | Thresher Time | Jackstraw | - | - | **Space game** |
-| **Brittle Star** | Brittle Star Time | Flatline | - | - | **Space game** |
+| **Brittle Star** | Brittle Star Time | Flatline | - | Shatterplane | **Space game** (built, `claude/fervent-edison-ol600q`) |
 | **Serpent** | Serpentine | Hood | - | - | **Mass game** (wave 1) |
 | **Swordfish** | - | - | - | Cleave | **Mass game** (wave 1) |
 | **Orca** | Breach | - | - | - | **Mass game** (wave 1) |
@@ -163,7 +163,7 @@ Quoted from `Docs/FleetCodex/abilities.json` on 2026-11-10. The session re-reads
 | --- | --- | --- | --- | --- |
 | Dolphin | Space | - | Rampage | shipped |
 | Thresher | Space | | | not started |
-| Brittle Star | Space | | | not started |
+| Brittle Star | Space | claude/fervent-edison-ol600q | Shatterplane (88) | authored headless 2026-11-10; editor playtest pending (`SHATTERPLANE.md`) |
 | Serpent | Mass | | | not started |
 | Swordfish | Mass | | | not started |
 | Orca | Mass | | | not started |
