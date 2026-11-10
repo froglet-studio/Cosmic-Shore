@@ -57,12 +57,18 @@ MonoBehaviour:
   spawnClearPoints: []
   fieldRadius: 1000
   centreClearingRadius: 200
-  sheafCount: 22
+  sheafCount: 20
   coreGap: 180
-  coreRadius: 46
-  coreBlocks: 90
+  coreRadius: 42
+  coreBlocks: 80
   shieldedCores: 1
-  stalkCount: 12
+  stalkCount: 24
   stalkPrisms: 5
+  wheelStalks: 1
   dangerStalkEveryNth: 4
+  chaffClouds: 12
+  chaffCloudRadius: 100
+  strawsPerCloud: 20
+  baleCount: 8
+  baleSize: 3
   colourPattern: 2
