@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.ScriptableObjects;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -17,15 +19,19 @@ namespace CosmicShore.UI
     /// <item>the kit, which paints from tokens (<see cref="KitThemedGraphic"/>, <see cref="KitText"/>, every
     /// <see cref="KitSelectableBase"/>): asked to paint again;</item>
     /// <item>any other Graphic whose colour IS a theme token (a colour a generator or a person typed from the theme):
-    /// its colour moves to the same token in the new theme, alpha kept. A colour that is no token (white icons, art,
-    /// domain colours) is left alone;</item>
+    /// its colour moves to the same token in the new theme, alpha kept;</item>
+    /// <item>every other colour a canvas draws that the colour trace knows (<see cref="ColorTrace"/>, role ui: a
+    /// Graphic's colour, a TextMesh Pro vertex gradient, a ColorTint selectable's colours, a shadow or outline, an
+    /// input field's caret and selection): the worn set's value for it, alpha kept (Garrett, 2026-11-10: "no pixel
+    /// anywhere should ever receive a color that can be traced somewhere but a colorset"). Pure white and black are
+    /// the same in every set and never traced, so white art tints are never dyed;</item>
     /// <item>the sea lines (CosmicShore/UI/SeaLines): drawn with a run-time copy of their material in the set's Jade,
     /// Blue and Ruby rims. The material assets are never written.</item>
     /// </list>
     /// UI that appears later paints itself (the kit reads the live tokens on enable); for the rest, a root canvas whose
-    /// hierarchy changed, and every canvas of a newly loaded scene, is swept again (<see cref="Tick"/>, once a second).
-    /// A view that resolves a token only when its data changes takes the new theme at its next refresh, or listens to
-    /// <see cref="Changed"/>.
+    /// hierarchy changed is swept again within a quarter of a second (<see cref="Tick"/>; the list of root canvases is
+    /// refreshed once a second), and every canvas of a newly loaded scene. A view that paints from data takes the new
+    /// theme at its next refresh, or listens to <see cref="Changed"/>.
     /// </summary>
     public static class UIThemeLive
     {
@@ -38,7 +44,13 @@ namespace CosmicShore.UI
         static readonly Dictionary<Material, Material> SeaCopies = new();   // asset -> run-time copy
         static readonly HashSet<Material> SeaCopySet = new();
         static readonly Dictionary<int, int> CanvasCounts = new();           // root canvas id -> hierarchyCount
+        static readonly Dictionary<int, float> CanvasSwept = new();          // root canvas id -> when it was last swept
+        const float SweepEvery = 0.25f;   // a canvas whose hierarchy keeps changing is swept at most this often
+        static readonly List<Canvas> RootCanvases = new(16);
         static readonly List<Graphic> Scratch = new(256);
+        static readonly List<Selectable> Selectables = new(64);
+        static readonly List<Shadow> Shadows = new(16);
+        static readonly List<TMP_InputField> Inputs = new(8);
         static float _nextTick;
         static bool _sceneHooked;
 
@@ -53,6 +65,9 @@ namespace CosmicShore.UI
             UIColorToken.TextLight, UIColorToken.TextInactive, UIColorToken.InactiveLight, UIColorToken.SurfaceBlack,
             UIColorToken.SurfaceVeryDark, UIColorToken.SurfaceDark, UIColorToken.SurfaceLight, UIColorToken.NeutralLightest,
             UIColorToken.Cta, UIColorToken.Danger, UIColorToken.ControlActive, UIColorToken.Purchase, UIColorToken.Selection,
+            // a colour set gives these directly since 2026-11-10 (TracedColors ui-token ids)
+            UIColorToken.Tooltip, UIColorToken.ElementCharge, UIColorToken.ElementMass, UIColorToken.ElementSpace,
+            UIColorToken.ElementTime,
         };
 
         /// <summary>Half a step of an 8-bit channel: a typed token and its float in a YAML file are the same colour.</summary>
@@ -68,6 +83,9 @@ namespace CosmicShore.UI
             SeaCopies.Clear();
             SeaCopySet.Clear();
             CanvasCounts.Clear();
+            CanvasSwept.Clear();
+            RootCanvases.Clear();
+            _nextTick = 0f;
             Changed = null;
         }
 
@@ -119,35 +137,73 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Once a second (unscaled), sweeps again each root canvas whose hierarchy grew or shrank since the last sweep:
-        /// rows, cards and windows instantiated from prefabs authored in the base theme. Cheap: one canvas lookup and an
-        /// int compare per root canvas.
+        /// Every frame (ThemeManager.Update), sweeps again each root canvas whose hierarchy grew or shrank since the last
+        /// sweep: rows, cards and windows instantiated from prefabs authored in the base theme, repainted within a quarter
+        /// of a second (a canvas is swept at most that often, so a HUD that changes every frame costs four sweeps a
+        /// second). Cheap otherwise: an int compare per root canvas; the list of root canvases is refreshed once a
+        /// second (unscaled), so a brand-new root canvas waits at most that long.
         /// </summary>
         public static void Tick(float unscaledTime)
         {
-            if (_live == null || unscaledTime < _nextTick || !Application.isPlaying) return;
-            _nextTick = unscaledTime + 1f;
-            foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            if (_live == null || !Application.isPlaying) return;
+            if (unscaledTime >= _nextTick)
             {
-                if (!canvas.isRootCanvas) continue;
+                _nextTick = unscaledTime + 1f;
+                RootCanvases.Clear();
+                foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                    if (canvas.isRootCanvas) RootCanvases.Add(canvas);
+            }
+            foreach (var canvas in RootCanvases)
+            {
+                if (!canvas) continue;
                 int id = canvas.GetInstanceID(), count = canvas.transform.hierarchyCount;
                 if (CanvasCounts.TryGetValue(id, out var was) && was == count) continue;
+                // A HUD whose rows come and go every frame is swept at most SweepEvery seconds apart: its count stays
+                // stale until then, so the change is still seen.
+                if (CanvasSwept.TryGetValue(id, out var at) && unscaledTime - at < SweepEvery) continue;
                 CanvasCounts[id] = count;
-                Scratch.Clear();
-                canvas.GetComponentsInChildren(true, Scratch);
-                foreach (var g in Scratch) Swap(g, _live);
+                CanvasSwept[id] = unscaledTime;
+                SweepCanvas(canvas.gameObject, _live);
                 RepaintKit(canvas.gameObject);
             }
+        }
+
+        // Every colour under `root` into the current theme: graphics, then the colours that are not Graphics.
+        static void SweepCanvas(GameObject root, ColorSetUITheme.Palette from)
+        {
+            Scratch.Clear();
+            root.GetComponentsInChildren(true, Scratch);
+            foreach (var g in Scratch) Swap(g, from);
+            Selectables.Clear();
+            root.GetComponentsInChildren(true, Selectables);
+            foreach (var sel in Selectables) RetraceTint(sel, from);
+            Shadows.Clear();
+            root.GetComponentsInChildren(true, Shadows);
+            foreach (var sh in Shadows) RetraceShadow(sh, from);
+            Inputs.Clear();
+            root.GetComponentsInChildren(true, Inputs);
+            foreach (var f in Inputs) RetraceInput(f, from);
         }
 
         static void RepaintAll(ColorSetUITheme.Palette previous)
         {
             foreach (var g in Object.FindObjectsByType<Graphic>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 Swap(g, previous);
+            foreach (var sel in Object.FindObjectsByType<Selectable>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                RetraceTint(sel, previous);
+            foreach (var sh in Object.FindObjectsByType<Shadow>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                RetraceShadow(sh, previous);
+            foreach (var f in Object.FindObjectsByType<TMP_InputField>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                RetraceInput(f, previous);
             RepaintKit(null);
             CanvasCounts.Clear();
+            RootCanvases.Clear();
             foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-                if (canvas.isRootCanvas) CanvasCounts[canvas.GetInstanceID()] = canvas.transform.hierarchyCount;
+            {
+                if (!canvas.isRootCanvas) continue;
+                RootCanvases.Add(canvas);
+                CanvasCounts[canvas.GetInstanceID()] = canvas.transform.hierarchyCount;
+            }
         }
 
         // The kit paints from tokens: ask it to paint again (null root: everything loaded).
@@ -179,7 +235,63 @@ namespace CosmicShore.UI
                 var to = now.Tokens[(int)token];
                 if (!Same(c, to)) g.color = new Color(to.r, to.g, to.b, c.a);
             }
+            else if (ColorTrace.TryRetrace(ColorTrace.Ui, c, out var traced) && !Same(c, traced))
+            {
+                g.color = traced;
+            }
+            if (g is TMP_Text text && text.enableVertexGradient) RetraceGradient(text, from);
             SwapSea(g);
+        }
+
+        // A colour into the current theme: a token of `from` or of the authored theme becomes that token now, any other
+        // colour the trace knows becomes the worn set's value for it, alpha kept; anything else is itself.
+        static Color Retraced(Color c, ColorSetUITheme.Palette from)
+        {
+            if (TokenOf(c, from, out var token) || TokenOf(c, _authored, out token))
+            {
+                var to = (_live ?? _authored).Tokens[(int)token];
+                return new Color(to.r, to.g, to.b, c.a);
+            }
+            return ColorTrace.Retrace(ColorTrace.Ui, c);
+        }
+
+        static void RetraceGradient(TMP_Text text, ColorSetUITheme.Palette from)
+        {
+            var v = text.colorGradient;
+            var to = new VertexGradient(Retraced(v.topLeft, from), Retraced(v.topRight, from),
+                                        Retraced(v.bottomLeft, from), Retraced(v.bottomRight, from));
+            if (to.topLeft != v.topLeft || to.topRight != v.topRight || to.bottomLeft != v.bottomLeft || to.bottomRight != v.bottomRight)
+                text.colorGradient = to;
+        }
+
+        // A ColorTint selectable's five colours (the kit's selectables paint their own graphics and use no tint).
+        static void RetraceTint(Selectable sel, ColorSetUITheme.Palette from)
+        {
+            if (!sel || sel is KitSelectableBase || sel.transition != Selectable.Transition.ColorTint) return;
+            var b = sel.colors;
+            var to = b;
+            to.normalColor = Retraced(b.normalColor, from);
+            to.highlightedColor = Retraced(b.highlightedColor, from);
+            to.pressedColor = Retraced(b.pressedColor, from);
+            to.selectedColor = Retraced(b.selectedColor, from);
+            to.disabledColor = Retraced(b.disabledColor, from);
+            if (to != b) sel.colors = to;
+        }
+
+        static void RetraceShadow(Shadow sh, ColorSetUITheme.Palette from)
+        {
+            if (!sh) return;
+            var to = Retraced(sh.effectColor, from);
+            if (!Same(to, sh.effectColor)) sh.effectColor = to;
+        }
+
+        static void RetraceInput(TMP_InputField f, ColorSetUITheme.Palette from)
+        {
+            if (!f) return;
+            var caret = Retraced(f.caretColor, from);
+            if (!Same(caret, f.caretColor)) f.caretColor = caret;
+            var sel = Retraced(f.selectionColor, from);
+            if (!Same(sel, f.selectionColor)) f.selectionColor = sel;
         }
 
         public static bool TokenOf(Color c, ColorSetUITheme.Palette palette, out UIColorToken token)

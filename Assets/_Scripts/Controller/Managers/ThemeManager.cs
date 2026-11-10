@@ -67,10 +67,11 @@ namespace CosmicShore.Gameplay
 
             // Last, so Data is never observable before the material sets above are in it.
             Data = _dataContainer;
+            WearTrace();
             WearUITheme();
         }
 
-        // The worn set's UI sweeps: windows and rows instantiated after a repaint (UIThemeLive.Tick, once a second).
+        // The worn set's UI sweeps: windows and rows instantiated after a repaint, before they draw (UIThemeLive.Tick).
         void Update() => UIThemeLive.Tick(Time.unscaledTime);
 
         void OnDestroy()
@@ -79,6 +80,7 @@ namespace CosmicShore.Gameplay
             if (Instance == this)
             {
                 Instance = null;
+                ColorTrace.Wear(null, ColorTrace.Authored);
                 UIThemeLive.Clear();
             }
         }
@@ -89,6 +91,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void WearUITheme() =>
             UIThemeLive.Wear(ColorSetUITheme.Build(_dataContainer.UITheme, _dataContainer.ColorSet), _dataContainer.UITheme);
+
+        /// <summary>
+        /// Every colour the game draws outside the domain blocks, from the worn set (Garrett, 2026-11-10;
+        /// Docs/VesselModels/COLOR_TRACE.md): <see cref="ColorTrace.Wear"/> raises Changed, and
+        /// <see cref="WorldColorTrace"/> repaints the sky, materials, particles, lights and the rest at once. Before the
+        /// UI theme, whose repaint asks the trace for every colour that is no token.
+        /// </summary>
+        void WearTrace() =>
+            ColorTrace.Wear(_dataContainer.ColorSet, ColorTrace.FindAuthored(_dataContainer.Catalog));
 
         /// <summary>
         /// The catalog entry saved under <paramref name="savedId"/>, if it is there and the player may wear it (unlocked,
@@ -131,6 +142,9 @@ namespace CosmicShore.Gameplay
             if (set == _dataContainer.ColorSet) return true;
 
             _dataContainer.ColorSet = set;
+            // The traced colours first: the world painter repaints the materials it knows, and the prism entities
+            // drawn with any of them are re-stamped below with the domain sets.
+            WearTrace();
             var repainted = new List<Material>(64);
             foreach (var pair in _dataContainer.TeamMaterialSets)
                 if (pair.Value && set.TryGetColorSetByDomain(pair.Key, out var domainColors))
@@ -138,6 +152,7 @@ namespace CosmicShore.Gameplay
                     PaintDomainMaterialSet(pair.Value, domainColors, pair.Key);
                     CollectMaterials(pair.Value, repainted);
                 }
+            repainted.AddRange(WorldColorTrace.LastPainted);
             HandOffColorSet();
             // What copied its colours out of a material when it spawned does not see a repaint in place: the prism
             // render entities and the crystals' tint blocks (§124). Vessels and settled MeshRenderer prisms draw the

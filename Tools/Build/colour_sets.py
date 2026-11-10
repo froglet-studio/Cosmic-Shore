@@ -36,12 +36,15 @@ connection between their look and their four letter name"):
        quiet   - its whole pigment lies at or below the night line (laws.night_line, L 0.40). Below it the truth holds only
                  Fire and Blue, so a dark face cannot name another domain; it reads as night under a rim that carries
                  the name, as Nocturne does.
-     the colour-blind sets waive it (below);
+     a set made for a vision keeps it as its viewer sees it (below);
   7. apart: as the game paints them, every two rims stay laws.rim_separation apart (OKLab, typical vision), both as
      light and as paint, so no two domains' edges, trails or HUD colours are confused.
-Rules 4 (its paint reading), 6 and 7 are typical-vision rules. A set made for another `vision` (protan, deutan, tritan,
-achromat, low_vision) keeps rule 5 for its viewer instead and may waive them (`waive`: voice, paint, apart), each with
-its reason in words; nothing else is waivable, and a typical-vision set waives nothing.
+A set made for another `vision` (protan, deutan, tritan, achromat, low_vision; Garrett, 2026-11-10: "we want the
+colour-blind sets to fulfill their version of the same criteria") keeps rules 4 and 6 AS ITS VIEWER SEES THEM, judged
+against the game's own colours as that viewer has learned them (the six-family truth's anchors through the same vision
+model, `vision_prototypes`): a rim, as light and on the HUD, must look more like its own family's colours than like any
+other family's (`name_margin`, default 0); a face is its family's (the same test), its rim's paint, or quiet in that
+viewer's lightness. Rule 5 is its rule 7: its rims apart as light and on the HUD, for its viewer.
 A set may name a `style` (colour_sets.json `styles`: Photic, Nocturne, Nacre), whose rules it keeps on top of these.
 Each swatch is the pigment at its mid L, on screen (sRGB). `examples` are worked sets the skill teaches from; they keep
 every rule and are never written to the game. PhoticColorSetSO, the hand-tuned original, is measured here as the
@@ -69,9 +72,8 @@ LAB = os.path.join(REPO, "Docs", "Studios", "ColourSetsLab.html")
 DOMAINS = colour_domains.FAMILIES      # fire, gold, lime, jade, blue, ruby
 ROLES = ("rim", "face")
 GRID = 48                              # the gap search: a GRID x GRID sweep of (L_a, L_b), then local refinement
-LAWS = {"night_line": 0.40, "rim_separation": 0.10, "crystal_body": 0.5}   # defaults; colour_sets.json `laws` wins
+LAWS = {"night_line": 0.40, "rim_separation": 0.10, "crystal_body": 0.5, "name_margin": 0.0}   # colour_sets.json `laws` wins
 VOICES = ("family", "paint", "quiet")
-WAIVABLE = ("voice", "paint", "apart")    # only a set made for a non-typical vision, and only with its reason
 STYLE_KEYS = {"name", "idea", "faces", "min_hue_contrast", "max_hue_contrast", "face_band", "rim_L", "face_L",
               "face_chroma", "rim_brightness"}
 CVD = {   # Machado, Oliveira and Fernandes 2009, severity 1, on linear sRGB (the matrices the Colour Domains lab uses)
@@ -252,17 +254,56 @@ def family_of(truth, rgb):
 
 
 # ----------------------------------------------------------------------------- rule 6: the voice of a face
-def voices(s, d, truth, lw=LAWS):
-    """Which of the three voices domain d's face keeps: family, paint, quiet (rule 6)."""
+def voices(s, d, truth, lw=LAWS, vision=None):
+    """Which of the three voices domain d's face keeps: family, paint, quiet (rule 6), as `vision` sees it (the set's
+    own viewer by default; typical vision uses the six-family truth, any other vision the anchors it has learned)."""
+    vision = vision or s.get("vision", "typical")
     rim, face = s["domains"][d]["rim"], s["domains"][d]["face"]
     out = []
-    if family_of(truth, swatch(face)[0])[0] == d:
+    if vision == "typical":
+        if family_of(truth, swatch(face)[0])[0] == d:
+            out.append("family")
+    elif name_margin(linear_of(*at(face, mid(face))), d, vision, truth)[0] >= 0:
         out.append("family")
     if math.dist(direction(face), direction(rim)) <= rim["rho"] + face["rho"] + 1e-9:
         out.append("paint")
-    if face["L"][1] <= lw["night_line"] + 1e-9:
+    top = face["L"][1] if vision == "typical" else see_linear(linear_of(*at(face, face["L"][1])), vision)[0]
+    if top <= lw["night_line"] + 1e-9:
         out.append("quiet")
     return out
+
+
+# ----------------------------------------------------------------------------- rules 4 and 6 for another viewer
+_PROTOS = {}
+
+
+def vision_prototypes(truth, vision):
+    """{family: [OKLab]}: each family's anchors in the six-family truth (the game's own colours of that family: the
+    danger red, the CTA lime, the domains' UI and signal colours, the hull's neutrals, black and white for Blue) as
+    `vision` sees them. A viewer learns a family's name from these colours, whatever their eyes make of them."""
+    key = (id(truth), vision)
+    if key not in _PROTOS:
+        _PROTOS[key] = {f: [see_linear(tuple(to_linear(v) for v in a["rgb"]), vision)
+                            for a in truth["families"][f]["anchors"]] for f in DOMAINS}
+    return _PROTOS[key]
+
+
+def name_margin(lin, d, vision, truth):
+    """(how much nearer a linear colour, as `vision` sees it, sits to domain d's anchors than to any other family's
+    (OKLab; positive: it looks like its own name), the family it is nearest otherwise)."""
+    P = vision_prototypes(truth, vision)
+    x = see_linear(lin, vision)
+    own = min(math.dist(x, p) for p in P[d])
+    other, who = min((math.dist(x, p), f) for f in DOMAINS if f != d for p in P[f])
+    return other - own, who
+
+
+def vision_readings(p):
+    """[(how, linear RGB)]: a rim as the game shows it, as light (the prism edge, a crystal) and on the HUD (the same
+    numbers read as sRGB), for a viewer model to see."""
+    u = unit_ray(p)
+    hud = tuple(p["hud"]) if "hud" in p else u
+    return [("light", u), ("HUD", tuple(to_linear(v) for v in hud))]
 
 
 # ----------------------------------------------------------------------------- rule 7: rims apart as painted
@@ -388,14 +429,9 @@ def set_problems(key, s, truth, defs=None):
                 errs.append("%s: %s.%s needs name, hue, sat, L [L0, L1], rho and swatch" % (key, d, r))
             elif not 0 < p["L"][0] < p["L"][1] <= 1:
                 errs.append("%s: %s.%s L must be 0 < L0 < L1 <= 1" % (key, d, r))
-    waive = s.get("waive", {})
-    for law, why in waive.items():
-        if law not in WAIVABLE:
-            errs.append("%s: rule %r cannot be waived (only %s)" % (key, law, ", ".join(WAIVABLE)))
-        elif s.get("vision", "typical") == "typical":
-            errs.append("%s: only a set made for a non-typical vision may waive %s (it keeps rule 5 instead)" % (key, law))
-        elif not isinstance(why, str) or len(why.strip()) < 20:
-            errs.append("%s: waiving %s needs its reason, in words" % (key, law))
+    if "waive" in s:
+        errs.append("%s: no rule is waived; a set made for a vision keeps rules 4 and 6 as its viewer sees them" % key)
+    viewer = s.get("vision", "typical")
     style = None
     if "style" in s:
         style = defs.get("styles", {}).get(s["style"])
@@ -439,22 +475,34 @@ def set_problems(key, s, truth, defs=None):
         dl = abs(mid(rim) - mid(face))
         if dl < s["min_lightness_contrast"] - 1e-9:
             errs.append("%s: %s rim and face are %.2f of lightness apart (need %.2f)" % (key, d, dl, s["min_lightness_contrast"]))
-        for how, rgb in readings(rim, d, lw):
-            if how == "paint" and "paint" in waive:
-                continue
-            fam, top, clear = family_of(truth, rgb)
-            if fam != d:
-                errs.append("%s: %s rim %s as %s %s reads as %s in the six-family truth (rule 4)" % (
-                    key, d, rim["name"], how, hexof(rgb), top if fam else "the band (nearest %s)" % top))
-        if "voice" not in waive and not voices(s, d, truth, lw):
-            fam, top, _ = family_of(truth, swatch(face)[0])
-            errs.append("%s: %s face %s %s is loud and not its family's (it reads as %s): make it a %s colour, its "
-                        "rim's own paint, or quiet (L1 <= %.2f, rule 6)" % (key, d, face["name"], hexof(swatch(face)[0]),
-                                                                           fam or "the band", d.capitalize(),
-                                                                           lw["night_line"]))
-    sep, where = rims_apart(s)
-    if sep < lw["rim_separation"] - 1e-4 and "apart" not in waive:
-        errs.append("%s: %s are %.3f apart (rule 7 needs %.3f)" % (key, where, sep, lw["rim_separation"]))
+        if viewer == "typical":
+            for how, rgb in readings(rim, d, lw):
+                fam, top, clear = family_of(truth, rgb)
+                if fam != d:
+                    errs.append("%s: %s rim %s as %s %s reads as %s in the six-family truth (rule 4)" % (
+                        key, d, rim["name"], how, hexof(rgb), top if fam else "the band (nearest %s)" % top))
+        elif viewer in VISIONS:
+            need = s.get("name_margin", lw["name_margin"])
+            for how, lin in vision_readings(rim):
+                m, who = name_margin(lin, d, viewer, truth)
+                if m < need - 1e-4:
+                    errs.append("%s: as %s sees it, the %s rim %s %s looks more like %s's colours than its own "
+                                "(margin %.3f, rule 4 needs %.3f)" % (key, viewer, d, rim["name"], how, who, m, need))
+        if not voices(s, d, truth, lw):
+            if viewer == "typical":
+                fam, top, _ = family_of(truth, swatch(face)[0])
+                errs.append("%s: %s face %s %s is loud and not its family's (it reads as %s): make it a %s colour, its "
+                            "rim's own paint, or quiet (L1 <= %.2f, rule 6)" % (key, d, face["name"], hexof(swatch(face)[0]),
+                                                                               fam or "the band", d.capitalize(),
+                                                                               lw["night_line"]))
+            elif viewer in VISIONS:
+                m, who = name_margin(linear_of(*at(face, mid(face))), d, viewer, truth)
+                errs.append("%s: as %s sees it, the %s face %s is loud and looks like %s's colours (margin %.3f): make "
+                            "it look like its own family, its rim's paint, or quiet (rule 6)" % (key, viewer, d, face["name"], who, m))
+    if viewer == "typical":
+        sep, where = rims_apart(s)
+        if sep < lw["rim_separation"] - 1e-4:
+            errs.append("%s: %s are %.3f apart (rule 7 needs %.3f)" % (key, where, sep, lw["rim_separation"]))
     if style is not None:
         errs += style_problems(key, s, style, s["style"], truth, lw)
     return errs
@@ -471,12 +519,21 @@ def lab_truth(path=LAB):
         raise SystemExit("colour_sets: %s has no SETS_RAW" % os.path.relpath(path, REPO))
     e = re.search(r"const EXAMPLES_RAW = (\{.*?\});\n", text)
     r = re.search(r"const REFERENCE_RAW = (\{.*?\});\n", text)
-    return {"sets": json.loads(m.group(1)), "examples": json.loads(e.group(1)) if e else {},
-            "reference": json.loads(r.group(1)) if r else None}
+    an = re.search(r"const ANCHORS = (\{.*?\});\n", text)
+    out = {"sets": json.loads(m.group(1)), "examples": json.loads(e.group(1)) if e else {},
+           "reference": json.loads(r.group(1)) if r else None}
+    if an:
+        out["anchors"] = json.loads(an.group(1))
+    return out
 
 
 def lab_problems(defs, lab):
     errs = []
+    if "anchors" in lab:
+        truth = colour_domains.load()
+        want = {f: [a["rgb"] for a in truth["families"][f]["anchors"]] for f in DOMAINS}
+        if lab["anchors"] != want:
+            errs.append("the lab's ANCHORS differ from colour_domains.json's anchors (rules 4 and 6 for another viewer)")
     for group in ("sets", "examples"):
         for key, s in defs.get(group, {}).items():
             theirs = lab.get(group, {}).get(key)
@@ -621,8 +678,12 @@ def describe(key, s, truth, lw, defs):
               hue_gap(rim["hue"], face["hue"]), abs(mid(rim) - mid(face))))
     if "vision" in s:
         print("  made for %s (rule 5 needs %.3f)" % (VISIONS[s["vision"]], s["vision_margin"]))
-    for law, why in s.get("waive", {}).items():
-        print("  waives %s (%s): %s" % ({"voice": "rule 6", "paint": "rule 4's paint reading", "apart": "rule 7"}[law], law, why))
+    viewer = s.get("vision", "typical")
+    if viewer != "typical" and viewer in VISIONS:
+        print("  rules 4 and 6 as %s sees them (name margin: how much nearer its own family's colours, OKLab):" % viewer)
+        for d in DOMAINS:
+            ms = ["%s %+.3f (else %s)" % ((how,) + name_margin(lin, d, viewer, truth)) for how, lin in vision_readings(s["domains"][d]["rim"])]
+            print("    %-4s rim %s   face voice %s" % (d, "  ".join(ms), "/".join(voices(s, d, truth, lw)) or "LOUD"))
     errs = set_problems(key, s, truth, defs)
     print("  rules: %s" % ("all kept" if not errs else "%d broken" % len(errs)))
 
@@ -669,16 +730,16 @@ def self_test():
                   json.loads(json.dumps(dict(defs, laws=dict(laws(defs), rim_separation=0.5)))), "rule 7"))
     cases.append(("an unknown style", planted(lambda S: S.update(style="baroque")), "is not one of"))
     cases.append(("a style's rule broken", planted(lambda S: S.update(style="nocturne"), key="nacre"), "style"))
-    cases.append(("a typical-vision set that waives a rule", planted(lambda S: S.update(waive={"voice": "because it would look nicer this way"})), "only a set made for"))
-    cases.append(("a rule that cannot be waived", planted(lambda S: S.update(waive={"band": "because it would be easier this way"})), "cannot be waived"))
+    cases.append(("a set that tries to waive a rule", planted(lambda S: S.update(waive={"voice": "because it would look nicer this way"})), "no rule is waived"))
     vision_key = next((k for k, s in defs["sets"].items() if "vision" in s), None)
     if vision_key:
         cases.append(("a vision set its viewer cannot read", planted(lambda S: S.update(vision_margin=1.0), vision_key), "rule 5"))
         cases.append(("an unknown vision", planted(lambda S: S.update(vision="x-ray"), vision_key), "is not one of"))
         cases.append(("a vision set with no margin", planted(lambda S: S.pop("vision_margin"), vision_key), "needs vision_margin"))
-        waiver_key = next((k for k, s in defs["sets"].items() if s.get("waive")), None)
-        if waiver_key:
-            cases.append(("a waiver with no reason", planted(lambda S: S["waive"].update({next(iter(S["waive"])): "x"}), waiver_key), "needs its reason"))
+        prot = next((k for k, s in defs["sets"].items() if s.get("vision") == "protan"), None)
+        if prot:
+            cases.append(("a protan's Gold that reads as Fire", planted(lambda S: S["domains"]["gold"]["rim"].update(hue=40, sat=0.3), prot), "looks more like"))
+            cases.append(("a protan's loud face", planted(lambda S: S["domains"]["blue"]["face"].update(hue=60, sat=0.2, L=[0.72, 0.82]), prot), "is loud and looks like"))
     ex_key = next(iter(defs.get("examples", {})), None)
     if ex_key:
         d = json.loads(json.dumps(defs))

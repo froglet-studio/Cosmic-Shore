@@ -18,7 +18,9 @@ A DRAFT is one set in colour_sets.json's shape ({"key": {...}}), its pigments wh
 may be omitted. `fit` moves each pigment as little as it can (OKLab distance of its swatch, plus its range and spread)
 until every rule holds, rounds to the repo's precision (hue 1 degree, sat 0.001, L 0.01, rho 0.001), re-checks with
 colour_sets.set_problems and prints the set ready to paste. A draft may pin a pigment (`"pin": true`) so it is never
-moved, and name `"objective": "vision"` to maximise rule 5 for its vision instead of staying near its intent.
+moved, and name `"objective": "vision"` to maximise rule 5 for its vision instead of staying near its intent, or
+`"objective": "name"` to make a vision set's rims look as much like their own names as its viewer allows (for a viewer
+no lawful set exists for; the set then declares the `name_margin` it reached).
 """
 import argparse
 import itertools
@@ -96,7 +98,12 @@ class Model:
     def __init__(self, s, defs):
         self.s, self.lw = s, cs.laws(defs)
         self.style = defs.get("styles", {}).get(s.get("style")) or {}
-        self.waive = set(s.get("waive", {}))
+        self.viewer = s.get("vision", "typical")
+        self.typical = self.viewer == "typical"
+        if not self.typical:     # the game's anchors as this viewer sees them (colour_sets.vision_prototypes)
+            protos = cs.vision_prototypes(TRUTH, self.viewer)
+            self.proto = np.array([p for f in DOMAINS for p in protos[f]])
+            self.proto_fam = np.array([i for i, f in enumerate(DOMAINS) for _ in protos[f]])
         self.P = np.array([[p["hue"], p["sat"], cs.mid(p), (p["L"][1] - p["L"][0]) / 2, p["rho"]]
                            for _, _, p in cs.pigments(s)], float)
         self.pins = np.array([bool(p.get("pin")) for _, _, p in cs.pigments(s)])
@@ -150,28 +157,37 @@ class Model:
         light_lab = lab_of_lin(linear(gamma(unit)))          # the light reading, as the screen quantises it
         paint_lab = lab_of_lin(linear(unit))                 # the same numbers read as sRGB
         fam = np.arange(6)
-        name = np.clip(EPS["name"] - clearance(lab[0::2], fam), 0, None)
-        name += np.clip(EPS["name"] - clearance(light_lab, fam), 0, None)
-        if "paint" not in self.waive:
-            name += np.clip(EPS["name"] - clearance(paint_lab, fam), 0, None)
-        lime = DOMAINS.index("lime")
-        body = lab_of_lin(unit[lime] * lw["crystal_body"])
-        name[lime] += max(0.0, EPS["name"] - float(clearance(body, lime)))
-        out["name"] = name.sum()
-        # rule 6: each face keeps a voice
-        if "voice" not in self.waive:
-            fam_v = np.clip(EPS["voice"] - clearance(lab[1::2], fam), 0, None)
-            paint_v = np.clip(np.linalg.norm(d2[1::2] - d2[0::2], axis=1) - rim[:, 4] - face[:, 4] + 0.002, 0, None) * 2
-            quiet_v = np.clip(face[:, 2] + face[:, 3] - lw["night_line"] + 0.003, 0, None)
-            allowed = self.style.get("faces", cs.VOICES)
-            stack = [v for k, v in (("family", fam_v), ("paint", paint_v), ("quiet", quiet_v)) if k in allowed]
-            out["voice"] = np.min(np.stack(stack), 0).sum()
-        # rule 7: the rims apart as light and as paint
+        paint_v = np.clip(np.linalg.norm(d2[1::2] - d2[0::2], axis=1) - rim[:, 4] - face[:, 4] + 0.002, 0, None) * 2
+        allowed = self.style.get("faces", cs.VOICES)
         a, b = self.rim_pairs[:, 0], self.rim_pairs[:, 1]
-        sep = lw["rim_separation"] + EPS["apart"]
-        out["apart"] = 0.0 if "apart" in self.waive else (
-            np.clip(sep - np.linalg.norm(light_lab[a] - light_lab[b], axis=1), 0, None).sum()
-            + np.clip(sep - np.linalg.norm(paint_lab[a] - paint_lab[b], axis=1), 0, None).sum())
+        if self.typical:
+            name = np.clip(EPS["name"] - clearance(lab[0::2], fam), 0, None)
+            name += np.clip(EPS["name"] - clearance(light_lab, fam), 0, None)
+            name += np.clip(EPS["name"] - clearance(paint_lab, fam), 0, None)
+            lime = DOMAINS.index("lime")
+            body = lab_of_lin(unit[lime] * lw["crystal_body"])
+            name[lime] += max(0.0, EPS["name"] - float(clearance(body, lime)))
+            out["name"] = name.sum()
+            # rule 6: each face keeps a voice
+            fam_v = np.clip(EPS["voice"] - clearance(lab[1::2], fam), 0, None)
+            quiet_v = np.clip(face[:, 2] + face[:, 3] - lw["night_line"] + 0.003, 0, None)
+            # rule 7: the rims apart as light and as paint
+            sep = lw["rim_separation"] + EPS["apart"]
+            out["apart"] = (np.clip(sep - np.linalg.norm(light_lab[a] - light_lab[b], axis=1), 0, None).sum()
+                            + np.clip(sep - np.linalg.norm(paint_lab[a] - paint_lab[b], axis=1), 0, None).sum())
+        else:
+            # rules 4 and 6 as this viewer sees them: nearer its own family's anchors than any other family's
+            need = s.get("name_margin", lw["name_margin"]) + EPS["name"]
+            seen_light, seen_hud = self.see(unit), self.see(linear(unit))
+            out["name"] = (np.clip(need - self.margin(seen_light, fam), 0, None).sum()
+                           + np.clip(need - self.margin(seen_hud, fam), 0, None).sum())
+            fam_v = np.clip(EPS["voice"] - self.margin(self.see(np.clip(lin[1::2], 0, None)), fam), 0, None)
+            top = lin_of_lab(np.stack([face[:, 2] + face[:, 3], d2[1::2, 0] * (face[:, 2] + face[:, 3]),
+                                       d2[1::2, 1] * (face[:, 2] + face[:, 3])], 1))
+            quiet_v = np.clip(self.see(np.clip(top, 0, None))[:, 0] - lw["night_line"] + 0.003, 0, None)
+            out["apart"] = 0.0                                      # rule 5 keeps the rims apart for this viewer
+        stack = [v for k, v in (("family", fam_v), ("paint", paint_v), ("quiet", quiet_v)) if k in allowed]
+        out["voice"] = np.min(np.stack(stack), 0).sum()
         # style ranges
         st = self.style
         v = 0.0
@@ -201,6 +217,27 @@ class Model:
             out["vision"] = max(0.0, self.s.get("vision_margin", 0) + EPS["vision"] - self.vision_sep(P))
         return out
 
+    def see(self, x):
+        """OKLab of linear colours (N, 3) as this set's viewer sees them (colour_sets.see_linear, vectorised)."""
+        vision = self.viewer
+        x = np.clip(x, 0, 1)
+        if vision in cs.CVD:
+            x = np.clip(x @ np.array(cs.CVD[vision]).T, 0, 1)
+        elif vision == "achromat":
+            y = x @ np.array([0.2126, 0.7152, 0.0722])
+            x = np.stack([y, y, y], 1)
+        o = lab_of_lin(np.clip(x, 1e-12, 1))
+        if vision == "low_vision":
+            o[:, 1:] *= 0.5
+        return o
+
+    def margin(self, seen, fam):
+        """For each seen colour (N, 3) of domain fam[i]: how much nearer its own family's anchors than any other's."""
+        D = np.linalg.norm(seen[:, None, :] - self.proto[None, :, :], axis=2)
+        own = np.where(self.proto_fam[None, :] == fam[:, None], D, np.inf).min(1)
+        other = np.where(self.proto_fam[None, :] != fam[:, None], D, np.inf).min(1)
+        return other - own
+
     def vision_sep(self, P):
         lab = self.swatch_lab(P)
         lin = np.clip(lin_of_lab(lab), 0, None)
@@ -229,11 +266,22 @@ class Model:
         d = np.linalg.norm(lab - self.intent_lab, axis=1)
         return d.sum() + 0.3 * np.abs(P[:, 3] - self.intent[:, 3]).sum() + 0.3 * np.abs(P[:, 4] - self.intent[:, 4]).sum()
 
+    def name_floor(self, P):
+        """The weakest name margin of the set's rims, light and HUD, as its viewer sees them (rule 4 for a vision)."""
+        lab = self.swatch_lab(P)
+        lin = np.clip(lin_of_lab(lab), 0, None)[0::2]
+        unit = lin / np.maximum(lin.max(1, keepdims=True), 1e-9)
+        fam = np.arange(6)
+        return min(self.margin(self.see(unit), fam).min(), self.margin(self.see(linear(unit)), fam).min())
+
     def cost(self, P, objective="near"):
         v = self.violations(P)
         total = sum(v.values())
         if objective == "vision":
             return 40 * total - self.vision_sep(P), total
+        if objective == "name":      # for a viewer no lawful set exists for: as near its names as it can be
+            rest = total - v.get("name", 0.0)
+            return 40 * rest - self.name_floor(P) - 0.2 * self.vision_sep(P), rest
         return 40 * total + self.distance(P), total
 
 

@@ -417,7 +417,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            SetLabelColor(b, selected ? selectedColor : unselectedColor);
+            SetLabelColor(b, ColorTrace.Retrace(ColorTrace.Ui, selected ? selectedColor : unselectedColor));
             if (underline != null) underline.SetActive(selected);
             if (b != null) b.transform.localScale = Vector3.one * (selected ? selectedScale : unselectedScale);
         }

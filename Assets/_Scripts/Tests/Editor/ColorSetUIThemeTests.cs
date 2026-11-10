@@ -71,16 +71,40 @@ namespace CosmicShore.Tests
             }
         }
 
+        // The tokens a colour set gives directly (TracedColors ui-token ids, Docs/VesselModels/COLOR_TRACE.md).
+        static readonly UIColorToken[] Given =
+        {
+            UIColorToken.ElementCharge, UIColorToken.ElementMass, UIColorToken.ElementSpace, UIColorToken.ElementTime,
+            UIColorToken.Tooltip,
+        };
+
         [Test]
-        public void TheElementColours_StayAuthored()
+        public void TheElementColours_AreTheSetsOwn_AndPhoticsAreTheAuthored()
         {
             var theme = AssetDatabase.LoadAssetAtPath<UIThemeSO>(ThemePath);
             var container = AssetDatabase.LoadAssetAtPath<ThemeManagerDataContainerSO>(ContainerPath);
+            var catalog = AssetDatabase.LoadAssetAtPath<ColorSetCatalogSO>(CatalogPath);
             Assert.AreSame(theme, container.UITheme, "ThemeManagerDataContainer names no UI theme to re-hue");
-            var palette = ColorSetUITheme.Build(theme, container.ColorSet);
-            foreach (var t in new[] { UIColorToken.ElementCharge, UIColorToken.ElementMass, UIColorToken.ElementSpace,
-                                      UIColorToken.ElementTime, UIColorToken.Tooltip })
-                Assert.AreEqual(UITheme.ResolveAuthored(theme, t), palette[t], $"{t} moved with the colour set");
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                var entry = catalog.Get(i);
+                var palette = ColorSetUITheme.Build(theme, entry.colorSet);
+                foreach (var t in Given)
+                {
+                    Assert.IsTrue(entry.colorSet.TryGetTracedColor(ColorSetUITheme.TokenId(t), out var given),
+                        $"{entry.id} carries no {t}: run python3 Tools/Build/author_colour_set_assets.py");
+                    Assert.AreEqual(new Color(given.r, given.g, given.b, 1f), palette[t], $"{entry.id} {t} is not the set's own");
+                }
+            }
+            var photic = catalog.Get(catalog.IndexOfId(ColorTrace.AuthoredSetId));
+            Assert.IsNotNull(photic, "the catalog names no Photic");
+            var authored = ColorSetUITheme.Build(theme, photic.colorSet);
+            foreach (var t in Given)
+            {
+                var want = UITheme.ResolveAuthored(theme, t);
+                float off = Mathf.Max(Mathf.Abs(authored[t].r - want.r), Mathf.Max(Mathf.Abs(authored[t].g - want.g), Mathf.Abs(authored[t].b - want.b)));
+                Assert.LessOrEqual(off, 1e-5f, $"Photic's {t} is not the authored colour");
+            }
         }
 
         [Test]

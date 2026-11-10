@@ -22418,6 +22418,39 @@ rail and are always free).
 6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
 
 
+## 🔴 The colour trace: every colour the game draws comes from the worn colour set (2026-11-10, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nifty-cray-41hy43`. Docs/VesselModels/COLOR_TRACE.md. Every colour authored outside the palette blocks is
+now a `TracedColor` on every `SO_ColorSet` (Photic: the baked value; every other set: computed from its pigments), and
+the runtime repaints it from the worn set: `UIThemeLive` (UI graphics, TMP gradients, ColorTint selectables, shadows,
+input carets; new UI swept before it draws), `WorldColorTrace` (every loaded material's colours, the HyperSea sky
+included, particles, trails and lines, lights, cameras, sprites, world text, fog, post colours; assets painted in
+memory and put back when play ends) and `ColorTrace.Retrace` at code and config paint sites. The sky's star ramp is now
+four material colours (`_StarColorHot/White/Warm/Cool`) saved at today's values; the static sky was re-baked (one
+pixel moved one level). The five colour-blind sets now keep rules 4 and 6 as their own viewer sees them (no waivers).
+Ran here: `colour_trace.py --check/--self-test`, `author_colour_set_assets.py --check`, `colour_sets.py
+--check/--self-test`, `bake_static_skybox.py --check`, the theme writers' checks, and `unity_refcompile` (player and
+editor configs: 0 errors in the changed files). Nothing here ran in Unity.
+
+1. **Import, then run the edit-mode tests** `ColorSetUIThemeTests` (its element test now expects each set's own element
+   colours, Photic's the authored ones) and `ColorSetCatalogTests`. The ten palette assets each gained a `TracedColors`
+   list of about 520 entries: open one and check the inspector shows Id, Color and Note.
+2. **Wear Photic** (Profile > Colour sets): nothing in the game should change colour compared with before this branch,
+   except the UI tokens' existing Photic re-hue. Any change is a bug in the trace (the gate holds Photic's values to the
+   baked ones).
+3. **Wear Nocturne (the default) and play a race, then the menu**: the sky's nebulae, core and stars, the crystal
+   materials, the flora and fauna spindles, the vessel hull body, glass and engine, particles and trails, the HUD
+   gauges and configs (ElementalBars, AbilityLockup), the Voyage map and the codex colours all take Nocturne's
+   family colours; greys and whites stay. Compare against Photic side by side.
+4. **Browse sets in the Profile (preview)**: the menu cell, the sky and the UI repaint at once. Known gap: caches copied
+   before the wear (spindle lean variants, fauna GPU palettes, vessel tails) keep the previous set until they repaint
+   (COLOR_TRACE.md section 2). No hitch should be visible while the pad moves between tiles; if there is one, profile
+   `WorldColorTrace.Repaint`.
+5. **Stop play**: `git status` shows no changed `.mat`, prefab or volume profile (the editor puts back every asset the
+   painter touched). Then press Ctrl+S during play once and check the same.
+6. **The colour-blind sets**: each set's rims should look like their names to that viewer (a deuteranope's and an
+   achromat's as nearly as the eyes allow). A player with each vision is the only real test.
+
 ## 🔴 Colour sets under seven rules: Dart Frog, Nacre, Contrast and the vision sets re-derived, Nocturne's Gold 4° yellower (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/nifty-cray-41hy43`. `colour_sets.json` now holds every set to seven rules (`Tools/Build/colour_sets.py`,

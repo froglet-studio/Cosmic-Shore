@@ -5,6 +5,7 @@ using CosmicShore.Gameplay;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.UI
 {
@@ -292,7 +293,7 @@ namespace CosmicShore.UI
             Vector2 start = ApertureStart();
             float t = 0f;
             var white = Color.white;
-            var outline = crystalHex ? crystalHex.Outline : white;
+            var outline = crystalHex ? ColorTrace.Retrace(ColorTrace.Ui, crystalHex.Outline) : white;
             if (gateRing)
             {
                 gateRing.enabled = false;

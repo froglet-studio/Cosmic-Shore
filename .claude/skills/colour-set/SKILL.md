@@ -43,13 +43,29 @@ original every field's brightness, alpha and tier whiteness come from; it is mea
 | 2 | **lighting-proof**: their directions at least `pigment_gap` apart beyond both spreads | no light or shadow turns one domain's paint into another's (dark green IS shaded lime) |
 | 3 | **form**: rim and face at least 0.12 apart in mid L (a set or style may add a hue contrast) | a prism reads as a solid |
 | 4 | **the name**: every rim reads as its family in the six-family truth, clear of the band, as swatch, as LIGHT (prism edge) and as PAINT (the same numbers read as sRGB: the HUD and tails); Lime also at the free crystal's body brightness | look ↔ name, on every screen |
-| 5 | **communication** (sets with a `vision` only): as that viewer sees the painted colours, rims (as light AND as the HUD paints them), faces and rim/face pairs stay `vision_margin` apart | the colour-blind sets |
+| 5 | **communication** (sets with a `vision` only): as that viewer sees the painted colours, rims (as light AND as the HUD paints them), faces and rim/face pairs stay `vision_margin` apart; it stands in for rule 7 | the colour-blind sets |
 | 6 | **the voice**: each face is its **family**'s colour, its rim's own **paint**, or **quiet** (whole pigment at or below the night line, L 0.40) | the body never names another domain |
 | 7 | **apart**: every two rims at least 0.10 apart as painted, as light and as paint | distinguishable edges, trails and HUD colours |
 
-Rules 4 (its paint reading), 6 and 7 are typical-vision rules. A set made for another vision (protan, deutan, tritan,
-achromat, low vision) keeps rule 5 for its viewer and may waive them (`waive`: `paint`, `voice`, `apart`), each with
-its reason in words; the five colour-blind sets do. A typical-vision set waives nothing, and nothing else is waivable.
+**No rule is waived** (Garrett, 2026-11-10: "we want the colour-blind sets to fulfill their version of the same
+criteria to the best of our ability without someone with each type to iteratively confirm"). A set made for another
+vision (protan, deutan, tritan, achromat, low vision) keeps every rule, and rules 4 and 6 are judged **as its viewer
+sees them**:
+
+- **4V, the name:** the viewer has learned the six names from the game's own colours, so the truth's anchors are seen
+  through the same vision model (`vision_prototypes`: Machado 2009 for the three dichromats, Rec. 709 luminance for
+  the achromat, half the chroma for low vision). Every rim, as LIGHT and as the HUD paints it, must look nearer its own
+  family's anchors than any other family's by `name_margin` (default 0, OKLab).
+- **6V, the voice:** a face is *family* (nearer its own family's anchors, as seen), its rim's *paint* (the cones
+  overlap; no vision changes that) or *quiet* (its top lightness, as seen, at or below the night line).
+- **Rule 5 is the vision set's rule 7:** its rims apart as light and on the HUD, for its viewer.
+
+Where no lawful set exists for those eyes (a deuteranope sees Fire's and Gold's rims on one yellow-blue line; an
+achromat has six names in one dimension), the maker's `"objective": "name"` finds the set whose rims look as much like
+their names as the viewer allows, and the set declares the margin it reached as its `name_margin` (deuteranopia
+-0.021, achromatopsia -0.045: how far short the worst rim falls). The gate holds it there, so a later change can only
+make it better. `--report` prints every rim's margin and which family it would be mistaken for. These are models,
+not people: a player with that vision is the only real test (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
 
 ## 2. The territories: where each family can live (run `python3 Tools/Build/colour_set_maker.py atlas`)
 
@@ -142,13 +158,16 @@ seven; or name none and mix voices domain by domain (Dart Frog, the Octopus).
 | Ukiyo-e | a painting style | one paint | bokashi is the paint voice: the face is the rim's pigment printed deeper |
 | Dusk | a mood | muted rims, quiet faces | rims stop at their families' chroma floors; Ruby is never dusty; the greys had to spread apart |
 | Contrast | a purpose (typical vision, as far apart as the rules allow) | one paint | its faces were other families' colours; held to rule 6 every body is its own family, and counting the HUD it is further apart than before (11.0 JND against 6.5) |
-| the five colour-blind sets | a viewer's eyes | rule 5, with reasoned waivers | rule 5 now counts the HUD (an achromat could tell Gold's and Ruby's HUD colours apart by 1.5 JND); re-balanced with `"objective": "vision"` |
+| the five colour-blind sets | a viewer's eyes | rules 4 and 6 as the viewer sees them (4V, 6V), rule 5 for rule 7 | their waivers are gone: every rim now looks like its own name to its viewer (protan, tritan, low vision) or as nearly as those eyes allow (deutan, achromat, declared `name_margin`); the faces went quiet in the viewer's own lightness; rule 5 counts the HUD; re-balanced with `"objective": "vision"` and `"name"` |
 
 ## 7. Taking a set into the game (each writer has `--check`)
 
 ```
 python3 Tools/Build/colour_sets.py --check                 # the seven rules, the swatches, the lab's copy
-python3 Tools/Build/author_colour_set_assets.py            # Assets/_SO_Assets/Color Palettes/<Name>ColorSetSO.asset
+python3 Tools/Build/colour_trace.py --build                # the traced colours (every colour outside the blocks)
+python3 Tools/Build/author_colour_set_assets.py            # Assets/_SO_Assets/Color Palettes/<Name>ColorSetSO.asset (+ TracedColors)
+python3 Tools/Build/colour_trace.py --write-photic         # Photic's TracedColors (the baked values)
+python3 Tools/Build/colour_trace.py --check                # every colour the game draws is in every set
 python3 Tools/Build/author_colour_set_catalog.py           # the Profile's catalog entry (its words are authored in the asset)
 python3 Tools/Build/author_editor_themes.py                # the editor windows' themes
 python3 Tools/Analytics/console/make_themes.py             # the analytics console's themes
@@ -159,7 +178,19 @@ changed pigment name needs the asset's `pigments` words updated by hand (the wri
 `--self-test` on `colour_sets.py` and `colour_set_maker.py`, the `/ship` gates, and an entry in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`: no palette has been judged in the editor until someone flies it.
 
-## 8. Traps (each one cost a set)
+## 8. Every other colour the game draws: the trace (`Docs/VesselModels/COLOR_TRACE.md`)
+
+A set is not only its 12 pigments. Every colour the game draws outside the palette blocks (the HyperSea sky, materials,
+particles, the UI's own colours, configs and code) is a `TracedColor` on every set (Garrett, 2026-11-10: "no pixel
+anywhere should ever receive a color that can be traced somewhere but a colorset"). Photic holds the baked values;
+every other set computes its own from its pigments: greys keep, UI grounds take the set's Jade face hue, everything
+else of family F wears the set's F **rim** at the original's brightness and whiteness, palette-baked materials take the
+set's own field. A new set gets all of them from the writer; to retune one for a set, put it in that set's `traced`
+(`{"<id>": "#RRGGBB"}`) and run the writer. The runtime painters are `UIThemeLive` (the UI) and `WorldColorTrace` (the
+world); code and configs read `ColorTrace.Retrace(role, colour)`. What the trace cannot reach yet (shader constants,
+textures, caches copied before a wear) is section 2 of that doc.
+
+## 9. Traps (each one cost a set)
 
 - **A loud face names the wrong family.** The face is 93 % of a prism. Dart Frog's mid-dark bronze made Jade read as
   Gold; Nacre's lavender made Jade read as Ruby. Rule 6.

@@ -6,7 +6,7 @@
   "lab": "Docs/Studios/ColourSetsLab.html",
   "artifact": "https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf",
   "space": "OKLab, x = [L, a, b] of the sRGB colour (Bjorn Ottosson 2020)",
-  "rule": "TWO-PIGMENT DOMAINS. A domain is two regions, its rim pigment (the prism's fresnel edge, the trail, the HUD, the signals) and its face pigment (the prism's body, most of what a player sees of it). A pigment is one paint seen from shadow to highlight: lighting scales a colour's linear RGB, which moves it along a ray from black in OKLab, so a pigment is the cone segment of colours with L0 <= L <= L1 whose chroma direction (a/L, b/L) lies within rho of (sat cos hue, sat sin hue). THE SEVEN RULES: (1) the band: any two pigments of different domains are at least margin apart in OKLab; (2) lighting-proof: their chroma directions are at least pigment_gap apart beyond their rho (no light or shadow turns one domain's pigment into another's); (3) form: a domain's rim and face differ in mid lightness by at least min_lightness_contrast (and in hue by min_hue_contrast, where a set or style asks for it); (4) the name: every rim reads as its own family of the colour_domains.json truth, clear of the band, as its swatch, as LIGHT (its centre ray at brightest channel 1: the prism's edge, the crystals) and as PAINT (the same numbers read as sRGB: the HUD, the score panels and the vessel tails read TrailHighlightColor that way), and Lime's rim also at the free crystal's body brightness; (5) communication, for a set made for a vision: as that viewer sees the painted colours, rims (as light and on the HUD), faces and each rim against its face stay vision_margin apart; (6) the voice: each face is its family's colour (its swatch rests in its family), its rim's own paint (its direction inside the rim's cone), or quiet (its whole pigment at or below the night line, where the truth holds only Fire and Blue, so it reads as night under a rim that carries the name); (7) apart: as painted, every two rims stay rim_separation apart, as light and as paint. Rules 4 (its paint reading), 6 and 7 are typical-vision rules: a set made for another vision keeps rule 5 for its viewer and may waive them, each with its reason. A set may name a style and keep its rules too. Examples are worked sets the skill teaches from; they keep every rule and are never written to the game.",
+  "rule": "TWO-PIGMENT DOMAINS. A domain is two regions, its rim pigment (the prism's fresnel edge, the trail, the HUD, the signals) and its face pigment (the prism's body, most of what a player sees of it). A pigment is one paint seen from shadow to highlight: lighting scales a colour's linear RGB, which moves it along a ray from black in OKLab, so a pigment is the cone segment of colours with L0 <= L <= L1 whose chroma direction (a/L, b/L) lies within rho of (sat cos hue, sat sin hue). THE SEVEN RULES: (1) the band: any two pigments of different domains are at least margin apart in OKLab; (2) lighting-proof: their chroma directions are at least pigment_gap apart beyond their rho (no light or shadow turns one domain's pigment into another's); (3) form: a domain's rim and face differ in mid lightness by at least min_lightness_contrast (and in hue by min_hue_contrast, where a set or style asks for it); (4) the name: every rim reads as its own family of the colour_domains.json truth, clear of the band, as its swatch, as LIGHT (its centre ray at brightest channel 1: the prism's edge, the crystals) and as PAINT (the same numbers read as sRGB: the HUD, the score panels and the vessel tails read TrailHighlightColor that way), and Lime's rim also at the free crystal's body brightness; (5) communication, for a set made for a vision: as that viewer sees the painted colours, rims (as light and on the HUD), faces and each rim against its face stay vision_margin apart; (6) the voice: each face is its family's colour (its swatch rests in its family), its rim's own paint (its direction inside the rim's cone), or quiet (its whole pigment at or below the night line, where the truth holds only Fire and Blue, so it reads as night under a rim that carries the name); (7) apart: as painted, every two rims stay rim_separation apart, as light and as paint. No rule is waived. A set made for another vision keeps rules 4 and 6 as its viewer sees them (4V: every rim, as light and on the HUD, looks nearer its own family's anchors in the truth, seen through the same vision model, than any other family's, by name_margin; 6V: each face is its family's as seen, its rim's paint, or quiet in the viewer's own lightness), and rule 5 stands in for rule 7. Where no lawful set exists for those eyes, the set declares the name_margin the maker reached and the gate holds it there. A set may name a style and keep its rules too. Examples are worked sets the skill teaches from; they keep every rule and are never written to the game.",
   "laws": {
     "night_line": 0.4,
     "rim_separation": 0.1,
@@ -228,13 +228,8 @@
       "proposed": "2026-11-05",
       "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB, and the rims keep rule 4 as swatch and light.",
       "vision": "protan",
-      "vision_margin": 0.16,
-      "summary": "Made for eyes without long-wave (red) cones. A protan sees two hues, blue and yellow, so each domain gets its own place on that axis and its own lightness: Fire's and Gold's faces, one just-noticeable step apart for a protan in Nocturne, become navy and steel blue. Re-balanced 2026-11-10: its HUD colours, which its viewer could tell apart by only 4.5 JND, are now 8.0 JND apart, and its Gold rim stays in Gold's window.",
-      "waive": {
-        "voice": "Made for a vision: its faces are chosen so its viewer tells the six domains apart by a prism's body alone (rule 5); giving each body its typical-vision family would cost that.",
-        "paint": "Its viewer reads the HUD by rule 5, which measures the HUD's colours as that viewer sees them; holding the HUD reading to its typical-vision family would cost that separation.",
-        "apart": "Rule 5 keeps its rims apart for its own viewer, as light and on the HUD; the typical-vision distance between them is not what it is made for."
-      },
+      "vision_margin": 0.105,
+      "summary": "Made for eyes without long-wave (red) cones. A protan sees two hues, blue and yellow, so each domain gets its own place on that axis and its own lightness: Fire's and Gold's faces, one just-noticeable step apart for a protan in Nocturne, become navy and steel blue. Re-balanced 2026-11-10 under its viewer's own rules 4 and 6: every rim, as light and on the HUD, and every face looks more like its own family's colours than any other's as a protan sees them; its domains stay 5.3 JND apart for its viewer, HUD included (they were 8.1 JND apart on the HUD before).",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -242,33 +237,33 @@
       "domains": {
         "fire": {
           "inspiration": "as a protan sees it: #6A6967 over #00275F (painted #FF2466 over #1A1A5D)",
-          "rim": {"name": "Rose Red", "hue": 354, "sat": 0.29, "L": [0.44, 0.64], "rho": 0.035, "swatch": "#B03F75"},
-          "face": {"name": "Navy", "hue": 263, "sat": 0.419, "L": [0.25, 0.35], "rho": 0.035, "swatch": "#08266B"}
+          "rim": {"name": "Rose Red", "hue": 8, "sat": 0.322, "L": [0.43, 0.63], "rho": 0.035, "swatch": "#B73259"},
+          "face": {"name": "Navy", "hue": 267, "sat": 0.457, "L": [0.27, 0.36], "rho": 0.029, "swatch": "#122579"}
         },
         "gold": {
           "inspiration": "as a protan sees it: #C1AB1E over #829EDB (painted #FFA333 over #4E9CD8)",
-          "rim": {"name": "Tangerine", "hue": 69, "sat": 0.182, "L": [0.7, 0.9], "rho": 0.031, "swatch": "#FAAB47"},
-          "face": {"name": "Steel Blue", "hue": 245, "sat": 0.176, "L": [0.61, 0.71], "rho": 0.035, "swatch": "#4E99D4"}
+          "rim": {"name": "Tangerine", "hue": 80, "sat": 0.178, "L": [0.67, 0.89], "rho": 0.023, "swatch": "#E6AC3F"},
+          "face": {"name": "Steel Blue", "hue": 255, "sat": 0.14, "L": [0.2, 0.37], "rho": 0.03, "swatch": "#1C2B3E"}
         },
         "lime": {
           "inspiration": "as a protan sees it: #FFF400 over #005EC0 (painted #FEFF2F over #A32DBC)",
-          "rim": {"name": "Lemon", "hue": 110, "sat": 0.209, "L": [0.74, 0.92], "rho": 0.035, "swatch": "#CFD024"},
-          "face": {"name": "Purple", "hue": 320, "sat": 0.411, "L": [0.5, 0.58], "rho": 0.035, "swatch": "#A32DBC"}
+          "rim": {"name": "Lemon", "hue": 114, "sat": 0.224, "L": [0.82, 0.93], "rho": 0.035, "swatch": "#D5E305"},
+          "face": {"name": "Purple", "hue": 331, "sat": 0.434, "L": [0.15, 0.29], "rho": 0.035, "swatch": "#31022E"}
         },
         "jade": {
           "inspiration": "as a protan sees it: #EEF2FC over #5D5212 (painted #28FFFB over #A14118)",
-          "rim": {"name": "Aqua", "hue": 185, "sat": 0.157, "L": [0.78, 0.86], "rho": 0.031, "swatch": "#44DFCF"},
-          "face": {"name": "Rust", "hue": 40, "sat": 0.274, "L": [0.47, 0.53], "rho": 0.035, "swatch": "#A1411B"}
+          "rim": {"name": "Aqua", "hue": 184, "sat": 0.168, "L": [0.78, 0.86], "rho": 0.031, "swatch": "#2EE1CE"},
+          "face": {"name": "Rust", "hue": 35, "sat": 0.334, "L": [0.2, 0.32], "rho": 0.035, "swatch": "#450E02"}
         },
         "blue": {
           "inspiration": "as a protan sees it: #8DB3FF over #A18E04 (painted #D1A1FF over #219E23)",
-          "rim": {"name": "Lavender", "hue": 309, "sat": 0.125, "L": [0.72, 0.89], "rho": 0.031, "swatch": "#D2AEF1"},
-          "face": {"name": "Emerald", "hue": 144, "sat": 0.306, "L": [0.56, 0.64], "rho": 0.035, "swatch": "#1C9A29"}
+          "rim": {"name": "Lavender", "hue": 309, "sat": 0.13, "L": [0.75, 0.87], "rho": 0.031, "swatch": "#D5AEF5"},
+          "face": {"name": "Emerald", "hue": 142, "sat": 0.323, "L": [0.24, 0.37], "rho": 0.035, "swatch": "#063A03"}
         },
         "ruby": {
           "inspiration": "as a protan sees it: #006AFF over #040302 (painted #872AFF over #020402)",
           "rim": {"name": "Violet", "hue": 288, "sat": 0.525, "L": [0.43, 0.63], "rho": 0.035, "swatch": "#7127FE"},
-          "face": {"name": "Ink", "hue": 136, "sat": 0.099, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#020402"}
+          "face": {"name": "Ink", "hue": 135, "sat": 0.111, "L": [0.07, 0.13], "rho": 0.027, "swatch": "#020402"}
         }
       }
     },
@@ -278,13 +273,9 @@
       "proposed": "2026-11-05",
       "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB, and the rims keep rule 4 as swatch and light.",
       "vision": "deutan",
-      "vision_margin": 0.085,
-      "summary": "Made for eyes without medium-wave (green) cones, the commonest colour blindness. Like a protan, a deutan sees blue against yellow, but sees reds brighter, so the rims sit at different points on that axis and the faces carry the rest in lightness: Lime's and Blue's faces, one step apart for a deutan in Nocturne, become pink and ink. Re-balanced 2026-11-10: its HUD colours, which its viewer could tell apart by only 2.4 JND, are now 4.4 JND apart, and its Gold rim stays in Gold's window.",
-      "waive": {
-        "voice": "Made for a vision: its faces are chosen so its viewer tells the six domains apart by a prism's body alone (rule 5); giving each body its typical-vision family would cost that.",
-        "paint": "Its viewer reads the HUD by rule 5, which measures the HUD's colours as that viewer sees them; holding the HUD reading to its typical-vision family would cost that separation.",
-        "apart": "Rule 5 keeps its rims apart for its own viewer, as light and on the HUD; the typical-vision distance between them is not what it is made for."
-      },
+      "vision_margin": 0.08,
+      "name_margin": -0.021,
+      "summary": "Made for eyes without medium-wave (green) cones, the commonest colour blindness. Like a protan, a deutan sees blue against yellow, but sees reds brighter, so the rims sit at different points on that axis and the faces carry the rest in lightness: Lime's and Blue's faces, one step apart for a deutan in Nocturne, become pink and ink. Re-balanced 2026-11-10 under its viewer's own rules 4 and 6: its rims come as near their own family's colours as a deutan's eyes allow (weakest margin -0.021: the game's own colours of some families look alike to them, so no set can do better); its domains stay 4.1 JND apart for its viewer, HUD included (they were 4.4 JND apart on the HUD before).",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -292,33 +283,33 @@
       "domains": {
         "fire": {
           "inspiration": "as a deutan sees it: #9A9583 over #104A90 (painted #FF2288 over #214E92)",
-          "rim": {"name": "Neon Rose", "hue": 355, "sat": 0.354, "L": [0.48, 0.68], "rho": 0.035, "swatch": "#CF2F80"},
-          "face": {"name": "Cobalt", "hue": 257, "sat": 0.25, "L": [0.38, 0.48], "rho": 0.03, "swatch": "#254F89"}
+          "rim": {"name": "Neon Rose", "hue": 5, "sat": 0.38, "L": [0.54, 0.74], "rho": 0.03, "swatch": "#F82278"},
+          "face": {"name": "Cobalt", "hue": 252, "sat": 0.225, "L": [0.24, 0.33], "rho": 0.019, "swatch": "#0F2B49"}
         },
         "gold": {
           "inspiration": "as a deutan sees it: #D1BA06 over #0067F9 (painted #FF9801 over #8A2FFD)",
-          "rim": {"name": "Orange", "hue": 71, "sat": 0.196, "L": [0.64, 0.84], "rho": 0.031, "swatch": "#E3992D"},
-          "face": {"name": "Electric Violet", "hue": 298, "sat": 0.479, "L": [0.51, 0.61], "rho": 0.035, "swatch": "#8E2FF8"}
+          "rim": {"name": "Orange", "hue": 72, "sat": 0.162, "L": [0.62, 0.8], "rho": 0.031, "swatch": "#CE9549"},
+          "face": {"name": "Electric Violet", "hue": 302, "sat": 0.501, "L": [0.28, 0.38], "rho": 0.035, "swatch": "#470879"}
         },
         "lime": {
           "inspiration": "as a deutan sees it: #FFF94C over #9AA2B7 (painted #FFFD3A over #E178BA)",
-          "rim": {"name": "Lemon", "hue": 109, "sat": 0.213, "L": [0.76, 0.96], "rho": 0.035, "swatch": "#DBD917"},
-          "face": {"name": "Pink", "hue": 343, "sat": 0.213, "L": [0.66, 0.76], "rho": 0.035, "swatch": "#E178BA"}
+          "rim": {"name": "Lemon", "hue": 112, "sat": 0.218, "L": [0.75, 0.95], "rho": 0.035, "swatch": "#D2D813"},
+          "face": {"name": "Pink", "hue": 333, "sat": 0.336, "L": [0.18, 0.23], "rho": 0.027, "swatch": "#280824"}
         },
         "jade": {
           "inspiration": "as a deutan sees it: #BDCFFF over #383217 (painted #4DEAFF over #581419)",
-          "rim": {"name": "Sky Cyan", "hue": 208, "sat": 0.151, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#48DEF2"},
-          "face": {"name": "Oxblood", "hue": 21, "sat": 0.318, "L": [0.26, 0.36], "rho": 0.035, "swatch": "#581419"}
+          "rim": {"name": "Sky Cyan", "hue": 196, "sat": 0.153, "L": [0.74, 0.94], "rho": 0.035, "swatch": "#43E4E6"},
+          "face": {"name": "Oxblood", "hue": 31, "sat": 0.38, "L": [0.32, 0.36], "rho": 0.035, "swatch": "#6B0C02"}
         },
         "blue": {
           "inspiration": "as a deutan sees it: #005AFC over #040300 (painted #1D4FFF over #010500)",
-          "rim": {"name": "Ultramarine", "hue": 269, "sat": 0.474, "L": [0.16, 0.38], "rho": 0.035, "swatch": "#101A63"},
-          "face": {"name": "Ink", "hue": 143, "sat": 0.258, "L": [0.09, 0.19], "rho": 0.035, "swatch": "#020D02"}
+          "rim": {"name": "Ultramarine", "hue": 269, "sat": 0.509, "L": [0.14, 0.42], "rho": 0.018, "swatch": "#10196D"},
+          "face": {"name": "Ink", "hue": 143, "sat": 0.257, "L": [0.11, 0.16], "rho": 0.031, "swatch": "#020B02"}
         },
         "ruby": {
           "inspiration": "as a deutan sees it: #699BFA over #696450 (painted #FE16FF over #526B4F)",
-          "rim": {"name": "Magenta", "hue": 328, "sat": 0.451, "L": [0.6, 0.8], "rho": 0.035, "swatch": "#FC16FE"},
-          "face": {"name": "Sage", "hue": 142, "sat": 0.108, "L": [0.45, 0.55], "rho": 0.035, "swatch": "#526B4F"}
+          "rim": {"name": "Magenta", "hue": 328, "sat": 0.445, "L": [0.61, 0.8], "rho": 0.035, "swatch": "#FD1EFF"},
+          "face": {"name": "Sage", "hue": 135, "sat": 0.095, "L": [0.24, 0.33], "rho": 0.023, "swatch": "#242D20"}
         }
       }
     },
@@ -328,13 +319,8 @@
       "proposed": "2026-11-05",
       "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB, and the rims keep rule 4 as swatch and light.",
       "vision": "tritan",
-      "vision_margin": 0.135,
-      "summary": "Made for eyes without short-wave (blue) cones. A tritan sees red against teal, so the domains are spread along that axis and in lightness: Blue's and Ruby's faces, one step apart for a tritan in Nocturne, become forest and teal. Re-balanced 2026-11-10: its HUD colours, which its viewer could tell apart by only 2.4 JND, are now 7.0 JND apart, and its Gold rim stays in Gold's window.",
-      "waive": {
-        "voice": "Made for a vision: its faces are chosen so its viewer tells the six domains apart by a prism's body alone (rule 5); giving each body its typical-vision family would cost that.",
-        "paint": "Its viewer reads the HUD by rule 5, which measures the HUD's colours as that viewer sees them; holding the HUD reading to its typical-vision family would cost that separation.",
-        "apart": "Rule 5 keeps its rims apart for its own viewer, as light and on the HUD; the typical-vision distance between them is not what it is made for."
-      },
+      "vision_margin": 0.09,
+      "summary": "Made for eyes without short-wave (blue) cones. A tritan sees red against teal, so the domains are spread along that axis and in lightness: Blue's and Ruby's faces, one step apart for a tritan in Nocturne, become forest and teal. Re-balanced 2026-11-10 under its viewer's own rules 4 and 6: every rim, as light and on the HUD, and every face looks more like its own family's colours than any other's as a tritan sees them; its domains stay 4.6 JND apart for its viewer, HUD included (they were 7.0 JND apart on the HUD before).",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -347,28 +333,28 @@
         },
         "gold": {
           "inspiration": "as a tritan sees it: #FF9492 over #689BA1 (painted #FFA934 over #7C92BF)",
-          "rim": {"name": "Saffron", "hue": 78, "sat": 0.15, "L": [0.73, 0.95], "rho": 0.035, "swatch": "#F8C065"},
-          "face": {"name": "Slate Blue", "hue": 267, "sat": 0.104, "L": [0.61, 0.71], "rho": 0.035, "swatch": "#7F91BD"}
+          "rim": {"name": "Saffron", "hue": 85, "sat": 0.132, "L": [0.75, 0.97], "rho": 0.034, "swatch": "#F3CB76"},
+          "face": {"name": "Slate Blue", "hue": 306, "sat": 0.074, "L": [0.67, 0.77], "rho": 0.032, "swatch": "#AD9CC0"}
         },
         "lime": {
           "inspiration": "as a tritan sees it: #FFEBD7 over #7C2B39 (painted #FFFC09 over #733146)",
-          "rim": {"name": "Lemon", "hue": 116, "sat": 0.205, "L": [0.46, 0.66], "rho": 0.035, "swatch": "#717C1F"},
-          "face": {"name": "Wine", "hue": 2, "sat": 0.222, "L": [0.36, 0.46], "rho": 0.035, "swatch": "#713346"}
+          "rim": {"name": "Lemon", "hue": 122, "sat": 0.207, "L": [0.48, 0.68], "rho": 0.033, "swatch": "#6F8529"},
+          "face": {"name": "Wine", "hue": 358, "sat": 0.228, "L": [0.23, 0.33], "rho": 0.035, "swatch": "#411A29"}
         },
         "jade": {
           "inspiration": "as a tritan sees it: #00FDE8 over #FF0061 (painted #3EFFA8 over #F71F9F)",
-          "rim": {"name": "Spearmint", "hue": 159, "sat": 0.217, "L": [0.75, 0.95], "rho": 0.035, "swatch": "#33F1A1"},
-          "face": {"name": "Hot Pink", "hue": 352, "sat": 0.395, "L": [0.6, 0.7], "rho": 0.035, "swatch": "#F71F9F"}
+          "rim": {"name": "Spearmint", "hue": 156, "sat": 0.213, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#49E895"},
+          "face": {"name": "Hot Pink", "hue": 333, "sat": 0.382, "L": [0.35, 0.39], "rho": 0.033, "swatch": "#68165F"}
         },
         "blue": {
           "inspiration": "as a tritan sees it: #00A3B6 over #00322A (painted #1A85FF over #003305)",
-          "rim": {"name": "Azure", "hue": 254, "sat": 0.275, "L": [0.52, 0.72], "rho": 0.035, "swatch": "#2C86E9"},
-          "face": {"name": "Forest", "hue": 140, "sat": 0.307, "L": [0.3, 0.4], "rho": 0.035, "swatch": "#144705"}
+          "rim": {"name": "Azure", "hue": 253, "sat": 0.272, "L": [0.48, 0.68], "rho": 0.035, "swatch": "#257BD4"},
+          "face": {"name": "Forest", "hue": 141, "sat": 0.315, "L": [0.23, 0.33], "rho": 0.035, "swatch": "#083302"}
         },
         "ruby": {
           "inspiration": "as a tritan sees it: #9B6A9B over #006866 (painted #AB30FF over #2C656A)",
-          "rim": {"name": "Violet", "hue": 317, "sat": 0.456, "L": [0.53, 0.73], "rho": 0.035, "swatch": "#CA26F7"},
-          "face": {"name": "Teal", "hue": 209, "sat": 0.168, "L": [0.45, 0.55], "rho": 0.035, "swatch": "#0A707D"}
+          "rim": {"name": "Violet", "hue": 317, "sat": 0.456, "L": [0.5, 0.65], "rho": 0.035, "swatch": "#B320DB"},
+          "face": {"name": "Teal", "hue": 214, "sat": 0.143, "L": [0.35, 0.39], "rho": 0.035, "swatch": "#174751"}
         }
       }
     },
@@ -379,12 +365,8 @@
       "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB, and the rims keep rule 4 as swatch and light.",
       "vision": "achromat",
       "vision_margin": 0.04,
-      "summary": "Made for eyes that see no colour at all. Every domain has its own brightness, rim and face, so a domain is told apart by how bright its rim is and how bright its body is. Because it never leans on hue, it is also the one set every vision can read (at least 4.6 steps for each). Re-balanced 2026-11-10: its HUD colours, which its viewer could tell apart by only 1.4 JND, are now 2.2 JND apart, and its Gold rim stays in Gold's window.",
-      "waive": {
-        "voice": "Made for a vision: its faces are chosen so its viewer tells the six domains apart by a prism's body alone (rule 5); giving each body its typical-vision family would cost that.",
-        "paint": "Its viewer reads the HUD by rule 5, which measures the HUD's colours as that viewer sees them; holding the HUD reading to its typical-vision family would cost that separation.",
-        "apart": "Rule 5 keeps its rims apart for its own viewer, as light and on the HUD; the typical-vision distance between them is not what it is made for."
-      },
+      "name_margin": -0.045,
+      "summary": "Made for eyes that see no colour at all. Every domain has its own brightness, rim and face, so a domain is told apart by how bright its rim is and how bright its body is. Because it leans on lightness, it is also the set every vision reads best (at least 1.9 steps for each viewer, where every other set falls to 0.7 or less for one of them). Re-balanced 2026-11-10 under its viewer's own rules 4 and 6: its rims come as near their own family's colours as an achromat's eyes allow (weakest margin -0.045: the game's own colours of some families look alike to them, so no set can do better); its domains stay 2.2 JND apart for its viewer, HUD included (they were 2.2 JND apart on the HUD before).",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -392,33 +374,33 @@
       "domains": {
         "fire": {
           "inspiration": "as no colour vision sees it: #818181 over #040404 (painted #FF1139 over #030311)",
-          "rim": {"name": "Red", "hue": 23, "sat": 0.402, "L": [0.39, 0.59], "rho": 0.035, "swatch": "#B60224"},
-          "face": {"name": "Ink", "hue": 278, "sat": 0.335, "L": [0.06, 0.16], "rho": 0.035, "swatch": "#030311"}
+          "rim": {"name": "Red", "hue": 23, "sat": 0.402, "L": [0.39, 0.59], "rho": 0.034, "swatch": "#B60224"},
+          "face": {"name": "Ink", "hue": 276, "sat": 0.39, "L": [0.08, 0.12], "rho": 0.025, "swatch": "#020210"}
         },
         "gold": {
           "inspiration": "as no colour vision sees it: #B9B9B9 over #5A5A5A (painted #FFA628 over #7B4484)",
-          "rim": {"name": "Amber", "hue": 69, "sat": 0.182, "L": [0.69, 0.89], "rho": 0.035, "swatch": "#F6A845"},
-          "face": {"name": "Plum", "hue": 318, "sat": 0.219, "L": [0.43, 0.53], "rho": 0.035, "swatch": "#764984"}
+          "rim": {"name": "Amber", "hue": 70, "sat": 0.165, "L": [0.75, 0.84], "rho": 0.031, "swatch": "#F2AC55"},
+          "face": {"name": "Plum", "hue": 296, "sat": 0.274, "L": [0.19, 0.28], "rho": 0.031, "swatch": "#211639"}
         },
         "lime": {
           "inspiration": "as no colour vision sees it: #F6F6F6 over #353535 (painted #FBFF08 over #30334C)",
-          "rim": {"name": "Lemon", "hue": 111, "sat": 0.219, "L": [0.6, 0.8], "rho": 0.035, "swatch": "#A3A603"},
-          "face": {"name": "Slate", "hue": 278, "sat": 0.132, "L": [0.28, 0.38], "rho": 0.035, "swatch": "#30334C"}
+          "rim": {"name": "Lemon", "hue": 111, "sat": 0.219, "L": [0.61, 0.77], "rho": 0.035, "swatch": "#A0A303"},
+          "face": {"name": "Slate", "hue": 270, "sat": 0.262, "L": [0.36, 0.4], "rho": 0.035, "swatch": "#2E3D77"}
         },
         "jade": {
           "inspiration": "as no colour vision sees it: #D7D7D7 over #A0A0A0 (painted #6AE8FF over #DE8798)",
-          "rim": {"name": "Ice Cyan", "hue": 209, "sat": 0.137, "L": [0.74, 0.94], "rho": 0.035, "swatch": "#5FDFF3"},
-          "face": {"name": "Rose", "hue": 8, "sat": 0.15, "L": [0.66, 0.76], "rho": 0.035, "swatch": "#DA8595"}
+          "rim": {"name": "Ice Cyan", "hue": 215, "sat": 0.116, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#77D8EE"},
+          "face": {"name": "Rose", "hue": 18, "sat": 0.22, "L": [0.18, 0.38], "rho": 0.026, "swatch": "#421B1D"}
         },
         "blue": {
           "inspiration": "as no colour vision sees it: #656565 over #191919 (painted #254DFF over #081E03)",
-          "rim": {"name": "Ultramarine", "hue": 266, "sat": 0.5, "L": [0.3, 0.5], "rho": 0.035, "swatch": "#1633B1"},
-          "face": {"name": "Forest", "hue": 139, "sat": 0.276, "L": [0.16, 0.26], "rho": 0.035, "swatch": "#081E03"}
+          "rim": {"name": "Ultramarine", "hue": 271, "sat": 0.569, "L": [0.28, 0.48], "rho": 0.029, "swatch": "#241FB2"},
+          "face": {"name": "Forest", "hue": 139, "sat": 0.273, "L": [0.16, 0.2], "rho": 0.008, "swatch": "#051602"}
         },
         "ruby": {
           "inspiration": "as no colour vision sees it: #9D9D9D over #757575 (painted #FF56E7 over #148563)",
-          "rim": {"name": "Flamingo", "hue": 334, "sat": 0.342, "L": [0.61, 0.81], "rho": 0.035, "swatch": "#F555DE"},
-          "face": {"name": "Viridian", "hue": 168, "sat": 0.194, "L": [0.5, 0.6], "rho": 0.035, "swatch": "#138565"}
+          "rim": {"name": "Flamingo", "hue": 334, "sat": 0.326, "L": [0.66, 0.79], "rho": 0.034, "swatch": "#F85EE2"},
+          "face": {"name": "Viridian", "hue": 175, "sat": 0.181, "L": [0.27, 0.36], "rho": 0.017, "swatch": "#043B30"}
         }
       }
     },
@@ -429,12 +411,7 @@
       "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB, and the rims keep rule 4 as swatch and light.",
       "vision": "low_vision",
       "vision_margin": 0.095,
-      "summary": "Made for low vision and cataract (reduced contrast sensitivity, a yellowed lens): bright rims over faces at least 0.4 darker, so a prism's edges read through blur, and the domains apart in brightness first and hue second. Re-balanced 2026-11-10: its HUD colours, which its viewer could tell apart by only 3.7 JND, are now 5.0 JND apart, and its Gold rim stays in Gold's window.",
-      "waive": {
-        "voice": "Made for a vision: its faces are chosen so its viewer tells the six domains apart by a prism's body alone (rule 5); giving each body its typical-vision family would cost that.",
-        "paint": "Its viewer reads the HUD by rule 5, which measures the HUD's colours as that viewer sees them; holding the HUD reading to its typical-vision family would cost that separation.",
-        "apart": "Rule 5 keeps its rims apart for its own viewer, as light and on the HUD; the typical-vision distance between them is not what it is made for."
-      },
+      "summary": "Made for low vision and cataract (reduced contrast sensitivity, a yellowed lens): bright rims over faces at least 0.4 darker, so a prism's edges read through blur, and the domains apart in brightness first and hue second. Re-balanced 2026-11-10 under its viewer's own rules 4 and 6: every rim, as light and on the HUD, and every face looks more like its own family's colours than any other's as low vision sees them; its domains stay 5.0 JND apart for its viewer, HUD included (they were 5.0 JND apart on the HUD before).",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -442,32 +419,32 @@
       "domains": {
         "fire": {
           "inspiration": "as low vision sees it: #D1826C over #1B1531 (painted #FF5B2D over #1E0846)",
-          "rim": {"name": "Flame", "hue": 20, "sat": 0.334, "L": [0.57, 0.76], "rho": 0.035, "swatch": "#FF4358"},
-          "face": {"name": "Midnight", "hue": 285, "sat": 0.48, "L": [0.17, 0.27], "rho": 0.035, "swatch": "#190A48"}
+          "rim": {"name": "Flame", "hue": 18, "sat": 0.335, "L": [0.56, 0.75], "rho": 0.035, "swatch": "#FA405B"},
+          "face": {"name": "Midnight", "hue": 274, "sat": 0.498, "L": [0.14, 0.24], "rho": 0.035, "swatch": "#0A093D"}
         },
         "gold": {
           "inspiration": "as low vision sees it: #E1B788 over #50365C (painted #FFAC38 over #5D2374)",
-          "rim": {"name": "Marigold", "hue": 71, "sat": 0.171, "L": [0.69, 0.89], "rho": 0.029, "swatch": "#F1AB4E"},
-          "face": {"name": "Plum", "hue": 316, "sat": 0.359, "L": [0.32, 0.42], "rho": 0.035, "swatch": "#5A226E"}
+          "rim": {"name": "Marigold", "hue": 75, "sat": 0.16, "L": [0.7, 0.93], "rho": 0.024, "swatch": "#F4B659"},
+          "face": {"name": "Plum", "hue": 308, "sat": 0.415, "L": [0.26, 0.31], "rho": 0.035, "swatch": "#3A1156"}
         },
         "lime": {
           "inspiration": "as low vision sees it: #F8F9A8 over #41628B (painted #FFFD20 over #045FB4)",
-          "rim": {"name": "Lemon", "hue": 109, "sat": 0.212, "L": [0.78, 0.98], "rho": 0.035, "swatch": "#E2E01B"},
-          "face": {"name": "Cobalt", "hue": 254, "sat": 0.314, "L": [0.41, 0.51], "rho": 0.035, "swatch": "#0357A6"}
+          "rim": {"name": "Lemon", "hue": 109, "sat": 0.213, "L": [0.8, 0.97], "rho": 0.03, "swatch": "#E4E218"},
+          "face": {"name": "Cobalt", "hue": 254, "sat": 0.313, "L": [0.35, 0.39], "rho": 0.035, "swatch": "#023F7B"}
         },
         "jade": {
           "inspiration": "as low vision sees it: #B7EAEF over #904962 (painted #81F4FF over #B30761)",
           "rim": {"name": "Ice", "hue": 202, "sat": 0.117, "L": [0.8, 1.0], "rho": 0.035, "swatch": "#80F3FC"},
-          "face": {"name": "Raspberry", "hue": 359, "sat": 0.4, "L": [0.44, 0.54], "rho": 0.028, "swatch": "#AE075E"}
+          "face": {"name": "Raspberry", "hue": 359, "sat": 0.402, "L": [0.34, 0.39], "rho": 0.028, "swatch": "#75023D"}
         },
         "blue": {
           "inspiration": "as low vision sees it: #A6AED9 over #223A20 (painted #9CA9FF over #003F03)",
-          "rim": {"name": "Lavender", "hue": 276, "sat": 0.163, "L": [0.63, 0.83], "rho": 0.035, "swatch": "#93A1F2"},
+          "rim": {"name": "Lavender", "hue": 276, "sat": 0.151, "L": [0.63, 0.83], "rho": 0.035, "swatch": "#95A1ED"},
           "face": {"name": "Forest", "hue": 143, "sat": 0.317, "L": [0.27, 0.37], "rho": 0.035, "swatch": "#053F07"}
         },
         "ruby": {
           "inspiration": "as low vision sees it: #D378D1 over #030403 (painted #FE14FF over #020402)",
-          "rim": {"name": "Magenta", "hue": 328, "sat": 0.452, "L": [0.51, 0.71], "rho": 0.035, "swatch": "#D20FD3"},
+          "rim": {"name": "Magenta", "hue": 328, "sat": 0.459, "L": [0.51, 0.71], "rho": 0.03, "swatch": "#D303D5"},
           "face": {"name": "Ink", "hue": 141, "sat": 0.124, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#020402"}
         }
       }
@@ -652,7 +629,7 @@
     "The vision sets (2026-11-05) are measured on the palette's colours before bloom and ACES, with the Machado 2009 simulation at full severity (protanomaly and deuteranomaly are the milder forms of the same loss). How they look in the game, and whether the low-vision model (chromatic contrast halved) matches players with low vision, is judged by eye and by players: an editor pass per set is owed. They are picked in the Profile's colour-set rail, which now pages through the whole catalog through its three tiles. Since 2026-11-10 rule 5 also measures the HUD's rims (the numbers read as sRGB).",
     "The HUD, the score panels and the vessel tails read SO_ColorSet.TrailHighlightColor as sRGB, while the trail shader and ColorSetUITheme read it as light. Until one encoding is chosen, rule 4 holds every rim to both readings, which narrows Gold's rim to hue 82-96.",
     "PhoticColorSetSO is measured, not defined: its Jade prism rim (InsideBlockColor, an azure) sits in the band between Jade and Blue (COLOR.md section 6, deferred), and its prism faces are its rims' paint in shadow. colour_sets.py --report prints it under the rules; nothing enforces them on it.",
-    "The five colour-blind sets waive rules 6, 7 and rule 4's paint reading, because those rules are typical-vision rules; holding each of them to a vision-aware voice rule (a body that names its domain as its own viewer reads names) is open.",
+    "The colour-blind sets keep every rule as their viewer sees it (2026-11-10), judged with models, not people: Machado 2009 at full severity for the dichromats, Rec. 709 luminance for the achromat, half the chroma for low vision, and the six names as the truth's anchors look through those eyes. Deuteranopia (-0.021) and achromatopsia (-0.045) declare a negative name_margin: for those eyes the game's own Fire, Gold and Lime anchors (deutan) or all six (achromat) crowd one line, so the best set leaves its weakest rim slightly nearer another family's colours. A player with each vision is the only real test.",
     "No set has been judged in the Unity editor after 2026-11-10: the stills come from colour_set_maker.py's model of the block shader and the gameplay bloom."
   ]
 }

@@ -1,0 +1,140 @@
+diff --git a/Assets/_Scripts/Controller/FX/GrizzlyClawConeVisual.cs b/Assets/_Scripts/Controller/FX/GrizzlyClawConeVisual.cs
+index 1721790aa0..e64cc7ed8a 100644
+--- a/Assets/_Scripts/Controller/FX/GrizzlyClawConeVisual.cs
++++ b/Assets/_Scripts/Controller/FX/GrizzlyClawConeVisual.cs
+@@ -1,3 +1,4 @@
++using CosmicShore.ScriptableObjects;
+ using CosmicShore.Utility;
+ using UnityEngine;
+ 
+@@ -64,6 +65,15 @@ namespace CosmicShore.Gameplay
+             _renderer.enabled = false;
+         }
+ 
++        // The cone's colour follows the colour set the player wears (its material is made once, in Awake).
++        void OnEnable() => ColorTrace.Changed += Repaint;
++        void OnDisable() => ColorTrace.Changed -= Repaint;
++
++        void Repaint()
++        {
++            if (_material) Tint(_material);
++        }
++
+         /// <summary>Show the cone for an ability whose reach is <paramref name="range"/>.</summary>
+         public void Show(float range, float halfAngleDegrees)
+         {
+@@ -168,14 +178,19 @@ namespace CosmicShore.Gameplay
+             mat.DisableKeyword("_ALPHATEST_ON");
+             mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+ 
+-            // Kept dim on purpose: the cone is a reach indicator drawn over live mass,
+-            // and at full strength it washes out the prisms it is telling you about.
+-            var c = CoreColor * 0.22f;
++            Tint(mat);
++            return mat;
++        }
++
++        // Kept dim on purpose: the cone is a reach indicator drawn over live mass,
++        // and at full strength it washes out the prisms it is telling you about.
++        // The core colour is the worn colour set's (ColorTrace) before it is dimmed.
++        static void Tint(Material mat)
++        {
++            var c = ColorTrace.Retrace(ColorTrace.World, CoreColor) * 0.22f;
+             c.a = 1f;
+             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
+             if (mat.HasProperty("_Color")) mat.SetColor("_Color", c);
+-
+-            return mat;
+         }
+ 
+         void OnDestroy()
+diff --git a/Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs b/Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs
+index 0aa58f759a..5a3c2cf57a 100644
+--- a/Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs
++++ b/Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs
+@@ -1,4 +1,5 @@
+ using CosmicShore.Data;
++using CosmicShore.ScriptableObjects;
+ using CosmicShore.Utility;
+ using UnityEngine;
+ using UnityEngine.Serialization;
+@@ -450,7 +451,8 @@ namespace CosmicShore.Gameplay
+ 
+         void Apply(float breath, float haloSize)
+         {
+-            var rim = Color.Lerp(_bombColor, sparkColor, sparkMix * breath)
++            // the spark as the worn colour set paints it (ColorTrace)
++            var rim = Color.Lerp(_bombColor, ColorTrace.Retrace(ColorTrace.World, sparkColor), sparkMix * breath)
+                       * Mathf.Lerp(rimIntensityTrough, rimIntensityPeak, breath);
+             var dark = _bombColor * coreDarkness;
+             rim.a = 1f;
+diff --git a/Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyTriggerBombConfigSO.cs b/Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyTriggerBombConfigSO.cs
+index 415c6bf724..b520080e39 100644
+--- a/Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyTriggerBombConfigSO.cs	
++++ b/Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyTriggerBombConfigSO.cs	
+@@ -1,3 +1,4 @@
++using CosmicShore.ScriptableObjects;
+ using FMODUnity;
+ using UnityEngine;
+ using UnityEngine.Serialization;
+@@ -118,7 +119,7 @@ namespace CosmicShore.Gameplay
+         public float SelfLaunchSeconds => selfLaunchSeconds;
+         public float SelfLaunchEdgeStrength => selfLaunchEdgeStrength;
+         public float SelfLaunchCeiling => selfLaunchCeiling;
+-        public Color FallbackDangerColor => fallbackDangerColor;
++        public Color FallbackDangerColor => ColorTrace.Retrace(ColorTrace.World, fallbackDangerColor);
+         public float SideHueShift => sideHueShift;
+         public float AiFireIntervalSeconds => aiFireIntervalSeconds;
+         public EventReference FireEvent => fireEvent;
+@@ -136,11 +137,12 @@ namespace CosmicShore.Gameplay
+         /// <summary>
+         /// One trigger's bomb colour: <paramref name="danger"/> (alpha 0 = no palette colour, use
+         /// <see cref="FallbackDangerColor"/>) rotated <see cref="SideHueShift"/> one way for LT and
+-        /// the other for RT, saturation and brightness kept. Pure; edit-mode tested.
++        /// the other for RT, saturation and brightness kept. Pure but for the fallback, which is the worn colour
++        /// set's; edit-mode tested.
+         /// </summary>
+         public Color BombColor(bool leftTrigger, Color danger)
+         {
+-            var c = danger.a > 0f ? danger : fallbackDangerColor;
++            var c = danger.a > 0f ? danger : FallbackDangerColor;
+             Color.RGBToHSV(c, out float h, out float sat, out float v);
+             h = Mathf.Repeat(h + (leftTrigger ? -sideHueShift : sideHueShift), 1f);
+             var shifted = Color.HSVToRGB(h, sat, v);
+diff --git a/Assets/_Scripts/UI/View/GrizzlyHUDView.cs b/Assets/_Scripts/UI/View/GrizzlyHUDView.cs
+index f1535c80f4..2f038baae9 100644
+--- a/Assets/_Scripts/UI/View/GrizzlyHUDView.cs
++++ b/Assets/_Scripts/UI/View/GrizzlyHUDView.cs
+@@ -1,6 +1,7 @@
+ using System.Collections.Generic;
+ using CosmicShore.Data;
+ using CosmicShore.Gameplay;
++using CosmicShore.ScriptableObjects;
+ using TMPro;
+ using UnityEngine;
+ using UnityEngine.UI;
+@@ -195,19 +196,20 @@ namespace CosmicShore.UI
+         {
+             if (!col) return reticleNoTargetColor;
+ 
++            // Each target colour as the worn colour set paints it (ColorTrace).
+             if (col.GetComponentInParent<ILifeFormEntity>() != null ||
+                 col.GetComponentInParent<LightFauna>() != null)
+-                return reticleFaunaColor;
++                return ColorTrace.Retrace(ColorTrace.Ui, reticleFaunaColor);
+ 
+             var vessel = col.GetComponentInParent<IVesselStatus>();
+             if (vessel != null)
+-                return vessel.Domain == _ownDomain ? reticleAllyColor : reticleEnemyColor;
++                return ColorTrace.Retrace(ColorTrace.Ui, vessel.Domain == _ownDomain ? reticleAllyColor : reticleEnemyColor);
+ 
+             var prism = col.GetComponentInParent<Prism>();
+             if (prism != null)
+             {
+-                if (prism.Domain == _ownDomain) return reticleAllyColor;
+-                return prism.Domain == Domains.Blue ? reticleFaunaColor : reticleEnemyColor;
++                if (prism.Domain == _ownDomain) return ColorTrace.Retrace(ColorTrace.Ui, reticleAllyColor);
++                return ColorTrace.Retrace(ColorTrace.Ui, prism.Domain == Domains.Blue ? reticleFaunaColor : reticleEnemyColor);
+             }
+ 
+             return reticleNoTargetColor;

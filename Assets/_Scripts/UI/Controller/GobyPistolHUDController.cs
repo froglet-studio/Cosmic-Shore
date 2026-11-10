@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -175,7 +176,8 @@ namespace CosmicShore.UI
             if (!_count || count == _shownCount) return;
             _shownCount = count;
             _count.text = TemplateText.Fill(template, "count", count.ToString());
-            _count.color = count > 0 ? countLiveColor : countEmptyColor;
+            // The count text sits on the HUD canvas: UIThemeLive repaints it when another set is worn between changes.
+            _count.color = ColorTrace.Retrace(ColorTrace.Ui, count > 0 ? countLiveColor : countEmptyColor);
         }
     }
 }

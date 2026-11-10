@@ -136,8 +136,12 @@ between their look and their four letter name"). `Tools/Build/colour_sets.py --c
    the name;
 7. **apart**: every two rims at least 0.10 apart as painted.
 
-Rules 4 (its paint reading), 6 and 7 are typical-vision rules: the five colour-blind sets keep rule 5 for their viewer
-instead and waive them, each with its reason. Three **styles** add rules of their own: **Photic** (one paint per
+No rule is waived (Garrett, 2026-11-10). The five colour-blind sets keep rules 4 and 6 **as their viewer sees them**:
+the viewer learned the six names from this truth's anchors through their own eyes (the same vision model), so a rim
+must look nearer its own family's anchors than any other's, as light and on the HUD, and a face is its family's, its
+rim's paint, or quiet in the viewer's own lightness; rule 5 stands in for rule 7. For a deuteranope and an achromat no
+lawful set exists (the anchors crowd one line for them), so those two declare the best name margin the maker found and
+the gate holds it there. Three **styles** add rules of their own: **Photic** (one paint per
 domain; the original, whose colours are this truth's anchors), **Nocturne** (lanterns over quiet jewel faces in one night
 band) and **Nacre** (soft faces of each family's own colour, painted so the gameplay bloom lifts them to pastel).
 

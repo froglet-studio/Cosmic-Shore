@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -251,7 +252,7 @@ namespace CosmicShore.UI
         /// </summary>
         public void SetBlastReady(bool ready, float cooldownSeconds)
         {
-            if (blastPrismsIcon) blastPrismsIcon.color = blastPrismColor;
+            if (blastPrismsIcon) blastPrismsIcon.color = ColorTrace.Retrace(ColorTrace.Ui, blastPrismColor);
             bool landing = !ready && _seeded && blastShatterSeconds > 0f;
             PaintBlast(BlastPartsFor(ready, landing));
             if (blastShatteredIcon)

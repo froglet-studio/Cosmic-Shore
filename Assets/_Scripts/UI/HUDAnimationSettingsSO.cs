@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using UnityEngine;
 
@@ -34,6 +35,10 @@ namespace CosmicShore.UI
         public Color scoreGainColor = new Color(0.2f, 1f, 0.4f, 1f);
         [Tooltip("Color flash when score decreases")]
         public Color scoreLossColor = new Color(1f, 0.3f, 0.2f, 1f);
+        /// <summary><see cref="scoreGainColor"/> as the worn colour set paints it: what a score gain flashes.</summary>
+        public Color ScoreGainColor => ColorTrace.Retrace(ColorTrace.Ui, scoreGainColor);
+        /// <summary><see cref="scoreLossColor"/> as the worn colour set paints it: what a score loss flashes.</summary>
+        public Color ScoreLossColor => ColorTrace.Retrace(ColorTrace.Ui, scoreLossColor);
         [Tooltip("Duration of the color flash")]
         public float scoreColorFlashDuration = 0.4f;
 
@@ -44,6 +49,8 @@ namespace CosmicShore.UI
         public float countdownFadeInDuration = 0.1f;
         [Tooltip("Tint applied during the final countdown sprite (index 3 = GO)")]
         public Color countdownUrgentColor = new Color(1f, 0.3f, 0.2f, 1f);
+        /// <summary><see cref="countdownUrgentColor"/> as the worn colour set paints it.</summary>
+        public Color CountdownUrgentColor => ColorTrace.Retrace(ColorTrace.Ui, countdownUrgentColor);
         [Tooltip("Index at which urgent color starts (0-based, 0=first sprite)")]
         public int countdownUrgentStartIndex = 2;
 

@@ -17,8 +17,11 @@ namespace CosmicShore.UI
     /// <item>selection and the control colour are its Jade rim, purchase its Gold rim;</item>
     /// <item>a mark or text too faint on a panel moves its OKLab lightness until it reaches 3:1 (marks) or 4.5:1 (text).</item>
     /// </list>
-    /// The four element colours and the tooltip keep their authored values, as on the console. A set's colours are linear
-    /// HDR; they reach the screen with a soft shoulder above 1 and the sRGB curve (Docs/PALETTE.md section 3).
+    /// The tooltip and the four element colours are the set's own (TracedColors <c>ui-token</c> ids, Garrett, 2026-11-10:
+    /// every colour respects the colour set): Photic carries the authored values, every other set its family rims' (the
+    /// console does not theme them). A set may give any other token the same way, which wins over the derivation. A
+    /// set's colours are linear HDR; they reach the screen with a soft shoulder above 1 and the sRGB curve
+    /// (Docs/PALETTE.md section 3).
     /// </summary>
     public static class ColorSetUITheme
     {
@@ -94,8 +97,26 @@ namespace CosmicShore.UI
             p.SeaMid = rimBlue;
             p.SeaEnd = rimRuby;
             p.SeaGlow = rimJade;
+
+            // A token the set gives directly (TracedColors ui-token:<Token>, Docs/VesselModels/COLOR_TRACE.md): the
+            // tooltip and the four element colours every set carries, and any token a set retunes.
+            for (int i = 0; i < TokenCount; i++)
+                if (set.TryGetTracedColor(TokenIds[i], out var given))
+                    p.Tokens[i] = new Color(given.r, given.g, given.b, 1f);
             return p;
         }
+
+        static readonly string[] TokenIds = BuildTokenIds();
+
+        static string[] BuildTokenIds()
+        {
+            var ids = new string[TokenCount];
+            for (int i = 0; i < TokenCount; i++) ids[i] = "ui-token:" + (UIColorToken)i;
+            return ids;
+        }
+
+        /// <summary>The TracedColors id a colour set gives <paramref name="token"/> by: <c>ui-token:&lt;Token&gt;</c>.</summary>
+        public static string TokenId(UIColorToken token) => TokenIds[(int)token];
 
         static void Set(Palette p, UIColorToken token, Color c) => p.Tokens[(int)token] = new Color(c.r, c.g, c.b, 1f);
 

@@ -31,6 +31,11 @@ Fire and Lime are not DomainColorSets (colour_sets.json, prism_mapping):
 
 The [ColorUsage(true, true)] fields hold LINEAR floats; UIAccentColor and ElementalCrystalColors hold sRGB.
 
+TracedColors (every colour the game draws outside these blocks: the sky, materials, particles, the UI's own colours,
+configs and code) come from Docs/VesselModels/colour_trace.json: each set's value for each id is computed by
+Tools/Build/colour_trace.py (repaint, Docs/VesselModels/COLOR_TRACE.md), in the storage of the place it is drawn
+(material and UI colours sRGB, HDR kept). PhoticColorSetSO's block is written by colour_trace.py --write-photic.
+
     python3 Tools/Build/author_colour_set_assets.py               # write every set's asset (keeps an existing guid)
     python3 Tools/Build/author_colour_set_assets.py --check       # exit 1 on drift or a field in another domain
     python3 Tools/Build/author_colour_set_assets.py --report      # every field: colour and which pigment holds it
@@ -85,9 +90,24 @@ def parse(text):
     text = re.sub(r",\r?\n\s+", ", ", text)   # Unity folds long colour lines when it saves
     blocks, block = {}, None
     for line in text.splitlines():
-        m = re.match(r"^  (\w+):\s*$", line)
+        m = re.match(r"^  (\w+):\s*(\[\])?$", line)
         if m:
             block = blocks.setdefault(m.group(1), {})
+            if m.group(1) == "TracedColors":
+                block["_entries"] = []
+            continue
+        if block is not None and "_entries" in block:
+            m = re.match(r"^  - Id: (.*)$", line)
+            if m:
+                block["_entries"].append([m.group(1).strip().strip("'"), None, ""])
+                continue
+            m = re.match(r"^    (Color|Note): (.*)$", line)
+            if m and block["_entries"]:
+                c = COLOR_RE.fullmatch(m.group(2))
+                if m.group(1) == "Color" and c:
+                    block["_entries"][-1][1] = tuple(float(v) for v in c.groups())
+                else:
+                    block["_entries"][-1][2] = m.group(2).strip()
             continue
         m = re.match(r"^    (\w+): (.*)$", line)
         if m and block is not None:
@@ -176,7 +196,23 @@ def render(key, s, orig):
             lines += ["    - " + e for e in v]
         else:
             lines.append("    %s: %s" % (f, colour_yaml(v) if isinstance(v, tuple) else v))
+    lines += traced_lines(key, s, pal)
     return "\n".join(lines) + "\n"
+
+
+_PHOTIC_REF = None
+
+
+def traced_lines(key, s, pal):
+    """The set's TracedColors block: its value for every id of colour_trace.json (empty until the table exists)."""
+    global _PHOTIC_REF
+    import colour_trace as ct
+    table = ct.load_table()
+    if not table:
+        return ["  TracedColors: []"]
+    if _PHOTIC_REF is None:
+        _PHOTIC_REF = cs.photic_reference()
+    return ct.traced_yaml(ct.set_values(key, s, table, _PHOTIC_REF, pal))
 
 
 def meta_text(guid):
@@ -219,6 +255,11 @@ def same(a, b, tol=1e-5):
             return False
         for f, v in a[block].items():
             w = b[block][f]
+            if f == "_entries":
+                if len(v) != len(w) or any(x[0] != y[0] or x[2] != y[2] or x[1] is None or y[1] is None or
+                                           any(abs(p - q) > tol for p, q in zip(x[1], y[1])) for x, y in zip(v, w)):
+                    return False
+                continue
             if isinstance(v, tuple) and isinstance(w, tuple):
                 if any(abs(x - y) > tol for x, y in zip(v, w)):
                     return False
