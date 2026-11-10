@@ -43,7 +43,7 @@ def tile(spec, R, baker):
 
 
 def main(argv):
-    sys.path[:0] = ["/home/user/work/genome", "/home/user/work"]
+    import os as _os; _H = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); sys.path[:0] = [_H, _os.path.join(_H, "genome")]  # ops_ext's parent (and a genome/ beside it)
     import ops_ext
     ops_ext.install()
     from agenome.render import Renderer

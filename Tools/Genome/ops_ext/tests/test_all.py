@@ -1,6 +1,6 @@
 """Smoke test: every ext op with default bytes compiles, renders and byte-roundtrips. python3 ops_ext/tests/test_all.py"""
 import sys, time
-sys.path[:0] = ["/home/user/work/genome", "/home/user/work"]
+import os as _os; _H = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); sys.path[:0] = [_H, _os.path.join(_H, "genome")]  # ops_ext's parent (and a genome/ beside it)
 import numpy as np
 import ops_ext
 ops_ext.install()

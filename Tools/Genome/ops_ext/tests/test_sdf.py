@@ -10,7 +10,7 @@ import sys
 import time
 
 os.environ.setdefault("LP_NUM_THREADS", "2")  # llvmpipe: share the box
-sys.path[:0] = ["/home/user/work/genome", "/home/user/work"]
+import os as _os; _H = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); sys.path[:0] = [_H, _os.path.join(_H, "genome")]  # ops_ext's parent (and a genome/ beside it)
 
 import numpy as np  # noqa: E402
 from PIL import Image  # noqa: E402

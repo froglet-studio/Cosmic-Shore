@@ -9,7 +9,7 @@ import time
 os.environ.setdefault("OMP_NUM_THREADS", "2")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "2")
 os.environ.setdefault("LP_NUM_THREADS", "2")  # llvmpipe
-sys.path[:0] = ["/home/user/work/genome", "/home/user/work"]
+import os as _os; _H = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))); sys.path[:0] = [_H, _os.path.join(_H, "genome")]  # ops_ext's parent (and a genome/ beside it)
 
 import numpy as np  # noqa: E402
 
@@ -20,7 +20,7 @@ from agenome.genome import Genome  # noqa: E402
 from agenome.handmade import _named  # noqa: E402
 from agenome import render  # noqa: E402
 
-OUT = "/home/user/work/ops_ext/renders/agents"
+OUT = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "renders", "agents")
 NF = 30
 
 
