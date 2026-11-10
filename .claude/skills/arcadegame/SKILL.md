@@ -417,6 +417,26 @@ Kelpwood (the Angler's Charge game, 2026-11-09, `claude/sweet-wozniak-tk48pb`, `
   (`KelpwoodScoringRuleSO : JackstrawScoringRuleSO`): a Strike pays its points either way. The base's tooltips then
   name the wrong hull (REFACTOR_BACKLOG K1).
 
+Corona (the Manta's Charge game, 2026-11-10, `claude/amazing-goldberg-7zn80e`, `CORONA.md`) taught five:
+- **A mirror with NO random draws still has count-moving float comparisons; measure their margin and tune the authored
+  value, not the code.** Corona's only count-changing tests are "inside a gate" and "inside a rim" (a dot product against
+  a cosine). `corona_budget.build` reports every tile's least distance from both boundaries, the generator fails under
+  1e-4, and quarter-degree gate angles (exact in float32) cleared every rung. Turning the shells' twist could not help:
+  the tightest tile sat on the untwisted first shell. Search the authored values in the mirror, then commit them.
+- **When the AI must route through the arena, have the Spawnable publish the geometry** (`SpawnableCorona.ShellRadius`,
+  `GateDirection`), and the AI reads the same numbers the C# lays from. A second copy of the gate layout in the AI is a
+  drift waiting for the next retune.
+- **A passive kit means a steering-only AI.** Every Manta Charge verb is automatic (skim, graze, crystal) and the hull's
+  own autopilot drive Soars, so `CoronaStinger` writes `SetExternalTargetProvider` and nothing else; the generator fails
+  on `InputStatus` or `PerformShipControllerActions`. Read the verb's GATE before designing the encounter:
+  `TryPlantOnVessel` plants only while the planter is at least as fast as the target, so a graze is an overtake.
+- **A sibling mode's ability override is not precedent.** Bloomrush sets the Manta's fuse per intensity
+  (`MantaBombRules.FuseSecondsOverride`); it predates the LOCKED vessel rule, so a new mode must not copy it. Corona's
+  generator greps its own controller and AI for it.
+- **The card renderer's full run can be blocked by another card** (`BurrowRun: no recipe`, REFACTOR_BACKLOG S95 / C4):
+  render the new card by name, and know a named run skips the manifest. Add the new scene to
+  `author_preview_spawns.SCENE_FOR_MODE` too: Kelpwood shipped without it and its preview went unchecked.
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```

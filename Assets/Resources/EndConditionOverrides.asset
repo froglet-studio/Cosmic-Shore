@@ -48,6 +48,7 @@ MonoBehaviour:
   - 90
   jackstrawStrikeTarget: 3
   kelpwoodBiteTarget: 12
+  coronaBloomTarget: 15
   tapestryRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
@@ -114,6 +115,7 @@ MonoBehaviour:
   - 90
   jackstrawStrikeTargetBuild: 3
   kelpwoodBiteTargetBuild: 12
+  coronaBloomTargetBuild: 15
   tapestryRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100

@@ -117,6 +117,8 @@ namespace CosmicShore.Editor
                 "to the mode scalar (default " + EndConditionOverridesSO.DefaultFlatlinePointTarget + ").\n" +
                 "  • Kelpwood: bites a DOMAIN needs - one creature an Angler locked on a rival biting its " +
                 "hull is 1, default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget + ".\n" +
+                "  • Corona: bloom hits a DOMAIN needs - a rival pilot caught in a bloom of a bomb a Manta " +
+                "planted is 1, default " + EndConditionOverridesSO.DefaultCoronaBloomTarget + ".\n" +
                 "  • Tapestry: round length in SECONDS (timed - most mass STANDING at the whistle " +
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
@@ -317,6 +319,7 @@ namespace CosmicShore.Editor
             }
             EditorGUI.indentLevel--;
             int kw  = Mathf.Max(0, EditorGUILayout.IntField("Kelpwood - Bite Target", _config.kelpwoodBiteTarget));
+            int cr  = Mathf.Max(0, EditorGUILayout.IntField("Corona - Bloom Target", _config.coronaBloomTarget));
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
@@ -374,6 +377,7 @@ namespace CosmicShore.Editor
                     _config.flatlinePointTarget = fl;
                     _config.flatlinePointTargetByIntensity = flByIntensity;
                     _config.kelpwoodBiteTarget = kw;
+                    _config.coronaBloomTarget = cr;
                     _config.tapestryRoundSeconds = tp;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
@@ -440,6 +444,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Flatline", string.Join(" / ", flByIntensity.ConvertAll(
                 v => v > 0 ? v.ToString() : flatlineEffective)));
             EditorGUILayout.LabelField("Kelpwood", kw > 0 ? kw.ToString() : EndConditionOverridesSO.DefaultKelpwoodBiteTarget + " (default)");
+            EditorGUILayout.LabelField("Corona", cr > 0 ? cr.ToString() : EndConditionOverridesSO.DefaultCoronaBloomTarget + " (default)");
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
@@ -522,6 +527,7 @@ namespace CosmicShore.Editor
                    "Flatline: " + Fmt(_config.flatlinePointTargetBuild, "default " + EndConditionOverridesSO.DefaultFlatlinePointTarget) +
                    " (per intensity " + string.Join(" / ", _config.flatlinePointTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Kelpwood: " + Fmt(_config.kelpwoodBiteTargetBuild, "default " + EndConditionOverridesSO.DefaultKelpwoodBiteTarget) + "\n" +
+                   "Corona: " + Fmt(_config.coronaBloomTargetBuild, "default " + EndConditionOverridesSO.DefaultCoronaBloomTarget) + "\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +

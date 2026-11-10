@@ -171,6 +171,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameKelpwood.unity
     guid: 750b1dc75ea9084b39ab73f51caa180b
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameCorona.unity
+    guid: 7dae0b29437b3069d777364648ac3eaf
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTapestry.unity
     guid: 66ee08b9dff6ca4fd973337baf4857af
   - enabled: 1

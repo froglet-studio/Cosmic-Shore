@@ -325,3 +325,15 @@ Seen while building Kelpwood (GameModes 86); recorded, not fixed. Re-run each co
 Not refactors (a report): the Angler's Charge changes no number (`element_ability_table.py Angler` → "NO SCALING"),
 and a client Angler holds no school (ANGLER.md follow-up 7), so a client cannot lock in Kelpwood. Both are the
 Angler's design slots, not cleanup.
+
+## Corona pass rows (2026-11-10, `claude/amazing-goldberg-7zn80e`)
+
+Seen while building Corona (GameModes 87, the Manta's Charge game); recorded, not fixed. Re-run each command before
+acting. K2 (the orphaned summary in `MiniGameHUD.cs`, now at line 1139) and K3 (`Tandava.png`) still stand.
+
+| Row | Shape | Evidence (2026-11-10, `origin/bleeding-edge` @ `01c1200453`) | Size | Owner to ask |
+|---|---|---|---|---|
+| C1 `CoronaScoringRuleSO` is a third copy of the golf combat-point race body (Jackstraw's, which Kelpwood inherits) with only the paid hit class and the breakdown stat changed | debt this branch created: a copied rule, chosen over subclassing because the base reads `StrikeHitsLanded` | `diff` of the two files from `PointsForCombatHit` down: 6 of 66 lines differ. One `CombatRaceScoringRuleSO` with a per-class points table and the breakdown stat chosen by class would end it and K1 together (guids kept by keeping the class files) | S | Shombith (Jackstraw, Kelpwood, Corona) |
+| C2 `element_ability_table.py Manta` reports Charge "NO SCALING", but the Manta's Charge DOES scale | a reader that stops short of a spawned prefab: the scaled field lives on an effect asset the bloom (`AOEMantaBloom.prefab`) carries, not on `Manta.prefab` | `python3 Tools/Build/element_ability_table.py Manta` → `NO SCALING`; `grep magnitudeAtFullCharge "Assets/_SO_Assets/Effects/Vessel Explosion Effects/MantaBombDebuffByExplosionEffect.asset"` → `2`; `MANTA_STING_KABLOOM.md` table says the same. The Fleet Codex reads the same table | S | Shombith (tooling); Garrett for the Manta's facts |
+| C3 Bloomrush sets the Manta's fuse per intensity (`MantaBombRules.FuseSecondsOverride`, 30/25/20/20) | a report, not a refactor: a mode changing the vessel, which the LOCKED rule (Shombith, 2026-10-31) now forbids; Bloomrush predates the rule | `grep -n FuseSecondsOverride Assets/_Scripts/Controller/Arcade/BloomrushController.cs`. Corona deliberately does not copy it and its generator fails if it does. Keep, or retire the override and move Bloomrush's intensity lever elsewhere: the owners' call | decision | Shombith (the rule), Garrett (the Manta) |
+| C4 `render_card_backgrounds.py` (no stem) still stops on `BurrowRun: no recipe` | S95 still half open: every new card is rendered by name, so `card_backgrounds_manifest.json` misses it | `python3 Tools/Build/render_card_backgrounds.py --report` → `AssertionError: BurrowRun: no recipe`. Corona and Kelpwood are both missing from the manifest for this reason | S | Shombith (tooling) |
