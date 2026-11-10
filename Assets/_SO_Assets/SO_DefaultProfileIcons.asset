@@ -67,3 +67,99 @@ MonoBehaviour:
   - Name: FLUME
     Id: 18
     IconSprite: {fileID: 21300000, guid: a3396d4c3b67a83e7ca63dc18d260023, type: 3}
+  - Name: Astrofoil
+    Id: 19
+    IconSprite: {fileID: 21300000, guid: e2f968e91542f46bda627652d0fde144, type: 3}
+  - Name: Bushy
+    Id: 20
+    IconSprite: {fileID: 21300000, guid: b4fd7d52fe1eb3fb66df4bdceea28e31, type: 3}
+  - Name: Comet
+    Id: 21
+    IconSprite: {fileID: 21300000, guid: 3711141b999d75fbfff9a6631e5fb40b, type: 3}
+  - Name: Damsel
+    Id: 22
+    IconSprite: {fileID: 21300000, guid: 5fb32d910f87c5808eea8841b34316d8, type: 3}
+  - Name: Dozer
+    Id: 23
+    IconSprite: {fileID: 21300000, guid: 33216cf313d19887383a5038fa5bbeb3, type: 3}
+  - Name: Echo
+    Id: 24
+    IconSprite: {fileID: 21300000, guid: 5a139317e65bdfcc43ea0e2ee44ca1c3, type: 3}
+  - Name: Fiest
+    Id: 25
+    IconSprite: {fileID: 21300000, guid: 8d9e2a4c3b4cbe5b6af3a439c7efed85, type: 3}
+  - Name: Flux
+    Id: 26
+    IconSprite: {fileID: 21300000, guid: ba515bfe001474eb21ed756e019d07b7, type: 3}
+  - Name: Jugger
+    Id: 27
+    IconSprite: {fileID: 21300000, guid: 716d8301c593ee63db7539efb34055ba, type: 3}
+  - Name: Krush
+    Id: 28
+    IconSprite: {fileID: 21300000, guid: c207b0a64b3619e9aa9b5da66e2652fe, type: 3}
+  - Name: Longshift
+    Id: 29
+    IconSprite: {fileID: 21300000, guid: 575ce7072ed0084549fc9d6248ae1cec, type: 3}
+  - Name: Maestro
+    Id: 30
+    IconSprite: {fileID: 21300000, guid: 0ffa92cbf65f672c9b313167a477fb3f, type: 3}
+  - Name: Mason
+    Id: 31
+    IconSprite: {fileID: 21300000, guid: 4c7ee5babebf0028b602852c14c81d76, type: 3}
+  - Name: Reaper
+    Id: 32
+    IconSprite: {fileID: 21300000, guid: b95ec9d1ba97ff02de853022942157b8, type: 3}
+  - Name: Riptide
+    Id: 33
+    IconSprite: {fileID: 21300000, guid: 3ae0647d8b8ada097086fad87d014861, type: 3}
+  - Name: Scales
+    Id: 34
+    IconSprite: {fileID: 21300000, guid: ddad7f1b8e27bcaf71a9afb626a975de, type: 3}
+  - Name: Shrapnel
+    Id: 35
+    IconSprite: {fileID: 21300000, guid: 35c871cd347a7a69e437334ea3e22d70, type: 3}
+  - Name: Siphon
+    Id: 36
+    IconSprite: {fileID: 21300000, guid: 505a41f14308cdedbf5bd1b7efe5df63, type: 3}
+  - Name: Slingshot
+    Id: 37
+    IconSprite: {fileID: 21300000, guid: 08fdba30ce8f6b53eea85b3e0fa9db18, type: 3}
+  - Name: Strider
+    Id: 38
+    IconSprite: {fileID: 21300000, guid: 08769083e59b6bf7a4d1781b032721ac, type: 3}
+  - Name: Tenacious
+    Id: 39
+    IconSprite: {fileID: 21300000, guid: 7ce7b9d72147ac78c225941445d34d0b, type: 3}
+  - Name: Tender
+    Id: 40
+    IconSprite: {fileID: 21300000, guid: 14616940ce9fb5c717b3ddb20a72b20d, type: 3}
+  - Name: Tomahawk
+    Id: 41
+    IconSprite: {fileID: 21300000, guid: 64370baee268214f7e2f7131af850e45, type: 3}
+  - Name: Trace
+    Id: 42
+    IconSprite: {fileID: 21300000, guid: e684a09f8170304945b6aef51f9f4fcb, type: 3}
+  - Name: Spare01
+    Id: 43
+    IconSprite: {fileID: 21300000, guid: f35c51f842bf51de2cccf3d25c9fffbb, type: 3}
+  - Name: Spare02
+    Id: 44
+    IconSprite: {fileID: 21300000, guid: 393d2a727245f9e4bd99ecc70e77f370, type: 3}
+  - Name: Spare03
+    Id: 45
+    IconSprite: {fileID: 21300000, guid: cdbea8e9b4598ad20be82da17eee9491, type: 3}
+  - Name: Spare04
+    Id: 46
+    IconSprite: {fileID: 21300000, guid: 4e1e9385d2cd406615a1b1c9bf699de9, type: 3}
+  - Name: Spare05
+    Id: 47
+    IconSprite: {fileID: 21300000, guid: bf0fcb2d070f26da5338fecb511b2cb5, type: 3}
+  - Name: Spare06
+    Id: 48
+    IconSprite: {fileID: 21300000, guid: b1c6b6fb7d8240114123a1ada10bc71e, type: 3}
+  - Name: Spare07
+    Id: 49
+    IconSprite: {fileID: 21300000, guid: 13c2a6349008aa24076d6e24d2193633, type: 3}
+  - Name: Spare08
+    Id: 50
+    IconSprite: {fileID: 21300000, guid: 4094717556dd16a46f631b5153bdc4f2, type: 3}
