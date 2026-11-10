@@ -13,7 +13,9 @@ def f(x):
     x = float(x)
     if not math.isfinite(x):
         x = 0.0
-    return f"{x:.6g}" if "e" not in f"{x:.6g}" else f"{x:.8f}"
+    s = f"{x:.6g}" if "e" not in f"{x:.6g}" else f"{x:.8f}"
+    # negatives in parentheses: a template "a-{f(x)}" printed "a--0.3", a GLSL syntax error (found by the ops thread)
+    return f"({s})" if s.startswith("-") else s
 
 
 def v3(a):

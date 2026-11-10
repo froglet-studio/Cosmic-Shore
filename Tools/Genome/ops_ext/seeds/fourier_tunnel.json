@@ -1,0 +1,246 @@
+{
+ "format": "amoebius-genome/0",
+ "seed": 3,
+ "meta": {
+  "lineage": "ops_ext",
+  "name": "fourier_tunnel"
+ },
+ "nodes": [
+  {
+   "id": 0,
+   "op": "tex.warpfbm",
+   "in": [],
+   "p": {
+    "freq": 80,
+    "oct": 180,
+    "warp": 100,
+    "warp2": 100,
+    "contrast": 128,
+    "cmix": 128,
+    "seed": 0,
+    "drift": 150,
+    "ah": 175,
+    "as": 220,
+    "av": 20,
+    "bh": 190,
+    "bs": 160,
+    "bv": 120,
+    "ch": 215,
+    "cs": 140,
+    "cv": 200
+   },
+   "v": {
+    "freq": 2.38651,
+    "oct": 5,
+    "warp": 0.78431,
+    "warp2": 0.78431,
+    "contrast": 1.41999,
+    "cmix": 0.50196,
+    "seed": 0,
+    "drift": 0.02198,
+    "ah": 0.68627,
+    "as": 0.86275,
+    "av": 0.016,
+    "bh": 0.7451,
+    "bs": 0.62745,
+    "bv": 0.16769,
+    "ch": 0.84314,
+    "cs": 0.54902,
+    "cv": 1.09858
+   }
+  },
+  {
+   "id": 1,
+   "op": "ag.spawn",
+   "in": [],
+   "p": {
+    "n": 85,
+    "radius": 204,
+    "shape": 27,
+    "speed": 201,
+    "seed": 4,
+    "teams": 154,
+    "hue0": 133,
+    "huestep": 52,
+    "sat": 228,
+    "val": 203
+   },
+   "v": {
+    "n": 8.0,
+    "radius": 83.46243,
+    "shape": 0,
+    "speed": 39.9934,
+    "seed": 4,
+    "teams": 3,
+    "hue0": 0.52157,
+    "huestep": 0.20392,
+    "sat": 0.89412,
+    "val": 1.63674
+   }
+  },
+  {
+   "id": 2,
+   "op": "ag.fourier",
+   "in": [
+    1
+   ],
+   "p": {
+    "K": 128,
+    "radius": 175,
+    "speed": 174,
+    "spread": 31,
+    "gain": 166,
+    "tube": 165,
+    "seed": 0
+   },
+   "v": {
+    "K": 3,
+    "radius": 40.32222,
+    "speed": 0.99437,
+    "spread": 0.12157,
+    "gain": 2.47093,
+    "tube": 2.47429,
+    "seed": 0
+   }
+  },
+  {
+   "id": 3,
+   "op": "ag.ribbon",
+   "in": [
+    2
+   ],
+   "p": {
+    "width": 108,
+    "height": 178,
+    "interval": 89,
+    "life": 163,
+    "twist": 127,
+    "emit": 154,
+    "edge": 127,
+    "facets": 128,
+    "colormode": 0,
+    "h": 150,
+    "s": 204,
+    "v": 196
+   },
+   "v": {
+    "width": 0.25008,
+    "height": 2.01488,
+    "interval": 0.09979,
+    "life": 11.93625,
+    "twist": -0.0,
+    "emit": 0.98529,
+    "edge": 1.99216,
+    "facets": 1,
+    "colormode": 0,
+    "h": 0.58824,
+    "s": 0.8,
+    "v": 1.00003
+   }
+  },
+  {
+   "id": 4,
+   "op": "cam.fourier",
+   "in": [],
+   "p": {
+    "K": 128,
+    "radius": 161,
+    "hamp": 76,
+    "speed": 135,
+    "lookahead": 157,
+    "aim": 89,
+    "bank": 127,
+    "fov": 127,
+    "seed": 0,
+    "phase": 0
+   },
+   "v": {
+    "K": 3,
+    "radius": 60.69455,
+    "hamp": 0.29804,
+    "speed": 0.11927,
+    "lookahead": 1.99997,
+    "aim": 0.34902,
+    "bank": 0.49804,
+    "fov": 69.80392,
+    "seed": 0,
+    "phase": 0.0
+   }
+  },
+  {
+   "id": 5,
+   "op": "post.grade",
+   "in": [],
+   "p": {
+    "exposure": 93,
+    "thresh": 114,
+    "bloom": 154,
+    "bloomrad": 187,
+    "fh": 163,
+    "fs": 199,
+    "fv": 84,
+    "fog": 86,
+    "vignette": 123,
+    "sat": 130,
+    "contrast": 145,
+    "feedback": 89,
+    "grain": 2,
+    "aberr": 255
+   },
+   "v": {
+    "exposure": 0.88487,
+    "thresh": 0.89412,
+    "bloom": 0.14975,
+    "bloomrad": 3.81937,
+    "fh": 0.63922,
+    "fs": 0.78039,
+    "fv": 0.07197,
+    "fog": 0.00049,
+    "vignette": 0.72353,
+    "sat": 1.02756,
+    "contrast": 1.09981,
+    "feedback": 0.33157,
+    "grain": 0.00157,
+    "aberr": 0.02
+   }
+  },
+  {
+   "id": 6,
+   "op": "out",
+   "in": [
+    null,
+    3,
+    4,
+    5,
+    0,
+    null
+   ],
+   "p": {
+    "sky": 180,
+    "steps": 100,
+    "far": 170,
+    "ltheta": 59,
+    "lphi": 156,
+    "ambient": 61,
+    "warmup": 22,
+    "lh": 166,
+    "ls": 208,
+    "lv": 176
+   },
+   "v": {
+    "sky": 0.34884,
+    "steps": 60,
+    "far": 542.88352,
+    "ltheta": 0.72688,
+    "lphi": 3.84383,
+    "ambient": 0.23922,
+    "warmup": 2.58824,
+    "lh": 0.65098,
+    "ls": 0.81569,
+    "lv": 0.62507
+   }
+  }
+ ],
+ "bytes": 98,
+ "zbytes": 109
+}

@@ -370,6 +370,11 @@ class Renderer:
         pops = build_populations(g, a_idx, gseed=g.seed)
         world = World(pops)
         cam = Camera(g, c_idx, world, seed=g.seed)
+        # clear the feedback buffers: without this a clip's first frames carried the PREVIOUS genome's last frame
+        # through uPrev, so a score depended on what the worker rendered before (found by the operator thread: one
+        # genome rendered twice differed by 1.2/255 over its first frames, enough to move the judge at feedback 0.3+)
+        for fb in self.out_fbo:
+            fb.clear(0.0, 0.0, 0.0, 1.0)
         post = _d(g.nodes[p_idx]) if p_idx is not None else _d(type("N", (), {"op": "post.grade", "params": [p.default for p in OPS["post.grade"].params]})())
         hud = hud_list(g, h_idx)
         dt = 1.0 / (FPS * SUBSTEPS)

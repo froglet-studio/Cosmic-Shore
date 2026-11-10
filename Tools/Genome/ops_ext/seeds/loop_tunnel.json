@@ -1,0 +1,305 @@
+{
+ "format": "amoebius-genome/0",
+ "seed": 3,
+ "meta": {
+  "lineage": "ops_ext",
+  "name": "loop_tunnel"
+ },
+ "nodes": [
+  {
+   "id": 0,
+   "op": "sdf.loop",
+   "in": [],
+   "p": {
+    "R": 125,
+    "r": 142,
+    "K": 128,
+    "ramp": 90,
+    "yamp": 110,
+    "seed": 0,
+    "sides": 64,
+    "twist": 160,
+    "spin": 128,
+    "anim": 175,
+    "mode": 0,
+    "ribs": 0
+   },
+   "v": {
+    "R": 5.91042,
+    "r": 1.01357,
+    "K": 3,
+    "ramp": 0.21176,
+    "yamp": 0.25882,
+    "seed": 0,
+    "sides": 4,
+    "twist": 2,
+    "spin": 0.0,
+    "anim": 0.10341,
+    "mode": 0,
+    "ribs": 0
+   }
+  },
+  {
+   "id": 1,
+   "op": "sdf.material",
+   "in": [
+    0,
+    null
+   ],
+   "p": {
+    "ah": 0,
+    "as": 0,
+    "av": 120,
+    "eh": 20,
+    "es": 200,
+    "ev": 200,
+    "emit": 100,
+    "glow": 0,
+    "falloff": 128,
+    "texscale": 128,
+    "texmix": 255,
+    "spec": 60
+   },
+   "v": {
+    "ah": 0.0,
+    "as": 0.0,
+    "av": 0.16769,
+    "eh": 0.07843,
+    "es": 0.78431,
+    "ev": 1.09858,
+    "emit": 0.03704,
+    "glow": 0.0001,
+    "falloff": 3.1967,
+    "texscale": 0.22696,
+    "texmix": 1.0,
+    "spec": 0.23529
+   }
+  },
+  {
+   "id": 2,
+   "op": "tex.warpfbm",
+   "in": [],
+   "p": {
+    "freq": 80,
+    "oct": 180,
+    "warp": 100,
+    "warp2": 100,
+    "contrast": 128,
+    "cmix": 128,
+    "seed": 0,
+    "drift": 150,
+    "ah": 175,
+    "as": 220,
+    "av": 20,
+    "bh": 190,
+    "bs": 160,
+    "bv": 120,
+    "ch": 215,
+    "cs": 140,
+    "cv": 200
+   },
+   "v": {
+    "freq": 2.38651,
+    "oct": 5,
+    "warp": 0.78431,
+    "warp2": 0.78431,
+    "contrast": 1.41999,
+    "cmix": 0.50196,
+    "seed": 0,
+    "drift": 0.02198,
+    "ah": 0.68627,
+    "as": 0.86275,
+    "av": 0.016,
+    "bh": 0.7451,
+    "bs": 0.62745,
+    "bv": 0.16769,
+    "ch": 0.84314,
+    "cs": 0.54902,
+    "cv": 1.09858
+   }
+  },
+  {
+   "id": 3,
+   "op": "ag.spawn",
+   "in": [],
+   "p": {
+    "n": 85,
+    "radius": 204,
+    "shape": 27,
+    "speed": 201,
+    "seed": 4,
+    "teams": 154,
+    "hue0": 133,
+    "huestep": 52,
+    "sat": 228,
+    "val": 203
+   },
+   "v": {
+    "n": 8.0,
+    "radius": 83.46243,
+    "shape": 0,
+    "speed": 39.9934,
+    "seed": 4,
+    "teams": 3,
+    "hue0": 0.52157,
+    "huestep": 0.20392,
+    "sat": 0.89412,
+    "val": 1.63674
+   }
+  },
+  {
+   "id": 4,
+   "op": "ag.boids",
+   "in": [
+    3
+   ],
+   "p": {
+    "coh": 90,
+    "ali": 86,
+    "sep": 103,
+    "radius": 109,
+    "turn": 189
+   },
+   "v": {
+    "coh": 0.02581,
+    "ali": 0.02234,
+    "sep": 0.04127,
+    "radius": 1.91581,
+    "turn": 4.24185
+   }
+  },
+  {
+   "id": 5,
+   "op": "ag.trail",
+   "in": [
+    4
+   ],
+   "p": {
+    "interval": 60,
+    "sx": 91,
+    "sy": 100,
+    "sz": 140,
+    "life": 148,
+    "emit": 165,
+    "colormode": 62,
+    "edge": 125,
+    "mesh": 15,
+    "h": 132,
+    "s": 97,
+    "v": 204
+   },
+   "v": {
+    "interval": 0.0591,
+    "sx": 0.15067,
+    "sy": 0.19703,
+    "sz": 0.64913,
+    "life": 8.19308,
+    "emit": 1.3676,
+    "colormode": 0,
+    "edge": 1.96078,
+    "mesh": 0,
+    "h": 0.51765,
+    "s": 0.38039,
+    "v": 1.20684
+   }
+  },
+  {
+   "id": 6,
+   "op": "cam.chase",
+   "in": [
+    5
+   ],
+   "p": {
+    "agent": 0,
+    "dist": 166,
+    "height": 150,
+    "lag": 221,
+    "fov": 170,
+    "look": 53
+   },
+   "v": {
+    "agent": 0,
+    "dist": 14.08983,
+    "height": 0.54956,
+    "lag": 0.84933,
+    "fov": 86.66667,
+    "look": 0.04854
+   }
+  },
+  {
+   "id": 7,
+   "op": "post.grade",
+   "in": [],
+   "p": {
+    "exposure": 93,
+    "thresh": 114,
+    "bloom": 154,
+    "bloomrad": 187,
+    "fh": 163,
+    "fs": 199,
+    "fv": 84,
+    "fog": 86,
+    "vignette": 123,
+    "sat": 130,
+    "contrast": 145,
+    "feedback": 89,
+    "grain": 2,
+    "aberr": 255
+   },
+   "v": {
+    "exposure": 0.88487,
+    "thresh": 0.89412,
+    "bloom": 0.14975,
+    "bloomrad": 3.81937,
+    "fh": 0.63922,
+    "fs": 0.78039,
+    "fv": 0.07197,
+    "fog": 0.00049,
+    "vignette": 0.72353,
+    "sat": 1.02756,
+    "contrast": 1.09981,
+    "feedback": 0.33157,
+    "grain": 0.00157,
+    "aberr": 0.02
+   }
+  },
+  {
+   "id": 8,
+   "op": "out",
+   "in": [
+    1,
+    5,
+    6,
+    7,
+    2,
+    null
+   ],
+   "p": {
+    "sky": 180,
+    "steps": 100,
+    "far": 170,
+    "ltheta": 59,
+    "lphi": 156,
+    "ambient": 61,
+    "warmup": 22,
+    "lh": 166,
+    "ls": 208,
+    "lv": 176
+   },
+   "v": {
+    "sky": 0.34884,
+    "steps": 60,
+    "far": 542.88352,
+    "ltheta": 0.72688,
+    "lphi": 3.84383,
+    "ambient": 0.23922,
+    "warmup": 2.58824,
+    "lh": 0.65098,
+    "ls": 0.81569,
+    "lv": 0.62507
+   }
+  }
+ ],
+ "bytes": 121,
+ "zbytes": 132
+}

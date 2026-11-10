@@ -1,0 +1,267 @@
+{
+ "format": "amoebius-genome/0",
+ "seed": 3,
+ "meta": {
+  "lineage": "ops_ext",
+  "name": "curl_ribbons_track"
+ },
+ "nodes": [
+  {
+   "id": 0,
+   "op": "tex.spectral",
+   "in": [],
+   "p": {
+    "beta": 212,
+    "fc": 90,
+    "bw": 200,
+    "aniso": 0,
+    "angle": 0,
+    "mode": 0,
+    "levels": 60,
+    "seed": 0,
+    "gamma": 128,
+    "drift": 128,
+    "ah": 175,
+    "as": 230,
+    "av": 25,
+    "bh": 195,
+    "bs": 150,
+    "bv": 140
+   },
+   "v": {
+    "beta": 3.01704,
+    "fc": 3.19772,
+    "bw": 4.66349,
+    "aniso": 0.0,
+    "angle": 0.0,
+    "mode": 0,
+    "levels": 5,
+    "seed": 0,
+    "gamma": 1.00545,
+    "drift": 0.0,
+    "ah": 0.68627,
+    "as": 0.90196,
+    "av": 0.01799,
+    "bh": 0.76471,
+    "bs": 0.58824,
+    "bv": 0.26828
+   }
+  },
+  {
+   "id": 1,
+   "op": "ag.spawn",
+   "in": [],
+   "p": {
+    "n": 85,
+    "radius": 204,
+    "shape": 27,
+    "speed": 201,
+    "seed": 4,
+    "teams": 154,
+    "hue0": 133,
+    "huestep": 52,
+    "sat": 228,
+    "val": 203
+   },
+   "v": {
+    "n": 8.0,
+    "radius": 83.46243,
+    "shape": 0,
+    "speed": 39.9934,
+    "seed": 4,
+    "teams": 3,
+    "hue0": 0.52157,
+    "huestep": 0.20392,
+    "sat": 0.89412,
+    "val": 1.63674
+   }
+  },
+  {
+   "id": 2,
+   "op": "ag.curl",
+   "in": [
+    1
+   ],
+   "p": {
+    "freq": 106,
+    "strength": 148,
+    "evolve": 160,
+    "seed": 0
+   },
+   "v": {
+    "freq": 0.01985,
+    "strength": 1.61877,
+    "evolve": 0.15196,
+    "seed": 0
+   }
+  },
+  {
+   "id": 3,
+   "op": "ag.ribbon",
+   "in": [
+    2
+   ],
+   "p": {
+    "width": 108,
+    "height": 178,
+    "interval": 89,
+    "life": 163,
+    "twist": 127,
+    "emit": 154,
+    "edge": 127,
+    "facets": 128,
+    "colormode": 0,
+    "h": 150,
+    "s": 204,
+    "v": 196
+   },
+   "v": {
+    "width": 0.25008,
+    "height": 2.01488,
+    "interval": 0.09979,
+    "life": 11.93625,
+    "twist": -0.0,
+    "emit": 0.98529,
+    "edge": 1.99216,
+    "facets": 1,
+    "colormode": 0,
+    "h": 0.58824,
+    "s": 0.8,
+    "v": 1.00003
+   }
+  },
+  {
+   "id": 4,
+   "op": "ag.trail",
+   "in": [
+    3
+   ],
+   "p": {
+    "interval": 60,
+    "sx": 91,
+    "sy": 100,
+    "sz": 140,
+    "life": 148,
+    "emit": 165,
+    "colormode": 62,
+    "edge": 125,
+    "mesh": 15,
+    "h": 132,
+    "s": 97,
+    "v": 204
+   },
+   "v": {
+    "interval": 0.0591,
+    "sx": 0.15067,
+    "sy": 0.19703,
+    "sz": 0.64913,
+    "life": 8.19308,
+    "emit": 1.3676,
+    "colormode": 0,
+    "edge": 1.96078,
+    "mesh": 0,
+    "h": 0.51765,
+    "s": 0.38039,
+    "v": 1.20684
+   }
+  },
+  {
+   "id": 5,
+   "op": "cam.track",
+   "in": [
+    4
+   ],
+   "p": {
+    "dist": 130,
+    "height": 217,
+    "speed": 177,
+    "fov": 102,
+    "lag": 221,
+    "phase": 0
+   },
+   "v": {
+    "dist": 1.59987,
+    "height": 0.34589,
+    "speed": 0.11703,
+    "fov": 60.0,
+    "lag": 0.84933,
+    "phase": 0.0
+   }
+  },
+  {
+   "id": 6,
+   "op": "post.grade",
+   "in": [],
+   "p": {
+    "exposure": 93,
+    "thresh": 114,
+    "bloom": 154,
+    "bloomrad": 187,
+    "fh": 163,
+    "fs": 199,
+    "fv": 84,
+    "fog": 86,
+    "vignette": 123,
+    "sat": 130,
+    "contrast": 145,
+    "feedback": 89,
+    "grain": 2,
+    "aberr": 255
+   },
+   "v": {
+    "exposure": 0.88487,
+    "thresh": 0.89412,
+    "bloom": 0.14975,
+    "bloomrad": 3.81937,
+    "fh": 0.63922,
+    "fs": 0.78039,
+    "fv": 0.07197,
+    "fog": 0.00049,
+    "vignette": 0.72353,
+    "sat": 1.02756,
+    "contrast": 1.09981,
+    "feedback": 0.33157,
+    "grain": 0.00157,
+    "aberr": 0.02
+   }
+  },
+  {
+   "id": 7,
+   "op": "out",
+   "in": [
+    null,
+    4,
+    5,
+    6,
+    0,
+    null
+   ],
+   "p": {
+    "sky": 180,
+    "steps": 100,
+    "far": 170,
+    "ltheta": 59,
+    "lphi": 156,
+    "ambient": 61,
+    "warmup": 22,
+    "lh": 166,
+    "ls": 208,
+    "lv": 176
+   },
+   "v": {
+    "sky": 0.34884,
+    "steps": 60,
+    "far": 542.88352,
+    "ltheta": 0.72688,
+    "lphi": 3.84383,
+    "ambient": 0.23922,
+    "warmup": 2.58824,
+    "lh": 0.65098,
+    "ls": 0.81569,
+    "lv": 0.62507
+   }
+  }
+ ],
+ "bytes": 105,
+ "zbytes": 116
+}

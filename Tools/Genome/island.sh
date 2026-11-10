@@ -25,7 +25,11 @@ HOURS=${2:-6}
 SHARE=/mnt/project-files/amoebius-genome
 WORK=${WORK:-$HOME/amoebius-island}
 mkdir -p "$WORK"
-rm -rf "$WORK/agenome" && cp -r "${CODE:-$SHARE/genome/agenome}" "$WORK/agenome"
+CODEDIR=${CODE:-$SHARE/genome/agenome}
+rm -rf "$WORK/agenome" "$WORK/ops_ext" && cp -r "$CODEDIR" "$WORK/agenome"
+# the extension operators (FFT, SVD, eigenmodes, flames, KIFS, curl flows, prism ribbons ...) live beside agenome and
+# install on import; AGENOME_EXT=0 runs the core set alone
+[ -d "$(dirname "$CODEDIR")/ops_ext" ] && cp -r "$(dirname "$CODEDIR")/ops_ext" "$WORK/ops_ext"
 # separate installs in parallel: one serial install crawled at ~40 KB/s in a fresh container (island A, 2026-11-10)
 python3 -c "import moderngl, scipy, PIL, jax" 2>/dev/null || {
   python3 -m pip install --quiet scipy 2>/dev/null & python3 -m pip install --quiet jaxlib 2>/dev/null &
@@ -41,7 +45,7 @@ F=$SHARE/fitness
 mkdir -p "$WORK/reels"
 for d in "$F"/reels_256x144/*/; do n=$(basename "$d"); mkdir -p "$WORK/reels/$n"; cp -n "$d/frames.npy" "$WORK/reels/$n/" ; done
 WORKERS=${WORKERS:-$(nproc)}
-SEEDS=${SEEDS:-"$SHARE/seeds/[!wt]*/*.json $SHARE/seeds/theta/*.json $SHARE/seeds/designed/*/*.json $SHARE/hier/seeds/*.json $SHARE/genome/handmade/*.json"}
+SEEDS=${SEEDS:-"$SHARE/seeds/[!wt]*/*.json $SHARE/seeds/theta/*.json $SHARE/seeds/designed/*/*.json $SHARE/hier/seeds/*.json $SHARE/genome/handmade/*.json $SHARE/genome/ops_ext/seeds/*.json"}
 set -f; read -r -a SEED_ARGS <<< "$SEEDS"; set +f
 RESUME_ARGS=()
 OWN=()

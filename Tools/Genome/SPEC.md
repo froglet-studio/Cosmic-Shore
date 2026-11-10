@@ -100,6 +100,48 @@ candidate for an honest size measure. Operator proposals: seeds/OP_PROPOSALS.md.
 | 0x92 | `hud.bar` | H | h | anchor:enum9, x:lin[-0.5,0.5], y:lin[-0.5,0.5], w:exp[0.003,1], hh:exp[0.003,1], segs:int[1,20], fill:lin[0,1], h:hue, s:lin[0,1], v:exp[0.01,4], alpha:lin[0,1] | overlay |
 | 0x93 | `hud.text` | H | h | anchor:enum9, x:lin[-0.5,0.5], y:lin[-0.5,0.5], size:exp[0.005,0.1], chars:int[1,40], rows:int[1,8], seed:int[0,255], h:hue, s:lin[0,1], v:exp[0.01,4], alpha:lin[0,1] | Bitmap_Text |
 | 0xF0 | `out` | O | s,a,c,p,t,h | sky:exp[0.001,4], steps:int[16,128], far:exp[10,4000], ltheta:lin[0,3.14159], lphi:lin[0,6.28319], ambient:lin[0,1], warmup:lin[0,30], lh:hue, ls:lin[0,1], lv:exp[0.01,4] | KOp root |
+| 0xA0 | `tex.spectral` | T | - | beta:exp[0.25,5], fc:exp[0.5,96], bw:exp[0.15,12], aniso:lin[0,0.95], angle:lin[0,3.14159], mode:enum5, levels:int[1,16], seed:int[0,255], gamma:exp[0.25,4], drift:scub[0,4], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | spectral synthesis (Voss / Musgrave) |
+| 0xA1 | `tex.fftfilter` | T | T | mode:enum6, fc:exp[0.5,128], bw:exp[0.1,8], angle:lin[0,3.14159], gain:exp[0.25,8], mix:lin[0,1], drift:scub[0,4] | werkkzeug Blur, generalized |
+| 0xA2 | `tex.convolve` | T | T,t | mode:enum3, size:exp[0.01,1], gain:exp[0.25,8], mix:lin[0,1], drift:scub[0,4] | convolution theorem |
+| 0xA3 | `tex.phaseswap` | T | T,t | amount:lin[0,1], gain:exp[0.25,4], drift:scub[0,4] | Oppenheim-Lim phase swap |
+| 0xA4 | `tex.svd` | T | T | mode:enum4, rank:int[1,64], gain:exp[0.25,4], mix:lin[0,1], drift:scub[0,4] | SVD low-rank |
+| 0xA5 | `tex.pca` | T | T | mode:enum4, k:int[0,15], w1:exp[0.1,10], w2:exp[0.1,10], w3:exp[0.1,10], rot:lin[0,6.28319], mix:lin[0,1], drift:scub[0,4] | PCA / Karhunen-Loeve |
+| 0xA6 | `tex.eigen` | T | t | dom:enum6, mode:int[0,60], mode2:int[0,60], w2:lin[0,1], aspect:exp[0.5,2], pot:exp[0.01,1000], render:enum4, sharp:exp[1,60], drift:scub[0,4], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | spectral geometry (Chladni, Kac) |
+| 0xA7 | `tex.rd` | T | t | feed:lin[0.01,0.09], delta:exp[0.0005,0.03], scale:enum3, steps:int[2,16], init:enum4, out:enum3, seed:int[0,255], drift:scub[0,4], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | Turing / Gray-Scott / Pearson 1993 |
+| 0xA8 | `tex.wavelet` | T | T | keep:bits255, orient:bits7, shrink:lin[0,0.5], gain:exp[0.25,8], approx:lin[0,1], mix:lin[0,1], drift:scub[0,4] | Haar / Mallat |
+| 0xA9 | `tex.poisson` | T | T | mode:enum5, scale:exp[0.1,20], angle:lin[0,6.28319], elev:lin[0.05,1.5], levels:int[1,32], gain:exp[0.25,4], mix:lin[0,1], drift:scub[0,4] | werkkzeug Bump+Normals, spectral |
+| 0xAA | `tex.flame` | T | - | maps:int[2,5], var:enum8, var2:enum8, vmix:lin[0,1], contract:lin[0.3,0.98], sym:int[1,8], zoom:exp[0.25,4], gamma:exp[0.15,1.5], bright:exp[0.1,8], seed:int[0,255], drift:scub[0,4], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | Draves 1992 flam3 / Electric Sheep |
+| 0xAB | `tex.attractor` | T | - | kind:enum3, pa:lin[-3,3], pb:lin[-3,3], pc:lin[-3,3], pd:lin[-3,3], zoom:exp[0.25,4], gamma:exp[0.15,1.5], bright:exp[0.1,8], drift:scub[0,4], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | Pickover / de Jong attractors |
+| 0xAC | `tex.physarum` | T | t | agents:exp[1000,40000], steps:int[2,16], sangle:lin[0.1,1.5], sdist:exp[2,30], rangle:lin[0.1,1.5], decay:lin[0.8,0.99], scale:enum3, seed:int[0,255], gamma:exp[0.25,4], drift:scub[0,4], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | Physarum polycephalum model |
+| 0xAD | `tex.distance` | T | T | thresh:lin[0,1], mode:enum4, width:exp[0.002,0.2], gamma:exp[0.25,4], drift:scub[0,4], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | distance transform (Danielsson) |
+| 0xB0 | `tex.warpfbm` | T | - | freq:exp[1,16], oct:int[1,6], warp:lin[0,2], warp2:lin[0,2], contrast:exp[0.5,4], cmix:lin[0,1], seed:int[0,255], drift:scub[0,4], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4], ch:hue, cs:lin[0,1], cv:exp[0.01,4] | iq warp |
+| 0xB1 | `tex.palette` | T | T | ar:lin[0,1], ag:lin[0,1], ab:lin[0,1], br:lin[0,1], bg:lin[0,1], bb:lin[0,1], freq:exp[0.25,4], ph:lin[0,1], spread:lin[0,0.5], gain:exp[0.25,4] | iq palettes |
+| 0xB2 | `tex.polar` | T | T | mode:enum2, repeat:int[1,16], twist:scub[0,8], power:exp[0.25,4], zoom:exp[0.25,8] | Bitmap_Unwrap |
+| 0xB3 | `tex.kaleido` | T | T | count:int[1,16], angle:lin[0,6.28319], zoom:exp[0.25,4], cx:lin[0,1], cy:lin[0,1] | kaleidoscope |
+| 0xB4 | `tex.flowwarp` | T | T,T | steps:int[1,6], amount:exp[0.001,0.2], swirl:lin[0,3.14159] | flow noise / LIC |
+| 0xB5 | `tex.kali` | T | - | form:lin[0.4,0.6], iter:int[4,18], vol:int[2,16], tile:lin[0.5,1], step:exp[0.05,0.3], bright:exp[0.0003,0.01], dark:lin[0,1], distfade:lin[0.5,0.95], sat:lin[0,1], zoom:exp[0.25,4], drift:scub[0,4], tmix:lin[0,1], gain:exp[0.1,10], ah:hue, as:lin[0,1], av:exp[0.01,4] | Star Nest (Kali, Shadertoy XlfGRj) |
+| 0xB6 | `tex.galaxy` | T | t | mode:enum2, lon:lin[0,6.28319], lat:lin[-1.4,1.4], size:exp[0.05,2], pa:lin[0,3.14159], incl:lin[0,1.5], arms:int[1,6], pitch:lin[0.15,1.2], sharp:exp[0.5,8], spin:scub[0,4], bulge:exp[0.1,10], gain:exp[0.05,8], seed:int[0,255], ah:hue, as:lin[0,1], av:exp[0.01,4], bh:hue, bs:lin[0,1], bv:exp[0.01,4] | log spiral / galactic band |
+| 0xC0 | `sdf.kifs` | S | s | iters:int[1,10], fold:enum5, ax:lin[-3.14159,3.14159], ay:lin[-3.14159,3.14159], scale:exp[1.2,3.5], ox:scub[0,3], oy:scub[0,3], oz:scub[0,3], anim:scub[0,1], size:exp[0.1,100] | Knighty KIFS (fractalforums 2010) |
+| 0xC1 | `sdf.mandelbox` | S | - | scale:lin[-1,1], minr:lin[0.05,1], fixr:lin[0.5,2], iters:int[4,14], bound:exp[0.5,12], anim:scub[0,0.5], size:exp[0.1,100] | Tom Lowe Mandelbox (2010) |
+| 0xC2 | `sdf.harmonic` | S | - | R:exp[0.2,100], amp:lin[0,0.9], lmax:int[2,4], decay:lin[0,3], seed:int[0,255], anim:scub[0,3] | spherical harmonics (spectral shape synthesis) |
+| 0xC3 | `sdf.loop` | S | - | R:exp[0.2,200], r:exp[0.01,40], K:int[1,4], ramp:lin[0,0.6], yamp:lin[0,0.6], seed:int[0,255], sides:int[2,8], twist:int[-8,8], spin:scub[0,4], anim:scub[0,2], mode:enum3, ribs:int[0,64] | Fourier curves; Amoebius prism tunnels |
+| 0xC4 | `sdf.superformula` | S | - | m1:int[0,16], n11:exp[0.1,40], n12:exp[0.7,40], n13:exp[0.7,40], m2:int[0,16], n21:exp[0.1,40], n22:exp[0.7,40], n23:exp[0.7,40], morph:lin[0,1.5], size:exp[0.1,100] | Gielis 2003 superformula |
+| 0xC5 | `sdf.heightfield` | S | s,T | height:exp[0.05,100], scale:exp[0.001,2], gamma:exp[0.25,4], lip:lin[0.1,1], y0:scub[0,100], mode:enum3, size:exp[0.1,100], gain:exp[0.25,16] | werkkzeug Mesh_Displace / heightmap terrain |
+| 0xC6 | `sdf.warp` | S | S | mode:enum3, freq:exp[0.01,10], amp:exp[0.01,20], speed:scub[0,4] | Mesh_Bend / iq domain warping |
+| 0xC7 | `sdf.voronoi` | S | - | cell:exp[0.1,50], thick:lin[0,0.4], jitter:lin[0,1], bound:exp[1,400], mode:enum2, seed:int[0,255], anim:scub[0,3] | Worley 1996 cellular; cell tissue / foam |
+| 0xC8 | `sdf.prism` | S | - | w:exp[0.02,50], len:exp[0.02,200], mode:enum2, round:lin[0,0.5], axis:enum3 | Amoebius prism walls; iq sdTriPrism / sdHexPrism |
+| 0xC9 | `sdf.path` | S | S | a1:exp[0.01,100], f1:exp[0.001,2], a2:exp[0.01,100], f2:exp[0.001,2], scroll:scub[0,4], phase:lin[0,6.28319] | demoscene tunnel paths |
+| 0xD0 | `ag.curl` | A | A | freq:exp[0.002,0.5], strength:exp[0.05,20], evolve:exp[0.001,3], seed:int[0,255] | Bridson 2007 curl noise |
+| 0xD1 | `ag.fourier` | A | A | K:int[1,4], radius:exp[0.5,300], speed:exp[0.05,4], spread:lin[0,1], gain:exp[0.05,20], tube:exp[0.01,50], seed:int[0,255] | epicycles / Fourier series |
+| 0xD2 | `ag.modes` | A | A | first:int[1,32], count:int[1,8], amp:lin[0,1], freq:exp[0.02,4], dir:enum4, k:int[3,12], gain:exp[0.05,20] | graph Laplacian eigenmodes / modal analysis |
+| 0xD3 | `ag.texflow` | A | A,t | map:enum2, scale:exp[1,1000], perp:lin[0,1], strength:exp[0.05,20], height:exp[0.1,300], radius:exp[1,500], seed:int[0,255] | flow-field steering (Reynolds) |
+| 0xD4 | `ag.vortex` | A | A | count:int[1,6], strength:exp[0.05,20], core:exp[0.2,100], spread:exp[0.5,300], tilt:lin[0,1], inflow:lin[0,1], updraft:scub[0,1], drift:scub[0,1], seed:int[0,255] | point vortices / Rankine vortex |
+| 0xD7 | `ag.ribbon` | A | A | width:exp[0.01,20], height:exp[0.01,20], interval:exp[0.02,2], life:exp[0.2,120], twist:scub[0,6], emit:exp[0.01,20], edge:lin[0,4], facets:enum3, colormode:enum2, h:hue, s:lin[0,1], v:exp[0.01,4] | Cosmic Shore prism walls, continuous |
+| 0xE0 | `cam.fourier` | C | - | K:int[1,4], radius:exp[0.5,1000], hamp:lin[0,1], speed:exp[0.005,2], lookahead:exp[0.05,20], aim:lin[0,1], bank:lin[0,1], fov:lin[20,120], seed:int[0,255], phase:lin[0,6.28319] | demo camera spline |
+| 0xE1 | `cam.track` | C | A | dist:exp[0.3,8], height:scub[0,1], speed:scub[0,2], fov:lin[20,120], lag:lin[0,0.98], phase:lin[0,6.28319] | game camera |
+| 0xD5 | `ag.flow` | A | A | field:enum4, scale:exp[2,500], a:lin[0,2], b:lin[0,2], c:lin[0,2], gain:exp[0.05,20], drift:scub[0,2] | Arnold-Beltrami-Childress flow |
+
+98 operators: 58 core and 40 extension ops (opcodes 0xA0-0xEF, `ops_ext/`, installed on import; `AGENOME_EXT=0` leaves them out). The table is `agenome.ops.spec_markdown()` after that install.
 
 ## Variation operators (for the search)
 param tweak (gaussian in byte space), op swap within a type, insert filter, delete node, rewire input, duplicate
