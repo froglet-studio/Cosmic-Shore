@@ -41,6 +41,16 @@ namespace CosmicShore.Editor
         {
             var preset = membrane.AnimationPreset;
 
+            if (membrane.AnimationSource == MembraneAnimationSource.GenerateFromSettings)
+            {
+                EditorGUILayout.HelpBox(
+                    "Generated from settings - no bake needed. The loop is computed from the bake inputs one " +
+                    "keyframe at a time as playback first needs it, and shared by every membrane with the same " +
+                    "settings. The preset (if any) is ignored; baking still writes the identical loop to it.",
+                    MessageType.Info);
+                return;
+            }
+
             if (preset == null)
             {
                 EditorGUILayout.HelpBox(

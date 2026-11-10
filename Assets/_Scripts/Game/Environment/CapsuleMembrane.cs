@@ -18,6 +18,10 @@ namespace CosmicShore.Game
     /// capsule per frame. If no valid preset is assigned it falls back to the original
     /// per-frame computation (and logs a warning) so the membrane still renders.
     ///
+    /// <see cref="MembraneAnimationSource.GenerateFromSettings"/> needs no preset at all: the same loop is
+    /// generated from the bake inputs on demand and shared (<see cref="CapsuleMembraneLoop"/>,
+    /// Docs/GENOME_MEMBRANE_LOOP.md), and <see cref="ApplyWobble"/> gives a membrane its own wobble.
+    ///
     /// Setup: Attach to a GameObject, assign any material (SpindleMaterial works directly),
     /// then click "Bake Animation Preset" on the inspector.
     /// </summary>
@@ -80,6 +84,12 @@ namespace CosmicShore.Game
                  "with the button below the default fields.")]
         [SerializeField] CapsuleMembraneAnimationSO animationPreset;
 
+        [Tooltip("Where the wobble loop comes from. BakedPreset plays the assigned asset (3.4 MB for the shipped " +
+                 "membrane). GenerateFromSettings computes the same loop from the ten bake inputs above, one keyframe " +
+                 "at a time as playback first needs it, shared by every membrane with the same settings - no asset, " +
+                 "no bake, no load spike. Both give the same rotations to float precision (CapsuleMembraneLoopTests).")]
+        [SerializeField] MembraneAnimationSource animationSource = MembraneAnimationSource.BakedPreset;
+
         [Tooltip("Wall-clock length of one full wobble loop, in seconds. Bake input.")]
         [Min(1f)]
         [SerializeField] float loopDuration = 12f;
@@ -113,6 +123,9 @@ namespace CosmicShore.Game
         int presetCount;
         int presetFrameCount;
         float presetLoopDuration;
+
+        // ---- Generated playback state (valid when _loop is not null) ----
+        CapsuleMembraneLoop _loop;
 
         // ---- Fallback per-frame computation state (valid when playbackMode is false) ----
         Vector3[] baseDirections;
@@ -174,11 +187,20 @@ namespace CosmicShore.Game
         {
             meshToRender = capsuleMesh != null ? capsuleMesh : GetBuiltinCapsuleMesh();
 
-            playbackMode = animationPreset != null
+            _loop = animationSource == MembraneAnimationSource.GenerateFromSettings
+                ? CapsuleMembraneLoop.Get(CurrentSignature)
+                : null;
+
+            playbackMode = _loop == null
+                           && animationPreset != null
                            && animationPreset.IsValid
                            && animationPreset.Signature.Matches(CurrentSignature);
 
-            if (playbackMode)
+            if (_loop != null)
+            {
+                matrices = new Matrix4x4[_loop.CapsuleCount];
+            }
+            else if (playbackMode)
             {
                 presetOffsets = animationPreset.CapsuleOffsets;
                 presetRotations = animationPreset.Rotations;
@@ -191,7 +213,8 @@ namespace CosmicShore.Game
             {
                 CSDebug.LogWarning(animationPreset == null
                     ? $"{nameof(CapsuleMembrane)} '{name}': no baked animation preset assigned - running the " +
-                      "expensive per-frame fallback. Bake one via the inspector's 'Bake Animation Preset' button."
+                      "expensive per-frame fallback. Bake one via the inspector's 'Bake Animation Preset' button, " +
+                      "or set Animation Source to GenerateFromSettings."
                     : $"{nameof(CapsuleMembrane)} '{name}': baked preset is stale or invalid - running the " +
                       "expensive per-frame fallback. Re-bake via the inspector's 'Bake Animation Preset' button.",
                     this);
@@ -259,7 +282,8 @@ namespace CosmicShore.Game
 
         void UpdateMatrices()
         {
-            if (playbackMode) UpdateMatricesFromPreset();
+            if (_loop != null) UpdateMatricesFromLoop();
+            else if (playbackMode) UpdateMatricesFromPreset();
             else UpdateMatricesRuntime();
         }
 
@@ -292,6 +316,66 @@ namespace CosmicShore.Game
         }
 
         /// <summary>
+        /// Generated path: the same interpolation as <see cref="UpdateMatricesFromPreset"/>, reading the two
+        /// keyframes from the shared <see cref="CapsuleMembraneLoop"/>, which generates each keyframe the
+        /// first time any membrane needs it.
+        /// </summary>
+        void UpdateMatricesFromLoop()
+        {
+            int frames = _loop.FrameCount;
+            float dur = _loop.LoopDuration;
+
+            float fpos = dur > 0f ? Mathf.Repeat(Time.time, dur) / dur * frames : 0f;
+            int f0 = (int)fpos;
+            if (f0 >= frames) f0 = 0;
+            int f1 = f0 + 1;
+            if (f1 >= frames) f1 = 0;
+            float blend = fpos - Mathf.Floor(fpos);
+
+            Quaternion[] a = _loop.Frame(f0);
+            Quaternion[] b = _loop.Frame(f1);
+
+            // Spread the keyframe after next over the updates before it is needed: a keyframe lasts
+            // 1/bakeFps s, i.e. matrixUpdateHz/bakeFps updates (4 at the defaults), so a third of it per
+            // update completes it with room to spare. A no-op once that keyframe exists.
+            int f2 = f1 + 1 >= frames ? 0 : f1 + 1;
+            _loop.Warm(f2, (_loop.CapsuleCount + 2) / 3);
+            Vector3[] offsets = _loop.Offsets;
+            Vector3 center = transform.position;
+
+            for (int i = 0; i < _drawCount; i++)
+                matrices[i] = Matrix4x4.TRS(center + offsets[i], Quaternion.Lerp(a[i], b[i], blend), capsuleScale);
+        }
+
+        /// <summary>
+        /// Give this membrane a different wobble (a per-cell "membrane genome": seed, noise frequency, noise
+        /// amplitude, pulse speed) and switch it to the generated loop. Needs no bake and no asset; membranes
+        /// with equal settings still share one loop. The layout keeps its subdivision level, so the capsule
+        /// count and the device-tier cap are unchanged. Gameplay never reads the wobble.
+        /// </summary>
+        public void ApplyWobble(int wobbleSeed, float wobbleNoiseFrequency, float wobbleNoiseAmplitude, float wobblePulseSpeed)
+        {
+            seed = wobbleSeed;
+            noiseFrequency = wobbleNoiseFrequency;
+            noiseAmplitude = wobbleNoiseAmplitude;
+            pulseSpeed = wobblePulseSpeed;
+            animationSource = MembraneAnimationSource.GenerateFromSettings;
+            if (matrices == null) return;   // before Awake: Awake picks the settings up
+
+            _loop = CapsuleMembraneLoop.Get(CurrentSignature);
+            playbackMode = false;
+            if (matrices.Length != _loop.CapsuleCount)
+            {
+                matrices = new Matrix4x4[_loop.CapsuleCount];
+                _drawCount = TierCappedCount(matrices.Length);
+            }
+            UpdateMatrices();
+        }
+
+        /// <summary>Where the wobble comes from right now (diagnostics, tests).</summary>
+        public MembraneAnimationSource AnimationSource => animationSource;
+
+        /// <summary>
         /// Fallback path: the original per-frame Perlin/quaternion/matrix computation,
         /// with the dead radial-noise samples and per-frame constant work removed.
         /// Only used when no valid baked preset is assigned.
@@ -320,38 +404,8 @@ namespace CosmicShore.Game
 
         void BuildBaseData()
         {
-            var vertices = GenerateIcosphereVertices(subdivisions);
-            int count = vertices.Count;
-            baseDirections = new Vector3[count];
-            baseOffsets = new Vector3[count];
-            perpendiculars = new Vector3[count];
-            noiseCoords = new Vector3[count];
-            var rng = new System.Random(seed);
-
-            for (int i = 0; i < count; i++)
-            {
-                Vector3 radialDir = vertices[i];
-
-                Vector3 tangent1 = Vector3.Cross(radialDir, Vector3.up).sqrMagnitude > 0.001f
-                    ? Vector3.Cross(radialDir, Vector3.up).normalized
-                    : Vector3.Cross(radialDir, Vector3.right).normalized;
-                Vector3 tangent2 = Vector3.Cross(radialDir, tangent1).normalized;
-
-                float jitterU = ((float)rng.NextDouble() * 2f - 1f) * placementJitter;
-                float jitterV = ((float)rng.NextDouble() * 2f - 1f) * placementJitter;
-                float jitterR = ((float)rng.NextDouble() * 2f - 1f) * radialJitter;
-
-                Vector3 jitteredDir = (radialDir + tangent1 * jitterU + tangent2 * jitterV).normalized;
-
-                baseDirections[i] = jitteredDir;
-                // Capsule's static local position (radius folded in) and the look-up vector,
-                // both constant per capsule - precomputed so the hot loop stays branch-free.
-                baseOffsets[i] = jitteredDir * (radius * (1f + jitterR));
-                perpendiculars[i] = Vector3.Cross(jitteredDir, Vector3.up).normalized;
-
-                // Pre-scale the noise coordinate so we only add the time/phase term later.
-                noiseCoords[i] = jitteredDir * noiseFrequency;
-            }
+            CapsuleMembraneLoop.BuildBase(CurrentSignature,
+                out baseDirections, out baseOffsets, out perpendiculars, out noiseCoords);
         }
 
         /// <summary>
@@ -363,48 +417,19 @@ namespace CosmicShore.Game
         {
             if (target == null) return;
 
-            BuildBaseData();
-            int count = baseDirections.Length;
-            int frameCount = Mathf.Max(2, Mathf.RoundToInt(loopDuration * bakeFps));
-
-            // The original animation drives the Perlin sample point along an open line
-            // (coord + time * k), so it never repeats. To bake a seamless loop we move
-            // the sample point around a closed circle instead. Each circle's radius is
-            // sized so the point traverses the noise field at the same speed as the
-            // original linear drift - this preserves the wobble's tempo and character
-            // while making frame 0 and frame N identical.
-            float twoPi = Mathf.PI * 2f;
-            float radX = pulseSpeed * loopDuration * Mathf.Sqrt(0.3f * 0.3f + 0.5f * 0.5f) / twoPi;
-            float radY = pulseSpeed * loopDuration * Mathf.Sqrt(0.8f * 0.8f + 0.2f * 0.2f) / twoPi;
-            float radZ = pulseSpeed * loopDuration * Mathf.Sqrt(0.6f * 0.6f + 0.4f * 0.4f) / twoPi;
-
-            var offsets = (Vector3[])baseOffsets.Clone();
-            var rotations = new Quaternion[frameCount * count];
-
-            for (int f = 0; f < frameCount; f++)
+            // The bake IS the generated loop written out: one code path, so a baked asset and a membrane
+            // set to GenerateFromSettings can never disagree. A private instance (not the shared cache)
+            // so baking in the editor leaves no loop alive behind it.
+            var loop = CapsuleMembraneLoop.Create(CurrentSignature);
+            var rotations = new Quaternion[loop.FrameCount * loop.CapsuleCount];
+            for (int f = 0; f < loop.FrameCount; f++)
             {
-                float theta = twoPi * f / frameCount;
-                float c = Mathf.Cos(theta);
-                float s = Mathf.Sin(theta);
-                int frameBase = f * count;
-
-                for (int i = 0; i < count; i++)
-                {
-                    Vector3 nc = noiseCoords[i];
-                    Vector3 noiseVec = new(
-                        Mathf.PerlinNoise(nc.y + radX * c, nc.z + radX * s) * 2f - 1f,
-                        Mathf.PerlinNoise(nc.z + radY * c, nc.x + radY * s) * 2f - 1f,
-                        Mathf.PerlinNoise(nc.x + radZ * c, nc.y + radZ * s) * 2f - 1f);
-
-                    Quaternion eulerNoise = Quaternion.Euler(noiseAmplitude * noiseVec);
-                    rotations[frameBase + i] = Quaternion.LookRotation(
-                        eulerNoise * baseDirections[i], eulerNoise * perpendiculars[i]);
-                }
-
-                onProgress?.Invoke((f + 1) / (float)frameCount);
+                System.Array.Copy(loop.Frame(f), 0, rotations, f * loop.CapsuleCount, loop.CapsuleCount);
+                onProgress?.Invoke((f + 1) / (float)loop.FrameCount);
             }
 
-            target.SetBakedData(offsets, rotations, count, frameCount, loopDuration, CurrentSignature);
+            target.SetBakedData((Vector3[])loop.Offsets.Clone(), rotations,
+                loop.CapsuleCount, loop.FrameCount, loop.LoopDuration, CurrentSignature);
         }
 
         static Mesh GetBuiltinCapsuleMesh()
@@ -415,87 +440,24 @@ namespace CosmicShore.Game
             return mesh;
         }
 
-        // ---- Icosphere generation (matches SpawnableSpherene algorithm) ----
-
-        static List<Vector3> GenerateIcosphereVertices(int subdivisionLevel)
-        {
-            float phi = (1f + Mathf.Sqrt(5f)) * 0.5f;
-            float a = 1f;
-            float b = 1f / phi;
-
-            var vertices = new List<Vector3>
-            {
-                new( 0,  b, -a),
-                new( b,  a,  0),
-                new(-b,  a,  0),
-                new( 0,  b,  a),
-                new( 0, -b,  a),
-                new(-a,  0,  b),
-                new( 0, -b, -a),
-                new( a,  0, -b),
-                new( a,  0,  b),
-                new(-a,  0, -b),
-                new( b, -a,  0),
-                new(-b, -a,  0),
-            };
-
-            for (int i = 0; i < vertices.Count; i++)
-                vertices[i] = vertices[i].normalized;
-
-            var triangles = new List<int>
-            {
-                2, 1, 0,   1, 2, 3,   5, 2, 3,   3, 8, 1,   3, 4, 8,
-                3, 5, 4,   0, 1, 7,   7, 1, 8,   6, 7, 8,   6, 8,10,
-                8, 4,10,   4,11,10,   4, 5,11,  11, 5, 9,   9, 5, 2,
-                9, 2, 0,   6, 0, 7,   9, 0, 6,  11, 9, 6,  10,11, 6,
-            };
-
-            var midpointCache = new Dictionary<(int, int), int>();
-
-            for (int level = 0; level < subdivisionLevel; level++)
-            {
-                var newTriangles = new List<int>();
-                midpointCache.Clear();
-
-                for (int i = 0; i < triangles.Count; i += 3)
-                {
-                    int v0 = triangles[i];
-                    int v1 = triangles[i + 1];
-                    int v2 = triangles[i + 2];
-
-                    int m01 = GetMidpoint(v0, v1, vertices, midpointCache);
-                    int m12 = GetMidpoint(v1, v2, vertices, midpointCache);
-                    int m20 = GetMidpoint(v2, v0, vertices, midpointCache);
-
-                    newTriangles.AddRange(new[] { v0, m01, m20 });
-                    newTriangles.AddRange(new[] { v1, m12, m01 });
-                    newTriangles.AddRange(new[] { v2, m20, m12 });
-                    newTriangles.AddRange(new[] { m01, m12, m20 });
-                }
-
-                triangles = newTriangles;
-            }
-
-            return vertices;
-        }
-
-        static int GetMidpoint(int a, int b, List<Vector3> vertices, Dictionary<(int, int), int> cache)
-        {
-            var key = a < b ? (a, b) : (b, a);
-            if (cache.TryGetValue(key, out int index))
-                return index;
-
-            Vector3 midpoint = ((vertices[a] + vertices[b]) * 0.5f).normalized;
-            index = vertices.Count;
-            vertices.Add(midpoint);
-            cache[key] = index;
-            return index;
-        }
+        // The icosphere generator lives in CapsuleMembraneLoop; DeviceTierTests reflects on this name to pin
+        // that a lower level is a prefix of a higher one.
+        static List<Vector3> GenerateIcosphereVertices(int subdivisionLevel) =>
+            CapsuleMembraneLoop.GenerateIcosphereVertices(subdivisionLevel);
 
         void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireSphere(transform.position, radius);
         }
+    }
+
+    /// <summary>Where a <see cref="CapsuleMembrane"/>'s wobble loop comes from.</summary>
+    public enum MembraneAnimationSource
+    {
+        /// <summary>Play the assigned baked <see cref="CapsuleMembraneAnimationSO"/>.</summary>
+        BakedPreset = 0,
+        /// <summary>Generate the same loop from the bake inputs, on demand (<see cref="CapsuleMembraneLoop"/>).</summary>
+        GenerateFromSettings = 1,
     }
 }
