@@ -75,6 +75,10 @@ Froglet's themes are built only from the six families. Nothing is borrowed from 
 | **Deep Sea** (default) | the game, Frogma, the codex, decks, artifacts | `#00041F` over `#00010A` | `#E6E9FF`, soft `#747BAD` | the game's own UITheme values |
 | **Shore** (light twin) | documents, print, the website by day | `#F4F5FF` | `#00041F`, soft `#434C89` | each family re-picked inside itself at 4.5:1; gold is a fill under dark text, never text |
 
+**In the game, the colour set a player wears is the UI's theme** (Shombith, 2026-11-09): the same theme the analytics
+console and the Fleet Codex give that set (`ColorSetUITheme`, a port of `Tools/Analytics/console/make_themes.py`). Deep
+Sea's lightness steps stay; the hue, the call to action, danger, selection and purchase come from the set.
+
 A **domain is never a theme**: a page that belongs to a team adds one accent with `data-fs-domain="jade|ruby|gold"`.
 On the web: `<html data-fs-theme="deep-sea">` (or `shore`, or `auto` to follow the viewer's light/dark setting) and
 `var(--fs-text)`, `var(--fs-cta)` and so on from `froglet.css`.

@@ -15,6 +15,11 @@ namespace CosmicShore.Gameplay
                  "at start-up and when one is applied (Docs/MENU_REDESIGN_B.md section 123). Empty: ColorSet as authored.")]
         public ColorSetCatalogSO Catalog;
 
+        [Tooltip("The UI theme the menus and HUD were authored in. The colour set worn re-hues it into the whole UI's " +
+                 "theme (ColorSetUITheme, the analytics console's and the Fleet Codex's theme for that set). Empty: the " +
+                 "style guide's values.")]
+        public CosmicShore.UI.UIThemeSO UITheme;
+
         public Dictionary<Domains, SO_MaterialSet> TeamMaterialSets { get; set; }
 
         /// <summary>

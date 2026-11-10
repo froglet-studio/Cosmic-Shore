@@ -95,6 +95,57 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AVisionSet_IsFree_EvenWhenMarkedLocked()
+        {
+            // Accessibility is never a reward (Shombith, 2026-11-09): a set made for a vision is worn whatever its
+            // unlocked flag says; a look set marked locked is not.
+            var catalog = ScriptableObject.CreateInstance<ColorSetCatalogSO>();
+            var look = ScriptableObject.CreateInstance<SO_ColorSet>();
+            var vision = ScriptableObject.CreateInstance<SO_ColorSet>();
+            var so = new SerializedObject(catalog);
+            var entries = so.FindProperty("entries");
+            entries.arraySize = 2;
+            void Set(int i, string id, SO_ColorSet set, ColourVision v)
+            {
+                var e = entries.GetArrayElementAtIndex(i);
+                e.FindPropertyRelative("id").stringValue = id;
+                e.FindPropertyRelative("colorSet").objectReferenceValue = set;
+                e.FindPropertyRelative("unlocked").boolValue = false;
+                e.FindPropertyRelative("vision").intValue = (int)v;
+            }
+            Set(0, "look", look, ColourVision.None);
+            Set(1, "vision", vision, ColourVision.Deuteranopia);
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.IsFalse(ColorSetCatalogSO.IsPickable(catalog.Get(0)));
+            Assert.IsTrue(ColorSetCatalogSO.IsPickable(catalog.Get(1)));
+            Assert.IsNull(ThemeManager.PickedColorSet(catalog, "look"));
+            Assert.AreSame(vision, ThemeManager.PickedColorSet(catalog, "vision"));
+            Assert.AreEqual(1, catalog.IndexOfFirstVisionSet());
+
+            Object.DestroyImmediate(catalog);
+            Object.DestroyImmediate(look);
+            Object.DestroyImmediate(vision);
+        }
+
+        [Test]
+        public void TheVisionSets_HaveTheirOwnRail_OnTheRight()
+        {
+            // The Showroom's left rail holds only the looks, the right rail only the sets made for a vision, each in
+            // the catalog's order.
+            var catalog = Catalog;
+            var looks = new System.Collections.Generic.List<int>();
+            var vision = new System.Collections.Generic.List<int>();
+            ProfileColorSetsPanel.SplitRails(catalog, looks, vision);
+            Assert.AreEqual(catalog.Count, looks.Count + vision.Count);
+            Assert.IsNotEmpty(looks);
+            Assert.IsNotEmpty(vision);
+            foreach (var i in looks) Assert.AreEqual(ColourVision.None, catalog.Get(i).vision, catalog.Get(i).id);
+            foreach (var i in vision) Assert.AreNotEqual(ColourVision.None, catalog.Get(i).vision, catalog.Get(i).id);
+            Assert.AreEqual(catalog.IndexOfFirstVisionSet(), vision[0], "the Settings breadcrumb opens the right rail's first set");
+        }
+
+        [Test]
         public void TheRail_IsAWindowOntoTheWholeCatalog()
         {
             // Three tiles over nine sets: the window moves only as far as it must to put the set shown on a tile.

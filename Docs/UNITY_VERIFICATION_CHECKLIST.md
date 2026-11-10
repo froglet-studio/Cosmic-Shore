@@ -22309,3 +22309,25 @@ missing-type errors in camera files this branch does not touch). `FlatlineTests`
    on its nose and uses its cords near panes. Watch whether it ever lands a Strike; if not, note it (FLATLINE.md "Known limits").
 9. **Toasts**: the start hint ("Panes stop your rounds...") once, then quarter / halfway / lead-change beats.
 10. **Replay** (Play Again) resets every count and lays the crystals again.
+
+## 🔴 Colour sets: a separate free Colour vision rail; the worn set themes the whole UI (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/quirky-ride-qv15s8`; `Docs/MENU_REDESIGN_B.md` section 126.3. Compiled with `unity_refcompile` (player and
+editor configs, 0 errors in project code); `.claude/skills/ship/gates.sh` all OK; `author_menu_profile.py --check` /
+`--self-test` pass. The C# theme maths was run outside Unity against `themes.css` (80 values, all within 1/255). Not opened
+in the editor; the edit-mode tests were compiled, not run. Affects Garrett's colour-vision sets (they now sit on their own
+rail and are always free).
+
+1. **Run the edit-mode tests** `ColorSetCatalogTests` and `ColorSetUIThemeTests`.
+2. **Profile > COLOUR SETS.** Left rail "Colour sets": Nocturne, Photic, Dart Frog, Nacre (three tiles, > slides to
+   Nacre). A hairline, then the right rail "Colour vision, always free": Contrast, Protanopia, Deuteranopia, Tritanopia,
+   Achromatopsia, Low Vision, with their own < >. "1 of 4" / "1 of 6" counts within the rail. APPLY sits right of the
+   name; nothing overlaps the rails at 16:9 and on a phone.
+3. **The pad**: left / right moves across both rails; each tile previews its set.
+4. **The UI follows the set**: browse Dart Frog: the panels, frames, text, tabs, focus ring, sea lines and APPLY turn
+   bronze-hued with Dart Frog's lime; leave without applying and the UI comes back with the worn set. APPLY it, open the
+   Arcade, Hangar, Settings and a match HUD: all of it in Dart Frog's theme. Restart Play: it starts in Dart Frog.
+5. **Look for anything left behind** (a panel still navy on a bronze theme): it is a colour that is not a theme token, or
+   a view that paints only when its data changes. Note the screen and object.
+6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
+
