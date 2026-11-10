@@ -98,6 +98,7 @@ SOURCES = [
     f"{_MG}/SpawnableJackstraw.cs",
     f"{_MG}/FlatlinePanes.cs",
     f"{_MG}/SpawnableFlatline.cs",
+    f"{_MG}/SpawnableKelpwood.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
     f"{_MG}/SpawnableSkein.cs",
     f"{_MG}/SpawnableRegattaRails.cs",
@@ -785,6 +786,9 @@ CAMERAS = {
     # Flatline: the I2 Five Pages from off the spine, so the pages read as thin planes fanning round it and the cords
     # crossing one page (the act that scores) read against its face.
     "Flatline": (12, 20, 1.2, 44),
+    # Kelpwood: inside the kelp ball's rim, so the strands radiate across the plate and the lock - the eraser's beam
+    # from one pilot onto a rival, a hunter on that rival's hull (the bite, the one thing that scores) - sits across it.
+    "Kelpwood": (35, 16, 0.75, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1416,6 +1420,29 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         glow(jade, 9, JADE, 1.0, 0.45)
         glow(ruby, 14, JADE, 1.2, 0.5)
         glow(ruby, 6, RUBY, 1.0, 0.6)
+    elif s == "Kelpwood":
+        # A LOCK through the kelp: the eraser's thin beam from an Angler onto a rival pilot, and the hunter it sent - a
+        # creature in the hunter's colour - on the rival's hull, biting (a glow in the hunter's colour). The omni
+        # crystals float round the core; a few tamed creatures trail the hunter's pilot.
+        for k in range(3):
+            crystal(v_add(centre, v_mul(rng.unit(), span * 0.12 * rng.u() ** 0.33)), span * 0.013)
+        pilot = v_add(centre, v_mul(v_norm([0.7, 0.2, -0.65]), span * 0.45))
+        rival = v_add(centre, v_mul(v_norm([-0.45, -0.1, 0.3]), span * 0.28))
+        beam = v_sub(rival, pilot)
+        d = v_norm(beam)
+        side = v_norm(v_cross([0, 1, 0], d)); u = v_cross(d, side)
+        w = span * 0.0025   # the eraser is 1.5 degrees: a thread, not a beam
+        sig = domain_signal(pal, JADE, 1.2)
+        layers.append({"kind": "box", "c": v_mul(v_add(pilot, rival), 0.5), "ax": v_mul(side, w), "ay": v_mul(u, w),
+                       "az": v_mul(d, math.sqrt(v_dot(beam, beam)) / 2),
+                       "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+        hunter = v_add(rival, v_mul(v_norm(v_add(v_mul(d, -1.0), side)), span * 0.03))
+        glow(hunter, span * 0.018, JADE, 1.3, 0.7)
+        glow(rival, span * 0.07, JADE, 0.9, 0.25)
+        for k in range(5):
+            glow(v_add(pilot, v_add(v_mul(d, -span * (0.05 + 0.02 * k)), v_mul(rng.unit(), span * 0.02))),
+                 span * 0.008, JADE, 1.0, 0.6)
+        stage["vessels"] = vessels([(JADE, 0.45, 8, 320, 25), (RUBY, 0.28, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)

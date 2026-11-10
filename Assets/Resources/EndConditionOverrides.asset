@@ -47,6 +47,7 @@ MonoBehaviour:
   - 220
   - 240
   jackstrawStrikeTarget: 3
+  kelpwoodBiteTarget: 12
   tapestryRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
@@ -112,6 +113,7 @@ MonoBehaviour:
   - 220
   - 240
   jackstrawStrikeTargetBuild: 3
+  kelpwoodBiteTargetBuild: 12
   tapestryRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100

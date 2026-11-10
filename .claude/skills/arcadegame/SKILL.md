@@ -207,9 +207,9 @@ Serpent Time (2026-10-27, `claude/dazzling-ride-dpyvkx`, `SERPENTTIME.md`) taugh
   objective arrow, the race toasts and the AI's commit all read it. The mode answers `ThreadsGate` and
   `ChooseAIGate` (`GateRaceController`), and the cluster's centre lies OUTSIDE every ring of a 3-ring cluster, so an
   AI left on the course's ring never threads.
-- `check_generated_assets.py` reports the Input System's default UI actions (guid `ca9f5fa9…`) on every arena scene
-  cloned this session: a package ASSET, which its "not judged" rule (package SCRIPTS only) does not cover. The shipped
-  Thresher Time and Headlong scenes carry the same 11 references.
+- `check_generated_assets.py` reported the Input System's default UI actions (guid `ca9f5fa9…`) on every arena scene
+  cloned from another (11 references: m_ActionsAsset and its ten actions), a package ASSET its "not judged" rule
+  missed. Fixed 2026-11-10 (Kelpwood): `PACKAGE_ASSET_GUIDS` names it, excused only while the base references it.
 
 Serpentine (Serpent Time reshaped, 2026-10-31, same branch) taught four more:
 - **A start line behind gate 0 for a SEEDED course** (`IPlayerSpawnLine` is asked during the spawn chain, before the
@@ -390,6 +390,24 @@ Flatline (the Brittle Star's charge game, 2026-11-09, `claude/great-rubin-rur3xs
 - **A per-intensity target is Cleave's shape** (scalar + `...ByIntensity` list, the `Build` twins, `SameInts` / `CopyInts`
   rows, the window's per-rung rows, the monitor resolving `SelectedIntensity` on the server). `set_end_condition`
   authors scalars only; the list rides beside it (`author_flatline_assets.py` §9).
+
+Kelpwood (the Angler's Charge game, 2026-11-09, `claude/sweet-wozniak-tk48pb`, `KELPWOOD.md`) taught four:
+- **A charge AI may press the hull's own trigger, and nothing else.** The Angler's lock is LT held while the beam
+  meets a rival, so `KelpwoodHunter` writes `IInputStatus.LeftTriggerAnalog` on the AI hull (replicated, the channel a
+  pad writes; the hull's own `AnglerLeapfrogAIPolicySO` writes RT the same way) and releases it after a short hold.
+  The generator fails if it presses anything else or stops pressing it. Read the executor for how the verb is DECIDED
+  (`UpdateBeamLock`: one lock per beam ENTRY, not per frame held) before choosing the hold.
+- **Ids move twice in a day; check every in-flight branch, then again right before the PR.** Flatline went 84 -> 85 ->
+  84 on its own branch while Jackstraw went 84 -> 85 on bleeding-edge, and both claimed toast 160 too. Take an id free
+  on every branch (a 644-branch scan is about a minute), and re-read the enum after merging the base: the collision
+  you flagged may have been settled for you.
+- **The card harness's prism count is arena + staging.** Kelpwood read 881 against the mirror's 880 (its one beam box)
+  and Jackstraw 1,140 against 1,122 (its 18 chain links): subtract your `accents()` pieces before calling a mismatch.
+- **`generated_assets` audits the index, not the working tree.** It was green while the new scene was untracked and
+  red once committed (the package-asset false positive, since fixed). Run the gates after `git add`.
+- **A shared rule can be reused by subclassing, with the mode's words on its own asset**
+  (`KelpwoodScoringRuleSO : JackstrawScoringRuleSO`): a Strike pays its points either way. The base's tooltips then
+  name the wrong hull (REFACTOR_BACKLOG K1).
 
 ## 4. Gates (no Unity needed; run them all)
 

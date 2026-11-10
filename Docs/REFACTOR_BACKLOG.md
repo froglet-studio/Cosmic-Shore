@@ -310,3 +310,18 @@ Seen while building the launch pipelines (PRs #1747-#1758); recorded, not fixed.
 
 Not refactors (incompleteness, a report): `LaunchFlags.disabledModes` is read and unused because no menu door checks it
 (#1756, `Docs/LAUNCH/LIVE_UPDATES.md` §1); hiding a mode remotely needs the menu owners to choose the doors.
+
+## Kelpwood pass rows (2026-11-10, `claude/sweet-wozniak-tk48pb`)
+
+Seen while building Kelpwood (GameModes 86); recorded, not fixed. Re-run each command before acting.
+
+| Row | Shape | Evidence (2026-11-10, `origin/bleeding-edge` @ `7d3ad2790d`) | Size | Owner to ask |
+|---|---|---|---|---|
+| K1 `JackstrawScoringRuleSO` is now the base of `KelpwoodScoringRuleSO`, and its tooltips and class doc name the Thresher | debt this branch created: a shared rule wearing one mode's name | `grep -n "Thresher" Assets/_Scripts/Controller/Arcade/Jackstraw/JackstrawScoringRuleSO.cs` → the tooltips; Flatline's rule pays the same Strike class. A neutral `StrikeRaceScoringRuleSO` both inherit (guids kept by keeping the class files) would end it | S | Shombith (both modes) |
+| K2 `MiniGameHUD.cs` carries an orphaned `/// <summary>` (two summaries in one block above the spectator eye) | an inserted member reassigned a doc comment | a `</summary>` then `<summary>` scan of `origin/bleeding-edge:Assets/_Scripts/UI/MiniGameHUD.cs` → line 1132 | XS | whoever owns the spectator badge (`who_works_where.py query Assets/_Scripts/UI/MiniGameHUD.cs`) |
+| K3 `author_card_backgrounds.py --strict` fails on bleeding-edge: `Tandava.png` names no live card | a check red for every branch | `python3 Tools/Build/author_card_backgrounds.py --strict` → `Tandava.png: no live card is named for this file` (identical with this branch's changes stashed) | XS | Shombith (Tandava) |
+| K4 `check_generated_assets.py` audits only TRACKED files: a new scene still untracked passed the gate, and failed once committed | a gate whose scope is the index, not the tree | this branch: `gates.sh` green before `git add`, `generated_assets` 11 findings after (the package-asset false positive, since fixed in 4ba354ce88). Add untracked `Assets/**` to its `added` set, or say in `/ship` §0.05 to gate after staging | S | Shombith (tooling) |
+
+Not refactors (a report): the Angler's Charge changes no number (`element_ability_table.py Angler` → "NO SCALING"),
+and a client Angler holds no school (ANGLER.md follow-up 7), so a client cannot lock in Kelpwood. Both are the
+Angler's design slots, not cleanup.

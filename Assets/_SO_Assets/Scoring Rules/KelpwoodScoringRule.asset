@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f051b4dc8a3fda1f1240794f419973a8, type: 3}
+  m_Name: KelpwoodScoringRule
+  m_EditorClassIdentifier:
+  metric: 8
+  golfRules: 1
+  strikePoints: 1
+  otherHitPoints: 0
+  strikesLeftTemplate: '{count} Bites Left'
+  strikesLandedTemplate: '{count} bites'
+  victoryHeader: VICTORY
+  victoryLabel: HUNT TIME
+  defeatHeader: DEFEAT
+  defeatLabel: BITES LEFT

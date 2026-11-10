@@ -82,6 +82,14 @@ MB_STANDARD = {"m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInst
                "m_GameObject", "m_Enabled", "m_EditorHideFlags", "m_Script", "m_Name",
                "m_EditorClassIdentifier", "serializedVersion"}
 UNITY_OBJECT = "UnityEngine.Object"
+# Package ASSETS (not scripts or shaders) a scene names by guid: Unity resolves them through Library/PackageCache,
+# which this audit never sees. Named one by one, because a blanket rule would also excuse a guid that is genuinely
+# dangling; each is still counted as unverified, and only while the BASE tree already references it.
+PACKAGE_ASSET_GUIDS = {
+    # com.unity.inputsystem's DefaultInputActions: every EventSystem's InputSystemUIInputModule names it, so every
+    # arena scene cloned from another carries 11 references (m_ActionsAsset and its ten actions).
+    "ca9f5fa95ffab41fb9a615ab714db018": "Input System DefaultInputActions",
+}
 
 
 def is_ref_registry(v):
@@ -471,7 +479,9 @@ class Audit:
             # a script in a package (UGUI Button/Image, TextMeshPro, Netcode...): Unity resolves it
             # through Library/PackageCache, which this audit never sees. The base tree already
             # references it, so the project depends on it either way.
-            self.unverified["%s in a package (guid %s)" % ("shader" if path.endswith("m_Shader") else "script", guid)] += 1
+            kind = ("asset" if guid in PACKAGE_ASSET_GUIDS else
+                    "shader" if path.endswith("m_Shader") else "script")
+            self.unverified["%s in a package (guid %s)" % (kind, guid)] += 1
             return []
         if not target:
             return [("guid", rel, "%s.%s -> guid %s resolves to no asset in Assets/" % (where, path, guid))]
@@ -722,6 +732,7 @@ def external_script_guids(base, guids):
                            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         return set(re.findall(r"[0-9a-f]{32}", r.stdout))
     referenced = grep(r"m_(Script|Shader): \{fileID: -?[0-9]+, guid: [0-9a-f]{32}", "Assets")
+    referenced |= grep(r"guid: (%s)" % "|".join(PACKAGE_ASSET_GUIDS), "Assets") & set(PACKAGE_ASSET_GUIDS)
     in_base_assets = grep(r"^guid: [0-9a-f]{32}", "Assets/*.meta")
     return frozenset(referenced - in_base_assets - set(guids))
 
@@ -937,6 +948,21 @@ def self_test(schema, base):
     hit = [f for f in found if f[0] == "guid" and ugui_image in f[2]]
     print("  [%s] %-60s %s" % ("MISSED" if hit else "ok", "package script guid on a new document is NOT a finding", hit[0][2][:110] if hit else ""))
     ok &= not hit
+    # the same for a named package ASSET (the Input System's DefaultInputActions, which every arena scene's
+    # EventSystem names) on a new document; an unnamed guid in the same field is still a finding
+    actions = next(iter(PACKAGE_ASSET_GUIDS))
+    pkg_asset = sub(tad, "m_Script: {fileID: 11500000, guid: ", "m_ActionsAsset: {fileID: -944628639613478452, guid: "
+                    + actions + ", type: 3}\n  m_Script: {fileID: 11500000, guid: ", 1)
+    found, _ = run_audit(Tree(ROOT, pkg_asset), schema, base, added, [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "guid" and actions in f[2]]
+    print("  [%s] %-60s %s" % ("MISSED" if hit else "ok", "named package asset guid on a new document is NOT a finding", hit[0][2][:110] if hit else ""))
+    ok &= not hit
+    stray = "fedcba9876543210fedcba9876543210"
+    found, _ = run_audit(Tree(ROOT, sub(tad, "m_Script: {fileID: 11500000, guid: ", "m_ActionsAsset: {fileID: -944628639613478452, guid: "
+                    + stray + ", type: 3}\n  m_Script: {fileID: 11500000, guid: ", 1)), schema, base, added, [], [], lambda r: None)
+    hit = [f for f in found if f[0] == "guid" and stray in f[2]]
+    print("  [%s] %-60s %s" % ("ok" if hit else "MISSED", "an UNNAMED guid in the same field is still a finding", hit[0][2][:110] if hit else ""))
+    ok &= bool(hit)
     # the same for a package SHADER (URP's Lit, which Resources/OrcaCrewLit.mat already names) on a new material
     urp_lit = "933532a4fcc9baf4fa0491de14d08ed7"
     mat_rel = "Assets/Resources/__SelfTestPackageShader.mat"
