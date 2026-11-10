@@ -446,7 +446,7 @@ Corona (the Manta's Charge game, 2026-11-10, `claude/amazing-goldberg-7zn80e`, `
   render the new card by name, and know a named run skips the manifest. Add the new scene to
   `author_preview_spawns.SCENE_FOR_MODE` too: Kelpwood shipped without it and its preview went unchecked.
 
-Harvest (the Thresher's Space game, 2026-11-10, `claude/keen-rubin-rw7p6q`, `HARVEST.md`) taught three:
+Harvest (the Thresher's Space game, 2026-11-10, `claude/keen-rubin-rw7p6q`, `HARVEST.md`) taught five:
 - **Fly the vessel's own solver round the arena before laying the arena.** The sheaves were built, baked and gated on
   a premise nobody had flown: that a circling Thresher's chain sweeps a sheaf's stalks. Its chain TRAILS (21-60 u behind
   at cruise) and cuts only its own path, so the stalks starved the loop (0-11 cuts a lap). Compiling the shipped
@@ -458,6 +458,14 @@ Harvest (the Thresher's Space game, 2026-11-10, `claude/keen-rubin-rw7p6q`, `HAR
   it per rung (`author_harvest_assets.py`); it cut Harvest's target from 1,500 to 750.
 - **A colour rule over N sheaves must be fair at each rung's N.** "One in three" gave 2 / 1 / 1 among twelve; check
   the counts per domain in the mirror and pin them in a test.
+- **A generator check that the BAKE equals the mirror deadlocks the run that changes the field** (second pass,
+  2026-11-10). The bake reads the prefab on disk, the generator refuses to write the new prefab while the bake is stale,
+  so neither can move first. Gate the comparison on the prefab being unchanged by this run (`g.read(rel) ==
+  g.files[rel]`), print "re-bake, then re-run" otherwise, and let `--check` (which diffs the prefab) carry the rest.
+  Order: generator, `bake_prism_layouts.py`, generator `--check`.
+- **A mode's own creatures are its own COPIES of a species config** (Harvest I4 copies four, Serpentine's
+  `_own_cell_assets` pattern): regex-replace only `m_Name` and the three population numbers, fail if any key is not
+  found exactly once, and mint the guid from the new name. Editing the shared asset retunes every mode that uses it.
 
 Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-ol600q`, `SHATTERPLANE.md`) taught six:
 - **A mode may SIZE an ability that reads the world, through the world.** The ring blast is as wide as the nucleus of the

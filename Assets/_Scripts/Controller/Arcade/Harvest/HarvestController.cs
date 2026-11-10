@@ -4,6 +4,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 
@@ -19,6 +20,14 @@ namespace CosmicShore.Gameplay
     /// in OnTurnEndedCustom, a snapshot SyncFinalScores_ClientRpc carrying the breakdown). The destruction stat
     /// increments itself (StatsManager.PrismDestroyed), so no per-event listener is needed. The omni crystals are the
     /// cell's own (its CrystalManager, in the field's clear centre): a crystal is the Thresher's 12 s windmill.</para>
+    ///
+    /// <para><b>Team Space crystals</b> (I3, <see cref="HarvestSettingsSO.teamCrystalsPerTeamByIntensity"/>): for each
+    /// team in the match the controller floats Space elemental crystals in that team's colour, at open points of the
+    /// field (<see cref="SpawnableHarvest.CollectOpenPoints"/>), laid identically on every peer, which only that team
+    /// can take (<see cref="ElementalCrystalImpactor.RestrictTo"/>) and which grow back after a while. A Space level
+    /// is the Thresher's own scaling (a bigger blast, x4 at rest Space up to x8 at full): the environment hands it out,
+    /// the kit is unchanged. The element is <see cref="HarvestSettingsSO.teamCrystalElement"/>.
+    /// The I4 creatures are the cell's own (its spawn profile), not this controller's.</para>
     ///
     /// <para><b>Nothing about the Thresher changes</b> (the LOCKED vessel rule): the mode's levers are the sheaves,
     /// the crystals and the AI. Every Thresher spawns in Mass Mode, where the ball steals and never destroys; the hint
@@ -41,8 +50,20 @@ namespace CosmicShore.Gameplay
                  "SpawnableHarvest says where the sheaves are.")]
         [SerializeField] Cell arenaCell;
 
+        sealed class CrystalSlot
+        {
+            public Vector3 Position;
+            public Domains Domain;
+            public Crystal Crystal;
+            public ElementalCrystalImpactor Impactor;
+            public float RegrowAt = -1f;
+        }
+
         readonly HarvestReaper _reaper = new();
         readonly List<SpawnableHarvest.Sheaf> _sheaves = new();
+        readonly List<CrystalSlot> _teamCrystals = new();
+        readonly List<Vector3> _points = new();
+        float _nextCrystalCheck;
         DomainRaceToasts _raceToasts;
         bool _finalResultsSent;
         bool _hintPosted;
@@ -67,11 +88,16 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             _reaper.Disarm();
+            ClearTeamCrystals();
             base.OnNetworkDespawn();
         }
 
         protected override void OnCountdownTimerEnded()
         {
+            // The team crystals are LOCAL, laid identically on every peer, so this runs before the server gate.
+            ClearTeamCrystals();
+            LayTeamCrystals();
+
             if (!IsServer) return;
 
             base.OnCountdownTimerEnded(); // ClientRpc: SetPlayersActive + StartTurn
@@ -82,7 +108,7 @@ namespace CosmicShore.Gameplay
                                    "Mass Mode and fly the platform's own steering.");
                 return;
             }
-            _reaper.Arm(gameData, settings, Centre, CollectSheaves());
+            _reaper.Arm(gameData, settings, Centre, CollectSheaves(), NearestTeamCrystal);
         }
 
         void Update()
@@ -105,6 +131,12 @@ namespace CosmicShore.Gameplay
                 if (local != null) GameToastAPI.Post(GameToastSituation.HarvestHint, local.Domain);
             }
 
+            if (settings != null && _teamCrystals.Count > 0 && Time.time >= _nextCrystalCheck)
+            {
+                _nextCrystalCheck = Time.time + settings.crystalCheckSeconds;
+                RegrowTeamCrystals();
+            }
+
             if (IsServer && _reaper.IsArmed) _reaper.Tick();
         }
 
@@ -120,10 +152,126 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _sheaves.Count; i++)
             {
                 var s = _sheaves[i];
-                _sheaves[i] = new SpawnableHarvest.Sheaf(env.transform.TransformPoint(s.Centre), s.CoreRadius * scale,
-                                                         s.Reach * scale, s.Domain);
+                _sheaves[i] = new SpawnableHarvest.Sheaf(env.transform.TransformPoint(s.Centre),
+                                                         env.transform.TransformDirection(s.Axis).normalized,
+                                                         s.CoreRadius * scale, s.Reach * scale, s.Domain);
             }
             return _sheaves;
+        }
+
+        SpawnableHarvest Environment()
+        {
+            var env = arenaCell ? arenaCell.GetComponentInChildren<SpawnableHarvest>(true) : null;
+            return env ? env : FindAnyObjectByType<SpawnableHarvest>();
+        }
+
+        // ── The team Space crystals (every peer) ──
+
+        /// <summary>The teams in the match, in enum order (Jade, Ruby, Gold), so every peer lays the same crystals.</summary>
+        List<Domains> TeamsPresent()
+        {
+            var teams = new List<Domains>();
+            var players = gameData != null ? gameData.Players : null;
+            if (players == null) return teams;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var d = players[i]?.Domain ?? Domains.Blue;
+                if (d == Domains.Blue || teams.Contains(d)) continue;
+                teams.Add(d);
+            }
+            teams.Sort();
+            return teams;
+        }
+
+        void LayTeamCrystals()
+        {
+            if (settings == null || gameData == null) return;
+            int intensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1;
+            int perTeam = settings.TeamCrystalsPerTeam(intensity);
+            if (perTeam <= 0 || ElementalCrystalSetSO.Load() == null) return;
+            var env = Environment();
+            if (!env) return;
+
+            foreach (var team in TeamsPresent())
+            {
+                _points.Clear();
+                // One stream per team (its enum value), so a team's places do not move when another team joins.
+                env.CollectOpenPoints((int)team, perTeam, settings.teamCrystalClearance, _points);
+                for (int i = 0; i < _points.Count; i++)
+                {
+                    var slot = new CrystalSlot { Position = env.transform.TransformPoint(_points[i]), Domain = team };
+                    _teamCrystals.Add(slot);
+                    MintTeamCrystal(slot);
+                }
+            }
+        }
+
+        void MintTeamCrystal(CrystalSlot slot)
+        {
+            var set = ElementalCrystalSetSO.Load();
+            var prefab = set != null ? set.GetPrefab(settings.teamCrystalElement) : null;
+            if (prefab == null) return;
+
+            var crystal = Instantiate(prefab, slot.Position, Quaternion.identity);
+            // One size, one petal, like every elemental crystal. Sized BEFORE Start(): Crystal stamps crystalValue from
+            // lossyScale.
+            crystal.transform.localScale = Vector3.one * ElementalCrystalSetSO.CrystalWorldScale;
+            crystal.enabled = true;
+            crystal.gameObject.SetActive(true);
+            // Its team's colour, and only its team may take it.
+            crystal.ApplyDomainPreview(slot.Domain);
+
+            var impactor = crystal.gameObject.AddComponent<ElementalCrystalImpactor>();
+            impactor.Crystal = crystal;
+            impactor.RestrictTo(slot.Domain);
+            if (set.CollectionEffects is { Length: > 0 })
+                impactor.SetCollectionEffects(set.CollectionEffects);
+            crystal.gameObject.AddComponent<ImpactCollider>().SetImpactor(impactor);
+
+            slot.Crystal = crystal;
+            slot.Impactor = impactor;
+            slot.RegrowAt = -1f;
+        }
+
+        static bool IsLive(CrystalSlot slot) => slot.Crystal && slot.Impactor && !slot.Impactor.HasBeenCollected;
+
+        void RegrowTeamCrystals()
+        {
+            float now = Time.time;
+            for (int i = 0; i < _teamCrystals.Count; i++)
+            {
+                var slot = _teamCrystals[i];
+                if (IsLive(slot)) continue;
+                if (slot.RegrowAt < 0f) { slot.RegrowAt = now + settings.teamCrystalRegrowSeconds; continue; }
+                if (now < slot.RegrowAt) continue;
+                // A collected crystal destroys itself at the end of its capture; one still flying is left to finish.
+                if (slot.Crystal) continue;
+                MintTeamCrystal(slot);
+            }
+        }
+
+        /// <summary>The nearest live crystal of <paramref name="team"/>'s on this machine (the AI's team-crystal target).</summary>
+        Vector3? NearestTeamCrystal(Vector3 from, Domains team)
+        {
+            Vector3? best = null;
+            float bestSqr = float.MaxValue;
+            for (int i = 0; i < _teamCrystals.Count; i++)
+            {
+                var slot = _teamCrystals[i];
+                if (slot.Domain != team || !IsLive(slot)) continue;
+                float d = (slot.Position - from).sqrMagnitude;
+                if (d >= bestSqr) continue;
+                bestSqr = d;
+                best = slot.Position;
+            }
+            return best;
+        }
+
+        void ClearTeamCrystals()
+        {
+            for (int i = 0; i < _teamCrystals.Count; i++)
+                if (_teamCrystals[i].Crystal) Destroy(_teamCrystals[i].Crystal.gameObject);
+            _teamCrystals.Clear();
         }
 
         // ── Server-authoritative game end ──
@@ -214,6 +362,7 @@ namespace CosmicShore.Gameplay
             gameData.WinnerDomain = (Domains)winnerDomain;
 
             _finalResultsSent = true;
+            ClearTeamCrystals();
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
@@ -231,6 +380,7 @@ namespace CosmicShore.Gameplay
             _hintPosted = false;
             _raceToasts = null;
             _reaper.Disarm();
+            ClearTeamCrystals();
 
             foreach (var s in gameData.RoundStatsList)
             {
