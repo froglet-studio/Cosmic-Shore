@@ -164,6 +164,28 @@ class Genome:
     def size(self):
         return len(zlib.compress(self.to_bytes(), 9))
 
+    def cost(self):
+        """Expanded (inlined) size of the shape tree and of the texture trees: what the GLSL compiler and the
+        raymarcher actually pay for. A DAG that reuses a subgraph pays for every use."""
+        from .ops import OPS as _OPS
+        memo = {}
+
+        def sz(i, types):
+            key = (i, types)
+            if key in memo:
+                return memo[key]
+            n = self.nodes[i]
+            s = 1 + sum(sz(j, types) for j in n.inputs if j is not None and _OPS[self.nodes[j].op].out in types)
+            memo[key] = min(s, 10 ** 7)
+            return memo[key]
+        r = self.root()
+        if r is None:
+            return 0, 0
+        ins = self.nodes[r].inputs
+        S = sz(ins[0], "S") if ins and ins[0] is not None else 0
+        T = sum(sz(i, "T") for i in self.live() if _OPS[self.nodes[i].op].out == "T")
+        return S, T
+
     def raw_size(self):
         return len(self.to_bytes())
 

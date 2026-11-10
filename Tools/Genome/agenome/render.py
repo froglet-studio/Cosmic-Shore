@@ -23,6 +23,8 @@ from .sim import build_populations, World, Camera, MESHES, _d
 W, H = 256, 144
 FPS = 15
 SUBSTEPS = 4  # 60 Hz game step, like Amoebius --frames
+MAX_SHAPE_COST = 160  # inlined SDF nodes evaluated per raymarch step
+MAX_TEX_COST = 400
 
 _XVFB = None
 
@@ -69,6 +71,36 @@ def _mesh(name):
         tris = [(0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11), (1, 5, 9), (5, 11, 4), (11, 10, 2), (10, 7, 6),
                 (7, 1, 8), (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9), (4, 9, 5), (2, 4, 11), (6, 2, 10),
                 (8, 6, 7), (9, 8, 1)]
+        return _flat(P, tris)
+    if name == "ring":
+        segs, sides, R, r = 16, 4, 0.42, 0.08
+        P, tris = [], []
+        for i in range(segs):
+            a = 2 * math.pi * i / segs
+            for j in range(sides):
+                b = 2 * math.pi * j / sides
+                P.append(((R + r * math.cos(b)) * math.cos(a), r * math.sin(b), (R + r * math.cos(b)) * math.sin(a)))
+        v = []
+        P = np.array(P, float)
+        for i in range(segs):
+            for j in range(sides):
+                a0, a1 = i * sides + j, ((i + 1) % segs) * sides + j
+                b0, b1 = i * sides + (j + 1) % sides, ((i + 1) % segs) * sides + (j + 1) % sides
+                for tri in ((a0, a1, b1), (a0, b1, b0)):
+                    p0, p1, p2 = P[list(tri)]
+                    n = np.cross(p1 - p0, p2 - p0)
+                    c = (p0 + p1 + p2) / 3
+                    ring_c = np.array([c[0], 0, c[2]]) / (np.hypot(c[0], c[2]) + 1e-9) * R
+                    if np.dot(n, c - ring_c) < 0:
+                        n = -n
+                        tri = (tri[0], tri[2], tri[1])
+                    n = n / (np.linalg.norm(n) + 1e-9)
+                    for k in tri:
+                        v.append(list(P[k]) + list(n))
+        return np.array(v, np.float32)
+    if name == "pyramid":
+        P = np.array([(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, -0.5, 0.5), (-0.5, -0.5, 0.5), (0, 0.5, 0)], float)
+        tris = [(0, 1, 4), (1, 2, 4), (2, 3, 4), (3, 0, 4), (0, 2, 1), (0, 3, 2)]
         return _flat(P, tris)
     raise KeyError(name)
 
@@ -291,6 +323,9 @@ class Renderer:
     def render(self, g, n_frames=60, return_state=False, t0=None):
         """Render genome g to uint8 [n_frames, H, W, 3] at 15 fps of game time."""
         g = g.copy().ensure_root()
+        cs, ct = g.cost()
+        if cs > MAX_SHAPE_COST or ct > MAX_TEX_COST:
+            raise ValueError(f"too costly to render: shape tree {cs}, texture trees {ct}")
         root = g.root()
         live = g.live()
         rn = g.nodes[root]

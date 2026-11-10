@@ -79,10 +79,10 @@ table + params grouped per op type), which compresses better — proposals welco
 | 0x52 | `ag.wander` | A | A | freq:exp[0.02,5], amp:exp[0.01,50] |  |
 | 0x53 | `ag.attract` | A | A | cx:scub[0,200], cy:scub[0,200], cz:scub[0,200], strength:exp[0.001,20], orbit:scub[0,2], radius:exp[0.1,300] |  |
 | 0x54 | `ag.bound` | A | A | radius:exp[1,1000], stiff:exp[0.01,100] |  |
-| 0x55 | `ag.trail` | A | A | interval:exp[0.02,2], sx:exp[0.01,20], sy:exp[0.01,20], sz:exp[0.01,20], life:exp[0.2,120], emit:exp[0.01,20], colormode:enum2, h:hue, s:lin[0,1], v:exp[0.01,4] | Cosmic Shore prism trails |
-| 0x56 | `ag.body` | A | A | shape:enum4, sx:exp[0.01,20], sy:exp[0.01,20], sz:exp[0.01,20], emit:exp[0.01,20], colormode:enum2, h:hue, s:lin[0,1], v:exp[0.01,4] | vessels |
+| 0x55 | `ag.trail` | A | A | interval:exp[0.02,2], sx:exp[0.01,20], sy:exp[0.01,20], sz:exp[0.01,20], life:exp[0.2,120], emit:exp[0.01,20], colormode:enum2, edge:lin[0,4], mesh:enum6, h:hue, s:lin[0,1], v:exp[0.01,4] | Cosmic Shore prism trails |
+| 0x56 | `ag.body` | A | A | shape:enum6, sx:exp[0.01,20], sy:exp[0.01,20], sz:exp[0.01,20], emit:exp[0.01,20], colormode:enum2, edge:lin[0,4], h:hue, s:lin[0,1], v:exp[0.01,4] | vessels |
 | 0x57 | `ag.merge` | A | A,A |  |  |
-| 0x58 | `ag.scatter` | A | - | n:exp[1,4096], radius:exp[0.5,400], shape:enum4, mesh:enum4, size:exp[0.01,50], sizevar:lin[0,1], spin:scub[0,3], emit:exp[0.01,20], seed:int[0,255], huevar:lin[0,1], h:hue, s:lin[0,1], v:exp[0.01,4] | Mesh_Multiply |
+| 0x58 | `ag.scatter` | A | - | n:exp[1,4096], radius:exp[0.5,400], shape:enum4, mesh:enum6, size:exp[0.01,50], sizevar:lin[0,1], spin:scub[0,3], emit:exp[0.01,20], seed:int[0,255], huevar:lin[0,1], edge:lin[0,4], h:hue, s:lin[0,1], v:exp[0.01,4] | Mesh_Multiply |
 | 0x70 | `cam.chase` | C | A | agent:int[0,15], dist:exp[0.1,200], height:scub[0,100], lag:lin[0,0.98], fov:lin[20,120], look:exp[0.01,20] | game camera |
 | 0x71 | `cam.orbit` | C | - | radius:exp[0.5,1000], height:scub[0,400], speed:scub[0,2], fov:lin[20,120], phase:lin[0,6.28319] | demo camera |
 | 0x72 | `cam.fly` | C | - | radius:exp[0.5,1000], speed:exp[0.01,5], fov:lin[20,120], seed:int[0,255] | demo camera |
@@ -92,7 +92,7 @@ table + params grouped per op type), which compresses better — proposals welco
 | 0x91 | `hud.ring` | H | h | anchor:enum9, x:lin[-0.5,0.5], y:lin[-0.5,0.5], r:exp[0.005,0.5], thick:exp[0.001,0.2], arc:lin[0,1], h:hue, s:lin[0,1], v:exp[0.01,4], alpha:lin[0,1] | overlay |
 | 0x92 | `hud.bar` | H | h | anchor:enum9, x:lin[-0.5,0.5], y:lin[-0.5,0.5], w:exp[0.003,1], hh:exp[0.003,1], segs:int[1,20], fill:lin[0,1], h:hue, s:lin[0,1], v:exp[0.01,4], alpha:lin[0,1] | overlay |
 | 0x93 | `hud.text` | H | h | anchor:enum9, x:lin[-0.5,0.5], y:lin[-0.5,0.5], size:exp[0.005,0.1], chars:int[1,40], rows:int[1,8], seed:int[0,255], h:hue, s:lin[0,1], v:exp[0.01,4], alpha:lin[0,1] | Bitmap_Text |
-| 0xF0 | `out` | O | s,a,c,p,t,h | sky:exp[0.001,4], steps:int[16,128], far:exp[10,4000], ltheta:lin[0,3.14159], lphi:lin[0,6.28319], ambient:lin[0,1], lh:hue, ls:lin[0,1], lv:exp[0.01,4] | KOp root |
+| 0xF0 | `out` | O | s,a,c,p,t,h | sky:exp[0.001,4], steps:int[16,128], far:exp[10,4000], ltheta:lin[0,3.14159], lphi:lin[0,6.28319], ambient:lin[0,1], warmup:lin[0,30], lh:hue, ls:lin[0,1], lv:exp[0.01,4] | KOp root |
 
 ## Variation operators (for the search)
 param tweak (gaussian in byte space), op swap within a type, insert filter, delete node, rewire input, duplicate

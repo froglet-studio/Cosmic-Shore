@@ -11,7 +11,7 @@ import numpy as np
 
 from .ops import OPS
 
-MESHES = ["box", "octa", "dart", "icosa"]
+MESHES = ["box", "octa", "dart", "icosa", "ring", "pyramid"]
 
 
 def _d(node):
@@ -109,6 +109,7 @@ class World:
         self.pr_col = np.zeros((max_prisms, 4), np.float32)
         self.pr_edge = np.zeros((max_prisms,), np.float32)
         self.pr_birth = np.full((max_prisms,), -1e9, np.float32)
+        self.pr_mesh = np.zeros((max_prisms,), np.int8)
         self.pr_life = np.zeros((max_prisms,), np.float32)
         self.pr_next = 0
 
@@ -247,6 +248,7 @@ class World:
         self.pr_col[sl, 3] = tr["emit"]
         self.pr_edge[sl] = tr["edge"]
         self.pr_birth[sl] = self.t
+        self.pr_mesh[sl] = int(tr.get("mesh", 0))
         self.pr_life[sl] = tr["life"]
         self.pr_next = int((self.pr_next + k) % self.max_prisms)
 
@@ -264,7 +266,9 @@ class World:
             col[:, 3] *= np.sqrt(fade)
             arr = np.concatenate([self.pr_pos[alive], self.pr_x[alive] * grow, self.pr_y[alive] * grow,
                                   self.pr_z[alive], col, self.pr_edge[alive][:, None]], 1)
-            lists["box"].append(arr)
+            mesh_id = self.pr_mesh[alive]
+            for mi in np.unique(mesh_id):
+                lists[MESHES[int(mi)]].append(arr[mesh_id == mi])
         for p in self.movers:
             if p.body is None:
                 continue

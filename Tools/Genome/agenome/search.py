@@ -1,5 +1,5 @@
 """Population search: regime-switching Pareto ("diamond") over (distance to Amoebius down, genome bytes down),
-with a MAP-Elites side archive for diversity.
+with a MAP-Elites side archive for diversity and a learned critic retrained as the population moves.
 
 The regimes are Garrett's pareto_complexity.py (NCA Ecology Lab) lifted from a (1+lambda) climber to a population:
   COMPLEXIFY - select on distance to Amoebius; growth mutations (insert, duplicate, swap, crossover) dominate.
@@ -7,7 +7,11 @@ The regimes are Garrett's pareto_complexity.py (NCA Ecology Lab) lifted from a (
                (delete, prune, param -> default) dominate.
 Flips on plateau (patience) or when the population's median size exceeds the byte budget.
 
-Run:  python3 -m agenome.search --run RUN_DIR --stats STATS.npz --seeds 'GLOB' [--workers 4] [--gens 200]
+Distance to Amoebius = stat (features.py, fixed) + critic_w * softplus(-critic logit) (critic.py, retrained every
+--critic-every generations on Amoebius train frames vs the frames the search just rendered).
+
+Run:  python3 -m agenome.search --run RUN_DIR --stats STATS.npz --hold HOLD.npz --real 'frames.npy globs'
+                                --seeds 'GLOB' [--workers 4] [--gens 200]
 """
 import argparse
 import glob
@@ -17,7 +21,6 @@ import multiprocessing as mp
 import os
 import random
 import time
-import traceback
 
 import numpy as np
 
@@ -32,9 +35,15 @@ _ST = None
 _HOLD = None
 
 
-def _init(stats_path, hold_path, lp_threads):
+def _init(stats_path, hold_path, lp_threads, mem_gb=3.0):
     global _R, _ST, _HOLD
-    os.environ.setdefault("LP_NUM_THREADS", str(lp_threads))
+    os.environ["LP_NUM_THREADS"] = str(lp_threads)
+    try:
+        import resource
+        lim = int(mem_gb * 2 ** 30)
+        resource.setrlimit(resource.RLIMIT_AS, (lim, lim))
+    except Exception:
+        pass
     os.environ.pop("DISPLAY", None)
     from .render import Renderer
     from .features import TargetStats
@@ -52,13 +61,14 @@ def _eval(payload):
         fr = _R.render(g, n_frames)
         f = window_features(fr, sub=2)
         d = _ST.distance(f)
-        res = {"ok": True, "dist": d["total"], "groups": {k: round(v, 4) for k, v in d.items() if k != "total"},
+        res = {"ok": True, "stat": d["total"], "groups": {k: round(v, 4) for k, v in d.items() if k != "total"},
                "zbytes": g.size(), "nodes": len(g.nodes), "luma": float(fr.mean() / 255.0),
-               "motion": float(np.abs(np.diff(fr[::4].astype(np.int16), axis=0)).mean() / 255.0) if len(fr) > 4 else 0.0}
+               "motion": float(np.abs(np.diff(fr[::4].astype(np.int16), axis=0)).mean() / 255.0) if len(fr) > 4 else 0.0,
+               "frames": fr[np.linspace(0, len(fr) - 1, 4).astype(int)].copy()}
         if _HOLD is not None:
             res["hold"] = _HOLD.distance(f)["total"]
     except Exception as e:
-        res = {"ok": False, "dist": 99.0, "zbytes": 10 ** 6, "err": f"{type(e).__name__}: {e}"[:300],
+        res = {"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"{type(e).__name__}: {e}"[:300],
                "nodes": 0, "luma": 0.0, "motion": 0.0}
     res["sec"] = time.time() - t0
     return res
@@ -148,7 +158,7 @@ def load_seeds(patterns, rng, limit=None):
                 g = Genome.load(p).ensure_root().prune()
                 if not g.nodes:
                     continue
-                g.meta.setdefault("src", os.path.relpath(p, "/mnt/project-files/amoebius-genome") if p.startswith("/mnt") else p)
+                g.meta.setdefault("src", p.split("amoebius-genome/")[-1])
                 out.append(g)
             except Exception as e:
                 print("seed load fail", p, e)
@@ -156,33 +166,134 @@ def load_seeds(patterns, rng, limit=None):
     return out[:limit] if limit else out
 
 
+class CriticState:
+    def __init__(self, args):
+        self.on = bool(args.real) and args.critic_w > 0
+        self.w = args.critic_w
+        self.c = None
+        self.buf = []
+        self.real = None
+        self.hold = None
+        self.rng = np.random.default_rng(args.seed)
+        if self.on:
+            from .critic import Critic
+            reals = [np.load(p) for pat in args.real for p in sorted(glob.glob(pat))]
+            self.real = np.concatenate(reals) if reals else None
+            if args.real_hold:
+                hs = [np.load(p) for p in sorted(glob.glob(args.real_hold))]
+                self.hold = np.concatenate(hs)[::4] if hs else None
+            self.c = Critic(seed=args.seed)
+            self.trained = False
+            print(f"critic: {len(self.real)} real frames", flush=True)
+
+    def add_fakes(self, cands):
+        for c in cands:
+            if c.get("ok") and "frames" in c:
+                self.buf.append(c["frames"])
+        self.buf = self.buf[-400:]
+
+    def train(self, steps):
+        if not self.on or not self.buf:
+            return {}
+        fake = np.concatenate(self.buf[-200:])
+        t0 = time.time()
+        loss = self.c.train(self.real, fake, steps=steps, rng=self.rng)
+        self.trained = True
+        info = {"critic_loss": round(loss, 4), "critic_sec": round(time.time() - t0, 1)}
+        if self.hold is not None:
+            info["critic_hold_logit"] = round(float(self.c.logits(self.hold).mean()), 3)
+        info["critic_fake_logit"] = round(float(self.c.logits(fake[-64:]).mean()), 3)
+        return info
+
+    def score(self, cands):
+        """Set c['crit'] (mean logit) and c['dist'] (stat + w * softplus(-logit)) for candidates with frames."""
+        from .critic import critic_distance
+        live = [c for c in cands if c.get("ok") and "frames" in c]
+        if self.on and self.trained and live:
+            lg = self.c.logits(np.concatenate([c["frames"] for c in live]))
+            for k, c in enumerate(live):
+                c["crit"] = float(lg[4 * k:4 * k + 4].mean())
+        for c in cands:
+            if not c.get("ok"):
+                c["dist"] = 99.0
+                continue
+            cd = critic_distance(c["crit"]) if (self.on and self.trained and "crit" in c) else 0.0
+            c["dist"] = c["stat"] + self.w * cd
+
+
 def run(args):
     rng = random.Random(args.seed)
     os.makedirs(args.run, exist_ok=True)
     os.makedirs(os.path.join(args.run, "best"), exist_ok=True)
     log = open(os.path.join(args.run, "log.jsonl"), "a")
+    with open(os.path.join(args.run, "args.json"), "w") as f:
+        json.dump(vars(args), f, indent=1)
     seeds = load_seeds(args.seeds, rng)
-    from .handmade import amoebius_like
-    seeds.append(amoebius_like())
+    from .handmade import amoebius_like, amoebius_v2
+    seeds += [amoebius_like(), amoebius_v2(), amoebius_v2(seed=9)]
+    if args.resume:
+        for p in args.resume:
+            for d in json.load(open(p)):
+                seeds.append(Genome.from_json(d["genome"]))
     print(f"{len(seeds)} seeds", flush=True)
     ctx = mp.get_context("spawn")
-    pool = ctx.Pool(args.workers, initializer=_init, initargs=(args.stats, args.hold, args.lp_threads))
+    state = {"pool": None}
+    crit = CriticState(args)
+
+    def new_pool():
+        if state["pool"] is not None:
+            state["pool"].terminate()
+        state["pool"] = ctx.Pool(args.workers, initializer=_init,
+                                 initargs=(args.stats, args.hold, args.lp_threads, args.mem_gb))
+    new_pool()
 
     def evaluate(gs):
-        res = pool.map(_eval, [(g.to_json(), args.frames) for g in gs], chunksize=1)
-        out = []
+        payload = [(g.to_json(), args.frames) for g in gs]
+        jobs = [state["pool"].apply_async(_eval, (p,)) for p in payload]
+        res = []
+        deadline = time.time() + 60 + 6.0 * len(jobs) / max(1, args.workers)
+        broken = False
+        for j in jobs:
+            try:
+                if broken:
+                    raise mp.TimeoutError()
+                res.append(j.get(timeout=max(1.0, deadline - time.time())))
+            except mp.TimeoutError:
+                broken = True
+                res.append({"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": "timeout", "nodes": 0,
+                            "luma": 0.0, "motion": 0.0, "sec": 0.0})
+            except Exception as e:
+                res.append({"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"worker: {e}"[:200], "nodes": 0,
+                            "luma": 0.0, "motion": 0.0, "sec": 0.0})
+        if broken:
+            print("evaluation timed out; restarting the worker pool", flush=True)
+            new_pool()
         for g, r in zip(gs, res):
             r["genome"] = g
-            out.append(r)
-        return out
+        crit.add_fakes(res)
+        crit.score(res)
+        return res
 
     t_start = time.time()
     pop = evaluate(seeds)
-    bad = [c for c in pop if not c["ok"]]
-    for c in bad[:5]:
+    for c in [c for c in pop if not c["ok"]][:5]:
         print("seed error:", c.get("err"), flush=True)
     pop = [c for c in pop if c["ok"]]
     archive, elites = Archive(), MapElites()
+
+    def rebuild():
+        nonlocal archive, elites
+        everyone = {id(c): c for c in pop + archive.members + list(elites.cells.values())}.values()
+        crit.score(list(everyone))
+        archive, elites = Archive(), MapElites()
+        for c in everyone:
+            archive.add(c)
+            elites.add(c)
+
+    if crit.on:
+        info = crit.train(args.critic_steps * 2)
+        print("critic", info, flush=True)
+        rebuild()
     for c in pop:
         archive.add(c)
         elites.add(c)
@@ -193,13 +304,21 @@ def run(args):
     since = 0
     evals = len(seeds)
     for gen in range(args.gens):
+        cinfo = {}
+        if crit.on and gen > 0 and gen % args.critic_every == 0:
+            cinfo = crit.train(args.critic_steps)
+            rebuild()
+            pop.sort(key=lambda c: c["dist"])
+            peak = min(c["dist"] for c in pop)  # the yardstick moved: re-anchor the floor
         parents = [c["genome"] for c in pop]
         extra = [m["genome"] for m in archive.members] + [m["genome"] for m in elites.cells.values()]
         kids = []
-        for k in range(args.lam):
-            src = rng.random()
-            if src < 0.6:
-                p = min(rng.sample(pop, min(3, len(pop))), key=lambda c: c["dist"] if regime == COMPLEXIFY else c["zbytes"])["genome"]
+        if args.share and gen > 0 and gen % args.migrate_every == 0:
+            kids += immigrants(args, rng, k=args.migrants)
+        for k in range(max(0, args.lam - len(kids))):
+            if rng.random() < 0.6:
+                p = min(rng.sample(pop, min(3, len(pop))),
+                        key=lambda c: c["dist"] if regime == COMPLEXIFY else c["zbytes"])["genome"]
             else:
                 p = rng.choice(extra) if extra else rng.choice(parents)
             if regime == COMPLEXIFY:
@@ -226,10 +345,10 @@ def run(args):
             key = lambda c: c["zbytes"] + args.beta * leaky(c["dist"] - floor)
             if best_now < peak - 1e-4:
                 peak = best_now
-            prev_min = min(c["zbytes"] for c in pop if c["dist"] <= floor) if any(c["dist"] <= floor for c in pop) else 1e9
+            ok_pop = [c["zbytes"] for c in pop if c["dist"] <= floor]
+            prev_min = min(ok_pop) if ok_pop else 1e9
             new_min = min((c["zbytes"] for c in allc if c["dist"] <= floor), default=1e9)
             since = 0 if new_min < prev_min else since + 1
-        # elitist selection with a little diversity: unique genomes by bytes
         allc.sort(key=key)
         seen, nxt = set(), []
         for c in allc:
@@ -250,31 +369,71 @@ def run(args):
         best = min(pop, key=lambda c: c["dist"])
         simplest_ok = min((m for m in archive.members if m["dist"] <= floor), key=lambda m: m["zbytes"], default=best)
         rec = {"gen": gen, "t": round(time.time() - t_start, 1), "evals": evals, "regime": regime, "flip": flipped,
-               "peak": round(peak, 4), "best_dist": round(best["dist"], 4), "best_hold": round(best.get("hold", -1), 4),
+               "peak": round(peak, 4), "best_dist": round(best["dist"], 4), "best_stat": round(best["stat"], 4),
+               "best_crit": round(best.get("crit", 0.0), 3), "best_hold": round(best.get("hold", -1), 4),
                "best_zbytes": best["zbytes"], "simplest_ok_zbytes": simplest_ok["zbytes"],
                "median_zbytes": med_size, "archive": len(archive.members), "elites": len(elites.cells),
                "errors": nerr, "sec_per_eval": round(float(np.mean([c["sec"] for c in res])), 3),
-               "best_groups": best.get("groups")}
+               "best_src": best["genome"].meta.get("src", best["genome"].meta.get("name", "")),
+               **cinfo, "best_groups": best.get("groups")}
         log.write(json.dumps(rec) + "\n")
         log.flush()
         print(json.dumps({k: v for k, v in rec.items() if k != "best_groups"}), flush=True)
         if gen % args.save_every == 0 or gen == args.gens - 1:
             save_state(args.run, pop, archive, elites, gen)
-    pool.close()
+            publish(args, args.run)
+    state["pool"].close()
     save_state(args.run, pop, archive, elites, args.gens)
+
+
+def immigrants(args, rng, k=4):
+    """Best genomes other islands published under --share (their pareto.json), re-evaluated here."""
+    out = []
+    me = os.path.abspath(os.path.join(args.share, args.island)) if args.island else None
+    for p in glob.glob(os.path.join(args.share, "*", "pareto.json")):
+        if me and os.path.abspath(os.path.dirname(p)) == me:
+            continue
+        try:
+            data = json.load(open(p))
+        except Exception:
+            continue
+        data = sorted(data, key=lambda d: d.get("dist", 99))[:max(1, k)]
+        for d in data:
+            g = Genome.from_json(d["genome"])
+            g.meta["immigrant_from"] = os.path.basename(os.path.dirname(p))
+            out.append(g)
+    rng.shuffle(out)
+    return out[:k]
+
+
+def publish(args, run_dir):
+    if not args.share or not args.island:
+        return
+    dst = os.path.join(args.share, args.island)
+    os.makedirs(dst, exist_ok=True)
+    import shutil
+    for name in ("pareto.json", "elites.json", "log.jsonl", "args.json"):
+        src = os.path.join(run_dir, name)
+        if os.path.exists(src):
+            shutil.copyfile(src, os.path.join(dst, name + ".tmp"))
+            os.replace(os.path.join(dst, name + ".tmp"), os.path.join(dst, name))
+    b = os.path.join(run_dir, "best", "best.json")
+    if os.path.exists(b):
+        shutil.copyfile(b, os.path.join(dst, "best.json"))
 
 
 def save_state(run_dir, pop, archive, elites, gen):
     def pack(c):
-        d = {k: v for k, v in c.items() if k != "genome"}
+        d = {k: v for k, v in c.items() if k not in ("genome", "frames")}
         d["genome"] = c["genome"].to_json()
         return d
-    with open(os.path.join(run_dir, "pareto.json"), "w") as f:
-        json.dump(sorted([pack(m) for m in archive.members], key=lambda d: d["zbytes"]), f)
-    with open(os.path.join(run_dir, "elites.json"), "w") as f:
-        json.dump([{"cell": list(k), **pack(c)} for k, c in elites.cells.items()], f)
-    with open(os.path.join(run_dir, "population.json"), "w") as f:
-        json.dump([pack(c) for c in pop], f)
+    tmp = lambda n: os.path.join(run_dir, n + ".tmp")
+    for name, data in (("pareto.json", sorted([pack(m) for m in archive.members], key=lambda d: d["zbytes"])),
+                       ("elites.json", [{"cell": list(k), **pack(c)} for k, c in elites.cells.items()]),
+                       ("population.json", [pack(c) for c in pop])):
+        with open(tmp(name), "w") as f:
+            json.dump(data, f)
+        os.replace(tmp(name), os.path.join(run_dir, name))
     best = min(pop, key=lambda c: c["dist"])
     best["genome"].save(os.path.join(run_dir, "best", f"best_gen{gen:04d}.json"))
     best["genome"].save(os.path.join(run_dir, "best", "best.json"))
@@ -285,9 +444,16 @@ def main(argv=None):
     ap.add_argument("--run", required=True)
     ap.add_argument("--stats", required=True)
     ap.add_argument("--hold", default=None)
+    ap.add_argument("--real", nargs="*", default=[], help="frames.npy globs: Amoebius frames the critic calls real")
+    ap.add_argument("--real-hold", default=None, help="frames.npy glob: held-out Amoebius frames (critic check)")
+    ap.add_argument("--critic-w", type=float, default=0.5)
+    ap.add_argument("--critic-every", type=int, default=6)
+    ap.add_argument("--critic-steps", type=int, default=120)
     ap.add_argument("--seeds", nargs="*", default=[])
+    ap.add_argument("--resume", nargs="*", default=[], help="population/pareto/elites json files to add as seeds")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--lp-threads", type=int, default=1)
+    ap.add_argument("--mem-gb", type=float, default=3.0)
     ap.add_argument("--gens", type=int, default=200)
     ap.add_argument("--mu", type=int, default=32)
     ap.add_argument("--lam", type=int, default=32)
@@ -299,6 +465,10 @@ def main(argv=None):
     ap.add_argument("--tiebreak", type=float, default=2e-5)
     ap.add_argument("--save-every", type=int, default=5)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--share", default=None, help="shared folder of islands, e.g. /mnt/project-files/amoebius-genome/runs")
+    ap.add_argument("--island", default=None, help="this island's name under --share")
+    ap.add_argument("--migrate-every", type=int, default=10)
+    ap.add_argument("--migrants", type=int, default=4)
     run(ap.parse_args(argv))
 
 

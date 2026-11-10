@@ -60,6 +60,22 @@ def _radial_bins(h, w, n=12):
 _RB = {}
 
 
+_FFTF = {}
+
+
+def _bank(img):
+    """All 16 random 5x5 filters on a stack of images [T,H,W] via FFT -> responses [16,T,H-4,W-4] ('valid')."""
+    T, H, W = img.shape
+    key = (H, W)
+    if key not in _FFTF:
+        pad = np.zeros((16, H, W), np.float32)
+        pad[:, :5, :5] = _FILTERS[:, ::-1, ::-1]
+        _FFTF[key] = np.fft.rfft2(pad)
+    Fi = np.fft.rfft2(img)
+    r = np.fft.irfft2(Fi[None] * _FFTF[key][:, None], s=(H, W))
+    return r[:, :, 4:, 4:]
+
+
 def _conv_valid(img, k):
     # img [T,H,W], k [5,5] -> correlation via stride tricks (small kernels)
     T, H, W = img.shape
@@ -120,7 +136,7 @@ def window_features(frames, sub=2):
     tf = L[:: max(1, T // 6)]
     feats = []
     for img in (tf, tf[:, ::2, ::2]):
-        r = np.stack([_conv_valid(img, k) for k in _FILTERS], 0)  # 16,T,h,w
+        r = _bank(img.astype(np.float32))  # 16,T,h,w
         a = np.abs(r).mean(axis=(1, 2, 3))
         sd = r.std(axis=(1, 2, 3))
         feats += [np.log(a + 1e-5), np.log(sd + 1e-5)]
@@ -202,3 +218,95 @@ class TargetStats:
 
 def score(frames, stats, sub=2):
     return stats.distance(window_features(frames, sub=sub))
+
+
+# ---------------------------------------------------------------------- patch bank: local structure, k-NN style
+def _down(frames, k):
+    x = frames.astype(np.float32) / 255.0
+    n, h, w, c = x.shape
+    return x.reshape(n, h // k, k, w // k, k, c).mean(axis=(2, 4))
+
+
+def patches(frames, scales=((2, 8, 8), (4, 8, 4))):
+    """frames uint8 [T,144,256,3] -> list (per scale) of patch matrices [N, 8*8*3].
+    scale = (downsample factor, patch size, stride)."""
+    out = []
+    for k, ps, st in scales:
+        x = _down(frames, k)
+        v = np.lib.stride_tricks.sliding_window_view(x, (ps, ps), axis=(1, 2))[:, ::st, ::st]  # T,a,b,c,ps,ps
+        out.append(np.ascontiguousarray(v.transpose(0, 1, 2, 4, 5, 3)).reshape(-1, ps * ps * 3))
+    return out
+
+
+class PatchBank:
+    """Amoebius patches at two scales, PCA-projected. precision = how Amoebius-like every candidate patch is
+    (nearest bank patch); recall = how much of Amoebius the candidate covers (nearest candidate patch for a fixed
+    sample of bank patches). Both are normalised so a held-out Amoebius window scores ~1."""
+
+    def __init__(self, data):
+        self.d = data
+
+    @classmethod
+    def build(cls, train_frames, hold_frames, n_bank=24000, n_recall=1500, dims=40, seed=0):
+        rng = np.random.default_rng(seed)
+        sub = train_frames[::2]
+        per = patches(sub)
+        d = {}
+        for s, P in enumerate(per):
+            idx = rng.choice(len(P), min(n_bank, len(P)), replace=False)
+            B = P[idx].astype(np.float32)
+            mu = B.mean(0)
+            U, S, Vt = np.linalg.svd(B[:6000] - mu, full_matrices=False)
+            basis = Vt[:dims].T.astype(np.float32)
+            proj = (B - mu) @ basis
+            d[f"mu{s}"], d[f"basis{s}"], d[f"bank{s}"] = mu, basis, proj
+            d[f"bn{s}"] = (proj ** 2).sum(1)
+            d[f"rec{s}"] = proj[rng.choice(len(proj), n_recall, replace=False)]
+            con = B.reshape(len(B), -1, 3).std(1).mean(1)  # patch contrast
+            thr = float(np.quantile(con, 0.8))
+            d[f"thr{s}"] = np.array(thr, np.float32)
+            sidx = np.nonzero(con >= thr)[0]
+            d[f"srec{s}"] = proj[rng.choice(sidx, min(n_recall, len(sidx)), replace=False)]
+        pb = cls(d)
+        # reference scale from held-out windows
+        refs = []
+        for w0 in range(0, len(hold_frames) - 60, 30):
+            refs.append(pb.raw(hold_frames[w0:w0 + 60]))
+        refs = np.array(refs)
+        d["ref"] = np.median(refs, 0)
+        return pb
+
+    def raw(self, frames, nframes=8):
+        fr = frames[np.linspace(0, len(frames) - 1, min(nframes, len(frames))).astype(int)]
+        per = patches(fr)
+        out = []
+        for s, P in enumerate(per):
+            q = (P.astype(np.float32) - self.d[f"mu{s}"]) @ self.d[f"basis{s}"]
+            qn = (q ** 2).sum(1)
+            D = qn[:, None] + self.d[f"bn{s}"][None, :] - 2.0 * (q @ self.d[f"bank{s}"].T)
+            nn = np.sqrt(np.maximum(D.min(1), 0))
+            prec = nn.mean()
+            con = P.reshape(len(P), -1, 3).std(1).mean(1)
+            sm = con >= float(self.d[f"thr{s}"])
+            # structured patches (beams, prisms, HUD): do they look like Amoebius's? too few is itself a miss
+            sprec = nn[sm].mean() if sm.mean() > 0.02 else 3.0 * prec
+            R = self.d[f"rec{s}"]
+            D2 = (R ** 2).sum(1)[:, None] + qn[None, :] - 2.0 * (R @ q.T)
+            rec = np.sqrt(np.maximum(D2.min(1), 0)).mean()
+            SR = self.d[f"srec{s}"]
+            D3 = (SR ** 2).sum(1)[:, None] + qn[None, :] - 2.0 * (SR @ q.T)
+            srec = np.sqrt(np.maximum(D3.min(1), 0)).mean()
+            out += [prec, rec, sprec, srec]
+        return np.array(out)
+
+    def distance(self, frames):
+        r = self.raw(frames)
+        return float((r / self.d["ref"]).mean()), r / self.d["ref"]
+
+    def save(self, path):
+        np.savez_compressed(path, **self.d)
+
+    @classmethod
+    def load(cls, path):
+        z = np.load(path)
+        return cls({k: z[k] for k in z.files})
