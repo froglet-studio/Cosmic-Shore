@@ -76,6 +76,15 @@ Then the platform rows, in this order:
   offers no Test Flight, silently. Eight modes shipped that way because their generators pre-dated
   `register_preview`; `Tools/Build/author_mode_previews.py --check` now holds those eight, and a
   new mode registers its own through the library.
+- **A gate race (any `GateRaceController` subclass) adds its line to `RaceCourseSource.For` and
+  `GateRaceModes`** (and `RaceCourseSourceTests.Races`). The card's preview has no scene to read,
+  so this switch is the ONLY way it learns the course: fifteen vessel Time games shipped without
+  it, and every one of their cards previewed a bare shell that never changed with intensity
+  (fixed 2026-11-10, `claude/great-meitner-72uziq`; `EveryGateRaceControllerIsRegistered` now fails).
+- **A preview definition's cells are the SCENE's cells.** `PreviewCellsByIntensity: []` is not
+  "authored": a generator that writes `[]` plus a donor's cell (hull_time_race.py wrote the Skim Race
+  cell for every hull Time race) shows another mode's world. `author_preview_intensities.py --check`
+  fails on that drift; run it after any scene cell change.
 
 ## 3. The generator (`Tools/Build/author_<mode>_assets.py`)
 
