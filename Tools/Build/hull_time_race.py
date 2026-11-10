@@ -221,12 +221,23 @@ def author(spec: dict):
                for block in authored_blocks if block not in scene]
     g.emit_scene(scene_name, g_scene, scene)
 
-    # 5. preview - a card without one offers no Test Flight.
+    # 5. preview - a card without one offers no Test Flight. It previews the cells the SCENE runs:
+    # a mode with its own cell_configs used to be emitted with the Skim Race cell and an empty
+    # per-intensity list, so six Time cards (Breach, Decoy Run, Perch Run, Serpent Time, Slip Line,
+    # Thornline) showed another mode's world that never changed with the intensity row
+    # (author_preview_intensities.py --check holds the pair together).
+    # Read from the scene as emitted (its own cell_configs, or the donor's cells it inherited -
+    # Thornline, Breach and the other Thresher-cloned races pass none), so the two cannot disagree.
+    scene_cells = re.findall(r"^  CellConfigs:\n((?:  - \{[^\n]*\}\n)+)  cellTypeChoiceOptions: \d+\n", scene, re.M)
+    own_cells = (re.findall(r"guid: ([0-9a-f]{32})", scene_cells[0]) if len(scene_cells) == 1
+                 else spec.get("cell_configs") or [])
+    preview_cell = own_cells[0] if own_cells else PREVIEW_CELL
+    preview_by_intensity = ("\n" + "".join(f"  - {{fileID: 11400000, guid: {c}, type: 2}}\n" for c in own_cells)
+                            if len(own_cells) > 1 else " []\n")
     g.emit_asset(preview, g_preview, lib.header_for(lib.SCRIPT_GUIDS["ModePreviewDefinitionSO"], f"ModePreview_{member}") + f"""  Mode: {mid}
   Notes: '{spec['preview_notes']}'
-  PreviewCell: {{fileID: 11400000, guid: {PREVIEW_CELL}, type: 2}}
-  PreviewCellsByIntensity: []
-  StructurePrefab: {{fileID: 0}}
+  PreviewCell: {{fileID: 11400000, guid: {preview_cell}, type: 2}}
+  PreviewCellsByIntensity:{preview_by_intensity}  StructurePrefab: {{fileID: 0}}
   TrackSpawnablesByIntensity: []
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4
