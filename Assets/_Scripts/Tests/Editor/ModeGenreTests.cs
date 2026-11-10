@@ -87,7 +87,7 @@ namespace CosmicShore.Tests
         [TestCase(ScoringMetric.PrismsRemaining,   Element.Mass)]
         [TestCase(ScoringMetric.PrismsStolen,      Element.Mass)]   // Hijack - nothing is destroyed to score it
         [TestCase(ScoringMetric.VolumeRemaining,   Element.Mass)]   // Tapestry - the mass you hold standing
-        [TestCase(ScoringMetric.PrismsDestroyed,   Element.Space)]  // Rampage, Cleave, Salvo, Wrecking Ball
+        [TestCase(ScoringMetric.PrismsDestroyed,   Element.Space)]  // Rampage, Cleave, Salvo, Wrecking Ball, Harvest
         [TestCase(ScoringMetric.VolumeDestroyed,   Element.Space)]  // Bloomrush
         [TestCase(ScoringMetric.LifeformsKilled,   Element.Space)]  // Wildlife Liberation
         [TestCase(ScoringMetric.Jousts,            Element.Charge)] // Joust
@@ -170,6 +170,23 @@ namespace CosmicShore.Tests
                     "is not in this list. Add it here and to Mode_OverridesItsMetricsGenre, so a " +
                     "shipped card's genre is pinned rather than merely present.");
             }
+        }
+
+        // Harvest is the Thresher's SPACE game (Docs/MassAndSpaceGames/PLAN.md): it has no row of its own, so it is
+        // Space through its metric. Pinned through the SHIPPED preview definition, so a definition that drifts to a
+        // stolen or remaining metric (Mass) fails here rather than quietly turning the card into a Mass game.
+        [Test]
+        public void Harvest_IsTheThreshersSpaceGame()
+        {
+            var library = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+            Assert.IsNotNull(library, $"Resources/{ModePreviewLibrarySO.ResourcePath} is missing");
+            var definition = library.Resolve(GameModes.Harvest);
+            Assert.IsNotNull(definition, "Harvest has no preview definition in the library");
+            Assert.AreEqual(ScoringMetric.PrismsDestroyed, definition.ObjectiveMetric);
+            Assert.IsTrue(ModeGenre.TryElementsFor(GameModes.Harvest, definition.ObjectiveMetric,
+                                                   out var first, out var second));
+            Assert.AreEqual(Element.Space, first, "Harvest's card must read Space: its score is mass destroyed");
+            Assert.AreEqual(Element.None, second);
         }
 
         // The end-to-end guard, and the one that catches the failure nobody would notice: a card

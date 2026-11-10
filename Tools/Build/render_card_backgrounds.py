@@ -100,6 +100,7 @@ SOURCES = [
     f"{_MG}/SpawnableFlatline.cs",
     f"{_MG}/SpawnableKelpwood.cs",
     f"{_MG}/SpawnableCorona.cs",
+    f"{_MG}/SpawnableHarvest.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
     f"{_MG}/SpawnableSkein.cs",
     f"{_MG}/SpawnableRegattaRails.cs",
@@ -794,6 +795,10 @@ CAMERAS = {
     # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
     # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
     "Corona": (37, -10, 0.36, 60),
+    # Harvest: inside the field, so the sheaves fill the plate, and the payoff - a Thresher's chain bowed round a
+    # sheaf's stalks, its red-hot ball in the core and the blast going off there (the act that scores most) - sits
+    # in the middle of it.
+    "Harvest": (40, 18, 0.7, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1465,6 +1470,43 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             layers.append({"kind": "ring", "c": p, "n": rng.unit(), "R": span * 0.008, "r": span * 0.0015,
                            "domain": JADE, "tier": SUPER, "emissive": domain_signal(pal, JADE, 0.9), "unbound": True})
         stage["vessels"] = vessels([(JADE, 0.12, 4, 300, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.62, 10, 230, 25)])
+    elif s == "Harvest":
+        # A HARVEST: a Jade Thresher's chain bowed round the rim of the nearest sheaf it scores on (the mow, every cut a
+        # charge), its red-hot ball in the core and the charged blast going off there (THRESHER.md section 2a). The
+        # omni crystals float in the field's clear centre.
+        import harvest_budget as hb
+        rung = hb.RUNGS[INTENSITY - 1]
+        sheaves, _ = hb.place(rung)
+        for k in range(3):
+            crystal(v_add(centre, v_mul(rng.unit(), rung["centreClearingRadius"] * 0.6 * rng.u() ** 0.33)), 12.0)
+        # The nearest sheaf a Jade pilot SCORES on: not its own colour (an own-colour sheaf is worth nothing).
+        target = min((sh for sh in sheaves if sh["domain"] != "jade"), key=lambda sh: v_dot(sh["c"], sh["c"]))
+        core = v_add(centre, list(target["c"]))
+        reach = hb.reach(rung)
+        out = v_norm(v_sub(core, centre))
+        side = v_norm(v_cross([0, 1, 0], out)); up = v_cross(out, side)
+        pilot = v_add(core, v_add(v_mul(out, reach * 1.25), v_mul(side, reach * 0.9)))
+        links = 20
+        prev = pilot
+        sig = domain_signal(pal, JADE, 1.3)
+        for k in range(1, links + 1):
+            t = k / links
+            # The chain sweeps round the rim (a quarter turn just outside the stalk tips), then whips into the core.
+            ang = 0.5 * math.pi * min(1.0, t / 0.75)
+            rim = v_add(core, v_mul(v_add(v_mul(out, math.cos(ang)), v_mul(side, math.sin(ang))), reach * 1.1))
+            q = rim if t <= 0.75 else v_add(rim, v_mul(v_sub(core, rim), (t - 0.75) / 0.25))
+            d = v_norm(v_sub(q, prev))
+            sx = v_norm(v_cross([0, 1, 0] if abs(d[1]) < 0.9 else [1, 0, 0], d)); sy = v_cross(d, sx)
+            w = 1.6
+            layers.append({"kind": "box", "c": v_mul(v_add(prev, q), 0.5), "ax": v_mul(sx, w), "ay": v_mul(sy, w),
+                           "az": v_mul(d, math.sqrt(v_dot(v_sub(q, prev), v_sub(q, prev))) * 0.42),
+                           "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+            prev = q
+        hot = [c * 1.6 for c in pal["danger"][:3]]   # the palette's danger red: the hot ball's own colour
+        layers.append({"kind": "sphere", "c": list(core), "r": 9.0, "base": [c * 0.6 for c in hot],
+                       "rim": hot, "emissive": hot, "unbound": True})
+        glow(core, rung["coreRadius"] * 1.7, JADE, 1.0, 0.3)
+        stage["vessels"] = vessels([(JADE, 0.42, 8, 320, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)
