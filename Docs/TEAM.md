@@ -74,7 +74,10 @@ full history, no commit, line, area owner or role moved credit from another coll
    AND the in-flight branches. `who_works_where.py query Assets/_Scripts/Data/Enums` shows who else is adding
    one.
 6. **Merge `bleeding-edge` in often, and keep pull requests small.** The longer two branches run apart, the
-   more each re-solves what the other already did (below).
+   more each re-solves what the other already did (below). **`/ship` merges its PR on a GO** (Garrett, 2026-11-10:
+   "it is becoming fast to batch test in bleeding edge and fix what doesn't work than switch to each branch for
+   testing"): shipped work is tested together on `bleeding-edge`, and what fails is fixed on a new branch (`/ship`
+   §5.7; "PR only" opts out).
 7. **Leave a trail.** When work touches another collaborator's area, the commit or PR says so: "Affects:
    Garrett's Thresher HUD". The next session reads the trail; the owner sees it in review.
 8. **Read the team activity when you need it** (Yash, 2026-10-15: "stay updated by searching all git repos

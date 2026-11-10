@@ -151,6 +151,8 @@ the engine renamed twice, retired tools brought back. **Every session:**
 - **Claim shared numbers only after checking `bleeding-edge` AND the in-flight branches**: enum values, `GameModes`
   ids, learnings ids, Netcode hashes, GUIDs.
 - **Leave a trail**: write "Affects: <person>'s <area>" in the commit or PR whenever you touch someone else's area.
+- **`/ship` merges on a GO** (Garrett, 2026-11-10): the PR goes into `bleeding-edge` with a merge commit, where the
+  team batch-tests shipped branches together and fixes what fails on a new branch (`/ship` §5.7). Say "PR only" to stop at the PR.
 - **Report on request**: when anyone asks for a report on a shared area or another person's work, build it with
   `python3 Tools/Build/team_report.py area <key>` (or `person <name>` / `paths <paths>`) plus the area's report in
   `Docs/Reports/`, never from memory (`Docs/TEAM.md` rule 10; the `report_request.py` hook reminds you).
