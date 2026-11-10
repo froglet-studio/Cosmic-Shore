@@ -140,9 +140,10 @@ audit (0 clipping; counts equal to the mirror), `bake_prism_layouts.py --check`,
 
 ## Known limitations
 
-- **The one question nobody has answered** (THRESHER_SPACE.md §4): can a pilot keep the ball off the stalks while the
-  chain mows them? If every bank goes off on a stalk, the sheaf reads as one pile and the game is Rampage with a chain.
-  That is the retire condition in the brief.
+- **The loop does not work with stalks in every direction** (THRESHER_SPACE.md §10, measured offline with the shipped
+  chain solver, `Tools/Build/harvest_stalk_lab/`): the chain trails the ship, so a lap cuts 0-11 stalks, the bank
+  stays small and a blast clears a few core blocks. Laying each sheaf's stalks flat as a wheel (a lap in its plane
+  cuts 38-92) and striking down its axle (bank intact, one blast takes about half a core) fixes it; not built yet.
 - The target (750) and the comeback rate are unplayed estimates (P-modes-02 asks for about 90 s).
 - Kills are credited where the attacker is simulated. The Thresher's ball runs on every peer and names its pilot, which
   is the shape Wrecking Ball relies on; untested in a multiplayer session here.

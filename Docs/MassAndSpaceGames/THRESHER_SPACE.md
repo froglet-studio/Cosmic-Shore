@@ -166,3 +166,44 @@ cores. That is the first idea in §8.
   spawn profile; grazers eating sheaves would score for nobody and empty the field early.
 - **The objective arrow** is Rampage's (the nearest omni crystal, in the clear centre), not a new sheaf finder.
 - **No new sound slot.** The mode has no event of its own: every blast, crush and smash is the Thresher's.
+
+## 10. The §4 question, answered offline: no, not with stalks in every direction (2026-11-10)
+
+**Method.** `Tools/Build/harvest_stalk_lab/` compiles the SHIPPED `ThresherChainSolver` and `ThresherChainLinks`
+with the SHIPPED dials (`ThresherConfig.asset`: analog triggers, rest 22 u, max 140 u, ball 3.1 u, smash 129 u/s) and
+flies them round one sheaf laid as `SpawnableHarvest` lays it, with `ThresherExecutor`'s contact rules (a prism is a
+sphere of half its box diagonal, plus the ball's radius or the 0.6 u cut radius), the bank (1 a cut, 70 at most),
+the blast (45 u x min(4, 1 + 0.1 x bank), rest Space) and shields (a hit pops, the next kills). The pilot is perfect
+on a set path: a 3 s approach, one lap round the sheaf, then a strike. Three sheaf orientations each; cruise 70 and
+120 u/s; RT up, half and full; laps from 110 u inside the sheaf's reach to 40 u outside it.
+
+**What it found.**
+- **The chain trails; it does not sweep.** With RT up the ball rides 21-60 u behind the ship at cruise (about 110 u at
+  120 u/s); RT pulled holds it at 21-25 u. A trailing chain lies along the ship's own path, so it cuts only what the
+  path crosses.
+- **Stalks in every direction starve it.** A lap round the sheaf as built crosses few stalks: **0-11 cuts a lap** at
+  every rung, speed, trigger and lap radius. The bank stays under 11, the blast clears **2-11 of I1's 160 core
+  blocks**, and at I2-I4 a blast only pops shields. That is the brief's retire condition.
+- **Laid flat, the stalks feed it.** With each sheaf's stalks in one plane round the core (a WHEEL), a lap at the tips
+  in that plane crosses every stalk: **38-92 cuts a lap**, the bank at 38-64. Off the wheel's plane by 20 degrees it
+  falls back to about 10, so the plane is what the pilot reads.
+- **The strike needs the axle.** Turning straight in through the wheel spends the bank on the stalks' unmowed inner
+  parts (bank at the core about 0). Climbing out of the plane and diving down the wheel's axis (no stalks there) keeps
+  it: at cruise the bank reaches the core intact (**39 at I1; one blast destroys 77 of 160 core blocks**; at I2 one
+  blast pops 81 of 140 shields, so a shielded core takes two). At 120 u/s the ball swings wide at the turn and misses
+  the core.
+
+| Lap round the tips, cruise 70, RT up | Cuts a lap | Bank at the core | One blast at the core |
+|---|---:|---:|---|
+| I1, stalks every way (as built) | 1.3 | 3 | 6 of 160 destroyed |
+| I1, wheel, straight in | 38 | 0.7 | 3 of 160 |
+| I1, wheel, down the axle | 38 | 39 | 77 of 160 |
+| I2, wheel, down the axle (lap 30 u inside) | 41 | 40 | 81 of 140 shields popped |
+
+**Limits of the lab.** The pilot is a perfect path; the rope's tug on the ship, the hull's own prism contacts, the
+plant (LT) and the windmill are not flown; one sheaf alone; a blast takes prisms whose centres are inside its radius.
+
+**What it means.** The mode as built does not deliver its loop. The fix is the mode's, not the vessel's: lay each
+sheaf's stalks as a wheel in a hashed plane (the core stays a ball), and teach the AI the wheel (lap in its plane,
+then dive down its axle). The AI as built laps in the plane it happens to fly and strikes straight in, so it would
+score mostly chain cuts and small blasts. Re-run with `bash Tools/Build/harvest_stalk_lab/run.sh [wheel <tilt> [axis]]`.
