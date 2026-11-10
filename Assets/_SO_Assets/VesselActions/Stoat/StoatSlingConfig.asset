@@ -60,7 +60,32 @@ MonoBehaviour:
   exitWindowSeconds: 1.1
   exitWindowHalfSeconds: 0.3
   exitWindowFalloffSeconds: 0.4
-  trampoline: 1
+  swing: 1
+  swingAhead: 150
+  swingSide: 35
+  swingHorizon: 0.8
+  swingReach: 55
+  swingCatchDegrees: 40
+  swingMinDegrees: 15
+  swingMaxDegrees: 90
+  swingDegreesPerSecond: 150
+  swingSeconds: 4
+  aiSwingFaceDegrees: 8
+  swingStartEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  swingFlingEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  trampoline: 0
   trampolineAhead: 140
   trampolineRadius: 30
   trampolineLine: 0.75
@@ -124,7 +149,7 @@ MonoBehaviour:
     element: 3
     UseFloor: 1
     Floor: 1.5
-  aiSlingMinTurnDegrees: 50
+  aiSlingMinTurnDegrees: 20
   aiReleaseConeDegrees: 15.999
   aiCatchGiveUpSeconds: 4
   aiSlingIntervalSeconds: 0.941
