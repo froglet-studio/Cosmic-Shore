@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
         public Element[] fieldElementByIntensity = { Element.None, Element.None, Element.Space, Element.None };
 
         [Tooltip("Each intensity's team rule (index = intensity - 1). On: every crystal site holds one crystal per team " +
-                 "present in the match, tinted to that team and collectable ONLY by it (TeamElementalCrystalImpactor), so " +
+                 "present in the match, tinted to that team and collectable ONLY by it (ElementalCrystalImpactor.RestrictTo), so " +
                  "no team can starve another of rings. Off: one crystal per site, anyone's.")]
         public bool[] fieldPerTeamByIntensity = { false, false, true, false };
 

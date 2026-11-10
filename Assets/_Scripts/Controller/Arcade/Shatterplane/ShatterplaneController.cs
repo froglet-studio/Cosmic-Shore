@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
     /// <para><b>Per intensity</b> (<see cref="ShatterplaneSettingsSO.fieldElementByIntensity"/>,
     /// <see cref="ShatterplaneSettingsSO.fieldPerTeamByIntensity"/>): I3 lays SPACE crystals only, one per team present at
     /// every site, side by side across the plate's axis, each tinted to its team and collectable by it alone
-    /// (<see cref="TeamElementalCrystalImpactor"/>) - so the race to a plate is never a race to deny another team its
+    /// (<see cref="ElementalCrystalImpactor.RestrictTo"/>, the opt-in gate Harvest's I3 added) - so the race to a plate is never a race to deny another team its
     /// ring. The AI forages only crystals its own team may take. I4's live elemental fauna are the CELL's (its spawn
     /// profile), never this controller's.</para>
     ///
@@ -305,11 +305,13 @@ namespace CosmicShore.Gameplay
             crystal.enabled = true;
             crystal.gameObject.SetActive(true);
 
-            // A team's crystal: tinted to the team and skimmed up by it alone. Anyone's: the base pickup.
-            ElementalCrystalImpactor impactor = slot.Owner != Domains.Blue
-                ? crystal.gameObject.AddComponent<TeamElementalCrystalImpactor>()
-                : crystal.gameObject.AddComponent<ElementalCrystalImpactor>();
-            if (slot.Owner != Domains.Blue) crystal.ApplyDomainPreview(slot.Owner);
+            var impactor = crystal.gameObject.AddComponent<ElementalCrystalImpactor>();
+            // A team's crystal: tinted to the team and skimmed up by it alone (the opt-in gate Harvest's I3 added).
+            if (slot.Owner != Domains.Blue)
+            {
+                impactor.RestrictTo(slot.Owner);
+                crystal.ApplyDomainPreview(slot.Owner);
+            }
             impactor.Crystal = crystal;
             if (set.CollectionEffects is { Length: > 0 })
                 impactor.SetCollectionEffects(set.CollectionEffects);

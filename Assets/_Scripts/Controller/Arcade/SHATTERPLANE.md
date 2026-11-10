@@ -120,8 +120,8 @@ experienced player should finish in about 90 s). The four values live in `EndCon
 just for teams present there"):
 - Every crystal site holds one Space crystal for each team present in the match, standing 30 u apart across the plate's
   axis, each tinted to its team.
-- A crystal can be skimmed up only by its own team (`TeamElementalCrystalImpactor`, the elemental twin of the omni
-  crystal's `TeamCrystalImpactor`).
+- A crystal can be skimmed up only by its own team (`ElementalCrystalImpactor.RestrictTo`, the opt-in gate Harvest's
+  I3 added the same day for the same request; Harvest and Shatterplane are its only two callers).
 - So reaching a plate first never denies another team its ring, and Space lengthens the guns' range and heat capacity.
 - The AI forages only crystals its own team may take.
 - These are `fieldElementByIntensity` / `fieldPerTeamByIntensity` on `ShatterplaneSettings`, per intensity, authored
@@ -235,5 +235,5 @@ Space arcade game). Froglet Compute is paused, so no job was queued.
 
 | Date | Change |
 |---|---|
-| 2026-11-10 | I3: Space crystals, one per team present, each its team's alone (`TeamElementalCrystalImpactor`). I4: live elemental fauna (Blob tadpole and shark, each creature rolling its element) on its own spawn profile at 2x (Shombith). |
+| 2026-11-10 | I3: Space crystals, one per team present, each its team's alone (`ElementalCrystalImpactor.RestrictTo`, shared with Harvest). I4: live elemental fauna (Blob tadpole and shark, each creature rolling its element) on its own spawn profile at 2x (Shombith). |
 | 2026-11-10 | Built (Shombith's session): D1 plates, D2 nucleus 470 u, D3 no wildlife, D4 the name, D5 straight to Unity. |

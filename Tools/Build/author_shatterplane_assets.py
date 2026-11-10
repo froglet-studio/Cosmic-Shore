@@ -16,7 +16,7 @@ THE DECISIONS (Shombith, 2026-11-10):
   D3 no wildlife at all; D4 the name; D5 straight to Unity.
   Then (Shombith, 2026-11-10): "for intensities 3 make elemental crystals of space just for teams present there and in
   i4 it has live elemental faunas" - I3's crystal field is Space, one crystal per team present at every site, each
-  collectable by its team alone (TeamElementalCrystalImpactor); I4's cell carries live elemental fauna (its own spawn
+  collectable by its team alone (ElementalCrystalImpactor.RestrictTo, shared with Harvest); I4's cell carries live elemental fauna (its own spawn
   profile: the Blob tadpole and shark, each creature rolling one of four elements), and I1-I3 still carry none.
 
 THE LADDER (one SpawnableShatterplane prefab and one cell config per intensity; shatterplane_budget.py is the census):
@@ -59,7 +59,6 @@ SCRIPT_PATHS = {
     "SpawnableShatterplane":        f"{MG}/SpawnableShatterplane.cs",
     "ShatterplanePlates":           f"{MG}/ShatterplanePlates.cs",
     "ShatterplaneTests":            "Assets/_Scripts/Tests/Editor/ShatterplaneTests.cs",
-    "TeamElementalCrystalImpactor": "Assets/_Scripts/Controller/ImpactEffects/Impactors/TeamElementalCrystalImpactor.cs",
 }
 G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
 CELL_DIR = "Assets/_SO_Assets/Cell Configs/Shatterplane Cell"
@@ -632,11 +631,11 @@ if any(FIELD_PER_TEAM_BY_INTENSITY[k] for k in (0, 1, 3)):
     errors.append("the per-team crystal field is I3's alone")
 if TEAM_CRYSTAL_SPACING * 2 >= sb.CRYSTAL_STEP:
     errors.append("three team crystals side by side would reach the next crystal round on the axis")
-impactor_cs = g.read(SCRIPT_PATHS["TeamElementalCrystalImpactor"])
-if "class TeamElementalCrystalImpactor : ElementalCrystalImpactor" not in impactor_cs or \
-        "Crystal.CanBeCollected(DomainOf(skimmer))" not in impactor_cs:
-    errors.append("TeamElementalCrystalImpactor no longer refuses another team's skimmer")
-if "AddComponent<TeamElementalCrystalImpactor>()" not in controller or "slot.Owner != team" not in controller:
+impactor_cs = g.read("Assets/_Scripts/Controller/ImpactEffects/Impactors/ElementalCrystalImpactor.cs")
+if "internal void RestrictTo(Domains domain)" not in impactor_cs or \
+        "skimmerImpactor.Skimmer.VesselStatus.Domain != _onlyFor.Value) return;" not in impactor_cs:
+    errors.append("ElementalCrystalImpactor's RestrictTo gate (Harvest's) no longer refuses another team's skimmer")
+if "impactor.RestrictTo(slot.Owner);" not in controller or "slot.Owner != team" not in controller:
     errors.append("ShatterplaneController no longer mints team crystals or keeps its AI off other teams' crystals")
 
 # The geometry the race promises: every structure placed with a gap, clear of the spawn ring, crystals on the axes.
