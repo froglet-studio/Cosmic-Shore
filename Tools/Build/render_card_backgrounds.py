@@ -99,6 +99,7 @@ SOURCES = [
     f"{_MG}/FlatlinePanes.cs",
     f"{_MG}/SpawnableFlatline.cs",
     f"{_MG}/SpawnableKelpwood.cs",
+    f"{_MG}/SpawnableCorona.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
     f"{_MG}/SpawnableSkein.cs",
     f"{_MG}/SpawnableRegattaRails.cs",
@@ -790,6 +791,9 @@ CAMERAS = {
     # Kelpwood: inside the kelp ball's rim, so the strands radiate across the plate and the lock - the eraser's beam
     # from one pilot onto a rival, a hunter on that rival's hull (the bite, the one thing that scores) - sits across it.
     "Kelpwood": (35, 16, 0.75, 46),
+    # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
+    # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
+    "Corona": (37, -10, 0.36, 60),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1446,6 +1450,21 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             glow(v_add(pilot, v_add(v_mul(d, -span * (0.05 + 0.02 * k)), v_mul(rng.unit(), span * 0.02))),
                  span * 0.008, JADE, 1.0, 0.6)
         stage["vessels"] = vessels([(JADE, 0.45, 8, 320, 25), (RUBY, 0.28, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
+    elif s == "Corona":
+        # A KABLOOM at the heart: a Manta touched an omni crystal, and the bloom round it catches a rival pilot (a
+        # glow in the planter's colour on the rival). Out on the shells, two bombed rivals carry fuse markers (small
+        # rings) - the next blooms. The heart's other crystal still floats beside it.
+        crystal(v_add(centre, v_mul(v_norm([0.4, 0.2, -0.3]), span * 0.03)), span * 0.014)
+        glow(centre, span * 0.11, JADE, 1.2, 0.4)
+        layers.append({"kind": "ring", "c": centre, "n": v_norm([0.3, 0.9, 0.2]), "R": span * 0.12, "r": span * 0.005,
+                       "domain": JADE, "tier": SUPER, "emissive": domain_signal(pal, JADE, 1.0), "unbound": True})
+        rival = v_add(centre, v_mul(v_norm([-0.6, 0.1, 0.5]), span * 0.07))
+        glow(rival, span * 0.03, JADE, 1.4, 0.6)
+        for d in ([0.7, -0.2, 0.6], [-0.5, 0.5, -0.7]):
+            p = v_add(centre, v_mul(v_norm(d), span * 0.33))
+            layers.append({"kind": "ring", "c": p, "n": rng.unit(), "R": span * 0.008, "r": span * 0.0015,
+                           "domain": JADE, "tier": SUPER, "emissive": domain_signal(pal, JADE, 0.9), "unbound": True})
+        stage["vessels"] = vessels([(JADE, 0.12, 4, 300, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.62, 10, 230, 25)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)

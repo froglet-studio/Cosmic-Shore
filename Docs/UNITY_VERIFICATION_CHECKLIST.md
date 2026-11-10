@@ -65,6 +65,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Corona, the Manta's Charge game (GameModes 87) (`claude/amazing-goldberg-7zn80e`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/CORONA.md`. Manta stings round a crystal heart in nested prism shells
+(`SpawnableCorona`, four baked prefabs), scored on blooms (a rival pilot caught in a bloom of a bomb you planted,
+Debuff-class CombatPoints, target 15), omni crystals in the heart (the scene's CrystalManager), AI stingers that only
+steer and route through the gates (`CoronaStinger`). New platform rows: `GameModes.Corona = 87`, `coronaBloomTarget`,
+toast situation 162. Checked offline: `author_corona_assets.py --check` (watched it fail on a mutated settings asset),
+the reference compile, the `/ship` gates, the clip audit (0 clipping; the C# lays 624 / 1,334 / 2,262 / 3,703 prisms
+and the mirror's volumes), the bake, the card render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now
+expects 80 modes).
+
+**Verify in editor:**
+1. Arcade → Corona card: the shells-and-bloom card art, Manta only, 2-4 players, intensities 1-4, the Charge badge.
+2. Launch I1 with one AI (any difficulty), as the HOST: you spawn outside one shell of tiles with eight wide gates;
+   four omni crystals float in the heart; the arrow points at the rival; the hint toast (162) shows once.
+3. Arm: fly along the shell close enough to skim (no hull contact): the Charge card's gauge fills and the armed badge
+   lights after about three tiles.
+4. Touch: brush a tile with the hull while carrying a planted bomb: every bomb goes off small and the energy empties.
+5. Plant: graze the rival while at least as fast as it: the armed badge drops, a fuse marker blooms on the rival (only
+   on your screen), the fuse board above the Space card counts 20 s. The rival sees nothing.
+6. Cash: dive through a gate and touch a crystal in the heart: every planted bomb blooms (nearest first) and a bloom
+   opens round your ship. Each rival caught: "<b>you</b> caught a rival in a bloom!" (82), the score goes up 1, the
+   rival is silenced and loses petals. At most one per rival per second. A fuse left to run out blooms smaller.
+7. AI: it skims a shell without touching, chases you through the gates, and dives for the heart once it has planted
+   (Easy at 1 bomb, Hard / Legendary at 3 or with 6-7 s of fuse left). Watch for the AI flying into tiles (its bombs
+   would go off early and its energy empty) and for it circling outside a gate it never lines up on.
+8. First team to 15 blooms wins: results show "N blooms" and "N Blooms Left"; the reveal says CORONA TIME / BLOOMS
+   LEFT. Replay works.
+9. I2, I3, I4: two, three, four shells; each shell's gates turned away from the last; red danger rims round the gates
+   from I3 (they take petals on contact); gates narrower (inner gate 131, 90, 65 u); 3, 2, 1 omni crystals in the heart.
+10. Blooms destroy tiles: after a full match, is I1's shell still a shell?
+11. Time a 2v2 at I2 with Medium AI. The plan wants 3-5 min; 15 is a first cut (FrogletTools > Game Modes > End Game
+    Conditions → Corona).
+12. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameCorona.unity`, and Reconcile Build Scene
+    List if the scene is reported missing from the build list. FrogletTools > Ecology > Measure Cell Environment
+    Baselines should agree with the census above.
+
+**First-pass tuning:** target 15, comeback 0.3, the shells and crystal counts in `corona_budget.RUNGS`, the AI
+ladders in `CORONA.md`.
+
+---
+
 ### 🔴 Kelpwood, the Angler's Charge game (GameModes 86) (`claude/sweet-wozniak-tk48pb`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/KELPWOOD.md`. An Angler hunt through a 0G ball of kelp (`SpawnableKelpwood`, four
