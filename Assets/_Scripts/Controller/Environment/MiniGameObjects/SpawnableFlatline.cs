@@ -5,18 +5,19 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// "Flatline" - the Brittle Star's charge arena (<c>GameModes.Flatline</c>): thin PANES of prisms crossing the cell.
-    /// See <c>Assets/_Scripts/Controller/Arcade/FLATLINE.md</c>.
+    /// "Flatline" - the Brittle Star's charge arena (<c>GameModes.Flatline</c>): an OPEN field of thin-paned structures
+    /// scattered through the cell - loose panes, tunnels you fly through and windowed cages you fly into. See
+    /// <c>Assets/_Scripts/Controller/Arcade/FLATLINE.md</c>.
     ///
     /// <para>Every pane has a job for the Brittle Star's own kit, which the mode never changes: a round stops at the
     /// first prism, so a pane is cover from the guns; the cords slice what they sweep, so they reach through a pane and
     /// strike the pilot hiding behind it; and the thrown ring bursts in a flat disk across its line of flight, so a ring
-    /// thrown face-on into a pane bursts flat along it and catches whoever hugs it. The seams where panes cross carry
-    /// the crystals (the spare rings), the most exposed places in the cell.</para>
+    /// thrown face-on into a pane bursts flat along it and catches whoever hugs it. The crystals (spare rings) float
+    /// inside the rooms first, so re-arming means going in.</para>
     ///
-    /// <para><b>Ribs.</b> Every <see cref="ribEvery"/>th grid line of a pane is super-shielded: nothing breaks it, so a
-    /// pane the cords and rings have worn down stays a readable plane, a lattice instead of nothing. The plain tiles
-    /// between the ribs are what the match wears away.</para>
+    /// <para><b>Ribs.</b> Every <see cref="ribEvery"/>th grid line of a wall is super-shielded: nothing breaks it, so a
+    /// wall the cords and rings have worn down stays a readable lattice. The plain tiles between the ribs are what the
+    /// match wears away.</para>
     ///
     /// <para>All tiles are painted neutral (<see cref="Domains.Blue"/>, as the Boneyard's crust is), so every team cuts
     /// them alike. The geometry is <see cref="FlatlinePanes"/> (pure, tested, twinned in
@@ -26,46 +27,77 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SpawnableFlatline : CellEnvironmentSpawnableBase
     {
-        [Header("Panes")]
-        [Tooltip("0 = three planes (the axes), 1 = five pages round one spine, 2 = the six icosahedral axes, " +
-                 "3 = a geode of ten panes standing off the centre.")]
-        [SerializeField, Range(0, 3)] int arrangement = 0;
-        [Tooltip("Each pane's radius in tiles (a tile is 10 u).")]
-        [SerializeField, Min(1)] int paneRadiusTiles = 23;
-        [Tooltip("How far (u) each pane stands from the centre along its own normal. 0 = every pane through the centre.")]
-        [SerializeField, Min(0f)] float paneOffset = 0f;
+        [Header("Field")]
+        [Tooltip("Structures are spread evenly by volume between this radius (u) and the outer one.")]
+        [SerializeField, Min(0f)] float innerRadius = 80f;
+        [Tooltip("The field's outer radius (u).")]
+        [SerializeField, Min(1f)] float outerRadius = 430f;
+
+        [Header("Structures")]
+        [Tooltip("Loose panes: square plates of (2h+1)^2 tiles (a tile is 10 u).")]
+        [SerializeField, Min(0)] int paneCount = 16;
+        [Tooltip("The smallest loose pane's half-size in tiles.")]
+        [SerializeField, Min(1)] int paneHalfMin = 3;
+        [Tooltip("The largest loose pane's half-size in tiles (sizes cycle from min to max).")]
+        [SerializeField, Min(1)] int paneHalfMax = 3;
+        [Tooltip("Tunnels: four walls of a hollow cube, open at both ends, to fly through.")]
+        [SerializeField, Min(0)] int tunnelCount = 0;
+        [Tooltip("Cages: six walls, each with a window in the middle, to fly into from any side.")]
+        [SerializeField, Min(0)] int cageCount = 0;
+        [Tooltip("A room's half-size in tiles (walls stand half a tile beyond it).")]
+        [SerializeField, Min(2)] int roomHalf = 4;
 
         [Header("Wear and danger")]
-        [Tooltip("Every Nth grid line is a super-shielded rib (the pane's skeleton). 0 = none.")]
-        [SerializeField, Min(0)] int ribEvery = 6;
-        [Tooltip("Outer rings of tiles that are danger prisms. 0 = none.")]
-        [SerializeField, Min(0)] int dangerRimTiles = 0;
-        [Tooltip("Share of the cells between the ribs left open as holes (0..1).")]
+        [Tooltip("Every Nth grid line of a wall is a super-shielded rib. 0 = none.")]
+        [SerializeField, Min(0)] int ribEvery = 3;
+        [Tooltip("Every Nth loose pane wears a danger rim. 0 = none.")]
+        [SerializeField, Min(0)] int dangerPaneEvery = 0;
+        [Tooltip("Every Nth room wears danger rims on its walls. 0 = none.")]
+        [SerializeField, Min(0)] int dangerRoomEvery = 0;
+        [Tooltip("Share of a loose pane's cells left open as holes (0..1).")]
         [SerializeField, Range(0f, 1f)] float holeShare = 0f;
         [Tooltip("A hole cell's edge, in tiles.")]
-        [SerializeField, Min(1)] int holeCellTiles = 4;
+        [SerializeField, Min(1)] int holeCellTiles = 2;
 
         [Header("Crystal sites (read by FlatlineController)")]
-        [Tooltip("Crystal sites on the seams where panes cross.")]
+        [Tooltip("Crystal sites: inside the rooms first, then in front of loose panes.")]
         [SerializeField, Min(0)] int crystalCount = 6;
-        [Tooltip("Step (u) along a seam between its sites; 0 puts each site at its seam's nearest point to the centre.")]
-        [SerializeField, Min(0f)] float crystalSpacing = 110f;
 
         protected override int DefaultSeed => 8484;
         protected override int LayCapacity => 16384;
 
         protected override int BuildParameterHash() =>
             System.HashCode.Combine(
-                System.HashCode.Combine(arrangement, paneRadiusTiles, paneOffset),
-                System.HashCode.Combine(ribEvery, dangerRimTiles, holeShare, holeCellTiles, 1));
+                System.HashCode.Combine(innerRadius, outerRadius, paneCount, paneHalfMin, paneHalfMax, tunnelCount,
+                                        cageCount, roomHalf),
+                System.HashCode.Combine(ribEvery, dangerPaneEvery, dangerRoomEvery, holeShare, holeCellTiles, 2));
 
-        readonly List<FlatlinePanes.Pane> _panes = new();
+        readonly List<FlatlinePanes.Structure> _structures = new();
         readonly List<FlatlinePanes.TileLay> _tiles = new();
+
+        FlatlinePanes.Settings Settings() => new()
+        {
+            Seed = seed != 0 ? seed : DefaultSeed,
+            InnerRadius = innerRadius,
+            OuterRadius = outerRadius,
+            PaneCount = paneCount,
+            PaneHalfMin = paneHalfMin,
+            PaneHalfMax = Mathf.Max(paneHalfMin, paneHalfMax),
+            TunnelCount = tunnelCount,
+            CageCount = cageCount,
+            RoomHalf = roomHalf,
+            RibEvery = ribEvery,
+            DangerPaneEvery = dangerPaneEvery,
+            DangerRoomEvery = dangerRoomEvery,
+            HoleShare = holeShare,
+            HoleCellTiles = holeCellTiles,
+        };
 
         protected override void BuildEnvironment()
         {
-            FlatlinePanes.Panes(arrangement, paneRadiusTiles, paneOffset, _panes);
-            FlatlinePanes.Tiles(_panes, dangerRimTiles, ribEvery, holeShare, holeCellTiles, _tiles);
+            var s = Settings();
+            FlatlinePanes.Layout(s, _structures);
+            FlatlinePanes.Tiles(_structures, s, _tiles);
             var scale = FlatlinePanes.TileScale;
             for (int i = 0; i < _tiles.Count; i++)
             {
@@ -76,15 +108,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The crystal sites in this structure's local space (the arena centre is its origin), on the seams. Read by
-        /// <c>FlatlineController</c> to lay the crystal field and by its AI to forage. Recomputed from the fields
-        /// rather than from a build, because a baked layout never runs <see cref="BuildEnvironment"/>.
+        /// The crystal sites in this structure's local space (the arena centre is its origin): inside the rooms, then in
+        /// front of loose panes. Read by <c>FlatlineController</c> to lay the crystal field and by its AI to forage.
+        /// Recomputed from the fields rather than from a build, because a baked layout never runs
+        /// <see cref="BuildEnvironment"/>.
         /// </summary>
         public void CollectCrystalSites(List<Vector3> into)
         {
-            var panes = new List<FlatlinePanes.Pane>(10);
-            FlatlinePanes.Panes(arrangement, paneRadiusTiles, paneOffset, panes);
-            FlatlinePanes.CrystalSites(panes, crystalCount, crystalSpacing, into);
+            var structures = new List<FlatlinePanes.Structure>(64);
+            FlatlinePanes.Layout(Settings(), structures);
+            FlatlinePanes.CrystalSites(structures, crystalCount, into);
         }
     }
 }

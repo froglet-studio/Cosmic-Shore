@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: Flatline Cell Config 4
   m_EditorClassIdentifier:
   CellName: Flatline
-  Description: 'Pane Geode - intensity 4 of Flatline: ten panes standing off the centre as a hollow
-    shell with two open faces and holes punched through, danger on every rim, four crystals
-    in the cracks. 5440 prisms, all neutral (1710 super-shielded ribs, 1568 danger).
-    Membrane radius 1200, spawn ring 420, the crystal field laid by the controller on the
-    seams. NO NUCLEUS, no flora, no fauna. Authored by Tools/Build/author_flatline_assets.py
-    - re-run it rather than hand-editing.'
+  Description: 'Maze - intensity 4 of Flatline: six cages, four tunnels and twenty-two holed panes,
+    danger on every other pane and every third room, five crystals deep inside the rooms.
+    3194 prisms, all neutral (670 super-shielded ribs, 640 danger). Membrane radius 1200,
+    spawn ring 680, the crystal field laid by the controller inside the rooms and in front
+    of panes. NO NUCLEUS, no flora, no fauna. Authored by
+    Tools/Build/author_flatline_assets.py - re-run it rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 4
   CellEndGameScore: 0
@@ -32,11 +32,11 @@ MonoBehaviour:
   EnvironmentIntensity: 4
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 6140
-    RestlessExit: 5940
-    FrenzyEnter: 9040
-    FrenzyExit: 8440
-    RestlessEnterVolume: 1088347
-    RestlessExitVolume: 1085147
-    FrenzyEnterVolume: 1134747
-    FrenzyExitVolume: 1125147
+    RestlessEnter: 3894
+    RestlessExit: 3694
+    FrenzyEnter: 6794
+    FrenzyExit: 6194
+    RestlessEnterVolume: 643628
+    RestlessExitVolume: 640428
+    FrenzyEnterVolume: 690028
+    FrenzyExitVolume: 680428

@@ -3,12 +3,12 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Flatline's tunables other than the point target (EndConditionOverridesSO, per intensity) and the point values
-    /// (FlatlineScoringRuleSO): progress feedback, the crystal field on the seams, and the AI hunters. Config
+    /// Flatline's tunables other than the point target (EndConditionOverridesSO, 90 at every intensity) and the point values
+    /// (FlatlineScoringRuleSO): progress feedback, the crystal field, and the AI hunters. Config
     /// separation - authored by <c>Tools/Build/author_flatline_assets.py</c>, never by hand.
     ///
-    /// <para>The crystal SITES are the arena's (<c>SpawnableFlatline.CollectCrystalSites</c>: on the seams where panes
-    /// cross), so they move with the panes at every intensity; this asset only says how fast a taken one grows back.</para>
+    /// <para>The crystal SITES are the arena's (<c>SpawnableFlatline.CollectCrystalSites</c>: inside the rooms, then in
+    /// front of loose panes), so they move with the structures at every intensity; this asset only says how fast a taken one grows back.</para>
     ///
     /// <para><b>Difficulty is the seat's AI level</b> (Easy, Medium, Hard, Legendary - index = level - 1), never the
     /// intensity: intensity is the MAP, difficulty the OPPONENT (<c>AIDifficulty.cs</c>). Each ladder is monotone toward
@@ -23,9 +23,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds between the field's regrowth checks and the hint's idle check.")]
         [Min(0.1f)] public float progressSampleSeconds = 0.5f;
 
-        [Header("Crystal field (on the seams)")]
+        [Header("Crystal field (inside the rooms)")]
         [Tooltip("Seconds before a collected crystal grows back in its place. Every crystal is a spare ring for the " +
-                 "Brittle Star, so this is how often the seams re-arm the cell.")]
+                 "Brittle Star, so this is how often the rooms re-arm the cell.")]
         [Min(0.5f)] public float fieldRegrowSeconds = 10f;
 
         [Tooltip("Seed for each site's element, drawn from the elemental crystal set. Every peer draws alike.")]

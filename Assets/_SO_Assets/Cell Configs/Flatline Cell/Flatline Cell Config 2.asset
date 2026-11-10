@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: Flatline Cell Config 2
   m_EditorClassIdentifier:
   CellName: Flatline
-  Description: 'Five Pages - intensity 2 of Flatline: five panes round one spine like the pages of a
-    book, ten narrow rooms, five crystals up the spine. 8393 prisms, all neutral (2393
-    super-shielded ribs, 0 danger). Membrane radius 1200, spawn ring 420, the crystal field
-    laid by the controller on the seams. NO NUCLEUS, no flora, no fauna. Authored by
-    Tools/Build/author_flatline_assets.py - re-run it rather than hand-editing.'
+  Description: 'Tunnels - intensity 2 of Flatline: twenty loose panes and five open-ended tunnels to
+    fly through, a crystal inside every tunnel. 2280 prisms, all neutral (560 super-shielded
+    ribs, 0 danger). Membrane radius 1200, spawn ring 680, the crystal field laid by the
+    controller inside the rooms and in front of panes. NO NUCLEUS, no flora, no fauna.
+    Authored by Tools/Build/author_flatline_assets.py - re-run it rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -31,11 +31,11 @@ MonoBehaviour:
   EnvironmentIntensity: 2
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 9093
-    RestlessExit: 8893
-    FrenzyEnter: 11993
-    FrenzyExit: 11393
-    RestlessEnterVolume: 1673056
-    RestlessExitVolume: 1669856
-    FrenzyEnterVolume: 1719456
-    FrenzyExitVolume: 1709856
+    RestlessEnter: 2980
+    RestlessExit: 2780
+    FrenzyEnter: 5880
+    FrenzyExit: 5280
+    RestlessEnterVolume: 462651
+    RestlessExitVolume: 459451
+    FrenzyEnterVolume: 509051
+    FrenzyExitVolume: 499451
