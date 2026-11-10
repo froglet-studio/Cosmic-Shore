@@ -131,8 +131,12 @@ would need the controller to know a core is gone, which it does not track.
 
 ## Verification status
 
-Authored headless; **not yet run in the Unity editor**. See the commit and `Docs/UNITY_VERIFICATION_CHECKLIST.md` for
-what ran offline and the hand tests.
+Authored headless; **not yet run in the Unity editor**. Run offline on 2026-11-10: `author_harvest_assets.py --check`
+(and watched it fail on a mutated cell config, a mutated C# constant and an AI keyed on intensity), the `/arcadegame`
+gates, `unity_refcompile` (player and editor, 0 errors in project code), the full `/ship` gates (ALL OK), the clip
+audit (0 clipping; counts equal to the mirror), `bake_prism_layouts.py --check`, `render_card_backgrounds.py Harvest
+--check`, `author_preview_spawns.py --check`. Not run: the EditMode tests (they need Unity). The hand tests are in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ## Known limitations
 

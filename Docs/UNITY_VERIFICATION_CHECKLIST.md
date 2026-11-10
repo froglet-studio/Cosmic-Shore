@@ -73,8 +73,8 @@ chain to charge the ball, smash it into the core for one blast. Scored on hostil
 Space), target 750, golf-timed. AI reapers (`HarvestReaper`) steer and press A once to leave Mass Mode. New platform
 rows: `GameModes.Harvest = 88`, `harvestPrismTarget`, toast situation 163 (`HarvestHint`). Checked offline:
 `author_harvest_assets.py --check` (and watched it fail three ways), the `/arcadegame` gates, the clip audit (0
-clipping; the C# lays 3,200 / 3,408 / 3,040 / 3,300 prisms, as the Python mirror does), the bake, the card render.
-Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 81 modes; `HarvestTests`,
+clipping; the C# lays 3,200 / 3,408 / 3,040 / 3,300 prisms, as the Python mirror does), the bake, the card render,
+the reference compile (player and editor: 0 errors in project code) and the full `/ship` gates (ALL OK). Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 81 modes; `HarvestTests`,
 `ModeGenreTests.Harvest_IsTheThreshersSpaceGame`).
 
 **Verify in editor:**
