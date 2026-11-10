@@ -151,8 +151,9 @@ at most every 3 s, never while a trigger is held, through the replicated press.
 
 ## 1b. Time mode — the catch and the 90° slingshot (2026-10-14)
 
-**Since 2026-11-04 Time mode is the TRAMPOLINE** (`StoatSlingConfigSO.trampoline` on; "The trampoline" below). The catch,
-the orbit and the aimed exit in this section are its fallback: `trampoline` 0 flies them as they shipped in PR #1733.
+**Since 2026-11-11 Time mode is the SWING** (`StoatSlingConfigSO.swing` on; "The swing" below). Off, the trampoline
+(`trampoline`, 2026-11-04, shipped off since) and then the catch, the orbit and the aimed exit in this section fly as they
+shipped.
 
 The design call, after the first cut was played: *"Mass mode [should] be like what we had before I tried to split into
 modes. Time mode would have less mass and reflect the way we had it working before the pathfinding and instead of
@@ -257,6 +258,36 @@ lets it go on the release. The catch and the orbit fly on the simulating machine
   model (`stoat_orbit_sim.py --earned`): 78-91 s a Slingshot race at 11-12 presses a minute with 63-78% of releases timed,
   where the press-spam AI ran 55-58 s at 19-28 a minute with almost none timed before, and 80-85 s under earned speed.
 - **On a phone** two orbit discs (LT left, RT right) sit round the right thumb; a thumb anywhere else steers.
+- **The swing (Yash, 2026-11-11: "it's worse, try smaller hole size, change it to a black hole only as before, then make the
+  slingshot angle dynamic based on our controller's axis like before... try a better approach this time... the black hole
+  looks more better than the white hole").** `swing` on (Unity-first, not in the studio yet). One black hole, no white
+  hole, no orbit, no shell:
+  - **The press** lays a lone BLACK HOLE `swingAhead` 150 u ahead and `swingSide` 35 u to the pressed side (RT right, LT
+    left; `StoatSlingMath.SwingHole`), its horizon `swingHorizon` 0.8 u: half the orbit's poles (1.6). It is owned by the
+    Stoat that laid it, so it pulls no vessel (`BlackHoleVesselPull`), and it steals prisms for Space 5 Accretion as the
+    orbit's attractor did.
+  - **The swing.** Pass within `swingReach` 55 u (× Space's reach) with the hole at least `swingCatchDegrees` 40° off your nose
+    (beside it, not into it: `SwingStarts`) and it swings you toward itself: your heading turns about the axis fixed at
+    that moment (`SwingAxis`) at your speed over your distance (ω = v / d), never faster than `swingDegreesPerSecond` 150°/s
+    (`SwingRate`). No radius is held and nothing pulls you: only the heading turns.
+  - **The stick picks the angle, live** (`SwingTurnDegrees`, read every frame): the stick's share toward the hole maps
+    `swingMinDegrees` 15° (away) .. 52.5° (at rest) .. `swingMaxDegrees` 90° (toward). The moment you have turned that far
+    you are FLUNG: the kick along your new heading (`slingBoostMin`..`slingBoostMax` of the engine by the hold's deepest
+    squeeze, × Mass's `launchPower`, under `speedCapShare` and `warpKickCapCruise`) and the warp kept as momentum. Every
+    fling is timed: no window. Letting go of the trigger while it swings you flings you at once; before it, nothing.
+  - **Drawn** (world dots, `StoatPathfinderExecutor.AddSwingRings`): a faint ring at the reach round the hole, and the EXIT
+    LINE from your nose along the heading the swing would fling you on right now, so moving the stick moves the line;
+    lime while it swings you. A lime ripple grows out of the hole at each fling. The Time card fills through the swing.
+  - **The end.** Passed untouched (moving away beyond the reach) or after `swingSeconds` 4 s, the hole collapses; flung, it
+    collapses at once. Either way it throws the Charge ripple, as the pair's annihilation did. A press over a live hole
+    collapses it first. A hull that came within the reach lays its trail shielded for the kick's length (Mass 5).
+  - **The AI** presses toward a turn (the hole lands on that side, so steering for its target it passes beside it) and
+    lets go at once; it is flung once it faces its target within `aiSwingFaceDegrees` 8° (after 15°), once its target is
+    no longer on the swing's side (`OnSwingSide`: a press for the warp alone), or at 90°. Model (`stoat_orbit_sim.py
+    --swing`, 6 courses): the hull's own rows (`aiSlingMinTurnDegrees` 50 → 20) 103 / 100 / 96 / 96 s at I1-I4, 0-0.7 rings
+    missed; Slingshot's own copy keeps Garrett's trained rows (c39317a6b6: warp presses on long legs) and races 61 / 71 /
+    72 / 76 s. The aimed exit ran 115 / 124 / 111 / 133 s, cruising 142 / 138 / 143 / 149 s. `--swing-grid` chose the reach
+    and the cap (a 70 u reach or a 300°/s cap bounced the AI off its line).
 - **The trampoline (Yash, 2026-11-04: "Make the slingshot mechanics in a different way, now while bouncing, it's getting
   sucked in some orbit, and then they gets puished, what if we remove the whole orbit, and make a soft tampoline like 3D surface
   above the black hole, or remove the black hole, just keep white hole, make it so that vessels can bounce off with extra

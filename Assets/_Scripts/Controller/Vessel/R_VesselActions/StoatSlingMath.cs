@@ -349,6 +349,70 @@ namespace CosmicShore.Gameplay
         public static Vector3 Midpoint(Vector3 hullPosition, Vector3 hullForward, float horizonRadius, float aheadHorizons)
             => hullPosition + hullForward * (Mathf.Max(0f, horizonRadius) * Mathf.Max(0f, aheadHorizons));
 
+        // ------------------------------------------------------------------ Time mode: the swing (STOAT_DIPOLE.md §1b)
+
+        /// <summary>Where the swing's black hole is laid: <paramref name="ahead"/> along the nose and <paramref name="side"/> to
+        /// the pressed side (RT right, LT left), so flying on you pass beside it on that side.</summary>
+        public static Vector3 SwingHole(Vector3 position, Vector3 forward, Vector3 right, bool pressedRight, float ahead, float side)
+        {
+            var f = forward.sqrMagnitude > 1e-8f ? forward.normalized : Vector3.forward;
+            var r = right.sqrMagnitude > 1e-8f ? right.normalized : Vector3.right;
+            return position + f * Mathf.Max(0f, ahead) + r * ((pressedRight ? 1f : -1f) * Mathf.Max(0f, side));
+        }
+
+        /// <summary>The swing starts: within <paramref name="reach"/> of the hole, with the hole at least
+        /// <paramref name="catchDegrees"/> off the nose (passing beside it, not flying into it).</summary>
+        public static bool SwingStarts(Vector3 hull, Vector3 forward, Vector3 hole, float reach, float catchDegrees)
+        {
+            var toHole = hole - hull;
+            return toHole.sqrMagnitude <= reach * reach && Vector3.Angle(forward, toHole) >= catchDegrees;
+        }
+
+        /// <summary>The swing's turn axis, fixed at its start: turning the nose about it by a positive angle turns it toward the
+        /// hole (the plane of the nose and the hole). Dead ahead or behind, the hull's up.</summary>
+        public static Vector3 SwingAxis(Vector3 forward, Vector3 toHole, Vector3 fallbackUp)
+        {
+            var axis = Vector3.Cross(forward, toHole);
+            if (axis.sqrMagnitude < 1e-8f) axis = fallbackUp;
+            return axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.up;
+        }
+
+        /// <summary>
+        /// The angle a swing turns the hull, read from the stick: the stick's share toward the hole (the stick
+        /// <paramref name="stickX"/> right / <paramref name="stickY"/> up against the hole's direction in the hull's frame,
+        /// <paramref name="holeX"/> / <paramref name="holeY"/>) maps <paramref name="minDegrees"/> (away) .. the middle (at rest)
+        /// .. <paramref name="maxDegrees"/> (toward). Read every frame, so moving the stick moves the exit.
+        /// </summary>
+        public static float SwingTurnDegrees(float stickX, float stickY, float holeX, float holeY, float minDegrees, float maxDegrees)
+        {
+            var hole = new Vector2(holeX, holeY);
+            float toward = hole.sqrMagnitude > 1e-8f ? Vector2.Dot(new Vector2(stickX, stickY), hole.normalized) : 0f;
+            return Mathf.Lerp(minDegrees, maxDegrees, 0.5f + 0.5f * Mathf.Clamp(toward, -1f, 1f));
+        }
+
+        /// <summary>How fast a swing turns the hull, degrees a second: its speed over its distance from the hole (ω = v / d, as a
+        /// circle round the hole), never faster than <paramref name="maxDegreesPerSecond"/>.</summary>
+        public static float SwingRate(float speed, float distance, float maxDegreesPerSecond) =>
+            Mathf.Min(Mathf.Max(0f, speed) / Mathf.Max(1f, distance) * Mathf.Rad2Deg, Mathf.Max(0f, maxDegreesPerSecond));
+
+        /// <summary>The heading a swing throws the hull on: its <paramref name="entry"/> heading turned
+        /// <paramref name="degrees"/> about <paramref name="axis"/> (the dotted exit line).</summary>
+        public static Vector3 SwingExit(Vector3 entry, Vector3 axis, float degrees) =>
+            (Quaternion.AngleAxis(degrees, axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.up) * entry).normalized;
+
+        /// <summary>The autopilot lets the swing throw it once it has turned at least <paramref name="minDegrees"/> and either faces
+        /// its target (within <paramref name="faceDegrees"/>) or has its target no longer on the swing's side
+        /// (<paramref name="targetOnTurnSide"/> false: turning on would turn it away - a press for the warp alone), or once it has
+        /// turned <paramref name="maxDegrees"/>.</summary>
+        public static bool SwingAiLetsGo(float turnedDegrees, float offTargetDegrees, float minDegrees, float maxDegrees, float faceDegrees,
+            bool targetOnTurnSide) =>
+            turnedDegrees >= maxDegrees || (turnedDegrees >= minDegrees && (offTargetDegrees <= faceDegrees || !targetOnTurnSide));
+
+        /// <summary>The target is on the swing's side of the nose: turning on about <paramref name="axis"/> brings the nose toward
+        /// it.</summary>
+        public static bool OnSwingSide(Vector3 forward, Vector3 toTarget, Vector3 axis) =>
+            Vector3.Dot(Vector3.Cross(forward, toTarget), axis) > 0f;
+
         // ------------------------------------------------------------------ Time mode: the trampoline (STOAT_DIPOLE.md §1b)
 
         /// <summary>
