@@ -65,6 +65,27 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 B21 (scoring): every pilot's drift, boost and prisms damaged on every scoreboard (`Ys-bleeding-edge`, 2026-11-10, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/ScoringSystem/BUGS.md` B21. Every hull gets a telemetry with its three base stats (from
+`Resources/GameModeStatsProfile` when the prefab has none or leaves a link empty); each pilot's machine reports its
+values to its `RoundStats` (`n_VesselStats`, server-written); the scoreboard's stat block lists every human pilot.
+`ProtocolVersion` 30: both machines need this build. Compiled with the editor's Roslyn (0 errors). Not run: EditMode,
+a play.
+
+**Verify in editor:**
+1. The project compiles; EditMode `VesselStatsSyncTests` (7) passes.
+2. Solo, fly a Dolphin (or Manta, Rhino, Serpent, Swordfish) in any arcade mode and ram some prisms. **Pass:** the
+   scoreboard's Prisms Damaged is above 0, and Longest Drift / Max Boost show your values. The console no longer
+   warns "[TelemetryBootstrap] ... serialized stat SO refs will be null".
+3. Two players (editor + MPPM Player 2, or a dev build), different hulls, both ram prisms. **Pass:** both scoreboards
+   show the same stat block: "<you> N · <them> M" on each row, the same numbers on both machines, yours first.
+4. The numbers match what each pilot did (one ram is a handful, not one per ship in the arena: the old double count).
+5. Play Again: the block starts from 0 for both.
+6. A Sparrow or Squirrel match (Skim Race): their extra rows (blocks shot, clean streak...) show both pilots too.
+
+---
+
 ### 🔴 B50: a rejoiner joins the running turn instead of landing on READY (`Ys-bleeding-edge`, 2026-11-10, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/PartySystem/BUGS.md` B50. `ServerPlayerVesselInitializer.TryReclaimSeat` sends the turn state

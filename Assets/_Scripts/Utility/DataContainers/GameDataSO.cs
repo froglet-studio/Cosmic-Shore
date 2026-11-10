@@ -1063,7 +1063,11 @@ namespace CosmicShore.Utility
             if (RoundStatsList == null) return;
 
             for (int i = 0, count = RoundStatsList.Count; i < count; i++)
+            {
                 RoundStatsList[i]?.Cleanup();
+                // The scoreboard's per-pilot telemetry (Docs/ScoringSystem/BUGS.md B21) starts the game empty too.
+                if (RoundStatsList[i] is RoundStats rs && rs) rs.ClearVesselStats();
+            }
         }
         
         public void ResetAllData()
