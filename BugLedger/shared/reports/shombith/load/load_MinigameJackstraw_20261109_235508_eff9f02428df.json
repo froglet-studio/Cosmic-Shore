@@ -1,0 +1,860 @@
+{
+    "schemaVersion": 1,
+    "reportId": "eff9f02428df",
+    "timestamp": "2026-11-09T23:55:08.5383192Z",
+    "source": {
+        "origin": 0,
+        "platform": "WindowsEditor",
+        "deviceModel": "System Product Name (ASUS)",
+        "unityVersion": "6000.3.17f1"
+    },
+    "gitBranch": "claude/epic-fermat-6c7n2l",
+    "gitCommitHash": "6ed437d5e0",
+    "trigger": "Game launch — Jackstraw → MinigameJackstraw",
+    "loadKind": "launch",
+    "completionReason": "Loaded — arena complete (laid + grown), connecting screen done",
+    "interrupted": false,
+    "sceneFrom": "Menu_Main",
+    "sceneTo": "MinigameJackstraw",
+    "gameMode": "Jackstraw",
+    "intensity": 3,
+    "totalPlayers": 2,
+    "humanPlayers": 1,
+    "aiBackfill": 1,
+    "isMultiplayer": true,
+    "networkRole": "Host",
+    "connectedClients": 1,
+    "totalMs": 6083.59521484375,
+    "visualReadyMs": 4544.19677734375,
+    "waitMs": 796.3885498046875,
+    "humanWaitMs": 0.0,
+    "workMs": 5287.20654296875,
+    "unattributedMs": 144.64825439453126,
+    "framesDuringLoad": 82,
+    "avgFpsDuringLoad": 13.47887134552002,
+    "worstFrameMs": 2365.00830078125,
+    "droppedSpans": 0,
+    "spans": [
+        {
+            "id": 0,
+            "parentId": -1,
+            "depth": 0,
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 11.8572998046875,
+            "endMs": 193.68800354003907,
+            "durationMs": 181.83070373535157,
+            "exclusiveMs": 181.83070373535157,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 1,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Scene load → activation (MinigameJackstraw)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "startMs": 193.6959991455078,
+            "endMs": 3756.78369140625,
+            "durationMs": 3563.087646484375,
+            "exclusiveMs": 3563.087646484375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 2,
+            "parentId": -1,
+            "depth": 0,
+            "label": "AI backfill spawn loop (1 AI players+vessels, single frame)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 3778.044189453125,
+            "endMs": 4023.781982421875,
+            "durationMs": 245.73779296875,
+            "exclusiveMs": 2.045654296875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 3,
+            "parentId": 2,
+            "depth": 1,
+            "label": "AI vessel instantiate+inject+spawn (Thresher)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 3779.313720703125,
+            "endMs": 3963.399169921875,
+            "durationMs": 184.08544921875,
+            "exclusiveMs": 183.28857421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 4,
+            "parentId": 3,
+            "depth": 2,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 3789.302978515625,
+            "endMs": 3790.099853515625,
+            "durationMs": 0.796875,
+            "exclusiveMs": 0.796875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 5,
+            "parentId": 2,
+            "depth": 1,
+            "label": "Pair init - inject + vessel.Initialize (Barrett)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "startMs": 3963.41650390625,
+            "endMs": 4023.023193359375,
+            "durationMs": 59.606689453125,
+            "exclusiveMs": 59.606689453125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 6,
+            "parentId": -1,
+            "depth": 0,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 4023.957763671875,
+            "endMs": 4559.4326171875,
+            "durationMs": 535.474853515625,
+            "exclusiveMs": 7.49365234375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 7,
+            "parentId": 6,
+            "depth": 1,
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 4024.004150390625,
+            "endMs": 4509.31396484375,
+            "durationMs": 485.309814453125,
+            "exclusiveMs": 17.456298828125,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 8,
+            "parentId": 7,
+            "depth": 2,
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 4039.38818359375,
+            "endMs": 4506.27783203125,
+            "durationMs": 466.8896484375,
+            "exclusiveMs": 466.8896484375,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 9,
+            "parentId": 7,
+            "depth": 2,
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "startMs": 4506.32666015625,
+            "endMs": 4507.29052734375,
+            "durationMs": 0.9638671875,
+            "exclusiveMs": 0.04052734375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 10,
+            "parentId": 9,
+            "depth": 3,
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 4506.35400390625,
+            "endMs": 4507.10546875,
+            "durationMs": 0.75146484375,
+            "exclusiveMs": 0.75146484375,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 11,
+            "parentId": 9,
+            "depth": 3,
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 4507.1123046875,
+            "endMs": 4507.2841796875,
+            "durationMs": 0.171875,
+            "exclusiveMs": 0.171875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 12,
+            "parentId": 6,
+            "depth": 1,
+            "label": "Vessel instantiate+inject+spawn (Thresher)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 4509.59912109375,
+            "endMs": 4519.2841796875,
+            "durationMs": 9.68505859375,
+            "exclusiveMs": 8.873046875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 13,
+            "parentId": 12,
+            "depth": 2,
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "startMs": 4516.353515625,
+            "endMs": 4517.16552734375,
+            "durationMs": 0.81201171875,
+            "exclusiveMs": 0.81201171875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 14,
+            "parentId": 6,
+            "depth": 1,
+            "label": "Pair init - inject + vessel.Initialize (Dragon)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "startMs": 4519.3037109375,
+            "endMs": 4544.19482421875,
+            "durationMs": 24.89111328125,
+            "exclusiveMs": 24.89111328125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 15,
+            "parentId": 6,
+            "depth": 1,
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "startMs": 4544.365234375,
+            "endMs": 4545.59130859375,
+            "durationMs": 1.22607421875,
+            "exclusiveMs": 1.22607421875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 16,
+            "parentId": 6,
+            "depth": 1,
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 4545.60498046875,
+            "endMs": 4552.4609375,
+            "durationMs": 6.85595703125,
+            "exclusiveMs": 6.85595703125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 17,
+            "parentId": 6,
+            "depth": 1,
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "startMs": 4559.41943359375,
+            "endMs": 4682.1376953125,
+            "durationMs": 122.71826171875,
+            "exclusiveMs": 122.71826171875,
+            "isWait": true,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 18,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Cell environment spawn (cell 0, SpawnableJackstraw3)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 4683.6240234375,
+            "endMs": 4686.28173828125,
+            "durationMs": 2.65771484375,
+            "exclusiveMs": 0.22314453125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 19,
+            "parentId": 18,
+            "depth": 1,
+            "label": "Spawnable node: SpawnableJackstraw3 (SpawnableJackstraw)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 4683.84716796875,
+            "endMs": 4686.23046875,
+            "durationMs": 2.38330078125,
+            "exclusiveMs": 0.49560546875,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 20,
+            "parentId": 19,
+            "depth": 2,
+            "label": "Prism layout bake: SpawnableJackstraw",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 4683.90283203125,
+            "endMs": 4685.5830078125,
+            "durationMs": 1.68017578125,
+            "exclusiveMs": 1.68017578125,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 21,
+            "parentId": 19,
+            "depth": 2,
+            "label": "Streamed prism lay (SpawnableJackstraw3::BLOCK, 2114 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 4686.02294921875,
+            "endMs": 5146.57080078125,
+            "durationMs": 460.5478515625,
+            "exclusiveMs": 460.5478515625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        },
+        {
+            "id": 22,
+            "parentId": -1,
+            "depth": 0,
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "startMs": 5255.86767578125,
+            "endMs": 6083.03173828125,
+            "durationMs": 827.1640625,
+            "exclusiveMs": 827.1640625,
+            "isWait": false,
+            "isHumanWait": false,
+            "truncated": false,
+            "offMainThread": false
+        }
+    ],
+    "slices": [
+        {
+            "category": 0,
+            "name": "Scene Load",
+            "attributedMs": 3563.087646484375,
+            "percent": 58.568782806396487,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 5,
+            "name": "Cell & Environment",
+            "attributedMs": 1297.89013671875,
+            "percent": 21.33426284790039,
+            "spanCount": 8,
+            "waitMs": 0.0
+        },
+        {
+            "category": 2,
+            "name": "Scripted Delays",
+            "attributedMs": 796.3885498046875,
+            "percent": 13.090755462646485,
+            "spanCount": 5,
+            "waitMs": 796.3885498046875
+        },
+        {
+            "category": 4,
+            "name": "AI Backfill",
+            "attributedMs": 244.94091796875,
+            "percent": 4.026252746582031,
+            "spanCount": 3,
+            "waitMs": 0.0
+        },
+        {
+            "category": -1,
+            "name": "Unattributed (engine & other)",
+            "attributedMs": 144.64825439453126,
+            "percent": 2.3776772022247316,
+            "spanCount": 0,
+            "waitMs": 0.0
+        },
+        {
+            "category": 3,
+            "name": "Vessels & Players",
+            "attributedMs": 33.76416015625,
+            "percent": 0.5550034046173096,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 10,
+            "name": "Pooling & Prewarm",
+            "attributedMs": 1.60888671875,
+            "percent": 0.02644631452858448,
+            "spanCount": 2,
+            "waitMs": 0.0
+        },
+        {
+            "category": 9,
+            "name": "Crystals",
+            "attributedMs": 1.22607421875,
+            "percent": 0.020153777673840524,
+            "spanCount": 1,
+            "waitMs": 0.0
+        },
+        {
+            "category": 12,
+            "name": "Game Flow & Countdown",
+            "attributedMs": 0.04052734375,
+            "percent": 0.000666174222715199,
+            "spanCount": 1,
+            "waitMs": 0.0
+        }
+    ],
+    "topCosts": [
+        {
+            "label": "Scene load → activation (MinigameJackstraw)",
+            "category": 0,
+            "categoryName": "Scene Load",
+            "count": 1,
+            "totalMs": 3563.087646484375,
+            "exclusiveMs": 3563.087646484375,
+            "maxSingleMs": 3563.087646484375,
+            "isWait": false
+        },
+        {
+            "label": "Arena settle: creation queue + grow-in (behind connecting screen)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 827.1640625,
+            "exclusiveMs": 827.1640625,
+            "maxSingleMs": 827.1640625,
+            "isWait": false
+        },
+        {
+            "label": "InitDelayMs gate before InitializeGame (1000ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 466.8896484375,
+            "exclusiveMs": 466.8896484375,
+            "maxSingleMs": 466.8896484375,
+            "isWait": true
+        },
+        {
+            "label": "Streamed prism lay (SpawnableJackstraw3::BLOCK, 2114 prisms)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 460.5478515625,
+            "exclusiveMs": 460.5478515625,
+            "maxSingleMs": 460.5478515625,
+            "isWait": false
+        },
+        {
+            "label": "AI vessel instantiate+inject+spawn (Thresher)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 184.08544921875,
+            "exclusiveMs": 183.28857421875,
+            "maxSingleMs": 184.08544921875,
+            "isWait": false
+        },
+        {
+            "label": "SceneLoader splash cover before load (0.1s)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 181.83070373535157,
+            "exclusiveMs": 181.83070373535157,
+            "maxSingleMs": 181.83070373535157,
+            "isWait": true
+        },
+        {
+            "label": "postSpawnDelayMs before NotifyClients (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 1,
+            "totalMs": 122.71826171875,
+            "exclusiveMs": 122.71826171875,
+            "maxSingleMs": 122.71826171875,
+            "isWait": true
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Barrett)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 59.606689453125,
+            "exclusiveMs": 59.606689453125,
+            "maxSingleMs": 59.606689453125,
+            "isWait": false
+        },
+        {
+            "label": "preSpawnDelayMs before vessel spawn (200ms)",
+            "category": 2,
+            "categoryName": "Scripted Delays",
+            "count": 2,
+            "totalMs": 1020.78466796875,
+            "exclusiveMs": 24.949951171875,
+            "maxSingleMs": 535.474853515625,
+            "isWait": true
+        },
+        {
+            "label": "Pair init - inject + vessel.Initialize (Dragon)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 24.89111328125,
+            "exclusiveMs": 24.89111328125,
+            "maxSingleMs": 24.89111328125,
+            "isWait": false
+        },
+        {
+            "label": "Vessel instantiate+inject+spawn (Thresher)",
+            "category": 3,
+            "categoryName": "Vessels & Players",
+            "count": 1,
+            "totalMs": 9.68505859375,
+            "exclusiveMs": 8.873046875,
+            "maxSingleMs": 9.68505859375,
+            "isWait": false
+        },
+        {
+            "label": "Cytoplasm (SnowChanger) instantiate+init (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 6.85595703125,
+            "exclusiveMs": 6.85595703125,
+            "maxSingleMs": 6.85595703125,
+            "isWait": false
+        },
+        {
+            "label": "AI backfill spawn loop (1 AI players+vessels, single frame)",
+            "category": 4,
+            "categoryName": "AI Backfill",
+            "count": 1,
+            "totalMs": 245.73779296875,
+            "exclusiveMs": 2.045654296875,
+            "maxSingleMs": 245.73779296875,
+            "isWait": false
+        },
+        {
+            "label": "Prism layout bake: SpawnableJackstraw",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 1.68017578125,
+            "exclusiveMs": 1.68017578125,
+            "maxSingleMs": 1.68017578125,
+            "isWait": false
+        },
+        {
+            "label": "Pool prewarm (NudgeShardPoolManager, 10 instances)",
+            "category": 10,
+            "categoryName": "Pooling & Prewarm",
+            "count": 2,
+            "totalMs": 1.60888671875,
+            "exclusiveMs": 1.60888671875,
+            "maxSingleMs": 0.81201171875,
+            "isWait": false
+        },
+        {
+            "label": "Crystal spawn (Crystal)",
+            "category": 9,
+            "categoryName": "Crystals",
+            "count": 1,
+            "totalMs": 1.22607421875,
+            "exclusiveMs": 1.22607421875,
+            "maxSingleMs": 1.22607421875,
+            "isWait": false
+        },
+        {
+            "label": "Cell membrane+nucleus instantiate (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.75146484375,
+            "exclusiveMs": 0.75146484375,
+            "maxSingleMs": 0.75146484375,
+            "isWait": false
+        },
+        {
+            "label": "Spawnable node: SpawnableJackstraw3 (SpawnableJackstraw)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 2.38330078125,
+            "exclusiveMs": 0.49560546875,
+            "maxSingleMs": 2.38330078125,
+            "isWait": false
+        },
+        {
+            "label": "Cell environment spawn (cell 0, SpawnableJackstraw3)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 2.65771484375,
+            "exclusiveMs": 0.22314453125,
+            "maxSingleMs": 2.65771484375,
+            "isWait": false
+        },
+        {
+            "label": "Cell density grid allocation (cell 0)",
+            "category": 5,
+            "categoryName": "Cell & Environment",
+            "count": 1,
+            "totalMs": 0.171875,
+            "exclusiveMs": 0.171875,
+            "maxSingleMs": 0.171875,
+            "isWait": false
+        },
+        {
+            "label": "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)",
+            "category": 12,
+            "categoryName": "Game Flow & Countdown",
+            "count": 1,
+            "totalMs": 0.9638671875,
+            "exclusiveMs": 0.04052734375,
+            "maxSingleMs": 0.9638671875,
+            "isWait": false
+        }
+    ],
+    "stalls": [
+        {
+            "atMs": 4559.9482421875,
+            "durationMs": 2365.00830078125,
+            "during": "Scene load → activation (MinigameJackstraw)"
+        },
+        {
+            "atMs": 1453.4930419921875,
+            "durationMs": 1256.41552734375,
+            "during": "Scene load → activation (MinigameJackstraw)"
+        },
+        {
+            "atMs": 4682.6064453125,
+            "durationMs": 518.5958862304688,
+            "during": "InitDelayMs gate before InitializeGame (1000ms)"
+        },
+        {
+            "atMs": 5147.1552734375,
+            "durationMs": 252.8953857421875,
+            "during": "Streamed prism lay (SpawnableJackstraw3::BLOCK, 2114 prisms)"
+        }
+    ],
+    "marks": [
+        {
+            "atMs": 0.0,
+            "label": "Load started — Game launch — Jackstraw → MinigameJackstraw"
+        },
+        {
+            "atMs": 1204.2501220703125,
+            "label": "Netcode scene load begins: MinigameJackstraw"
+        },
+        {
+            "atMs": 3756.94580078125,
+            "label": "Unity scene loaded: MinigameJackstraw (Single)"
+        },
+        {
+            "atMs": 4024.361572265625,
+            "label": "Game controller spawned (JackstrawController, IsServer=True)"
+        },
+        {
+            "atMs": 4041.925537109375,
+            "label": "Netcode scene load complete: MinigameJackstraw (client 0)"
+        },
+        {
+            "atMs": 4042.23486328125,
+            "label": "Netcode scene load completed on ALL clients: MinigameJackstraw"
+        },
+        {
+            "atMs": 4507.29345703125,
+            "label": "Session started (app state → InGame)"
+        },
+        {
+            "atMs": 4544.1982421875,
+            "label": "Client ready — splash cleared, vessel visible"
+        },
+        {
+            "atMs": 4554.60693359375,
+            "label": "Flora/fauna spawner started (cell 0, IntensityWiseLifeSpawner)"
+        },
+        {
+            "atMs": 4555.0771484375,
+            "label": "Connecting panel shown (holding for arena build)"
+        }
+    ],
+    "counters": [
+        {
+            "name": "AI players spawned during load",
+            "value": 1
+        },
+        {
+            "name": "Pool objects prewarmed during load",
+            "value": 20
+        },
+        {
+            "name": "Vessels spawned during load",
+            "value": 2
+        },
+        {
+            "name": "Crystals spawned during load",
+            "value": 1
+        },
+        {
+            "name": "Prisms reused from the environment pool",
+            "value": 0
+        },
+        {
+            "name": "Prisms cloned by InstantiateAsync",
+            "value": 2114
+        },
+        {
+            "name": "Frames an async clone batch waited to integrate",
+            "value": 16
+        },
+        {
+            "name": "Prisms laid during load",
+            "value": 2114
+        },
+        {
+            "name": "Active prisms when load ended",
+            "value": 2114
+        }
+    ],
+    "accumulators": [
+        {
+            "label": "Prism clone: InstantiateAsync batch, call to integrated (wall time)",
+            "count": 2,
+            "totalMs": 361.7803955078125,
+            "maxSingleMs": 337.1791076660156
+        },
+        {
+            "label": "Prism creation completion (visibility, collider, grow stamp, SOAP, spatial bind)",
+            "count": 2122,
+            "totalMs": 313.8273010253906,
+            "maxSingleMs": 0.9204999804496765
+        },
+        {
+            "label": "Prism lay: Initialize (reset + grow coroutine start)",
+            "count": 2114,
+            "totalMs": 39.36140060424805,
+            "maxSingleMs": 0.29660001397132876
+        },
+        {
+            "label": "Prism lay: team + pose",
+            "count": 2114,
+            "totalMs": 17.773000717163087,
+            "maxSingleMs": 0.16920000314712525
+        },
+        {
+            "label": "Prism lay: kind + trail.Add",
+            "count": 2114,
+            "totalMs": 8.117199897766114,
+            "maxSingleMs": 0.10180000215768814
+        },
+        {
+            "label": "Prism lay: TargetScale (scale-manager registration)",
+            "count": 2114,
+            "totalMs": 3.938499927520752,
+            "maxSingleMs": 0.12870000302791596
+        }
+    ],
+    "errors": [],
+    "hints": [
+        {
+            "id": "scripted-delays",
+            "severity": 1,
+            "title": "Hardcoded delays are on the critical path",
+            "finding": "0.8s (13%) of this load is fixed UniTask.Delay-style gates.",
+            "fixAdvice": "These are free wins — replace fixed delays with event-driven readiness (SOAP events / NetworkVariable callbacks) or shrink the constants.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "single-dominator",
+            "severity": 1,
+            "title": "One cost dominates this load",
+            "finding": "\"Scene load → activation (MinigameJackstraw)\" alone is 59% of the load (3.6s).",
+            "fixAdvice": "See the hot-path breakdown for its per-stage costs. Cut its workload (content/intensity tuning), pool or pre-instantiate its prefabs, or spread the work across frames.",
+            "matchedMarker": ""
+        },
+        {
+            "id": "giant-stall",
+            "severity": 1,
+            "title": "A single frame froze for over a second",
+            "finding": "Worst frame: 2.4s during \"Scene load → activation (MinigameJackstraw)\".",
+            "fixAdvice": "That work runs synchronously in one frame — spread it across frames (coroutine/UniTask batches) or pool/preload the assets.",
+            "matchedMarker": ""
+        }
+    ]
+}
