@@ -67,6 +67,10 @@ and older flights are judged by hand in `JUDGED_KIT`). A kit change by a vessel'
 change, so the sweep never writes numbers from the old kit over the owner's tuning of the new one. The Stoat's trampoline
 (8abe1fe83b) is the first.
 
+**The Stoat is report only** (Yash, 2026-11-10: "The stoat is not ready, ignore its AI, I'm trying to make the Stoat
+ability better"): its races are reported, never written (`REPORT_ONLY` in `learn_drives_from_flights.py`), and the sweep
+does not judge its AI or ask about it until Yash says the kit is ready.
+
 ## 3. What a session owes the loop
 
 - **A new learner joins `ai_learn.py`** (`plan` and `run_learners`), with a case in its `--self-test`. A learner

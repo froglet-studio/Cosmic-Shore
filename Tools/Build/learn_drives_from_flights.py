@@ -266,6 +266,8 @@ REPORT_ONLY = {
                "jtgjones's grizzly-v3 is reworking the bomb triggers (15 unmerged commits): learn it once that lands",
     "Butterfly": "its AI's one choice, Mass or Dust, is made by each Butterfly mode's controller "
                  "(ButterflyAutopilotModeDriver) in code, and the recorder logs no Dust-mode bit: nothing to learn into yet",
+    "Stoat": "its ability is still being made (Yash, 2026-11-10: \"The stoat is not ready, ignore its AI, I'm trying to "
+             "make the Stoat ability better\"): reported, never written, until Yash says the kit is ready",
 }
 
 # A hull's drive in ONE mode that is reported, not written: the mode's own AI decides what the learner would measure
@@ -992,6 +994,8 @@ def learn_hull(hull, flights, each_intensity=False):
             learned["releaseStickBand"] = max(learned.get("releaseStickBand", 0), learned.get("stickBand", 0))
             learned["releaseRunwaySeconds"] = min(learned["releaseRunwaySeconds"], learned.get("engageRunwaySeconds", 6))
     apply_floors(hull, MODE, learned)
+    if why is None and hull in REPORT_ONLY:
+        why = "report only: " + REPORT_ONLY[hull]
     if why is None and (hull, MODE) in REPORT_ONLY_MODES:
         why = "report only: " + REPORT_ONLY_MODES[(hull, MODE)]
     if why is None and len(done) < MIN_FINISHED:
@@ -1067,10 +1071,29 @@ def variant_text(hull, learned, intensity=None):
     return os.path.join(OUT_DIR, name + ".asset"), asset_header(script_guid, name) + body
 
 
+# A variant that holds a TRAINED drive (a search's winner, written by promote_trained_drives.py for the AI plan's
+# time-arcade step, c39317a6b6 on 2026-11-08) is never overwritten by numbers learned from people's races: the sweep's
+# relearn of 2026-11-10 would have put the imitation numbers back over four of them. Its learned numbers are reported.
+HELD_BACK = []
+
+
+def promoted_variants():
+    """The variant names promote_trained_drives.py owns (its ROWS), or none when it is not in this checkout."""
+    try:
+        import promote_trained_drives
+        return set(promote_trained_drives.ROWS)
+    except Exception:   # a checkout without it, or its shared results folder missing: nothing is promoted
+        return set()
+
+
 def write_variant(hull, learned, intensity=None):
     ensure_folder()
     paths = []
+    promoted = promoted_variants()
     for path, text in ([variant_text(hull, learned, intensity)] if intensity else variant_texts(hull, learned)):
+        if os.path.basename(path)[:-len(".asset")] in promoted:
+            HELD_BACK.append(os.path.basename(path))
+            continue
         open(path, "w", encoding="utf-8").write(text)
         meta = path + ".meta"
         if not os.path.exists(meta):
@@ -1301,6 +1324,10 @@ def run(sources, write):
                 if write and R["learned"]:
                     wrote += write_variant(h, R["learned"], intensity=i)
     text = report(results, wrote)
+    if HELD_BACK:
+        text += ("\nNot written: " + ", ".join(f"`{n}`" for n in sorted(set(HELD_BACK))) + " hold a trained drive "
+                 "(promote_trained_drives.py, the AI plan's searched winner); numbers learned from races never "
+                 "overwrite one. The learned numbers are in the tables above.\n")
     print(text)
     if write:
         doc = REPORT_DOC if MODE == "Regatta" else REPORT_DOC.replace("LEARNED_DRIVES", f"LEARNED_DRIVES_{MODE}")
@@ -1355,6 +1382,9 @@ def self_test_rocket_and_rings():
     assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (0, 50, 100)) - 0.0) < 1e-6, "a ring above the nose is no turn"
     assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (100, 0, 100)) - 45.0) < 1e-6, "a ring 45 deg to the right"
     assert abs(yaw_off_nose((0, 0, 1), (0, 1, 0), (-1, 0, -100)) - 180.0) < 1.0, "a ring behind is a full turn"
+    if promoted_variants():
+        assert "DolphinAIBoostPolicy_Switchback" in promoted_variants(), "the promoted Switchback drive is known"
+    assert coverage("Stoat", "Slingshot")[0] == "report", "the Stoat is not ready (Yash, 2026-11-10): reported, never written"
     assert coverage("Serpent", "SerpentGulag")[0] == "report", "Serpent Gulag's marksman is reported, never written"
     assert coverage("Serpent", "SerpentTime")[0] == "drives", "negative control: Serpent Time still learns"
     assert [ring_index(k, 20, 20) for k in (0, 19)] == [0, 19], "Switchback: open, in order"
@@ -1530,7 +1560,9 @@ def self_test():
         return S
 
     R = learn_hull("Stoat", [(f, stoat_samples(f)) for f in [stoat_flight(120 + i) for i in range(3)]])
-    st = R["learned"]
+    # The Stoat is REPORT_ONLY while its ability is made (Yash, 2026-11-10): nothing written, the measure still checked
+    assert R["learned"] == {} and R["why"] and R["why"].startswith("report only"), R["why"]
+    st = R["proposed"]
     sl, md = st.get("StoatSlingConfig", {}), st.get("StoatModeAction", {})
     assert sl and 38 <= sl["aiSlingMinTurnDegrees"] <= 50 and sl["aiSlingMinDistance"] >= 195 and abs(sl["autopilotHold01"] - 0.7) < 1e-6, st
     # the last held sample, a tenth of a second before the 15 deg let-go: still MEASURED (the report shows it) ...
@@ -1547,8 +1579,8 @@ def self_test():
         "three 16 s flights pressing every 5 s: 5 s (pooled across flights it was -15)"
     sloppy = learn_hull("Stoat", [(f, stoat_samples(f)) for f in [stoat_flight(120 + i, sloppy=True) for i in range(3)]])
     rs = sloppy["person"].get("StoatSlingConfig", {})   # negative control: a pilot slinging at random does not look like the rule
-    assert rs.get("aiReleaseConeDegrees", 0) > 40 and sloppy["learned"].get("StoatSlingConfig", {}).get("aiSlingMinTurnDegrees", 99) < 35, \
-        ("negative control", sloppy["learned"])
+    assert rs.get("aiReleaseConeDegrees", 0) > 40 and sloppy["proposed"].get("StoatSlingConfig", {}).get("aiSlingMinTurnDegrees", 99) < 35, \
+        ("negative control", sloppy["proposed"])
     paths = [p for p, _ in variant_texts("Stoat", st)]
     assert any(p.endswith("StoatSlingConfig_Regatta.asset") for p in paths) and any(p.endswith("StoatModeAction_Regatta.asset") for p in paths), paths
     _, text = variant_texts("Stoat", {"StoatSlingConfig": {"aiSlingMinTurnDegrees": 42.0, "notAField": 3}})[0]
