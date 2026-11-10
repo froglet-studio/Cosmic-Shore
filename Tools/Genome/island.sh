@@ -12,6 +12,8 @@
 # The judge is v3 since 18:30 (the worse of its two networks; the mean was ridden by pleasing one of them).
 # MIGRATE=0 stops importing other islands' best (default every 10 generations; a diversity reservoir uses 0 with
 # RESUME=none); LINEAGE=0.25 caps the share of survivors one root seed's descendants may hold (0 = no cap).
+# WINDOWS=2 judges two 4-second windows of each phenotype, 8 s apart (HOP=8), and scores their mean: the best genomes
+# fit the first 4 seconds only (1.13-1.70 there, 1.21-2.48 later); each window is one more render.
 # The reels are three sources (reel05 re-cuts reel03, reel04 re-cuts reel02): reels 1, 2, 4 train every measure and
 # reels 3, 5 are held out (v2 fitness, 2026-11-10 18:00).
 # It runs in the FOREGROUND (a cloud container kills detached processes once it idles after a turn): start it as a
@@ -60,6 +62,7 @@ CMD=(python3 -m agenome.search --run "$WORK/run_$NAME" \
   --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
   --judge-w "${JUDGE:-0}" --stat-w "${STATW:-1.0}" --critic-w "${CRITICW:-0.5}" \
   --migrate-every "${MIGRATE:-10}" --lineage-cap "${LINEAGE:-0.25}" \
+  --judge-windows "${WINDOWS:-1}" --judge-hop "${HOP:-8}" \
   --share "${RUNS:-$SHARE/runs}" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
 echo "island $NAME: log $WORK/run_$NAME.out ; results in $SHARE/runs/$NAME/ ; resuming from ${#OWN[@]} own file(s)"
 if [ "${BG:-0}" = 1 ]; then nohup "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1 & exit 0; fi
