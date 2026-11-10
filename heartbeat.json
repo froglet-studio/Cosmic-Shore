@@ -1,5 +1,4 @@
 {
- "agent": true,
  "caps": {
   "bash": false,
   "caps_version": 2,
@@ -15,10 +14,16 @@
   "unity": true
  },
  "cores": 23,
- "current": {},
+ "current": {
+  "job": "unity-train~r20261105-090126-c1cb",
+  "max_evals": 148,
+  "minutes": 60.0,
+  "phase": "starting",
+  "request": "r20261105-090126-c1cb",
+  "since": 1794352544,
+  "unit": "regatta-serpent-i1"
+ },
  "host": "desktop-lqtg35e",
- "idle_seconds": 406.063,
- "remote_start": true,
  "runs": [
   {
    "best_end": -46.7071533203125,
@@ -381,22 +386,10 @@
    "unit": "regatta-serpent-i1"
   }
  ],
- "specs": {
-  "cores": 24,
-  "disk_free_gb": 125.1,
-  "os": "windows",
-  "os_name": "Windows 11",
-  "python": "3.14.7",
-  "ram_free_gb": 7.2,
-  "ram_gb": 31.9,
-  "unity": true,
-  "unity_open": true
- },
- "status": "in use",
  "totals": {
   "sessions": 2474
  },
- "updated": 1794352469,
+ "updated": 1794352544,
  "user": "belacstein",
  "version": "1"
 }
