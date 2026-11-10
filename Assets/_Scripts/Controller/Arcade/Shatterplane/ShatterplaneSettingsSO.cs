@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
@@ -37,6 +38,30 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Seed for each site's element, drawn from the elemental crystal set. Every peer draws alike.")]
         public int fieldSeed = 88;
+
+        [Tooltip("Each intensity's crystal element (index = intensity - 1). None = each site draws a random element " +
+                 "from fieldSeed. I3 is Space (Shombith, 2026-11-10: \"intensities 3 make elemental crystals of space " +
+                 "just for teams present there\"). Space lengthens the Brittle Star's gun range and its heat capacity.")]
+        public Element[] fieldElementByIntensity = { Element.None, Element.None, Element.Space, Element.None };
+
+        [Tooltip("Each intensity's team rule (index = intensity - 1). On: every crystal site holds one crystal per team " +
+                 "present in the match, tinted to that team and collectable ONLY by it (ElementalCrystalImpactor.RestrictTo), so " +
+                 "no team can starve another of rings. Off: one crystal per site, anyone's.")]
+        public bool[] fieldPerTeamByIntensity = { false, false, true, false };
+
+        [Tooltip("How far apart a site's team crystals stand (u), across the plate's axis.")]
+        [Min(0f)] public float teamCrystalSpacing = 30f;
+
+        /// <summary>The crystal element authored for an intensity (1-based), or None for a random draw.</summary>
+        public Element FieldElementFor(int intensity) =>
+            fieldElementByIntensity is { Length: > 0 }
+                ? fieldElementByIntensity[Mathf.Clamp(intensity - 1, 0, fieldElementByIntensity.Length - 1)]
+                : Element.None;
+
+        /// <summary>Whether an intensity (1-based) lays one crystal per team present.</summary>
+        public bool FieldPerTeamFor(int intensity) =>
+            fieldPerTeamByIntensity is { Length: > 0 } &&
+            fieldPerTeamByIntensity[Mathf.Clamp(intensity - 1, 0, fieldPerTeamByIntensity.Length - 1)];
 
         [Header("AI (index = AI difficulty - 1: Easy, Medium, Hard, Legendary)")]
         [Tooltip("Seconds between an AI's choices of plate. Shorter is sharper.")]

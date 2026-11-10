@@ -123,7 +123,8 @@ I2 plate landed almost on a spawn in the first render.
   rendered and dropped: on a solid clump the ring takes one thin slice, about 11%, whatever the angle (§7).
 - **D2, the disk's reach. DECIDED (Shombith): "you can make it a little bigger".** The arena's nucleus is 470 u (a
   standard cell's is about 392 u), sized by the controller on every peer; the ring reads its reach from it.
-- **D3, ecology. DECIDED: none at all.**
+- **D3, ecology. DECIDED: none at all; then revised the same day (Shombith): I4 carries live elemental fauna.** I3's
+  crystals became Space, one per team present (`SHATTERPLANE.md` §3).
 - **D4, the name. DECIDED: Shatterplane.**
 - **D5, prototype first? DECIDED: straight to Unity.** The model in `Tools/Build/shatterplane_budget.py` set the targets.
 

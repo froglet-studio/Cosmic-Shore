@@ -116,7 +116,30 @@ experienced player should finish in about 90 s). The four values live in `EndCon
 - **The burst to profile:** a square ring kills a whole plate (up to 529 prisms) in its 0.7 s sweep, in ten queries.
   That is well under a Rampage blast, but it has not been profiled.
 
-The cell has no flora and no fauna (decision D3).
+**I3's crystals are Space, one per team** (Shombith, 2026-11-10: "for intensities 3 make elemental crystals of space
+just for teams present there"):
+- Every crystal site holds one Space crystal for each team present in the match, standing 30 u apart across the plate's
+  axis, each tinted to its team.
+- A crystal can be skimmed up only by its own team (`ElementalCrystalImpactor.RestrictTo`, the opt-in gate Harvest's
+  I3 added the same day for the same request; Harvest and Shatterplane are its only two callers).
+- So reaching a plate first never denies another team its ring, and Space lengthens the guns' range and heat capacity.
+- The AI forages only crystals its own team may take.
+- These are `fieldElementByIntensity` / `fieldPerTeamByIntensity` on `ShatterplaneSettings`, per intensity, authored
+  by the generator.
+- The other rungs keep one crystal per site with a random element, anyone's.
+
+**I4 carries live elemental fauna**, and I1-I3 carry none:
+- I4's cell has its own spawn profile (`Shatterplane Spawn Profile 4`). It carries the Blob tadpole and shark, the
+  species Rampage uses, referenced read-only. Each spreads its creatures over the four elements (`SpreadElements` and
+  a four-element palette), so every creature rolls its own element.
+- The amount is the profile's `FaunaPopulationScale` 2, which leaves the shared species assets untouched.
+- With no flora, the plates are the food: herbivores graze the neutral plates (opposing environment volume), and
+  sharks hunt the herbivores. Nothing scripts it.
+- Creatures spawn in the controlling team's colour. Their body prisms are hostile to the other teams, so breaking them
+  scores for those teams; this is Rampage's rule, not a new one.
+- A dying creature drops its heart as an elemental crystal anyone can take, and every crystal is a spare ring.
+- **Cost:** a handful of fauna. Tadpole and shark at 2x their authored populations, a tadpole capped at 12, add tens
+  of colliders against I4's 4,588 prisms.
 
 ## 4. The AI (`ShatterplaneSquarer`, server-only)
 
@@ -212,4 +235,5 @@ Space arcade game). Froglet Compute is paused, so no job was queued.
 
 | Date | Change |
 |---|---|
+| 2026-11-10 | I3: Space crystals, one per team present, each its team's alone (`ElementalCrystalImpactor.RestrictTo`, shared with Harvest). I4: live elemental fauna (Blob tadpole and shark, each creature rolling its element) on its own spawn profile at 2x (Shombith). |
 | 2026-11-10 | Built (Shombith's session): D1 plates, D2 nucleus 470 u, D3 no wildlife, D4 the name, D5 straight to Unity. |
