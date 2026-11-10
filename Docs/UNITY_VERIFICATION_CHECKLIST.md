@@ -22016,8 +22016,8 @@ Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY
 URP 17.3's source (not yet seen in the editor): `BrittleStarRingSmearPass.ForwardPass` picked each material's pass by
 its LightMode tag, and the hull's `VesselGraph` is an Unlit Shader Graph whose forward pass has NO LightMode tag
 (UniversalUnlitSubTarget sets none; ShaderGraph writes `// LightMode: <None>`). No pass matched, so the ring layer was
-empty, the smear averaged nothing, and the ring the hull had hidden vanished whenever it turned more than 1.5° a frame.
-The fallback missed it because the request was marked drawn when the pass was recorded. Fixed on branch
+empty, the smear averaged nothing, and the ring the hull had hidden vanished whenever it turned more than
+`ringSmearMinDegrees` a frame (1.5° in `BrittleStarConfig.asset`). The fallback missed it because the request was marked drawn when the pass was recorded. Fixed on branch
 `claude/brittlestar-smear-empty-layer` (**not compiled**: nuget.org is refused in the session's container, so
 `unity_refcompile` could not fetch its references; a Roslyn syntax pass ran clean). Re-run steps 1-3, plus:
 

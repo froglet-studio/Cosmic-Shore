@@ -272,8 +272,8 @@ namespace CosmicShore.Gameplay
         /// sets none; ShaderGraph's Generator then writes <c>// LightMode: &lt;None&gt;</c>), so
         /// <see cref="Shader.FindPassTagValue"/> answers <see cref="ShaderTagId.none"/>. Matching the tags alone found no
         /// pass on any of the hull's materials: the ring layer came out empty, the smear averaged nothing, and the ring,
-        /// which the hull had already hidden, vanished whenever it turned more than 1.5° a frame. Garrett: "too dark to
-        /// see".</para>
+        /// which the hull had already hidden, vanished whenever it turned more than <c>ringSmearMinDegrees</c> a frame
+        /// (1.5° in BrittleStarConfig.asset). Garrett: "too dark to see".</para>
         /// </summary>
         public static int ForwardPass(Material material)
         {

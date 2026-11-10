@@ -948,6 +948,13 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: Unity-Technologies/Graphics `6000.3/staging` 4064d5b: `UniversalUnlitSubTarget.UnlitPasses.Forward` (no `lightMode`), `Generator.cs` (the `<None>` splice); `BrittleStarRingSmearPass.ForwardPass` / `HasDrawableSubmesh`.
 - Promoted: no
 
+### L-STU-170 — Verify a lab kept as an artifact FRAGMENT in its published form, and A/B its failures against the last round
+- Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `claude/brittlestar-smear-empty-layer` · By: Garrett's session · Date: 2026-11-10
+- What happened: the repo copy is the artifact's fragment (it starts at `<title>`; the Artifact tool adds the doctype, viewport and body when it publishes). `verify_lab.cjs` on the fragment ran it in quirks mode with no viewport, so the emulated iPhone 13 laid the page out 980 px wide, and the full-page phone screenshot timed out at 30 s on both tries after the desktop half had run. Wrapped in a publish skeleton the same page finished in 45 s with both screenshots. In a cloud session the egress proxy refuses the page's Google Fonts, which the verifier reports on every load as `console/page error: Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED`.
+- Do instead: wrap a fragment in a skeleton (doctype, charset, `width=device-width` viewport, body) before verifying it, and run the verifier on the lab's previous round too (`git show <merge-base>:<lab.html>`), so a failure is attributed to the round that caused it. Read the font error as the sandbox's.
+- Evidence: this session: the fragment (TimeoutError at the phone screenshot, twice) against the wrapped page (45 s, `desktop.png` + `phone.png`); round 2 from `385d3018c` fails the same font check and scrolls 1727 px on desktop (round 3: 2590 px), so the ring lab has never been on §2.7's no-scroll layout.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-STU-146 — A combine bolted onto autonomous vessels has no loop; design the parts so neither phase can do the other's work

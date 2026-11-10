@@ -463,8 +463,8 @@ stick"). The studio's `AimRing` port (`VesselStudio/brittlestar.html`) runs the 
 **Round 3 (2026-11-10): the port drew no ring while it turned.** In the editor the spinning ring was "too dark to see".
 The smear pass redraws the ring into a layer with the hull's own materials, choosing each material's pass by its
 LightMode tag, and the hull's `VesselGraph` is an Unlit Shader Graph whose forward pass has no LightMode tag at all. The
-layer came out empty and the ring, which the hull hides while it smears, vanished whenever it turned more than 1.5° a
-frame. Fixed on `claude/brittlestar-smear-empty-layer` (the lookup takes the untagged pass, and an empty layer is never
+layer came out empty and the ring, which the hull hides while it smears, vanished whenever it turned more than
+`ringSmearMinDegrees` a frame (1.5° in `BrittleStarConfig.asset`). Fixed on `claude/brittlestar-smear-empty-layer` (the lookup takes the untagged pass, and an empty layer is never
 counted as drawn), not yet compiled. The lab's round 3 now draws every scope the game's way: the shipped hull mesh
 (`BrittleStar.fbx`), `VesselGraph`'s formula on the shipped materials and the colour set's domain colours, the gameplay
 bloom (`GamePlay PostProcessing Profile`, LQ) with no tonemapping, from the 38-unit chase camera. In that look the
