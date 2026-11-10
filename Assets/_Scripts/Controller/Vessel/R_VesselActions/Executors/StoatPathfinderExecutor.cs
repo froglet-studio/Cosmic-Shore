@@ -152,10 +152,52 @@ namespace CosmicShore.Gameplay
             if (!cam) return;
             _worldDots ??= new StoatPathfinderWorldDots();
             if (!_worldDots.Begin(cam)) return;
-            if (_sling && _sling.UsesTrampoline) AddTrampolineRings(cam, hull);
+            if (_sling && _sling.UsesSwing) AddSwingRings(hull);
+            else if (_sling && _sling.UsesTrampoline) AddTrampolineRings(cam, hull);
             else if (_sling && _sling.UsesSkim) AddSkimRings(cam, hull);
             else AddRings(hull);
             _worldDots.End();
+        }
+
+        /// <summary>
+        /// Time mode's swing (STOAT_DIPOLE.md §1b), world dots only. The REACH: a faint ring round the black hole in the plane
+        /// of your pass, where the swing starts. The EXIT LINE: dots from the hull along the heading the swing would throw you
+        /// on right now - the stick's angle about the hole - so moving the stick visibly moves where you will go; lime while it
+        /// swings you. Each fling throws a lime RIPPLE ring growing out of the hole, fading.
+        /// </summary>
+        void AddSwingRings(Transform hull)
+        {
+            var sc = _sling ? _sling.Config : null;
+            if (!sc || !hull) return;
+            int n;
+            float age = _sling.SwingFxAge;
+            const float rippleSeconds = 0.6f;
+            if (age >= 0f && age < rippleSeconds)
+            {
+                var ripple = config.WarpedColor;
+                ripple.a *= 1f - age / rippleSeconds;
+                float r = sc.SwingReach * (0.3f + 0.9f * age / rippleSeconds);
+                n = StoatSlingMath.Ring(_sling.SwingFxCentre, _sling.SwingFxNormal, r, RingSegments, _ring);
+                _worldDots.Add(_ring, n, null, 0, ripple, sc.RingDotSize * 1.3f, sc.RingDotSpacing * 1.5f, config.WorldDotMinPixels, closed: true);
+            }
+            if (!_sling.IsSwingUp) return;
+            var hole = _sling.SwingHolePosition;
+            bool swinging = _sling.IsSwinging;
+
+            var reach = config.OpenColor;
+            reach.a *= swinging ? sc.OrbitRingAlpha : sc.DetectionRingAlpha;
+            var normal = StoatSlingMath.RingNormal(hull.position, hull.forward, hole, hull.up);
+            n = StoatSlingMath.Ring(hole, normal, _sling.SwingReachRadius, RingSegments, _ring);
+            _worldDots.Add(_ring, n, null, 0, reach, sc.RingDotSize, sc.RingDotSpacing * 1.5f, config.WorldDotMinPixels, closed: true);
+
+            // The exit line: from just ahead of the nose, along the heading the stick asks for now.
+            var exit = _sling.SwingExitHeading;
+            const int linePoints = 2;
+            _ring[0] = hull.position + exit * 30f;
+            _ring[1] = hull.position + exit * 180f;
+            var line = swinging ? config.WarpedColor : config.OpenColor;
+            line.a *= swinging ? 1f : sc.OrbitRingAlpha;
+            _worldDots.Add(_ring, linePoints, null, 0, line, sc.RingDotSize, sc.RingDotSpacing, config.WorldDotMinPixels);
         }
 
         /// <summary>
