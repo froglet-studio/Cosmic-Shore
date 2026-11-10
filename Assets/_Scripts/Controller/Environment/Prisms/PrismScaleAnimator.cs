@@ -113,62 +113,6 @@ namespace CosmicShore.Gameplay
         {
             _clockActive = false;
             _clockSettleTime = 0f;
-            // The previous life's pending grow-stamp clear owns nothing now (the stamp guard
-            // would make it a no-op anyway); drop it rather than let it sit in the timer list.
-            // Instance, not EnsureInstance: never spawn the manager from a reset.
-            PrismTimerManager.Instance?.CancelScheduledActions(this);
-        }
-
-        // ------------------------------------------------------------------
-        // Grow-stamp clear (Docs/PRISM_ANIMATION.md §1 touchpoint 3: one scheduled
-        // callback at an analytic time). A bloom's stamp keeps _GrowRate > 0, and
-        // while it does every vertex of the prism runs PrismGrowScale's exp() and
-        // its three per-instance loads, for a factor that has long been exactly 1.
-        // So the stamp is cleared at the first moment the shader's float32 factor
-        // max(1 - (1 - s0)·exp(-k·t), 0) IS exactly 1.0f on every axis: the clear
-        // is bit-invisible, not a snap.
-        // ------------------------------------------------------------------
-
-        /// <summary>
-        /// ln of the largest per-axis remainder <c>|1 - s0|·exp(-k·t)</c> that still rounds to exactly 1.0f is
-        /// -25·ln2 (half an ulp below 1; above 1 it is -24·ln2). 27·ln2 = 18.715 keeps a 4x (8x for shrinks)
-        /// margin for a GPU exp that is not correctly rounded and a clock read a frame apart; it costs ~0.3-0.6 s
-        /// more bloom evaluation per lay. Verified in float32 for k in [1.25, 2.5] (the ClockRateK range) and
-        /// s0 in [0, 60], also with exp perturbed by ±2^-19 offline (PrismGrowStampClearTests holds the exact-exp grid).
-        /// </summary>
-        internal const float GrowStampExactLnMargin = 18.72f;
-
-        /// <summary>Seconds after the stamp at which PrismGrowScale_float (PrismClockAnimation.hlsl) returns
-        /// exactly 1.0f on every axis: <c>(ln max|1 - s0| + GrowStampExactLnMargin) / k</c>, clamped at 0.
-        /// 0 when the stamp is already its own end state (s0 = 1) or unstamped (k = 0).</summary>
-        internal static float GrowStampExactDelay(float rate, in float3 startFrac)
-        {
-            float deviation = math.cmax(math.abs(1f - startFrac));
-            if (rate <= 0f || deviation <= 0f) return 0f;
-            return math.max(0f, (math.log(deviation) + GrowStampExactLnMargin) / rate);
-        }
-
-        float _growClearStampTime;    // the start time of the stamp the pending clear belongs to
-        Action _clearSettledGrowStamp; // cached once: scheduling allocates no delegate per lay
-
-        /// <summary>Schedules the bit-invisible clear of the entity grow stamp written at
-        /// <paramref name="stampTime"/>. Supersedes any clear pending for an earlier stamp.</summary>
-        void ScheduleGrowStampClear(float stampTime, float rate, in float3 startFrac)
-        {
-            var timers = PrismTimerManager.EnsureInstance();
-            if (timers == null) return;
-            timers.CancelScheduledActions(this);
-            _growClearStampTime = stampTime;
-            float delay = math.max(0f,
-                GrowStampExactDelay(rate, in startFrac) - (PrismClock.Now - stampTime));
-            timers.ScheduleAction(this, delay, _clearSettledGrowStamp ??= ClearSettledGrowStamp);
-        }
-
-        void ClearSettledGrowStamp()
-        {
-            if (prism == null) return;
-            // Guarded by the stamp time: a newer stamp or a pool reuse leaves this a no-op.
-            PrismRenderService.ClearGrowStampIfStartedAt(in prism.RenderHandle, _growClearStampTime);
         }
 
         /// <summary>The per-second exponential-approach rate k — the exact per-tick
@@ -237,15 +181,14 @@ namespace CosmicShore.Gameplay
 
             // STRICT MODE (no legacy fallback): stamp, and scream if the visual
             // cannot ride the clock — gameplay state goes final regardless.
-            bool entityStamped = PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac);
+            bool stamped = PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac);
 
             // One self-heal before screaming: the stamp is a ONE-SHOT initial-conditions
             // write, so a prism that reaches this instant without a companion entity
             // loses its bloom for good. Creation is idempotent and no-ops when an entity
             // already exists, so this costs nothing on the happy path.
-            if (!entityStamped && prism != null && prism.TryEnsureRenderEntityForStamp())
-                entityStamped = PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac);
-            bool stamped = entityStamped;
+            if (!stamped && prism != null && prism.TryEnsureRenderEntityForStamp())
+                stamped = PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac);
 
             // No Entities Graphics on this device (a WebGL2 browser): the same stamp rides the
             // MeshRenderer's property block (Docs/PRISM_ANIMATION.md §4.11). False everywhere else.
@@ -295,11 +238,6 @@ namespace CosmicShore.Gameplay
             _clockSettleTime = d0 <= SETTLE_EPSILON
                 ? now
                 : now + Mathf.Log(d0 / SETTLE_EPSILON) / k;
-
-            // The entity stamp clears itself once the bloom is exactly final (the §4.11
-            // MeshRenderer twin already schedules its own clear inside its StampGrow).
-            if (entityStamped)
-                ScheduleGrowStampClear(now, k, in startFrac);
 
             // Completion side effects run at the START on the clock path (the law:
             // gameplay state final at start; only photons animate).
@@ -425,10 +363,8 @@ namespace CosmicShore.Gameplay
             {
                 if (PrismClock.Now < _clockSettleTime)
                 {
-                    float settledPast = PrismClock.SettledPast;
-                    if (PrismRenderService.StampGrow(in prism.RenderHandle,
-                            settledPast, _clockK, in _clockStartFrac))
-                        ScheduleGrowStampClear(settledPast, _clockK, in _clockStartFrac); // already exact: clears next tick
+                    PrismRenderService.StampGrow(in prism.RenderHandle,
+                        PrismClock.SettledPast, _clockK, in _clockStartFrac);
                     // The MeshRenderer twin of "rewrite into the past" is removal: the settled
                     // material is the end state (no-op off the §4.11 path).
                     PrismMeshRendererStamps.ClearGrowStamp(meshRenderer);
