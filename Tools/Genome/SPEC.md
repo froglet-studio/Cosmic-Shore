@@ -88,6 +88,7 @@ candidate for an honest size measure. Operator proposals: seeds/OP_PROPOSALS.md.
 | 0x56 | `ag.body` | A | A | shape:enum6, sx:exp[0.01,20], sy:exp[0.01,20], sz:exp[0.01,20], emit:exp[0.01,20], colormode:enum2, edge:lin[0,4], h:hue, s:lin[0,1], v:exp[0.01,4] | vessels |
 | 0x57 | `ag.merge` | A | A,A |  |  |
 | 0x58 | `ag.scatter` | A | - | n:exp[1,4096], radius:exp[0.5,400], shape:enum4, mesh:enum6, size:exp[0.01,50], sizevar:lin[0,1], spin:scub[0,3], emit:exp[0.01,20], seed:int[0,255], huevar:lin[0,1], edge:lin[0,4], h:hue, s:lin[0,1], v:exp[0.01,4] | Mesh_Multiply |
+| 0x59 | `ag.rim` | A | A | power:exp[0.5,16], bright:exp[0.1,8] | Cosmic Shore prism shader |
 | 0x70 | `cam.chase` | C | A | agent:int[0,15], dist:exp[0.1,200], height:scub[0,100], lag:lin[0,0.98], fov:lin[20,120], look:exp[0.01,20] | game camera |
 | 0x71 | `cam.orbit` | C | - | radius:exp[0.5,1000], height:scub[0,400], speed:scub[0,2], fov:lin[20,120], phase:lin[0,6.28319] | demo camera |
 | 0x72 | `cam.fly` | C | - | radius:exp[0.5,1000], speed:exp[0.01,5], fov:lin[20,120], seed:int[0,255] | demo camera |

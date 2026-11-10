@@ -144,7 +144,14 @@ void main(){
   float m1 = max(a.x, max(a.y, a.z));
   float m2 = a.x + a.y + a.z - m1 - min(a.x, min(a.y, a.z)); // second largest
   float edge = smoothstep(0.78, 0.98, m2);
-  vec3 col = fC.rgb*(uLightCol*dif*0.6 + uAmbient) + fC.rgb*fC.a + fC.rgb*edge*fE*2.0;
+  vec3 col;
+  if(fE < 0.0){ // ag.rim: unlit fresnel, a bright rim in the instance colour over a dark complementary face
+    float fr = pow(1.0 - abs(dot(n, normalize(uEye - fW))), -fE);
+    float mx = max(max(fC.r, fC.g), max(fC.b, 1e-4));
+    col = mix((vec3(1.0) - fC.rgb/mx)*0.06, fC.rgb*(1.0 + fC.a), fr);
+  } else {
+    col = fC.rgb*(uLightCol*dif*0.6 + uAmbient) + fC.rgb*fC.a + fC.rgb*edge*fE*2.0;
+  }
   float dist = length(fW - uEye);
   col = mix(col, uFogCol, 1.0-exp(-uFog*dist));
   oCol = vec4(col, 1.0);

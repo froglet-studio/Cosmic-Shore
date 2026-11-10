@@ -31,13 +31,21 @@ class Population:
         self.behaviours = []
         self.trail = None
         self.body = None
+        self.rim = None  # ag.rim: fresnel rim shading for this population's instances
         self.rng = np.random.default_rng(seed)
 
     def copy_shallow(self):
         p = Population(self.kind, self.cfg, 0)
         p.behaviours = list(self.behaviours)
-        p.trail, p.body, p.rng = self.trail, self.body, self.rng
+        p.trail, p.body, p.rng, p.rim = self.trail, self.body, self.rng, self.rim
         return p
+
+    def edge(self, e):
+        """Instance edge value: the op's box-edge highlight, or -power (rim mode in FS_INST) under ag.rim."""
+        return -float(self.rim["power"]) if self.rim else float(e)
+
+    def bright(self):
+        return float(self.rim["bright"]) if self.rim else 1.0
 
 
 def build_populations(g, idx, memo=None, gseed=0):
@@ -66,6 +74,8 @@ def build_populations(g, idx, memo=None, gseed=0):
                 p.trail = d
             elif n.op == "ag.body":
                 p.body = d
+            elif n.op == "ag.rim":
+                p.rim = d
     memo[idx] = out
     return [p.copy_shallow() for p in out]
 
@@ -244,9 +254,9 @@ class World:
         self.pr_x[sl] = x * tr["sx"]
         self.pr_y[sl] = y * tr["sy"]
         self.pr_z[sl] = z * tr["sz"]
-        self.pr_col[sl, :3] = col
+        self.pr_col[sl, :3] = col * p.bright()
         self.pr_col[sl, 3] = tr["emit"]
-        self.pr_edge[sl] = tr["edge"]
+        self.pr_edge[sl] = p.edge(tr["edge"])
         self.pr_birth[sl] = self.t
         self.pr_mesh[sl] = int(tr.get("mesh", 0))
         self.pr_life[sl] = tr["life"]
@@ -279,8 +289,8 @@ class World:
                 col = p.team_rgb[p.team] * 0.5 + _rgb(b["h"], b["s"], b["v"]) * 0.5
             else:
                 col = np.tile(_rgb(b["h"], b["s"], b["v"]), (n, 1))
-            arr = np.concatenate([p.pos, x * b["sx"], y * b["sy"], z * b["sz"], col,
-                                  np.full((n, 1), b["emit"], np.float32), np.full((n, 1), b["edge"], np.float32)], 1)
+            arr = np.concatenate([p.pos, x * b["sx"], y * b["sy"], z * b["sz"], col * p.bright(),
+                                  np.full((n, 1), b["emit"], np.float32), np.full((n, 1), p.edge(b["edge"]), np.float32)], 1)
             lists[MESHES[int(b["shape"])]].append(arr)
         for p in self.static:
             c = p.cfg
@@ -295,8 +305,8 @@ class World:
             y = -base_x * sa + base_y * ca
             s = p.size[:, None]
             rgb = p.rgb if p.rgb is not None else np.tile(_rgb(c["h"], c["s"], c["v"]), (n, 1))
-            arr = np.concatenate([p.pos, x * s, y * s, ax * s, rgb, np.full((n, 1), c["emit"], np.float32),
-                                  np.full((n, 1), c["edge"], np.float32)], 1)
+            arr = np.concatenate([p.pos, x * s, y * s, ax * s, rgb * p.bright(), np.full((n, 1), c["emit"], np.float32),
+                                  np.full((n, 1), p.edge(c["edge"]), np.float32)], 1)
             lists[MESHES[int(c["mesh"])]].append(arr)
         return {m: (np.concatenate(v, 0).astype(np.float32) if v else None) for m, v in lists.items()}
 

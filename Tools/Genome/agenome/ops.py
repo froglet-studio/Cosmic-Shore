@@ -194,6 +194,10 @@ OPS_LIST = [
         P("spin", "scub", 0, 3, 128), P("emit", "exp", 0.01, 20, 100), P("seed", "int", 0, 255, 0),
         P("huevar", "lin", 0, 1, 0), P("edge", "lin", 0, 4, 0)) + _hsv(),
        "static instances: crystals, motes, flora bits", "Mesh_Multiply"),
+    Op(0x59, "ag.rim", "A", ("A",), (P("power", "exp", 0.5, 16, 150), P("bright", "exp", 0.1, 8, 128)),
+       "fresnel rim shading for every instance (trail prisms, bodies, scatter) of the populations under it: a bright "
+       "rim in the population colour over a dark complementary face, as the game shades prisms and crystals",
+       "Cosmic Shore prism shader"),
     # ---------------------------------------------------------------- cameras
     Op(0x70, "cam.chase", "C", ("A",), (P("agent", "int", 0, 15, 0), P("dist", "exp", 0.1, 200, 128),
                                        P("height", "scub", 0, 100, 150), P("lag", "lin", 0, 0.98, 160),
