@@ -19,6 +19,11 @@
 # every REJUDGE generations (default 6) judges the survivors and the front again on windows they have not seen and
 # folds them in: two FIXED windows get fitted too (climbed genomes read 0.3-0.6 worse on windows they never saw).
 # AUDIT="24,28" (default) judges each generation's best on windows selection never uses, logged as best_audit.
+# LABW=1.0 adds the fitness lab's element-aware scorer (agenome.labscore, 1.0 = Amoebius' held-out source) to the
+# fitness beside the judge, on the same windows, scored by LABWORKERS processes (default 2; about 1.5 s a window
+# each); its numbers are logged as best_lab and best_audit_lab. Unset or 0, the command is the same as before. A
+# lab island's dist is not comparable with the others': give it its own RUNS folder, and IMPORT=<the shared runs
+# folder> so it still draws the same immigrants as the islands it is compared with.
 # The reels are three sources (reel05 re-cuts reel03, reel04 re-cuts reel02): reels 1, 2, 4 train every measure and
 # reels 3, 5 are held out (v2 fitness, 2026-11-10 18:00).
 # It runs in the FOREGROUND (a cloud container kills detached processes once it idles after a turn): start it as a
@@ -42,10 +47,20 @@ python3 -c "import moderngl, scipy, PIL, jax" 2>/dev/null || {
   python3 -m pip install --quiet scipy 2>/dev/null & python3 -m pip install --quiet jaxlib 2>/dev/null &
   python3 -m pip install --quiet moderngl pillow numpy 2>/dev/null & wait
   python3 -m pip install --quiet "jax[cpu]" 2>/dev/null || true; }
-if [ "${JUDGE:-0}" != 0 ]; then
+if [ "${JUDGE:-0}" != 0 ] || [ "${LABW:-0}" != 0 ]; then
   KERAS_BACKEND=jax python3 -c "import keras, h5py" 2>/dev/null || python3 -m pip install --quiet keras h5py 2>/dev/null
   mkdir -p "$HOME/.keras/models" && cp -n "$SHARE"/fitness/judge/*.h5 "$HOME/.keras/models/" 2>/dev/null || true
 fi
+LAB_ARGS=()
+if [ "${LABW:-0}" != 0 ]; then
+  # the lab scorer's own needs (fitness_lab/scorer/MERGE.md); it uses the judge's InceptionV3 weights copied above
+  python3 -c "import cv2, skimage, pywt, sklearn, cloudpickle" 2>/dev/null || python3 -m pip install --quiet \
+    opencv-python-headless scikit-image PyWavelets scikit-learn cloudpickle 2>/dev/null
+  LAB_ARGS=(--lab-w "$LABW" --lab-workers "${LABWORKERS:-2}")
+fi
+# IMPORT=<folder> draws immigrants from that folder's islands while RUNS keeps this island's own front elsewhere
+IMPORT_ARGS=()
+[ -n "${IMPORT:-}" ] && IMPORT_ARGS=(--import-from "$IMPORT")
 export KERAS_BACKEND=jax
 command -v Xvfb >/dev/null || { echo "need Xvfb (apt-get install -y xvfb)"; exit 1; }
 F=$SHARE/fitness
@@ -79,7 +94,8 @@ CMD=(python3 -m agenome.search --run "$WORK/run_$NAME" \
   --judge-windows "${WINDOWS:-1}" --judge-hop "${HOP:-8}" --window-mode "${WINMODE:-fixed}" \
   --window-span "${SPAN:-20}" --window-step "${STEP:-2}" --audit-offsets "${AUDIT:-24,28}" \
   --rejudge-every "$( [ "${WINMODE:-fixed}" = random ] && echo "${REJUDGE:-6}" || echo 0 )" \
+  ${LAB_ARGS[@]+"${LAB_ARGS[@]}"} ${IMPORT_ARGS[@]+"${IMPORT_ARGS[@]}"} \
   --share "${RUNS:-$SHARE/runs}" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
-echo "island $NAME: log $WORK/run_$NAME.out ; results in $SHARE/runs/$NAME/ ; resuming from ${#OWN[@]} own file(s)"
+echo "island $NAME: log $WORK/run_$NAME.out ; results in ${RUNS:-$SHARE/runs}/$NAME/ ; resuming from ${#OWN[@]} own file(s)"
 if [ "${BG:-0}" = 1 ]; then nohup "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1 & exit 0; fi
 exec "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1

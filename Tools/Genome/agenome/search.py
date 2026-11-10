@@ -8,7 +8,9 @@ The regimes are Garrett's pareto_complexity.py (NCA Ecology Lab) lifted from a (
 Flips on plateau (patience) or when the population's median size exceeds the byte budget.
 
 Distance to Amoebius = stat (features.py, fixed) + critic_w * softplus(-critic logit) (critic.py, retrained every
---critic-every generations on Amoebius train frames vs the frames the search just rendered).
+--critic-every generations on Amoebius train frames vs the frames the search just rendered) + judge_w * judge (the fixed
+perceptual judge, agenome.judge) + lab_w * lab (the fitness lab's element-aware scorer, agenome.labscore; off unless
+--lab-w > 0, scored on the same windows as the judge by --lab-workers processes while the pool renders the rest).
 
 Run:  python3 -m agenome.search --run RUN_DIR --stats STATS.npz --hold HOLD.npz --real 'frames.npy globs'
                                 --seeds 'GLOB' [--workers 4] [--gens 200]
@@ -53,9 +55,11 @@ def _init(stats_path, hold_path, lp_threads, mem_gb=3.0):
 
 
 def _eval(payload):
-    """Render and score one genome. payload = (genome json, frames, judge frames, windows[, hop]): windows is either a
-    list of start offsets in seconds (each window renders with t_shift = offset) or a count n, meaning offsets
-    0, hop, 2 hop, ... (the older form, still used by agenome.tune). The stat, held-out stat, groups, luma and motion
+    """Render and score one genome. payload = (genome json, frames, judge frames, windows[, hop[, full]]): windows is
+    either a list of start offsets in seconds (each window renders with t_shift = offset) or a count n, meaning offsets
+    0, hop, 2 hop, ... (the older form, still used by agenome.tune). full (default False) also returns every window's
+    whole clip as res['lframes'], for the lab scorer (its optical flow needs all 60 frames, not the judge's 12).
+    The stat, held-out stat, groups, luma and motion
     are means over the windows, each window's judge frames go to the judge, and the critic's 4 frames are spread over
     the windows (one window: frames 0, 1/3, 2/3 and the end, as before; two: the first and last frame of each), so no
     term of the fitness is measured on one stretch of time (code review 2026-11-10: groups and the critic were still
@@ -68,10 +72,11 @@ def _eval(payload):
     else:
         hop = float(payload[4]) if len(payload) > 4 else 8.0
         offsets = [k * hop for k in range(max(1, int(wins)))]
+    full = bool(payload[5]) if len(payload) > 5 else False
     t0 = time.time()
     try:
         g = Genome.from_json(gj)
-        stats, holds, jfr, dks, lumas, motions, cfr = [], [], [], [], [], [], []
+        stats, holds, jfr, dks, lumas, motions, cfr, lfr = [], [], [], [], [], [], [], []
         nw = len(offsets)
         slots = [4 // nw + (1 if w < 4 % nw else 0) for w in range(nw)]  # the critic's 4 frames over the windows
         for w, ts in enumerate(offsets):
@@ -93,6 +98,8 @@ def _eval(payload):
             if slots[w] > 0:
                 ci = np.linspace(0, len(frk) - 1, slots[w]).astype(int) if slots[w] > 1 else [len(frk) // 2]
                 cfr.append(frk[ci].copy())
+            if full:
+                lfr.append(frk)
         groups = {k: round(float(np.mean([dk[k] for dk in dks])), 4) for k in dks[0] if k != "total"}
         res = {"ok": True, "stat": float(np.mean(stats)), "groups": groups,
                "zbytes": g.size(), "nodes": len(g.nodes), "luma": float(np.mean(lumas)),
@@ -105,11 +112,42 @@ def _eval(payload):
             res["hold_windows"] = [round(x, 4) for x in holds]
         if n_judge:
             res["jframes"] = jfr
+        if full:
+            res["lframes"] = lfr
     except Exception as e:
         res = {"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"{type(e).__name__}: {e}"[:300],
                "nodes": 0, "luma": 0.0, "motion": 0.0}
     res["sec"] = time.time() - t0
     return res
+
+
+# ---------------------------------------------------------------------- lab scorer side (only when --lab-w > 0)
+def _lab_init():
+    """A lab-scoring process: one numpy/OpenCV thread, no X display; loads the scorer once (about 20 s: the reference
+    pickle plus Keras' InceptionV3 for its crit and dist axes, with the judge's weights from ~/.keras/models)."""
+    for k in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ[k] = "1"
+    os.environ.setdefault("KERAS_BACKEND", "jax")
+    os.environ.pop("DISPLAY", None)
+    try:
+        import cv2
+        cv2.setNumThreads(1)
+    except Exception:
+        pass
+    from . import labscore
+    labscore.scorer()
+
+
+def _lab_eval(frames_list):
+    """Lab score of one candidate's windows (each a whole uint8 [60,144,256,3] clip): per-window scores, 1.0 = Amoebius'
+    held-out source."""
+    t0 = time.time()
+    try:
+        from . import labscore
+        _, per, _ = labscore.windows(frames_list)
+        return {"ok": True, "per": [float(x) for x in per], "sec": time.time() - t0}
+    except Exception as e:
+        return {"ok": False, "err": f"{type(e).__name__}: {e}"[:300], "sec": time.time() - t0}
 
 
 def window_grid(args):
@@ -162,6 +200,11 @@ def merge_windows(c, r):
             c[k] = list(c[k]) + list(r[k])
     if "judge_nwin" in c and "judge_nwin" in r:
         c["judge_nwin"] = n0 + n1
+    if "lab" in r:  # the lab scorer (--lab-w > 0) is merged over its own window count
+        l0, l1 = int(c.get("lab_nwin", 0)) if "lab" in c else 0, int(r.get("lab_nwin", 1))
+        c["lab"] = round(wavg(c["lab"], r["lab"], l0, l1), 4) if l0 else r["lab"]
+        c["lab_windows"] = (list(c.get("lab_windows", [])) if l0 else []) + list(r.get("lab_windows", []))
+        c["lab_nwin"] = l0 + l1
     c["stat_nwin"] = m0 + m1
     c["rejudged"] = int(c.get("rejudged", 0)) + 1
     return c
@@ -345,11 +388,84 @@ class JudgeState:
             c.pop("jframes", None)
 
 
+class LabState:
+    """The fitness lab's element-aware scorer (agenome.labscore; 1.0 = Amoebius' held-out source, about 9 a typical
+    phenotype) as a search term, on the same windows as the judge. Off unless --lab-w > 0, so the default fitness and
+    every running island stay as they were. Each render result's whole clips go to a pool of --lab-workers processes
+    as soon as it arrives (submit), so the lab scores finished candidates while the render pool works on the rest;
+    collect() waits for them. A candidate whose lab scoring failed has no 'lab' and dist reads it as LAB_MISSING."""
+    LAB_MISSING = 10.0
+
+    def __init__(self, args, ctx):
+        self.on = getattr(args, "lab_w", 0.0) > 0
+        self.w = getattr(args, "lab_w", 0.0)
+        self.n = max(1, int(getattr(args, "lab_workers", 2)))
+        self.ctx, self.pool, self.jobs = ctx, None, {}
+        self.errors, self.wait, self.scored = 0, 0.0, 0
+        if self.on:
+            from .labscore import LAB
+            self.new_pool()
+            print(f"lab: weight {self.w}, {self.n} scoring processes, scorer {LAB}", flush=True)
+
+    def new_pool(self):
+        if self.pool is not None:
+            self.pool.terminate()
+        self.pool = self.ctx.Pool(self.n, initializer=_lab_init)
+        self.jobs = {}
+
+    def submit(self, r):
+        fr = r.pop("lframes", None)
+        if self.on and fr is not None and r.get("ok"):
+            try:
+                self.jobs[id(r)] = (r, self.pool.apply_async(_lab_eval, (fr,)))
+            except Exception as e:  # a broken pool: this candidate goes unscored (LAB_MISSING), the run goes on
+                self.errors += 1
+                print("lab submit failed:", f"{type(e).__name__}: {e}"[:200], flush=True)
+
+    def collect(self, res):
+        if not self.on:
+            return
+        t0 = time.time()
+        todo = [self.jobs.pop(id(r)) for r in res if id(r) in self.jobs]
+        nwin = max([len(r.get("win_t") or [0]) for r, _ in todo] or [1])
+        # the first call in each process loads the scorer (about 20 s); after that about 1.5 s a window on a free core
+        deadline = time.time() + 120 + 8.0 * nwin * len(todo) / self.n
+        broken = False
+        for r, j in todo:
+            try:
+                if broken:
+                    raise mp.TimeoutError()
+                out = j.get(timeout=max(1.0, deadline - time.time()))
+            except mp.TimeoutError:
+                broken = True
+                out = {"ok": False, "err": "lab timeout"}
+            except Exception as e:
+                out = {"ok": False, "err": f"lab worker: {e}"[:200]}
+            if out.get("ok") and out.get("per"):
+                r["lab"] = round(float(np.mean(out["per"])), 4)
+                r["lab_windows"] = [round(x, 3) for x in out["per"]]
+                r["lab_nwin"] = len(out["per"])
+                self.scored += 1
+            else:
+                self.errors += 1
+                if self.errors <= 5:
+                    print("lab error:", out.get("err"), flush=True)
+        if broken:
+            print("lab scoring timed out; restarting the lab pool", flush=True)
+            self.new_pool()
+        self.wait += time.time() - t0
+
+    def close(self):
+        if self.pool is not None:
+            self.pool.close()
+
+
 class CriticState:
     def __init__(self, args):
         self.on = bool(args.real) and args.critic_w > 0
         self.w = args.critic_w
         self.stat_w, self.judge_w = args.stat_w, args.judge_w
+        self.lab_w = getattr(args, "lab_w", 0.0)
         self.c = None
         self.buf = []
         self.real = None
@@ -400,6 +516,8 @@ class CriticState:
             cd = critic_distance(c["crit"]) if (self.on and self.trained and "crit" in c) else 0.0
             jd = c.get("judge", 10.0) if self.judge_w > 0 else 0.0
             c["dist"] = self.stat_w * c["stat"] + self.w * cd + self.judge_w * jd
+            if self.lab_w > 0:  # never used alone: the red team climbed the lab while the judge got worse (MERGE.md)
+                c["dist"] += self.lab_w * c.get("lab", LabState.LAB_MISSING)
 
 
 def run(args):
@@ -435,6 +553,11 @@ def run(args):
     state = {"pool": None}
     crit = CriticState(args)
     judge = JudgeState(args)
+    lab = LabState(args, ctx)
+
+    def job(gj, offsets):
+        """One evaluation's payload; with the lab on, the workers also return every window's whole clip."""
+        return (gj, args.frames, judge.n, offsets, 8.0, True) if lab.on else (gj, args.frames, judge.n, offsets)
 
     def new_pool():
         if state["pool"] is not None:
@@ -462,18 +585,20 @@ def run(args):
             except Exception as e:
                 res.append({"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"worker: {e}"[:200], "nodes": 0,
                             "luma": 0.0, "motion": 0.0, "sec": 0.0})
+            lab.submit(res[-1])  # the lab scores this one while the pool renders the rest (never raises)
         if broken:
             print("evaluation timed out; restarting the worker pool", flush=True)
             new_pool()
         return res
 
     def evaluate(gs):
-        payload = [(g.to_json(), args.frames, judge.n, draw_offsets(args, rng)) for g in gs]
+        payload = [job(g.to_json(), draw_offsets(args, rng)) for g in gs]
         res = run_payload(payload)
         for g, r in zip(gs, res):
             r["genome"] = g
         crit.add_fakes(res)
         judge.score(res)
+        lab.collect(res)
         crit.score(res)
         return res
 
@@ -488,8 +613,9 @@ def run(args):
                     todo.append((c, o))
         if not todo:
             return 0
-        res = run_payload([(c["genome"].to_json(), args.frames, judge.n, o) for c, o in todo])
+        res = run_payload([job(c["genome"].to_json(), o) for c, o in todo])
         judge.score(res)
+        lab.collect(res)
         n = 0
         for (c, _), r in zip(todo, res):
             if r.get("ok"):
@@ -506,10 +632,13 @@ def run(args):
             return None
         key = c["genome"].to_bytes()
         if key not in audits:
-            (r,) = run_payload([(c["genome"].to_json(), args.frames, judge.n, list(args.audit_offsets))])
+            (r,) = run_payload([job(c["genome"].to_json(), list(args.audit_offsets))])
             judge.score([r])
+            lab.collect([r])
             audits[key] = ({"judge": r.get("judge"), "judge_windows": r.get("judge_windows"), "t": r.get("win_t"),
-                            "stat": round(r["stat"], 4)} if r.get("ok") else {"err": r.get("err")})
+                            "stat": round(r["stat"], 4),
+                            **({"lab": r.get("lab"), "lab_windows": r.get("lab_windows")} if lab.on else {})}
+                           if r.get("ok") else {"err": r.get("err")})
         c["audit"] = audits[key]
         return c["audit"]
 
@@ -544,6 +673,7 @@ def run(args):
     for gen in range(args.gens):
         cinfo = {}
         moved = False
+        lab.wait = 0.0
         if args.rejudge_every > 0 and gen > 0 and gen % args.rejudge_every == 0:
             # random windows: survivors and the published front get fresh windows folded into their scores, so a lucky
             # first draw does not keep a genome on top (each is judged at most once per window offset)
@@ -622,6 +752,11 @@ def run(args):
                    "best_judge_nwin": best.get("judge_nwin"),
                    "top_judge": min((c.get("judge", 99) for c in allc), default=None)} if judge.on else {}),
                **({"best_audit": aud.get("judge"), "best_audit_windows": aud.get("judge_windows")} if aud else {}),
+               **({"best_lab": best.get("lab"), "best_lab_nwin": best.get("lab_nwin"),
+                   "top_lab": min((c.get("lab", 99) for c in allc), default=None),
+                   "lab_wait": round(lab.wait, 1), "lab_errors": lab.errors} if lab.on else {}),
+               **({"best_audit_lab": aud.get("lab"), "best_audit_lab_windows": aud.get("lab_windows")}
+                  if aud and lab.on else {}),
                "best_zbytes": best["zbytes"], "simplest_ok_zbytes": simplest_ok["zbytes"],
                "median_zbytes": med_size, "archive": len(archive.members), "elites": len(elites.cells),
                "errors": nerr, "sec_per_eval": round(float(np.mean([c["sec"] for c in res])), 3),
@@ -634,6 +769,7 @@ def run(args):
             save_state(args.run, pop, archive, elites, gen)
             publish(args, args.run)
     state["pool"].close()
+    lab.close()
     save_state(args.run, pop, archive, elites, args.gens)
 
 
@@ -653,7 +789,9 @@ def immigrants(args, rng, k=4, have=(), held=()):
         return []
     me = os.path.abspath(os.path.join(args.share, args.island)) if args.island else None
     held, fronts = set(held), []
-    for folder in sorted(glob.glob(os.path.join(args.share, "*", ""))):
+    # --import-from reads another folder's islands while this one publishes under --share: a trial island kept out of
+    # runs/ (its dist has other terms) still gets the same immigrants as the islands it is compared with
+    for folder in sorted(glob.glob(os.path.join(getattr(args, "import_from", None) or args.share, "*", ""))):
         folder = os.path.abspath(folder)
         if me and folder == me:
             continue
@@ -730,7 +868,7 @@ def publish(args, run_dir):
 
 def save_state(run_dir, pop, archive, elites, gen):
     def pack(c):
-        d = {k: v for k, v in c.items() if k not in ("genome", "frames")}
+        d = {k: v for k, v in c.items() if k not in ("genome", "frames", "jframes", "lframes")}
         d["genome"] = c["genome"].to_json()
         return d
     tmp = lambda n: os.path.join(run_dir, n + ".tmp")
@@ -781,6 +919,13 @@ def main(argv=None):
                     help="window starts (s) never used for selection on which each generation's best is judged and "
                          "logged as best_audit (comma list; 'none' = off). Keep warmup + offset under 60 s")
     ap.add_argument("--stat-w", type=float, default=1.0, help="weight of the fixed statistics in dist")
+    ap.add_argument("--lab-w", type=float, default=0.0,
+                    help="weight of the fitness lab's element-aware scorer (agenome.labscore; 1.0 = Amoebius' held-out "
+                         "source, about 9 a typical phenotype), scored on the judged windows and added to dist beside "
+                         "the judge, never alone; 0 = off (the default, so the merged code changes no running island). "
+                         "About 1.5 s a window on a free core")
+    ap.add_argument("--lab-workers", type=int, default=2,
+                    help="processes that score the lab while the render pool works (each loads it once, about 20 s)")
     ap.add_argument("--critic-every", type=int, default=6)
     ap.add_argument("--critic-steps", type=int, default=120)
     ap.add_argument("--seeds", nargs="*", default=[])
@@ -808,6 +953,9 @@ def main(argv=None):
     ap.add_argument("--lineage-cap", type=float, default=0.25,
                     help="largest share of the mu survivors one lineage (root seed) may hold; 0 = no cap")
     ap.add_argument("--migrants", type=int, default=4)
+    ap.add_argument("--import-from", default=None,
+                    help="folder of islands to draw immigrants from (default: --share); lets a trial island publish to a "
+                         "folder of its own and still import what the compared islands import")
     args = ap.parse_args(argv)
     args.audit_offsets = [] if str(args.audit_offsets).strip().lower() in ("", "none", "0", "off") else \
         [float(x) for x in str(args.audit_offsets).split(",") if x.strip()]
