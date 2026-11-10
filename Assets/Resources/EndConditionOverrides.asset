@@ -50,6 +50,7 @@ MonoBehaviour:
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
   tapestryRoundSeconds: 90
+  glasshouseRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -117,6 +118,7 @@ MonoBehaviour:
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
   tapestryRoundSecondsBuild: 90
+  glasshouseRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35

@@ -65,6 +65,39 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Glasshouse, the Angler's Mass game (GameModes 88) (`claude/peaceful-cerf-vpl3x8`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/GLASSHOUSE.md`. A timed garden: an omni crystal is a creature and a seed, letting go
+of the lure plants the seed in your colour, holding it grows your plants 3x. The score is `VolumeRemaining`: trail
+(StatsManager) + garden (the controller credits each domain's plants outside the nucleus by deltas). Four cells (the
+standard cell with Barren's nucleus, no environment), a cactus planted only from seeds (`SpawnProbability 0`), tadpole
+herds, omni crystals per rung. The AI (`GlasshouseGardener`) steers and holds the lure only. New platform rows:
+`GameModes.Glasshouse = 88`, `glasshouseRoundSeconds` (90), `GameToastSituation.GlasshouseHint = 163`, the HUD arrow
+(Rampage's provider). Nothing about the Angler changed. Authored by `Tools/Build/author_glasshouse_assets.py`. Ran
+headless: the generator `--check` (with a negative control), the `/arcadegame` §4 gates, the card render, and
+`unity_refcompile` (see the commit). No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Glasshouse card: the gardens card art, Angler only, 1-4 players, intensities 1-4, the **Mass** petal.
+2. Run the edit-mode tests `GlasshouseScoringTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. Solo, I2: the arrow points into the nucleus at an omni crystal. Take it: the Mass card shows a seed.
+4. Fly out past the nucleus, hold A (the lure) and let go: a cactus grows at the esca in **your** colour. Your score
+   (Hold volume) rises as it grows, on top of what your trail adds.
+5. Hold the lure over the plant: it grows visibly faster (3x), and the hull stops (no trail while it is lit).
+6. Let go of the lure inside the nucleus with a seed: the plant counts nothing (the garden is outside the nucleus).
+7. Wait: the tadpoles graze the garden and your score falls; luring tames the grazers in reach.
+8. With a 2-domain lobby (AI): an AI Angler fetches a seed, flies to its bed, holds the lure and plants; at Medium and
+   above it raids (steers at your plants; its school is thrown at them).
+9. At the whistle: the domain with the most volume standing wins; the results show "{n} Volume" and "{n} grown".
+10. FrogletTools > Game Modes > End Game Conditions: Glasshouse - Round Seconds reads 90.
+11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameGlasshouse.unity`, and Reconcile Build
+    Scene List if the card refuses to load.
+12. Profiler: a full I1 arena (36 plants) stays under ~9,800 prisms; the garden sample is one pass a second.
+
+**First-pass tuning (not settled):** round 90 s; plant caps 36 / 30 / 24 / 18; omni 4 / 3 / 3 / 2; grazers
+6 / 9 / 12 / 15; cactus at 1.4x leaf (~32,900 volume mature); comeback 0.00003. The open question is the
+retire condition: does the garden matter against the trail (~42,000 volume a round of cruising)?
+
 ### 🔴 Corona, the Manta's Charge game (GameModes 87) (`claude/amazing-goldberg-7zn80e`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/CORONA.md`. Manta stings round a crystal heart in nested prism shells

@@ -558,6 +558,11 @@ namespace CosmicShore.UI
                     // The Bends' provider again: the nearest pilot this player may graze. The way to them is through
                     // the gates, and the cash-out is always the heart, so the arrow only has to answer who.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Corona");
+                case GameModes.Glasshouse:
+                    // Rampage's provider: the nearest managed omni crystal. In the garden that crystal is the next
+                    // SEED (and a creature), the one thing a pilot has to go and fetch; the planting and the tending
+                    // happen wherever the pilot lets go of the lure.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Glasshouse");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's

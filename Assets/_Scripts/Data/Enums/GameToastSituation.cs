@@ -237,6 +237,10 @@ namespace CosmicShore.Data
         // Corona, the Manta's charge game (_Scripts/Controller/Arcade/CORONA.md). Its race beats are the shared
         // 128-130 (DomainRaceToasts); a bloom hit is 82 (DebuffHitsLanded rose). Posted to the LOCAL pilot only.
         CoronaHint = 162,               // once, at the start: skim a shell to arm, graze to plant, cash at the heart
+        // Glasshouse, the Angler's Mass game (_Scripts/Controller/Arcade/GLASSHOUSE.md). Its lead change is the shared
+        // 130 (DomainRaceLeadChanged), sampled by the controller because a timed mode has no target. Posted to the
+        // LOCAL pilot only.
+        GlasshouseHint = 163,           // once, at the start: take an omni crystal, let go of the lure to plant, light it to grow
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
