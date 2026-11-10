@@ -53,46 +53,107 @@ def _init(stats_path, hold_path, lp_threads, mem_gb=3.0):
 
 
 def _eval(payload):
+    """Render and score one genome. payload = (genome json, frames, judge frames, windows[, hop]): windows is either a
+    list of start offsets in seconds (each window renders with t_shift = offset) or a count n, meaning offsets
+    0, hop, 2 hop, ... (the older form, still used by agenome.tune). The stat and held-out stat are the means over the
+    windows, each window's judge frames go to the judge, and groups, luma, motion and the critic's 4 frames come from
+    the first window."""
     from .features import window_features
     gj, n_frames, n_judge = payload[:3]
-    n_win, hop = (payload[3], payload[4]) if len(payload) > 4 else (1, 8.0)
+    wins = payload[3] if len(payload) > 3 else 1
+    if isinstance(wins, (list, tuple)):
+        offsets = [float(t) for t in wins] or [0.0]
+    else:
+        hop = float(payload[4]) if len(payload) > 4 else 8.0
+        offsets = [k * hop for k in range(max(1, int(wins)))]
     t0 = time.time()
     try:
         g = Genome.from_json(gj)
-        fr = _R.render(g, n_frames)
-        f = window_features(fr, sub=2)
-        d = _ST.distance(f)
-        res = {"ok": True, "stat": d["total"], "groups": {k: round(v, 4) for k, v in d.items() if k != "total"},
+        stats, holds, jfr, first = [], [], [], None
+        for ts in offsets:
+            # later windows of the same phenotype: judged, and the stat averages over them too, so neither term can be
+            # met by fitting one stretch of time (2026-11-10: genomes judged 0.87 on the first window read 2.0 to 3.9
+            # later, and genomes climbed on two fixed windows read 0.3 to 0.6 worse on windows they never saw)
+            frk = _R.render(g, n_frames, t_shift=ts)
+            fk = window_features(frk, sub=2)
+            dk = _ST.distance(fk)
+            stats.append(dk["total"])
+            if _HOLD is not None:
+                holds.append(_HOLD.distance(fk)["total"])
+            if n_judge:
+                pick = np.linspace(0, len(frk) - 1, n_judge).round().astype(int)
+                jfr.append(frk[pick].copy())
+            if first is None:
+                first = (frk, dk)
+        fr, d = first
+        res = {"ok": True, "stat": float(np.mean(stats)),
+               "groups": {k: round(v, 4) for k, v in d.items() if k != "total"},
                "zbytes": g.size(), "nodes": len(g.nodes), "luma": float(fr.mean() / 255.0),
                "motion": float(np.abs(np.diff(fr[::4].astype(np.int16), axis=0)).mean() / 255.0) if len(fr) > 4 else 0.0,
-               "frames": fr[np.linspace(0, len(fr) - 1, 4).astype(int)].copy()}
-        holds = [_HOLD.distance(f)["total"]] if _HOLD is not None else []
-        if n_judge:
-            pick = np.linspace(0, len(fr) - 1, n_judge).round().astype(int)
-            res["jframes"] = [fr[pick].copy()]
-        if n_win > 1:
-            # later windows of the same phenotype (see --judge-windows): judged, and the stat averages over them too,
-            # so neither term can be met by fitting the first 4 seconds (2026-11-10: genomes judged 0.87 on the first
-            # window read 2.0 to 3.9 later)
-            stats = [d["total"]]
-            for k in range(1, n_win):
-                frk = _R.render(g, n_frames, t_shift=k * hop)
-                fk = window_features(frk, sub=2)
-                stats.append(_ST.distance(fk)["total"])
-                if _HOLD is not None:
-                    holds.append(_HOLD.distance(fk)["total"])
-                if n_judge:
-                    res["jframes"].append(frk[pick].copy())
-            res["stat"] = float(np.mean(stats))
-            res["stat_windows"] = [round(x, 4) for x in stats]
+               "frames": fr[np.linspace(0, len(fr) - 1, 4).astype(int)].copy(),
+               "stat_windows": [round(x, 4) for x in stats], "stat_nwin": len(offsets),
+               "win_t": [round(t, 3) for t in offsets]}
         if holds:
             res["hold"] = float(np.mean(holds))
-        res["stat_nwin"] = max(1, n_win)
+            res["hold_windows"] = [round(x, 4) for x in holds]
+        if n_judge:
+            res["jframes"] = jfr
     except Exception as e:
         res = {"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"{type(e).__name__}: {e}"[:300],
                "nodes": 0, "luma": 0.0, "motion": 0.0}
     res["sec"] = time.time() - t0
     return res
+
+
+def window_grid(args):
+    """The offsets a genome's judged windows are drawn from: random mode, 0 to --window-span on a --window-step grid;
+    fixed mode, the --judge-windows offsets 0, hop, 2 hop, ..."""
+    if getattr(args, "window_mode", "fixed") == "random":
+        n = int(round(args.window_span / args.window_step)) + 1
+        return [round(k * args.window_step, 3) for k in range(n)]
+    return [round(k * args.judge_hop, 3) for k in range(max(1, args.judge_windows))]
+
+
+def draw_offsets(args, rng, exclude=()):
+    """The window offsets for one evaluation. Random mode: --judge-windows offsets drawn from the grid without
+    replacement, skipping offsets this genome was already judged on (empty when none are left); fixed mode: the
+    fixed offsets (empty when they are all in exclude, so a fixed-mode genome is never re-judged on the same windows)."""
+    grid = window_grid(args)
+    seen = {round(float(t), 3) for t in exclude}
+    if getattr(args, "window_mode", "fixed") != "random":
+        return [] if seen.issuperset(grid) and exclude else grid
+    free = [t for t in grid if t not in seen]
+    k = max(1, args.judge_windows)
+    return sorted(rng.sample(free, k)) if len(free) >= k else []
+
+
+def merge_windows(c, r):
+    """Fold r, a re-evaluation of c's genome on other windows, into c: every score becomes the window-weighted mean
+    over all the windows judged so far, so a long-lived genome converges on its look over the whole span instead of
+    the luck of its first draw. The critic frames, groups, luma and motion stay those of c's first evaluation."""
+    n0, n1 = int(c.get("judge_nwin", 1)), int(r.get("judge_nwin", 1))
+    m0, m1 = int(c.get("stat_nwin", 1)), int(r.get("stat_nwin", 1))
+
+    def wavg(a, b, wa, wb):
+        return (a * wa + b * wb) / float(wa + wb)
+
+    for k in ("judge", "judge_hold"):
+        if k in c and k in r:
+            c[k] = round(wavg(c[k], r[k], n0, n1), 4)
+    for k in ("judges", "judges_hold"):
+        if k in c and k in r and len(c[k]) == len(r[k]):
+            c[k] = [round(wavg(x, y, n0, n1), 3) for x, y in zip(c[k], r[k])]
+    for k in ("stat", "hold"):
+        if k in c and k in r:
+            c[k] = wavg(c[k], r[k], m0, m1)
+    for k in ("judge_windows", "judge_hold_windows", "stat_windows", "hold_windows", "win_t"):
+        if k in c and k in r:
+            c[k] = list(c[k]) + list(r[k])
+    if "judge_nwin" in c and "judge_nwin" in r:
+        c["judge_nwin"] = n0 + n1
+    c["stat_nwin"] = m0 + m1
+    c["rejudged"] = int(c.get("rejudged", 0)) + 1
+    return c
 
 
 # ---------------------------------------------------------------------- variation with regime bias
@@ -265,8 +326,8 @@ class JudgeState:
                 c["judge_hold"] = round(float(np.mean(win_h)), 4)
                 c["judges"] = [round(float(np.mean([p[i]["judge"] for i in idx])), 3) for p in per]
                 c["judges_hold"] = [round(float(np.mean([p[i]["judge_hold"] for i in idx])), 3) for p in per]
-                if len(idx) > 1:
-                    c["judge_windows"] = [round(x, 3) for x in win]
+                c["judge_windows"] = [round(x, 3) for x in win]
+                c["judge_hold_windows"] = [round(x, 3) for x in win_h]
                 c["judge_nwin"] = len(idx)
                 c["judge_v"] = self.version
         for c in cands:
@@ -368,11 +429,12 @@ def run(args):
                                  initargs=(args.stats, args.hold, args.lp_threads, args.mem_gb))
     new_pool()
 
-    def evaluate(gs):
-        payload = [(g.to_json(), args.frames, judge.n, args.judge_windows, args.judge_hop) for g in gs]
+    def run_payload(payload):
+        """Evaluate payloads on the worker pool; a hung evaluation restarts the pool instead of stalling the island."""
         jobs = [state["pool"].apply_async(_eval, (p,)) for p in payload]
         res = []
-        deadline = time.time() + 60 + 6.0 * max(1, args.judge_windows) * len(jobs) / max(1, args.workers)
+        nwin = max([len(p[3]) if isinstance(p[3], (list, tuple)) else int(p[3]) for p in payload] or [1])
+        deadline = time.time() + 60 + 6.0 * max(1, nwin) * len(jobs) / max(1, args.workers)
         broken = False
         for j in jobs:
             try:
@@ -389,12 +451,53 @@ def run(args):
         if broken:
             print("evaluation timed out; restarting the worker pool", flush=True)
             new_pool()
+        return res
+
+    def evaluate(gs):
+        payload = [(g.to_json(), args.frames, judge.n, draw_offsets(args, rng)) for g in gs]
+        res = run_payload(payload)
         for g, r in zip(gs, res):
             r["genome"] = g
         crit.add_fakes(res)
         judge.score(res)
         crit.score(res)
         return res
+
+    def rejudge(cands):
+        """Random windows: judge each candidate again on windows it has not been judged on and fold them in
+        (merge_windows), so survivors' scores converge on the whole span. Returns how many were re-judged."""
+        todo = []
+        for c in cands:
+            if c.get("ok"):
+                o = draw_offsets(args, rng, exclude=c.get("win_t", []))
+                if o:
+                    todo.append((c, o))
+        if not todo:
+            return 0
+        res = run_payload([(c["genome"].to_json(), args.frames, judge.n, o) for c, o in todo])
+        judge.score(res)
+        n = 0
+        for (c, _), r in zip(todo, res):
+            if r.get("ok"):
+                merge_windows(c, r)
+                n += 1
+        return n
+
+    audits = {}
+
+    def audit(c):
+        """Judge c on the --audit-offsets windows, which selection never uses (cached by bytes): the honest number for
+        a published best. Stored on the row as c['audit']."""
+        if not args.audit_offsets or not c.get("ok"):
+            return None
+        key = c["genome"].to_bytes()
+        if key not in audits:
+            (r,) = run_payload([(c["genome"].to_json(), args.frames, judge.n, list(args.audit_offsets))])
+            judge.score([r])
+            audits[key] = ({"judge": r.get("judge"), "judge_windows": r.get("judge_windows"), "t": r.get("win_t"),
+                            "stat": round(r["stat"], 4)} if r.get("ok") else {"err": r.get("err")})
+        c["audit"] = audits[key]
+        return c["audit"]
 
     t_start = time.time()
     pop = evaluate(seeds)
@@ -426,8 +529,17 @@ def run(args):
     evals = len(seeds)
     for gen in range(args.gens):
         cinfo = {}
+        moved = False
+        if args.rejudge_every > 0 and gen > 0 and gen % args.rejudge_every == 0:
+            # random windows: survivors and the published front get fresh windows folded into their scores, so a lucky
+            # first draw does not keep a genome on top (each is judged at most once per window offset)
+            cinfo["rejudged"] = rejudge(list({id(c): c for c in pop + archive.members}.values()))
+            evals += cinfo["rejudged"]
+            moved = cinfo["rejudged"] > 0
         if crit.on and gen > 0 and gen % args.critic_every == 0:
-            cinfo = crit.train(args.critic_steps)
+            cinfo.update(crit.train(args.critic_steps))
+            moved = True
+        if moved:
             rebuild()
             pop.sort(key=lambda c: c["dist"])
             peak = min(c["dist"] for c in pop)  # the yardstick moved: re-anchor the floor
@@ -486,12 +598,15 @@ def run(args):
         elif regime == COMPRESS and since >= args.patience:
             regime, since, flipped = COMPLEXIFY, 0, True
         best = min(pop, key=lambda c: c["dist"])
+        aud = audit(best) if judge.on else None
         simplest_ok = min((m for m in archive.members if m["dist"] <= floor), key=lambda m: m["zbytes"], default=best)
         rec = {"gen": gen, "t": round(time.time() - t_start, 1), "evals": evals, "regime": regime, "flip": flipped,
                "peak": round(peak, 4), "best_dist": round(best["dist"], 4), "best_stat": round(best["stat"], 4),
                "best_crit": round(best.get("crit", 0.0), 3), "best_hold": round(best.get("hold", -1), 4),
                **({"best_judge": best.get("judge"), "best_judge_hold": best.get("judge_hold"),
+                   "best_judge_nwin": best.get("judge_nwin"),
                    "top_judge": min((c.get("judge", 99) for c in allc), default=None)} if judge.on else {}),
+               **({"best_audit": aud.get("judge"), "best_audit_windows": aud.get("judge_windows")} if aud else {}),
                "best_zbytes": best["zbytes"], "simplest_ok_zbytes": simplest_ok["zbytes"],
                "median_zbytes": med_size, "archive": len(archive.members), "elites": len(elites.cells),
                "errors": nerr, "sec_per_eval": round(float(np.mean([c["sec"] for c in res])), 3),
@@ -597,7 +712,19 @@ def main(argv=None):
                          "after the first); the score is their mean. 2 or more stop a genome from fitting only the frames "
                          "it is judged on: best genomes judged 1.13 to 1.70 on their first window read 1.21 to 2.48 on "
                          "the next three (2026-11-10), and each extra window costs one more render")
-    ap.add_argument("--judge-hop", type=float, default=8.0, help="seconds between judged windows")
+    ap.add_argument("--judge-hop", type=float, default=8.0, help="seconds between judged windows (fixed mode)")
+    ap.add_argument("--window-mode", default="fixed", choices=["fixed", "random"],
+                    help="fixed: every genome is judged on offsets 0, hop, 2 hop, ...; random: each evaluation draws "
+                         "--judge-windows offsets from 0..--window-span on a --window-step grid (genomes climbed on two "
+                         "fixed windows read 0.3 to 0.6 worse on windows they never saw, 2026-11-10)")
+    ap.add_argument("--window-span", type=float, default=20.0, help="random mode: latest window start, seconds")
+    ap.add_argument("--window-step", type=float, default=2.0, help="random mode: grid of window starts, seconds")
+    ap.add_argument("--rejudge-every", type=int, default=0,
+                    help="random mode: every N generations judge the survivors and the front again on windows they "
+                         "have not seen and fold them in (0 = never)")
+    ap.add_argument("--audit-offsets", default="24,28",
+                    help="window starts (s) never used for selection on which each generation's best is judged and "
+                         "logged as best_audit (comma list; 'none' = off). Keep warmup + offset under 60 s")
     ap.add_argument("--stat-w", type=float, default=1.0, help="weight of the fixed statistics in dist")
     ap.add_argument("--critic-every", type=int, default=6)
     ap.add_argument("--critic-steps", type=int, default=120)
@@ -624,6 +751,10 @@ def main(argv=None):
                     help="largest share of the mu survivors one lineage (root seed) may hold; 0 = no cap")
     ap.add_argument("--migrants", type=int, default=4)
     args = ap.parse_args(argv)
+    args.audit_offsets = [] if str(args.audit_offsets).strip().lower() in ("", "none", "0", "off") else \
+        [float(x) for x in str(args.audit_offsets).split(",") if x.strip()]
+    if args.window_mode == "random" and args.judge_windows > len(window_grid(args)):
+        ap.error("--judge-windows is larger than the random window grid")
     if args.ss:
         os.environ["AGENOME_SS"] = str(args.ss)  # workers inherit it; every Renderer reads it
     run(args)
