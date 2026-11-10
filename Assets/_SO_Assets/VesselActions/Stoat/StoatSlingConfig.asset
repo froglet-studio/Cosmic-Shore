@@ -62,12 +62,12 @@ MonoBehaviour:
   exitWindowFalloffSeconds: 0.4
   trampoline: 1
   trampolineAhead: 140
-  trampolineRadius: 60
+  trampolineRadius: 30
   trampolineLine: 0.75
   trampolineSoftSeconds: 0.35
   trampolineSeconds: 4
   trampolinePredictDegrees: 90
-  trampolineAiTurnScale: 100
+  trampolineAiTurnScale: 55
   trampolineTouchEvent:
     Guid:
       Data1: 0
@@ -124,7 +124,7 @@ MonoBehaviour:
     element: 3
     UseFloor: 1
     Floor: 1.5
-  aiSlingMinTurnDegrees: 35
+  aiSlingMinTurnDegrees: 50
   aiReleaseConeDegrees: 15.999
   aiCatchGiveUpSeconds: 4
   aiSlingIntervalSeconds: 0.941

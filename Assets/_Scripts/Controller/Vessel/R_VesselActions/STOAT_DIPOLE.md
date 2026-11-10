@@ -287,6 +287,17 @@ lets it go on the release. The catch and the orbit fly on the simulating machine
     flies at the flank as deep as the turn it wants (`TrampolineLineFor`, `trampolineAiTurnScale` 100). Model
     (`stoat_orbit_sim.py --trampoline`, 6 courses): 125 / 113 / 111 / 121 s at I1-I4, every shell touched, 0-8 rings missed a
     race; the aimed exit ran 115 / 124 / 111 / 133 s. Without the borrowed aim the AI touched only 12-38% of its shells.
+  - **The smaller shell (Yash, 2026-11-07: "the slingshot is still very wacky, like it moves the vessel too much, make the
+    radius of white hole smaller by 50 percent so the slingshot is manageable").** `trampolineRadius` 60 → 30 u (the white
+    hole is laid the same way, 0.75 × the radius off your line). A small shell is relatively softer, so the same graze
+    turns you less: the shipped line now turns you about 23° at 150 u/s (17-30° at 120-190; was 45°), a 0.5 graze about 49°,
+    0.9 about 8°, and a bounce lasts 0.15-0.28 s (was 0.23-0.32). Head-on is still straight back: the spring alone let a
+    190 u/s hull through the 30 u shell, so it has a HARD CORE now - still moving in at `StoatSlingMath.TrampolineCoreShare`
+    0.2 × the radius from the centre, the hull is reflected out. **The AI gains little from the small shell:** it presses
+    only for a turn of 50° or more (`aiSlingMinTurnDegrees` 35 → 50, both configs) and grazes deep (`trampolineAiTurnScale`
+    100 → 55); model 135 / 133 / 141 / 145 s at I1-I4, every race finished, 0-3 rings missed - about cruise pace (142 / 138
+    / 143 / 149 s), where the 60 u shell ran 111-125 s. At 35° it bounced itself off its line (3 of 6 races unfinished at
+    I3). The learning sweep relearns it from people's races.
   - **Not carried over:** Space 5 Accretion (the black hole stole prisms; a white hole takes none, so Accretion is dormant),
     and the flick launch (nothing to launch out of).
 - **The aimed exit (Yash, 2026-11-03: "I want to get into the orbit, and then I want to be slingshot at 30-45degrees from angle

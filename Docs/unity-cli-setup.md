@@ -26,6 +26,22 @@ unity doctor
 
 - `unity` not found → you didn't reopen the terminal.
 - `Project version: unknown` → you ran it outside the repo root; `cd` there first.
+- `Pipeline package is too old to parse command lines` (CLI 1.0.0-beta.13 against package `0.5.0-exp.1`,
+  2026-11-06) → the CLI cannot pass arguments to a command. Commands without arguments still work
+  (`unity command recompile` refreshes and compiles even while the editor is in the background). For a
+  command that needs arguments, POST to the editor's own server: the port and the token are in
+  `Library/Pipeline/.unity-pipeline-port` (keys `port` and `evalToken`, rewritten each time the editor starts):
+
+  ```bash
+  curl -s -X POST "http://127.0.0.1:$PORT/api/exec" -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"command":"<name from unity command>","parameters":{...},"timeout":600000}'
+  ```
+
+  Read the two values into variables with a script; never print the token (it answers on localhost only,
+  but it still runs code in your editor).
+- A save from the CLI (`save_all`) right after Play mode can write Play-time values into the open scene
+  (Bootstrap.unity's camera, 2026-11-06). Check `git status` after it and `git checkout` a scene you did not mean to change.
 
 ## What changes
 

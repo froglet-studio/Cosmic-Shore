@@ -52,8 +52,9 @@ HyperSea shader.
 - **FMOD** is proprietary: ship it only under a valid FMOD licence for our revenue tier and keep
   the required credit. The libraries we load are FMOD's, taken from the FMOD-for-Unity package.
 - **Obvious SOAP** and **DOTween**: we re-implement their APIs and never use their source, so
-  shipping the engine needs no licence from them; the Unity build that uses the real packages
-  still needs its Asset Store/seat licences (`Docs/THIRD_PARTY_REGISTER.md`).
+  shipping the engine needs no licence from them; the Unity build that uses the real DOTween
+  package still needs its Asset Store/seat licence (`Docs/THIRD_PARTY_REGISTER.md`). The Unity build
+  stopped using Obvious SOAP on 2026-11-06 (replaced by first-party `Assets/Plugins/CosmicShoreSoap/`).
 - **OpenAL Soft** (only in the old SkimRace/Client zips) is LGPL: ship it as a replaceable DLL
   with its notice, or drop it.
 - **Asset Store content** in `Assets/` (models, textures, sounds) is used under the Asset Store

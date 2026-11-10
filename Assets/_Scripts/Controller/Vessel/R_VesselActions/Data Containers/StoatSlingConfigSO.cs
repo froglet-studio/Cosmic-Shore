@@ -162,12 +162,13 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("How far ahead the white hole is laid, world units, along the line you are flying (your turn carried on).")]
         [SerializeField, Range(40f, 400f)] float trampolineAhead = 140f;
 
-        [Tooltip("The soft shell's radius, world units, × Space's reach (orbitReach).")]
-        [SerializeField, Range(10f, 200f)] float trampolineRadius = 60f;
+        [Tooltip("The soft shell's radius, world units, × Space's reach (orbitReach). 30 since 2026-11-07 (was 60: \"it moves " +
+                 "the vessel too much\"): a smaller shell is relatively softer, so it turns you less.")]
+        [SerializeField, Range(10f, 200f)] float trampolineRadius = 30f;
 
         [Tooltip("How far to the side, as a share of the radius, the shell is laid off your line (away from the bounce): flying " +
-                 "on, you graze it there. 0.75 turns you about 37-51 degrees at 120-190 u/s; less turns you more (0 = head-on, " +
-                 "straight back).")]
+                 "on, you graze it there. On the 30 u shell 0.75 turns you about 17-30 degrees at 120-190 u/s; less turns you " +
+                 "more (0 = head-on, straight back).")]
         [SerializeField, Range(0f, 0.95f)] float trampolineLine = 0.75f;
 
         [Tooltip("How soft the shell is: seconds a head-on bounce lasts (the spring is (pi / this)^2). More is softer and deeper.")]
@@ -180,8 +181,8 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Range(0f, 180f)] float trampolinePredictDegrees = 90f;
 
         [Tooltip("The autopilot grazes as deep as the turn it wants: share off the centre = 1 - turn / this (stoat_orbit_sim.py " +
-                 "--trampoline chose 100).")]
-        [SerializeField, Range(40f, 300f)] float trampolineAiTurnScale = 100f;
+                 "--trampoline chose 100 for the 60 u shell, 55 for the 30 u one).")]
+        [SerializeField, Range(40f, 300f)] float trampolineAiTurnScale = 55f;
 
         [Tooltip("Played when the hull touches the shell. Empty = silent.")]
         [SerializeField] EventReference trampolineTouchEvent;

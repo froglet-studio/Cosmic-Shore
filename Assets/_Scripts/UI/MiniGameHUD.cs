@@ -770,6 +770,16 @@ namespace CosmicShore.UI
                 LoadInsights.CompleteLoad("Loaded — arena complete (laid + grown), connecting screen done");
                 Show();
 
+                // A pilot who rejoined a running match (MatchRejoin, section 103) joined the turn while the panel was up:
+                // no intro and no Ready - nobody else will press Ready again, so it would wait for good. Straight into
+                // the race; OnMiniGameTurnStarted has already set up the score and the cards.
+                if (gameData != null && gameData.IsTurnRunning)
+                {
+                    ShowLocalVesselHUD();
+                    UpdateScoreUI();
+                    return;
+                }
+
                 // Play pre-game cinematic if available
                 if (enablePreGameCinematic && preGameCinematic != null)
                 {
@@ -799,6 +809,9 @@ namespace CosmicShore.UI
                 }
 
                 _readyButtonUnlocked = true;
+                // The turn can have been joined while the intro played (a rejoin whose roster raised ClientReady
+                // before the seat claim did): no Ready for a running turn.
+                if (gameData != null && gameData.IsTurnRunning) return;
                 ToggleReadyButton(true);
             }
             catch (OperationCanceledException)
@@ -820,6 +833,7 @@ namespace CosmicShore.UI
         private void PrepareIntro()
         {
             if (!enablePreGameCinematic || preGameCinematic == null) return;
+            if (gameData != null && gameData.IsTurnRunning) return;   // a rejoiner joins a running turn: no intro
             Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
             if (playerTarget == null) return;
             preGameCinematic.Prepare(cinematicLookAtCenter, playerTarget, gameData.GameMode, gameData.Vessels,

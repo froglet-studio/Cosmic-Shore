@@ -66,6 +66,7 @@ the arena cards' Vessels row (Pick, Random, Draft, Squad), `Docs/HomeHub/ARCHITE
 **29** (2026-11-07, `claude/regatta-integration`; 29 was free on bleeding-edge and every in-flight branch, checked
 that day) - no wire change of its own: the build that carries both 27 (the Vessels row) and 28 (the course pool), so a
 28 build without the Vessels row, or a 27 build without the drawn course, cannot join one that has both (as with 20 above).
+**30** (2026-11-10, `Ys-bleeding-edge`; 30 was free on every origin branch, checked that day) - `RoundStats.n_VesselStats` (a `NetworkList` of each pilot's telemetry: drift, boost, prisms damaged and the hull extras) and `RoundStats.ReportVesselStat_ServerRpc`, so every scoreboard shows every pilot's numbers (`Docs/ScoringSystem/BUGS.md` B21). It also covers 2fae4bedb9 (`Docs/PartySystem/BUGS.md` B50), which added the turn state to `ClientPlayerVesselInitializer.SeatReclaimed_ClientRpc` on 29 without a bump.
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.
