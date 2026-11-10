@@ -12,6 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adc7d1fcc703b7cbd83736c11ff0e932, type: 3}
   m_Name: HarvestSettings
   m_EditorClassIdentifier:
+  teamCrystalElement: 3
+  teamCrystalsPerTeamByIntensity:
+  - 0
+  - 0
+  - 4
+  - 0
+  teamCrystalClearance: 30
+  teamCrystalRegrowSeconds: 12
+  crystalCheckSeconds: 0.5
   aiMowSeconds:
   - 2
   - 3
@@ -19,9 +28,9 @@ MonoBehaviour:
   - 5
   aiMowStandoff:
   - 0
-  - 15
-  - 30
-  - 40
+  - -10
+  - -20
+  - -25
   aiCrystalReach:
   - 250
   - 400
@@ -35,4 +44,7 @@ MonoBehaviour:
   aiMowLeadDegrees: 40
   aiStrikeOvershoot: 120
   aiStrikeSeconds: 2.5
+  aiClimbSeconds: 3
+  aiAxleArrive: 60
+  aiAxleReachFactor: 1.4
   aiMassModeCheckSeconds: 1.5

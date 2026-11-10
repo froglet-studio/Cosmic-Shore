@@ -1511,7 +1511,7 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         # omni crystals float in the field's clear centre.
         import harvest_budget as hb
         rung = hb.RUNGS[INTENSITY - 1]
-        sheaves, _ = hb.place(rung)
+        sheaves = hb.build(rung)["sheaves"]
         for k in range(3):
             crystal(v_add(centre, v_mul(rng.unit(), rung["centreClearingRadius"] * 0.6 * rng.u() ** 0.33)), 12.0)
         # The nearest sheaf a Jade pilot SCORES on: not its own colour (an own-colour sheaf is worth nothing).

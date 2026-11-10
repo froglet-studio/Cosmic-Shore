@@ -13,12 +13,14 @@ MonoBehaviour:
   m_Name: Harvest Cell Config 4
   m_EditorClassIdentifier:
   CellName: Harvest
-  Description: 'Granary - intensity 4 of Harvest: twenty-two small sheaves, every fourth stalk danger,
-    one crystal for the lobby. 3300 prisms in 22 sheaves (1980 core, 1320 stalk, 1980
-    shielded, 330 danger), field radius 1000 inside the standard 1200 u cell, spawn ring
-    1080. The omni crystals spawn in the clear centre. NO NUCLEUS, no flora, no fauna.
-    Authored by Tools/Build/author_harvest_assets.py from harvest_budget.py - re-run it
-    rather than hand-editing.'
+  Description: 'Granary - intensity 4 of Harvest: twenty small wheel sheaves with danger stalks, chaff
+    and bales, and live elemental creatures that graze the field and hunt each other. 4561
+    prisms - 20 wheel sheaves (1600 core, 2400 stalk), 12 chaff clouds (345), 8 bales (216);
+    1600 shielded, 600 danger; field radius 1000 inside the standard 1200 u cell, spawn ring
+    1080. The omni crystals spawn in the clear centre. NO NUCLEUS, creatures from Harvest I4
+    Spawn Profile (Shark, Piranha, Brittlestar, Tadpole), no flora. Authored by
+    Tools/Build/author_harvest_assets.py from harvest_budget.py - re-run it rather than
+    hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 4
   CellEndGameScore: 0
@@ -27,16 +29,16 @@ MonoBehaviour:
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CytoplasmShardDistance: 0
   CellModifiers: []
-  SpawnProfile: {fileID: 11400000, guid: b0d074abc6435fdbbbcd2eee21f9ce22, type: 2}
+  SpawnProfile: {fileID: 11400000, guid: 4bf9bc43c263074fbd401bd52ac6245f, type: 2}
   EnvironmentPrefab: {fileID: 8800000000000203, guid: 5c982b66d5562b47ad96a1c5ba573d32, type: 3}
   EnvironmentIntensity: 4
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 4000
-    RestlessExit: 3800
-    FrenzyEnter: 6900
-    FrenzyExit: 6300
-    RestlessEnterVolume: 675292
-    RestlessExitVolume: 672092
-    FrenzyEnterVolume: 721692
-    FrenzyExitVolume: 712092
+    RestlessEnter: 5261
+    RestlessExit: 5061
+    FrenzyEnter: 8161
+    FrenzyExit: 7561
+    RestlessEnterVolume: 895086
+    RestlessExitVolume: 891886
+    FrenzyEnterVolume: 941486
+    FrenzyExitVolume: 931886
