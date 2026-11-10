@@ -22116,7 +22116,8 @@ are all missing `.asset` files the sparse checkout left out. Design record: `MAN
 9. **HUD:** the Space card's new `energyFill` / `energyCountText` are unwired on the prefab (the icon pass wires them).
 10. **Follow-up tuning (branch `claude/manta-tuning`, compiled with `unity_refcompile`, NOT RUN IN EDITOR):** the Manta
     holds one bomb of energy at a time (skim, plant, skim, plant); the fuse no longer changes with Charge; a Charge 10
-    Manta's bloom knocks twice the petals out of a rival that a Charge 0 one does; the trail is thin and even like the
+    Manta's bloom knocks twice the petals out of a rival that a Charge 0 one does *(both superseded 2026-11-10: Charge
+    is the fuse again and the bloom's petals are flat, see "Manta: Charge is the fuse" below)*; the trail is thin and even like the
     Squirrel's, the same at every Time level and through hard turns.
     A Time 10 Manta cruises about 1.5x as fast as a Time 0 one (270 against 180 u/s at full throttle).
 
@@ -22543,3 +22544,23 @@ rail and are always free).
    a view that paints only when its data changes. Note the screen and object.
 6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
 
+
+## 🔴 Manta: Charge is the fuse, not the bloom's petals (2026-11-10, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/cool-dijkstra-4puf92`. Design record: `MANTA_STING_KABLOOM.md` §0a. Compile and gate status are in the
+commit message. Also carries the quoted Yastri text that makes `Manta.asset` parse again (E-251530c87b; the same two
+lines as `claude/fix-manta-ability-map-yaml`, plus the generator that kept writing the broken form).
+
+1. **Run `MantaFuseChargeTests`** (EditMode): 8 tests, all green.
+2. **Open `Resources/ElementalAbilityMaps/Manta.asset`** in the Inspector: four entries, no parse error in the Console
+   (before this branch Unity could not read the file). The Sting entry's text names the fuse.
+3. **Fly the Manta in the Toybox at Charge 0.** Skim, then plant on a rival AI: the Charge card's fuse gauge starts
+   full and the fuse board reads about 20 s.
+4. **Raise Charge to 10** (collect Charge crystals, or the dev level tool) and plant again: the board now reads about
+   30 s, and the gauge drains at the slower rate. Every bomb already planted waits for the new 30 s.
+5. **Let a fuse run out next to a rival at Charge 10, then at Charge 0.** The rival loses the same petals each time
+   (about one of Mass and one of Space per bloom): Charge no longer changes the bite.
+6. **Bloomrush I1 at Charge 0**: the fuse reads 30 s (the mode's resting length); at Charge 10 it reads 45 s.
+7. **Tuning, if wanted**: `MantaStingConfig.asset` `fuseSeconds` (resting length) and `fuseScale` (Max = the multiplier
+   at Charge 10, Floor = the least it can fall to), through `Tools/Build/author_manta_kit_assets.py` (it writes the
+   whole file; `--check` is its gate).
