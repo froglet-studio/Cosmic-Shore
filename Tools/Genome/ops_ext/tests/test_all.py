@@ -41,5 +41,10 @@ for name, e in sorted([kv for kv in EXT.items() if kv[0] in _OPS], key=lambda kv
     except Exception as ex:
         bad += 1
         print(f"0x{o.code:02X} {name:18s} FAIL {type(ex).__name__}: {str(ex)[:200]}")
+from ops_ext import agents_ext as _A  # every agent/camera hook must be live (ag.flow once was not: no-op behaviour)
+for _n, _e in EXT.items():
+    if _n in _OPS and _e.agent is not None and _n not in _A.AGENT_OPS + _A.CAM_OPS:
+        bad += 1
+        print(f"{_n:18s} FAIL hook not installed")
 print("ops", sum(1 for k in EXT if k in _OPS), "failures", bad)
 sys.exit(1 if bad else 0)

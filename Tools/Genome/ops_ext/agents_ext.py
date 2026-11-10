@@ -651,6 +651,11 @@ CAM_OPS = [n for n, e in EXT.items() if isinstance(e.agent, CamHook)]
 # ====================================================================== hooks
 def install_hooks(sim, render):
     """Monkeypatch the core sim / renderer so the ops above run. Idempotent."""
+    # recompute here: ops registered after the module-level lists (ag.flow, 0xD5) were missing from them, so ag.flow
+    # built and rendered but its behaviour never ran (found 2026-11-10: tuning ag.flow never moved the judge)
+    global AGENT_OPS, CAM_OPS
+    AGENT_OPS = [n for n, e in EXT.items() if isinstance(e.agent, AgentHook)]
+    CAM_OPS = [n for n, e in EXT.items() if isinstance(e.agent, CamHook)]
     if getattr(sim, "_agents_ext_hooked", False):
         return
     sim._agents_ext_hooked = True
