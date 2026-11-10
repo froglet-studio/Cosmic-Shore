@@ -5,7 +5,8 @@
 # learned critic, publishing its Pareto front under runs/<island-name>/ and importing other islands' best every
 # 10 generations. Stop it with: pkill -f agenome.search
 # Optional: SEEDS="glob glob ..." picks the starting lineages (default: every seed folder but the raw wz3 ones);
-# RESUME=none starts without the other islands' fronts; WORKERS=n; TUNE=0.25 (share of parameter-only steps);
+# RESUME=none starts without the other islands' fronts (a restart always resumes the island's own population, and
+# then reads only seed files written since; ALLSEEDS=1 reads every seed again); WORKERS=n; TUNE=0.25 (share of parameter-only steps);
 # SS=2 renders every clip at 2x and filters it down (closer to the downscaled reels, 2 to 2.7x slower);
 # JUDGE=1.0 adds the fixed perceptual judge (agenome/judge.py, ImageNet features vs the reels) to the fitness,
 # with STATW (weight of the statistics, default 1.0) and CRITICW (the online critic, default 0.5) beside it.
@@ -56,14 +57,23 @@ set -f; read -r -a SEED_ARGS <<< "$SEEDS"; set +f
 RESUME_ARGS=()
 OWN=()
 for f in "$WORK/run_$NAME/population.json" "$WORK/run_$NAME/pareto.json"; do [ -f "$f" ] && OWN+=("$f"); done
-if [ "${RESUME:-all}" != none ]; then RESUME_ARGS=(--resume ${OWN[@]+"${OWN[@]}"} $(ls "$SHARE"/runs/*/pareto.json 2>/dev/null | head -16))
+if [ "${RESUME:-all}" != none ]; then RESUME_ARGS=(--resume ${OWN[@]+"${OWN[@]}"} $(ls "$SHARE"/runs/*/pareto.json 2>/dev/null | head -16 || true))
 elif [ ${#OWN[@]} -gt 0 ]; then RESUME_ARGS=(--resume "${OWN[@]}"); fi
+# a resuming island evaluated every seed file at its first start; it re-reads only the ones written since its last
+# population save (about 150 genomes to score at a restart instead of 600). ALLSEEDS=1 reads them all again.
+POP="$WORK/run_$NAME/population.json"
+if [ -f "$POP" ] && [ "${ALLSEEDS:-0}" = 0 ]; then
+  NEWSEEDS=()
+  for pat in "${SEED_ARGS[@]}"; do for f in $pat; do [ -f "$f" ] && [ "$f" -nt "$POP" ] && NEWSEEDS+=("$f"); done; done
+  echo "island $NAME: ${#NEWSEEDS[@]} seed file(s) newer than its population (ALLSEEDS=1 reads every seed)"
+  SEED_ARGS=(${NEWSEEDS[@]+"${NEWSEEDS[@]}"})
+fi
 GENS=$(( HOURS * 90 ))
 cd "$WORK"
 CMD=(python3 -m agenome.search --run "$WORK/run_$NAME" \
   --stats "$F/target_stats_train_v2.npz" --hold "$F/target_stats_hold_v2.npz" \
   --real "$WORK/reels/reel0[124]/frames.npy" --real-hold "$WORK/reels/reel0[35]/frames.npy" \
-  --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
+  --seeds ${SEED_ARGS[@]+"${SEED_ARGS[@]}"} ${RESUME_ARGS[@]+"${RESUME_ARGS[@]}"} --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
   --judge-w "${JUDGE:-0}" --stat-w "${STATW:-1.0}" --critic-w "${CRITICW:-0.5}" \
   --migrate-every "${MIGRATE:-10}" --lineage-cap "${LINEAGE:-0.25}" \
   --judge-windows "${WINDOWS:-1}" --judge-hop "${HOP:-8}" --window-mode "${WINMODE:-fixed}" \

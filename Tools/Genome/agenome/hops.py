@@ -497,9 +497,9 @@ def apply_post_chain(frames, nodes):
 def split_post_chain(g):
     """On a copy of g: cut the numpy post ops out of the root's p chain. Returns (g2, [nodes outermost first]).
 
-    Merge note (genome thread, 2026-11-10): the chain is walked through every P node down to the post.grade, and only
-    the hx nodes are cut out; other families' post ops (ops_ext's post.bandgain) stay linked in order for their own
-    render hook, so the result does not depend on which hook wraps the renderer last."""
+    Kept for callers that want the hx nodes alone; rendering goes through agenome/postchain.py, which cuts every
+    family's numpy ops in one walk and applies them in chain order (the code review of 2026-11-10 measured that two
+    family hooks, each cutting only its own ops, ran a mixed chain in the order the hooks were installed)."""
     from agenome.ops import OPS as _OPS
     g2 = g.copy().ensure_root()
     r = g2.root()
@@ -592,19 +592,10 @@ def install():
     aglsl.compile_textures = compile_textures
     aglsl.compile_shapes = compile_shapes
 
-    orig_render = arender.Renderer.render
-
-    def render(self, g, n_frames=60, *a, **kw):  # merge note: forwards every argument (t_shift for judged windows)
-        return_state = kw.get("return_state", a[0] if a else False)
-        g2, chain = split_post_chain(g)
-        res = orig_render(self, g2, n_frames, *a, **kw)
-        if not chain:
-            return res
-        if return_state:
-            fr, st = res
-            return apply_post_chain(fr, chain[::-1]), st
-        return apply_post_chain(res, chain[::-1])
-
-    render._hops_orig = orig_render
-    arender.Renderer.render = render
+    # numpy post ops: registered with the one post-chain executor (agenome/postchain.py), which cuts every family's
+    # numpy ops out of the chain in one walk and applies them in chain order (until 2026-11-10 this module wrapped
+    # Renderer.render itself, so in a chain mixed with ops_ext's post.bandgain the inner hook's family ran first)
+    from agenome import postchain
+    postchain.register("hx", NP_FUNCS, apply_post_chain)
+    postchain.install(arender)
     _INSTALLED = True

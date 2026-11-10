@@ -381,7 +381,9 @@ class Renderer:
         dt = 1.0 / (FPS * SUBSTEPS)
         warm = (rd["warmup"] if t0 is None else t0) + float(t_shift)
         steps_warm = int(warm / dt)
-        for _ in range(min(steps_warm, 3600)):
+        # the cap bounds a warmup alone (the out.warmup byte spans 0-30 s) plus the requested window shift; a flat 3600
+        # (60 s) silently moved any window whose warmup + t_shift went past 60 s back to 60 s (code review 2026-11-10)
+        for _ in range(min(steps_warm, 3600 + int(max(0.0, float(t_shift)) / dt))):
             world.step(dt)
             cam.update(world.t, dt)
         th, ph = rd["ltheta"], rd["lphi"]

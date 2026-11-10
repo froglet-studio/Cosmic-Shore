@@ -18,10 +18,19 @@ The tuned genome is then judged on --check-n windows --check-hop seconds apart (
 windows the climb never saw (4, 12, 16, 20 s by default) are reported before and after as meta.cma.unseen_before/after:
 the honest read of whether the tune generalised or only fitted the judged windows.
 
+--window-mode random (2026-11-10, after the fixed-window tunes above fitted their windows: c_mincell 0.947 -> 0.897
+judged but 1.50 -> 1.47 on the windows it never saw): every CMA generation draws its --windows offsets from 0 to
+--window-span s on a --window-step grid, the same draw for every candidate and for the current best (common random
+windows: candidates are compared on equal terms, and no window stays long enough to be fitted). The best is replaced
+only by a candidate that beats it on that generation's windows; its score is the mean over every window it has been
+judged on. The check then uses --check-offsets (default 22,24,26,28 s, outside the grid, so selection never saw
+them), and a genome is written only when it is better there than the genome it started from.
+
 Writes OUT_DIR/<file stem>__cma.json (meta.name <lineage>__cma) when the climb improved (the best genome, meta.cma =
-before/after/unseen/evals), OUT_DIR/pareto.json (those genomes as island rows: copy it to runs/<name>/ and every
-island resumes from it and draws immigrants out of it) and OUT_DIR/log.jsonl (one line per CMA generation, plus one
-"check" line per genome).
+before/after/unseen/evals), OUT_DIR/pareto.json (those genomes as island rows; in random mode the row's numbers are
+its check windows, the comparable ones) and OUT_DIR/log.jsonl (one line per CMA generation, plus one "check" line per
+genome). --publish DIR copies pareto.json and an args.json naming it an island to DIR (runs/tuned): every island then
+resumes from it at its next start and draws immigrants out of it.
 """
 import argparse
 import json
@@ -129,8 +138,15 @@ def main(argv=None):
                          "parameters are the first block, and the output is named <stem>__<op>__cma")
     ap.add_argument("--windows", type=int, default=2)
     ap.add_argument("--hop", type=float, default=8.0)
+    ap.add_argument("--window-mode", choices=("fixed", "random"), default="fixed",
+                    help="random: each CMA generation draws its windows from 0..--window-span on a --window-step grid")
+    ap.add_argument("--window-span", type=float, default=20.0)
+    ap.add_argument("--window-step", type=float, default=2.0)
     ap.add_argument("--check-n", type=int, default=6, help="windows for the after-tune check (0: no check)")
     ap.add_argument("--check-hop", type=float, default=4.0)
+    ap.add_argument("--check-offsets", default=None,
+                    help="comma list of check windows in seconds (random mode default 22,24,26,28: never drawn)")
+    ap.add_argument("--publish", default=None, help="copy pareto.json and an island args.json here (runs/tuned)")
     ap.add_argument("--frames", type=int, default=60)
     ap.add_argument("--stat-w", type=float, default=0.5)
     ap.add_argument("--judge-w", type=float, default=1.0)
@@ -147,11 +163,14 @@ def main(argv=None):
     log = open(os.path.join(a.out, "log.jsonl"), "a")
     cache = {}
 
-    def evaluate(gs):
-        keys = [g.to_bytes().hex() for g in gs]
+    def evaluate(gs, offsets=None):
+        """Score gs on the fixed windows (count --windows, --hop apart) or on the given offsets (seconds)."""
+        tag = tuple(offsets) if offsets is not None else None
+        keys = [(g.to_bytes().hex(), tag) for g in gs]
         todo = [(k, g) for k, g in zip(keys, gs) if k not in cache]
         uniq = {k: g for k, g in todo}
-        res = pool.map(_eval, [(g.to_json(), a.frames, judge.n, a.windows, a.hop) for g in uniq.values()])
+        wins = list(offsets) if offsets is not None else a.windows
+        res = pool.map(_eval, [(g.to_json(), a.frames, judge.n, wins, a.hop) for g in uniq.values()])
         for c in res:
             c.pop("frames", None)
         judge.score(res)
@@ -160,40 +179,85 @@ def main(argv=None):
             cache[k] = c
         return [cache[k] for k in keys], len(uniq)
 
-    seen = {round(k * a.hop, 3) for k in range(a.windows)}
-    times = [round(k * a.check_hop, 3) for k in range(a.check_n)]
+    rand = a.window_mode == "random"
+    grid = [round(k * a.window_step, 3) for k in range(int(a.window_span / a.window_step + 1e-9) + 1)]
+    if rand and a.windows > len(grid):
+        ap.error(f"--windows {a.windows} > the {len(grid)} offsets of the window grid")
+    if a.check_offsets:
+        times = [round(float(t), 3) for t in a.check_offsets.split(",") if t.strip()]
+    elif rand:
+        times = [22.0, 24.0, 26.0, 28.0]
+    else:
+        times = [round(k * a.check_hop, 3) for k in range(a.check_n)]
+    seen = set(grid) if rand else {round(k * a.hop, 3) for k in range(a.windows)}
     unseen = [i for i, t in enumerate(times) if t not in seen]
+    checks = {}  # genome hex -> its check result (the check of g0 is shared by every graft of it)
 
     def check(gs):
-        """Judge each genome on the check windows; returns (all-window judge, unseen-window mean, per-window list)."""
-        if a.check_n < 2 or not unseen:
-            return [(None, None, None)] * len(gs)
-        res = pool.map(_eval, [(g.to_json(), a.frames, judge.n, a.check_n, a.check_hop) for g in gs])
+        """Judge each genome on the check windows; returns (all-window judge, unseen-window mean, per-window list,
+        the row: stat and judge over the check windows)."""
+        if len(times) < 1 or not unseen or (not a.check_offsets and not rand and a.check_n < 2):
+            return [(None, None, None, None)] * len(gs)
+        todo = [g for g in gs if g.to_bytes().hex() not in checks]
+        res = pool.map(_eval, [(g.to_json(), a.frames, judge.n, list(times), a.hop) for g in todo])
         for c in res:
             c.pop("frames", None)
         judge.score(res)
+        for g, c in zip(todo, res):
+            if c.get("ok"):
+                c["dist"] = a.stat_w * c["stat"] + a.judge_w * c.get("judge", 99.0)
+            checks[g.to_bytes().hex()] = c
         out = []
-        for c in res:
+        for g in gs:
+            c = checks[g.to_bytes().hex()]
             w = c.get("judge_windows")
-            out.append((c.get("judge"), round(float(np.mean([w[i] for i in unseen])), 4) if w else None, w))
+            out.append((c.get("judge"), round(float(np.mean([w[i] for i in unseen])), 4) if w else None, w, c))
         return out
+
+    def merged(hist):
+        """One record of a genome judged on several generations' windows: the window-weighted means."""
+        from .search import merge_windows
+        r = dict(hist[0])
+        for h in hist[1:]:
+            r = merge_windows(r, dict(h))
+        if r.get("ok"):
+            r["dist"] = a.stat_w * r["stat"] + a.judge_w * r.get("judge", 99.0)
+        return r
 
     rng = np.random.default_rng(a.seed)
     rows = []
+
+    def draw():
+        return sorted(float(t) for t in rng.choice(grid, size=a.windows, replace=False)) if rand else None
+
+    def publish():
+        if not a.publish:
+            return
+        os.makedirs(a.publish, exist_ok=True)
+        for name, data in (("pareto.json", sorted(rows, key=lambda r: r["zbytes"])),
+                           ("args.json", dict(vars(a), island=os.path.basename(os.path.normpath(a.publish)),
+                                              kind="tuner"))):
+            tmp = os.path.join(a.publish, name + ".tmp")
+            with open(tmp, "w") as f:
+                json.dump(data, f)
+            os.replace(tmp, os.path.join(a.publish, name))
+
     for path in a.genome:
         g0 = Genome.from_json(json.load(open(path))).ensure_root()
         stem = os.path.splitext(os.path.basename(path))[0]
         name = (g0.meta or {}).get("name") or stem  # the lineage name (the islands' cap reads the part before "__")
-        (c0,), _ = evaluate([g0])
-        best_g, best = g0, c0
+        (c0,), _ = evaluate([g0], draw())
+        best_g, hist = g0, [c0]
+        best = merged(hist)
         print(f"{name}: start dist {c0['dist']:.3f} judge {c0.get('judge')} stat {c0['stat']:.3f}", flush=True)
         focus = []
         if a.graft:
             # the grafted genome starts as the identity (or close to it); its parameters go first, then every block
             # draws from all parameters. The before/after numbers stay those of the ungrafted genome.
             gg, k = graft_post(g0, a.graft)
-            (cg,), _ = evaluate([gg])
-            best_g, best = gg, cg  # climbed from the graft; written only if it ends below the ungrafted genome
+            (cg,), _ = evaluate([gg], draw())
+            best_g, hist = gg, [cg]  # climbed from the graft; written only if it ends below the ungrafted genome
+            best = merged(hist)
             focus = [(k, j) for j in range(len(OPS[a.graft].params))]
             stem = f"{stem}__{a.graft.replace('.', '_')}"
             print(f"{name}: grafted {a.graft} at node {k}: dist {cg['dist']:.3f} judge {cg.get('judge')}", flush=True)
@@ -205,7 +269,7 @@ def main(argv=None):
             focus = []
             x0 = [best_g.nodes[i].params[j] for i, j in block]
             es = SepCMA(x0, sigma0, seed=int(rng.integers(1 << 30)))
-            before_block = best["dist"]
+            improved = False
             for _ in range(a.gens_per_block):
                 if spent >= a.evals:
                     break
@@ -216,52 +280,79 @@ def main(argv=None):
                     for (i, j), v in zip(block, x):
                         h.nodes[i].params[j] = int(round(v))
                     cands.append(h)
-                res, n_new = evaluate(cands)
+                offs = draw()
+                if rand:
+                    # common random windows: the candidates and the current best are judged on the same fresh draw
+                    res, n_new = evaluate(cands + [best_g], offs)
+                    res, fe = res[:-1], res[-1]
+                else:
+                    res, n_new = evaluate(cands)
                 spent += max(1, n_new)
                 f = np.array([c["dist"] for c in res])
                 es.tell(f)
                 k = int(np.argmin(f))
-                if f[k] < best["dist"]:
-                    best_g, best = cands[k], res[k]
+                if rand:
+                    if f[k] < fe["dist"]:
+                        best_g, hist, improved = cands[k], [res[k]], True
+                    elif fe.get("win_t") not in [h.get("win_t") for h in hist]:
+                        hist.append(fe)
+                    best = merged(hist)
+                elif f[k] < best["dist"]:
+                    best_g, best, improved = cands[k], res[k], True
                 log.write(json.dumps({"genome": name, "spent": spent, "gen": es.gen, "sigma": round(es.sigma, 2),
                                       "gen_best": round(float(f[k]), 4), "best": round(best["dist"], 4),
-                                      "best_judge": best.get("judge"), "t": round(time.time() - t0, 1)}) + "\n")
+                                      "best_judge": best.get("judge"), "best_nwin": best.get("judge_nwin"),
+                                      "windows": offs, "t": round(time.time() - t0, 1)}) + "\n")
                 log.flush()
             # between blocks, a 1/5th-style rule on the step: a block that found nothing halves the next block's start
             # (an already-tuned genome sits in a narrow basin: on 2026-11-10 most steps of 18 bytes made it worse)
-            sigma0 = max(sigma0, es.sigma) if best["dist"] < before_block else max(a.sigma_min, 0.5 * sigma0)
+            sigma0 = max(sigma0, es.sigma) if improved else max(a.sigma_min, 0.5 * sigma0)
             print(f"{name}: {spent} evals, best dist {best['dist']:.3f} judge {best.get('judge')} "
                   f"windows {best.get('judge_windows')}, next sigma {sigma0:.1f}", flush=True)
-        if best["dist"] >= c0["dist"]:
+        if best_g.to_bytes() == g0.to_bytes() or (not rand and best["dist"] >= c0["dist"]):
             print(f"{name}: no gain in {spent} evals (dist {c0['dist']:.3f}); nothing written", flush=True)
             continue
-        (jb, ub, wb), (ja, ua, wa) = check([g0, best_g])
+        (jb, ub, wb, cb), (ja, ua, wa, ca) = check([g0, best_g])
         log.write(json.dumps({"genome": name, "check": {"times": times, "unseen": [times[i] for i in unseen],
                                                          "before": wb, "after": wa, "unseen_before": ub,
-                                                         "unseen_after": ua}}) + "\n")
+                                                         "unseen_after": ua,
+                                                         "dist_before": cb and cb.get("dist"),
+                                                         "dist_after": ca and ca.get("dist")}}) + "\n")
         log.flush()
+        if rand and (ca is None or cb is None or not ca.get("ok") or ca["dist"] >= cb["dist"]):
+            print(f"{name}: tuned on random windows but no better on the check windows {times} "
+                  f"(dist {cb and round(cb.get('dist', 99), 4)} -> {ca and round(ca.get('dist', 99), 4)}); "
+                  f"nothing written", flush=True)
+            continue
         g = best_g.copy()
         g.meta = dict(g0.meta or {})
+        before, after = (cb["dist"], ca["dist"]) if rand else (c0["dist"], best["dist"])
         g.meta.update({"name": f"{name}__cma", "tuned_from": os.path.basename(path),
-                       "cma": {"before": round(c0["dist"], 4), "after": round(best["dist"], 4),
-                               "judge_before": c0.get("judge"), "judge_after": best.get("judge"),
+                       "cma": {"before": round(before, 4), "after": round(after, 4),
+                               "judge_before": cb.get("judge") if rand else c0.get("judge"),
+                               "judge_after": ca.get("judge") if rand else best.get("judge"),
                                "judge_windows": best.get("judge_windows"), "windows": a.windows, "hop": a.hop,
+                               "window_mode": a.window_mode, "train_judge": best.get("judge"),
+                               "train_nwin": best.get("judge_nwin"),
                                "check_times": times, "check_before": wb, "check_after": wa,
                                "unseen_before": ub, "unseen_after": ua,
                                "evals": spent, "stat_w": a.stat_w}})
         out = os.path.join(a.out, f"{stem}__cma.json")
         g.save(out)
-        # a pareto.json of the tuned genomes, in the islands' row format: copied to runs/<name>/ it reaches every
-        # island (they resume from and draw immigrants out of runs/*/pareto.json); dist here has no critic term
-        rows.append({k: best[k] for k in ("ok", "stat", "hold", "judge", "judge_hold", "judges", "judges_hold",
-                                          "judge_windows", "judge_nwin", "judge_v", "stat_windows", "stat_nwin",
-                                          "zbytes", "nodes", "luma", "motion", "dist") if k in best})
+        # a pareto.json of the tuned genomes, in the islands' row format: --publish (or a copy to runs/<name>/ with an
+        # island args.json) reaches every island; dist here has no critic term. In random mode the row is the check
+        # windows' record (windows no genome of the tune was selected on), so rows of different tunes compare.
+        src = ca if rand else best
+        rows.append({k: src[k] for k in ("ok", "stat", "hold", "judge", "judge_hold", "judges", "judges_hold",
+                                         "judge_windows", "judge_nwin", "judge_v", "stat_windows", "stat_nwin",
+                                         "win_t", "zbytes", "nodes", "luma", "motion", "dist") if k in src})
         rows[-1].update({"unseen_before": ub, "unseen_after": ua, "genome": g.to_json()})
         with open(os.path.join(a.out, "pareto.json.tmp"), "w") as f:
             json.dump(sorted(rows, key=lambda r: r["zbytes"]), f)
         os.replace(os.path.join(a.out, "pareto.json.tmp"), os.path.join(a.out, "pareto.json"))
-        print(f"wrote {out}: dist {c0['dist']:.3f} -> {best['dist']:.3f}; judge {c0.get('judge')} -> "
-              f"{best.get('judge')}; unseen windows {ub} -> {ua}", flush=True)
+        publish()
+        print(f"wrote {out}: dist {before:.3f} -> {after:.3f}; judge {g.meta['cma']['judge_before']} -> "
+              f"{g.meta['cma']['judge_after']}; unseen windows {ub} -> {ua}", flush=True)
     pool.terminate()
 
 

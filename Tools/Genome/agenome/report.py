@@ -252,13 +252,17 @@ def main(argv=None):
         except Exception as e:
             print("skip", gid, e, flush=True)
             continue
-        d = stats.distance(window_features(fr))
-        dh = hold.distance(window_features(fr))
         try:
             later = [R.render(g, 60, t_shift=k * a.hop) for k in range(1, max(1, a.windows))]
         except Exception as e:
             print("skip", gid, e, flush=True)
             continue
+        # the stat, held-out stat and groups are means over the same windows as the judge, the way the islands score
+        # them since v1.4 (code review 2026-11-10: the page showed window 0 beside a two-window judge)
+        dws = [stats.distance(window_features(x)) for x in [fr] + later]
+        dhws = [hold.distance(window_features(x)) for x in [fr] + later]
+        d = {k: float(np.mean([x[k] for x in dws])) for k in dws[0]}
+        dh = {k: float(np.mean([x[k] for x in dhws])) for k in dhws[0]}
         jd, jdh, jdn, jdw = judged([fr] + later)
         _strip(fr, os.path.join(a.out, "strips", gid + ".jpg"))
         frames_of[gid] = fr

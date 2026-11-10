@@ -55,9 +55,11 @@ def _init(stats_path, hold_path, lp_threads, mem_gb=3.0):
 def _eval(payload):
     """Render and score one genome. payload = (genome json, frames, judge frames, windows[, hop]): windows is either a
     list of start offsets in seconds (each window renders with t_shift = offset) or a count n, meaning offsets
-    0, hop, 2 hop, ... (the older form, still used by agenome.tune). The stat and held-out stat are the means over the
-    windows, each window's judge frames go to the judge, and groups, luma, motion and the critic's 4 frames come from
-    the first window."""
+    0, hop, 2 hop, ... (the older form, still used by agenome.tune). The stat, held-out stat, groups, luma and motion
+    are means over the windows, each window's judge frames go to the judge, and the critic's 4 frames are spread over
+    the windows (one window: frames 0, 1/3, 2/3 and the end, as before; two: the first and last frame of each), so no
+    term of the fitness is measured on one stretch of time (code review 2026-11-10: groups and the critic were still
+    window 0 only, so a row's groups described window 0 while its stat was the mean)."""
     from .features import window_features
     gj, n_frames, n_judge = payload[:3]
     wins = payload[3] if len(payload) > 3 else 1
@@ -69,8 +71,10 @@ def _eval(payload):
     t0 = time.time()
     try:
         g = Genome.from_json(gj)
-        stats, holds, jfr, first = [], [], [], None
-        for ts in offsets:
+        stats, holds, jfr, dks, lumas, motions, cfr = [], [], [], [], [], [], []
+        nw = len(offsets)
+        slots = [4 // nw + (1 if w < 4 % nw else 0) for w in range(nw)]  # the critic's 4 frames over the windows
+        for w, ts in enumerate(offsets):
             # later windows of the same phenotype: judged, and the stat averages over them too, so neither term can be
             # met by fitting one stretch of time (2026-11-10: genomes judged 0.87 on the first window read 2.0 to 3.9
             # later, and genomes climbed on two fixed windows read 0.3 to 0.6 worse on windows they never saw)
@@ -83,14 +87,17 @@ def _eval(payload):
             if n_judge:
                 pick = np.linspace(0, len(frk) - 1, n_judge).round().astype(int)
                 jfr.append(frk[pick].copy())
-            if first is None:
-                first = (frk, dk)
-        fr, d = first
-        res = {"ok": True, "stat": float(np.mean(stats)),
-               "groups": {k: round(v, 4) for k, v in d.items() if k != "total"},
-               "zbytes": g.size(), "nodes": len(g.nodes), "luma": float(fr.mean() / 255.0),
-               "motion": float(np.abs(np.diff(fr[::4].astype(np.int16), axis=0)).mean() / 255.0) if len(fr) > 4 else 0.0,
-               "frames": fr[np.linspace(0, len(fr) - 1, 4).astype(int)].copy(),
+            dks.append(dk)
+            lumas.append(float(frk.mean() / 255.0))
+            motions.append(float(np.abs(np.diff(frk[::4].astype(np.int16), axis=0)).mean() / 255.0) if len(frk) > 4 else 0.0)
+            if slots[w] > 0:
+                ci = np.linspace(0, len(frk) - 1, slots[w]).astype(int) if slots[w] > 1 else [len(frk) // 2]
+                cfr.append(frk[ci].copy())
+        groups = {k: round(float(np.mean([dk[k] for dk in dks])), 4) for k in dks[0] if k != "total"}
+        res = {"ok": True, "stat": float(np.mean(stats)), "groups": groups,
+               "zbytes": g.size(), "nodes": len(g.nodes), "luma": float(np.mean(lumas)),
+               "motion": float(np.mean(motions)),
+               "frames": np.concatenate(cfr, axis=0),
                "stat_windows": [round(x, 4) for x in stats], "stat_nwin": len(offsets),
                "win_t": [round(t, 3) for t in offsets]}
         if holds:
@@ -130,7 +137,8 @@ def draw_offsets(args, rng, exclude=()):
 def merge_windows(c, r):
     """Fold r, a re-evaluation of c's genome on other windows, into c: every score becomes the window-weighted mean
     over all the windows judged so far, so a long-lived genome converges on its look over the whole span instead of
-    the luck of its first draw. The critic frames, groups, luma and motion stay those of c's first evaluation."""
+    the luck of its first draw. Groups, luma and motion are merged the same way; the critic frames stay those of c's
+    first evaluation (a fixed 4 per genome)."""
     n0, n1 = int(c.get("judge_nwin", 1)), int(r.get("judge_nwin", 1))
     m0, m1 = int(c.get("stat_nwin", 1)), int(r.get("stat_nwin", 1))
 
@@ -143,9 +151,12 @@ def merge_windows(c, r):
     for k in ("judges", "judges_hold"):
         if k in c and k in r and len(c[k]) == len(r[k]):
             c[k] = [round(wavg(x, y, n0, n1), 3) for x, y in zip(c[k], r[k])]
-    for k in ("stat", "hold"):
+    for k in ("stat", "hold", "luma", "motion"):
         if k in c and k in r:
             c[k] = wavg(c[k], r[k], m0, m1)
+    if isinstance(c.get("groups"), dict) and isinstance(r.get("groups"), dict):
+        c["groups"] = {k: round(wavg(v, r["groups"][k], m0, m1), 4) if k in r["groups"] else v
+                       for k, v in c["groups"].items()}
     for k in ("judge_windows", "judge_hold_windows", "stat_windows", "hold_windows", "win_t"):
         if k in c and k in r:
             c[k] = list(c[k]) + list(r[k])
@@ -547,7 +558,8 @@ def run(args):
         extra = [m["genome"] for m in archive.members] + [m["genome"] for m in elites.cells.values()]
         kids = []
         if args.share and args.migrate_every > 0 and gen > 0 and gen % args.migrate_every == 0:
-            kids += immigrants(args, rng, k=args.migrants, have={lineage_of(c) for c in pop})
+            held = {c["genome"].to_bytes() for c in pop + archive.members + list(elites.cells.values())}
+            kids += immigrants(args, rng, k=args.migrants, have={lineage_of(c) for c in pop}, held=held)
         n_tune = int(round(args.lam * args.tune))
         best_first = sorted(pop, key=lambda c: c["dist"])
         for k in range(max(0, args.lam - len(kids))):
@@ -622,38 +634,78 @@ def run(args):
     save_state(args.run, pop, archive, elites, args.gens)
 
 
-def immigrants(args, rng, k=4, have=()):
-    """Genomes other islands published under --share (their pareto.json and elites.json), re-evaluated here: the best
-    one overall, then the best of each other lineage (root seed), lineages this island lacks first. Process mining
-    (2026-11-10): the top k of the fronts by distance were all one seed (min+cellnet), so migration only spread the
-    leader; the survivor cap limits a lineage inside an island, this keeps the exchange between islands diverse."""
+def immigrants(args, rng, k=4, have=(), held=()):
+    """Genomes other islands published under --share (their pareto.json and elites.json), re-evaluated here.
+
+    Each front is ranked only against itself: islands score on different windows, weights and judge versions, so a
+    dist from one folder says nothing about a dist from another. Code review, 2026-11-10: ranking the pooled rows by
+    raw dist let the static seedbank (one window, judge v2, no critic term) supply nearly every migrant to every island,
+    the same four at every migration, and no island's front reached another. Only folders whose args.json names an
+    island count (islands publish one; the seedbank and tuner copies are --resume / --seeds inputs). The first
+    immigrant is the best row of one other island picked at random, any lineage, so a leader's gains still spread; the
+    rest go round the other islands taking each one's best row of a lineage this island lacks (have), then of any
+    lineage not taken yet. Rows whose bytes are in held (what this island already holds) are skipped. k <= 0 imports
+    nothing (it used to return the lead anyway)."""
+    if k <= 0:
+        return []
     me = os.path.abspath(os.path.join(args.share, args.island)) if args.island else None
-    best = {}  # lineage -> (dist, genome, island)
-    for p in glob.glob(os.path.join(args.share, "*", "pareto.json")) + glob.glob(os.path.join(args.share, "*", "elites.json")):
-        if me and os.path.abspath(os.path.dirname(p)) == me:
+    held, fronts = set(held), []
+    for folder in sorted(glob.glob(os.path.join(args.share, "*", ""))):
+        folder = os.path.abspath(folder)
+        if me and folder == me:
             continue
         try:
-            data = json.load(open(p))
+            if not json.load(open(os.path.join(folder, "args.json"))).get("island"):
+                continue
         except Exception:
             continue
-        for d in data:
+        rows, seen = [], set()
+        for name in ("pareto.json", "elites.json"):
             try:
-                g = Genome.from_json(d["genome"])
-            except Exception:  # ops this code does not know yet (an island on newer code): skip, never crash
+                data = json.load(open(os.path.join(folder, name)))
+            except Exception:
                 continue
-            L, dist = lineage_name(g), float(d.get("dist", 99.0))
-            if L not in best or dist < best[L][0]:
-                best[L] = (dist, g, os.path.basename(os.path.dirname(p)))
-    if not best:
+            for d in data:
+                try:
+                    g = Genome.from_json(d["genome"])
+                    b = g.to_bytes()
+                except Exception:  # ops this code does not know yet (an island on newer code): skip, never crash
+                    continue
+                if b in held or b in seen:
+                    continue
+                seen.add(b)
+                rows.append((float(d.get("dist", 99.0)), b, g))
+        if rows:
+            rows.sort(key=lambda r: r[0])
+            fronts.append((os.path.basename(folder), rows))
+    if not fronts:
         return []
-    have = set(have)
-    lead = min(best, key=lambda L: best[L][0])
-    rest = sorted((L for L in best if L != lead), key=lambda L: (L in have, best[L][0] + 0.01 * rng.random()))
-    out = []
-    for L in [lead] + rest[:max(0, k - 1)]:
-        g = best[L][1]
-        g.meta["immigrant_from"] = best[L][2]
+    out, taken, used = [], set(), set()
+
+    def take(name, b, g):
+        g.meta["immigrant_from"] = name
         out.append(g)
+        taken.add(lineage_name(g))
+        used.add(b)
+
+    name, rows = fronts[rng.randrange(len(fronts))]
+    take(name, rows[0][1], rows[0][2])
+    order = list(fronts)
+    rng.shuffle(order)
+    for lacking in (True, False):
+        moved = True
+        while len(out) < k and moved:
+            moved = False
+            for name, rows in order:
+                if len(out) >= k:
+                    break
+                for _, b, g in rows:
+                    L = lineage_name(g)
+                    if b in used or L in taken or (lacking and L in have):
+                        continue
+                    take(name, b, g)
+                    moved = True
+                    break
     return out
 
 
