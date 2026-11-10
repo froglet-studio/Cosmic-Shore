@@ -211,6 +211,10 @@ What it shows (`/mnt/project-files/amoebius-genome/docs/hypersea_methods_sheet.p
 - The PNG is very slightly bluer in the cell lines than the shader today (part of its 0.78), so it was baked from an
   older material; a runtime bake can never drift from the material.
 - Not emulated: the PNG's on-device ETC2/ASTC loss (its real error is somewhat worse than 0.78).
+- Independent agreement from the genome project's sky-spectrum study (`/mnt/project-files/amoebius-genome/docs/SKY_SPECTRUM.md`
+  §5): the best genomes match the reels' sky power spectrum within about 2 dB above an 8 px period, and the only
+  feature still missing, the only one needing per-pixel resolution, is the 1-4 px cell web. The genomes' film grain
+  is a stand-in for that web at the judge's 256x144 and must not be ported to Unity as a look.
 
 **HyperSea recommendation (a proposal: the shader is Shombith's):** for MobileLow and Web, bake HyperSea at load into a
 256 cube with `_CellOverlayStrength = 0`, and draw it with a small shader that adds HyperSea's own
