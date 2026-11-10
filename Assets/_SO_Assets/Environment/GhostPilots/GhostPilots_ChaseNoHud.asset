@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d523e1bb99284b75b5648de536e832b9, type: 3}
+  m_Name: GhostPilots_ChaseNoHud
+  m_EditorClassIdentifier: 
+  sourceGenome: 'amoebius-genome seeds/amoebius_like/chase_nohud__tuned.json (seed 22): ag.spawn 15, ag.boids 16 (turn only), ag.wander 17, ag.bound 18, ag.trail 19, ag.body 20. Tuned 450 evals, footage score 5.20 -> 1.66.'
+  count: 16
+  spawnRadius: 64.94473
+  spawnShape: 0
+  seed: 175150
+  warmupSeconds: 8
+  cruiseSpeed: 29.68494
+  turnCap: 1.34138
+  speedRelax: 2
+  wanderFrequency: 0.29956
+  wanderAmplitude: 6.09687
+  boundRadius: 146.11873
+  boundStiffness: 0.49444
+  attractEnabled: 0
+  attractCentre: {x: 0, y: 0, z: 0}
+  attractStrength: 0.1
+  attractRadius: 100
+  attractOrbit: 0
+  teams: 3
+  teamHue0: 0.63922
+  teamHueStep: 0.4
+  teamSaturation: 0.92941
+  teamValue: 1.60885
+  trailInterval: 0.05805
+  trailLifetime: 9.76585
+  trailSize: {x: 0.54282, y: 0.36844, z: 2.20335}
+  trailTaperPower: 0.5
+  trailEmission: 0.66877
+  trailColorMode: 0
+  trailHue: 0.05098
+  trailSaturation: 0
+  trailValue: 1.00003
+  bodySize: {x: 0.79974, y: 0.40291, z: 1.07745}
+  bodyEmission: 0.57617
+  bodyColorMode: 0
+  bodyHue: 0.05882
+  bodySaturation: 0.02745
+  bodyValue: 2.87874
