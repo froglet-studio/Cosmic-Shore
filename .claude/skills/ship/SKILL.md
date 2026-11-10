@@ -1044,6 +1044,8 @@ A branch that found nothing says so in the report. Silence reads as "not checked
 Say **NO** — and list the concrete iterations needed — when any of these hold:
 
 - A review gate in §2 failed and the fix isn't a quick one.
+- `approvals.py check` reports a **swim lane COLLISION** the person has not decided on (§5). Touching another
+  collaborator's work is otherwise never a NO-GO: it goes through, with its `/approve` entries.
 - **§2.5 is unresolved** — a WRITER tool is on the branch and its output is not, or the
   human has not confirmed they ran it. This one is not a judgment call: no amount of
   otherwise-good work makes a half-landed migration shippable.
@@ -1073,8 +1075,15 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
 - **Who else works here** (`Docs/TEAM.md`): `git fetch origin && python3 Tools/Build/who_works_where.py query
   $(git diff --name-only origin/bleeding-edge...HEAD | cut -d/ -f1-4 | sort -u)`. For every other collaborator with
   in-flight or recent work in those paths, the PR body gets an **Affects** line ("Affects: Garrett's
-  `cece/zen-fermat` Stoat modes - builds on them, changes nothing they decided"). A branch that would replace or
-  re-tune another collaborator's work is a NO-GO until the person you work with has confirmed it with them (§4).
+  `cece/zen-fermat` Stoat modes - builds on them, changes nothing they decided").
+- **Collide or go** (`Docs/TEAM.md` rules 3 and 13, Garrett 2026-11-10): `python3 Tools/Build/approvals.py check --me
+  <person>`. **Exit 2 is a COLLISION** - the branch is about a swim lane someone else occupies right now - and it is a
+  NO-GO until the person you work with has heard who is in it and decided (talk to the occupant, or go ahead). Nothing
+  else is a NO-GO for touching another collaborator's work, re-tuning or replacing it included: tell the person whose
+  toes it is on, and for each HEADS-UP person whose work the branch actually changes, commit an
+  `approvals.py add --to <them> --by <person> --area ... --summary ...` entry before opening the PR (add `--pr` when
+  you know it). The PR body's **Affects** section lists the entries it queued ("queued for Shombith's /approve:
+  <id>").
 - **Hand-offs** (`Docs/TEAM.md` rule 9, the `/team-tasks` skill): anything the branch leaves for a person (an editor
   test, a playtest, a dashboard step, content, a decision) goes on the branch's ONE ticket (`/team-tasks add`; a second
   `add` appends a checklist line), naming nobody: tickets are never assigned; taking one makes it the taker's, and naming a branch starts it. Close
