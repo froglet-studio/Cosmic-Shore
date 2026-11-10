@@ -117,7 +117,7 @@ def load_island(name, dirs):
         if L:
             segs.append(e0)
             for r in L:
-                log.append([r["evals"] + e0, r["best_dist"], r["best_stat"], 1 if r["regime"] == "COMPRESS" else 0,
+                log.append([r["evals"] + e0, r["best_dist"], r.get("best_stat", 0.0), 1 if r.get("regime") == "COMPRESS" else 0,
                             r.get("median_zbytes", 0), r["gen"] + g0, r.get("best_zbytes", 0)])
             e0 += L[-1]["evals"]
             g0 += L[-1]["gen"] + 1
