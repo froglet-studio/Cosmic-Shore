@@ -444,3 +444,17 @@
 2026-11-06T23:12:52.774Z PlayMode session ended (19s play run, exiting play mode): 0 fix(es) waiting; counted: none
 2026-11-06T23:13:56.330Z PlayMode session ended (29s play run, exiting play mode): 0 fix(es) waiting; counted: none
 2026-11-06T23:14:31.893Z PlayMode session ended (13s play run, exiting play mode): not counted (capture=True, long enough=False)
+2026-11-06T23:19:16.336Z PlayMode session ended (180s play run, exiting play mode): 0 fix(es) waiting; counted: none
+2026-11-06T23:23:18.340Z EditMode session ended (20min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-15940b78c5 E-69d8f59062 E-e5bc8c31c5 E-81100c14a5
+2026-11-06T23:23:37.307Z editor load: play=False capture=True minPlay=15s issues=58
+2026-11-06T23:41:51.699Z EditMode session ended (18min editor span, script reload): 0 fix(es) waiting; counted: none; fired: E-15034bdc73
+2026-11-06T23:42:01.345Z editor load: play=False capture=True minPlay=15s issues=58
+2026-11-06T23:46:16.078Z EditMode session ended (4min editor session): not counted (capture=True, long enough=False)
+2026-11-06T23:47:20.530Z editor load: play=False capture=True minPlay=15s issues=59
+2026-11-07T00:22:30.655Z PlayMode session ended (2081s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-b6c18a87a2
+2026-11-07T00:22:35.976Z EditMode session ended (35min editor session): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-b6c18a87a2
+2026-11-07T00:23:06.064Z editor load: play=False capture=True minPlay=15s issues=59
+2026-11-07T00:54:47.941Z PlayMode session ended (1882s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-b6c18a87a2
+2026-11-07T00:54:52.679Z EditMode session ended (31min editor session): 0 fix(es) waiting; counted: none; fired: E-15034bdc73 E-b6c18a87a2
+2026-11-10T00:42:51.815Z editor load: play=False capture=True minPlay=15s issues=59
+2026-11-10T00:54:35.385Z PlayMode session ended (627s play run, exiting play mode): 0 fix(es) waiting; counted: none; fired: E-c52c39070d E-251530c87b E-fdf6dcdfc7 E-e0844806c9 E-0a098d80df E-e5ff2abb8c E-625609559e E-62ac69194a
