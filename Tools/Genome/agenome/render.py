@@ -11,6 +11,7 @@ Pipeline per frame (all OpenGL 3.3 on llvmpipe, offscreen):
 import atexit
 import math
 import os
+import select
 import shutil
 import subprocess
 import threading
@@ -32,31 +33,47 @@ _XVFB = None
 
 
 def ensure_display():
+    """Start a private Xvfb for this process (moderngl's standalone context needs a display).
+
+    The server picks a FREE display itself (-displayfd): the old pid % 500 number collided, and a process whose server
+    could not start borrowed another's. It also dies with the process that started it: pool workers killed on a
+    timeout or a restart left theirs running (146 orphans holding 1.4 GB in the genome thread's container,
+    2026-11-10). setpriv sets the parent-death signal with no Python in the child (a preexec_fn forces fork(), which
+    can deadlock under JAX's threads); the signal is tied to the starting THREAD, so only the main thread's server
+    gets it."""
     global _XVFB
     if os.environ.get("DISPLAY"):
         return
     if shutil.which("Xvfb") is None:
         return
+    pre = ["setpriv", "--pdeathsig", "TERM", "--"] if (
+        shutil.which("setpriv") and threading.current_thread() is threading.main_thread()) else []
+    rd, wr = os.pipe()
+    try:
+        _XVFB = subprocess.Popen(pre + ["Xvfb", "-displayfd", str(wr), "-screen", "0", "64x64x24", "-nolisten", "tcp"],
+                                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                 pass_fds=(wr,))
+    finally:
+        os.close(wr)
+    buf, deadline = b"", time.time() + 15
+    while not buf.endswith(b"\n") and time.time() < deadline:
+        ready, _, _ = select.select([rd], [], [], max(0.0, deadline - time.time()))
+        chunk = os.read(rd, 32) if ready else b""
+        if not chunk:
+            break
+        buf += chunk
+    os.close(rd)
+    if buf.strip().isdigit():
+        atexit.register(_XVFB.terminate)
+        os.environ["DISPLAY"] = f":{int(buf.strip())}"
+        return
+    _XVFB.terminate()  # no -displayfd (old server): the old fixed number
     num = 90 + (os.getpid() % 500)
-    _XVFB = subprocess.Popen(["Xvfb", f":{num}", "-screen", "0", "64x64x24", "-nolisten", "tcp"],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                             # tied to the starting THREAD: only the main thread's server may die with it
-                             preexec_fn=_die_with_parent if threading.current_thread() is threading.main_thread()
-                             else None)
+    _XVFB = subprocess.Popen(pre + ["Xvfb", f":{num}", "-screen", "0", "64x64x24", "-nolisten", "tcp"],
+                             stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     atexit.register(_XVFB.terminate)
     os.environ["DISPLAY"] = f":{num}"
     time.sleep(0.4)
-
-
-def _die_with_parent():
-    """Xvfb gets SIGTERM when the process that started it dies: a pool worker killed on a timeout or a restart left
-    its server running (146 orphans holding 1.4 GB in the genome thread's container, 2026-11-10)."""
-    try:
-        import ctypes
-        import signal
-        ctypes.CDLL("libc.so.6", use_errno=True).prctl(1, int(signal.SIGTERM))  # PR_SET_PDEATHSIG
-    except Exception:
-        pass
 
 
 def _mesh(name):
