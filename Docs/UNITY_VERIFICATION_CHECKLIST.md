@@ -65,14 +65,14 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Glasshouse, the Angler's Mass game (GameModes 88) (`claude/peaceful-cerf-vpl3x8`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+### 🔴 Glasshouse, the Angler's Mass game (GameModes 89) (`claude/peaceful-cerf-vpl3x8`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/GLASSHOUSE.md`. A timed garden: an omni crystal is a creature and a seed, letting go
 of the lure plants the seed in your colour, holding it grows your plants 3x. The score is `VolumeRemaining`: trail
 (StatsManager) + garden (the controller credits each domain's plants outside the nucleus by deltas). Four cells (the
 standard cell with Barren's nucleus, no environment), a cactus planted only from seeds (`SpawnProbability 0`), tadpole
 herds, omni crystals per rung. The AI (`GlasshouseGardener`) steers and holds the lure only. New platform rows:
-`GameModes.Glasshouse = 88`, `glasshouseRoundSeconds` (90), `GameToastSituation.GlasshouseHint = 163`, the HUD arrow
+`GameModes.Glasshouse = 89`, `glasshouseRoundSeconds` (90), `GameToastSituation.GlasshouseHint = 164`, the HUD arrow
 (Rampage's provider). Nothing about the Angler changed. Authored by `Tools/Build/author_glasshouse_assets.py`. Ran
 headless: the generator `--check` (with a negative control), the `/arcadegame` §4 gates, the card render, and
 `unity_refcompile` (see the commit). No Unity editor ran.

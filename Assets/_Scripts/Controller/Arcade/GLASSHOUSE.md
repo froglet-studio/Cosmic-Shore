@@ -1,4 +1,4 @@
-# Glasshouse (`GameModes.Glasshouse = 88`)
+# Glasshouse (`GameModes.Glasshouse = 89`)
 
 The Angler's **MASS** game: a timed garden. Asked for by Shombith's Mass and Space plan
 (`Docs/MassAndSpaceGames/PLAN.md`, wave 1). It sits beside the Angler's other cards: Lantern Run (Time) and Kelpwood
@@ -24,7 +24,7 @@ rival paints your plants, and their school is thrown at them.
 | Herds | four `Glasshouse I<n> Tadpole Fauna Config Data`s, copies of the Thresher Time I1 tadpole (Kelpwood's donor) |
 | Omni crystals | the scene's `NetworkCrystalManager`, per intensity; they respawn inside the nucleus (LOCKED platform rule) |
 | Objective arrow | `RampageObjectiveProvider`: the nearest omni crystal, i.e. the next seed |
-| Toasts | 163 `GlasshouseHint` (new), 130 lead change (the controller's own sampler; a timed mode has no target for `DomainRaceToasts`), 30 comeback |
+| Toasts | 164 `GlasshouseHint` (new), 130 lead change (the controller's own sampler; a timed mode has no target for `DomainRaceToasts`), 30 comeback |
 | Generator | `Tools/Build/author_glasshouse_assets.py` (`--check`) |
 | Card art | `Assets/_Graphics/ARCADE/CardBackgrounds/Glasshouse.png` (`/cardart`, MODEL tier: the gardens, seeds and grazers read off the shipped assets at intensity 2) |
 
@@ -154,13 +154,14 @@ it would need a garden sim (seed supply, growth rate, grazing), which `/compute-
 
 ## Platform changes
 
-- `GameModes.Glasshouse = 88` (88 was free on bleeding-edge and every one of the 648 remote branches on 2026-11-10),
+- `GameModes.Glasshouse = 89` (first authored as 88; Harvest, the Thresher's Space game on `claude/keen-rubin-rw7p6q`,
+  pushed 88 and toast 163 first the same day, so this took 89 and 164, free on every branch),
   `EnumIntegrityTests` 80 -> 81.
-- `GameToastSituation.GlasshouseHint = 163`.
+- `GameToastSituation.GlasshouseHint = 164`.
 - `EndConditionOverridesSO.glasshouseRoundSeconds` (+ `Build` twin, getter, `LiveMatchesBuild` / `Apply` / `Capture`
   rows) and the window's field, label and build-summary rows.
 - `MiniGameHUD.CreateObjectiveProviderForGameMode`: Glasshouse -> `RampageObjectiveProvider`.
-- `author_preview_spawns.SCENE_FOR_MODE` 88; `render_card_backgrounds.py` a Glasshouse recipe (MODEL) and camera.
+- `author_preview_spawns.SCENE_FOR_MODE` 89; `render_card_backgrounds.py` a Glasshouse recipe (MODEL) and camera.
 
 ## Verification status
 

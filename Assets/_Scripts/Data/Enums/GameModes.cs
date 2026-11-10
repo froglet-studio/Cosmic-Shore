@@ -430,7 +430,8 @@ namespace CosmicShore.Data
         // fast. The score is the mass standing in your colour at the whistle (VolumeRemaining): your trail plus the
         // garden grown from your seeds, outside the nucleus. Wild herds graze it and rival schools are thrown at it.
         // I1-I4 thin the seeds, crowd in the grazers and shrink the room the gardens share.
-        Glasshouse = 88,
+        // 88 is Harvest's (the Thresher's Space game, claude/keen-rubin-rw7p6q, in flight on 2026-11-10).
+        Glasshouse = 89,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 81) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved

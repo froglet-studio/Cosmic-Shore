@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86d1715b8f104fcc87cb60e015d4b563, type: 3}
   m_Name: GameToastConfig_Glasshouse
   m_EditorClassIdentifier:
-  gameMode: 88
+  gameMode: 89
   toasts:
   - situation: 130
     messageTemplate: '{0} takes the lead - {1} volume standing'
@@ -24,7 +24,7 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 60
     repeatWhileIdle: 1
-  - situation: 163
+  - situation: 164
     messageTemplate: 'Take an omni crystal for a seed, let go of the lure to plant it, and hold the lure over your plants to grow them'
     tintWithDomainColor: 0
     useDomainColoredNames: 0

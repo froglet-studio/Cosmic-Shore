@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
   m_Name: ModePreview_Glasshouse
   m_EditorClassIdentifier:
-  Mode: 88
+  Mode: 89
   Notes: 'The garden cell at each intensity - fewer seeds, more grazers, less room. OPEN-ENDED - it scores
     on mass standing in your colour, and what a solo preview teaches is the loop - an omni crystal in
     the core, out past the nucleus, let go of the lure to plant, hold it to grow. Vessel pinned to Angler(17).'

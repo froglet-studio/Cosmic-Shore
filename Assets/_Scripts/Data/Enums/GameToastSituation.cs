@@ -240,7 +240,7 @@ namespace CosmicShore.Data
         // Glasshouse, the Angler's Mass game (_Scripts/Controller/Arcade/GLASSHOUSE.md). Its lead change is the shared
         // 130 (DomainRaceLeadChanged), sampled by the controller because a timed mode has no target. Posted to the
         // LOCAL pilot only.
-        GlasshouseHint = 163,           // once, at the start: take an omni crystal, let go of the lure to plant, light it to grow
+        GlasshouseHint = 164,             // once, at the start: take an omni crystal, let go of the lure to plant, light it to grow
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

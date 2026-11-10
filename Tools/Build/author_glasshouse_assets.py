@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Glasshouse game mode needs (GameModes.Glasshouse = 88).
+Authors every serialized asset the Glasshouse game mode needs (GameModes.Glasshouse = 89).
 
 Glasshouse is the Angler's MASS game (Docs/MassAndSpaceGames/PLAN.md, wave 1): a timed garden. An omni crystal is a
 creature and a SEED for an Angler (AnglerTameByCrystalEffectSO); letting go of the lure plants every seed it carries in
@@ -34,8 +34,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib  # noqa: E402
 
-MODE_ID = 88
-TOAST_HINT = 163
+MODE_ID = 89
+TOAST_HINT = 164
 TOAST_LEAD = 130          # DomainRaceLeadChanged, posted by the controller's own lead sampler (a timed mode has no target)
 ROUND_SECONDS = 90        # Docs/ARCADE_MATCH_LENGTH.md; kept in sync with EndConditionOverridesSO.DefaultGlasshouseRoundSeconds
 g = lib.Generator(MODE_ID, "Glasshouse")

@@ -200,7 +200,8 @@ namespace CosmicShore.Tests
             // 77 -> 78 on 2026-11-09: Flatline (84), the Brittle Star's charge game (Shombith gave it 84 after both claimed it).
             // 78 -> 79 on 2026-11-09: Kelpwood (86), the Angler's Charge game.
             // 79 -> 80 on 2026-11-10: Corona (87), the Manta's Charge game (87 free on every branch that day).
-            // 80 -> 81 on 2026-11-10: Glasshouse (88), the Angler's Mass game (88 free on every branch that day).
+            // 80 -> 81 on 2026-11-10: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest (the Thresher's
+            // Space game, claude/keen-rubin-rw7p6q) pushed first the same day; when both land this becomes 82.
             var values = Enum.GetValues(typeof(GameModes));
             Assert.AreEqual(81, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
