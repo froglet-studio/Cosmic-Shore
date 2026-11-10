@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: GenomeNebulaSkybox
+  m_Shader: {fileID: 4800000, guid: 02f1d7015e4a44159e50acf9c378c5b9, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _MAPPING_EQUIRECT
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _FogMix: 0.12454
+    - _Gamma0: 1.39323
+    - _Gamma1: 1.10882
+    - _Mapping: 0
+    - _SkyIntensity: 0.34884
+    - _SphereScale: 0.2387
+    m_Colors:
+    - _ColA0: {r: 0.007902, g: 0.01931, b: 0.004392, a: 0}
+    - _ColA1: {r: 0.04827, g: 0.029928, b: 0.026312, a: 0}
+    - _ColB0: {r: 0.363948, g: 0.330118, b: 0.80943, a: 0}
+    - _ColB1: {r: 0.82867, g: 0.82867, b: 0.82867, a: 0}
+    - _Drift: {r: 0.004, g: 0.0015, b: -0.001, a: 0}
+    - _FogColor: {r: 0.015805, g: 0.025055, b: 0.07197, a: 0}
+    - _Grade: {r: 0.88487, g: 1.02756, b: 1.09981, a: 1}
+    - _Noise0: {r: 3, g: 4, b: 0.61647, a: 124.27}
+    - _Noise1: {r: 6, g: 3, b: 0.51059, a: 811.41}
+    - _Warp: {r: 0.43137, g: 0.32745, b: 0, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
