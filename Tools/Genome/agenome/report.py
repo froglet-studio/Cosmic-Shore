@@ -5,7 +5,7 @@
       --island A=/mnt/project-files/amoebius-genome/runs/A --island B=/mnt/project-files/amoebius-genome/runs/B \
       --seedbank /mnt/project-files/amoebius-genome/runs/seedbank/pareto.json \
       --reels '/home/user/work/targets/reel0*/frames.npy' --holdout reel05 \
-      --stats /home/user/work/target_stats_reels_train.npz --hold /home/user/work/target_stats_reel05_hold.npz
+      --stats /mnt/project-files/amoebius-genome/fitness/target_stats_train_v2.npz --hold /mnt/project-files/amoebius-genome/fitness/target_stats_hold_v2.npz
 
 An island is name=dir[,dir...]: the dirs are its runs in order (a restart continues the curve). Every genome shown is
 rendered again here and re-scored with the fixed statistics, so the numbers on the page are comparable across
@@ -309,7 +309,7 @@ def main(argv=None):
     # the judge's calibration: cached per net beside the reference features, else computed (a few minutes each)
     per_net = []
     for J in Js:
-        cp = os.path.join(SHARED, f"calibration_{J.net}_native.json")
+        cp = os.path.join(SHARED, f"calibration_{J.net}_native_v{J.version}.json")
         cj = _json(cp)
         per_net.append(cj["cases"] if cj else judge_calibration(J))
     jcal = [{"label": rows[0]["label"], "judge": round(float(np.mean([r["judge"] for r in rows])), 3),

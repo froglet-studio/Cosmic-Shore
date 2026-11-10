@@ -66,9 +66,12 @@ class Genome:
     def type_of(self, i):
         return OPS[self.nodes[i].op].out
 
-    def repair(self):
+    def repair(self, keep_absent=False):
         """Make every input point backwards to a node of the right type (nearest one), or None if optional/absent.
-        Returns self. Mutation can produce anything; repair makes it a valid program."""
+        Returns self. Mutation can produce anything; repair makes it a valid program.
+        keep_absent: an optional input that is None stays None. Decoding a stored genome (from_json, from_bytes) keeps
+        it, so a genome written with no sky or no HUD renders without one; a node mutation just created (all inputs
+        None) is wired up as before."""
         for i, n in enumerate(self.nodes):
             o = OPS[n.op]
             n.params = [max(0, min(255, int(b))) for b in (list(n.params) + [p.default for p in o.params])[:len(o.params)]]
@@ -76,6 +79,8 @@ class Genome:
             for s, want in enumerate(o.inputs):
                 t = want.upper()
                 j = n.inputs[s]
+                if j is None and keep_absent and want.islower():
+                    continue
                 ok = j is not None and 0 <= j < i and i - j <= 255 and self.type_of(j) == t
                 if not ok:
                     j2 = None
@@ -159,7 +164,7 @@ class Genome:
             k += len(o.params)
             ps += [p.default for p in o.params[len(ps):]]
             g.nodes.append(Node(o.name, [None if r == 0 else i - r for r in refs], ps))
-        return g.repair()
+        return g.repair(keep_absent=True)
 
     def size(self):
         return len(zlib.compress(self.to_bytes(), 9))
@@ -222,7 +227,7 @@ class Genome:
                         ps[q_i] = q.encode(vals[q.name])
             ins = [None if j is None else ids.get(j, j) for j in nd.get("in", [])]
             g.nodes.append(Node(o.name, ins, [int(x) for x in ps]))
-        return g.repair()
+        return g.repair(keep_absent=True)
 
     def save(self, path):
         with open(path, "w") as f:

@@ -195,6 +195,7 @@ class JudgeState:
                 c["judge"] = round(float(np.mean([p[k]["judge"] for p in per])), 4)
                 c["judge_hold"] = round(float(np.mean([p[k]["judge_hold"] for p in per])), 4)
                 c["judges"] = [round(p[k]["judge"], 3) for p in per]
+                c["judge_v"] = self.Js[0].version
         for c in cands:
             c.pop("jframes", None)
 

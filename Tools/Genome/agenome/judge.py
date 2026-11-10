@@ -11,17 +11,22 @@ fully convolutional and average-pooled) by Keras' InceptionV3 on the JAX backend
 Scores against a reference set of Amoebius frames:
 
   kid_train, kid_hold   kernel inception distance x 1000 (unbiased MMD^2, cubic kernel) against the training reels
-                        (1 to 4) and against the held-out reel 5
-  judge, judge_hold     the same, over the level Amoebius itself reaches: the held-out reel's 4-second windows against
-                        the training reels set judge = 1.0, the training reels' windows against reel 5 set judge_hold = 1.0
+                        (1, 2, 4) and against the held-out reels (3, 5)
+  judge, judge_hold     the same, over the level Amoebius itself reaches: the held-out reels' 4-second windows against
+                        the training reels set judge = 1.0, the training reels' windows against the held-out reels set
+                        judge_hold = 1.0
 
-The search climbs `judge` (train reels) and reports `judge_hold`; a genome that only fits reels 1 to 4 shows up there.
+The search climbs `judge` (train reels) and reports `judge_hold`; a genome that only fits the training reels shows up
+there. Version 2 (2026-11-10 18:00): the five reels are three sources (reel05 re-cuts reel03, reel04 re-cuts reel02;
+median nearest-frame distance 0.07 and 0.09 against ~1.1 between unrelated reels), so v1's held-out reel 5 was mostly
+reel 3, which was in training. v2 holds out the whole source (reels 3 and 5); v1 caches stay on disk under their names.
 
   python3 -m agenome.judge calibrate OUT.json [--net inception|mobilenet] [--res native|299]
   python3 -m agenome.judge score OUT.json --front main=pareto.json --front seedbank=... [--genome g.json ...]
 
 Weights: ~/.keras/models, else /mnt/project-files/amoebius-genome/fitness/judge/ (copied there once), else fetched from
-storage.googleapis.com. Reference features and calibration are cached per net and size (judge_<net>_<res>.npz).
+storage.googleapis.com. Reference features and calibration are cached per net, size and version
+(judge_<net>_<res>_v2.npz; v1 was judge_<net>_<res>.npz).
 """
 import argparse
 import glob
@@ -33,7 +38,8 @@ os.environ.setdefault("KERAS_BACKEND", "jax")
 import numpy as np
 
 REELS = "/mnt/project-files/amoebius-genome/fitness/reels_256x144/reel0*/frames.npy"
-HOLDOUT = "reel05"
+HOLDOUT = ("reel03", "reel05")  # one whole source held out (v2): reel05 is a re-cut of reel03
+VERSION = 2
 SHARED = "/mnt/project-files/amoebius-genome/fitness/judge"
 N_SAMPLE = 12
 NETS = {
@@ -81,9 +87,10 @@ class Judge:
         self.model = getattr(keras.applications, cls)(weights=_weights(fname), include_top=False, pooling="avg",
                                                       input_shape=self.shape)
         self.paths = sorted(glob.glob(reels))
-        self.holdout = holdout
+        self.holdout = (holdout,) if isinstance(holdout, str) else tuple(holdout)
+        self.version = VERSION
         cache_dir = cache_dir or os.path.expanduser("~/.cache/agenome")
-        self.cache = os.path.join(cache_dir, f"judge_{net}_{res}.npz")
+        self.cache = os.path.join(cache_dir, f"judge_{net}_{res}_v{VERSION}.npz")
         for c in (self.cache, os.path.join(SHARED, os.path.basename(self.cache))):
             if os.path.exists(c):
                 z = np.load(c)
@@ -92,16 +99,25 @@ class Judge:
                 return
         if not build:
             raise FileNotFoundError(self.cache)
-        tr = np.concatenate([np.load(p)[::2] for p in self.paths if holdout not in p])
-        ho = np.concatenate([np.load(p) for p in self.paths if holdout in p])
+        tr = np.concatenate([np.load(p)[::2] for p in self.train_paths()])
+        ho = np.concatenate([np.load(p) for p in self.hold_paths()])
         self.train, self.hold = self.embed(tr), self.embed(ho)
         self.level = self.level_hold = 1.0
-        hw = [self.raw(w) for w in _windows(ho)]
-        tw = [self.raw(w) for p in self.paths if holdout not in p for w in _windows(np.load(p))[::3]]
+        hw = [self.raw(w) for p in self.hold_paths() for w in _windows(np.load(p))]
+        tw = [self.raw(w) for p in self.train_paths() for w in _windows(np.load(p))[::3]]
         self.level = float(np.mean([r["kid_train"] for r in hw]))
         self.level_hold = float(np.mean([r["kid_hold"] for r in tw]))
         os.makedirs(cache_dir, exist_ok=True)
         np.savez(self.cache, train=self.train, hold=self.hold, level=self.level, level_hold=self.level_hold)
+
+    def held(self, p):
+        return any(h in p for h in self.holdout)
+
+    def train_paths(self):
+        return [p for p in self.paths if not self.held(p)]
+
+    def hold_paths(self):
+        return [p for p in self.paths if self.held(p)]
 
     def embed(self, frames, batch=64, chunk=256):
         """uint8 (N, 144, 256, 3) -> float32 (N, d), a chunk at a time: a whole first generation at once (433 clips x
@@ -141,8 +157,8 @@ def calibration(J):
     """The judge on Amoebius itself and on broken versions of the held-out reel, window by window."""
     from scipy.ndimage import uniform_filter
     rng = np.random.default_rng(0)
-    hold = np.concatenate([np.load(p) for p in J.paths if J.holdout in p])
-    train_w = [w for p in J.paths if J.holdout not in p for w in _windows(np.load(p))[::3]]
+    hold_w = [w for p in J.hold_paths() for w in _windows(np.load(p))]
+    train_w = [w for p in J.train_paths() for w in _windows(np.load(p))[::3]]
     cases = [
         ("Amoebius, held-out reel", lambda w: w),
         ("Mirrored left to right", lambda w: w[:, :, ::-1].copy()),
@@ -156,7 +172,7 @@ def calibration(J):
     ]
     out = []
     for label, f in cases:
-        js = [J.raw(f(w)) for w in _windows(hold)]
+        js = [J.raw(f(w)) for w in hold_w]
         out.append({"label": label, **{k: float(np.mean([j[k] for j in js])) for k in js[0]}})
     js = [J.raw(w) for w in train_w]
     out.insert(1, {"label": "Amoebius, train reels (vs held-out)", **{k: float(np.mean([j[k] for j in js])) for k in js[0]}})
@@ -185,11 +201,13 @@ def main(argv=None):
     J = Judge(a.net, a.res, a.n, a.reels)
     if a.cmd == "calibrate":
         res = calibration(J)
-        print(f"level (held-out windows vs train reels) {J.level:.1f}; level_hold (train windows vs reel 5) {J.level_hold:.1f}")
+        print(f"v{J.version} level (held-out windows vs train reels) {J.level:.1f}; level_hold (train windows vs held-out) "
+          f"{J.level_hold:.1f}")
         for r in res:
             print(f"{r['label']:40s} judge {r['judge']:6.2f}  judge_hold {r['judge_hold']:6.2f}  "
                   f"kid_train {r['kid_train']:7.1f}  kid_hold {r['kid_hold']:7.1f}", flush=True)
-        json.dump({"net": a.net, "res": a.res, "n": a.n, "level": J.level, "level_hold": J.level_hold, "cases": res},
+        json.dump({"net": a.net, "res": a.res, "n": a.n, "version": J.version, "holdout": list(J.holdout),
+                   "level": J.level, "level_hold": J.level_hold, "cases": res},
                   open(a.out, "w"), indent=1)
         return
     J2 = Judge(a.also, a.res, a.n, a.reels) if a.also else None

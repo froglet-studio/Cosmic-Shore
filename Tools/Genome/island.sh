@@ -9,6 +9,8 @@
 # SS=2 renders every clip at 2x and filters it down (closer to the downscaled reels, 2 to 2.7x slower);
 # JUDGE=1.0 adds the fixed perceptual judge (agenome/judge.py, ImageNet features vs the reels) to the fitness,
 # with STATW (weight of the statistics, default 1.0) and CRITICW (the online critic, default 0.5) beside it.
+# The reels are three sources (reel05 re-cuts reel03, reel04 re-cuts reel02): reels 1, 2, 4 train every measure and
+# reels 3, 5 are held out (v2 fitness, 2026-11-10 18:00).
 # It runs in the FOREGROUND (a cloud container kills detached processes once it idles after a turn): start it as a
 # tracked background task (Bash run_in_background, 2 h timeout) and start it again when that ends - it resumes from
 # its own population. BG=1 detaches it with nohup instead (only on a machine that stays up).
@@ -36,7 +38,7 @@ F=$SHARE/fitness
 mkdir -p "$WORK/reels"
 for d in "$F"/reels_256x144/*/; do n=$(basename "$d"); mkdir -p "$WORK/reels/$n"; cp -n "$d/frames.npy" "$WORK/reels/$n/" ; done
 WORKERS=${WORKERS:-$(nproc)}
-SEEDS=${SEEDS:-"$SHARE/seeds/[!wt]*/*.json $SHARE/seeds/theta/*.json $SHARE/genome/handmade/*.json"}
+SEEDS=${SEEDS:-"$SHARE/seeds/[!wt]*/*.json $SHARE/seeds/theta/*.json $SHARE/designs/*/*.json $SHARE/genome/handmade/*.json"}
 set -f; read -r -a SEED_ARGS <<< "$SEEDS"; set +f
 RESUME_ARGS=()
 OWN=()
@@ -46,8 +48,8 @@ elif [ ${#OWN[@]} -gt 0 ]; then RESUME_ARGS=(--resume "${OWN[@]}"); fi
 GENS=$(( HOURS * 90 ))
 cd "$WORK"
 CMD=(python3 -m agenome.search --run "$WORK/run_$NAME" \
-  --stats "$F/target_stats_reels_train.npz" --hold "$F/target_stats_reel05_hold.npz" \
-  --real "$WORK/reels/reel0[1-4]/frames.npy" --real-hold "$WORK/reels/reel05/frames.npy" \
+  --stats "$F/target_stats_train_v2.npz" --hold "$F/target_stats_hold_v2.npz" \
+  --real "$WORK/reels/reel0[124]/frames.npy" --real-hold "$WORK/reels/reel0[35]/frames.npy" \
   --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
   --judge-w "${JUDGE:-0}" --stat-w "${STATW:-1.0}" --critic-w "${CRITICW:-0.5}" \
   --share "${RUNS:-$SHARE/runs}" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
