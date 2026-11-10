@@ -186,9 +186,13 @@ anywhere should ever receive a color that can be traced somewhere but a colorset
 every other set computes its own from its pigments: greys keep, UI grounds take the set's Jade face hue, everything
 else of family F wears the set's F **rim** at the original's brightness and whiteness, palette-baked materials take the
 set's own field. A new set gets all of them from the writer; to retune one for a set, put it in that set's `traced`
-(`{"<id>": "#RRGGBB"}`) and run the writer. The runtime painters are `UIThemeLive` (the UI) and `WorldColorTrace` (the
-world); code and configs read `ColorTrace.Retrace(role, colour)`. What the trace cannot reach yet (shader constants,
-textures, caches copied before a wear) is section 2 of that doc.
+(`{"<id>": "#RRGGBB"}`) and run the writer. The writer then keeps every value of every set naming one colour (the
+runtime finds a colour by its value, from whichever set painted it) and UI values clear of every set's UI theme
+tokens, moving a clash to the nearest free 8-bit value; so **a new set is written with every other set in one run**
+(`author_colour_set_assets.py`, then `colour_trace.py --write-photic`), and `colour_trace.py --check` fails if any value
+of any set could be misread. The runtime painters are `UIThemeLive` (the UI) and `WorldColorTrace` (the world); code
+and configs read `ColorTrace.Retrace(role, colour)`. What the trace cannot reach yet (shader constants, textures,
+caches copied before a wear) is section 2 of that doc.
 
 ## 9. Traps (each one cost a set)
 

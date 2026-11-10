@@ -15,8 +15,10 @@ namespace CosmicShore.ScriptableObjects
     /// <para>A traced colour is found on screen by its value. Its id is <c>role:RRGGBB</c>: the role (<c>ui</c> for
     /// canvas graphics, text, selectables and UI materials; <c>world</c> for materials, particles, trails, lights,
     /// cameras and the sky) and the colour as authored in 8-bit channels, with <c>xN.NN</c> (its brightest channel)
-    /// when it is HDR. A painter that finds a colour asks <see cref="TryRetrace"/>: the colour may be the authored
-    /// (Photic) value or the value the set worn before painted, and the answer keeps the found colour's alpha.
+    /// when it is HDR. So the id names the authored colour itself, and a colour on screen is found as authored (the id),
+    /// or as any set worn this session painted it (its values). The tool keeps every value of every set naming one
+    /// colour, in either role, so whichever set painted a colour it is found again. A painter that finds a colour asks
+    /// <see cref="TryRetrace"/>, and the answer keeps the found colour's alpha.
     /// <c>ui-token:&lt;Token&gt;</c> ids carry UI theme tokens a set gives directly (<see cref="Get"/>).</para>
     /// <see cref="Changed"/> is raised after each <see cref="Wear"/>; painters repaint then.
     /// </summary>
@@ -35,15 +37,22 @@ namespace CosmicShore.ScriptableObjects
         /// Never reset, so a cache from an earlier play session can never match.</summary>
         public static int Version { get; private set; }
 
-        static SO_ColorSet _worn, _authored, _previous;
-        // set -> (value key of the set's colour for an id -> that id): how a colour found on screen is named
-        static readonly Dictionary<SO_ColorSet, Dictionary<long, string>> Reverse = new();
+        static SO_ColorSet _worn, _authored;
+        // every set worn since the authored set was named: what can have painted a colour on screen
+        static readonly List<SO_ColorSet> Seen = new();
+        // value key -> id: each id's own (authored) colour, then the authored set's values, then every seen set's
+        static readonly Dictionary<long, string> Names = new(1024);
+        static bool _named;
+
+        const long UiBit = 1L << 52;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
-            _worn = _authored = _previous = null;
-            Reverse.Clear();
+            _worn = _authored = null;
+            Seen.Clear();
+            Names.Clear();
+            _named = false;
             Changed = null;
         }
 
@@ -53,19 +62,25 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>The set the game was authored in (Photic), or null when none is known.</summary>
         public static SO_ColorSet Authored => _authored;
 
-        /// <summary>True when a set other than the authored one is worn: something on screen may need repainting.</summary>
-        public static bool IsRepainting => _worn && _authored && _worn != _authored;
-
         /// <summary>
         /// Wears <paramref name="worn"/> (null: back to the authored colours). <paramref name="authored"/> is the set the
-        /// assets were authored in: a value found on screen is matched against it, and against the set worn before.
+        /// assets were authored in. A colour found on screen is matched against the ids (the authored colours) and
+        /// against every set worn since (what they painted); a new authored set starts that history again.
         /// </summary>
         public static void Wear(SO_ColorSet worn, SO_ColorSet authored)
         {
-            var next = worn ? worn : authored;
-            _previous = _worn ? _worn : authored;
-            _worn = next;
-            _authored = authored;
+            if (authored != _authored)
+            {
+                _authored = authored;
+                Seen.Clear();
+                _named = false;
+            }
+            _worn = worn ? worn : authored;
+            if (_worn && _worn != _authored && !Seen.Contains(_worn))
+            {
+                Seen.Add(_worn);
+                _named = false;
+            }
             Version++;
             Changed?.Invoke();
         }
@@ -84,18 +99,27 @@ namespace CosmicShore.ScriptableObjects
             _worn && _worn.TryGetTracedColor(id, out var c) ? c : fallback;
 
         /// <summary>
-        /// A colour found on screen in <paramref name="role"/>, as authored or as the previous set painted it: the worn
+        /// A colour found on screen in <paramref name="role"/>, as authored or as a set worn before painted it: the worn
         /// set's colour for it, with <paramref name="current"/>'s alpha. The other role is asked when this one does not
-        /// know the colour (a config colour can be painted on a canvas or in the world). False, and
-        /// <paramref name="worn"/> unchanged, when the colour is not traced.
+        /// know the colour (a config colour can be painted on a canvas or in the world). A colour that already is the
+        /// worn set's (to its 8-bit id) comes back exactly as it is, so a repaint changes nothing twice and wearing
+        /// Photic leaves every baked colour alone. False, and <paramref name="worn"/> unchanged, when the colour is not
+        /// traced.
         /// </summary>
         public static bool TryRetrace(string role, Color current, out Color worn)
         {
             worn = current;
             if (!_worn) return false;
+            if (!_named) Name();
             bool ui = role == Ui;
-            if (!TryIdOf(Key(ui, current), out var id) && !TryIdOf(Key(!ui, current), out id)) return false;
+            long key = Key(ui, current);
+            if (!Names.TryGetValue(key, out var id))
+            {
+                key = Key(!ui, current);
+                if (!Names.TryGetValue(key, out id)) return false;
+            }
             if (!_worn.TryGetTracedColor(id, out var c)) return false;
+            if (Key((key & UiBit) != 0, c) == key) return true;      // already the worn colour
             worn = new Color(c.r, c.g, c.b, current.a);
             return true;
         }
@@ -104,13 +128,6 @@ namespace CosmicShore.ScriptableObjects
         /// painter with a colour literal or a config colour makes before it paints.</summary>
         public static Color Retrace(string role, Color authored) =>
             TryRetrace(role, authored, out var worn) ? worn : authored;
-
-        static bool TryIdOf(long key, out string id)
-        {
-            if (TryIdIn(_previous, key, out id)) return true;
-            if (_authored != _previous && TryIdIn(_authored, key, out id)) return true;
-            return false;
-        }
 
         /// <summary>
         /// The value id of a colour in a role: <c>role:RRGGBB</c>, each channel as Mathf.RoundToInt(v * 255) of the
@@ -126,6 +143,19 @@ namespace CosmicShore.ScriptableObjects
             string id = role + ":" + rgb.ToString("X6", CultureInfo.InvariantCulture);
             return n == 0 ? id : id + "x" + (n / 100).ToString(CultureInfo.InvariantCulture) + "." +
                                  (n % 100).ToString("00", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// The colour a value id names (its authored colour, to 8 bits; HDR at its brightest channel): what
+        /// <see cref="ValueId"/> packs back to the same id. False for a <c>ui-token:</c> id or anything that is no value id.
+        /// </summary>
+        public static bool TryColorOf(string id, out Color color)
+        {
+            color = default;
+            if (!TryKeyOf(id, out long k)) return false;
+            float n = ((k >> 24) & 0xFFFFFFF) / 100f, peak = n > 0f ? n : 1f;
+            color = new Color(((k >> 16) & 0xFF) / 255f * peak, ((k >> 8) & 0xFF) / 255f * peak, (k & 0xFF) / 255f * peak, 1f);
+            return true;
         }
 
         /// <summary>
@@ -145,32 +175,81 @@ namespace CosmicShore.ScriptableObjects
                 b /= peak;
             }
             long rgb = ((long)Byte(r) << 16) | ((long)Byte(g) << 8) | (long)Byte(b);
-            return (ui ? 1L << 52 : 0L) | (Math.Min(hundredths, 0xFFFFFFFL) << 24) | rgb;
+            return (ui ? UiBit : 0L) | (Math.Min(hundredths, 0xFFFFFFFL) << 24) | rgb;
         }
 
         static int Byte(float v) => Mathf.Clamp(Mathf.RoundToInt(v * 255f), 0, 255);
 
-        // The id whose value in `set` has value id `key` (built once per set).
-        static bool TryIdIn(SO_ColorSet set, long key, out string id)
+        // The key a value id names, read from the id itself: role:RRGGBB or role:RRGGBBxN.NN.
+        static bool TryKeyOf(string id, out long key)
         {
-            id = null;
-            if (!set || set.TracedColors == null) return false;
-            if (!Reverse.TryGetValue(set, out var map))
+            key = 0;
+            if (string.IsNullOrEmpty(id)) return false;
+            int at;
+            bool ui;
+            if (id.StartsWith(Ui + ":", StringComparison.Ordinal)) { ui = true; at = Ui.Length + 1; }
+            else if (id.StartsWith(World + ":", StringComparison.Ordinal)) { ui = false; at = World.Length + 1; }
+            else return false;
+            if (id.Length < at + 6) return false;
+            long rgb = 0;
+            for (int i = at; i < at + 6; i++)
             {
-                map = new Dictionary<long, string>(set.TracedColors.Length);
-                foreach (var t in set.TracedColors)
-                {
-                    if (string.IsNullOrEmpty(t.Id)) continue;
-                    bool ui = t.Id.StartsWith(Ui + ":", StringComparison.Ordinal);
-                    if (!ui && !t.Id.StartsWith(World + ":", StringComparison.Ordinal)) continue;
-                    map[Key(ui, t.Color)] = t.Id;
-                }
-                Reverse[set] = map;
+                int h = Hex(id[i]);
+                if (h < 0) return false;
+                rgb = (rgb << 4) | (uint)h;
             }
-            return map.TryGetValue(key, out id);
+            long hundredths = 0;
+            int p = at + 6;
+            if (p < id.Length)
+            {
+                // xN.NN: the peak in hundredths
+                if (id[p] != 'x') return false;
+                bool dot = false;
+                int decimals = 0;
+                for (int i = p + 1; i < id.Length; i++)
+                {
+                    char ch = id[i];
+                    if (ch == '.' && !dot) { dot = true; continue; }
+                    if (ch < '0' || ch > '9') return false;
+                    hundredths = hundredths * 10 + (ch - '0');
+                    if (dot) decimals++;
+                }
+                if (decimals != 2) return false;
+            }
+            key = (ui ? UiBit : 0L) | (Math.Min(hundredths, 0xFFFFFFFL) << 24) | rgb;
+            return true;
         }
 
-        /// <summary>Forget the reverse maps (a set's traced colours were edited while playing).</summary>
-        public static void Invalidate() => Reverse.Clear();
+        static int Hex(char c) =>
+            c >= '0' && c <= '9' ? c - '0' : c >= 'A' && c <= 'F' ? c - 'A' + 10 : c >= 'a' && c <= 'f' ? c - 'a' + 10 : -1;
+
+        // Every colour a traced id can show on screen, named: its id (the authored colour), then what the authored set
+        // and every set worn since paint for it. The first claim of a value keeps it (the tool keeps them apart).
+        static void Name()
+        {
+            Names.Clear();
+            if (_authored && _authored.TracedColors != null)
+                foreach (var t in _authored.TracedColors)
+                    if (TryKeyOf(t.Id, out long k)) Names.TryAdd(k, t.Id);
+            NameValuesOf(_authored);
+            foreach (var set in Seen) NameValuesOf(set);
+            _named = true;
+        }
+
+        static void NameValuesOf(SO_ColorSet set)
+        {
+            if (!set || set.TracedColors == null) return;
+            foreach (var t in set.TracedColors)
+            {
+                if (string.IsNullOrEmpty(t.Id)) continue;
+                bool ui = t.Id.StartsWith(Ui + ":", StringComparison.Ordinal);
+                if (!ui && !t.Id.StartsWith(World + ":", StringComparison.Ordinal)) continue;
+                Names.TryAdd(Key(ui, t.Color), t.Id);
+            }
+        }
+
+        /// <summary>Forget the names (a set's traced colours were edited while playing); they are built again on the
+        /// next lookup.</summary>
+        public static void Invalidate() => _named = false;
     }
 }

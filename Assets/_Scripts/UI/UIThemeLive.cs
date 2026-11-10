@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
@@ -28,10 +29,12 @@ namespace CosmicShore.UI
     /// <item>the sea lines (CosmicShore/UI/SeaLines): drawn with a run-time copy of their material in the set's Jade,
     /// Blue and Ruby rims. The material assets are never written.</item>
     /// </list>
-    /// UI that appears later paints itself (the kit reads the live tokens on enable); for the rest, a root canvas whose
-    /// hierarchy changed is swept again within a quarter of a second (<see cref="Tick"/>; the list of root canvases is
-    /// refreshed once a second), and every canvas of a newly loaded scene. A view that paints from data takes the new
-    /// theme at its next refresh, or listens to <see cref="Changed"/>.
+    /// UI that appears later is born in the theme: the UI prefab assets in memory are painted where they live (as the
+    /// world colour trace paints world prefabs; in the editor each change is put back when play ends), and the kit
+    /// reads the live tokens on enable. For what comes from elsewhere, a root canvas whose hierarchy changed is swept
+    /// again within a quarter of a second (<see cref="Tick"/>; the list of root canvases is refreshed once a second),
+    /// and every canvas of a newly loaded scene. A view that paints from data takes the new theme at its next refresh,
+    /// or listens to <see cref="Changed"/>.
     /// </summary>
     public static class UIThemeLive
     {
@@ -45,6 +48,7 @@ namespace CosmicShore.UI
         static readonly HashSet<Material> SeaCopySet = new();
         static readonly Dictionary<int, int> CanvasCounts = new();           // root canvas id -> hierarchyCount
         static readonly Dictionary<int, float> CanvasSwept = new();          // root canvas id -> when it was last swept
+        static readonly HashSet<int> CanvasDirty = new();                    // root canvases changed since their last sweep
         const float SweepEvery = 0.25f;   // a canvas whose hierarchy keeps changing is swept at most this often
         static readonly List<Canvas> RootCanvases = new(16);
         static readonly List<Graphic> Scratch = new(256);
@@ -84,6 +88,7 @@ namespace CosmicShore.UI
             SeaCopySet.Clear();
             CanvasCounts.Clear();
             CanvasSwept.Clear();
+            CanvasDirty.Clear();
             RootCanvases.Clear();
             _nextTick = 0f;
             Changed = null;
@@ -157,11 +162,18 @@ namespace CosmicShore.UI
             {
                 if (!canvas) continue;
                 int id = canvas.GetInstanceID(), count = canvas.transform.hierarchyCount;
-                if (CanvasCounts.TryGetValue(id, out var was) && was == count) continue;
-                // A HUD whose rows come and go every frame is swept at most SweepEvery seconds apart: its count stays
-                // stale until then, so the change is still seen.
+                // Every change of the count marks the canvas, so a change seen while it waits out its SweepEvery is
+                // still swept when the wait ends, even if the count has come back to the last one by then (a toast
+                // gone and another come).
+                if (!CanvasCounts.TryGetValue(id, out var was) || was != count)
+                {
+                    CanvasCounts[id] = count;
+                    CanvasDirty.Add(id);
+                }
+                if (!CanvasDirty.Contains(id)) continue;
+                // A HUD whose rows come and go every frame is swept at most SweepEvery seconds apart.
                 if (CanvasSwept.TryGetValue(id, out var at) && unscaledTime - at < SweepEvery) continue;
-                CanvasCounts[id] = count;
+                CanvasDirty.Remove(id);
                 CanvasSwept[id] = unscaledTime;
                 SweepCanvas(canvas.gameObject, _live);
                 RepaintKit(canvas.gameObject);
@@ -195,8 +207,10 @@ namespace CosmicShore.UI
                 RetraceShadow(sh, previous);
             foreach (var f in Object.FindObjectsByType<TMP_InputField>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 RetraceInput(f, previous);
+            PaintPrefabAssets(previous);
             RepaintKit(null);
             CanvasCounts.Clear();
+            CanvasDirty.Clear();
             RootCanvases.Clear();
             foreach (var canvas in Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
             {
@@ -204,6 +218,109 @@ namespace CosmicShore.UI
                 RootCanvases.Add(canvas);
                 CanvasCounts[canvas.GetInstanceID()] = canvas.transform.hierarchyCount;
             }
+        }
+
+        // ------------------------------------------------------------------ UI prefab assets in memory
+        // Painted where they live, so the rows, cards and windows instantiated from them are born in the theme (a list
+        // rebuilt with as many rows as it had never changes its canvas's count, so the sweep alone would miss it). The
+        // same colours as on screen: a Graphic's, a vertex gradient, a ColorTint selectable's, a shadow's, an input
+        // field's. Never the sea lines' material: a prefab asset never takes a run-time copy. In the editor every change
+        // is recorded and put back when play ends (WorldColorTrace.RecordAssetChange).
+
+        static void PaintPrefabAssets(ColorSetUITheme.Palette from)
+        {
+            if (WorldColorTrace.IsStopped) return;   // play is ending: the editor has put the assets back
+            foreach (var g in Resources.FindObjectsOfTypeAll<Graphic>())
+            {
+                if (!IsPrefabAsset(g)) continue;
+                var was = g.color;
+                var to = Retraced(was, from);
+                if (!Same(was, to))
+                {
+                    bool records = WorldColorTrace.RecordsAsset(g);
+                    g.color = to;
+                    if (records) RecordGraphic(g, was, to);
+                }
+                if (g is TMP_Text text && text.enableVertexGradient)
+                {
+                    var v = text.colorGradient;
+                    var w = new VertexGradient(Retraced(v.topLeft, from), Retraced(v.topRight, from),
+                                               Retraced(v.bottomLeft, from), Retraced(v.bottomRight, from));
+                    if (!SameGradient(v, w))
+                    {
+                        bool records = WorldColorTrace.RecordsAsset(text);
+                        text.colorGradient = w;
+                        if (records) RecordGradient(text, v, w);
+                    }
+                }
+            }
+            foreach (var sel in Resources.FindObjectsOfTypeAll<Selectable>())
+            {
+                if (sel is KitSelectableBase || sel.transition != Selectable.Transition.ColorTint || !IsPrefabAsset(sel)) continue;
+                var b = sel.colors;
+                var to = b;
+                to.normalColor = Retraced(b.normalColor, from);
+                to.highlightedColor = Retraced(b.highlightedColor, from);
+                to.pressedColor = Retraced(b.pressedColor, from);
+                to.selectedColor = Retraced(b.selectedColor, from);
+                to.disabledColor = Retraced(b.disabledColor, from);
+                if (to == b) continue;
+                bool records = WorldColorTrace.RecordsAsset(sel);
+                sel.colors = to;
+                if (records) RecordTint(sel, b, to);
+            }
+            foreach (var sh in Resources.FindObjectsOfTypeAll<Shadow>())
+            {
+                if (!IsPrefabAsset(sh)) continue;
+                var was = sh.effectColor;
+                var to = Retraced(was, from);
+                if (Same(was, to)) continue;
+                bool records = WorldColorTrace.RecordsAsset(sh);
+                sh.effectColor = to;
+                if (records) RecordShadow(sh, was, to);
+            }
+            foreach (var f in Resources.FindObjectsOfTypeAll<TMP_InputField>())
+            {
+                if (!IsPrefabAsset(f)) continue;
+                var caret = f.caretColor;
+                var caretTo = Retraced(caret, from);
+                var sel = f.selectionColor;
+                var selTo = Retraced(sel, from);
+                if (Same(caret, caretTo) && Same(sel, selTo)) continue;
+                bool records = WorldColorTrace.RecordsAsset(f);
+                f.caretColor = caretTo;
+                f.selectionColor = selTo;
+                if (records) RecordInput(f, caret, caretTo, sel, selTo);
+            }
+        }
+
+        // A component of a prefab asset (not in any scene): in the editor, what lives in an asset file.
+        static bool IsPrefabAsset(Component c) =>
+            c && (WorldColorTrace.Editor != null ? WorldColorTrace.RecordsAsset(c) : !c.gameObject.scene.IsValid());
+
+        static bool SameGradient(VertexGradient a, VertexGradient b) =>
+            a.topLeft == b.topLeft && a.topRight == b.topRight && a.bottomLeft == b.bottomLeft && a.bottomRight == b.bottomRight;
+
+        static bool Exact(Color a, Color b) =>
+            Mathf.Abs(a.r - b.r) < 1e-6f && Mathf.Abs(a.g - b.g) < 1e-6f && Mathf.Abs(a.b - b.b) < 1e-6f && Mathf.Abs(a.a - b.a) < 1e-6f;
+
+        // The closures live here, made only when the editor records a change (never in a player).
+        static void RecordGraphic(Graphic g, Color was, Color painted) =>
+            WorldColorTrace.RecordAssetChange(g, 1, was, painted, () => g.color, v => g.color = v, Exact);
+
+        static void RecordGradient(TMP_Text t, VertexGradient was, VertexGradient painted) =>
+            WorldColorTrace.RecordAssetChange(t, 2, was, painted, () => t.colorGradient, v => t.colorGradient = v, SameGradient);
+
+        static void RecordTint(Selectable s, ColorBlock was, ColorBlock painted) =>
+            WorldColorTrace.RecordAssetChange(s, 1, was, painted, () => s.colors, v => s.colors = v, (a, b) => a == b);
+
+        static void RecordShadow(Shadow sh, Color was, Color painted) =>
+            WorldColorTrace.RecordAssetChange(sh, 1, was, painted, () => sh.effectColor, v => sh.effectColor = v, Exact);
+
+        static void RecordInput(TMP_InputField f, Color caret, Color caretTo, Color sel, Color selTo)
+        {
+            WorldColorTrace.RecordAssetChange(f, 1, caret, caretTo, () => f.caretColor, v => f.caretColor = v, Exact);
+            WorldColorTrace.RecordAssetChange(f, 2, sel, selTo, () => f.selectionColor, v => f.selectionColor = v, Exact);
         }
 
         // The kit paints from tokens: ask it to paint again (null root: everything loaded).

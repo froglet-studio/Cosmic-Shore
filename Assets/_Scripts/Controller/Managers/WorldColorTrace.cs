@@ -17,49 +17,70 @@ namespace CosmicShore.Gameplay
     ///
     /// <para>On every <see cref="ColorTrace.Changed"/> (a set worn, previewed or applied) and every scene load, each
     /// colour below that the colour trace knows becomes the worn set's value for it (<see cref="ColorTrace.TryRetrace"/>,
-    /// role world; world text, role ui), alpha kept:</para>
+    /// role world; world text and UI-shader materials, role ui), alpha kept:</para>
     /// <list type="bullet">
-    /// <item>every Color property of every loaded material (the HyperSea sky, flora, fauna, effects; the prism and
-    /// crystal materials ThemeManager builds already wear the set and are left as they are);</item>
+    /// <item>every Color property of every loaded material (the HyperSea sky, flora, fauna, effects), except the
+    /// colours ThemeManager paints on its domain material sets from the domain blocks (<see cref="Own"/>);</item>
     /// <item>particle systems (start colour, colour over lifetime and by speed, trails, colour custom data), trails and
-    /// lines, lights, solid-colour camera clears, sprites, world-space TextMesh Pro, fog and ambient light, and
-    /// post-processing colour parameters.</item>
+    /// lines, lights, solid-colour game camera clears, sprites, world-space TextMesh Pro, fog and ambient light, and
+    /// post-processing colour parameters. When the sky's material changes, the ambient light and reflections it gives
+    /// are worked out again (<see cref="DynamicGI.UpdateEnvironment"/>).</item>
     /// </list>
     /// Prefab assets and materials are painted where they live in memory, so everything instantiated afterwards is
-    /// born in the worn set and nothing is repainted per frame or per spawn. In a player nothing is saved; in the editor
-    /// every asset touched is put back when play ends, or before the editor saves assets during play
-    /// (<c>WorldColorTraceEditor</c>), so a .mat or prefab in git never takes a set's colours.
+    /// born in the worn set and nothing is repainted per frame or per spawn. A material loaded later (a
+    /// <c>Resources.Load</c> on first use) is painted by its loader (<see cref="Paint(Material)"/>; the gate,
+    /// <c>colour_trace.py --check</c>, names any loader that does not). In a player nothing is saved; in the editor
+    /// every asset colour a repaint gave is put back when play ends, or before the editor saves assets during play,
+    /// unless a person changed it since (<c>WorldColorTraceEditor</c>), so a .mat or prefab in git never takes a set's
+    /// colours. Nothing is painted once play is stopping.
     /// </summary>
     public static class WorldColorTrace
     {
         /// <summary>Raised after a repaint, with the number of colours changed.</summary>
         public static event Action<int> Repainted;
 
-        /// <summary>Set by the editor: true for an object that lives in an asset file (what must be put back).</summary>
-        public static Func<Object, bool> IsPersistent;
+        /// <summary>What the editor tells the painter (null in a player, where nothing is recorded or skipped).</summary>
+        public interface IEditorHooks
+        {
+            /// <summary>True for an object that lives in an asset file: what a repaint changes in it is recorded and put
+            /// back. Asked before the first change to it.</summary>
+            bool IsAsset(Object o);
 
-        static readonly List<(Object owner, Action restore)> Restores = new();
-        static readonly HashSet<long> Recorded = new();
+            /// <summary>True for an object the editor itself shows (Prefab Mode's stage, an inspector preview): never
+            /// painted, since saving the stage would write the set's colours into the prefab.</summary>
+            bool IsPreview(Object o);
+
+            /// <summary>After each change a repaint made to an asset.</summary>
+            void Changed(Object asset);
+        }
+
+        /// <summary>Set by the editor (<c>WorldColorTraceEditor</c>).</summary>
+        public static IEditorHooks Editor;
+
+        static readonly List<Slot> Slots = new();
+        static readonly Dictionary<long, Slot> SlotOf = new();
+        static readonly HashSet<long> Owned = new();
         static readonly List<Material> Painted = new(64);
-        static readonly Dictionary<Shader, int[]> ColorProps = new();
+        static readonly Dictionary<Shader, (int[] ids, string role)> Shaders = new();
         static readonly List<int> Scratch = new(32);
         static readonly ParticleSystemCustomData[] CustomStreams = { ParticleSystemCustomData.Custom1, ParticleSystemCustomData.Custom2 };
-        static bool _installed;
+        static bool _installed, _stopped;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
             Repainted = null;
-            Restores.Clear();
-            Recorded.Clear();
+            Slots.Clear();
+            SlotOf.Clear();
+            Owned.Clear();
             Painted.Clear();
-            ColorProps.Clear();
-            ShaderRoles.Clear();
+            Shaders.Clear();
             _installed = false;
+            _stopped = false;
         }
 
-        // After SubsystemRegistration (which clears ColorTrace.Changed) and before the first scene's Awake. The scene
-        // hook is removed first: with domain reload off, SceneManager keeps the last play session's handler.
+        // After SubsystemRegistration (which clears ColorTrace.Changed) and before the first scene's Awake. The scene and
+        // quit hooks are removed first: with domain reload off, Unity keeps the last play session's handlers.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Install()
         {
@@ -69,21 +90,33 @@ namespace CosmicShore.Gameplay
             ColorTrace.Changed += Repaint;
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneLoaded += OnSceneLoaded;
+            Application.quitting -= Stop;
+            Application.quitting += Stop;
         }
 
         static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => Repaint();
+
+        /// <summary>
+        /// Play is ending (Application.quitting; the editor calls it when play stops, before it puts the assets back):
+        /// nothing is painted from now on, so a set worn while the scenes are torn down (ThemeManager going) never
+        /// writes into an asset again.
+        /// </summary>
+        public static void Stop() => _stopped = true;
+
+        /// <summary>True once play is ending (<see cref="Stop"/>).</summary>
+        public static bool IsStopped => _stopped;
 
         /// <summary>The materials the last repaint changed (ThemeManager re-stamps the prism entities drawn with them).</summary>
         public static IReadOnlyList<Material> LastPainted => Painted;
 
         /// <summary>True while an asset holds a colour a repaint gave it (the editor puts it back).</summary>
-        public static bool HasAssetChanges => Restores.Count > 0;
+        public static bool HasAssetChanges => Slots.Count > 0;
 
         /// <summary>Paints everything loaded from the worn set. Play mode only.</summary>
         public static void Repaint()
         {
             Painted.Clear();
-            if (!Application.isPlaying || !ColorTrace.Worn) return;
+            if (!CanPaint) return;
             int changed = 0;
             foreach (var m in Resources.FindObjectsOfTypeAll<Material>()) changed += PaintMaterial(m);
             foreach (var ps in Resources.FindObjectsOfTypeAll<ParticleSystem>()) changed += PaintParticles(ps);
@@ -95,28 +128,79 @@ namespace CosmicShore.Gameplay
             foreach (var t in Resources.FindObjectsOfTypeAll<TextMeshPro>()) changed += PaintWorldText(t);
             foreach (var v in Resources.FindObjectsOfTypeAll<VolumeProfile>()) changed += PaintProfile(v);
             changed += PaintRenderSettings();
+            var sky = RenderSettings.skybox;
+            if (sky && Painted.Contains(sky)) DynamicGI.UpdateEnvironment();
             Repainted?.Invoke(changed);
         }
 
         /// <summary>
-        /// Puts back every asset a repaint touched (the editor calls this when play ends or before a save), then hands
-        /// each one to <paramref name="restored"/> (the editor clears its dirty flag: its file is unchanged).
+        /// Paints one material from the worn set: for a material loaded after the last repaint (a lazy
+        /// <c>Resources.Load</c>), so it is born in the set like everything already in memory. Returns the colours changed.
         /// </summary>
-        public static void RestoreAssets(Action<Object> restored = null)
+        public static int Paint(Material material) => CanPaint ? PaintMaterial(material) : 0;
+
+        static bool CanPaint => !_stopped && Application.isPlaying && ColorTrace.Worn;
+
+        /// <summary>
+        /// A material colour another painter owns: ThemeManager paints the domain material sets' colours from the worn
+        /// set's domain blocks, and the trace must never read one of those as a traced colour (a domain colour can equal
+        /// some set's value for a traced id). Left alone by every repaint.
+        /// </summary>
+        public static void Own(Material material, int propertyId)
         {
-            for (int i = Restores.Count - 1; i >= 0; i--)
+            if (material) Owned.Add(OwnedKey(material, propertyId));
+        }
+
+        static long OwnedKey(Material m, int propertyId) => ((long)m.GetInstanceID() << 32) ^ (uint)propertyId;
+
+        /// <summary>
+        /// For another painter that changes an asset's colour in memory (UIThemeLive paints UI prefab assets, so rows
+        /// instantiated from them are born in the worn set): asked before the change, true when the editor must put it
+        /// back. Always false in a player.
+        /// </summary>
+        public static bool RecordsAsset(Object owner) => Records(owner);
+
+        /// <summary>
+        /// Records a change another painter made to an asset (<see cref="RecordsAsset"/>): put back when play ends, or
+        /// before the editor saves, if the asset still holds <paramref name="painted"/>. <paramref name="slot"/> tells
+        /// one colour of the owner from another.
+        /// </summary>
+        public static void RecordAssetChange<T>(Object owner, long slot, T was, T painted, Func<T> get, Action<T> set,
+                                                Func<T, T, bool> same) =>
+            Record(owner, slot, was, painted, get, set, same);
+
+        /// <summary>The assets a repaint changed since play began (or since they were last put back).</summary>
+        public static IEnumerable<Object> ChangedAssets
+        {
+            get
             {
-                var (owner, restore) = Restores[i];
-                if (!owner) continue;
-                try
-                {
-                    restore();
-                    restored?.Invoke(owner);
-                }
-                catch (Exception e) { CSDebug.LogWarning($"WorldColorTrace: could not put back a colour on {owner.name}: {e.Message}"); }
+                var seen = new HashSet<Object>();
+                foreach (var s in Slots)
+                    if (s.Owner && seen.Add(s.Owner)) yield return s.Owner;
             }
-            Restores.Clear();
-            Recorded.Clear();
+        }
+
+        /// <summary>
+        /// Puts back every asset colour a repaint gave, if it still holds that colour; one a person (or the game) changed
+        /// since is theirs and is left alone. Then hands each asset to <paramref name="restored"/>, with true when every
+        /// colour recorded on it was put back (the editor clears its dirty flag only then).
+        /// </summary>
+        public static void RestoreAssets(Action<Object, bool> restored = null)
+        {
+            var whole = new Dictionary<Object, bool>();
+            for (int i = Slots.Count - 1; i >= 0; i--)
+            {
+                var s = Slots[i];
+                if (!s.Owner) continue;
+                bool back = false;
+                try { back = s.PutBack(); }
+                catch (Exception e) { CSDebug.LogWarning($"WorldColorTrace: could not put back a colour on {s.Owner.name}: {e.Message}"); }
+                whole[s.Owner] = (!whole.TryGetValue(s.Owner, out var all) || all) && back;
+            }
+            Slots.Clear();
+            SlotOf.Clear();
+            if (restored == null) return;
+            foreach (var pair in whole) restored(pair.Key, pair.Value);
         }
 
         // ------------------------------------------------------------------ painters
@@ -125,67 +209,81 @@ namespace CosmicShore.Gameplay
             ColorTrace.TryRetrace(role, c, out worn) && !Same(c, worn);
 
         static bool Same(Color a, Color b) =>
-            Mathf.Abs(a.r - b.r) < 1e-6f && Mathf.Abs(a.g - b.g) < 1e-6f && Mathf.Abs(a.b - b.b) < 1e-6f;
+            Mathf.Abs(a.r - b.r) < 1e-6f && Mathf.Abs(a.g - b.g) < 1e-6f && Mathf.Abs(a.b - b.b) < 1e-6f &&
+            Mathf.Abs(a.a - b.a) < 1e-6f;
 
-        static readonly Dictionary<Shader, string> ShaderRoles = new();
+        // A component the editor shows outside play (Prefab Mode's stage, an inspector preview) is never painted.
+        static bool Skips(Object o) => Editor != null && Editor.IsPreview(o);
 
-        // The role a material's colours are traced in, by its shader's name (colour_trace.py is_ui_shader), cached.
-        static string RoleOf(Shader shader)
+        // True when a change to `owner` must be recorded for the editor to put back (never in a player).
+        static bool Records(Object owner) => Editor != null && Editor.IsAsset(owner);
+
+        // The colour properties of a shader and the role its colours are traced in (colour_trace.py is_ui_shader), cached.
+        static (int[] ids, string role) ShaderInfo(Shader shader)
         {
-            if (ShaderRoles.TryGetValue(shader, out var role)) return role;
-            var n = shader.name;
-            role = n.StartsWith("UI/") || n.StartsWith("TextMeshPro/") || n.StartsWith("CosmicShore/UI/") ||
-                   n.StartsWith("Hidden/UI") || n.StartsWith("Sprites/")
+            if (Shaders.TryGetValue(shader, out var info)) return info;
+            Scratch.Clear();
+            for (int i = 0, n = shader.GetPropertyCount(); i < n; i++)
+                if (shader.GetPropertyType(i) == ShaderPropertyType.Color) Scratch.Add(shader.GetPropertyNameId(i));
+            var name = shader.name;
+            string role = name.StartsWith("UI/", StringComparison.Ordinal) ||
+                          name.StartsWith("TextMeshPro/", StringComparison.Ordinal) ||
+                          name.StartsWith("CosmicShore/UI/", StringComparison.Ordinal) ||
+                          name.StartsWith("Hidden/UI", StringComparison.Ordinal) ||
+                          name.StartsWith("Sprites/", StringComparison.Ordinal)
                 ? ColorTrace.Ui : ColorTrace.World;
-            ShaderRoles[shader] = role;
-            return role;
+            info = (Scratch.ToArray(), role);
+            Shaders[shader] = info;
+            return info;
         }
 
         static int PaintMaterial(Material m)
         {
             if (!m || !m.shader) return 0;
-            var props = ColorPropertiesOf(m.shader);
+            var (props, role) = ShaderInfo(m.shader);
             if (props.Length == 0) return 0;
-            string role = RoleOf(m.shader);
+            bool records = Records(m);
             int changed = 0;
             foreach (var id in props)
             {
+                if (Owned.Count > 0 && Owned.Contains(OwnedKey(m, id))) continue;
                 var c = m.GetColor(id);
                 if (!Retrace(role, c, out var worn)) continue;
-                if (Records(m)) RememberColor(m, id, c);
                 m.SetColor(id, worn);
+                if (records) RecordColor(m, id, c, worn);
                 changed++;
             }
             if (changed > 0) Painted.Add(m);
             return changed;
         }
 
-        static int[] ColorPropertiesOf(Shader shader)
-        {
-            if (ColorProps.TryGetValue(shader, out var ids)) return ids;
-            Scratch.Clear();
-            for (int i = 0, n = shader.GetPropertyCount(); i < n; i++)
-                if (shader.GetPropertyType(i) == ShaderPropertyType.Color) Scratch.Add(shader.GetPropertyNameId(i));
-            ids = Scratch.ToArray();
-            ColorProps[shader] = ids;
-            return ids;
-        }
-
         static int PaintParticles(ParticleSystem ps)
         {
-            if (!ps) return 0;
+            if (!ps || Skips(ps)) return 0;
+            bool records = Records(ps);
             int changed = 0;
             var main = ps.main;
-            if (Paint(main.startColor, out var start)) { var was = main.startColor; if (Records(ps)) Remember(ps, 1, () => { var mm = ps.main; mm.startColor = was; }); main.startColor = start; changed++; }
+            var start = main.startColor;
+            if (Paint(start, out var wornStart)) { main.startColor = wornStart; if (records) RecordGradient(ps, 1, start, wornStart); changed++; }
             var col = ps.colorOverLifetime;
-            if (col.enabled && Paint(col.color, out var life)) { var was = col.color; if (Records(ps)) Remember(ps, 2, () => { var m = ps.colorOverLifetime; m.color = was; }); col.color = life; changed++; }
+            if (col.enabled)
+            {
+                var life = col.color;
+                if (Paint(life, out var wornLife)) { col.color = wornLife; if (records) RecordGradient(ps, 2, life, wornLife); changed++; }
+            }
             var speed = ps.colorBySpeed;
-            if (speed.enabled && Paint(speed.color, out var bySpeed)) { var was = speed.color; if (Records(ps)) Remember(ps, 3, () => { var m = ps.colorBySpeed; m.color = was; }); speed.color = bySpeed; changed++; }
+            if (speed.enabled)
+            {
+                var bySpeed = speed.color;
+                if (Paint(bySpeed, out var wornSpeed)) { speed.color = wornSpeed; if (records) RecordGradient(ps, 3, bySpeed, wornSpeed); changed++; }
+            }
             var trails = ps.trails;
             if (trails.enabled)
             {
-                if (Paint(trails.colorOverLifetime, out var tl)) { var was = trails.colorOverLifetime; if (Records(ps)) Remember(ps, 4, () => { var m = ps.trails; m.colorOverLifetime = was; }); trails.colorOverLifetime = tl; changed++; }
-                if (Paint(trails.colorOverTrail, out var tt)) { var was = trails.colorOverTrail; if (Records(ps)) Remember(ps, 5, () => { var m = ps.trails; m.colorOverTrail = was; }); trails.colorOverTrail = tt; changed++; }
+                var tl = trails.colorOverLifetime;
+                if (Paint(tl, out var wornTl)) { trails.colorOverLifetime = wornTl; if (records) RecordGradient(ps, 4, tl, wornTl); changed++; }
+                var tt = trails.colorOverTrail;
+                if (Paint(tt, out var wornTt)) { trails.colorOverTrail = wornTt; if (records) RecordGradient(ps, 5, tt, wornTt); changed++; }
             }
             var custom = ps.customData;
             if (custom.enabled)
@@ -193,8 +291,11 @@ namespace CosmicShore.Gameplay
                 foreach (var stream in CustomStreams)
                 {
                     if (custom.GetMode(stream) != ParticleSystemCustomDataMode.Color) continue;
-                    var s = stream;
-                    if (Paint(custom.GetColor(s), out var cc)) { var was = custom.GetColor(s); if (Records(ps)) Remember(ps, 6 + (int)s, () => { var m = ps.customData; m.SetColor(s, was); }); custom.SetColor(s, cc); changed++; }
+                    var cc = custom.GetColor(stream);
+                    if (!Paint(cc, out var wornCc)) continue;
+                    custom.SetColor(stream, wornCc);
+                    if (records) RecordGradient(ps, 6 + (int)stream, cc, wornCc);
+                    changed++;
                 }
             }
             return changed;
@@ -246,62 +347,75 @@ namespace CosmicShore.Gameplay
 
         static int PaintTrail(TrailRenderer t)
         {
-            if (!t || !Paint(t.colorGradient, out var g)) return 0;
+            if (!t || Skips(t)) return 0;
             var was = t.colorGradient;
-            if (Records(t)) Remember(t, 1, () => t.colorGradient = was);
+            if (!Paint(was, out var g)) return 0;
+            bool records = Records(t);
             t.colorGradient = g;
+            if (records) RecordTrail(t, was, g);
             return 1;
         }
 
         static int PaintLine(LineRenderer l)
         {
-            if (!l || !Paint(l.colorGradient, out var g)) return 0;
+            if (!l || Skips(l)) return 0;
             var was = l.colorGradient;
-            if (Records(l)) Remember(l, 1, () => l.colorGradient = was);
+            if (!Paint(was, out var g)) return 0;
+            bool records = Records(l);
             l.colorGradient = g;
+            if (records) RecordLine(l, was, g);
             return 1;
         }
 
         static int PaintLight(Light l)
         {
-            if (!l || !Retrace(ColorTrace.World, l.color, out var c)) return 0;
+            if (!l || Skips(l)) return 0;
             var was = l.color;
-            if (Records(l)) Remember(l, 1, () => l.color = was);
+            if (!Retrace(ColorTrace.World, was, out var c)) return 0;
+            bool records = Records(l);
             l.color = c;
+            if (records) RecordLight(l, was, c);
             return 1;
         }
 
+        // Game cameras only: the scene view's, a preview's or a reflection probe's clear colour is the editor's.
         static int PaintCamera(Camera cam)
         {
-            if (!cam || cam.clearFlags != CameraClearFlags.SolidColor) return 0;
-            if (!Retrace(ColorTrace.World, cam.backgroundColor, out var c)) return 0;
+            if (!cam || cam.cameraType != CameraType.Game || cam.clearFlags != CameraClearFlags.SolidColor || Skips(cam)) return 0;
             var was = cam.backgroundColor;
-            if (Records(cam)) Remember(cam, 1, () => cam.backgroundColor = was);
+            if (!Retrace(ColorTrace.World, was, out var c)) return 0;
+            bool records = Records(cam);
             cam.backgroundColor = c;
+            if (records) RecordCamera(cam, was, c);
             return 1;
         }
 
         static int PaintSprite(SpriteRenderer s)
         {
-            if (!s || !Retrace(ColorTrace.World, s.color, out var c)) return 0;
+            if (!s || Skips(s)) return 0;
             var was = s.color;
-            if (Records(s)) Remember(s, 1, () => s.color = was);
+            if (!Retrace(ColorTrace.World, was, out var c)) return 0;
+            bool records = Records(s);
             s.color = c;
+            if (records) RecordSprite(s, was, c);
             return 1;
         }
 
         static int PaintWorldText(TextMeshPro t)
         {
-            if (!t || !Retrace(ColorTrace.Ui, t.color, out var c)) return 0;
+            if (!t || Skips(t)) return 0;
             var was = t.color;
-            if (Records(t)) Remember(t, 1, () => t.color = was);
+            if (!Retrace(ColorTrace.Ui, was, out var c)) return 0;
+            bool records = Records(t);
             t.color = c;
+            if (records) RecordText(t, was, c);
             return 1;
         }
 
         static int PaintProfile(VolumeProfile profile)
         {
             if (!profile || profile.components == null) return 0;
+            bool records = Records(profile);
             int changed = 0;
             foreach (var comp in profile.components)
             {
@@ -309,16 +423,17 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < comp.parameters.Count; i++)
                 {
                     if (comp.parameters[i] is not ColorParameter p || !p.overrideState) continue;
-                    if (!Retrace(ColorTrace.World, p.value, out var c)) continue;
                     var was = p.value;
-                    if (Records(profile)) Remember(profile, ((long)comp.GetInstanceID() << 8) + i, () => p.value = was);
+                    if (!Retrace(ColorTrace.World, was, out var c)) continue;
                     p.value = c;
+                    if (records) RecordParameter(profile, ((long)comp.GetInstanceID() << 8) + i, p, was, c);
                     changed++;
                 }
             }
             return changed;
         }
 
+        // The scene's render settings belong to the scene (never an asset), so nothing is recorded.
         static int PaintRenderSettings()
         {
             int changed = 0;
@@ -330,18 +445,134 @@ namespace CosmicShore.Gameplay
             return changed;
         }
 
-        // The lambda lives here, so the loop that calls it allocates nothing unless a change is recorded.
-        static void RememberColor(Material m, int id, Color was) => Remember(m, id, () => m.SetColor(id, was));
+        // ------------------------------------------------------------------ the editor's record (assets only)
+        // Each painter above captures nothing; the closures below are made only when an asset's change is recorded,
+        // which never happens in a player (Editor is null there).
 
-        // True when a change to `owner` must be recorded for the editor to put back (never in a player).
-        static bool Records(Object owner) => IsPersistent != null && IsPersistent(owner);
+        static void RecordColor(Material m, int id, Color was, Color painted) =>
+            Record(m, id, was, painted, () => m.GetColor(id), v => m.SetColor(id, v), SameColor);
 
-        // An asset's colour, recorded the first time a repaint changes it, so the editor can put it back.
-        static void Remember(Object owner, long slot, Action restore)
+        static void RecordGradient(ParticleSystem ps, int slot, ParticleSystem.MinMaxGradient was, ParticleSystem.MinMaxGradient painted) =>
+            Record(ps, slot, was, painted, () => Read(ps, slot), v => Write(ps, slot, v), SameGradient);
+
+        static void RecordTrail(TrailRenderer t, Gradient was, Gradient painted) =>
+            Record(t, 1, was, painted, () => t.colorGradient, v => t.colorGradient = v, SameGradientKeys);
+
+        static void RecordLine(LineRenderer l, Gradient was, Gradient painted) =>
+            Record(l, 1, was, painted, () => l.colorGradient, v => l.colorGradient = v, SameGradientKeys);
+
+        static void RecordLight(Light l, Color was, Color painted) =>
+            Record(l, 1, was, painted, () => l.color, v => l.color = v, SameColor);
+
+        static void RecordCamera(Camera cam, Color was, Color painted) =>
+            Record(cam, 1, was, painted, () => cam.backgroundColor, v => cam.backgroundColor = v, SameColor);
+
+        static void RecordSprite(SpriteRenderer s, Color was, Color painted) =>
+            Record(s, 1, was, painted, () => s.color, v => s.color = v, SameColor);
+
+        static void RecordText(TextMeshPro t, Color was, Color painted) =>
+            Record(t, 1, was, painted, () => t.color, v => t.color = v, SameColor);
+
+        static void RecordParameter(VolumeProfile profile, long slot, ColorParameter p, Color was, Color painted) =>
+            Record(profile, slot, was, painted, () => p.value, v => p.value = v, SameColor);
+
+        static ParticleSystem.MinMaxGradient Read(ParticleSystem ps, int slot) => slot switch
         {
-            if (!Records(owner)) return;
+            1 => ps.main.startColor,
+            2 => ps.colorOverLifetime.color,
+            3 => ps.colorBySpeed.color,
+            4 => ps.trails.colorOverLifetime,
+            5 => ps.trails.colorOverTrail,
+            _ => ps.customData.GetColor((ParticleSystemCustomData)(slot - 6)),
+        };
+
+        static void Write(ParticleSystem ps, int slot, ParticleSystem.MinMaxGradient v)
+        {
+            switch (slot)
+            {
+                case 1: { var m = ps.main; m.startColor = v; break; }
+                case 2: { var m = ps.colorOverLifetime; m.color = v; break; }
+                case 3: { var m = ps.colorBySpeed; m.color = v; break; }
+                case 4: { var m = ps.trails; m.colorOverLifetime = v; break; }
+                case 5: { var m = ps.trails; m.colorOverTrail = v; break; }
+                default: { var m = ps.customData; m.SetColor((ParticleSystemCustomData)(slot - 6), v); break; }
+            }
+        }
+
+        static readonly Func<Color, Color, bool> SameColor = Same;
+        static readonly Func<ParticleSystem.MinMaxGradient, ParticleSystem.MinMaxGradient, bool> SameGradient = SameMinMax;
+        static readonly Func<Gradient, Gradient, bool> SameGradientKeys = SameKeys;
+
+        static bool SameMinMax(ParticleSystem.MinMaxGradient a, ParticleSystem.MinMaxGradient b)
+        {
+            if (a.mode != b.mode) return false;
+            switch (a.mode)
+            {
+                case ParticleSystemGradientMode.Color: return Same(a.color, b.color);
+                case ParticleSystemGradientMode.TwoColors: return Same(a.colorMin, b.colorMin) && Same(a.colorMax, b.colorMax);
+                case ParticleSystemGradientMode.TwoGradients: return SameKeys(a.gradientMin, b.gradientMin) && SameKeys(a.gradientMax, b.gradientMax);
+                default: return SameKeys(a.gradient, b.gradient);
+            }
+        }
+
+        static bool SameKeys(Gradient a, Gradient b)
+        {
+            if (a == null || b == null) return a == b;
+            var ka = a.colorKeys;
+            var kb = b.colorKeys;
+            if (ka.Length != kb.Length) return false;
+            for (int i = 0; i < ka.Length; i++)
+                if (!Same(ka[i].color, kb[i].color) || Mathf.Abs(ka[i].time - kb[i].time) > 1e-6f) return false;
+            return true;
+        }
+
+        // An asset's colour: the value before the first repaint changed it (what is put back) and the value the last
+        // repaint gave (what it must still hold to be put back).
+        static void Record<T>(Object owner, long slot, T was, T painted, Func<T> get, Action<T> set, Func<T, T, bool> same)
+        {
             long key = ((long)owner.GetInstanceID() << 20) ^ slot;
-            if (Recorded.Add(key)) Restores.Add((owner, restore));
+            if (SlotOf.TryGetValue(key, out var s) && s is Slot<T> known) known.Painted = painted;
+            else
+            {
+                var fresh = new Slot<T>(owner, was, painted, get, set, same);
+                SlotOf[key] = fresh;
+                Slots.Add(fresh);
+            }
+            Editor?.Changed(owner);
+        }
+
+        abstract class Slot
+        {
+            public readonly Object Owner;
+            protected Slot(Object owner) => Owner = owner;
+
+            // Puts the first value back if the slot still holds what the last repaint gave; true when it did.
+            public abstract bool PutBack();
+        }
+
+        sealed class Slot<T> : Slot
+        {
+            readonly T _was;
+            readonly Func<T> _get;
+            readonly Action<T> _set;
+            readonly Func<T, T, bool> _same;
+            public T Painted;
+
+            public Slot(Object owner, T was, T painted, Func<T> get, Action<T> set, Func<T, T, bool> same) : base(owner)
+            {
+                _was = was;
+                Painted = painted;
+                _get = get;
+                _set = set;
+                _same = same;
+            }
+
+            public override bool PutBack()
+            {
+                if (!_same(_get(), Painted)) return false;
+                _set(_was);
+                return true;
+            }
         }
     }
 }

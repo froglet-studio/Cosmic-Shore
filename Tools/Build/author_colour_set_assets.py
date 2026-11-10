@@ -204,12 +204,18 @@ _PHOTIC_REF = None
 
 
 def traced_lines(key, s, pal):
-    """The set's TracedColors block: its value for every id of colour_trace.json (empty until the table exists)."""
+    """The set's TracedColors block: its value for every id of colour_trace.json (empty until the table exists). A
+    shipped set's values come from colour_trace.all_values, which keeps every set's values apart from every other's
+    (ColorTrace names a colour on screen by its value, from whichever set painted it); a set that is not in
+    colour_sets.json (a self-test's) gets its own values."""
     global _PHOTIC_REF
     import colour_trace as ct
     table = ct.load_table()
     if not table:
         return ["  TracedColors: []"]
+    shipped = ct.all_values()
+    if key in shipped and s == ct.set_defs().get(key):
+        return ct.traced_yaml(shipped[key])
     if _PHOTIC_REF is None:
         _PHOTIC_REF = cs.photic_reference()
     return ct.traced_yaml(ct.set_values(key, s, table, _PHOTIC_REF, pal))

@@ -261,7 +261,7 @@ MonoBehaviour:
     Color: {r: 0.234291583, g: 0.764150977, b: 0.360850453, a: 1}
     Note: '2 uses: Assets/_Prefabs/NotificationUI.prefab TextMeshProUGUI'
   - Id: ui:3DB2FF
-    Color: {r: 0.259833336, g: 0.882352412, b: 0.861692727, a: 1}
+    Color: {r: 0.254901975, g: 0.882352948, b: 0.862745106, a: 1}
     Note: 'UI theme token Selection; 119 uses: Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab TextMeshProUGUI; Assets/_Prefabs/UI Elements/Kit/KitTopNavTab.prefab Image'
   - Id: ui:3ED121
     Color: {r: 0.24255845, g: 0.820754707, b: 0.127758995, a: 1}

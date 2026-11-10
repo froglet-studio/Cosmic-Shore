@@ -22451,6 +22451,36 @@ editor configs: 0 errors in the changed files). Nothing here ran in Unity.
 6. **The colour-blind sets**: each set's rims should look like their names to that viewer (a deuteranope's and an
    achromat's as nearly as the eyes allow). A player with each vision is the only real test.
 
+Second round, the same day (the runtime review's findings; also NOT RUN IN EDITOR). The lookup now names a colour from
+its id (a UI theme token used in a material or code, the Presence orb's `_SpaceColor` among them, used to fall to the
+world repaint) and from every set worn in the session; the writer keeps every value of every set naming one colour,
+and UI values clear of every set's live tokens (939 values moved, none by more than 2/255); a colour already in the
+worn set is left exactly as it is. The world painter leaves ThemeManager's domain colours alone, skips Prefab Mode's
+stage and non-game cameras, recomputes the sky's ambient light, and the three lazily loaded traced materials paint
+themselves on load. UIThemeLive paints UI prefab assets in memory. The editor stops painting before it puts assets back,
+restores only what still holds the painted colour, keeps a dirty flag it did not cause, and restores before a mid-play
+recompile. Ran here: the same gates as above (`colour_trace.py --check/--self-test` with new negative controls,
+`author_colour_set_assets.py --check`, `check_console_logging.py`, `check_conditional_compilation.py`),
+`unity_refcompile` in the player, editor and player-dev configs (0 errors in the changed files), and the real
+`ColorTrace.cs` compiled with Roslyn and run under .NET 8 against the ten shipped sets (54,120 lookups, 0 misread; 79
+with the values the sets held before). Nothing here ran in Unity.
+
+7. **Run `ColorTraceTests`** (the new cases: a token found as authored and as Photic painted it, a worn colour left
+   exactly alone, a colour from two wears ago, the id round trip, every shipped set reading every other set's paint).
+8. **Edit an asset during play and stop**: with Nocturne worn, change a float on the HyperSea sky material and a traced
+   colour on a painted flora material in the inspector, then stop. Both edits stay and the sky material is still
+   marked unsaved; every colour you did not touch is back to its authored value (`git diff` after saving shows only
+   your edits).
+9. **Open a prefab in Prefab Mode during play**, browse a set in the Profile, stop: the stage still shows the authored
+   colours and saving it changes nothing.
+10. **Recompile during play** (with Preferences > General > Script Changes While Playing set to Recompile And Continue
+    Playing): save a C# file, let it reload, stop: `git status` shows no changed asset.
+11. **Lazily loaded materials**: under Nocturne, play Switchback at I4 (the path rays), a cell with black holes on the
+    Mobile look (the glow), and Astro League (the ball's trail): each wears Nocturne's colours from its first frame.
+12. **Rebuilt UI rows**: under Nocturne, open the hangar's ship list and a scoreboard twice (rebuilt with the same
+    number of rows): every row wears the theme, none flashes the authored Deep Sea colours.
+13. **The sky's light**: preview Photic, then Nocturne in the Profile: the lit surfaces' ambient tint follows the sky.
+
 ## 🔴 Colour sets under seven rules: Dart Frog, Nacre, Contrast and the vision sets re-derived, Nocturne's Gold 4° yellower (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/nifty-cray-41hy43`. `colour_sets.json` now holds every set to seven rules (`Tools/Build/colour_sets.py`,

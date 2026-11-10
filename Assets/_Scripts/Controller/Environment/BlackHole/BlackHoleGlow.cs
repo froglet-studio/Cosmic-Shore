@@ -75,6 +75,7 @@ namespace CosmicShore.Gameplay
                 if (reason != null)
                     CSDebug.LogWarning($"[BlackHole] The mobile glow cannot draw: {reason}. Holes draw as plain spheres.");
                 else s_material = material;
+                WorldColorTrace.Paint(s_material);   // loaded after the scene's repaint: born in the worn colour set
                 return s_material;
             }
         }

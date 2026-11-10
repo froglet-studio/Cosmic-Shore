@@ -1675,7 +1675,8 @@ def token_value(key, name, s, photic, set_pal):
 
 
 def set_values(key, s, table, photic, set_pal=None):
-    """[(id, rgba, note)] set `key` carries, in the table's id order (Photic: the baked values)."""
+    """[(id, rgba, note)] set `key` computes, in the table's id order (Photic: the baked values), before the values of
+    every set are kept apart (all_values)."""
     overrides = (s or {}).get("traced", {})
     out = []
     for i, e in table["ids"].items():
@@ -1698,7 +1699,7 @@ def set_values(key, s, table, photic, set_pal=None):
         if e.get("token"):
             note = "UI theme token %s; %s" % (e["token"], note)
         out.append((i, [f32(v) for v in c], note[:240]))
-    return out if key == "photic" else unambiguous(out, table)
+    return out
 
 
 def nudge(c):
@@ -1711,45 +1712,149 @@ def nudge(c):
     return [v * peak for v in rgb] + [c[3]]
 
 
-def unambiguous(values, table):
-    """A set's values, each naming one id in its role: a value two ids would share, or Photic's value of another id,
-    moves by an 8-bit step (ColorTrace finds a colour on screen by its value, from the set worn before or Photic)."""
-    taken = {}
-    for i, e in table["ids"].items():
-        role = i.split(":")[0]
-        if role in ("ui", "world"):
-            taken[value_id(role, e["photic"])] = i
-    out = []
-    for i, c, note in values:
-        role = i.split(":")[0]
-        if role in ("ui", "world"):
-            k = value_id(role, c)
-            for _ in range(32):
-                if taken.get(k, i) == i:
-                    break
-                c = nudge(c)
-                k = value_id(role, c)
-            taken[k] = i
-        out.append((i, c, note))
+def identity(i):
+    """The colour an id names, whichever role it is drawn in: ui:H and world:H are one colour (its hex and HDR peak)."""
+    return i.split(":", 1)[1]
+
+
+def bare(vid):
+    """A value id without its role: how ColorTrace finds a colour in either role (its own first, then the other)."""
+    return vid.split(":", 1)[1]
+
+
+def claims(table):
+    """{bare value id: identity} every id claims as authored: the id itself (ColorTrace names it from the id)."""
+    return {identity(i): identity(i) for i in table["ids"] if i.split(":")[0] in ("ui", "world")}
+
+
+def unambiguous(values_by_set, table, avoid=()):
+    """Every set's values, kept apart: ColorTrace names a colour on screen by its value, from the ids (the authored
+    colours) and from every set worn in a session (what each one painted), in either role. So no value of any set may
+    land on another colour's id or on any set's value of another colour; a clash moves to the nearest free 8-bit value,
+    the sets taken in order (Photic first: its baked values are its ids and never move; its UI theme tokens are derived
+    and may). A UI value that is no theme token also stays out of UIThemeLive's tolerance of every token value in
+    `avoid` (live_tokens: UIThemeLive asks for a token before it asks the trace, so a value there would be read as the
+    token)."""
+    taken = claims(table)
+    out = {}
+    for key, values in values_by_set.items():
+        res = []
+        for i, c, note in values:
+            role = i.split(":")[0]
+            if role in ("ui", "world"):
+                me = identity(i)
+                clear = avoid if role == "ui" and not table["ids"].get(i, {}).get("token") else ()
+                k = bare(value_id(role, c))
+                if taken.get(k, me) != me or near_token(c, clear):
+                    c, k = nearest_free(c, role, me, taken, clear)
+                taken[k] = me
+            res.append((i, c, note))
+        out[key] = res
     return out
 
 
-def ambiguities(values, table):
-    """[(id, other id)] whose values the reverse lookup could not tell apart (the gate's check of `unambiguous`)."""
-    seen, bad = {}, []
-    for i, e in table["ids"].items():
-        role = i.split(":")[0]
-        if role in ("ui", "world"):
-            seen[value_id(role, e["photic"])] = i
-    for i, c, _ in values:
-        role = i.split(":")[0]
-        if role not in ("ui", "world"):
+def near_token(c, tokens):
+    """True when `c` is one of `tokens` to UIThemeLive (every channel within its Tolerance, 0.6/255; a hair more, so
+    the C# palette's floats, which match the tool's to about 1e-6, cannot fall inside)."""
+    lim = TOKEN_TOL + 1e-4
+    return any(abs(c[0] - t[0]) <= lim and abs(c[1] - t[1]) <= lim and abs(c[2] - t[2]) <= lim for t in tokens)
+
+
+def live_tokens(table=None):
+    """Every UI theme token value UIThemeLive.TokenOf can meet: the authored theme's, and each shipped set's palette
+    (ColorSetUITheme.Build: the derived tokens and the ones the set gives)."""
+    import author_colour_set_assets as writer
+    defs, orig, ref = set_defs(), writer.read_original(), cs.photic_reference()
+    out = [tuple(v[:3]) for k, v in ui_tokens().items() if k in TOKEN_ENUM]
+    for key in set_order():
+        s = defs.get(key)
+        pal = orig if key == "photic" else writer.palette(s, orig)
+        out += [tuple(v[:3]) for v in ui_theme(pal).values()]
+        out += [tuple(token_value(key, name, s, ref, pal)[:3]) for name in SET_GIVEN]
+    return out
+
+
+_DELTAS = []
+
+
+def deltas(radius=5):
+    """8-bit steps around a colour, nearest first: many colours a set paints alike (a family's rim at one brightness)
+    spread over a few steps on every channel instead of walking one channel far from its hue."""
+    if not _DELTAS:
+        r = range(-radius, radius + 1)
+        _DELTAS.extend(sorted(((x, y, z) for x in r for y in r for z in r if (x, y, z) != (0, 0, 0)),
+                              key=lambda d: (d[0] * d[0] + d[1] * d[1] + d[2] * d[2], max(map(abs, d)), d)))
+    return _DELTAS
+
+
+def nearest_free(c, role, me, taken, clear=()):
+    """The value nearest `c` (in 8-bit steps of its colour at brightest channel 1, its HDR peak kept) that no other
+    colour holds and that is no token value of `clear`, and its bare value id."""
+    rgb, peak = unit(c)
+    base = [byte(v) for v in rgb]
+    for d in deltas():
+        q = [base[j] + d[j] for j in range(3)]
+        if min(q) < 0 or max(q) > 255:
             continue
-        k = value_id(role, c)
-        if seen.get(k, i) != i:
-            bad.append((i, seen[k]))
-        seen[k] = i
+        cand = [f32(v / 255.0 * peak) for v in q] + [c[3]]
+        k = bare(value_id(role, cand))
+        if taken.get(k, me) == me and not near_token(cand, clear):
+            return cand, k
+    for _ in range(255):                              # a cluster wider than the neighbourhood: walk one channel
+        c = nudge(c)
+        k = bare(value_id(role, c))
+        if taken.get(k, me) == me and not near_token(c, clear):
+            return c, k
+    raise ValueError("no free value near %s for %s" % (value_id(role, c), me))
+
+
+def ambiguities(values_by_set, table, avoid=()):
+    """[(set, id, other id or 'a UI theme token')] whose values ColorTrace (or UIThemeLive, which asks for a token
+    first) could not tell apart: the gate's check of `unambiguous`."""
+    seen, bad = claims(table), []
+    for key, values in values_by_set.items():
+        for i, c, _ in values:
+            role = i.split(":")[0]
+            if role not in ("ui", "world"):
+                continue
+            me, k = identity(i), bare(value_id(role, c))
+            if seen.get(k, me) != me:
+                bad.append((key, i, seen[k]))
+            elif role == "ui" and not table["ids"].get(i, {}).get("token") and near_token(c, avoid):
+                bad.append((key, i, "a UI theme token"))
+            seen.setdefault(k, me)
     return bad
+
+
+SET_ORDER = ("photic",)                              # then colour_sets.json's sets, in the file's order
+
+
+def set_order():
+    return list(SET_ORDER) + [k for k in set_defs() if k not in SET_ORDER]
+
+
+_ALL = None
+
+
+def all_values(table=None):
+    """{set key: [(id, rgba, note)]} every shipped set's TracedColors, kept apart (unambiguous), Photic first. Cached."""
+    global _ALL
+    cache = table is None
+    if cache and _ALL is not None:
+        return _ALL
+    import author_colour_set_assets as writer
+    table = load_table() if table is None else table
+    defs, orig, ref = set_defs(), writer.read_original(), cs.photic_reference()
+    raw = {}
+    for key in set_order():
+        if key == "photic":
+            raw[key] = set_values("photic", None, table, None, orig)
+        else:
+            raw[key] = set_values(key, defs[key], table, ref, writer.palette(defs[key], orig))
+    out = unambiguous(raw, table, live_tokens(table))
+    if cache:
+        _ALL = out
+    return out
 
 
 def fmt(v):
@@ -1788,8 +1893,7 @@ def splice_traced(text, block_lines):
 
 
 def photic_text(table):
-    import author_colour_set_assets as writer
-    return splice_traced(read(PHOTIC_ASSET), traced_yaml(set_values("photic", None, table, None, writer.read_original())))
+    return splice_traced(read(PHOTIC_ASSET), traced_yaml(all_values(table)["photic"]))
 
 
 # ----------------------------------------------------------------------------- the gate
@@ -1820,23 +1924,53 @@ def check(recs=None, table=None):
             errs.append("%s: its Photic value %s packs to %s" % (i, e["photic"], value_id(role, e["photic"])))
     if os.path.exists(PHOTIC_ASSET) and read(PHOTIC_ASSET) != photic_text(table):
         errs.append("PhoticColorSetSO.asset's TracedColors are stale: run python3 Tools/Build/colour_trace.py --write-photic")
+    errs += lazy_loads_unpainted(recs)
     import author_colour_set_assets as writer
     for key, sd in set_defs().items():
         for i in sorted(set(sd.get("traced", {})) - set(table["ids"])):
             errs.append("colour_sets.json %s retunes %s, which nothing draws any more: drop it" % (key, i))
+    shipped = {}
+    for key in set_order():
+        path = PHOTIC_ASSET if key == "photic" else writer.asset_path(key)
+        if os.path.exists(path):
+            entries = writer.parse(read(path)).get("TracedColors", {}).get("_entries", [])
+            shipped[key] = [(i, list(c), n) for i, c, n in entries if c]
+    tokens = live_tokens(table)
+    for key, i, other in ambiguities(shipped, table, tokens)[:5]:
+        errs.append("%s's %s takes a value ColorTrace also reads as %s (in that set or one before it): run the writers"
+                    % ("PhoticColorSetSO" if key == "photic" else writer.asset_name(key), i, other))
+    for i, e in sorted(table["ids"].items()):          # an authored UI colour cannot move: a set's token must not reach it
+        if i.startswith("ui:") and not e.get("token") and near_token(e["photic"], tokens):
+            errs.append("%s is within UIThemeLive's tolerance of a colour set's UI theme token, so it would be read as "
+                        "that token: retune the set (colour_sets.json) or make the colour that token" % i)
     for key in set_defs():
         text = read(writer.asset_path(key))
-        entries = writer.parse(text).get("TracedColors", {}).get("_entries", [])
-        bad = ambiguities([(i, list(c), n) for i, c, n in entries if c], table)
-        if bad:
-            errs.append("%s: %s and %s have values ColorTrace cannot tell apart: run the writer"
-                        % (writer.asset_name(key), bad[0][0], bad[0][1]))
         got = {m.strip("'") for m in re.findall(r"^  - Id: (.+)$", text, re.M)}
         missing = set(table["ids"]) - got
         if missing:
             errs.append("%s carries %d of the table's %d traced colours (missing e.g. %s): run "
                         "python3 Tools/Build/author_colour_set_assets.py"
                         % (writer.asset_name(key), len(got & set(table["ids"])), len(table["ids"]), sorted(missing)[0]))
+    return errs
+
+
+LOAD_RE = re.compile(r"Resources\.Load(?:<\w+>)?\s*\(")
+
+
+def lazy_loads_unpainted(recs, sources=None):
+    """A material in a Resources folder that carries a traced colour, loaded by name from code, is loaded after the
+    scene's repaint: its loader paints it (WorldColorTrace.Paint) or it shows Photic's colours under every set."""
+    errs, sources = [], cs_sources() if sources is None else sources
+    mats = sorted({r["file"] for r in recs if r["status"] in ("traced", "token") and r["file"].endswith(".mat")
+                   and "/Resources/" in r["file"]})
+    for f in mats:
+        name = os.path.splitext(f.split("/Resources/", 1)[1])[0]
+        literal = '"%s"' % name
+        loaders = [p for p, text in sources.items() if literal in text and LOAD_RE.search(text)]
+        for p in loaders:
+            if "WorldColorTrace.Paint(" not in sources[p]:
+                errs.append("%s loads %s (a traced colour) after the scene's repaint and does not paint it: call "
+                            "WorldColorTrace.Paint(material) where it is loaded" % (p, f))
     return errs
 
 
@@ -1932,12 +2066,32 @@ def self_test():
     expect("a new untraced colour fails the gate", any(e.startswith("untraced colour") for e in check(un, build_table(recs))))
     moved = [dict(recs[0], rgba=[0.9, 0.2, 0.1001, 1])]
     expect("a moved baked value fails the gate", any("baked value moved" in e for e in check(moved, table)))
-    two = {"ids": {"ui:E6331A": {"photic": [0.9, 0.2, 0.1, 1]}, "ui:1AE633": {"photic": [0.1, 0.9, 0.2, 1]}}}
-    clash = [("ui:E6331A", [0.5, 0.5, 0.9, 1], ""), ("ui:1AE633", [0.5, 0.5, 0.9, 1], "")]
+    two = {"ids": {"ui:E6331A": {"photic": [0.9, 0.2, 0.1, 1]}, "ui:1AE633": {"photic": [0.1, 0.9, 0.2, 1]},
+                   "world:E6331A": {"photic": [0.9, 0.2, 0.1, 1]}, "world:3366CC": {"photic": [0.2, 0.4, 0.8, 1]}}}
+    clash = {"a": [("ui:E6331A", [0.5, 0.5, 0.9, 1], ""), ("ui:1AE633", [0.5, 0.5, 0.9, 1], "")]}
     expect("two ids sharing a value are caught", bool(ambiguities(clash, two)))
     expect("the nudge parts them", not ambiguities(unambiguous(clash, two), two))
-    onto = [("ui:E6331A", [0.1, 0.9, 0.2, 1], "")]
-    expect("a value on another id's Photic value is caught", bool(ambiguities(onto, two)))
+    onto = {"a": [("ui:E6331A", [0.1, 0.9, 0.2, 1], "")]}
+    expect("a value on another id's authored colour is caught", bool(ambiguities(onto, two)))
+    across = {"a": [("ui:E6331A", [0.5, 0.5, 0.9, 1], "")], "b": [("ui:1AE633", [0.5, 0.5, 0.9, 1], "")]}
+    expect("a value another set gives another id is caught", bool(ambiguities(across, two)))
+    expect("the nudge parts sets", not ambiguities(unambiguous(across, two), two))
+    roles = {"a": [("ui:1AE633", [0.2, 0.4, 0.8, 1], "")]}
+    expect("a value on another role's colour is caught", bool(ambiguities(roles, two)))
+    twins = {"a": [("ui:E6331A", [0.5, 0.5, 0.9, 1], ""), ("world:E6331A", [0.5, 0.5, 0.9, 1], "")]}
+    expect("one colour in two roles is no clash", not ambiguities(twins, two))
+    tok = [(0.5, 0.5, 0.9)]
+    on = {"a": [("ui:E6331A", [0.5 + 0.4 / 255, 0.5, 0.9, 1], "")]}
+    expect("a UI value inside a token's tolerance is caught", bool(ambiguities(on, two, tok)))
+    moved = unambiguous(on, two, tok)
+    expect("the writer moves it out", not ambiguities(moved, two, tok) and not near_token(moved["a"][0][1], tok))
+    expect("a world value may sit on a token", not ambiguities({"a": [("world:3366CC", [0.5, 0.5, 0.9, 1], "")]}, two, tok))
+    lazy = [dict(recs[0], source="material", file="Assets/Resources/Glow.mat", component="Material(x)")]
+    loader = 'const string Path = "Glow"; var m = Resources.Load<Material>(Path);'
+    expect("a lazily loaded traced material nobody paints is caught",
+           bool(lazy_loads_unpainted(lazy, {"Assets/_Scripts/a.cs": loader})))
+    expect("one its loader paints passes",
+           not lazy_loads_unpainted(lazy, {"Assets/_Scripts/a.cs": loader + " WorldColorTrace.Paint(m);"}))
     blk = traced_yaml([("ui:E6331A", [0.9, 0.2, 0.1, 1], "1 use: a")])
     text = splice_traced("x\n  EnvironmentColors:\n    Danger: {r: 1, g: 0, b: 0, a: 0}\n", blk)
     expect("splice appends the block", text.rstrip().endswith("Note: '1 use: a'"))

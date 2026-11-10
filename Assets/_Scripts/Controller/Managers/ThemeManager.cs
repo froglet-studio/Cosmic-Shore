@@ -80,6 +80,9 @@ namespace CosmicShore.Gameplay
             if (Instance == this)
             {
                 Instance = null;
+                // Not while play is ending: the scenes are being torn down, and in the editor the assets the trace
+                // painted have just been put back (WorldColorTraceEditor), so a repaint now would leave them changed.
+                if (WorldColorTrace.IsStopped) return;
                 ColorTrace.Wear(null, ColorTrace.Authored);
                 UIThemeLive.Clear();
             }
@@ -258,10 +261,10 @@ namespace CosmicShore.Gameplay
                                             materialSet.CrystalMaterial4 })
             {
                 if (!crystal) continue;
-                crystal.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
-                crystal.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
-                crystal.SetColor("_BrightColor", colorSet.BrightCrystalColor);
-                crystal.SetColor("_DarkColor", colorSet.DullCrystalColor);
+                SetDomainColor(crystal, "_BrightCrystalColor", colorSet.BrightCrystalColor);
+                SetDomainColor(crystal, "_DullCrystalColor", colorSet.DullCrystalColor);
+                SetDomainColor(crystal, "_BrightColor", colorSet.BrightCrystalColor);
+                SetDomainColor(crystal, "_DarkColor", colorSet.DullCrystalColor);
                 // The free omni body wears each element's shapes in that element's shade of lime (Docs/PALETTE.md
                 // §2.12); a team omni is the whole crystal in its domain's colour, so its clone turns the shades off.
                 crystal.SetFloat("_ElementShades", 0f);
@@ -271,22 +274,22 @@ namespace CosmicShore.Gameplay
             // actually draws with (PrismDebris reads mesh/material off it) and its colours arrive
             // as PER-ENTITY overrides keyed on the dying prism's kind - so this per-domain copy is
             // never consumed. Kept painted at the PLAIN tier for parity with the other materials.
-            materialSet.ExplodingBlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
-            materialSet.ExplodingBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
+            SetDomainColor(materialSet.ExplodingBlockMaterial, "_BrightColor", colorSet.InsideBlockColor);
+            SetDomainColor(materialSet.ExplodingBlockMaterial, "_DarkColor", colorSet.OutsideBlockColor);
 
-            materialSet.ShipMaterial.SetColor("_Color1", colorSet.ShipColor1);
-            materialSet.ShipMaterial.SetColor("_Color2", colorSet.ShipColor2);
+            SetDomainColor(materialSet.ShipMaterial, "_Color1", colorSet.ShipColor1);
+            SetDomainColor(materialSet.ShipMaterial, "_Color2", colorSet.ShipColor2);
 
-            materialSet.AOEExplosionMaterial.SetColor("_TextureColor", colorSet.AOETextureColor);
-            materialSet.AOEExplosionMaterial.SetColor("_FresnelColor", colorSet.AOEFresnelColor);
+            SetDomainColor(materialSet.AOEExplosionMaterial, "_TextureColor", colorSet.AOETextureColor);
+            SetDomainColor(materialSet.AOEExplosionMaterial, "_FresnelColor", colorSet.AOEFresnelColor);
 
-            materialSet.AOEConicExplosionMaterial.SetColor("_Color", colorSet.AOEConicColor);
-            materialSet.AOEConicExplosionMaterial.SetColor("_EdgeColor", colorSet.AOEConicEdgeColor);
+            SetDomainColor(materialSet.AOEConicExplosionMaterial, "_Color", colorSet.AOEConicColor);
+            SetDomainColor(materialSet.AOEConicExplosionMaterial, "_EdgeColor", colorSet.AOEConicEdgeColor);
 
-            materialSet.SpikeMaterial.SetColor("_LightColor", colorSet.SpikeLightColor);
-            materialSet.SpikeMaterial.SetColor("_DarkColor", colorSet.SpikeDarkColor);
+            SetDomainColor(materialSet.SpikeMaterial, "_LightColor", colorSet.SpikeLightColor);
+            SetDomainColor(materialSet.SpikeMaterial, "_DarkColor", colorSet.SpikeDarkColor);
 
-            materialSet.SkimmerMaterial.SetColor("_Color", colorSet.SkimmerColor);
+            SetDomainColor(materialSet.SkimmerMaterial, "_Color", colorSet.SkimmerColor);
         }
 
         /// <summary>
@@ -307,14 +310,26 @@ namespace CosmicShore.Gameplay
         {
             _dataContainer.ColorSet.GetPrismKindColors(colorSet, kind, out var bright, out var dark);
 
-            opaque.SetColor("_BrightColor", bright);
-            opaque.SetColor("_DarkColor", dark);
+            SetDomainColor(opaque, "_BrightColor", bright);
+            SetDomainColor(opaque, "_DarkColor", dark);
             opaque.SetFloat(PrismLitDomainId, (int)domain);
-            transparent.SetColor("_BrightColor", bright);
-            transparent.SetColor("_DarkColor", dark);
+            SetDomainColor(transparent, "_BrightColor", bright);
+            SetDomainColor(transparent, "_DarkColor", dark);
             transparent.SetFloat(PrismLitDomainId, (int)domain);
         }
 
         static readonly int PrismLitDomainId = Shader.PropertyToID("_PrismLitDomain");
+
+        /// <summary>
+        /// A colour this manager paints from the worn set's domain block. The world colour trace leaves it alone
+        /// (<see cref="WorldColorTrace.Own"/>): a domain colour can equal some set's value for a traced colour, and a
+        /// repaint (a scene load, a preview) would otherwise read it as that one.
+        /// </summary>
+        static void SetDomainColor(Material material, string property, Color color)
+        {
+            int id = Shader.PropertyToID(property);
+            material.SetColor(id, color);
+            WorldColorTrace.Own(material, id);
+        }
     }
 }

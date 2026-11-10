@@ -53,31 +53,60 @@ This is how that works, what it covers today, and what is still outside it. The 
        because the UI theme re-hues Photic's tokens;
    - **a set may retune any id**: `colour_sets.json`, `sets.<key>.traced: {"<id>": "#RRGGBB"}`, then the writer. An
      edit in the inspector is drift the writer's `--check` reports.
-   - Every set's values are unambiguous: no two ids share a value in a role, and no value lands on Photic's value of
-     another id (the writer moves a clash by one 8-bit step), so a colour found on screen always names one id.
-5. **Painters** (play mode only; nothing is painted in edit mode):
+   - **Every value names one colour, in every set and both roles** (`colour_trace.py unambiguous`). A colour on screen
+     is found by its value, and the runtime asks every set worn in the session (a copy can keep a colour from two
+     wears ago), so no value of any set may land on another colour's id or on any set's value of another colour. One
+     colour drawn in both roles (`ui:H` and `world:H`) is one colour. A UI value that is no theme token also stays out
+     of UIThemeLive's tolerance (0.6/255) of every set's live UI theme token, since UIThemeLive asks for a token first.
+     A clash moves to the nearest free 8-bit value (Photic first, then the sets in `colour_sets.json` order; Photic's
+     baked values are their own ids and never move). Measured 2026-11-10: 939 of the 4,920 ui and world values moved, none by more
+     than 2/255 on a channel; before this rule the sets held 329 values the runtime could misread.
+5. **Painters** (play mode only; nothing is painted in edit mode, or once play is stopping):
+   - **the lookup** (`ColorTrace.TryRetrace`): a colour is named from the ids themselves (each id IS its authored
+     colour: `TryColorOf`), then from what the authored set and every set worn since paint. A colour that already is
+     the worn set's (to its 8-bit id) comes back exactly as it is, so repaints are idempotent and wearing Photic leaves
+     every baked float alone. A theme token's id finds its authored colour too, although Photic's value for it is the
+     re-hued theme's;
    - `ThemeManager.WearTrace` wears the set (`ColorTrace.Wear`) at startup and on every Profile preview or apply,
      before the domain material sets are repainted, so the prism entities drawn with a traced material are re-stamped
-     with them;
+     with them. The colours ThemeManager paints on its domain material sets are its own (`WorldColorTrace.Own`): the
+     trace never reads a domain colour as a traced one;
    - **UI** (`UIThemeLive`): a Graphic's colour that is a token takes the live token; any other colour the trace
      knows takes the worn set's value: Graphic colours, TextMesh Pro vertex gradients, ColorTint selectables'
-     ColorBlocks, Shadow and Outline effect colours, input-field carets and selections. New UI is swept before it
-     draws (root canvases whose hierarchy changed, every frame; the list of root canvases is refreshed once a second).
-     The set gives the tooltip and element tokens (`ColorSetUITheme.Build` reads `ui-token:` ids);
+     ColorBlocks, Shadow and Outline effect colours, input-field carets and selections. The UI prefab assets in memory
+     are painted where they live, so rows, cards and windows instantiated from them are born in the theme (a list
+     rebuilt with the same number of rows never changes its canvas's count). Anything else new is swept before it
+     draws: a root canvas whose hierarchy changed is marked and swept at most every 0.25 s (a change seen while it
+     waits is still swept); the list of root canvases is refreshed once a second. The set gives the tooltip and element
+     tokens (`ColorSetUITheme.Build` reads `ui-token:` ids);
    - **world** (`WorldColorTrace`, on every wear and every scene load): every Color property of every loaded
      material (the HyperSea sky included), particle systems (start colour, colour over lifetime and by speed, trails,
-     colour custom data, each by its mode), trails and lines, lights, solid-colour camera clears, sprites, world-space
-     TextMesh Pro, fog and ambient light, and post-processing colour parameters. Prefab assets and materials are
-     painted where they live in memory, so everything spawned later is born in the worn set; nothing is repainted per
-     frame or per spawn;
+     colour custom data, each by its mode), trails and lines, lights, solid-colour clears of game cameras, sprites,
+     world-space TextMesh Pro, the render settings' fog and ambient colours, and post-processing colour parameters.
+     When the sky's material changes, the ambient light and reflections it gives are worked out again
+     (`DynamicGI.UpdateEnvironment`). Prefab assets and materials are painted where they live in memory, so everything
+     spawned later is born in the worn set; nothing is repainted per frame or per spawn. A material loaded later (a
+     `Resources.Load` on first use) is painted by its loader (`WorldColorTrace.Paint(material)`: the Switchback path
+     rays, the black-hole glow, the Astro League ball's trail); the gate names any loader of a traced Resources
+     material that does not;
    - **code and configs**: a colour in C# or a config field is read through `ColorTrace.Retrace(role, colour)` where
      it paints (an SO's accessor, a view's paint statement). It allocates nothing;
-   - **the editor** (`WorldColorTraceEditor`): every asset the world painter touched is put back when play ends, and
-     before the editor saves assets during play, so no `.mat` or prefab in git ever takes a set's colours.
+   - **the editor** (`WorldColorTraceEditor`): when play stops, painting ends first (`WorldColorTrace.Stop`: the
+     scenes torn down afterwards may wear a set again), then every asset colour a painter gave (the world painter's,
+     and UIThemeLive's UI prefab assets) is put back if the asset still holds it; a colour a person changed during play
+     is theirs and stays. An asset's dirty flag is cleared only when every recorded colour went back, it was not dirty
+     before play painted it and nothing else marked it dirty since, so a person's other unsaved edit keeps its flag.
+     The same happens before the editor saves assets during play (then it paints again) and before scripts recompile
+     during play, and a second pass runs back in edit mode. Prefab Mode's stage and inspector previews are never
+     painted, so no `.mat` or prefab in git ever takes a set's colours.
 6. **The gate.** `python3 Tools/Build/colour_trace.py --check` fails when the scan and the table disagree (a new colour,
    a colour nothing authors any more, a baked value that moved), on a new untraced colour, when Photic's block is
-   stale, when a set asset lacks the table's ids, or when a set's values are ambiguous.
-   `author_colour_set_assets.py --check` fails when a set's block drifted.
+   stale, when a set asset lacks the table's ids, when any value of any set could be read as another colour (or, for
+   UI, as a theme token), when an authored UI colour sits inside a set's token tolerance, or when code loads a traced
+   Resources material without painting it. `author_colour_set_assets.py --check` fails when a set's block drifted.
+   `ColorTraceTests.EveryShippedSet_FindsWhatEveryOtherSetPainted` wears every shipped set and reads every value of
+   every set back (54,120 lookups; run on the real `ColorTrace.cs` under .NET on 2026-11-10: 0 misread, against 79
+   with the values the sets held before).
 
 ```
 python3 Tools/Build/colour_trace.py --build                # the table, from the scan
@@ -125,8 +154,15 @@ The ratchet list (`colour_trace.json` `untraced`) names each colour. What remain
   CrystalAccentTint's arcs, ToyFactory's colour-keyed caches, fauna GPU palettes, vessel tails and jets painted at
   spawn. They are right after a scene load (the world painter runs before Start); after a Profile preview in
   Menu_Main they show the previous set until they repaint. Each owner can subscribe its re-apply to
-  `ColorTrace.Changed`.
+  `ColorTrace.Changed`. (A copy written back into a material later is still found: the lookup asks every set worn
+  in the session.)
 - **Particles alive at a wear** keep their emitted start colour until they die (a fraction of a second).
+- **UI prefabs loaded on first use** (`Resources.Load` of the quests window, a toast row) are not in memory at the
+  repaint: their first instance is swept when it changes its canvas's count, a later one is born themed.
+- **Baked lighting.** The four scenes with a lighting data asset keep their baked light probes; the ambient light
+  and reflections the sky gives are recomputed on a sky repaint (`DynamicGI.UpdateEnvironment`).
+- **Editor objects made with DontSave outside play** (an editor tool's preview objects) are painted during play and
+  keep the colours afterwards; they are never saved.
 
 ## 3. Decisions waiting on people
 

@@ -809,6 +809,7 @@ namespace CosmicShore.Gameplay
             trail.endWidth = 0f;
             trailMpb = new MaterialPropertyBlock();
             var cometMat = Resources.Load<Material>(TrailMaterialResourcePath);
+            WorldColorTrace.Paint(cometMat);   // loaded after the scene's repaint: born in the worn colour set
             _cometTrail = cometMat != null;
             if (_cometTrail)
             {
