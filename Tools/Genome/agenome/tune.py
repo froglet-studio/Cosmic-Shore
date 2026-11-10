@@ -103,7 +103,8 @@ def main(argv=None):
     ap.add_argument("--evals", type=int, default=400, help="renders per genome (each judged window is one more)")
     ap.add_argument("--block", type=int, default=24, help="parameters tuned together; each block starts from the best")
     ap.add_argument("--gens-per-block", type=int, default=8)
-    ap.add_argument("--sigma", type=float, default=20.0, help="initial step in byte units")
+    ap.add_argument("--sigma", type=float, default=12.0, help="initial step in byte units")
+    ap.add_argument("--sigma-min", type=float, default=2.0, help="smallest block start step after fruitless blocks")
     ap.add_argument("--windows", type=int, default=2)
     ap.add_argument("--hop", type=float, default=8.0)
     ap.add_argument("--check-n", type=int, default=6, help="windows for the after-tune check (0: no check)")
@@ -165,10 +166,12 @@ def main(argv=None):
         print(f"{name}: start dist {c0['dist']:.3f} judge {c0.get('judge')} stat {c0['stat']:.3f}", flush=True)
         slots = param_slots(g0)
         spent, t0 = 1, time.time()
+        sigma0 = a.sigma
         while spent < a.evals and slots:
             block = [slots[k] for k in rng.permutation(len(slots))[: a.block]]
             x0 = [best_g.nodes[i].params[j] for i, j in block]
-            es = SepCMA(x0, a.sigma, seed=int(rng.integers(1 << 30)))
+            es = SepCMA(x0, sigma0, seed=int(rng.integers(1 << 30)))
+            before_block = best["dist"]
             for _ in range(a.gens_per_block):
                 if spent >= a.evals:
                     break
@@ -190,8 +193,11 @@ def main(argv=None):
                                       "gen_best": round(float(f[k]), 4), "best": round(best["dist"], 4),
                                       "best_judge": best.get("judge"), "t": round(time.time() - t0, 1)}) + "\n")
                 log.flush()
+            # between blocks, a 1/5th-style rule on the step: a block that found nothing halves the next block's start
+            # (an already-tuned genome sits in a narrow basin: on 2026-11-10 most steps of 18 bytes made it worse)
+            sigma0 = max(sigma0, es.sigma) if best["dist"] < before_block else max(a.sigma_min, 0.5 * sigma0)
             print(f"{name}: {spent} evals, best dist {best['dist']:.3f} judge {best.get('judge')} "
-                  f"windows {best.get('judge_windows')}", flush=True)
+                  f"windows {best.get('judge_windows')}, next sigma {sigma0:.1f}", flush=True)
         if best["dist"] >= c0["dist"]:
             print(f"{name}: no gain in {spent} evals (dist {c0['dist']:.3f}); nothing written", flush=True)
             continue
