@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""Swim lanes: which vessels and app-shell sections are OCCUPIED right now, and which open ones to pick up next.
+"""Swim lanes: which vessels, games, app-shell sections and systems are OCCUPIED right now, and which open ones to pick up next.
 
     python3 .claude/skills/swimlanes/swimlanes.py                 # the board: open with work, occupied, needs polish, polished
     python3 .claude/skills/swimlanes/swimlanes.py --lane thresher # one lane in full: who is in it, its work, its polish gaps
+    python3 .claude/skills/swimlanes/swimlanes.py --kind game     # only one kind: vessel, game, shell, system
     python3 .claude/skills/swimlanes/swimlanes.py --md | --json   # for a page or another tool
     python3 .claude/skills/swimlanes/swimlanes.py --days 5 --no-github
     python3 .claude/skills/swimlanes/swimlanes.py set thresher rough --by Garrett --note "the Belfry needs a sound pass"
     python3 .claude/skills/swimlanes/swimlanes.py --self-test
 
-A lane is a vessel or a section of the app shell (the Voyages map, the Hangar, ...) that someone can hold in their
-head; it is never a task. Lanes are listed in lanes.json beside this file; every vessel on the roster is a lane by
-itself.
+A lane is anything that someone can hold in their head and that takes more than a couple of prompts and one pull
+request to finish: a vessel, a game (a mode with its own card), a section of the app shell (the Voyages map, the
+Hangar, ...) or a mechanical system (ecology, prisms, netcode, ...). It is never a task. Every vessel on the roster and
+every shipped game card is a lane by itself; shell sections and systems are listed in lanes.json beside this file, and
+one that is truly closed out is archived there (`archived`), not deleted silently.
 
   OCCUPIED   an unmerged branch has pushed work focused on the lane in the last `window_days` (default 7). The lane
              opens again by itself when that work merges into bleeding-edge, or when the branch goes quiet. Past work
@@ -108,7 +111,25 @@ def split_camel(name):
     return re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', name)
 
 
+GAMES_DIR = ('Assets', '_SO_Assets', 'Games')
+
+
+def game_roster(root):
+    """The shipped game cards: every Assets/_SO_Assets/Games/ArcadeGame<Name>.asset at the top of the folder (the arcade
+    and arena cards alike; _Archive, Training and Missions are not games anyone plays as a mode). -> [(Name, DisplayName)]"""
+    d = os.path.join(root, *GAMES_DIR)
+    out = []
+    for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+        if not (f.startswith('ArcadeGame') and f.endswith('.asset')) or len(f) <= len('ArcadeGame.asset'):
+            continue
+        m = re.search(r'^\s+DisplayName:\s*(.*)$', read(root, '/'.join(GAMES_DIR + (f,))), re.M)
+        out.append((f[len('ArcadeGame'):-len('.asset')], (m.group(1).strip().strip('\'"') if m else '')))
+    return out
+
+
 def load_lanes(root, catalog):
+    """Every lane: the vessels (the roster), the games (the shipped cards), then the catalog's app-shell sections and
+    systems. A catalog lane with `archived` set is closed out and not on the board; a retired vessel or game likewise."""
     lanes = []
     vcfg = catalog.get('vessels', {})
     retired = set(vcfg.get('retired', []))
@@ -119,15 +140,33 @@ def load_lanes(root, catalog):
         if v in retired:
             continue
         lanes.append(Lane(v.lower(), split_camel(v), 'vessel', [v] + aliases.get(v, [])))
-    for s in catalog.get('shell', []):
-        lanes.append(Lane(s['key'], s['name'], 'shell', s.get('tokens', []), s.get('paths', []), s.get('note', '')))
+    gcfg = catalog.get('games', {})
+    g_retired, g_aliases = set(gcfg.get('retired', [])), gcfg.get('aliases', {})
+    taken = {ln.key for ln in lanes}
+    for g, shown in game_roster(root):
+        if g in g_retired:
+            continue
+        spaced = split_camel(g)
+        name = shown if not shown or shown.replace(' ', '').lower() == g.lower() else f'{shown} ({spaced})'
+        key = g.lower() if g.lower() not in taken else 'game-' + g.lower()
+        lanes.append(Lane(key, name or spaced, 'game', [g] + ([spaced] if spaced != g else []) + g_aliases.get(g, [])))
+    for kind, section in (('shell', 'shell'), ('system', 'systems')):
+        for s in catalog.get(section, []):
+            if s.get('archived'):
+                continue
+            lanes.append(Lane(s['key'], s['name'], kind, s.get('tokens', []), s.get('paths', []), s.get('note', '')))
     return lanes
+
+
+def archived_lanes(catalog):
+    return [(s['key'], s['name'], s['archived']) for sec in ('shell', 'systems') for s in catalog.get(sec, []) if s.get('archived')]
 
 
 def focus_lanes(files, lanes):
     """The lanes a commit is ABOUT: each lane holding a quarter of its files or three of them (meta files left out). A
     sweep across twenty vessels' docs is about none of them; a fix that brushes one Hangar prefab among ten files is not
-    Hangar work. A commit about three or more lanes at once is a sweep and occupies none."""
+    Hangar work. A commit about three or more lanes OF ONE KIND (vessels, games, shell sections, systems) is a sweep and
+    occupies none of that kind."""
     files = [f for f in files if not f.endswith('.meta')]
     if not files or len(files) > MAX_FILES:
         return set()
@@ -137,7 +176,13 @@ def focus_lanes(files, lanes):
             if ln.matches(f):
                 hits[ln.key] += 1
     focus = {k for k, n in hits.items() if n * 4 >= len(files) or n >= 3}
-    return focus if len(focus) <= 2 else set()      # a re-bake or rename across the fleet is a sweep, not a lane
+    kind = {ln.key: ln.kind for ln in lanes}
+    by_kind = collections.defaultdict(set)
+    for k in focus:
+        by_kind[kind[k]].add(k)
+    # a re-bake or rename across the fleet (three vessels, three games, three systems) is a sweep, not a lane; a vessel
+    # change that also touches its game and the AI system is about all three
+    return {k for ks in by_kind.values() if len(ks) <= 2 for k in ks}
 
 
 def named_lanes(text, lanes, most):
@@ -512,7 +557,11 @@ HEADS = {'work': 'OPEN - WORK WAITING (highest priority: pick one of these)',
          'polished': 'OPEN - POLISHED (lowest priority)'}
 
 
-def print_board(data, full=False, md=False, limit=3):
+QUIET_ROWS = 8          # the two quiet tiers list this many lanes unless --full: the board is read, not scrolled
+WORK_ROWS = 12          # the work tier its top twelve; occupied is never cut (it is the heads-up)
+
+
+def print_board(data, full=False, md=False, limit=3, kind=None):
     out = []
     h = (lambda s: out.append(f'\n## {s}\n')) if md else (lambda s: out.append(f'\n{s}'))
     out.append(('# Swim lanes' if md else 'SWIM LANES') + f' - {data["generated"]}; occupied = unmerged work pushed in the last '
@@ -520,10 +569,14 @@ def print_board(data, full=False, md=False, limit=3):
     for n in data['notes']:
         out.append(('> ' if md else '  note: ') + n)
     for tier in data['order']:
-        rows = [b for b in data['lanes'] if b['tier'] == tier]
+        rows = [b for b in data['lanes'] if b['tier'] == tier and (not kind or b['kind'] == kind)]
         h(HEADS[tier] + f'  [{len(rows)}]')
         if not rows:
             out.append('  none')
+        hidden = 0
+        cap = WORK_ROWS if tier == 'work' else QUIET_ROWS if tier in ('polish', 'polished') else None
+        if cap and not full and len(rows) > cap:
+            rows, hidden = rows[:cap], len(rows) - cap
         for i, b in enumerate(rows, 1):
             bullet = '- ' if md else f'  {i:>2}. '
             name = f'**{b["name"]}**' if md else b['name']
@@ -546,8 +599,10 @@ def print_board(data, full=False, md=False, limit=3):
                 out.append(f'{bullet}{name} {tag}{opened(b)}' + (f': {b["polish"][0]}' if b['polish'] else ''))
             if b['note'] and tier != 'occupied':
                 out.append(f'        ! {b["note"]}')
-    out.append('\nA lane is a vessel or an app-shell section, not a task. It opens when its work merges into bleeding-edge.'
-               ' Details: --lane <key>. Mark one: swimlanes.py set <key> polished|rough --by <you>.')
+        if hidden:
+            out.append(f'  ... {hidden} more (--full, or --kind vessel|game|shell|system)')
+    out.append('\nA lane is a vessel, a game, an app-shell section or a system, not a task. It opens when its work merges into'
+               ' bleeding-edge. Details: --lane <key>. Mark one: swimlanes.py set <key> polished|rough --by <you>.')
     print('\n'.join(out))
 
 
@@ -623,8 +678,32 @@ def self_test():
         bad.append('a fleet-wide line was given to every vessel it names')
     if named_lanes('Thresher Time: the Belfry', lanes, 2) != {'t'}:
         bad.append('a commit about the Thresher was not read as about the Thresher')
+    bloom, corona, regatta = (Lane(k.lower(), k, 'game', [k]) for k in ('Bloomrush', 'Corona', 'Regatta'))
+    ai = Lane('ai-system', 'AI', 'system', [], ['Assets/_Scripts/Controller/AI'])
+    mixed = lanes + [bloom, corona, regatta, ai]
+    if focus_lanes(['Assets/MantaSting.cs', 'Assets/Thresher.prefab', 'Assets/ThresherBloomrush.asset', 'Assets/BloomrushController.cs',
+                    'Assets/_Scripts/Controller/AI/ThresherSoar.cs', 'Assets/_Scripts/Controller/AI/BloomrushPilot.cs',
+                    'Assets/_Scripts/Controller/AI/X.cs'], mixed) != {'t', 'bloomrush', 'ai-system'}:
+        bad.append('a vessel change that also touches its game and the AI system lost one of the three lanes')
+    if focus_lanes([f'Assets/Cards/{g}{i}.asset' for g in ('Bloomrush', 'Corona', 'Regatta') for i in range(3)], mixed):
+        bad.append('a card sweep across three games occupied each of them')                         # negative control
     tmp = tempfile.mkdtemp(prefix='lanes-')
     try:
+        for rel, body in [('Assets/Resources/ElementalAbilityMaps/Manta.asset', ''),
+                          ('Assets/_SO_Assets/Games/ArcadeGameSerpentTime.asset', '  DisplayName: Serpentine\n'),
+                          ('Assets/_SO_Assets/Games/ArcadeGameManta.asset', '  DisplayName: Manta\n'),
+                          ('Assets/_SO_Assets/Games/ArcadeGameOld.asset', '  DisplayName: Old\n'),
+                          ('Assets/_SO_Assets/Games/_Archive/ArcadeGameGone.asset', '  DisplayName: Gone\n')]:
+            os.makedirs(os.path.dirname(os.path.join(tmp, rel)), exist_ok=True)
+            with open(os.path.join(tmp, rel), 'w') as fh:
+                fh.write(body)
+        got = {ln.key: ln for ln in load_lanes(tmp, {'games': {'retired': ['Old']}, 'systems': [
+            {'key': 'prisms', 'name': 'Prisms', 'paths': ['P']}, {'key': 'gone', 'name': 'Gone', 'archived': '2026-11-11, x: done'}]})}
+        if set(got) != {'manta', 'serpenttime', 'game-manta', 'prisms'}:
+            bad.append(f'the lanes from the roster, the cards and the catalog are wrong: {sorted(got)}')
+        elif got['serpenttime'].name != 'Serpentine (Serpent Time)' or not got['serpenttime'].matches('Assets/_SO_Assets/Cell Configs/Serpent Time Cell/I1.asset') \
+                or got['serpenttime'].kind != 'game' or got['prisms'].kind != 'system':
+            bad.append('a game lane does not carry its card name, its spaced token or its kind')
         def run(*a, cwd, env=None):
             subprocess.run(list(a), cwd=cwd, check=True, capture_output=True, env=dict(os.environ, GIT_CONFIG_NOSYSTEM='1', **(env or {})))
 
@@ -689,6 +768,7 @@ def main():
     ap.add_argument('--lane', help='one lane in full')
     ap.add_argument('--days', type=int, help='how recent a push must be to occupy a lane (default lanes.json window_days)')
     ap.add_argument('--full', action='store_true', help='every work item, every polish gap')
+    ap.add_argument('--kind', choices=['vessel', 'game', 'shell', 'system'], help='only lanes of this kind')
     ap.add_argument('--md', action='store_true')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--no-github', action='store_true', help='skip the tickets and pull requests (gh)')
@@ -711,7 +791,7 @@ def main():
     elif a.lane:
         print_lane(data, a.lane.lower())
     else:
-        print_board(data, full=a.full, md=a.md)
+        print_board(data, full=a.full, md=a.md, kind=a.kind)
     return 0
 
 

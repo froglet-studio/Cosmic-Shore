@@ -12,8 +12,8 @@ This file holds only the rules every session needs. Everything else moved verbat
 
 - [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **Froglet Tasks, the team's hand-off tickets** - tests, playtests, setup, content and decisions one collaborator's session leaves for another: GitHub issues labelled `team-task`, read on the Froglet Tasks page, written only through the `/team-tasks` skill (`Tools/Build/team_tasks.py`). Tickets are nobody's until someone takes one.
   Sections: a pointer to the tickets (the board moved to GitHub Issues)
-- [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels and app-shell sections are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the tickets, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`).
-  Sections: Run it; How occupancy is read; Answer the person; Polished or rough is a person's call; Adding or fixing a lane
+- [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels, games, app-shell sections and systems are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the tickets, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`).
+  Sections: Run it; How occupancy is read; Answer the person; Polished or rough is a person's call; Adding, fixing or archiving a lane
 - [`.claude/skills/approve/SKILL.md`](.claude/skills/approve/SKILL.md): **Approve after the fact** (`/approve`, Garrett 2026-11-10) - changes to someone else's work go through unless they collide with an occupied swim lane (`Tools/Build/approvals.py check`), and land in that person's queue (`Docs/Approvals/<Person>/`, [`Docs/Approvals/README.md`](Docs/Approvals/README.md)); `/approve` retrieves the list and records approve / discuss / resolve.
   Sections: Who you are; Retrieve the list; Walk through it; Record the answers; Commit the answers; What your own changes queued; Filing entries
 - [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
@@ -130,8 +130,10 @@ Cosmic Shore is built by **Garrett, Caleb, Shombith and Yash** (the core four) p
 all of it goes through Claude sessions, so git rarely says which person drove a change. On 2026-10-13 one merge
 needed about 110 conflict fixes because work had been done twice: the Stoat in two places, enum value 14 taken twice,
 the engine renamed twice, retired tools brought back. **Every session:**
-- **Find your lane: `/swimlanes`** (Garrett, 2026-11-08). A lane is a vessel or an app-shell section (the Thresher,
-  the Voyages map), not a task. It shows the open lanes with obvious work first, the OCCUPIED ones (unmerged work
+- **Find your lane: `/swimlanes`** (Garrett, 2026-11-08). A lane is a vessel, a game, an app-shell section or a
+  mechanical system (the Thresher, Bloomrush, the Voyages map, ecology), not a task. **Anything bigger than a couple of
+  prompts and one PR gets a lane** (Caleb, 2026-11-11): vessels and game cards automatically; a section or system no
+  lane covers goes into `lanes.json` with the commit that starts it, and is archived there when truly closed out. It shows the open lanes with obvious work first, the OCCUPIED ones (unmerged work
   pushed in the last 7 days: who, which branch), then the ones that need polish. Occupied is the heads-up: tell the
   person and take another lane or talk to the occupant. Work that merged earlier is context, not a block. `Docs/TEAM.md` rule 12.
 - **Only a swim lane collision waits; everything else goes through and is approved after the fact** (Garrett,

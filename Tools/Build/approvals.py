@@ -12,7 +12,7 @@ afterwards, through their own queue, and approves it or talks to the person who 
 
 The process (Garrett, 2026-11-10: "only slow people down when they collide with a swimlane"):
 
-  COLLISION  the change is ABOUT a swim lane (the /swimlanes skill: a vessel or an app-shell section) that someone ELSE
+  COLLISION  the change is ABOUT a swim lane (the /swimlanes skill: a vessel, game, app-shell section or system) that someone ELSE
              occupies right now (unmerged work pushed in the last 7 days). `check` exits 2 and names the occupant: the
              session stops and tells its person, who talks to the occupant or decides to go ahead anyway.
   HEADS-UP   anything else: declared owners (Docs/TEAM.json `owners`), people whose recent work landed in these paths,
