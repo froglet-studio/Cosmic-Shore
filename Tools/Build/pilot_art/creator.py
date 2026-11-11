@@ -392,8 +392,64 @@ def faction_tables():
     return recruitable, founding
 
 
+def cs_table(text, name, enum):
+    """{member: line} of the generator's `Dictionary<enum, string> name` (TypeLines, SightLines)."""
+    m = re.search(r"\b%s\s*=\s*new\(\)\s*\{(.*?)\n\s*\};" % name, text, re.S)
+    return dict(re.findall(r'\[%s\.(\w+)\]\s*=\s*"((?:[^"\\]|\\.)*)"' % enum, m.group(1)))
+
+
+def faction_in_sentence(name):
+    """PilotGenerator.FactionInSentence: a faction's name mid-sentence."""
+    if not name:
+        return "a crew with no name"
+    if name.startswith("The "):
+        return "the " + name[4:]
+    return name if name.startswith("House ") else "the " + name
+
+
+STORY_PARTS = ("home", "upbringing", "heritage_line", "joining", "quirk", "want", "backstory")
+
+
+def story(text, seed, given, family, heritage, ftype, fname, callsign):
+    """The story PilotGenerator.Roll gives a seed, from its one "pilot.story" stream in the generator's own order:
+    the homeworld (in Roll), then Backstory's five picks (Upbringings, HeritageLines, Joinings, Quirks, Wants), and
+    the paragraph Backstory builds from them. This is what a scene's `source` quotes (scene.py): the upbringing is
+    the pilot's history, the quirk a hobby, the want what they want most. It names the world, so it is for whoever
+    writes the record and never goes into a brief."""
+    s = SeededRandom.for_(seed, "pilot.story")
+    home = s.pick(cs_array(text, "Homeworlds"))
+    upbringing = s.pick(cs_array(text, "Upbringings"))
+    one, two = (h.lower() for h in heritage)        # Species.Name(...).ToLowerInvariant()
+    heritage_line = s.pick(cs_array(text, "HeritageLines")).replace("{one}", one).replace("{two}", two)
+    joining = (s.pick(cs_array(text, "Joinings")).replace("{faction}", faction_in_sentence(fname))
+               .replace("{they}", "they"))
+    quirk = s.pick(cs_array(text, "Quirks"))
+    want = s.pick(cs_array(text, "Wants"))
+    type_line = cs_table(text, "TypeLines", "FactionType").get(ftype, "")
+    sight = {k.upper(): v for k, v in cs_table(text, "SightLines", "PilotVision").items()}.get(callsign.upper(), "")
+    back = (f"{given} {family} {upbringing} on {home}. Part human, part {one}, part {two}, {given} {heritage_line}. "
+            f"{given} {joining}. "
+            + (f"Its members are {type_line}. " if type_line else "")
+            + (sight.replace("{name}", given) + ". " if sight else "")
+            + f"{quirk} {want}")
+    back = "".join(c for c in back if " " <= c <= "~")     # Printable
+    return dict(home=home, upbringing=upbringing, heritage_line=heritage_line, joining=joining, quirk=quirk,
+                want=want, backstory=back)
+
+
+def scene_sources(r):
+    """The four lines a scene record's `source` may start from, for a rolled pilot (scene.SOURCES)."""
+    hobby = re.sub(r"^They ", "", r["quirk"]).rstrip(".")
+    want = re.sub(r"^What they want most is ", "", r["want"]).rstrip(".")
+    return (f"profession: {brief.faction_words(r['faction'])}",
+            f"history: \"{r['upbringing']}\" (the game's Upbringings)",
+            f"hobby: \"{hobby}\" (the game's Quirks; put it in the third person)",
+            f"want: \"{want}\" (the game's Wants)")
+
+
 def roll(callsign, seed):
-    """The person PilotGenerator.Roll(callsign, seed) mints: name, heritage, faction type and founding faction."""
+    """The person PilotGenerator.Roll(callsign, seed) mints: name, heritage, faction type and founding faction, and
+    the story (homeworld, upbringing, heritage line, joining, quirk, want, and the backstory built from them)."""
     text = open(os.path.join(ROOT, GENERATOR_CS), encoding="utf-8").read()
     seed = seed or 1
     names = SeededRandom.for_(seed, "pilot.name")
@@ -413,7 +469,8 @@ def roll(callsign, seed):
     fnames = founding.get(ftype, [])
     fname = fnames[alleg.next(len(fnames))] if fnames else ""
     return dict(person=f"{given} {family}", heritage=(pool[first], pool[second]), faction=ftype,
-                faction_name=fname, callsign=callsign.upper(), seed=f"{seed:016x}")
+                faction_name=fname, callsign=callsign.upper(), seed=f"{seed:016x}",
+                **story(text, seed, given, family, (pool[first], pool[second]), ftype, fname, callsign))
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -542,6 +599,28 @@ def self_test():
         errors.append("roll is not deterministic")
     if r1["heritage"][0] == r1["heritage"][1]:
         errors.append("roll gave the same animal twice")
+    # The story: every table the generator picks from is read, every part is rolled, the paragraph ends on the
+    # want with no token left in it, and another seed tells another story.
+    gen = open(os.path.join(ROOT, GENERATOR_CS), encoding="utf-8").read()
+    for table in ("Homeworlds", "Upbringings", "HeritageLines", "Joinings", "Quirks", "Wants"):
+        if len(cs_array(gen, table)) < 6:
+            errors.append(f"PilotGenerator.{table} was not read (fewer than 6 lines)")
+    for table, enum in (("TypeLines", "FactionType"), ("SightLines", "PilotVision")):
+        if len(cs_table(gen, table, enum)) < 6:
+            errors.append(f"PilotGenerator.{table} was not read (fewer than 6 lines)")
+    missing = [k for k in STORY_PARTS if not r1.get(k)]
+    if missing:
+        errors.append(f"roll gives no {', '.join(missing)}")
+    elif "{" in r1["backstory"] or not r1["backstory"].endswith(r1["want"]) or r1["home"] not in r1["backstory"]:
+        errors.append("the backstory keeps a token, or does not hold the homeworld and end on the want")
+    elif roll("TALON", 12346)["backstory"] == r1["backstory"]:
+        errors.append("two seeds told the same story")
+    elif "TALON" not in r1["backstory"] or len(scene_sources(r1)) != 4:
+        errors.append("the backstory has no sight line for the callsign, or the scene sources are not four")
+    if faction_in_sentence("The Black Tide") != "the Black Tide" or faction_in_sentence("House Verdance") != \
+            "House Verdance" or faction_in_sentence("Red Reef Rovers") != "the Red Reef Rovers" or \
+            faction_in_sentence("") != "a crew with no name":
+        errors.append("faction_in_sentence departs from PilotGenerator.FactionInSentence")
     errors += cast_errors()
     words = [c[0] for c in catalog()]
     if len(set(words)) != len(words):
@@ -654,6 +733,9 @@ def main():
         r = roll(callsign, seed)
         print(f"{r['person']}  {r['callsign']}  Human / {r['heritage'][0]} / {r['heritage'][1]}  "
               f"{brief.faction_words(r['faction'])} of {r['faction_name']}  seed {r['seed']}\n")
+        print(f"Their story, as the game tells it (for the scene's writer; never sent to a painter):\n"
+              f"{r['backstory']}\n")
+        print("A scene's source starts from one of:\n  " + "\n  ".join(scene_sources(r)) + "\n")
         more = bust.roll_more(*r["heritage"], r["person"])     # a new pilot may show more of the human side
         print(bust.compose(r["heritage"], r["faction"], r["person"], r["callsign"], **more))
     elif a.cmd == "brief":
