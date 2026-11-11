@@ -119,7 +119,7 @@ class VesselWorld:
 
     def __init__(self, session, hull=(4.5, 1.13, 6.7), hull_col=(0.1, 0.13, 0.24), pod_col=(0.7, 0.2, 0.25),
                  jet_secs=0.5, jet_width=0.12, jet_col=(0.1, 0.75, 1.0),
-                 tail_secs=4.0, tail_width=1.0, tail_col=(0.0, 0.6, 0.62),
+                 tail_secs=4.0, tail_width=1.0, tail_col=(0.0, 0.6, 0.62), tail_gain=0.4,
                  crystal=3.8, crystal_bright=(0.055, 0.51, 0.749), crystal_dark=(0.0, 0.02, 0.05)):
         self.__dict__.update(locals())
         self.fps = session.meta.get("fps", 15.0)
@@ -180,7 +180,7 @@ class VesselWorld:
                                    lambda u: np.concatenate([np.tile(jc, (len(u), 1)), (1 - u)[:, None]], 1), soft=True)
                 rib += self._trail(session, frame, v, self.TAILS, self.tail_secs,
                                    lambda u: self.tail_width * np.where(u < 0.1875, 1.0, (1 - u) / 0.8125), eye,
-                                   lambda u: np.concatenate([np.tile(tc, (len(u), 1)), np.interp(u, [0, 0.0647, 0.1588, 1], [0, 0, 0.706, 0])[:, None]], 1))
+                                   lambda u: np.concatenate([np.tile(tc, (len(u), 1)), np.interp(u, [0, 0.0647, 0.1588, 1], [0, 0, 0.706, 0])[:, None] * self.tail_gain], 1))
             if rib:
                 out["lines"] = rib
         C = [c for c in st.get("crystals", []) if not c.get("exploding")]
