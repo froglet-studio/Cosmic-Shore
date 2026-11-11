@@ -99,6 +99,9 @@ LEGACY_NAMES = {   # the spare paintings never had a name; these were given by h
 # differ (fifty pilots, fifty places), with the places of the callsign pilots chosen by hand for the person, then
 # FROZEN here: the busts on disk were painted from exactly these looks. Change a line on purpose and repaint that
 # pilot; a new pilot gets its line from `creator.py cast`.
+# Round 3 (2026-11-11, "please never make crab hands"): Comet, Damsel, Dozer, Slingshot and Reaper lost a claw, a
+# pincer, clubs and forelegs. Comet now holds a shard in a lobster-shell hand with fingers, Dozer and Reaper show
+# their face animal's true hand, Damsel and Slingshot show none.
 # ---------------------------------------------------------------------------------------------------------------
 CAST = {   # word: the look it is painted with (bust.compose"s keywords); dealt by propose_cast, then frozen
     "ENSIGN": dict(backdrop="water-garden", gear=0, pose=0, expression="shy and gentle", hair="short spiky white human hair", limb=False, hand="none"),
@@ -121,9 +124,9 @@ CAST = {   # word: the look it is painted with (bust.compose"s keywords); dealt 
     "FLUME": dict(backdrop="wreck-ring", gear=0, pose=9, expression="proud and unbowed", hair="none", limb=True, hand="curled under the chin in thought"),
     "Astrofoil": dict(backdrop="chart-room", gear=0, pose=6, expression="mischievous, holding back a laugh", hair="a thick dark human plait hanging down the back", limb=False, hand="none"),
     "Bushy": dict(backdrop="harvest-lines", gear=0, pose=5, expression="warm and kind", hair="none", limb=False, hand="none"),
-    "Comet": dict(backdrop="grandstand-night", gear=0, pose=4, expression="fierce and determined", hair="none", limb=True, hand="none"),
-    "Damsel": dict(backdrop="night-march", gear=0, pose=9, expression="delighted, on the edge of laughing", hair="none", limb=True, hand="none"),
-    "Dozer": dict(backdrop="shipyard", gear=0, pose=6, expression="serene, almost sleepy", hair="none", limb=True, hand="none"),
+    "Comet": dict(backdrop="grandstand-night", gear=0, pose=4, expression="fierce and determined", hair="none", limb=True, hand="holding a small glowing crystal shard up beside the face"),
+    "Damsel": dict(backdrop="night-march", gear=0, pose=9, expression="delighted, on the edge of laughing", hair="none", limb=False, hand="none"),
+    "Dozer": dict(backdrop="shipyard", gear=0, pose=6, expression="serene, almost sleepy", hair="none", limb=True, hand="holding the welding goggles at the chest"),
     "Echo": dict(backdrop="tidal-archive", gear=0, pose=5, expression="cool and assessing", hair="none", limb=False, hand="none"),
     "Fiest": dict(backdrop="warrant-wall", gear=0, pose=3, expression="weary but steady", hair="none", limb=False, hand="none"),
     "Flux": dict(backdrop="race-gates", gear=1, pose=7, expression="bright, open and curious", hair="none", limb=False, hand="none"),
@@ -132,12 +135,12 @@ CAST = {   # word: the look it is painted with (bust.compose"s keywords); dealt 
     "Longshift": dict(backdrop="uncharted-edge", gear=1, pose=1, expression="shy and gentle", hair="none", limb=True, hand="giving a small wave"),
     "Maestro": dict(backdrop="ninefold-shell", gear=0, pose=0, expression="cool and assessing", hair="long honey-brown human waves swept to one side", limb=False, hand="none"),
     "Mason": dict(backdrop="lattice-pens", gear=2, pose=7, expression="mischievous, holding back a laugh", hair="none", limb=False, hand="none"),
-    "Reaper": dict(backdrop="kelp-alley", gear=1, pose=8, expression="serene, almost sleepy", hair="none", limb=True, hand="none"),
+    "Reaper": dict(backdrop="kelp-alley", gear=1, pose=8, expression="serene, almost sleepy", hair="none", limb=True, hand="holding one thin lockpick up beside the face"),
     "Riptide": dict(backdrop="nucleus-sun", gear=1, pose=5, expression="stern and watchful", hair="none", limb=False, hand="resting flat over the heart"),
     "Scales": dict(backdrop="harbour-terrace", gear=0, pose=3, expression="proud and unbowed", hair="a short swept-back undercut of dark human hair", limb=False, hand="none"),
     "Shrapnel": dict(backdrop="rally-wall", gear=1, pose=9, expression="delighted, on the edge of laughing", hair="a long silver-white human braid falling over one shoulder", limb=False, hand="none"),
     "Siphon": dict(backdrop="lantern-reach", gear=2, pose=6, expression="warm and kind", hair="a wild mop of auburn human curls", limb=False, hand="none"),
-    "Slingshot": dict(backdrop="ark-greenhouse", gear=2, pose=4, expression="fierce and determined", hair="none", limb=True, hand="none"),
+    "Slingshot": dict(backdrop="ark-greenhouse", gear=2, pose=4, expression="fierce and determined", hair="none", limb=False, hand="none"),
     "Strider": dict(backdrop="tollmoor-market", gear=1, pose=1, expression="weary but steady", hair="none", limb=False, hand="none"),
     "Tenacious": dict(backdrop="rescue-bay", gear=0, pose=0, expression="calm and faintly amused", hair="long straight black human hair falling behind the shoulders", limb=False, hand="none"),
     "Tender": dict(backdrop="old-growth-reef", gear=0, pose=2, expression="wry and unimpressed", hair="none", limb=False, hand="none"),
@@ -206,7 +209,8 @@ def propose_cast(wish=None):
         if not backdrop:
             home, anyone = bust.backdrops_for(faction)
             pool = [k for k in home if not used[k]] or anyone
-            backdrop = min(pool, key=lambda k: (used[k], values[bust.BACKDROPS[k][0]], h(person, k)))
+            backdrop = min(pool, key=lambda k: (used[k], k not in bust.UNEARTHLY, values[bust.BACKDROPS[k][0]],
+                                                h(person, k)))   # a place that could not be on Earth first
             used[backdrop] += 1
             values[bust.BACKDROPS[backdrop][0]] += 1
         gear = w.get("gear", outfits[faction] % 3)
@@ -220,11 +224,17 @@ def propose_cast(wish=None):
             mood = min(bust.EXPRESSIONS, key=lambda m: (moods[m], h(person, m)))
             moods[mood] += 1
         look = dict(backdrop=backdrop, gear=gear, pose=pose, expression=mood, **bust.roll_tells(a, b, person))
+        if not w:    # a NEW pilot may show more of the human side; a pilot with a wished look keeps exactly that look
+            more = bust.roll_more(a, b, person)
+            if more["touch"] != "none":
+                look["touch"] = more["touch"]
+            if not more["glove"]:
+                look["glove"] = False
         if look["hair"] != "none" and "hair" not in w:   # deal the hair styles too
             cap = bust.crown_of(a, b)[1]
             look["hair"] = min(bust.HAIRS_LOW if cap else bust.HAIRS, key=lambda x: (hairs[x], h(person, x)))
             hairs[look["hair"]] += 1
-        for k in ("hair", "limb", "hand", "extra", "iris"):
+        for k in ("hair", "limb", "hand") + LOOK_MORE:
             if k in w:
                 look[k] = w[k]
         if look["hair"] != "none" and not look["limb"]:
@@ -235,7 +245,7 @@ def propose_cast(wish=None):
 
 
 LOOK_KEYS = ("backdrop", "gear", "pose", "expression", "hair", "limb", "hand")   # every frozen look carries these
-LOOK_MORE = ("extra", "iris")                                                    # and may carry these
+LOOK_MORE = ("extra", "iris", "touch", "glove")                                   # and may carry these
 
 
 def cast_errors(cast=None):
@@ -290,6 +300,10 @@ def cast_errors(cast=None):
             errors.append(f"{word}: pose {look['pose']!r} is not an index in bust.POSES")
         if look["expression"] not in bust.EXPRESSIONS:
             errors.append(f"{word}: {look['expression']!r} is not in bust.EXPRESSIONS")
+        if look.get("touch", "none") not in ["none"] + bust.TOUCHES + bust.TOUCHES_FUR:
+            errors.append(f"{word}: {look['touch']!r} is not a human touch on bust.TOUCHES or bust.TOUCHES_FUR")
+        if type(look.get("glove", True)) is not bool:
+            errors.append(f"{word}: glove {look['glove']!r} is not True or False")
         covered = bust.crown_of(*animals)[1]    # a frozen look wears a listed hair style, of the list its crown allows
         if look["hair"] != "none" and look["hair"] not in (bust.HAIRS_LOW if covered else bust.HAIRS + bust.HAIRS_LOW):
             errors.append(f"{word}: {look['hair']!r} is not a hair style " + (
@@ -544,7 +558,9 @@ def self_test():
                                ("ENSIGN", dict(gear=9), "gear 9"),
                                ("ENSIGN", dict(pose=len(bust.POSES)), "is not an index in bust.POSES"),
                                ("ENSIGN", dict(expression="smug"), "is not in bust.EXPRESSIONS"),
-                               ("Comet", dict(limb=False), "always in the frame"),
+                               ("IVY", dict(limb=False), "always in the frame"),
+                               ("ENSIGN", dict(touch="wears a top hat"), "ENSIGN: 'wears a top hat' is not a human touch"),
+                               ("ENSIGN", dict(glove="no"), "ENSIGN: glove 'no' is not True or False"),
                                ("ANVIL", dict(hair=bust.HAIRS[0]), "a mane of its own"),
                                ("Krush", dict(hair=bust.HAIRS[0]), "the hair is enough"),
                                ("TALON", dict(hairr="none"), "TALON: unknown key 'hairr'"),
@@ -638,7 +654,8 @@ def main():
         r = roll(callsign, seed)
         print(f"{r['person']}  {r['callsign']}  Human / {r['heritage'][0]} / {r['heritage'][1]}  "
               f"{brief.faction_words(r['faction'])} of {r['faction_name']}  seed {r['seed']}\n")
-        print(bust.compose(r["heritage"], r["faction"], r["person"], r["callsign"]))
+        more = bust.roll_more(*r["heritage"], r["person"])     # a new pilot may show more of the human side
+        print(bust.compose(r["heritage"], r["faction"], r["person"], r["callsign"], **more))
     elif a.cmd == "brief":
         print(brief_of(a.args[0]))
     elif a.cmd == "list":

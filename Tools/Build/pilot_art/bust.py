@@ -21,12 +21,19 @@ heritage its own ground inside the crop:
                      covers the back of the head, the nape, the throat and the neck, blending into the face along
                      the jaw (round 1's patch on one cheek read as pasted on); plus, where it has one, ONE MORE piece
                      of its body in the frame (SECOND[b]: a tail over the shoulder, folded wings, a shell rim) or its
-                     limb (LIMB_TELL[b]: a lobster's claw, a mantis's praying forelegs). When the face already shows
-                     the crown's organ (ears on a hare), ALT[b] is used instead of a second pair.
+                     hand (LIMB_TELL[b]: an otter's paws around a pebble). When the face already shows the crown's
+                     organ (ears on a hare), ALT[b] is used instead of a second pair. Wings, tails and tail fans grow
+                     from the BACK and stand behind the clothes, never from the head (round 3).
   * HUMAN         -> the bearing, the CLOTHES (GEAR: three outfits per faction type) and the gaze. Human hair for
                      some pilots only (never over a crown that covers the scalp); a human hand almost never, and never
                      beside hair or on a pilot whose animal has a hand or a tentacle of its own (LIMB), which can show
-                     that instead.
+                     that instead. A pilot's hand can always hold and use things: never a claw, a pincer or a club.
+
+Round 3 (Garrett, 2026-11-11, on round 2: "These are great. only a few need changing"): "please never make crab hands
+(how would they interact with things?)", "butterfly Wings on a head, as ears, is nonsensical", "the turkey tail
+feathers are in a very weird spot with respect to the dog's hood", "the chameleon transitioning to jellyfish looks a
+bit abrupt", and "The backgrounds that don't look like they could be earth are the best". Each is a rule in a table
+below, held by --self-test, so every pilot rolled from now on inherits it; eight busts were repainted.
 
 What every bust shares, so the set reads as one: the framing (the head in the upper middle, cropped at mid-chest),
 the painterly finish, the faction's DOMAIN colour as the clothes' trim, the rim light and a thin glowing ring around
@@ -223,7 +230,7 @@ CROWN = {
     "Walrus": ("tusks", "other", False, "two long ivory walrus tusks curving down from the corners of the jaw to the chest, and a broad pad of stiff pale walrus whiskers above them"),
     "Ibis": ("feathers", "other", True, "sleek vivid scarlet ibis feathers covering the whole crown and nape"),
     "Tapir": ("ears", "ears", False, "two oval tapir ears rimmed in white, and a short stiff tapir crest of dark hair along the top of the neck"),
-    "Jellyfish": ("veil", "other", True, "a translucent glowing lilac jellyfish bell worn over the crown like a veil, with fine frilled tentacles trailing down behind the head"),
+    "Jellyfish": ("veil", "other", True, "a translucent glowing lilac jellyfish bell that the top and the back of the head turn into by degrees, with no rim where it begins, the {a}'s own skin growing paler and clearer toward the crown until it is glowing jelly, and fine frilled tentacles trailing down behind the head"),
     "Badger": ("stripes", "other", True, "the badger's head pattern over the whole top of the head, a white cap from the brow to the nape split by two bold black stripes that start above each eye and run back over the crown, three white bands and two black"),
     "Chameleon": ("casque", "other", True, "a tall pointed green chameleon casque rising from the back of the head, banded turquoise and yellow"),
     "Owl": ("ear tufts", "other", True, "two tall feathered owl ear tufts, barred brown and cream, and a ruff of fine radiating owl disc feathers framing the face"),
@@ -260,15 +267,15 @@ LEGACY_CROWN = {   # the legacy painted pilots' second animals that are not Anim
     "Scorpion": ("tail", "other", False, "a segmented scorpion tail, glossy dark red, rising from behind the shoulders and arching forward over the head with its curved stinger poised above the brow"),
     "Orca": ("fin", "other", True, "a tall glossy black orca dorsal fin rising from the crown like a blade, and a crisp white orca eye patch swept back from behind each eye"),
     "Eagle": ("mane", "other", False, "a mane of snow-white bald eagle feathers sweeping back from behind the face, over the nape and down the neck to the shoulders, leaving the top of the head bare of feathers"),
-    "Turkey": ("fan", "other", False, "a wide fan of bronze turkey tail feathers, banded and white-tipped, spread upright behind the head, and a red turkey wattle hanging at the throat"),
-    "Butterfly": ("wings", "other", False, "two orange monarch butterfly wings veined in black and edged with white dots, standing up from the sides of the head like tall ears, and two thin clubbed antennae"),
+    "Turkey": ("wattle", "other", False, "a long red turkey wattle hanging at the throat, and a row of small red turkey caruncles down each side of the neck"),
+    "Butterfly": ("antennae", "other", False, "two slender black butterfly antennae with clubbed tips rising from the brow"),
     "Porcupine": ("quills", "other", True, "a great crest of long porcupine quills banded black and white, sweeping back from the brow over the whole head"),
     "Lionfish": ("spines", "other", False, "a crown of long lionfish spines banded red and white, fanning out from the back of the head, each trailing a strip of striped fin"),
     "Red panda": ("ears", "ears", False, "two large pointed red panda ears rimmed in thick white fur, with white cheek patches and russet tear tracks below them"),
     "Mantis shrimp": ("carapace", "other", True, "a peacock mantis shrimp's carapace over the crown, olive green spotted like a leopard and edged in electric blue, with flat red-fringed antennal paddles at the temples and fine red feelers sweeping back"),
     "Crocodile": ("scutes", "other", True, "rows of square armoured crocodile scutes, olive-brown and keeled, covering the crown and running down the nape in a double ridge"),
     "Hawk": ("mantle", "other", False, "a mantle of streaked brown-and-cream red-tailed hawk feathers sweeping back from behind the face, over the nape and down the neck, leaving the top of the head bare of feathers"),
-    "Peacock": ("crest", "other", False, "a peacock's upright crest of fine blue-tipped feather stems on top of the head, and a fan of iridescent green-gold peacock tail feathers with blue eye-spots spread behind it"),
+    "Peacock": ("crest", "other", False, "a peacock's upright crest of fine bare feather stems, each tipped with a small blue fan, standing on top of the head"),
     "Ram": ("horns", "horns", False, "two heavy ridged ram horns curling down and around the sides of the head"),
     "Tiger": ("ears", "ears", False, "two rounded tiger ears, black on the backs with a bold white spot, a wide orange-and-white tiger cheek ruff, and black tiger stripes running back over the crown"),
     "Deer": ("antlers", "horns", False, "a pair of branching stag antlers rising from the top of the head"),
@@ -311,6 +318,11 @@ ALT = {
 # SECOND: one more piece of the second animal's body inside the frame (kind, line). The lemur's ringed tail, the
 # scorpion's tail and the turkey's fan were what the blind readers named those animals from; a hand no longer fills
 # that part of the frame.
+# Where it grows (Garrett, 2026-11-11: "butterfly Wings on a head, as ears, is nonsensical", "the turkey tail feathers
+# are in a very weird spot with respect to the dog's hood"): WINGS grow from the back between the shoulder blades, a
+# TAIL and a tail FAN from the base of the back, and all of them stand BEHIND the clothes. None grows from the head,
+# and a fan never stands between a hood and the head: a fan or wings line says "behind the back" or "behind ...
+# shoulders" and never "behind the head" (--self-test), and the composer lays a hood in front of them (BEHIND_HOOD).
 SECOND = {
     "Heron": ("wings", "broad blue-grey heron wings with black flight feathers and a black patch at the bend, folded high behind both shoulders"),
     "Pangolin": ("tail", "a heavy pangolin tail armoured in the same overlapping scales, curled up around one shoulder"),
@@ -342,16 +354,30 @@ SECOND = {
     "Eagle": ("wings", "dark brown eagle wings folded high behind both shoulders"),
     "Red panda": ("tail", "a thick red panda tail ringed russet and cream, curled over one shoulder"),
     "Crocodile": ("tail", "a heavy crocodile tail with a double row of ridged scutes, curled around one shoulder"),
-    "Hawk": ("fan", "a red-tailed hawk's tail feathers, rust-red with a dark band near the tips, fanned upright behind the head, and barred hawk wings folded behind the shoulders"),
+    "Hawk": ("fan", "barred hawk wings folded behind both shoulders, and a red-tailed hawk's tail feathers, rust-red with a dark band near the tips, fanned behind the back where a tail grows, their tips showing behind one shoulder and no higher than the jaw"),
     "Tiger": ("tail", "a thick tiger tail ringed in orange and black, curled over one shoulder"),
     "Mantis shrimp": ("tail", "a mantis shrimp's fanned tail plates in electric blue, green and red, raised behind one shoulder"),
     "Lionfish": ("fins", "wide striped lionfish fins spread behind the shoulders like fans"),
     "Tardigrade": ("body", "two pairs of stubby tardigrade legs, each ending in a ring of tiny claws, peeking over the shoulders"),
+    "Lobster": ("tail", "a lobster's broad armoured tail, red segmented plates ending in a fan of flat blades, curled up behind one shoulder"),
+    "Mantis": ("wings", "long narrow leaf-green mantis wings, veined like leaves, folded flat behind both shoulders like a cloak"),
+    "Butterfly": ("wings", "two great monarch butterfly wings, orange veined in black and edged with white dots, growing from the back between the shoulder blades and standing open behind both shoulders, behind the clothes and well clear of the head and the neck"),
+    "Turkey": ("fan", "a wide fan of bronze turkey tail feathers, banded and white-tipped, spread behind the back where a tail grows: it rises from below the frame behind both shoulders and behind the clothes, its tips no higher than the jaw, well clear of the head and the neck"),
+    "Peacock": ("fan", "a peacock's train of iridescent green-gold tail feathers with blue eye-spots, fanned wide behind the back where a tail grows: it rises from below the frame behind both shoulders and behind the clothes, well clear of the head and the neck"),
 }
+# The kinds of SECOND that stand up behind the shoulders: under a hooded outfit the composer says the hood lies in
+# front of them (Krush's fan was painted between his hood and his head).
+BEHIND_HOOD = ("fan", "wings", "fins", "shell")
+HOODED = re.compile(r"\b(?:hood|hooded|hoodie|cowl)\b")
 
 # LIMB: the animals that have a hand or a tentacle of their own (Garrett, 2026-11-11: "any creature that already has
 # a hand or tentacle like a frog, primate, or octopus it doesn't need a hand"). A pilot with one never gets a human
 # hand; about half of them show the limb instead.
+# A pilot's hand can HOLD AND USE THINGS (Garrett, 2026-11-11: "please never make crab hands (how would they interact
+# with things?)"). So a line here is a hand with fingers or a tentacle, and never a claw, a pincer, a club, a blade or
+# a hook (--self-test): round 2's lobster claws, scorpion pincer, mantis forelegs and mantis shrimp clubs were
+# repainted. The armoured animals (ARMOURED) wear their shell on a five-fingered hand like a gauntlet, and a pilot
+# who has a true hand as well (a tree frog with a scorpion's tail) shows the true hand.
 LIMB = {
     "Tree frog": "a tree frog's long-fingered green hand, each finger ending in a round orange sticky pad",
     "Octopus": "one long suckered octopus arm, ochre above and pale beneath, curling up from below",
@@ -367,27 +393,38 @@ LIMB = {
     "Badger": "a badger's broad dark forepaw, the palm toward the viewer, with five toes and one long pale digging claw on each toe",
     "Mouse": "a mouse's tiny pink hand with fine fingers",
     "Kangaroo": "a kangaroo's small dark forepaw with five clawed fingers",
-    "Mole": "a mole's huge pink digging hand, broad as a spade with long pale claws",
-    "Sloth": "a sloth's long shaggy arm ending in three long curved pale claws",
+    "Mole": "a mole's broad pink hand, its five thick fingers ending in long pale nails",
+    "Sloth": "a sloth's long shaggy arm ending in a slow long-fingered hand, a curved pale claw at the tip of each finger",
     "Cuttlefish": "one slim cuttlefish tentacle with a flat suckered club at its tip, curling up from below",
-    "Lobster": "one heavy red lobster claw, its pincers a little open",
-    "Scorpion": "one glossy dark-red scorpion pincer",
-    "Mantis": "a green mantis foreleg folded like a jack-knife, toothed along its inner edge",
-    "Mantis shrimp": "a mantis shrimp's folded striking club, red with white spots",
+    "Lobster": "a hand with four fingers and a thumb, armoured in red lobster shell, every finger jointed in small overlapping plates like the fingers of a gauntlet",
+    "Scorpion": "a hand with four fingers and a thumb, plated in glossy dark-red scorpion armour, every finger jointed like the fingers of a gauntlet",
+    "Mantis": "a slender long-fingered hand of smooth leaf-green mantis chitin, four fingers and a thumb, with a row of fine thorns along the forearm",
+    "Mantis shrimp": "a hand with four fingers and a thumb, armoured in a mantis shrimp's shell, red with white spots across the knuckles, every finger jointed like the fingers of a gauntlet",
     "Platypus": "a platypus's webbed forepaw, dark skin stretched between clawed fingers",
-    "Tardigrade": "a tardigrade's stubby soft leg ending in a ring of tiny claws",
+    "Tardigrade": "a soft translucent cream tardigrade hand with five plump stubby fingers",
     "Jellyfish": "",   # its tentacles trail from the bell (CROWN, FACE): no human hand, and nothing more to raise
 }
+# The animals whose own limb is a claw, a pincer, a blade or a club: their LIMB line is their shell on a hand with
+# fingers. A pilot whose other animal has a true hand shows that one instead (human_tells).
+ARMOURED = {"Lobster", "Scorpion", "Mantis", "Mantis shrimp"}
+# What a limb line may never be, and what it must name (--self-test).
+NOT_A_HAND = re.compile(r"\b(?:pincers?|crusher|striking clubs?|forelegs?|jack-kni(?:fe|ves)|hooks?)\b")
+A_HAND = re.compile(r"\b(?:fingers?|fingered|toes|paws?|forepaws?|tentacle|suckered)\b")
 # Animals that bring a mane or long hair of their own: human hair beside it is one head of hair too many.
 OWN_HAIR = {"Zebra", "Yak", "Bison", "Orangutan", "Sloth"}
 # LIMB_TELL: second animals whose limb is how people know them; it is always in the frame (the whole sentence).
 LIMB_TELL = {
-    "Lobster": "One arm is raised into the frame and it is the lobster's: a heavy red crusher claw, its pincers a little open, held up at the chest",
-    "Mantis": "Both arms are raised into the frame and they are the mantis's: two green forelegs folded like jack-knives, toothed along their inner edges, held together in front of the chest in the praying pose",
-    "Sloth": "One arm is raised into the frame and it is the sloth's: a long shaggy grey-brown arm ending in three long curved pale claws, hooked over the collar",
-    "Mole": "Both hands are raised into the frame and they are the mole's: huge pink digging hands, broad as spades with long pale claws, held up at the chest",
-    "Mantis shrimp": "Both arms are raised into the frame and they are the mantis shrimp's: two folded striking clubs, red with white spots, tucked up at the chest like a boxer's guard",
+    "Sloth": "One arm is raised into the frame and it is the sloth's: a long shaggy grey-brown arm ending in a slow long-fingered hand, a curved pale claw at the tip of each finger, the fingers curled over the collar",
+    "Mole": "Both hands are raised into the frame and they are the mole's: broad pink hands with five thick fingers and long pale nails, held up at the chest",
     "Otter": "Both hands are raised into the frame and they are the otter's: small dark webbed paws held together at the chest, cradling a smooth pebble the way an otter does",
+}
+
+# BLEND: how a second animal's coat meets the face, where the usual seam along the jaw is not enough ({a}: the face
+# animal). A translucent animal against an opaque one was painted as a helmet with a hard edge (Garrett, 2026-11-11:
+# "the chameleon transitioning to jellyfish looks a bit abrupt"), so its seam is a gradient that is written out.
+SEAM = "meeting the {a}'s face along the jawline and the temples in a soft natural blend"
+BLEND = {
+    "Jellyfish": "and there is no line where the {a} ends: past the cheeks and the temples its skin thins and turns glassy by degrees, its colours fading out into the jelly over a hand's width",
 }
 
 # MARK: the second animal's coat, which covers everything behind the face (the composer says where).
@@ -593,7 +630,42 @@ BACKDROPS = {
     "ninefold-shell": ("mid", (), ("Priest",), "nested pearly shell vaults, lit by candle-like points, a mother-of-pearl sheen", "soft pearly light with small warm points"),
     "treaty-hall": ("light", (), ("Diplomat", "Aristocrat"), "a treaty hall, a long table between tall pale columns, three tall plain curtains of ruby, gold and jade cloth drawn back at the far windows", "even pale hall light"),
     "harbour-terrace": ("mid", ("Gold",), ("Diplomat",), "a harbour terrace at golden evening, a marble balustrade, far vessels at anchor, long warm light", "long warm evening light from one side"),
+    # round 3: places that could not be on Earth (UNEARTHLY), one home ground for every faction type and five for anyone
+    "geode-bazaar": ("dark", (), ("Merchant",), "a night market moored inside a hollow geode as wide as a harbour, barges and stalls on black water, every violet crystal face of the walls throwing back the stall lamps in broken points", "cool violet light off the crystal walls with small warm lamp points"),
+    "herd-canopy": ("mid", ("Jade",), ("Hunter",), "a hide slung high in a forest of giant translucent stalks, far below it a herd of slow glowing creatures drifting through blue-green haze like lanterns on a river", "dim blue-green light from below and a pale glow through the stalks"),
+    "spire-terrace": ("light", (), ("Aristocrat",), "a palace terrace grown from pale living crystal, slender spires like frozen spray, two small pale suns low over a sea of white cloud", "soft double light from two low suns, with two faint shadows"),
+    "leviathan-ribs": ("dark", (), ("Pirate",), "a hidden anchorage inside the skeleton of some vast dead creature, its ribs arching overhead like the vault of a great hall, patched vessels moored between them, deck fires doubled in black water", "low firelight from below and cold blue light falling between the ribs"),
+    "gulf-waystation": ("dark", (), ("BountyHunter",), "a waystation bolted to the underside of a drifting rock, a row of caged lamps hanging over a bottomless gulf that glows faintly blue far below", "one caged lamp overhead and a faint blue glow from far below"),
+    "spiral-sink": ("light", ("Jade",), ("Explorer",), "the lip of a colossal sinkhole whose pale stone walls spiral down out of sight, three small moons in a green twilight sky, one survey line dropping into the dark", "pale green twilight with a cool glow from the moons"),
+    "raft-city": ("mid", ("Jade",), ("Activist",), "a city of a thousand small boats lashed together, drifting under a sky that is one enormous translucent membrane veined like a leaf, lanterns strung between the masts", "soft green-white light through the membrane and warm lantern points"),
+    "drift-vault": ("dark", (), ("Thief",), "a looted vault where gravity has let go, coins, keys and cut gems hanging in the air and turning slowly in one shaft of violet-white light, the vault door standing open on black", "one shaft of violet-white light and scattered glints"),
+    "sphere-terraces": ("light", ("Jade",), ("Gatherer",), "harvest terraces climbing the inside of a hollow sphere as big as a valley, rows of blue-green kelp curving up and overhead, a small white sun hanging at its centre", "bright even light from the small sun at the centre, with no horizon"),
+    "crystal-slip": ("mid", (), ("Contractor",), "a slipway where a hull is grown and not built, a half-formed vessel of living blue-grey crystal in a cradle of scaffolds, new facets still creeping along its edges, cold sparks drifting upward like slow stars", "cool blue light from the growing crystal and white work lamps"),
+    "ring-canyon": ("mid", ("Ruby",), ("Sport",), "a race line threading a canyon of rose-coloured crystal, glowing gate rings hanging in the air between the walls and receding out of sight, streaks of light where vessels have passed", "rose light off the crystal walls and white glare from the nearest ring"),
+    "sphere-observatory": ("dark", (), ("Researcher",), "an observatory gallery under a clear dome, the dark beyond it crowded with enormous translucent spheres, each with a tiny bright sun at its heart, brass instruments in silhouette", "the cold many-pointed light of the far spheres and one small desk lamp"),
+    "bell-grove": ("dark", ("Gold",), ("Preservationist",), "a grove of giant bell-shaped flora that glow amber from within, their stems as thick as towers, pale spores rising between them like slow snow", "warm amber glow from the bells and deep blue shadow"),
+    "maelstrom-light": ("dark", ("Ruby",), ("FirstResponder",), "a rescue tower on a shard of rock above a maelstrom of violet cloud, a slow spiral of light turning in its depths, rescue craft circling like sparks", "a turning white beacon from above and a violet glow from below"),
+    "hollow-pearl": ("light", (), ("Priest",), "a sanctuary inside a hollow pearl the size of a hall, its curved wall glowing milk-white and faintly rainbowed, nine small flames floating in the air with no lamps beneath them", "soft shadowless pearl light with nine small warm points"),
+    "twin-spheres": ("mid", (), ("Diplomat",), "a round council floor hanging in open space between two enormous translucent spheres that almost touch, one glowing rose and one glowing blue, a thin bridge of light where they meet", "rose light from one side and blue light from the other"),
+    "prism-field": ("mid", (), (), "a field of great drifting prisms, each as big as a house and clear as water, splitting the light into slow bands of colour that drift through the haze", "white light broken into soft coloured bands"),
+    "ring-tunnel": ("dark", (), (), "the mouth of a tunnel of light bored through dark water, ring after glowing ring receding to a point, fine bright dust streaming into it", "cold white-blue light from the tunnel behind"),
+    "membrane-dawn": ("light", ("Ruby",), (), "the inside of a vast living cell at its dawn, the far membrane wall glowing rose and pearl like the inside of a shell, veined with pale light", "soft rose-pearl light from the whole far wall, shadowless"),
+    "spore-plain": ("light", (), (), "a white plain of fallen spores under a pale sky full of drifting seed-globes, each trailing a thread, a far line of crystal trees", "flat bright light from above and from the white ground"),
+    "giant-wake": ("dark", ("Jade",), (), "the wake of something vast that has just passed, a wall of churned dark water full of green sparks, and one enormous fin sliding out of sight", "green sparks from the wake and a cold key light from above"),
 }
+# UNEARTHLY: the places that could not be on Earth (Garrett, 2026-11-11: "The backgrounds that don't look like they
+# could be earth are the best"). A new pilot's place is rolled three times as readily from these (weighted_backdrops,
+# creator.propose_cast), and every faction type has at least one of its own (--self-test). The busts already painted
+# keep the places they stand in.
+UNEARTHLY = frozenset({
+    "open-sea-dusk", "cell-membrane", "nucleus-sun", "crystal-shallows", "lantern-reach", "glassmere", "nine-wells",
+    "the-maw", "cinder-shoal", "lattice-pens", "uncharted-edge", "race-gates", "old-growth-reef", "ninefold-shell",
+    "bloom-garden", "deepreed-shrine",
+    "geode-bazaar", "herd-canopy", "spire-terrace", "leviathan-ribs", "gulf-waystation", "spiral-sink", "raft-city",
+    "drift-vault", "sphere-terraces", "crystal-slip", "ring-canyon", "sphere-observatory", "bell-grove",
+    "maelstrom-light", "hollow-pearl", "twin-spheres", "prism-field", "ring-tunnel", "membrane-dawn", "spore-plain",
+    "giant-wake",
+})
 
 # The person's human tells, rolled from the name when the caller does not set them (a name always paints the same).
 HAIRS = [   # over a crown that pokes through hair (ears, horns, antennae, fins)
@@ -610,13 +682,46 @@ HAIRS = [   # over a crown that pokes through hair (ears, horns, antennae, fins)
     "a cloud of tight black human coils",
     "long honey-brown human waves swept to one side",
     "shoulder-length dark human locs gathered in a band",
+    # round 3: more of the human side, for the pilots who show it (the list grows; the painted busts keep theirs)
+    "a shaved side and a long sweep of black human hair falling over the other eye",
+    "two thick chestnut human braids hanging forward over the shoulders",
+    "a short iron-grey human crop, thinning at the temples",
+    "a loose bun of sun-bleached human hair with strands escaping",
+    "a high rounded puff of tight dark human curls",
+    "a blunt jaw-length cut of white-blond human hair",
+    "long dark-red human hair tied back with a strip of plain cloth",
+    "a mane of salt-and-pepper human waves combed straight back",
 ]
 HAIRS_LOW = [   # under a crown that covers the scalp: the hair shows only below it
     "a long silver-white human braid falling over one shoulder",
     "a thick dark human plait hanging down the back",
     "loose copper-red human curls spilling out at the nape",
     "long straight black human hair falling behind the shoulders",
+    "a short grey human queue tied at the nape with a cord",
+    "two thin dark human braids hanging forward over the collar",
+    "soft pale-gold human curls gathered low at the nape",
+    "a long rope of tight black human braids over one shoulder",
 ]
+# A person's own touch on an animal's face (Garrett, 2026-11-11: "it is fine to have some that express more of their
+# human side ... I would expand the list vs. change that"): each is what {name} does or has, a full clause. Rolled for
+# about a quarter of NEW pilots (roll_more); the busts already painted have none, and none hides a crown.
+TOUCHES = [
+    "wears round wire-rimmed spectacles low in front of the eyes",
+    "wears a line of dark kohl drawn under each eye",
+    "wears a streak of bright paint under each eye",
+    "has a thin old scar running down through one brow",
+    "holds a sprig of dried kelp in the corner of the mouth",
+    "wears a thin plain gold ring through one brow",
+    "wears half-moon reading glasses on a cord, pushed down to the end of the nose",
+    "has a small healed nick at the edge of the lip",
+]
+TOUCHES_FUR = [   # human facial hair, only on a face that has fur of its own (FACE[a] names it)
+    "wears a neat human moustache waxed to two points",
+    "wears a short trimmed human beard along the jaw",
+    "wears long human sideburns brushed forward",
+]
+TOUCH_ODDS = 25                     # percent of new pilots with a human touch
+BARE_HAND_ODDS = 50                 # percent of the human hands shown that are bare, a person's own skin, not gloved
 IRISES = ["amber-brown", "hazel-green", "steel-grey", "ice-blue", "deep brown", "warm hazel", "pale green", "dark amber"]
 ACTIONS = [   # what a hand or a limb in the frame is doing
     "raised to adjust the collar",
@@ -694,7 +799,7 @@ def crown_of(a, b):
     elif brings_ears(a, b):
         line += f", and {EARS_TOO[b]}, the only ears on the head"
     own_ears = "ears" in KEEPS.get(a, ()) or a in FACE_EARS
-    return part, cap, line.replace("{no ears}", "" if own_ears else NO_EARS)
+    return part, cap, line.replace("{no ears}", "" if own_ears else NO_EARS).replace("{a}", a.lower())
 
 
 def backdrops_for(faction):
@@ -702,6 +807,14 @@ def backdrops_for(faction):
     domain = brief.DOMAIN_OF[faction]
     ok = [k for k, v in BACKDROPS.items() if domain not in v[1]]
     return [k for k in ok if faction in BACKDROPS[k][2]], [k for k in ok if not BACKDROPS[k][2]]
+
+
+def weighted_backdrops(faction):
+    """The pool a new pilot's place is rolled from: a home ground twice as likely as any one other, and a place that
+    could not be on Earth (UNEARTHLY) three times as likely as one that could."""
+    home, anyone = backdrops_for(faction)
+    pool = home + home + anyone
+    return pool + [k for k in pool if k in UNEARTHLY] * 2
 
 
 def roll_tells(a, b, name):
@@ -725,7 +838,16 @@ def roll_tells(a, b, name):
     return dict(hair=hair, limb=False, hand=hand)
 
 
-def human_tells(a, b, name, hair=None, hand=None, limb=None):
+def roll_more(a, b, name):
+    """What a NEW pilot's name rolls for more of the human side: dict(touch, glove). touch: a clause of TOUCHES (or
+    of TOUCHES_FUR too, on a furred face) or "none"; glove: whether a human hand, when one shows, is gloved. The
+    pilots already painted were cast without these and keep their looks (compose's defaults are none and gloved)."""
+    pool = TOUCHES + (TOUCHES_FUR if re.search(r"\bfur\b", FACE[a]) and a not in BEAKED else [])
+    touch = pick(pool, name, "touch") if roll100(name, "touch?") < TOUCH_ODDS else "none"
+    return dict(touch=touch, glove=roll100(name, "glove?") >= BARE_HAND_ODDS)
+
+
+def human_tells(a, b, name, hair=None, hand=None, limb=None, glove=True):
     """(the hair sentence, the hand sentence).
 
     Each of hair, hand and limb is rolled from the name when None (roll_tells), and a tell that is set wins over a
@@ -762,8 +884,8 @@ def human_tells(a, b, name, hair=None, hand=None, limb=None):
     owners = [x for x in (b, a) if x in LIMB]
     if limb and b in LIMB_TELL:
         return hair_line, LIMB_TELL[b] + ". No other hand is in the frame."
-    if limb:
-        shown = [x for x in owners if LIMB[x]]
+    if limb:   # a true hand where the pilot has one, an armoured animal's gauntlet hand only where it has not
+        shown = [x for x in owners if LIMB[x] and x not in ARMOURED] or [x for x in owners if LIMB[x]]
         if not shown:
             raise ValueError(f"neither {a} nor {b} has a limb of its own to raise (bust.LIMB)")
         x = shown[roll100(name, "limb owner") % len(shown)]
@@ -775,16 +897,21 @@ def human_tells(a, b, name, hair=None, hand=None, limb=None):
             raise ValueError(f"{owners[0]} has a limb of its own: it does not need a human hand")
         if hair != "none":
             raise ValueError("human hair and a human hand: the hair is enough")
+        if not glove:
+            return hair_line, (f"One bare human hand is raised into the frame, {hand}: a person's hand, four fingers "
+                               f"and a thumb, with a person's skin and short nails.")
         return hair_line, f"One gloved hand is raised into the frame, {hand}."
     return hair_line, "Both arms are down and out of the frame: no hands."
 
 
 def compose(animals, faction, name, callsign=None, hair=None, iris="", hand=None, limb=None, expression="",
-            extra="", backdrop="", gear=None, pose=None):
+            extra="", backdrop="", gear=None, pose=None, touch="none", glove=True):
     """The bust brief, verbatim what the painter gets. animals = (face animal, crown animal).
 
     backdrop: a BACKDROPS key (rolled from the name among the faction's when empty). gear: the outfit's index in
-    GEAR[faction] or its text. pose: the index in POSES or its text. The rest: human_tells.
+    GEAR[faction] or its text. pose: the index in POSES or its text. touch: a clause of TOUCHES, "none", or None to
+    roll it from the name (roll_more: a new pilot); glove: a human hand that shows is gloved, or bare. The rest:
+    human_tells.
     """
     a, b = animals
     if not name.strip():
@@ -803,8 +930,7 @@ def compose(animals, faction, name, callsign=None, hair=None, iris="", hand=None
     face = face_of(a, b)
 
     if not backdrop:
-        home, anyone = backdrops_for(faction)
-        backdrop = pick(home + home + anyone, name, "backdrop")   # a home ground twice as likely as any one other
+        backdrop = pick(weighted_backdrops(faction), name, "backdrop")
     if backdrop not in BACKDROPS:
         raise KeyError(f"no BACKDROPS entry {backdrop!r}")
     value, _avoid, _factions, scene, light = BACKDROPS[backdrop]
@@ -816,8 +942,17 @@ def compose(animals, faction, name, callsign=None, hair=None, iris="", hand=None
     expression = expression or pick(EXPRESSIONS, name, "expression")
     motif = f", and {MOTIF[callsign]}" if callsign else ""
 
-    hair_line, hand_line = human_tells(a, b, name, hair, hand, limb)
-    second = SECOND.get(b, ("", ""))[1]
+    if touch is None:
+        touch = roll_more(a, b, name)["touch"]
+    if not isinstance(touch, str) or not touch.strip():
+        raise ValueError(f"the touch is {touch!r}: give its clause, or 'none'")
+    hair_line, hand_line = human_tells(a, b, name, hair, hand, limb, glove)
+    if touch != "none":
+        hand_line += f" {name.split()[0]} {touch}."
+    kind, second = SECOND.get(b, ("", ""))
+    seam = BLEND.get(b, SEAM).replace("{a}", al)
+    hood = (f" The hood lies flat on the back of the shoulders, in front of the {bl}'s {kind}: nothing grows between "
+            f"the hood and the head." if kind in BEHIND_HOOD and HOODED.search(outfit) else "")
     if a in EYES:
         eyes = (f"the eyes are the {al}'s own, {EYES[a]}, bright and alert and looking at the viewer, each rimmed by "
                 f"a thin glowing {word} line (the pilot's sight)")
@@ -834,12 +969,12 @@ def compose(animals, faction, name, callsign=None, hair=None, iris="", hand=None
         f"and {bl} and human in one body. Each heritage owns its own part, so both animals read at a glance even as "
         f"a tiny icon. {a.upper()} owns the face and skull: {face}. {b.upper()} owns the {part} and everything "
         f"behind the face: {crown}; the back of the head, the nape, the throat and the neck down into the collar are "
-        f"all {bl}, {MARK[b]}, meeting the {al}'s face along the jawline and the temples in a soft natural blend"
+        f"all {bl}, {MARK[b]}, {seam}"
         + (f"; and {second}" if second else "") + ". "
         f"HUMAN is the bearing, the clothes and the gaze: {name} sits upright like a person, dressed, and {eyes}. "
         f"{hair_line} {hand_line} {mood} "
         f"Wearing {outfit}, trimmed in {word} ({acc['hex']}) with thin glowing {word} seam lines{motif}; the collar "
-        f"sits low and open so the {bl}'s throat and neck show above it. "
+        f"sits low and open so the {bl}'s throat and neck show above it.{hood} "
         + (f"{extra.rstrip('.')}. " if extra else "")
         + f"{stance}, the head in the upper middle of a square frame with clear space above everything that grows "
         f"from it, cropped at mid-chest. Background: {scene}. Lighting: {light}, {rim}. " + RENDER)
@@ -925,7 +1060,7 @@ def self_test():
     texts = list(FACE.values()) + list(MARK.values()) + list(MOTIF.values()) + list(EYES.values()) + \
         [v for v in LIMB.values() if v] + list(LIMB_TELL.values()) + [x for v in GEAR.values() for x in v] + \
         [v[3] for v in CROWN.values()] + [v[2] for v in ALT.values()] + [v[1] for v in SECOND.values()] + \
-        list(EARS_TOO.values()) + list(FACE_EARS.values()) + \
+        list(EARS_TOO.values()) + list(FACE_EARS.values()) + list(BLEND.values()) + [SEAM] + TOUCHES + TOUCHES_FUR + \
         [x for v in BACKDROPS.values() for x in v[3:]] + HAIRS + HAIRS_LOW + ACTIONS + EXPRESSIONS + POSES + IRISES
     for t in texts:
         if not t.isascii():
@@ -934,7 +1069,8 @@ def self_test():
             errors.append(f"a table line ends with a full stop (the composer adds it): {t[:40]}")
     # nothing a painter could draw as a symbol says a word that summons one (EMBLEM)
     drawn = [(f"GEAR[{f}]", o) for f, v in GEAR.items() for o in v] + [(f"MOTIF[{c}]", t) for c, t in MOTIF.items()] + \
-        [(f"backdrop {k}", x) for k, v in BACKDROPS.items() for x in v[3:]] + [("ACTIONS", x) for x in ACTIONS]
+        [(f"backdrop {k}", x) for k, v in BACKDROPS.items() for x in v[3:]] + [("ACTIONS", x) for x in ACTIONS] + \
+        [("TOUCHES", x) for x in TOUCHES + TOUCHES_FUR]
     for where, t in drawn:
         if emblem_word(t):
             errors.append(f"{where} says {emblem_word(t)!r}, which is painted as an emblem or as lettering: describe "
@@ -959,7 +1095,7 @@ def self_test():
         if "ears" in named and "ears" not in KEEPS.get(k, ()):
             errors.append(f"FACE[{k}] names ears: KEEPS (always its own) or FACE_EARS (only when the crown has none)")
     for k, (_part, organ, _cap, line) in CROWN.items():
-        named = line.replace("{no ears}", "").replace("like tall ears", "")
+        named = line.replace("{no ears}", "")
         if re.search(r"\bears\b", named) and organ != "ears":
             errors.append(f"CROWN[{k}] names ears and is not an ears crown: its ears go in EARS_TOO, and a head "
                           f"with no ears says so in the slot {{no ears}}")
@@ -978,7 +1114,7 @@ def self_test():
             if "{" in crown:
                 errors.append(f"{a} + {b}: a slot is left in the crown line: {crown[:60]}")
             shows = "ears" in KEEPS.get(a, ()) or (a in FACE_EARS and not brings_ears(a, b))
-            rest = crown.replace(f"the {a.lower()}'s own ears", "").replace("like tall ears", "")
+            rest = crown.replace(f"the {a.lower()}'s own ears", "")
             if shows and re.search(r"\bears\b", rest):
                 errors.append(f"{a} + {b}: the face shows its own ears and the crown line names ears as well")
             if a in FACE_EARS and not shows and "the only ears on the head" not in crown:
@@ -996,6 +1132,88 @@ def self_test():
     for k, v in CROWN.items():
         if v[1] in ("ears", "horns") and k not in ALT:
             errors.append(f"{k}'s crown is {v[1]} and it has no ALT for a face that already has them")
+    # round 3. A hand can hold and use things: a limb line names fingers, toes, a paw or a tentacle, and is never a
+    # claw, a pincer, a club, a blade or a hook ("please never make crab hands (how would they interact with things?)")
+    for n, table in (("LIMB", LIMB), ("LIMB_TELL", LIMB_TELL)):
+        for k, line in table.items():
+            if line and NOT_A_HAND.search(line):
+                errors.append(f"{n}[{k}] says {NOT_A_HAND.search(line).group(0)!r}: a pilot's hand can hold and use "
+                              f"things, so a limb is a hand with fingers or a tentacle")
+            if line and not A_HAND.search(line):
+                errors.append(f"{n}[{k}] names no fingers, toes, paw or tentacle: say what the hand holds things with")
+    for k in ARMOURED:
+        if not LIMB.get(k) or "four fingers and a thumb" not in LIMB[k]:
+            errors.append(f"{k} is ARMOURED: its LIMB line is its shell on a hand with four fingers and a thumb")
+        if k in LIMB_TELL:
+            errors.append(f"{k} is ARMOURED and in LIMB_TELL: an armoured hand is never how people know a pilot")
+    # wings, tails and fans grow from the back and stand behind the clothes: never from the head, never at the head
+    for k, (_part, _organ, _cap, line) in CROWN.items():
+        if re.search(r"\bwings\b|\bwing\b(?!-case)|\btail feathers\b|\bfan of [^,]*feathers\b", line):
+            errors.append(f"CROWN[{k}] grows wings or a tail fan from the head: they grow from the back (SECOND)")
+    for k, (kind, line) in SECOND.items():
+        if kind in ("fan", "wings"):
+            if "behind the head" in line:
+                errors.append(f"SECOND[{k}] puts its {kind} behind the head: it stands behind the back or the shoulders")
+            if not re.search(r"behind (?:the back|both shoulders|the shoulders)", line):
+                errors.append(f"SECOND[{k}] does not say its {kind} stands behind the back or the shoulders")
+    for k in BLEND:
+        if k not in MARK:
+            errors.append(f"BLEND names {k}, which has no MARK")
+    t = compose(("Chameleon", "Jellyfish"), "Merchant", "X")
+    if "no line where the chameleon ends" not in t or SEAM.replace("{a}", "chameleon") in t or "{a}" in t:
+        errors.append("a jellyfish's coat must meet the face in its written gradient (BLEND), not at the usual seam")
+    if SEAM.replace("{a}", "owl") not in compose(("Owl", "Lynx"), "Merchant", "X"):
+        errors.append("a coat with no BLEND line must meet the face at the usual seam (SEAM)")
+    t = compose(("Coyote", "Turkey"), "Thief", "X", gear=0)
+    if "The hood lies flat on the back of the shoulders, in front of the turkey's fan" not in t:
+        errors.append("a hooded outfit over a tail fan must say the hood lies in front of the fan (BEHIND_HOOD)")
+    if "The hood lies" in compose(("Coyote", "Turkey"), "Thief", "X", gear=1):
+        errors.append("an outfit with no hood was given the hood sentence")
+    if "The hood lies" in compose(("Caracal", "Red panda"), "Thief", "X", gear=2):
+        errors.append("a tail curled over a shoulder needs no hood sentence (BEHIND_HOOD)")
+    t = compose(("Tree frog", "Scorpion"), "Contractor", "X", limb=True)
+    if "it is the tree frog's own" not in t or "scorpion armour" in t:
+        errors.append("a pilot with a true hand and an armoured animal must show the true hand")
+    t = compose(("Heron", "Lobster"), "Sport", "X", limb=True)
+    if "it is the lobster's own: a hand with four fingers and a thumb" not in t:
+        errors.append("a lobster pilot who shows a hand must show one with fingers")
+    # more of the human side: nothing is added to a pilot who was cast without it, a touch is rolled only when asked
+    plain = compose(("Lynx", "Jackal"), "Hunter", "Wyvendo Waveline", "TALON", hair="none", hand=ACTIONS[0], limb=False)
+    if "One gloved hand is raised" not in plain or any(x in plain for x in TOUCHES + TOUCHES_FUR):
+        errors.append("a pilot cast without a touch or a bare hand must be painted without them")
+    more = {f"Pilot {i}": roll_more("Lynx", "Jackal", f"Pilot {i}") for i in range(400)}
+    share = sum(1 for r in more.values() if r["touch"] != "none")
+    if not 60 <= share <= 140:
+        errors.append(f"{share} of 400 new pilots roll a human touch: TOUCH_ODDS is {TOUCH_ODDS} percent")
+    if not any(r["touch"] in TOUCHES_FUR for r in more.values()):
+        errors.append("no furred face in 400 rolled human facial hair (TOUCHES_FUR)")
+    if any(roll_more(a, "Lynx", f"Pilot {i}")["touch"] in TOUCHES_FUR for a in ("Heron", "Tree frog", "Koi")
+           for i in range(400)):
+        errors.append("human facial hair was rolled for a face with a beak or without fur")
+    touched = next(n for n, r in more.items() if r["touch"] != "none")
+    t = compose(("Lynx", "Jackal"), "Hunter", touched, touch=None)
+    if f"Pilot {more[touched]['touch']}." not in t:
+        errors.append(f"{touched} rolls a touch: compose(touch=None) must write it")
+    t = compose(("Lynx", "Jackal"), "Hunter", "X", hair="none", hand=ACTIONS[0], limb=False, glove=False)
+    if "One bare human hand is raised into the frame" not in t or "gloved" in t:
+        errors.append("a bare human hand must be painted bare")
+    try:
+        compose(("Owl", "Lynx"), "Hunter", "X", touch="")
+        errors.append("compose accepted an empty touch")
+    except ValueError:
+        pass
+    # places that could not be on Earth: every faction type has one of its own, and a new pilot rolls them more
+    for k in UNEARTHLY:
+        if k not in BACKDROPS:
+            errors.append(f"UNEARTHLY names {k}, which is not a backdrop")
+    for f in brief.DOMAIN_OF:
+        home, anyone = backdrops_for(f)
+        if not any(k in UNEARTHLY for k in home):
+            errors.append(f"{f} has no home ground that could not be on Earth (UNEARTHLY)")
+        pool = weighted_backdrops(f)
+        plain_share = sum(1 for k in home + home + anyone if k in UNEARTHLY) / len(home + home + anyone)
+        if sum(1 for k in pool if k in UNEARTHLY) / len(pool) <= plain_share + 0.1:
+            errors.append(f"{f}: an unearthly place is not rolled more readily than an earthly one")
     for k, (value, avoid, factions, scene, light) in BACKDROPS.items():
         if value not in ("dark", "mid", "light"):
             errors.append(f"backdrop {k}: value {value!r}")
@@ -1032,10 +1250,16 @@ def self_test():
         compose(("Owl", "Lynx"), "Hunter", "X", hair=HAIRS[0], hand="none", limb=False),
         compose(("Lynx", "Jackal"), "Hunter", "X", hair=HAIRS_LOW[0], hand="none", limb=False),
         compose(("Lynx", "Jackal"), "Hunter", "X", hair="none", hand=ACTIONS[0], limb=False),
-        compose(("Heron", "Lobster"), "Sport", "X"),
+        compose(("Heron", "Lobster"), "Sport", "X", limb=True),
+        compose(("Heron", "Otter"), "Sport", "X"),
+        compose(("Chameleon", "Jellyfish"), "Merchant", "X"),
+        compose(("Coyote", "Turkey"), "Thief", "X", gear=0),
+        compose(("Lynx", "Jackal"), "Hunter", "X", hair="none", hand=ACTIONS[0], limb=False, glove=False,
+                touch=TOUCHES[0]),
         compose(("Tree frog", "Owl"), "Researcher", "X", limb=True),
         compose(("Horned lizard", "Hedgehog"), "Gatherer", "X")]
     for must in ("Human hair: ", "Human hair shows only below", "No human hair anywhere", "One gloved hand is raised",
+                 "One bare human hand is raised", "The hood lies flat", "no line where the chameleon ends",
                  "Both arms are down", "No other hand is in the frame", "No human hand is in the frame",
                  "the only ears on the head") + tuple(a["word"] for a in brief.ACCENT.values()):
         if not any(must in t for t in scanned):
@@ -1061,8 +1285,8 @@ def self_test():
         if "Human hair:" in t and "gloved hand" in t:
             errors.append(f"{nm}: hair and a hand together")
         t = compose(("Heron", "Lobster"), "Sport", nm)
-        if "crusher claw" not in t or "gloved hand" in t:
-            errors.append(f"{nm}: a lobster second animal must show its claw and no human hand")
+        if NOT_A_HAND.search(t) or re.search(r"\bclaws?\b", t) or "gloved hand" in t:
+            errors.append(f"{nm}: a lobster second animal never shows a claw, and needs no human hand")
         t = compose(("Heron", "Tortoise"), "Sport", nm)
         if "Human hair:" in t:
             errors.append(f"{nm}: human hair painted over a crown that covers the scalp")
@@ -1134,7 +1358,7 @@ def self_test():
         pass
     for animals, look, what in (
             (("Zebra", "Yak"), dict(hair=HAIRS[0]), "human hair beside a yak's own mane"),
-            (("Heron", "Lobster"), dict(limb=False), "a lobster pilot without its claw"),
+            (("Heron", "Sloth"), dict(limb=False), "a sloth pilot without its arm in the frame"),
             (("Tree frog", "Owl"), dict(hand=ACTIONS[0], limb=False), "a human hand on a tree frog pilot"),
             (("Owl", "Lynx"), dict(hair=HAIRS[0], hand=ACTIONS[0], limb=False), "human hair and a human hand"),
             (("Owl", "Lynx"), dict(limb=True), "a limb for a pilot whose animals have none")):

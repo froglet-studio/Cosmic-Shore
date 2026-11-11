@@ -12,7 +12,11 @@ triple hybrid people with that unique and high quality style." Round 1 painted a
 with a hand in every frame. Garrett, 2026-11-11: "a good step forward, but the backgrounds need much more variance.
 they don't all need a hand ... any creature that already has a hand or tentacle like a frog, primate, or octopus it
 doesn't need a hand. the human side is the least important to express when it is wearing clothes". Round 2 is what
-this skill paints (Docs/Pilots/PORTRAITS.md section 7).
+this skill paints (Docs/Pilots/PORTRAITS.md section 7). Garrett on round 2, 2026-11-11: "These are great. only a few
+need changing", with five rules that are now in the tables (section 5, "Round 3") and eight busts repainted. He also
+named what the skill is for: "a large enough roster that every pilot is unique and each player has their own unique
+crew. They will all use the same callsigns which connect to the same vision abilities (not unique) but the art,
+backstory, species combination, etc. will all be unique."
 
 ## 0. The bar
 
@@ -28,22 +32,27 @@ twice. Round 1: both animals named in 26 and 27 of 50. Round 2: 44 and 47, and t
   look appear when the crown brings none (`FACE_EARS`: a cat's, a badger's, an opossum's).
 - **Second animal: the CROWN** (`CROWN[b]`: what grows from the head) **and everything behind the face**: its coat
   (`MARK[b]`) over the back of the head, the nape, the throat and the neck, blending into the face along the jaw;
-  **plus one more piece of its body in the frame** (`SECOND[b]`: a tail, folded wings, a shell rim) or the limb
-  people know it by (`LIMB_TELL[b]`: a lobster's claw, a mantis's forelegs). When the face keeps the crown's organ
-  the crown is `ALT[b]` instead of a second pair; `EARS_TOO[b]` adds small ears to a crown that is not ears.
+  **plus one more piece of its body in the frame** (`SECOND[b]`: a tail, folded wings, a shell rim) or the hand
+  people know it by (`LIMB_TELL[b]`: an otter's paws around a pebble). Wings, a tail and a tail fan grow from the
+  BACK and stand behind the clothes, never from the head. A translucent coat meets the face in a written gradient
+  (`BLEND`), not at a seam. When the face keeps the crown's organ the crown is `ALT[b]` instead of a second pair;
+  `EARS_TOO[b]` adds small ears to a crown that is not ears.
 - **Human: the bearing, the CLOTHES and the gaze** (`GEAR`: three outfits per faction type, all open at the throat
   so the second animal's neck shows). Human hair for some (`HAIR_ODDS`; never over a crown that covers the scalp,
   never beside an animal's own mane, `OWN_HAIR`). **A human hand almost never** (`HAND_ODDS`, gloved): never beside
   hair, and never on a pilot whose animal has a hand, a paw or a tentacle of its own (`LIMB`), which shows that
-  instead about half the time. Of the 50: 10 have human hair, 12 show their animal's own limb, 3 a gloved hand.
+  instead about half the time. **A hand can always hold and use things**: fingers or a tentacle, never a claw, a
+  pincer, a club or a hook. Of the 50: 10 have human hair, 10 show their animal's own hand, 3 a gloved hand.
 
 **What every bust shares, so the set reads as one:** the framing (the head in the upper middle, clear space above
 everything that grows from it, cropped at mid-chest, looking at the viewer), the premium painterly finish, the
 faction's DOMAIN colour (Ruby #C800C3, Gold #FFA700, Jade #0EC0B6) as the clothes' trim, the rim light and a thin
 glowing ring around each eye (the pilot's sight), and a few crystal motes in the air.
-**What differs:** the place (`BACKDROPS`: 52 places, each with its light, its value and the faction types whose home
-ground it is), the outfit, the pose (`POSES`) and the expression (`EXPRESSIONS`). The 50 catalog pilots stand in 50
-different places; what each was painted with is frozen in `creator.CAST`.
+**What differs:** the place (`BACKDROPS`: 73 places, each with its light, its value and the faction types whose home
+ground it is; 37 of them could not be on Earth, `UNEARTHLY`, and a new pilot rolls those three times as readily), the
+outfit, the pose (`POSES`) and the expression (`EXPRESSIONS`). The 50 catalog pilots stand in 50 different places;
+what each was painted with is frozen in `creator.CAST`. A new pilot may also show more of the human side (`roll_more`:
+21 hair styles, a human touch such as spectacles, kohl, a scar or a beard, a bare hand instead of a gloved one).
 
 ## 1. Read before you touch
 
@@ -195,6 +204,26 @@ banners that Spare05's brief had called plain.
   usage limit for eight hours.
 
 ## 5. Rules
+
+**Round 3 (Garrett, 2026-11-11). Each is a table rule that `bust.py --self-test` holds, so every new pilot inherits it:**
+- **"please never make crab hands (how would they interact with things?)"** A limb in the frame is a hand with
+  fingers or a tentacle (`LIMB`, `LIMB_TELL`; the gate is `NOT_A_HAND` and `A_HAND`). The armoured animals (`ARMOURED`:
+  lobster, scorpion, mantis, mantis shrimp) wear their shell on a hand with four fingers and a thumb, like a gauntlet,
+  and a pilot who also has a true hand (a tree frog with a scorpion's tail) shows the true hand. Give the hand
+  something to hold: Comet's lobster-shell hand holds a crystal shard.
+- **"butterfly Wings on a head, as ears, is nonsensical."** Wings grow from the back between the shoulder blades
+  (`SECOND`), and no `CROWN` line names wings or tail feathers.
+- **"the turkey tail feathers are in a very weird spot with respect to the dog's hood."** A tail fan grows from the
+  base of the back: its line says "behind the back", never "behind the head", and under a hooded outfit the brief
+  says the hood lies in front of it (`BEHIND_HOOD`).
+- **"the chameleon transitioning to jellyfish looks a bit abrupt."** A translucent coat has a `BLEND` line: the face's
+  skin thins and turns glassy by degrees, with no rim where the bell begins.
+- **"The backgrounds that don't look like they could be earth are the best."** `UNEARTHLY` marks those places; every
+  faction type has one of its own, and a new pilot's place is rolled three times as readily from them
+  (`weighted_backdrops`, `creator.propose_cast`).
+- **"it is fine to have some that express more of their human side ... I would expand the list vs. change that."** The
+  lists grow and the painted busts stay: `HAIRS`, `HAIRS_LOW`, `TOUCHES`, `TOUCHES_FUR` and a bare human hand
+  (`roll_more`, for new pilots only; `compose`'s defaults leave a cast pilot exactly as painted).
 
 - The second animal is never only a tail or wings, and never a patch on a cheek: it owns the crown and the neck.
 - The human is the clothes, the bearing and the gaze. No human hand beside human hair, and none on a pilot whose
