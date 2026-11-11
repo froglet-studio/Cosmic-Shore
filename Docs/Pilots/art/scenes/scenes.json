@@ -519,6 +519,22 @@
     "9:16": [932, 0, 1418, 864]
    }
   },
+  "Riptide": {
+   "name": "Riptide",
+   "file": "Docs/Pilots/art/scenes/Riptide.jpg",
+   "size": [1536, 864],
+   "close": [480, 0, 760, 280],
+   "side": "left",
+   "treatment": "Midday postcard colour on a sandbar, primaries hard against each other",
+   "source": "profession: a pirate changes a craft's stripes between raids, by hand",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [44, 0, 1196, 864],
+    "1:1": [188, 0, 1052, 864],
+    "4:5": [274, 0, 965, 864],
+    "9:16": [377, 0, 863, 864]
+   }
+  },
   "Scales": {
    "name": "Scales",
    "file": "Docs/Pilots/art/scenes/Scales.jpg",
@@ -536,6 +552,70 @@
    },
    "chart": "volume of the cell"
   },
+  "Shrapnel": {
+   "name": "Shrapnel",
+   "file": "Docs/Pilots/art/scenes/Shrapnel.jpg",
+   "size": [1536, 864],
+   "close": [760, 10, 1050, 300],
+   "side": "right",
+   "treatment": "Frozen at 1/4000 s like a sports frame, a fruit in the air",
+   "source": "profession: an activist holds a street overnight, and breakfast is the barricade",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [329, 0, 1481, 864],
+    "1:1": [473, 0, 1337, 864],
+    "4:5": [560, 0, 1251, 864],
+    "9:16": [662, 0, 1148, 864]
+   }
+  },
+  "Siphon": {
+   "name": "Siphon",
+   "file": "Docs/Pilots/art/scenes/Siphon.jpg",
+   "size": [1536, 864],
+   "close": [330, 0, 790, 460],
+   "side": "left",
+   "treatment": "From the sill itself among the shells, one night lamp, the port's night behind",
+   "source": "hobby: \"collects shells from every port and gives them away to strangers\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [128, 0, 992, 864],
+    "4:5": [214, 0, 905, 864],
+    "9:16": [317, 0, 803, 864]
+   }
+  },
+  "Slingshot": {
+   "name": "Slingshot",
+   "file": "Docs/Pilots/art/scenes/Slingshot.jpg",
+   "size": [1536, 864],
+   "close": [790, 20, 1070, 300],
+   "side": "right",
+   "treatment": "Rear-curtain flash at dusk with the shutter dragged, ice in the air",
+   "source": "profession: a racer clears the intake the evening before a winter heat, with one rap of the hand",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [354, 0, 1506, 864],
+    "1:1": [498, 0, 1362, 864],
+    "4:5": [584, 0, 1275, 864],
+    "9:16": [687, 0, 1173, 864]
+   }
+  },
+  "Strider": {
+   "name": "Strider",
+   "file": "Docs/Pilots/art/scenes/Strider.jpg",
+   "size": [1536, 864],
+   "close": [520, 0, 880, 360],
+   "side": "centre",
+   "treatment": "Remote nest camera at sand level, tripped as the keeper bends",
+   "source": "profession: a hunter keeps the hatchery beach of the quarry through the dry weeks, a billful of water at a time",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [124, 0, 1276, 864],
+    "1:1": [268, 0, 1132, 864],
+    "4:5": [354, 0, 1045, 864],
+    "9:16": [457, 0, 943, 864]
+   }
+  },
   "Tenacious": {
    "name": "Tenacious",
    "file": "Docs/Pilots/art/scenes/Tenacious.jpg",
@@ -550,6 +630,22 @@
     "1:1": [95, 0, 959, 864],
     "4:5": [182, 0, 873, 864],
     "9:16": [284, 0, 770, 864]
+   }
+  },
+  "Tender": {
+   "name": "Tender",
+   "file": "Docs/Pilots/art/scenes/Tender.jpg",
+   "size": [1536, 864],
+   "close": [770, 30, 1170, 430],
+   "side": "right",
+   "treatment": "Editorial portrait for a feature, held mid-task under flat bright overcast",
+   "source": "profession: a preservationist replants a bleached reef one seed at a time, and opens each seed case in the bill",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [538, 0, 1402, 864],
+    "4:5": [624, 0, 1315, 864],
+    "9:16": [727, 0, 1213, 864]
    }
   },
   "Trace": {

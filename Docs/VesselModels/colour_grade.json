@@ -5432,10 +5432,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Riptide.png": {
-   "coloured": 0.8635,
+   "coloured": 0.7561,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "a54c266e452cf9fe",
+   "sha": "21baa281d708e1e0",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_SUNDIAL.png": {
@@ -5453,24 +5453,24 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Shrapnel.png": {
-   "coloured": 0.9148,
+   "coloured": 0.5911,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "c01eca98da7e86a6",
+   "sha": "fd68ed11af825766",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Siphon.png": {
-   "coloured": 0.6235,
+   "coloured": 0.7928,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "67d54e016d7e0202",
+   "sha": "ce9931b621724d57",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Slingshot.png": {
-   "coloured": 0.8767,
+   "coloured": 0.7922,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "677c71a16394f3ef",
+   "sha": "c9a39ece3869c17b",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare01.png": {
@@ -5530,10 +5530,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Strider.png": {
-   "coloured": 0.9404,
+   "coloured": 0.762,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "f6a7a1725e57d14d",
+   "sha": "e5cd57ffe69fb8b5",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_TALON.png": {
@@ -5551,10 +5551,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Tender.png": {
-   "coloured": 0.7882,
+   "coloured": 0.4242,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "098dee2361ce8777",
+   "sha": "354ac5a3eef186ca",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Tomahawk.png": {
