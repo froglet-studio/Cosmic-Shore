@@ -238,10 +238,11 @@ SAMPLES = {
               ("shaggy dark-brown bison wool", "curly dark-brown bison wool")),
         seen=("the face is a walrus's from the chin to the top: a smooth rounded forehead sloping straight into a "
               "broad flat muzzle of two round whisker pads, with the nostrils between them and small wide-set eyes",
-              "the skin is deep cinnamon brown, the whiskers pale and stiff, the tusks yellowed ivory, finely crazed "
-              "with age",
-              "the wool is tight springy curls like a lamb's fleece, growing from the scalp itself, down over the "
-              "temples where ears would be, and running without a break into the beard and the wool of the neck",
+              "the face is bare skin from the brow to the chin, deep cinnamon brown and wrinkled, with no fur on it "
+              "but the pale stiff whiskers, and the tusks are yellowed ivory, finely crazed with age",
+              "the wool is a deep dense fleece of short tight curls, packed like a sheepskin and nowhere longer than "
+              "a finger, growing from the scalp itself, closing round the base of each horn in an unbroken fleece, "
+              "and running without a break into the beard and the wool of the neck",
               "each epaulette is a coil of rope, the ship's wheel is a small badge of yellow brass, and the "
               "sea-glass is pale green"),
         doing=("Haradek stands at the nose of a small single-seat craft and ties a strip of plain faded red cloth to "
@@ -328,7 +329,7 @@ SAMPLES = {
 }
 CLOSE = {   # painted scene -> the square around the figure's head, for the sheet's close-up beside the avatar
     "MANGER-field": (490, 195, 860, 565),
-    "GALLEON-film": (330, 0, 800, 470),
+    "GALLEON-film": (360, 0, 800, 440),
     "Echo-candid": (340, 20, 740, 420),
     "Tenacious-sitting": (280, 10, 780, 510),
 }
