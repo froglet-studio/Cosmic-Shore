@@ -76,6 +76,11 @@ def _hsv(prefix="", h=128, s=128, v=200):
     return (P(prefix + "h", "hue", default=h), P(prefix + "s", "lin", 0, 1, s), P(prefix + "v", "exp", 0.01, 4.0, v))
 
 
+def _hsvd(prefix="", h=128, s=128, v=128):
+    """A colour whose value reaches the very dark linear colours a sky is made of."""
+    return (P(prefix + "h", "hue", default=h), P(prefix + "s", "lin", 0, 1, s), P(prefix + "v", "exp", 0.0003, 3.0, v))
+
+
 ANCH = P("anchor", "enum", 0, 9, 0)  # 0..8: TL T TR L C R BL B BR
 
 OPS_LIST = [
@@ -275,6 +280,35 @@ OPS_LIST = [
         P("fog", "exp", 1e-5, 1, 60), P("vignette", "lin", 0, 1.5, 80), P("sat", "exp", 0.25, 4, 128),
         P("contrast", "exp", 0.5, 2, 128), P("feedback", "lin", 0, 0.95, 0), P("grain", "lin", 0, 0.2, 0),
         P("aberr", "lin", 0, 0.02, 0)), "exposure, bloom, fog, vignette, grading, feedback", "GenIPP"),
+    Op(0x81, "post.urp", "P", (), (P("thresh", "lin", 0, 1, 51), P("intensity", "exp", 0.05, 16, 173),
+        P("scatter", "lin", 0, 1, 173), P("exposure", "exp", 0.25, 4, 128)) + _hsv("f", 160, 128, 20) + (
+        P("fog", "exp", 1e-6, 0.1, 0),), "the game's own post: soft-knee pyramid bloom, no tonemap, sRGB out", "URP Bloom"),
+    # ---------------------------------------------------------------- sky layers (HyperSeaSkybox.shader, by direction)
+    # T ops evaluated on the view direction (uv is the lat-long of it), so they are seamless on the sphere and still
+    # compose with every tex.* op. Each adds its layer to the optional input. sky.base also sets what the layers share:
+    # the galactic plane's normal and width, and the drift speed.
+    Op(0x0E, "sky.base", "T", (), _hsvd("d", 170, 200, 60) + _hsvd("a", 180, 180, 90) + (
+        P("ntheta", "lin", 0, math.pi, 12), P("nphi", "lin", 0, 2 * math.pi, 40), P("width", "exp", 0.005, 0.5, 124),
+        P("drift", "lin", 0, 0.5, 51)), "deep colour + ambient noise; galactic normal, width, drift", "HyperSea ambient"),
+    Op(0x0F, "sky.band", "T", ("t",), _hsvd("c", 20, 180, 200) + _hsvd("e", 160, 110, 210) + (
+        P("nscale", "exp", 1, 32, 190), P("nstr", "lin", 0, 2, 112)), "galactic band", "HyperSea galactic plane"),
+    Op(0x10, "sky.stars", "T", ("t",), (P("density", "exp", 8, 128, 196), P("bright", "exp", 0.01, 4, 135),
+        P("base", "lin", 0, 0.5, 0), P("boost", "lin", 0, 0.5, 45), P("conc", "exp", 0.5, 8, 128)),
+       "stars and small galaxies, denser near the plane", "HyperSea stars"),
+    Op(0x11, "sky.nebula", "T", ("t",), (P("scale", "exp", 0.5, 8, 148),) + _hsvd("a", 170, 240, 200)
+       + _hsvd("b", 150, 235, 200) + _hsvd("c", 190, 215, 200), "three domain-warped clouds", "HyperSea nebulae"),
+    Op(0x12, "sky.dust", "T", ("t",), (P("scale", "exp", 0.5, 16, 170), P("strength", "lin", 0, 1, 241)),
+       "dark lanes near the plane (multiplies the input)", "HyperSea dust"),
+    Op(0x13, "sky.core", "T", ("t",), (P("theta", "lin", 0, math.pi, 135), P("phi", "lin", 0, 2 * math.pi, 12))
+       + _hsvd("c", 26, 150, 220) + _hsvd("h", 20, 145, 190) + (P("size", "exp", 0.003, 0.5, 113),
+        P("halo", "exp", 0.03, 1, 168)), "galactic core on the plane", "HyperSea core"),
+    Op(0x14, "sky.galaxy", "T", ("t",), (P("theta", "lin", 0, math.pi, 100), P("phi", "lin", 0, 2 * math.pi, 86))
+       + _hsvd("c", 32, 200, 180) + _hsvd("n", 17, 160, 180) + (P("size", "exp", 0.05, 1, 177),),
+       "one inclined spiral galaxy", "HyperSea Andromeda"),
+    Op(0x15, "sky.web", "T", ("t",), (P("scale", "exp", 2, 48, 144), P("sharp", "exp", 2, 64, 165),
+        P("interior", "lin", 0, 0.5, 77)) + _hsvd("", 166, 255, 190), "3D Voronoi edge web", "HyperSea cell overlay"),
+    Op(0x16, "sky.haze", "T", ("t",), _hsvd("", 170, 255, 100) + (P("height", "lin", -1, 1, 216),
+        P("falloff", "exp", 1, 32, 153)), "haze band by height", "HyperSea atmosphere bridge"),
     # ---------------------------------------------------------------- hud (werkkzeug genoverlay)
     Op(0x90, "hud.rect", "H", ("h",), (ANCH, P("x", "lin", -0.5, 0.5, 128), P("y", "lin", -0.5, 0.5, 128),
                                       P("w", "exp", 0.003, 1, 100), P("hh", "exp", 0.003, 1, 100)) + _hsv() + (

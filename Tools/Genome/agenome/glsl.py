@@ -70,12 +70,77 @@ mat2 rot2(float a){ float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
 vec3 rotax(vec3 p, int ax, float a){ if(ax==0) p.yz = rot2(a)*p.yz; else if(ax==1) p.xz = rot2(a)*p.xz; else p.xy = rot2(a)*p.xy; return p; }
 Mat mdef(){ return Mat(vec3(0.5), vec3(0.0), 0.2); }
 vec3 tri(vec3 p, vec3 n){ vec3 w = abs(n); w = pow(w, vec3(4.0)); return w/(w.x+w.y+w.z+1e-5); }
+
+vec3 sdir(vec2 uv){ float a = (uv.x-0.5)*6.2831853, e = (uv.y-0.5)*3.14159265; return vec3(cos(e)*cos(a), sin(e), cos(e)*sin(a)); }
+float hs31(vec3 p){ p = fract(p*vec3(0.1031,0.1030,0.0973)); p += dot(p, p.yxz+33.33); return fract((p.x+p.y)*p.z); }
+vec3 hs33(vec3 p){ p = fract(p*vec3(0.1031,0.1030,0.0973)); p += dot(p, p.yxz+33.33);
+  return fract(vec3((p.x+p.y)*p.z, (p.x+p.z)*p.y, (p.y+p.z)*p.x)); }
+float svn3(vec3 p){ vec3 i = floor(p); vec3 f = fract(p); f = f*f*(3.0-2.0*f);
+  return mix(mix(mix(hs31(i), hs31(i+vec3(1,0,0)), f.x), mix(hs31(i+vec3(0,1,0)), hs31(i+vec3(1,1,0)), f.x), f.y),
+             mix(mix(hs31(i+vec3(0,0,1)), hs31(i+vec3(1,0,1)), f.x), mix(hs31(i+vec3(0,1,1)), hs31(i+vec3(1,1,1)), f.x), f.y), f.z); }
+float fb3(vec3 p, int n){ float v = 0.0, a = 0.5; for(int i=0;i<n;i++){ v += a*svn3(p); p = p*2.0+vec3(100.0,0.0,0.0); a *= 0.5; } return v; }
+float sat1(float x){ return clamp(x, 0.0, 1.0); }
+vec3 starcol(float t){ vec3 c = mix(vec3(0.65,0.75,1.0), vec3(1.0,0.95,0.88), sat1(t*2.5));
+  c = mix(c, vec3(1.0,0.78,0.4), sat1((t-0.5)*3.5)); return mix(c, vec3(1.0,0.45,0.25), sat1((t-0.82)*5.5)); }
+vec3 skystars(vec3 dir, vec3 gn, float scale, float bright, float base, float boost, float conc){
+  vec3 res = vec3(0.0); vec3 p = dir*scale; vec3 id = floor(p); vec3 f = fract(p)-0.5;
+  for(int x=-1;x<=1;x++) for(int y=-1;y<=1;y++) for(int z=-1;z<=1;z++){
+    vec3 nb = vec3(x,y,z); vec3 cid = id+nb; float h = hs31(cid);
+    float gd = abs(dot(normalize((cid+0.5)/scale), gn));
+    if(h > base + boost*pow(1.0-gd, conc)) continue;
+    vec3 sp = nb + hs33(cid) - 0.5 - f; float dist = length(sp);
+    float ty = hs31(cid+73.7), sz = hs31(cid+191.3), tp = hs31(cid+127.1); vec3 o = normalize(hs33(cid+53.0)-0.5);
+    float al = dot(sp, o); vec3 pv = sp - al*o; float pe = length(pv); float ob; vec3 col;
+    if(ty < 0.15){ ob = exp(-dist*dist*(600.0+sz*800.0));
+      vec3 sa = normalize(cross(o, vec3(0.17,1.0,0.31))); vec3 sb = normalize(cross(o, sa));
+      float dA = length(cross(sp, sa)), dB = length(cross(sp, sb));
+      ob += (exp(-dA*dA*3000.0)+exp(-dB*dB*3000.0))*exp(-dist*12.0)*0.35; col = starcol(tp); }
+    else if(ty < 0.40){ float el = 3.0+sz*5.0, sr = 10.0+sz*8.0;
+      ob = exp(-(al*al*sr/el + pe*pe*sr*el)) + exp(-dist*dist*sr*2.0)*0.5; col = starcol(tp*0.6+0.2); }
+    else if(ty < 0.60){ float sr = 6.0+sz*6.0; vec3 pd = normalize(pv+0.001); vec3 s2 = normalize(cross(o, pd));
+      float ang = atan(dot(sp, s2), dot(sp, pd));
+      ob = exp(-dist*dist*sr)*(sin(ang*2.0+dist*sr*0.8)*0.3+0.7)*0.4 + exp(-dist*dist*sr*8.0)*0.7; col = starcol(tp*0.5+0.25); }
+    else if(ty < 0.78){ vec3 ao = (hs33(cid+97.3)-0.5)*0.15; float sr = 8.0+sz*12.0; float ad = length(sp+ao);
+      float kd = length(sp-ao*2.0); ob = exp(-ad*ad*sr) + exp(-kd*kd*sr*3.0)*0.4; col = starcol(tp*0.7+0.15); }
+    else { float el = 1.5+sz*3.0, sr = 12.0+sz*16.0;
+      ob = exp(-(al*al*sr/el + pe*pe*sr*el)) + exp(-dist*dist*sr*3.0)*0.3; col = starcol(tp*0.4+0.3); }
+    float tw = ty < 0.15 ? sin(uTime*1.06 + h*80.0)*0.25+0.75 : 1.0;
+    res += ob*col*(0.15+h*h*3.0)*tw*bright; }
+  return res; }
+vec3 skyneb(vec3 dir, float scale, float dr, vec3 c1, vec3 c2, vec3 c3){
+  vec3 p = dir*scale;
+  vec3 w = vec3(svn3(p*1.5+vec3(dr*0.2,0,0)), svn3(p*1.5+vec3(5.2,1.3+dr*0.15,0)), svn3(p*1.5+vec3(2.1,0,7.8)));
+  vec3 wp = p + (w-0.5)*1.4;
+  float rm = smoothstep(0.3, 0.7, svn3(dir*1.3+vec3(42.0,17.0,91.0)));
+  float a = smoothstep(0.28, 0.88, fb3(wp*2.0+vec3(dr,0,0), 4)); a *= a;
+  float b = smoothstep(0.30, 0.90, fb3(wp*2.5+vec3(5.2,1.3+dr*0.7,9.1), 4)); b *= b;
+  float c = smoothstep(0.29, 0.89, fb3(wp*3.0+vec3(3.7,8.4,2.6+dr*1.3), 4)); c *= c;
+  a *= 0.3 + svn3(wp*4.5+vec3(11.3,0,dr*0.3)); b *= 0.3 + svn3(wp*5.0+vec3(0,13.7,dr*0.25)); c *= 0.3 + svn3(wp*5.5+vec3(0,dr*0.2,15.1));
+  return (a*c1 + b*c2 + c*c3)*rm; }
+float skyweb(vec3 p, float sharp, float interior){
+  vec3 i = floor(p); vec3 f = fract(p); float m1 = 10.0, m2 = 10.0;
+  for(int x=-1;x<=1;x++) for(int y=-1;y<=1;y++) for(int z=-1;z<=1;z++){ vec3 nb = vec3(x,y,z);
+    vec3 df = nb + hs33(i+nb) - f; float d = dot(df, df); if(d<m1){ m2 = m1; m1 = d; } else if(d<m2){ m2 = d; } }
+  m1 = sqrt(m1); m2 = sqrt(m2);
+  return 1.0 - smoothstep(0.0, 1.0/sharp, m2-m1) + smoothstep(0.0, 0.5, m1)*interior; }
 """
+
+
+def _sph(theta, phi):
+    """Unit vector at polar angle theta from +y, azimuth phi from +x toward +z."""
+    return (math.sin(theta) * math.cos(phi), math.cos(theta), math.sin(theta) * math.sin(phi))
 
 
 def compile_textures(g, live):
     """Return GLSL source for every live texture node."""
     src = []
+    SKYG = ("vec3(0.0,1.0,0.0)", "0.05", "0.0")  # galactic normal, width, drift: the first live sky.base sets them
+    for i, n in enumerate(g.nodes):
+        if i in live and n.op == "sky.base":
+            o = OPS[n.op]
+            d = {p.name: p.decode(b) for p, b in zip(o.params, n.params)}
+            SKYG = (v3(_sph(d["ntheta"], d["nphi"])), f(d["width"]), f(d["drift"]))
+            break
     for i, n in enumerate(g.nodes):
         if i not in live or OPS[n.op].out != "T":
             continue
@@ -157,6 +222,47 @@ def compile_textures(g, live):
             body = (f"vec2 q = fract(uv)*vec2({tx}.0,{ty}.0); float row = floor(q.y); q.x += mod(row, 2.0)*0.5;"
                     f" vec2 id = floor(q); vec2 fr = fract(q); float fu = {f(d['fuge'])};"
                     f" float m = step(fu, fr.x)*step(fu, fr.y); return mix({a}*0.3, mix({a},{b},h21(mod(id, vec2({tx}.0,{ty}.0))+{f(d['seed'])})), m);")
+        elif op.startswith("sky."):
+            A = T(0, "vec3(0.0)")
+            pre = f"vec3 dir = sdir(uv); vec3 gn = {SKYG[0]}; float gw = {SKYG[1]}; float dr = uTime*{SKYG[2]}; vec3 c = {A('uv')};"
+            if op == "sky.base":
+                body = f"vec3 dir = sdir(uv); return {v3(hsv(d, 'd'))} + {v3(hsv(d, 'a'))}*(0.5+0.5*svn3(dir*2.5+uTime*{f(d['drift'] * 1.5)}));"
+            elif op == "sky.band":
+                body = pre + (f" float ds = abs(dot(dir, gn)); float w = gw*(1.0+(svn3(dir*{f(d['nscale'])}+dr*0.5)-0.5)*{f(d['nstr'])});"
+                              f" float b = exp(-ds*ds/(2.0*w*w))*(0.6+0.4*fb3(dir*10.0+dr*0.2, 3));"
+                              f" return c + b*mix({v3(hsv(d, 'c'))}, {v3(hsv(d, 'e'))}, exp(-ds*ds/(2.0*w*w*0.09)));")
+            elif op == "sky.stars":
+                body = pre + (f" return c + skystars(dir, gn, {f(d['density'])}, {f(d['bright'])}, {f(d['base'])},"
+                              f" {f(d['boost'])}, {f(d['conc'])});")
+            elif op == "sky.nebula":
+                body = pre + (f" return c + skyneb(dir, {f(d['scale'])}, dr, {v3(hsv(d, 'a'))}, {v3(hsv(d, 'b'))},"
+                              f" {v3(hsv(d, 'c'))});")
+            elif op == "sky.dust":
+                body = pre + (f" float du = smoothstep(0.3, 0.7, fb3(dir*{f(d['scale'] * 1.8)}+vec3(0.0,dr*0.3,0.0), 3));"
+                              f" float gm = 1.0-smoothstep(0.0, gw*2.5, abs(dot(dir, gn)));"
+                              f" return c*max(1.0-du*{f(d['strength'])}*gm, 0.25);")
+            elif op == "sky.core":
+                cd = _sph(d["theta"], d["phi"])
+                body = pre + (f" vec3 cd = {v3(cd)}; float gd = abs(dot(dir, gn)); float on = exp(-gd*gd/(2.0*gw*gw));"
+                              f" float cdt = dot(dir, cd); float inn = smoothstep({f(1 - d['size'])}, 1.0, cdt); inn *= inn*on;"
+                              f" float ha = smoothstep({f(1 - d['halo'])}, 1.0, cdt)*on*(0.6+0.4*svn3(dir*8.0+cd*3.0));"
+                              f" return c + inn*{v3(hsv(d, 'c'))} + ha*{v3(hsv(d, 'h'))};")
+            elif op == "sky.galaxy":
+                ad = _sph(d["theta"], d["phi"])
+                sz = d["size"]
+                body = pre + (f" vec3 ad = {v3(ad)}; vec3 up = normalize(cross(ad, vec3(0.13,1.0,0.24))); vec3 rt = normalize(cross(up, ad));"
+                              f" float fc = sat1((dot(dir, ad)-0.7)*5.0); if(fc < 0.001) return c;"
+                              f" float eu = dot(dir, rt), ev = dot(dir, up)*3.2; float r2 = eu*eu+ev*ev; float s2 = {f(sz * sz)};"
+                              f" float r = sqrt(r2); float ph = atan(ev, eu)*2.0 + r*{f(15.0 / sz)};"
+                              f" float dk = exp(-r2/(s2*0.25))*(0.4+0.6*svn3(vec3(sin(ph), cos(ph), r*{f(10.0 / sz)}+3.7)));"
+                              f" dk *= 1.0-0.35*exp(-ev*ev/(s2*0.003));"
+                              f" return c + (dk*{v3(hsv(d, 'c'))} + exp(-r2/(s2*0.008))*{v3(hsv(d, 'n'))})*fc;")
+            elif op == "sky.web":
+                body = pre + (f" return c + skyweb(dir*{f(d['scale'])}+vec3(dr*0.3,0.0,dr*0.2), {f(d['sharp'])},"
+                              f" {f(d['interior'])})*{v3(hsv(d))};")
+            elif op == "sky.haze":
+                body = pre + (f" float at = exp(-abs(dir.y-{f(d['height'])})*{f(d['falloff'])})*(0.7+0.3*svn3(dir*3.0+vec3(17.3,0.0,41.7)));"
+                              f" return c + {v3(hsv(d))}*at;")
         else:
             body = "return vec3(0.5);"
         src.append(f"vec3 t{i}(vec2 uv){{ {body} }}")

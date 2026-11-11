@@ -210,7 +210,27 @@ void main(){ vec2 uv = gl_FragCoord.xy/uRes; vec3 c = vec3(0.0); float ws = 0.0;
   for(int i=-6;i<=6;i++){ float w = exp(-float(i*i)/18.0); c += texture(uSrc, uv + uDir*float(i)/uRes).rgb*w; ws += w; }
   oCol = vec4(c/ws, 1.0); }"""
 
+FS_UPRE = """#version 330
+uniform sampler2D uSrc; uniform vec2 uRes; uniform float uThreshold, uKnee; out vec4 oCol;
+void main(){ vec2 uv = gl_FragCoord.xy/uRes; vec3 c = min(texture(uSrc, uv).rgb, vec3(65472.0));
+  float br = max(c.r, max(c.g, c.b)); float soft = clamp(br-uThreshold+uKnee, 0.0, 2.0*uKnee);
+  soft = soft*soft/(4.0*uKnee+1e-4); c *= max(br-uThreshold, soft)/max(br, 1e-4); oCol = vec4(max(c, 0.0), 1.0); }"""
+
+FS_UBLUR = """#version 330
+uniform sampler2D uSrc; uniform vec2 uRes; uniform vec2 uStep; out vec4 oCol;
+void main(){ vec2 uv = gl_FragCoord.xy/uRes; vec3 c = texture(uSrc, uv).rgb*0.22702703;
+  c += (texture(uSrc, uv-uStep).rgb + texture(uSrc, uv+uStep).rgb)*0.19459459;
+  c += (texture(uSrc, uv-2.0*uStep).rgb + texture(uSrc, uv+2.0*uStep).rgb)*0.12162162;
+  c += (texture(uSrc, uv-3.0*uStep).rgb + texture(uSrc, uv+3.0*uStep).rgb)*0.05405405;
+  c += (texture(uSrc, uv-4.0*uStep).rgb + texture(uSrc, uv+4.0*uStep).rgb)*0.01621622;
+  oCol = vec4(c, 1.0); }"""
+
+FS_UUP = """#version 330
+uniform sampler2D uHigh, uLow; uniform vec2 uRes; uniform float uScatter; out vec4 oCol;
+void main(){ vec2 uv = gl_FragCoord.xy/uRes; oCol = vec4(mix(texture(uHigh, uv).rgb, texture(uLow, uv).rgb, uScatter), 1.0); }"""
+
 FS_COMP = """#version 330
+uniform int uMode;
 uniform sampler2D uScene, uBloom, uPrev; uniform vec2 uRes; uniform float uExposure, uBloomK, uSat, uContrast,
   uVignette, uFeedback, uGrain, uAberr, uTime;
 uniform vec4 uPanini; // distance, crop scale, view extents x, y (URP PaniniProjection, Panini_Generic); x = 0: off
@@ -225,6 +245,9 @@ void main(){ vec2 so = gl_FragCoord.xy/uRes; vec2 uv = panini(so); vec2 cc = uv-
   vec3 c;
   c.r = texture(uScene, uv + cc*uAberr).r; c.g = texture(uScene, uv).g; c.b = texture(uScene, uv - cc*uAberr).b;
   c = c*uExposure + texture(uBloom, uv).rgb*uBloomK;
+  if(uMode == 1){ // post.urp: no tonemapper, the sRGB transfer, nothing else
+    c = clamp(c, 0.0, 1.0); c = mix(c*12.92, 1.055*pow(c, vec3(1.0/2.4))-0.055, step(0.0031308, c));
+    oCol = vec4(c, 1.0); return; }
   c = c*(2.51*c+0.03)/(c*(2.43*c+0.59)+0.14); // ACES fit
   float l = dot(c, vec3(0.299,0.587,0.114)); c = mix(vec3(l), c, uSat);
   c = clamp((c-0.5)*uContrast+0.5, 0.0, 1.0);
@@ -362,6 +385,29 @@ class Renderer:
         self.p_bright = ctx.program(vertex_shader=VS_QUAD, fragment_shader=FS_BRIGHT)
         self.p_blur = ctx.program(vertex_shader=VS_QUAD, fragment_shader=FS_BLUR)
         self.p_comp = ctx.program(vertex_shader=VS_QUAD, fragment_shader=FS_COMP)
+        # post.urp pyramid: level i is the game's level i + log2(1280 / w) (its bloom is built at 1280x720, from half)
+        self.u_shift = math.log2(1280.0 / w)
+        self.u_n = max(1, int(round(6 - self.u_shift)))
+        self.u_tex, self.u_fbo = [], []
+        for i in range(self.u_n):
+            lw, lh = max(1, (w // 2) >> i), max(1, (h // 2) >> i)
+            trio = [ctx.texture((lw, lh), 4, dtype="f2") for _ in range(3)]  # down, scratch, up
+            for t in trio:
+                t.repeat_x = t.repeat_y = False
+            self.u_tex.append(trio)
+            self.u_fbo.append([ctx.framebuffer([t]) for t in trio])
+        self.u_pre_tex = ctx.texture((w, h), 4, dtype="f2")
+        self.u_pre_tex.repeat_x = self.u_pre_tex.repeat_y = False
+        self.u_pre_fbo = ctx.framebuffer([self.u_pre_tex])
+        self.u_top_tex = ctx.texture((w, h), 4, dtype="f2")
+        self.u_top_tex.repeat_x = self.u_top_tex.repeat_y = False
+        self.u_top_fbo = ctx.framebuffer([self.u_top_tex])
+        self.p_upre = ctx.program(vertex_shader=VS_QUAD, fragment_shader=FS_UPRE)
+        self.p_ublur = ctx.program(vertex_shader=VS_QUAD, fragment_shader=FS_UBLUR)
+        self.p_uup = ctx.program(vertex_shader=VS_QUAD, fragment_shader=FS_UUP)
+        self.v_upre = ctx.vertex_array(self.p_upre, [(self.quad, "2f", "p")])
+        self.v_ublur = ctx.vertex_array(self.p_ublur, [(self.quad, "2f", "p")])
+        self.v_uup = ctx.vertex_array(self.p_uup, [(self.quad, "2f", "p")])
         self.p_hud = ctx.program(vertex_shader=VS_QUAD, fragment_shader=FS_HUD)
         self.p_inst = ctx.program(vertex_shader=VS_INST, fragment_shader=FS_INST)
         self.v_bright = ctx.vertex_array(self.p_bright, [(self.quad, "2f", "p")])
@@ -375,6 +421,56 @@ class Renderer:
                                                            (self.inst_buf, "3f 3f 3f 3f 4f 1f/i", "ip", "ix", "iy", "iz",
                                                             "ic", "ie")]) for m in MESHES}
         self._prog_cache = {}
+
+    def _urp_bloom(self, post):
+        """URP's bloom as the engine builds it (PostPass.cs): soft-knee prefilter, a gaussian while halving, then back
+        up blending each level with the one below by the scatter. Levels finer than this render's own are the
+        prefiltered image itself, weighted as the game's chain would weight them."""
+        ctx, TS = self.ctx, self.mgl.TRIANGLE_STRIP
+        thr = float(post["thresh"])
+        thr = ((thr + 0.055) / 1.055) ** 2.4 if thr > 0.04045 else thr / 12.92
+        sc = 0.05 + 0.9 * float(post["scatter"])
+        ex = float(post["exposure"])
+        self.scene_tex.use(0)
+        self.u_pre_fbo.use()
+        for k, v in (("uSrc", 0), ("uRes", (float(self.w), float(self.h))), ("uThreshold", thr / ex), ("uKnee", 0.5 * thr / ex)):
+            self._set(self.p_upre, k, v)
+        self.v_upre.render(TS)
+        src = self.u_pre_tex
+        for i in range(self.u_n):
+            down, scratch, up = self.u_tex[i]
+            fd, fs, fu = self.u_fbo[i]
+            res = tuple(float(x) for x in down.size)
+            src.use(0)
+            fs.use()
+            self._set(self.p_ublur, "uSrc", 0)
+            self._set(self.p_ublur, "uRes", res)
+            self._set(self.p_ublur, "uStep", (1.0 / res[0], 0.0))
+            self.v_ublur.render(TS)
+            scratch.use(0)
+            fd.use()
+            self._set(self.p_ublur, "uStep", (0.0, 1.0 / res[1]))
+            self.v_ublur.render(TS)
+            src = down
+        low = self.u_tex[-1][0]
+        self._set(self.p_uup, "uHigh", 0)
+        self._set(self.p_uup, "uLow", 1)
+        for i in range(self.u_n - 2, -1, -1):
+            down, scratch, up = self.u_tex[i]
+            self._set(self.p_uup, "uRes", tuple(float(x) for x in down.size))
+            self._set(self.p_uup, "uScatter", sc)
+            down.use(0)
+            low.use(1)
+            self.u_fbo[i][2].use()
+            self.v_uup.render(TS)
+            low = up
+        # the game's finer levels: each would be (1 - sc) of itself over sc of the rest
+        self._set(self.p_uup, "uRes", (float(self.w), float(self.h)))
+        self._set(self.p_uup, "uScatter", sc ** max(0.0, self.u_shift))
+        self.u_pre_tex.use(0)
+        low.use(1)
+        self.u_top_fbo.use()
+        self.v_uup.render(TS)
 
     def scene_program(self, src):
         key = hash(src)
@@ -418,6 +514,10 @@ class Renderer:
         for fb in self.out_fbo:
             fb.clear(0.0, 0.0, 0.0, 1.0)
         post = _d(g.nodes[p_idx]) if p_idx is not None else _d(type("N", (), {"op": "post.grade", "params": [p.default for p in OPS["post.grade"].params]})())
+        urp = p_idx is not None and g.nodes[p_idx].op == "post.urp"
+        if urp:
+            post = dict(post, bloom=post["intensity"] * post["exposure"], sat=1.0, contrast=1.0, vignette=0.0, feedback=0.0, grain=0.0,
+                        aberr=0.0, bloomrad=1.0)
         hud = hud_list(g, h_idx)
         dt = 1.0 / (FPS * SUBSTEPS)
         warm = (rd["warmup"] if t0 is None else t0) + float(t_shift)
@@ -455,6 +555,7 @@ class Renderer:
                           ("uFeedback", float(post["feedback"])), ("uGrain", float(post["grain"])),
                           ("uAberr", float(post["aberr"]))):
             self._set(pc, name, val)
+        self._set(pc, "uMode", 1 if urp else 0)
         pd, crop = cam.panini()
         self._set(pc, "uPanini", panini_params(pd, crop, fov, self.w / self.h))
         self._set(self.p_bright, "uThresh", float(post["thresh"]))
@@ -520,30 +621,35 @@ class Renderer:
                 self.inst_vao[m].render(self.mgl.TRIANGLES, vertices=self.mesh_n[m], instances=len(arr))
                 n_inst_total += len(arr)
             ctx.disable(self.mgl.DEPTH_TEST)
-            # ---- bloom
-            self.scene_tex.use(0)
-            self.p_bright["uSrc"].value = 0
-            self.f1.use()
-            ctx.viewport = (0, 0, *self.bsize)
-            self.v_bright.render(self.mgl.TRIANGLE_STRIP)
-            rad = float(post["bloomrad"])
-            for _ in range(2):
-                self.b1.use(0)
-                self.p_blur["uSrc"].value = 0
-                self.p_blur["uDir"].value = (rad, 0.0)
-                self.f2.use()
-                self.v_blur.render(self.mgl.TRIANGLE_STRIP)
-                self.b2.use(0)
-                self.p_blur["uDir"].value = (0.0, rad)
+            if urp:
+                self._urp_bloom(post)
+                bloom_tex = self.u_top_tex
+            else:
+                # ---- bloom
+                self.scene_tex.use(0)
+                self.p_bright["uSrc"].value = 0
                 self.f1.use()
-                self.v_blur.render(self.mgl.TRIANGLE_STRIP)
+                ctx.viewport = (0, 0, *self.bsize)
+                self.v_bright.render(self.mgl.TRIANGLE_STRIP)
+                rad = float(post["bloomrad"])
+                for _ in range(2):
+                    self.b1.use(0)
+                    self.p_blur["uSrc"].value = 0
+                    self.p_blur["uDir"].value = (rad, 0.0)
+                    self.f2.use()
+                    self.v_blur.render(self.mgl.TRIANGLE_STRIP)
+                    self.b2.use(0)
+                    self.p_blur["uDir"].value = (0.0, rad)
+                    self.f1.use()
+                    self.v_blur.render(self.mgl.TRIANGLE_STRIP)
+                bloom_tex = self.b1
             # ---- composite
             dst = self.out_fbo[fb_i]
             prev = self.out_tex[1 - fb_i]
             dst.use()
             ctx.viewport = (0, 0, self.w, self.h)
             self.scene_tex.use(0)
-            self.b1.use(1)
+            bloom_tex.use(1)
             prev.use(2)
             self._set(pc, "uScene", 0)
             self._set(pc, "uBloom", 1)
