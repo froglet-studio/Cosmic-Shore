@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-10-every-authored-colour-in-the-vessel-hud-cf24dc",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-10T22:18:39+00:00",
+  "area": "vessel HUDs, vessel action configs and crew seats",
+  "summary": "Every authored colour in the vessel HUD views (Angler, Brittle Star, Butterfly, Dolphin, Goby and Pistol, Manta, Rhino, Scarab, Serpent, Shrike, Sparrow, Starling, Urchin), the vessel action configs and the crew seats (Honeyguide, Kite navigator, Orca, Goby) is now read through ColorTrace.Retrace where it paints, so it follows the worn colour set. Serialized values are untouched (they are Photic's); under Photic nothing changes on screen. The Grizzly, Thresher and Stoat edits are NOT applied because your Ys-bleeding-edge work occupies those lanes: they wait as Docs/VesselModels/colour_trace_waiting/{grizzly,thresher,stoat}.patch for you to apply or adapt.",
+  "why": "Garrett, 2026-11-10: every colour in the game must respect the colour set. Docs/VesselModels/COLOR_TRACE.md.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "537eafa35",
+  "paths": [
+    "Assets/_Scripts/Controller/Vessel",
+    "Assets/_Scripts/UI/View",
+    "Docs/VesselModels/colour_trace_waiting"
+  ]
+}

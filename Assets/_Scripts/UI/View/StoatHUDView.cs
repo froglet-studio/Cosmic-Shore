@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -158,14 +159,24 @@ namespace CosmicShore.UI
             RefreshParts();
         }
 
+        // A colour set worn while the cards show repaints their parts (ColorTrace).
+        void OnEnable()
+        {
+            ColorTrace.Changed += RefreshParts;
+            RefreshParts();
+        }
+
+        void OnDisable() => ColorTrace.Changed -= RefreshParts;
+
         void RefreshParts()
         {
             float held = _pairHeld ? 1f : idlePartAlpha;
+            var danger = ColorTrace.Retrace(ColorTrace.Ui, dangerColor);
             Paint(rippleStoatIcon, _domain, 1f);
             Paint(ripplePairIcon, Color.white, held);
             Paint(rippleRingsIcon, Color.white, held);
-            Paint(rippleFaunaIcon, dangerColor, 1f);
-            Paint(rippleSiphonIcon, dangerColor, IsAbilityUpgraded(Element.Charge) ? 1f : 0f);
+            Paint(rippleFaunaIcon, danger, 1f);
+            Paint(rippleSiphonIcon, danger, IsAbilityUpgraded(Element.Charge) ? 1f : 0f);
 
             Paint(launchStoatIcon, _domain, 1f);
             Paint(launchKickIcon, Color.white, _launched ? 1f : 0f);
@@ -177,7 +188,7 @@ namespace CosmicShore.UI
             Paint(orbitAttractorIcon, Color.white, held);
             Paint(orbitRepulsorIcon, Color.white, held);
             Paint(orbitRingIcon, Color.white, _orbiting ? 1f : 0f);
-            Paint(orbitPreyIcon, dangerColor, accretion ? 1f : 0f);
+            Paint(orbitPreyIcon, danger, accretion ? 1f : 0f);
             Paint(orbitPullIcon, Color.white, accretion ? 1f : 0f);
 
             float ring = _orbiting ? 1f : idlePartAlpha;
@@ -187,7 +198,7 @@ namespace CosmicShore.UI
             Paint(slingStoatOrbitIcon, _domain, _orbiting ? 1f : 0f);
             Paint(slingStoatGoneIcon, _domain, _orbiting ? 0f : 1f);
             Paint(slingSpeedIcon, Color.white, !_orbiting && _launched ? 1f : 0f);
-            Paint(slingForesightIcon, dangerColor, IsAbilityUpgraded(Element.Time) ? 1f : 0f);
+            Paint(slingForesightIcon, danger, IsAbilityUpgraded(Element.Time) ? 1f : 0f);
         }
 
         static void Paint(Image part, Color color, float alpha)
@@ -201,7 +212,7 @@ namespace CosmicShore.UI
         {
             if (!gauge) return;
             gauge.fillAmount = fill;
-            gauge.color = gaugeColor;
+            gauge.color = ColorTrace.Retrace(ColorTrace.Ui, gaugeColor);
         }
 
         public void SetRipple(float charge01) => Push(rippleGauge, charge01, false);
@@ -273,7 +284,7 @@ namespace CosmicShore.UI
             if (!gauge) return;
             gauge.fillAmount = Mathf.Clamp01(fill01);
             float k = 1f - Mathf.Exp(-colorBlendRate * Time.unscaledDeltaTime);
-            gauge.color = Color.Lerp(gauge.color, ready ? readyColor : gaugeColor, k);
+            gauge.color = Color.Lerp(gauge.color, ready ? readyColor : ColorTrace.Retrace(ColorTrace.Ui, gaugeColor), k);
         }
 
         /// <summary>

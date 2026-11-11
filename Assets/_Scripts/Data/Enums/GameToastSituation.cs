@@ -234,6 +234,17 @@ namespace CosmicShore.Data
         // Kelpwood, the Angler's charge game (_Scripts/Controller/Arcade/KELPWOOD.md). Its race beats are the shared
         // 128-130 (DomainRaceToasts); a bite is 86 (StrikeHitsLanded rose). Posted to the LOCAL pilot only.
         KelpwoodHint = 161,             // once, at the start: lock a rival with the eraser; tame the herds in the kelp
+        // Corona, the Manta's charge game (_Scripts/Controller/Arcade/CORONA.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a bloom hit is 82 (DebuffHitsLanded rose). Posted to the LOCAL pilot only.
+        CoronaHint = 162,               // once, at the start: skim a shell to arm, graze to plant, cash at the heart
+
+        // Harvest, the Thresher's space game (_Scripts/Controller/Arcade/HARVEST.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a prism milestone is 83 (HostilePrismsDestroyed). Posted to the LOCAL pilot only.
+        HarvestHint = 163,              // once, at the start: press A to break; mow the stalks, smash the core
+        // Shatterplane, the Brittle Star's space game (_Scripts/Controller/Arcade/SHATTERPLANE.md). Its race beats are the
+        // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
+        // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
+        ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

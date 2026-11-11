@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Shatterplane Cell Config 1
+  m_EditorClassIdentifier:
+  CellName: Shatterplane
+  Description: 'Billboards - intensity 1 of Shatterplane: ten plates facing straight out at the spawn
+    ring, a crystal on every plate''s axis. 5290 prisms, all neutral (5290 breakable, 0
+    super-shielded, 0 danger). Membrane radius 1200, spawn ring 780, the standard nucleus
+    resized to 470 u by the controller (the ring blast is as wide as the nucleus; play
+    geometry, not a claim), the crystal field laid by the controller on the plates'' axes.
+    No flora; no fauna. Authored by Tools/Build/author_shatterplane_assets.py - re-run it
+    rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 1
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 120
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: a5648314df28373fbbb13472a5c3d361, type: 2}
+  EnvironmentPrefab: {fileID: 8800000000000203, guid: 46d95c6c5b4361a420e70eaaecf982ec, type: 3}
+  EnvironmentIntensity: 1
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 5990
+    RestlessExit: 5790
+    FrenzyEnter: 8890
+    FrenzyExit: 8290
+    RestlessEnterVolume: 275700
+    RestlessExitVolume: 272500
+    FrenzyEnterVolume: 322100
+    FrenzyExitVolume: 312500

@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-10-the-tandava-ascension-palettes-are-appli-03fe8d",
+  "to": "aradia1",
+  "by": "Garrett",
+  "date": "2026-11-10T22:18:39+00:00",
+  "area": "arcade modes (Tandava, Tandava Severing, Astro League, the countdown)",
+  "summary": "The Tandava ascension palettes are applied through the new WornAscensionPalette() (each colour from the worn colour set), the Astro League goal and ball colours through accessors that retrace them, and the countdown's urgent colour through HUDAnimationSettingsSO.CountdownUrgentColor. Serialized values are untouched; under Photic nothing changes on screen.",
+  "why": "Garrett, 2026-11-10: every colour in the game must respect the colour set. Docs/VesselModels/COLOR_TRACE.md.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "537eafa35",
+  "paths": [
+    "Assets/_Scripts/Controller/Arcade"
+  ]
+}

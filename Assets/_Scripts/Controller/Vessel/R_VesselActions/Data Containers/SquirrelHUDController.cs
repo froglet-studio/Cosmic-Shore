@@ -38,6 +38,12 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier;
         [SerializeField] private ScriptableVariable<float> boostMaxMultiplier;
 
+        [Header("Joust speed (Charge card)")]
+        [Tooltip("SquirrelJoustSpeed.asset: the least speed a joust needs, on Charge - the SAME asset the vessel joust " +
+                 "(VesselOvertakeBySkimmerEffect) and the lifeform joust (SquirrelVesselWitherLifeformByCrystalEffect) " +
+                 "ask, so the tick on the Charge card is the gate itself. Empty hides the gauge's mark.")]
+        [SerializeField] private JoustSpeedConfigSO joustSpeed;
+
         [Inject] private GameDataSO gameData;
 
         private IVesselStatus _vesselStatus;
@@ -146,6 +152,7 @@ namespace CosmicShore.UI
                 view.SetTubeCooldownReady(1f - _tubeExecutor.CooldownRemaining01);
 
             PushStealReadout();
+            PushJoustSpeed();
             PushPalette();
             if (_drifting) view.SetDriftAngle(DriftAngleDegrees());
         }
@@ -178,6 +185,25 @@ namespace CosmicShore.UI
         /// <c>ThemeManagerData</c>, while the domain tints are additionally waiting on a domain to
         /// resolve. Neither latch closes until the palette actually answered, which is the whole of
         /// the fix - see <see cref="_domainPainted"/>.</para>
+        ///
+        /// Why the palette is POLLED rather than pushed once.
+        ///
+        /// <para>A domain is not decided by the time a vessel spawns: <c>Player.NetDomain</c> is
+        /// server-write and initialises to Jade, the owner's own pick arrives later through
+        /// <c>RequestSetDomain_ServerRpc</c>, and the match's active set can move a human again at
+        /// spawn (<c>NormalizeUnassignedHumans</c>). CLAUDE.md states the rule outright - <i>do not
+        /// snapshot domain at component-creation time</i> - and this controller was snapshotting it
+        /// twice, so the omni card and the steal count both held whatever was true one frame after
+        /// <c>Initialize</c>.</para>
+        ///
+        /// <para>Polled off the live <c>Player.Domain</c> mirror rather than subscribed to
+        /// <c>NetDomain.OnValueChanged</c> for two reasons: this controller already runs an Update
+        /// for the tube cooldown and the steal readout, so the poll is free; and a subscription has
+        /// to be torn down against a <c>Player</c> reference that a vessel swap replaces underneath
+        /// it, which is the asymmetric-binding failure the vessel contract has paid for three times.
+        /// The read is gated on <c>Player</c> being present because <c>IVesselStatus.Domain</c>
+        /// logs an ERROR when it is not - a per-frame poll through that getter would turn one
+        /// missing reference into console spam.</para>
         /// </summary>
         private void PushPalette()
         {
@@ -228,27 +254,6 @@ namespace CosmicShore.UI
             domain != Domains.Blue && resolved.a > 0f;
 
         /// <summary>
-        /// Why the palette is POLLED rather than pushed once.
-        ///
-        /// <para>A domain is not decided by the time a vessel spawns: <c>Player.NetDomain</c> is
-        /// server-write and initialises to Jade, the owner's own pick arrives later through
-        /// <c>RequestSetDomain_ServerRpc</c>, and the match's active set can move a human again at
-        /// spawn (<c>NormalizeUnassignedHumans</c>). CLAUDE.md states the rule outright - <i>do not
-        /// snapshot domain at component-creation time</i> - and this controller was snapshotting it
-        /// twice, so the omni card and the steal count both held whatever was true one frame after
-        /// <c>Initialize</c>.</para>
-        ///
-        /// <para>Polled off the live <c>Player.Domain</c> mirror rather than subscribed to
-        /// <c>NetDomain.OnValueChanged</c> for two reasons: this controller already runs an Update
-        /// for the tube cooldown and the steal readout, so the poll is free; and a subscription has
-        /// to be torn down against a <c>Player</c> reference that a vessel swap replaces underneath
-        /// it, which is the asymmetric-binding failure the vessel contract has paid for three times.
-        /// The read is gated on <c>Player</c> being present because <c>IVesselStatus.Domain</c>
-        /// logs an ERROR when it is not - a per-frame poll through that getter would turn one
-        /// missing reference into console spam.</para>
-        /// </summary>
-
-        /// <summary>
         /// The SPACE card: how far the steal reaches right now, and how much has been taken.
         ///
         /// <para>Both are POLLED rather than pushed, and for different reasons. The reach is a
@@ -258,6 +263,25 @@ namespace CosmicShore.UI
         /// steal learns about its own steal by reading it back. A per-frame read of two fields is
         /// the cheap half of this controller's Update; the view repaints only on a change.</para>
         /// </summary>
+        private void PushJoustSpeed()
+        {
+            if (_vesselStatus == null) return;
+            var transformer = _vesselStatus.VesselTransformer;
+            float top = JoustGaugeTopSpeed(transformer ? transformer.CruiseSpeed : 0f,
+                                           transformer ? transformer.MaxBoost : 1f);
+            if (top <= 0f) return;
+            float minimum = joustSpeed ? joustSpeed.MinimumSpeedFor(_vesselStatus) : 0f;
+            view.SetJoustSpeed(_vesselStatus.Speed / top, minimum / top);
+        }
+
+        /// <summary>
+        /// The speed the Charge card's gauge is full at: the hull's own fastest, its cruise times its skim-boost ceiling
+        /// (the Squirrel: 60 x 5 = 300 u/s), read off its transformer so the gauge never holds a copy of a flight number.
+        /// 0 while the transformer has not set its cruise yet.
+        /// </summary>
+        public static float JoustGaugeTopSpeed(float cruiseSpeed, float maxBoost) =>
+            Mathf.Max(0f, cruiseSpeed) * Mathf.Max(1f, maxBoost);
+
         private void PushStealReadout()
         {
             var skimmer = _vesselStatus?.NearFieldSkimmer;

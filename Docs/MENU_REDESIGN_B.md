@@ -6665,3 +6665,72 @@ held until it lands. The Goby's turn: `CrewOrientation` asks `CrewPictureInPictu
 a turn makes grows the new view out of the small square over the old one (smoothstep, 0.35 s); a swap by the D-pad or a
 double tap stays instant. Not run on a device yet (checklist "Portrait menus", step 8). The nav band has a pose too (Shombith, 2026-11-08: "give the nav band a pose too"): its own rect, across the
 top upright as on PC, so it glides with the rest (`author_menu_portrait.py` SCENE_POSED).
+
+## 155. Rev 84 mockups: a flight certificate and element tiers for the solo vessels (2026-11-10; Shombith picked A + B, built; the tiers await ratings)
+
+**Asked (Shombith, 2026-11-10):** "Okay now we want to do a completion certificate for the vessels in the game and also
+make a tier system based on their specific elemental system. First part the completion, vessels get completion percentage
+or minimum viable pass or arena ready progression lets set on a name you can suggest too, so it will depend if the vessel
+has all of its abilities added, l5 upgrades figured out and also time games completed that's minimum and then there is
+mass-space(vessel can have either one and be ready) and charge games. Then their tier system like vessels which are
+really good in time games have S tier time game and least have C tier, you can confirm each vessel from me. These only
+apply to solo vessels not crew do not touch them. Create mockups first before implementing", and while it was drawn: "We
+should be able to sort and filter in the fleet codex all fleet view as per tier and completion separately".
+
+**Design brief:** the fundamental is the vessel kit (four element abilities, their level 5s, a game per element); it
+obeys the codex rules (facts read from the game's files, never typed; elements carry no colour; one Lime call to action,
+none here) and comes closest to breaking "no label the data does not know": the tier letters are a person's judgement,
+so they are placeholders until Shombith rates every vessel. Prototype: these boards. Judged by Shombith on Frogma.
+Retire if the tiers are not rated, or if the certificate stops matching what the team calls ready.
+
+**The rule drawn (suggested name: the Flight Certificate):** five checks, 20% each, read from the Fleet Codex data:
+1 all four abilities in the map; 2 the level-5 upgrades, 5% per wired one; 3 a Time arcade game; 4 a Mass or a Space
+arcade game (either); 5 a Charge arcade game. Stages: **Launch Ready** (1, all of 2, and 3: the minimum viable pass),
+**Fleet Ready** (and 4), **Arena Ready** (all five); below Launch Ready, *In the hangar*. Today (bleeding-edge
+`c53235b2`): Arena Ready 7 (Manta, Dolphin, Squirrel, Sparrow, Scarab, Brittle Star, Tiger Moth), Fleet Ready 1
+(Urchin), Launch Ready 5 (Rhino, Serpent, Stoat, Jacks, Meerkat), In the hangar 6 (Grizzly 75%, Thresher 95%, Angler
+70%: an unwired level 5; Shrike 45%; Starlings 20%; Swordfish 60%: no Time game). Crews (Goby & Pistol, Wrasse &
+Grouper, Orca, Honeyguide) and the Termite (no ability map) are left out.
+
+**On the canvas:** the **Fleet Codex** tab, round "Rev 84 - Flight certificate and element tiers for the solo vessels"
+(version `1794355298-b0b9`). Copies `Docs/MenuRedesignB/board/R84*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r84_vessel_certificate.py` (Rev 68's kit and art ids, the facts from `fleet.json`).
+- **R84A (recommended), interactive:** the vessel page's flight-deck window with the certificate in the briefing (the
+  percentage, the stage, five segments, the five checks with what met each, the next step) and a tier letter beside
+  each element game; a fleet strip counts the stages. Switch between Squirrel, Grizzly, Rhino and Shrike.
+- **R84B, interactive:** the whole-fleet page (`#fleet`) with the cards carrying the certificate bar, the stage and the
+  four tier letters, and two separate controls as asked: **Sort by** completion or one element's tier; **Filter** by
+  stage and by an element's tier letter, each alone or together.
+- **R84C, interactive:** a tier list per element (Charge / Mass / Space / Time games), S to C lanes of hull tiles each
+  carrying its certificate, and the vessels with no game of that element named under it.
+- **R84Notes:** the rule, the names, the colour use (ink for done; Gold only for Arena Ready and an S, the style guide's
+  "first place"), and the sheet of every solo vessel's certificate with a `?` per tier to rate.
+
+A recommended because the certificate sits where a reader already studies one vessel; B is the fleet view the follow-up
+asked for and goes with it; C is an extra view. `check_mockup.py` fails the colours and type sizes the same way the
+picked Rev 69 codex board does (the codex is drawn in the Nocturne colour set's tokens and Saira), and the noise budget
+on B (19 cards).
+
+**Differs from the build:** the live codex (`Docs/FleetCodex/index.html`, `Tools/Build/fleet_codex.py`) gains a
+`certificate` per solo vessel (computed in the generator from the map, the L5 status and the arcade cards) and a
+`tiers` table typed by a person (a new hand table beside `abilities.json`, each entry naming who rated it and when), the
+vessel page's briefing gains the certificate, and `#fleet` gains the sort and filter controls.
+
+**Picked (Shombith, 2026-11-10):** "A+B it is"; the name ("Flight Certificate", Launch / Fleet / Arena Ready) and the rule
+that only a WIRED level 5 counts: "cool".
+
+**Built (2026-11-10):** `Tools/Build/fleet_codex.py` writes each solo vessel's `certificate` (`certificate()`: the five
+checks, the percentage, the stage, the next step) and `tiers` (`tiers_of()`: a letter from the new hand table
+`Docs/FleetCodex/tiers.json`, null for not rated yet, `-` where the vessel has no game of that element; a letter given
+there is dropped with a warning); crews and map-less vessels carry neither. `Docs/FleetCodex/index.html`: the vessel
+page's briefing shows the certificate (A) in place of the stats row, with the five checks as one row of cells, and a
+tier letter beside each element game; `#fleet` (B) adds Sort by (completion, or one element's tier) and the Completion
+and Tier filters, each on its own; a stage or tier filter leaves the crews out. Checked in Chromium at 1600 px (Rhino,
+the fleet sorted by Time tier and filtered to Launch Ready) and 390 px: no script error, no sideways scroll. Until the
+tiers are rated every letter shows `?`. The ratings are collected with the **Fleet Tier Sheet**
+(https://claude.ai/artifact/76HqmyoHRaWSM14zTcnPVt), shared with Garrett; its Copy answers text goes into `tiers.json`.
+
+**Percentage only (Shombith, 2026-11-10, on the built page):** "Should not be names but only the percantage". The
+page and the Fleet Tier Sheet no longer show Launch / Fleet / Arena Ready: the certificate is its percentage (Gold at 100%,
+soft under 60%), and the fleet's completion filter is in bands (100%, 80-95%, 60-75%, under 60%). The generator still
+records the stage in `fleet.json` for readers; nothing draws it.

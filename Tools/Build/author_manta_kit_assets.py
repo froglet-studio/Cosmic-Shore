@@ -183,8 +183,9 @@ FILES[_BOMB_DEBUFF_ASSET] = (
     so_asset("VesselElementalDebuffByExplosionEffectSO", "MantaBombDebuffByExplosionEffect",
              "  debuffMagnitude: %s\n" % _live_bomb_debuff_magnitude() +
              "  debuffDuration: 4\n"
-             # CHARGE scales the petals a bloom knocks loose (Garrett, 2026-11-07): x1 at rest, x2 at Charge 10.
-             "  magnitudeAtFullCharge: 2\n"
+             # Charge does NOT scale the bloom's petals (Garrett, 2026-11-10: a petal is a whole unit, too coarse a
+             # dial to tune). It scaled them x1 -> x2 from 2026-11-07; Charge now sets the fuse (fuseScale below).
+             "  magnitudeAtFullCharge: 1\n"
              "  cooldown: 1\n"
              "  elements:\n"
              "  - 2\n"
@@ -212,6 +213,16 @@ FILES["Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset"] = (
              "  explosiveLift: 0.55\n"
              "  explosiveLiftFadeSeconds: 0.25\n"
              "  fuseSeconds: 20\n"
+             # CHARGE -> the fuse (Garrett, 2026-11-10): a plant resets the shared fuse to fuseSeconds x this, read
+             # at the planter's Charge: 20 s at rest, 30 s at Charge 10, floored at half.
+             "  fuseScale:\n"
+             "    Enabled: 1\n"
+             "    Value: 1\n"
+             "    Min: 1\n"
+             "    Max: 1.5\n"
+             "    element: 1\n"
+             "    UseFloor: 1\n"
+             "    Floor: 0.5\n"
              "  plantSpeedMargin: 0\n"
              "  aoePrefabs:\n"
              f"  - {{fileID: {AOE_EXPLOSION_COMPONENT_FILEID}, guid: {BLOOM_PREFAB_GUID}, type: 3}}\n"
@@ -339,9 +350,9 @@ MAP_BODY = """  vesselClass: 1
   - Element: 1
     AbilityLabel: Sting
     AbilityDescription: Skimming a rival plants a bomb that costs one bomb of energy. Every
-      bomb shares ONE fuse, reset by each plant, so they all go off together. Charge raises the
-      petals each bloom knocks out of a rival (MantaBombDebuffByExplosionEffect.asset
-      magnitudeAtFullCharge, 2x at level 10).
+      bomb shares ONE fuse, reset by each plant, so they all go off together. Charge sets how
+      long the fuse runs when a plant resets it (MantaStingConfig.asset fuseSeconds x fuseScale,
+      20 s at rest to 30 s at level 10).
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -375,10 +386,10 @@ MAP_BODY = """  vesselClass: 1
     UpgradeDescription: Skimming a shielded rival prism pops its shield and makes it explosive.
   - Element: 4
     AbilityLabel: Yastri
-    AbilityDescription: Hard flat turns on the turn pair. Time makes the Manta faster:
+    AbilityDescription: 'Hard flat turns on the turn pair. Time makes the Manta faster:
       cruise speed (VesselTransformer.ThrottleScalerMultiplier, x1.5 at level 10) and the
       soaring speed (BoostSpeedMultiplier, x1.3 at level 10). The trail is a plain
-      Squirrel-style trail: no element grows it and turns do not flare it.
+      Squirrel-style trail: no element grows it and turns do not flare it.'
     Input: 12
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -391,7 +402,30 @@ FILES["Assets/Resources/ElementalAbilityMaps/Manta.asset"] = (
     so_asset("ElementalAbilityMapSO", "Manta", MAP_BODY), None)  # meta already exists
 
 
+def unparseable_assets():
+    """Every .asset this generator writes must PARSE, not only match. The byte comparison below cannot see a broken
+    file it wrote itself: an unquoted 'faster:' in the Yastri text left Manta.asset unreadable to Unity
+    (E-251530c87b) while --check stayed green. Skipped, not failed, where PyYAML is not installed."""
+    try:
+        import yaml
+    except ImportError:
+        return []
+    errors = []
+    for rel, (content, _meta) in FILES.items():
+        if not rel.endswith(".asset"):
+            continue
+        try:
+            yaml.safe_load(content.split("--- !u!114 &11400000\n", 1)[-1])
+        except yaml.YAMLError as e:
+            errors.append(f"{rel}: {str(e).splitlines()[0]}")
+    return errors
+
+
 def main() -> int:
+    broken = unparseable_assets()
+    if broken:
+        print("DOES NOT PARSE (nothing written):\n  " + "\n  ".join(broken))
+        return 1
     drift = []
     for rel, (content, meta) in FILES.items():
         path = os.path.join(ROOT, rel)

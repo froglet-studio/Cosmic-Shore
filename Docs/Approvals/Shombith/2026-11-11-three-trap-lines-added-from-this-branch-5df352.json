@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-11-three-trap-lines-added-from-this-branch-5df352",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T01:12:40+00:00",
+  "area": "the Claude skills (/ship, /asset-surgery, /approve)",
+  "summary": "Three trap lines added from this branch's skill capture; nothing changes how a skill decides. /ship 3.55: re-grep the LEARNINGS ids after the base merge (uniq -d), because this branch and bleeding-edge's Brittle Star ship pass both took L-STU-168 to 170 on 2026-11-10 and git joined them without a conflict. /asset-surgery SHADERGRAPH.md: a colour moved from an HDR Color node or an HLSL constant into a material Color is saved at its sRGB encoding (Unity linearizes material colours). /approve 7: put every file after one --paths (argparse reads --path as its abbreviation and keeps only the last).",
+  "why": "the /ship 3.5 skill capture",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "934546316",
+  "paths": [
+    ".claude/skills/approve/SKILL.md",
+    ".claude/skills/asset-surgery/references/SHADERGRAPH.md",
+    ".claude/skills/ship/SKILL.md"
+  ]
+}

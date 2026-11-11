@@ -71,16 +71,54 @@ namespace CosmicShore.Tests
             }
         }
 
+        const string SeaMaterialPath = "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat";
+
+        static float Off(Color a, Color b) => Mathf.Max(Mathf.Abs(a.r - b.r), Mathf.Max(Mathf.Abs(a.g - b.g), Mathf.Abs(a.b - b.b)));
+
+        // Garrett, 2026-11-10 (LOCKED): every colour comes from the colour set. Every set gives every UI token and the
+        // sea's four colours (TracedColors ui-token ids), and the theme it gives is exactly those; Photic, the set the
+        // game was authored in, gives the authored theme (its selection Jade as the style guide decided, D3) and the sea
+        // material's own colours.
         [Test]
-        public void TheElementColours_StayAuthored()
+        public void EveryToken_IsTheSetsOwn_AndPhoticsAreTheAuthored()
         {
             var theme = AssetDatabase.LoadAssetAtPath<UIThemeSO>(ThemePath);
             var container = AssetDatabase.LoadAssetAtPath<ThemeManagerDataContainerSO>(ContainerPath);
+            var catalog = AssetDatabase.LoadAssetAtPath<ColorSetCatalogSO>(CatalogPath);
             Assert.AreSame(theme, container.UITheme, "ThemeManagerDataContainer names no UI theme to re-hue");
-            var palette = ColorSetUITheme.Build(theme, container.ColorSet);
-            foreach (var t in new[] { UIColorToken.ElementCharge, UIColorToken.ElementMass, UIColorToken.ElementSpace,
-                                      UIColorToken.ElementTime, UIColorToken.Tooltip })
-                Assert.AreEqual(UITheme.ResolveAuthored(theme, t), palette[t], $"{t} moved with the colour set");
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                var entry = catalog.Get(i);
+                var palette = ColorSetUITheme.Build(theme, entry.colorSet);
+                for (int t = 0; t < ColorSetUITheme.TokenCount; t++)
+                {
+                    var token = (UIColorToken)t;
+                    Assert.IsTrue(entry.colorSet.TryGetTracedColor(ColorSetUITheme.TokenId(token), out var given),
+                        $"{entry.id} carries no {token}: run python3 Tools/Build/author_colour_set_assets.py");
+                    Assert.AreEqual(new Color(given.r, given.g, given.b, 1f), palette[token], $"{entry.id} {token} is not the set's own");
+                }
+                foreach (var (id, got) in new[] { (ColorSetUITheme.SeaLineId, palette.SeaLine), (ColorSetUITheme.SeaMidId, palette.SeaMid),
+                                                 (ColorSetUITheme.SeaEndId, palette.SeaEnd), (ColorSetUITheme.SeaGlowId, palette.SeaGlow) })
+                {
+                    Assert.IsTrue(entry.colorSet.TryGetTracedColor(id, out var given), $"{entry.id} carries no {id}");
+                    Assert.AreEqual(new Color(given.r, given.g, given.b, 1f), got, $"{entry.id} {id} is not the set's own");
+                }
+            }
+            var photic = catalog.Get(catalog.IndexOfId(ColorTrace.AuthoredSetId));
+            Assert.IsNotNull(photic, "the catalog names no Photic");
+            var authored = ColorSetUITheme.Build(theme, photic.colorSet);
+            for (int t = 0; t < ColorSetUITheme.TokenCount; t++)
+            {
+                var token = (UIColorToken)t;
+                var want = UITheme.ResolveAuthored(theme, token == UIColorToken.Selection ? UIColorToken.ControlActive : token);
+                Assert.LessOrEqual(Off(authored[token], want), 1e-5f, $"Photic's {token} is not the authored colour");
+            }
+            var sea = AssetDatabase.LoadAssetAtPath<Material>(SeaMaterialPath);
+            Assert.IsNotNull(sea, SeaMaterialPath);
+            Assert.LessOrEqual(Off(authored.SeaLine, sea.GetColor("_LineColor")), 1e-5f, "Photic's sea line is not the material's");
+            Assert.LessOrEqual(Off(authored.SeaMid, sea.GetColor("_LineColorMid")), 1e-5f, "Photic's sea middle is not the material's");
+            Assert.LessOrEqual(Off(authored.SeaEnd, sea.GetColor("_LineColorEnd")), 1e-5f, "Photic's sea end is not the material's");
+            Assert.LessOrEqual(Off(authored.SeaGlow, sea.GetColor("_GlowColor")), 1e-5f, "Photic's sea glow is not the material's");
         }
 
         [Test]

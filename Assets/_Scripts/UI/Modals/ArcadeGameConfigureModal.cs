@@ -73,11 +73,14 @@ namespace CosmicShore.UI
         [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
         [SerializeField] private ModePreviewSession previewSession;
 
-        [SerializeField, Tooltip("Rebuild the preview's arena when the intensity row changes. Off (the owner, 2026-10-17: " +
-                                 "\"the cell should not change for the preview\"): the preview keeps the card's lowest " +
-                                 "intensity cell, so moving the row never stands a new world - a multi-second cell build " +
-                                 "and a hitch on every press. The match itself still launches at the chosen intensity.")]
-        private bool previewFollowsIntensity;
+        [SerializeField, Tooltip("Rebuild the preview's arena when the intensity row changes, so each " +
+                                 "intensity shows the world (and, for a gate race, the course) it plays in. " +
+                                 "On (Shombith, 2026-11-10: \"it should show how the environment looks when " +
+                                 "each intensity is clicked\"). This reverses his 2026-10-17 'one cell' call, " +
+                                 "which was about a multi-second cell build per press: the card now stands a " +
+                                 "scale model (a mesh, no prisms) and builds the real cell only on the tap, so " +
+                                 "following the row costs a model. Off holds the card's lowest intensity.")]
+        private bool previewFollowsIntensity = true;
 
         [Header("Maelstrom")]
         [Tooltip("Names the Maelstrom's own arcade card, so OpenMaelstrom can find it. Optional - " +
@@ -649,14 +652,6 @@ namespace CosmicShore.UI
         #region Launch panels
 
         /// <summary>
-        /// Bring up the panel that draws this card and take the others down.
-        ///
-        /// <para>Selection is by <see cref="ArcadeLaunchPanel.Handles"/>, first match wins - a card
-        /// asks the panels which of them draws it rather than the modal switching on a mode enum,
-        /// so a third kind of card is a new subclass and one list entry, with nothing here to
-        /// edit.</para>
-        /// </summary>
-        /// <summary>
         /// Which panel draws this card, with NO side effects - so the routing question can be asked
         /// before anything is shown or hidden.
         /// </summary>
@@ -670,6 +665,14 @@ namespace CosmicShore.UI
             return null;
         }
 
+        /// <summary>
+        /// Bring up the panel that draws this card and take the others down.
+        ///
+        /// <para>Selection is by <see cref="ArcadeLaunchPanel.Handles"/>, first match wins - a card
+        /// asks the panels which of them draws it rather than the modal switching on a mode enum,
+        /// so a third kind of card is a new subclass and one list entry, with nothing here to
+        /// edit.</para>
+        /// </summary>
         void SelectLaunchPanel(SO_ArcadeGame game)
         {
             if (!UsesLaunchPanels) return;
@@ -1191,17 +1194,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Stop anything running in the window and let go of it. Reached from exactly TWO routes -
-        /// the ✕ (<see cref="CloseAndNotifyClients"/>) and the modal being disabled.
-        ///
-        /// <para>This comment used to claim a third, "a launch", and that route does not exist:
-        /// <see cref="HandleAllPlayersReady"/> closes through <c>ModalWindowOut</c>, which fades a
-        /// CanvasGroup and never deactivates the GameObject, so <c>OnDisable</c> never fires. The
-        /// window is taken down on that route by <see cref="HandlePreviewEnded"/> instead, off the
-        /// session's own end event - which is the better place for it anyway, since it holds on
-        /// every stop rather than on the ones the modal happens to hear about.</para>
-        /// </summary>
-        /// <summary>
         /// This modal closed - by any route at all. Take the CONTENT down with the window.
         ///
         /// <para>Re-entrancy is safe: <c>_activePanel.Hide()</c> on a panel with a host modal
@@ -1257,6 +1249,17 @@ namespace CosmicShore.UI
         // apart by the caller saying which one it is.
         bool _launching;
 
+        /// <summary>
+        /// Stop anything running in the window and let go of it. Reached from exactly TWO routes -
+        /// the ✕ (<see cref="CloseAndNotifyClients"/>) and the modal being disabled.
+        ///
+        /// <para>This comment used to claim a third, "a launch", and that route does not exist:
+        /// <see cref="HandleAllPlayersReady"/> closes through <c>ModalWindowOut</c>, which fades a
+        /// CanvasGroup and never deactivates the GameObject, so <c>OnDisable</c> never fires. The
+        /// window is taken down on that route by <see cref="HandlePreviewEnded"/> instead, off the
+        /// session's own end event - which is the better place for it anyway, since it holds on
+        /// every stop rather than on the ones the modal happens to hear about.</para>
+        /// </summary>
         void ShutDownPreview()
         {
             UnsubscribeFromPreviewSession();
@@ -3090,11 +3093,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Hands the launch to <see cref="WeeklyChallengeService"/> when this session is the weekly
-        /// challenge, and clears the flag when it is not. Safe with no service present (the
-        /// feature is simply off) and safe on a card that merely happens to be this week's mode.
-        /// </summary>
-        /// <summary>
         /// False only when this is a weekly-challenge session whose attempt is already spent.
         /// Every ordinary card, and a challenge with an attempt left, answers true.
         /// </summary>
@@ -3139,6 +3137,11 @@ namespace CosmicShore.UI
             return leaderboardModal;
         }
 
+        /// <summary>
+        /// Hands the launch to <see cref="WeeklyChallengeService"/> when this session is the weekly
+        /// challenge, and clears the flag when it is not. Safe with no service present (the
+        /// feature is simply off) and safe on a card that merely happens to be this week's mode.
+        /// </summary>
         void ArmWeeklyChallengeForLaunch()
         {
             if (!gameData) return;
@@ -3355,6 +3358,17 @@ namespace CosmicShore.UI
         const float FreestyleExitGraceSeconds = 6f;
         float _freestyleExitDeadline;
 
+        /// <summary>True when this guest's config no longer matches the host's replicated roster.</summary>
+        bool ClientRosterDrifted(ArcadeConfigSyncManager.LobbySnapshot lobby)
+        {
+            if (config.PlayerCount != Mathf.Max(1, lobby.PlayerCount)) return true;
+            var placed = lobby.PlacedAiDomains();
+            if (config.AIDomains.Count != placed.Length) return true;
+            for (int i = 0; i < placed.Length; i++)
+                if ((int)config.AIDomains[i] != placed[i]) return true;
+            return false;
+        }
+
         /// <summary>
         /// Self-heal: if the host's lobby is open and this guest is not showing it, show it.
         ///
@@ -3371,17 +3385,6 @@ namespace CosmicShore.UI
         /// dismissed the card themselves is not fought with; a host who re-opens (a new
         /// generation) reaches them either way.</para>
         /// </summary>
-        /// <summary>True when this guest's config no longer matches the host's replicated roster.</summary>
-        bool ClientRosterDrifted(ArcadeConfigSyncManager.LobbySnapshot lobby)
-        {
-            if (config.PlayerCount != Mathf.Max(1, lobby.PlayerCount)) return true;
-            var placed = lobby.PlacedAiDomains();
-            if (config.AIDomains.Count != placed.Length) return true;
-            for (int i = 0; i < placed.Length; i++)
-                if ((int)config.AIDomains[i] != placed[i]) return true;
-            return false;
-        }
-
         void ReconcileClientLobby()
         {
             if (!UsesLaunchPanels || !arcadeConfigSyncManager) return;

@@ -2312,13 +2312,22 @@ Map asset: `Assets/Resources/ElementalAbilityMaps/Scarab.asset` (exact folder + 
 >
 > | Element | Ability | Quantitative | L5 upgrade |
 > |---|---|---|---|
-> | **Charge (1)** | **Shove** (the juke's blast, cooldown a flat 2.5 s) | Debuff magnitude ×1 → **×2.5** at Charge 10 (`VesselElementalDebuffByExplosionEffectSO.magnitudeAtFullCharge` on the Scarab-only `ScarabShoveDebuffByExplosionEffect.asset`) | **Backdraft** — the plate mirrors about its start plane: push and pull (§3.9) |
+> | **Charge (1)** | **Shove** (the juke's blast) | **Cooldown** 2.5 s → **1.25 s** at Charge 10 (`ScarabCavitationBlast.cooldownSeconds` × `cooldownScale`, an `ElementalFloat` ×1 → ×0.5 floored ×0.25 on `Scarab.prefab`; re-cut 2026-11-11, see the note below) | **Backdraft** — the plate mirrors about its start plane: push and pull (§3.9) |
 > | **Mass (2)** | **Switch** | Ring aperture (`switchScale` 1 → 2.5) | **Sun Cores** — a scored switch's dais raises its super-shielded suns (`ScarabSwitch.LaysDaisElement`); without it only the wings rise |
 > | **Space (3)** | **Nucleus Seeding** | Seeded ball size ×1 → ×4 (`ScarabBallForge.SizeScaleFor`) | **Core Breaker** — the ball breaks super-shielded prisms (§4.1b) |
 > | **Time (4)** | **Throttle** | Top speed ×1 → ×1.5 | **Snap Dash** — 500 u/s, 5 s cooldown (§3.6) |
 >
 > The ball forge (crystal at full energy → a ball) is the omni-crystal ability and forges at ×1.
-> Cavitation Shear (`DevastatingOverride`) and the charge-scaled cooldown are retired.
+> Cavitation Shear (`DevastatingOverride`) is retired.
+>
+> **Charge re-cut (2026-11-11, Garrett):** *"scarab charge parameter can switch to the cooldown on its shove plate."*
+> Charge's bite on the debuff (×1 → ×2.5, `magnitudeAtFullCharge`) moved in whole petals and was too coarse to tune, so
+> Charge sets the shove's PACE again: 2.5 s at rest, 1.875 s at Charge 5, 1.25 s at Charge 10, 3.125 s at Charge −5,
+> 0.625 s at Charge 15 (`cooldownScale`). It reads the replicated level when the plate fires and keeps that wait for
+> the whole recharge (`_cooldownAtFire`), so a Charge change moves the next wait, never the running one, and the Charge
+> card's sweep and the readiness agree. The debuff is the flat priced 1.2 petals per element
+> (`ScarabShoveDebuffByExplosionEffect.asset` `magnitudeAtFullCharge: 1`). Tests: `ScarabShoveCooldownTests`.
+>
 > Everything below this note is REVISION 3, kept for history.
 
 > **REVISION 3 (2026-08-15) — the map below is AUTHORED, not proposed.** Garrett's markup of

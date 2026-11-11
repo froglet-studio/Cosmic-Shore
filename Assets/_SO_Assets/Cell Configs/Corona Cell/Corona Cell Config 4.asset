@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Corona Cell Config 4
+  m_EditorClassIdentifier:
+  CellName: Corona
+  Description: 'Flare - intensity 4 of Corona: four shells, four narrow rimmed gates each; one omni
+    crystal in the heart. 3703 prisms, all neutral (284 danger), outer shell 400 u inside
+    the standard 1200 u cell, spawn ring 500. 1 omni crystals float in the heart (the
+    scene''s CrystalManager). NO NUCLEUS, no flora, no fauna. Authored by
+    Tools/Build/author_corona_assets.py from corona_budget.py - re-run it rather than
+    hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 4
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 0
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: fef4103348b99b63aacef2202fcfc20f, type: 2}
+  EnvironmentPrefab: {fileID: 8700000000000203, guid: c733021d38a93c3a895b358cccaa2eaf, type: 3}
+  EnvironmentIntensity: 4
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 4403
+    RestlessExit: 4203
+    FrenzyEnter: 7303
+    FrenzyExit: 6703
+    RestlessEnterVolume: 3610516
+    RestlessExitVolume: 3607316
+    FrenzyEnterVolume: 3656916
+    FrenzyExitVolume: 3647316

@@ -38,6 +38,11 @@ CONTAINER = os.path.join(REPO, "Assets", "_SO_Assets", "ThemeManagerDataContaine
 OUT_CSS = os.path.join(HERE, "themes.css")
 OUT_JS = os.path.join(HERE, "theme.js")
 BASE = "deep-sea"           # the lightness steps every theme keeps
+# The set the game was authored in (ColorTrace.AuthoredSetId). Its theme is the authored Deep Sea itself and the sea
+# material's own colours (Garrett, 2026-11-10, LOCKED: every colour comes from the colour set, and Photic holds the
+# values the game was authored in), as ColorSetUITheme.Build gives it from Photic's TracedColors ui-token ids.
+AUTHORED_SET = "photic"
+SEA_MATERIAL = os.path.join(REPO, "Assets", "_Graphics", "Materials", "Shaders", "UI", "Sea_Window.mat")
 # The UI tokens a theme re-hues from its signature face, with the most chroma each may carry.
 TINTED = {"ground": 0.05, "ground-deep": 0.035, "surface": 0.06, "surface-raised": 0.08, "line": 0.08,
           "text": 0.02, "text-soft": 0.05, "text-off": 0.03}
@@ -211,12 +216,28 @@ def live_set(sets):
 
 # ------------------------------------------------------------------ the files
 
-def theme_tokens(base, c):
-    """Every UI token for one theme, as hex, plus the rims and faces."""
+def sea_colours():
+    """The sea material's own line, middle, end and glow colours (Sea_Window.mat), as the screen shows them."""
+    text = open(SEA_MATERIAL, encoding="utf-8").read()
+
+    def prop(name):
+        m = re.search(r"- %s: \{r: %s, g: %s, b: %s" % (name, NUM, NUM, NUM), text)
+        return tuple(float(x) for x in m.groups())
+    return {"line": prop("_LineColor"), "mid": prop("_LineColorMid"), "end": prop("_LineColorEnd"),
+            "glow": prop("_GlowColor")}
+
+
+def theme_tokens(base, c, authored=False):
+    """Every UI token for one theme, as hex, plus the rims and faces. The authored set's theme is the authored Deep
+    Sea as it is, with the sea material's own colours; its domain marks, data and rims are still its own pigments."""
     face, rims = c["face"]["jade"], c["rim"]
-    t = {k: tint(hx(base[k]), face, cap) for k, cap in TINTED.items()}
+    if authored:
+        t = {k: hx(base[k]) for k in TINTED}
+    else:
+        t = {k: tint(hx(base[k]), face, cap) for k, cap in TINTED.items()}
     surface, ground = t["surface"], t["ground"]
-    t["text-soft"] = fit(t["text-soft"], surface, TEXT)
+    if not authored:
+        t["text-soft"] = fit(t["text-soft"], surface, TEXT)
     marks = {k: fit(fit(v, ground, MARK), surface, MARK) for k, v in rims.items()}
     out = {f"--fs-{k}": to_hex(v) for k, v in t.items()}
     out.update({
@@ -228,6 +249,9 @@ def theme_tokens(base, c):
         "--fs-purchase": to_hex(marks["gold"]), "--fs-purchase-fill": to_hex(rims["gold"]),
         "--fs-on-fill": to_hex(t["ground"]),
     })
+    if authored:
+        out.update({f"--fs-{k}": base[k] for k in ("cta", "cta-fill", "danger", "selection", "control", "purchase",
+                                                    "purchase-fill")})
     out.update({f"--cs-{k}": to_hex(v) for k, v in marks.items()})
     out.update({f"--series-{n}": f"var(--cs-{k})" for n, (k, _) in enumerate(DOMAINS, 1)})
     data = marks["blue"]
@@ -238,6 +262,10 @@ def theme_tokens(base, c):
                 # the sea: the shader's cyan / periwinkle / violet become the set's Jade, Blue and Ruby rims
                 "--sea-1": to_hex(rims["jade"]), "--sea-2": to_hex(rims["blue"]), "--sea-3": to_hex(rims["ruby"]),
                 "--sea-wash": to_hex(mix(ground, face, 0.3)), "--sea-glow": to_hex(rims["jade"])})
+    if authored:
+        sea = sea_colours()
+        out.update({"--sea-1": to_hex(sea["line"]), "--sea-2": to_hex(sea["mid"]), "--sea-3": to_hex(sea["end"]),
+                    "--sea-glow": to_hex(sea["glow"])})
     report = {"text": contrast(t["text"], surface), "text-soft": contrast(t["text-soft"], surface),
               "danger": contrast(hx(out["--fs-danger"]), surface), "cta": contrast(hx(out["--fs-cta"]), surface),
               **{k: contrast(v, surface) for k, v in marks.items()}, "data-text": contrast(hx(out["--data-text"]), surface),
@@ -256,7 +284,7 @@ def build(tokens=None, sets=None, default=None):
     rows = [f"  --fs-{k}: {v};" for k, v in base.items()] + ["  color-scheme: dark;"]
     css, reports = [head, ":root {\n" + "\n".join(rows) + "\n}\n"], {}
     for s_ in sets:
-        vals, reports[s_["id"]] = theme_tokens(base, s_["colours"])
+        vals, reports[s_["id"]] = theme_tokens(base, s_["colours"], s_["id"] == AUTHORED_SET)
         sel = f'[data-fs-theme="{s_["id"]}"]'
         if s_["id"] == default:
             sel = ":root:not([data-fs-theme]), " + sel     # the game's own set, before theme.js runs
@@ -293,16 +321,23 @@ def self_test():
     floors = {"text": 7.0, "text-soft": TEXT, "danger": TEXT, "data-text": TEXT, "cta": MARK,
               **{k: MARK for k, _ in DOMAINS}}
     for sid, r in reports.items():
+        # The authored Deep Sea is what the game was made in, and the authored set wears it as it is (its soft text and
+        # danger sit at 3.6:1 and 4.4:1 on a panel); the floors hold what fit() derives for every other set.
+        if sid == AUTHORED_SET:
+            continue
         bad += [f"{sid} {k} {r[k]:.2f}:1 < {f}" for k, f in floors.items() if r[k] < f]
     # Shombith: "dart frog had a metallic brown right in the game" - its panels must be bronze, not navy
     if "dartfrog" in reports and not 25 <= reports["dartfrog"]["surface-hue"] <= 90:
         bad.append(f"Dart Frog's panels are hue {reports['dartfrog']['surface-hue']:.0f}, not bronze")
     if len({round(r["surface-hue"]) for r in reports.values()}) < len(reports):
         bad.append("two themes share one panel colour: the whole UI must change with the theme")
-    # the linear assets must reach the screen as the palette doc's swatches (Dart Frog Jade: Mint over Bronze #774325)
+    # the linear assets must reach the screen as the palette doc's swatches (Dart Frog Jade: Mint over Bronze, whose
+    # swatch colour_sets.json holds; it was #774325 until the 2026-11-10 rules took the bronze into the night)
+    with open(os.path.join(REPO, "Docs", "VesselModels", "colour_sets.json"), encoding="utf-8") as fh:
+        bronze = json.load(fh)["sets"]["dart_frog"]["domains"]["jade"]["face"]["swatch"].upper()
     for x in catalog():
-        if x["id"] == "dartfrog" and to_hex(x["colours"]["face"]["jade"]) != "#774325":
-            bad.append(f"Dart Frog's Jade face reads {to_hex(x['colours']['face']['jade'])}, not Bronze #774325")
+        if x["id"] == "dartfrog" and to_hex(x["colours"]["face"]["jade"]) != bronze:
+            bad.append(f"Dart Frog's Jade face reads {to_hex(x['colours']['face']['jade'])}, not Bronze {bronze}")
         if f'data-fs-theme="{x["id"]}"' not in css or f'"id":"{x["id"]}"' not in js:
             bad.append(f"theme {x['id']} missing from the output")
     if any(w in css for w in ("hypersea", "cosmic-shore")):

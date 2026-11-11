@@ -39,12 +39,6 @@ namespace CosmicShore.Gameplay
     public static class PrismSway
     {
         /// <summary>
-        /// Bakes a prism's attachment to its limb and stamps it. Safe to call repeatedly —
-        /// every value is a pure function of the two transforms and the limb's material, so
-        /// a re-stamp writes the same numbers.
-        /// </summary>
-        /// <returns>true when the sway landed on the GPU.</returns>
-        /// <summary>
         /// The whole of the geometry, as a pure function of two transforms — extracted so the
         /// one thing that can be silently WRONG here is testable without a render service, an
         /// entity world or a play mode.
@@ -71,6 +65,12 @@ namespace CosmicShore.Gameplay
             spanY = new float3(y.x, y.y, y.z);
         }
 
+        /// <summary>
+        /// Bakes a prism's attachment to its limb and stamps it. Safe to call repeatedly —
+        /// every value is a pure function of the two transforms and the limb's material, so
+        /// a re-stamp writes the same numbers.
+        /// </summary>
+        /// <returns>true when the sway landed on the GPU.</returns>
         public static bool TryStamp(HealthPrism prism, Spindle limb)
         {
             if (prism == null || prism.destroyed || limb == null) return false;

@@ -19,9 +19,10 @@ MonoBehaviour:
     AbilityDescription: BASE (no upgrade needed) - joust a lifeform's crystal while
       moving faster than it to wither opposing-domain creatures, freeing the heart
       and auto-collecting it; overtake an opposing PILOT and you steal elemental
-      petals off them. Charge scales how many petals each steal takes
-      (VesselOvertakeBySkimmerEffectSO.stealScale, x1 at rest -> x2.5 at level 10,
-      read from the thief's replicated level so every peer moves the same petals).
+      petals off them. Charge sets the least speed either joust needs - 90 u/s at rest
+      down to 45 u/s at level 10 (SquirrelJoustSpeed.asset minimumSpeed, read from the
+      replicated level; the Charge card's speed gauge marks it) - and every steal takes
+      the flat priced petals.
       At level 5 the joust also SHEPHERDS allies - an own-domain lifeform is
       NOURISHED instead (ILifeFormEntity.Nourish - its starvation clock resets and
       its birth counter advances).

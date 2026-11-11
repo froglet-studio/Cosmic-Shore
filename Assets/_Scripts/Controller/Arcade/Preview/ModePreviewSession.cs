@@ -295,7 +295,15 @@ namespace CosmicShore.Gameplay
             bool sameCard = _definition == definition &&
                             _state is State.Standing or State.Showing or State.Live;
             bool sameArena = !definition || !definition.ArenaDiffers(intensity, _intensity);
-            if (sameCard && sameArena)
+
+            // ...but a gate race's MODEL is its course, and every course setting is per-intensity
+            // even where the cell is shared (all the vessel Time games run one cell at every
+            // rung). The model costs a mesh, not a cell build, so while the card is only being
+            // looked at a new rung re-stands it; in flight the rings alone follow, below.
+            bool modelCourseChanges = sameCard && intensity != _intensity &&
+                                      (_state is State.Standing or State.Showing) &&
+                                      definition && RaceCourseSource.For(definition.Mode) != null;
+            if (sameCard && sameArena && !modelCourseChanges)
             {
                 bool courseChanges = intensity != _intensity && _gateCourse && _gateCourse.IsRaised;
                 _intensity = intensity;

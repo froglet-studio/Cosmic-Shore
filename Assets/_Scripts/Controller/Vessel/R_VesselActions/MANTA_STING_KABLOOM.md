@@ -12,7 +12,7 @@ The map is `Assets/Resources/ElementalAbilityMaps/Manta.asset` — **the asset i
 
 | Element | Ability | Quantitative (authoring home) | L5 upgrade |
 |---|---|---|---|
-| Charge | **Sting** (passive) | the petals each bloom knocks out of a rival (`magnitudeAtFullCharge` 2× at Charge 10, on `MantaBombDebuffByExplosionEffect.asset`) | **Contagion** — anything caught in a bloom is itself bombed, free |
+| Charge | **Sting** (passive) | how long the shared fuse runs when a plant resets it: 20 s at rest → 30 s at Charge 10 (`fuseSeconds` × `fuseScale` 1 → 1.5, on `MantaStingConfig.asset`; §0a) | **Contagion** — anything caught in a bloom is itself bombed, free |
 | Mass | **Decoy** (passive) | how long a decoy stands (`decoyLifetimeAtFullMass` 2×) | **Omni Decoy** — the omni crystal leaves a decoy too |
 | Space | **Skim** (passive) | the skimmer's size (Manta.prefab `Skimmer.Scale`, 20 → 40) | **Shield Breaker** — skimming a shielded rival prism pops its shield and makes it explosive |
 | Time | **Yastri** (Input 12, the turn pair) | the Manta's speed: cruise (`VesselTransformer.ThrottleScalerMultiplier` 1.5× at Time 10) and soaring (`BoostSpeedMultiplier` 1.3×); the trail is a plain Squirrel-style trail, unscaled and unflared | **Soar** — the boost stays dark until Time 5 |
@@ -27,8 +27,8 @@ disagrees with this section, this section wins.
   every planted bomb and loses all the energy** (`MantaDetonateByPrismEffectSO` in
   `vesselPrismEffects` → `MantaStingActionExecutor.OnPrismImpact`).
 - **One fuse (Charge card).** Every bomb shares the bay's fuse (`FuseDeadline`); each new plant
-  resets it, so all bombs always go off together. No element scales the fuse; Charge scales the
-  petals each bloom knocks out of a rival instead. A bomb moved to a new carrier (a fauna heart
+  resets it, so all bombs always go off together. Charge sets how long the fuse runs when a plant
+  resets it (§0a); the petals a bloom knocks out of a rival are flat. A bomb moved to a new carrier (a fauna heart
   crystal, a vessel that picked it up) keeps the running fuse. A fuse or prism-impact board blooms
   every bomb at once at `fuseBlastScale`, growing over `bloomGrowSeconds` (slow on purpose: many
   blooms at once read well and cost less per frame).
@@ -46,6 +46,29 @@ disagrees with this section, this section wins.
   Squirrel-style trail (2026-11-07 follow-up): the Squirrel's prism size (20 × 0.75 × 5.5), no
   element growing its volume, no turn flare. Time makes the Manta faster: cruise speed 1.5× at
   Time 10 (`ThrottleScalerMultiplier`, the Scarab's shape), on top of the soaring speed.
+
+## 0a. Charge is the fuse, not the petals (Garrett, 2026-11-10)
+
+*"I want to move away from charge being coupled to elemental petals. It is too coarse to adjust. The manta charge
+parameter should be the length of time on the fuse when it resets."*
+
+- **The fuse.** Each plant resets the shared fuse to `fuseSeconds` × `fuseScale`, read at the planter's live Charge at
+  that moment (`MantaStingConfigSO.FuseSecondsFor`, called by `MantaStingActionExecutor.ResetFuse`). `fuseScale` is an
+  `ElementalFloat` on Charge: ×1 at rest, ×1.5 at Charge 10, floored at ×0.5. So 20 s at rest, 25 s at Charge 5, 30 s
+  at Charge 10, 15 s at Charge −5 and 35 s at Charge 15, and every tenth of a level in between moves it. A plant at a
+  higher Charge buys the whole board the longer fuse; a bomb that only moves (a heart crystal, a pickup) keeps the
+  running fuse, as before.
+- **Why the continuous level.** Only the machine that simulates the bombs runs the fuse (§4), so nothing else has to
+  agree with it, and `EvaluateLive` reads the level between petals. That is the whole point of the change.
+- **The bloom's bite is flat again.** `magnitudeAtFullCharge` on `MantaBombDebuffByExplosionEffect.asset` is back to 1:
+  every bloom ejects the priced 1.2 petals (0.12, the drain table's Debuff class) from each of Mass and Space, at any
+  Charge. From 2026-11-07 to 2026-11-10 Charge doubled it (2.4 at Charge 10).
+- **Bloomrush.** Its per-intensity ladder (`MantaBombRules.FuseSecondsOverride`, 30/25/20/20) replaces the RESTING
+  length only; Charge still scales it, so an intensity-1 Charge 10 Manta runs a 45 s fuse. Whether a mode may set the
+  fuse at all is still the open owners' call in `Docs/REFACTOR_BACKLOG.md` C3 (the LOCKED rule that a mode never
+  changes the vessel postdates the ladder).
+- **Tune it** on `MantaStingConfig.asset` through `Tools/Build/author_manta_kit_assets.py` (it writes the whole file;
+  `--check` is the drift gate and now also fails on a file that does not parse). Tests: `MantaFuseChargeTests`.
 
 ## 3a. Explosive prisms
 
@@ -131,8 +154,8 @@ rival Manta tagging a creature first locks you out of it); the closing-speed mar
 spends one bomb and stamps a `MantaBombSnapshot` (§4) onto the target. **The target gets no
 indication** — no HUD ping, no VFX on the victim's machine. That is the spec, not an oversight.
 
-**The fuse.** `fuseSeconds` (25 s authored; Bloomrush overrides per intensity through the
-static `MantaBombRules.FuseSecondsOverride`, reset on domain reload). A fuse expiry detonates at
+**The fuse.** `fuseSeconds` (20 s at rest, × Charge's `fuseScale` since 2026-11-10, §0a; Bloomrush overrides the
+resting length per intensity through the static `MantaBombRules.FuseSecondsOverride`, reset on domain reload). A fuse expiry detonates at
 `fuseBlastScale` — smaller than a crystal-cashed bloom by construction, which is what makes
 "beat the fuse" score a fraction without any scoring special case.
 
@@ -398,7 +421,7 @@ GameObject, which `OnDestroy` already handles.
 | `baseCapacity` / `capacityPerChargeLevel` / `maxCapacity` | 3 / 0.2 / 5 | bay = 3 + 0.2×Charge, so 5 at Charge 15 (spec) |
 | `chargePerSkim` / `perPrismChargeCooldown` | 0.34 / 1.5 | ~3 distinct prisms arm one bomb |
 | `chargeRateAtFullCharge` / `minChargeRateMultiplier` | 2 / 0.25 | Charge scales arming speed |
-| `fuseSeconds` | 25 | mode-overridable via `MantaBombRules.FuseSecondsOverride` |
+| `fuseSeconds` / `fuseScale` | 20 / ×1 → ×1.5 (floor ×0.5) | the fuse a plant resets: 20 s at rest, 30 s at Charge 10 (§0a); the resting length is mode-overridable via `MantaBombRules.FuseSecondsOverride` |
 | `plantSpeedMargin` | 0 | closing speed required to plant; 0 = any graze |
 | `knockOffGraceSeconds` / `ownFreshTrailGraceSeconds` | 1 / 6 | scrape-off exemptions |
 | `kabloomBlastScale` / `fuseBlastScale` / `blastScaleAtFullSpace` | (asset) | cashed vs fizzle vs Space growth — keep cashed > fizzle or "beat the fuse" stops meaning anything |
