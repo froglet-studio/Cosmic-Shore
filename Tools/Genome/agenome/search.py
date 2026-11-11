@@ -30,6 +30,9 @@ from .genome import Genome, mutate, crossover, _delete
 from .ops import OPS
 
 COMPLEXIFY, COMPRESS = "COMPLEXIFY", "COMPRESS"
+# with --lab-w > 0, renders go to the pool this many at a time (each finished one holds its whole clips here until the
+# lab takes it; LabState.MAX_PENDING bounds the lab's own queue)
+LAB_CHUNK = 32
 
 # ---------------------------------------------------------------------- worker side
 _R = None
@@ -391,73 +394,216 @@ class JudgeState:
 class LabState:
     """The fitness lab's element-aware scorer (agenome.labscore; 1.0 = Amoebius' held-out source, about 9 a typical
     phenotype) as a search term, on the same windows as the judge. Off unless --lab-w > 0, so the default fitness and
-    every running island stay as they were. Each render result's whole clips go to a pool of --lab-workers processes
-    as soon as it arrives (submit), so the lab scores finished candidates while the render pool works on the rest;
-    collect() waits for them. A candidate whose lab scoring failed has no 'lab' and dist reads it as LAB_MISSING."""
+    every running island stay as they were. Each render result's whole clips go to --lab-workers scoring processes as
+    soon as it arrives (submit), so the lab scores finished candidates while the render pool works on the rest;
+    collect() waits for them. A candidate whose lab scoring failed has no 'lab' and dist reads it as LAB_MISSING.
+
+    Memory: an unfinished job holds its candidate's clips in this process (about 6.6 MB a window), and the lab scores
+    slower than the render pool renders, so submit() waits while MAX_PENDING jobs are unfinished (and the renders go in
+    LAB_CHUNK chunks, see run()). A job's clips go as soon as it finishes. Without the bound, an island at generation 0
+    queued every seed's clips and was OOM-killed at about 9.8 GB (labA, 2026-11-10).
+    Failures: the scoring processes are a concurrent.futures ProcessPoolExecutor, not a multiprocessing.Pool. A Pool
+    whose idle worker is killed (the OOM killer's likeliest target, at about 1.2 GB) keeps that worker's task-queue
+    lock forever: no job runs again and Pool.terminate() itself blocks on the lock, so the island would hang for good
+    (found by review on 2026-11-11 and reproduced). The executor instead fails every unfinished job at once
+    (BrokenProcessPool): the pool restarts and each of those jobs is sent once more, so a dead process costs about the
+    jobs it was running, not the whole queue. A pool that finishes nothing for STALL seconds while submit() waits is
+    stopped and restarted the same way. A job still running when collect() gives up (QUIET with nothing finishing, or
+    its deadline) goes unscored, and the pool restarts so the hung process dies."""
     LAB_MISSING = 10.0
+    MAX_PENDING = 24   # unfinished lab jobs before submit() waits for one to finish
+    STALL = 300.0      # submit(): nothing finished for this long while it waits means the pool is wedged
+    QUIET = 120.0      # collect(): no job finishing for this long (plus 8 s a window) means a scoring process hangs
+    MAX_RESTARTS = 3   # restarts in a row with no job scored in between before the lab stops scoring
+    RETRIES = 1        # times a job that a dead or stopped pool failed is sent again
 
     def __init__(self, args, ctx):
         self.on = getattr(args, "lab_w", 0.0) > 0
         self.w = getattr(args, "lab_w", 0.0)
         self.n = max(1, int(getattr(args, "lab_workers", 2)))
-        self.ctx, self.pool, self.jobs = ctx, None, {}
-        self.errors, self.wait, self.scored = 0, 0.0, 0
+        # jobs: id(candidate) -> [candidate, future, clips, sends]; the clips are kept only until the job is final, so
+        # a job a dead pool failed can be sent again
+        self.ctx, self.pool, self.jobs, self.dead = ctx, None, {}, False
+        self.errors, self.wait, self.scored, self.restarts, self.failed_restarts, self.resent = 0, 0.0, 0, 0, 0, 0
         if self.on:
             from .labscore import LAB
             self.new_pool()
             print(f"lab: weight {self.w}, {self.n} scoring processes, scorer {LAB}", flush=True)
 
-    def new_pool(self):
+    def _kill(self):
+        """Stop the current pool without ever blocking: kill its processes (the executor then fails whatever is still
+        unfinished) and let it clean up in the background."""
+        old, self.pool = self.pool, None
+        if old is None:
+            return
+        for p in list((getattr(old, "_processes", None) or {}).values()):
+            try:
+                p.kill()
+            except Exception:
+                pass
+        # Python 3.10, and 3.11 before 3.11.5, never close this end of the job pipe when a pool breaks (gh-94777): the
+        # thread feeding it stays blocked part-way through writing a clip, the old pool never shuts down, and the
+        # interpreter's exit waits on it for good. With every reader closed the write fails (EPIPE, which the executor
+        # ignores) and the thread ends. Later Pythons close it themselves; closing it twice is harmless.
+        try:
+            old._call_queue._reader.close()
+        except Exception:
+            pass
+        try:
+            old.shutdown(wait=False, cancel_futures=True)
+        except Exception:
+            pass
+
+    def new_pool(self, failed=False):
+        """(Re)start the scoring processes. The jobs already submitted stay in self.jobs: a dead pool has failed them,
+        and _reap() sends them again. After MAX_RESTARTS failed restarts in a row (no job scored in between: the scorer
+        cannot load, say) the lab stops scoring for the rest of the run, loudly."""
+        import gc
+        from concurrent.futures import ProcessPoolExecutor
         if self.pool is not None:
-            self.pool.terminate()
-        self.pool = self.ctx.Pool(self.n, initializer=_lab_init)
-        self.jobs = {}
+            self._kill()
+            gc.collect()  # what the dead pool held goes now, not at some later full collection
+        if failed:
+            self.restarts += 1
+            self.failed_restarts += 1
+            if self.failed_restarts > self.MAX_RESTARTS:
+                self.dead = True
+                print(f"lab: {self.failed_restarts} pool restarts without a scored job; the lab scores nothing more "
+                      "this run (every candidate reads LAB_MISSING)", flush=True)
+                return
+        self.pool = ProcessPoolExecutor(self.n, mp_context=self.ctx, initializer=_lab_init)
+
+    def _send(self, fr):
+        """Submit one job, restarting a pool found broken (a scoring process died). Never raises; None when the lab is
+        dead or the submit failed."""
+        import concurrent.futures as cf
+        for attempt in (0, 1):
+            if self.dead or self.pool is None:
+                return None
+            try:
+                return self.pool.submit(_lab_eval, fr)
+            except cf.BrokenExecutor:
+                if attempt:
+                    break
+                print("lab: a scoring process died; restarting the lab pool", flush=True)
+                self.new_pool(failed=True)
+            except Exception as e:
+                print("lab submit failed:", f"{type(e).__name__}: {e}"[:200], flush=True)
+                break
+        return None
+
+    def _reap(self):
+        """Go over the jobs that finished since the last look: a job is final once it scored, failed on its own, or
+        has been sent RETRIES + 1 times, and its clips go then; a job scored proves the scorer works (the restart count
+        starts over); a job that a dead or stopped pool failed (BrokenProcessPool, or cancelled) is sent again."""
+        import concurrent.futures as cf
+        again = []
+        for job in list(self.jobs.values()):
+            f = job[1]
+            if job[2] is None or not f.done():
+                continue
+            e = None if f.cancelled() else f.exception()
+            if f.cancelled() or isinstance(e, cf.process.BrokenProcessPool):
+                if job[3] <= self.RETRIES and not self.dead:
+                    again.append(job)
+                    continue
+            elif e is None and (f.result() or {}).get("ok"):
+                self.failed_restarts = 0
+            job[2] = None
+        if again:
+            print(f"lab: sending {len(again)} jobs again that a stopped scoring pool failed", flush=True)
+        for job in again:
+            nf = self._send(job[2])
+            if nf is None:  # the lab is dead: the failed future stays, and collect() counts it
+                job[2] = None
+                continue
+            job[1], job[3] = nf, job[3] + 1
+            self.resent += 1
 
     def submit(self, r):
+        """Queue r's clips for lab scoring (never raises). Waits while MAX_PENDING jobs are unfinished, so at most that
+        many candidates' clips wait in this process; that wait counts toward lab_wait. After STALL seconds with no job
+        finished the pool is taken as wedged and restarts (its jobs are sent again)."""
+        import concurrent.futures as cf
         fr = r.pop("lframes", None)
-        if self.on and fr is not None and r.get("ok"):
-            try:
-                self.jobs[id(r)] = (r, self.pool.apply_async(_lab_eval, (fr,)))
-            except Exception as e:  # a broken pool: this candidate goes unscored (LAB_MISSING), the run goes on
+        if not (self.on and fr is not None and r.get("ok")):
+            return
+        t0 = t_stall = time.time()
+        try:
+            while not self.dead:
+                self._reap()
+                busy = [j[1] for j in self.jobs.values() if not j[1].done()]
+                if len(busy) < self.MAX_PENDING:
+                    break
+                if time.time() - t_stall > self.STALL:
+                    print(f"lab: no scoring finished in {self.STALL:.0f} s; restarting the lab pool", flush=True)
+                    self.new_pool(failed=True)
+                    t_stall = time.time()
+                    continue
+                cf.wait(busy, timeout=0.5, return_when=cf.FIRST_COMPLETED)
+            f = self._send(fr)
+            if f is None:  # unscored (LAB_MISSING); the run goes on
                 self.errors += 1
-                print("lab submit failed:", f"{type(e).__name__}: {e}"[:200], flush=True)
+                return
+            self.jobs[id(r)] = [r, f, fr, 1]
+        except Exception as e:
+            self.errors += 1
+            print("lab submit failed:", f"{type(e).__name__}: {e}"[:200], flush=True)
+        finally:
+            self.wait += time.time() - t0
 
     def collect(self, res):
+        import concurrent.futures as cf
         if not self.on:
             return
         t0 = time.time()
-        todo = [self.jobs.pop(id(r)) for r in res if id(r) in self.jobs]
-        nwin = max([len(r.get("win_t") or [0]) for r, _ in todo] or [1])
-        # the first call in each process loads the scorer (about 20 s); after that about 1.5 s a window on a free core
-        deadline = time.time() + 120 + 8.0 * nwin * len(todo) / self.n
-        broken = False
-        for r, j in todo:
-            try:
-                if broken:
-                    raise mp.TimeoutError()
-                out = j.get(timeout=max(1.0, deadline - time.time()))
-            except mp.TimeoutError:
+        keys = [id(r) for r in res if id(r) in self.jobs]
+        nwin = max([len(self.jobs[k][0].get("win_t") or [0]) for k in keys] or [1])
+        # the first job in each process waits for the scorer to load (about 20 s); after that about 1.5 s a window on a
+        # free core. A hung scoring process shows as a quiet spell with no job finishing; then the pool restarts.
+        deadline = time.time() + 120 + 8.0 * nwin * len(keys) / self.n
+        quiet = self.QUIET + 8.0 * nwin
+        last, broken = time.time(), False
+        while True:
+            self._reap()  # a job a dead pool failed is sent again here too
+            pending = [self.jobs[k][1] for k in keys if not self.jobs[k][1].done()]
+            if not pending:
+                break
+            done, _ = cf.wait(pending, timeout=1.0, return_when=cf.FIRST_COMPLETED)
+            now = time.time()
+            if done:
+                last = now
+            if now > deadline or now - last > quiet:
                 broken = True
+                break
+        for k in keys:
+            r, f = self.jobs.pop(k)[:2]
+            if not f.done():
                 out = {"ok": False, "err": "lab timeout"}
-            except Exception as e:
-                out = {"ok": False, "err": f"lab worker: {e}"[:200]}
+            else:
+                try:
+                    out = f.result()
+                except Exception as e:  # BrokenProcessPool (a scoring process died), a cancelled job, a worker error
+                    out = {"ok": False, "err": f"lab worker: {type(e).__name__}: {e}"[:200]}
             if out.get("ok") and out.get("per"):
                 r["lab"] = round(float(np.mean(out["per"])), 4)
                 r["lab_windows"] = [round(x, 3) for x in out["per"]]
                 r["lab_nwin"] = len(out["per"])
                 self.scored += 1
+                self.failed_restarts = 0
             else:
                 self.errors += 1
                 if self.errors <= 5:
                     print("lab error:", out.get("err"), flush=True)
-        if broken:
+        if broken and not self.dead:  # kill the hung process; a dead one's pool restarted when it was found
             print("lab scoring timed out; restarting the lab pool", flush=True)
-            self.new_pool()
+            self.new_pool(failed=True)
         self.wait += time.time() - t0
 
     def close(self):
-        if self.pool is not None:
-            self.pool.close()
+        """End of run: every job was collected, so the processes are killed rather than joined (a hung one would hold
+        the interpreter's exit)."""
+        self._kill()
 
 
 class CriticState:
@@ -520,6 +666,26 @@ class CriticState:
                 c["dist"] += self.lab_w * c.get("lab", LabState.LAB_MISSING)
 
 
+def _drop_pool(pool, wait=2.0):
+    """Stop a multiprocessing.Pool without ever blocking for good. A worker killed while it waits for a task (the OOM
+    killer's likeliest pick: the render workers are the largest processes) keeps the task queue's read lock, and
+    Pool.terminate() then blocks forever on that lock, as does the pool's own exit hook (review, 2026-11-11;
+    reproduced). So terminate() runs in a daemon thread, which also uses up the exit hook, and the workers still alive
+    after `wait` seconds are killed here."""
+    import threading
+    if pool is None:
+        return
+    t = threading.Thread(target=pool.terminate, name="drop-pool", daemon=True)
+    t.start()
+    t.join(wait)
+    for p in list(getattr(pool, "_pool", None) or []):
+        try:
+            if p.exitcode is None:
+                p.kill()
+        except Exception:
+            pass
+
+
 def run(args):
     rng = random.Random(args.seed)
     os.makedirs(args.run, exist_ok=True)
@@ -560,14 +726,27 @@ def run(args):
         return (gj, args.frames, judge.n, offsets, 8.0, True) if lab.on else (gj, args.frames, judge.n, offsets)
 
     def new_pool():
-        if state["pool"] is not None:
-            state["pool"].terminate()
+        _drop_pool(state["pool"])  # never terminate() in this thread: it can block for good (see _drop_pool)
         state["pool"] = ctx.Pool(args.workers, initializer=_init,
                                  initargs=(args.stats, args.hold, args.lp_threads, args.mem_gb))
     new_pool()
 
     def run_payload(payload):
-        """Evaluate payloads on the worker pool; a hung evaluation restarts the pool instead of stalling the island."""
+        """Evaluate payloads on the worker pool. With the lab on they go in LAB_CHUNK chunks: a finished render waits in
+        this process with its whole clips until the lab takes it, so the pool may only run that far ahead. Each chunk is
+        judged as it lands too (its judge frames, about 1.3 MB a window, go then), so a generation 0 of a thousand seeds
+        does not hold them all; judge.score() skips what it has already scored."""
+        if lab.on and len(payload) > LAB_CHUNK:
+            res = []
+            for i in range(0, len(payload), LAB_CHUNK):
+                part = run_chunk(payload[i:i + LAB_CHUNK])
+                judge.score(part)
+                res += part
+            return res
+        return run_chunk(payload)
+
+    def run_chunk(payload):
+        """A hung evaluation restarts the pool instead of stalling the island."""
         jobs = [state["pool"].apply_async(_eval, (p,)) for p in payload]
         res = []
         nwin = max([len(p[3]) if isinstance(p[3], (list, tuple)) else int(p[3]) for p in payload] or [1])
@@ -585,7 +764,9 @@ def run(args):
             except Exception as e:
                 res.append({"ok": False, "stat": 99.0, "zbytes": 10 ** 6, "err": f"worker: {e}"[:200], "nodes": 0,
                             "luma": 0.0, "motion": 0.0, "sec": 0.0})
+            t_sub = time.time()
             lab.submit(res[-1])  # the lab scores this one while the pool renders the rest (never raises)
+            deadline += time.time() - t_sub  # time spent waiting on the lab is not the renders' time
         if broken:
             print("evaluation timed out; restarting the worker pool", flush=True)
             new_pool()
@@ -768,7 +949,7 @@ def run(args):
         if gen % args.save_every == 0 or gen == args.gens - 1:
             save_state(args.run, pop, archive, elites, gen)
             publish(args, args.run)
-    state["pool"].close()
+    _drop_pool(state["pool"])
     lab.close()
     save_state(args.run, pop, archive, elites, args.gens)
 

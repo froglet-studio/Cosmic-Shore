@@ -23,7 +23,9 @@
 # fitness beside the judge, on the same windows, scored by LABWORKERS processes (default 2; about 1.5 s a window
 # each); its numbers are logged as best_lab and best_audit_lab. Unset or 0, the command is the same as before. A
 # lab island's dist is not comparable with the others': give it its own RUNS folder, and IMPORT=<the shared runs
-# folder> so it still draws the same immigrants as the islands it is compared with.
+# folder> so it still draws the same immigrants as the islands it is compared with. With the lab on, renders go
+# 32 at a time and at most 24 candidates' clips wait for the lab (CONTRACT.md (34)); code before that queued every
+# seed's clips and was OOM-killed in generation 0.
 # The reels are three sources (reel05 re-cuts reel03, reel04 re-cuts reel02): reels 1, 2, 4 train every measure and
 # reels 3, 5 are held out (v2 fitness, 2026-11-10 18:00).
 # It runs in the FOREGROUND (a cloud container kills detached processes once it idles after a turn): start it as a
