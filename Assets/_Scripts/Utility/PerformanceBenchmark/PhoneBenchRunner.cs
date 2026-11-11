@@ -32,6 +32,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     {
         public const string ExtraName = "csbench";
         public const string TagExtraName = "csbenchtag";
+        /// <summary>Optional extra Profiler markers for each game's capture, comma-separated (<c>--es csbenchm "SerpentTime.AI,AI.Pilot.Update"</c>).</summary>
+        public const string MarkersExtraName = "csbenchm";
         const string OutputFolder = "PerfRuns";
         const string OfflineKey = "CosmicShore.OfflinePreferred";
         const float SettleSeconds = 15f;
@@ -48,6 +50,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         string _outPath;
         GameDataSO _gameData;
         bool _skippedName;
+        string _markers = "";
         int _offlineWas;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -60,6 +63,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var r = go.AddComponent<PhoneBenchRunner>();
             r._entries = Parse(spec);
             r._tag = DeviceLogFormat.SafeName(ReadExtra(TagExtraName), "bench");
+            string markers = ReadExtra(MarkersExtraName);
+            r._markers = string.IsNullOrWhiteSpace(markers) ? "" : " " + MarkerBudget.ExtraMarkersPrefix + markers.Replace(" ", "");
             // Offline (a local host): a Relay hiccup mid-game bounces the host to the menu and voids the run. Put back at the end.
             r._offlineWas = PlayerPrefs.GetInt(OfflineKey, 0);
             PlayerPrefs.SetInt(OfflineKey, 1);
@@ -240,7 +245,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             // The per-system breakdown, AFTER the clean window: a capture turns the Profiler on.
             string label = DeviceLogFormat.SafeName($"bench_{_tag}_{e.Mode}", "bench");
-            CSDebug.Log("[PhoneBench] " + DiagnosticsHUD.RunConsole($"{DiagnosticsHUD.CaptureCommand} {label} {CaptureSeconds}"));
+            CSDebug.Log("[PhoneBench] " + DiagnosticsHUD.RunConsole($"{DiagnosticsHUD.CaptureCommand} {label} {CaptureSeconds}{_markers}"));
             yield return new WaitForSecondsRealtime(CaptureSeconds + 3f);
         }
 
