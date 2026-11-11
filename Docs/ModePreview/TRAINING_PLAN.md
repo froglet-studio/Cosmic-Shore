@@ -608,8 +608,8 @@ each step themselves, so they learn where the thing lives.
 
 | Piece | File | Note |
 |---|---|---|
-| Guide state | `UI/Guide/MenuGuide.cs` | Static: on/off, the card it leads to, the always-available windows (SETTINGS, CREDITS) and the controls that open them - DERIVED from each Button's inspector-wired onClick, plus `MenuGuideAlwaysAvailable` for anything else |
-| Spotlight | `UI/Guide/MenuSpotlight.cs`, `SpotlightDimGraphic.cs`, `SpotlightFrameGraphic.cs` | Own overlay canvas built in code (sort order 32000). The dim is an `ICanvasRaycastFilter` that refuses every press except inside a cut-out, so the real control underneath is what gets pressed. CTA frame in the palette's CTA colour, pulsing; caption from the node. Fades in/out; the cut-out glides between steps. Holds a pad selection on the path |
+| Guide state | `UI/Guide/MenuGuide.cs` | Static: on/off, the card it leads to, the always-available windows (SETTINGS, CREDITS) and the controls that open them - DERIVED from each Button's inspector-wired onClick, every `MenuHubButton` targeting one, and anything carrying `MenuGuideAlwaysAvailable`. Also `RequestSkip` / `SkipRequested`, the guide's Skip (below) |
+| Spotlight | `UI/Guide/MenuSpotlight.cs`, `SpotlightDimGraphic.cs`, `SpotlightFrameGraphic.cs` | Own overlay canvas built in code (sort order 32000). The dim is an `ICanvasRaycastFilter` that refuses every press except inside a cut-out, so the real control underneath is what gets pressed. CTA frame in the palette's CTA colour, pulsing; caption from the node. Fades in/out; the cut-out glides between steps. Holds a pad or keyboard selection on the path. Draws the guide's SKIP button (below) |
 | The node | `FTUE/.../Nodes/QuestGuideToMicrogameNode.cs` (the old open node's file and guid) | Re-derives the step every frame: flying or Settings open → stand aside; the target card's preview open → the window; Arcade open → the card (scrolled into view, `ArcadeExploreView.TryRevealCard`); home → the Arcade hub entry, else the footer Arcade button. Fails open after `lostStepGraceSeconds`. Not `AppliesLock` |
 | Menu hooks | `ScreenSwitcher`, `ModalWindowManager`, `ArcadeExploreView`, `MenuHubButton` | While a guide is on: pad Y (freestyle) and the triggers (paging) stand down; B closes only Settings; the card the guide leads to is pressable even if progression locks it (`MenuGuide.ExemptsMode`); `MenuHubButton.Target` is readable |
 | Removed | `ModePreviewSession.ArmForcedEntry`, `ArcadeExploreView.TrySelectMode` | Deleted, so nothing can carry a player again by reaching for them. `ModePreviewSession.Window` is exposed instead, for the spotlight to point at |
@@ -625,11 +625,35 @@ Stated, and only the editor can settle them:
 - **The cut-out is the target's bounding rectangle**, inflated a little, not its shape. A
   trapezoid hub button reads inside a rectangle; if that looks wrong, the frame graphic is where a
   shaped cut-out would go.
-- **Settings is found from its onClick.** Menu_Main's `SettingsButton` wires
-  `SettingsModal.ModalWindowIn` directly, so it is found; a Settings control that opens the window
-  some other way needs `MenuGuideAlwaysAvailable`.
-- **A wandering pad selection is put back** only while a gamepad is connected, so a mouse player
-  never sees a selection highlight appear on the target.
+- **Settings is found three ways** (`MenuGuide.CollectAlwaysAvailable`): a Button whose
+  inspector-wired onClick calls `ModalWindowIn` on the Settings or Credits window, a `MenuHubButton`
+  targeting one, or a `MenuGuideAlwaysAvailable` marker. Menu_Main's `SettingsButton` is found by
+  the first (it wires `SettingsModal.ModalWindowIn`) and also carries the marker, so a rewire cannot
+  lose it. A Settings control another window is drawn over is not cut out (`IsReachable`), because a
+  hole there would pass the press to whatever is underneath. Settings only has to be reachable from
+  Home and in game, not from every window (team decision, 2026-10-19).
+- **A selection that wanders off the path is put back on the target on any device**
+  (`MenuSpotlight.HoldPadOnPath`), so neither the D-pad nor the arrow keys can reach a dimmed
+  control and A or Enter presses the right one. With no gamepad an EMPTY selection stays empty, so a
+  mouse player never sees a focus ring they did not ask for. (`69b9a9d3f`, 2026-10-25, made this
+  any-device; the comms-window commit `2679449e67` on 2026-10-29 put the gamepad-only early-out
+  back, and the training branch restored the fix on 2026-11-11.)
+
+**The guide's Skip (2026-10-15, `Docs/MENU_REDESIGN_B.md` §28).** Every step of the guide shows a
+SKIP button in the bottom-right corner, above the dim, so a press reaches it; the pad's Y presses it
+too, and its keycap shows only while a pad is connected. It ends the WHOLE tutorial, not one step:
+`MenuGuide.RequestSkip` → `QuestGraphRunner.HandleSkipRequested` stops the quest and marks it done
+(`QuestProgressStore.MarkQuestCompleted`), so first login never returns. It does not raise
+`ftue_completed`, which keeps meaning "played through". The words are authored on the node
+(`QuestGuideToMicrogameNode.skipLabel`, "Skip tutorial", and `skipKeycap`, "Y"); an empty label
+hides Skip. A guide is never a cage.
+
+This is separate from the Lesson's Skip in the preview window (`DrillCoachView`). That one follows
+D2/D7 unless `DrillLibrarySO.everyLessonSkippable` is on, and it ships ON (`DrillLibrary.asset`,
+from the owner's 2026-10-15 playtest: "even if those come we need a skip button"), so every Lesson,
+the account's first included, offers Skip after `lessonSkipDelaySeconds` (3 s). **Open decision
+(Caleb):** keep Skip on every Lesson and rewrite D2/D7 to match, or set the flag to 0 and restore
+D2/D7's unskippable first Lessons. Until it is decided, D2/D7 describe the flag-off behaviour.
 
 **Fixes from the first Breakwater run (2026-10-07).** Two ways the guide could fail to release:
 - **A one-thumb hull could not be steered from the keyboard.** `SingleStickMouseInputStrategy`
@@ -685,6 +709,9 @@ trail, checked against `Docs/SKIM_RACE_AI.md` §1-2, not against play) is seeded
 `--check` is green: 13 of 35.** The script is not named `check_*`, so it stays out of the repo-wide
 sweep.
 
+**2026-11-11 reading: 23 of 49 cards fully covered**, and every Game of the Week card is (the report was
+regenerated after upstream added cards; `--check` green).
+
 ## 11. Still open
 
 1. **What happens to Main Quest phases 1–5** (the Crystal Capture funnel and the unlock chain) now
@@ -693,3 +720,7 @@ sweep.
 2. **Mentor pacing** is set (D10) but wants one playtest to confirm it reads as a friend, not a
    billboard.
 3. **Do the ball courts rotate as Game of the Week?** `ModeGenre` makes Astro League and Scarab Scramble Time-genre (`Goals`). The drill system handles them either way (§8). Whether the weekly *racing* rotation should include them is a product call.
+4. **The Lesson skip rule (Caleb's call).** `DrillLibrarySO.everyLessonSkippable` ships on, which
+   overrides D2/D7: every Lesson, the account's first included, offers Skip after 3 s. Either keep it
+   and rewrite D2/D7 to match, or set it to 0 and restore the unskippable first Lessons (§10.6). The
+   other §11 items do not wait on it.
