@@ -22461,3 +22461,33 @@ rail and are always free).
    a view that paints only when its data changes. Note the screen and object.
 6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
 
+
+## 🔴 Waystation's Lantern Towers, the Tiger Moth's Time game (2026-11-11, Yash, NOT COMPILED BY UNITY, NOT RUN IN EDITOR)
+
+Branch `claude/tigermoth-time-upgrade-4dda34` (pushed to `Ys-bleeding-edge`). Docs: `Assets/_Scripts/Controller/Arcade/WAYSTATION.md`
+"Lantern Towers", `Docs/Studios/TIGER_MOTH_TIME.md` §6. Unity was not imported or run (ten sessions share this machine,
+2026-11-11), and `unity_refcompile` does not run on Windows. Ran here: `waystation_tower_course.py --check` (200 seeds x 4,
+16 checks), `--self-test`, `--compile` (the shipped `WaystationTower.cs` + `WaystationHopPlan.cs` built with dotnet and
+compared with the model: rings, lantern posts, shelves, far edges, AI targets, crown gems), `--sweep`;
+`waystation_tower_harness/run_tests.sh --self-test` (the shipped `WaystationTowerTests` and `WaystationHopPlanTests`
+compiled with Roslyn against a Unity math stub: 22 pass, 8 source mutations each turn a test red);
+`author_waystation_assets.py --check`; `check_console_logging.py`; `check_conditional_compilation.py`. The controller
+partials (`WaystationController.cs`, `WaystationController.Feedback.cs`) reach Netcode and the gameplay assemblies and
+have NOT been type-checked.
+
+1. **Compile, then run `WaystationTowerTests` and `WaystationHopPlanTests`** (EditMode). Expect 22 green.
+2. **I1 race with AI backfill**: lantern posts (two dotted Blue columns either side of a hop's drop line) stand on the
+   towers with more than one hop. Drop between them: a landing at their foot lights them in your colour for a second.
+   Is the light visible from the chase camera and through the drop camera?
+3. **I2**: some hops' lanterns are visibly SHORT. Land past a short hop's lanterns: you should reach the next ring
+   before the Drop is back and miss it. Land at their foot: the Drop is back exactly as you pass over the next ring.
+4. **Streak**: three deep landings in a row light the whole tower (six and ten again, brighter). A short or missed hop
+   ends it. All sound slots are empty (`hopDeepEvent` ... `crownGemEvent`): silence is expected.
+5. **I4**: a Time crystal hangs on each tower's last plunge. Land a little short of the deepest landing and you fly
+   through it (+1 Time); land at the deepest and you skip it. It grows back after 5 s.
+6. **AI at I1-I4**: the four AI Tiger Moths drop through the towers (not around them), differ from one another, and
+   FINISH. Watch one that overshoots a press point: it should turn round and drop on the way back, not fly away.
+   Write each rung's finish times here (the model's median is in WAYSTATION.md "Measured").
+7. **The dust and the walls**: a tile the dust steals keeps standing in the thief's colour; no second Blue tile is
+   laid on top of it. Walls and lanterns regrow one piece per 1.5 s.
+8. **Phones**: frame rate at I4 (up to ~2,000 wall tiles and ~130 lantern segments a course).

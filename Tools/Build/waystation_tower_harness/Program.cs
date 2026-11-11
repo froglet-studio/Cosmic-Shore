@@ -28,6 +28,23 @@ static class Program
                 foreach (var t in tiles) if (t.Danger) danger++;
                 Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "T {0} {1} {2} {3} {4}",
                     intensity, seed, used, tiles.Count, danger));
+                // Lantern Towers: every post segment, every hop's shelf / laid depth / far edge, every crown gem
+                var lanterns = new List<WaystationLantern>();
+                WaystationTower.Lanterns(gates, intensity, lanterns);
+                foreach (var l in lanterns)
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "L {0} {1} {2} {3:R} {4:R} {5:R} {6}",
+                        intensity, seed, l.Gate, l.Position.x, l.Position.y, l.Position.z, l.Deep ? 1 : 0));
+                var ts = WaystationTowerSettings.ForIntensity(intensity);
+                for (int i = 1; i < gates.Count; i++)
+                    if (WaystationTower.HasShelf(gates, i, ts))
+                        Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "S {0} {1} {2} {3:R} {4:R} {5:R} {6:R}",
+                            intensity, seed, i, WaystationTower.ShelfDepth(gates, i, ts), WaystationTower.LaidDepth(gates, i, ts),
+                            WaystationTower.FarEdge(gates, i, ts), WaystationHopPlan.AiTargetDepth(gates, i, ts, i % 4)));
+                var gems = new List<Vector3>();
+                WaystationTower.CrownGems(gates, intensity, gems);
+                foreach (var g in gems)
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "C {0} {1} {2:R} {3:R} {4:R}",
+                        intensity, seed, g.x, g.y, g.z));
                 for (int i = 0; i < gates.Count; i++)
                 {
                     var g = gates[i];

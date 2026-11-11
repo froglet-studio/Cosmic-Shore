@@ -17,5 +17,12 @@ namespace CosmicShore.Gameplay
             float t = Mathf.Clamp01(x);
             return t * t * (3f - 2f * t);
         }
+
+        public static float HoldSecondsFor(float distance, float dropSpeed, float easeSeconds, float landSeconds, float cruiseSpeed)
+        {
+            if (dropSpeed <= 0f) return 0f;
+            float landing = landSeconds * (dropSpeed + cruiseSpeed) * 0.5f;
+            return Mathf.Max(0f, (distance - landing) / dropSpeed + easeSeconds * 0.5f);
+        }
     }
 }

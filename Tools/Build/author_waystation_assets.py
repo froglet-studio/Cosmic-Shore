@@ -62,6 +62,10 @@ SCRIPTS = {
     "WaystationCourse":     "Assets/_Scripts/Controller/Arcade/Waystation/WaystationCourse.cs",
     "WaystationTower":      "Assets/_Scripts/Controller/Arcade/Waystation/WaystationTower.cs",
     "WaystationTowerTests": "Assets/_Scripts/Tests/Editor/WaystationTowerTests.cs",
+    # Lantern Towers (2026-11-11): the hop plan, the feedback partial and their tests
+    "WaystationHopPlan":     "Assets/_Scripts/Controller/Arcade/Waystation/WaystationHopPlan.cs",
+    "WaystationController.Feedback": "Assets/_Scripts/Controller/Arcade/Waystation/WaystationController.Feedback.cs",
+    "WaystationHopPlanTests": "Assets/_Scripts/Tests/Editor/WaystationHopPlanTests.cs",
 }
 G_SCRIPT = {name: lib.guid(f"script/{name}") for name in SCRIPTS}
 G_ASSET = {
@@ -112,9 +116,11 @@ g.emit_asset(
 # ── the arcade card ─────────────────────────────────────────────────────────
 DESCRIPTION = lib.wrap_yaml_scalar(
     "Tiger Moths only. Weave each cluster of rings, then climb down the Drop Tower to the next: short hops through "
-    "floor plates, each ring just past its plate. Tap too short and you land on the plate; hold too long and the "
-    "pipe ahead meets you before the Drop is back. Plates are mostly plain at low intensity, more of them danger as "
-    "it climbs. The last gap is one long drop, and it leaves a wormhole for whoever follows.")
+    "floor plates, each ring just past its plate, between two lantern posts that reach as deep as that hop can land. "
+    "Tap too short and you land on the plate; land past the lanterns and the Drop is not back before the next ring. "
+    "Land as deep as the lanterns reach and they light up in your colour. From intensity 2 some lanterns are short, "
+    "and at the top a Time crystal hangs on the last plunge of each tower, just short of its deepest landing. The "
+    "last gap is one long drop, and it leaves a wormhole for whoever follows.")
 g.emit_asset(
     "Assets/_SO_Assets/Games/ArcadeGameWaystation.asset",
     G_ASSET["ArcadeGameWaystation"],
@@ -154,9 +160,9 @@ g.emit_asset(
     G_ASSET["GameToastConfig_Waystation"],
     lib.header_for(EXISTING["GameToastConfigSO"], "GameToastConfig_Waystation")
     + f"  gameMode: {MODE_ID}\n  toasts:\n"
-    + lib.toast(117, "The tower's rings hang under the plates - fly over one and TAP the Drop through it",
+    + lib.toast(117, "Fly over a tower ring and TAP the Drop - land between the lanterns",
                 tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=25)
-    + lib.toast(118, "Short lands on the plate, long meets the pipe - a quick tap, then roll for the next",
+    + lib.toast(118, "Land as deep as the lanterns reach - short lanterns mean a tight hop",
                 tint_domain=0, domain_names=0, every_n=1, idle=1, idle_seconds=40)
     + lib.toast(129, "{0} is halfway home - ring {1}/{2}", tint_domain=1, domain_names=0)
     + lib.toast(130, "{0} takes the lead - ring {1}/{2}", tint_domain=1, domain_names=0)

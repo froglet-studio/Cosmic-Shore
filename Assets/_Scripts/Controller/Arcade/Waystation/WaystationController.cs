@@ -82,7 +82,7 @@ namespace CosmicShore.Gameplay
     /// weapon. The Butterfly's shipped kit supplies the racing: Soar-less slow cruise, the wing
     /// spread, and the Fold.</para>
     /// </summary>
-    public class WaystationController : GateRaceController
+    public partial class WaystationController : GateRaceController
     {
         // There is deliberately NO "first cluster distance" field. Every cluster centre sits on
         // one sphere - that is what makes the chain contain itself - so where the first one goes
@@ -162,6 +162,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far ahead of the press point the autopilot steers along the line it arrives on (u): it flies the " +
                  "cruise line over the ring rather than at the ring, which sits under a plate.")]
         [SerializeField, Min(10f)] float aiHopLookahead = 150f;
+
+        [Tooltip("How far past a tower ring's press point (u, beyond the ring's radius) an autopilot that has not dropped " +
+                 "turns round and flies the cruise line back over it. It drops from either direction: the fall follows the " +
+                 "belly, not the nose. Before 2026-11-11 a bot that overshot flew on along the line for good.")]
+        [SerializeField, Min(10f)] float aiHopMissMargin = 60f;
 
         const string WallOwnerId = "WaystationTowerWall";
 
@@ -432,6 +437,7 @@ namespace CosmicShore.Gameplay
         {
             base.OnCourseRaised();
             ClearWalls();
+            RaiseLanternsAndGems();   // WaystationController.Feedback.cs (Lantern Towers)
             if (!wallPrefab)
             {
                 if (!_warnedNoPrefab)
@@ -479,25 +485,38 @@ namespace CosmicShore.Gameplay
             plate.Pieces[index] = prism;
         }
 
+        /// <summary>Ours, Blue and alive: what the walls release on teardown.</summary>
         static bool IsStanding(Prism prism) =>
             prism && !prism.destroyed && prism.ownerID == WallOwnerId && prism.Domain == Domains.Blue;
 
-        /// <summary>Each plate grows one missing tile back per <see cref="wallRegrowSeconds"/>, walking its tiles.</summary>
+        /// <summary>
+        /// Does this tile need regrowing? Only when it is gone (<see cref="WaystationTower.TileNeedsRegrow"/>): a tile the
+        /// Tiger Moth's dust stole still stands where it was, in the thief's colour, and stays the wall. Before
+        /// 2026-11-11 a stolen tile counted as missing and a Blue one was laid on top of it.
+        /// </summary>
+        static bool NeedsRegrow(Prism prism, Vector3 worldPosition) =>
+            WaystationTower.TileNeedsRegrow(prism, prism && prism.destroyed, IsStanding(prism),
+                                            prism ? Vector3.Distance(prism.transform.position, worldPosition) : 0f);
+
+        /// <summary>Each plate grows one missing tile back per <see cref="wallRegrowSeconds"/>, walking its tiles; the
+        /// lantern posts regrow the same way.</summary>
         void TickWallRegrow()
         {
-            if (_plates.Count == 0 || !wallPrefab || Time.time < _nextRegrowAt) return;
+            if ((_plates.Count == 0 && _lanternPosts.Count == 0) || !wallPrefab || Time.time < _nextRegrowAt) return;
             _nextRegrowAt = Time.time + wallRegrowSeconds;
             foreach (var plate in _plates)
             {
                 for (int step = 0; step < plate.Pieces.Length; step++)
                 {
                     int t = (plate.NextTile + step) % plate.Pieces.Length;
-                    if (IsStanding(plate.Pieces[t])) continue;
+                    if (!NeedsRegrow(plate.Pieces[t], _wallRoot ? _wallRoot.TransformPoint(plate.Tiles[t].Position)
+                                                                 : plate.Tiles[t].Position)) continue;
                     LayTile(plate, t, forReveal: false);
                     plate.NextTile = t + 1;
                     break;
                 }
             }
+            TickLanternRegrow();
         }
 
         void ClearWalls()
@@ -512,6 +531,7 @@ namespace CosmicShore.Gameplay
             _plates.Clear();
             if (_wallRoot && _wallRoot.childCount == 0) Destroy(_wallRoot.gameObject);
             _wallRoot = null;
+            ClearLanternsAndGems();
         }
 
         // GateRaceController.Update runs the race and a subclass must not declare Update; LateUpdate is free.
@@ -519,6 +539,7 @@ namespace CosmicShore.Gameplay
         {
             if (!IsSpawned || gameData == null || !gameData.IsTurnRunning) return;
             TickWallRegrow();
+            TickLanternTowers();
         }
 
         // ── The hop autopilot (server) ────────────────────────────────────
@@ -553,17 +574,44 @@ namespace CosmicShore.Gameplay
         {
             target = default;
             var status = pilot?.Vessel?.VesselStatus;
-            if (status != null && TryNextTowerRing(pilot, out _, out _, out _, out Vector3 press, out Vector3 cruise))
+            if (status != null && TryNextTowerRing(pilot, out int index, out _, out _, out Vector3 press, out Vector3 cruise))
             {
+                // Miss recovery (Lantern Towers, 2026-11-11): a hop that went past its press point without dropping -
+                // still recharging after a deep landing - used to fly on along the cruise line for good. Past the press by
+                // more than the ring's radius plus the margin, the bot turns round and flies the line back the other way;
+                // the drop falls along the belly, not the nose, so it presses over the ring from either direction.
+                if (!_hopPass.TryGetValue(pilot, out var pass) || pass.Ring != index) pass = new HopPass(index, 1f);
                 Vector3 hull = status.Transform.position;
-                float along = Mathf.Max(0f, Vector3.Dot(hull - press, cruise));
-                target = press + cruise * (along + aiHopLookahead);
+                float past = pass.Sign * Vector3.Dot(hull - press, cruise);
+                if (past > _course[index].Radius + aiHopMissMargin) pass = new HopPass(index, -pass.Sign);
+                _hopPass[pilot] = pass;
+                float along = Mathf.Max(0f, pass.Sign * Vector3.Dot(hull - press, cruise));
+                target = press + cruise * (pass.Sign * (along + aiHopLookahead));
                 _hopRolls.Add(pilot);
                 return true;
             }
-            if (pilot != null) _hopRolls.Remove(pilot);
+            if (pilot != null)
+            {
+                _hopRolls.Remove(pilot);
+                _hopPass.Remove(pilot);
+            }
             return false;
         }
+
+        /// <summary>Which way along the cruise line a bot is flying the press point of tower ring <see cref="Ring"/>.</summary>
+        readonly struct HopPass
+        {
+            public readonly int Ring;
+            public readonly float Sign;
+
+            public HopPass(int ring, float sign)
+            {
+                Ring = ring;
+                Sign = sign;
+            }
+        }
+
+        readonly Dictionary<IPlayer, HopPass> _hopPass = new();
 
         bool TryHopBelly(IPlayer pilot, out Vector3 worldDirection)
         {
@@ -596,7 +644,9 @@ namespace CosmicShore.Gameplay
 
                 if (_hopReleaseAt.TryGetValue(pilot, out float releaseAt))
                 {
-                    if (now >= releaseAt) ReleaseHop(pilot);
+                    // Let go on the frame NEAREST the release, not the first one after it: a 900 u/s fall covers 15 u a
+                    // frame at 60 fps, and rounding up always lands deep (Lantern Towers' aibudget check allows half).
+                    if (now + Time.deltaTime * 0.5f >= releaseAt) ReleaseHop(pilot);
                     continue;
                 }
 
@@ -612,10 +662,15 @@ namespace CosmicShore.Gameplay
                 if (along <= 0f) continue;
                 if (Vector3.ProjectOnPlane(toRing, drop).magnitude > _course[index].Radius * aiHopLineShare) continue;
 
-                // Through the ring to the middle of the window beyond it: the plunge ring sits deeper, and the same
-                // margin past it lands the hull in the plunge's own clear water.
-                float travel = along + (s.WindowCentre - s.RingDepth);
-                _hopReleaseAt[pilot] = now + WaystationTower.HoldForTravel(travel);
+                // Through the ring to the depth the hop plan reads off the lanterns (WaystationHopPlan.AiTargetDepth): the
+                // middle of the deep band plus this seat's own error, never past the far edge; on a plunge, short of the
+                // crown gem (I4) or the window's centre past it. Measured from the press point, so the ring's own depth
+                // under it - deeper on a plunge - comes off what the hull still has to fall to reach the ring.
+                float ringDepth = Vector3.Dot(_course[index].Position - WaystationTower.PressOf(_course, index, s),
+                                              _course[index].Axis);
+                float travel = along + (WaystationHopPlan.AiTargetDepth(_course, index, s, i) - ringDepth);
+                // The executor lands to the speed the hull had at the press, so the hold is sized at the live speed.
+                _hopReleaseAt[pilot] = now + WaystationTower.HoldForTravel(travel, status.Speed);
                 handler.PerformShipControllerActionsReplicated(input);
             }
         }
@@ -634,6 +689,7 @@ namespace CosmicShore.Gameplay
             foreach (var pilot in new List<IPlayer>(_hopReleaseAt.Keys)) ReleaseHop(pilot);
             _hopReleaseAt.Clear();
             _hopRolls.Clear();
+            _hopPass.Clear();
             _hopExecutors.Clear();
         }
 

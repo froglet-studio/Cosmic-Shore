@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-11-lantern-towers-on-top-of-the-drop-tower-97b3e0",
+  "to": "Shombith",
+  "by": "Yash",
+  "date": "2026-11-11T02:42:10+00:00",
+  "area": "Waystation's Drop Tower (his 2026-11-01 direction) and author_waystation_assets.py",
+  "summary": "Lantern Towers on top of the Drop Tower: lantern posts per hop, tight hops from I2, in-world grading lights and a streak, an I4 crown gem, seven empty FMOD slots, toasts 117/118 re-worded (no new ids), generator adds the new scripts' metas and the card text. Not compiled by Unity (Docs/UNITY_VERIFICATION_CHECKLIST.md).",
+  "branch": "claude/tigermoth-time-upgrade-4dda34",
+  "commit": "e4465c7a3"
+}

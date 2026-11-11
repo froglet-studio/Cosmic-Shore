@@ -28,6 +28,7 @@ changed, and what is still an estimate. The targets themselves live where they a
 | Switchback | gates (1 lap; more gates = longer course) | 20 | **26** | I1 58-75 s -> ~85 s | measured, 15 finishes |
 | Thresher Time | laps x 8 gates | 3 laps = 24 | **2 laps = 16** | 127-180 s -> ~75-125 s | measured, 2 finishes |
 | Waystation | rings (dealt in clusters; more = longer) | 24 | **15** | 205 s -> ~90-130 s | measured, 1 pilot |
+| Waystation since 2026-11-01 (Drop Towers; Lantern Towers 2026-11-11) | 5 CLUSTERS (`waystationClusterTarget`); the finish line is every ring laid, 18-41 | 15 rings | **5 clusters** | a lantern reader 59 / 86 / 105 / 127 s at I1-I4 (offline sweep; I3 and I4 over target, as before) | modelled (`waystation_tower_course.py --sweep`), comeback 0.4 |
 | Grizzly Time | laps x 8 gates | 3 laps = 24 | **2 laps = 16** | unfinishable today (4 gates in 268 s) | see §4 |
 | Headlong | laps x 8 gates | 3 laps = 24 | **5 laps = 40** | ~40-55 s -> ~70-90 s | estimate (Regatta transfer) |
 | Redline | laps x 8 gates | 3 laps = 24 | **5 laps = 40** | ~40-75 s -> ~70-120 s | estimate (Regatta transfer) |

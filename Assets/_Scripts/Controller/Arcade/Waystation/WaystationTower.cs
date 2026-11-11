@@ -28,7 +28,22 @@ namespace CosmicShore.Gameplay
         /// <summary>Share of a plate's tiles that are danger prisms; the rest are plain.</summary>
         public float DangerShare;
 
-        /// <summary>Shortest travel of a legal hop (u).</summary>
+        /// <summary>Share of D hops (a tower ring a sideways hop follows) that are TIGHT: the runway after them is cut
+        /// short, so the deepest landing that still recharges and rolls before the next press - the SHELF - lies short
+        /// of the window's far edge. The lanterns show where it lies (Lantern Towers, 2026-11-11).</summary>
+        public float ShelfShare;
+
+        /// <summary>How far short of the window's far edge a tight hop's shelf lies (u), drawn per hop between these.</summary>
+        public float ShelfCutMin, ShelfCutMax;
+
+        /// <summary>The deep band (u): the last stretch of the lanterns, where a landing grades DEEP.</summary>
+        public float DeepBand;
+
+        /// <summary>1 = a Time crystal (the crown gem) hangs on each tower's plunge, just short of its deepest landing.</summary>
+        public float CrownGem;
+
+        /// <summary>Half-width (u) of the autopilot's per-seat landing error: rivals that read the lanterns but differ.</summary>
+        public float AiErrorU;
         public float WindowLow => WindowCentre - WindowHalfWidth;
 
         /// <summary>Longest travel of a legal hop (u).</summary>
@@ -51,6 +66,12 @@ namespace CosmicShore.Gameplay
                 WindowHalfWidth = new[] { 100f, 84f, 70f, 58f }[i],
                 RollGateShare = new[] { 0f, 0f, 0.5f, 1f }[i],
                 DangerShare = new[] { 0.10f, 0.20f, 0.35f, 0.50f }[i],
+                ShelfShare = new[] { 0f, 0.4f, 0.5f, 0.75f }[i],
+                ShelfCutMin = new[] { 0f, 50f, 45f, 40f }[i],
+                ShelfCutMax = new[] { 0f, 100f, 80f, 90f }[i],
+                DeepBand = new[] { 45f, 45f, 40f, 30f }[i],
+                CrownGem = new[] { 0f, 0f, 0f, 1f }[i],
+                AiErrorU = new[] { 6f, 10f, 12f, 12f }[i],
             };
         }
     }
@@ -74,6 +95,29 @@ namespace CosmicShore.Gameplay
             Danger = danger;
             Gate = gate;
             Wall = wall;
+        }
+    }
+
+    /// <summary>One segment of a lantern post, in the course's own frame. Laid as an environment prism.</summary>
+    public readonly struct WaystationLantern
+    {
+        public readonly Vector3 Position;
+        public readonly Quaternion Rotation;
+        public readonly Vector3 Scale;
+
+        /// <summary>The course index of the tower ring whose hop the post marks.</summary>
+        public readonly int Gate;
+
+        /// <summary>Inside the deep band (the dense run at the post's foot).</summary>
+        public readonly bool Deep;
+
+        public WaystationLantern(Vector3 position, Quaternion rotation, Vector3 scale, int gate, bool deep)
+        {
+            Position = position;
+            Rotation = rotation;
+            Scale = scale;
+            Gate = gate;
+            Deep = deep;
         }
     }
 
@@ -155,7 +199,24 @@ namespace CosmicShore.Gameplay
         /// <summary>Course seeds tried for a long final gap before the best one is kept.</summary>
         public const int SeedTries = 64;
 
+        // ── The lanterns and the crown gem (Lantern Towers, 2026-11-11) ──
+
+        /// <summary>How far short of the shelf the lanterns stop (u): the last post is a little inside the deepest landing.</summary>
+        public const float LanternBack = 15f;
+
+        /// <summary>Spacing (u) of the lantern posts' segments before the deep band, and inside it (denser).</summary>
+        public const float LanternGap = 30f;
+        public const float LanternDeepGap = 15f;
+
+        /// <summary>A lantern segment's length along the drop line and its square side (u).</summary>
+        public const float LanternSeg = 10f;
+        public const float LanternSide = 3f;
+
+        /// <summary>How far short of the plunge's deepest landing (u) the crown gem hangs: max-depth greed skips it.</summary>
+        public const float GemSkip = 40f;
+
         const float RadiusTolerance = 0.01f;
+        const float ShelfTolerance = 0.05f;
 
         // ── The Drop's own kinematics (TigerMothDropExecutor, closed form) ──
 
@@ -172,21 +233,28 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Fall plus the landing turn's travel: where the colliders come back on, measured from the press.</summary>
-        public static float Travel(float hold)
+        public static float Travel(float hold) => Travel(hold, Cruise);
+
+        /// <summary>Fall plus the landing turn's travel at a given cruise: the executor lands to the speed it had at the
+        /// press, so a hull slowed by a wall (or quickened by Afterburn) carries less (or more) than <see cref="Cruise"/>.</summary>
+        public static float Travel(float hold, float cruise)
         {
             float t = Mathf.Max(0f, hold);
             float release = DropSpeed * TigerMothDropMath.Ease01(t / DropEaseSeconds);
-            return Fall(t) + LandSeconds * (release + Cruise) * 0.5f;
+            return Fall(t) + LandSeconds * (release + Mathf.Max(0f, cruise)) * 0.5f;
         }
 
         /// <summary>The hold that travels <paramref name="travel"/> units (bisection on the monotone <see cref="Travel"/>).</summary>
-        public static float HoldForTravel(float travel)
+        public static float HoldForTravel(float travel) => HoldForTravel(travel, Cruise);
+
+        /// <summary>The hold that travels <paramref name="travel"/> units at the live <paramref name="cruise"/>.</summary>
+        public static float HoldForTravel(float travel, float cruise)
         {
             float lo = 0f, hi = 4f;
             for (int i = 0; i < 40; i++)
             {
                 float mid = 0.5f * (lo + hi);
-                if (Travel(mid) < travel) lo = mid; else hi = mid;
+                if (Travel(mid, cruise) < travel) lo = mid; else hi = mid;
             }
             return 0.5f * (lo + hi);
         }
@@ -199,8 +267,126 @@ namespace CosmicShore.Gameplay
         public static float RollSeconds(float degrees) => Mathf.Abs(degrees) / RollDegreesPerSecond;
 
         /// <summary>The runway (u) a pilot needs after landing at the window's far edge before pressing again.</summary>
-        public static float Runway(in WaystationTowerSettings s, float rollDegrees) =>
-            Cruise * (Mathf.Max(RechargeForTravel(s.WindowHigh), RollSeconds(rollDegrees)) + ReactSeconds);
+        public static float Runway(in WaystationTowerSettings s, float rollDegrees) => RunwayAfter(s.WindowHigh, rollDegrees);
+
+        /// <summary>The runway (u) a pilot needs after a hop of <paramref name="travel"/> before pressing again: the
+        /// recharge or the roll, whichever is longer, plus the reaction.</summary>
+        public static float RunwayAfter(float travel, float rollDegrees) =>
+            Cruise * (Mathf.Max(RechargeForTravel(travel), RollSeconds(rollDegrees)) + ReactSeconds);
+
+        // ── The shelf: how deep each hop may land (Lantern Towers) ──
+
+        /// <summary>Is the D hop at course index <paramref name="gate"/> tight? Hashed on the index, so every peer agrees.</summary>
+        public static bool IsTightHop(int gate, in WaystationTowerSettings s) =>
+            s.ShelfShare > 0f && Hash01(gate, 7, 0) < s.ShelfShare;
+
+        /// <summary>How far short of the far edge a tight hop's shelf lies (u).</summary>
+        public static float ShelfCut(int gate, in WaystationTowerSettings s) =>
+            s.ShelfCutMin + (s.ShelfCutMax - s.ShelfCutMin) * Hash01(gate, 7, 1);
+
+        /// <summary>Does tower ring <paramref name="i"/> have a hop after it (so a shelf and lanterns)? Every tower ring
+        /// but a tower's last, the plunge.</summary>
+        public static bool HasShelf(IReadOnlyList<RaceGate> course, int i, in WaystationTowerSettings s) =>
+            i >= 1 && i + 1 < course.Count && IsTowerRing(course[i], s) && IsTowerRing(course[i + 1], s);
+
+        /// <summary>Degrees the pilot rolls between landing hop <paramref name="i"/> and pressing hop i + 1: the belly
+        /// after a landing points back along the heading it pressed on (the previous ring's axis), and the next hop
+        /// falls along the next ring's axis. 0, 90 or 180.</summary>
+        public static float RollBefore(IReadOnlyList<RaceGate> course, int i) =>
+            RaceCourseGeometry.Angle(-course[i - 1].Axis, course[i + 1].Axis);
+
+        /// <summary>
+        /// The SHELF of tower ring <paramref name="i"/>: the deepest landing (u of travel from its press point) after
+        /// which the Drop is recharged and the roll done exactly as the hull reaches the next press point - from the
+        /// broadcast course alone, so every peer and the autopilot read the same number. Near the window's far edge on a
+        /// loose hop (past it by the reaction the runway keeps); shorter on a tight one. A landing deeper than the shelf
+        /// presses late, and past <see cref="FarEdge"/> the next ring is out of reach. The lanterns end
+        /// <see cref="LanternBack"/> short of it.
+        ///
+        /// <para>Why not the depth the course was laid for (<see cref="LaidDepth"/>, which keeps the reaction)? Measured
+        /// by <c>waystation_tower_course.py --sweep</c>: lanterns there saved a reading pilot 1% against the best fixed
+        /// depth, because a fixed pilot simply spends the reaction margin; at the shelf they save 3-4%.</para>
+        /// </summary>
+        public static float ShelfDepth(IReadOnlyList<RaceGate> course, int i, in WaystationTowerSettings s) =>
+            HasShelf(course, i, s)
+                ? DeepestLanding(course, i, s, 0f, s.WindowLow, s.WindowHigh + FarEdgeReach)
+                : s.WindowHigh;
+
+        /// <summary>The depth hop <paramref name="i"/> was laid for: its shelf with <see cref="ReactSeconds"/> kept spare
+        /// (the window's far edge on a loose hop, the far edge less its cut on a tight one).</summary>
+        public static float LaidDepth(IReadOnlyList<RaceGate> course, int i, in WaystationTowerSettings s) =>
+            HasShelf(course, i, s)
+                ? DeepestLanding(course, i, s, ReactSeconds, s.WindowLow, s.WindowHigh)
+                : s.WindowHigh;
+
+        /// <summary>
+        /// The HARD far edge of tower ring <paramref name="i"/>'s hop: the deepest landing after which the next ring can
+        /// still be dropped through at all - no reaction left, and the press late by as much as the next mouth allows (its
+        /// radius less the hull's). Past it the grade is <see cref="HopGrade.Past"/>. Infinite on a plunge, which has no
+        /// next hop.
+        /// </summary>
+        public static float FarEdge(IReadOnlyList<RaceGate> course, int i, in WaystationTowerSettings s)
+        {
+            if (!HasShelf(course, i, s)) return float.PositiveInfinity;
+            float late = (course[i + 1].Radius - HullRadius) / Cruise;
+            return DeepestLanding(course, i, s, -late, s.WindowLow, s.WindowHigh + FarEdgeReach);
+        }
+
+        /// <summary>How far past the window's far edge (u) <see cref="FarEdge"/> searches; the `edges` check measures the
+        /// real overshoot at 33 u or less.</summary>
+        const float FarEdgeReach = 400f;
+
+        /// <summary>The deepest landing in [<paramref name="lo"/>, <paramref name="hi"/>] whose remaining cruise to the next
+        /// press point covers the recharge or the roll plus <paramref name="spareSeconds"/> (bisection; the need grows
+        /// and the cruise shrinks with depth, so the test is monotone).</summary>
+        static float DeepestLanding(IReadOnlyList<RaceGate> course, int i, in WaystationTowerSettings s, float spareSeconds,
+                                    float lo, float hi) =>
+            DeepestLanding(Vector3.Dot(PressOf(course, i + 1, s) - PressOf(course, i, s), course[i].Axis),
+                           RollBefore(course, i), spareSeconds, lo, hi);
+
+        /// <summary>The same, for a hop <paramref name="span"/> u from its press point to the next one, with a
+        /// <paramref name="roll"/> between: what <see cref="Lay"/> knows before the ring exists.</summary>
+        static float DeepestLanding(float span, float roll, float spareSeconds, float lo, float hi)
+        {
+            if (Fits(span, hi, roll, spareSeconds)) return hi;
+            if (!Fits(span, lo, roll, spareSeconds)) return lo;
+            for (int k = 0; k < 40; k++)
+            {
+                float mid = 0.5f * (lo + hi);
+                if (Fits(span, mid, roll, spareSeconds)) lo = mid; else hi = mid;
+            }
+            return lo;
+        }
+
+        static bool Fits(float span, float landing, float roll, float spareSeconds) =>
+            span - landing + ShelfTolerance >=
+            Cruise * (Mathf.Max(RechargeForTravel(landing), RollSeconds(roll)) + spareSeconds);
+
+        /// <summary>The depth (u) the lanterns of tower ring <paramref name="i"/> reach: a little short of its shelf.</summary>
+        public static float LanternEnd(IReadOnlyList<RaceGate> course, int i, in WaystationTowerSettings s) =>
+            ShelfDepth(course, i, s) - LanternBack;
+
+        /// <summary>How much deeper than a regular hop the plunge ring <paramref name="i"/> lies (u).</summary>
+        public static float PlungeOf(IReadOnlyList<RaceGate> course, int i, in WaystationTowerSettings s) =>
+            Vector3.Dot(course[i].Position - PressOf(course, i, s), course[i].Axis) - s.RingDepth;
+
+        /// <summary>The crown gem's depth under the plunge's press point (u): the plunge's deepest landing less
+        /// <see cref="GemSkip"/>.</summary>
+        public static float GemDepth(IReadOnlyList<RaceGate> course, int i, in WaystationTowerSettings s) =>
+            s.WindowHigh + PlungeOf(course, i, s) - GemSkip;
+
+        /// <summary>Is tower ring <paramref name="i"/> a tower's last, the plunge?</summary>
+        public static bool IsPlunge(IReadOnlyList<RaceGate> course, int i, in WaystationTowerSettings s) =>
+            i >= 1 && IsTowerRing(course[i], s) && (i + 1 >= course.Count || !IsTowerRing(course[i + 1], s));
+
+        /// <summary>
+        /// Does a wall tile need regrowing? Only when it is gone: never laid, destroyed, or its pooled prism reused
+        /// somewhere else (no longer ours and moved off its tile). A tile the Tiger Moth's dust STOLE stands where it
+        /// was, in the thief's colour, and is left standing - it is still the wall, and laying a Blue tile on top of it
+        /// would stack two prisms in one place.
+        /// </summary>
+        public static bool TileNeedsRegrow(bool exists, bool destroyed, bool ours, float displacement) =>
+            !exists || destroyed || (!ours && displacement > 1f);
 
         // ── Hashes (the same on every peer and every runtime) ──
 
@@ -277,6 +463,110 @@ namespace CosmicShore.Gameplay
             public readonly List<(Vector3 a, Vector3 b)> Segments = new();
             public readonly List<Plate> Plates = new();
             public readonly List<RaceGate> Rings = new();
+
+            /// <summary>The lantern posts laid so far, each from its window's near edge to its foot (Lantern Towers).</summary>
+            public readonly List<(Vector3 a, Vector3 b)> Posts = new();
+        }
+
+        /// <summary>A post's reach (u) beyond its centre line: half a segment's length plus its side.</summary>
+        const float PostPad = LanternSeg * 0.5f + LanternSide;
+
+        /// <summary>How far a post stands from every corporeal flight line (u): the hull, a margin and the post's pad.</summary>
+        const float PostClear = HullRadius + 4f + PostPad;
+
+        /// <summary>The shortest distance between segments ab and cd (closed form, clamped to both segments).</summary>
+        public static float SegmentDistance(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+        {
+            Vector3 u = b - a, v = d - c, w = a - c;
+            float A = Vector3.Dot(u, u), B = Vector3.Dot(u, v), C = Vector3.Dot(v, v);
+            float D = Vector3.Dot(u, w), E = Vector3.Dot(v, w);
+            // A point against a segment (the ring and plate tests ask about points): the general case below treats a
+            // zero-length segment as parallel and answers from a's end, which is wrong (measured: 88 u for 35 u).
+            if (C < 1e-9f) return PointSegmentDistance(c, a, b);
+            if (A < 1e-9f) return PointSegmentDistance(a, c, d);
+            float den = A * C - B * B;
+            float sN, sD = den, tN, tD = den;
+            if (den < 1e-6f) { sN = 0f; sD = 1f; tN = E; tD = C; }
+            else
+            {
+                sN = B * E - C * D;
+                tN = A * E - B * D;
+                if (sN < 0f) { sN = 0f; tN = E; tD = C; }
+                else if (sN > sD) { sN = sD; tN = E + B; tD = C; }
+            }
+            if (tN < 0f)
+            {
+                tN = 0f;
+                if (-D < 0f) sN = 0f; else if (-D > A) sN = sD; else { sN = -D; sD = A; }
+            }
+            else if (tN > tD)
+            {
+                tN = tD;
+                if (-D + B < 0f) sN = 0f; else if (-D + B > A) sN = sD; else { sN = -D + B; sD = A; }
+            }
+            float sc = Mathf.Abs(sN) < 1e-6f || sD < 1e-12f ? 0f : sN / sD;
+            float tc = Mathf.Abs(tN) < 1e-6f || tD < 1e-12f ? 0f : tN / tD;
+            Vector3 gap = w + u * sc - v * tc;
+            return gap.magnitude;
+        }
+
+        /// <summary>The distance from <paramref name="p"/> to segment ab.</summary>
+        public static float PointSegmentDistance(Vector3 p, Vector3 a, Vector3 b)
+        {
+            Vector3 ab = b - a;
+            float len = Vector3.Dot(ab, ab);
+            float t = len < 1e-12f ? 0f : Mathf.Clamp01(Vector3.Dot(p - a, ab) / len);
+            return (p - (a + ab * t)).magnitude;
+        }
+
+        /// <summary>Does the post ab come within <paramref name="pad"/> of plate <paramref name="plate"/>? Sampled every
+        /// 3 u, after a bounding test.</summary>
+        static bool PostHitsPlate(Vector3 a, Vector3 b, in Plate plate, float pad)
+        {
+            if (SegmentDistance(a, b, plate.Centre, plate.Centre) > plate.Half * 1.415f + pad + TileThickness) return false;
+            return SegmentHitsPlate(a, b, plate, pad);
+        }
+
+        /// <summary>Does the post ab come within <paramref name="pad"/> of a ring's rim or centre?</summary>
+        static bool PostHitsRing(Vector3 a, Vector3 b, in RaceGate ring, float pad)
+        {
+            if (SegmentDistance(a, b, ring.Position, ring.Position) > ring.Radius + pad) return false;
+            // Through the mouth: where the post crosses (or runs within pad of) the ring's plane, inside its radius.
+            float da = Vector3.Dot(a - ring.Position, ring.Axis), db = Vector3.Dot(b - ring.Position, ring.Axis);
+            if (da * db <= 0f && Mathf.Abs(da - db) > 1e-6f)
+            {
+                Vector3 x = a + (b - a) * (da / (da - db));
+                if (Vector3.ProjectOnPlane(x - ring.Position, ring.Axis).magnitude < ring.Radius + pad) return true;
+            }
+            foreach (var (e, de) in new[] { (a, da), (b, db) })
+                if (Mathf.Abs(de) < pad && Vector3.ProjectOnPlane(e - ring.Position, ring.Axis).magnitude < ring.Radius + pad)
+                    return true;
+            Vector3 u = RaceCourseGeometry.Perpendicular(ring.Axis);
+            Vector3 w = Vector3.Cross(ring.Axis, u);
+            for (int k = 0; k < 17; k++)
+            {
+                float t = k * Mathf.PI / 8f;
+                Vector3 p = k == 16 ? ring.Position : ring.Position + (u * Mathf.Cos(t) + w * Mathf.Sin(t)) * ring.Radius;
+                if (SegmentDistance(a, b, p, p) < pad) return true;
+            }
+            return false;
+        }
+
+        /// <summary>The two posts of a hop pressed at <paramref name="press"/> falling along <paramref name="axis"/> after
+        /// arriving along <paramref name="arrive"/>, from the window's near edge to the lanterns' foot at
+        /// <paramref name="end"/>. <see cref="Lanterns"/> lays them from the broadcast course; this is the copy Lay
+        /// keeps clear before the rings exist.</summary>
+        static void AddPosts(Vector3 press, Vector3 axis, Vector3 arrive, float end, in WaystationTowerSettings s,
+                             List<(Vector3 a, Vector3 b)> into)
+        {
+            if (end < s.WindowLow) return;
+            Vector3 across = RaceCourseGeometry.SafeNormalize(Vector3.Cross(axis, arrive), RaceCourseGeometry.Perpendicular(axis));
+            float offset = s.HopRingRadius + PlateMargin;
+            for (int side = 0; side < 2; side++)
+            {
+                Vector3 post = press + across * (side == 0 ? offset : -offset);
+                into.Add((post + axis * s.WindowLow, post + axis * end));
+            }
         }
 
         static bool SegmentHitsPlate(Vector3 a, Vector3 b, in Plate plate, float clearance)
@@ -307,8 +597,39 @@ namespace CosmicShore.Gameplay
 
         /// <summary>New plates inside the cell and clear of every obstacle; new flight clear of every plate.</summary>
         static bool ElementsClear(List<Plate> plates, List<(Vector3 a, Vector3 b)> segments, Obstacles o,
-                                  float innerLimit, float outerLimit)
+                                  float innerLimit, float outerLimit) =>
+            ElementsClear(plates, segments, null, o, innerLimit, outerLimit);
+
+        /// <summary>The same, with the new hops' lantern posts: each inside the cell and clear of every flight line, ring
+        /// and plate; and the new flight lines and plates clear of every post already standing.</summary>
+        static bool ElementsClear(List<Plate> plates, List<(Vector3 a, Vector3 b)> segments, List<(Vector3 a, Vector3 b)> posts,
+                                  Obstacles o, float innerLimit, float outerLimit)
         {
+            if (posts != null)
+            {
+                foreach (var (a, b) in posts)
+                {
+                    if (a.magnitude < innerLimit || b.magnitude < innerLimit || a.magnitude > outerLimit
+                        || b.magnitude > outerLimit) return false;
+                    foreach (var (c, d) in o.Segments)
+                        if (SegmentDistance(a, b, c, d) < PostClear) return false;
+                    foreach (var (c, d) in segments)
+                        if (SegmentDistance(a, b, c, d) < PostClear) return false;
+                    foreach (var ring in o.Rings)
+                        if (PostHitsRing(a, b, ring, PostPad)) return false;
+                    foreach (var plate in o.Plates)
+                        if (PostHitsPlate(a, b, plate, PostPad)) return false;
+                    foreach (var plate in plates)
+                        if (PostHitsPlate(a, b, plate, PostPad)) return false;
+                }
+            }
+            foreach (var (a, b) in o.Posts)
+            {
+                foreach (var (c, d) in segments)
+                    if (SegmentDistance(a, b, c, d) < PostClear) return false;
+                foreach (var plate in plates)
+                    if (PostHitsPlate(a, b, plate, PostPad)) return false;
+            }
             const float clear = HullRadius + 1f;
             foreach (var plate in plates)
             {
@@ -370,6 +691,7 @@ namespace CosmicShore.Gameplay
             AddFinals(press, down, nextRing, s, finals);
 
             var rings = new List<RaceGate>();
+            var posts = new List<(Vector3 a, Vector3 b)>(4);
             Vector3 belly = -heading;            // where the belly points after the next D hop lands
             Vector3 lastSide = Vector3.zero;
             float used = 0f;                     // along the drop line, from the first press point
@@ -386,14 +708,22 @@ namespace CosmicShore.Gameplay
                 else if (gate) { options.Set(0, abeam, 90f); options.Set(1, -abeam, 90f); options.Set(2, belly, 0f); count = 3; }
                 else { options.Set(0, belly, 0f); options.Set(1, abeam, 90f); options.Set(2, -abeam, 90f); count = 3; }
 
+                // A TIGHT D hop (Lantern Towers): its runway is sized for a landing at its shelf, short of the far edge,
+                // so a pilot who lands deeper than the shelf reaches the sideways press uncharged. Hashed on the ring's
+                // course index, which is where it lands in the broadcast course.
+                int dGate = into.Count + rings.Count;
+                float shelf = IsTightHop(dGate, s) ? high - ShelfCut(dGate, s) : high;
+
                 bool chosen = false;
                 Vector3 side = default, lateralPress = default, next = default;
+                float step = 0f;
+                Vector3 arrive = lateral == 1 ? heading : lastSide;
                 for (int k = 0; k < count && !chosen; k++)
                 {
                     options.Get(k, out side, out float roll);
-                    float run = Runway(s, roll);
-                    if (used + high + run + high > avail) continue;
-                    lateralPress = press + down * (high + run);
+                    step = shelf + RunwayAfter(shelf, roll);
+                    if (used + step + high > avail) continue;
+                    lateralPress = press + down * step;
                     next = lateralPress + side * lateralStride;
                     plates.Clear();
                     plates.Add(new Plate(lateralPress + down * pipe, down, side, half));
@@ -404,9 +734,15 @@ namespace CosmicShore.Gameplay
                     segments.Add((press + down * low, lateralPress));
                     segments.Add((lateralPress + side * low, next));
                     AddFinals(next, down, nextRing, s, segments);
-                    if (!ElementsClear(plates, segments, obstacles, innerLimit, outerLimit)) continue;
+                    // The lanterns both hops will stand (Lanterns lays them from the broadcast course; the same numbers).
+                    posts.Clear();
+                    AddPosts(press, down, arrive, DeepestLanding(step, roll, 0f, low, high + FarEdgeReach) - LanternBack,
+                             s, posts);
+                    AddPosts(lateralPress, side, down,
+                             DeepestLanding(lateralStride, 180f, 0f, low, high + FarEdgeReach) - LanternBack, s, posts);
+                    if (!ElementsClear(plates, segments, posts, obstacles, innerLimit, outerLimit)) continue;
                     chosen = true;
-                    used += high + run;
+                    used += step;
                 }
                 if (!chosen) break;
 
@@ -417,6 +753,7 @@ namespace CosmicShore.Gameplay
                 obstacles.Segments.Add(segments[1]);
                 obstacles.Rings.Add(rings[rings.Count - 2]);
                 obstacles.Rings.Add(rings[rings.Count - 1]);
+                obstacles.Posts.AddRange(posts);
                 finals.Clear();
                 for (int k = 2; k < segments.Count; k++) finals.Add(segments[k]);
                 press = next;
@@ -430,6 +767,9 @@ namespace CosmicShore.Gameplay
             into.AddRange(rings);
             obstacles.Segments.AddRange(finals);
             obstacles.Rings.Add(rings[rings.Count - 1]);
+            // The plunge's landing stretch (and the crown gem on it, at I4): a later tower's plate there would be landed
+            // in, and would bury the gem (measured: I4 seed 11 before this, a plate 2.5 u from a gem).
+            obstacles.Segments.Add((press + down * (low + plunge), press + down * (high + plunge)));
             return dHops;
         }
 
@@ -567,6 +907,56 @@ namespace CosmicShore.Gameplay
             if (!IsTowerRing(prev, s)) return prev.Position + prev.Axis * Lead;   // the exit gate: a one-hop tower
             Vector3 lateralPress = prev.Position - prev.Axis * s.RingDepth;
             return lateralPress + prev.Axis * (s.WindowHigh + Runway(s, 180f));
+        }
+
+        // ── The lanterns and the crown gems, from the broadcast course alone ──
+
+        /// <summary>
+        /// Every lantern post of every hop that has a hop after it: two dotted posts either side of the drop line, from
+        /// the window's near edge down to <see cref="LanternEnd"/>, a segment every <see cref="LanternGap"/> and every
+        /// <see cref="LanternDeepGap"/> through the last <see cref="WaystationTowerSettings.DeepBand"/>. A tight hop's
+        /// posts are visibly shorter: that is how a pilot reads the shelf before pressing. Pure, so every peer lays the
+        /// same posts. The plunge has none: its deepest landing is the crown gem's business (and the cluster's).
+        /// </summary>
+        public static void Lanterns(IReadOnlyList<RaceGate> course, int intensity, List<WaystationLantern> into)
+        {
+            into.Clear();
+            var s = WaystationTowerSettings.ForIntensity(intensity);
+            float offset = s.HopRingRadius + PlateMargin;
+            var scale = new Vector3(LanternSide, LanternSide, LanternSeg);
+            for (int i = 1; i < course.Count; i++)
+            {
+                if (!HasShelf(course, i, s)) continue;
+                float end = LanternEnd(course, i, s);
+                if (end < s.WindowLow) continue;
+                Vector3 axis = course[i].Axis;
+                Vector3 press = PressOf(course, i, s);
+                Vector3 across = RaceCourseGeometry.SafeNormalize(Vector3.Cross(axis, course[i - 1].Axis),
+                                                                  RaceCourseGeometry.Perpendicular(axis));
+                var rotation = Quaternion.LookRotation(axis, across);
+                float deepFrom = Mathf.Max(s.WindowLow, end - s.DeepBand);
+                for (int side = 0; side < 2; side++)
+                {
+                    Vector3 post = press + across * (side == 0 ? offset : -offset);
+                    float d = end;
+                    for (; d >= deepFrom - 1e-3f; d -= LanternDeepGap)
+                        into.Add(new WaystationLantern(post + axis * d, rotation, scale, i, true));
+                    for (d -= LanternGap - LanternDeepGap; d >= s.WindowLow - 1e-3f; d -= LanternGap)
+                        into.Add(new WaystationLantern(post + axis * d, rotation, scale, i, false));
+                }
+            }
+        }
+
+        /// <summary>The crown gem of every tower (I4 only): one Time crystal on each plunge's drop line,
+        /// <see cref="GemDepth"/> under its press point. Pure, so every peer stands it in the same place.</summary>
+        public static void CrownGems(IReadOnlyList<RaceGate> course, int intensity, List<Vector3> into)
+        {
+            into.Clear();
+            var s = WaystationTowerSettings.ForIntensity(intensity);
+            if (s.CrownGem <= 0f) return;
+            for (int i = 1; i < course.Count; i++)
+                if (IsPlunge(course, i, s))
+                    into.Add(PressOf(course, i, s) + course[i].Axis * GemDepth(course, i, s));
         }
 
         static void Tiles(in Plate plate, in WaystationTowerSettings s, int gate, int wall, List<WaystationTowerTile> into)

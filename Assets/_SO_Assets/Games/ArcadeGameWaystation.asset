@@ -16,10 +16,13 @@ MonoBehaviour:
   IsMultiplayer: 1
   DisplayName: Waystation
   Description: 'Tiger Moths only. Weave each cluster of rings, then climb down the Drop Tower to the
-    next: short hops through floor plates, each ring just past its plate. Tap too short and
-    you land on the plate; hold too long and the pipe ahead meets you before the Drop is
-    back. Plates are mostly plain at low intensity, more of them danger as it climbs. The
-    last gap is one long drop, and it leaves a wormhole for whoever follows.'
+    next: short hops through floor plates, each ring just past its plate, between two
+    lantern posts that reach as deep as that hop can land. Tap too short and you land on the
+    plate; land past the lanterns and the Drop is not back before the next ring. Land as
+    deep as the lanterns reach and they light up in your colour. From intensity 2 some
+    lanterns are short, and at the top a Time crystal hangs on the last plunge of each
+    tower, just short of its deepest landing. The last gap is one long drop, and it leaves a
+    wormhole for whoever follows.'
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 5f369710bf604859820aa9aeb3301a12, type: 3}
