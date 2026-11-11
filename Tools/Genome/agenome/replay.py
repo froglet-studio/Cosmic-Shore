@@ -235,6 +235,7 @@ class ExtrasWorld:
         self.gain, self.mesh_gain, self.soft = gain, mesh_gain, soft
         w = json.load(open(os.path.join(session.path, "world.json")))
         self.mat = {}
+        self.clear = {k for k, m in w.get("materials", {}).items() if m.get("render_queue", 2000) >= 3000}
         for k, m in w.get("materials", {}).items():
             v = m.get("vectors", {})
             for name in ("_BrightColor", "_Color2", "_Straight_Color", "_Edge_Color", "_Color", "_BaseColor"):
@@ -263,7 +264,8 @@ class ExtrasWorld:
             lines.append((p, hw, rgba, any(s in x.get("material", "") for s in self.soft)))
         if lines:
             out["lines"] = lines
-        M = d.get("meshes", [])
+        # translucent shells (explosion ripples, charge fields) are not solid stand-in material
+        M = [m for m in d.get("meshes", []) if m["material"] not in self.clear and m["material"].split("#")[0] not in self.clear]
         if M:
             pos = np.array([m["world_center"] for m in M], np.float64)
             R = quat_mats([m["rot"] for m in M])
