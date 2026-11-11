@@ -8,7 +8,11 @@ aspect hint, so `author.py` reads whatever size arrives) over the key colour the
 
 **Update 2026-11-10:** `www.figma.com` is now on the Default environment's allowed hosts (Garrett approved),
 so a cloud session downloads `image.url` with curl (`creator.py capture`) and no longer needs `get_screenshot`,
-whose Collab-seat read limit runs out after about 30 calls a day. The signature busts use `gpt-image-2.5-sunburst`.
+whose Collab-seat read limit runs out after about 30 calls a day. The signature busts use `gpt-image-2.5-sunburst`
+at 1024 x 1024, painted with their own background (no key colour, no matte): `/pilot-creator`. Round 2 of the busts
+(2026-11-11) was 70 paintings for 50 pilots. A bust brief never names the game, the studio, the world or a place,
+a crew or a faction in it, and never asks for an emblem by name (LESSONS 44, 45); the full-body brief (`brief.py`)
+names the pilot's callsign and founding faction.
 
 The claude.ai Figma connector exposes `generate_image` (a text prompt into a Design file; models
 `gpt-image-2.5-flare` (the default; round 1), `gpt-image-2.5-sunburst`, `gemini-3.1-flash-image`,
@@ -20,12 +24,13 @@ paintings a round will make before making them, and name the file.
   2026-11-07 because the game's art belongs with the studio). `whoami` first; `create_session` on the file;
   `generate_image(prompt, fileKey, width 1024, height 1280, model)`; every painting lands as a frame in the file,
   so the file is also the round's gallery.
-- **Capturing the painting in a cloud session**: the result's `image.url` is on `www.figma.com`, which the cloud
-  environment's network policy refuses (`curl` gets 403 from the proxy; LESSONS 4). Call `get_screenshot` on the
-  returned `nodeId` with `enableBase64Response: true`, `maxDimension: 1280`, `contentsOnly: true`: the harness
-  saves the inline PNG under the session's `tool-results/` folder as `mcp-Figma-blob-<...>.png` at the full
-  1024 x 1280; copy it to `Docs/Pilots/art/sources/<name>.png`. (The thumbnail the generate call itself returns is
-  a 205 x 256 JPEG: never use it.) On a desktop session with the host allowed, `curl -f -L -o` the URL instead.
+- **Capturing the painting**: `curl -f -L -o Docs/Pilots/art/sources/<name>.png <image.url>` (a bust:
+  `creator.py capture`). The thumbnail the generate call itself returns is a 205 x 256 JPEG: never use it. Until
+  2026-11-10 the cloud environment's network policy refused `www.figma.com` (`curl` got 403 from the proxy;
+  LESSONS 4), and round 1 captured with `get_screenshot` on the returned `nodeId` (`enableBase64Response: true`,
+  `maxDimension: 1280`, `contentsOnly: true`; the harness saved the inline PNG under the session's
+  `tool-results/` folder at the full 1024 x 1280). That route still works where the host is not allowed, within
+  the Collab seat's limit of about 30 reads a day.
 - **What the models get right from the brief** (round 1, 6 paintings): the species, the lent feature, the faction
   gear, the exact accent hex as trim and seam lights, the callsign mark, a flat key with a 0.005 OKLab spread, the
   framing. **What they get wrong**: a dark animal in dark gear sinks (LESSONS 2); a prop in the hand sometimes
@@ -78,6 +83,12 @@ Readers never see a file name that could leak the species (hence p01...), never 
 the spec. The grader's "close relative" list keeps everyday words honest (yak: bull or ox; ocelot: leopard or
 spotted cat; moose: elk; crane: stork or heron; ibis: flamingo or curlew; mantis: grasshopper; orangutan: ape;
 chameleon: lizard; hedgehog: porcupine). Results and what they changed: LESSONS.md, round 2.
+
+**The busts' blind read (2026-11-11) is the same test with the grader as a script**, so two rounds can be
+compared: `Tools/Build/pilot_art/blind.py prep` shuffles the busts into a scratch folder (the key stays outside
+it) and cuts the 64 px icon sheets, `.claude/skills/pilot-creator/references/blind_read.js` is the readers
+(one for every ten portraits, two on the icons, told nothing), and `blind.py grade` scores what they named at
+two levels: the species, and its kind by the everyday-word list above. `/pilot-creator` section 4.
 
 ## 5. What a painting without the kit gets wrong (why the earlier attempt read as terrible)
 

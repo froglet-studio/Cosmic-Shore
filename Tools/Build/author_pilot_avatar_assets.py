@@ -5,7 +5,9 @@ Garrett, 2026-11-08: "update the avatar choices to reflect all the pilots"; 2026
 pilots as avatars". The catalog is the 18 callsign pilots, then the 32 painted pilots (Docs/Pilots/PORTRAITS.md §2,
 the old 40-pilot roster's art). This script OWNS:
 
-  Assets/_Graphics/Profile/Pilots/Avatar_<NAME>.png        128x128 RGBA, head and shoulders on a Deep Sea glow
+  Assets/_Graphics/Profile/Pilots/Avatar_<NAME>.png        256x256 RGBA: the pilot's signature bust, cut square
+                                                           (a pilot without a bust: head and shoulders from its
+                                                           portrait on a Deep Sea glow)
   Assets/_Graphics/Profile/Pilots/Avatar_<NAME>.png.meta   the old avatar set's importer, deterministic guid
                                                            md5("CosmicShore/PilotAvatar/<NAME>")
   Assets/_SO_Assets/SO_DefaultProfileIcons.asset               the SO_ProfileIconList every avatar picker and
@@ -13,8 +15,8 @@ the old 40-pilot roster's art). This script OWNS:
 
 THE SOURCE is the pilot's SIGNATURE BUST when it has one (Docs/Pilots/art/busts/<NAME>.jpg, Garrett 2026-11-10:
 "pilot images that really show both clades in the avatar bust"; painted by Tools/Build/pilot_art/creator.py, the
-/pilot-creator skill): a 1024 square already framed for an avatar, so the avatar is the whole frame less a thin
-margin (creator.avatar_cut), resized to SIZE. A pilot without a bust falls back to the old cut from its portrait
+/pilot-creator skill): a 1024 square already framed for an avatar, so the avatar is its top-centre square, 4% off
+each side and 8% off the bottom (creator.avatar_cut), resized to SIZE. A pilot without a bust falls back to the old cut from its portrait
 (wired.json's 220x280 sprite for a callsign, the painted PNG otherwise): the square starts just above the top of the
 silhouette and centres on the head (the median column of the opaque pixels in its upper half).
 

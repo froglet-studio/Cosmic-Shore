@@ -17,10 +17,4 @@ PORTRAIT = dict(
     crop=None,
     exempt=(),
     before=None,
-    bust=dict(                               # the signature bust (bust.py): the human tells as painted
-        hair='a short swept-back undercut of dark human hair',
-        iris='amber-brown',
-        hand='raised to grip the lapel of the jacket',
-        expression='a knowing, daring half-smile',
-    ),
 )

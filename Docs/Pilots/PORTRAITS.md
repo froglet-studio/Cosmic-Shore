@@ -124,20 +124,85 @@ against the spec); its results are in LESSONS, round 2.
 Garrett, 2026-11-10: "can you get us pilot images that really show both clades in the avatar bust ... when people see
 it they know it is cosmic shore because only we have triple hybrid people". The avatars had been cut from the
 full-body portraits, where the second animal lends a tail or wings, so the crop showed one animal. The fix is a new
-picture made for the crop: a **signature bust** (`Tools/Build/pilot_art/bust.py`), where the first animal owns the
-FACE, the second owns the CROWN and a heritage MARK across the nape and one cheek, and the human owns the eyes, the
-hair and one hand, on the house look (navy plate, domain-colour halo, rim light and iris ring, crystal motes).
-Six samples got "these are definitely improvements"; then all 50 avatar pilots were painted.
+picture made for the crop: a **signature bust** (`Tools/Build/pilot_art/bust.py`).
+
+**Round 1 (2026-11-10)** gave the first animal the face, the second the crown and a mark across the nape and one
+cheek, and the human the eyes, the hair and one hand, on one navy plate with a domain-colour halo. Six samples got
+"these are definitely improvements"; then all 50 avatar pilots were painted.
+
+**Round 2 (2026-11-11) is what the avatars show.** Garrett: "a good step forward, but the backgrounds need much
+more variance. they don't all need a hand ... any creature that already has a hand or tentacle like a frog,
+primate, or octopus it doesn't need a hand. the human side is the least important to express when it is wearing
+clothes". All 50 were repainted:
+
+- the **first animal** owns the face and skull, and its own eyes where the eye is its tell;
+- the **second animal** owns the crown and everything behind the face (the back of the head, the nape, the throat
+  and the neck), plus one more piece of its body in the frame or the limb people know it by;
+- the **human** is the bearing, the clothes (three outfits per faction type, open at the throat) and the gaze. Of
+  the 50, 10 have human hair, 12 show their animal's own limb, 3 a gloved hand and 35 no hand at all;
+- every pilot stands in a **different place** (52 in `BACKDROPS`; 20 dark, 16 mid and 14 light among the 50), and
+  the set wears 37 of the 48 outfits in 8 poses and 14 moods. What makes them one set: the framing, the painterly
+  finish, the faction's domain colour as trim, the rim light, the thin glowing ring around each eye and the
+  crystal motes.
+
+**It is measured: the blind read** (`Tools/Build/pilot_art/blind.py`, `/pilot-creator` section 4). The busts are
+shuffled and unnamed, read by seven readers who are told nothing, and graded by script against the cast. A name
+counts as the animal when it is the animal or a name everyday speech does not tell apart from it (crow for a
+raven, rabbit for a hare), and as its kind when it is a relative people do tell apart, a look-alike or the
+everyday word for its family (a fox for a jackal, a stork for an egret, a lizard for a gecko). "Some bird" or "a
+fish" names no kind and counts for nothing. One read is one sample, so each round was read twice by different
+readers, and both rounds are graded by the same script.
+
+| What the readers named | Round 1, two reads | Round 2, two reads |
+|---|---|---|
+| Both animals, full size (sure or likely) | 26 and 27 of 50 | 44 and 47 of 50 |
+| Both animals' kind, full size (any confidence) | 42 and 42 | 48 and 50 |
+| The second animal, full size (sure or likely) | 29 and 28 | 45 and 47 |
+| Both animals in the 64 px icon, either reader | 10 and 12 | 23 and 29 |
+| A human hand in the frame | 50 and 49 | 3 and 3 |
+| Human hair | 50 and 50 | 11 and 9 (10 are cast) |
+
+Round 2's two reads are of the same 50 pictures, each in its own shuffle. Two of those pictures were replaced
+afterwards for emblems (Slingshot and Spare05, below). A check read of the two new ones, beside three unchanged
+busts that read at full size as they had, named Spare05's hare and ram at both sizes. Slingshot's mantis shrimp,
+"likely" in both reads of the old picture, was a guess behind a likely "lobster" in the new one, so the headline
+row of the finished set may stand one lower than the table (its icon was a flamingo with peacock feathers before
+and after). An earlier full read gave 45, 49, 46 and 25; four pictures were replaced after
+it for flaws a reader does not grade: Longshift's paw had eight claws, and Damsel, BANDIT and Shrapnel carried
+emblems nobody asked for (an armband with a ring and a cross, a hand on a banner). The grader was reviewed twice,
+and each of its rules was then broken on purpose once: its self-test noticed all 244.
+
+**The emblem sweep** (`/pilot-creator` section 4.5) is the other check: readers who are told nothing look at each
+bust at full size and in enlarged tiles and list every drawn sign and what it resembles. Every one of the 50 was
+read once. In the finished set the readers list 88 devices, 61 of them with something they resemble, and no legible
+lettering; ten busts carry none. Nearly all are a callsign's own mark worn as a small object (ANVIL's anvil pin,
+GALLEON's helm brooch, SUNDIAL's sundial brooch), a compass star, or scenery. The sweep found two that the eye had
+passed, and both were repainted: Slingshot's sash carried a gold laurel wreath on black, which is a clothing
+brand's mark, and Spare05's treaty hall hung a winged sword, a sun and a star on banners the brief had called
+plain. A second reading found the new Slingshot clean, as it had the new BANDIT and Shrapnel. Spare05's new hall
+has no banner in its brief and still hangs two small ones at the frame's edges, each with a gold tree: scenery,
+and kept (LESSONS 44, 52).
 
 - **The skill is `/pilot-creator`** (`.claude/skills/pilot-creator/SKILL.md`); the tool is
-  `Tools/Build/pilot_art/creator.py`, which also rolls a player's unique pilot exactly as `PilotGenerator` mints it.
+  `Tools/Build/pilot_art/creator.py`, which also rolls a player's unique pilot exactly as `PilotGenerator` mints it
+  and rolls that pilot's look (place, outfit, pose, mood, hair, limb) from its name.
 - **The busts**: `Docs/Pilots/art/busts/<WORD>.jpg`, 1024 square, 50 of them (18 callsign pilots, 32 legacy
-  pilots now cast as triple hybrids in `creator.LEGACY`, names for the eight spares in `LEGACY_NAMES`).
-- **The avatars**: `author_pilot_avatar_assets.py` now cuts each avatar from its bust at 256 px (was 128 from the
+  pilots cast as triple hybrids in `creator.LEGACY`, names for the eight spares in `LEGACY_NAMES`). What each was
+  painted with is frozen in `creator.CAST`, and the brief it was painted from is `busts/briefs/<WORD>.txt`.
+- **The avatars**: `author_pilot_avatar_assets.py` cuts each avatar from its bust at 256 px (was 128 from the
   portrait); ids and guids unchanged, so saved profiles keep their face.
 - **Painter**: Figma `generate_image`, `gpt-image-2.5-sunburst`, captured by curl (`www.figma.com` was added to the
-  Default environment's allow-list, Garrett 2026-11-10). About 60 paintings in all (six samples, 50, two repaints).
-- **Weak ones** (LESSONS, signature busts): MANGER's platypus barely shows, Comet reads mostly human with clownfish
-  colouring, Wyvendo's jackal is subtle. Each is one repaint away once Garrett names the ones he wants redone.
+  Default environment's allow-list, Garrett 2026-11-10). Round 1 was about 60 paintings (six samples, 50, two
+  repaints); round 2 was 70 (50, and 20 repaints of 16 pilots).
+- **What still misses** (LESSONS 43 and 50): ZODIAC's heron is a secretary bird or a guess after three paintings
+  (a heron without its bill); TALON's jackal is a fox in every read and Scales's egret a stork in most; Tomahawk's
+  hawk is a turkey to two readers of three (a fan of banded tail feathers; a hawk's other tells are its bill and
+  its talons, so talons in the frame are the fix to try) and Shrapnel's newt a lizard to one of two. Slingshot's
+  repainted mantis shrimp was a lobster first to its one reader (its clubs came back with a pincer's hook).
+  BANDIT's octopus face reads as a mind flayer and MANGER's ibis wears
+  a second bill. At 64 px about half the set shows one animal: a coat on the neck does not survive that size, and
+  no icon reader named the second animal of FLUME, Longshift, MANGER, Shrapnel, Strider, WINGMAN or Tender, whose
+  narwhal reads at full size and is only a parrot in the icon (LESSONS 48).
 - **Not yet**: per-player busts painted on recruit (decision 2 in section 6), and the hand test of the 256 px
-  avatars in the profile window and avatar picker (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+  avatars in the profile window and avatar picker (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Pilot avatars are
+  cut from the signature busts at 256 px").

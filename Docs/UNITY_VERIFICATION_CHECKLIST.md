@@ -22547,3 +22547,16 @@ rail and are always free).
    a view that paints only when its data changes. Note the screen and object.
 6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
 
+## 🔴 Pilot avatars are cut from the signature busts at 256 px (2026-11-11, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/signature-pilot-busts` (PR #1894); `Docs/Pilots/PORTRAITS.md` section 7. No C# changed, so no reference
+compile: the 50 `Assets/_Graphics/Profile/Pilots/Avatar_<WORD>.png` were re-cut from the busts in
+`Docs/Pilots/art/busts/` at 256 px (they were 128 px, cut from the full-body portraits). Every id, guid and `.meta` and
+`SO_DefaultProfileIcons.asset` are unchanged; `author_pilot_avatar_assets.py --check` passes. Affects Shombith's profile
+window and avatar picker.
+
+1. **Profile > Change avatar.** All 50 avatars show, each a bust in its own place (no navy plate, no white or missing
+   sprite), and each reads at the picker's tile size.
+2. **A saved profile keeps its avatar**: the same id shows the same pilot, now as a bust.
+3. **The small sizes**: the friends drawer, a party seat, the scoreboard and the HUD's AI seats. Look for a hard edge
+   or a soft, blurry picture where the 256 px sprite is scaled down, and note the screen.

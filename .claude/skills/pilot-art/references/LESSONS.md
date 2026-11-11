@@ -144,3 +144,112 @@ Garrett: pilot images that "really show both clades in the avatar bust". 50 bust
 32. **Capture by curl, not `get_screenshot`.** The Collab seat's read limit runs out after about 30 calls a day;
     `www.figma.com` is now on the Default environment's allow-list, so `creator.py capture` downloads `image.url`.
     Capture each batch of five before painting the next (the asset URLs last 7 days).
+
+## 2026-11-11 - signature busts, round 2: places, almost no hands, and the blind read
+
+Garrett on round 1: "a good step forward, but the backgrounds need much more variance. they don't all need a hand
+... any creature that already has a hand or tentacle like a frog, primate, or octopus it doesn't need a hand. the
+human side is the least important to express when it is wearing clothes". All 50 were repainted: 70 paintings, 20 of
+them repaints of 16 pilots. The blind read (`Tools/Build/pilot_art/blind.py`, `/pilot-creator` section 4), taken
+twice for each round, named both animals in 26 and 27 of 50 before and in 44 and 47 after, and in 10 and 12, then
+23 and 29, of the 64 px icons.
+
+33. **Have the set read blind before calling it good.** Round 1 was passed by eye, by someone who knew each
+    pilot's animals. Seven readers who were told nothing named both in 26 of 50, the second animal in 29, and
+    found a human hand and human hair in all 50. Grade by script, too: a hand count of the same reads said 27,
+    and 15 at icon size, where the script says 26 and 10.
+34. **The second animal needs ground, not a patch.** A crown and a mark on one cheek was named in 29 and 28 of 50.
+    The crown, the whole back of the head, the nape, the throat and the neck, plus one more piece of its body in
+    the frame (a tail, wings, a shell rim, its claw) is named in 45 and 47.
+35. **The clothes must leave that ground open.** Every outfit ends "the collar sits low and open so the
+    <animal>'s throat and neck show above it". A high collar or a hood hides the second animal.
+36. **The human is the clothes, the bearing and the gaze.** The hand was round 1's commonest painting flaw and
+    said nothing the outfit does not. Now 3 of 50 keep one, gloved, and 12 show their animal's own limb instead (a
+    lobster's claw, an otter's paw, a sloth's claws), which is a second tell. Human hair never over a crown that
+    covers the scalp (there it shows only below the crown: 4 of the 10) and never beside an animal's own mane:
+    10 of 50.
+37. **A crown is what grows from the head, never a hood.** Jugger's eagle "hood of head feathers" and brow ridge
+    made the orca's head a bird's. The face animal keeps its skull; the crown animal starts behind it.
+38. **A face tell that is not on the face has to be said.** A snail without its stalk eyes was a blue alien
+    (Astrofoil), and an oryx with short horns was a goat (Flux: "two very long slender ringed horns ... each as long
+    as the head").
+39. **Two animals of one texture merge unless the second brings a tell the first cannot have.** A hedgehog's
+    spines on a horned lizard read as one spiny lizard until the hedgehog brought its furry ears (Bushy, `EARS_TOO`).
+40. **One pair of ears, and the brief says whose.** `KEEPS` (the face's ears are its tell), `FACE_EARS` (the
+    face's ears show when the crown brings none), `EARS_TOO`, and "the only ears on the head". An opossum under a
+    lynx crown was once told both things, and a cat and a badger were painted with no ears at all.
+41. **A tail curled over the shoulder is a squirrel's.** TALON's jackal read as a red squirrel twice. A dog's tail
+    is "held up straight behind one shoulder like a fox's brush, not curled".
+42. **Look-alikes are decided by colour and by the one shape the other lacks.** Brown overlapping plates are a
+    pangolin; a grey mosaic cap and narrow grey hoops are an armadillo (RAMPART). Short curved horns on a dark
+    shaggy head are a bison or a wildebeest; long slender horns sweeping wide over long straight hair are a yak
+    (ANVIL, Spare03). A white blaze on a black face is a skunk; a white cap split by two black stripes, with the
+    digging claws in frame, is a badger (Longshift).
+43. **A bird whose tell is its bill is a weak second animal.** The face is the first animal's, so a heron arrives
+    as a long neck, grey wings and head plumes. ZODIAC's was a secretary bird in two reads (a spray of long black
+    plumes); with two short plumes and the white crown it is "some bird" and its neck "a stoat". Three paintings,
+    still not a heron: a limit, and the pair to avoid when casting. Tomahawk's hawk is the same case: streaked
+    feathers and a fan of banded tail feathers are a turkey to two readers of three. A raptor's other tell is its
+    talons, so talons in the frame (`LIMB_TELL`) are the fix to try.
+44. **A word can summon an emblem, and two words can summon a worse one.** "A medic's tabard" was painted with a
+    red cross, which is a protected emblem. "A bright armband" was painted as a band with a disc and a star on it.
+    "Raised fists in far silhouette" came back as fist emblems on banners, and "murals of waves and open hands" as
+    a yellow hand on a banner and a hand print on the poncho (Shrapnel). BANDIT's "bandana knotted around one upper
+    arm" beside its "crosshair-marked eyepiece" was painted as a red armband carrying a black ring and cross: each
+    phrase was harmless, the pair was not, and the picture passed two looks and a blind read before a zoom caught
+    it. Outfits describe colours and cut, places describe lights and plain shapes, a callsign's mark is a small
+    object (a brooch, a pendant) and never a sign on cloth, nothing is tied on an arm, and a band of cloth on a
+    sleeve says plain. "Plain" does not keep a carrier plain, though: "a champion's ribbon sash" was painted with
+    a gold laurel wreath on black, which is a clothing brand's mark (Slingshot), and "three plain hanging banners"
+    in a treaty hall with a winged sword, a sun and a star (Spare05). A sash is now "a broad plain satin sash" and
+    a hall has curtains. Even so, the hall came back with two small banners at its edges, each carrying the tree
+    the painter had put on the pilot's "signet brooch": a signet is a crest, and a hall of state hangs it up. The
+    self-test refuses the words (`bust.emblem_word`); the emblem sweep (`/pilot-creator` section 4.5) reads the
+    finished pictures, because a word list only knows the words that have already failed.
+45. **The brief goes to an outside painter, so it describes a picture and nothing else.** It never names the game,
+    the studio, the world, or a place, a crew or a faction in it (a backdrop is "thick dark water the colour of old
+    wine", never the place's name), and it carries the pilot's own rolled name, never a player's. The self-test
+    reads the world's names from the game (`bust.world_names`) and refuses them in every table line.
+46. **Fifty places need a table, not adjectives.** `BACKDROPS` gives each place its light, its value (20 dark, 16
+    mid and 14 light among the 50) and the domain colours it must not sit beside, so the accent is never
+    swallowed; a home ground goes to its faction type first and no two catalog pilots share a place. The place
+    stays soft and lower in contrast than the head, and the rim light keeps the silhouette off it.
+47. **Record what each bust was painted from.** `capture` writes `briefs/<WORD>.txt`, and `stale` lists the busts
+    today's tables would paint differently. Capture before the next table edit, or the record is of a brief that
+    painted nothing.
+48. **At 64 px only the silhouette and big colour blocks survive.** Both animals are named in 23 and 29 of 50
+    icons (10 and 12 before), and by all four icon readers of the two reads in 16. What survives changes the
+    outline or brings its own block of colour: antlers, a fin, a claw in the frame, a jellyfish bell, a peacock's
+    fan, a tiger's stripes. A coat on the neck does not: no icon reader named FLUME's eel, Shrapnel's newt,
+    Strider's crocodile, MANGER's platypus, Longshift's badger, WINGMAN's pelican or Tender's narwhal, whose tusk
+    at the jaw is a hummingbird's bill at that size.
+49. **One reader is not a verdict, and neither is one look.** With the pictures unchanged, two or three pilots
+    flip between reads: RAMPART's armadillo was an armadillo, then a pangolin. Each round read twice by different
+    readers gave 26 and 27, then 44 and 47, of 50 at full size, and 10 and 12, then 23 and 29, at icon size: quote
+    both reads, and trust a difference only when it is much larger than that. Two readers counted six fingers on
+    Krush's glove, which has five; and nobody counted the eight claws on Longshift's first paw until a zoom did
+    ("five toes and one long pale digging claw on each toe" painted five). Zoom into every hand, paw and claw,
+    and repaint what two reads agree on or what the picture confirms.
+50. **Limits that held.** An octopus face is a mind flayer to anyone who knows one (BANDIT); a hare with horns is
+    a jackalope (Spare05, Spare07); a bull-headed person in a coat is a minotaur at first glance (ANVIL, Spare03);
+    an ibis with a platypus's bill has two bills (MANGER). A stranger says fox for a jackal, stork for an egret
+    and bearded dragon for a horned lizard: the grader counts those as the animal's kind (its clade level), and
+    crow for a raven, rabbit for a hare or heron for an egret as the animal, since everyday speech does not tell
+    those apart. "Some bird" counts for nothing.
+51. **The grader is part of the measurement, so test it like code.** Two reviewers who tried to break `blind.py`
+    found 15 ways a plain answer was misgraded ("fox? no, a dog" counted as a fox; "monarchs" as no butterfly; a
+    hedge between a pilot's own two animals counted for both). Each is now a rule with a read in the self-test,
+    and each rule was then broken on purpose once: the self-test noticed all 244. Regrading every saved read with
+    the fixed grader moved no row by more than one (round 1's kind row 41 to 42, its icon row 9 to 10; round 2's
+    headline 44 to 45 on the read of the time), and each move is a named answer: rabbit for a hare, lizard for a
+    newt. Keep every read's `result.json`, so a grader fix can be applied to all of them.
+52. **Have strangers look for signs, and keep them cheap.** The eye that wrote the brief looks for what it asked
+    for: the laurel on Slingshot's sash and the crests on Spare05's banners passed every look, the blind reads and
+    a review, and readers who were told nothing listed both at once (`/pilot-creator` section 4.5). In the
+    finished 50 they list 88 devices, 61 with something they resemble; reading those 61 lines and looking at each
+    bust is the work, and most are a pilot's own mark or scenery. The first design gave each reader the busts and
+    let it cut its own enlargements at full effort: 35 minutes and 0.8M tokens a reader, and eight at once stopped
+    the session at its usage limit for eight hours. Cut the tiles first (`creator.py tiles`), let the readers
+    only open pictures, at medium effort: 29 busts, three readers, under three minutes, 480k tokens. And a
+    repaint is a new picture: read it again. Slingshot's came back without the laurel and with clubs that have a
+    pincer's hook, so its one reader said lobster before mantis shrimp.
