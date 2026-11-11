@@ -22120,7 +22120,8 @@ are all missing `.asset` files the sparse checkout left out. Design record: `MAN
 9. **HUD:** the Space card's new `energyFill` / `energyCountText` are unwired on the prefab (the icon pass wires them).
 10. **Follow-up tuning (branch `claude/manta-tuning`, compiled with `unity_refcompile`, NOT RUN IN EDITOR):** the Manta
     holds one bomb of energy at a time (skim, plant, skim, plant); the fuse no longer changes with Charge; a Charge 10
-    Manta's bloom knocks twice the petals out of a rival that a Charge 0 one does; the trail is thin and even like the
+    Manta's bloom knocks twice the petals out of a rival that a Charge 0 one does *(both superseded 2026-11-10: Charge
+    is the fuse again and the bloom's petals are flat, see "Manta: Charge is the fuse" below)*; the trail is thin and even like the
     Squirrel's, the same at every Time level and through hard turns.
     A Time 10 Manta cruises about 1.5x as fast as a Time 0 one (270 against 180 u/s at full throttle).
 
@@ -22686,3 +22687,56 @@ packages the sandbox cannot fetch). The stills come from a numpy model of the bl
 6. **The five colour-blind sets**: Gold's HUD colour no longer reads as Fire, and the HUD colours are further apart for
    each set's own viewer (`colour_sets.py --report`, rule 5). A colour-blind player's look at their set is the real test.
 7. **The Nacre entry above (2026-11-08)** names its old pigments in step 1; they changed here.
+
+## 🔴 Manta: Charge is the fuse, not the bloom's petals (2026-11-10, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/cool-dijkstra-4puf92`. Design record: `MANTA_STING_KABLOOM.md` §0a. Compile and gate status are in the
+commit message. Also carries the quoted Yastri text that makes `Manta.asset` parse again (E-251530c87b; the same two
+lines as `claude/fix-manta-ability-map-yaml`, plus the generator that kept writing the broken form).
+
+1. **Run `MantaFuseChargeTests`** (EditMode): 8 tests, all green.
+2. **Open `Resources/ElementalAbilityMaps/Manta.asset`** in the Inspector: four entries, no parse error in the Console
+   (before this branch Unity could not read the file). The Sting entry's text names the fuse.
+3. **Fly the Manta in the Toybox at Charge 0.** Skim, then plant on a rival AI: the Charge card's fuse gauge starts
+   full and the fuse board reads about 20 s.
+4. **Raise Charge to 10** (collect Charge crystals, or the dev level tool) and plant again: the board now reads about
+   30 s, and the gauge drains at the slower rate. Every bomb already planted waits for the new 30 s.
+5. **Let a fuse run out next to a rival at Charge 10, then at Charge 0.** The rival loses the same petals each time
+   (about one of Mass and one of Space per bloom): Charge no longer changes the bite.
+6. **Bloomrush I1 at Charge 0**: the fuse reads 30 s (the mode's resting length); at Charge 10 it reads 45 s.
+7. **Tuning, if wanted**: `MantaStingConfig.asset` `fuseSeconds` (resting length) and `fuseScale` (Max = the multiplier
+   at Charge 10, Floor = the least it can fall to), through `Tools/Build/author_manta_kit_assets.py` (it writes the
+   whole file; `--check` is its gate).
+
+## 🔴 Squirrel: Charge is the joust's speed, and the Charge card is a speed gauge (2026-11-11, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/cool-dijkstra-4puf92`. Design record: `SQUIRREL_ELEMENT_RECUT.md`, "Charge is the joust's SPEED".
+
+1. **Run `SquirrelJoustSpeedTests`** (EditMode): 9 tests, all green.
+2. **Fly the Squirrel in the Toybox at Charge 0.** The Charge card's plate is a gauge that rises with speed: about a
+   fifth full at cruise (60 of 300 u/s). Two short dim ticks sit in from its slanted edges at 30% (90 u/s).
+3. **Skim to boost past the ticks.** The ticks vanish and a dark gap cuts across the fill at the same height. Slow
+   down again: the ticks come back.
+4. **Joust a rival AI below the mark, then above it.** Below: nothing happens (no steal, no score, no joust point, no
+   impact blast, no haptic). Above it, while faster than the rival: the usual joust - the two hulls flash lime, the
+   rival loses about 0.8 petal per element (flat at any Charge), the blast goes off, the score counts.
+4a. **Joust mode (Squirrels only), I1**: the joust count rises only for jousts flown above the mark. Note whether the AI
+   Squirrels still joust often enough for the round to end in its usual time.
+5. **Joust a creature's heart below and above the mark.** Below: it bounces off. Above: it withers and the heart is
+   yours. At Charge 5 (Shepherd), an own-domain creature is nourished only above the mark too.
+6. **Raise Charge to 10.** The mark drops to 15% (45 u/s): a cruising Squirrel now jousts.
+7. **Two editors (MPPM):** a friendly joust below the mark buffs nobody on either screen.
+8. **Tuning:** `SquirrelJoustSpeed.asset` `minimumSpeed` (Min = at rest, Max = at Charge 10). The gauge's full scale is
+   the hull's cruise × its skim-boost ceiling, read live.
+
+## 🔴 Scarab: Charge is the shove plate's cooldown (2026-11-11, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/cool-dijkstra-4puf92`. Design record: `SCARAB.md`, the RECUT note's "Charge re-cut (2026-11-11)".
+
+1. **Run `ScarabShoveCooldownTests`** (EditMode): 4 tests, all green.
+2. **Fly the Scarab at Charge 0** and dash with a full right-stick flick: the plate fires, and the Charge card's sweep
+   takes about 2.5 s to refill. A second flick inside it dashes without a plate.
+3. **Raise Charge to 10**: the sweep refills in about 1.25 s. A flick fired just before the change keeps its old wait;
+   the next one uses the new one.
+4. **Shove a rival at Charge 10 and at Charge 0**: the same petals (about 1.2 per element) come loose either way.
+5. **Undertow**: plays as before, with more plates per minute from a charged Scarab.

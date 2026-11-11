@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Shove
-    AbilityDescription: 'The punch that rides the dash: push the RIGHT THUMBSTICK to the perimeter and the dash throws a swept PLATE - a broad disc lying flat across your course, starting on the hull and sweeping along the dash - shredding prisms, killing fauna and elementally debuffing any opposing pilot it engulfs. Everything it claims is thrown the way the punch travelled. Charge scales how hard that debuff bites: x1 at rest -> x2.5 at level 10 (magnitudeAtFullCharge on ScarabShoveDebuffByExplosionEffect, read off the shover''s replicated Charge level). The cooldown is a flat 2.5 s, and the dash itself is free and never paced. No input-event binding: the juke polls the right thumbstick directly (ScarabJukeController).'
+    AbilityDescription: 'The punch that rides the dash: push the RIGHT THUMBSTICK to the perimeter and the dash throws a swept PLATE - a broad disc lying flat across your course, starting on the hull and sweeping along the dash - shredding prisms, killing fauna and elementally debuffing any opposing pilot it engulfs. Everything it claims is thrown the way the punch travelled. Charge sets how often the plate fires: its cooldown is 2.5 s at rest down to 1.25 s at level 10 (ScarabCavitationBlast.cooldownSeconds x cooldownScale, read off the shover''s replicated Charge level when the plate fires), and the debuff it bites with is the flat priced one. The dash itself is free and never paced. No input-event binding: the juke polls the right thumbstick directly (ScarabJukeController).'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

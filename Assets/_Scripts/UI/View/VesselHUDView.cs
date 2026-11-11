@@ -565,6 +565,29 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Points an ELEMENT's card at a meter built at runtime (the Squirrel's joust speed), adding the entry when
+        /// the vessel authored none. The gauge twin of <see cref="BindGeneratedAbilityIcon"/>, called from
+        /// <see cref="EnsureGeneratedAbilityIcons"/> so the lockup adopts it like an authored one. An authored
+        /// gauge always wins.
+        /// </summary>
+        protected void BindGeneratedAbilityGauge(Element element, Image gauge)
+        {
+            if (!gauge) return;
+
+            for (int i = 0; i < abilityIcons.Count; i++)
+            {
+                if (abilityIcons[i].element != element) continue;
+                if (abilityIcons[i].gauge) return;         // an authored meter wins
+                var binding = abilityIcons[i];
+                binding.gauge = gauge;
+                abilityIcons[i] = binding;
+                return;
+            }
+
+            abilityIcons.Add(new AbilityIconBinding { element = element, gauge = gauge });
+        }
+
+        /// <summary>
         /// A non-elemental card's icon KERNING, and the rest scale that goes with it. No upgrade
         /// term - see <see cref="SetCoreAbilityCooldown"/>.
         /// </summary>
