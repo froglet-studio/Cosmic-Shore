@@ -18,6 +18,40 @@
     "9:16": [432, 0, 918, 864]
    }
   },
+  "ZODIAC": {
+   "name": "Ivelia Starreach",
+   "file": "Docs/Pilots/art/scenes/ZODIAC.jpg",
+   "size": [1536, 864],
+   "close": [650, 0, 990, 340],
+   "side": "centre",
+   "treatment": "Travel reportage on slow slide film, dusk in a chart house",
+   "source": "history: \"was apprenticed to a cartographer\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [244, 0, 1396, 864],
+    "1:1": [388, 0, 1252, 864],
+    "4:5": [474, 0, 1165, 864],
+    "9:16": [577, 0, 1063, 864]
+   },
+   "chart": "hologram of the waters"
+  },
+  "NEEDLE": {
+   "name": "Ilia Silvergate",
+   "file": "Docs/Pilots/art/scenes/NEEDLE.jpg",
+   "size": [1536, 864],
+   "close": [320, 0, 775, 455],
+   "side": "left",
+   "treatment": "Architectural interior with a shift lens, verticals true",
+   "source": "profession: an aristocrat whose house keeps a harbour's sea gate stands the last watch of the night",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [116, 0, 980, 864],
+    "4:5": [202, 0, 893, 864],
+    "9:16": [304, 0, 790, 864]
+   },
+   "chart": "panel of the waters"
+  },
   "GALLEON": {
    "name": "Haradek Anchorkeel",
    "file": "Docs/Pilots/art/scenes/GALLEON.jpg",
@@ -50,6 +84,23 @@
     "9:16": [317, 0, 803, 864]
    }
   },
+  "Longshift": {
+   "name": "Longshift",
+   "file": "Docs/Pilots/art/scenes/Longshift.jpg",
+   "size": [1536, 864],
+   "close": [870, 0, 1250, 380],
+   "side": "right",
+   "treatment": "High-key expedition frame, pale on pale",
+   "source": "want: \"to see the edge of the map\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [628, 0, 1492, 864],
+    "4:5": [714, 0, 1405, 864],
+    "9:16": [817, 0, 1303, 864]
+   },
+   "chart": "panel of the galaxy"
+  },
   "Tenacious": {
    "name": "Tenacious",
    "file": "Docs/Pilots/art/scenes/Tenacious.jpg",
@@ -65,6 +116,23 @@
     "4:5": [182, 0, 873, 864],
     "9:16": [284, 0, 770, 864]
    }
+  },
+  "Spare05": {
+   "name": "Halven Frostgate",
+   "file": "Docs/Pilots/art/scenes/Spare05.jpg",
+   "size": [1536, 864],
+   "close": [440, 0, 800, 360],
+   "side": "left",
+   "treatment": "Snow-light interior, large format, very still",
+   "source": "hobby: \"writes letters to a sibling who never writes back\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [44, 0, 1196, 864],
+    "1:1": [188, 0, 1052, 864],
+    "4:5": [274, 0, 965, 864],
+    "9:16": [377, 0, 863, 864]
+   },
+   "chart": "hologram of the galaxy"
   }
  }
 }

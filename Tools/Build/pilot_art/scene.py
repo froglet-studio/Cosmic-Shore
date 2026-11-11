@@ -181,12 +181,81 @@ def place_of(rec):
 # The body below the bust's crop: decided once, here, the same for every picture of a pilot.
 # ---------------------------------------------------------------------------------------------------------------
 BUILD_DEFAULT = "an adult's build, upright and proportioned like a person"
-BUILD = {   # by the face animal; an animal not listed gets BUILD_DEFAULT
+BUILD = {   # by the face animal: the body under the clothes follows the head it carries (BUILD_DEFAULT for a new one)
+    "Armadillo": "short, round-backed and solid, low to the ground",
+    "Axolotl": "small and compact, soft-shouldered and quick",
+    "Badger": "short, broad and low-slung, thick in the neck and heavy in the forearm",
+    "Basilisk": "light, lean and quick, long in the leg, always about to move",
+    "Beetle": "broad, compact and heavy for its height, slow to start and hard to stop",
+    "Bison": "huge in the chest and shoulder, heavy-necked, narrow in the hip",
+    "Black hare": "lean and long-legged, light on the feet, quick to startle",
+    "Booby": "of middle height and plain, a little pigeon-toed, steady",
+    "Capybara": "barrel-bodied and placid, short in the leg, never in a hurry",
+    "Caracal": "slim and light, long in the leg, a jumper's build",
+    "Chameleon": "slim and deliberate, long in the arm, every movement slow and exact",
+    "Cheetah": "tall and whip-lean, deep-chested and narrow-waisted, a sprinter's build",
+    "Clownfish": "small, compact and wiry, a jockey's build",
+    "Coyote": "rangy and loose-limbed, lean from going without",
+    "Crane": "tall and slender, long-necked and long-legged, with a dancer's straight back",
+    "Cuttlefish": "soft-shouldered and fluid, of middle height, never quite still",
+    "Eel": "long, narrow and supple, sloping in the shoulder",
+    "Egret": "tall and very slender, long-necked, with an exact upright carriage",
+    "Fennec": "small and slight, fine-boned, quick and light",
+    "Firefly": "slight and narrow, light on the feet",
+    "Flamingo": "tall and thin, all leg and neck, balanced like a dancer",
+    "Fox": "slight, neat and quick",
+    "Gecko": "small, slim and supple, at ease on any surface",
+    "Hare": "lean and long-legged, light on the feet, quick to startle",
+    "Hedgehog": "small and round-shouldered, a head shorter than most people",
+    "Heron": "tall, thin and stooped a little, long-legged and patient",
+    "Horned lizard": "squat and broad, short-legged and wide across the back",
+    "Hummingbird": "tiny and fine-boned, a head shorter than most people, quick and never still",
+    "Hyena": "heavy in the shoulder and neck, sloping to lean hips",
+    "Ibis": "lean and long-legged, a wader's build",
+    "Jackal": "lean, light and wiry, a trotter's build",
+    "Jellyfish": "slight and soft, of middle height, drifting more than walking",
+    "Kangaroo": "tall and long-legged, strong in the haunch, narrow in the shoulder",
+    "Koi": "smooth and solid, of middle height, calm in every movement",
+    "Lemur": "small, light and long-limbed, a climber's build",
+    "Lobster": "broad and armoured-looking, heavy in the forearm",
+    "Lynx": "lean and spring-legged, a climber's build",
+    "Mandrill": "powerful and compact, heavy in the shoulder and long in the arm",
+    "Mantis": "very tall and thin, long-limbed and narrow-waisted, with a held stillness",
+    "Mole": "short, stout and strong, broad in the hand",
+    "Moose": "very tall and rangy, long-legged and big-shouldered, a little stooped",
+    "Mouse": "small and slight, narrow-shouldered, a head shorter than most people",
+    "Narwhal": "tall, heavy and smooth, deep-chested, with a slow straight carriage",
+    "Newt": "small, slim and soft, cool and unhurried",
+    "Ocelot": "lithe and light on the feet, with a cat's easy balance",
+    "Octopus": "soft-shouldered and fluid, of middle height, never quite still",
+    "Opossum": "small, wiry and sharp-shouldered",
+    "Orangutan": "big and heavy-shouldered, with arms so long the hands hang to the knees",
+    "Orca": "huge and smooth, broad as a doorway, heavy and unhurried",
+    "Oryx": "lean and long-legged, a runner's build, with a straight proud neck",
+    "Ostrich": "very tall, long-necked and long-legged, with powerful thighs",
+    "Otter": "long-bodied and supple, short in the leg, quick as water",
+    "Owl": "short and stout, deep-chested, the head carried high",
+    "Pangolin": "stocky and round-backed, strong in the forearm",
+    "Parrot": "of middle height and compact, quick in the hands, the head often cocked",
+    "Pelican": "big-chested and heavy, short in the leg",
+    "Platypus": "broad and low, thick through the body, with a slow rolling walk",
+    "Puffin": "short and barrel-chested, with a seaman's wide stance",
+    "Raven": "lean, dark and deliberate, of middle height",
+    "Seahorse": "narrow and upright, held very straight",
+    "Shoebill": "tall, gaunt and long-legged, standing very still",
+    "Sloth": "long-armed and slow, hung loosely together",
+    "Snail": "soft and unhurried, of middle height, sloping in the shoulder",
+    "Tapir": "solid and barrel-chested, short in the neck",
+    "Tardigrade": "plump, short-limbed and unbothered",
+    "Tiger": "tall, broad-shouldered and powerful",
+    "Tortoise": "stocky and slow, short in the leg, built to last",
+    "Toucan": "of middle height and sturdy, a little top-heavy under the great bill",
+    "Tree frog": "slight and long-limbed, long in the finger and the shin, folded up when at rest",
     "Walrus": "huge and heavy, barrel-chested and thick-necked, broad as a doorway, a big man's bulk carried upright "
               "and gently",
-    "Mouse": "small and slight, narrow-shouldered, a head shorter than most people",
-    "Tiger": "tall, broad-shouldered and powerful",
-    "Ibis": "lean and long-legged, a wader's build",
+    "Wolf": "tall, rangy and deep-chested, an easy tireless walker",
+    "Yak": "massive and slow, deep-chested and heavy-shouldered, a head taller than most people",
+    "Zebra": "strong and deep-chested, heavy in the neck, straight-backed",
 }
 
 GLOVES = {   # by faction type: the gloves a pilot wears when no animal hand of their own shows
@@ -258,7 +327,8 @@ SCENE_KEYS = ("treatment", "shot", "source", "seen", "doing", "place", "light", 
 SCENE_MORE = ("frame", "side", "carry", "lower", "build", "hands", "swap", "chart", "close")
 SOURCES = ("profession", "hobby", "history", "want")
 SWAPPED = ("face", "coat", "second", "eyes", "hair", "outfit", "motif")   # the bust's lines a swap may correct
-WORD_CAP = 1000   # briefs of 870 to 890 words were painted faithfully; past a thousand a line is one too many
+WORD_CAP = 1000   # briefs of 870 to 890 words were painted faithfully; past a thousand a line is one too many.
+#                   A chart's own sentences (chart_of) are counted apart: they are the same in every record.
 
 
 @functools.lru_cache(maxsize=None)
@@ -352,14 +422,26 @@ def as_seen(idn, swap=()):
     return out
 
 
+POSED = (", the palm toward the viewer", ", curling up from below")   # bust.LIMB's words that pose a bust's one limb
+ARMS = ("Octopus", "Cuttlefish")   # animals whose own limb is an arm with no fingers: it holds by curling round
+
+
 def hands_of(idn):
     """The pilot's two hands, the same in every picture: the hand the avatar shows (an animal's own, or gloves);
-    else the true hand of one of their animals; else the faction type's gloves."""
+    else the true hand of one of their animals; else the faction type's gloves. A bust's limb line poses the one
+    limb the bust shows (POSED); a scene poses its own hands, so those words are left out."""
     a, b, look = idn["a"], idn["b"], idn["look"]
     holds = "Each hand has fingers and a thumb and holds things the way a person's hand does."
 
     def own(x):
-        return (f"Both hands are the {x.lower()}'s own: each is {bust.LIMB[x]}, and the wrist above it wears the "
+        limb = bust.LIMB[x]
+        for posed in POSED:
+            limb = limb.replace(posed, "")
+        if x in ARMS:
+            return (f"Both arms are the {x.lower()}'s own from the elbow down: each sleeve ends in {limb}, in place "
+                    f"of a forearm and a hand. Each arm holds things by curling round them, as surely as a "
+                    f"person's hand does.")
+        return (f"Both hands are the {x.lower()}'s own: each is {limb}, and the wrist above it wears the "
                 f"{x.lower()}'s own coat. {holds}")
     if look.get("limb"):
         m = OWN_LIMB.search(idn["hand"])
@@ -1018,6 +1100,9 @@ def self_test():
     for a in BUILD:
         if a not in bust.FACE:
             errors.append(f"BUILD names {a}, which is not a face animal")
+    for a in bust.FACE:
+        if a not in BUILD:
+            errors.append(f"BUILD has no line for a {a}'s body (a new face animal takes BUILD_DEFAULT until it has one)")
     texts = ([FINISH, FRAMING, BUILD_DEFAULT, CHART_RULE, FINISH_CHART] + list(BUILD.values())
              + list(GLOVES.values()) + list(LOWER.values()) + list(CARRY.values()) + list(CHART_VIEWS.values())
              + list(CHART_KINDS.values()))
@@ -1071,8 +1156,10 @@ def self_test():
             errors.append(f"{w}: the scene brief does not name the pilot")
         if re.search(r"(?:\bthe|'s) portrait\b", text):
             errors.append(f"{w}: the brief points the painter at a portrait it cannot see")
-        if len(text.split()) > WORD_CAP:
-            errors.append(f"{w}: the scene brief is {len(text.split())} words (the cap is {WORD_CAP})")
+        count = len(text.split()) - (len(chart_of(rec["chart"]).split()) if rec.get("chart") else 0)
+        if count > WORD_CAP:
+            errors.append(f"{w}: the scene brief is {count} words"
+                          + (" beside its chart" if rec.get("chart") else "") + f" (the cap is {WORD_CAP})")
         if not os.path.exists(scene_path(w)):
             continue
         from PIL import Image
@@ -1091,8 +1178,9 @@ def self_test():
                     errors.append(f"{w}: the brief it was painted from lacks the pilot's {k} line")
     errors += manifest_errors()
     charts = [w for w, rec in recs.items() if rec.get("chart")]
-    if len(charts) > max(1, int(len(recs) * CHART_MOST + 0.999)):
-        errors.append(f"{len(charts)} of {len(recs)} scenes carry a chart of the sea: a few do, never most "
+    cast = len(creator.catalog())   # of the whole cast, so the few may be written and painted first
+    if len(charts) > max(1, int(cast * CHART_MOST + 0.999)):
+        errors.append(f"{len(charts)} scenes of a cast of {cast} carry a chart of the sea: a few do, never most "
                       f"(CHART_MOST)")
 
     # 4. Negative controls: each gate fires on what it is for.
