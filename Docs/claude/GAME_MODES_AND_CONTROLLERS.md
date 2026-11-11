@@ -824,7 +824,8 @@ special case — a crystal-cashed bloom is authored BIGGER than a fuse fizzle, s
 pays a fraction by construction. The arena is **Rampage's cactus forest referenced verbatim**
 (the Bends precedent — the scene is a donor clone of MinigameBends), with the omni-crystal
 ladder re-cut toward ABUNDANCE (crystals are the detonator: `3p+2 / 2p+1 / p / p−1` by
-intensity) and the mode's own intensity dial being the **FUSE** — 30/25/20/20 s, pushed
+intensity) and the mode's own intensity dial being the **FUSE** — 30/25/20/20 s at rest (the planter's
+Charge scales it, ×1.5 at Charge 10: `MANTA_STING_KABLOOM.md` §0a), pushed
 through the static `MantaBombRules.FuseSecondsOverride` on every peer at countdown end (after
 the config-sync gate) and cleared on despawn. Bombs are LOCAL objects simulated by the
 planter's owner machine; peers see blooms via `MantaBombNetworkRelay` (originator-skip

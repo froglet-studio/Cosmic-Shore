@@ -7,7 +7,7 @@ description: Your approval queue - the changes other people's sessions made to Y
 
 **Why this exists** (Garrett, 2026-11-10): asking for approval before every change to someone else's work was slowing
 everyone down. Now a change goes through unless it **collides with an occupied swim lane** (`/swimlanes`; someone else
-has unmerged work in that vessel or app-shell section right now). Everything else goes through, the session tells
+has unmerged work in that vessel, game, app-shell section or system right now). Everything else goes through, the session tells
 its person whose toes it is on so they talk, and the change lands in the queue of each person whose work it changed.
 This skill is how you read and answer that queue. The rules: `Docs/TEAM.md` rules 3, 12 and 13. The files:
 `Docs/Approvals/README.md`.
@@ -110,6 +110,10 @@ python3 Tools/Build/approvals.py check --me <You>
 python3 Tools/Build/approvals.py add --to <Them> --by <You> --area "<their area, in their words>" \
   --summary "<what changed in it, one sentence>" --why "<why>" --paths <the files of theirs it changed>
 ```
+
+Put every file after ONE `--paths`. It takes a list, and argparse accepts `--path` as its abbreviation, so
+`--path a --path b` files only `b` and says nothing (2026-11-10: an entry lost all but its last path that way).
+Read the entry's `paths` back before you commit it.
 
 Commit the entry with the change, so it lands with it, and keep the "Affects:" line in the commit or PR.
 

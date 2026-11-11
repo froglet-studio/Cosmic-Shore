@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -256,7 +257,7 @@ namespace CosmicShore.Gameplay
             // rectangle behind it: RawImage falls back to a white texture, so a textureless
             // instance is a flat shape in its own colour.
             _backing = MakePetal("Backing", 0f);
-            _backing.color = new Color(0.02f, 0.03f, 0.05f, 0.95f);
+            _backing.color = ColorTrace.Retrace(ColorTrace.Ui, new Color(0.02f, 0.03f, 0.05f, 0.95f));
 
             _pipSurface = MakePetal("Picture", BorderPixels);
             _pipSurface.enabled = false;
