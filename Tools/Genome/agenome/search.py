@@ -1423,9 +1423,11 @@ def main(argv=None):
                     help="random mode: every N generations judge the survivors and the front again on windows they "
                          "have not seen and fold them in (0 = never)")
     ap.add_argument("--audit-offsets", default="24,28",
-                    help="window starts (s) never used for selection on which each generation's best is judged and "
-                         "logged as best_audit (comma list; 'none' = off). Any start renders at its real time "
-                         "(render.py caps the warmup alone at 60 s)")
+                    help="window starts (s) on which each generation's best is judged and logged as best_audit (comma "
+                         "list; 'none' = off). Selection never sees them only if they start at or after the end of "
+                         "the last window it can judge (--window-span + 4 s in random mode, e.g. 44,48 with "
+                         "--window-span 40). Any start renders at its real time (render.py caps the warmup alone "
+                         "at 60 s)")
     ap.add_argument("--stat-w", type=float, default=1.0, help="weight of the fixed statistics in dist")
     ap.add_argument("--lab-w", type=float, default=0.0,
                     help="weight of the fitness lab's element-aware scorer (agenome.labscore; 1.0 = Amoebius' held-out "

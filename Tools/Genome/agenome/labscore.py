@@ -15,13 +15,13 @@ Below about 1.0 the total no longer shows whether the game's elements are there:
 non-blue elements inpainted away (the blue prism walls stay but for their brightest facets) reads below 1.0 in 16 of
 24 held-out windows, and a genome with none of the game's walls, vessels or crystals reads 0.29 (CONTRACT.md (37)).
 So each row also splits every window's lab into its element axes (`lab_elements`: bove and dist, the patch and
-spatial-token axes built to see prisms, beams and rings; spec also has an element-shortfall term, but it reads 0 on
-every genome measured on the contract's windows) and the other three (`lab_other`: spec, crit, mech), each the lab
-computed with the other group at 0, so that lab^2 = elements^2 + other^2 window by window (p = 2), then averaged over
-windows like `lab`. Reference `lab_elements`, means over the 24 held-out windows
+spatial-token axes built to see prisms, beams and rings) and the other three (`lab_other`: spec, crit, mech), each
+the lab computed with the other group at 0, so that lab^2 = elements^2 + other^2 window by window (p = 2), then
+averaged over windows like `lab`. Reference `lab_elements`, means over the 24 held-out windows
 (fitness/checks/labA_best_1111/strip_lab.json): real 0.09 (median 0.01, single windows up to 0.47), bright and
 non-blue elements inpainted away 0.17, the walls inpainted too 0.49. It can show that a genome is short of real
-footage; it cannot prove the elements are there.
+footage; it cannot prove the elements are there. `lab_other` is not blind to the elements either: spec has an
+element-shortfall term, and crit's probe was trained against real footage with its elements inpainted.
 
 The scorer lives in the fitness lab's folder (AGENOME_LAB, default the shared scorer/); it needs the judge's Keras
 stack plus cloudpickle, opencv-python-headless, scikit-image, PyWavelets and scikit-learn, and costs about 1.5 s
@@ -48,8 +48,9 @@ def scorer():
     return _S[0]
 
 
-ELEMENTS = ("bove", "dist")  # the axes built to see the game's elements; spec, crit and mech see mostly sky, sharpness
-# and motion (spec also has an element-shortfall term)
+ELEMENTS = ("bove", "dist")  # the patch and spatial-token axes built to see the game's elements. spec, crit and mech
+# see mostly sky, sharpness and motion, but spec has an element-shortfall term and crit's probe was trained against
+# real footage with its elements inpainted (strip60, strip75) and its median plate (medbg).
 
 
 def _score(frames_list, parts):
