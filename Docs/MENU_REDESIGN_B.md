@@ -6660,7 +6660,7 @@ a turn makes grows the new view out of the small square over the old one (smooth
 double tap stays instant. Not run on a device yet (checklist "Portrait menus", step 8). The nav band has a pose too (Shombith, 2026-11-08: "give the nav band a pose too"): its own rect, across the
 top upright as on PC, so it glides with the rest (`author_menu_portrait.py` SCENE_POSED).
 
-## 155. Rev 84 mockups: a flight certificate and element tiers for the solo vessels (2026-11-10, awaiting a pick and the tier ratings)
+## 155. Rev 84 mockups: a flight certificate and element tiers for the solo vessels (2026-11-10; Shombith picked A + B, built; the tiers await ratings)
 
 **Asked (Shombith, 2026-11-10):** "Okay now we want to do a completion certificate for the vessels in the game and also
 make a tier system based on their specific elemental system. First part the completion, vessels get completion percentage
@@ -6709,3 +6709,17 @@ on B (19 cards).
 `certificate` per solo vessel (computed in the generator from the map, the L5 status and the arcade cards) and a
 `tiers` table typed by a person (a new hand table beside `abilities.json`, each entry naming who rated it and when), the
 vessel page's briefing gains the certificate, and `#fleet` gains the sort and filter controls.
+
+**Picked (Shombith, 2026-11-10):** "A+B it is"; the name ("Flight Certificate", Launch / Fleet / Arena Ready) and the rule
+that only a WIRED level 5 counts: "cool".
+
+**Built (2026-11-10):** `Tools/Build/fleet_codex.py` writes each solo vessel's `certificate` (`certificate()`: the five
+checks, the percentage, the stage, the next step) and `tiers` (`tiers_of()`: a letter from the new hand table
+`Docs/FleetCodex/tiers.json`, null for not rated yet, `-` where the vessel has no game of that element; a letter given
+there is dropped with a warning); crews and map-less vessels carry neither. `Docs/FleetCodex/index.html`: the vessel
+page's briefing shows the certificate (A) in place of the stats row, with the five checks as one row of cells, and a
+tier letter beside each element game; `#fleet` (B) adds Sort by (completion, or one element's tier) and the Completion
+and Tier filters, each on its own; a stage or tier filter leaves the crews out. Checked in Chromium at 1600 px (Rhino,
+the fleet sorted by Time tier and filtered to Launch Ready) and 390 px: no script error, no sideways scroll. Until the
+tiers are rated every letter shows `?`. The ratings are collected with the **Fleet Tier Sheet**
+(https://claude.ai/artifact/76HqmyoHRaWSM14zTcnPVt), shared with Garrett; its Copy answers text goes into `tiers.json`.
