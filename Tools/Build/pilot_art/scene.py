@@ -519,9 +519,14 @@ def compose(word, _rec=None, **over):
         f"{rec['doing']}\n\n"
         f"{place} A few tiny faceted crystal grains drift in the air like dust in a sunbeam. {rec['light']}\n\n"
         + finish.replace("{name}", name))
-    for gate, what in ((bust.world_name_in, "names the world"), (bust.emblem_word, "invites an emblem"),
-                       (lambda t: (STYLE_WORDS.search(t) or [None])[0], "pulls back to a painting")):
-        hit = gate(text)
+    # The emblem gate reads the scene's own words. The animals' anatomy lines were painted before, as they stand
+    # ("a casque rising from the back of the skull" is a chameleon's head, not a skull on a sleeve).
+    own = text
+    for k in ("face", "coat", "second"):
+        own = own.replace(i[k], "") if i[k] else own
+    for gate, what, of in ((bust.world_name_in, "names the world", text), (bust.emblem_word, "invites an emblem", own),
+                           (lambda t: (STYLE_WORDS.search(t) or [None])[0], "pulls back to a painting", text)):
+        hit = gate(of)
         if hit:
             raise ValueError(f"{i['word']}'s scene brief {what}: {hit!r}")
     return text

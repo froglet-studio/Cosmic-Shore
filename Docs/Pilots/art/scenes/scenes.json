@@ -2,6 +2,22 @@
  "about": "Pilot scenes: one widescreen picture a pilot. close is the avatar's square (the head); side is where the pilot stands, so text goes on the other side; crops are the largest box of each aspect that keeps the pilot; chart, on a few, says the scene shows the sea on a display. Written by Tools/Build/pilot_art/scene.py manifest.",
  "frame": [1536, 864],
  "scenes": {
+  "ENSIGN": {
+   "name": "Veliane Crestward",
+   "file": "Docs/Pilots/art/scenes/ENSIGN.jpg",
+   "size": [1536, 864],
+   "close": [296, 0, 606, 310],
+   "side": "left",
+   "treatment": "Medium-format garden portrait at waist level, first warmth",
+   "source": "profession: an aristocrat who keeps a garden's sea wall by hand sits in the one gap left in it",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [19, 0, 883, 864],
+    "4:5": [106, 0, 797, 864],
+    "9:16": [208, 0, 694, 864]
+   }
+  },
   "MANGER": {
    "name": "Tamako Deephook",
    "file": "Docs/Pilots/art/scenes/MANGER.jpg",
@@ -16,6 +32,38 @@
     "1:1": [243, 0, 1107, 864],
     "4:5": [330, 0, 1021, 864],
     "9:16": [432, 0, 918, 864]
+   }
+  },
+  "ANVIL": {
+   "name": "Brikon Copperwright",
+   "file": "Docs/Pilots/art/scenes/ANVIL.jpg",
+   "size": [1536, 864],
+   "close": [764, 0, 1194, 430],
+   "side": "right",
+   "treatment": "Industrial reportage side-on, deep focus, mid-push",
+   "source": "profession: a dealer in heavy crystal brings a boulder of it up from the quarry by hand",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [547, 0, 1411, 864],
+    "4:5": [634, 0, 1325, 864],
+    "9:16": [736, 0, 1222, 864]
+   }
+  },
+  "VOLT": {
+   "name": "Karenth Amberweaver",
+   "file": "Docs/Pilots/art/scenes/VOLT.jpg",
+   "size": [1536, 864],
+   "close": [340, 0, 700, 360],
+   "side": "left",
+   "treatment": "Workshop reportage at a slow shutter, one hand a blur",
+   "source": "profession: a dealer in lamps and the charge that lights them proves each bulb by hand before it is sold",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [88, 0, 952, 864],
+    "4:5": [174, 0, 865, 864],
+    "9:16": [277, 0, 763, 864]
    }
   },
   "ZODIAC": {
@@ -34,6 +82,150 @@
     "9:16": [577, 0, 1063, 864]
    },
    "chart": "hologram of the waters"
+  },
+  "SUNDIAL": {
+   "name": "Delmira Stillwater",
+   "file": "Docs/Pilots/art/scenes/SUNDIAL.jpg",
+   "size": [1536, 864],
+   "close": [924, 36, 1204, 316],
+   "side": "right",
+   "treatment": "Window-light interior on a tripod, a private moment walked in on",
+   "source": "hobby: \"has never once arrived early\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [632, 0, 1496, 864],
+    "4:5": [718, 0, 1409, 864],
+    "9:16": [821, 0, 1307, 864]
+   }
+  },
+  "OPAL": {
+   "name": "Quivera Pearlspark",
+   "file": "Docs/Pilots/art/scenes/OPAL.jpg",
+   "size": [1536, 864],
+   "close": [460, 0, 730, 270],
+   "side": "left",
+   "treatment": "Deadpan colour documentary, squared-up, harsh noon",
+   "source": "hobby: \"refuses to fly on an empty stomach\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [19, 0, 1171, 864],
+    "1:1": [163, 0, 1027, 864],
+    "4:5": [250, 0, 941, 864],
+    "9:16": [352, 0, 838, 864]
+   }
+  },
+  "RAMPART": {
+   "name": "Obelo Stormstone",
+   "file": "Docs/Pilots/art/scenes/RAMPART.jpg",
+   "size": [1536, 864],
+   "close": [829, 40, 1089, 300],
+   "side": "right",
+   "treatment": "Unposed side-on documentary in a yard, storm light",
+   "source": "want: \"a quiet harbour and a long sleep\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [383, 0, 1535, 864],
+    "1:1": [527, 0, 1391, 864],
+    "4:5": [614, 0, 1305, 864],
+    "9:16": [716, 0, 1202, 864]
+   }
+  },
+  "CITADEL": {
+   "name": "Nedira Shellward",
+   "file": "Docs/Pilots/art/scenes/CITADEL.jpg",
+   "size": [1536, 864],
+   "close": [800, 20, 1150, 370],
+   "side": "right",
+   "treatment": "Window light in the Dutch manner, a storeroom",
+   "source": "profession: an aristocrat whose house feeds its harbour through the winter measures out the alms grain by hand",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [543, 0, 1407, 864],
+    "4:5": [630, 0, 1321, 864],
+    "9:16": [732, 0, 1218, 864]
+   }
+  },
+  "HORNET": {
+   "name": "Zeko Mirethorn",
+   "file": "Docs/Pilots/art/scenes/HORNET.jpg",
+   "size": [1536, 864],
+   "close": [180, 0, 480, 300],
+   "side": "left",
+   "treatment": "Night exterior by one hazard lamp, from a boat alongside",
+   "source": "profession: a hunter who keeps the hazard light on a danger shoal stands the night under it",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [0, 0, 691, 864],
+    "9:16": [87, 0, 573, 864]
+   }
+  },
+  "IVY": {
+   "name": "Mathalo Kelpbloom",
+   "file": "Docs/Pilots/art/scenes/IVY.jpg",
+   "size": [1536, 864],
+   "close": [790, 60, 1110, 380],
+   "side": "right",
+   "treatment": "Botanical-survey portrait from the next bough, deadpan",
+   "source": "profession: an aristocrat who keeps a hanging garden judges its one bloom of the year",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [374, 0, 1526, 864],
+    "1:1": [518, 0, 1382, 864],
+    "4:5": [604, 0, 1295, 864],
+    "9:16": [707, 0, 1193, 864]
+   }
+  },
+  "TALON": {
+   "name": "Wyvendo Waveline",
+   "file": "Docs/Pilots/art/scenes/TALON.jpg",
+   "size": [1536, 864],
+   "close": [330, 0, 730, 400],
+   "side": "left",
+   "treatment": "Raking-light documentary at sunrise, eye to eye",
+   "source": "profession: a tracker finds, in a brickyard at sunrise, the print of what walked through town in the night",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [98, 0, 962, 864],
+    "4:5": [184, 0, 875, 864],
+    "9:16": [287, 0, 773, 864]
+   }
+  },
+  "DOE": {
+   "name": "Fenlia Moonbell",
+   "file": "Docs/Pilots/art/scenes/DOE.jpg",
+   "size": [1536, 864],
+   "close": [860, 0, 1270, 410],
+   "side": "right",
+   "treatment": "Half-second exposure at nightfall on a tripod",
+   "source": "profession: a hunter who tracks by ear stands in still water at nightfall and listens",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [633, 0, 1497, 864],
+    "4:5": [720, 0, 1411, 864],
+    "9:16": [822, 0, 1308, 864]
+   }
+  },
+  "WINGMAN": {
+   "name": "Jorin Gullwing",
+   "file": "Docs/Pilots/art/scenes/WINGMAN.jpg",
+   "size": [1536, 864],
+   "close": [370, 0, 710, 340],
+   "side": "left",
+   "treatment": "Hard sea light on a cliff ledge, from a burrow's doorway",
+   "source": "want: \"a crew that stays\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [108, 0, 972, 864],
+    "4:5": [194, 0, 885, 864],
+    "9:16": [297, 0, 783, 864]
+   }
   },
   "NEEDLE": {
    "name": "Ilia Silvergate",
