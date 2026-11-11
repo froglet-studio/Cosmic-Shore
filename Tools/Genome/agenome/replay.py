@@ -140,14 +140,15 @@ class VesselWorld:
     recorded path (emitters in hull space from world.json: four jets, two tails 12 u behind); a crystal is an
     icosahedron of the crystal's world size.
     """
+    trail_classes = None  # e.g. ("Squirrel",) when ExtrasWorld draws the other hulls' trails
     JETS = ((-1.08, -0.11, -1.61), (1.12, -0.11, -1.61), (-1.81, 0.15, 0.72), (1.82, 0.15, 0.72))
     TAILS = ((4.0, 0.0, -12.0), (-4.0, 0.0, -12.0))
     JET_COL = {"Jade": (0.1, 0.75, 1.0), "Ruby": (0.7, 0.12, 1.0), "Blue": (0.3, 0.4, 1.0), "Gold": (1.0, 0.5, 0.08)}
-    jet_vmax = 120.0  # recorded: the jets show below about 120 u/s and are gone by 150
+    jet_vmax = 1e9  # no gate: the flare texture and the near plane hide a fast hull's jets (render.FLARE_A)
 
     def __init__(self, session, hull=(4.5, 1.13, 6.7), hull_col=(0.1, 0.13, 0.24), pod_col=(0.7, 0.2, 0.25),
-                 jet_secs=0.5, jet_width=0.12, jet_col=(0.1, 0.75, 1.0),
-                 tail_secs=4.0, tail_width=0.15, tail_col=(0.0, 0.6, 0.62), tail_gain=1.0,
+                 jet_secs=0.5, jet_width=0.15, jet_col=(0.1, 0.75, 1.0),
+                 tail_secs=4.0, tail_width=0.5, tail_col=(0.0, 0.6, 0.62), tail_gain=1.0,
                  crystal=3.8, crystal_bright=(0.055, 0.51, 0.749), crystal_dark=(0.0, 0.02, 0.05)):
         self.__dict__.update(locals())
         self.fps = session.meta.get("fps", 15.0)
@@ -202,16 +203,18 @@ class VesselWorld:
             jc, tc = np.array(self.jet_col), np.array(self.tail_col)
             rib = []
             for v in V:
+                if self.trail_classes is not None and v.get("class") not in self.trail_classes:
+                    continue  # another hull's trails come from the recorded extras
                 gate = float(np.clip((self.jet_vmax * 1.15 - v.get("speed", 0.0)) / (self.jet_vmax * 0.3), 0.0, 1.0))
                 jc = np.array(self.JET_COL.get(v.get("domain"), self.jet_col))
                 tc = jc * 0.75  # the tail takes the domain colour too
-                # vfx_Projectile_02's trail: 0.5 s, 0.3 wide, alpha 1 -> 0; VesselTail.prefab: 4 s, 1 wide tapering
-                # from 19 %, alpha 0 / 0.71 / 0 at 6.5 % / 16 % / 100 %
+                # as the recorder reads them off the live renderers: jet 0.5 s, 0.3 wide, alpha 1 -> 0 under the flare
+                # texture; tail 4 s, width 1 / 0.7 / 0 and alpha 0 / 0.42 / 0 at 0 / 50 / 100 %
                 rib += self._trail(session, frame, v, self.JETS, self.jet_secs, lambda u: np.full_like(u, self.jet_width), eye,
                                    lambda u, jc=jc, gate=gate: np.concatenate([np.tile(jc, (len(u), 1)), (1 - u)[:, None] * gate], 1), soft=True)
                 rib += self._trail(session, frame, v, self.TAILS, self.tail_secs,
-                                   lambda u: self.tail_width * np.where(u < 0.1875, 1.0, (1 - u) / 0.8125), eye,
-                                   lambda u, tc=tc: np.concatenate([np.tile(tc, (len(u), 1)), np.interp(u, [0, 0.0647, 0.1588, 1], [0, 0, 0.706, 0])[:, None] * self.tail_gain], 1))
+                                   lambda u: self.tail_width * np.interp(u, [0, 0.5, 1], [1, 0.7, 0]), eye,
+                                   lambda u, tc=tc: np.concatenate([np.tile(tc, (len(u), 1)), np.interp(u, [0, 0.5, 1], [0, 0.42, 0])[:, None] * self.tail_gain], 1))
             if rib:
                 out["lines"] = rib
         C = [c for c in st.get("crystals", []) if not c.get("exploding")]
@@ -251,7 +254,10 @@ class ExtrasWorld:
     width curve and gradient, and every other mesh renderer (creature spindles, ring wires) as a stand-in of its
     recorded pose and size in its material's colour. Use it in place of VesselWorld's rebuilt trails."""
 
-    def __init__(self, session, gain=1.0, mesh_gain=1.0, soft=("DistortedFlare",)):
+    def __init__(self, session, gain=1.0, mesh_gain=1.0, soft=("DistortedFlare",), skip=()):
+        # skip: the recorder lists a hull's jet and tail trails whether or not the game shows them (a Squirrel's
+        # jets are gone above ~120 u/s though their points go on being recorded), so those stay with VesselWorld
+        self.skip = skip
         self.keys = {}
         for d in read_jsonl(session.path, "extras_key"):
             self.keys[d["frame"]] = d
@@ -272,7 +278,7 @@ class ExtrasWorld:
         out, lines = {}, []
         for x in d.get("lines", []):
             p = np.array(x["points"], np.float64).reshape(-1, 3)
-            if len(p) < 2:
+            if len(p) < 2 or (x.get("path", "").startswith("Squirrel") and any(k in x["path"] for k in self.skip)):
                 continue
             if x["type"] == "TrailRenderer":
                 p = p[::-1]  # stored oldest first; the ribbon runs from the emitter

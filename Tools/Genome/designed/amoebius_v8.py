@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, __import__('os').path.join(__import__('os').path.dirname(__file__), '..'))
+sys.path.insert(0,'/home/user/g')
 from agenome.genome import Genome
 from agenome.handmade import _named as N
 import sky1
@@ -19,8 +19,8 @@ def build(mode="skim", seed=5, hud=True):
     a=g.addv("ag.lay",a,wave=8.4,sx=20,sy=0.83,sz=6.08,gap=18.34,offset=0,delay=2,grow=1.25,emit=0.5)
     a=g.addv("ag.impact",a,hull=1.5,slow=0.5,dur=1.0,fresh=1.5,wobble=0,period=1.0)
     a=g.addv("ag.shards",a,spacing=120,radius=1200,scale=10,emit=0.15,h=0.67,s=0.25,v=0.45)
-    a=g.addv("ag.jet",a,secs=0.5,width=0.12,x=1.45,z=-0.5,ramp=0,alpha=1,soft=1,vmax=120,domain=1,h=0.55,s=0.9,v=1.1)
-    a=g.addv("ag.jet",a,secs=4,width=0.15,x=4,z=-12,ramp=0.16,alpha=0.7,soft=0,vmax=2000,domain=1,h=0.503,s=1,v=0.75)
+    a=g.addv("ag.jet",a,secs=0.5,width=0.3,x=1.45,z=-0.5,ramp=0,alpha=1,soft=1,vmax=2000,domain=1,h=0.55,s=0.9,v=1.1)
+    a=g.addv("ag.jet",a,secs=4,width=1.0,x=4,z=-12,ramp=0.5,alpha=0.42,soft=0,vmax=2000,domain=1,h=0.503,s=1,v=0.75)
     a=g.addv("ag.body",a,shape=2,sx=4.5,sy=2.2,sz=6.7,emit=0.3,colormode=1,edge=0.2,h=0.62,s=0.4,v=0.5)
     cam=g.addv("cam.attach",a,agent=0,dist=17,height=0,fov=90)
     cam=g.addv("cam.tunnel",cam,lo=70,hi=280,fovdrop=25,panini=0.7,pdrop=0.5)

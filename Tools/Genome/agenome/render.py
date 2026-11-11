@@ -76,6 +76,11 @@ def ensure_display():
     time.sleep(0.4)
 
 
+FLARE_A = np.array([0, .002, .011, .05, .106, .205, .255, .28, .284, .169, .167, .12, .057, .015, .001, 0]) / .284
+FLARE_U = (np.arange(16) + 0.5) / 16
+FLARE_W = 0.6
+
+
 def ribbon_tris(lines, eye):
     """Camera-facing strips as the engine's CollectRibbon builds them. lines: (p [n,3], halfwidth [n], rgba [n,4],
     soft); soft puts the colour on the centre line and clear edges (a flare texture). -> [m,7] triangle vertices."""
@@ -91,6 +96,11 @@ def ribbon_tris(lines, eye):
         # within a few units of the eye a strip's place on screen is not known to a unit: it fades there
         c[:, 3] *= np.clip((np.linalg.norm(p - eye, axis=1) - 0.8) / 3.0, 0.0, 1.0)
         if soft:
+            # the flare texture's alpha along the ribbon (DistortedFlare01, 16 bins, peak 1): the first eighth is clear
+            seg = np.linalg.norm(np.diff(p, axis=0), axis=1)
+            u = np.concatenate([[0.0], np.cumsum(seg)]) / max(seg.sum(), 1e-9)
+            c[:, 3] *= np.interp(u, FLARE_U, FLARE_A)
+            hw = hw * FLARE_W  # across the ribbon the texture is the same bell, narrower than a linear ramp
             e0 = c.copy()
             e0[:, 3] = 0.0
             cols = (np.concatenate([p - side * hw, e0], 1), np.concatenate([p, c], 1), np.concatenate([p + side * hw, e0], 1))
@@ -218,12 +228,12 @@ void main(){
   if(fE < -200.0){ // the game's prism graph: face -> rim by fresnel, the rim sinking to the face with distance
     float x = abs(dot(n, normalize(uEye - fW))); // closed meshes behind a depth test: the visible face looks at the eye
     vec3 bright = mix(fC.rgb, fD, fNear > 1.0 ? 0.9 : fNear*0.9);
-    oCol = vec4(mix(fD, bright, pow(1.0 - x, -fE - 200.0)), 1.0); return;
+    oCol = vec4(mix(fD, bright, pow(clamp(1.0 - x, 0.0, 1.0), -fE - 200.0)), 1.0); return;
   } else if(fE < -100.0){ // game prism: a dim face in its own hue, a bright fresnel rim (PrismMaterial)
-    float fr = pow(1.0 - abs(dot(n, normalize(uEye - fW))), -fE - 100.0);
+    float fr = pow(clamp(1.0 - abs(dot(n, normalize(uEye - fW))), 0.0, 1.0), -fE - 100.0);
     col = mix(fC.rgb*0.22, fC.rgb*(1.0 + fC.a), clamp(fr + edge*0.35, 0.0, 1.0));
   } else if(fE < 0.0){ // ag.rim: unlit fresnel, a bright rim in the instance colour over a dark complementary face
-    float fr = pow(1.0 - abs(dot(n, normalize(uEye - fW))), -fE);
+    float fr = pow(clamp(1.0 - abs(dot(n, normalize(uEye - fW))), 0.0, 1.0), -fE);
     float mx = max(max(fC.r, fC.g), max(fC.b, 1e-4));
     col = mix((vec3(1.0) - fC.rgb/mx)*0.06, fC.rgb*(1.0 + fC.a), fr);
   } else {
