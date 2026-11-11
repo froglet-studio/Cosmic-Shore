@@ -5313,10 +5313,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Echo.png": {
-   "coloured": 0.7165,
+   "coloured": 0.9576,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "57c06c2931d8648e",
+   "sha": "2aef2ad95c8f9f67",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_FLUME.png": {
@@ -5341,10 +5341,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_GALLEON.png": {
-   "coloured": 0.783,
+   "coloured": 0.6364,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "7eba2cafdab60c4b",
+   "sha": "f228f789fd436a9e",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_HORNET.png": {
@@ -5383,10 +5383,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_MANGER.png": {
-   "coloured": 0.9034,
+   "coloured": 0.3625,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "491b1748f475b0a5",
+   "sha": "768fd6ab9ce570e3",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Maestro.png": {
@@ -5544,10 +5544,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Tenacious.png": {
-   "coloured": 0.6974,
+   "coloured": 0.3499,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "892743731b4a390b",
+   "sha": "b6453041d2178af6",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Tender.png": {

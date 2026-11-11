@@ -1,66 +1,82 @@
 #!/usr/bin/env python3
-"""The SCENE brief: a pilot photographed in their world, the same person as their signature bust.
+"""The SCENE: a pilot photographed in their world. One widescreen picture a pilot, and its close-up is their avatar.
 
-STATUS: THE STYLE IS NOT LOCKED. This file holds the mechanism and four samples, each a different approach, made for
-Garrett to choose from. Until he does, the scene tables below cover what the samples need plus one line per faction
-type, and a scene for any other pilot is a draft. `Docs/Pilots/PORTRAITS.md` section 8 says where it stands.
+Garrett, 2026-11-11, asked for a second, realistic style ("make a full scene piece of art that show them in a hyper
+realistic setting. they still have their scratches, imperfections, a tear in their clothing, some dirt on their knees,
+etc. they don't need to have any of these things, but if they fit then it shouldn't look like a pristine commercial
+set, it should show them raw in their environment doing something that is appropriate to their background, history,
+hobbies, profession, etc."), saw four samples, and decided (19:58 UTC): "All four of these are knocked out of the
+park. This is an excellent direction. drop what we had before. the scene close ups are categorically better than the
+previous avatar pictures and should be used in their place. All four scenes are excellent choices and I like that
+each choice suits the personality of the pilot. SO I would continue to extend your reach and treat each pilot as a
+new bespoke exercise in that regard. As far as the sizing and aspect ratio, we want something like 2.- (cinematic
+film still) because then we have a fullscreen piece of art we can crop etc. for different platforms and
+presentations. the main use will be a full screen profile for each pilot accessible through the ark app shell menu."
 
-Garrett, 2026-11-11, after round 2 of the busts: "These also look like airbrushed glamour shots, which is fine for
-avatar pictures. now lets see how realistic we can get when we take the same character from the avatar picture and make
-the art needed for the ark. and elsewhere. make a full scene piece of art that show them in a hyper realistic setting.
-they still have their scratches, imperfections, a tear in their clothing, some dirt on their knees, etc. they don't
-need to have any of these things, but if they fit then it shouldn't look like a pristine commercial set, it should show
-them raw in their environment doing something that is appropriate to their background, history, hobbies, profession,
-etc." And the goal: "lock in this second style so for each new character the skill is equipped to make all the needed
-assets and keep the character consistent across them."
+So:
+  * EVERY PILOT HAS ONE SCENE, and it is a bespoke exercise: the shot, the place and what the pilot is doing are
+    chosen for that person. A pilot's record is one file, scenes/<WORD>.py (SCENE = dict(...)); no two records
+    share a treatment.
+  * THE FRAME IS WIDE: 16:9, asked of the painter as ASK and returned as FRAME. It is fullscreen art that other
+    presentations are cropped from (crop_box, the `crops` sheet, and the manifest scenes.json, which gives whoever
+    builds a screen each scene's size, the head's box and the side the pilot stands on).
+  * THE AVATAR IS THE SCENE'S CLOSE-UP: the record's `close` box, a square round the head, at least AVATAR px wide
+    so an avatar is never enlarged. Tools/Build/author_pilot_avatar_assets.py cuts every avatar from it; a pilot
+    without a painted scene keeps the cut from their bust until they have one (avatar_source).
+  * A FEW SCENES SHOW THE SEA THE PILOTS SAIL, on a chart panel or a chart of light in the place (20:22 UTC: "Make a
+    few of them render the hypersea in their scene on either a panel or holographic display"): a record's `chart`,
+    drawn as the game's own map draws that sea and never named (CHART_VIEWS, CHART_KINDS).
 
-How a scene keeps the character (the painter takes words only, never the avatar itself):
+How a scene keeps the character (the painter takes words only):
 
-1. THE SAME WORDS. A scene's description of the person is cut from the very brief their avatar was painted from
-   (`busts/briefs/<WORD>.txt`, `identity`), not from today's tables: the tables move on, the painting does not. The
-   face, the crown, the coat behind the face, the second animal's piece, the eyes, the hair, the outfit, the callsign's
-   mark and the accent colour reach the scene's painter word for word.
-2. WHAT THE AVATAR SHOWS BEYOND ITS BRIEF (`seen`), AND AGAINST IT (`swap`). A painter decides things no brief asked
-   for: the colour of a glove, that the brooch is brass, that the shell cap hides the ears. Whoever writes a scene
-   LOOKS at the avatar first and writes those down, and the scene repeats them. And where the painting departs from
-   the words it was painted from (the brief asked for hazel eyes and the painter gave amber-gold; "shaggy" wool was
-   painted as tight curls), the record swaps that phrase for what the picture shows: a scene follows the painting,
-   not the request. Two colour words for one eye let the painter choose, so a correction replaces, never adds.
-3. THE REST OF THE BODY IS RULES, NOT ROLLS. Below the bust's crop nothing was ever decided, so it is decided once,
-   here, the same way for every picture of a pilot: the build (BUILD), the hands (`hands_of`: the hand the avatar
-   shows; else the animal's own true hand; else gloves), where the second animal's piece grows from (CARRY) and the
-   lower half of the clothes (LOWER).
+1. THE SAME WORDS. A scene's description of the person is cut from the brief their bust was painted from
+   (`busts/briefs/<WORD>.txt`, `identity`), not from today's tables: the tables move on, a painting does not. A new
+   pilot, who never had a bust, takes the bust brief today's tables compose, and capture freezes it
+   (scenes/identity/<WORD>.txt) so every later picture of that pilot starts from the same words.
+2. WHAT THE PAINTING SHOWS BEYOND ITS BRIEF (`seen`), AND AGAINST IT (`swap`). A painter decides things no brief
+   asked for: the colour of a glove, that the brooch is brass, that the shell cap hides the ears. Whoever writes a
+   record LOOKS at the pilot's earlier picture first and writes those down. Where that painting departs from the
+   words it was painted from, the record swaps the phrase for what the picture shows. Two colour words for one eye
+   let the painter choose, so a correction replaces, never adds.
+3. THE REST OF THE BODY IS RULES, NOT ROLLS: the build (BUILD), the hands (`hands_of`), where the second animal's
+   piece grows from (CARRY) and the lower half of the clothes (LOWER), the same in every picture of a pilot.
 4. NOTHING PERMANENT IS ADDED. Wear is mud, soot, a tear, a mended seam, a scuff: things a day gives and a wash or a
-   needle takes away. A scene never gives the face a scar, a chipped tusk or a missing ear that the avatar does not
-   have (PERMANENT), because the next picture of that pilot would have to carry it.
+   needle takes away. A scene never gives the face a scar, a chipped tusk or a missing ear (PERMANENT).
 
-What the person is DOING comes from who they are, and each scene names its source: their profession (the faction
-type), a hobby (the game's own `Quirks` in PilotGenerator.cs) or their history (its `Upbringings`).
+What the person is DOING comes from who they are, and each record names its source: their profession (the faction
+type), a hobby (the game's own `Quirks` in PilotGenerator.cs), their history (its `Upbringings`) or what they want
+most (its `Wants`). A pilot the game rolled has all of these already (`creator.py roll`).
 
 The brief goes to an outside painter, so it keeps bust.py's two gates: it never names the game, the studio, the world
 or a place, a crew or a faction in it (`bust.world_name_in`; the home ship is "a great ship"), and it never invites an
 emblem or lettering (`bust.emblem_word`).
 
-    python3 Tools/Build/pilot_art/scene.py list                 # the samples and their approaches
-    python3 Tools/Build/pilot_art/scene.py who <WORD>           # any avatar pilot's identity lines, as painted
-    python3 Tools/Build/pilot_art/scene.py brief <WORD> [approach]
-    python3 Tools/Build/pilot_art/scene.py capture <WORD> <url> [approach]
-    python3 Tools/Build/pilot_art/scene.py sheet <out.png>       # each sample beside its avatar
-    python3 Tools/Build/pilot_art/scene.py stale                 # scenes today's kit would paint differently
-    python3 Tools/Build/pilot_art/scene.py read-prep <dir>       # the readers' pictures, shuffled; key beside <dir>
-    python3 Tools/Build/pilot_art/scene.py read-grade <dir>      # grade <dir>/result.json against the key
+    python3 Tools/Build/pilot_art/scene.py list                 # every pilot: treatment, source, painted or not
+    python3 Tools/Build/pilot_art/scene.py who <WORD>           # a pilot's identity lines and hands
+    python3 Tools/Build/pilot_art/scene.py draft <WORD>         # the facts and an empty record for a new scene
+    python3 Tools/Build/pilot_art/scene.py brief <WORD>         # the brief, verbatim what the painter gets
+    python3 Tools/Build/pilot_art/scene.py capture <WORD> <url> # save a painting and the brief it was painted from
+    python3 Tools/Build/pilot_art/scene.py grid <WORD|file> <out.jpg>   # the picture under a ruled grid, to set `close`
+    python3 Tools/Build/pilot_art/scene.py sheet <out.png> [WORD...]    # scenes beside their avatars, ten a page
+    python3 Tools/Build/pilot_art/scene.py crops <out.png> [WORD...]    # one scene cut for other presentations
+    python3 Tools/Build/pilot_art/scene.py manifest [--check]   # scenes.json: what a screen needs to place a scene
+    python3 Tools/Build/pilot_art/scene.py stale                # scenes today's kit would paint differently
+    python3 Tools/Build/pilot_art/scene.py sweep-prep <dir> [WORD...]   # the readers' pictures, shuffled; key beside <dir>
+    python3 Tools/Build/pilot_art/scene.py sweep-grade <dir>    # grade <dir>/result.json against the key
     python3 Tools/Build/pilot_art/scene.py --self-test
 
-THE READ is how "the same character" is measured, because whoever wrote the brief sees the pilot they asked for.
-read-prep writes, into a NEW scratch folder outside the repository, the fifty avatars numbered in a shuffled order
-(match/avatars_N.jpg), every painted scene under a letter with a close-up (match/scene_X.jpg), and each scene beside
-its own avatar (compare/), with the key at <dir>.key.json, outside the folder the readers open. The readers are the
-workflow .claude/skills/pilot-creator/references/scene_read.js: one finds each scene's character among the fifty,
-told nothing; one compares each scene with its avatar and lists what differs. Save what it returns as
-<dir>/result.json and grade it. A repaint is a new picture: read it again.
+THE SWEEP is how a finished scene is checked by someone who did not write its brief. sweep-prep writes, into a NEW
+scratch folder outside the repository, every painted scene under a shuffled number: sNN.jpg whole, sNN_close.jpg the
+avatar's square, sNN_left.jpg and sNN_right.jpg its two halves enlarged, with the key at <dir>.key.json, outside the
+folder the readers open. The readers are the workflow .claude/skills/pilot-creator/references/scene_sweep.js: told
+nothing, they say what kind of image it is, which animals they see, what the person is doing, how many figures there
+are, and list any lettering, any broken anatomy and any bare human skin. Save what it returns as <dir>/result.json
+and grade it. Whether a stranger names both animals from the AVATAR is blind.py's read, which reads the close-ups.
 """
 import collections
+import functools
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -77,49 +93,20 @@ ROOT = brief.ROOT
 SCENES = "Docs/Pilots/art/scenes"
 
 # ---------------------------------------------------------------------------------------------------------------
-# The four approaches (samples for the style decision). `shot` is the camera, `frame` the width and height asked for.
+# The frame. Every scene is the wide frame of a cinema still, and the pilot's avatar is cut from it.
 # ---------------------------------------------------------------------------------------------------------------
-APPROACHES = {
-    "field": dict(
-        name="Field documentary",
-        frame=(1536, 1024),
-        shot=("A documentary photograph taken in the field by a photojournalist who waited hours for it, in the manner "
-              "of the best wildlife and expedition photography. A 400mm lens at f/4 from a long way off, the camera low, "
-              "at the subject's own height; one blurred stem leaning through the near foreground, the subject sharp, "
-              "the distance soft. Natural light only. The subject is at work and has not noticed the camera. The whole "
-              "figure is in the frame, head to foot, a little over half the frame's height and off-centre, with the "
-              "place filling the rest. True-to-life colour, a little grain, nothing retouched."),
-    ),
-    "film": dict(
-        name="Cinematic film still",
-        frame=(1536, 864),   # asked for as 2048 x 1152; this is what the painter returns for 16:9
-        shot=("A single frame from a feature film shot on 35mm stock with anamorphic lenses. A medium-wide shot: the "
-              "figure from the knees up, placed a third of the way in from one side, deep space behind, out-of-focus "
-              "lights stretched into soft ovals, fine film grain, a restrained colour grade with true deep blacks. "
-              "The lighting is motivated by what is in the place. It is a quiet moment between scenes of action, held "
-              "a beat longer than is comfortable. The subject does not look at the camera."),
-    ),
-    "candid": dict(
-        name="Candid, available light",
-        frame=(1024, 1280),
-        shot=("A candid photograph taken by a crewmate without asking. A 35mm lens wide open at arm's length in a small "
-              "room, available light only, high ISO with real grain, the white balance a little too warm, the frame "
-              "slightly off level, something soft and out of focus intruding at one near corner, a trace of motion "
-              "blur in one hand. The subject is off duty and absorbed in something of their own, unposed, not looking "
-              "at the camera. The whole seated figure is in the frame. Nothing has been tidied for the picture."),
-    ),
-    "sitting": dict(
-        name="Aftermath portrait",
-        frame=(1024, 1280),
-        shot=("An environmental portrait by a documentary photographer, made in the first quiet minute after the work "
-              "was done. Medium format, an 80mm lens at f/2.8, the camera at the subject's eye height and two steps "
-              "away, close enough to see the rim of each iris, a thin line of colour where an animal's would be "
-              "dark. The subject has stopped "
-              "where they were, sits, and looks straight into the lens and holds the look. Framed from the knees up, "
-              "the place soft behind. Every trace of the last hours is kept: wet fur in clumps, grime in the creases, "
-              "a tired and steady face. Nothing retouched."),
-    ),
-}
+ASK = (2048, 1152)      # what the painter is asked for
+FRAME = (1536, 864)     # what gpt-image-2.5-sunburst returns for 16:9: the size of every scene
+AVATAR = 256            # the avatar's size (author_pilot_avatar_assets.SIZE): a close-up is never smaller
+RECORDS = os.path.join(HERE, "scenes")   # one record a pilot: <WORD>.py, SCENE = dict(...)
+
+# What every shot shares, after its own words: where the pilot stands in the wide frame, so a screen can lay text
+# over the other side and other presentations can be cropped from it, and what the avatar needs of the head. A
+# record whose shot already frames itself says frame="" (the two samples kept from before this line existed).
+FRAMING = ("The frame is wide, sixteen by nine, with {name} a third of the way in from the {side} edge and the place "
+           "filling the rest. Clear space above all that grows from the head. The head is sharp and lit, the whole "
+           "face easy to read, the place behind it soft.")
+SIDES = ("left", "right")
 
 FINISH = (
     "All of it is photographed as it is, with a real camera: living anatomy with the fur, feathers, hide and scales of "
@@ -131,6 +118,64 @@ FINISH = (
 )
 STYLE_WORDS = re.compile(r"\b(?:painterly|illustrat\w+|render\w*|concept art|digital art|airbrush\w*|glamour|"
                          r"cartoon\w*|anime|collectible|3d)\b", re.I)   # words that pull a photograph back to a painting
+
+# ---------------------------------------------------------------------------------------------------------------
+# The sea on a display. Garrett, 2026-11-11 (20:22 UTC): "Make a few of them render the hypersea in their scene on
+# either a panel or holographic display". So a FEW scenes, never most (CHART_MOST), show the sea the pilots sail on
+# something that stands in the place: a flat chart panel, or a chart of light hanging in the air. It is drawn as the
+# game's own map draws it (VoyageMapGraphic and the Voyage Board, coloured by HyperSea.SeaColor: slate spray, teal
+# froth, blue water, violet thick water, coral reef; places as small rings and diamonds, lanes as thin pale lines,
+# the course one lime-yellow line). The brief may not name that sea or a place on it (bust.world_name_in), so the
+# chart is told by what it looks like, and it carries no writing. A record asks for one with chart=(kind, view) and
+# writes the token {chart} in its `place` where the display's own words begin ("On the bulkhead to the right hangs
+# {chart} Under it, ..."): the token becomes the display, what it shows, how dim it is and that nothing is written
+# on it, ending in a full stop. A lit chart is the one thing in a scene that glows, and a loud glow turns a
+# photograph into a 3D render (LESSONS 67), so both kinds are dim by their own words; the record's `light` says
+# what little the chart lights.
+# ---------------------------------------------------------------------------------------------------------------
+CHART_VIEWS = {   # what the chart shows: the whole sea, or the waters round a course
+    "galaxy": ("a whole spiral galaxy seen from above, drawn as a chart of a sea: long arms of soft sea blue flecked "
+               "with violet wind out from a short pale-peach bar at the centre, the gulfs between them nearly black, "
+               "small gold points scattered round it; one small amber ring near the centre, another far out along "
+               "a spiral arm, and a thin lime-yellow line between them in short straight legs"),
+    "waters": ("a sea chart of deep space seen from straight above: dark blue water dusted with fine white points, "
+               "drifts of violet where it thickens, islands of coral orange with violet shores, one wide grey shoal "
+               "inside a thin teal shoreline, small ring and diamond markers joined by thin pale lines, and one "
+               "lime-yellow course line stepping from marker to marker"),
+}
+CHART_KINDS = {   # what the chart is shown on
+    "panel": ("a flat chart panel, a sheet of dark glass in a scuffed metal frame. It shows {view}. The panel is old "
+              "and dim, no brighter than a lamp turned low, its glass smeared with fingerprints."),
+    "hologram": ("a chart made of faint light that hangs in the air on its own, a thin flat sheet of it. It shows "
+                 "{view}. Its light is grainy and thin as smoke in a torch beam, and the place shows through it."),
+}
+CHART_RULE = "The chart is colour, lines and plain marks only: no letter, number, label or icon anywhere on it."
+CHART_TOKEN = "{chart}"
+CHART_MOST = 0.2   # "a few of them": at most one scene in five carries a chart
+FINISH_BLANK = "every label, sign, crate and screen is blank"                                  # FINISH's own words,
+FINISH_CHART = "every label, sign and crate is blank, and the chart is the only screen that is lit"   # and a chart's
+
+
+def chart_of(chart):
+    """The words a record's {chart} token becomes."""
+    if not (isinstance(chart, (tuple, list)) and len(chart) == 2 and chart[0] in CHART_KINDS
+            and chart[1] in CHART_VIEWS):
+        raise ValueError(f"chart={chart!r}: give (kind, view), kind one of {', '.join(CHART_KINDS)}, view one of "
+                         f"{', '.join(CHART_VIEWS)}")
+    return CHART_KINDS[chart[0]].replace("{view}", CHART_VIEWS[chart[1]]) + " " + CHART_RULE
+
+
+def place_of(rec):
+    """(the record's place with its chart written in, the brief's last paragraph before the name is filled in)."""
+    place, chart = rec["place"], rec.get("chart")
+    if not chart:
+        if CHART_TOKEN in place:
+            raise ValueError(f"the place says {CHART_TOKEN} and the record has no chart=(kind, view)")
+        return place, FINISH
+    if place.count(CHART_TOKEN) != 1:
+        raise ValueError(f"a record with a chart writes {CHART_TOKEN} once in its place, where the display's words "
+                         f"begin")
+    return place.replace(CHART_TOKEN, chart_of(chart)), FINISH.replace(FINISH_BLANK, FINISH_CHART)
 
 # ---------------------------------------------------------------------------------------------------------------
 # The body below the bust's crop: decided once, here, the same for every picture of a pilot.
@@ -202,141 +247,44 @@ PERMANENT = re.compile(r"\b(?:scars?|scarred|tattoo\w*|eye ?patch\w*|one-eyed|br
                        r"horns?|beaks?|bills?|ears?|antlers?|shell|teeth|tooth))\b", re.I)
 
 # ---------------------------------------------------------------------------------------------------------------
-# The samples. source: what in the pilot's life the scene comes from. seen: what the painted avatar shows beyond its
-# brief (look at the picture, then write). The rest is the scene.
+# The records: scenes/<WORD>.py, one a pilot. treatment: a few words that name the shot (no two pilots share one).
+# shot: the camera, the lens and the moment, written for this pilot. side: which side of the frame the pilot stands
+# on. source: what in the pilot's life the scene comes from. seen / swap: what the pilot's earlier painting shows
+# beyond and against its brief (look at the picture, then write). doing, place, light, wear: the scene. chart: a
+# display in the place that shows the sea (above). close: the square round the head in the painted scene, which is
+# the avatar (set it after painting: `grid`).
 # ---------------------------------------------------------------------------------------------------------------
-SAMPLES = {
-    "MANGER": dict(
-        approach="field",
-        source="profession: a hunter who wades the feeding flats sets a lure line",
-        seen=("the whole face is scarlet and the long bill rose-red, greyer toward its tip",
-              "the cape has a broad turned-down collar with magenta piping on every edge",
-              "the jerkin is dark brown, the line is a coil of pale hemp rope, and the strap's buckle is square brass"),
-        carry="seen whole, the paddle tail is as long as a forearm and a hand, grows from the base of the spine and "
-              "comes out under the back of the cape",
-        doing=("Tamako kneels on one knee at the edge of a shallow channel on a feeding flat and sets a lure. One "
-               "webbed hand pays out wet line from the coil worn at the chest; the other lowers a small hand-carved "
-               "wooden float with one glinting crystal bead into the water. The long bill is tipped down over the "
-               "work and the eyes are fixed on the line. The paddle tail lies flat on the mud behind, as a brace."),
-        place=("The feeding flat lies inside a living cell the size of a valley: grey silt and mirror-still water a "
-               "hand deep, stands of pale glassy reeds whose seed heads are clusters of small clear crystals, and far "
-               "behind, through mist, the wall of the cell, a translucent sea-green membrane veined like a leaf and "
-               "curving up out of sight."),
-        light=("Soft, shadowless green-white daylight filtering down through the membrane, the mist brighter behind "
-               "the figure, the wet mud shining."),
-        wear=("Both knees and shins are plastered with wet grey mud; the hem of the cape is soaked dark and spattered; "
-              "a three-cornered tear near the hem has been mended with coarse pale stitches; the leather is cracked "
-              "at its creases; the fur of the neck is damp and spiked; there is silt under the claws, and water "
-              "stands in beads on the oilskin. Above the mud line the magenta piping still shows bright along the "
-              "collar and down the front edges of the cape."),
-    ),
-    "GALLEON": dict(
-        approach="film",
-        source="hobby: \"ties a ribbon on the hull for every friend lost\" (the game's Quirks)",
-        swap=(("a bison's huge shaggy forelock", "a bison's huge woolly forelock"),
-              ("just showing through it at the sides", "standing clear of it at each side of the head,"),
-              ("shaggy dark-brown bison wool", "curly dark-brown bison wool")),
-        seen=("the face is a walrus's from the chin to the top: a smooth rounded forehead sloping straight into a "
-              "broad flat muzzle of two round whisker pads, with the nostrils between them and small wide-set eyes",
-              "the face is bare skin from the brow to the chin, deep cinnamon brown and wrinkled, with no fur on it "
-              "but the pale stiff whiskers, and the tusks are yellowed ivory, finely crazed with age",
-              "the wool is a deep dense fleece of short tight curls, packed like a sheepskin and nowhere longer than "
-              "a finger, growing from the scalp itself, closing round the base of each horn in an unbroken fleece, "
-              "and running without a break into the beard and the wool of the neck",
-              "each epaulette is a coil of rope, the ship's wheel is a small badge of yellow brass, and the "
-              "sea-glass is pale green"),
-        doing=("Haradek stands at the nose of a small single-seat craft and ties a strip of plain faded red cloth to "
-               "its landing strut, the big gloved fingers slow and careful with the knot. A dozen older strips already "
-               "hang from the same strut, sun-bleached, frayed and stiff with salt: one for every friend lost. The "
-               "eyes are lowered to the knot, and the heavy face is shy and gentle."),
-        place=("The hangar deck of a great ship: a long vaulted bay of dark ribbed metal, scuffed deck plates with "
-               "worn coloured lane stripes, hoses and chains, a row of small single-seat craft parked nose-out on "
-               "their pads, each hull made of dark glassy facets like a cut gemstone, and at the far end the open "
-               "mouth of the bay, a wall of dim blue-green haze where pale faceted crystals drift slowly past. A thin "
-               "mist of coolant lies at knee height. The bay is empty of people."),
-        light=("One warm work lamp on a stand just out of frame is the key light, low and from the side; the cold "
-               "blue-green of the open bay rims the wool, the horns and the shoulders from behind; the rest falls "
-               "away into shadow."),
-        wear=("The greatcoat is salt-stained in tide lines, its oxblood red still plain under them, and its hem is "
-              "dark with oil; one shoulder seam has split and shows the lining; a button hangs by a thread; the "
-              "magenta piping is rubbed through at the cuffs; the gloves are creased and the boots scuffed grey; "
-              "the curls are flecked with salt."),
-    ),
-    "Echo": dict(
-        approach="candid",
-        source="hobby: \"keeps a jar of every crystal they have ever missed\" (the game's Quirks)",
-        seen=("the face is a mouse's, small and fine with a short pointed muzzle, and each round ear is nearly as big "
-              "as the face",
-              "the face is white from the brow down, and the barred feathers begin above the brow, between the two "
-              "mouse ears, where the ear tufts stand",
-              "the coat is pale stone-grey, edged in teal piping along the lapels, the pocket and the cuffs, and "
-              "worn over a dark teal brocade waistcoat",
-              "the lens is a round brass-rimmed magnifying glass on a thin brown cord, and one small glass vial "
-              "stands in the pocket beside the pens"),
-        lower="plain dark trousers, bagged at the knees, and grey wool socks pulled up under their cuffs, one darned "
-              "at the heel, the deck shoes kicked off under the bunk",
-        doing=("Echo sits on the bunk with both knees drawn up and a big glass jar wedged between them, three-quarters "
-               "full of small crystals: every crystal Echo ever missed. One small white-furred hand steadies the jar; "
-               "the other holds a single pale crystal the size of a thumbnail up to the desk lamp in a pair of "
-               "tweezers. The brass lens hangs on its cord against the chest. The whiskers are pushed forward and "
-               "the whole face is bent to the crystal, cool and assessing. Both wings show behind the shoulders: one is folded, the other hangs "
-               "half open over the edge of the bunk, and two shed barred feathers lie on the blanket."),
-        place=("A crew cabin aboard a great ship, late at night: a narrow bunk built into a metal wall, a fold-down "
-               "desk crowded with a chipped enamel mug, a bent desk lamp, coils of wire and a closed notebook, a "
-               "small round window full of dark blue-green haze, a shelf of odd blank jars and tins above, a jacket "
-               "on a hook."),
-        light=("The desk lamp's warm bulb is the only real light, close and low: it glows through the thin ears and "
-               "catches the edge of every feather. The window gives a faint cold fill, and the corners of the room "
-               "are nearly black."),
-        wear=("The coat is unbuttoned and creased from being slept in, its sleeves a little too long and down over "
-              "the wrists, one cuff frayed, an old ink stain spread under the breast pocket; a few feathers are out "
-              "of place, and there are crumbs on the blanket."),
-    ),
-    "Tenacious": dict(
-        approach="sitting",
-        source="profession: a first responder, in the first minute after a rescue",
-        swap=(("warm hazel irises", "amber-gold irises, a tiger's own eye colour,"),),
-        seen=("the shell cap is one smooth unbroken dome, a tortoise's own carapace in small, fitting close over the "
-              "whole top of the head, down to the brow and down over the temples where ears would be",
-              "the nose is pink, the whiskers are long and white, and the rim of each amber-gold iris is teal where "
-              "a tiger's would be dark",
-              "the tortoise skin of the neck is olive green",
-              "the jacket has a stand collar lined in teal and plain grey reflective bands on the sleeves, and the "
-              "harness is black webbing with steel buckles"),
-        lower="signal-orange over-trousers to match the jacket, with grey reflective bands, and heavy black rescue "
-              "boots",
-        doing=("Tenacious has just come off a long rescue and sits on an upturned equipment case at the edge of the "
-               "deck, elbows on knees, a dented steel mug steaming between both gloved hands, and looks straight into "
-               "the lens: bone tired, calm and faintly amused."),
-        place=("The open deck of a rescue station at first light after a storm: wet steel plates, coiled lines and "
-               "blank crates of gear stacked against a rail, two orange rescue boats in their cradles soft in the "
-               "background, empty and unlit, their hulls plain orange, and a beacon lamp still turning far behind, "
-               "laying a red-orange glow into the lifting rain. The station stands inside a living cell the size of a sea: beyond the rail the water lies flat "
-               "and milky green, and where a horizon and a sky would be, the far wall of the cell rises through the "
-               "rain and curves overhead, a pale translucent membrane veined like a leaf, dim and far."),
-        light=("Flat grey-green daylight filtering down through the membrane and the rain, soft and even on the "
-               "face; the far beacon's red-orange as a faint warm edge on the wet shell and one shoulder; fine rain "
-               "still falling, a few drops caught sharp."),
-        wear=("The jacket is soaked; soot is ground into one shoulder, one side and both knees, where they went "
-              "against a wall and a floor, and the rain has washed the rest nearly clean; one forearm of it is ripped "
-              "open in a ragged tear with the grey lining showing; one reflective band is half peeled away; the "
-              "harness webbing is frayed at a buckle; the gloves are blackened; the shell cap and the shell behind "
-              "the shoulders are scuffed, with pale scrapes across the olive-brown plates, their golden growth rings "
-              "still plain; the black hair hangs wet in ropes; rain runs down the face, the fur of the cheeks and "
-              "the brow is soaked dark and stuck in points, and one cheek is smeared with soot where a glove wiped "
-              "it."),
-    ),
-}
-CLOSE = {   # painted scene -> the square around the figure's head, for the sheet's close-up beside the avatar
-    "MANGER-field": (490, 195, 860, 565),
-    "GALLEON-film": (360, 0, 800, 440),
-    "Echo-candid": (340, 20, 740, 420),
-    "Tenacious-sitting": (280, 10, 780, 510),
-}
-SCENE_KEYS = ("approach", "source", "seen", "doing", "place", "light", "wear")
-SCENE_MORE = ("carry", "lower", "build", "hands", "swap")
-SWAPPED = ("face", "coat", "second", "eyes", "hair", "outfit", "motif")   # the avatar's lines a swap may correct
+SCENE_KEYS = ("treatment", "shot", "source", "seen", "doing", "place", "light", "wear")
+SCENE_MORE = ("frame", "side", "carry", "lower", "build", "hands", "swap", "chart", "close")
+SOURCES = ("profession", "hobby", "history", "want")
+SWAPPED = ("face", "coat", "second", "eyes", "hair", "outfit", "motif")   # the bust's lines a swap may correct
 WORD_CAP = 1000   # briefs of 870 to 890 words were painted faithfully; past a thousand a line is one too many
+
+
+@functools.lru_cache(maxsize=None)
+def _load(path, stamp):
+    spec = importlib.util.spec_from_file_location("scene_record_" + os.path.basename(path)[:-3], path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.SCENE
+
+
+def record(word):
+    """A pilot's scene record (a copy), or None when the pilot has none yet."""
+    path = os.path.join(RECORDS, f"{word}.py")
+    if not os.path.exists(path):
+        return None
+    return dict(_load(path, os.path.getmtime(path)))
+
+
+def records():
+    """{word: record} for every catalog pilot that has one, in the catalog's order."""
+    out = {}
+    for w, *_ in creator.catalog():
+        rec = record(w)
+        if rec is not None:
+            out[w] = rec
+    return out
 
 # ---------------------------------------------------------------------------------------------------------------
 # The identity: cut from the brief the avatar was painted from.
@@ -352,21 +300,35 @@ GAZE = "bright and alert and looking at the viewer, "   # the bust's gaze; a sce
 OWN_LIMB = re.compile(r"it is the (?P<x>[a-z -]+?)'s(?: own)?:")
 
 
+def identity_brief_path(word):
+    """Where a pilot who never had a bust keeps the words their first scene was painted from."""
+    return os.path.join(ROOT, SCENES, "identity", f"{word}.txt")
+
+
+def identity_text(word):
+    """(the bust brief a pilot's pictures start from, its path): the brief their bust was painted from; else the one
+    frozen when their first scene was captured; else, for a pilot with no picture yet, what today's tables compose
+    (path None)."""
+    for path in (creator.painted_brief_path(word), identity_brief_path(word)):
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as fh:
+                return fh.read(), path
+    return creator.brief_of(word), None
+
+
 def identity(word):
-    """A cast pilot as their avatar was painted: dict(word, name, a, b, faction, callsign, look, face, part, coat,
-    second, kind, eyes, hair, hand, outfit, accent, hex, motif), every text line verbatim from the painted brief."""
+    """A cast pilot as their first picture was painted: dict(word, name, a, b, faction, callsign, look, face, part, coat,
+    second, kind, eyes, hair, hand, outfit, accent, hex, motif), every text line verbatim from that brief (identity_text)."""
     for w, person, (a, b), faction, callsign, look in creator.catalog():
         if w.lower() == word.lower():
             break
     else:
         raise SystemExit(f"{word} is not in the catalog (creator.py list)")
-    path = creator.painted_brief_path(w)
-    if not os.path.exists(path):
-        raise SystemExit(f"{w} has no painted brief on record ({path}): paint the bust first")
-    text = open(path, encoding="utf-8").read()
+    text, path = identity_text(w)
     m = PAINTED.search(text)
     if not m:
-        raise ValueError(f"{path} does not read as a bust brief: scene.PAINTED no longer matches bust.compose")
+        raise ValueError(f"{path or 'the brief bust.compose writes for ' + w} does not read as a bust brief: "
+                         f"scene.PAINTED no longer matches bust.compose")
     d = m.groupdict()
     behind = d["behind"]
     cut = behind.find("; and ", behind.find("the back of the head, the nape"))
@@ -429,23 +391,32 @@ def who(word, seen=(), swap=()):
     return " ".join(lines)
 
 
-def compose(word, approach=None, **over):
-    """The scene brief, verbatim what the painter gets. A sample's record (SAMPLES) fills what is not given."""
+def shot_of(rec, name):
+    """The camera paragraph: the record's own shot, then what every shot shares (FRAMING) unless the record frames
+    itself (frame="")."""
+    frame = rec.get("frame", FRAMING)
+    if not frame:
+        return rec["shot"]
+    if rec.get("side") not in SIDES:
+        raise ValueError(f"the record says side={rec.get('side')!r}: one of {', '.join(SIDES)}")
+    return rec["shot"] + " " + frame.replace("{name}", name).replace("{side}", rec["side"])
+
+
+def compose(word, _rec=None, **over):
+    """The scene brief, verbatim what the painter gets, from the pilot's record (scenes/<WORD>.py)."""
     i = identity(word)
-    rec = dict(SAMPLES.get(i["word"], {}), **over)
-    missing = [k for k in SCENE_KEYS if k != "approach" and not rec.get(k)]
+    rec = dict(record(i["word"]) or {} if _rec is None else _rec, **over)
+    missing = [k for k in SCENE_KEYS if not rec.get(k)]
     if missing:
-        raise ValueError(f"{i['word']} has no scene record: give {', '.join(missing)} (scene.SAMPLES)")
+        raise ValueError(f"{i['word']} has no scene record: give {', '.join(missing)} "
+                         f"(Tools/Build/pilot_art/scenes/{i['word']}.py)")
     i = as_seen(i, rec.get("swap", ()))
-    approach = approach or rec.get("approach")
-    if approach not in APPROACHES:
-        raise KeyError(f"no approach {approach!r}: one of {', '.join(APPROACHES)}")
     name, bl = i["name"], i["b"].lower()
     for what in ("doing", "wear"):
         m = PERMANENT.search(rec[what])
         if m and not PERMANENT.search(i["hand"] + " " + " ".join(rec["seen"])):
             raise ValueError(f"{i['word']}'s {what} says {m.group(0)!r}: a scene adds nothing permanent that the "
-                             f"avatar does not have")
+                             f"pilot does not have")
     build = rec.get("build") or BUILD.get(i["a"], BUILD_DEFAULT)
     hands = rec.get("hands") or hands_of(i)
     lower = rec.get("lower") or LOWER[i["faction"]]
@@ -454,8 +425,9 @@ def compose(word, approach=None, **over):
         carry = rec.get("carry") or CARRY[i["kind"]].replace("{bl}", bl)
         second = f" The {bl} also gives {i['second']}: {carry}."
     motif = f", and {i['motif']}" if i["motif"] else ""
+    place, finish = place_of(rec)
     text = (
-        f"{APPROACHES[approach]['shot']}\n\n"
+        f"{shot_of(rec, name)}\n\n"
         f"{who(i['word'], rec['seen'], rec.get('swap', ()))}\n\n"
         f"From the neck down {name} is built like a person and stands, sits and moves like one: {build}. {hands} "
         f"The clothes cover the body from the collar to the wrists and the ankles, and no bare human skin shows "
@@ -463,8 +435,8 @@ def compose(word, approach=None, **over):
         f"{name}'s clothes, seen whole and lived in: {i['outfit']}, piped in {i['accent']} ({i['hex']}), the piping "
         f"a thin cord that glows faintly{motif}; below it, {lower}. {rec['wear']}\n\n"
         f"{rec['doing']}\n\n"
-        f"{rec['place']} A few tiny faceted crystal grains drift in the air like dust in a sunbeam. {rec['light']}\n\n"
-        + FINISH.replace("{name}", name))
+        f"{place} A few tiny faceted crystal grains drift in the air like dust in a sunbeam. {rec['light']}\n\n"
+        + finish.replace("{name}", name))
     for gate, what in ((bust.world_name_in, "names the world"), (bust.emblem_word, "invites an emblem"),
                        (lambda t: (STYLE_WORDS.search(t) or [None])[0], "pulls back to a painting")):
         hit = gate(text)
@@ -474,139 +446,358 @@ def compose(word, approach=None, **over):
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# Capture.
+# The painted scene, its brief, its close-up.
 # ---------------------------------------------------------------------------------------------------------------
-def scene_path(word, approach):
-    return os.path.join(ROOT, SCENES, f"{word}-{approach}.jpg")
+def scene_path(word):
+    return os.path.join(ROOT, SCENES, f"{word}.jpg")
 
 
-def painted_brief_path(word, approach):
+def painted_brief_path(word):
     """The brief a scene was painted from, kept beside it: the kit moves on, the painting does not."""
-    return os.path.join(ROOT, SCENES, "briefs", f"{word}-{approach}.txt")
+    return os.path.join(ROOT, SCENES, "briefs", f"{word}.txt")
 
 
-def stale():
-    """[(scene, why)] for the samples today's kit would paint differently, or that are not painted."""
+def close_of(word):
+    """The avatar's square in a pilot's painted scene (left, top, right, bottom), or None while the scene is not
+    painted or its record has no `close` yet."""
+    rec = record(word)
+    if not rec or not rec.get("close") or not os.path.exists(scene_path(word)):
+        return None
+    return tuple(rec["close"])
+
+
+def close_errors(word, size=None):
+    """What is wrong with a painted scene's `close` box, as sentences (none: [])."""
+    rec = record(word) or {}
+    box = rec.get("close")
+    if size is None:
+        from PIL import Image
+        size = Image.open(scene_path(word)).size
+    if not box:
+        return [f"{word}: the painted scene has no `close` box, so the pilot has no avatar from it"]
+    if len(box) != 4 or not (0 <= box[0] < box[2] <= size[0] and 0 <= box[1] < box[3] <= size[1]):
+        return [f"{word}: the `close` box {tuple(box)} is not inside the scene {size}"]
     out = []
-    for w, rec in SAMPLES.items():
-        key = f"{w}-{rec['approach']}"
-        if not os.path.exists(scene_path(w, rec["approach"])):
-            out.append((key, "not painted"))
-        elif not os.path.exists(painted_brief_path(w, rec["approach"])):
-            out.append((key, "no brief on record"))
-        elif open(painted_brief_path(w, rec["approach"]), encoding="utf-8").read().strip() != compose(w).strip():
-            out.append((key, "painted from an older brief"))
+    if box[2] - box[0] != box[3] - box[1]:
+        out.append(f"{word}: the `close` box is not square")
+    if box[2] - box[0] < AVATAR:
+        out.append(f"{word}: the `close` box is {box[2] - box[0]} px wide, and an avatar is {AVATAR}: the head is "
+                   f"too small in this scene")
     return out
 
 
-def capture(word, url, approach=None, **over):
-    """Download a painted scene and keep the brief it was painted from beside it."""
+def avatar_source(word):
+    """Where a pilot's avatar is cut from: ("scene", path, close box) once their scene is painted and its close-up is
+    set; ("bust", path, None) while they only have a bust; None with neither."""
+    box = close_of(word)
+    if box:
+        return ("scene", scene_path(word), box)
+    if os.path.exists(creator.bust_path(word)):
+        return ("bust", creator.bust_path(word), None)
+    return None
+
+
+def avatar_image(word):
+    """A pilot's avatar before it is sized, a square picture: their scene's close-up, else their bust's cut, else
+    None. The blind read (blind.py) reads these."""
+    from PIL import Image
+    src = avatar_source(word)
+    if not src:
+        return None
+    im = Image.open(src[1]).convert("RGB")
+    return im.crop(src[2]) if src[0] == "scene" else creator.avatar_cut(im)
+
+
+def avatar_sources():
+    """{word: (the scene's path from the repository root, its close box)} for every pilot whose avatar is cut from
+    their scene. Tools/Build/author_pilot_avatar_assets.py reads this."""
+    out = {}
+    for w in records():
+        box = close_of(w)
+        if box:
+            out[w] = (f"{SCENES}/{w}.jpg", box)
+    return out
+
+
+def stale():
+    """[(word, why)] for the records today's kit would paint differently, or that are not painted."""
+    out = []
+    for w in records():
+        if not os.path.exists(scene_path(w)):
+            out.append((w, "not painted"))
+        elif not os.path.exists(painted_brief_path(w)):
+            out.append((w, "no brief on record"))
+        elif open(painted_brief_path(w), encoding="utf-8").read().strip() != compose(w).strip():
+            out.append((w, "painted from an older brief"))
+    return out
+
+
+def wide(size):
+    """Is a picture the wide frame (16:9 to within a row or two of pixels, and at least FRAME)?"""
+    w, h = size
+    return w >= FRAME[0] and abs(w * 9 - h * 16) <= 16 * 2
+
+
+def capture(word, url, **over):
+    """Download a painted scene and keep the brief it was painted from beside it. A pilot who never had a bust also
+    gets the bust brief of today's tables frozen (identity_brief_path), so later pictures start from the same words."""
     i = identity(word)
-    approach = approach or SAMPLES.get(i["word"], {}).get("approach")
-    text = compose(i["word"], approach, **over)
-    out = scene_path(i["word"], approach)
-    os.makedirs(os.path.dirname(painted_brief_path(i["word"], approach)), exist_ok=True)
+    w = i["word"]
+    text = compose(w, **over)
+    froze = None
+    if identity_text(w)[1] is None:
+        froze = creator.brief_of(w)
+    out = scene_path(w)
+    os.makedirs(os.path.dirname(painted_brief_path(w)), exist_ok=True)
     raw = out + ".download"
     subprocess.run(["curl", "-sS", "-f", "-L", "-o", raw, url], check=True)
     from PIL import Image
     im = Image.open(raw).convert("RGB")
     os.remove(raw)
-    assert max(im.size) >= 1280 and min(im.size) >= 848, f"{url} is {im.size}: smaller than any scene frame"
-    im.save(out, quality=92, subsampling=0, optimize=True)
-    with open(painted_brief_path(i["word"], approach), "w", encoding="utf-8") as f:
+    if not wide(im.size):
+        raise SystemExit(f"{url} is {im.size}: a scene is the wide frame, {FRAME[0]} x {FRAME[1]} (ask the painter "
+                         f"for {ASK[0]} x {ASK[1]})")
+    im.save(out, quality=93, subsampling=0, optimize=True)
+    with open(painted_brief_path(w), "w", encoding="utf-8") as f:
         f.write(text + "\n")
+    if froze:
+        os.makedirs(os.path.dirname(identity_brief_path(w)), exist_ok=True)
+        with open(identity_brief_path(w), "w", encoding="utf-8") as f:
+            f.write(froze + "\n")
     print(f"captured {out} {im.size}")
+    if close_of(w) is None or close_errors(w, im.size):
+        print(f"set its close box next: scene.py grid {w} <out.jpg>, then close=(left, top, right, bottom) in "
+              f"Tools/Build/pilot_art/scenes/{w}.py")
     return out
 
 
-def sheet(out):
-    """The review sheet: each sample's avatar, the scene's own close-up under it, and the whole scene beside them."""
-    from PIL import Image, ImageDraw, ImageFont
+def _font(size, bold=False):
+    from PIL import ImageFont
+    name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
+    try:
+        return ImageFont.truetype(os.path.join("/usr/share/fonts/truetype/dejavu", name), size)
+    except OSError:
+        return ImageFont.load_default()
 
-    def font(size, bold=False):
-        name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
-        try:
-            return ImageFont.truetype(os.path.join("/usr/share/fonts/truetype/dejavu", name), size)
-        except OSError:
-            return ImageFont.load_default()
 
-    plate, ink, dim = (20, 23, 43), (236, 238, 246), (160, 166, 190)
-    W, M, GAP = 2200, 40, 16
-    probe = ImageDraw.Draw(Image.new("RGB", (8, 8)))
-    blocks = []
-    for n, (w, rec) in enumerate(SAMPLES.items(), 1):
-        i = identity(w)
-        ap = APPROACHES[rec["approach"]]
-        key = f"{i['word']}-{rec['approach']}"
-        scene = Image.open(scene_path(i["word"], rec["approach"])).convert("RGB")
-        avatar = Image.open(creator.bust_path(i["word"])).convert("RGB")
-        wide = scene.width > scene.height
-        side = 440 if wide else 380
-        h = side * 2 + GAP
-        big = scene.resize((round(scene.width * h / scene.height), h), Image.LANCZOS)
-        width = side + GAP + big.width
-        who_ = i["name"] if i["name"] == i["word"] else f"{i['name']} ({i['word']})"
-        lines, line = [], ""
-        for word_ in f"{who_}, {i['a'].lower()} and {i['b'].lower()}. From their {rec['source']}".split():
-            if line and probe.textlength(f"{line} {word_}", font=font(22)) > width:
-                lines.append(line)
-                line = word_
-            else:
-                line = f"{line} {word_}".strip()
-        lines.append(line)
-        HEAD = 2 * 30 + 66   # room for two lines under the title, so every block's pictures start level
-        block = Image.new("RGB", (width, HEAD + h), plate)
-        d = ImageDraw.Draw(block)
-        d.text((0, 0), f"{n}. {ap['name']}", fill=ink, font=font(40, True))
-        for k, text_ in enumerate(lines[:2]):
-            d.text((0, 54 + 30 * k), text_, fill=dim, font=font(22))
-        block.paste(avatar.resize((side, side), Image.LANCZOS), (0, HEAD))
-        block.paste(scene.crop(CLOSE[key]).resize((side, side), Image.LANCZOS), (0, HEAD + side + GAP))
-        d.rectangle((0, HEAD, 150, HEAD + 34), fill=(0, 0, 0))
-        d.text((8, HEAD + 4), "the avatar", fill=ink, font=font(22))
-        d.rectangle((0, HEAD + side + GAP, 236, HEAD + side + GAP + 34), fill=(0, 0, 0))
-        d.text((8, HEAD + side + GAP + 4), "the scene, close up", fill=ink, font=font(22))
-        block.paste(big, (side + GAP, HEAD))
-        blocks.append((wide, block))
-    rows, pending = [], []
-    for wide, block in blocks:   # a wide scene takes a row; two tall ones share one
-        if wide:
-            rows.append([block])
-        else:
-            pending.append(block)
-            if len(pending) == 2:
-                rows.append(pending)
-                pending = []
-    if pending:
-        rows.append(pending)
-    top = 150
-    height = top + sum(max(b.height for b in row) + M for row in rows) + 20
-    im = Image.new("RGB", (W, height), plate)
+def grid(src, out, step=96):
+    """A picture (a pilot's scene, or any file) under a ruled grid with its pixel coordinates, for setting `close`
+    by eye. The record's close box, when it has one, is drawn too."""
+    from PIL import Image, ImageDraw
+    rec = record(src) if not os.path.exists(src) else None
+    path = scene_path(src) if not os.path.exists(src) else src
+    im = Image.open(path).convert("RGB")
     d = ImageDraw.Draw(im)
-    d.text((M, 30), "The second style: realistic scenes, four approaches", fill=ink, font=font(50, True))
-    d.text((M, 96), "Each scene is the same pilot as the avatar beside it, painted from words alone. Nothing here is "
-                    "locked: which approach, or which mix, is the style?", fill=dim, font=font(24))
-    y = top
-    for row in rows:
-        x = M
-        for block in row:
-            im.paste(block, (x, y))
-            x += block.width + M
-        y += max(b.height for b in row) + M
+    f = _font(15, True)
+    for x in range(0, im.width, step):
+        d.line((x, 0, x, im.height), fill=(255, 235, 0), width=1)
+        d.text((x + 3, 2), str(x), fill=(255, 235, 0), font=f, stroke_width=2, stroke_fill=(0, 0, 0))
+    for y in range(step, im.height, step):
+        d.line((0, y, im.width, y), fill=(255, 235, 0), width=1)
+        d.text((3, y + 2), str(y), fill=(255, 235, 0), font=f, stroke_width=2, stroke_fill=(0, 0, 0))
+    if rec and rec.get("close"):
+        d.rectangle(tuple(rec["close"]), outline=(255, 0, 200), width=3)
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
-    im.save(out)
-    print(f"sheet {out} {im.size}")
+    im.save(out, quality=88)
+    print(f"grid {out} {im.size}")
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# The read: is the scene the same person as the avatar, to someone who was told nothing?
+# Other presentations: a scene is fullscreen art that narrower and squarer frames are cut from.
+# ---------------------------------------------------------------------------------------------------------------
+CROPS = (("16:9", 16 / 9), ("4:3", 4 / 3), ("1:1", 1.0), ("4:5", 4 / 5), ("9:16", 9 / 16))
+
+
+def crop_box(size, close, aspect):
+    """The largest box of an aspect (width over height) inside a scene, placed to hold the pilot: centred on the
+    head from side to side, with the head a little above the middle. Returns (left, top, right, bottom)."""
+    W, H = size
+    if W / H > aspect:
+        w, h = min(W, round(H * aspect)), H
+    else:
+        w, h = W, min(H, round(W / aspect))
+    cx, cy = (close[0] + close[2]) / 2, (close[1] + close[3]) / 2
+    left = int(min(max(round(cx - w / 2), 0), W - w))
+    top = int(min(max(round(cy - h * 0.4), 0), H - h))
+    return (left, top, left + w, top + h)
+
+
+def side_of(size, close):
+    """Which side of the frame the pilot stands on, measured from the painting: left, right or centre."""
+    x = (close[0] + close[2]) / 2 / size[0]
+    return "left" if x < 0.45 else "right" if x > 0.55 else "centre"
+
+
+def manifest():
+    """What a screen needs to place a scene, for every pilot whose scene is painted and has its close box."""
+    from PIL import Image
+    scenes = {}
+    for w, rec in records().items():
+        box = close_of(w)
+        if not box:
+            continue
+        size = Image.open(scene_path(w)).size
+        i = identity(w)
+        scenes[w] = dict(name=i["name"], file=f"{SCENES}/{w}.jpg", size=list(size), close=list(box),
+                         side=side_of(size, box), treatment=rec["treatment"], source=rec["source"],
+                         crops={name: list(crop_box(size, box, a)) for name, a in CROPS})
+        if rec.get("chart"):
+            scenes[w]["chart"] = " of the ".join(rec["chart"])   # e.g. "panel of the waters": the sea is in this one
+    return dict(about="Pilot scenes: one widescreen picture a pilot. close is the avatar's square (the head); side "
+                      "is where the pilot stands, so text goes on the other side; crops are the largest box of "
+                      "each aspect that keeps the pilot; chart, on a few, says the scene shows the sea on a display. "
+                      "Written by Tools/Build/pilot_art/scene.py manifest.",
+                frame=list(FRAME), scenes=scenes)
+
+
+MANIFEST = f"{SCENES}/scenes.json"
+
+
+def manifest_text():
+    text = json.dumps(manifest(), indent=1, ensure_ascii=False)
+    # a row of numbers reads better on one line: [490, 155, 860, 525]
+    return re.sub(r"\[\s+((?:-?\d+,\s+)*-?\d+)\s+\]", lambda m: "[" + re.sub(r"\s+", " ", m.group(1)) + "]", text) + "\n"
+
+
+def manifest_errors():
+    path = os.path.join(ROOT, MANIFEST)
+    if not os.path.exists(path):
+        return [f"{MANIFEST} is missing (scene.py manifest)"] if avatar_sources() else []
+    with open(path, encoding="utf-8") as fh:
+        if fh.read() != manifest_text():
+            return [f"{MANIFEST} drifted from the records and the paintings (scene.py manifest)"]
+    return []
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Sheets, for looking.
+# ---------------------------------------------------------------------------------------------------------------
+def _wrap(d, text, font, width):
+    lines, line = [], ""
+    for word_ in text.split():
+        if line and d.textlength(f"{line} {word_}", font=font) > width:
+            lines.append(line)
+            line = word_
+        else:
+            line = f"{line} {word_}".strip()
+    return lines + [line]
+
+
+def sheet(out, words=None, per_page=10):
+    """Review sheets: each painted scene with its avatar (the close-up at 256, 128 and 64 px) and a line saying who
+    it is and where the scene comes from; ten scenes a page (out.png, then out-2.png and so on). Returns the files."""
+    from PIL import Image, ImageDraw
+    want = {w.lower() for w in words or ()}
+    rows = [(w, rec) for w, rec in records().items()
+            if os.path.exists(scene_path(w)) and (not want or w.lower() in want)]
+    if not rows:
+        raise SystemExit("no painted scene to put on a sheet")
+    plate, ink, dim = (20, 23, 43), (236, 238, 246), (160, 166, 190)
+    SW, SH, AV, M, CAP = 960, 540, 256, 32, 78
+    cell_w, cell_h = SW + 16 + AV, CAP + SH
+    cols = 2 if len(rows) > 1 else 1
+    files = []
+    stem, ext = os.path.splitext(out)
+    for page in range((len(rows) + per_page - 1) // per_page):
+        part = rows[page * per_page:(page + 1) * per_page]
+        lines_n = (len(part) + cols - 1) // cols
+        im = Image.new("RGB", (M + cols * (cell_w + M), M + lines_n * (cell_h + M)), plate)
+        d = ImageDraw.Draw(im)
+        for k, (w, rec) in enumerate(part):
+            i = identity(w)
+            x, y = M + (k % cols) * (cell_w + M), M + (k // cols) * (cell_h + M)
+            who_ = i["name"] if i["name"] == w else f"{i['name']} ({w})"
+            d.text((x, y), f"{who_}: {i['a'].lower()} and {i['b'].lower()}", fill=ink, font=_font(26, True))
+            cap = _wrap(d, f"{rec['treatment']}. From their {rec['source']}", _font(17), cell_w)
+            for n, line in enumerate(cap[:2]):
+                d.text((x, y + 34 + 21 * n), line, fill=dim, font=_font(17))
+            scene = Image.open(scene_path(w)).convert("RGB")
+            im.paste(scene.resize((SW, SH), Image.LANCZOS), (x, y + CAP))
+            box = close_of(w)
+            if box:
+                av = scene.crop(box)
+                ax = x + SW + 16
+                im.paste(av.resize((AV, AV), Image.LANCZOS), (ax, y + CAP))
+                im.paste(creator.octagon(av, 128), (ax, y + CAP + AV + 16))
+                im.paste(av.resize((64, 64), Image.LANCZOS), (ax + 128 + 16, y + CAP + AV + 16))
+                im.paste(av.resize((44, 44), Image.LANCZOS), (ax + 128 + 16, y + CAP + AV + 16 + 64 + 12))
+        name = out if page == 0 else f"{stem}-{page + 1}{ext}"
+        os.makedirs(os.path.dirname(os.path.abspath(name)), exist_ok=True)
+        im.save(name)
+        files.append(name)
+        print(f"sheet {name} {im.size}: {len(part)} scenes")
+    return files
+
+
+def crops_sheet(out, words=None):
+    """One row a pilot: the scene whole, then cut to each aspect of CROPS around the pilot, then the avatar."""
+    from PIL import Image, ImageDraw
+    want = {w.lower() for w in words or ()}
+    rows = [w for w in avatar_sources() if not want or w.lower() in want]
+    if not rows:
+        raise SystemExit("no painted scene with a close box to cut")
+    plate, ink = (20, 23, 43), (236, 238, 246)
+    H, M = 360, 24
+    widths = [round(H * a) for _, a in CROPS] + [H]
+    im = Image.new("RGB", (M + sum(w + M for w in widths), M + len(rows) * (H + 40 + M)), plate)
+    d = ImageDraw.Draw(im)
+    for r, w in enumerate(rows):
+        scene = Image.open(scene_path(w)).convert("RGB")
+        box = close_of(w)
+        y = M + r * (H + 40 + M)
+        x = M
+        for (name, a), width in zip(CROPS, widths):
+            cut = crop_box(scene.size, box, a)
+            d.text((x, y), f"{w}  {name}  {cut[2] - cut[0]} x {cut[3] - cut[1]}", fill=ink, font=_font(18, True))
+            im.paste(scene.crop(cut).resize((width, H), Image.LANCZOS), (x, y + 30))
+            x += width + M
+        d.text((x, y), f"avatar  {box[2] - box[0]} px", fill=ink, font=_font(18, True))
+        im.paste(scene.crop(box).resize((H, H), Image.LANCZOS), (x, y + 30))
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    im.save(out)
+    print(f"crops {out} {im.size}: {len(rows)} scenes")
+
+
+def draft(word):
+    """What whoever writes a new scene needs in front of them: the pilot's facts, the body rules that will be
+    applied, what the other records already use, and an empty record to fill."""
+    i = identity(word)
+    w = i["word"]
+    lines = [f"# {w}: {i['name']}, {i['a'].lower()} and {i['b'].lower()}, a {brief.faction_words(i['faction'])}"
+             + (f", callsign {i['callsign']}" if i["callsign"] else "")]
+    look = i["look"]
+    if look.get("expression"):
+        lines.append(f"# mood: {look['expression']}")
+    if look.get("backdrop") in bust.BACKDROPS:
+        lines.append(f"# the place their bust stood in: {bust.BACKDROPS[look['backdrop']][3]}")
+    lines += [f"# face: {i['face']}", f"# {i['part']}, and behind the face: {i['coat']}"]
+    if i["second"]:
+        lines.append(f"# the {i['b'].lower()} also gives: {i['second']} ({CARRY[i['kind']].replace('{bl}', i['b'].lower())})")
+    lines += [f"# eyes: {i['eyes']}", f"# hair: {i['hair']}", f"# clothes: {i['outfit']}"
+              + (f"; {i['motif']}" if i["motif"] else ""), f"# below: {LOWER[i['faction']]}",
+              f"# build: {BUILD.get(i['a'], BUILD_DEFAULT)}", f"# hands: {hands_of(i)}", "#",
+              "# Treatments taken (yours is a new one):"]
+    for other, rec in records().items():
+        if other != w:
+            lines.append(f"#   {other}: {rec['treatment']} | {rec['source']}")
+    lines += ["#", "# Sources: profession: | hobby: (the game's Quirks) | history: (its Upbringings) | want: (its Wants).",
+              "# `creator.py roll` prints the lines a rolled pilot already has.", "",
+              f'"""{i["name"]}' + (f", {w}" if i["name"] != w else "") + f": {i['a'].lower()} and {i['b'].lower()}, "
+              f"a {brief.faction_words(i['faction'])}.\"\"\"",
+              "SCENE = dict(", '    treatment="",', '    shot=(""),', '    side="left",', '    source="profession: ",',
+              "    seen=(),", '    doing=(""),', '    place=(""),', '    light=(""),', '    wear=(""),', ")"]
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# The sweep: what does someone who was told nothing see in each finished scene?
 # ---------------------------------------------------------------------------------------------------------------
 def _md5(path):
     with open(path, "rb") as fh:
         return hashlib.md5(fh.read()).hexdigest()
 
 
-def read_key_path(out):
+def sweep_key_path(out):
     """The key's path: beside the readers' folder, never in it."""
     return os.path.abspath(out) + ".key.json"
 
@@ -615,167 +806,164 @@ def _in_repo(path):
     return os.path.realpath(path).startswith(os.path.realpath(ROOT) + os.sep)
 
 
-def read_prep(out, salt=None):
-    """Write the readers' pictures into out/ and the key beside it; returns the key. The fifty avatars are numbered
-    in an order shuffled by the folder's name (or `salt`), the painted scenes lettered in another. A folder in the
-    repository, or one that already holds a read, is refused."""
-    from PIL import Image, ImageDraw, ImageFont
+HALVES = ((0, 0, 864, 864), (672, 0, 1536, 864))   # a FRAME's two squares, overlapping by 192 px
+TILE = 1072
+
+
+def sweep_prep(out, words=None, salt=None):
+    """Write the readers' pictures into out/ and the key beside it; returns the key. Every painted scene that has a
+    close box (or the words given) gets a number in an order shuffled by the folder's name (or `salt`): sNN.jpg the
+    whole frame, sNN_close.jpg the avatar's square, sNN_left.jpg and sNN_right.jpg its halves enlarged. A folder in
+    the repository, or one that already holds a read, is refused."""
+    from PIL import Image
     out = os.path.realpath(out)
-    if _in_repo(out) or _in_repo(read_key_path(out)):
-        raise ValueError("a read's pictures and key are scratch: give a folder outside the repository")
+    if _in_repo(out) or _in_repo(sweep_key_path(out)):
+        raise ValueError("a sweep's pictures and key are scratch: give a folder outside the repository")
     if os.path.exists(os.path.join(out, "result.json")):
         raise ValueError(f"{out} already holds a read (result.json): prep a new folder, so a read stays with the "
                          f"pictures it was made on")
     salt = salt or os.path.basename(out)
-
-    def shuffled(items, what):
-        return sorted(items, key=lambda w: hashlib.md5(f"{salt}/{what}/{w}".encode("utf-8")).hexdigest())
-    order = shuffled([c[0] for c in creator.catalog() if os.path.exists(creator.bust_path(c[0]))], "avatar")
-    painted = shuffled([w for w, rec in SAMPLES.items() if os.path.exists(scene_path(w, rec["approach"]))], "scene")
+    have = avatar_sources()
+    want = {w.lower() for w in words or ()}
+    strangers = sorted(want - {w.lower() for w in have})
+    if strangers:
+        raise ValueError(f"no painted scene with a close box: {', '.join(strangers)}")
+    painted = sorted((w for w in have if not want or w.lower() in want),
+                     key=lambda w: hashlib.md5(f"{salt}/scene/{w}".encode("utf-8")).hexdigest())
     if not painted:
         raise ValueError("no painted scene to read")
-    if len(painted) > 26:
-        raise ValueError("a read letters its scenes A to Z: read at most 26 at a time")
-    for sub in ("match", "compare"):
-        os.makedirs(os.path.join(out, sub), exist_ok=True)
-        for name in os.listdir(os.path.join(out, sub)):   # the pictures of an earlier shuffle
-            if re.fullmatch(r"(?:avatars_\d+|scene_[A-Z](?:_close)?|pair_[A-Z]_avatar)\.jpg", name):
-                os.remove(os.path.join(out, sub, name))
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-    except OSError:
-        font = ImageFont.load_default()
-    tile = 320
-    for s in range((len(order) + 24) // 25):
-        page = Image.new("RGB", (5 * tile, 5 * tile), (20, 23, 43))
-        d = ImageDraw.Draw(page)
-        for j, w in enumerate(order[s * 25:s * 25 + 25]):
-            x, y = (j % 5) * tile, (j // 5) * tile
-            page.paste(Image.open(creator.bust_path(w)).convert("RGB").resize((tile, tile), Image.LANCZOS), (x, y))
-            label = str(s * 25 + j + 1)
-            d.rectangle((x, y, x + 16 + 15 * len(label), y + 34), fill=(0, 0, 0))
-            d.text((x + 8, y + 3), label, fill=(255, 255, 255), font=font)
-        page.save(os.path.join(out, "match", f"avatars_{s + 1}.jpg"), quality=90)
-    number = {w: n for n, w in enumerate(order, 1)}
-    key = dict(avatars={str(n): w for w, n in number.items()}, scenes={})
-    for k, w in enumerate(painted):
-        letter, approach = chr(ord("A") + k), SAMPLES[w]["approach"]
-        path = scene_path(w, approach)
+    os.makedirs(out, exist_ok=True)
+    for name in os.listdir(out):   # the pictures of an earlier shuffle
+        if re.fullmatch(r"s\d+(?:_close|_left|_right)?\.jpg", name):
+            os.remove(os.path.join(out, name))
+    key = {}
+    for n, w in enumerate(painted, 1):
+        sid = f"s{n:02d}"
+        path = scene_path(w)
         im = Image.open(path).convert("RGB")
-        close = im.crop(CLOSE[f"{w}-{approach}"]).resize((1040, 1040), Image.LANCZOS)
-        for sub in ("match", "compare"):
-            im.save(os.path.join(out, sub, f"scene_{letter}.jpg"), quality=92)
-            close.save(os.path.join(out, sub, f"scene_{letter}_close.jpg"), quality=92)
-        Image.open(creator.bust_path(w)).convert("RGB").save(
-            os.path.join(out, "compare", f"pair_{letter}_avatar.jpg"), quality=92)
-        key["scenes"][letter] = dict(word=w, approach=approach, number=number[w], scene_md5=_md5(path),
-                                     bust_md5=_md5(creator.bust_path(w)))
-    with open(read_key_path(out), "w", encoding="utf-8") as fh:
+        if im.size != FRAME:
+            im = im.resize(FRAME, Image.LANCZOS)
+            box = tuple(round(v * FRAME[0] / Image.open(path).size[0]) for v in have[w][1])
+        else:
+            box = have[w][1]
+        im.save(os.path.join(out, f"{sid}.jpg"), quality=92)
+        im.crop(box).resize((768, 768), Image.LANCZOS).save(os.path.join(out, f"{sid}_close.jpg"), quality=92)
+        for half, tag in zip(HALVES, ("left", "right")):
+            im.crop(half).resize((TILE, TILE), Image.LANCZOS).save(os.path.join(out, f"{sid}_{tag}.jpg"), quality=92)
+        i = identity(w)
+        key[sid] = dict(word=w, face=i["a"], crown=i["b"], scene_md5=_md5(path),
+                        chart=list((record(w) or {}).get("chart") or ()))
+    with open(sweep_key_path(out), "w", encoding="utf-8") as fh:
         json.dump(key, fh, indent=1)
     return key
 
 
 PHOTO_KINDS = ("photograph", "film still")
-NOTHING = re.compile(r"\s*(?:no|none|nothing|not any)\b", re.I)   # a reader's "none seen" is not a report
+CHART_SEEN = re.compile(r"\b(?:galax\w*|spiral|star ?(?:map|chart|field)s?|maps?|charts?|nebula\w*|sea chart|"
+                        r"navigation\w*|constellation\w*)\b", re.I)   # a reader's words for the sea on a display
+NOTHING = re.compile(r"\s*(?:no|none|nothing|not any|n/a)\b", re.I)   # a reader's "none seen" is not a report
+LISTS = ("lettering_or_symbols", "anatomy_problems", "bare_human_skin", "permanent_marks", "realism_breaks")
 
 
 def _reported(entries):
-    return [e for e in entries or () if not NOTHING.match(str(e))]
+    if isinstance(entries, str):
+        entries = [entries]
+    return [str(e) for e in entries or () if str(e).strip() and not NOTHING.match(str(e))]
 
 
-def read_grade(key, result):
-    """Grade what scene_read.js returned against the key: (rows, tally). rows is [(letter, word-approach, [lines])],
-    tally the counts the docs quote. A reader's answer for a letter the key does not have is ignored."""
+def sweep_grade(key, result):
+    """Grade what scene_sweep.js returned against the key: (rows, tally). rows is [(id, word, [lines])], worst
+    first; tally the counts the docs quote. An answer for an id the key does not have is counted and left out."""
+    import blind
     tally = collections.Counter()
+    by_id = collections.defaultdict(list)
+    for reader in result.get("readers") or ():
+        for s in (reader or {}).get("scenes") or ():
+            sid = str(s.get("id", "")).strip().lower().replace(".jpg", "")
+            if sid in key:
+                by_id[sid].append(s)
+            else:
+                tally["answers for an id that is not in the key"] += 1
     rows = []
-    for letter in sorted(key["scenes"]):
-        k = key["scenes"][letter]
-        lines = []
-        for n, reader in enumerate(result.get("match") or (), 1):
-            for s in (reader or {}).get("scenes", ()):
-                if str(s.get("letter", "")).strip().upper() != letter:
-                    continue
-                picks = [(int(c["number"]), c.get("confidence", "")) for c in s.get("candidates", ())]
-                first = picks[0] if picks else (None, "")
-                right = first[0] == k["number"]
-                among = any(p == k["number"] for p, _ in picks)
-                tally["match answers"] += 1
-                tally["match first choice right"] += right
-                tally["match right among the candidates"] += among
-                tally["called a photograph or a film still"] += s.get("kind_of_image") in PHOTO_KINDS
-                tally["kind answers"] += 1
-                tally["lettering reports"] += bool(_reported(s.get("lettering_or_symbols")))
-                tally["more than one figure"] += int(s.get("figures_visible") or 1) > 1
-                verdict = "RIGHT" if right else ("right among the candidates" if among else "WRONG")
-                lines.append(f"match {n}: picked {first[0]} ({first[1]}), {verdict}; saw {s.get('face_animal')} and "
-                             f"{s.get('second_animal')}; a {s.get('kind_of_image')}; {s.get('figures_visible')} "
-                             f"figure(s)")
-                for what in ("lettering_or_symbols", "anatomy_problems"):
-                    if _reported(s.get(what)):
-                        lines.append(f"    {what.replace('_', ' ')}: " + "; ".join(_reported(s[what])))
-        for n, reader in enumerate(result.get("compare") or (), 1):
-            for s in (reader or {}).get("scenes", ()):
-                if str(s.get("letter", "")).strip().upper() != letter:
-                    continue
-                same = s.get("same_character", "")
-                tally["compare answers"] += 1
-                tally[f"same character: {same}"] += 1
-                tally["eye ring visible"] += bool(s.get("eye_ring_visible"))
-                tally["trim colour present"] += bool(s.get("trim_colour_present"))
-                tally["called a photograph or a film still"] += s.get("kind_of_image") in PHOTO_KINDS
-                tally["kind answers"] += 1
-                tally["lettering reports"] += bool(_reported(s.get("lettering_or_symbols")))
-                tally["something permanent added"] += bool(_reported(s.get("added_permanent")))
-                noticed = [d["what"] for d in s.get("differences", ()) if d.get("severity") == "a player would notice"]
-                tally["differences a player would notice"] += len(noticed)
-                lines.append(f"compare {n}: same character {same}; eye ring "
-                             f"{'seen' if s.get('eye_ring_visible') else 'not seen'}; trim colour "
-                             f"{'present' if s.get('trim_colour_present') else 'absent'}; a {s.get('kind_of_image')}")
-                for d in noticed:
-                    lines.append(f"    a player would notice: {d}")
-                for what in ("added_permanent", "realism_breaks", "lettering_or_symbols", "anatomy_problems"):
-                    if _reported(s.get(what)):
-                        lines.append(f"    {what.replace('_', ' ')}: " + "; ".join(_reported(s[what])))
-        rows.append((letter, f"{k['word']}-{k['approach']}", lines))
-    return rows, tally
+    for sid in sorted(key):
+        k = key[sid]
+        lines, score = [], 0
+        if not by_id[sid]:
+            tally["scenes no reader answered for"] += 1
+            lines.append("NO READER ANSWERED")
+            score += 100
+        for s in by_id[sid]:
+            tally["answers"] += 1
+            said = [str(x) for x in [s.get("face_animal"), s.get("second_animal")] + list(s.get("other_animals") or ())
+                    if x and not NOTHING.match(str(x))]
+            f_lv, c_lv = blind.read_levels(k["face"], k["crown"], said)
+            face, crown = (("no", "its kind", "named")[lv] for lv in (f_lv, c_lv))
+            both = f_lv == blind.SPECIES and c_lv == blind.SPECIES
+            kinds = bool(f_lv and c_lv)
+            photo = s.get("kind_of_image") in PHOTO_KINDS
+            figures = int(s.get("figures_visible") or 1)
+            tally["both animals named"] += both
+            tally["both animals named, at least by their kind"] += kinds
+            tally["called a photograph or a film still"] += photo
+            tally["more than one figure"] += figures > 1
+            tally["face not easy to read"] += s.get("face_readable") is False
+            score += (not kinds) * 4 + (not photo) * 3 + (figures > 1) * 5 + (s.get("face_readable") is False) * 3
+            shown = "; ".join(_reported(s.get("displays")))
+            if k.get("chart"):
+                saw = bool(CHART_SEEN.search(shown))
+                tally["chart scenes read"] += 1
+                tally["chart scenes where the reader saw the chart"] += saw
+                score += (not saw) * 3
+                lines_chart = f"    the {k['chart'][0]} ({k['chart'][1]}): " + (shown or "NOT SEEN")
+            else:
+                lines_chart = f"    a display nobody asked for: {shown}" if shown else ""
+            lines.append(f"saw {s.get('face_animal')} and {s.get('second_animal')} "
+                         f"({k['face']}: {face}; {k['crown']}: {crown}); a {s.get('kind_of_image')} "
+                         f"({s.get('kind_why', '')}); {figures} figure(s); doing: {s.get('doing', '')}")
+            if lines_chart:
+                lines.append(lines_chart)
+            for what in LISTS:
+                hits = _reported(s.get(what))
+                tally[f"answers listing {what.replace('_', ' ')}"] += bool(hits)
+                if hits:
+                    score += 2 if what != "realism_breaks" else 1
+                    lines.append(f"    {what.replace('_', ' ')}: " + "; ".join(hits))
+        rows.append((score, sid, k["word"], lines))
+    rows.sort(key=lambda r: (-r[0], r[1]))
+    return [(sid, word, lines) for _, sid, word, lines in rows], tally
 
 
-def read_notes(key):
-    """What changed since the read was prepared: scenes or avatars repainted since (the read is of the earlier ones)."""
-    notes = []
-    for letter, k in sorted(key["scenes"].items()):
-        path = scene_path(k["word"], k["approach"])
-        if not os.path.exists(path) or _md5(path) != k["scene_md5"]:
-            notes.append(f"scene {letter} ({k['word']}-{k['approach']}) was repainted since this read")
-        if _md5(creator.bust_path(k["word"])) != k["bust_md5"]:
-            notes.append(f"{k['word']}'s avatar was repainted since this read")
-    return notes
+def sweep_notes(key):
+    """What changed since the sweep was prepared: scenes repainted since (the read is of the earlier pictures)."""
+    return [f"{sid} ({k['word']}) was repainted since this read" for sid, k in sorted(key.items())
+            if not os.path.exists(scene_path(k["word"])) or _md5(scene_path(k["word"])) != k["scene_md5"]]
 
 
-def print_read(out):
-    with open(read_key_path(out), encoding="utf-8") as fh:
+def print_sweep(out):
+    with open(sweep_key_path(out), encoding="utf-8") as fh:
         key = json.load(fh)
     with open(os.path.join(out, "result.json"), encoding="utf-8") as fh:
         result = json.load(fh)
-    rows, tally = read_grade(key, result)
-    for letter, name, lines in rows:
-        print(f"{letter}  {name}  (avatar {key['scenes'][letter]['number']})")
+    rows, tally = sweep_grade(key, result)
+    for sid, word, lines in rows:
+        print(f"{sid}  {word}")
         for line in lines:
             print("   " + line)
-    m, c, kinds = tally["match answers"], tally["compare answers"], tally["kind answers"]
-    print(f"scenes read                                   {len(rows)}")
-    print(f"blind match, first choice right               {tally['match first choice right']} of {m} answers")
-    print(f"blind match, right among the candidates       {tally['match right among the candidates']} of {m}")
-    print(f"side by side, same character                  yes {tally['same character: yes']}, mostly "
-          f"{tally['same character: mostly']}, no {tally['same character: no']} (of {c})")
-    print(f"side by side, differences a player would notice {tally['differences a player would notice']}")
-    print(f"eye ring seen                                 {tally['eye ring visible']} of {c}")
-    print(f"trim colour present                           {tally['trim colour present']} of {c}")
-    print(f"called a photograph or a film still           {tally['called a photograph or a film still']} of {kinds}")
-    print(f"answers listing a mark, device or lettering   {tally['lettering reports']} of {kinds} (read the lines)")
-    print(f"answers counting more than one figure         {tally['more than one figure']} of {m}")
-    print(f"answers reporting something permanent added   {tally['something permanent added']} of {c}")
-    for note in read_notes(key):
+    n = tally["answers"]
+    print(f"scenes read                                   {len(rows)} ({n} answers)")
+    for what in ("both animals named", "both animals named, at least by their kind",
+                 "called a photograph or a film still", "more than one figure", "face not easy to read"):
+        print(f"{what:45} {tally[what]} of {n}")
+    if tally["chart scenes read"]:
+        print(f"{'the chart seen, where a scene has one':45} {tally['chart scenes where the reader saw the chart']} "
+              f"of {tally['chart scenes read']}")
+    for what in LISTS:
+        label = f"answers listing {what.replace('_', ' ')}"
+        print(f"{label:45} {tally[label]} of {n} (read the lines)")
+    for what in ("scenes no reader answered for", "answers for an id that is not in the key"):
+        if tally[what]:
+            print(f"WARNING: {what}: {tally[what]}")
+    for note in sweep_notes(key):
         print("NOTE:", note)
     return 0
 
@@ -787,14 +975,14 @@ def self_test():
     errors = []
     words = [w for w, *_ in creator.catalog()]
 
-    # 1. Every avatar's painted brief still reads, and what is cut from it is in it, word for word.
+    # 1. Every pilot's bust brief still reads, and what is cut from it is in it, word for word.
     for w in words:
         try:
             i = identity(w)
         except (ValueError, SystemExit) as e:
             errors.append(str(e))
             continue
-        text = open(creator.painted_brief_path(w), encoding="utf-8").read()
+        text = identity_text(w)[0]
         for k in ("face", "coat", "second", "hair", "outfit", "motif"):
             if i[k] and i[k] not in text:
                 errors.append(f"{w}: the {k} line is not the painted brief's own words")
@@ -813,6 +1001,11 @@ def self_test():
             who(w)
         except Exception as e:   # noqa: BLE001
             errors.append(f"{w}: who() raised {e!r}")
+    # ... and so does the brief TODAY's tables write, which is where a pilot who never had a bust starts
+    for w, person, animals, faction, callsign, look in creator.catalog():
+        if not PAINTED.search(bust.compose(animals, faction, person, callsign, **look)):
+            errors.append(f"{w}: scene.PAINTED no longer reads the brief bust.compose writes today")
+            break
 
     # 2. The tables cover every faction type and every kind of second piece, and name nothing they must not.
     for f in bust.GEAR:
@@ -825,149 +1018,211 @@ def self_test():
     for a in BUILD:
         if a not in bust.FACE:
             errors.append(f"BUILD names {a}, which is not a face animal")
-    texts = ([FINISH, BUILD_DEFAULT] + [v["shot"] for v in APPROACHES.values()] + list(BUILD.values())
-             + list(GLOVES.values()) + list(LOWER.values()) + list(CARRY.values()))
+    texts = ([FINISH, FRAMING, BUILD_DEFAULT, CHART_RULE, FINISH_CHART] + list(BUILD.values())
+             + list(GLOVES.values()) + list(LOWER.values()) + list(CARRY.values()) + list(CHART_VIEWS.values())
+             + list(CHART_KINDS.values()))
     for t in texts:
         for gate, what in ((bust.world_name_in, "names the world"), (bust.emblem_word, "invites an emblem")):
             if gate(t):
                 errors.append(f"a scene table line {what} ({gate(t)!r}): {t[:60]}...")
-    for v in APPROACHES.values():
-        w_, h_ = v["frame"]
-        if not (848 <= min(w_, h_) and 1280 <= max(w_, h_) <= 2048):
-            errors.append(f"approach {v['name']}: frame {v['frame']} is outside what the painter takes")
+    if FINISH.count(FINISH_BLANK) != 1:
+        errors.append("FINISH no longer has the words a chart's scene swaps (FINISH_BLANK)")
+    for kind, line in CHART_KINDS.items():
+        if line.count("{view}") != 1 or not line.rstrip().endswith("."):
+            errors.append(f"CHART_KINDS[{kind!r}] takes its view once and ends in a full stop")
+        if STYLE_WORDS.search(line):
+            errors.append(f"CHART_KINDS[{kind!r}] pulls back to a painting")
+    if not wide(FRAME) or not wide(ASK) or wide((1536, 1024)) or wide((1024, 576)):
+        errors.append("wide() does not tell the wide frame from a 3:2 picture or a small one")
 
-    # 3. Every sample composes, names its source, keeps the identity lines and passes the gates.
-    for w, rec in SAMPLES.items():
+    # 3. Every record is a catalog pilot's, complete, names its source, composes, keeps the identity lines and
+    #    passes the gates; no two share a treatment.
+    recs = records()
+    for name in sorted(os.listdir(RECORDS)):
+        if name.endswith(".py") and name[:-3] not in words:
+            errors.append(f"scenes/{name} is no catalog pilot's record (creator.py list)")
+    taken = collections.Counter(rec.get("treatment", "").strip().lower() for rec in recs.values())
+    for w, rec in recs.items():
         for k in SCENE_KEYS:
             if not rec.get(k):
-                errors.append(f"sample {w} has no {k}")
+                errors.append(f"{w}: the record has no {k}")
         for k in rec:
             if k not in SCENE_KEYS + SCENE_MORE:
-                errors.append(f"sample {w} has an unknown field {k}")
-        if not re.match(r"(?:profession|hobby|history): ", rec.get("source", "")):
-            errors.append(f"sample {w}: the source says profession:, hobby: or history:")
+                errors.append(f"{w}: the record has an unknown field {k}")
+        if not re.match(r"(?:%s): \S" % "|".join(SOURCES), rec.get("source", "")):
+            errors.append(f"{w}: the source starts with one of {', '.join(x + ':' for x in SOURCES)}")
+        if taken[rec.get("treatment", "").strip().lower()] > 1:
+            errors.append(f"{w}: another pilot has the treatment {rec.get('treatment')!r}: each scene is its own")
+        if rec.get("frame", FRAMING) and rec.get("side") not in SIDES:
+            errors.append(f"{w}: the record needs side= one of {', '.join(SIDES)}")
+        if rec.get("chart") and "chart" not in (rec.get("doing", "") + rec.get("light", "")).lower():
+            errors.append(f"{w}: the scene has a chart that neither its doing nor its light mentions: a display "
+                          f"belongs to what the pilot is doing or to the light, or it is set dressing")
         try:
             text = compose(w)
         except Exception as e:   # noqa: BLE001
-            errors.append(f"sample {w} does not compose: {e}")
+            errors.append(f"{w} does not compose: {e}")
             continue
         i = as_seen(identity(w), rec.get("swap", ()))
         for k in ("face", "coat", "outfit"):
             if i[k] not in text:
-                errors.append(f"sample {w}: the scene brief lost the avatar's {k} line")
+                errors.append(f"{w}: the scene brief lost the pilot's {k} line")
         if i["name"] not in text:
-            errors.append(f"sample {w}: the scene brief does not name the pilot")
+            errors.append(f"{w}: the scene brief does not name the pilot")
         if re.search(r"(?:\bthe|'s) portrait\b", text):
-            errors.append(f"sample {w}: the brief points the painter at a portrait it cannot see")
+            errors.append(f"{w}: the brief points the painter at a portrait it cannot see")
         if len(text.split()) > WORD_CAP:
-            errors.append(f"sample {w}: the scene brief is {len(text.split())} words (the cap is {WORD_CAP})")
-    for w, rec in SAMPLES.items():
-        path = scene_path(w, rec["approach"])
-        if os.path.exists(path):
-            from PIL import Image
-            box = CLOSE.get(f"{w}-{rec['approach']}")
-            size = Image.open(path).size
-            if not box or not (0 <= box[0] < box[2] <= size[0] and 0 <= box[1] < box[3] <= size[1]):
-                errors.append(f"sample {w}: CLOSE has no box inside {os.path.basename(path)} {size}")
-            elif box[2] - box[0] != box[3] - box[1]:
-                errors.append(f"sample {w}: the CLOSE box is not square")
-            if not os.path.exists(painted_brief_path(w, rec["approach"])):
-                errors.append(f"sample {w}: the painted scene has no brief on record beside it")
-            else:   # whatever the kit writes today, the painting's own brief carries the avatar's own words,
-                    # as its brief had them or as the record swaps them for what the avatar shows
-                painted = open(painted_brief_path(w, rec["approach"]), encoding="utf-8").read()
-                raw, seen_ = identity(w), as_seen(identity(w), rec.get("swap", ()))
-                for k in ("face", "coat", "outfit"):
-                    if raw[k] not in painted and seen_[k] not in painted:
-                        errors.append(f"sample {w}: the brief it was painted from lacks the avatar's {k} line")
-    if len({r["approach"] for r in SAMPLES.values()}) != len(SAMPLES):
-        errors.append("two samples share an approach: each sample is a different one")
+            errors.append(f"{w}: the scene brief is {len(text.split())} words (the cap is {WORD_CAP})")
+        if not os.path.exists(scene_path(w)):
+            continue
+        from PIL import Image
+        size = Image.open(scene_path(w)).size
+        if not wide(size):
+            errors.append(f"{w}: the painted scene is {size}, not the wide frame")
+        errors += close_errors(w, size)
+        if not os.path.exists(painted_brief_path(w)):
+            errors.append(f"{w}: the painted scene has no brief on record beside it")
+        else:   # whatever the kit writes today, the painting's own brief carries the pilot's own words,
+                # as the bust's brief had them or as the record swaps them for what the bust shows
+            painted = open(painted_brief_path(w), encoding="utf-8").read()
+            raw = identity(w)
+            for k in ("face", "coat", "outfit"):
+                if raw[k] not in painted and i[k] not in painted:
+                    errors.append(f"{w}: the brief it was painted from lacks the pilot's {k} line")
+    errors += manifest_errors()
+    charts = [w for w, rec in recs.items() if rec.get("chart")]
+    if len(charts) > max(1, int(len(recs) * CHART_MOST + 0.999)):
+        errors.append(f"{len(charts)} of {len(recs)} scenes carry a chart of the sea: a few do, never most "
+                      f"(CHART_MOST)")
 
     # 4. Negative controls: each gate fires on what it is for.
-    def refuses(over, why):
+    base = recs.get("MANGER") or next(iter(recs.values()), None)
+    who_ = "MANGER" if "MANGER" in recs else next(iter(recs), None)
+    if base is None:
+        errors.append("no record to test the gates on")
+    else:
+        def refuses(over, why):
+            try:
+                compose(who_, **over)
+            except ValueError as e:
+                return why in str(e)
+            return False
+        controls = (
+            (dict(place="The hangar of the Ark, at night."), "names the world"),
+            (dict(doing="Tamako sits cross-legged and waves a flag."), "invites an emblem"),
+            (dict(wear="A long scar runs down the bill."), "nothing permanent"),
+            (dict(wear="One chipped tusk and a muddy hem."), "nothing permanent"),
+            (dict(place="A painterly marsh at dawn."), "pulls back to a painting"),
+            (dict(swap=(("a phrase the bust's brief never had", "anything"),)), "is in none of the avatar's lines"),
+            (dict(frame=FRAMING, side="middle"), "side="),
+            (dict(chart=("panel", "waters")), "writes {chart} once"),
+            (dict(place="A chart room. On the wall hangs {chart} Nothing else."), "has no chart="),
+            (dict(chart=("window", "waters"), place="A chart room. On the wall hangs {chart}"), "give (kind, view)"),
+            (dict(chart=("panel", "waters"), place="The bridge of the HyperSea liner. There hangs {chart}"),
+             "names the world"),
+        )
+        for over, why in controls:
+            if not refuses(over, why):
+                errors.append(f"the gate '{why}' did not fire on {over}")
         try:
-            compose("MANGER", **over)
-        except ValueError as e:
-            return why in str(e)
-        return False
-    controls = (
-        (dict(place="The hangar of the Ark, at night."), "names the world"),
-        (dict(doing="Tamako sits cross-legged and waves a flag."), "invites an emblem"),
-        (dict(wear="A long scar runs down the bill."), "nothing permanent"),
-        (dict(wear="One chipped tusk and a muddy hem."), "nothing permanent"),
-        (dict(place="A painterly marsh at dawn."), "pulls back to a painting"),
-        (dict(swap=(("a phrase the avatar's brief never had", "anything"),)), "is in none of the avatar's lines"),
-    )
-    for over, why in controls:
-        if not refuses(over, why):
-            errors.append(f"the gate '{why}' did not fire on {over}")
-    try:
-        compose("ENSIGN")
-        errors.append("compose made a scene for a pilot with no scene record")
-    except ValueError:
-        pass
+            compose(who_, _rec={})
+            errors.append("compose made a scene from an empty record")
+        except ValueError:
+            pass
+        framed = compose(who_, frame=FRAMING, side="right")
+        if "a third of the way in from the right edge" not in framed or "{" in framed:
+            errors.append("FRAMING does not reach the brief with its side and the pilot's name filled in")
+        for kind in CHART_KINDS:
+            for view in CHART_VIEWS:
+                charted = compose(who_, chart=(kind, view), place="A chart room. On the wall hangs {chart} A stool.")
+                if (CHART_VIEWS[view] not in charted or CHART_RULE not in charted or FINISH_CHART not in charted
+                        or FINISH_BLANK in charted or "{" in charted):
+                    errors.append(f"a {kind} of the {view} does not reach the brief whole")
+        if FINISH_BLANK not in compose(who_) or FINISH_CHART in compose(who_):
+            errors.append("a scene without a chart lost FINISH's blank screens")
 
-    # 5. The read: prep shuffles into scratch with the key outside the readers' folder, and grade tells a right
-    #    match from a wrong one.
+    # 5. Cuts for other presentations: each is the aspect asked for, inside the frame, and holds the head when a
+    #    frame of that shape can.
+    for close in ((360, 0, 800, 440), (1100, 300, 1400, 600), (0, 500, 300, 800), (640, 200, 896, 456)):
+        for name, a in CROPS:
+            l, t, r, b = crop_box(FRAME, close, a)
+            if not (0 <= l < r <= FRAME[0] and 0 <= t < b <= FRAME[1]) or abs((r - l) / (b - t) - a) > 0.01:
+                errors.append(f"crop_box gives {(l, t, r, b)} for {name} round {close}")
+            elif r - l >= close[2] - close[0] and not (l <= close[0] and close[2] <= r):
+                errors.append(f"the {name} cut round {close} loses part of the head: {(l, t, r, b)}")
+    if (side_of(FRAME, (100, 0, 400, 300)), side_of(FRAME, (1100, 0, 1400, 300)),
+            side_of(FRAME, (640, 0, 896, 256))) != ("left", "right", "centre"):
+        errors.append("side_of does not tell left, right and centre apart")
+
+    # 6. The sweep: prep shuffles into scratch with the key outside the readers' folder, and grade tells a clean
+    #    answer from one that lists a second figure, lettering and the wrong animals.
     import shutil
     import tempfile
-    painted = sorted(w for w, rec in SAMPLES.items() if os.path.exists(scene_path(w, rec["approach"])))
-    tmp = tempfile.mkdtemp(prefix="scene_read_")
-    try:
-        out = os.path.join(tmp, "read")
-        key = read_prep(out)
-        if sorted(k["word"] for k in key["scenes"].values()) != painted:
-            errors.append("read-prep did not letter every painted scene once")
-        if len(set(key["avatars"].values())) != len(key["avatars"]) or len(key["avatars"]) != len(words):
-            errors.append("read-prep did not number every avatar once")
-        if any(key["avatars"][str(k["number"])] != k["word"] for k in key["scenes"].values()):
-            errors.append("the read key's scene numbers do not point at their own avatars")
-        if os.path.dirname(read_key_path(out)) != tmp or "key" in " ".join(os.listdir(out)):
-            errors.append("the read key is inside the folder the readers open")
-        shown = os.listdir(os.path.join(out, "match")) + os.listdir(os.path.join(out, "compare"))
-        if any(w.lower() in name.lower() for name in shown for w in words):
-            errors.append("a file the readers open gives a pilot away by its name")
-        if read_prep(os.path.join(tmp, "another"))["avatars"] == key["avatars"]:
-            errors.append("two reads in different folders share one shuffle")
+    have = sorted(avatar_sources())
+    if have:
+        tmp = tempfile.mkdtemp(prefix="scene_sweep_")
+        try:
+            out = os.path.join(tmp, "sweep")
+            key = sweep_prep(out)
+            if sorted(k["word"] for k in key.values()) != have:
+                errors.append("sweep-prep did not number every painted scene once")
+            if os.path.dirname(sweep_key_path(out)) != tmp or "key" in " ".join(os.listdir(out)):
+                errors.append("the sweep key is inside the folder the readers open")
+            if any(w.lower() in name.lower() for name in os.listdir(out) for w in words):
+                errors.append("a file the readers open gives a pilot away by its name")
+            if len(os.listdir(out)) != 4 * len(have):
+                errors.append("sweep-prep did not write four pictures a scene")
+            first = [k["word"] for _, k in sorted(key.items())]   # a few scenes can fall in one order by chance,
+            if len(have) > 3 and all(                              # so three more folders are tried
+                    [k["word"] for _, k in sorted(sweep_prep(os.path.join(tmp, other)).items())] == first
+                    for other in ("another", "third", "fourth")):
+                errors.append("sweeps in different folders share one shuffle")
 
-        def answers(pick):
-            return dict(
-                match=[dict(scenes=[dict(letter=x, kind_of_image="photograph", face_animal="a", second_animal="b",
-                                         candidates=[dict(number=pick(x), confidence="sure", why="")],
-                                         lettering_or_symbols=["None seen"], anatomy_problems=[],
-                                         figures_visible=1) for x in key["scenes"]])],
-                compare=[dict(scenes=[dict(letter=x, same_character="yes", added_permanent=[],
-                                           differences=[dict(what="the eyes", severity="a player would notice"),
-                                                        dict(what="a button", severity="trivial")],
-                                           trim_colour_present=True, eye_ring_visible=False,
-                                           kind_of_image="film still", realism_breaks=[], lettering_or_symbols=[],
-                                           anatomy_problems=[]) for x in key["scenes"]])])
-        n = len(key["scenes"])
-        _, tally = read_grade(key, answers(lambda x: key["scenes"][x]["number"]))
-        if (tally["match first choice right"], tally["differences a player would notice"],
-                tally["lettering reports"], tally["called a photograph or a film still"]) != (n, n, 0, 2 * n):
-            errors.append(f"read-grade miscounts a right read: {dict(tally)}")
-        _, tally = read_grade(key, answers(lambda x: key["scenes"][x]["number"] % len(words) + 1))
-        if tally["match first choice right"] or tally["match right among the candidates"]:
-            errors.append("read-grade called a wrong match right")
-        with open(os.path.join(out, "result.json"), "w", encoding="utf-8") as fh:
-            fh.write("{}")
-        for folder, what in ((out, "a folder that already holds a read"),
-                             (os.path.join(ROOT, SCENES, "_read"), "the repository")):
-            try:
-                read_prep(folder)
-                errors.append(f"read-prep wrote into {what}")
-            except ValueError:
-                pass
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+            def answers(clean):
+                return dict(readers=[dict(scenes=[dict(
+                    id=sid, kind_of_image="photograph" if clean else "3D render", kind_why="",
+                    face_animal=k["face"].lower() if clean else "a dragon",
+                    second_animal=k["crown"].lower() if clean else "none", doing="works",
+                    figures_visible=1 if clean else 2, face_readable=clean,
+                    displays=["a glowing map of a spiral galaxy"] if clean else [],
+                    lettering_or_symbols=["None seen"] if clean else ["a number on a crate"],
+                    anatomy_problems=[] if clean else ["six fingers on the left hand"],
+                    bare_human_skin=[], permanent_marks=[], realism_breaks=[]) for sid, k in key.items()])])
+            n = len(key)
+            charted = {sid: dict(k, chart=["hologram", "galaxy"]) for sid, k in key.items()}
+            seen = [sweep_grade(charted, answers(c))[1]["chart scenes where the reader saw the chart"]
+                    for c in (True, False)]
+            if seen != [n, 0]:
+                errors.append(f"sweep-grade does not tell a chart that was seen from one that was not: {seen}")
+            _, tally = sweep_grade(key, answers(True))
+            if (tally["both animals named"], tally["called a photograph or a film still"], tally["more than one figure"],
+                    tally["answers listing lettering or symbols"], tally["face not easy to read"]) != (n, n, 0, 0, 0):
+                errors.append(f"sweep-grade miscounts a clean read: {dict(tally)}")
+            _, tally = sweep_grade(key, answers(False))
+            if (tally["both animals named, at least by their kind"], tally["called a photograph or a film still"],
+                    tally["more than one figure"], tally["answers listing lettering or symbols"],
+                    tally["answers listing anatomy problems"], tally["face not easy to read"]) != (0, 0, n, n, n, n):
+                errors.append(f"sweep-grade miscounts a bad read: {dict(tally)}")
+            with open(os.path.join(out, "result.json"), "w", encoding="utf-8") as fh:
+                fh.write("{}")
+            for folder, what in ((out, "a folder that already holds a read"),
+                                 (os.path.join(ROOT, SCENES, "_sweep"), "the repository")):
+                try:
+                    sweep_prep(folder)
+                    errors.append(f"sweep-prep wrote into {what}")
+                except ValueError:
+                    pass
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
+    painted = sum(os.path.exists(scene_path(w)) for w in recs)
     if errors:
         print("scene.py self-test FAILED:")
         for e in errors:
             print("  -", e)
         return 1
-    print(f"scene.py self-test: ok ({len(words)} avatars read, {len(SAMPLES)} samples, {len(APPROACHES)} approaches)")
+    print(f"scene.py self-test: ok ({len(words)} pilots read, {len(recs)} records, {painted} painted, "
+          f"{len(avatar_sources())} avatars cut from a scene)")
     return 0
 
 
@@ -979,46 +1234,71 @@ def main():
     if args[0] == "--self-test":
         return self_test()
     if args[0] == "list":
-        for w, rec in SAMPLES.items():
-            i = identity(w)
-            ap = APPROACHES[rec["approach"]]
-            print(f"{w:10} {i['name']:20} {i['a']}/{i['b']:10} {ap['name']:24} {ap['frame'][0]}x{ap['frame'][1]}  "
-                  f"{rec['source']}")
+        recs = records()
+        sources = avatar_sources()
+        for w, person, (a, b), *_ in creator.catalog():
+            rec = recs.get(w)
+            state = "-" if not rec else "avatar" if w in sources else "painted" if os.path.exists(scene_path(w)) \
+                else "record"
+            print(f"{w:10} {person:22} {a + '/' + b:26} {state:8} "
+                  + (f"{rec['treatment']} | {rec['source']}" if rec else ""))
+        print(f"{len(recs)} records, {sum(os.path.exists(scene_path(w)) for w in recs)} painted, {len(sources)} "
+              f"avatars cut from a scene, of {len(creator.catalog())} pilots")
         return 0
     if args[0] == "who" and len(args) == 2:
         i = identity(args[1])
-        rec = SAMPLES.get(i["word"], {})
+        rec = record(i["word"]) or {}
         print(who(args[1], rec.get("seen", ()), rec.get("swap", ())))
         print(hands_of(i))
         return 0
-    if args[0] == "brief" and len(args) in (2, 3):
-        print(compose(args[1], args[2] if len(args) == 3 else None))
+    if args[0] == "draft" and len(args) == 2:
+        print(draft(args[1]))
+        return 0
+    if args[0] == "brief" and len(args) == 2:
+        print(compose(args[1]))
         return 0
     if args[0] == "stale":
         rows = stale()
         for key, why in rows:
             print(f"{key:20} {why}")
-        print(f"{len(rows)} of {len(SAMPLES)} scenes differ from what the kit would paint today")
+        print(f"{len(rows)} of {len(records())} scenes differ from what the kit would paint today")
         return 0
-    if args[0] == "sheet" and len(args) == 2:
-        sheet(args[1])
+    if args[0] == "sheet" and len(args) >= 2:
+        sheet(args[1], args[2:] or None)
         return 0
-    if args[0] == "capture" and len(args) in (3, 4):
-        capture(args[1], args[2], args[3] if len(args) == 4 else None)
+    if args[0] == "crops" and len(args) >= 2:
+        crops_sheet(args[1], args[2:] or None)
         return 0
-    if args[0] == "read-prep" and len(args) == 2:
+    if args[0] == "grid" and len(args) == 3:
+        grid(args[1], args[2])
+        return 0
+    if args[0] == "capture" and len(args) == 3:
+        capture(args[1], args[2])
+        return 0
+    if args[0] == "manifest":
+        if "--check" in args:
+            problems = manifest_errors()
+            for e in problems:
+                print("DRIFT", e)
+            print("manifest:", "ok" if not problems else f"{len(problems)} problem(s)")
+            return 1 if problems else 0
+        with open(os.path.join(ROOT, MANIFEST), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(manifest_text())
+        print(f"wrote {MANIFEST}: {len(avatar_sources())} scenes")
+        return 0
+    if args[0] == "sweep-prep" and len(args) >= 2:
         try:
-            key = read_prep(args[1])
+            key = sweep_prep(args[1], args[2:] or None)
         except ValueError as e:
-            print(f"scene.py read-prep: {e}")
+            print(f"scene.py sweep-prep: {e}")
             return 2
-        print(f"{len(key['scenes'])} scenes and {len(key['avatars'])} avatars in {os.path.realpath(args[1])}; the key "
-              f"is {read_key_path(args[1])}")
-        print("readers: .claude/skills/pilot-creator/references/scene_read.js with args "
-              f"{{\"dir\": \"{os.path.realpath(args[1])}\", \"letters\": {json.dumps(sorted(key['scenes']))}}}")
+        ids = sorted(key)
+        print(f"{len(key)} scenes in {os.path.realpath(args[1])}; the key is {sweep_key_path(args[1])}")
+        print("readers: .claude/skills/pilot-creator/references/scene_sweep.js with args "
+              f"{{\"dir\": \"{os.path.realpath(args[1])}\", \"ids\": {json.dumps(ids)}}}")
         return 0
-    if args[0] == "read-grade" and len(args) == 2:
-        return print_read(args[1])
+    if args[0] == "sweep-grade" and len(args) == 2:
+        return print_sweep(args[1])
     print(__doc__)
     return 2
 

@@ -1,0 +1,70 @@
+{
+ "about": "Pilot scenes: one widescreen picture a pilot. close is the avatar's square (the head); side is where the pilot stands, so text goes on the other side; crops are the largest box of each aspect that keeps the pilot; chart, on a few, says the scene shows the sea on a display. Written by Tools/Build/pilot_art/scene.py manifest.",
+ "frame": [1536, 864],
+ "scenes": {
+  "MANGER": {
+   "name": "Tamako Deephook",
+   "file": "Docs/Pilots/art/scenes/MANGER.jpg",
+   "size": [1536, 864],
+   "close": [490, 155, 860, 525],
+   "side": "left",
+   "treatment": "Field documentary, a long lens from far off",
+   "source": "profession: a hunter who wades the feeding flats sets a lure line",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [99, 0, 1251, 864],
+    "1:1": [243, 0, 1107, 864],
+    "4:5": [330, 0, 1021, 864],
+    "9:16": [432, 0, 918, 864]
+   }
+  },
+  "GALLEON": {
+   "name": "Haradek Anchorkeel",
+   "file": "Docs/Pilots/art/scenes/GALLEON.jpg",
+   "size": [1536, 864],
+   "close": [360, 0, 800, 440],
+   "side": "left",
+   "treatment": "Cinematic film still, anamorphic, one work lamp",
+   "source": "hobby: \"ties a ribbon on the hull for every friend lost\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [4, 0, 1156, 864],
+    "1:1": [148, 0, 1012, 864],
+    "4:5": [234, 0, 925, 864],
+    "9:16": [337, 0, 823, 864]
+   }
+  },
+  "Echo": {
+   "name": "Echo",
+   "file": "Docs/Pilots/art/scenes/Echo.jpg",
+   "size": [1536, 864],
+   "close": [390, 0, 730, 340],
+   "side": "left",
+   "treatment": "Candid snapshot by a crewmate, desk-lamp light",
+   "source": "hobby: \"keeps a jar of every crystal they have ever missed\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [128, 0, 992, 864],
+    "4:5": [214, 0, 905, 864],
+    "9:16": [317, 0, 803, 864]
+   }
+  },
+  "Tenacious": {
+   "name": "Tenacious",
+   "file": "Docs/Pilots/art/scenes/Tenacious.jpg",
+   "size": [1536, 864],
+   "close": [362, 5, 692, 335],
+   "side": "left",
+   "treatment": "Aftermath portrait, medium format, eye to eye",
+   "source": "profession: a first responder, in the first minute after a rescue",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [95, 0, 959, 864],
+    "4:5": [182, 0, 873, 864],
+    "9:16": [284, 0, 770, 864]
+   }
+  }
+ }
+}

@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
-"""The BLIND READ: does a stranger name both animals of a pilot bust, at full size and at icon size?
+"""The BLIND READ: does a stranger name both animals of a pilot's avatar, at full size and at icon size?
 
-Garrett's bar (2026-11-10) is "pilot images that really show both clades in the avatar bust". Looking at a bust
-whose brief you wrote is no test: you see the jackal because you asked for one. So the busts are shown, shuffled
+Garrett's bar (2026-11-10) is "pilot images that really show both clades in the avatar bust". Looking at a picture
+whose brief you wrote is no test: you see the jackal because you asked for one. So the avatars are shown, shuffled
 and unnamed, to readers who are told nothing (agents that may open only the pictures), and what they name is graded
 against the key by this file. Round 1 (one navy plate, a hand in every frame) and round 2 (bust.py as it stands)
-were both read this way; the numbers are in Docs/Pilots/PORTRAITS.md section 7.
+were both read this way; the numbers are in Docs/Pilots/PORTRAITS.md section 7. Since 2026-11-11 a pilot's avatar is
+the close-up of their realistic scene ("the scene close ups are categorically better than the previous avatar
+pictures and should be used in their place"), so that close-up is the picture read (scene.avatar_source); a pilot
+whose scene is not painted yet is read from their bust, and the key says which picture each pilot was read from.
 
-    python3 Tools/Build/pilot_art/blind.py prep <dir> [WORD...]     # shuffle the busts into <dir>, key beside it
+    python3 Tools/Build/pilot_art/blind.py prep <dir> [WORD...]     # shuffle the avatars into <dir>, key beside it
     python3 Tools/Build/pilot_art/blind.py grade <dir> [--rows]     # grade <dir>/result.json against the key
     python3 Tools/Build/pilot_art/blind.py --self-test
 
-prep writes <dir>/full/pNN.jpg (640 px), <dir>/thumb/sheetN.png (the avatar cut at 64 px, shown enlarged with hard
-pixels, 25 to a sheet) and the key at <dir>.key.json, OUTSIDE the folder the readers open. The readers are the
+prep writes <dir>/full/pNN.jpg (640 px: the scene's close-up, or the whole bust), <dir>/thumb/sheetN.png (the
+avatar at 64 px, shown enlarged with hard pixels, 25 to a sheet) and the key at <dir>.key.json, OUTSIDE the folder
+the readers open. The readers are the
 workflow .claude/skills/pilot-creator/references/blind_read.js (one at full size for every ten portraits, two at
 icon size); save what it returns as <dir>/result.json. <dir> is a NEW scratch folder each time, never in the repo:
 prep refuses a folder that already holds a read, and grade says which pictures were repainted since the read.
@@ -366,10 +370,13 @@ def _md5(path):
 
 
 def prep(out, words=None, salt=None):
-    """Shuffle the catalog's busts into out/ for the readers and write the key beside it. Returns the key. The
-    words are taken in any case; a word that is no catalog pilot, or has no bust, raises ValueError, and so does a
-    folder that already holds a read (result.json). Pictures of an earlier shuffle in the folder are removed."""
+    """Shuffle the catalog's avatar pictures into out/ for the readers and write the key beside it. Returns the key.
+    A pilot is read from the close-up of their scene once it is painted, else from their bust (scene.avatar_source).
+    The words are taken in any case; a word that is no catalog pilot, or has neither picture, raises ValueError, and
+    so does a folder that already holds a read (result.json). Pictures of an earlier shuffle in the folder are
+    removed."""
     from PIL import Image, ImageDraw, ImageFont
+    import scene
     out = os.path.realpath(out)
     salt = salt or os.path.basename(out)
     cat = creator.catalog()
@@ -378,12 +385,12 @@ def prep(out, words=None, salt=None):
     if strangers:
         raise ValueError(f"not in the catalog (creator.py list): {', '.join(strangers)}")
     cat = [c for c in cat if not want or c[0].lower() in want]
-    unpainted = [c[0] for c in cat if not os.path.exists(creator.bust_path(c[0]))]
+    unpainted = [c[0] for c in cat if scene.avatar_source(c[0]) is None]
     if want and unpainted:
-        raise ValueError(f"no bust to read yet: {', '.join(unpainted)}")
+        raise ValueError(f"no avatar picture to read yet: {', '.join(unpainted)}")
     cat = [c for c in cat if c[0] not in unpainted]
     if not cat:
-        raise ValueError("no bust to shuffle")
+        raise ValueError("no avatar picture to shuffle")
     if os.path.exists(os.path.join(out, "result.json")):
         raise ValueError(f"{out} already holds a read (result.json): prep a new folder, so a read stays with the "
                          f"pictures it was made on")
@@ -400,12 +407,14 @@ def prep(out, words=None, salt=None):
     key, chips = {}, []
     for i, c in enumerate(order, 1):
         pid = f"p{i:02d}"
-        im = Image.open(creator.bust_path(c[0])).convert("RGB")
+        picture, source, box = scene.avatar_source(c[0])
+        im = Image.open(source).convert("RGB")
+        avatar = im.crop(box) if picture == "scene" else creator.avatar_cut(im)
         shown = os.path.join(out, "full", f"{pid}.jpg")
-        im.resize((640, 640), Image.LANCZOS).save(shown, quality=90)
+        (avatar if picture == "scene" else im).resize((640, 640), Image.LANCZOS).save(shown, quality=90)
         key[pid] = dict(word=c[0], person=c[1], face=c[2][0], crown=c[2][1], faction=c[3], callsign=c[4],
-                        bust_md5=_md5(creator.bust_path(c[0])), shown_md5=_md5(shown))
-        chips.append((pid, creator.avatar_cut(im).resize((64, 64), Image.LANCZOS).resize((256, 256), Image.NEAREST)))
+                        picture=picture, source_md5=_md5(source), shown_md5=_md5(shown))
+        chips.append((pid, avatar.resize((64, 64), Image.LANCZOS).resize((256, 256), Image.NEAREST)))
     for s in range((len(chips) + 24) // 25):
         sheet = Image.new("RGB", (5 * 276 + 20, 5 * 300 + 20), (34, 38, 69))
         d = ImageDraw.Draw(sheet)
@@ -426,17 +435,23 @@ def key_path(out):
 
 def picture_notes(key, out):
     """What changed since the read was prepared, as sentences: a picture in the folder that is not the one the
-    key was written for, and the busts that were repainted since (a key from before 2026-11-11 records neither)."""
+    key was written for, and the pilots whose avatar picture was repainted since, or is cut from a different
+    picture now (a key from before 2026-11-11 records neither; one from before the scenes names only a bust)."""
+    import scene
     notes = []
     swapped = [pid for pid, k in key.items() if k.get("shown_md5") and os.path.exists(os.path.join(out, "full", f"{pid}.jpg"))
                and _md5(os.path.join(out, "full", f"{pid}.jpg")) != k["shown_md5"]]
     if swapped:
         notes.append(f"{len(swapped)} pictures in the folder are not the ones this key was written for: "
                      f"{', '.join(swapped)}")
-    repainted = [k["word"] for k in key.values() if k.get("bust_md5") and os.path.exists(creator.bust_path(k["word"]))
-                 and _md5(creator.bust_path(k["word"])) != k["bust_md5"]]
+    repainted = []
+    for k in key.values():
+        was, md5 = k.get("picture", "bust"), k.get("source_md5") or k.get("bust_md5")
+        now = scene.avatar_source(k["word"])
+        if md5 and now and (now[0] != was or _md5(now[1]) != md5):
+            repainted.append(k["word"])
     if repainted:
-        notes.append(f"{len(repainted)} busts were repainted since this read, which is of the earlier pictures: "
+        notes.append(f"{len(repainted)} avatars were repainted since this read, which is of the earlier pictures: "
                      f"{', '.join(repainted)}")
     return notes
 
@@ -972,7 +987,8 @@ def self_test():
     # and a repainted bust said at grading
     import tempfile
     with tempfile.TemporaryDirectory() as scratch:
-        words = [c[0] for c in creator.catalog() if os.path.exists(creator.bust_path(c[0]))][:3]
+        import scene
+        words = [c[0] for c in creator.catalog() if scene.avatar_source(c[0])][:3]
         if len(words) == 3:
             d = os.path.join(scratch, "read")
             k3 = prep(d, [w.swapcase() for w in words])
@@ -986,8 +1002,21 @@ def self_test():
                 errors.append(f"a fresh shuffle has nothing to note: {picture_notes(k1, d)}")
             if not any("not the ones this key was written for: p01" in n for n in picture_notes(dict(k1, p01=dict(k1["p01"], shown_md5="0")), d)) \
                     or not any(f"repainted since this read, which is of the earlier pictures: {words[0]}" in n
-                               for n in picture_notes(dict(k1, p01=dict(k1["p01"], bust_md5="0")), d)):
-                errors.append("a swapped picture or a repainted bust is not noted at grading")
+                               for n in picture_notes(dict(k1, p01=dict(k1["p01"], source_md5="0")), d)) \
+                    or not any(f"repainted since this read, which is of the earlier pictures: {words[0]}" in n
+                               for n in picture_notes(dict(k1, p01=dict(k1["p01"], picture="x")), d)):
+                errors.append("a swapped picture, a repainted avatar or a changed source is not noted at grading")
+            scened = [w for w in (c[0] for c in creator.catalog()) if (scene.avatar_source(w) or ("",))[0] == "scene"][:1]
+            if scened:   # a pilot whose scene is painted is read from its close-up, the square the avatar is cut from
+                ks = prep(os.path.join(scratch, "scened"), scened)
+                box = scene.close_of(scened[0])
+                from PIL import Image as _Image
+                want_ = _Image.open(scene.scene_path(scened[0])).convert("RGB").crop(box).resize((640, 640), _Image.LANCZOS)
+                got_ = _Image.open(os.path.join(scratch, "scened", "full", "p01.jpg")).convert("RGB")
+                import numpy as _np
+                if ks["p01"].get("picture") != "scene" or \
+                        _np.abs(_np.asarray(want_).astype(int) - _np.asarray(got_).astype(int)).mean() > 4:
+                    errors.append("a pilot with a painted scene is not read from the scene's close-up")
             for call, says in ((lambda: prep(d, ["nobody"]), "not in the catalog"),):
                 try:
                     call()
@@ -995,16 +1024,17 @@ def self_test():
                 except ValueError as e:
                     if says not in str(e):
                         errors.append(f"prep: {e}")
-            painted = creator.bust_path
-            try:    # a named pilot with no bust is said, not skipped
+            painted, closed = creator.bust_path, scene.close_of
+            try:    # a named pilot with neither picture is said, not skipped
                 creator.bust_path = lambda w: os.path.join(scratch, "nowhere", f"{w}.jpg")
+                scene.close_of = lambda w: None
                 prep(os.path.join(scratch, "read2"), words[:1])
-                errors.append("prep shuffled a pilot that has no bust")
+                errors.append("prep shuffled a pilot that has no avatar picture")
             except ValueError as e:
-                if "no bust to read yet" not in str(e):
+                if "no avatar picture to read yet" not in str(e):
                     errors.append(f"prep: {e}")
             finally:
-                creator.bust_path = painted
+                creator.bust_path, scene.close_of = painted, closed
             with open(os.path.join(d, "result.json"), "w", encoding="utf-8") as fh:
                 fh.write("{}")
             try:
@@ -1049,7 +1079,9 @@ def main():
             key = prep(where, args.words)
         except ValueError as e:
             ap.error(str(e))
-        print(f"{len(key)} busts shuffled into {where} (key: {key_path(where)})")
+        from_scene = sum(k.get("picture") == "scene" for k in key.values())
+        print(f"{len(key)} avatars shuffled into {where} (key: {key_path(where)}): {from_scene} read from a scene's "
+              f"close-up, {len(key) - from_scene} from a bust")
         return 0
     loaded = []
     for path, what in ((key_path(where), "the key (blind.py prep writes it)"),
