@@ -19,8 +19,10 @@ that can sit between them without being code: blank lines, `//` comments, `#regi
 one-line attributes (`[SerializeField]`). Any other line ends the run, `#if` / `#else` included, so a member
 declared once per platform branch, each with its own doc, passes.
 
-FIXING A FINDING. Read the first block and find the member it describes: search the file for the names it uses,
-or `git log -S '<a phrase from it>'`. Move it onto that member, merging it with any doc the member already has.
+FIXING A FINDING. Read the first block and find the member it describes: search the file for the names it uses
+(a <paramref> naming a parameter the member under it does not have is the quickest tell), or run
+`git log -S '<a phrase from it>'`, which in a shallow clone only reaches back to the graft, so prefer the code.
+Move it onto that member, merging it with any doc the member already has.
 Delete it when that member is gone. When both blocks really describe this member, merge them into one <summary>
 (with <para> where needed). Change docs only, never code. A block above a commented-out declaration is not a doc:
 make it a plain `//` comment beside that line.
