@@ -184,20 +184,23 @@ namespace CosmicShore.Gameplay
         /// One skim tick from <paramref name="source"/>: pays energy, per-prism throttled (a skimmer slides along a
         /// prism and re-enters it), capped at the capacity.
         /// </summary>
-        public void AddSkimCharge(Prism source)
+        /// <returns>True when the skim actually paid energy: false when it was throttled, the bay was already full,
+        /// or this machine is not the simulation authority. The skim pulse haptic fires on exactly this, so a full bay
+        /// flying through dense prisms is silent rather than a minutes-long hum (Docs/HAPTICS.md).</returns>
+        public bool AddSkimCharge(Prism source)
         {
-            if (!config || _status == null || !IsSimAuthority(_status)) return;
+            if (!config || _status == null || !IsSimAuthority(_status)) return false;
 
             if (source)
             {
                 int id = source.GetInstanceID();
                 if (_lastChargeTimeByPrism.TryGetValue(id, out float last)
                     && Time.time - last < config.PerPrismEnergyCooldown)
-                    return;
+                    return false;
                 _lastChargeTimeByPrism[id] = Time.time;
             }
 
-            PayEnergy();
+            return PayEnergy();
         }
 
         /// <summary>Vessel-graze energy tick (no prism identity to throttle on - uses the target).</summary>
@@ -215,13 +218,13 @@ namespace CosmicShore.Gameplay
             PayEnergy();
         }
 
-        void PayEnergy()
+        bool PayEnergy()
         {
             float before = _energy;
             int armedBefore = ArmedBombs;
 
             _energy = Mathf.Min(Capacity, _energy + config.EnergyPerSkim);
-            if (Mathf.Approximately(before, _energy)) return;   // already full
+            if (Mathf.Approximately(before, _energy)) return false;   // already full
 
             PushBayState();
             OnSkimCharged?.Invoke();
@@ -232,6 +235,8 @@ namespace CosmicShore.Gameplay
                 OnBombArmed?.Invoke();
                 PlayCue(config.BombArmedEvent);
             }
+
+            return true;
         }
 
         /// <summary>

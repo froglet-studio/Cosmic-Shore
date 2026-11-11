@@ -448,7 +448,7 @@ if not g.read("Assets/_Scripts/Data/Enums/CombatHitClass.cs").count(f"Debuff = {
     errors.append(f"CombatHitClass.Debuff is no longer {DEBUFF_CLASS}")
 # ...a skim of ANY prism (the shells are neutral) pays energy, and a graze plants on a vessel...
 skim = g.read(MANTA_SKIM)
-if "bay.AddSkimCharge(prism);" not in skim or skim.index("bay.AddSkimCharge(prism);") > skim.index("domain == Domains.Blue"):
+if "bay.AddSkimCharge(prism)" not in skim or skim.index("bay.AddSkimCharge(prism)") > skim.index("domain == Domains.Blue"):
     errors.append("MantaStingSkimPrismEffectSO no longer pays energy before its domain check - neutral shells would "
                   "not arm a bomb")
 bay = g.read(MANTA_BAY)

@@ -22,14 +22,19 @@ namespace CosmicShore.Gameplay
             if (status == null || !status.IsLocalUser || status.AutoPilotEnabled) return;
             if (prismImpactee == null || prismImpactee.Prism == null) return;
 
-            // Proximity from prism position vs the skimmer sphere: 1 at the centre, 0 at the surface.
-            Vector3 center = impactor.transform.position;
-            float radius = impactor.SphereWorldRadius;
-            float closeness = radius > 0.0001f
-                ? Mathf.Clamp01(1f - Vector3.Distance(prismImpactee.Prism.transform.position, center) / radius)
-                : 1f;
+            HapticController.PlaySkim(Mathf.Lerp(minStrength, 1f, Closeness01(impactor, prismImpactee.Prism)));
+        }
 
-            HapticController.PlaySkim(Mathf.Lerp(minStrength, 1f, closeness));
+        /// <summary>
+        /// How close <paramref name="prism"/> passed to the skimmer centre: 1 at the centre, 0 at the sphere's
+        /// surface. Shared by every skim pulse (this effect, and the Manta's charge-paying skim in
+        /// <see cref="MantaStingSkimPrismEffectSO"/>) so they scale the same way.
+        /// </summary>
+        public static float Closeness01(SkimmerImpactor impactor, Prism prism)
+        {
+            float radius = impactor.SphereWorldRadius;
+            if (radius <= 0.0001f || prism == null) return 1f;
+            return Mathf.Clamp01(1f - Vector3.Distance(prism.transform.position, impactor.transform.position) / radius);
         }
     }
 }

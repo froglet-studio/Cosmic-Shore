@@ -40,8 +40,13 @@ The two feels are ordinary **impact-effect SOs** wired into the standard effect 
 every other `SkimmerPrismEffectSO` / `VesselPrismEffectSO`:
 
 - **Skim**: `SkimmerHapticsByPrismEffect.asset` → each skimmer's `SkimmerImpactorDataContainerSO.SkimmerPrismEffects`
-  (fired from `SkimmerImpactor.AcceptImpactee`, prism case). Wired into the Squirrel / Manta-overcharge /
-  Rhino-forcefield skimmer containers.
+  (fired from `SkimmerImpactor.AcceptImpactee`, prism case). Wired into the Squirrel and
+  Rhino-forcefield skimmer containers. **The Manta is the exception (2026-11-11):** its skimmer is
+  20-40 units across, so a pulse per prism ENTRY never stopped in dense prisms (the Toybox cell, or its
+  own trail waking inside the sphere when it flies slower than the radius per second). Pulses 30 ms apart
+  on a 70 ms clip never let the clip end, so the pad sat at one steady level for minutes. The Manta's
+  skim pulse now fires from `MantaStingSkimPrismEffectSO` only when the skim PAYS energy into the bay
+  (per-prism cooldown, capped at capacity), so it says "that paid" and goes quiet once the bay is full.
 - **Punish**: `VesselHapticsByPrismEffect.asset` → each vessel's `VesselImpactorDataContainerSO.VesselPrismEffects`
   (fired from `VesselImpactor.AcceptImpactee`, prism case). Wired into all six playable vessel containers.
 
@@ -231,6 +236,13 @@ its call site — it's already silent.
    including a remote or AI Sparrow holding down its guns.
 
 ## Follow-ups (not blockers)
+
+- **The skim train can flatten into a hum on any vessel.** `SkimMinIntervalSec` (30 ms) is shorter than
+  the skim clip (70 ms), so a stream of entries faster than about 14 a second re-starts the clip before it
+  ends and the motors hold one level instead of pulsing; this breaks this document's own cadence rule
+  ("keep any repeating feel at or above its own clip length"). It was the Manta's minutes-long rumble
+  (fixed there by pulsing only on a paying skim, above). The Squirrel and the Rhino keep the per-entry
+  pulse; raising the floor to the clip length changes their feel, so it is the owner's call.
 
 - **Own-trail false-positives**: the punish fires on *any* body-into-prism, including the Squirrel clipping
   its own freshly-collider-enabled trail during a tight drift. The 250 ms gate caps the rate, but if it

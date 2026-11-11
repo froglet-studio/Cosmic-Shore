@@ -329,7 +329,7 @@ and a cashed board went off as one flat bang. Every beat now answers, in four ch
 
 | Beat | What it does |
 |---|---|
-| **Skim pays charge** | Charge card flashes (`VesselHUDView.PlayAbilityFlash`), gauge climbs, `skimChargeEvent`. The skim-pulse haptic was already wired. |
+| **Skim pays charge** | Charge card flashes (`VesselHUDView.PlayAbilityFlash`), gauge climbs, `skimChargeEvent`, and the skim-pulse haptic. The pulse fires **only on a skim that pays** (`MantaStingSkimPrismEffectSO`, 2026-11-11): the fleet's per-entry `SkimmerHapticsByPrismEffect` is no longer in the Sting container, because in dense prisms a pulse per entry into the 20-40 unit sphere held the pad at a steady hum for minutes, full bay or not (`Docs/HAPTICS.md`). |
 | **A bomb finishes arming** | Charge card flashes again + `bombArmedEvent`, and the armed badge lights (≥1 bomb = highlight colour). This is the "you may plant" moment. |
 | **A bomb is planted** | Charge card flashes, badge decrements, `bombPlantedEvent`, and the **fuse marker blooms in** on the target. |
 | **A fuse burns down** | The marker crosses calm → critical and its pulse quickens from `markerCalmPulseHz` to `markerCriticalPulseHz`; the HUD board counts the shortest fuse. |
