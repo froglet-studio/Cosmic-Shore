@@ -338,9 +338,6 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Returns the quest data for a given game mode, or null if not found.
-        /// </summary>
-        /// <summary>
         /// Emits the `quest_completed` analytics event. Its only producer used to be
         /// <c>QuestSystem.cs</c>, which this branch deleted along with the XP/shard economy —
         /// so the event was documented LIVE with nothing left to raise it, and
@@ -358,6 +355,9 @@ namespace CosmicShore.Core
             _analytics?.RecordQuestCompleted(quest.DisplayName, 0);
         }
 
+        /// <summary>
+        /// Returns the quest data for a given game mode, or null if not found.
+        /// </summary>
         public SO_UnlockData GetQuestForMode(GameModes mode)
         {
             if (questList == null) return null;

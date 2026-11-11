@@ -417,7 +417,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            SetLabelColor(b, selected ? selectedColor : unselectedColor);
+            SetLabelColor(b, ColorTrace.Retrace(ColorTrace.Ui, selected ? selectedColor : unselectedColor));
             if (underline != null) underline.SetActive(selected);
             if (b != null) b.transform.localScale = Vector3.one * (selected ? selectedScale : unselectedScale);
         }
@@ -683,17 +683,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Opens the in-game CREDITS screen. Names the modal TYPE and lets <see cref="ScreenSwitcher"/>
-        /// find the window, rather than holding a reference to it and calling
-        /// <c>ModalWindowIn</c> - the switcher already owns the modal stack, the return-to-modal
-        /// preference and the close sweeps, and a second authority over a modal's lifecycle is the
-        /// shape <c>Docs/HomeHub/ARCHITECTURE.md</c> §1 rules out.
-        ///
-        /// <para>The screen is not optional chrome: FMOD's EULA clause 3 requires an in-game credit,
-        /// so this row is what makes the obligation dischargeable at all. See
-        /// <c>Docs/THIRD_PARTY_REGISTER.md</c> §7.</para>
-        /// </summary>
-        /// <summary>
         /// Guarantees there is a CREDITS row to press, by cloning the Privacy Policy row when no
         /// <c>creditsButton</c> is wired.
         ///
@@ -753,6 +742,17 @@ namespace CosmicShore.UI
                 "to replace it with an authored row.");
         }
 
+        /// <summary>
+        /// Opens the in-game CREDITS screen. Names the modal TYPE and lets <see cref="ScreenSwitcher"/>
+        /// find the window, rather than holding a reference to it and calling
+        /// <c>ModalWindowIn</c> - the switcher already owns the modal stack, the return-to-modal
+        /// preference and the close sweeps, and a second authority over a modal's lifecycle is the
+        /// shape <c>Docs/HomeHub/ARCHITECTURE.md</c> §1 rules out.
+        ///
+        /// <para>The screen is not optional chrome: FMOD's EULA clause 3 requires an in-game credit,
+        /// so this row is what makes the obligation dischargeable at all. See
+        /// <c>Docs/THIRD_PARTY_REGISTER.md</c> §7.</para>
+        /// </summary>
         void OpenCredits()
         {
             if (!screenSwitcher)

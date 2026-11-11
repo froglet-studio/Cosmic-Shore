@@ -200,10 +200,13 @@ namespace CosmicShore.Tests
             // 77 -> 78 on 2026-11-09: Flatline (84), the Brittle Star's charge game (Shombith gave it 84 after both claimed it).
             // 78 -> 79 on 2026-11-09: Kelpwood (86), the Angler's Charge game.
             // 79 -> 80 on 2026-11-10: Corona (87), the Manta's Charge game (87 free on every branch that day).
-            // 80 -> 81 on 2026-11-10: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest (the Thresher's
-            // Space game, claude/keen-rubin-rw7p6q) pushed first the same day; when both land this becomes 82.
+            // 80 -> 81 on 2026-11-10: Harvest (88), the Thresher's Space game (88 free on every recent branch that day).
+            // 81 -> 82 on 2026-11-10: Shatterplane (90), the Brittle Star's Space game. It first took 88, which Harvest
+            // landed with first; 89 is Glasshouse's on claude/peaceful-cerf-vpl3x8 (in flight), so it moved to 90.
+            // 82 -> 83 on 2026-11-11: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest
+            // pushed first; 89 was free on every branch.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(81, values.Length,
+            Assert.AreEqual(83, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -256,6 +259,7 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Breach, 83)]
         [TestCase(GameModes.Flatline, 84)]
         [TestCase(GameModes.Corona, 87)]
+        [TestCase(GameModes.Shatterplane, 90)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Gameplay
 {
@@ -117,7 +118,7 @@ namespace CosmicShore.Gameplay
             vh.Clear();
             if (_dotCount <= 0) return;
             float r = 0.5f * _diameter;
-            var rim = new Color(4f / 255f, 6f / 255f, 20f / 255f, 1f);
+            var rim = ColorTrace.Retrace(ColorTrace.Ui, new Color(4f / 255f, 6f / 255f, 20f / 255f, 1f));
             for (int i = 0; i < _dotCount; i++)
             {
                 int src = _dotSource[i];

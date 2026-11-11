@@ -177,7 +177,7 @@ def fuse_ring(cx, cy, r, frac, w=4.0):
 
 # ---- Charge: Sting ----------------------------------------------------------------------------------------------------------
 # Skimming a rival plants a bomb (paid for with a bomb of skim energy). Every bomb shares ONE fuse, reset by each plant, so
-# they all go off together; Charge raises the petals each bloom knocks out. L5 Contagion: anything caught in a blast is
+# they all go off together; Charge sets how long that fuse runs when a plant resets it. L5 Contagion: anything caught in a blast is
 # bombed too. The plate is the shared FUSE (MantaVesselHUDView.SetFuse).
 
 CH_MANTA = manta(50, cx=27, cy=100)

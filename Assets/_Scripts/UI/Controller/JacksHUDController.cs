@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -81,7 +82,7 @@ namespace CosmicShore.UI
             {
                 _shownCount = count;
                 _count.text = TemplateText.Fill(countTemplate, "count", count.ToString());
-                _count.color = count > crew.MinHerd ? countLiveColor : countFloorColor;
+                _count.color = ColorTrace.Retrace(ColorTrace.Ui, count > crew.MinHerd ? countLiveColor : countFloorColor);
             }
 
             float danger = crew.DangerShare;

@@ -566,6 +566,20 @@ namespace CosmicShore.Gameplay
             SetSpikeOpacity(0.5f);
         }
 
+        Renderer[] _domainRenderers;
+
+        /// <summary>
+        /// Every renderer of this round that is authored with the domain placeholder (the base set's ship material)
+        /// wears the firing domain's ship material, per flight like the spike's paint (a pooled round changes hands).
+        /// </summary>
+        void PaintDomainPlaceholders()
+        {
+            if (_themeManagerData == null) return;
+            _domainRenderers ??= GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < _domainRenderers.Length; i++)
+                _themeManagerData.PaintDomainPlaceholders(_domainRenderers[i], OwnDomain);
+        }
+
         /// <summary>Per-instance opacity via MPB — never <c>renderer.material</c>.</summary>
         internal void SetSpikeOpacity(float opacity)
         {
@@ -742,6 +756,7 @@ namespace CosmicShore.Gameplay
                 _detachedThisFlight = true;
                 ApplySpikeAppearance();
             }
+            PaintDomainPlaceholders();
 
             Stop(); // Stop any running movement before starting a new one
 

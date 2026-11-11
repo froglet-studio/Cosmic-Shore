@@ -465,6 +465,58 @@ Glasshouse (the Angler's Mass game, 2026-11-10, `claude/peaceful-cerf-vpl3x8`, `
   session of the same plan). Re-scan every branch for the enum value AND the toast id right before the first push,
   not only at design time. The generator mints guids from names, so a renumber moved only the ids and the
   always-unlocked row.
+Harvest (the Thresher's Space game, 2026-11-10, `claude/keen-rubin-rw7p6q`, `HARVEST.md`) taught five:
+- **Fly the vessel's own solver round the arena before laying the arena.** The sheaves were built, baked and gated on
+  a premise nobody had flown: that a circling Thresher's chain sweeps a sheaf's stalks. Its chain TRAILS (21-60 u behind
+  at cruise) and cuts only its own path, so the stalks starved the loop (0-11 cuts a lap). Compiling the shipped
+  `ThresherChainSolver.cs` against `card_art_harness/UnityShim.cs` in a console project, with the dials read from the
+  asset, answered it in an hour (`Tools/Build/harvest_stalk_lab/`). Do that at the brief, when the arena is still a
+  drawing.
+- **A destruction race on a field that never regrows must fit three domains' targets in the smallest hostile pool**,
+  or the field can run dry with nobody at the target. Rampage restocks through flora; a baked field does not. Assert
+  it per rung (`author_harvest_assets.py`); it cut Harvest's target from 1,500 to 750.
+- **A colour rule over N sheaves must be fair at each rung's N.** "One in three" gave 2 / 1 / 1 among twelve; check
+  the counts per domain in the mirror and pin them in a test.
+- **A generator check that the BAKE equals the mirror deadlocks the run that changes the field** (second pass,
+  2026-11-10). The bake reads the prefab on disk, the generator refuses to write the new prefab while the bake is stale,
+  so neither can move first. Gate the comparison on the prefab being unchanged by this run (`g.read(rel) ==
+  g.files[rel]`), print "re-bake, then re-run" otherwise, and let `--check` (which diffs the prefab) carry the rest.
+  Order: generator, `bake_prism_layouts.py`, generator `--check`.
+- **A mode's own creatures are its own COPIES of a species config** (Harvest I4 copies four, Serpentine's
+  `_own_cell_assets` pattern): regex-replace only `m_Name` and the three population numbers, fail if any key is not
+  found exactly once, and mint the guid from the new name. Editing the shared asset retunes every mode that uses it.
+
+Shatterplane (the Brittle Star's Space game, 2026-11-10, `claude/fervent-edison-ol600q`, `SHATTERPLANE.md`) taught seven:
+- **A mode may SIZE an ability that reads the world, through the world.** The ring blast is as wide as the nucleus of the
+  cell it blows in, so "make the ring reach a little further" is an ARENA change: give the cell configs the standard
+  `NucleusPrefab` (a cell with none cannot be sized, and the blast falls back to the vessel's own constant), then call
+  `arenaCell.SetNucleusWorldRadius(r)` and `NucleusIsControlZone = false` on EVERY peer in `OnNetworkSpawn` (a radius asked
+  for before the cell builds its nucleus is honoured when it does; Wrecking Ball's rule). The generator greps the executor
+  for the read (`NucleusVisualWorldRadius`) so the lever fails loudly the day the vessel stops reading it.
+- **Model the verb's tolerance before sizing the arena.** `shatterplane_budget.ring_yield` ran the hull's own disk test
+  (`BrittleStarRules.DiskReaches`) against a plate at 0-45 degrees of tilt: on the planned 19-tile plates one degree already
+  lost 18%, and the big plates did not all fit the field. The shipped plates are smaller and more numerous. The concept
+  renders the person approved were the old size: say what moved and why.
+- **`audit_prism_clipping.py` takes the Spawnable TYPE, not the prefab stem.** Given `SpawnableShatterplane1` it reported
+  `0 generators on 0 prefabs ... clipping: 0`, which reads as a pass; `SpawnableShatterplane` ran 16 audits. Read the
+  generator count before the clipping count.
+- **`TemplateText` is `CosmicShore.UI`** (its file sits under `Data/`): a rule that subclasses `RampageScoringRuleSO` to
+  move its literal results text into authored fields needs that using. The reference compile caught it; the stub-free
+  using-directive gate passed once it was there.
+- **Never `git stash -u` while a background reference compile reads the tree** (it hides the untracked new files mid-run);
+  merge another branch from a clean tree or after the compile ends. And the card accent belongs on a structure the camera
+  sees face-on: turning the `CAMERAS` row was faster than scoring structures by view.
+- **Two sessions working ONE plan will take the same id, and only one of the two collisions conflicts.** Harvest (the
+  Thresher's Space game, from the same `PLAN.md`) landed `GameModes` 88 and toast 163 an hour before this PR merged.
+  `GameModes` conflicted; `GameToastSituation` auto-merged into two members worth 163 with NO marker. The loser renumbers
+  (its own enum, generator `MODE_ID`, toast id, preview mapping, test case, docs; the generator re-emits the card, toast
+  config, preview and unlock list), skipping ids a third in-flight branch claims (Glasshouse, 89 / 164). Run a duplicate-
+  value check over every enum after the merge, and scan EVERY branch for the next free id right before the PR.
+- **...and they get the same FOLLOW-UP too, so a platform hook gets built twice.** "I3 team crystals, I4 fauna" reached
+  Harvest's and Shatterplane's sessions alike; each added its own team gate (`ElementalCrystalImpactor.RestrictTo` and a
+  `TeamElementalCrystalImpactor` subclass). Harvest merged first, so Shatterplane adopted `RestrictTo` and deleted its
+  class. Before adding a hook to a platform class, `git log origin/bleeding-edge -- <that class>` and read the sibling
+  mode's newest commits; when two sessions work one plan, assume the other one is building the same thing.
 
 ## 4. Gates (no Unity needed; run them all)
 

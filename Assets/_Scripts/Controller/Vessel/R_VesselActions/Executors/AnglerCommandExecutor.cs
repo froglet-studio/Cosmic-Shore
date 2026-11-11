@@ -1256,14 +1256,17 @@ namespace CosmicShore.Gameplay
             if (!cam) return;
             _marks ??= new AnglerWorldMarks();
             if (!_marks.Begin(cam)) return;
+            // The marks in the worn colour set (ColorTrace): four lookups a frame, for the local pilot only.
+            Color esca = ColorTrace.Retrace(ColorTrace.World, escaColor), taming = ColorTrace.Retrace(ColorTrace.World, tamingColor);
+            Color paint = ColorTrace.Retrace(ColorTrace.World, paintColor), erase = ColorTrace.Retrace(ColorTrace.World, eraseColor);
             var t = _status.Transform;
             Vector3 lure = AnglerCommandMath.LurePoint(t.position, t.forward, t.up, config.LureAhead);
-            _marks.Dot(lure, escaColor, _luring ? 2.4f : 1.2f, 6f);
-            if (_luring) _marks.Ring(lure, t.right, t.up, config.TameRadius, 24, escaColor * new Color(1f, 1f, 1f, 0.6f), 0.6f, 2f);
+            _marks.Dot(lure, esca, _luring ? 2.4f : 1.2f, 6f);
+            if (_luring) _marks.Ring(lure, t.right, t.up, config.TameRadius, 24, esca * new Color(1f, 1f, 1f, 0.6f), 0.6f, 2f);
             for (int i = 0; i < _lured.Count; i++)
             {
                 var c = _lured[i].Creature;
-                if (c) _marks.Dot(c.transform.position + t.up * 3f, Color.Lerp(tamingColor, escaColor, _lured[i].Tame), 1.2f, 4f);
+                if (c) _marks.Dot(c.transform.position + t.up * 3f, Color.Lerp(taming, esca, _lured[i].Tame), 1.2f, 4f);
             }
             // Painted prisms are not dotted here: they are drawn LIT (Prism.SetColorLift, BrushStroke). A dot at a prism's
             // centre sat inside the prism and was never seen.
@@ -1277,14 +1280,14 @@ namespace CosmicShore.Gameplay
                 const float RimAt = 60f;
                 float near = config.BrushNear * AnglerCommandMath.BrushScale(erasing ? _eraseDepth : _cmdDepth, config.BrushMin);
                 float r = Mathf.Max(near, Mathf.Tan(cone * Mathf.Deg2Rad) * RimAt);
-                _marks.Ring(t.position + t.forward * RimAt, t.right, t.up, r, 32, erasing ? eraseColor : paintColor, 1f, 3f);
+                _marks.Ring(t.position + t.forward * RimAt, t.right, t.up, r, 32, erasing ? erase : paint, 1f, 3f);
             }
-            if (_cmdHeld) _marks.Dot(t.position + t.forward * config.SlingAhead, paintColor, 1.4f, 5f);
+            if (_cmdHeld) _marks.Dot(t.position + t.forward * config.SlingAhead, paint, 1.4f, 5f);
             for (int i = 0; i < _hunters.Count; i++)   // the Charge locks: a ring round every hunted hull
             {
                 var prey = _hunters[i].Prey;
                 if (prey != null && prey is Object po && po && prey.Transform)
-                    _marks.Ring(prey.Transform.position, t.right, t.up, 12f, 24, eraseColor, 1.2f, 3f);
+                    _marks.Ring(prey.Transform.position, t.right, t.up, 12f, 24, erase, 1.2f, 3f);
             }
             _marks.End();
         }

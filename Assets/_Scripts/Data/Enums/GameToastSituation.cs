@@ -242,6 +242,14 @@ namespace CosmicShore.Data
         // LOCAL pilot only.
         GlasshouseHint = 164,             // once, at the start: take an omni crystal, let go of the lure to plant, light it to grow
 
+        // Harvest, the Thresher's space game (_Scripts/Controller/Arcade/HARVEST.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a prism milestone is 83 (HostilePrismsDestroyed). Posted to the LOCAL pilot only.
+        HarvestHint = 163,              // once, at the start: press A to break; mow the stalks, smash the core
+        // Shatterplane, the Brittle Star's space game (_Scripts/Controller/Arcade/SHATTERPLANE.md). Its race beats are the
+        // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
+        // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
+        ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

@@ -681,6 +681,36 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// Owner of "virtual" spatial-index entries: data-driven prisms (e.g. swarm members
+    /// simulated in a job) that have no GameObject <see cref="Prism"/> until something
+    /// actually needs one. Queries that only DETECT see the entry by slot id
+    /// (<see cref="PrismSpatialIndex.QuerySphereIds"/>); anything that must APPLY gameplay
+    /// to it (AOE damage) calls <see cref="MaterialiseVirtualPrism"/>, which returns a
+    /// real, registered Prism (or null when the member is gone / cannot materialise).
+    /// The index suspends the virtual slot as soon as a materialisation succeeds, so a
+    /// member is counted exactly once; the owner calls
+    /// <see cref="PrismSpatialIndex.SetVirtualSuspended"/>(id, false) when its proxy retires.
+    /// </summary>
+    public interface IVirtualPrismOwner
+    {
+        Prism MaterialiseVirtualPrism(int slot);
+    }
+
+    /// <summary>
+    /// Optional companion of <see cref="IVirtualPrismOwner"/>: a per-frame budget on how many of the
+    /// owner's entries BULK paths may materialise (each materialisation is an Instantiate). Asked by
+    /// the AOE resolve (an over-budget virtual hit is deferred into the blast's backlog, never lost)
+    /// and by <see cref="VirtualFauna"/>'s prey searches. A single targeted hit (a hitscan round, a
+    /// projectile's own contact) resolves through <see cref="PrismSpatialIndex.ResolvePrism"/> and is
+    /// never refused - the shot must land on the frame it is fired. Owners without a budget are
+    /// always materialised. Docs/SWARM_FAUNA.md §19.
+    /// </summary>
+    public interface IVirtualPrismBudget
+    {
+        bool HasMaterialiseBudget(int slot);
+    }
+
+    /// <summary>
     /// THE canonical spatial index of all live prism mass. One registration
     /// lifecycle, multiple query views - see Docs/SPATIAL_INDEX.md before adding
     /// any new spatial query against prisms (Physics.OverlapSphere / CheckBox
@@ -745,36 +775,6 @@ namespace CosmicShore.Gameplay
     ///                                steering, fauna body prisms swimming) must
     ///                                keep the stored position honest
     /// </summary>
-    /// <summary>
-    /// Owner of "virtual" spatial-index entries: data-driven prisms (e.g. swarm members
-    /// simulated in a job) that have no GameObject <see cref="Prism"/> until something
-    /// actually needs one. Queries that only DETECT see the entry by slot id
-    /// (<see cref="PrismSpatialIndex.QuerySphereIds"/>); anything that must APPLY gameplay
-    /// to it (AOE damage) calls <see cref="MaterialiseVirtualPrism"/>, which returns a
-    /// real, registered Prism (or null when the member is gone / cannot materialise).
-    /// The index suspends the virtual slot as soon as a materialisation succeeds, so a
-    /// member is counted exactly once; the owner calls
-    /// <see cref="PrismSpatialIndex.SetVirtualSuspended"/>(id, false) when its proxy retires.
-    /// </summary>
-    public interface IVirtualPrismOwner
-    {
-        Prism MaterialiseVirtualPrism(int slot);
-    }
-
-    /// <summary>
-    /// Optional companion of <see cref="IVirtualPrismOwner"/>: a per-frame budget on how many of the
-    /// owner's entries BULK paths may materialise (each materialisation is an Instantiate). Asked by
-    /// the AOE resolve (an over-budget virtual hit is deferred into the blast's backlog, never lost)
-    /// and by <see cref="VirtualFauna"/>'s prey searches. A single targeted hit (a hitscan round, a
-    /// projectile's own contact) resolves through <see cref="PrismSpatialIndex.ResolvePrism"/> and is
-    /// never refused - the shot must land on the frame it is fired. Owners without a budget are
-    /// always materialised. Docs/SWARM_FAUNA.md §19.
-    /// </summary>
-    public interface IVirtualPrismBudget
-    {
-        bool HasMaterialiseBudget(int slot);
-    }
-
     public class PrismSpatialIndex : Singleton<PrismSpatialIndex>
     {
         private const int INITIAL_CAPACITY = 4096;
@@ -2388,13 +2388,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Shell-contact query: one synchronous Burst pass over the hot array that
-        /// tests every shield-flagged slot's analytic shell against the probe set
-        /// and appends overlaps to <paramref name="hits"/>. Same
-        /// Schedule-then-Complete discipline as ProcessExplosionFrame — the caller
-        /// dispatches from the results afterwards, never during the scan.
-        /// </summary>
-        /// <summary>
         /// Rebuilds every slot's shell entry. Called when
         /// <see cref="PrismShellContactManager.ExtendToUnshieldedPrisms"/> is toggled:
         /// the shell view is maintained incrementally (register / shield change /
@@ -2436,6 +2429,13 @@ namespace CosmicShore.Gameplay
             return _shell[index].Kind != ShellKind.None;
         }
 
+        /// <summary>
+        /// Shell-contact query: one synchronous Burst pass over the hot array that
+        /// tests every shield-flagged slot's analytic shell against the probe set
+        /// and appends overlaps to <paramref name="hits"/>. Same
+        /// Schedule-then-Complete discipline as ProcessExplosionFrame — the caller
+        /// dispatches from the results afterwards, never during the scan.
+        /// </summary>
         public void CollectShellContacts(NativeArray<ShellProbe> probes, int probeCount, NativeList<ShellContactHit> hits)
         {
             hits.Clear();

@@ -1022,6 +1022,30 @@ applies to new abilities, new resources on the meter list, and anything that add
       element field.** A helper `UpgradeActive(status, element)` hides every gate behind one parameter and the
       table reports "UPGRADE IS PROSE". Call `abilities.IsUpgradeActive(<field>)` at each site.
 
+68. **An element's dial is a continuous quantity, not a PETAL COUNT** (Garrett, 2026-11-10: "move away from charge
+    being coupled to elemental petals. it is too coarse to adjust"). A petal take settles in whole petals, so Charge
+    0 -> 10 on a 1.2-petal bite moves it by about one petal and there is nothing in between to tune. Three hulls were
+    re-cut on `cece/cool-dijkstra-4puf92` and they are the pattern: the take goes flat (its priced value), and the
+    element moves something continuous the pilot plays with - the Manta's shared FUSE length at each reset
+    (`MantaStingConfigSO.fuseScale`), the Squirrel's minimum JOUST SPEED (`JoustSpeedConfigSO`, vessel and lifeform
+    jousts), the Scarab's shove COOLDOWN (`ScarabCavitationBlast.cooldownScale`, snapshotted when it fires). Read it
+    at the REPLICATED level wherever more than one machine decides the outcome (a joust, a blast every peer fires)
+    and at the live level where only one does (the Manta's fuse runs on the bomb's simulating machine only). Still
+    coupled when this was written, and each the owner's call: the Swordfish's sword steal, the Thresher's ball hit,
+    the Goby & Pistol's rings, the Meerkat's zaps (`element_ability_table.py <Hull>` shows each).
+    **A behaviour can have several DECIDERS, and the gate goes on all of them** (rule 26's lesson, met again). A
+    Squirrel joust is decided in FOUR places: the scored hit and steal (`VesselCombatHitBySkimmerEffectSO`), the
+    joust point and its blast, which is what the Joust mode counts (`VesselExplosionBySkimmerEffectSO`), the friendly
+    buff (`VesselOvertakeBySkimmerEffectSO.Execute`) and the lifeform joust (`VesselWitherLifeformByCrystalEffectSO`).
+    The first cut gated three; the ship review found the joust point still scoring a joust that stole nothing. Two of
+    those assets are shared by five hulls, so the rule rides the hull's OWN sibling effect (`IContactAdmission`,
+    asked through `ContactAdmission.AdmittedBySiblings`) and the shared assets stay byte-identical. List the deciders
+    by grepping the CONDITION the old rule used (here the overtake test, `Speed <= ...Speed`), not the effect you
+    started from. **A live measurement on a card** (the joust speed against its minimum) is generated in
+    `EnsureGeneratedAbilityIcons` and bound with `BindGeneratedAbilityGauge`, so the lockup adopts and styles it like
+    an authored gauge; its threshold is drawn the way the Rhino draws Momentum (ticks below, a gap through the fill
+    once past). Three views now carry that mark code (Sparrow, Rhino, Squirrel): `Docs/REFACTOR_BACKLOG.md` S118.
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)

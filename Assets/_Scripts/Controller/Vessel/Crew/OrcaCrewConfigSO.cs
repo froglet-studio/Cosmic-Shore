@@ -324,7 +324,7 @@ namespace CosmicShore.Gameplay
         public float BombFuse => bombFuse;
         public float BombBlastRadiusAt(IVesselStatus status) => bombBlastRadius.EvaluateLive(status);
         public float BombScale => bombScale;
-        public Color BombColor => bombColor;
+        public Color BombColor => ColorTrace.Retrace(ColorTrace.World, bombColor);
         public AOEExplosion[] BombExplosions => bombExplosions;
         public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
         public EventReference SniperShotSound => sniperShotSound;
@@ -377,10 +377,11 @@ namespace CosmicShore.Gameplay
         public float BombCamBack => bombCamBack;
         public float BombCamUp => bombCamUp;
         public float GunCamAim => gunCamAim;
-        public Color CrosshairColor => crosshairColor;
-        public Color CrosshairReadyColor => crosshairReadyColor;
-        public Color CrosshairHotColor => crosshairHotColor;
-        public Color CrosshairWarmColor => crosshairWarmColor;
+        // The crosshairs are drawn on a canvas (OrcaCrosshairGraphic), so their colours are retraced in the ui role.
+        public Color CrosshairColor => ColorTrace.Retrace(ColorTrace.Ui, crosshairColor);
+        public Color CrosshairReadyColor => ColorTrace.Retrace(ColorTrace.Ui, crosshairReadyColor);
+        public Color CrosshairHotColor => ColorTrace.Retrace(ColorTrace.Ui, crosshairHotColor);
+        public Color CrosshairWarmColor => ColorTrace.Retrace(ColorTrace.Ui, crosshairWarmColor);
 
         /// <summary>The core's numbers, as a plain struct.</summary>
         public OrcaCrewSettings ToSettings() => new()

@@ -1,0 +1,23 @@
+{
+  "id": "2026-11-11-garrett-decided-the-colour-rule-is-unive-825583",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-11T00:14:27+00:00",
+  "area": "Grizzly, Thresher and Stoat colours",
+  "summary": "Garrett decided the colour rule is universal (2026-11-10, LOCKED: every colour comes from the colour set; not an owner's call), so the held-back edits are applied: GrizzlyClawConeVisual, GrizzlyBombVisual, GrizzlyTriggerBombConfigSO, GrizzlyHUDView, ThresherConfigSO, ThresherLaunchSight, ThresherHUDView, StoatDipoleConfigSO, StoatPathfinderDots and StoatHUDView read their colours through ColorTrace.Retrace, so they follow the worn colour set. Ys-bleeding-edge does not touch these files, so nothing conflicts.",
+  "why": "Garrett, 2026-11-10: 'there is no reason for a vessel owner to be breaking this rule: all colors come from a color set'.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "15709b3b5",
+  "paths": [
+    "Assets/_Scripts/Controller/FX/GrizzlyClawConeVisual.cs",
+    "Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyTriggerBombConfigSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/StoatDipoleConfigSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/ThresherConfigSO.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ThresherLaunchSight.cs",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/StoatPathfinderDots.cs",
+    "Assets/_Scripts/UI/View/GrizzlyHUDView.cs",
+    "Assets/_Scripts/UI/View/StoatHUDView.cs",
+    "Assets/_Scripts/UI/View/ThresherHUDView.cs"
+  ]
+}

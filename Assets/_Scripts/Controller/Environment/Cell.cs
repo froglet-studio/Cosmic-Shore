@@ -2187,13 +2187,6 @@ namespace CosmicShore.Gameplay
             || NetworkManager.Singleton.IsServer;
 
         /// <summary>
-        /// The <c>CellConfigs</c> index for the selected intensity, floored at 1 and fail-loud on
-        /// over-run. The floor matters because the intensity SOAP asset defaults to 0 (so a scene
-        /// opened directly in the editor asks for index -1), and the warning matters because the
-        /// clamp is otherwise silent - a mode whose SO_ArcadeGame offers four intensities but whose
-        /// cell authors two would quietly serve the same arena for 3 and 4.
-        /// </summary>
-        /// <summary>
         /// May a CourseVariantWise cell choose yet? Once the match's variant is known on THIS peer - drawn on the host
         /// by the controller's spawn, received in the game-config sync on a client. Unlike IntensityWise the host is
         /// not ready by definition: the cell's first-crystal bootstrap can run before the controller has drawn, and a
@@ -2221,6 +2214,13 @@ namespace CosmicShore.Gameplay
             return CourseVariantIndexFor(variant, CellConfigs.Count);
         }
 
+        /// <summary>
+        /// The <c>CellConfigs</c> index for the selected intensity, floored at 1 and fail-loud on
+        /// over-run. The floor matters because the intensity SOAP asset defaults to 0 (so a scene
+        /// opened directly in the editor asks for index -1), and the warning matters because the
+        /// clamp is otherwise silent - a mode whose SO_ArcadeGame offers four intensities but whose
+        /// cell authors two would quietly serve the same arena for 3 and 4.
+        /// </summary>
         int IntensityIndex()
         {
             int intensity = Mathf.Max(1, gameData.SelectedIntensity.Value);
@@ -3128,13 +3128,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Drain the suctioned world over frames. A 35k-prism world destroyed in one frame is
-        /// a multi-second freeze (every <c>Prism.OnDestroy</c> unregisters from the spatial
-        /// index and unbinds from this cell), and it would land right where the player is
-        /// waiting to see the new world. The root is already suctioned to a point, so nothing
-        /// is visible while it drains.
-        /// </summary>
-        /// <summary>
         /// Send the retired loose trail back to its pool, newest first, in 12 ms slices.
         ///
         /// WHY (B36, Docs/PartySystem/BUGS.md): one Menu_Main swap returned 76,115 pooled prisms
@@ -3173,6 +3166,13 @@ namespace CosmicShore.Gameplay
             pooledRetiring.Clear();
         }
 
+        /// <summary>
+        /// Drain the suctioned world over frames. A 35k-prism world destroyed in one frame is
+        /// a multi-second freeze (every <c>Prism.OnDestroy</c> unregisters from the spatial
+        /// index and unbinds from this cell), and it would land right where the player is
+        /// waiting to see the new world. The root is already suctioned to a point, so nothing
+        /// is visible while it drains.
+        /// </summary>
         IEnumerator ReleaseRetiredWorld(GameObject retiring)
         {
             if (!retiring) yield break;

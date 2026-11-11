@@ -31,6 +31,11 @@ Fire and Lime are not DomainColorSets (colour_sets.json, prism_mapping):
 
 The [ColorUsage(true, true)] fields hold LINEAR floats; UIAccentColor and ElementalCrystalColors hold sRGB.
 
+TracedColors (every colour the game draws outside these blocks: the sky, materials, particles, the UI's own colours,
+configs and code) come from Docs/VesselModels/colour_trace.json: each set's value for each id is computed by
+Tools/Build/colour_trace.py (repaint, Docs/VesselModels/COLOR_TRACE.md), in the storage of the place it is drawn
+(material and UI colours sRGB, HDR kept). PhoticColorSetSO's block is written by colour_trace.py --write-photic.
+
     python3 Tools/Build/author_colour_set_assets.py               # write every set's asset (keeps an existing guid)
     python3 Tools/Build/author_colour_set_assets.py --check       # exit 1 on drift or a field in another domain
     python3 Tools/Build/author_colour_set_assets.py --report      # every field: colour and which pigment holds it
@@ -85,9 +90,24 @@ def parse(text):
     text = re.sub(r",\r?\n\s+", ", ", text)   # Unity folds long colour lines when it saves
     blocks, block = {}, None
     for line in text.splitlines():
-        m = re.match(r"^  (\w+):\s*$", line)
+        m = re.match(r"^  (\w+):\s*(\[\])?$", line)
         if m:
             block = blocks.setdefault(m.group(1), {})
+            if m.group(1) == "TracedColors":
+                block["_entries"] = []
+            continue
+        if block is not None and "_entries" in block:
+            m = re.match(r"^  - Id: (.*)$", line)
+            if m:
+                block["_entries"].append([m.group(1).strip().strip("'"), None, ""])
+                continue
+            m = re.match(r"^    (Color|Note): (.*)$", line)
+            if m and block["_entries"]:
+                c = COLOR_RE.fullmatch(m.group(2))
+                if m.group(1) == "Color" and c:
+                    block["_entries"][-1][1] = tuple(float(v) for v in c.groups())
+                else:
+                    block["_entries"][-1][2] = m.group(2).strip()
             continue
         m = re.match(r"^    (\w+): (.*)$", line)
         if m and block is not None:
@@ -176,7 +196,29 @@ def render(key, s, orig):
             lines += ["    - " + e for e in v]
         else:
             lines.append("    %s: %s" % (f, colour_yaml(v) if isinstance(v, tuple) else v))
+    lines += traced_lines(key, s, pal)
     return "\n".join(lines) + "\n"
+
+
+_PHOTIC_REF = None
+
+
+def traced_lines(key, s, pal):
+    """The set's TracedColors block: its value for every id of colour_trace.json (empty until the table exists). A
+    shipped set's values come from colour_trace.all_values, which keeps every set's values apart from every other's
+    (ColorTrace names a colour on screen by its value, from whichever set painted it); a set that is not in
+    colour_sets.json (a self-test's) gets its own values."""
+    global _PHOTIC_REF
+    import colour_trace as ct
+    table = ct.load_table()
+    if not table:
+        return ["  TracedColors: []"]
+    shipped = ct.all_values()
+    if key in shipped and s == ct.set_defs().get(key):
+        return ct.traced_yaml(shipped[key])
+    if _PHOTIC_REF is None:
+        _PHOTIC_REF = cs.photic_reference()
+    return ct.traced_yaml(ct.set_values(key, s, table, _PHOTIC_REF, pal))
 
 
 def meta_text(guid):
@@ -219,6 +261,11 @@ def same(a, b, tol=1e-5):
             return False
         for f, v in a[block].items():
             w = b[block][f]
+            if f == "_entries":
+                if len(v) != len(w) or any(x[0] != y[0] or x[2] != y[2] or x[1] is None or y[1] is None or
+                                           any(abs(p - q) > tol for p, q in zip(x[1], y[1])) for x, y in zip(v, w)):
+                    return False
+                continue
             if isinstance(v, tuple) and isinstance(w, tuple):
                 if any(abs(x - y) > tol for x, y in zip(v, w)):
                     return False
@@ -253,6 +300,11 @@ def problems(defs, orig):
         if not os.path.exists(path + ".meta"):
             found.append("%s: %s.meta is missing" % (key, os.path.relpath(path, REPO)))
         found += field_problems(key, s, palette(s, orig))
+    # An example is never written, but it must be ready to be: it keeps the writer's field rule too, so taking one
+    # into the game is a move in colour_sets.json and never a re-derivation (2026-11-11: Dusk passed every rule as an
+    # example and failed this one the day it was taken into the game).
+    for key, s in defs.get("examples", {}).items():
+        found += ["example " + p for p in field_problems(key, s, palette(s, orig))]
     return found
 
 
@@ -294,8 +346,16 @@ def self_test():
     moved = dict(s, domains=dict(s["domains"], jade=dict(s["domains"]["jade"],
                                                          rim=dict(s["domains"]["jade"]["rim"], hue=180))))
     planted("the json moves, the asset does not", [1] if render(key, moved, orig) != render(key, s, orig) else [])
-    print("self-test: %d/3 caught" % caught)
-    return caught == 3
+    if "dusk" in defs["sets"]:   # Dusk as it was the day it was promoted: its Lime face took a whitened Ruby field
+        old = defs["sets"]["dusk"]
+        lime = dict(old["domains"]["lime"], face=dict(old["domains"]["lime"]["face"], hue=316, sat=0.217))
+        planted("an example a field lands in the wrong pigment of",
+                [p for p in problems(dict(defs, sets={}, examples={"dusk": dict(old, domains=dict(old["domains"], lime=lime))}),
+                                     orig) if p.startswith("example ")])
+    else:   # never a silent pass: a case that cannot be planted any more is a missed case until it is replanted
+        planted("an example a field lands in the wrong pigment of (no Dusk: replant this case)", [])
+    print("self-test: %d/4 caught" % caught)
+    return caught == 4
 
 
 def main(argv):

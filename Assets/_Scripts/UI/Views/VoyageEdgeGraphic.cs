@@ -67,6 +67,8 @@ namespace CosmicShore.UI
         readonly List<Vector2> _poly = new();
         readonly HashSet<long> _walls = new();
         float _lastPaint = float.NegativeInfinity;
+        // The colour set the strip was last painted in (ColorTrace.Version): another one worn paints it again.
+        int _colorVersion;
 
         public override Texture mainTexture => _tex ? _tex : s_WhiteTexture;
 
@@ -109,6 +111,12 @@ namespace CosmicShore.UI
 
         void LateUpdate()
         {
+            // Another colour set worn: the strip is painted again in it (the mesh retraces its colours as it is built).
+            if (_colorVersion != ColorTrace.Version)
+            {
+                _colorVersion = ColorTrace.Version;
+                _dirty = true;
+            }
             if (!_dirty || Time.unscaledTime - _lastPaint < RepaintEvery) return;
             _dirty = false;
             Paint();
@@ -212,9 +220,10 @@ namespace CosmicShore.UI
             if (CellZoom) Cells(vh, r, s, zc, white);
 
             // The disk's faces at +-500 ly and the midplane.
-            Rule(vh, r, r.center.y + ((float)HyperSea.DiskHalf - zc) * s, DiskFace, white);
-            Rule(vh, r, r.center.y + (-(float)HyperSea.DiskHalf - zc) * s, DiskFace, white);
-            Rule(vh, r, r.center.y - zc * s, Midplane, white);
+            var diskFace = ColorTrace.Retrace(ColorTrace.Ui, DiskFace);
+            Rule(vh, r, r.center.y + ((float)HyperSea.DiskHalf - zc) * s, diskFace, white);
+            Rule(vh, r, r.center.y + (-(float)HyperSea.DiskHalf - zc) * s, diskFace, white);
+            Rule(vh, r, r.center.y - zc * s, ColorTrace.Retrace(ColorTrace.Ui, Midplane), white);
 
             // The deep zoom's stars and landmarks at their heights, as the board's side view stands them.
             var sky = _map.Sky;
@@ -233,10 +242,11 @@ namespace CosmicShore.UI
                     VoyageMapGraphic.Quad(vh, at + new Vector2(-rad, -rad), at + new Vector2(-rad, rad),
                         at + new Vector2(rad, rad), at + new Vector2(rad, -rad), col, white, white, white, white);
                 }
+                var landmarkTint = ColorTrace.Retrace(ColorTrace.Ui, LandmarkTint);
                 foreach (var p in sky.Landmarks)
                 {
                     var at = ToRect((float)p.X, (float)p.Z, s, zc);
-                    if (r.Contains(at)) VoyageMapGraphic.Diamond(vh, at, PlaceSize * .7f, LandmarkTint, white);
+                    if (r.Contains(at)) VoyageMapGraphic.Diamond(vh, at, PlaceSize * .7f, landmarkTint, white);
                 }
             }
 
@@ -322,7 +332,7 @@ namespace CosmicShore.UI
             _barY = y;
             var a = new Vector2(r.xMin + GaugeWidth, y);
             var b = new Vector2(r.xMax, y);
-            VoyageMapGraphic.Line(vh, a, b, 4f, new Color(.02f, .035f, .07f, .7f), white);
+            VoyageMapGraphic.Line(vh, a, b, 4f, ColorTrace.Retrace(ColorTrace.Ui, new Color(.02f, .035f, .07f, .7f)), white);
             VoyageMapGraphic.Line(vh, a, b, 1.5f, VoyageMapSky.SliceLime, white);
             var handle = Handle(r, y);
             Box(vh, handle, VoyageMapSky.SliceLime, white);
@@ -348,7 +358,7 @@ namespace CosmicShore.UI
                 }
                 t.fontSize = VoyageMapText.Ladder * .8f;
                 t.fontStyle = FontStyles.Bold;
-                t.color = new Color(.02f, .035f, .07f, 1f);
+                t.color = ColorTrace.Retrace(ColorTrace.Ui, new Color(.02f, .035f, .07f, 1f));
                 t.alignment = TextAlignmentOptions.Center;
                 t.textWrappingMode = TextWrappingModes.NoWrap;
                 t.raycastTarget = false;
@@ -449,14 +459,15 @@ namespace CosmicShore.UI
         void Gauge(VertexHelper vh, Rect r, float s, float zc, VoyageLocation here, VoyageToyDefinitionSO style,
             Vector2 uv)
         {
-            Box(vh, new Rect(r.xMin, r.yMin, GaugeWidth, r.height), GaugeBack, uv);
+            Box(vh, new Rect(r.xMin, r.yMin, GaugeWidth, r.height), ColorTrace.Retrace(ColorTrace.Ui, GaugeBack), uv);
             float top = r.yMax - 8f, bottom = r.yMin + 8f, x = r.xMin + GaugeWidth * 0.4f;
             float Gz(float z) => Mathf.Lerp(bottom, top, Mathf.InverseLerp(-GaugeRange, GaugeRange, z));
             float disk = (float)HyperSea.DiskHalf;
-            Box(vh, Rect.MinMaxRect(x - 4f, Gz(-disk), x + 4f, Gz(disk)), GaugeDisk, uv);
+            Box(vh, Rect.MinMaxRect(x - 4f, Gz(-disk), x + 4f, Gz(disk)), ColorTrace.Retrace(ColorTrace.Ui, GaugeDisk), uv);
             float zTop = zc + r.height * 0.5f / s, zBottom = zc - r.height * 0.5f / s;
             float wt = Gz(Mathf.Min(GaugeRange, zTop)), wb = Gz(Mathf.Max(-GaugeRange, zBottom));
-            if (wt - wb < top - bottom - 2f) Outline(vh, Rect.MinMaxRect(x - 8f, wb, x + 8f, Mathf.Max(wb + 2f, wt)), GaugeWindow, uv);
+            if (wt - wb < top - bottom - 2f)
+                Outline(vh, Rect.MinMaxRect(x - 8f, wb, x + 8f, Mathf.Max(wb + 2f, wt)), ColorTrace.Retrace(ColorTrace.Ui, GaugeWindow), uv);
             if (here != null && here.Charted)
                 VoyageMapGraphic.Diamond(vh, new Vector2(x + 12f, Gz(here.GalaxyZ)), 8f, style.HereColor, uv);
         }
