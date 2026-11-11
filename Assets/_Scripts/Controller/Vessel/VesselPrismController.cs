@@ -68,6 +68,19 @@ namespace CosmicShore.Gameplay
         float _turnFlare01;
         int _turnFlareLaneSign;
 
+        [Header("Speed shape (the Manta's trail)")]
+        [Tooltip("When enabled, a two-rail prism's X, Y and Z come from speed and turning (uniform width, " +
+                 "longer toward Soar, taller at a crawl and in a Yawstery, inside rail shorter and outside " +
+                 "longer in a turn) instead of BaseScale x the scalers. Off on every vessel that does not author it. " +
+                 "Picked in the Manta Trail Lab (Docs/Manta/POLISH.md).")]
+        [SerializeField] TrailSpeedShape speedShape = new();
+
+        // The vessel's yaw rate at the last lay (rad/s, + = turning right), measured lay to lay for the speed
+        // shape's inside/outside rails. Only kept while the speed shape is on.
+        float _layYawRate;
+        Vector3 _lastLayForward;
+        float _lastLayTime = -1f;
+
         [Header("Gap Settings")]
         [SerializeField] float offset;
         public float Offset => offset;
@@ -322,6 +335,7 @@ namespace CosmicShore.Gameplay
 
                 if (spawnerEnabled && !trailPenUp && !tierHold && !vesselStatus.IsAttached && vesselStatus.Speed > 3f * warp)
                 {
+                    if (speedShape.Enabled) MeasureLayYawRate();
                     if (Mathf.Approximately(Gap, 0f))
                     {
                         CreateBlock(ApplyBoostGap(0f), Trail);
@@ -341,6 +355,23 @@ namespace CosmicShore.Gameplay
                 float finalDelay = ApplyBoostSpawnDelay(clamped);
                 await UniTask.Delay(TimeSpan.FromSeconds(finalDelay), cancellationToken: ct);
             }
+        }
+
+        /// <summary>
+        /// The yaw rate since the previous lay, signed so a right turn is positive (the speed shape's
+        /// convention, <see cref="TrailSpeedShape.ArcFactor"/>). Lay to lay rather than per frame: the
+        /// shape only reads it at a lay, and a lay is at most 3 s from the last (or it reads 0).
+        /// </summary>
+        void MeasureLayYawRate()
+        {
+            var ship = vesselStatus.ShipTransform;
+            Vector3 forward = ship.forward;
+            float now = Time.time, dt = now - _lastLayTime;
+            _layYawRate = _lastLayTime >= 0f && dt > 1e-4f && dt <= 3.5f
+                ? Vector3.SignedAngle(_lastLayForward, forward, ship.up) * Mathf.Deg2Rad / dt
+                : 0f;
+            _lastLayForward = forward;
+            _lastLayTime = now;
         }
 
         async UniTask LerpXScalerAsync(float from, float to, float duration, CancellationToken ct)
@@ -427,6 +458,20 @@ namespace CosmicShore.Gameplay
                 BaseScale.z * ZScaler
             ));
 
+            // Speed shape (the Manta's trail): X, Y and Z from speed and turning, never from what is near the
+            // vessel. Measured in UNWARPED lengths, since the warp scales the whole lay below.
+            bool shaped = speedShape.Enabled && halfGap != 0f;
+            if (shaped)
+            {
+                float fieldScale = WarpFieldRuntime.ScaleAt(transform.position);
+                float speedHere = vesselStatus.Speed / Mathf.Max(fieldScale, 1e-4f);
+                float spacing = speedShape.FrameAwareSpacing
+                    ? Mathf.Max(wavelength, speedHere * Time.deltaTime)
+                    : wavelength;
+                scale = speedShape.Evaluate(BaseScale.y, BaseScale.z, halfGap, speedHere, _turnFlare01,
+                    _layYawRate, (int)Mathf.Sign(halfGap), spacing);
+            }
+
             // MASS -> trail prism volume: live per-spawn read of the prefab-authored
             // ElementalFloat (1x when disabled). Cube root per axis so VOLUME scales
             // linearly with the element level; the mass still flows through the normal
@@ -437,7 +482,7 @@ namespace CosmicShore.Gameplay
 
             bool thickened = ThicknessMultiplier > 1.0001f;
             if (thickened) scale.y *= ThicknessMultiplier;
-            bool widened = WidthMultiplier > 1.0001f || thickened;
+            bool widened = WidthMultiplier > 1.0001f || thickened || shaped;
             if (WidthMultiplier > 1.0001f) scale.x *= WidthMultiplier;
 
             // Yastri flare: the OUTER lane fattens with turn intensity, so a hard bank throws

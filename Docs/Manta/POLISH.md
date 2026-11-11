@@ -118,3 +118,19 @@ gain 0.6, full turn geometry), with the scaler removed.
 **Decision needed (Caleb).** At a crawl Volume kept lays short tall posts (1.5 m long, 2.75 m tall) about 10 m apart,
 so the slow trail reads as a dotted fence rather than a wall. Keep that, or let slow prisms also fill the gap (more
 mass per metre while slow)? Fly the crawl chicane in the lab and record the pick in its Decisions tab.
+
+**Decided (Caleb, 2026-11-11): Free curves, 8 m rails, the scaler removed.** "I think I like 'Free Curves' the most.
+We definitely want to remove the scaler, and I think I found 8m a good value for us to start with." His recorded
+settings (the lab's decision log, two identical entries): rail width 8, reference 162 u/s, Soar 600 u/s at 10 m,
+spacing cap 0.9 (frame aware), crawl below 60 u/s at 4× height, Yawstery height gain 0.8, outside thin 0.25, Y held
+0.1 to 3.5 m, full turn geometry. In the lab those numbers pass every hard check; the soft misses are crawl mass
+2.68× cruise and Soar fill 0.75 (the gap at Soar is 10 % of the spacing by design). That answers the open question
+above: slow prisms are tall and keep their length, so the crawl trail is a taller wall, not a fence.
+
+**Graduated (same day).** `ScoutTrailPrismScaler` is off Manta.prefab (the script and `ScoutTrailPrismConfig.asset`
+stay in the repo, unused). `TrailSpeedShape` (`Assets/_Scripts/Controller/Vessel/`) is the lab's `shapeFor('free')`
+line for line; `VesselPrismController.speedShape` authors it on the Manta with the numbers above, measures the yaw rate
+between lays, and is off by default for every other hull. `TrailSpeedShapeTests` holds the lab's values (read from
+the page) and the prefab. The Time ability's description in the kit says the trail is shaped by speed.
+Not verified in Unity yet: fly the Manta from the Toybox's Vessel Changer and judge the look at a crawl, at Soar
+and in a held Yawstery.
