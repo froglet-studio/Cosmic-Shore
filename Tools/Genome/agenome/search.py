@@ -40,6 +40,7 @@ import numpy as np
 from .genome import Genome, mutate, crossover, _delete
 from .ops import OPS
 from .selection import CMAEmitter, Lexicase, Matching, hypervolume, roi_bound, roi_order
+from .steward import genome_diff
 
 COMPLEXIFY, COMPRESS, PARETO = "COMPLEXIFY", "COMPRESS", "PARETO"
 ARMS = ("param", "struct", "xover", "shrink")
@@ -736,7 +737,8 @@ def run(args):
     aos = Matching(ARMS, p0=PRIOR_MIX, p_min=args.aos_min, alpha=args.aos_rate) \
         if args.operators == "adaptive" else None
     emitter = CMAEmitter(block=args.cma_block, gens_per_block=args.cma_gens, sigma=args.cma_sigma,
-                         sigma_min=args.cma_sigma_min, seed=args.seed) if args.tuner == "cma" else None
+                         sigma_min=args.cma_sigma_min, seed=args.seed, blocks=args.cma_blocks) \
+        if args.tuner == "cma" else None
     for gen in range(args.gens):
         cinfo = {}
         moved = False
@@ -757,13 +759,14 @@ def run(args):
         parents = [c["genome"] for c in pop]
         extra = [m["genome"] for m in archive.members] + [m["genome"] for m in elites.cells.values()]
         extra_c = archive.members + list(elites.cells.values())
-        kids, tags, pdist = [], [], []
+        kids, tags, pdist, pcand = [], [], [], []
         if args.share and args.migrate_every > 0 and gen > 0 and gen % args.migrate_every == 0:
             held = {c["genome"].to_bytes() for c in pop + archive.members + list(elites.cells.values())}
             imm = immigrants(args, rng, k=args.migrants, have={lineage_of(c) for c in pop}, held=held)
             kids += imm
             tags += ["imm"] * len(imm)
             pdist += [None] * len(imm)
+            pcand += [None] * len(imm)
         n_tune = min(int(round(args.lam * args.tune)), max(0, args.lam - len(kids)))
         best_first = sorted(pop, key=lambda c: c["dist"])
         n_cma, i_cma = 0, len(kids)
@@ -776,6 +779,7 @@ def run(args):
             kids += ck
             tags += ["cma"] * n_cma
             pdist += [emitter.anchor_dist] * n_cma
+            pcand += [emitter.anchor_cand] * n_cma
         for _ in range(n_tune - n_cma):
             # TUNE: parameter-only steps around the current best few (a hill climb inside the population);
             # the seed thread's 150-eval param climb took a seed from 4.40 to 1.57 where structural search stalled
@@ -783,6 +787,7 @@ def run(args):
             kids.append(mutate(pc["genome"], rng, structural=0.0).ensure_root().prune())
             tags.append("tune")
             pdist.append(pc["dist"])
+            pcand.append(pc)
         lex = Lexicase(lexicase_matrix(pop, crit.on and crit.trained)) if args.parents == "lexicase" else None
         donors = parents + extra
         while len(kids) < args.lam:
@@ -798,6 +803,7 @@ def run(args):
             kids.append(child)
             tags.append(tag)
             pdist.append(pc["dist"])
+            pcand.append(pc)
         res = evaluate(kids)
         evals += len(kids)
         for c, t in zip(res, tags):
@@ -860,6 +866,23 @@ def run(args):
         if aos is not None:
             aos.update({t: g for t, g in gains.items() if t in aos.arms})
         best = min(pop, key=lambda c: c["dist"])
+        # the steward's evidence (agenome/steward.py): every child that beat its parent and survived, with the edit
+        # that did it and how each feature group moved
+        events = []
+        for c, pc in zip(res, pcand):
+            if pc is None or not c.get("ok") or id(c) not in alive or c["dist"] >= pc["dist"]:
+                continue
+            ev = {"gen": gen, "evals": evals, "op": c.get("op"), "parent_dist": round(pc["dist"], 4),
+                  "dist": round(c["dist"], 4), "gain": round((pc["dist"] - c["dist"]) / max(abs(pc["dist"]), 1e-9), 5),
+                  "zbytes": c["zbytes"], "parent_zbytes": pc.get("zbytes"), "leader": c is best,
+                  "src": lineage_of(c), "edit": genome_diff(pc["genome"], c["genome"])}
+            if c.get("groups") and pc.get("groups"):
+                ev["groups_delta"] = {k: round(c["groups"][k] - pc["groups"][k], 4) for k in c["groups"]
+                                      if k in pc["groups"]}
+            events.append(ev)
+        if events:
+            with open(os.path.join(args.run, "improvements.jsonl"), "a") as f:
+                f.write("".join(json.dumps(e) + "\n" for e in events))
         aud = audit(best) if judge.on else None
         simplest_ok = min((m for m in archive.members if m["dist"] <= floor), key=lambda m: m["zbytes"], default=best)
         front = [(m["dist"], m["zbytes"]) for m in archive.members]
@@ -981,7 +1004,8 @@ def publish(args, run_dir):
     dst = os.path.join(args.share, args.island)
     os.makedirs(dst, exist_ok=True)
     import shutil
-    for name in ("pareto.json", "elites.json", "log.jsonl", "args.json"):
+    # population.json and improvements.jsonl are the steward's evidence (agenome/steward.py)
+    for name in ("pareto.json", "elites.json", "log.jsonl", "args.json", "population.json", "improvements.jsonl"):
         src = os.path.join(run_dir, name)
         if os.path.exists(src):
             shutil.copyfile(src, os.path.join(dst, name + ".tmp"))
@@ -1089,6 +1113,9 @@ def main(argv=None):
     ap.add_argument("--cma-gens", type=int, default=8, help="cma tuner: generations per block")
     ap.add_argument("--cma-sigma", type=float, default=12.0, help="cma tuner: first block's step, byte units")
     ap.add_argument("--cma-sigma-min", type=float, default=2.0, help="cma tuner: smallest block start step")
+    ap.add_argument("--cma-blocks", default="random", choices=["random", "op"],
+                    help="cma tuner: a block is --cma-block random bytes, or whole operators' parameters until it "
+                         "holds --cma-block (LEDGER.md L7)")
     ap.add_argument("--log-front", action="store_true", help="write the archive's (dist, bytes) front every generation")
     ap.add_argument("--patience", type=int, default=8)
     ap.add_argument("--retain", type=float, default=0.97)

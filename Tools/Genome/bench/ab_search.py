@@ -54,6 +54,9 @@ ARMS["base+cma6"] = _with(BASE, "--tuner", "cma", "--cma-block", "6")
 # the forward winners combined
 ARMS["pareto+cma"] = _with(_with(BASE, "--survival", "pareto"), "--tuner", "cma")
 ARMS["pareto+cma+aos"] = _with(ARMS["pareto+cma"], "--operators", "adaptive")
+# steward experiments (LEDGER.md)
+ARMS["base+cma24op"] = _with(BASE, "--tuner", "cma", "--cma-blocks", "op")  # L7: blocks of whole operators
+ARMS["pareto+cmaop"] = ARMS["pareto+cma"] + ["--cma-blocks", "op"]  # L7 inside the pair
 
 
 def hidden(name):

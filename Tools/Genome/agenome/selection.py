@@ -235,8 +235,8 @@ class CMAEmitter:
     the start step follows the offline tuner's rule (agenome.tune): kept after a block that improved the anchor, halved
     (to sigma_min) after one that did not, because a tuned genome sits in a narrow basin."""
 
-    def __init__(self, block=24, gens_per_block=8, sigma=12.0, sigma_min=2.0, seed=0):
-        self.block, self.gens_per_block = block, gens_per_block
+    def __init__(self, block=24, gens_per_block=8, sigma=12.0, sigma_min=2.0, seed=0, blocks="random"):
+        self.block, self.gens_per_block, self.blocks_mode = block, gens_per_block, blocks
         self.sigma0, self.sigma_init, self.sigma_min = sigma, sigma, sigma_min
         self.rng = np.random.default_rng(seed)
         self.es = None
@@ -258,7 +258,19 @@ class CMAEmitter:
             fruitful = self.best is not None and self.best < self.anchor_dist - 1e-9
             self.sigma0 = max(self.sigma0, self.es.sigma) if fruitful else max(self.sigma_min, 0.5 * self.sigma0)
         self.anchor, self.anchor_dist, self.anchor_key = g, float(cand["dist"]), structure_key(g)
-        self.slots = [slots[i] for i in self.rng.permutation(len(slots))[: self.block]] if slots else []
+        self.anchor_cand = cand
+        if self.blocks_mode == "op" and slots:
+            # whole operators until the block is full (LEDGER L7: do a genome's bytes act in per-operator groups?)
+            by = {}
+            for i, j in slots:
+                by.setdefault(i, []).append((i, j))
+            self.slots = []
+            for i in self.rng.permutation(sorted(by)):
+                # whole operators that still fit (the first always does), so the block stays near --cma-block
+                if not self.slots or len(self.slots) + len(by[int(i)]) <= self.block:
+                    self.slots += by[int(i)]
+        else:
+            self.slots = [slots[i] for i in self.rng.permutation(len(slots))[: self.block]] if slots else []
         self.gens, self.best = 0, None
         self.blocks += 1
         if not self.slots:

@@ -24,6 +24,11 @@ Search a space that keeps the procedural compactness of .kkrieger while reproduc
   (off by default). Why, and the A/B that chose each default: `SEARCH.md`.
 - `bench/ab_search.py`: that A/B on a synthetic target (a hidden genome's own renders), no reels needed;
   `tests/test_selection.py` tests the selection pieces.
+- `agenome/steward.py` + `LEDGER.md`: the steward loop. The search writes `improvements.jsonl` (every child that beat
+  its parent and survived, with the edit that did it and how each feature group moved); `python3 -m agenome.steward
+  RUN_DIR ...` condenses a run into an evidence pack; a Claude session reads it every few hours, turns what worked
+  into hypotheses with predictions, tests each as an A/B arm and records the verdict in `LEDGER.md`.
+  `tests/test_steward.py` tests it.
 - `agenome/report.py` + `report_page.html`: the Amoebius Genome Lab page (re-renders and re-scores every genome shown).
 - `agenome/cli.py`: render, sheet and score commands.
 - `island.sh`: start one island in a fresh Linux container.
