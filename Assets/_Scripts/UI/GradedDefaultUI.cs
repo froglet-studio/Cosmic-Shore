@@ -10,6 +10,7 @@ namespace CosmicShore.UI
     /// portrait and illustration a canvas draws follows the worn colour set, including the ones code makes or assigns
     /// later. <see cref="Use"/>(null) gives uGUI back its own default.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public abstract class GradedDefaultUI : Graphic
     {
         /// <summary>Makes <paramref name="material"/> the default UI material (null: uGUI's own again). Call it before a
