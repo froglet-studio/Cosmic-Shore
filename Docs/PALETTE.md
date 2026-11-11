@@ -56,6 +56,14 @@ still an editor call. It does not replace `PastelColorSetSO`, which is older and
 into the night (L 0.40 or below), so a Jade prism no longer reads as bronze; Blue is the Azureus, azure over cobalt. Every
 set obeys the seven rules of `colour_sets.json` (`colour_sets.py --check`, `/colour-set`).
 
+**`BlueRingedOctopusColorSetSO`, `NeonNoirColorSetSO`, `UkiyoEColorSetSO` and `DuskColorSetSO`** (2026-11-11) were the
+`/colour-set` skill's worked examples (an animal, a film genre's palette, a painting style, a mood) and are now game sets
+in the Profile's colour-set rail, beside the other looks (free track, unlocked like every set; Garrett: "the artifact
+lab had some great new color sets"), written like the others from `colour_sets.json`. Taking Dusk in moved its Lime
+face (Heather) 1 degree and 0.005 saturation: the palette writer's whitened Ruby fields walk toward grey along the
+plum's hue and one of them (`AOEConicEdgeColor`) landed in that quiet purple face. `author_colour_set_assets.py --check`
+now holds the examples to the same field rule, so the next example taken into the game is a move, not a re-derivation.
+
 `CosmicWaveColorSetSO`, `PastelColorSetSO` and `Default Color Palette` exist but are
 **not wired to anything** — editing them changes nothing at runtime. The per-domain
 `Shielded*SpreadFresnelMaterial.mat` files under `_Graphics/Materials/` are likewise

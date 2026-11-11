@@ -22688,6 +22688,28 @@ packages the sandbox cannot fetch). The stills come from a numpy model of the bl
    each set's own viewer (`colour_sets.py --report`, rule 5). A colour-blind player's look at their set is the real test.
 7. **The Nacre entry above (2026-11-08)** names its old pigments in step 1; they changed here.
 
+## 🔴 Four new colour sets in the Profile: Blue-ringed Octopus, Neon Noir, Ukiyo-e, Dusk (2026-11-11, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nifty-cray-41hy43` (after #1895). The `/colour-set` skill's four worked examples are now game sets (Garrett:
+"the artifact lab had some great new color sets ... i just tried bleeding edge and they were not there"): moved from
+`colour_sets.json` `examples` to `sets` (free track, unlocked like every set), written by `author_colour_set_assets.py`
+(`BlueRingedOctopusColorSetSO`, `NeonNoirColorSetSO`, `UkiyoEColorSetSO`, `DuskColorSetSO`, each with its TracedColors),
+catalogued after Nacre (`author_colour_set_catalog.py`; the lines are seeded words, edit them in the inspector), graded
+(`colour_grade.py`: two tables each) and themed (`FrogletSeaTheme.Themes.cs`, the console's `themes.css`). Dusk's Lime
+face moved 1 degree and 0.005 saturation for the writer's field check. Dart Frog and Nacre each moved one traced value by
+1/255 (the writer keeps every value of every set apart). Ran here: `colour_sets.py --check`, `author_colour_set_assets.py
+--check/--self-test`, `author_colour_set_catalog.py --check/--self-test`, `colour_trace.py --check`, `colour_grade.py
+--check`, both theme writers' `--check`, `froglet_style.py --check`, the `/ship` gates and `unity_refcompile`. The lab
+renders all four (`verify_lab.cjs`, Playwright); nothing ran in Unity.
+
+1. **Let Unity import**, then run `ColorSetCatalogTests`, `ColorSetUIThemeTests`, `ColorTraceTests` and `ColorGradeTests`.
+2. **Profile > Colour sets**: the rail pages through 14 sets, the four new ones after Nacre, each tile with its name, line
+   and four pigment lines.
+3. **Wear each of the four and play a race, then the menu**: every domain still reads as its name (Jade, Ruby, Gold, Blue
+   on the prisms, trails and HUD); the UI, card art and portraits take the set's colours through the theme and the grade.
+   Dusk is muted by design (the rims sit at their families' chroma floors); judge whether it is too quiet on a phone.
+4. **Neon Noir under the gameplay bloom**: its rims are neon at full strength; check the shielded tiers stay apart.
+
 ## 🔴 Manta: Charge is the fuse, not the bloom's petals (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/cool-dijkstra-4puf92`. Design record: `MANTA_STING_KABLOOM.md` §0a. Compile and gate status are in the
