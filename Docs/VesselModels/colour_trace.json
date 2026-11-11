@@ -4,17 +4,17 @@
  "tool": "Tools/Build/colour_trace.py",
  "rule": "Every colour that reaches a pixel comes from the worn colour set. Photic holds the baked values; every other set computes its own from its pigments (colour_trace.py repaint). A colour is inert, a UI theme token, fixed (pure white, pure black), traced (an id below), or untraced (listed below: the work left).",
  "counts": {
-  "fixed": 2471,
-  "inert": 29837,
-  "token": 3866,
-  "traced": 1812,
-  "untraced": 76
+  "fixed": 2472,
+  "inert": 29818,
+  "token": 3867,
+  "traced": 1897,
+  "untraced": 8
  },
  "inert": {
   "ambient-mode": 171,
   "camera-no-clear": 8,
-  "code-fallback": 164,
-  "code-inert": 250,
+  "code-fallback": 163,
+  "code-inert": 232,
   "debug": 109,
   "field-reviewed": 9,
   "fog-off": 57,
@@ -87,7 +87,7 @@
   "ElementSpace": 4,
   "ElementTime": 4,
   "InactiveLight": 11,
-  "NeutralLightest": 732,
+  "NeutralLightest": 733,
   "Purchase": 32,
   "Sea": 7,
   "Selection": 118,
@@ -100,6 +100,51 @@
   "Tooltip": 2
  },
  "ids": {
+  "ui-token:ControlActive": {
+   "role": "ui-token",
+   "photic": [
+    0.0,
+    0.831373,
+    1.0,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "ControlActive"
+  },
+  "ui-token:Cta": {
+   "role": "ui-token",
+   "photic": [
+    0.6,
+    1.0,
+    0.501961,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "Cta"
+  },
+  "ui-token:Danger": {
+   "role": "ui-token",
+   "photic": [
+    1.0,
+    0.294118,
+    0.227451,
+    1.0
+   ],
+   "family": "fire",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "Danger"
+  },
   "ui-token:ElementCharge": {
    "role": "ui-token",
    "photic": [
@@ -159,6 +204,216 @@
     "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
    ],
    "token": "ElementTime"
+  },
+  "ui-token:InactiveLight": {
+   "role": "ui-token",
+   "photic": [
+    0.360784,
+    0.372549,
+    0.439216,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "InactiveLight"
+  },
+  "ui-token:NeutralLightest": {
+   "role": "ui-token",
+   "photic": [
+    0.454902,
+    0.482353,
+    0.678431,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "NeutralLightest"
+  },
+  "ui-token:Purchase": {
+   "role": "ui-token",
+   "photic": [
+    1.0,
+    0.682353,
+    0.0,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "Purchase"
+  },
+  "ui-token:SeaEnd": {
+   "role": "ui-token",
+   "photic": [
+    0.611765,
+    0.54902,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+   ],
+   "token": "SeaEnd"
+  },
+  "ui-token:SeaGlow": {
+   "role": "ui-token",
+   "photic": [
+    0.239216,
+    0.54902,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+   ],
+   "token": "SeaGlow"
+  },
+  "ui-token:SeaLine": {
+   "role": "ui-token",
+   "photic": [
+    0.286274,
+    0.721569,
+    1.0,
+    1.0
+   ],
+   "family": "band",
+   "uses": 0,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+   ],
+   "token": "SeaLine"
+  },
+  "ui-token:SeaMid": {
+   "role": "ui-token",
+   "photic": [
+    0.498039,
+    0.596078,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+   ],
+   "token": "SeaMid"
+  },
+  "ui-token:Selection": {
+   "role": "ui-token",
+   "photic": [
+    0.0,
+    0.831373,
+    1.0,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "Selection"
+  },
+  "ui-token:SurfaceBlack": {
+   "role": "ui-token",
+   "photic": [
+    0.0,
+    0.003922,
+    0.039216,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "SurfaceBlack"
+  },
+  "ui-token:SurfaceDark": {
+   "role": "ui-token",
+   "photic": [
+    0.133333,
+    0.14902,
+    0.270588,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "SurfaceDark"
+  },
+  "ui-token:SurfaceLight": {
+   "role": "ui-token",
+   "photic": [
+    0.262745,
+    0.298039,
+    0.537255,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "SurfaceLight"
+  },
+  "ui-token:SurfaceVeryDark": {
+   "role": "ui-token",
+   "photic": [
+    0.0,
+    0.015686,
+    0.121569,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "SurfaceVeryDark"
+  },
+  "ui-token:TextInactive": {
+   "role": "ui-token",
+   "photic": [
+    0.145098,
+    0.14902,
+    0.176471,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "TextInactive"
+  },
+  "ui-token:TextLight": {
+   "role": "ui-token",
+   "photic": [
+    0.901961,
+    0.913725,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 0,
+   "where": [
+    "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"
+   ],
+   "token": "TextLight"
   },
   "ui-token:Tooltip": {
    "role": "ui-token",
@@ -1144,7 +1399,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 733,
+   "uses": 734,
    "where": [
     "Assets/Resources/Voyages/QuestsView.prefab TextMeshProUGUI",
     "Assets/_Graphics/Materials/Shaders/UI/Presence_Orb.mat Material(CosmicShore/UI/Presence)",
@@ -1830,9 +2085,10 @@
     1.0
    ],
    "family": "blue",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab ThresherHUDView"
+    "Assets/_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab ThresherHUDView",
+    "Assets/_Scripts/UI/View/ThresherHUDView.cs code"
    ]
   },
   "ui:C2C9F2": {
@@ -2392,6 +2648,20 @@
    "uses": 1,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image"
+   ]
+  },
+  "ui:FFC882": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.7843137254901961,
+    0.5098039215686274,
+    0.0
+   ],
+   "family": "band~gold",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
    ]
   },
   "ui:FFC95F": {
@@ -3676,7 +3946,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 4,
+   "uses": 5,
    "where": [
     "Assets/_Graphics/Materials/ThresherChainMaterial.mat Material(CosmicShore/ThresherChainFresnel)",
     "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset BrittleStarConfigSO",
@@ -4555,11 +4825,12 @@
     1.0
    ],
    "family": "jade",
-   "uses": 3,
+   "uses": 4,
    "where": [
     "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset BrittleStarConfigSO",
     "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset ThresherConfigSO",
-    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/BrittleStarConfigSO.cs code"
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/BrittleStarConfigSO.cs code",
+    "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/ThresherConfigSO.cs code"
    ]
   },
   "world:4CF2E6": {
@@ -4874,6 +5145,22 @@
     "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
    ]
   },
+  "world:6680FF": {
+   "role": "world",
+   "photic": [
+    0.4,
+    0.5,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Toys/ToyFactory.cs code"
+   ],
+   "palette": "BlueColors.TrailHighlightColor",
+   "palette_scale": 1.0
+  },
   "world:6B1C0A": {
    "role": "world",
    "photic": [
@@ -5142,10 +5429,11 @@
     0.5
    ],
    "family": "blue",
-   "uses": 2,
+   "uses": 3,
    "where": [
     "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
-    "Assets/_Graphics/Skyboxes/BlackSkybox.mat Material(?)"
+    "Assets/_Graphics/Skyboxes/BlackSkybox.mat Material(?)",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
    ]
   },
   "world:8186F1": {
@@ -5300,11 +5588,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 3,
+   "uses": 4,
    "where": [
     "Assets/Resources/Codex.asset CodexSO",
     "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
-    "Assets/_SO_Assets/Toys/Toy_CellSelector.asset CellSelectorToyDefinitionSO"
+    "Assets/_SO_Assets/Toys/Toy_CellSelector.asset CellSelectorToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
    ]
   },
   "world:8CD9FF": {
@@ -5330,7 +5619,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 4,
+   "uses": 5,
    "where": [
     "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset StoatDipoleConfigSO",
     "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset StoatDipoleConfigSO",
@@ -5453,9 +5742,10 @@
     1.0
    ],
    "family": "band~lime",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO"
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
    ]
   },
   "world:99FFF7": {
@@ -5481,7 +5771,7 @@
     1.0
    ],
    "family": "lime",
-   "uses": 9,
+   "uses": 10,
    "where": [
     "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset StoatDipoleConfigSO",
     "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset StoatDipoleConfigSO",
@@ -5733,9 +6023,10 @@
     1.0
    ],
    "family": "lime",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO"
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
    ]
   },
   "world:B3B3FF": {
@@ -6197,9 +6488,10 @@
     1.0
    ],
    "family": "blue",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO"
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
    ]
   },
   "world:E6E9FF": {
@@ -6427,10 +6719,11 @@
     1.0
    ],
    "family": "blue",
-   "uses": 2,
+   "uses": 3,
    "where": [
     "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
-    "Assets/_Scripts/Controller/Toys/ToyFactory.cs code"
+    "Assets/_Scripts/Controller/Toys/ToyFactory.cs code",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
    ]
   },
   "world:F5F5FF": {
@@ -6744,9 +7037,10 @@
     1.0
    ],
    "family": "fire",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO"
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
    ]
   },
   "world:FF4D6D": {
@@ -6861,9 +7155,10 @@
     1.0
    ],
    "family": "fire",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO"
+    "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs code"
    ]
   },
   "world:FF991A": {
@@ -6967,7 +7262,7 @@
     1.0
    ],
    "family": "gold",
-   "uses": 5,
+   "uses": 6,
    "where": [
     "Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO",
     "Assets/_SO_Assets/Toys/Wander_WithArk.asset ArkwaySettingsSO",
@@ -7266,9 +7561,10 @@
     1.0
    ],
    "family": "band~gold",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/_Prefabs/Projectile/GrizzlyBomb.prefab GrizzlyBombVisual"
+    "Assets/_Prefabs/Projectile/GrizzlyBomb.prefab GrizzlyBombVisual",
+    "Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs code"
    ]
   },
   "world:FFEDCC": {
@@ -7430,118 +7726,6 @@
  },
  "untraced": [
   {
-   "file": "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset",
-   "line": 0,
-   "component": "StoatDipoleConfigSO",
-   "field": "MonoBehaviour.openColor",
-   "id": "world:96A6C2",
-   "why": "a colour field on StoatDipoleConfigSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Slingshot.asset",
-   "line": 0,
-   "component": "StoatDipoleConfigSO",
-   "field": "MonoBehaviour.warpedColor",
-   "id": "world:9DFF2E",
-   "why": "a colour field on StoatDipoleConfigSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset",
-   "line": 0,
-   "component": "StoatDipoleConfigSO",
-   "field": "MonoBehaviour.openColor",
-   "id": "world:96A6C2",
-   "why": "a colour field on StoatDipoleConfigSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/AIBoostPolicies/StoatDipoleConfig_Warpline.asset",
-   "line": 0,
-   "component": "StoatDipoleConfigSO",
-   "field": "MonoBehaviour.warpedColor",
-   "id": "world:9DFF2E",
-   "why": "a colour field on StoatDipoleConfigSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/Voyages/QuestsView.prefab",
-   "line": 0,
-   "component": "VoyageWindowTabs",
-   "field": "MonoBehaviour.idleColor",
-   "id": "world:747BAD",
-   "why": "a colour field on VoyageWindowTabs: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/Voyages/Voyage.asset",
-   "line": 0,
-   "component": "VoyageToyDefinitionSO",
-   "field": "MonoBehaviour.coreColor",
-   "id": "world:FF7359",
-   "why": "a colour field on VoyageToyDefinitionSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/Voyages/Voyage.asset",
-   "line": 0,
-   "component": "VoyageToyDefinitionSO",
-   "field": "MonoBehaviour.hereColor",
-   "id": "world:FFC740",
-   "why": "a colour field on VoyageToyDefinitionSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/Voyages/Voyage.asset",
-   "line": 0,
-   "component": "VoyageToyDefinitionSO",
-   "field": "MonoBehaviour.lairColor",
-   "id": "world:FF4C8C",
-   "why": "a colour field on VoyageToyDefinitionSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/Voyages/Voyage.asset",
-   "line": 0,
-   "component": "VoyageToyDefinitionSO",
-   "field": "MonoBehaviour.nurseryColor",
-   "id": "world:99FF99",
-   "why": "a colour field on VoyageToyDefinitionSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/Voyages/Voyage.asset",
-   "line": 0,
-   "component": "VoyageToyDefinitionSO",
-   "field": "MonoBehaviour.portColor",
-   "id": "world:F5F0DB",
-   "why": "a colour field on VoyageToyDefinitionSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/Voyages/Voyage.asset",
-   "line": 0,
-   "component": "VoyageToyDefinitionSO",
-   "field": "MonoBehaviour.routeColor",
-   "id": "world:B2FF59",
-   "why": "a colour field on VoyageToyDefinitionSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/Voyages/Voyage.asset",
-   "line": 0,
-   "component": "VoyageToyDefinitionSO",
-   "field": "MonoBehaviour.shrineColor",
-   "id": "world:E6D9FF",
-   "why": "a colour field on VoyageToyDefinitionSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/Voyages/Voyage.asset",
-   "line": 0,
-   "component": "VoyageToyDefinitionSO",
-   "field": "MonoBehaviour.unchartedColor",
-   "id": "world:808080",
-   "why": "a colour field on VoyageToyDefinitionSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/Resources/Voyages/Voyage.asset",
-   "line": 0,
-   "component": "VoyageToyDefinitionSO",
-   "field": "MonoBehaviour.vaultColor",
-   "id": "world:8CBFFF",
-   "why": "a colour field on VoyageToyDefinitionSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
    "file": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl",
    "line": 43,
    "component": "constant",
@@ -7604,438 +7788,6 @@
    "field": "col += _MWLightDir.w * l2.z * glint * float3(1.0, 0.98, 0.95);          // the light off the wall",
    "id": "world:FFFAF2",
    "why": "a colour baked into a shader: make it a Color property the material saves, so the world painter repaints it"
-  },
-  {
-   "file": "Assets/_Prefabs/Projectile/GrizzlyBomb.prefab",
-   "line": 0,
-   "component": "GrizzlyBombVisual",
-   "field": "MonoBehaviour.sparkColor",
-   "id": "world:FFEBB2",
-   "why": "a colour field on GrizzlyBombVisual: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab",
-   "line": 0,
-   "component": "ThresherHUDView",
-   "field": "MonoBehaviour.chainColor",
-   "id": "ui:BFBFC7",
-   "why": "a colour field on ThresherHUDView: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset",
-   "line": 0,
-   "component": "StoatDipoleConfigSO",
-   "field": "MonoBehaviour.openColor",
-   "id": "world:96A6C2",
-   "why": "a colour field on StoatDipoleConfigSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/_SO_Assets/VesselActions/Stoat/StoatDipoleConfig.asset",
-   "line": 0,
-   "component": "StoatDipoleConfigSO",
-   "field": "MonoBehaviour.warpedColor",
-   "id": "world:9DFF2E",
-   "why": "a colour field on StoatDipoleConfigSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset",
-   "line": 0,
-   "component": "ThresherConfigSO",
-   "field": "MonoBehaviour.chainColor",
-   "id": "world:121111",
-   "why": "a colour field on ThresherConfigSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset",
-   "line": 0,
-   "component": "ThresherConfigSO",
-   "field": "MonoBehaviour.fallbackDomainColor",
-   "id": "world:4CE6D9",
-   "why": "a colour field on ThresherConfigSO: the code that paints with it reads it through ColorTrace.Retrace"
-  },
-  {
-   "file": "Assets/_Scripts/Controller/FX/GrizzlyClawConeVisual.cs",
-   "line": 33,
-   "component": "code",
-   "field": "static readonly Color CoreColor = new Color(1f, 0.45f, 0.12f, 1f);",
-   "id": "world:FF731F",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs",
-   "line": 50,
-   "component": "code",
-   "field": "_text.color = new Color(1f, 0.92f, 0.6f);",
-   "id": "world:FFEB99",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ThresherLaunchSight.cs",
-   "line": 86,
-   "component": "code",
-   "field": "frame.color = new Color(0.02f, 0.025f, 0.06f, 0.92f);",
-   "id": "world:05060F",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/StoatPathfinderDots.cs",
-   "line": 120,
-   "component": "code",
-   "field": "var rim = new Color(4f / 255f, 6f / 255f, 20f / 255f, 1f);",
-   "id": "world:040614",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/View/GrizzlyHUDView.cs",
-   "line": 61,
-   "component": "code",
-   "field": "Color reticleAllyColor = new Color(0.25f, 1f, 0.35f, 1f);",
-   "id": "ui:40FF59",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/View/GrizzlyHUDView.cs",
-   "line": 63,
-   "component": "code",
-   "field": "Color reticleFaunaColor = new Color(0.3f, 0.6f, 1f, 1f);",
-   "id": "ui:4C99FF",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/View/GrizzlyHUDView.cs",
-   "line": 65,
-   "component": "code",
-   "field": "Color reticleEnemyColor = new Color(1f, 0.25f, 0.25f, 1f);",
-   "id": "ui:FF4040",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 26,
-   "component": "code",
-   "field": "static readonly Color MemPale = new(214 / 255f, 236 / 255f, 1f, 1f);",
-   "id": "ui:D6ECFF",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 27,
-   "component": "code",
-   "field": "static readonly Color MemBlue = new(60 / 255f, 90 / 255f, 210 / 255f, 1f);",
-   "id": "ui:3C5AD2",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 28,
-   "component": "code",
-   "field": "static readonly Color Seam = new(5 / 255f, 9 / 255f, 18 / 255f, 1f);",
-   "id": "ui:050912",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 29,
-   "component": "code",
-   "field": "static readonly Color Warm = new(1f, 248 / 255f, 226 / 255f, 1f);",
-   "id": "ui:FFF8E2",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 30,
-   "component": "code",
-   "field": "static readonly Color WallBlue = new(37 / 255f, 54 / 255f, 160 / 255f, 1f);",
-   "id": "ui:2536A0",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 31,
-   "component": "code",
-   "field": "static readonly Color NucleusLine = new(1f, 236 / 255f, 190 / 255f, 1f);",
-   "id": "ui:FFECBE",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 79,
-   "component": "code",
-   "field": "c = Over(c, new Color(1f, 236 / 255f, 190 / 255f, .35f * band));",
-   "id": "ui:FFECBE",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 87,
-   "component": "code",
-   "field": "c = Over(c, new Color(1f, 250 / 255f, 236 / 255f, .95f * rim));",
-   "id": "ui:FFFAEC",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 94,
-   "component": "code",
-   "field": "var c0 = new Color(1f, 252 / 255f, 240 / 255f, .85f);",
-   "id": "ui:FFFCF0",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 95,
-   "component": "code",
-   "field": "var c1 = new Color(1f, 238 / 255f, 196 / 255f, .45f);",
-   "id": "ui:FFEEC4",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 96,
-   "component": "code",
-   "field": "var c2 = new Color(1f, 224 / 255f, 160 / 255f, .35f);",
-   "id": "ui:FFE0A0",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
-   "line": 97,
-   "component": "code",
-   "field": "var c3 = new Color(1f, 246 / 255f, 220 / 255f, .95f);",
-   "id": "ui:FFF6DC",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
-   "line": 45,
-   "component": "code",
-   "field": "static readonly Color Midplane = new(0.84f, 0.88f, 0.94f, 0.3f);",
-   "id": "ui:D6E0F0",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
-   "line": 46,
-   "component": "code",
-   "field": "static readonly Color DiskFace = new(1f, 0.91f, 0.66f, 0.55f);",
-   "id": "ui:FFE8A8",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
-   "line": 47,
-   "component": "code",
-   "field": "static readonly Color GaugeBack = new(0.02f, 0.035f, 0.07f, 0.8f);",
-   "id": "ui:050912",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
-   "line": 48,
-   "component": "code",
-   "field": "static readonly Color GaugeDisk = new(0.16f, 0.41f, 0.72f, 0.35f);",
-   "id": "ui:2969B8",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
-   "line": 49,
-   "component": "code",
-   "field": "static readonly Color GaugeWindow = new(0.89f, 0.92f, 0.96f, 0.9f);",
-   "id": "ui:E3EBF5",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
-   "line": 50,
-   "component": "code",
-   "field": "static readonly Color LandmarkTint = new(0.84f, 0.88f, 0.94f, 0.75f);",
-   "id": "ui:D6E0F0",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
-   "line": 325,
-   "component": "code",
-   "field": "VoyageMapGraphic.Line(vh, a, b, 4f, new Color(.02f, .035f, .07f, .7f), white);",
-   "id": "ui:050912",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
-   "line": 351,
-   "component": "code",
-   "field": "t.color = new Color(.02f, .035f, .07f, 1f);",
-   "id": "ui:050912",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 65,
-   "component": "code",
-   "field": "static readonly Color32 GlobCore = new(255, 226, 170, 242), GlobMid = new(255, 206, 140, 115), GlobEdge = new(255, 200, ",
-   "id": "ui:FFCE8C",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 65,
-   "component": "code",
-   "field": "static readonly Color32 GlobCore = new(255, 226, 170, 242), GlobMid = new(255, 206, 140, 115), GlobEdge = new(255, 200, ",
-   "id": "ui:FFE2AA",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 66,
-   "component": "code",
-   "field": "static readonly Color OpenRing = new(170 / 255f, 205 / 255f, 1f, .85f);",
-   "id": "ui:AACDFF",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 67,
-   "component": "code",
-   "field": "static readonly Color StarLabelReal = new(214 / 255f, 226 / 255f, 246 / 255f, .8f);",
-   "id": "ui:D6E2F6",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 68,
-   "component": "code",
-   "field": "static readonly Color StarLabelModel = new(200 / 255f, 210 / 255f, 230 / 255f, .6f);",
-   "id": "ui:C8D2E6",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 69,
-   "component": "code",
-   "field": "static readonly Color StarLabelTumult = new(1f, 214 / 255f, 150 / 255f, .82f);",
-   "id": "ui:FFD696",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 70,
-   "component": "code",
-   "field": "static readonly Color GlobLabel = new(1f, 220 / 255f, 170 / 255f, .85f);",
-   "id": "ui:FFDCAA",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 71,
-   "component": "code",
-   "field": "static readonly Color OpenLabel = new(180 / 255f, 210 / 255f, 1f, .85f);",
-   "id": "ui:B4D2FF",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 72,
-   "component": "code",
-   "field": "static readonly Color FarColor = new(159 / 255f, 176 / 255f, 200 / 255f, .9f);",
-   "id": "ui:9FB0C8",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 73,
-   "component": "code",
-   "field": "static readonly Color LadderIdle = new(214 / 255f, 224 / 255f, 240 / 255f, .7f);",
-   "id": "ui:D6E0F0",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 74,
-   "component": "code",
-   "field": "static readonly Color PanelBack = new(.02f, .035f, .07f, .86f);",
-   "id": "ui:050912",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 75,
-   "component": "code",
-   "field": "static readonly Color LabelBack = new(.02f, .035f, .07f, .62f);",
-   "id": "ui:050912",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 77,
-   "component": "code",
-   "field": "public static readonly Color SliceLime = new(179 / 255f, 1f, 89 / 255f, .95f);",
-   "id": "ui:B3FF59",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 78,
-   "component": "code",
-   "field": "static readonly Color CutLine = new(179 / 255f, 1f, 89 / 255f, .6f);",
-   "id": "ui:B3FF59",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 79,
-   "component": "code",
-   "field": "static readonly Color TagNucleus = new(1f, 238 / 255f, 196 / 255f, 1f);",
-   "id": "ui:FFEEC4",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 80,
-   "component": "code",
-   "field": "static readonly Color TagCytoplasm = new(207 / 255f, 228 / 255f, 1f, 1f);",
-   "id": "ui:CFE4FF",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 81,
-   "component": "code",
-   "field": "static readonly Color TagMembrane = new(214 / 255f, 236 / 255f, 1f, 1f);",
-   "id": "ui:D6ECFF",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 82,
-   "component": "code",
-   "field": "static readonly Color TagBody = new(214 / 255f, 224 / 255f, 240 / 255f, .8f);",
-   "id": "ui:D6E0F0",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 461,
-   "component": "code",
-   "field": "new Vector2(b.xMax, b.yMin), on ? new Color(.95f, .97f, 1f, .92f) : new Color(.04f, .067f, .125f, .78f),",
-   "id": "ui:0A1120",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 461,
-   "component": "code",
-   "field": "new Vector2(b.xMax, b.yMin), on ? new Color(.95f, .97f, 1f, .92f) : new Color(.04f, .067f, .125f, .78f),",
-   "id": "ui:F2F7FF",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
-  },
-  {
-   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
-   "line": 805,
-   "component": "code",
-   "field": "t.color = on ? new Color(.02f, .035f, .07f, 1f) : LadderIdle;",
-   "id": "ui:050912",
-   "why": "a colour literal in runtime code: read it through ColorTrace.Retrace(role, colour) where it paints"
   }
  ]
 }

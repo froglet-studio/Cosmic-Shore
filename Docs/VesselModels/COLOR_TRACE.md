@@ -32,7 +32,8 @@ This is how that works, what it covers today, and what is still outside it. The 
 3. **Ids.** A traced colour's id is its role and its value as authored: `ui:747BAD`, `world:FFB21F`, and
    `world:FF0101x1.50` for HDR (the brightest channel, in hundredths). `ui` is canvas graphics, text, selectables and
    UI materials; `world` is materials, particles, trails and lines, lights, cameras, sprites and the sky.
-   `ui-token:<Token>` carries the UI theme tokens a set gives directly (the tooltip and the four element colours).
+   `ui-token:<Token>` carries every UI theme token and the sea lines' four colours (`SeaLine`, `SeaMid`, `SeaEnd`,
+   `SeaGlow`): the UI theme a set gives is exactly these (`ColorSetUITheme.Build` reads them).
 4. **Values.** Every set holds a value for every id (`SO_ColorSet.TracedColors`):
    - **Photic**, the set the game was authored in, holds the baked value (`colour_trace.py --write-photic` writes its
      block; nothing else in `PhoticColorSetSO` changes);
@@ -49,8 +50,10 @@ This is how that works, what it covers today, and what is still outside it. The 
      - a world colour that IS a field of `PhoticColorSetSO`, or a multiple of one (a material baked from the field at a
        brightness: the omni crystal's element shades are `ElementalCrystalColors` x 0.988), takes the set's own field
        at the same scale;
-     - a UI token colour takes the set's own token (`ColorSetUITheme.Build`, ported line for line), for Photic too,
-       because the UI theme re-hues Photic's tokens;
+     - a UI token colour takes the set's own token. Photic's tokens are the authored theme (`UITheme.asset`, with
+       the selection Jade as the style guide decided, D3) and the sea material's own colours, so under Photic the UI is
+       exactly as authored; every other set's are what the UI theme derives from its pigments (`token_value`; the
+       derivation is `ColorSetUITheme.Build`'s, which a set that carries no tokens still gets);
    - **a set may retune any id**: `colour_sets.json`, `sets.<key>.traced: {"<id>": "#RRGGBB"}`, then the writer. An
      edit in the inspector is drift the writer's `--check` reports.
    - **Every value names one colour, in every set and both roles** (`colour_trace.py unambiguous`). A colour on screen
@@ -124,13 +127,6 @@ becomes Photic's, and every other set computes its own.
 
 The ratchet list (`colour_trace.json` `untraced`) names each colour. What remains, by kind:
 
-- **Four occupied swim lanes, waiting on their occupants.** The code edits that route the Voyage map's, the
-  Grizzly's, the Thresher's and the Stoat's colours through the trace are written but not applied, because those lanes
-  had unmerged work in flight on 2026-11-10 (the Voyages map: Shombith, `claude/epic-fermat-6c7n2l`; Grizzly, Thresher
-  and Stoat: Yash, `Ys-bleeding-edge`). Each is a patch in `colour_trace_waiting/` (`git apply
-  Docs/VesselModels/colour_trace_waiting/<lane>.patch`, then `colour_trace.py --build` and the writers). Until then their
-  68 colours are on the untraced list.
-
 - **Colours baked into shader code.** A colour node or constant counts only when it is wired to the output (a
   ShaderGraph node with an edge path to a Block node) and a drawn material uses the shader. Of 50 ColorNodes, 31 are
   wired to nothing and 18 sit in graphs no reachable material draws; the one left is CageGraph's dark blend constant
@@ -164,20 +160,19 @@ The ratchet list (`colour_trace.json` `untraced`) names each colour. What remain
 - **Editor objects made with DontSave outside play** (an editor tool's preview objects) are painted during play and
   keep the colours afterwards; they are never saved.
 
-## 3. Decisions waiting on people
+## 3. The rule, and what still breaks it
 
-- **Photic's UI tokens (Garrett and Shombith).** "Photic = baked" holds for every traced colour, but the UI theme
-  re-hues Photic's own tokens from its Jade face (Shombith, 2026-11-09), so under Photic the UI is not the authored
-  `UITheme.asset`. Token colours outside Graphics (a material, a tint, a code literal) follow the theme, so the UI
-  stays one look. One answer is needed: keep the derived Photic theme, or make Photic's tokens the authored ones.
-- **The element colours and the tooltip (Shombith).** They used to stay authored in every set; they are now each
-  set's own (Photic keeps the authored values, every other set paints them with its family rims).
-  `ColorSetUIThemeTests` holds the new rule.
-- **Domain colours baked off the domain slot (vessel owners).** A few hulls draw a fixed Jade or Ruby material where
-  their domain should show (GreenVesselMaterial on the SkyBurst projectile, RedAccentVesselMaterial on slot 0 of the
-  Goby and the Squirrel, the Serpent's blue and lime). The trace makes them the set's Jade or Ruby; binding them to the
-  pilot's domain is the owner's fix.
-- **Texture lanes and the art grade (Garrett).** Section 2.
+**LOCKED (Garrett, 2026-11-10): every colour comes from the colour set.** "There is no reason for a vessel owner to be
+breaking this rule: all colors come from a color set. If that rule is broken then it is a sign of incompleteness or a
+bug, not something to be respected." Nothing here is anyone's decision; each break below is work, fixed where it is
+found.
+
+- Photic's UI was the theme's derivation, not the authored theme: fixed 2026-11-11 (section 1.4). The authored
+  theme's soft text and danger sit at 3.6:1 and 4.4:1 on a panel, under the style guide's 4.5:1 for text; the
+  derived themes lift theirs (`make_themes.fit`), Photic shows them as authored.
+- The Voyage map, Grizzly, Thresher and Stoat colours: applied 2026-11-11 (they had been held back while those lanes
+  had work in flight).
+- The rest is section 2.
 
 ## 4. Where it came from
 

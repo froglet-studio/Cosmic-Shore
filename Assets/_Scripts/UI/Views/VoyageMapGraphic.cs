@@ -297,8 +297,17 @@ namespace CosmicShore.UI
         // The labels and the sea follow the map's size. Watched here rather than by overriding
         // OnRectTransformDimensionsChange, whose access differs between the shipped uGUI (protected) and the compile
         // gate's publicized reference (public).
+        // The colour set the map was last drawn in (ColorTrace.Version): another one worn draws it again, the route,
+        // landmark and sky colours through the trace (Docs/VesselModels/COLOR_TRACE.md).
+        int _colorVersion;
+
         void LateUpdate()
         {
+            if (_colorVersion != ColorTrace.Version)
+            {
+                _colorVersion = ColorTrace.Version;
+                _viewDirty = true;
+            }
             if (rectTransform.rect.size != _placedFor)
             {
                 Relayout();

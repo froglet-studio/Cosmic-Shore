@@ -180,9 +180,9 @@ namespace CosmicShore.Tests
             foreach (var t in photic.colorSet.TracedColors)
             {
                 if (!t.Id.StartsWith(ColorTrace.Ui + ":") && !t.Id.StartsWith(ColorTrace.World + ":")) continue;
-                // a UI theme token's value is the theme's (Photic's too); every other Photic value IS the baked colour,
-                // so it packs to its own id, the way a painter finds it on screen
-                if (!string.IsNullOrEmpty(t.Note) && t.Note.StartsWith("UI theme token")) continue;
+                // Photic holds the values the game was authored in, so each packs to its own id, the way a painter finds
+                // it on screen. The one exception is decided: the old sky-blue selection is the style guide's Jade (D3).
+                if (!string.IsNullOrEmpty(t.Note) && t.Note.StartsWith("UI theme token Selection")) continue;
                 string role = t.Id.Substring(0, t.Id.IndexOf(':'));
                 Assert.AreEqual(t.Id, ColorTrace.ValueId(role, t.Color), $"Photic's {t.Id} does not pack to its own id");
             }

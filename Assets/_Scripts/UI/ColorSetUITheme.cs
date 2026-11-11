@@ -17,11 +17,13 @@ namespace CosmicShore.UI
     /// <item>selection and the control colour are its Jade rim, purchase its Gold rim;</item>
     /// <item>a mark or text too faint on a panel moves its OKLab lightness until it reaches 3:1 (marks) or 4.5:1 (text).</item>
     /// </list>
-    /// The tooltip and the four element colours are the set's own (TracedColors <c>ui-token</c> ids, Garrett, 2026-11-10:
-    /// every colour respects the colour set): Photic carries the authored values, every other set its family rims' (the
-    /// console does not theme them). A set may give any other token the same way, which wins over the derivation. A
-    /// set's colours are linear HDR; they reach the screen with a soft shoulder above 1 and the sRGB curve
-    /// (Docs/PALETTE.md section 3).
+    /// Every token and the sea lines' four colours are the set's own (TracedColors <c>ui-token</c> ids; Garrett,
+    /// 2026-11-10: every colour comes from the colour set, LOCKED): Photic, the set the game was authored in, carries
+    /// the authored theme (UITheme.asset, its selection Jade as the style guide decided, D3) and the sea material's own
+    /// colours; every other set carries what <c>Tools/Build/colour_trace.py</c> computes for it with this derivation
+    /// (and its family rims for the tooltip and the element colours). What a set carries wins; the derivation is what a
+    /// set that carries nothing gets. A set's colours are linear HDR; they reach the screen with a soft shoulder above 1
+    /// and the sRGB curve (Docs/PALETTE.md section 3).
     /// </summary>
     public static class ColorSetUITheme
     {
@@ -98,15 +100,23 @@ namespace CosmicShore.UI
             p.SeaEnd = rimRuby;
             p.SeaGlow = rimJade;
 
-            // A token the set gives directly (TracedColors ui-token:<Token>, Docs/VesselModels/COLOR_TRACE.md): the
-            // tooltip and the four element colours every set carries, and any token a set retunes.
+            // What the set gives (TracedColors ui-token:<Token>, Docs/VesselModels/COLOR_TRACE.md): every token and the
+            // sea's four colours, Photic's the authored ones.
             for (int i = 0; i < TokenCount; i++)
                 if (set.TryGetTracedColor(TokenIds[i], out var given))
                     p.Tokens[i] = new Color(given.r, given.g, given.b, 1f);
+            if (set.TryGetTracedColor(SeaLineId, out var line)) p.SeaLine = new Color(line.r, line.g, line.b, 1f);
+            if (set.TryGetTracedColor(SeaMidId, out var mid)) p.SeaMid = new Color(mid.r, mid.g, mid.b, 1f);
+            if (set.TryGetTracedColor(SeaEndId, out var end)) p.SeaEnd = new Color(end.r, end.g, end.b, 1f);
+            if (set.TryGetTracedColor(SeaGlowId, out var glow)) p.SeaGlow = new Color(glow.r, glow.g, glow.b, 1f);
             return p;
         }
 
         static readonly string[] TokenIds = BuildTokenIds();
+
+        /// <summary>The TracedColors ids a colour set gives the sea lines' four colours by.</summary>
+        public const string SeaLineId = "ui-token:SeaLine", SeaMidId = "ui-token:SeaMid", SeaEndId = "ui-token:SeaEnd",
+                            SeaGlowId = "ui-token:SeaGlow";
 
         static string[] BuildTokenIds()
         {

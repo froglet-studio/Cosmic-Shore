@@ -72,26 +72,26 @@
 }
 
 [data-fs-theme="photic"] {
-  --fs-ground: #000818;
-  --fs-ground-deep: #000208;
-  --fs-surface: #042D41;
-  --fs-surface-raised: #1C5978;
-  --fs-line: #1C5978;
-  --fs-text: #DFEDF6;
-  --fs-text-soft: #7497AC;
-  --fs-text-off: #52636E;
-  --fs-cta: #CAF66F;
-  --fs-cta-fill: #CAF66F;
-  --fs-danger: #FF5345;
-  --fs-selection: #42E1DC;
-  --fs-control: #42E1DC;
+  --fs-ground: #00041F;
+  --fs-ground-deep: #00010A;
+  --fs-surface: #222645;
+  --fs-surface-raised: #434C89;
+  --fs-line: #434C89;
+  --fs-text: #E6E9FF;
+  --fs-text-soft: #747BAD;
+  --fs-text-off: #5C5F70;
+  --fs-cta: #99FF80;
+  --fs-cta-fill: #99FF80;
+  --fs-danger: #FF4B3A;
+  --fs-selection: #00D4FF;
+  --fs-control: #00D4FF;
   --fs-jade: #42E1DC;
   --fs-ruby: #E500E3;
   --fs-gold: #FFD400;
   --fs-gold-fill: #FFD400;
-  --fs-purchase: #FFD400;
-  --fs-purchase-fill: #FFD400;
-  --fs-on-fill: #000818;
+  --fs-purchase: #FFAE00;
+  --fs-purchase-fill: #FFAE00;
+  --fs-on-fill: #00041F;
   --cs-jade: #42E1DC;
   --cs-ruby: #E500E3;
   --cs-gold: #FFD400;
@@ -105,11 +105,11 @@
   --data-text: #AABCFF;
   --rim: #42E1DC;
   --face: #006F9E;
-  --sea-1: #42E1DC;
-  --sea-2: #AABCFF;
-  --sea-3: #E500E3;
-  --sea-wash: #00233C;
-  --sea-glow: #42E1DC;
+  --sea-1: #49B8FF;
+  --sea-2: #7F98FF;
+  --sea-3: #9C8CFF;
+  --sea-wash: #002042;
+  --sea-glow: #3D8CFF;
 }
 
 [data-fs-theme="dartfrog"] {

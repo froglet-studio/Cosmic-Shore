@@ -63,13 +63,12 @@ namespace CosmicShore.UI
         static readonly int LineColorEndId = Shader.PropertyToID("_LineColorEnd");
         static readonly int GlowColorId = Shader.PropertyToID("_GlowColor");
 
-        // The tokens a raw colour is matched against: every role a colour set re-hues.
+        // The tokens a raw colour is matched against: every token, each the worn set's own (TracedColors ui-token ids).
         static readonly UIColorToken[] Swapped =
         {
             UIColorToken.TextLight, UIColorToken.TextInactive, UIColorToken.InactiveLight, UIColorToken.SurfaceBlack,
             UIColorToken.SurfaceVeryDark, UIColorToken.SurfaceDark, UIColorToken.SurfaceLight, UIColorToken.NeutralLightest,
             UIColorToken.Cta, UIColorToken.Danger, UIColorToken.ControlActive, UIColorToken.Purchase, UIColorToken.Selection,
-            // a colour set gives these directly since 2026-11-10 (TracedColors ui-token ids)
             UIColorToken.Tooltip, UIColorToken.ElementCharge, UIColorToken.ElementMass, UIColorToken.ElementSpace,
             UIColorToken.ElementTime,
         };

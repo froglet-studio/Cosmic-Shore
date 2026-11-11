@@ -1202,6 +1202,28 @@ TOKEN_ENUM = {"textLight": "TextLight", "textInactive": "TextInactive", "inactiv
               "elementCharge": "ElementCharge", "elementMass": "ElementMass", "elementSpace": "ElementSpace",
               "elementTime": "ElementTime", "selection": "Selection"}
 
+# Shombith, 2026-11-05 (D3, Docs/UI_STYLE_GUIDE.md section 13): the selection and the focus ring are Jade
+# (controlActive). UITheme.asset's selection still holds the old sky blue, the colour prefabs were authored in, so a
+# raw colour typed from it is still found as the Selection token; Photic's Selection is the decided colour, as the style
+# guide's Deep Sea (Docs/UI/froglet-tokens.json) has it.
+DECIDED = {"selection": "controlActive"}
+# The menu's sea lines (CosmicShore/UI/SeaLines): UIThemeLive paints a copy of the material with the set's four sea
+# colours (ColorSetUITheme.Build). Photic's are the material's own; every other set's the rims Shombith chose.
+SEA_MATERIAL = os.path.join(REPO, "Assets", "_Graphics", "Materials", "Shaders", "UI", "Sea_Window.mat")
+SEA_TOKENS = {"SeaLine": ("_LineColor", "JadeColors"), "SeaMid": ("_LineColorMid", "BlueColors"),
+              "SeaEnd": ("_LineColorEnd", "RubyColors"), "SeaGlow": ("_GlowColor", "JadeColors")}
+
+
+def authored_token(name):
+    """Photic's colour for UI theme token `name` (an enum name, or a sea colour): the authored theme's (UITheme.asset,
+    as the style guide decided it: DECIDED), or the sea material's own."""
+    if name in SEA_TOKENS:
+        m = re.search(r"- %s: \{r: %s, g: %s, b: %s, a: %s\}" % (SEA_TOKENS[name][0], NUM, NUM, NUM, NUM), read(SEA_MATERIAL))
+        return [float(m.group(i)) for i in range(1, 4)] + [1.0]
+    key = next(k for k, v in TOKEN_ENUM.items() if v == name)
+    return list(ui_tokens()[DECIDED.get(key, key)])
+
+
 _PALETTE = None
 COLOR_RE_RAW = re.compile(r"\{r: %s, g: %s, b: %s, a: %s\}" % (NUM, NUM, NUM, NUM))
 
@@ -1592,13 +1614,14 @@ def build_table(recs):
         w = "%s %s" % (r["file"], r["component"])
         if w not in e["where"]:
             e["where"].append(w)
-    for name in SET_GIVEN:                              # ColorSetUITheme.Build reads these from every set
-        key = next(k for k, v in TOKEN_ENUM.items() if v == name)
-        e = ids.setdefault("ui-token:" + name, {"role": "ui-token", "photic": [round(v, 6) for v in tokens[key]],
-                                                "family": family_of(tokens[key])[0], "uses": 0, "where": []})
+    for name in list(TOKEN_ENUM.values()) + list(SEA_TOKENS):   # ColorSetUITheme.Build reads every one from the set
+        authored = authored_token(name)
+        e = ids.setdefault("ui-token:" + name, {"role": "ui-token", "photic": [round(v, 6) for v in authored],
+                                                "family": family_of(authored)[0], "uses": 0, "where": []})
         e["token"] = name
         if not e["where"]:
-            e["where"] = ["Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"]
+            e["where"] = ["Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)"
+                          if name in SEA_TOKENS else "Assets/_SO_Assets/UI/UITheme.asset UIThemeSO"]
     for e in ids.values():
         e["where"] = sorted(e["where"])[:4]
     untraced = sorted({(r["file"], r.get("line", 0), r["component"], r["field"][:120], r.get("id", ""), r.get("why", ""))
@@ -1659,18 +1682,21 @@ def ui_theme(pal):
 
 
 def token_value(key, name, s, photic, set_pal):
-    """Set `key`'s colour for UI theme token `name`: a token the set derives from its pigments (the panels, text, call
-    to action, danger, selection, purchase: Photic's too, as the UI theme re-hues it), or one it gives directly (the
-    element colours and the tooltip: Photic's the authored value, every other set's painted with its family's rim)."""
-    tok = ui_tokens()
-    authored = tok[next(k for k, v in TOKEN_ENUM.items() if v == name)]
+    """Set `key`'s colour for UI theme token `name` (or a sea colour). Photic's is the authored one (authored_token:
+    the colour set the game was authored in holds the values it was authored in). Every other set's is its own: the
+    ones the UI theme derives from the set's pigments (the panels, text, call to action, danger, selection, purchase,
+    the sea), the element colours and the tooltip painted with its family's rim; a set may retune any of them
+    (colour_sets.json traced: {"ui-token:<Token>": "#RRGGBB"})."""
+    if key == "photic":
+        return authored_token(name)
+    if s and "ui-token:" + name in s.get("traced", {}):
+        v = s["traced"]["ui-token:" + name]
+        return list(cs.rgb_of_hex(v)) + [1.0] if isinstance(v, str) else list(v)
+    if name in SEA_TOKENS:
+        return list(make_themes().screen(set_pal[SEA_TOKENS[name][1]]["TrailHighlightColor"][:3])) + [1.0]
     if name in SET_GIVEN:
-        if key == "photic":
-            return list(authored)
-        if s and "ui-token:" + name in s.get("traced", {}):
-            v = s["traced"]["ui-token:" + name]
-            return list(cs.rgb_of_hex(v)) + [1.0] if isinstance(v, str) else list(v)
-        return repaint("ui", authored, s, photic)
+        tok = ui_tokens()
+        return repaint("ui", tok[next(k for k, v in TOKEN_ENUM.items() if v == name)], s, photic)
     return list(ui_theme(set_pal)[name]) + [1.0]
 
 
@@ -1769,8 +1795,7 @@ def live_tokens(table=None):
     for key in set_order():
         s = defs.get(key)
         pal = orig if key == "photic" else writer.palette(s, orig)
-        out += [tuple(v[:3]) for v in ui_theme(pal).values()]
-        out += [tuple(token_value(key, name, s, ref, pal)[:3]) for name in SET_GIVEN]
+        out += [tuple(token_value(key, name, s, ref, pal)[:3]) for name in TOKEN_ENUM.values()]
     return out
 
 
@@ -1922,6 +1947,12 @@ def check(recs=None, table=None):
         role = i.split(":")[0]
         if role in ("ui", "world") and not e.get("token") and value_id(role, e["photic"]) != i:
             errs.append("%s: its Photic value %s packs to %s" % (i, e["photic"], value_id(role, e["photic"])))
+    decided = {TOKEN_ENUM[k] for k in DECIDED}
+    for i, c, _ in all_values(table)["photic"]:        # Photic holds the values the game was authored in
+        role = i.split(":")[0]
+        if role in ("ui", "world") and table["ids"].get(i, {}).get("token") not in decided and value_id(role, c) != i:
+            errs.append("Photic's value for %s is %s, not the colour it names: Photic holds the values the game was "
+                        "authored in" % (i, value_id(role, c)))
     if os.path.exists(PHOTIC_ASSET) and read(PHOTIC_ASSET) != photic_text(table):
         errs.append("PhoticColorSetSO.asset's TracedColors are stale: run python3 Tools/Build/colour_trace.py --write-photic")
     errs += lazy_loads_unpainted(recs)

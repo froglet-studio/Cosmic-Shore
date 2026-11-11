@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.UI
 {
@@ -23,12 +24,19 @@ namespace CosmicShore.UI
         /// <summary>A nucleus smaller than this (radius, px) uses the small sprite, which has no cage to alias.</summary>
         const float SmallBelow = 16f;
 
-        static readonly Color MemPale = new(214 / 255f, 236 / 255f, 1f, 1f);
-        static readonly Color MemBlue = new(60 / 255f, 90 / 255f, 210 / 255f, 1f);
-        static readonly Color Seam = new(5 / 255f, 9 / 255f, 18 / 255f, 1f);
-        static readonly Color Warm = new(1f, 248 / 255f, 226 / 255f, 1f);
-        static readonly Color WallBlue = new(37 / 255f, 54 / 255f, 160 / 255f, 1f);
-        static readonly Color NucleusLine = new(1f, 236 / 255f, 190 / 255f, 1f);
+        static readonly Color MemPaleAuthored = new(214 / 255f, 236 / 255f, 1f, 1f);
+
+        static Color MemPale => ColorTrace.Retrace(ColorTrace.Ui, MemPaleAuthored);
+        static readonly Color MemBlueAuthored = new(60 / 255f, 90 / 255f, 210 / 255f, 1f);
+        static Color MemBlue => ColorTrace.Retrace(ColorTrace.Ui, MemBlueAuthored);
+        static readonly Color SeamAuthored = new(5 / 255f, 9 / 255f, 18 / 255f, 1f);
+        static Color Seam => ColorTrace.Retrace(ColorTrace.Ui, SeamAuthored);
+        static readonly Color WarmAuthored = new(1f, 248 / 255f, 226 / 255f, 1f);
+        static Color Warm => ColorTrace.Retrace(ColorTrace.Ui, WarmAuthored);
+        static readonly Color WallBlueAuthored = new(37 / 255f, 54 / 255f, 160 / 255f, 1f);
+        static Color WallBlue => ColorTrace.Retrace(ColorTrace.Ui, WallBlueAuthored);
+        static readonly Color NucleusLineAuthored = new(1f, 236 / 255f, 190 / 255f, 1f);
+        static Color NucleusLine => ColorTrace.Retrace(ColorTrace.Ui, NucleusLineAuthored);
 
         // ── The sprites ──────────────────────────────────────────────────────
 
@@ -76,7 +84,7 @@ namespace CosmicShore.UI
                     // the fresnel band inside the rim
                     float d0 = 1f - Mathf.Max(1f, r * .04f) / r, bw = Mathf.Max(2f, r * .09f) / r * .5f;
                     float band = Mathf.Clamp01(1f - (Mathf.Abs(d - d0) - bw) / aa);
-                    c = Over(c, new Color(1f, 236 / 255f, 190 / 255f, .35f * band));
+                    c = Over(c, ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 236 / 255f, 190 / 255f, .35f * band)));
                     // the highlight
                     float lx = x + .42f, ly = y - .42f, dh = Mathf.Sqrt(lx * lx + ly * ly);
                     c = Over(c, new Color(1f, 1f, 1f, .55f * Mathf.Clamp01(1f - dh / .5f)));
@@ -84,17 +92,17 @@ namespace CosmicShore.UI
                 // the rim, bright and thin
                 float rw = Mathf.Max(1f, r * .035f) / r * .5f;
                 float rim = Mathf.Clamp01(1f - (Mathf.Abs(d - 1f) - rw) / aa);
-                c = Over(c, new Color(1f, 250 / 255f, 236 / 255f, .95f * rim));
+                c = Over(c, ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 250 / 255f, 236 / 255f, .95f * rim)));
                 px[(y0 + j) * texW + x0 + i] = c;
             }
         }
 
         static Color Body(float t)
         {
-            var c0 = new Color(1f, 252 / 255f, 240 / 255f, .85f);
-            var c1 = new Color(1f, 238 / 255f, 196 / 255f, .45f);
-            var c2 = new Color(1f, 224 / 255f, 160 / 255f, .35f);
-            var c3 = new Color(1f, 246 / 255f, 220 / 255f, .95f);
+            var c0 = ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 252 / 255f, 240 / 255f, .85f));
+            var c1 = ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 238 / 255f, 196 / 255f, .45f));
+            var c2 = ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 224 / 255f, 160 / 255f, .35f));
+            var c3 = ColorTrace.Retrace(ColorTrace.Ui, new Color(1f, 246 / 255f, 220 / 255f, .95f));
             if (t < .55f) return Color.Lerp(c0, c1, t / .55f);
             if (t < .92f) return Color.Lerp(c1, c2, (t - .55f) / .37f);
             return Color.Lerp(c2, c3, (t - .92f) / .08f);

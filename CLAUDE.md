@@ -283,6 +283,16 @@ speed), no per-mode rescaling, no edits to vessel code or assets for one mode. B
 and retired for this. A kit change is a vessel change, made on the vessel (its owner hears of it through `/approve`), never through
 a mode. `/arcadegame` §6.
 
+## Every colour comes from the colour set (LOCKED rule, Garrett, 2026-11-10)
+
+"All colors come from a color set. If that rule is broken then it is a sign of incompleteness or a bug, not something
+to be respected." Every colour the game draws (UI, world, sky, effects, vessels, textures, code, configs) is a value
+the worn `SO_ColorSet` carries: its domain and environment blocks, or its `TracedColors`. Photic holds the values the
+game was authored in. No area, vessel or owner is exempt and none decides otherwise: a colour that does not follow the
+set is a bug to fix (route it through the set: `ColorTrace.Retrace`, a domain material set, a set field, the texture
+grade), never a choice to keep or a question for someone. `python3 Tools/Build/colour_trace.py --check` fails on a new
+colour that is not traced. How it works and what is still unfinished: `Docs/VesselModels/COLOR_TRACE.md`.
+
 ## Testing
 
 ### Test Infrastructure
