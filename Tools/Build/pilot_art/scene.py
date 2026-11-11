@@ -20,9 +20,12 @@ How a scene keeps the character (the painter takes words only, never the avatar 
    (`busts/briefs/<WORD>.txt`, `identity`), not from today's tables: the tables move on, the painting does not. The
    face, the crown, the coat behind the face, the second animal's piece, the eyes, the hair, the outfit, the callsign's
    mark and the accent colour reach the scene's painter word for word.
-2. WHAT THE AVATAR SHOWS BEYOND ITS BRIEF (`seen`). A painter decides things no brief asked for: the colour of a
-   glove, which lapel the brooch is on, that the shell cap hides the ears. Whoever writes a scene LOOKS at the avatar
-   first and writes those down, and the scene repeats them.
+2. WHAT THE AVATAR SHOWS BEYOND ITS BRIEF (`seen`), AND AGAINST IT (`swap`). A painter decides things no brief asked
+   for: the colour of a glove, that the brooch is brass, that the shell cap hides the ears. Whoever writes a scene
+   LOOKS at the avatar first and writes those down, and the scene repeats them. And where the painting departs from
+   the words it was painted from (the brief asked for hazel eyes and the painter gave amber-gold; "shaggy" wool was
+   painted as tight curls), the record swaps that phrase for what the picture shows: a scene follows the painting,
+   not the request. Two colour words for one eye let the painter choose, so a correction replaces, never adds.
 3. THE REST OF THE BODY IS RULES, NOT ROLLS. Below the bust's crop nothing was ever decided, so it is decided once,
    here, the same way for every picture of a pilot: the build (BUILD), the hands (`hands_of`: the hand the avatar
    shows; else the animal's own true hand; else gloves), where the second animal's piece grows from (CARRY) and the
@@ -42,6 +45,8 @@ emblem or lettering (`bust.emblem_word`).
     python3 Tools/Build/pilot_art/scene.py who <WORD>           # any avatar pilot's identity lines, as painted
     python3 Tools/Build/pilot_art/scene.py brief <WORD> [approach]
     python3 Tools/Build/pilot_art/scene.py capture <WORD> <url> [approach]
+    python3 Tools/Build/pilot_art/scene.py sheet <out.png>       # each sample beside its avatar
+    python3 Tools/Build/pilot_art/scene.py stale                 # scenes today's kit would paint differently
     python3 Tools/Build/pilot_art/scene.py --self-test
 """
 import os
@@ -95,18 +100,21 @@ APPROACHES = {
         frame=(1024, 1280),
         shot=("An environmental portrait by a documentary photographer, made in the first quiet minute after the work "
               "was done. Medium format, an 80mm lens at f/2.8, the camera at the subject's eye height and two steps "
-              "away. The subject has stopped where they were, sits, and looks straight into the lens and holds the "
-              "look. Framed from the knees up, the place soft behind. Every trace of the last hours is kept: wet fur "
-              "in clumps, grime in the creases, a tired and steady face. Nothing retouched."),
+              "away, close enough to see the rim of each iris, a thin line of colour where an animal's would be "
+              "dark. The subject has stopped "
+              "where they were, sits, and looks straight into the lens and holds the look. Framed from the knees up, "
+              "the place soft behind. Every trace of the last hours is kept: wet fur in clumps, grime in the creases, "
+              "a tired and steady face. Nothing retouched."),
     ),
 }
 
 FINISH = (
     "All of it is photographed as it is, with a real camera: living anatomy with the fur, feathers, hide and scales of "
     "real animals, every hair resolved, wet where it is wet; real cloth, leather and metal with weight and wear; real "
-    "dirt. The head is {name}'s own living head, never a mask or a costume. The eye rings and the piping glow no "
-    "brighter than a reflection. One person only. Nothing in the frame carries writing, numbers or a symbol: every "
-    "label, sign, crate and screen is blank. No weapon, no watermark, no border, no human ears."
+    "dirt. The head and everything that grows from it are {name}'s own living anatomy, never a mask, a costume, a hat "
+    "or a headdress. The eye rings and the piping glow no brighter than a reflection. One person only: nobody else is "
+    "anywhere in the frame, near or far. Nothing in the frame carries writing, numbers or a symbol: every label, "
+    "sign, crate and screen is blank. No weapon, no watermark, no border, no human ears."
 )
 STYLE_WORDS = re.compile(r"\b(?:painterly|illustrat\w+|render\w*|concept art|digital art|airbrush\w*|glamour|"
                          r"cartoon\w*|anime|collectible|3d)\b", re.I)   # words that pull a photograph back to a painting
@@ -187,7 +195,7 @@ PERMANENT = re.compile(r"\b(?:scars?|scarred|tattoo\w*|eye ?patch\w*|one-eyed|br
 SAMPLES = {
     "MANGER": dict(
         approach="field",
-        source="profession: a Hunter, a wader of the feeding flats, sets a lure line",
+        source="profession: a hunter who wades the feeding flats sets a lure line",
         seen=("the whole face is scarlet and the long bill rose-red, greyer toward its tip",
               "the cape has a broad turned-down collar with magenta piping on every edge",
               "the jerkin is dark brown, the line is a coil of pale hemp rope, and the strap's buckle is square brass"),
@@ -211,12 +219,15 @@ SAMPLES = {
     "GALLEON": dict(
         approach="film",
         source="hobby: \"ties a ribbon on the hull for every friend lost\" (the game's Quirks)",
+        swap=(("a bison's huge shaggy forelock", "a bison's huge woolly forelock"),
+              ("just showing through it at the sides", "standing clear of it at each side of the head,"),
+              ("shaggy dark-brown bison wool", "curly dark-brown bison wool")),
         seen=("the skin is deep cinnamon brown, the whiskers pale and stiff, the tusks yellowed ivory, finely crazed "
               "with age",
-              "the wool is a mass of tight dark-brown curls",
-              "each epaulette is a coil of rope, the ship's wheel is a small brass badge on one lapel, and the "
-              "sea-glass is green",
-              "the gloves are dark brown leather"),
+              "the wool is tight springy curls like a lamb's fleece, growing from the scalp itself and running "
+              "without a break into the beard and the wool of the neck",
+              "each epaulette is a coil of rope, the ship's wheel is a small badge of yellow brass, and the "
+              "sea-glass is pale green"),
         doing=("Haradek stands at the nose of a small single-seat craft and ties a strip of plain faded red cloth to "
                "its landing strut, the big gloved fingers slow and careful with the knot. A dozen older strips already "
                "hang from the same strut, sun-bleached, frayed and stiff with salt: one for every friend lost. The "
@@ -225,32 +236,32 @@ SAMPLES = {
                "worn coloured lane stripes, hoses and chains, a row of small single-seat craft parked nose-out on "
                "their pads, each hull made of dark glassy facets like a cut gemstone, and at the far end the open "
                "mouth of the bay, a wall of dim blue-green haze where pale faceted crystals drift slowly past. A thin "
-               "mist of coolant lies at knee height."),
+               "mist of coolant lies at knee height. The bay is empty of people."),
         light=("One warm work lamp on a stand just out of frame is the key light, low and from the side; the cold "
                "blue-green of the open bay rims the wool, the horns and the shoulders from behind; the rest falls "
                "away into shadow."),
-        wear=("The greatcoat is salt-stained in tide lines and its hem is dark with oil; one shoulder seam has split "
-              "and shows the lining; a button hangs by a thread; the magenta piping is rubbed through at the cuffs; "
-              "the gloves are creased and the boots scuffed grey; the wool is matted in places and flecked with "
-              "salt."),
+        wear=("The greatcoat is salt-stained in tide lines, its oxblood red still plain under them, and its hem is "
+              "dark with oil; one shoulder seam has split and shows the lining; a button hangs by a thread; the "
+              "magenta piping is rubbed through at the cuffs; the gloves are creased and the boots scuffed grey; "
+              "the curls are flecked with salt."),
     ),
     "Echo": dict(
         approach="candid",
         source="hobby: \"keeps a jar of every crystal they have ever missed\" (the game's Quirks)",
-        seen=("the ear tufts stand up between the two mouse ears, and barred feathers come down the forehead to a "
-              "point between the eyes",
+        seen=("the face is white from the brow down, and the barred feathers begin above the brow, between the two "
+              "mouse ears, where the ear tufts stand",
               "the coat is pale stone-grey, edged in teal piping along the lapels, the pocket and the cuffs, and "
-              "worn over a dark teal patterned waistcoat",
+              "worn over a dark teal brocade waistcoat",
               "the lens is a round brass-rimmed magnifying glass on a thin brown cord, and one small glass vial "
               "stands in the pocket beside the pens"),
-        lower="plain dark trousers, bagged at the knees, and grey wool socks, one darned at the heel, the deck shoes "
-              "kicked off under the bunk",
+        lower="plain dark trousers, bagged at the knees, and grey wool socks pulled up under their cuffs, one darned "
+              "at the heel, the deck shoes kicked off under the bunk",
         doing=("Echo sits on the bunk with both knees drawn up and a big glass jar wedged between them, three-quarters "
-               "full of small crystals: every crystal Echo ever missed. One small pink hand holds the brass lens up "
-               "to one eye; the other holds a single pale crystal the size of a thumbnail up to the desk lamp in a "
-               "pair of tweezers. The whiskers are pushed forward and the whole face is bent to the crystal, cool and "
-               "assessing. One wing hangs half open over the edge of the bunk, and two shed barred feathers lie on "
-               "the blanket."),
+               "full of small crystals: every crystal Echo ever missed. One small pink hand lifts the brass lens on "
+               "its cord up to one eye; the other holds a single pale crystal the size of a thumbnail up to the desk "
+               "lamp in a pair of tweezers. The whiskers are pushed forward and the whole face is bent to the "
+               "crystal, cool and assessing. Both wings show behind the shoulders: one is folded, the other hangs "
+               "half open over the edge of the bunk, and two shed barred feathers lie on the blanket."),
         place=("A crew cabin aboard a great ship, late at night: a narrow bunk built into a metal wall, a fold-down "
                "desk crowded with a chipped enamel mug, a bent desk lamp, coils of wire and a closed notebook, a "
                "small round window full of dark blue-green haze, a shelf of odd blank jars and tins above, a jacket "
@@ -258,15 +269,19 @@ SAMPLES = {
         light=("The desk lamp's warm bulb is the only real light, close and low: it glows through the thin ears and "
                "catches the edge of every feather. The window gives a faint cold fill, and the corners of the room "
                "are nearly black."),
-        wear=("The coat is unbuttoned and creased from being slept in, both sleeves pushed up past the elbows, one "
-              "cuff frayed, an old ink stain spread under the breast pocket, a small burn hole near the hem, a loose "
-              "thread at a button; a few feathers are out of place, and there are crumbs on the blanket."),
+        wear=("The coat is unbuttoned and creased from being slept in, its sleeves a little too long and down over "
+              "the wrists, one cuff frayed, an old ink stain spread under the breast pocket, a small burn hole near "
+              "the hem, a loose thread at a button; a few feathers are out of place, and there are crumbs on the "
+              "blanket."),
     ),
     "Tenacious": dict(
         approach="sitting",
-        source="profession: a FirstResponder, in the first minute after a rescue",
-        seen=("no ears show, because the shell cap covers the whole top of the head down to the brow like a close helmet",
-              "the nose is pink and the whiskers long and white",
+        source="profession: a first responder, in the first minute after a rescue",
+        swap=(("warm hazel irises", "amber-gold irises, a tiger's own eye colour,"),),
+        seen=("the shell cap is one smooth unbroken dome, a tortoise's own carapace in small, fitting close over the "
+              "whole top of the head, down to the brow and down over the temples where ears would be",
+              "the nose is pink, the whiskers are long and white, and the rim of each amber-gold iris is teal where "
+              "a tiger's would be dark",
               "the tortoise skin of the neck is olive green",
               "the jacket has a stand collar lined in teal and plain grey reflective bands on the sleeves, and the "
               "harness is black webbing with steel buckles"),
@@ -275,22 +290,33 @@ SAMPLES = {
         doing=("Tenacious has just come off a long rescue and sits on an upturned equipment case at the edge of the "
                "deck, elbows on knees, a dented steel mug steaming between both gloved hands, and looks straight into "
                "the lens: bone tired, calm and faintly amused."),
-        place=("The open deck of a rescue station at first light after a storm: wet steel plates, coiled lines and "
-               "blank crates of gear stacked against a rail, two orange rescue boats in their cradles soft in the "
-               "background, and a beacon lamp still turning far behind, laying a red-orange glow into the lifting "
-               "rain."),
-        light=("Flat grey daylight from the overcast sky on the face, soft and even; the far beacon's red-orange as a "
-               "faint warm edge on the wet shell and one shoulder; fine rain still falling, a few drops caught "
-               "sharp."),
+        place=("The open deck of a rescue station built on a shard of rock, at first light after a storm: wet steel "
+               "plates, coiled lines and blank crates of gear stacked against a rail, two orange rescue boats in "
+               "their cradles soft in the background, and a beacon lamp still turning far behind, laying a "
+               "red-orange glow into the lifting rain. Beyond the rail there is no sea, no shore and no horizon: only "
+               "a vast slow whirlpool of violet-grey storm cloud, dim and far, seen through the rain like weather, "
+               "and pale faceted crystals as big as houses drifting past."),
+        light=("Flat grey daylight from the overcast above on the face, soft and even; the far beacon's red-orange as "
+               "a faint warm edge on the wet shell and one shoulder; a faint violet glow from the cloud behind; fine "
+               "rain still falling, a few drops caught sharp."),
         wear=("The jacket is soaked and streaked with soot; one forearm of it is ripped open in a ragged tear with "
               "the grey lining showing; one reflective band is half peeled away; the harness webbing is frayed at a "
               "buckle; the gloves are blackened; the shell cap and the shell behind the shoulders are scuffed, with "
-              "pale scrapes across the plates; the black hair hangs wet in ropes; the cheek fur is clumped with rain "
-              "and smudged with soot."),
+              "pale scrapes across the olive-brown plates, their golden growth rings still plain; the black hair "
+              "hangs wet in ropes; rain runs down the face, and the fur of the cheeks and the brow is soaked dark, "
+              "stuck in points and smudged with soot."),
     ),
 }
+CLOSE = {   # painted scene -> the square around the figure's head, for the sheet's close-up beside the avatar
+    "MANGER-field": (650, 195, 1010, 555),
+    "GALLEON-film": (330, 0, 800, 470),
+    "Echo-candid": (300, 60, 720, 480),
+    "Tenacious-sitting": (220, 20, 720, 520),
+}
 SCENE_KEYS = ("approach", "source", "seen", "doing", "place", "light", "wear")
-SCENE_MORE = ("carry", "lower", "build", "hands")
+SCENE_MORE = ("carry", "lower", "build", "hands", "swap")
+SWAPPED = ("face", "coat", "second", "eyes", "hair", "outfit", "motif")   # the avatar's lines a swap may correct
+WORD_CAP = 1000   # briefs of 870 to 890 words were painted faithfully; past a thousand a line is one too many
 
 # ---------------------------------------------------------------------------------------------------------------
 # The identity: cut from the brief the avatar was painted from.
@@ -331,38 +357,55 @@ def identity(word):
                 accent=d["word"], hex=d["hex"], motif=d["motif"] or "")
 
 
+def as_seen(idn, swap=()):
+    """The identity with a record's swaps applied: where the PAINTING departs from the words it was painted from, the
+    scene follows the painting. A swap whose phrase is in none of the avatar's lines is refused."""
+    out = dict(idn)
+    for old, new in swap:
+        hit = [k for k in SWAPPED if old in out[k]]
+        if not hit:
+            raise ValueError(f"{idn['word']}: the swap {old!r} is in none of the avatar's lines")
+        for k in hit:
+            out[k] = out[k].replace(old, new)
+    return out
+
+
 def hands_of(idn):
     """The pilot's two hands, the same in every picture: the hand the avatar shows (an animal's own, or gloves);
     else the true hand of one of their animals; else the faction type's gloves."""
     a, b, look = idn["a"], idn["b"], idn["look"]
+    holds = "Each hand has fingers and a thumb and holds things the way a person's hand does."
+
+    def own(x):
+        return (f"Both hands are the {x.lower()}'s own: each is {bust.LIMB[x]}, and the wrist above it wears the "
+                f"{x.lower()}'s own coat. {holds}")
     if look.get("limb"):
         m = OWN_LIMB.search(idn["hand"])
         x = next((k for k in (b, a) if m and k.lower() == m.group("x")), None)
-        line = bust.LIMB.get(x) if x else None
-        if not line:
+        if not x or not bust.LIMB.get(x):
             raise ValueError(f"{idn['word']} shows a limb but its brief does not say whose (scene.OWN_LIMB)")
-        return f"Both hands are the {x.lower()}'s own, the hand the portrait shows: each is {line}."
+        return own(x)
+    if look.get("hand", "none") != "none" and not look.get("glove", True):
+        return "Both hands are a person's bare hands: four fingers and a thumb, a person's skin and short nails."
     if look.get("hand", "none") != "none":
-        return (f"Both hands are a person's hands in gloves, the gloves the portrait shows: "
-                f"{GLOVES[idn['faction']]}.")
+        return f"Both hands are a person's hands in gloves: {GLOVES[idn['faction']]}."
     owners = [x for x in (b, a) if bust.LIMB.get(x)]
     true = [x for x in owners if x not in bust.ARMOURED] or owners
     if true:
-        return f"Both hands are the {true[0].lower()}'s own: each is {bust.LIMB[true[0]]}."
+        return own(true[0])
     return f"Both hands are a person's hands in gloves: {GLOVES[idn['faction']]}."
 
 
-def who(word, seen=()):
+def who(word, seen=(), swap=()):
     """The identity paragraph of a scene: the person, in the words their avatar was painted from."""
-    i = identity(word)
+    i = as_seen(identity(word), swap)
     al, bl = i["a"].lower(), i["b"].lower()
     lines = [f"The subject is {i['name']}, a real living person in a world where people like this are ordinary: {al} "
-             f"and {bl} and human in one body. It is the same person as in {i['name']}'s portrait, feature for "
-             f"feature. {i['a'].upper()} is the face and the shape of the head: {i['face']}. {i['b'].upper()} is the "
-             f"{i['part']} and everything behind the face: {i['coat']}."]
+             f"and {bl} and human in one body. {i['a'].upper()} is the face and the shape of the head: {i['face']}. "
+             f"{i['b'].upper()} is the {i['part']} and everything behind the face: {i['coat']}."]
     lines.append(f"{i['eyes'][0].upper()}{i['eyes'][1:]}. {i['hair']}")
     if seen:
-        lines.append("As the portrait shows: " + "; ".join(seen) + ".")
+        lines.append("In detail: " + "; ".join(seen) + ".")
     return " ".join(lines)
 
 
@@ -373,6 +416,7 @@ def compose(word, approach=None, **over):
     missing = [k for k in SCENE_KEYS if k != "approach" and not rec.get(k)]
     if missing:
         raise ValueError(f"{i['word']} has no scene record: give {', '.join(missing)} (scene.SAMPLES)")
+    i = as_seen(i, rec.get("swap", ()))
     approach = approach or rec.get("approach")
     if approach not in APPROACHES:
         raise KeyError(f"no approach {approach!r}: one of {', '.join(APPROACHES)}")
@@ -388,16 +432,16 @@ def compose(word, approach=None, **over):
     second = ""
     if i["second"]:
         carry = rec.get("carry") or CARRY[i["kind"]].replace("{bl}", bl)
-        second = f" The {bl} also gives what the portrait shows behind the shoulders, {i['second']}: {carry}."
+        second = f" The {bl} also gives {i['second']}: {carry}."
     motif = f", and {i['motif']}" if i["motif"] else ""
     text = (
         f"{APPROACHES[approach]['shot']}\n\n"
-        f"{who(i['word'], rec['seen'])}\n\n"
+        f"{who(i['word'], rec['seen'], rec.get('swap', ()))}\n\n"
         f"From the neck down {name} is built like a person and stands, sits and moves like one: {build}. {hands} "
-        f"Each hand has fingers and a thumb and holds things the way a person's hand does.{second}\n\n"
-        f"{name} wears the same clothes as in the portrait, seen whole and lived in: {i['outfit']}, piped in "
-        f"{i['accent']} ({i['hex']}), the piping a thin cord that glows faintly{motif}; below it, {lower}. "
-        f"{rec['wear']}\n\n"
+        f"The clothes cover the body from the collar to the wrists and the ankles, and no bare human skin shows "
+        f"between them.{second}\n\n"
+        f"{name}'s clothes, seen whole and lived in: {i['outfit']}, piped in {i['accent']} ({i['hex']}), the piping "
+        f"a thin cord that glows faintly{motif}; below it, {lower}. {rec['wear']}\n\n"
         f"{rec['doing']}\n\n"
         f"{rec['place']} A few tiny faceted crystal grains drift in the air like dust in a sunbeam. {rec['light']}\n\n"
         + FINISH.replace("{name}", name))
@@ -416,13 +460,32 @@ def scene_path(word, approach):
     return os.path.join(ROOT, SCENES, f"{word}-{approach}.jpg")
 
 
+def painted_brief_path(word, approach):
+    """The brief a scene was painted from, kept beside it: the kit moves on, the painting does not."""
+    return os.path.join(ROOT, SCENES, "briefs", f"{word}-{approach}.txt")
+
+
+def stale():
+    """[(scene, why)] for the samples today's kit would paint differently, or that are not painted."""
+    out = []
+    for w, rec in SAMPLES.items():
+        key = f"{w}-{rec['approach']}"
+        if not os.path.exists(scene_path(w, rec["approach"])):
+            out.append((key, "not painted"))
+        elif not os.path.exists(painted_brief_path(w, rec["approach"])):
+            out.append((key, "no brief on record"))
+        elif open(painted_brief_path(w, rec["approach"]), encoding="utf-8").read().strip() != compose(w).strip():
+            out.append((key, "painted from an older brief"))
+    return out
+
+
 def capture(word, url, approach=None, **over):
     """Download a painted scene and keep the brief it was painted from beside it."""
     i = identity(word)
     approach = approach or SAMPLES.get(i["word"], {}).get("approach")
     text = compose(i["word"], approach, **over)
     out = scene_path(i["word"], approach)
-    os.makedirs(os.path.join(os.path.dirname(out), "briefs"), exist_ok=True)
+    os.makedirs(os.path.dirname(painted_brief_path(i["word"], approach)), exist_ok=True)
     raw = out + ".download"
     subprocess.run(["curl", "-sS", "-f", "-L", "-o", raw, url], check=True)
     from PIL import Image
@@ -430,10 +493,89 @@ def capture(word, url, approach=None, **over):
     os.remove(raw)
     assert max(im.size) >= 1280 and min(im.size) >= 848, f"{url} is {im.size}: smaller than any scene frame"
     im.save(out, quality=92, subsampling=0, optimize=True)
-    with open(os.path.join(os.path.dirname(out), "briefs", f"{i['word']}-{approach}.txt"), "w", encoding="utf-8") as f:
+    with open(painted_brief_path(i["word"], approach), "w", encoding="utf-8") as f:
         f.write(text + "\n")
     print(f"captured {out} {im.size}")
     return out
+
+
+def sheet(out):
+    """The review sheet: each sample's avatar, the scene's own close-up under it, and the whole scene beside them."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    def font(size, bold=False):
+        name = "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"
+        try:
+            return ImageFont.truetype(os.path.join("/usr/share/fonts/truetype/dejavu", name), size)
+        except OSError:
+            return ImageFont.load_default()
+
+    plate, ink, dim = (20, 23, 43), (236, 238, 246), (160, 166, 190)
+    W, M, GAP = 2200, 40, 16
+    probe = ImageDraw.Draw(Image.new("RGB", (8, 8)))
+    blocks = []
+    for n, (w, rec) in enumerate(SAMPLES.items(), 1):
+        i = identity(w)
+        ap = APPROACHES[rec["approach"]]
+        key = f"{i['word']}-{rec['approach']}"
+        scene = Image.open(scene_path(i["word"], rec["approach"])).convert("RGB")
+        avatar = Image.open(creator.bust_path(i["word"])).convert("RGB")
+        wide = scene.width > scene.height
+        side = 440 if wide else 380
+        h = side * 2 + GAP
+        big = scene.resize((round(scene.width * h / scene.height), h), Image.LANCZOS)
+        width = side + GAP + big.width
+        who_ = i["name"] if i["name"] == i["word"] else f"{i['name']} ({i['word']})"
+        lines, line = [], ""
+        for word_ in f"{who_}, {i['a'].lower()} and {i['b'].lower()}. From their {rec['source']}".split():
+            if line and probe.textlength(f"{line} {word_}", font=font(22)) > width:
+                lines.append(line)
+                line = word_
+            else:
+                line = f"{line} {word_}".strip()
+        lines.append(line)
+        HEAD = 2 * 30 + 66   # room for two lines under the title, so every block's pictures start level
+        block = Image.new("RGB", (width, HEAD + h), plate)
+        d = ImageDraw.Draw(block)
+        d.text((0, 0), f"{n}. {ap['name']}", fill=ink, font=font(40, True))
+        for k, text_ in enumerate(lines[:2]):
+            d.text((0, 54 + 30 * k), text_, fill=dim, font=font(22))
+        block.paste(avatar.resize((side, side), Image.LANCZOS), (0, HEAD))
+        block.paste(scene.crop(CLOSE[key]).resize((side, side), Image.LANCZOS), (0, HEAD + side + GAP))
+        d.rectangle((0, HEAD, 150, HEAD + 34), fill=(0, 0, 0))
+        d.text((8, HEAD + 4), "the avatar", fill=ink, font=font(22))
+        d.rectangle((0, HEAD + side + GAP, 236, HEAD + side + GAP + 34), fill=(0, 0, 0))
+        d.text((8, HEAD + side + GAP + 4), "the scene, close up", fill=ink, font=font(22))
+        block.paste(big, (side + GAP, HEAD))
+        blocks.append((wide, block))
+    rows, pending = [], []
+    for wide, block in blocks:   # a wide scene takes a row; two tall ones share one
+        if wide:
+            rows.append([block])
+        else:
+            pending.append(block)
+            if len(pending) == 2:
+                rows.append(pending)
+                pending = []
+    if pending:
+        rows.append(pending)
+    top = 150
+    height = top + sum(max(b.height for b in row) + M for row in rows) + 20
+    im = Image.new("RGB", (W, height), plate)
+    d = ImageDraw.Draw(im)
+    d.text((M, 30), "The second style: realistic scenes, four approaches", fill=ink, font=font(50, True))
+    d.text((M, 96), "Each scene is the same pilot as the avatar beside it, painted from words alone. Nothing here is "
+                    "locked: which approach, or which mix, is the style?", fill=dim, font=font(24))
+    y = top
+    for row in rows:
+        x = M
+        for block in row:
+            im.paste(block, (x, y))
+            x += block.width + M
+        y += max(b.height for b in row) + M
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    im.save(out)
+    print(f"sheet {out} {im.size}")
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -507,14 +649,35 @@ def self_test():
         except Exception as e:   # noqa: BLE001
             errors.append(f"sample {w} does not compose: {e}")
             continue
-        i = identity(w)
+        i = as_seen(identity(w), rec.get("swap", ()))
         for k in ("face", "coat", "outfit"):
             if i[k] not in text:
                 errors.append(f"sample {w}: the scene brief lost the avatar's {k} line")
         if i["name"] not in text:
             errors.append(f"sample {w}: the scene brief does not name the pilot")
-        if len(text.split()) > 950:
-            errors.append(f"sample {w}: the scene brief is {len(text.split())} words")
+        if re.search(r"(?:\bthe|'s) portrait\b", text):
+            errors.append(f"sample {w}: the brief points the painter at a portrait it cannot see")
+        if len(text.split()) > WORD_CAP:
+            errors.append(f"sample {w}: the scene brief is {len(text.split())} words (the cap is {WORD_CAP})")
+    for w, rec in SAMPLES.items():
+        path = scene_path(w, rec["approach"])
+        if os.path.exists(path):
+            from PIL import Image
+            box = CLOSE.get(f"{w}-{rec['approach']}")
+            size = Image.open(path).size
+            if not box or not (0 <= box[0] < box[2] <= size[0] and 0 <= box[1] < box[3] <= size[1]):
+                errors.append(f"sample {w}: CLOSE has no box inside {os.path.basename(path)} {size}")
+            elif box[2] - box[0] != box[3] - box[1]:
+                errors.append(f"sample {w}: the CLOSE box is not square")
+            if not os.path.exists(painted_brief_path(w, rec["approach"])):
+                errors.append(f"sample {w}: the painted scene has no brief on record beside it")
+            else:   # whatever the kit writes today, the painting's own brief carries the avatar's own words,
+                    # as its brief had them or as the record swaps them for what the avatar shows
+                painted = open(painted_brief_path(w, rec["approach"]), encoding="utf-8").read()
+                raw, seen_ = identity(w), as_seen(identity(w), rec.get("swap", ()))
+                for k in ("face", "coat", "outfit"):
+                    if raw[k] not in painted and seen_[k] not in painted:
+                        errors.append(f"sample {w}: the brief it was painted from lacks the avatar's {k} line")
     if len({r["approach"] for r in SAMPLES.values()}) != len(SAMPLES):
         errors.append("two samples share an approach: each sample is a different one")
 
@@ -531,6 +694,7 @@ def self_test():
         (dict(wear="A long scar runs down the bill."), "nothing permanent"),
         (dict(wear="One chipped tusk and a muddy hem."), "nothing permanent"),
         (dict(place="A painterly marsh at dawn."), "pulls back to a painting"),
+        (dict(swap=(("a phrase the avatar's brief never had", "anything"),)), "is in none of the avatar's lines"),
     )
     for over, why in controls:
         if not refuses(over, why):
@@ -566,11 +730,21 @@ def main():
         return 0
     if args[0] == "who" and len(args) == 2:
         i = identity(args[1])
-        print(who(args[1], SAMPLES.get(i["word"], {}).get("seen", ())))
+        rec = SAMPLES.get(i["word"], {})
+        print(who(args[1], rec.get("seen", ()), rec.get("swap", ())))
         print(hands_of(i))
         return 0
     if args[0] == "brief" and len(args) in (2, 3):
         print(compose(args[1], args[2] if len(args) == 3 else None))
+        return 0
+    if args[0] == "stale":
+        rows = stale()
+        for key, why in rows:
+            print(f"{key:20} {why}")
+        print(f"{len(rows)} of {len(SAMPLES)} scenes differ from what the kit would paint today")
+        return 0
+    if args[0] == "sheet" and len(args) == 2:
+        sheet(args[1])
         return 0
     if args[0] == "capture" and len(args) in (3, 4):
         capture(args[1], args[2], args[3] if len(args) == 4 else None)
