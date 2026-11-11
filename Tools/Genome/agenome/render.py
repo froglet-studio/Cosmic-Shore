@@ -76,6 +76,31 @@ def ensure_display():
     time.sleep(0.4)
 
 
+def ribbon_tris(lines, eye):
+    """Camera-facing strips as the engine's CollectRibbon builds them. lines: (p [n,3], halfwidth [n], rgba [n,4],
+    soft); soft puts the colour on the centre line and clear edges (a flare texture). -> [m,7] triangle vertices."""
+    out = []
+    eye = np.asarray(eye, np.float64)
+    for p, hw, c, soft in lines:
+        p = np.asarray(p, np.float64)
+        c = np.array(c, np.float64)
+        tan = np.concatenate([p[1:2] - p[0:1], p[2:] - p[:-2], p[-1:] - p[-2:-1]])
+        side = np.cross(tan, eye - p)
+        side /= np.maximum(np.linalg.norm(side, axis=1, keepdims=True), 1e-9)
+        hw = np.asarray(hw, np.float64)[:, None]
+        # within a few units of the eye a strip's place on screen is not known to a unit: it fades there
+        c[:, 3] *= np.clip((np.linalg.norm(p - eye, axis=1) - 0.8) / 3.0, 0.0, 1.0)
+        if soft:
+            e0 = c.copy()
+            e0[:, 3] = 0.0
+            cols = (np.concatenate([p - side * hw, e0], 1), np.concatenate([p, c], 1), np.concatenate([p + side * hw, e0], 1))
+        else:
+            cols = (np.concatenate([p - side * hw, c], 1), np.concatenate([p + side * hw, c], 1))
+        for a, b in zip(cols[:-1], cols[1:]):
+            out.append(np.stack([a[:-1], a[1:], b[:-1], b[:-1], a[1:], b[1:]], 1).reshape(-1, 7))
+    return np.concatenate(out, 0).astype(np.float32) if out else None
+
+
 def _mesh(name):
     if name == "box":
         v = []
@@ -639,7 +664,7 @@ class Renderer:
                 self.inst_buf.write(np.ascontiguousarray(arr, np.float32).tobytes())
                 self.inst_vao[m].render(self.mgl.TRIANGLES, vertices=self.mesh_n[m], instances=len(arr))
                 n_inst_total += len(arr)
-            rib = inst.get("ribbon")
+            rib = ribbon_tris(inst["lines"], eye) if inst.get("lines") else None
             if rib is not None and len(rib):
                 rib = np.ascontiguousarray(rib[:60000], np.float32)
                 self.rib_buf.write(rib.tobytes())

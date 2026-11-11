@@ -117,8 +117,8 @@ class VesselWorld:
     JETS = ((-1.08, -0.11, -1.61), (1.12, -0.11, -1.61), (-1.81, 0.15, 0.72), (1.82, 0.15, 0.72))
     TAILS = ((4.0, 0.0, -12.0), (-4.0, 0.0, -12.0))
 
-    def __init__(self, session, hull=(4.5, 1.13, 6.7), hull_col=(0.16, 0.2, 0.34), pod_col=(0.9, 0.25, 0.3),
-                 jet_secs=0.5, jet_width=0.3, jet_col=(0.1, 0.8, 1.1),
+    def __init__(self, session, hull=(4.5, 1.13, 6.7), hull_col=(0.1, 0.13, 0.24), pod_col=(0.7, 0.2, 0.25),
+                 jet_secs=0.5, jet_width=0.12, jet_col=(0.1, 0.75, 1.0),
                  tail_secs=4.0, tail_width=1.0, tail_col=(0.0, 0.6, 0.62),
                  crystal=3.8, crystal_bright=(0.055, 0.51, 0.749), crystal_dark=(0.0, 0.02, 0.05)):
         self.__dict__.update(locals())
@@ -151,22 +151,7 @@ class VesselWorld:
             if tot < 1e-4:
                 continue
             u = np.concatenate([[0.0], np.cumsum(seg)]) / tot
-            tan = np.concatenate([p[1:2] - p[0:1], p[2:] - p[:-2], p[-1:] - p[-2:-1]])
-            side = np.cross(tan, eye - p)
-            side /= np.maximum(np.linalg.norm(side, axis=1, keepdims=True), 1e-9)
-            hw = 0.5 * width(u)[:, None]
-            c = grad(u)
-            # the recorded path is 15 lines a second: within a few units of the eye a ribbon's place on screen is
-            # not known, so it fades there instead of covering the picture
-            c[:, 3] *= np.clip((np.linalg.norm(p - eye, axis=1) - 1.5) / 6.0, 0.0, 1.0)
-            if soft:  # a flare texture across the strip: bright core, clear edges
-                e0 = c.copy()
-                e0[:, 3] = 0.0
-                cols = (np.concatenate([p - side * hw, e0], 1), np.concatenate([p, c], 1), np.concatenate([p + side * hw, e0], 1))
-            else:
-                cols = (np.concatenate([p - side * hw, c], 1), np.concatenate([p + side * hw, c], 1))
-            for a, b in zip(cols[:-1], cols[1:]):
-                out.append(np.stack([a[:-1], a[1:], b[:-1], b[:-1], a[1:], b[1:]], 1).reshape(-1, 7))
+            out.append((p, 0.5 * width(u), grad(u), soft))
         return out
 
     def __call__(self, session, frame):
@@ -197,7 +182,7 @@ class VesselWorld:
                                    lambda u: self.tail_width * np.where(u < 0.1875, 1.0, (1 - u) / 0.8125), eye,
                                    lambda u: np.concatenate([np.tile(tc, (len(u), 1)), np.interp(u, [0, 0.0647, 0.1588, 1], [0, 0, 0.706, 0])[:, None]], 1))
             if rib:
-                out["ribbon"] = np.concatenate(rib, 0).astype(np.float32)
+                out["lines"] = rib
         C = [c for c in st.get("crystals", []) if not c.get("exploding")]
         if C:
             pos = np.array([c["pos"] for c in C], np.float64)
@@ -221,5 +206,5 @@ class Layers:
         out = {}
         for f in self.fns:
             for k, v in f(session, frame).items():
-                out[k] = np.concatenate([out[k], v], 0) if k in out else v
+                out[k] = (out[k] + v if k == "lines" else np.concatenate([out[k], v], 0)) if k in out else v
         return out

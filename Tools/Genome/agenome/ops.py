@@ -252,6 +252,12 @@ OPS_LIST = [
         P("period", "exp", 0.2, 8, 128)),
        "hull versus prism: a hit on the course or a laid trail resets boost and cuts throttle; pilot aim wobble",
        "VesselChangeSpeedByPrismEffect"),
+    Op(0x63, "ag.jet", "A", ("A",), (P("secs", "exp", 0.05, 8, 115), P("width", "exp", 0.02, 4, 130),
+        P("x", "exp", 0.1, 10, 148), P("z", "lin", -16, 4, 197), P("ramp", "lin", 0, 0.5, 0), P("alpha", "lin", 0, 1, 255),
+        P("soft", "enum", 0, 1, 1)) + _hsv(),
+       "a ribbon pair behind each vessel (the game's TrailRenderers): emitters at +-x, z in hull space, secs long; "
+       "ramp 0 = alpha falling from the emitter, else clear to ramp then fading and tapering; soft = flare core",
+       "VesselJet / VesselTail"),
     Op(0x64, "ag.shards", "A", ("A",), (
         P("spacing", "exp", 60, 300, 110), P("radius", "exp", 200, 2000, 198), P("scale", "lin", 0, 20, 128),
         P("emit", "exp", 0.05, 10, 40)) + _hsv("", 170, 60, 120),

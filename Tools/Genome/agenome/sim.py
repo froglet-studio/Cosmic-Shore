@@ -84,7 +84,7 @@ def build_populations(g, idx, memo=None, gseed=0):
                 p.rim = d
             elif n.op in GAME_OPS and p.kind == "game":
                 p.game = dict(p.game)
-                p.game[n.op] = d
+                p.game[n.op] = p.game.get(n.op, []) + [d] if n.op == "ag.jet" else d
     memo[idx] = out
     return [p.copy_shallow() for p in out]
 
@@ -328,7 +328,11 @@ class World:
         def cat(v):
             v = [a if a.shape[1] == 20 else np.concatenate([a, np.zeros((len(a), 20 - a.shape[1]), a.dtype)], 1) for a in v]
             return np.concatenate(v, 0).astype(np.float32)
-        return {m: (cat(v) if v else None) for m, v in lists.items()}
+        lines = lists.pop("lines", None)
+        out = {m: (cat(v) if v else None) for m, v in lists.items()}
+        if lines:
+            out["lines"] = lines
+        return out
 
     def frame_of(self, k):
         """Position, rotation (columns right, up, forward) and speed of game vessel k, or None."""

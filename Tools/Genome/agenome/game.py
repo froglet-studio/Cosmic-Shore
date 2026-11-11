@@ -16,7 +16,7 @@ import numpy as np
 from scipy.spatial import cKDTree
 from scipy.spatial.transform import Rotation
 
-GAME_OPS = ("ag.rail", "ag.gate", "ag.crystal", "ag.vessel", "ag.pilot", "ag.skim", "ag.lay", "ag.shards", "ag.impact")
+GAME_OPS = ("ag.rail", "ag.gate", "ag.crystal", "ag.vessel", "ag.pilot", "ag.skim", "ag.lay", "ag.shards", "ag.impact", "ag.jet")
 RIM = -204.0  # instance edge value: the game's prism graph (face to rim by fresnel power 4, distance spread)
 FACE = 0.072  # a domain's face colour is its rim times this, more saturated (Photic: Jade rim/face, the ribbon's)
 
@@ -115,6 +115,8 @@ class GameSim:
         self._init_shards()
         self.tr = np.zeros((max_trail, 20), np.float32)
         self.tr_birth = np.full(max_trail, -1e9, np.float32)
+        self.tr_octa = np.zeros(max_trail, bool)  # shielded prisms (the crystal rings) draw as octahedra
+        self.hist = []  # (pos, Rh) of the last few seconds, newest first, for the jet ribbons
         self.tr_n = 0
         self.tr_next = 0
         self.max_trail = max_trail
@@ -254,6 +256,10 @@ class GameSim:
             self._pilot(dt)
             self._integrate(dt)
             self._events(dt)
+            if self.cfg.get("ag.jet"):
+                self.hist_dt = dt
+                self.hist.insert(0, (self.pos.copy(), self.Rh.copy()))
+                del self.hist[int(8.5 / max(dt, 1e-3)):]
         self.t += dt
 
     def _aim(self):
@@ -374,10 +380,11 @@ class GameSim:
                 self.dist[ids] = 0.0
                 self._lay(ids, lay)
 
-    def _push(self, rows):
+    def _push(self, rows, octa=False):
         k = len(rows)
         sl = (self.tr_next + np.arange(k)) % self.max_trail
         self.tr[sl] = rows
+        self.tr_octa[sl] = octa
         self.tr_birth[sl] = self.t
         self.tr_next = int((self.tr_next + k) % self.max_trail)
         self.tr_n = min(self.max_trail, self.tr_n + k)
@@ -394,13 +401,16 @@ class GameSim:
             self._push(_inst(pos, R, [sx, lay["sy"], lay["sz"]], rgb, lay["emit"], RIM))
 
     def _aoe_ring(self, i):
+        """The ring a collected crystal leaves: 8 shielded prisms around the flight line, long axis radial
+        (recorded: 5.4 x 5.4 x 22.5 at radius 27)."""
         R = self.Rh[i]
         a = np.arange(8) * 2 * math.pi / 8
-        off = (np.cos(a)[:, None] * R[:, 0] + np.sin(a)[:, None] * R[:, 1]) * 8.2
-        Rs = np.tile(R[None], (8, 1, 1))
-        rgb = self.domain_rgb(self.dom[i]) * 0.6 + 0.5
+        rad = np.cos(a)[:, None] * R[:, 0] + np.sin(a)[:, None] * R[:, 1]
+        tan = -np.sin(a)[:, None] * R[:, 0] + np.cos(a)[:, None] * R[:, 1]
+        Rs = np.stack([tan, np.tile(R[:, 2], (8, 1)), -rad], 2)
+        rgb = self.domain_rgb(self.dom[i]) * 0.9 + np.array([0.12, 0.06, 0.2], np.float32)
         k = self.cr["ring"] if "ring" in self.cr else 1.0
-        self._push(_inst(self.pos[i] + off * k, Rs, [1.8 * k, 1.8 * k, 7.5 * k], rgb, 1.0, RIM))
+        self._push(_inst(self.pos[i] + rad * 9.0 * k, Rs, [1.8 * k, 1.8 * k, 7.5 * k], rgb, 1.0, RIM), octa=True)
 
     # ------------------------------------------------------------------ draw
     def add_instances(self, lists):
@@ -412,7 +422,39 @@ class GameSim:
             k = lay["grow"] if lay else 1.25
             g = 1.0 - (1.0 - 0.05) * np.exp(-k * np.maximum(self.t - self.tr_birth[:self.tr_n], 0.0))
             rows[:, 3:12] *= g[:, None]
-            lists["box"].append(rows)
+            o = self.tr_octa[:self.tr_n]
+            lists["box"].append(rows[~o])
+            if o.any():
+                lists["octa"].append(rows[o])
+        jets = self.cfg.get("ag.jet")
+        if jets and len(self.hist) > 1:
+            dt = self.hist_dt
+            for j in (jets if isinstance(jets, list) else [jets]):
+                n = min(int(math.ceil(j["secs"] / dt)), len(self.hist) - 1)
+                if n < 1:
+                    continue
+                tt = np.linspace(0.0, min(j["secs"] / dt, n), 16)
+                i0 = np.minimum(tt.astype(int), n - 1)
+                f = (tt - i0)[:, None]
+                col = _hsv(j["h"], j["s"], j["v"])
+                for k in range(self.n):
+                    for sg in (-1.0, 1.0):
+                        e = np.array([sg * j["x"], 0.0, j["z"]], np.float32)
+                        P = np.array([h[0][k] + h[1][k] @ e for h in self.hist[:n + 1]])
+                        if np.abs(np.diff(P, axis=0)).max() > 60.0:
+                            continue  # a respawn jump is not a trail
+                        p = P[i0] * (1 - f) + P[i0 + 1] * f
+                        seg = np.linalg.norm(np.diff(p, axis=0), axis=1)
+                        if seg.sum() < 1e-3:
+                            continue
+                        u = np.concatenate([[0.0], np.cumsum(seg)]) / seg.sum()
+                        if j["ramp"] > 0.004:
+                            al = np.interp(u, [0.0, 0.4 * j["ramp"], j["ramp"], 1.0], [0.0, 0.0, 1.0, 0.0])
+                            hw = 0.5 * j["width"] * np.where(u < 0.19, 1.0, (1 - u) / 0.81)
+                        else:
+                            al, hw = 1.0 - u, np.full_like(u, 0.5 * j["width"])
+                        rgba = np.concatenate([np.tile(col, (len(u), 1)), (al * j["alpha"])[:, None]], 1)
+                        lists.setdefault("lines", []).append((p, hw, rgba, int(j["soft"]) == 1))
         if self.n:
             b = self.body
             if b is None:
