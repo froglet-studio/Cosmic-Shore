@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Compile the SHIPPED Redline course code (RaceCourseGeometry, HeadlongCircuit, RedlineCourse, RedlineTimeCrystals) and
-# its SHIPPED edit-mode tests (RedlineCourseTests, RedlineTimeCrystalsTests) against race_course_source_harness's Unity
-# math stub and an NUnit shim with Roslyn, and RUN every [Test] - the 400-seed ladder sweep in a few seconds, no Unity.
+# Compile the SHIPPED Redline course code (RaceCourseGeometry, HeadlongCircuit, RedlineCourse, RedlineTimeCrystals,
+# RedlineHeat) and its SHIPPED edit-mode tests (RedlineCourseTests, RedlineTimeCrystalsTests, RedlineHeatTests) against
+# race_course_source_harness's Unity math stub and an NUnit shim with Roslyn, and RUN every [Test] - the 400-seed ladder
+# sweep, the flown curve and the heat in a few seconds, no Unity.
 #
 #   bash Tools/Build/redline_course_harness/run.sh                 # every test; exit 0 = all passed
-#   bash Tools/Build/redline_course_harness/run.sh --self-test     # ...plus two negative controls that must FAIL
+#   bash Tools/Build/redline_course_harness/run.sh --self-test     # ...plus four negative controls that must FAIL
 #   bash Tools/Build/redline_course_harness/run.sh --sweep         # the corner ladder per intensity (400 seeds)
 #   bash Tools/Build/redline_course_harness/run.sh --parity        # rewrite redline_parity.jsonl (gates + Time crystals,
 #                                                                  # the file manta_redline_sim.py --self-test reads)
@@ -29,17 +30,19 @@ mkdir -p "$OUT"
 
 COURSE="$A/Controller/Arcade/Redline/RedlineCourse.cs"
 CRYSTALS="$A/Controller/Arcade/Redline/RedlineTimeCrystals.cs"
+HEAT="$A/Controller/Arcade/Redline/RedlineHeat.cs"
 
 # Roslyn takes native paths: Git Bash's /b/... reads as B:\b/... on Windows.
 native() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
-build() {   # $1 = course source, $2 = crystals source, $3 = output name
+build() {   # $1 = course source, $2 = crystals source, $3 = output name, $4 = heat source (default: shipped)
   : > "$OUT/refs.rsp"
   for d in "$REFDIR"/*.dll; do printf -- '-r:"%s"\n' "$(native "$d")" >> "$OUT/refs.rsp"; done
   : > "$OUT/files.rsp"
   for f in "$ROOT/Tools/Build/race_course_source_harness/UnityMath.cs" "$HERE/NUnitShim.cs" "$HERE/Runner.cs" \
     "$A/Controller/Arcade/Racing/RaceCourseGeometry.cs" "$A/Controller/Arcade/Headlong/HeadlongCircuit.cs" \
-    "$1" "$2" "$A/Tests/Editor/RedlineCourseTests.cs" "$A/Tests/Editor/RedlineTimeCrystalsTests.cs"; do
+    "$1" "$2" "${4:-$HEAT}" "$A/Tests/Editor/RedlineCourseTests.cs" "$A/Tests/Editor/RedlineTimeCrystalsTests.cs" \
+    "$A/Tests/Editor/RedlineHeatTests.cs"; do
     printf '"%s"\n' "$(native "$f")" >> "$OUT/files.rsp"
   done
   "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$(native "$OUT/refs.rsp")" \
@@ -66,8 +69,8 @@ cat "$OUT/result.txt"
 [ "${1:-}" = "--self-test" ] || exit 0
 
 # Negative controls: each mutated copy must make the tests fail.
-negative() {   # $1 = label, $2 = course source, $3 = crystals source
-  build "$2" "$3" neg
+negative() {   # $1 = label, $2 = course source, $3 = crystals source, $4 = heat source (default: shipped)
+  build "$2" "$3" neg "${4:-$HEAT}"
   set +e; run neg > "$OUT/neg.txt"; local nrc=$?; set -e
   if [ $nrc -eq 0 ]; then echo "NEGATIVE CONTROL DID NOT FIRE: $1"; exit 1; fi
   echo "negative control fired: $1 ($(grep -c '^FAIL' "$OUT/neg.txt") failing test(s))"
@@ -79,4 +82,10 @@ negative "an I4 corner floor of 90 u (the Yawstery pivot's ladder)" "$OUT/Redlin
 sed 's/public const float ApexInset = 70f;/public const float ApexInset = -70f;/' "$CRYSTALS" > "$OUT/RedlineTimeCrystals_neg.cs"
 grep -q 'ApexInset = -70f' "$OUT/RedlineTimeCrystals_neg.cs" || { echo "the inset mutation did not apply"; exit 1; }
 negative "I4 crystals set OUTSIDE their corners" "$COURSE" "$OUT/RedlineTimeCrystals_neg.cs"
+sed 's/StartingTimeLevelByIntensity = { 6, 6, 6, 6 }/StartingTimeLevelByIntensity = { 0, 6, 6, 6 }/' "$COURSE" > "$OUT/RedlineCourse_dark.cs"
+grep -q '{ 0, 6, 6, 6 }' "$OUT/RedlineCourse_dark.cs" || { echo "the start-level mutation did not apply"; exit 1; }
+negative "I1 starting at Time 0 (Soar dark, the race before 2026-11-11)" "$OUT/RedlineCourse_dark.cs" "$CRYSTALS"
+sed 's/public const float CleanMouthFraction = 0.5f;/public const float CleanMouthFraction = 1.5f;/' "$HEAT" > "$OUT/RedlineHeat_neg.cs"
+grep -q 'CleanMouthFraction = 1.5f' "$OUT/RedlineHeat_neg.cs" || { echo "the clean-mouth mutation did not apply"; exit 1; }
+negative "a clean thread wider than the mouth" "$COURSE" "$CRYSTALS" "$OUT/RedlineHeat_neg.cs"
 echo "redline_course_harness self-test: ok"
