@@ -459,7 +459,7 @@ class GameSim:
                         else:
                             al, hw = 1.0 - u, np.full_like(u, 0.5 * j["width"])
                         rgba = np.concatenate([np.tile(col, (len(u), 1)), (al * j["alpha"] * gate)[:, None]], 1)
-                        lists.setdefault("lines", []).append((p, hw, rgba, int(j["soft"]) == 1))
+                        lists.setdefault("lines", []).append((p, hw, rgba, int(j["soft"]) >= 1))
         if self.n:
             b = self.body
             if b is None:
