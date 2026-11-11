@@ -228,7 +228,7 @@ def print_check(r, me):
         print('\nCOLLISION - stop and tell your person before going on (Docs/TEAM.md rule 3):')
         for row in r['collisions']:
             for o in row['occupants']:
-                ppl = ', '.join(o['people']) or 'a Claude session (no person on record)'
+                ppl = ', '.join(o['people']) or o.get('label') or 'a Claude session (no person on record)'
                 pr = f', PR #{o["pr"]}' if o.get('pr') else ''
                 print(f'  {row["name"]}: {ppl} on {o["branch"]}{pr}, last push {o["last"]}: "{o["subjects"][0][:80]}"')
         print('  Talk to them first. If your person decides to go ahead anyway, go ahead, say "Affects: <occupant>\'s'

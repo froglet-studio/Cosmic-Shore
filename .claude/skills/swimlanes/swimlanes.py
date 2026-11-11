@@ -260,7 +260,8 @@ def occupancy(root, lanes, team, cfg, days, base, prs, merged_heads):
         for k, cs in per.items():
             cs.sort(key=lambda c: c['date'], reverse=True)
             occ[k].append({'branch': branch, 'people': people, 'last': cs[0]['date'][:10], 'commits': len(cs),
-                           'subjects': [c['subject'] for c in cs[:3]], 'pr': pr.get('number') if pr else None})
+                           'subjects': [c['subject'] for c in cs[:3]], 'pr': pr.get('number') if pr else None,
+                           'label': getattr(team, 'branch_label', lambda b: None)(branch)})
     for k in occ:
         occ[k].sort(key=lambda r: r['last'], reverse=True)
     return occ
@@ -538,7 +539,7 @@ def build(root, args):
 
 
 def who(o):
-    ppl = ', '.join(o['people']) if o['people'] else 'a Claude session (no person on record)'
+    ppl = ', '.join(o['people']) if o['people'] else (o.get('label') or 'a Claude session (no person on record)')   # TEAM.json unattributed_prefixes
     pr = f', PR #{o["pr"]}' if o.get('pr') else ''
     return f'{ppl} on {o["branch"]}{pr}, last push {o["last"]}, {o["commits"]} commit(s): "{o["subjects"][0][:80]}"'
 
