@@ -1341,6 +1341,14 @@ def upgrade_art(key, elements, art, pngs_by_dir, png_index=None, l5_fields=None)
         e["upgrade"]["icon"] = art.png(os.path.relpath(hit, REPO), f"ab/{key}_{el}_L5.png") if hit else None
 
 
+def palette_bytes(path):
+    """A colour set's bytes without its TracedColors list. The colour trace (Docs/VesselModels/COLOR_TRACE.md) rewrites
+    that list on every set whenever any colour in the game is traced, and no render reads it, so it must not make every
+    vessel render again."""
+    text = open(path, encoding="utf-8").read()
+    return re.sub(r"^  TracedColors:.*\n(?:  - .*\n|    .*\n)*", "", text, flags=re.M).encode()
+
+
 def domain_images(vessels, preview_by_value, out_dir, render=False):
     """{domain: img/dom/<model>_<Domain>_<hash>.webp} per vessel: the hangar preview rendered in that domain's livery
     by Tools/Build/vessel_model/render_cards.py (its camera, look and the palette's domain colours), for the model the
@@ -1364,7 +1372,7 @@ def domain_images(vessels, preview_by_value, out_dir, render=False):
     tool = hashlib.sha256()
     for f in ("render_cards.py", "vessel_colors.py"):
         tool.update(open(os.path.join(vm, f), "rb").read())
-    tool.update(open(COLOR_SET, "rb").read())
+    tool.update(palette_bytes(COLOR_SET))
     dom_dir = os.path.join(out_dir, "img", "dom")
     os.makedirs(dom_dir, exist_ok=True)
     keep = set()
