@@ -648,7 +648,7 @@ MonoBehaviour:
     Color: {r: 0.996078432, g: 0.835294127, b: 0.407843143, a: 0.899999976}
     Note: '1 use: Assets/_Prefabs/Spacevessels/Grizzly.prefab Image'
   - Id: ui:FFD966
-    Color: {r: 1, g: 0.845630527, b: 0.476909608, a: 1}
+    Color: {r: 0.996078432, g: 0.847058833, b: 0.478431374, a: 1}
     Note: '1 use: Assets/_Scripts/UI/View/DolphinVesselHUDView.cs code'
   - Id: ui:FFDCAA
     Color: {r: 1, g: 0.89732188, b: 0.696942449, a: 0.850000024}

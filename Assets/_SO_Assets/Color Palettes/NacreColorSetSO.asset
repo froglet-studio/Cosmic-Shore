@@ -183,7 +183,7 @@ MonoBehaviour:
     Color: {r: 0, g: 0.0152929472, b: 0.00780828809, a: 0}
     Note: '1 use: Assets/_Graphics/Materials/Shaders/UI/Sea_Window.mat Material(CosmicShore/UI/SeaLines)'
   - Id: ui:00020F
-    Color: {r: 0, g: 0.0117647061, b: 0.00784313772, a: 1}
+    Color: {r: 0, g: 0.0156862754, b: 0.00392156886, a: 1}
     Note: '1 use: Assets/_Scripts/UI/PreGameCinematic/IntroCameraOverlay.cs code'
   - Id: ui:00041F
     Color: {r: 0, g: 0.0473944135, b: 0.0155455265, a: 0.550000012}
