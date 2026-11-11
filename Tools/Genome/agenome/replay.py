@@ -114,7 +114,10 @@ class PrismWorld:
             rim, face = a[:, 13:16], a[:, 17:20]
         sh = ((flags & 3) != 0)[:, None] & (a.shape[1] < 25)  # shielded prisms read paler
         rim = np.where(sh, rim + (1.0 - rim / max(rim.max(), 1e-6)) * self.shield_mix * 0.5, rim)
-        rows = np.concatenate([a[:, 1:4], R[:, :, 0] * S[:, 0:1], R[:, :, 1] * S[:, 1:2], R[:, :, 2] * S[:, 2:3], rim,
+        pos = a[:, 1:4]
+        if a.shape[1] >= 31:  # a fired prism's transform is its landing point; the vertex stage walks it in from the muzzle
+            pos = pos + a[:, 28:31]
+        rows = np.concatenate([pos, R[:, :, 0] * S[:, 0:1], R[:, :, 1] * S[:, 1:2], R[:, :, 2] * S[:, 2:3], rim,
                                np.zeros((len(a), 1)), np.full((len(a), 1), -(200.0 + self.power)), face], 1)
         # the game swaps a shielded prism's box for an octahedron and a super-shielded one's for a stellated
         # octahedron, both with semi-axes 3x the box half-extents (OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE)

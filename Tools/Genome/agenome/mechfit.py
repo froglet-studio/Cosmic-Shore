@@ -137,6 +137,7 @@ def main(argv=None):
             k = int(np.argmin(f))
             if f[k] < best:
                 best, bx = f[k], X[k].copy()
+                _apply(g, sl, bx).save(a.out + ".part")  # a run cut short still leaves its best
             print(gen, "gen best", round(min(f), 4), "best", round(best, 4), "sigma", round(es.sigma, 1), flush=True)
     gb = _apply(g, sl, bx)
     after = sim_stats(gb, secs, seeds=tuple(range(100, 108)))
