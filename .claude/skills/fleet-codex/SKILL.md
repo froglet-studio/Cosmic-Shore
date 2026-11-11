@@ -119,6 +119,10 @@ element question `python3 Tools/Build/element_ability_table.py <Vessel>` is fast
   them (`_yaml_unescape`). A literal `\uXXXX` on the page means a reader bypassed it.
 - **A new field:** add it in `fleet_codex.py` (read it from an asset or code, never type it), draw it in
   `index.html`, run the generator, look at one vessel and the matrix once, republish (§1), commit both files.
+- **A new class name in `index.html` collides with the page's own** (2026-11-10, Rev 84): `.stage` is the move scene's
+  150 px box and `.row` the four-column ability row, so a certificate label named `stage` drew a black box and a filter
+  row named `row` took the ability grid. `grep -n '^\.<name>' Docs/FleetCodex/index.html` before naming a class, and
+  look at the page in Chromium (vessel page and `#fleet`) before publishing.
 - **A new vessel** needs nothing here: its enum member, class asset and map put it on the page at the next refresh.
 - The page follows the artifact page contract and the UI style guide: colours only from the colour-set tokens
   (`themes.css`), no colour per element (elements have no colour, `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md`), the corner
