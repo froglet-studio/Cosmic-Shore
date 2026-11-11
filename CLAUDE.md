@@ -109,8 +109,10 @@ This file holds only the rules every session needs. Everything else moved verbat
   `Assets/_Graphics/Pilots/**`, a `Pilot_<Callsign>.asset` portrait or `Tools/Build/pilot_art/**`. The painted set
   is the reference and is never overwritten. The player AVATARS are signature triple-hybrid busts made by
   **`/pilot-creator`** (`bust.py`, `creator.py`, `Docs/Pilots/art/busts/`; it also rolls a player's unique pilot;
-  `blind.py` is the blind read that measures whether both animals are named).
-  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions; the signature busts
+  `blind.py` is the blind read that measures whether both animals are named). The same skill holds the realistic
+  SCENE of a pilot (`scene.py`, `Docs/Pilots/art/scenes/`): four sample approaches, the style NOT locked until
+  Garrett picks, and a read that checks each scene against its avatar.
+  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions; the signature busts; the scenes
 - [`Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md`](Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md): Namespace convention, key systems & classes reference, async pattern.
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.

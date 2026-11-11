@@ -10,7 +10,11 @@ aspect hint, so `author.py` reads whatever size arrives) over the key colour the
 so a cloud session downloads `image.url` with curl (`creator.py capture`) and no longer needs `get_screenshot`,
 whose Collab-seat read limit runs out after about 30 calls a day. The signature busts use `gpt-image-2.5-sunburst`
 at 1024 x 1024, painted with their own background (no key colour, no matte): `/pilot-creator`. Round 2 of the busts
-(2026-11-11) was 70 paintings for 50 pilots. A bust brief never names the game, the studio, the world or a place,
+(2026-11-11) was 70 paintings for 50 pilots and round 3 was 8, one for each bust a rule touched. The four realistic
+scene samples (`scene.py`, the style not locked) took 19 on the same model: it returns 1536 x 1024 for 3:2,
+1536 x 864 for 16:9 (asked as 2048 x 1152) and 1024 x 1280 for 4:5, from a brief of up to about 1,000 words;
+`gemini-3.1-flash-image`, tried once, returned 1264 x 848 and lost the second animal (LESSONS 70).
+A bust brief never names the game, the studio, the world or a place,
 a crew or a faction in it, and never asks for an emblem by name (LESSONS 44, 45); the full-body brief (`brief.py`)
 names the pilot's callsign and founding faction.
 
@@ -44,7 +48,9 @@ paintings a round will make before making them, and name the file.
 (a few of the painted set as style anchors plus the brief). Every run needs the person's explicit approval of the
 quoted credit cost in the session (the tool refuses without it), so this route is for an interactive session,
 never an autonomous one. Use it when a pilot must match a specific painted reference's handling more closely than
-the text brief achieves.
+the text brief achieves. The scenes are the case for it: a text brief keeps a pilot recognisable (found among 50
+avatars every time) and still leaves two of four "mostly the same" side by side, and a model that is shown the
+avatar should close most of that. Not run yet: it waits for Garrett's approval of the cost.
 
 ## 3. An artist
 

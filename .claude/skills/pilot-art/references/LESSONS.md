@@ -253,3 +253,101 @@ twice for each round, named both animals in 26 and 27 of 50 before and in 44 and
     only open pictures, at medium effort: 29 busts, three readers, under three minutes, 480k tokens. And a
     repaint is a new picture: read it again. Slingshot's came back without the laurel and with clubs that have a
     pincer's hook, so its one reader said lobster before mantis shrimp.
+
+## 2026-11-11 - signature busts, round 3: six rules from one review
+
+Garrett on round 2: "These are great. only a few need changing." Eight busts were repainted, each right on its
+first painting, because each fix was a table line and not a prompt edit (`Docs/Pilots/PORTRAITS.md` section 7).
+
+53. **A hand is something that can hold.** "please never make crab hands (how would they interact with
+    things?)" A pincer, a striking club, a mantis's foreleg and a hook are an animal's tell and no hand, and a
+    pilot has to work a ship. The armoured animals wear their shell ON a hand with four fingers and a thumb,
+    jointed like a gauntlet, and a pilot who also has a true hand shows that one. Give the hand something to hold
+    (Comet's holds a shard): a hand that holds is read as a hand. The gate is two patterns, `NOT_A_HAND` and
+    `A_HAND`, on every limb line.
+54. **Where a piece grows from is a sentence of its own.** "butterfly Wings on a head, as ears, is nonsensical"
+    and "the turkey tail feathers are in a very weird spot with respect to the dog's hood": the brief had named
+    the piece and left its root to the painter. Wings, tails and fans now say the back, a fan "rises from below
+    the frame behind both shoulders", and under a hooded outfit the brief adds that the hood lies in front of
+    it. What is worn and what is grown both sit behind the head, so say which is in front.
+55. **Two materials meet by a written gradient.** "the chameleon transitioning to jellyfish looks a bit abrupt":
+    the standard seam line ("meeting the face along the jawline") draws a rim when one side is translucent. A
+    translucent coat has a `BLEND` line instead: the skin thins and turns glassy by degrees over a hand's width.
+56. **A review that likes the set grows the lists; it does not repaint the set.** "The backgrounds that don't
+    look like they could be earth are the best" became 21 new places and a mark (`UNEARTHLY`, rolled three times
+    as readily), and "it is fine to have some that express more of their human side ... I would expand the list
+    vs. change that" became `roll_more` for new pilots only. The 50 kept their places and looks; `creator.py
+    stale` lists the ten whose table line moved on after they were painted.
+
+## 2026-11-11 - the scenes: the same pilot in a realistic picture (the style is not locked)
+
+Four samples, 19 paintings, three reads (`Docs/Pilots/PORTRAITS.md` section 8; `Tools/Build/pilot_art/scene.py`).
+
+57. **The same words keep the same person.** A text painter never sees the avatar. A scene whose description of
+    the person is cut word for word from the brief the avatar was painted from was matched to the right avatar
+    among 50, by readers told nothing, in 16 answers of 16, every one "sure". Composing the person again from
+    today's tables would describe someone slightly different: the tables move on, the painting does not.
+58. **Follow the painting, not the request.** The painter decided things no brief asked for, and departed from
+    some it did. Look at the avatar and write both down: `seen` for what it added (the brooch is brass, the shell
+    cap hides the ears), `swap` for where it differs (hazel was asked and amber-gold painted; "shaggy" wool was
+    painted as tight curls). A correction REPLACES the phrase: "warm hazel irises" beside "amber-gold" gave pale
+    green eyes, because two colour words for one thing let the painter choose a third.
+59. **Below the avatar's crop nothing was decided, so decide it once.** The build, the hands, where the second
+    animal's piece grows from and the lower half of the clothes are tables (`BUILD`, `hands_of`, `CARRY`,
+    `LOWER`), the same for every picture of a pilot. And cover the body: the first candid picture had bare pink
+    human forearms between an owl's neck and a mouse's face, which its reader marked as a thing a player would
+    notice. The brief now says the clothes cover everything from the collar to the wrists and ankles, and the
+    wrist wears the hand's own coat.
+60. **An animal's bare-skinned hand is painted as a person's.** "a mouse's small hand, four thin bare pink
+    fingers" came back as small bare human hands, and a reader said they made the head look like a costume head.
+    Fur to the fingertips and bare skin only at the pads reads as the animal's.
+61. **Hair words mean something else in a photograph.** "Shaggy" wool was a fur hat sitting on the head. "Tight
+    springy curls like a lamb's fleece" was a person's long ringlets. "A deep dense fleece of short tight curls,
+    packed like a sheepskin and nowhere longer than a finger" was the mound the avatar has, and in the one roll
+    without "the face is bare skin from the brow to the chin" the fleece ran over the face. Say the length, what
+    it is packed like, and where it stops.
+62. **A face needs its whole outline.** "A walrus's broad heavy face" under a mound of wool was painted with an
+    ape's brow and nose: the painter filled the top of the face with the nearest heavy face it knew. "The face is
+    a walrus's from the chin to the top: a smooth rounded forehead sloping straight into a broad flat muzzle of
+    two round whisker pads" gave the walrus's own muzzle in three rolls of three.
+63. **A horned animal gets its ears.** The bison's small ear under one horn was painted in four rolls of four,
+    whatever the wool was told to cover ("where ears would be", "so that only wool shows there", "closing round
+    the base of each horn in an unbroken fleece"). A hard cap does hide ears when it is described as covering the
+    place ("fitting close over the whole top of the head ... down over the temples where ears would be"), and "so
+    no ears show" drew one. Not solved for wool.
+64. **The eye ring is a close-up's detail.** "Ringed by a thin glowing line" was painted in one roll of three;
+    "the rim of each iris, a thin line of colour where an animal's would be dark" in three of three. Readers
+    still saw it only in the portrait taken from two steps away. A scene that must carry the pilot's sight has to
+    be near the face.
+65. **Tell the wear where to stop.** Mud to the knees also buried the trim, and a reader said the faction colour
+    was dull. "Above the mud line the magenta piping still shows bright along the collar" kept both. Wear that
+    has a cause reads truer than wear that is spread: "soot is ground into one shoulder, one side and both knees,
+    where they went against a wall and a floor" against "streaked with soot". The last reader still found the
+    tiger's mud "evenly applied, like costume breakdown".
+66. **A prop stays where the avatar wears it.** The lens that hangs on a cord in the avatar was painted in the
+    scene as a monocle over one eye, and a reader called it a difference a player would notice. Say in the action
+    where every worn thing is ("the brass lens hangs on its cord against the chest").
+67. **Empty the place by name.** A hangar "with a row of craft" came back with blurred crew in the distance (both
+    readers counted four or five figures), and two rescue boats with someone in each. "The bay is empty of
+    people", boats "empty and unlit, their hulls plain orange", and "nobody else is anywhere in the frame, near
+    or far" held. Naming labels in order to ban them ("every label ... is blank") still drew two jar labels with
+    marks too small to read: leave out the thing, do not ask for it blank.
+68. **Unearthly and photographic at once means a quiet strangeness.** A violet spiral sky with crystals the size
+    of houses made both readers call the portrait a 3D render. The far wall of a living cell, veined like a leaf
+    and seen through rain, with flat milky-green water under it, was called a photograph by both, and one still
+    listed "a faint giant lattice in the misty sky" as the thing that breaks the realism. Make the place strange
+    through distance, weather and what the ground is made of, and keep the camera, the light and the foreground
+    ordinary.
+69. **Each approach reads as what it copies.** Readers called the long-lens field picture "a real telephoto
+    wildlife or documentary shot" and the close portrait a photograph; they called the film still a film still,
+    and the candid snapshot a film still too ("warm single-lamp lighting and tidy composition feel staged").
+    A candid picture needs light that nobody would choose.
+70. **The painter and its frames.** `gpt-image-2.5-sunburst` returns 1536x1024 for 3:2, 1536x864 for 16:9 (ask
+    for 2048x1152) and 1024x1280 for 4:5, from a brief of up to about 1,000 words. `gemini-3.1-flash-image`,
+    tried once on the same brief, merged the platypus's bill shield into the beak, drew human hands and a clean
+    cape, at 1264x848.
+71. **The read is two commands and two readers.** `scene.py read-prep` cuts and shuffles the pictures and keeps
+    the key outside the folder; the workflow's two readers only open pictures, at medium effort: about 220k
+    tokens and under two minutes for four scenes. Each repaint is a new picture and is read again; three reads
+    took the "differences a player would notice" from 3 to 1, and the read after the first repaints found four,
+    because fixing one thing moved another (the walrus's fur hat became an ape's brow).

@@ -1,6 +1,6 @@
 ---
 name: pilot-creator
-description: Create a Cosmic Shore PILOT as a signature triple-hybrid bust - a unique person (human + two animals, a faction, a callsign) rolled exactly as the game's PilotGenerator mints them, painted as a head-and-shoulders bust where the first animal owns the face, the second owns the crown and everything behind the face, and the human is the bearing, the clothes and the gaze, standing in one of many places, then cut into the player avatar (Assets/_Graphics/Profile/Pilots/Avatar_<NAME>.png). Use on "/pilot-creator", "make a pilot", "give this player a unique pilot", "roll a pilot", "paint a bust / avatar for <pilot>", "the avatar only shows one animal", "repaint <pilot>'s avatar", "add a pilot to the avatars", "blind read the busts", "do both animals read", "sweep the busts for emblems", or any change to Tools/Build/pilot_art/bust.py, creator.py, blind.py or Docs/Pilots/art/busts/. The full-body Hangar portrait is /pilot-art.
+description: Create a Cosmic Shore PILOT as a signature triple-hybrid bust - a unique person (human + two animals, a faction, a callsign) rolled exactly as the game's PilotGenerator mints them, painted as a head-and-shoulders bust where the first animal owns the face, the second owns the crown and everything behind the face, and the human is the bearing, the clothes and the gaze, standing in one of many places, then cut into the player avatar (Assets/_Graphics/Profile/Pilots/Avatar_<NAME>.png). Use on "/pilot-creator", "make a pilot", "give this player a unique pilot", "roll a pilot", "paint a bust / avatar for <pilot>", "the avatar only shows one animal", "repaint <pilot>'s avatar", "add a pilot to the avatars", "blind read the busts", "do both animals read", "sweep the busts for emblems", or any change to Tools/Build/pilot_art/bust.py, creator.py, blind.py or Docs/Pilots/art/busts/. Also holds the realistic SCENE of the same pilot (Tools/Build/pilot_art/scene.py, Docs/Pilots/art/scenes/; four sample approaches, the style NOT locked until Garrett picks): "a scene of <pilot>", "the realistic art", "art for the Ark", "does the scene look like the avatar". The full-body Hangar portrait is /pilot-art.
 ---
 
 # Pilot Creator: the signature triple-hybrid bust
@@ -16,7 +16,9 @@ this skill paints (Docs/Pilots/PORTRAITS.md section 7). Garrett on round 2, 2026
 need changing", with five rules that are now in the tables (section 5, "Round 3") and eight busts repainted. He also
 named what the skill is for: "a large enough roster that every pilot is unique and each player has their own unique
 crew. They will all use the same callsigns which connect to the same vision abilities (not unique) but the art,
-backstory, species combination, etc. will all be unique."
+backstory, species combination, etc. will all be unique." And he asked for a second style: the same character in a
+hyper-realistic scene, "raw in their environment". Section 6 holds the four samples and the mechanism; that style
+is not locked.
 
 ## 0. The bar
 
@@ -57,9 +59,10 @@ what each was painted with is frozen in `creator.CAST`. A new pilot may also sho
 ## 1. Read before you touch
 
 - `Tools/Build/pilot_art/bust.py` (the tables and the brief), `creator.py` (the roll, the catalog, the cast,
-  capture, stale, sheet, tiles) and `blind.py` (the blind read's shuffle and grading).
-- `.claude/skills/pilot-art/references/LESSONS.md` sections "signature busts" (rounds 1 and 2) and `PAINTERS.md`
-  section 1.
+  capture, stale, sheet, tiles) and `blind.py` (the blind read's shuffle and grading). For a scene, `scene.py`
+  (its docstring is the mechanism) and `Docs/Pilots/PORTRAITS.md` section 8.
+- `.claude/skills/pilot-art/references/LESSONS.md` sections "signature busts" (rounds 1 to 3) and "the scenes"
+  (57 to 71), and `PAINTERS.md` section 1.
 - The pilot record: `Docs/Pilots/INVENTORY.md` section 3; `Assets/_Scripts/Data/Inventory/` (`AnimalSpecies`,
   `FactionCatalog`, `PilotGenerator`, `SeededRandom`).
 - `git fetch origin && python3 Tools/Build/who_works_where.py query Tools/Build/pilot_art Assets/_Graphics/Profile`.
@@ -84,7 +87,15 @@ python3 Tools/Build/pilot_art/blind.py grade <scratch dir> --rows     # grade wh
 python3 Tools/Build/author_pilot_avatar_assets.py              # re-cut every avatar (256 px) from its bust
 python3 Tools/Build/author_pilot_avatar_assets.py --check      # the drift gate
 python3 Tools/Build/colour_grade.py                            # after a re-cut: the texture record follows
-for m in bust creator blind; do python3 Tools/Build/pilot_art/$m.py --self-test; done
+python3 Tools/Build/pilot_art/scene.py list                    # the scene samples and their approaches
+python3 Tools/Build/pilot_art/scene.py who <WORD>              # an avatar pilot's identity lines, as painted
+python3 Tools/Build/pilot_art/scene.py brief <WORD> [approach] # field | film | candid | sitting
+python3 Tools/Build/pilot_art/scene.py capture <WORD> <url> [approach]
+python3 Tools/Build/pilot_art/scene.py sheet out.png           # each scene beside its avatar, for looking
+python3 Tools/Build/pilot_art/scene.py stale                   # scenes today's kit would paint differently
+python3 Tools/Build/pilot_art/scene.py read-prep <scratch dir> # the readers' pictures, shuffled; key beside it
+python3 Tools/Build/pilot_art/scene.py read-grade <scratch dir>
+for m in bust creator blind scene; do python3 Tools/Build/pilot_art/$m.py --self-test; done
 ```
 
 ## 3. The round
@@ -254,3 +265,60 @@ banners that Spare05's brief had called plain.
   bust painted before a later table fix can still be right.
 - Per-player busts painted on recruit are not built yet: that needs a backend painter and is Garrett's call,
   Shombith's for anything on the backend (PORTRAITS.md section 6, decision 2).
+
+## 6. The scene: the same pilot in a realistic picture (THE STYLE IS NOT LOCKED)
+
+Garrett, 2026-11-11: "now lets see how realistic we can get when we take the same character from the avatar picture
+and make the art needed for the ark. and elsewhere. make a full scene piece of art that show them in a hyper
+realistic setting ... it shouldn't look like a pristine commercial set, it should show them raw in their environment
+doing something that is appropriate to their background, history, hobbies, profession, etc. ... do 4 of these and
+make stretch yourself in different directions so we can give feedback on your different approaches and lock in this
+second style". Four samples exist, one per approach (`scene.APPROACHES`: `field` a long-lens documentary, `film` a
+cinematic still, `candid` a crewmate's snapshot, `sitting` a portrait in the minute after the work). **Until he
+picks, a scene for any other pilot is a draft, and nothing here is imported by the game.** PORTRAITS.md section 8
+has the samples, the reads and what is open.
+
+**How a scene keeps the character** (the painter takes words only):
+
+1. The person's lines come word for word from the brief the avatar was painted from (`identity`), never from
+   today's tables.
+2. LOOK at the avatar and write down what its painter decided beyond the brief (`seen`) and where the painting
+   departs from it (`swap`: the scene follows the painting, and a correction replaces the phrase, never adds to it).
+3. Below the avatar's crop the body is rules, the same for every picture of that pilot: `BUILD`, `hands_of` (the
+   hand the avatar shows, else the animal's own true hand, else gloves), `CARRY`, `LOWER`. No bare human skin.
+4. Nothing permanent is added: wear is mud, soot, a tear, a mended seam (`PERMANENT` refuses a scar or a chipped
+   tusk).
+5. What the pilot is doing names its source: their profession (the faction type), a hobby (the game's `Quirks`) or
+   their history (`Upbringings`).
+
+**The round for one scene:**
+
+1. Write the record in `scene.SAMPLES` (approach, source, `seen`, `swap`, doing, place, light, wear) with the
+   avatar open beside you. `brief <WORD>` and read it: is every worn thing placed (lesson 66)? Is the place emptied
+   of people by name (67)? Is the wear told where to stop (65)? Is the place strange through distance and weather,
+   with an ordinary camera (68)? `--self-test`.
+2. Paint the brief verbatim on `gpt-image-2.5-sunburst`: 1536x1024 (`field`), 2048x1152 (`film`), 1024x1280
+   (`candid`, `sitting`). Say the count first; a sample took three to seven paintings.
+3. Look at it whole, then at the head, the hands and the background at full size, beside the avatar. `capture`
+   the one you keep (it writes the brief it was painted from), set its `CLOSE` box, and `sheet`.
+4. **The read** for anything that will be shown:
+
+   ```
+   python3 Tools/Build/pilot_art/scene.py read-prep <scratch>/readN       # a NEW folder outside the repository
+   Workflow({scriptPath: ".claude/skills/pilot-creator/references/scene_read.js",
+             args: {dir: "<scratch>/readN", letters: ["A", "B", "C", "D"]}})
+   # save what it returns as <scratch>/readN/result.json
+   python3 Tools/Build/pilot_art/scene.py read-grade <scratch>/readN
+   ```
+
+   Two readers (say so before running it): one finds each scene's pilot among the 50 avatars, told nothing; one
+   puts each scene beside its avatar and lists what differs. About 220k tokens and two minutes for four scenes.
+   The key lives beside the folder, never in it. Fix what "a player would notice" in the record, repaint once,
+   and read the new picture again: fixing one thing can move another.
+5. Commit the scene, its brief, the record and any lesson together. No C# changes, so no reference compile; say so.
+
+**What a text brief does not hold yet** (write it down, do not chase it): the eye ring at any distance, an ear on
+a horned animal, small costume details (an epaulette's make, the count of a necklace's pieces). A model that takes
+the avatar as a reference image is the next thing to try, and every run of one needs Garrett's approval of its cost
+(PAINTERS.md section 2).
+
