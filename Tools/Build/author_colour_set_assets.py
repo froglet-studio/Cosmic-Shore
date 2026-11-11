@@ -300,6 +300,11 @@ def problems(defs, orig):
         if not os.path.exists(path + ".meta"):
             found.append("%s: %s.meta is missing" % (key, os.path.relpath(path, REPO)))
         found += field_problems(key, s, palette(s, orig))
+    # An example is never written, but it must be ready to be: it keeps the writer's field rule too, so taking one
+    # into the game is a move in colour_sets.json and never a re-derivation (2026-11-11: Dusk passed every rule as an
+    # example and failed this one the day it was taken into the game).
+    for key, s in defs.get("examples", {}).items():
+        found += ["example " + p for p in field_problems(key, s, palette(s, orig))]
     return found
 
 
@@ -341,8 +346,16 @@ def self_test():
     moved = dict(s, domains=dict(s["domains"], jade=dict(s["domains"]["jade"],
                                                          rim=dict(s["domains"]["jade"]["rim"], hue=180))))
     planted("the json moves, the asset does not", [1] if render(key, moved, orig) != render(key, s, orig) else [])
-    print("self-test: %d/3 caught" % caught)
-    return caught == 3
+    if "dusk" in defs["sets"]:   # Dusk as it was the day it was promoted: its Lime face took a whitened Ruby field
+        old = defs["sets"]["dusk"]
+        lime = dict(old["domains"]["lime"], face=dict(old["domains"]["lime"]["face"], hue=316, sat=0.217))
+        planted("an example a field lands in the wrong pigment of",
+                [p for p in problems(dict(defs, sets={}, examples={"dusk": dict(old, domains=dict(old["domains"], lime=lime))}),
+                                     orig) if p.startswith("example ")])
+    else:
+        caught += 1
+    print("self-test: %d/4 caught" % caught)
+    return caught == 4
 
 
 def main(argv):

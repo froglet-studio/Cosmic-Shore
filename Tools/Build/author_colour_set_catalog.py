@@ -40,6 +40,14 @@ SETS = (
     ("photic", "PhoticColorSetSO", "Photic", "The original sunlit sea: one bright hue per domain.", 0),
     ("dartfrog", "DartFrogColorSetSO", "Dart Frog", "Frog warning colours over their dark grounds: mint over bronze, bumblebee over coal.", 0),
     ("nacre", "NacreColorSetSO", "Nacre", "Light, not bright: soft bodies in each family's own colour under a sheen.", 0),
+    # The /colour-set skill's worked examples, taken into the game 2026-11-11 (Garrett: "the artifact lab had some
+    # great new color sets").
+    ("blueringedoctopus", "BlueRingedOctopusColorSetSO", "Blue-ringed Octopus",
+     "Sand skin, electric rings, black outlines: an octopus flashing its warning.", 0),
+    ("neonnoir", "NeonNoirColorSetSO", "Neon Noir",
+     "Rain and neon: every rim a neon tube, every face a wet street reflecting the sign across from it.", 0),
+    ("ukiyoe", "UkiyoEColorSetSO", "Ukiyo-e", "Woodblock prints: every face its rim's own pigment, printed deeper.", 0),
+    ("dusk", "DuskColorSetSO", "Dusk", "The hush after sunset: muted rims over dusky faces, plum the clearest colour.", 0),
     ("contrast", "ContrastColorSetSO", "Contrast",
      "Every domain as far from every other as the rules allow, for anyone who wants the board to read at a glance.", 6),
     ("protanopia", "ProtanopiaColorSetSO", "Protanopia",
@@ -54,7 +62,8 @@ SETS = (
      "Made for low vision and cataract: bright rims over dark faces, the domains apart in brightness first.", 5),
 )
 VISION = {s[0]: s[4] for s in SETS}
-JSON_KEY = {"dartfrog": "dart_frog", "lowvision": "low_vision"}   # catalog id -> colour_sets.json key, where they differ
+JSON_KEY = {"dartfrog": "dart_frog", "lowvision": "low_vision", "blueringedoctopus": "blue_ringed_octopus",
+            "neonnoir": "neon_noir", "ukiyoe": "ukiyo_e"}   # catalog id -> colour_sets.json key, where they differ
 
 PIGMENTS = {
     "nocturne": ("Lagoon over Plum", "Orchid over Deep Teal", "Honey over Violet", "Cornflower over Spruce"),
