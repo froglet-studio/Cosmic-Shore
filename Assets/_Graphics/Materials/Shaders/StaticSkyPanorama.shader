@@ -31,6 +31,8 @@ Shader "CosmicShore/StaticSkyPanorama"
             #pragma target 3.0
 
             #include "UnityCG.cginc"
+            #pragma multi_compile _ COSMIC_COLOR_GRADE
+            #include "ColorGrade.cginc"   // the baked sky follows the worn colour set, as the live sky's colours do
 
             sampler2D _MainTex;
 
@@ -58,7 +60,9 @@ Shader "CosmicShore/StaticSkyPanorama"
                 float3 d = normalize(i.viewDir);
                 float2 uv = float2(0.5 - atan2(d.z, d.x) * (0.5 / UNITY_PI),
                                    1.0 - acos(clamp(d.y, -1.0, 1.0)) / UNITY_PI);
-                return tex2Dlod(_MainTex, float4(uv, 0, 0));
+                half4 sky = tex2Dlod(_MainTex, float4(uv, 0, 0));
+                sky.rgb = COSMIC_GRADE_WORLD(sky.rgb);
+                return sky;
             }
             ENDCG
         }

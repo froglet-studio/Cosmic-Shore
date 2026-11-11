@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -148,6 +149,14 @@ namespace CosmicShore.UI
 
         public override void Initialize() { }
 
+        // The katana keeps its tint between lit changes, so a colour set worn meanwhile repaints it here; the other parts
+        // take the worn set at their next push (UIThemeLive repaints the ones still on screen).
+        void OnEnable() => ColorTrace.Changed += RepaintKatana;
+
+        void OnDisable() => ColorTrace.Changed -= RepaintKatana;
+
+        void RepaintKatana() => SetKatanaLit(_katanaLit);
+
         /// <summary>
         /// The card's katana for a pose of the real sword: <paramref name="swipe"/> -1..1 (right trigger
         /// minus left, + is a swing to the right), <paramref name="chop01"/> 0..1 (the summed pull over 2).
@@ -167,7 +176,7 @@ namespace CosmicShore.UI
         public void SetKatanaLit(bool lit)
         {
             _katanaLit = lit;
-            if (_katana) _katana.color = lit ? katanaLitColor : katanaDarkColor;
+            if (_katana) _katana.color = ColorTrace.Retrace(ColorTrace.Ui, lit ? katanaLitColor : katanaDarkColor);
         }
 
         /// <summary>
@@ -197,7 +206,7 @@ namespace CosmicShore.UI
         public void SetBladeReach(float reach01, bool breaker, bool lit, Color prismColor)
         {
             if (!_reachHost) return;
-            var color = lit ? katanaLitColor : katanaDarkColor;
+            var color = ColorTrace.Retrace(ColorTrace.Ui, lit ? katanaLitColor : katanaDarkColor);
             if (_reachHilt) _reachHilt.color = color;
             if (_reachBlade) _reachBlade.color = color;
             if (_reachPosts) _reachPosts.color = new Color(1f, 1f, 1f, reachPostsAlpha);
@@ -232,8 +241,9 @@ namespace CosmicShore.UI
         {
             var parts = MomentumPartsFor(warded);
             if (spoolHullIcon) spoolHullIcon.color = domain;
-            ShowPart(spoolPrismIcon, parts.Prism, spoolDangerColor);
-            ShowPart(spoolGlanceIcon, parts.Glance, spoolDangerColor);
+            var danger = ColorTrace.Retrace(ColorTrace.Ui, spoolDangerColor);
+            ShowPart(spoolPrismIcon, parts.Prism, danger);
+            ShowPart(spoolGlanceIcon, parts.Glance, danger);
             ShowPart(spoolWardIcon, parts.Ward, spoolWardColor);
         }
 
@@ -278,7 +288,7 @@ namespace CosmicShore.UI
             _momentumGap.gameObject.SetActive(shown && passed);
             _momentumTickLeft.gameObject.SetActive(shown && !passed);
             _momentumTickRight.gameObject.SetActive(shown && !passed);
-            _momentumGap.color = momentumGapColor;
+            _momentumGap.color = ColorTrace.Retrace(ColorTrace.Ui, momentumGapColor);
             _momentumTickLeft.color = _momentumTickRight.color = momentumMarkAheadColor;
         }
 

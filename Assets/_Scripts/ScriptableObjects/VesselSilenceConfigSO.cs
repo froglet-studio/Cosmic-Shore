@@ -311,7 +311,7 @@ namespace CosmicShore.ScriptableObjects
         public Shader PerimeterShader => perimeterShader;
         public float VignetteIntensity => vignetteIntensity;
         public float VignetteColorStrength => vignetteColorStrength;
-        public Color FallbackDangerColor => fallbackDangerColor;
+        public Color FallbackDangerColor => ColorTrace.Retrace(ColorTrace.World, fallbackDangerColor);
         public float VignetteBreatheDepth => vignetteBreatheDepth;
         public float VignetteBreatheHz => vignetteBreatheHz;
         public float VignetteHitPulse => vignetteHitPulse;

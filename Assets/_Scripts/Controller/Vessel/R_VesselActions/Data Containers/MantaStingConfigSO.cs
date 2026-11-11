@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using FMODUnity;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -202,8 +203,9 @@ namespace CosmicShore.Gameplay
         public float DecoyTriggerRadiusScale => decoyTriggerRadiusScale;
         public bool ShowFuseMarker => showFuseMarker;
         public float MarkerRadius => markerRadius;
-        public Color MarkerCalmColor => markerCalmColor;
-        public Color MarkerCriticalColor => markerCriticalColor;
+        // the fuse marker is a halo in the world: as the worn colour set paints it
+        public Color MarkerCalmColor => ColorTrace.Retrace(ColorTrace.World, markerCalmColor);
+        public Color MarkerCriticalColor => ColorTrace.Retrace(ColorTrace.World, markerCriticalColor);
         public float MarkerCriticalSeconds => markerCriticalSeconds;
         public float MarkerCalmPulseHz => markerCalmPulseHz;
         public float MarkerCriticalPulseHz => markerCriticalPulseHz;

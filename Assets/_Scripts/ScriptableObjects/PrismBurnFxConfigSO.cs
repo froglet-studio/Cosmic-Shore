@@ -77,7 +77,7 @@ namespace CosmicShore.ScriptableObjects
         public float LaserDistance => laserDistance;
         public float LaserFarBand => laserFarBand;
         public AshColorSource AshSource => ashColorSource;
-        public Color FallbackAshColor => fallbackAshColor;
+        public Color FallbackAshColor => ColorTrace.Retrace(ColorTrace.World, fallbackAshColor);
         public bool IsUsable => nearMaterial != null && midMaterial != null;
 
         static PrismBurnFxConfigSO s_instance;

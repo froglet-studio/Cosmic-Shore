@@ -249,7 +249,7 @@ namespace CosmicShore.UI
             Color domain = DomainColor(chip.Player);
 
             if (chip.Avatar)
-                chip.Avatar.color = Color.Lerp(waitingAvatarTint, Color.white, chip.Lit01);
+                chip.Avatar.color = Color.Lerp(ColorTrace.Retrace(ColorTrace.Ui, waitingAvatarTint), Color.white, chip.Lit01);
 
             if (chip.Plate)
             {

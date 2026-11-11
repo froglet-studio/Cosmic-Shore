@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
         public static int Burst(ThemeManagerDataContainerSO theme, Vector3 centre, IReadOnlyList<Vector3> from, int shards,
                                 float speed, float scale, PrismKind kind = PrismKind.Plain)
         {
-            Color bright = s_bright, dark = s_dark;
+            Color bright = ColorTrace.Retrace(ColorTrace.World, s_bright), dark = ColorTrace.Retrace(ColorTrace.World, s_dark);
             if (theme && theme.ColorSet && theme.ColorSet.TryGetPrismKindColors(Domains.Gold, kind, out var b, out var d))
             {
                 bright = b; dark = d;

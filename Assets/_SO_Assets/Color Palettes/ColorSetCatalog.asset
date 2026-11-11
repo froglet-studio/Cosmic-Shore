@@ -38,24 +38,24 @@ MonoBehaviour:
   - id: dartfrog
     colorSet: {fileID: 11400000, guid: fc278fc4db3642deb6d5c94314865280, type: 2}
     displayName: Dart Frog
-    line: 'Two frog pigments per domain: mint over bronze, bumblebee over indigo.'
+    line: 'Frog warning colours over their dark grounds: mint over bronze, bumblebee over coal.'
     unlocked: 1
     pigments:
     - Mint over Bronze
     - Orchid over Petrol
-    - Bumblebee over Indigo
-    - Azure over Forest
+    - Bumblebee over Coal
+    - Azure over Cobalt
     vision: 0
   - id: nacre
     colorSet: {fileID: 11400000, guid: 5c23989fe41646f5998662aa44c15ffa, type: 2}
     displayName: Nacre
-    line: 'Light, not bright: pastel rims over pale pastel faces, a sheen instead of a glow.'
+    line: 'Light, not bright: soft bodies in each family''s own colour under a sheen.'
     unlocked: 1
     pigments:
-    - Mint over Lavender
-    - Orchid over Pearl
-    - Butter over Periwinkle
-    - Ice over Sage
+    - Aqua over Seafoam
+    - Orchid over Amethyst
+    - Butter over Champagne
+    - Periwinkle over Powder
     vision: 0
   - id: contrast
     colorSet: {fileID: 11400000, guid: a2b69fd4235d40b683d21c958716a7f8, type: 2}
@@ -63,10 +63,10 @@ MonoBehaviour:
     line: 'Every domain as far from every other as the rules allow, for anyone who wants the board to read at a glance.'
     unlocked: 1
     pigments:
-    - Sky Cyan over Aubergine
-    - Magenta over Viridian
-    - Marigold over Electric Violet
-    - Ultramarine over Ink
+    - Sky Cyan over Deep Cyan
+    - Magenta over Purple
+    - Bright Gold over Amber
+    - Ultramarine over Navy
     vision: 6
   - id: protanopia
     colorSet: {fileID: 11400000, guid: 31cde80f4f78432bac8960d826595421, type: 2}

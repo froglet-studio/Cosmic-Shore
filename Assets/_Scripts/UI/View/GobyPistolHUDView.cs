@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -96,13 +97,32 @@ namespace CosmicShore.UI
         public void SetSpaceGauge(float value01) => Fill(spaceGauge, value01, force: false);
         public void SetMassGauge(float value01) => Fill(massGauge, value01, force: false);
 
+        void OnEnable()
+        {
+            ColorTrace.Changed += RepaintGauges;
+            RepaintGauges();
+        }
+
+        void OnDisable() => ColorTrace.Changed -= RepaintGauges;
+
+        // Every gauge at its fill in the colour set worn now (another was worn, or one was worn while this was hidden): a
+        // gauge whose fill does not move is not written again by the controller's pushes.
+        void RepaintGauges()
+        {
+            if (timeGauge) Fill(timeGauge, timeGauge.fillAmount, force: true);
+            if (spaceGauge) Fill(spaceGauge, spaceGauge.fillAmount, force: true);
+            if (massGauge) Fill(massGauge, massGauge.fillAmount, force: true);
+        }
+
         void Fill(Image gauge, float value01, bool force)
         {
             if (!gauge) return;
             value01 = Mathf.Clamp01(value01);
             if (!force && Mathf.Abs(gauge.fillAmount - value01) < 0.002f) return;
             gauge.fillAmount = value01;
-            gauge.color = Color.Lerp(gaugeColor, gaugeFullColor, value01);
+            // Both ends as the worn colour set paints them (ColorTrace).
+            gauge.color = Color.Lerp(ColorTrace.Retrace(ColorTrace.Ui, gaugeColor),
+                                     ColorTrace.Retrace(ColorTrace.Ui, gaugeFullColor), value01);
         }
     }
 }

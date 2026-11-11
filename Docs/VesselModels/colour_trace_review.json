@@ -1,0 +1,5322 @@
+{
+ "format": "cosmic-shore-colour-trace-review/1",
+ "what": "Every C# colour literal in runtime code that never reaches a pixel or is already painted from the colour set, read with Roslyn's semantic model on 2026-11-10 (all three builds: release, development, editor) and checked against every prefab, scene and asset that holds the script. colour_trace.py reads it: a literal it lists by file, literal and line (within 60 lines) takes its bucket; a literal it does not list is untraced until it is read through ColorTrace or added here with its reason. Fields (a serialized colour in an asset, by asset and field path) take INERT or FALLBACK the same way. Buckets: INERT (never drawn: a serialized default every instance overrides, an alpha-0 sentinel, a value overwritten before it draws), FALLBACK (drawn only when a reference is unwired, which no shipped scene leaves unwired), EXCLUDED (editor-only, development-build-only, gizmo, debug or a diagnostic tool), TRACED (another path paints it from the worn set first).",
+ "doc": "Docs/VesselModels/COLOR_TRACE.md",
+ "literals": [
+  {
+   "file": "Assets/FTUE/Scripts/Graph/Nodes/QuestGuideToMicrogameNode.cs",
+   "line": 187,
+   "literal": "new Color(0.55f, 1f, 0.2f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "CTA lime fallback when the colour reads unauthored"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueArena.cs",
+   "line": 93,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "goal colours without settings"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueArena.cs",
+   "line": 94,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "goal colours without settings"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueArena.cs",
+   "line": 364,
+   "literal": "new Color(0.2f, 0.8f, 1f, 0.2f)",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueArena.cs",
+   "line": 366,
+   "literal": "new Color(0.15f, 1f, 0.55f, 0.4f)",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueArena.cs",
+   "line": 368,
+   "literal": "new Color(1f, 0.22f, 0.35f, 0.4f)",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.PerFrameVisuals.cs",
+   "line": 144,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "comet colour when the hue is black"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs",
+   "line": 198,
+   "literal": "new(1f, 0.6f, 0.1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs",
+   "line": 199,
+   "literal": "new(0.2f, 0.5f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs",
+   "line": 200,
+   "literal": "new(1f, 0.15f, 0.6f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs",
+   "line": 845,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white colour key of an alpha-fade gradient: multiplies the particle's start colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs",
+   "line": 845,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white colour key of an alpha-fade gradient: multiplies the particle's start colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs",
+   "line": 877,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "comet colour when the hue is black"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs",
+   "line": 936,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white colour key of an alpha-fade gradient: multiplies the particle's start colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs",
+   "line": 936,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white colour key of an alpha-fade gradient: multiplies the particle's start colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs",
+   "line": 962,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white base of a fallback spark material (tinted by start colour)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs",
+   "line": 1028,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white colour key of an alpha-fade gradient: multiplies the particle's start colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueSettingsSO.cs",
+   "line": 721,
+   "literal": "new(0.15f, 1f, 0.55f, 0.5f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueSettingsSO.cs",
+   "line": 723,
+   "literal": "new(1f, 0.22f, 0.35f, 0.5f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueSettingsSO.cs",
+   "line": 727,
+   "literal": "new(1f, 0.82f, 0.2f, 0.5f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/CountdownTimer.cs",
+   "line": 91,
+   "literal": "new Color(1f, 0.3f, 0.2f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "urgent colour without anim settings"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/CountdownTimer.cs",
+   "line": 149,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Maelstrom/MaelstromSceneView.cs",
+   "line": 1029,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no theme"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/ScarabScramble/ScarabScrambleSettingsSO.cs",
+   "line": 55,
+   "literal": "new(0.78f, 0.92f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 337,
+   "literal": "Color.yellow",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 337,
+   "literal": "Color.green",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 513,
+   "literal": "Color.red",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 513,
+   "literal": "Color.cyan",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 514,
+   "literal": "Color.magenta",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 671,
+   "literal": "Color.yellow",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 671,
+   "literal": "Color.green",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 674,
+   "literal": "Color.red",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 674,
+   "literal": "Color.cyan",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 677,
+   "literal": "Color.magenta",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 678,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 679,
+   "literal": "new Color(1f, 0.6f, 0f)",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 699,
+   "literal": "new Color(1f, 0.5f, 0f)",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 699,
+   "literal": "Color.green",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 702,
+   "literal": "Color.gray",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 702,
+   "literal": "Color.magenta",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 705,
+   "literal": "Color.yellow",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 706,
+   "literal": "Color.yellow",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackBlastAI.cs",
+   "line": 707,
+   "literal": "Color.cyan",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Camera/MenuGodModeCamera.cs",
+   "line": 190,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs",
+   "line": 372,
+   "literal": "new(0.16f, 0.78f, 0.56f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs",
+   "line": 373,
+   "literal": "new(0.93f, 0.27f, 0.38f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs",
+   "line": 374,
+   "literal": "new(0.98f, 0.75f, 0.18f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs",
+   "line": 375,
+   "literal": "new(0.24f, 0.60f, 0.95f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs",
+   "line": 376,
+   "literal": "new(0.62f, 0.42f, 0.94f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs",
+   "line": 377,
+   "literal": "new(0.16f, 0.78f, 0.82f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs",
+   "line": 378,
+   "literal": "new(0.90f, 0.36f, 0.71f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs",
+   "line": 379,
+   "literal": "new(0.62f, 0.83f, 0.24f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs",
+   "line": 380,
+   "literal": "new(0.55f, 0.57f, 0.62f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/ECS/Rendering/PrismRenderService.cs",
+   "line": 1281,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the property"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/ECS/Rendering/PrismRenderStressTest.cs",
+   "line": 99,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/ECS/Rendering/PrismRenderStressTest.cs",
+   "line": 100,
+   "literal": "Color.black",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/BlackHole/BlackHole.cs",
+   "line": 163,
+   "literal": "Color.black",
+   "bucket": "TRACED",
+   "why": "placeholder; the spawner sets DomainTint"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/CellVisualTint.cs",
+   "line": 98,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the colour property (white base)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/CellVisualTint.cs",
+   "line": 98,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the colour property (white base)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/CellVisualTint.cs",
+   "line": 99,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the colour property (white base)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/CellVisualTint.cs",
+   "line": 99,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the colour property (white base)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/CellVisualTint.cs",
+   "line": 99,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the colour property (white base)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs",
+   "line": 874,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the property"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Crystals/CrystalHullFusion.cs",
+   "line": 875,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the property"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Cytoplasm/SnowChanger.cs",
+   "line": 115,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without a colour property / placeholder"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Cytoplasm/SnowChanger.cs",
+   "line": 237,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without a colour property / placeholder"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/EcosystemPerfProbe.cs",
+   "line": 107,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Builders/BuilderColonyFauna.cs",
+   "line": 303,
+   "literal": "new(0.1f, 0.2f, 0.5f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Builders/BuilderColonyFauna.cs",
+   "line": 303,
+   "literal": "new(0.8f, 0.9f, 1.4f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Builders/BuilderColonyFauna.cs",
+   "line": 306,
+   "literal": "new(0.05f, 0.2f, 0.4f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Builders/BuilderColonyFauna.cs",
+   "line": 306,
+   "literal": "new(0.4f, 0.8f, 1.2f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Builders/BuilderColonyFauna.cs",
+   "line": 307,
+   "literal": "new(1.5f, 0.3f, 0.1f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/SpawnableCord.cs",
+   "line": 92,
+   "literal": "Color.green",
+   "bucket": "INERT",
+   "why": "Dead code: SpawnableCord's only user is SeaweedFlora.prefab, and nothing in Assets references that prefab's guid (no scene, prefab, spawn profile, Resources or Addressables entry), so the cord's line is never built."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/SpawnableCord.cs",
+   "line": 93,
+   "literal": "Color.blue",
+   "bucket": "INERT",
+   "why": "Dead code: SpawnableCord's only user is SeaweedFlora.prefab, and nothing in Assets references that prefab's guid (no scene, prefab, spawn profile, Resources or Addressables entry), so the cord's line is never built."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate/SubstrateMemberRenderer.cs",
+   "line": 131,
+   "literal": "new(0.05f, 0.2f, 0.4f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate/SubstrateMemberRenderer.cs",
+   "line": 131,
+   "literal": "new(0.4f, 0.8f, 1.2f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate/SubstrateMemberRenderer.cs",
+   "line": 132,
+   "literal": "new(1.5f, 0.3f, 0.1f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate/SubstrateMemberRenderer.cs",
+   "line": 133,
+   "literal": "new(0.1f, 0.2f, 0.5f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate/SubstrateMemberRenderer.cs",
+   "line": 133,
+   "literal": "new(0.8f, 0.9f, 1.4f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFauna.cs",
+   "line": 596,
+   "literal": "new(0.1f, 0.2f, 0.5f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFauna.cs",
+   "line": 596,
+   "literal": "new(0.8f, 0.9f, 1.4f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFauna.cs",
+   "line": 601,
+   "literal": "new(0.05f, 0.2f, 0.4f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFauna.cs",
+   "line": 601,
+   "literal": "new(0.4f, 0.8f, 1.2f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFauna.cs",
+   "line": 602,
+   "literal": "new(1.5f, 0.3f, 0.1f)",
+   "bucket": "FALLBACK",
+   "why": "fauna palette when the config's Theme is unassigned (logs a warning)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/FlowField/NetworkCrystalManager.cs",
+   "line": 447,
+   "literal": "Color.yellow",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Fulmen/FulmenConfigSO.cs",
+   "line": 78,
+   "literal": "new(0.42f, 0.58f, 0.95f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWaypointTrack.cs",
+   "line": 497,
+   "literal": "Color.green",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWaypointTrack.cs",
+   "line": 498,
+   "literal": "Color.yellow",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWaypointTrack.cs",
+   "line": 499,
+   "literal": "new Color(1f, 0.5f, 0f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWaypointTrack.cs",
+   "line": 500,
+   "literal": "Color.red",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWaypointTrack.cs",
+   "line": 545,
+   "literal": "Color.cyan",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWaypointTrack.cs",
+   "line": 554,
+   "literal": "new Color(0f, 1f, 1f, 0.5f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs",
+   "line": 86,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "tunnel tint when no maker"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs",
+   "line": 113,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "tunnel tint when no maker"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonNetwork.cs",
+   "line": 113,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonTunnelConfigSO.cs",
+   "line": 48,
+   "literal": "new(0.31f, 0.85f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonTunnelPlacer.cs",
+   "line": 185,
+   "literal": "new Color(0.4f, 0.9f, 1f, 0.6f)",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs",
+   "line": 28,
+   "literal": "Color.blue",
+   "bucket": "TRACED",
+   "why": "placeholder; SetColours pushes the band colours"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs",
+   "line": 28,
+   "literal": "Color.green",
+   "bucket": "TRACED",
+   "why": "placeholder; SetColours pushes the band colours"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs",
+   "line": 28,
+   "literal": "Color.yellow",
+   "bucket": "TRACED",
+   "why": "placeholder; SetColours pushes the band colours"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs",
+   "line": 28,
+   "literal": "Color.magenta",
+   "bucket": "TRACED",
+   "why": "placeholder; SetColours pushes the band colours"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs",
+   "line": 32,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "runtime-made veil crystal: EnvironmentLoadVeil.cs:235 SetColours(UITheme.Resolve(...)) replaces bands and outline"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs",
+   "line": 34,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/StarChanger.cs",
+   "line": 11,
+   "literal": "new(0, .4f, .6f)",
+   "bucket": "INERT",
+   "why": "StarChanger's only carrier, BigCage.prefab, is referenced by no scene, prefab, Resources or Addressables entry (colour_trace.reachable() is false) and no code adds the component, so its star material never draws."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/StarChanger.cs",
+   "line": 12,
+   "literal": "new(.18f, .18f, .58f)",
+   "bucket": "INERT",
+   "why": "Dead code: same unreachable BigCage.prefab, and the colour is only assigned by UpdateFuelLevel, which nothing in code or YAML calls."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Environment/StarChanger.cs",
+   "line": 13,
+   "literal": "new(.28f, 0, .52f)",
+   "bucket": "INERT",
+   "why": "Dead code: same unreachable BigCage.prefab, and the colour is only assigned by UpdateFuelLevel, which nothing in code or YAML calls."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/FX/ArcLightningFallback.cs",
+   "line": 55,
+   "literal": "new(0.4921569f, 0.4960784f, 0.1254902f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/FX/ArcLightningFallback.cs",
+   "line": 70,
+   "literal": "new(0.5314704f, 0.7752642f, 0.7702202f, 1f)",
+   "bucket": "TRACED",
+   "why": "placeholder; ReadEffectValues reads the VFX's own colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SerpentWallShieldByCrystalEffectSO.cs",
+   "line": 37,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal / crystal mark fallback (no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Managers/ThemeManagerDataContainerSO.cs",
+   "line": 31,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "colour-set accessor fallback (no domain block / no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Managers/ThemeManagerDataContainerSO.cs",
+   "line": 39,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "colour-set accessor fallback (no domain block / no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Managers/ThemeManagerDataContainerSO.cs",
+   "line": 49,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Managers/ThemeManagerDataContainerSO.cs",
+   "line": 58,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Multiplayer/SpectatorController.cs",
+   "line": 543,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal / crystal mark fallback (no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/PilotSight/PilotSightProviders.cs",
+   "line": 73,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal / crystal mark fallback (no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/PilotSight/PilotSightProviders.cs",
+   "line": 107,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal / crystal mark fallback (no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/PilotSight/PilotSightProviders.cs",
+   "line": 127,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal / crystal mark fallback (no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/PilotSight/PilotSightProviders.cs",
+   "line": 180,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal / crystal mark fallback (no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/PilotSight/PilotSightProviders.cs",
+   "line": 203,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal / crystal mark fallback (no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/PilotSight/PilotSightProviders.cs",
+   "line": 240,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal / crystal mark fallback (no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Prisms/PrismFactory.cs",
+   "line": 397,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "team colours when no set"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Prisms/PrismFactory.cs",
+   "line": 398,
+   "literal": "Color.black",
+   "bucket": "FALLBACK",
+   "why": "team colours when no set"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs",
+   "line": 136,
+   "literal": "new(1f, 0.92f, 0.7f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs",
+   "line": 163,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; Arm() pushes the bomb colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Projectiles/GrizzlyBombVisual.cs",
+   "line": 212,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ArkwayRun.cs",
+   "line": 71,
+   "literal": "new(1f, 0.78f, 0.25f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "The class default only paints when a config is built without its settings SO (new ArkwayConfig { ... } when withArk/definition is unwired); every shipped path (Toy_Wander.asset, Resources/Voyages/Voyage.asset) wires Wander_WithArk.asset, whose ArkwaySettingsSO.BuildConfig already sets ReturnStationColor = ColorTrace.Retrace(ColorTrace.World, returnStationColor)."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/CellSelectorToy.cs",
+   "line": 69,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ElementChargerToy.cs",
+   "line": 102,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ElementChargerToy.cs",
+   "line": 133,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs",
+   "line": 55,
+   "literal": "new(1f, 0.78f, 0.25f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "WanderwaySettingsSO.BuildConfig overwrites it from Wander_WithoutArk.asset returnStationColor; the default survives only when Toy_Wander's withoutArk (wired) or the toy's definition is missing."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/PaintingGalleryToy.cs",
+   "line": 163,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/PaintingGalleryToy.cs",
+   "line": 175,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/PaintingGalleryToy.cs",
+   "line": 193,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/SpawnMatrixToy.cs",
+   "line": 73,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/SpawnMatrixToy.cs",
+   "line": 116,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/SpawnMatrixToy.cs",
+   "line": 138,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/SpawnMatrixToy.cs",
+   "line": 171,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/SpawnMatrixToy.cs",
+   "line": 189,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/SpawnMatrixToy.cs",
+   "line": 239,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyFactory.cs",
+   "line": 400,
+   "literal": "new Color(0.55f, 0.95f, 0.15f)",
+   "bucket": "FALLBACK",
+   "why": "CTA lime fallback (no theme / a set that authors no CTA)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyFactory.cs",
+   "line": 790,
+   "literal": "new Color(0.15f, 0.95f, 0.55f)",
+   "bucket": "FALLBACK",
+   "why": "domain accent fallback palette (no theme wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyFactory.cs",
+   "line": 791,
+   "literal": "new Color(1.00f, 0.20f, 0.45f)",
+   "bucket": "FALLBACK",
+   "why": "domain accent fallback palette (no theme wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyFactory.cs",
+   "line": 792,
+   "literal": "new Color(1.00f, 0.80f, 0.15f)",
+   "bucket": "FALLBACK",
+   "why": "domain accent fallback palette (no theme wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyFactory.cs",
+   "line": 795,
+   "literal": "new Color(0.40f, 0.50f, 1.00f)",
+   "bucket": "FALLBACK",
+   "why": "domain accent fallback palette (no theme wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyFactory.cs",
+   "line": 796,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "domain accent fallback palette (no theme wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyModelBuilder.cs",
+   "line": 94,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white base of a preview material whose colour comes from the model (white multiplier)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyOptionSet.cs",
+   "line": 81,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyShellSurface.cs",
+   "line": 33,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "option accent default (every builder sets Accent)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyVesselRoster.cs",
+   "line": 188,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyboxController.cs",
+   "line": 206,
+   "literal": "new Color(0.20f, 0.90f, 1.00f)",
+   "bucket": "FALLBACK",
+   "why": "code-built toybox (only when no ToyboxSO is wired): default toy accents"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyboxController.cs",
+   "line": 209,
+   "literal": "new Color(1.00f, 0.85f, 0.20f)",
+   "bucket": "FALLBACK",
+   "why": "code-built toybox (only when no ToyboxSO is wired): default toy accents"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyboxController.cs",
+   "line": 211,
+   "literal": "new Color(0.85f, 0.30f, 0.90f)",
+   "bucket": "FALLBACK",
+   "why": "code-built toybox (only when no ToyboxSO is wired): default toy accents"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyboxController.cs",
+   "line": 215,
+   "literal": "new Color(0.90f, 0.95f, 1.00f)",
+   "bucket": "FALLBACK",
+   "why": "code-built toybox (only when no ToyboxSO is wired): default toy accents"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyboxController.cs",
+   "line": 223,
+   "literal": "new Color(0.35f, 1.00f, 0.55f)",
+   "bucket": "FALLBACK",
+   "why": "code-built toybox (only when no ToyboxSO is wired): default toy accents"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/ToyboxController.cs",
+   "line": 228,
+   "literal": "new Color(0.55f, 0.75f, 1.00f)",
+   "bucket": "FALLBACK",
+   "why": "code-built toybox (only when no ToyboxSO is wired): default toy accents"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Toys/WanderToy.cs",
+   "line": 155,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing: accent falls back to white"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/CrewViews.cs",
+   "line": 224,
+   "literal": "Color.black",
+   "bucket": "INERT",
+   "why": "parked pilot camera clear under an opaque full-screen seat view"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs",
+   "line": 2009,
+   "literal": "new Color32(255, 138, 61, 255)",
+   "bucket": "FALLBACK",
+   "why": "Built only when GobyPistolConfig names no Pistol model, and the shipped GobyPistolConfig.asset (wired on Goby.prefab) names Pistol.fbx."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs",
+   "line": 2009,
+   "literal": "new Color32(90, 34, 5, 255)",
+   "bucket": "FALLBACK",
+   "why": "Same stand-in: built only when the config names no Pistol model, and the shipped config names Pistol.fbx."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs",
+   "line": 2310,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white base of juice materials re-tinted per shard (Lit(white, white) then SetColor)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/GobyPistol/GobyPistolDuo.cs",
+   "line": 2310,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white base of juice materials re-tinted per shard (Lit(white, white) then SetColor)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs",
+   "line": 263,
+   "literal": "new(0.85f, 0.12f, 0.08f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs",
+   "line": 486,
+   "literal": "new(0.36f, 0.72f, 1f, 0.85f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs",
+   "line": 504,
+   "literal": "new(1f, 0.82f, 0.48f, 0.9f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs",
+   "line": 539,
+   "literal": "new(1f, 0f, 0.976f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs",
+   "line": 539,
+   "literal": "new(0.075f, 1f, 0.949f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs",
+   "line": 539,
+   "literal": "new(1f, 0.655f, 0f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs",
+   "line": 557,
+   "literal": "new(0.66f, 1f, 0.18f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideConfigSO.cs",
+   "line": 856,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "pattern colour index out of range"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs",
+   "line": 1214,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "pattern family colour fallback"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/KiteNavigatorView.cs",
+   "line": 277,
+   "literal": "Color.black",
+   "bucket": "INERT",
+   "why": "parked pilot camera clear under an opaque full-screen seat view"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrew.cs",
+   "line": 192,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "trail colours when the material reads none"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrew.cs",
+   "line": 205,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal fallback"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrewConfigSO.cs",
+   "line": 184,
+   "literal": "new(1f, 0.072f, 0.105f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrewConfigSO.cs",
+   "line": 260,
+   "literal": "new(0.95f, 0.97f, 0.98f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrewConfigSO.cs",
+   "line": 262,
+   "literal": "new(157f / 255f, 1f, 46f / 255f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrewConfigSO.cs",
+   "line": 264,
+   "literal": "new(1f, 0.302f, 0.427f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrewConfigSO.cs",
+   "line": 266,
+   "literal": "new(1f, 0.655f, 0f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrewView.cs",
+   "line": 111,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "crew status missing"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/Crew/OrcaCrewView.cs",
+   "line": 213,
+   "literal": "Color.black",
+   "bucket": "INERT",
+   "why": "parked pilot camera clear under an opaque full-screen seat view"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/ElementPipsConfigSO.cs",
+   "line": 51,
+   "literal": "new(1f, 1f, 1f, 0.4f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/ElementPipsConfigSO.cs",
+   "line": 60,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/ElementPipsConfigSO.cs",
+   "line": 64,
+   "literal": "new(1f, 1f, 1f, 0.15f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/ElementPipsConfigSO.cs",
+   "line": 68,
+   "literal": "new(1f, 0.3f, 0.3f, 0.8f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/PrismShieldMorph.cs",
+   "line": 154,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the property"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/PrismShieldMorph.cs",
+   "line": 156,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the property"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ButterflyBloomDust.cs",
+   "line": 71,
+   "literal": "new(1f, 0.86f, 0.52f, 0.9f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ButterflyBloomDust.cs",
+   "line": 310,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white colour key of an alpha-fade gradient: multiplies the particle's start colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ButterflyBloomDust.cs",
+   "line": 310,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white colour key of an alpha-fade gradient: multiplies the particle's start colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ButterflyDustField.cs",
+   "line": 47,
+   "literal": "new(1f, 0.86f, 0.52f, 0.9f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ButterflyDustField.cs",
+   "line": 427,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white colour key of an alpha-fade gradient: multiplies the particle's start colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/ButterflyDustField.cs",
+   "line": 427,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white colour key of an alpha-fade gradient: multiplies the particle's start colour"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs",
+   "line": 227,
+   "literal": "Color.black",
+   "bucket": "FALLBACK",
+   "why": "material without the property"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/CrystalMorphRunner.cs",
+   "line": 228,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the property"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/BrittleStarConfigSO.cs",
+   "line": 197,
+   "literal": "new(0.07f, 0.065f, 0.065f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/BrittleStarConfigSO.cs",
+   "line": 201,
+   "literal": "new(0.3f, 0.9f, 0.85f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/DolphinHUDController.cs",
+   "line": 339,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "HUD controller signal-colour fallback (no colour set / no vessel status)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/GrizzlyTriggerBombConfigSO.cs",
+   "line": 81,
+   "literal": "new(1f, 0.072f, 0.105f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MantaStingConfigSO.cs",
+   "line": 141,
+   "literal": "new Color(0.35f, 0.8f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MantaStingConfigSO.cs",
+   "line": 144,
+   "literal": "new Color(1f, 0.35f, 0.1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/SquirrelHUDController.cs",
+   "line": 83,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "HUD controller signal-colour fallback (no colour set / no vessel status)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/SquirrelHUDController.cs",
+   "line": 92,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/SquirrelHUDController.cs",
+   "line": 110,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/SquirrelHUDController.cs",
+   "line": 369,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "boost bar colour when the boost has no source domain"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/StoatDipoleConfigSO.cs",
+   "line": 220,
+   "literal": "new(150f / 255f, 166f / 255f, 194f / 255f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/StoatDipoleConfigSO.cs",
+   "line": 223,
+   "literal": "new(157f / 255f, 1f, 46f / 255f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/ThresherConfigSO.cs",
+   "line": 309,
+   "literal": "new Color(0.07f, 0.065f, 0.065f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/ThresherConfigSO.cs",
+   "line": 311,
+   "literal": "new Color(0.3f, 0.9f, 0.85f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/ThresherConfigSO.cs",
+   "line": 313,
+   "literal": "new Color(1f, 0.05f, 0.05f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/ThresherConfigSO.cs",
+   "line": 315,
+   "literal": "new Color(0.55f, 0.95f, 0.15f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs",
+   "line": 62,
+   "literal": "The paint brush's rim and the ball (the lab's #ffd27a).",
+   "bucket": "INERT",
+   "why": "tooltip text that names a hex"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs",
+   "line": 62,
+   "literal": "#ffd27a",
+   "bucket": "INERT",
+   "why": "Tooltip text in the inspector that names the lab's hex; it is never parsed into a colour or drawn."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs",
+   "line": 64,
+   "literal": "The eraser's rim (the lab's #7fd7ff).",
+   "bucket": "INERT",
+   "why": "tooltip text that names a hex"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs",
+   "line": 64,
+   "literal": "#7fd7ff",
+   "bucket": "INERT",
+   "why": "Tooltip text in the inspector that names the lab's hex; it is never parsed into a colour or drawn."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs",
+   "line": 66,
+   "literal": "The esca, the lure light (Jade, the lab's #13fff2).",
+   "bucket": "INERT",
+   "why": "tooltip text that names a hex"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs",
+   "line": 66,
+   "literal": "#13fff2",
+   "bucket": "INERT",
+   "why": "Tooltip text in the inspector that names the lab's hex; it is never parsed into a colour or drawn."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs",
+   "line": 1262,
+   "literal": "new Color(1f, 1f, 1f, 0.6f)",
+   "bucket": "INERT",
+   "why": "alpha multiplier on the esca colour (escaColor * (1,1,1,0.6))"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/EchoSightActionExecutor.cs",
+   "line": 406,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "rest colours when the material has no pair / no peer tint"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/EchoSightActionExecutor.cs",
+   "line": 423,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "rest colours when the material has no pair / no peer tint"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/EchoSightVesselHighlighter.cs",
+   "line": 98,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "entry default (always set by the executor)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/EchoSightVesselHighlighter.cs",
+   "line": 293,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "rest colours when the material has no pair / no peer tint"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/EchoSightVesselHighlighter.cs",
+   "line": 294,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "rest colours when the material has no pair / no peer tint"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 68,
+   "literal": "The jacks (the lab's #f2c84b).",
+   "bucket": "INERT",
+   "why": "tooltip text that names a hex"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 68,
+   "literal": "#f2c84b",
+   "bucket": "INERT",
+   "why": "A hex code quoted inside an inspector tooltip string to document the lab's colour; it is text, never parsed or painted (the field it describes is now retraced where the marks draw)."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 69,
+   "literal": "new(0.949f, 0.784f, 0.294f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 70,
+   "literal": "The decoy's ring (the lab's #f0a043); the decoy itself is drawn as a third jack.",
+   "bucket": "INERT",
+   "why": "tooltip text that names a hex"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 70,
+   "literal": "#f0a043",
+   "bucket": "INERT",
+   "why": "A hex code quoted inside an inspector tooltip string to document the lab's colour; it is text, never parsed or painted (decoyColor is now retraced where the ring draws)."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 71,
+   "literal": "new(0.941f, 0.627f, 0.263f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 72,
+   "literal": "A danger creature's mark (the lab's #ff5a3c).",
+   "bucket": "INERT",
+   "why": "tooltip text that names a hex"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 72,
+   "literal": "#ff5a3c",
+   "bucket": "INERT",
+   "why": "A hex code quoted inside an inspector tooltip string to document the lab's colour; it is text, never parsed or painted (dangerColor is now retraced where the danger dots draw)."
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 73,
+   "literal": "new(1f, 0.353f, 0.235f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 75,
+   "literal": "new(0.949f, 0.784f, 0.294f, 0.55f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksExecutor.cs",
+   "line": 1538,
+   "literal": "new Color(1f, 1f, 1f, 0.6f)",
+   "bucket": "INERT",
+   "why": "alpha multiplier on the decoy colour (decoyColor * (1,1,1,0.6))"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/JacksView.cs",
+   "line": 89,
+   "literal": "Color.black",
+   "bucket": "INERT",
+   "why": "parked pilot camera clear under an opaque full-screen seat view"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonExecutor.cs",
+   "line": 1037,
+   "literal": "new Color(0.31f, 0.85f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "domain colour fallback (no set / no player)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleConfigSO.cs",
+   "line": 73,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleConfigSO.cs",
+   "line": 80,
+   "literal": "new Color(1.4979111f, 0.0058463f, 0.0068495f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleConfigSO.cs",
+   "line": 115,
+   "literal": "new Color(2f, 2f, 2f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShrikeExecutor.cs",
+   "line": 1686,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal fallback"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/SniperShotActionExecutor.cs",
+   "line": 460,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal fallback"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatPathfinderExecutor.cs",
+   "line": 393,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour fallback (no player / no set)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatRippleExecutor.cs",
+   "line": 183,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour fallback (no player / no set)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/StoatRippleExecutor.cs",
+   "line": 185,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour fallback (no player / no set)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ThresherExecutor.cs",
+   "line": 254,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "ball / CTA colour fallback (no config)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ThresherExecutor.cs",
+   "line": 257,
+   "literal": "Color.green",
+   "bucket": "FALLBACK",
+   "why": "ball / CTA colour fallback (no config)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ThresherLaunchSight.cs",
+   "line": 88,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white multiplier on the sight's RenderTexture picture"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs",
+   "line": 486,
+   "literal": "Color.cyan",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs",
+   "line": 498,
+   "literal": "Color.green",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs",
+   "line": 498,
+   "literal": "Color.red",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/TrailPassives/ScoutTrailPrismScaler.cs",
+   "line": 162,
+   "literal": "Color.red",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/TrailPassives/ScoutTrailPrismScaler.cs",
+   "line": 162,
+   "literal": "Color.green",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/TrailPassives/ScoutTrailPrismScaler.cs",
+   "line": 166,
+   "literal": "new Color(1, 0, 0, 0.3f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/TrailPassives/ScoutTrailPrismScaler.cs",
+   "line": 169,
+   "literal": "new Color(0, 1, 0, 0.3f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/VesselTailAndJets.cs",
+   "line": 50,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; SetColors pushes the trail colours"
+  },
+  {
+   "file": "Assets/_Scripts/Controller/Vessel/VesselTailAndJets.cs",
+   "line": 51,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; SetColors pushes the trail colours"
+  },
+  {
+   "file": "Assets/_Scripts/Game/Environment/CapsuleMembrane.cs",
+   "line": 132,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "material without the colour property (white base)"
+  },
+  {
+   "file": "Assets/_Scripts/Game/Environment/CapsuleMembrane.cs",
+   "line": 497,
+   "literal": "Color.cyan",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 188,
+   "literal": "new(0.51f, 0.53f, 0.61f, 0.85f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 192,
+   "literal": "new(0.96f, 0.96f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 228,
+   "literal": "new(0.024f, 0.031f, 0.063f, 0.86f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 284,
+   "literal": "new(0.96f, 0.96f, 1f, 0.3f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 288,
+   "literal": "new(0.11f, 0.12f, 0.17f, 0.92f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 293,
+   "literal": "new(0.086f, 0.094f, 0.129f, 0.9f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 297,
+   "literal": "new(0.22f, 0.51f, 1f, 0.55f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 303,
+   "literal": "new(0.024f, 0.031f, 0.063f, 0.55f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 306,
+   "literal": "new(0.361f, 0.373f, 0.439f, 0.55f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 317,
+   "literal": "new(0.024f, 0.031f, 0.063f, 0.72f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 324,
+   "literal": "new(0.024f, 0.031f, 0.063f, 0.55f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 329,
+   "literal": "new(0.96f, 0.96f, 1f, 0.75f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs",
+   "line": 337,
+   "literal": "new(0.96f, 0.96f, 1f, 0.22f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/CallsignSetSO.cs",
+   "line": 74,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "crystal mark white is a config field (CallsignSet asset); PilotSight's runtime instance reads it"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Codex/CodexSO.cs",
+   "line": 79,
+   "literal": "new(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Codex/CodexSO.cs",
+   "line": 152,
+   "literal": "new(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/ControlGlyphSetSO.cs",
+   "line": 59,
+   "literal": "new(0.65f, 0.65f, 0.7f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/ControlGlyphSetSO.cs",
+   "line": 62,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/DisconnectNoticeConfigSO.cs",
+   "line": 101,
+   "literal": "new(0f, 0f, 0f, 0.72f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/DisconnectNoticeConfigSO.cs",
+   "line": 104,
+   "literal": "new(0.10f, 0.10f, 0.15f, 0.98f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/DisconnectNoticeConfigSO.cs",
+   "line": 107,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/DisconnectNoticeConfigSO.cs",
+   "line": 110,
+   "literal": "new(0.78f, 0.80f, 0.86f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/DisconnectNoticeConfigSO.cs",
+   "line": 113,
+   "literal": "new(0.05f, 0.75f, 0.71f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/DisconnectNoticeConfigSO.cs",
+   "line": 116,
+   "literal": "new(0.22f, 0.22f, 0.28f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs",
+   "line": 65,
+   "literal": "new(1f,    0.33f, 0.10f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs",
+   "line": 67,
+   "literal": "new(0.51f, 0.51f, 0.54f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs",
+   "line": 69,
+   "literal": "new(0.96f, 0.96f, 1f,    1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs",
+   "line": 71,
+   "literal": "new(0.22f, 0.51f, 1f,    1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs",
+   "line": 73,
+   "literal": "new(0.59f, 0.92f, 0.16f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs",
+   "line": 76,
+   "literal": "new(1f, 0.2f, 0.2f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs",
+   "line": 108,
+   "literal": "Color.red",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/ElementalBarsConfigSO.cs",
+   "line": 116,
+   "literal": "new(0.7f, 0.9f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/MouseFlightConfigSO.cs",
+   "line": 127,
+   "literal": "new Color(1f, 1f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by the config asset (runtime CreateInstance only in a test path)"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/PrismBurnFxConfigSO.cs",
+   "line": 41,
+   "literal": "new(0.2f, 0.45f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/SO_ColorSet.cs",
+   "line": 70,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "colour-set accessor fallback (no domain block / no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/SO_ColorSet.cs",
+   "line": 92,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "colour-set accessor fallback (no domain block / no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/SO_ColorSet.cs",
+   "line": 119,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/SO_ColorSet.cs",
+   "line": 146,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/SO_ColorSet.cs",
+   "line": 204,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/SO_ColorSet.cs",
+   "line": 207,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/SO_ColorSet.cs",
+   "line": 274,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "colour-set accessor fallback (no domain block / no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/SO_ColorSet.cs",
+   "line": 275,
+   "literal": "Color.black",
+   "bucket": "FALLBACK",
+   "why": "colour-set accessor fallback (no domain block / no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/TheaterConfigSO.cs",
+   "line": 120,
+   "literal": "new Color(0.03f, 0.04f, 0.06f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "The replay dark stage: TheaterStage.Enter clears the camera to it only with hideWorld on. The shipped asset leaves hideWorld off, and ReplayPlayer turns it on only when a replay's arena cannot be stood (no preview definition or cell config, or a build timeout) and the replay was recorded in another scene."
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Toys/ArkwaySettingsSO.cs",
+   "line": 148,
+   "literal": "new(1f, 0.78f, 0.25f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Toys/ToyDefinitionSO.cs",
+   "line": 48,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Toys/WanderwaySettingsSO.cs",
+   "line": 147,
+   "literal": "new(1f, 0.78f, 0.25f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/VesselSilenceConfigSO.cs",
+   "line": 245,
+   "literal": "new Color(1f, 0.12f, 0.08f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "danger colour when the palette authors none"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 41,
+   "literal": "new(0.95f, 0.75f, 0.25f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 92,
+   "literal": "new(0.70f, 1f, 0.35f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 95,
+   "literal": "new(1f, 0.78f, 0.25f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 98,
+   "literal": "new(0.96f, 0.94f, 0.86f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 101,
+   "literal": "new(0.55f, 0.75f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 104,
+   "literal": "new(1f, 0.45f, 0.35f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 107,
+   "literal": "new(1f, 0.3f, 0.55f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 110,
+   "literal": "new(0.6f, 1f, 0.6f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 113,
+   "literal": "new(0.9f, 0.85f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 116,
+   "literal": "new(0.5f, 0.5f, 0.5f, 0.6f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/ScriptableObjects/Voyages/VoyageToyDefinitionSO.cs",
+   "line": 119,
+   "literal": "new(1f, 1f, 1f, 0.35f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/System/Bootstrap/SceneTransitionManager.cs",
+   "line": 43,
+   "literal": "Color.black",
+   "bucket": "FALLBACK",
+   "why": "fade colour on the auto-created manager (AppManager.cs:767, only when Bootstrap has no AppManager); the scene instance serializes it"
+  },
+  {
+   "file": "Assets/_Scripts/System/Runtime/Models/DialogueVisuals.cs",
+   "line": 11,
+   "literal": "new Color(1f, 0.92f, 0.3f)",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/System/Runtime/Models/DialogueVisuals.cs",
+   "line": 12,
+   "literal": "new Color(0.3f, 1f, 0.5f)",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/System/Runtime/Models/DialogueVisuals.cs",
+   "line": 13,
+   "literal": "Color.gray",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/System/Runtime/Models/DialogueVisuals.cs",
+   "line": 21,
+   "literal": "new Color(0.3f, 0.6f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/System/Runtime/Models/DialogueVisuals.cs",
+   "line": 22,
+   "literal": "new Color(0.8f, 0.5f, 0.2f)",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/System/Runtime/Models/DialogueVisuals.cs",
+   "line": 23,
+   "literal": "Color.gray",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/UI/ColorSetUITheme.cs",
+   "line": 43,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/ColorSetUITheme.cs",
+   "line": 102,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "colour-set accessor fallback (no domain block / no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/ColorSetUITheme.cs",
+   "line": 103,
+   "literal": "Color.black",
+   "bucket": "FALLBACK",
+   "why": "colour-set accessor fallback (no domain block / no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/ConnectingPanelController.cs",
+   "line": 78,
+   "literal": "Color.black",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/ConnectingPanelController.cs",
+   "line": 392,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no theme"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/AnglerHUDController.cs",
+   "line": 81,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/AnglerHUDController.cs",
+   "line": 90,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/BrittleStarHUDController.cs",
+   "line": 61,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/ButterflyHUDController.cs",
+   "line": 102,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/ButterflyHUDController.cs",
+   "line": 111,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/ButterflyHUDController.cs",
+   "line": 119,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/GobyPistolHUDController.cs",
+   "line": 47,
+   "literal": "new(157f / 255f, 1f, 46f / 255f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/GobyPistolHUDController.cs",
+   "line": 49,
+   "literal": "new(0.59f, 0.65f, 0.76f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/MantaHUDController.cs",
+   "line": 92,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/RhinoHUDController.cs",
+   "line": 227,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "HUD controller signal-colour fallback (no colour set / no vessel status)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/RhinoHUDController.cs",
+   "line": 236,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/ScarabHUDController.cs",
+   "line": 221,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "HUD controller signal-colour fallback (no colour set / no vessel status)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/SerpentHUDController.cs",
+   "line": 95,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "HUD controller signal-colour fallback (no colour set / no vessel status)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/SerpentHUDController.cs",
+   "line": 104,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/ShrikeHUDController.cs",
+   "line": 59,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/SparrowHUDController.cs",
+   "line": 199,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "HUD controller signal-colour fallback (no colour set / no vessel status)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/SparrowHUDController.cs",
+   "line": 208,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/StoatHUDController.cs",
+   "line": 97,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/ThresherHUDController.cs",
+   "line": 54,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal fallback (alpha 0 = no set)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/ThresherHUDController.cs",
+   "line": 64,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Controller/UrchinHUDController.cs",
+   "line": 149,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/DomainVolumeHexGraphic.cs",
+   "line": 84,
+   "literal": "Color.green",
+   "bucket": "TRACED",
+   "why": "placeholder; SetState pushes the colour-set domain colours"
+  },
+  {
+   "file": "Assets/_Scripts/UI/DomainVolumeHexGraphic.cs",
+   "line": 84,
+   "literal": "Color.red",
+   "bucket": "TRACED",
+   "why": "placeholder; SetState pushes the colour-set domain colours"
+  },
+  {
+   "file": "Assets/_Scripts/UI/DomainVolumeHexGraphic.cs",
+   "line": 84,
+   "literal": "Color.yellow",
+   "bucket": "TRACED",
+   "why": "placeholder; SetState pushes the colour-set domain colours"
+  },
+  {
+   "file": "Assets/_Scripts/UI/DomainVolumeIndicator.cs",
+   "line": 106,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; RefreshDomainColors reads GetDomainUIColor"
+  },
+  {
+   "file": "Assets/_Scripts/UI/DomainVolumeIndicator.cs",
+   "line": 106,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; RefreshDomainColors reads GetDomainUIColor"
+  },
+  {
+   "file": "Assets/_Scripts/UI/DomainVolumeIndicator.cs",
+   "line": 106,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; RefreshDomainColors reads GetDomainUIColor"
+  },
+  {
+   "file": "Assets/_Scripts/UI/DomainVolumeIndicator.cs",
+   "line": 328,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/DomainVolumeIndicator.cs",
+   "line": 554,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour without theme"
+  },
+  {
+   "file": "Assets/_Scripts/UI/DomainVolumeIndicator.cs",
+   "line": 566,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour without theme"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/AIDifficultyPicker.cs",
+   "line": 59,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/AIDifficultyPicker.cs",
+   "line": 62,
+   "literal": "new Color32(125, 125, 125, 255)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/AIDifficultyPicker.cs",
+   "line": 69,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/AIDifficultyPicker.cs",
+   "line": 72,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Ark/SquadMateCard.cs",
+   "line": 38,
+   "literal": "new(0.902f, 0.914f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Ark/SquadMateCard.cs",
+   "line": 40,
+   "literal": "new(0.361f, 0.373f, 0.439f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Ark/SquadNanobotSwap.cs",
+   "line": 34,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Ark/SquadNanobotSwap.cs",
+   "line": 47,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; SetColor pushes the domain colour"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Ark/SquadsPage.cs",
+   "line": 1170,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no palette"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Codex/CodexPortrait.cs",
+   "line": 91,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "no palette: art untinted"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ConnectingGateView.cs",
+   "line": 115,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; Awake captures the authored outline"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ConnectingGateView.cs",
+   "line": 131,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ConnectingGateView.cs",
+   "line": 188,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ConnectingGateView.cs",
+   "line": 300,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ConnectingPlayerRoster.cs",
+   "line": 82,
+   "literal": "new(0.42f, 0.45f, 0.5f, 0.65f)",
+   "bucket": "FALLBACK",
+   "why": "roster made at runtime only when the panel has none authored"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ConnectingPlayerRoster.cs",
+   "line": 541,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ConnectingPlayerRoster.cs",
+   "line": 611,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no theme"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/DomainAvatarChip.cs",
+   "line": 329,
+   "literal": "new Color(0.16f, 0.45f, 0.85f, 0.95f)",
+   "bucket": "FALLBACK",
+   "why": "The (i) badge is generated only while infoButton is unwired, and every shipped chip is instantiated from ConfigureSeatChip.prefab (chipPrefab in ArcadeGameConfigureModal.prefab and both Menu_Main instances), which wires infoButton to a resolving object with no scene override nulling it."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/DomainAvatarChip.cs",
+   "line": 367,
+   "literal": "new Color(0.05f, 0.06f, 0.1f, 0.92f)",
+   "bucket": "FALLBACK",
+   "why": "The hover pill is generated only while hoverLabel is unwired; ConfigureSeatChip.prefab, the only shipped chip, wires hoverLabel (fileID 517685485484337710 resolves) and no instance overrides it."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/DomainAvatarChip.cs",
+   "line": 422,
+   "literal": "new Color(0.75f, 0.12f, 0.12f, 0.95f)",
+   "bucket": "FALLBACK",
+   "why": "The kick X is generated only while kickButton is unwired; ConfigureSeatChip.prefab wires kickButton (a stripped object of its nested instance that resolves), and the bare DomainAvatarChip.prefab (unwired) is referenced by nothing."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/DomainInfoData.cs",
+   "line": 29,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/DomainInfoData.cs",
+   "line": 30,
+   "literal": "Color.gray",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/DomainScorePanel.cs",
+   "line": 90,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; replaced before it is shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ElementalConverterView.cs",
+   "line": 88,
+   "literal": "new(0.04f, 0.08f, 0.04f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "Drawn only on BuildUi's code-built CONVERT caption, which BuildUi skips when convertButton is wired, as Menu_Main (the only scene with this view) wires it."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ElementalConverterView.cs",
+   "line": 427,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white multiplier on the converter surface art"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/GameCard.cs",
+   "line": 97,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; captured from the authored Graphic in Awake / DrawLocked"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/GameCard.cs",
+   "line": 111,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; captured from the authored Graphic in Awake / DrawLocked"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/GameCard.cs",
+   "line": 257,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white petal tint over petal art (multiplier)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/GameCard.cs",
+   "line": 258,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white petal tint over petal art (multiplier)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/GameCard.cs",
+   "line": 349,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white petal tint over petal art (multiplier)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/GoalRow.cs",
+   "line": 95,
+   "literal": "new Color(0.247f, 0.498f, 0.847f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/GoalRow.cs",
+   "line": 100,
+   "literal": "new Color(0.902f, 0.914f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/GoalRow.cs",
+   "line": 107,
+   "literal": "new Color(0.96f, 0.96f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/GoalRow.cs",
+   "line": 125,
+   "literal": "new Color(0.902f, 0.914f, 1f, 0.16f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Hangar/HangarAbilitiesPage.cs",
+   "line": 173,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Hangar/HangarArtifactsPage.cs",
+   "line": 189,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Hangar/HangarArtifactsPage.cs",
+   "line": 205,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Hangar/HangarPilotsPage.cs",
+   "line": 215,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Hangar/HangarUpgradesPage.cs",
+   "line": 280,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Hangar/HangarVesselStage.cs",
+   "line": 133,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; Perform / Pulse push the colour"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Hangar/HangarVesselStage.cs",
+   "line": 137,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; Perform / Pulse push the colour"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Hangar/HangarVesselStage.cs",
+   "line": 671,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/IconRotator.cs",
+   "line": 25,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "dead script (no prefab/scene/asset holds it, nothing AddComponents it)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/IconRotator.cs",
+   "line": 26,
+   "literal": "new Color(0.25f, 0.95f, 1f)",
+   "bucket": "INERT",
+   "why": "dead script (no prefab/scene/asset holds it, nothing AddComponents it)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/IconRotator.cs",
+   "line": 27,
+   "literal": "new Color(1f, 0.30f, 0.85f)",
+   "bucket": "INERT",
+   "why": "dead script (no prefab/scene/asset holds it, nothing AddComponents it)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/IconRotator.cs",
+   "line": 28,
+   "literal": "new Color(0.65f, 0.45f, 1f)",
+   "bucket": "INERT",
+   "why": "dead script (no prefab/scene/asset holds it, nothing AddComponents it)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/IconRotator.cs",
+   "line": 49,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "dead script (no prefab/scene/asset holds it, nothing AddComponents it)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/LoadoutCard.cs",
+   "line": 20,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/MenuAvailabilityView.cs",
+   "line": 57,
+   "literal": "new(1f, 1f, 1f, 0.4f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance (runtime AddComponent sets them after)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/MenuAvailabilityView.cs",
+   "line": 66,
+   "literal": "new(1f, 1f, 1f, 0.35f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance (runtime AddComponent sets them after)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/MenuAvailabilityView.cs",
+   "line": 151,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "graphic missing"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 63,
+   "literal": "new(0.4f, 0.885f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 65,
+   "literal": "new(1f, 0.85f, 0.25f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 70,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 71,
+   "literal": "new(0.4f, 0.8f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 72,
+   "literal": "new(0.9f, 0.2f, 0.2f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 73,
+   "literal": "new(0.5f, 0.5f, 0.5f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 75,
+   "literal": "new(0.6f, 0.9f, 0.6f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 79,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 81,
+   "literal": "new(1f, 0.75f, 0.1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 83,
+   "literal": "new(1f, 0.95f, 0.5f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineInfoEntry.cs",
+   "line": 85,
+   "literal": "new(0.35f, 0.35f, 0.35f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineStatusIndicator.cs",
+   "line": 91,
+   "literal": "new Color(0.59f, 0.92f, 0.16f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "online / offline colours without the bars palette"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/OnlineStatusIndicator.cs",
+   "line": 92,
+   "literal": "new Color(0.51f, 0.51f, 0.54f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "online / offline colours without the bars palette"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/Party/KitPresenceOrb.cs",
+   "line": 149,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/PartySlotDomainGlow.cs",
+   "line": 71,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; replaced before it is shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/PartySlotDomainGlow.cs",
+   "line": 72,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; replaced before it is shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/PartySlotDomainGlow.cs",
+   "line": 129,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/PilotSwapIndicator.cs",
+   "line": 487,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/PilotSwapIndicator.cs",
+   "line": 488,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/PilotSwapIndicator.cs",
+   "line": 489,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/QuestItemCard.cs",
+   "line": 39,
+   "literal": "new(0.35f, 0.35f, 0.35f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/QuestItemCard.cs",
+   "line": 45,
+   "literal": "new(0.4f, 0.7f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/QuestItemCard.cs",
+   "line": 47,
+   "literal": "new(0.4f, 1f, 0.55f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/QuestItemCard.cs",
+   "line": 50,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; replaced before it is shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/RematchVoteRoster.cs",
+   "line": 473,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/RematchVoteRoster.cs",
+   "line": 609,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no theme"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/RequestInfoEntry.cs",
+   "line": 33,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/RequestInfoEntry.cs",
+   "line": 34,
+   "literal": "new(1f, 0.85f, 0.2f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/RequestInfoEntry.cs",
+   "line": 35,
+   "literal": "new(0.9f, 0.3f, 0.2f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ScoreNumberAnimator.cs",
+   "line": 131,
+   "literal": "new Color(0.2f, 1f, 0.4f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "score gain / loss flash without settings"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ScoreNumberAnimator.cs",
+   "line": 132,
+   "literal": "new Color(1f, 0.3f, 0.2f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "score gain / loss flash without settings"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ToyVariantCard.cs",
+   "line": 121,
+   "literal": "new(0.62f, 1f, 0.16f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ToyVariantCard.cs",
+   "line": 124,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; CaptureAuthoredAlpha replaces it"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ToyVariantCard.cs",
+   "line": 125,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; CaptureAuthoredAlpha replaces it"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ToyVariantCard.cs",
+   "line": 207,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "deselect: accent unused when not selected"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ToyVariantCard.cs",
+   "line": 234,
+   "literal": "new Color(0.96f, 0.96f, 1f, 0.3f)",
+   "bucket": "FALLBACK",
+   "why": "bloom colour without a style"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ToyVariantCard.cs",
+   "line": 306,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/ToyboxCard.cs",
+   "line": 57,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/VesselInfoPopup.cs",
+   "line": 197,
+   "literal": "new(0.07f, 0.09f, 0.14f, 0.97f)",
+   "bucket": "FALLBACK",
+   "why": "Only VesselInfoPopup.Build uses it, and ArcadeGameConfigureModal.ShowVesselInfo calls Build only when neither vesselInfoPopup nor vesselInfoPopupPrefab is wired; ArcadeGameConfigureModal.prefab and both modal instances in Menu_Main wire vesselInfoPopupPrefab to VesselInfoCard.prefab. The only unwired holder, MIgration_Prefabs (DELETE LATER)/ModalWindows.prefab, is unreachable in a build."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/VesselInfoPopup.cs",
+   "line": 198,
+   "literal": "new(0.36f, 0.78f, 0.95f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "Used only by the generated card Build lays out when the modal wires no popup and no popup prefab, which no shipped modal does (all wire VesselInfoCard.prefab)."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/VesselInfoPopup.cs",
+   "line": 199,
+   "literal": "new(0.85f, 0.88f, 0.93f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "Used only by the generated card Build lays out when the modal wires no popup and no popup prefab, which no shipped modal does (all wire VesselInfoCard.prefab)."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/VesselInfoPopup.cs",
+   "line": 200,
+   "literal": "new(0.6f, 0.66f, 0.75f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "Used only by the generated card Build lays out when the modal wires no popup and no popup prefab, which no shipped modal does (all wire VesselInfoCard.prefab)."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Elements/VesselInfoPopup.cs",
+   "line": 278,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/GameToastSystem/GameToastAPI.cs",
+   "line": 69,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no set"
+  },
+  {
+   "file": "Assets/_Scripts/UI/GameToastSystem/GameToastController.cs",
+   "line": 212,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no theme"
+  },
+  {
+   "file": "Assets/_Scripts/UI/HUDAnimationSettingsSO.cs",
+   "line": 34,
+   "literal": "new Color(0.2f, 1f, 0.4f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/HUDAnimationSettingsSO.cs",
+   "line": 36,
+   "literal": "new Color(1f, 0.3f, 0.2f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/HUDAnimationSettingsSO.cs",
+   "line": 46,
+   "literal": "new Color(1f, 0.3f, 0.2f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Kit/KitBrandButton.cs",
+   "line": 21,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "provider sign-in artwork drawn untinted (brand rules forbid recolouring): white multiplier"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Kit/KitElementHalo.cs",
+   "line": 36,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; SetColour pushes the element token"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Kit/KitElementHalo.cs",
+   "line": 53,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/MaelstromRoundCard.cs",
+   "line": 113,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no theme"
+  },
+  {
+   "file": "Assets/_Scripts/UI/MiniGameHUD.cs",
+   "line": 807,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no theme"
+  },
+  {
+   "file": "Assets/_Scripts/UI/MiniGameHUD.cs",
+   "line": 884,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no theme"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/CreditsModal.cs",
+   "line": 384,
+   "literal": "new Color(0.04f, 0.05f, 0.09f, 0.96f)",
+   "bucket": "FALLBACK",
+   "why": "Build runs only when the scene has no CREDITS modal (ScreenSwitcher.EnsureCreditsModal). Menu_Main, the only scene with a ScreenSwitcher, instances CreditsModal.prefab, so this window never shows."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/CreditsModal.cs",
+   "line": 399,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/CreditsModal.cs",
+   "line": 435,
+   "literal": "new Color(0.16f, 0.18f, 0.26f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "Part of the same code-built window, which shows only when no CREDITS modal is authored, and Menu_Main authors one."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/GameSettingsPanelController.cs",
+   "line": 62,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/GameSettingsPanelController.cs",
+   "line": 63,
+   "literal": "new Color(0.5f, 0.5f, 0.5f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/ModalWindowManager.cs",
+   "line": 152,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/ToyConfigureModal.cs",
+   "line": 589,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "toy definition missing / set without CTA"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/ToyConfigureModal.cs",
+   "line": 916,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs",
+   "line": 86,
+   "literal": "new(0.15f, 0.85f, 0.95f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs",
+   "line": 89,
+   "literal": "new(1f, 1f, 1f, 0.35f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs",
+   "line": 93,
+   "literal": "new(1f, 1f, 1f, 0.12f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs",
+   "line": 95,
+   "literal": "Color.black",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs",
+   "line": 96,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Model/MinigameHUDInspector.cs",
+   "line": 10,
+   "literal": "new Color(0.09f, 0.24f, 0.48f)",
+   "bucket": "INERT",
+   "why": "Dead code: the whole CustomEditor is under #if false (formerly UNITY_EDITOR), so it never compiles, and it only ever coloured editor inspector header bars."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Model/MinigameHUDInspector.cs",
+   "line": 11,
+   "literal": "new Color(0.14f, 0.22f, 0.36f)",
+   "bucket": "INERT",
+   "why": "Dead code under #if false: an editor-inspector section bar colour that never compiles."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Model/MinigameHUDInspector.cs",
+   "line": 12,
+   "literal": "new Color(0.14f, 0.32f, 0.21f)",
+   "bucket": "INERT",
+   "why": "Dead code under #if false: an editor-inspector section bar colour that never compiles."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Model/MinigameHUDInspector.cs",
+   "line": 23,
+   "literal": "new Color(0.2f, 0.6f, 0.2f)",
+   "bucket": "INERT",
+   "why": "Dead code under #if false: an editor-inspector header colour that never compiles."
+  },
+  {
+   "file": "Assets/_Scripts/UI/Model/MinigameHUDInspector.cs",
+   "line": 24,
+   "literal": "new Color(0.6f, 0.2f, 0.6f)",
+   "bucket": "INERT",
+   "why": "Dead code under #if false: an editor-inspector header colour that never compiles."
+  },
+  {
+   "file": "Assets/_Scripts/UI/MouseFlightWidget.cs",
+   "line": 219,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; Bind copies MouseFlightConfigSO.WidgetColor"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/FairPlayNoticeOverlay.cs",
+   "line": 370,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/FairPlayNoticeOverlay.cs",
+   "line": 371,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/FairPlayNoticeOverlay.cs",
+   "line": 372,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/FairPlayNoticeOverlay.cs",
+   "line": 373,
+   "literal": "new Color(0.7f, 0.7f, 0.7f, 1f)",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/FairPlayNoticeOverlay.cs",
+   "line": 374,
+   "literal": "new Color(1f, 1f, 1f, 0.25f)",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/FairPlayNoticeOverlay.cs",
+   "line": 390,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/PrivacyConsentOverlay.cs",
+   "line": 519,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/PrivacyConsentOverlay.cs",
+   "line": 520,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/PrivacyConsentOverlay.cs",
+   "line": 521,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/PrivacyConsentOverlay.cs",
+   "line": 522,
+   "literal": "new Color(0.7f, 0.7f, 0.7f, 1f)",
+   "bucket": "INERT",
+   "why": "ColorBlock multiplier (ColorTint state): white = identity, grey = darken, alpha = fade; the Graphic's own colour carries the hue"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/PrivacyConsentOverlay.cs",
+   "line": 523,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Privacy/PrivacyConsentOverlay.cs",
+   "line": 539,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Scoreboard.cs",
+   "line": 1050,
+   "literal": "Color.gray",
+   "bucket": "FALLBACK",
+   "why": "domain colour with no theme"
+  },
+  {
+   "file": "Assets/_Scripts/UI/ToastNotification/ToastNotificationManager.cs",
+   "line": 173,
+   "literal": "new Color(0.1f, 0.1f, 0.15f, 0.9f)",
+   "bucket": "FALLBACK",
+   "why": "Built only when no toast prefab is wired and Resources/UI/ToastNotificationItem.prefab fails to load. That prefab ships in Resources with the ToastNotificationItem on its root, so the default is never built."
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 54,
+   "literal": "new Color32(0xE6, 0xE9, 0xFF, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 55,
+   "literal": "new Color32(0x25, 0x26, 0x2D, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 56,
+   "literal": "new Color32(0x5C, 0x5F, 0x70, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 57,
+   "literal": "new Color32(0x00, 0x01, 0x0A, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 58,
+   "literal": "new Color32(0x00, 0x04, 0x1F, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 59,
+   "literal": "new Color32(0x22, 0x26, 0x45, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 60,
+   "literal": "new Color32(0x43, 0x4C, 0x89, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 61,
+   "literal": "new Color32(0x74, 0x7B, 0xAD, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 62,
+   "literal": "new Color32(0x99, 0xFF, 0x80, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 63,
+   "literal": "new Color32(0xFF, 0x4B, 0x3A, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 64,
+   "literal": "new Color32(0x00, 0xD4, 0xFF, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 65,
+   "literal": "new Color32(0xFF, 0xAE, 0x00, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UITheme.cs",
+   "line": 71,
+   "literal": "new Color32(0x3D, 0xB2, 0xFF, 0xFF)",
+   "bucket": "TRACED",
+   "why": "UI theme §11 fallback (UITheme.Resolve answers UIThemeLive first; UITheme.asset is wired)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 34,
+   "literal": "new Color32(0xE6, 0xE9, 0xFF, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 36,
+   "literal": "new Color32(0x25, 0x26, 0x2D, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 40,
+   "literal": "new Color32(0x5C, 0x5F, 0x70, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 44,
+   "literal": "new Color32(0x00, 0x01, 0x0A, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 46,
+   "literal": "new Color32(0x00, 0x04, 0x1F, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 48,
+   "literal": "new Color32(0x22, 0x26, 0x45, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 50,
+   "literal": "new Color32(0x43, 0x4C, 0x89, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 52,
+   "literal": "new Color32(0x74, 0x7B, 0xAD, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 56,
+   "literal": "new Color32(0x99, 0xFF, 0x80, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 58,
+   "literal": "new Color32(0xFF, 0x4B, 0x3A, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 62,
+   "literal": "new Color32(0x00, 0xD4, 0xFF, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 64,
+   "literal": "new Color32(0xFF, 0xAE, 0x00, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 66,
+   "literal": "new Color32(0xA6, 0x00, 0xFF, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 70,
+   "literal": "new Color32(0xFF, 0xD3, 0x4D, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 72,
+   "literal": "new Color32(0x7F, 0xA8, 0xFF, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 74,
+   "literal": "new Color32(0xB0, 0x7C, 0xFF, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 76,
+   "literal": "new Color32(0x5F, 0xF0, 0xC8, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/UIThemeSO.cs",
+   "line": 80,
+   "literal": "new Color32(0x3D, 0xB2, 0xFF, 0xFF)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AbilityLockupView.cs",
+   "line": 278,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "ability lockup style fallback (no style asset)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AbilityLockupView.cs",
+   "line": 280,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "ability lockup style fallback (no style asset)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AbilityLockupView.cs",
+   "line": 735,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AbilityLockupView.cs",
+   "line": 794,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "stencil/mask graphic (colour never renders; alpha only)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AbilityLockupView.cs",
+   "line": 1036,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AbilityLockupView.cs",
+   "line": 1050,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AbilityLockupView.cs",
+   "line": 1328,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "stencil/mask graphic (colour never renders; alpha only)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AbilityLockupView.cs",
+   "line": 1723,
+   "literal": "new(0.9f, 0.92f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "gated off: ApplyElementColour returns unless AbilityLockupStyle.elementColour (0 in AbilityLockupStyle.asset; AbilityLockupView.cs:1739)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AnglerHUDView.cs",
+   "line": 46,
+   "literal": "new(0.59f, 0.65f, 0.76f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AnglerHUDView.cs",
+   "line": 48,
+   "literal": "new(157f / 255f, 1f, 46f / 255f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AnglerHUDView.cs",
+   "line": 133,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "re-initialised placeholder; SetLockOnColor pushes the domain signal colour"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AnglerHUDView.cs",
+   "line": 152,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AnglerHUDView.cs",
+   "line": 196,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AnglerHUDView.cs",
+   "line": 196,
+   "literal": "new(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AnglerHUDView.cs",
+   "line": 288,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/AnglerHUDView.cs",
+   "line": 313,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/LobbySlotView.cs",
+   "line": 43,
+   "literal": "new(0.55f, 0.55f, 0.6f, 1f)",
+   "bucket": "INERT",
+   "why": "dead script (no prefab/scene/asset holds it, nothing AddComponents it)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/LobbySlotView.cs",
+   "line": 109,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "dead script (no prefab/scene/asset holds it, nothing AddComponents it)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/ObjectiveBoxView.cs",
+   "line": 44,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; captured from the authored Graphic in Bind / CaptureRestScale"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/ObjectiveBoxView.cs",
+   "line": 45,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; captured from the authored Graphic in Bind / CaptureRestScale"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/ObjectiveBoxView.cs",
+   "line": 46,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; captured from the authored Graphic in Bind / CaptureRestScale"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlRow.cs",
+   "line": 110,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlRow.cs",
+   "line": 184,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlRow.cs",
+   "line": 230,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlRow.cs",
+   "line": 257,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; captured from the authored Graphic in Bind / CaptureRestScale"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlRow.cs",
+   "line": 259,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "placeholder; captured from the authored Graphic in Bind / CaptureRestScale"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlRow.cs",
+   "line": 388,
+   "literal": "new Color(1f, 1f, 1f, 0.22f)",
+   "bucket": "FALLBACK",
+   "why": "lockup style missing"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlRow.cs",
+   "line": 392,
+   "literal": "new Color(1f, 1f, 1f, 0.5f)",
+   "bucket": "FALLBACK",
+   "why": "lockup style missing"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlRow.cs",
+   "line": 416,
+   "literal": "new Color(0.024f, 0.031f, 0.063f, 0.72f)",
+   "bucket": "FALLBACK",
+   "why": "lockup style missing"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlRow.cs",
+   "line": 420,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ArcadeLaunch/VesselControlsPanel.cs",
+   "line": 639,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/BrittleStarHUDView.cs",
+   "line": 113,
+   "literal": "new(0.59f, 0.65f, 0.76f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/BrittleStarHUDView.cs",
+   "line": 130,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/BrittleStarHUDView.cs",
+   "line": 131,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/BrittleStarHUDView.cs",
+   "line": 132,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/BrittleStarHUDView.cs",
+   "line": 133,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/BrittleStarHUDView.cs",
+   "line": 230,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ButterflyHUDView.cs",
+   "line": 140,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ButterflyHUDView.cs",
+   "line": 140,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ButterflyHUDView.cs",
+   "line": 140,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 60,
+   "literal": "new(0.51f, 0.51f, 0.54f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 63,
+   "literal": "new(0.96f, 0.96f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 77,
+   "literal": "new(0.96f, 0.96f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 81,
+   "literal": "new(0.22f, 0.51f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 94,
+   "literal": "new(0.59f, 0.92f, 0.16f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 97,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 99,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 160,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the pilot's domain signal colour (GetDomainSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 182,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 196,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/DolphinVesselHUDView.cs",
+   "line": 245,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/GobyPistolHUDView.cs",
+   "line": 58,
+   "literal": "new(0.22f, 0.51f, 1f, 0.55f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/GobyPistolHUDView.cs",
+   "line": 60,
+   "literal": "new(0.96f, 0.96f, 1f, 0.5f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/GrizzlyHUDView.cs",
+   "line": 28,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/GrizzlyHUDView.cs",
+   "line": 29,
+   "literal": "new Color(1f, 1f, 1f, 0.25f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/MantaVesselHUDView.cs",
+   "line": 102,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/MantaVesselHUDView.cs",
+   "line": 103,
+   "literal": "Color.yellow",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/MantaVesselHUDView.cs",
+   "line": 108,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ModePreviewWindow.cs",
+   "line": 251,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white multiplier on a RenderTexture surface (pixels are the preview camera's)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/OrcaCrosshairGraphic.cs",
+   "line": 36,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "public field of a runtime-made Graphic overwritten from OrcaCrew config each frame (OrcaCrewView.cs:297)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/OrcaCrosshairGraphic.cs",
+   "line": 36,
+   "literal": "Color.green",
+   "bucket": "INERT",
+   "why": "public field of a runtime-made Graphic overwritten from OrcaCrew config each frame (OrcaCrewView.cs:297)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/OrcaCrosshairGraphic.cs",
+   "line": 36,
+   "literal": "Color.red",
+   "bucket": "INERT",
+   "why": "public field of a runtime-made Graphic overwritten from OrcaCrew config each frame (OrcaCrewView.cs:297)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/OrcaCrosshairGraphic.cs",
+   "line": 36,
+   "literal": "new(1f, 0.65f, 0f, 1f)",
+   "bucket": "INERT",
+   "why": "public field of a runtime-made Graphic overwritten from OrcaCrew config each frame (OrcaCrewView.cs:297)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/RhinoVesselHUDView.cs",
+   "line": 418,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ScarabHUDView.cs",
+   "line": 117,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SerpentVesselHUDView.cs",
+   "line": 22,
+   "literal": "new Color(1f, 1f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SerpentVesselHUDView.cs",
+   "line": 23,
+   "literal": "new Color(1f, 1f, 1f, 0.25f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ShrikeHUDView.cs",
+   "line": 38,
+   "literal": "new(0.59f, 0.65f, 0.76f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ShrikeHUDView.cs",
+   "line": 41,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ShrikeHUDView.cs",
+   "line": 90,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SparrowHUDView.cs",
+   "line": 40,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the pilot's domain signal colour (GetDomainSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SparrowHUDView.cs",
+   "line": 78,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the pilot's domain signal colour (GetDomainSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SparrowHUDView.cs",
+   "line": 103,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the pilot's domain signal colour (GetDomainSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SparrowHUDView.cs",
+   "line": 162,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the pilot's domain signal colour (GetDomainSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SparrowHUDView.cs",
+   "line": 177,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SparrowHUDView.cs",
+   "line": 182,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SparrowHUDView.cs",
+   "line": 183,
+   "literal": "new(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SparrowHUDView.cs",
+   "line": 198,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SparrowHUDView.cs",
+   "line": 237,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 101,
+   "literal": "new Color(0.7f, 0.9f, 1f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "Used only by the single-icon drift path in JuiceDriftStart; SquirrelHUDVariant.prefab wires driftTrailIcon and driftHullIcon (HasDriftPair), which paint from the domain and shielded colours."
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 103,
+   "literal": "new Color(1f, 0.6f, 0.2f, 1f)",
+   "bucket": "FALLBACK",
+   "why": "Same single-icon drift path, never taken while the shipped prefab wires both drift parts."
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 140,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 144,
+   "literal": "Color.red",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 213,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 214,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 215,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 229,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 236,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 247,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 283,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 414,
+   "literal": "new Color(1f, 1f, 1f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 486,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "skim icon blue fallback (no ElementalBarsConfig)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 514,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "danger tint fallback (alpha 0 = not pushed)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs",
+   "line": 789,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "danger tint fallback (alpha 0 = not pushed)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/StarlingHUDView.cs",
+   "line": 91,
+   "literal": "new(1f, 1f, 1f, 0.22f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/StarlingHUDView.cs",
+   "line": 133,
+   "literal": "new(0.03f, 0.05f, 0.12f, 0.95f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/StarlingHUDView.cs",
+   "line": 145,
+   "literal": "new(1f, 1f, 1f, 0.35f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/StarlingHUDView.cs",
+   "line": 147,
+   "literal": "new(0.59f, 0.65f, 0.76f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/StarlingHUDView.cs",
+   "line": 149,
+   "literal": "new(157f / 255f, 1f, 46f / 255f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/StarlingHUDView.cs",
+   "line": 446,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "element accent fallback (no AbilityLockupStyle)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/StoatHUDView.cs",
+   "line": 47,
+   "literal": "new(0.59f, 0.65f, 0.76f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/StoatHUDView.cs",
+   "line": 50,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/StoatHUDView.cs",
+   "line": 115,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ThresherHUDView.cs",
+   "line": 46,
+   "literal": "new(0.75f, 0.75f, 0.78f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ThresherHUDView.cs",
+   "line": 103,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ThresherHUDView.cs",
+   "line": 112,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "initial value; the controller pushes the domain colour on its first Update"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/ThresherHUDView.cs",
+   "line": 113,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "initial value; the controller pushes the domain colour on its first Update"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/TrapezoidGraphic.cs",
+   "line": 75,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "dead script (no prefab/scene/asset holds it, nothing AddComponents it)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/UrchinVesselHUDView.cs",
+   "line": 31,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/UrchinVesselHUDView.cs",
+   "line": 32,
+   "literal": "Color.cyan",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/UrchinVesselHUDView.cs",
+   "line": 37,
+   "literal": "new(1f, 1f, 1f, 0.25f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/UrchinVesselHUDView.cs",
+   "line": 38,
+   "literal": "Color.green",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/UrchinVesselHUDView.cs",
+   "line": 52,
+   "literal": "new(0.22f, 0.51f, 1f, 0.55f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/UrchinVesselHUDView.cs",
+   "line": 54,
+   "literal": "new(0.96f, 0.96f, 1f, 0.5f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/UrchinVesselHUDView.cs",
+   "line": 108,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "pre-push placeholder; the HUD controller pushes the colour-set signal colour (GetDomainSignalColor / GetShieldedSignalColor / GetDangerSignalColor)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/VesselHUDView.cs",
+   "line": 402,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "omni tint fallback (alpha 0 = not pushed yet)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/VesselHUDView.cs",
+   "line": 479,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "omni tint fallback (alpha 0 = not pushed yet)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/View/VesselHUDView.cs",
+   "line": 498,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/PortSquadCaptainSelectionView.cs",
+   "line": 13,
+   "literal": "Color.gray",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/PortSquadCaptainSelectionView.cs",
+   "line": 14,
+   "literal": "Color.black",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
+   "line": 61,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageCellDraw.cs",
+   "line": 117,
+   "literal": "new Color(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs",
+   "line": 176,
+   "literal": "new Color32(255, 255, 255, 255)",
+   "bucket": "INERT",
+   "why": "white texels of a mask texture (alpha carries the shape; the Graphic's colour tints it)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageMapGraphic.cs",
+   "line": 623,
+   "literal": "new Color32(255, 255, 255, 255)",
+   "bucket": "INERT",
+   "why": "white texels of a mask texture (alpha carries the shape; the Graphic's colour tints it)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageMapGraphic.cs",
+   "line": 721,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white vertex colour of an inset quad sampling the sea texture"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
+   "line": 65,
+   "literal": "new(255, 200, 130, 0)",
+   "bucket": "INERT",
+   "why": "alpha-0 initial/hidden state; RGB replaced when shown"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
+   "line": 438,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white vertex colour on a textured line/ring (texture 'white' multiplies)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
+   "line": 446,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white vertex colour on a textured line/ring (texture 'white' multiplies)"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
+   "line": 648,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "label colour without a template"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageMapSky.cs",
+   "line": 834,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "label colour without a template"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageOpenCard.cs",
+   "line": 74,
+   "literal": "new(0f, 0f, 0f, 0f)",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageWindowTabs.cs",
+   "line": 36,
+   "literal": "new(0.902f, 0.914f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/VoyageWindowTabs.cs",
+   "line": 37,
+   "literal": "new(0.455f, 0.482f, 0.678f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs",
+   "line": 85,
+   "literal": "new(0.42f, 0.85f, 1f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs",
+   "line": 87,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs",
+   "line": 100,
+   "literal": "new(0.6f, 1f, 0.5f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs",
+   "line": 101,
+   "literal": "new(0.9f, 0.91f, 0.95f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs",
+   "line": 102,
+   "literal": "new(0.455f, 0.482f, 0.678f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs",
+   "line": 116,
+   "literal": "new(0.13f, 0.15f, 0.27f, 1f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs",
+   "line": 393,
+   "literal": "Color.white",
+   "bucket": "INERT",
+   "why": "white multiplier on avatar art ('the ART carries the colour')"
+  },
+  {
+   "file": "Assets/_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs",
+   "line": 601,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "row background rest when no Image"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Effects/PrismExplosion.cs",
+   "line": 144,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; SetTeamColors pushes the prism's material colours"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Effects/PrismExplosion.cs",
+   "line": 145,
+   "literal": "Color.black",
+   "bucket": "TRACED",
+   "why": "placeholder; SetTeamColors pushes the prism's material colours"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Effects/PrismImplosion.cs",
+   "line": 70,
+   "literal": "Color.white",
+   "bucket": "TRACED",
+   "why": "placeholder; SetTeamColors pushes the prism's material colours"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Effects/PrismImplosion.cs",
+   "line": 71,
+   "literal": "Color.black",
+   "bucket": "TRACED",
+   "why": "placeholder; SetTeamColors pushes the prism's material colours"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Lit/PrismLit.cs",
+   "line": 194,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain signal / crystal mark fallback (no set wired)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Network/ConnectionWarningBadge.cs",
+   "line": 65,
+   "literal": "new Color(1f, 0.55f, 0.2f, 0.9f)",
+   "bucket": "EXCLUDED",
+   "why": "gizmo / debug line / OnGUI"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/BenchmarkHUDOverlay.cs",
+   "line": 170,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "diagnostic / tool / editor-only reader"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 827,
+   "literal": "#8b97a8",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 827,
+   "literal": "#ffffff",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 827,
+   "literal": "#5fe07a",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 827,
+   "literal": "#ffd066",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 828,
+   "literal": "#ff6b6b",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 828,
+   "literal": "#7cc2ff",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 828,
+   "literal": "#6b7686",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 1407,
+   "literal": "new Color(0f, 0f, 0f, 0.72f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 1450,
+   "literal": "new Color(0.12f, 0.15f, 0.2f, 0.95f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 1460,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 1470,
+   "literal": "new Color(1f, 1f, 1f, 0.35f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 1513,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 1527,
+   "literal": "new Color(0.25f, 0.3f, 0.4f, 0.95f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/PerformanceBenchmark/DiagnosticsHUD.cs",
+   "line": 1538,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/SavePng.cs",
+   "line": 22,
+   "literal": "new Color(.95f, .95f, .95f)",
+   "bucket": "INERT",
+   "why": "serialized default shadowed by every YAML instance"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/SavePng.cs",
+   "line": 32,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Theater/TheaterPlayback.cs",
+   "line": 523,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour fallback (no set)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Theater/TheaterPlayback.cs",
+   "line": 524,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour fallback (no set)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Theater/TheaterWorldPlayback.cs",
+   "line": 246,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "domain colour fallback (no set)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 46,
+   "literal": "new Color(0.68f, 0.62f, 0.85f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 47,
+   "literal": "new Color(0.60f, 0.85f, 0.75f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 48,
+   "literal": "new Color(0.85f, 0.72f, 0.60f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 49,
+   "literal": "new Color(0.85f, 0.78f, 0.55f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 50,
+   "literal": "new Color(0.72f, 0.60f, 0.85f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 51,
+   "literal": "new Color(0.60f, 0.78f, 0.85f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 52,
+   "literal": "new Color(0.85f, 0.60f, 0.72f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 53,
+   "literal": "new Color(0.75f, 0.85f, 0.60f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 68,
+   "literal": "new(0.22f, 0.20f, 0.30f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 69,
+   "literal": "new(0.68f, 0.62f, 0.85f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 70,
+   "literal": "new(0.20f, 0.19f, 0.26f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 71,
+   "literal": "new(0.38f, 0.34f, 0.48f, 0.4f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 72,
+   "literal": "new(0.45f, 0.72f, 0.58f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 73,
+   "literal": "new(0.72f, 0.45f, 0.48f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 74,
+   "literal": "new(0.58f, 0.56f, 0.65f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 75,
+   "literal": "new(0.14f, 0.13f, 0.18f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 76,
+   "literal": "new(0.18f, 0.17f, 0.22f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 77,
+   "literal": "new(0.26f, 0.24f, 0.32f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 171,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 188,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 244,
+   "literal": "new Color(0.18f, 0.17f, 0.22f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 276,
+   "literal": "new Color(0.16f, 0.15f, 0.20f, 1f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 319,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 323,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 323,
+   "literal": "new Color(0.88f, 0.86f, 0.94f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 566,
+   "literal": "new Color(0.65f, 0.85f, 0.7f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 644,
+   "literal": "new Color(0.65f, 0.80f, 0.90f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 1307,
+   "literal": "new Color(0.16f, 0.15f, 0.20f, 0.5f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 1311,
+   "literal": "new Color(0.85f, 0.83f, 0.92f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/LogControlWindow.cs",
+   "line": 1312,
+   "literal": "new Color(0.85f, 0.83f, 0.92f)",
+   "bucket": "EXCLUDED",
+   "why": "editor-only (#if UNITY_EDITOR)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 900,
+   "literal": "<color=#80ff80>inscribed — ends at the face centres</color>",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 900,
+   "literal": "#80ff80",
+   "bucket": "EXCLUDED",
+   "why": "Rich-text colour in the prism-grid explosion test rig's readout; the whole file is inside #if DEVELOPMENT_BUILD || UNITY_EDITOR and is a diagnostic harness."
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 902,
+   "literal": "<color=#80ff80>blast engulfs lattice</color>",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 902,
+   "literal": "#80ff80",
+   "bucket": "EXCLUDED",
+   "why": "Rich-text colour in the test rig's diagnostic readout, compiled only under #if DEVELOPMENT_BUILD || UNITY_EDITOR."
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 903,
+   "literal": "<color=#ffcc60>blast covers centre only</color>",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 903,
+   "literal": "#ffcc60",
+   "bucket": "EXCLUDED",
+   "why": "Rich-text colour in the test rig's diagnostic readout, compiled only under #if DEVELOPMENT_BUILD || UNITY_EDITOR."
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 909,
+   "literal": "<color=#ffcc60>laying ",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 909,
+   "literal": "#ffcc60",
+   "bucket": "EXCLUDED",
+   "why": "Rich-text colour in the test rig's diagnostic readout, compiled only under #if DEVELOPMENT_BUILD || UNITY_EDITOR."
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 913,
+   "literal": "<color=#ffcc60>materializing ",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 913,
+   "literal": "#ffcc60",
+   "bucket": "EXCLUDED",
+   "why": "Rich-text colour in the test rig's diagnostic readout, compiled only under #if DEVELOPMENT_BUILD || UNITY_EDITOR."
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 916,
+   "literal": "<color=#80ff80>ready — ",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 916,
+   "literal": "#80ff80",
+   "bucket": "EXCLUDED",
+   "why": "Rich-text colour in the test rig's diagnostic readout, compiled only under #if DEVELOPMENT_BUILD || UNITY_EDITOR."
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 930,
+   "literal": "\n<color=#ff9060>",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 930,
+   "literal": "#ff9060",
+   "bucket": "EXCLUDED",
+   "why": "Rich-text colour on the test rig's pinned warning, compiled only under #if DEVELOPMENT_BUILD || UNITY_EDITOR."
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 1217,
+   "literal": "new Color(0.05f, 0.05f, 0.08f, 0.85f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 1248,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 1317,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 1327,
+   "literal": "new Color(0.12f, 0.12f, 0.16f, 0.95f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 1338,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 1352,
+   "literal": "new Color(0.25f, 0.3f, 0.4f, 0.95f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 1363,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 1378,
+   "literal": "new Color(0.15f, 0.15f, 0.2f, 0.95f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 1387,
+   "literal": "new Color(0.35f, 0.55f, 0.8f, 0.95f)",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/Tools/PrismGridExplosionHarness.cs",
+   "line": 1398,
+   "literal": "Color.white",
+   "bucket": "EXCLUDED",
+   "why": "development-build-only (#if DEVELOPMENT_BUILD)"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/VesselVisionShading.cs",
+   "line": 335,
+   "literal": "Color.clear",
+   "bucket": "INERT",
+   "why": "alpha-0 black: hidden graphic, cleared target or 'unset/keep' sentinel"
+  },
+  {
+   "file": "Assets/_Scripts/Utility/VesselVisionShading.cs",
+   "line": 384,
+   "literal": "Color.white",
+   "bucket": "FALLBACK",
+   "why": "entry tint default (set by the shader feeder)"
+  }
+ ],
+ "fields": [
+  {
+   "asset": "Assets/Resources/DisconnectNoticeConfig.asset",
+   "field": "BodyColor",
+   "bucket": "FALLBACK",
+   "why": "A legacy-panel colour that DisconnectNotice uses only when WindowPrefab is empty, which the shipped asset never leaves it (it wires DisconnectNoticeView.prefab).",
+   "class": "Assets/_Scripts/ScriptableObjects/DisconnectNoticeConfigSO.cs"
+  },
+  {
+   "asset": "Assets/Resources/DisconnectNoticeConfig.asset",
+   "field": "PanelColor",
+   "bucket": "FALLBACK",
+   "why": "Only DisconnectNotice.BuildUI's legacy panel paints it, and that panel is built only when the config's WindowPrefab is empty; the shipped Resources asset wires DisconnectNoticeView.prefab.",
+   "class": "Assets/_Scripts/ScriptableObjects/DisconnectNoticeConfigSO.cs"
+  },
+  {
+   "asset": "Assets/Resources/DisconnectNoticeConfig.asset",
+   "field": "PrimaryButtonColor",
+   "bucket": "FALLBACK",
+   "why": "The legacy panel's Reconnect fill, built only when WindowPrefab is empty; the shipped asset wires the style-B window.",
+   "class": "Assets/_Scripts/ScriptableObjects/DisconnectNoticeConfigSO.cs"
+  },
+  {
+   "asset": "Assets/Resources/DisconnectNoticeConfig.asset",
+   "field": "SecondaryButtonColor",
+   "bucket": "FALLBACK",
+   "why": "The legacy panel's Continue Offline fill, built only when WindowPrefab is empty; the shipped asset wires the style-B window.",
+   "class": "Assets/_Scripts/ScriptableObjects/DisconnectNoticeConfigSO.cs"
+  },
+  {
+   "asset": "Assets/Resources/TheaterConfig.asset",
+   "field": "stageBackground",
+   "bucket": "FALLBACK",
+   "why": "Drawn only as the replay's dark-stage camera clear (TheaterStage.Enter -> HideWorld), which shows only when the replay's arena cannot be stood; the shipped asset has hideWorld off.",
+   "class": "Assets/_Scripts/ScriptableObjects/TheaterConfigSO.cs"
+  },
+  {
+   "asset": "Assets/_Prefabs/UI Elements/VesselHUD/SquirrelHUDVariant.prefab",
+   "field": "joustFlashColor",
+   "bucket": "FALLBACK",
+   "why": "Shown only on the single-icon joust path or when ElementalBarsConfig fails to load; the shipped prefab wires both hull icons and the config exists, so a joust flashes ElementalBarsConfig's lime instead.",
+   "class": "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs"
+  },
+  {
+   "asset": "Assets/_SO_Assets/Toys/Toy_VesselChanger.asset",
+   "field": "accentColor",
+   "bucket": "TRACED",
+   "why": "Only partly: the field is declared and read in the base class ToyDefinitionSO (outside this batch), and ToyboxCard.Bind paints the Vessel Changer card's accentFill from ToyDefinitionSO.AccentColor, which UIThemeLive retraces by value only at a wear or a canvas sweep, so a pooled card re-bound after a wear shows the authored gold (ToyConfigureModal's back row and VesselChangerToy.PreviewColor reach it only as fallbacks).",
+   "class": "Assets/_Scripts/ScriptableObjects/Toys/VesselChangerToyDefinitionSO.cs"
+  },
+  {
+   "asset": "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset",
+   "field": "fallbackReadyColor",
+   "bucket": "FALLBACK",
+   "why": "Used only when the vessel has no domain palette to read the ready colour from, which no shipped hull lacks.",
+   "class": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/ThresherConfigSO.cs"
+  },
+  {
+   "asset": "Assets/_Scenes/Menu_Main.unity",
+   "field": "SelectedRowColor",
+   "bucket": "INERT",
+   "why": "Its only paint is inside UpdateView's loop over sortedCaptains, a private list that is only ever cleared (AssignModel: the captain system was removed), so the loop never runs and the colour never reaches a pixel.",
+   "class": "Assets/_Scripts/UI/Views/PortSquadCaptainSelectionView.cs"
+  },
+  {
+   "asset": "Assets/_Scenes/Menu_Main.unity",
+   "field": "activeTabColor",
+   "bucket": "INERT",
+   "why": "The weekly-challenge modal's tab colours are overwritten by its kit tabs before they draw (the migration review of WeeklyChallengeLeaderboardModal, 2026-11-10).",
+   "class": "Assets/_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs"
+  }
+ ]
+}

@@ -397,9 +397,9 @@ namespace CosmicShore.Gameplay
         public float CordDebrisRestitution => cordDebrisRestitution;
         public float CordDebrisSpeedLimit => cordDebrisSpeedLimit;
         public int CordRenderSubdivisions => cordRenderSubdivisions;
-        public Color CordColor => cordColor;
+        public Color CordColor => ColorTrace.Retrace(ColorTrace.World, cordColor);
         public float CordRimBrightness => cordRimBrightness;
-        public Color CordFallbackRim => cordFallbackRim;
+        public Color CordFallbackRim => ColorTrace.Retrace(ColorTrace.World, cordFallbackRim);
         public float RingLaunchSpeed => ringLaunchSpeed;
         public float RingFuseSeconds => ringFuseSeconds;
         public float RingContactRadiusScale => ringContactRadiusScale;

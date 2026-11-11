@@ -125,8 +125,9 @@ namespace CosmicShore.ScriptableObjects
         public ArkwaySettingsSO WithArk => withArk;
         public VoyageContentSO Content => content ? content : VoyageContentSO.Load();
         public ArkEscortSO ArkEscort => arkEscort;
-        public Color RouteColor => routeColor;
-        public Color HereColor => hereColor;
+        // The map's colours are the worn colour set's (ColorTrace): the Voyage window draws them on its canvas.
+        public Color RouteColor => ColorTrace.Retrace(ColorTrace.Ui, routeColor);
+        public Color HereColor => ColorTrace.Retrace(ColorTrace.Ui, hereColor);
         public float SeedElementLevel => seedElementLevel;
         public float WingmateLeash => wingmateLeash;
         public float FindDistance => findDistance;
@@ -138,13 +139,13 @@ namespace CosmicShore.ScriptableObjects
         public float CullRadius => cullRadius;
         public float ObserveRadius => observeRadius;
         public float RivalAbeam => rivalAbeam;
-        public Color PortColor => portColor;
-        public Color VaultColor => vaultColor;
-        public Color CoreColor => coreColor;
-        public Color LairColor => lairColor;
-        public Color NurseryColor => nurseryColor;
-        public Color ShrineColor => shrineColor;
-        public Color UnchartedColor => unchartedColor;
+        public Color PortColor => ColorTrace.Retrace(ColorTrace.Ui, portColor);
+        public Color VaultColor => ColorTrace.Retrace(ColorTrace.Ui, vaultColor);
+        public Color CoreColor => ColorTrace.Retrace(ColorTrace.Ui, coreColor);
+        public Color LairColor => ColorTrace.Retrace(ColorTrace.Ui, lairColor);
+        public Color NurseryColor => ColorTrace.Retrace(ColorTrace.Ui, nurseryColor);
+        public Color ShrineColor => ColorTrace.Retrace(ColorTrace.Ui, shrineColor);
+        public Color UnchartedColor => ColorTrace.Retrace(ColorTrace.Ui, unchartedColor);
         public Color LaneColor => laneColor;
 
         /// <summary>The Ark's settings for a voyage, the corridor's worlds taken from the content's cell pool when it

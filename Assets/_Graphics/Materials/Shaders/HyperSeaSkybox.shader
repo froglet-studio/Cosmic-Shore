@@ -23,6 +23,13 @@ Shader "CosmicShore/HyperSeaSkybox"
         _StarGalacticBoost ("Star Galactic Plane Boost", Range(0, 1)) = 0.35
         _StarConcentration ("Star Galactic Concentration", Range(0, 100)) = 1.2
         _TwinkleSpeed ("Twinkle Speed", Range(0, 5)) = 1.5
+        // The star temperature ramp, hot to cool (Docs/VesselModels/COLOR_TRACE.md: every colour the sky draws is a
+        // material colour the worn colour set repaints). Stored sRGB like every Color property; Unity linearizes them
+        // to the ramp's old constants (0.65, 0.75, 1), (1, 0.95, 0.88), (1, 0.78, 0.4), (1, 0.45, 0.25).
+        _StarColorHot ("Star Colour Hot (blue-white)", Color) = (0.82665706, 0.88082502, 1, 1)
+        _StarColorWhite ("Star Colour White", Color) = (1, 0.9776916, 0.9452769, 1)
+        _StarColorWarm ("Star Colour Warm (yellow)", Color) = (1, 0.8962439, 0.6651851, 1)
+        _StarColorCool ("Star Colour Cool (red-orange)", Color) = (1, 0.7014107, 0.5370987, 1)
 
         [Header(Nebulae)]
         [HDR]_NebulaColor1 ("Nebula Color 1 (Rose)", Color) = (0.5, 0.06, 0.3, 1)
@@ -94,6 +101,10 @@ Shader "CosmicShore/HyperSeaSkybox"
     half _StarGalacticBoost;
     half _StarConcentration;
     half _TwinkleSpeed;
+    half4 _StarColorHot;
+    half4 _StarColorWhite;
+    half4 _StarColorWarm;
+    half4 _StarColorCool;
 
     half4 _NebulaColor1;
     half4 _NebulaColor2;
@@ -231,10 +242,10 @@ Shader "CosmicShore/HyperSeaSkybox"
 
     half3 starColor(float temp)
     {
-        half3 blue   = half3(0.65, 0.75, 1.0);
-        half3 white  = half3(1.0, 0.95, 0.88);
-        half3 yellow = half3(1.0, 0.78, 0.4);
-        half3 red    = half3(1.0, 0.45, 0.25);
+        half3 blue   = _StarColorHot.rgb;
+        half3 white  = _StarColorWhite.rgb;
+        half3 yellow = _StarColorWarm.rgb;
+        half3 red    = _StarColorCool.rgb;
 
         half3 col = lerp(blue, white, saturate(temp * 2.5));
         col = lerp(col, yellow, saturate((temp - 0.5) * 3.5));

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using TMPro;
 using UnityEngine;
@@ -48,6 +49,38 @@ namespace CosmicShore.Gameplay
         static readonly Color Backdrop = new(0.043f, 0.051f, 0.071f, 1f);   // the board's panel, opaque
         static readonly Color HiveBar = new(1f, 0.655f, 0f, 1f);             // hive mode's time left
         static readonly Color StripTrack = new(0.165f, 0.2f, 0.25f, 1f);
+
+        // The colours above as the worn colour set paints them (ColorTrace). The board is rebuilt every frame, so they are
+        // read again only when the player wears another set (ColorTrace.Version), not once a hex.
+        int _paletteVersion = -1;
+        Color _panel, _edge, _cell, _cellEdge, _wildCell, _apFull, _apBonus, _apEmpty, _barTrack, _barRun, _barStill, _card,
+              _usePip, _ability, _muted, _cream, _label, _backdrop, _hiveBar, _stripTrack;
+
+        void RefreshPalette()
+        {
+            if (_paletteVersion == ColorTrace.Version) return;
+            _paletteVersion = ColorTrace.Version;
+            _panel = ColorTrace.Retrace(ColorTrace.Ui, Panel);
+            _edge = ColorTrace.Retrace(ColorTrace.Ui, Edge);
+            _cell = ColorTrace.Retrace(ColorTrace.Ui, Cell);
+            _cellEdge = ColorTrace.Retrace(ColorTrace.Ui, CellEdge);
+            _wildCell = ColorTrace.Retrace(ColorTrace.Ui, WildCell);
+            _apFull = ColorTrace.Retrace(ColorTrace.Ui, ApFull);
+            _apBonus = ColorTrace.Retrace(ColorTrace.Ui, ApBonus);
+            _apEmpty = ColorTrace.Retrace(ColorTrace.Ui, ApEmpty);
+            _barTrack = ColorTrace.Retrace(ColorTrace.Ui, BarTrack);
+            _barRun = ColorTrace.Retrace(ColorTrace.Ui, BarRun);
+            _barStill = ColorTrace.Retrace(ColorTrace.Ui, BarStill);
+            _card = ColorTrace.Retrace(ColorTrace.Ui, Card);
+            _usePip = ColorTrace.Retrace(ColorTrace.Ui, UsePip);
+            _ability = ColorTrace.Retrace(ColorTrace.Ui, Ability);
+            _muted = ColorTrace.Retrace(ColorTrace.Ui, Muted);
+            _cream = ColorTrace.Retrace(ColorTrace.Ui, Cream);
+            _label = ColorTrace.Retrace(ColorTrace.Ui, Label);
+            _backdrop = ColorTrace.Retrace(ColorTrace.Ui, Backdrop);
+            _hiveBar = ColorTrace.Retrace(ColorTrace.Ui, HiveBar);
+            _stripTrack = ColorTrace.Retrace(ColorTrace.Ui, StripTrack);
+        }
 
         readonly HoneyguideCrew _crew;
         readonly GameObject _root;
@@ -120,26 +153,29 @@ namespace CosmicShore.Gameplay
             _graphic.raycastTarget = false;
             _graphic.View = this;
 
-            _seat = MakeText("Seat", Label, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
-            _abilityName = MakeText("AbilityName", Ability, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
-            _abilityText = MakeText("AbilityText", Muted, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
-            _free = MakeText("Free", Cream, FontStyles.Bold, TextAlignmentOptions.Center);
-            _revealTitle = MakeText("RevealTitle", Ability, FontStyles.Bold, TextAlignmentOptions.Center);
+            // The labels are made in the worn set's colours; UIThemeLive repaints them when the player wears another.
+            RefreshPalette();
+            _seat = MakeText("Seat", _label, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
+            _abilityName = MakeText("AbilityName", _ability, FontStyles.Bold, TextAlignmentOptions.MidlineLeft);
+            _abilityText = MakeText("AbilityText", _muted, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
+            _free = MakeText("Free", _cream, FontStyles.Bold, TextAlignmentOptions.Center);
+            _revealTitle = MakeText("RevealTitle", _ability, FontStyles.Bold, TextAlignmentOptions.Center);
             _revealText = MakeText("RevealText", Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
             _detail = MakeText("CardDetail", Color.white, FontStyles.Normal, TextAlignmentOptions.Center);
             _chip = MakeText("TriggerChip", Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
-            _fly = MakeText("FlyButton", Cream, FontStyles.Bold, TextAlignmentOptions.Center);
-            _strip = MakeText("Strip", Muted, FontStyles.Normal, TextAlignmentOptions.MidlineRight);
-            _leave = MakeText("LeaveButton", Cream, FontStyles.Bold, TextAlignmentOptions.Center);
+            _fly = MakeText("FlyButton", _cream, FontStyles.Bold, TextAlignmentOptions.Center);
+            _strip = MakeText("Strip", _muted, FontStyles.Normal, TextAlignmentOptions.MidlineRight);
+            _leave = MakeText("LeaveButton", _cream, FontStyles.Bold, TextAlignmentOptions.Center);
             for (int k = 0; k < 3; k++)
             {
-                _slotNames[k] = MakeText("Slot" + k, new Color(0.91f, 0.93f, 0.95f, 1f), FontStyles.Bold, TextAlignmentOptions.TopLeft);
+                _slotNames[k] = MakeText("Slot" + k, ColorTrace.Retrace(ColorTrace.Ui, new Color(0.91f, 0.93f, 0.95f, 1f)), FontStyles.Bold,
+                                         TextAlignmentOptions.TopLeft);
                 _slotTaps[k] = MakeText("Tap" + k, Color.white, FontStyles.Bold, TextAlignmentOptions.BottomLeft);
             }
             for (int k = 0; k < MaxOffers; k++)
             {
                 _offerNames[k] = MakeText("OfferName" + k, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);
-                _offerTexts[k] = MakeText("OfferText" + k, Cream, FontStyles.Normal, TextAlignmentOptions.Center);
+                _offerTexts[k] = MakeText("OfferText" + k, _cream, FontStyles.Normal, TextAlignmentOptions.Center);
             }
         }
 
@@ -314,11 +350,12 @@ namespace CosmicShore.Gameplay
         {
             var core = _crew.Core;
             if (core == null) return;
+            RefreshPalette();
             Layout();
             // One view (the lowest preset, CrewSingleView): no small board while the human flies, and while the human plays
             // the Ratel the world behind the board is not drawn - the board on a plain backdrop is all the screen shows.
             bool single = CrewSingleView.On;
-            if (single && !_small) _park.Park(CameraManager.ViewCamera, Backdrop);
+            if (single && !_small) _park.Park(CameraManager.ViewCamera, ColorTrace.Retrace(ColorTrace.World, Backdrop));
             else _park.Release();
             _seatButtonOnly = single && _small;
             if (_seatButtonOnly) { FrameSeatButton(); return; }
@@ -352,7 +389,7 @@ namespace CosmicShore.Gameplay
                 : hive ? (_crew.Hive.Rewards.Count > 0 ? TemplateText.Fill(cfg.HiveEarnedTemplate, "colours", _crew.ColourList(_crew.Hive.Rewards)) : "")
                 : freeLine ? _mFree.Fill(cfg.FreePrismTemplate, "count", IntText(core.FreePlace), "colour", cfg.ColourName(core.Free[0]))
                 : _crew.MadeLine;
-            var lineColour = freeLine || _crew.MadeLineDynamo ? cfg.DynamoLineColour : Cream;
+            var lineColour = freeLine || _crew.MadeLineDynamo ? cfg.DynamoLineColour : _cream;
             float lineFlash = cfg.MadeJuiceSeconds > 0f ? 1f - Mathf.Clamp01((Time.time - _crew.LastMade.At) / cfg.MadeJuiceSeconds) : 0f;
             _free.color = Color.Lerp(lineColour, Color.white, lineFlash * lineFlash);
             var lineRect = _leaveRect.width > 0f ? new Rect(_lineRect.x, _lineRect.y, _lineRect.width - _leaveRect.width - 6f * ui, _lineRect.height) : _lineRect;
@@ -727,18 +764,19 @@ namespace CosmicShore.Gameplay
         {
             var core = _crew.Core;
             if (core == null || _rect.width < 4f) return;
+            RefreshPalette();
             if (_seatButtonOnly)
             {
-                HoneyguideMesh.Quad(vh, _flyRect, Panel);
-                HoneyguideMesh.Outline(vh, _flyRect, 2f, Ability);
+                HoneyguideMesh.Quad(vh, _flyRect, _panel);
+                HoneyguideMesh.Outline(vh, _flyRect, 2f, _ability);
                 return;
             }
             var cfg = _crew.Config;
             var s = _crew.Settings;
             float now = Time.time, ui = _ui;
 
-            HoneyguideMesh.Quad(vh, _rect, Panel);
-            HoneyguideMesh.Outline(vh, _rect, 1f, Edge);
+            HoneyguideMesh.Quad(vh, _rect, _panel);
+            HoneyguideMesh.Outline(vh, _rect, 1f, _edge);
 
             // the time to the next spin: a bar across the top that shrinks from both sides to the centre (no number; Garrett
             // 2026-10-31, the Ratel Raid Lab's bar); it stands still during a reveal. In hive mode it is the hive's time left.
@@ -748,9 +786,9 @@ namespace CosmicShore.Gameplay
             float barH = (_small ? 3f : 5f) * ui;
             float frac = hive != null ? Mathf.Clamp01(1f - (float)(_crew.HiveTime / hs.RaidSeconds)) : Mathf.Clamp01(1f - (float)(core.Clock / s.TickSeconds));
             bool soon = hive == null && rv == null && s.TickSeconds - core.Clock < 1.5;
-            HoneyguideMesh.Quad(vh, new Rect(_rect.x, _rect.yMax - barH, _rect.width, barH), BarTrack);
+            HoneyguideMesh.Quad(vh, new Rect(_rect.x, _rect.yMax - barH, _rect.width, barH), _barTrack);
             HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * frac / 2f, _rect.yMax - barH, _rect.width * frac, barH),
-                                hive != null ? HiveBar : rv != null ? BarStill : soon ? ApFull : BarRun);
+                                hive != null ? _hiveBar : rv != null ? _barStill : soon ? _apFull : _barRun);
             if (!_small) Strip(vh, cfg);
 
             // AP pips and the battery
@@ -758,7 +796,7 @@ namespace CosmicShore.Gameplay
             int bank = s.ApBank + (core.Ability == DynamoAbility.Overclock ? 1 : 0), pips = Mathf.Max(bank, core.Ap) + core.BonusAp;
             for (int k = 0; k < pips; k++)
                 HoneyguideMesh.Disc(vh, new Vector2(apX + k * 13f * ui, pipY), 4.5f * ui,
-                                    k < core.Ap + core.BonusAp ? (k >= core.Ap ? ApBonus : ApFull) : ApEmpty);
+                                    k < core.Ap + core.BonusAp ? (k >= core.Ap ? _apBonus : _apFull) : _apEmpty);
             int cap = core.BatteryCap(s);
             var made = _crew.LastMade;
             float flight = cfg.ChargeFlightSeconds, since = now - made.At;
@@ -773,7 +811,7 @@ namespace CosmicShore.Gameplay
                     float swell = mine ? 1f + 0.45f * (1f - Ease(Mathf.Clamp01((since - flight) / ChargePop))) : 1f;
                     HoneyguideMesh.Disc(vh, at, 6.5f * ui * swell, cfg.ColourOf(core.Battery[k]));
                 }
-                else HoneyguideMesh.Ring(vh, at, 5f * ui, 6.5f * ui, 16, 0f, new Color(0.235f, 0.275f, 0.329f, 1f));
+                else HoneyguideMesh.Ring(vh, at, 5f * ui, 6.5f * ui, 16, 0f, ColorTrace.Retrace(ColorTrace.Ui, new Color(0.235f, 0.275f, 0.329f, 1f)));
             }
 
             var built = core.Built(s);
@@ -783,8 +821,8 @@ namespace CosmicShore.Gameplay
                 Cards(vh, core, cfg, s, built, now);
                 if (!_small && _leaveRect.width > 2f)
                 {
-                    HoneyguideMesh.Quad(vh, _leaveRect, Panel);
-                    HoneyguideMesh.Outline(vh, _leaveRect, 2f, HiveBar);
+                    HoneyguideMesh.Quad(vh, _leaveRect, _panel);
+                    HoneyguideMesh.Outline(vh, _leaveRect, 2f, _hiveBar);
                 }
                 FlyButton(vh);
                 return;
@@ -797,8 +835,8 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < DynamoCore.CellCount; i++)
             {
                 var p = CellPx(i);
-                HoneyguideMesh.Hex(vh, p, _size * 0.95f, 0f, i == DynamoCore.Centre && core.Ability == DynamoAbility.WildCore ? WildCell : Cell);
-                HoneyguideMesh.HexRing(vh, p, _size * 0.95f, 1f, 0f, builtCells.Contains(i) && core.Cells[i] == 0 ? Color.white : CellEdge);
+                HoneyguideMesh.Hex(vh, p, _size * 0.95f, 0f, i == DynamoCore.Centre && core.Ability == DynamoAbility.WildCore ? _wildCell : _cell);
+                HoneyguideMesh.HexRing(vh, p, _size * 0.95f, 1f, 0f, builtCells.Contains(i) && core.Cells[i] == 0 ? Color.white : _cellEdge);
             }
 
             // the ports: a ring of their colour, filled faintly, turning together on a spin; fading in after a new pattern
@@ -847,15 +885,15 @@ namespace CosmicShore.Gameplay
             {
                 var d = DetailRect(ui);
                 HoneyguideMesh.Quad(vh, new Rect(_rect.x, _slots[0].yMax, _rect.width, _rect.height - _slots[0].height - barH), new Color(0f, 0f, 0f, 0.6f));
-                HoneyguideMesh.Quad(vh, d, Card);
+                HoneyguideMesh.Quad(vh, d, _card);
                 HoneyguideMesh.Outline(vh, d, 2f, cfg.ColourOf(cfg.Patterns[core.Slots[_detailSlot]].family));
             }
 
             if (ChipShown)
             {
                 float lit = ChipUpgraded ? 1f : 0.35f;
-                HoneyguideMesh.Quad(vh, _chipRect, new Color(1f, 0.655f, 0f, 0.35f * lit));
-                HoneyguideMesh.Outline(vh, _chipRect, 2f, new Color(1f, 0.655f, 0f, lit));
+                HoneyguideMesh.Quad(vh, _chipRect, Alpha(_hiveBar, 0.35f * lit));   // HiveBar's amber
+                HoneyguideMesh.Outline(vh, _chipRect, 2f, Alpha(_hiveBar, lit));
             }
             FlyButton(vh);
         }
@@ -864,8 +902,8 @@ namespace CosmicShore.Gameplay
         void FlyButton(VertexHelper vh)
         {
             if (_small || _flyRect.width <= 2f) return;
-            HoneyguideMesh.Quad(vh, _flyRect, Panel);
-            HoneyguideMesh.Outline(vh, _flyRect, 2f, Ability);
+            HoneyguideMesh.Quad(vh, _flyRect, _panel);
+            HoneyguideMesh.Outline(vh, _flyRect, 2f, _ability);
         }
 
         // the three cards: lit when the board shows the pattern; the shape; one pip per make before it is replaced
@@ -882,12 +920,12 @@ namespace CosmicShore.Gameplay
                 bool lit = built[k] != null && !hive;
                 var fam = cfg.ColourOf(pat.family);
                 float flash = Mathf.Clamp01(1f - (now - _crew.RetiredAt[k]));
-                HoneyguideMesh.Quad(vh, r, lit ? Alpha(fam, 0.22f + 0.2f * pulse) : flash > 0f ? Alpha(Color.white, 0.25f * flash) : Card);
+                HoneyguideMesh.Quad(vh, r, lit ? Alpha(fam, 0.22f + 0.2f * pulse) : flash > 0f ? Alpha(Color.white, 0.25f * flash) : _card);
                 HoneyguideMesh.Outline(vh, r, lit ? 2f : 1f, lit ? fam : Alpha(fam, 0.45f));
                 int uses = s.UsesPerPattern;
                 if (uses > 0 && !_small)
                     for (int u = 0; u < uses; u++)
-                        HoneyguideMesh.Disc(vh, new Vector2(r.xMax - 7f * ui - (uses - 1 - u) * 8f * ui, r.y + 7f * ui), 2.6f * ui, u < core.Uses[k] ? ApFull : UsePip);
+                        HoneyguideMesh.Disc(vh, new Vector2(r.xMax - 7f * ui - (uses - 1 - u) * 8f * ui, r.y + 7f * ui), 2.6f * ui, u < core.Uses[k] ? _apFull : _usePip);
                 var cells = HoneyguideConfigSO.ParseShape(pat.shape);
                 if (cells.Length == 0) continue;
                 float head = _cardHead, sz = Mathf.Min(r.width / 12f, (r.height - head - 6f) / 6.5f);
@@ -909,16 +947,16 @@ namespace CosmicShore.Gameplay
             {
                 for (int k = 0; k < _offerCount; k++)
                 {
-                    HoneyguideMesh.Quad(vh, _offerRects[k], Card);
-                    HoneyguideMesh.Outline(vh, _offerRects[k], 2f * ui, Ability);
+                    HoneyguideMesh.Quad(vh, _offerRects[k], _card);
+                    HoneyguideMesh.Outline(vh, _offerRects[k], 2f * ui, _ability);
                 }
                 if (_offerCount > 0 && total > 0f)
                 {
                     var last = _offerRects[_offerCount - 1];
-                    HoneyguideMesh.Quad(vh, new Rect(last.x, last.y - 6f * ui, last.width * prog, 2f * ui), Ability);
+                    HoneyguideMesh.Quad(vh, new Rect(last.x, last.y - 6f * ui, last.width * prog, 2f * ui), _ability);
                 }
             }
-            else HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * 0.4f * prog, _cy - _size * 2.6f, _rect.width * 0.8f * prog, 2f * ui), Ability);
+            else HoneyguideMesh.Quad(vh, new Rect(_rect.center.x - _rect.width * 0.4f * prog, _cy - _size * 2.6f, _rect.width * 0.8f * prog, 2f * ui), _ability);
         }
 
         // ------------------------------------------------------------------ hive mode (the Ratel Raid Lab's drawHive)
@@ -934,8 +972,8 @@ namespace CosmicShore.Gameplay
             {
                 var p = CellPx(i);
                 var x = hive.Cells[i];
-                HoneyguideMesh.Hex(vh, p, _size * 0.95f, 0f, Cell);
-                HoneyguideMesh.HexRing(vh, p, _size * 0.95f, 1f, 0f, CellEdge);
+                HoneyguideMesh.Hex(vh, p, _size * 0.95f, 0f, _cell);
+                HoneyguideMesh.HexRing(vh, p, _size * 0.95f, 1f, 0f, _cellEdge);
                 if (x.Dom == 0) continue;
                 var col = cfg.ColourOf(x.Dom);
                 if (x.Danger)
@@ -962,7 +1000,7 @@ namespace CosmicShore.Gameplay
                 HoneyguideMesh.Outline(vh, _rect, 3f * _ui * sting, Alpha(cfg.HiveDangerColour, sting));
             }
             float open = 1f - Mathf.Clamp01((now - _crew.HiveAt) / 0.8f);   // the hive opening: the board's edge flashes amber
-            if (open > 0f) HoneyguideMesh.Outline(vh, _rect, 4f * _ui * open, Alpha(HiveBar, open));
+            if (open > 0f) HoneyguideMesh.Outline(vh, _rect, 4f * _ui * open, Alpha(_hiveBar, open));
         }
 
         // After hive mode: the planar crystal the rewards landed on lights, the cells they landed in flash, and the cells it
@@ -1028,10 +1066,10 @@ namespace CosmicShore.Gameplay
 
             if (_crew.InHive)
             {
-                HoneyguideMesh.Quad(vh, new Rect(x0, cy - 1f * ui, x1 - x0, 2f * ui), StripTrack);
+                HoneyguideMesh.Quad(vh, new Rect(x0, cy - 1f * ui, x1 - x0, 2f * ui), _stripTrack);
                 var hull = new Vector2(x1 - 12f * ui, cy);
-                HoneyguideMesh.Hex(vh, new Vector2(x1, cy), 6f * ui, 0f, HiveBar);
-                HoneyguideMesh.Disc(vh, hull, 5f * ui, Ability);
+                HoneyguideMesh.Hex(vh, new Vector2(x1, cy), 6f * ui, 0f, _hiveBar);
+                HoneyguideMesh.Disc(vh, hull, 5f * ui, _ability);
                 HoneyguideMesh.Ring(vh, hull, 7f * ui, 8.5f * ui, 16, 0f, Alpha(Color.white, 0.8f));   // invulnerable
                 _stripHullX = -1f;
                 return;
@@ -1040,16 +1078,16 @@ namespace CosmicShore.Gameplay
             var goal = _crew.Goal;
             var ride = _crew.Ride;
             float hitSecs = Mathf.Max(0.05f, cfg.StripHitSeconds);
-            var goalCol = _crew.GoalColour >= 1 ? cfg.ColourOf(_crew.GoalColour) : Cream;
+            var goalCol = _crew.GoalColour >= 1 ? cfg.ColourOf(_crew.GoalColour) : _cream;
 
             // the track, and its ticks streaming left as the hull flies (faster on a ride)
-            HoneyguideMesh.Quad(vh, new Rect(x0, cy - 0.75f * ui, x1 - x0, 1.5f * ui), StripTrack);
+            HoneyguideMesh.Quad(vh, new Rect(x0, cy - 0.75f * ui, x1 - x0, 1.5f * ui), _stripTrack);
             float gap = 16f * ui, pace = Mathf.Clamp(_crew.HullSpeed * 0.8f, 10f, 140f) * ui * (ride != HoneyguideCrew.RideKind.None ? 3f : 1f);
             float shift = Mathf.Repeat(now * pace, gap);
             for (float x = x1 - shift; x > x0; x -= gap)
             {
                 float edge = Mathf.Clamp01(Mathf.Min(x - x0, x1 - x) / (24f * ui));
-                HoneyguideMesh.Quad(vh, new Rect(x - 0.75f * ui, cy - 2.5f * ui, 1.5f * ui, 5f * ui), Alpha(StripTrack, 0.4f + 0.6f * edge));
+                HoneyguideMesh.Quad(vh, new Rect(x - 0.75f * ui, cy - 2.5f * ui, 1.5f * ui, 5f * ui), Alpha(_stripTrack, 0.4f + 0.6f * edge));
             }
 
             // where the hull stands: back from the goal by its distance, eased so it glides
@@ -1076,7 +1114,7 @@ namespace CosmicShore.Gameplay
             else if (ride == HoneyguideCrew.RideKind.Jet)
             {
                 for (int k = 1; k <= 3; k++)
-                    DrawHoneyguide(vh, hullAt - new Vector2(7f * k * ui, 0f), ui, now, Alpha(Ability, 0.45f / k));
+                    DrawHoneyguide(vh, hullAt - new Vector2(7f * k * ui, 0f), ui, now, Alpha(_ability, 0.45f / k));
             }
             else if (ride == HoneyguideCrew.RideKind.Reel && goal != HoneyguideCrew.HuntGoal.None)
                 HoneyguideMesh.Line(vh, hullAt, goalAt, 1.5f * ui, Alpha(Color.white, 0.85f));
@@ -1093,8 +1131,8 @@ namespace CosmicShore.Gameplay
                     break;
                 }
                 case HoneyguideCrew.HuntGoal.Hive:
-                    HoneyguideMesh.Hex(vh, goalAt, 6.5f * ui, 0f, HiveBar);
-                    HoneyguideMesh.HexRing(vh, goalAt, 9f * ui, 1.2f * ui, 0f, Alpha(HiveBar, 0.4f + 0.3f * Mathf.Sin(now * 3f)));
+                    HoneyguideMesh.Hex(vh, goalAt, 6.5f * ui, 0f, _hiveBar);
+                    HoneyguideMesh.HexRing(vh, goalAt, 9f * ui, 1.2f * ui, 0f, Alpha(_hiveBar, 0.4f + 0.3f * Mathf.Sin(now * 3f)));
                     break;
                 case HoneyguideCrew.HuntGoal.Fauna:
                 {
@@ -1106,7 +1144,7 @@ namespace CosmicShore.Gameplay
                     HoneyguideMesh.Line(vh, at + new Vector2(-2f * ui, 2f * ui), at + new Vector2(-6f * ui, 6f * ui + 0.4f * beat), 1f * ui, goalCol);
                     HoneyguideMesh.Line(vh, at + new Vector2(-2f * ui, -2f * ui), at + new Vector2(-6f * ui, -6f * ui - 0.4f * beat), 1f * ui, goalCol);
                     HoneyguideMesh.Disc(vh, at, 4.5f * ui, goalCol);
-                    HoneyguideMesh.Disc(vh, at + new Vector2(-1.8f * ui, 1.2f * ui), 1.1f * ui, Backdrop);
+                    HoneyguideMesh.Disc(vh, at + new Vector2(-1.8f * ui, 1.2f * ui), 1.1f * ui, _backdrop);
                     goalAt = at;
                     break;
                 }
@@ -1116,7 +1154,7 @@ namespace CosmicShore.Gameplay
                     float jolt = struck < 1f ? (1f - struck) * 3f * ui * Mathf.Sin(now * 60f) : 0f;
                     var at = goalAt + new Vector2(jolt, Mathf.Sin(now * 2.3f) * 1.5f * ui);
                     HoneyguideMesh.Poly(vh, at, 7f * ui, 3, Mathf.PI, goalCol);
-                    HoneyguideMesh.Poly(vh, at + new Vector2(2f * ui, 0f), 3f * ui, 3, Mathf.PI, Backdrop);
+                    HoneyguideMesh.Poly(vh, at + new Vector2(2f * ui, 0f), 3f * ui, 3, Mathf.PI, _backdrop);
                     goalAt = at;
                     break;
                 }
@@ -1127,14 +1165,14 @@ namespace CosmicShore.Gameplay
                     for (int k = 0; k < PrismCluster.Length; k++)
                     {
                         if (broke < 1f && k == _crew.BrokeCount % PrismCluster.Length) continue;
-                        HoneyguideMesh.Hex(vh, goalAt + PrismCluster[k] * s, s * 0.92f, 0f, k % 2 == 0 ? goalCol : Color.Lerp(goalCol, Backdrop, 0.3f));
+                        HoneyguideMesh.Hex(vh, goalAt + PrismCluster[k] * s, s * 0.92f, 0f, k % 2 == 0 ? goalCol : Color.Lerp(goalCol, _backdrop, 0.3f));
                     }
                     break;
                 }
             }
 
             // the Honeyguide
-            DrawHoneyguide(vh, hullAt, ui, now, Ability);
+            DrawHoneyguide(vh, hullAt, ui, now, _ability);
 
             // a Peck: three dots down the track toward the goal
             float peck = now - _crew.PeckAt;
@@ -1143,7 +1181,7 @@ namespace CosmicShore.Gameplay
                 {
                     float u = Mathf.Clamp01((peck - 0.08f * k) / 0.3f);
                     if (u <= 0f || u >= 1f) continue;
-                    HoneyguideMesh.Disc(vh, Vector2.Lerp(hullAt + new Vector2(7f * ui, 0f), goalAt, u), 1.4f * ui, Cream);
+                    HoneyguideMesh.Disc(vh, Vector2.Lerp(hullAt + new Vector2(7f * ui, 0f), goalAt, u), 1.4f * ui, _cream);
                 }
 
             // a strike: a ring and sparks out of the target (or just ahead of the hull with no target)
@@ -1156,7 +1194,7 @@ namespace CosmicShore.Gameplay
                 {
                     float a = k * Mathf.PI / 3f + 0.3f;
                     var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-                    HoneyguideMesh.Line(vh, at + dir * (6f + 8f * e) * ui, at + dir * (9f + 12f * e) * ui, 1.2f * ui, Alpha(ApFull, fade));
+                    HoneyguideMesh.Line(vh, at + dir * (6f + 8f * e) * ui, at + dir * (9f + 12f * e) * ui, 1.2f * ui, Alpha(_apFull, fade));
                 }
             }
 

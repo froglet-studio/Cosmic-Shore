@@ -347,7 +347,8 @@ namespace CosmicShore.Gameplay
         /// <summary>The mote colour of element index <paramref name="e"/> (Element - 1); <paramref name="fallback"/> when
         /// the asset carries none (a config authored before 2026-10-21).</summary>
         public Color ElementColor(int e, Color fallback) =>
-            elementColors != null && e >= 0 && e < elementColors.Length && elementColors[e].a > 0f ? elementColors[e] : fallback;
+            elementColors != null && e >= 0 && e < elementColors.Length && elementColors[e].a > 0f
+                ? ColorTrace.Retrace(ColorTrace.World, elementColors[e]) : fallback;
         public float HeadingAlignDistance => headingAlignDistance;
         public float ViewMargin => viewMargin;
         public float MoteSize => moteSize;
