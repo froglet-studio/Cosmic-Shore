@@ -23,7 +23,7 @@ Where each fact comes from (so a wrong fact is fixed at its source, never in the
 
 | On the page | Source |
 |---|---|
-| The Flight Certificate (solo vessels: five checks, 20 % each; Launch / Fleet / Arena Ready; Rev 84, section 155) | `fleet_codex.py` `certificate()`: the map (every ability), the L5 status (5 % per WIRED upgrade), the vessel's arcade cards by element (Time; Mass or Space; Charge). Never typed |
+| The Flight Certificate (solo vessels: five checks, 20 % each, shown as the percentage only - no stage names, Shombith 2026-11-10; Rev 84, section 155) | `fleet_codex.py` `certificate()`: the map (every ability), the L5 status (5 % per WIRED upgrade), the vessel's arcade cards by element (Time; Mass or Space; Charge). Never typed |
 | Each element's tier (S, A, B, C) | `Docs/FleetCodex/tiers.json`, the third hand table: a person's rating (Shombith's, gathered with Garrett on the Fleet Tier Sheet https://claude.ai/artifact/76HqmyoHRaWSM14zTcnPVt); `?` until rated, a dash where the vessel has no game of that element |
 | What an ability does, its trigger, the plain 'more Mass ...' line, what the omni crystal does | `Docs/FleetCodex/abilities.json`; an entry whose `ability` no longer equals the map's `AbilityLabel` is DROPPED with a stderr warning (re-read its `source` and fix the entry) |
 | Crew seats (a card per seat with its abilities inside) | `Docs/FleetCodex/seats.json`; a seat not in `CrewNames` or an element the map lacks STOPS the build |

@@ -6723,3 +6723,8 @@ and Tier filters, each on its own; a stage or tier filter leaves the crews out. 
 the fleet sorted by Time tier and filtered to Launch Ready) and 390 px: no script error, no sideways scroll. Until the
 tiers are rated every letter shows `?`. The ratings are collected with the **Fleet Tier Sheet**
 (https://claude.ai/artifact/76HqmyoHRaWSM14zTcnPVt), shared with Garrett; its Copy answers text goes into `tiers.json`.
+
+**Percentage only (Shombith, 2026-11-10, on the built page):** "Should not be names but only the percantage". The
+page and the Fleet Tier Sheet no longer show Launch / Fleet / Arena Ready: the certificate is its percentage (Gold at 100%,
+soft under 60%), and the fleet's completion filter is in bands (100%, 80-95%, 60-75%, under 60%). The generator still
+records the stage in `fleet.json` for readers; nothing draws it.
