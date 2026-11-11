@@ -1930,3 +1930,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: hold an example to everything a set is held to, the writer's field check included (`author_colour_set_assets.py --check` now does), so promoting one is a move in `colour_sets.json`. When a lab shows sets beside the game's, a ship report names the ones that are not shipped and offers to take them in: a person reads the lab's rail as the game's.
 - Evidence: `author_colour_set_assets.py --self-test` (Dusk's old Heather, planted as an example, is caught); the window scan in the promotion commit.
 - Promoted: `.claude/skills/colour-set/SKILL.md` §7, §9
+
+### L-STU-179 — A per-lay loop that waits on UniTask.Delay is frame-bound at speed: the spacing is speed × frame time, not the authored wavelength
+- Lab: Manta Trail Lab (`Docs/Studios/MantaTrailLab.html`) · Branch: `claude/manta-trail-speed-shape` · By: Manta Polish thread (Caleb) · Date: 2026-11-11
+- What happened: `VesselPrismController.SpawnLoopAsync` lays, then waits `wavelength / speed` (10 m / speed). A `UniTask.Delay` ends on a frame, so once the wait is shorter than a frame the lay is one per frame. At the Manta's Soar (~600-700 u/s at 60 fps) the rail spacing is ~11 m, not 10, and it grows with speed and with a lower frame rate. A first lab that stepped the lay with sub-frame timing would have shown a Soar ribbon that the game never lays: Soar fill read 0.45 for the shipped 5.5 m prism, and a "Z fills the wavelength" rule left gaps at Soar until its cap used `max(wavelength, speed × dt)`.
+- Do instead: step any per-lay or per-tick async loop the way the game's awaiter resolves (one firing per frame at most, the next wait measured from that frame), and give the lab a frame-rate dial so a phone's 30 fps is scored too.
+- Evidence: `VesselPrismController.SpawnLoopAsync`; the lab's `simStep` lay timer and `shFrameAware` dial; scorecard "Soar fill" column.
+- Promoted: no
