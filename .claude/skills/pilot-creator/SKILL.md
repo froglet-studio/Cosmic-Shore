@@ -74,6 +74,7 @@ python3 Tools/Build/pilot_art/blind.py prep <scratch dir> [WORD...]   # shuffle 
 python3 Tools/Build/pilot_art/blind.py grade <scratch dir> --rows     # grade what they said, worst first
 python3 Tools/Build/author_pilot_avatar_assets.py              # re-cut every avatar (256 px) from its bust
 python3 Tools/Build/author_pilot_avatar_assets.py --check      # the drift gate
+python3 Tools/Build/colour_grade.py                            # after a re-cut: the texture record follows
 for m in bust creator blind; do python3 Tools/Build/pilot_art/$m.py --self-test; done
 ```
 
@@ -111,6 +112,9 @@ for m in bust creator blind; do python3 Tools/Build/pilot_art/$m.py --self-test;
    inherit. A pilot whose animal is missed gets its table line fixed and one repaint; read the final set again.
 7. **Write** the avatars: `author_pilot_avatar_assets.py` then `--check`. Ids are append-only (1-18 the callsign
    pilots, 19-50 the legacy painted pilots); guids are `md5("CosmicShore/PilotAvatar/<WORD>")` and never move.
+   Then `python3 Tools/Build/colour_grade.py`: its record (`Docs/VesselModels/colour_grade.json`) holds a hash of
+   every texture a build can load, so a re-cut avatar makes it stale and its `--check` is a ship gate. Only the
+   re-cut avatars' entries should change.
 8. **Commit** the busts, their briefs, the avatars, any table change and the lessons together:
    `feat(pilots): signature bust of <Person> (<WORD>)`, "Affects: Garrett's pilots; Shombith's profile UI".
    No C# changes, so no reference compile; say so.
