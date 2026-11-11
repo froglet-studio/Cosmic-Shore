@@ -391,8 +391,9 @@ LIMB = {
     "Otter": "a sea otter's small dark webbed paw with nimble fingers",
     "Opossum": "an opossum's pink hand with five slender bare fingers",
     "Badger": "a badger's broad dark forepaw, the palm toward the viewer, with five toes and one long pale digging claw on each toe",
-    "Mouse": "a mouse's small hand, four thin bare pink fingers and a thumb, each tipped with a tiny pale claw, "
-             "the back of the hand in short white fur",
+    "Mouse": "a mouse's small forepaw grown to the size of a person's hand, covered in short white fur to the "
+             "fingertips and bare pink only at the pads, its four fingers and its thumb each ending in a small pale "
+             "claw",
     "Kangaroo": "a kangaroo's small dark forepaw with five clawed fingers",
     "Mole": "a mole's broad pink hand, its five thick fingers ending in long pale nails",
     "Sloth": "a sloth's long shaggy arm ending in a slow long-fingered hand, a curved pale claw at the tip of each finger",

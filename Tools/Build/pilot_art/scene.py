@@ -47,8 +47,21 @@ emblem or lettering (`bust.emblem_word`).
     python3 Tools/Build/pilot_art/scene.py capture <WORD> <url> [approach]
     python3 Tools/Build/pilot_art/scene.py sheet <out.png>       # each sample beside its avatar
     python3 Tools/Build/pilot_art/scene.py stale                 # scenes today's kit would paint differently
+    python3 Tools/Build/pilot_art/scene.py read-prep <dir>       # the readers' pictures, shuffled; key beside <dir>
+    python3 Tools/Build/pilot_art/scene.py read-grade <dir>      # grade <dir>/result.json against the key
     python3 Tools/Build/pilot_art/scene.py --self-test
+
+THE READ is how "the same character" is measured, because whoever wrote the brief sees the pilot they asked for.
+read-prep writes, into a NEW scratch folder outside the repository, the fifty avatars numbered in a shuffled order
+(match/avatars_N.jpg), every painted scene under a letter with a close-up (match/scene_X.jpg), and each scene beside
+its own avatar (compare/), with the key at <dir>.key.json, outside the folder the readers open. The readers are the
+workflow .claude/skills/pilot-creator/references/scene_read.js: one finds each scene's character among the fifty,
+told nothing; one compares each scene with its avatar and lists what differs. Save what it returns as
+<dir>/result.json and grade it. A repaint is a new picture: read it again.
 """
+import collections
+import hashlib
+import json
 import os
 import re
 import subprocess
@@ -214,7 +227,8 @@ SAMPLES = {
         wear=("Both knees and shins are plastered with wet grey mud; the hem of the cape is soaked dark and spattered; "
               "a three-cornered tear near the hem has been mended with coarse pale stitches; the leather is cracked "
               "at its creases; the fur of the neck is damp and spiked; there is silt under the claws, and water "
-              "stands in beads on the oilskin."),
+              "stands in beads on the oilskin. Above the mud line the magenta piping still shows bright along the "
+              "collar and down the front edges of the cape."),
     ),
     "GALLEON": dict(
         approach="film",
@@ -222,10 +236,12 @@ SAMPLES = {
         swap=(("a bison's huge shaggy forelock", "a bison's huge woolly forelock"),
               ("just showing through it at the sides", "standing clear of it at each side of the head,"),
               ("shaggy dark-brown bison wool", "curly dark-brown bison wool")),
-        seen=("the skin is deep cinnamon brown, the whiskers pale and stiff, the tusks yellowed ivory, finely crazed "
+        seen=("the face is a walrus's from the chin to the top: a smooth rounded forehead sloping straight into a "
+              "broad flat muzzle of two round whisker pads, with the nostrils between them and small wide-set eyes",
+              "the skin is deep cinnamon brown, the whiskers pale and stiff, the tusks yellowed ivory, finely crazed "
               "with age",
-              "the wool is tight springy curls like a lamb's fleece, growing from the scalp itself and running "
-              "without a break into the beard and the wool of the neck",
+              "the wool is tight springy curls like a lamb's fleece, growing from the scalp itself, down over the "
+              "temples where ears would be, and running without a break into the beard and the wool of the neck",
               "each epaulette is a coil of rope, the ship's wheel is a small badge of yellow brass, and the "
               "sea-glass is pale green"),
         doing=("Haradek stands at the nose of a small single-seat craft and ties a strip of plain faded red cloth to "
@@ -248,7 +264,9 @@ SAMPLES = {
     "Echo": dict(
         approach="candid",
         source="hobby: \"keeps a jar of every crystal they have ever missed\" (the game's Quirks)",
-        seen=("the face is white from the brow down, and the barred feathers begin above the brow, between the two "
+        seen=("the face is a mouse's, small and fine with a short pointed muzzle, and each round ear is nearly as big "
+              "as the face",
+              "the face is white from the brow down, and the barred feathers begin above the brow, between the two "
               "mouse ears, where the ear tufts stand",
               "the coat is pale stone-grey, edged in teal piping along the lapels, the pocket and the cuffs, and "
               "worn over a dark teal brocade waistcoat",
@@ -257,10 +275,10 @@ SAMPLES = {
         lower="plain dark trousers, bagged at the knees, and grey wool socks pulled up under their cuffs, one darned "
               "at the heel, the deck shoes kicked off under the bunk",
         doing=("Echo sits on the bunk with both knees drawn up and a big glass jar wedged between them, three-quarters "
-               "full of small crystals: every crystal Echo ever missed. One small pink hand lifts the brass lens on "
-               "its cord up to one eye; the other holds a single pale crystal the size of a thumbnail up to the desk "
-               "lamp in a pair of tweezers. The whiskers are pushed forward and the whole face is bent to the "
-               "crystal, cool and assessing. Both wings show behind the shoulders: one is folded, the other hangs "
+               "full of small crystals: every crystal Echo ever missed. One small white-furred hand steadies the jar; "
+               "the other holds a single pale crystal the size of a thumbnail up to the desk lamp in a pair of "
+               "tweezers. The brass lens hangs on its cord against the chest. The whiskers are pushed forward and "
+               "the whole face is bent to the crystal, cool and assessing. Both wings show behind the shoulders: one is folded, the other hangs "
                "half open over the edge of the bunk, and two shed barred feathers lie on the blanket."),
         place=("A crew cabin aboard a great ship, late at night: a narrow bunk built into a metal wall, a fold-down "
                "desk crowded with a chipped enamel mug, a bent desk lamp, coils of wire and a closed notebook, a "
@@ -270,9 +288,8 @@ SAMPLES = {
                "catches the edge of every feather. The window gives a faint cold fill, and the corners of the room "
                "are nearly black."),
         wear=("The coat is unbuttoned and creased from being slept in, its sleeves a little too long and down over "
-              "the wrists, one cuff frayed, an old ink stain spread under the breast pocket, a small burn hole near "
-              "the hem, a loose thread at a button; a few feathers are out of place, and there are crumbs on the "
-              "blanket."),
+              "the wrists, one cuff frayed, an old ink stain spread under the breast pocket; a few feathers are out "
+              "of place, and there are crumbs on the blanket."),
     ),
     "Tenacious": dict(
         approach="sitting",
@@ -290,28 +307,30 @@ SAMPLES = {
         doing=("Tenacious has just come off a long rescue and sits on an upturned equipment case at the edge of the "
                "deck, elbows on knees, a dented steel mug steaming between both gloved hands, and looks straight into "
                "the lens: bone tired, calm and faintly amused."),
-        place=("The open deck of a rescue station built on a shard of rock, at first light after a storm: wet steel "
-               "plates, coiled lines and blank crates of gear stacked against a rail, two orange rescue boats in "
-               "their cradles soft in the background, and a beacon lamp still turning far behind, laying a "
-               "red-orange glow into the lifting rain. Beyond the rail there is no sea, no shore and no horizon: only "
-               "a vast slow whirlpool of violet-grey storm cloud, dim and far, seen through the rain like weather, "
-               "and pale faceted crystals as big as houses drifting past."),
-        light=("Flat grey daylight from the overcast above on the face, soft and even; the far beacon's red-orange as "
-               "a faint warm edge on the wet shell and one shoulder; a faint violet glow from the cloud behind; fine "
-               "rain still falling, a few drops caught sharp."),
-        wear=("The jacket is soaked and streaked with soot; one forearm of it is ripped open in a ragged tear with "
-              "the grey lining showing; one reflective band is half peeled away; the harness webbing is frayed at a "
-              "buckle; the gloves are blackened; the shell cap and the shell behind the shoulders are scuffed, with "
-              "pale scrapes across the olive-brown plates, their golden growth rings still plain; the black hair "
-              "hangs wet in ropes; rain runs down the face, and the fur of the cheeks and the brow is soaked dark, "
-              "stuck in points and smudged with soot."),
+        place=("The open deck of a rescue station at first light after a storm: wet steel plates, coiled lines and "
+               "blank crates of gear stacked against a rail, two orange rescue boats in their cradles soft in the "
+               "background, empty and unlit, their hulls plain orange, and a beacon lamp still turning far behind, "
+               "laying a red-orange glow into the lifting rain. The station stands inside a living cell the size of a sea: beyond the rail the water lies flat "
+               "and milky green, and where a horizon and a sky would be, the far wall of the cell rises through the "
+               "rain and curves overhead, a pale translucent membrane veined like a leaf, dim and far."),
+        light=("Flat grey-green daylight filtering down through the membrane and the rain, soft and even on the "
+               "face; the far beacon's red-orange as a faint warm edge on the wet shell and one shoulder; fine rain "
+               "still falling, a few drops caught sharp."),
+        wear=("The jacket is soaked; soot is ground into one shoulder, one side and both knees, where they went "
+              "against a wall and a floor, and the rain has washed the rest nearly clean; one forearm of it is ripped "
+              "open in a ragged tear with the grey lining showing; one reflective band is half peeled away; the "
+              "harness webbing is frayed at a buckle; the gloves are blackened; the shell cap and the shell behind "
+              "the shoulders are scuffed, with pale scrapes across the olive-brown plates, their golden growth rings "
+              "still plain; the black hair hangs wet in ropes; rain runs down the face, the fur of the cheeks and "
+              "the brow is soaked dark and stuck in points, and one cheek is smeared with soot where a glove wiped "
+              "it."),
     ),
 }
 CLOSE = {   # painted scene -> the square around the figure's head, for the sheet's close-up beside the avatar
-    "MANGER-field": (650, 195, 1010, 555),
+    "MANGER-field": (490, 195, 860, 565),
     "GALLEON-film": (330, 0, 800, 470),
-    "Echo-candid": (300, 60, 720, 480),
-    "Tenacious-sitting": (220, 20, 720, 520),
+    "Echo-candid": (340, 20, 740, 420),
+    "Tenacious-sitting": (280, 10, 780, 510),
 }
 SCENE_KEYS = ("approach", "source", "seen", "doing", "place", "light", "wear")
 SCENE_MORE = ("carry", "lower", "build", "hands", "swap")
@@ -579,6 +598,188 @@ def sheet(out):
 
 
 # ---------------------------------------------------------------------------------------------------------------
+# The read: is the scene the same person as the avatar, to someone who was told nothing?
+# ---------------------------------------------------------------------------------------------------------------
+def _md5(path):
+    with open(path, "rb") as fh:
+        return hashlib.md5(fh.read()).hexdigest()
+
+
+def read_key_path(out):
+    """The key's path: beside the readers' folder, never in it."""
+    return os.path.abspath(out) + ".key.json"
+
+
+def _in_repo(path):
+    return os.path.realpath(path).startswith(os.path.realpath(ROOT) + os.sep)
+
+
+def read_prep(out, salt=None):
+    """Write the readers' pictures into out/ and the key beside it; returns the key. The fifty avatars are numbered
+    in an order shuffled by the folder's name (or `salt`), the painted scenes lettered in another. A folder in the
+    repository, or one that already holds a read, is refused."""
+    from PIL import Image, ImageDraw, ImageFont
+    out = os.path.realpath(out)
+    if _in_repo(out) or _in_repo(read_key_path(out)):
+        raise ValueError("a read's pictures and key are scratch: give a folder outside the repository")
+    if os.path.exists(os.path.join(out, "result.json")):
+        raise ValueError(f"{out} already holds a read (result.json): prep a new folder, so a read stays with the "
+                         f"pictures it was made on")
+    salt = salt or os.path.basename(out)
+
+    def shuffled(items, what):
+        return sorted(items, key=lambda w: hashlib.md5(f"{salt}/{what}/{w}".encode("utf-8")).hexdigest())
+    order = shuffled([c[0] for c in creator.catalog() if os.path.exists(creator.bust_path(c[0]))], "avatar")
+    painted = shuffled([w for w, rec in SAMPLES.items() if os.path.exists(scene_path(w, rec["approach"]))], "scene")
+    if not painted:
+        raise ValueError("no painted scene to read")
+    if len(painted) > 26:
+        raise ValueError("a read letters its scenes A to Z: read at most 26 at a time")
+    for sub in ("match", "compare"):
+        os.makedirs(os.path.join(out, sub), exist_ok=True)
+        for name in os.listdir(os.path.join(out, sub)):   # the pictures of an earlier shuffle
+            if re.fullmatch(r"(?:avatars_\d+|scene_[A-Z](?:_close)?|pair_[A-Z]_avatar)\.jpg", name):
+                os.remove(os.path.join(out, sub, name))
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+    except OSError:
+        font = ImageFont.load_default()
+    tile = 320
+    for s in range((len(order) + 24) // 25):
+        page = Image.new("RGB", (5 * tile, 5 * tile), (20, 23, 43))
+        d = ImageDraw.Draw(page)
+        for j, w in enumerate(order[s * 25:s * 25 + 25]):
+            x, y = (j % 5) * tile, (j // 5) * tile
+            page.paste(Image.open(creator.bust_path(w)).convert("RGB").resize((tile, tile), Image.LANCZOS), (x, y))
+            label = str(s * 25 + j + 1)
+            d.rectangle((x, y, x + 16 + 15 * len(label), y + 34), fill=(0, 0, 0))
+            d.text((x + 8, y + 3), label, fill=(255, 255, 255), font=font)
+        page.save(os.path.join(out, "match", f"avatars_{s + 1}.jpg"), quality=90)
+    number = {w: n for n, w in enumerate(order, 1)}
+    key = dict(avatars={str(n): w for w, n in number.items()}, scenes={})
+    for k, w in enumerate(painted):
+        letter, approach = chr(ord("A") + k), SAMPLES[w]["approach"]
+        path = scene_path(w, approach)
+        im = Image.open(path).convert("RGB")
+        close = im.crop(CLOSE[f"{w}-{approach}"]).resize((1040, 1040), Image.LANCZOS)
+        for sub in ("match", "compare"):
+            im.save(os.path.join(out, sub, f"scene_{letter}.jpg"), quality=92)
+            close.save(os.path.join(out, sub, f"scene_{letter}_close.jpg"), quality=92)
+        Image.open(creator.bust_path(w)).convert("RGB").save(
+            os.path.join(out, "compare", f"pair_{letter}_avatar.jpg"), quality=92)
+        key["scenes"][letter] = dict(word=w, approach=approach, number=number[w], scene_md5=_md5(path),
+                                     bust_md5=_md5(creator.bust_path(w)))
+    with open(read_key_path(out), "w", encoding="utf-8") as fh:
+        json.dump(key, fh, indent=1)
+    return key
+
+
+PHOTO_KINDS = ("photograph", "film still")
+NOTHING = re.compile(r"\s*(?:no|none|nothing|not any)\b", re.I)   # a reader's "none seen" is not a report
+
+
+def _reported(entries):
+    return [e for e in entries or () if not NOTHING.match(str(e))]
+
+
+def read_grade(key, result):
+    """Grade what scene_read.js returned against the key: (rows, tally). rows is [(letter, word-approach, [lines])],
+    tally the counts the docs quote. A reader's answer for a letter the key does not have is ignored."""
+    tally = collections.Counter()
+    rows = []
+    for letter in sorted(key["scenes"]):
+        k = key["scenes"][letter]
+        lines = []
+        for n, reader in enumerate(result.get("match") or (), 1):
+            for s in (reader or {}).get("scenes", ()):
+                if str(s.get("letter", "")).strip().upper() != letter:
+                    continue
+                picks = [(int(c["number"]), c.get("confidence", "")) for c in s.get("candidates", ())]
+                first = picks[0] if picks else (None, "")
+                right = first[0] == k["number"]
+                among = any(p == k["number"] for p, _ in picks)
+                tally["match answers"] += 1
+                tally["match first choice right"] += right
+                tally["match right among the candidates"] += among
+                tally["called a photograph or a film still"] += s.get("kind_of_image") in PHOTO_KINDS
+                tally["kind answers"] += 1
+                tally["lettering reports"] += bool(_reported(s.get("lettering_or_symbols")))
+                tally["more than one figure"] += int(s.get("figures_visible") or 1) > 1
+                verdict = "RIGHT" if right else ("right among the candidates" if among else "WRONG")
+                lines.append(f"match {n}: picked {first[0]} ({first[1]}), {verdict}; saw {s.get('face_animal')} and "
+                             f"{s.get('second_animal')}; a {s.get('kind_of_image')}; {s.get('figures_visible')} "
+                             f"figure(s)")
+                for what in ("lettering_or_symbols", "anatomy_problems"):
+                    if _reported(s.get(what)):
+                        lines.append(f"    {what.replace('_', ' ')}: " + "; ".join(_reported(s[what])))
+        for n, reader in enumerate(result.get("compare") or (), 1):
+            for s in (reader or {}).get("scenes", ()):
+                if str(s.get("letter", "")).strip().upper() != letter:
+                    continue
+                same = s.get("same_character", "")
+                tally["compare answers"] += 1
+                tally[f"same character: {same}"] += 1
+                tally["eye ring visible"] += bool(s.get("eye_ring_visible"))
+                tally["trim colour present"] += bool(s.get("trim_colour_present"))
+                tally["called a photograph or a film still"] += s.get("kind_of_image") in PHOTO_KINDS
+                tally["kind answers"] += 1
+                tally["lettering reports"] += bool(_reported(s.get("lettering_or_symbols")))
+                tally["something permanent added"] += bool(_reported(s.get("added_permanent")))
+                noticed = [d["what"] for d in s.get("differences", ()) if d.get("severity") == "a player would notice"]
+                tally["differences a player would notice"] += len(noticed)
+                lines.append(f"compare {n}: same character {same}; eye ring "
+                             f"{'seen' if s.get('eye_ring_visible') else 'not seen'}; trim colour "
+                             f"{'present' if s.get('trim_colour_present') else 'absent'}; a {s.get('kind_of_image')}")
+                for d in noticed:
+                    lines.append(f"    a player would notice: {d}")
+                for what in ("added_permanent", "realism_breaks", "lettering_or_symbols", "anatomy_problems"):
+                    if _reported(s.get(what)):
+                        lines.append(f"    {what.replace('_', ' ')}: " + "; ".join(_reported(s[what])))
+        rows.append((letter, f"{k['word']}-{k['approach']}", lines))
+    return rows, tally
+
+
+def read_notes(key):
+    """What changed since the read was prepared: scenes or avatars repainted since (the read is of the earlier ones)."""
+    notes = []
+    for letter, k in sorted(key["scenes"].items()):
+        path = scene_path(k["word"], k["approach"])
+        if not os.path.exists(path) or _md5(path) != k["scene_md5"]:
+            notes.append(f"scene {letter} ({k['word']}-{k['approach']}) was repainted since this read")
+        if _md5(creator.bust_path(k["word"])) != k["bust_md5"]:
+            notes.append(f"{k['word']}'s avatar was repainted since this read")
+    return notes
+
+
+def print_read(out):
+    with open(read_key_path(out), encoding="utf-8") as fh:
+        key = json.load(fh)
+    with open(os.path.join(out, "result.json"), encoding="utf-8") as fh:
+        result = json.load(fh)
+    rows, tally = read_grade(key, result)
+    for letter, name, lines in rows:
+        print(f"{letter}  {name}  (avatar {key['scenes'][letter]['number']})")
+        for line in lines:
+            print("   " + line)
+    m, c, kinds = tally["match answers"], tally["compare answers"], tally["kind answers"]
+    print(f"scenes read                                   {len(rows)}")
+    print(f"blind match, first choice right               {tally['match first choice right']} of {m} answers")
+    print(f"blind match, right among the candidates       {tally['match right among the candidates']} of {m}")
+    print(f"side by side, same character                  yes {tally['same character: yes']}, mostly "
+          f"{tally['same character: mostly']}, no {tally['same character: no']} (of {c})")
+    print(f"side by side, differences a player would notice {tally['differences a player would notice']}")
+    print(f"eye ring seen                                 {tally['eye ring visible']} of {c}")
+    print(f"trim colour present                           {tally['trim colour present']} of {c}")
+    print(f"called a photograph or a film still           {tally['called a photograph or a film still']} of {kinds}")
+    print(f"answers listing a mark, device or lettering   {tally['lettering reports']} of {kinds} (read the lines)")
+    print(f"answers counting more than one figure         {tally['more than one figure']} of {m}")
+    print(f"answers reporting something permanent added   {tally['something permanent added']} of {c}")
+    for note in read_notes(key):
+        print("NOTE:", note)
+    return 0
+
+
+# ---------------------------------------------------------------------------------------------------------------
 # Self-test.
 # ---------------------------------------------------------------------------------------------------------------
 def self_test():
@@ -705,6 +906,61 @@ def self_test():
     except ValueError:
         pass
 
+    # 5. The read: prep shuffles into scratch with the key outside the readers' folder, and grade tells a right
+    #    match from a wrong one.
+    import shutil
+    import tempfile
+    painted = sorted(w for w, rec in SAMPLES.items() if os.path.exists(scene_path(w, rec["approach"])))
+    tmp = tempfile.mkdtemp(prefix="scene_read_")
+    try:
+        out = os.path.join(tmp, "read")
+        key = read_prep(out)
+        if sorted(k["word"] for k in key["scenes"].values()) != painted:
+            errors.append("read-prep did not letter every painted scene once")
+        if len(set(key["avatars"].values())) != len(key["avatars"]) or len(key["avatars"]) != len(words):
+            errors.append("read-prep did not number every avatar once")
+        if any(key["avatars"][str(k["number"])] != k["word"] for k in key["scenes"].values()):
+            errors.append("the read key's scene numbers do not point at their own avatars")
+        if os.path.dirname(read_key_path(out)) != tmp or "key" in " ".join(os.listdir(out)):
+            errors.append("the read key is inside the folder the readers open")
+        shown = os.listdir(os.path.join(out, "match")) + os.listdir(os.path.join(out, "compare"))
+        if any(w.lower() in name.lower() for name in shown for w in words):
+            errors.append("a file the readers open gives a pilot away by its name")
+        if read_prep(os.path.join(tmp, "another"))["avatars"] == key["avatars"]:
+            errors.append("two reads in different folders share one shuffle")
+
+        def answers(pick):
+            return dict(
+                match=[dict(scenes=[dict(letter=x, kind_of_image="photograph", face_animal="a", second_animal="b",
+                                         candidates=[dict(number=pick(x), confidence="sure", why="")],
+                                         lettering_or_symbols=["None seen"], anatomy_problems=[],
+                                         figures_visible=1) for x in key["scenes"]])],
+                compare=[dict(scenes=[dict(letter=x, same_character="yes", added_permanent=[],
+                                           differences=[dict(what="the eyes", severity="a player would notice"),
+                                                        dict(what="a button", severity="trivial")],
+                                           trim_colour_present=True, eye_ring_visible=False,
+                                           kind_of_image="film still", realism_breaks=[], lettering_or_symbols=[],
+                                           anatomy_problems=[]) for x in key["scenes"]])])
+        n = len(key["scenes"])
+        _, tally = read_grade(key, answers(lambda x: key["scenes"][x]["number"]))
+        if (tally["match first choice right"], tally["differences a player would notice"],
+                tally["lettering reports"], tally["called a photograph or a film still"]) != (n, n, 0, 2 * n):
+            errors.append(f"read-grade miscounts a right read: {dict(tally)}")
+        _, tally = read_grade(key, answers(lambda x: key["scenes"][x]["number"] % len(words) + 1))
+        if tally["match first choice right"] or tally["match right among the candidates"]:
+            errors.append("read-grade called a wrong match right")
+        with open(os.path.join(out, "result.json"), "w", encoding="utf-8") as fh:
+            fh.write("{}")
+        for folder, what in ((out, "a folder that already holds a read"),
+                             (os.path.join(ROOT, SCENES, "_read"), "the repository")):
+            try:
+                read_prep(folder)
+                errors.append(f"read-prep wrote into {what}")
+            except ValueError:
+                pass
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
     if errors:
         print("scene.py self-test FAILED:")
         for e in errors:
@@ -749,6 +1005,19 @@ def main():
     if args[0] == "capture" and len(args) in (3, 4):
         capture(args[1], args[2], args[3] if len(args) == 4 else None)
         return 0
+    if args[0] == "read-prep" and len(args) == 2:
+        try:
+            key = read_prep(args[1])
+        except ValueError as e:
+            print(f"scene.py read-prep: {e}")
+            return 2
+        print(f"{len(key['scenes'])} scenes and {len(key['avatars'])} avatars in {os.path.realpath(args[1])}; the key "
+              f"is {read_key_path(args[1])}")
+        print("readers: .claude/skills/pilot-creator/references/scene_read.js with args "
+              f"{{\"dir\": \"{os.path.realpath(args[1])}\", \"letters\": {json.dumps(sorted(key['scenes']))}}}")
+        return 0
+    if args[0] == "read-grade" and len(args) == 2:
+        return print_read(args[1])
     print(__doc__)
     return 2
 
