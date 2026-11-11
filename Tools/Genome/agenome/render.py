@@ -106,8 +106,8 @@ def _mesh(name):
                 (7, 1, 8), (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9), (4, 9, 5), (2, 4, 11), (6, 2, 10),
                 (8, 6, 7), (9, 8, 1)]
         return _flat(P, tris)
-    if name == "ring":
-        segs, sides, R, r = 16, 4, 0.42, 0.08
+    if name in ("ring", "hoop"):  # hoop: the thin wire ring of gates and crystal rings
+        segs, sides, R, r = (16, 4, 0.42, 0.08) if name == "ring" else (40, 4, 0.42, 0.012)
         P, tris = [], []
         for i in range(segs):
             a = 2 * math.pi * i / segs
@@ -132,6 +132,10 @@ def _mesh(name):
                     for k in tri:
                         v.append(list(P[k]) + list(n))
         return np.array(v, np.float32)
+    if name == "stella":  # stellated octahedron: the mesh the game draws super-shielded prisms with
+        A = np.array([(1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1)], float) * 0.5
+        tris = [(0, 1, 2), (0, 3, 1), (0, 2, 3), (1, 3, 2)]
+        return np.concatenate([_flat(A, tris), _flat(-A, tris)], 0)
     if name == "pyramid":
         P = np.array([(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, -0.5, 0.5), (-0.5, -0.5, 0.5), (0, 0.5, 0)], float)
         tris = [(0, 1, 4), (1, 2, 4), (2, 3, 4), (3, 0, 4), (0, 2, 1), (0, 3, 2)]
@@ -179,7 +183,10 @@ void main(){
   float m2 = a.x + a.y + a.z - m1 - min(a.x, min(a.y, a.z)); // second largest
   float edge = smoothstep(0.78, 0.98, m2);
   vec3 col;
-  if(fE < 0.0){ // ag.rim: unlit fresnel, a bright rim in the instance colour over a dark complementary face
+  if(fE < -100.0){ // game prism: a dim face in its own hue, a bright fresnel rim (PrismMaterial)
+    float fr = pow(1.0 - abs(dot(n, normalize(uEye - fW))), -fE - 100.0);
+    col = mix(fC.rgb*0.22, fC.rgb*(1.0 + fC.a), clamp(fr + edge*0.35, 0.0, 1.0));
+  } else if(fE < 0.0){ // ag.rim: unlit fresnel, a bright rim in the instance colour over a dark complementary face
     float fr = pow(1.0 - abs(dot(n, normalize(uEye - fW))), -fE);
     float mx = max(max(fC.r, fC.g), max(fC.b, 1e-4));
     col = mix((vec3(1.0) - fC.rgb/mx)*0.06, fC.rgb*(1.0 + fC.a), fr);
@@ -388,7 +395,7 @@ class Renderer:
         if name in prog:
             prog[name].value = value
 
-    def render(self, g, n_frames=60, return_state=False, t0=None, t_shift=0.0):
+    def render(self, g, n_frames=60, return_state=False, t0=None, t_shift=0.0, replay=None):
         """Render genome g to uint8 [n_frames, H, W, 3] at 15 fps of game time, starting at its warmup (or t0) plus
         t_shift seconds (a later window of the same phenotype, for judging more than its first 4 seconds)."""
         g = g.copy().ensure_root()
@@ -417,7 +424,8 @@ class Renderer:
         steps_warm = int(warm / dt)
         # the cap bounds a warmup alone (the out.warmup byte spans 0-30 s) plus the requested window shift; a flat 3600
         # (60 s) silently moved any window whose warmup + t_shift went past 60 s back to 60 s (code review 2026-11-10)
-        for _ in range(min(steps_warm, 3600 + int(max(0.0, float(t_shift)) / dt))):
+        # replay: a recorded session drives camera and instances (replay.frame(fi) -> t, eye, r, u, fwd, fov, inst)
+        for _ in range(0 if replay is not None else min(steps_warm, 3600 + int(max(0.0, float(t_shift)) / dt))):
             world.step(dt)
             cam.update(world.t, dt)
         th, ph = rd["ltheta"], rd["lphi"]
@@ -463,11 +471,24 @@ class Renderer:
                 if f"u{nm}" in hp:
                     hp[f"u{nm}"].value = [tuple(float(x) for x in it[k]) for it in allh]
         for fi in range(n_frames):
-            for _ in range(SUBSTEPS):
-                world.step(dt)
-                eye, tgt = cam.update(world.t, dt)
-            t = world.t
-            r, u, fwd = look_at(eye, tgt)
+            if replay is not None:
+                rf = replay.frame(fi)
+                t, eye, r, u, fwd = rf["t"], np.asarray(rf["eye"], np.float32), rf["r"], rf["u"], rf["fwd"]
+                tgt = eye + fwd
+                if rf.get("fov"):
+                    fov = float(rf["fov"])
+                    self._set(prog, "uTanHalf", math.tan(math.radians(fov) / 2))
+                    self._set(pc, "uPanini", panini_params(pd, crop, fov, self.w / self.h))
+            else:
+                for _ in range(SUBSTEPS):
+                    world.step(dt)
+                    eye, tgt = cam.update(world.t, dt)
+                t = world.t
+                r, u, fwd = look_at(eye, tgt) if cam.basis is None else cam.basis
+                if cam.tunnel() is not None:
+                    fov = cam.fov_now()
+                    self._set(prog, "uTanHalf", math.tan(math.radians(fov) / 2))
+                    self._set(pc, "uPanini", panini_params(cam.panini()[0], 1.0, fov, self.w / self.h))
             # ---- scene pass
             self.scene_fbo.use()
             ctx.viewport = (0, 0, self.w, self.h)
@@ -482,7 +503,7 @@ class Renderer:
             vao.render(self.mgl.TRIANGLE_STRIP)
             ctx.depth_func = "<"
             # ---- instances
-            inst = world.instances()
+            inst = rf["inst"] if replay is not None else world.instances()
             V = np.eye(4)
             V[0, :3], V[1, :3], V[2, :3] = r, u, -fwd
             V[:3, 3] = -V[:3, :3] @ eye

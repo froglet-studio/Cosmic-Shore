@@ -198,6 +198,54 @@ OPS_LIST = [
        "fresnel rim shading for every instance (trail prisms, bodies, scatter) of the populations under it: a bright "
        "rim in the population colour over a dark complementary face, as the game shades prisms and crystals",
        "Cosmic Shore prism shader"),
+    # ---------------------------------------------------------------- the game's own mechanics (agenome/game.py)
+    Op(0x5A, "ag.course", "A", (), (
+        P("kind", "enum", 0, 4, 0), P("radius", "exp", 100, 1100, 207), P("gates", "int", 4, 32, 36),
+        P("perturb", "lin", 0, 300, 0), P("mouth", "exp", 8, 120, 103), P("seed", "int", 0, 255, 0)),
+       "closed course: flat octagon / Catmull loop / gate loop / harmonic ring, with gate frames", "Skim Race, Regatta"),
+    Op(0x5B, "ag.rail", "A", ("A",), (
+        P("lanes", "int", 1, 3, 0), P("offset", "lin", 0, 40, 0), P("twist", "lin", 0, 2, 0),
+        P("sx", "exp", 0.5, 24, 197), P("sy", "exp", 0.5, 24, 46), P("sz", "exp", 0.5, 24, 118),
+        P("spacing", "exp", 4, 24, 156), P("state", "enum", 0, 4, 140), P("colour", "enum", 0, 2, 0),
+        P("marker", "lin", 1, 3, 128), P("emit", "exp", 0.05, 10, 100)) + _hsv("", 163, 150, 180),
+       "static prisms along the course: the Skim Race ribbon, the Regatta rails (state super = stellated mesh)",
+       "RegattaCourse, SpawnableWaypointTrack"),
+    Op(0x5C, "ag.gate", "A", ("A",), (P("emit", "exp", 0.05, 10, 128),) + _hsv("", 163, 150, 200),
+       "a ring per gate at the mouth radius", "RaceGateRing"),
+    Op(0x5D, "ag.crystal", "A", ("A",), (
+        P("jitter", "lin", 0, 60, 149), P("radius", "exp", 2, 30, 234), P("inset", "lin", 0, 60, 110),
+        P("lift", "lin", -30, 30, 128), P("emit", "exp", 0.05, 10, 150)),
+       "one crystal ring per vessel in its colour: collect, +boost, drop a prism ring, jump to the next anchor",
+       "CrystalManager, CrystalRaceRing"),
+    Op(0x5E, "ag.vessel", "A", ("A",), (
+        P("count", "int", 1, 12, 46), P("domains", "int", 1, 3, 255), P("cruise", "exp", 10, 200, 153),
+        P("minspeed", "lin", 0, 20, 0), P("turn", "lin", 20, 180, 159), P("roll", "lin", 0, 180, 184),
+        P("rotthr", "lin", 0, 0.5, 0), P("follow", "exp", 0.5, 12, 88), P("accel", "exp", 0.5, 6, 113),
+        P("boostmax", "lin", 1, 8, 146), P("decay", "exp", 0.03, 1, 167),
+        P("ha", "hue", default=137), P("hb", "hue", default=199), P("hc", "hue", default=24),
+        P("sat", "lin", 0, 1, 255), P("val", "exp", 0.05, 4, 190)),
+       "the hull integrator: commanded frame, lagging nose, speed lerp, decaying boost; three domain hues",
+       "VesselTransformer"),
+    Op(0x5F, "ag.pilot", "A", ("A",), (
+        P("law", "enum", 0, 2, 255), P("look", "lin", 0, 1.5, 145), P("lookmin", "exp", 20, 120, 99),
+        P("lookmax", "exp", 100, 600, 216), P("lead", "lin", 1, 4, 128), P("maxlead", "lin", 0, 90, 65),
+        P("gain", "exp", 0.02, 0.3, 135), P("height", "lin", 0, 12, 93), P("thrlo", "lin", 0, 1, 51),
+        P("thrhi", "lin", 0, 1, 255), P("bend", "exp", 50, 600, 180), P("bank", "exp", 0.1, 10, 128)),
+       "stick input: bang-bang pursuit or lead-compensated line follow, bending through the crystal",
+       "SkimRaceDriver, AIPilot"),
+    Op(0x60, "ag.skim", "A", ("A",), (P("radius", "lin", 2, 20, 78), P("add", "lin", 0, 0.5, 51),
+                                      P("pickup", "lin", 0, 2, 102)),
+       "boost from grazing prisms and from crystals; a hull hit resets it", "SkimmerBoostPrismEffect"),
+    Op(0x61, "ag.lay", "A", ("A",), (
+        P("wave", "exp", 1, 20, 166), P("sx", "exp", 0.2, 24, 245), P("sy", "exp", 0.2, 8, 91),
+        P("sz", "exp", 0.2, 12, 206), P("gap", "lin", 0, 20, 236), P("offset", "lin", 0, 20, 0),
+        P("delay", "lin", 0, 3, 170), P("grow", "exp", 0.5, 5, 101), P("emit", "exp", 0.05, 10, 128)),
+       "lay prisms per distance in the hull frame, two rails with a gap, persistent, exponential grow-in",
+       "VesselPrismController"),
+    Op(0x64, "ag.shards", "A", ("A",), (
+        P("spacing", "exp", 60, 300, 110), P("radius", "exp", 200, 2000, 198), P("scale", "lin", 0, 20, 128),
+        P("emit", "exp", 0.05, 10, 40)) + _hsv("", 170, 60, 120),
+       "static needles filling the cell, aimed at the crystal and growing with distance from it", "SnowChanger"),
     # ---------------------------------------------------------------- cameras
     Op(0x70, "cam.chase", "C", ("A",), (P("agent", "int", 0, 15, 0), P("dist", "exp", 0.1, 200, 128),
                                        P("height", "scub", 0, 100, 150), P("lag", "lin", 0, 0.98, 160),
@@ -213,6 +261,13 @@ OPS_LIST = [
        "Panini projection over the camera's image, as URP's post effect (the game uses distance 0.7, crop to fit)",
        "URP PaniniProjection"),
     Op(0x73, "cam.shake", "C", ("C",), (P("amp", "exp", 0.0001, 2, 60), P("freq", "exp", 0.5, 30, 128)), "", ""),
+    Op(0x75, "cam.attach", "C", ("A",), (P("agent", "int", 0, 11, 0), P("dist", "exp", 5, 300, 76),
+                                        P("height", "lin", 0, 20, 0), P("fov", "lin", 40, 110, 182)),
+       "camera rigidly attached in the hull frame (rolls with it), as the game's FixedCamera", "CustomCameraController"),
+    Op(0x76, "cam.tunnel", "C", ("C",), (P("lo", "lin", 0, 150, 119), P("hi", "lin", 100, 400, 153),
+                                        P("fovdrop", "lin", 0, 40, 159), P("panini", "lin", 0, 1, 179),
+                                        P("pdrop", "lin", 0, 1, 128)),
+       "speed tunnel: FOV and Panini follow the followed vessel's speed", "SpeedTunnelConfig"),
     # ---------------------------------------------------------------- post (werkkzeug IPP)
     Op(0x80, "post.grade", "P", (), (
         P("exposure", "exp", 0.25, 8, 128), P("thresh", "lin", 0, 2, 100), P("bloom", "exp", 0.001, 4, 128),

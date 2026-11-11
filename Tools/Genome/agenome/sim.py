@@ -10,8 +10,9 @@ import math
 import numpy as np
 
 from .ops import OPS
+from .game import GAME_OPS, GameSim
 
-MESHES = ["box", "octa", "dart", "icosa", "ring", "pyramid"]
+MESHES = ["box", "octa", "dart", "icosa", "ring", "pyramid", "stella", "hoop"]
 
 
 def _d(node):
@@ -38,6 +39,7 @@ class Population:
         p = Population(self.kind, self.cfg, 0)
         p.behaviours = list(self.behaviours)
         p.trail, p.body, p.rng, p.rim = self.trail, self.body, self.rng, self.rim
+        p.game = getattr(self, "game", None)
         return p
 
     def edge(self, e):
@@ -63,6 +65,10 @@ def build_populations(g, idx, memo=None, gseed=0):
         out = [Population("movers", d, (gseed * 7919 + int(d["seed"]) * 131 + idx) & 0xFFFFFFFF)]
     elif n.op == "ag.scatter":
         out = [Population("static", d, (gseed * 7919 + int(d["seed"]) * 131 + idx) & 0xFFFFFFFF)]
+    elif n.op == "ag.course":
+        pp = Population("game", d, (gseed * 7919 + int(d["seed"]) * 131 + 17) & 0xFFFFFFFF)
+        pp.game = {"ag.course": d}
+        out = [pp]
     elif n.op == "ag.merge":
         out = build_populations(g, ins[0], memo, gseed) + build_populations(g, ins[1], memo, gseed)
     else:
@@ -76,6 +82,9 @@ def build_populations(g, idx, memo=None, gseed=0):
                 p.body = d
             elif n.op == "ag.rim":
                 p.rim = d
+            elif n.op in GAME_OPS and p.kind == "game":
+                p.game = dict(p.game)
+                p.game[n.op] = d
     memo[idx] = out
     return [p.copy_shallow() for p in out]
 
@@ -104,8 +113,12 @@ class World:
         self.t = 0.0
         self.movers = []
         self.static = []
+        self.games = []
         for p in pops:
-            if p.kind == "movers":
+            if p.kind == "game":
+                p.sim = GameSim(p.game, p.rng, p.body)
+                self.games.append(p)
+            elif p.kind == "movers":
                 self._init_movers(p)
                 self.movers.append(p)
             else:
@@ -167,6 +180,8 @@ class World:
     def step(self, dt):
         for p in self.movers:
             self._step_movers(p, dt)
+        for p in self.games:
+            p.sim.step(dt)
         self.t += dt
 
     def _step_movers(self, p, dt):
@@ -308,9 +323,22 @@ class World:
             arr = np.concatenate([p.pos, x * s, y * s, ax * s, rgb * p.bright(), np.full((n, 1), c["emit"], np.float32),
                                   np.full((n, 1), p.edge(c["edge"]), np.float32)], 1)
             lists[MESHES[int(c["mesh"])]].append(arr)
+        for p in self.games:
+            p.sim.add_instances(lists)
         return {m: (np.concatenate(v, 0).astype(np.float32) if v else None) for m, v in lists.items()}
 
+    def frame_of(self, k):
+        """Position, rotation (columns right, up, forward) and speed of game vessel k, or None."""
+        for p in self.games:
+            if p.sim.n:
+                return p.sim.frame_of(k)
+        return None
+
     def mover(self, k):
+        for p in self.games:
+            if p.sim.n:
+                pos, R, sp = p.sim.frame_of(k)
+                return pos, R[:, 2] * sp
         if not self.movers:
             return None
         tot = sum(len(p.pos) for p in self.movers)
@@ -323,7 +351,7 @@ class World:
 
 
 # ---------------------------------------------------------------------- cameras
-MODIFIERS = ("cam.shake", "cam.lens")  # camera ops that sit over a rig (input C) instead of being one
+MODIFIERS = ("cam.shake", "cam.lens", "cam.tunnel")  # camera ops that sit over a rig (input C) instead of being one
 
 
 class Camera:
@@ -334,7 +362,7 @@ class Camera:
             n = g.nodes[j]
             self.chain.append((n.op, _d(n)))
             j = n.inputs[0] if (n.op in MODIFIERS and n.inputs) else None
-            if n.op == "cam.chase":
+            if n.op in ("cam.chase", "cam.attach"):
                 break
         self.chain.reverse()  # base rig first, then shakes and lenses
         if not self.chain or self.chain[0][0] in MODIFIERS:  # no rig under the modifiers: the default orbit
@@ -344,12 +372,28 @@ class Camera:
         self.tgt = None
         self.rng = np.random.default_rng(seed)
         self.ph = self.rng.random(12) * 6.2831853
+        self.basis = None  # (right, up, forward) when the rig sets the full rotation (cam.attach rolls with the hull)
+        self.effect = 0.0  # cam.tunnel: smoothed speed effect 0..1
+        self.speed = 0.0
 
     def fov(self):
         return float(self.chain[0][1].get("fov", 60.0))
 
+    def tunnel(self):
+        for op, d in self.chain[1:]:
+            if op == "cam.tunnel":
+                return d
+        return None
+
+    def fov_now(self):
+        d = self.tunnel()
+        return self.fov() - (d["fovdrop"] * self.effect if d else 0.0)
+
     def panini(self):
         """(distance, crop to fit) of the first cam.lens over the rig; (0, 1) without one (rectilinear)."""
+        d = self.tunnel()
+        if d:
+            return max(0.0, float(d["panini"] - d["pdrop"] * self.effect)), 1.0
         for op, d in self.chain[1:]:
             if op == "cam.lens":
                 return float(d["panini"]), float(d["crop"])
@@ -357,6 +401,22 @@ class Camera:
 
     def update(self, t, dt):
         op, d = self.chain[0]
+        self.basis = None
+        if op == "cam.attach":
+            fr = self.world.frame_of(int(d["agent"])) if self.world is not None else None
+            if fr is None:
+                op, d = "cam.orbit", {"radius": d["dist"] * 3, "height": d["height"], "speed": 0.2, "fov": d["fov"],
+                                     "phase": 0.0}
+            else:
+                pos, R, sp = fr
+                self.eye = (pos - R[:, 2] * d["dist"] + R[:, 1] * d["height"]).astype(np.float32)
+                self.tgt = (self.eye + R[:, 2]).astype(np.float32)
+                self.basis = (R[:, 0], R[:, 1], R[:, 2])
+                self.speed = sp
+                tn = self.tunnel()
+                if tn:
+                    e = min(1.0, max(0.0, (sp - tn["lo"]) / max(tn["hi"] - tn["lo"], 1.0)))
+                    self.effect += (e - self.effect) * min(1.0, 12.0 * dt)
         if op == "cam.chase":
             m = self.world.mover(int(d["agent"])) if self.world is not None else None
             if m is None:
