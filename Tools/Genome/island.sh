@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run one search island of the Amoebius genome search on this machine (any Linux box with python3 >= 3.10).
 #   bash island.sh <island-name> [hours]
-# It copies the code from the shared project folder, installs what it needs, and runs the diamond search with the
+# It copies the code from the shared project folder, installs what it needs, and runs the Pareto search with the
 # learned critic, publishing its Pareto front under runs/<island-name>/ and importing other islands' best every
 # 10 generations. Stop it with: pkill -f agenome.search
 # Optional: SEEDS="glob glob ..." picks the starting lineages (default: every seed folder but the raw wz3 ones);
@@ -19,6 +19,10 @@
 # every REJUDGE generations (default 6) judges the survivors and the front again on windows they have not seen and
 # folds them in: two FIXED windows get fitted too (climbed genomes read 0.3-0.6 worse on windows they never saw).
 # AUDIT="24,28" (default) judges each generation's best on windows selection never uses, logged as best_audit.
+# The search (agenome/search.py, SEARCH.md) defaults to pareto survival and the CMA tuner, the two pieces that won the
+# 2026-11-10 A/B; SURVIVAL=diamond TUNER=random runs the search as it was before (set one of them for an A/B island),
+# PARENTS=lexicase and OPERATORS=adaptive switch on the two pieces that were a wash; BAND=0.05 is the pareto band
+# (fidelity given up for bytes; SPAN is the random-window span).
 # LABW=1.0 adds the fitness lab's element-aware scorer (agenome.labscore, 1.0 = Amoebius' held-out source) to the
 # fitness beside the judge, on the same windows, scored by LABWORKERS processes (default 2; about 1.5 s a window
 # each); its numbers are logged as best_lab and best_audit_lab. Unset or 0, the command is the same as before. A
@@ -94,6 +98,8 @@ CMD=(python3 -m agenome.search --run "$WORK/run_$NAME" \
   --judge-windows "${WINDOWS:-1}" --judge-hop "${HOP:-8}" --window-mode "${WINMODE:-fixed}" \
   --window-span "${SPAN:-20}" --window-step "${STEP:-2}" --audit-offsets "${AUDIT:-24,28}" \
   --rejudge-every "$( [ "${WINMODE:-fixed}" = random ] && echo "${REJUDGE:-6}" || echo 0 )" \
+  --survival "${SURVIVAL:-pareto}" --parents "${PARENTS:-tournament}" --operators "${OPERATORS:-fixed}" \
+  --tuner "${TUNER:-cma}" --span "${BAND:-0.05}" \
   ${LAB_ARGS[@]+"${LAB_ARGS[@]}"} ${IMPORT_ARGS[@]+"${IMPORT_ARGS[@]}"} \
   --share "${RUNS:-$SHARE/runs}" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
 echo "island $NAME: log $WORK/run_$NAME.out ; results in ${RUNS:-$SHARE/runs}/$NAME/ ; resuming from ${#OWN[@]} own file(s)"

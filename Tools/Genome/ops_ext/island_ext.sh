@@ -4,7 +4,7 @@
 #   Fronts go to ops_ext/runs/<name>/ (RUNS) so islands on core code never import unknown ops.
 # Run one search island of the Amoebius genome search on this machine (any Linux box with python3 >= 3.10).
 #   bash island.sh <island-name> [hours]
-# It copies the code from the shared project folder, installs what it needs, and runs the diamond search with the
+# It copies the code from the shared project folder, installs what it needs, and runs the Pareto search with the
 # learned critic, publishing its Pareto front under runs/<island-name>/ and importing other islands' best every
 # 10 generations. Stop it with: pkill -f agenome.search
 # Optional: SEEDS="glob glob ..." picks the starting lineages (default: every seed folder but the raw wz3 ones);
@@ -12,6 +12,8 @@
 # SS=2 renders every clip at 2x and filters it down (closer to the downscaled reels, 2 to 2.7x slower);
 # JUDGE=1.0 adds the fixed perceptual judge (agenome/judge.py, ImageNet features vs the reels) to the fitness,
 # with STATW (weight of the statistics, default 1.0) and CRITICW (the online critic, default 0.5) beside it.
+# SURVIVAL=diamond TUNER=random runs the search as it was before 2026-11-10 (defaults: pareto survival and the CMA
+# tuner; PARENTS=lexicase, OPERATORS=adaptive are the A/B's washes; agenome/search.py, SEARCH.md); BAND=0.05 = band.
 # It runs in the FOREGROUND (a cloud container kills detached processes once it idles after a turn): start it as a
 # tracked background task (Bash run_in_background, 2 h timeout) and start it again when that ends - it resumes from
 # its own population. BG=1 detaches it with nohup instead (only on a machine that stays up).
@@ -59,6 +61,8 @@ CMD=(python3 -m ops_ext.run_search "${EXTARGS[@]}" --run "$WORK/run_$NAME" \
   --real "$WORK/reels/reel0[1-4]/frames.npy" --real-hold "$WORK/reels/reel05/frames.npy" \
   --seeds "${SEED_ARGS[@]}" "${RESUME_ARGS[@]}" --tune "${TUNE:-0.25}" --ss "${SS:-1}" \
   --judge-w "${JUDGE:-0}" --stat-w "${STATW:-1.0}" --critic-w "${CRITICW:-0.5}" \
+  --survival "${SURVIVAL:-pareto}" --parents "${PARENTS:-tournament}" --operators "${OPERATORS:-fixed}" \
+  --tuner "${TUNER:-cma}" --span "${BAND:-0.05}" \
   --share "${RUNS:-$SHARE/ops_ext/runs}" --island "$NAME" --workers "$WORKERS" --gens "$GENS" --seed $RANDOM)
 echo "island $NAME: log $WORK/run_$NAME.out ; results in ${RUNS:-$SHARE/ops_ext/runs}/$NAME/ ; resuming from ${#OWN[@]} own file(s)"
 if [ "${BG:-0}" = 1 ]; then nohup "${CMD[@]}" >> "$WORK/run_$NAME.out" 2>&1 & exit 0; fi

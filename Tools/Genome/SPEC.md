@@ -161,5 +161,8 @@ candidate for an honest size measure. Operator proposals: seeds/OP_PROPOSALS.md.
 
 ## Variation operators (for the search)
 param tweak (gaussian in byte space), op swap within a type, insert filter, delete node, rewire input, duplicate
-node, typed subgraph crossover at a root slot. All followed by `repair()`. The search also spends `--tune` (default
-0.25) of each generation on parameter-only steps around its best few genomes.
+node, typed subgraph crossover at a root slot. All followed by `repair()`. The search mixes them by regime (growth,
+with a quarter shrinks in PARETO; `--operators adaptive` instead learns the mix from each operator's gains), and
+spends `--tune` (default 0.25) of each generation on a sep-CMA-ES emitter over 24 parameter bytes of the current
+best genome (`--tuner cma`; `random` = byte tweaks around the best few). Selection, survival and the A/B behind
+them: `SEARCH.md`.
