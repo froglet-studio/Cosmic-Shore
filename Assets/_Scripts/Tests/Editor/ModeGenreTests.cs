@@ -137,6 +137,29 @@ namespace CosmicShore.Tests
                 "weight - delete the row, or the row is no longer saying what it was added to say.");
         }
 
+        // The vessels' own MASS games that need no row: their metric already says Mass, so the card's petal comes from
+        // the metric fallback. Pinned here so a metric change, or a row someone adds, cannot move them silently, and so
+        // the shipped preview definition is checked to carry that metric (the fallback reads it).
+        [Test]
+        [TestCase(GameModes.Glasshouse, ScoringMetric.VolumeRemaining)]   // the Angler's garden (GLASSHOUSE.md)
+        [TestCase(GameModes.Tapestry,   ScoringMetric.VolumeRemaining)]   // the Tiger Moth's painting war
+        public void MassGame_ResolvesMassThroughItsMetric(GameModes mode, ScoringMetric metric)
+        {
+            Assert.IsTrue(ModeGenre.TryElementsFor(mode, metric, out var first, out var second),
+                $"GameModes.{mode} lost its genre.");
+            Assert.AreEqual(Element.Mass, first, $"GameModes.{mode} no longer reads as a Mass game.");
+            Assert.AreEqual(Element.None, second, $"GameModes.{mode} grew a second genre.");
+            Assert.IsFalse(ModeGenre.TryElementsFor(mode, null, out _, out _),
+                $"GameModes.{mode} gained a row in ModeGenre; its metric already says Mass.");
+
+            var library = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+            Assert.IsNotNull(library, $"Resources/{ModePreviewLibrarySO.ResourcePath} is missing.");
+            var definition = library.Resolve(mode);
+            Assert.IsNotNull(definition, $"GameModes.{mode} has no preview definition - its card would draw no petal.");
+            Assert.AreEqual(metric, definition.ObjectiveMetric,
+                $"ModePreview for {mode} carries a different metric - its card's genre would follow it.");
+        }
+
         // A Space game reads Space through its METRIC, with no row of its own: Shatterplane (90), the Brittle Star's
         // Space game, scores the prisms it breaks. If a row is ever added for it, or its rule moves off PrismsDestroyed,
         // the Fleet Codex would show it as another element's game - this pins it (Docs/MassAndSpaceGames/PLAN.md §6).
