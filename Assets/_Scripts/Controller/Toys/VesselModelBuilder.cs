@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
 
             bool built = ToyModelBuilder.TryBuild(
                 prefabRoot, targetRadius, sharedMaterial: null, out model, IsHull,
-                (node, source, authored) => ResolveMaterials(authored, custom, domainMaterial));
+                (node, source, authored) => ResolveMaterials(authored, custom, domainMaterial, source is SkinnedMeshRenderer));
 
             if (built && model) model.name = "VesselModel";
             return built;
@@ -72,11 +72,11 @@ namespace CosmicShore.Gameplay
         /// a vessel that changes which slot carries its domain changes both at once.
         /// </summary>
         static Material[] ResolveMaterials(Material[] authored, VesselCustomization custom,
-            Material domainMaterial) =>
+            Material domainMaterial, bool skinned) =>
             custom == null
                 ? authored
                 : ResolveDomainMaterials(authored, custom.DomainReplacesMaterials,
-                    custom.DomainMaterialSlot, domainMaterial);
+                    custom.DomainMaterialSlot, domainMaterial, skinned);
 
         /// <summary>
         /// The same swap, for a caller that has already read the rule off the
@@ -85,8 +85,13 @@ namespace CosmicShore.Gameplay
         /// instance is still inert. One implementation either way, so a vessel that changes which
         /// slot carries its domain moves every consumer with it.
         /// </summary>
+        /// <param name="skinned">The renderer is a SkinnedMeshRenderer: with no identities named, its domain slot is
+        /// 0, as the live ship paints it (<c>ShipHelper.ApplyShipMaterial</c> writes a skinned mesh's
+        /// <c>materials[0]</c>, the fleet's Domain slot, whatever the index). Display hulls used the index for every
+        /// renderer, so a toybox or preview Goby or Squirrel wore its team colour on the body and the Ruby placeholder on
+        /// its accent.</param>
         public static Material[] ResolveDomainMaterials(Material[] authored,
-            IReadOnlyList<Material> identities, int domainMaterialSlot, Material domainMaterial)
+            IReadOnlyList<Material> identities, int domainMaterialSlot, Material domainMaterial, bool skinned = false)
         {
             if (authored == null || authored.Length == 0) return authored;
             if (!domainMaterial) return authored;
@@ -108,7 +113,7 @@ namespace CosmicShore.Gameplay
                 return result;
             }
 
-            int index = Mathf.Clamp(domainMaterialSlot, 0, result.Length - 1);
+            int index = skinned ? 0 : Mathf.Clamp(domainMaterialSlot, 0, result.Length - 1);
             result[index] = domainMaterial;
             return result;
         }

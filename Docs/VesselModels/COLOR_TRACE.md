@@ -127,13 +127,13 @@ becomes Photic's, and every other set computes its own.
 
 The ratchet list (`colour_trace.json` `untraced`) names each colour. What remains, by kind:
 
-- **Colours baked into shader code.** A colour node or constant counts only when it is wired to the output (a
-  ShaderGraph node with an edge path to a Block node) and a drawn material uses the shader. Of 50 ColorNodes, 31 are
-  wired to nothing and 18 sit in graphs no reachable material draws; the one left is CageGraph's dark blend constant
-  (the cell nucleus). HLSL constants left: the black-hole lens's ring, core, shell and gravity-wave glows
-  (`BlackHoleLens.hlsl`) and the Soliton tunnel's glint. The HyperSea sky's star ramp was the largest one and is now
-  four material colours (`_StarColorHot/White/Warm/Cool`, saved at today's values). The fix for the rest is the same:
-  a Color property the material saves (shader asset surgery), which the world painter then repaints.
+- **Colours baked into shader code: none left (2026-11-11).** A colour node or constant counts only when it is wired
+  to the output (a ShaderGraph node with an edge path to a Block node) and a drawn material uses the shader. The last
+  ones are now material colours saved at the sRGB encodings of the old constants (the shader sees the same numbers
+  once Unity reads a Color into linear): the HyperSea sky's star ramp (`_StarColorHot/White/Warm/Cool`), the
+  black-hole lens's ring, core, shell and gravity-wave glows (`_BHRingColour`, `_BHCoreColour`, `_BHShellColour`,
+  `_BHWaveColour`), the Soliton tunnel's glint (`_MWGlintColour`) and CageGraph's nucleus blend (`_Nucleus_Dark`, a
+  property node where the HDR Color node was). `colour_trace.json` lists 0 untraced colours.
 - **Textures.** The trace reads colours, not pixels. The texture audit measured every shipped image:
   - masks (white or grey sprites tinted by a Graphic) are already covered through their tint;
   - 151 sprites bake a Deep Sea token flat and 27 another flat colour: whiten each PNG in place (same guid and
@@ -172,6 +172,15 @@ found.
   derived themes lift theirs (`make_themes.fit`), Photic shows them as authored.
 - The Voyage map, Grizzly, Thresher and Stoat colours: applied 2026-11-11 (they had been held back while those lanes
   had work in flight).
+- The hulls and rounds that drew a fixed Jade or Ruby where their owner's domain should show: fixed 2026-11-11.
+  The SkyBurst and Explodable projectiles' particles and the AI Gunner's gun drew `GreenVesselMaterial`, the
+  template every domain's ship material is cloned from; they now take their owner's domain ship material
+  (`ThemeManagerDataContainerSO.PaintDomainPlaceholders`, from `Projectile.LaunchProjectile` and `Gun`). The Goby's
+  and Squirrel's `RedAccentVesselMaterial` is replaced at spawn on the live ship (a skinned mesh's slot 0); the
+  display hulls (toybox matrices, replay ghosts) painted slot 1 instead, so they wore the team colour on the body:
+  `VesselModelBuilder.ResolveDomainMaterials` now follows the live rule (`DomainMaterialSlotTests`). The Serpent's
+  Blue and Lime sit on an inactive model nothing draws.
+- The colours in shader code: none left (section 2).
 - The rest is section 2.
 
 ## 4. Where it came from

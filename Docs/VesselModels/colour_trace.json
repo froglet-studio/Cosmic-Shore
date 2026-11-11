@@ -5,10 +5,9 @@
  "rule": "Every colour that reaches a pixel comes from the worn colour set. Photic holds the baked values; every other set computes its own from its pigments (colour_trace.py repaint). A colour is inert, a UI theme token, fixed (pure white, pure black), traced (an id below), or untraced (listed below: the work left).",
  "counts": {
   "fixed": 2472,
-  "inert": 29818,
+  "inert": 29825,
   "token": 3867,
-  "traced": 1897,
-  "untraced": 8
+  "traced": 1903
  },
  "inert": {
   "ambient-mode": 171,
@@ -31,7 +30,7 @@
   "scene-not-in-build": 433,
   "script-missing": 19,
   "selectable-no-tint": 410,
-  "shader-default": 267,
+  "shader-default": 273,
   "shader-node-dead": 31,
   "shader-not-drawn": 19,
   "stale-field": 17,
@@ -40,7 +39,7 @@
   "tmp-face-cache": 1603,
   "tmp-feature-off": 52,
   "tmp-gradient-off": 6412,
-  "unreachable": 13560
+  "unreachable": 13561
  },
  "inert_why": {
   "scene-not-in-build": "a colour authored in a scene the player build does not ship (EditorBuildSettings)",
@@ -3428,20 +3427,6 @@
     "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
    ]
   },
-  "world:020206": {
-   "role": "world",
-   "photic": [
-    0.0063706072978675365,
-    0.0071669332683086395,
-    0.02309345081448555,
-    0.4117647111415863
-   ],
-   "family": "blue",
-   "uses": 1,
-   "where": [
-    "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph ColorNode"
-   ]
-  },
   "world:022263": {
    "role": "world",
    "photic": [
@@ -3952,6 +3937,20 @@
     "Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset BrittleStarConfigSO",
     "Assets/_SO_Assets/VesselActions/Thresher/ThresherConfig.asset ThresherConfigSO",
     "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/BrittleStarConfigSO.cs code"
+   ]
+  },
+  "world:13142A": {
+   "role": "world",
+   "photic": [
+    0.0733298857,
+    0.079784937,
+    0.164468809,
+    0.411764711
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Graphics/Materials/CageMaterial.mat Material(Shader Graphs/CageGraph)"
    ]
   },
   "world:131820": {
@@ -5291,20 +5290,6 @@
     "Assets/_Prefabs/Environment/Materials/FX/JetFX.prefab ParticleSystem"
    ]
   },
-  "world:7399FF": {
-   "role": "world",
-   "photic": [
-    0.45,
-    0.6,
-    1.0,
-    1.0
-   ],
-   "family": "blue",
-   "uses": 1,
-   "where": [
-    "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl constant"
-   ]
-  },
   "world:747BAD": {
    "role": "world",
    "photic": [
@@ -6044,6 +6029,20 @@
     "Assets/_Graphics/Materials/CrystalMaterials/MassDepthPrismsInactive.mat Material(Custom/OmniDepthPrismShader)",
     "Assets/_Graphics/Materials/CrystalMaterials/OmniCrystalBodyInactive.mat Material(Custom/OmniCrystalFresnelShader)",
     "Assets/_Graphics/Materials/CrystalMaterials/OmniDepthPrismsInactive.mat Material(Custom/OmniDepthPrismShader)"
+   ]
+  },
+  "world:B3CBFF": {
+   "role": "world",
+   "photic": [
+    0.701410718,
+    0.797737733,
+    1.0,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)"
    ]
   },
   "world:B4171D": {
@@ -7342,9 +7341,8 @@
     1.0
    ],
    "family": "band~gold",
-   "uses": 2,
+   "uses": 1,
    "where": [
-    "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl constant",
     "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code"
    ]
   },
@@ -7524,6 +7522,20 @@
     "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
    ]
   },
+  "world:FFE7C4": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.906331753,
+    0.767375658,
+    1.0
+   ],
+   "family": "band~blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)"
+   ]
+  },
   "world:FFEB04": {
    "role": "world",
    "photic": [
@@ -7632,24 +7644,9 @@
     1.0
    ],
    "family": "band~blue",
-   "uses": 4,
-   "where": [
-    "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl constant",
-    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code"
-   ]
-  },
-  "world:FFF7E6": {
-   "role": "world",
-   "photic": [
-    1.0,
-    0.97,
-    0.9,
-    1.0
-   ],
-   "family": "blue",
    "uses": 1,
    "where": [
-    "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl constant"
+    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code"
    ]
   },
   "world:FFF9F1": {
@@ -7666,6 +7663,20 @@
     "Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)"
    ]
   },
+  "world:FFFAEF": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.982207082,
+    0.935741027,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)"
+   ]
+  },
   "world:FFFAF0": {
    "role": "world",
    "photic": [
@@ -7680,18 +7691,32 @@
     "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code"
    ]
   },
-  "world:FFFAF2": {
+  "world:FFFCF3": {
    "role": "world",
    "photic": [
     1.0,
-    0.98,
-    0.95,
+    0.986695246,
+    0.954687172,
     1.0
    ],
    "family": "blue",
    "uses": 1,
    "where": [
-    "Assets/_Graphics/Materials/Graphs/SolitonTunnel.shader constant"
+    "Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)"
+   ]
+  },
+  "world:FFFDF9": {
+   "role": "world",
+   "photic": [
+    1.0,
+    0.9911565,
+    0.977691562,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/Resources/SolitonTunnel.mat Material(CosmicShore/SolitonTunnel)"
    ]
   },
   "world:FFFFFFx2.00": {
@@ -7724,70 +7749,5 @@
    ]
   }
  },
- "untraced": [
-  {
-   "file": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl",
-   "line": 43,
-   "component": "constant",
-   "field": "#define BLACK_HOLE_LENS_RING_COLOUR float3(1.0, 0.8, 0.55)",
-   "id": "world:FFCC8C",
-   "why": "a colour baked into a shader: make it a Color property the material saves, so the world painter repaints it"
-  },
-  {
-   "file": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl",
-   "line": 44,
-   "component": "constant",
-   "field": "#define BLACK_HOLE_LENS_CORE_COLOUR float3(1.0, 0.97, 0.9)",
-   "id": "world:FFF7E6",
-   "why": "a colour baked into a shader: make it a Color property the material saves, so the world painter repaints it"
-  },
-  {
-   "file": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl",
-   "line": 122,
-   "component": "constant",
-   "field": "glow += float3(1.0, 0.96, 0.86) * P.w * g;",
-   "id": "world:FFF5DB",
-   "why": "a colour baked into a shader: make it a Color property the material saves, so the world painter repaints it"
-  },
-  {
-   "file": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl",
-   "line": 134,
-   "component": "constant",
-   "field": "glow += float3(0.45, 0.6, 1.0) * 0.32 * gwGlow * max(0.0, h) * s2;",
-   "id": "world:7399FF",
-   "why": "a colour baked into a shader: make it a Color property the material saves, so the world painter repaints it"
-  },
-  {
-   "file": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl",
-   "line": 162,
-   "component": "constant",
-   "field": "col = col * (1.0 - min(0.6, squeeze)) + glow + float3(1.0, 0.96, 0.86) * shellWash;",
-   "id": "world:FFF5DB",
-   "why": "a colour baked into a shader: make it a Color property the material saves, so the world painter repaints it"
-  },
-  {
-   "file": "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl",
-   "line": 173,
-   "component": "constant",
-   "field": "return col + waveGlow + float3(1.0, 0.96, 0.86) * shellWash;",
-   "id": "world:FFF5DB",
-   "why": "a colour baked into a shader: make it a Color property the material saves, so the world painter repaints it"
-  },
-  {
-   "file": "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph",
-   "line": 0,
-   "component": "ColorNode",
-   "field": "cb55e6b0e51640a1a2279cbd6ec9492b",
-   "id": "world:020206",
-   "why": "a colour baked into a shader: make it a Color property the material saves, so the world painter repaints it"
-  },
-  {
-   "file": "Assets/_Graphics/Materials/Graphs/SolitonTunnel.shader",
-   "line": 385,
-   "component": "constant",
-   "field": "col += _MWLightDir.w * l2.z * glint * float3(1.0, 0.98, 0.95);          // the light off the wall",
-   "id": "world:FFFAF2",
-   "why": "a colour baked into a shader: make it a Color property the material saves, so the world painter repaints it"
-  }
- ]
+ "untraced": []
 }

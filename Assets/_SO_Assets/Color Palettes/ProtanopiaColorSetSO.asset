@@ -782,9 +782,6 @@ MonoBehaviour:
   - Id: world:020109
     Color: {r: 0.0254753288, g: 0.0163104068, b: 0.0350000001, a: 1}
     Note: '1 use: Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)'
-  - Id: world:020206
-    Color: {r: 0.0063706073, g: 0.00716693327, b: 0.0230934508, a: 0.411764711}
-    Note: '1 use: Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph ColorNode'
   - Id: world:022263
     Color: {r: 0.332025766, g: 0.266403288, b: 0.386792481, a: 1}
     Note: '2 uses: Assets/_Graphics/Materials/BlockMaterials/ShieldedBlockMaterial.mat Material(Shader Graphs/BlockGraph); Assets/_Graphics/Materials/BlockMaterials/TransparentShieldedBlockMaterial.mat Material(Shader Graphs/BlockGraph)'
@@ -890,6 +887,9 @@ MonoBehaviour:
   - Id: world:121111
     Color: {r: 0.0700000003, g: 0.0649999976, b: 0.0649999976, a: 1}
     Note: '5 uses: Assets/_Graphics/Materials/ThresherChainMaterial.mat Material(CosmicShore/ThresherChainFresnel); Assets/_SO_Assets/VesselActions/BrittleStar/BrittleStarConfig.asset BrittleStarConfigSO'
+  - Id: world:13142A
+    Color: {r: 0.137262404, g: 0.104663186, b: 0.16446881, a: 0.411764711}
+    Note: '1 use: Assets/_Graphics/Materials/CageMaterial.mat Material(Shader Graphs/CageGraph)'
   - Id: world:131820
     Color: {r: 0.075000003, g: 0.0939999968, b: 0.125, a: 1}
     Note: '1 use: Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code'
@@ -1163,9 +1163,6 @@ MonoBehaviour:
   - Id: world:737070
     Color: {r: 0.452830195, g: 0.437878251, b: 0.437878251, a: 1}
     Note: '1 use: Assets/_Prefabs/Environment/Materials/FX/JetFX.prefab ParticleSystem'
-  - Id: world:7399FF
-    Color: {r: 0.862745106, g: 0.717647076, b: 1, a: 1}
-    Note: '1 use: Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl constant'
   - Id: world:747BAD
     Color: {r: 0.593119383, g: 0.493292153, b: 0.677999973, a: 0.850000024}
     Note: '2 uses: Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO; Assets/Resources/Voyages/QuestsView.prefab VoyageWindowTabs'
@@ -1188,7 +1185,7 @@ MonoBehaviour:
     Color: {r: 0.869217157, g: 0.712510705, b: 1, a: 1}
     Note: '1 use: Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code'
   - Id: world:7FD7FF
-    Color: {r: 0.866666675, g: 0.70588237, b: 1, a: 1}
+    Color: {r: 0.862745106, g: 0.717647076, b: 1, a: 1}
     Note: '1 use: Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/AnglerCommandExecutor.cs code'
   - Id: world:808080
     Color: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
@@ -1224,10 +1221,10 @@ MonoBehaviour:
     Color: {r: 0.550000012, g: 0.569999993, b: 0.620000005, a: 1}
     Note: '1 use: Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs code'
   - Id: world:8CBFFF
-    Color: {r: 0.866666675, g: 0.713725507, b: 0.992156863, a: 1}
+    Color: {r: 0.866666675, g: 0.70588237, b: 1, a: 1}
     Note: '4 uses: Assets/Resources/Codex.asset CodexSO; Assets/Resources/Voyages/Voyage.asset VoyageToyDefinitionSO'
   - Id: world:8CD9FF
-    Color: {r: 0.866666675, g: 0.721568644, b: 1, a: 1}
+    Color: {r: 0.866666675, g: 0.713725507, b: 0.992156863, a: 1}
     Note: '1 use: Assets/_Graphics/Materials/Graphs/CloakGhost.mat Material(CosmicShore/CloakGhost)'
   - Id: world:96A6C2
     Color: {r: 0.691871583, g: 0.616881371, b: 0.75999999, a: 1}
@@ -1272,7 +1269,7 @@ MonoBehaviour:
     Color: {r: 0.759287, g: 0.660040498, b: 0.847058833, a: 1}
     Note: '1 use: Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs code'
   - Id: world:9FE6FF
-    Color: {r: 0.870588243, g: 0.70588237, b: 0.996078432, a: 1}
+    Color: {r: 0.866666675, g: 0.721568644, b: 1, a: 1}
     Note: '1 use: Assets/_Scripts/Controller/Vessel/Crew/HoneyguideDynamoView.cs code'
   - Id: world:9FFF97
     Color: {r: 0.951401174, g: 1, b: 0.438487768, a: 0.941176474}
@@ -1316,6 +1313,9 @@ MonoBehaviour:
   - Id: world:B3B3FF
     Color: {r: 0.88493222, g: 0.751583517, b: 1, a: 1}
     Note: '4 uses: Assets/_Graphics/Materials/CrystalMaterials/BlueCrystalFresnelMateriall.mat Material(Custom/SpreadFresnelShader); Assets/_Graphics/Materials/CrystalMaterials/MassDepthPrismsInactive.mat Material(Custom/OmniDepthPrismShader)'
+  - Id: world:B3CBFF
+    Color: {r: 0.882352948, g: 0.752941191, b: 1, a: 1}
+    Note: '1 use: Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)'
   - Id: world:B4171D
     Color: {r: 0.70588237, g: 0.212124377, b: 0.35037452, a: 1}
     Note: '1 use: Assets/_Graphics/Materials/ForcefieldCrackleMaterial.mat Material(Shader Graphs/ForcefieldCrackle)'
@@ -1579,7 +1579,7 @@ MonoBehaviour:
     Note: '2 uses: Assets/_SO_Assets/Games/TandavaSettings.asset TandavaSettingsSO; Assets/_SO_Assets/Games/TandavaSeveringSettings.asset TandavaSeveringSettingsSO'
   - Id: world:FFCC8C
     Color: {r: 0.996078432, g: 0.823529422, b: 0.580392182, a: 1}
-    Note: '2 uses: Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl constant; Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code'
+    Note: '1 use: Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code'
   - Id: world:FFD133
     Color: {r: 0.996078432, g: 0.75686276, b: 0.309803933, a: 0.5}
     Note: '2 uses: Assets/_SO_Assets/Games/AstroLeagueSettings.asset AstroLeagueSettingsSO; Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueSettingsSO.cs code'
@@ -1616,6 +1616,9 @@ MonoBehaviour:
   - Id: world:FFE5AA
     Color: {r: 1, g: 0.854901969, b: 0.686274529, a: 1}
     Note: '1 use: Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)'
+  - Id: world:FFE7C4
+    Color: {r: 0.90196079, g: 0.80392158, b: 1, a: 1}
+    Note: '1 use: Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)'
   - Id: world:FFEB04
     Color: {r: 0.937254906, g: 1, b: 0.0313725509, a: 1}
     Note: '1 use: Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs code'
@@ -1639,19 +1642,22 @@ MonoBehaviour:
     Note: '1 use: Assets/_Scenes/Authentication.unity Light'
   - Id: world:FFF5DB
     Color: {r: 0.937254906, g: 0.882352948, b: 1, a: 1}
-    Note: '4 uses: Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl constant; Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code'
-  - Id: world:FFF7E6
-    Color: {r: 0.956862748, g: 0.909803927, b: 1, a: 1}
-    Note: '1 use: Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl constant'
+    Note: '1 use: Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code'
   - Id: world:FFF9F1
     Color: {r: 1, g: 0.977691591, b: 0.945276916, a: 1}
     Note: '1 use: Assets/_Graphics/Skyboxes/HyperSeaSkybox.mat Material(CosmicShore/HyperSeaSkybox)'
+  - Id: world:FFFAEF
+    Color: {r: 1, g: 0.98220706, b: 0.935741007, a: 1}
+    Note: '1 use: Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)'
   - Id: world:FFFAF0
     Color: {r: 1, g: 0.980000019, b: 0.939999998, a: 1}
     Note: '1 use: Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleGlow.cs code'
-  - Id: world:FFFAF2
-    Color: {r: 1, g: 0.980000019, b: 0.949999988, a: 1}
-    Note: '1 use: Assets/_Graphics/Materials/Graphs/SolitonTunnel.shader constant'
+  - Id: world:FFFCF3
+    Color: {r: 1, g: 0.98669523, b: 0.954687178, a: 1}
+    Note: '1 use: Assets/Resources/BlackHoleLens.mat Material(CosmicShore/BlackHoleLens)'
+  - Id: world:FFFDF9
+    Color: {r: 1, g: 0.991156518, b: 0.977691591, a: 1}
+    Note: '1 use: Assets/Resources/SolitonTunnel.mat Material(CosmicShore/SolitonTunnel)'
   - Id: world:FFFFFFx2.00
     Color: {r: 2, g: 2, b: 2, a: 1}
     Note: '2 uses: Assets/_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO; Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleConfigSO.cs code'
