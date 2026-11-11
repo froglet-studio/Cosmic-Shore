@@ -12,8 +12,8 @@ This file holds only the rules every session needs. Everything else moved verbat
 
 - [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **Froglet Tasks, the team's hand-off tickets** - tests, playtests, setup, content and decisions one collaborator's session leaves for another: GitHub issues labelled `team-task`, read on the Froglet Tasks page, written only through the `/team-tasks` skill (`Tools/Build/team_tasks.py`). Tickets are nobody's until someone takes one.
   Sections: a pointer to the tickets (the board moved to GitHub Issues)
-- [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels and app-shell sections are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the tickets, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`).
-  Sections: Run it; How occupancy is read; Answer the person; Polished or rough is a person's call; Adding or fixing a lane
+- [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels, games, app-shell sections and systems are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the tickets, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`).
+  Sections: Run it; How occupancy is read; Answer the person; Polished or rough is a person's call; Adding, fixing or archiving a lane
 - [`.claude/skills/approve/SKILL.md`](.claude/skills/approve/SKILL.md): **Approve after the fact** (`/approve`, Garrett 2026-11-10) - changes to someone else's work go through unless they collide with an occupied swim lane (`Tools/Build/approvals.py check`), and land in that person's queue (`Docs/Approvals/<Person>/`, [`Docs/Approvals/README.md`](Docs/Approvals/README.md)); `/approve` retrieves the list and records approve / discuss / resolve.
   Sections: Who you are; Retrieve the list; Walk through it; Record the answers; Commit the answers; What your own changes queued; Filing entries
 - [`Docs/TEAM.md`](Docs/TEAM.md): **Read before working anywhere.** Who works where (Garrett, Caleb, Shombith, Yash and others, measured from git), the collaboration rules, what doing work twice cost, and the generated map (`Tools/Build/who_works_where.py`).
@@ -85,7 +85,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Status (the item table); one numbered section per round (what was asked, drawn, picked, built; numbers claimed at commit)
 - [`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`](Docs/claude/VESSEL_HUD_AND_ELEMENTS.md): Elemental bars, hull morphs, rigged-model swap, the LOCKED four-icon ability row.
   Sections: Elemental Bars (per-vessel buff/debuff display); Elemental Hull Morphs (the vessel model is an element display); The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
-- [`Docs/VesselModels/README.md`](Docs/VesselModels/README.md): **Vessel MODELS (the FBX hulls) are built by `/vessel-model`**, not by C# `*HullForm` surfaces (Garrett, 2026-10-17: "procedural vessel models are terrible even as placeholders"). Blender-as-a-module specs under `Tools/Build/vessel_model/specs/` rebuild each hull in place with the shipped names, bone rest poses (exact), four real element morphs, the puppetry takes and the four slots; three readers verify, a Cycles contact sheet is looked at, `build.py --check` is the drift gate. One measured dossier per vessel (Squirrel, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino, and the Ark: `ArkReverse.md` is the Arkway's Ark, its rig table and its fixed-rate omni regrowth) and the constraints a replacement meets; `COLOR.md` there is the fleet's colour language and vessel colour scheme (`vessel_colors.py --check`), `COLOR_DOMAINS.md` + `colour_domains.json` there are the SOURCE OF TRUTH for which of the six families (Fire, Gold, Lime, Jade, Blue, Ruby) a colour belongs to and where the forbidden band lies (`colour_domains.py --check`, shaped in the Colour Domains lab), and every class card is rendered from its model (`render_cards.py --all --check`). Read before touching any `Assets/_Models/Vessel Models/**` file or a vessel prefab's model.
+- [`Docs/VesselModels/README.md`](Docs/VesselModels/README.md): **Vessel MODELS (the FBX hulls) are built by `/vessel-model`**, not by C# `*HullForm` surfaces (Garrett, 2026-10-17: "procedural vessel models are terrible even as placeholders"). Blender-as-a-module specs under `Tools/Build/vessel_model/specs/` rebuild each hull in place with the shipped names, bone rest poses (exact), four real element morphs, the puppetry takes and the four slots; three readers verify, a Cycles contact sheet is looked at, `build.py --check` is the drift gate. One measured dossier per vessel (Squirrel, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino, and the Ark: `ArkReverse.md` is the Arkway's Ark, its rig table and its fixed-rate omni regrowth) and the constraints a replacement meets; `COLOR.md` there is the fleet's colour language and vessel colour scheme (`vessel_colors.py --check`), `COLOR_DOMAINS.md` + `colour_domains.json` there are the SOURCE OF TRUTH for which of the six families (Fire, Gold, Lime, Jade, Blue, Ruby) a colour belongs to and where the forbidden band lies (`colour_domains.py --check`, shaped in the Colour Domains lab), `COLOR_TRACE.md` there is how every colour the game draws follows the worn colour set (`colour_trace.py --check`: a new baked colour fails until it is traced), and every class card is rendered from its model (`render_cards.py --all --check`). Read before touching any `Assets/_Models/Vessel Models/**` file or a vessel prefab's model.
   Sections: the table of dossiers; how to regenerate a number
 - [`Docs/Icons/ABILITY_ICON_SKILL_PLAN.md`](Docs/Icons/ABILITY_ICON_SKILL_PLAN.md): **The ability-row ICONS are made by `/ability-icon`**
   (`Tools/Build/icon_kit/`: a hull's real mesh projected or skinned into its takes, parts a HUD tints / swaps / turns,
@@ -130,8 +130,10 @@ Cosmic Shore is built by **Garrett, Caleb, Shombith and Yash** (the core four) p
 all of it goes through Claude sessions, so git rarely says which person drove a change. On 2026-10-13 one merge
 needed about 110 conflict fixes because work had been done twice: the Stoat in two places, enum value 14 taken twice,
 the engine renamed twice, retired tools brought back. **Every session:**
-- **Find your lane: `/swimlanes`** (Garrett, 2026-11-08). A lane is a vessel or an app-shell section (the Thresher,
-  the Voyages map), not a task. It shows the open lanes with obvious work first, the OCCUPIED ones (unmerged work
+- **Find your lane: `/swimlanes`** (Garrett, 2026-11-08). A lane is a vessel, a game, an app-shell section or a
+  mechanical system (the Thresher, Bloomrush, the Voyages map, ecology), not a task. **Anything bigger than a couple of
+  prompts and one PR gets a lane** (Caleb, 2026-11-11): vessels and game cards automatically; a section or system no
+  lane covers goes into `lanes.json` with the commit that starts it, and is archived there when truly closed out. It shows the open lanes with obvious work first, the OCCUPIED ones (unmerged work
   pushed in the last 7 days: who, which branch), then the ones that need polish. Occupied is the heads-up: tell the
   person and take another lane or talk to the occupant. Work that merged earlier is context, not a block. `Docs/TEAM.md` rule 12.
 - **Only a swim lane collision waits; everything else goes through and is approved after the fact** (Garrett,
@@ -282,6 +284,16 @@ ability (Serpent Time's crystal-bought sniper rounds), no press vetoes, no added
 speed), no per-mode rescaling, no edits to vessel code or assets for one mode. Both of those Serpent Time rules were built
 and retired for this. A kit change is a vessel change, made on the vessel (its owner hears of it through `/approve`), never through
 a mode. `/arcadegame` §6.
+
+## Every colour comes from the colour set (LOCKED rule, Garrett, 2026-11-10)
+
+"All colors come from a color set. If that rule is broken then it is a sign of incompleteness or a bug, not something
+to be respected." Every colour the game draws (UI, world, sky, effects, vessels, textures, code, configs) is a value
+the worn `SO_ColorSet` carries: its domain and environment blocks, or its `TracedColors`. Photic holds the values the
+game was authored in. No area, vessel or owner is exempt and none decides otherwise: a colour that does not follow the
+set is a bug to fix (route it through the set: `ColorTrace.Retrace`, a domain material set, a set field, the texture
+grade), never a choice to keep or a question for someone. `python3 Tools/Build/colour_trace.py --check` fails on a new
+colour that is not traced. How it works and what is still unfinished: `Docs/VesselModels/COLOR_TRACE.md`.
 
 ## Testing
 

@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -130,7 +131,8 @@ namespace CosmicShore.Gameplay
         public float BridgeShimmer => bridgeShimmer;
 
         public bool TintFromMaker => tintFromMaker;
-        public Color OverrideTint => overrideTint;
+        /// <summary>The override tint as the worn colour set paints it (ColorTrace); the field keeps the authored one.</summary>
+        public Color OverrideTint => ColorTrace.Retrace(ColorTrace.World, overrideTint);
         public float TintStrength => tintStrength;
 
         public float BendRadius => bendRadius;
@@ -160,7 +162,7 @@ namespace CosmicShore.Gameplay
         /// (a). No maker (<paramref name="hasMaker"/> false) or <see cref="TintFromMaker"/> off: <see cref="OverrideTint"/>.</summary>
         public Color Tint(Color makerColour, bool hasMaker)
         {
-            var c = tintFromMaker && hasMaker ? makerColour : overrideTint;
+            var c = tintFromMaker && hasMaker ? makerColour : OverrideTint;
             c.a = Mathf.Clamp01(tintStrength);
             return c;
         }

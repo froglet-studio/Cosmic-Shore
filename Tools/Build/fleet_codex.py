@@ -769,10 +769,29 @@ _METHOD = re.compile(r"^ {8}(?:\[[^\]]*\]\s*)?(?:(?:public|private|protected|int
                      r"async|new)\s+)*[\w<>\[\],.?]+\s+(\w+)\s*\([^;{]*$", re.M)
 
 
+_RETRACE = re.compile(r"\bColorTrace\.Retrace\(\s*(?:ColorTrace\.\w+|\"\w+\")\s*,\s*")
+
+
+def unwrap_retrace(expr):
+    """`ColorTrace.Retrace(role, c)` -> `c`, wherever it sits in the expression. Retrace is the worn colour set's
+    repaint of c at runtime (Docs/VesselModels/COLOR_TRACE.md); the codex reads the authored colour, so it reads c."""
+    while True:
+        m = _RETRACE.search(expr)
+        if not m:
+            return expr
+        depth, i = 1, m.end()
+        while i < len(expr) and depth:
+            depth += {"(": 1, ")": -1}.get(expr[i], 0)
+            i += 1
+        if depth:
+            return expr
+        expr = expr[:m.start()] + expr[m.end():i - 1].strip() + expr[i:]
+
+
 def resolve_colour(expr, method, view_body, aliases=None, depth=0):
     """A colour expression -> a token (domain, shielded, danger, blue, lime, fire, grey, petalwhite, white, hidden),
     an (r, g, b, a) the prefab authors, or None when the script does not say."""
-    expr = " ".join(expr.split())
+    expr = unwrap_retrace(" ".join(expr.split()))
     if "?" in expr and ":" in expr:
         cond, rest = expr.split("?", 1)
         a, b = rest.rsplit(":", 1)
@@ -824,6 +843,9 @@ def hud_colours(hud_path, scripts_by_guid):
         for m in re.finditer(r"(?<![.\w])(_\w+)\s*=(?!=)\s*([^;]+);", text):
             if not MOMENT_METHODS.search(method_at(m.start())):
                 aliases.setdefault(m.group(1), []).append((m.group(2), method_at(m.start())))
+        # a Color property is a name for its expression too (`Color HighLightColor => ColorTrace.Retrace(..., c)`)
+        for m in re.finditer(r"\bColor\s+(\w+)\s*=>\s*([^;]+);", text):
+            aliases.setdefault(m.group(1), []).append((m.group(2), ""))
         painted = {}
         for m in re.finditer(r"\b(\w+)\.color\s*=\s*([^;]+);", text):
             name = method_at(m.start())
@@ -1319,6 +1341,14 @@ def upgrade_art(key, elements, art, pngs_by_dir, png_index=None, l5_fields=None)
         e["upgrade"]["icon"] = art.png(os.path.relpath(hit, REPO), f"ab/{key}_{el}_L5.png") if hit else None
 
 
+def palette_bytes(path):
+    """A colour set's bytes without its TracedColors list. The colour trace (Docs/VesselModels/COLOR_TRACE.md) rewrites
+    that list on every set whenever any colour in the game is traced, and no render reads it, so it must not make every
+    vessel render again."""
+    text = open(path, encoding="utf-8").read()
+    return re.sub(r"^  TracedColors:.*\n(?:  - .*\n|    .*\n)*", "", text, flags=re.M).encode()
+
+
 def domain_images(vessels, preview_by_value, out_dir, render=False):
     """{domain: img/dom/<model>_<Domain>_<hash>.webp} per vessel: the hangar preview rendered in that domain's livery
     by Tools/Build/vessel_model/render_cards.py (its camera, look and the palette's domain colours), for the model the
@@ -1342,7 +1372,7 @@ def domain_images(vessels, preview_by_value, out_dir, render=False):
     tool = hashlib.sha256()
     for f in ("render_cards.py", "vessel_colors.py"):
         tool.update(open(os.path.join(vm, f), "rb").read())
-    tool.update(open(COLOR_SET, "rb").read())
+    tool.update(palette_bytes(COLOR_SET))
     dom_dir = os.path.join(out_dir, "img", "dom")
     os.makedirs(dom_dir, exist_ok=True)
     keep = set()

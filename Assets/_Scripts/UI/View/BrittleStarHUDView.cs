@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -116,6 +117,11 @@ namespace CosmicShore.UI
         [Tooltip("How fast a gauge eases to its colour (1/s, exponential, unscaled time).")]
         [SerializeField, Min(0f)] float colorBlendRate = 15f;
 
+        // The two gauge colours as the worn colour set paints them (a gauge eases to its colour every push, so a set worn
+        // mid-flight is taken at the next one).
+        Color GaugeColor => ColorTrace.Retrace(ColorTrace.Ui, gaugeColor);
+        Color HotColor => ColorTrace.Retrace(ColorTrace.Ui, hotColor);
+
         /// <summary>Seat every readout at rest (no spare rings, cold guns, every mode off). Idempotent: it re-runs on a swap.</summary>
         public override void Initialize()
         {
@@ -137,14 +143,14 @@ namespace CosmicShore.UI
         {
             if (!gauge) return;
             gauge.fillAmount = fill;
-            gauge.color = gaugeColor;
+            gauge.color = GaugeColor;
         }
 
-        public void SetCharge(float spareStock01, bool on) => Push(ringGauge, spareStock01, gaugeColor);
-        public void SetCreation(float on01) => Push(creationGauge, on01, gaugeColor);
+        public void SetCharge(float spareStock01, bool on) => Push(ringGauge, spareStock01, GaugeColor);
+        public void SetCreation(float on01) => Push(creationGauge, on01, GaugeColor);
         public void SetSpace(float heat01, bool on, bool overheated) =>
-            Push(destructionGauge, heat01, overheated ? hotColor : gaugeColor);
-        public void SetSpeed(float on01) => Push(speedGauge, on01, gaugeColor);
+            Push(destructionGauge, heat01, overheated ? HotColor : GaugeColor);
+        public void SetSpeed(float on01) => Push(speedGauge, on01, GaugeColor);
 
         /// <summary>
         /// The Charge card's cords: whips while Charge Mode is on and RT is loose, crossfading into sabers as RT pulls

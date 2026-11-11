@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -118,7 +119,7 @@ namespace CosmicShore.UI
             if (!text || count == _shown[i]) return;
             _shown[i] = count;
             text.text = string.IsNullOrEmpty(countTemplate) ? string.Empty : countTemplate.Replace("{count}", count.ToString());
-            text.color = count > 0 ? countLiveColor : countEmptyColor;
+            text.color = ColorTrace.Retrace(ColorTrace.Ui, count > 0 ? countLiveColor : countEmptyColor);
         }
     }
 }
