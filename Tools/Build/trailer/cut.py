@@ -95,12 +95,49 @@ def text_frame(lines, alpha, grow, sizes, cy=0.5):
     return Image.alpha_composite(Image.alpha_composite(band, glow), img)
 
 
+def slam_frame(word, sub, k, cy):
+    """A one-word title that lands: big white word with a cyan glow, a small cyan label under it.
+    k runs 0..1 over the landing; the word starts 18% larger and settles, so it hits on the cut."""
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ease = 1 - (1 - min(1.0, k)) ** 3
+    size = int(190 * (1.18 - 0.18 * ease))
+    f = font(size)
+    tracking = size * 0.16
+    w = spaced_width(f, word, tracking)
+    y = H * cy - size * 0.62
+    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw_spaced(ImageDraw.Draw(glow), ((W - w) / 2, y), word, f, tracking, CYAN + (255,))
+    glow = glow.filter(ImageFilter.GaussianBlur(22))
+    band = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(band).rectangle([0, H * cy - 190, W, H * cy + 150], fill=(0, 0, 0, 120))
+    band = band.filter(ImageFilter.GaussianBlur(70))
+    img = Image.alpha_composite(band, glow)
+    d = ImageDraw.Draw(img)
+    draw_spaced(d, ((W - w) / 2, y), word, f, tracking, (255, 255, 255, 255))
+    if sub:
+        fs = font(48)
+        ts = 48 * 0.42
+        ws = spaced_width(fs, sub, ts)
+        draw_spaced(d, ((W - ws) / 2, H * cy + 118), sub, fs, ts, CYAN + (255,))
+    return img
+
+
 def render_text(card, out_dir):
-    """PNG sequence for one text card; fades 0.25 s in and 0.2 s out, tracking opens over its life."""
+    """PNG sequence for one text card; fades 0.25 s in and 0.2 s out, tracking opens over its life.
+    A card with "slam" is one big word (plus an optional "sub" label) that lands hard and cuts out."""
     dur = card["t1"] - card["t0"]
     n = int(round(dur * FPS))
-    sizes = card.get("sizes") or [64] * len(card["lines"])
     os.makedirs(out_dir, exist_ok=True)
+    if card.get("slam"):
+        for i in range(n):
+            t = i / FPS
+            f = slam_frame(card["slam"], card.get("sub"), t / 0.16, card.get("cy", 0.5))
+            out = (dur - t) / 0.12
+            if out < 1:
+                f.putalpha(f.getchannel("A").point(lambda v, a=max(0.0, out): int(v * a)))
+            f.save(os.path.join(out_dir, f"{i:05d}.png"), compress_level=1)
+        return n
+    sizes = card.get("sizes") or [64] * len(card["lines"])
     full = text_frame(card["lines"], 1.0, 0.5, sizes, card.get("cy", 0.5))   # drawn once; each frame only scales its alpha
     alpha = full.getchannel("A")
     for i in range(n):
@@ -188,6 +225,11 @@ def resolve_shot(shots, name):
 
 
 def cut_segment(seg, dur, shots, out):
+    if seg["shot"] == "BLACK":   # a held black beat, for the pause before a drop
+        run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", f"color=c=black:s={W}x{H}:r={FPS}",
+             "-frames:v", str(int(round(dur * FPS))), "-c:v", "libx264", "-preset", "veryfast", "-crf", "10",
+             "-pix_fmt", "yuv420p", out])
+        return
     src = resolve_shot(shots, seg["shot"])
     speed = seg.get("speed", 1.0)
     vf = [f"setpts=(PTS-STARTPTS)/{speed}", f"fps={FPS}",
@@ -272,13 +314,37 @@ def main(argv=None):
         off = card["t0"] - t_start
         chains.append(f"[{k + 1}:v]setpts=PTS-STARTPTS+{off:.4f}/TB[t{k}];[{prev}][t{k}]overlay=eof_action=pass[v{k}]")
         prev = f"v{k}"
-    a_in = inputs.count("-i")
+    # the sound: the song (it may come in after the picture starts: a cold open on sound effects alone),
+    # with the game's own sfx laid under it at song seconds. Mixed in its own pass, then muxed.
     fade_out = edl.get("audio_fade_out", 2.5)
-    audio = (f"[{a_in}:a]atrim=start={t_start}:end={t_start + total},asetpts=PTS-STARTPTS,"
-             f"afade=t=in:st=0:d={edl.get('audio_fade_in', 0.5)},afade=t=out:st={total - fade_out:.3f}:d={fade_out}[a]")
-    fc = ";".join(chains + [audio])
+    m_in = max(t_start, edl.get("music_in", t_start))
+    delay_ms = int(round((m_in - t_start) * 1000))
+    a_inputs = ["-i", music]
+    a_chains = [f"[0:a]aformat=sample_rates=48000:channel_layouts=stereo,atrim=start={m_in}:end={t_start + total},"
+                f"asetpts=PTS-STARTPTS,afade=t=in:st=0:d={edl.get('audio_fade_in', 0.5)},adelay={delay_ms}|{delay_ms},"
+                f"volume={edl.get('music_gain_db', 0)}dB,apad=whole_dur={total:.3f},atrim=end={total:.3f}[mus]"]
+    labels = ["[mus]"]
+    for j, s in enumerate(edl.get("sfx", [])):
+        path = s["file"] if os.path.isabs(s["file"]) else os.path.join(ROOT, s["file"])
+        a_inputs += ["-i", path]
+        ms = max(0, int(round((s["t"] - t_start) * 1000)))
+        chain = f"[{j + 1}:a]aformat=sample_rates=48000:channel_layouts=stereo"
+        if s.get("trim"):
+            chain += f",atrim=end={s['trim']}"
+        chain += f",volume={s.get('gain_db', 0)}dB,adelay={ms}|{ms}[s{j}]"
+        a_chains.append(chain)
+        labels.append(f"[s{j}]")
+    mix = f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0:duration=first," if len(labels) > 1 else "[mus]anull,"
+    a_chains.append(mix + f"afade=t=out:st={total - fade_out:.3f}:d={fade_out}[a]")
+    wav = os.path.join(work, "mix.wav")
+    run(["ffmpeg", "-y", "-v", "error", *a_inputs, "-filter_complex", ";".join(a_chains), "-map", "[a]", "-c:a", "pcm_s24le", wav])
+    a_in = inputs.count("-i")
+    fc = ";".join(chains)
     vmap = f"[{prev}]" if chains else "0:v"
-    run(["ffmpeg", "-y", "-v", "error", *inputs, "-i", music, "-filter_complex", fc, "-map", vmap, "-map", "[a]",
+    cmd = ["ffmpeg", "-y", "-v", "error", *inputs, "-i", wav]
+    if fc:
+        cmd += ["-filter_complex", fc]
+    run(cmd + ["-map", vmap, "-map", f"{a_in}:a",
          "-c:v", "libx264", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p", "-r", str(FPS),
          "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart", "-t", f"{total:.3f}", a.out])
     if edl.get("loudness"):

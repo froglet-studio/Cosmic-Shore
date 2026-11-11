@@ -1,0 +1,391 @@
+{
+ "music": "Assets/_Audio/Music/Full Quality MP3/SKY FIRE.mp3",
+ "music_in": 26.578,
+ "audio_fade_in": 0.05,
+ "audio_fade_out": 2.0,
+ "music_gain_db": -6,
+ "loudness": {
+  "I": -14,
+  "TP": -1,
+  "LRA": 11
+ },
+ "end": 61.7,
+ "segments": [
+  {
+   "t0": 24.627,
+   "shot": "C:/Claude/trailer/shots/S11a_impact_rhino.mp4",
+   "src_in": 0.3
+  },
+  {
+   "t0": 26.578,
+   "shot": "C:/Claude/trailer/shots/S16b_finale_orrery.mp4",
+   "src_in": 2.0,
+   "flash": true
+  },
+  {
+   "t0": 28.529,
+   "shot": "V3_race_c.mp4",
+   "src_in": 1.0
+  },
+  {
+   "t0": 30.48,
+   "shot": "V3_shoot_a.mp4",
+   "src_in": 1.0
+  },
+  {
+   "t0": 32.431,
+   "shot": "C:/Claude/trailer/shots/S11a_impact_rhino.mp4",
+   "src_in": 4.0
+  },
+  {
+   "t0": 34.383,
+   "shot": "V3_build_c.mp4",
+   "src_in": 0.3
+  },
+  {
+   "t0": 36.334,
+   "shot": "C:/Claude/trailer/shots/S14e_thresher.mp4",
+   "src_in": 0.5
+  },
+  {
+   "t0": 38.285,
+   "shot": "C:/Claude/trailer/shots/S06_rhino.mp4",
+   "src_in": 1.0
+  },
+  {
+   "t0": 38.773,
+   "shot": "C:/Claude/trailer/shots/S08g_brittlestar.mp4",
+   "src_in": 1.0
+  },
+  {
+   "t0": 39.261,
+   "shot": "C:/Claude/trailer/shots/S03_sparrow.mp4",
+   "src_in": 1.0
+  },
+  {
+   "t0": 39.748,
+   "shot": "C:/Claude/trailer/shots/S08c_scarab.mp4",
+   "src_in": 1.0
+  },
+  {
+   "t0": 40.236,
+   "shot": "C:/Claude/trailer/shots/S15a_wildlife_shark.mp4",
+   "src_in": 0.5
+  },
+  {
+   "t0": 42.188,
+   "shot": "C:/Claude/trailer/shots-v2/V2C2.mp4",
+   "src_in": 0.0
+  },
+  {
+   "t0": 44.139,
+   "shot": "BLACK",
+   "src_in": 0
+  },
+  {
+   "t0": 46.09,
+   "shot": "C:/Claude/trailer/shots-v2/V2C1.mp4",
+   "src_in": 0.0,
+   "flash": true
+  },
+  {
+   "t0": 48.041,
+   "shot": "C:/Claude/trailer/shots/S12_crowd_hesperides.mp4",
+   "src_in": 1.0
+  },
+  {
+   "t0": 49.992,
+   "shot": "C:/Claude/trailer/shots-v2/V2D1c.mp4",
+   "src_in": 0.4
+  },
+  {
+   "t0": 51.944,
+   "shot": "C:/Claude/trailer/shots/S11a_impact_rhino.mp4",
+   "src_in": 1.0
+  },
+  {
+   "t0": 52.92,
+   "shot": "V3_shoot_a.mp4",
+   "src_in": 1.6
+  },
+  {
+   "t0": 53.895,
+   "shot": "C:/Claude/trailer/shots/S16_finale_hesperides.mp4",
+   "src_in": 1.0
+  },
+  {
+   "t0": 55.846,
+   "shot": "V3_build_c.mp4",
+   "src_in": 2.6
+  },
+  {
+   "t0": 57.797,
+   "shot": "V3_race_b.mp4",
+   "src_in": 1.2
+  },
+  {
+   "t0": 58.773,
+   "shot": "V3_race_c.mp4",
+   "src_in": 3.0
+  },
+  {
+   "t0": 59.749,
+   "shot": "C:/Claude/trailer/shots/S16b_finale_orrery.mp4",
+   "src_in": 6.0
+  }
+ ],
+ "texts": [
+  {
+   "t0": 26.728,
+   "t1": 28.449,
+   "lines": [
+    "EVERY VESSEL",
+    "PLAYS A DIFFERENT GAME"
+   ],
+   "sizes": [
+    54,
+    78
+   ],
+   "cy": 0.78
+  },
+  {
+   "t0": 28.549,
+   "t1": 30.36,
+   "slam": "RACE",
+   "sub": "SQUIRREL",
+   "cy": 0.8
+  },
+  {
+   "t0": 30.5,
+   "t1": 32.311,
+   "slam": "SHOOT",
+   "sub": "SPARROW",
+   "cy": 0.8
+  },
+  {
+   "t0": 32.451,
+   "t1": 34.262,
+   "slam": "SMASH",
+   "sub": "RHINO",
+   "cy": 0.8
+  },
+  {
+   "t0": 34.403,
+   "t1": 36.214,
+   "slam": "BUILD",
+   "sub": "EVERY TRAIL IS A WALL",
+   "cy": 0.8
+  },
+  {
+   "t0": 36.354,
+   "t1": 38.165,
+   "slam": "WRECK",
+   "sub": "THRESHER",
+   "cy": 0.8
+  },
+  {
+   "t0": 40.336,
+   "t1": 42.108,
+   "lines": [
+    "ONE LIVING SEA"
+   ],
+   "sizes": [
+    78
+   ],
+   "cy": 0.8
+  },
+  {
+   "t0": 44.289,
+   "t1": 46.04,
+   "lines": [
+    "FLY IT TOGETHER"
+   ],
+   "sizes": [
+    96
+   ],
+   "cy": 0.5
+  }
+ ],
+ "sfx": [
+  {
+   "t": 24.627,
+   "file": "C:/Claude/trailer/sfx/whoosh.wav",
+   "gain_db": -9
+  },
+  {
+   "t": 24.877,
+   "file": "Assets/_Audio/Sounds/SFX/ship impact cosmic shore.wav",
+   "gain_db": -6
+  },
+  {
+   "t": 24.877,
+   "file": "C:/Claude/trailer/sfx/boom.wav",
+   "gain_db": -5
+  },
+  {
+   "t": 24.927,
+   "file": "Assets/_Audio/Sounds/SFX/Cosmic shore block break.wav",
+   "gain_db": -7
+  },
+  {
+   "t": 25.527,
+   "file": "Assets/_Audio/Sounds/SFX/Cosmic shore block break.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 26.578,
+   "file": "C:/Claude/trailer/sfx/boom.wav",
+   "gain_db": -7
+  },
+  {
+   "t": 26.578,
+   "file": "Assets/_Audio/Sounds/SFX/Cosmic shore Boost.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 28.229,
+   "file": "C:/Claude/trailer/sfx/whoosh.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 28.529,
+   "file": "Assets/_Audio/Sounds/Gameplay/SpeedBurst.wav",
+   "gain_db": -9
+  },
+  {
+   "t": 28.629,
+   "file": "Assets/_Audio/Sounds/SFX/skim 2 cosmic shore.wav",
+   "gain_db": 1
+  },
+  {
+   "t": 30.18,
+   "file": "C:/Claude/trailer/sfx/whoosh.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 30.53,
+   "file": "Assets/_Audio/Sounds/SFX/cosmic shore laser.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 30.78,
+   "file": "Assets/_Audio/Sounds/SFX/cosmic shore laser.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 31.03,
+   "file": "Assets/_Audio/Sounds/SFX/cosmic shore laser.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 31.18,
+   "file": "Assets/_Audio/Sounds/SFX/Cosmic shore block break.wav",
+   "gain_db": -9
+  },
+  {
+   "t": 32.131,
+   "file": "C:/Claude/trailer/sfx/whoosh.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 32.431,
+   "file": "Assets/_Audio/Sounds/SFX/ship impact cosmic shore.wav",
+   "gain_db": -7
+  },
+  {
+   "t": 32.431,
+   "file": "C:/Claude/trailer/sfx/boom.wav",
+   "gain_db": -8
+  },
+  {
+   "t": 32.531,
+   "file": "Assets/_Audio/Sounds/SFX/Cosmic shore block break.wav",
+   "gain_db": -8
+  },
+  {
+   "t": 34.083,
+   "file": "C:/Claude/trailer/sfx/whoosh.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 34.383,
+   "file": "Assets/_Audio/Sounds/SFX/Crystal_Collision_Amplified.wav",
+   "gain_db": -13
+  },
+  {
+   "t": 36.034,
+   "file": "C:/Claude/trailer/sfx/whoosh.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 36.334,
+   "file": "Assets/_Audio/Sounds/SFX/Cosmic shore Boost.wav",
+   "gain_db": -9
+  },
+  {
+   "t": 36.734,
+   "file": "Assets/_Audio/Sounds/SFX/Cosmic shore block break.wav",
+   "gain_db": -9
+  },
+  {
+   "t": 38.235,
+   "file": "C:/Claude/trailer/sfx/whoosh.wav",
+   "gain_db": -15
+  },
+  {
+   "t": 38.723,
+   "file": "C:/Claude/trailer/sfx/whoosh.wav",
+   "gain_db": -15
+  },
+  {
+   "t": 39.211,
+   "file": "C:/Claude/trailer/sfx/whoosh.wav",
+   "gain_db": -15
+  },
+  {
+   "t": 39.698,
+   "file": "C:/Claude/trailer/sfx/whoosh.wav",
+   "gain_db": -15
+  },
+  {
+   "t": 44.439,
+   "file": "C:/Claude/trailer/sfx/riser.wav",
+   "gain_db": -5
+  },
+  {
+   "t": 46.09,
+   "file": "C:/Claude/trailer/sfx/boom.wav",
+   "gain_db": -3
+  },
+  {
+   "t": 46.09,
+   "file": "Assets/_Audio/Sounds/SFX/Crystal_Collision_Amplified.wav",
+   "gain_db": -11
+  },
+  {
+   "t": 51.944,
+   "file": "Assets/_Audio/Sounds/SFX/ship impact cosmic shore.wav",
+   "gain_db": -9
+  },
+  {
+   "t": 52.044,
+   "file": "Assets/_Audio/Sounds/SFX/Cosmic shore block break.wav",
+   "gain_db": -10
+  },
+  {
+   "t": 53.12,
+   "file": "Assets/_Audio/Sounds/SFX/cosmic shore laser.wav",
+   "gain_db": -13
+  },
+  {
+   "t": 61.7,
+   "file": "C:/Claude/trailer/sfx/boom.wav",
+   "gain_db": -9
+  }
+ ],
+ "endcard": {
+  "dur": 3.902,
+  "tagline": "THE PARTY GAME FOR PILOTS",
+  "platforms": "COMING SOON  ·  iOS  ·  ANDROID  ·  STEAM"
+ }
+}
