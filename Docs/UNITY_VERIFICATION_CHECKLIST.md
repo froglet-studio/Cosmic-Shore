@@ -22781,3 +22781,13 @@ rail and are always free).
    a view that paints only when its data changes. Note the screen and object.
 6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
 
+## 🟡 Stoat: the swing - a small black hole, the stick picks the angle (2026-11-11, Yash, NOT PLAYED)
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/STOAT_DIPOLE.md` §1b "The swing". `StoatSlingConfig`: swing on (ahead 150,
+side 35, horizon 0.8, reach 55, catch 40 deg, 15-90 deg, 150 deg/s, 4 s), trampoline 0, aiSlingMinTurnDegrees 50 -> 20 (the
+hull's; Slingshot's copy keeps Garrett's trained rows).
+- [ ] EditMode `StoatSlingTests` and `StoatSkimTests`: all pass, the seven new Swing* tests included.
+- [ ] Press RT in Slingshot: a small black hole appears ahead-right (no white hole), a faint ring round it and a dotted line from your nose.
+- [ ] Move the stick: the dotted line swings between a slight and a right-angle turn; stick toward the hole = the sharpest.
+- [ ] Fly past it: you curve round it to the line and are flung on with a kick; no pull toward it, no orbit.
+- [ ] Let go of RT halfway round: you are flung at once. Fly past it without turning: it collapses (the Charge ripple), nothing happens to you.
+- [ ] Slingshot I1-I4: AI Stoats finish (model: 61-76 s on Slingshot's trained rows).
