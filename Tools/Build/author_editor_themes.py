@@ -44,7 +44,7 @@ def themes():
     sets = mt.catalog()
     out = []
     for s in sets:
-        vals, _ = mt.theme_tokens(base, s['colours'])
+        vals, _ = mt.theme_tokens(base, s['colours'], s['id'] == mt.AUTHORED_SET)
         out.append((s['id'], s['name'], s['line'], {f: vals[t] for f, t in FIELDS}))
     return out, mt.live_set(sets)
 
@@ -102,19 +102,25 @@ def self_test():
         if bad:
             errs.append(f'{sid}: not a #RRGGBB colour: {bad}')
         # The theme keeps the style guide's readability: text on a panel at 4.5:1, marks at 3:1 (make_themes fits them).
+        # The authored set wears the authored Deep Sea as it is (make_themes.AUTHORED_SET), so it is not fitted.
+        if sid == mt.AUTHORED_SET:
+            continue
         surface = mt.hx(cols['Surface'])
         for f, ratio in (('Text', 4.5), ('TextSoft', 4.5), ('Danger', 4.5), ('Selection', 3.0), ('Cta', 3.0)):
             c = mt.contrast(mt.hx(cols[f]), surface)
             if c < ratio - 0.01:
                 errs.append(f'{sid}.{f} is {c:.2f}:1 on a panel, under {ratio}:1')
+    # Photic is the authored Deep Sea (Garrett, 2026-11-10: Photic holds the values the game was authored in): its
+    # selection is the style guide's Jade (controlActive, D3) and its panels the authored navy.
     photic = dict((r[0], r[3]) for r in rows).get('photic', {})
-    if photic and photic.get('Selection') != '#42E1DC':
-        errs.append(f'Photic selection {photic.get("Selection")} differs from the console\'s #42E1DC (make_themes changed?)')
+    if photic and (photic.get('Selection') != '#00D4FF' or photic.get('Surface') != '#222645'):
+        errs.append(f'Photic is not the authored Deep Sea: selection {photic.get("Selection")}, panels '
+                    f'{photic.get("Surface")} (make_themes changed?)')
     text = render(rows, live)
     if text.count('new Palette') != len(rows) or 'Rgb(0x' not in text:
         errs.append('render() lost a theme')
     # Negative control: a drifted file is caught.
-    if text == text.replace('Rgb(0x42E1DC)', 'Rgb(0x42E1DD)') and '42E1DC' in text:
+    if text == text.replace('Rgb(0x222645)', 'Rgb(0x222646)') and '222645' in text:
         errs.append('drift control did not change the text')
     for e in errs:
         print('FAIL:', e)

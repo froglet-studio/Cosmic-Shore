@@ -38,8 +38,8 @@ CATALOG_GUID = hashlib.md5(b"CosmicShore/ColorSetCatalog").hexdigest()
 SETS = (
     ("nocturne", "NocturneColorSetSO", "Nocturne", "Every prism a lantern: a glowing rim over a deep jewel face.", 0),
     ("photic", "PhoticColorSetSO", "Photic", "The original sunlit sea: one bright hue per domain.", 0),
-    ("dartfrog", "DartFrogColorSetSO", "Dart Frog", "Two frog pigments per domain: mint over bronze, bumblebee over indigo.", 0),
-    ("nacre", "NacreColorSetSO", "Nacre", "Light, not bright: pastel rims over pale pastel faces, a sheen instead of a glow.", 0),
+    ("dartfrog", "DartFrogColorSetSO", "Dart Frog", "Frog warning colours over their dark grounds: mint over bronze, bumblebee over coal.", 0),
+    ("nacre", "NacreColorSetSO", "Nacre", "Light, not bright: soft bodies in each family's own colour under a sheen.", 0),
     ("contrast", "ContrastColorSetSO", "Contrast",
      "Every domain as far from every other as the rules allow, for anyone who wants the board to read at a glance.", 6),
     ("protanopia", "ProtanopiaColorSetSO", "Protanopia",
@@ -59,7 +59,7 @@ JSON_KEY = {"dartfrog": "dart_frog", "lowvision": "low_vision"}   # catalog id -
 PIGMENTS = {
     "nocturne": ("Lagoon over Plum", "Orchid over Deep Teal", "Honey over Violet", "Cornflower over Spruce"),
     "photic": ("Cyan over Deep cyan", "Violet over Deep violet", "Amber over Umber", "Periwinkle over Indigo"),
-    "dartfrog": ("Mint over Bronze", "Orchid over Petrol", "Bumblebee over Indigo", "Azure over Forest"),
+    "dartfrog": ("Mint over Bronze", "Orchid over Petrol", "Bumblebee over Coal", "Azure over Cobalt"),
 }
 
 

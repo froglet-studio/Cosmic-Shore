@@ -511,6 +511,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"[Soliton] The Soliton Tunnel lens cannot draw: {reason}. Tunnels are not shown.");
                 s_lens = null;
             }
+            WorldColorTrace.Paint(s_lens);   // loaded after the scene's repaint: born in the worn colour set
             return s_lens;
         }
 

@@ -22566,6 +22566,128 @@ rail and are always free).
 6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
 
 
+## 🔴 The colour trace: every colour the game draws comes from the worn colour set (2026-11-10, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nifty-cray-41hy43`. Docs/VesselModels/COLOR_TRACE.md. Every colour authored outside the palette blocks is
+now a `TracedColor` on every `SO_ColorSet` (Photic: the baked value; every other set: computed from its pigments), and
+the runtime repaints it from the worn set: `UIThemeLive` (UI graphics, TMP gradients, ColorTint selectables, shadows,
+input carets; new UI swept before it draws), `WorldColorTrace` (every loaded material's colours, the HyperSea sky
+included, particles, trails and lines, lights, cameras, sprites, world text, fog, post colours; assets painted in
+memory and put back when play ends) and `ColorTrace.Retrace` at code and config paint sites. The sky's star ramp is now
+four material colours (`_StarColorHot/White/Warm/Cool`) saved at today's values; the static sky was re-baked (one
+pixel moved one level). The five colour-blind sets now keep rules 4 and 6 as their own viewer sees them (no waivers).
+Ran here: `colour_trace.py --check/--self-test`, `author_colour_set_assets.py --check`, `colour_sets.py
+--check/--self-test`, `bake_static_skybox.py --check`, the theme writers' checks, and `unity_refcompile` (player and
+editor configs: 0 errors in the changed files). Nothing here ran in Unity.
+
+1. **Import, then run the edit-mode tests** `ColorSetUIThemeTests` (its element test now expects each set's own element
+   colours, Photic's the authored ones) and `ColorSetCatalogTests`. The ten palette assets each gained a `TracedColors`
+   list of about 520 entries: open one and check the inspector shows Id, Color and Note.
+2. **Wear Photic** (Profile > Colour sets): nothing in the game should change colour compared with before this branch,
+   except the UI tokens' existing Photic re-hue. Any change is a bug in the trace (the gate holds Photic's values to the
+   baked ones).
+3. **Wear Nocturne (the default) and play a race, then the menu**: the sky's nebulae, core and stars, the crystal
+   materials, the flora and fauna spindles, the vessel hull body, glass and engine, particles and trails, the HUD
+   gauges and configs (ElementalBars, AbilityLockup), the Voyage map and the codex colours all take Nocturne's
+   family colours; greys and whites stay. Compare against Photic side by side.
+4. **Browse sets in the Profile (preview)**: the menu cell, the sky and the UI repaint at once. Known gap: caches copied
+   before the wear (spindle lean variants, fauna GPU palettes, vessel tails) keep the previous set until they repaint
+   (COLOR_TRACE.md section 2). No hitch should be visible while the pad moves between tiles; if there is one, profile
+   `WorldColorTrace.Repaint`.
+5. **Stop play**: `git status` shows no changed `.mat`, prefab or volume profile (the editor puts back every asset the
+   painter touched). Then press Ctrl+S during play once and check the same.
+6. **The colour-blind sets**: each set's rims should look like their names to that viewer (a deuteranope's and an
+   achromat's as nearly as the eyes allow). A player with each vision is the only real test.
+
+Second round, the same day (the runtime review's findings; also NOT RUN IN EDITOR). The lookup now names a colour from
+its id (a UI theme token used in a material or code, the Presence orb's `_SpaceColor` among them, used to fall to the
+world repaint) and from every set worn in the session; the writer keeps every value of every set naming one colour,
+and UI values clear of every set's live tokens (939 values moved, none by more than 2/255); a colour already in the
+worn set is left exactly as it is. The world painter leaves ThemeManager's domain colours alone, skips Prefab Mode's
+stage and non-game cameras, recomputes the sky's ambient light, and the three lazily loaded traced materials paint
+themselves on load. UIThemeLive paints UI prefab assets in memory. The editor stops painting before it puts assets back,
+restores only what still holds the painted colour, keeps a dirty flag it did not cause, and restores before a mid-play
+recompile. Ran here: the same gates as above (`colour_trace.py --check/--self-test` with new negative controls,
+`author_colour_set_assets.py --check`, `check_console_logging.py`, `check_conditional_compilation.py`),
+`unity_refcompile` in the player, editor and player-dev configs (0 errors in the changed files), and the real
+`ColorTrace.cs` compiled with Roslyn and run under .NET 8 against the ten shipped sets (54,120 lookups, 0 misread; 79
+with the values the sets held before). Nothing here ran in Unity.
+
+7. **Run `ColorTraceTests`** (the new cases: a token found as authored and as Photic painted it, a worn colour left
+   exactly alone, a colour from two wears ago, the id round trip, every shipped set reading every other set's paint).
+8. **Edit an asset during play and stop**: with Nocturne worn, change a float on the HyperSea sky material and a traced
+   colour on a painted flora material in the inspector, then stop. Both edits stay and the sky material is still
+   marked unsaved; every colour you did not touch is back to its authored value (`git diff` after saving shows only
+   your edits).
+9. **Open a prefab in Prefab Mode during play**, browse a set in the Profile, stop: the stage still shows the authored
+   colours and saving it changes nothing.
+10. **Recompile during play** (with Preferences > General > Script Changes While Playing set to Recompile And Continue
+    Playing): save a C# file, let it reload, stop: `git status` shows no changed asset.
+11. **Lazily loaded materials**: under Nocturne, play Switchback at I4 (the path rays), a cell with black holes on the
+    Mobile look (the glow), and Astro League (the ball's trail): each wears Nocturne's colours from its first frame.
+12. **Rebuilt UI rows**: under Nocturne, open the hangar's ship list and a scoreboard twice (rebuilt with the same
+    number of rows): every row wears the theme, none flashes the authored Deep Sea colours.
+13. **The sky's light**: preview Photic, then Nocturne in the Profile: the lit surfaces' ambient tint follows the sky.
+
+Third round, 2026-11-11 (Garrett: "this is a fundamental that should be respected universally"; also NOT RUN IN
+EDITOR). Photic's UI is now exactly the authored theme (every set carries all 18 UI tokens and the sea's four colours;
+the console and editor themes match); the Voyage map, Grizzly, Thresher and Stoat colours are traced; projectiles and
+the AI Gunner's gun take their owner's domain; display hulls paint the live ship's domain slot; the black-hole lens,
+the Soliton glint and the cage nucleus are material colours (0 untraced); and every texture is graded: the trace's
+rule through a 33^3 table per set (`colour_grade.py`, `ColorGrade.cs`), drawn by the default UI material
+(`CosmicShore/UI/GradedDefault`), CardDrift, HullLit, SilhouetteHolo, ElementRim and the static sky. Ran here: the
+gates (`colour_trace`, `colour_grade`, both with negative controls), `unity_refcompile` (player and editor: 0 errors in
+the changed files), the real `ColorTrace.cs` under .NET 8 (0 misread), and the grade applied to real art in Python
+(the look, not the shader). The shaders and the ShaderGraph edit were not compiled.
+
+14. **Shaders compile**: open the project and check the Console for errors in `GradedDefault.shader`,
+    `ColorGrade.cginc`, CardDrift, HullLit, SilhouetteHolo, ElementRim, StaticSkyPanorama, BlackHoleLens,
+    SolitonTunnel and CageGraph (the `_Nucleus_Dark` property node).
+15. **Wear Photic**: every menu, card, portrait and the sky look exactly as before this branch (the grade is off). The
+    UI is the authored Deep Sea theme, the selection Jade (`#00D4FF`); the sea lines are their material's colours.
+16. **Wear Nocturne, then a vision set**: card art, hangar renders, pilot portraits, codex pictures and flat-coloured
+    sprites take the set's colours; masks and white icons do not change; the Google sign-in button and mark keep
+    Google's colours. Compare with the sheet the session rendered from the real tables.
+17. **Masks, clipping and fonts**: scroll a masked list (stencil), a RectMask2D with softness, and legacy Text: all
+    draw as before (the graded default material is UI/Default otherwise).
+18. **A phone at Low**: open the Hangar and the Arcade grid under Nocturne and watch the frame time; the grade adds one
+    3D texture read per coloured UI texel (greys skip it).
+19. **Domain on rounds and hulls**: as a Ruby pilot, fire the Sparrow's SkyBurst and an Explodable round; meet an AI
+    Gunner; open the toybox Vessel Changer on a Goby and a Squirrel: each wears its owner's domain, the body stays dark.
+
+## 🔴 Colour sets under seven rules: Dart Frog, Nacre, Contrast and the vision sets re-derived, Nocturne's Gold 4° yellower (2026-11-10, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nifty-cray-41hy43`. `colour_sets.json` now holds every set to seven rules (`Tools/Build/colour_sets.py`,
+the `/colour-set` skill) so each domain stays distinguishable and looks like its four-letter name. Rewritten by
+`author_colour_set_assets.py`: the Dart Frog, Nocturne, Nacre, Contrast, Protanopia, Deuteranopia, Tritanopia,
+Achromatopsia and Low Vision palettes in `Assets/_SO_Assets/Color Palettes/`; regenerated: `FrogletSeaTheme.Themes.cs`,
+the console's `themes.css` / `theme.js`, `Docs/UI/froglet-tokens.json`; catalog words edited in `ColorSetCatalog.asset`.
+Ran here: `colour_sets.py --check/--self-test`, `colour_set_maker.py --self-test`, `author_colour_set_assets.py
+--check/--self-test`, `author_colour_set_catalog.py --check/--self-test`, both theme writers' `--check/--self-test`,
+`froglet_style.py --check`, every palette reader's `--check`, `/ship` gates, and `unity_refcompile` in the player and
+editor configs (0 errors in the changed file `FrogletSeaTheme.Themes.cs`; 21 elsewhere, in multiplayer and party code whose
+packages the sandbox cannot fetch). The stills come from a numpy model of the block shader with the gameplay bloom
+(`colour_set_maker.py preview` / `hero`), not from Unity.
+
+1. **Let Unity import the nine palettes**, then run the edit-mode tests `ColorSetCatalogTests` and `ColorSetUIThemeTests`
+   (the latter compares the C# theme maths to the regenerated `themes.css`).
+2. **Nocturne (the default), Gold on a team**: the Gold score panel, HUD colour and trail read honey-gold, not orange.
+   Nothing else in Nocturne moved.
+3. **Profile > Colour sets > Dart Frog**: the tile reads Mint over Bronze, Orchid over Petrol, Bumblebee over Coal, Azure
+   over Cobalt. Apply it and race with all four domains: each prism reads as its rim's colour over a dark ground (Jade
+   mint over dark bronze, no longer tan; Gold yellow over coal; Ruby orchid over petrol) and Blue prisms are wholly blue.
+   The UI theme stays bronze-hued.
+4. **Nacre**: the tile reads Aqua over Seafoam, Orchid over Amethyst, Butter over Champagne, Periwinkle over Powder.
+   Prisms should be soft bodies in their own domain's colour (seafoam Jade, champagne Gold, powder Blue, amethyst Ruby),
+   light but not white. Judge the bloom: if the faces still wash out, lower the faces' `L` in `colour_sets.json` (the Nacre
+   style allows mid L 0.50-0.74) and re-run the writer. Shielded tiers keep a tint; danger (a coral rim over a pale body)
+   still warns. The UI theme turns mint-hued (its Jade face is seafoam).
+5. **Contrast**: every prism is one domain's colour at two lightnesses (a crimson-bodied Fire, an amber-bodied Gold); the
+   board reads at a glance.
+6. **The five colour-blind sets**: Gold's HUD colour no longer reads as Fire, and the HUD colours are further apart for
+   each set's own viewer (`colour_sets.py --report`, rule 5). A colour-blind player's look at their set is the real test.
+7. **The Nacre entry above (2026-11-08)** names its old pigments in step 1; they changed here.
+
 ## 🔴 Manta: Charge is the fuse, not the bloom's petals (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/cool-dijkstra-4puf92`. Design record: `MANTA_STING_KABLOOM.md` §0a. Compile and gate status are in the

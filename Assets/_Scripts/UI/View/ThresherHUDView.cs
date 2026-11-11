@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -142,11 +143,12 @@ namespace CosmicShore.UI
         {
             // Mass Mode never smashes (THRESHER.md 2b), so the Charge card is cool there too.
             bool smash = _hot && !_massMode;
+            var danger = ColorTrace.Retrace(ColorTrace.Ui, dangerColor);
             Paint(wreckSharkIcon, _domain, 1f);
             Paint(wreckChainIcon, Color.white, 1f);
-            Paint(wreckBallIcon, smash ? dangerColor : Color.white, 1f);
-            Paint(wreckPrismIcon, dangerColor, smash ? 0f : 1f);
-            Paint(wreckSplitIcon, dangerColor, smash ? 1f : 0f);
+            Paint(wreckBallIcon, smash ? danger : Color.white, 1f);
+            Paint(wreckPrismIcon, danger, smash ? 0f : 1f);
+            Paint(wreckSplitIcon, danger, smash ? 1f : 0f);
             Paint(wreckBlastIcon, Color.white, smash ? 1f : 0f);
             Paint(wreckMagnetIcon, Color.white, IsAbilityUpgraded(Element.Charge) ? 1f : 0f);
 
@@ -192,7 +194,7 @@ namespace CosmicShore.UI
             if (!energyGauge) return;
             float e = Mathf.Clamp01(radius01);
             energyGauge.fillAmount = e;
-            Color target = Color.Lerp(chainColor, fullColor, e);
+            Color target = Color.Lerp(ColorTrace.Retrace(ColorTrace.Ui, chainColor), fullColor, e);
             float k = 1f - Mathf.Exp(-colorBlendRate * Time.unscaledDeltaTime);
             energyGauge.color = Color.Lerp(energyGauge.color, target, k);
         }

@@ -470,8 +470,9 @@ namespace CosmicShore.UI
         /// <summary>The local player's own pick. Legacy: tints the card's Border.</summary>
         protected virtual void DrawLocalPick(bool picked)
         {
+            // Both in the worn colour set: the rest colour was captured at Awake, as the prefab authored it.
             if (LocalPickBorder)
-                LocalPickBorder.color = picked ? localPickBorderColor : _borderRestColor;
+                LocalPickBorder.color = ColorTrace.Retrace(ColorTrace.Ui, picked ? localPickBorderColor : _borderRestColor);
         }
 
         /// <summary>One party-pick avatar chip. Legacy: toggles its GameObject.</summary>
@@ -490,7 +491,7 @@ namespace CosmicShore.UI
                 if (locked && !_isLocked)
                     _originalBgColor = BackgroundImage.color;
 
-                BackgroundImage.color = locked ? lockedTintColor : _originalBgColor;
+                BackgroundImage.color = ColorTrace.Retrace(ColorTrace.Ui, locked ? lockedTintColor : _originalBgColor);
             }
         }
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
@@ -200,6 +201,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] Color tertiaryColor = new(1f, 0.15f, 0.6f, 1f);
         [SerializeField] float colorCycleSpeed = 1.2f;
         [SerializeField] float baseLightIntensity = 3f;
+
+        // The payload colours as the worn colour set paints them (alpha kept). Read these, never the fields, where a
+        // colour is painted: the authored fields are never written.
+        Color PrimaryColor => ColorTrace.Retrace(ColorTrace.World, primaryColor);
+        Color SecondaryColor => ColorTrace.Retrace(ColorTrace.World, secondaryColor);
+        Color TertiaryColor => ColorTrace.Retrace(ColorTrace.World, tertiaryColor);
 
         // Prism fresnel-shader (BlockGraph) properties: bright rim + dark base.
         static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
@@ -781,7 +788,7 @@ namespace CosmicShore.Gameplay
                         mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
                         mat.SetFloat("_Metallic", 0.9f);
                         mat.SetFloat("_Smoothness", 0.95f);
-                        mat.SetColor(BaseColorId, primaryColor);
+                        mat.SetColor(BaseColorId, PrimaryColor);
                         mat.EnableKeyword("_EMISSION");
                         _usesFresnel = false;
                     }
@@ -791,7 +798,7 @@ namespace CosmicShore.Gameplay
 
             ballLight = gameObject.AddComponent<Light>();
             ballLight.type = LightType.Point;
-            ballLight.color = primaryColor;
+            ballLight.color = PrimaryColor;
             ballLight.range = settings != null ? settings.MinLightRange : 25f;
             ballLight.intensity = baseLightIntensity;
             ballLight.shadows = LightShadows.None;
@@ -802,6 +809,7 @@ namespace CosmicShore.Gameplay
             trail.endWidth = 0f;
             trailMpb = new MaterialPropertyBlock();
             var cometMat = Resources.Load<Material>(TrailMaterialResourcePath);
+            WorldColorTrace.Paint(cometMat);   // loaded after the scene's repaint: born in the worn colour set
             _cometTrail = cometMat != null;
             if (_cometTrail)
             {
@@ -813,11 +821,13 @@ namespace CosmicShore.Gameplay
                 // Legacy ribbon — the BallTrail material is missing from Resources.
                 trail.numCapVertices = 4;
                 var trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-                trailMat.color = primaryColor;
+                var primary = PrimaryColor;
+                var secondary = SecondaryColor;
+                trailMat.color = primary;
                 MakeTransparent(trailMat);
                 trail.sharedMaterial = trailMat;
-                trail.startColor = primaryColor;
-                trail.endColor = new Color(secondaryColor.r, secondaryColor.g, secondaryColor.b, 0f);
+                trail.startColor = primary;
+                trail.endColor = new Color(secondary.r, secondary.g, secondary.b, 0f);
                 trail.minVertexDistance = 0.5f;
             }
             trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -984,7 +994,7 @@ namespace CosmicShore.Gameplay
             main.playOnAwake = !burstOnly;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.gravityModifier = 0f;
-            main.startColor = new ParticleSystem.MinMaxGradient(primaryColor, secondaryColor);
+            main.startColor = new ParticleSystem.MinMaxGradient(PrimaryColor, SecondaryColor);
 
             var emission = ps.emission;
             var shape = ps.shape;
@@ -996,7 +1006,7 @@ namespace CosmicShore.Gameplay
                 main.startSpeed = new ParticleSystem.MinMaxCurve(15f, 45f);
                 main.startSize = new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
                 main.maxParticles = 200;
-                main.startColor = new ParticleSystem.MinMaxGradient(Color.white, primaryColor);
+                main.startColor = new ParticleSystem.MinMaxGradient(Color.white, PrimaryColor);
                 emission.rateOverTime = 0f;
                 shape.radius = 0.5f;
             }
@@ -1025,7 +1035,7 @@ namespace CosmicShore.Gameplay
             colorOverLifetime.enabled = true;
             var gradient = new Gradient();
             gradient.SetKeys(
-                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(secondaryColor, 1f) },
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(SecondaryColor, 1f) },
                 new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0f, 1f) });
             colorOverLifetime.color = gradient;
 

@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -68,6 +69,7 @@ namespace CosmicShore.UI
             Show(0);
             _openedFrame = Time.frameCount;
             if (!_window || _window.IsOpen) HubShoulders.Claim(this);
+            ColorTrace.Changed += Repaint;
         }
 
         void OnDisable()
@@ -79,7 +81,11 @@ namespace CosmicShore.UI
             }
             _window = null;
             HubShoulders.Release(this);
+            ColorTrace.Changed -= Repaint;
         }
+
+        // A colour set was worn: the tab labels take its colours.
+        void Repaint() => Show(_shown);
 
         void OnDestroy()
         {
@@ -127,7 +133,7 @@ namespace CosmicShore.UI
                 var t = tabs[i];
                 if (t.page && t.page.activeSelf != on) t.page.SetActive(on);
                 if (t.mark) t.mark.SetActive(on);
-                if (t.label) t.label.color = on ? selectedColor : idleColor;
+                if (t.label) t.label.color = ColorTrace.Retrace(ColorTrace.Ui, on ? selectedColor : idleColor);
             }
         }
     }
