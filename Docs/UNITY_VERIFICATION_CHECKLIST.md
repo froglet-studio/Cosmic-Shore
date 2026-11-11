@@ -22595,9 +22595,11 @@ Branch `cece/cool-dijkstra-4puf92`. Design record: `SQUIRREL_ELEMENT_RECUT.md`, 
    fifth full at cruise (60 of 300 u/s). Two short dim ticks sit in from its slanted edges at 30% (90 u/s).
 3. **Skim to boost past the ticks.** The ticks vanish and a dark gap cuts across the fill at the same height. Slow
    down again: the ticks come back.
-4. **Joust a rival AI below the mark, then above it.** Below: nothing happens (no steal, no score, no haptic). Above it,
-   while faster than the rival: the usual joust - the two hulls flash lime, the rival loses about 0.8 petal per element
-   (flat at any Charge), the score counts.
+4. **Joust a rival AI below the mark, then above it.** Below: nothing happens (no steal, no score, no joust point, no
+   impact blast, no haptic). Above it, while faster than the rival: the usual joust - the two hulls flash lime, the
+   rival loses about 0.8 petal per element (flat at any Charge), the blast goes off, the score counts.
+4a. **Joust mode (Squirrels only), I1**: the joust count rises only for jousts flown above the mark. Note whether the AI
+   Squirrels still joust often enough for the round to end in its usual time.
 5. **Joust a creature's heart below and above the mark.** Below: it bounces off. Above: it withers and the heart is
    yours. At Charge 5 (Shepherd), an own-domain creature is nourished only above the mark too.
 6. **Raise Charge to 10.** The mark drops to 15% (45 u/s): a cruising Squirrel now jousts.

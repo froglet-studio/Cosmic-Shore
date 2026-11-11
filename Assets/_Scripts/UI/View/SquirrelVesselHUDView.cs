@@ -166,11 +166,14 @@ namespace CosmicShore.UI
         [Header("Joust speed (the CHARGE card's gauge - GENERATED, see EnsureGeneratedAbilityIcons)")]
         [Tooltip("Thickness, in canvas units, of the joust-speed threshold's marks (the Rhino's momentumMarkThickness).")]
         [SerializeField, Min(0.5f)] private float joustMarkThickness = 2f;
-        [Tooltip("The threshold once speed has passed it: a GAP cut through the fill, the plate showing through " +
-                 "(match AbilityLockupStyle's gauge track colour).")]
-        [SerializeField] private Color joustMarkGapColor = new(0.086f, 0.094f, 0.129f, 0.9f);
-        [Tooltip("The threshold while speed is still below it: a short tick in from each slanted edge of the plate.")]
-        [SerializeField] private Color joustMarkAheadColor = new(1f, 1f, 1f, 0.35f);
+        [Tooltip("The fleet's lockup style. The mark's colours are ITS: the gap cut through the fill once speed has passed " +
+                 "the threshold is the gauge track colour (the plate showing through), and the ticks while speed is below " +
+                 "it are the gauge fill colour at joustMarkAheadAlpha. Loaded from Resources when left empty; never " +
+                 "author a second copy of either colour.")]
+        [SerializeField] private AbilityLockupStyleSO lockupStyle;
+        [SerializeField] private string lockupStyleResourcePath = "AbilityLockupStyle";
+        [Tooltip("The ticks' opacity: the gauge fill colour at this alpha, so they read as a mark, not as fill.")]
+        [SerializeField, Range(0f, 1f)] private float joustMarkAheadAlpha = 0.35f;
         [Tooltip("Length, in canvas units, of a tick, in from each edge of the gauge.")]
         [SerializeField, Min(1f)] private float joustTickLength = 7f;
         [Tooltip("How far the plate's slanted edge sits in from the gauge's rect at the BOTTOM of the card, in canvas " +
@@ -430,8 +433,14 @@ namespace CosmicShore.UI
             _joustGap.gameObject.SetActive(marks.Gap);
             _joustTickLeft.gameObject.SetActive(marks.Ticks);
             _joustTickRight.gameObject.SetActive(marks.Ticks);
-            _joustGap.color = joustMarkGapColor;
-            _joustTickLeft.color = _joustTickRight.color = joustMarkAheadColor;
+
+            if (!lockupStyle && !string.IsNullOrEmpty(lockupStyleResourcePath))
+                lockupStyle = Resources.Load<AbilityLockupStyleSO>(lockupStyleResourcePath);
+            if (!lockupStyle) return;
+            _joustGap.color = lockupStyle.GaugeTrackColor;
+            var ahead = lockupStyle.GaugeFillColor;
+            ahead.a *= joustMarkAheadAlpha;
+            _joustTickLeft.color = _joustTickRight.color = ahead;
         }
 
         /// <summary>Which joust-speed marks show: the ticks while the speed is below the threshold, the gap once it has

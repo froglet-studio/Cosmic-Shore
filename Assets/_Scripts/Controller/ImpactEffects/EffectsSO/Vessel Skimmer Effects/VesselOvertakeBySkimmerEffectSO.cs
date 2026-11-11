@@ -47,7 +47,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>A joust can need a minimum speed</b> (<see cref="joustSpeed"/>, the Squirrel's): below it
     /// the contact does nothing at all - no steal and no score (the reporter asks this effect through
-    /// <see cref="IContactAdmission"/>), and no friendly buff (asked in <c>Execute</c>). It is a floor on
+    /// <see cref="IContactAdmission"/>), no joust point or impact blast (<see cref="VesselExplosionBySkimmerEffectSO"/>
+    /// asks it the same way), and no friendly buff (asked in <c>Execute</c>). It is a floor on
     /// top of <see cref="requireOvertake"/>, not instead of it.</para>
     ///
     /// <para><b>The steal can be a level-5 upgrade</b> (<see cref="stealUpgradeElement"/>): the

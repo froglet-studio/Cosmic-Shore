@@ -25,13 +25,18 @@ petals, so Charge 0 → 10 moved a joust from about one petal per element to two
   Squirrel's 60 u/s cruise, so it skims for boost first), 67.5 at Charge 5, 45 at Charge 10 (a cruising Squirrel
   jousts), 112.5 at Charge −5. It is a FLOOR on top of each joust's own rule, never instead of it: a vessel joust still
   has to out-run its victim, a lifeform joust its creature (`speedMargin`).
-- **One asset, four readers.** `SquirrelJoustSpeed.asset` (`JoustSpeedConfigSO.minimumSpeed`, an `ElementalFloat` on
+- **One asset, five readers.** `SquirrelJoustSpeed.asset` (`JoustSpeedConfigSO.minimumSpeed`, an `ElementalFloat` on
   Charge, read at the replicated level so every deciding machine agrees) is asked by the vessel joust's score and steal
-  (`VesselCombatHitBySkimmerEffectSO` asks its siblings through the new `IContactAdmission`, so a slow contact claims no
-  window, takes nothing and scores nothing), by the friendly joust's buff (`VesselOvertakeBySkimmerEffectSO.Execute`), by
-  the lifeform joust (`VesselWitherLifeformByCrystalEffectSO`, the kill and Shepherd's nourish alike), and by the HUD.
-  The shared reporter asset (`VesselCombatHitByJoust`, five hulls) did not change; the rule lives on the Squirrel's own
-  take, so the Stoat, Shrike, Brittle Star and Thresher joust exactly as before.
+  (`VesselCombatHitBySkimmerEffectSO`) and by its joust point and impact blast (`VesselExplosionBySkimmerEffectSO`), both
+  through `ContactAdmission.AdmittedBySiblings` and the new `IContactAdmission` on the Squirrel's take, so a slow contact
+  claims no window, takes nothing, scores nothing and counts no joust; by the friendly joust's buff
+  (`VesselOvertakeBySkimmerEffectSO.Execute`); by the lifeform joust (`VesselWitherLifeformByCrystalEffectSO`, the kill
+  and Shepherd's nourish alike); and by the HUD. The two shared skimmer assets (`VesselCombatHitByJoust`,
+  `VesselExplosionBySkimmerEffect`, five hulls each) did not change; the rule lives on the Squirrel's own take, so the
+  Stoat, Shrike, Brittle Star and Thresher joust exactly as before.
+- **The Joust mode changes with it.** `Joust` (`GameModes` 34) seats only Squirrels and counts the joust point, so a
+  joust below the minimum no longer counts there: at Charge 0 a pilot must be skim-boosted past 90 u/s. Its joust target
+  and its AI may want a playtest and a retune (the mode's own levers, never the Squirrel's kit).
 - **The steal is flat.** `stealScale` on `VesselOvertakeBySkimmerEffect.asset` is disabled (×1): every steal takes the
   priced Strike, 0.8 petal per element. The Swordfish's sword keeps its own Charge-scaled steal.
 - **The Charge card shows it.** The card's plate is now a SPEED gauge (`SquirrelVesselHUDView.SetJoustSpeed`, generated

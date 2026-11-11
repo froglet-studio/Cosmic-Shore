@@ -13,6 +13,8 @@ namespace CosmicShore.Gameplay
     /// <list type="bullet">
     /// <item>the vessel joust's score and steal - <see cref="VesselCombatHitBySkimmerEffectSO"/> asks the hull's take
     /// (<see cref="VesselOvertakeBySkimmerEffectSO"/>, through <see cref="IContactAdmission"/>) before it admits a hit;</item>
+    /// <item>the vessel joust's joust point and impact blast (what the Joust mode counts) -
+    /// <see cref="VesselExplosionBySkimmerEffectSO"/> asks the same take;</item>
     /// <item>the friendly joust's buff - <see cref="VesselOvertakeBySkimmerEffectSO"/>'s own <c>Execute</c>;</item>
     /// <item>the lifeform joust - <see cref="VesselWitherLifeformByCrystalEffectSO"/>;</item>
     /// <item>the Charge card's speed gauge and its threshold mark - <c>SquirrelHUDController</c>.</item>
