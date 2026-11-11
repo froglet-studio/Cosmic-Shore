@@ -58,9 +58,9 @@ AOE_EXPLOSION_COMPONENT_FILEID = 3479271500403630839
 AOE_FLOWER_PREFAB_GUID = "f5ecfb9923155a84c860975d559b2714"
 AOE_FLOWER_COMPONENT_FILEID = 6875622972764638977
 COMBAT_HIT_BY_BLAST_GUID = "fb13e2c96ac07b6d086178c042518dcf"
-# SkimmerHapticsByPrismEffect is deliberately NOT in the Sting container: the Manta's skim pulse fires
-# from MantaStingSkimPrismEffect only when a skim pays energy (a pulse per entry into the 20-40 unit
-# sphere held the pad at a steady hum in dense prisms; Docs/HAPTICS.md, the Manta row).
+# SkimmerHapticsByPrismEffect is deliberately NOT in the Sting container: the Manta's skim has no haptic
+# (Caleb, 2026-11-11). A pulse per entry into the 20-40 unit sphere held the pad at a steady hum in dense
+# prisms; the pad now speaks only on a hull collision and a bomb plant (Docs/HAPTICS.md, the Manta row).
 STING_CONTAINER_GUID = "911a107d002544e47bc70cef1714a1a6"  # the renamed overcharge container
 
 # ── Minted guids for the new assets ──────────────────────────────────────────
@@ -270,8 +270,7 @@ FILES["Assets/_SO_Assets/Effects/Vessel Crystal Effects/MantaDecoyByCrystalEffec
     ASSET_META.format(guid=DECOY_EFFECT_GUID))
 
 FILES["Assets/_SO_Assets/Effects/Skimmer Prism Effects/MantaStingSkimPrismEffect.asset"] = (
-    so_asset("MantaStingSkimPrismEffectSO", "MantaStingSkimPrismEffect",
-             "  hapticMinStrength: 0.35\n"),
+    so_asset("MantaStingSkimPrismEffectSO", "MantaStingSkimPrismEffect", ""),
     ASSET_META.format(guid=SKIM_EFFECT_GUID))
 
 FILES["Assets/_SO_Assets/Effects/Vessel Skimmer Effects/MantaStingPlantBombVesselEffect.asset"] = (

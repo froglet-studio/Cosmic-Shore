@@ -15,9 +15,10 @@ explosion reads as noise. Keep it this way — see "Adding/changing a feel" befo
 | **Bind grind** (state) | Short (~80 ms) **low**-frequency (0.15) grind carried by the LOW motor with a little high-motor grit, no transient, repeated every ~100 ms. Heavy like the thud, repeating like the spray. | The Rhino's NON-energized blade held inside a super-shielded prism it cannot cut (`RHINO_ENERGY_SWORD.md` § "Binding") — the entry is a punish thud, this is the texture after it. **Nothing else** |
 | **Drift rumble** (state) | Short (~90 ms) smooth, **low-mid** frequency (0.3) swell-and-fade, low motor leading but lighter than the bind, no transient. Repeats every ~100 ms while drifting; strength follows the **slip angle** like the drift loop's volume (linear from `quietSlipDegrees` to `fullSlipDegrees`), 0 to 0.3 - subtle by design (Garrett 2026-10-27). | Drifting on the local human pilot's vessel (`DriftAudioController`, Haptics header). **Nothing else** |
 | **Drift press / let-go** (event) | Two one-shots. Press: a firm ~60 ms mid-frequency (0.6) tap on both motors. Let-go: a softer ~90 ms low-frequency (0.2) bump, low-motor led. Each sets a short busy window so the drift rumble can't cut it short. | The drift trigger engaging / releasing on the local human pilot's vessel (`DriftAudioController`). **Nothing else** |
+| **Plant knock** (event) | Two short firm knocks (~40 ms, 40 ms gap, ~50 ms softer second), mid-low frequency (0.35), both motors with the low one leading. Two hits is its signature against the skim's one tick and the punish's one thud. Rate-limited to 150 ms; suppresses skim and the textures for its ~130 ms. | The Manta planting a bomb on a vessel or a creature (`MantaStingActionExecutor.SpendBomb`, local human pilot; Caleb 2026-11-11). **Nothing else** |
 | **Spray buzz** (state) | Short (~50 ms) **mid**-frequency buzz with no transient (skim's signature) and both motors together (which is what reads as a buzz rather than a tick or a rumble). Repeats while the trigger is down, climbing in **both** strength (0.15 → 1.0) and cadence (100 ms → 45 ms) as the gun's accuracy decays, and holding flat once the cone reaches its sustainable cap — both channels are at their ceiling there, so a longer hold has nothing worse left to say. | Holding the Sparrow's full-auto trigger — bullets **or** turret stance. **Nothing else** |
 
-**Priority, top to bottom: alert > punish > skim > drift press/let-go > spray = bind = drift.** The textures share the
+**Priority, top to bottom: alert > punish > plant > skim > drift press/let-go > spray = bind = drift.** The textures share the
 bottom rung and neither sets a busy window, so neither can suppress anything. The spray is the game's only
 *continuous* feel and therefore the only one that sits below skim: everything suppresses it and
 it suppresses nothing. Being interruptible costs it nothing (the next pulse is milliseconds
@@ -44,9 +45,9 @@ every other `SkimmerPrismEffectSO` / `VesselPrismEffectSO`:
   Rhino-forcefield skimmer containers. **The Manta is the exception (2026-11-11):** its skimmer is
   20-40 units across, so a pulse per prism ENTRY never stopped in dense prisms (the Toybox cell, or its
   own trail waking inside the sphere when it flies slower than the radius per second). Pulses 30 ms apart
-  on a 70 ms clip never let the clip end, so the pad sat at one steady level for minutes. The Manta's
-  skim pulse now fires from `MantaStingSkimPrismEffectSO` only when the skim PAYS energy into the bay
-  (per-prism cooldown, capped at capacity), so it says "that paid" and goes quiet once the bay is full.
+  on a 70 ms clip never let the clip end, so the pad sat at one steady level for minutes. Caleb's call:
+  the Manta's skim has **no haptic** (sound and the HUD tell it). Its pad speaks only on a hull collision
+  (the punish thud, below) and when it plants a bomb (the plant knock).
 - **Punish**: `VesselHapticsByPrismEffect.asset` → each vessel's `VesselImpactorDataContainerSO.VesselPrismEffects`
   (fired from `VesselImpactor.AcceptImpactee`, prism case). Wired into all six playable vessel containers.
 
@@ -239,10 +240,9 @@ its call site — it's already silent.
 
 - **The skim train can flatten into a hum on any vessel.** `SkimMinIntervalSec` (30 ms) is shorter than
   the skim clip (70 ms), so a stream of entries faster than about 14 a second re-starts the clip before it
-  ends and the motors hold one level instead of pulsing; this breaks this document's own cadence rule
-  ("keep any repeating feel at or above its own clip length"). It was the Manta's minutes-long rumble
-  (fixed there by pulsing only on a paying skim, above). The Squirrel and the Rhino keep the per-entry
-  pulse; raising the floor to the clip length changes their feel, so it is the owner's call.
+  ends and the motors hold one level instead of pulsing (against this document's own cadence rule). It was
+  the Manta's minutes-long rumble. Caleb and Garrett (2026-11-11) have not felt it on the Squirrel or the
+  Rhino, so it stays as it is there; revisit if a dense skim ever reads as a hum.
 
 - **Own-trail false-positives**: the punish fires on *any* body-into-prism, including the Squirrel clipping
   its own freshly-collider-enabled trail during a tight drift. The 250 ms gate caps the rate, but if it

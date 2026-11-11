@@ -12,11 +12,8 @@ namespace CosmicShore.Gameplay
     ///    beside it in its prismscape die too, and an explosive neighbour carries the chain on. A shielded prism keeps
     ///    its armour and is not primed - until SPACE 5, where the skim pops the shield and primes it anyway;
     ///  • a skimmed prism that is a LIVING CREATURE'S BODY plants a bomb on the creature (graze to plant);
-    ///  • a skim that PAID energy fires the skim pulse haptic (<see cref="HapticController.PlaySkim"/>), local human
-    ///    pilot only. Only a paying skim: the Manta's skimmer is 20-40 units across, so in dense prisms (the Toybox
-    ///    cell, its own trail when it flies slower than the sphere) a pulse per prism ENTRY re-triggered the 70 ms clip
-    ///    every 30 ms and held the pad at one steady level for as long as the Manta stayed there - minutes, with a full
-    ///    bay meaning nothing at all. Tied to the energy, the pulses say "that paid" and stop when the bay is full.
+    ///  • no haptic: skimming is told by sound and the HUD only (Caleb, 2026-11-11). The Manta's pad speaks on a hull
+    ///    collision (the punish thud) and when a bomb is planted (<see cref="HapticController.PlayPlant"/>).
     ///
     /// The energy and the plant gate on simulation authority inside the bay; the priming is a prism state and runs
     /// wherever this effect runs, like every other skim effect on prisms.
@@ -26,11 +23,6 @@ namespace CosmicShore.Gameplay
         menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/MantaStingSkimPrismEffectSO")]
     public class MantaStingSkimPrismEffectSO : SkimmerPrismEffectSO
     {
-        [Header("Haptics")]
-        [Tooltip("Skim pulse strength for a paying skim at the sphere's edge; a dead-centre skim plays at 1. " +
-                 "Same floor as the fleet's SkimmerHapticsByPrismEffect (Docs/HAPTICS.md).")]
-        [Range(0f, 1f)] [SerializeField] float hapticMinStrength = 0.35f;
-
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
             var status = impactor?.Skimmer?.VesselStatus;
@@ -40,9 +32,7 @@ namespace CosmicShore.Gameplay
             var prism = prismImpactee?.Prism;
             if (prism == null || prism.destroyed) return;
 
-            if (bay.AddSkimCharge(prism) && status.Player != null && status.IsLocalUser && !status.AutoPilotEnabled)
-                HapticController.PlaySkim(Mathf.Lerp(hapticMinStrength, 1f,
-                    SkimmerHapticsByPrismEffectSO.Closeness01(impactor, prism)));
+            bay.AddSkimCharge(prism);
             TryPrimeExplosive(bay, status, prism);
 
             if (prism is HealthPrism healthPrism)

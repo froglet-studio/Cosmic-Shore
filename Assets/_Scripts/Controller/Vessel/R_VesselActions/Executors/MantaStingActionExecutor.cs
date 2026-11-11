@@ -184,23 +184,20 @@ namespace CosmicShore.Gameplay
         /// One skim tick from <paramref name="source"/>: pays energy, per-prism throttled (a skimmer slides along a
         /// prism and re-enters it), capped at the capacity.
         /// </summary>
-        /// <returns>True when the skim actually paid energy: false when it was throttled, the bay was already full,
-        /// or this machine is not the simulation authority. The skim pulse haptic fires on exactly this, so a full bay
-        /// flying through dense prisms is silent rather than a minutes-long hum (Docs/HAPTICS.md).</returns>
-        public bool AddSkimCharge(Prism source)
+        public void AddSkimCharge(Prism source)
         {
-            if (!config || _status == null || !IsSimAuthority(_status)) return false;
+            if (!config || _status == null || !IsSimAuthority(_status)) return;
 
             if (source)
             {
                 int id = source.GetInstanceID();
                 if (_lastChargeTimeByPrism.TryGetValue(id, out float last)
                     && Time.time - last < config.PerPrismEnergyCooldown)
-                    return false;
+                    return;
                 _lastChargeTimeByPrism[id] = Time.time;
             }
 
-            return PayEnergy();
+            PayEnergy();
         }
 
         /// <summary>Vessel-graze energy tick (no prism identity to throttle on - uses the target).</summary>
@@ -218,13 +215,13 @@ namespace CosmicShore.Gameplay
             PayEnergy();
         }
 
-        bool PayEnergy()
+        void PayEnergy()
         {
             float before = _energy;
             int armedBefore = ArmedBombs;
 
             _energy = Mathf.Min(Capacity, _energy + config.EnergyPerSkim);
-            if (Mathf.Approximately(before, _energy)) return false;   // already full
+            if (Mathf.Approximately(before, _energy)) return;   // already full
 
             PushBayState();
             OnSkimCharged?.Invoke();
@@ -235,8 +232,6 @@ namespace CosmicShore.Gameplay
                 OnBombArmed?.Invoke();
                 PlayCue(config.BombArmedEvent);
             }
-
-            return true;
         }
 
         /// <summary>
@@ -323,6 +318,9 @@ namespace CosmicShore.Gameplay
             _energy = Mathf.Max(0f, _energy - 1f);
             PushBayState();
             OnBombPlanted?.Invoke();
+
+            // The plant knock: one of the Manta's two haptics (the other is the hull-hit thud). Local human only.
+            if (_status.IsLocalUser && !_status.AutoPilotEnabled) HapticController.PlayPlant();
         }
 
         /// <summary>Per-use snapshot at PLANT time: Contagion (Charge 5) and the shared fuse as it stands.</summary>
