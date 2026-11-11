@@ -161,18 +161,25 @@ in vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }"""
 
 VS_INST = """#version 330
 in vec3 vp; in vec3 vn;
-in vec3 ip; in vec3 ix; in vec3 iy; in vec3 iz; in vec4 ic; in float ie;
+in vec3 ip; in vec3 ix; in vec3 iy; in vec3 iz; in vec4 ic; in float ie; in vec3 id;
 uniform mat4 uPV; uniform vec3 uEye;
-out vec3 fN; out vec3 fL; out vec4 fC; out float fE; out vec3 fW;
+out vec3 fN; out vec3 fL; out vec4 fC; out float fE; out vec3 fW; out vec3 fD; out float fNear;
 void main(){
   vec3 w = ip + ix*vp.x + iy*vp.y + iz*vp.z;
+  fD = id; fNear = 0.0;
+  if(ie < -200.0){ // the game's prism graph (Distance Spread And Colors): faces pushed out with camera distance
+    vec3 dc = ip - uEye; float nd = dot(dc, dc)/100000.0; fNear = nd;
+    vec3 far = 0.1*vec3(50.0, 35.0, 20.0);
+    vec3 k = nd > 1.0 ? far : mix(vec3(-7.0), far, nd);
+    vec3 sv = max(k, vec3(0.1));
+    w += normalize(ix)*sv.x*vn.x + normalize(iy)*sv.y*vn.y + normalize(iz)*sv.z*vn.z; }
   vec3 n = normalize(ix*vn.x/max(dot(ix,ix),1e-8) + iy*vn.y/max(dot(iy,iy),1e-8) + iz*vn.z/max(dot(iz,iz),1e-8));
   fN = n; fL = vp; fC = ic; fE = ie; fW = w;
   gl_Position = uPV*vec4(w, 1.0);
 }"""
 
 FS_INST = """#version 330
-in vec3 fN; in vec3 fL; in vec4 fC; in float fE; in vec3 fW;
+in vec3 fN; in vec3 fL; in vec4 fC; in float fE; in vec3 fW; in vec3 fD; in float fNear;
 uniform vec3 uLightDir, uLightCol, uFogCol, uEye; uniform float uFog, uAmbient;
 out vec4 oCol;
 void main(){
@@ -183,7 +190,12 @@ void main(){
   float m2 = a.x + a.y + a.z - m1 - min(a.x, min(a.y, a.z)); // second largest
   float edge = smoothstep(0.78, 0.98, m2);
   vec3 col;
-  if(fE < -100.0){ // game prism: a dim face in its own hue, a bright fresnel rim (PrismMaterial)
+  if(fE < -200.0){ // the game's prism graph: face -> rim by fresnel, the rim sinking to the face with distance
+    float d = dot(n, normalize(uEye - fW)); if(!gl_FrontFacing) d = -d;
+    float x = d > 0.0 ? d : (d + 1.0)*0.2;
+    vec3 bright = mix(fC.rgb, fD, fNear > 1.0 ? 0.9 : fNear*0.9);
+    oCol = vec4(mix(fD, bright, pow(1.0 - x, -fE - 200.0)), 1.0); return;
+  } else if(fE < -100.0){ // game prism: a dim face in its own hue, a bright fresnel rim (PrismMaterial)
     float fr = pow(1.0 - abs(dot(n, normalize(uEye - fW))), -fE - 100.0);
     col = mix(fC.rgb*0.22, fC.rgb*(1.0 + fC.a), clamp(fr + edge*0.35, 0.0, 1.0));
   } else if(fE < 0.0){ // ag.rim: unlit fresnel, a bright rim in the instance colour over a dark complementary face
@@ -416,10 +428,10 @@ class Renderer:
         self.v_hud = ctx.vertex_array(self.p_hud, [(self.quad, "2f", "p")])
         self.meshes = {m: ctx.buffer(_mesh(m).tobytes()) for m in MESHES}
         self.mesh_n = {m: len(_mesh(m)) for m in MESHES}
-        self.inst_buf = ctx.buffer(reserve=4 * 17 * 32768, dynamic=True)
+        self.inst_buf = ctx.buffer(reserve=4 * 20 * 32768, dynamic=True)
         self.inst_vao = {m: ctx.vertex_array(self.p_inst, [(self.meshes[m], "3f 3f", "vp", "vn"),
-                                                           (self.inst_buf, "3f 3f 3f 3f 4f 1f/i", "ip", "ix", "iy", "iz",
-                                                            "ic", "ie")]) for m in MESHES}
+                                                           (self.inst_buf, "3f 3f 3f 3f 4f 1f 3f/i", "ip", "ix", "iy", "iz",
+                                                            "ic", "ie", "id")]) for m in MESHES}
         self._prog_cache = {}
 
     def _urp_bloom(self, post):
@@ -616,7 +628,9 @@ class Renderer:
                 arr = inst.get(m)
                 if arr is None or not len(arr):
                     continue
-                arr = arr[:32768]
+                arr = np.asarray(arr[:32768], np.float32)
+                if arr.shape[1] == 17:  # no second colour: the face colour column is unused outside the prism graph
+                    arr = np.concatenate([arr, np.zeros((len(arr), 3), np.float32)], 1)
                 self.inst_buf.write(np.ascontiguousarray(arr, np.float32).tobytes())
                 self.inst_vao[m].render(self.mgl.TRIANGLES, vertices=self.mesh_n[m], instances=len(arr))
                 n_inst_total += len(arr)
