@@ -213,3 +213,66 @@ class Layers:
             for k, v in f(session, frame).items():
                 out[k] = (out[k] + v if k == "lines" else np.concatenate([out[k], v], 0)) if k in out else v
         return out
+
+
+def _lin(c):
+    c = np.asarray(c, np.float64)
+    return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+
+
+class ExtrasWorld:
+    """What extras_key.jsonl holds, drawn as recorded: every Line and Trail renderer as a ribbon with its own points,
+    width curve and gradient, and every other mesh renderer (creature spindles, ring wires) as a stand-in of its
+    recorded pose and size in its material's colour. Use it in place of VesselWorld's rebuilt trails."""
+
+    def __init__(self, session, gain=1.0, mesh_gain=1.0, soft=("DistortedFlare",)):
+        self.keys = {}
+        p = os.path.join(session.path, "extras_key.jsonl")
+        for l in open(p):
+            d = json.loads(l)
+            self.keys[d["frame"]] = d
+        self.kf = np.array(sorted(self.keys))
+        self.gain, self.mesh_gain, self.soft = gain, mesh_gain, soft
+        w = json.load(open(os.path.join(session.path, "world.json")))
+        self.mat = {}
+        for k, m in w.get("materials", {}).items():
+            v = m.get("vectors", {})
+            for name in ("_BrightColor", "_Color2", "_Straight_Color", "_Edge_Color", "_Color", "_BaseColor"):
+                if name in v and max(v[name][:3]) > 0:
+                    self.mat[k] = np.array(v[name][:3], np.float64)
+                    break
+
+    def __call__(self, session, frame):
+        d = self.keys[int(self.kf[np.argmin(np.abs(self.kf - frame))])]
+        out, lines = {}, []
+        for x in d.get("lines", []):
+            p = np.array(x["points"], np.float64).reshape(-1, 3)
+            if len(p) < 2:
+                continue
+            if x["type"] == "TrailRenderer":
+                p = p[::-1]  # stored oldest first; the ribbon runs from the emitter
+            seg = np.linalg.norm(np.diff(p, axis=0), axis=1)
+            if seg.sum() < 1e-4:
+                continue
+            u = np.concatenate([[0.0], np.cumsum(seg)]) / seg.sum()
+            wc = x.get("width_curve") or [1, 1, 1]
+            g = np.array(x.get("gradient") or [[1, 1, 1, 1]] * 3, np.float64)
+            hw = 0.5 * np.interp(u, [0, 0.5, 1], wc)
+            rgba = np.stack([np.interp(u, [0, 0.5, 1], g[:, i]) for i in range(4)], 1)
+            rgba[:, :3] = _lin(rgba[:, :3]) * self.gain
+            lines.append((p, hw, rgba, any(s in x.get("material", "") for s in self.soft)))
+        if lines:
+            out["lines"] = lines
+        M = d.get("meshes", [])
+        if M:
+            pos = np.array([m["world_center"] for m in M], np.float64)
+            R = quat_mats([m["rot"] for m in M])
+            sz = np.array([np.array(m["mesh_size"]) * np.abs(np.array(m["scale"])) for m in M])
+            col = np.array([self.mat.get(m["material"], self.mat.get(m["material"].split("#")[0], (0.2, 0.5, 0.4))) for m in M]) * self.mesh_gain
+            ring = np.array(["Ring" in m["mesh"] for m in M])
+            big = sz.max(1) > 400  # the nucleus cage and other world-sized shells are not stand-in material
+            rows = _rows(pos, R[:, :, 0] * sz[:, 0:1], R[:, :, 1] * sz[:, 1:2], R[:, :, 2] * sz[:, 2:3], col, col * 0.15, 2.0)
+            for name, m in (("octa", ~ring & ~big), ("hoop", ring & ~big)):
+                if m.any():
+                    out[name] = rows[m]
+        return out
