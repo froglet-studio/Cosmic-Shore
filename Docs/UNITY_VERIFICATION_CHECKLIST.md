@@ -22481,6 +22481,32 @@ with the values the sets held before). Nothing here ran in Unity.
     number of rows): every row wears the theme, none flashes the authored Deep Sea colours.
 13. **The sky's light**: preview Photic, then Nocturne in the Profile: the lit surfaces' ambient tint follows the sky.
 
+Third round, 2026-11-11 (Garrett: "this is a fundamental that should be respected universally"; also NOT RUN IN
+EDITOR). Photic's UI is now exactly the authored theme (every set carries all 18 UI tokens and the sea's four colours;
+the console and editor themes match); the Voyage map, Grizzly, Thresher and Stoat colours are traced; projectiles and
+the AI Gunner's gun take their owner's domain; display hulls paint the live ship's domain slot; the black-hole lens,
+the Soliton glint and the cage nucleus are material colours (0 untraced); and every texture is graded: the trace's
+rule through a 33^3 table per set (`colour_grade.py`, `ColorGrade.cs`), drawn by the default UI material
+(`CosmicShore/UI/GradedDefault`), CardDrift, HullLit, SilhouetteHolo, ElementRim and the static sky. Ran here: the
+gates (`colour_trace`, `colour_grade`, both with negative controls), `unity_refcompile` (player and editor: 0 errors in
+the changed files), the real `ColorTrace.cs` under .NET 8 (0 misread), and the grade applied to real art in Python
+(the look, not the shader). The shaders and the ShaderGraph edit were not compiled.
+
+14. **Shaders compile**: open the project and check the Console for errors in `GradedDefault.shader`,
+    `ColorGrade.cginc`, CardDrift, HullLit, SilhouetteHolo, ElementRim, StaticSkyPanorama, BlackHoleLens,
+    SolitonTunnel and CageGraph (the `_Nucleus_Dark` property node).
+15. **Wear Photic**: every menu, card, portrait and the sky look exactly as before this branch (the grade is off). The
+    UI is the authored Deep Sea theme, the selection Jade (`#00D4FF`); the sea lines are their material's colours.
+16. **Wear Nocturne, then a vision set**: card art, hangar renders, pilot portraits, codex pictures and flat-coloured
+    sprites take the set's colours; masks and white icons do not change; the Google sign-in button and mark keep
+    Google's colours. Compare with the sheet the session rendered from the real tables.
+17. **Masks, clipping and fonts**: scroll a masked list (stencil), a RectMask2D with softness, and legacy Text: all
+    draw as before (the graded default material is UI/Default otherwise).
+18. **A phone at Low**: open the Hangar and the Arcade grid under Nocturne and watch the frame time; the grade adds one
+    3D texture read per coloured UI texel (greys skip it).
+19. **Domain on rounds and hulls**: as a Ruby pilot, fire the Sparrow's SkyBurst and an Explodable round; meet an AI
+    Gunner; open the toybox Vessel Changer on a Goby and a Squirrel: each wears its owner's domain, the body stays dark.
+
 ## 🔴 Colour sets under seven rules: Dart Frog, Nacre, Contrast and the vision sets re-derived, Nocturne's Gold 4° yellower (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/nifty-cray-41hy43`. `colour_sets.json` now holds every set to seven rules (`Tools/Build/colour_sets.py`,

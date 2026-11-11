@@ -41,6 +41,7 @@ namespace CosmicShore.Editor
                 {
                     WorldColorTrace.Stop();
                     Restore();
+                    ColorGrade.Stop();   // uGUI's own default material and no grade in edit mode
                 }
                 else if (state == PlayModeStateChange.EnteredEditMode && WorldColorTrace.HasAssetChanges) Restore();
             };

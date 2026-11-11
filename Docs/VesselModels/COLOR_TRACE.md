@@ -102,11 +102,33 @@ This is how that works, what it covers today, and what is still outside it. The 
      The same happens before the editor saves assets during play (then it paints again) and before scripts recompile
      during play, and a second pass runs back in edit mode. Prefab Mode's stage and inspector previews are never
      painted, so no `.mat` or prefab in git ever takes a set's colours.
-6. **The gate.** `python3 Tools/Build/colour_trace.py --check` fails when the scan and the table disagree (a new colour,
+7. **Textures: the colour grade** (`Tools/Build/colour_grade.py`, `ColorGrade.cs`; Garrett: "if rerendering textures
+   per set is the best you can do, but perhaps you can get clever"). A picture is millions of colours, so the trace's
+   own rule (step 4) is applied to every colour of an sRGB grid and kept as a small table per set and role: 33^3 for
+   the UI and for the world, `Assets/Resources/ColorGrades/<SetAsset>_ui.bytes` and `_world.bytes`, about 108 KB
+   each. Inside a family's cell the table IS the trace's rule; where a picture's gradient crosses a family border,
+   the grey threshold or the UI ground's edge, the rule is blended so no seam shows (a 0.002 step never moves the
+   output more than 0.007 in OKLab; the 33^3 table's interpolation error is under 0.011 for 99 % of colours).
+   When a set is worn, `ColorGrade` builds the two tables into Texture3Ds and switches `COSMIC_COLOR_GRADE` on;
+   `ColorGrade.cginc` looks every texel up, except greys, which keep their value and skip the lookup. Photic has no
+   table: the keyword is off and costs nothing. Nothing is copied per set and no picture file changes, so the
+   painted portraits (`Docs/Pilots/PORTRAITS.md`) follow the set too.
+   - **What draws through it:** every Graphic that names no material (the default UI material becomes
+     `CosmicShore/UI/GradedDefault`, UI/Default with the grade, through `GradedDefaultUI`), so a sprite assigned
+     later or a Graphic made in code is graded as well; the repo's UI shaders that sample a picture (CardDrift,
+     HullLit, SilhouetteHolo, ElementRim); and the static sky (StaticSkyPanorama, the world table).
+   - **What keeps its authored colours:** a Graphic that calls `ColorGrade.KeepAsAuthored` (the sign-in providers'
+     marks, in SignInChooser and AccountSettingsView).
+   - **The record:** `colour_grade.json` classifies every texture a build can load: 580 coloured canvas pictures,
+     the static sky, 8 exempt with their reasons, 468 grey masks that need nothing. A new coloured texture that no
+     graded shader draws fails the gate.
+8. **The gate.** `python3 Tools/Build/colour_trace.py --check` fails when the scan and the table disagree (a new colour,
    a colour nothing authors any more, a baked value that moved), on a new untraced colour, when Photic's block is
    stale, when a set asset lacks the table's ids, when any value of any set could be read as another colour (or, for
    UI, as a theme token), when an authored UI colour sits inside a set's token tolerance, or when code loads a traced
-   Resources material without painting it. `author_colour_set_assets.py --check` fails when a set's block drifted.
+   Resources material without painting it. `author_colour_set_assets.py --check` fails when a set's block drifted. `colour_grade.py --check` fails when a set's
+   tables drifted from its colours (by more than 1/255) or a coloured texture is not graded. All of them run in the
+   `/ship` gates (`Tools/Build/ship_gates.py`).
    `ColorTraceTests.EveryShippedSet_FindsWhatEveryOtherSetPainted` wears every shipped set and reads every value of
    every set back (54,120 lookups; run on the real `ColorTrace.cs` under .NET on 2026-11-10: 0 misread, against 79
    with the values the sets held before).
@@ -115,6 +137,7 @@ This is how that works, what it covers today, and what is still outside it. The 
 python3 Tools/Build/colour_trace.py --build                # the table, from the scan
 python3 Tools/Build/author_colour_set_assets.py            # every set's TracedColors
 python3 Tools/Build/colour_trace.py --write-photic         # Photic's block
+python3 Tools/Build/colour_grade.py                        # every set's texture grade tables and the texture record
 python3 Tools/Build/colour_trace.py --check                # the gate (and --self-test)
 python3 Tools/Build/colour_trace.py --summary              # counts by status, rule, role
 python3 Tools/Build/colour_trace.py --report               # what is untraced, by file
@@ -134,16 +157,11 @@ The ratchet list (`colour_trace.json` `untraced`) names each colour. What remain
   black-hole lens's ring, core, shell and gravity-wave glows (`_BHRingColour`, `_BHCoreColour`, `_BHShellColour`,
   `_BHWaveColour`), the Soliton tunnel's glint (`_MWGlintColour`) and CageGraph's nucleus blend (`_Nucleus_Dark`, a
   property node where the HDR Color node was). `colour_trace.json` lists 0 untraced colours.
-- **Textures.** The trace reads colours, not pixels. The texture audit measured every shipped image:
-  - masks (white or grey sprites tinted by a Graphic) are already covered through their tint;
-  - 151 sprites bake a Deep Sea token flat and 27 another flat colour: whiten each PNG in place (same guid and
-    borders) and move the colour into the Graphic's tint, where the UI theme or the trace paints it;
-  - art (56 rendered card backgrounds, 95 vessel renders, 107 pilot portraits and avatars, 45 codex illustrations, the
-    static sky for low tiers): either re-render per set (`render_card_backgrounds.py`, `bake_static_skybox.py`) or a
-    runtime art grade (a shader that maps Photic's anchors to the worn set's). The painted portraits are never
-    overwritten (`Docs/Pilots/PORTRAITS.md`), so only a grade can move them;
-  - exceptions the rule cannot reach: platform controller glyphs (Xbox and PlayStation colours), the Google "G"
-    brand mark, the app icon and splash (drawn before any script runs).
+- **Textures: graded, not re-rendered (2026-11-11).** See section 1.7. What the grade does not reach, each for a
+  reason: the sign-in providers' own marks (Google's, Apple's; their brand rules fix them), the app icon and splash
+  (the platform draws them before any script runs), TextMesh Pro's emoji atlas (no text draws one). A picture drawn
+  by a custom UI shader that does not include `ColorGrade.cginc` would also escape it; the repo's four that sample a
+  picture include it, and `colour_grade.py --check` fails on a coloured world texture nothing grades.
 - **Copies made before a wear.** A colour copied out of a material or config into a cache before the set is worn
   keeps the old value until it is copied again: Spindle's leaned and phase variants, SpindleLodSystem's copies,
   CapsuleMembrane's draw colours, CellVisualTint's capture, SnowChanger's clones, PrismSlice's runtime material,
@@ -181,6 +199,7 @@ found.
   `VesselModelBuilder.ResolveDomainMaterials` now follows the live rule (`DomainMaterialSlotTests`). The Serpent's
   Blue and Lime sit on an inactive model nothing draws.
 - The colours in shader code: none left (section 2).
+- The textures: graded, every one a build can load (section 1.7), but for the marks whose owners fix them.
 - The rest is section 2.
 
 ## 4. Where it came from

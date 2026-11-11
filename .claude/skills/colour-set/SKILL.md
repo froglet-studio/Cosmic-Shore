@@ -189,8 +189,9 @@ set's own field. A new set gets all of them from the writer; to retune one for a
 (`{"<id>": "#RRGGBB"}`) and run the writer. The writer then keeps every value of every set naming one colour (the
 runtime finds a colour by its value, from whichever set painted it) and UI values clear of every set's UI theme
 tokens, moving a clash to the nearest free 8-bit value; so **a new set is written with every other set in one run**
-(`author_colour_set_assets.py`, then `colour_trace.py --write-photic`), and `colour_trace.py --check` fails if any value
-of any set could be misread. The runtime painters are `UIThemeLive` (the UI) and `WorldColorTrace` (the world); code
+(`author_colour_set_assets.py`, then `colour_trace.py --write-photic`, then `colour_grade.py`, which writes the set's
+texture grade: the same rule on every texel of every picture, a 33^3 table per role), and `colour_trace.py --check`
+and `colour_grade.py --check` fail if any value of any set could be misread or a table drifted. The runtime painters are `UIThemeLive` (the UI) and `WorldColorTrace` (the world); code
 and configs read `ColorTrace.Retrace(role, colour)`. What the trace cannot reach yet (shader constants, textures,
 caches copied before a wear) is section 2 of that doc.
 
