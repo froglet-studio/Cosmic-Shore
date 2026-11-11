@@ -8,13 +8,15 @@ bove, dist), each calibrated to 0 = new-source real and 1 = a typical phenotype,
 (fitness_lab/scorer/MERGE.md). The judge keeps its meaning; this score is reported as `lab` and `lab_windows`, with
 the per-axis `lab_parts` (mean over windows) so one axis riding near 0 while the others stay high shows up.
 
-Below about 1.0 the total no longer shows whether the game's elements are there: real footage with its brightest
-elements inpainted away reads below 1.0 in 16 of 24 held-out windows (CONTRACT.md (37)). So each row also splits
-every window's lab into its element axes (`lab_elements`: bove and dist, the patch and spatial-token axes built to
-see prisms, beams and rings) and the other three (`lab_other`: spec, crit, mech), each the lab computed with the other
-group at 0, so that lab^2 = elements^2 + other^2 window by window (p = 2), then averaged over windows like `lab`.
-Reference `lab_elements` on the 24 held-out windows (fitness/checks/labA_best_1111/strip_lab.json): real 0.09,
-brightest elements inpainted away 0.17, most elements inpainted away 0.49.
+Below about 1.0 the total no longer shows whether the game's elements are there: real footage with its bright and
+non-blue elements inpainted away (the blue prism walls stay) reads below 1.0 in 16 of 24 held-out windows, and a
+genome with almost none of them reads 0.29 (CONTRACT.md (37)). So each row also splits every window's lab into its
+element axes (`lab_elements`: bove and dist, the patch and spatial-token axes built to see prisms, beams and rings)
+and the other three (`lab_other`: spec, crit, mech), each the lab computed with the other group at 0, so that
+lab^2 = elements^2 + other^2 window by window (p = 2), then averaged over windows like `lab`. Reference
+`lab_elements`, means over the 24 held-out windows (fitness/checks/labA_best_1111/strip_lab.json): real 0.09 (median
+0.01, single windows up to 0.47), bright and non-blue elements inpainted away 0.17, the walls inpainted too 0.49.
+It can show that a genome is short of real footage; it cannot prove the elements are there.
 
 The scorer lives in the fitness lab's folder (AGENOME_LAB, default the shared scorer/); it needs the judge's Keras
 stack plus cloudpickle, opencv-python-headless, scikit-image, PyWavelets and scikit-learn, and costs about 1.5 s
