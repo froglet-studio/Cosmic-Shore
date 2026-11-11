@@ -3,16 +3,16 @@ sys.path.insert(0, __import__('os').path.join(__import__('os').path.dirname(__fi
 from agenome.genome import Genome
 from agenome.handmade import _named as N
 def build(mode="skim", seed=5, hud=True):
-    g=Genome(seed=seed,meta={"lineage":"designed","name":"amoebius_v5_"+mode})
+    g=Genome(seed=seed,meta={"lineage":"designed","name":"amoebius_v6_"+mode})
     w=g.add("tex.perlin",**N("tex.perlin",freq=3,oct=4,persist=0.5,seed=3,gamma=1.0))
     b=g.add("tex.perlin",**N("tex.perlin",freq=5,oct=6,persist=0.6,seed=11,gamma=2.2,ah=0.68,as_=0.95,av=0.012,bh=0.63,bs=0.8,bv=0.2))
     d=g.addv("tex.distort",b,w,amount=0.3)
     c=g.add("tex.cell",**N("tex.cell",count=64,seed=7,mode=2,gamma=1.0,ah=0.63,as_=0.85,av=0.09,bh=0.62,bs=0.6,bv=0.01))
     sky=g.addv("tex.blend",d,c,mode=0,amount=0.55)
     if mode=="skim":
-        co=g.addv("ag.course",kind=0,radius=700,gates=8,perturb=0,mouth=24,seed=0)
-        a=g.addv("ag.rail",co,lanes=1,offset=0,twist=0,sx=10,sy=1,sz=3,spacing=12,state=2,colour=0,marker=2,emit=0.3,h=0.64,s=0.6,v=1.2)
-        a=g.addv("ag.crystal",a,jitter=35,radius=24,inset=26,lift=0,emit=1.5)
+        co=g.addv("ag.course",kind=1,radius=700,gates=8,perturb=247,mouth=20,seed=0)
+        a=g.addv("ag.rail",co,lanes=1,offset=0,twist=0,sx=30.75,sy=3.075,sz=9.225,spacing=12.2,state=2,colour=0,marker=2,emit=0.3,h=0.64,s=0.6,v=1.2)
+        a=g.addv("ag.crystal",a,jitter=35,radius=20,inset=26,lift=0,emit=1.5)
     else:
         co=g.addv("ag.course",kind=2,radius=820,gates=8,perturb=200,mouth=88,seed=3)
         a=g.addv("ag.rail",co,lanes=3,offset=22,twist=1,sx=6,sy=6,sz=8,spacing=8,state=2,colour=1,marker=1,emit=0.3,h=0.64,s=0.6,v=1.2)
@@ -20,7 +20,8 @@ def build(mode="skim", seed=5, hud=True):
     a=g.addv("ag.vessel",a,count=3,domains=3,cruise=60,minspeed=0,turn=120,roll=130,rotthr=0,follow=1.5,accel=1.5,boostmax=5,decay=0.3,ha=0.58,hb=0.795,hc=0.10,sat=1.0,val=1.4)
     a=g.addv("ag.pilot",a,law=1,look=0.85,lookmin=40,lookmax=455,lead=2.5,maxlead=23,gain=0.084,height=4.4,thrlo=0.2,thrhi=1.0,bend=300,bank=2.0)
     a=g.addv("ag.skim",a,radius=7.5,add=0.1,pickup=0.8)
-    a=g.addv("ag.lay",a,wave=7,sx=20,sy=0.75,sz=5.5,gap=18.5,offset=0,delay=2,grow=1.25,emit=0.5)
+    a=g.addv("ag.lay",a,wave=8.4,sx=20,sy=0.83,sz=6.08,gap=18.34,offset=0,delay=2,grow=1.25,emit=0.5)
+    a=g.addv("ag.impact",a,hull=1.5,slow=0.5,dur=1.0,fresh=1.5,wobble=0,period=1.0)
     a=g.addv("ag.shards",a,spacing=120,radius=1200,scale=10,emit=0.15,h=0.67,s=0.25,v=0.45)
     a=g.addv("ag.body",a,shape=2,sx=3.2,sy=2.2,sz=4,emit=0.8,colormode=1,edge=0.6,h=0.6,s=0.1,v=1.6)
     cam=g.addv("cam.attach",a,agent=0,dist=17,height=0,fov=90)

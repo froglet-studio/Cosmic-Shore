@@ -207,10 +207,10 @@ OPS_LIST = [
     Op(0x5A, "ag.course", "A", (), (
         P("kind", "enum", 0, 4, 0), P("radius", "exp", 100, 1100, 207), P("gates", "int", 4, 32, 36),
         P("perturb", "lin", 0, 300, 0), P("mouth", "exp", 8, 120, 103), P("seed", "int", 0, 255, 0)),
-       "closed course: flat octagon / Catmull loop / gate loop / harmonic ring, with gate frames", "Skim Race, Regatta"),
+       "closed course: flat octagon / sphere seam (perturb = lobe height) / gate loop / harmonic ring, with gate frames", "Skim Race, Regatta"),
     Op(0x5B, "ag.rail", "A", ("A",), (
         P("lanes", "int", 1, 3, 0), P("offset", "lin", 0, 40, 0), P("twist", "lin", 0, 2, 0),
-        P("sx", "exp", 0.5, 24, 197), P("sy", "exp", 0.5, 24, 46), P("sz", "exp", 0.5, 24, 118),
+        P("sx", "exp", 0.5, 64, 197), P("sy", "exp", 0.5, 64, 46), P("sz", "exp", 0.5, 64, 118),
         P("spacing", "exp", 4, 24, 156), P("state", "enum", 0, 4, 140), P("colour", "enum", 0, 2, 0),
         P("marker", "lin", 1, 3, 128), P("emit", "exp", 0.05, 10, 100)) + _hsv("", 163, 150, 180),
        "static prisms along the course: the Skim Race ribbon, the Regatta rails (state super = stellated mesh)",
@@ -247,6 +247,11 @@ OPS_LIST = [
         P("delay", "lin", 0, 3, 170), P("grow", "exp", 0.5, 5, 101), P("emit", "exp", 0.05, 10, 128)),
        "lay prisms per distance in the hull frame, two rails with a gap, persistent, exponential grow-in",
        "VesselPrismController"),
+    Op(0x62, "ag.impact", "A", ("A",), (P("hull", "exp", 0.5, 8, 101), P("slow", "lin", 0, 1, 128),
+        P("dur", "exp", 0.2, 4, 137), P("fresh", "lin", 0, 4, 96), P("wobble", "lin", 0, 60, 0),
+        P("period", "exp", 0.2, 8, 128)),
+       "hull versus prism: a hit on the course or a laid trail resets boost and cuts throttle; pilot aim wobble",
+       "VesselChangeSpeedByPrismEffect"),
     Op(0x64, "ag.shards", "A", ("A",), (
         P("spacing", "exp", 60, 300, 110), P("radius", "exp", 200, 2000, 198), P("scale", "lin", 0, 20, 128),
         P("emit", "exp", 0.05, 10, 40)) + _hsv("", 170, 60, 120),

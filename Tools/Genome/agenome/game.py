@@ -16,7 +16,7 @@ import numpy as np
 from scipy.spatial import cKDTree
 from scipy.spatial.transform import Rotation
 
-GAME_OPS = ("ag.rail", "ag.gate", "ag.crystal", "ag.vessel", "ag.pilot", "ag.skim", "ag.lay", "ag.shards")
+GAME_OPS = ("ag.rail", "ag.gate", "ag.crystal", "ag.vessel", "ag.pilot", "ag.skim", "ag.lay", "ag.shards", "ag.impact")
 RIM = -104.0  # instance edge value: game prism shading (face = dim own hue, fresnel rim power 4)
 
 
@@ -62,6 +62,11 @@ class Course:
                 pts.append(0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t
                                   + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3))
         P = np.concatenate(pts, 0)
+        if kind == 1:  # sphere seam: a ring in the xy plane on the sphere of radius R, two lobes along z (Skim Race)
+            th = np.arange(n * sub) * 2 * math.pi / (n * sub)
+            q = np.stack([np.cos(th), np.sin(th), -(pert / 300.0) * np.sin(2 * th)], 1)
+            P = R * q / np.linalg.norm(q, axis=1, keepdims=True)
+            self.cp = P[::sub]
         seg = np.linalg.norm(np.roll(P, -1, 0) - P, axis=1)
         s = np.concatenate([[0.0], np.cumsum(seg)])
         self.length = float(s[-1])
@@ -213,6 +218,11 @@ class GameSim:
         self.near = [set() for _ in range(n)]
         self.react = np.zeros(n, np.float32)
         self.slow = np.ones(n, np.float32)
+        self.resets = np.zeros(n, int)
+        self.tr_tree = None
+        self.tr_tree_t = -1e9
+        self.wob = np.zeros((n, 3), np.float32)
+        self.wob_t = 0.0
 
     def _init_crystals(self):
         cr = self.cfg.get("ag.crystal")
@@ -266,7 +276,14 @@ class GameSim:
 
     def _pilot(self, dt):
         p, v = self.pil, self.v
-        aim = _u(self._aim() - self.pos)
+        aim = self._aim() - self.pos
+        im = self.cfg.get("ag.impact")
+        if im is not None and im["wobble"] > 0:  # the pilot's aim wanders: a new offset every period
+            if self.t - self.wob_t > im["period"]:
+                self.wob = self.rng.normal(0, 1, (self.n, 3)).astype(np.float32)
+                self.wob_t = self.t
+            aim = aim + self.wob * im["wobble"]
+        aim = _u(aim)
         fwd, cf = self.Rh[:, :, 2], self.Rc[:, :, 2]
         err = np.degrees(np.arccos(np.clip((fwd * aim).sum(1), -1, 1)))
         if int(p.get("law", 1)) == 0:  # bang-bang pursuit
@@ -298,7 +315,8 @@ class GameSim:
         rel = Rotation.from_matrix(self.Rc @ np.transpose(self.Rh, (0, 2, 1))).as_rotvec()
         self.Rh = Rotation.from_rotvec(rel * f).as_matrix() @ self.Rh
         self.boost = np.maximum(1.0, self.boost - v["decay"] * dt)
-        self.slow = np.minimum(1.0, self.slow + dt / 1.0)
+        im = self.cfg.get("ag.impact")
+        self.slow = np.minimum(1.0, self.slow + dt / (im["dur"] if im else 1.0))
         target = self.throttle * v["cruise"] * self.boost * self.slow + v["minspeed"]
         self.speed = self.speed + (target - self.speed) * min(1.0, v["accel"] * dt)
         step = self.Rh[:, :, 2] * (self.speed * dt)[:, None]
@@ -319,9 +337,24 @@ class GameSim:
                 self.near[i] = hs
                 if new:
                     self.boost[i] = min(v["boostmax"], self.boost[i] + sk["add"] * new)
-                if hull[i]:  # the hull itself clipped a prism: lose the boost
+                if hull[i] and self.cfg.get("ag.impact") is None:  # the hull clipped a prism: lose the boost
                     self.boost[i] = 1.0
                     self.slow[i] = 0.6
+        im = self.cfg.get("ag.impact")
+        if im is not None:
+            hit = np.zeros(self.n, bool)
+            if self.sk_tree is not None:
+                hit |= np.array([len(h) > 0 for h in self.sk_tree.query_ball_point(self.pos, im["hull"])])
+            if self.t - self.tr_tree_t > 0.25 and self.tr_n:
+                old = np.nonzero(self.tr_birth[:self.tr_n] < self.t - im["fresh"])[0]
+                self.tr_tree = cKDTree(self.tr[old, :3]) if len(old) else None
+                self.tr_tree_t = self.t
+            if self.tr_tree is not None:
+                hit |= np.array([len(h) > 0 for h in self.tr_tree.query_ball_point(self.pos, im["hull"])])
+            fresh_hit = hit & (self.slow >= 1.0)
+            self.resets += fresh_hit
+            self.boost[fresh_hit] = 1.0
+            self.slow[fresh_hit] = 1.0 - im["slow"]
         if self.cr_pos is not None:
             d = np.linalg.norm(self.cr_pos - self.pos, axis=1)
             for i in np.nonzero(d < self.cr["radius"])[0]:
