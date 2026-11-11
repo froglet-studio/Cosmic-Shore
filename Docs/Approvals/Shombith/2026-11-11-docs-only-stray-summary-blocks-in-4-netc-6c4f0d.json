@@ -1,0 +1,19 @@
+{
+  "id": "2026-11-11-docs-only-stray-summary-blocks-in-4-netc-6c4f0d",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-11T02:28:14+00:00",
+  "area": "Multiplayer netcode (your claude/launch-protocol-filter, PR #1755)",
+  "summary": "Docs only: stray /// <summary> blocks in 4 netcode files now sit on their members, and in HostConnectionService LeavePartySessionAsync's doc sits on it while an orphan for the retired PENDING-sentinel handshake is deleted; no code line changed.",
+  "why": "Garrett decided to go ahead while the lane was occupied (2026-11-11). #1755 shares HostConnectionService.cs with this branch; the in-memory trial merge is clean there.",
+  "branch": "cece/loving-volta-kkvnex",
+  "lane": "netcode",
+  "commit": "7b63c63dc",
+  "paths": [
+    "Assets/_Scripts/Controller/Multiplayer/ArcadeConfigSyncManager.cs",
+    "Assets/_Scripts/Controller/Multiplayer/ClientPlayerVesselInitializer.cs",
+    "Assets/_Scripts/Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs",
+    "Assets/_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializer.cs",
+    "Assets/_Scripts/Controller/Party/HostConnectionService.cs"
+  ]
+}
