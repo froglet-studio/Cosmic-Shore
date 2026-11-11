@@ -56,10 +56,42 @@ the best arm there, and the only setup that is never worse than the old search o
 can be near or far from the seed bank, so the defaults are the pair: the band supplies the exploration that makes
 the tuner safe.
 
-### Next
-A steward loop on a follow-up branch: an evidence pack per run (which edits made each improvement, what the leader's
-distance is made of), an insight ledger, and a scheduled pass that turns what worked into tested changes. Its first
-kept finding, CMA blocks of whole operators' parameters, beat 24 random bytes near the seeds (1.537 against 1.596).
+## The steward loop (Claude in the loop)
+
+The search is the fast loop: it renders around the clock and remembers nothing about why a genome got better. The
+steward is the slow loop on top of it, a Claude session every few hours:
+
+1. **Observe.** `python3 -m agenome.steward runs/*/` condenses each island into an evidence pack: progress and
+   stalls, which operator made each new best, the largest improvements with the edit that made them (which bytes,
+   which nodes) and how each feature group moved (`improvements.jsonl`, written by the search and published with
+   the front), what the leader's distance is made of, which operators are over-represented in the best quarter,
+   lineage shares, the leader's genome with decoded parameters, and flags for the patterns that needed a decision
+   before (stall, bottleneck group, an operator whose children almost never survive, monoculture).
+2. **Explain.** Hypotheses that account for the pack, each with a prediction that could fail. Look at the leader's
+   frames beside the reels'.
+3. **Condense.** Each hypothesis made usable by the search: priors on which operators and bytes to mutate and in
+   what ranges, motifs promoted to operators, a genome written by hand, a fitness fix where a measure is gamed.
+4. **Test.** The cheapest check that could kill it first (counting, a unit test), then an A/B at equal renders: an
+   arm of `bench/ab_search.py`, or an island with the flag beside a control island.
+5. **Record.** `LEDGER.md`: claim, evidence, test, verdict. A killed claim stays, so nobody retries it blind.
+
+The scheduled pass, for the project where the islands run (it needs `/mnt/project-files/amoebius-genome`):
+
+    Every 4 hours: run `python3 -m agenome.steward /mnt/project-files/amoebius-genome/runs/*/ --out
+    steward/<UTC stamp>.md` from the genome code. Read LEDGER.md and the pack. Write the verdict of every open claim
+    whose test has finished. Add at most three claims, each with its evidence from the pack, a prediction and the
+    cheapest test that could kill it; run the cheap checks yourself, and start at most two A/B islands for the rest,
+    each beside a control island on the current defaults. Commit LEDGER.md and the pack on the genome branch, and
+    say in two lines what changed.
+
+### What it has tested so far (LEDGER.md)
+- L7 mixed: CMA blocks of whole operators' parameters (`--cma-blocks op`, up to 24 bytes) beat 24 random bytes for
+  the tuner alone near the seeds (1.537 against 1.596, 2 of 3 seeds, half the spread), but inside the pair they
+  won only seed 1 on each target (by a lot) and lost seeds 2 and 3 (by less): means near 1.78 against 1.68, far
+  2.41 against 2.43, anytime and bytes near the best better on both. Random blocks stay the default; 6+ seeds next.
+- L8 killed before building: sharing duplicated subgraphs would save a median 0.7% of the bytes (zlib already
+  compresses the copy).
+- L9 open: why the band and the CMA tuner trade places near and far from the seeds.
 
 ## What the logs showed (and what was fixed before the table above)
 
