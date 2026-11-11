@@ -1,0 +1,49 @@
+{
+    "scene": "MinigameScurryMultiplayer_Gameplay",
+    "timestamp": "2026-11-10 23:25:15",
+    "label": "",
+    "secondsSinceSceneLoad": 38.21870040893555,
+    "floraObjectsInScene": 0,
+    "faunaObjectsInScene": 0,
+    "cells": [
+        {
+            "id": 0,
+            "gameObject": "Cell",
+            "config": "Scurry Cell Config",
+            "spawnProfile": "Barren Cell Spawn Profile",
+            "configChoice": "Random",
+            "isSatellite": false,
+            "satelliteEcologyEnabled": false,
+            "postInitialized": true,
+            "postInitDeferred": false,
+            "activeSpawner": "RandomLifeSpawner",
+            "phase": "Frenzy",
+            "liveVolume": 75374.5546875,
+            "liveEnvironmentVolume": 75374.5546875,
+            "livePrismCount": 21386,
+            "floraPlantingEnabled": false,
+            "faunaSpawningEnabled": true,
+            "diagnosticHold": false,
+            "restlessEnterVolume": 128000.0,
+            "frenzyEnterVolume": 240000.0,
+            "frenzyExitVolume": 224000.0,
+            "frenzyEnterCount": 15000,
+            "frenzyExitCount": 14000,
+            "membraneRadius": 1200.0,
+            "expectedNucleusRadius": 195.9557342529297,
+            "nucleusIsControlZone": true,
+            "faunaReleaseTier": 2147483647,
+            "controllingDomain": "Jade",
+            "floraPopulationScale": 1.0,
+            "floraPrismScale": 1.0,
+            "faunaPopulationScale": 1.0,
+            "floraLiveTotal": 0,
+            "faunaLiveTotal": 0,
+            "flora": [],
+            "fauna": []
+        }
+    ],
+    "notes": [
+        "Cell 0: planting is OFF because the phase is Frenzy."
+    ]
+}
