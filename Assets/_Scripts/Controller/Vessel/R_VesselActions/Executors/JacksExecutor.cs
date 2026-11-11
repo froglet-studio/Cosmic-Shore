@@ -1521,11 +1521,16 @@ namespace CosmicShore.Gameplay
             float ringDot = flightView ? dot * flightRingDotScale : dot, ringPixels = flightView ? flightRingDotPixels : 3f;
             int ringDots = flightView ? flightRingDots : 48;
             var fade = new Color(1f, 1f, 1f, flightView ? flightRingAlpha : 1f);
+            // the marks wear the worn colour set (ColorTrace), asked once per draw rather than once per mark
+            Color jackTint = ColorTrace.Retrace(ColorTrace.World, jackColor);
+            Color ringTint = ColorTrace.Retrace(ColorTrace.World, ringColor);
+            Color decoyTint = ColorTrace.Retrace(ColorTrace.World, decoyColor);
+            Color dangerTint = ColorTrace.Retrace(ColorTrace.World, dangerColor);
             bool calling = Calling;
             for (int k = 0; k < 2; k++)
             {
-                if (!flightView || _herding) marks.Dot(_jack[k], jackColor, dot * 3f, 8f);
-                if (!calling) marks.Ring(_jack[k], _r, _f, ring, ringDots, ringColor * fade, ringDot, ringPixels);
+                if (!flightView || _herding) marks.Dot(_jack[k], jackTint, dot * 3f, 8f);
+                if (!calling) marks.Ring(_jack[k], _r, _f, ring, ringDots, ringTint * fade, ringDot, ringPixels);
             }
             // where the hull will be when the jacks take off: halfway between them (the take-off jump, SetHerding)
             if (!flightView && _herding)
@@ -1534,13 +1539,13 @@ namespace CosmicShore.Gameplay
             {
                 if (!_decoyOn[s]) continue;
                 // the decoy is drawn as a third jack (JacksBodies), so it wears a jack's mark; its ring keeps the decoy's colour
-                if (!flightView || _herding) marks.Dot(_decoys[s], jackColor, dot * 3f, 8f);
-                marks.Ring(_decoys[s], _r, _f, ring, ringDots, decoyColor * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
+                if (!flightView || _herding) marks.Dot(_decoys[s], jackTint, dot * 3f, 8f);
+                marks.Ring(_decoys[s], _r, _f, ring, ringDots, decoyTint * new Color(1f, 1f, 1f, 0.6f) * fade, ringDot, ringPixels);
             }
             float charge = Level(Element.Charge);
             for (int i = 0; i < _herd.Count; i++)
                 if (JacksMath.IsDanger(_herd[i].Roll, charge))
-                    marks.Dot(_herd[i].LastPos + _u * 4f, dangerColor, dot * 1.5f, 5f);
+                    marks.Dot(_herd[i].LastPos + _u * 4f, dangerTint, dot * 1.5f, 5f);
             marks.End();
         }
 

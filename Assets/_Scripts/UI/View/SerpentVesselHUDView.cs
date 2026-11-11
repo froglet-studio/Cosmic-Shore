@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 namespace CosmicShore.UI
 {
     public class SerpentVesselHUDView : VesselHUDView
@@ -102,7 +103,7 @@ namespace CosmicShore.UI
         {
             if (seedWallPanelsIcon)
             {
-                seedWallPanelsIcon.color = seedWallPanelColor;
+                seedWallPanelsIcon.color = ColorTrace.Retrace(ColorTrace.Ui, seedWallPanelColor);
                 seedWallPanelsIcon.enabled = IsAbilityUpgraded(Element.Mass);
             }
             BuildBoostPipCache();
@@ -111,8 +112,8 @@ namespace CosmicShore.UI
             SetFivePellets(IsAbilityUpgraded(Element.Time));
             SetHuntersSight(IsAbilityUpgraded(Element.Charge));
             if (scopeAfterimagesIcon) scopeAfterimagesIcon.color = scopeAfterimageColor;
-            if (scopeHunterReticleIcon) scopeHunterReticleIcon.color = scopeHunterReticleColor;
-            if (sniperShardsIcon) sniperShardsIcon.color = sniperShardColor;
+            if (scopeHunterReticleIcon) scopeHunterReticleIcon.color = ColorTrace.Retrace(ColorTrace.Ui, scopeHunterReticleColor);
+            if (sniperShardsIcon) sniperShardsIcon.color = ColorTrace.Retrace(ColorTrace.Ui, sniperShardColor);
             _scopedSeeded = false;
             SetScoped(false);
         }

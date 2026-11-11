@@ -1,13 +1,21 @@
 ---
 name: swimlanes
-description: Show which swim lanes of Cosmic Shore are OCCUPIED right now and which open ones to work on next - a lane is a vessel (the Thresher, the Goby, ...) or a section of the app shell someone holds in their head (the Voyages map, the Hangar, Settings, the in-game HUD), never a task. Ranked from git and the team's own records by swimlanes.py - open lanes with obvious work waiting on top, occupied lanes under them, then lanes that need polish, then polished ones. Use on "/swimlanes", "what should I work on next", "what's free", "is anyone working on <vessel / screen>", "who is in the <X> lane", "am I going to collide with someone", "find me the next thing", "mark <lane> polished / rough", or before starting work on a vessel or an app-shell section.
+description: Show which swim lanes of Cosmic Shore are OCCUPIED right now and which open ones to work on next - a lane is anything someone holds in their head that takes more than a couple of prompts and one PR - a vessel (the Thresher, the Goby, ...), a game (Bloomrush, Regatta, ...), a section of the app shell (the Voyages map, the Hangar, Settings, the in-game HUD) or a mechanical system (ecology, prisms, netcode, the AI platform, ...) - never a task. Ranked from git and the team's own records by swimlanes.py - open lanes with obvious work waiting on top, occupied lanes under them, then lanes that need polish, then polished ones. Use on "/swimlanes", "what should I work on next", "what's free", "is anyone working on <vessel / game / screen / system>", "who is in the <X> lane", "am I going to collide with someone", "find me the next thing", "mark <lane> polished / rough", "add a lane", "archive a lane", or before starting work on a vessel, a game, an app-shell section or a system.
 ---
 
 # Swim lanes - find the next thing, and don't collide
 
-A swim lane is a **vessel** or a **section of the app shell** (the Voyages map, the Hangar, the Arcade screen, Settings,
-the in-game HUD, ...) that someone can hold in their head. It is **not a task**. Yash clearly working on the Thresher
-Time games means the Thresher lane is occupied: someone else should pick another lane, or talk to Yash first.
+A swim lane is anything someone can hold in their head that takes more than a couple of prompts and one pull request
+to finish: a **vessel**, a **game** (a mode with its own card), a **section of the app shell** (the Voyages map, the
+Hangar, the Arcade screen, Settings, the in-game HUD, ...) or a **mechanical system** (ecology, prisms, netcode, the AI
+platform, audio, ...). It is **not a task**. Yash clearly working on the Thresher Time games means the Thresher lane
+(and the Thresher Time game lane) is occupied: someone else should pick another lane, or talk to Yash first.
+
+**Everything that size gets a lane** (Caleb, 2026-11-11: "the whole point of tracking them is to help us coordinate our
+efforts"). Untracked work cannot collide on the board, so it collides in a merge instead. The cut-off is a judgment,
+not a number: a couple of prompts and one PR is the rough line. Vessels and games need nothing (section 5); a shell
+section or system that no lane covers is added in the same commit that starts the work, and archived when it is truly
+closed out. Keep the list usable: a lane exists to tell people apart, so do not add one per folder.
 
 **Occupied is the only thing that says "not now"** - and the only thing that slows a change down anywhere (Garrett,
 2026-11-10; `Tools/Build/approvals.py check` exits 2 on it). Work that already merged never blocks anyone: who built
@@ -46,6 +54,7 @@ Options:
 |---|---|
 | one lane in full: every occupant, every work item with its ticket number, every polish gap | `--lane <key>` (e.g. `--lane thresher`, `--lane voyages`) |
 | every item on the board, not the top three | `--full` |
+| one kind of lane only | `--kind vessel` / `game` / `shell` / `system` |
 | a page or another tool | `--md` / `--json` |
 | a shorter or longer occupancy window | `--days N` |
 | no GitHub (no tickets, no PR authors) | `--no-github` |
@@ -79,7 +88,8 @@ Options:
 - **"Is anyone in <X>?"**: `--lane <key>`. If occupied, say who, the branch, the PR and the last push in one line,
   and suggest they talk to that person or take another lane. Never tell them they may not work there: it is a
   heads-up, not a lock.
-- **Before you start work on a vessel or an app-shell section** (any session): run `--lane <key>` for it. If it is
+- **Before you start work on a vessel, a game, an app-shell section or a system** (any session): run `--lane <key>`
+  for it (if no lane covers work that will take more than one PR, add one, section 5, in your first commit). If it is
   occupied, tell the person in one line before changing anything. If the person still wants to go ahead, go ahead -
   say in the commit "Affects: <occupant>'s <lane> work on <branch>" (`Docs/TEAM.md` rule 7) and queue the occupant an
   entry (`/approve` §7).
@@ -104,16 +114,31 @@ python3 .claude/skills/swimlanes/swimlanes.py set thresher rough --by Garrett --
 `polished` sends a lane to the bottom, `rough` adds a gap with the note, `clear` hands it back to the measures. It
 writes `verdicts` in `lanes.json`: commit that file so everyone sees it. Only write a verdict the person said.
 
-## 5. Adding or fixing a lane
+## 5. Adding, fixing or archiving a lane
 
-`lanes.json` beside this file is the catalog:
+`lanes.json` beside this file is the catalog. There are four kinds of lane (`--kind vessel|game|shell|system`):
 
 - **Vessels** come from the roster (each `Assets/Resources/ElementalAbilityMaps/<Vessel>.asset`) and need no entry. Add
   an alias when the vessel's files use another name (`Goby: Pistol`, `Honeyguide: Ratel`); add a retired one to
   `retired`.
-- **Shell lanes** are a key, a name, `tokens` (matched at a word or CamelCase boundary in any path: `Voyage` matches
-  `VoyageMapGraphic.cs` and `Docs/Voyages/`, never `Envoyage`) and `paths` (prefixes). Keep tokens specific: a token
-  most commits carry makes the lane useless.
+- **Games** come from the shipped cards (each `Assets/_SO_Assets/Games/ArcadeGame<Name>.asset` at the top of that
+  folder, arcade and arena alike; `_Archive`, `Training` and `Missions` are not modes) and need no entry. The lane is
+  named from the card's `DisplayName` and matches `<Name>` and its spaced form (`SerpentTime`, `Serpent Time Cell`).
+  `games.aliases` adds a name its files use; `games.retired` drops one whose card still exists. A new mode is a lane
+  the moment its card is committed.
+- **Shell lanes** (`shell`) and **systems** (`systems`) are a key, a name, `tokens` (matched at a word or CamelCase
+  boundary in any path: `Voyage` matches `VoyageMapGraphic.cs` and `Docs/Voyages/`, never `Envoyage`), `paths`
+  (prefixes, or globs such as `Docs/PRISM_*`) and an optional `note` (an owner to tell). Keep tokens specific: a token
+  most commits carry makes the lane useless. Add a system when work on it can collide in practice (two people in the
+  same mechanism), not for every folder. Measure a new one before committing it: the files it matches, and that it
+  does not swallow another lane's files.
+- **Archive, then delete.** When a shell section or system is truly closed out, set `"archived": "<date>, <who>: why"`
+  on its entry: it leaves the board and the collision check, and its history stays readable. Delete the entry only
+  once nobody needs that. A retired vessel or game goes into its `retired` list.
+- **Sweeps.** A commit about three or more lanes OF ONE KIND (three vessels, three games, three systems) is a sweep and
+  occupies none of that kind; a vessel change that also touches its game and the AI system is about all three.
+- **Readability.** The board lists every occupied lane, the top 12 open lanes with work and the top 8 of each quiet
+  tier; `--full` or `--kind` shows the rest.
 - Run `--self-test` and the board after a change, and read the lane with `--lane` to see it picks up what you meant.
 
 The script is tooling: Shombith heads the Claude skills and tools (CLAUDE.md § Team). Say "Affects: Shombith's

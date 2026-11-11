@@ -1,68 +1,101 @@
 {
-  "format": "cosmic-shore-colour-sets/1",
-  "status": "Colour sets. 2026-11-08: Nacre, a light pastel set to complement Nocturne and Photic (rim_brightness keeps its rims below the original's glow). Nocturne is the game's default palette (Garrett, 2026-11-03: \"make the nocturne the new default. It does look amazing.\"); Dart Frog is proposed for the paid track. Each set gives every domain its own regions of OKLab. The six-family truth in colour_domains.json is untouched; its anchors are read from PhoticColorSetSO, the default until 2026-11-03. 2026-11-05: Contrast, then one set per form of colour blindness or visual impairment (Protanopia, Deuteranopia, Tritanopia, Achromatopsia, Low Vision), each keeping rule 5 for its vision; they sit in the Profile's colour-set rail with the others, and Settings > General > Colour sets is a breadcrumb to them.",
+  "format": "cosmic-shore-colour-sets/2",
+  "status": "Colour sets. 2026-11-10: seven rules so every domain stays distinguishable and looks like its four-letter name, whatever the set's inspiration (Garrett: \"Lime, Fire, Blue, Jade, Ruby, Gold, those must be distinguishable and have rules that govern the territory of their regions in color space; it must be obvious to the player based on a connection between their look and their four letter name\"), three styles (Photic, Nocturne, Nacre), Dart Frog and Nacre re-derived under them, Nocturne's Gold rim moved 4 degrees so the HUD reads it as Gold, the vision sets re-balanced so their HUDs read for their own viewers, and worked examples the /colour-set skill teaches from; four of them (Blue-ringed Octopus, Neon Noir, Ukiyo-e, Dusk) became game sets on 2026-11-11 (Garrett: \"the artifact lab had some great new color sets\"). Nocturne is the game's default palette (Garrett, 2026-11-03); Dart Frog is proposed for the paid track; Nacre (2026-11-08) is the light set. The six-family truth in colour_domains.json is untouched; its anchors are read from PhoticColorSetSO.",
   "checker": "python3 Tools/Build/colour_sets.py --check",
+  "maker": "python3 Tools/Build/colour_set_maker.py (atlas, sample, fit, preview, hero); the /colour-set skill",
   "lab": "Docs/Studios/ColourSetsLab.html",
   "artifact": "https://claude.ai/artifact/7bzYVFEyn4NKJUcT9yyJuf",
   "space": "OKLab, x = [L, a, b] of the sRGB colour (Bjorn Ottosson 2020)",
-  "rule": "TWO-PIGMENT DOMAINS. A domain is two regions, its rim pigment and its face pigment. A pigment is one paint seen from shadow to highlight: lighting scales a colour's linear RGB, which moves it along a ray from black in OKLab, so a pigment is the cone segment of colours with L0 <= L <= L1 whose chroma direction (a/L, b/L) lies within rho of (sat cos hue, sat sin hue). A colour belongs to a domain when it lies in either of that domain's pigments; a colour in no pigment is unclaimed by the set. The rules every set keeps: (1) any two pigments of different domains are at least margin apart in OKLab (the band); (2) their chroma directions are at least pigment_gap apart beyond their rho (no light or shadow turns one domain's pigment into another's); (3) a domain's rim and face differ in hue by at least min_hue_contrast degrees and in mid lightness by at least min_lightness_contrast (the hue contrast between a prism's rim and face); (4) every rim pigment's swatch rests in its own family of the colour_domains.json truth, clear of the band (the domain still reads as itself).",
+  "rule": "TWO-PIGMENT DOMAINS. A domain is two regions, its rim pigment (the prism's fresnel edge, the trail, the HUD, the signals) and its face pigment (the prism's body, most of what a player sees of it). A pigment is one paint seen from shadow to highlight: lighting scales a colour's linear RGB, which moves it along a ray from black in OKLab, so a pigment is the cone segment of colours with L0 <= L <= L1 whose chroma direction (a/L, b/L) lies within rho of (sat cos hue, sat sin hue). THE SEVEN RULES: (1) the band: any two pigments of different domains are at least margin apart in OKLab; (2) lighting-proof: their chroma directions are at least pigment_gap apart beyond their rho (no light or shadow turns one domain's pigment into another's); (3) form: a domain's rim and face differ in mid lightness by at least min_lightness_contrast (and in hue by min_hue_contrast, where a set or style asks for it); (4) the name: every rim reads as its own family of the colour_domains.json truth, clear of the band, as its swatch, as LIGHT (its centre ray at brightest channel 1: the prism's edge, the crystals) and as PAINT (the same numbers read as sRGB: the HUD, the score panels and the vessel tails read TrailHighlightColor that way), and Lime's rim also at the free crystal's body brightness; (5) communication, for a set made for a vision: as that viewer sees the painted colours, rims (as light and on the HUD), faces and each rim against its face stay vision_margin apart; (6) the voice: each face is its family's colour (its swatch rests in its family), its rim's own paint (its direction inside the rim's cone), or quiet (its whole pigment at or below the night line, where the truth holds only Fire and Blue, so it reads as night under a rim that carries the name); (7) apart: as painted, every two rims stay rim_separation apart, as light and as paint. No rule is waived. A set made for another vision keeps rules 4 and 6 as its viewer sees them (4V: every rim, as light and on the HUD, looks nearer its own family's anchors in the truth, seen through the same vision model, than any other family's, by name_margin; 6V: each face is its family's as seen, its rim's paint, or quiet in the viewer's own lightness), and rule 5 stands in for rule 7. Where no lawful set exists for those eyes, the set declares the name_margin the maker reached and the gate holds it there. A set may name a style and keep its rules too. Examples are worked sets the skill teaches from; they keep every rule and are never written to the game.",
+  "laws": {
+    "night_line": 0.4,
+    "rim_separation": 0.1,
+    "crystal_body": 0.5
+  },
+  "laws_why": {
+    "night_line": "Below OKLab L 0.40 the six-family truth holds only Fire and Blue: no Gold, Lime, Jade or Ruby lives there, so a face wholly below it cannot name another domain. Nocturne's faces reach L 0.37.",
+    "rim_separation": "0.10 OKLab, five just-noticeable steps, between the two closest rims as the game paints them.",
+    "crystal_body": "DarkCTA, the free crystal's body (about 93% of it), is painted at half of the brightest channel (PhoticColorSetSO, Docs/PALETTE.md section 2.2)."
+  },
+  "styles": {
+    "photic": {
+      "name": "Photic",
+      "idea": "One paint per domain, the way the original palette defines the six territories: the rim is the paint in light, the face the same paint in shadow or a deeper tone of its own family, so every prism is one family at two lightnesses.",
+      "faces": ["family", "paint"]
+    },
+    "nocturne": {
+      "name": "Nocturne",
+      "idea": "Lanterns: each rim glows in its family's hue and carries the name; each face is a dark jewel of a contrasting hue, wholly in the night, all six faces in one night band so no body outshines another.",
+      "faces": ["quiet"],
+      "min_hue_contrast": 90,
+      "face_band": 0.1,
+      "rim_L": [0.6, 0.95]
+    },
+    "nacre": {
+      "name": "Nacre",
+      "idea": "Pearl: soft bodies in each family's own colour under clearer rims of the same family, a small iridescent turn of hue between them; faces painted at mid L 0.50-0.74 so the gameplay bloom lifts them to pastel instead of white, rims a sheen (rim_brightness 0.5-0.85), not a glow.",
+      "faces": ["family", "paint"],
+      "face_L": [0.5, 0.74],
+      "rim_brightness": [0.5, 0.85]
+    }
+  },
   "prism_mapping": {
     "rim": "SO_ColorSet DomainColorSet.InsideBlockColor and its shielded twins: the prism's fresnel rim (_BrightColor). 'Inside' is a legacy name for the rim (Docs/PALETTE.md section 2).",
     "face": "SO_ColorSet DomainColorSet.OutsideBlockColor and its shielded twins: the prism's base face (_DarkColor).",
     "fire": "Fire and Lime are not DomainColorSets: Fire is EnvironmentColors.Danger (the danger rim over the domain's shielded face), Lime is the CTA pair (BrightCTA rim, DarkCTA body). How a set paints them is an open decision (see open)."
   },
-  "unity": "Tools/Build/author_colour_set_assets.py writes each set as Assets/_SO_Assets/Color Palettes/<Name>ColorSetSO.asset (Dart Frog: DartFrogColorSetSO.asset). Every field takes its hue from one pigment of its domain and keeps PhoticColorSetSO's alpha and tier whiteness; rim fields keep the original's (HDR) brightness, face fields take their face pigment's own lightness, scaled by the original's step between tiers; Danger wears the Fire rim, BrightCTA and DarkCTA both wear the Lime rim, ElementalCrystalColors are copied. --check fails on drift or on any field that lands in another domain's pigment. The default is the set named by ThemeManagerDataContainer.asset's ColorSet slot and by the prefabs that hold a palette directly (ThemeManager, ArkView, CodexView, ConfigureDomainColumn, ConfigureSeatPedestal); PhoticColorSetSO is the palette every field's tuning comes from.",
+  "unity": "Tools/Build/author_colour_set_assets.py writes each set as Assets/_SO_Assets/Color Palettes/<Name>ColorSetSO.asset (Dart Frog: DartFrogColorSetSO.asset). Examples are not written. Every field takes its hue from one pigment of its domain and keeps PhoticColorSetSO's alpha and tier whiteness; rim fields keep the original's (HDR) brightness, face fields take their face pigment's own lightness, scaled by the original's step between tiers; Danger wears the Fire rim, BrightCTA and DarkCTA both wear the Lime rim, ElementalCrystalColors are copied. --check fails on drift or on any field that lands in another domain's pigment. The default is the set named by ThemeManagerDataContainer.asset's ColorSet slot and by the prefabs that hold a palette directly (ThemeManager, ArkView, CodexView, ConfigureDomainColumn, ConfigureSeatPedestal); PhoticColorSetSO is the palette every field's tuning comes from.",
   "sets": {
     "dart_frog": {
       "name": "Dart Frog",
       "track": "paid",
       "proposed": "2026-11-02",
-      "by": "Garrett (Jade from his photo of a green-and-bronze Dendrobates auratus); the other five laid out under the same rules",
+      "by": "Garrett (Jade from his photo of a green-and-bronze Dendrobates auratus); the other five laid out under the same rules. Re-derived 2026-11-10 under the seven rules: every frog keeps its warning colour as the rim and its dark ground as a quiet face.",
+      "summary": "Poison dart frogs warn with bright colour on a dark ground, and so does this set: each rim is a frog's warning colour (strawberry, bumblebee, acid lime, Garrett's mint, azure, orchid) and each face is that frog's ground taken into the night (denim, coal, oxblood, bronze, petrol), so the bright edge carries the domain's name. Blue is the Azureus, blue on blue: azure over cobalt, one family. Until 2026-11-10 the grounds sat at mid L 0.39-0.45, light enough to name other domains: a Jade prism read as bronze, a Blue one as forest green, a Gold one as indigo.",
       "margin": 0.05,
       "pigment_gap": 0.05,
-      "min_hue_contrast": 90,
       "min_lightness_contrast": 0.12,
       "domains": {
         "fire": {
-          "inspiration": "Oophaga pumilio 'Blue Jeans': strawberry-red body, denim legs",
+          "inspiration": "Oophaga pumilio 'Blue Jeans': a strawberry-red frog with denim legs, the denim taken into the night",
           "rim": {"name": "Strawberry", "hue": 30, "sat": 0.36, "L": [0.46, 0.68], "rho": 0.04, "swatch": "#D52E1E"},
-          "face": {"name": "Denim", "hue": 264, "sat": 0.36, "L": [0.32, 0.54], "rho": 0.035, "swatch": "#2247A3"}
+          "face": {"name": "Denim", "hue": 252, "sat": 0.284, "L": [0.25, 0.39], "rho": 0.009, "swatch": "#04335F"}
         },
         "gold": {
-          "inspiration": "Dendrobates leucomelas (bumblebee): yellow bands on black, the black given a violet hue so the face keeps a hue",
-          "rim": {"name": "Bumblebee", "hue": 88, "sat": 0.2, "L": [0.74, 0.96], "rho": 0.035, "swatch": "#FCC618"},
-          "face": {"name": "Indigo", "hue": 300, "sat": 0.4, "L": [0.3, 0.5], "rho": 0.035, "swatch": "#57288F"}
+          "inspiration": "Dendrobates leucomelas, the bumblebee frog: yellow bands on black; the yellow kept in Gold's window (hue 82-96) so the HUD reads it as Gold, not Fire",
+          "rim": {"name": "Bumblebee", "hue": 89, "sat": 0.17, "L": [0.78, 0.97], "rho": 0.03, "swatch": "#FDD052"},
+          "face": {"name": "Coal", "hue": 303, "sat": 0.24, "L": [0.18, 0.34], "rho": 0.012, "swatch": "#2A1B3D"}
         },
         "lime": {
-          "inspiration": "a dart-frog pairing: acid lime over oxblood",
+          "inspiration": "a dart-frog pairing: acid lime over an oxblood ground",
           "rim": {"name": "Lime", "hue": 124, "sat": 0.24, "L": [0.68, 0.92], "rho": 0.035, "swatch": "#A4D11D"},
-          "face": {"name": "Oxblood", "hue": 356, "sat": 0.38, "L": [0.3, 0.48], "rho": 0.04, "swatch": "#7C0F48"}
+          "face": {"name": "Oxblood", "hue": 356, "sat": 0.4, "L": [0.27, 0.39], "rho": 0.035, "swatch": "#640337"}
         },
         "jade": {
-          "inspiration": "Dendrobates auratus, green-and-bronze (Garrett's photo): measured mint L 0.63-0.89, C/L 0.08-0.10, hue 148-178; bronze L 0.32-0.55, C/L 0.18-0.21, hue 46-58",
-          "photo_coverage": "Mint surrounds 76% of the photo's mint pixels and Bronze 86% of its bronze. The greyest quarter of the mint (C/L under about 0.075) lies in the six-family truth's Jade/Lime band, so rule 4 stops Mint reaching it.",
-          "rim": {"name": "Mint", "hue": 164, "sat": 0.115, "L": [0.6, 0.94], "rho": 0.04, "swatch": "#7DC6A5"},
-          "face": {"name": "Bronze", "hue": 50, "sat": 0.19, "L": [0.3, 0.58], "rho": 0.04, "swatch": "#774325"}
+          "inspiration": "Dendrobates auratus, green-and-bronze (Garrett's photo, the lab's picture): its mint as the rim and its bronze ground as the face",
+          "rim": {"name": "Mint", "hue": 170, "sat": 0.13, "L": [0.62, 0.94], "rho": 0.035, "swatch": "#6ECDAD"},
+          "face": {"name": "Bronze", "hue": 52, "sat": 0.22, "L": [0.27, 0.39], "rho": 0.035, "swatch": "#52290C"},
+          "photo_coverage": "The photo's brightest mint (#ACE3C6, its brightest tenth) and median bronze (#693A1B) sit just outside Mint and Bronze; their clearer and darker neighbours (#8FD3B5, #4F2A12) are inside. The greyest mint lies in the truth's Jade/Lime band (rule 4), and the median bronze is at the night line, L 0.40 (rule 6)."
         },
         "blue": {
-          "inspiration": "a dart-frog pairing: azure over forest green",
+          "inspiration": "Dendrobates tinctorius 'Azureus', the blue poison frog: a sky-blue back over cobalt legs, blue on blue",
           "rim": {"name": "Azure", "hue": 250, "sat": 0.18, "L": [0.6, 0.84], "rho": 0.035, "swatch": "#61AAF2"},
-          "face": {"name": "Forest", "hue": 148, "sat": 0.28, "L": [0.3, 0.48], "rho": 0.025, "swatch": "#06541F"}
+          "face": {"name": "Cobalt", "hue": 266, "sat": 0.4, "L": [0.42, 0.54], "rho": 0.03, "swatch": "#2A4FC8"}
         },
         "ruby": {
-          "inspiration": "a dart-frog pairing: orchid over deep petrol",
-          "rim": {"name": "Orchid", "hue": 318, "sat": 0.3, "L": [0.56, 0.8], "rho": 0.04, "swatch": "#CB67E8"},
-          "face": {"name": "Petrol", "hue": 210, "sat": 0.165, "L": [0.36, 0.54], "rho": 0.025, "swatch": "#0D606C"}
+          "inspiration": "a dart-frog pairing: orchid over a petrol ground",
+          "rim": {"name": "Orchid", "hue": 318, "sat": 0.32, "L": [0.56, 0.8], "rho": 0.035, "swatch": "#CE62ED"},
+          "face": {"name": "Petrol", "hue": 211, "sat": 0.16, "L": [0.32, 0.38], "rho": 0.018, "swatch": "#0A424B"}
         }
-      },
-      "summary": "Every domain is two pigments: a bright one for the prism's rim and a dark one, a different hue, for its face. Jade is the green-and-bronze frog; the other five domains follow the same rules."
+      }
     },
     "nocturne": {
       "name": "Nocturne",
       "track": "the default",
       "proposed": "2026-11-03",
-      "by": "Claude, asked by Garrett for the most beautiful set it could make; Garrett made it the default on 2026-11-03 after playing it",
-      "summary": "Every prism is a lantern. The rim glows in its family's own hue and carries the domain; the face is a deep jewel tone of a different hue, all six faces in one night-dark band (mid L 0.27 to 0.32) so no body outshines another and the bodies read as tinted glass. Rims sit at mid L 0.66 to 0.85.",
+      "by": "Claude, asked by Garrett for the most beautiful set it could make; Garrett made it the default on 2026-11-03 after playing it. 2026-11-10: its Gold rim moved 4 degrees toward yellow (hue 83 to 87) so the HUD reads it as Gold, not the Gold/Fire band; it is the model of the Nocturne style.",
+      "summary": "Every prism is a lantern. The rim glows in its family's own hue and carries the domain; the face is a deep jewel tone of a different hue, all six faces in one night-dark band (mid L 0.27 to 0.32, every face wholly below L 0.37) so no body outshines another and the bodies read as tinted glass. Rims sit at mid L 0.66 to 0.85. Its rules are the Nocturne style's: faces quiet, at least 90 degrees of hue from their rims, one night band.",
+      "style": "nocturne",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -75,7 +108,7 @@
         },
         "gold": {
           "inspiration": "ametrine, the one stone that is citrine and amethyst together: honey over violet",
-          "rim": {"name": "Honey", "hue": 83, "sat": 0.176, "L": [0.72, 0.92], "rho": 0.035, "swatch": "#F1BB45"},
+          "rim": {"name": "Honey", "hue": 87, "sat": 0.176, "L": [0.72, 0.92], "rho": 0.035, "swatch": "#ECBD44"},
           "face": {"name": "Violet", "hue": 303, "sat": 0.337, "L": [0.27, 0.37], "rho": 0.035, "swatch": "#3F205F"}
         },
         "lime": {
@@ -104,43 +137,43 @@
       "name": "Nacre",
       "track": "free",
       "proposed": "2026-11-08",
-      "by": "Claude, asked by Garrett for a pastel set to complement Nocturne and Photic: light, not bright, keeping the hue contrasts; found by search (lowest chroma and highest lightness under rules 1-4, then rounded and re-checked)",
-      "summary": "The inside of a shell. Light, not bright: five faces are pale pastels (mid L 0.70 to 0.79, chroma 0.06 to 0.12) under lighter pastel rims of a different hue (mid L 0.83 to 0.92); Ruby turns it over, a pearl face (mid L 0.93) under the one clearer rim the six-family truth requires, an orchid. Rims are painted at three quarters of Photic's brightness (rim_brightness) so they read as a sheen, not a glow. Nocturne's complement: pale bodies under soft edges where Nocturne is dark bodies under lanterns.",
+      "by": "Claude, asked by Garrett for a pastel set to complement Nocturne and Photic; re-derived 2026-11-10 under the seven rules (Garrett: \"much better at following the rules while maintaining ... the desire for a pastel version\").",
+      "summary": "The inside of a shell. Soft bodies in each family's own colour (shell pink, champagne, celadon, seafoam, powder blue) under clearer rims of the same family, with a small iridescent turn of hue between the two, the way nacre shifts. Faces sit at mid L 0.56 to 0.66 so the gameplay bloom lifts them to pastel instead of white, and rims are painted at 0.7 of Photic's brightness (rim_brightness), a sheen, not a glow. Ruby keeps the one clear jewel, an amethyst body under an orchid rim: the six-family truth gives every pale violet to Blue and every pale pink to Fire, so no pastel Ruby exists. Until 2026-11-10 Nacre's faces were pale pastels of other hues (a lavender Jade, a periwinkle Gold, a sage Blue), which named the wrong domains and bloomed to white.",
+      "style": "nacre",
       "margin": 0.05,
       "pigment_gap": 0.05,
-      "min_hue_contrast": 90,
       "min_lightness_contrast": 0.12,
-      "rim_brightness": 0.75,
+      "rim_brightness": 0.7,
       "domains": {
         "fire": {
-          "inspiration": "coral polyp over sea glass: Fire stays warm enough to warn",
-          "rim": {"name": "Coral", "hue": 26, "sat": 0.109, "L": [0.8, 0.86], "rho": 0.012, "swatch": "#FDB1A9"},
-          "face": {"name": "Sea Glass", "hue": 204, "sat": 0.114, "L": [0.64, 0.76], "rho": 0.012, "swatch": "#5CADB5"}
+          "inspiration": "a conch's shell-pink lip under a coral rim: Fire stays warm enough to warn",
+          "rim": {"name": "Coral", "hue": 31, "sat": 0.258, "L": [0.62, 0.8], "rho": 0.02, "swatch": "#FF6D56"},
+          "face": {"name": "Shell Pink", "hue": 18, "sat": 0.146, "L": [0.52, 0.65], "rho": 0.015, "swatch": "#A96668"}
         },
         "gold": {
-          "inspiration": "a cowrie's butter-yellow lip over the periwinkle snail",
-          "rim": {"name": "Butter", "hue": 90, "sat": 0.115, "L": [0.88, 0.94], "rho": 0.012, "swatch": "#FCDF8E"},
-          "face": {"name": "Periwinkle", "hue": 257, "sat": 0.119, "L": [0.72, 0.84], "rho": 0.012, "swatch": "#91BAF3"}
+          "inspiration": "a gold-lipped pearl: butter over champagne, one paint in two lights",
+          "rim": {"name": "Butter", "hue": 90, "sat": 0.13, "L": [0.8, 0.96], "rho": 0.02, "swatch": "#F5D47C"},
+          "face": {"name": "Champagne", "hue": 88, "sat": 0.13, "L": [0.6, 0.72], "rho": 0.015, "swatch": "#A88F52"}
         },
         "lime": {
-          "inspiration": "new kelp over a mauve anemone",
-          "rim": {"name": "Pistachio", "hue": 125, "sat": 0.149, "L": [0.86, 0.96], "rho": 0.012, "swatch": "#CDF18A"},
-          "face": {"name": "Mauve", "hue": 330, "sat": 0.07, "L": [0.72, 0.84], "rho": 0.012, "swatch": "#CCABC8"}
+          "inspiration": "new kelp: pistachio over celadon",
+          "rim": {"name": "Pistachio", "hue": 128, "sat": 0.2, "L": [0.78, 0.94], "rho": 0.02, "swatch": "#B0E660"},
+          "face": {"name": "Celadon", "hue": 132, "sat": 0.197, "L": [0.6, 0.72], "rho": 0.015, "swatch": "#74A249"}
         },
         "jade": {
-          "inspiration": "mint sea foam over a lavender abalone shell",
-          "rim": {"name": "Mint", "hue": 168, "sat": 0.133, "L": [0.85, 0.97], "rho": 0.012, "swatch": "#89FBD2"},
-          "face": {"name": "Lavender", "hue": 298, "sat": 0.147, "L": [0.75, 0.81], "rho": 0.012, "swatch": "#C0A7F7"}
+          "inspiration": "abalone's sea-green: aqua over seafoam",
+          "rim": {"name": "Aqua", "hue": 190, "sat": 0.14, "L": [0.78, 0.94], "rho": 0.02, "swatch": "#5FEAE2"},
+          "face": {"name": "Seafoam", "hue": 168, "sat": 0.145, "L": [0.6, 0.72], "rho": 0.015, "swatch": "#4FA587"}
         },
         "blue": {
-          "inspiration": "ice-blue sky on the water over sage sea grass",
-          "rim": {"name": "Ice", "hue": 235, "sat": 0.046, "L": [0.89, 0.95], "rho": 0.012, "swatch": "#CAEAFD"},
-          "face": {"name": "Sage", "hue": 138, "sat": 0.074, "L": [0.75, 0.82], "rho": 0.012, "swatch": "#A7C29E"}
+          "inspiration": "a pearl's blue sheen: periwinkle over powder",
+          "rim": {"name": "Periwinkle", "hue": 268, "sat": 0.093, "L": [0.76, 0.92], "rho": 0.02, "swatch": "#B5C9FF"},
+          "face": {"name": "Powder", "hue": 250, "sat": 0.08, "L": [0.6, 0.72], "rho": 0.015, "swatch": "#7A95B2"}
         },
         "ruby": {
-          "inspiration": "an orchid sea slug on pearl, the one rim the six-family truth keeps clear: it gives every pale lavender to Blue, so Ruby's rim is an orchid at sat 0.256 (rule 4)",
-          "rim": {"name": "Orchid", "hue": 318, "sat": 0.256, "L": [0.72, 0.79], "rho": 0.012, "swatch": "#E182FE"},
-          "face": {"name": "Pearl", "hue": 57, "sat": 0.039, "L": [0.89, 0.96], "rho": 0.012, "swatch": "#FAE1CF"}
+          "inspiration": "the one jewel a pastel set keeps: an orchid rim over an amethyst body (no pastel Ruby exists in the truth)",
+          "rim": {"name": "Orchid", "hue": 324, "sat": 0.328, "L": [0.63, 0.74], "rho": 0.02, "swatch": "#DA5CE6"},
+          "face": {"name": "Amethyst", "hue": 315, "sat": 0.391, "L": [0.5, 0.62], "rho": 0.015, "swatch": "#A23BCA"}
         }
       }
     },
@@ -148,44 +181,44 @@
       "name": "Contrast",
       "track": "free",
       "proposed": "2026-11-05",
-      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB,; every face now names its own domain.",
       "vision": "typical",
-      "vision_margin": 0.27,
-      "summary": "Every domain as far from every other as the rules allow, for typical vision: six rims spread round the hue circle at full strength, and faces that differ from each other in hue AND lightness, so a prism's body names its domain even when its rim is out of sight.",
+      "vision_margin": 0.22,
+      "summary": "Every domain as far from every other as the rules allow, for typical vision: six rims spread round the hue circle at full strength, and every prism one family at two lightnesses (the Photic style), so a prism's body names its domain even when its rim is out of sight. Until 2026-11-10 its faces were other families' colours (a violet Gold, a viridian Ruby); held to rule 6, the bodies now say their own names, and counting the HUD it is further apart than before (11.0 JND against 6.5).",
+      "style": "photic",
       "margin": 0.05,
       "pigment_gap": 0.05,
-      "min_hue_contrast": 90,
       "min_lightness_contrast": 0.12,
       "domains": {
         "fire": {
-          "inspiration": "as typical vision sees it: #FF032C over #B3C1FC (painted #FF032C over #B3C1FC)",
-          "rim": {"name": "Signal Red", "hue": 25, "sat": 0.404, "L": [0.22, 0.42], "rho": 0.035, "swatch": "#65000B"},
-          "face": {"name": "Periwinkle", "hue": 274, "sat": 0.104, "L": [0.77, 0.87], "rho": 0.035, "swatch": "#B3C1FC"}
+          "inspiration": "as typical vision sees it, the Photic style at full distance: signal red over crimson, one family at two lightnesses",
+          "rim": {"name": "Signal Red", "hue": 27, "sat": 0.385, "L": [0.18, 0.38], "rho": 0.035, "swatch": "#520506"},
+          "face": {"name": "Crimson", "hue": 25, "sat": 0.37, "L": [0.35, 0.47], "rho": 0.025, "swatch": "#8A141B"}
         },
         "gold": {
-          "inspiration": "as typical vision sees it: #FFB42D over #5F3EF9 (painted #FFB42D over #5F3EF9)",
-          "rim": {"name": "Marigold", "hue": 76, "sat": 0.196, "L": [0.66, 0.86], "rho": 0.035, "swatch": "#E6A228"},
-          "face": {"name": "Electric Violet", "hue": 281, "sat": 0.487, "L": [0.48, 0.58], "rho": 0.035, "swatch": "#5F3EF9"}
+          "inspiration": "as typical vision sees it, the Photic style at full distance: bright gold over amber",
+          "rim": {"name": "Bright Gold", "hue": 96, "sat": 0.114, "L": [0.8, 0.97], "rho": 0.035, "swatch": "#EDD98B"},
+          "face": {"name": "Amber", "hue": 75, "sat": 0.187, "L": [0.67, 0.77], "rho": 0.025, "swatch": "#D59731"}
         },
         "lime": {
-          "inspiration": "as typical vision sees it: #2BFF13 over #DC2E7D (painted #2BFF13 over #DC2E7D)",
-          "rim": {"name": "Neon Lime", "hue": 142, "sat": 0.332, "L": [0.66, 0.86], "rho": 0.035, "swatch": "#23D50E"},
-          "face": {"name": "Raspberry", "hue": 359, "sat": 0.359, "L": [0.55, 0.65], "rho": 0.035, "swatch": "#DC2E7D"}
+          "inspiration": "as typical vision sees it, the Photic style at full distance: neon lime over deep lime",
+          "rim": {"name": "Neon Lime", "hue": 143, "sat": 0.334, "L": [0.62, 0.82], "rho": 0.035, "swatch": "#02C717"},
+          "face": {"name": "Deep Lime", "hue": 142, "sat": 0.334, "L": [0.45, 0.55], "rho": 0.025, "swatch": "#0D7902"}
         },
         "jade": {
-          "inspiration": "as typical vision sees it: #34E4FF over #542C4F (painted #34E4FF over #542C4F)",
-          "rim": {"name": "Sky Cyan", "hue": 211, "sat": 0.163, "L": [0.74, 0.94], "rho": 0.035, "swatch": "#33E2FD"},
-          "face": {"name": "Aubergine", "hue": 332, "sat": 0.215, "L": [0.31, 0.41], "rho": 0.035, "swatch": "#542C4F"}
+          "inspiration": "as typical vision sees it, the Photic style at full distance: sky cyan over deep cyan",
+          "rim": {"name": "Sky Cyan", "hue": 208, "sat": 0.164, "L": [0.67, 0.87], "rho": 0.035, "swatch": "#26CADE"},
+          "face": {"name": "Deep Cyan", "hue": 219, "sat": 0.151, "L": [0.62, 0.66], "rho": 0.025, "swatch": "#389AB4"}
         },
         "blue": {
-          "inspiration": "as typical vision sees it: #4B7AFF over #030400 (painted #4B7AFF over #030400)",
-          "rim": {"name": "Ultramarine", "hue": 266, "sat": 0.331, "L": [0.31, 0.51], "rho": 0.035, "swatch": "#274393"},
-          "face": {"name": "Ink", "hue": 123, "sat": 0.225, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#030400"}
+          "inspiration": "as typical vision sees it, the Photic style at full distance: ultramarine over navy",
+          "rim": {"name": "Ultramarine", "hue": 261, "sat": 0.326, "L": [0.35, 0.55], "rho": 0.035, "swatch": "#2150A5"},
+          "face": {"name": "Navy", "hue": 274, "sat": 0.331, "L": [0.24, 0.36], "rho": 0.025, "swatch": "#20265E"}
         },
         "ruby": {
-          "inspiration": "as typical vision sees it: #FE35FF over #138967 (painted #FE35FF over #138967)",
-          "rim": {"name": "Magenta", "hue": 328, "sat": 0.421, "L": [0.59, 0.79], "rho": 0.035, "swatch": "#F232F3"},
-          "face": {"name": "Viridian", "hue": 167, "sat": 0.197, "L": [0.51, 0.61], "rho": 0.035, "swatch": "#138967"}
+          "inspiration": "as typical vision sees it, the Photic style at full distance: magenta over purple",
+          "rim": {"name": "Magenta", "hue": 328, "sat": 0.392, "L": [0.58, 0.78], "rho": 0.035, "swatch": "#E840E9"},
+          "face": {"name": "Purple", "hue": 325, "sat": 0.415, "L": [0.47, 0.57], "rho": 0.025, "swatch": "#A224AB"}
         }
       }
     },
@@ -193,10 +226,10 @@
       "name": "Protanopia",
       "track": "free",
       "proposed": "2026-11-05",
-      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB, and the rims keep rule 4 as swatch and light.",
       "vision": "protan",
-      "vision_margin": 0.21,
-      "summary": "Made for eyes without long-wave (red) cones. A protan sees two hues, blue and yellow, so each domain gets its own place on that axis and its own lightness: Fire's and Gold's faces, one just-noticeable step apart for a protan in Nocturne, become navy and steel blue.",
+      "vision_margin": 0.105,
+      "summary": "Made for eyes without long-wave (red) cones. A protan sees two hues, blue and yellow, so each domain gets its own place on that axis and its own lightness: Fire's and Gold's faces, one just-noticeable step apart for a protan in Nocturne, become navy and steel blue. Re-balanced 2026-11-10 under its viewer's own rules 4 and 6: every rim, as light and on the HUD, and every face looks more like its own family's colours than any other's as a protan sees them; its domains stay 5.3 JND apart for its viewer, HUD included (they were 8.1 JND apart on the HUD before).",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -204,33 +237,33 @@
       "domains": {
         "fire": {
           "inspiration": "as a protan sees it: #6A6967 over #00275F (painted #FF2466 over #1A1A5D)",
-          "rim": {"name": "Rose Red", "hue": 12, "sat": 0.377, "L": [0.38, 0.58], "rho": 0.035, "swatch": "#AB1442"},
-          "face": {"name": "Navy", "hue": 275, "sat": 0.43, "L": [0.22, 0.32], "rho": 0.035, "swatch": "#1A1A5D"}
+          "rim": {"name": "Rose Red", "hue": 8, "sat": 0.322, "L": [0.43, 0.63], "rho": 0.035, "swatch": "#B73259"},
+          "face": {"name": "Navy", "hue": 267, "sat": 0.457, "L": [0.27, 0.36], "rho": 0.029, "swatch": "#122579"}
         },
         "gold": {
           "inspiration": "as a protan sees it: #C1AB1E over #829EDB (painted #FFA333 over #4E9CD8)",
-          "rim": {"name": "Tangerine", "hue": 66, "sat": 0.202, "L": [0.69, 0.89], "rho": 0.035, "swatch": "#FEA333"},
-          "face": {"name": "Steel Blue", "hue": 244, "sat": 0.176, "L": [0.62, 0.72], "rho": 0.035, "swatch": "#4E9CD8"}
+          "rim": {"name": "Tangerine", "hue": 80, "sat": 0.178, "L": [0.67, 0.89], "rho": 0.023, "swatch": "#E6AC3F"},
+          "face": {"name": "Steel Blue", "hue": 255, "sat": 0.14, "L": [0.2, 0.37], "rho": 0.03, "swatch": "#1C2B3E"}
         },
         "lime": {
           "inspiration": "as a protan sees it: #FFF400 over #005EC0 (painted #FEFF2F over #A32DBC)",
-          "rim": {"name": "Lemon", "hue": 110, "sat": 0.209, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#CFD024"},
-          "face": {"name": "Purple", "hue": 320, "sat": 0.411, "L": [0.49, 0.59], "rho": 0.035, "swatch": "#A32DBC"}
+          "rim": {"name": "Lemon", "hue": 114, "sat": 0.224, "L": [0.82, 0.93], "rho": 0.035, "swatch": "#D5E305"},
+          "face": {"name": "Purple", "hue": 331, "sat": 0.434, "L": [0.15, 0.29], "rho": 0.035, "swatch": "#31022E"}
         },
         "jade": {
           "inspiration": "as a protan sees it: #EEF2FC over #5D5212 (painted #28FFFB over #A14118)",
-          "rim": {"name": "Aqua", "hue": 193, "sat": 0.166, "L": [0.74, 0.94], "rho": 0.035, "swatch": "#23E7E3"},
-          "face": {"name": "Rust", "hue": 41, "sat": 0.275, "L": [0.45, 0.55], "rho": 0.035, "swatch": "#A14118"}
+          "rim": {"name": "Aqua", "hue": 184, "sat": 0.168, "L": [0.78, 0.86], "rho": 0.031, "swatch": "#2EE1CE"},
+          "face": {"name": "Rust", "hue": 35, "sat": 0.334, "L": [0.2, 0.32], "rho": 0.035, "swatch": "#450E02"}
         },
         "blue": {
           "inspiration": "as a protan sees it: #8DB3FF over #A18E04 (painted #D1A1FF over #219E23)",
-          "rim": {"name": "Lavender", "hue": 307, "sat": 0.176, "L": [0.64, 0.84], "rho": 0.035, "swatch": "#C094EB"},
-          "face": {"name": "Emerald", "hue": 143, "sat": 0.311, "L": [0.56, 0.66], "rho": 0.035, "swatch": "#219E23"}
+          "rim": {"name": "Lavender", "hue": 309, "sat": 0.13, "L": [0.75, 0.87], "rho": 0.031, "swatch": "#D5AEF5"},
+          "face": {"name": "Emerald", "hue": 142, "sat": 0.323, "L": [0.24, 0.37], "rho": 0.035, "swatch": "#063A03"}
         },
         "ruby": {
           "inspiration": "as a protan sees it: #006AFF over #040302 (painted #872AFF over #020402)",
-          "rim": {"name": "Violet", "hue": 295, "sat": 0.5, "L": [0.39, 0.59], "rho": 0.035, "swatch": "#7222D8"},
-          "face": {"name": "Ink", "hue": 137, "sat": 0.109, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#020402"}
+          "rim": {"name": "Violet", "hue": 288, "sat": 0.525, "L": [0.43, 0.63], "rho": 0.035, "swatch": "#7127FE"},
+          "face": {"name": "Ink", "hue": 135, "sat": 0.111, "L": [0.07, 0.13], "rho": 0.027, "swatch": "#020402"}
         }
       }
     },
@@ -238,10 +271,11 @@
       "name": "Deuteranopia",
       "track": "free",
       "proposed": "2026-11-05",
-      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB, and the rims keep rule 4 as swatch and light.",
       "vision": "deutan",
-      "vision_margin": 0.17,
-      "summary": "Made for eyes without medium-wave (green) cones, the commonest colour blindness. Like a protan, a deutan sees blue against yellow, but sees reds brighter, so the rims sit at different points on that axis and the faces carry the rest in lightness: Lime's and Blue's faces, one step apart for a deutan in Nocturne, become pink and ink.",
+      "vision_margin": 0.08,
+      "name_margin": -0.021,
+      "summary": "Made for eyes without medium-wave (green) cones, the commonest colour blindness. Like a protan, a deutan sees blue against yellow, but sees reds brighter, so the rims sit at different points on that axis and the faces carry the rest in lightness: Lime's and Blue's faces, one step apart for a deutan in Nocturne, become pink and ink. Re-balanced 2026-11-10 under its viewer's own rules 4 and 6: its rims come as near their own family's colours as a deutan's eyes allow (weakest margin -0.021: the game's own colours of some families look alike to them, so no set can do better); its domains stay 4.1 JND apart for its viewer, HUD included (they were 4.4 JND apart on the HUD before).",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -249,33 +283,33 @@
       "domains": {
         "fire": {
           "inspiration": "as a deutan sees it: #9A9583 over #104A90 (painted #FF2288 over #214E92)",
-          "rim": {"name": "Neon Rose", "hue": 1, "sat": 0.384, "L": [0.48, 0.68], "rho": 0.035, "swatch": "#D91B72"},
-          "face": {"name": "Cobalt", "hue": 259, "sat": 0.285, "L": [0.38, 0.48], "rho": 0.035, "swatch": "#214E92"}
+          "rim": {"name": "Neon Rose", "hue": 5, "sat": 0.38, "L": [0.54, 0.74], "rho": 0.03, "swatch": "#F82278"},
+          "face": {"name": "Cobalt", "hue": 252, "sat": 0.225, "L": [0.24, 0.33], "rho": 0.019, "swatch": "#0F2B49"}
         },
         "gold": {
           "inspiration": "as a deutan sees it: #D1BA06 over #0067F9 (painted #FF9801 over #8A2FFD)",
-          "rim": {"name": "Orange", "hue": 64, "sat": 0.226, "L": [0.65, 0.85], "rho": 0.035, "swatch": "#F69301"},
-          "face": {"name": "Electric Violet", "hue": 296, "sat": 0.486, "L": [0.51, 0.61], "rho": 0.035, "swatch": "#8A2FFD"}
+          "rim": {"name": "Orange", "hue": 72, "sat": 0.162, "L": [0.62, 0.8], "rho": 0.031, "swatch": "#CE9549"},
+          "face": {"name": "Electric Violet", "hue": 302, "sat": 0.501, "L": [0.28, 0.38], "rho": 0.035, "swatch": "#470879"}
         },
         "lime": {
           "inspiration": "as a deutan sees it: #FFF94C over #9AA2B7 (painted #FFFD3A over #E178BA)",
-          "rim": {"name": "Lemon", "hue": 109, "sat": 0.203, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#D1CF2E"},
-          "face": {"name": "Pink", "hue": 343, "sat": 0.213, "L": [0.66, 0.76], "rho": 0.035, "swatch": "#E178BA"}
+          "rim": {"name": "Lemon", "hue": 112, "sat": 0.218, "L": [0.75, 0.95], "rho": 0.035, "swatch": "#D2D813"},
+          "face": {"name": "Pink", "hue": 333, "sat": 0.336, "L": [0.18, 0.23], "rho": 0.027, "swatch": "#280824"}
         },
         "jade": {
           "inspiration": "as a deutan sees it: #BDCFFF over #383217 (painted #4DEAFF over #581419)",
-          "rim": {"name": "Sky Cyan", "hue": 208, "sat": 0.151, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#48DEF2"},
-          "face": {"name": "Oxblood", "hue": 21, "sat": 0.318, "L": [0.26, 0.36], "rho": 0.035, "swatch": "#581419"}
+          "rim": {"name": "Sky Cyan", "hue": 196, "sat": 0.153, "L": [0.74, 0.94], "rho": 0.035, "swatch": "#43E4E6"},
+          "face": {"name": "Oxblood", "hue": 31, "sat": 0.38, "L": [0.32, 0.36], "rho": 0.035, "swatch": "#6B0C02"}
         },
         "blue": {
           "inspiration": "as a deutan sees it: #005AFC over #040300 (painted #1D4FFF over #010500)",
-          "rim": {"name": "Ultramarine", "hue": 265, "sat": 0.5, "L": [0.16, 0.36], "rho": 0.035, "swatch": "#051861"},
-          "face": {"name": "Ink", "hue": 137, "sat": 0.299, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#010500"}
+          "rim": {"name": "Ultramarine", "hue": 269, "sat": 0.509, "L": [0.14, 0.42], "rho": 0.018, "swatch": "#10196D"},
+          "face": {"name": "Ink", "hue": 143, "sat": 0.257, "L": [0.11, 0.16], "rho": 0.031, "swatch": "#020B02"}
         },
         "ruby": {
           "inspiration": "as a deutan sees it: #699BFA over #696450 (painted #FE16FF over #526B4F)",
-          "rim": {"name": "Magenta", "hue": 328, "sat": 0.451, "L": [0.6, 0.8], "rho": 0.035, "swatch": "#FC16FE"},
-          "face": {"name": "Sage", "hue": 142, "sat": 0.108, "L": [0.45, 0.55], "rho": 0.035, "swatch": "#526B4F"}
+          "rim": {"name": "Magenta", "hue": 328, "sat": 0.445, "L": [0.61, 0.8], "rho": 0.035, "swatch": "#FD1EFF"},
+          "face": {"name": "Sage", "hue": 135, "sat": 0.095, "L": [0.24, 0.33], "rho": 0.023, "swatch": "#242D20"}
         }
       }
     },
@@ -283,10 +317,10 @@
       "name": "Tritanopia",
       "track": "free",
       "proposed": "2026-11-05",
-      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB, and the rims keep rule 4 as swatch and light.",
       "vision": "tritan",
-      "vision_margin": 0.18,
-      "summary": "Made for eyes without short-wave (blue) cones. A tritan sees red against teal, so the domains are spread along that axis and in lightness: Blue's and Ruby's faces, one step apart for a tritan in Nocturne, become forest and teal.",
+      "vision_margin": 0.09,
+      "summary": "Made for eyes without short-wave (blue) cones. A tritan sees red against teal, so the domains are spread along that axis and in lightness: Blue's and Ruby's faces, one step apart for a tritan in Nocturne, become forest and teal. Re-balanced 2026-11-10 under its viewer's own rules 4 and 6: every rim, as light and on the HUD, and every face looks more like its own family's colours than any other's as a tritan sees them; its domains stay 4.6 JND apart for its viewer, HUD included (they were 7.0 JND apart on the HUD before).",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -294,33 +328,33 @@
       "domains": {
         "fire": {
           "inspiration": "as a tritan sees it: #FF0045 over #010306 (painted #FF3E4B over #03010F)",
-          "rim": {"name": "Tomato", "hue": 23, "sat": 0.344, "L": [0.5, 0.7], "rho": 0.035, "swatch": "#E13641"},
-          "face": {"name": "Ink", "hue": 289, "sat": 0.397, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#03010F"}
+          "rim": {"name": "Tomato", "hue": 32, "sat": 0.377, "L": [0.46, 0.66], "rho": 0.035, "swatch": "#D42502"},
+          "face": {"name": "Ink", "hue": 294, "sat": 0.389, "L": [0.1, 0.2], "rho": 0.035, "swatch": "#0D0521"}
         },
         "gold": {
           "inspiration": "as a tritan sees it: #FF9492 over #689BA1 (painted #FFA934 over #7C92BF)",
-          "rim": {"name": "Saffron", "hue": 69, "sat": 0.198, "L": [0.69, 0.89], "rho": 0.035, "swatch": "#FAA633"},
-          "face": {"name": "Slate Blue", "hue": 265, "sat": 0.11, "L": [0.61, 0.71], "rho": 0.035, "swatch": "#7C92BF"}
+          "rim": {"name": "Saffron", "hue": 85, "sat": 0.132, "L": [0.75, 0.97], "rho": 0.034, "swatch": "#F3CB76"},
+          "face": {"name": "Slate Blue", "hue": 306, "sat": 0.074, "L": [0.67, 0.77], "rho": 0.032, "swatch": "#AD9CC0"}
         },
         "lime": {
           "inspiration": "as a tritan sees it: #FFEBD7 over #7C2B39 (painted #FFFC09 over #733146)",
-          "rim": {"name": "Lemon", "hue": 109, "sat": 0.216, "L": [0.43, 0.63], "rho": 0.035, "swatch": "#727001"},
-          "face": {"name": "Wine", "hue": 2, "sat": 0.232, "L": [0.36, 0.46], "rho": 0.035, "swatch": "#733146"}
+          "rim": {"name": "Lemon", "hue": 122, "sat": 0.207, "L": [0.48, 0.68], "rho": 0.033, "swatch": "#6F8529"},
+          "face": {"name": "Wine", "hue": 358, "sat": 0.228, "L": [0.23, 0.33], "rho": 0.035, "swatch": "#411A29"}
         },
         "jade": {
           "inspiration": "as a tritan sees it: #00FDE8 over #FF0061 (painted #3EFFA8 over #F71F9F)",
-          "rim": {"name": "Spearmint", "hue": 158, "sat": 0.217, "L": [0.75, 0.95], "rho": 0.035, "swatch": "#3AF19E"},
-          "face": {"name": "Hot Pink", "hue": 352, "sat": 0.395, "L": [0.6, 0.7], "rho": 0.035, "swatch": "#F71F9F"}
+          "rim": {"name": "Spearmint", "hue": 156, "sat": 0.213, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#49E895"},
+          "face": {"name": "Hot Pink", "hue": 333, "sat": 0.382, "L": [0.35, 0.39], "rho": 0.033, "swatch": "#68165F"}
         },
         "blue": {
           "inspiration": "as a tritan sees it: #00A3B6 over #00322A (painted #1A85FF over #003305)",
-          "rim": {"name": "Azure", "hue": 256, "sat": 0.322, "L": [0.47, 0.67], "rho": 0.035, "swatch": "#1574E0"},
-          "face": {"name": "Forest", "hue": 144, "sat": 0.324, "L": [0.23, 0.33], "rho": 0.035, "swatch": "#003305"}
+          "rim": {"name": "Azure", "hue": 253, "sat": 0.272, "L": [0.48, 0.68], "rho": 0.035, "swatch": "#257BD4"},
+          "face": {"name": "Forest", "hue": 141, "sat": 0.315, "L": [0.23, 0.33], "rho": 0.035, "swatch": "#083302"}
         },
         "ruby": {
           "inspiration": "as a tritan sees it: #9B6A9B over #006866 (painted #AB30FF over #2C656A)",
-          "rim": {"name": "Violet", "hue": 306, "sat": 0.463, "L": [0.5, 0.7], "rho": 0.035, "swatch": "#AB30FF"},
-          "face": {"name": "Teal", "hue": 203, "sat": 0.126, "L": [0.42, 0.52], "rho": 0.035, "swatch": "#2C656A"}
+          "rim": {"name": "Violet", "hue": 317, "sat": 0.456, "L": [0.5, 0.65], "rho": 0.035, "swatch": "#B320DB"},
+          "face": {"name": "Teal", "hue": 214, "sat": 0.143, "L": [0.35, 0.39], "rho": 0.035, "swatch": "#174751"}
         }
       }
     },
@@ -328,10 +362,11 @@
       "name": "Achromatopsia",
       "track": "free",
       "proposed": "2026-11-05",
-      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB, and the rims keep rule 4 as swatch and light.",
       "vision": "achromat",
-      "vision_margin": 0.09,
-      "summary": "Made for eyes that see no colour at all. Every domain has its own brightness, rim and face, so a domain is told apart by how bright its rim is and how bright its body is. Because it never leans on hue, it is also the one set every vision can read (at least 4.6 steps for each).",
+      "vision_margin": 0.04,
+      "name_margin": -0.045,
+      "summary": "Made for eyes that see no colour at all. Every domain has its own brightness, rim and face, so a domain is told apart by how bright its rim is and how bright its body is. Because it leans on lightness, it is also the set every vision reads best (at least 1.9 steps for each viewer, where every other set falls to 0.7 or less for one of them). Re-balanced 2026-11-10 under its viewer's own rules 4 and 6: its rims come as near their own family's colours as an achromat's eyes allow (weakest margin -0.045: the game's own colours of some families look alike to them, so no set can do better); its domains stay 2.2 JND apart for its viewer, HUD included (they were 2.2 JND apart on the HUD before).",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -339,33 +374,33 @@
       "domains": {
         "fire": {
           "inspiration": "as no colour vision sees it: #818181 over #040404 (painted #FF1139 over #030311)",
-          "rim": {"name": "Red", "hue": 23, "sat": 0.396, "L": [0.38, 0.58], "rho": 0.035, "swatch": "#B00824"},
-          "face": {"name": "Ink", "hue": 278, "sat": 0.331, "L": [0.06, 0.16], "rho": 0.035, "swatch": "#030311"}
+          "rim": {"name": "Red", "hue": 23, "sat": 0.402, "L": [0.39, 0.59], "rho": 0.034, "swatch": "#B60224"},
+          "face": {"name": "Ink", "hue": 276, "sat": 0.39, "L": [0.08, 0.12], "rho": 0.025, "swatch": "#020210"}
         },
         "gold": {
           "inspiration": "as no colour vision sees it: #B9B9B9 over #5A5A5A (painted #FFA628 over #7B4484)",
-          "rim": {"name": "Amber", "hue": 69, "sat": 0.205, "L": [0.68, 0.88], "rho": 0.035, "swatch": "#F8A227"},
-          "face": {"name": "Plum", "hue": 322, "sat": 0.243, "L": [0.43, 0.53], "rho": 0.035, "swatch": "#7B4484"}
+          "rim": {"name": "Amber", "hue": 70, "sat": 0.165, "L": [0.75, 0.84], "rho": 0.031, "swatch": "#F2AC55"},
+          "face": {"name": "Plum", "hue": 296, "sat": 0.274, "L": [0.19, 0.28], "rho": 0.031, "swatch": "#211639"}
         },
         "lime": {
           "inspiration": "as no colour vision sees it: #F6F6F6 over #353535 (painted #FBFF08 over #30334C)",
-          "rim": {"name": "Lemon", "hue": 111, "sat": 0.219, "L": [0.6, 0.8], "rho": 0.035, "swatch": "#A3A603"},
-          "face": {"name": "Slate", "hue": 278, "sat": 0.132, "L": [0.28, 0.38], "rho": 0.035, "swatch": "#30334C"}
+          "rim": {"name": "Lemon", "hue": 111, "sat": 0.219, "L": [0.61, 0.77], "rho": 0.035, "swatch": "#A0A303"},
+          "face": {"name": "Slate", "hue": 270, "sat": 0.262, "L": [0.36, 0.4], "rho": 0.035, "swatch": "#2E3D77"}
         },
         "jade": {
           "inspiration": "as no colour vision sees it: #D7D7D7 over #A0A0A0 (painted #6AE8FF over #DE8798)",
-          "rim": {"name": "Ice Cyan", "hue": 211, "sat": 0.133, "L": [0.74, 0.94], "rho": 0.035, "swatch": "#65DEF4"},
-          "face": {"name": "Rose", "hue": 8, "sat": 0.15, "L": [0.67, 0.77], "rho": 0.035, "swatch": "#DE8798"}
+          "rim": {"name": "Ice Cyan", "hue": 215, "sat": 0.116, "L": [0.73, 0.93], "rho": 0.035, "swatch": "#77D8EE"},
+          "face": {"name": "Rose", "hue": 18, "sat": 0.22, "L": [0.18, 0.38], "rho": 0.026, "swatch": "#421B1D"}
         },
         "blue": {
           "inspiration": "as no colour vision sees it: #656565 over #191919 (painted #254DFF over #081E03)",
-          "rim": {"name": "Ultramarine", "hue": 266, "sat": 0.5, "L": [0.3, 0.5], "rho": 0.035, "swatch": "#1633B1"},
-          "face": {"name": "Forest", "hue": 139, "sat": 0.276, "L": [0.16, 0.26], "rho": 0.035, "swatch": "#081E03"}
+          "rim": {"name": "Ultramarine", "hue": 271, "sat": 0.569, "L": [0.28, 0.48], "rho": 0.029, "swatch": "#241FB2"},
+          "face": {"name": "Forest", "hue": 139, "sat": 0.273, "L": [0.16, 0.2], "rho": 0.008, "swatch": "#051602"}
         },
         "ruby": {
           "inspiration": "as no colour vision sees it: #9D9D9D over #757575 (painted #FF56E7 over #148563)",
-          "rim": {"name": "Flamingo", "hue": 334, "sat": 0.348, "L": [0.6, 0.8], "rho": 0.035, "swatch": "#F251DB"},
-          "face": {"name": "Viridian", "hue": 166, "sat": 0.198, "L": [0.5, 0.6], "rho": 0.035, "swatch": "#148563"}
+          "rim": {"name": "Flamingo", "hue": 334, "sat": 0.326, "L": [0.66, 0.79], "rho": 0.034, "swatch": "#F85EE2"},
+          "face": {"name": "Viridian", "hue": 175, "sat": 0.181, "L": [0.27, 0.36], "rho": 0.017, "swatch": "#043B30"}
         }
       }
     },
@@ -373,10 +408,10 @@
       "name": "Low Vision",
       "track": "free",
       "proposed": "2026-11-05",
-      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under rules 1-4 and the asset writer's field check)",
+      "by": "Claude, asked by Garrett for a set optimised so the domains communicate to the player, then one per form of colour blindness or visual impairment; found by search (rule 5's measure, maximised under the other rules and the asset writer's field check). Re-balanced 2026-11-10: rule 5 now also measures the HUD, which reads the rims' numbers as sRGB, and the rims keep rule 4 as swatch and light.",
       "vision": "low_vision",
-      "vision_margin": 0.13,
-      "summary": "Made for low vision and cataract (reduced contrast sensitivity, a yellowed lens): bright rims over faces at least 0.4 darker, so a prism's edges read through blur, and the domains apart in brightness first and hue second.",
+      "vision_margin": 0.095,
+      "summary": "Made for low vision and cataract (reduced contrast sensitivity, a yellowed lens): bright rims over faces at least 0.4 darker, so a prism's edges read through blur, and the domains apart in brightness first and hue second. Re-balanced 2026-11-10 under its viewer's own rules 4 and 6: every rim, as light and on the HUD, and every face looks more like its own family's colours than any other's as low vision sees them; its domains stay 5.0 JND apart for its viewer, HUD included (they were 5.0 JND apart on the HUD before).",
       "margin": 0.05,
       "pigment_gap": 0.05,
       "min_hue_contrast": 90,
@@ -384,41 +419,216 @@
       "domains": {
         "fire": {
           "inspiration": "as low vision sees it: #D1826C over #1B1531 (painted #FF5B2D over #1E0846)",
-          "rim": {"name": "Flame", "hue": 36, "sat": 0.303, "L": [0.57, 0.77], "rho": 0.035, "swatch": "#F8592B"},
-          "face": {"name": "Midnight", "hue": 292, "sat": 0.476, "L": [0.17, 0.27], "rho": 0.035, "swatch": "#1E0846"}
+          "rim": {"name": "Flame", "hue": 18, "sat": 0.335, "L": [0.56, 0.75], "rho": 0.035, "swatch": "#FA405B"},
+          "face": {"name": "Midnight", "hue": 274, "sat": 0.498, "L": [0.14, 0.24], "rho": 0.035, "swatch": "#0A093D"}
         },
         "gold": {
           "inspiration": "as low vision sees it: #E1B788 over #50365C (painted #FFAC38 over #5D2374)",
-          "rim": {"name": "Marigold", "hue": 70, "sat": 0.194, "L": [0.68, 0.88], "rho": 0.035, "swatch": "#F4A435"},
-          "face": {"name": "Plum", "hue": 315, "sat": 0.366, "L": [0.33, 0.43], "rho": 0.035, "swatch": "#5D2374"}
+          "rim": {"name": "Marigold", "hue": 75, "sat": 0.16, "L": [0.7, 0.93], "rho": 0.024, "swatch": "#F4B659"},
+          "face": {"name": "Plum", "hue": 308, "sat": 0.415, "L": [0.26, 0.31], "rho": 0.035, "swatch": "#3A1156"}
         },
         "lime": {
           "inspiration": "as low vision sees it: #F8F9A8 over #41628B (painted #FFFD20 over #045FB4)",
-          "rim": {"name": "Lemon", "hue": 109, "sat": 0.212, "L": [0.79, 0.99], "rho": 0.035, "swatch": "#E6E31C"},
-          "face": {"name": "Cobalt", "hue": 254, "sat": 0.314, "L": [0.44, 0.54], "rho": 0.035, "swatch": "#045FB4"}
+          "rim": {"name": "Lemon", "hue": 109, "sat": 0.213, "L": [0.8, 0.97], "rho": 0.03, "swatch": "#E4E218"},
+          "face": {"name": "Cobalt", "hue": 254, "sat": 0.313, "L": [0.35, 0.39], "rho": 0.035, "swatch": "#023F7B"}
         },
         "jade": {
           "inspiration": "as low vision sees it: #B7EAEF over #904962 (painted #81F4FF over #B30761)",
-          "rim": {"name": "Ice", "hue": 204, "sat": 0.117, "L": [0.8, 1.0], "rho": 0.035, "swatch": "#80F3FE"},
-          "face": {"name": "Raspberry", "hue": 359, "sat": 0.4, "L": [0.45, 0.55], "rho": 0.035, "swatch": "#B30761"}
+          "rim": {"name": "Ice", "hue": 202, "sat": 0.117, "L": [0.8, 1.0], "rho": 0.035, "swatch": "#80F3FC"},
+          "face": {"name": "Raspberry", "hue": 359, "sat": 0.402, "L": [0.34, 0.39], "rho": 0.028, "swatch": "#75023D"}
         },
         "blue": {
           "inspiration": "as low vision sees it: #A6AED9 over #223A20 (painted #9CA9FF over #003F03)",
-          "rim": {"name": "Lavender", "hue": 276, "sat": 0.163, "L": [0.63, 0.83], "rho": 0.035, "swatch": "#93A1F2"},
-          "face": {"name": "Forest", "hue": 143, "sat": 0.333, "L": [0.27, 0.37], "rho": 0.035, "swatch": "#003F03"}
+          "rim": {"name": "Lavender", "hue": 276, "sat": 0.151, "L": [0.63, 0.83], "rho": 0.035, "swatch": "#95A1ED"},
+          "face": {"name": "Forest", "hue": 143, "sat": 0.317, "L": [0.27, 0.37], "rho": 0.035, "swatch": "#053F07"}
         },
         "ruby": {
           "inspiration": "as low vision sees it: #D378D1 over #030403 (painted #FE14FF over #020402)",
-          "rim": {"name": "Magenta", "hue": 328, "sat": 0.452, "L": [0.51, 0.71], "rho": 0.035, "swatch": "#D20FD3"},
+          "rim": {"name": "Magenta", "hue": 328, "sat": 0.459, "L": [0.51, 0.71], "rho": 0.03, "swatch": "#D303D5"},
           "face": {"name": "Ink", "hue": 141, "sat": 0.124, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#020402"}
+        }
+      }
+    },
+    "blue_ringed_octopus": {
+      "name": "Blue-ringed Octopus",
+      "track": "free",
+      "proposed": "2026-11-10",
+      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); taken into the game 2026-11-11 (Garrett: \"the artifact lab had some great new color sets\").",
+      "summary": "An animal with three colours, stretched to six domains. Sand skin, electric-blue rings, black outlines: the rings give Blue, their iridescence gives Jade and Ruby, the alarm flush gives Fire, the tide-pool algae gives Lime. Gold is the skin itself, one paint in light and shadow; every other face is the black of the outlines and the deep water, quiet.",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "the alarm flush: the skin darkens to rust when it warns, over mud",
+          "rim": {"name": "Alarm Rust", "hue": 36, "sat": 0.3, "L": [0.5, 0.7], "rho": 0.03, "swatch": "#D54C25"},
+          "face": {"name": "Mud", "hue": 52, "sat": 0.16, "L": [0.21, 0.36], "rho": 0.016, "swatch": "#3C2314"}
+        },
+        "gold": {
+          "inspiration": "its sand skin, one paint: lit on the rim, in shadow on the face",
+          "rim": {"name": "Sand", "hue": 88, "sat": 0.14, "L": [0.8, 0.96], "rho": 0.025, "swatch": "#F9D373"},
+          "face": {"name": "Ochre Skin", "hue": 89, "sat": 0.14, "L": [0.5, 0.66], "rho": 0.02, "swatch": "#8E783E"}
+        },
+        "lime": {
+          "inspiration": "tide-pool algae, its own paint in deep shadow",
+          "rim": {"name": "Tide Algae", "hue": 128, "sat": 0.22, "L": [0.72, 0.9], "rho": 0.03, "swatch": "#9FD648"},
+          "face": {"name": "Kelp Shadow", "hue": 130, "sat": 0.257, "L": [0.22, 0.34], "rho": 0.02, "swatch": "#1D2F02"}
+        },
+        "jade": {
+          "inspiration": "the rings' iridescence turning teal, over the black outline",
+          "rim": {"name": "Ring Sheen", "hue": 195, "sat": 0.14, "L": [0.72, 0.92], "rho": 0.03, "swatch": "#56DBDB"},
+          "face": {"name": "Ring Black", "hue": 232, "sat": 0.177, "L": [0.12, 0.28], "rho": 0.018, "swatch": "#031923"}
+        },
+        "blue": {
+          "inspiration": "the electric rings over deep water, blue on blue",
+          "rim": {"name": "Ring Blue", "hue": 258, "sat": 0.26, "L": [0.56, 0.76], "rho": 0.03, "swatch": "#4990F9"},
+          "face": {"name": "Deep Water", "hue": 262, "sat": 0.35, "L": [0.36, 0.48], "rho": 0.025, "swatch": "#1B479C"}
+        },
+        "ruby": {
+          "inspiration": "the violet flash at the edge of a ring, over a cuttle plum dark",
+          "rim": {"name": "Violet Flash", "hue": 312, "sat": 0.38, "L": [0.52, 0.7], "rho": 0.03, "swatch": "#B049E5"},
+          "face": {"name": "Cuttle Plum", "hue": 325, "sat": 0.25, "L": [0.19, 0.29], "rho": 0.022, "swatch": "#2D142F"}
+        }
+      }
+    },
+    "neon_noir": {
+      "name": "Neon Noir",
+      "track": "free",
+      "proposed": "2026-11-10",
+      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); taken into the game 2026-11-11 (Garrett: \"the artifact lab had some great new color sets\").",
+      "summary": "A film genre's palette: the rain and neon of cyberpunk cinema. Every rim is a neon tube at full strength; every face is a puddle on wet asphalt, reflecting the opposite sign across the street, all in the night (the Nocturne style). Sodium amber has to stay in Gold's window, or the HUD shows it as Fire.",
+      "style": "nocturne",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "a red neon tube over a cyan puddle",
+          "rim": {"name": "Red Neon", "hue": 28, "sat": 0.36, "L": [0.5, 0.7], "rho": 0.03, "swatch": "#E5302A"},
+          "face": {"name": "Cyan Puddle", "hue": 221, "sat": 0.179, "L": [0.22, 0.36], "rho": 0.011, "swatch": "#02313D"}
+        },
+        "gold": {
+          "inspiration": "a sodium street lamp over violet haze",
+          "rim": {"name": "Sodium Lamp", "hue": 86, "sat": 0.16, "L": [0.78, 0.96], "rho": 0.025, "swatch": "#FDCD5D"},
+          "face": {"name": "Violet Haze", "hue": 295, "sat": 0.32, "L": [0.2, 0.34], "rho": 0.025, "swatch": "#2B1B4B"}
+        },
+        "lime": {
+          "inspiration": "a toxic-green sign over a magenta puddle",
+          "rim": {"name": "Toxic Lime", "hue": 130, "sat": 0.26, "L": [0.74, 0.94], "rho": 0.03, "swatch": "#9AE521"},
+          "face": {"name": "Magenta Puddle", "hue": 342, "sat": 0.393, "L": [0.27, 0.32], "rho": 0.013, "swatch": "#4F083C"}
+        },
+        "jade": {
+          "inspiration": "a cyan sign over a brake-light puddle",
+          "rim": {"name": "Cyan Neon", "hue": 189, "sat": 0.147, "L": [0.74, 0.94], "rho": 0.03, "swatch": "#52E4DB"},
+          "face": {"name": "Brake-light Puddle", "hue": 14, "sat": 0.383, "L": [0.18, 0.32], "rho": 0.008, "swatch": "#440213"}
+        },
+        "blue": {
+          "inspiration": "an electric-blue sign over an amber puddle",
+          "rim": {"name": "Electric Blue", "hue": 262, "sat": 0.3, "L": [0.52, 0.74], "rho": 0.03, "swatch": "#4582F9"},
+          "face": {"name": "Amber Puddle", "hue": 58, "sat": 0.232, "L": [0.23, 0.36], "rho": 0.025, "swatch": "#452202"}
+        },
+        "ruby": {
+          "inspiration": "a magenta sign over a green puddle",
+          "rim": {"name": "Magenta Neon", "hue": 328, "sat": 0.4, "L": [0.56, 0.74], "rho": 0.03, "swatch": "#DC38DD"},
+          "face": {"name": "Green Puddle", "hue": 156, "sat": 0.224, "L": [0.28, 0.36], "rho": 0.023, "swatch": "#083D23"}
+        }
+      }
+    },
+    "ukiyo_e": {
+      "name": "Ukiyo-e",
+      "track": "free",
+      "proposed": "2026-11-10",
+      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); taken into the game 2026-11-11 (Garrett: \"the artifact lab had some great new color sets\").",
+      "summary": "A painting style: Edo woodblock prints. Bokashi, one pigment printed from light to dark, is the paint voice: every face is its rim's pigment printed deeper (the Photic style). Ruby is murasaki, the purple dye, because safflower crimson sits in Fire.",
+      "style": "photic",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "vermilion (shu), printed deep for the face",
+          "rim": {"name": "Vermilion", "hue": 32, "sat": 0.32, "L": [0.52, 0.7], "rho": 0.03, "swatch": "#E0452C"},
+          "face": {"name": "Vermilion, printed deep", "hue": 31, "sat": 0.32, "L": [0.28, 0.44], "rho": 0.02, "swatch": "#6D1D12"}
+        },
+        "gold": {
+          "inspiration": "gamboge yellow, printed deep",
+          "rim": {"name": "Gamboge", "hue": 88, "sat": 0.15, "L": [0.8, 0.96], "rho": 0.025, "swatch": "#FCD269"},
+          "face": {"name": "Gamboge, printed deep", "hue": 82, "sat": 0.149, "L": [0.5, 0.66], "rho": 0.02, "swatch": "#94753A"}
+        },
+        "lime": {
+          "inspiration": "young bamboo green, printed deep",
+          "rim": {"name": "Young Bamboo", "hue": 125, "sat": 0.21, "L": [0.72, 0.9], "rho": 0.025, "swatch": "#A8D349"},
+          "face": {"name": "Young Bamboo, printed deep", "hue": 126, "sat": 0.21, "L": [0.42, 0.58], "rho": 0.02, "swatch": "#546D23"}
+        },
+        "jade": {
+          "inspiration": "verdigris (rokusho), printed deep",
+          "rim": {"name": "Verdigris", "hue": 182, "sat": 0.135, "L": [0.7, 0.9], "rho": 0.025, "swatch": "#61D5C3"},
+          "face": {"name": "Verdigris, printed deep", "hue": 183, "sat": 0.135, "L": [0.4, 0.56], "rho": 0.02, "swatch": "#2C6A61"}
+        },
+        "blue": {
+          "inspiration": "Prussian blue (bero-ai), printed deep",
+          "rim": {"name": "Prussian Blue", "hue": 258, "sat": 0.22, "L": [0.5, 0.7], "rho": 0.03, "swatch": "#4B80CE"},
+          "face": {"name": "Prussian Blue, printed deep", "hue": 257, "sat": 0.22, "L": [0.24, 0.4], "rho": 0.02, "swatch": "#1A3356"}
+        },
+        "ruby": {
+          "inspiration": "murasaki purple, printed deep",
+          "rim": {"name": "Murasaki", "hue": 312, "sat": 0.38, "L": [0.52, 0.7], "rho": 0.03, "swatch": "#B049E5"},
+          "face": {"name": "Murasaki, printed deep", "hue": 311, "sat": 0.38, "L": [0.3, 0.46], "rho": 0.02, "swatch": "#5A2279"}
+        }
+      }
+    },
+    "dusk": {
+      "name": "Dusk",
+      "track": "free",
+      "proposed": "2026-11-10",
+      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); taken into the game 2026-11-11 (Garrett: \"the artifact lab had some great new color sets\").",
+      "summary": "A mood: the hush after sunset. Muted rims at the lowest chroma their families allow (Gold's window, Jade's and Lime's floors) over dusky faces in the night. Ruby is never dusty (it needs chroma 0.20), so its plum is the clearest colour in the set; the near-grey faces had to spread apart in lightness and chroma, or the band squeezes them together.",
+      "margin": 0.05,
+      "pigment_gap": 0.05,
+      "min_lightness_contrast": 0.12,
+      "domains": {
+        "fire": {
+          "inspiration": "a dusky rose over twilight slate",
+          "rim": {"name": "Dusky Rose", "hue": 20, "sat": 0.22, "L": [0.52, 0.7], "rho": 0.025, "swatch": "#C75E61"},
+          "face": {"name": "Twilight Slate", "hue": 261, "sat": 0.184, "L": [0.32, 0.36], "rho": 0.012, "swatch": "#253858"}
+        },
+        "gold": {
+          "inspiration": "the last light over a rosewood dark",
+          "rim": {"name": "Last Light", "hue": 90, "sat": 0.11, "L": [0.8, 0.96], "rho": 0.02, "swatch": "#F0D58C"},
+          "face": {"name": "Rosewood", "hue": 11, "sat": 0.126, "L": [0.33, 0.37], "rho": 0.009, "swatch": "#4F3135"}
+        },
+        "lime": {
+          "inspiration": "lichen over heather",
+          "rim": {"name": "Lichen", "hue": 125, "sat": 0.18, "L": [0.74, 0.9], "rho": 0.02, "swatch": "#AED463"},
+          "face": {"name": "Heather", "hue": 315, "sat": 0.212, "L": [0.19, 0.33], "rho": 0.009, "swatch": "#2E1B36"}
+        },
+        "jade": {
+          "inspiration": "sea mist over a dusk brown",
+          "rim": {"name": "Sea Mist", "hue": 190, "sat": 0.131, "L": [0.74, 0.92], "rho": 0.019, "swatch": "#66DED7"},
+          "face": {"name": "Dusk Brown", "hue": 52, "sat": 0.214, "L": [0.25, 0.29], "rho": 0.015, "swatch": "#3C1D08"}
+        },
+        "blue": {
+          "inspiration": "slate blue over night fog, its own grey",
+          "rim": {"name": "Slate Blue", "hue": 265, "sat": 0.1, "L": [0.62, 0.8], "rho": 0.02, "swatch": "#8CA1CF"},
+          "face": {"name": "Night Fog", "hue": 240, "sat": 0.042, "L": [0.4, 0.48], "rho": 0.02, "swatch": "#4A545C"}
+        },
+        "ruby": {
+          "inspiration": "wild plum over moss shadow",
+          "rim": {"name": "Wild Plum", "hue": 318, "sat": 0.305, "L": [0.6, 0.76], "rho": 0.025, "swatch": "#CB66E9"},
+          "face": {"name": "Moss Shadow", "hue": 146, "sat": 0.101, "L": [0.2, 0.34], "rho": 0.02, "swatch": "#1E2A1E"}
         }
       }
     }
   },
+  "examples": {},
   "open": [
     "Nocturne as the default leaves four things on Photic: vessel hull materials, rendered card art, the vessel studio's colours and the Amoebius launcher's accents (Amoebius itself reads the live palette since 2026-11-05). Its dark faces also darken the HUD shielded signal (Docs/PALETTE.md section 1).",
     "Lime as the CTA pair: DarkCTA paints about 93% of a free crystal, so a face pigment there makes free pickups read as oxblood. The Unity asset keeps the CTA lime on both halves for now; the Lime face (Oxblood) has no field.",
-    "Fire as danger: danger is a shared rim over each domain's shielded face, so Fire's own face pigment (Denim) has nowhere to go in SO_ColorSet today. The Unity asset paints Danger with the Fire rim (Strawberry) only.",
-    "The vision sets (2026-11-05) are measured on the palette's colours before bloom and ACES, with the Machado 2009 simulation at full severity (protanomaly and deuteranomaly are the milder forms of the same loss). How they look in the game, and whether the low-vision model (chromatic contrast halved) matches players with low vision, is judged by eye and by players: an editor pass per set is owed. They are picked in the Profile's colour-set rail, which now pages through the whole catalog through its three tiles."
+    "Fire as danger: danger is a shared rim over each domain's shielded face, so Fire's own face pigment (Denim) has nowhere to go in SO_ColorSet today. The Unity asset paints Danger with the Fire rim (Strawberry) only. In a light set (Nacre) the danger prism's body is pale, so its Fire rim is all that warns.",
+    "The vision sets (2026-11-05) are measured on the palette's colours before bloom and ACES, with the Machado 2009 simulation at full severity (protanomaly and deuteranomaly are the milder forms of the same loss). How they look in the game, and whether the low-vision model (chromatic contrast halved) matches players with low vision, is judged by eye and by players: an editor pass per set is owed. They are picked in the Profile's colour-set rail, which now pages through the whole catalog through its three tiles. Since 2026-11-10 rule 5 also measures the HUD's rims (the numbers read as sRGB).",
+    "The HUD, the score panels and the vessel tails read SO_ColorSet.TrailHighlightColor as sRGB, while the trail shader and ColorSetUITheme read it as light. Until one encoding is chosen, rule 4 holds every rim to both readings, which narrows Gold's rim to hue 82-96.",
+    "PhoticColorSetSO is measured, not defined: its Jade prism rim (InsideBlockColor, an azure) sits in the band between Jade and Blue (COLOR.md section 6, deferred), and its prism faces are its rims' paint in shadow. colour_sets.py --report prints it under the rules; nothing enforces them on it.",
+    "The colour-blind sets keep every rule as their viewer sees it (2026-11-10), judged with models, not people: Machado 2009 at full severity for the dichromats, Rec. 709 luminance for the achromat, half the chroma for low vision, and the six names as the truth's anchors look through those eyes. Deuteranopia (-0.021) and achromatopsia (-0.045) declare a negative name_margin: for those eyes the game's own Fire, Gold and Lime anchors (deutan) or all six (achromat) crowd one line, so the best set leaves its weakest rim slightly nearer another family's colours. A player with each vision is the only real test.",
+    "No set has been judged in the Unity editor after 2026-11-10: the stills come from colour_set_maker.py's model of the block shader and the gameplay bloom."
   ]
 }

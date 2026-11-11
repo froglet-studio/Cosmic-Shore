@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
 using UnityEngine;
@@ -753,7 +754,7 @@ namespace CosmicShore.Gameplay
         public float RideWatchdog => rideWatchdog;
         public Material PreviewMaterial => previewMaterial;
         public float PreviewWidth => previewWidth;
-        public Color PreviewColour => previewColour;
+        public Color PreviewColour => ColorTrace.Retrace(ColorTrace.World, previewColour);
         public int PreviewRingSegments => previewRingSegments;
         public bool MassHive => massHive;
         public float MassHiveSeconds => massHiveSeconds;
@@ -761,7 +762,7 @@ namespace CosmicShore.Gameplay
         public float HiveMinDistance => hiveMinDistance;
         public float HiveReach => hiveReach;
         public float HiveMarkerSize => hiveMarkerSize;
-        public Color HiveMarkerColour => hiveMarkerColour;
+        public Color HiveMarkerColour => ColorTrace.Retrace(ColorTrace.World, hiveMarkerColour);
         public HoneyguideEngineerSkill EngineerSkill => engineerSkills is { Length: > 0 }
             ? engineerSkills[Mathf.Clamp((int)engineerLevel, 0, engineerSkills.Length - 1)] : new HoneyguideEngineerSkill();
         public bool AICrewEngineers => aiCrewEngineers;
@@ -782,7 +783,7 @@ namespace CosmicShore.Gameplay
         public string PickAbilityTitle => pickAbilityTitle;
         public string MadeToastTemplate => madeToastTemplate;
         public string MadeLineTemplate => madeLineTemplate;
-        public Color DynamoLineColour => dynamoLineColour;
+        public Color DynamoLineColour => ColorTrace.Retrace(ColorTrace.Ui, dynamoLineColour);
         public string AbilityToastTemplate => abilityToastTemplate;
         public string CardDetailTemplate => cardDetailTemplate;
         public float ZipSpeed => zipSpeed;
@@ -818,7 +819,7 @@ namespace CosmicShore.Gameplay
         public FloraConfigurationSO LeftBeeHive => leftBeeHive;
         public float LeftBeeHiveBehind => leftBeeHiveBehind;
         public float StripRangeU => stripRangeU;
-        public Color HiveDangerColour => hiveDangerColour;
+        public Color HiveDangerColour => ColorTrace.Retrace(ColorTrace.Ui, hiveDangerColour);
         public HoneyguideHiveSkill HiveSkill => hiveSkills is { Length: > 0 }
             ? hiveSkills[Mathf.Clamp((int)engineerLevel, 0, hiveSkills.Length - 1)] : new HoneyguideHiveSkill();
         public string HiveTitle => hiveTitle;
@@ -853,7 +854,8 @@ namespace CosmicShore.Gameplay
         public GameDataSO GameData => gameData;
 
         /// <summary>Colour 1-3's display colour (white for anything else).</summary>
-        public Color ColourOf(int colour) => colours != null && colour >= 1 && colour <= colours.Length ? colours[colour - 1] : Color.white;
+        public Color ColourOf(int colour) => colours != null && colour >= 1 && colour <= colours.Length
+            ? ColorTrace.Retrace(ColorTrace.Ui, colours[colour - 1]) : Color.white;
 
         /// <summary>Colour 1-3's name, or empty.</summary>
         public string ColourName(int colour) => colourNames != null && colour >= 1 && colour <= colourNames.Length ? colourNames[colour - 1] : "";

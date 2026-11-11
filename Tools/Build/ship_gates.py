@@ -32,6 +32,8 @@ STATIC = [
     ('validate_project', 'Tools/CI/validate_project.py', []),
     ('conditional_compilation', 'Tools/Build/check_conditional_compilation.py', ['--root', 'Assets']),
     ('console_logging', 'Tools/Build/check_console_logging.py', []),
+    ('doc_summaries', 'Tools/Build/check_doc_summaries.py', []),
+    ('doc_summaries_self_test', 'Tools/Build/check_doc_summaries.py', ['--self-test']),
     ('fairplay_paid_content', 'Tools/Build/check_fairplay_paid_content.py', []),
     ('fairplay_paid_self_test', 'Tools/Build/check_fairplay_paid_content.py', ['--self-test']),
     ('fairplay_device_reads', 'Tools/Build/check_fairplay_device_reads.py', []),
@@ -54,6 +56,12 @@ STATIC = [
     ('approvals_self_test', 'Tools/Build/approvals.py', ['--self-test']),
     ('editor_themes', 'Tools/Build/author_editor_themes.py', ['--check']),
     ('editor_themes_self_test', 'Tools/Build/author_editor_themes.py', ['--self-test']),
+    # Every colour comes from the colour set (Garrett, 2026-11-10, LOCKED; Docs/VesselModels/COLOR_TRACE.md): every
+    # authored colour is traced, every set's values are kept apart, and every coloured texture is graded.
+    ('colour_trace', 'Tools/Build/colour_trace.py', ['--check']),
+    ('colour_trace_self_test', 'Tools/Build/colour_trace.py', ['--self-test']),
+    ('colour_grade', 'Tools/Build/colour_grade.py', ['--check']),
+    ('colour_grade_self_test', 'Tools/Build/colour_grade.py', ['--self-test']),
 ]
 # Every asset generator's drift gate, plus the two generators whose names do not end in _assets.
 GENERATOR_GLOB = 'Tools/Build/author_*_assets.py'

@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -83,7 +84,7 @@ namespace CosmicShore.Gameplay
             _window.pivot = new Vector2(0f, 1f);
 
             var frame = MakePetal("Frame", 0f);
-            frame.color = new Color(0.02f, 0.025f, 0.06f, 0.92f);
+            frame.color = ColorTrace.Retrace(ColorTrace.Ui, new Color(0.02f, 0.025f, 0.06f, 0.92f));
             _picture = MakePetal("Picture", FramePixels);
             _picture.color = Color.white;
 

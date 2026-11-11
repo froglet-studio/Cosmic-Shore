@@ -17,7 +17,13 @@
 // the trunk / root (network) shimmer and pulses, the spindle bridge over formed tubes. Earlier shaders: §12-§15.
 Shader "CosmicShore/SolitonTunnel"
 {
-    Properties { }
+    Properties
+    {
+        // The light off the wall (the glint), the sRGB encoding of the studio's (1, 0.98, 0.95): Unity reads a Color
+        // into linear, so the shader sees the studio's numbers, and the world colour trace repaints it from the worn
+        // colour set (Garrett, 2026-11-10, LOCKED: every colour comes from the colour set).
+        _MWGlintColour ("Glint", Color) = (1, 0.9911565, 0.977691562, 1)
+    }
 
     SubShader
     {
@@ -74,6 +80,7 @@ Shader "CosmicShore/SolitonTunnel"
             float4 _MWCamU;
             float4 _MWCamF;
             float4 _MWLightDir;   // xyz toward the main light, w its strength (0: no glint)
+            float4 _MWGlintColour;   // the glint's colour (the material's)
 
             // The mouths (SolitonTunnelLensPass.ScreenWells): C (x, y screen heights from the centre, y up; z depth; w the
             // mouth's world radius, the foreground margin), P (x Einstein angle thE in screen heights, y lens strength,
@@ -382,7 +389,7 @@ Shader "CosmicShore/SolitonTunnel"
                 col = lerp(col, col * lerp(float3(1.0, 1.0, 1.0), tintC * 1.25, 0.6) + tintC * 0.03, tintK * layer);
                 float3 film = lerp(float3(1.0, 1.0, 1.0), tintC, tintK);
                 col += film * (l2.w * layer + l2.x * rim);                             // the wall's glow and rim
-                col += _MWLightDir.w * l2.z * glint * float3(1.0, 0.98, 0.95);          // the light off the wall
+                col += _MWLightDir.w * l2.z * glint * _MWGlintColour.rgb;             // the light off the wall
                 return half4(col, 1.0);
             }
 

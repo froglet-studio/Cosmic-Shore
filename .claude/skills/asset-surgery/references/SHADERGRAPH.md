@@ -74,6 +74,19 @@ every other block is one object keyed by 32-hex `m_ObjectId`.
   entity path reads the SAME asset (e.g. `PrismDebris` copies
   `PrismExplosion.prefab`'s `sharedMaterial`) or you will tune a material
   nothing draws with.
+- **A colour changes colour space when it moves into a material.** A Color
+  node in HDR mode stores its value LINEAR (what the GPU gets); a material's
+  Color property is saved sRGB-encoded and Unity linearizes it on upload in a
+  Linear project, HDR or not. So replacing an HDR Color node with a Color
+  property, or an HLSL `float3` constant with a `Color` property in a
+  `.shader`, saves the sRGB ENCODING of the old value in every `.mat` that
+  uses it (`m_Colors`), or the colour draws darker and more saturated; a
+  Default-mode node already stores sRGB, so its value copies as it is. Put a
+  `PropertyNode` where the Color node was and point the node's edges at the
+  new node's object id (the slot's integer `m_Id` stays). (`cece/nifty-cray-41hy43`,
+  2026-11-11: CageGraph's nucleus blend, the black-hole lens's four glows,
+  the Soliton tunnel's glint; `colour_trace.py --check` finds a constant
+  still wired to an output.)
 - Unity reimports on pull; the in-editor validator + a shader-error check
   (`ShaderUtil.ShaderHasError`) confirm; magenta = `git checkout` the graph.
 

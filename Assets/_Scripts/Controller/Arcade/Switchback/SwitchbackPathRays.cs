@@ -66,6 +66,7 @@ namespace CosmicShore.Gameplay
         {
             if (s_material) return s_material;
             s_material = Resources.Load<Material>(MaterialResourcePath);
+            WorldColorTrace.Paint(s_material);   // loaded after the scene's repaint: born in the worn colour set
             if (!s_material && !s_warned)
             {
                 s_warned = true;

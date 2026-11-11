@@ -59,7 +59,7 @@ Shader "CosmicShore/UI/HullLit"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma target 2.0
+            #pragma target 3.0
 
             #include "UnityCG.cginc"
             #include "UnityUI.cginc"
@@ -67,6 +67,8 @@ Shader "CosmicShore/UI/HullLit"
 
             #pragma multi_compile_local _ UNITY_UI_CLIP_RECT
             #pragma multi_compile_local _ UNITY_UI_ALPHACLIP
+            #pragma multi_compile _ COSMIC_COLOR_GRADE
+            #include "../ColorGrade.cginc"   // the hull render follows the worn colour set
 
             struct appdata_t
             {
@@ -109,6 +111,7 @@ Shader "CosmicShore/UI/HullLit"
             fixed4 frag(v2f IN) : SV_Target
             {
                 half4 tex = tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd;
+                tex.rgb = COSMIC_GRADE_UI(tex.rgb);
                 float2 t = _MainTex_TexelSize.xy * _RimWidth;
                 half aN = min(
                     min(tex2D(_MainTex, IN.texcoord + float2(0, t.y)).a, tex2D(_MainTex, IN.texcoord - float2(0, t.y)).a),

@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -220,11 +221,13 @@ namespace CosmicShore.UI
         {
             bool primary = rank == GoalRank.Primary;
             _lastRank = rank;
+            // The worn colour set's chrome; the row is re-applied on every monitor tick, so a set worn mid-turn lands here.
+            var chrome = ColorTrace.Retrace(ColorTrace.Ui, chromeTint);
 
             if (icon)
             {
                 icon.sprite = glyph;
-                icon.color = chromeTint;
+                icon.color = chrome;
                 // An Image with no sprite still draws a white box, so absence has to switch it off.
                 icon.enabled = glyph != null;
                 var r = icon.rectTransform;
@@ -235,7 +238,7 @@ namespace CosmicShore.UI
             if (label)
             {
                 label.text = string.IsNullOrEmpty(title) ? string.Empty : title.ToUpperInvariant();
-                label.color = chromeTint;
+                label.color = chrome;
                 label.fontSize = primary ? primaryLabelSize : secondaryLabelSize;
             }
 
@@ -248,7 +251,7 @@ namespace CosmicShore.UI
                 // Rank sets the HUE and the rest alpha - but the row is re-applied on every
                 // monitor tick, so writing the alpha unconditionally would stomp a punch a tick
                 // after it started and the pulse would never be seen.
-                var g = glowColor;
+                var g = ColorTrace.Retrace(ColorTrace.Ui, glowColor);
                 g.a = _glowPunch != null && _glowPunch.IsActive() && _glowPunch.IsPlaying()
                     ? glow.color.a
                     : _glowRest;
@@ -277,7 +280,7 @@ namespace CosmicShore.UI
 
             _glowPunch?.Kill();
 
-            var c = glowColor;
+            var c = ColorTrace.Retrace(ColorTrace.Ui, glowColor);
             c.a = Mathf.Clamp01(Mathf.Max(glowPunchAlpha, _glowRest));
             glow.color = c;
 
@@ -308,7 +311,7 @@ namespace CosmicShore.UI
             _glowPunch = null;
             if (glow)
             {
-                var c = glowColor;
+                var c = ColorTrace.Retrace(ColorTrace.Ui, glowColor);
                 c.a = _glowRest;
                 glow.color = c;
             }
@@ -326,12 +329,12 @@ namespace CosmicShore.UI
             if (progressTrack)
             {
                 progressTrack.enabled = visible;
-                progressTrack.color = trackColor;
+                progressTrack.color = ColorTrace.Retrace(ColorTrace.Ui, trackColor);
             }
 
             if (!progressFill) return;
             progressFill.enabled = visible;
-            progressFill.color = rank == GoalRank.Primary ? PrimaryFill : secondaryFillColor;
+            progressFill.color = rank == GoalRank.Primary ? PrimaryFill : ColorTrace.Retrace(ColorTrace.Ui, secondaryFillColor);
             // The stack re-applies every row on each monitor tick with the same value, so only a
             // CHANGE travels; a fresh row (or a disabled one) lands where it is told.
             if (Mathf.Approximately(progressFill.fillAmount, amount01)) return;

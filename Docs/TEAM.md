@@ -139,8 +139,13 @@ full history, no commit, line, area owner or role moved credit from another coll
    skills (`/ship` and the rest) and the hooks.
 12. **Find your lane with `/swimlanes`, and stay out of an occupied one** (Garrett, 2026-11-08: "instead of blocking
    people because someone else worked on that area in the past, inform people that that swim lane is currently
-   occupied"). A lane is a vessel or an app-shell section someone holds in their head (the Thresher, the Voyages
-   map), never a task. `python3 .claude/skills/swimlanes/swimlanes.py` lists open lanes with obvious work on top,
+   occupied"). A lane is anything someone holds in their head that takes more than a couple of prompts and one pull
+   request to finish: a vessel (the Thresher), a game (Bloomrush), an app-shell section (the Voyages map) or a
+   mechanical system (ecology, netcode), never a task. **Everything that size gets a lane** (Caleb, 2026-11-11: "the
+   whole point of tracking them is to help us coordinate our efforts"): every vessel on the roster and every shipped
+   game card is one automatically; a shell section or system nobody's lane covers is added to
+   `.claude/skills/swimlanes/lanes.json` in the same commit that starts multi-PR work on it, and archived there once
+   it is truly closed out. Keep the list usable: add a system when work on it can collide, not for every folder. `python3 .claude/skills/swimlanes/swimlanes.py` lists open lanes with obvious work on top,
    occupied lanes under them (unmerged work pushed in the last 7 days, with who and which branch), then lanes that
    need polish, then polished ones. **An occupied lane is the one thing that stops a change** (rule 3); past work is
    never a block. Who worked in an open lane before is context to build on, and if your change re-tunes or replaces

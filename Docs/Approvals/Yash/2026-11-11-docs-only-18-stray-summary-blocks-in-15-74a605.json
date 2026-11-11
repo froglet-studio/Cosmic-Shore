@@ -1,0 +1,29 @@
+{
+  "id": "2026-11-11-docs-only-18-stray-summary-blocks-in-15-74a605",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-11T02:28:14+00:00",
+  "area": "Ecology: cells, flora and fauna (your claude/squirrel-time-upgrade-b02f6b)",
+  "summary": "Docs only: 20 stray /// <summary> blocks (19 doc comments that held two or more) in 15 ecology files now sit on the members they describe (Ark class doc onto class Ark, Cell.IntensityIndex, Fauna.IsShieldedMass, Flora.AssignLineage, SwarmTickJob.StrikeState, ...); no code line changed.",
+  "why": "Garrett decided to go ahead while the lane was occupied (2026-11-11): each stale doc told every reader the wrong thing about the member it sat on. The in-memory trial merge with claude/squirrel-time-upgrade-b02f6b is clean (no shared files).",
+  "branch": "cece/loving-volta-kkvnex",
+  "lane": "ecology",
+  "commit": "7b63c63dc",
+  "paths": [
+    "Assets/_Scripts/Controller/Environment/Ark.cs",
+    "Assets/_Scripts/Controller/Environment/Cell.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Builders/BuilderCore.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Builders/BuilderPrismWorld.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Flora.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/MandelbulbSurface.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/PrismSway.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate/SubstrateCore.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Substrate/SubstrateKernel.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFauna.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFieldCore.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmSortCore.cs",
+    "Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmTickJob.cs"
+  ]
+}

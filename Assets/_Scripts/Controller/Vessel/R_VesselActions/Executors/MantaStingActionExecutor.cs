@@ -342,6 +342,7 @@ namespace CosmicShore.Gameplay
             };
         }
 
+        // CHARGE: the planter's Charge at this plant sets how long the WHOLE board's fuse now runs.
         void ResetFuse()
         {
             _fuseLength = config ? config.FuseSecondsFor(_status) : 20f;

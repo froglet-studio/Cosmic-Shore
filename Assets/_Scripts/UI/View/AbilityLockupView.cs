@@ -1222,10 +1222,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Lights the CARD on a press. This is the totem's answer to the per-vessel circular glow,
-        /// which was authored to sit behind a round button and reads as a foreign shape now.
-        /// </summary>
-        /// <summary>
         /// The fleet's ONE recharge readout: a radial veil swept over the ability plate while an
         /// ability is recovering, ending in a one-shot flash the moment it comes back.
         /// <paramref name="remaining01"/> is 1 the instant the ability fires and 0 when it is ready.
@@ -1622,6 +1618,10 @@ namespace CosmicShore.UI
             return glyphSet;
         }
 
+        /// <summary>
+        /// Lights the CARD on a press. This is the totem's answer to the per-vessel circular glow,
+        /// which was authored to sit behind a round button and reads as a foreign shape now.
+        /// </summary>
         public void PlayPressFlash(Element element) => SetPressed(element, true, releaseImmediately: true);
 
         /// <summary>

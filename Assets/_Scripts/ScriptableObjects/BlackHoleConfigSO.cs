@@ -2,6 +2,15 @@ using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
 {
+    /// <summary>How holes and waves are drawn (<see cref="BlackHoleConfigSO.Look"/>). Serialized: values are stable.</summary>
+    public enum HoleLook
+    {
+        /// <summary>Cheap local meshes, no space warping (BlackHoleGlow.shader). The default.</summary>
+        Mobile = 0,
+        /// <summary>The Vessel Studio's full-screen lens, spaghettification and waves (BlackHoleLens.shader).</summary>
+        StudioLens = 1,
+    }
+
     /// <summary>
     /// Tuning for BLACK HOLES (<c>BlackHoleRegistry</c>, <c>BlackHoleGravityField</c>,
     /// <c>BlackHoleWarp</c>, <c>PrismGravityWarp.hlsl</c>, Docs/BLACK_HOLE.md).
@@ -22,15 +31,6 @@ namespace CosmicShore.ScriptableObjects
     /// Place the asset at <c>Resources/BlackHoleConfig</c>. With no asset the defaults below
     /// apply, so a spawn works with nothing authored.
     /// </summary>
-    /// <summary>How holes and waves are drawn (<see cref="BlackHoleConfigSO.Look"/>). Serialized: values are stable.</summary>
-    public enum HoleLook
-    {
-        /// <summary>Cheap local meshes, no space warping (BlackHoleGlow.shader). The default.</summary>
-        Mobile = 0,
-        /// <summary>The Vessel Studio's full-screen lens, spaghettification and waves (BlackHoleLens.shader).</summary>
-        StudioLens = 1,
-    }
-
     [CreateAssetMenu(fileName = "BlackHoleConfig", menuName = "ScriptableObjects/Environment/Black Hole Config")]
     public class BlackHoleConfigSO : ScriptableObject
     {

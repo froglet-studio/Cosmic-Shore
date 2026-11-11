@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,6 +26,8 @@ namespace CosmicShore.UI
         const float LowerBottom = 200f, LowerHeight = 102f, LowerWidth = 560f;
         const float TitleSpacing = 5f, ObjectiveSpacing = 14f, LowerTitleSpacing = 6f, LowerLineSpacing = 16f;
 
+        // As authored (Photic); every use reads the worn colour set's value (ColorTrace.Retrace). The overlay is kept
+        // between matches: a set worn later repaints its graphics on screen (UIThemeLive).
         static readonly Color BarColour = new(0f, 0.008f, 0.059f, 1f);
         static readonly Color FrameColour = new(0.169f, 0.196f, 0.4f, 1f);
         static readonly Color GlassColour = new(0.012f, 0.027f, 0.133f, 0.95f);
@@ -59,9 +62,9 @@ namespace CosmicShore.UI
 
             _flash = MakeImage(transform, "Flash", Color.white);
             Stretch(_flash.rectTransform);
-            _top = MakeImage(transform, "LetterboxTop", BarColour).rectTransform;
+            _top = MakeImage(transform, "LetterboxTop", ColorTrace.Retrace(ColorTrace.Ui, BarColour)).rectTransform;
             Bar(_top, top: true);
-            _bottom = MakeImage(transform, "LetterboxBottom", BarColour).rectTransform;
+            _bottom = MakeImage(transform, "LetterboxBottom", ColorTrace.Retrace(ColorTrace.Ui, BarColour)).rectTransform;
             Bar(_bottom, top: false);
 
             // The title rises out of its own box, so it never slides over the frame below it.
@@ -76,18 +79,18 @@ namespace CosmicShore.UI
             Stretch(_titleRect);
 
             _tagline = MakeText(transform, "Tagline", detail, style ? style.TaglineFontSize : 26f, FontStyles.Normal,
-                                TextAlignmentOptions.TopLeft, TaglineColour);
+                                TextAlignmentOptions.TopLeft, ColorTrace.Retrace(ColorTrace.Ui, TaglineColour));
             _taglineRect = _tagline.rectTransform;
             Place(_taglineRect, Vector2.zero, new Vector2(Column, TaglineBottom), new Vector2(TitleWidth, TaglineHeight));
 
             // The objective in its chip: a frame, the glass inside it, the words; as wide as the words.
-            var chip = MakeImage(transform, "Objective", FrameColour);
+            var chip = MakeImage(transform, "Objective", ColorTrace.Retrace(ColorTrace.Ui, FrameColour));
             _objectiveRect = chip.rectTransform;
             Place(_objectiveRect, Vector2.zero, new Vector2(Column, ObjectiveBottom), new Vector2(0f, ObjectiveHeight));
             Row(chip.gameObject, new RectOffset(1, 1, 1, 1));
             chip.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
             _objectiveGroup = chip.gameObject.AddComponent<CanvasGroup>();
-            var glass = MakeImage(chip.transform, "Glass", GlassColour);
+            var glass = MakeImage(chip.transform, "Glass", ColorTrace.Retrace(ColorTrace.Ui, GlassColour));
             Row(glass.gameObject, new RectOffset(18, 22, 0, 0));
             _objective = MakeText(glass.transform, "Text", detail, style ? style.ObjectiveFontSize : 15f, FontStyles.UpperCase,
                                   TextAlignmentOptions.Left, Color.white);
@@ -96,11 +99,11 @@ namespace CosmicShore.UI
             _objective.rectTransform.sizeDelta = new Vector2(0f, ObjectiveHeight - 2f);
 
             // The lower third: a framed panel at the right margin, a bar in the pilot's colour on its left edge.
-            var lower = MakeImage(transform, "LowerThird", FrameColour);
+            var lower = MakeImage(transform, "LowerThird", ColorTrace.Retrace(ColorTrace.Ui, FrameColour));
             _lowerRect = lower.rectTransform;
             Place(_lowerRect, new Vector2(1f, 0f), new Vector2(-Column, LowerBottom), new Vector2(LowerWidth, LowerHeight));
             _lowerGroup = lower.gameObject.AddComponent<CanvasGroup>();
-            var lowerGlass = MakeImage(lower.transform, "Glass", GlassColour);
+            var lowerGlass = MakeImage(lower.transform, "Glass", ColorTrace.Retrace(ColorTrace.Ui, GlassColour));
             Inset(lowerGlass.rectTransform, 1f);
             _lowerBar = MakeImage(lower.transform, "Bar", accent);
             var bar = _lowerBar.rectTransform;

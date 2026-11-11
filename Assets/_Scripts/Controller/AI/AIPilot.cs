@@ -158,9 +158,6 @@ namespace CosmicShore.Gameplay
                  "instead; if it is the only one, the pilot keeps it and just re-attacks.")]
         [SerializeField, Min(0f)] float orbitAbandonSeconds = 5f;
 
-        /// <summary>
-        /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
-        /// </summary>
         /// <summary>The mode this pilot races in, once its game data is known (a hull's drive reads its mode's tuning).</summary>
         public bool TryGetGameMode(out GameModes mode)
         {
@@ -168,6 +165,9 @@ namespace CosmicShore.Gameplay
             return gameData != null;
         }
 
+        /// <summary>
+        /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
+        /// </summary>
         public void ConfigureForGameMode(GameDataSO gameDataRef, bool shouldSeekPlayers, float skill)
         {
             gameData = gameDataRef;
@@ -1657,7 +1657,6 @@ namespace CosmicShore.Gameplay
             return Mathf.Max(Mathf.Abs(_inputStatus.XSum), Mathf.Abs(_inputStatus.YSum));
         }
 
-        /// <summary>Hold the line: no turn input this frame, throttle untouched.</summary>
         /// <summary>Scale the three steering axes down together so their sum stays at or under
         /// <paramref name="limit"/>: the same direction of turn, gentler.</summary>
         void LimitRotation(float limit)
@@ -1670,6 +1669,7 @@ namespace CosmicShore.Gameplay
             _inputStatus.YDiff *= k;
         }
 
+        /// <summary>Hold the line: no turn input this frame, throttle untouched.</summary>
         void CentreStick()
         {
             if (VesselStatus.IsSingleStickControls)

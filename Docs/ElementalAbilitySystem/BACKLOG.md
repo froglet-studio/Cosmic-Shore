@@ -593,7 +593,7 @@ measurement attached is worse than no row.
   To measure: author a throwaway new SO type + asset by script, have a human pull it and select the
   asset before entering play mode, and record what the inspector says. *Report, not a fix.*
 
-- **Two pre-existing orphaned doc comments** (a `/// </summary>` immediately followed by
+- ~~**Two pre-existing orphaned doc comments**~~ **RESOLVED 2026-11-11** (`f484ff49bd`, `cece/loving-volta-kkvnex`): the `SweepCrystals` doc sits on `SweepCrystals`, the `CSLogChannel` note on the enum; `Tools/Build/check_doc_summaries.py`, a `/ship` gate since then, fails on any such stack under `Assets/`. Was: (a `/// </summary>` immediately followed by
   `/// <summary>`, both present at merge base `2cf25d8e`): `ExplosionImpactor.cs` above
   `SweptCylinder` (the `SweepCrystals` doc stacked on the narrowphase struct's) and `CSDebug.cs:40`
   (the `CSLogChannel` usage note stacked on `CSLogChannelLabelAttribute`'s). Move each down onto

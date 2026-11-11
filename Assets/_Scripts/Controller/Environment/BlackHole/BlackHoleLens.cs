@@ -71,6 +71,7 @@ namespace CosmicShore.Gameplay
                         CSDebug.LogWarning($"[BlackHole] The lens cannot draw: {reason}. Holes draw as plain black spheres.");
                         s_material = null;
                     }
+                    WorldColorTrace.Paint(s_material);   // loaded after the scene's repaint: born in the worn colour set
                     s_materialResolved = true;
                 }
                 return s_material;

@@ -92,12 +92,6 @@ namespace CosmicShore.Gameplay
         /// <summary>The sector pen's soft width, in cosine: the pull ramps from 0 at SectorCos + this to full at the edge.</summary>
         public const float PenSectorSoft = 0.1f;
 
-        /// <summary>
-        /// The pen's pull at <paramref name="beyond"/> u past its edge (negative = inside): ramps 0 -> 2 over the soft width
-        /// inside the edge, then on to 6 over two soft widths past it (round 11-14). Capped at 2, a lurker's flee or a
-        /// mobber's dive outweighed it and carried them 20-60 u out of their band; past the edge the pen now outweighs any
-        /// one drive, so it bends a chase back rather than walling it.
-        /// </summary>
         /// <summary>How far inside its band's edges an agent's SEAT (home) stands: two soft widths (the pen's ramp), at most a
         /// quarter of the band (round 11-14, SubstrateCore.InPen).</summary>
         public static float SeatMargin(float inner, float outer)
@@ -106,6 +100,12 @@ namespace CosmicShore.Gameplay
             return KernelMath.Min(2f * 0.1f * KernelMath.Max(w, 50f), 0.25f * w);
         }
 
+        /// <summary>
+        /// The pen's pull at <paramref name="beyond"/> u past its edge (negative = inside): ramps 0 -> 2 over the soft width
+        /// inside the edge, then on to 6 over two soft widths past it (round 11-14). Capped at 2, a lurker's flee or a
+        /// mobber's dive outweighed it and carried them 20-60 u out of their band; past the edge the pen now outweighs any
+        /// one drive, so it bends a chase back rather than walling it.
+        /// </summary>
         public static float PenWeight(float beyond, float soft) =>
             Clamp((beyond + soft) / soft, 0f, 1f) * 2f + Clamp(beyond / soft, 0f, 2f) * 2f;
 
