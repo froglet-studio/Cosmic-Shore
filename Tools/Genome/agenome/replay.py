@@ -4,9 +4,11 @@
 The camera's Unity quaternion (x, y, z, w) gives right/up/forward in Unity world axes (left-handed, +z forward); the
 renderer only needs the three vectors. inst is filled by a builder (inst_fn(session, fi) -> instance lists), or empty.
 """
+import gzip
 import json
 import math
 import os
+import subprocess
 
 import numpy as np
 
@@ -19,18 +21,41 @@ def quat_axes(q):
     return R[:, 0], R[:, 1], R[:, 2]
 
 
+def read_jsonl(sdir, name):
+    """Lines of <name>.jsonl or <name>.jsonl.gz (the recorder repacks key files gzipped; targets/tools/load.py)."""
+    p = os.path.join(sdir, name + ".jsonl")
+    with (open(p) if os.path.exists(p) else gzip.open(p + ".gz", "rt")) as f:
+        for l in f:
+            if l.strip():
+                yield json.loads(l)
+
+
+def has_jsonl(sdir, name):
+    p = os.path.join(sdir, name + ".jsonl")
+    return os.path.exists(p) or os.path.exists(p + ".gz")
+
+
+def read_frames(sdir, variant="_nohud"):
+    """uint8 [T,144,256,3]; frames_144<variant>.npy, or the lossless .mkv the recorder repacks it to."""
+    base = os.path.join(sdir, f"frames_144{variant}")
+    if os.path.exists(base + ".npy"):
+        return np.load(base + ".npy", mmap_mode="r")
+    raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", base + ".mkv", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                         capture_output=True, check=True).stdout
+    return np.frombuffer(raw, np.uint8).reshape(-1, 144, 256, 3)
+
+
 class Session:
     def __init__(self, path, inst_fn=None, frames=None):
         self.path = path
         self.meta = json.load(open(os.path.join(path, "meta.json")))
-        self.state = [json.loads(l) for l in open(os.path.join(path, "state.jsonl"))]
+        self.state = list(read_jsonl(path, "state"))
         self.inst_fn = inst_fn
         self.pick = list(frames) if frames is not None else list(range(len(self.state)))
 
     def real(self, variant=""):
         """uint8 [N,144,256,3] of the picked frames; variant "", "_nohud" or "_sky"."""
-        a = np.load(os.path.join(self.path, f"frames_144{variant}.npy"), mmap_mode="r")
-        return np.asarray(a[self.pick])
+        return np.asarray(read_frames(self.path, variant)[self.pick])
 
     def frame(self, fi):
         st = self.state[self.pick[fi]]
@@ -62,8 +87,7 @@ class PrismWorld:
 
     def __init__(self, session, palette=None, power=4.0, shield_mix=0.5):
         self.keys = {}
-        for l in open(os.path.join(session.path, "prisms_key.jsonl")):
-            d = json.loads(l)
+        for d in read_jsonl(session.path, "prisms_key"):
             p = d["prisms"]
             self.keys[d["frame"]] = np.array(p, np.float64).reshape(-1, len(p[0]) if p else 13)
         self.kf = np.array(sorted(self.keys))
@@ -80,6 +104,8 @@ class PrismWorld:
             return out
         R = quat_mats(a[:, 4:8])
         S = a[:, 8:11]
+        if a.shape[1] >= 28:  # drawn fraction per axis: a fresh prism grows in from a clock stamp in the vertex stage
+            S = S * a[:, 25:28]
         dom = a[:, 11].astype(int)
         flags = a[:, 12].astype(int)
         rim = np.array([self.palette.get(d, self.palette[3])[0] for d in dom])
@@ -227,9 +253,7 @@ class ExtrasWorld:
 
     def __init__(self, session, gain=1.0, mesh_gain=1.0, soft=("DistortedFlare",)):
         self.keys = {}
-        p = os.path.join(session.path, "extras_key.jsonl")
-        for l in open(p):
-            d = json.loads(l)
+        for d in read_jsonl(session.path, "extras_key"):
             self.keys[d["frame"]] = d
         self.kf = np.array(sorted(self.keys))
         self.gain, self.mesh_gain, self.soft = gain, mesh_gain, soft
