@@ -70,16 +70,16 @@
    "name": "Ivelia Starreach",
    "file": "Docs/Pilots/art/scenes/ZODIAC.jpg",
    "size": [1536, 864],
-   "close": [650, 0, 990, 340],
-   "side": "centre",
+   "close": [730, 0, 1060, 330],
+   "side": "right",
    "treatment": "Travel reportage on slow slide film, dusk in a chart house",
    "source": "history: \"was apprenticed to a cartographer\" (the game's Upbringings)",
    "crops": {
     "16:9": [0, 0, 1536, 864],
-    "4:3": [244, 0, 1396, 864],
-    "1:1": [388, 0, 1252, 864],
-    "4:5": [474, 0, 1165, 864],
-    "9:16": [577, 0, 1063, 864]
+    "4:3": [319, 0, 1471, 864],
+    "1:1": [463, 0, 1327, 864],
+    "4:5": [550, 0, 1241, 864],
+    "9:16": [652, 0, 1138, 864]
    },
    "chart": "hologram of the waters"
   },
@@ -227,6 +227,22 @@
     "9:16": [297, 0, 783, 864]
    }
   },
+  "BANDIT": {
+   "name": "Rosh Rusthook",
+   "file": "Docs/Pilots/art/scenes/BANDIT.jpg",
+   "size": [1536, 864],
+   "close": [1040, 80, 1400, 440],
+   "side": "right",
+   "treatment": "Low-tide documentary at crouch height, flat silver light",
+   "source": "profession: a pirate at home in the den, the hoard laid out at the door, opening the day's take",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [845, 0, 1536, 864],
+    "9:16": [977, 0, 1463, 864]
+   }
+  },
   "NEEDLE": {
    "name": "Ilia Silvergate",
    "file": "Docs/Pilots/art/scenes/NEEDLE.jpg",
@@ -260,6 +276,86 @@
     "9:16": [337, 0, 823, 864]
    }
   },
+  "FLUME": {
+   "name": "Ekora Hollowbrook",
+   "file": "Docs/Pilots/art/scenes/FLUME.jpg",
+   "size": [1536, 864],
+   "close": [230, 10, 530, 310],
+   "side": "left",
+   "treatment": "Split-level waterline shot, half above and half below",
+   "source": "history: \"grew up on a salvage barge\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [0, 0, 864, 864],
+    "4:5": [34, 0, 725, 864],
+    "9:16": [137, 0, 623, 864]
+   }
+  },
+  "Astrofoil": {
+   "name": "Astrofoil",
+   "file": "Docs/Pilots/art/scenes/Astrofoil.jpg",
+   "size": [1536, 864],
+   "close": [520, 20, 900, 400],
+   "side": "centre",
+   "treatment": "Climbing photograph from the anchor above, looking down the wall",
+   "source": "profession: an explorer goes past the last fixed marker, and is pleased to be caught at it",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [134, 0, 1286, 864],
+    "1:1": [278, 0, 1142, 864],
+    "4:5": [364, 0, 1055, 864],
+    "9:16": [467, 0, 953, 864]
+   }
+  },
+  "Bushy": {
+   "name": "Bushy",
+   "file": "Docs/Pilots/art/scenes/Bushy.jpg",
+   "size": [1536, 864],
+   "close": [300, 10, 600, 310],
+   "side": "left",
+   "treatment": "Harvest reportage into the sun, backlit dust at golden hour",
+   "source": "profession: a gatherer winnows the day's seed on the hill floor, and the birds get the last of each basket",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [18, 0, 882, 864],
+    "4:5": [104, 0, 795, 864],
+    "9:16": [207, 0, 693, 864]
+   }
+  },
+  "Comet": {
+   "name": "Comet",
+   "file": "Docs/Pilots/art/scenes/Comet.jpg",
+   "size": [1536, 864],
+   "close": [600, 60, 920, 380],
+   "side": "centre",
+   "treatment": "Night sports-desk photograph after the event, floodlights still on",
+   "source": "want: \"a rematch\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [184, 0, 1336, 864],
+    "1:1": [328, 0, 1192, 864],
+    "4:5": [414, 0, 1105, 864],
+    "9:16": [517, 0, 1003, 864]
+   }
+  },
+  "Damsel": {
+   "name": "Damsel",
+   "file": "Docs/Pilots/art/scenes/Damsel.jpg",
+   "size": [1536, 864],
+   "close": [400, 0, 656, 256],
+   "side": "left",
+   "treatment": "Morning street photograph from across the quay, caught mid-sip",
+   "source": "profession: an activist, up before the dawn walk, is caught at breakfast in a wall bloom",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [96, 0, 960, 864],
+    "4:5": [182, 0, 873, 864],
+    "9:16": [285, 0, 771, 864]
+   }
+  },
   "Echo": {
    "name": "Echo",
    "file": "Docs/Pilots/art/scenes/Echo.jpg",
@@ -275,6 +371,40 @@
     "4:5": [214, 0, 905, 864],
     "9:16": [317, 0, 803, 864]
    }
+  },
+  "Flux": {
+   "name": "Flux",
+   "file": "Docs/Pilots/art/scenes/Flux.jpg",
+   "size": [1536, 864],
+   "close": [460, 20, 980, 540],
+   "side": "centre",
+   "treatment": "Cockpit portrait from the nose, lit from below by a replay",
+   "source": "profession: a racer replays the practice heat in the cockpit, looking for the ring where the time went",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [144, 0, 1296, 864],
+    "1:1": [288, 0, 1152, 864],
+    "4:5": [374, 0, 1065, 864],
+    "9:16": [477, 0, 963, 864]
+   },
+   "chart": "volume of the race"
+  },
+  "Jugger": {
+   "name": "Jugger",
+   "file": "Docs/Pilots/art/scenes/Jugger.jpg",
+   "size": [1536, 864],
+   "close": [960, 0, 1270, 310],
+   "side": "right",
+   "treatment": "65mm epic film still, deep focus, a bridge lit by its display",
+   "source": "history: \"grew up in the shadow of a dead Ark\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [770, 0, 1461, 864],
+    "9:16": [872, 0, 1358, 864]
+   },
+   "chart": "volume of the siege"
   },
   "Longshift": {
    "name": "Longshift",
@@ -293,6 +423,23 @@
    },
    "chart": "panel of the galaxy"
   },
+  "Scales": {
+   "name": "Scales",
+   "file": "Docs/Pilots/art/scenes/Scales.jpg",
+   "size": [1536, 864],
+   "close": [350, 0, 700, 350],
+   "side": "left",
+   "treatment": "Formal state-occasion photograph down the length of a bridge, soft daylight",
+   "source": "profession: a diplomat watches the first joint patrol fly under the treaty just signed",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [93, 0, 957, 864],
+    "4:5": [180, 0, 871, 864],
+    "9:16": [282, 0, 768, 864]
+   },
+   "chart": "volume of the cell"
+  },
   "Tenacious": {
    "name": "Tenacious",
    "file": "Docs/Pilots/art/scenes/Tenacious.jpg",
@@ -309,22 +456,38 @@
     "9:16": [284, 0, 770, 864]
    }
   },
+  "Trace": {
+   "name": "Trace",
+   "file": "Docs/Pilots/art/scenes/Trace.jpg",
+   "size": [1536, 864],
+   "close": [370, 10, 800, 440],
+   "side": "left",
+   "treatment": "Working photograph in a survey vessel's cabin, a display and a reading lamp",
+   "source": "profession: a researcher matches a sprig taken that day against the survey of the whole growth",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [9, 0, 1161, 864],
+    "1:1": [153, 0, 1017, 864],
+    "4:5": [240, 0, 931, 864],
+    "9:16": [342, 0, 828, 864]
+   },
+   "chart": "volume of the garden"
+  },
   "Spare05": {
    "name": "Halven Frostgate",
    "file": "Docs/Pilots/art/scenes/Spare05.jpg",
    "size": [1536, 864],
-   "close": [440, 0, 800, 360],
+   "close": [385, 0, 705, 320],
    "side": "left",
    "treatment": "Snow-light interior, large format, very still",
    "source": "hobby: \"writes letters to a sibling who never writes back\" (the game's Quirks)",
    "crops": {
     "16:9": [0, 0, 1536, 864],
-    "4:3": [44, 0, 1196, 864],
-    "1:1": [188, 0, 1052, 864],
-    "4:5": [274, 0, 965, 864],
-    "9:16": [377, 0, 863, 864]
-   },
-   "chart": "hologram of the galaxy"
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [113, 0, 977, 864],
+    "4:5": [200, 0, 891, 864],
+    "9:16": [302, 0, 788, 864]
+   }
   }
  }
 }

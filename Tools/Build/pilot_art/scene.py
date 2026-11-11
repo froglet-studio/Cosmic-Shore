@@ -26,6 +26,13 @@ So:
   * A FEW SCENES SHOW THE SEA THE PILOTS SAIL, on a chart panel or a chart of light in the place (20:22 UTC: "Make a
     few of them render the hypersea in their scene on either a panel or holographic display"): a record's `chart`,
     drawn as the game's own map draws that sea and never named (CHART_VIEWS, CHART_KINDS).
+  * AND A FEW SHOW LIVE PLAY, in a hologram with depth, on the bridge of the pilot's great ship or in a vessel
+    (21:34 UTC, on the first four: "these are all just view of the galactic scale hypersea. I want to see some where
+    the pilot's are on the bridge of the ark or in a vessel. and they are looking at a 3D holographic display (not a
+    2d hologram embedded in 3d) that 3d rendering should look like gameplay footage. prisms, trails, flora, fauna,
+    gyroid flora, crystals, cells, etc."): the kind "volume" and its PLAY_VIEWS. The pilot looks INTO it: of the
+    sheet of light in a tower room he said it "looks out of place in that scene and not aligned to his perspective",
+    so a display belongs to its place (a ship has one, a writing desk does not) and the pilot's eyes are on it.
 
 How a scene keeps the character (the painter takes words only):
 
@@ -143,29 +150,93 @@ CHART_VIEWS = {   # what the chart shows: the whole sea, or the waters round a c
                "inside a thin teal shoreline, small ring and diamond markers joined by thin pale lines, and one "
                "lime-yellow course line stepping from marker to marker"),
 }
-CHART_KINDS = {   # what the chart is shown on
+# Live play in a hologram with depth. Garrett, 2026-11-11 (21:34 UTC), on the four charts: "these are all just view
+# of the galactic scale hypersea. I want to see some where the pilot's are on the bridge of the ark or in a vessel.
+# and they are looking at a 3D holographic display (not a 2d hologram embedded in 3d) that 3d rendering should look
+# like gameplay footage. prisms, trails, flora, fauna, gyroid flora, crystals, cells, etc." So a third kind of
+# display, "volume", shows play as the game draws it (the arena pictures on the arcade cards are the reference,
+# Assets/_Graphics/ARCADE/CardBackgrounds, with Docs/Ecology/FaunaScale for the creatures): a cell is a vast clear
+# pale bubble holding indigo dark; a vessel is a tiny pale dart that lays a trail of prisms, small glowing blocks
+# evenly spaced, in its domain's colour; flora are burrs of rods and the gyroid lattice; fauna are slate spindles
+# round a cream crystal heart; crystals are lime. None of it is named, since the brief names nothing of the game's:
+# it is told by what it looks like. {own} is the pilot's own domain colour (the accent their clothes are piped in),
+# {other} and {third} the other two. A volume shows play and nothing else, and a chart never shows play.
+PLAY_VIEWS = {
+    "cell": ("the inside of one vast clear bubble with a skin as thin as a soap film, pale blue-violet, holding deep "
+             "indigo dark. Six tiny pale dart-shaped craft fly inside it, and each draws behind it a long curving "
+             "trail of small glowing blocks, hundreds to a trail, evenly spaced like beads on a string: three trails "
+             "{own}, three {other}, looping over and under each other. At the bubble's heart grows a lattice like a "
+             "sponge of smoothly curving channels, built of thousands of the same small blocks. Spiny burrs of pale "
+             "violet rods drift near it, a shoal of small skeletal creatures circles it, slate-blue with a cream "
+             "crystal at the heart of each, and bright lime crystals no bigger than peas hang here and there"),
+    "race": ("a racing course strung through deep indigo dark: a long line of thin glowing rings, pale blue-white, "
+             "set one beyond another at odd angles like hoops, and three tiny pale dart-shaped craft threading "
+             "them. Each craft draws behind it a long curving trail of small glowing blocks, hundreds to a trail, "
+             "evenly spaced like beads on a string: one trail {own}, one {other}, one {third}. Where two trails "
+             "meet, blocks have been knocked loose and tumble away. Bright lime crystals no bigger than peas hang "
+             "along the racing line, and far behind it all curves the pale skin of a vast clear bubble"),
+    "siege": ("one great dark ship, no longer than a forearm in the display, its long hull built of many thousands "
+              "of small blocks, with one round tunnel straight through it. A shoal of skeletal creatures is closing "
+              "on it from every side, each a spray of slate-blue spindles round a faceted cream crystal heart, some "
+              "finned like sharks, some round-headed like tadpoles, some rayed like brittle stars; where they have "
+              "fed, blocks are gone from the hull. Three tiny pale dart-shaped craft circle the ship, and each "
+              "draws behind it a long curving trail of small glowing {own} blocks, evenly spaced like beads on a "
+              "string, the three trails winding round the hull like a cage. Bright lime crystals no bigger than "
+              "peas hang in the dark, and far behind curves the pale skin of a vast clear bubble"),
+    "garden": ("a lattice growing through deep indigo dark like coral: a sponge of smoothly curving channels with "
+               "no straight line in it, built of many thousands of small glowing blocks, {own} at its heart and "
+               "paler at its growing edges, where new blocks are budding. Spiny burrs stand off round it, each a "
+               "ball of pale violet rods. One tiny pale dart-shaped craft flies through the lattice's channels and "
+               "draws behind it a long curving trail of small glowing blocks, evenly spaced like beads on a string. "
+               "Small skeletal creatures graze on the lattice's far side, slate-blue with a cream crystal at the "
+               "heart of each; bright lime crystals no bigger than peas hang inside the channels; and far behind "
+               "curves the pale skin of a vast clear bubble"),
+}
+PLAY_COLOURS = ("jade teal", "ruby magenta", "amber gold")   # the three accents a pilot's clothes are piped in
+CHART_KINDS = {   # what the sea or the play is shown on
     "panel": ("a flat chart panel, a sheet of dark glass in a scuffed metal frame. It shows {view}. The panel is old "
               "and dim, no brighter than a lamp turned low, its glass smeared with fingerprints."),
     "hologram": ("a chart made of faint light that hangs in the air on its own, a thin flat sheet of it. It shows "
                  "{view}. Its light is grainy and thin as smoke in a torch beam, and the place shows through it."),
+    "volume": ("a hologram with real depth: not a flat picture but a small solid-looking scene made of light, "
+               "standing in the air, with a near side and a far side like a model, the near things in front of the "
+               "far. It shows {view}. Its colours are clear and bright against its own dark, bright enough to read "
+               "a face by and no brighter, and they fall softly on whatever is near."),
 }
+CHART_SHOWS = {"panel": CHART_VIEWS, "hologram": CHART_VIEWS, "volume": PLAY_VIEWS}   # which views a kind may show
+CHART_NOUN = {"panel": "chart", "hologram": "chart", "volume": "display"}   # what a record's own words call it
 CHART_RULE = "The chart is colour, lines and plain marks only: no letter, number, label or icon anywhere on it."
+PLAY_RULE = "The display is light and shape only: no letter, number, label or icon anywhere in it."
+CHART_RULES = {"chart": CHART_RULE, "display": PLAY_RULE}
 CHART_TOKEN = "{chart}"
-CHART_MOST = 0.2   # "a few of them": at most one scene in five carries a chart
+CHART_MOST = 0.2   # "a few of them": at most one scene in five carries a display of either sort
 FINISH_BLANK = "every label, sign, crate and screen is blank"                                  # FINISH's own words,
 FINISH_CHART = "every label, sign and crate is blank, and the chart is the only screen that is lit"   # and a chart's
+FINISH_PLAY = "every label, sign and crate is blank, and the display is the only screen that is lit"
+FINISH_LIT = {"chart": FINISH_CHART, "display": FINISH_PLAY}
 
 
-def chart_of(chart):
-    """The words a record's {chart} token becomes."""
+def chart_pairs():
+    """Every (kind, view) a record may ask for."""
+    return [(kind, view) for kind, views in CHART_SHOWS.items() for view in views]
+
+
+def chart_of(chart, own=None):
+    """The words a record's {chart} token becomes. `own` is the pilot's accent colour, which a view of play gives
+    the pilot's own side's trails (the first of PLAY_COLOURS when none is given)."""
     if not (isinstance(chart, (tuple, list)) and len(chart) == 2 and chart[0] in CHART_KINDS
-            and chart[1] in CHART_VIEWS):
-        raise ValueError(f"chart={chart!r}: give (kind, view), kind one of {', '.join(CHART_KINDS)}, view one of "
-                         f"{', '.join(CHART_VIEWS)}")
-    return CHART_KINDS[chart[0]].replace("{view}", CHART_VIEWS[chart[1]]) + " " + CHART_RULE
+            and chart[1] in CHART_SHOWS[chart[0]]):
+        raise ValueError(f"chart={chart!r}: give (kind, view), one of "
+                         + ", ".join(f"({k}, {v})" for k, v in chart_pairs()))
+    kind, view = chart
+    shown = CHART_SHOWS[kind][view]
+    own = own if own in PLAY_COLOURS else PLAY_COLOURS[0]
+    other, third = [c for c in PLAY_COLOURS if c != own]
+    shown = shown.replace("{own}", own).replace("{other}", other).replace("{third}", third)
+    return CHART_KINDS[kind].replace("{view}", shown) + " " + CHART_RULES[CHART_NOUN[kind]]
 
 
-def place_of(rec):
+def place_of(rec, own=None):
     """(the record's place with its chart written in, the brief's last paragraph before the name is filled in)."""
     place, chart = rec["place"], rec.get("chart")
     if not chart:
@@ -175,7 +246,8 @@ def place_of(rec):
     if place.count(CHART_TOKEN) != 1:
         raise ValueError(f"a record with a chart writes {CHART_TOKEN} once in its place, where the display's words "
                          f"begin")
-    return place.replace(CHART_TOKEN, chart_of(chart)), FINISH.replace(FINISH_BLANK, FINISH_CHART)
+    words = chart_of(chart, own)
+    return place.replace(CHART_TOKEN, words), FINISH.replace(FINISH_BLANK, FINISH_LIT[CHART_NOUN[chart[0]]])
 
 # ---------------------------------------------------------------------------------------------------------------
 # The body below the bust's crop: decided once, here, the same for every picture of a pilot.
@@ -507,7 +579,7 @@ def compose(word, _rec=None, **over):
         carry = rec.get("carry") or CARRY[i["kind"]].replace("{bl}", bl)
         second = f" The {bl} also gives {i['second']}: {carry}."
     motif = f", and {i['motif']}" if i["motif"] else ""
-    place, finish = place_of(rec)
+    place, finish = place_of(rec, i["accent"])
     text = (
         f"{shot_of(rec, name)}\n\n"
         f"{who(i['word'], rec['seen'], rec.get('swap', ()))}\n\n"
@@ -948,6 +1020,8 @@ def sweep_prep(out, words=None, salt=None):
 PHOTO_KINDS = ("photograph", "film still")
 CHART_SEEN = re.compile(r"\b(?:galax\w*|spiral|star ?(?:map|chart|field)s?|maps?|charts?|nebula\w*|sea chart|"
                         r"navigation\w*|constellation\w*)\b", re.I)   # a reader's words for the sea on a display
+PLAY_SEEN = re.compile(r"\b(?:hologra\w*|projection\w*|projected|miniature|model|trails?|bubble|sphere|orb|"
+                       r"lattice|creatures?|craft|ships?|rings?)\b", re.I)   # and for play in a hologram with depth
 NOTHING = re.compile(r"\s*(?:no|none|nothing|not any|n/a)\b", re.I)   # a reader's "none seen" is not a report
 LISTS = ("lettering_or_symbols", "anatomy_problems", "bare_human_skin", "permanent_marks", "realism_breaks")
 
@@ -997,7 +1071,7 @@ def sweep_grade(key, result):
             score += (not kinds) * 4 + (not photo) * 3 + (figures > 1) * 5 + (s.get("face_readable") is False) * 3
             shown = "; ".join(_reported(s.get("displays")))
             if k.get("chart"):
-                saw = bool(CHART_SEEN.search(shown))
+                saw = bool((PLAY_SEEN if k["chart"][0] == "volume" else CHART_SEEN).search(shown))
                 tally["chart scenes read"] += 1
                 tally["chart scenes where the reader saw the chart"] += saw
                 score += (not saw) * 3
@@ -1108,9 +1182,9 @@ def self_test():
     for a in bust.FACE:
         if a not in BUILD:
             errors.append(f"BUILD has no line for a {a}'s body (a new face animal takes BUILD_DEFAULT until it has one)")
-    texts = ([FINISH, FRAMING, BUILD_DEFAULT, CHART_RULE, FINISH_CHART] + list(BUILD.values())
+    texts = ([FINISH, FRAMING, BUILD_DEFAULT, CHART_RULE, PLAY_RULE, FINISH_CHART, FINISH_PLAY] + list(BUILD.values())
              + list(GLOVES.values()) + list(LOWER.values()) + list(CARRY.values()) + list(CHART_VIEWS.values())
-             + list(CHART_KINDS.values()))
+             + list(PLAY_VIEWS.values()) + list(CHART_KINDS.values()))
     for t in texts:
         for gate, what in ((bust.world_name_in, "names the world"), (bust.emblem_word, "invites an emblem")):
             if gate(t):
@@ -1122,6 +1196,14 @@ def self_test():
             errors.append(f"CHART_KINDS[{kind!r}] takes its view once and ends in a full stop")
         if STYLE_WORDS.search(line):
             errors.append(f"CHART_KINDS[{kind!r}] pulls back to a painting")
+    for view, line in list(CHART_VIEWS.items()) + list(PLAY_VIEWS.items()):
+        if STYLE_WORDS.search(line):
+            errors.append(f"the view {view!r} pulls back to a painting")
+    for view, line in PLAY_VIEWS.items():
+        if "{own}" not in line:
+            errors.append(f"PLAY_VIEWS[{view!r}] gives no trail the pilot's own colour ({{own}})")
+    if set(CHART_SHOWS) != set(CHART_KINDS) or set(CHART_NOUN) != set(CHART_KINDS):
+        errors.append("CHART_SHOWS and CHART_NOUN name every kind of display, and no other")
     if not wide(FRAME) or not wide(ASK) or wide((1536, 1024)) or wide((1024, 576)):
         errors.append("wide() does not tell the wide frame from a 3:2 picture or a small one")
 
@@ -1145,9 +1227,14 @@ def self_test():
             errors.append(f"{w}: another pilot has the treatment {rec.get('treatment')!r}: each scene is its own")
         if rec.get("frame", FRAMING) and rec.get("side") not in SIDES:
             errors.append(f"{w}: the record needs side= one of {', '.join(SIDES)}")
-        if rec.get("chart") and "chart" not in (rec.get("doing", "") + rec.get("light", "")).lower():
-            errors.append(f"{w}: the scene has a chart that neither its doing nor its light mentions: a display "
+        noun = CHART_NOUN.get((rec.get("chart") or ("",))[0])
+        if rec.get("chart") and noun and noun not in (rec.get("doing", "") + rec.get("light", "")).lower():
+            errors.append(f"{w}: the scene has a {noun} that neither its doing nor its light mentions: a display "
                           f"belongs to what the pilot is doing or to the light, or it is set dressing")
+        if noun == "display" and not ("display" in rec.get("doing", "").lower()
+                                      and "display" in rec.get("light", "").lower()):
+            errors.append(f"{w}: a display of play is looked into and lights the face: both the doing and the "
+                          f"light say so (\"not aligned to his perspective\" was a display nobody looked at)")
         try:
             text = compose(w)
         except Exception as e:   # noqa: BLE001
@@ -1161,7 +1248,7 @@ def self_test():
             errors.append(f"{w}: the scene brief does not name the pilot")
         if re.search(r"(?:\bthe|'s) portrait\b", text):
             errors.append(f"{w}: the brief points the painter at a portrait it cannot see")
-        count = len(text.split()) - (len(chart_of(rec["chart"]).split()) if rec.get("chart") else 0)
+        count = len(text.split()) - (len(chart_of(rec["chart"], i["accent"]).split()) if rec.get("chart") else 0)
         if count > WORD_CAP:
             errors.append(f"{w}: the scene brief is {count} words"
                           + (" beside its chart" if rec.get("chart") else "") + f" (the cap is {WORD_CAP})")
@@ -1211,6 +1298,8 @@ def self_test():
             (dict(chart=("panel", "waters")), "writes {chart} once"),
             (dict(place="A chart room. On the wall hangs {chart} Nothing else."), "has no chart="),
             (dict(chart=("window", "waters"), place="A chart room. On the wall hangs {chart}"), "give (kind, view)"),
+            (dict(chart=("volume", "waters"), place="A chart room. On the wall hangs {chart}"), "give (kind, view)"),
+            (dict(chart=("panel", "race"), place="A chart room. On the wall hangs {chart}"), "give (kind, view)"),
             (dict(chart=("panel", "waters"), place="The bridge of the HyperSea liner. There hangs {chart}"),
              "names the world"),
         )
@@ -1225,12 +1314,17 @@ def self_test():
         framed = compose(who_, frame=FRAMING, side="right")
         if "a third of the way in from the right edge" not in framed or "{" in framed:
             errors.append("FRAMING does not reach the brief with its side and the pilot's name filled in")
-        for kind in CHART_KINDS:
-            for view in CHART_VIEWS:
-                charted = compose(who_, chart=(kind, view), place="A chart room. On the wall hangs {chart} A stool.")
-                if (CHART_VIEWS[view] not in charted or CHART_RULE not in charted or FINISH_CHART not in charted
-                        or FINISH_BLANK in charted or "{" in charted):
-                    errors.append(f"a {kind} of the {view} does not reach the brief whole")
+        for kind, view in chart_pairs():
+            charted = compose(who_, chart=(kind, view), place="A chart room. On the wall hangs {chart} A stool.")
+            noun = CHART_NOUN[kind]
+            whole = CHART_SHOWS[kind][view].split("{")[0]   # a view of play carries the pilot's colours after this
+            if (whole not in charted or CHART_RULES[noun] not in charted or FINISH_LIT[noun] not in charted
+                    or FINISH_BLANK in charted or "{" in charted):
+                errors.append(f"a {kind} of the {view} does not reach the brief whole")
+        mine = identity(who_)["accent"]
+        if PLAY_VIEWS and f"small glowing {mine} blocks" not in compose(
+                who_, chart=("volume", "siege"), place="A bridge. Over the well stands {chart} A stool."):
+            errors.append("a view of play does not take the pilot's own colour for the pilot's side")
         if FINISH_BLANK not in compose(who_) or FINISH_CHART in compose(who_):
             errors.append("a scene without a chart lost FINISH's blank screens")
 
