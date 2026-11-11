@@ -421,6 +421,12 @@ class Renderer:
         self.v_uup = ctx.vertex_array(self.p_uup, [(self.quad, "2f", "p")])
         self.p_hud = ctx.program(vertex_shader=VS_QUAD, fragment_shader=FS_HUD)
         self.p_inst = ctx.program(vertex_shader=VS_INST, fragment_shader=FS_INST)
+        # ribbons (the game's line and trail renderers): world-space triangles with a vertex colour, alpha blended
+        self.p_rib = ctx.program(
+            vertex_shader="#version 330\nin vec3 rp; in vec4 rc; uniform mat4 uPV; out vec4 c;\nvoid main(){ c = rc; gl_Position = uPV*vec4(rp, 1.0); }",
+            fragment_shader="#version 330\nin vec4 c; out vec4 o;\nvoid main(){ o = c; }")
+        self.rib_buf = ctx.buffer(reserve=4 * 7 * 60000, dynamic=True)
+        self.rib_vao = ctx.vertex_array(self.p_rib, [(self.rib_buf, "3f 4f", "rp", "rc")])
         self.v_bright = ctx.vertex_array(self.p_bright, [(self.quad, "2f", "p")])
         self.v_blur = ctx.vertex_array(self.p_blur, [(self.quad, "2f", "p")])
         self.v_comp = ctx.vertex_array(self.p_comp, [(self.quad, "2f", "p")])
@@ -633,6 +639,17 @@ class Renderer:
                 self.inst_buf.write(np.ascontiguousarray(arr, np.float32).tobytes())
                 self.inst_vao[m].render(self.mgl.TRIANGLES, vertices=self.mesh_n[m], instances=len(arr))
                 n_inst_total += len(arr)
+            rib = inst.get("ribbon")
+            if rib is not None and len(rib):
+                rib = np.ascontiguousarray(rib[:60000], np.float32)
+                self.rib_buf.write(rib.tobytes())
+                self.p_rib["uPV"].write(PV.T.astype(np.float32).tobytes())
+                ctx.enable(self.mgl.BLEND)
+                ctx.blend_func = self.mgl.SRC_ALPHA, self.mgl.ONE_MINUS_SRC_ALPHA
+                self.scene_fbo.depth_mask = False
+                self.rib_vao.render(self.mgl.TRIANGLES, vertices=len(rib))
+                self.scene_fbo.depth_mask = True
+                ctx.disable(self.mgl.BLEND)
             ctx.disable(self.mgl.DEPTH_TEST)
             if urp:
                 self._urp_bloom(post)
