@@ -118,3 +118,26 @@ against the spec); its results are in LESSONS, round 2.
 5. **Shombith's 2026-10-26 "Dont create art we will wait for an artist"** was about the 40-pilot roster's eight
    missing portraits; that roster is gone and this is Garrett's ask for the callsign pilots. The painted set is
    never overwritten; an artist's portrait of any of these pilots replaces the model's through a spec change.
+
+## 7. The signature busts (2026-11-10/11): every avatar shows all three heritages
+
+Garrett, 2026-11-10: "can you get us pilot images that really show both clades in the avatar bust ... when people see
+it they know it is cosmic shore because only we have triple hybrid people". The avatars had been cut from the
+full-body portraits, where the second animal lends a tail or wings, so the crop showed one animal. The fix is a new
+picture made for the crop: a **signature bust** (`Tools/Build/pilot_art/bust.py`), where the first animal owns the
+FACE, the second owns the CROWN and a heritage MARK across the nape and one cheek, and the human owns the eyes, the
+hair and one hand, on the house look (navy plate, domain-colour halo, rim light and iris ring, crystal motes).
+Six samples got "these are definitely improvements"; then all 50 avatar pilots were painted.
+
+- **The skill is `/pilot-creator`** (`.claude/skills/pilot-creator/SKILL.md`); the tool is
+  `Tools/Build/pilot_art/creator.py`, which also rolls a player's unique pilot exactly as `PilotGenerator` mints it.
+- **The busts**: `Docs/Pilots/art/busts/<WORD>.jpg`, 1024 square, 50 of them (18 callsign pilots, 32 legacy
+  pilots now cast as triple hybrids in `creator.LEGACY`, names for the eight spares in `LEGACY_NAMES`).
+- **The avatars**: `author_pilot_avatar_assets.py` now cuts each avatar from its bust at 256 px (was 128 from the
+  portrait); ids and guids unchanged, so saved profiles keep their face.
+- **Painter**: Figma `generate_image`, `gpt-image-2.5-sunburst`, captured by curl (`www.figma.com` was added to the
+  Default environment's allow-list, Garrett 2026-11-10). About 60 paintings in all (six samples, 50, two repaints).
+- **Weak ones** (LESSONS, signature busts): MANGER's platypus barely shows, Comet reads mostly human with clownfish
+  colouring, Wyvendo's jackal is subtle. Each is one repaint away once Garrett names the ones he wants redone.
+- **Not yet**: per-player busts painted on recruit (decision 2 in section 6), and the hand test of the 256 px
+  avatars in the profile window and avatar picker (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).

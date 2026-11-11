@@ -6,6 +6,10 @@ aspect hint, so `author.py` reads whatever size arrives) over the key colour the
 
 ## 1. The Figma connector's image models (what round 1 used)
 
+**Update 2026-11-10:** `www.figma.com` is now on the Default environment's allowed hosts (Garrett approved),
+so a cloud session downloads `image.url` with curl (`creator.py capture`) and no longer needs `get_screenshot`,
+whose Collab-seat read limit runs out after about 30 calls a day. The signature busts use `gpt-image-2.5-sunburst`.
+
 The claude.ai Figma connector exposes `generate_image` (a text prompt into a Design file; models
 `gpt-image-2.5-flare` (the default; round 1), `gpt-image-2.5-sunburst`, `gemini-3.1-flash-image`,
 `gemini-3.1-flash-lite-image`). **It spends Figma AI credits on the destination file's plan**: say how many

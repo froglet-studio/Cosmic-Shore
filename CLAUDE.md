@@ -107,8 +107,9 @@ This file holds only the rules every session needs. Everything else moved verbat
   gates, the sheet beside the nearest references, the writer that keeps every guid and wires the `PilotSO`).
   Garrett's bar (2026-11-07): "art like the ones we have but even better". Read before touching
   `Assets/_Graphics/Pilots/**`, a `Pilot_<Callsign>.asset` portrait or `Tools/Build/pilot_art/**`. The painted set
-  is the reference and is never overwritten.
-  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions
+  is the reference and is never overwritten. The player AVATARS are signature triple-hybrid busts made by
+  **`/pilot-creator`** (`bust.py`, `creator.py`, `Docs/Pilots/art/busts/`; it also rolls a player's unique pilot).
+  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions; the signature busts
 - [`Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md`](Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md): Namespace convention, key systems & classes reference, async pattern.
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.

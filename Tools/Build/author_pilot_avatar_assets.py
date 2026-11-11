@@ -11,10 +11,12 @@ the old 40-pilot roster's art). This script OWNS:
   Assets/_SO_Assets/SO_DefaultProfileIcons.asset               the SO_ProfileIconList every avatar picker and
                                                                avatar face reads (PlayerDataService.GetAvatarSprite)
 
-THE SOURCE is each callsign's portrait as the pilot-art kit wired it (Tools/Build/pilot_art/wired.json, the
-220x280 finished sprite). The cut is measured from the sprite's alpha: the square starts just above the top of the
-silhouette and centres on the head (the median column of the opaque pixels in its upper half), so a new or
-re-painted portrait re-cuts itself. Run the kit first (pilot_art/author.py), then this.
+THE SOURCE is the pilot's SIGNATURE BUST when it has one (Docs/Pilots/art/busts/<NAME>.jpg, Garrett 2026-11-10:
+"pilot images that really show both clades in the avatar bust"; painted by Tools/Build/pilot_art/creator.py, the
+/pilot-creator skill): a 1024 square already framed for an avatar, so the avatar is the whole frame less a thin
+margin (creator.avatar_cut), resized to SIZE. A pilot without a bust falls back to the old cut from its portrait
+(wired.json's 220x280 sprite for a callsign, the painted PNG otherwise): the square starts just above the top of the
+silhouette and centres on the head (the median column of the opaque pixels in its upper half).
 
 THE IDS are the callsign values (CALLSIGNS.md §2: ENSIGN = 1 ... FLUME = 18), the same 1..18 the old avatar set
 used, so a profile saved with an old avatar id lands on a pilot instead of falling back to the first face. The
@@ -51,7 +53,9 @@ META_DONOR = "Assets/_Graphics/Profile/ProfileIcon01.png.meta"     # the old ava
 ICON_LIST = "Assets/_SO_Assets/SO_DefaultProfileIcons.asset"
 ICON_LIST_SCRIPT_META = "Assets/_Scripts/ScriptableObjects/SO_ProfileIconList.cs.meta"
 
-SIZE = 128              # the old avatars' size; the picker, chips and HUD faces all scale it down
+SIZE = 256              # the bust avatars carry their detail (both clades) at 256; the picker, chips and HUD faces
+                        # all scale it down (the old portrait cuts were 128)
+BUST_DIR = "Docs/Pilots/art/busts"
 CUT = 88                # the square cut from the 220x280 portrait: head and shoulders
 TOP_PAD = 6             # rows of air above the silhouette's top
 HEAD_SHARE = 0.55       # the upper share of the cut whose opaque columns place the head
@@ -111,16 +115,28 @@ PAINTED = [
 ]
 
 
+def bust_of(word):
+    rel = f"{BUST_DIR}/{word}.jpg"
+    return rel if os.path.exists(os.path.join(ROOT, rel)) else None
+
+
 def roster():
-    """[(id, name, portrait png)]: the callsign pilots (id = callsign value), then the painted pilots."""
+    """[(id, name, source)]: the callsign pilots (id = callsign value), then the painted pilots. source is the
+    signature bust's path when the pilot has one, else (portrait png[, cut[, centre column]])."""
     wired = json.loads(read(WIRED)).get("portraits", {})
     out = []
     for value, word, _ in CALLSIGNS:
+        if bust_of(word):
+            out.append((value, word, (bust_of(word),)))
+            continue
         entry = wired.get(f"pilot.callsign.{word.lower()}")
         assert entry, f"{word} has no wired portrait in {WIRED} (run Tools/Build/pilot_art/author.py for it)"
         assert os.path.exists(os.path.join(ROOT, entry["png"])), f"{entry['png']} is missing"
         out.append((value, word, (entry["png"],)))
     for i, (name, stem, *frame) in enumerate(PAINTED):
+        if bust_of(name):
+            out.append((len(CALLSIGNS) + 1 + i, name, (bust_of(name),)))
+            continue
         png = f"{PAINTED_DIR}/{stem}.png"
         assert os.path.exists(os.path.join(ROOT, png)), f"{png} is missing"
         out.append((len(CALLSIGNS) + 1 + i, name, (png, *frame)))
@@ -148,7 +164,11 @@ def glow():
 
 
 def render(source):
-    """source: (portrait png[, cut[, centre column]]) as roster() gives it."""
+    """source: (bust jpg,) or (portrait png[, cut[, centre column]]) as roster() gives it."""
+    if source[0].startswith(BUST_DIR):
+        from pilot_art.creator import avatar_cut
+        im = avatar_cut(Image.open(os.path.join(ROOT, source[0])).convert("RGB"))
+        return im.resize((SIZE, SIZE), Image.LANCZOS).convert("RGBA")
     png, cut, centre = (tuple(source) + (CUT, None))[:3]
     im = Image.open(os.path.join(ROOT, png)).convert("RGBA")
     left, top = cut_box(np.asarray(im)[:, :, 3], cut, centre)

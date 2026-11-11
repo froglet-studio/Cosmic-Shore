@@ -124,3 +124,23 @@ each finding had to survive three refuters. What held, and what changed:
     real gate and give a reason; a kept detached piece (a thrown rope) is no longer counted as a speck; the sheet's
     font keeps its size without DejaVu; ACCENT is held to `colour_domains.json` by the brief's self-test; the docs
     no longer claim the portrait shows in the codex or the voyage card, or that an unwired card shows a word.
+
+## 2026-11-10/11 - signature busts (`/pilot-creator`)
+
+Garrett: pilot images that "really show both clades in the avatar bust". 50 busts with gpt-image-2.5-sunburst.
+
+27. **An avatar cut from a full-body portrait shows one animal.** The second animal's ONE feature (a tail, wings)
+    lives below the crop. A bust is painted as a bust and gives each heritage a zone on the head: face, crown and
+    mark, eyes/hair/hand.
+28. **Name the human's parts explicitly**: "white sclera", "human eyebrows", "five slender fingers, its skin matching
+    the <animal>'s". Without them the human vanishes into an animal head.
+29. **A face animal whose tell grows from the head keeps a small one.** Fenlia's moose with the crown given to the
+    fennec read as a horse; "two short velvet antler stubs on the brow" fixed it.
+30. **The sunburst model follows a long structured brief** better than flare: all 50 kept the halo, rim light and
+    domain colour, and only Flux lost its crown (the orca fin), which came back on one repaint of the same brief.
+31. **Weak reads to fix in the tables next**: a platypus face (MANGER) reads as a duck-billed human; a clownfish
+    face (Comet) reads as orange human skin; a jackal crown on a lynx face (Wyvendo) is subtle. Push the FACE line
+    harder (snout length, coat on the whole face) before repainting.
+32. **Capture by curl, not `get_screenshot`.** The Collab seat's read limit runs out after about 30 calls a day;
+    `www.figma.com` is now on the Default environment's allow-list, so `creator.py capture` downloads `image.url`.
+    Capture each batch of five before painting the next (the asset URLs last 7 days).
