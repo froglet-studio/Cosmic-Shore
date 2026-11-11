@@ -62,6 +62,36 @@ printf '%s\n' "$HERE/UnityMath.cs" "$HERE/Platform.cs" "$HERE/Driver.cs" "$OUT/G
   "$A/Controller/Arcade/Regatta/RegattaCourseFeatures.cs" \
   "$A/Controller/Arcade/Regatta/RegattaCourse.cs" \
   "$A/Controller/Arcade/Regatta/RegattaCourseSource.cs" \
+  "$A/Controller/Arcade/Breach/BreachCourse.cs" \
+  "$A/Controller/Arcade/Breach/BreachCourseSource.cs" \
+  "$A/Controller/Arcade/Thornline/ThornlineCourse.cs" \
+  "$A/Controller/Arcade/Thornline/ThornlineCourseSource.cs" \
+  "$A/Controller/Arcade/ThresherTime/ThresherTimeCourse.cs" \
+  "$A/Controller/Arcade/ThresherTime/ThresherTimeCourseSource.cs" \
+  "$A/Controller/Arcade/GrizzlyTime/GrizzlyTimeCourse.cs" \
+  "$A/Controller/Arcade/GrizzlyTime/GrizzlyTimeCourseSource.cs" \
+  "$A/Controller/Arcade/ScarabRally/ScarabRallyCourse.cs" \
+  "$A/Controller/Arcade/ScarabRally/ScarabRallyCourseSource.cs" \
+  "$A/Controller/Arcade/DecoyRun/DecoyRunCourse.cs" \
+  "$A/Controller/Arcade/DecoyRun/DecoyRunCourseSource.cs" \
+  "$A/Controller/Arcade/PerchRun/PerchRunCourse.cs" \
+  "$A/Controller/Arcade/PerchRun/PerchRunCourseSource.cs" \
+  "$A/Controller/Arcade/WrasseRun/WrasseRunCourse.cs" \
+  "$A/Controller/Arcade/WrasseRun/WrasseRunCourseSource.cs" \
+  "$A/Controller/Arcade/LanternRun/LanternRunCourse.cs" \
+  "$A/Controller/Arcade/LanternRun/LanternRunCourseSource.cs" \
+  "$A/Controller/Arcade/SlipLine/SlipLineCourse.cs" \
+  "$A/Controller/Arcade/SlipLine/SlipLineCourseSource.cs" \
+  "$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeCourse.cs" \
+  "$A/Controller/Arcade/BrittleStarTime/BrittleStarTimeCourseSource.cs" \
+  "$A/Controller/Arcade/Slingshot/SlingshotCourse.cs" \
+  "$A/Controller/Arcade/Slingshot/SlingshotCourseSource.cs" \
+  "$A/Controller/Arcade/SerpentTime/SerpentTimeCourse.cs" \
+  "$A/Controller/Arcade/SerpentTime/SerpentTimeCourseSource.cs" \
+  "$A/Controller/Arcade/BurrowRun/BurrowRunCourseSource.cs" \
+  "$A/Controller/Arcade/Warpline/WarplineCourseSource.cs" \
+  "$A/Controller/Vessel/JacksRacePlan.cs" \
+  "$A/Controller/Arcade/Racing/TimeRaceCourseConfigSO.cs" \
   | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "@$OUT/refs.rsp" \
   -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0660,CS0661 \

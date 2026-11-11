@@ -20,6 +20,13 @@ namespace UnityEngine
     public class MinAttribute : Attribute { public MinAttribute(float v) { } }
     public class HeaderAttribute : Attribute { public HeaderAttribute(string s) { } }
     public class RangeAttribute : Attribute { public RangeAttribute(float a, float b) { } }
+    // TimeRaceCourseConfigSO (the Time Race Prototyper's asset) is compiled for real; with no
+    // Resources here its Instance is null, so Slingshot / Warpline / Burrow Run fly their shipped
+    // courses - the path a build without the asset takes.
+    public class CreateAssetMenuAttribute : Attribute { public string fileName, menuName; }
+    public enum RuntimeInitializeLoadType { SubsystemRegistration }
+    public class RuntimeInitializeOnLoadMethodAttribute : Attribute { public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { } }
+    public static class Resources { public static T Load<T>(string path) where T : Object => null; }
 }
 
 namespace CosmicShore.Utility
@@ -53,6 +60,21 @@ namespace CosmicShore.ScriptableObjects
         public int GetSkeinRingTarget() => 0;
         public int GetRegattaGateTarget() => 0;
         public int GetWaystationClusterTarget() => 0;
+        public int GetBreachGateTarget() => 0;
+        public int GetThornlineGateTarget() => 0;
+        public int GetThresherTimeGateTarget() => 0;
+        public int GetGrizzlyTimeGateTarget() => 0;
+        public int GetScarabRallyGateTarget() => 0;
+        public int GetDecoyRunGateTarget() => 0;
+        public int GetBurrowRunGateTarget() => 0;
+        public int GetPerchRunGateTarget() => 0;
+        public int GetWrasseRunGateTarget() => 0;
+        public int GetLanternRunGateTarget() => 0;
+        public int GetWarplineGateTarget() => 0;
+        public int GetSlipLineGateTarget() => 0;
+        public int GetBrittleStarTimeGateTarget() => 0;
+        public int GetSlingshotGateTarget() => 0;
+        public int GetSerpentTimeGateTarget() => 0;
     }
 }
 

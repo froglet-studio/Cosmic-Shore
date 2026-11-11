@@ -40,3 +40,15 @@ namespace CosmicShore.Gameplay
         public bool TryGetNextGate(out Vector3 position) { position = Gate; return HasGate; }
     }
 }
+
+// ControlGlyphSetSO.RestColor reads its colour through the colour trace (bleeding-edge 2fa2dbfcf5,
+// Garrett 2026-11-10). The real ColorTrace drags in SO_ColorSet and the whole set catalog; the
+// harness wears no set, which is the authored set, so a retrace returns the authored colour.
+namespace CosmicShore.ScriptableObjects
+{
+    public static class ColorTrace
+    {
+        public const string Ui = "ui", World = "world";
+        public static Color Retrace(string role, Color authored) => authored;
+    }
+}

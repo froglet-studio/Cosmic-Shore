@@ -51,6 +51,12 @@ namespace UnityEngine
         public static Vector3 ProjectOnPlane(Vector3 v, Vector3 n) { float nn = n.sqrMagnitude; if (nn < 1e-15f) return v; return v - n * (Dot(v,n)/nn); }
         public override string ToString() => $"({x:F2}, {y:F2}, {z:F2})";
     }
+    // UnityEngine.Pose: the start-grid poses the vessel Time games' courses return.
+    public struct Pose
+    {
+        public Vector3 position; public Quaternion rotation;
+        public Pose(Vector3 position, Quaternion rotation) { this.position = position; this.rotation = rotation; }
+    }
     public struct Quaternion
     {
         public float x, y, z, w;
