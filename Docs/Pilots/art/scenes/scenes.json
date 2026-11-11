@@ -356,6 +356,22 @@
     "9:16": [285, 0, 771, 864]
    }
   },
+  "Dozer": {
+   "name": "Dozer",
+   "file": "Docs/Pilots/art/scenes/Dozer.jpg",
+   "size": [1536, 864],
+   "close": [320, 10, 680, 370],
+   "side": "left",
+   "treatment": "Through a new pane from inside, the glazier dozing on the outside of the glass",
+   "source": "profession: a contractor glazes a great canopy from the outside, held on by sticky palms",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [68, 0, 932, 864],
+    "4:5": [154, 0, 845, 864],
+    "9:16": [257, 0, 743, 864]
+   }
+  },
   "Echo": {
    "name": "Echo",
    "file": "Docs/Pilots/art/scenes/Echo.jpg",
@@ -370,6 +386,22 @@
     "1:1": [128, 0, 992, 864],
     "4:5": [214, 0, 905, 864],
     "9:16": [317, 0, 803, 864]
+   }
+  },
+  "Fiest": {
+   "name": "Fiest",
+   "file": "Docs/Pilots/art/scenes/Fiest.jpg",
+   "size": [1536, 864],
+   "close": [970, 30, 1270, 330],
+   "side": "right",
+   "treatment": "Wide 21mm interior from the doorway, available light, a little crooked",
+   "source": "hobby: \"laughs at exactly the wrong moments\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [774, 0, 1465, 864],
+    "9:16": [877, 0, 1363, 864]
    }
   },
   "Flux": {
@@ -406,6 +438,22 @@
    },
    "chart": "volume of the siege"
   },
+  "Krush": {
+   "name": "Krush",
+   "file": "Docs/Pilots/art/scenes/Krush.jpg",
+   "size": [1536, 864],
+   "close": [420, 0, 720, 300],
+   "side": "left",
+   "treatment": "Flash snapshot by whoever came down the cellar stairs",
+   "source": "hobby: \"cannot resist a dare\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [138, 0, 1002, 864],
+    "4:5": [224, 0, 915, 864],
+    "9:16": [327, 0, 813, 864]
+   }
+  },
   "Longshift": {
    "name": "Longshift",
    "file": "Docs/Pilots/art/scenes/Longshift.jpg",
@@ -422,6 +470,54 @@
     "9:16": [817, 0, 1303, 864]
    },
    "chart": "panel of the galaxy"
+  },
+  "Maestro": {
+   "name": "Maestro",
+   "file": "Docs/Pilots/art/scenes/Maestro.jpg",
+   "size": [1536, 864],
+   "close": [890, 10, 1210, 330],
+   "side": "right",
+   "treatment": "Long view down a nave on a 135mm from a tripod, candle points",
+   "source": "hobby: \"hums off-key during every jump\" (the game's Quirks)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [618, 0, 1482, 864],
+    "4:5": [704, 0, 1395, 864],
+    "9:16": [807, 0, 1293, 864]
+   }
+  },
+  "Mason": {
+   "name": "Mason",
+   "file": "Docs/Pilots/art/scenes/Mason.jpg",
+   "size": [1536, 864],
+   "close": [400, 0, 720, 320],
+   "side": "left",
+   "treatment": "Wall-height working frame from the seaward side, caught in the act in sea haze",
+   "source": "profession: a contractor leaves one glass marble in the mortar of every wall, where nobody will look",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [128, 0, 992, 864],
+    "4:5": [214, 0, 905, 864],
+    "9:16": [317, 0, 803, 864]
+   }
+  },
+  "Reaper": {
+   "name": "Reaper",
+   "file": "Docs/Pilots/art/scenes/Reaper.jpg",
+   "size": [1536, 864],
+   "close": [1030, 20, 1320, 310],
+   "side": "right",
+   "treatment": "Level-tripod interior across a great shell, the wall plainly vertical",
+   "source": "want: \"a vault no one else has opened\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [672, 0, 1536, 864],
+    "4:5": [830, 0, 1521, 864],
+    "9:16": [932, 0, 1418, 864]
+   }
   },
   "Scales": {
    "name": "Scales",

@@ -5299,10 +5299,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Dozer.png": {
-   "coloured": 0.8722,
+   "coloured": 0.7165,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "fdcafad71ce6a939",
+   "sha": "c6344cc485729060",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_ENSIGN.png": {
@@ -5327,10 +5327,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Fiest.png": {
-   "coloured": 0.679,
+   "coloured": 0.8222,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "76291fe973a438c6",
+   "sha": "93d55bd2853cb930",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Flux.png": {
@@ -5369,10 +5369,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Krush.png": {
-   "coloured": 0.4986,
+   "coloured": 0.688,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "d4502bbd4fd42a22",
+   "sha": "8584047f00ed0038",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Longshift.png": {
@@ -5390,17 +5390,17 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Maestro.png": {
-   "coloured": 0.6803,
+   "coloured": 0.9476,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "2876bde87a7e7e8f",
+   "sha": "f38e082e895fa4d5",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Mason.png": {
-   "coloured": 0.8541,
+   "coloured": 0.2611,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "1f87396bcad9867b",
+   "sha": "bc22debd15d9671f",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_NEEDLE.png": {
@@ -5425,10 +5425,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Reaper.png": {
-   "coloured": 0.6325,
+   "coloured": 0.6114,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "9de529b4503b8ca2",
+   "sha": "8121a4c42053b5b7",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Riptide.png": {
