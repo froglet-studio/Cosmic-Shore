@@ -313,9 +313,16 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
 .ftiers{display:flex;gap:6px}
 .ftiers span{display:flex;flex-direction:column;align-items:center;gap:2px}
 .ftiers small{font-size:9px;letter-spacing:.1em;color:var(--soft)}
-.ftools{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;align-items:center;margin-top:22px}
-.ftools .frow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.ftools .sep{width:1px;height:24px;background:var(--line);margin:0 8px}
+/* sort and filter: one quiet row of three dropdowns (Shombith 2026-11-11: the chip rows were "big" and "noisy") */
+.ftools{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;margin-top:22px;padding-top:14px;border-top:1px solid var(--hair)}
+.fsel{position:relative;display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.fsel select{appearance:none;-webkit-appearance:none;height:34px;padding:0 30px 0 12px;border:0;cursor:pointer;background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font:inherit;font-size:14px;letter-spacing:.02em;text-transform:none;transition:box-shadow .2s var(--ease)}
+.fsel select:hover{box-shadow:inset 0 0 0 1px var(--soft)}
+.fsel select.on{box-shadow:inset 0 0 0 1px var(--sel)}
+.fsel select option,.fsel select optgroup{background:var(--fs-ground);color:var(--ink)}
+.fsel svg{position:absolute;right:10px;pointer-events:none;color:var(--soft)}
+.fclear{border:0;background:none;cursor:pointer;color:var(--sel);font-size:13px;padding:6px 2px;text-decoration:underline;text-underline-offset:3px}
+.fcount{margin-left:auto;font-size:13px;color:var(--soft)}
 /* ---------- phone ---------- */
 @media (max-width:1100px){
   .win{height:auto;display:flex;flex-direction:column;gap:22px;background:none;box-shadow:none;overflow:visible}
@@ -333,7 +340,7 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
   .fc3{grid-template-columns:1fr}
   .switch{order:3;width:100%;margin:0}.cur{flex:1;justify-content:center}
   .search{width:auto;flex:1}
-  .win.certified{height:auto}.ftools{grid-template-columns:1fr;gap:6px}.chks{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .win.certified{height:auto}.ftools{gap:10px}.fcount{margin-left:0;width:100%}.chks{grid-template-columns:repeat(2,minmax(0,1fr))}
   .fhead h1{font-size:52px}.fstats{margin-left:0}.fgrid{grid-template-columns:1fr 1fr;gap:8px}.fcard .pic{height:100px}.fname .disp{font-size:20px}.fab span{width:26px;height:26px}.fab img,.fab .ico{width:24px;height:24px}
 }
 @media (max-width:640px){.dc{font-size:11px}.kc{min-width:48px;font-size:11px}.dv{padding:8px 4px}.step span{display:none}.stats{gap:16px}}
@@ -722,11 +729,19 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
     var crews = certFilter ? [] : vs.filter(isCrew);
     var certified = all.filter(function(v){ return v.certificate; });
     function chips(list, cur, attr, label){ return list.map(function(x){ return '<button type="button" class="chip" data-' + attr + '="' + esc(x) + '" aria-pressed="' + (x === cur) + '">' + esc(label ? label(x) : x) + '</button>'; }).join(""); }
+    function sel(id, label, opts, cur, on){
+      return '<label class="fsel">' + label + '<select id="' + id + '" class="' + (on ? 'on' : '') + '">' + opts.map(function(o){
+        if(o.group) return '<optgroup label="' + esc(o.group) + '">' + o.items.map(function(i){ return '<option value="' + esc(i.v) + '"' + (i.v === cur ? ' selected' : '') + '>' + esc(i.t) + '</option>'; }).join("") + '</optgroup>';
+        return '<option value="' + esc(o.v) + '"' + (o.v === cur ? ' selected' : '') + '>' + esc(o.t) + '</option>'; }).join("") + '</select>' + CARET + '</label>';
+    }
+    var tierCur = tierPick === "Any tier" ? "any" : tierEl + ":" + tierPick;
     var tools = '<div class="ftools" role="group" aria-label="Sort and filter the solo vessels">' +
-      '<span class="lab">Sort by</span><div class="frow">' + chips(["Completion"].concat(D.elements.map(function(e){ return e + " tier"; })), fleetSort, "fsort") + '</div>' +
-      '<span class="lab">Completion</span><div class="frow">' + chips(["Any"].concat(BANDS), fleetStage, "fstage", function(x){
-        return x === "Any" ? "Any %" : x + " \u00b7 " + certified.filter(function(v){ return band(v.certificate) === x; }).length; }) + '</div>' +
-      '<span class="lab">Tier</span><div class="frow">' + chips(D.elements, tierEl, "ftel") + '<span class="sep"></span>' + chips(["Any tier", "S", "A", "B", "C"], tierPick, "ftier") + '</div></div>';
+      sel("fsort", "Sort", ["Completion"].concat(D.elements.map(function(e){ return e + " tier"; })).map(function(x){ return {v:x, t:x}; }), fleetSort, false) +
+      sel("fstage", "Completion", [{v:"Any", t:"Any"}].concat(BANDS.map(function(x){ return {v:x, t:x + "  (" + certified.filter(function(v){ return band(v.certificate) === x; }).length + ")"}; })), fleetStage, fleetStage !== "Any") +
+      sel("ftier", "Tier", [{v:"any", t:"Any"}].concat(D.elements.map(function(e){ return {group:e + " games", items:["S", "A", "B", "C"].map(function(t){
+        return {v:e + ":" + t, t:e + " " + t + "  (" + certified.filter(function(v){ return v.tiers[e] === t; }).length + ")"}; })}; })), tierCur, tierPick !== "Any tier") +
+      (certFilter ? '<button type="button" class="fclear" id="fclear">Clear filters</button>' : '') +
+      '<span class="fcount">' + solo.length + ' of ' + certified.length + ' solo vessels</span></div>';
     app.innerHTML = '<div class="fhead"><div><div class="lab" style="color:var(--sel)">The fleet</div><h1 class="disp">Pick a vessel</h1></div>' +
       '<div class="fstats">' + [[all.length, "vessels"], [all.filter(isCrew).length, "crews"], [wired + " / " + all.length * 4, "level 5 wired"],
         [certified.filter(function(v){ return v.certificate.pct >= 100; }).length + " / " + certified.length, "at 100%"]].map(function(x){ return '<div><span class="disp">' + x[0] + '</span><small>' + x[1] + '</small></div>'; }).join("") + '</div>' +
@@ -738,8 +753,12 @@ footer{margin:56px auto 40px;font-size:12px;color:var(--off)}
     function bind(attr, set){ Array.prototype.forEach.call(app.querySelectorAll("[data-" + attr + "]"), function(b){ b.addEventListener("click", function(){
       set(b.getAttribute("data-" + attr)); var y = window.scrollY; fleetView(); window.scrollTo(0, y);
       var n = app.querySelector('[data-' + attr + '="' + b.getAttribute("data-" + attr) + '"]'); if(n) n.focus({preventScroll:true}); }); }); }
-    bind("ff", function(x){ fleetFilt = x; }); bind("fsort", function(x){ fleetSort = x; }); bind("fstage", function(x){ fleetStage = x; });
-    bind("ftel", function(x){ tierEl = x; }); bind("ftier", function(x){ tierPick = x; });
+    bind("ff", function(x){ fleetFilt = x; });
+    function onSel(id, set){ var el = document.getElementById(id); if(el) el.addEventListener("change", function(){
+      set(el.value); var y = window.scrollY; fleetView(); window.scrollTo(0, y); var n = document.getElementById(id); if(n) n.focus({preventScroll:true}); }); }
+    onSel("fsort", function(x){ fleetSort = x; }); onSel("fstage", function(x){ fleetStage = x; });
+    onSel("ftier", function(x){ if(x === "any"){ tierPick = "Any tier"; } else { tierEl = x.split(":")[0]; tierPick = x.split(":")[1]; } });
+    var fc = document.getElementById("fclear"); if(fc) fc.addEventListener("click", function(){ fleetStage = "Any"; tierPick = "Any tier"; fleetView(); });
   }
 
   var PADMAP = {};
