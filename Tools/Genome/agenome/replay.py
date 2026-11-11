@@ -116,6 +116,8 @@ class VesselWorld:
     """
     JETS = ((-1.08, -0.11, -1.61), (1.12, -0.11, -1.61), (-1.81, 0.15, 0.72), (1.82, 0.15, 0.72))
     TAILS = ((4.0, 0.0, -12.0), (-4.0, 0.0, -12.0))
+    JET_COL = {"Jade": (0.1, 0.75, 1.0), "Ruby": (0.7, 0.12, 1.0), "Blue": (0.3, 0.4, 1.0), "Gold": (1.0, 0.5, 0.08)}
+    jet_vmax = 120.0  # recorded: the jets show below about 120 u/s and are gone by 150
 
     def __init__(self, session, hull=(4.5, 1.13, 6.7), hull_col=(0.1, 0.13, 0.24), pod_col=(0.7, 0.2, 0.25),
                  jet_secs=0.5, jet_width=0.12, jet_col=(0.1, 0.75, 1.0),
@@ -174,10 +176,12 @@ class VesselWorld:
             jc, tc = np.array(self.jet_col), np.array(self.tail_col)
             rib = []
             for v in V:
+                gate = float(np.clip((self.jet_vmax * 1.15 - v.get("speed", 0.0)) / (self.jet_vmax * 0.3), 0.0, 1.0))
+                jc = np.array(self.JET_COL.get(v.get("domain"), self.jet_col))
                 # vfx_Projectile_02's trail: 0.5 s, 0.3 wide, alpha 1 -> 0; VesselTail.prefab: 4 s, 1 wide tapering
                 # from 19 %, alpha 0 / 0.71 / 0 at 6.5 % / 16 % / 100 %
                 rib += self._trail(session, frame, v, self.JETS, self.jet_secs, lambda u: np.full_like(u, self.jet_width), eye,
-                                   lambda u: np.concatenate([np.tile(jc, (len(u), 1)), (1 - u)[:, None]], 1), soft=True)
+                                   lambda u, jc=jc, gate=gate: np.concatenate([np.tile(jc, (len(u), 1)), (1 - u)[:, None] * gate], 1), soft=True)
                 rib += self._trail(session, frame, v, self.TAILS, self.tail_secs,
                                    lambda u: self.tail_width * np.where(u < 0.1875, 1.0, (1 - u) / 0.8125), eye,
                                    lambda u: np.concatenate([np.tile(tc, (len(u), 1)), np.interp(u, [0, 0.0647, 0.1588, 1], [0, 0, 0.706, 0])[:, None] * self.tail_gain], 1))

@@ -436,8 +436,13 @@ class GameSim:
                 tt = np.linspace(0.0, min(j["secs"] / dt, n), 16)
                 i0 = np.minimum(tt.astype(int), n - 1)
                 f = (tt - i0)[:, None]
-                col = _hsv(j["h"], j["s"], j["v"])
+                base = _hsv(j["h"], j["s"], j["v"])
                 for k in range(self.n):
+                    gate = float(np.clip((j["vmax"] * 1.15 - self.speed[k]) / (j["vmax"] * 0.3), 0.0, 1.0))
+                    if gate <= 0.0:
+                        continue
+                    d = self.domain_rgb(self.dom[k])
+                    col = base * (1 - j["domain"]) + j["domain"] * (d / max(float(d.max()), 1e-6) * 0.85 + 0.12) * j["v"]
                     for sg in (-1.0, 1.0):
                         e = np.array([sg * j["x"], 0.0, j["z"]], np.float32)
                         P = np.array([h[0][k] + h[1][k] @ e for h in self.hist[:n + 1]])
@@ -453,7 +458,7 @@ class GameSim:
                             hw = 0.5 * j["width"] * np.where(u < 0.19, 1.0, (1 - u) / 0.81)
                         else:
                             al, hw = 1.0 - u, np.full_like(u, 0.5 * j["width"])
-                        rgba = np.concatenate([np.tile(col, (len(u), 1)), (al * j["alpha"])[:, None]], 1)
+                        rgba = np.concatenate([np.tile(col, (len(u), 1)), (al * j["alpha"] * gate)[:, None]], 1)
                         lists.setdefault("lines", []).append((p, hw, rgba, int(j["soft"]) == 1))
         if self.n:
             b = self.body
