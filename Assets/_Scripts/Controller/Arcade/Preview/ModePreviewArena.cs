@@ -680,6 +680,11 @@ namespace CosmicShore.Gameplay
             // but a mode that did would genuinely have both in its arena.
             bool track = AddTrackModel(definition, intensity, gameData, pointBudget);
 
+            // A gate race's arena is its COURSE, laid by its controller at match start - twenty-two
+            // cards, and the cell alone drew every one of them as the same bare shell at every
+            // intensity. Additive like the track: Regatta's rails and its rings are both its arena.
+            track |= AddCourseModel(definition, intensity, config, gameData, pointBudget);
+
             if (!config.EnvironmentPrefab)
             {
                 bool planted = AddPlantingModel(config, gameData, pointBudget);
@@ -778,6 +783,41 @@ namespace CosmicShore.Gameplay
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[ModePreview] Track model '{spawnable.name}' up at intensity {intensity}.");
+            return true;
+        }
+
+        /// <summary>
+        /// A gate race's course as a model: the rings the tap will fly, at this intensity
+        /// (<see cref="ModePreviewTrackModel.BuildGateCourseLays"/>). No prisms, one mesh.
+        /// </summary>
+        bool AddCourseModel(ModePreviewDefinitionSO definition, int intensity, CellConfigDataSO config,
+                            GameDataSO gameData, int pointBudget)
+        {
+            if (!definition || RaceCourseSource.For(definition.Mode) == null) return false;
+
+            var lays = ModePreviewTrackModel.BuildGateCourseLays(definition.Mode, intensity, config,
+                                                                 Cell.MeasureNucleusRadius(config));
+            if (lays.Count == 0) return false;
+
+            var miniature = CellMiniatureBuilder.BuildFromLays(lays, _modelRadius,
+                                                               Mathf.Max(lays.Count, pointBudget),
+                                                               1f, $"{definition.Mode} course");
+            if (!miniature.IsValid) return false;
+
+            var body = ToyFactory.AddMiniatureBody(_modelRoot.transform, miniature,
+                                                   new ToyContext { GameData = gameData },
+                                                   "CourseModel");
+            if (!body)
+            {
+                Object.Destroy(miniature.Mesh);
+                return false;
+            }
+
+            _generatedMeshes.Add(miniature.Mesh);
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] Course model for {definition.Mode} up at intensity {intensity} " +
+                $"({lays.Count} shards).");
             return true;
         }
 
