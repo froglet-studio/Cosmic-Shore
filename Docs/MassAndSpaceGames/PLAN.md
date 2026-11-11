@@ -167,7 +167,7 @@ Quoted from `Docs/FleetCodex/abilities.json` on 2026-11-10. The session re-reads
 | Serpent | Mass | | | not started |
 | Swordfish | Mass | | | not started |
 | Orca | Mass | | | not started |
-| Angler | Mass | | | not started |
+| Angler | Mass | `claude/peaceful-cerf-vpl3x8` | Glasshouse (89) | authored headless 2026-11-10, not editor-verified (`Arcade/GLASSHOUSE.md`) |
 | Grizzly, Rhino, Manta, Sparrow | ? | | | waiting on §5 |
 
 Each session updates its own row in the commit that lands the mode.

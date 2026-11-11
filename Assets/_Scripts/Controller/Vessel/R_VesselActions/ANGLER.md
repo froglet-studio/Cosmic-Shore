@@ -479,7 +479,7 @@ The Editor test steps are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` under "Angle
 1. ~~**The Angler's own hull.**~~ Done 2026-10-18: `Angler.fbx` and `AnglerAnimation` (§9). Open: its hit box is still
    the Stoat's (`StoatBody` 1.2 x 1.4 x 7), narrower than the bow and the stabilisers; the AI and the card art were made
    against the stand-in.
-2. ~~**An Angler AI autopilot.**~~ Started 2026-10-29 with Lantern Run: `AnglerLeapfrogAIPolicySO` (the hull's `AnglerAIBoostPolicy`), input-only. It paints by holding RT, throws on release, and dashes after the school when the dash carries it toward its objective. It does not lure, erase or lock on yet. Untested in the editor.
+2. ~~**An Angler AI autopilot.**~~ (Glasshouse, the Angler's Mass game, 2026-11-10: `GlasshouseGardener` holds the LURE for an AI Angler - it fetches seeds, plants and tends; `Arcade/GLASSHOUSE.md`. The hull is unchanged.) Started 2026-10-29 with Lantern Run: `AnglerLeapfrogAIPolicySO` (the hull's `AnglerAIBoostPolicy`), input-only. It paints by holding RT, throws on release, and dashes after the school when the dash carries it toward its objective. It does not lure, erase or lock on yet. Untested in the editor.
 3. **Element scaling for Charge, Mass and Space, and the Charge and Time level-5 upgrades** (§7). Time scales the tamed fauna's speed. The fleet's convention would make Space the paint's reach, Mass the lure's reach or growth, and Charge the bite, but none is approved.
 4. ~~**The HUD's squad name.**~~ Done in round 7: the picked kind shows over the Mass card (§1k).
 5. **A squad that is never ordered starves, apart from the keeper.** Whether a following creature should graze in passing is still a designer call.

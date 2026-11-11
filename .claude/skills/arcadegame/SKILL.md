@@ -446,6 +446,25 @@ Corona (the Manta's Charge game, 2026-11-10, `claude/amazing-goldberg-7zn80e`, `
   render the new card by name, and know a named run skips the manifest. Add the new scene to
   `author_preview_spawns.SCENE_FOR_MODE` too: Kelpwood shipped without it and its preview went unchecked.
 
+Glasshouse (the Angler's Mass game, 2026-11-10, `claude/peaceful-cerf-vpl3x8`, `GLASSHOUSE.md`) taught five:
+- **Mass with no roster owner (flora, laid structure) is credited into the existing stat by DELTAS, never by
+  assignment.** `StatsManager` moves `VolumeRemaining` by += / -= for every trail prism between your samples, so writing
+  the garden's total over it erases the trail. Keep a book of what each pilot was credited (`GlasshouseGarden.ShareBook`)
+  and add only the change; a test interleaves both producers and asserts "trail + garden".
+- **A grazing arena needs a NUCLEUS to be fair.** Without one, a herbivore eats only what is not its own colour and the
+  herds are born in the controlling (leading) colour, so the leader's mass is immune and the trailer's is eaten
+  (Tapestry's reason for having no fauna). With one, everything outside it is edible whatever its colour
+  (`Cell.IsPreyForHerbivore`), and the nucleus is a sanctuary, so count only mass outside it.
+- **A species the cell must KNOW but never plant wild** (the Angler's seed reads `SpawnProfile.SupportedFloras`) is a
+  mode-owned config copy with `SpawnProbability: 0`, no initial batch and no seeder floor: `AllowSpawn` is
+  `Random.value < p`, so 0 never plants, and reproduction (`Flora.SpawnOffspring`, its parent's colour) still spreads it.
+  A non-positive `FloraPopulationScale` is read as 1, so the scale cannot do this.
+- **`ScoreReveal`'s fourth argument is `formatAsTime`, not "did win".** A points mode passes `false` on both sides;
+  Tapestry and Bloomrush pass `true` on victory and so show a volume as `MM:SS:CS`.
+- **"The next free id" was taken twenty minutes before the push** (Harvest, the Thresher's Space game, on a sibling
+  session of the same plan). Re-scan every branch for the enum value AND the toast id right before the first push,
+  not only at design time. The generator mints guids from names, so a renumber moved only the ids and the
+  always-unlocked row.
 Harvest (the Thresher's Space game, 2026-11-10, `claude/keen-rubin-rw7p6q`, `HARVEST.md`) taught five:
 - **Fly the vessel's own solver round the arena before laying the arena.** The sheaves were built, baked and gated on
   a premise nobody had flown: that a circling Thresher's chain sweeps a sheaf's stalks. Its chain TRAILS (21-60 u behind
