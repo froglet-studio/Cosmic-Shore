@@ -510,15 +510,22 @@ Walk every changed file against these gates:
   `///` block belongs to whatever declaration follows it, so adding a helper between an
   existing doc comment and its method hands the doc to the HELPER and leaves the method
   undocumented — with two `<summary>` tags in one block and no compile error, in a file that
-  otherwise reads perfectly. Three landed in one branch. It is mechanically detectable: scan
-  every changed `.cs` for a line `/// </summary>` immediately followed by `/// <summary>`, and
-  split the hits against the merge base so you only own the new ones. When it fires, decide per
-  site whether the orphaned doc should move DOWN onto its method or be deleted as superseded —
-  the new member usually has its own.
+  otherwise reads perfectly. Three landed in one branch. **Since 2026-11-11 it is a gate:
+  `doc_summaries` (`Tools/Build/check_doc_summaries.py`, run by `gates.sh`) fails on any doc
+  comment under `Assets/` that holds two `<summary>` blocks, so every hit is new.** It also sees
+  the shapes the old one-line scan (`/// </summary>` directly followed by `/// <summary>`) misses:
+  a first block closing on a text line, a `<param>` or `<returns>` between the two, or a blank
+  line or `//` comment between them. On bleeding-edge that day the scan found 55 and the gate 76
+  (`cece/loving-volta-kkvnex`). When it fires, decide per site whether the orphaned doc should
+  move DOWN onto its method, merge with the method's own doc, or be deleted as superseded — the
+  new member usually has its own. A check independent of the shape: every `<paramref>` /
+  `<param>` name must be a parameter of the member the doc sits on (10 mismatches before that fix,
+  0 after). In a shallow clone `git log -S '<phrase>'` reaches back only to the graft
+  (`.git/shallow`) and names the boundary merge for everything, so find the member from the code.
   **Do the scan in Python, not `awk`.** macOS ships BSD awk, and a one-liner using `prev ~ /…/`
   over a `/// ...</summary>` line followed by `/// <summary>` silently matched NOTHING on a branch
-  that had two such hits — a scan that cannot fire reads exactly like a clean branch. A five-line
-  `re.search` loop over `git diff --name-only <merge-base>..HEAD -- '*.cs'` found both.
+  that had two such hits — a scan that cannot fire reads exactly like a clean branch. For trees
+  the gate does not cover, run `check_doc_summaries.py --root Port --root Tools`.
 - **A rename sweep must split its hits by which THING the name means.** One identifier is
   routinely three: a C# class, an HLSL function, a shadergraph node's `m_FunctionName`. Renaming
   the class leaves the other two correct, so a blanket search-and-replace is as wrong as no sweep

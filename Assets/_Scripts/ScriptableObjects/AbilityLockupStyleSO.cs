@@ -370,25 +370,19 @@ namespace CosmicShore.ScriptableObjects
         public float FlowerLocalY => (abilityCellHeight + cellGap) * 0.5f;
 
         /// <summary>
-        /// The narrow edge as a fraction of the wide edge. Both plates read their edges from this
-        /// ONE number, mirrored - the element plate narrows upward, the ability plate downward - so
-        /// the slant can never disagree between the two halves of one totem.
-        /// </summary>
-        /// <summary>
         /// How far the slant band reaches inward from a plate's outline. Anything drawn ON a plate
         /// that is not meant to cover the band - the gauge and its clip - insets by this.
         /// </summary>
         public float PlateEdgeReach => slantEdgeThickness + slantEdgeAntialias;
 
+        /// <summary>
+        /// The narrow edge as a fraction of the wide edge. Both plates read their edges from this
+        /// ONE number, mirrored - the element plate narrows upward, the ability plate downward - so
+        /// the slant can never disagree between the two halves of one totem.
+        /// </summary>
         public float NarrowEdgeFraction =>
             plateWidth > 0.01f ? Mathf.Clamp01((plateWidth - trapezoidInset * 2f) / plateWidth) : 1f;
 
-        /// <summary>
-        /// The scale that draws an icon authored at <paramref name="authoredSize"/> at the fleet's
-        /// one drawn size. This is what makes "every vessel's icons are the same size" true without
-        /// anyone editing a prefab: the Dolphin authors 80 on three slots and 96 on its fourth, the
-        /// Squirrel scales its whole button 0.7, and all of them still draw at iconBoxSize.
-        /// </summary>
         /// <summary>
         /// How far the two plates are from being mirror images. 0 = perfectly balanced. The auditor
         /// and the tests both key off this, because "the totem drifted back into a coffin" is a
@@ -403,6 +397,12 @@ namespace CosmicShore.ScriptableObjects
             }
         }
 
+        /// <summary>
+        /// The scale that draws an icon authored at <paramref name="authoredSize"/> at the fleet's
+        /// one drawn size. This is what makes "every vessel's icons are the same size" true without
+        /// anyone editing a prefab: the Dolphin authors 80 on three slots and 96 on its fourth, the
+        /// Squirrel scales its whole button 0.7, and all of them still draw at iconBoxSize.
+        /// </summary>
         public float IconScaleFor(float authoredSize)
             => authoredSize > 0.01f ? iconBoxSize / authoredSize : 1f;
 

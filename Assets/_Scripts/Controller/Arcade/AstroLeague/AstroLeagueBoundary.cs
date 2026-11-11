@@ -749,7 +749,6 @@ namespace CosmicShore.Gameplay
             return pts;
         }
 
-        /// <summary>Barrel (N segments) + flat ±Z caps, matching <see cref="ContainCylinder"/>'s walls.</summary>
         /// <summary>
         /// Flat-shaded icosphere hull at the sphere court's radius.
         ///
@@ -788,6 +787,7 @@ namespace CosmicShore.Gameplay
             if (Application.isPlaying) UnityEngine.Object.Destroy(sphere);
         }
 
+        /// <summary>Barrel (N segments) + flat ±Z caps, matching <see cref="ContainCylinder"/>'s walls.</summary>
         void AppendCylinderMesh(List<Vector3> meshVerts, List<int> tris, List<Vector3> normals)
         {
             const int seg = 32;

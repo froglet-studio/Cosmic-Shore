@@ -513,6 +513,17 @@ namespace CosmicShore.Gameplay
             _bloomTimer = settings != null ? settings.SpawnBloomSeconds : 0.55f;
         }
 
+        /// <summary>Server: stamp whether this ball destroys super-shielded prisms (its maker's
+        /// Space 5). A ball keeps it for life, like its size.</summary>
+        public void SetBreaksSuperShieldedServer(bool on)
+        {
+            if (!IsSpawned || IsServer) _breaksSuperShieldedLocal = on;
+            if (IsSpawned && IsServer) n_BreaksSuperShielded.Value = on;
+        }
+
+        bool _breaksSuperShieldedLocal;
+        bool BreaksSuperShielded => IsSpawned ? n_BreaksSuperShielded.Value : _breaksSuperShieldedLocal;
+
         /// <summary>
         /// Scale the ball (visual + collider) by the intensity factor on top of its authored
         /// base size. Runs on every peer (server physics + client rendering both need it).
@@ -525,17 +536,6 @@ namespace CosmicShore.Gameplay
         /// radius forever. Astro League's per-peer intensity calls are unaffected: each peer
         /// applies the same value locally and the replicated echo is idempotent.
         /// </summary>
-        /// <summary>Server: stamp whether this ball destroys super-shielded prisms (its maker's
-        /// Space 5). A ball keeps it for life, like its size.</summary>
-        public void SetBreaksSuperShieldedServer(bool on)
-        {
-            if (!IsSpawned || IsServer) _breaksSuperShieldedLocal = on;
-            if (IsSpawned && IsServer) n_BreaksSuperShielded.Value = on;
-        }
-
-        bool _breaksSuperShieldedLocal;
-        bool BreaksSuperShielded => IsSpawned ? n_BreaksSuperShielded.Value : _breaksSuperShieldedLocal;
-
         public void SetSizeScale(float factor)
         {
             factor = Mathf.Max(0.01f, factor);
@@ -2042,27 +2042,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// SERVER: an AOE blast reached the ball. The payload is shoved the way prism mass is
-        /// shoved — with the blast's OWN impact vector (<see cref="AOEExplosion.CalculateImpactVector"/>,
-        /// i.e. <c>ExplosionImpulse.Along(radialDirection)</c>), so a weapon tuned to throw mass
-        /// hard throws the ball hard and no second tuning surface exists to drift from the first.
-        /// There is no distance falloff because prisms do not get one either: the blast either
-        /// reached you or it did not.
-        ///
-        /// Before this, an explosion passed straight through the ball. Nothing in the mode could
-        /// move the payload except a hull or a blade, which quietly made every AOE weapon useless
-        /// on the one object the match is about.
-        ///
-        /// A blast also CLAIMS the ball (<see cref="AstroLeagueSettingsSO.explosionClaimsBall"/>),
-        /// on the same rule as a strike: whoever touched it last owns it. And unlike a prism, the
-        /// ball has no friendly-fire exemption — blowing your OWN ball toward the goal is a play,
-        /// not an accident, so the blast's domain is never a reason to skip.
-        /// </summary>
-        /// <param name="blastOrigin">Centre the impact vector radiates from.</param>
-        /// <param name="impactVector">The blast's impact vector at the ball's position — already
-        /// direction × magnitude, exactly as a prism receives it.</param>
-        /// <param name="blastDomain">Domain that fired the blast; claims the ball.</param>
-        /// <summary>
         /// Route a blast to the ball from whichever peer owns the explosion. Blasts are LOCAL —
         /// a projectile or a juke-fired cavitation punch exists only on the machine that fired
         /// it — while the ball is server-simulated, so a client's blast has to ask. Without this
@@ -2088,6 +2067,27 @@ namespace CosmicShore.Gameplay
             player.RequestBlastBall_ServerRpc(ball.NetworkObjectId, blastOrigin, impactVector);
         }
 
+        /// <summary>
+        /// SERVER: an AOE blast reached the ball. The payload is shoved the way prism mass is
+        /// shoved — with the blast's OWN impact vector (<see cref="AOEExplosion.CalculateImpactVector"/>,
+        /// i.e. <c>ExplosionImpulse.Along(radialDirection)</c>), so a weapon tuned to throw mass
+        /// hard throws the ball hard and no second tuning surface exists to drift from the first.
+        /// There is no distance falloff because prisms do not get one either: the blast either
+        /// reached you or it did not.
+        ///
+        /// Before this, an explosion passed straight through the ball. Nothing in the mode could
+        /// move the payload except a hull or a blade, which quietly made every AOE weapon useless
+        /// on the one object the match is about.
+        ///
+        /// A blast also CLAIMS the ball (<see cref="AstroLeagueSettingsSO.explosionClaimsBall"/>),
+        /// on the same rule as a strike: whoever touched it last owns it. And unlike a prism, the
+        /// ball has no friendly-fire exemption — blowing your OWN ball toward the goal is a play,
+        /// not an accident, so the blast's domain is never a reason to skip.
+        /// </summary>
+        /// <param name="blastOrigin">Centre the impact vector radiates from.</param>
+        /// <param name="impactVector">The blast's impact vector at the ball's position — already
+        /// direction × magnitude, exactly as a prism receives it.</param>
+        /// <param name="blastDomain">Domain that fired the blast; claims the ball.</param>
         public void ApplyBlastServer(Vector3 blastOrigin, Vector3 impactVector, Domains blastDomain)
         {
             if (settings == null || !settings.ExplosionsAffectBall) return;

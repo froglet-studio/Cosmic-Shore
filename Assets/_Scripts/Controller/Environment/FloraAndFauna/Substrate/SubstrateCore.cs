@@ -771,11 +771,6 @@ namespace CosmicShore.Gameplay
             if (P.RingHoldSeconds > 0f) RingHoldClock(pop);
         }
 
-        /// <summary>The opt-in ring hold (<see cref="SubstrateSpeciesParams.RingHoldSeconds"/>): one clock per pilot. It
-        /// runs while the closure around that pilot is saturated (>= q_up), waits while the ring loosens (q_down..q_up),
-        /// and resets when the pilot breaks out (below q_down) or a packmate around it is resting (a fresh ring must hold
-        /// again). Closure is a per-pilot moment, so every hunter around one pilot reads the same clock: they release
-        /// together.</summary>
         /// <summary>During the ring hold a hunter's phase is held at or below this fraction of its danger phase.</summary>
         public const float HoldPhase = 0.4f;
 
@@ -783,6 +778,11 @@ namespace CosmicShore.Gameplay
         /// fraction of the danger phase (bestiary pack.py: intent below 0.2 against the 0.5 it shows at).</summary>
         public const float WindupResetFrac = 0.4f;
 
+        /// <summary>The opt-in ring hold (<see cref="SubstrateSpeciesParams.RingHoldSeconds"/>): one clock per pilot. It
+        /// runs while the closure around that pilot is saturated (>= q_up), waits while the ring loosens (q_down..q_up),
+        /// and resets when the pilot breaks out (below q_down) or a packmate around it is resting (a fresh ring must hold
+        /// again). Closure is a per-pilot moment, so every hunter around one pilot reads the same clock: they release
+        /// together.</summary>
         void RingHoldClock(SubstratePopulation pop)
         {
             var P = pop.P;

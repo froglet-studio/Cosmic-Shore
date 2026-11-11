@@ -32,6 +32,8 @@ STATIC = [
     ('validate_project', 'Tools/CI/validate_project.py', []),
     ('conditional_compilation', 'Tools/Build/check_conditional_compilation.py', ['--root', 'Assets']),
     ('console_logging', 'Tools/Build/check_console_logging.py', []),
+    ('doc_summaries', 'Tools/Build/check_doc_summaries.py', []),
+    ('doc_summaries_self_test', 'Tools/Build/check_doc_summaries.py', ['--self-test']),
     ('fairplay_paid_content', 'Tools/Build/check_fairplay_paid_content.py', []),
     ('fairplay_paid_self_test', 'Tools/Build/check_fairplay_paid_content.py', ['--self-test']),
     ('fairplay_device_reads', 'Tools/Build/check_fairplay_device_reads.py', []),

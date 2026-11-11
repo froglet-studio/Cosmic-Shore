@@ -1137,16 +1137,6 @@ namespace CosmicShore.UI
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
 
         /// <summary>
-        /// Point the goal stack at this mode's objective - its glyph, its name and its target,
-        /// all resolved from the mode's own ScoringRuleSO. Called once the game config is
-        /// authoritative and again at turn start, because a client can reach Start() before the
-        /// config ClientRpc lands; until it does the stack has no metric and draws nothing rather
-        /// than another mode's objective.
-        ///
-        /// The COUNT does not come through here - it arrives on every monitor tick through
-        /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
-        /// </summary>
-        /// <summary>
         /// The eye under the goal stack that appears while somebody is spectating this pilot.
         /// Ensured in code rather than authored: the goal stack lives in two forked GameCanvas
         /// prefabs across a dozen scenes, so an authored badge would be a hand-edit in both and
@@ -1178,6 +1168,16 @@ namespace CosmicShore.UI
             PilotSwapIndicator.Ensure(parent, gameData, stackRect, scoreBar);
         }
 
+        /// <summary>
+        /// Point the goal stack at this mode's objective - its glyph, its name and its target,
+        /// all resolved from the mode's own ScoringRuleSO. Called once the game config is
+        /// authoritative and again at turn start, because a client can reach Start() before the
+        /// config ClientRpc lands; until it does the stack has no metric and draws nothing rather
+        /// than another mode's objective.
+        ///
+        /// The COUNT does not come through here - it arrives on every monitor tick through
+        /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
+        /// </summary>
         protected void RefreshGoalStack()
         {
             var stack = view != null ? view.GoalStack : null;
