@@ -159,3 +159,12 @@ person already needed), and one AI race coach per hull (`IJacksRaceCoach`, `IGob
 `IOrcaRaceCoach`), inert outside its race. **Found:** the shipped Orca AI helm never burns in any mode; a default
 gate-race coach from Breach's burn rule is proposed, not made. Slip Line's spending decision measured at about 1% and is
 documented as such. None of the four has been flown; Rivals and Fairness stay low until people race them.
+
+## 2026-11-11, round 5: the ten most-played vessels
+
+Ranked from 518 recorded flights on the `origin/bugledger/*` branches (the analytics read key was unavailable). Each
+vessel's Time game is upgraded in place by its own session; each adds its own row.
+
+| Vessel | Game | The change | Reading the course saves (I1-I4) | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) | Floor |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Grizzly | Grizzly Time (63) | **Powder kegs**: a keg beside every ring - freeze a bomb in it, get on its far side, blow it: the keg opens the gate and the blast (which pushes away from the bomb) throws you down the next leg; the mouth still counts. I1 kegs / I2 bank shot (a chalk rail marks the exit lane) / I3 shielded cores (strip, then blow) / I4 the tightest credit and regrow. Mouths 96/84/74/66 (were 96/72/58/46). The AI commits from the approach point (Redline's 10/24 -> 24/24 fix), passes beside plain kegs, takes open ones, and is rescued after 18 s without a gate. Toasts 300-301 + the race beats; 4 empty FMOD slots. I4 twin kegs were measured fake (the inside keg right at 99% of gates) and dropped. GRIZZLYTIME.md §0, Docs/GrizzlyTime/POWDER_KEGS_SPEC.md | a bank shot lands a median 101 / 137 / 157 / 199 u nearer the next ring than a straight blow at corners over 60 deg (2.0 / 2.7 / 3.1 / 4.0 s of cruise each; `grizzly_time_course_harness --sweep`, a model) | **9** | 7 | 7 | **5** | **3** | **4** | **5.8** est. (was 4.8) | 3 Rivals |

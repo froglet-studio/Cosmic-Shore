@@ -23,7 +23,7 @@ MonoBehaviour:
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 5
-  ObjectiveText: Ride your blasts down the straights
+  ObjectiveText: Blow the kegs, ride the blasts
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60

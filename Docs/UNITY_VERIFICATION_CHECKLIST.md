@@ -22609,3 +22609,32 @@ hull's; Slingshot's copy keeps Garrett's trained rows).
 - [ ] Fly past it: you curve round it to the line and are flung on with a kick; no pull toward it, no orbit.
 - [ ] Let go of RT halfway round: you are flung at once. Fly past it without turning: it collapses (the Charge ripple), nothing happens to you.
 - [ ] Slingshot I1-I4: AI Stoats finish (model: 61-76 s on Slingshot's trained rows).
+
+## 🔴 Grizzly Time: the powder kegs (2026-11-11, Yash, NOT COMPILED IN UNITY, NOT PLAYED)
+
+`GameModes.GrizzlyTime = 63`. A keg beside every ring (`GrizzlyTimeKegs`, `GrizzlyTimeController.Kegs.cs`); spec
+`Docs/GrizzlyTime/POWDER_KEGS_SPEC.md`, doc `GRIZZLYTIME.md` §0. Ran: `Tools/Build/grizzly_time_course_harness/run.sh`
+(the shipped course and keg code plus `GrizzlyTimeCourseTests` and `GrizzlyTimeKegsTests`, compiled with Roslyn and run
+over 400 seeds x I1-I4; `--self-test` negative controls), `author_grizzly_time_assets.py --check`. Not run: Unity (a
+compile of the controller partial, which the harness does not build), `unity_refcompile` (cannot run on this Windows box).
+
+1. **Compile**, then run the EditMode tests `GrizzlyTimeKegsTests` and `GrizzlyTimeCourseTests`.
+2. **Grizzly Time, I1, two players.** A keg (3 blue cubes in a ring of 12 slabs) stands about 140 u to the inside of
+   every ring. Freeze a full bomb by one and blow it: the keg bursts, the gate clears (the lime ring moves on), and the
+   blast throws you away from the bomb. Threading the ring mouth still clears the gate. The hint toast shows once.
+3. **Regrow.** An opened keg grows back as a live ribbon about 3 s later, never on top of a hull.
+4. **I2 bank shot.** A rail of 6 chalk dots marks each keg's exit lane, on the corner's inside. Blow a keg from its far
+   side (keg between you and the next ring): you are thrown down the lane and "Bank shot (1)" shows; a straight blow
+   throws you wide and shows nothing. Fly the ring-to-ring line: you never hit a chalk dot.
+5. **I3 shielded cores.** The first blast only strips the core's shield (no burst); a second opens it. Leave a stripped
+   keg alone: it shields itself again about 2.5 s later. Confirm a Grizzly blast damages these Blue `GrizzlyTimeKeg`
+   prisms at all (the spec's reading of `PrismSpatialIndex`, unverified).
+6. **Silence.** A rival's blast that catches you silences you for 8 s; your blasts then do not open kegs, and the ring
+   mouths still work.
+7. **AI, every seat, I1-I4.** AI Grizzlies pass beside I1-I2 kegs and open most of them, take open kegs, thread the
+   mouths at I3-I4, and finish every level. An AI stuck at one ring for 18 s is steered back to it.
+8. **Two clients (MPPM).** Both see the same kegs and chalk; a keg one client opens opens on the other; a gate is
+   credited once.
+9. **Feedback and cost.** A crown of debris bursts off each ring you clear; the burst doubles in speed on your final
+   lap. On a phone-class device the bursts and regrow cost no visible hitch. The four sound slots are empty (by design).
+10. **Kegs off.** Untick `kegsAtGates` on the scene's controller: the race is rings only, as before.

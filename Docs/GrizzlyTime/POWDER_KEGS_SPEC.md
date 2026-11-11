@@ -1,5 +1,19 @@
 # Grizzly Time: Powder Kegs, the final build spec
 
+> **As built, 2026-11-11** (`GrizzlyTimeKegs.cs`, `GrizzlyTimeController.Kegs.cs`, GRIZZLYTIME.md §0). The offline
+> harness (`Tools/Build/grizzly_time_course_harness`, 28 tests over 400 seeds x I1-I4, 6 negative controls) changed
+> four things below, each by measurement:
+> - **I4 twin kegs dropped.** The throw-chain sweep picked the inside keg at 99% of gates; reading the choice was worth
+>   0.1% (section 7's bar was 3%). I4's demand is the 100 u credit and the 2 s regrow, as section 7 said to fall back to.
+> - **One chalk rail, on the inside.** The outside rail sat on the ring-to-ring line (median 3-10 u from it); the inside
+>   rail clears it by at least 43 u. A dot that would crowd a mouth is skipped (97.8% of I2 lanes keep all six).
+> - **The bank shot is worth less than section 2 claimed.** At corners over 60 deg a straight blow lands a median
+>   101 / 137 / 157 / 199 u farther from the next ring (I1-I4), never less than 31 u - not "about 300 u". The test asserts
+>   a median of at least 100 u from I2 up.
+> - **Toast ids are 300 / 301** (the band reserved for Grizzly Time while ten Time-game sessions ran in parallel), not
+>   166 / 167. The finish demolition wave (3d) is cut: bursting every keg on the local finish would open them for the AIs
+>   still racing on the host. Four sound slots, not five.
+
 **What this is.** An upgrade of `GameModes.GrizzlyTime = 63`. It keeps the same scene, generator and HeadlongCircuit solver, and 2 laps x 8 rings = 16 gates.
 
 **What it is built from.**

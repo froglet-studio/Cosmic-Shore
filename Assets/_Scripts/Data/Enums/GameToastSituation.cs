@@ -235,6 +235,12 @@ namespace CosmicShore.Data
         // 128-130 (DomainRaceToasts); a bite is 86 (StrikeHitsLanded rose). Posted to the LOCAL pilot only.
         KelpwoodHint = 161,             // once, at the start: lock a rival with the eraser; tame the herds in the kelp
 
+        // Grizzly Time, the Grizzly's Time race (_Scripts/Controller/Arcade/GRIZZLYTIME.md, Docs/GrizzlyTime/
+        // POWDER_KEGS_SPEC.md). Its race beats are the shared 129-132 + 30 (DomainRaceToasts). Posted to the LOCAL pilot
+        // only. 300-309 are reserved for Grizzly Time (2026-11-11: parallel Time-game sessions hold 310-429).
+        GrizzlyTimeHint = 300,          // once, at the start: freeze a bomb in the keg, get on its far side, blow it
+        GrizzlyTimeBankShot = 301,      // a keg blown from its exit side threw you down the lane; {0} = how many so far
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.
