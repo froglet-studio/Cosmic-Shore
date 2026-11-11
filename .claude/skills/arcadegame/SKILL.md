@@ -460,7 +460,9 @@ Glasshouse (the Angler's Mass game, 2026-11-10, `claude/peaceful-cerf-vpl3x8`, `
   `Random.value < p`, so 0 never plants, and reproduction (`Flora.SpawnOffspring`, its parent's colour) still spreads it.
   A non-positive `FloraPopulationScale` is read as 1, so the scale cannot do this.
 - **`ScoreReveal`'s fourth argument is `formatAsTime`, not "did win".** A points mode passes `false` on both sides;
-  Tapestry and Bloomrush pass `true` on victory and so show a volume as `MM:SS:CS`.
+  Tapestry and Bloomrush passed `true` on victory and so showed a volume as `MM:SS:CS` (fixed 2026-11-11,
+  `claude/wonderful-franklin-x851ah`). `PointsRuleRevealTests.EveryShippedPointsRule_RevealsAWin_AsACount` now fails
+  any scoring-rule asset with `golfRules: 0` whose win reveal formats as a time.
 - **"The next free id" was taken twenty minutes before the push** (Harvest, the Thresher's Space game, on a sibling
   session of the same plan). Re-scan every branch for the enum value AND the toast id right before the first push,
   not only at design time. The generator mints guids from names, so a renumber moved only the ids and the
