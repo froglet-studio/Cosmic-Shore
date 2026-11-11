@@ -167,6 +167,11 @@ design and, where they name parts, the placeholder's:
     Limits: the turn is applied on the ring's plane, so the pods and barrels standing off it smear with a little parallax;
     a TRANSPARENT in front of the ring is overdrawn (the pass runs after the transparents); while the ring is hidden the
     renderer's mesh is the ring-less copy, so a crystal fusing onto the hull in that frame finds no ring faces.
+    **The layer draws each material with the pass URP's forward renderer uses** (`BrittleStarRingSmearPass.ForwardPass`):
+    one tagged UniversalForward / UniversalForwardOnly / SRPDefaultUnlit, else the first UNTAGGED pass. The hull's
+    `VesselGraph` is an Unlit Shader Graph, whose forward pass has no LightMode tag; until 2026-11-10 the lookup matched
+    tags only, the layer came out empty, and the hidden ring vanished whenever it turned (Garrett: "too dark to see"). A
+    request whose layer would be empty is now skipped without being marked drawn, so the hull shows its own ring.
 - **Card images** (icon, inactive, silhouette, large, hangar preview) are renders of the MODEL (`Tools/Build/vessel_model/render_cards.py BrittleStar`, `--check`), the four ability icons are
   `Tools/Build/author_brittlestar_icons.py` (the Thresher's icon language).
 
@@ -548,6 +553,8 @@ None of that is a play test. In order:
     background). Hold Space Mode and RT while spinning: the five guns still fire from the drawn turrets. Check the
     smear in the Scene view too, and that the ring reappears at once when the stick stops. Profile one frame of a
     spin (`BrittleStar ring layer` / `BrittleStar ring smear` in the Frame Debugger) on a phone.
+    The ring must stay VISIBLE the whole time it spins (2026-11-10: it vanished, because the layer drew nothing): the
+    Frame Debugger's `BrittleStar ring layer` holds one draw per ring submesh.
 14. Run the edit-mode suite: `BrittleStarTests`, `BrittleStarRingSpinTests`, `EnumIntegrityTests`, `OneThumbVesselCoverageTests`,
     `ToyVesselRosterCoverageTests`, `CrystalHullFusionConfigTests`.
 

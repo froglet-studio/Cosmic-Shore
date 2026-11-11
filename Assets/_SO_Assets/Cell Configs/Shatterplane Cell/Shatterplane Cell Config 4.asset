@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Shatterplane Cell Config 4
+  m_EditorClassIdentifier:
+  CellName: Shatterplane
+  Description: 'Reliquary - intensity 4 of Shatterplane: eight plates braced by super-shielded ribs on
+    every sixth line with danger rims, every other one half behind a super-shielded grille,
+    four crystals. 4588 prisms, all neutral (3232 breakable, 1356 super-shielded, 704
+    danger). Membrane radius 1200, spawn ring 780, the standard nucleus resized to 470 u by
+    the controller (the ring blast is as wide as the nucleus; play geometry, not a claim),
+    the crystal field laid by the controller on the plates'' axes. No flora; live elemental
+    fauna (the Blob tadpole and shark, each creature rolling one of four elements, at 2x
+    their authored populations). Authored by Tools/Build/author_shatterplane_assets.py -
+    re-run it rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 4
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 120
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: 0804dc01a73e24b6b24996bdb4318ad3, type: 2}
+  EnvironmentPrefab: {fileID: 8800000000000203, guid: 4fa409dfb742f3e91454a38a9480114d, type: 3}
+  EnvironmentIntensity: 4
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 5288
+    RestlessExit: 5088
+    FrenzyEnter: 8188
+    FrenzyExit: 7588
+    RestlessEnterVolume: 240600
+    RestlessExitVolume: 237400
+    FrenzyEnterVolume: 287000
+    FrenzyExitVolume: 277400

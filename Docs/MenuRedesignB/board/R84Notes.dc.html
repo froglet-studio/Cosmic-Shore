@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 84 - notes: the scoring rule, the names, the tier sheet to confirm</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&amp;family=Saira:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#13010C}
+.app{position:relative;overflow:hidden;color:#F5E6EE;background:radial-gradient(ellipse 70% 60% at 50% 30%,#210118,#13010C 72%);font-family:'Saira',sans-serif}
+.app *{box-sizing:border-box}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:2px solid #65E1DF;outline-offset:2px}
+.disp{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.lab{font-size:12px;letter-spacing:.22em;color:#A8869A;text-transform:uppercase}
+.soft{-webkit-mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%);mask-image:radial-gradient(ellipse 58% 62% at 50% 50%,#000 52%,transparent 100%)}
+.hud{position:absolute;padding:22px 24px;background:rgba(19,1,12,.88)}
+.chip{border:0;cursor:pointer;height:34px;padding:0 14px;background:transparent;color:#A8869A;box-shadow:inset 0 0 0 1px #70405F;font-size:13px;letter-spacing:.06em;transition:color .2s cubic-bezier(.45,0,.2,1),background .2s cubic-bezier(.45,0,.2,1)}
+.chip:hover{color:#F5E6EE}
+.chip.on{color:#13010C;background:#65E1DF;box-shadow:none}
+/* the certificate: five segments, filled in ink, the stage word in Gold only when it is Arena Ready (a first place) */
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg i{display:block;height:8px;background:#70405F;opacity:.45;transition:opacity .4s cubic-bezier(.45,0,.2,1),background .4s cubic-bezier(.45,0,.2,1)}
+.seg i.on{background:#F5E6EE;opacity:1}
+.seg i.part{background:linear-gradient(90deg,#F5E6EE var(--p),#70405F var(--p));opacity:1}
+.seg.thin i{height:4px}
+.chk{display:grid;grid-template-columns:20px 130px 1fr;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(112,64,95,.5);font-size:14px}
+.chk svg{width:16px;height:16px}
+.chk span{color:#A8869A;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.chk.no{color:#6C5A65}
+.stage{font-family:'Saira Condensed',sans-serif;font-weight:700;text-transform:uppercase;font-size:30px;letter-spacing:.04em}
+.stage.gold{color:#FFC549}
+.stage.dim{color:#A8869A}
+/* a tier letter: S solid (Gold, a first place), A outlined ink, B soft, C off; a dash is no game of that element */
+.tier{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:22px}
+.tier.tS{background:#FFC549;color:#13010C}
+.tier.tA{box-shadow:inset 0 0 0 2px #F5E6EE;color:#F5E6EE}
+.tier.tB{box-shadow:inset 0 0 0 1px #70405F;color:#A8869A}
+.tier.tC{color:#6C5A65;box-shadow:inset 0 0 0 1px rgba(112,64,95,.5)}
+.tier.t-{color:#6C5A65;font-size:16px}
+.vsel{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:0;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px #70405F;transition:background .2s cubic-bezier(.45,0,.2,1)}
+.vsel.on{background:#3C1D31;box-shadow:inset 0 0 0 1px #65E1DF}
+.vsel img{width:46px;height:26px;object-fit:cover}
+.trow{display:grid;grid-template-columns:64px 170px 300px 70px 160px repeat(4,70px);gap:18px;align-items:center;height:42px;border-bottom:1px solid rgba(112,64,95,.45);font-size:15px}
+.trow img{width:64px;height:36px;object-fit:cover}
+.trow.h{height:34px;font-size:11px;letter-spacing:.2em;color:#A8869A;text-transform:uppercase}
+.fcard{display:flex;flex-direction:column;gap:7px;padding:8px 10px 10px;background:rgba(60,29,49,.42);box-shadow:inset 0 0 0 1px rgba(112,64,95,.6)}
+.fcard img{width:100%;height:62px;object-fit:cover;-webkit-mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 50%,transparent 100%);mask-image:radial-gradient(ellipse 60% 64% at 50% 50%,#000 50%,transparent 100%)}
+.fcard b{font-family:'Saira Condensed',sans-serif;font-size:21px;text-transform:uppercase;line-height:1}
+.tier.hot{outline:2px solid #65E1DF;outline-offset:1px}
+.tile{display:flex;flex-direction:column;gap:6px;width:150px;padding:8px;background:rgba(60,29,49,.35);box-shadow:inset 0 0 0 1px rgba(112,64,95,.6)}
+.tile img{width:134px;height:70px;object-fit:cover}
+.tile b{font-family:'Saira Condensed',sans-serif;font-size:19px;text-transform:uppercase;line-height:1}
+.tile small{font-size:11px;color:#A8869A}
+.lane{display:grid;grid-template-columns:90px 1fr;gap:20px;align-items:center;min-height:132px;border-bottom:1px solid rgba(112,64,95,.5);padding:10px 0}
+.lane .tier{width:72px;height:72px;font-size:46px}
+.lane .tiles{display:flex;gap:12px;flex-wrap:wrap}
+.grow{animation:grow .7s cubic-bezier(.45,0,.2,1) both}
+@keyframes grow{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
+@media (prefers-reduced-motion:reduce){.grow{animation:none}}
+</style>
+</helmet>
+<div class="app" style="width:1920px;height:900px">
+
+<div style="position:absolute;left:64px;top:48px;width:820px;font-size:15px;line-height:1.6">
+  <div class="lab" style="color:#65E1DF">REV 84 NOTES</div>
+  <h1 class="disp" style="font-size:44px;margin:6px 0 14px">Flight certificate and element tiers</h1>
+  <p style="margin:0 0 10px"><b>Name (suggested):</b> the <b>Flight Certificate</b>, with three stages a vessel climbs:
+  <b>Launch Ready</b> (the minimum viable pass), <b>Fleet Ready</b>, <b>Arena Ready</b>. Below Launch Ready it is <i>In the hangar</i>.</p>
+  <p style="margin:0 0 10px"><b>Five checks, 20% each,</b> read from the game's own files by the codex (never typed):
+  1 all four abilities in the map; 2 the level-5 upgrades, 5% per wired one; 3 a Time game; 4 a Mass or a Space game (either);
+  5 a Charge game. A game is an arcade card whose element is that element.</p>
+  <p style="margin:0 0 10px"><b>Launch Ready</b> = checks 1, 2 (all four wired) and 3. <b>Fleet Ready</b> = and 4. <b>Arena Ready</b> = all five.</p>
+  <p style="margin:0 0 10px"><b>Tiers</b> S, A, B, C per element: S the best of the fleet in that element's game, C the least. A dash where the
+  vessel has no game of that element. <b>The letters on A, B and C are placeholders</b>: every vessel is rated by you first.</p>
+  <p style="margin:0 0 10px"><b>Only solo vessels.</b> Crews (Goby &amp; Pistol, Wrasse &amp; Grouper, Orca, Honeyguide) and the Termite (no map) are left out.</p>
+  <p style="margin:0"><b>Fleet view (B):</b> sort by completion or by one element's tier, and filter by stage and by an element's tier letter, each on its own and together (your ask of 2026-11-10). <b>Colour:</b> ink for done; Gold only for Arena Ready and an S (a first place, the style guide's Gold); no element colour.
+  A is recommended: the certificate sits where a reader already looks at one vessel; B and C can come with it as the fleet views.</p>
+</div>
+<div style="position:absolute;left:940px;top:48px;width:920px;font-size:13px">
+  <div class="lab" style="margin-bottom:8px">TODAY, FROM THE CODEX DATA &middot; TIERS TO RATE (?)</div>
+  <table style="border-collapse:collapse"><thead><tr style="color:#A8869A;font-size:11px;letter-spacing:.16em;text-align:left">
+  <th style="padding:3px 14px 3px 0">VESSEL</th><th>%</th><th>STAGE</th><th style="padding:3px 10px 3px 0">CHARGE</th><th style="padding:3px 10px 3px 0">MASS</th><th style="padding:3px 10px 3px 0">SPACE</th><th style="padding:3px 10px 3px 0">TIME</th></tr></thead>
+  <tbody><tr><td style="padding:3px 14px 3px 0">Manta</td><td class="num" style="padding:3px 14px 3px 0">100%</td><td style="padding:3px 14px 3px 0;color:#FFC549">Arena Ready</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Dolphin</td><td class="num" style="padding:3px 14px 3px 0">100%</td><td style="padding:3px 14px 3px 0;color:#FFC549">Arena Ready</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Rhino</td><td class="num" style="padding:3px 14px 3px 0">60%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">Launch Ready</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Urchin</td><td class="num" style="padding:3px 14px 3px 0">80%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">Fleet Ready</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Grizzly</td><td class="num" style="padding:3px 14px 3px 0">75%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">In the hangar</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Squirrel</td><td class="num" style="padding:3px 14px 3px 0">100%</td><td style="padding:3px 14px 3px 0;color:#FFC549">Arena Ready</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Serpent</td><td class="num" style="padding:3px 14px 3px 0">80%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">Launch Ready</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Shrike</td><td class="num" style="padding:3px 14px 3px 0">45%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">In the hangar</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Sparrow</td><td class="num" style="padding:3px 14px 3px 0">100%</td><td style="padding:3px 14px 3px 0;color:#FFC549">Arena Ready</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Scarab</td><td class="num" style="padding:3px 14px 3px 0">100%</td><td style="padding:3px 14px 3px 0;color:#FFC549">Arena Ready</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Thresher</td><td class="num" style="padding:3px 14px 3px 0">95%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">In the hangar</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Stoat</td><td class="num" style="padding:3px 14px 3px 0">60%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">Launch Ready</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Brittle Star</td><td class="num" style="padding:3px 14px 3px 0">100%</td><td style="padding:3px 14px 3px 0;color:#FFC549">Arena Ready</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Angler</td><td class="num" style="padding:3px 14px 3px 0">70%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">In the hangar</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Starlings</td><td class="num" style="padding:3px 14px 3px 0">20%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">In the hangar</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td></tr><tr><td style="padding:3px 14px 3px 0">Jacks</td><td class="num" style="padding:3px 14px 3px 0">60%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">Launch Ready</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Meerkat</td><td class="num" style="padding:3px 14px 3px 0">60%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">Launch Ready</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Tiger Moth</td><td class="num" style="padding:3px 14px 3px 0">100%</td><td style="padding:3px 14px 3px 0;color:#FFC549">Arena Ready</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td></tr><tr><td style="padding:3px 14px 3px 0">Swordfish</td><td class="num" style="padding:3px 14px 3px 0">60%</td><td style="padding:3px 14px 3px 0;color:#F5E6EE">In the hangar</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td><td style="padding:3px 10px 3px 0;color:#F5E6EE">?</td><td style="padding:3px 10px 3px 0;color:#6C5A65">-</td></tr></tbody></table>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

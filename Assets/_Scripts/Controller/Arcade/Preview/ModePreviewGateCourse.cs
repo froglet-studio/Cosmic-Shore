@@ -137,7 +137,7 @@ namespace CosmicShore.Gameplay
 
             _intensity = Mathf.Clamp(intensity, 1, 4);
             _source.ResolveShell(nucleusRadius, out float inner, out float outer);
-            int seed = ModePreviewPlantingModel.StableSeed(mode.ToString()) & 0x7FFFFFFF;
+            int seed = ModePreviewTrackModel.CourseSeed(mode);   // the card's model draws this same course
             int target = _source.AuthoredGateTarget(_intensity);
 
             var request = new RaceCourseRequest(seed, _intensity, target, inner, outer, config);
