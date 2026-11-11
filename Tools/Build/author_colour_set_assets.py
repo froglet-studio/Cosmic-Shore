@@ -352,8 +352,8 @@ def self_test():
         planted("an example a field lands in the wrong pigment of",
                 [p for p in problems(dict(defs, sets={}, examples={"dusk": dict(old, domains=dict(old["domains"], lime=lime))}),
                                      orig) if p.startswith("example ")])
-    else:
-        caught += 1
+    else:   # never a silent pass: a case that cannot be planted any more is a missed case until it is replanted
+        planted("an example a field lands in the wrong pigment of (no Dusk: replant this case)", [])
     print("self-test: %d/4 caught" % caught)
     return caught == 4
 
