@@ -22421,3 +22421,15 @@ rail and are always free).
    a view that paints only when its data changes. Note the screen and object.
 6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
 
+
+### 🔴 First-login guide holds the KEYBOARD on the path again (`claude/training-ftue-mbxf1o`, 2026-11-11) — NOT EDITOR-VERIFIED
+
+`MenuSpotlight.HoldPadOnPath` had lost `69b9a9d3f`'s any-device fix (the comms-window commit `2679449e67`
+put the gamepad-only early-out back), so with no pad connected the arrow keys could walk to a dimmed
+control during the guide. Restored; `unity_refcompile` only, not run in the editor.
+
+1. Reset first login (FrogletTools > Quest Graph > Reset Microgame Lessons, then the Quest Graph Editor's restart).
+2. With NO gamepad connected, on the guide's first step press the arrow keys: the selection stays on the
+   spotlit control and never reaches a top-nav tab or another Home button; Enter presses the spotlit one.
+3. With the mouse only (no key pressed), no focus ring appears on the spotlit control.
+4. Settings still opens from Home while the guide runs, and SKIP (bottom right) still ends the tutorial.
