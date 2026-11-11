@@ -261,6 +261,7 @@ class ExtrasWorld:
         # skip: the recorder lists a hull's jet and tail trails whether or not the game shows them (a Squirrel's
         # jets are gone above ~120 u/s though their points go on being recorded), so those stay with VesselWorld
         self.skip = skip
+        self.bursts = False  # stand-in boxes for burst pieces: no gain measured on Skim Race, Regatta or Maelstrom
         self.keys = {}
         for d in read_jsonl(session.path, "extras_key"):
             self.keys[d["frame"]] = d
@@ -297,6 +298,24 @@ class ExtrasWorld:
             lines.append((p, hw, rgba, any(s in x.get("material", "") for s in self.soft)))
         if lines:
             out["lines"] = lines
+        # destroyed and consumed prisms (PrismCollisionBurst.hlsl): the prism's own box, cut into fragments that fly
+        # apart or wind into a sink and shrink away, coverage linear in age. Stand-in: the box, shrinking with its
+        # age, drifting to the sink when it is a suction. _SliceTiming = (start, life, -, kind)
+        B = d.get("bursts", []) if self.bursts else []
+        if B:
+            m = np.array([b["m"] for b in B], np.float64).reshape(-1, 4, 4)  # column-major: rows here are columns
+            tm = np.array([b["_SliceTiming"] for b in B], np.float64)
+            p = np.clip((d["t"] - tm[:, 0]) / np.maximum(tm[:, 1], 1e-3), 0.0, 1.0)
+            k = (1.0 - p)[:, None]
+            bs = np.array([b.get("bounds", [1, 1, 1]) for b in B], np.float64)
+            pos = m[:, 3, :3].copy()
+            suck = tm[:, 3] == 7
+            sink = np.array([b["_SliceCentre"][:3] for b in B], np.float64)
+            pos[suck] += (sink[suck] - pos[suck]) * (p[suck, None] ** 2)
+            pos[~suck] += m[~suck, 2, :3] * 0.0
+            br = np.array([b["_BrightColor"][:3] for b in B], np.float64)
+            dk = np.array([b["_DarkColor"][:3] for b in B], np.float64)
+            out["box"] = _rows(pos, m[:, 0, :3] * bs[:, 0:1] * k, m[:, 1, :3] * bs[:, 1:2] * k, m[:, 2, :3] * bs[:, 2:3] * k, br, dk, 4.0)
         # translucent shells (explosion ripples, charge fields) are not solid stand-in material
         M = [m for m in d.get("meshes", []) if m["material"] not in self.clear and m["material"].split("#")[0] not in self.clear]
         if M:
