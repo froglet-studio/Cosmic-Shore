@@ -99,6 +99,11 @@ namespace CosmicShore.Gameplay
         const float DriftEngageDurationSec = 0.060f;
         const float DriftReleaseDurationSec = 0.090f;
 
+        // The plant knock is an EVENT: one per bomb the Manta plants. It sits under alert and punish (a hull hit
+        // must still cut through) and above skim and the textures, which it suppresses for its own short length.
+        const float PlantMinIntervalSec = 0.150f;  // a graze that plants twice in a frame knocks once
+        const float PlantDurationSec = 0.130f;     // the knock's length: skim and textures wait this long
+
         static float s_lastSkimTime = -999f;
         static float s_skimBusyUntil = -999f;      // spray is suppressed until here (skim outranks it)
         static float s_lastPunishTime = -999f;
@@ -110,6 +115,8 @@ namespace CosmicShore.Gameplay
         static float s_lastDriftTime = -999f;
         static float s_lastDriftKickTime = -999f;
         static float s_driftKickBusyUntil = -999f; // textures are suppressed until here
+        static float s_lastPlantTime = -999f;
+        static float s_plantBusyUntil = -999f;     // skim is suppressed until here (textures via s_skimBusyUntil)
 
         // These are compared against Time.unscaledTime, which restarts at 0 every play session —
         // with domain reload disabled a leftover busy-until stamp from a long session would
@@ -128,6 +135,8 @@ namespace CosmicShore.Gameplay
             s_lastDriftTime = -999f;
             s_lastDriftKickTime = -999f;
             s_driftKickBusyUntil = -999f;
+            s_lastPlantTime = -999f;
+            s_plantBusyUntil = -999f;
         }
 
         /// <summary>
@@ -142,6 +151,7 @@ namespace CosmicShore.Gameplay
             float now = Time.unscaledTime;
             if (now < s_alertBusyUntil) return;                  // alert outranks everything
             if (now < s_punishBusyUntil) return;                 // punish outranks skim — don't interrupt it
+            if (now < s_plantBusyUntil) return;                  // so does the plant knock
             if (now - s_lastSkimTime < SkimMinIntervalSec) return;
             s_lastSkimTime = now;
             s_skimBusyUntil = now + SkimDurationSec;   // spray must not cut the reward short
@@ -296,6 +306,28 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The PLANT knock (Caleb, 2026-11-11): the Manta planting a bomb on a vessel or a creature. Two quick knocks,
+        /// mid-low frequency on both motors - "it's on" - distinct from the skim's single bright tick and the punish's
+        /// one long thud. Under alert and punish, over skim and the textures. Fenced to the Manta's bomb plant
+        /// (<c>MantaStingActionExecutor.SpendBomb</c>); do not hang it on anything else (Docs/HAPTICS.md).
+        /// </summary>
+        public static void PlayPlant()
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;
+            if (now < s_punishBusyUntil) return;
+            if (now - s_lastPlantTime < PlantMinIntervalSec) return;
+            s_lastPlantTime = now;
+            s_plantBusyUntil = now + PlantDurationSec;
+            s_skimBusyUntil = Mathf.Max(s_skimBusyUntil, s_plantBusyUntil);   // the textures yield to it too
+
+            EnsureClips();
+            PlayPattern(s_plantJson, s_plantRumble, level);
+        }
+
+        /// <summary>
         /// The drift PRESS kick: one crisp, firm tap the moment a drift engages. Mid frequency,
         /// both motors, a soft attack (not the skim's sharp transient) — "you're in".
         /// </summary>
@@ -350,6 +382,7 @@ namespace CosmicShore.Gameplay
         static byte[] s_driftJson;
         static byte[] s_driftEngageJson;
         static byte[] s_driftReleaseJson;
+        static byte[] s_plantJson;
         static GamepadRumblePattern s_skimRumble;
         static GamepadRumblePattern s_punishRumble;
         static GamepadRumblePattern s_alertRumble;
@@ -358,6 +391,7 @@ namespace CosmicShore.Gameplay
         static GamepadRumblePattern s_driftRumble;
         static GamepadRumblePattern s_driftEngageRumble;
         static GamepadRumblePattern s_driftReleaseRumble;
+        static GamepadRumblePattern s_plantRumble;
         static bool s_clipsBuilt;
 
         static void EnsureClips()
@@ -475,6 +509,20 @@ namespace CosmicShore.Gameplay
                 new[] { 40, 50 },
                 low:  new[] { 0.75f, 0.35f },
                 high: new[] { 0.25f, 0.10f });
+
+            // Plant — a double KNOCK, ~130 ms: two short firm hits with a gap, mid-low frequency (0.35), both motors
+            // with the low one leading. Two hits is the signature: the skim is one bright tick, the punish one long
+            // thud. The second knock is a little softer, so it reads as "clamped on" rather than a stutter.
+            s_plantJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":1.0}," +
+                "{\"time\":0.04,\"amplitude\":0.0}," +
+                "{\"time\":0.08,\"amplitude\":0.75}," +
+                "{\"time\":0.13,\"amplitude\":0.0}",
+                frequency: "0.35", durationSec: "0.13");
+            s_plantRumble = Rumble(
+                new[] { 40, 40, 50 },
+                low:  new[] { 0.90f, 0.0f, 0.65f },
+                high: new[] { 0.55f, 0.0f, 0.40f });
         }
 
         // Builds a continuous .haptic clip: the caller supplies the amplitude breakpoints; frequency

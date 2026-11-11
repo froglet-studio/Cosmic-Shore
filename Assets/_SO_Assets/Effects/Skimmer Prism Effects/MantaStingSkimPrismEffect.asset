@@ -12,4 +12,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2dcf021070794c32ad8fedb2fc9c5ede, type: 3}
   m_Name: MantaStingSkimPrismEffect
   m_EditorClassIdentifier:
-  hapticMinStrength: 0.35

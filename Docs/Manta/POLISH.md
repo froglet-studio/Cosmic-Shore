@@ -21,15 +21,19 @@ Manta's own trail waking its colliders inside the sphere when it flies slower th
 second) the clip never ended, so the motors held one steady level, whether or not the bay could take
 any more energy (capacity 1, 0.34 a skim: full after three).
 
-**Changed.** The Sting container no longer lists `SkimmerHapticsByPrismEffect`;
-`MantaStingSkimPrismEffectSO` plays the same skim pulse (same 0.35 floor, same closeness scaling)
-only when `AddSkimCharge` actually paid energy. Generator `author_manta_kit_assets.py` updated
-(`--check` clean). Branch `claude/manta-skim-rumble-fix`.
+**First try (rejected).** Pulse only on a skim that pays energy. Caleb flew it for 7 minutes in the Toybox
+and felt nothing, which confirmed the hum was gone but left the pad silent.
 
-**Only the editor can judge.** The feel on a real pad: three bright ticks as the bay fills, then
-silence through the cell; a hull hit empties the bay and the ticks come back on the next skims.
+**Decided (Caleb, 2026-11-11).** No haptic for skimming at all; sound and visuals tell it. The pad speaks only
+when something meaningful happens to the pilot: a **hull collision** (the fleet's punish thud, already in the
+Manta's vessel container) and **planting a bomb** (a new, fenced plant knock: `HapticController.PlayPlant`,
+two quick mid-low knocks, fired from `MantaStingActionExecutor.SpendBomb`). The Sting container no longer lists
+`SkimmerHapticsByPrismEffect` (generator `author_manta_kit_assets.py`, `--check` clean). The fleet-wide skim
+cadence (30 ms floor under a 70 ms clip) stays as it is on the Squirrel and Rhino: Caleb and Garrett have not
+felt a hum there. Branch `claude/manta-skim-rumble-fix`, PR #1905.
 
-**Next question.** Is "pulse on a paying skim" enough feedback, or does a full bay want its own tell
-(a world-side one, not a haptic)? Separately, the fleet-wide skim train (30 ms floor under a 70 ms
-clip) flattens into a hum on any dense stream; that is Garrett's skim feel to decide (`Docs/HAPTICS.md`
-follow-ups).
+**Only the editor can judge.** On a real pad: silence while skimming through the cell; one heavy thud on a hull
+hit; two quick knocks on each plant (graze a rival vessel or a creature with an armed bomb).
+
+**Next question.** Do the knock and the thud read clearly mid-fight, and does the omni cash-out (a big, rare
+event) want the alert shake?
