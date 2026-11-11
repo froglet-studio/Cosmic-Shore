@@ -22,6 +22,7 @@ import math
 import multiprocessing as mp
 import os
 import random
+import sys
 import time
 
 import numpy as np
@@ -151,6 +152,18 @@ def _lab_eval(frames_list):
         return {"ok": True, "per": [float(x) for x in per], "sec": time.time() - t0}
     except Exception as e:
         return {"ok": False, "err": f"{type(e).__name__}: {e}"[:300], "sec": time.time() - t0}
+
+
+def _lab_run(fn, frames_list, mark):
+    """One lab job in a scoring process: leave the job's mark file first (so the search can tell a job a dead pool
+    failed after it had started from one it never started), then score with fn. fn is _lab_eval, passed in rather than
+    named here so that a stand-in scorer a test installs reaches the scoring process too."""
+    if mark:
+        try:
+            open(mark, "w").close()
+        except OSError:
+            pass
+    return fn(frames_list)
 
 
 def window_grid(args):
@@ -403,61 +416,166 @@ class LabState:
     LAB_CHUNK chunks, see run()). A job's clips go as soon as it finishes. Without the bound, an island at generation 0
     queued every seed's clips and was OOM-killed at about 9.8 GB (labA, 2026-11-10).
     Failures: the scoring processes are a concurrent.futures ProcessPoolExecutor, not a multiprocessing.Pool. A Pool
-    whose idle worker is killed (the OOM killer's likeliest target, at about 1.2 GB) keeps that worker's task-queue
-    lock forever: no job runs again and Pool.terminate() itself blocks on the lock, so the island would hang for good
-    (found by review on 2026-11-11 and reproduced). The executor instead fails every unfinished job at once
-    (BrokenProcessPool): the pool restarts and each of those jobs is sent once more, so a dead process costs about the
-    jobs it was running, not the whole queue. A pool that finishes nothing for STALL seconds while submit() waits is
-    stopped and restarted the same way. A job still running when collect() gives up (QUIET with nothing finishing, or
-    its deadline) goes unscored, and the pool restarts so the hung process dies."""
+    whose idle worker is killed (the OOM killer's likeliest target, at about 1.2 GB) keeps that worker's task-queue lock
+    forever: no job runs again and Pool.terminate() itself blocks on the lock, so the island would hang for good (found
+    by review on 2026-11-11 and reproduced). The executor instead fails every unfinished job at once
+    (BrokenProcessPool): the pool restarts and those jobs are sent again. Each job marks a file when a process starts it
+    (_lab_run). A job that had not started goes again at once, for free. A job that had started is charged a send, gets
+    RETRIES more, and is a suspect: suspects go again one at a time (the suspect slot), so when one is a candidate whose
+    clips kill or hang the scorer every time, its next failure is charged to it and to nobody else it was queued with,
+    and it costs only itself. (Its restarts still count toward a stop when nothing scores in between: three that hang
+    the scorer, left at the end of a payload with nothing else to score, stop the lab.) Suspects waiting their turn hold
+    their clips and count toward MAX_PENDING, so when they fill it while a scoring process has nothing to do, submit()
+    sends the oldest at once, outside the slot (it can then cost a job beside it, as before the slot) rather than leave
+    the scorers idle. A pool that finishes nothing for STALL seconds while submit() waits, or for QUIET seconds while
+    collect() waits, is stopped and restarted the same way (collect() does that up to GIVE_UPS times, then what is left
+    goes unscored). A pool that cannot start, refuses a job, or loses its manager thread without breaking (before Python
+    3.12.1 that thread dies so when its queue feeder thread cannot start, and the pool would never finish a job again;
+    _reap() restarts it as soon as it sees that, and its jobs go again, see _bury) counts as a failed restart. The
+    second and third restarts in a row with no job scored wait first (BACKOFF, then twice that), so a scorer that cannot
+    load for a few seconds is ridden out. When the pool after MAX_RESTARTS such restarts fails too, the lab stops,
+    loudly: the candidates it holds, and those that come until REVIVE seconds later (doubling while it keeps failing),
+    read LAB_MISSING; then the lab starts over as at the start of the run, on trial until its first scored job (a pool
+    that hangs on trial without loading the scorer stops it again at once, see _hung). Nothing here raises into the
+    search."""
     LAB_MISSING = 10.0
     MAX_PENDING = 24   # unfinished lab jobs before submit() waits for one to finish
     STALL = 300.0      # submit(): nothing finished for this long while it waits means the pool is wedged
     QUIET = 120.0      # collect(): no job finishing for this long (plus 8 s a window) means a scoring process hangs
     MAX_RESTARTS = 3   # restarts in a row with no job scored in between before the lab stops scoring
-    RETRIES = 1        # times a job that a dead or stopped pool failed is sent again
+    BACKOFF = 5.0      # wait before the 2nd restart in a row with no job scored, doubled before the 3rd (5 s, 10 s)
+    REVIVE = 120.0     # a stopped lab starts over this long after it stopped; doubles while it keeps failing
+    REVIVE_MAX = 1800.0
+    UNSTICK = 5.0      # Python before 3.11.5: how long a dead pool's own shutdown gets before its job pipe is closed
+    RETRIES = 1        # times a job that had STARTED when a dead or stopped pool failed it is sent again
+    GIVE_UPS = 3       # collect(): hung pools restarted (their jobs sent again) before the unfinished jobs time out
 
     def __init__(self, args, ctx):
         self.on = getattr(args, "lab_w", 0.0) > 0
         self.w = getattr(args, "lab_w", 0.0)
         self.n = max(1, int(getattr(args, "lab_workers", 2)))
-        # jobs: id(candidate) -> [candidate, future, clips, sends]; the clips are kept only until the job is final, so
-        # a job a dead pool failed can be sent again
+        # jobs: id(candidate) -> [candidate, future, clips, charged, mark, sends]. charged counts the sends that had
+        # started when a pool failed them; mark is the file this send's process makes when it starts the job; the
+        # clips are kept only until the job is final, so a job a dead pool failed can be sent again
         self.ctx, self.pool, self.jobs, self.dead = ctx, None, {}, False
         self.errors, self.wait, self.scored, self.restarts, self.failed_restarts, self.resent = 0, 0.0, 0, 0, 0, 0
+        self.t_pool, self.mark_dir = 0.0, None
+        self.suspects = []  # keys of the suspects waiting for the slot, oldest first
+        self.graves = []  # per killed pool: (a weak ref to its manager thread, its unfinished futures) until done
+        self.deaths, self.t_revive, self.revive_in, self.revived = 0, 0.0, self.REVIVE, False
         if self.on:
+            import tempfile
             from .labscore import LAB
+            self.mark_dir = tempfile.mkdtemp(prefix="agenome-lab-")
             self.new_pool()
             print(f"lab: weight {self.w}, {self.n} scoring processes, scorer {LAB}", flush=True)
 
+    # ---- marks: a job's process makes its mark file when it starts the job
+    def _mark(self, r, k):
+        return os.path.join(self.mark_dir, f"{id(r)}-{k}") if self.mark_dir else None
+
+    @staticmethod
+    def _rm(path):
+        if path:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
+    def _final(self, job):
+        """The job will not be sent again: its clips go now."""
+        job[2] = None
+        self._rm(job[4])
+
     def _kill(self):
         """Stop the current pool without ever blocking: kill its processes (the executor then fails whatever is still
-        unfinished) and let it clean up in the background."""
+        unfinished) and let it clean up in the background. (Before Python 3.11.5, where no thread can start, a pids
+        limit say, it waits here instead, up to UNSTICK seconds.) Its unfinished jobs go to the graves: a pool whose
+        manager thread is gone cannot fail them itself, so _bury() does."""
         old, self.pool = self.pool, None
         if old is None:
             return
+        # shutdown() drops the manager thread; the job table stays
+        mgr, pending = getattr(old, "_executor_manager_thread", None), getattr(old, "_pending_work_items", None)
         for p in list((getattr(old, "_processes", None) or {}).values()):
             try:
                 p.kill()
             except Exception:
                 pass
         # Python 3.10, and 3.11 before 3.11.5, never close this end of the job pipe when a pool breaks (gh-94777): the
-        # thread feeding it stays blocked part-way through writing a clip, the old pool never shuts down, and the
-        # interpreter's exit waits on it for good. With every reader closed the write fails (EPIPE, which the executor
-        # ignores) and the thread ends. Later Pythons close it themselves; closing it twice is harmless.
-        try:
-            old._call_queue._reader.close()
-        except Exception:
-            pass
+        # thread feeding it can stay blocked part-way through writing a clip, the old pool then never shuts down, and
+        # the interpreter's exit waits on it for good. With the reader closed the write fails (EPIPE, which the
+        # executor ignores) and the thread ends. Closing it at once would race that same thread, which closes the
+        # reader itself when it is not blocked (later Pythons close it from the executor's own thread), and two closes
+        # of one descriptor can shut a pipe the next pool has just been given (review, 2026-11-11, reproduced on 3.10,
+        # 3.11.4 and 3.11.18). So, on those Pythons only, the old pool gets UNSTICK seconds to shut down, and its
+        # reader is closed only if it is still stuck then, which it can only be behind a feeder blocked mid-write.
+        unstick = None
+        if sys.version_info < (3, 11, 5):
+            import threading
+            cq = getattr(old, "_call_queue", None)
+
+            def unstick(mgr=mgr, cq=cq, wait=self.UNSTICK):
+                if mgr is not None and mgr.ident is not None:  # one that never started (no thread left) feeds nothing
+                    mgr.join(wait)
+                if cq is not None and (mgr is None or mgr.is_alive()):
+                    try:
+                        cq._reader.close()
+                    except Exception:
+                        pass
+            try:
+                threading.Thread(target=unstick, name="lab-unstick", daemon=True).start()
+                unstick = None
+            except Exception:  # no thread can start: unstick() runs below, once the shutdown has woken the old pool
+                pass
         try:
             old.shutdown(wait=False, cancel_futures=True)
         except Exception:
             pass
+        if unstick is not None:
+            try:
+                unstick()
+            except Exception:
+                pass
+        if pending:
+            import weakref
+            try:  # list() of a dict's values is atomic under the GIL, even while the old pool's own thread changes it
+                futs = [w.future for w in list(pending.values())]
+            except Exception:
+                futs = []
+            self.graves.append((None if mgr is None else weakref.ref(mgr), futs))
+            self._bury()
+
+    def _bury(self):
+        """The unfinished jobs of a killed pool whose manager thread is gone fail here (BrokenProcessPool), so _reap()
+        sends them again: that thread never started, or it died without failing them (before Python 3.12.1 it dies so
+        when its queue feeder thread cannot start, and the pool never breaks; gh-109047). A live one fails them itself
+        once it sees the kill, but one that is dying may not, so a pool whose manager thread is still alive is looked
+        at again on the next call (_reap() calls this first) until none of its jobs is unfinished. A grave holds that
+        thread weakly: once it has ended, nothing here keeps it or what it holds (the jobs' clips, when the pool's
+        shutdown left them in a table only that thread still refers to) until the next call."""
+        from concurrent.futures.process import BrokenProcessPool
+        keep = []
+        for ref, futs in self.graves:
+            mgr = None if ref is None else ref()
+            gone = mgr is None or not mgr.is_alive()  # looked at first: once it is gone, nothing else finishes them
+            futs = [f for f in futs if not f.done()]
+            if futs and not gone:
+                keep.append((ref, futs))
+                continue
+            for f in futs:
+                try:
+                    f.set_exception(BrokenProcessPool("the lab pool's manager thread was gone"))
+                except Exception:
+                    pass
+        self.graves = keep
 
     def new_pool(self, failed=False):
         """(Re)start the scoring processes. The jobs already submitted stay in self.jobs: a dead pool has failed them,
-        and _reap() sends them again. After MAX_RESTARTS failed restarts in a row (no job scored in between: the scorer
-        cannot load, say) the lab stops scoring for the rest of the run, loudly."""
+        and _reap() sends them again. The second and third failed restarts in a row (no job scored in between) wait
+        BACKOFF seconds first, then twice that; the next failure (the scorer cannot load, say) stops the lab, loudly,
+        until _revive(). Never raises: a pool that cannot start (no file descriptors or /dev/shm left, say) leaves no
+        pool, and the next send tries again as a failed restart."""
         import gc
         from concurrent.futures import ProcessPoolExecutor
         if self.pool is not None:
@@ -467,85 +585,236 @@ class LabState:
             self.restarts += 1
             self.failed_restarts += 1
             if self.failed_restarts > self.MAX_RESTARTS:
-                self.dead = True
-                print(f"lab: {self.failed_restarts} pool restarts without a scored job; the lab scores nothing more "
-                      "this run (every candidate reads LAB_MISSING)", flush=True)
+                self._stop(f"{self.failed_restarts} pool restarts in a row without a scored job")
                 return
-        self.pool = ProcessPoolExecutor(self.n, mp_context=self.ctx, initializer=_lab_init)
+            if self.failed_restarts > 1:  # the pool before scored nothing either: let what stopped it pass first
+                wait = self.BACKOFF * 2 ** (self.failed_restarts - 2)
+                print(f"lab: {self.failed_restarts} pool restarts in a row without a scored job; waiting {wait:g} s "
+                      "before the next", flush=True)
+                time.sleep(wait)
+        try:
+            self.pool = ProcessPoolExecutor(self.n, mp_context=self.ctx, initializer=_lab_init)
+            self.t_pool = time.time()
+        except Exception as e:
+            self.pool = None
+            print("lab: the scoring processes did not start:", f"{type(e).__name__}: {e}"[:200], flush=True)
 
-    def _send(self, fr):
-        """Submit one job, restarting a pool found broken (a scoring process died). Never raises; None when the lab is
-        dead or the submit failed."""
+    def _stop(self, why):
+        """The lab stops scoring, loudly, until _revive(): REVIVE seconds, doubling while it keeps failing. Its pool is
+        gone (every caller killed it), so the jobs it holds are final now and read LAB_MISSING: their clips go, and a
+        start-over in the same payload does not send them again behind the stop's back."""
+        self.dead, self.deaths, self.revived = True, self.deaths + 1, False
+        for job in self.jobs.values():
+            if job[2] is not None:
+                self._final(job)
+        self.suspects = []
+        self.t_revive = time.time() + self.revive_in
+        print(f"lab: {why}; the lab stops (its candidates read LAB_MISSING) and starts over in {self.revive_in:.0f} s",
+              flush=True)
+        self.revive_in = min(2.0 * self.revive_in, self.REVIVE_MAX)
+
+    def _started(self):
+        """Whether a process of the current pool has started one of the jobs (its mark exists), so the scorer loaded
+        there. A suspect waiting for the slot still has the mark of its send to an earlier pool: it does not count."""
+        waiting = set(self.suspects)
+        return any(j[4] and os.path.exists(j[4]) for k, j in self.jobs.items() if j[2] is not None and k not in waiting)
+
+    def _hung(self, msg, then, started=None):
+        """A pool finished nothing for STALL or QUIET seconds: it is killed and another starts (a failed restart; its
+        jobs go again, the hung ones charged a send). On trial (the lab started over and nothing has scored since), a
+        pool none of whose processes ever started a job stops the lab again at once instead: its scorer still does not
+        load, and each further pool would hold the search that long again, at every try. A pool that did start a job
+        loaded the scorer, so what hangs there may be a candidate's clips, and it counts as at the start of the run.
+        started: whether the pool started a job, when the caller had to find that out before its jobs went (None: look
+        now)."""
+        import gc
+        if not self.revived or (self._started() if started is None else started):
+            print(msg + ("" if self.failed_restarts >= self.MAX_RESTARTS else then), flush=True)
+            self.new_pool(failed=True)
+            return
+        print(msg, flush=True)
+        self._kill()
+        gc.collect()
+        self.restarts += 1
+        self.failed_restarts += 1
+        self._stop("nothing has scored since it started over, and its newest pool never loaded the scorer")
+
+    def _send(self, fr, mark):
+        """Submit one job. A missing pool is started, and a pool that is broken (a scoring process died) or refuses the
+        job is replaced, each as a failed restart. Never raises; None when the lab is dead or the job could not go. A
+        fresh pool that refuses its first job too is dropped there: its manager thread may not have started (no thread
+        left to start), and CPython never starts it later, so every job sent to it would wait for good."""
         import concurrent.futures as cf
         for attempt in (0, 1):
-            if self.dead or self.pool is None:
+            if self.dead:
                 return None
-            try:
-                return self.pool.submit(_lab_eval, fr)
-            except cf.BrokenExecutor:
-                if attempt:
-                    break
-                print("lab: a scoring process died; restarting the lab pool", flush=True)
+            if self.pool is None:
                 self.new_pool(failed=True)
+                if self.pool is None:
+                    return None
+            try:
+                return self.pool.submit(_lab_run, _lab_eval, fr, mark)
             except Exception as e:
-                print("lab submit failed:", f"{type(e).__name__}: {e}"[:200], flush=True)
-                break
+                if attempt:
+                    print("lab submit failed:", f"{type(e).__name__}: {e}"[:200], flush=True)
+                    self._kill()  # the next send starts another pool, as a failed restart
+                    break
+                last = self.failed_restarts >= self.MAX_RESTARTS  # then the restart below stops the lab instead
+                if isinstance(e, cf.BrokenExecutor):
+                    print("lab: a scoring process died" + ("" if last else "; restarting the lab pool"), flush=True)
+                else:
+                    print("lab: the scoring pool refused a job", f"({type(e).__name__}: {e})"[:200]
+                          + ("" if last else "; restarting it"), flush=True)
+                self.new_pool(failed=True)
         return None
 
+    def _resend(self, job):
+        """Send job again under a fresh mark. False, and the job final (its failed future kept), if it could not go."""
+        self._rm(job[4])
+        job[5] += 1
+        job[4] = self._mark(job[0], job[5])
+        self._rm(job[4])
+        nf = self._send(job[2], job[4])
+        if nf is None:  # the lab is dead or the job could not go: collect() counts the failed future
+            self._final(job)
+            return False
+        job[1] = nf
+        self.resent += 1
+        return True
+
+    def _inflight(self):
+        """The futures of the jobs being scored: not final and not waiting for the suspect slot."""
+        waiting = set(self.suspects)
+        return [j[1] for k, j in self.jobs.items() if j[2] is not None and k not in waiting and not j[1].done()]
+
+    def _lost_manager(self):
+        """Whether the current pool's manager thread died without breaking it. Before Python 3.12.1 it dies so when its
+        queue feeder thread cannot start (no thread left), and nothing breaks the pool (gh-109047): it would never
+        finish a job again."""
+        mgr = getattr(self.pool, "_executor_manager_thread", None)
+        return mgr is not None and mgr.ident is not None and not mgr.is_alive() \
+            and getattr(self.pool, "_broken", None) is False
+
     def _reap(self):
-        """Go over the jobs that finished since the last look: a job is final once it scored, failed on its own, or
-        has been sent RETRIES + 1 times, and its clips go then; a job scored proves the scorer works (the restart count
-        starts over); a job that a dead or stopped pool failed (BrokenProcessPool, or cancelled) is sent again."""
-        import concurrent.futures as cf
-        again = []
-        for job in list(self.jobs.values()):
+        """Go over the jobs that finished since the last look; returns how many became suspects and wait for the slot
+        or are in it. A job is final once it scored, failed on its own, or was charged more than RETRIES sends; its
+        clips go then. A scored job proves the scorer works (the restart count starts over). A job that a dead or
+        stopped pool failed (BrokenProcessPool, or cancelled) goes again: at once if no process had started it, through
+        the suspect slot if one had (or had at an earlier failure). A pool that lost its manager thread without
+        breaking is restarted first (a failed restart), so its jobs go again here too."""
+        from concurrent.futures.process import BrokenProcessPool
+        if self._lost_manager():  # it goes now, not after a quiet spell
+            print("lab: the scoring pool lost its manager thread"
+                  + ("" if self.failed_restarts >= self.MAX_RESTARTS else "; restarting the lab pool"), flush=True)
+            self.new_pool(failed=True)  # its jobs fail in the graves (_bury) and go again below
+        self._bury()  # a killed pool's manager thread may have died since without failing its jobs
+        waiting = set(self.suspects)
+        fresh, sus, spent = [], [], 0
+        for k, job in list(self.jobs.items()):
             f = job[1]
-            if job[2] is None or not f.done():
+            if job[2] is None or k in waiting or not f.done():
                 continue
             e = None if f.cancelled() else f.exception()
-            if f.cancelled() or isinstance(e, cf.process.BrokenProcessPool):
-                if job[3] <= self.RETRIES and not self.dead:
-                    again.append(job)
+            if f.cancelled() or isinstance(e, BrokenProcessPool):
+                if job[4] and os.path.exists(job[4]):  # a process had started it
+                    job[3] += 1
+                if not self.dead and job[3] <= self.RETRIES:
+                    if job[3]:
+                        self.suspects.append(k)
+                        sus.append(job)
+                    else:
+                        fresh.append(job)
                     continue
+                spent += 1  # it had already gone again: it stays unscored
             elif e is None and (f.result() or {}).get("ok"):
-                self.failed_restarts = 0
-            job[2] = None
-        if again:
-            print(f"lab: sending {len(again)} jobs again that a stopped scoring pool failed", flush=True)
-        for job in again:
-            nf = self._send(job[2])
-            if nf is None:  # the lab is dead: the failed future stays, and collect() counts it
-                job[2] = None
+                self._scored_one()
+            self._final(job)
+        went = sum(self._resend(job) for job in fresh)  # a resend can restart the pool, and that restart stop the lab
+        self._next_suspect()  # so can the first suspect's send
+        nsus, lost = len(sus), sum(job[2] is None for job in sus)  # lost: its send failed, so it is final
+        if fresh or nsus or spent:
+            n = len(fresh) + nsus + spent
+            if self.dead:
+                print(f"lab: a stopped scoring pool failed {n} jobs, and the lab stopped: they stay unscored",
+                      flush=True)
+            else:
+                print(f"lab: a stopped scoring pool failed {n} jobs: {went} of the {len(fresh)} that had not started "
+                      f"went again, {nsus - lost} that had started (this time or before) go again one at a time"
+                      + (f", {lost} more that had started could not be sent again" if lost else "")
+                      + (f", {spent} that had already gone again stay unscored" if spent else ""), flush=True)
+        return nsus - lost  # the suspects now waiting their turn, or being scored
+
+    def _scored_one(self):
+        """A job scored: the scorer works, so the count of restarts in a row starts over (and a revived lab is back)."""
+        self.failed_restarts, self.revive_in = 0, self.REVIVE
+        if self.revived:
+            self.revived = False
+            print("lab: the fresh pool scores; the lab is back", flush=True)
+
+    def _revive(self):
+        """A stopped lab starts over (submit() calls this once its wait is over): a fresh pool, and the restarts in a
+        row count from 0 again, so a candidate whose clips kill the scorer costs only itself here too, as at the start
+        of the run. It is on trial (revived) until a job scores; a pool that hangs on trial without loading the scorer
+        stops it again (_hung).
+        Stopping again doubles the wait; a scored job re-arms it."""
+        self.dead, self.revived, self.failed_restarts = False, True, 0
+        print("lab: starting over with a fresh scoring pool", flush=True)
+        self.new_pool()
+
+    def _next_suspect(self, now=False):
+        """The suspect slot: the oldest waiting suspect goes when no other suspect is being scored (or at once, when
+        now; see submit). If it is what kills or hangs the scorer, the failure it causes then charges it and the jobs
+        scored beside it; those were never charged, so they only become suspects, while it has used its RETRIES and is
+        final."""
+        waiting = set(self.suspects)
+        if not now and any(j[3] and j[2] is not None and k not in waiting and not j[1].done()
+                           for k, j in self.jobs.items()):
+            return
+        while self.suspects:
+            job = self.jobs.get(self.suspects.pop(0))
+            if job is None or job[2] is None:
                 continue
-            job[1], job[3] = nf, job[3] + 1
-            self.resent += 1
+            if self.dead:
+                self._final(job)
+                continue
+            if self._resend(job):
+                return
 
     def submit(self, r):
         """Queue r's clips for lab scoring (never raises). Waits while MAX_PENDING jobs are unfinished, so at most that
         many candidates' clips wait in this process; that wait counts toward lab_wait. After STALL seconds with no job
-        finished the pool is taken as wedged and restarts (its jobs are sent again)."""
+        finished (counted from the newest pool's start) the pool is taken as wedged and restarts (its jobs go again)."""
         import concurrent.futures as cf
         fr = r.pop("lframes", None)
         if not (self.on and fr is not None and r.get("ok")):
             return
         t0 = t_stall = time.time()
         try:
+            if self.dead and t0 >= self.t_revive:
+                self._revive()
             while not self.dead:
                 self._reap()
-                busy = [j[1] for j in self.jobs.values() if not j[1].done()]
-                if len(busy) < self.MAX_PENDING:
+                if sum(j[2] is not None for j in self.jobs.values()) < self.MAX_PENDING:
                     break
-                if time.time() - t_stall > self.STALL:
-                    print(f"lab: no scoring finished in {self.STALL:.0f} s; restarting the lab pool", flush=True)
-                    self.new_pool(failed=True)
+                busy = self._inflight()
+                if self.suspects and len(busy) < self.n:  # suspects fill the bound and a scoring process idles
+                    self._next_suspect(now=True)
+                    continue
+                if time.time() - max(t_stall, self.t_pool) > self.STALL:
+                    self._hung(f"lab: no scoring finished in {self.STALL:.0f} s", "; restarting the lab pool")
                     t_stall = time.time()
                     continue
-                cf.wait(busy, timeout=0.5, return_when=cf.FIRST_COMPLETED)
-            f = self._send(fr)
+                if busy:
+                    cf.wait(busy, timeout=0.5, return_when=cf.FIRST_COMPLETED)
+                else:  # cannot happen while the lab lives (a waiting suspect is sent once the slot is free)
+                    time.sleep(0.2)
+            mark = self._mark(r, 1)
+            self._rm(mark)
+            f = self._send(fr, mark)
             if f is None:  # unscored (LAB_MISSING); the run goes on
                 self.errors += 1
                 return
-            self.jobs[id(r)] = [r, f, fr, 1]
+            self.jobs[id(r)] = [r, f, fr, 0, mark, 1]
         except Exception as e:
             self.errors += 1
             print("lab submit failed:", f"{type(e).__name__}: {e}"[:200], flush=True)
@@ -559,51 +828,78 @@ class LabState:
         t0 = time.time()
         keys = [id(r) for r in res if id(r) in self.jobs]
         nwin = max([len(self.jobs[k][0].get("win_t") or [0]) for k in keys] or [1])
+
         # the first job in each process waits for the scorer to load (about 20 s); after that about 1.5 s a window on a
-        # free core. A hung scoring process shows as a quiet spell with no job finishing; then the pool restarts.
-        deadline = time.time() + 120 + 8.0 * nwin * len(keys) / self.n
-        quiet = self.QUIET + 8.0 * nwin
-        last, broken = time.time(), False
+        # free core, and suspects one at a time. A hung scoring process shows as a quiet spell with no job finishing;
+        # then the pool restarts and its jobs go again (the hung ones charged a send), at most GIVE_UPS times.
+        def until(ks):
+            sus = sum(1 for k in ks if self.jobs[k][3])
+            return time.time() + 120 + 8.0 * nwin * ((len(ks) - sus) / self.n + sus)
+
+        deadline, quiet, last, gave_up, broken = until(keys), self.QUIET + 8.0 * nwin, time.time(), 0, False
+        t_pool = self.t_pool
         while True:
-            self._reap()  # a job a dead pool failed is sent again here too
-            pending = [self.jobs[k][1] for k in keys if not self.jobs[k][1].done()]
-            if not pending:
+            nsus = self._reap()  # a job a dead pool failed goes again here too
+            deadline += (20 + 8.0 * nwin) * nsus  # a new suspect waits its turn in the slot
+            live = [k for k in keys if self.jobs[k][2] is not None]
+            if not live:
                 break
-            done, _ = cf.wait(pending, timeout=1.0, return_when=cf.FIRST_COMPLETED)
+            if self.t_pool != t_pool:  # a pool started meanwhile: its backoff wait and its load do not count
+                t_pool = self.t_pool
+                deadline = max(deadline, until(live))
+            busy = self._inflight()  # any job finishing, ours or not, shows the pool is alive
+            if busy:
+                done, _ = cf.wait(busy, timeout=1.0, return_when=cf.FIRST_COMPLETED)
+            else:  # cannot happen while the lab lives (a waiting suspect is sent once the slot is free)
+                done = ()
+                time.sleep(0.2)
             now = time.time()
             if done:
                 last = now
-            if now > deadline or now - last > quiet:
-                broken = True
-                break
+            if now > deadline or now - max(last, self.t_pool) > quiet:  # from the newest pool's start too
+                if self.dead or gave_up >= self.GIVE_UPS:
+                    broken = True
+                    break
+                self._hung("lab scoring timed out", "; restarting the lab pool")  # _reap() says what goes again
+                gave_up += 1
+                deadline, last = until(live), time.time()
+        loaded = broken and not self.dead and self._started()  # before this payload's jobs and their marks go
         for k in keys:
-            r, f = self.jobs.pop(k)[:2]
-            if not f.done():
+            job = self.jobs.pop(k)
+            r, f = job[0], job[1]
+            self._rm(job[4])
+            if not f.done() or (job[2] is not None and k in self.suspects):  # still scoring, or still waiting its turn
                 out = {"ok": False, "err": "lab timeout"}
+            elif f.cancelled():
+                out = {"ok": False, "err": "lab worker: cancelled"}
             else:
-                try:
-                    out = f.result()
-                except Exception as e:  # BrokenProcessPool (a scoring process died), a cancelled job, a worker error
-                    out = {"ok": False, "err": f"lab worker: {type(e).__name__}: {e}"[:200]}
+                # BrokenProcessPool (a scoring process died), or whatever the scorer raised, SystemExit included
+                e = f.exception()
+                out = {"ok": False, "err": f"lab worker: {type(e).__name__}: {e}"[:200]} if e is not None \
+                    else (f.result() or {})
             if out.get("ok") and out.get("per"):
                 r["lab"] = round(float(np.mean(out["per"])), 4)
                 r["lab_windows"] = [round(x, 3) for x in out["per"]]
                 r["lab_nwin"] = len(out["per"])
                 self.scored += 1
-                self.failed_restarts = 0
+                if job[2] is not None:  # _reap() never saw this one finish (collect gave up just after)
+                    self._scored_one()
             else:
                 self.errors += 1
                 if self.errors <= 5:
                     print("lab error:", out.get("err"), flush=True)
+        self.suspects = [k for k in self.suspects if k in self.jobs]
         if broken and not self.dead:  # kill the hung process; a dead one's pool restarted when it was found
-            print("lab scoring timed out; restarting the lab pool", flush=True)
-            self.new_pool(failed=True)
+            self._hung("lab scoring timed out", "; restarting the lab pool", loaded)
         self.wait += time.time() - t0
 
     def close(self):
         """End of run: every job was collected, so the processes are killed rather than joined (a hung one would hold
         the interpreter's exit)."""
         self._kill()
+        if self.mark_dir:
+            import shutil
+            shutil.rmtree(self.mark_dir, ignore_errors=True)
 
 
 class CriticState:
@@ -684,6 +980,26 @@ def _drop_pool(pool, wait=2.0):
                 p.kill()
         except Exception:
             pass
+
+
+def _close_pool(pool, wait=5.0):
+    """End of run: close() lets the idle render workers take their sentinel and exit normally, so each one's atexit
+    hook stops its Xvfb (render.ensure_display; terminate() SIGTERMs them past it, and where setpriv is missing those
+    servers outlived the island: review, 2026-11-11). Whatever has not exited after `wait` seconds (a worker killed
+    while idle keeps the others from their sentinels) goes through _drop_pool()."""
+    if pool is None:
+        return
+    try:
+        pool.close()
+    except Exception:
+        pass
+    t_end = time.time() + wait
+    for p in list(getattr(pool, "_pool", None) or []):
+        try:
+            p.join(max(0.0, t_end - time.time()))
+        except Exception:
+            pass
+    _drop_pool(pool)
 
 
 def run(args):
@@ -804,22 +1120,31 @@ def run(args):
                 n += 1
         return n
 
-    audits = {}
+    audits, audit_redo = {}, set()
 
     def audit(c):
         """Judge c on the --audit-offsets windows, which selection never uses (cached by bytes): the honest number for
-        a published best. Stored on the row as c['audit']."""
+        a published best. Stored on the row as c['audit']. One made while the lab was stopped, so without its lab
+        number, is made again on a later call once the lab is no longer stopped; if that render fails, the audit keeps
+        what it had and is tried again on the next call."""
         if not args.audit_offsets or not c.get("ok"):
             return None
         key = c["genome"].to_bytes()
-        if key not in audits:
+        if key not in audits or (key in audit_redo and not lab.dead):
+            redo = key in audits
+            audit_redo.discard(key)
             (r,) = run_payload([job(c["genome"].to_json(), list(args.audit_offsets))])
             judge.score([r])
             lab.collect([r])
-            audits[key] = ({"judge": r.get("judge"), "judge_windows": r.get("judge_windows"), "t": r.get("win_t"),
-                            "stat": round(r["stat"], 4),
-                            **({"lab": r.get("lab"), "lab_windows": r.get("lab_windows")} if lab.on else {})}
-                           if r.get("ok") else {"err": r.get("err")})
+            if redo and not r.get("ok"):
+                audit_redo.add(key)
+            else:
+                audits[key] = ({"judge": r.get("judge"), "judge_windows": r.get("judge_windows"),
+                                "t": r.get("win_t"), "stat": round(r["stat"], 4),
+                                **({"lab": r.get("lab"), "lab_windows": r.get("lab_windows")} if lab.on else {})}
+                               if r.get("ok") else {"err": r.get("err")})
+                if lab.on and lab.dead and r.get("ok") and r.get("lab") is None:
+                    audit_redo.add(key)
         c["audit"] = audits[key]
         return c["audit"]
 
@@ -935,7 +1260,8 @@ def run(args):
                **({"best_audit": aud.get("judge"), "best_audit_windows": aud.get("judge_windows")} if aud else {}),
                **({"best_lab": best.get("lab"), "best_lab_nwin": best.get("lab_nwin"),
                    "top_lab": min((c.get("lab", 99) for c in allc), default=None),
-                   "lab_wait": round(lab.wait, 1), "lab_errors": lab.errors} if lab.on else {}),
+                   "lab_wait": round(lab.wait, 1), "lab_errors": lab.errors, "lab_stops": lab.deaths}
+                  if lab.on else {}),
                **({"best_audit_lab": aud.get("lab"), "best_audit_lab_windows": aud.get("lab_windows")}
                   if aud and lab.on else {}),
                "best_zbytes": best["zbytes"], "simplest_ok_zbytes": simplest_ok["zbytes"],
@@ -949,7 +1275,7 @@ def run(args):
         if gen % args.save_every == 0 or gen == args.gens - 1:
             save_state(args.run, pop, archive, elites, gen)
             publish(args, args.run)
-    _drop_pool(state["pool"])
+    _close_pool(state["pool"])
     lab.close()
     save_state(args.run, pop, archive, elites, args.gens)
 
