@@ -960,7 +960,11 @@ node .claude/skills/labmaker/verify_lab.cjs <lab.html> --out <scratch>
   - a technique that made the lab legible;
   - a process change the human asked for between rounds.
 
-  Use that file's entry format. Grep the id before you claim it (§1's id-collision rule).
+  Use that file's entry format. Grep the id before you claim it (§1's id-collision rule), and again after §1.5's
+  merge: `grep -oE '^### L-[A-Z]+-[0-9]+' .claude/skills/labmaker/LEARNINGS.md | sort | uniq -d` names every id
+  two branches claimed apart, and git joins two entries with one id without a conflict. Renumber yours and every
+  reference to it (2026-11-11: this check found `cece/nifty-cray-41hy43` and bleeding-edge's Brittle Star ship pass
+  had both taken L-STU-168 to 170 the same day; L-STU-41, 42 and 102 were already doubled on bleeding-edge).
 - **Promote** into `SKILL.md` §2–§8 any entry that has now recurred in a second lab or cost a
   round. Mark it `Promoted: §N`.
 - If the branch added a reusable check, extend `verify_lab.cjs`, add its planted defect to

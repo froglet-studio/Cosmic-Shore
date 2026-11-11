@@ -119,7 +119,7 @@ This is how that works, what it covers today, and what is still outside it. The 
      HullLit, SilhouetteHolo, ElementRim); and the static sky (StaticSkyPanorama, the world table).
    - **What keeps its authored colours:** a Graphic that calls `ColorGrade.KeepAsAuthored` (the sign-in providers'
      marks, in SignInChooser and AccountSettingsView).
-   - **The record:** `colour_grade.json` classifies every texture a build can load: 580 coloured canvas pictures,
+   - **The record:** `colour_grade.json` classifies every texture a build can load: 582 coloured canvas pictures,
      the static sky, 8 exempt with their reasons, 468 grey masks that need nothing. A new coloured texture that no
      graded shader draws fails the gate.
 8. **The gate.** `python3 Tools/Build/colour_trace.py --check` fails when the scan and the table disagree (a new colour,

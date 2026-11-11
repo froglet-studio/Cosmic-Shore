@@ -29,7 +29,9 @@ takes the set's Jade face hue, a grey keeps) is applied to every texel through a
     python3 Tools/Build/colour_grade.py --report   # every coloured texture and how it follows the set
     python3 Tools/Build/colour_grade.py --self-test
 """
+import contextlib
 import hashlib
+import io
 import json
 import math
 import os
@@ -367,11 +369,26 @@ def self_test():
     expect("the identity is no table", all(k != "photic" for k, _ in graded_sets()))
     expect("an exempt mark is exempt", how_graded("Assets/_Graphics/UI/Brands/google_logo_dark_pill.png", "sprite")[0] == "exempt")
     expect("a coloured world texture nobody grades is caught", how_graded("Assets/_Graphics/Materials/x.png", "texture")[0] is None)
+    with contextlib.redirect_stderr(io.StringIO()):
+        refused = main(["report"]) == 2 and main(["--check", "--x"]) == 2
+    expect("an unknown argument writes nothing", refused)
     print("colour_grade self-test: " + ("ok" if not bad else "FAILED " + "; ".join(bad)))
     return 0 if not bad else 1
 
 
+COMMANDS = ("--check", "--report", "--self-test")
+
+
 def main(argv):
+    if argv in (["-h"], ["--help"]):
+        print(__doc__)
+        return 0
+    # Writing is the default, so anything this does not know (a typo, `report` without its dashes) must not fall
+    # through to it.
+    if len(argv) > 1 or (argv and argv[0] not in COMMANDS):
+        print("colour_grade: unknown arguments: %s (nothing written; --help lists the commands)" % " ".join(argv),
+              file=sys.stderr)
+        return 2
     if "--self-test" in argv:
         return self_test()
     if "--check" in argv:

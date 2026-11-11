@@ -192,8 +192,10 @@ tokens, moving a clash to the nearest free 8-bit value; so **a new set is writte
 (`author_colour_set_assets.py`, then `colour_trace.py --write-photic`, then `colour_grade.py`, which writes the set's
 texture grade: the same rule on every texel of every picture, a 33^3 table per role), and `colour_trace.py --check`
 and `colour_grade.py --check` fail if any value of any set could be misread or a table drifted. The runtime painters are `UIThemeLive` (the UI) and `WorldColorTrace` (the world); code
-and configs read `ColorTrace.Retrace(role, colour)`. What the trace cannot reach yet (shader constants, textures,
-caches copied before a wear) is section 2 of that doc.
+and configs read `ColorTrace.Retrace(role, colour)`. No colour is left in shader code (each is a material colour,
+saved at the sRGB encoding of the old constant; `/asset-surgery` `references/SHADERGRAPH.md`), every texture follows
+the set through the grade (section 1.7 of that doc), and what is still outside the trace (caches copied before a
+wear, particles alive at one, baked light probes) is its section 2.
 
 ## 9. Traps (each one cost a set)
 
