@@ -1,0 +1,22 @@
+{
+  "id": "2026-11-11-every-colour-comes-from-the-colour-set-g-1a0ca8",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-11T00:26:17+00:00",
+  "area": "projectiles, the black-hole lens and the Soliton tunnel",
+  "summary": "Every colour comes from the colour set (Garrett, LOCKED 2026-11-10). (1) The SkyBurst and Explodable projectiles' particles and the AI Gunner's gun drew GreenVesselMaterial, the template every domain's ship material is cloned from, so they glowed Jade for every pilot: Projectile.LaunchProjectile and Gun (Initialize and each shot) now call ThemeManagerDataContainerSO.PaintDomainPlaceholders, which swaps that template (or an earlier owner's domain material) for the owner's domain ship material. (2) The black-hole lens's ring, core, shell and gravitational-wave glows (BlackHoleLens.hlsl) and the Soliton tunnel's glint (SolitonTunnel.shader) were constants in shader code: they are now material colours (_BHRingColour/_BHCoreColour/_BHShellColour/_BHWaveColour, _MWGlintColour) that BlackHoleLens.mat and SolitonTunnel.mat save as the sRGB encodings of the old constants, so the shader sees the same numbers under Photic and the world colour trace repaints them under every other set; their loaders paint them on load. A trial merge with claude/standin-lenses (the lens perf work) has no conflicting lines.",
+  "why": "Garrett, 2026-11-10: 'there is no reason for a vessel owner to be breaking this rule: all colors come from a color set ... if that rule is broken then it is a sign of incompleteness or a bug'.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "2fa2dbfcf",
+  "paths": [
+    "Assets/Resources/BlackHoleLens.mat",
+    "Assets/Resources/SolitonTunnel.mat",
+    "Assets/_Graphics/Materials/Graphs/BlackHoleLens.hlsl",
+    "Assets/_Graphics/Materials/Graphs/BlackHoleLens.shader",
+    "Assets/_Graphics/Materials/Graphs/SolitonTunnel.shader",
+    "Assets/_Scripts/Controller/Environment/BlackHole/BlackHoleLens.cs",
+    "Assets/_Scripts/Controller/Environment/SolitonTunnel/SolitonTunnelLensPass.cs",
+    "Assets/_Scripts/Controller/Projectiles/Gun.cs",
+    "Assets/_Scripts/Controller/Projectiles/Projectile.cs"
+  ]
+}

@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -450,7 +451,8 @@ namespace CosmicShore.Gameplay
 
         void Apply(float breath, float haloSize)
         {
-            var rim = Color.Lerp(_bombColor, sparkColor, sparkMix * breath)
+            // the spark as the worn colour set paints it (ColorTrace)
+            var rim = Color.Lerp(_bombColor, ColorTrace.Retrace(ColorTrace.World, sparkColor), sparkMix * breath)
                       * Mathf.Lerp(rimIntensityTrough, rimIntensityPeak, breath);
             var dark = _bombColor * coreDarkness;
             rim.a = 1f;

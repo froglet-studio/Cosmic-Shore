@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -138,11 +139,23 @@ namespace CosmicShore.UI
             RefreshParts();
         }
 
+        void OnEnable() => ColorTrace.Changed += Repaint;
+        void OnDisable() => ColorTrace.Changed -= Repaint;
+
+        // A colour set worn while the HUD is up: the parts take it now, the count at its next push (the gauges ease to
+        // it every frame).
+        void Repaint()
+        {
+            _shownCount = -1;
+            RefreshParts();
+        }
+
         void RefreshParts()
         {
+            var danger = ColorTrace.Retrace(ColorTrace.Ui, dangerColor);
             Paint(arrayShrikeIcon, _domain, 1f);
             Paint(arrayReticleIcon, Color.white, _painted ? 1f : idlePartAlpha);
-            Paint(arrayTargetIcon, dangerColor, 1f);
+            Paint(arrayTargetIcon, danger, 1f);
             Paint(arrayMissilesIcon, Color.white, _painted ? 1f : 0f);
 
             Paint(nestShrikeIcon, _domain, 1f);
@@ -152,8 +165,8 @@ namespace CosmicShore.UI
             bool pierce = IsAbilityUpgraded(Element.Space);
             Paint(lanceShrikeIcon, _domain, 1f);
             Paint(lanceBeamIcon, Color.white, _lancing ? 1f : 0f);
-            Paint(lancePrismsIcon, dangerColor, _lancing ? 0f : 1f);
-            Paint(lanceSplitIcon, dangerColor, _lancing ? 1f : 0f);
+            Paint(lancePrismsIcon, danger, _lancing ? 0f : 1f);
+            Paint(lanceSplitIcon, danger, _lancing ? 1f : 0f);
             Paint(lancePierceIcon, Color.white, pierce && !_lancing ? 1f : 0f);
             Paint(lancePierceCutIcon, Color.white, pierce && _lancing ? 1f : 0f);
 
@@ -174,7 +187,7 @@ namespace CosmicShore.UI
         {
             if (!gauge) return;
             gauge.fillAmount = fill;
-            gauge.color = gaugeColor;
+            gauge.color = ColorTrace.Retrace(ColorTrace.Ui, gaugeColor);
         }
 
         void EnsureMissileCount()
@@ -201,7 +214,7 @@ namespace CosmicShore.UI
             if (!_missileCount || count == _shownCount) return;
             _shownCount = count;
             _missileCount.text = count.ToString();
-            _missileCount.color = count > 0 ? readyColor : gaugeColor;
+            _missileCount.color = count > 0 ? readyColor : ColorTrace.Retrace(ColorTrace.Ui, gaugeColor);
         }
 
         public void SetCharge(float fill01, bool live) => Push(chargeGauge, fill01, live);
@@ -214,7 +227,7 @@ namespace CosmicShore.UI
             if (!gauge) return;
             gauge.fillAmount = Mathf.Clamp01(fill01);
             float k = 1f - Mathf.Exp(-colorBlendRate * Time.unscaledDeltaTime);
-            gauge.color = Color.Lerp(gauge.color, live ? readyColor : gaugeColor, k);
+            gauge.color = Color.Lerp(gauge.color, live ? readyColor : ColorTrace.Retrace(ColorTrace.Ui, gaugeColor), k);
         }
 
         /// <summary>Re-anchor every gauge's rest scale after the base's upgrade handling (vessel contract rule 9).</summary>

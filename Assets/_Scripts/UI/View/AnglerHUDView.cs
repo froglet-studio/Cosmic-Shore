@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -241,13 +242,13 @@ namespace CosmicShore.UI
             if (paintPrismIcon)
             {
                 paintPrismIcon.enabled = !_spaceUpgraded;
-                paintPrismIcon.color = painted ? Color.white : lureWildColor;
+                paintPrismIcon.color = painted ? Color.white : ColorTrace.Retrace(ColorTrace.Ui, lureWildColor);
             }
             if (paintShellIcon) paintShellIcon.enabled = _spaceUpgraded;
             if (paintCoreIcon)
             {
                 paintCoreIcon.enabled = _spaceUpgraded;
-                paintCoreIcon.color = painted ? Color.white : lureWildColor;
+                paintCoreIcon.color = painted ? Color.white : ColorTrace.Retrace(ColorTrace.Ui, lureWildColor);
             }
         }
 
@@ -302,8 +303,8 @@ namespace CosmicShore.UI
             }
             if (!lureFishIcon) return;
             Color c = Time.unscaledTime < _joinedUntil ? _lureDomain
-                    : _massUpgraded ? lockDangerColor
-                    : lureWildColor;
+                    : _massUpgraded ? ColorTrace.Retrace(ColorTrace.Ui, lockDangerColor)
+                    : ColorTrace.Retrace(ColorTrace.Ui, lureWildColor);
             if (!luring && Time.unscaledTime >= _joinedUntil) c.a *= lureIdleAlpha;
             lureFishIcon.color = c;
         }
@@ -338,15 +339,17 @@ namespace CosmicShore.UI
             }
             if (lockRingIcon) lockRingIcon.enabled = hunting;
             if (lockRivalIcon)
-                lockRivalIcon.color = new Color(lockDangerColor.r, lockDangerColor.g, lockDangerColor.b,
-                                                hunting ? lockDangerColor.a : lockDangerColor.a * lockRivalIdleAlpha);
+            {
+                var danger = ColorTrace.Retrace(ColorTrace.Ui, lockDangerColor);
+                lockRivalIcon.color = new Color(danger.r, danger.g, danger.b, hunting ? danger.a : danger.a * lockRivalIdleAlpha);
+            }
         }
 
         void Seat(Image gauge)
         {
             if (!gauge) return;
             gauge.fillAmount = 0f;
-            gauge.color = gaugeColor;
+            gauge.color = ColorTrace.Retrace(ColorTrace.Ui, gaugeColor);
         }
 
         // ---- the numbers: fauna on the Mass card, seeds on the omni card (built at runtime; the lockup re-homes them) ----
@@ -441,7 +444,7 @@ namespace CosmicShore.UI
             if (!gauge) return;
             gauge.fillAmount = Mathf.Clamp01(fill01);
             float k = 1f - Mathf.Exp(-colorBlendRate * Time.unscaledDeltaTime);
-            gauge.color = Color.Lerp(gauge.color, ready ? readyColor : gaugeColor, k);
+            gauge.color = Color.Lerp(gauge.color, ColorTrace.Retrace(ColorTrace.Ui, ready ? readyColor : gaugeColor), k);
         }
 
         /// <summary>

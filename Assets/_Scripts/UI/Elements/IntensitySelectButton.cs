@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Soap;
 using TMPro;
 using UnityEngine;
@@ -148,29 +149,32 @@ namespace CosmicShore.UI
             {
                 BorderImage.sprite = BorderSpriteSelected;
                 IntensityImage.sprite = IntensitySpriteActive;
-                IntensityText.color = IntensityColorSelected;
+                IntensityText.color = ColorTrace.Retrace(ColorTrace.Ui, IntensityColorSelected);
             }
             else
             {
                 BorderImage.sprite = BorderSpriteUnselected;
                 IntensityImage.sprite = IntensitySpriteInactive;
-                IntensityText.color = IntensityColorUnselected;
+                IntensityText.color = ColorTrace.Retrace(ColorTrace.Ui, IntensityColorUnselected);
             }
         }
 
         protected virtual void DrawActive(bool active)
         {
+            // Every state's colour in the worn colour set (ColorTrace).
             if (active)
             {
-                BorderImage.color = IntensityColorActive;
-                IntensityImage.color = IntensityColorActive;
-                IntensityText.color = Selected ? IntensityColorSelected : IntensityColorUnselected;
+                Color level = ColorTrace.Retrace(ColorTrace.Ui, IntensityColorActive);
+                BorderImage.color = level;
+                IntensityImage.color = level;
+                IntensityText.color = ColorTrace.Retrace(ColorTrace.Ui, Selected ? IntensityColorSelected : IntensityColorUnselected);
             }
             else
             {
-                BorderImage.color = IntensityColorInactive;
-                IntensityImage.color = IntensityColorInactive;
-                IntensityText.color = IntensityColorInactive;
+                Color inactive = ColorTrace.Retrace(ColorTrace.Ui, IntensityColorInactive);
+                BorderImage.color = inactive;
+                IntensityImage.color = inactive;
+                IntensityText.color = inactive;
             }
         }
 
@@ -179,7 +183,7 @@ namespace CosmicShore.UI
             // An unlock is drawn by the SetActive / SetSelected that always follow it.
             if (!locked) return;
 
-            Color32 lockColor = IntensityColorLocked.a > 0 ? IntensityColorLocked : IntensityColorInactive;
+            Color lockColor = ColorTrace.Retrace(ColorTrace.Ui, IntensityColorLocked.a > 0 ? IntensityColorLocked : IntensityColorInactive);
             BorderImage.sprite = BorderSpriteUnselected;
             BorderImage.color = lockColor;
             IntensityImage.sprite = IntensitySpriteInactive;

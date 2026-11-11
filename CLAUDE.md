@@ -85,7 +85,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Status (the item table); one numbered section per round (what was asked, drawn, picked, built; numbers claimed at commit)
 - [`Docs/claude/VESSEL_HUD_AND_ELEMENTS.md`](Docs/claude/VESSEL_HUD_AND_ELEMENTS.md): Elemental bars, hull morphs, rigged-model swap, the LOCKED four-icon ability row.
   Sections: Elemental Bars (per-vessel buff/debuff display); Elemental Hull Morphs (the vessel model is an element display); The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
-- [`Docs/VesselModels/README.md`](Docs/VesselModels/README.md): **Vessel MODELS (the FBX hulls) are built by `/vessel-model`**, not by C# `*HullForm` surfaces (Garrett, 2026-10-17: "procedural vessel models are terrible even as placeholders"). Blender-as-a-module specs under `Tools/Build/vessel_model/specs/` rebuild each hull in place with the shipped names, bone rest poses (exact), four real element morphs, the puppetry takes and the four slots; three readers verify, a Cycles contact sheet is looked at, `build.py --check` is the drift gate. One measured dossier per vessel (Squirrel, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino, and the Ark: `ArkReverse.md` is the Arkway's Ark, its rig table and its fixed-rate omni regrowth) and the constraints a replacement meets; `COLOR.md` there is the fleet's colour language and vessel colour scheme (`vessel_colors.py --check`), `COLOR_DOMAINS.md` + `colour_domains.json` there are the SOURCE OF TRUTH for which of the six families (Fire, Gold, Lime, Jade, Blue, Ruby) a colour belongs to and where the forbidden band lies (`colour_domains.py --check`, shaped in the Colour Domains lab), and every class card is rendered from its model (`render_cards.py --all --check`). Read before touching any `Assets/_Models/Vessel Models/**` file or a vessel prefab's model.
+- [`Docs/VesselModels/README.md`](Docs/VesselModels/README.md): **Vessel MODELS (the FBX hulls) are built by `/vessel-model`**, not by C# `*HullForm` surfaces (Garrett, 2026-10-17: "procedural vessel models are terrible even as placeholders"). Blender-as-a-module specs under `Tools/Build/vessel_model/specs/` rebuild each hull in place with the shipped names, bone rest poses (exact), four real element morphs, the puppetry takes and the four slots; three readers verify, a Cycles contact sheet is looked at, `build.py --check` is the drift gate. One measured dossier per vessel (Squirrel, Dolphin, Sparrow, Serpent, Manta, Urchin, Rhino, and the Ark: `ArkReverse.md` is the Arkway's Ark, its rig table and its fixed-rate omni regrowth) and the constraints a replacement meets; `COLOR.md` there is the fleet's colour language and vessel colour scheme (`vessel_colors.py --check`), `COLOR_DOMAINS.md` + `colour_domains.json` there are the SOURCE OF TRUTH for which of the six families (Fire, Gold, Lime, Jade, Blue, Ruby) a colour belongs to and where the forbidden band lies (`colour_domains.py --check`, shaped in the Colour Domains lab), `COLOR_TRACE.md` there is how every colour the game draws follows the worn colour set (`colour_trace.py --check`: a new baked colour fails until it is traced), and every class card is rendered from its model (`render_cards.py --all --check`). Read before touching any `Assets/_Models/Vessel Models/**` file or a vessel prefab's model.
   Sections: the table of dossiers; how to regenerate a number
 - [`Docs/Icons/ABILITY_ICON_SKILL_PLAN.md`](Docs/Icons/ABILITY_ICON_SKILL_PLAN.md): **The ability-row ICONS are made by `/ability-icon`**
   (`Tools/Build/icon_kit/`: a hull's real mesh projected or skinned into its takes, parts a HUD tints / swaps / turns,
@@ -284,6 +284,16 @@ ability (Serpent Time's crystal-bought sniper rounds), no press vetoes, no added
 speed), no per-mode rescaling, no edits to vessel code or assets for one mode. Both of those Serpent Time rules were built
 and retired for this. A kit change is a vessel change, made on the vessel (its owner hears of it through `/approve`), never through
 a mode. `/arcadegame` §6.
+
+## Every colour comes from the colour set (LOCKED rule, Garrett, 2026-11-10)
+
+"All colors come from a color set. If that rule is broken then it is a sign of incompleteness or a bug, not something
+to be respected." Every colour the game draws (UI, world, sky, effects, vessels, textures, code, configs) is a value
+the worn `SO_ColorSet` carries: its domain and environment blocks, or its `TracedColors`. Photic holds the values the
+game was authored in. No area, vessel or owner is exempt and none decides otherwise: a colour that does not follow the
+set is a bug to fix (route it through the set: `ColorTrace.Retrace`, a domain material set, a set field, the texture
+grade), never a choice to keep or a question for someone. `python3 Tools/Build/colour_trace.py --check` fails on a new
+colour that is not traced. How it works and what is still unfinished: `Docs/VesselModels/COLOR_TRACE.md`.
 
 ## Testing
 

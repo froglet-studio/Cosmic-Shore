@@ -111,6 +111,10 @@ python3 Tools/Build/approvals.py add --to <Them> --by <You> --area "<their area,
   --summary "<what changed in it, one sentence>" --why "<why>" --paths <the files of theirs it changed>
 ```
 
+Put every file after ONE `--paths`. It takes a list, and argparse accepts `--path` as its abbreviation, so
+`--path a --path b` files only `b` and says nothing (2026-11-10: an entry lost all but its last path that way).
+Read the entry's `paths` back before you commit it.
+
 Commit the entry with the change, so it lands with it, and keep the "Affects:" line in the commit or PR.
 
 The script is tooling: Shombith heads the Claude skills and tools (CLAUDE.md § Team). A change to how it decides is

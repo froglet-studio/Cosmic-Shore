@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -195,19 +196,20 @@ namespace CosmicShore.UI
         {
             if (!col) return reticleNoTargetColor;
 
+            // Each target colour as the worn colour set paints it (ColorTrace).
             if (col.GetComponentInParent<ILifeFormEntity>() != null ||
                 col.GetComponentInParent<LightFauna>() != null)
-                return reticleFaunaColor;
+                return ColorTrace.Retrace(ColorTrace.Ui, reticleFaunaColor);
 
             var vessel = col.GetComponentInParent<IVesselStatus>();
             if (vessel != null)
-                return vessel.Domain == _ownDomain ? reticleAllyColor : reticleEnemyColor;
+                return ColorTrace.Retrace(ColorTrace.Ui, vessel.Domain == _ownDomain ? reticleAllyColor : reticleEnemyColor);
 
             var prism = col.GetComponentInParent<Prism>();
             if (prism != null)
             {
-                if (prism.Domain == _ownDomain) return reticleAllyColor;
-                return prism.Domain == Domains.Blue ? reticleFaunaColor : reticleEnemyColor;
+                if (prism.Domain == _ownDomain) return ColorTrace.Retrace(ColorTrace.Ui, reticleAllyColor);
+                return ColorTrace.Retrace(ColorTrace.Ui, prism.Domain == Domains.Blue ? reticleFaunaColor : reticleEnemyColor);
             }
 
             return reticleNoTargetColor;
