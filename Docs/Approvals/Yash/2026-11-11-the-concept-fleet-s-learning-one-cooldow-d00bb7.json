@@ -1,0 +1,14 @@
+{
+  "id": "2026-11-11-the-concept-fleet-s-learning-one-cooldow-d00bb7",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-11T01:29:55+00:00",
+  "area": "the Concept fleet lab's learnings (Ys-bleeding-edge)",
+  "summary": "The Concept fleet's learning 'One cooldown for the skim and the hull hides every hull contact' is now L-STU-177 (it was L-STU-102, the same id Brittle Star Studio's entry holds); its text is unchanged, and nothing in CONCEPT_FLEET.md cited it by id.",
+  "why": "Both entries had carried L-STU-102 since Ys-bleeding-edge's 2026-10-18 merge of bleeding-edge (733b3cd282 renumbered it from L-STU-80, 23 s after Brittle Star claimed 102), and Brittle Star's landed on bleeding-edge first (#1223 on 2026-10-18, before #1201 on 2026-10-25), so the Concept fleet's moves. Cite it as L-STU-177 from now on.",
+  "branch": "cece/ecstatic-einstein-r019ix",
+  "commit": "e3285c1b2",
+  "paths": [
+    ".claude/skills/labmaker/LEARNINGS.md"
+  ]
+}
