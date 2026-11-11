@@ -178,6 +178,25 @@ namespace CosmicShore.UI
         /// <c>ThemeManagerData</c>, while the domain tints are additionally waiting on a domain to
         /// resolve. Neither latch closes until the palette actually answered, which is the whole of
         /// the fix - see <see cref="_domainPainted"/>.</para>
+        ///
+        /// Why the palette is POLLED rather than pushed once.
+        ///
+        /// <para>A domain is not decided by the time a vessel spawns: <c>Player.NetDomain</c> is
+        /// server-write and initialises to Jade, the owner's own pick arrives later through
+        /// <c>RequestSetDomain_ServerRpc</c>, and the match's active set can move a human again at
+        /// spawn (<c>NormalizeUnassignedHumans</c>). CLAUDE.md states the rule outright - <i>do not
+        /// snapshot domain at component-creation time</i> - and this controller was snapshotting it
+        /// twice, so the omni card and the steal count both held whatever was true one frame after
+        /// <c>Initialize</c>.</para>
+        ///
+        /// <para>Polled off the live <c>Player.Domain</c> mirror rather than subscribed to
+        /// <c>NetDomain.OnValueChanged</c> for two reasons: this controller already runs an Update
+        /// for the tube cooldown and the steal readout, so the poll is free; and a subscription has
+        /// to be torn down against a <c>Player</c> reference that a vessel swap replaces underneath
+        /// it, which is the asymmetric-binding failure the vessel contract has paid for three times.
+        /// The read is gated on <c>Player</c> being present because <c>IVesselStatus.Domain</c>
+        /// logs an ERROR when it is not - a per-frame poll through that getter would turn one
+        /// missing reference into console spam.</para>
         /// </summary>
         private void PushPalette()
         {
@@ -226,27 +245,6 @@ namespace CosmicShore.UI
         /// </summary>
         internal static bool PaletteLanded(Domains domain, Color resolved) =>
             domain != Domains.Blue && resolved.a > 0f;
-
-        /// <summary>
-        /// Why the palette is POLLED rather than pushed once.
-        ///
-        /// <para>A domain is not decided by the time a vessel spawns: <c>Player.NetDomain</c> is
-        /// server-write and initialises to Jade, the owner's own pick arrives later through
-        /// <c>RequestSetDomain_ServerRpc</c>, and the match's active set can move a human again at
-        /// spawn (<c>NormalizeUnassignedHumans</c>). CLAUDE.md states the rule outright - <i>do not
-        /// snapshot domain at component-creation time</i> - and this controller was snapshotting it
-        /// twice, so the omni card and the steal count both held whatever was true one frame after
-        /// <c>Initialize</c>.</para>
-        ///
-        /// <para>Polled off the live <c>Player.Domain</c> mirror rather than subscribed to
-        /// <c>NetDomain.OnValueChanged</c> for two reasons: this controller already runs an Update
-        /// for the tube cooldown and the steal readout, so the poll is free; and a subscription has
-        /// to be torn down against a <c>Player</c> reference that a vessel swap replaces underneath
-        /// it, which is the asymmetric-binding failure the vessel contract has paid for three times.
-        /// The read is gated on <c>Player</c> being present because <c>IVesselStatus.Domain</c>
-        /// logs an ERROR when it is not - a per-frame poll through that getter would turn one
-        /// missing reference into console spam.</para>
-        /// </summary>
 
         /// <summary>
         /// The SPACE card: how far the steal reaches right now, and how much has been taken.

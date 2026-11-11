@@ -686,19 +686,6 @@ namespace CosmicShore.Gameplay
             explosion != null ? explosion.CalculateImpactVector(at) : Vector3.zero;
 
         /// <summary>
-        /// Blast → CRYSTAL, dispatched by an explicit overlap rather than through the trigger.
-        /// Layer 9 (Crystals) × layer 10 (Explosions) is off in the collision matrix, so no
-        /// trigger pair is ever generated for this contact; the alternative to querying here was
-        /// turning that pair on project-wide, which would mint trigger pairs between EVERY blast
-        /// and EVERY crystal in every mode to serve one weapon.
-        ///
-        /// The query is skipped entirely unless this blast AUTHORS crystal effects — which today
-        /// is only the Scarab's cavitation punch, so the other twelve AOE prefabs pay one array
-        /// null-check per frame and nothing else. `_crystalsHit` is the once-per-blast ledger, the
-        /// same shape as the prism batch tracker: a blast grows over many frames and would
-        /// otherwise re-convert the same crystal on each of them.
-        /// </summary>
-        /// <summary>
         /// Exact swept-CYLINDER narrowphase for the crystal sweep, when the caller's blast is one.
         /// A sphere cannot bound a squat cylinder tightly — for the Scarab's 45-wide, 54-long plate
         /// the bounding sphere reaches ~43 units BEHIND the pilot on the first frame — so without
@@ -740,6 +727,19 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Blast → CRYSTAL, dispatched by an explicit overlap rather than through the trigger.
+        /// Layer 9 (Crystals) × layer 10 (Explosions) is off in the collision matrix, so no
+        /// trigger pair is ever generated for this contact; the alternative to querying here was
+        /// turning that pair on project-wide, which would mint trigger pairs between EVERY blast
+        /// and EVERY crystal in every mode to serve one weapon.
+        ///
+        /// The query is skipped entirely unless this blast AUTHORS crystal effects — which today
+        /// is only the Scarab's cavitation punch, so the other twelve AOE prefabs pay one array
+        /// null-check per frame and nothing else. `_crystalsHit` is the once-per-blast ledger, the
+        /// same shape as the prism batch tracker: a blast grows over many frames and would
+        /// otherwise re-convert the same crystal on each of them.
+        /// </summary>
         void SweepCrystals(Vector3 centre, float radius) =>
             SweepCrystals(centre, radius, default);
 

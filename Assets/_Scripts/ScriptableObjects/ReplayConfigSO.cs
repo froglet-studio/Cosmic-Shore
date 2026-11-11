@@ -146,7 +146,6 @@ namespace CosmicShore.ScriptableObjects
         public int ListedReplays => listedReplays;
         public int CloudIndexSize => cloudIndexSize;
 
-        /// <summary>Whether a match of <paramref name="mode"/> records itself.</summary>
         /// <summary>
         /// Whether a match of <paramref name="mode"/> in <paramref name="sceneName"/> records itself. Never in
         /// <paramref name="menuSceneName"/>: the menu's freestyle (the lava lamp) is not a match.

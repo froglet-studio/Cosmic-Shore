@@ -164,11 +164,6 @@ namespace CosmicShore.UI
         /// <summary>True while this element's level-5 upgrade is active on this HUD.</summary>
         public bool IsAbilityUpgraded(Element element) => _upgraded.Contains(element);
 
-        /// <summary>
-        /// The ability icon this element upgrades, if the vessel wired one. Used by the control-hint
-        /// binder so an (LT)/(RT) label can find the ability it belongs to instead of being pinned to
-        /// a hand-authored position.
-        /// </summary>
         /// <summary>The meter this ability drives, if the vessel wired one.</summary>
         public bool TryGetAbilityGauge(Element element, out Image gauge)
         {
@@ -182,6 +177,11 @@ namespace CosmicShore.UI
             return false;
         }
 
+        /// <summary>
+        /// The ability icon this element upgrades, if the vessel wired one. Used by the control-hint
+        /// binder so an (LT)/(RT) label can find the ability it belongs to instead of being pinned to
+        /// a hand-authored position.
+        /// </summary>
         public bool TryGetAbilityIcon(Element element, out Image icon)
         {
             foreach (var binding in abilityIcons)

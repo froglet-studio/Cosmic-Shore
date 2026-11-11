@@ -1363,13 +1363,6 @@ namespace CosmicShore.Gameplay
         public bool RecyclesWhenDestroyed { get; set; }
 
         /// <summary>
-        /// Finish THIS life's creation now: skip the spawn wait and the per-frame completion budget, and run
-        /// exactly the completion the coroutine would have run (visibility, collider, growth stamp, created
-        /// event, spatial registration). For an OWNER that needs the prism real in the frame it asked - a swarm
-        /// member materialised to take a hit a weapon has already landed (Docs/SWARM_FAUNA.md §16.2). The caller
-        /// owns the budget: every call is one full completion. No-op once complete, destroyed, or never started.
-        /// </summary>
-        /// <summary>
         /// Abandon this life's pending creation (spawn wait or the creation queue): the prism stays invisible,
         /// collider-off and unregistered until it is released or re-initialised. For mass leaving the world
         /// before it ever showed (a retiring world's suction). No-op once complete.
@@ -1382,6 +1375,13 @@ namespace CosmicShore.Gameplay
             _creationQueued = false;   // its queue entry is dropped when the drain reaches it
         }
 
+        /// <summary>
+        /// Finish THIS life's creation now: skip the spawn wait and the per-frame completion budget, and run
+        /// exactly the completion the coroutine would have run (visibility, collider, growth stamp, created
+        /// event, spatial registration). For an OWNER that needs the prism real in the frame it asked - a swarm
+        /// member materialised to take a hit a weapon has already landed (Docs/SWARM_FAUNA.md §16.2). The caller
+        /// owns the budget: every call is one full completion. No-op once complete, destroyed, or never started.
+        /// </summary>
         public void CompleteCreationImmediately()
         {
             if (destroyed || IsCreationComplete || (_creationRoutine == null && !_creationQueued)) return;
