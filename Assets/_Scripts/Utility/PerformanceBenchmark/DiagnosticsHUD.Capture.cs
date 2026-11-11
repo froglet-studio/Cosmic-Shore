@@ -67,18 +67,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             string label = "";
             int seconds = 15;
+            string extraMarkers = null;   // an m=A,B argument goes on to the diag window, as 'diag' takes it
             foreach (string a in args)
             {
                 if (int.TryParse(a, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) && n > 0) seconds = Mathf.Clamp(n, 5, 600);
+                else if (MarkerBudget.TryParseExtraMarkers(a, out _)) extraMarkers = a;
                 else if (!string.IsNullOrWhiteSpace(a)) label = a;
             }
             if (label.Length == 0) label = Sanitize(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
 
-            StartCoroutine(RunCapture(label, seconds));
+            StartCoroutine(RunCapture(label, seconds, extraMarkers));
             return $"capture '{label}': burst, diag {seconds}s, prof {CaptureProfFrames} frames, renderers, cells → one file. Hands off the editor until it says saved.";
         }
 
-        IEnumerator RunCapture(string label, int seconds)
+        IEnumerator RunCapture(string label, int seconds, string extraMarkers = null)
         {
             _captureRunning = true;
             _captureLog.Clear();
@@ -109,7 +111,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 SetStat("Capture", "run", $"diag {seconds}s");
                 string started;
                 using (s_captureDiagStart.Auto())
-                    started = HandleDiagCommand(new[] { label, seconds.ToString(CultureInfo.InvariantCulture) });
+                    started = HandleDiagCommand(extraMarkers == null
+                        ? new[] { label, seconds.ToString(CultureInfo.InvariantCulture) }
+                        : new[] { label, seconds.ToString(CultureInfo.InvariantCulture), extraMarkers });
                 if (!_recording) { notes.Add("diag did not start: " + started); }
                 while (_recording) yield return null;
                 diagPath = _lastSavedPath;
