@@ -464,7 +464,7 @@ def build(root, args):
     for ln in lanes:
         decl = [o['owner'] for o in team.declared_owners(ln.paths)] if ln.paths else []
         if decl or ln.note:
-            owners[ln.key] = (ln.note or ('Owner: ' + ', '.join(decl) + ' (Docs/TEAM.json): ask before changing it.'))
+            owners[ln.key] = (ln.note or ('Owner: ' + ', '.join(decl) + ' (Docs/TEAM.json): tell them, and queue changes for their /approve.'))
     board = []
     for ln in lanes:
         f = found[ln.key]

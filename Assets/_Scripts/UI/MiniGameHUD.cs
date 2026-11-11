@@ -554,6 +554,14 @@ namespace CosmicShore.UI
                     // The Bends' provider again: the nearest pilot this player may bite. In the kelp the hard half is
                     // keeping them under the nose long enough to lock; the arrow answers where.
                     return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Kelpwood");
+                case GameModes.Corona:
+                    // The Bends' provider again: the nearest pilot this player may graze. The way to them is through
+                    // the gates, and the cash-out is always the heart, so the arrow only has to answer who.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Corona");
+                case GameModes.Harvest:
+                    // Rampage's provider again: the nearest managed omni crystal, in the field's clear centre. The
+                    // sheaves are in plain sight; the crystal is the windmill - the one thing worth racing to.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Harvest");
                 case GameModes.Tapestry:
                     // The same provider, answering the RAID half of the mode: the nearest
                     // opposing pilot is where the freshest opposing paint is, because a pilot's
@@ -569,6 +577,11 @@ namespace CosmicShore.UI
                     // there still a LOT of it" does, and on the 2,160-unit open rungs it is far
                     // from obvious. Densest hostile mass, the query Cleave's AI raids with.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Cleave");
+                case GameModes.Shatterplane:
+                    // Densest standing hostile mass again: the plates are the only breakable mass in the cell, so the
+                    // arrow names the nearest big plate still standing. Not a crystal: a crystal is a spare ring, and
+                    // it already floats on a plate's axis in front of it.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Shatterplane");
                 case GameModes.Sirocco:
                     // Same provider, same reason: the forest rings the cell, so the arrow names
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs

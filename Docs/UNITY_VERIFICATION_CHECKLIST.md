@@ -65,6 +65,188 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Redline round 5: Soar from the gun, 8 laps, the AI race line, the heat (`Ys-bleeding-edge`, 2026-11-11, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `Assets/_Scripts/Controller/Arcade/REDLINE.md` section 0. The card starts every Manta at Time 6
+(`StartingElements`, from `RedlineCourse.StartingTimeLevelByIntensity`) so Soar (the Time level-5 upgrade) is lit from
+the gun; the race is 8 laps (64 gates); the AI Mantas fly a race line through the mouths' centres
+(`RedlineController.TryRaceLine`) at a throttle floor by difficulty (`AIThrottleFloorFor`, a new additive hook on
+`GateRaceController` that every other mode answers with its old `AIThrottleFloor`), with quicker Easy/Medium noses at
+I3-I4; and the local pilot's threads are graded and called (`RedlineHeat`, `RedlineController.Heat`, toasts 360-366, nine
+EMPTY FMOD slots). **Not compiled in Unity:** `redline_course_harness` compiled and ran `RedlineCourse`, `RedlineHeat` and
+their tests out of the editor (29/29, four negative controls); `RedlineController`, `RedlineController.Heat`,
+`GateRaceController` and `RedlineAISteeringTests` have not been compiled (no Unity was run in this worktree; ten
+sessions shared the machine).
+
+**Verify in editor:**
+1. Compile; run the EditMode tests `RedlineHeatTests`, `RedlineCourseTests`, `RedlineTimeCrystalsTests`,
+   `RedlineAISteeringTests` (the last has three new or changed tests: the nose rows, the throttle floor, the race line).
+2. Launch Redline at I1 with two players: the Manta starts with six Time petals, and both triggers buried go to ~1100
+   u/s within ~2 s. (Before this, Soar was dark at I1 for the whole race.) The goal row reads x/64.
+3. Thread a ring dead centre: a copy of its mouth grows off the gate and vanishes (redhot, flat out: a bigger one).
+   Three clean in a row: the toast "3 clean in a row". Off-centre or a miss: the streak ends silently.
+4. Finish a lap: "Lap 1 - N.Ns"; a faster later lap reads "Best lap yet". A lap threaded clean end to end: a chase
+   of shock rings round the circuit and "Clean lap N".
+5. At I4 take Time crystals to Time 10 and bury both triggers: once a race, "REDLINE - 13xx u/s" and every ring flares.
+6. Add AI Mantas at Easy and Legendary, I1 and I4: they race at the mouths' centres and finish (offline: Legendary
+   60/64/71/91 s, Easy 139/143/153/149 s for 8 laps at I1-I4). After a missed mouth they turn back and re-attack.
+7. Regression: Headlong, Grizzly Time and every other gate race unchanged (they answer `AIThrottleFloorFor` with their
+   own `AIThrottleFloor`).
+8. MPPM two clients: both peers see the same circuit and crystals; each sees only its OWN shock rings and heat toasts.
+
+**First-pass tuning:** start Time 6; 8 laps; throttle floors 0.7 / 0.85 / 1 / 1; nose rows I3 2.5/3/6/9, I4 4/5/6/9;
+clean 0.5 of the mouth, redhot 0.8 of full Soar, redline 1362 u/s; flare 1.6x / 2.6x over 0.45 s.
+
+---
+
+### 🔴 Harvest, the Thresher's Space game (GameModes 88) (`claude/keen-rubin-rw7p6q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/HARVEST.md` (plan: `Docs/MassAndSpaceGames/THRESHER_SPACE.md`). A Thresher
+destruction race through a field of sheaves (`SpawnableHarvest`, four baked prefabs): mow a sheaf's stalks with the
+chain to charge the ball, smash it into the core for one blast. Scored on hostile prisms destroyed (PrismsDestroyed,
+Space), target 750, golf-timed. AI reapers (`HarvestReaper`) steer and press A once to leave Mass Mode. New platform
+rows: `GameModes.Harvest = 88`, `harvestPrismTarget`, toast situation 163 (`HarvestHint`). Checked offline:
+`author_harvest_assets.py --check` (and watched it fail three ways), the `/arcadegame` gates, the clip audit (0
+clipping; the C# lays 3,200 / 3,408 / 3,040 / 3,300 prisms, as the Python mirror does), the bake, the card render,
+the reference compile (player and editor: 0 errors in project code) and the full `/ship` gates (ALL OK). Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 81 modes; `HarvestTests`,
+`ModeGenreTests.Harvest_IsTheThreshersSpaceGame`).
+
+**Verify in editor:**
+1. Arcade → Harvest card: the sheaves card art, Thresher only, 1-4 players, 2-3 domains, intensities 1-4, the
+   **Space** badge.
+2. Launch I1 with one AI: you spawn just outside a field of eight big blue sheaves; the arrow points at an omni
+   crystal in the clear centre; the hint toast (163) shows once ("Press A to break ...").
+3. Before pressing A (Mass Mode): the ball steals and lays trail, nothing explodes, and the score moves only on chain
+   cuts. Press A: the ball breaks and explodes.
+4. **The question the mode stands on**: circle a sheaf with it inside your turn. Does the chain cut stalks while the
+   ball swings outside the tips (the ball's rim whitens as the bank grows)? Then whip the ball into the core: does one
+   blast clear most of it? If the ball keeps touching stalks and every blast is small, say so (the brief's retire
+   condition).
+5. Scoring: chain cuts, ball hits and blast kills all raise your count; a sheaf in your own colour (I2+) never does,
+   and a toast every 150 prisms (83) shows the count.
+6. Crystals: 8 / 4 / 3 / 1 for a lobby of four at I1-I4, in the clear centre; taking one windmills the red-hot ball
+   round you for 12 s.
+7. AI: it presses A within a couple of seconds of the start (its ball starts exploding), circles a sheaf not in its
+   colour, then turns in through the core; at Hard / Legendary it mows longer and wider. Watch whether it stalls in a
+   sheaf or orbits forever.
+8. First team to 750 wins: results show "N Prisms" per pilot and "N Prisms Left" for losers; the reveal says
+   HARVEST TIME / PRISMS LEFT. Replay works.
+9. I2, I3, I4: shielded cores (two hits), team-coloured sheaves, every fourth stalk danger at I4; the spawn ring stays
+   just outside the field.
+10. Time a full match at I2, 1v1 Medium AI: P-modes-02 wants about 90 s for an experienced pilot (FrogletTools > Game
+    Modes > End Game Conditions → Harvest).
+11. MPPM two clients: a client's chain, ball and blast kills score once each on both peers; both see the same field.
+12. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameHarvest.unity`, and Reconcile Build Scene
+    List if the scene is reported missing from the build list.
+
+**First-pass tuning:** target 750, comeback 0.012, the AI ladders in `HARVEST.md`.
+
+---
+
+### 🔴 Shatterplane, the Brittle Star's Space game (GameModes 90) (`claude/fervent-edison-ol600q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/SHATTERPLANE.md` (plan and decisions: `Docs/MassAndSpaceGames/BRITTLE_STAR_SPACE.md`).
+Wide, thin round plates of neutral prisms (`SpawnableShatterplane`, four baked prefabs). The ring blast erases a plate
+it lies in, and the guns chew the rest. Scored on `PrismsDestroyed` (Rampage's rule, so the card reads Space), first
+domain to 1600 / 1600 / 2000 / 1000 by intensity. The crystal field sits on the plates' axes. The arena's nucleus is
+sized to 470 u (D2), so every ring blast in this cell is 940 u across. The AI squarer only steers.
+
+New platform rows: `GameModes.Shatterplane = 90`, `shatterplanePrismTarget` + per-intensity list, toast situation 165,
+the HUD arrow (`HostileMassObjectiveProvider`).
+
+**Checked offline:**
+- `author_shatterplane_assets.py --check`, watched failing on a mutated settings asset and on a mutated C# default.
+- The reference compile: player 0 errors; editor config run as well.
+- The `/ship` gates.
+- The clip audit: 0 clipping on all 16 runs.
+- The bake: the C# lays 5,290 / 5,292 / 6,615 / 4,588 prisms, exactly the twin's.
+- The card render.
+
+**Not run:** Unity, and the EditMode tests (`ShatterplaneTests`, `ModeGenreTests`, `EnumIntegrityTests`, which now
+expects 82 modes).
+
+**Verify in editor:**
+1. Arcade → Shatterplane card: the plates-and-square-blast art, Brittle Star only, 1-4 players, intensities 1-4, the
+   **Space** badge (genre through `PrismsDestroyed`).
+2. Launch I1 with one AI, as the HOST:
+   - you spawn on a 780 u ring;
+   - ten round plates face you;
+   - a crystal floats in front of each plate;
+   - the nucleus sphere in the middle is about 470 u (`ShatterplaneSettings.nucleusRadius`);
+   - the hint toast (163) shows once;
+   - the arrow points at standing plate mass.
+3. Take a crystal (the Charge card's spare-ring slot fills), fly on along the plate's axis, throw (LT): the blast lies
+   in the plate and erases it whole; the score jumps by about 529.
+4. Throw at a slant: only a band goes.
+5. Space Mode (X + RT): the five guns chip a plate.
+6. Lay a Creation trail and shoot it: your own prisms never score.
+7. AI: it takes crystals and lines up on a plate's axis before flying in. **Count how many of its ring throws land square
+   versus fuse short in front of the plate** (the executor decides when to throw; a throw from beyond about 313 u at
+   cruise fuses before it arrives). Watch for an AI circling a plate it never lines up on.
+8. First team to the target wins: results "N Prisms" / "N Prisms Left", the reveal SHATTERPLANE TIME / PRISMS LEFT.
+   Replay works.
+9. I2: plates at mixed angles. I3: stacks of three 70 u apart (the front plate shields the next from the guns). I4: white
+   super-shielded ribs on every sixth line, red danger rims, and grilles in front of every other plate (a ring thrown
+   through a grille blows on it and takes little).
+10. Profile a square ring at I1 (`prof`): one blast kills a plate in its 0.7 s sweep.
+11. Time a 2v2 at I2 with Medium AI against P-modes-02 (about 90 s for an experienced player); retune in FrogletTools >
+    Game Modes > End Game Conditions → Shatterplane.
+12. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameShatterplane.unity`, and Reconcile Build
+    Scene List if the scene is reported missing. FrogletTools > Ecology > Measure Cell Environment Baselines should
+    agree with the census above.
+
+**First-pass tuning:**
+- targets 1600 / 1600 / 2000 / 1000 (30% of each rung's breakable mass);
+- comeback rate 0.005;
+- nucleus 470;
+- crystal regrow 8 s;
+- the plates in `shatterplane_budget.RUNGS`;
+- the AI ladders in `ShatterplaneSettings`.
+
+---
+
+### 🔴 Corona, the Manta's Charge game (GameModes 87) (`claude/amazing-goldberg-7zn80e`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/CORONA.md`. Manta stings round a crystal heart in nested prism shells
+(`SpawnableCorona`, four baked prefabs), scored on blooms (a rival pilot caught in a bloom of a bomb you planted,
+Debuff-class CombatPoints, target 15), omni crystals in the heart (the scene's CrystalManager), AI stingers that only
+steer and route through the gates (`CoronaStinger`). New platform rows: `GameModes.Corona = 87`, `coronaBloomTarget`,
+toast situation 162. Checked offline: `author_corona_assets.py --check` (watched it fail on a mutated settings asset),
+the reference compile, the `/ship` gates, the clip audit (0 clipping; the C# lays 624 / 1,334 / 2,262 / 3,703 prisms
+and the mirror's volumes), the bake, the card render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now
+expects 80 modes).
+
+**Verify in editor:**
+1. Arcade → Corona card: the shells-and-bloom card art, Manta only, 2-4 players, intensities 1-4, the Charge badge.
+2. Launch I1 with one AI (any difficulty), as the HOST: you spawn outside one shell of tiles with eight wide gates;
+   four omni crystals float in the heart; the arrow points at the rival; the hint toast (162) shows once.
+3. Arm: fly along the shell close enough to skim (no hull contact): the Charge card's gauge fills and the armed badge
+   lights after about three tiles.
+4. Touch: brush a tile with the hull while carrying a planted bomb: every bomb goes off small and the energy empties.
+5. Plant: graze the rival while at least as fast as it: the armed badge drops, a fuse marker blooms on the rival (only
+   on your screen), the fuse board above the Space card counts 20 s. The rival sees nothing.
+6. Cash: dive through a gate and touch a crystal in the heart: every planted bomb blooms (nearest first) and a bloom
+   opens round your ship. Each rival caught: "<b>you</b> caught a rival in a bloom!" (82), the score goes up 1, the
+   rival is silenced and loses petals. At most one per rival per second. A fuse left to run out blooms smaller.
+7. AI: it skims a shell without touching, chases you through the gates, and dives for the heart once it has planted
+   (Easy at 1 bomb, Hard / Legendary at 3 or with 6-7 s of fuse left). Watch for the AI flying into tiles (its bombs
+   would go off early and its energy empty) and for it circling outside a gate it never lines up on.
+8. First team to 15 blooms wins: results show "N blooms" and "N Blooms Left"; the reveal says CORONA TIME / BLOOMS
+   LEFT. Replay works.
+9. I2, I3, I4: two, three, four shells; each shell's gates turned away from the last; red danger rims round the gates
+   from I3 (they take petals on contact); gates narrower (inner gate 131, 90, 65 u); 3, 2, 1 omni crystals in the heart.
+10. Blooms destroy tiles: after a full match, is I1's shell still a shell?
+11. Time a 2v2 at I2 with Medium AI. The plan wants 3-5 min; 15 is a first cut (FrogletTools > Game Modes > End Game
+    Conditions → Corona).
+12. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameCorona.unity`, and Reconcile Build Scene
+    List if the scene is reported missing from the build list. FrogletTools > Ecology > Measure Cell Environment
+    Baselines should agree with the census above.
+
+**First-pass tuning:** target 15, comeback 0.3, the shells and crystal counts in `corona_budget.RUNGS`, the AI
+ladders in `CORONA.md`.
+
+---
+
 ### 🔴 B21 (scoring): every pilot's drift, boost and prisms damaged on every scoreboard (`Ys-bleeding-edge`, 2026-11-10, Yash) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/ScoringSystem/BUGS.md` B21. Every hull gets a telemetry with its three base stats (from

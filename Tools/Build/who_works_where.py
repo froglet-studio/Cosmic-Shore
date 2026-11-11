@@ -218,7 +218,7 @@ def print_query(paths, land, flight, days, team=None):
     print(f'Who works on {", ".join(paths) or "the whole repo"} (last {days} days; read from origin/*, fetch first)')
     owners = team.declared_owners(paths) if team and paths else []
     if owners:
-        print('\nOWNER (declared in Docs/TEAM.json; this decides who to ask, not the merge counts below):')
+        print('\nOWNER (declared in Docs/TEAM.json; this decides who to tell and whose /approve queue, not the merge counts below):')
         for o in owners:
             print(f'  {o["area"]}: {o["owner"]}' + (f' - {o["note"]}' if o.get('note') else '') + f'  ({o.get("said", "")})')
     print('\nIN FLIGHT (unmerged branches touching it - read before redoing or overriding):')
@@ -248,8 +248,9 @@ def print_query(paths, land, flight, days, team=None):
             people[p] += 2
     if people:
         print('\nTALK TO: ' + ', '.join(f'{p} ({n})' for p, n in people.most_common(6)) +
-              '  - their work is here; build on it, and ask before replacing it (Docs/TEAM.md).' +
-              ('\n  A merge counts for whoever merged it; the declared OWNER above is who decides.' if owners else ''))
+              '  - their work is here; build on it, tell them, and queue changes to it for their /approve'
+              ' (Docs/TEAM.md rules 3, 13; `approvals.py check` says whether it collides).' +
+              ('\n  A merge counts for whoever merged it; the declared OWNER above is whose queue it goes into.' if owners else ''))
 
 
 def build_map(team, days, cwd):

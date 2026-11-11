@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Harvest
+  m_EditorClassIdentifier:
+  Mode: 88
+  Notes: 'The field at each intensity - big neutral sheaves, then shielded cores, team colours and
+    danger stalks. What it teaches is the mow-then-smash - circle a sheaf so the chain cuts the
+    stalks, then whip the ball into the core. Vessel pinned to Thresher(14).'
+  PreviewCell: {fileID: 11400000, guid: 7b77f14282c087d0350c30e13eda08a5, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 7b77f14282c087d0350c30e13eda08a5, type: 2}
+  - {fileID: 11400000, guid: 9eae98cf1ea6ddb4912185048a2d23fc, type: 2}
+  - {fileID: 11400000, guid: ee06e833401b6efbbfc2af875cf75415, type: 2}
+  - {fileID: 11400000, guid: 3b39d3920969985a33ee9921d055f97a, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 14
+  ObjectiveText: Mow the stalks with your chain, then smash the ball into the core
+  ObjectiveMetric: 5
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 880
+  SpawnRingRadiusFloorByIntensity:
+  - 880
+  - 960
+  - 1020
+  - 1080
+  SpawnFormation: 0
+  SpawnPoints: []

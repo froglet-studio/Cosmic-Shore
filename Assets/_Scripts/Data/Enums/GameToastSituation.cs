@@ -234,6 +234,27 @@ namespace CosmicShore.Data
         // Kelpwood, the Angler's charge game (_Scripts/Controller/Arcade/KELPWOOD.md). Its race beats are the shared
         // 128-130 (DomainRaceToasts); a bite is 86 (StrikeHitsLanded rose). Posted to the LOCAL pilot only.
         KelpwoodHint = 161,             // once, at the start: lock a rival with the eraser; tame the herds in the kelp
+        // Corona, the Manta's charge game (_Scripts/Controller/Arcade/CORONA.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a bloom hit is 82 (DebuffHitsLanded rose). Posted to the LOCAL pilot only.
+        CoronaHint = 162,               // once, at the start: skim a shell to arm, graze to plant, cash at the heart
+
+        // Harvest, the Thresher's space game (_Scripts/Controller/Arcade/HARVEST.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a prism milestone is 83 (HostilePrismsDestroyed). Posted to the LOCAL pilot only.
+        HarvestHint = 163,              // once, at the start: press A to break; mow the stalks, smash the core
+        // Shatterplane, the Brittle Star's space game (_Scripts/Controller/Arcade/SHATTERPLANE.md). Its race beats are the
+        // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
+        // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
+        ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
+        // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
+        // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.
+        RedlineHint = 360,              // once, at the start: Soar is lit, bury both triggers, thread the hearts
+        RedlineStreak = 361,            // a streak of clean threads is called (3, 8, 16, then every 16): {0} = the streak
+        RedlineLapSplit = 362,          // a lap completed: {0} = the lap, {1} = its time in seconds
+        RedlineBestLap = 363,           // a lap beat this race's best: {0} = the lap, {1} = its time in seconds
+        RedlineCleanLap = 364,          // every gate of a lap threaded clean: {0} = the lap
+        RedlineSoarDark = 365,          // the pilot's Time fell below Soar's relock (4): Soar is dark until a crystal
+        RedlineRedline = 366,           // once a race: the pilot reached the redline: {0} = the speed in u/s
 
         // Grizzly Time, the Grizzly's Time race (_Scripts/Controller/Arcade/GRIZZLYTIME.md, Docs/GrizzlyTime/
         // POWDER_KEGS_SPEC.md). Its race beats are the shared 129-132 + 30 (DomainRaceToasts). Posted to the LOCAL pilot

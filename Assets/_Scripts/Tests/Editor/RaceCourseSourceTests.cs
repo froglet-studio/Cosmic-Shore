@@ -41,6 +41,21 @@ namespace CosmicShore.Tests
             (GameModes.Skein,      "MinigameSkein",      "Controller/Arcade/Skein/SkeinController.cs"),
             (GameModes.Regatta,    "MinigameRegatta",    "Controller/Arcade/Regatta/RegattaController.cs"),
             (GameModes.Waystation, "MinigameWaystation", "Controller/Arcade/Waystation/WaystationController.cs"),
+            (GameModes.Breach,          "MinigameBreach",          "Controller/Arcade/Breach/BreachController.cs"),
+            (GameModes.Thornline,       "MinigameThornline",       "Controller/Arcade/Thornline/ThornlineController.cs"),
+            (GameModes.ThresherTime,    "MinigameThresherTime",    "Controller/Arcade/ThresherTime/ThresherTimeController.cs"),
+            (GameModes.GrizzlyTime,     "MinigameGrizzlyTime",     "Controller/Arcade/GrizzlyTime/GrizzlyTimeController.cs"),
+            (GameModes.ScarabRally,     "MinigameScarabRally",     "Controller/Arcade/ScarabRally/ScarabRallyController.cs"),
+            (GameModes.DecoyRun,        "MinigameDecoyRun",        "Controller/Arcade/DecoyRun/DecoyRunController.cs"),
+            (GameModes.BurrowRun,       "MinigameBurrowRun",       "Controller/Arcade/BurrowRun/BurrowRunController.cs"),
+            (GameModes.PerchRun,        "MinigamePerchRun",        "Controller/Arcade/PerchRun/PerchRunController.cs"),
+            (GameModes.WrasseRun,       "MinigameWrasseRun",       "Controller/Arcade/WrasseRun/WrasseRunController.cs"),
+            (GameModes.LanternRun,      "MinigameLanternRun",      "Controller/Arcade/LanternRun/LanternRunController.cs"),
+            (GameModes.Warpline,        "MinigameWarpline",        "Controller/Arcade/Warpline/WarplineController.cs"),
+            (GameModes.SlipLine,        "MinigameSlipLine",        "Controller/Arcade/SlipLine/SlipLineController.cs"),
+            (GameModes.BrittleStarTime, "MinigameBrittleStarTime", "Controller/Arcade/BrittleStarTime/BrittleStarTimeController.cs"),
+            (GameModes.Slingshot,       "MinigameSlingshot",       "Controller/Arcade/Slingshot/SlingshotController.cs"),
+            (GameModes.SerpentTime,     "MinigameSerpentTime",     "Controller/Arcade/SerpentTime/SerpentTimeController.cs"),
         };
 
         [Test]
@@ -77,8 +92,43 @@ namespace CosmicShore.Tests
                     case HeadlongCourseSource h:   AssertKnob(knobs, "laps", h.Laps, mode); break;
                     case RedlineCourseSource rl:   AssertKnob(knobs, "laps", rl.Laps, mode); break;
                     case BreakwaterCourseSource b: AssertKnob(knobs, "lapsFallback", b.LapsFallback, mode); break;
+                    case ThresherTimeCourseSource c:    AssertKnob(knobs, "laps", c.Laps, mode); break;
+                    case GrizzlyTimeCourseSource c:     AssertKnob(knobs, "laps", c.Laps, mode); break;
+                    case BurrowRunCourseSource c:       AssertKnob(knobs, "laps", c.Laps, mode); break;
+                    case WrasseRunCourseSource c:       AssertKnob(knobs, "laps", c.Laps, mode); break;
+                    case LanternRunCourseSource c:      AssertKnob(knobs, "laps", c.Laps, mode); break;
+                    case WarplineCourseSource c:        AssertKnob(knobs, "laps", c.Laps, mode); break;
+                    case BrittleStarTimeCourseSource c: AssertKnob(knobs, "laps", c.Laps, mode); break;
+                    case SlingshotCourseSource c:       AssertKnob(knobs, "laps", c.Laps, mode); break;
+                    case SerpentTimeCourseSource c:     AssertKnob(knobs, "laps", c.Laps, mode); break;
                 }
             }
+        }
+
+        /// <summary>
+        /// <b>Every gate race previews its course.</b> <see cref="RaceCourseSource.For"/> is a
+        /// hand-kept switch, and it once stopped at seven races while fifteen more shipped - every
+        /// one of those arcade cards then showed a bare shell that never changed with intensity.
+        /// So this walks the controllers themselves: any concrete <see cref="GateRaceController"/>
+        /// must have its mode registered.
+        /// </summary>
+        [Test]
+        public void EveryGateRaceControllerIsRegistered()
+        {
+            var registered = new HashSet<GameModes>(RaceCourseSource.GateRaceModes);
+            var covered = new HashSet<string>();
+            foreach (var r in Races) covered.Add(Path.GetFileNameWithoutExtension(r.controller));
+
+            foreach (var type in typeof(GateRaceController).Assembly.GetTypes())
+            {
+                if (type.IsAbstract || !typeof(GateRaceController).IsAssignableFrom(type)) continue;
+                Assert.IsTrue(covered.Contains(type.Name),
+                    $"{type.Name} is a gate race but RaceCourseSourceTests.Races does not list it, so " +
+                    "RaceCourseSource.For has no entry for its mode and its arcade card previews no course.");
+            }
+
+            foreach (var r in Races)
+                Assert.IsTrue(registered.Contains(r.mode), $"{r.mode} is listed here but not in GateRaceModes.");
         }
 
         /// <summary>

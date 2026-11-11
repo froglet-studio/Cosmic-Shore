@@ -325,3 +325,37 @@ Seen while building Kelpwood (GameModes 86); recorded, not fixed. Re-run each co
 Not refactors (a report): the Angler's Charge changes no number (`element_ability_table.py Angler` → "NO SCALING"),
 and a client Angler holds no school (ANGLER.md follow-up 7), so a client cannot lock in Kelpwood. Both are the
 Angler's design slots, not cleanup.
+
+## Corona pass rows (2026-11-10, `claude/amazing-goldberg-7zn80e`)
+
+Seen while building Corona (GameModes 87, the Manta's Charge game); recorded, not fixed. Re-run each command before
+acting. K2 (the orphaned summary in `MiniGameHUD.cs`, now at line 1139) and K3 (`Tandava.png`) still stand.
+
+| Row | Shape | Evidence (2026-11-10, `origin/bleeding-edge` @ `01c1200453`) | Size | Owner to ask |
+|---|---|---|---|---|
+| C1 `CoronaScoringRuleSO` is a third copy of the golf combat-point race body (Jackstraw's, which Kelpwood inherits) with only the paid hit class and the breakdown stat changed | debt this branch created: a copied rule, chosen over subclassing because the base reads `StrikeHitsLanded` | `diff` of the two files from `PointsForCombatHit` down: 6 of 66 lines differ. One `CombatRaceScoringRuleSO` with a per-class points table and the breakdown stat chosen by class would end it and K1 together (guids kept by keeping the class files) | S | Shombith (Jackstraw, Kelpwood, Corona) |
+| C2 `element_ability_table.py Manta` reports Charge "NO SCALING", but the Manta's Charge DOES scale | a reader that stops short of a spawned prefab: the scaled field lives on an effect asset the bloom (`AOEMantaBloom.prefab`) carries, not on `Manta.prefab` | `python3 Tools/Build/element_ability_table.py Manta` → `NO SCALING`; `grep magnitudeAtFullCharge "Assets/_SO_Assets/Effects/Vessel Explosion Effects/MantaBombDebuffByExplosionEffect.asset"` → `2`; `MANTA_STING_KABLOOM.md` table says the same. The Fleet Codex reads the same table | S | Shombith (tooling); Garrett for the Manta's facts |
+| C3 Bloomrush sets the Manta's fuse per intensity (`MantaBombRules.FuseSecondsOverride`, 30/25/20/20) | a report, not a refactor: a mode changing the vessel, which the LOCKED rule (Shombith, 2026-10-31) now forbids; Bloomrush predates the rule | `grep -n FuseSecondsOverride Assets/_Scripts/Controller/Arcade/BloomrushController.cs`. Corona deliberately does not copy it and its generator fails if it does. Keep, or retire the override and move Bloomrush's intensity lever elsewhere: the owners' call | decision | Shombith (the rule), Garrett (the Manta) |
+| C4 `render_card_backgrounds.py` (no stem) still stops on `BurrowRun: no recipe` | S95 still half open: every new card is rendered by name, so `card_backgrounds_manifest.json` misses it | `python3 Tools/Build/render_card_backgrounds.py --report` → `AssertionError: BurrowRun: no recipe`. Corona and Kelpwood are both missing from the manifest for this reason | S | Shombith (tooling) |
+
+## Harvest pass rows (2026-11-10, `claude/keen-rubin-rw7p6q`)
+
+Seen while building Harvest (GameModes 88, the Thresher's Space game); recorded, not fixed. Re-run each command before
+acting. K2 (the orphaned summary in `MiniGameHUD.cs`, now at line 1143), K3 (`Tandava.png`) and C4 (`BurrowRun: no
+recipe`) still stand.
+
+| Row | Shape | Evidence (2026-11-10, `origin/bleeding-edge` @ `f3304c93a7`) | Size | Owner to ask |
+|---|---|---|---|---|
+| H1 `RampageScoringRuleSO` builds its results and reveal from C# literals ("RAMPAGE TIME", "Prisms Left"), and `WreckingBallScoringRuleSO` inherits the same shape; Harvest overrides both with authored templates | the legacy literal-text shape the LOCKED text rule names (walked past) | `grep -n '"[A-Z ]*TIME"\|Prisms Left' Assets/_Scripts/Controller/Arcade/Scoring/RampageScoringRuleSO.cs Assets/_Scripts/Controller/Arcade/WreckingBall/WreckingBallScoringRuleSO.cs` | S: lift `HarvestScoringRuleSO`'s template fields into `RampageScoringRuleSO`, author Rampage's and Wrecking Ball's words into their assets | Yash (Rampage), Garrett (Wrecking Ball) |
+| H2 `HarvestReaper` cannot tell a sheaf is gone: it remembers when it worked one and comes back after `aiRevisitSeconds` | debt this branch created | `grep -n 'WorkedAt\|aiRevisitSeconds' Assets/_Scripts/Controller/Arcade/Harvest/HarvestReaper.cs` | S: the controller counts each sheaf's live core prisms (the spawnable's lays are indexed by sheaf) and the reaper skips an empty one | Shombith |
+| H3 Harvest's sheaves do not deliver the mode's loop: a trailing chain cuts 0-11 stalks a lap, so a core blast stays small (THRESHER_SPACE.md section 10) | a design gap, not a refactor (report only) | `bash Tools/Build/harvest_stalk_lab/run.sh` (as built) against `run.sh wheel 0 axis` | M: stalks laid as a wheel per sheaf, the reaper laps in its plane and dives down its axle; re-bake, re-render, re-census | Shombith (decision waiting) |
+
+### Shatterplane (`claude/fervent-edison-ol600q`, 2026-11-10)
+
+Seen while building Shatterplane (GameModes 90, the Brittle Star's Space game); recorded, not fixed. Re-run each command
+before acting. K3 / S115 (`Tandava.png` failing `author_card_backgrounds.py --strict`) still stands.
+
+| Row | Shape | Evidence (2026-11-10, `origin/bleeding-edge` @ `f3304c93a7`) | Size | Owner to ask |
+|---|---|---|---|---|
+| SP1 `RampageScoringRuleSO` builds its results and reveal from C# literals (`"{n} Prisms Left"`, `"{n} Prisms"`, `"VICTORY"`, `"RAMPAGE TIME"`), and four rules inherit them (Salvo, Hijack, Wrecking Ball, Sirocco; Sirocco and others override only the reveal, with literals again) | the LOCKED text rule's legacy shape: player text with no human-facing control | `grep -n 'Prisms Left\|"VICTORY"' Assets/_Scripts/Controller/Arcade/Scoring/RampageScoringRuleSO.cs` → lines 80, 88; `grep -rl ': RampageScoringRuleSO' Assets/_Scripts`. `ShatterplaneScoringRuleSO` moved its own words to authored fields (the pattern to lift into the base, with the base's defaults so no asset changes) | S | Shombith |
+| SP2 `audit_prism_clipping.py` given a prefab stem (`SpawnableShatterplane1`) reports `0 generators on 0 prefabs, 0 runs ... clipping: 0` and exits 0 | a gate that cannot fire reads as a pass | `python3 Tools/Build/audit_prism_clipping.py SpawnableShatterplane1; echo $?` → `0 generators` and 0. An unknown shape name should be an error naming the types it knows | S | Shombith (tooling) |

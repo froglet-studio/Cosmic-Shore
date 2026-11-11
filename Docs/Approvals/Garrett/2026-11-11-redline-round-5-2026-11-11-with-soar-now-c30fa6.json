@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-11-redline-round-5-2026-11-11-with-soar-now-c30fa6",
+  "to": "Garrett",
+  "by": "Yash",
+  "date": "2026-11-11T01:54:10+00:00",
+  "area": "Redline AI nose follow rates (#1844)",
+  "summary": "Redline round 5 (2026-11-11): with Soar now lit from the gun (the card starts the Manta at Time 6) a 2/s nose could not hold the 72/44 u mouths, so the I3 row is 2.5/3/6/9 (was 2/3/6/9) and the I4 row 4/5/6/9; I1-I2 unchanged. Offline (manta_redline_sim.py --reading) every difficulty now finishes every level. REDLINE.md section 0.",
+  "branch": "claude/manta-time-upgrade-a25952",
+  "commit": "573f93025"
+}

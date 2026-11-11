@@ -73,11 +73,14 @@ namespace CosmicShore.UI
         [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
         [SerializeField] private ModePreviewSession previewSession;
 
-        [SerializeField, Tooltip("Rebuild the preview's arena when the intensity row changes. Off (the owner, 2026-10-17: " +
-                                 "\"the cell should not change for the preview\"): the preview keeps the card's lowest " +
-                                 "intensity cell, so moving the row never stands a new world - a multi-second cell build " +
-                                 "and a hitch on every press. The match itself still launches at the chosen intensity.")]
-        private bool previewFollowsIntensity;
+        [SerializeField, Tooltip("Rebuild the preview's arena when the intensity row changes, so each " +
+                                 "intensity shows the world (and, for a gate race, the course) it plays in. " +
+                                 "On (Shombith, 2026-11-10: \"it should show how the environment looks when " +
+                                 "each intensity is clicked\"). This reverses his 2026-10-17 'one cell' call, " +
+                                 "which was about a multi-second cell build per press: the card now stands a " +
+                                 "scale model (a mesh, no prisms) and builds the real cell only on the tap, so " +
+                                 "following the row costs a model. Off holds the card's lowest intensity.")]
+        private bool previewFollowsIntensity = true;
 
         [Header("Maelstrom")]
         [Tooltip("Names the Maelstrom's own arcade card, so OpenMaelstrom can find it. Optional - " +

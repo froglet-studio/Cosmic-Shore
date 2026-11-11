@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-10-the-generator-emitted-every-hull-time-ra-517ed6",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-10T18:48:33+00:00",
+  "area": "Hull Time-race generator (hull_time_race.py) and its preview definitions",
+  "summary": "The generator emitted every hull Time race's preview with the Skim Race cell and an empty per-intensity list, so Breach, Decoy Run, Perch Run, Serpent Time, Slip Line and Thornline previewed another mode's world that never changed with intensity. It now reads the preview's cells from the scene it emits (their Thresher Time / Serpentine cells, I1-I4); the six assets are rewritten and all nine generators pass --check. RaceCourseSource.For also now registers all 22 gate races (it stopped at 7), so these cards draw their course.",
+  "branch": "claude/great-meitner-72uziq",
+  "commit": "385d3018c"
+}
