@@ -153,10 +153,10 @@ seven; or name none and mix voices domain by domain (Dart Frog, the Octopus).
 | Nocturne | a feeling (night) | lanterns | its Gold rim moved 4 degrees toward yellow (hue 83 to 87) so the HUD gold reads Gold |
 | Nacre | a material (mother of pearl) | pastel | faces moved into their own families and painted at L 0.5-0.7, so the bloom lifts them to pastel instead of white |
 | Dart Frog | a photograph (Garrett's green-and-bronze frog) and four frogs | quiet grounds, Azureus in family | every frog's second colour taken into the night; the Azureus is blue on blue |
-| Blue-ringed Octopus | an animal | mixed: sand skin as one paint, black for the quiet faces | an animal with three colours borrows its alarm flush and its iridescence |
-| Neon Noir | a film genre's palette | lanterns | each neon's puddle is its complement in the night; sodium amber stays in Gold's window |
-| Ukiyo-e | a painting style | one paint | bokashi is the paint voice: the face is the rim's pigment printed deeper |
-| Dusk | a mood | muted rims, quiet faces | rims stop at their families' chroma floors; Ruby is never dusty; the greys had to spread apart |
+| Blue-ringed Octopus (in the game since 2026-11-11) | an animal | mixed: sand skin as one paint, black for the quiet faces | an animal with three colours borrows its alarm flush and its iridescence |
+| Neon Noir (in the game since 2026-11-11) | a film genre's palette | lanterns | each neon's puddle is its complement in the night; sodium amber stays in Gold's window |
+| Ukiyo-e (in the game since 2026-11-11) | a painting style | one paint | bokashi is the paint voice: the face is the rim's pigment printed deeper |
+| Dusk (in the game since 2026-11-11) | a mood | muted rims, quiet faces | rims stop at their families' chroma floors; Ruby is never dusty; the greys had to spread apart; taken into the game, its Lime face (Heather) moved 1 degree so the writer's whitened Ruby fields stay out of it |
 | Contrast | a purpose (typical vision, as far apart as the rules allow) | one paint | its faces were other families' colours; held to rule 6 every body is its own family, and counting the HUD it is further apart than before (11.0 JND against 6.5) |
 | the five colour-blind sets | a viewer's eyes | rules 4 and 6 as the viewer sees them (4V, 6V), rule 5 for rule 7 | their waivers are gone: every rim now looks like its own name to its viewer (protan, tritan, low vision) or as nearly as those eyes allow (deutan, achromat, declared `name_margin`); the faces went quiet in the viewer's own lightness; rule 5 counts the HUD; re-balanced with `"objective": "vision"` and `"name"` |
 
@@ -173,7 +173,9 @@ python3 Tools/Build/author_editor_themes.py                # the editor windows'
 python3 Tools/Analytics/console/make_themes.py             # the analytics console's themes
 ```
 
-A new set needs a catalog row in `author_colour_set_catalog.py` `SETS` (and its words in the catalog asset); a
+To take a worked example into the game, move it from `examples` to the END of `sets` (the writer keeps every value of
+every set apart in that order, so appending moves no shipped set's colours), give it a `track`, then run the writers
+above (2026-11-11: Blue-ringed Octopus, Neon Noir, Ukiyo-e, Dusk). A new set needs a catalog row in `author_colour_set_catalog.py` `SETS` (and its words in the catalog asset); a
 changed pigment name needs the asset's `pigments` words updated by hand (the writer stands down on words). Then
 `--self-test` on `colour_sets.py` and `colour_set_maker.py`, the `/ship` gates, and an entry in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md`: no palette has been judged in the editor until someone flies it.
@@ -216,3 +218,8 @@ wear, particles alive at one, baked light probes) is its section 2.
 - **A light set weakens danger.** Danger is the Fire rim over the domain's shielded face; over a pale body the edge
   is all that warns. Give a light set's Fire rim real chroma (Nacre's coral is sat 0.26).
 - **Fire's and Lime's faces are never painted** (no field yet): design them, but do not lean on them.
+- **A whitened rim walks toward grey along its own hue.** The writer paints the brighter tiers with Photic's
+  whiteness, so a rim's fields sweep from its saturation down toward grey on its own hue line, and a quiet face of the
+  same hue and less chroma catches them: Dusk's Heather (Lime face, hue 316) took Wild Plum's `AOEConicEdgeColor`
+  (Ruby rim, hue 318). The seven rules compare pigments only; `author_colour_set_assets.py --check` compares every
+  field, for the examples too since 2026-11-11.

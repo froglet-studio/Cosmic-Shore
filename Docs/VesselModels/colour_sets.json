@@ -1,6 +1,6 @@
 {
   "format": "cosmic-shore-colour-sets/2",
-  "status": "Colour sets. 2026-11-10: seven rules so every domain stays distinguishable and looks like its four-letter name, whatever the set's inspiration (Garrett: \"Lime, Fire, Blue, Jade, Ruby, Gold, those must be distinguishable and have rules that govern the territory of their regions in color space; it must be obvious to the player based on a connection between their look and their four letter name\"), three styles (Photic, Nocturne, Nacre), Dart Frog and Nacre re-derived under them, Nocturne's Gold rim moved 4 degrees so the HUD reads it as Gold, the vision sets re-balanced so their HUDs read for their own viewers, and worked examples the /colour-set skill teaches from. Nocturne is the game's default palette (Garrett, 2026-11-03); Dart Frog is proposed for the paid track; Nacre (2026-11-08) is the light set. The six-family truth in colour_domains.json is untouched; its anchors are read from PhoticColorSetSO.",
+  "status": "Colour sets. 2026-11-10: seven rules so every domain stays distinguishable and looks like its four-letter name, whatever the set's inspiration (Garrett: \"Lime, Fire, Blue, Jade, Ruby, Gold, those must be distinguishable and have rules that govern the territory of their regions in color space; it must be obvious to the player based on a connection between their look and their four letter name\"), three styles (Photic, Nocturne, Nacre), Dart Frog and Nacre re-derived under them, Nocturne's Gold rim moved 4 degrees so the HUD reads it as Gold, the vision sets re-balanced so their HUDs read for their own viewers, and worked examples the /colour-set skill teaches from; four of them (Blue-ringed Octopus, Neon Noir, Ukiyo-e, Dusk) became game sets on 2026-11-11 (Garrett: \"the artifact lab had some great new color sets\"). Nocturne is the game's default palette (Garrett, 2026-11-03); Dart Frog is proposed for the paid track; Nacre (2026-11-08) is the light set. The six-family truth in colour_domains.json is untouched; its anchors are read from PhoticColorSetSO.",
   "checker": "python3 Tools/Build/colour_sets.py --check",
   "maker": "python3 Tools/Build/colour_set_maker.py (atlas, sample, fit, preview, hero); the /colour-set skill",
   "lab": "Docs/Studios/ColourSetsLab.html",
@@ -448,14 +448,12 @@
           "face": {"name": "Ink", "hue": 141, "sat": 0.124, "L": [0.05, 0.15], "rho": 0.035, "swatch": "#020402"}
         }
       }
-    }
-  },
-  "examples": {
+    },
     "blue_ringed_octopus": {
       "name": "Blue-ringed Octopus",
-      "track": "example",
+      "track": "free",
       "proposed": "2026-11-10",
-      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); never written to the game.",
+      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); taken into the game 2026-11-11 (Garrett: \"the artifact lab had some great new color sets\").",
       "summary": "An animal with three colours, stretched to six domains. Sand skin, electric-blue rings, black outlines: the rings give Blue, their iridescence gives Jade and Ruby, the alarm flush gives Fire, the tide-pool algae gives Lime. Gold is the skin itself, one paint in light and shadow; every other face is the black of the outlines and the deep water, quiet.",
       "margin": 0.05,
       "pigment_gap": 0.05,
@@ -495,9 +493,9 @@
     },
     "neon_noir": {
       "name": "Neon Noir",
-      "track": "example",
+      "track": "free",
       "proposed": "2026-11-10",
-      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); never written to the game.",
+      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); taken into the game 2026-11-11 (Garrett: \"the artifact lab had some great new color sets\").",
       "summary": "A film genre's palette: the rain and neon of cyberpunk cinema. Every rim is a neon tube at full strength; every face is a puddle on wet asphalt, reflecting the opposite sign across the street, all in the night (the Nocturne style). Sodium amber has to stay in Gold's window, or the HUD shows it as Fire.",
       "style": "nocturne",
       "margin": 0.05,
@@ -538,9 +536,9 @@
     },
     "ukiyo_e": {
       "name": "Ukiyo-e",
-      "track": "example",
+      "track": "free",
       "proposed": "2026-11-10",
-      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); never written to the game.",
+      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); taken into the game 2026-11-11 (Garrett: \"the artifact lab had some great new color sets\").",
       "summary": "A painting style: Edo woodblock prints. Bokashi, one pigment printed from light to dark, is the paint voice: every face is its rim's pigment printed deeper (the Photic style). Ruby is murasaki, the purple dye, because safflower crimson sits in Fire.",
       "style": "photic",
       "margin": 0.05,
@@ -581,9 +579,9 @@
     },
     "dusk": {
       "name": "Dusk",
-      "track": "example",
+      "track": "free",
       "proposed": "2026-11-10",
-      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); never written to the game.",
+      "by": "Claude, a worked example for the /colour-set skill (Garrett, 2026-11-10: \"new color sets from a variety of inspirations\"); taken into the game 2026-11-11 (Garrett: \"the artifact lab had some great new color sets\").",
       "summary": "A mood: the hush after sunset. Muted rims at the lowest chroma their families allow (Gold's window, Jade's and Lime's floors) over dusky faces in the night. Ruby is never dusty (it needs chroma 0.20), so its plum is the clearest colour in the set; the near-grey faces had to spread apart in lightness and chroma, or the band squeezes them together.",
       "margin": 0.05,
       "pigment_gap": 0.05,
@@ -602,7 +600,7 @@
         "lime": {
           "inspiration": "lichen over heather",
           "rim": {"name": "Lichen", "hue": 125, "sat": 0.18, "L": [0.74, 0.9], "rho": 0.02, "swatch": "#AED463"},
-          "face": {"name": "Heather", "hue": 316, "sat": 0.217, "L": [0.19, 0.33], "rho": 0.009, "swatch": "#2F1B36"}
+          "face": {"name": "Heather", "hue": 315, "sat": 0.212, "L": [0.19, 0.33], "rho": 0.009, "swatch": "#2E1B36"}
         },
         "jade": {
           "inspiration": "sea mist over a dusk brown",
@@ -622,6 +620,7 @@
       }
     }
   },
+  "examples": {},
   "open": [
     "Nocturne as the default leaves four things on Photic: vessel hull materials, rendered card art, the vessel studio's colours and the Amoebius launcher's accents (Amoebius itself reads the live palette since 2026-11-05). Its dark faces also darken the HUD shielded signal (Docs/PALETTE.md section 1).",
     "Lime as the CTA pair: DarkCTA paints about 93% of a free crystal, so a face pigment there makes free pickups read as oxblood. The Unity asset keeps the CTA lime on both halves for now; the Lime face (Oxblood) has no field.",
