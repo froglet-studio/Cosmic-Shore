@@ -59,7 +59,8 @@ the tuner safe.
 ### Next
 A steward loop on a follow-up branch: an evidence pack per run (which edits made each improvement, what the leader's
 distance is made of), an insight ledger, and a scheduled pass that turns what worked into tested changes. Its first
-kept finding, CMA blocks of whole operators' parameters, beat 24 random bytes near the seeds (1.537 against 1.596).
+test: CMA blocks of whole operators' parameters beat 24 random bytes for the tuner alone near the seeds (1.537
+against 1.596), but were a wash inside the pair, so random blocks stay.
 
 ## What the logs showed (and what was fixed before the table above)
 
