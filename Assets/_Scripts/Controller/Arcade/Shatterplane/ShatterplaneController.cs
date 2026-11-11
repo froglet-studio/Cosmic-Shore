@@ -32,6 +32,13 @@ namespace CosmicShore.Gameplay
     /// square to the plate behind it. Collection is per-peer, as in Flatline, which is tolerable because a crystal
     /// scores nothing.</para>
     ///
+    /// <para><b>Per intensity</b> (<see cref="ShatterplaneSettingsSO.fieldElementByIntensity"/>,
+    /// <see cref="ShatterplaneSettingsSO.fieldPerTeamByIntensity"/>): I3 lays SPACE crystals only, one per team present at
+    /// every site, side by side across the plate's axis, each tinted to its team and collectable by it alone
+    /// (<see cref="ElementalCrystalImpactor.RestrictTo"/>, the opt-in gate Harvest's I3 added) - so the race to a plate is never a race to deny another team its
+    /// ring. The AI forages only crystals its own team may take. I4's live elemental fauna are the CELL's (its spawn
+    /// profile), never this controller's.</para>
+    ///
     /// <para>Structurally <see cref="FlatlineController"/> for the field and <see cref="SiroccoController"/> for the
     /// prism race (1 round / 1 turn, HasEndGame=false, server winner detection, a snapshot SyncFinalScores_ClientRpc
     /// carrying the breakdown). BRITTLE-STAR-ONLY is enforced by the arcade card's Vessels list.</para>
@@ -55,6 +62,8 @@ namespace CosmicShore.Gameplay
         {
             public Vector3 Position;
             public Element Element;
+            /// <summary>The team this crystal belongs to (only it can collect it), or Blue for anyone's.</summary>
+            public Domains Owner = Domains.Blue;
             public Crystal Crystal;
             public ElementalCrystalImpactor Impactor;
             public float RegrowAt = -1f;
@@ -207,19 +216,43 @@ namespace CosmicShore.Gameplay
         }
 
         readonly List<Vector3> _siteScratch = new();
+        readonly List<Vector3> _axisScratch = new();
+        readonly List<Domains> _teamScratch = new();
 
-        /// <summary>The crystal sites in world space, read off the arena's own environment. Empty when the cell has no
-        /// SpawnableShatterplane, and then there is no field.</summary>
+        /// <summary>The crystal sites in world space, read off the arena's own environment, with each site's plate axis
+        /// in <see cref="_axisScratch"/>. Empty when the cell has no SpawnableShatterplane, and then there is no field.</summary>
         List<Vector3> CollectSites()
         {
             _siteScratch.Clear();
+            _axisScratch.Clear();
             var env = Environment();
             if (!env) return _siteScratch;
-            env.CollectCrystalSites(_siteScratch);
+            env.CollectCrystalSites(_siteScratch, _axisScratch);
             for (int i = 0; i < _siteScratch.Count; i++)
+            {
                 _siteScratch[i] = env.transform.TransformPoint(_siteScratch[i]);
+                if (i < _axisScratch.Count) _axisScratch[i] = env.transform.TransformDirection(_axisScratch[i]).normalized;
+            }
             return _siteScratch;
         }
+
+        /// <summary>The teams present in this match, in enum order, so every peer lists them alike (Blue is nobody's).</summary>
+        List<Domains> TeamsPresent()
+        {
+            _teamScratch.Clear();
+            var players = gameData != null ? gameData.Players : null;
+            if (players == null) return _teamScratch;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var p = players[i];
+                if (p == null || p.Domain == Domains.Blue || _teamScratch.Contains(p.Domain)) continue;
+                _teamScratch.Add(p.Domain);
+            }
+            _teamScratch.Sort();
+            return _teamScratch;
+        }
+
+        int Intensity => gameData != null && gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 1;
 
         // ── The crystal field (every peer) ──
 
@@ -230,15 +263,32 @@ namespace CosmicShore.Gameplay
 
             var sites = CollectSites();
             var rng = new System.Random(settings.fieldSeed);
+            int intensity = Intensity;
+            var fixedElement = settings.FieldElementFor(intensity);
+            // Per team (I3): one crystal per team present at every site, side by side across the plate's axis, each
+            // collectable only by its team - so a team that reaches a plate first cannot take the others' rings.
+            var teams = settings.FieldPerTeamFor(intensity) ? TeamsPresent() : null;
+            int perSite = teams is { Count: > 0 } ? teams.Count : 1;
             for (int i = 0; i < sites.Count; i++)
             {
-                var slot = new FieldSlot
+                Vector3 across = Vector3.zero;
+                if (perSite > 1 && i < _axisScratch.Count)
                 {
-                    Position = sites[i],
-                    Element = ElementalCrystalSetSO.RandomElementFrom(rng),
-                };
-                _field.Add(slot);
-                Mint(slot);
+                    ShatterplanePlates.Basis(_axisScratch[i], out var u, out _);
+                    across = u;
+                }
+                for (int t = 0; t < perSite; t++)
+                {
+                    var element = fixedElement != Element.None ? fixedElement : ElementalCrystalSetSO.RandomElementFrom(rng);
+                    var slot = new FieldSlot
+                    {
+                        Position = sites[i] + across * ((t - (perSite - 1) * 0.5f) * settings.teamCrystalSpacing),
+                        Element = element,
+                        Owner = teams is { Count: > 0 } ? teams[t] : Domains.Blue,
+                    };
+                    _field.Add(slot);
+                    Mint(slot);
+                }
             }
         }
 
@@ -256,6 +306,12 @@ namespace CosmicShore.Gameplay
             crystal.gameObject.SetActive(true);
 
             var impactor = crystal.gameObject.AddComponent<ElementalCrystalImpactor>();
+            // A team's crystal: tinted to the team and skimmed up by it alone (the opt-in gate Harvest's I3 added).
+            if (slot.Owner != Domains.Blue)
+            {
+                impactor.RestrictTo(slot.Owner);
+                crystal.ApplyDomainPreview(slot.Owner);
+            }
             impactor.Crystal = crystal;
             if (set.CollectionEffects is { Length: > 0 })
                 impactor.SetCollectionEffects(set.CollectionEffects);
@@ -283,8 +339,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The nearest crystal of the field still there to take, on this machine (the AI's re-arm target).</summary>
-        Vector3? NearestLiveCrystal(Vector3 from)
+        /// <summary>The nearest crystal of the field still there for <paramref name="team"/> to take, on this machine (the
+        /// AI's re-arm target): anyone's crystals and the team's own, never another team's.</summary>
+        Vector3? NearestLiveCrystal(Vector3 from, Domains team)
         {
             Vector3? best = null;
             float bestSqr = float.MaxValue;
@@ -292,6 +349,7 @@ namespace CosmicShore.Gameplay
             {
                 var slot = _field[i];
                 if (!IsLive(slot)) continue;
+                if (slot.Owner != Domains.Blue && slot.Owner != team) continue;
                 float d = (slot.Position - from).sqrMagnitude;
                 if (d >= bestSqr) continue;
                 bestSqr = d;

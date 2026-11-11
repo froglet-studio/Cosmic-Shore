@@ -81,6 +81,14 @@ motion, give it a volume. A screen-space ring, a label or a word over it is the 
 - **A watery or glassy surface, bent space, or a lit underground wall**: start from the Meerkat family and its recipe,
   `Docs/Shaders/WATERY_GLASS.md` (the HLSL traps of porting an artifact's GLSL are listed there).
 
+- **A render pass that redraws a renderer with its own materials picks each material's pass the way URP does**
+  (2026-11-10, `BrittleStarRingSmearPass.ForwardPass`): one tagged `UniversalForward`, `UniversalForwardOnly` or
+  `SRPDefaultUnlit`, else the first pass with NO LightMode tag, which URP draws as `SRPDefaultUnlit`. An Unlit Shader
+  Graph writes its forward pass untagged (`// LightMode: <None>`), and the shared vessel materials wear one
+  (`VesselGraph`: 14 `.mat` files on 2026-11-10, the domain, engine and screen materials among them), so a lookup by
+  tag alone finds no pass and the redraw comes out empty with no error. Count such a pass as drawn only when
+  it has something to draw.
+
 - Custom Function nodes use HLSL files stored in a consistent location
 - Function signatures must follow Shader Graph conventions (proper `_float` suffix usage, sampler declarations)
 - Blend shapes are converted to textures for shader-driven animation (no controller scripts — animation is entirely GPU-driven for performance)

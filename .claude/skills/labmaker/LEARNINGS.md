@@ -933,6 +933,28 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Evidence: `BrittleStarRingSpinTests` (written, not run in Unity).
 - Promoted: no
 
+
+### L-STU-168 — Judge a look on the game's own render: round 2 picked a smear on a stand-in ring and measured total light
+- Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `claude/brittlestar-smear-empty-layer` · By: Garrett's session · Date: 2026-11-10
+- What happened: round 2 drew the ring as a 0.44-unit neon beam with a white core and a glow, 19 units away in a three-quarter view (about 2.6 times the game's size). The game's ring is a near-black `VesselGraph` body whose light comes from thin domain plates, seen from 38 units straight behind through the gameplay bloom. Round 2's brightness check summed the smear's light (−1.2%..−0.3% of the still ring), which an average keeps by construction, so it could never say no. When the ring went "too dark to see" in Unity, the page had no way to tell a look problem from a port bug.
+- Do instead: render the shipped FBX with the shader's own formula on the shipped materials and colour set, through the profile's post (L-SIM-2), from the shipped camera, and measure what the eye reads: the 99th-percentile lightness of the rendered frame against the object at rest. Give the scorecard a row that must fail (round 3's "bleeding-edge today": the ring hidden and nothing drawn reads about 6%), so the column is known to say no.
+- Evidence: round 3's game look (`GR` in the page, mesh from `BrittleStar.fbx` by axis swap file (x, z, y)); scorecard at 60 fps Nocturne Jade: averaged smear 90% at 3 rev/s, the bug row 6%.
+- Promoted: no
+
+### L-STU-169 — A port that hides the original must count its replacement as drawn only when something landed in it
+- Lab: Brittle Star Ring Spin (port: `BrittleStarRingSmearPass`) · Branch: `claude/brittlestar-smear-empty-layer` · By: Garrett's session · Date: 2026-11-10
+- What happened: the smear pass redrew the ring into a layer with the hull's materials, picking each material's pass by LightMode (UniversalForward / UniversalForwardOnly / SRPDefaultUnlit). `VesselGraph` is an Unlit Shader Graph, and URP 17.3 writes its forward pass with NO LightMode tag (`UniversalUnlitSubTarget` sets none; ShaderGraph's `Generator.cs` writes `// LightMode: <None>`), so `FindPassTagValue` answered `ShaderTagId.none` and no material matched. The layer was empty, the hull had already hidden its ring, and the fallback ("a smear no camera drew shows the ring") never fired, because `DrawnFrame` was set when the pass was recorded. The ring vanished whenever it turned more than 1.5° a frame. The port was never compiled or run before merge.
+- Do instead: treat an untagged pass as the forward pass when no tagged one exists (URP draws it as SRPDefaultUnlit). Decide "drawn" from the replacement's actual draw list, and skip, without marking drawn, a request with nothing to draw. Add an edit-mode test that every material the replacement draws has a pass (`BrittleStarRingSpinTests.TheSmearLayer_FindsTheForwardPassOnEveryHullMaterial`, with a negative control).
+- Evidence: Unity-Technologies/Graphics `6000.3/staging` 4064d5b: `UniversalUnlitSubTarget.UnlitPasses.Forward` (no `lightMode`), `Generator.cs` (the `<None>` splice); `BrittleStarRingSmearPass.ForwardPass` / `HasDrawableSubmesh`.
+- Promoted: no
+
+### L-STU-170 — Verify a lab kept as an artifact FRAGMENT in its published form, and A/B its failures against the last round
+- Lab: Brittle Star Ring Spin (`Docs/Studios/BrittleStarRingLab.html`) · Branch: `claude/brittlestar-smear-empty-layer` · By: Garrett's session · Date: 2026-11-10
+- What happened: the repo copy is the artifact's fragment (it starts at `<title>`; the Artifact tool adds the doctype, viewport and body when it publishes). `verify_lab.cjs` on the fragment ran it in quirks mode with no viewport, so the emulated iPhone 13 laid the page out 980 px wide, and the full-page phone screenshot timed out at 30 s on both tries after the desktop half had run. Wrapped in a publish skeleton the same page finished in 45 s with both screenshots. In a cloud session the egress proxy refuses the page's Google Fonts, which the verifier reports on every load as `console/page error: Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED`.
+- Do instead: wrap a fragment in a skeleton (doctype, charset, `width=device-width` viewport, body) before verifying it, and run the verifier on the lab's previous round too (`git show <merge-base>:<lab.html>`), so a failure is attributed to the round that caused it. Read the font error as the sandbox's.
+- Evidence: this session: the fragment (TimeoutError at the phone screenshot, twice) against the wrapped page (45 s, `desktop.png` + `phone.png`); round 2 from `385d3018c` fails the same font check and scrolls 1727 px on desktop (round 3: 2590 px), so the ring lab has never been on §2.7's no-scroll layout.
+- Promoted: no
+
 ## NCA — swarm / neural-CA research rigs (Tools/NCA)
 
 ### L-STU-146 — A combine bolted onto autonomous vessels has no loop; design the parts so neither phase can do the other's work

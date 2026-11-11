@@ -14,6 +14,10 @@ THE DECISIONS (Shombith, 2026-11-10):
   D2 the ring's reach "a little bigger": the arena's nucleus is NUCLEUS_RADIUS (470 u against a standard cell's ~392);
      the ring's disk is as wide as the nucleus it blows in, so the mode sizes its nucleus, never the vessel;
   D3 no wildlife at all; D4 the name; D5 straight to Unity.
+  Then (Shombith, 2026-11-10): "for intensities 3 make elemental crystals of space just for teams present there and in
+  i4 it has live elemental faunas" - I3's crystal field is Space, one crystal per team present at every site, each
+  collectable by its team alone (ElementalCrystalImpactor.RestrictTo, shared with Harvest); I4's cell carries live elemental fauna (its own spawn
+  profile: the Blob tadpole and shark, each creature rolling one of four elements), and I1-I3 still carry none.
 
 THE LADDER (one SpawnableShatterplane prefab and one cell config per intensity; shatterplane_budget.py is the census):
   I1 Billboards - ten plates facing straight out at the spawn ring.     Can you square up at all?
@@ -66,6 +70,7 @@ G_ASSET = {
     "ModePreviewShatterplane":     guid("asset/ModePreviewShatterplane"),
     "MinigameShatterplane.unity":  guid("asset/MinigameShatterplane.unity"),
     "ShatterplaneSpawnProfile":    guid("asset/ShatterplaneSpawnProfile"),
+    "ShatterplaneSpawnProfile4":   guid("asset/ShatterplaneSpawnProfile4"),
 }
 for i in (1, 2, 3, 4):
     G_ASSET[f"ShatterplaneCellConfig{i}"] = guid(f"asset/ShatterplaneCellConfig{i}")
@@ -171,6 +176,20 @@ LADDERS = {
 }
 FIELD_REGROW_SECONDS = 8
 FIELD_SEED = 88
+# The crystal field per intensity (index = intensity - 1): the element (0 None = a random draw per site, 3 Space) and
+# whether each site holds one crystal per team present, collectable by that team alone.
+ELEMENT_SPACE = 3
+FIELD_ELEMENT_BY_INTENSITY = [0, 0, ELEMENT_SPACE, 0]
+FIELD_PER_TEAM_BY_INTENSITY = [0, 0, 1, 0]
+TEAM_CRYSTAL_SPACING = 30
+# I4's live elemental fauna: Rampage's own two species, referenced READ-ONLY (shared Blob assets: the amount lives on
+# the profile, never on them), each spawning creatures that roll one of the four elements from its ElementPalette.
+FAUNA_INTENSITIES = (4,)
+FAUNA_SPECIES = {
+    "Tadpole": "Assets/_SO_Assets/Cell Configs/Blob Cell/Blob Tadpole Fauna Config Data.asset",
+    "Shark":   "Assets/_SO_Assets/Cell Configs/Blob Cell/Blob Shark Fauna Config Data.asset",
+}
+FAUNA_POPULATION_SCALE = 2.0
 
 
 def ladder_yaml(name):
@@ -183,6 +202,9 @@ g.emit_asset("Assets/_SO_Assets/Games/ShatterplaneSettings.asset", G_ASSET["Shat
   progressSampleSeconds: 0.5
   fieldRegrowSeconds: {FIELD_REGROW_SECONDS}
   fieldSeed: {FIELD_SEED}
+  fieldElementByIntensity:
+{"".join(f"  - {e}\n" for e in FIELD_ELEMENT_BY_INTENSITY)}  fieldPerTeamByIntensity:
+{"".join(f"  - {b}\n" for b in FIELD_PER_TEAM_BY_INTENSITY)}  teamCrystalSpacing: {TEAM_CRYSTAL_SPACING}
 """ + "".join(ladder_yaml(n) for n in LADDERS))
 
 # ── 4. Arcade card ───────────────────────────────────────────────────────────
@@ -302,16 +324,22 @@ MonoBehaviour:
   crystalCount: {r['crystalCount']}
 """)
 
+FIELD_NOTE = {i: (" (Space crystals, one per team present at every site, each collectable by its team alone)"
+                  if FIELD_PER_TEAM_BY_INTENSITY[i - 1] else "") for i in (1, 2, 3, 4)}
+FAUNA_NOTE = {i: ("live elemental fauna (the Blob tadpole and shark, each creature rolling one of four elements, at "
+                  f"{FAUNA_POPULATION_SCALE:g}x their authored populations)" if i in FAUNA_INTENSITIES else "no fauna")
+              for i in (1, 2, 3, 4)}
 for r in RUNGS:
     i = r["i"]
     c = CENSUS[i]
     th = thresholds(c["total"], round(c["volume"]))
+    profile = G_ASSET["ShatterplaneSpawnProfile4"] if i in FAUNA_INTENSITIES else G_ASSET["ShatterplaneSpawnProfile"]
     env = f"{{fileID: {SPAWNABLE_MB}, guid: {G_ASSET[f'prefab/SpawnableShatterplane{i}']}, type: 3}}"
     desc = (f"{r['label']} - intensity {i} of Shatterplane: {r['blurb']}. {c['total']} prisms, all neutral "
             f"({c['breakable']} breakable, {c['super']} super-shielded, {c['danger']} danger). Membrane radius "
             f"{int(MEMBRANE_RADIUS)}, spawn ring {SPAWN_RING}, the standard nucleus resized to "
             f"{int(NUCLEUS_RADIUS)} u by the controller (the ring blast is as wide as the nucleus; play geometry, not a "
-            f"claim), the crystal field laid by the controller on the plates' axes. No flora, no fauna. Authored by "
+            f"claim), the crystal field laid by the controller on the plates' axes{FIELD_NOTE[i]}. No flora; {FAUNA_NOTE[i]}. Authored by "
             f"Tools/Build/author_shatterplane_assets.py - re-run it rather than hand-editing.")
     g.emit_asset(f"{CELL_DIR}/Shatterplane Cell Config {i}.asset", G_ASSET[f"ShatterplaneCellConfig{i}"],
                  lib.header_for(EXISTING["CellConfigDataSO"], f"Shatterplane Cell Config {i}") + f"""  CellName: Shatterplane
@@ -324,7 +352,7 @@ for r in RUNGS:
   CytoplasmPrefab: {{fileID: {CYTOPLASM_FILEID}, guid: {EXISTING['Cytoplasm_prefab']}, type: 3}}
   CytoplasmShardDistance: {CYTOPLASM_SHARD_DISTANCE}
   CellModifiers: []
-  SpawnProfile: {{fileID: 11400000, guid: {G_ASSET['ShatterplaneSpawnProfile']}, type: 2}}
+  SpawnProfile: {{fileID: 11400000, guid: {profile}, type: 2}}
   EnvironmentPrefab: {env}
   EnvironmentIntensity: {i}
   SenseRadiusOverride: 0
@@ -339,7 +367,7 @@ for r in RUNGS:
     FrenzyExitVolume: {th['FrenzyExitVolume']}
 """)
 
-# One spawn profile, shared by all four configs: it spawns nothing (decision D3: no wildlife at all).
+# The spawn profile I1-I3 share: it spawns nothing (decision D3, kept for those rungs).
 g.emit_asset(f"{CELL_DIR}/Shatterplane Spawn Profile.asset", G_ASSET["ShatterplaneSpawnProfile"],
              lib.header_for(EXISTING["SpawnProfileSO"], "Shatterplane Spawn Profile") + """  FloraExcludeLocalDomain: 0
   FloraSpawnVolumeCeiling: 0
@@ -361,6 +389,33 @@ g.emit_asset(f"{CELL_DIR}/Shatterplane Spawn Profile.asset", G_ASSET["Shatterpla
   PredatorSpawnRadius: 0
   SupportedFaunas: []
 """)
+
+# I4's own profile: live elemental fauna, no flora. The species are referenced, never edited; the amount is this
+# profile's FaunaPopulationScale. Fauna spawn on the densest sensed mass (no spawn-point ring), which is a plate.
+FAUNA_GUIDS = {name: lib.existing_guid(path) for name, path in FAUNA_SPECIES.items()}
+EXISTING.update({f"Fauna_{name}": gd for name, gd in FAUNA_GUIDS.items()})
+g.emit_asset(f"{CELL_DIR}/Shatterplane Spawn Profile 4.asset", G_ASSET["ShatterplaneSpawnProfile4"],
+             lib.header_for(EXISTING["SpawnProfileSO"], "Shatterplane Spawn Profile 4") + f"""  FloraExcludeLocalDomain: 0
+  FloraSpawnVolumeCeiling: 0
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 0
+  SupportedFloras: []
+  FaunaExcludeLocalDomain: 0
+  InitialFaunaSpawnWaitTime: 10
+  InitialFaunaReleaseTier: 2147483647
+  FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: {lib.num(FAUNA_POPULATION_SCALE)}
+  BaseFaunaSpawnTime: 30
+  SeedFullWaveEveryTick: 0
+  FaunaFoodFloor: 5
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 1
+  HerbivoreSpawnPointCount: 0
+  HerbivoreSpawnRadius: 0
+  PredatorSpawnPointCount: 0
+  PredatorSpawnRadius: 0
+  SupportedFaunas:
+""" + "".join(f"  - {{fileID: 11400000, guid: {gd}, type: 2}}\n" for gd in FAUNA_GUIDS.values()))
 
 CELLS = [G_ASSET[f"ShatterplaneCellConfig{i}"] for i in (1, 2, 3, 4)]
 
@@ -514,7 +569,12 @@ for name, (values, harder) in LADDERS.items():
     if f"{name} = {init};" not in settings_cs:
         errors.append(f"{name}: the C# initializer does not match {init}")
 for needle in (f"nucleusRadius = {lib.num(NUCLEUS_RADIUS)}f;", f"fieldRegrowSeconds = {FIELD_REGROW_SECONDS}f;",
-               f"fieldSeed = {FIELD_SEED};"):
+               f"fieldSeed = {FIELD_SEED};",
+               "fieldElementByIntensity = { " + ", ".join(
+                   {0: "Element.None", 3: "Element.Space"}[e] for e in FIELD_ELEMENT_BY_INTENSITY) + " };",
+               "fieldPerTeamByIntensity = { " + ", ".join(
+                   "true" if b else "false" for b in FIELD_PER_TEAM_BY_INTENSITY) + " };",
+               f"teamCrystalSpacing = {TEAM_CRYSTAL_SPACING}f;"):
     if needle not in settings_cs:
         errors.append(f"ShatterplaneSettingsSO's default is not '{needle}'")
 squarer = g.read(SCRIPT_PATHS["ShatterplaneSquarer"])
@@ -554,6 +614,29 @@ for r in RUNGS:
     want = f"[TestCase({r['i']}, {c['total']}, {c['danger']}, {c['super']})]"
     if want not in tests_cs:
         errors.append(f"ShatterplaneTests does not pin I{r['i']}'s census {want} - the C# and the twin may have drifted")
+
+# I4's fauna are ELEMENTAL and live: each species spreads its creatures over the four elements, and only I4 carries them.
+for name, path in FAUNA_SPECIES.items():
+    text = g.read(path)
+    if "  SpreadElements: 1\n" not in text:
+        errors.append(f"{name}: {path} no longer spreads its creatures over the elements - I4's fauna would be one element")
+    palette = re.search(r"  ElementPalette:\n((?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)+)", text)
+    if not palette or palette.group(1).count("guid:") != 4:
+        errors.append(f"{name}: {path}'s ElementPalette is not the four elements")
+if FAUNA_INTENSITIES != (4,):
+    errors.append("live elemental fauna belong to I4 alone (Shombith, 2026-11-10)")
+if FIELD_ELEMENT_BY_INTENSITY[2] != ELEMENT_SPACE or not FIELD_PER_TEAM_BY_INTENSITY[2]:
+    errors.append("I3's crystals are Space, one per team present (Shombith, 2026-11-10)")
+if any(FIELD_PER_TEAM_BY_INTENSITY[k] for k in (0, 1, 3)):
+    errors.append("the per-team crystal field is I3's alone")
+if TEAM_CRYSTAL_SPACING * 2 >= sb.CRYSTAL_STEP:
+    errors.append("three team crystals side by side would reach the next crystal round on the axis")
+impactor_cs = g.read("Assets/_Scripts/Controller/ImpactEffects/Impactors/ElementalCrystalImpactor.cs")
+if "internal void RestrictTo(Domains domain)" not in impactor_cs or \
+        "skimmerImpactor.Skimmer.VesselStatus.Domain != _onlyFor.Value) return;" not in impactor_cs:
+    errors.append("ElementalCrystalImpactor's RestrictTo gate (Harvest's) no longer refuses another team's skimmer")
+if "impactor.RestrictTo(slot.Owner);" not in controller or "slot.Owner != team" not in controller:
+    errors.append("ShatterplaneController no longer mints team crystals or keeps its AI off other teams' crystals")
 
 # The geometry the race promises: every structure placed with a gap, clear of the spawn ring, crystals on the axes.
 for r in RUNGS:

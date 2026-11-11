@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
         readonly List<Prism> _candidates = new();
         GameDataSO _gameData;
         ShatterplaneSettingsSO _settings;
-        Func<Vector3, Vector3?> _nearestCrystal;
+        Func<Vector3, Domains, Vector3?> _nearestCrystal;
         IReadOnlyList<PlateFace> _plates;
         float _plateRadius;
         Vector3 _centre;
@@ -61,9 +61,9 @@ namespace CosmicShore.Gameplay
         public bool IsArmed => _squarers.Count > 0;
 
         /// <summary>Arms every AI pilot on the roster. <paramref name="plates"/> are the arena's front faces in world
-        /// space; <paramref name="nearestCrystal"/> answers the nearest live crystal of the field (or null).</summary>
+        /// space; <paramref name="nearestCrystal"/> answers the nearest live crystal of the field a team may take (or null).</summary>
         public void Arm(GameDataSO gameData, ShatterplaneSettingsSO settings, Vector3 centre,
-                        IReadOnlyList<PlateFace> plates, float plateRadius, Func<Vector3, Vector3?> nearestCrystal)
+                        IReadOnlyList<PlateFace> plates, float plateRadius, Func<Vector3, Domains, Vector3?> nearestCrystal)
         {
             Disarm();
             if (gameData == null || settings == null) return;
@@ -133,7 +133,7 @@ namespace CosmicShore.Gameplay
             // No spare ring: a near crystal first. It floats on a plate's axis, so it is also the line-up.
             if (s.Executor && s.Executor.SpareRings == 0 && _nearestCrystal != null)
             {
-                var crystal = _nearestCrystal(from);
+                var crystal = _nearestCrystal(from, s.Player.Domain);
                 float detour = ShatterplaneSettingsSO.Rung(_settings.aiCrystalDetourRange, s.Level);
                 if (crystal.HasValue && (crystal.Value - from).sqrMagnitude <= detour * detour)
                     return crystal.Value;
