@@ -147,7 +147,7 @@ TIP_LISTS = {
              prompt="Every corner has a top speed. Lift just enough to make it, then wind back up."),
     ]),
     # Redline teaches the Manta's Time ability alone (2026-11-04, REDLINE.md section 1): hold Soar, ease BOTH triggers
-    # for a corner (one alone is the Yastri yaw, which no corner needs), wind it back early, and what a Time crystal does.
+    # for a corner (one alone is the Yawstery yaw, which no corner needs), wind it back early, and what a Time crystal does.
     f"{TIP_DIR}/Tips_Redline.asset": ("mode", "Redline", [
         dict(id="redline-hold", tier="WinTheMode", prio=40, moment=STRAIGHT,
              prompt="Keep {glyph:Time} held. {ability:Time} is four times cruise, and most corners take it flat out."),
