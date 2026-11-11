@@ -30,5 +30,5 @@ SCENE = dict(
     wear=("The cream shirt is rolled to the elbow and spotted with black and white paint; the leather baldric is "
           "stiff with salt; the red sash is knotted short to keep it out of the paint; the sea boots are white "
           "with dried salt to the ankle; the gloves are stiff with old paint; sand sticks to one knee."),
-    close=(480, 0, 760, 280),
+    close=(420, 0, 780, 360),
 )

@@ -31,5 +31,5 @@ SCENE = dict(
     wear=("The striped poncho is damp with dew and stained with juice down the front; the megaphone strap has "
           "twisted; the trousers are grey with brazier ash at the knees; both odd laces of the old boots are "
           "undone; there is a smear of soot on the white throat and a seed stuck to the bill."),
-    close=(760, 10, 1050, 300),
+    close=(740, 0, 1180, 440),
 )

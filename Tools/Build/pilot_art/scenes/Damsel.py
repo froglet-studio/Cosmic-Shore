@@ -30,5 +30,5 @@ SCENE = dict(
     wear=("Yellow pollen dusts the bill and the brow; the denim cuffs are frayed and one pocket corner is torn; "
           "the plain cloth knotted round the sleeve has come half undone; a drop of nectar runs down the jacket front; "
           "dew has wet the trouser hems, and one of the odd boot laces trails."),
-    close=(400, 0, 656, 256),
+    close=(400, 0, 740, 340),
 )

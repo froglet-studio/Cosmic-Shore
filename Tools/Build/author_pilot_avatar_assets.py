@@ -16,8 +16,9 @@ the old 40-pilot roster's art). This script OWNS:
 
 THE SOURCE is the CLOSE-UP OF THE PILOT'S SCENE when the scene is painted (Docs/Pilots/art/scenes/<NAME>.jpg, the
 realistic widescreen picture of Tools/Build/pilot_art/scene.py; Garrett 2026-11-11: "the scene close ups are
-categorically better than the previous avatar pictures and should be used in their place"): the square round the head
-that the pilot's scene record names (`close`, never smaller than SIZE), resized to SIZE. A pilot whose scene is not
+categorically better than the previous avatar pictures and should be used in their place"): the square that the
+pilot's scene record names (`close`: the head, with the second animal's nearest piece when the scene carries one
+near it, so both clades show; never smaller than SIZE), resized to SIZE. A pilot whose scene is not
 painted yet keeps their SIGNATURE BUST (Docs/Pilots/art/busts/<NAME>.jpg, Garrett 2026-11-10: "pilot images that
 really show both clades in the avatar bust"; Tools/Build/pilot_art/creator.py, the /pilot-creator skill): a 1024
 square already framed for an avatar, so the avatar is its top-centre square, 4% off each side and 8% off the bottom

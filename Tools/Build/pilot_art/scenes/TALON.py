@@ -29,5 +29,5 @@ SCENE = dict(
     wear=("Wet clay is smeared to the elbows of the cream shirt and dries pale on the knees of the breeches; the "
           "vest is buttoned one button out; there is a thumb mark of clay on the muzzle; burrs are caught in the "
           "tail."),
-    close=(330, 0, 730, 400),
+    close=(245, 0, 735, 490),
 )

@@ -31,5 +31,5 @@ SCENE = dict(
     wear=("The racing jacket is unzipped to the chest and its collar is dark with sweat; one colour-block patch is "
           "half unstitched; the gloves are worn pale at the fingertips; grit lies in the fur of the brow where "
           "goggles sat; the knee pads are scuffed."),
-    close=(460, 20, 980, 540),
+    close=(480, 0, 1100, 620),
 )

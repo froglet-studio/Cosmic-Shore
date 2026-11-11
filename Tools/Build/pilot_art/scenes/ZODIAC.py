@@ -31,5 +31,5 @@ SCENE = dict(
            "the chin, the dividers and the gloved fingers."),
     wear=("The cloak's hem is stiff with dried salt and one corner is singed; the gold edging is rubbed dull; "
           "pencil dust greys the right glove; a thread hangs from a cuff; two flight feathers are out of line."),
-    close=(730, 0, 1060, 330),
+    close=(720, 0, 1230, 510),
 )

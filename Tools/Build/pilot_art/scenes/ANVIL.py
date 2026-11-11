@@ -29,5 +29,5 @@ SCENE = dict(
     wear=("Stone dust whitens the coat to the elbows and the boots to the ankle; one toggle of the vest has torn "
           "loose and hangs; the gloves are scuffed pale at the fingertips; dust lies along the horns and in the "
           "long hair of the jaw."),
-    close=(764, 0, 1194, 430),
+    close=(640, 0, 1190, 550),
 )

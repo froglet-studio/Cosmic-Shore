@@ -34,5 +34,5 @@ SCENE = dict(
     wear=("The grey vest is dark with spray down one side and has dust caked white in its quilting; the cream "
           "shirt sleeves are wet to the elbow and cling; the breeches are soaked to the thigh and powdered pale; "
           "the bone toggle has swung back over one shoulder; a few wing feathers are beaded with water."),
-    close=(550, 0, 830, 280),
+    close=(400, 0, 840, 440),
 )

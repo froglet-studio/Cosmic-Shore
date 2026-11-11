@@ -33,5 +33,5 @@ SCENE = dict(
     wear=("The grey cloak is damp with dew at the shoulders and has a fresh three-cornered tear at the hem; roof "
           "moss is smeared on one elbow; the ring of charms is wrapped in a scrap of cloth so that it cannot "
           "chime; the gloves are worn thin at the fingertips; a burr is caught in the fur of the tail."),
-    close=(330, 0, 790, 460),
+    close=(205, 0, 785, 580),
 )

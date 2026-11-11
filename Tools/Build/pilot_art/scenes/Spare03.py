@@ -32,5 +32,5 @@ SCENE = dict(
           "tunic is creased from the saddle; the tan gloves are polished dark at the fingertips; the trade tokens "
           "are worn smooth; fine crystal dust powders the cuffs and the edge of the counter; the long hair is "
           "blown and tangled at the ends."),
-    close=(790, 0, 1230, 440),
+    close=(765, 0, 1235, 470),
 )

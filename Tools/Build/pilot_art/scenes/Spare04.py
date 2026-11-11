@@ -32,5 +32,5 @@ SCENE = dict(
     wear=("The charcoal jacket is dusted with dry sand to the elbows and has a fresh snag at one cuff; the black "
           "gloves are gritty; sand clings to the knees of the dark trousers; one antenna has a cobweb on it; the "
           "wing cases are dulled with salt."),
-    close=(270, 0, 610, 340),
+    close=(240, 0, 620, 380),
 )

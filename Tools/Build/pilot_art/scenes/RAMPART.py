@@ -28,5 +28,5 @@ SCENE = dict(
     wear=("Reed dust and chaff cover the green waistcoat and cling in the fur of the forearms; the shirt has "
           "pulled out at the waist; the satchel strap has slipped to the elbow; the boots are unlaced, ready to "
           "be kicked off."),
-    close=(829, 40, 1089, 300),
+    close=(660, 20, 1100, 460),
 )

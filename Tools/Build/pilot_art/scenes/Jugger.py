@@ -32,5 +32,5 @@ SCENE = dict(
           "to the collarbone over the grey undershirt; the rivet gauge swings on its strap; weld spatter has "
           "pitted the gauntlets; one wing feather is bent out of line; the steel caps of the boots are scraped "
           "bright."),
-    close=(960, 0, 1270, 310),
+    close=(930, 0, 1370, 440),
 )

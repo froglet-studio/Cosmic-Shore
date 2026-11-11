@@ -25,5 +25,5 @@ SCENE = dict(
     wear=("The sea coat's cuffs are dark with suds and one elbow patch has come unstitched at a corner; the "
           "scarf is tucked into the coat to keep it out of the tub; soap has dried white on the gloves; the "
           "trousers are splashed to the knee."),
-    close=(370, 0, 710, 340),
+    close=(250, 0, 710, 460),
 )

@@ -28,5 +28,5 @@ SCENE = dict(
     wear=("The velvet is dusty at the elbow and the hip from the stone; a cobweb hangs from one shoulder scale; "
           "the lace collar has slipped sideways; one boot has a water stain to the ankle; a downy feather has "
           "drifted onto a knee."),
-    close=(924, 36, 1204, 316),
+    close=(860, 0, 1300, 440),
 )

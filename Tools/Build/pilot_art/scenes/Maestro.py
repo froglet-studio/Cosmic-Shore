@@ -30,5 +30,5 @@ SCENE = dict(
     wear=("The indigo robe is worn pale at the elbows, and its hem is grey with soot and dotted with spilled wax; "
           "one sleeve is pushed back to the elbow; the shell pendant has swung round on its cord; the sandals are "
           "scuffed; a little orange wing dust lies on one shoulder."),
-    close=(890, 10, 1210, 330),
+    close=(790, 0, 1310, 520),
 )

@@ -28,5 +28,5 @@ SCENE = dict(
     wear=("Grain dust whitens the front of the waistcoat, and the mantle has been pushed back over the shoulder "
           "out of the way, its hem grey from the floor; the gloves are yellowed at the fingertips; a few husks are "
           "caught in the spines; the breastplate is dull with finger marks."),
-    close=(800, 20, 1150, 370),
+    close=(760, 0, 1220, 460),
 )

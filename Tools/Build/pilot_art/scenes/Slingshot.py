@@ -28,5 +28,5 @@ SCENE = dict(
     wear=("The pale hoodie is spattered with meltwater and has frost in its folds; the satin sash has slipped "
           "toward the hip; the goggles on the chest are fogged; the leggings are scuffed at the padded knee; ice "
           "has built up on the boot soles; a few pink feathers at the neck are stiff with rime."),
-    close=(790, 20, 1070, 300),
+    close=(610, 0, 1070, 460),
 )

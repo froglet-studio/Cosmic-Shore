@@ -40,5 +40,5 @@ SCENE = dict(
           "growth rings still plain; the black hair hangs wet in ropes; rain runs down the face, the fur of the "
           "cheeks and the brow is soaked dark and stuck in points, and one cheek is smeared with soot where a "
           "glove wiped it."),
-    close=(362, 5, 692, 335),
+    close=(230, 0, 700, 470),
 )

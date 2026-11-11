@@ -28,5 +28,5 @@ SCENE = dict(
     wear=("The shirt cuffs are grey with graphite and one is singed brown; a burn hole in the waistcoat has been "
           "darned; copper filings glitter on the satchel strap; there is a smudge of soot beside the mouth, and "
           "the bob has come loose on one side."),
-    close=(340, 0, 700, 360),
+    close=(150, 0, 700, 550),
 )

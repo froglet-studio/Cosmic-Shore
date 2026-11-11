@@ -20,9 +20,13 @@ So:
   * THE FRAME IS WIDE: 16:9, asked of the painter as ASK and returned as FRAME. It is fullscreen art that other
     presentations are cropped from (crop_box, the `crops` sheet, and the manifest scenes.json, which gives whoever
     builds a screen each scene's size, the head's box and the side the pilot stands on).
-  * THE AVATAR IS THE SCENE'S CLOSE-UP: the record's `close` box, a square round the head, at least AVATAR px wide
-    so an avatar is never enlarged. Tools/Build/author_pilot_avatar_assets.py cuts every avatar from it; a pilot
-    without a painted scene keeps the cut from their bust until they have one (avatar_source).
+  * THE AVATAR IS THE SCENE'S CLOSE-UP: the record's `close` box, a square of the head AND whatever of the second
+    animal the scene carries near it (a wing at the shoulder, a shell on the back, a tail, a fin), at least AVATAR
+    px wide so an avatar is never enlarged. A square of the face alone loses the second animal: in a scene much of
+    it rides on the body, where a bust kept it at the neck. So the box is head and shoulders wherever that brings
+    the second animal in, and tight on the head where the head already carries both. Tools/Build/
+    author_pilot_avatar_assets.py cuts every avatar from it; a pilot without a painted scene keeps the cut from
+    their bust until they have one (avatar_source).
   * A FEW SCENES SHOW THE SEA THE PILOTS SAIL, on a chart panel or a chart of light in the place (20:22 UTC: "Make a
     few of them render the hypersea in their scene on either a panel or holographic display"): a record's `chart`,
     drawn as the game's own map draws that sea and never named (CHART_VIEWS, CHART_KINDS).
@@ -392,8 +396,8 @@ PERMANENT = re.compile(r"\b(?:scars?|scarred|tattoo\w*|eye ?patch\w*|one-eyed|br
 # shot: the camera, the lens and the moment, written for this pilot. side: which side of the frame the pilot stands
 # on. source: what in the pilot's life the scene comes from. seen / swap: what the pilot's earlier painting shows
 # beyond and against its brief (look at the picture, then write). doing, place, light, wear: the scene. chart: a
-# display in the place that shows the sea (above). close: the square round the head in the painted scene, which is
-# the avatar (set it after painting: `grid`).
+# display in the place that shows the sea (above). close: the square in the painted scene that is the avatar: the
+# head, and the nearest piece of the second animal when the scene carries one near it (set it after painting: `grid`).
 # ---------------------------------------------------------------------------------------------------------------
 SCENE_KEYS = ("treatment", "shot", "source", "seen", "doing", "place", "light", "wear")
 SCENE_MORE = ("frame", "side", "carry", "lower", "build", "hands", "swap", "chart", "close")
@@ -802,7 +806,8 @@ def manifest():
                          crops={name: list(crop_box(size, box, a)) for name, a in CROPS})
         if rec.get("chart"):
             scenes[w]["chart"] = " of the ".join(rec["chart"])   # e.g. "panel of the waters": the sea is in this one
-    return dict(about="Pilot scenes: one widescreen picture a pilot. close is the avatar's square (the head); side "
+    return dict(about="Pilot scenes: one widescreen picture a pilot. close is the avatar's square (the head, with "
+                      "the second animal's nearest piece); side "
                       "is where the pilot stands, so text goes on the other side; crops are the largest box of "
                       "each aspect that keeps the pilot; chart, on a few, says the scene shows the sea on a display. "
                       "Written by Tools/Build/pilot_art/scene.py manifest.",

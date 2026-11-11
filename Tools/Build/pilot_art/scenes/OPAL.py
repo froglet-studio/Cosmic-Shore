@@ -29,5 +29,5 @@ SCENE = dict(
     wear=("The mustard coat is sun-faded on the shoulders and its hem is tarred where it has brushed a hawser; one "
           "toggle of the vest is gone and the gap is closed with a loop of twine; there are crumbs on the cloth "
           "and a drop of sauce on the napkin tucked into the collar."),
-    close=(460, 0, 730, 270),
+    close=(395, 0, 815, 420),
 )

@@ -29,5 +29,5 @@ SCENE = dict(
           "dull with silt; the blue undersuit is dark with water at the sleeves; the coiled lifeline at the "
           "shoulder is sodden and trails an end; mud has dried on the forepaws and to the knees of the "
           "over-trousers; a few stems of straw are stuck to the wet carapace."),
-    close=(920, 10, 1230, 320),
+    close=(800, 0, 1240, 440),
 )

@@ -34,5 +34,5 @@ SCENE = dict(
           "frayed, and one pouch hangs open and empty; the gardening gloves are black with mud in the seams; the "
           "canvas trousers are soaked to the knee; fine white grit sticks to the bill and to the first hand's "
           "length of the tusk."),
-    close=(770, 30, 1170, 430),
+    close=(750, 10, 1350, 610),
 )

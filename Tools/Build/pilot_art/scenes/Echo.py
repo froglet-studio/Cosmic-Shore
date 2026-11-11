@@ -34,5 +34,5 @@ SCENE = dict(
     wear=("The coat is unbuttoned and creased from being slept in, its sleeves down over the wrists, one cuff "
           "frayed, an old ink stain under the breast pocket; a few feathers are out of place, and there are crumbs "
           "on the blanket."),
-    close=(390, 0, 730, 340),
+    close=(390, 0, 850, 460),
 )
