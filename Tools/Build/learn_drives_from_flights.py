@@ -275,9 +275,16 @@ REPORT_ONLY = {
 # steers to a sniper POST (SetExternalTargetProvider), so the pellet drive's angle and runway are to that post; the
 # learner measures a mode without rings against the nearest CRYSTAL, so its numbers (the person lit pellets 127 deg off
 # the crystal, written clamped as alignDegrees 90 on 2026-11-08) would retune his AI with a measure it does not read.
+# The same holds for every mode whose controller steers the AI itself: Hood (Serpent Gulag rebuilt in place as Hood,
+# GameModes 77, #1865) and Jackstraw (#1864, JackstrawHunter steers each Thresher at its rival and leaves the plant to
+# the shipped ~70 deg sling; its first learned variant, plantMinTurnDegrees 39.8 measured against the nearest crystal,
+# was held back on 2026-11-11). Both are Shombith's.
+_STEERED = ("its controller steers the AI ({}: SetExternalTargetProvider), not at the crystal the learner measures "
+            "against, and the mode's AI is Shombith's: reported, never written")
 REPORT_ONLY_MODES = {
-    ("Serpent", "SerpentGulag"): "SerpentGulagMarksman steers its Serpents to a sniper post, not the crystal the learner "
-                                 "measures against, and the mode's AI is Shombith's: reported, never written",
+    ("Serpent", "SerpentGulag"): _STEERED.format("SerpentGulagMarksman, to a sniper post"),
+    ("Serpent", "SerpentHood"): _STEERED.format("SerpentHoodMarksman, round the rim to a perch"),
+    ("Thresher", "Jackstraw"): _STEERED.format("JackstrawHunter, at its rival"),
 }
 
 
@@ -1386,6 +1393,9 @@ def self_test_rocket_and_rings():
         assert "DolphinAIBoostPolicy_Switchback" in promoted_variants(), "the promoted Switchback drive is known"
     assert coverage("Stoat", "Slingshot")[0] == "report", "the Stoat is not ready (Yash, 2026-11-10): reported, never written"
     assert coverage("Serpent", "SerpentGulag")[0] == "report", "Serpent Gulag's marksman is reported, never written"
+    assert coverage("Serpent", "SerpentHood")[0] == "report" and coverage("Thresher", "Jackstraw")[0] == "report", \
+        "Hood's marksman and Jackstraw's hunter steer their AIs: reported, never written"
+    assert coverage("Thresher", "ThresherTime")[0] == "drives", "negative control: Thresher Time still learns"
     assert coverage("Serpent", "SerpentTime")[0] == "drives", "negative control: Serpent Time still learns"
     assert [ring_index(k, 20, 20) for k in (0, 19)] == [0, 19], "Switchback: open, in order"
     S = [{"t": i * 0.1, "held": False, "dist": 100.0 + 10 * i, "nose": float(i % 10)} for i in range(100)]
