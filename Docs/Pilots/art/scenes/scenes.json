@@ -648,6 +648,22 @@
     "9:16": [727, 0, 1213, 864]
    }
   },
+  "Tomahawk": {
+   "name": "Tomahawk",
+   "file": "Docs/Pilots/art/scenes/Tomahawk.jpg",
+   "size": [1536, 864],
+   "close": [550, 0, 830, 280],
+   "side": "left",
+   "treatment": "Panned at 1/30 s from a skiff keeping pace, the runner sharp, the lagoon drawn into lines",
+   "source": "profession: a hunter who tracks over water follows a wake across a lagoon on foot before its skin closes",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [114, 0, 1266, 864],
+    "1:1": [258, 0, 1122, 864],
+    "4:5": [344, 0, 1035, 864],
+    "9:16": [447, 0, 933, 864]
+   }
+  },
   "Trace": {
    "name": "Trace",
    "file": "Docs/Pilots/art/scenes/Trace.jpg",
@@ -665,6 +681,70 @@
    },
    "chart": "volume of the garden"
   },
+  "Spare01": {
+   "name": "Korvane Ashwhistle",
+   "file": "Docs/Pilots/art/scenes/Spare01.jpg",
+   "size": [1536, 864],
+   "close": [880, 0, 1200, 320],
+   "side": "right",
+   "treatment": "Rain photographed against the light from under the gate, every drop a bright streak",
+   "source": "profession: a priest keeps a shrine with no roof, whose one rite of the year is to stand in the first rain",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [608, 0, 1472, 864],
+    "4:5": [694, 0, 1385, 864],
+    "9:16": [797, 0, 1283, 864]
+   }
+  },
+  "Spare02": {
+   "name": "Lunari Hollowreach",
+   "file": "Docs/Pilots/art/scenes/Spare02.jpg",
+   "size": [1536, 864],
+   "close": [340, 0, 700, 360],
+   "side": "left",
+   "treatment": "One frame lit by a lightning bolt, the shutter left open on a tripod in the dark",
+   "source": "profession: a hunter carries the season's decoys home across the bog ahead of a storm, on the back",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [88, 0, 952, 864],
+    "4:5": [174, 0, 865, 864],
+    "9:16": [277, 0, 763, 864]
+   }
+  },
+  "Spare03": {
+   "name": "Bellomo Stripewright",
+   "file": "Docs/Pilots/art/scenes/Spare03.jpg",
+   "size": [1536, 864],
+   "close": [790, 0, 1230, 440],
+   "side": "right",
+   "treatment": "Across the counter from the other party's side, thin hard light at altitude, colour deep and clean",
+   "source": "want: \"to pay back an old debt, with interest\" (the game's Wants)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [578, 0, 1442, 864],
+    "4:5": [664, 0, 1355, 864],
+    "9:16": [767, 0, 1253, 864]
+   }
+  },
+  "Spare04": {
+   "name": "Zeria Emberwick",
+   "file": "Docs/Pilots/art/scenes/Spare04.jpg",
+   "size": [1536, 864],
+   "close": [270, 0, 610, 340],
+   "side": "left",
+   "treatment": "From the sand of the den, lens wide open, lit by the sitter's own lantern glow",
+   "source": "profession: a thief caches the night's take in the sand of the den, beside a row of single boots",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [8, 0, 872, 864],
+    "4:5": [94, 0, 785, 864],
+    "9:16": [197, 0, 683, 864]
+   }
+  },
   "Spare05": {
    "name": "Halven Frostgate",
    "file": "Docs/Pilots/art/scenes/Spare05.jpg",
@@ -679,6 +759,54 @@
     "1:1": [113, 0, 977, 864],
     "4:5": [200, 0, 891, 864],
     "9:16": [302, 0, 788, 864]
+   }
+  },
+  "Spare06": {
+   "name": "Tamsin Dusklight",
+   "file": "Docs/Pilots/art/scenes/Spare06.jpg",
+   "size": [1536, 864],
+   "close": [700, 0, 1170, 470],
+   "side": "right",
+   "treatment": "From inside the reed bed, lens wide open, the near stems soft bars across the frame",
+   "source": "profession: a bounty hunter waits in the reeds beside a towpath for a quarry that is late",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [359, 0, 1511, 864],
+    "1:1": [503, 0, 1367, 864],
+    "4:5": [590, 0, 1281, 864],
+    "9:16": [692, 0, 1178, 864]
+   }
+  },
+  "Spare07": {
+   "name": "Fennaro Mossbell",
+   "file": "Docs/Pilots/art/scenes/Spare07.jpg",
+   "size": [1536, 864],
+   "close": [300, 0, 650, 350],
+   "side": "left",
+   "treatment": "One frame of handheld 16mm documentary film, late sun, walking backward ahead of the subject",
+   "source": "history: \"was raised among reef gardeners\" (the game's Upbringings)",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [43, 0, 907, 864],
+    "4:5": [130, 0, 821, 864],
+    "9:16": [232, 0, 718, 864]
+   }
+  },
+  "Spare08": {
+   "name": "Oki Sandrunner",
+   "file": "Docs/Pilots/art/scenes/Spare08.jpg",
+   "size": [1536, 864],
+   "close": [920, 10, 1230, 320],
+   "side": "right",
+   "treatment": "Boat-interior shot from amidships looking aft, the morning after a flood, mist on brown water",
+   "source": "profession: a first responder brings the last one out of a drowned hamlet the morning after the flood",
+   "crops": {
+    "16:9": [0, 0, 1536, 864],
+    "4:3": [384, 0, 1536, 864],
+    "1:1": [643, 0, 1507, 864],
+    "4:5": [730, 0, 1421, 864],
+    "9:16": [832, 0, 1318, 864]
    }
   }
  }

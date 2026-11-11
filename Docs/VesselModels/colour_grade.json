@@ -5474,31 +5474,31 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare01.png": {
-   "coloured": 0.945,
+   "coloured": 0.8575,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "099dd6c394e007e8",
+   "sha": "84c03dedcd0746cd",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare02.png": {
-   "coloured": 0.7969,
+   "coloured": 0.7048,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "b339ccf97a6972ca",
+   "sha": "94c61dd492ba3c4c",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare03.png": {
-   "coloured": 0.7233,
+   "coloured": 0.6084,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "55ba7924af638096",
+   "sha": "6f6ecd26b292b4ce",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare04.png": {
-   "coloured": 0.6294,
+   "coloured": 0.4826,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "a447e69108d99de2",
+   "sha": "a03a22ad0549bce9",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare05.png": {
@@ -5509,24 +5509,24 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare06.png": {
-   "coloured": 0.6799,
+   "coloured": 0.9423,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "c3c6d98a1f917cfc",
+   "sha": "c7cec2010f7fd437",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare07.png": {
-   "coloured": 0.9415,
+   "coloured": 0.832,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "72eb06149d69d222",
+   "sha": "b6925e72c6608063",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare08.png": {
-   "coloured": 0.7008,
+   "coloured": 0.5081,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "057121872eb4b2f8",
+   "sha": "418259c93e8a4bf9",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Strider.png": {
@@ -5558,10 +5558,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Tomahawk.png": {
-   "coloured": 0.813,
+   "coloured": 0.8595,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "ae067501c76e121c",
+   "sha": "46ebfd3efe80c962",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Trace.png": {
