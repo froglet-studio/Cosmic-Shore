@@ -278,7 +278,7 @@ class GameSim:
             to = self.cr_pos - self.pos
             dist = np.linalg.norm(to, axis=1)
             ahead = (to * self.Rh[:, :, 2]).sum(1) > 0
-            near = (dist < look * 1.2) & ahead
+            near = ((dist < look * 1.2) & ahead) | (dist < p.get("hunt", 0.0))  # hunting: turn back for it
             pt[near] = self.cr_pos[near] + _u(to[near]) * 20.0
         return pt
 
