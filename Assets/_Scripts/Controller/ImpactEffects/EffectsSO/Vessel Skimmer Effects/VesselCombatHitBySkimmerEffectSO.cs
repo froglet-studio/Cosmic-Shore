@@ -109,6 +109,11 @@ namespace CosmicShore.Gameplay
 
             if (requireFasterThanVictim && shooterStatus.Speed <= victimStatus.Speed) return;
 
+            // The hull's own rule for whether this contact counts at all (the Squirrel's minimum joust speed, its
+            // Charge): asked before anything is admitted, so a refused contact claims no window, takes nothing and
+            // scores nothing.
+            if (!AdmittedBySiblings(impactee, shooterStatus, victimStatus)) return;
+
             // A take that sets its own pace and price (the Tiger Moth's shred) is admitted, taken
             // and scored per PETAL, not per hit class.
             var paced = PacedSibling(impactee);
@@ -178,6 +183,16 @@ namespace CosmicShore.Gameplay
                 });
             }
             _petalsTowardScore[key] = Mathf.Max(0f, owed);
+        }
+
+        static bool AdmittedBySiblings(SkimmerImpactor impactee, IVesselStatus attacker, IVesselStatus victim)
+        {
+            var container = impactee ? impactee.EffectContainer : null;
+            var siblings = container ? container.VesselSkimmerEffects : null;
+            if (siblings == null) return true;
+            for (int i = 0; i < siblings.Length; i++)
+                if (siblings[i] is IContactAdmission rule && !rule.AdmitsContact(attacker, victim)) return false;
+            return true;
         }
 
         static IPacedContactPetalTake PacedSibling(SkimmerImpactor impactee)

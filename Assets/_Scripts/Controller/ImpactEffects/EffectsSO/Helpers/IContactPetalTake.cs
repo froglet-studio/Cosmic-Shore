@@ -26,6 +26,20 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// A contact weapon's own rule for WHETHER a contact counts at all, asked by
+    /// <see cref="VesselCombatHitBySkimmerEffectSO"/> of every sibling in its container before it admits, scores or takes
+    /// anything. The Squirrel's joust says no below its minimum joust speed (<see cref="JoustSpeedConfigSO"/>, the
+    /// Squirrel's CHARGE since 2026-11-11), so a slow contact is neither scored nor robbed. The reporter asset is shared
+    /// by five hulls (VesselCombatHitByJoust), so the rule lives on the hull's own take, not on the reporter.
+    /// </summary>
+    public interface IContactAdmission
+    {
+        /// <summary>False when this contact by <paramref name="attacker"/> on <paramref name="victim"/> must not
+        /// count. Asked on the machine that decides the hit.</summary>
+        bool AdmitsContact(IVesselStatus attacker, IVesselStatus victim);
+    }
+
+    /// <summary>
     /// A contact take that sets its OWN pace and its OWN price: the Tiger Moth's shred (one petal off
     /// one random element, every <see cref="SameVictimCooldownSeconds"/>, which its Charge shortens).
     /// The reporter then uses this window instead of its own <c>sameVictimCooldownSeconds</c>, silences

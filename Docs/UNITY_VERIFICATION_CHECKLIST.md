@@ -22585,3 +22585,34 @@ lines as `claude/fix-manta-ability-map-yaml`, plus the generator that kept writi
 7. **Tuning, if wanted**: `MantaStingConfig.asset` `fuseSeconds` (resting length) and `fuseScale` (Max = the multiplier
    at Charge 10, Floor = the least it can fall to), through `Tools/Build/author_manta_kit_assets.py` (it writes the
    whole file; `--check` is its gate).
+
+## 🔴 Squirrel: Charge is the joust's speed, and the Charge card is a speed gauge (2026-11-11, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/cool-dijkstra-4puf92`. Design record: `SQUIRREL_ELEMENT_RECUT.md`, "Charge is the joust's SPEED".
+
+1. **Run `SquirrelJoustSpeedTests`** (EditMode): 9 tests, all green.
+2. **Fly the Squirrel in the Toybox at Charge 0.** The Charge card's plate is a gauge that rises with speed: about a
+   fifth full at cruise (60 of 300 u/s). Two short dim ticks sit in from its slanted edges at 30% (90 u/s).
+3. **Skim to boost past the ticks.** The ticks vanish and a dark gap cuts across the fill at the same height. Slow
+   down again: the ticks come back.
+4. **Joust a rival AI below the mark, then above it.** Below: nothing happens (no steal, no score, no haptic). Above it,
+   while faster than the rival: the usual joust - the two hulls flash lime, the rival loses about 0.8 petal per element
+   (flat at any Charge), the score counts.
+5. **Joust a creature's heart below and above the mark.** Below: it bounces off. Above: it withers and the heart is
+   yours. At Charge 5 (Shepherd), an own-domain creature is nourished only above the mark too.
+6. **Raise Charge to 10.** The mark drops to 15% (45 u/s): a cruising Squirrel now jousts.
+7. **Two editors (MPPM):** a friendly joust below the mark buffs nobody on either screen.
+8. **Tuning:** `SquirrelJoustSpeed.asset` `minimumSpeed` (Min = at rest, Max = at Charge 10). The gauge's full scale is
+   the hull's cruise × its skim-boost ceiling, read live.
+
+## 🔴 Scarab: Charge is the shove plate's cooldown (2026-11-11, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/cool-dijkstra-4puf92`. Design record: `SCARAB.md`, the RECUT note's "Charge re-cut (2026-11-11)".
+
+1. **Run `ScarabShoveCooldownTests`** (EditMode): 4 tests, all green.
+2. **Fly the Scarab at Charge 0** and dash with a full right-stick flick: the plate fires, and the Charge card's sweep
+   takes about 2.5 s to refill. A second flick inside it dashes without a plate.
+3. **Raise Charge to 10**: the sweep refills in about 1.25 s. A flick fired just before the change keeps its old wait;
+   the next one uses the new one.
+4. **Shove a rival at Charge 10 and at Charge 0**: the same petals (about 1.2 per element) come loose either way.
+5. **Undertow**: plays as before, with more plates per minute from a charged Scarab.
