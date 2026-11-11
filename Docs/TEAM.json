@@ -160,7 +160,7 @@
   ],
   "unattributed_prefixes": {
     "claude/": "a Claude Code session; the person is the one who merges or pushes it",
-    "cece/": "a Claude Code session; merged mostly by Garrett, sometimes Shombith",
+    "cece/": "Garrett or Shombith (cece/ branches: Garrett started them, Shombith said \"cece/ is mine\", both work in them, nobody else; Caleb, 2026-11-11)",
     "codex/": "a Codex session",
     "qa/": "QA results"
   },

@@ -2,7 +2,7 @@
 
 Garrett, 2026-11-10: asking for approval before changing someone else's work was slowing everyone down. So:
 
-1. **Only a collision waits.** A change that is about a swim lane (`/swimlanes`: a vessel or an app-shell section)
+1. **Only a collision waits.** A change that is about a swim lane (`/swimlanes`: a vessel, game, app-shell section or system)
    that someone ELSE occupies right now - unmerged work pushed there in the last 7 days - stops, and the session tells
    its person, who talks to the occupant or decides to go ahead.
 2. **Everything else goes through.** The session tells its person whose toes the change is on (a declared owner,
