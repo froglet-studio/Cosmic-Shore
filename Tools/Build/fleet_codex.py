@@ -1211,6 +1211,69 @@ def ability_words(key, elements, omni):
             e["words"]["tint"] = words["tint"]
 
 
+TIERS = os.path.join(REPO, "Docs", "FleetCodex", "tiers.json")
+CERT_CHECKS = ["Abilities", "Level 5", "Time game", "Mass or Space game", "Charge game"]
+CERT_STAGES = ["Arena Ready", "Fleet Ready", "Launch Ready", "In the hangar"]
+
+
+def element_games(cards):
+    """The vessel's ELEMENT games: each arcade card (on the ArcadeGames roster, or on no roster) under its first element,
+    the same rule the page uses for 'Its element games'."""
+    out = {e: [] for e in ELEMENTS}
+    for c in cards:
+        els = c.get("elements") or []
+        if els and ("ArcadeGames" in (c.get("rosters") or []) or not c.get("rosters")):
+            out[els[0]].append(c["name"])
+    return out
+
+
+def certificate(v):
+    """The Flight Certificate of a SOLO vessel (Rev 84 A, picked by Shombith 2026-11-10, section 155): five checks, 20 %
+    each - every element's ability in the map; the level-5 upgrades, 5 % per wired one; a Time game; a Mass or a Space
+    game (either); a Charge game. Launch Ready = the first three with all four upgrades wired (the minimum viable pass),
+    Fleet Ready = and the fourth, Arena Ready = all five; below Launch Ready a vessel is In the hangar. Crews and vessels
+    without a map get none (None)."""
+    if not v["status"]["hasMap"] or (v["crew"] or {}).get("seats", 1) > 1:
+        return None
+    els, games = v["elements"], element_games(v["cards"])
+    abil = all(e in els and not els[e]["open"] for e in ELEMENTS)
+    wired = sum(1 for e in ELEMENTS if e in els and els[e]["upgrade"]["status"] == "wired")
+    has = {"time": bool(games["Time"]), "ms": bool(games["Mass"] or games["Space"]), "charge": bool(games["Charge"])}
+    done = [abil, wired == 4, has["time"], has["ms"], has["charge"]]
+    launch = done[0] and done[1] and done[2]
+    stage = ("Arena Ready" if launch and done[3] and done[4] else "Fleet Ready" if launch and done[3]
+             else "Launch Ready" if launch else "In the hangar")
+    detail = ["All four" if abil else f"{sum(1 for e in ELEMENTS if e in els and not els[e]['open'])} of 4",
+              f"{wired} of 4 wired", ", ".join(games["Time"]) or "None yet",
+              ", ".join(games["Mass"] + games["Space"]) or "None yet", ", ".join(games["Charge"]) or "None yet"]
+    return {"pct": 20 * abil + 5 * wired + 20 * sum(has.values()), "stage": stage, "wired": wired,
+            "checks": [{"name": n, "done": d, "detail": t} for n, d, t in zip(CERT_CHECKS, done, detail)],
+            "next": next((n for n, d in zip(CERT_CHECKS, done) if not d), None)}
+
+
+def tiers_of(key, cert, games):
+    """Each element's tier (S, A, B, C) from Docs/FleetCodex/tiers.json, the one place a person rates a vessel: a letter,
+    null for not rated yet, or '-' where the vessel has no game of that element (no letter can be given there; one that is
+    is dropped with a warning)."""
+    if cert is None:
+        return None
+    table = json.load(open(TIERS, encoding="utf-8")).get(key, {}) if os.path.exists(TIERS) else {}
+    out = {}
+    for el in ELEMENTS:
+        letter = table.get(el)
+        if not games[el]:
+            if letter:
+                print(f"tiers.json: {key} {el} is rated {letter}, but {key} has no {el} game: dropped", file=sys.stderr)
+            out[el] = "-"
+        elif letter in ("S", "A", "B", "C"):
+            out[el] = letter
+        else:
+            if letter:
+                print(f"tiers.json: {key} {el} '{letter}' is not S, A, B or C: dropped", file=sys.stderr)
+            out[el] = None
+    return out
+
+
 def hud_l5_fields():
     """{field: element} for every Sprite a vessel HUD view serializes under a "(<ELEMENT> 5)" header - the art the HUD
     script swaps in itself when that upgrade comes on (the Serpent's five-row pellet slots, "Fifth pellet (TIME 5)")."""
@@ -1420,6 +1483,8 @@ def build(out_dir, images=True, render_domains=False, branch_label=None, pending
             upgrade_art(v["key"], v["elements"], art, pngs_by_dir, png_index, l5_fields)
         for card in v["cards"]:
             card["art"] = card_art(card.get("asset"), art, png_index, card["name"])
+        v["certificate"] = certificate(v)
+        v["tiers"] = tiers_of(v["key"], v["certificate"], element_games(v["cards"]))
 
     def icon_layers(rel):
         if not rel or not art.enabled:
@@ -1498,7 +1563,9 @@ def main():
     v = data["vessels"]
     print(f"fleet.json: {len(v)} vessels, {sum(x['status']['abilities'] for x in v)} abilities, "
           f"{sum(x['status']['upgradesWired'] for x in v)} L5 upgrades wired, "
-          f"{sum(len(x['cards']) for x in v)} card seats; content {data['contentHash']} at {data['commit']}")
+          f"{sum(len(x['cards']) for x in v)} card seats; "
+          + ", ".join(f"{sum(1 for x in v if (x.get('certificate') or {}).get('stage') == st)} {st}" for st in CERT_STAGES)
+          + f"; content {data['contentHash']} at {data['commit']}")
     print(f"written to {os.path.abspath(a.out)}")
     if a.files_json:
         out = os.path.abspath(a.out)
