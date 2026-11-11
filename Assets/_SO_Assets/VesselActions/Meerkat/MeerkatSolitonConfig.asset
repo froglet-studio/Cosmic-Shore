@@ -25,7 +25,7 @@ MonoBehaviour:
   reticleIdleAlpha: 0.053
   reticleWhite: 0.45
   reticleNearLight: 0.25
-  omniOn: 1
+  omniOn: 0
   menuAutopilotNetworks: 1
   networkReach:
     Enabled: 1

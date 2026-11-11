@@ -19,7 +19,7 @@ gate race in the barren race cell with an EQUATORIAL spawn ring (gate 0 on its p
 rule), on the shared GateRaceController with a RaceGateTurnMonitor, a RaceGateObjectiveProvider
 and the generic GateRaceScoringRuleSO. The clone swaps FIVE things and inherits the rest:
 
-  1. the controller script (GrizzlyTimeController), keeping Redline's `laps` field (3, as Redline's).
+  1. the controller script (GrizzlyTimeController), keeping Redline's `laps` field (2 laps since 2026-10-26).
   2. its scoring rule ASSET (another asset on the same GateRaceScoringRuleSO script).
   3. the AI approach numbers and the plausible-speed clamp, scaled to the Grizzly's 211 u circle
      (Redline's were sized to the Manta's 237 u).
@@ -29,6 +29,12 @@ and the generic GateRaceScoringRuleSO. The clone swaps FIVE things and inherits 
 
 THE CIRCUIT GENERATOR IS SHARED, NOT CLONED. GrizzlyTimeCourse supplies the Grizzly's settings to
 HeadlongCircuit.Generate; GrizzlyTimeCourseTests asserts the ladder over 400 seeds.
+
+THE POWDER KEGS (2026-11-11, Docs/GrizzlyTime/POWDER_KEGS_SPEC.md). A keg beside every ring (GrizzlyTimeKegs,
+GrizzlyTimeController.Kegs.cs): blow it with your own bomb and the gate is yours, and the blast throws you down the next
+leg. This generator authors the controller's keg block into the committed scene (a one-shot migration that stands down
+once the block is there), the mode's toast config (the shared race beats 129-132 + 30 and the mode's own 300 / 301),
+and checks that the C# ladder matches the numbers below. Every sound slot ships EMPTY.
 """
 import os
 import re
@@ -53,11 +59,17 @@ SCRIPT_PATHS = {
     "GrizzlyTimeController":  f"{MODE_DIR}/GrizzlyTimeController.cs",
     "GrizzlyTimeCourse":      f"{MODE_DIR}/GrizzlyTimeCourse.cs",
     "GrizzlyTimeCourseTests": "Assets/_Scripts/Tests/Editor/GrizzlyTimeCourseTests.cs",
+    "GrizzlyTimeKegs":        f"{MODE_DIR}/GrizzlyTimeKegs.cs",
+    "GrizzlyTimeController.Kegs": f"{MODE_DIR}/GrizzlyTimeController.Kegs.cs",
+    "GrizzlyTimeKegsTests":   "Assets/_Scripts/Tests/Editor/GrizzlyTimeKegsTests.cs",
 }
+HARNESS_DIR = "Tools/Build/grizzly_time_course_harness"
+
 DOC = "Assets/_Scripts/Controller/Arcade/GRIZZLYTIME.md"
 CARD = "Assets/_SO_Assets/Games/ArcadeGameGrizzlyTime.asset"
 RULE = "Assets/_SO_Assets/Scoring Rules/GrizzlyTimeScoringRule.asset"
 PREVIEW = "Assets/_SO_Assets/Mode Previews/ModePreview_GrizzlyTime.asset"
+TOASTS = "Assets/_SO_Assets/Game Toasts/GameToastConfig_GrizzlyTime.asset"
 SCENE_NAME = "MinigameGrizzlyTime"
 SCENE = f"{lib.SCENES_DIR}/{SCENE_NAME}.unity"
 DONOR_SCENE = f"{lib.SCENES_DIR}/MinigameRedline.unity"
@@ -67,6 +79,7 @@ G_SCRIPT = {k: guid(f"script/{k}") for k in SCRIPT_PATHS}
 G_CARD = guid("asset/ArcadeGameGrizzlyTime")
 G_RULE = guid("asset/GrizzlyTimeScoringRule")
 G_PREVIEW = guid("asset/ModePreview_GrizzlyTime")
+G_TOASTS = guid("asset/GameToastConfig_GrizzlyTime")
 G_SCENE = guid("asset/MinigameGrizzlyTime.unity")
 
 # ── Existing GUIDs we reference (read from the repo, never invented) ──────────
@@ -116,6 +129,36 @@ MAX_PLAUSIBLE_SPEED = 1400
 # lands on the mode's axis.
 COMEBACK_RATE = 0.45
 
+# ── The powder kegs (GrizzlyTimeKegs; the C# arrays are checked against these below) ──
+# The environment prism every keg, chalk dot and crown is laid from: Assets/_Prefabs/Trails/SpawnablePrism.prefab, whose
+# Prism component is fileID 4563009547826722997 (Thresher Time's nests and Serpentine's debris use the same).
+SPAWNABLE_PRISM = lib.existing_guid("Assets/_Prefabs/Trails/SpawnablePrism.prefab")
+EXISTING["SpawnablePrism"] = SPAWNABLE_PRISM
+KEGS_AT_GATES = 1
+CREDIT_RADIUS_BY_INTENSITY = (160, 140, 120, 100)
+REGROW_SECONDS_BY_INTENSITY = (3, 3, 2.5, 2)
+CORE_KIND_BY_INTENSITY = ("Plain", "Plain", "Shielded", "Shielded")
+CHALK_BY_INTENSITY = ("false", "true", "true", "true")
+RING_RADIUS_BY_INTENSITY = (96, 84, 74, 66)
+TOAST_HINT = 300            # GameToastSituation.GrizzlyTimeHint (300-309 reserved for Grizzly Time)
+TOAST_BANK_SHOT = 301       # GameToastSituation.GrizzlyTimeBankShot
+# The controller's keg fields, in declaration order (GrizzlyTimeController.Kegs.cs); the C# defaults are the same numbers
+# (checked below). The four sound slots ship EMPTY (CLAUDE.md: never a placeholder event).
+KEG_SCALARS = (
+    ("kegBurstPerFrame", 24), ("kegBurstSpeed", 60), ("kegRegrowPerFrame", 15), ("chalkRegrowSeconds", 3),
+    ("crownPrisms", 16), ("crownOutset", 14),
+)
+KEG_TOAST_SCALARS = (("hintToast", TOAST_HINT), ("bankShotToast", TOAST_BANK_SHOT), ("bankShotEveryN", 4),
+                     ("bankShotMaxDegrees", 30))
+KEG_SOUNDS = ("kegBurstEvent", "kegStrippedEvent", "bankShotEvent", "crownBurstEvent")
+EMPTY_EVENT = "    Guid:\n      Data1: 0\n      Data2: 0\n      Data3: 0\n      Data4: 0\n    Path: \n"
+KEG_FIELDS = (
+    f"  kegsAtGates: {KEGS_AT_GATES}\n"
+    f"  kegPrefab: {{fileID: 4563009547826722997, guid: {SPAWNABLE_PRISM}, type: 3}}\n"
+    + "".join(f"  {k}: {v}\n" for k, v in KEG_SCALARS)
+    + "".join(f"  {k}: {v}\n" for k, v in KEG_TOAST_SCALARS)
+    + "".join(f"  {k}:\n{EMPTY_EVENT}" for k in KEG_SOUNDS))
+
 # Fresh Netcode ids for the clone's in-scene NetworkObjects (rule 4 above).
 HASH_SALT = "MinigameGrizzlyTime"
 
@@ -144,9 +187,10 @@ g.emit_asset(CARD, G_CARD, header(EXISTING["SO_ArcadeGame"], "ArcadeGameGrizzlyT
   IsMultiplayer: 1
   DisplayName: Grizzly Time
   Description: Grizzlies only, against the clock. Your speed is your bombs - squeeze LT or
-    RT to fire, pull again to freeze it, let go to blow it and ride the blast at three times
-    cruise. A launch keeps going the way you were pointed, so every corner asks how much
-    launch it is worth. Two laps. Fastest domain home wins.
+    RT to fire, pull again to freeze it, let go to blow it, and the blast throws you away
+    from the bomb. A powder keg stands beside every ring - blow it from its far side and the
+    gate is yours and the blast throws you down the next leg. Two laps. Fastest domain home
+    wins.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {lib.card_background('GrizzlyTime')}, type: 3}}
@@ -246,6 +290,27 @@ def clone_scene() -> str:
 scene, scene_errors = lib.committed_scene(
     SCENE, clone_scene,
     authored_blocks=(NEW_FIELDS, "  spawnDistanceOutsideNucleus: 150\n", "  spawnFormation: 1\n"))
+
+
+def with_keg_fields(text: str) -> str:
+    """The controller's keg block, right after the field block this generator owns. A one-shot migration for the scene
+    committed before the kegs (append the block), then a re-author of the block in place: it STANDS DOWN to a no-op once
+    the block in the scene is the one above."""
+    start = text.find("  kegsAtGates: ")
+    if start < 0:
+        if text.count(NEW_FIELDS) != 1:
+            return text   # reported below: the owned block is not in the scene exactly once
+        return text.replace(NEW_FIELDS, NEW_FIELDS + KEG_FIELDS, 1)
+    end_key = text.find(f"  {KEG_SOUNDS[-1]}:\n", start)
+    if end_key < 0:
+        return text   # reported below
+    end = end_key + len(f"  {KEG_SOUNDS[-1]}:\n") + len(EMPTY_EVENT)
+    return text[:start] + KEG_FIELDS + text[end:]
+
+
+scene = with_keg_fields(scene)
+if KEG_FIELDS not in scene or scene.count(NEW_FIELDS + KEG_FIELDS) != 1:
+    scene_errors.append("MinigameGrizzlyTime.unity: the controller's keg block is not right after its field block")
 g.emit_scene(SCENE_NAME, G_SCENE, scene)
 
 # ── 5. Preview (a card without one offers no Test Flight) ────────────────────
@@ -260,7 +325,7 @@ g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "Mo
   PreviewFauna: {{fileID: 0}}
   PreviewFaunaCount: 4
   Vessel: {lib.VESSEL_CLASS_ID['Grizzly']}
-  ObjectiveText: Ride your blasts down the straights
+  ObjectiveText: Blow the kegs, ride the blasts
   ObjectiveMetric: 9
   ObjectiveTarget: 0
   DurationSeconds: 60
@@ -271,6 +336,19 @@ g.emit_asset(PREVIEW, G_PREVIEW, header(EXISTING["ModePreviewDefinitionSO"], "Mo
   SpawnPoints: []
 """)
 g.register_preview(G_PREVIEW)
+
+# ── 5b. Toasts: the shared race beats GateRaceController ticks (DomainRaceToasts), then the mode's own ──
+g.emit_asset(TOASTS, G_TOASTS, header(lib.SCRIPT_GUIDS["GameToastConfigSO"], "GameToastConfig_GrizzlyTime") +
+             f"  gameMode: {MODE_ID}\n  toasts:\n" +
+             lib.toast(129, "{0} is halfway home - gate {1}/{2}", tint_domain=1, domain_names=0) +
+             lib.toast(130, "{0} takes the lead - gate {1}/{2}", tint_domain=1, domain_names=0) +
+             lib.toast(131, "{0} is on the home stretch - gate {1}/{2}", tint_domain=1, domain_names=0) +
+             lib.toast(132, "{0} is on the final lap", tint_domain=1, domain_names=0) +
+             lib.toast(30, "Comeback system is on", domain_names=0, alpha=0.9) +
+             lib.toast(TOAST_HINT, "Freeze a bomb in the keg, get round to its far side, blow it - the gate is yours "
+                                   "and the blast throws you down the next leg.", domain_names=0) +
+             lib.toast(TOAST_BANK_SHOT, "Bank shot ({0})", tint_domain=1, domain_names=0))
+g.register_toast_config(G_TOASTS)
 
 # ── 6. Registries ────────────────────────────────────────────────────────────
 g.register_arcade_card(G_CARD)
@@ -349,12 +427,59 @@ if not _freeze or not _blast or float(_freeze.group(1)) >= float(_blast.group(1)
     errors.append("GrizzlyTriggerBombConfig.aiFreezeDistance is not inside the blast radius (maxBlastScale / 2) - "
                   "an AI Grizzly's launch would miss its own hull")
 
+# The powder kegs: the C# ladder, the mouths and the toast ids are the numbers above.
+_kegs = read_or_empty(SCRIPT_PATHS["GrizzlyTimeKegs"])
+
+
+def cs_array(src: str, name: str):
+    m = re.search(rf"{name}\s*=\s*\{{([^}}]*)\}}", src)
+    return None if not m else [v.strip().replace("PrismKind.", "").rstrip("f") for v in m.group(1).split(",")]
+
+
+def nums(vals):
+    return [float(v) for v in vals]
+
+
+for name, want in (("CreditRadiusByIntensity", CREDIT_RADIUS_BY_INTENSITY),
+                   ("RegrowSecondsByIntensity", REGROW_SECONDS_BY_INTENSITY)):
+    got = cs_array(_kegs, name)
+    if got is None or nums(got) != [float(w) for w in want]:
+        errors.append(f"GrizzlyTimeKegs.{name} is {got}, not {list(want)}")
+if cs_array(_kegs, "CoreKindByIntensity") != list(CORE_KIND_BY_INTENSITY):
+    errors.append(f"GrizzlyTimeKegs.CoreKindByIntensity is not {list(CORE_KIND_BY_INTENSITY)}")
+if cs_array(_kegs, "ChalkByIntensity") != list(CHALK_BY_INTENSITY):
+    errors.append(f"GrizzlyTimeKegs.ChalkByIntensity is not {list(CHALK_BY_INTENSITY)}")
+m = re.search(r"RingRadius = new\[\] \{([^}]*)\}", _course)
+if not m or nums(v.strip().rstrip("f") for v in m.group(1).split(",")) != [float(r) for r in RING_RADIUS_BY_INTENSITY]:
+    errors.append(f"GrizzlyTimeCourse RingRadius is not {list(RING_RADIUS_BY_INTENSITY)}")
+_toast_enum = read_or_empty("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
+for member, want in (("GrizzlyTimeHint", TOAST_HINT), ("GrizzlyTimeBankShot", TOAST_BANK_SHOT)):
+    m = re.search(rf"^\s*{member}\s*=\s*(\d+),", _toast_enum, re.M)
+    if not m or int(m.group(1)) != want:
+        errors.append(f"GameToastSituation.{member} is not {want}")
+_ids = [int(v) for v in re.findall(r"=\s*(\d+),", _toast_enum)]
+for want in (TOAST_HINT, TOAST_BANK_SHOT):
+    if _ids.count(want) != 1:
+        errors.append(f"GameToastSituation value {want} is used {_ids.count(want)} times")
+_ctrl_kegs = read_or_empty(SCRIPT_PATHS["GrizzlyTimeController.Kegs"])
+for k, v in KEG_SCALARS + (("bankShotEveryN", 4), ("bankShotMaxDegrees", 30)):
+    d = lib.cs_field_default(_ctrl_kegs, k)
+    if d is None or float(d) != float(v):
+        errors.append(f"GrizzlyTimeController.{k} defaults to {d}, the scene authors {v}")
+for k in KEG_SOUNDS:
+    if not re.search(rf"FMODUnity\.EventReference {k};", _ctrl_kegs):
+        errors.append(f"GrizzlyTimeController.{k} is not an exposed EventReference")
+if not SPAWNABLE_PRISM:
+    errors.append("Assets/_Prefabs/Trails/SpawnablePrism.prefab has no guid - the kegs have no prism to lay")
+if not os.path.exists(os.path.join(ROOT, HARNESS_DIR, "run.sh")):
+    errors.append(f"{HARNESS_DIR}/run.sh is missing - the kegs' offline tests have no runner")
+
 # The toybox must offer the hull this mode is built for (ToyVesselRosterCoverageTests asserts the
 # general rule; this names it for the mode that needs it).
 _roster = read_or_empty("Assets/_Scripts/Controller/Toys/ToyVesselRoster.cs")
 if "VesselClassType.Grizzly" not in _roster:
     errors.append("ToyVesselRoster.Default does not offer the Grizzly")
 
-minted = list(G_SCRIPT.values()) + [G_CARD, G_RULE, G_PREVIEW, G_SCENE,
+minted = list(G_SCRIPT.values()) + [G_CARD, G_RULE, G_PREVIEW, G_SCENE, G_TOASTS,
                                     guid(f"folder/{MODE_DIR}"), guid(f"text/{DOC}")]
 g.finish(errors, referenced=EXISTING, minted=minted)

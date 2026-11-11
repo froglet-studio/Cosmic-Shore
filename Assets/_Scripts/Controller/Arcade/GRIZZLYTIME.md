@@ -1,9 +1,57 @@
 # Grizzly Time — the Grizzly-only circuit race
 
 > `GameModes.GrizzlyTime = 63`. A closed loop of switch rings is cut through the cell and every
-> pilot flies **three laps** of it in order; the first **domain** whose **lead runner** threads the
-> last gate of the last lap wins, on finish **time** (golf). The race the Grizzly was asked for,
-> alongside its existing arena mode **Grizzly Charge** (`62`).
+> pilot flies **two laps** of it in order (16 gates; two since 2026-10-26); the first **domain** whose
+> **lead runner** clears the last gate of the last lap wins, on finish **time** (golf). A **powder keg**
+> stands beside every ring (2026-11-11, §0): blow it with your own bomb and the gate is yours, and the
+> blast throws you down the next leg. The race the Grizzly was asked for, alongside its arena mode
+> **Grizzly Charge** (`62`).
+
+## 0. The powder kegs (2026-11-11)
+
+Spec, research and judge panel: `Docs/GrizzlyTime/POWDER_KEGS_SPEC.md`. Code: `GrizzlyTimeKegs` (pure),
+`GrizzlyTimeController.Kegs.cs` (the partial that lays, breaks, regrows and credits them, the AI's aim, the feedback).
+
+**The loop.** Freeze a bomb by the keg, get round to the keg's far side (keg → next ring), blow it. One detonation
+opens the keg, clears the gate (a pilot within the credit radius of an OPEN keg clears its ring, `ThreadsGate`) and
+throws the hull down the next leg, because the launch pushes AWAY from the bomb. Where you stand when you blow it is
+your steering; the keg gives it a target. **The ring mouth still clears the gate**, so the old line is never closed
+(Yash turned Thresher Time's nests off on 2026-11-07 for "just pass through waypoints"; here the kegs are a second way
+in, and `kegsAtGates` turns them off).
+
+| level | the new demand | core | credit | regrow | chalk |
+|---|---|---|---|---|---|
+| I1 KEGS | hit a target with your bomb: one bomb is key and engine | plain | 160 u | 3 s | none |
+| I2 BANK SHOT | blow it from its exit side, so the push points at the next ring | plain | 140 u | 3 s | one rail |
+| I3 TWO KEYS | strip the shield from range, then blow it from the exit (re-shields 2.5 s after) | shielded | 120 u | 2.5 s | one rail |
+| I4 BREAK YOUR OWN | the tightest credit and the fastest regrow: a rival's open keg is gone first | shielded | 100 u | 2 s | one rail |
+
+- **Placement** is closed form, zero random draws, the same on every peer: 140 u from the ring centre, in the ring's
+  plane, toward the corner's inside (the legs' bisector); a corner under 10° picks its side by a hash of the ring. A
+  keg is 3 core cubes and a 12-slab hoop at 16 u (15 prisms) - its nearest prism sits 124 u from the ring centre, past
+  a full blast (100 u) fired in the mouth. **Mouths 96 / 84 / 74 / 66 u** (were 96 / 72 / 58 / 46): the mouth is the
+  safe line, no step over 15%.
+- **Chalk** (I2 up): 6 plain dots on the corner's inside of the exit lane, 70 u off it, 120-260 u down it - beyond a
+  full blast at the keg, and at least 43 u from every ring-to-ring line over 400 seeds (the first cut's outside rail
+  sat ON that line, median 3-10 u, and was dropped). A dot that would crowd a mouth is skipped.
+- **Measured** (`grizzly_time_course_harness/run.sh --sweep`, 400 seeds, a model of the throw, not the hull): at
+  corners over 60° a straight blow lands a median **101 / 137 / 157 / 199 u** farther from the next ring than the bank
+  shot at I1-I4 (never less than 31 u). A throw-chain lap (one launch a gate, no carry bomb) is 88-105 s for two laps
+  - an upper bound; a carry bomb a leg brings it toward the ~75 s the ammo allows.
+- **I4 was twin kegs** (inside and outside, pick one). The throw-chain sweep found the inside keg right at 99% of
+  gates and reading the choice worth 0.1%, so the twins were dropped as the spec's own bar said.
+- **Rivalry** is the fleet's: a blast that catches a rival is a MissileBlast hit (20 points, 8 s silence), and a
+  silenced pilot's blasts deflect off every prism, so it threads the mouths until it recovers.
+- **AI** (input only, no vessel change): commits from the approach point (`AICommitFromApproachPoint`; Redline went
+  10/24 → 24/24 offline on it); passes BESIDE a plain keg down its exit lane (the autopilot's bombs open it) and gives
+  it up for the mouth if it still stands; flies to any OPEN keg within 600 u; threads the mouth past a shielded keg;
+  after 18 s without a gate it is steered to a run-up 300 u behind its ring.
+- **Feedback** (in the world, every peer): the keg's burst (doubled speed on your final lap) and its regrow as a live
+  ribbon, the chalk lane, a crown of debris off each ring you clear (local). Toasts `GameToastConfig_GrizzlyTime`:
+  the shared race beats 129-132 + 30, the hint (300, once) and "Bank shot ({0})" (301, first and every 4th). Four
+  sound slots ship EMPTY: `kegBurstEvent`, `kegStrippedEvent`, `bankShotEvent`, `crownBurstEvent`.
+- **Cut from the spec:** the finish demolition wave (bursting every keg on the local finish would open them for the
+  AIs still racing on the host), the I4 twins (above).
 
 ## 1. What the mode is asking
 
@@ -47,9 +95,11 @@ median lap (`GrizzlyTimeCourseTests`):
 | 3 | **2** of 8 | 136 u · **64%** | 149 u · 71% | 306 u · 100% | 58 | ~5.1 k u |
 | 4 | **3** of 8 | 98 u · **47%** | 115 u · 54% | 190 u · 90% | 46 | ~5.2 k u |
 
-Percentages are of the 350 u/s top speed via `FastestSpeedForCorner`. A three-lap race is
-~15 k u: ~45 s if every metre were flown on the ceiling, ~85 s at the ammo-limited sustained pace,
-five minutes coasting. The first cut (2026-10-06) was fourteen gates on a 560 u ring against a
+Percentages are of the 350 u/s top speed via `FastestSpeedForCorner`. A two-lap race is
+~9.4-10.4 k u. Pace has two limits: recorded flights are CONTROL-bound (the ammo meter sat at
+0.66-0.81 - pilots were not spending it), and a pilot who launches as often as the pool allows is
+AMMO-bound at about 4.7 s a gate, ~75 s a race. The mouth radii in the table are the first cut's;
+since 2026-11-11 they are 96 / 84 / 74 / 66 (§0). The first cut (2026-10-06) was fourteen gates on a 560 u ring against a
 150 u/s top speed; tripling the launch (2026-10-08) made every one of those legs shorter than a
 single launch's carry, so the circuit was re-cut (§3).
 
@@ -66,9 +116,10 @@ generator**. It reuses:
 - **`HeadlongCircuit`**, the shared closed-circuit solver. `GrizzlyTimeCourse` supplies the
   Grizzly's settings exactly as `RedlineCourse` supplies the Manta's; the solver is untouched
   (Redline's 14-test suite still passes against it).
-- The Grizzly's shipped kit for the racing: the trigger bombs are the throttle, **Rush** (B) is a burst
-  onto a straight, **Dig In** (A) is a hard stop, and a bomb blown across a rival's trail breaks it
-  (the blast spares only your own domain). None of that is scored; the race is.
+- The Grizzly's shipped kit for the racing: the trigger bombs are the throttle, **Rush** (B) is a
+  short burst (about 75-80 u; Energy starts at 0, so the first Rush comes about 5 s in), **Dig In**
+  (A) is a hard stop, and a bomb blown across a rival's trail breaks it (the blast spares only your
+  own domain). None of that is scored; the race is.
 
 ## 3. The cut — Headlong's octagon, against the 211 u circle
 
@@ -76,8 +127,7 @@ A corner's radius on this metric is `(shorter leg / 2) / tan(turn / 2)`. With th
 the Grizzly's full-launch circle is **211 u** and a full launch carries **~300 u** — the Rhino's
 territory, so the cut is Headlong's, re-measured with the shipped solver compiled out of editor:
 
-- **Eight gates a lap** on Headlong's **800 u** base circle, three laps a race (Headlong's and
-  Redline's 24). Legs of 475–610 u at the median: one launch's carry and half again on every leg
+- **Eight gates a lap** on Headlong's **800 u** base circle, two laps a race (16 gates). Legs of 475–610 u at the median: one launch's carry and half again on every leg
   (`Legs_are_long_enough_to_launch_down`). The old fourteen gates on 560 u left 250–420 u legs —
   shorter than one launch now carries — and no shorter lap fits a hairpin with long enough legs
   inside the 480–1080 shell.
@@ -90,8 +140,8 @@ territory, so the cut is Headlong's, re-measured with the shipped solver compile
 
 The safety floor is stated in absolute Grizzly units (`CornerFloorRadius` 169 / 106 / 95 / 89 u),
 never below the 30 u cruise pivot. Presentation caps (50 / 70 / 72 / 76°) each sit over the
-level's measured worst half-turn (44 / 68 / 68 / 73°). Mouths are Headlong's (96 / 72 / 58 / 46):
-the Grizzly now arrives at a Rhino's pace, on a push it cannot steer.
+level's measured worst half-turn (44 / 68 / 68 / 73°). Mouths were Headlong's (96 / 72 / 58 / 46)
+until the kegs; they are 96 / 84 / 74 / 66 since 2026-11-11 (§0).
 
 ## 4. The AI bomb-jumps — a vessel change, not a mode one
 
@@ -99,8 +149,7 @@ the Grizzly now arrives at a Rhino's pace, on a push it cannot steer.
 trigger. In a race cut around the full-launch circle that would make every bot a 50 u/s obstacle —
 and an all-AI domain that cannot play is a defect. `GrizzlyTriggerBombExecutor` carries an
 **autopilot drive** (Redline's autopilot Soar, REDLINE.md §5, on the Grizzly's kit): while
-`AIPilot.AutoPilotEnabled` and the stick is straight (inside `aiFireStickBand` 0.35), it fires a
-full bomb, freezes it 18 u ahead, flies past it and detonates it 10 u behind — thrown forward, away
+`AIPilot.AutoPilotEnabled` it fires a full bomb (about every 2.3 s), freezes it 18 u ahead, flies past it and detonates it 10 u behind — thrown forward, away
 from it — through the REPLICATED press/release, so every peer runs the same bomb. Gated on the pilot being an autopilot,
 so the menu's lava-lamp Grizzly and a released companion bomb-jump too. `0` disables the drive.
 
@@ -110,8 +159,10 @@ pre-restoration prefab):
 - **`AIPilot` was serialized disabled** (`m_Enabled: 0`). `StartAIPilot` does not enable the
   component and steering runs in `Update`, so an AI Grizzly never steered — in Grizzly Charge too.
   Every other hull ships it enabled. Now enabled; the generator asserts it.
-- **AI throttle was pinned at 0.6** (a 30 u/s cruise). Now 0.7 → 1.0 across skill (skill =
-  intensity × 0.25), so a level-4 bot cruises at the full 50.
+- **The stick band does not gate the AI.** `aiFireStickBand` (0.35) reads `input.XSum/YSum`, which
+  `AIPilot` never writes for a single-stick hull, so the AI fires mid-corner too (proposal P1 in
+  POWDER_KEGS_SPEC.md §5, for the vessel's owner). The AI's throttle does not set its speed either:
+  `SingleStickVesselTransformer` ignores it.
 
 AI approach numbers are Redline's ratios on the Grizzly's 211 u circle: commit **380** / lead
 **420** / through **285** (Redline: 420 / 480 / 320 against 237 u).
@@ -120,8 +171,10 @@ AI approach numbers are Redline's ratios on the Grizzly's 211 u circle: commit *
 
 | Knob | Where | Shipped |
 |---|---|---|
-| race length (laps × rings) | `Resources/EndConditionOverrides` → `grizzlyTimeGateTarget` | **24** |
-| laps | `MinigameGrizzlyTime.unity` → `GrizzlyTimeController.laps` | **3** |
+| race length (laps × rings) | `Resources/EndConditionOverrides` → `grizzlyTimeGateTarget` | **16** |
+| laps | `MinigameGrizzlyTime.unity` → `GrizzlyTimeController.laps` | **2** |
+| powder kegs (on/off, prism, burst, regrow, crown, toasts, sounds) | scene → `GrizzlyTimeController` keg block | §0 |
+| keg ladder (credit, regrow, core, chalk) and geometry | `GrizzlyTimeKegs` | §0 |
 | rings per lap / base circle | `GrizzlyTimeCourse.GatesPerLap` / `.BaseRadius` | **8** / **800** |
 | corner profile, spread, floor, mouth, presentation | `GrizzlyTimeCourse.ForIntensity` | §1, §3 |
 | AI commit / lead / through | scene → `GateRaceController` | 380 / 420 / 285 |
@@ -129,7 +182,7 @@ AI approach numbers are Redline's ratios on the Grizzly's 211 u circle: commit *
 | autopilot bomb-jump | `GrizzlyTriggerBombConfig.asset` → `aiFireStickBand` / `aiFreezeDistance` | 0.35 / 18 |
 | launch strength / ceiling | `GrizzlyTriggerBombConfig.asset` → `selfLaunchMultiplier` / `selfLaunchCeiling`; `maxBlastScale` | 4.5 / 300; 200 |
 | ammo (the sustained pace) | `Grizzly.prefab` Ammo `resourceGainRate`; `maxAmmoCost` | 0.15/s; 0.35 |
-| comeback rate | `ArcadeGameGrizzlyTime.asset` | **0.3** (6 gates behind buys 1.8 levels) |
+| comeback rate | `ArcadeGameGrizzlyTime.asset` | **0.45** (4 gates behind buys 1.8 levels) |
 | course shell | scene → `courseOuterRadius` / `courseInnerRadiusFallback` | 1080 / 480 |
 
 Every vessel number the cut depends on is restated as a constant on `GrizzlyTimeCourse` and
@@ -144,7 +197,9 @@ The scene is cloned once from `MinigameRedline` (controller script, field block,
 unique `GlobalObjectIdHash`es) and then adopted as committed (`arcade_mode_lib.committed_scene`).
 The generator authors the card, the scoring rule, the preview (`ModePreview_GrizzlyTime`,
 registered in `Resources/ModePreviewLibrary`), the build-scene row, the always-unlocked row, both
-rosters (`OrganicRematchGames` + `ArcadeGames`) and the end-condition target, and asserts the
+rosters (`OrganicRematchGames` + `ArcadeGames`), the end-condition target, the toast config
+(`GameToastConfig_GrizzlyTime`) and the controller's keg block in the scene, and asserts the
+keg ladder and mouths against the C#, the toast ids,
 comeback rate, the lap arithmetic, the constants it shares with the C#, the AI prefab state, the
 autopilot bomb-jump (on, and freezing inside its own blast) and the toybox roster. `--check` diffs every file.
 
@@ -157,7 +212,7 @@ autopilot bomb-jump (on, and freezing inside its own blast) and the toybox roste
 3. **Bomb-jump a lap.** Fire, freeze just ahead, ride the blast; alternate LT/RT. Each launch
    should throw you to ~350 for about a second and carry you ~300 u. At intensity 1 every corner
    can be taken with a launch running.
-4. **Lap wrap.** After gate 8 the lit ring returns to gate 1 and the goal row reads 8/24.
+4. **Lap wrap.** After gate 8 the lit ring returns to gate 1 and the goal row reads 8/16.
 5. **Intensity 4.** A median lap is a triangle: two near-hairpins that punish launching into
    them (you swing wide of the next mouth) and a third you can hold with most of a launch.
 6. **AI.** Add AI Grizzlies: they must **steer** (the `AIPilot` enable), **fire, freeze and ride
@@ -166,6 +221,10 @@ autopilot bomb-jump (on, and freezing inside its own blast) and the toybox roste
    each peer sees the other's bombs at matching sizes.
 8. **Regressions.** Redline and Headlong unchanged; the menu lava-lamp Grizzly now bomb-jumps —
    if that reads too busy, the dial is `aiFireStickBand` (0 disables).
+9. **The kegs** (the `Docs/UNITY_VERIFICATION_CHECKLIST.md` entry for 2026-11-11 lists each step):
+   a full blast opens a plain keg and clears its gate; at I3 the first blast only strips the core and
+   it re-shields 2.5 s later; the chalk reads as a lane; the bank-shot toast fires on a blow from
+   the exit side; AI Grizzlies open I1-I2 kegs and finish at I1-I4.
 
 ## 8. Known limitations / follow-ups
 
@@ -185,5 +244,6 @@ autopilot bomb-jump (on, and freezing inside its own blast) and the toybox roste
 - **Card art** is the `/cardart` COURSE-tier render (`CardBackgrounds/GrizzlyTime.png`): the
   shipped `GrizzlyTimeCourse` at intensity 2 through the card-art harness, the `GrizzlyTime` branch
   of Redline's recipe in `render_card_backgrounds.py`. Judged at card size; not yet seen in the grid.
-- **No toasts of its own** — the gate-race platform's stat toasts only, as Redline.
+- **Toasts** are `GameToastConfig_GrizzlyTime` (since 2026-11-11): the race beats 129-132 + 30, the
+  hint (300) and the bank shot (301).
 - **The AI never uses Rush or the charged cannon**; its edge is the trigger-bomb launch alone, always full-size.

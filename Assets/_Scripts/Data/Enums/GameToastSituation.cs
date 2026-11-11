@@ -241,6 +241,26 @@ namespace CosmicShore.Data
         // Harvest, the Thresher's space game (_Scripts/Controller/Arcade/HARVEST.md). Its race beats are the shared
         // 128-130 (DomainRaceToasts); a prism milestone is 83 (HostilePrismsDestroyed). Posted to the LOCAL pilot only.
         HarvestHint = 163,              // once, at the start: press A to break; mow the stalks, smash the core
+        // Shatterplane, the Brittle Star's space game (_Scripts/Controller/Arcade/SHATTERPLANE.md). Its race beats are the
+        // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
+        // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
+        ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
+        // Redline, the Manta's Time game (_Scripts/Controller/Arcade/REDLINE.md). Its race beats are the shared 129-132
+        // (DomainRaceToasts). Posted to the LOCAL pilot only, from its own threads (RedlineController.Heat). 360-369 is
+        // Redline's band (the 2026-11-11 round 5 sessions each hold their own); 367-369 are free.
+        RedlineHint = 360,              // once, at the start: Soar is lit, bury both triggers, thread the hearts
+        RedlineStreak = 361,            // a streak of clean threads is called (3, 8, 16, then every 16): {0} = the streak
+        RedlineLapSplit = 362,          // a lap completed: {0} = the lap, {1} = its time in seconds
+        RedlineBestLap = 363,           // a lap beat this race's best: {0} = the lap, {1} = its time in seconds
+        RedlineCleanLap = 364,          // every gate of a lap threaded clean: {0} = the lap
+        RedlineSoarDark = 365,          // the pilot's Time fell below Soar's relock (4): Soar is dark until a crystal
+        RedlineRedline = 366,           // once a race: the pilot reached the redline: {0} = the speed in u/s
+
+        // Grizzly Time, the Grizzly's Time race (_Scripts/Controller/Arcade/GRIZZLYTIME.md, Docs/GrizzlyTime/
+        // POWDER_KEGS_SPEC.md). Its race beats are the shared 129-132 + 30 (DomainRaceToasts). Posted to the LOCAL pilot
+        // only. 300-309 are reserved for Grizzly Time (2026-11-11: parallel Time-game sessions hold 310-429).
+        GrizzlyTimeHint = 300,          // once, at the start: freeze a bomb in the keg, get on its far side, blow it
+        GrizzlyTimeBankShot = 301,      // a keg blown from its exit side threw you down the lane; {0} = how many so far
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

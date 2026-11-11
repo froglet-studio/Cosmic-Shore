@@ -86,10 +86,10 @@ CHECKLIST = [
      "Counsel rules on COPPA: social features (sign-in, Cloud Save, presence, Friends) currently start before the age "
      "gate, and age is checked by year only.\nSet submitAnalytics to 0 in ProjectSettings; the consent copy names "
      "crash reports; sign the PostHog DPA; accept Unity's DPA; set retention periods.", "#8"),
-    (10, "licences-clean", "Licences clean: FMOD tier, SOAP, a font, sound-library files", "launch", "unknown", "High",
+    (10, "licences-clean", "Licences clean: FMOD tier, a font, sound-library files", "launch", "unknown", "High",
      "S-M", True, True,
-     "FMOD: check the budget and revenue thresholds; buy a tier if exceeded.\nObvious SOAP: file the receipt and "
-     "licence.\nElectronic Highway Sign font (ships via Resources): find its licence or remove it.\nThe sound-library "
+     "FMOD: check the budget and revenue thresholds; buy a tier if exceeded.\n(Obvious SOAP was removed on "
+     "2026-11-06: nothing to file.)\nElectronic Highway Sign font (ships via Resources): find its licence or remove it.\nThe sound-library "
      "named .wav files in the public repo (e.g. 'Cosmic Shore/Assets/AEROJet_Airplane Jet_S6k01-50.wav'): check the "
      "licence; remove from the public tree (and history if the licence forbids redistribution).\nAdd Vivox, "
      "Steamworks.NET, PostHog and Moderation to Docs/THIRD_PARTY_REGISTER.md.", "#8"),

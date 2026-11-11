@@ -746,6 +746,39 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Entry for a DEFINITE server-side loss of this machine's own party session
+        /// (<c>HostConnectionService.HandleDefiniteSessionGoneAsync</c>): rebuild the solo session the same way every
+        /// other route back to a solo menu does (<see cref="RecoverFromFailedTransitionAsync"/>: the player and vessel
+        /// destroyed, the runtime data reset, the network shut down, Menu_Main reloaded, THEN the solo session).
+        ///
+        /// <para>It used to restart the host IN PLACE on the live menu. The scene's spawner then never caught the new
+        /// host Player (<c>FindUnprocessedPlayerByOwnerClientId(0) returned NULL</c>), so nothing paired it and
+        /// <c>gameData</c> kept the dead session's players. Launched from that menu, a Thresher Time match seated the
+        /// pilot who had picked Jade on Gold, with no Jade column on the scoreboard (Yash, 2026-11-07; BUGS.md B48).</para>
+        ///
+        /// <para>Silent: a solo player whose session was reaped has nothing to be told (the caller raises the
+        /// host-connection-lost notice when a real party dropped). False when a transition is already running: it owns
+        /// the session and makes its own.</para>
+        /// </summary>
+        public async UniTask<bool> RecoverFromSessionGoneAsync()
+        {
+            if (_transitioning) return false;
+            _transitioning = true;
+            try
+            {
+                NetSessionRecorder.Mark("bounce", "party session gone server-side");
+                // A recovery lands on HOME, never on the launch panel of a lobby that no longer exists (MenuReturnCard).
+                CosmicShore.UI.MenuReturnCard.Clear();
+                await RecoverFromFailedTransitionAsync();
+                return true;
+            }
+            finally
+            {
+                EndTransition();
+            }
+        }
+
+        /// <summary>
         /// Terminal "bounce": return the player to their own functional solo menu via
         /// <see cref="RecoverFromFailedTransitionAsync"/>, then surface the notice toast.
         /// Guarantees a failed join / host-loss never ends in a permanent splash hang.
@@ -839,8 +872,21 @@ namespace CosmicShore.Gameplay
             data != null && data.IsPartyHost && !data.IsSpectating &&
             data.PartyMembers != null && data.PartyMembers.Count > 1;
 
-        /// <summary>Whether Play is running. Tests substitute it; it is Unity's own flag otherwise.</summary>
-        internal static Func<bool> IsPlaying { get; set; } = () => Application.isPlaying;
+        /// <summary>
+        /// Whether Play is running. Tests substitute it; it is Unity's own flag otherwise. In the editor a Stop that
+        /// is already requested counts as ended: <c>Application.isPlaying</c> stays true until Play has torn down,
+        /// and in that window UniTask resumes the awaiting flow from the editor's update loop, where a scene load
+        /// returns null (Bug Ledger E-0de9ec6c70 again on belac's 2026-11-06 Regatta, past the B38 guard).
+        /// </summary>
+        internal static Func<bool> IsPlaying { get; set; } = UnityIsPlaying;
+
+        internal static bool UnityIsPlaying()
+        {
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode) return false;
+#endif
+            return Application.isPlaying;
+        }
 
         /// <summary>
         /// True once Play has stopped or this controller is gone, so the flow that awaited must stop

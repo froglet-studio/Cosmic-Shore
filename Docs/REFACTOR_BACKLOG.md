@@ -350,3 +350,12 @@ recipe`) still stand.
 | H2 `HarvestReaper` cannot tell a sheaf is gone: it remembers when it worked one and comes back after `aiRevisitSeconds` | debt this branch created | `grep -n 'WorkedAt\|aiRevisitSeconds' Assets/_Scripts/Controller/Arcade/Harvest/HarvestReaper.cs` | S: the controller counts each sheaf's live core prisms (the spawnable's lays are indexed by sheaf) and the reaper skips an empty one | Shombith |
 | H3 Harvest's sheaves do not deliver the mode's loop: a trailing chain cuts 0-11 stalks a lap, so a core blast stays small (THRESHER_SPACE.md section 10) | a design gap, not a refactor (report only) | `bash Tools/Build/harvest_stalk_lab/run.sh` (as built) against `run.sh wheel 0 axis` | M: stalks laid as a wheel per sheaf, the reaper laps in its plane and dives down its axle; re-bake, re-render, re-census | Shombith (decision waiting) |
 
+### Shatterplane (`claude/fervent-edison-ol600q`, 2026-11-10)
+
+Seen while building Shatterplane (GameModes 90, the Brittle Star's Space game); recorded, not fixed. Re-run each command
+before acting. K3 / S115 (`Tandava.png` failing `author_card_backgrounds.py --strict`) still stands.
+
+| Row | Shape | Evidence (2026-11-10, `origin/bleeding-edge` @ `f3304c93a7`) | Size | Owner to ask |
+|---|---|---|---|---|
+| SP1 `RampageScoringRuleSO` builds its results and reveal from C# literals (`"{n} Prisms Left"`, `"{n} Prisms"`, `"VICTORY"`, `"RAMPAGE TIME"`), and four rules inherit them (Salvo, Hijack, Wrecking Ball, Sirocco; Sirocco and others override only the reveal, with literals again) | the LOCKED text rule's legacy shape: player text with no human-facing control | `grep -n 'Prisms Left\|"VICTORY"' Assets/_Scripts/Controller/Arcade/Scoring/RampageScoringRuleSO.cs` → lines 80, 88; `grep -rl ': RampageScoringRuleSO' Assets/_Scripts`. `ShatterplaneScoringRuleSO` moved its own words to authored fields (the pattern to lift into the base, with the base's defaults so no asset changes) | S | Shombith |
+| SP2 `audit_prism_clipping.py` given a prefab stem (`SpawnableShatterplane1`) reports `0 generators on 0 prefabs, 0 runs ... clipping: 0` and exits 0 | a gate that cannot fire reads as a pass | `python3 Tools/Build/audit_prism_clipping.py SpawnableShatterplane1; echo $?` → `0 generators` and 0. An unknown shape name should be an error naming the types it knows | S | Shombith (tooling) |

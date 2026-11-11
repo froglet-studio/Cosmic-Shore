@@ -45,6 +45,8 @@ SCOPES = [
     # Every hull's boost policy: each presses its vessel's abilities through the replicated press (2026-11-02, with the
     # Thresher's aimed launch, which hands its executor an aim and nothing else).
     "Assets/_Scripts/Controller/AI/Boost",
+    # The Thresher's Belfry AI (2026-11-07): where it aims and when it ducks - nothing it may write to a vessel.
+    "Assets/_Scripts/Controller/Arcade/ThresherTime/AI",
 ]
 
 # Members whose assignment changes the world rather than the pilot's input.

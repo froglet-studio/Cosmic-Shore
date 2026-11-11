@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
@@ -71,6 +72,7 @@ namespace CosmicShore.Gameplay
                 gameData.OnResetForReplay.OnRaised      -= HandleReplay;
             }
             Unsubscribe();
+            WatchPilots(null);
         }
 
         // ── Wiring ─────────────────────────────────────────────────────────────
@@ -176,15 +178,37 @@ namespace CosmicShore.Gameplay
         public override List<StatData> GetStats()
         {
             var result = new List<StatData>();
+            var pilots = HumanPilots();
+            WatchPilots(pilots);
 
             foreach (var (stat, _) in _subscriptions)
             {
                 if (stat == null) continue;
-                _latestValues.TryGetValue(stat, out var value);
+                _latestValues.TryGetValue(stat, out var localValue);
+                string value;
+                if (pilots.Count <= 1)
+                {
+                    // Solo (or the only human): this machine's own number, as it always was.
+                    if (pilots.Count == 1 && pilots[0].TryGetVesselStat(stat.name, out var synced)) localValue = synced;
+                    value = stat.Format(localValue);
+                }
+                else
+                {
+                    var row = new List<PilotValue>(pilots.Count);
+                    foreach (var p in pilots)
+                    {
+                        bool has = p.TryGetVesselStat(stat.name, out var v);
+                        // The pilot on this machine counts here even before the report lands.
+                        if (!has && ReferenceEquals(p, gameData.LocalPlayer?.RoundStats)) { v = localValue; has = true; }
+                        row.Add(new PilotValue(p.Name, has, v));
+                    }
+                    value = FormatPerPilot(stat, row);
+                }
+
                 result.Add(new StatData
                 {
                     Label = stat.Label,
-                    Value = stat.Format(value),
+                    Value = value,
                     Icon  = stat.Icon
                 });
             }
@@ -194,5 +218,64 @@ namespace CosmicShore.Gameplay
 
             return result;
         }
+
+        // ── Every pilot's numbers (Docs/ScoringSystem/BUGS.md B21) ─────────────
+
+        /// <summary>One pilot's value for one stat; <see cref="Has"/> false when that pilot never reported it.</summary>
+        public readonly struct PilotValue
+        {
+            public readonly string Name;
+            public readonly bool Has;
+            public readonly float Value;
+
+            public PilotValue(string name, bool has, float value)
+            {
+                Name = name;
+                Has = has;
+                Value = value;
+            }
+        }
+
+        /// <summary>"Yash 12 · Garrett 39": each pilot in order, a dash for one with no value for this stat.</summary>
+        public static string FormatPerPilot(VesselStatEventSO stat, IReadOnlyList<PilotValue> pilots)
+        {
+            var parts = new List<string>(pilots.Count);
+            foreach (var p in pilots)
+                parts.Add($"{(string.IsNullOrEmpty(p.Name) ? "?" : p.Name)} {(p.Has ? stat.Format(p.Value) : "-")}");
+            return string.Join("  ·  ", parts);
+        }
+
+        /// <summary>The human pilots' stats, this machine's pilot first. AI fly no telemetry.</summary>
+        List<RoundStats> HumanPilots()
+        {
+            var list = new List<RoundStats>();
+            if (gameData?.Players == null) return list;
+            var local = gameData.LocalPlayer?.RoundStats as RoundStats;
+            if (local) list.Add(local);
+            foreach (var player in gameData.Players)
+            {
+                if (player == null || player.IsInitializedAsAI) continue;
+                if (player.RoundStats is RoundStats rs && rs && !list.Contains(rs)) list.Add(rs);
+            }
+            return list;
+        }
+
+        readonly List<RoundStats> _watched = new();
+
+        /// <summary>Listens to the pilots on the board, so a value landing after it was drawn redraws it.</summary>
+        void WatchPilots(List<RoundStats> pilots)
+        {
+            foreach (var rs in _watched)
+                if (rs) rs.OnVesselStatsChanged -= OnPilotStatsChanged;
+            _watched.Clear();
+            if (pilots == null) return;
+            foreach (var rs in pilots)
+            {
+                rs.OnVesselStatsChanged += OnPilotStatsChanged;
+                _watched.Add(rs);
+            }
+        }
+
+        void OnPilotStatsChanged(RoundStats _) => RaiseChanged();
     }
 }

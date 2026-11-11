@@ -232,6 +232,8 @@ namespace CosmicShore.UI
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
+            else
+                statsProvider.Changed += OnStatsChanged;
 
             ResolveGameController();
             if (wireButtonsInCode) WireButtons();
@@ -578,6 +580,13 @@ namespace CosmicShore.UI
         {
             s_boards.Remove(this);
             _entranceSeq?.Kill();
+            if (statsProvider) statsProvider.Changed -= OnStatsChanged;
+        }
+
+        // Another pilot's last numbers can land a moment after the board was drawn (B21): redraw the stat block only.
+        void OnStatsChanged()
+        {
+            if (scoreboardPanel && scoreboardPanel.gameObject.activeInHierarchy) PopulateDynamicStats();
         }
 
         /// <summary>

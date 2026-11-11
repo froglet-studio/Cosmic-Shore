@@ -351,8 +351,8 @@ def self_test():
         bad.append(f"Skim Race's Squirrel is measured by the skim learner {modes['SkimRace']}")
     if not modes["Regatta"]["hold"]:
         bad.append("Regatta is on hold: the AIs train in their own minigames (Yash, 2026-10-27)")
-    if modes["Warpline"]["hold"] or modes["Warpline"]["learners"] != ["drives"]:
-        bad.append(f"Warpline's Stoat is learned since 2026-10-26 {modes['Warpline']}")
+    if modes["Warpline"]["hold"] or "Stoat" not in modes["Warpline"]["report"] or modes["Warpline"]["learners"]:
+        bad.append(f"Warpline's Stoat is reported only while its ability is being made (Yash, 2026-11-10) {modes['Warpline']}")
     if modes["Bloomrush"]["learners"] != ["drives"]:
         bad.append("the Manta's Soar is learned in any mode")
     if "Grizzly" not in modes["GrizzlyCharge"]["report"] or "Wrasse" not in modes["WrasseRun"]["report"]:
@@ -365,8 +365,10 @@ def self_test():
     learned, waiting = settle(new, {"Breakwater"})
     if any("flight_Regatta_" in p for p in learned) or not any("flight_Regatta_" in p for p in waiting):
         bad.append("a Regatta flight (a mode on hold) waits, it is not learned")
-    if not any("Warpline" in p for p in learned):
-        bad.append("Warpline's Stoat flights are learned now that its hold is lifted")
+    if not any("Bloomrush" in p for p in learned):
+        bad.append("a covered mode's flights (the Manta in Bloomrush) are learned")
+    if any("Warpline" in p for p in learned) or not any("Warpline" in p for p in waiting):
+        bad.append("Warpline's Stoat waits, reported only while its ability is made (Yash, 2026-11-10)")
     if any("Ghost" in p for p in learned) or not any("Ghost" in p for p in waiting):
         bad.append("a flight no learner covers waits, it is not learned")
     if any("Breakwater" in p for p in learned | set(waiting)):

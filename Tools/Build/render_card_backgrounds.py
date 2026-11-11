@@ -101,6 +101,8 @@ SOURCES = [
     f"{_MG}/SpawnableKelpwood.cs",
     f"{_MG}/SpawnableCorona.cs",
     f"{_MG}/SpawnableHarvest.cs",
+    f"{_MG}/ShatterplanePlates.cs",
+    f"{_MG}/SpawnableShatterplane.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
     f"{_MG}/SpawnableSkein.cs",
     f"{_MG}/SpawnableRegattaRails.cs",
@@ -799,6 +801,9 @@ CAMERAS = {
     # sheaf's stalks, its red-hot ball in the core and the blast going off there (the act that scores most) - sits
     # in the middle of it.
     "Harvest": (40, 18, 0.7, 46),
+    # Shatterplane: from beside the I2 Gallery, so the plates read as thin round sheets at mixed angles and the square
+    # ring blast (the spike that scores) lies flat in the plate nearest the camera.
+    "Shatterplane": (75, -12, 0.78, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -1432,6 +1437,36 @@ def accents(s, layers, stage, cam, pal, R, card_path):
         glow(jade, 9, JADE, 1.0, 0.45)
         glow(ruby, 14, JADE, 1.2, 0.5)
         glow(ruby, 6, RUBY, 1.0, 0.6)
+    elif s == "Shatterplane":
+        # A SQUARE RING: the crystals float on the plates' axes (shatterplane_budget's sites at this rung), and on the
+        # plate nearest the centre a Jade Brittle Star, lined up on the axis, has thrown its ring square: the blast lies
+        # IN the plate, its five-fold front sweeping out across it - the one act that takes a whole plate.
+        import shatterplane_budget as sb
+        rung = sb.RUNGS[INTENSITY - 1]
+        structs, _ = sb.layout(rung)
+        for site in sb.crystal_sites(structs, rung, rung["crystalCount"]):
+            crystal(site, 10.0)
+        # The plate the camera sees most nearly face-on, among the inner half: the blast must read as lying IN it.
+        az, el = math.radians(cam["azimuth"]), math.radians(cam["elevation"])
+        view = [math.cos(el) * math.sin(az), math.sin(el), math.cos(el) * math.cos(az)]
+        def framing(st):
+            off = v_sub([float(x) for x in st["c"]], centre)
+            across = v_sub(off, v_mul(view, v_dot(off, view)))   # how far off the frame's centre line
+            return abs(v_dot([float(x) for x in st["n"]], view)) - math.sqrt(v_dot(across, across)) / span
+        plate = max(structs, key=framing)
+        front = float(sb.half_depth(rung))
+        pc = [float(x) for x in plate["c"]]
+        pn = [float(x) for x in plate["n"]]
+        face = v_add(pc, v_mul(pn, front))
+        pr = (rung["plateRadius"] + 0.5) * sb.TILE
+        sig = domain_signal(pal, JADE, 1.3)
+        for k, frac in enumerate((0.95, 0.62)):
+            layers.append({"kind": "ring", "c": face, "n": pn, "R": pr * frac, "r": pr * 0.016 * (1.3 - 0.4 * k),
+                           "domain": JADE, "tier": SUPER, "emissive": sig, "unbound": True})
+        glow(face, pr * 0.5, JADE, 0.9, 0.2)
+        pilot = v_add(face, v_mul(pn, 170))
+        glow(pilot, 9, JADE, 1.2, 0.6)
+        streak(v_add(face, v_mul(pn, 80)), pn, 70, JADE)
     elif s == "Kelpwood":
         # A LOCK through the kelp: the eraser's thin beam from an Angler onto a rival pilot, and the hunter it sent - a
         # creature in the hunter's colour - on the rival's hull, biting (a glow in the hunter's colour). The omni

@@ -49,6 +49,12 @@ MonoBehaviour:
   jackstrawStrikeTarget: 3
   kelpwoodBiteTarget: 12
   coronaBloomTarget: 15
+  shatterplanePrismTarget: 1600
+  shatterplanePrismTargetByIntensity:
+  - 1600
+  - 1600
+  - 2000
+  - 1000
   harvestPrismTarget: 750
   tapestryRoundSeconds: 90
   siroccoPrismTarget: 400
@@ -62,7 +68,7 @@ MonoBehaviour:
   breakwaterLaps: 2
   skeinRingTarget: 24
   headlongGateTarget: 40
-  redlineGateTarget: 40
+  redlineGateTarget: 64
   grizzlyTimeGateTarget: 16
   slingshotGateTarget: 16
   warplineGateTarget: 10
@@ -117,6 +123,12 @@ MonoBehaviour:
   jackstrawStrikeTargetBuild: 3
   kelpwoodBiteTargetBuild: 12
   coronaBloomTargetBuild: 15
+  shatterplanePrismTargetBuild: 1600
+  shatterplanePrismTargetByIntensityBuild:
+  - 1600
+  - 1600
+  - 2000
+  - 1000
   harvestPrismTargetBuild: 750
   tapestryRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
@@ -130,7 +142,7 @@ MonoBehaviour:
   breakwaterLapsBuild: 2
   skeinRingTargetBuild: 24
   headlongGateTargetBuild: 40
-  redlineGateTargetBuild: 40
+  redlineGateTargetBuild: 64
   grizzlyTimeGateTargetBuild: 16
   slingshotGateTargetBuild: 16
   warplineGateTargetBuild: 10

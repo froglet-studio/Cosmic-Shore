@@ -50,3 +50,4 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: 'Six Sentinels'
     UpgradeDescription: 'The pool is 6 sentinels.'
+  omniAbilityLabel: Fulmen

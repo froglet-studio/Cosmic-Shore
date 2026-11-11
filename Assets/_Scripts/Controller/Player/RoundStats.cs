@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using Unity.Netcode;
 using Unity.Collections;
@@ -301,6 +302,8 @@ namespace CosmicShore.Data
             OnButton1AbilityActiveTimeChanged = null;
             OnButton2AbilityActiveTimeChanged = null;
             OnButton3AbilityActiveTimeChanged = null;
+
+            OnVesselStatsChanged = null;
         }
 
         //–––––––––––––––––––––––––––––––––––––––––
@@ -1202,10 +1205,124 @@ namespace CosmicShore.Data
                 _button3AbilityActiveTimeLocal = v;
                 RaiseSpecific(OnButton3AbilityActiveTimeChanged);
             };
+
+            SyncVesselStatsFromNetwork();
+            n_VesselStats.OnListChanged += OnVesselStatsListChanged;
         }
 
         public override void OnNetworkDespawn()
         {
+            n_VesselStats.OnListChanged -= OnVesselStatsListChanged;
+        }
+
+        //–––––––––––––––––––––––––––––––––––––––––
+        // VESSEL STATS (Docs/ScoringSystem/BUGS.md B21)
+        //
+        // The scoreboard's stat block - Longest Drift, Max Boost, Prisms Damaged and the hull extras - comes from
+        // VesselTelemetry, which only the pilot's own machine can count. Each value is keyed by its
+        // VesselStatEventSO's asset name. The owner reports it (a ServerRpc from a client), the server writes it
+        // here, and every peer reads every pilot's values, so all scoreboards agree.
+        //–––––––––––––––––––––––––––––––––––––––––
+
+        /// <summary>One telemetry value: the stat asset's name and the pilot's latest value.</summary>
+        public struct VesselStatValue : INetworkSerializable, IEquatable<VesselStatValue>
+        {
+            public FixedString64Bytes Name;
+            public float Value;
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref Name);
+                serializer.SerializeValue(ref Value);
+            }
+
+            public bool Equals(VesselStatValue other) => Name.Equals(other.Name) && Value.Equals(other.Value);
+            public override bool Equals(object obj) => obj is VesselStatValue other && Equals(other);
+            public override int GetHashCode() => HashCode.Combine(Name, Value);
+        }
+
+        /// <summary>Longest name a value can carry (<see cref="FixedString64Bytes"/>, UTF-8 bytes).</summary>
+        public const int MaxVesselStatNameBytes = 61;
+
+        // Constructed in Awake, not at the field: Netcode allocates a NetworkList natively and wants it made per instance.
+        NetworkList<VesselStatValue> n_VesselStats;
+        readonly Dictionary<string, float> _vesselStatsLocal = new();
+
+        /// <summary>A pilot's vessel stats changed (reported here, or replicated from the server).</summary>
+        public event Action<RoundStats> OnVesselStatsChanged;
+
+        void Awake()
+        {
+            n_VesselStats = new NetworkList<VesselStatValue>(null,
+                NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        }
+
+        /// <summary>The pilot's latest value for the stat asset named <paramref name="statName"/>.</summary>
+        public bool TryGetVesselStat(string statName, out float value) => _vesselStatsLocal.TryGetValue(statName, out value);
+
+        /// <summary>
+        /// Records the pilot's latest value. Called on the pilot's own machine: kept here at once (so their own
+        /// scoreboard never waits on the network) and, in a networked match, written by the server for everyone.
+        /// </summary>
+        public void ReportVesselStat(string statName, float value)
+        {
+            if (string.IsNullOrEmpty(statName) || System.Text.Encoding.UTF8.GetByteCount(statName) > MaxVesselStatNameBytes)
+                return;
+
+            _vesselStatsLocal[statName] = value;
+            OnVesselStatsChanged?.Invoke(this);
+
+            if (!IsSpawned) return;
+            if (IsServer) WriteVesselStat(statName, value);
+            else if (IsOwner) ReportVesselStat_ServerRpc(new FixedString64Bytes(statName), value);
+        }
+
+        [ServerRpc]
+        void ReportVesselStat_ServerRpc(FixedString64Bytes statName, float value)
+        {
+            var name = statName.ToString();
+            _vesselStatsLocal[name] = value;
+            WriteVesselStat(name, value);
+        }
+
+        void WriteVesselStat(string statName, float value)
+        {
+            var key = new FixedString64Bytes(statName);
+            for (int i = 0; i < n_VesselStats.Count; i++)
+            {
+                if (!n_VesselStats[i].Name.Equals(key)) continue;
+                if (!n_VesselStats[i].Value.Equals(value))
+                    n_VesselStats[i] = new VesselStatValue { Name = key, Value = value };
+                return;
+            }
+            n_VesselStats.Add(new VesselStatValue { Name = key, Value = value });
+        }
+
+        /// <summary>A new game: no pilot has flown it yet. Every peer clears its copy; the server clears the list.</summary>
+        public void ClearVesselStats()
+        {
+            _vesselStatsLocal.Clear();
+            if (IsSpawned && IsServer) n_VesselStats.Clear();
+            OnVesselStatsChanged?.Invoke(this);
+        }
+
+        void OnVesselStatsListChanged(NetworkListEvent<VesselStatValue> _)
+        {
+            SyncVesselStatsFromNetwork();
+            OnVesselStatsChanged?.Invoke(this);
+        }
+
+        void SyncVesselStatsFromNetwork()
+        {
+            // The server's list is the truth for everyone but the pilot's own latest reports, which may be ahead of it.
+            if (IsServer) return;
+            if (!IsOwner) _vesselStatsLocal.Clear();   // a cleared or shrunk list clears here too
+            foreach (var entry in n_VesselStats)
+            {
+                var name = entry.Name.ToString();
+                if (IsOwner && _vesselStatsLocal.ContainsKey(name)) continue;
+                _vesselStatsLocal[name] = entry.Value;
+            }
         }
     }
 }

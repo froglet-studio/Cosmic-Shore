@@ -577,6 +577,11 @@ namespace CosmicShore.UI
                     // there still a LOT of it" does, and on the 2,160-unit open rungs it is far
                     // from obvious. Densest hostile mass, the query Cleave's AI raids with.
                     return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Cleave");
+                case GameModes.Shatterplane:
+                    // Densest standing hostile mass again: the plates are the only breakable mass in the cell, so the
+                    // arrow names the nearest big plate still standing. Not a crystal: a crystal is a spare ring, and
+                    // it already floats on a plate's axis in front of it.
+                    return CreateProviderComponent<HostileMassObjectiveProvider>("ObjectiveProvider_Shatterplane");
                 case GameModes.Sirocco:
                     // Same provider, same reason: the forest rings the cell, so the arrow names
                     // the densest standing hostile stand - the point Sirocco's AI erosion runs
@@ -765,6 +770,16 @@ namespace CosmicShore.UI
                 LoadInsights.CompleteLoad("Loaded — arena complete (laid + grown), connecting screen done");
                 Show();
 
+                // A pilot who rejoined a running match (MatchRejoin, section 103) joined the turn while the panel was up:
+                // no intro and no Ready - nobody else will press Ready again, so it would wait for good. Straight into
+                // the race; OnMiniGameTurnStarted has already set up the score and the cards.
+                if (gameData != null && gameData.IsTurnRunning)
+                {
+                    ShowLocalVesselHUD();
+                    UpdateScoreUI();
+                    return;
+                }
+
                 // Play pre-game cinematic if available
                 if (enablePreGameCinematic && preGameCinematic != null)
                 {
@@ -794,6 +809,9 @@ namespace CosmicShore.UI
                 }
 
                 _readyButtonUnlocked = true;
+                // The turn can have been joined while the intro played (a rejoin whose roster raised ClientReady
+                // before the seat claim did): no Ready for a running turn.
+                if (gameData != null && gameData.IsTurnRunning) return;
                 ToggleReadyButton(true);
             }
             catch (OperationCanceledException)
@@ -815,6 +833,7 @@ namespace CosmicShore.UI
         private void PrepareIntro()
         {
             if (!enablePreGameCinematic || preGameCinematic == null) return;
+            if (gameData != null && gameData.IsTurnRunning) return;   // a rejoiner joins a running turn: no intro
             Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
             if (playerTarget == null) return;
             preGameCinematic.Prepare(cinematicLookAtCenter, playerTarget, gameData.GameMode, gameData.Vessels,

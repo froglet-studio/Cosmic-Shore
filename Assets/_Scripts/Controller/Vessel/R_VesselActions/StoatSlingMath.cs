@@ -349,6 +349,70 @@ namespace CosmicShore.Gameplay
         public static Vector3 Midpoint(Vector3 hullPosition, Vector3 hullForward, float horizonRadius, float aheadHorizons)
             => hullPosition + hullForward * (Mathf.Max(0f, horizonRadius) * Mathf.Max(0f, aheadHorizons));
 
+        // ------------------------------------------------------------------ Time mode: the swing (STOAT_DIPOLE.md §1b)
+
+        /// <summary>Where the swing's black hole is laid: <paramref name="ahead"/> along the nose and <paramref name="side"/> to
+        /// the pressed side (RT right, LT left), so flying on you pass beside it on that side.</summary>
+        public static Vector3 SwingHole(Vector3 position, Vector3 forward, Vector3 right, bool pressedRight, float ahead, float side)
+        {
+            var f = forward.sqrMagnitude > 1e-8f ? forward.normalized : Vector3.forward;
+            var r = right.sqrMagnitude > 1e-8f ? right.normalized : Vector3.right;
+            return position + f * Mathf.Max(0f, ahead) + r * ((pressedRight ? 1f : -1f) * Mathf.Max(0f, side));
+        }
+
+        /// <summary>The swing starts: within <paramref name="reach"/> of the hole, with the hole at least
+        /// <paramref name="catchDegrees"/> off the nose (passing beside it, not flying into it).</summary>
+        public static bool SwingStarts(Vector3 hull, Vector3 forward, Vector3 hole, float reach, float catchDegrees)
+        {
+            var toHole = hole - hull;
+            return toHole.sqrMagnitude <= reach * reach && Vector3.Angle(forward, toHole) >= catchDegrees;
+        }
+
+        /// <summary>The swing's turn axis, fixed at its start: turning the nose about it by a positive angle turns it toward the
+        /// hole (the plane of the nose and the hole). Dead ahead or behind, the hull's up.</summary>
+        public static Vector3 SwingAxis(Vector3 forward, Vector3 toHole, Vector3 fallbackUp)
+        {
+            var axis = Vector3.Cross(forward, toHole);
+            if (axis.sqrMagnitude < 1e-8f) axis = fallbackUp;
+            return axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.up;
+        }
+
+        /// <summary>
+        /// The angle a swing turns the hull, read from the stick: the stick's share toward the hole (the stick
+        /// <paramref name="stickX"/> right / <paramref name="stickY"/> up against the hole's direction in the hull's frame,
+        /// <paramref name="holeX"/> / <paramref name="holeY"/>) maps <paramref name="minDegrees"/> (away) .. the middle (at rest)
+        /// .. <paramref name="maxDegrees"/> (toward). Read every frame, so moving the stick moves the exit.
+        /// </summary>
+        public static float SwingTurnDegrees(float stickX, float stickY, float holeX, float holeY, float minDegrees, float maxDegrees)
+        {
+            var hole = new Vector2(holeX, holeY);
+            float toward = hole.sqrMagnitude > 1e-8f ? Vector2.Dot(new Vector2(stickX, stickY), hole.normalized) : 0f;
+            return Mathf.Lerp(minDegrees, maxDegrees, 0.5f + 0.5f * Mathf.Clamp(toward, -1f, 1f));
+        }
+
+        /// <summary>How fast a swing turns the hull, degrees a second: its speed over its distance from the hole (ω = v / d, as a
+        /// circle round the hole), never faster than <paramref name="maxDegreesPerSecond"/>.</summary>
+        public static float SwingRate(float speed, float distance, float maxDegreesPerSecond) =>
+            Mathf.Min(Mathf.Max(0f, speed) / Mathf.Max(1f, distance) * Mathf.Rad2Deg, Mathf.Max(0f, maxDegreesPerSecond));
+
+        /// <summary>The heading a swing throws the hull on: its <paramref name="entry"/> heading turned
+        /// <paramref name="degrees"/> about <paramref name="axis"/> (the dotted exit line).</summary>
+        public static Vector3 SwingExit(Vector3 entry, Vector3 axis, float degrees) =>
+            (Quaternion.AngleAxis(degrees, axis.sqrMagnitude > 1e-8f ? axis.normalized : Vector3.up) * entry).normalized;
+
+        /// <summary>The autopilot lets the swing throw it once it has turned at least <paramref name="minDegrees"/> and either faces
+        /// its target (within <paramref name="faceDegrees"/>) or has its target no longer on the swing's side
+        /// (<paramref name="targetOnTurnSide"/> false: turning on would turn it away - a press for the warp alone), or once it has
+        /// turned <paramref name="maxDegrees"/>.</summary>
+        public static bool SwingAiLetsGo(float turnedDegrees, float offTargetDegrees, float minDegrees, float maxDegrees, float faceDegrees,
+            bool targetOnTurnSide) =>
+            turnedDegrees >= maxDegrees || (turnedDegrees >= minDegrees && (offTargetDegrees <= faceDegrees || !targetOnTurnSide));
+
+        /// <summary>The target is on the swing's side of the nose: turning on about <paramref name="axis"/> brings the nose toward
+        /// it.</summary>
+        public static bool OnSwingSide(Vector3 forward, Vector3 toTarget, Vector3 axis) =>
+            Vector3.Dot(Vector3.Cross(forward, toTarget), axis) > 0f;
+
         // ------------------------------------------------------------------ Time mode: the trampoline (STOAT_DIPOLE.md §1b)
 
         /// <summary>
@@ -390,8 +454,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The graze that gives a bounce of <paramref name="turnDegrees"/>, as a share of the radius off the centre:
-        /// 1 − turn / <paramref name="turnScale"/>, within 0.3..0.92 (deeper turns more; the shipped shell at 150 u/s turns a
-        /// 0.5 graze about 83°, 0.7 about 53°, 0.9 about 19°, head-on 180°: <c>stoat_orbit_sim.py</c>).</summary>
+        /// 1 − turn / <paramref name="turnScale"/>, within 0.3..0.92 (deeper turns more; the shipped 30 u shell at 150 u/s turns
+        /// a 0.5 graze about 49°, 0.75 about 23°, 0.9 about 8°, head-on 180°: <c>stoat_orbit_sim.py</c>).</summary>
         public static float TrampolineLineFor(float turnDegrees, float turnScale) =>
             Mathf.Clamp(1f - Mathf.Max(0f, turnDegrees) / Mathf.Max(1f, turnScale), 0.3f, 0.92f);
 
@@ -399,18 +463,28 @@ namespace CosmicShore.Gameplay
         /// <paramref name="softSeconds"/>.</summary>
         public static float TrampolineStiffness(float softSeconds) => Mathf.Pow(Mathf.PI / Mathf.Max(0.05f, softSeconds), 2f);
 
+        /// <summary>The shell's hard core, as a share of its radius from the centre out: a hull still moving in when it reaches
+        /// it is thrown straight back out, so a fast head-on hull never passes through (on the 30 u shell the spring alone let
+        /// a 190 u/s hull through the centre).</summary>
+        public const float TrampolineCoreShare = 0.2f;
+
         /// <summary>
         /// One step inside the soft shell: the spring pushes <paramref name="velocity"/> out along the shell's normal by
         /// stiffness × depth × <paramref name="dt"/>. The velocity is carried from the touch through the bounce, so a hull
         /// flying straight in is slowed, stopped and sent back out (a head-on bounce); the hull flies its direction at its own
-        /// engine's speed. Outside the shell, <paramref name="velocity"/> unchanged.
+        /// engine's speed. At the hard core (<see cref="TrampolineCoreShare"/> of the radius from the centre) the inward part
+        /// is reflected. Outside the shell, <paramref name="velocity"/> unchanged.
         /// </summary>
         public static Vector3 TrampolineStep(Vector3 velocity, Vector3 radial, float radius, float softSeconds, float dt)
         {
             float d = radial.magnitude;
             float depth = radius - d;
             if (depth <= 0f || d < 1e-6f) return velocity;
-            return velocity + radial / d * (TrampolineStiffness(softSeconds) * depth * Mathf.Max(0f, dt));
+            var normal = radial / d;
+            velocity += normal * (TrampolineStiffness(softSeconds) * depth * Mathf.Max(0f, dt));
+            float inward = Vector3.Dot(velocity, normal);
+            if (d <= TrampolineCoreShare * radius && inward < 0f) velocity -= 2f * inward * normal;
+            return velocity;
         }
 
         /// <summary>The hull TOUCHES the shell: inside its radius and moving in (a hull already moving out passes free).</summary>

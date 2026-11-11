@@ -30,7 +30,15 @@ namespace CosmicShore.Tests
         public void TearDown()
         {
             if (_go) Object.DestroyImmediate(_go);
-            PartyInviteController.IsPlaying = () => Application.isPlaying;
+            PartyInviteController.IsPlaying = PartyInviteController.UnityIsPlaying;
+        }
+
+        [Test]
+        public void UnityFlag_IsOff_InEditMode()
+        {
+            // Edit-mode tests run with no Play and no Play pending: the real flag must say "not playing", so a
+            // flow resumed by UniTask's editor loop after Stop stops instead of loading Menu_Main (E-0de9ec6c70).
+            Assert.IsFalse(PartyInviteController.UnityIsPlaying(), "edit mode reads as not playing");
         }
 
         static bool PlayEnded(PartyInviteController c)
