@@ -2,21 +2,26 @@
 
     python3 -m agenome.labscore out.json --genome g.json ... [--front name=pareto.json] --windows 4 --hop 6
 
-Lower is better. 1.0 = Amoebius footage from a held-out source (4 s windows of reels 3 and 5) against a reference
-fitted on reels 1, 2 and 4, the judge's protocol; a typical phenotype reads about 9. Five axes (spec, crit, mech,
-bove, dist), each calibrated to 0 = new-source real and 1 = a typical phenotype, combined by a p=2 power mean
-(fitness_lab/scorer/MERGE.md). The judge keeps its meaning; this score is reported as `lab` and `lab_windows`, with
-the per-axis `lab_parts` (mean over windows) so one axis riding near 0 while the others stay high shows up.
+Lower is better. 1.0 = the MEAN over Amoebius footage from a held-out source (the 24 4 s windows of reels 3 and 5,
+hop 2 s; the median window reads 0.12 and 20 of the 24 read below 1.0) against a reference fitted on reels 1, 2 and
+4, the judge's protocol; a typical phenotype reads about 9. Five axes (spec, crit, mech, bove, dist), each calibrated
+to 0 = new-source real and 1 = a typical phenotype, combined by a p=2 power mean (fitness_lab/scorer/MERGE.md). The
+judge keeps its meaning; this score is reported as `lab` and `lab_windows`, with the per-axis `lab_parts` (mean over
+windows) so one axis riding near 0 while the others stay high shows up. `lab_parts` are in held-out-real units (1.0 =
+that axis's mean over the 24 held-out windows): multiply each by the scorer's `parts_level` to get the
+0-to-typical-phenotype units above before comparing one axis with another.
 
 Below about 1.0 the total no longer shows whether the game's elements are there: real footage with its bright and
-non-blue elements inpainted away (the blue prism walls stay) reads below 1.0 in 16 of 24 held-out windows, and a
-genome with almost none of them reads 0.29 (CONTRACT.md (37)). So each row also splits every window's lab into its
-element axes (`lab_elements`: bove and dist, the patch and spatial-token axes built to see prisms, beams and rings)
-and the other three (`lab_other`: spec, crit, mech), each the lab computed with the other group at 0, so that
-lab^2 = elements^2 + other^2 window by window (p = 2), then averaged over windows like `lab`. Reference
-`lab_elements`, means over the 24 held-out windows (fitness/checks/labA_best_1111/strip_lab.json): real 0.09 (median
-0.01, single windows up to 0.47), bright and non-blue elements inpainted away 0.17, the walls inpainted too 0.49.
-It can show that a genome is short of real footage; it cannot prove the elements are there.
+non-blue elements inpainted away (the blue prism walls stay but for their brightest facets) reads below 1.0 in 16 of
+24 held-out windows, and a genome with none of the game's walls, vessels or crystals reads 0.29 (CONTRACT.md (37)).
+So each row also splits every window's lab into its element axes (`lab_elements`: bove and dist, the patch and
+spatial-token axes built to see prisms, beams and rings; spec also has an element-shortfall term, but it reads 0 on
+every genome measured on the contract's windows) and the other three (`lab_other`: spec, crit, mech), each the lab
+computed with the other group at 0, so that lab^2 = elements^2 + other^2 window by window (p = 2), then averaged over
+windows like `lab`. Reference `lab_elements`, means over the 24 held-out windows
+(fitness/checks/labA_best_1111/strip_lab.json): real 0.09 (median 0.01, single windows up to 0.47), bright and
+non-blue elements inpainted away 0.17, the walls inpainted too 0.49. It can show that a genome is short of real
+footage; it cannot prove the elements are there.
 
 The scorer lives in the fitness lab's folder (AGENOME_LAB, default the shared scorer/); it needs the judge's Keras
 stack plus cloudpickle, opencv-python-headless, scikit-image, PyWavelets and scikit-learn, and costs about 1.5 s
@@ -43,7 +48,8 @@ def scorer():
     return _S[0]
 
 
-ELEMENTS = ("bove", "dist")  # the axes that see the game's elements; the rest see sky, sharpness and motion
+ELEMENTS = ("bove", "dist")  # the axes built to see the game's elements; spec, crit and mech see mostly sky, sharpness
+# and motion (spec also has an element-shortfall term)
 
 
 def _score(frames_list, parts):

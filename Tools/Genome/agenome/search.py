@@ -1424,7 +1424,8 @@ def main(argv=None):
                          "have not seen and fold them in (0 = never)")
     ap.add_argument("--audit-offsets", default="24,28",
                     help="window starts (s) never used for selection on which each generation's best is judged and "
-                         "logged as best_audit (comma list; 'none' = off). Keep warmup + offset under 60 s")
+                         "logged as best_audit (comma list; 'none' = off). Any start renders at its real time "
+                         "(render.py caps the warmup alone at 60 s)")
     ap.add_argument("--stat-w", type=float, default=1.0, help="weight of the fixed statistics in dist")
     ap.add_argument("--lab-w", type=float, default=0.0,
                     help="weight of the fitness lab's element-aware scorer (agenome.labscore; 1.0 = Amoebius' held-out "
