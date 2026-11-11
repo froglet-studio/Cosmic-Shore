@@ -1,5 +1,5 @@
 import sys,os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+sys.path.insert(0, __import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), '..'))
 os.environ.setdefault("KERAS_BACKEND","jax")
 import colorsys, math, numpy as np
 from agenome.genome import Genome
@@ -32,7 +32,7 @@ def build(linear=True, post=None):
     cam=g.addv("cam.tunnel",g.addv("cam.attach",None,agent=0,dist=17,height=0,fov=90),lo=70,hi=280,fovdrop=25,panini=0.7,pdrop=0.5)
     pp=dict(exposure=1.0,thresh=0.7,bloom=0.35,bloomrad=2.0,fh=0.68,fs=0.8,fv=0.03,fog=0.00001,vignette=0.0,sat=1.0,contrast=1.0,feedback=0.0,grain=0.0,aberr=0.0)
     pp.update(post if isinstance(post,dict) else {})
-    p=g.add("post.grade",**N("post.grade",**pp)) if post!="urp" else g.addv("post.urp",thresh=0.2,intensity=2.5,scatter=0.68,exposure=1.0)
+    p=g.add("post.grade",**N("post.grade",**pp)) if post!="urp" else g.addv("post.urp",thresh=0.2,intensity=2.5,scatter=0.7,exposure=1.0)
     g.add("out",None,None,cam,p,s,None,**N("out",sky=1.0,steps=16,far=4000,ltheta=0.9,lphi=0.7,ambient=0.3,lh=0.6,ls=0.15,lv=1.0,warmup=0))
     return g
 if __name__=="__main__":

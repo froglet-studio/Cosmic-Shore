@@ -88,8 +88,8 @@ def slots(g):
 _G = {}
 
 
-def _init(gj, target, secs):
-    _G["g"], _G["t"], _G["secs"] = Genome.from_json(gj), target, secs
+def _init(gj, target, secs, seeds=(0, 1)):
+    _G["g"], _G["t"], _G["secs"], _G["seeds"] = Genome.from_json(gj), target, secs, tuple(seeds)
 
 
 def _apply(g, sl, x):
@@ -102,7 +102,7 @@ def _apply(g, sl, x):
 def _eval(x):
     g = _G["g"]
     try:
-        return loss(sim_stats(_apply(g, slots(g), x), _G["secs"]), _G["t"])
+        return loss(sim_stats(_apply(g, slots(g), x), _G["secs"], seeds=_G["seeds"]), _G["t"])
     except Exception:
         return 99.0
 
@@ -117,6 +117,7 @@ def main(argv=None):
     ap.add_argument("--lam", type=int, default=16)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--sigma", type=float, default=20.0)
+    ap.add_argument("--seeds", type=int, default=6, help="simulations per evaluation: the races are chaotic, two seeds fitted their own crashes")
     a = ap.parse_args(argv)
     g = Genome.load(a.genome)
     target, sd, rows = real_stats(a.sessions)
@@ -128,7 +129,7 @@ def main(argv=None):
     print("before", dict(zip(NAMES, base.round(2))), "loss", round(loss(base, target), 4), flush=True)
     es = SepCMA(x0, a.sigma, lam=a.lam, seed=1)
     best, bx = loss(base, target), x0
-    with mp.Pool(a.workers, initializer=_init, initargs=(g.to_json(), target, secs)) as pool:
+    with mp.Pool(a.workers, initializer=_init, initargs=(g.to_json(), target, secs, tuple(range(a.seeds)))) as pool:
         for gen in range(a.gens):
             X = es.ask()
             f = pool.map(_eval, [x for x in X])
@@ -138,8 +139,8 @@ def main(argv=None):
                 best, bx = f[k], X[k].copy()
             print(gen, "gen best", round(min(f), 4), "best", round(best, 4), "sigma", round(es.sigma, 1), flush=True)
     gb = _apply(g, sl, bx)
-    after = sim_stats(gb, secs, seeds=(5, 6, 7))
-    b0 = sim_stats(g, secs, seeds=(5, 6, 7))
+    after = sim_stats(gb, secs, seeds=tuple(range(100, 108)))
+    b0 = sim_stats(g, secs, seeds=tuple(range(100, 108)))
     gb.meta["mechfit"] = {"sessions": [os.path.basename(p.rstrip("/")) for p in a.sessions], "loss_before_unseen_seeds": loss(b0, target),
                           "loss_after_unseen_seeds": loss(after, target), "names": NAMES, "real": target.tolist(),
                           "before": b0.tolist(), "after": after.tolist()}

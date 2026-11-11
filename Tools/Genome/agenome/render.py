@@ -191,8 +191,7 @@ void main(){
   float edge = smoothstep(0.78, 0.98, m2);
   vec3 col;
   if(fE < -200.0){ // the game's prism graph: face -> rim by fresnel, the rim sinking to the face with distance
-    float d = dot(n, normalize(uEye - fW)); if(!gl_FrontFacing) d = -d;
-    float x = d > 0.0 ? d : (d + 1.0)*0.2;
+    float x = abs(dot(n, normalize(uEye - fW))); // closed meshes behind a depth test: the visible face looks at the eye
     vec3 bright = mix(fC.rgb, fD, fNear > 1.0 ? 0.9 : fNear*0.9);
     oCol = vec4(mix(fD, bright, pow(1.0 - x, -fE - 200.0)), 1.0); return;
   } else if(fE < -100.0){ // game prism: a dim face in its own hue, a bright fresnel rim (PrismMaterial)

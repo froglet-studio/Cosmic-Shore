@@ -219,7 +219,7 @@ OPS_LIST = [
        "a ring per gate at the mouth radius", "RaceGateRing"),
     Op(0x5D, "ag.crystal", "A", ("A",), (
         P("jitter", "lin", 0, 60, 149), P("radius", "exp", 2, 30, 234), P("inset", "lin", 0, 60, 110),
-        P("lift", "lin", -30, 30, 128), P("emit", "exp", 0.05, 10, 150)),
+        P("lift", "lin", -30, 30, 128), P("emit", "exp", 0.05, 10, 150), P("ring", "exp", 0.5, 6, 71)),
        "one crystal ring per vessel in its colour: collect, +boost, drop a prism ring, jump to the next anchor",
        "CrystalManager, CrystalRaceRing"),
     Op(0x5E, "ag.vessel", "A", ("A",), (

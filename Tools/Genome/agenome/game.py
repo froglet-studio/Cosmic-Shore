@@ -17,7 +17,8 @@ from scipy.spatial import cKDTree
 from scipy.spatial.transform import Rotation
 
 GAME_OPS = ("ag.rail", "ag.gate", "ag.crystal", "ag.vessel", "ag.pilot", "ag.skim", "ag.lay", "ag.shards", "ag.impact")
-RIM = -104.0  # instance edge value: game prism shading (face = dim own hue, fresnel rim power 4)
+RIM = -204.0  # instance edge value: the game's prism graph (face to rim by fresnel power 4, distance spread)
+FACE = 0.072  # a domain's face colour is its rim times this, more saturated (Photic: Jade rim/face, the ribbon's)
 
 
 def _u(v):
@@ -34,8 +35,9 @@ def _inst(pos, R, scale, rgb, emit, edge):
     n = len(pos)
     scale = np.broadcast_to(np.asarray(scale, np.float32), (n, 3))
     rgb = np.broadcast_to(np.asarray(rgb, np.float32), (n, 3))
+    dark = FACE * rgb * rgb / np.maximum(rgb.max(1, keepdims=True), 1e-6) if edge <= -200.0 else np.zeros((n, 3))
     return np.concatenate([pos, R[:, :, 0] * scale[:, 0:1], R[:, :, 1] * scale[:, 1:2], R[:, :, 2] * scale[:, 2:3], rgb,
-                           np.full((n, 1), emit, np.float32), np.full((n, 1), edge, np.float32)], 1).astype(np.float32)
+                           np.full((n, 1), emit, np.float32), np.full((n, 1), edge, np.float32), dark], 1).astype(np.float32)
 
 
 class Course:
@@ -111,7 +113,7 @@ class GameSim:
         self._init_vessels()
         self._init_crystals()
         self._init_shards()
-        self.tr = np.zeros((max_trail, 17), np.float32)
+        self.tr = np.zeros((max_trail, 20), np.float32)
         self.tr_birth = np.full(max_trail, -1e9, np.float32)
         self.tr_n = 0
         self.tr_next = 0
@@ -397,7 +399,8 @@ class GameSim:
         off = (np.cos(a)[:, None] * R[:, 0] + np.sin(a)[:, None] * R[:, 1]) * 8.2
         Rs = np.tile(R[None], (8, 1, 1))
         rgb = self.domain_rgb(self.dom[i]) * 0.6 + 0.5
-        self._push(_inst(self.pos[i] + off, Rs, [1.8, 1.8, 7.5], rgb, 1.0, RIM))
+        k = self.cr["ring"] if "ring" in self.cr else 1.0
+        self._push(_inst(self.pos[i] + off * k, Rs, [1.8 * k, 1.8 * k, 7.5 * k], rgb, 1.0, RIM))
 
     # ------------------------------------------------------------------ draw
     def add_instances(self, lists):

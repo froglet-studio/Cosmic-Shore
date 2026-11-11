@@ -63,7 +63,8 @@ class PrismWorld:
         self.keys = {}
         for l in open(os.path.join(session.path, "prisms_key.jsonl")):
             d = json.loads(l)
-            self.keys[d["frame"]] = np.array(d["prisms"], np.float64).reshape(-1, 13)
+            p = d["prisms"]
+            self.keys[d["frame"]] = np.array(p, np.float64).reshape(-1, len(p[0]) if p else 13)
         self.kf = np.array(sorted(self.keys))
         self.palette = palette or PALETTE0
         self.power = power
@@ -81,7 +82,9 @@ class PrismWorld:
         flags = a[:, 12].astype(int)
         rim = np.array([self.palette.get(d, self.palette[3])[0] for d in dom])
         face = np.array([self.palette.get(d, self.palette[3])[1] for d in dom])
-        sh = ((flags & 3) != 0)[:, None]  # shielded prisms read paler
+        if a.shape[1] >= 25:  # the recorder's per-prism values: bright rgba, dark rgba, spread xyz, material
+            rim, face = a[:, 13:16], a[:, 17:20]
+        sh = ((flags & 3) != 0)[:, None] & (a.shape[1] < 25)  # shielded prisms read paler
         rim = np.where(sh, rim + (1.0 - rim / max(rim.max(), 1e-6)) * self.shield_mix * 0.5, rim)
         rows = np.concatenate([a[:, 1:4], R[:, :, 0] * S[:, 0:1], R[:, :, 1] * S[:, 1:2], R[:, :, 2] * S[:, 2:3], rim,
                                np.zeros((len(a), 1)), np.full((len(a), 1), -(200.0 + self.power)), face], 1)

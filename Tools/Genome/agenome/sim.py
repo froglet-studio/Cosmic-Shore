@@ -325,7 +325,10 @@ class World:
             lists[MESHES[int(c["mesh"])]].append(arr)
         for p in self.games:
             p.sim.add_instances(lists)
-        return {m: (np.concatenate(v, 0).astype(np.float32) if v else None) for m, v in lists.items()}
+        def cat(v):
+            v = [a if a.shape[1] == 20 else np.concatenate([a, np.zeros((len(a), 20 - a.shape[1]), a.dtype)], 1) for a in v]
+            return np.concatenate(v, 0).astype(np.float32)
+        return {m: (cat(v) if v else None) for m, v in lists.items()}
 
     def frame_of(self, k):
         """Position, rotation (columns right, up, forward) and speed of game vessel k, or None."""
