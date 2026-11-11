@@ -741,6 +741,11 @@ def install_hooks(sim, render):
         for m, lst in extra.items():
             if out.get(m) is not None:
                 lst = lst + [out[m]]  # ribbons first: render.py truncates each mesh list at 32768
+            # the core's instances carry 20 columns since the prism graph (a second face colour), these draws 17;
+            # zeros there mean "no second colour", as World.instances and render.py pad them
+            w = max(a.shape[1] for a in lst)
+            lst = [a if a.shape[1] == w else np.concatenate([a, np.zeros((len(a), w - a.shape[1]), a.dtype)], 1)
+                   for a in lst]
             out[m] = np.concatenate(lst, 0).astype(np.float32)
         return out
 
