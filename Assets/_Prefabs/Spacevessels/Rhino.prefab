@@ -13126,6 +13126,6 @@ MonoBehaviour:
     Value: 14
     Min: 14
     Max: 40
-    element: 2
+    element: 3
     UseFloor: 1
     Floor: 10

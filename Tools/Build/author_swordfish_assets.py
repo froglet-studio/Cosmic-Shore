@@ -338,28 +338,30 @@ SWORDFISH_TIME = """  - Element: 4
     UpgradeDescription: 'Above 70% of top speed (588 u/s) danger prisms cannot drain the Swordfish''s elements - the elemental-debuff ward scoped to DangerPrism alone, so an opposing pilot''s blast still lands (VesselElementalImmunity on the root, condition WhileAboveTopSpeedFraction, upgradeGate Time). The Time card lights while the ward is holding.'
 """
 
+# The plough kit as it stands since the 2026-11-12 rework (RHINO_PLOUGH.md): only written when the map still
+# carries the sword (the one-shot split), so the rework is what a re-split produces.
 RHINO_PLOUGH_ENTRIES = """  - Element: 1
-    AbilityLabel: 'Carry'
-    AbilityDescription: 'A thrown prism flies on past where the furrow lands it to strike the next one in its line, and a thrown prism that strikes another destroys both (prism motion). Charge sets how far it still reaches: 0 at rest (it strikes only what is in its way), 40 u at level 10, floored at 0, read at the replicated level so every peer strikes alike (RhinoPloughPrismEffect.carryDistance). A prism that strikes nothing still lands where the furrow puts it.'
+    AbilityLabel: 'Gore'
+    AbilityDescription: 'Ram a rival vessel and its petals come loose: a gore is a scored Strike (8 points, Swordfish sword price) decided on the Rhino''s owner, landed only while the Rhino is moving faster than its victim, once per 1.4 s per victim (VesselCombatHitByGore). Charge multiplies the petals one gore takes: x1 at rest, x3 at level 10, read at the replicated level (RhinoGoreBySkimmerEffect.goreScale). Charge also carries a thrown prism on to strike the next one in its line: 0 u at rest, 40 u at level 10 (RhinoPloughPrismEffect.carryDistance); a thrown prism that strikes another destroys both.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Avalanche'
-    UpgradeDescription: 'A strike carries on: the next prism down the line within the carry is thrown on too, and its own strike can throw the next, up to 3 more (RhinoPloughPrismEffectSO.avalancheUpgradeElement, gated on IsUpgradeActive(Charge); Garrett, 2026-11-07).'
+    UpgradeLabel: 'Gore Steal'
+    UpgradeDescription: 'The petals a gore knocks loose land on the Rhino instead of floating free as crystals (RhinoGoreBySkimmerEffectSO.stealUpgradeElement, gated on IsUpgradeActive(Charge); 2026-11-12, replacing Avalanche).'
   - Element: 2
-    AbilityLabel: 'Blade'
-    AbilityDescription: 'A plough blade across the nose: one hull collider whose width follows Mass - 14 u at rest (a little wider than the hull), 40 u at level 10, floored at 10, read at the replicated level (RhinoPloughBlade.width). A wider blade catches more mass, and the plough throws what it catches clear of the whole blade.'
-    Input: 0
+    AbilityLabel: 'Heft'
+    AbilityDescription: 'A heavier plough throws further: Mass adds 0 u at rest to 60 u at level 10 to every throw, at any speed, on top of the speed-driven throw (speed x 0.12 s, at most 90 u) (RhinoPloughPrismEffect.furrowDistance, replicated level). Pull a trigger for a shove that way; HOLD it and everything the hull ploughs is thrown to that side, across the centreline (RhinoPloughSteerAction: LT left, RT right, the last one pulled wins). Let go and each prism goes to the side it already sat on.'
+    Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 'Berm'
     UpgradeDescription: 'A ploughed prism LANDS SHIELDED, so the furrow banks into walls of armour; a prism that strikes another still breaks (RhinoPloughPrismEffectSO.bermUpgradeElement, gated on IsUpgradeActive(Mass); Garrett, 2026-11-07).'
   - Element: 3
-    AbilityLabel: 'Furrow'
-    AbilityDescription: 'How far aside the plough throws what the hull hits: Space adds 0 u at rest to 60 u at level 10 to every throw, at any speed, on top of the speed-driven throw (speed x 0.12 s, at most 90 u) (RhinoPloughPrismEffect.furrowDistance, replicated level). Pull a trigger for a little shove that way; HOLD it and everything the hull ploughs is thrown to that side, across the centreline (RhinoPloughSteerAction: LT left, RT right, the last one pulled wins). Let go and each prism goes to the side it already sat on.'
-    Input: 1
+    AbilityLabel: 'Blade'
+    AbilityDescription: 'A plough blade across the nose: one hull collider whose width follows Space - 14 u at rest (a little wider than the hull), 40 u at level 10, floored at 10, read at the replicated level (RhinoPloughBlade.width). A wider blade reaches more mass, and the plough throws what it catches clear of the whole blade.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -393,7 +395,7 @@ def rhino_plough_map(rhino_map: str) -> str:
     start = entry_span(rhino_map, 1).start()
     end = entry_span(rhino_map, 3).end()
     t = rhino_map[:start] + RHINO_PLOUGH_ENTRIES.rstrip("\n") + rhino_map[end:]
-    return re.sub(r"(?m)^  omniAbilityLabel: .*$", "  omniAbilityLabel: ", t)
+    return re.sub(r"(?m)^  omniAbilityLabel: .*$", "  omniAbilityLabel: Stampede", t)
 
 
 def class_asset(rhino_class: str) -> str:
@@ -523,13 +525,13 @@ def errors() -> list:
     need(rh.count(f"guid: {STEER_RIGHT_GUID}, type: 2") == 2 and rh.count(f"guid: {STEER_LEFT_GUID}, type: 2") == 2,
          "LT / RT do not steer the plough on both the pad and touch")
     need(f"guid: {guid_of(STEER_EXEC_META)}, type: 3" in rh, "the Rhino has no plough steer executor")
-    need(f"guid: {guid_of(BLADE_META)}, type: 3" in rh, "the Rhino has no plough blade (Mass)")
+    need(f"guid: {guid_of(BLADE_META)}, type: 3" in rh, "the Rhino has no plough blade (Space)")
     need(f"  _nearFieldSkimmer: {{fileID: {NEAR_SKIMMER_ID}}}\n" in rh, "the Rhino lost its near-field skimmer (no crystals)")
     need(f"guid: {RHINO_SKIMMER_CONTAINER_GUID}," in rh and f"guid: {SWORD_SKIMMER_CONTAINER_GUID}," not in rh,
          "the Rhino's skimmer still cuts like the sword")
     need(not dangling_refs(rh), "Rhino.prefab has dangling local references")
     rk = read(RHINO_SKIMMER_CONTAINER)
-    need(f"guid: {SKIMMER_CONTAINER_SCRIPT}" in rk and "Damage" not in rk, "the Rhino's skimmer container is not haptics-only")
+    need(f"guid: {SKIMMER_CONTAINER_SCRIPT}" in rk and "Damage" not in rk, "the Rhino's skimmer container damages prisms like the sword")
     rc = read(RHINO_VESSEL_CONTAINER)
     need(f"guid: {PLOUGH_EFFECT_GUID}" in rc, "the Rhino's hull does not plough")
     need(f"guid: {SURGE_EFFECT_GUID}" not in rc, "the Rhino still has the sword's surge")
@@ -539,7 +541,7 @@ def errors() -> list:
     need(f"  vesselClass: {CLASS_ID}\n" in mp and "AbilityLabel: 'Energize'" in mp and "UpgradeLabel: 'Shield Breaker'" in mp,
          "the Swordfish map is not the sword kit on class 30")
     rm = read(RHINO_MAP)
-    for label in ("'Carry'", "'Avalanche'", "'Blade'", "'Berm'", "'Furrow'", "'Unstoppable'", "'Ramp Spool'", "'Momentum'"):
+    for label in ("'Gore'", "'Gore Steal'", "'Heft'", "'Berm'", "'Blade'", "'Unstoppable'", "'Ramp Spool'", "'Momentum'"):
         need(label in rm, f"the Rhino's map has no {label}")
     need("'Energize'" not in rm and "'Afterimage'" not in rm and "'Blade Reach'" not in rm, "a sword card is on the Rhino's map")
     need(f"  Class: {CLASS_ID}\n" in read(CLASS_ASSET), "SO_Class_Swordfish is not class 30")
