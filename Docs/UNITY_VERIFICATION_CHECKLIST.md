@@ -22919,3 +22919,18 @@ Branch `cece/cool-dijkstra-4puf92`. Design record: `SCARAB.md`, the RECUT note's
    the next one uses the new one.
 4. **Shove a rival at Charge 10 and at Charge 0**: the same petals (about 1.2 per element) come loose either way.
 5. **Undertow**: plays as before, with more plates per minute from a charged Scarab.
+
+## 🔴 Loading screen: the percentage is real (2026-11-12, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/gracious-faraday-h2ny3a`. Record: `Docs/CONNECTING_PANEL.md` section 1, `Docs/MENU_REDESIGN_B.md` section 176.
+Compiled against the Unity reference assemblies (player and editor); the model's 8 tests were run outside Unity on a
+`Mathf` shim and pass. Not run in the editor.
+
+1. **Run `ArenaLoadProgressTests`** (EditMode): 8 tests, all green.
+2. **Launch any arcade mode alone.** The bar and the percentage start at 0 and stay there until the arena starts to
+   build (about a second; it used to creep to 5%). They climb to 60% as prisms are laid, to 90% as they settle, then
+   the gate opens at 100%. The number never goes down and never moves while nothing is being built.
+3. **Two editors (MPPM), a party of two.** On the machine that finishes first the bar waits at 95% (one of two pilots
+   ready) under "Waiting for pilots", and reaches 100% when the other reports. It used to sit at 100% for that wait.
+4. **Judge the hold.** If the bar standing still during the dwell or a gap reads as a hang, say so: the fix is the
+   moving glint drawn on the Rev 91 bar, not a timed creep.

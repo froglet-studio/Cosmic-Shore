@@ -62,29 +62,32 @@ A bar that followed them faithfully would run backwards mid-load, which turns *"
 while"* into *"something is wrong"*. So the model **never lowers its own output**; a phase reporting
 less than what is already shown is simply not shown. `Reset()` is the only way down.
 
-### Bands, and the creep between them
+### Shares, each one measured (2026-11-12)
 
-| Span | Band |
-|---|---|
-| Dwell (nothing announced yet) | 0 → **0.05**, by creep |
-| Laying | **0.05 → 0.60**, from `LayProgress` |
-| Growing | **0.60 → 0.95**, from `1 − remaining / peak` |
-| Arena ready | **1.0** |
+Shombith: "Make the percentage real." Every value the bar shows is a measurement, and the percentage on the panel is
+the same value.
 
-Two spans have no denominator: the opening dwell, and any gap between phases. Sitting still there
-reads as a hang; jumping ahead lies. The model eases toward the current phase's ceiling at a rate
-that never reaches it, so the bar always moves and never overtakes real progress.
+| Span | Share | Measured as |
+|---|---|---|
+| Laying | **0 → 0.60** | `LayProgress`: prisms laid over prisms queued |
+| Growing | **0.60 → 0.90** | `1 − remaining / peak` |
+| Pilots | **0.90 → 1.0** | human pilots who reported their arena built over human pilots in the match (`ConnectingPlayerRoster.ReadyHumanCount` / `HumanCount`), once this machine's arena is ready |
 
-Three details are load-bearing, and each is a test:
+Two spans have no denominator: the opening dwell, and any gap between phases. There the bar **holds**. Until
+2026-11-12 it crept on a timer (toward 5% in the dwell, toward the next band in a gap), which showed a number nothing
+had measured; that is gone, and so is the dwell's 5% band. A solo load has one pilot, so the pilots' share completes
+the moment the arena is ready; with a party the last tenth is the wait for the others, which used to sit at 100%.
 
-- **The creep's ceiling is a function of the furthest phase ENTERED**, not of the current value.
-  Inferring it from the value (*"we are past the lay band, so creep toward the grow ceiling"*) relies
-  on a lerp never quite reaching its target — a float accident standing in for a decision. The day it
-  does reach it, the dwell creeps to 60% before a single prism is laid.
+Three details are load-bearing, and each is a test (`ArenaLoadProgressTests`):
+
+- **Nothing measured, nothing moved.** However long the dwell or a gap lasts, the value does not change.
 - **The grow denominator is the PEAK count seen this load.** Taking the first reading as the total
   shows 0% forever on a build whose prisms are still being queued as others settle.
-- **It finishes at exactly 1**, latched off the hold predicate. A bar that vanishes at 0.9 reads as
-  an abandoned load rather than a completed one.
+- **It finishes at exactly 1**: every pilot ready, or no pilot to wait on. When the peer wait times out the panel
+  opens its gate, which draws 100% itself (`ConnectingPanelController.Hide`).
+
+Not covered: the scene load before the panel exists (the splash covers it, and nothing reads the scene load's own
+progress), and the boot splash's bar (`KitLoadBar`), which has no percentage and still reads the prism builder alone.
 
 ### The slider is a READOUT, not a control
 

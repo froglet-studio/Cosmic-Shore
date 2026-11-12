@@ -7415,7 +7415,7 @@ boards is unknown until a screenshot is set beside R89A, R90Saga, R90Quests and 
 perfect progress bar. Create me mockups, maybe all parts of the game is shown in the loading menu. Like squads or the
 ark or the pilots or vessels the toybox. Create like 6 mockups". He named the new tab **Loading Screens**.
 
-**Picked (Shombith, 2026-11-12): "for the Loading screen I liked F"**, and "Make the percentage real" (section 175).
+**Picked (Shombith, 2026-11-12): "for the Loading screen I liked F"**, and "Make the percentage real" (section 176).
 
 **On the canvas**: tab **Loading Screens** (`loading-screens`, opened for this round), section "Rev 91 - Loading
 screens". Copies: `Docs/MenuRedesignB/board/R91*.dc.html`; the source that draws them is
@@ -7459,7 +7459,7 @@ Compare board, which is a sheet of fragments. Looked at in a local render at two
 a steps panel, a pilots panel, a tip and a slim bar. F replaces the crystal and both panels with the tour and moves
 the steps into the bar. The moving background departs from the quiet rule (no idle motion) because motion was the
 brief. In the game the show would be the live models, and every word (the step names, the lines under each title) an
-authored field. F's look is not built; only the percentage is (section 175).
+authored field. F's look is not built; only the percentage is (section 176).
 
 ## 174. Rev 92 mockups: the boot splash and sign-in scene - two logos and the environment (2026-11-12; rejected by Shombith the same day)
 
@@ -7523,3 +7523,34 @@ status lines. The hull is real: the shipped FBX mesh (Squirrel, Sparrow, Dolphin
 `frogma.py check --only R93` and `check_mockup.py` pass on all four. Looked at in a local render. The hull drawings
 are the bind pose of each mesh, not a posed or lit render; today's art has a prism structure on the left that these
 leave out. Nothing built.
+
+## 176. Built: the loading screen's percentage is real (2026-11-12, not run in Unity)
+
+Shombith, with the pick of Rev 91 F: "Make the percentage real". Only the number is built here; F's look is not.
+
+**What it was.** The loading screen into a game (`ConnectingPanel`) already drew a bar and a `{pct}%`, both from
+`ArenaLoadProgress`. Two stretches of it were not measurements: a timed creep toward 5% during the opening dwell, and
+a timed creep toward the next band in any gap between phases. And the wait for the other pilots sat at 100%.
+
+**What it is.** Every value is a measurement, in three shares (`Docs/CONNECTING_PANEL.md` section 1):
+- laying, 0 to 60%: prisms laid over prisms queued;
+- growing, 60 to 90%: prisms settled over the most that were ever growing;
+- pilots, 90 to 100%: human pilots who reported their arena built over human pilots in the match.
+
+Where nothing is measurable the bar holds. It still never goes down and still ends at exactly 100. Alone, the pilots'
+share completes the moment the arena is ready.
+
+**Files.** `Assets/_Scripts/UI/Elements/ArenaLoadProgress.cs` (the model: no clock, a pilots' share),
+`ConnectingPanelController.TickProgress` (passes the roster's ready and total counts), `ArenaLoadProgressTests`
+(8 tests: the creep test became "holds still where nothing is measured"; two new ones for the pilots' share).
+No prefab, scene or generator changed: the panel's slider and percentage text already read this value.
+
+**Verified.** `unity_refcompile` player and editor: no errors in project code. `gates.sh`: all OK. The 8 tests run
+outside Unity on a `Mathf` shim: all pass. **Not run in the editor**: the hand test is "Loading screen: the percentage
+is real" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Not done.** The boot splash's bar (`KitLoadBar`) has no percentage and still reads only the prism builder
+(`EnvironmentLoadVeil.BarSpan`: a drifting segment before a build, which is not a measurement). Giving connecting,
+signing in, the profile and the session a share means `BootStatusBroadcaster` and the sign-in controller reporting
+steps to a shared model; it waits on the splash's pick (sections 174, 175). The scene load before the panel exists is
+not measured either: nothing reads the scene load's own progress.

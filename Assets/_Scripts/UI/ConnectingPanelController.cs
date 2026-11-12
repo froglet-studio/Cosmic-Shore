@@ -192,11 +192,12 @@ namespace CosmicShore.UI
         float TickProgress()
         {
             float target = _progress.Tick(
-                Time.unscaledDeltaTime,
                 PrismTrailBuilder.IsLayingInProgress,
                 PrismTrailBuilder.LayProgress,
                 PrismTrailBuilder.GrowRemainingCount,
-                _arenaReady);
+                _arenaReady,
+                playerRoster ? playerRoster.ReadyHumanCount : 0,
+                playerRoster ? playerRoster.HumanCount : 0);
 
             _shownProgress = Mathf.Lerp(_shownProgress, target, Mathf.Clamp01(Time.unscaledDeltaTime / barSmoothing));
             if (progressSlider) progressSlider.value = _shownProgress;
@@ -254,8 +255,8 @@ namespace CosmicShore.UI
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
-                // THIS machine's arena is complete: the bar finishes here, because the bar measures the build and
-                // the build is done. Whatever is waited on next is a different wait and says so in its own words.
+                // THIS machine's arena is complete: the bar moves into its last share, the pilots who have reported
+                // their own arena built (ArenaLoadProgress.PilotsFloor). Alone, that is all of them at once.
                 _arenaReady = true;
 
                 await WaitForPeersAsync(ct);
