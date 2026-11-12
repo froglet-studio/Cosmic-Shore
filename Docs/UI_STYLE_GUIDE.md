@@ -273,6 +273,9 @@ tints still in five vessel HUDs (`StarlingHUDView`, `GobyPistolButtons`, `OrcaHU
    token on `UIThemeSO` for Ready; the fallback in `UITheme.Resolve` and `SelectionStyleTests`; the generators that
    assert the sky blue (`author_ui_kit_prefabs.py`, `author_ui_lattice.py`) and the SelectionRim materials they write;
    `colour_domains.json` `ui_tokens.selection` -> jade (Garrett's file: say so in the PR).
+   **The Ready / Play half is built** (2026-11-12, PR #1919, `/frogma-to-unity`, `Docs/UI/specs/sg5-play-ready.md`):
+   `KitButtonVariant.Commit`, the `commit` Ruby (Unity's `Tooltip` token) under the `on-commit` white label, on
+   Maelstrom's READY and PLAY AGAIN; which other launch buttons follow is its question Q2. The selection half is open.
 2. **Portrait menus** (D6): the menus rotate with the phone (matches stay landscape), showing the same PC UI in the way
    picked on Frogma's Portrait tab.
 
