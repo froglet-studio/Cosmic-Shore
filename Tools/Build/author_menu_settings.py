@@ -6,12 +6,15 @@ section 18; the approved Settings / SettingsOther boards, revision 2, on the "Me
 
     Assets/_Prefabs/UI Elements/Main Menu Screens/Settings/
         SettingsView.prefab     the whole window: the dim, the frame and brackets, "Settings" + the active
-                                tab's name, the five hex tabs, Close (B), four pages of rows (label, one-
+                                tab's name, the six hex tabs, Close (B), four pages of rows (label, one-
                                 line description, and a dropdown, an ON / OFF pair or a slider with its
                                 value), the General links, the Performance notices and buttons, the version,
                                 and (Rev 9, section 54) the ACCOUNT page - the pilot, the guest notice, a row
                                 per sign-in provider with LINK, Sign out and Delete account - with its window
-                                (the link conflict and the confirmations) over the settings.
+                                (the link conflict and the confirmations) over the settings; and (2026-11-12)
+                                the REGION page before it - the server-region dropdown with the ping to each
+                                Relay region, its status line, MEASURE PING and the host-region rule
+                                (RegionSettingsView).
                                 GameSettingsPanelController, SettingsTabBar and BenchmarkSceneLauncher ride
                                 on its root.
 

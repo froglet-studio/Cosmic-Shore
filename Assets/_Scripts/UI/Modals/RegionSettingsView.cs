@@ -85,6 +85,7 @@ namespace CosmicShore.UI
         bool _measuring;
         bool _changedThisOpen;
         int _probeGeneration;
+        ModalWindowManager _window;
 
         void Awake()
         {
@@ -96,20 +97,47 @@ namespace CosmicShore.UI
             if (measureButton != null) measureButton.onClick.AddListener(() => Measure(force: true));
         }
 
+        // The SETTINGS modal never deactivates when it closes (ModalWindowManager.ModalWindowOut skips DisableWindow for
+        // it), so OnEnable / OnDisable are scene load and unload, not open and close. Opening measures; closing applies -
+        // both from the window's own events, as VoyageWindowTabs does.
         void OnEnable()
         {
-            _changedThisOpen = false;
-            _measured = RelayRegionProbe.Last;
             RelayRegionPreference.Changed += OnPreferenceChanged;
-            Rebuild();
-            Measure(force: false);
+            _window = GetComponentInParent<ModalWindowManager>(true);
+            if (_window)
+            {
+                _window.OnModalOpened += Opened;
+                _window.OnModalClosed += Closed;
+            }
+            if (!_window || _window.IsOpen) Opened();
+            else Rebuild();
         }
 
         void OnDisable()
         {
             RelayRegionPreference.Changed -= OnPreferenceChanged;
-            _probeGeneration++;
+            if (_window)
+            {
+                _window.OnModalOpened -= Opened;
+                _window.OnModalClosed -= Closed;
+            }
+            _window = null;
+            Closed();
+        }
+
+        void Opened()
+        {
+            _changedThisOpen = false;
+            _measured = RelayRegionProbe.Last ?? _measured;
+            Rebuild();
+            Measure(force: false);
+        }
+
+        void Closed()
+        {
+            _probeGeneration++;   // a probe still running finishes into nothing
             _measuring = false;
+            if (measureButton != null) measureButton.interactable = true;
             if (_changedThisOpen) ApplyAfterCloseAsync().Forget();
             _changedThisOpen = false;
         }
