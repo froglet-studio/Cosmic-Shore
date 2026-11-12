@@ -6195,15 +6195,15 @@ heaps, the danger blades, the trails) take that set's colours, read from `Assets
   crystals light the deck lime and bloom into the cell (`r67_omni_capture.cjs` captures, `r67_comp_converter.py` lays
   it over the pier loop). The converter's panels (the recipe, the progress bar, Convert again) are the board's own,
   as someone reworked them on the canvas; only the backdrop changed, now per colour set. The reactor room is retired.
-- **Artifacts tab: the vault.** A long room whose back wall is the cabinet: twelve lit cells behind
-  glass, the four artifacts the game has (`Assets/_SO_Assets/Pilots/Artifacts`: Javelin, Hydra, Aftershock, Aegis)
-  each shaped from the game's prisms after what it does, turning; the selected one (Hydra) lit brighter; eight cells
-  empty, still to be found; a super-shield prism on a plinth either side. The 2D list and the selected artifact's
-  card (its real description, who holds it, **Give to a seat**) sit on top.
-- **Decor tab: the decor bay's antechamber.** The bay's sealed hatch is the room's back wall: ribbed leaves
-  trimmed in the domain, warm light behind a slit, danger blades set edge-out either side, a hologram padlock with a
-  scan line sweeping it. Decor is locked: the banner, the outer hull and the inner hull as three locked tiles, "Not
-  open yet" (section 92's Decor).
+- **Artifacts tab: open to the cell, not a closed room** (Shombith, 2026-11-12: "the artifact screen should not be
+  a closed Ark room"): its backdrop is the Converter's view from inside the hangar out of the open mouth, without the
+  crystals; the list and the selected artifact's card (its real description, who holds it, **Give to a seat**) sit on top.
+  The vault render is retired; the 3D cabinet is for the live scene in the game.
+- **Decor tab: locked completely** (Shombith, 2026-11-12: "there is no decor scene, we do it later"): no screen and no
+  backdrop; the tab shows its lock, a press says it opens later, and LB / RB cycle Converter, Squads and Artifacts only.
+- **No more renders for this round** (Shombith, 2026-11-12: "you do not need to render more, we can do it live on the
+  game"): the Converter and Artifacts backdrops are one still frame of the `pier` scene (Nocturne, shown for every colour
+  set) with Garrett's combine as the only motion; the live scene in the game is the target.
 
 **Not in this round:** the pilots walking the hangar (Shombith: later); the Breakers squad's own vessels (its
 backdrop stays Skim Wing's, lit in its own domain).
