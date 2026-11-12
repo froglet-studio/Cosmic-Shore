@@ -6,12 +6,18 @@ Read blind on 2026-11-12, the avatar gave a stranger the ibis and "beaver (or ot
 as "a leather cap or helmet, or a casque/shield-like plate", and in the whole scene as "a flat cap or a mask piece
 rather than part of the head". The bust had been named a platypus, and read as an ibis that wears a second bill. The
 patch below designs Tamako again as one creature (Garrett, 2026-11-11: "we can do a lot better job of expressing the
-animals together"): she has one bill, and it is both animals', a platypus's wide flat bill of slate skin where it
-leaves the forehead, drawing in to the ibis's long scarlet curve, with water on it and breath from its nostrils; the
-head turns a quarter so that its width is seen; the hands are bare and webbed. Only the name counts for a platypus, so
-this is the pilot least sure to be named. This scene is one of the four Garrett approved on 2026-11-11, so the run is
-his to allow by name; nothing but the head and the hands is asked. Not painted yet: this is one of the eight weakest
-reads, and painting them waits for Garrett's go-ahead."""
+animals together"): she has one bill, a platypus's broad flat bill of blue-black skin where it leaves the face,
+running on from the middle of its round front edge as the ibis's long scarlet curve, with water on it and breath over
+its nostrils; the head turns a little so that its flat top is seen. Three critics then read the first draft of these
+words beside the picture (an art director's eye, a painter's, a stranger's), and this is the second draft: the bill
+begins in front of the eye and below it (from the forehead it was the cap again, with the eye in its shadow); the
+broad part keeps its round front edge and both corners, the outline a platypus is named by, where the first draft drew
+it in to a wedge; the head turns only a little, so the long curve the ibis is named by stays in side view and its tip
+stays where it is; slate, marble and the string of drops are out of the words; and the hands are left as they are,
+since they are small, already dark and wet, and hold the line. Only the name counts for a platypus: about one in three
+(the critics' estimate: nothing is painted or tested). This scene is one of the four Garrett approved on 2026-11-11,
+so the run is his to allow by name, and nothing but the head is asked. Not painted yet: this is one of the eight
+weakest reads, and painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Field documentary, a long lens from far off",
     shot=("A documentary photograph taken in the field by a photojournalist who waited hours for it, in the manner "
@@ -44,29 +50,31 @@ SCENE = dict(
           "collar and down the front edges of the cape."),
     close=(490, 155, 860, 525),
     patch=dict(
-        what=("the bill where it leaves the forehead, the turn of the head, the water on the bill, and the two "
-              "hands"),
-        changes=("the face", "the hands"),
-        ask=("THE BILL. {name} has one bill, and it is both animals'. Where the small dark shape sits on the "
-             "forehead now, the bill itself begins, and it begins as a platypus's: for its first third it is as "
-             "wide as the head and flat, a finger thick, of soft bare skin the colour of wet slate, blue-black and "
-             "finely pored, with two small nostrils on its upper side, its edge soft and rounded. It runs straight "
-             "out of the forehead in one slope, and the brown fur of the head thins to single hairs out onto it. "
-             "From the middle of its front it draws in and runs on as the ibis's long, slim, down-curved bill, as "
-             "long and as curved as it is now. Over a thumb's length the slate skin turns dusky plum and then the "
-             "scarlet of the rest. One mouth line runs under both parts, from the corner of the mouth to the tip, "
-             "and the bare red skin round the eye marbles into the slate at the side of the bill."
+        what=("the bill where it leaves the face, the dark shape on the forehead, the turn of the head, and the "
+              "water on the bill"),
+        changes=("the face",),
+        ask=("THE BILL. {name} has one bill. Where the small dark shape sits on the forehead now there is the "
+             "brown fur of the head, running down to the bill. The bill begins where it begins now, in front of "
+             "the eye and below it, and it begins as a platypus's: for its first third it is broad and flat, "
+             "two-thirds as wide as the head, with a soft rounded edge, of soft bare skin, blue-black and matte, "
+             "moist and finely pored, with two small nostrils on its upper side. The eye sits behind its rear "
+             "corner, in the bare red skin, as it does now. The fur of the forehead runs down onto its upper side "
+             "in one slope and thins there to single hairs. It keeps its width to a broad round front edge with a "
+             "soft round corner at each side: the front edge of a platypus's bill. From the middle of that edge "
+             "the bill runs on, one piece with it, as the ibis's long, slim, down-curved bill, as curved as it is "
+             "now, and the tip of the bill is exactly where it is now, so a round corner of dark skin stands out "
+             "at each side of the red bill's root. The blue-black skin runs on along the top of the red bill as a "
+             "narrowing streak and breaks into soft dark blotches in the scarlet. One mouth line runs under both "
+             "parts, from the corner of the mouth to the tip, and the bare red skin round the eye runs in soft "
+             "blotches into the blue-black skin at the side of the bill."
              "\n\n"
-             "THE HEAD. The head is turned a quarter toward the camera, so the flat upper side of the bill's wide "
-             "part is seen, and it is still tipped down over the work."
+             "THE HEAD. The head is turned a little toward the camera, less than halfway to a three-quarter view: "
+             "just enough that the flat upper side of the bill's broad part, both nostrils and both round corners "
+             "are seen. The slim red part of the bill is still seen from the side, with its whole curve, tipped "
+             "down over the float as it is now, and the eye is where it is now."
              "\n\n"
-             "THE WATER. Beads of water stand on the slate skin. A string of drops falls from the tip of the bill "
-             "into the channel and rings it, and two thin threads of breath rise from the nostrils into the cold "
-             "mist."
-             "\n\n"
-             "THE HANDS. Both hands are bare, and they are a platypus's in a person's shape: four fingers and a "
-             "thumb in dark wet skin, with a thin web of skin between the fingers. They hold the line and the "
-             "float as they do now."),
+             "THE WATER. Beads of water stand on the blue-black skin. One bright drop hangs from the tip of the "
+             "bill, and one small soft puff of breath hangs over the nostrils in the cold air."),
         edit=(   # the whole frame: the head itself changes, so the figure is the painter's (refs.WHOLE)
             ((0, 0), (1536, 0), (1536, 864), (0, 864)),
         ),

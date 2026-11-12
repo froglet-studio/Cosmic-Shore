@@ -11,6 +11,8 @@ in the repository for three reasons:
   piece, the eyes, the hair, the outfit. A table fix reaches every later pilot with that animal.
 - **A bust can be shown to the painter for the one part it got right** (a patch's `bust=`, `refs.py`): strangers
   named the second animal in 44 and 47 of the 50 busts, more than in the scenes' close-ups (SKILL.md section 0).
+  Send only the detail that holds the part (`bust_box=`, `refs.py detail <WORD>`): the rest of a bust shows what
+  the patch takes away (WINGMAN's plumes, NEEDLE's row of points), and a reference is copied before the words.
 
 Garrett's notes that shaped them are in SKILL.md's opening and in section 5 here; the measurements are in
 `Docs/Pilots/PORTRAITS.md` section 7.

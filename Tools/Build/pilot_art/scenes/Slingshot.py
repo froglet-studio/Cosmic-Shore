@@ -6,11 +6,19 @@ Read blind on 2026-11-12, the avatar gave a stranger the flamingo, "mahi-mahi (d
 clear attachment". The whole scene was named a mantis shrimp, with "the tail fan sits behind the left shoulder like a
 wing, not at the base of the spine", a shell that "reads somewhat like a helmet" and "glossy plastic-looking hands and
 shell". The bust had been named a mantis shrimp at full size. The patch below designs Slingshot again as one creature
-(Garrett, 2026-11-11: "we can do a lot better job of expressing the animals together"): the bust's shell in
-overlapping plates and bands, dull, pitted and frosted, the pink feathers lying over its first edge; a paddle at each
-temple, swung forward as guards against the ice; hands in the same shell with four fingers and a thumb; and the tail
-grown from the base of the spine in six bands that end in the tail plates, held out low behind the standing leg. Not
-painted yet: this is one of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
+(Garrett, 2026-11-11: "we can do a lot better job of expressing the animals together"): one smooth shield over the
+crown and bands down the back of the neck, dull, pitted and frosted, the pink feathers lying over its first edge; a
+paddle at each side of the brow, swung out toward the flying ice; hands in the same shell with four fingers and a
+thumb; and the tail grown from the base of the spine in six bands that end in the tail plates, held out for balance.
+Three critics then read the first draft of these words beside the picture (an art director's eye, a painter's, a
+stranger's), and this is the second draft: the shell is one shield and then bands (plates lying over one another are
+scales, the fish a stranger sees now), and four bands come round to the camera's side, since bands are the one pattern
+a fish cannot have; the paddles are half as long as the bill and the near one stops behind the eye, so they are not
+ears and do not cover the face; nothing is worn (a shell that is worn is a helmet, and hands that wear shell are
+gloves); and the bust is not sent, since its gloss and its rainbow are the fish's colours and it shows the fan this
+patch takes away. A lobster or a shrimp, which counts as its kind, named from the avatar: about one in two, and a
+mantis shrimp by name one in five (the critics' estimate: nothing is painted or tested). Not painted yet: this is one
+of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Rear-curtain flash at dusk with the shutter dragged, ice in the air",
     shot=("A photograph made at dusk with the shutter dragged and a flash fired at its end: a 28mm lens close in, "
@@ -41,33 +49,42 @@ SCENE = dict(
           "has built up on the boot soles; a few pink feathers at the neck are stiff with rime."),
     close=(610, 0, 1070, 460),
     patch=dict(
-        what=("the shell over the head and the neck, the paddles and feelers at the temples, the two hands, and "
-              "the fan behind the shoulder, which becomes a tail"),
-        bust="the spotted shell over the crown, with its two paddles and the banded neck below it",
+        what=("the shell over the head and the neck, the paddles and feelers at the brow, the two hands, and the "
+              "fan behind the shoulder, which becomes a tail"),
         changes=("the hands",),
         ask=("THE HEAD AND NECK. {name} is feathered pink as far back as the eyes. Behind them, where the shining "
-             "green dome is now, the head and the neck wear a mantis shrimp's shell, the shell of picture 2: hard "
-             "plates, each lying over the edge of the next, a dull matte olive green, with dark spots ringed in "
-             "white low on each side of the head and a thin bright blue line along the edge of every plate. The "
-             "last pink feathers lie over the front edge of the first plate. Down the back of the neck the plates "
-             "are bands, each two fingers tall, each with a blue rear edge, and orange-red skin shows in the seam "
-             "between one band and the next. The shell is dull, finely pitted and scratched, and frost lies along "
-             "every edge of it."
+             "green dome is now, the back of the head and the back of the neck are a mantis shrimp's own shell, "
+             "grown there: one smooth hard shield over the crown and broad bands behind it, a dull matte olive "
+             "green, with dark spots ringed in white low on each side of the shield and a thin bright blue line "
+             "along the edge of the shield and of every band. From the back of the crown down to the hood of the "
+             "hoodie the shell is bands, four of them in view, each running from the back of the neck round the "
+             "side that faces the camera as far forward as the corner of the jaw, each with a blue rear edge, and "
+             "orange-red skin shows in the seam between one band and the next. The front of the neck is "
+             "pink-feathered, as it is now. The last pink feathers lie over the front edge of the shield, single "
+             "pink feathers grow from the seams between the first bands, and the shield's dark spots begin as dark "
+             "flecks among the pink feathers of the brow. The shell is dull, finely pitted and scratched, and "
+             "frost lies along every edge of it."
              "\n\n"
-             "THE PADDLES. At each temple, on a short jointed stalk, is one flat oval paddle as long as the bill: "
-             "orange-red with a darker edge and a fringe of short red bristles. Both are swung forward beside the "
-             "eyes, guarding them from the flying ice, and ice is breaking on the near one. From the brow between "
-             "them two thin red feelers are thrown back over the head by the blow."
+             "THE PADDLES. Low at each side of the brow, where the shield's front edge meets the pink feathers, on "
+             "a short jointed stalk that is seen, is one flat oval paddle of smooth hard shell, half as long as "
+             "the bill: orange-red with a darker edge and short red bristles along it. Both are swung forward and "
+             "outward, away from the head, toward the flying ice. The far one stands clear against the sky in "
+             "front of the brow. The near one is where the red fin stands at the temple now: it stops level with "
+             "the back corner of the eye, so the eye, the cheek and the whole bill are in full view in front of "
+             "it, and ice is breaking on its outer face. From the brow between them two thin red feelers are "
+             "thrown back over the head by the blow."
              "\n\n"
-             "THE HANDS. Both hands wear the same shell in red: four fingers and a thumb, each finger in three "
-             "short jointed pieces of dull red shell, pitted, scuffed pale at the knuckles and frosted. The hand "
-             "at the intake is closed, its fingers folded, as it is now."
+             "THE HANDS. Both hands are of the same shell, grown from their own skin: dull red, four fingers and a "
+             "thumb, each finger in three short jointed pieces, pitted, scuffed pale at the knuckles and frosted. "
+             "The hand at the intake is closed, its fingers folded, as it is now."
              "\n\n"
-             "THE TAIL. Where the coloured fan stands behind the shoulder now there is the dusk sky and the far "
-             "lights. The tail grows from the base of the spine: it comes out under the back hem of the hoodie as "
-             "six broad bands of the olive shell, each narrower than the last, and is held out low behind the "
-             "standing leg, where it ends in its tail plates: one ridged middle plate and two flat blades at each "
-             "side of it, deep blue edged with red."),
+             "THE TAIL. Where the coloured fan stands behind the shoulder now there is the dusk sky, the far "
+             "lights and the frozen field. The tail grows from the base of the spine. It comes into view from "
+             "under the hoodie's hem at the back of the hips, on the side away from the frosted intake, as six "
+             "broad bands of the olive shell, each narrower than the last. It passes behind the hanging hand and "
+             "is held out low and level to the left of the standing leg, for balance, clear against the wet "
+             "ground, where it ends in its tail plates: one ridged middle plate and two flat blades at each side "
+             "of it, deep blue edged with red, held just above the ground."),
         edit=(   # the whole frame: the head itself changes, so the figure is the painter's (refs.WHOLE)
             ((0, 0), (1536, 0), (1536, 864), (0, 864)),
         ),

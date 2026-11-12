@@ -6,9 +6,16 @@ gila monster or newt-like)", with "reptile spines or a dragon-like crest"; in th
 the head looks like a hood or hat worn on top", the braid "hangs from under the crest, no clear origin" and the tail
 "curls up behind with unclear attachment". The patch below designs Shrapnel again as one creature (Garrett,
 2026-11-11: "we can do a lot better job of expressing the animals together"), by what a newt has and a lizard has not:
-smooth moist skin, a crest that is one thin soft sheet the low sun shines through and that has flopped over with the
-catch, round soft fingertips, and a flat swimming tail with a wavy border of thin skin, seen from the poncho's hem to
-its tip. The braid gets a root. Not painted yet: this is one of the eight weakest reads, and painting them waits for
+smooth moist skin, orange blotched with black on the throat and the palms, a thin fold of skin over the head that the
+low sun shines through, round soft fingertips, and a flat swimming tail. Three critics then read the first draft of
+these words beside the picture (an art director's eye, a painter's, a stranger's), and this is the second draft: the
+fold of skin stands along the whole head (flopped over, it was a flap of hair or a rooster's comb) and its edge runs
+in rounded waves; the tail leaves the place behind the shoulder, where it read as unattached, and lies on the blanket
+in a curve that keeps four of the fruit on the crates, so it has a root in view and a job; the braid begins in the
+toucan's own white feathers, where the camera can see it; the raised palm shows its orange to the camera, since
+fingers are what a fish has not; and leaf, pearl and sheet are out of the words. A newt or a salamander named from the
+avatar: about four in ten, with a lizard, which counts as its kind, in most of the rest (the critics' estimate:
+nothing is painted or tested). Not painted yet: this is one of the eight weakest reads, and painting them waits for
 Garrett's go-ahead."""
 SCENE = dict(
     treatment="Frozen at 1/4000 s like a sports frame, a fruit in the air",
@@ -43,36 +50,41 @@ SCENE = dict(
           "undone; there is a smear of soot on the white throat and a seed stuck to the bill."),
     close=(740, 0, 1180, 440),
     patch=dict(
-        what=("the skin behind the face, the row of dark points over the head, the two hands, the tail, and where "
+        what=("the skin behind the face, the dark spiked hood over the head, the two hands, the tail, and where "
               "the braid begins"),
         changes=("the hands",),
-        ask=("THE SKIN. Behind the face {name} is a newt. Everything there that is beaded, hard or pointed now is "
-             "smooth, moist, bare skin with a fine grain: near black with an olive sheen and a dusting of tiny "
-             "white dots, and on the throat, the underside of the neck and the insides of the fingers a fire "
-             "orange with large black blotches. The black feathers at the edge of the face thin out toward the "
-             "back of the head, and the skin begins among them with no line."
+        ask=("THE SKIN. Behind the face {name} is a newt. From the last black feathers back to the collar of the "
+             "poncho the skin is smooth, moist and bare, with a fine grain: near black with an olive sheen and a "
+             "dusting of tiny white dots, and on the throat, the underside of the neck and the insides of the "
+             "fingers a vivid orange with large black blotches. The black feathers at the edge of the face thin "
+             "out toward the back of the head, and the skin shows between them more and more until it is all skin."
              "\n\n"
-             "THE CREST. Where the row of hard dark points stands over the head now there is a newt's crest: one "
-             "thin soft sheet of that same skin, standing on its edge along the midline of the head. It begins "
-             "just behind the eyes, is two fingers tall over the crown and a hand tall at the nape, and its upper "
-             "edge is wavy and uneven. It is as thin as a leaf: the low sun behind it shines through it brown and "
-             "amber, darker at its foot. With the head thrown back for the catch it has flopped over to one side, "
-             "and bright drops fly from its edge."
+             "THE SKIN OVER THE HEAD. Where the dark spiked hood stands over the head now there is one thin soft "
+             "fold of that same skin, standing on its edge along the midline of the head. It begins just behind "
+             "the eyes, is low over the crown and rises to a third of the head's height behind it, and its upper "
+             "edge runs in slow rounded waves of uneven size. It is thin enough for the low sun behind it to shine "
+             "through: it glows amber-brown, nearly black at its foot and brightest along its upper edge. It "
+             "stands along its whole length, and with the head thrown back for the catch its upper edge ripples "
+             "back in the air; bright drops fly from it."
              "\n\n"
              "THE HANDS. Both hands are a newt's in a person's shape: small, damp and soft, four fingers and a "
              "thumb with round soft fingertips, near black on the backs and orange blotched with black inside. "
-             "They do what they do now: one is up from the toss, and the other holds the second fruit."
+             "They do what they do now: one is up from the toss, its orange, black-blotched palm turned to the "
+             "camera, and the other holds the cut fruit."
              "\n\n"
-             "THE TAIL. Where the big curled tail stands behind the shoulder now there is the street: shuttered "
-             "houses in the morning light. The tail is a newt's swimming tail. It grows from the base of the spine "
-             "and comes out under the back hem of the poncho, lies along the blanket on top of the crates beside "
-             "the hip, and lifts its last third beside the shoulder, flat side to the camera. It is tall and flat "
-             "from side to side, smooth and wet, near black with a pearl-white stripe along its middle, and along "
-             "its upper and lower edges runs a soft wavy border of thin skin that the low sun shines through, "
-             "amber."
+             "THE TAIL. Where the big curled tail stands behind the shoulder now there is the street behind: the "
+             "pale stone wall in the morning light. The tail is a newt's swimming tail. It grows from the base of "
+             "the spine and comes into view from under the poncho's hem beside the hip, on the megaphone's side. "
+             "It lies along the blanket on top of the crates, in front of the megaphone, in one loose curve, and "
+             "four of the fruit lie inside the curve, kept on the crates by it. Its end hangs over the front edge "
+             "of the crates, flat side to the camera, and drips. It is tall and flat from side to side, smooth and "
+             "wet, near black with a pale silver-white stripe along its middle, and along its upper and lower "
+             "edges runs a soft wavy border of thin skin that the low sun shines through, amber."
              "\n\n"
-             "THE BRAID. The silver-white braid begins in a narrow strip of silver-white hair low on the nape, "
-             "beside the foot of the crest, and hangs over the shoulder as it does now."),
+             "THE BRAID. The silver-white braid begins in the toucan's own white feathers: at the side of the "
+             "neck, below the cheek on the braid's side, the white feathers grow long and fine and are gathered "
+             "into the braid, with a few of them hanging loose beside it. The braid hangs over the shoulder as it "
+             "does now."),
         edit=(   # the whole frame: the head itself changes, so the figure is the painter's (refs.WHOLE)
             ((0, 0), (1536, 0), (1536, 864), (0, 864)),
         ),

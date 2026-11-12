@@ -306,14 +306,17 @@ What a painter is shown (`refs.py`):
   go with its window or display.
 - **A pilot's likeness** (`refs.py likeness <WORD>`): head and shoulders cut from their approved scene, so a later
   picture shows the same person.
-- **A patch**, `patch=dict(what=, ask=, edit=, keep=, refs=, likeness=, bust=, changes=, took=)`: part of a scene is
-  painted again and the rest is kept to the pixel. The painter gets the scene and what to change; `apply` takes from
-  its answer only the record's region. The painter repaints the whole picture a little while it works (5 to 14 of
-  255 outside the region), so the pilot is never taken from an answer by accident.
+- **A patch**, `patch=dict(what=, ask=, edit=, keep=, refs=, likeness=, bust=, bust_box=, changes=, took=)`: part of
+  a scene is painted again and the rest is kept to the pixel. The painter gets the scene and what to change;
+  `apply` takes from its answer only the record's region. The painter repaints the whole picture a little while
+  it works (5 to 14 of 255 outside the region), so the pilot is never taken from an answer by accident.
 - **A patch of the pilot.** Where the head itself changes, the region is the whole frame (`refs.WHOLE`) and the
   picture is the painter's answer. `likeness=` names the one thing taken from the pilot's earlier scene (Flux's fin:
   the head changed and the face was kept, 87); `bust=` names the one part taken from the pilot's earlier bust,
-  where the bust held a part the scene lost. The patch's first line tells the painter what stays (the pilot, the
+  where the bust held a part the scene lost. A bust also shows what the patch takes away (the plumes a pouch
+  came with), and a reference is copied before the words are read: `bust_box=(l, t, r, b)` sends only that
+  detail of it (`refs.py detail <WORD>` cuts it; look at it and commit it), and the patch's own words give the
+  part its size, its colours and its root. The patch's first line tells the painter what stays (the pilot, the
   face, the hands, the clothes, the place, the light): `changes=(...)` names the ones the patch redraws, so the
   line never says that what is asked to change stays. A pilot designed again waits in its record as a patch
   until its run is approved; the record's `swap` and `seen` lines follow the picture after `apply`, never before.
@@ -324,6 +327,24 @@ reference frame's colour before it reads the words for theirs; where the scene a
 size, send the scene alone (`refs=()`) and point the words at it ("the round port of this same photograph", 90). A
 reflection asked for in glass is painted as a second figure (84). Each `apply` re-encodes the scene, so re-cut the
 avatar and commit it. After changing `edit` or `keep`, run `refs.py mask <WORD>` or the self-test fails.
+
+**Read a pilot patch's words beside the picture before a run is asked for.** Three critics read eight drafts on
+2026-11-12 (an art director's eye, a painter's eye, a stranger's eye; their figures are estimates until a run
+tests them), and the same faults were in every draft:
+
+- **A place the frame has no room for.** Name each new part's root and end by things already in the picture, on a
+  gridded view (`scene.py grid <WORD> out.jpg`), and check the anchors against each other: given a length, a slope
+  and an end point that cannot all be true, the painter breaks one (Tender's tusk at two-thirds of its length
+  ended at the hand with the shoots, and a pole that ends at a hand is held).
+- **A part where this camera cannot see it** (a slit at the back, a nape, the backs of the ears): the painter
+  turns the figure or paints it on the front. Say what shows from here.
+- **A length in hands, fingers, thumbs or wrists**, beside real hands or a hidden one: the named hand comes back
+  as a third hand. Use fractions of the head, the bill or a thing in the picture.
+- **A word that gets painted.** A noun or verb of clothing, metal or building for a grown part (a shell that is
+  "worn", a "fringe", "gold" ridges, a "column" of rings), a comparison ("as thin as a leaf" is a leaf) and a
+  denial ("Neither hand touches it" puts a hand on it). "Where X is now there is Y" is the form that works.
+- **One large shape with its own outline inside the avatar's square**, shown with its root: texture is lost at
+  256 px (small feathers become fur, lapped plates become scales), and a part with no root is a separate object.
 
 ## 8. Showing a round
 

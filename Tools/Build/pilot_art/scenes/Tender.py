@@ -7,10 +7,18 @@ unattached to the body". The whole scene was named a narwhal, and of the tusk it
 stuck onto the beak". The bust had been named a narwhal at full size: its tusk leaves the face at the near corner of
 the mouth. The patch below designs Tender again as one creature (Garrett, 2026-11-11: "we can do a lot better job of
 expressing the animals together"): the macaw's scarlet runs over the whole crown and thins into a narwhal's skin down
-the back of the head, with a blowhole and a breath where the feathers end; the tusk is a tooth with a root that shows,
-and it is what Tender plants with, so its tip is caked with the flat's white sand and the hand that held a dibber
-holds the next shoots; the fluke, which the frame cannot join to a body seen from the waist up, is below the frame.
-Not painted yet: this is one of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
+the back of the head, with a blowhole and a breath where the feathers end; the tusk is a tooth with a root that shows
+on the near cheek, and it is what Tender plants with, so its grooves hold the flat's white sand and the hand that held
+a dibber holds the next shoots; the fluke, which the frame cannot join to a body seen from the waist up, is not in the
+picture. Three critics then read the first draft of these words beside the picture (an art director's eye, a
+painter's, a stranger's), and this is the second draft: the tusk keeps the slope it has now (a tusk that hangs down
+from the mouth is a walrus's) and is half as long, so that its root is clear of the seed case, its whole length lies
+in front of the green jacket, where ivory shows, and its point stops short of the hand with the shoots (a pole that
+ends at a hand is held); the three sentences that named a thing in order to remove it are gone (what is named is
+painted); the blowhole is high on the back of the head, where its breath streams back against the dark shore and can
+be seen (over the head it was white on a white sky); and the bust is not sent, since it shows the dome and the fluke
+this patch takes away. A narwhal named from the avatar: about one in two (the critics' estimate: nothing is painted or
+tested). Not painted yet: this is one of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Editorial portrait for a feature, held mid-task under flat bright overcast",
     shot=("An editorial portrait made for a feature about a replanting, the subject asked to hold still in the "
@@ -48,31 +56,36 @@ SCENE = dict(
     close=(750, 10, 1350, 610),
     patch=dict(
         what=("the skin over the top and back of the head and the neck, the tusk and where it leaves the face, "
-              "what the lower hand holds, and the fluke behind the shoulder"),
-        bust="the tusk where it leaves the face",
-        ask=("THE HEAD. Where smooth grey skin covers the top of the head and frames the face now, the head wears "
-             "a scarlet macaw's feathers, the same scarlet as the face, over the whole crown. Down the back of the "
-             "head the feathers thin, until single scarlet feathers lie on bare skin, and from there the back of "
-             "the head and the whole neck are a narwhal's: smooth wet skin, pale grey, with soft dark blotches "
-             "that run into one another along the back of the neck and fade to plain cream at the throat. The bare "
-             "white skin of the macaw's cheek runs into that grey skin with no edge between them. Just behind the "
-             "crown, where the feathers end, the skin has a small crescent blowhole, and a low soft puff of breath "
-             "hangs over it."
+              "what the hand at the left holds, and the fluke behind the shoulder"),
+        ask=("THE HEAD. Where smooth grey skin covers the top of the head and frames the face now, the head is "
+             "feathered as a scarlet macaw's, the same scarlet as the face, over the whole crown. Down the back of "
+             "the head the feathers thin, until single scarlet feathers lie on bare skin, and from there the back "
+             "of the head and the whole neck are a narwhal's: smooth wet skin, pale grey, with soft dark blotches "
+             "that run into one another along the back of the neck and fade to plain cream at the throat. Under "
+             "the jaw the scarlet feathers thin in the same way, and the grey skin of the throat shows between "
+             "them. High on the back of the head, where the last scarlet feathers lie on the grey skin, on the "
+             "side toward the camera, is a blowhole: a dark crescent slit as wide as the eye, with a raised wet "
+             "rim. A small plume of breath streams back from it, level with it, pale against the far blue-green "
+             "shore."
              "\n\n"
-             "THE TUSK. The tusk no longer comes from behind the bill. It is a tooth of the upper jaw, and it "
-             "leaves the face where it does in picture 2: at the near corner of the mouth, just under the hinge of "
-             "the bill, through a swollen ring of pink-grey gum. From its root it runs straight, forward and down, "
-             "under the bill and the seed case the bill holds and in front of the collar of the green jacket, to a "
-             "tip that is in the picture at the lower left: as long as the tusk is now, ivory, with one spiral "
-             "groove, wet, and caked for its last hand's length with wet white sand that drips. Neither hand "
-             "touches it. The bill and the seed case stay whole and in full view."
+             "THE TUSK. Where the tusk shows to the left of the bill now, out over the flats, there is the flat: "
+             "water, white growths and rows of shoots. The tusk grows from the upper jaw. It leaves the face low "
+             "on the near cheek, at the lower edge of the red feathers, below and just behind the corner of the "
+             "mouth and clear of the seed case, through a swollen ring of pink-grey gum that is in full view. From "
+             "its root it runs straight, forward and down, at the slope the tusk has now: it passes clear below "
+             "the seed case and lies in front of the collar and the near shoulder of the green jacket, and it ends "
+             "in front of the upper sleeve, its point just inside the sleeve's outer edge, so the dark green of "
+             "the jacket is behind its whole length. It is half as long as the tusk is now: ivory, twisted along "
+             "its whole length in close spiral grooves as it is now, wet. The grooves hold wet white sand, "
+             "thickest over its last quarter, and a drop of water hangs from its point. The bill and the seed case "
+             "stay whole and in full view."
              "\n\n"
-             "THE LOWER HAND. Where the lower hand holds a wooden tool now, it holds three green shoots by their "
-             "stems, their pale roots hanging wet. The glove stays as it is."
+             "THE HAND AT THE LEFT. Where the hand at the left grips a wooden tool now, and where the tool runs "
+             "down out of the picture, the hand holds three green shoots by their stems, their pale roots hanging "
+             "wet, with the water behind them. The glove stays as it is."
              "\n\n"
-             "THE TAIL. Where the grey fluke stands behind the shoulder now there is the flat, as it is beside it: "
-             "still water, white growths, rows of shoots and the far blue-green edge. The tail hangs below the "
-             "frame, and none of it is in this picture."),
+             "BEHIND THE SHOULDER. Where the grey fluke stands behind the shoulder now there is the flat, as it is "
+             "beside it: still water, white growths, rows of shoots and the far blue-green shore."),
         edit=(   # the whole frame: the head itself changes, so the figure is the painter's (refs.WHOLE)
             ((0, 0), (1536, 0), (1536, 864), (0, 864)),
         ),

@@ -129,7 +129,8 @@ picture made for the crop: a **signature bust** (`Tools/Build/pilot_art/bust.py`
 **Since 2026-11-11 the avatar is the close-up of the pilot's scene (section 8)**, by Garrett's decision on the
 four scene samples ("drop what we had before"). The busts stay in the repository: a bust's brief is the frozen
 source of its pilot's identity lines, `bust.py`'s tables compose a new pilot's lines, and a patch of a scene may
-show the painter the pilot's bust for the one part it got right (`refs.py`, a patch's `bust=`). The bust
+show the painter the pilot's bust for the one part it got right (`refs.py`, a patch's `bust=`, or only the detail
+that holds it, `bust_box=`). The bust
 procedure is `.claude/skills/pilot-creator/references/BUSTS.md`. What follows is the record of the three rounds.
 
 **Round 1 (2026-11-10)** gave the first animal the face, the second the crown and a mark across the nape and one
@@ -370,7 +371,8 @@ eight weakest, in each of which every stranger names the first animal and the se
 | Tender, macaw | narwhal | "seal"; "like a hood over a parrot face"; the tusk "looks stuck onto the beak" |
 
 Several of these were named in their busts (WINGMAN's pouch, MANGER's bill, NEEDLE's ringed neck and spiral tail),
-which is why a patch may show the painter the pilot's bust for one part (`bust=`).
+which is why a patch may show the painter the pilot's bust for one part (`bust=`), cut to that part (`bust_box=`),
+since the same busts also show what a patch takes away (WINGMAN's plumes, NEEDLE's row of points).
 
 **The four samples' read** (before the decision, kept as the record of how the mechanism was proved: one reader
 found each scene's pilot among the 50 busts, another put each scene beside its bust):
@@ -400,7 +402,12 @@ GPT Image 2.6 through Weave, five runs, 55 credits. Both are in `PAINTERS.md`.
 1. **The eight weakest are designed again as one creature each**, in words, as a pending `patch` in each record;
    painting them waits for Garrett's answer on a card (up to 16 runs on Weave, 176 credits at most). Three of the
    pairs are limits whatever is painted: a heron behind an ocelot's face, a platypus behind an ibis's bill, and a
-   jackal, which is a fox to nearly everyone (`LESSONS` 43, 50).
+   jackal, which is a fox to nearly everyone (`LESSONS` 43, 50). The words are a second draft: three critics read
+   the first beside the pictures (an art director's eye, a painter's, a stranger's) and none of the eight was
+   ready to send. What they found is in each record's docstring and, as rules, in the skill's section 7. Their
+   estimate of a stranger naming the second animal from the avatar, with nothing painted or tested: about one in
+   two for WINGMAN, NEEDLE, Tender and Slingshot (Slingshot by kind), four in ten for Shrapnel and TALON (TALON
+   by kind), one in three for MANGER and for ZODIAC at best, which is the run to leave till last or leave out.
 2. **What is still weak in the six painted again**: Trace's bell is still called worn by a reader who is sure it
    is a jellyfish; ZODIAC's heron is missed; the white patch on Flux sits where his ear was; Longshift's fingers
    read as fused.

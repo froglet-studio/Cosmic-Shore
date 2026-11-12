@@ -18,12 +18,19 @@ Read blind on 2026-11-12, the avatar gave a stranger the ocelot and "some bird (
 feather-like crest between them"; the whole scene's reader saw a "bird of prey with grey-white and black feathers
 (white-and-black feather crest on the head, folded grey wings on the back); exact bird unclear". Three paintings have
 not been named a heron: a heron's tell is its bill, and the ocelot owns the face. The patch below designs Ivelia again
-as one creature (Garrett, 2026-11-11: "we can do a lot better job of expressing the animals together"), by the one
-shape of a heron the face leaves free: the long neck drawn back in its S, slate blue-grey with the streaked white
-stripe, that holds the head still over the chart as a heron holds its head over water; the crown's black stripes leave
-the head as two thin feathers; and the wings fold low, so that nothing stands over the shoulders like a hawk's. A
-wading bird by its kind is the honest target. Not painted yet: this is one of the eight weakest reads, and painting
-them waits for Garrett's go-ahead."""
+as one creature (Garrett, 2026-11-11: "we can do a lot better job of expressing the animals together"), by the shapes
+of a heron the face leaves free: the long neck folded once, its bend hanging in front of the chest with loose plumes
+that the chart lights from below, and the head hung out over the chart on it; two black plumes from the crown; and the
+wing folded low, with a black patch at its bend. Three critics then read the first draft of these words beside the
+picture (an art director's eye, a painter's, a stranger's), and this is the second draft: all three said this design
+needs more than new words. The first draft folded the wings out of sight behind a figure seen from the front, which
+took the only bird a stranger sees now out of the avatar, and asked for a double bend in a space under one head tall.
+This draft keeps the wing's bend and its black patch inside the avatar and below the jaw (above the shoulders it is a
+hawk's), hangs the neck's one bend where its outline shows, grows the plumes from the neck and not from the cloak's
+edge, and lets the fur turn to feather over a third of the head's height. It is still the weakest of the eight: a
+wading bird of any kind named from the avatar is about one in three at best, and a heron by name one in ten (the
+critics' estimate: nothing is painted or tested). So this is the run to leave till last, or to leave out. Not painted
+yet: this is one of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Travel reportage on slow slide film, a chart house lit by the reef outside",
     shot=("A travel-reportage photograph on slow colour slide film: a 35mm lens nearly wide open. Saturated colour, "
@@ -59,24 +66,35 @@ SCENE = dict(
           "fur of two fingers; two flight feathers are out of line."),
     close=(800, 0, 1320, 520),
     patch=dict(
-        what=("the throat and the neck under the head, the stripes at the top of the head, and the wings"),
-        ask=("THE NECK. Where the white furred throat is now, {name} has a heron's neck, drawn back in its S: it "
-             "leaves the collar of the cloak, swings forward in one deep bend below the chin and comes up to the "
-             "head behind the jaw, so the head is where it is now, held quite still over the chart. The neck is "
-             "half as wide as the head and wears small flat feathers in close rows, slate blue-grey, with a narrow "
-             "white stripe down its front that carries two rows of short black streaks. Under the jaw the ocelot's "
-             "fur turns to feather over two finger-widths, and the fur's black spots draw out into the first "
-             "streaks. From the base of the neck a fringe of long narrow pale grey feathers, each a hand long, "
-             "hangs over the neckline of the cloak, and the chart lights them from below."
+        what=("the throat and the neck under the head, the black feathers at the back of the head, and the wing "
+              "behind the far shoulder"),
+        ask=("THE NECK. Where the white furred throat and chest are now, from the jaw down to the cream shirt, "
+             "{name} has a heron's neck: long, slim, half as wide as the head, and folded once on itself, as a "
+             "heron carries it. From the collar of the cloak it sinks forward and down in one deep rounded bend "
+             "that hangs in front of the chest as low as the breastbone, above the round pendant, and from there "
+             "it turns up to join the head behind the jaw. The whole curve of the bend is in clear view, the cream "
+             "shirt and the dark cloak showing at both sides of it, and the chart lights its underside. The head "
+             "is where it is now, hung out over the chart on that neck. The neck is feathered smooth, slate "
+             "blue-grey, with a narrow white stripe down its front that carries two rows of short black streaks, "
+             "and the stripe runs round the outside of the bend. From the jaw down, over a third of the head's "
+             "height, the white fur of the cheek and throat lies flatter and broader, hair by hair, until it is "
+             "feather, and its black spots draw out, each longer than the one above it, into the first streaks. "
+             "From the lower half of the bend grow long loose pointed plumes, pale grey with white shafts, each a "
+             "third as long as the head. They hang from the neck itself, down in front of the cream shirt among "
+             "the strings of beads, some over a string and some under it, and the chart shines up through them."
              "\n\n"
-             "THE CROWN. The two black stripes on the top of the head run back past the ears and leave the head as "
-             "two thin black feathers, as long as the head, lying along the back of the neck."
+             "THE CROWN. Where the black shape stands behind the ears now, the back of the head is feathered "
+             "smooth, slate blue-grey like the neck. From the back edge of the white crown patch, midway between "
+             "the ears, grow two narrow black plumes, each as wide as the eye and longer than the head. They hang "
+             "free behind the head, out over the dark shoulder of the cloak, and the lamp puts a thin warm line of "
+             "light along each."
              "\n\n"
-             "THE WINGS. Where the wings stand above the shoulders now there is the room: the window, its frame "
-             "and the dark wood. The wings are folded low. Each grows from a shoulder blade and comes out through "
-             "a slit in the back of the cloak, bound in the cloak's own dull gold edging, and lies closed against "
-             "the back with its bend below the shoulder: blue-grey, with black flight feathers and a black patch "
-             "at the bend."),
+             "THE WING. Where the wing stands above the far shoulder now there is the room: the window and its "
+             "dark frame. The wing is folded low. It grows from the shoulder blade, comes out through the cloak "
+             "and lies closed along the far arm: its bend shows just above the line of the far shoulder, beside "
+             "the collar of the cloak and lower than the jaw, with a black patch at the bend, and its long "
+             "feathers hang down behind the far arm where the dark feather tips hang now. It is blue-grey with "
+             "black flight feathers, and the chart lights the edges of the feathers from below."),
         edit=(   # the whole frame: the head itself changes, so the figure is the painter's (refs.WHOLE)
             ((0, 0), (1536, 0), (1536, 864), (0, 864)),
         ),

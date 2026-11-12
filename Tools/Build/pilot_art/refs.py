@@ -32,7 +32,10 @@ successor, run through Weave, also takes pictures (PAINTER). So:
     picture 2 (PATCH_LIKENESS). Flux's fin was painted this way, on the first run (LESSONS 87).
   * A PATCH SHOWN THE BUST. Where the pilot's earlier bust holds a part the scene lost (a pouch a stranger named,
     a tail beside the head), the patch's bust= names that one part and the bust goes with the scene as a picture
-    (PATCH_BUST). The bust is a painting, so the words take its shape and never its finish.
+    (PATCH_BUST). The bust is a painting, so the words take its shape and never its finish, and the patch's own
+    words give the part its size, its colours and its root. A bust also shows what the patch takes away (the
+    plumes a pouch came with, a crest), and a reference is copied before the words are read: bust_box=(l, t, r, b)
+    sends only that detail of the bust (`detail` cuts it to patches/<WORD>_bust.png, which is committed).
   * WHAT A PATCH CHANGES OF THE PILOT. A patch's first line tells the painter what stays: the pilot, the face,
     the hands, the clothes, the place and the light (PATCH_KEPT). A patch that redraws one of those says so in
     changes=(...), and the line then lists the rest: a painter told that the hands stay and asked for new hands
@@ -56,6 +59,7 @@ successor, run through Weave, also takes pictures (PAINTER). So:
     python3 Tools/Build/pilot_art/refs.py list                         # the library, and who has a likeness
     python3 Tools/Build/pilot_art/refs.py likeness <WORD> [l t r b]    # cut a pilot's likeness from their scene
     python3 Tools/Build/pilot_art/refs.py mask <WORD> [view.jpg]       # write a patch's mask (and a view of it)
+    python3 Tools/Build/pilot_art/refs.py detail <WORD>                # cut the detail of the bust a patch shows
     python3 Tools/Build/pilot_art/refs.py prompt <WORD> [--patch]      # the words the painter gets
     python3 Tools/Build/pilot_art/refs.py input <WORD> [--patch] [--size W H]   # the run's input, with its links
     python3 Tools/Build/pilot_art/refs.py apply <WORD> <painted file>  # put a patch into the scene
@@ -113,12 +117,16 @@ PATCH_FOOT = ("It stays one photograph taken with a real camera: the new parts h
               "a symbol.")
 PATCH_LIKENESS = ("Picture {n} is {name}, photographed before in another place: the same person. Take from it only "
                   "{take}. Everything else stays as picture 1 has it.")
-PATCH_BUST = ("Picture {n} is {name} too, the same person, in a painted portrait made before this photograph. "
-              "Take from it only {take}: its shape, its size against the head and where it grows from. It is a "
-              "painting and picture 1 is a photograph: what is taken from it is photographed here, with the grain, "
-              "the focus and the light of picture 1, and nothing of the painting's smooth finish, its background or "
-              "its pose.")
-PATCH_KEYS = ("what", "ask", "edit", "keep", "refs", "likeness", "bust", "changes", "took")
+# {portrait} is BUST_WHOLE, or BUST_DETAIL when the patch sends a detail of the bust (bust_box=). The words above
+# it own the part's size, colours and root: three critics found "its size against the head" at odds with the sizes
+# the asks gave (2026-11-12), and a painter given two sizes takes the picture's.
+PATCH_BUST = ("Picture {n} is {name} too, the same person, in {portrait} made before this photograph. Take from it "
+              "only {take}: the shape, and nothing else. The size, the colours and where it grows from are as the "
+              "words above say. It is a painting and picture 1 is a photograph: what is taken from it is "
+              "photographed here, with the grain, the focus and the light of picture 1, and nothing of the "
+              "painting's smooth finish, its background or its pose.")
+BUST_WHOLE, BUST_DETAIL = "a painted portrait", "a detail cut from a painted portrait"
+PATCH_KEYS = ("what", "ask", "edit", "keep", "refs", "likeness", "bust", "bust_box", "changes", "took")
 WHOLE = ((0, 0), (scene.FRAME[0], 0), scene.FRAME, (0, scene.FRAME[1]))   # an edit polygon: the whole frame
 VIEW_TOKEN = "{view}"   # in a patch's ask: the words the record's own display shows (scene.CHART_SHOWS)
 GROW = 0.12             # a likeness is the avatar's square and a little more of the shoulders
@@ -188,6 +196,29 @@ def likeness_path(word):
 def bust_path(word):
     """The pilot's earlier painted bust (creator.py): a patch's bust= shows it to the painter for one part."""
     return scene.creator.bust_path(word)
+
+
+def bust_detail_path(word):
+    """The detail of the bust a patch with bust_box= shows the painter in place of the whole bust."""
+    return os.path.join(ROOT, PATCHES, f"{word}_bust.png")
+
+
+def bust_detail(word, box):
+    """The bust cut to `box` (left, top, right, bottom, in the bust's own pixels)."""
+    from PIL import Image
+    return Image.open(bust_path(word)).convert("RGB").crop(tuple(int(v) for v in box))
+
+
+def write_bust_detail(word):
+    """Cut the detail a record's patch names (bust_box=) and write it beside the mask. Lossless, so the self-test
+    can hold the file on disk to the record's box."""
+    w = _word(word)
+    box = (patch_of(w) or {}).get("bust_box")
+    if not box:
+        raise ValueError(f"{w}'s patch has no bust_box: it shows the painter the whole bust, or none")
+    os.makedirs(os.path.join(ROOT, PATCHES), exist_ok=True)
+    bust_detail(w, box).save(bust_detail_path(w), optimize=True)
+    return bust_detail_path(w)
 
 
 def likeness_log():
@@ -327,6 +358,8 @@ def apply(word, painted_file, out=None):
                 prompt=prompt(w, patch=True), moved_outside_the_mask=round(drift, 2))
     if patch.get("bust"):   # the pilot's bust went with the scene, for this one part
         note["bust"] = patch["bust"]
+        if patch.get("bust_box"):   # and only this detail of it
+            note["bust_box"] = list(patch["bust_box"])
     if patch.get("took"):   # less than the ask named went into the scene: say what did
         note["took"] = patch["took"]
     if not out:
@@ -400,6 +433,18 @@ def record_errors(word, rec):
             out.append(f"{word}: the patch's `bust` is a phrase that goes inside a sentence: the one part taken")
         if not os.path.exists(bust_path(word)):
             out.append(f"{word}: the patch takes from the bust and {word} has none ({scene.creator.BUSTS})")
+    box = patch.get("bust_box")
+    if box is not None:
+        if not shown:
+            out.append(f"{word}: the patch has a bust_box and no `bust`: the box is the detail of the bust it shows")
+        elif os.path.exists(bust_path(word)):
+            from PIL import Image
+            bw, bh = Image.open(bust_path(word)).size
+            if (len(box) != 4 or any(not isinstance(v, int) for v in box)
+                    or not (0 <= box[0] < box[2] <= bw and 0 <= box[1] < box[3] <= bh)
+                    or min(box[2] - box[0], box[3] - box[1]) < scene.AVATAR):
+                out.append(f"{word}: the patch's bust_box is (left, top, right, bottom) inside the bust ({bw}x{bh}), "
+                           f"no side under {scene.AVATAR} px")
     changed = patch.get("changes", ())
     if isinstance(changed, str) or len(set(changed)) != len(changed) or any(c not in PATCH_KEPT for c in changed):
         out.append(f"{word}: the patch's `changes` is a tuple of what its first line would say stays, each once: "
@@ -482,7 +527,8 @@ def prompt(word, patch=False):
         parts = [patch_head(p), ask]
         told = [PATCH_LIKENESS.replace("{n}", "2").replace("{take}", p["likeness"])] if p.get("likeness") else []
         if p.get("bust"):
-            told.append(PATCH_BUST.replace("{n}", str(2 + len(told))).replace("{take}", p["bust"]))
+            told.append(PATCH_BUST.replace("{n}", str(2 + len(told))).replace("{take}", p["bust"])
+                        .replace("{portrait}", BUST_DETAIL if p.get("bust_box") else BUST_WHOLE))
         told += reference_lines(refs, name, 2 + len(told))
         if told:
             parts.append(REF_HEAD + " " + " ".join(told))
@@ -532,7 +578,8 @@ def pictures(word, patch=False):
         if (rec.get("patch") or {}).get("likeness"):
             out.append(("the likeness", likeness_path(w)))
         if (rec.get("patch") or {}).get("bust"):
-            out.append(("the bust", bust_path(w)))
+            detail = (rec.get("patch") or {}).get("bust_box")
+            out.append(("a detail of the bust", bust_detail_path(w)) if detail else ("the bust", bust_path(w)))
         names = patch_refs(w)
     else:
         out = [("the likeness", likeness_path(w))] if os.path.exists(likeness_path(w)) else []
@@ -594,6 +641,17 @@ def self_test():
             errors.append(f"{w}: the mask is {on_disk.size} {on_disk.mode}, and the scene is {size}")
         elif on_disk.tobytes() != mask_image(patch, size).tobytes():
             errors.append(f"{w}: the mask on disk is not the record's polygons (refs.py mask {w})")
+
+    # A patch that shows a detail of the bust has it on disk, and it is the bust cut to the record's box.
+    for w, rec in recs.items():
+        box = (rec.get("patch") or {}).get("bust_box")
+        if not box or not os.path.exists(bust_path(w)):
+            continue
+        if not os.path.exists(bust_detail_path(w)):
+            errors.append(f"{w}: the patch shows a detail of the bust and it is not on disk (refs.py detail {w})")
+        elif Image.open(bust_detail_path(w)).convert("RGB").tobytes() != bust_detail(w, box).tobytes():
+            errors.append(f"{w}: the detail on disk is not the bust cut to the record's bust_box "
+                          f"(refs.py detail {w})")
 
     # A mask is clear exactly where the painter may work, and blending keeps everything else to the pixel.
     patch = dict(edit=[[(100, 100), (500, 100), (500, 400), (100, 400)]], keep=[[(250, 200), (350, 200), (350, 300)]])
@@ -662,9 +720,19 @@ def self_test():
         errors.append("patch_head still says that what a patch changes stays")
     if patch_head(dict(whole, changes=PATCH_KEPT)) != as_sent.split("{name}")[0] + "{name}.":
         errors.append("patch_head does not end at the pilot when a patch changes everything else")
-    shown = PATCH_BUST.replace("{n}", "2").replace("{take}", "the pouch under the bill").replace("{name}", "Tamako")
-    if "{" in shown or "Picture 2 is Tamako too" not in shown or "only the pouch under the bill:" not in shown:
-        errors.append("PATCH_BUST does not say which picture the bust is and the one part taken from it")
+    shown = (PATCH_BUST.replace("{n}", "2").replace("{take}", "the pouch under the bill").replace("{name}", "Tamako")
+             .replace("{portrait}", BUST_DETAIL))
+    if ("{" in shown or "only the pouch under the bill: the shape" not in shown or "size against" in shown
+            or "Picture 2 is Tamako too, the same person, in a detail cut from a painted portrait" not in shown):
+        errors.append("PATCH_BUST does not say which picture the bust is, the one part taken from it, and that the "
+                      "words own its size")
+    busted = dict(whole, bust="the pouch under the bill")
+    for bad, why in (((0, 0, 100, 100), "smaller than an avatar"), ((0, 0, 99999, 400), "outside the bust"),
+                     ((0, 0, 400.0, 400), "not whole numbers")):
+        if not any("bust_box" in e for e in record_errors("WINGMAN", dict(patch=dict(busted, bust_box=bad)))):
+            errors.append(f"record_errors took a bust_box that is {why}")
+    if not any("bust_box" in e for e in record_errors("WINGMAN", dict(patch=dict(whole, bust_box=(0, 0, 400, 400))))):
+        errors.append("record_errors took a bust_box on a patch that shows no bust")
 
     # A link is only given for what is committed; the reference words number the pictures as they are given.
     for bad in (os.path.join(ROOT, REFS, "no_such_picture.jpg"), "/tmp/outside.jpg"):
@@ -735,6 +803,10 @@ def main():
         if args[0] == "mask" and len(args) in (2, 3):
             path = write_mask(args[1], args[2] if len(args) == 3 else None)
             print(f"wrote {os.path.relpath(path, ROOT)}" + (f" and the view {args[2]}" if len(args) == 3 else ""))
+            return 0
+        if args[0] == "detail" and len(args) == 2:
+            path = write_bust_detail(args[1])
+            print(f"cut {os.path.relpath(path, ROOT)}: look at it, then commit it (it needs a link)")
             return 0
         if args[0] == "prompt" and len(args) >= 2:
             print(prompt(args[1], "--patch" in args))
