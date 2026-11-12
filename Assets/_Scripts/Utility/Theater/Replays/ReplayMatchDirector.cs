@@ -53,6 +53,10 @@ namespace CosmicShore.Utility
             public IVesselStatus Status;
             public Transform Root;
             public readonly Dictionary<string, ShipActionSO> Actions = new();
+            // The last pose step, for the stick its turn implies (ReplayPuppetry).
+            public Quaternion LastRotation;
+            public float LastTime = float.NegativeInfinity;
+            public Vector3 Stick;
         }
 
         enum Phase { WaitingForSeats, WaitingForGo, Playing, Leaving }
@@ -260,10 +264,50 @@ namespace CosmicShore.Utility
             // Something (a respawn, a player restart) may have handed the hull back to its flight model.
             var transformer = b.Status.VesselTransformer;
             if (transformer && transformer.IsActive) transformer.ToggleActive(false);
+            // The round's start hands the local seat its input back (SetPause(false) on Go). Its strategy then writes
+            // the untouched stick over the recorded one every frame before the hull's puppetry reads it, so the
+            // recorded pilot's hull alone sat still in every turn while the AI seats (never local) moved.
+            var controller = b.Status.Player?.InputController;
+            if (controller && b.Status.InputStatus is { Paused: false }) controller.SetPause(true);
             if (!b.Track.TryEvaluate(t, out var position, out var rotation, out float speed)) return;
             b.Root.SetPositionAndRotation(position, rotation);
             b.Status.Speed = speed;
             b.Status.Course = rotation * Vector3.forward;
+            // Trail prisms lay along blockRotation, which the (switched off) transformer writes every frame;
+            // without this every prism kept the hull's spawn facing.
+            b.Status.blockRotation = rotation;
+            Puppeteer(b, transformer, rotation, speed, t);
+        }
+
+        /// <summary>
+        /// Holds the stick the recorded turn implies, so the hull's <c>VesselAnimation</c> puppets the turns it is
+        /// seen making instead of idling (only a speed-driven gait, the Stoat's, moved before). The flight model
+        /// is off, so the stick moves the puppet and nothing else.
+        /// </summary>
+        static void Puppeteer(Binding b, VesselTransformer transformer, Quaternion rotation, float speed, float t)
+        {
+            var input = b.Status.InputStatus;
+            if (input == null) return;
+            float dt = t - b.LastTime;
+            if (transformer && dt > 0f)
+            {
+                var full = ReplayPuppetry.FullStickRates(speed, transformer.RotationThrottleScaler,
+                    transformer.PitchScaler, transformer.YawScaler, transformer.RollScaler,
+                    transformer.ExternalTurnRateMultiplier);
+                var target = ReplayPuppetry.StickFor(ReplayPuppetry.LocalTurnRate(b.LastRotation, rotation, dt), full);
+                b.Stick = dt > ReplayPuppetry.MaxStepSeconds ? target : ReplayPuppetry.Ease(b.Stick, target, dt);
+                input.XDiff = ReplayPuppetry.ThrottleFor(speed, transformer.MinimumSpeed, transformer.ThrottleScaler);
+            }
+            if (dt != 0f)
+            {
+                b.LastRotation = rotation;
+                b.LastTime = t;
+            }
+            input.YSum = b.Stick.x;
+            input.XSum = b.Stick.y;
+            input.YDiff = b.Stick.z;
+            input.EasedLeftJoystickPosition = new Vector2(b.Stick.y, b.Stick.x);
+            input.Idle = speed <= 0.01f;
         }
 
         void RunActions(float t)
