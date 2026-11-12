@@ -3868,8 +3868,8 @@
       "title": "Rev 94 B - Three crews: a pilot and a hull in each domain band, the Ark beside; the colour set changing"
     },
     "R94Notes.dc.html": {
-      "x": 4200,
-      "y": 14640,
+      "x": 0,
+      "y": 15900,
       "w": 1920,
       "h": 900,
       "page": "loading-screens",
@@ -3936,6 +3936,14 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations"
+    },
+    "R94C.dc.html": {
+      "x": 4200,
+      "y": 14640,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 94 C - The crew before the domains, the living sea far behind: cells, crystals, fauna and flora; the colour set changing"
     }
   },
   "createdOnFiles": {
@@ -7194,6 +7202,7 @@
     "R93Notes.dc.html",
     "R94A.dc.html",
     "R94B.dc.html",
+    "R94C.dc.html",
     "R94Notes.dc.html",
     "R95S1A.dc.html",
     "R95S1B.dc.html",

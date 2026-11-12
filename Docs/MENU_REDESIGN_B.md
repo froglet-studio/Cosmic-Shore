@@ -7615,3 +7615,11 @@ What answers each of his points:
 `frogma.py check --only R94` passes. `check_mockup.py` fails the colour gate on purpose: the 24 colour-set swatches are
 not UI tokens. Looked at in a local render at two moments of the loop (two sets), before a last layout pass.
 In the game the splash would wear the player's own set and blend when it changes. Nothing built.
+
+**C, added the same hour.** Shombith, on the flora bursts: "remove this sun like thing", then "crystals cells can be
+shown but not this i guess, create another mockup with cells and crystals and fauna and flora in the distant bg as
+well". `R94C` is A with the living sea far behind the bands (which are a little more see-through): five cells
+breathing, crystals pulsing, a school of small darts crossing, one long creature of linked segments swimming, and
+flora as stalks of prism segments swaying from the floor, never a radial burst. Canvas version `1794525024-6c59`.
+The fauna and flora are drawings, not the game's creatures. Looked at in a local render before a last pass that moved
+a cell off the Froglet logo and the creature off the colour-set readout.

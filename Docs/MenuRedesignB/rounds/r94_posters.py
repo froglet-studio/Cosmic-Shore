@@ -18,6 +18,9 @@ So: A's crew and D's three slanted domain bands in one picture; the first pass's
 
   A  The crew before the domains   five pilots in a line across the three bands, the Ark above (recommended)
   B  Three crews                   a pilot and a hull in each band, the Ark beside
+  C  The crew, the living sea      A, with cells, crystals, fauna and flora far behind ("crystals cells can be
+                                   shown ... create another mockup with cells and crystals and fauna and flora in the
+                                   distant bg as well")
 
     python3 Docs/MenuRedesignB/rounds/r94_posters.py <scratch root> [rev]
 """
@@ -168,6 +171,62 @@ def board_b():
     return r91.page(f"R{REV}B.dc.html", body, CSS)
 
 
+# ── C The crew before the domains, with the living sea far behind ─────────────────────────
+
+def distant(seed):
+    """The far background: cells, crystals, fauna and flora, small and faint, each moving slowly.
+    Flora here is stalks of prism segments swaying from the sea floor, never a radial burst."""
+    import math
+    rng = random.Random(seed)
+    out = ""
+    for i, (x, y, r, dur) in enumerate([(190, 640, 104, 13), (1810, 330, 230, 11), (1590, 120, 54, 15), (60, 380, 46, 17), (1010, 60, 40, 19)]):
+        out += (f'<g style="transform-box:fill-box;transform-origin:center;animation:breathe {dur}s ease-in-out infinite alternate">'
+                f'<circle cx="{x}" cy="{y}" r="{r}" fill="url(#cellG)" stroke="rgba(185,201,250,.42)" stroke-width="2"></circle></g>')
+    for i, (x, y) in enumerate([(170, 610), (230, 680), (1740, 270), (1860, 400), (1800, 190), (1590, 120), (60, 380), (300, 520), (1700, 800)]):
+        out += (f'<rect x="{x - 7}" y="{y - 7}" width="14" height="14" transform="rotate(45 {x} {y})" fill="{INK}" '
+                f'style="animation:pulse {3 + (i % 4) * .8:.1f}s ease-in-out {-i * .7:.1f}s infinite alternate"></rect>')
+    # fauna: a school of small darts crossing, and one long creature of linked segments swimming
+    school = ""
+    for i in range(16):
+        x, y = 60 + rng.uniform(0, 230), 400 + rng.uniform(0, 110)
+        school += f'<path d="M {x:.0f} {y:.0f} l -16 -6 l 4 6 l -4 6 z" fill="{PALE}" opacity="{rng.uniform(.35, .7):.2f}"></path>'
+    out += f'<g style="animation:school 26s ease-in-out infinite alternate">{school}</g>'
+    worm = ""
+    for i in range(11):
+        x = 1620 + i * 26
+        worm += (f'<circle cx="{x}" cy="810" r="{13 - i * .9:.1f}" fill="rgba(0,4,31,.7)" stroke="{PALE}" stroke-width="2" opacity=".6" '
+                 f'style="animation:swim 3.2s ease-in-out {-i * .28:.2f}s infinite alternate"></circle>')
+    out += f'<g style="animation:glide 34s ease-in-out infinite alternate">{worm}</g>'
+    # flora: stalks of prism segments rising from the foot, swaying about their roots
+    for i, (x, h, lean, dur) in enumerate([(100, 250, 36, 9), (330, 170, -26, 11), (1870, 300, -40, 12)]):
+        d = f"M {x} 860 q {lean} {-h // 2} 0 {-h}"
+        twigs = "".join(f"M {x + lean * t * (1 - t) * 2:.0f} {860 - h * t:.0f} l {s * 34} -26 " for t, s in ((.35, 1), (.55, -1), (.75, 1)))
+        out += (f'<g style="transform-box:fill-box;transform-origin:50% 100%;animation:sway {dur}s ease-in-out infinite alternate">'
+                f'<path d="{d}" stroke="{PALE}" stroke-width="9" stroke-dasharray="16 6" opacity=".5"></path>'
+                f'<path d="{twigs}" stroke="{PALE}" stroke-width="6" stroke-dasharray="10 5" opacity=".4"></path></g>')
+    return r92.svg(out)
+
+
+C_CSS = """@keyframes school{0%{transform:translate(-40px,20px)}100%{transform:translate(120px,-50px)}}
+@keyframes glide{0%{transform:translate(40px,10px)}100%{transform:translate(-110px,-40px)}}
+@keyframes swim{0%{transform:translateY(-9px)}100%{transform:translateY(9px)}}
+@keyframes sway{0%{transform:rotate(-3.5deg)}100%{transform:rotate(3.5deg)}}"""
+
+
+def board_c():
+    line = [("Hornet", 430), ("Needle", 500), ("Galleon", 590), ("Sundial", 500), ("Anvil", 430)]
+    xs = [470, 715, 960, 1205, 1450]
+    crew = ""
+    for i in (0, 4, 1, 3, 2):
+        n, h = line[i]
+        w = round(h * 440 / 560)
+        crew += img(PILOT[n], n, xs[i] - w // 2, 862 - h, w, h)
+    body = (r91.sea() + distant(3) + "".join(band(i, 360 + i * 400, alpha=.8) for i in range(3))
+            + img(ARK, "The Ark", 600, 96, 720, 337, "animation:bob 10s ease-in-out infinite alternate")
+            + crew + marks(96, 64, 300, 96, 200, 180) + themes(1650, 560, row=False) + foot())
+    return r91.page(f"R{REV}C.dc.html", body, CSS + C_CSS)
+
+
 def board_notes():
     cols = [
         ("Asked", ["Shombith, 2026-11-12: \"Delete others and can you combine D and A and the theme switching in this scene as well, this scene needs to be very very smooth ... the colors on D is too bright ... and also the empty dull blue. Can show some animated parts of the cell along with the sea lines in the background.\""]),
@@ -179,6 +238,7 @@ def board_notes():
                                     "In the game the splash would wear the player's set, and blend when it changes."]),
         ("The two", ["A The crew before the domains (recommended): five pilots across the three bands, the Ark above.",
                      "B Three crews: a pilot and a hull in each band, the Ark beside.",
+                     "C As A, with the living sea far behind: cells, crystals, a school and a long creature, flora swaying from the floor.",
                      "Smooth: every motion eases both ways and alternates; nothing pops or restarts."]),
     ]
     body = (f'<div class="abs" aria-hidden="true" style="inset:0;background:{GROUND}"></div>'
@@ -193,5 +253,5 @@ def board_notes():
 
 
 if __name__ == "__main__":
-    for fn in (board_a, board_b, board_notes):
+    for fn in (board_a, board_b, board_c, board_notes):
         print("wrote", fn())

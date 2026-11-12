@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794524891-90ac` of **Frogma**: Rev 3 to Rev 95, 478 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794525024-6c59` of **Frogma**: Rev 3 to Rev 95, 479 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -749,6 +749,7 @@ Copied on 2026-11-12 from canvas version `1794524891-90ac` of **Frogma**: Rev 3 
 
 - [`R94A.dc.html`](R94A.dc.html) - Rev 94 A - The crew before the domains: five pilots across three domain bands, the Ark above; the colour set changing (recommended)
 - [`R94B.dc.html`](R94B.dc.html) - Rev 94 B - Three crews: a pilot and a hull in each domain band, the Ark beside; the colour set changing
+- [`R94C.dc.html`](R94C.dc.html) - Rev 94 C - The crew before the domains, the living sea far behind: cells, crystals, fauna and flora; the colour set changing
 - [`R94Notes.dc.html`](R94Notes.dc.html) - Rev 94 - notes: A and D as one poster, what changed, the colour set changing
 
 #### Rev 93 - The boot splash as today's art with a real vessel
