@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-12-the-pilot-creator-skill-new-in-this-pull-876375",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T05:58:17+00:00",
+  "area": "the Claude skills and the pilot art tooling",
+  "summary": "The /pilot-creator skill (new in this pull request) is rewritten round the scenes: the scene is now the procedure and the avatar is the scene's close-up, the bust procedure moved to references/BUSTS.md, and the skill gained the one-creature rules, the two painters and painting from the game's own frames. Tools/Build/pilot_art/refs.py lets a patch show the pilot's bust to the painter (bust=). CLAUDE.md's pilots line now names the scenes, refs.py and the one-creature rule.",
+  "why": "Garrett's decision of 2026-11-11 (the scene close-ups replace the busts as avatars, each pilot a bespoke scene) and his notes that a pilot must be designed as one creature and painted from the game's own frames. Nothing outside the pilot art kit changed; the scene_sweep.js edit is a cost comment only.",
+  "branch": "claude/signature-pilot-busts",
+  "pr": 1894,
+  "commit": "bb7384fd9",
+  "paths": [
+    ".claude/skills/pilot-creator",
+    "CLAUDE.md",
+    "Docs/Pilots/PORTRAITS.md",
+    "Tools/Build/pilot_art/refs.py"
+  ]
+}

@@ -35,6 +35,9 @@ namespace CosmicShore.UI
         [Tooltip("Set sail: opens the voyage's launch window.")]
         [SerializeField] Button setSailButton;
 
+        /// <summary>The voyage's card (the Voyage window's Saga table reads it, <see cref="VoyageSagaSlab"/>).</summary>
+        public SO_ArcadeGame Card => voyage;
+
         void Awake()
         {
             if (setSailButton) setSailButton.onClick.AddListener(SetSail);

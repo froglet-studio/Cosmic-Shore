@@ -173,6 +173,86 @@ the sequence's current END, so inserting a long tween first (a hex fill at 0, d,
 appended beat starts after it: 3-2-1 would have started about 3 s late. Append the timeline first, then `Insert` the
 overlays at absolute times.
 
+**T21 - the game blends UI in LINEAR light, so a see-through dark plate is far thinner than its alpha, and a web
+drawing hides it** (claude/signature-pilot-busts, 2026-11-12, the pilot profile page, section 92.1).
+`ProjectSettings.asset` has `m_ActiveColorSpace: 1`: a plate at alpha a keeps (1 - a) of the LIGHT behind it. A white
+sky under SurfaceBlack at 0.88 (the Credits window's dim, fine over the dark menu) is still sRGB 97, and words in
+NeutralLightest on it stood at 1.5:1. A stills page composites in sRGB and showed the same plate near black, so the
+drawing passed and the build did not. For words over a picture, live footage or anything that can be bright:
+- compute, do not look: `author_menu_pilot_profile.contrast_over_white(words, plate, alpha)` blends as the game does;
+  the generator holds every plate to 4.5:1 for every colour words are drawn in, from the alpha as WRITTEN (the
+  Image's own and the one `KitThemedGraphic` paints it with), and three controls prove the rule fires;
+- over white, SurfaceBlack needs alpha 0.86 for TextLight and 0.993 for NeutralLightest, so a plate with quiet lines
+  on it is solid, or the quiet lines are drawn brighter;
+- a drawing of such a plate on a web page blends in linear light too: `out = (1 - a) * picture + a * plate` on
+  linearised channels, then back to sRGB;
+- quiet words are NeutralLightest. TextInactive is the DISABLED colour and does not read on SurfaceBlack.
+
+**T22 - look at a menu build in Amoebius before calling it built** (same branch; section 159 took four menu builds
+back out because "the build was never seen before it reached him"). The engine runs the real prefabs, scripts and
+`Resources.Load` with no Unity (`/amoebius`: build `Port/src/CosmicShore.Player` in a scratch worktree, start it under
+xvfb with the control port, offline and silent, with a throwaway profile that declines data consent). Click through
+the screen, `resize` to 4:3 and 21:9, and LOOK at each capture. For the pilot page that proved, in a few minutes, the
+tab's eighteen cells, the page loading from Resources, the wiring, Next, the panel's change of side, the cut at three
+shapes and Close, and it found T21. What that look does not tell you:
+- the menu's sea material (`Sea_Window (colour set)`) draws WHITE in the engine, on every screen that has one, so a
+  white ground is not your screen's fault: switch the `Sea` Images off for the pictures (`set "Sea" Image enabled false`);
+- a paragraph's lines sit closer than TextMeshPro sets them (17.6 against the kit's 23.2 at Body), so a wrapped block
+  stands about a third taller in Unity;
+- the diagnostics overlay (F7) covers the top left and takes the clicks there;
+- the menu pauses the game off Home (`ScreenSwitcher`, `timeScale` 0): a window must not time anything on scaled time
+  (`ModalWindowManager` closes on realtime), and a paused clock in `state` is not the window's doing;
+- the engine's pad reaches controls Unity's cannot: its `Selectable.IsInteractable()` ignores `CanvasGroup`s, so
+  automatic navigation there wanders under closed and covered windows (a press left on the pilot page selected a game
+  card, and A opened its configure window underneath). Press the pad anyway (`do "pad dpad.left"`, `pad buttonSouth`
+  for A, `pad buttonEast` for B; read `get "EventSystem" EventSystem currentSelectedGameObject` after each): explicit
+  navigation behaves there as in Unity, and a leak is the cue to work out what Unity's search would pick (T24);
+- stand-ins the engine build needs stay in the scratch worktree. A ship never patches Amoebius (`/ship` section 0.05).
+The final look, the fonts, the fade, the pad and the safe area are still the hand test's.
+
+**T23 - a negative control names the rule that must catch it, and a token list is read from the code that fills it**
+(same branch, found in review). A generator's self-test that only asks "did validate() raise" passes a control caught
+by a NEIGHBOURING rule, so the rule it was written for can be dead and the self-test stays green: `expect(label,
+mutate, by="words of the rule")` fails a control caught by any other. And a hand-kept list of the tokens a template
+may name drifts from the C# that fills them: read it from the source (`PilotProfileModal.TokenNames`; `ArkPilotsPage`'s
+`TemplateText.Fill` calls, one list a line, so `{count}` is the count's alone), and check the tokens in what was
+WRITTEN to the prefab, before the rule that compares the line with its authored words.
+
+**T24 - a window that covers the nav gives its controls an explicit pad path** (same branch: the pad left the page in
+an Amoebius run, and what Unity would do was then worked out, not seen). The kit's buttons are on AUTOMATIC
+navigation: uGUI picks, from every live Selectable on the canvas, the one with the best `dot / distance squared` in
+the pressed direction (`Selectable.FindSelectable`, recalled from uGUI's source: the reference assemblies here list
+its members without their bodies). The menu keeps the pad inside an open window by switching
+`CanvasGroup.interactable` off on the screens and on the windows underneath. What sits in neither has to be off some
+other way, and in the engine's live scene (2026-11-12, the pilot page open) the hub strip, the friends drawer and its
+orb, the in-game HUD and the disconnect notice all read off, each by a group of its own. The top nav did not: its
+`LeftArrrow` and `RightArrow` are automatic Buttons in a group that is switched off only for freestyle, so they are
+candidates under EVERY open window. Under a window that leaves the nav showing that is a visible button. Under a
+full-screen one it is a hidden button that A still presses: by that score on the pilot page's rectangles, up from
+NEXT, up or left from PREVIOUS and left from CLOSE each pick one. So:
+- a window that covers the nav authors Explicit navigation among its own controls (`WAYS` and `steer()` in
+  `author_menu_pilot_profile.py`: mode 4, each way a file id, an unnamed way goes nowhere), or takes a control that
+  only the pad's own key works out of navigation (mode 0: the replay viewer's EXIT, the hub strip's arrows);
+- the generator holds it from what was WRITTEN: every Selectable in the prefab is named, each way lands on one of the
+  window's own buttons, every button can be reached from every other, and a control proves each rule fires;
+- a Selectable writes its navigation in the file that DRAWS it, so a nested kit button (`P.kit_button`: a
+  `KitButton.prefab` instance, or `KitButtonSmall`, a variant with no navigation block of its own) stays automatic
+  where the window's table cannot name it, and a count of the window's own `m_Navigation` blocks cannot see it. Read
+  the nested prefabs all the way down and refuse one (`nested_controls`; found in review, where the count rule also
+  had no control of its own);
+- explicit navigation does not skip a disabled button (`Selectable.Navigate` asks only whether the target is active;
+  recalled the same way), so a way should not point at a control the window disables while its neighbours stay live:
+  hide it instead, since an inactive target is skipped. And the menu focuses a window BEFORE the window draws
+  (`ModalWindowIn` pushes the window, which runs `Refocus`, and only then raises `OnModalOpened`), so a window that
+  disables a control when it opens can disable the one just focused, and uGUI's `interactable` setter then clears
+  the selection (recalled the same way): the pad has no focus at all. The pilot page has one such state, a crew of
+  one, which play never reaches and a damaged save can (backlog row PP6);
+- to know what automatic would do without Unity, list the live buttons outside the window (`do "buttons"` in the
+  engine prints every active one with its rectangle; drop those under a group whose `interactable` reads False) and
+  score them yourself: origin on the pressed edge of the selected rectangle, candidates at their centres,
+  `dot <= 0` skipped. `buttons` lists Buttons only: a Slider, Toggle or input field is a candidate too.
+By the same score the nav's arrows can be reached from other windows too (backlog row PP4, Shombith's nav).
+
 ## Cross-cutting checks
 
 Run these regardless of task, since they are the project's known failure modes:

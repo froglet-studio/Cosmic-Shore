@@ -2,7 +2,7 @@
  "counts": {
   "exempt": 8,
   "grey": 468,
-  "ui": 583,
+  "ui": 601,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -38,6 +38,132 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "72d0782de5418a68"
+  },
+  "Assets/Resources/Pilots/Scenes/ANVIL.jpg": {
+   "coloured": 0.3931,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d251a5ed02652a37",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/BANDIT.jpg": {
+   "coloured": 0.354,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "f3a28728af561f7b",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/CITADEL.jpg": {
+   "coloured": 0.5222,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "0a5ef8e4182d03ad",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/DOE.jpg": {
+   "coloured": 0.6123,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "03e0400c3aea2ab1",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/ENSIGN.jpg": {
+   "coloured": 0.3889,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "708cc0177795e74e",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/FLUME.jpg": {
+   "coloured": 0.8628,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "0852fa9db680e3f5",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/GALLEON.jpg": {
+   "coloured": 0.5388,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "9d03e952d85e3a06",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/HORNET.jpg": {
+   "coloured": 0.3609,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "64807db828d888a3",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/IVY.jpg": {
+   "coloured": 0.957,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "54f0ccab3c184e74",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/MANGER.jpg": {
+   "coloured": 0.2629,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "4f8d9e57e3a0edf8",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/NEEDLE.jpg": {
+   "coloured": 0.2695,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "18f5ccddfcad09a2",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/OPAL.jpg": {
+   "coloured": 0.6128,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "e61b5d3d5cf8f9ee",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/RAMPART.jpg": {
+   "coloured": 0.848,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "1efefe7217dd8aa3",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/SUNDIAL.jpg": {
+   "coloured": 0.4221,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "158483edc17a43c6",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/TALON.jpg": {
+   "coloured": 0.9838,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "cd8382c8ca8671c1",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/VOLT.jpg": {
+   "coloured": 0.9238,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "3e9d7784db62cf1b",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/WINGMAN.jpg": {
+   "coloured": 0.5318,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "1a390f362a5d9b56",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/ZODIAC.jpg": {
+   "coloured": 0.8478,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "4db182f4f0e2ec87",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/Resources/UI/icon_Spectate.png": {
    "coloured": 0.0,
@@ -5250,353 +5376,353 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_ANVIL.png": {
-   "coloured": 0.8319,
+   "coloured": 0.5813,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "27883232a56d76e2",
+   "sha": "f001dda4d3c4f2f5",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Astrofoil.png": {
-   "coloured": 0.9062,
+   "coloured": 0.772,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "7313fd1ed88bee10",
+   "sha": "21fe406944bc5122",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_BANDIT.png": {
-   "coloured": 0.8526,
+   "coloured": 0.362,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "beee9d24ddf866db",
+   "sha": "67cdefc12d61cefb",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Bushy.png": {
-   "coloured": 0.8509,
+   "coloured": 0.9995,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "8209cc470a33e4e2",
+   "sha": "ad8e3321bc12a78e",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_CITADEL.png": {
-   "coloured": 0.8749,
+   "coloured": 0.5356,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "da5271e2392c266c",
+   "sha": "06ba01226ae56d5a",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Comet.png": {
-   "coloured": 0.6604,
+   "coloured": 0.5498,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "cec90823010f9298",
+   "sha": "ed81be342d0b16a3",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_DOE.png": {
-   "coloured": 0.9518,
+   "coloured": 0.7865,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "bfac114dc375761f",
+   "sha": "3eaf43ed921f7443",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Damsel.png": {
-   "coloured": 0.9312,
+   "coloured": 0.9102,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "9508418257b092ae",
+   "sha": "05eb3722dd92f6e0",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Dozer.png": {
-   "coloured": 0.9837,
+   "coloured": 0.7165,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "d5cefcbdfd1a5e57",
+   "sha": "c6344cc485729060",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_ENSIGN.png": {
-   "coloured": 0.7811,
+   "coloured": 0.5693,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "502cd00e491259fb",
+   "sha": "1b227543f9af087e",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Echo.png": {
-   "coloured": 0.811,
+   "coloured": 0.8944,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "30433cc7807fcb82",
+   "sha": "d87b0102bb745927",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_FLUME.png": {
-   "coloured": 0.9048,
+   "coloured": 0.6988,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "d2f74a095e3fa797",
+   "sha": "c86f6e9e20f47328",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Fiest.png": {
-   "coloured": 0.8526,
+   "coloured": 0.8222,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "6a82c637c2077091",
+   "sha": "93d55bd2853cb930",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Flux.png": {
-   "coloured": 0.5878,
+   "coloured": 0.309,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "c1227363d211d50d",
+   "sha": "86aedde989e41bef",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_GALLEON.png": {
-   "coloured": 0.9025,
+   "coloured": 0.6364,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "42898253ff0b279e",
+   "sha": "f228f789fd436a9e",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_HORNET.png": {
-   "coloured": 0.9508,
+   "coloured": 0.698,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "6bc38562f7f3f86c",
+   "sha": "99239b4965566098",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_IVY.png": {
-   "coloured": 0.9558,
+   "coloured": 0.8538,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "41faf2db14946236",
+   "sha": "754fa501f690d301",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Jugger.png": {
-   "coloured": 0.7391,
+   "coloured": 0.3811,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "65e1887c230c34f8",
+   "sha": "72f705fe4eb97390",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Krush.png": {
-   "coloured": 0.8229,
+   "coloured": 0.688,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "20e7c3ec00bce392",
+   "sha": "8584047f00ed0038",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Longshift.png": {
-   "coloured": 0.6457,
+   "coloured": 0.6801,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "6b5ad18aa6553914",
+   "sha": "2c7edcd9ac371130",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_MANGER.png": {
-   "coloured": 0.9402,
+   "coloured": 0.3625,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "aaa58fe92e1fdf95",
+   "sha": "768fd6ab9ce570e3",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Maestro.png": {
-   "coloured": 0.7383,
+   "coloured": 0.8014,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "b416eb458924123f",
+   "sha": "7ad9574fd887499e",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Mason.png": {
-   "coloured": 0.873,
+   "coloured": 0.2611,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "6a103c917e051ced",
+   "sha": "bc22debd15d9671f",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_NEEDLE.png": {
-   "coloured": 0.6955,
+   "coloured": 0.2597,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "78e29af692686071",
+   "sha": "ae39b117821ba8af",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_OPAL.png": {
-   "coloured": 0.9812,
+   "coloured": 0.87,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "eace2e91fafa17e5",
+   "sha": "2d161243b5735ad3",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_RAMPART.png": {
-   "coloured": 0.718,
+   "coloured": 0.8573,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "4dcbda146b168a37",
+   "sha": "70cb2148d3d09323",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Reaper.png": {
-   "coloured": 0.7729,
+   "coloured": 0.6114,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "8e051ee8176fb359",
+   "sha": "8121a4c42053b5b7",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Riptide.png": {
-   "coloured": 0.7043,
+   "coloured": 0.7767,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "9b21b16b35412d0e",
+   "sha": "5cdeef71da141440",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_SUNDIAL.png": {
-   "coloured": 0.9022,
+   "coloured": 0.3913,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "2387d22eae561956",
+   "sha": "75744037114eba55",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Scales.png": {
-   "coloured": 0.8896,
+   "coloured": 0.4478,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "5821971fbb0a95bc",
+   "sha": "9fef9ca2f0761ade",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Shrapnel.png": {
-   "coloured": 0.7414,
+   "coloured": 0.6544,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "22ce090b865e7118",
+   "sha": "67f39d7c50c10636",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Siphon.png": {
-   "coloured": 0.8958,
+   "coloured": 0.7712,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "00265196bc1183d1",
+   "sha": "6ab4769e3ccb0ef3",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Slingshot.png": {
-   "coloured": 0.9133,
+   "coloured": 0.7528,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "90c9f8276e483b6a",
+   "sha": "132733a5c5fc8375",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare01.png": {
-   "coloured": 0.8675,
+   "coloured": 0.8575,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "b105ecc99839bcbe",
+   "sha": "84c03dedcd0746cd",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare02.png": {
-   "coloured": 0.9615,
+   "coloured": 0.7048,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "59ac8a7f88964e48",
+   "sha": "94c61dd492ba3c4c",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare03.png": {
-   "coloured": 0.947,
+   "coloured": 0.6208,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "8a0a4ec6ed8abeea",
+   "sha": "c2372ed223e201af",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare04.png": {
-   "coloured": 0.9554,
+   "coloured": 0.4507,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "f9bee483310a4a60",
+   "sha": "54cddffe5e6960cb",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare05.png": {
-   "coloured": 0.9901,
+   "coloured": 0.1912,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "17ccd517cc9bd36c",
+   "sha": "353ac1825b2488d4",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare06.png": {
-   "coloured": 0.9925,
+   "coloured": 0.9423,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "02ebe391aeacea75",
+   "sha": "c7cec2010f7fd437",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare07.png": {
-   "coloured": 0.9453,
+   "coloured": 0.832,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "766f78e9159cd0a2",
+   "sha": "b6925e72c6608063",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Spare08.png": {
-   "coloured": 0.934,
+   "coloured": 0.5927,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "b3b37322306f5755",
+   "sha": "6bdb25ae80c54a35",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Strider.png": {
-   "coloured": 0.8091,
+   "coloured": 0.762,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "0dea7418b780efd1",
+   "sha": "e5cd57ffe69fb8b5",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_TALON.png": {
-   "coloured": 0.8502,
+   "coloured": 0.9103,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "26795f14b5112bd0",
+   "sha": "2300b1739249d135",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Tenacious.png": {
-   "coloured": 0.6972,
+   "coloured": 0.4184,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "45ceae36dae9d4e0",
+   "sha": "c64bbe64a0710c4f",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Tender.png": {
-   "coloured": 0.9588,
+   "coloured": 0.343,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "b55ad83e91e4c2c3",
+   "sha": "374dc2a00099b870",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Tomahawk.png": {
-   "coloured": 0.7958,
+   "coloured": 0.8649,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "66a53a43f1a7ff66",
+   "sha": "ffd3ffacc7a2f01e",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Trace.png": {
-   "coloured": 0.8296,
+   "coloured": 0.5737,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "5bb833dac9d72c4a",
+   "sha": "8695999e054af41f",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_VOLT.png": {
-   "coloured": 0.952,
+   "coloured": 0.913,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "58388ab174c0c5e1",
+   "sha": "4e797e17ce1086a7",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_WINGMAN.png": {
-   "coloured": 0.7692,
+   "coloured": 0.5604,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "e4e2e5dfc931e449",
+   "sha": "5fd74c1670484999",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_ZODIAC.png": {
-   "coloured": 0.8587,
+   "coloured": 0.6324,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "fe450d8f25267685",
+   "sha": "574e85a9b19c0256",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/ProfileIcon01.png": {
