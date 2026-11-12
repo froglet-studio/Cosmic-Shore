@@ -16,7 +16,7 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: 'Gore'
-    AbilityDescription: 'Ram a rival vessel and its petals come loose: a gore is a scored Strike (8 points, Swordfish sword price) decided on the Rhino''s owner, landed only while the Rhino is moving faster than its victim, once per 1.4 s per victim (VesselCombatHitByGore). Charge multiplies the petals one gore takes: x1 at rest, x3 at level 10, read at the replicated level (RhinoGoreBySkimmerEffect.goreScale). Charge also carries a thrown prism on to strike the next one in its line: 0 u at rest, 40 u at level 10 (RhinoPloughPrismEffect.carryDistance); a thrown prism that strikes another destroys both.'
+    AbilityDescription: 'Ram a rival vessel and its petals come loose: a gore is a scored Strike (8 points, Swordfish sword price) decided on the Rhino''s owner, landed only while the Rhino is moving faster than its victim, once per 1.4 s per victim (VesselCombatHitByGore). Charge lowers the least ram speed a gore needs, like the Squirrel joust: 150 u/s at rest (three times the 50 u/s cruise, a short ramp wind-up) down to 50 u/s at level 10 (a cruising Rhino gores), read at the replicated level (RhinoGoreSpeed); a slower contact is neither scored nor robbed. Charge also carries a thrown prism on to strike the next one in its line: 0 u at rest, 40 u at level 10 (RhinoPloughPrismEffect.carryDistance); a thrown prism that strikes another destroys both.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

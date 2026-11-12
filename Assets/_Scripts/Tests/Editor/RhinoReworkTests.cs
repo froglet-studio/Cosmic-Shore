@@ -1,6 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
+using UnityEditor;
 
 namespace CosmicShore.Tests
 {
@@ -28,6 +29,17 @@ namespace CosmicShore.Tests
             Assert.AreEqual(Element.Mass, heft.ScaledElement);
             Assert.AreEqual(40f, blade.EvaluateAtNormalizedLevel(1f), 1e-4f);
             Assert.AreEqual(60f, heft.EvaluateAtNormalizedLevel(1f), 1e-4f);
+        }
+
+        [Test]
+        public void ChargeLowersTheGoreSpeedFromARampToACruise()
+        {
+            var speed = AssetDatabase.LoadAssetAtPath<JoustSpeedConfigSO>(
+                "Assets/_SO_Assets/VesselActions/Rhino/RhinoGoreSpeed.asset");
+            Assert.IsNotNull(speed, "RhinoGoreSpeed.asset is missing");
+            Assert.AreEqual(Element.Charge, speed.ScaledElement);
+            Assert.AreEqual(150f, speed.MinimumSpeedAtLevel(0f), 1e-3f);
+            Assert.AreEqual(50f, speed.MinimumSpeedAtLevel(1f), 1e-3f);
         }
 
         [Test]

@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// The Rhino's OMNI-CRYSTAL ability, the <b>Stampede</b> (2026-11-12, replacing the slow blast it shared with the
     /// Swordfish): the omni crystal is absorbed into the hull (the fleet's absorb morph runs first) and for
     /// <see cref="stampedeSeconds"/> the Rhino charges - its throttle surges by the crystal's own speed buff and every
-    /// gore takes at full Charge and steals (<see cref="RhinoGoreBySkimmerEffectSO"/>).
+    /// gore needs only its Charge 10 ram speed and steals (<see cref="RhinoGoreBySkimmerEffectSO"/>).
     ///
     /// <para><b>Where it runs.</b> Omni-crystal collection resolves on the server and replays on a remote pilot's own
     /// machine (<c>OmniCrystalImpactor.ReplayOnRemoteOwner</c>), so the stampede is known on the Rhino's owner, which is

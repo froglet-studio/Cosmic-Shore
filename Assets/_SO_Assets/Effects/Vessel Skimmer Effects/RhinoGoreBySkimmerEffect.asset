@@ -12,12 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d313743057ee4c40938de1b0e38ea624, type: 3}
   m_Name: RhinoGoreBySkimmerEffect
   m_EditorClassIdentifier:
-  goreScale:
-    Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 3
-    element: 1
-    UseFloor: 1
-    Floor: 1
+  goreSpeed: {fileID: 11400000, guid: 747ac55656974b2492cc54ce6218b894, type: 2}
   stealUpgradeElement: 1
