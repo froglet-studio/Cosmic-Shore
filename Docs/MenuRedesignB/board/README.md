@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794512997-7142` of **Frogma**: Rev 3 to Rev 93, 468 boards on 12 tabs. The canvas opens on the tab `loading-screens`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794524354-d2c4` of **Frogma**: Rev 3 to Rev 94, 473 boards on 12 tabs. The canvas opens on the tab `loading-screens`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -734,6 +734,14 @@ Copied on 2026-11-12 from canvas version `1794512997-7142` of **Frogma**: Rev 3 
 - `R75Notes.dc.html` (not copied yet) - Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed
 
 ### Tab: Loading Screens  (`loading-screens`)
+
+#### Rev 94 - The boot splash as a poster: no neon
+
+- [`R94A.dc.html`](R94A.dc.html) - Rev 94 A - The crew: five pilots in a line before the Ark (recommended)
+- [`R94B.dc.html`](R94B.dc.html) - Rev 94 B - The shore: a travel poster, the Squirrel crossing a low cell over a flat sea
+- [`R94C.dc.html`](R94C.dc.html) - Rev 94 C - The pilot: a character one-sheet, four pilots take turns
+- [`R94D.dc.html`](R94D.dc.html) - Rev 94 D - Three domains: Jade, Ruby and Gold bands with a hull in each
+- [`R94Notes.dc.html`](R94Notes.dc.html) - Rev 94 - notes: what is shared, the four, what to know
 
 #### Rev 93 - The boot splash as today's art with a real vessel
 

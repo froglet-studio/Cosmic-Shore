@@ -7498,7 +7498,7 @@ splash is a full, bright picture; the logo is laid on top of it, not part of it.
 full size (the offline arena renderer, `Tools/Build/render_card_backgrounds.py`, can draw one at 1920 x 1080 but needs
 the .NET 8 SDK, which this session could not install).
 
-## 175. Rev 93 mockups: the boot splash as today's art with a real vessel (2026-11-12, awaiting a pick)
+## 175. Rev 93 mockups: the boot splash as today's art with a real vessel (2026-11-12; not taken: "move away from this neon design", section 177)
 
 **Asked** (Shombith, 2026-11-12, after rejecting Rev 92): "I like the idea of real arena and also improve today's art
 replace it with like a real vessel. Can you show me mockups for both?" Then, on a sheet of the offline arena renders
@@ -7554,3 +7554,31 @@ is real" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 signing in, the profile and the session a share means `BootStatusBroadcaster` and the sign-in controller reporting
 steps to a shared model; it waits on the splash's pick (sections 174, 175). The scene load before the panel exists is
 not measured either: nothing reads the scene load's own progress.
+
+## 177. Rev 94 mockups: the boot splash as a poster, no neon (2026-11-12, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-12, on Rev 93): "Okay can we move away from this neon design, create some good poster
+based mockups 4".
+
+**On the canvas**: tab **Loading Screens**, section "Rev 94", under Rev 93. Copies: `Docs/MenuRedesignB/board/R94*.dc.html`;
+drawn by `Docs/MenuRedesignB/rounds/r94_posters.py`.
+
+No glow anywhere. Flat colour fields; the roster's painted pilots (the 220 x 280 portraits enlarged to 440 x 560); the
+real hulls (Squirrel, Sparrow, Dolphin meshes) drawn in three flat tones with an ink line; both logos as flat marks
+cut from the neon ones; Rev 91's bar on a dark foot with the boot status lines. Motion is slow: a disc breathing, a
+hull drifting, the sea sliding.
+
+- **A The crew (recommended)**: an ensemble poster. Hornet, Needle, Galleon, Sundial and Anvil stand in a line before
+  the Ark on two flat blue discs. Recommended: the painted pilots are the best art the game has, and this is the one
+  that looks like a game's key art.
+- **B The shore**: a travel poster. Flat sky bands, a low sun-coloured cell on the horizon, a flat sea sliding, the
+  Squirrel in shadow crossing the cell with its prisms behind it.
+- **C The pilot**: a character one-sheet. One pilot on a gold disc with the hull's shadow behind and the callsign;
+  Galleon, Needle, Sundial and Hornet take turns.
+- **D Three domains**: three slanted bands in Jade, Ruby and Gold with the Dolphin, the Squirrel and the Sparrow.
+- `R94Notes`.
+
+`frogma.py check --only R94` and `check_mockup.py` pass on all five. Looked at in a local render before the last
+layout pass. To know: a poster at this size wants the pilots painted larger; Gold here is a sun and a disc, not a
+purchase (a poster uses the families as paint, which is a question for the style guide's owner, who asked for the
+poster); the flat logos are thresholds of the neon ones, not drawn marks. Nothing built.

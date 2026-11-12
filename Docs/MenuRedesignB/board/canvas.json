@@ -3850,6 +3850,46 @@
       "h": 900,
       "page": "loading-screens",
       "title": "Rev 93 - notes: what was asked, what this round is, what is not here"
+    },
+    "R94A.dc.html": {
+      "x": 0,
+      "y": 14640,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 94 A - The crew: five pilots in a line before the Ark (recommended)"
+    },
+    "R94B.dc.html": {
+      "x": 2100,
+      "y": 14640,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 94 B - The shore: a travel poster, the Squirrel crossing a low cell over a flat sea"
+    },
+    "R94C.dc.html": {
+      "x": 4200,
+      "y": 14640,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 94 C - The pilot: a character one-sheet, four pilots take turns"
+    },
+    "R94D.dc.html": {
+      "x": 0,
+      "y": 15900,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 94 D - Three domains: Jade, Ruby and Gold bands with a hull in each"
+    },
+    "R94Notes.dc.html": {
+      "x": 0,
+      "y": 17160,
+      "w": 1920,
+      "h": 900,
+      "page": "loading-screens",
+      "title": "Rev 94 - notes: what is shared, the four, what to know"
     }
   },
   "createdOnFiles": {
@@ -3977,6 +4017,7 @@
     "sec-rev91",
     "sec-rev92",
     "sec-rev93",
+    "sec-rev94",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4060,7 +4101,8 @@
     "rev90",
     "rev91",
     "rev92",
-    "rev93"
+    "rev93",
+    "rev94"
   ],
   "notes": {
     "hud_end": {
@@ -6583,6 +6625,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "loading-screens"
+    },
+    "rev94": {
+      "kind": "title1",
+      "text": "Rev 94 - The boot splash as a poster: no neon",
+      "x": 0,
+      "y": 14240,
+      "w": 240,
+      "maxW": 6120,
+      "page": "loading-screens"
+    },
+    "sec-rev94": {
+      "kind": "rect",
+      "x": -160,
+      "y": 14080,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "loading-screens"
     }
   },
   "order": [
@@ -7053,7 +7119,12 @@
     "R93A.dc.html",
     "R93B.dc.html",
     "R93C.dc.html",
-    "R93Notes.dc.html"
+    "R93Notes.dc.html",
+    "R94A.dc.html",
+    "R94B.dc.html",
+    "R94C.dc.html",
+    "R94D.dc.html",
+    "R94Notes.dc.html"
   ],
   "pages": [
     {
