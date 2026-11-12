@@ -440,7 +440,8 @@ namespace CosmicShore.Gameplay
         {
             float now = Time.time;
             float threshold = config.SwipeEngageThreshold;
-            bool energized = Sword is { IsEnergized: true };
+            // Energized, or the Time level-5 Flurry: the frenzy, with no recovery at all.
+            bool energized = Sword is { IsEnergized: true } || config.FlurryActive(_status);
 
             // Track the swing/release edges off the RAW target, so suppressing a direction can
             // never make it look released and re-arm itself mid-hold.
@@ -466,7 +467,7 @@ namespace CosmicShore.Gameplay
             else if (swung)
             {
                 swung = false;
-                readyAt = now + config.SwipeCooldownSeconds;   // recovery starts on release
+                readyAt = now + config.SwipeCooldownSecondsFor(_status);   // recovery starts on release; Time shortens it
             }
         }
 

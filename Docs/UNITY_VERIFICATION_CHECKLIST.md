@@ -65,6 +65,23 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Swordfish's fundamentals pass: Quickdraw, Flurry, the Surge alone (`claude/swordfish-kit`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SWORDFISH.md` § "Fundamentals pass". Time is the sword's rate (Quickdraw: energize
+hold, energize cooldown and swipe recovery divided by x1 -> x2.5), its L5 Flurry removes the swipe recovery; the
+Swordfish's ramp is its own unscaled asset and the Momentum ward is gone from it; the omni crystal is absorbed and
+raises the Surge with no blast.
+Ran: `unity_refcompile` player and editor (0 errors in changed files; 30 pre-existing in untouched files),
+`element_ability_table.py Swordfish` (4/4, 0 disagreements), `author_swordfish_assets.py --check`.
+Not run: Unity, the EditMode tests (`SwordfishQuickdrawTests`).
+
+1. Toybox, Swordfish, Time 0: both triggers energize after 1 s; after the 5 s tail the cooldown is 5 s.
+2. Raise Time to 10 (crystals or the debug level): energize after 0.4 s, cooldown 2 s, the swipes recover visibly faster.
+3. Time 5: the swipes never hold centre between swings, lit or not (Flurry). Below 4 it relocks.
+4. Ramp: flat out still reaches 840 u/s, at the same wind-up at every Time level.
+5. Fly through danger prisms flat out at Time 5: they drain the Swordfish (no Momentum).
+6. Take an omni crystal: it flows into the hull (no 200-500 blast), the ring of eight bills rises for 8 s.
+
 ### 🔴 The Ark's Pilots tab and the pilot profile page (`claude/signature-pilot-busts`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Docs/MENU_REDESIGN_B.md` section 92.1. The Ark gains a PILOTS tab (`ArkPilotsPage`: the crew, one cell
