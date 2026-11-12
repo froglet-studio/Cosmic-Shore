@@ -17,8 +17,8 @@ ark"; Docs/MENU_REDESIGN_B.md section 92.1, Docs/Pilots/PORTRAITS.md section 8).
 THE LAYOUT. The picture is the page; the words sit in one panel on the side the pilot does not stand on (the page
 moves it: authored against the left edge) and leave the friends orb's corner clear. Next, Previous and the count sit
 in one plate at the bottom centre, the same place for every pilot, so a mouse does not chase them from side to
-side. Both plates are the window ground at PLATE_ALPHA, so words read on any picture. EVERY WORD is a template on
-PilotProfileModal (WORDS below) or the text of a button.
+side. Both plates are the window's black, solid (PLATE_ALPHA), so words read on any picture. EVERY WORD is a template
+on PilotProfileModal (WORDS below) or the text of a button.
 
 STANDING DOWN: every output is re-derived on each run, so a re-run is a no-op (--check).
 
@@ -60,7 +60,15 @@ PAGE_TYPE = 21                                            # ScreenSwitcher.Modal
 # orb, whose top is 124 above the canvas's bottom left (author_menu_arcade.ORB_CLEARANCE is 100 for a 52-tall bar).
 PANEL_W, PANEL_H, PANEL_INSET, PANEL_BOTTOM, PAD = 560, 744, 48, 140, 24
 INNER = PANEL_W - 2 * PAD
-PLATE_ALPHA = 0.88                                        # the Credits window's dim: words read on any picture
+# The ground under words that sit on a painted scene is SOLID. The game blends in linear light (ProjectSettings
+# m_ActiveColorSpace 1), so a plate at alpha a lets through (1 - a) of the picture's LIGHT, which is far more of its
+# look: at 0.88, the Credits window's dim over the menu, a white sky behind the words is still a mid grey and the
+# quiet lines fall under 2:1 (seen in the engine's own render of this page, 2026-11-12; a web drawing blends in sRGB
+# and shows the same plate near black). NeutralLightest on SurfaceBlack has about 5:1 with nothing behind it, so there
+# is no light to give away. validate() holds every plate to PLATE_CONTRAST for every colour words are drawn in.
+PLATE_ALPHA = 1.0
+PLATE_CONTRAST = 4.5                                      # WCAG AA for small text, over a WHITE picture
+PLATES = ("Panel/Frame/Fill", "Stepper/Frame/Fill", "Window/Close/Plate")
 ORB_TOP = 124
 
 # The step through the crew: one plate at the bottom centre.
@@ -167,7 +175,7 @@ def hidden_group():
 
 
 def plate(parent, key, sliver):
-    """The ground under words that sit on a picture: the window's black at PLATE_ALPHA, a light hairline."""
+    """The ground under words that sit on a picture: the window's black, solid (PLATE_ALPHA), a light hairline."""
     C.frame(parent, key, sliver, "SurfaceBlack", "TextLight", fill_alpha=PLATE_ALPHA)
 
 
@@ -290,6 +298,22 @@ def callsign_meanings():
     return [m[1:-1].replace("''", "'") if m.startswith("'") else m for m in found]
 
 
+def luminance(token):
+    """A kit token's relative luminance (WCAG): its sRGB channels in linear light, weighted."""
+    def linear(channel):
+        return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+    r, g, b, _ = tok(token)
+    return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+
+
+def contrast_over_white(words, plate, alpha):
+    """The WCAG contrast of words in the token `words` on a plate of the token `plate` at `alpha`, over a WHITE
+    picture, blended in linear light as the game blends it: the plate keeps (1 - alpha) of the picture's light."""
+    ground = (1 - alpha) * 1.0 + alpha * luminance(plate)
+    ink = luminance(words)
+    return (max(ink, ground) + 0.05) / (min(ink, ground) + 0.05)
+
+
 def validate(files):
     guids = T.known_guids() | PACKAGE
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
@@ -368,6 +392,21 @@ def validate(files):
             f"a callsign's meaning needs more than {SIGHT_LINES} lines of the Sight row: {meaning}"
     for key, _, _, _, _, token, _ in ROWS:
         assert token in READABLE, f"Panel/{key} is drawn in {token}, which does not read on the plate"
+    # Words over a painted scene: each plate, as written (the Image's own alpha and the one KitThemedGraphic paints
+    # it with), must hold every colour words are drawn in at PLATE_CONTRAST over a white picture.
+    for key in PLATES:
+        _, themed = A.doc_of(pf, F(f"{key}#th"))
+        _, image = A.doc_of(pf, F(f"{key}#img"))
+        assert f"  token: {K.TOKEN_INDEX['SurfaceBlack']}\n" in themed, f"{key} is not the window's black"
+        painted = re.search(r"^  alpha: ([\d.e-]+)$", themed, re.M)
+        authored = re.search(r"^  m_Color: \{r: [\d.e-]+, g: [\d.e-]+, b: [\d.e-]+, a: ([\d.e-]+)\}$", image, re.M)
+        assert painted and authored, f"{key} carries no alpha to read"
+        for alpha in (float(painted.group(1)), float(authored.group(1))):
+            for token in READABLE:
+                got = contrast_over_white(token, "SurfaceBlack", alpha)
+                assert got >= PLATE_CONTRAST, \
+                    (f"{key} at alpha {alpha:g} leaves {token} words at {got:.1f}:1 over a white picture "
+                     f"(the game blends in linear light); they need {PLATE_CONTRAST}:1")
     for (_, _, y0, h0, *_), (key, _, y1, *_rest) in zip(ROWS, ROWS[1:]):
         assert y0 + h0 <= y1, f"Panel/{key} overlaps the row above it"
     assert ROWS[-1][2] + ROWS[-1][3] <= PANEL_H - PAD, "the last row runs into the panel's padding"
@@ -454,6 +493,13 @@ def self_test(files):
          doc_swap(F("Panel#rt"), f"  m_AnchoredPosition: {{x: {PANEL_INSET}, y: {PANEL_BOTTOM}}}\n",
                   f"  m_AnchoredPosition: {{x: {PANEL_INSET}, y: 96}}\n")),
         ("a page that starts shown", doc_swap(F("root#cg"), "  m_Alpha: 0\n", "  m_Alpha: 1\n")),
+        ("a plate the theme paints thin enough for a bright picture to wash out the words",
+         doc_swap(F("Panel/Frame/Fill#th"), "  alpha: 1\n", "  alpha: 0.88\n"), "over a white picture"),
+        ("a plate authored thin under the step through the crew",
+         doc_swap(F("Stepper/Frame/Fill#img"), ", a: 1}\n", ", a: 0.88}\n"), "over a white picture"),
+        ("a plate under Close that is not the window's black",
+         doc_swap(F("Window/Close/Plate#th"), f"  token: {K.TOKEN_INDEX['SurfaceBlack']}\n",
+                  f"  token: {K.TOKEN_INDEX['TextLight']}\n"), "is not the window's black"),
         ("a Close that closes nothing", swap("guid: " + S["close"], "guid: " + S["scene"])),
     ]
     ok = all([expect(*case) for case in cases])

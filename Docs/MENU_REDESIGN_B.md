@@ -4088,7 +4088,7 @@ controls (Decor opened, a squad mate with no pilot button, `arkTabs` unwired); a
 - `author_pilot_assets.py --check` fails on this branch because the Meerkat (on bleeding-edge since the 10-27 merge)
   has no pilots or artifacts. That is a content gap for the pilots work, not caused by the tabs.
 
-### 92.1 The PILOTS tab and a pilot's profile page (2026-11-12, NOT RUN IN EDITOR)
+### 92.1 The PILOTS tab and a pilot's profile page (2026-11-12, NOT RUN IN EDITOR; run in Amoebius)
 
 Garrett (2026-11-11): "the main use will be a full screen profile for each pilot accessible through the ark app shell
 menu"; (2026-11-12): "Lets get them into the game. update the avatars, and use the full size art for each pilot's
@@ -4118,15 +4118,24 @@ profile page in the ark."
   page's cut (`PilotSceneImage.Frame`) was run under plain .NET on all eighteen scenes at 21:9, 19.5:9, 16:9, 16:10,
   3:2 and 4:3 with the panel in its place: every face is inside the view and clear of the words. With no words it
   equals the scene kit's recorded crop within a pixel (90 scene and shape pairs).
-- **Generators:** `author_menu_pilot_profile.py` (the page; 17 negative controls) and `author_menu_ark.py` (the tab;
+- **Seen in the engine before it shipped** (section 159: a build nobody had looked at was taken back out). The tree
+  merged with bleeding-edge was run in Amoebius, offline: the tab, a press, the page, NEXT, the panel's change of side,
+  the cut at 4:3 and 21:9, and CLOSE all work. The look found one fault. The plates under the words were authored at
+  alpha 0.88, the Credits window's dim, and **the game blends in linear light** (`m_ActiveColorSpace: 1`): a plate at
+  alpha a lets through (1 - a) of the picture's light, so a white sky under 0.88 is still sRGB 97 and the quiet lines
+  (NeutralLightest) stood at 1.5:1. A web drawing blends in sRGB and had shown the same plate near black. The plates
+  are solid now, and the layout tool computes each plate's contrast over a white picture in linear light for both
+  colours words are drawn in (4.5:1 or it fails). The engine is not Unity: it does not draw the menu's sea material
+  and sets a paragraph's lines closer (17.6 against the kit's 23.2 at Body).
+- **Generators:** `author_menu_pilot_profile.py` (the page; 20 negative controls) and `author_menu_ark.py` (the tab;
   nine new controls). Each reads the tokens a line may name from the code that fills them
   (`PilotProfileModal.TokenNames`; `ArkPilotsPage`'s two `TemplateText.Fill` calls, so `{count}` is the count's
   alone), and a control names the rule that must catch it, so one caught by a neighbouring rule fails the self-test.
   `ArkView.prefab` gained 814 documents and changed three (the root's children, the tabs component's new entry, the
   tab row's width); `Menu_Main.unity` is untouched.
-- **Not drawn on Frogma first:** built straight from Garrett's words. A drawing of the page at three screen shapes and
-  of the tab, laid out from the generators' numbers, is at https://claude.ai/artifact/RAAiiZAuMzHt8Fzx6Bf1mM. No
-  upright pose is drawn: an upright phone shows the PC layout fitted to the width (section 138). Hand test:
+- **Not drawn on Frogma first:** built straight from Garrett's words. Pictures of the page at three screen shapes and
+  of the tab, captured from that engine run, are at https://claude.ai/artifact/RAAiiZAuMzHt8Fzx6Bf1mM. No upright pose
+  is drawn: an upright phone shows the PC layout fitted to the width (section 138). Hand test:
   `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ## 93. Rev 28 mockups: the Ark's Squads and Decor tabs (2026-10-27, awaiting board approval)

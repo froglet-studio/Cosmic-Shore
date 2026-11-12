@@ -78,7 +78,17 @@ pilot does not stand on, Next / Previous through the crew. Eighteen scene textur
 editor (0 errors in changed files, and a planted fault in each new file is caught); `check_generated_assets.py`; the
 `Frame` arithmetic run under plain .NET on all eighteen scenes at six screen shapes, with the eight `Frame_*` cases of
 `PilotSceneAssetTests`; name and story lengths over 360,000 rolls of `PilotGenerator`. The seven asset tests of
-`PilotSceneAssetTests` have not run. A drawing of the layout: https://claude.ai/artifact/RAAiiZAuMzHt8Fzx6Bf1mM.
+`PilotSceneAssetTests` have not run. Pictures of the page and the tab: https://claude.ai/artifact/RAAiiZAuMzHt8Fzx6Bf1mM.
+
+**Run in Amoebius (the engine, offline, 2026-11-12), which is not Unity:** on the tree merged with bleeding-edge the
+PILOTS tab shows "YOUR CREW", "PILOTS: 18" and the eighteen cells clear of the friends orb; a press opens the page
+with the scene, every line of the panel and "1 / 18"; NEXT steps; the panel stands on the left for ANVIL, who stands
+on the right; the cut holds at 4:3 and 21:9 with ANVIL's horns whole; CLOSE returns to the tab; the log holds no
+error. That run is why the plates are solid: at their first alpha, 0.88, a bright sky showed through as a mid grey
+and the quiet lines could not be read (the game blends in linear light; the web drawing blends in sRGB and had shown
+the plate near black). The engine does not draw the menu's sea material (it was switched off for the pictures) and
+sets a paragraph's lines 17.6 apart where the kit measures 23.2 for Unity, so a story stands about a third taller in
+Unity than in those pictures. The final look, the fonts' rendering, the fade and the pad are still Unity's to judge.
 
 **Verify in editor:**
 1. Let Unity import the branch. **Pass:** 18 textures under `Assets/Resources/Pilots/Scenes/` (1536x864), the catalog
@@ -104,8 +114,10 @@ editor (0 errors in changed files, and a planted fault in each new file is caugh
 11. The importer preview per platform. **Pass:** the scenes read clean on Standalone (BC7), Android and iOS (ASTC);
     WebGL holds 32 px stand-ins, and the browser Toybox has no way to the page.
 
-**First-pass tuning (not settled):** the plates' alpha 0.88; the panel 560 x 744; the face margin 0.03 of the view;
-the crew cell 260 x 256 with a 180 close-up.
+**First-pass tuning (not settled):** the plates are solid (`author_menu_pilot_profile.py` holds every plate to 4.5:1
+for both colours words are drawn in, over a white picture; a thinner plate needs brighter quiet lines); the panel
+560 x 744, which holds the longest story a pilot can have (14 lines), so a ten-line story leaves empty plate above
+the caption; the face margin 0.03 of the view; the crew cell 260 x 256 with a 180 close-up.
 
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
