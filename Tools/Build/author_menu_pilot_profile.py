@@ -11,8 +11,8 @@ ark"; Docs/MENU_REDESIGN_B.md section 92.1, Docs/Pilots/PORTRAITS.md section 8).
         carries it to the screen's edges); and, under Content, the step through the crew (Next first, so the pad
         lands on it), the words panel and Close (B).
 
-    No scene is edited: ScreenSwitcher.EnsurePilotProfileModal adds the page to the canvas from Resources, as
-    EnsureQuestsModal adds the Quests window.
+    No scene is edited: ScreenSwitcher.EnsurePilotProfileModal adds the page to the canvas from Resources at start
+    when the scene has none, as EnsureCreditsModal adds the credits screen.
 
 THE LAYOUT. The picture is the page; the words sit in one panel on the side the pilot does not stand on (the page
 moves it: authored against the left edge) and leave the friends orb's corner clear. Next, Previous and the count sit

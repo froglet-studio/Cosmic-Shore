@@ -633,6 +633,14 @@ namespace CosmicShore.UI
         void Labels()
         {
             _candidates.Clear();
+            if (_map.Plain)
+            {
+                // The board's plain map: no star, cluster or landmark names, and no card.
+                foreach (var t in _labels) if (t && t.gameObject.activeSelf) t.gameObject.SetActive(false);
+                _backs.Clear();
+                if (Selected != null) Select(null);
+                return;
+            }
             bool sys = SystemTier;
             foreach (var m in _stars)
             {
@@ -807,6 +815,13 @@ namespace CosmicShore.UI
             var r = _map.rectTransform.rect;
             _tier = HyperSeaSky.TierOf(_view.W);
             _ladderRects.Clear();
+            if (_map.Plain)
+            {
+                // The Voyages board's map shows no ladder or readout (VoyageMapGraphic.Plain).
+                foreach (var t in _ladder) if (t) t.gameObject.SetActive(false);
+                if (_readout) _readout.gameObject.SetActive(false);
+                return;
+            }
             float size = VoyageMapText.Ladder;
             float y = r.yMax - LadderTop;
             for (int i = 0; i < Rows; i++)
