@@ -7604,5 +7604,12 @@ the picker) and **Open the seat** (Lime) on an offline friend's card in a squad 
 kept, its pad stands empty, the first friend who joins takes it; the toast is `SquadsPage.seatOpenedToast`). Only the one
 that applies shows (`SquadMateCard.SetActions`); a joined squad's cards show neither (the leader edits).
 
+**The presence dot and Give to a seat** (Shombith: "add the online dot and give to a seat too"): each seat card shows a
+small diamond before who flies it, in the theme's Selection colour while they are here (you, an AI wingmate, an online
+friend), dim for an offline friend, none for an open seat (`SquadMateCard.SetPresence`). The picked artifact's card has
+**Give to a seat**: it switches to the Squads tab, opens the selected squad's editor and asks for a seat
+(`SquadsPage.giveHintToast`); the seat picked carries the artifact (`givenToast`), and saving keeps it as any edit does
+(a joined squad refuses: only its leader changes it).
+
 Affects: Shombith's Ark screen (`ElementalConverterView`, `SquadsPage`, `author_menu_ark.py`); Garrett's omni combine
 (stepped, not drawn, behind the video).

@@ -81,7 +81,10 @@ on a missing clip and a drifted entry). No Unity editor ran.
    Your card shows CHANGE VESSEL: it opens the squad's editor on your seat; pick another vessel, save: the card shows it.
    A friend's card in your squad while they are offline shows OPEN THE SEAT (Lime): press it, the seat reads open and a
    toast says the pad stands empty; online friends, AI seats and a joined squad's cards show neither button.
+   Each card's presence diamond: lit for you, an AI and an online friend, dim for an offline friend, none for an open seat.
 3. ARTIFACTS: the room (Rev 86) behind the list and the detail card, no veil.
+   GIVE TO A SEAT on the picked artifact's card: the Squads tab opens in the editor with a toast asking for a seat; press
+   a card: it carries the artifact (toast), save: the card's Artifact row shows it.
 4. DECOR: refused, as before.
 5. Settings: switch colour set to Photic and to Dart Frog: the hangar's clip follows.
 6. Leave the Ark and come back: the clips start again; no error about a missing clip in the console.
