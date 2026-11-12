@@ -70,16 +70,16 @@
    "name": "Ivelia Starreach",
    "file": "Docs/Pilots/art/scenes/ZODIAC.jpg",
    "size": [1536, 864],
-   "close": [720, 0, 1230, 510],
+   "close": [800, 0, 1320, 520],
    "side": "right",
-   "treatment": "Travel reportage on slow slide film, dusk in a chart house",
+   "treatment": "Travel reportage on slow slide film, a chart house lit by the reef outside",
    "source": "history: \"was apprenticed to a cartographer\" (the game's Upbringings)",
    "crops": {
     "16:9": [0, 0, 1536, 864],
     "4:3": [384, 0, 1536, 864],
-    "1:1": [543, 0, 1407, 864],
-    "4:5": [630, 0, 1321, 864],
-    "9:16": [732, 0, 1218, 864]
+    "1:1": [628, 0, 1492, 864],
+    "4:5": [714, 0, 1405, 864],
+    "9:16": [817, 0, 1303, 864]
    },
    "chart": "hologram of the waters"
   },

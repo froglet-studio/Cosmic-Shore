@@ -5586,10 +5586,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_ZODIAC.png": {
-   "coloured": 0.7225,
+   "coloured": 0.6324,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "0eccd65c642b1b12",
+   "sha": "574e85a9b19c0256",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/ProfileIcon01.png": {
