@@ -82,7 +82,10 @@ Options:
 
 ## 3. Answer the person
 
-- **"What should I work on next?"**: run the board and give them the top of **Open - work waiting** - the first three
+- **"What should I work on next?"**: first, the **elemental vessel loop is the top priority** (Garrett, 2026-11-12):
+  give them the top of `python3 Tools/Build/elemental_loop.py next` (`/elemental-loop`) and say which vessel lane each
+  action sits in, skipping any that is occupied. Then, for anyone who wants something else, run the board and give
+  them the top of **Open - work waiting** - the first three
   or four lanes with their top item each - then one line naming the occupied lanes to stay out of. If they say what
   they like (vessels, UI, a platform), pick from that. Offer `--lane <key>` for the one they lean to.
 - **"Is anyone in <X>?"**: `--lane <key>`. If occupied, say who, the branch, the PR and the last push in one line,

@@ -6,10 +6,24 @@ You are expected to work autonomously and persistently. Complete the entire task
 
 When a task spans multiple files or systems, complete ALL of them in a single pass. Do not stop after the first file and ask if you should proceed to the next.
 
+## TOP PRIORITY: the elemental vessel loop (Garrett, 2026-11-12)
+
+"Pushing every vessel through this plan in a systematic way remains the highest priority for anyone who has any
+cycles." When a person has no task for you, or asks what to work on, start here: **`/elemental-loop`**, or
+`python3 Tools/Build/elemental_loop.py next`. The loop, per vessel and element: 0 a game kit (a Time, a Charge and a
+Mass or Space arcade game), 1 fun (abilities and game together, one intensity), 2 the I1-I4 ladder (intro, fun,
+challenging, very hard), 3 one AI on all four rungs; then per arena game (Regatta for Time, Broadside for Charge,
+Brood Rush for Mass and Space together, balanced on net control of space): 4 an environment creator trained against
+the fixed AI pool, 5 the plateau's vessel imbalance tuned and sent back to steps 2-4 until no step 5 is needed. Each
+loop needs fewer people. Process: [`Docs/ElementalLoop/PLAYBOOK.md`](Docs/ElementalLoop/PLAYBOOK.md); board:
+`Docs/ElementalLoop/STATUS.md` (generated); sign-offs: `loop.json`, written by `elemental_loop.py set`.
+
 ## Where everything else lives (read the topic file before touching its area)
 
 This file holds only the rules every session needs. Everything else moved verbatim into topic files under `Docs/claude/`. Each entry lists the section headings the file contains, so a reference like "CLAUDE.md § Anti-Patterns" can be found by grepping this index. To find a passage quoted from the old single-file CLAUDE.md, search both places: `grep -rn '<phrase>' CLAUDE.md Docs/claude/`.
 
+- [`Docs/ElementalLoop/PLAYBOOK.md`](Docs/ElementalLoop/PLAYBOOK.md): **The elemental vessel loop, the top priority** (`/elemental-loop`, Garrett 2026-11-12): steps 0-5 with each step's start, work, exit and sign-off, the game kit rule, the three arena games, how the loop needs fewer people each round, the missing scaffolding and Garrett's open decisions. Board `STATUS.md` and sign-offs `loop.json`, both through `Tools/Build/elemental_loop.py` (`next`, `vessel`, `set`, `--check`).
+  Sections: Garrett's words; The loop at a glance; Step 0 the game kit; The steps; Running the loop; What the loop pays for; How this maps onto what exists; Missing scaffolding; Rules this loop keeps; Decisions for Garrett; Log
 - [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **Froglet Tasks, the team's hand-off tickets** - tests, playtests, setup, content and decisions one collaborator's session leaves for another: GitHub issues labelled `team-task`, read on the Froglet Tasks page, written only through the `/team-tasks` skill (`Tools/Build/team_tasks.py`). Tickets are nobody's until someone takes one.
   Sections: a pointer to the tickets (the board moved to GitHub Issues)
 - [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels, games, app-shell sections and systems are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the tickets, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`).

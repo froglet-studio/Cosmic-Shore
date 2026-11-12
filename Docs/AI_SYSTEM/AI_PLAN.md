@@ -9,6 +9,11 @@ own games, [`REGATTA_BALANCE_PLAN.md`](REGATTA_BALANCE_PLAN.md) is the Time aren
 [`../ElementalAbilitySystem/SILENCE.md`](../ElementalAbilitySystem/SILENCE.md) section 6 is the Charge balance plan.
 Where one of them disagrees with this page, this page wins and the disagreement goes to section 7.
 
+**Above this page (Garrett, 2026-11-12, top priority):** the elemental vessel loop,
+[`../ElementalLoop/PLAYBOOK.md`](../ElementalLoop/PLAYBOOK.md). Its steps 1-2 (fun, then the I1-I4 ladder) come
+before any AI is trained; this plan is how its steps 3-5 are done. `python3 Tools/Build/elemental_loop.py next` ranks
+the work.
+
 Garrett, 2026-11-02:
 
 > "We need our planning and learning to be working towards an AI training system that produces all the AI capabilities
@@ -61,8 +66,8 @@ the AI, the same callsign weights its targets.
 |---|---|---|---|
 | Time | each vessel's own Time card: Skim Race (Squirrel), Headlong (Rhino), Redline (Manta), Switchback (Dolphin), Skein (Urchin), Slingshot (Stoat), Warpline (Meerkat) - `MINIGAME_TRAINING_PLAN.md` section 2 | Regatta | `REGATTA_BALANCE_PLAN.md` |
 | Charge | each vessel's Charge card (mirror matches) | Broadside | `SILENCE.md` section 6 |
-| Mass | each vessel's Mass card | to be named | - |
-| Space | each vessel's Space card | to be named | - |
+| Mass | each vessel's Mass card | Brood Rush (Mass and Space together, balanced on net control of space; Garrett, 2026-11-12) | `../ElementalLoop/PLAYBOOK.md` |
+| Space | each vessel's Space card | Brood Rush (the same) | `../ElementalLoop/PLAYBOOK.md` |
 
 "An element's arcade game" is the card whose genre petal is that element (`ModeGenre.cs`).
 
@@ -110,8 +115,8 @@ the AI, the same callsign weights its targets.
 | `time-arena-elements` | Time | the smallest elemental tuning that closes what the course leaves: each vessel's Time baseline | blocked (job `regatta-elements`) |
 | `charge-arcade` | Charge | each vessel's universal Charge genome, from mirror matches in its Charge arcade game, scored on petals taken | next: needs the per-attacker petal ledger (SILENCE section 6) |
 | `charge-arena` | Charge | Broadside balanced until every vessel's petal plateau is the same | blocked |
-| `mass-arcade`, `mass-arena` | Mass | the same two steps for Mass | later |
-| `space-arcade`, `space-arena` | Space | the same two steps for Space | later |
+| `mass-arcade`, `space-arcade` | Mass, Space | each vessel's universal Mass and Space genomes, in its Mass and Space arcade games | later |
+| `massspace-arena` | Mass + Space | Brood Rush balanced on each vessel's net control of space against the fixed Mass and Space genomes; the cultivator/destroyer position is measured, never set (replaced `mass-arena` and `space-arena`, Garrett 2026-11-12) | later |
 | `pilot-bias` | any | per callsign, the bias over an element genome's target choices | later |
 | `squad-ai` | any | a squad seat flies the genome its vessel and element choose, biased by its pilot; voyage policies (`VOYAGES.md` section 6.6) are built from these | later |
 
@@ -193,6 +198,7 @@ trainer (studyholic, Garrett, Shombith). Decision 2 below proposes the same gate
 
 | Date | What moved |
 |---|---|
+| 2026-11-12 | **Garrett**: the elemental vessel loop is the top priority (`../ElementalLoop/PLAYBOOK.md`); this plan is its steps 3-5. Mass and Space share one arena, Brood Rush, balanced on net control of space: `mass-arena` and `space-arena` became `massspace-arena` here and in `ai_plan.json` |
 | 2026-11-06 | **Garrett**: the Regatta direction reset (decision 8; `REGATTA_BALANCE_PLAN.md` "The direction since 2026-11-06"). His two I4 playtests (both, it turned out, on the old circuit) showed the Urchin far ahead of AIs that were never trained; no course search until every Regatta hull's Time genome passes the four-part "well trained" test; a wider course space, a pool of courses with cancelling spreads in one Regatta level, Time levels last with his yes. `time-arena-course`'s title updated here and in `ai_plan.json` |
 | 2026-11-04 | Manta (`time-arcade`, Yash: "only time"): Redline's ladder teaches Soar alone, I1 to I4 (`REDLINE.md` §1): no corner under the 156 u Soar alone makes, one costing corner a level, the omni crystal off and Time crystals 0-3 a lap. The model now races Redline's five laps (it raced three) and the crystals, held to the shipped C# by `redline_course_harness`; `redline-manta-time` is a new epoch (evaluator v2). The AI finishes all 24 model races (183-538 s) but does not steer for the crystals: the speed made it miss more I4 mouths. Its I4 pace waits on the nose rate (decision 7; Switchback's per-intensity nose rows are the precedent) |
 | 2026-11-03 | Dolphin (`time-arcade`, Yash): Switchback I4 is now the GAUNTLET (`SWITCHBACK.md` "The I4 gauntlet": 1.5x the prisms, 2-3 keys a gate in a zig-zag, plugged tunnels, sealed eyes). The planner takes the keys in order (`StageFor`). New I4 bands for the gauntlet (Yash: "yes"): 175-195 / 165-185 / 155-175 / 145-165 s, landed by its own nose-lag row `aiNoseFollowGauntlet` 1.9 / 2.8 / 3.5 / 5 (offline 185 / 173 / 165 / 155 s); `switchback-dolphin-time`'s I4 baselines were measured on the old I4 |
