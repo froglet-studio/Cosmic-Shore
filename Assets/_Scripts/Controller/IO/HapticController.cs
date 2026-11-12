@@ -89,9 +89,11 @@ namespace CosmicShore.Gameplay
         const float PunishPlainDurationSec = 0.240f;
         const float PunishShieldedDurationSec = 0.300f;
         const float PunishHeavyDurationSec = 0.420f;
-        // Every step of the ladder plays at twice its authored strength (Caleb, 2026-11-12: "double the intensity
-        // all the way up the ladder"). The motors stop at 1, so a segment already authored at 1 (each thud's first
-        // slam on the low motor) cannot get stronger: what doubles is the high-motor grit and every tail.
+        // The shielded and heavy steps play at twice their authored strength (Caleb, 2026-11-12: "double the
+        // intensity all the way up the ladder"). The motors stop at 1, so a segment already authored at 1 cannot get
+        // stronger: what doubles is the high-motor grit and every tail. The PLAIN step was then taken 25% below what
+        // that doubling felt like (Caleb, same day), which is authored directly into its clip at gain 1: the doubled
+        // plain thud sat at the motors' cap, so a gain cut alone would not have reached what was felt.
         const float PunishGain = 2f;
 
         // The alert is the loudest event the game has: a long, rattling shake that says
@@ -210,7 +212,7 @@ namespace CosmicShore.Gameplay
             {
                 case PunishWeight.Heavy:    PlayPattern(s_punishHeavyJson, s_punishHeavyRumble, level * PunishGain); break;
                 case PunishWeight.Shielded: PlayPattern(s_punishShieldedJson, s_punishShieldedRumble, level * PunishGain); break;
-                default:                    PlayPattern(s_punishJson, s_punishRumble, level * PunishGain); break;
+                default:                    PlayPattern(s_punishJson, s_punishRumble, level); break;
             }
         }
 
@@ -455,14 +457,15 @@ namespace CosmicShore.Gameplay
             // Punish — heavy & dull: full amplitude held then decaying over ~200 ms, zero frequency
             // (the deepest/heaviest character, the opposite of the skim). No transient.
             s_punishJson = ClipJson(
-                "{\"time\":0.0,\"amplitude\":1.0}," +
-                "{\"time\":0.14,\"amplitude\":0.85}," +
+                "{\"time\":0.0,\"amplitude\":0.75}," +
+                "{\"time\":0.14,\"amplitude\":0.75}," +
                 "{\"time\":0.24,\"amplitude\":0.0}",
                 frequency: "0.0", durationSec: "0.24");
+            // 75% of the doubled thud as felt (low 1, 1 / high 0.5, 0.3), played at gain 1.
             s_punishRumble = Rumble(
                 new[] { 140, 100 },
-                low: new[] { 1.0f, 0.7f },   // low-frequency motor = the heavy rumble
-                high: new[] { 0.25f, 0.15f });
+                low: new[] { 0.75f, 0.75f },   // low-frequency motor = the heavy rumble
+                high: new[] { 0.375f, 0.225f });
 
             // Punish, shielded — the same thud, longer, with more grit on the high motor: you hit armour.
             s_punishShieldedJson = ClipJson(
