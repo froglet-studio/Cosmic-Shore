@@ -37,13 +37,25 @@ So:
     gyroid flora, crystals, cells, etc."): the kind "volume" and its PLAY_VIEWS. The pilot looks INTO it: of the
     sheet of light in a tower room he said it "looks out of place in that scene and not aligned to his perspective",
     so a display belongs to its place (a ship has one, a writing desk does not) and the pilot's eyes are on it.
+  * THE TWO ANIMALS ARE ONE CREATURE (23:01 UTC, on a booby under a jellyfish's bell: "looks like a bad and lazy
+    photoshop with a bird head some hair and jellyfish stuff. she does not look like a thoughtfully conceived hybrid
+    animal person. we can do a lot better job of expressing the animals together"; and on a hare in a badger's
+    stripes: "otherwise he is just a rabbit man with skunk coloring"). A bust's brief gives each animal a part of
+    its own so both can be named at icon size, and a painter paints that as parts set side by side. So a record
+    may carry a `fused` line: the pilot written bespoke as ONE animal (the second animal's traits grown through
+    the first one's own structures, one pattern over the whole body, an outline neither animal has alone, and a
+    body the pilot is seen USING), which takes the place of the two sentences that hand out the parts (`who`,
+    fused_errors). How to write one: .claude/skills/pilot-creator/SKILL.md, "One creature".
+  * A PILOT'S ANIMAL CAN BE RECAST after their bust was painted (the hare's badger became a skunk): `recast`
+    freezes today's words (scenes/identity/<WORD>.txt), and every later picture starts from them.
 
 How a scene keeps the character (the painter takes words only):
 
 1. THE SAME WORDS. A scene's description of the person is cut from the brief their bust was painted from
    (`busts/briefs/<WORD>.txt`, `identity`), not from today's tables: the tables move on, a painting does not. A new
    pilot, who never had a bust, takes the bust brief today's tables compose, and capture freezes it
-   (scenes/identity/<WORD>.txt) so every later picture of that pilot starts from the same words.
+   (scenes/identity/<WORD>.txt) so every later picture of that pilot starts from the same words. A frozen file
+   wins over a bust's brief, which is how a recast pilot leaves the old animal behind.
 2. WHAT THE PAINTING SHOWS BEYOND ITS BRIEF (`seen`), AND AGAINST IT (`swap`). A painter decides things no brief
    asked for: the colour of a glove, that the brooch is brass, that the shell cap hides the ears. Whoever writes a
    record LOOKS at the pilot's earlier picture first and writes those down. Where that painting departs from the
@@ -65,6 +77,7 @@ emblem or lettering (`bust.emblem_word`).
     python3 Tools/Build/pilot_art/scene.py list                 # every pilot: treatment, source, painted or not
     python3 Tools/Build/pilot_art/scene.py who <WORD>           # a pilot's identity lines and hands
     python3 Tools/Build/pilot_art/scene.py draft <WORD>         # the facts and an empty record for a new scene
+    python3 Tools/Build/pilot_art/scene.py recast <WORD>        # freeze today's words for a pilot whose animals changed
     python3 Tools/Build/pilot_art/scene.py brief <WORD>         # the brief, verbatim what the painter gets
     python3 Tools/Build/pilot_art/scene.py capture <WORD> <url> # save a painting and the brief it was painted from
     python3 Tools/Build/pilot_art/scene.py grid <WORD|file> <out.jpg>   # the picture under a ruled grid, to set `close`
@@ -391,6 +404,13 @@ PERMANENT = re.compile(r"\b(?:scars?|scarred|tattoo\w*|eye ?patch\w*|one-eyed|br
                        r"tusk|horn|finger|tooth)|(?:chipped|broken|cracked|snapped|notched|torn|split) (?:tusks?|"
                        r"horns?|beaks?|bills?|ears?|antlers?|shell|teeth|tooth))\b", re.I)
 
+# What a fused line may not say: the words that give one animal the head and the other what is behind it. And what
+# it must say when the second animal brings a piece of its body (bust.SECOND's kinds): the fused line is the whole
+# creature, so compose adds no "also gives" sentence after it and the record gives no `carry`.
+FUSED_PIECE = {"tail": "tail", "fan": "fan", "wings": "wing", "fins": "fin", "shell": "shell"}
+FUSED_NOT = re.compile(r"\b(?:owns|everything behind the face|is the face and the shape of the head|"
+                       r"the head of an? \w+ (?:on|with) the body of)\b", re.I)
+
 # ---------------------------------------------------------------------------------------------------------------
 # The records: scenes/<WORD>.py, one a pilot. treatment: a few words that name the shot (no two pilots share one).
 # shot: the camera, the lens and the moment, written for this pilot. side: which side of the frame the pilot stands
@@ -400,7 +420,7 @@ PERMANENT = re.compile(r"\b(?:scars?|scarred|tattoo\w*|eye ?patch\w*|one-eyed|br
 # head, and the nearest piece of the second animal when the scene carries one near it (set it after painting: `grid`).
 # ---------------------------------------------------------------------------------------------------------------
 SCENE_KEYS = ("treatment", "shot", "source", "seen", "doing", "place", "light", "wear")
-SCENE_MORE = ("frame", "side", "carry", "lower", "build", "hands", "swap", "chart", "close")
+SCENE_MORE = ("frame", "side", "carry", "lower", "build", "hands", "swap", "chart", "close", "fused")
 SOURCES = ("profession", "hobby", "history", "want")
 SWAPPED = ("face", "coat", "second", "eyes", "hair", "outfit", "motif")   # the bust's lines a swap may correct
 WORD_CAP = 1000   # briefs of 870 to 890 words were painted faithfully; past a thousand a line is one too many.
@@ -452,14 +472,28 @@ def identity_brief_path(word):
 
 
 def identity_text(word):
-    """(the bust brief a pilot's pictures start from, its path): the brief their bust was painted from; else the one
-    frozen when their first scene was captured; else, for a pilot with no picture yet, what today's tables compose
-    (path None)."""
-    for path in (creator.painted_brief_path(word), identity_brief_path(word)):
+    """(the bust brief a pilot's pictures start from, its path): the words frozen for this pilot (a pilot who never
+    had a bust, at their first scene; a pilot recast since their bust, by `recast`); else the brief their bust was
+    painted from; else, for a pilot with no picture yet, what today's tables compose (path None)."""
+    for path in (identity_brief_path(word), creator.painted_brief_path(word)):
         if os.path.exists(path):
             with open(path, encoding="utf-8") as fh:
                 return fh.read(), path
     return creator.brief_of(word), None
+
+
+def recast(word):
+    """Freeze today's words for a pilot whose animals changed after their bust was painted (creator.LEGACY, a spec's
+    heritage): the bust's brief still says the old animal, so every later picture starts from this file instead.
+    Returns its path. The record's `seen` and `swap` were written against the old words: read them again."""
+    w = next((w for w, *_ in creator.catalog() if w.lower() == word.lower()), None)
+    if w is None:
+        raise SystemExit(f"{word} is not in the catalog (creator.py list)")
+    path = identity_brief_path(w)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(creator.brief_of(w) + "\n")
+    return path
 
 
 def identity(word):
@@ -536,13 +570,48 @@ def hands_of(idn):
     return f"Both hands are a person's hands in gloves: {GLOVES[idn['faction']]}."
 
 
-def who(word, seen=(), swap=()):
-    """The identity paragraph of a scene: the person, in the words their avatar was painted from."""
+ONE = "one creature, born this way, and no part of {name} looks added to another"   # what a fused pilot's brief opens on
+FUSED_CONTROL = ("One animal: the {a}'s face in the {b}'s coat, the one growing out of the other with no line "
+                 "between them, and its tail, wing, fan, fin and shell all the same creature's.")   # the self-test's
+
+
+def fused_errors(idn, fused):
+    """What is wrong with a record's `fused` line, as sentences (none: []). It is the pilot's two animals written as
+    ONE creature (the docstring's ONE CREATURE), so it names both, and it does not hand the head to one animal and
+    what is behind it to the other, which is the collage it replaces."""
+    out = []
+    for x in (idn["a"], idn["b"]):
+        if not re.search(r"\b%s" % re.escape(x.split()[-1].lower()), fused.lower()):
+            out.append(f"{idn['word']}: the fused line never says {x.split()[-1].lower()}: it is both animals as one "
+                       f"creature")
+    m = FUSED_NOT.search(fused)
+    if m:
+        out.append(f"{idn['word']}: the fused line says {m.group(0)!r}: that hands a part to each animal, which is "
+                   f"the collage a fused line replaces")
+    piece = FUSED_PIECE.get(idn["kind"])
+    if piece and not re.search(r"\b%s" % piece, fused.lower()):
+        out.append(f"{idn['word']}: the fused line never says {piece}: it tells the whole creature, the "
+                   f"{idn['b'].lower()}'s {idn['kind']} and where it grows from included")
+    if not fused.rstrip().endswith("."):
+        out.append(f"{idn['word']}: the fused line ends in a full stop")
+    return out
+
+
+def who(word, seen=(), swap=(), fused=""):
+    """The identity paragraph of a scene: the person, in the words their avatar was painted from; or, when the
+    record has a `fused` line, as the one creature that line describes."""
     i = as_seen(identity(word), swap)
     al, bl = i["a"].lower(), i["b"].lower()
-    lines = [f"The subject is {i['name']}, a real living person in a world where people like this are ordinary: {al} "
-             f"and {bl} and human in one body. {i['a'].upper()} is the face and the shape of the head: {i['face']}. "
-             f"{i['b'].upper()} is the {i['part']} and everything behind the face: {i['coat']}."]
+    opening = (f"The subject is {i['name']}, a real living person in a world where people like this are ordinary: "
+               f"{al} and {bl} and human in one body")
+    if fused:
+        problems = fused_errors(i, fused)
+        if problems:
+            raise ValueError("; ".join(problems))
+        lines = [f"{opening}: {ONE.replace('{name}', i['name'])}. {fused}"]
+    else:
+        lines = [f"{opening}. {i['a'].upper()} is the face and the shape of the head: {i['face']}. "
+                 f"{i['b'].upper()} is the {i['part']} and everything behind the face: {i['coat']}."]
     lines.append(f"{i['eyes'][0].upper()}{i['eyes'][1:]}. {i['hair']}")
     if seen:
         lines.append("In detail: " + "; ".join(seen) + ".")
@@ -579,14 +648,17 @@ def compose(word, _rec=None, **over):
     hands = rec.get("hands") or hands_of(i)
     lower = rec.get("lower") or LOWER[i["faction"]]
     second = ""
-    if i["second"]:
+    if rec.get("fused") and rec.get("carry"):
+        raise ValueError(f"{i['word']}: a record with a fused line tells the whole creature there, where its "
+                         f"{i['kind'] or 'second piece'} grows from included: it gives no carry")
+    if i["second"] and not rec.get("fused"):
         carry = rec.get("carry") or CARRY[i["kind"]].replace("{bl}", bl)
         second = f" The {bl} also gives {i['second']}: {carry}."
     motif = f", and {i['motif']}" if i["motif"] else ""
     place, finish = place_of(rec, i["accent"])
     text = (
         f"{shot_of(rec, name)}\n\n"
-        f"{who(i['word'], rec['seen'], rec.get('swap', ()))}\n\n"
+        f"{who(i['word'], rec['seen'], rec.get('swap', ()), rec.get('fused', ''))}\n\n"
         f"From the neck down {name} is built like a person and stands, sits and moves like one: {build}. {hands} "
         f"The clothes cover the body from the collar to the wrists and the ankles, and no bare human skin shows "
         f"between them.{second}\n\n"
@@ -1246,7 +1318,10 @@ def self_test():
             errors.append(f"{w} does not compose: {e}")
             continue
         i = as_seen(identity(w), rec.get("swap", ()))
-        for k in ("face", "coat", "outfit"):
+        fused = rec.get("fused", "")
+        if fused and (fused not in text or ONE.replace("{name}", i["name"]) not in text):
+            errors.append(f"{w}: the scene brief lost the pilot's fused line")
+        for k in ("outfit",) if fused else ("face", "coat", "outfit"):
             if i[k] not in text:
                 errors.append(f"{w}: the scene brief lost the pilot's {k} line")
         if i["name"] not in text:
@@ -1271,7 +1346,7 @@ def self_test():
             painted = open(painted_brief_path(w), encoding="utf-8").read()
             raw = identity(w)
             for k in ("face", "coat", "outfit"):
-                if raw[k] not in painted and i[k] not in painted:
+                if raw[k] not in painted and i[k] not in painted and not (k != "outfit" and fused and fused in painted):
                     errors.append(f"{w}: the brief it was painted from lacks the pilot's {k} line")
     errors += manifest_errors()
     charts = [w for w, rec in recs.items() if rec.get("chart")]
@@ -1307,6 +1382,13 @@ def self_test():
             (dict(chart=("panel", "race"), place="A chart room. On the wall hangs {chart}"), "give (kind, view)"),
             (dict(chart=("panel", "waters"), place="The bridge of the HyperSea liner. There hangs {chart}"),
              "names the world"),
+            (dict(fused=f"A creature with the {identity(who_)['a'].lower()}'s face and nothing else.", carry=""),
+             "the fused line never says"),
+            (dict(fused=f"The {identity(who_)['a'].lower()} owns the head and the {identity(who_)['b'].lower()} "
+                        f"the rest, tail, wing, fan, fin and shell.", carry=""), "hands a part to each animal"),
+            (dict(fused=FUSED_CONTROL.replace("{a}", identity(who_)["a"].lower())
+                  .replace("{b}", identity(who_)["b"].lower()), carry="seen whole, it grows from the hip"),
+             "it gives no carry"),
         )
         for over, why in controls:
             if not refuses(over, why):
@@ -1316,6 +1398,14 @@ def self_test():
             errors.append("compose made a scene from an empty record")
         except ValueError:
             pass
+        one = FUSED_CONTROL.replace("{a}", identity(who_)["a"].lower()).replace("{b}", identity(who_)["b"].lower())
+        told = compose(who_, fused=one, carry="")
+        raw = identity(who_)
+        if (one not in told or ONE.replace("{name}", raw["name"]) not in told or raw["coat"] in told
+                or " also gives " in told or "is the face and the shape of the head" in told):
+            errors.append("a fused line does not replace the two animals' own sentences in the brief")
+        if FUSED_CONTROL.count("{a}") < 1 or FUSED_CONTROL.count("{b}") < 1:
+            errors.append("FUSED_CONTROL names both animals")
         framed = compose(who_, frame=FRAMING, side="right")
         if "a third of the way in from the right edge" not in framed or "{" in framed:
             errors.append("FRAMING does not reach the brief with its side and the pilot's name filled in")
@@ -1445,6 +1535,11 @@ def main():
         return 0
     if args[0] == "draft" and len(args) == 2:
         print(draft(args[1]))
+        return 0
+    if args[0] == "recast" and len(args) == 2:
+        path = recast(args[1])
+        print(f"froze today's words for {args[1]} in {os.path.relpath(path, ROOT)}: the record's seen and swap were "
+              f"written against the old words, so read them again (scene.py who {args[1]})")
         return 0
     if args[0] == "brief" and len(args) == 2:
         print(compose(args[1]))

@@ -5376,10 +5376,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Longshift.png": {
-   "coloured": 0.1281,
+   "coloured": 0.6801,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "e182716d7c44db62",
+   "sha": "2c7edcd9ac371130",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_MANGER.png": {

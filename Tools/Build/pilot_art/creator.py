@@ -46,6 +46,10 @@ MASK = (1 << 64) - 1
 # were painted before pilots had two animals, so each was given one (cast 2026-11-11: their own animal stays the
 # face, the second is the feature their full-body painting already showed where it had one, a tail, wings or a shell,
 # moved to the head). word: the avatar's word; spec: the full-body spec, when there is one.
+# A second animal that was given can be given again: Longshift's was the badger until Garrett read him
+# (2026-11-11) as a skunk, "Longshift should have a bushy skunk tail that wraps around his body and into hit lap like
+# a blanket ... otherwise he is just a rabbit man with skunk coloring". A recast pilot's bust is stale (`stale`), and
+# their pictures start from the words frozen by `scene.py recast <WORD>`, not from the bust's old brief.
 # ---------------------------------------------------------------------------------------------------------------
 CALLSIGN_PILOTS = {   # word -> spec name (specs/<spec>.py holds the person, the heritage and the faction)
     "ENSIGN": "veliane", "MANGER": "tamako", "ANVIL": "brikon", "VOLT": "karenth", "ZODIAC": "ivelia",
@@ -64,7 +68,7 @@ LEGACY = [   # (word, face animal, crown animal, faction type)
     ("Flux", "Oryx", "Orca", "Sport"),
     ("Jugger", "Orca", "Eagle", "Contractor"),
     ("Krush", "Coyote", "Turkey", "Thief"),
-    ("Longshift", "Black hare", "Badger", "Explorer"),
+    ("Longshift", "Black hare", "Skunk", "Explorer"),
     ("Maestro", "Platypus", "Butterfly", "Priest"),
     ("Mason", "Ostrich", "Porcupine", "Contractor"),
     ("Reaper", "Gecko", "Mantis", "Thief"),

@@ -351,3 +351,19 @@ Four samples, 19 paintings, three reads (`Docs/Pilots/PORTRAITS.md` section 8; `
     tokens and under two minutes for four scenes. Each repaint is a new picture and is read again; three reads
     took the "differences a player would notice" from 3 to 1, and the read after the first repaints found four,
     because fixing one thing moved another (the walrus's fur hat became an ape's brow).
+72. **Weather laid over a whole thing replaces the thing.** "trail boots caked with snow" came back with a white
+    furry paw where a toe cap should be. "tall laced trail boots, snow packed in the treads" came back as boots
+    in four rolls of four. Put the snow, the mud or the rust on a part that has a shape of its own (the treads,
+    the laces, one sleeve), never over all of it.
+73. **A hand that is hidden comes back as a third one.** "One hand is buried to the wrist in the tail's fur; the
+    other holds a steaming tin cup" was painted with two hands on the cup and a third paw at the knee. Give both
+    hands work the camera sees ("both hands are wrapped round a steaming tin cup") and close the count ("and no
+    other hand is anywhere"): two hands in three rolls of three.
+74. **A pair posed two ways makes three.** "one ear straight up and the other turned to the wind" was painted as
+    two ears up and a third out sideways. "the two ears standing straight up side by side" held in two rolls of
+    two. Pose a pair as a pair, with its number in the sentence.
+75. **Bring the second animal up to the head.** The avatar is the scene's head and shoulders, and a tail lying in
+    the lap is outside that square: the hare with the skunk's tail across his lap cut to an avatar of a black
+    rabbit. The same scene with the tail drawn "across the lap and up over the chest like a blanket, its white tip
+    tucked under the chin" put the skunk in the avatar, and made the picture more his own. When the second
+    animal's piece can be worn, held or wrapped, pose it where the avatar's square will catch it.

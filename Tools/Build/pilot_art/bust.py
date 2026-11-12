@@ -279,6 +279,7 @@ LEGACY_CROWN = {   # the legacy painted pilots' second animals that are not Anim
     "Ram": ("horns", "horns", False, "two heavy ridged ram horns curling down and around the sides of the head"),
     "Tiger": ("ears", "ears", False, "two rounded tiger ears, black on the backs with a bold white spot, a wide orange-and-white tiger cheek ruff, and black tiger stripes running back over the crown"),
     "Deer": ("antlers", "horns", False, "a pair of branching stag antlers rising from the top of the head"),
+    "Skunk": ("stripes", "other", True, "the striped skunk's head pattern over the whole top of the head: a thin white blaze from the bridge of the nose up between the eyes, widening on the crown into a snow-white cap that divides at the nape into two broad white stripes running on down the back of the neck, all of it in long glossy jet-black fur"),
 }
 for _k, _v in LEGACY_CROWN.items():
     CROWN.setdefault(_k, _v)
@@ -364,6 +365,7 @@ SECOND = {
     "Butterfly": ("wings", "two great monarch butterfly wings, orange veined in black and edged with white dots, growing from the back between the shoulder blades and standing open behind both shoulders, behind the clothes and well clear of the head and the neck"),
     "Turkey": ("fan", "a wide fan of bronze turkey tail feathers, banded and white-tipped, spread behind the back where a tail grows: it rises from below the frame behind both shoulders and behind the clothes, its tips no higher than the jaw, well clear of the head and the neck"),
     "Peacock": ("fan", "a peacock's train of iridescent green-gold tail feathers with blue eye-spots, fanned wide behind the back where a tail grows: it rises from below the frame behind both shoulders and behind the clothes, well clear of the head and the neck"),
+    "Skunk": ("tail", "a huge bushy skunk tail as long as the body, a plume of long coarse hair as wide as the shoulders, black with the two white stripes of the back running on into it and white at the tip, standing up behind one shoulder"),
 }
 # The kinds of SECOND that stand up behind the shoulders: under a hooded outfit the composer says the hood lies in
 # front of them (Krush's fan was painted between his hood and his head).
@@ -404,6 +406,7 @@ LIMB = {
     "Mantis shrimp": "a hand with four fingers and a thumb, armoured in a mantis shrimp's shell, red with white spots across the knuckles, every finger jointed like the fingers of a gauntlet",
     "Platypus": "a platypus's webbed forepaw, dark skin stretched between clawed fingers",
     "Tardigrade": "a soft translucent cream tardigrade hand with five plump stubby fingers",
+    "Skunk": "a skunk's black forepaw with five slim fingers, each ending in a long pale curved digging claw",
     "Jellyfish": "",   # its tentacles trail from the bell (CROWN, FACE): no human hand, and nothing more to raise
 }
 # The animals whose own limb is a claw, a pincer, a blade or a club: their LIMB line is their shell on a hand with
@@ -495,6 +498,7 @@ MARK = {
     "Ram": "thick cream ram fleece",
     "Tiger": "orange-and-black tiger stripes with a white throat",
     "Deer": "soft fawn deer fur with white spots and a white throat patch",
+    "Skunk": "long glossy jet-black skunk fur with two broad white stripes running down the back of the neck",
 }
 
 # A bust shows only the chest up: the callsign's mark sits there (brief.MOTIFS can sit at the belt or the wrist).

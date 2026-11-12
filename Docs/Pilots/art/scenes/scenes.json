@@ -458,16 +458,16 @@
    "name": "Longshift",
    "file": "Docs/Pilots/art/scenes/Longshift.jpg",
    "size": [1536, 864],
-   "close": [870, 0, 1250, 380],
+   "close": [800, 0, 1220, 420],
    "side": "right",
-   "treatment": "High-key expedition frame, pale on pale",
+   "treatment": "Blue hour at a snowbound halt, one warm lamp",
    "source": "want: \"to see the edge of the map\" (the game's Wants)",
    "crops": {
     "16:9": [0, 0, 1536, 864],
     "4:3": [384, 0, 1536, 864],
-    "1:1": [628, 0, 1492, 864],
-    "4:5": [714, 0, 1405, 864],
-    "9:16": [817, 0, 1303, 864]
+    "1:1": [578, 0, 1442, 864],
+    "4:5": [664, 0, 1355, 864],
+    "9:16": [767, 0, 1253, 864]
    },
    "chart": "panel of the galaxy"
   },

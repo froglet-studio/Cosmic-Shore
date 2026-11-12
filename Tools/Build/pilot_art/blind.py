@@ -185,6 +185,7 @@ NAMES = {
     "Scorpion": (["scorpion"], ["lobster", "crayfish", "crawfish"]),
     "Seahorse": (["sea ?horse", "sea ?dragon"], []),
     "Shoebill": (["shoebill"], _kin(WADERS) + ["pelican"]),
+    "Skunk": (["skunk", "polecat"], _kin(MUSTELIDS, "skunk", "polecat")),
     "Sloth": (["sloth"], []),
     "Snail": (["snail"], ["slug"]),
     "Tapir": (["tapir"], []),
