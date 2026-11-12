@@ -23003,3 +23003,20 @@ window and avatar picker.
 2. **A saved profile keeps its avatar**: the same id shows the same pilot, now as their scene's close-up.
 3. **The small sizes**: the friends drawer, a party seat, the scoreboard and the HUD's AI seats. Look for a hard edge
    or a soft, blurry picture where the 256 px sprite is scaled down, and note the screen.
+
+## 🔴 The one-minute fun card after every arcade match (2026-11-12, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-nokvvr`; `Docs/ElementalLoop/PLAYBOOK.md` steps 1-2 and section 7 items 1-2. New
+editor-only `Assets/_Scripts/Editor/Diagnostics/FunCard.cs` and a `fun` kind in `BugHuntReports.cs`. The reference
+compile's editor config passes for both files (a planted error in `FunCard.cs` was reported, so the file is compiled);
+the player config fails on 30 errors in multiplayer files this cloud session cannot fetch packages for, none in this
+change. No Unity editor ran.
+
+1. **Fly any arcade game to its end** (Switchback I2 is quick) and stop Play: after the Bug Hunt confirmation, a "Fun
+   Card" window names the vessel, the game and the rung ("Dolphin in Switchback, I2 (fun)").
+2. **Answer it**: Send stays disabled until fun and the rung are picked; "Almost" or "No" shows the five "what held it
+   back" buttons. Send closes it, writes `Documents/CosmicShore Diagnostics/FunCards/funcard_*.json` and the Bug Hunt
+   send pushes it to `bugledger/<you>` under `.../fun/`. `python3 Tools/Build/fun_cards.py` then lists it.
+3. **Regatta (an arena game) and a run left early** do not open the card; Skip closes it without writing anything.
+4. **FrogletTools > Diagnostics > Fun Card (last match)** reopens it for the last arcade match of the day, and **Fun
+   Card: ask after every match** unticks it on this machine.
