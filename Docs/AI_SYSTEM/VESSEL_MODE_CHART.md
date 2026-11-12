@@ -43,7 +43,7 @@ Stats are read off the hull's prefab:
 | Grizzly | Dig In | Weapon Systems | Charged Cannon | Rush | 50 | 90 / 90 | 4 | GrizzlyCharge, GrizzlyTime |
 | Honeyguide | 'Flit' | 'Hive' | 'Peck' | 'Slip' | 25 | 80 / 80 | 5 | SlipLine |
 | Jacks | 'Danger Share' | 'The Call' | 'Wide' | 'Decoys' | 50 | 90 / 90 | 4 | DecoyRun |
-| Manta | Sting | Decoy | Skim | Yastri | 180 | 50 / 30 | 4 | Bloomrush, Broadside, BroodRush, Maelstrom, Redline, Regatta, Scurry |
+| Manta | Sting | Decoy | Skim | Yawstery | 180 | 50 / 30 | 4 | Bloomrush, Broadside, BroodRush, Maelstrom, Redline, Regatta, Scurry |
 | Meerkat | 'Sentinel Mode' | 'Exit Portal' | 'Soliton' | 'Faster Ride' | 60 | 120 / 120 | 1 | BurrowRun, Warpline |
 | Orca | 'Flown Missiles' | 'Danger Shield' | 'Burst' | 'Boost Tank' | 21.25 | 44 / 44 | 5 | Breach |
 | Rhino | 'Carry' | 'Blade' | 'Furrow' | 'Ramp Spool' | 50 | 90 / 90 | 4 | BroodRush, Headlong, Regatta |

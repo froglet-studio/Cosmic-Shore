@@ -385,7 +385,7 @@ MAP_BODY = """  vesselClass: 1
     UpgradeLabel: Shield Breaker
     UpgradeDescription: Skimming a shielded rival prism pops its shield and makes it explosive.
   - Element: 4
-    AbilityLabel: Yastri
+    AbilityLabel: Yawstery
     AbilityDescription: 'Hard flat turns on the turn pair. Time makes the Manta faster:
       cruise speed (VesselTransformer.ThrottleScalerMultiplier, x1.5 at level 10) and the
       soaring speed (BoostSpeedMultiplier, x1.3 at level 10). The trail is a plain
@@ -404,7 +404,7 @@ FILES["Assets/Resources/ElementalAbilityMaps/Manta.asset"] = (
 
 def unparseable_assets():
     """Every .asset this generator writes must PARSE, not only match. The byte comparison below cannot see a broken
-    file it wrote itself: an unquoted 'faster:' in the Yastri text left Manta.asset unreadable to Unity
+    file it wrote itself: an unquoted 'faster:' in the Yawstery text left Manta.asset unreadable to Unity
     (E-251530c87b) while --check stayed green. Skipped, not failed, where PyYAML is not installed."""
     try:
         import yaml

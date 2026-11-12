@@ -3860,17 +3860,17 @@
    "kind": "sprite",
    "sha": "f5df6bc4a40b49ed"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Manta/Parts/Manta_YastriManta.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Manta/Parts/Manta_YawsteryManta.png": {
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "0752fc64ed0e5109"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Manta/Parts/Manta_YastriSoar.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Manta/Parts/Manta_YawsterySoar.png": {
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "68c932daf35bed2d"
   },
-  "Assets/_Graphics/Icons/AbilityIcons/Manta/Parts/Manta_YastriTurn.png": {
+  "Assets/_Graphics/Icons/AbilityIcons/Manta/Parts/Manta_YawsteryTurn.png": {
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "ff34b3a1fa4d5500"

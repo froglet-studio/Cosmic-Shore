@@ -227,14 +227,14 @@ The map as it stands (the 2026-11-07 overhaul, Charge re-cut 2026-11-10; `MANTA_
 | Charge | Sting (passive) | how long the shared fuse runs when a plant resets it: 20 s at rest → 30 s at Charge 10 (`fuseSeconds` × `fuseScale` 1 → 1.5, `MantaStingConfig.asset`). Until 2026-11-10 it was the petals a bloom knocks out of a rival (×2 at Charge 10), retired as too coarse to tune | **Contagion** — anything caught in a bloom is itself bombed, free |
 | Mass | Decoy (passive) | how long a decoy stands (`decoyLifetimeAtFullMass` 2×, `MantaStingConfig.asset`) | **Omni Decoy** — the omni crystal leaves a decoy too |
 | Space | Skim (passive) | the skimmer's size (`Manta.prefab` `Skimmer.Scale`, 20 → 40) | **Shield Breaker** — skimming a shielded rival prism pops its shield and makes it explosive |
-| Time | Yastri (Input 12) | cruise ×1.5 (`ThrottleScalerMultiplier`) and soaring ×1.3 (`BoostSpeedMultiplier`) at Time 10 | **Soar** — the boost stays dark until Time 5 |
+| Time | Yawstery (Input 12) | cruise ×1.5 (`ThrottleScalerMultiplier`) and soaring ×1.3 (`BoostSpeedMultiplier`) at Time 10 | **Soar** — the boost stays dark until Time 5 |
 
 The table the remake shipped with (2026-08-26), kept as history:
 
 | Element | Ability | Quantitative (authoring home) | L5 upgrade (shipped) |
 |---|---|---|---|
 | Charge | Sting (passive) | bomb-bay capacity 3→5 at Charge 15 + skim-charge rate (`MantaStingConfig.asset`) | **Contagion** — anything caught in a bloom is itself bombed, free |
-| Mass | Yastri (Input 12) | trail prism VOLUME (`trailVolume` 1→2.5 on the prism controller); turn rate deliberately unscaled | **Shielded Turn Trails** — hard-turn prisms come out shielded |
+| Mass | Yawstery (Input 12) | trail prism VOLUME (`trailVolume` 1→2.5 on the prism controller); turn rate deliberately unscaled | **Shielded Turn Trails** — hard-turn prisms come out shielded |
 | Space | Kabloom (passive) | every bloom's scale (`blastScaleAtFullSpace` 1.6) | **No Friendly Fire** — blooms spare allies and allied prisms |
 | Time | Soar (Input 13) | max soaring speed (map 1.3 — the authoring home) | *(open)* — **Wake Highway** (boost rings laid while soaring, allies ride them at L5) shipped and was CUT 2026-09 on design direction |
 

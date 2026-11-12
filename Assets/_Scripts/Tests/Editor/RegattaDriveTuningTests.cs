@@ -131,7 +131,7 @@ namespace CosmicShore.Tests
             // Regatta flights replace it through learn_drives_from_flights.py --write).
             var tuning = MantaSoarAITuningSO.LoadForMode(GameModes.Regatta);
             Assert.IsNotNull(tuning, "the Regatta Manta flies its own bands");
-            Assert.Greater(tuning.YastriStickBand, tuning.BoostStickBand, "the pivot starts past the boost band");
+            Assert.Greater(tuning.YawsteryStickBand, tuning.BoostStickBand, "the pivot starts past the boost band");
             Assert.IsNull(MantaSoarAITuningSO.LoadForMode(GameModes.Rampage), "every other mode keeps the executor's bands");
         }
     }
