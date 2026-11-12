@@ -495,15 +495,17 @@ Shader "CosmicShore/HyperSeaSkybox"
     {
         float3 galNorm = normalize(_GalacticNormal.xyz);
 
+        // Dust concentrates near galactic plane. Off the band the mask is exactly 0 and the occlusion below is
+        // exactly 1, so skip the fbm (exact; about 88 % of the sky).
+        float galDist = abs(dot(dir, galNorm));
+        float galMask = 1.0 - smoothstep(0.0, _GalacticWidth * 2.5, galDist);
+        if (galMask <= 0.0) return 1.0;
+
         float3 p = dir * _DustScale;
         float drift = time * _DriftSpeed * 0.3;
 
         float dust = fbm3(p * 1.8 + float3(0, drift, 0));
         dust = smoothstep(0.3, 0.7, dust);
-
-        // Dust concentrates near galactic plane
-        float galDist = abs(dot(dir, galNorm));
-        float galMask = 1.0 - smoothstep(0.0, _GalacticWidth * 2.5, galDist);
 
         float occlusion = 1.0 - dust * _DustStrength * galMask;
         return max(occlusion, 0.25);
@@ -531,6 +533,8 @@ Shader "CosmicShore/HyperSeaSkybox"
         // Broader glow, also constrained to the plane
         float halo = smoothstep(1.0 - _CoreHaloSize, 1.0, coreDot);
         halo *= onPlane;
+        // Exact early-out: outside both caps every term below is 0 * finite (about 85 % of the sky).
+        if (inner <= 0.0 && halo <= 0.0) return half3(0.0, 0.0, 0.0);
 
         // Particulate structure in the halo
         float rayNoise = valueNoise(dir * 8.0 + coreDir * 3.0);

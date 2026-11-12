@@ -282,6 +282,8 @@ namespace CosmicShore.Editor.ProvenWin
 
         static Mesh LoadMesh(Spec spec)
         {
+            // "builtin:Sphere.fbx" names one of Unity's built-in meshes (a sky is drawn on a sphere round the eye).
+            if (spec.mesh.StartsWith("builtin:")) return Resources.GetBuiltinResource<Mesh>(spec.mesh.Substring(8));
             var meshes = AssetDatabase.LoadAllAssetsAtPath(spec.mesh).OfType<Mesh>().ToList();
             var mesh = spec.meshFileId != 0
                 ? meshes.FirstOrDefault(m => AssetDatabase.TryGetGUIDAndLocalFileIdentifier(m, out string _, out long id) && id == spec.meshFileId)

@@ -3,6 +3,31 @@
 One row per change that passed `Docs/ProvenWin/PLAYBOOK.md`: one change, one machine-read metric, B better in every
 paired sample, output identical, controls behaving, a human sign-off. Newest first.
 
+## W3. HyperSea sky: skip the dust off the galactic band and the core outside its caps (2026-11-12)
+
+| | |
+|---|---|
+| Change | Two exact early-outs in `Assets/_Graphics/Materials/Shaders/HyperSeaSkybox.shader`: `computeDust` returns 1 where the galactic mask is exactly 0 (its occlusion is then exactly 1; about 88 % of the sky), and `computeCore` returns 0 where both cap smoothsteps are 0 (every term is 0 x finite; about 85 % of the sky). Found by the "Find more provable Unity performance wins" sweep (its S2 and S3). |
+| Metric | GPU time of the sky: ms per batch of 16 full-screen sky draws at 2560 x 1440 (the material on a sphere round the eye, `_Time` driven by the bench), 200 interleaved pairs |
+| Exposure | The authored skybox of 59 build scenes, Menu_Main and every match; full cost on Desktop and MobileHigh (MobileLow and Web draw a baked panorama). On the RTX 3080 one full-screen sky costs about 2.3 ms at 1440p. |
+| Owner | Shombith (the sky shader) |
+
+| API | Shipped ms | Change ms | B/A median (p10-p90) | Speed-up | Pairs B faster | Pixels different |
+|---|---|---|---|---|---|---|
+| Direct3D 12 | 36.61 | 33.43 | 0.9132 (0.907-0.919) | 1.095x | 200/200 | 0 (bit-identical) |
+| Vulkan | 32.86 | 30.13 | 0.9158 (0.910-0.921) | 1.092x | 200/200 | 0 |
+| Direct3D 11 | 35.95 | 32.99 | 0.9203 (0.913-0.925) | 1.087x | 200/200 | 0 |
+
+About 0.2 ms per frame of sky at 1440p on this GPU, every frame, in menus and matches. Null control 1.0000 (50.5 %).
+Negative control (dust bound `< 0.02`) caught on every API (about 97,000 px). Not measured: a phone GPU, where the
+sky's share of the frame is larger.
+
+How the set was cut: the sweep proposed three early-outs (nebula S1, dust S2, core S3). All three together were 1.23x
+on D3D and within one display level there, but on Vulkan they moved 3.3 M pixels by up to 3 levels. Measured apart on
+Vulkan: dust bit-identical, core bit-identical when inserted without reordering lines, nebula within one level on
+829,000 px. So W3 ships dust + core; the nebula early-out (about 10 % more) is queued below for a human sign-off.
+The star pre-test (S4) on top of S1-S3 measured bit-identical and 1.08x on D3D12; it is queued for the other APIs.
+
 ## W2. Spindle lace: search 6 Voronoi cells, not 9 (2026-11-12)
 
 | | |
@@ -80,6 +105,14 @@ Runner-ups, for the next run:
 The queue is W1's runner-ups above plus whatever the "Find more provable Unity performance wins" thread ranks; a
 candidate moves here with its evidence when it is picked, proven or rejected. The envelope cull was superseded, not
 rejected: it is runner-up 1.
+
+Queued with evidence:
+
+| Candidate | Evidence so far | What it needs |
+|---|---|---|
+| Sky nebula region-mask early-out (sweep S1) | 1.10x on Vulkan alone; within one display level but on 829,000 of 44 M px (1.8 %) | measure on top of W3 on all APIs, then a blind sign-off |
+| Sky star pre-test (sweep S4) | bit-identical, 1.08x on D3D12 on top of S1-S3; negative control caught (836,000 px, 65 levels) | measure on top of W3 on Vulkan and D3D11 |
+| The sweep's queue (`provenwin-queue/QUEUE.md` in the project files) | ranked 3-11: scene-transition doors Animator, parked cameras under load covers, creature body bloom pulse, ... | one at a time through `/proven-win` |
 
 Rejected:
 

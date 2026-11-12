@@ -88,6 +88,11 @@ Traps this cost a day to find (all handled in the bench; keep them handled in an
   a few thousand the D3D12 device fails (`8007000e`) and the editor crashes. Sync with a 1-pixel `ReadPixels`.
 - **Swapping the file between rounds is too slow and too noisy.** Rounds minutes apart catch different desktop load
   (one round's median went 5x). Compile both variants at once and interleave.
+- **Vulkan can disagree with D3D, and parts can disagree with their sum.** The sky's three early-outs were within one
+  display level on D3D12 and D3D11 (about 75 px) but moved 3.3 M pixels by up to 3 levels on Vulkan, while each alone
+  was bit-identical or within one level there (2026-11-12). Unity's Vulkan path keeps HLSL `half` as relaxed precision,
+  which the driver may run at fp16, so moving code changes results. Measure every API, measure the exact combination
+  you will ship, and when a combination fails, split it and ship the parts that pass.
 - **Launch detached** (`start` / `Start-Process` without waiting): a dropped remote session kills a child Unity mid
   swap and leaves the project file changed.
 - Then the project's own gates on the branch with only B applied: `bash Tools/Build/unity_refcompile/run.sh`,
