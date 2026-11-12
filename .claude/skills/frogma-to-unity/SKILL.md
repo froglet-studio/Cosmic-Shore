@@ -119,8 +119,10 @@ otherwise say so plainly and add the hand test to `Docs/UNITY_VERIFICATION_CHECK
    `frogma_to_unity.py status-note --live <canvas.json> --root <scratchpad>/status --board <Board>.dc.html
    --text "Built in Unity - <what>, PR #N (<date>)"`, `frogma.py check <root> --no-node`, and publish ONLY the index
    (`Artifact publish url=<board> root=<root> file_path=<root>/project/canvas.json`; a refusal: re-read, redo, again).
-   Pull it into the repo copy (`frogma.py pull --src <root> --version <v>`) and add the "Built" line to the round's
-   section of `Docs/MENU_REDESIGN_B.md` (or the decision row of the style guide).
+   Copy ONLY your note into the repo copy (`Docs/MenuRedesignB/board/canvas.json`, written indent 2): a full
+   `frogma.py pull` mirrors whatever other sessions did to the canvas meanwhile (on 2026-11-12 it would have dropped
+   Rev 79-83 and added Rev 85-87, the occupied Frogma lane's work), and that is their pull to make. Add the "Built"
+   line to the round's section of `Docs/MENU_REDESIGN_B.md` (or the decision row of the style guide).
 3. **The tracker**: if the work is one of `Docs/UI_REDESIGN_TASKS.md`'s tasks, run `/ui-redesign-tracker` on it;
    open questions go to its Design feedback queue.
 4. **Tell the person**: the PR link, the sheet, the differences, the open questions, and what only the editor can
