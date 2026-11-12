@@ -33,8 +33,13 @@ successor, run through Weave, also takes pictures (PAINTER). So:
   * ASKED AND TAKEN. A run is paid for whole, so one ask may name several things, and each is judged on its own
     when the answer is in: the record's `edit` holds only the regions that are taken, and its took= says in a
     phrase what of the ask went into the scene and what was left out (Trace's port and cylinder were taken; her
-    head was read blind and left as it was, LESSONS 88). The note beside the mask holds the words as they were
-    sent, `took`, and under `earlier` the note of every patch the scene had before.
+    head was read blind and left as it was, LESSONS 88, 89). The note beside the mask holds the words as they
+    were sent, `took`, and under `earlier` the note of every patch the scene had before.
+  * THE SCENE AS ITS OWN REFERENCE. A patch's refs=() sends the scene alone. Where the scene already holds the
+    thing at another size (a port beside a display), the words point at it ("the round port of this same
+    photograph") and no frame of the game goes with it: a frame is copied for its colour before the words are
+    read for theirs. Trace's cylinder came back orange beside an orange frame, and in her port's colours from her
+    port (LESSONS 90).
   * LINKS, NOT UPLOADS. The painter fetches each picture by its link. The repository is public, so a picture that is
     committed and pushed has one (raw_url), and `input` refuses a picture that is not pushed. A link names the
     repository, which the words never do: the game's own frames were asked for (above).

@@ -469,3 +469,56 @@ quoted, and refused by the plan.
     can be patched from frames (83); a head cannot be patched without the painter redrawing the pilot. So the
     scene is roll A, with the cylinder and the port prepared as a patch. It also corrects 79: the brief without
     "smooth" and "slim" painted both the best head and the wig, so those two words did not make the join.
+
+## 2026-11-12 - the paid plan: a head changed by an edit, a head that lost its read, one thing at three sizes
+
+Garrett moved the workspace to a paid plan (04:09 UTC) and three more of the six runs he had approved were made:
+Flux (the whole frame, with his likeness), Trace (four things in one ask) and Trace's cylinder again (one thing,
+and no frame of the game). 55 of the 66 credits are spent and one run is unused.
+
+87. **A whole-frame edit that is shown the pilot's likeness changes the head and keeps the face.** Flux's patch
+    names the whole frame as its region, because the head itself changes, and shows the painter his likeness
+    (head and shoulders, cut from his first scene) as picture 2: "an orca's dorsal fin: the fin Flux has in
+    picture 2". One run gave the hooked fin of wet black skin, an orca's skin from the temples back, a display
+    with depth and the course outside from three frames, and the face, the horns, the canopy and the hands of the
+    fifth painting were where they had been. Read blind, a stranger named a gemsbok and an orca, where one of two
+    had said "horse or zebra" (80). What the ask wanted kept and also used as a landmark was lost: "swept back
+    toward the ear" put the white patch where the ear was, no ear shows, and the reader took the patch for "one
+    small white ear". Place a new part by what cannot be painted over (the eye, the base of a horn), never by a
+    part the new one could cover. Afterwards the record follows the picture: the fin and the patch are `swap`
+    pairs against the identity's own phrases, because three more `seen` lines put the brief over its word cap.
+88. **One run may be asked for several things, and each is judged alone: asked and taken.** Trace's run asked for
+    four: the back of her head drawn in to a booby's outline, the cylinder, the port, and a blank plate on the
+    microscope. A run costs the same whatever it asks. The answer was looked at part by part, and only the port
+    and the cylinder went into the scene: the record's `edit` holds those two regions, its `took` says in a
+    phrase what was taken and what was left, and the note beside the mask keeps the ask as it was sent
+    (`refs.py`, ASKED AND TAKEN). Part by part: the port came right on the first run. The cylinder came back
+    orange, the colour of one reference frame, over the ask's "jade teal ... indigo and violet", and wider than
+    it had been over "stay exactly where they are". "The small plate on the microscope's head is ... blank" was
+    painted as a white dish on its stage: what is named is painted (84), and a plate is a dish. The seams of
+    regions cut through feathers, scales and metal could not be found at four times, because the painter keeps
+    the picture's alignment to the pixel while it repaints it (the whole moved 13.48 of 255, the face 7.82, fine
+    detail a little softer). A region need not end on a drawn edge (83) when the answer is that well aligned;
+    look at the seam at four times either way.
+89. **Drawing the second animal in to the first one's outline loses it.** Two readers of Trace's bell had said it
+    was worn "like a hood", so the run drew the jelly in: "no wider and no higher than a booby's own head", the
+    feathers going clear into a close mantle down the nape. It came back as asked, and to the eye that had asked
+    for it, it was one head at last. Read blind BEFORE it was shown (80), the jellyfish went from sure
+    ("translucent glowing bell and frilly tentacles") to a guess ("translucent purple frilled veil"), and the
+    reader still said "worn as hair; could also read as a gauzy headscarf". At icon size the bird read better
+    ("long-beaked seabird (gannet or booby)" from both readers, where the bell gave "bird") and the jellyfish not
+    at all. So the scene keeps the bell, and the head that was tried is on the gallery page beside it with both
+    reads. An animal is named by its own silhouette, and a jellyfish is its bell. And jelly that hangs where hair
+    hangs is read as hair whatever its outline: "worn" is about where a part sits and what it does, which an
+    outline does not change. What is left to try is the part put to use, as Longshift's tail is his blanket
+    (Garrett's note on him): a frill that holds, lights or reaches.
+90. **Make the scene its own reference where it already holds the thing, and send no frame in another colour.**
+    The second run for Trace's cylinder sent the scene alone (the patch's `refs=()`): "a small model of the
+    growth that fills the round port of this same photograph ... in the same colours and the same glow as the
+    port shows it". It came back in the port's jade teal and violet on the first run, in the same place and at
+    the same size, and the answer moved the room about half as far as the four-part ask had (7.09 of 255 against
+    13.48; 83 found the same for one part against two). A frame is copied for its colour before the words are
+    read for theirs: send only frames in the colours the scene wants, and where the scene has a window, a port
+    or a second display, point the words at it. A scene patched twice keeps both notes (`earlier`). Each `apply`
+    encodes the picture again: the avatar's cut moved by 2 of 255 at most, so it is re-cut and committed with
+    the scene.

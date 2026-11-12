@@ -58,7 +58,8 @@ of real frames, a pilot's likeness, a record's `refs=` and `patch=`, the links, 
 - **Two pools of credits.** Section 1's painter spends Figma AI credits on the file's plan; they ran out on
   2026-11-12 after twelve repaints ("Insufficient Figma AI credits ... resets at 2026-11-14T01:41:00Z"). Weave
   spends the workspace's own ("These are your workspace's Weave credits, not Figma AI credits"): 150 a month on the
-  Free plan, and this painter is quoted at 11 a run at quality high whatever the size (3 at medium).
+  Free plan, and this painter is quoted at 11 a run at quality high whatever the size and however many things the
+  ask names (3 at medium).
 - **Every run is quoted, and the person approves the cost on a card.** A call without `acknowledgedCost` spends
   nothing and returns the quote. Put the cost on a decision card (never free text) and run only what the card
   approved, at the cost it named: a card may approve a named set of runs at so much each and so much in all, each
@@ -68,7 +69,8 @@ of real frames, a pilot's likeness, a record's `refs=` and `patch=`, the links, 
   "You've used your 2 free Weave model runs. Upgrade to a paid Weave plan" (2026-11-12, after a quote of 11 and
   with 128 credits left; nothing was spent). The pricing page that day (https://weave.figma.com/pricing) listed
   Starter at 1,500 credits a month and Professional at 4,000, and did not mention the limit. The plan is the
-  person's to change: never route round it (another tool, another account, a published workflow).
+  person's to change: never route round it (another tool, another account, a published workflow). Garrett moved
+  the workspace to a paid plan that day ("i've upgraded weave", 04:09 UTC) and the next run went through.
 - **Links, not uploads.** The painter fetches each picture by its link. The repository is public, so a picture
   that is committed and pushed has one (`refs.py input` builds them at the pushed HEAD and refuses a picture that
   is not pushed). Figma's upload host is not reachable from a Default-environment session. A link names the
@@ -76,18 +78,28 @@ of real frames, a pilot's likeness, a record's `refs=` and `patch=`, the links, 
 - **The answer** is served from `s3-alpha-sig.figma.com`, which must be on the environment's allowed hosts (added
   to Default on 2026-11-12, Garrett approving the prompt): `curl -sS -f -L -o <a new scratch folder>/a.png
   '<url>'`, one folder a download, read with `python3 -I`.
-- **What it does** (LESSONS 83, 84): from the scene, four frames and "Edit this photograph, picture 1. Change
-  only ..." it painted the game's own bricks, needles, net, crystals, shards and trails, and the ship from its
-  four views, on the first run each (Jugger's windows and dome, Scales's dome). It repaints the whole picture a
-  little while it works (6.09 and 14.36 of 255 outside the region), so `refs.py apply` takes only the record's
+- **What it does** (LESSONS 83, 84, 87 to 90): from the scene, four frames and "Edit this photograph, picture 1.
+  Change only ..." it painted the game's own bricks, needles, net, crystals, shards and trails, and the ship from
+  its four views, on the first run each (Jugger's windows and dome, Scales's dome). It repaints the whole picture
+  a little while it works (6.09 and 14.36 of 255 outside the region), so `refs.py apply` takes only the record's
   region and the pilot stays the pilot of the first painting. What an ask names is painted: "faint reflections of
-  the bridge" hung a second head in a window.
+  the bridge" hung a second head in a window, and a "plate" on a microscope came back as a dish.
+- **A head** (87, 89): shown the pilot's likeness as picture 2 and given the whole frame as the region, it changed
+  Flux's head (an orca's fin, skin and eye patch) and kept his face, horns and hands in place, on the first run.
+  A head changed this way is read blind before it is shown: Trace's, drawn in to her first animal's outline, came
+  back as asked and lost her second animal to a stranger, and was not taken.
+- **Several things in one ask** (88): a run costs the same whatever it asks, so an ask may name several parts. Each
+  is judged alone when the answer is in; the record's `edit` holds only the regions taken and `took=` says so.
+- **Colour comes from the pictures before the words** (90): Trace's cylinder came back orange beside an orange
+  frame, over "jade teal ... indigo and violet". Asked again with the scene alone (`refs=()`) and the words
+  pointing at "the round port of this same photograph", it came back in the port's colours. Send only frames in
+  the colours wanted, and let a scene that holds the thing already be its own reference.
 - **Run the first of a set alone** and look at its answer whole and at full size before the next is quoted.
-- **Where it stands** (2026-11-12): two runs made. Flux's patch (the fin of Flux's own likeness, an orca's skin,
-  the display, the course outside; the whole frame) and Trace's (her cylinder, her port, a plate) are written
-  into their records and wait for a plan that runs them. Garrett chose "I'll move Weave to a paid plan" on a card
-  (04:03 UTC); one more try after that answer was quoted at 11 and refused the same way, so the next try waits
-  for his word that the plan has changed. A quote never shows the plan: only a run meets the wall.
+- **Where it stands** (2026-11-12, 05:00 UTC): five runs made of the six Garrett approved on a card, 55 of the 66
+  credits, 1,467 left in the workspace: Jugger, Scales, Flux, Trace, and Trace's cylinder again. One run is
+  unused, and the card named it a rerun of those scenes: a new target (ZODIAC's heron brought up to the head, a
+  frill of Trace's put to use) is a new card. A run finished in one to three minutes. A quote never shows the
+  plan: only a run meets the wall.
 
 ## 3. An artist
 
