@@ -22470,6 +22470,8 @@ The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran 
 3. **Shielded and super-shielded prisms** still read as a tier above plain in every domain (Ruby's rim is the brightest).
 4. **Danger (coral) and free crystals (lime CTA)** still stand out against the pale bodies.
 
+## ⚪ REVERTED (section 159, nothing to test) - The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
+
 ## 🔴 Voyages: own scene (Voyage.unity) and in-world toys removed (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
 Branch `claude/voyage-scene-port`. unity_refcompile could not run (no .NET SDK in the cloud session).
@@ -22484,32 +22486,6 @@ Ran 2026-11-08 on Garrett's PC (Unity 6000.3.17f1, batchmode `verify_unity.sh`):
 6. Leave the voyage from the HUD: back to the menu, and the board offers the next jobs from where the Ark anchored.
 7. Start an escort from the Voyage window: it runs in Voyage.unity.
 8. In menu freestyle, the Toy Box toys still work from the app shell and no in-world toys appear.
-
-## 🔴 The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
-
-Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 151. Compiled with `unity_refcompile` (player and
-editor: 0 errors in project code; the rest are packages the cloud cannot fetch). No Unity editor was open, so the
-`unity` CLI and the EditMode tests have not run in Unity. `VoyageCardRulesTests`' pure tests ran outside Unity;
-`Cover_CropsToTheFramesShape_Centred` needs a real `Texture2D` and has not run.
-
-1. **Run the EditMode tests** `VoyageCardRulesTests` and `VoyageShellTests`.
-2. **Open the Voyage window** from Home. It shows three tabs, Voyages, Saga and Episodes (locked), on LB / RB. Voyages
-   opens first, with the HyperSea map on the whole galaxy and the edge view under it.
-3. **The coverflow**: the voyages, with the Ark escort first, are muted place cards. The picked one faces front, and its
-   neighbours turn away and fade. Pressing a card, or moving onto it with the D-pad, picks it in one ease. The cards are
-   not blue: the colour is a quiet grey-violet with a light diamond at the centre.
-4. **One press picks**: press a hull under the flow. The vessel strip opens over the column, and one press picks and
-   saves. In Ark crew, each seat's vessel, pilot, element (the Codex's shapes) and artifact open a strip the same way,
-   and Save squad keeps the draft. Changing the domain chip changes the draft only. Change a seat without saving, close
-   the window and reopen it: the change is gone. With a friend in the squad, Save squad reaches them (their Ark shows
-   the change after its refresh), as a save in the Ark does.
-5. **Story**: the beats step with < > and the dots. **Underway**: send a voyage out, reopen the window, and the column
-   shows the place, the underway line and a dark "Set sail - after this voyage".
-6. **The Quests window**: on Home, press the quest card. The Quests window opens (not the Voyage window), titled
-   Quests, with Episode 1 (the quest tracker as before) and Episode 2 (locked) on LB / RB. Gamepad B and Back close it,
-   and the card's claim line reads "Ready to claim in Quests".
-7. **Console**: no new errors or warnings on Menu_Main load. A warning naming `Resources/Voyages/QuestsView` means the
-   prefab did not import.
 
 ## 🔴 Voyages: the Ark no longer stalls at a job's stop (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
@@ -22535,6 +22511,48 @@ Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK i
 2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
 3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
 
+## ⚪ REVERTED (section 159, nothing to test) - The Quests window's carousel, Rev 77 "Quests" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 156. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran.
+
+1. **Run the EditMode test** `VoyageCardRulesTests.SpriteCover_StaysInsideTheSpritesOwnRect_InAnAtlas`.
+2. **Home > the quest card**: the Quests window opens on Episode 1. "The Hypersea" and "N of 5 claimed" with its bar
+   sit at the top. The five quests stand on a coverflow, each its game's card art, muted, with the frontier quest in
+   front.
+3. **Pick** with a press or the D-pad: the picked card turns to face front, and the line under the cards follows it.
+4. **The button**: on a done quest it reads Claim and claims it (the count and bar go up, the pick moves on). On the
+   next quest it reads Play quest and opens that game's configure; on the Hangar quest it reads Open the Hangar.
+   Locked quests show "Unlocks after ..." and claimed ones "Claimed", with no button.
+5. **The Profile's quest track** still works as before (it is a separate view).
+6. **The Voyages tab**: the first open with five voyages no longer stalls (the place art is a quarter of the work).
+
+## ⚪ REVERTED (section 159, nothing to test) - The Saga tab, Rev 77 "Saga" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 157. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran.
+
+1. **Voyage window > Saga** (RB from Voyages). The left shows Tandava's art, muted, with "Saga - part 1 of 2",
+   "Tandava" and its four forms at the foot. The right shows the two parts on a coverflow, Tandava in front, its line
+   under them, and a full-width Lime Set sail.
+2. **Pick the Severing** (press it or move onto it with the D-pad). The left changes to its art, "part 2 of 2",
+   "Tandava: Severing" and its five forms.
+3. **Set sail** on each part opens its launch window with the hull carousel, your pilot, the seat line and a live
+   Start. It must not open an empty shell (the Arena or Maelstrom window's copy of the modal).
+4. **Back** from the launch window returns to the Saga tab.
+
+## ⚪ REVERTED (section 159, nothing to test) - The Episodes tab, Rev 77 "Episodes" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 158. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran.
+
+1. **Voyage window > Episodes** (RB twice from Voyages). One panel over the whole galaxy, dark and muted: the lock,
+   "Episode 2", "Coming soon" and "New episodes arrive here. Voyages and the Saga are open now." at its foot.
+   The first open may hitch briefly while the galaxy paints (about 140 ms measured offline); later opens do not.
+2. **Back to the Saga** under the panel shows the Saga tab (its tab lights, the page changes).
+3. **Quests window > Episode 2**: the same panel with its own line, and **Back to Episode 1** shows the quests.
+4. **D-pad / gamepad**: the button is reachable and A presses it.
+
 ## 🔴 Menu: friends orb, its minimise button, the Codex strip and the Hangar Upgrades text (2026-11-09, NOT COMPILED, generated assets only)
 
 Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generators' `--check` and `--self-test` pass (arcade's `--check` already failed before this branch: `ArcadeView.prefab` lacks the Swordfish content). Hand-checked by one person on a desktop editor (Hangar Upgrades, minimise button, orb, Codex strip). Still to check:
@@ -22543,6 +22561,32 @@ Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generato
 2. **Friends window:** the minimise square is easy to tap on a phone; it lightens under the pointer and takes the accent when pressed; the party panel under the title row is not covered.
 3. **Codex > Ecology (Field Guide):** scroll the bottom strip left; tiles stop 16 px short of the "Friends" text, never over it.
 4. **Hangar > Upgrades, any hull:** "CHARGE CRYSTALS 0 HELD - 0 SPENT" is on its own row under the step line; nothing overlaps.
+
+## 🔴 The Voyages tab as the board: Rev 81 B5 with the Rev 83 S2 seat editor (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 165. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran. Compare against Frogma's Voyages tab, boards R81B5 and R83S2.
+
+1. **Open the Voyage window.** The Voyages tab shows three columns:
+   - the voyage list on the left, each row with its course on the water, "01  <place>", "Brought by <pilot>" and its
+     numbers;
+   - the galaxy map over its edge view in the middle;
+   - the right panel: title, line, Distance / Sail / Intensity, the squad chips, three seat cards and a Lime Set sail.
+   The first voyage is open (its row lit with a cyan bar), and the map frames its course.
+2. **Press another row.** It lights, and the map and the right panel change to it.
+3. **Press your own seat card.** The seat editor opens over the list and the map, and the card's edge turns Jade.
+   - The Vessel tab shows the hull large on a lit floor, with its name and its description, and the six hulls listed
+     on the right, the current one marked in Jade.
+   - Done straddles the editor's bottom edge.
+4. **Pick another hull.** The hero, the list mark and the seat card behind change at once.
+   - Pilot tab: pick a pilot who flies another seat. The two swap, and the other card changes too.
+   - Element and Artifact tabs: one press each.
+5. **Done** closes the editor. Reopen the window: the changes are still there (they save at once).
+6. **Squad chips.** Pick the other squad: the cards change. In a squad you joined, only your seat opens; the others
+   are dimmed and say whose seat they are.
+7. **Set sail** launches the open voyage, as before. With the Ark escort open, its stepper changes the difficulty.
+8. **Look:** no part overflows its column at 1920x1080 or at the phone's aspect. The text is the game's face, and the
+   labels are Chakra Petch in capitals.
 
 
 ## 🔴 Flatline, the Brittle Star's charge game (GameModes 84) (2026-11-09, re-laid as an open scattered field 2026-11-10, Shombith, NOT RUN IN EDITOR)
