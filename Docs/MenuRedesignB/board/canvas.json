@@ -3857,7 +3857,7 @@
       "w": 1920,
       "h": 1080,
       "page": "loading-screens",
-      "title": "Rev 94 A - The crew: five pilots in a line before the Ark (recommended)"
+      "title": "Rev 94 A - The crew before the domains: five pilots across three domain bands, the Ark above; the colour set changing (recommended)"
     },
     "R94B.dc.html": {
       "x": 2100,
@@ -3865,31 +3865,15 @@
       "w": 1920,
       "h": 1080,
       "page": "loading-screens",
-      "title": "Rev 94 B - The shore: a travel poster, the Squirrel crossing a low cell over a flat sea"
-    },
-    "R94C.dc.html": {
-      "x": 4200,
-      "y": 14640,
-      "w": 1920,
-      "h": 1080,
-      "page": "loading-screens",
-      "title": "Rev 94 C - The pilot: a character one-sheet, four pilots take turns"
-    },
-    "R94D.dc.html": {
-      "x": 0,
-      "y": 15900,
-      "w": 1920,
-      "h": 1080,
-      "page": "loading-screens",
-      "title": "Rev 94 D - Three domains: Jade, Ruby and Gold bands with a hull in each"
+      "title": "Rev 94 B - Three crews: a pilot and a hull in each domain band, the Ark beside; the colour set changing"
     },
     "R94Notes.dc.html": {
       "x": 0,
-      "y": 17160,
+      "y": 15900,
       "w": 1920,
       "h": 900,
       "page": "loading-screens",
-      "title": "Rev 94 - notes: what is shared, the four, what to know"
+      "title": "Rev 94 - notes: A and D as one poster, what changed, the colour set changing"
     },
     "R95S1A.dc.html": {
       "x": 0,
@@ -3952,6 +3936,66 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations"
+    },
+    "R94C.dc.html": {
+      "x": 4200,
+      "y": 14640,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 94 C - The crew before the domains, the living sea far behind: cells, crystals, fauna and flora; the colour set changing"
+    },
+    "R96S1A.dc.html": {
+      "x": 0,
+      "y": 20620,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 96 S1A - 1A - Screen 1 as picked (Rev 95 1A), with the soft buttons - interactive",
+      "is_interactive": true
+    },
+    "R96Buttons.dc.html": {
+      "x": 2100,
+      "y": 20620,
+      "w": 1920,
+      "h": 620,
+      "page": "voyages",
+      "title": "Rev 96 Buttons - three readings of soft hard soft on Set sail and Configure squad, beside the buttons as they were"
+    },
+    "R96S2D.dc.html": {
+      "x": 4200,
+      "y": 20620,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 96 S2D - 2D Deck: the three seats stand across a lit deck; the picked seat's four choices are one tray under them, one press each (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R96S2E.dc.html": {
+      "x": 0,
+      "y": 21880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 96 S2E - 2E Kits: the picked seat large; six whole kits from the Hangar, one press sets all four; element and artifact beside - interactive",
+      "is_interactive": true
+    },
+    "R96S2F.dc.html": {
+      "x": 2100,
+      "y": 21880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 96 S2F - 2F Showroom: a rail of seats, the picked seat as the hero on the deck, its four choices as strips beside it - interactive",
+      "is_interactive": true
+    },
+    "R96Notes.dc.html": {
+      "x": 0,
+      "y": 23140,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens"
     }
   },
   "createdOnFiles": {
@@ -4079,8 +4123,9 @@
     "sec-rev91",
     "sec-rev92",
     "sec-rev93",
-    "sec-rev94",
     "sec-rev95",
+    "sec-rev94",
+    "sec-rev96",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4166,7 +4211,8 @@
     "rev92",
     "rev93",
     "rev94",
-    "rev95"
+    "rev95",
+    "rev96"
   ],
   "notes": {
     "hud_end": {
@@ -6692,26 +6738,11 @@
     },
     "rev94": {
       "kind": "title1",
-      "text": "Rev 94 - The boot splash as a poster: no neon",
+      "text": "Rev 94 - The boot splash as a poster: the crew and the three domains, no neon",
       "x": 0,
       "y": 14240,
       "w": 240,
       "maxW": 6120,
-      "page": "loading-screens"
-    },
-    "sec-rev94": {
-      "kind": "rect",
-      "x": -160,
-      "y": 14080,
-      "w": 6440,
-      "h": 4140,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
       "page": "loading-screens"
     },
     "rev95": {
@@ -6733,6 +6764,45 @@
         "background": "rgba(255, 92, 168, 0.06)",
         "border-style": "solid",
         "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "sec-rev94": {
+      "kind": "rect",
+      "x": -160,
+      "y": 14080,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "loading-screens"
+    },
+    "rev96": {
+      "kind": "title1",
+      "text": "Rev 96 - the squad screen: a backdrop, soft buttons, one press",
+      "x": 0,
+      "y": 20220,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev96": {
+      "kind": "rect",
+      "x": -160,
+      "y": 20060,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
         "border-width": "3px 3px 3px 3px",
         "border-radius": "40px 40px 40px 40px"
       },
@@ -7211,7 +7281,6 @@
     "R94A.dc.html",
     "R94B.dc.html",
     "R94C.dc.html",
-    "R94D.dc.html",
     "R94Notes.dc.html",
     "R95S1A.dc.html",
     "R95S1B.dc.html",
@@ -7219,7 +7288,13 @@
     "R95S2A.dc.html",
     "R95S2B.dc.html",
     "R95S2C.dc.html",
-    "R95Notes.dc.html"
+    "R95Notes.dc.html",
+    "R96S1A.dc.html",
+    "R96Buttons.dc.html",
+    "R96S2D.dc.html",
+    "R96S2E.dc.html",
+    "R96S2F.dc.html",
+    "R96Notes.dc.html"
   ],
   "pages": [
     {

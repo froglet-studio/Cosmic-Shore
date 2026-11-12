@@ -7474,7 +7474,7 @@ boards is unknown until a screenshot is set beside R89A, R90Saga, R90Quests and 
 - The hand test is "The Voyage window as the Sea table" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 
-## 173. Rev 95 mockups: Voyages as two screens - the voyage on the map, then the squad (2026-11-12, awaiting a pick)
+## 173. Rev 95 mockups: Voyages as two screens - the voyage on the map, then the squad (2026-11-12; Shombith picked 1A, the squad screens rejected, redrawn in section 174)
 
 **Asked (Shombith, 2026-11-12, with two screenshots of the built section 172 in Unity):**
 - "Image 1 : the top bar looks nothing like the design" (the tabs are still dark boxes).
@@ -7524,6 +7524,9 @@ edge-on view stays with it. The voyage list on the left is Rev 89's chips.
   foot. A seat of your own squad that is not yours has a fifth stepper, **Flown by**: the AI, or a lobby friend.
 - **Notes.**
 
+**Picked (Shombith, 2026-11-12): 1A; none of screen 2:** "S1A is good but I didnt like any of the second scren designs"
+(section 174).
+
 **Recommended: 1A with 2A.** 1A keeps Set sail one press from a preset, which is the common case; 2A shows the whole
 squad at once, so a change to one seat is seen against the others.
 
@@ -7534,3 +7537,51 @@ by), and a changed squad can be saved as a preset here. Today both happen in the
 the map is the explorer again (not `Plain`), with places pressable; the seats and steppers leave the Voyages tab for a
 second screen; the right column becomes the voyage's name, the presets and two buttons. The Saga, Quests and Episodes
 tables (Rev 90) are not redrawn here.
+
+
+## 174. Rev 96 mockups: the squad screen - a backdrop, soft buttons, one press (2026-11-12, awaiting a pick)
+
+**Asked (Shombith, 2026-11-12, on Rev 95):** "S1A is good but I didnt like any of the second scren designs, the bg is
+too bland and also the button in both the screens are too hard not soft hard soft. Clicking through so many vessels and
+pilots and artifacts also seems like a drag, we need to make the experience smoother for the users".
+
+**On the canvas:** tab **Voyages**, round "Rev 96 - the squad screen: a backdrop, soft buttons, one press" (canvas
+version `1794525384-1630`), under Rev 95.
+- Copies: `Docs/MenuRedesignB/board/R96*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r96_voyages.py`, on Rev 95's.
+- All boards pass `frogma.py check`. `check_mockup.py` against `--baseline Docs/MenuRedesignB/board/R89A.dc.html` (a
+  budget of 98): 1A passes; **2D (103), 2E (99) and 2F (101) are just over**, because every choice is on screen; the
+  Buttons board fails the one-Lime rule by design (it compares four Set sails); and the soft-ended buttons draw a
+  contrast warning at their faded ends, where there are no words.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**Three answers, in every board:**
+- **The backdrop.** The squad stands on a lit deck over the sea of the voyage that was picked: its own course map,
+  blurred and dimmed, with the deck's lines running away under the hulls.
+- **The buttons.** "Soft hard soft" is read as the fill being solid in the middle and fading out to both ends, with no
+  box (so no cut corners). **This is a reading, not a certainty**: the Buttons board sets it beside the buttons as
+  they were and two other readings (Soft glow: the slab stays, a soft light round it; Soft face: the fill eases from
+  top to foot under one bright line). The style guide's section 4 says two cut corners and nothing rounded; Soft ends
+  departs from it, the other two do not. Whichever is picked becomes the rule for every button.
+- **One press.** No steppers. Every choice is on screen. Picking a vessel brings the pilot, element and artifact kept
+  for it (the Hangar's kit), so most seats are one press.
+
+**The boards:**
+- **1A:** screen 1 as picked (Rev 95 1A) with the soft buttons. Configure squad opens 2D.
+- **Buttons:** the four button looks side by side.
+- **2D - Deck (recommended):** the three seats stand across the deck, each its pilot and hull; a press picks the seat
+  being changed (lit, the others dimmed). One tray under them holds its four strips: six hulls, four pilots (one who
+  flies another seat says "Swaps with ..."), four elements, five artifacts.
+- **2E - Kits:** the picked seat large on the left under a row of the three seats. Six whole kits (hull, pilot,
+  element, artifact), one press sets all four; element and artifact can still be changed alone.
+- **2F - Showroom:** the seats on a rail, the picked seat as the hero, its four strips in a panel on the right.
+- All three: the voyage and a way back at the head, the squad names, Save as preset and Set sail at the foot.
+- **Notes.**
+
+**Recommended: 2D.** It is the only one that shows the whole squad at full size while one seat is changed.
+
+**New rules these draw, to confirm with the pick:** a vessel brings a whole kit (today a vessel change brings only the
+pilot kept for it in the Hangar, `PilotLoadoutStore.GetPilot`); Save as preset and a lobby friend's seat, as section 173.
+Rev 95's "Flown by" is not drawn on these boards.
+
+**Differs from the build (section 172):** as section 173, and the steppers (`VoyageSquadColumn`) are replaced by
+strips of tiles; the backdrop needs the picked voyage's map drawn behind the squad screen.

@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794524853-7ff6` of **Frogma**: Rev 3 to Rev 95, 480 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794525384-1630` of **Frogma**: Rev 3 to Rev 96, 485 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -698,6 +698,15 @@ Copied on 2026-11-12 from canvas version `1794524853-7ff6` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
+#### Rev 96 - the squad screen: a backdrop, soft buttons, one press
+
+- [`R96S1A.dc.html`](R96S1A.dc.html) - Rev 96 S1A - 1A - Screen 1 as picked (Rev 95 1A), with the soft buttons - interactive
+- [`R96Buttons.dc.html`](R96Buttons.dc.html) - Rev 96 Buttons - three readings of soft hard soft on Set sail and Configure squad, beside the buttons as they were
+- [`R96S2D.dc.html`](R96S2D.dc.html) - Rev 96 S2D - 2D Deck: the three seats stand across a lit deck; the picked seat's four choices are one tray under them, one press each (recommended) - interactive
+- [`R96S2E.dc.html`](R96S2E.dc.html) - Rev 96 S2E - 2E Kits: the picked seat large; six whole kits from the Hangar, one press sets all four; element and artifact beside - interactive
+- [`R96S2F.dc.html`](R96S2F.dc.html) - Rev 96 S2F - 2F Showroom: a rail of seats, the picked seat as the hero on the deck, its four choices as strips beside it - interactive
+- [`R96Notes.dc.html`](R96Notes.dc.html) - Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens
+
 #### Rev 95 - Voyages as two screens: the voyage on the map, then the squad
 
 - [`R95S1A.dc.html`](R95S1A.dc.html) - Rev 95 S1A - 1A Presets: the map over its edge view; the voyage's name, the squad presets as cards and Set sail on the right (recommended) - interactive
@@ -745,13 +754,12 @@ Copied on 2026-11-12 from canvas version `1794524853-7ff6` of **Frogma**: Rev 3 
 
 ### Tab: Loading Screens  (`loading-screens`)
 
-#### Rev 94 - The boot splash as a poster: no neon
+#### Rev 94 - The boot splash as a poster: the crew and the three domains, no neon
 
-- `R94A.dc.html` (not copied yet) - Rev 94 A - The crew: five pilots in a line before the Ark (recommended)
-- `R94B.dc.html` (not copied yet) - Rev 94 B - The shore: a travel poster, the Squirrel crossing a low cell over a flat sea
-- `R94C.dc.html` (not copied yet) - Rev 94 C - The pilot: a character one-sheet, four pilots take turns
-- `R94D.dc.html` (not copied yet) - Rev 94 D - Three domains: Jade, Ruby and Gold bands with a hull in each
-- `R94Notes.dc.html` (not copied yet) - Rev 94 - notes: what is shared, the four, what to know
+- `R94A.dc.html` (not copied yet) - Rev 94 A - The crew before the domains: five pilots across three domain bands, the Ark above; the colour set changing (recommended)
+- `R94B.dc.html` (not copied yet) - Rev 94 B - Three crews: a pilot and a hull in each domain band, the Ark beside; the colour set changing
+- `R94C.dc.html` (not copied yet) - Rev 94 C - The crew before the domains, the living sea far behind: cells, crystals, fauna and flora; the colour set changing
+- `R94Notes.dc.html` (not copied yet) - Rev 94 - notes: A and D as one poster, what changed, the colour set changing
 
 #### Rev 93 - The boot splash as today's art with a real vessel
 
