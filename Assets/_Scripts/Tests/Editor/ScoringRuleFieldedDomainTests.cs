@@ -94,7 +94,7 @@ namespace CosmicShore.Tests
                 "no roster at all keeps the old enum-order answer rather than the Blue sentinel");
         }
 
-        private sealed class FakeStats : IRoundStats
+        internal sealed class FakeStats : IRoundStats
         {
         // The interface, stubbed (copied from RegattaTeamPlayTests). Only Name, Domain,
         // HostileVolumeDestroyed and FusesBeaten are read by the rules under test; the rest

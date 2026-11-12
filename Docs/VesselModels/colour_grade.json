@@ -2,7 +2,7 @@
  "counts": {
   "exempt": 8,
   "grey": 468,
-  "ui": 582,
+  "ui": 583,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -182,6 +182,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "d504af88671cecd3",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/ARCADE/CardBackgrounds/Glasshouse.png": {
+   "coloured": 0.9984,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "22c26593f68ab6d0",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/ARCADE/CardBackgrounds/GrizzlyCharge.png": {
