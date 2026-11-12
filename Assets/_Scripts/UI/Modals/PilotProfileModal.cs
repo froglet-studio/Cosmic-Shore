@@ -16,10 +16,11 @@ namespace CosmicShore.UI
     /// side they do not stand on, and a step to the next and previous pilot of the crew.
     ///
     /// <para><b>Who is shown.</b> A person of the player's crew (<see cref="PilotLoadoutStore.GetCrew"/>): the words
-    /// are that person's own record. The picture is their CALLSIGN's scene (<see cref="PilotSceneCatalogSO"/>): a
-    /// callsign's art is its first painted pilot until each person has art of their own (PORTRAITS.md §6, decision 1),
-    /// so the page says who is pictured (<c>picturedTemplate</c>). A callsign with no scene shows the words on the
-    /// plain ground.</para>
+    /// are that person's own record. The picture is their CALLSIGN's scene (<see cref="PilotSceneCatalogSO"/>). A
+    /// crew's starter pilots ARE the painted pilots (<see cref="PaintedCrewSO"/>, Garrett 2026-11-12: the stories must
+    /// match the art), so for them the words and the picture are one person. A person who is not the one pictured
+    /// (a recruit, until each person has art of their own) gets a caption saying who is (<c>picturedTemplate</c>). A
+    /// callsign with no scene shows the words on the plain ground.</para>
     ///
     /// <para><b>Opened with a pilot.</b> <see cref="ScreenSwitcher.OpenPilotProfile"/> hands the page a pilot id and
     /// opens it; the Ark's Pilots tab calls that (<see cref="ArkPilotsPage"/>). A window type alone does not say
@@ -198,7 +199,8 @@ namespace CosmicShore.UI
             string word = row?.word ?? string.Empty;
             string sight = row?.meaning ?? string.Empty;
             string species = person.SpeciesCombo();
-            string painted = pictured ? scene.painted : string.Empty;
+            // The caption names who is pictured only when that is someone else: a starter IS the painted pilot.
+            string painted = pictured && scene.painted != name ? scene.painted : string.Empty;
 
             int t = 1;
             _pairs[t] = name; t += 2;

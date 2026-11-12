@@ -23003,3 +23003,17 @@ window and avatar picker.
 2. **A saved profile keeps its avatar**: the same id shows the same pilot, now as their scene's close-up.
 3. **The small sizes**: the friends drawer, a party seat, the scoreboard and the HUD's AI seats. Look for a hard edge
    or a soft, blurry picture where the 256 px sprite is scaled down, and note the screen.
+
+## 🔴 A pilot's page shows the painted pilot's own name, animals and story (2026-11-12, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/pilot-page-story-matches-art`; `Docs/Pilots/PORTRAITS.md` section 8. The starter crew are now the
+painted pilots (`PaintedCrewSO`, `Resources/Pilots/PaintedCrew`, written by `author_pilot_scene_assets.py` from
+`Docs/Pilots/art/scenes/people.json`); `AccountInventoryStore` repaints every starter record on each read. Compiled
+against Unity reference assemblies (`unity_refcompile`), not opened in the editor; `PaintedCrewTests` not run.
+
+1. **Run the EditMode tests** `PaintedCrewTests` and `AccountInventoryTests`.
+2. **An existing save.** With a crew granted before this change, open Ark > PILOTS and a pilot's page: the name, the
+   animals, the faction, the home and the story are the pictured pilot's (VOLT is Karenth Amberweaver, Axolotl and
+   Koi, Brass Lantern Company), and no "Pictured:" line shows. The crew list and a squad that seated them still work.
+3. **The story** reads as three short paragraphs with a blank line between, inside the panel, on every pilot.
+4. **A voyage's jobs** for a starter come from the painted faction (VOLT: a Merchant's courier and convoy work).
