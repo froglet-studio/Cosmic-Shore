@@ -22,6 +22,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: The questions; What we have today; Amoebius: keep, narrow, or stop?; The Vessel Studio: keep, narrow, or remove?; The one tool; Decision record; How we decide
 - [`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`](Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): LOCKED. Read before any ecology, fauna, flora, or HyperSea change.
   Sections: Ecosystem Design Principles (LOCKED — read before any ecology change)
+- [`Docs/ProvenWin/PLAYBOOK.md`](Docs/ProvenWin/PLAYBOOK.md): **Proven wins** (`/proven-win`, Garrett 2026-11-11): one cost-free improvement at a time, measured in real Unity on a GPU (paired A/B with null and negative controls, `ShaderABBench`), output proven identical, a blind sign-off page. `WINS.md` is the record of proven, rejected and queued candidates.
+  Sections: what counts; pick; isolate; measure (and the batchmode GPU traps); the human A/B; record; limits
 - [`Docs/claude/ABOUT_PROJECT.md`](Docs/claude/ABOUT_PROJECT.md): Vessel classes, team domains, tech stack.
   Sections: About This Project; Vessel Classes; Team Domains; Tech Stack
 - [`Docs/claude/PROJECT_STRUCTURE.md`](Docs/claude/PROJECT_STRUCTURE.md): Folder layout, assembly definitions, where tests live, scene inventory.
