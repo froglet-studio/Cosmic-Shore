@@ -7410,7 +7410,7 @@ quest track (states from `GameModeProgressionService`). The table tops are a sti
 galaxy from `VoyagePlaceArt.Galaxy()`); only the Voyages table is the live map. Not seen in Unity.
 
 
-## 172. Built: the Voyage window as the Sea table - Rev 89 A and Rev 90 (2026-11-12, not seen in Unity)
+## 172. Built: the Voyage window as the Sea table - Rev 89 A and Rev 90 (2026-11-12; seen in Unity by Shombith, the tilt and the top bar rejected, redrawn in section 173)
 
 **Asked (Shombith, 2026-11-12, on Rev 89 A and Rev 90):** "Now build all of this in Unity".
 Affects: Garrett's Voyage window and galaxy map (`VoyageJobsView`, `VoyageMapGraphic`; his voyage data, launch and Ark
@@ -7472,3 +7472,65 @@ boards is unknown until a screenshot is set beside R89A, R90Saga, R90Quests and 
 - `VoyageBoardTests` (9 tests: the tilt's arithmetic, the fade, the grid, the picture crop, the stepper, the board
   building and shaping its table): written and compiled, **not run**.
 - The hand test is "The Voyage window as the Sea table" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+
+## 173. Rev 95 mockups: Voyages as two screens - the voyage on the map, then the squad (2026-11-12, awaiting a pick)
+
+**Asked (Shombith, 2026-11-12, with two screenshots of the built section 172 in Unity):**
+- "Image 1 : the top bar looks nothing like the design" (the tabs are still dark boxes).
+- "Image 2 : I dont like the preview earlier we could zoom in and out of the whole map, set course directly there which
+  is not possible."
+- "first screen in voyages is the left side list, that can stay, the middle becomes the preview with all features that
+  I mentioned earlier. Then we can have squad presets and set sail directly or if we have players in the friends lobby
+  with me and they are not in the squad we can have the configure your current squad or something like that but then
+  the second image can give us the options to select the vessel, pilot, artifact, element etc and then set sail. Create
+  3 mockups each for both the screens".
+
+**What the screenshots showed of the build (the first time a Voyage build of this redesign was seen in Unity):**
+- The tabs keep their dark boxes: `VoyageWindowTabs.Plain` does not remove them in the editor. Not fixed here; it is
+  fixed with the build of whichever boards are picked.
+- The tilt works as drawn (the map lies back, the edge view stands under it), and is rejected: a lying map cannot be
+  explored. The edge view's caption runs across the face in capitals, and the course's far end leaves the frame.
+
+**On the canvas:** tab **Voyages**, round "Rev 95 - Voyages as two screens: the voyage on the map, then the squad"
+(canvas version `1794524853-7ff6`), under Rev 90.
+- Copies: `Docs/MenuRedesignB/board/R95*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r95_voyages.py`, on Rev 89's.
+- All boards pass `frogma.py check`. `check_mockup.py` against `--baseline Docs/MenuRedesignB/board/R89A.dc.html` (a
+  budget of 98): the three screen 1 boards and 2B pass; **2A (118) and 2C (119) are over**, because they show every
+  seat's choices at once. The count is of the markup, with five steppers for each of three seats.
+- They were rendered locally with the canvas's own art, at rest and zoomed out, and looked at before publishing.
+
+**The map, in all three of screen 1:** flat, and the explorer again: a zoom ladder (Galaxy, Arm, Sector, Course) with +
+and -; zoomed out, each voyage's place is a mark with its name, and a press sets the course there and zooms to it. The
+edge-on view stays with it. The voyage list on the left is Rev 89's chips.
+
+**Screen 1, the voyage:**
+- **1A - Presets (recommended):** the map over its edge view. On the right the voyage's name and numbers, the squad
+  presets as cards (name, who flies, the three hulls), Configure squad, Set sail.
+- **1B - Wide map:** the map across the window; a foot bar holds the edge view, the voyage, the squad as a stepper
+  with its hulls, Configure squad and Set sail. The widest map, cropped top and bottom.
+- **1C - Briefing:** the map full height with the edge view inset at its foot. The right shows the squad's three seats
+  (hull, vessel, who) under the squad names.
+- **Configure squad** is on all three: a quiet button that opens the matching screen 2, and over it a line naming a
+  lobby friend who flies no seat ("Mirel is in your lobby, not in this squad").
+
+**Screen 2, the squad:**
+- **2A - Three seats (recommended):** a column per seat: pilot, vessel, who, hull, then Vessel, Pilot, Element and
+  Artifact as steppers. A seat that is not yours to change says whose it is.
+- **2B - Seat and picker:** the seats on the left; the picked seat's choice on the right as large tiles under Vessel,
+  Pilot, Element, Artifact tabs.
+- **2C - Roster:** a table, a row per seat and a stepper per choice.
+- In all three: the picked voyage and a way back at the head, the squad names, **Save as preset** and Set sail at the
+  foot. A seat of your own squad that is not yours has a fifth stepper, **Flown by**: the AI, or a lobby friend.
+- **Notes.**
+
+**Recommended: 1A with 2A.** 1A keeps Set sail one press from a preset, which is the common case; 2A shows the whole
+squad at once, so a change to one seat is seen against the others.
+
+**New rules these draw, to confirm with the pick:** a lobby friend can be given a seat from the Voyage window (Flown
+by), and a changed squad can be saved as a preset here. Today both happen in the Ark (`SquadsPage`).
+
+**Differs from the build (section 172):** the tilt goes (`VoyageMapGraphic.Tilt`, `VoyageSlab` for the Voyages tab) and
+the map is the explorer again (not `Plain`), with places pressable; the seats and steppers leave the Voyages tab for a
+second screen; the right column becomes the voyage's name, the presets and two buttons. The Saga, Quests and Episodes
+tables (Rev 90) are not redrawn here.

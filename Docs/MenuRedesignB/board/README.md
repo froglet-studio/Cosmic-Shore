@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794504089-60a9` of **Frogma**: Rev 3 to Rev 90, 451 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794524853-7ff6` of **Frogma**: Rev 3 to Rev 95, 480 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -698,6 +698,16 @@ Copied on 2026-11-12 from canvas version `1794504089-60a9` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
+#### Rev 95 - Voyages as two screens: the voyage on the map, then the squad
+
+- [`R95S1A.dc.html`](R95S1A.dc.html) - Rev 95 S1A - 1A Presets: the map over its edge view; the voyage's name, the squad presets as cards and Set sail on the right (recommended) - interactive
+- [`R95S1B.dc.html`](R95S1B.dc.html) - Rev 95 S1B - 1B Wide map: the map across the window; a foot bar holds the edge view, the voyage, the squad and Set sail - interactive
+- [`R95S1C.dc.html`](R95S1C.dc.html) - Rev 95 S1C - 1C Briefing: the map full height with the edge view inset at its foot; the squad's three seats shown on the right - interactive
+- [`R95S2A.dc.html`](R95S2A.dc.html) - Rev 95 S2A - 2A Three seats: a column per seat, its pilot and hull over its choices; Save as preset and Set sail at the foot (recommended) - interactive
+- [`R95S2B.dc.html`](R95S2B.dc.html) - Rev 95 S2B - 2B Seat and picker: the seats on the left, one large picker on the right with Vessel, Pilot, Element, Artifact - interactive
+- [`R95S2C.dc.html`](R95S2C.dc.html) - Rev 95 S2C - 2C Roster: one table, a row per seat and a stepper per choice - interactive
+- [`R95Notes.dc.html`](R95Notes.dc.html) - Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations
+
 #### Rev 90 - Saga, Quests and Episodes as the Sea table
 
 - [`R90Saga.dc.html`](R90Saga.dc.html) - Rev 90 Saga - the part's arena on the table, its forms in order on the front face; The Severing locked - interactive
@@ -732,5 +742,41 @@ Copied on 2026-11-12 from canvas version `1794504089-60a9` of **Frogma**: Rev 3 
 - `R75Codex.dc.html` (not copied yet) - Rev 75 Codex - Codex: element doors and game cards (A) around a large 3D level (C), the intensities and the prompt besid
 - `R75Builder.dc.html` (not copied yet) - Rev 75 Builder - Builder: the same game opened in the builder, its I1-I4 ladder, the dials, saved layouts and the layout
 - `R75Notes.dc.html` (not copied yet) - Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed
+
+### Tab: Loading Screens  (`loading-screens`)
+
+#### Rev 94 - The boot splash as a poster: no neon
+
+- `R94A.dc.html` (not copied yet) - Rev 94 A - The crew: five pilots in a line before the Ark (recommended)
+- `R94B.dc.html` (not copied yet) - Rev 94 B - The shore: a travel poster, the Squirrel crossing a low cell over a flat sea
+- `R94C.dc.html` (not copied yet) - Rev 94 C - The pilot: a character one-sheet, four pilots take turns
+- `R94D.dc.html` (not copied yet) - Rev 94 D - Three domains: Jade, Ruby and Gold bands with a hull in each
+- `R94Notes.dc.html` (not copied yet) - Rev 94 - notes: what is shared, the four, what to know
+
+#### Rev 93 - The boot splash as today's art with a real vessel
+
+- `R93A.dc.html` (not copied yet) - Rev 93 A - Squirrel: today's composition, the real Squirrel laying a Ruby trail (recommended)
+- `R93B.dc.html` (not copied yet) - Rev 93 B - The squad: three hulls in formation, a trail each in the domain colours
+- `R93C.dc.html` (not copied yet) - Rev 93 C - The fleet: one hull at a time in the same place, taking turns
+- `R93Notes.dc.html` (not copied yet) - Rev 93 - notes: what was asked, what this round is, what is not here
+
+#### Rev 92 - The boot splash and sign-in scene: the two logos and the environment as the show
+
+- `R92A.dc.html` (not copied yet) - Rev 92 A - The cell: one cell, three domain trails laid around it, crystals inside (recommended)
+- `R92B.dc.html` (not copied yet) - Rev 92 B - The gates: ring gates fly past the logo, two trails run out of the distance
+- `R92C.dc.html` (not copied yet) - Rev 92 C - The arenas: three windows onto real arenas, taking turns
+- `R92D.dc.html` (not copied yet) - Rev 92 D - The garden: flora blooming around the logos
+- `R92Notes.dc.html` (not copied yet) - Rev 92 - notes: what is shared, how each shows the environment, what differs from the build
+
+#### Rev 91 - Loading screens: a smooth moving sea, one honest progress bar, and a part of the game on show
+
+- `R91Compare.dc.html` (not copied yet) - Rev 91 - The progress bar on its own: live, and held at each step, a slow patch and done
+- `R91A.dc.html` (not copied yet) - Rev 91 A - Squad: your three seats arrive one by one as the load moves on
+- `R91B.dc.html` (not copied yet) - Rev 91 B - The Ark: the ship drifts across the sea, its four rooms lit in turn
+- `R91C.dc.html` (not copied yet) - Rev 91 C - Pilots: one pilot stands large, the roster beside
+- `R91D.dc.html` (not copied yet) - Rev 91 D - Vessels: one hull at a time, large, the fleet beside
+- `R91E.dc.html` (not copied yet) - Rev 91 E - Toy Box: the Vessel Changer cycling hulls, the seven toys lit in turn
+- `R91F.dc.html` (not copied yet) - Rev 91 F - The tour: Squad, Ark, Pilots, Vessels and Toy Box in turn while the bar fills (recommended)
+- `R91Notes.dc.html` (not copied yet) - Rev 91 - notes: what is shared, what each option shows, the bar's rules, what differs from the build
 
 <!-- frogma.py readme: end -->
