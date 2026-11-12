@@ -44,7 +44,7 @@ LEAD = 0.85   # game seconds the director lets play after the start point before
 CONFIG = os.path.join(HERE, "story_config.json")
 DEFAULT_CAMERA = {
     "min_distance": 40, "min_chase_back": 28,
-    "pvp": {"verbs": ["tq {pair} 45 30 10 3"], "slowmo": 3, "game_seconds": 3.0},
+    "pvp": {"verbs": ["ots local {rival} 30 8 6 2"], "slowmo": 3, "game_seconds": 3.0},
     "maneuvering": {"verbs": ["tq local 40 90 8 0 3"], "slowmo": 2, "game_seconds": 3.5},
     "destruction": {"verbs": ["tq local 52 -40 18 6"], "slowmo": 4, "game_seconds": 2.5},
     "creation": {"verbs": ["crane local 0,18,-42 0,95,-180 {frames} 3"], "slowmo": 1, "game_seconds": 6.0},
@@ -67,7 +67,7 @@ def check_camera(cam):
             raise SystemExit(f"story camera: no rule for {el}")
         for verb in rule["verbs"]:
             w = verb.split()
-            if w[0] == "chase" and float(w[2]) < cam["min_chase_back"]:
+            if w[0] in ("chase", "ots") and float(w[2 if w[0] == "chase" else 3]) < cam["min_chase_back"]:
                 raise SystemExit(f"story camera: {el} chases {w[2]} back, closer than {cam['min_chase_back']}")
             if w[0] in ("tq", "orbit") and float(w[2]) < cam["min_distance"]:
                 raise SystemExit(f"story camera: {el} {w[0]} at {w[2]}, closer than {cam['min_distance']}")
@@ -140,13 +140,14 @@ def plan(items, cam, recordings=None, max_clips=8, why=None):
             # the camera follows the moment's own pilot: local flies the first human, every other seat is named
             pilot = m.get("pilot")
             subject = "local" if not pilot or pilot == _hero(it) or " " in pilot else f"pilot:{pilot}"
-            # a duel is framed on both pilots: the middle of the moment's pilot and the one it passed
+            # a duel is filmed over the moment's pilot's shoulder at the one it passed (the local seat flies the first human)
             rival = next((e.get("with") for e in m.get("events", []) if e.get("with") and " " not in e["with"]), None)
             pair = f"pair:{subject},pilot:{rival}" if rival else subject
+            other = ("local" if rival == _hero(it) else f"pilot:{rival}") if rival else "nearest"
             clips.append({"clip": f"{it['id']}-{el}", "item": it["id"], "element": el,
                           "file": os.path.join(recordings, name) if recordings else name,
                           "start": start, "frames": frames, "slowmo": rule["slowmo"],
-                          "verbs": [v.replace("{frames}", str(frames)).replace("{pair}", pair)
+                          "verbs": [v.replace("{frames}", str(frames)).replace("{pair}", pair).replace("{rival}", other)
                                     .replace(" local ", f" {subject} ") for v in rule["verbs"]],
                           "mode": it.get("mode"), "pilot": m.get("pilot"), "why": (why or {}).get(it["id"]),
                           "events": [e["type"] for e in m.get("events", [])]})
@@ -190,7 +191,7 @@ def self_test() -> int:
     text = script(plan(index["items"], cam, recordings="C:\\R", max_clips=4)[0])
     assert f"replay C:/R/Kelpwood_1.cstheater {round(18.5 - LEAD, 2)}" in text and "slowmo 3" in text, text
     assert "record replay-a-pvp 540" in text and "crane local 0,18,-42 0,95,-180 360 3" in text, text   # {frames} filled
-    assert "tq local 45" in text, text                     # a pass with nobody named frames the pilot alone
+    assert "ots local nearest 30" in text, text                     # a pass with nobody named frames the pilot alone
     # rule 3: a tight chase is refused (negative control)
     tight = dict(cam, maneuvering={"verbs": ["chase local 14 3 0"], "slowmo": 1, "game_seconds": 3})
     try:
@@ -208,10 +209,10 @@ def self_test() -> int:
     # a duel frames both pilots
     index["items"][0]["moments"][0]["events"] = [{"type": "near_pass", "with": "ys1"}]
     text = script(plan(index["items"], cam, max_clips=4)[0])
-    assert "tq pair:local,pilot:ys1 45" in text, text
+    assert "ots local pilot:ys1 30" in text, text
     # a pass 50 units apart is not filmed as a duel (negative control)
     index["items"][0]["moments"][0]["events"] = [{"type": "near_pass", "with": "ys1", "dist": 50.0}]
-    assert not any(c["element"] == "pvp" and c["item"] == "replay-a" and "pair:" in " ".join(c["verbs"])
+    assert not any(c["element"] == "pvp" and c["item"] == "replay-a" and "pilot:ys1" in " ".join(c["verbs"])
                    for c in plan(index["items"], cam, max_clips=4)[0])
     print("shoot: self-test OK")
     return 0

@@ -39,7 +39,7 @@ namespace CosmicShore.Editor.Trailer
     /// FILE is a path or a name in the project's Recordings folder; the story flywheel's shoot list) | menu |
     /// slowmo N (every filmed frame is 1/(60 N) s of game: N times slower, 1 to 8; menu resets it) |
     /// chase SUBJ BACK UP SIDE [LEAD] [SMOOTH] | ease BACK UP SIDE FRAMES | tq SUBJ DIST AZIMUTH HEIGHT [DRIFT] [SMOOTH] |
-    /// orbit SUBJ DIST HEIGHT DEG/S [PHASE] | rail SUBJ AHEAD SIDE UP [SMOOTH] | crane SUBJ A B FRAMES [SMOOTH] (offsets
+    /// orbit SUBJ DIST HEIGHT DEG/S [PHASE] | ots SUBJ TARGET BACK UP SIDE [SMOOTH] (over SUBJ's shoulder at TARGET) | rail SUBJ AHEAD SIDE UP [SMOOTH] | crane SUBJ A B FRAMES [SMOOTH] (offsets
     /// from where SUBJ is when the shot starts) | fov DEGREES | release | record NAME FRAMES | still NAME | recorder NAME FRAMES (the Unity Recorder, for comparison) | quit.</para>
     /// <para>A SUBJ is local, aiN, class:Rhino, pilot:NAME (a replay seat by its recorded pilot; local when none), pair:A,B (the middle of two subjects), nearest, fastest, fleet, all, kept, flora, fauna, crystal, or name:TEXT. It resolves
     /// once per shot and is held. The camera rides the subject's position exactly and low-passes only the heading,
@@ -124,7 +124,11 @@ namespace CosmicShore.Editor.Trailer
     /// <summary>The play-mode half of <see cref="TrailerShoot"/>: boots to the menu, runs the inbox, poses the camera.</summary>
     public class TrailerDirector : MonoBehaviour
     {
-        enum CamMode { None, Chase, ThreeQuarter, Orbit, Rail, Crane }
+        enum CamMode { None, Chase, ThreeQuarter, Orbit, Rail, Crane, Shoulder }
+
+        Transform _target;
+        string _targetSpec = "";
+        bool _shoulderStart;
 
         string _dir, _logPath;
         int _scale;
@@ -354,6 +358,12 @@ namespace CosmicShore.Editor.Trailer
                     Take(); _mode = CamMode.Crane; Subject(w[1]); _offsetA = V(w[2]); _offsetB = V(w[3]); _craneFrames = I(w[4]);
                     _craneStart = Time.frameCount; _anchor = _subject != null ? _subject.position : Vector3.zero; _haveHeading = false; _smooth = At(w, 5, 3f);
                     return null;
+                case "ots":
+                    // over the shoulder: behind SUBJ on the line from TARGET, looking past SUBJ at TARGET (a duel's two-shot)
+                    Take(); _mode = CamMode.Shoulder; Subject(w[1]); _targetSpec = w[2]; _target = Resolve(w[2]);
+                    _back = F(w[3]); _up = F(w[4]); _side = F(w[5]); _smooth = At(w, 6, 2f); _haveHeading = false; _shoulderStart = true;
+                    Log($"ots target {w[2]} -> {(_target ? _target.name : "none")}");
+                    return null;
                 case "fov": _fov = F(w[1]); return null;
                 case "slowmo": SlowMo(F(w[1])); return null;
                 case "release": Release(); return null;
@@ -521,6 +531,19 @@ namespace CosmicShore.Editor.Trailer
                     if (Time.frameCount == _craneStart + 1) _lookDir = want;
                     _lookDir = Vector3.Lerp(_lookDir, want, 1f - Mathf.Exp(-_smooth * dt)).normalized;
                     look = pos + _lookDir * 50f;
+                    break;
+                }
+                case CamMode.Shoulder:
+                {
+                    if (_target == null || !_target.gameObject.activeInHierarchy) _target = Resolve(_targetSpec);
+                    var other = _target && _target != s ? _target.position : at + _heading * 40f;
+                    var toward = other - at;
+                    var want = toward.sqrMagnitude > 1e-2f ? toward.normalized : _heading;
+                    if (_shoulderStart) { _lookDir = want; _shoulderStart = false; }
+                    _lookDir = Vector3.Lerp(_lookDir, want, 1f - Mathf.Exp(-_smooth * dt)).normalized;
+                    var right = Vector3.Cross(Vector3.up, _lookDir).normalized;
+                    pos = at - _lookDir * _back + Vector3.up * _up + right * _side;
+                    look = Vector3.Lerp(at, other, 0.6f);
                     break;
                 }
                 default: return;
