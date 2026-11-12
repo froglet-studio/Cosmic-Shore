@@ -18,7 +18,8 @@ namespace CosmicShore.UI
         Purchase = 3,
         /// <summary>Free / primary action. Lime: always categorically good.</summary>
         Cta = 4,
-        /// <summary>Launch a game: the call to action, in lime. The opaque Play button is the one gradient fill in the menu
+        /// <summary>The lime call to action with the gradient fill (join, reconnect, retry, confirm). For a button that
+        /// launches a game or readies up, use <see cref="Commit"/> (the style guide's Ruby Play / Ready). The opaque Play button is the one gradient fill in the menu
         /// (§1.4).</summary>
         Play = 5,
         /// <summary>Destructive. Fire, for danger, caution and problems only. Always drawn opaque (§2).</summary>
@@ -30,6 +31,11 @@ namespace CosmicShore.UI
         Space = 8,
         /// <summary>Retired, as <see cref="Mass"/>. Draws as <see cref="Default"/>.</summary>
         Time = 9,
+        /// <summary>Play / Ready: a commitment the player cannot take back (launch a game, Ready). Ruby - the style
+        /// guide's <c>commit</c> token, Unity's <see cref="UIColorToken.Tooltip"/> - with the <c>on-commit</c> white
+        /// label, a flat fill (Frogma Style Guide 5 "Buttons and their states"; Docs/UI_STYLE_GUIDE.md section 5, D5;
+        /// Docs/UI/specs/sg5-play-ready.md). <see cref="Play"/> stays the lime call to action it has always drawn.</summary>
+        Commit = 10,
     }
 
     /// <summary>§10.1: opaque on popups and wherever a button sits on a line, transparent everywhere else.</summary>
@@ -112,7 +118,8 @@ namespace CosmicShore.UI
         {
             var v = state == VisualState.Disabled ? KitButtonVariant.Inactive : variant;
             bool opaque = fill == KitButtonFill.Opaque || v == KitButtonVariant.Danger;
-            var p = PaletteFor(v, opaque);
+            var (border, fillC, content) = Colors(v, opaque, theme);
+            var p = new Palette(border, fillC, content);
 
             Color fillColor = p.Fill;
             if (state == VisualState.Highlighted || state == VisualState.Pressed)
@@ -138,44 +145,63 @@ namespace CosmicShore.UI
             if (playGradient) playGradient.enabled = v == KitButtonVariant.Play && opaque;
         }
 
-        /// <summary>The variant's colours by role (Docs/UI_COLOR_RULES.md): neutral blue, lime for the call to action,
-        /// gold for a spend, fire for danger.</summary>
-        private Palette PaletteFor(KitButtonVariant v, bool opaque)
+        /// <summary>The variant's colours by role (Docs/UI_COLOR_RULES.md, Docs/UI_STYLE_GUIDE.md section 5): neutral blue,
+        /// lime for the call to action, gold for a spend, fire for danger, ruby for a commitment (<see cref="KitButtonVariant.Commit"/>).
+        /// Normal state; hover, press and disabled are applied on top by <see cref="CollectColors"/>.
+        /// Tools/Build/author_ui_kit_prefabs.py button_palette mirrors this table.</summary>
+        public static (Color border, Color fill, Color content) Colors(KitButtonVariant v, bool opaque, UIThemeSO theme)
         {
-            var dark = Token(UIColorToken.SurfaceBlack);
+            Color T(UIColorToken token, float alpha = 1f)
+            {
+                var c = UITheme.Resolve(theme, token);
+                c.a *= alpha;
+                return c;
+            }
+
+            var dark = T(UIColorToken.SurfaceBlack);
             switch (v)
             {
                 case KitButtonVariant.Inactive:
                     return opaque
-                        ? new Palette(Token(UIColorToken.InactiveLight), Token(UIColorToken.InactiveLight), Token(UIColorToken.TextInactive))
-                        : new Palette(Token(UIColorToken.InactiveLight), Token(UIColorToken.InactiveLight, TintAlpha), Token(UIColorToken.InactiveLight));
+                        ? (T(UIColorToken.InactiveLight), T(UIColorToken.InactiveLight), T(UIColorToken.TextInactive))
+                        : (T(UIColorToken.InactiveLight), T(UIColorToken.InactiveLight, TintAlpha), T(UIColorToken.InactiveLight));
                 case KitButtonVariant.Cancel:
                     return opaque
-                        ? new Palette(Token(UIColorToken.NeutralLightest), Token(UIColorToken.NeutralLightest), dark)
-                        : new Palette(Token(UIColorToken.NeutralLightest), Token(UIColorToken.NeutralLightest, TintAlpha), Token(UIColorToken.TextLight));
+                        ? (T(UIColorToken.NeutralLightest), T(UIColorToken.NeutralLightest), dark)
+                        : (T(UIColorToken.NeutralLightest), T(UIColorToken.NeutralLightest, TintAlpha), T(UIColorToken.TextLight));
                 case KitButtonVariant.Purchase:
                     return opaque
-                        ? new Palette(Token(UIColorToken.Purchase), Token(UIColorToken.Purchase), dark)
-                        : new Palette(Token(UIColorToken.Purchase), Token(UIColorToken.Purchase, TintAlpha), Token(UIColorToken.Purchase));
+                        ? (T(UIColorToken.Purchase), T(UIColorToken.Purchase), dark)
+                        : (T(UIColorToken.Purchase), T(UIColorToken.Purchase, TintAlpha), T(UIColorToken.Purchase));
                 case KitButtonVariant.Cta:
                     return opaque
-                        ? new Palette(Token(UIColorToken.Cta), Token(UIColorToken.Cta), dark)
-                        : new Palette(Token(UIColorToken.Cta), Token(UIColorToken.Cta, TintAlpha), Token(UIColorToken.Cta));
+                        ? (T(UIColorToken.Cta), T(UIColorToken.Cta), dark)
+                        : (T(UIColorToken.Cta), T(UIColorToken.Cta, TintAlpha), T(UIColorToken.Cta));
                 case KitButtonVariant.Play:
                 {
                     // Play is the call to action, in lime. The opaque fill runs lime -> lime halfway to white (the
                     // KitGradient); its border is that lighter end. Transparent, the label is lime too.
-                    var cta = Token(UIColorToken.Cta);
+                    var cta = T(UIColorToken.Cta);
                     return opaque
-                        ? new Palette(Color.Lerp(cta, Color.white, KitGradient.DefaultLighten), cta, dark)
-                        : new Palette(cta, Token(UIColorToken.Cta, PlayTintAlpha), cta);
+                        ? (Color.Lerp(cta, Color.white, KitGradient.DefaultLighten), cta, dark)
+                        : (cta, T(UIColorToken.Cta, PlayTintAlpha), cta);
+                }
+                case KitButtonVariant.Commit:
+                {
+                    // Play / Ready, no way back: the commit Ruby as a flat fill under the on-commit white label (the
+                    // board draws no gradient). Transparent follows the kit's rule: the role colour as border and label
+                    // over the role colour at 12% (Docs/UI/specs/sg5-play-ready.md Q1 asks about the label's contrast).
+                    var commit = T(UIColorToken.Tooltip);
+                    return opaque
+                        ? (commit, commit, UITheme.OnCommit)
+                        : (commit, T(UIColorToken.Tooltip, TintAlpha), commit);
                 }
                 case KitButtonVariant.Danger:
-                    return new Palette(Token(UIColorToken.Danger), Token(UIColorToken.Danger), dark);
+                    return (T(UIColorToken.Danger), T(UIColorToken.Danger), dark);
                 default:
                     return opaque
-                        ? new Palette(Token(UIColorToken.TextLight), Token(UIColorToken.TextLight), dark)
-                        : new Palette(Token(UIColorToken.ControlActive), Token(UIColorToken.ControlActive, TintAlpha), Token(UIColorToken.TextLight));
+                        ? (T(UIColorToken.TextLight), T(UIColorToken.TextLight), dark)
+                        : (T(UIColorToken.ControlActive), T(UIColorToken.ControlActive, TintAlpha), T(UIColorToken.TextLight));
             }
         }
     }

@@ -62,7 +62,7 @@ namespace CosmicShore.UI
         public Color controlActive = new Color32(0x00, 0xD4, 0xFF, 0xFF);
         [Tooltip("FFAE00 — currency and purchase affordance (§3, §10.1 Purchase). Same hex as Gold; never use it to mean the Gold team.")]
         public Color purchase = new Color32(0xFF, 0xAE, 0x00, 0xFF);
-        [Tooltip("A600FF — tooltip boxes (§3). Same hex as Ruby; never use it to mean the Ruby team.")]
+        [Tooltip("A600FF — tooltip boxes (§3), and the style guide's `commit` (Ruby: Play / Ready, no way back; KitButtonVariant.Commit). Same hex as Ruby; never use it to mean the Ruby team.")]
         public Color tooltip = new Color32(0xA6, 0x00, 0xFF, 0xFF);
 
         [Header("Elements (rev 6: the colours of meaning)")]
