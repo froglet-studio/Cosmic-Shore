@@ -3,7 +3,7 @@
 One row per change that passed `Docs/ProvenWin/PLAYBOOK.md`: one change, one machine-read metric, B better in every
 paired sample, output identical, controls behaving, a human sign-off. Newest first.
 
-## W5 (proven, held: ecology lane occupied). Space hearts stop re-deforming while off screen (2026-11-12)
+## W5. Space hearts stop re-deforming while off screen (2026-11-12)
 
 | | |
 |---|---|
@@ -13,7 +13,7 @@ paired sample, output identical, controls behaving, a human sign-off. Newest fir
 | Exactness | Screenshots with scaled time stopped: identical, including the hearts straddling the frustum edges. Negative control (bounds 1e-5): 1.6 M px differ. |
 | Exposure | Garland's menu world (6-12 Space hearts), fauna-heavy cells (Wildlife Liberation, about 80). Small in the menu, more with fauna. |
 | Gates | Crystal EditMode tests: the same 5 pre-existing failures as bleeding-edge. Not measured on a phone. |
-| Hold | `approvals.py check`: the Ecology lane is occupied (Yash, `claude/squirrel-time-upgrade-b02f6b`). Committed on a local branch only until Garrett decides. |
+| Lane | The Ecology lane was occupied (Yash, `claude/squirrel-time-upgrade-b02f6b`); Garrett said to ship the measured wins on 2026-11-12, and the change is queued for Yash's /approve. |
 
 ## W4. HyperSea sky: reject empty star cells before the per-cell maths (2026-11-12)
 
