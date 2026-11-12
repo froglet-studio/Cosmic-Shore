@@ -22,6 +22,18 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// How hard the thing the hull hit was (Docs/HAPTICS.md, the hull-hit ladder). Read from the prism's own state, the
+    /// same facts the camera's impact weight reads (Docs/CAMERA_FEEL.md): a plain prism, a shielded one, and the two
+    /// that really hurt, danger and super-shielded.
+    /// </summary>
+    public enum PunishWeight
+    {
+        Plain = 0,
+        Shielded = 1,
+        Heavy = 2,
+    }
+
+    /// <summary>
     /// The whole game's haptic policy in one place.
     ///
     /// Cosmic Shore ships TWO everyday feels, both local-human-pilot-only:
@@ -46,18 +58,6 @@ namespace CosmicShore.Gameplay
     /// the skim train never interrupts a thud; the spray is a texture, so it yields to all three
     /// and interrupts none of them.
     /// </summary>
-    /// <summary>
-    /// How hard the thing the hull hit was (Docs/HAPTICS.md, the hull-hit ladder). Read from the prism's own state, the
-    /// same facts the camera's impact weight reads (Docs/CAMERA_FEEL.md): a plain prism, a shielded one, and the two
-    /// that really hurt, danger and super-shielded.
-    /// </summary>
-    public enum PunishWeight
-    {
-        Plain = 0,
-        Shielded = 1,
-        Heavy = 2,
-    }
-
     public class HapticController : MonoBehaviour
     {
         [Inject] GameSetting injectedGameSetting;
