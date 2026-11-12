@@ -126,6 +126,12 @@ it they know it is cosmic shore because only we have triple hybrid people". The 
 full-body portraits, where the second animal lends a tail or wings, so the crop showed one animal. The fix is a new
 picture made for the crop: a **signature bust** (`Tools/Build/pilot_art/bust.py`).
 
+**Since 2026-11-11 the avatar is the close-up of the pilot's scene (section 8)**, by Garrett's decision on the
+four scene samples ("drop what we had before"). The busts stay in the repository: a bust's brief is the frozen
+source of its pilot's identity lines, `bust.py`'s tables compose a new pilot's lines, and a patch of a scene may
+show the painter the pilot's bust for the one part it got right (`refs.py`, a patch's `bust=`). The bust
+procedure is `.claude/skills/pilot-creator/references/BUSTS.md`. What follows is the record of the three rounds.
+
 **Round 1 (2026-11-10)** gave the first animal the face, the second the crown and a mark across the nape and one
 cheek, and the human the eyes, the hair and one hand, on one navy plate with a domain-colour halo. Six samples got
 "these are definitely improvements"; then all 50 avatar pilots were painted.
@@ -195,7 +201,8 @@ it for flaws a reader does not grade: Longshift's paw had eight claws, and Damse
 emblems nobody asked for (an armband with a ring and a cross, a hand on a banner). The grader was reviewed twice,
 and each of its rules was then broken on purpose once: its self-test noticed all 244.
 
-**The emblem sweep** (`/pilot-creator` section 4.5) is the other check: readers who are told nothing look at each
+**The emblem sweep** (`/pilot-creator` section 4.5; a bust's own, with enlarged tiles, `references/BUSTS.md`
+section 4) is the other check: readers who are told nothing look at each
 bust at full size and in enlarged tiles and list every drawn sign and what it resembles. Every one of the 50 was
 read once. In the finished set the readers list 88 devices, 61 of them with something they resemble, and no legible
 lettering; ten busts carry none. Nearly all are a callsign's own mark worn as a small object (ANVIL's anvil pin,
@@ -212,8 +219,9 @@ and kept (LESSONS 44, 52).
 - **The busts**: `Docs/Pilots/art/busts/<WORD>.jpg`, 1024 square, 50 of them (18 callsign pilots, 32 legacy
   pilots cast as triple hybrids in `creator.LEGACY`, names for the eight spares in `LEGACY_NAMES`). What each was
   painted with is frozen in `creator.CAST`, and the brief it was painted from is `busts/briefs/<WORD>.txt`.
-- **The avatars**: `author_pilot_avatar_assets.py` cuts each avatar from its bust at 256 px (was 128 from the
-  portrait); ids and guids unchanged, so saved profiles keep their face.
+- **The avatars**: `author_pilot_avatar_assets.py` cut each avatar from its bust at 256 px (was 128 from the
+  portrait); ids and guids unchanged, so saved profiles keep their face. Since 2026-11-11 it cuts the scene's
+  close-up, and the bust's cut is the fallback for a pilot with no scene (section 8).
 - **Painter**: Figma `generate_image`, `gpt-image-2.5-sunburst`, captured by curl (`www.figma.com` was added to the
   Default environment's allow-list, Garrett 2026-11-10). Round 1 was about 60 paintings (six samples, 50, two
   repaints); round 2 was 70 (50, and 20 repaints of 16 pilots); round 3 was 8.
@@ -227,11 +235,11 @@ and kept (LESSONS 44, 52).
   a second bill. At 64 px about half the set shows one animal: a coat on the neck does not survive that size, and
   no icon reader named the second animal of FLUME, Longshift, MANGER, Shrapnel, Strider, WINGMAN or Tender, whose
   narwhal reads at full size and is only a parrot in the icon (LESSONS 48).
-- **Not yet**: per-player busts painted on recruit (decision 2 in section 6), and the hand test of the 256 px
+- **Not yet**: per-player pilots painted on recruit (decision 2 in section 6), and the hand test of the 256 px
   avatars in the profile window and avatar picker (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Pilot avatars are
-  cut from the signature busts at 256 px").
+  the close-ups of the pilots' scenes at 256 px").
 
-## 8. The scenes (2026-11-11): the same pilot, photographed in their world. THE STYLE IS NOT LOCKED
+## 8. The scenes (2026-11-11/12): every pilot photographed in their world, and the close-up is the avatar
 
 Garrett, after round 2 of the busts: "These also look like airbrushed glamour shots, which is fine for avatar
 pictures. now lets see how realistic we can get when we take the same character from the avatar picture and make
@@ -243,40 +251,129 @@ different directions so we can give feedback on your different approaches and lo
 each new character the skill is equipped to make all the needed assets and keep the character consistent across
 them."
 
-So this section is four samples and a mechanism, waiting for his choice. The kit is
-`Tools/Build/pilot_art/scene.py`; the pictures are `Docs/Pilots/art/scenes/<WORD>-<approach>.jpg`, each with the
-brief it was painted from in `scenes/briefs/`. Nothing here is imported by the game yet.
+**His decision on the four samples (2026-11-11, 19:58 UTC):** "All four of these are knocked out of the park. This
+is an excellent direction. drop what we had before. the scene close ups are categorically better than the previous
+avatar pictures and should be used in their place. All four scenes are excellent choices and I like that each
+choice suits the personality of the pilot. SO I would continue to extend your reach and treat each pilot as a new
+bespoke exercise in that regard. As far as the sizing and aspect ratio, we want something like 2.- (cinematic film
+still) because then we have a fullscreen piece of art we can crop etc. for different platforms and presentations.
+the main use will be a full screen profile for each pilot accessible through the ark app shell menu."
 
-**The four approaches** (`scene.APPROACHES`), each on a different pilot, and what each pilot is doing comes from
-who they are:
+**What exists now.** All 50 catalog pilots have one scene: `Docs/Pilots/art/scenes/<WORD>.jpg` (1536x864), the
+brief it was painted from in `scenes/briefs/`, its record in `Tools/Build/pilot_art/scenes/<WORD>.py`, and
+`scenes.json` (what a screen needs to place a scene: its size, the avatar's box, the side the pilot stands on, the
+crops for other aspects). All 50 player avatars (`Assets/_Graphics/Profile/Pilots/Avatar_<WORD>.png`, ids and guids
+unchanged) are cut from the scenes' close-ups. The busts of section 7 stay in the repository: a bust's brief is the
+frozen source of its pilot's identity lines, and a bust can be shown to a painter for the one part it got right.
+The full-screen pilot profile is not built, and the scenes are not imported by the game yet. Every scene, its
+avatar and what strangers named in each are on one page (https://claude.ai/artifact/AWHauAfBgnFD7Nw2rJ3wk8); the
+scenes painted again, with their earlier versions, are on another
+(https://claude.ai/artifact/QZXJW89raWJqyYcP46tg9r). How a scene is made is `/pilot-creator`.
 
-| Approach | The frame | Pilot | From their | Doing |
-|---|---|---|---|---|
-| Field documentary (`field`) | 3:2, a long lens from far off, natural light, the whole figure at work, unaware of the camera | Tamako Deephook (MANGER), ibis and platypus | profession (a hunter) | kneeling in the mud of a feeding flat inside a living cell, setting a lure line |
-| Cinematic film still (`film`) | 16:9, anamorphic, a lamp and the cold light of the bay, from the knees up, a third of the way in | Haradek Anchorkeel (GALLEON), walrus and bison | hobby: "ties a ribbon on the hull for every friend lost" (the game's `Quirks`) | tying a strip of red cloth beside a dozen older ones under a craft's nose on a hangar deck |
-| Candid, available light (`candid`) | 4:5, a crewmate's snapshot in a small cabin, one desk lamp, grain, off level | Echo, mouse and owl | hobby: "keeps a jar of every crystal they have ever missed" (`Quirks`) | on the bunk in socks, holding one crystal up to the lamp in tweezers, the jar between the knees |
-| Aftermath portrait (`sitting`) | 4:5, medium format, two steps away, looking into the lens in the first quiet minute after the work | Tenacious, tiger and tortoise | profession (a first responder) | sitting on a gear case on a rescue deck after a storm, soaked and sooty, a steel mug in both hands |
+**Each pilot is a bespoke exercise.** No two records share a treatment, and what the pilot is doing names its
+source: their profession (31 of the 50), a hobby from the game's `Quirks` (9), their history from its
+`Upbringings` (4) or what they want most from its `Wants` (6). `python3 Tools/Build/pilot_art/scene.py list` prints
+all 50. A few, to show the reach:
 
-**How a scene keeps the character.** The painter takes words only, never the avatar itself, so the words do it:
+| Pilot | Treatment | From their |
+|---|---|---|
+| Tamako Deephook (MANGER), ibis and platypus | field documentary, a long lens from far off | profession: a hunter sets a lure line on a feeding flat |
+| Ekora Hollowbrook (FLUME), otter and eel | split-level waterline shot, half above and half below | history: "grew up on a salvage barge" |
+| Dozer, tree frog and scorpion | through a new pane from inside, the glazier dozing on the outside of the glass | profession: a contractor glazes a great canopy |
+| Lunari Hollowreach (Spare02), opossum and lynx | one frame lit by a lightning bolt, the shutter left open in the dark | profession: a hunter carries the season's decoys home ahead of a storm |
+| Krush, coyote and turkey | flash snapshot by whoever came down the cellar stairs | hobby: "cannot resist a dare" |
+| Bellomo Stripewright (Spare03), zebra and yak | across a trading counter, thin hard light at altitude | want: "to pay back an old debt, with interest" |
+| Tomahawk, basilisk and hawk | panned at 1/30 s from a skiff keeping pace | profession: a hunter runs across a lagoon's skin after a wake |
+| Jugger, orca and eagle | 65mm epic film still, a bridge lit by its display | history: "grew up in the shadow of a dead Ark" |
 
-1. *The same words.* The person's description is cut from the very brief their avatar was painted from
-   (`busts/briefs/<WORD>.txt`), not from today's tables.
-2. *What the avatar shows beyond its brief (`seen`), and against it (`swap`).* Whoever writes a scene looks at
-   the avatar and writes down what the painter decided (the brooch is brass, the shell cap hides the ears); and
-   where the painting departs from its brief, the scene's words follow the painting. A correction replaces the
-   phrase and never sits beside it: two colour words for one eye let the painter choose.
+**How a scene keeps the character.** The first painter takes words only, never the earlier picture, so the words
+do it:
+
+1. *The same words.* The person's description is cut from the very brief their bust was painted from
+   (`busts/briefs/<WORD>.txt`), not from today's tables. A new pilot without a bust takes the lines today's tables
+   compose, frozen at capture (`scenes/identity/<WORD>.txt`).
+2. *What the earlier painting shows beyond its brief (`seen`), and against it (`swap`).* Whoever writes a scene
+   looks at the pilot's picture and writes down what the painter decided (the brooch is brass, the shell cap hides
+   the ears); and where the painting departs from its brief, the scene's words follow the painting. A correction
+   replaces the phrase and never sits beside it: two colour words for one eye let the painter choose.
 3. *The rest of the body is rules, not rolls* (`BUILD`, `hands_of`, `CARRY`, `LOWER`, `GLOVES`): the build, the
    hands, where the second animal's piece grows from and the lower half of the clothes are decided once, the
    same for every picture of that pilot. The clothes cover the body to the wrists and ankles, so no bare human
    skin appears between an animal's head and an animal's hands.
 4. *Nothing permanent is added* (`PERMANENT`). Wear is what a day gives and a wash or a needle takes away: mud,
-   soot, a tear, a mended seam. Never a scar or a chipped tusk the avatar does not have.
+   soot, a tear, a mended seam. Never a scar or a chipped tusk the pilot does not have.
 
-**It is measured: the read** (`scene.py read-prep` and `read-grade`, the readers in
-`.claude/skills/pilot-creator/references/scene_read.js`). One reader, told nothing, finds each scene's pilot
-among the 50 avatars, which are numbered in a shuffled order. Another puts each scene beside its own avatar and
-lists what matches, what differs and how much it matters. Each read was of the pictures as they stood; what a
-read found was fixed in the record and repainted, and the new picture was read again.
+**One creature.** Garrett on Trace (2026-11-11, 23:01 UTC): "trace looks like a bad and lazy photoshop with a bird
+head some hair and jellyfish stuff. she does not look like a thoughtfully conceived hybrid animal person. we can do
+a lot better job of expressing the animals together." And on Longshift: he "should have a bushy skunk tail that
+wraps around his body and into hit lap like a blanket to keep warm while he is waiting at his cold spaceport stop,
+otherwise he is just a rabbit man with skunk coloring." A bust's brief hands each animal its own ground, and a
+painter paints that as parts set side by side. So a record may carry a `fused` line, the pilot written as ONE
+animal (`scene.fused_errors` holds its form), and the second animal's part is put to USE in the scene. Longshift
+was recast as hare and skunk and wrapped in his own tail; a stranger then named both animals. Trace is a booby
+whose skull ends in a jellyfish's bell; Flux got an orca's fin, skin and eye patch by an edit that kept his face.
+The ten rules that came out of it, each with the painting that taught it, are `/pilot-creator` section 5 and
+`LESSONS` 72 to 90.
+
+**Displays and windows** (seven scenes, `chart=`; never more than a fifth of the cast). Garrett, 20:22 UTC: "Make
+a few of them render the hypersea in their scene on either a panel or holographic display". On the first four
+(21:34 UTC): "zodiac's feathers look too rendered. halven's hologram looks out of place in that scene and not
+aligned to his perspective. the others look good, but these are all just view of the galactic scale hypersea. I
+want to see some where the pilot's are on the bridge of the ark or in a vessel. and they are looking at a 3D
+holographic display (not a 2d hologram embedded in 3d) that 3d rendering should look like gameplay footage. prisms,
+trails, flora, fauna, gyroid flora, crystals, cells, etc." Three scenes show the sea the pilots sail as a chart
+(ZODIAC in a chart of light, NEEDLE and Longshift on a panel) and four show live play in a hologram with depth
+(`volume`): Jugger (a siege of the great ship, on its bridge), Scales (a whole cell, on a bridge), Flux (a race,
+in a cockpit) and Trace (a cell's garden, in a survey cabin). Halven's tower lost its hologram and kept its scene ("I
+like the choice you made to just remove the hologram from halven"). His standard for a window (23:01 UTC): "the
+dual perspectives of jugger is a better standard for windows, which applies to zodiac as well": the window shows
+the same sea at its true size, and a display that tells another story is the exception.
+
+**The game's own sea, painted from the game's frames.** On Jugger (22:49 UTC): "both the hypersea outside and the
+hypersea in the rendering are very different than the hypersea in our gameplay. is there a way to upload
+screenshots or other content so we can keep consistency between the game and the art we are generating? it seems
+like we will need something like this if we want the same character in more than one piece of art as well". Then
+(23:03 UTC): "i connected weave. use amoebius etc. to make and send screenshots. you can also use froglet.games".
+The kit's answer is `Tools/Build/pilot_art/refs.py`: a library of seven real pictures of the game
+(`Docs/Pilots/art/refs/`, `refs.json` says where each came from), a pilot's likeness cut from their approved scene,
+and a **patch**: a painter that takes pictures is given the finished scene and the frames and asked to change named
+things, and `refs.py apply` takes from its answer only the record's region. Five runs on Weave (GPT Image 2.6, 11
+credits each, each quoted first and approved by Garrett on a card) painted Jugger's windows and hologram and
+Scales's display from the frames, Flux's orca and the course outside his canopy, and Trace's port and cylinder
+(twice). The contract, the costs and the wall of the free plan are `PAINTERS.md` section 2.
+
+**It is measured, and the scenes read worse than the busts they replaced.** Two reads, both by readers who are
+told nothing (2026-11-12; one read is one sample):
+
+| What strangers named | The 50 scenes | The 50 busts (section 7) |
+|---|---|---|
+| Both animals, from the avatar at 640 px (sure or likely) | 29 of 50 | 44 and 47 of 50 (two reads) |
+| Both animals, from the avatar, counting guesses | 35 | |
+| Both animals in the 64 px icon, either reader | 16 | 23 and 29 |
+| Both animals, from the whole scene (the sweep) | 40 of 50, and 47 at least by kind | |
+| The scene taken for a photograph or a film still | 26 of 50 (24 a 3D render or digital painting) | |
+
+Garrett chose the scenes for how they look, and was told these numbers on 2026-11-12. A scene's close-up shows
+less of the second animal than a bust that was built to show it, and in 27 of the 50 a reader called some part of
+the pilot worn (a cap, a hood, a helmet, a wig, a mask, a headdress): his note about Trace, across the roster. The
+eight weakest, in each of which every stranger names the first animal and the second goes unnamed:
+
+| Pilot | The second animal | What a stranger said of the avatar |
+|---|---|---|
+| ZODIAC, ocelot | heron | "some bird (owl or hawk)"; "cat ears, with a feather-like crest between them" |
+| WINGMAN, puffin | pelican | "some white bird (gull or swan)"; the wing "appears to hang from a strap or harness" |
+| MANGER, ibis | platypus | "beaver (or otter)"; the brow plate "a leather cap or helmet" |
+| Shrapnel, toucan | newt | "lizard"; the crest "looks like a hood or hat" |
+| Slingshot, flamingo | mantis shrimp | "mahi-mahi (dolphinfish)", "lobster or shrimp"; "glossy plastic-looking hands and shell" |
+| TALON, lynx | jackal | "squirrel"; the tail "stands behind the shoulder rather than grows from the body" |
+| NEEDLE, narwhal | seahorse | "lionfish"; the tusk "comes straight out of the tip of the snout like a beak" |
+| Tender, macaw | narwhal | "seal"; "like a hood over a parrot face"; the tusk "looks stuck onto the beak" |
+
+Several of these were named in their busts (WINGMAN's pouch, MANGER's bill, NEEDLE's ringed neck and spiral tail),
+which is why a patch may show the painter the pilot's bust for one part (`bust=`).
+
+**The four samples' read** (before the decision, kept as the record of how the mechanism was proved: one reader
+found each scene's pilot among the 50 busts, another put each scene beside its bust):
 
 | | The first four (2 + 2 readers) | Three repainted (1 + 1) | The four samples as kept (1 + 1) |
 |---|---|---|---|
@@ -289,49 +386,29 @@ read found was fixed in the record and repainted, and the new picture was read a
 | Something permanent added | none | none | none |
 | Anyone else in the frame | far figures in the hangar, both readers | nobody | nobody |
 
-What the reads changed, each now a line in the kit or a lesson (`LESSONS` 57 to 71):
+What those reads changed is in `LESSONS` 57 to 71 (an animal's bare-skinned hand is painted as a person's; hair
+words mean something else in a photograph; a face needs its whole outline; tell the wear where to stop; empty the
+place by name; a loud unearthly sky reads as a render). What the 46 scenes after them taught is in `LESSONS` 72 on.
 
-- **The mouse had bare human-looking hands and wore its lens as a monocle.** An animal's bare-skinned hand is
-  painted as a person's. `bust.LIMB["Mouse"]` is now a forepaw furred to the fingertips, and the scene says where
-  the lens hangs.
-- **The walrus had an ape's brow, then a person's long curls.** "Shaggy" wool was painted as a fur hat and "tight
-  springy curls" as ringlets; the record now gives the face from the chin to the top, calls it bare skin, and
-  describes the wool as a short dense fleece.
-- **The ibis's trim was dull under the mud.** Wear is told where to stop: the piping shows bright above the mud
-  line.
-- **The tiger's eyes were green.** The avatar's brief asked for hazel and its painter gave amber-gold: `swap`.
-  And the ring around the iris is asked for as "the rim of each iris, a thin line of colour where an animal's
-  would be dark", which was painted in three rolls of three where "ringed by a thin glowing line" was painted
-  in one of three. It still shows only in the close portrait.
-- **Blurred figures stood in the far hangar.** A place is emptied by name ("The bay is empty of people", boats
-  "empty and unlit"), and the brief ends "nobody else is anywhere in the frame, near or far".
-- **A loud unearthly sky reads as a render.** Garrett's "backgrounds that don't look like they could be earth
-  are the best" was first painted for the tiger as a violet spiral sky with crystals the size of houses, and
-  both readers of that picture called it a 3D render. The quiet version (the far wall of a living cell, veined
-  like a leaf, seen through rain: the same world as the ibis's flat) is called a photograph by both. The place
-  can be unearthly through distance, weather and what the ground is made of; the camera stays ordinary.
+**The painters.** Words only: `gpt-image-2.5-sunburst` through the same Figma file as the busts, a brief of at most
+1,000 words (`WORD_CAP`), asked for 2048x1152 and returned at 1536x864. It made 87 paintings for the fifty scenes
+and their repaints (19 of them for the four samples), and its plan's credits ran out on 2026-11-12. From pictures:
+GPT Image 2.6 through Weave, five runs, 55 credits. Both are in `PAINTERS.md`.
 
-**What still differs in the four as kept** (the last read's own words, shortened): Echo's two ear tufts are thin
-single feathers where the avatar's are thick and bushy (the one difference "a player would notice"), its snout
-is longer and its waistcoat charcoal, not teal; MANGER has a pale cheek patch the avatar lacks, its hands read as
-muddy gloves and its bill shield as a worn cap; GALLEON's epaulette is a fringed board, not coiled rope, its
-whiskers are shorter, and the painter gives the bison a small ear under one horn in four rolls of four; Tenacious
-wears its teal as a collar lining, not as piping. Two jars on Echo's desk carry labels with marks too small to
-read, though the brief asked for blank ones. The eye ring is lost at any distance. Both readers call the candid
-picture a film still: its one warm lamp reads as staged.
+**Open:**
 
-**The painter**: `gpt-image-2.5-sunburst` through the same Figma file as the busts, a text brief of under 1,000
-words (`WORD_CAP`), 19 paintings for the four samples (MANGER 3, GALLEON 5, Echo 4, Tenacious 7). It returns
-1536x1024 for 3:2, 1536x864 for 16:9 and 1024x1280 for 4:5. `gemini-3.1-flash-image`, tried once on MANGER, merged
-the platypus's bill shield into the beak, drew human hands and a clean cape, at 1264x848.
-
-**Open, and Garrett's to decide:**
-
-1. Which approach, or which mix, is the style; and which frame each place in the game takes (the Ark screen, the
-   Hangar, the Squads page, the codex). Until then a scene for any pilot outside the four is a draft: the kit's
-   tables cover what the samples need plus one line per faction type.
-2. Likeness is words-only today. A model that takes the avatar as a reference image (PAINTERS.md section 2)
-   should close most of the "mostly" rows; every run of one needs his approval of its cost.
-3. A rolled pilot's story (`PilotGenerator`'s `Homeworlds`, `Upbringings`, `Quirks`, `Wants`) is not ported
-   into `creator.roll` yet, so a new pilot's scene cannot yet draw on their own backstory.
-
+1. **The eight weakest are designed again as one creature each**, in words, as a pending `patch` in each record;
+   painting them waits for Garrett's answer on a card (up to 16 runs on Weave, 176 credits at most). Three of the
+   pairs are limits whatever is painted: a heron behind an ocelot's face, a platypus behind an ibis's bill, and a
+   jackal, which is a fox to nearly everyone (`LESSONS` 43, 50).
+2. **What is still weak in the six painted again**: Trace's bell is still called worn by a reader who is sure it
+   is a jellyfish; ZODIAC's heron is missed; the white patch on Flux sits where his ear was; Longshift's fingers
+   read as fused.
+3. **Twenty-four scenes read as a render or a digital painting**, and the icon-size read is 16 of 50. Neither has
+   been worked on.
+4. **The full-screen pilot profile** reached from the Ark app-shell menu is not built (the app shell and its menus
+   are Shombith's UI). `scenes.json` is written for whoever builds it. The scenes live under `Docs/` and are not
+   in a build; bringing them in is a texture import with its own memory budget.
+5. **Size.** The painter returns 1536x864. A 4K screen needs an upscale or a painter that returns more.
+6. **The hand test** of the avatars in the profile window and avatar picker
+   (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Pilot avatars are the close-ups of the pilots' scenes").

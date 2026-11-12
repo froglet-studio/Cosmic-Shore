@@ -9,7 +9,8 @@ export const meta = {
 
 // The readers are told nothing about the pilots: no brief, no names, no project. They may open only the pictures
 // scene.py sweep-prep wrote. Keep this prompt as it is between rounds, or the rounds stop being comparable.
-// One reader takes ten scenes (four pictures a scene, about 80k tokens a reader), so fifty scenes are five readers:
+// One reader takes ten scenes (four pictures a scene, about 150k tokens a reader: five readers of fifty scenes cost
+// 765k on 2026-11-12), so fifty scenes are five readers:
 // say that number before running it. A scene that was repainted is swept again on its own (prep a new folder with
 // its word).
 const DIR = args.dir

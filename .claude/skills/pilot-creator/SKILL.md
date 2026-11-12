@@ -1,68 +1,62 @@
 ---
 name: pilot-creator
-description: Create a Cosmic Shore PILOT as a signature triple-hybrid bust - a unique person (human + two animals, a faction, a callsign) rolled exactly as the game's PilotGenerator mints them, painted as a head-and-shoulders bust where the first animal owns the face, the second owns the crown and everything behind the face, and the human is the bearing, the clothes and the gaze, standing in one of many places, then cut into the player avatar (Assets/_Graphics/Profile/Pilots/Avatar_<NAME>.png). Use on "/pilot-creator", "make a pilot", "give this player a unique pilot", "roll a pilot", "paint a bust / avatar for <pilot>", "the avatar only shows one animal", "repaint <pilot>'s avatar", "add a pilot to the avatars", "blind read the busts", "do both animals read", "sweep the busts for emblems", or any change to Tools/Build/pilot_art/bust.py, creator.py, blind.py or Docs/Pilots/art/busts/. Also holds the realistic SCENE of the same pilot (Tools/Build/pilot_art/scene.py, Docs/Pilots/art/scenes/; four sample approaches, the style NOT locked until Garrett picks): "a scene of <pilot>", "the realistic art", "art for the Ark", "does the scene look like the avatar". The full-body Hangar portrait is /pilot-art.
+description: Create a Cosmic Shore PILOT - a unique triple-hybrid person (human + two animals, a faction, a callsign) rolled exactly as the game's PilotGenerator mints them, designed as ONE creature, photographed in one realistic widescreen SCENE from their own life (Docs/Pilots/art/scenes/), with the player avatar cut from the scene's close-up (Assets/_Graphics/Profile/Pilots/Avatar_<NAME>.png) and read blind by strangers who must name both animals. Use on "/pilot-creator", "make a pilot", "give this player a unique pilot", "roll a pilot", "a scene of <pilot>", "repaint <pilot>", "the avatar only shows one animal", "it looks photoshopped / worn / stuck on", "put the game's sea in the picture", "blind read the avatars", "sweep the scenes", or any change to Tools/Build/pilot_art/scene.py, refs.py, bust.py, creator.py, blind.py or Docs/Pilots/art/. Holds both painters and what each costs, and the earlier signature busts (references/BUSTS.md). The full-body Hangar portrait is /pilot-art.
 ---
 
-# Pilot Creator: the signature triple-hybrid bust
+# Pilot Creator: a triple-hybrid person, their scene, their avatar
 
 Garrett, 2026-11-10: "can you get us pilot images that really show both clades in the avatar bust when used in that
 context. I want to produce a character creator skill that will allow us to give players unique pilots. I want you to
 send the quality to its highest levels such that when people see it they know it is cosmic shore because only we have
-triple hybrid people with that unique and high quality style." Round 1 painted all 50 avatar pilots on one navy plate
-with a hand in every frame. Garrett, 2026-11-11: "a good step forward, but the backgrounds need much more variance.
-they don't all need a hand ... any creature that already has a hand or tentacle like a frog, primate, or octopus it
-doesn't need a hand. the human side is the least important to express when it is wearing clothes". Round 2 is what
-this skill paints (Docs/Pilots/PORTRAITS.md section 7). Garrett on round 2, 2026-11-11: "These are great. only a few
-need changing", with five rules that are now in the tables (section 5, "Round 3") and eight busts repainted. He also
-named what the skill is for: "a large enough roster that every pilot is unique and each player has their own unique
-crew. They will all use the same callsigns which connect to the same vision abilities (not unique) but the art,
-backstory, species combination, etc. will all be unique." And he asked for a second style: the same character in a
-hyper-realistic scene, "raw in their environment". Section 6 holds the four samples and the mechanism; that style
-is not locked.
+triple hybrid people with that unique and high quality style." And what the skill is for (2026-11-11): "a large
+enough roster that every pilot is unique and each player has their own unique crew. They will all use the same
+callsigns which connect to the same vision abilities (not unique) but the art, backstory, species combination, etc.
+will all be unique."
+
+Three decisions of his shape everything below, each on 2026-11-11:
+
+- **The scene replaced the bust** (19:58 UTC, on four realistic samples): "All four of these are knocked out of the
+  park ... drop what we had before. the scene close ups are categorically better than the previous avatar pictures
+  and should be used in their place ... treat each pilot as a new bespoke exercise ... we want something like 2.-
+  (cinematic film still) because then we have a fullscreen piece of art we can crop etc. for different platforms and
+  presentations. the main use will be a full screen profile for each pilot accessible through the ark app shell
+  menu." So a pilot is ONE widescreen scene, and the avatar is its close-up. The 50 busts stay as the source of each
+  catalog pilot's identity (`references/BUSTS.md`).
+- **The two animals are one creature** (23:01 UTC, on a booby under a jellyfish's bell): "looks like a bad and lazy
+  photoshop with a bird head some hair and jellyfish stuff. she does not look like a thoughtfully conceived hybrid
+  animal person. we can do a lot better job of expressing the animals together." And on a hare in skunk colours: he
+  "should have a bushy skunk tail that wraps around his body and into hit lap like a blanket to keep warm while he
+  is waiting at his cold spaceport stop, otherwise he is just a rabbit man with skunk coloring." Section 5.
+- **The sea in a picture is the game's sea** (22:49 UTC): "both the hypersea outside and the hypersea in the
+  rendering are very different than the hypersea in our gameplay. is there a way to upload screenshots or other
+  content so we can keep consistency between the game and the art we are generating?" Section 7.
 
 ## 0. The bar
 
-A stranger who is told nothing names BOTH animals from the bust. It is measured, never felt: the **blind read**
-(section 4) shows the busts shuffled and unnamed to readers who may open only the pictures. Each round was read
-twice. Round 1: both animals named in 26 and 27 of 50. Round 2: 44 and 47, and their kind (a fox for a jackal) in
-48 and 50; at 64 px icon size 23 and 29, from 10 and 12.
+A stranger who is told nothing names BOTH animals from the avatar, and no part of the pilot reads as worn. It is
+measured, never felt (sections 4 and 4.5), and one read is one sample.
 
-**Each heritage has its own ground inside the crop (bust.py's tables, never a hand prompt):**
-- **First animal: the FACE and skull** (`FACE[a]`), and its own eyes where the eye is the animal's tell (`EYES[a]`:
-  a tree frog's red eyes; human eyes in a frog's face read as a goblin). A beak stays rigid (`BEAKED`). A tell that
-  grows from the head stays on the face (`KEEPS`: a hare's ears, an oryx's horns). Ears that are only part of the
-  look appear when the crown brings none (`FACE_EARS`: a cat's, a badger's, an opossum's).
-- **Second animal: the CROWN** (`CROWN[b]`: what grows from the head) **and everything behind the face**: its coat
-  (`MARK[b]`) over the back of the head, the nape, the throat and the neck, blending into the face along the jaw;
-  **plus one more piece of its body in the frame** (`SECOND[b]`: a tail, folded wings, a shell rim) or the hand
-  people know it by (`LIMB_TELL[b]`: an otter's paws around a pebble). Wings, a tail and a tail fan grow from the
-  BACK and stand behind the clothes, never from the head. A translucent coat meets the face in a written gradient
-  (`BLEND`), not at a seam. When the face keeps the crown's organ the crown is `ALT[b]` instead of a second pair;
-  `EARS_TOO[b]` adds small ears to a crown that is not ears.
-- **Human: the bearing, the CLOTHES and the gaze** (`GEAR`: three outfits per faction type, all open at the throat
-  so the second animal's neck shows). Human hair for some (`HAIR_ODDS`; never over a crown that covers the scalp,
-  never beside an animal's own mane, `OWN_HAIR`). **A human hand almost never** (`HAND_ODDS`, gloved): never beside
-  hair, and never on a pilot whose animal has a hand, a paw or a tentacle of its own (`LIMB`), which shows that
-  instead about half the time. **A hand can always hold and use things**: fingers or a tentacle, never a claw, a
-  pincer, a club or a hook. Of the 50: 10 have human hair, 10 show their animal's own hand, 3 a gloved hand.
+| What strangers named (2026-11-12) | The 50 scenes | The 50 busts they replaced |
+|---|---|---|
+| Both animals, from the avatar (sure or likely) | 29 of 50 | 44 and 47 of 50 (two reads) |
+| Both animals in the 64 px icon, either reader | 16 | 23 and 29 |
+| Both animals, from the whole scene | 40 of 50 | (a bust is its own whole) |
+| Taken for a photograph or a film still | 26 of 50 | (painted on purpose) |
 
-**What every bust shares, so the set reads as one:** the framing (the head in the upper middle, clear space above
-everything that grows from it, cropped at mid-chest, looking at the viewer), the premium painterly finish, the
-faction's DOMAIN colour (Ruby #C800C3, Gold #FFA700, Jade #0EC0B6) as the clothes' trim, the rim light and a thin
-glowing ring around each eye (the pilot's sight), and a few crystal motes in the air.
-**What differs:** the place (`BACKDROPS`: 73 places, each with its light, its value and the faction types whose home
-ground it is; 37 of them could not be on Earth, `UNEARTHLY`, and a new pilot rolls those three times as readily), the
-outfit, the pose (`POSES`) and the expression (`EXPRESSIONS`). The 50 catalog pilots stand in 50 different places;
-what each was painted with is frozen in `creator.CAST`. A new pilot may also show more of the human side (`roll_more`:
-21 hair styles, a human touch such as spectacles, kohl, a scar or a beard, a bare hand instead of a gloved one).
+Garrett chose the scenes for how they look and was told these numbers on 2026-11-12. They say where the work is: a
+scene's close-up shows less of the second animal than a bust built for it, and in 27 of 50 a reader called some part
+of the pilot worn (a cap, a hood, a helmet, a wig, a mask). That is his note about the booby, across the roster.
+Every pilot's reads are on the roster page (section 8). Before calling a pilot done, read section 5 and read the
+avatar blind.
 
 ## 1. Read before you touch
 
-- `Tools/Build/pilot_art/bust.py` (the tables and the brief), `creator.py` (the roll, the catalog, the cast,
-  capture, stale, sheet, tiles) and `blind.py` (the blind read's shuffle and grading). For a scene, `scene.py`
-  (its docstring is the mechanism) and `Docs/Pilots/PORTRAITS.md` section 8.
-- `.claude/skills/pilot-art/references/LESSONS.md` sections "signature busts" (rounds 1 to 3) and "the scenes"
-  (57 to 71), and `PAINTERS.md` section 1.
+- `Tools/Build/pilot_art/scene.py` (its docstring is the mechanism; a pilot's record is `scenes/<WORD>.py`),
+  `refs.py` (pictures for a painter that takes them, and patches), `blind.py` (the blind read and its grading),
+  `creator.py` (the roll, the catalog) and `bust.py` (the tables every identity line comes from).
+- `.claude/skills/pilot-art/references/LESSONS.md`: "the scenes" (57 to 90) before writing a scene, "signature
+  busts" (27 to 56) before touching a table. `PAINTERS.md` sections 1 and 2 before spending a painting.
+- `Docs/Pilots/PORTRAITS.md` sections 7 and 8 (what was painted, measured and decided), `references/BUSTS.md`.
 - The pilot record: `Docs/Pilots/INVENTORY.md` section 3; `Assets/_Scripts/Data/Inventory/` (`AnimalSpecies`,
   `FactionCatalog`, `PilotGenerator`, `SeededRandom`).
 - `git fetch origin && python3 Tools/Build/who_works_where.py query Tools/Build/pilot_art Assets/_Graphics/Profile`.
@@ -71,254 +65,301 @@ what each was painted with is frozen in `creator.CAST`. A new pilot may also sho
 ## 2. Commands
 
 ```
-python3 Tools/Build/pilot_art/creator.py roll TALON 0x3039     # the person the game mints for that seed
+python3 Tools/Build/pilot_art/creator.py roll TALON 0x3039     # the person the game mints for that seed, their story
 python3 Tools/Build/pilot_art/creator.py roll TALON            # a fresh seed: a new unique pilot
-python3 Tools/Build/pilot_art/bust.py --callsign TALON --heritage Mole Newt --faction Pirate --name "Lulolo Dawnwhistle"
-python3 Tools/Build/pilot_art/bust.py --backdrops              # the places
-python3 Tools/Build/pilot_art/creator.py brief <WORD>          # the brief of a catalog pilot (the 50 avatars)
-python3 Tools/Build/pilot_art/creator.py list                  # the catalog, each pilot's place, which have a bust
-python3 Tools/Build/pilot_art/creator.py cast                  # CAST lines for catalog pilots that have none
-python3 Tools/Build/pilot_art/creator.py capture <WORD> <url>  # save a painting and the brief it was painted from
-python3 Tools/Build/pilot_art/creator.py stale                 # busts today's tables would paint differently
-python3 Tools/Build/pilot_art/creator.py sheet out.png [WORD...]   # bust + octagon avatar sizes, for looking
-python3 Tools/Build/pilot_art/creator.py tiles <scratch dir> [WORD...]   # whole + four enlarged quarters (4.5)
-python3 Tools/Build/pilot_art/blind.py prep <scratch dir> [WORD...]   # shuffle the busts for the blind readers
-python3 Tools/Build/pilot_art/blind.py grade <scratch dir> --rows     # grade what they said, worst first
-python3 Tools/Build/author_pilot_avatar_assets.py              # re-cut every avatar (256 px) from its bust
-python3 Tools/Build/author_pilot_avatar_assets.py --check      # the drift gate
-python3 Tools/Build/colour_grade.py                            # after a re-cut: the texture record follows
-python3 Tools/Build/pilot_art/scene.py list                    # the scene samples and their approaches
-python3 Tools/Build/pilot_art/scene.py who <WORD>              # an avatar pilot's identity lines, as painted
-python3 Tools/Build/pilot_art/scene.py brief <WORD> [approach] # field | film | candid | sitting
-python3 Tools/Build/pilot_art/scene.py capture <WORD> <url> [approach]
-python3 Tools/Build/pilot_art/scene.py sheet out.png           # each scene beside its avatar, for looking
+python3 Tools/Build/pilot_art/creator.py list                  # the catalog (the 50 avatar pilots)
+python3 Tools/Build/pilot_art/scene.py list                    # every pilot: treatment, source, painted or not
+python3 Tools/Build/pilot_art/scene.py who <WORD>              # a pilot's identity lines and hands, as painted
+python3 Tools/Build/pilot_art/scene.py draft <WORD>            # the facts, the treatments taken, an empty record
+python3 Tools/Build/pilot_art/scene.py recast <WORD>           # freeze today's words when a pilot's animal changed
+python3 Tools/Build/pilot_art/scene.py brief <WORD>            # the brief, verbatim what a words-only painter gets
+python3 Tools/Build/pilot_art/scene.py capture <WORD> <url>    # save a painting and the brief it was painted from
+python3 Tools/Build/pilot_art/scene.py grid <WORD|file> out.jpg    # the picture under a ruled grid, to set `close`
+python3 Tools/Build/pilot_art/scene.py sheet out.png [WORD...]     # scenes beside their avatars, ten a page
+python3 Tools/Build/pilot_art/scene.py crops out.png [WORD...]     # one scene cut for other presentations
+python3 Tools/Build/pilot_art/scene.py manifest [--check]      # scenes.json: what a screen needs to place a scene
 python3 Tools/Build/pilot_art/scene.py stale                   # scenes today's kit would paint differently
-python3 Tools/Build/pilot_art/scene.py read-prep <scratch dir> # the readers' pictures, shuffled; key beside it
-python3 Tools/Build/pilot_art/scene.py read-grade <scratch dir>
-for m in bust creator blind scene; do python3 Tools/Build/pilot_art/$m.py --self-test; done
+python3 Tools/Build/pilot_art/scene.py sweep-prep <scratch dir> [WORD...]   # the readers' pictures, shuffled
+python3 Tools/Build/pilot_art/scene.py sweep-grade <scratch dir>
+python3 Tools/Build/pilot_art/refs.py list                     # the library of real game frames; who has a likeness
+python3 Tools/Build/pilot_art/refs.py likeness <WORD> [l t r b]    # cut a pilot's likeness from their scene
+python3 Tools/Build/pilot_art/refs.py mask <WORD> [view.jpg]   # a patch's mask (run after changing edit or keep)
+python3 Tools/Build/pilot_art/refs.py prompt <WORD> [--patch]  # the words a painter that takes pictures gets
+python3 Tools/Build/pilot_art/refs.py input <WORD> [--patch]   # the run's input with its links (needs a push)
+python3 Tools/Build/pilot_art/refs.py apply <WORD> <painted file>  # put a patch's answer into the scene
+python3 Tools/Build/pilot_art/blind.py prep <scratch dir> [WORD...]    # shuffle the avatars for the blind readers
+python3 Tools/Build/pilot_art/blind.py grade <scratch dir> --rows      # grade what they said, worst first
+python3 Tools/Build/author_pilot_avatar_assets.py              # re-cut every avatar (256 px), then --check
+python3 Tools/Build/colour_grade.py                            # after a re-cut: the texture record follows
+for m in bust creator blind scene refs; do python3 Tools/Build/pilot_art/$m.py --self-test; done
 ```
 
-## 3. The round
+## 3. The round for one pilot
 
-1. **The person.** For a player's pilot, `roll <CALLSIGN> <seed>` gives the same name, heritage and faction the game
-   mints (the C# tables are read from source and `SeededRandom` is ported bit for bit; the self-test holds it), and
-   its look (place, outfit, pose, mood, hair, limb) is rolled from the name. For a catalog pilot, `brief <WORD>`
-   composes from its `CAST` line. A new catalog pilot is four lines, all append-only: a row at the END of `PAINTED`
-   in `Tools/Build/author_pilot_avatar_assets.py` (its avatar id comes from there), the same word at the end of
+1. **The person.** For a player's pilot, `creator.py roll <CALLSIGN> <seed>` gives the same name, heritage and
+   faction the game mints (the C# tables are read from source and `SeededRandom` is ported bit for bit; the
+   self-test holds it), their story as the game tells it, and four places a scene can start from: the profession,
+   the history, a hobby and a want. The story is for whoever writes the scene and is never sent to a painter. A new
+   CATALOG pilot (an avatar every player can pick) is four append-only lines: a row at the END of `PAINTED` in
+   `Tools/Build/author_pilot_avatar_assets.py` (its avatar id comes from there), the same word at the end of
    `creator.LEGACY` with its two animals and faction type, a name in `LEGACY_NAMES` when the word is not the
-   person's name, and the `CAST` line `creator.py cast` prints. When `cast` says every place that pilot may stand
-   in is taken, add a place to `bust.BACKDROPS` first: no two catalog pilots share one, and the self-test holds it.
-2. **The brief.** Read it before spending a painting, and ask: does the crown swallow the face (a hood of head
-   feathers makes the head that bird)? Does the face line say the animal's tell (the oryx's long horns, the snail's
-   stalk eyes)? If the two animals share a texture, does the second have a tell the first cannot have? Is there one
-   pair of ears, and does the brief say whose? Would any word summon an emblem or lettering (a medic's tabard, an
-   armband, a crowd's raised fists, a banner), or would two phrases do it together (a bandana on an arm beside a
-   crosshair-marked eyepiece came back as an armband with a ring and a cross on it)? A wrong or weak animal is
-   fixed in `bust.py`'s TABLES, never in the prompt by hand: every pilot with that animal inherits the fix. Then
-   `--self-test`.
-3. **Paint**: Figma `generate_image`, model `gpt-image-2.5-sunburst`, 1024x1024, the brief verbatim, into the file
-   "Cosmic Shore Pilot Art" (key `BPjqBNIQgtY3L6RvghdWcg`). Each call spends Figma AI credits: say the count up
-   front. Paint in batches of five and capture each batch before the next.
-4. **Capture** with `creator.py capture <WORD> <image.url>` (curl; `www.figma.com` is on the Default environment's
-   allow-list since 2026-11-10). Never `get_screenshot`: the Collab seat's read limit is about 30 calls a day.
-   Capture also writes `Docs/Pilots/art/busts/briefs/<WORD>.txt`, the brief the bust was painted from: capture
-   BEFORE the next table edit, and never edit that file by hand.
-5. **Look** at the 256 px thumbnail the tool returns, then at the sheet. Obvious misses (the second animal absent,
-   a stray emblem, a wrong species) are fixed in the table and repainted now. Then zoom: crop every hand, paw and
-   claw at full size and count (a badger's paw came back with eight claws, and two blind readers counted six
-   fingers on a glove that has five), and look over the clothes and the place for an emblem nobody asked for.
-   A whole round gets the emblem sweep (section 4.5): the eye that wrote the brief passes what it did not ask for.
-6. **The blind read** (section 4) for any round of more than a handful, and after a table change that many pilots
-   inherit. A pilot whose animal is missed gets its table line fixed and one repaint; read the final set again.
-7. **Write** the avatars: `author_pilot_avatar_assets.py` then `--check`. Ids are append-only (1-18 the callsign
-   pilots, 19-50 the legacy painted pilots); guids are `md5("CosmicShore/PilotAvatar/<WORD>")` and never move.
-   Then `python3 Tools/Build/colour_grade.py`: its record (`Docs/VesselModels/colour_grade.json`) holds a hash of
-   every texture a build can load, so a re-cut avatar makes it stale and its `--check` is a ship gate. Only the
-   re-cut avatars' entries should change.
-8. **Commit** the busts, their briefs, the avatars, any table change and the lessons together:
-   `feat(pilots): signature bust of <Person> (<WORD>)`, "Affects: Garrett's pilots; Shombith's profile UI".
-   No C# changes, so no reference compile; say so.
+   person's name, and the `CAST` line `creator.py cast` prints.
+2. **The identity.** `scene.py draft <WORD>` prints the pilot's lines (face, coat, second piece, eyes, hair, clothes,
+   build, hands) and every treatment already taken. A catalog pilot's lines are cut word for word from the brief
+   their bust was painted from; a pilot who never had a bust takes what `bust.py`'s tables compose, and `capture`
+   freezes it (`scenes/identity/<WORD>.txt`). A wrong or weak animal is fixed in the TABLES, never in one brief by
+   hand, so every later pilot with that animal inherits the fix.
+3. **One creature** (section 5): design the two animals as one, find the tell the first animal cannot have, and
+   decide what the pilot DOES with the second animal's part. A new pilot's record carries it as the `fused` line; a
+   pilot who is already painted is designed again as a patch of the pilot (section 7).
+4. **The scene** (section 6): write the record, read its brief, paint it, look, capture, set `close`.
+5. **The avatar**: `scene.py manifest`, `author_pilot_avatar_assets.py`, `--check`, `colour_grade.py`. Ids are
+   append-only (1 to 18 the callsign pilots, 19 to 50 the legacy pilots); guids are
+   `md5("CosmicShore/PilotAvatar/<WORD>")` and never move. `colour_grade.json` holds a hash of every texture a build
+   can load, so a re-cut avatar makes it stale and its `--check` is a ship gate: commit it with the avatar, "Affects:
+   Shombith's colour grade record".
+6. **The reads** (sections 4 and 4.5): the avatar blind, the scene swept. A repaint is read blind BEFORE it is shown
+   to anyone: a repaint that answers a note can lose the animal the note never mentioned (LESSONS 80).
+7. **Commit** the scene, its brief, the record, the avatar, the texture record and any lesson together:
+   `feat(pilots): <what changed for whom>`, "Affects: Garrett's pilots; Shombith's profile UI". No C# changes, so
+   no reference compile; say so.
 
 ## 4. The blind read
 
 ```
-python3 Tools/Build/pilot_art/blind.py prep <scratch>/blindN          # full/pNN.jpg, thumb/sheetN.png, key beside
-Workflow({scriptPath: ".claude/skills/pilot-creator/references/blind_read.js", args: {dir: "<scratch>/blindN", count: 50}})
+python3 Tools/Build/pilot_art/blind.py prep <scratch>/blindN [WORD...]    # full/pNN.jpg, thumb/sheetN.png, key beside
+Workflow({scriptPath: ".claude/skills/pilot-creator/references/blind_read.js",
+          args: {dir: "<scratch>/blindN", count: N}})
 # save what it returns as <scratch>/blindN/result.json
 python3 Tools/Build/pilot_art/blind.py grade <scratch>/blindN --rows
 ```
 
-Seven readers (one for every ten portraits at 640 px, two on the 64 px icon sheets): say so before running it.
-The folder is a scratch folder outside the repository (`prep` and `grade` refuse one inside it); a new folder name
-is a new shuffle. The readers are told nothing and may open only the pictures, so do not put the key, a brief or a
-pilot's name where they can see it, and do not change their prompts between rounds.
+It reads the AVATARS: each pilot's scene close-up (their bust's cut while they have no scene). One reader for every
+ten at 640 px and two on the 64 px icon sheets, so seven readers for fifty and three for a handful: say the count
+before running it (three readers cost about 280k tokens). The folder is a NEW scratch folder outside the repository
+(`prep` and `grade` refuse one inside it); a new name is a new shuffle. The readers are told nothing and may open
+only the pictures: never put the key, a brief or a pilot's name where they can see it, and do not change their
+prompts between rounds.
 
-`grade` gives two levels. `blind.py`'s docstring is the standard, and every round is graded by it:
-- **species**: the animal itself, or a name everyday speech does not tell apart from it (turtle for a tortoise,
-  crow for a raven, rabbit for a hare, heron for an egret);
+`grade` gives two levels (`blind.py`'s docstring is the standard):
+- **species**: the animal itself, or a name everyday speech does not tell apart from it (crow for a raven, rabbit
+  for a hare, salamander for a newt);
 - **clade**, its kind: a relative people do tell apart, a look-alike of the whole animal, or the everyday word for
-  its family (a fox for a jackal, a cat for a lynx, a lizard for a gecko, a stork for an egret);
+  its family (a fox for a jackal, a lizard for a newt, a stork for an egret);
 - **nothing**: a word for a whole class ("some bird", "a fish") and a look-alike of one part (a beaver for a
-  platypus).
+  platypus). Some animals have no kind at all: only "pelican", "platypus" or "seahorse" counts for those.
 
-One name counts for one animal. A hedge ("lynx or owl", "fox?") counts for one, and a tie goes to the face animal.
-A name the reader denies ("a dog, not a fox") or takes back ("fox? no, a dog") is no name, "fox-like" is the kind
-at most, and a name used as a colour or a look ("salmon pink", "leopard print") is no animal.
-`blind.py --self-test` holds each rule with a read that fails when the rule is broken (183 reads, each also with
-its names in the other order). The headline is "both animals, species, sure or likely" at full size, and "both
-animals, species, any reader" at icon size. `grade` prints a `WARNING` line for a portrait a reader left out, an
-id that is not in the key, an answer outside the form, and a portrait where one name hedges between the pilot's own
-two animals: read them before quoting a number. A new name a reader used for an animal goes into `NAMES` at the
-level the docstring gives it, with a self-test read, and every saved read is graded again: the grader is part of
-the measurement.
-The readers also report hands, hair, defects and anything that reads as a mythical creature: `--rows` prints them
-under each portrait (human hair is counted from the human features a reader listed, since "none; shaggy fur" is
-also a hair answer).
+One name counts for one animal. A hedge ("lynx or owl", "fox?") counts for one, a tie goes to the face animal, a
+denied name is no name, and a name marked "guess" counts only in the "any" columns. The headline is "both animals,
+species, sure or likely" at full size and "both animals, species, either reader" at icon size. `grade` prints a
+`WARNING` for a portrait a reader left out or an answer outside the form: read them before quoting a number. A new
+name a reader used for an animal goes into `NAMES` at the level the docstring gives it, with a self-test read, and
+every saved read is graded again: the grader is part of the measurement (LESSONS 51).
 
-**One read is one sample.** Round 1's 50 pictures, read twice by different readers, gave 26 and 27 on the headline
-row and 10 and 12 at icon size, and a pilot or three flips between reads (an armadillo was an armadillo, then a
-pangolin). Read a finished set twice and quote both. Repaint what two reads agree on or what the picture itself
-confirms, fix the table line first, and stop after one repaint per pilot: what still misses is a limit to write
-down (LESSONS 43, 50).
+The readers also say what each part **reads as** and list defects. Search those words for cap, hood, helmet, wig,
+mask, headdress, strap and costume: a part a reader calls worn is the note in section 5, whatever the animal count.
 
-## 4.5 The emblem sweep
+**One read is one sample.** Two reads of the same fifty pictures differ by two or three pilots. Read a finished set
+twice and quote both; repaint what two reads agree on or what the picture itself confirms; stop after one repaint a
+pilot and write down what still misses as a limit (LESSONS 43, 50).
 
-A painter adds signs nobody asked for, and the eye that wrote the brief passes them: BANDIT's first round-2 bust
-went through two looks and a blind read wearing a red armband with a black ring and cross on it. Before a round
-ships, readers who are told nothing look at every bust whole and in four enlarged quarters, and list each drawn
-device (an emblem, insignia, symbol, a hand or fist shape, a cross, a star, a figure in a disc), what carries it,
-how large it is and which real-world emblem it resembles, plus any lettering:
+## 4.5 The scene sweep and the emblem sweep
 
 ```
-python3 Tools/Build/pilot_art/creator.py tiles <scratch>/tiles [WORD...]
-Workflow({scriptPath: ".claude/skills/pilot-creator/references/emblem_sweep.js",
-          args: {tiles: "<scratch>/tiles", jobs: [{reader: "A1", words: ["ANVIL", "Astrofoil", ...]}, ...]}})
+python3 Tools/Build/pilot_art/scene.py sweep-prep <scratch>/sweepN [WORD...]   # a NEW folder outside the repository
+Workflow({scriptPath: ".claude/skills/pilot-creator/references/scene_sweep.js", args: {dir: ..., ids: [...]}})
+# save what it returns as <scratch>/sweepN/result.json
+python3 Tools/Build/pilot_art/scene.py sweep-grade <scratch>/sweepN
 ```
 
-About ten busts a reader; say the count before running it. Then read every "resembles" that is not "none" and
-look at that bust yourself. Round 2's sweep read all 50: in the finished set the readers list 88 devices, 61 with
-something they resemble, and no legible lettering. Most are what a brief asked for or harmless (an anvil pin, a
-helm brooch, compass stars, wreck timbers that cross). Two were what the eye had passed: a gold laurel wreath on
-Slingshot's black sash, which is a clothing brand's mark, and a winged sword, a sun and a star on three hall
-banners that Spare05's brief had called plain.
+One reader for every ten scenes, told nothing: what kind of image each is, which animals they see, what the person
+is doing, how many figures there are, what any display shows, and every piece of lettering, broken anatomy, bare
+human skin and whatever breaks the realism. Five readers for the fifty cost 765k tokens (2026-11-12), about 150k a
+reader: say the count first, push the work before a large read, and keep readers at medium effort (a fan-out of
+readers has run a session into its usage limit twice). Fix in the record what a player would notice, repaint once,
+and sweep the new picture on its own.
 
-- **Repaint** a device that sits on the carrier its real-world twin is known from (a sign on an armband, a hand
-  on a banner, a cross on white, a brand's mark on a garment), and heraldry where the brief asked for plain. Fix
-  the table line first so the words cannot come back (`bust.EMBLEM`), and have the repaint read again: Spare05's
-  second hall has no banner in its brief and still hangs two small ones at the frame's edges.
-- **Keep** a callsign's own mark worn as a small object, a compass star, a plain block of colour, and scenery that
-  is small, soft and generic (a foliate crest on a far banner).
-- **Keep the readers cheap.** The tiles are cut before the readers start, the readers only open pictures, and
-  their effort is medium: about 100k tokens a reader before its first picture and about 6k a bust after it, so
-  three readers read 29 busts in under three minutes. The first design, in which each reader cut its own tiles at
-  full effort, took about 35 minutes and 0.8M tokens a reader, and eight of those at once ran the session into its
-  usage limit for eight hours.
+A painter adds signs nobody asked for, and the eye that wrote the brief passes them. A scene's sweep lists its
+lettering and symbols; a bust's own sweep, with enlarged tiles, is `references/BUSTS.md` section 4. Repaint a device
+that sits where its real-world twin is known from (a sign on an armband, a hand on a banner, a cross on white, a
+brand's mark on a garment); keep a callsign's own mark worn as a small object and scenery that is small, soft and
+generic.
 
-## 5. Rules
+## 5. One creature
 
-**Round 3 (Garrett, 2026-11-11). Each is a table rule that `bust.py --self-test` holds, so every new pilot inherits it:**
-- **"please never make crab hands (how would they interact with things?)"** A limb in the frame is a hand with
-  fingers or a tentacle (`LIMB`, `LIMB_TELL`; the gate is `NOT_A_HAND` and `A_HAND`). The armoured animals (`ARMOURED`:
-  lobster, scorpion, mantis, mantis shrimp) wear their shell on a hand with four fingers and a thumb, like a gauntlet,
-  and a pilot who also has a true hand (a tree frog with a scorpion's tail) shows the true hand. Give the hand
-  something to hold: Comet's lobster-shell hand holds a crystal shard.
-- **"butterfly Wings on a head, as ears, is nonsensical."** Wings grow from the back between the shoulder blades
-  (`SECOND`), and no `CROWN` line names wings or tail feathers.
-- **"the turkey tail feathers are in a very weird spot with respect to the dog's hood."** A tail fan grows from the
-  base of the back: its line says "behind the back", never "behind the head", and under a hooded outfit the brief
-  says the hood lies in front of it (`BEHIND_HOOD`).
-- **"the chameleon transitioning to jellyfish looks a bit abrupt."** A translucent coat has a `BLEND` line: the face's
-  skin thins and turns glassy by degrees, with no rim where the bell begins.
-- **"The backgrounds that don't look like they could be earth are the best."** `UNEARTHLY` marks those places; every
-  faction type has one of its own, and a new pilot's place is rolled three times as readily from them
-  (`weighted_backdrops`, `creator.propose_cast`).
-- **"it is fine to have some that express more of their human side ... I would expand the list vs. change that."** The
-  lists grow and the painted busts stay: `HAIRS`, `HAIRS_LOW`, `TOUCHES`, `TOUCHES_FUR` and a bare human hand
-  (`roll_more`, for new pilots only; `compose`'s defaults leave a cast pilot exactly as painted).
+A bust's brief hands each animal its own ground (the face to one, the crown and everything behind it to the other)
+so that both can be named at icon size. A painter paints that as parts set side by side, and a reader calls the
+second animal's part a cap, a hood, a wig or a costume. A scene's record therefore may carry a `fused` line: the
+pilot written bespoke as ONE animal. It takes the place of the two sentences that hand out the parts (`scene.who`),
+and the kit holds its form (`fused_errors`): it names both animals, it never says one "owns" a part or "the head of
+a ... on the body of", it tells the second animal's piece (tail, fan, wing, fin, shell) and where it grows from, and
+the record gives no `carry` beside it.
 
-- The second animal is never only a tail or wings, and never a patch on a cheek: it owns the crown and the neck.
-- The human is the clothes, the bearing and the gaze. No human hand beside human hair, and none on a pilot whose
-  animal has a hand, a paw or a tentacle of its own.
-- No two catalog pilots stand in the same place; a home ground goes to its own faction type first, and a place
-  never swallows its pilot's accent (`BACKDROPS`' avoid column). `creator.py --self-test` holds this for `CAST`,
-  with the outfit, pose and mood on their lists and every look composing.
-- **The brief goes to an outside painter**: it describes a picture and never names the game, the studio, the
-  world, or a place, a crew or a faction in it, and it carries the pilot's own rolled name, never a player's. The
-  self-test holds this: it reads the world's names from the game (`bust.world_names`, from
-  `Docs/Voyages/voyage_slice.json` and `FactionCatalog.cs`) and refuses them, as names, in every table line.
-- No protected emblem, no real-world symbol and no lettering: an outfit describes colours and cut ("a plain white
-  rescue tabard with one broad red band", never "a medic's tabard", which was painted with a red cross; "a strip of
-  bright plain cloth knotted around one sleeve", never "an armband", which was painted with a disc and a star), and a
-  place has lights and plain shapes (a crowd "holding lanterns high", never "raised fists", which came back as
-  fist emblems on banners; "murals of waves", never "open hands", which came back as a hand on a banner). A
-  callsign's mark is a small object (a brooch, a pendant), never a sign on cloth; nothing is tied on an arm, and a
-  band of cloth on a sleeve says plain. A sash is "a broad plain satin sash", never "a champion's ribbon sash",
-  which was painted with a laurel wreath; and a hall has curtains, never banners: "three plain hanging banners"
-  came back with a winged sword, a sun and a star on them. The self-test holds the words (`bust.emblem_word`),
-  and the emblem sweep (section 4.5) reads the finished pictures.
-- The domain colour comes from the faction (Ruby freedom, Gold commerce, Jade order), never from an element.
-- The 32 painted full-body references in `Assets/_Graphics/Pilots/` are never overwritten; they are the check for
-  what a legacy pilot is.
-- A bust is painted with its own background (no matte); the avatar is the top-centre square of the frame: 4% off
-  each side, 8% off the bottom and the top kept (`creator.avatar_cut`).
-- `CAST` is frozen: change a line on purpose and repaint that pilot. `stale` is a list to look at, not a gate: a
-  bust painted before a later table fix can still be right.
-- Per-player busts painted on recruit are not built yet: that needs a backend painter and is Garrett's call,
-  Shombith's for anything on the backend (PORTRAITS.md section 6, decision 2).
+What has been measured, each with the painting that taught it (LESSONS 72 to 90):
 
-## 6. The scene: the same pilot in a realistic picture (THE STYLE IS NOT LOCKED)
+1. **An animal is named by its own silhouette.** A jellyfish is its bell. Trace's jellyfish was "drawn in" to the
+   booby's outline so it would stop reading as a hood, and a stranger who had been sure of it only guessed (89). So
+   do not dissolve the second animal into the first one's shape. Give it the one shape people know it by, and make
+   THAT shape grow from the body.
+2. **The second animal brings a tell the first cannot have** (39, 42). Two furred animals merge. Look-alikes are
+   decided by colour and by the one shape the other lacks: a white blaze on a black face is a skunk, a white cap
+   split by two black stripes is a badger.
+3. **One pattern runs over the whole body.** Longshift is "a hare grown in a skunk's fur": the skunk's white runs
+   from the nose over the crown, down the back and out along the tail. A pattern that crosses a join, and something
+   that lies inside it (Trace's last dark feathers inside the jelly), are what a paste-up cannot have (79).
+4. **A join is a gradient, with no edge and no shadow under it** (55, 79). "Its only edge is low at the nape ...
+   with shadow under it" was painted as an edge, and two readers said the jelly "sits on the back of the head like
+   a cap".
+5. **The part is put to USE, and the use brings it up to the head** (75, and his Longshift note). The avatar is the
+   head and shoulders; a tail in the lap is outside it. "Across the lap and up over the chest like a blanket, its
+   white tip tucked under the chin" put the skunk in the avatar and made the picture his own. Ask of every pilot:
+   what does this person do with that tail, pouch, wing or tusk, here, in this job, that only they could do?
+6. **A second signature that cannot be worn**: the hands. Trace's are the blue of a booby's feet, scaled to the
+   fingertips, with a web of jelly between the fingers (79). A hand still holds: four fingers and a thumb, never a
+   claw, a pincer or a club ("please never make crab hands").
+7. **The painter paints the noun** (78). "Like the peak of a cap" is a cap, "speckled like a leopard seal" is a
+   seal, "a plate" is a dish. Describe the thing itself, and compare it only to something you would accept in the
+   picture. What should be absent is LEFT OUT of the words, never forbidden: "so no ears show" drew an ear, and labels
+   named in order to ban them were painted (63, 67).
+8. **Where each piece grows from is a sentence** (54): a tail from the base of the spine and out under the coat,
+   wings from the shoulder blades through the cloth. "butterfly Wings on a head, as ears, is nonsensical."
+9. **Count the hats, wigs and second heads over every roll before picking one, and pick by what the note is about**
+   (79, 86). Trace's four rolls: one keeper, one good head with a wrong display, one jelly wig, one jelly bonnet.
+10. **Some pairs are limits, and the cast should avoid them** (43, 50): a bird whose tell is its bill, behind
+    another animal's face (three paintings of the ocelot-and-heron never gave "heron"); a jackal, which is a fox to
+    nearly everyone; an octopus face, which is a mind flayer to anyone who knows one. Write a limit down and stop.
 
-Garrett, 2026-11-11: "now lets see how realistic we can get when we take the same character from the avatar picture
-and make the art needed for the ark. and elsewhere. make a full scene piece of art that show them in a hyper
-realistic setting ... it shouldn't look like a pristine commercial set, it should show them raw in their environment
-doing something that is appropriate to their background, history, hobbies, profession, etc. ... do 4 of these and
-make stretch yourself in different directions so we can give feedback on your different approaches and lock in this
-second style". Four samples exist, one per approach (`scene.APPROACHES`: `field` a long-lens documentary, `film` a
-cinematic still, `candid` a crewmate's snapshot, `sitting` a portrait in the minute after the work). **Until he
-picks, a scene for any other pilot is a draft, and nothing here is imported by the game.** PORTRAITS.md section 8
-has the samples, the reads and what is open.
+The line that worked, whole (Longshift, hare and skunk; a stranger then named both): "Longshift is a hare grown in a
+skunk's fur. The head and the long limbs are a black hare's: a long face in sleek black fur, a white muzzle with a
+cleft upper lip, and two ears each as long as the head, pink-grey inside. The white is the skunk's and runs through
+the whole animal as one pattern: a bold white blaze runs from the nose up between the eyes, widens on the crown
+between the ears and divides at the nape into two broad white stripes that run on down the back and out along the
+tail. From the nape down the fur is a skunk's, long, glossy and jet black. The tail is the skunk's and enormous, as
+long as the body and as wide as the shoulders: a plume of long coarse black hair in which the two stripes meet at a
+white tip. It grows from the base of the spine, out under the hem of the parka."
 
-**How a scene keeps the character** (the painter takes words only):
+A pilot whose animal itself changes (the hare's badger became a skunk) is recast: `scene.py recast <WORD>` freezes
+today's words, and every later picture starts from them.
 
-1. The person's lines come word for word from the brief the avatar was painted from (`identity`), never from
-   today's tables.
-2. LOOK at the avatar and write down what its painter decided beyond the brief (`seen`) and where the painting
-   departs from it (`swap`: the scene follows the painting, and a correction replaces the phrase, never adds to it).
-3. Below the avatar's crop the body is rules, the same for every picture of that pilot: `BUILD`, `hands_of` (the
-   hand the avatar shows, else the animal's own true hand, else gloves), `CARRY`, `LOWER`. No bare human skin.
-4. Nothing permanent is added: wear is mud, soot, a tear, a mended seam (`PERMANENT` refuses a scar or a chipped
-   tusk).
-5. What the pilot is doing names its source: their profession (the faction type), a hobby (the game's `Quirks`) or
-   their history (`Upbringings`).
+## 6. The scene
+
+**One record a pilot**, `Tools/Build/pilot_art/scenes/<WORD>.py` (`SCENE = dict(...)`; its docstring tells the
+pilot's story of notes and repaints). Required: `treatment` (a few words that name the shot; no two pilots share
+one), `shot` (the camera, the lens, the moment, how much of the figure is seen), `source`, `seen`, `doing`, `place`,
+`light`, `wear`. As needed: `side`, `frame`, `swap`, `fused`, `carry`, `lower`, `build`, `hands`, `chart`, `refs`,
+`patch`, and after painting `close`. Lines stay under 119 columns. The brief is at most 1,000 words (`WORD_CAP`); the
+identity takes about half.
+
+- **Each pilot is a bespoke exercise**: a camera, a light and a moment no other record has, chosen for that person.
+  What they are DOING names its source: their profession (the faction type), a hobby (the game's `Quirks`), their
+  history (`Upbringings`) or what they want most (`Wants`).
+- **The frame is 16:9**: asked of the painter as 2048x1152, returned as 1536x864. It is fullscreen art that other
+  presentations are cropped from; `manifest` writes `Docs/Pilots/art/scenes/scenes.json` (each scene's size, the
+  avatar's box, the side the pilot stands on, and the largest crop of each other aspect that keeps the pilot).
+- **The same words keep the same person** (57). LOOK at the pilot's earlier picture and write what its painter
+  decided beyond the brief (`seen`) and where it departs from it (`swap`: the scene follows the painting, and a
+  correction replaces the phrase, never adds to it). Below the head the body is rules, the same in every picture of
+  a pilot (`BUILD`, `hands_of`, `CARRY`, `LOWER`), and no bare human skin shows between an animal's head and its
+  hands. Nothing permanent is added: wear is mud, soot, a tear, a mended seam (`PERMANENT` refuses a scar).
+- **Windows and displays.** A few scenes (at most a fifth, `CHART_MOST`) show the sea the pilots sail: a chart
+  `panel` or `hologram`, or a `volume` of live play on the bridge of the pilot's great ship or in a vessel
+  (`chart=(kind, view)`). His rules: a display belongs to its place and the pilot looks INTO it; a hologram is a
+  volume with depth, "not a 2d hologram embedded in 3d", and "should look like gameplay footage"; all of it stays
+  inside its own edge and clear of every window; and where there is a window, it shows the same sea at its true
+  size ("the dual perspectives of jugger is a better standard for windows"). A display that tells another story is
+  the exception. The sea is written from the game's frames and has six nouns (76); to make it the game's own sea,
+  paint it from pictures (section 7).
 
 **The round for one scene:**
 
-1. Write the record in `scene.SAMPLES` (approach, source, `seen`, `swap`, doing, place, light, wear) with the
-   avatar open beside you. `brief <WORD>` and read it: is every worn thing placed (lesson 66)? Is the place emptied
-   of people by name (67)? Is the wear told where to stop (65)? Is the place strange through distance and weather,
-   with an ordinary camera (68)? `--self-test`.
-2. Paint the brief verbatim on `gpt-image-2.5-sunburst`: 1536x1024 (`field`), 2048x1152 (`film`), 1024x1280
-   (`candid`, `sitting`). Say the count first; a sample took three to seven paintings.
-3. Look at it whole, then at the head, the hands and the background at full size, beside the avatar. `capture`
-   the one you keep (it writes the brief it was painted from), set its `CLOSE` box, and `sheet`.
-4. **The read** for anything that will be shown:
+1. `draft <WORD>`, write the record with the pilot's earlier picture open beside you, then `brief <WORD>` and read
+   it. Is every worn thing placed (66)? Is the place emptied of people by name (67)? Is the wear told where to stop
+   (65), and laid on a part with a shape of its own (72)? Do both hands have work the camera sees, with the count
+   closed (73)? Is a pair posed as a pair (74)? Is the thing that must be whole named, with the figure's two ends
+   (77)? `--self-test`.
+2. Paint the brief verbatim (section 7 says with which painter and what it costs). Say the count first: the fifty
+   scenes and their repaints took 87 paintings on the words-only painter, 19 of them for the first four.
+3. Look at it whole, then at the head, the hands and the background at full size. `capture <WORD> <image.url>`
+   writes the brief the scene was painted from: capture BEFORE the next edit of the record. Set `close` with `grid`:
+   a square at least 256 px wide holding the head AND the nearest piece of the second animal.
+4. The avatar, the reads and the commit: section 3, steps 5 to 7.
 
-   ```
-   python3 Tools/Build/pilot_art/scene.py read-prep <scratch>/readN       # a NEW folder outside the repository
-   Workflow({scriptPath: ".claude/skills/pilot-creator/references/scene_read.js",
-             args: {dir: "<scratch>/readN", letters: ["A", "B", "C", "D"]}})
-   # save what it returns as <scratch>/readN/result.json
-   python3 Tools/Build/pilot_art/scene.py read-grade <scratch>/readN
-   ```
+## 7. Painting: two painters, and painting from pictures
 
-   Two readers (say so before running it): one finds each scene's pilot among the 50 avatars, told nothing; one
-   puts each scene beside its avatar and lists what differs. About 220k tokens and two minutes for four scenes.
-   The key lives beside the folder, never in it. Fix what "a player would notice" in the record, repaint once,
-   and read the new picture again: fixing one thing can move another.
-5. Commit the scene, its brief, the record and any lesson together. No C# changes, so no reference compile; say so.
+`PAINTERS.md` holds each painter's contract as it was met. Every painting spends someone's credits: say how many a
+round will make before making them, and never work round a credit limit or a plan's wall.
 
-**What a text brief does not hold yet** (write it down, do not chase it): the eye ring at any distance, an ear on
-a horned animal, small costume details (an epaulette's make, the count of a necklace's pieces). A model that takes
-the avatar as a reference image is the next thing to try, and every run of one needs Garrett's approval of its cost
-(PAINTERS.md section 2).
+- **Words only**: Figma `generate_image`, model `gpt-image-2.5-sunburst`, into the file "Cosmic Shore Pilot Art"
+  (key `BPjqBNIQgtY3L6RvghdWcg`). It painted every bust and the first painting of every scene. It spends the Figma
+  AI credits of the studio file's plan, which ran out on 2026-11-12 and reset on a date the refusal names. Capture
+  by curl (`www.figma.com` is allowed on the Default environment), never `get_screenshot`.
+- **From pictures**: GPT Image 2.6 (Sunburst) through Weave (`refs.PAINTER`). It takes up to sixteen pictures by
+  link and no mask, and is quoted at 11 Weave credits a run at quality high. **Every run is quoted first and runs
+  only after Garrett approves that cost on a card, reruns too**; the workspace needs a paid plan. The repository is
+  public, so a picture that is committed and PUSHED has a link (`refs.py input` refuses one that is not); the answer
+  is downloaded from `s3-alpha-sig.figma.com` into a new scratch folder and looked at before it is used.
 
+What a painter is shown (`refs.py`):
+
+- **The library**, `Docs/Pilots/art/refs/` (`refs.json`): real frames of the game and views of its ships, each with
+  the words the painter is told about it. A frame is never retouched. A record's `refs=(...)` names the ones that
+  go with its window or display.
+- **A pilot's likeness** (`refs.py likeness <WORD>`): head and shoulders cut from their approved scene, so a later
+  picture shows the same person.
+- **A patch**, `patch=dict(what=, ask=, edit=, keep=, refs=, likeness=, bust=, took=)`: part of a finished scene is
+  painted again and the rest is kept to the pixel. The painter gets the scene and what to change; `apply` takes from
+  its answer only the record's region. The painter repaints the whole picture a little while it works (5 to 14 of
+  255 outside the region), so the pilot is never taken from an answer by accident.
+- **A patch of the pilot.** Where the head itself changes, the region is the whole frame (`refs.WHOLE`) and the
+  picture is the painter's answer. `likeness=` names the one thing taken from the pilot's earlier scene (Flux's fin:
+  the head changed and the face was kept, 87); `bust=` names the one part taken from the pilot's earlier bust,
+  where the bust held a part the scene lost.
+
+What five runs taught (83 to 90): one run may ask for several things, and each is judged alone when the answer is
+in, so `edit` holds only the regions taken and `took=` says what went into the scene (88). The painter copies a
+reference frame's colour before it reads the words for theirs; where the scene already holds the thing at another
+size, send the scene alone (`refs=()`) and point the words at it ("the round port of this same photograph", 90). A
+reflection asked for in glass is painted as a second figure (84). Each `apply` re-encodes the scene, so re-cut the
+avatar and commit it. After changing `edit` or `keep`, run `refs.py mask <WORD>` or the self-test fails.
+
+## 8. Showing a round
+
+Garrett sees pictures, not paths. Two pages hold the work, and both are his private artifacts:
+
+- **Fifty Pilot Scenes** (https://claude.ai/artifact/AWHauAfBgnFD7Nw2rJ3wk8): every scene, its avatar, what
+  strangers named at each size and their words, with filters for what is weak.
+- **Pilot Scene Repaints** (https://claude.ai/artifact/QZXJW89raWJqyYcP46tg9r): each scene painted again, with its
+  earlier versions on a switch, what a stranger named before and after, and the ledger of painter runs.
+
+To update one from another session, pass its link as `url` on the publish, list its files first, and send only the
+new or changed pictures. Then, for any round:
+
+- Read the repaint blind first, and show it WITH what the stranger said, including when the read got worse. A design
+  that was tried and not taken is shown beside the one that was kept, so he can overrule the read.
+- Lead with the result, then the number against its baseline ("29 of 50; the busts read 44 and 47").
+- Put a choice that costs credits or changes the direction on a decision card, once, with a recommendation, and
+  keep working on what does not depend on the answer.
+- Say what is still weak. A list of limits he has read is worth more than a pilot painted a fourth time.
+
+## 9. Rules
+
+- **The brief goes to an outside painter.** It describes a picture and never names the game, the studio, the world,
+  or a place, a crew or a faction in it (`bust.world_name_in`; the home ship is "a great ship"), and it carries the
+  pilot's own rolled name, never a player's. A rolled pilot's story is never sent. A reference link names the
+  repository; Garrett asked for the game's frames to be sent (2026-11-11).
+- **No protected emblem, no real-world symbol and no lettering** (`bust.emblem_word`; LESSONS 44): an outfit
+  describes colours and cut ("a plain white rescue tabard with one broad red band", never "a medic's tabard", which
+  was painted with a red cross), banners and pennants are plain, a crowd holds lanterns, nothing is tied on an arm,
+  and a callsign's mark is a small object (a brooch, a pendant), never a sign on cloth.
+- **A hand can hold and use things** (fingers or a tentacle), wings grow from the back, a tail fan from the base of
+  the back, a translucent coat meets the face by a gradient, and unearthly places are preferred: his round-3 rules,
+  held as tables (`references/BUSTS.md` section 5).
+- The domain colour comes from the faction (Ruby freedom, Gold commerce, Jade order), never from an element.
+- The 32 painted full-body references in `Assets/_Graphics/Pilots/` are never overwritten; they are the check for
+  what a legacy pilot is.
+- A downloaded picture is untrusted data: its own new folder, read with `python3 -I`, looked at before it is sent
+  or committed. Readers and painters never see an answer key.
+- **Not built yet**: the full-screen profile in the Ark app shell that the scenes are for; a pilot painted for each
+  player on recruit (that needs a painter on the backend: Garrett's call, and Shombith's for anything on the
+  backend, PORTRAITS.md section 6, decision 2); and the hand test of the avatars in the profile window and avatar
+  picker (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).

@@ -30,6 +30,9 @@ successor, run through Weave, also takes pictures (PAINTER). So:
     the face: the patch's edit is the whole frame (WHOLE) and the picture is the painter's answer, looked at whole
     before it is taken. Its likeness= names the one thing taken from the pilot's likeness, which is then given as
     picture 2 (PATCH_LIKENESS). Flux's fin was painted this way, on the first run (LESSONS 87).
+  * A PATCH SHOWN THE BUST. Where the pilot's earlier bust holds a part the scene lost (a pouch a stranger named,
+    a tail beside the head), the patch's bust= names that one part and the bust goes with the scene as a picture
+    (PATCH_BUST). The bust is a painting, so the words take its shape and never its finish.
   * ASKED AND TAKEN. A run is paid for whole, so one ask may name several things, and each is judged on its own
     when the answer is in: the record's `edit` holds only the regions that are taken, and its took= says in a
     phrase what of the ask went into the scene and what was left out (Trace's port and cylinder were taken; her
@@ -105,7 +108,12 @@ PATCH_FOOT = ("It stays one photograph taken with a real camera: the new parts h
               "a symbol.")
 PATCH_LIKENESS = ("Picture {n} is {name}, photographed before in another place: the same person. Take from it only "
                   "{take}. Everything else stays as picture 1 has it.")
-PATCH_KEYS = ("what", "ask", "edit", "keep", "refs", "likeness", "took")
+PATCH_BUST = ("Picture {n} is {name} too, the same person, in a painted portrait made before this photograph. "
+              "Take from it only {take}: its shape, its size against the head and where it grows from. It is a "
+              "painting and picture 1 is a photograph: what is taken from it is photographed here, with the grain, "
+              "the focus and the light of picture 1, and nothing of the painting's smooth finish, its background or "
+              "its pose.")
+PATCH_KEYS = ("what", "ask", "edit", "keep", "refs", "likeness", "bust", "took")
 WHOLE = ((0, 0), (scene.FRAME[0], 0), scene.FRAME, (0, scene.FRAME[1]))   # an edit polygon: the whole frame
 VIEW_TOKEN = "{view}"   # in a patch's ask: the words the record's own display shows (scene.CHART_SHOWS)
 GROW = 0.12             # a likeness is the avatar's square and a little more of the shoulders
@@ -170,6 +178,11 @@ def library_errors():
 # ---------------------------------------------------------------------------------------------------------------
 def likeness_path(word):
     return os.path.join(ROOT, LIKENESS, f"{word}.jpg")
+
+
+def bust_path(word):
+    """The pilot's earlier painted bust (creator.py): a patch's bust= shows it to the painter for one part."""
+    return scene.creator.bust_path(word)
 
 
 def likeness_log():
@@ -307,6 +320,8 @@ def apply(word, painted_file, out=None):
     result.save(out or scene.scene_path(w), quality=93, subsampling=0, optimize=True)
     note = dict(what=patch["what"], before=before, painter=PAINTER["name"], refs=list(patch_refs(w)),
                 prompt=prompt(w, patch=True), moved_outside_the_mask=round(drift, 2))
+    if patch.get("bust"):   # the pilot's bust went with the scene, for this one part
+        note["bust"] = patch["bust"]
     if patch.get("took"):   # less than the ask named went into the scene: say what did
         note["took"] = patch["took"]
     if not out:
@@ -374,6 +389,12 @@ def record_errors(word, rec):
             out.append(f"{word}: the patch's `likeness` is a phrase that goes inside a sentence: what is taken")
         if not os.path.exists(likeness_path(word)):
             out.append(f"{word}: the patch takes from a likeness and {word} has none (refs.py likeness {word})")
+    shown = patch.get("bust")
+    if shown is not None:
+        if not shown or shown.rstrip()[-1:] == "." or shown[:1].isupper():
+            out.append(f"{word}: the patch's `bust` is a phrase that goes inside a sentence: the one part taken")
+        if not os.path.exists(bust_path(word)):
+            out.append(f"{word}: the patch takes from the bust and {word} has none ({scene.creator.BUSTS})")
     if VIEW_TOKEN in patch.get("ask", "") and not rec.get("chart"):
         out.append(f"{word}: the patch's ask says {VIEW_TOKEN} and the record has no chart to take the view from")
     if not out:
@@ -443,6 +464,8 @@ def prompt(word, patch=False):
         refs = patch_refs(w)
         parts = [PATCH_HEAD.replace("{what}", p["what"]), ask]
         told = [PATCH_LIKENESS.replace("{n}", "2").replace("{take}", p["likeness"])] if p.get("likeness") else []
+        if p.get("bust"):
+            told.append(PATCH_BUST.replace("{n}", str(2 + len(told))).replace("{take}", p["bust"]))
         told += reference_lines(refs, name, 2 + len(told))
         if told:
             parts.append(REF_HEAD + " " + " ".join(told))
@@ -491,6 +514,8 @@ def pictures(word, patch=False):
         out = [("the scene", scene.scene_path(w))]
         if (rec.get("patch") or {}).get("likeness"):
             out.append(("the likeness", likeness_path(w)))
+        if (rec.get("patch") or {}).get("bust"):
+            out.append(("the bust", bust_path(w)))
         names = patch_refs(w)
     else:
         out = [("the likeness", likeness_path(w))] if os.path.exists(likeness_path(w)) else []
@@ -604,6 +629,11 @@ def self_test():
     whole = dict(what="a thing", ask="Change it.", edit=(WHOLE,))
     if not any("`took`" in e for e in record_errors("MANGER", dict(patch=dict(whole, took="Everything.")))):
         errors.append("record_errors took a sentence for a patch's `took`")
+    if not any("`bust`" in e for e in record_errors("MANGER", dict(patch=dict(whole, bust="The whole bust.")))):
+        errors.append("record_errors took a sentence for a patch's `bust`")
+    shown = PATCH_BUST.replace("{n}", "2").replace("{take}", "the pouch under the bill").replace("{name}", "Tamako")
+    if "{" in shown or "Picture 2 is Tamako too" not in shown or "only the pouch under the bill:" not in shown:
+        errors.append("PATCH_BUST does not say which picture the bust is and the one part taken from it")
 
     # A link is only given for what is committed; the reference words number the pictures as they are given.
     for bad in (os.path.join(ROOT, REFS, "no_such_picture.jpg"), "/tmp/outside.jpg"):
@@ -639,7 +669,7 @@ def self_test():
                 errors.append(f"{w}: the words speak of pictures {sorted(told)} and {count} are given")
             if "{" in text:
                 errors.append(f"{w}: a token is left in the reference words")
-    for line in list(ROLES.values()) + [REF_HEAD, LIKENESS_LINE, PATCH_LIKENESS, PATCH_HEAD, PATCH_FOOT]:
+    for line in list(ROLES.values()) + [REF_HEAD, LIKENESS_LINE, PATCH_LIKENESS, PATCH_BUST, PATCH_HEAD, PATCH_FOOT]:
         for gate, what in ((bust.world_name_in, "names the world"), (bust.emblem_word, "invites an emblem")):
             if gate(line):
                 errors.append(f"a reference line {what} ({gate(line)!r}): {line[:60]}...")
