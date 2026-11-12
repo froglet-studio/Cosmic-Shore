@@ -29,7 +29,12 @@ successor, run through Weave, also takes pictures (PAINTER). So:
   * A PATCH OF THE PILOT. Where the head itself changes (a fin, a skin), no region can hold the change and keep
     the face: the patch's edit is the whole frame (WHOLE) and the picture is the painter's answer, looked at whole
     before it is taken. Its likeness= names the one thing taken from the pilot's likeness, which is then given as
-    picture 2 (PATCH_LIKENESS). Written for Flux's fin, quoted, and not yet run (LESSONS 85).
+    picture 2 (PATCH_LIKENESS). Flux's fin was painted this way, on the first run (LESSONS 87).
+  * ASKED AND TAKEN. A run is paid for whole, so one ask may name several things, and each is judged on its own
+    when the answer is in: the record's `edit` holds only the regions that are taken, and its took= says in a
+    phrase what of the ask went into the scene and what was left out (Trace's port and cylinder were taken; her
+    head was read blind and left as it was, LESSONS 88). The note beside the mask holds the words as they were
+    sent, `took`, and under `earlier` the note of every patch the scene had before.
   * LINKS, NOT UPLOADS. The painter fetches each picture by its link. The repository is public, so a picture that is
     committed and pushed has one (raw_url), and `input` refuses a picture that is not pushed. A link names the
     repository, which the words never do: the game's own frames were asked for (above).
@@ -95,7 +100,7 @@ PATCH_FOOT = ("It stays one photograph taken with a real camera: the new parts h
               "a symbol.")
 PATCH_LIKENESS = ("Picture {n} is {name}, photographed before in another place: the same person. Take from it only "
                   "{take}. Everything else stays as picture 1 has it.")
-PATCH_KEYS = ("what", "ask", "edit", "keep", "refs", "likeness")
+PATCH_KEYS = ("what", "ask", "edit", "keep", "refs", "likeness", "took")
 WHOLE = ((0, 0), (scene.FRAME[0], 0), scene.FRAME, (0, scene.FRAME[1]))   # an edit polygon: the whole frame
 VIEW_TOKEN = "{view}"   # in a patch's ask: the words the record's own display shows (scene.CHART_SHOWS)
 GROW = 0.12             # a likeness is the avatar's square and a little more of the shoulders
@@ -297,10 +302,27 @@ def apply(word, painted_file, out=None):
     result.save(out or scene.scene_path(w), quality=93, subsampling=0, optimize=True)
     note = dict(what=patch["what"], before=before, painter=PAINTER["name"], refs=list(patch_refs(w)),
                 prompt=prompt(w, patch=True), moved_outside_the_mask=round(drift, 2))
+    if patch.get("took"):   # less than the ask named went into the scene: say what did
+        note["took"] = patch["took"]
     if not out:
+        note.update(earlier_notes(patch_note_path(w), before))
         with open(patch_note_path(w), "w", encoding="utf-8", newline="\n") as fh:
             fh.write(json.dumps(note, indent=1, ensure_ascii=False) + "\n")
     return note
+
+
+def earlier_notes(path, before):
+    """{"earlier": [...]} for a scene that was patched before, oldest first, or {}. A note on disk that starts from
+    the same picture is this patch tried again, and is replaced; one that starts from another is an earlier patch
+    of the scene, and is kept."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        old = json.load(fh)
+    kept = old.pop("earlier", [])
+    if old.get("before") != before:
+        kept = kept + [old]
+    return dict(earlier=kept) if kept else {}
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -338,6 +360,9 @@ def record_errors(word, rec):
                 out.append(f"{word}: a patch {k} polygon has under three points or leaves the frame {scene.FRAME}")
     if patch.get("what", "").rstrip()[-1:] == "." or patch.get("what", "")[:1].isupper():
         out.append(f"{word}: the patch's `what` is a phrase that goes inside a sentence (no capital, no full stop)")
+    took = patch.get("took")
+    if took is not None and (not took or took.rstrip()[-1:] == "." or took[:1].isupper()):
+        out.append(f"{word}: the patch's `took` is a phrase: what of the ask went into the scene")
     take = patch.get("likeness")
     if take is not None:
         if not take or take.rstrip()[-1:] == "." or take[:1].isupper():
@@ -554,6 +579,26 @@ def self_test():
         pass
     if blend(base, Image.new("RGB", (1280, 960), (200, 150, 100)), patch)[0].getpixel((200, 150)) != (200, 150, 100):
         errors.append("blend does not size a larger answer of the same shape to the scene")
+
+    # A scene patched twice keeps its first note; the same patch tried again replaces its own; `took` is a phrase.
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "note.json")
+        first, second = dict(what="a", before="c1:x"), dict(what="b", before="c2:x", earlier=[dict(what="a")])
+        cases = [(None, "c1:x", {}), (first, "c1:x", {}), (first, "c2:x", dict(earlier=[first])),
+                 (second, "c3:x", dict(earlier=[dict(what="a"), dict(what="b", before="c2:x")]))]
+        for on_disk, before, want in cases:
+            if on_disk is None:
+                if os.path.exists(path):
+                    os.remove(path)
+            else:
+                with open(path, "w", encoding="utf-8") as fh:
+                    json.dump(on_disk, fh)
+            if earlier_notes(path, before) != want:
+                errors.append(f"earlier_notes kept the wrong notes for a patch that starts from {before}")
+    whole = dict(what="a thing", ask="Change it.", edit=(WHOLE,))
+    if not any("`took`" in e for e in record_errors("MANGER", dict(patch=dict(whole, took="Everything.")))):
+        errors.append("record_errors took a sentence for a patch's `took`")
 
     # A link is only given for what is committed; the reference words number the pictures as they are given.
     for bad in (os.path.join(ROOT, REFS, "no_such_picture.jpg"), "/tmp/outside.jpg"):

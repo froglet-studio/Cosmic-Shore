@@ -28,8 +28,19 @@ gave C and D: both hung the display free, and both set the jelly over the feathe
 first, for its display. That was the wrong trade: his note is about the creature, and a cylinder of light is at home
 on a bench of specimen jars. So the scene is A (2026-11-12) and the words are the ones that painted it (LESSONS 86).
 
-What a painter that takes pictures would still do is the patch below: fill the cylinder and the port from real frames
-of the game, and blank the small plate on the microscope's head. It is prepared and has not run (LESSONS 85)."""
+The painter that takes pictures was then asked for four things in one run (2026-11-12, 11 credits, the fourth of the
+six Garrett approved on a card), and each was judged on its own when the answer was in (LESSONS 88):
+  * THE PORT, taken: the growth at its true size, with the game's own bricks, needles and net.
+  * THE CYLINDER, taken: all of it is inside the glass now, a coral holding a crystal, a craft and its trail. Its
+    coral came back orange, the colour of one reference frame, where the port's is jade teal and violet.
+  * THE HEAD, not taken. A reader of the scene and a reader of the close-up had both said the bell was worn "like a
+    hood", so the ask drew it in to a booby's own outline: the feathers go clear and run into a mantle of jelly down
+    the nape. It came back as asked. Read blind from the close-up, a stranger then only GUESSED jellyfish and
+    thought of a veil or a headscarf, where the bell had been named for sure, and still said "like a hood or hair".
+    A jellyfish needs its bell, and jelly that hangs where hair hangs is read as hair whatever its outline. The
+    head stays the bell; the head that was tried is kept beside the gallery page.
+  * THE MICROSCOPE, not taken: "the small plate ... is blank" was painted as a white dish on its stage.
+The patch below is that ask as it was sent. Its `edit` holds only the two regions taken, and `took` says so."""
 SCENE = dict(
     treatment="Working photograph in a survey vessel's cabin: a sprig, the survey, and the growth itself in the port",
     shot=("A working photograph in the cabin of a small survey vessel at night: a 35mm lens from the cabin "
@@ -82,9 +93,23 @@ SCENE = dict(
     close=(256, 20, 716, 480),
     refs=("sea_flora_approach", "sea_flora_through", "sea_flora_crystal"),
     patch=dict(
-        what=("what the glass cylinder on the bench holds, what is seen through the round port, and the small plate "
-              "on the microscope"),
-        ask=("THE CYLINDER. The glass cylinder and its round stand stay exactly where they are. All that the "
+        what=("the back of the head and the ribbons of jelly at the neck, what the glass cylinder on the bench "
+              "holds, what is seen through the round port, and the small plate on the microscope"),
+        ask=("THE BACK OF THE HEAD. {name} has one head, and its outline is a seabird's. Where the clear dome swells "
+             "out behind the head now, the back of the head is drawn in close: a low rounded crown and a nape that "
+             "runs straight down into the back of the neck, no wider and no higher than a booby's own head. Along "
+             "that outline the head changes what it is made of. Behind the eye the brown feathers go clear one by "
+             "one: a few whole feathers of clear lilac jelly lying flat among the brown ones, then more, and at the "
+             "back of the head they have run together into smooth, thick, milky lilac jelly, lying as close to the "
+             "head as the feathers did, with the last brown feathers lying deep inside it. At the nape the jelly "
+             "thins and becomes the skin of the neck. Out of that skin, in one row down the back of the neck from "
+             "the nape to the collar, grow five ruffled ribbons of the same jelly, each rooted in the neck and lying "
+             "flat against it. Four end at the shoulder; the longest comes forward over the collar to the fingers "
+             "of the hand at the collarbone, which holds its end as before. The jelly is lit only from outside: the "
+             "port's cold light shows through it from behind, and the lamp puts one warm highlight on it. The "
+             "face, the eye, the bill, the white throat and both hands stay exactly as they are."
+             "\n\n"
+             "THE CYLINDER. The glass cylinder and its round stand stay exactly where they are. All that the "
              "cylinder held is gone, and every ring and mote of light that hung round it, and the glass is filled "
              "again from nothing with what the reference pictures show: a hologram with real depth, a small "
              "solid-looking scene with a near side and a far side, all of it inside the glass. Inside it is {view}."
@@ -98,19 +123,16 @@ SCENE = dict(
              "\n\n"
              "THE MICROSCOPE. The small plate on the microscope's head is plain white enamel like the rest of it, "
              "and blank."),
-        edit=(   # the port's glass; the cylinder with the rings that pass through its glass; the microscope's plate
-            ((1060, 170), (1057, 205), (1048, 238), (1033, 270), (1013, 299), (989, 323), (960, 343), (928, 358),
-             (895, 367), (860, 370), (825, 367), (792, 358), (760, 343), (731, 323), (707, 299), (687, 270),
-             (672, 238), (663, 205), (660, 170), (663, 135), (672, 102), (687, 70), (707, 41), (731, 17), (760, 0),
-             (960, 0), (989, 17), (1013, 41), (1033, 70), (1048, 102), (1057, 135)),
-            ((896, 418), (972, 418), (976, 368), (1200, 368), (1204, 418), (1284, 418), (1284, 600), (1204, 648),
-             (972, 648), (896, 640)),
-            ((1322, 418), (1342, 418), (1342, 446), (1322, 446)),
-        ),
-        keep=(   # in front of the port: the jar with the hand and wrist that hold it, and the tip of the bill
-            ((716, 118), (812, 118), (812, 180), (832, 184), (834, 300), (812, 330), (806, 372), (730, 372),
-             (736, 300), (708, 262), (706, 214), (716, 210)),
-            ((655, 150), (700, 196), (704, 212), (655, 214)),
+        took=("what is seen through the round port and what the cylinder holds; the head, drawn in as asked, was "
+              "read blind and left as it was, and the microscope was left as it was"),
+        edit=(   # the port's glass; the cylinder on its stand, with the bench where the old rings of light stood
+            # outside the glass. Everything inside them is the answer's, the jar and the hand that holds it too.
+            ((1076, 166), (1073, 202), (1063, 238), (1048, 271), (1027, 301), (1001, 327), (971, 348), (938, 363),
+             (902, 373), (866, 376), (830, 373), (794, 363), (761, 348), (731, 327), (705, 301), (684, 271),
+             (669, 238), (659, 202), (656, 166), (659, 130), (669, 94), (684, 61), (705, 31), (731, 5), (737, 0),
+             (995, 0), (1001, 5), (1027, 31), (1048, 61), (1063, 94), (1073, 130)),
+            ((882, 362), (1290, 362), (1290, 560), (1262, 600), (1215, 640), (1206, 708), (1040, 708), (1035, 730),
+             (882, 730)),
         ),
     ),
 )

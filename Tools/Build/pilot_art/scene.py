@@ -624,6 +624,13 @@ def fused_errors(idn, fused):
     return out
 
 
+def painted_as_one(fused, painted, name, patched=False):
+    """Whether the brief a scene was painted from is this pilot's one-creature brief. It holds the record's `fused`
+    line word for word; or, when a patch has since redrawn the creature (its note lies beside its mask, and the
+    fused line now follows the picture), it still opens as that pilot's one creature (ONE)."""
+    return bool(fused) and (fused in painted or (patched and ONE.replace("{name}", name) in painted))
+
+
 def who(word, seen=(), swap=(), fused=""):
     """The identity paragraph of a scene: the person, in the words their avatar was painted from; or, when the
     record has a `fused` line, as the one creature that line describes."""
@@ -1376,8 +1383,10 @@ def self_test():
                 # as the bust's brief had them or as the record swaps them for what the bust shows
             painted = open(painted_brief_path(w), encoding="utf-8").read()
             raw = identity(w)
+            patched = os.path.exists(os.path.join(ROOT, SCENES, "patches", f"{w}.json"))   # refs.py apply's note
+            as_one = painted_as_one(fused, painted, i["name"], patched)
             for k in ("face", "coat", "outfit"):
-                if raw[k] not in painted and i[k] not in painted and not (k != "outfit" and fused and fused in painted):
+                if raw[k] not in painted and i[k] not in painted and not (k != "outfit" and as_one):
                     errors.append(f"{w}: the brief it was painted from lacks the pilot's {k} line")
     errors += manifest_errors()
     import refs   # the pictures a record shows a painter, and its patch: refs.py says what is wrong with them
@@ -1438,6 +1447,12 @@ def self_test():
         if (one not in told or ONE.replace("{name}", raw["name"]) not in told or raw["coat"] in told
                 or " also gives " in told or "is the face and the shape of the head" in told):
             errors.append("a fused line does not replace the two animals' own sentences in the brief")
+        later = one + " Its back has since been painted again."   # the fused line after a patch redrew the creature
+        if (not painted_as_one(one, told, raw["name"]) or painted_as_one(later, told, raw["name"])
+                or not painted_as_one(later, told, raw["name"], patched=True)
+                or painted_as_one(later, compose(who_), raw["name"], patched=True)):
+            errors.append("painted_as_one does not tell a patched creature's first brief from a brief that never "
+                          "was the one creature's")
         if FUSED_CONTROL.count("{a}") < 1 or FUSED_CONTROL.count("{b}") < 1:
             errors.append("FUSED_CONTROL names both animals")
         framed = compose(who_, frame=FRAMING, side="right")
