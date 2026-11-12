@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794512490-bf4f` of **Frogma**: Rev 3 to Rev 92, 464 boards on 12 tabs. The canvas opens on the tab `loading-screens`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794512997-7142` of **Frogma**: Rev 3 to Rev 93, 468 boards on 12 tabs. The canvas opens on the tab `loading-screens`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -734,6 +734,13 @@ Copied on 2026-11-12 from canvas version `1794512490-bf4f` of **Frogma**: Rev 3 
 - `R75Notes.dc.html` (not copied yet) - Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed
 
 ### Tab: Loading Screens  (`loading-screens`)
+
+#### Rev 93 - The boot splash as today's art with a real vessel
+
+- [`R93A.dc.html`](R93A.dc.html) - Rev 93 A - Squirrel: today's composition, the real Squirrel laying a Ruby trail (recommended)
+- [`R93B.dc.html`](R93B.dc.html) - Rev 93 B - The squad: three hulls in formation, a trail each in the domain colours
+- [`R93C.dc.html`](R93C.dc.html) - Rev 93 C - The fleet: one hull at a time in the same place, taking turns
+- [`R93Notes.dc.html`](R93Notes.dc.html) - Rev 93 - notes: what was asked, what this round is, what is not here
 
 #### Rev 92 - The boot splash and sign-in scene: the two logos and the environment as the show
 

@@ -7497,3 +7497,29 @@ environment is a thin line drawing on a dark, mostly empty ground (A, B, D) or t
 splash is a full, bright picture; the logo is laid on top of it, not part of it. A next round needs the real world at
 full size (the offline arena renderer, `Tools/Build/render_card_backgrounds.py`, can draw one at 1920 x 1080 but needs
 the .NET 8 SDK, which this session could not install).
+
+## 175. Rev 93 mockups: the boot splash as today's art with a real vessel (2026-11-12, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-12, after rejecting Rev 92): "I like the idea of real arena and also improve today's art
+replace it with like a real vessel. Can you show me mockups for both?" Then, on a sheet of the offline arena renders
+(`render_card_backgrounds.py` run at 1920 x 1080): "Dont use these pictures they are too bad, I will change them
+later too". So this round is the second direction only. **The real-arena direction is not drawn**: it waits for arena
+pictures he accepts (a capture from the editor).
+
+**On the canvas**: tab **Loading Screens**, section "Rev 93", under Rev 92. Copies: `Docs/MenuRedesignB/board/R93*.dc.html`;
+drawn by `Docs/MenuRedesignB/rounds/r93_splash_vessel.py`.
+
+Today's splash picture (`Assets/_Graphics/Icons/App Icons/Feature_Graphic_width_matched.png`: a neon vessel laying a
+trail of prisms through a starfield, the logo top left) rebuilt: Rev 91's sea with a starfield, the Cosmic Shore logo
+top left and Froglet's under it, the prisms laid one by one behind the hull on a loop, Rev 91's bar with the boot
+status lines. The hull is real: the shipped FBX mesh (Squirrel, Sparrow, Dolphin) projected with the icon kit's reader
+(`Tools/Build/icon_kit/hull_view.py`) and drawn in the art's own style, blue faces and glowing cyan creases.
+
+- **A Squirrel (recommended)**: today's composition with the real Squirrel laying a Ruby trail.
+- **B The squad**: Dolphin, Squirrel and Sparrow in formation, a trail each in Jade, Ruby and Gold.
+- **C The fleet**: Squirrel, Sparrow and Dolphin take turns in the same place.
+- `R93Notes`.
+
+`frogma.py check --only R93` and `check_mockup.py` pass on all four. Looked at in a local render. The hull drawings
+are the bind pose of each mesh, not a posed or lit render; today's art has a prism structure on the left that these
+leave out. Nothing built.

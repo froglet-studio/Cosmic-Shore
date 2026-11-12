@@ -3818,6 +3818,38 @@
       "h": 900,
       "page": "loading-screens",
       "title": "Rev 92 - notes: what is shared, how each shows the environment, what differs from the build"
+    },
+    "R93A.dc.html": {
+      "x": 0,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 93 A - Squirrel: today's composition, the real Squirrel laying a Ruby trail (recommended)"
+    },
+    "R93B.dc.html": {
+      "x": 2100,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 93 B - The squad: three hulls in formation, a trail each in the domain colours"
+    },
+    "R93C.dc.html": {
+      "x": 4200,
+      "y": 11020,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 93 C - The fleet: one hull at a time in the same place, taking turns"
+    },
+    "R93Notes.dc.html": {
+      "x": 0,
+      "y": 12280,
+      "w": 1920,
+      "h": 900,
+      "page": "loading-screens",
+      "title": "Rev 93 - notes: what was asked, what this round is, what is not here"
     }
   },
   "createdOnFiles": {
@@ -3944,6 +3976,7 @@
     "sec-rev90",
     "sec-rev91",
     "sec-rev92",
+    "sec-rev93",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4026,7 +4059,8 @@
     "rev89",
     "rev90",
     "rev91",
-    "rev92"
+    "rev92",
+    "rev93"
   ],
   "notes": {
     "hud_end": {
@@ -6525,6 +6559,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "loading-screens"
+    },
+    "rev93": {
+      "kind": "title1",
+      "text": "Rev 93 - The boot splash as today's art with a real vessel",
+      "x": 0,
+      "y": 10620,
+      "w": 240,
+      "maxW": 6120,
+      "page": "loading-screens"
+    },
+    "sec-rev93": {
+      "kind": "rect",
+      "x": -160,
+      "y": 10460,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "loading-screens"
     }
   },
   "order": [
@@ -6991,7 +7049,11 @@
     "R92B.dc.html",
     "R92C.dc.html",
     "R92D.dc.html",
-    "R92Notes.dc.html"
+    "R92Notes.dc.html",
+    "R93A.dc.html",
+    "R93B.dc.html",
+    "R93C.dc.html",
+    "R93Notes.dc.html"
   ],
   "pages": [
     {
