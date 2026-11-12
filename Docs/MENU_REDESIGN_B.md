@@ -7555,7 +7555,7 @@ signing in, the profile and the session a share means `BootStatusBroadcaster` an
 steps to a shared model; it waits on the splash's pick (sections 174, 175). The scene load before the panel exists is
 not measured either: nothing reads the scene load's own progress.
 
-## 177. Rev 94 mockups: the boot splash as a poster, no neon (2026-11-12; A and D combined in a second pass, awaiting a pick)
+## 177. Rev 94 mockups: the boot splash as a poster, no neon (2026-11-12; Shombith likes C, redrawn with the game's own art in 177.2)
 
 **Asked** (Shombith, 2026-11-12, on Rev 93): "Okay can we move away from this neon design, create some good poster
 based mockups 4".
@@ -7623,3 +7623,35 @@ breathing, crystals pulsing, a school of small darts crossing, one long creature
 flora as stalks of prism segments swaying from the floor, never a radial burst. Canvas version `1794525024-6c59`.
 The fauna and flora are drawings, not the game's creatures. Looked at in a local render before a last pass that moved
 a cell off the Froglet logo and the creature off the colour-set readout.
+
+### 177.2 Third pass: C in the game's own art; the old splash rounds off the canvas (2026-11-12)
+
+Shombith: "Delete the old revs for this opening scene but I like C but the captains are too low res, garrett added new
+captain images, we can curate and use some of them and also use the vessels actual icons from the hangar the silver
+look and for crystals I want actual omni crystals not this small icon and also some color ful prisms or a cell works
+as well".
+
+**Liked (Shombith, 2026-11-12): "I like C"** - the crew before the three domain bands with the living sea behind.
+
+**Taken off the canvas** on his word (version `1794525596-970e`): Rev 92 (`R92A`-`D`, notes), Rev 93 (`R93A`-`C`,
+notes) and this round's `R94A` and `R94B`, with the two rounds' title notes and sections; Rev 94 moved up into their
+place. Their copies stay in `Docs/MenuRedesignB/board/` and in git. Rev 91 (the loading screen, F picked) is untouched.
+
+**`R94C` redrawn** (`Docs/MenuRedesignB/rounds/r94_posters.py`), every stand-in replaced by the game's own picture:
+- **Captains**: five of the new 1024 px busts from `Docs/Pilots/art/busts/` on `bleeding-edge` (Hornet, Needle,
+  Galleon, Sundial, Anvil), each in a slanted card that leans the way the bands lean, the middle one largest. Curated
+  to keep the cast the board already had; any of the 18 roster busts drops in.
+- **Vessels**: the class cards in silver livery (`Assets/_Graphics/CardImages/<Hull>_large.png`: Squirrel, Dolphin,
+  Sparrow), one floating over each band.
+- **Crystals**: the Omni crystal's own render (`Assets/_Graphics/Codex/ethirion_omni.png`), five of them turning.
+- **A cell and colourful prisms**: a real frame of a cell seen from outside, with its coloured prism clouds
+  (`Docs/Pilots/art/refs/sea_cell_outside.jpg`, one of the painter's reference frames of the game), far behind
+  everything and slowly pushing in; two short runs of prisms in the worn set's rim colours.
+- **Fauna and flora**: the Codex's pictures (`Assets/_Graphics/Codex/`): a shoal, a quadfish, a shark and a piranha
+  gliding; coral, an arbor, a lantern and a pine swaying from the foot.
+
+Kept: the three domain bands as the worn colour set paints a prism, the set changing on the seamless 28 s loop, the
+sea lines, the flat logos, Rev 91's bar. `frogma.py check --only R94` passes; `check_mockup.py`'s colour gate fails on
+the colour-set swatches, as before. Looked at in a local render before one prism run was moved off the Froglet logo.
+To know: the busts are painted with their own backgrounds, so they sit in cards and are not cut out; the silver hull
+cards are 512 px shown at 300; the cell frame is dimmed and mostly behind the bands. Nothing built.

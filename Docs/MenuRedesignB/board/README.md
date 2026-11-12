@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794525024-6c59` of **Frogma**: Rev 3 to Rev 95, 479 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794525596-970e` of **Frogma**: Rev 3 to Rev 96, 474 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -698,6 +698,15 @@ Copied on 2026-11-12 from canvas version `1794525024-6c59` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
+#### Rev 96 - the squad screen: a backdrop, soft buttons, one press
+
+- `R96S1A.dc.html` (not copied yet) - Rev 96 S1A - 1A - Screen 1 as picked (Rev 95 1A), with the soft buttons - interactive
+- `R96Buttons.dc.html` (not copied yet) - Rev 96 Buttons - three readings of soft hard soft on Set sail and Configure squad, beside the buttons as they were
+- `R96S2D.dc.html` (not copied yet) - Rev 96 S2D - 2D Deck: the three seats stand across a lit deck; the picked seat's four choices are one tray under them, one press each (recommended) - interactive
+- `R96S2E.dc.html` (not copied yet) - Rev 96 S2E - 2E Kits: the picked seat large; six whole kits from the Hangar, one press sets all four; element and artifact beside - interactive
+- `R96S2F.dc.html` (not copied yet) - Rev 96 S2F - 2F Showroom: a rail of seats, the picked seat as the hero on the deck, its four choices as strips beside it - interactive
+- `R96Notes.dc.html` (not copied yet) - Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens
+
 #### Rev 95 - Voyages as two screens: the voyage on the map, then the squad
 
 - `R95S1A.dc.html` (not copied yet) - Rev 95 S1A - 1A Presets: the map over its edge view; the voyage's name, the squad presets as cards and Set sail on the right (recommended) - interactive
@@ -745,27 +754,10 @@ Copied on 2026-11-12 from canvas version `1794525024-6c59` of **Frogma**: Rev 3 
 
 ### Tab: Loading Screens  (`loading-screens`)
 
-#### Rev 94 - The boot splash as a poster: the crew and the three domains, no neon
+#### Rev 94 - The boot splash: the crew before the domains (C, liked)
 
-- [`R94A.dc.html`](R94A.dc.html) - Rev 94 A - The crew before the domains: five pilots across three domain bands, the Ark above; the colour set changing (recommended)
-- [`R94B.dc.html`](R94B.dc.html) - Rev 94 B - Three crews: a pilot and a hull in each domain band, the Ark beside; the colour set changing
-- [`R94C.dc.html`](R94C.dc.html) - Rev 94 C - The crew before the domains, the living sea far behind: cells, crystals, fauna and flora; the colour set changing
-- [`R94Notes.dc.html`](R94Notes.dc.html) - Rev 94 - notes: A and D as one poster, what changed, the colour set changing
-
-#### Rev 93 - The boot splash as today's art with a real vessel
-
-- [`R93A.dc.html`](R93A.dc.html) - Rev 93 A - Squirrel: today's composition, the real Squirrel laying a Ruby trail (recommended)
-- [`R93B.dc.html`](R93B.dc.html) - Rev 93 B - The squad: three hulls in formation, a trail each in the domain colours
-- [`R93C.dc.html`](R93C.dc.html) - Rev 93 C - The fleet: one hull at a time in the same place, taking turns
-- [`R93Notes.dc.html`](R93Notes.dc.html) - Rev 93 - notes: what was asked, what this round is, what is not here
-
-#### Rev 92 - The boot splash and sign-in scene: the two logos and the environment as the show
-
-- [`R92A.dc.html`](R92A.dc.html) - Rev 92 A - The cell: one cell, three domain trails laid around it, crystals inside (recommended)
-- [`R92B.dc.html`](R92B.dc.html) - Rev 92 B - The gates: ring gates fly past the logo, two trails run out of the distance
-- [`R92C.dc.html`](R92C.dc.html) - Rev 92 C - The arenas: three windows onto real arenas, taking turns
-- [`R92D.dc.html`](R92D.dc.html) - Rev 92 D - The garden: flora blooming around the logos
-- [`R92Notes.dc.html`](R92Notes.dc.html) - Rev 92 - notes: what is shared, how each shows the environment, what differs from the build
+- [`R94C.dc.html`](R94C.dc.html) - Rev 94 C - The crew before the domains, in the game's own art: the new captain busts, silver hulls, Omni crystals, a real cell, fauna and flora; the colour set changing
+- [`R94Notes.dc.html`](R94Notes.dc.html) - Rev 94 - notes: what is now the game's own art, the far background, what was kept
 
 #### Rev 91 - Loading screens: a smooth moving sea, one honest progress bar, and a part of the game on show
 
