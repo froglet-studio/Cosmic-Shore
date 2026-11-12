@@ -127,6 +127,16 @@ The build (IL2CPP, ARM64 only) took 38.5 min on Gbox with a warm Library. Its fi
 mistake). The Android build rewrites a dozen project files (Gradle templates, FMOD plugin metas, URP and project
 settings): revert them in the bench worktree afterwards (`git checkout -- Assets/Plugins ProjectSettings ...`).
 
+## 3.6 In a scene, for "this component stops running"
+
+`ProvenWinSceneBenchBuilder.RunInEditor` (run the editor WITHOUT -batchmode so the Game view renders) instantiates
+one real prefab in a temporary scene, enters Play, and `ProvenWinSceneBench` alternates the component enabled (A)
+and disabled (B) in ABBA blocks of frames, reading the engine's own counters (PlayerUpdateCanvases, Canvas.BuildBatch,
+UGUI.Rendering.UpdateBatches, Main Thread) and comparing a screenshot of each state. The editor quits when the json
+is written. It stands the project's SceneBootstrapper aside through its in-process guard, never its EditorPrefs key
+(shared with every editor on the machine). `ProvenWinSceneBenchBuilder.Build` makes a Windows player instead, but
+only where the Library is already built for Windows: a platform switch reimports everything.
+
 ## 4. The human A/B
 
 Publish one blind page per win: the real frames A and B under random letters, a flicker toggle, the diff image,

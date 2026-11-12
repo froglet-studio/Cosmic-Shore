@@ -129,6 +129,7 @@ Queued with evidence:
 | Candidate | Evidence so far | What it needs |
 |---|---|---|
 | Creature body bloom pulse early-out (sweep SG-1, `IncorporealDepth_BloomPulse`) | **Inconclusive.** In the material bench the early-out measured 1.00x (B faster in 26 % of pairs), but probes showed why: returning 1 from the pulse unconditionally was 1.6x (so the pulse is real cost), while returning 1 only when `openness` is 0 changed nothing, so the closed state never occurred in the bench. The bench's state is not the game's (the publishers ran, `_IncorporealSpread` read (0.09, 0.29, 0.8, 1e5)), so the guard was never tested. | an in-scene bench (a real body under `SpindleLodSystem`), with the probe pair kept as its first check |
+| Scene-transition doors Animator sleep (sweep UI-1) | **No gain on GameCanvas.** In-scene bench (GameCanvas.prefab in editor Play mode, the doors opened as SceneLoader does, then 40 ABBA pairs of 30 frames with the Animator enabled vs disabled): PlayerUpdateCanvases 0.063 vs 0.066 ms, Canvas.BuildBatch 0.0061 vs 0.0063 ms, B lower in only 37-41 % of frames; screens identical. The settled Animator does not cost a measurable canvas rebuild here. | Menu_Main's 3,400-graphic canvas is untested; measure there before dropping it (`rejected_doors/`) |
 | The sweep's queue (`provenwin-queue/QUEUE.md` in the project files) | ranked 3-11: scene-transition doors Animator, parked cameras under load covers, creature body bloom pulse, ... | one at a time through `/proven-win` |
 
 Rejected:
