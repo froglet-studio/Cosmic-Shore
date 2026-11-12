@@ -7159,3 +7159,66 @@ since the third pass. The hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`
   Voyages tab draws uses `VoyageOpenCard`, the job-card grid, or `mapHeight`, `columns` and `cardColumn`. Once the board
   is accepted in Unity, retire them; while it is not, they are the way back.
 - **The Quests tab** is the pre-redesign quest track. Draw it on Frogma before building it.
+
+
+## 168. Rev 87 mockups: the Voyages tab, drawn new around the HyperSea map and the edge view (2026-11-12, awaiting a pick)
+
+**Asked (Shombith, 2026-11-12, on the built section 165):** "The voyages tab, this has gone through a lot of updates
+but it either does not update inside unity due to some issues or I do not like the design of it. Only thing the
+hypersea map and the bottom edge on view should stay apart from that, bring up the /frogma skill and delete the old
+voyages mockups and create new".
+
+**Deleted from the canvas, on his word:** the Voyages tab's five rounds, Rev 79 to Rev 83 (20 boards, their titles and
+sections). Their copies stay in `Docs/MenuRedesignB/board/` as the record of what sections 160-165 picked and built. The
+older Voyage boards on the Menu Redesign tab (Rev 13-17, 25) were not touched.
+
+**On the canvas:** tab **Voyages**, round "Rev 87 - the Voyages tab, drawn new around the HyperSea map and the edge
+view" (canvas version `1794502547-82a0`). The tab holds only this round.
+- Copies: `Docs/MenuRedesignB/board/R87*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r87_voyages.py`, on Rev 82's
+  data and Rev 80's map and edge view.
+- All boards pass `frogma.py check`. They pass `check_mockup.py` against the picked board (`--baseline
+  Docs/MenuRedesignB/board/R81B5.dc.html`, a budget of 88) at 66-74 visual elements; R81B5 itself is 68. Against the
+  default budget of 60 they fail, as R81B5 and R83S2 do. The count includes both states of a part that shows one.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**Kept, in all three:** the course on the HyperSea and the same course seen edge on under it, as Rev 81 drew them.
+
+**New, in all three:**
+- Four tabs, as the game has them (Voyages, Saga, Quests, Episodes; Episodes says Soon).
+- No seat editor screen. A seat changes where it stands, and the map is never covered. Your own seat stands open.
+- The squad is picked by its name, the picked one under a Jade line. One Lime: Set sail.
+
+**The options:**
+- **A - Slide (recommended):** small voyage cards on their own water; the picked one slides open with its place, its
+  title, its line and the three numbers (section 117's "smaller cards ... they slide open"). The right column is only
+  the squad: a row per seat (pilot, vessel, who flies it, element and artifact, hull). A pressed row opens Vessel, Pilot,
+  Element and Artifact as four steppers.
+- **B - Wide sea:** the whole course picture, uncropped, takes the left of the window with its edge view under it. One
+  panel on the right: the four voyages, the open one's title and numbers, the squad's three hulls in formation, and a
+  tray of tiles (tabs Vessel, Pilot, Element, Artifact) under a pressed seat.
+- **C - Ticket:** the quietest. A list of places with no pictures, and the open voyage as one ticket: where, the
+  numbers, the crew as three lines. A pressed line opens the same steppers. Set sail is the ticket's stub.
+- **Notes.** No compare board: the three stand side by side on the tab.
+
+**Recommended: A.** It answers both halves of the ask. The voyage's words sit with the voyage and the squad with the
+squad, so neither column is a mix; and every piece is one the menu kit has (a plate, a text tab, a stepper, a card).
+
+**Design brief:**
+- The fundamental it serves: choosing where the Ark sails and who flies, on one screen.
+- The principles it obeys: P-ui-11 (nothing moves for its own sake), P-ui-12/31/33/35 (Jade the pick, Lime the one
+  call to action), P-ui-13 (elements are words, no colour), P-ui-28 (four tabs, Voyages first), P-ui-37 (authored words).
+- The one it comes closest to: P-ui-21 (one configure card serves Arcade, Arena and Voyage). Set sail still opens that
+  card; the steppers change the squad's seats, the Ark's own data, not a match's configuration.
+- What it changes for a player: a seat is changed in place with the course still in view.
+- The cheapest prototype: this round.
+- Who judges it, and where: Shombith, on Frogma, then in the Unity editor.
+- The retire condition: the build is set beside the picked board in Unity and does not match it.
+
+**Differs from the build (section 165):**
+- The seat editor (`VoyageBoard`'s S2 overlay) goes; a seat's four choices are steppers or a tray on the seat itself.
+- A: the list rows become cards with the open one holding the title, line and numbers; the right panel loses them.
+  B: the map column widens from 660 to 960 and the list moves into the right panel. C: the right panel becomes one plate.
+- **For the build:** author the tab as prefabs from the kit's own parts rather than building it in code at runtime
+  (`VoyageBoard`). Section 165's third pass found the kit's theming components undoing the runtime restyle on every
+  enable; that is the "does not update inside unity". A cloud session cannot see Unity: the build needs a session on a
+  computer with the editor, or a screenshot after each pass (`/frogma` section 5).
