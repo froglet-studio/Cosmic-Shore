@@ -1,8 +1,10 @@
 # Proven Win candidates
 
 One folder per candidate: `Docs/ProvenWin/candidates/<id>/`. `run.py` measures it, `verdict.py` judges it,
-`signoff.py` builds its page. The worked example is `example-w4-sky-stars/` (W4, re-measured with these tools):
-copy it and change the fields; do not write one from nothing.
+`signoff.py` builds its page. Worked examples, both re-measured end to end with these tools: `example-w4-sky-stars/`
+(shader kind) and `example-w5-space-hearts/` (scene kind). Copy the one of your kind and change the fields; do not
+write one from nothing. `auth-cameras-under-cover/` is a real candidate that ended inconclusive: the scene moves on to
+Menu_Main by itself, and the bench reports that instead of measuring.
 
 ```
 <id>/
@@ -62,5 +64,6 @@ copy it and change the fields; do not write one from nothing.
 ```
 Keys under `scene` are `RunInEditor` flags without the dash (`-scene`, `-prefab`, `-ownerType`, `-toggledType`,
 `-ownerPathContains`, `-toggleTypes`, `-toggleUnder`, `-keepTypes`, `-spawnBehind`, `-spawnInView`,
-`-offscreenBoundsSize`, `-diagnoseFrames`, `-setupMethod`). Several writers dirtying one thing mask each other: switch
+`-offscreenBoundsSize`, `-offscreenAOn`, `-diagnoseFrames`, `-setupMethod`). `-setupMethod none` when there is no
+setup call; `-ownerType none` when the candidate only toggles a set (`toggleTypes`). Several writers dirtying one thing mask each other: switch
 them off TOGETHER (`toggleTypes`) before concluding anything from one.

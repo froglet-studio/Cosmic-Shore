@@ -299,12 +299,15 @@
    "gain": "most of the GPU frame while on the Auth screen",
    "confidence": "high",
    "lens": "unseen-work",
-   "status": "queued",
+   "status": "inconclusive",
    "added": "2026-11-12",
    "baseCommit": "3479a8e3ba",
    "fileHashes": {
     "Assets/_Scenes/Authentication.unity": "cff6d4ab2e1d038c83da5d364921ef869a7705af"
-   }
+   },
+   "taken": "2026-11-12",
+   "outcomeReason": "the Authentication scene loads Menu_Main by itself within seconds of Play, so the scene bench cannot measure it standalone (HOLD)",
+   "finished": "2026-11-12"
   }
  ]
 }

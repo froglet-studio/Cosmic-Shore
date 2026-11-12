@@ -31,6 +31,7 @@ Work for things no camera can see: `updateWhenOffscreen`, instanced draws with w
 under an opaque cover, particle systems whose renderer is off, animation of hidden UI.
 - Found: W5 (Space hearts, `updateWhenOffscreen`).
 - Check: first prove the engine does NOT already skip it (a probe: does the count change frame to frame?).
+- Check: a scene that moves on by itself (Authentication -> Menu_Main) cannot be scene-benched on its own.
 
 ### every-frame-writes
 A value rewritten every frame with the same value, dirtying a canvas or renderer.
@@ -49,3 +50,4 @@ A value rewritten every frame with the same value, dirtying a canvas or renderer
 - 2026-11-12 menu-canvas-dirtiers (inconclusive, lens: every-frame-writes): Menu_Main's 1.8 ms UpdateBatches is not dirt-driven; the next step is a development-player measurement, not another writer.
 - 2026-11-12 w5-space-hearts (won, lens: unseen-work): engine flags that keep off-screen work alive (updateWhenOffscreen) are cheap, exact wins once the bounds provably hold every pose.
 - 2026-11-12 creature-bloom-pulse-skip (inconclusive in the material bench, lens: multiplied-by-zero): give every early-out a probe pair; without it a 1.00x result said nothing because the guarded state never occurred.
+- 2026-11-12 auth-cameras-under-cover (inconclusive, lens: unseen-work): before proposing a scene-bench candidate, check whether the scene navigates away on its own (Authentication, Bootstrap); bench those in their real boot path or as a prefab in an empty scene

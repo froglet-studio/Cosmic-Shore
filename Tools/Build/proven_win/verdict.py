@@ -131,6 +131,9 @@ def scene_verdict(cand, reports):
         if not c:
             holds.append(f"{api}: no 'change' report")
             continue
+        if str(c.get("verdict", "")).startswith("ERROR"):
+            holds.append(f"{api}: the bench reported an error: {c['verdict']}")
+            continue
         s = next((x for x in c["series"] if x["counter"] == metric), None)
         if not s:
             holds.append(f"{api}: counter '{metric}' not in the report (not available in this player?)")
