@@ -102,7 +102,8 @@ def detect(rec: theater.Recording, me: theater.Track):
         for i in range(1, len(mine) - 1):
             if d[i] < NEAR_PASS_RADIUS and d[i] <= d[i - 1] and d[i] < d[i + 1] and mine[i][8] > fast:
                 ev.append((mine[i][0], "near_pass", 1.0 - d[i] / NEAR_PASS_RADIUS,
-                           f"{other.vessel_name} ({'AI' if other.is_ai else 'human'}) at {d[i]:.0f}u", other.name))
+                           f"{other.vessel_name} ({'AI' if other.is_ai else 'human'}) at {d[i]:.0f}u",
+                           {"with": other.name, "dist": round(d[i], 1)}))
     turns = []
     for i in range(1, len(mine)):
         dt = mine[i][0] - mine[i - 1][0]
@@ -221,7 +222,7 @@ def moments(rec: theater.Recording, weights=None):
             feats["combo"] = float(len({e[1] for e in g}) - 1)
             score = sum(w.get(k, 0) * v for k, v in feats.items())
             events = [{"type": e[1], "t": round(e[0], 2), "strength": round(e[2], 3), "detail": e[3],
-                       **({"with": e[4]} if len(e) > 4 else {})} for e in g]
+                       **(e[4] if len(e) > 4 else {})} for e in g]
             out.append({"pilot": me.name, "hull": me.vessel_name, "t": round(peak[0], 2),
                         "start": round(max(0.0, g[0][0] - PRE_ROLL), 2), "end": round(g[-1][0] + POST_ROLL, 2),
                         "events": events, "elements": elements(events),

@@ -54,10 +54,12 @@ PvP, maneuvering, destruction, and creation."
   prisms going up behind it is creation. Destruction and creation come from the replay's prism stream.
   `shoot.py` picks round-robin across the four, so a list covers all of them before it repeats one.
 - **Wide, never tight, never a speck.** Each element has its own camera in `story_config.json` `camera`: a
-  three-quarter on both pilots for PvP (`pair:`, 70 away), on the pilot for destruction (52), a crane pulling up and
-  back for creation so the trail is seen being drawn (to 180), a loose chase for maneuvering (33 back).
+  three-quarter on both pilots for PvP (`pair:`, 45 away, and only passes within 30 units count as a duel), on the
+  pilot for destruction (52), a crane pulling up and back for creation so the trail is seen being drawn (to 180), a
+  side-on tracking shot for maneuvering (40) so the turn is seen against the world.
   `check_camera` refuses a chase closer than `min_chase_back` (28) or any other camera closer than `min_distance`
-  (40). Measured on the first two shoots: a 14 chase showed only the hull; 110 / 55 / 300 made it a speck.
+  (40). Measured on the first three shoots: a 14 chase showed only the hull; 110 / 55 / 300 made it a speck; a 33
+  chase lost it in dense trail fields and PvP at 70 read as two trails, not two ships.
 - **Real slow motion.** The director's `slowmo N` steps 1/(60 N) s of game per filmed frame, so every frame is drawn:
   PvP x3, maneuvering x2, destruction x4, creation real time. The moment's peak is in the middle of the window.
 - **The moment's own pilot.** The camera follows `local` for the recording's first human and `pilot:NAME` for any

@@ -1572,7 +1572,7 @@ namespace CosmicShore.Editor.Trailer
             // The match only starts moving once every seat is filled and its go fires, and the scene's own camera
             // takes over a moment later: recording before both would open every clip on a frozen frame.
             // (a later start fast-forwards from 0 first, so wait for the start point itself, not the first movement)
-            float p0 = ReplayMatch.StartAt, playing = Time.realtimeSinceStartup + 120f;
+            float p0 = ReplayMatch.StartAt, playing = Time.realtimeSinceStartup + 600f;   // fast-forwarding 4 min takes a while
             while (director && director.Position <= p0 + 0.1f && Time.realtimeSinceStartup < playing) yield return null;
             if (!director || director.Position <= p0 + 0.1f) { Log("replay: the match never started playing"); yield break; }
             yield return WaitFrames(45);

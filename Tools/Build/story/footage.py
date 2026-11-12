@@ -42,7 +42,7 @@ import moments as M  # noqa: E402
 SCHEMA = "cosmic-shore.footage-index/1"
 KEEP = ("rating", "used_in", "notes", "clip")   # written by people or later stages; survive a re-index
 TOP_MOMENTS = 8
-INDEXER = 4   # bump when a replay's entry would come out differently (moments, times): older entries are re-read
+INDEXER = 5   # bump when a replay's entry would come out differently (moments, times): older entries are re-read
 
 
 def _id(kind, key):

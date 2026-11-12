@@ -39,12 +39,13 @@ sys.path.insert(0, HERE)
 from moments import ELEMENTS  # noqa: E402
 
 FPS = 60
+PVP_MAX_DIST = 30.0   # a pass farther apart than this is two trails near each other on screen, not a duel
 LEAD = 0.85   # game seconds the director lets play after the start point before recording (TrailerShoot.Replay)
 CONFIG = os.path.join(HERE, "story_config.json")
 DEFAULT_CAMERA = {
     "min_distance": 40, "min_chase_back": 28,
-    "pvp": {"verbs": ["tq {pair} 70 35 22 4"], "slowmo": 3, "game_seconds": 3.0},
-    "maneuvering": {"verbs": ["chase local 33 9 6 30 1.4"], "slowmo": 2, "game_seconds": 3.5},
+    "pvp": {"verbs": ["tq {pair} 45 30 10 3"], "slowmo": 3, "game_seconds": 3.0},
+    "maneuvering": {"verbs": ["tq local 40 90 8 0 3"], "slowmo": 2, "game_seconds": 3.5},
     "destruction": {"verbs": ["tq local 52 -40 18 6"], "slowmo": 4, "game_seconds": 2.5},
     "creation": {"verbs": ["crane local 0,18,-42 0,95,-180 {frames} 3"], "slowmo": 1, "game_seconds": 6.0},
 }
@@ -83,6 +84,16 @@ def _hero(item):
     return None
 
 
+def _duel(m):
+    """PvP that reads on screen: two pilots within PVP_MAX_DIST, a close finish, or a raid on a rival's wall."""
+    for e in m.get("events", []):
+        if e["type"] == "near_pass" and (e.get("dist") is None or e["dist"] <= PVP_MAX_DIST):
+            return True
+        if e["type"] in ("close_finish", "raid"):
+            return True
+    return False
+
+
 def candidates(items, prefer=()):
     """(score, item, moment, element) for every replay moment and every element it shows, not yet filmed.
     Items in `prefer` (the day's shoot list) count double."""
@@ -96,6 +107,8 @@ def candidates(items, prefer=()):
             mine = m.get("pilot") == hero or hero in (m.get("also") or [])
             for rank, el in enumerate(m.get("elements", [])):
                 if el in filmed:
+                    continue
+                if el == "pvp" and not _duel(m):
                     continue
                 # the element a moment is filmed as first counts fully; the hero pilot's moments come first
                 weight = (1.0 if rank == 0 else 0.6) * (1.0 if mine else 0.8) * (2.0 if it["id"] in prefer else 1.0)
@@ -177,7 +190,7 @@ def self_test() -> int:
     text = script(plan(index["items"], cam, recordings="C:\\R", max_clips=4)[0])
     assert f"replay C:/R/Kelpwood_1.cstheater {round(18.5 - LEAD, 2)}" in text and "slowmo 3" in text, text
     assert "record replay-a-pvp 540" in text and "crane local 0,18,-42 0,95,-180 360 3" in text, text   # {frames} filled
-    assert "tq local 70" in text, text                     # a pass with nobody named frames the pilot alone
+    assert "tq local 45" in text, text                     # a pass with nobody named frames the pilot alone
     # rule 3: a tight chase is refused (negative control)
     tight = dict(cam, maneuvering={"verbs": ["chase local 14 3 0"], "slowmo": 1, "game_seconds": 3})
     try:
@@ -195,7 +208,11 @@ def self_test() -> int:
     # a duel frames both pilots
     index["items"][0]["moments"][0]["events"] = [{"type": "near_pass", "with": "ys1"}]
     text = script(plan(index["items"], cam, max_clips=4)[0])
-    assert "tq pair:local,pilot:ys1 70" in text, text
+    assert "tq pair:local,pilot:ys1 45" in text, text
+    # a pass 50 units apart is not filmed as a duel (negative control)
+    index["items"][0]["moments"][0]["events"] = [{"type": "near_pass", "with": "ys1", "dist": 50.0}]
+    assert not any(c["element"] == "pvp" and c["item"] == "replay-a" and "pair:" in " ".join(c["verbs"])
+                   for c in plan(index["items"], cam, max_clips=4)[0])
     print("shoot: self-test OK")
     return 0
 

@@ -50,19 +50,19 @@
     "S16b": "creation"
   },
   "camera": {
-    "_why": "Garrett 2026-11-12: a 14-unit chase showed only the vessel; the first wide pass (110/55/300) made it a speck. These are about 60% of that.",
+    "_why": "Garrett 2026-11-12: a 14-unit chase showed only the vessel; the first wide pass (110/55/300) made it a speck. These are about 60% of that. Round 3: a 33 chase lost the hull in trail fields and PvP at 70 read as two trails, so maneuvering is a side-on tracking shot and PvP sits at 45 on duels within 30 units.",
     "min_distance": 40,
     "min_chase_back": 28,
     "pvp": {
       "verbs": [
-        "tq {pair} 70 35 22 4"
+        "tq {pair} 45 30 10 3"
       ],
       "slowmo": 3,
       "game_seconds": 3.0
     },
     "maneuvering": {
       "verbs": [
-        "chase local 33 9 6 30 1.4"
+        "tq local 40 90 8 0 3"
       ],
       "slowmo": 2,
       "game_seconds": 3.5
