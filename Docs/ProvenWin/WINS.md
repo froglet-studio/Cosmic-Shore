@@ -114,9 +114,7 @@ measures the state the game draws, and the silenced crawl showed up as pure wast
 shipped state, read the scripts that write the material at run time, not the .mat.
 
 Runner-ups, for the next run:
-1. The envelope cull (#1880, ChargeCrystal part; `B_ChargeCrystal.hlsl` here): measured 1.84x / 1.88x / 1.91x with the
-   crawl on and 1.85x silenced (D3D12), identical at 8 bits. With W1 in, it only helps materials that keep the crawl on
-   (hull fusion copies), so price how many of those draw before taking it.
+1. The envelope cull (#1880): rejected on top of W1 (see Rejected): it slows the silenced crystal on D3D11.
 2. `ProjectileChargeField` early-out (#1880, same shape; claimed 1.19-1.28x). Check its run-time state first.
 3. Prism rest (#1879; claimed -35 % vertex work per resting prism; C# + shader, needs a scene bench, not a material bench).
 
@@ -137,6 +135,7 @@ Rejected:
 
 | Date | Candidate | Why | Evidence |
 |---|---|---|---|
+| 2026-11-12 | ChargeCrystal envelope cull (#1880) on top of W1 | With the crawl ON (hull-fusion copies keep it) 1.86-1.89x and identical at 8 bits on all APIs. But in the game's main state (crawl silenced, where W1's skip returns before the cull's code runs) D3D11 got 1.6 % SLOWER, B slower in 95.5 % of pairs (D3D12 and Vulkan neutral): code generation, not the branch. An observed cost on every live crystal to help only fused copies. | `rejected_cull_on_w1/` |
 | 2026-11-12 | Sky nebula region-mask early-out (sweep S1) | On Vulkan, on top of W3, 3.3 M of 44 M px move by up to 3 levels (270,000 by more than one); D3D is within one level. Vulkan is the phone path. A rewrite that keeps Vulkan's fp16 arithmetic identical might pass. | `W4_stars/report_*_W3S1.json` |
 | 2026-11-12 | Spindle 2x2 Voronoi with polynomial trig (draft PR #1878's choice) | 1.5x but moves pixels by up to 140 levels | `W2_spindle/report_*_pr4.json` |
 | 2026-11-12 | `ProjectileChargeField` early-out (#1880; skip the wander FBM off the arc's band) | Not identical and not categorical: 4 px differ at 8 bits (max 0.00098, 48 moments x 3.7 M px), and B was faster in only 85 % of pairs (median 1.17x, p90 B/A 1.01). The null control read 1.00x with 47.5 %, so the instrument was fine; the change is near-exact and sometimes slower (a divergent branch on a partly covered sphere). The Sparrow's charge shell is also a few pixels on screen in play. | `ShaderABBench` DX12, `spec_pcf_*.json`; negative control caught at 140,527 px |
