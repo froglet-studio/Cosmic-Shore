@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Glasshouse Cell Config 3
+  m_EditorClassIdentifier:
+  CellName: Glasshouse
+  Description: 'Meadow - intensity 3 of Glasshouse: twelve grazers and less room - tending and raiding
+    both matter. The standard 1200 u cell with its nucleus (~392 u). No environment and
+    NOTHING planted wild - every plant is an Angler''s seed, cacti at 1.4x leaf, up to 24
+    plants between every colour (160 prisms, ~32,928 volume each at maturity). 12 tameable
+    tadpoles graze every garden outside the nucleus; 3 omni crystals respawn inside it (the
+    scene''s CrystalManager). Frenzy sits 25% above the full arena (5,897 prisms, 959,986
+    volume). Authored by Tools/Build/author_glasshouse_assets.py - re-run it rather than
+    hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 3
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CytoplasmShardDistance: 0
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: f27cfaa8738f3ae2cd3df7885da76f38, type: 2}
+  EnvironmentPrefab: {fileID: 0}
+  EnvironmentIntensity: 3
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 516
+    RestlessExit: 369
+    FrenzyEnter: 7371
+    FrenzyExit: 6265
+    RestlessEnterVolume: 83999
+    RestlessExitVolume: 59999
+    FrenzyEnterVolume: 1199983
+    FrenzyExitVolume: 1019986

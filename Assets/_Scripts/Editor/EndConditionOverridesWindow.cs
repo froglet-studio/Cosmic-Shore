@@ -129,6 +129,8 @@ namespace CosmicShore.Editor
                 "(default " + EndConditionOverridesSO.DefaultShatterplanePrismTarget + ").\n" +
                 "  • Tapestry: round length in SECONDS (timed - most mass STANDING at the whistle " +
                 "wins), default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds + ".\n" +
+                "  • Glasshouse: round length in SECONDS (timed - most trail and garden STANDING in a " +
+                "domain's colour at the whistle wins), default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + ".\n" +
                 "  • Sirocco: hostile prisms a DOMAIN must destroy with the Scale Dust (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget + ".\n" +
                 "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
@@ -343,6 +345,7 @@ namespace CosmicShore.Editor
             }
             EditorGUI.indentLevel--;
             int tp  = Mathf.Max(0, EditorGUILayout.IntField("Tapestry - Round Seconds", _config.tapestryRoundSeconds));
+            int gh  = Mathf.Max(0, EditorGUILayout.IntField("Glasshouse - Round Seconds", _config.glasshouseRoundSeconds));
             int sc  = Mathf.Max(0, EditorGUILayout.IntField("Sirocco - Prism Target", _config.siroccoPrismTarget));
             int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             int tv  = Mathf.Clamp(EditorGUILayout.IntField("Tandava - Break PERCENT", _config.tandavaBreakPercent), 0, 100);
@@ -404,6 +407,7 @@ namespace CosmicShore.Editor
                     _config.shatterplanePrismTarget = sp;
                     _config.shatterplanePrismTargetByIntensity = spByIntensity;
                     _config.tapestryRoundSeconds = tp;
+                    _config.glasshouseRoundSeconds = gh;
                     _config.siroccoPrismTarget = sc;
                     _config.broadsidePointsPerPilot = bs;
                     _config.tandavaBreakPercent = tv;
@@ -476,6 +480,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Shatterplane", string.Join(" / ", spByIntensity.ConvertAll(
                 v => v > 0 ? v.ToString() : shatterplaneEffective)));
             EditorGUILayout.LabelField("Tapestry (seconds)", tp > 0 ? tp.ToString() : EndConditionOverridesSO.DefaultTapestryRoundSeconds + " (default)");
+            EditorGUILayout.LabelField("Glasshouse (seconds)", gh > 0 ? gh.ToString() : EndConditionOverridesSO.DefaultGlasshouseRoundSeconds + " (default)");
             EditorGUILayout.LabelField("Sirocco", sc > 0 ? sc.ToString() : EndConditionOverridesSO.DefaultSiroccoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUILayout.LabelField("Tandava (break %)", tv > 0 ? tv.ToString() : EndConditionOverridesSO.DefaultTandavaBreakPercent + " (default)");
@@ -562,6 +567,7 @@ namespace CosmicShore.Editor
                    "Shatterplane: " + Fmt(_config.shatterplanePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultShatterplanePrismTarget) +
                    " (per intensity " + string.Join(" / ", _config.shatterplanePrismTargetByIntensityBuild ?? new List<int>()) + ")\n" +
                    "Tapestry (seconds): " + Fmt(_config.tapestryRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultTapestryRoundSeconds) + "\n" +
+                   "Glasshouse (seconds): " + Fmt(_config.glasshouseRoundSecondsBuild, "default " + EndConditionOverridesSO.DefaultGlasshouseRoundSeconds) + "\n" +
                    "Sirocco: " + Fmt(_config.siroccoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSiroccoPrismTarget) + "\n" +
                    "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot) + "\n" +
                    "Tandava (break %): " + Fmt(_config.tandavaBreakPercentBuild, "default " + EndConditionOverridesSO.DefaultTandavaBreakPercent) + "\n" +

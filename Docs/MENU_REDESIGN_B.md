@@ -6734,3 +6734,8 @@ tiers are rated every letter shows `?`. The ratings are collected with the **Fle
 page and the Fleet Tier Sheet no longer show Launch / Fleet / Arena Ready: the certificate is its percentage (Gold at 100%,
 soft under 60%), and the fleet's completion filter is in bands (100%, 80-95%, 60-75%, under 60%). The generator still
 records the stage in `fleet.json` for readers; nothing draws it.
+
+**Sort and filter as one row (Shombith, 2026-11-11):** "This is a big noisy section right now and I dont like this
+filtering UI". The three rows of chips became one row of three dropdowns (Sort; Completion, each band with its count;
+Tier, grouped by element's games with counts), a "Clear filters" link while a filter is on, and the count shown on the
+right.
