@@ -89,6 +89,10 @@ namespace CosmicShore.Gameplay
         const float PunishPlainDurationSec = 0.240f;
         const float PunishShieldedDurationSec = 0.300f;
         const float PunishHeavyDurationSec = 0.420f;
+        // Every step of the ladder plays at twice its authored strength (Caleb, 2026-11-12: "double the intensity
+        // all the way up the ladder"). The motors stop at 1, so a segment already authored at 1 (each thud's first
+        // slam on the low motor) cannot get stronger: what doubles is the high-motor grit and every tail.
+        const float PunishGain = 2f;
 
         // The alert is the loudest event the game has: a long, rattling shake that says
         // "something just changed". It outranks BOTH other feels for its whole duration.
@@ -204,9 +208,9 @@ namespace CosmicShore.Gameplay
             EnsureClips();
             switch (weight)
             {
-                case PunishWeight.Heavy:    PlayPattern(s_punishHeavyJson, s_punishHeavyRumble, level); break;
-                case PunishWeight.Shielded: PlayPattern(s_punishShieldedJson, s_punishShieldedRumble, level); break;
-                default:                    PlayPattern(s_punishJson, s_punishRumble, level); break;
+                case PunishWeight.Heavy:    PlayPattern(s_punishHeavyJson, s_punishHeavyRumble, level * PunishGain); break;
+                case PunishWeight.Shielded: PlayPattern(s_punishShieldedJson, s_punishShieldedRumble, level * PunishGain); break;
+                default:                    PlayPattern(s_punishJson, s_punishRumble, level * PunishGain); break;
             }
         }
 
