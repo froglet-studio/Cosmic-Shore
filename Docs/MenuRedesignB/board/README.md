@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794503648-5f83` of **Frogma**: Rev 3 to Rev 89, 447 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794504089-60a9` of **Frogma**: Rev 3 to Rev 90, 451 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -697,6 +697,13 @@ Copied on 2026-11-12 from canvas version `1794503648-5f83` of **Frogma**: Rev 3 
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 90 - Saga, Quests and Episodes as the Sea table
+
+- [`R90Saga.dc.html`](R90Saga.dc.html) - Rev 90 Saga - the part's arena on the table, its forms in order on the front face; The Severing locked - interactive
+- [`R90Quests.dc.html`](R90Quests.dc.html) - Rev 90 Quests - the HyperSea on the table, the episode's five quests as a track on the front face; the picked quest's card, Claim or Play quest - interactive
+- [`R90Episodes.dc.html`](R90Episodes.dc.html) - Rev 90 Episodes - the galaxy on the table, dimmed; Episode 2 is coming; one way back
+- [`R90Notes.dc.html`](R90Notes.dc.html) - Rev 90 - notes: one slab on every tab, each tab, the tabs as links
 
 #### Rev 89 - the Voyages screen with the HyperSea as the show
 

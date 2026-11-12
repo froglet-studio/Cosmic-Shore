@@ -3680,6 +3680,40 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 89 - notes: what was dull, what both options do, the two options, the recommendation"
+    },
+    "R90Saga.dc.html": {
+      "x": 0,
+      "y": 12120,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 90 Saga - the part's arena on the table, its forms in order on the front face; The Severing locked - interactive",
+      "is_interactive": true
+    },
+    "R90Quests.dc.html": {
+      "x": 2100,
+      "y": 12120,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 90 Quests - the HyperSea on the table, the episode's five quests as a track on the front face; the picked quest's card, Claim or Play quest - interactive",
+      "is_interactive": true
+    },
+    "R90Episodes.dc.html": {
+      "x": 4200,
+      "y": 12120,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 90 Episodes - the galaxy on the table, dimmed; Episode 2 is coming; one way back"
+    },
+    "R90Notes.dc.html": {
+      "x": 0,
+      "y": 13380,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 90 - notes: one slab on every tab, each tab, the tabs as links"
     }
   },
   "createdOnFiles": {
@@ -3803,6 +3837,7 @@
     "sec-rev87",
     "sec-rev88",
     "sec-rev89",
+    "sec-rev90",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -3882,7 +3917,8 @@
     "rev87",
     "f2u-sgbuttons",
     "rev88",
-    "rev89"
+    "rev89",
+    "rev90"
   ],
   "notes": {
     "hud_end": {
@@ -6309,6 +6345,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev90": {
+      "kind": "title1",
+      "text": "Rev 90 - Saga, Quests and Episodes as the Sea table",
+      "x": 0,
+      "y": 11720,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev90": {
+      "kind": "rect",
+      "x": -160,
+      "y": 11560,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -6758,7 +6818,11 @@
     "R88Notes.dc.html",
     "R89A.dc.html",
     "R89B.dc.html",
-    "R89Notes.dc.html"
+    "R89Notes.dc.html",
+    "R90Saga.dc.html",
+    "R90Quests.dc.html",
+    "R90Episodes.dc.html",
+    "R90Notes.dc.html"
   ],
   "pages": [
     {

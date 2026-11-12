@@ -7264,7 +7264,7 @@ pre-redesign Saga and quest track, section 159). The escort's line "Fly beside t
 board's own; the game's is `VoyageLines`.
 
 
-## 170. Rev 89 mockups: the Voyages screen with the HyperSea as the show (2026-11-12, awaiting a pick)
+## 170. Rev 89 mockups: the Voyages screen with the HyperSea as the show (2026-11-12; Shombith picked A, the Sea table; the other tabs in section 171)
 
 **Asked (Shombith, 2026-11-12, on Rev 87 and 88):** "Delete B and C but still for the voyages UI, I do not know I dont
 like it, man youre fable shw your skills, give me some cool ass designed UI for the voyage".
@@ -7294,6 +7294,8 @@ its difficulty stepper stands under the numbers. The squad keeps Rev 88's seat c
   width. The name and numbers head the left column over the voyages.
 - **Notes.**
 
+**Picked (Shombith, 2026-11-12): A, the Sea table:** "Go with A, redo saga quests and episodes to match" (section 171).
+
 **Recommended: A.** It is the only one that says what the edge-on view is without a label, and nothing else in the
 menus looks like it.
 
@@ -7303,3 +7305,41 @@ rows become chips; the title, line and numbers leave the right panel; the seat e
   or the map drawn to a RenderTexture on a tilted quad. `VoyageMapGraphic` stays as it is. The map's own labels shrink
   with the tilt (they read at 1020 wide on the board; check them at the phone scale). B needs no tilt.
 - Not seen in Unity. A cloud session cannot run the editor.
+
+
+## 171. Rev 90 mockups: Saga, Quests and Episodes as the Sea table (2026-11-12, awaiting board approval)
+
+**Asked (Shombith, 2026-11-12, on Rev 89):** "Go with A, redo saga quests and episodes to match".
+
+**On the canvas:** tab **Voyages**, round "Rev 90 - Saga, Quests and Episodes as the Sea table" (canvas version
+`1794504089-60a9`), under Rev 89.
+- Copies: `Docs/MenuRedesignB/board/R90*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r90_voyages.py`, on Rev 89's.
+- All boards pass `frogma.py check`, and `check_mockup.py` against `--baseline
+  Docs/MenuRedesignB/board/R81B5.dc.html` (a budget of 88) at 43-77 visual elements.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**One slab on every tab:** a picture lying tilted in perspective, and under its near edge a front face that shows the
+same thing as a line. On Voyages (R89A) that line is the course seen edge on. The chips on the left, the name over the
+table, the right column and the one Lime button are R89A's.
+
+**The boards:**
+- **Saga:** the part's arena on the table. The front face is the fight's four forms in order, as stations on a line.
+  The Severing is dimmed; its front face says "Opens when Tandava is done" and the button says After Tandava. The squad
+  and Set sail are Voyages' own.
+- **Quests:** the HyperSea on the table, because Episode 1 is The Hypersea; its name and "1 of 5 claimed" stand over
+  it. The front face is the five quests as a track: claimed ones filled, the one to claim ringed in Jade, locked ones
+  dim, the picked one underlined in Jade. The picked quest's own card art, name, goal and state stand in the right
+  column over Claim, Play quest, or the state.
+- **Episodes:** the galaxy on the table, dimmed. Episode 2, Coming soon; the front face says "New episodes arrive here";
+  one button back to Voyages.
+- **Notes.**
+
+**Changed on a picked board:** R89A's and R89B's tabs are now links to these boards (Voyages to R89A, the other three
+to R90Saga, R90Quests, R90Episodes). Only the link targets changed; the drawing is as picked.
+
+**Not drawn:** a voyage that is under way, and the story beats.
+
+**Differs from the build (section 165):** the Saga, Quests and Episodes tabs are the pre-redesign ones (section 159);
+each becomes the slab. The front faces are new parts: a forms line (the forms are `SagaView`'s authored lines) and a
+quest track (states from `GameModeProgressionService`). The table tops are a still picture (the part's card art, the
+galaxy from `VoyagePlaceArt.Galaxy()`); only the Voyages table is the live map. Not seen in Unity.

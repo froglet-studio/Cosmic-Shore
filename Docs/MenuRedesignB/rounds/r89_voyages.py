@@ -46,8 +46,23 @@ def logic():
   return { voyage, vlist, tabs, presets, seatList, tray, hero };""")
 
 
-def window(body, title, ground=GROUND):
-    return page(title, ground + nav(crystals=False) + r88.header() + r88.tabs("Voyages") + body, logic())
+# Where each tab goes once A was picked: the Voyages screen is this round's A, the other three are Rev 90's.
+TAB_FILES = {"Voyages": f"R{REV}A", "Saga": "R90Saga", "Quests": "R90Quests", "Episodes": "R90Episodes"}
+
+
+def tabs(lit):
+    out = []
+    for name, target in TAB_FILES.items():
+        on = name == lit
+        soon = '<span style="font-size:14px;margin-left:8px;letter-spacing:.12em">Soon</span>' if name == "Episodes" else ""
+        out.append(f'<a class="cap" href="{target}.dc.html" aria-current="{"page" if on else "false"}" '
+                   f'style="font-size:15px;text-decoration:none;color:{INK if on else DIM};padding-bottom:8px;'
+                   f'border-bottom:2px solid {INK if on else "rgba(0,0,0,0)"}">{name}{soon}</a>')
+    return f'<nav aria-label="Voyage window tabs" class="abs" style="left:64px;top:186px;display:flex;gap:34px;align-items:flex-end">{"".join(out)}</nav>'
+
+
+def window(body, title, ground=GROUND, lit="Voyages", lg=None):
+    return page(title, ground + nav(crystals=False) + r88.header() + tabs(lit) + body, lg or logic())
 
 
 def difficulty(style):
