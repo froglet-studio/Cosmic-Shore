@@ -408,16 +408,16 @@
    "name": "Flux",
    "file": "Docs/Pilots/art/scenes/Flux.jpg",
    "size": [1536, 864],
-   "close": [480, 0, 1100, 620],
-   "side": "centre",
-   "treatment": "Cockpit portrait from the nose, lit from below by a replay",
-   "source": "profession: a racer replays the practice heat in the cockpit, looking for the ring where the time went",
+   "close": [460, 8, 920, 468],
+   "side": "left",
+   "treatment": "Onboard camera under a shut canopy, the course streaming behind",
+   "source": "profession: a racer mid-heat, just through a ring, checking the display for the two behind",
    "crops": {
     "16:9": [0, 0, 1536, 864],
-    "4:3": [214, 0, 1366, 864],
-    "1:1": [358, 0, 1222, 864],
-    "4:5": [444, 0, 1135, 864],
-    "9:16": [547, 0, 1033, 864]
+    "4:3": [114, 0, 1266, 864],
+    "1:1": [258, 0, 1122, 864],
+    "4:5": [344, 0, 1035, 864],
+    "9:16": [447, 0, 933, 864]
    },
    "chart": "volume of the race"
   },

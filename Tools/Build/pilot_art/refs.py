@@ -9,8 +9,8 @@ generating? it seems like we will need something like this if we want the same c
 art as well". And (23:03 UTC): "i connected weave. use amoebius etc. to make and send screenshots. you can also use
 froglet.games".
 
-The painter of every bust and scene so far took words only (.claude/skills/pilot-art/references/PAINTERS.md). The
-same painter, run through Weave, also takes pictures and a mask. So:
+The painter of every bust and scene so far took words only (.claude/skills/pilot-art/references/PAINTERS.md). Its
+successor, run through Weave, also takes pictures (PAINTER). So:
 
   * THE LIBRARY (Docs/Pilots/art/refs, refs.json): real frames of the game and views of its models, each with its
     role, the words the painter is told about it (`shows`) and where it came from (`source`). A frame is a real
@@ -21,9 +21,10 @@ same painter, run through Weave, also takes pictures and a mask. So:
   * A RECORD'S refs=(...): the library pictures that go with the scene, whatever is outside its window or in its
     display.
   * A PATCH: a record's patch=dict(what=, ask=, edit=, keep=, refs=). Part of a finished scene is painted again and
-    the rest is kept. The painter gets the scene, a mask and the references, and `apply` takes from its answer only
-    the pixels inside the mask (edit, less keep), feathered inward. A painter given a mask still repaints the whole
-    picture a little, faces included, so the pilot is never taken from its answer.
+    the rest is kept. The painter gets the scene, the references and what to change, and `apply` takes from its
+    answer only the pixels inside the record's region (edit, less keep), feathered inward. A painter asked to
+    change one thing still repaints the whole picture a little, faces included, so the pilot is never taken from
+    its answer. The region is also written as a mask (`mask`): a painter that takes one is given it.
   * LINKS, NOT UPLOADS. The painter fetches each picture by its link. The repository is public, so a picture that is
     committed and pushed has one (raw_url), and `input` refuses a picture that is not pushed. A link names the
     repository, which the words never do: the game's own frames were asked for (above).
@@ -34,7 +35,7 @@ same painter, run through Weave, also takes pictures and a mask. So:
     python3 Tools/Build/pilot_art/refs.py likeness <WORD> [l t r b]    # cut a pilot's likeness from their scene
     python3 Tools/Build/pilot_art/refs.py mask <WORD> [view.jpg]       # write a patch's mask (and a view of it)
     python3 Tools/Build/pilot_art/refs.py prompt <WORD> [--patch]      # the words the painter gets
-    python3 Tools/Build/pilot_art/refs.py input <WORD> [--patch]       # the run's input as JSON, with its links
+    python3 Tools/Build/pilot_art/refs.py input <WORD> [--patch] [--size W H]   # the run's input, with its links
     python3 Tools/Build/pilot_art/refs.py apply <WORD> <painted file>  # put a patch into the scene
     python3 Tools/Build/pilot_art/refs.py --self-test
 """
@@ -58,10 +59,13 @@ PATCHES = f"{scene.SCENES}/patches"
 REPO = "froglet-studio/cosmic-shore"   # public: a pushed picture answers at RAW/<commit>/<path> without a token
 RAW = f"https://raw.githubusercontent.com/{REPO}"
 
-# The painter: the one that painted every scene (scene.FRAME is what it returns), run where it takes pictures.
-# `quality` and the variant are the defaults the words-only route used; the prompt is never rewritten for us.
-PAINTER = dict(name="GPT Image 2.5 (Sunburst), through Weave", id="2db90e64-51dd-45b2-870a-66d19a81118e", most=16,
-               params=dict(model="Sunburst", quality="high", output_format="png", weave_enhance_prompt=False))
+# The painter. Every scene was painted by GPT Image 2.5 Sunburst from words. On Weave that model also takes a mask,
+# but the studio's Weave plan does not include it (asked 2026-11-12: "This model is not available on the Free
+# plan"). Its successor is included, takes up to sixteen pictures and no mask, and is quoted at 11 credits a run at
+# this variant and quality, whatever the size (3 at quality medium). `size` is the key its contract gives the
+# picture's size; `mask` is the key of a painter that takes one, None for one that does not.
+PAINTER = dict(name="GPT Image 2.6 (Sunburst), through Weave", id="96f53e1c-465d-44d6-90fd-38bcb9fada66", most=16,
+               size="size", mask=None, params=dict(model="Sunburst", quality="high", output_format="png"))
 
 # What a painter is told about each kind of reference. {pictures} is "Picture 3" or "Pictures 3 to 5", {shows} the
 # library's own words for them.
@@ -77,9 +81,9 @@ LIKENESS_LINE = ("Picture {n} is {name}, photographed before: the same person. T
                  "its shape, its markings, its colours and its eyes, and the clothes are those clothes. Take the "
                  "person from it and nothing else: the place, the pose, the framing and the light are new, as "
                  "written above.")
-PATCH_HEAD = ("Edit this photograph, picture 1. Change only what lies inside the masked area: {what}. Everything "
-              "outside the mask stays exactly as it is: {name}, the face, the hands, the clothes, the room and "
-              "every light that falls on them.")
+PATCH_HEAD = ("Edit this photograph, picture 1. Change only {what}. Everything else stays exactly as it is, in the "
+              "same place and at the same size: {name}, the face, the hands, the clothes, the room and every light "
+              "that falls on them.")
 PATCH_FOOT = ("It stays one photograph taken with a real camera: the new parts have the grain, the focus and the "
               "exposure of the rest and meet it without a seam. Nothing in the picture carries writing, numbers or "
               "a symbol.")
@@ -450,10 +454,10 @@ def run_input(word, patch=False, size=None, commit=None):
         raise ValueError(f"{len(pics)} pictures: the painter takes {PAINTER['most']}")
     commit = commit or pushed_commit()
     size = size or scene.FRAME
-    given = dict(prompt=prompt(w, patch), images=[raw_url(p, commit) for _, p in pics],
-                 image_size=dict(width=size[0], height=size[1]), **PAINTER["params"])
-    if patch:
-        given["mask"] = raw_url(mask_path(w), commit)
+    given = dict(prompt=prompt(w, patch), images=[raw_url(p, commit) for _, p in pics], **PAINTER["params"])
+    given[PAINTER["size"]] = dict(width=size[0], height=size[1])
+    if patch and PAINTER["mask"]:
+        given[PAINTER["mask"]] = raw_url(mask_path(w), commit)
     return dict(id=PAINTER["id"], input=given)
 
 
@@ -598,7 +602,8 @@ def main():
             print(prompt(args[1], "--patch" in args))
             return 0
         if args[0] == "input" and len(args) >= 2:
-            print(json.dumps(run_input(args[1], "--patch" in args), indent=1, ensure_ascii=False))
+            size = tuple(int(v) for v in args[args.index("--size") + 1:][:2]) if "--size" in args else None
+            print(json.dumps(run_input(args[1], "--patch" in args, size), indent=1, ensure_ascii=False))
             return 0
         if args[0] == "apply" and len(args) == 3:
             note = apply(args[1], args[2])
