@@ -34,6 +34,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [SerializeField] int pairs = 40;
         [SerializeField] int framesPerHalf = 30;
         [SerializeField] int discardFramesPerHalf = 3;
+        [Tooltip("Optional: B disables EVERY enabled component of these types (full names, ';'-separated) under `toggleUnder`, all together. One writer switched off alone cannot show a change while others keep dirtying the same canvas; freeze them together first, then leave one in at a time.")]
+        [SerializeField] string toggleTypes;
+        [Tooltip("Name of the root object `toggleTypes` searches under (e.g. UI_Refactored); empty = the whole scene.")]
+        [SerializeField] string toggleUnder;
+        [Tooltip("With toggleTypes: these types (full names, ';'-separated) stay ON in B (leave-one-in).")]
+        [SerializeField] string keepTypes;
         [Tooltip("When > 0, skip the A/B and instead record, for this many frames, which UI objects re-dirty the canvases: RectTransforms whose transform changed, elements in uGUI's layout and graphic rebuild queues, and enabled Animators under a canvas. The candidate list for the next A/B.")]
         [SerializeField] int diagnoseFrames;
         [SerializeField] string[] counters = { "PostLateUpdate.PlayerUpdateCanvases", "Canvas.BuildBatch", "UGUI.Rendering.UpdateBatches", "Main Thread" };
@@ -48,6 +54,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             string outPath = Arg("-provenwinOut") ?? Path.Combine(Application.persistentDataPath, "provenwin_scene.json");
             var report = new Report { prefab = prefab ? prefab.name : UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, toggled = toggledType, device = SystemInfo.deviceModel, gpu = SystemInfo.graphicsDeviceName, pairs = pairs, framesPerHalf = framesPerHalf };
             Behaviour toggled = null;
+            var group = new List<Behaviour>();
             try
             {
                 // With a prefab, measure a fresh instance; without one, measure the owner already in the open scene.
@@ -60,6 +67,22 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 toggled = (Behaviour)owner.GetComponents<Component>().First(c => c && c.GetType().FullName == toggledType);
             }
             catch (Exception e) { report.verdict = "ERROR setup: " + e.Message; }
+            if (!string.IsNullOrEmpty(toggleTypes))
+            {
+                var types = toggleTypes.Split(';').Select(x => x.Trim()).Where(x => x.Length > 0).ToHashSet();
+                var keep = (keepTypes ?? "").Split(';').Select(x => x.Trim()).Where(x => x.Length > 0).ToHashSet();
+                var roots = string.IsNullOrEmpty(toggleUnder)
+                    ? UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects()
+                    : FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(t => t.name == toggleUnder).Select(t => t.gameObject).ToArray();
+                foreach (var root in roots)
+                    foreach (var b in root.GetComponentsInChildren<Behaviour>(false))
+                        if (b && b.enabled && types.Contains(b.GetType().FullName) && !keep.Contains(b.GetType().FullName)) group.Add(b);
+                foreach (var b in group) if (b is Animator an) an.keepAnimatorStateOnDisable = true;
+                report.toggled = $"{group.Count} components: " + string.Join(", ", group.GroupBy(b => b.GetType().Name).Select(g => $"{g.Key} x{g.Count()}"));
+                Debug.Log($"ProvenWin scene: PlayerPrefs menu.hint.fly.closed = {PlayerPrefs.GetInt("menu.hint.fly.closed", -1)}");
+                Debug.Log("ProvenWin scene: freezing " + report.toggled + "; " + string.Join(" | ", group.Select(b => PathOf(b.transform))));
+                report.verdict = null;
+            }
 
             if (diagnoseFrames > 0)
             {
@@ -69,7 +92,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 yield break;
             }
 
-            if (toggled != null)
+            if (toggled != null || group.Count > 0)
             {
                 for (int i = 0; i < settleFrames; i++) yield return null;
                 // Find each counter by name among everything the profiler can record (markers keep their own category).
@@ -87,22 +110,27 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 for (int c = 0; c < recorders.Length; c++)
                     if (!recorders[c].Valid) Debug.LogWarning($"ProvenWin scene: counter '{counters[c]}' is not available in this player");
                 var all = counters.Select(n => new Series { counter = n }).ToArray();
+                int bbIndex = Math.Max(0, Array.IndexOf(counters, "Canvas.BuildBatch"));
+                var countA = new List<double>(); var countB = new List<double>();
                 for (int p = 0; p < pairs; p++)
                 {
                     for (int half = 0; half < 2; half++)
                     {
                         bool b = (p % 2 == 0) == (half == 1);   // ABBA order
-                        toggled.enabled = !b;
+                        SetB(toggled, group, b);
                         for (int f = 0; f < framesPerHalf; f++)
                         {
                             yield return null;
                             if (f < discardFramesPerHalf) continue;
                             for (int c = 0; c < recorders.Length; c++)
                                 (b ? all[c].b : all[c].a).Add(recorders[c].LastValue / 1e6);
+                            int n = recorders[bbIndex].Valid && recorders[bbIndex].Count > 0 ? (int)recorders[bbIndex].GetSample(0).Count : 0;
+                            (b ? countB : countA).Add(n);
                         }
                     }
                 }
                 foreach (var r in recorders) r.Dispose();
+                report.series.Add(new Series { counter = "Canvas.BuildBatch calls per frame", a = countA, b = countB, medianA = countA.DefaultIfEmpty(0).Average(), medianB = countB.DefaultIfEmpty(0).Average() });
                 foreach (var s in all)
                 {
                     s.medianA = Median(s.a); s.medianB = Median(s.b);
@@ -112,11 +140,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 }
 
                 // Screenshots of both states, after the same settle.
-                toggled.enabled = true;
+                SetB(toggled, group, false);
                 for (int i = 0; i < 10; i++) yield return null;
                 yield return new WaitForEndOfFrame();
                 var shotA = ScreenCapture.CaptureScreenshotAsTexture();
-                toggled.enabled = false;
+                SetB(toggled, group, true);
                 for (int i = 0; i < 10; i++) yield return null;
                 yield return new WaitForEndOfFrame();
                 var shotB = ScreenCapture.CaptureScreenshotAsTexture();
@@ -133,6 +161,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             File.WriteAllText(outPath, JsonUtility.ToJson(report, true));
             Debug.Log("ProvenWin scene: " + report.verdict);
             Application.Quit();
+        }
+
+        static void SetB(Behaviour one, List<Behaviour> group, bool b)
+        {
+            if (group.Count > 0) { foreach (var x in group) if (x) x.enabled = !b; }
+            else if (one) one.enabled = !b;
         }
 
         [Serializable] class Dirty { public string path; public int frames; public string kind; public string components; }
