@@ -403,7 +403,9 @@ new or changed pictures. Then, for any round:
   or committed. Readers and painters never see an answer key.
 - **Built, not yet run in the editor**: the full-screen profile page the scenes are for, opened from the Ark's
   Pilots tab (`PilotProfileModal`, `Docs/MENU_REDESIGN_B.md` section 92.1). It shows a crew member's own words over
-  their callsign's painted pilot and says who is pictured.
+  their callsign's painted pilot and says who is pictured. It was run and looked at in Amoebius (2026-11-12), which
+  is where the words' plates turned out too thin over a bright scene: a scene is often bright, so words on one sit on
+  a solid plate (`/ui-redesign-tracker` T21).
 - **Not built yet**: a pilot painted for each player on recruit (that needs a painter on the backend: Garrett's
   call, and Shombith's for anything on the backend, PORTRAITS.md section 6, decision 2); and the hand tests of the
   page and of the avatars in the profile window and avatar picker (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).

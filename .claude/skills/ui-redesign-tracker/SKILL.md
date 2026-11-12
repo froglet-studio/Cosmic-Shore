@@ -173,6 +173,46 @@ the sequence's current END, so inserting a long tween first (a hex fill at 0, d,
 appended beat starts after it: 3-2-1 would have started about 3 s late. Append the timeline first, then `Insert` the
 overlays at absolute times.
 
+**T21 - the game blends UI in LINEAR light, so a see-through dark plate is far thinner than its alpha, and a web
+drawing hides it** (claude/signature-pilot-busts, 2026-11-12, the pilot profile page, section 92.1).
+`ProjectSettings.asset` has `m_ActiveColorSpace: 1`: a plate at alpha a keeps (1 - a) of the LIGHT behind it. A white
+sky under SurfaceBlack at 0.88 (the Credits window's dim, fine over the dark menu) is still sRGB 97, and words in
+NeutralLightest on it stood at 1.5:1. A stills page composites in sRGB and showed the same plate near black, so the
+drawing passed and the build did not. For words over a picture, live footage or anything that can be bright:
+- compute, do not look: `author_menu_pilot_profile.contrast_over_white(words, plate, alpha)` blends as the game does;
+  the generator holds every plate to 4.5:1 for every colour words are drawn in, from the alpha as WRITTEN (the
+  Image's own and the one `KitThemedGraphic` paints it with), and three controls prove the rule fires;
+- over white, SurfaceBlack needs alpha 0.86 for TextLight and 0.993 for NeutralLightest, so a plate with quiet lines
+  on it is solid, or the quiet lines are drawn brighter;
+- a drawing of such a plate on a web page blends in linear light too: `out = (1 - a) * picture + a * plate` on
+  linearised channels, then back to sRGB;
+- quiet words are NeutralLightest. TextInactive is the DISABLED colour and does not read on SurfaceBlack.
+
+**T22 - look at a menu build in Amoebius before calling it built** (same branch; section 159 took four menu builds
+back out because "the build was never seen before it reached him"). The engine runs the real prefabs, scripts and
+`Resources.Load` with no Unity (`/amoebius`: build `Port/src/CosmicShore.Player` in a scratch worktree, start it under
+xvfb with the control port, offline and silent, with a throwaway profile that declines data consent). Click through
+the screen, `resize` to 4:3 and 21:9, and LOOK at each capture. For the pilot page that proved, in a few minutes, the
+tab's eighteen cells, the page loading from Resources, the wiring, Next, the panel's change of side, the cut at three
+shapes and Close, and it found T21. What that look does not tell you:
+- the menu's sea material (`Sea_Window (colour set)`) draws WHITE in the engine, on every screen that has one, so a
+  white ground is not your screen's fault: switch the `Sea` Images off for the pictures (`set "Sea" Image enabled false`);
+- a paragraph's lines sit closer than TextMeshPro sets them (17.6 against the kit's 23.2 at Body), so a wrapped block
+  stands about a third taller in Unity;
+- the diagnostics overlay (F7) covers the top left and takes the clicks there;
+- the menu pauses the game off Home (`ScreenSwitcher`, `timeScale` 0): a window must not time anything on scaled time
+  (`ModalWindowManager` closes on realtime), and a paused clock in `state` is not the window's doing;
+- stand-ins the engine build needs stay in the scratch worktree. A ship never patches Amoebius (`/ship` section 0.05).
+The final look, the fonts, the fade, the pad and the safe area are still the hand test's.
+
+**T23 - a negative control names the rule that must catch it, and a token list is read from the code that fills it**
+(same branch, found in review). A generator's self-test that only asks "did validate() raise" passes a control caught
+by a NEIGHBOURING rule, so the rule it was written for can be dead and the self-test stays green: `expect(label,
+mutate, by="words of the rule")` fails a control caught by any other. And a hand-kept list of the tokens a template
+may name drifts from the C# that fills them: read it from the source (`PilotProfileModal.TokenNames`; `ArkPilotsPage`'s
+`TemplateText.Fill` calls, one list a line, so `{count}` is the count's alone), and check the tokens in what was
+WRITTEN to the prefab, before the rule that compares the line with its authored words.
+
 ## Cross-cutting checks
 
 Run these regardless of task, since they are the project's known failure modes:
