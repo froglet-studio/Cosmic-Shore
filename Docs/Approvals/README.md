@@ -12,6 +12,13 @@ Garrett, 2026-11-10: asking for approval before changing someone else's work was
    run **`/approve`** to read their list and answer each entry: **approve** (they agree), **discuss** (they want to
    talk to the person who made it; the author sees that), and after talking, **resolve**.
 
+4. **Answer first what the elemental loop is building on** (Garrett, 2026-11-12). A stakeholder who catches a change
+   against the spirit of a vessel they worked on sends that vessel back through the loop, and every step built on
+   the change since (intensities, the AI training, the arena's environment creator) is redone. So `list` ranks open
+   entries by **loop impact**: the loop work a "this is wrong" answer would send back now
+   (`Tools/Build/elemental_loop.py` `rework`). It grows while an entry waits, so the queue puts the costly catches
+   first. `add --vessel / --element / --loop-step` names what a change is about; left out, it is read from the entry.
+
 The rules: [`Docs/TEAM.md`](../TEAM.md) rules 3, 12 and 13. The skill: [`.claude/skills/approve/SKILL.md`](../../.claude/skills/approve/SKILL.md).
 The tool: `Tools/Build/approvals.py` (`check`, `add`, `list`, `reply`, `--self-test`).
 

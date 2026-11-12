@@ -757,3 +757,64 @@ REBIND += [
                                            ("SpoolWard", "Rhino_SpoolWard", "spoolWardIcon"),
                                            ("SpoolHull", "Rhino_SpoolHull", "spoolHullIcon")])),
 ]
+
+
+# ---- the plough kit (2026-11-12 rework: Gore, Heft, Blade) --------------------------------------------------------
+# The sword cards above (Katana, Afterimage, Blade Reach) went to the Swordfish with the sword on 2026-11-07; the Rhino
+# keeps Ramp Spool. Both hulls nest RhinoHUDVariant; Rhino.prefab's own overrides on that instance put the three
+# single sprites below on its Charge, Mass and Space containers and switch the sword parts off (the Swordfish moves to
+# its own SwordfishHUDVariant). The Charge plate is the live gore-speed gauge (RhinoHUDController.PushGore). Brief, one line each:
+#   Charge  Gore   ramming a slower rival above the Charge-lowered ram speed (150 -> 50 u/s) is a scored Strike that
+#                  knocks its petals loose (Gore Steal at Charge 5: they land on the Rhino). One object: the Rhino's nose
+#                  in the rival's flank, three petals flying off it.
+#   Mass    Heft   Mass throws a ploughed prism further to its own side (furrow 0 -> 60 u). One object: the prism far
+#                  out to the side of the Rhino, one chamfered motion bar between them.
+#   Space   Blade  Space widens the plough's blade (14 -> 40 u). One object: the blade, far wider than the hull it
+#                  rides on, with the width's two end posts.
+# Every hull here is the game's own Rhino silhouette (rhino_top / rhino_right), never a drawing of it.
+
+def petal(cx, cy, l=13.0, w=8.0, angle=0.0):
+    """A loose petal: the element flower's kite, long along `angle` (deg clockwise from +x)."""
+    return fill(rotate([(cx + l / 2, cy), (cx - l * 0.1, cy - w / 2), (cx - l / 2, cy), (cx - l * 0.1, cy + w / 2)],
+                       angle, cx, cy))
+
+
+def gore_rival():
+    """The rival: the generic vessel crossing the Rhino's nose, flying right."""
+    from motifs import hull
+    return hull(62.0, 30.0, 30.0, heading=0.0)
+
+
+def gore():
+    rhino = rhino_top(cx=64.0, nose_y=40.0, height=84.0)
+    rival = _clear_of(gore_rival(), rhino, px=3.0)
+    petals = petal(22, 30, l=20, w=12, angle=-160) | petal(104, 12, l=20, w=12, angle=-35) | petal(110, 46, l=20, w=12, angle=15)
+    return rhino | rival | petals
+
+
+def heft():
+    rhino = rhino_top(cx=40.0, nose_y=28.0, height=86.0)
+    from motifs import prism as prism_m, speed_wedge
+    thrown = prism_m(106.0, 32.0, 17.0)
+    bar = speed_wedge(62.0, 32.0, 22.0, 9.0)
+    return rhino | _clear_of(bar, rhino, px=3.0) | thrown
+
+
+def blade():
+    rhino = rhino_top(cx=64.0, nose_y=44.0, height=76.0)
+    # the plough's blade: one wide straight bar across the nose, its ends turned back - far wider than the hull
+    t, y = 12.0, 30.0
+    bar = fill([(6, y + 14), (16, y), (112, y), (122, y + 14), (122, y + 14 + t), (110, y + t), (18, y + t), (6, y + 14 + t)])
+    return _clear_of(rhino, bar, px=3.0) | bar
+
+
+PLOUGH_EXEMPT = {"components": "the hull, the act and its target", "specks": "the silhouette's own cut-outs",
+                 "gap": "the wing plates"}
+ICONS += [
+    dict(name="Rhino_Gore", element="Charge", act="Gore: the Rhino rams a rival broadside and its petals fly loose", draw=gore,
+         exempt=PLOUGH_EXEMPT),
+    dict(name="Rhino_Heft", element="Mass", act="Heft: the plough throws a prism far out to the Rhino's side", draw=heft,
+         exempt=PLOUGH_EXEMPT),
+    dict(name="Rhino_Blade", element="Space", act="Blade: the plough's blade, far wider than the Rhino it rides on", draw=blade,
+         exempt=PLOUGH_EXEMPT),
+]

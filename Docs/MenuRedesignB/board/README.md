@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-11 from canvas version `1794355298-b0b9` of **Frogma**: Rev 3 to Rev 84, 452 boards on 11 tabs. The canvas opens on the tab `fleet-codex`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794504089-60a9` of **Frogma**: Rev 3 to Rev 90, 451 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -33,8 +33,11 @@ Copied on 2026-11-11 from canvas version `1794355298-b0b9` of **Frogma**: Rev 3 
 - [`SGButtons.dc.html`](SGButtons.dc.html) - Style Guide 5 - Buttons and their states
 - [`SGWindows.dc.html`](SGWindows.dc.html) - Style Guide 6 - Cards, windows and toasts
 - [`SGMotion.dc.html`](SGMotion.dc.html) - Style Guide 7 - Motion
-- [`SGDoDont.dc.html`](SGDoDont.dc.html) - Style Guide 8 - Do and don't, from our own screens
 - [`SGChecklist.dc.html`](SGChecklist.dc.html) - Style Guide 9 - The UI checklist and the five screens to fix
+
+#### Play / Ready built in Unity: KitButton Commit, Maelstrom READY + PLAY AGAIN - in PR #1919 (2026-11-12, /frogma-to-unity)
+
+- [`SGDoDont.dc.html`](SGDoDont.dc.html) - Style Guide 8 - Do and don't, from our own screens
 
 ### Tab: Menu Redesign  (`menu-redesign`)
 
@@ -661,9 +664,19 @@ Copied on 2026-11-11 from canvas version `1794355298-b0b9` of **Frogma**: Rev 3 
 
 ### Tab: Ark  (`ark`)
 
+#### Rev 86 - The Artifacts room, A and B as one - the Reliquary's platform in the Gallery's hall
+
+- `R86ArtifactsAB.dc.html` (not copied yet) - Rev 86 ArtifactsAB - A + B - the Reliquary platform in the Gallery
+
+#### Rev 85 - The Artifacts room, three still mockups - A Reliquary, B Gallery, C Orrery
+
+- `R85ArtifactsA.dc.html` (not copied yet) - Rev 85 ArtifactsA - A - The Reliquary
+- `R85ArtifactsB.dc.html` (not copied yet) - Rev 85 ArtifactsB - B - The Gallery
+- `R85ArtifactsC.dc.html` (not copied yet) - Rev 85 ArtifactsC - C - The Orrery
+
 #### Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)
 
-- `R67Ark.dc.html` (not copied yet) - Rev 67 Ark - The Ark screen - Converter, Squads, Artifacts, Decor (live) - interactive
+- [`R67Ark.dc.html`](R67Ark.dc.html) - Rev 67 Ark - The Ark screen - Converter, Squads, Artifacts, Decor (live) - interactive
 
 #### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
 
@@ -685,40 +698,32 @@ Copied on 2026-11-11 from canvas version `1794355298-b0b9` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
-#### Rev 83 - the seat editor in the game's own look
+#### Rev 90 - Saga, Quests and Episodes as the Sea table
 
-- `R83Compare.dc.html` (not copied yet) - Rev 83 - Rev 82 Squad: the outlined-square editor this replaces
-- `R83S1.dc.html` (not copied yet) - Rev 83 S1 - Showroom: the choice as the hero, its render and name large, the options a slim strip along the foot (recommended) - interactive
-- `R83S2.dc.html` (not copied yet) - Rev 83 S2 - Hangar bay: the choice large on a lit podium, the options a sleek list beside it - interactive
-- `R83S3.dc.html` (not copied yet) - Rev 83 S3 - Seat sheet: the seat's card opens into a sheet with all four choices as rows - interactive
-- `R83Notes.dc.html` (not copied yet) - Rev 83 - What was wrong with Rev 82's editor, what the three draw from, the recommendation
+- [`R90Saga.dc.html`](R90Saga.dc.html) - Rev 90 Saga - the part's arena on the table, its forms in order on the front face; The Severing locked - interactive
+- [`R90Quests.dc.html`](R90Quests.dc.html) - Rev 90 Quests - the HyperSea on the table, the episode's five quests as a track on the front face; the picked quest's card, Claim or Play quest - interactive
+- [`R90Episodes.dc.html`](R90Episodes.dc.html) - Rev 90 Episodes - the galaxy on the table, dimmed; Episode 2 is coming; one way back
+- [`R90Notes.dc.html`](R90Notes.dc.html) - Rev 90 - notes: one slab on every tab, each tab, the tabs as links
 
-#### Rev 82 - B5 playable - choosing the squad and changing its seats
+#### Rev 89 - the Voyages screen with the HyperSea as the show
 
-- `R82Squad.dc.html` (not copied yet) - Rev 82 Squad - B5 playable: choosing the squad and changing its seats - interactive
+- [`R89A.dc.html`](R89A.dc.html) - Rev 89 A - Sea table: the map tilted in perspective, the edge-on view its front face; the voyage's name over it (recommended) - interactive
+- [`R89B.dc.html`](R89B.dc.html) - Rev 89 B - Flat chart: the same screen without the tilt - the whole map in its own colours over its edge-on view - interactive
+- [`R89Notes.dc.html`](R89Notes.dc.html) - Rev 89 - notes: what was dull, what both options do, the two options, the recommendation
 
-#### Rev 81 - Voyage window, B1 with B3's seat cards - a livelier right panel, three ways
+#### Rev 88 - A taken forward: smaller top texts, every screen of the Voyage window
 
-- `R81B5.dc.html` (not copied yet) - Rev 81 B5 - Cards: B1 with labelled numbers and B3's three seat cards in the right panel (recommended) - interactive
-- `R81Notes.dc.html` (not copied yet) - Rev 81 - notes: what B1 keeps, B3's cards, the three right panels, the recommendation
+- [`R88Voyages.dc.html`](R88Voyages.dc.html) - Rev 88 Voyages - A with smaller top texts: the voyages and the Ark escort as cards, the picked one open; the squad as rows - interactive
+- [`R88Escort.dc.html`](R88Escort.dc.html) - Rev 88 Escort - the Ark escort card open: its difficulty stepper where a voyage has its intensity - interactive
+- [`R88Saga.dc.html`](R88Saga.dc.html) - Rev 88 Saga - the two parts as cards, Tandava open with its forms, The Severing locked; the squad and Set sail - interactive
+- [`R88Quests.dc.html`](R88Quests.dc.html) - Rev 88 Quests - the five quests as cards with their state, the picked one open over its game's art; Claim or Play quest - interactive
+- [`R88Episodes.dc.html`](R88Episodes.dc.html) - Rev 88 Episodes - Episode 2, coming soon, over the galaxy; one way back
+- [`R88Notes.dc.html`](R88Notes.dc.html) - Rev 88 - notes: the top texts, the one order, each screen, what is not drawn
 
-#### Rev 80 - Voyage window, B Logbook taken further - the list, the course and the squad, four ways better
+#### Rev 87 - the Voyages tab, drawn new around the HyperSea map and the edge view
 
-- `R80Compare.dc.html` (not copied yet) - Rev 80 - What each option changes from B: the row, the squad bar, the seat card, the quiet row
-- `R80B1.dc.html` (not copied yet) - Rev 80 B1 - Refined: each row a course thumbnail and who brought it, seats with their pilot (recommended) - interactive
-- `R80B2.dc.html` (not copied yet) - Rev 80 B2 - Wide sea: a narrow list, the course map wide with the voyage over it, the squad a bar along the foot - interactive
-- `R80B3.dc.html` (not copied yet) - Rev 80 B3 - Crew: the squad as three tall seat cards, the hull and its pilot large - interactive
-- `R80B4.dc.html` (not copied yet) - Rev 80 B4 - Quiet: no pictures in the list, the maps muted so only the course is bright, the most air - interactive
-- `R80Notes.dc.html` (not copied yet) - Rev 80 - notes: what B keeps, what each option changes, the recommendation
-
-#### Rev 79 - Voyage window, four new directions - the whole window redrawn: its tabs, the HyperSea map and edge view, the voyages, and picking the squad's vessels
-
-- `R79Compare.dc.html` (not copied yet) - Rev 79 - Picking a vessel, four ways: one press from the squad to any hull
-- `R79A.dc.html` (not copied yet) - Rev 79 A - Chart: the map is the window; voyages are pins on it and the picked one docks on the right (recommended) - interactive
-- `R79B.dc.html` (not copied yet) - Rev 79 B - Logbook: a list of voyages, the course large in the middle, the squad as three seats on the right - interactive
-- `R79C.dc.html` (not copied yet) - Rev 79 C - Formation: the squad's three hulls are the hero; destinations on a ribbon above them - interactive
-- `R79D.dc.html` (not copied yet) - Rev 79 D - Route: the picked voyage as a journey line across the window, rising and falling through the disk - interactive
-- `R79Notes.dc.html` (not copied yet) - Rev 79 - notes: what each direction is, what it redraws, the recommendation, what it would change in the game
+- [`R87A.dc.html`](R87A.dc.html) - Rev 87 A - Slide: small voyage cards, the picked one slides open; the squad as rows that open where they stand (recommended) - interactive
+- [`R87Notes.dc.html`](R87Notes.dc.html) - Rev 87 - notes: what stays, what is new in all three, the three options, the recommendation
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 

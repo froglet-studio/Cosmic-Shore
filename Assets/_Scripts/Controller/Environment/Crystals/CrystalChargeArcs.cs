@@ -209,7 +209,10 @@ namespace CosmicShore.Gameplay
         void ConsiderThisFrame(Camera view, int frame)
         {
             if (!isActiveAndEnabled || mesh == null) return;
-            if (effect == Effect.SeamWalk) walker.Advance(Time.time - clockStart, settings);
+            // The walk steers toward this view's side of the crystal (seamFaceViewer): the bolt stays on screen.
+            if (effect == Effect.SeamWalk)
+                walker.Advance(Time.time - clockStart, settings,
+                               view ? transform.InverseTransformPoint(view.transform.position) : (Vector3?)null);
             if (!arcsRenderer.enabled || !arcsRenderer.isVisible || !view) return;
             pixels = ScreenRadiusPixels(view);
             if (TooSmallToSee(pixels))
