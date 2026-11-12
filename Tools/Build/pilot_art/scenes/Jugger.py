@@ -7,7 +7,15 @@ however the hologram boundary was bleeding into the window and didn't contain ev
 outside and the hypersea in the rendering are very different than the hypersea in our gameplay." And 23:01: "the dual
 perspectives of jugger is a better standard for windows". So the scene stays and two things in it are painted again
 from real frames of the game (the patch): what the windows show, and the display, which is now one closed dome
-inside the rail and below the sills."""
+inside the rail and below the sills.
+
+Painted 2026-11-12 in one run, by the painter that takes pictures (four of them: three frames of the sea and the
+ship's four views). The windows hold the game's bricks, needles, trails and shards, and the dome holds the ship
+itself. The painter repainted the whole room a little while it worked (its answer moved 14.36 of 255 outside the
+region: the figure 40 px to the right, the windows taller), so only the region was taken (refs.apply) and Jugger is
+the Jugger of the first painting. Its answer also hung a second orca head in a window, above the old frames and so
+outside the region: the words had asked the glass to carry "faint reflections of the bridge". That sentence is gone
+from the ask below (LESSONS 84); patches/Jugger.json keeps the words as they were sent."""
 SCENE = dict(
     treatment="65mm epic film still, deep focus, a bridge lit by its display",
     shot=("A film still in the manner of a 65mm epic: a wide lens low on the deck of a ship's bridge at night, deep "
@@ -50,7 +58,7 @@ SCENE = dict(
              "every hole. It is one thing seen through all the windows, running on behind the frames from one pane "
              "to the next. Two long ribbons of small amber gold bricks curve away past it, the trails of small "
              "craft flying guard, and a swarm of tiny violet shards streams toward the ship. The window frames "
-             "stay where they are. The glass is thick and scratched and carries faint reflections of the bridge."
+             "stay where they are. The glass is thick and scratched."
              "\n\n"
              "THE DISPLAY. The old display is gone, and all of its light with it. Over the well stands one closed "
              "dome of light, like a model under a glass bell: its "

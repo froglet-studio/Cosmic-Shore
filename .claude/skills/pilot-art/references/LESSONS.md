@@ -367,3 +367,67 @@ Four samples, 19 paintings, three reads (`Docs/Pilots/PORTRAITS.md` section 8; `
     rabbit. The same scene with the tail drawn "across the lap and up over the chest like a blanket, its white tip
     tucked under the chin" put the skunk in the avatar, and made the picture more his own. When the second
     animal's piece can be worn, held or wrapped, pose it where the avatar's square will catch it.
+
+## 2026-11-12 - the scenes, round 2: the game's own sea, one creature, a painter with a wall
+
+Garrett's notes of 2026-11-11 (22:49 and 23:01 UTC) on the scenes with displays: the sea in the art was not the
+game's, Flux's scene was to start again, Trace was "a bad and lazy photoshop with a bird head some hair and
+jellyfish stuff", ZODIAC's windows were to follow Jugger's ("the dual perspectives of jugger is a better standard
+for windows"). Four repaints: Longshift, Flux (five paintings), Trace (four) and ZODIAC (three).
+
+76. **The sea is written from the game's frames, and it has six nouns.** "both the hypersea outside and the
+    hypersea in the rendering are very different than the hypersea in our gameplay." The old words were a
+    guess (islands, plankton, a galaxy). The new ones were written with six real frames open (five from the
+    studio site, one flown in the browser build; `Docs/Pilots/art/refs/`): black space sown with fine white
+    dust; the wall of a vast hollow sphere, a net of thin dim blue lines in six-sided panes; bricks of light,
+    flat-sided blocks with deep clear faces and thin bright edges, a trail being a ribbon of them; a coral of
+    bricks set edge to edge in rings round open holes; a crystal shaped like a twelve-sided die; fauna as swarms
+    of tiny violet shards. `scene.SEA` holds them once, the display views are built from them, and a record's
+    own words for a window use the same nouns. The six-sided wall was painted in three scenes of three.
+77. **A crop is named by the thing that must be whole and by the figure's two ends.** Flux's horn tips were cut
+    by the top of the frame in four paintings of four, whatever the shot said about them: "both horns are
+    whole", a height in fractions of the picture, the eyes at mid-height, a seat laid back. "Seen from the waist
+    up" names one end of the figure, and the painter spends the other. The fifth says "the whole arch of the
+    canopy is in the picture, from rim to rim" and the figure "from the tips of the horns down to the gloved
+    hands on the stick", and drops the sentence that puts the figure a third of the way in: both tips whole,
+    with glass above them. Name both ends of whatever must not be cut, and the frame that holds them.
+78. **The painter paints the noun.** ZODIAC's windows asked twice for "a reef of coral-orange bricks of light
+    with violet edges" and got a reef: glowing rock, once as a spiral with boulders, once as a lava plain under
+    a horizon. "A wall of bricks of light, each as big as a door, set edge to edge in rings round open holes,
+    coral orange deepening to violet" got bricks on the first roll, and the chart on the table drew the same
+    rings of bricks small without being asked. In Trace's port "a spray of white needles in every hole" became
+    sea-urchin puffs. Where the thing fills a window, call it by what it is built of and size it by something
+    the painter knows (a door); a likeness from nature (reef, coral, island, needles) is painted as that nature.
+    Inside a display the size of a hatbox "a coral" is safe, because nothing that small can be a reef.
+79. **A fused head is one outline with states along it, and no edge to sit on.** Trace was designed by a panel
+    (five designers, each from one lens; a director, a stranger reading blind and the painter's habits as
+    judges): one booby head whose back turns to jelly (dry feathers, wet feathers, jelly), a pattern that
+    crosses the join (the white flecks), something lying inside it (the last dark feathers), and a second
+    signature that cannot be worn (hands the blue of a booby's feet, scaled, "every web is jelly"). The parts of
+    the old picture were LEFT OUT of the words, never forbidden (63, 67), and none came back in four rolls. The
+    four: one keeper, one good head with the display inside a glass case, one jelly wig, one jelly bonnet.
+    "Smooth" jelly and "slim" frills moved it off the wig; "hangs in the open air with nothing round it" took
+    the case away. What is still wrong was written by the brief: "its only edge is low at the nape ... with
+    shadow under it" is an edge, and both blind readers who named booby and jellyfish also said the jelly "sits
+    on the back of the head like a cap", with "a visible edge where it meets the feathers". The next brief
+    gives the join no edge and no shadow: the feathers thin, go clear and are the jelly. Count the hats, wigs
+    and second heads over all the rolls before picking one.
+80. **A repaint that answers the note can lose what the note never mentioned.** Flux's fifth painting answers
+    every line of his note (the tail inside, the display over the panel, the canopy shut over the horns), and
+    one of two blind readers no longer found the orca: "horse or zebra (stiff upright mane)". The picture he
+    rejected had a glossy hooked fin and a fluke; the new one hides the fluke by design and paints the fin as a
+    matte crest with no white eye patch. When a repaint takes the second animal's biggest piece out of the
+    frame, the brief owes the head a second sign of it (75), and the avatar is read blind again BEFORE the
+    picture is shown: "is it still both animals" is a measurement, and it was taken after the push.
+81. **The painter's credits are a wall, and it arrives mid-pair.** The second of two ZODIAC rolls came back
+    "Insufficient Figma AI credits ... resets at 2026-11-14T01:41:00Z". Twelve paintings had gone on three pilots.
+    Roll changed words only: never a second pair of words that have just failed the same way, and never a roll
+    "to see" (PAINTERS.md section 2 has the pools: Figma AI credits for the words-only painter, Weave credits,
+    approved run by run on a card, for the painter that takes pictures).
+82. **A critic told to object will object, so give each critic that picture's notes.** The review workflow gave
+    three critics every note Garrett had written on any scene. They applied all of them to each picture
+    (Longshift's field was faulted for not showing the game's sea, which he asked of Jugger and ZODIAC) and
+    all three said "unlikely". What held up was what they measured: the names the blind readers gave,
+    an ear tip on the top edge, the share of vivid pixels (1.5 percent in Flux's sky against about 42 in the
+    sheet of game frames). Brief a critic with the notes on THAT picture, the standing rules under their own
+    heading, and ask for measurements first.

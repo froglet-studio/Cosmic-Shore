@@ -5362,10 +5362,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Jugger.png": {
-   "coloured": 0.3938,
+   "coloured": 0.3811,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "964aaa2229889901",
+   "sha": "72f705fe4eb97390",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Krush.png": {
@@ -5446,10 +5446,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Scales.png": {
-   "coloured": 0.4474,
+   "coloured": 0.4478,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "8a18fce5b655ebf0",
+   "sha": "9fef9ca2f0761ade",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Shrapnel.png": {

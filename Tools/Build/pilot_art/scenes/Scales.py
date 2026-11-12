@@ -7,7 +7,12 @@ His note on it (2026-11-11, 23:01 UTC): "scales is great if we could get the hyp
 gyroid flora was better than other aspects. we will want more where they have the hypersea outside, but some like
 this could tell a different story. that should be the except though." So the scene, the clouds in its windows and
 the figure stay, and only the display is painted again (`patch`), from the real frames: the first painting filled
-the dome with sea urchins, strings of beads and craft like fish, none of which the game has."""
+the dome with sea urchins, strings of beads and craft like fish, none of which the game has.
+
+Painted 2026-11-12 in one run, by the painter that takes pictures (four frames of the game). The room came back
+nearly to the pixel (its answer moved 6.09 of 255 outside the region) and only the dome was taken from it: the far
+net of six-sided panes, a coral of bricks holding a twelve-sided crystal, a ring of shards, and six craft laying
+ribbons of bricks, three jade teal and three ruby magenta, with one of each side by side on the near side."""
 SCENE = dict(
     treatment="Formal state-occasion photograph down the length of a bridge, soft daylight",
     shot=("A formal photograph of a state occasion, made after the room has emptied: an 85mm lens down the length "
