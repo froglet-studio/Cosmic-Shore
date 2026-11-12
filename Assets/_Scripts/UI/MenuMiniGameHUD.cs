@@ -37,7 +37,8 @@ namespace CosmicShore.UI
         [Tooltip("What the freestyle button does, drawn in the middle of its volume hex: leave " +
                  "freestyle (chrome_close). Empty = no glyph (Docs/MENU_REDESIGN_B.md section 22.5).")]
         [SerializeField] Sprite exitGlyph;
-        [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle.")]
+        [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle. Empty in the voyage " +
+                 "scene, where the button leaves the voyage instead (VoyageScene.Leave).")]
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
         [Header("SOAP Events")]
@@ -189,12 +190,17 @@ namespace CosmicShore.UI
         {
             if (!_isInFreestyle) return;
             if (OverviewGesture.RequestedThisFrame())
-                crystalClickHandler.ToggleTransition();
+                Exit();
         }
 
-        void OnVolumePauseClicked()
+        void OnVolumePauseClicked() => Exit();
+
+        /// <summary>Leave the flight: freestyle back to the menu, or (in the voyage scene, which has no freestyle toggle)
+        /// leave the voyage.</summary>
+        void Exit()
         {
-            crystalClickHandler.ToggleTransition();
+            if (crystalClickHandler) crystalClickHandler.ToggleTransition();
+            else VoyageScene.Current?.Leave();
         }
 
         public void Show()

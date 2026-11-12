@@ -9,7 +9,7 @@ namespace CosmicShore.Editor.Froglet
     ///
     /// Analytics collection is opt-in: the COPPA age gate and the consent flag both default to
     /// DENIED, and until both are granted <c>AnalyticsServiceFacade</c> drops every event before
-    /// it reaches any sink - so UGS and PostHog go silent together. In a build the player answers
+    /// it reaches any sink - so UGS and Froglet Analytics go silent together. In a build the player answers
     /// <c>PrivacyConsentOverlay</c>, which AppManager creates on first run.
     ///
     /// This window exists to skip that dialog while testing, and to re-open it: clearing the gates
@@ -26,7 +26,7 @@ namespace CosmicShore.Editor.Froglet
         [FrogletTool(FrogletToolCategory.Services, Importance = 5,
             Description = "Inspect the analytics consent gate and grant it on this machine for " +
                           "testing. Until it is granted, every event is dropped before reaching " +
-                          "UGS or PostHog.")]
+                          "UGS or Froglet Analytics.")]
         public static void Open()
         {
             var window = GetWindow<AnalyticsConsentDevWindow>(false, "Analytics Consent");
@@ -49,7 +49,7 @@ namespace CosmicShore.Editor.Froglet
             EditorGUILayout.Space(6f);
             EditorGUILayout.LabelField(
                 "Collection is opt-in. Both gates must be granted or every event is dropped " +
-                "before it reaches UGS or PostHog - which looks like a backend problem and is not.",
+                "before it reaches UGS or Froglet Analytics - which looks like a backend problem and is not.",
                 EditorStyles.wordWrappedMiniLabel);
 
             EditorGUILayout.Space(8f);

@@ -39,8 +39,25 @@ MonoBehaviour:
   wreckingBallPrismTarget: 650
   undertowPointTarget: 12
   dustupPointTarget: 4
-  serpentGulagSnipeTarget: 3
+  serpentHoodSnipeTarget: 3
+  flatlinePointTarget: 90
+  flatlinePointTargetByIntensity:
+  - 90
+  - 90
+  - 90
+  - 90
+  jackstrawStrikeTarget: 3
+  kelpwoodBiteTarget: 12
+  coronaBloomTarget: 15
+  shatterplanePrismTarget: 1600
+  shatterplanePrismTargetByIntensity:
+  - 1600
+  - 1600
+  - 2000
+  - 1000
+  harvestPrismTarget: 750
   tapestryRoundSeconds: 90
+  glasshouseRoundSeconds: 90
   siroccoPrismTarget: 400
   broadsidePointsPerPilot: 100
   tandavaBreakPercent: 35
@@ -63,6 +80,11 @@ MonoBehaviour:
   serpentTimeGateTarget: 16
   brittleStarTimeGateTarget: 16
   lanternRunGateTarget: 16
+  thornlineGateTarget: 16
+  decoyRunGateTarget: 12
+  perchRunGateTarget: 16
+  slipLineGateTarget: 16
+  breachGateTarget: 16
   regattaGateTarget: 24
   hijackStealTarget: 500
   hexRaceCrystalCountBuild: 0
@@ -92,8 +114,25 @@ MonoBehaviour:
   wreckingBallPrismTargetBuild: 650
   undertowPointTargetBuild: 12
   dustupPointTargetBuild: 4
-  serpentGulagSnipeTargetBuild: 3
+  serpentHoodSnipeTargetBuild: 3
+  flatlinePointTargetBuild: 90
+  flatlinePointTargetByIntensityBuild:
+  - 90
+  - 90
+  - 90
+  - 90
+  jackstrawStrikeTargetBuild: 3
+  kelpwoodBiteTargetBuild: 12
+  coronaBloomTargetBuild: 15
+  shatterplanePrismTargetBuild: 1600
+  shatterplanePrismTargetByIntensityBuild:
+  - 1600
+  - 1600
+  - 2000
+  - 1000
+  harvestPrismTargetBuild: 750
   tapestryRoundSecondsBuild: 90
+  glasshouseRoundSecondsBuild: 90
   siroccoPrismTargetBuild: 400
   broadsidePointsPerPilotBuild: 100
   tandavaBreakPercentBuild: 35
@@ -116,6 +155,11 @@ MonoBehaviour:
   serpentTimeGateTargetBuild: 16
   brittleStarTimeGateTargetBuild: 16
   lanternRunGateTargetBuild: 16
+  thornlineGateTargetBuild: 16
+  decoyRunGateTargetBuild: 12
+  perchRunGateTargetBuild: 16
+  slipLineGateTargetBuild: 16
+  breachGateTargetBuild: 16
   regattaGateTargetBuild: 24
   hijackStealTargetBuild: 500
   autoRestoreBuildValuesBeforeBuild: 1

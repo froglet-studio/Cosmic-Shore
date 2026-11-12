@@ -674,13 +674,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual int PrismBudget => 0;
 
-        /// <summary>
-        /// Binds this plant to its species lineage: the cell whose population it belongs to and
-        /// the config that defines the species. Registers it in the cell's per-species live
-        /// count (unregistered in OnDestroy). Called by <c>CellLifeSpawnerBase.SpawnFlora</c> -
-        /// the one canonical spawn path every producer already routes through - and by a parent
-        /// for its offspring, since heredity is what lets reproduction recurse.
-        /// </summary>
         /// <summary>This plant's variant tuning block, or null if it rolled none. Read by
         /// <see cref="FloraNetworkSync"/> to record WHICH palette sibling supplied it - the half
         /// of the identity that the element alone does not name.</summary>
@@ -711,6 +704,13 @@ namespace CosmicShore.Gameplay
             base.Die(killerName);
         }
 
+        /// <summary>
+        /// Binds this plant to its species lineage: the cell whose population it belongs to and
+        /// the config that defines the species. Registers it in the cell's per-species live
+        /// count (unregistered in OnDestroy). Called by <c>CellLifeSpawnerBase.SpawnFlora</c> -
+        /// the one canonical spawn path every producer already routes through - and by a parent
+        /// for its offspring, since heredity is what lets reproduction recurse.
+        /// </summary>
         public void AssignLineage(Cell host, FloraConfigurationSO config,
             LifeformVariantPick<FloraVariantTuning>? inherit = null)
         {

@@ -4,7 +4,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using FMOD.Studio;
 using FMODUnity;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Utility;
 using UnityEngine;
 

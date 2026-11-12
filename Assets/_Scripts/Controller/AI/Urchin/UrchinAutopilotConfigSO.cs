@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -105,6 +106,18 @@ namespace CosmicShore.Gameplay
         {
             var cfg = Resources.Load<UrchinAutopilotConfigSO>(ResourcePath);
             return cfg != null ? cfg : CreateInstance<UrchinAutopilotConfigSO>();
+        }
+
+        /// <summary>
+        /// <paramref name="mode"/>'s own config (<c>Resources/UrchinAutopilotConfig_&lt;mode&gt;</c>), or the shared
+        /// default when the mode has none - the <c>MantaSoarAITuningSO.LoadForMode</c> rule, so a genome trained in
+        /// one mode never re-tunes the Urchin in every other mode. Skein has one (genome W, 2026-11-08); Regatta and
+        /// Hijack fly the default.
+        /// </summary>
+        public static UrchinAutopilotConfigSO LoadForMode(GameModes mode)
+        {
+            var cfg = Resources.Load<UrchinAutopilotConfigSO>($"{ResourcePath}_{mode}");
+            return cfg != null ? cfg : LoadDefault();
         }
     }
 }

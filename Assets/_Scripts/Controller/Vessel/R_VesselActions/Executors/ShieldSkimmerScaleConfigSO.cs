@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -179,7 +180,7 @@ namespace CosmicShore.Gameplay
         public float VisibilityMultiplier => Mathf.Max(0f, visibilityMultiplier);
         public Color RestingBladeColor    => restingBladeColor;
 
-        public Color EnergizedColor         => energizedColor;
+        public Color EnergizedColor         => ColorTrace.Retrace(ColorTrace.World, energizedColor);
         public float ColorTransitionSeconds => Mathf.Max(0.0001f, colorTransitionSeconds);
 
         public float IgniteCrackleIntensity => Mathf.Max(0f, igniteCrackleIntensity);
@@ -195,7 +196,7 @@ namespace CosmicShore.Gameplay
         public float HitFlashAmount    => hitFlashAmount;
         public float PopFlashAmount    => popFlashAmount;
         public float FlashDecaySeconds => Mathf.Max(0.0001f, flashDecaySeconds);
-        public Color FlashColor        => flashColor;
+        public Color FlashColor        => ColorTrace.Retrace(ColorTrace.World, flashColor);
 
         public float PopShakeIntensity      => Mathf.Max(0f, popShakeIntensity);
         public float PopShakeDuration       => Mathf.Max(0f, popShakeDuration);

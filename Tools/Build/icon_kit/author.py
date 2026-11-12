@@ -166,7 +166,7 @@ def run(hull, check=False, preview=False):
         os.makedirs(folder, exist_ok=True)
         # every new folder down from the hull's needs its .meta (a first hull with only Parts/ missed its own)
         for f in {out_dir, folder}:
-            folder_meta = f.rstrip("/") + ".meta"
+            folder_meta = f.rstrip("/\\") + ".meta"   # os.path.join(dir, "") ends in "\" on Windows
             if not os.path.exists(folder_meta):
                 open(folder_meta, "w").write(FOLDER_META.format(guid=guid_for(spec.HULL, os.path.relpath(f, ICON_ROOT) + ".folder")))
                 print(f"  wrote {os.path.relpath(folder_meta, ROOT)} (new folder guid)")

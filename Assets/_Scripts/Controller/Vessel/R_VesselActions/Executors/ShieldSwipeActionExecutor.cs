@@ -1,13 +1,18 @@
 using CosmicShore.Core;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
+    /// The SWORDFISH's config sets <see cref="SwordPoseMapping.Bill"/> (2026-11-08): the blade is the fish's bill,
+    /// resting straight ahead off the snout; the difference lays it out to a side and the shared pull stands it up,
+    /// pivoting at its mount (<see cref="BillChannels"/>), and the local pilot's camera pans to keep it centred
+    /// (<see cref="SwordfishSwordCamera"/>). The paragraph below is the <see cref="SwordPoseMapping.Chop"/> model.
+    ///
     /// Drives the Rhino shield swipe from the analog triggers, reparameterized like the
     /// Manta's turn boost: the DIFFERENCE (right - left) sweeps the sword laterally
     /// through yaw+roll (full pulls are the +/-1 stances) and the SUM pitches it down
@@ -74,6 +79,9 @@ namespace CosmicShore.Gameplay
         Vector3 _baseLocalPos;
         Quaternion _baseLocalRot;
         bool _baseCaptured;
+        Matrix4x4 _frameToHull = Matrix4x4.identity; // the pose frame's rest, in the hull's frame (the bill camera)
+
+        readonly SwordfishSwordCamera _billCamera = new();
 
         float _diff;       // smoothed swipe control: -1 (left stance) .. +1 (right stance)
         float _sum;        // smoothed chop control: 0 (raised rest) .. 2 (full chop)
@@ -183,7 +191,11 @@ namespace CosmicShore.Gameplay
             // growing out of both ends of its mount again (the staff read this fix removes).
             bool poseAtRest = _flourish == null
                               && _diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f;
-            if (poseAtRest && Mathf.Approximately(AnchorOffsetLocal(), _appliedAnchor)) return;
+            if (poseAtRest && Mathf.Approximately(AnchorOffsetLocal(), _appliedAnchor))
+            {
+                TickBillCamera();   // the pan eases home after the blade has
+                return;
+            }
 
             // The fingers keep driving underneath a flourish, so the blend back lands exactly
             // where the triggers are at that moment rather than where they were when it began.
@@ -191,14 +203,48 @@ namespace CosmicShore.Gameplay
             _sum = Drive(_sum, sumTarget, analog);
 
             ApplyShieldPose(_flourish != null ? AdvanceFlourish(Time.deltaTime) : AnalogChannels());
+            TickBillCamera();
         }
 
+        bool IsBill => config && config.PoseMapping == SwordPoseMapping.Bill;
+
         /// <summary>The trigger reparameterization, expressed in pose channels.</summary>
-        SwordPoseChannels AnalogChannels() => new(
-            _diff * config.SwipeYawDegrees,
-            _diff * config.SwipeRollDegrees,
-            0.5f * _sum * config.ChopPitchDegrees,
-            0f);
+        SwordPoseChannels AnalogChannels() => IsBill
+            ? BillChannels(_diff, _sum, config.BillSideYawDegrees, config.BillSideRollDegrees, config.BillRaiseDegrees)
+            : new(
+                _diff * config.SwipeYawDegrees,
+                _diff * config.SwipeRollDegrees,
+                0.5f * _sum * config.ChopPitchDegrees,
+                0f);
+
+        /// <summary>
+        /// The Swordfish's bill pose (<see cref="SwordPoseMapping.Bill"/>) from the two controls: the DIFFERENCE
+        /// (right - left, -1..1) swings the bill out to that side, and the RAISE - the part of the pull both triggers
+        /// share, min(left, right) = (sum - |difference|) / 2 - stands it up. So a single trigger lays the sword out
+        /// flat to its side, both triggers stand it straight up, and nothing pulled leaves it pointing ahead off the
+        /// nose. Pitch is negative because a positive turn about the frame's right carries forward DOWN. Pure, so it
+        /// is tested directly.
+        /// </summary>
+        public static SwordPoseChannels BillChannels(float diff, float sum, float sideYawDegrees, float sideRollDegrees, float raiseDegrees)
+        {
+            diff = Mathf.Clamp(diff, -1f, 1f);
+            float raise = Mathf.Clamp01(0.5f * (sum - Mathf.Abs(diff)));
+            return new SwordPoseChannels(diff * sideYawDegrees, diff * sideRollDegrees, -raise * raiseDegrees, 0f);
+        }
+
+        void TickBillCamera()
+        {
+            if (!IsBill || !_baseCaptured || !shieldRoot)
+            {
+                _billCamera.Release();
+                return;
+            }
+            // The blade's midpoint is the transform itself (the mesh is centred on it), and at rest it sits a half
+            // blade ahead of the mount. Its offset from there, in the hull's frame at rest, is what the camera centres.
+            Vector3 rest = _baseLocalPos + _baseLocalRot * Vector3.up * AnchorOffsetLocal();
+            Vector3 offset = _frameToHull.MultiplyVector(shieldRoot.localPosition - rest);
+            _billCamera.Tick(_status, offset, config, Time.deltaTime);
+        }
 
         /// <summary>
         /// Feed this frame's trigger MIRRORS to the combo detector and start a flourish when a
@@ -559,6 +605,10 @@ namespace CosmicShore.Gameplay
             var pose = sweep * _baseLocalRot;
             shieldRoot.localRotation = pose;
 
+            // The BILL pivots at its root on the nose: the mount stays where it is and only the blade turns about
+            // it. (The chop carries the mount round the fuselage's centre, so it carves a wide arc.)
+            Vector3 mount = IsBill ? _baseLocalPos : sweep * _baseLocalPos;
+
             // HILT ANCHOR — what makes it a sword instead of a staff. The blade mesh is
             // centred on its transform, so growing it extends the capsule equally in BOTH
             // directions from the mount: at 30 the sword ran 30 units past the grip in each
@@ -569,7 +619,7 @@ namespace CosmicShore.Gameplay
             // THRUST (combos only) slides the whole blade out along itself — a lunge — as a
             // fraction of that same anchor length, so it reads the same at every blade size.
             float anchor = AnchorOffsetLocal();
-            shieldRoot.localPosition = sweep * _baseLocalPos + pose * Vector3.up * (anchor * (1f + channels.thrust));
+            shieldRoot.localPosition = mount + pose * Vector3.up * (anchor * (1f + channels.thrust));
             _appliedAnchor = anchor;
             _lastApplied = channels;
         }
@@ -603,6 +653,10 @@ namespace CosmicShore.Gameplay
             {
                 _baseLocalPos = shieldRoot.localPosition;
                 _baseLocalRot = shieldRoot.localRotation;
+                var hull = _status?.ShipTransform;
+                _frameToHull = hull && shieldRoot.parent
+                    ? hull.worldToLocalMatrix * shieldRoot.parent.localToWorldMatrix
+                    : Matrix4x4.identity;
                 _baseCaptured = true;
             }
             return true;
@@ -622,6 +676,7 @@ namespace CosmicShore.Gameplay
             // Drop the energize gesture too, so a turn-end/despawn mid-hold can't leave
             // the sword charging forever off a stance edge that will never release.
             Sword?.SetInStance(false);
+            _billCamera.Release();
 
             if (_baseCaptured && shieldRoot)
             {

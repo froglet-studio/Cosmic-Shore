@@ -24,6 +24,14 @@ namespace CosmicShore.UI
     /// </list>
     /// <see cref="VoyageJobsView"/> builds it once and fills it; every word is the voyage content's
     /// (<see cref="VoyageLines"/>) or the game's data, never this class's.
+    ///
+    /// <para><b>Pilots are people, artifacts one of a kind</b> (Garrett 2026-11-07, Docs/Pilots/INVENTORY.md). Pressing a
+    /// seat's pilot cycles the people in the player's crew whose callsign can fly the hull, and its artifact cycles the
+    /// hoard's artifacts the hull can carry (and none); each writes the record's own id into the slot, as the Ark's
+    /// picker does. A seat whose ids are the player's shows the person's name (its callsign word on the setting's label)
+    /// and the artifact's name; a joined squad's other seats carry the owner's ids, which this crew does not hold, so they
+    /// show the callsign and kind from the catalog. A legacy slot (a bare callsign or kind id saved before 2026-11-07)
+    /// cycles on from the person or artifact it resolves to.</para>
     /// </summary>
     public class VoyageOpenCard : MonoBehaviour
     {
@@ -32,22 +40,37 @@ namespace CosmicShore.UI
         {
             public string Pager, Kicker, Title, CourseChip, FoundBy;
             public string CourseValue, SailValue, IntensityValue, Cells, From, To;
+            /// <summary>The raw numbers (no template), for the Voyages board's rows.</summary>
+            public string LightYears, Minutes, Intensity;
             public readonly List<Vector2> Course = new();
             public readonly List<VoyageCardRules.Beat> Beats = new();
             public Action SetSail;
         }
 
-        // The style foundation's colours (Docs/STYLE_FOUNDATION.md v0.3.3) and the map's course colour.
-        static readonly Color Light = new(0.902f, 0.914f, 1f, 1f);
-        static readonly Color Sub = new(0.604f, 0.627f, 0.8f, 1f);
-        static readonly Color Lab = new(0.549f, 0.576f, 0.78f, 1f);
-        static readonly Color Route = new(0.784f, 1f, 0.353f, 1f);
-        static readonly Color Ark = new(1f, 0.78f, 0.25f, 1f);
-        static readonly Color Ground = new(0.024f, 0.039f, 0.149f, 1f);
-        static readonly Color Plate = new(0f, 0.004f, 0.039f, 0.6f);
-        static readonly Color Edge = new(0.169f, 0.196f, 0.4f, 1f);
-        static readonly Color Picked = new(0.902f, 0.914f, 1f, 0.12f);
-        static readonly Color Idle = new(0f, 0.004f, 0.039f, 0.35f);
+        // The style foundation's colours (Docs/STYLE_FOUNDATION.md v0.3.3) and the map's course colour, each painted as
+        // the worn colour set has it (ColorTrace, Docs/VesselModels/COLOR_TRACE.md).
+        static readonly Color LightAuthored = new(0.902f, 0.914f, 1f, 1f);
+        static Color Light => ColorTrace.Retrace(ColorTrace.Ui, LightAuthored);
+        static readonly Color SubAuthored = new(0.604f, 0.627f, 0.8f, 1f);
+        static Color Sub => ColorTrace.Retrace(ColorTrace.Ui, SubAuthored);
+        static readonly Color LabAuthored = new(0.549f, 0.576f, 0.78f, 1f);
+        static Color Lab => ColorTrace.Retrace(ColorTrace.Ui, LabAuthored);
+        static readonly Color RouteAuthored = new(0.784f, 1f, 0.353f, 1f);
+        static Color Route => ColorTrace.Retrace(ColorTrace.Ui, RouteAuthored);
+        static readonly Color ArkAuthored = new(1f, 0.78f, 0.25f, 1f);
+        static Color Ark => ColorTrace.Retrace(ColorTrace.Ui, ArkAuthored);
+        static readonly Color GroundAuthored = new(0.024f, 0.039f, 0.149f, 1f);
+        static Color Ground => ColorTrace.Retrace(ColorTrace.Ui, GroundAuthored);
+        static readonly Color PlateAuthored = new(0f, 0.004f, 0.039f, 0.6f);
+        static Color Plate => ColorTrace.Retrace(ColorTrace.Ui, PlateAuthored);
+        static readonly Color EdgeAuthored = new(0.169f, 0.196f, 0.4f, 1f);
+        static Color Edge => ColorTrace.Retrace(ColorTrace.Ui, EdgeAuthored);
+        static readonly Color PickedAuthored = new(0.902f, 0.914f, 1f, 0.12f);
+        static Color Picked => ColorTrace.Retrace(ColorTrace.Ui, PickedAuthored);
+        static readonly Color IdleAuthored = new(0f, 0.004f, 0.039f, 0.35f);
+        static Color Idle => ColorTrace.Retrace(ColorTrace.Ui, IdleAuthored);
+        static readonly Color SeaAuthored = new(0.75f, 0.75f, 0.8f, 1f);
+        static Color Sea => ColorTrace.Retrace(ColorTrace.Ui, SeaAuthored);
         static readonly Element[] Elements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
         const float Slide = 0.32f;
@@ -88,6 +111,10 @@ namespace CosmicShore.UI
         RectTransform _sweep, _routeLine;
         Image _endNode;
         Button _sail1, _sail2, _sail3, _save;
+        // Read on each press of a pilot or artifact setting (reused, not allocated per press).
+        readonly List<PilotRecord> _crew = new();
+        readonly List<ArtifactRecord> _hoard = new();
+        readonly List<string> _ids = new();
 
         sealed class Seat
         {
@@ -449,7 +476,7 @@ namespace CosmicShore.UI
             Set(_pager, _model.Pager);
             bool sail = _model.SetSail != null;
             foreach (var b in new[] { _sail1, _sail2, _sail3 }) if (b) b.interactable = sail;
-            if (_map) _poster.Show(_map, _model.Course, Route, Ark, new Color(0.75f, 0.75f, 0.8f, 1f));
+            if (_map) _poster.Show(_map, _model.Course, Route, Ark, Sea);
 
             Set(_chipCourse, _model.CourseChip);
             Set(_chipFound, _model.FoundBy);
@@ -531,14 +558,23 @@ namespace CosmicShore.UI
                 view.Hull.sprite = sprite;
                 view.Hull.enabled = sprite;
                 bool editable = active != null && CanEdit(active, seat);
-                var pilot = active != null && _catalog ? _catalog.ResolvePilot(slot, null) : null;
-                var artifact = active != null && _catalog ? _catalog.ResolveArtifact(slot, null) : null;
+                var keywords = vessel ? vessel.Keywords : null;
+                var pilot = active != null && _catalog ? _catalog.ResolvePilot(slot, keywords) : null;
+                var artifact = active != null && _catalog ? _catalog.ResolveArtifact(slot, keywords) : null;
+                // The catalog gives the callsign and kind for anyone's ids; only the player's own name a person and an
+                // artifact this inventory holds (SquadsPage.IdsAreMine).
+                PilotRecord person = null;
+                ArtifactRecord held = null;
+                if (editable && pilot && PilotLoadoutStore.TryGetPilot(slot.PilotId, out var p) && p.CallsignOrTemplate() == pilot.Id) person = p;
+                if (editable && artifact && PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var a) && a.Kind() == artifact.Id) held = a;
+                string word = pilot ? Callsigns.WordOf(pilot.Vision) : string.Empty;
+                Set(view.Settings[1].label, string.IsNullOrEmpty(word) ? _lines.CardSettingPilot : _lines.CardSettingPilot + " - " + word);
                 string[] values =
                 {
                     vessel ? vessel.CardName : string.Empty,
-                    pilot ? pilot.DisplayName : string.Empty,
+                    person != null ? person.DisplayName() : pilot ? pilot.DisplayName : string.Empty,
                     ElementName(slot.Element),
-                    artifact ? artifact.DisplayName : _lines.CardNoArtifact,
+                    held != null ? held.Name : artifact ? artifact.DisplayName : _lines.CardNoArtifact,
                 };
                 for (int k = 0; k < 4; k++)
                 {
@@ -561,9 +597,9 @@ namespace CosmicShore.UI
         }
 
         // The Ark's rules (SquadsPage.IsMySeat / CanEdit): your own card, and the AI or open cards of a squad you made.
-        static bool IsMySeat(SavedSquad squad, int seat) => squad.IsJoined() ? seat == squad.MySeat : seat == 0;
+        internal static bool IsMySeat(SavedSquad squad, int seat) => squad.IsJoined() ? seat == squad.MySeat : seat == 0;
 
-        static bool CanEdit(SavedSquad squad, int seat) =>
+        internal static bool CanEdit(SavedSquad squad, int seat) =>
             squad != null && (IsMySeat(squad, seat) || (!squad.IsJoined() && seat > 0 && !squad.GetSlot(seat).IsPlayer()));
 
         string Who(SavedSquad squad, int seat, SquadSlot slot)
@@ -599,20 +635,27 @@ namespace CosmicShore.UI
                     var next = VoyageCardRules.Cycle(offered, slot.Vessel);
                     if (offered.Count == 0 || next == slot.Vessel) return;
                     slot = slot.WithVessel(next);
-                    // The player's own card starts on the pilot they keep in that vessel's Hangar seat.
+                    // The player's own card starts on the person they keep in that vessel's Hangar seat (a crew id).
                     if (mine) slot.PilotId = PilotLoadoutStore.GetPilot(next);
                     break;
                 }
                 case 1:
                 {
+                    // The crew's people whose callsign can fly the hull, in crew order.
                     var vessel = Vessel(slot.Vessel);
-                    var pilots = new List<PilotSO>();
-                    if (_catalog && vessel) _catalog.GetPilotsFor(vessel, pilots);
-                    var ids = new List<string>();
-                    foreach (var p in pilots) if (p) ids.Add(p.Id);
-                    var current = _catalog ? _catalog.ResolvePilot(slot, null) : null;
-                    if (ids.Count == 0) return;
-                    slot.PilotId = VoyageCardRules.Cycle(ids, current ? current.Id : slot.PilotId);
+                    _ids.Clear();
+                    if (_catalog && vessel)
+                    {
+                        PilotLoadoutStore.GetCrew(_crew);
+                        foreach (var person in _crew)
+                            if (_catalog.TryGetPilot(person.Id, out var callsign) && callsign && callsign.Requirement != null
+                                && callsign.Requirement.IsMetBy(vessel.Class, vessel.Keywords))
+                                _ids.Add(person.Id);
+                    }
+                    if (_ids.Count == 0) return;
+                    // A legacy callsign id cycles on from the person it resolves to.
+                    string current = PilotLoadoutStore.TryGetPilot(slot.PilotId, out var seated) ? seated.Id : slot.PilotId;
+                    slot.PilotId = VoyageCardRules.Cycle(_ids, current);
                     break;
                 }
                 case 2:
@@ -620,26 +663,33 @@ namespace CosmicShore.UI
                     break;
                 default:
                 {
+                    // The hoard's artifacts the hull can carry: each is one of a kind, so every seat this card edits (the
+                    // player's own, or an AI or open seat of a squad they made) carries only what is held. Null is none.
                     var vessel = Vessel(slot.Vessel);
-                    var artifacts = new List<ArtifactSO>();
-                    if (_catalog && vessel) _catalog.GetArtifactsFor(vessel, artifacts);
-                    // The player carries only what they hold; an AI wingmate may carry anything. Null is no artifact.
-                    var ids = new List<string> { null };
-                    foreach (var a in artifacts)
-                        if (a && (!mine || PilotLoadoutStore.Holds(a.Id))) ids.Add(a.Id);
-                    slot.ArtifactId = VoyageCardRules.Cycle(ids, string.IsNullOrEmpty(slot.ArtifactId) ? null : slot.ArtifactId);
+                    _ids.Clear();
+                    _ids.Add(null);
+                    if (_catalog && vessel)
+                    {
+                        PilotLoadoutStore.GetHoard(_hoard);
+                        foreach (var artifact in _hoard)
+                            if (_catalog.TryGetArtifact(artifact.Id, out var kind) && kind && kind.Requirement != null
+                                && kind.Requirement.IsMetBy(vessel.Class, vessel.Keywords))
+                                _ids.Add(artifact.Id);
+                    }
+                    // A legacy kind id cycles on from the artifact it resolves to.
+                    string current = PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var carried) ? carried.Id : null;
+                    slot.ArtifactId = VoyageCardRules.Cycle(_ids, current);
                     break;
                 }
             }
             squad.SetSlot(seat, slot);
             // Each vessel has its own pilot and artifact: one moved onto this vessel leaves the others (the pilot swaps).
             squad.KeepCardsOwn(seat, previousPilot);
-            if (_catalog)
-            {
-                var all = new List<string>();
-                foreach (var p in _catalog.Pilots) if (p) all.Add(p.Id);
-                squad.FillPilots(all);
-            }
+            // Every vessel needs a pilot: an empty or doubled seat takes the next free person of the crew.
+            PilotLoadoutStore.GetCrew(_crew);
+            _ids.Clear();
+            foreach (var p in _crew) if (!string.IsNullOrEmpty(p.Id)) _ids.Add(p.Id);
+            squad.FillPilots(_ids);
             Draw();
         }
 

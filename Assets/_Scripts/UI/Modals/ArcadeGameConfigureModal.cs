@@ -7,7 +7,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using TMPro;
 using Unity.Netcode;
@@ -73,11 +73,14 @@ namespace CosmicShore.UI
         [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
         [SerializeField] private ModePreviewSession previewSession;
 
-        [SerializeField, Tooltip("Rebuild the preview's arena when the intensity row changes. Off (the owner, 2026-10-17: " +
-                                 "\"the cell should not change for the preview\"): the preview keeps the card's lowest " +
-                                 "intensity cell, so moving the row never stands a new world - a multi-second cell build " +
-                                 "and a hitch on every press. The match itself still launches at the chosen intensity.")]
-        private bool previewFollowsIntensity;
+        [SerializeField, Tooltip("Rebuild the preview's arena when the intensity row changes, so each " +
+                                 "intensity shows the world (and, for a gate race, the course) it plays in. " +
+                                 "On (Shombith, 2026-11-10: \"it should show how the environment looks when " +
+                                 "each intensity is clicked\"). This reverses his 2026-10-17 'one cell' call, " +
+                                 "which was about a multi-second cell build per press: the card now stands a " +
+                                 "scale model (a mesh, no prisms) and builds the real cell only on the tap, so " +
+                                 "following the row costs a model. Off holds the card's lowest intensity.")]
+        private bool previewFollowsIntensity = true;
 
         [Header("Maelstrom")]
         [Tooltip("Names the Maelstrom's own arcade card, so OpenMaelstrom can find it. Optional - " +
@@ -258,6 +261,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient += HandleIntensityChangedOnClient;
                 arcadeConfigSyncManager.OnAIDifficultyChangedOnClient += HandleAIDifficultyChangedOnClient;
+                arcadeConfigSyncManager.OnVesselSelectionChangedOnClient += HandleVesselSelectionChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient += HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllyVesselCycleRequested += HandleAllyVesselCycleRequested;
                 arcadeConfigSyncManager.OnAIVesselSetRequested += HandleAIVesselSetRequested;
@@ -300,6 +304,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient -= HandleIntensityChangedOnClient;
                 arcadeConfigSyncManager.OnAIDifficultyChangedOnClient -= HandleAIDifficultyChangedOnClient;
+                arcadeConfigSyncManager.OnVesselSelectionChangedOnClient -= HandleVesselSelectionChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient -= HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllyVesselCycleRequested -= HandleAllyVesselCycleRequested;
                 arcadeConfigSyncManager.OnAIVesselSetRequested -= HandleAIVesselSetRequested;
@@ -318,6 +323,7 @@ namespace CosmicShore.UI
 
             ReconcileClientLobby();
             TickArenaHullClaim();
+            TickVesselSelection();
 
             // The pad moves focus through the EventSystem like any other screen: the configure tree
             // is plain Selectables (intensity nodes, domain tiles, each domain's + AI, Start).
@@ -519,6 +525,9 @@ namespace CosmicShore.UI
             RestoreRememberedRoster();
             RestoreRememberedDomain();
             RefreshRoster();
+
+            // The Vessels row opens on Pick, after the commit (the lobby it publishes into is open now).
+            ResetVesselSelection();
         }
 
         /// <summary>
@@ -643,14 +652,6 @@ namespace CosmicShore.UI
         #region Launch panels
 
         /// <summary>
-        /// Bring up the panel that draws this card and take the others down.
-        ///
-        /// <para>Selection is by <see cref="ArcadeLaunchPanel.Handles"/>, first match wins - a card
-        /// asks the panels which of them draws it rather than the modal switching on a mode enum,
-        /// so a third kind of card is a new subclass and one list entry, with nothing here to
-        /// edit.</para>
-        /// </summary>
-        /// <summary>
         /// Which panel draws this card, with NO side effects - so the routing question can be asked
         /// before anything is shown or hidden.
         /// </summary>
@@ -664,6 +665,22 @@ namespace CosmicShore.UI
             return null;
         }
 
+        /// <summary>
+        /// Whether this copy can launch <paramref name="game"/>: it drives a launch panel that takes the card. Menu_Main
+        /// carries three copies of this component and only one authors panels - the Arena window's and the Maelstrom
+        /// window's are their panels' host modals (<see cref="ArcadeLaunchPanel.HostModal"/>) - so a caller that finds
+        /// "a" modal in the scene must ask this, or it can open the card on a shell that binds nothing.
+        /// </summary>
+        public bool CanOpen(SO_ArcadeGame game) => game && ResolvePanelFor(game) != null;
+
+        /// <summary>
+        /// Bring up the panel that draws this card and take the others down.
+        ///
+        /// <para>Selection is by <see cref="ArcadeLaunchPanel.Handles"/>, first match wins - a card
+        /// asks the panels which of them draws it rather than the modal switching on a mode enum,
+        /// so a third kind of card is a new subclass and one list entry, with nothing here to
+        /// edit.</para>
+        /// </summary>
         void SelectLaunchPanel(SO_ArcadeGame game)
         {
             if (!UsesLaunchPanels) return;
@@ -751,6 +768,7 @@ namespace CosmicShore.UI
                 arena.OnVesselConfirmRequested += HandleVesselConfirmRequested;
                 arena.OnVesselChangeRequested  += HandleVesselChangeRequested;
                 arena.OnVesselPickRequested    += HandleVesselPickRequested;
+                arena.OnVesselSelectionStepRequested += HandleVesselSelectionStepRequested;
             }
 
             WireSeatLineup(_activePanel.SeatLineup);
@@ -797,6 +815,7 @@ namespace CosmicShore.UI
                 arena.OnVesselConfirmRequested -= HandleVesselConfirmRequested;
                 arena.OnVesselChangeRequested  -= HandleVesselChangeRequested;
                 arena.OnVesselPickRequested    -= HandleVesselPickRequested;
+                arena.OnVesselSelectionStepRequested -= HandleVesselSelectionStepRequested;
             }
 
             UnwireSeatLineup(_activePanel.SeatLineup);
@@ -1183,17 +1202,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Stop anything running in the window and let go of it. Reached from exactly TWO routes -
-        /// the ✕ (<see cref="CloseAndNotifyClients"/>) and the modal being disabled.
-        ///
-        /// <para>This comment used to claim a third, "a launch", and that route does not exist:
-        /// <see cref="HandleAllPlayersReady"/> closes through <c>ModalWindowOut</c>, which fades a
-        /// CanvasGroup and never deactivates the GameObject, so <c>OnDisable</c> never fires. The
-        /// window is taken down on that route by <see cref="HandlePreviewEnded"/> instead, off the
-        /// session's own end event - which is the better place for it anyway, since it holds on
-        /// every stop rather than on the ones the modal happens to hear about.</para>
-        /// </summary>
-        /// <summary>
         /// This modal closed - by any route at all. Take the CONTENT down with the window.
         ///
         /// <para>Re-entrancy is safe: <c>_activePanel.Hide()</c> on a panel with a host modal
@@ -1249,6 +1257,17 @@ namespace CosmicShore.UI
         // apart by the caller saying which one it is.
         bool _launching;
 
+        /// <summary>
+        /// Stop anything running in the window and let go of it. Reached from exactly TWO routes -
+        /// the ✕ (<see cref="CloseAndNotifyClients"/>) and the modal being disabled.
+        ///
+        /// <para>This comment used to claim a third, "a launch", and that route does not exist:
+        /// <see cref="HandleAllPlayersReady"/> closes through <c>ModalWindowOut</c>, which fades a
+        /// CanvasGroup and never deactivates the GameObject, so <c>OnDisable</c> never fires. The
+        /// window is taken down on that route by <see cref="HandlePreviewEnded"/> instead, off the
+        /// session's own end event - which is the better place for it anyway, since it holds on
+        /// every stop rather than on the ones the modal happens to hear about.</para>
+        /// </summary>
         void ShutDownPreview()
         {
             UnsubscribeFromPreviewSession();
@@ -1477,6 +1496,10 @@ namespace CosmicShore.UI
                 ? Mathf.Clamp(_weeklyChallengeIntensity, game.MinIntensity, game.MaxIntensity)
                 : LaunchPreferenceRules.ResolveIntensity(
                     rememberedIntensity, game.MinIntensity, game.MaxIntensity, maxUnlocked);
+
+            // An arena card has no intensity row: it always plays the one arena intensity, whatever was remembered or
+            // unlocked (ResolveIntensity would clamp it to a player's unlocked ceiling, which can sit below it).
+            if (game.ArenaRules) config.Intensity = SO_ArcadeGame.ArenaIntensity;
 
             // The AI difficulty it was last launched with, or the default (Medium) the first time
             // and for a record saved before difficulty existed. The weekly challenge pins it to
@@ -1734,6 +1757,7 @@ namespace CosmicShore.UI
             arena.ShowHullStrip(_availableShips, _availableShipIndex,
                                 v => IsHullHeldByOtherPilot(v.Class), _vesselConfirmed);
             RefreshSeatLineup();
+            DrawVesselSelection();   // the Vessels row and, in Squad mode, the chosen squad over the seat caption
         }
 
         /// <summary>A tap on the hull strip: show that hull, unless the pick is already made, a claim
@@ -1748,7 +1772,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            if (_vesselConfirmed || ArenaHullClaimPending) return;
+            if (_vesselConfirmed || ArenaHullClaimPending || !MayChooseOwnHullNow()) return;
             if (index < 0 || index >= _availableShips.Count || index == _availableShipIndex) return;
             if (IsHullHeldByOtherPilot(_availableShips[index].Class)) return;
 
@@ -1766,8 +1790,9 @@ namespace CosmicShore.UI
                 return;
             }
 
+            if (TryStepSquad(direction)) return;   // Squad mode: the arrows step the saved squads
             if (_vesselConfirmed || _availableShips.Count == 0) return;
-            if (ArenaHullClaimPending) return;
+            if (ArenaHullClaimPending || !MayChooseOwnHullNow()) return;
 
             int count = _availableShips.Count;
             // Step past hulls another pilot already holds (arena cards only - a no-op otherwise).
@@ -1787,7 +1812,8 @@ namespace CosmicShore.UI
         {
             // An AI's pick lands as it is made; only the pilot's own hull is claimed.
             if (_vesselSeat != OwnVesselSeat) return;
-            if (_vesselConfirmed || ArenaHullClaimPending) return;
+            if (TryDealFromChosenSquad()) return;   // Squad mode: SELECT deals one of the squad's vessels
+            if (_vesselConfirmed || ArenaHullClaimPending || !MayChooseOwnHullNow()) return;
             if (_availableShipIndex < 0 || _availableShipIndex >= _availableShips.Count) return;
 
             // ARENA: a hull is flown by one pilot, so SELECT VESSEL is a CLAIM the server
@@ -1804,6 +1830,8 @@ namespace CosmicShore.UI
         void HandleVesselChangeRequested()
         {
             if (_vesselSeat != OwnVesselSeat || !_vesselConfirmed || _localPlayerReady) return;
+            // A dealt or drafted hull is not taken back: only Pick lets a pilot change their mind.
+            if (SelectionMode != VesselSelectionMode.Pick) return;
 
             _vesselConfirmed = false;
             ReleaseArenaHullClaim();
@@ -1871,7 +1899,9 @@ namespace CosmicShore.UI
                 if (players[i] is not Player p || !p || p == self || !p.IsSpawned) continue;
                 if (p.ArenaHullClaim == hull) return true;
             }
-            return false;
+
+            // In a draft an AI's hull is as final as a pilot's: it was its turn, and it picked.
+            return SelectionMode == VesselSelectionMode.Draft && config != null && config.AIVessels.Contains(hull);
         }
 
         /// <summary>
@@ -1975,6 +2005,12 @@ namespace CosmicShore.UI
             if (RequiresVesselConfirmation && !_vesselConfirmed)
             {
                 _activePanel.SetStartAvailable(false, "Claim a hull to start.");
+                return;
+            }
+
+            if (SelectionHoldsStart(out var selectionReason))
+            {
+                _activePanel.SetStartAvailable(false, TemplateText.Fill(selectionReason));
                 return;
             }
 
@@ -2571,7 +2607,7 @@ namespace CosmicShore.UI
         /// </summary>
         void ApplyAIVesselSet(Player requester, int ordinal, VesselClassType hull)
         {
-            if (!MayRequesterPickAiSeat(requester, ordinal)) return;
+            if (!MayRequesterPickAiSeat(requester, ordinal) || !MaySetAiHullUnderSelection(requester, ordinal)) return;
             if (!AIHullSeating.IsConcrete(hull) || !_availableShips.Any(v => v && v.Class == hull)) return;
 
             config.SyncAIVesselSlots();
@@ -2602,7 +2638,7 @@ namespace CosmicShore.UI
         /// </summary>
         void ApplyAllyVesselCycle(Player requester, int ordinal, int direction)
         {
-            if (!MayRequesterPickAiSeat(requester, ordinal)) return;
+            if (!MayRequesterPickAiSeat(requester, ordinal) || !MaySetAiHullUnderSelection(requester, ordinal)) return;
 
             config.SyncAIVesselSlots();
             var seatDomain = config.AIDomains[ordinal];
@@ -2837,6 +2873,7 @@ namespace CosmicShore.UI
             _vesselConfirmed = false;
             _vesselSeat = OwnVesselSeat;
             ReleaseArenaHullClaim();
+            ClearVesselSelectionGate();
 
             // A satellite arena is the expensive half of the preview - it must never outlive the
             // window somebody was looking at it through.
@@ -3064,11 +3101,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Hands the launch to <see cref="WeeklyChallengeService"/> when this session is the weekly
-        /// challenge, and clears the flag when it is not. Safe with no service present (the
-        /// feature is simply off) and safe on a card that merely happens to be this week's mode.
-        /// </summary>
-        /// <summary>
         /// False only when this is a weekly-challenge session whose attempt is already spent.
         /// Every ordinary card, and a challenge with an attempt left, answers true.
         /// </summary>
@@ -3113,6 +3145,11 @@ namespace CosmicShore.UI
             return leaderboardModal;
         }
 
+        /// <summary>
+        /// Hands the launch to <see cref="WeeklyChallengeService"/> when this session is the weekly
+        /// challenge, and clears the flag when it is not. Safe with no service present (the
+        /// feature is simply off) and safe on a card that merely happens to be this week's mode.
+        /// </summary>
         void ArmWeeklyChallengeForLaunch()
         {
             if (!gameData) return;
@@ -3286,6 +3323,7 @@ namespace CosmicShore.UI
             InitializeDomainSelection();
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
+            ResetVesselSelection();
 
             // Move the APP SHELL to the window the card belongs to first, so the card the host
             // opened is drawn on it rather than over whatever the guest was looking at. An Arena card
@@ -3328,6 +3366,17 @@ namespace CosmicShore.UI
         const float FreestyleExitGraceSeconds = 6f;
         float _freestyleExitDeadline;
 
+        /// <summary>True when this guest's config no longer matches the host's replicated roster.</summary>
+        bool ClientRosterDrifted(ArcadeConfigSyncManager.LobbySnapshot lobby)
+        {
+            if (config.PlayerCount != Mathf.Max(1, lobby.PlayerCount)) return true;
+            var placed = lobby.PlacedAiDomains();
+            if (config.AIDomains.Count != placed.Length) return true;
+            for (int i = 0; i < placed.Length; i++)
+                if ((int)config.AIDomains[i] != placed[i]) return true;
+            return false;
+        }
+
         /// <summary>
         /// Self-heal: if the host's lobby is open and this guest is not showing it, show it.
         ///
@@ -3344,17 +3393,6 @@ namespace CosmicShore.UI
         /// dismissed the card themselves is not fought with; a host who re-opens (a new
         /// generation) reaches them either way.</para>
         /// </summary>
-        /// <summary>True when this guest's config no longer matches the host's replicated roster.</summary>
-        bool ClientRosterDrifted(ArcadeConfigSyncManager.LobbySnapshot lobby)
-        {
-            if (config.PlayerCount != Mathf.Max(1, lobby.PlayerCount)) return true;
-            var placed = lobby.PlacedAiDomains();
-            if (config.AIDomains.Count != placed.Length) return true;
-            for (int i = 0; i < placed.Length; i++)
-                if ((int)config.AIDomains[i] != placed[i]) return true;
-            return false;
-        }
-
         void ReconcileClientLobby()
         {
             if (!UsesLaunchPanels || !arcadeConfigSyncManager) return;

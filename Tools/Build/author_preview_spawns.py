@@ -76,7 +76,19 @@ SCENE_FOR_MODE = {
     73: 'MinigameSerpentTime',
     74: 'MinigameBrittleStarTime',
     75: 'MinigameLanternRun',
-    77: 'MinigameSerpentGulag',
+    77: 'MinigameSerpentHood',
+    79: 'MinigameThornline',
+    80: 'MinigameDecoyRun',
+    83: 'MinigameBreach',
+    82: 'MinigameSlipLine',
+    81: 'MinigamePerchRun',
+    84: 'MinigameFlatline',
+    85: 'MinigameJackstraw',
+    86: 'MinigameKelpwood',
+    87: 'MinigameCorona',
+    88: 'MinigameHarvest',
+    89: 'MinigameGlasshouse',
+    90: 'MinigameShatterplane',
 }
 
 

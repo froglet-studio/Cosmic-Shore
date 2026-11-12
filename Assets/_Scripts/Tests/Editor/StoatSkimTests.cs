@@ -353,12 +353,16 @@ namespace CosmicShore.Tests
         // ------------------------------------------------------------------ the shipped config
 
         [Test]
-        public void ShippedSlingConfig_FliesTheSkim()
+        public void ShippedSkimConfig_IsSound_TimeModeFliesTheTrampoline()
         {
+            // The Skim Sling was Time mode from 2026-10-29 until the orbit-only kit unset StoatSlingConfig.skim; since 2026-11-04
+            // Time mode is the trampoline (StoatSlingTests). The Skim config is kept for when a skim is set again.
             var sling = AssetDatabase.LoadAssetAtPath<StoatSlingConfigSO>("Assets/_SO_Assets/VesselActions/Stoat/StoatSlingConfig.asset");
             Assert.IsNotNull(sling, "StoatSlingConfig.asset");
-            Assert.IsNotNull(sling.Skim, "Time mode is the Skim Sling: StoatSlingConfig.skim must be set");
-            var skim = sling.Skim;
+            Assert.IsTrue(sling.Trampoline, "Time mode is the trampoline (STOAT_DIPOLE.md §1b)");
+            Assert.IsNull(sling.Skim, "the Skim Sling is not the shipped Time mode");
+            var skim = AssetDatabase.LoadAssetAtPath<StoatSkimConfigSO>("Assets/_SO_Assets/VesselActions/Stoat/StoatSkimConfig.asset");
+            Assert.IsNotNull(skim, "StoatSkimConfig.asset");
             Assert.That(skim.TidepoolScale, Is.GreaterThan(1f));
             Assert.That(skim.LaunchGainMax, Is.GreaterThanOrEqualTo(skim.LaunchGainMin));
             Assert.That(skim.CapCruises, Is.GreaterThan(1f));

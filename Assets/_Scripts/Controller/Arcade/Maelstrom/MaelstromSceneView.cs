@@ -7,7 +7,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -921,10 +921,6 @@ namespace CosmicShore.Gameplay
 
         // ── Roster sourcing / ordering ───────────────────────────────────────────
 
-        /// <summary>
-        /// The roster for the round-0 preview - the connected human players (every peer sees all
-        /// Player NetworkObjects via the spawn manager). Between rounds the cards come from History.
-        /// </summary>
         /// <summary>
         /// Who is in this tournament: the live human pilots, plus the AI SEATS the hub dealt.
         ///

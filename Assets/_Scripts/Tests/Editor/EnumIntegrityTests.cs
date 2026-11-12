@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
             // If someone adds or removes a vessel, this test forces them to
             // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(27, values.Length,
+            Assert.AreEqual(28, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -64,6 +64,7 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Honeyguide, 23)]
         [TestCase(VesselClassType.Meerkat, 28)]
         [TestCase(VesselClassType.TigerMoth, 29)]
+        [TestCase(VesselClassType.Swordfish, 30)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -184,12 +185,28 @@ namespace CosmicShore.Tests
             // three hulls that had none (merged with BurrowRun from Ys-bleeding-edge).
             // 69 -> 70 on 2026-10-31: WaystationPrototype (76), the Tiger Moth's Drop Tower race beside Waystation
             // (72-74 are ScarabRally, SerpentTime and BrittleStarTime; 75 is LanternRun's, in flight).
-            // 70 -> 71 on 2026-10-31: SerpentGulag (77), the Serpent's sniper duel (67 is still SerpentCharge's and
+            // 70 -> 71 on 2026-10-31: SerpentGulag (77, renamed SerpentHood 2026-11-09), the Serpent's sniper duel (67 is still SerpentCharge's and
             // 75 LanternRun's, both in flight).
             // 71 -> 70 on 2026-11-01: WaystationPrototype (76) folded into Waystation (58); 76 is retired and reserved.
             // 70 -> 71 on 2026-11-01: LanternRun (75), the Angler's Time race.
+            // 71 -> 72 on 2026-11-07: Thornline (79), the Shrike's Time race (78 was SpeedPainter's on its branch).
+            // 72 -> 73 on 2026-11-07: DecoyRun (80), the Jacks' Time race.
+            // 73 -> 74 on 2026-11-07: PerchRun (81), the Goby's Time race.
+            // 74 -> 75 on 2026-11-07: SlipLine (82), the Honeyguide's Time race.
+            // 75 -> 76 on 2026-11-07: Breach (83), the Orca's Time race.
+            // 76 -> 77 on 2026-11-09: Jackstraw (85), the Thresher's Charge game. It first took 84, which the Brittle Star's
+            // Flatline (84, claude/great-rubin-rur3xs, in flight) had claimed; Shombith gave 84 to Flatline. When both land
+            // this becomes 78.
+            // 77 -> 78 on 2026-11-09: Flatline (84), the Brittle Star's charge game (Shombith gave it 84 after both claimed it).
+            // 78 -> 79 on 2026-11-09: Kelpwood (86), the Angler's Charge game.
+            // 79 -> 80 on 2026-11-10: Corona (87), the Manta's Charge game (87 free on every branch that day).
+            // 80 -> 81 on 2026-11-10: Harvest (88), the Thresher's Space game (88 free on every recent branch that day).
+            // 81 -> 82 on 2026-11-10: Shatterplane (90), the Brittle Star's Space game. It first took 88, which Harvest
+            // landed with first; 89 is Glasshouse's on claude/peaceful-cerf-vpl3x8 (in flight), so it moved to 90.
+            // 82 -> 83 on 2026-11-11: Glasshouse (89), the Angler's Mass game. It first took 88, which Harvest
+            // pushed first; 89 was free on every branch.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(71, values.Length,
+            Assert.AreEqual(83, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -235,6 +252,14 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.ScarabRally, 72)]
         [TestCase(GameModes.SerpentTime, 73)]
         [TestCase(GameModes.BrittleStarTime, 74)]
+        [TestCase(GameModes.Thornline, 79)]
+        [TestCase(GameModes.DecoyRun, 80)]
+        [TestCase(GameModes.PerchRun, 81)]
+        [TestCase(GameModes.SlipLine, 82)]
+        [TestCase(GameModes.Breach, 83)]
+        [TestCase(GameModes.Flatline, 84)]
+        [TestCase(GameModes.Corona, 87)]
+        [TestCase(GameModes.Shatterplane, 90)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

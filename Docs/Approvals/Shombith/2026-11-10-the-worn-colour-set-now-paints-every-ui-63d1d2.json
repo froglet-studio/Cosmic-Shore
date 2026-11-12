@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-10-the-worn-colour-set-now-paints-every-ui-63d1d2",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-10T21:40:54+00:00",
+  "area": "the UI theme (UIThemeLive, ColorSetUITheme) and its tests",
+  "summary": "The worn colour set now paints every UI colour, not only the 13 tokens: UIThemeLive retraces non-token colours through ColorTrace (graphics, TMP gradients, ColorTint ColorBlocks, Shadow/Outline, input carets), sweeps changed root canvases every frame instead of once a second, and swaps the tooltip and element tokens too; ColorSetUITheme.Build reads ui-token ids from the set, so the element colours and tooltip are each set's own (Photic keeps the authored values). ColorSetUIThemeTests.TheElementColours_StayAuthored became TheElementColours_AreTheSetsOwn_AndPhoticsAreTheAuthored.",
+  "why": "Garrett, 2026-11-10: every colour in the game must respect the colour set, the UI included. Docs/VesselModels/COLOR_TRACE.md. Open decision for you both: under Photic the UI theme still re-hues the tokens (your 2026-11-09 console parity), so Photic's UI is not the authored UITheme.asset.",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "537eafa35",
+  "paths": [
+    "Assets/_Scripts/Tests/Editor/ColorSetUIThemeTests.cs",
+    "Assets/_Scripts/UI/ColorSetUITheme.cs",
+    "Assets/_Scripts/UI/UIThemeLive.cs"
+  ]
+}

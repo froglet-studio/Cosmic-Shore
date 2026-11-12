@@ -128,7 +128,8 @@ MODES = [
      "SwitchesThreaded",
      "Headlong's solver cut to the Manta's full-boost circle: the FLIGHT phase stands that "
      "circuit (same RaceCourseSource, card-art seed), laps it, and starts the pilot behind gate "
-     "1. It teaches the Soar/Yastri trigger trade. One cell serves every intensity."),
+     "1. It teaches Soar, the Time ability, alone - both triggers buried, eased together for a "
+     "corner (REDLINE.md section 1). One cell serves every intensity."),
 ]
 
 def course_structure(scene_name: str) -> str:

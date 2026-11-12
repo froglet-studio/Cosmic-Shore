@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.Utility;

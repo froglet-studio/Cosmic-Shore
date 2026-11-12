@@ -600,7 +600,7 @@ Two hygiene facts that matter for a visual overhaul:
 
 Runtime-loaded by path: `Assets/Resources/ElementPetals/` (4 petal sprites for the elemental bars).
 
-Avatar list: `SO_ProfileIconList` → `Assets/_SO_Assets/SO_DefaultProfileIcons.asset` (consumed by 7 UI scripts).
+Avatar list: `SO_ProfileIconList` → `Assets/_SO_Assets/SO_DefaultProfileIcons.asset` (consumed by 7 UI scripts). Since 2026-11-10 it holds the whole pilot catalog (ids 1-18 = callsign values, 19-50 the painted pilots, append-only), cut from the pilot portraits and written by `Tools/Build/author_pilot_avatar_assets.py`; never edit it in the inspector.
 
 Ability icons per vessel: `SO_VesselAbility` assets carry `IconActive`/`IconInactive` sprites; per-vessel ability maps live in `Assets/Resources/ElementalAbilityMaps/` (8 assets: Dolphin, Manta, Rhino, Scarab, Serpent, Sparrow, Squirrel, Urchin).
 

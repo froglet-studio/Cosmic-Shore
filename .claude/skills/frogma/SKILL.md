@@ -235,6 +235,11 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
   locally before publishing (`node .claude/skills/frogma/render_local.cjs <dir> <out> <boards...>`: a stand-in for the
   canvas runtime, holes / `sc-for` / `sc-if` / handlers, `CLICK=` presses through a flow; `/_blob/` images show broken) and look for an overlay covering the
   very control it points at. Rev 36's `clear_of()` moves a panel off its target.
+- **A `<button>` inside a `<button>` splits the board** (Rev 60, 2026-11-06). A tappable card holding its own Claim / Play
+  button is the natural markup, and the HTML parser closes the outer button at the inner one, so the card's other
+  children fall out and land elsewhere on the board (cards drawn above the phone frame). `check` passes it; only a local
+  render shows it. Make the card a `<div>`, put a transparent `<button class="pick" style="position:absolute;inset:0">`
+  as its first child for the pick, and give the content above it `pointer-events:none` except the inner button's row.
 - **The sliver clips what straddles it** (Rev 51, 2026-11-05). `.sl` is a `clip-path`, so a window's buttons placed to
   straddle its foot (style guide §6) are cut in half when they are children of the `.sl` element: the check passes,
   the board shows half a button. Put the sliver on a background layer (`<div class="abs sl panel" style="inset:0">`)
@@ -244,6 +249,15 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
   meant to open at 1.25 s shows half open. Either put the timing in keyframe percentages on one shared loop (the
   `phased()` scrubber in Rev 33's kit), or compare options at rest.
 
+- **The canvas holds at most 512 FILES** (the Design type's limit; it counts the type's own ~21 files and every
+  board, not the uploaded `/_blob/` images). Frogma reached it at Rev 68 (2026-11-08): `Artifact list scope=files`
+  printed "512 files" and no board could be added. Count before planning; making room is the owner's call (Rev 68 took
+  the superseded Rev 45 / Rev 48 boards off the canvas on Shombith's word, publishing `"project/<file>": null` with
+  `overwrite_unread`, and their repo copies stayed). Put a round's notes in the title or the doc when only a few files
+  are left, and draw one tall board (fleet over window, 1920 x 2160) rather than two.
+- **Edit the index the way `write_index` writes it** (`json.dump(..., indent=2, ensure_ascii=False)` plus a newline).
+  A hand edit saved compact (`separators=(',',':')`) is valid, publishes fine, and turns the repo copy's
+  `canvas.json` into one line: the PR then shows ~7,000 deleted lines (Rev 68/69, fixed by re-dumping with indent 2).
 - **The canvas holds at most 40 pages (tabs)** (2026-10-31, Rev 40). It filled at Rev 40 because every round took a
   page. Since 2026-11-02 (section 112) a round is a titled section on a tab and costs no page; the 40 old pages were
   folded into the Menu Redesign and Compute Console tabs with `frogma.py fold` (each old page a section, packed
@@ -271,3 +285,30 @@ as this session: a new session re-arms it with `ArtifactComments watch url=<boar
   and the `rev47` note already there; copying your entries over that index would have REPLACED the other session's
   boards. Re-run `plan` on the fresh index, rename your files to the new number
   (`sed 's/Rev 47/Rev 48/g'` on the titles; the ids inside `/_blob/` ids are hex and need no change), `check`, publish.
+
+- **A picked board built in Unity is not done until a render of the BUILD has been set beside the board** (Voyages,
+  Rev 81 B5 + Rev 83 S2, 2026-11-09/10, `claude/epic-fermat-6c7n2l`; section 159 had promised it). The build compiled,
+  every gate was green, and the person's first screenshot "looks nothing like frogma's design": the window's old framed
+  tabs, the galaxy explorer at galaxy scale with its tier ladder, a cloned call to action at its own small size, square
+  hull renders drawn tiny in a wide box. The second pass, also unseen, kept half of those. A cloud session has no Unity:
+  say so BEFORE building and ask for a session on the person's computer (Remote Control, the `unity` CLI) or a screenshot
+  after each pass; never present a compile as a look.
+- **The UI kit's theming components undo a runtime restyle** (same branch, 2026-11-10). `KitThemedGraphic` (on a
+  frame's Fill, Border and brackets) and `KitText` (on a label) re-apply the kit's colour, face, size and capitals in
+  `OnEnable`, so a restyle made in code holds until the window is next opened. Restyling a kit element at runtime
+  means disabling those components on it first (`VoyageWindowTabs.Plain`), or changing the element in its prefab.
+
+## The design brief comes first (2026-11-07)
+
+Before a new screen or redesign round, write the one-page design brief (`Docs/claude/DESIGN_BRIEF.md`): the fundamental it serves,
+the principles it obeys by id (`python3 Tools/Build/principles.py --area ui`; `Docs/claude/PRINCIPLES.md` holds
+the owners' rules in their words, drafted on 2026-11-07 and waiting on each owner to confirm or strike), the one it
+comes closest to breaking, the cheapest prototype, who judges it and where, and the retire condition. A design that
+breaks a drafted principle is a proposal to that principle's owner first, not a build. Read `references/UI_LESSONS.md` first (what Shombith picked and rejected, in his words), and run `python3 Tools/Build/check_mockup.py <board.html>` on every mockup before it is shown.
+
+- **A clip of an animated board** (Rev 72, 76, 78, 2026-11-08: "show me a clip"). A board whose motion is CSS keyframes
+  can be filmed: load it with `render_local.cjs`'s shim, route every `/_blob/<id>` to a repo image of the same thing
+  (unknown ids to a 1x1 PNG: `Artifact read` cannot fetch canvas assets), then for each frame pause every
+  `document.getAnimations()` and set its `currentTime`, screenshot a clip box, and `ffmpeg` the PNGs at 30 fps.
+  Seeking is exact, so slowed passes (`setpts=4*PTS`) cost nothing more. Rev 76's three rounds were each taken by another
+  session while drawn (71, 75): re-read the index right before publishing, every time. Say the clip is the drawing.

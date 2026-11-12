@@ -869,20 +869,6 @@ namespace CosmicShore.Gameplay
         protected const float DegenerateSteeringSqr = 1e-6f;
 
         /// <summary>
-        /// Shielded mass is not food for ANY herbivore - the one canonical rule every
-        /// species' edibility predicate routes through, so no new grazer can re-acquire
-        /// the bug. A SUPER-shielded prism is fully invulnerable and a SHIELDED one only
-        /// sheds its shield (see <see cref="Prism.Consume"/>), so a grazer that adopts one
-        /// as its feed target approaches it, faces it, "eats" it, and finds it still there
-        /// on the next mouthful-chaining query - grazing forever without ever removing
-        /// mass. That is what parked brittlestars on Skim Race's super-shielded track
-        /// prisms. Excluding shields from the predicate makes the creature skip straight
-        /// to the next normal prism on the same behavior tick.
-        ///
-        /// <para>Public since round 11c: the threat flora (ThreatGrove) eat through the same rule, so a plant that
-        /// eats is held to it exactly as a creature is.</para>
-        /// </summary>
-        /// <summary>
         /// Armour points this species wears off armour per bite: <paramref name="superShielded"/> picks the super-shield
         /// rate. 0 (the default) = this species never gnaws that tier. Only matters in a cell whose
         /// <see cref="Cell.ArmourIsFood"/> is set (the Ark escort's worlds); a species authors it on its own config.
@@ -969,6 +955,20 @@ namespace CosmicShore.Gameplay
             return Leash is IFaunaHerd herd && herd.EatsShields(this);
         }
 
+        /// <summary>
+        /// Shielded mass is not food for ANY herbivore - the one canonical rule every
+        /// species' edibility predicate routes through, so no new grazer can re-acquire
+        /// the bug. A SUPER-shielded prism is fully invulnerable and a SHIELDED one only
+        /// sheds its shield (see <see cref="Prism.Consume"/>), so a grazer that adopts one
+        /// as its feed target approaches it, faces it, "eats" it, and finds it still there
+        /// on the next mouthful-chaining query - grazing forever without ever removing
+        /// mass. That is what parked brittlestars on Skim Race's super-shielded track
+        /// prisms. Excluding shields from the predicate makes the creature skip straight
+        /// to the next normal prism on the same behavior tick.
+        ///
+        /// <para>Public since round 11c: the threat flora (ThreatGrove) eat through the same rule, so a plant that
+        /// eats is held to it exactly as a creature is.</para>
+        /// </summary>
         public static bool IsShieldedMass(Prism prism)
         {
             var properties = prism ? prism.prismProperties : null;
@@ -1737,6 +1737,11 @@ namespace CosmicShore.Gameplay
         /// blast's lifeform-crystal effects act on when they reach a creature through its body rather
         /// than through a collider overlap (<see cref="VirtualFauna"/>, Docs/SWARM_FAUNA.md §19).</summary>
         public Crystal LivingHeart => crystal && crystal.IsEmbedded ? crystal : null;
+
+        /// <summary>The heart whether it is still embedded or already dropped - what a Manta bomb riding this
+        /// creature moves onto when the creature dies (MANTA_STING_KABLOOM.md §2: a bombed creature drops a bombed
+        /// crystal). Null for a manager-only fauna that never carried one.</summary>
+        public Crystal HeartCrystal => crystal;
 
         // How this creature came apart - see LifeformDeathStyle. Written by the force that
         // killed it (Jousted / the devour overload of Predated); starvation and every other

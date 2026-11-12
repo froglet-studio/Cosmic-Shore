@@ -1,6 +1,6 @@
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.UI;
 namespace CosmicShore.Gameplay

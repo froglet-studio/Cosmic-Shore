@@ -6,7 +6,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -950,7 +950,10 @@ namespace CosmicShore.UI
             }
         }
 
-        bool _crystalsAwardedThisGame;
+        // Static: the wallet is one per player, so the latch is one per process. An instance field let
+        // a second live Scoreboard (a duplicate in the scene, or a stale one surviving Play/Stop/Play)
+        // pay the same game again 2-27 ms later (crystals_earned near-duplicates, 2026-10-16..19).
+        static bool _crystalsAwardedThisGame;
 
         void ClearCrystalAwardLatch() => _crystalsAwardedThisGame = false;
 
@@ -1181,11 +1184,6 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Client-side "Leave Lobby" button handler. Disconnects from the host's party
-        /// session and returns to Menu_Main. Host/single-player users see the regular
-        /// Main Menu button instead (which is wired to the SOAP main-menu event).
-        /// </summary>
-        /// <summary>
         /// Sends this client's rematch vote and locks the button so it reads as cast. The tally
         /// comes back to every peer through <c>OnRematchVotesChanged</c>, so the host sees it too.
         /// </summary>
@@ -1233,6 +1231,11 @@ namespace CosmicShore.UI
                 : (_rematchVoteCast ? rematchSentLine : TemplateText.Fill(guestTallyLine, "votes", v, "pilots", n));
         }
 
+        /// <summary>
+        /// Client-side "Leave Lobby" button handler. Disconnects from the host's party
+        /// session and returns to Menu_Main. Host/single-player users see the regular
+        /// Main Menu button instead (which is wired to the SOAP main-menu event).
+        /// </summary>
         public void OnLeaveLobbyButtonPressed()
         {
             if (leaveLobbyButton) leaveLobbyButton.SetActive(false);

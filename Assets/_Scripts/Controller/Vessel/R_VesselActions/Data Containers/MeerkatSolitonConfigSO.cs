@@ -66,6 +66,23 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Omnicrystals on the course (a new course or reset places them)")]
         [SerializeField, Range(0, 12)] int omniCount = 3;
 
+        /// <summary>What an omnicrystal opens (the artifact's <c>omniMode</c>: 0 the Rift, 1 the network).</summary>
+        public enum OmniAbility { Rift = 0, Network = 1 }
+
+        // Round 28 (Yash, 2026-11-03: "Yes, prototype the Rift"; cloned from the artifact's round 28, the omnicrystal card
+        // "Omnicrystal · the Rift"): the Meerkat's ultimate, after Apex's Wraith. Take an omnicrystal and a mouth opens where
+        // you are; you go into the void (phased, faster, steering freely) until riftSeconds, the length budget (the network's
+        // Mass reach) or RT ends it, and the path you flew is laid as a tube anyone may ride, way in to way out, for riftLife s.
+        [Header("Omnicrystal · the Rift (the artifact's round 28; the network stays one selector away)")]
+        [Tooltip("The omnicrystal opens: the Rift (round 28) or the network (round 27)")]
+        [SerializeField] OmniAbility omniMode = OmniAbility.Rift;
+        [Tooltip("Into the void: your speed (× cruise; the Time rush on top)")]
+        [SerializeField, Range(1f, 5f)] float riftSpeed = 2f;
+        [Tooltip("...for at most (s; RT ends it sooner, the length budget too)")]
+        [SerializeField, Range(0.5f, 15f)] float riftSeconds = 5f;
+        [Tooltip("The rift stands (s; anyone may ride it)")]
+        [SerializeField, Range(1f, 120f)] float riftLife = 45f;
+
         // Round 23 (Yash, 2026-10-28: "revert the mass ability as Garrett has said ... the prism gets sucked in from this one
         // side and gets sucked out on the other ... distorted while traveling through this wormhole ... From a certain
         // radius"): Garrett's soliton. Space sets its surface area, so a longer tunnel is thinner; it pulls the prisms and
@@ -231,6 +248,10 @@ namespace CosmicShore.ScriptableObjects
         public bool OmniOn => omniOn;
         public bool MenuAutopilotNetworks => menuAutopilotNetworks;
         public int OmniCount => omniCount;
+        public OmniAbility OmniMode => omniMode;
+        public float RiftSpeed => riftSpeed;
+        public float RiftSeconds => riftSeconds;
+        public float RiftLife => riftLife;
         /// <summary>Round 26: the network's reach as a share of its cell's radius, on this hull's live Mass (at least 0.05).</summary>
         public float NetworkShare(IVesselStatus status) => Mathf.Max(0.05f, networkReach.EvaluateLive(status));
         /// <summary>The slide's top speed in a tunnel (u/s; the AI's plan reads it).</summary>

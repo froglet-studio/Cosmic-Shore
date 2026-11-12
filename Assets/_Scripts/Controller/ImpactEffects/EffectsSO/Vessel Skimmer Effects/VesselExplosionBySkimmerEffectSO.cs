@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using UnityEngine;
 using CosmicShore.UI;
 using CosmicShore.Data;
@@ -95,6 +95,11 @@ namespace CosmicShore.Gameplay
             // ...and a SILENCED jouster scores nothing, for the same reason: CombatHitDrain.TryAdmit
             // refuses their overtake's steal (VesselSilence), so the joust point goes with it.
             if (VesselSilence.IsSilenced(impacteeVessel.VesselStatus))
+                return;
+
+            // ...and a contact too SLOW to be a joust is not one (the Squirrel's minimum joust speed, its Charge): its
+            // steal is refused by the same rule, so the joust point and the blast go with it.
+            if (!ContactAdmission.AdmittedBySiblings(impactee, impacteeVessel.VesselStatus, impactorVessel.VesselStatus))
                 return;
 
             var impacteeVesselImpactor = impacteeVessel.Transform.GetComponent<VesselImpactor>();

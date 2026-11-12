@@ -142,7 +142,16 @@ the engine.
      text-asset case. A game feature that ships data in `Resources/` as text or bytes is worth one boot to confirm
      Amoebius finds it; the miss reads as "the feature quietly falls back".
 
-16. **Traps from the catch-up session (2026-11-05, `claude/dazzling-einstein-gnr5iw`).**
+16. **Traps from the Settings > REGION session (2026-11-12, `claude/ecstatic-curie-fjt6ep`).**
+   - **A game file that opens a NEW `Unity.Services.*` namespace breaks the live compile unless the sync maps it.**
+     `SyncUnitySources.targets` rewrites only the namespaces in its table; `using Unity.Services.Relay;` and
+     `Unity.Services.Qos` were not there, so `RelayRegionProbe.cs` failed with CS0234 "'Services' does not exist in
+     'Unity'". The fix is a map row plus a stand-in with Unity's shape (`Services/RelayQosSdk.cs`), in its own
+     Port-only commit. A sub-namespace (`.Models`) follows its root's row by itself.
+   - **When the live build is already red, compare error SETS, not exit codes.** `grep "error CS" | sed 's/ \[.*//'
+     | sort -u` before and after: identical sets mean the change adds nothing. Then remove the new map rows and build
+     again to prove the comparison can fail (here it named `RelayRegionProbe.cs` twice).
+17. **Traps from the catch-up session (2026-11-05, `claude/dazzling-einstein-gnr5iw`).**
    - **The live compile had been red on bleeding-edge since about Oct 29** (77 errors there, 72 on this branch, behind 3
      declaration errors that hid the rest). The gaps were Unity members newer game code calls: batched queries
      (`SpherecastCommand`, `OverlapCapsuleCommand`, `QueryParameters`, `ColliderHit`), IMGUI (`Event`, `GUILayout`

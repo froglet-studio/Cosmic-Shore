@@ -5,7 +5,7 @@ using System.Threading;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using Reflex.Attributes;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
@@ -168,11 +168,6 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Manages the UGS lobby-only presence session: join/create/leave/refresh.</summary>
         [Inject] private IPresenceLobbyService _lobbyService;
-
-        /// <summary>
-        /// Orchestrates the PENDING-sentinel three-phase acceptance handshake:
-        /// scan for signals, publish acceptance, wait for real id, republish.
-        /// </summary>
 
         /// <summary>Manages the UGS Relay-backed party session lifecycle.</summary>
         [Inject] private IPartySessionService _partySessionService;
@@ -1582,31 +1577,6 @@ namespace CosmicShore.Gameplay
         public void ClearPartySessionRef() => _partySessionService.ClearSession();
 
         /// <summary>
-        /// Leaves the current party session via <see cref="PartySessionService.LeaveAsync"/>
-        /// - calls <c>DeleteAsync</c> (host) or <c>session.LeaveAsync</c> (client)
-        /// on the UGS session and clears the shared session ref. Safe to call
-        /// when no session is active.
-        ///
-        /// <para>
-        /// Bare leave primitive: does NOT touch NetworkManager, does NOT recreate
-        /// a solo session. The caller (currently <c>PartyInviteController</c>'s
-        /// leave + failed-transition recovery flows) is responsible for sequencing
-        /// the subsequent NM shutdown, Menu_Main reload, and
-        /// <see cref="EnsurePartySessionAsync"/> calls in the right order - see
-        /// <c>Docs/PartySystem/ARCHITECTURE.md</c> (Investigation answers Q6) for
-        /// the rationale. The decomposed primitives ensure
-        /// <see cref="EnsurePartySessionAsync"/> only ever runs against a
-        /// freshly-loaded Menu_Main scene, so vessel spawn fires exactly once
-        /// via the scene-placed initializer's catch.
-        /// </para>
-        ///
-        /// <para>
-        /// <see cref="PartySessionService.LeaveAsync"/> currently swallows its
-        /// own exceptions, so the outer try/catch here is defensive - kept for
-        /// future-proofing.
-        /// </para>
-        /// </summary>
-        /// <summary>
         /// Tears the party layer down to a clean slate. Two callers, one need:
         /// <c>ReconnectService</c> before the boot chain re-runs, and
         /// <c>OfflineModeService</c> when an offline session starts.
@@ -1667,6 +1637,31 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.Party, "[HostConnectionService] Party layer reset - ready to re-init.");
         }
 
+        /// <summary>
+        /// Leaves the current party session via <see cref="PartySessionService.LeaveAsync"/>
+        /// - calls <c>DeleteAsync</c> (host) or <c>session.LeaveAsync</c> (client)
+        /// on the UGS session and clears the shared session ref. Safe to call
+        /// when no session is active.
+        ///
+        /// <para>
+        /// Bare leave primitive: does NOT touch NetworkManager, does NOT recreate
+        /// a solo session. The caller (currently <c>PartyInviteController</c>'s
+        /// leave + failed-transition recovery flows) is responsible for sequencing
+        /// the subsequent NM shutdown, Menu_Main reload, and
+        /// <see cref="EnsurePartySessionAsync"/> calls in the right order - see
+        /// <c>Docs/PartySystem/ARCHITECTURE.md</c> (Investigation answers Q6) for
+        /// the rationale. The decomposed primitives ensure
+        /// <see cref="EnsurePartySessionAsync"/> only ever runs against a
+        /// freshly-loaded Menu_Main scene, so vessel spawn fires exactly once
+        /// via the scene-placed initializer's catch.
+        /// </para>
+        ///
+        /// <para>
+        /// <see cref="PartySessionService.LeaveAsync"/> currently swallows its
+        /// own exceptions, so the outer try/catch here is defensive - kept for
+        /// future-proofing.
+        /// </para>
+        /// </summary>
         public async UniTask LeavePartySessionAsync()
         {
             // Whatever the session was to us - our own party, somebody else's, or a match we were
@@ -2194,7 +2189,7 @@ namespace CosmicShore.Gameplay
 
                     if (changed)
                     {
-                        // Obvious.Soap's ScriptableList<T> indexer-set silently mutates
+                        // CosmicShore.Soap's ScriptableList<T> indexer-set silently mutates
                         // without raising any event; RemoveAt + Insert at the same
                         // index fires OnItemRemoved/OnItemAdded so subscribers update.
                         connectionData.OnlinePlayers.RemoveAt(existingIdx);

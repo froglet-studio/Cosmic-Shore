@@ -249,30 +249,30 @@
  "Manta": {
   "Charge": {
    "ability": "Sting",
-   "does": "Skimming prisms arms bombs. Graze a rival vessel or creature to plant one without them knowing; it goes off on its own after its fuse runs out unless they scrape it off on prism mass.",
+   "does": "Graze a rival vessel or creature to plant a bomb without them knowing; each costs the energy your skimming gathers. Every bomb shares one fuse and a new plant resets it, so they all go off together, and none can be scraped off.",
    "trigger": "Passive - skim to arm, graze to plant",
-   "scales": "More Charge carries more bombs and arms them faster by skimming.",
+   "scales": "More Charge makes the shared fuse run longer when a plant resets it: 20 s at rest, 30 s at Charge 10.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Mass": {
-   "ability": "Yastri",
-   "does": "A hard, flat turn to one side. The outer edge of your trail flares out as you bank, leaving a wall of prisms behind the turn.",
-   "trigger": "Hold, one side per direction",
-   "scales": "More Mass makes the prisms in your trail bigger; the turn itself stays the same.",
+   "ability": "Decoy",
+   "does": "Every elemental crystal you collect leaves a decoy where it was, one of its effects frozen as the tell. A rival who takes it gets a cluster of danger prisms laid across their course.",
+   "trigger": "Passive - collect a crystal",
+   "scales": "More Mass makes a decoy stand longer.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Space": {
-   "ability": "Kabloom",
-   "does": "Touch a crystal to set off every bomb you have planted at once in big blooms, plus a bloom at your own ship. Pilots caught in a bloom lose Mass and Space.",
-   "trigger": "Passive - touch a crystal",
-   "scales": "More Space widens every bomb's bloom.",
+   "ability": "Skim",
+   "does": "Skimming prisms gathers the energy that plants bombs, and turns rival prisms explosive: destroyed, they take their neighbours with them. Touching a prism with your hull sets off every bomb and loses all the energy.",
+   "trigger": "Passive - skim prisms",
+   "scales": "More Space widens your skimmer.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Time": {
-   "ability": "Soar",
-   "does": "Squeeze both to soar: an analog boost that goes faster the harder you press and the straighter you fly. On a phone, lift both thumbs and steer by tilting.",
-   "trigger": "Hold both",
-   "scales": "More Time raises your top soaring speed.",
+   "ability": "Yastri",
+   "does": "Hard, flat turns on the turn pair, one side per direction. Your trail is a plain trail; Time makes the Manta faster, cruising and soaring.",
+   "trigger": "Hold, one side per direction",
+   "scales": "More Time raises your cruise speed and your soaring speed.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Omni": {
@@ -356,25 +356,25 @@
  },
  "Rhino": {
   "Charge": {
-   "ability": "Energize",
-   "does": "Hold both evenly for a second to light the sword. It stays lit while you hold, then for a few seconds after, followed by a short cooldown. It costs nothing. A sword hit on a rival knocks their petals loose as crystals.",
-   "trigger": "Hold both",
-   "scales": "More Charge knocks more petals off a rival with each sword hit.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
+   "ability": "Carry",
+   "does": "A prism your plough throws keeps flying past where it would land and smashes the next prism in its way - both break.",
+   "trigger": "Passive - plough",
+   "scales": "More Charge lets a thrown prism fly further on to hit another.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md"
   },
   "Mass": {
-   "ability": "Afterimage",
-   "does": "When the lit sword goes out, it keeps leaving prism copies of itself in its own shape and pose for five seconds - walls you swing into place. Your own sword can still cut them.",
-   "trigger": "Passive - after Energize",
-   "scales": "More Mass makes the afterimage prisms bigger.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md"
+   "ability": "Blade",
+   "does": "A plough blade across your nose catches the prisms you fly into and throws them clear of the whole blade.",
+   "trigger": "Passive - plough",
+   "scales": "More Mass makes the plough blade wider.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md"
   },
   "Space": {
-   "ability": "Blade Reach",
-   "does": "Your sword cuts any ordinary or shielded prism it touches, and you swing it by how hard you squeeze each side. Super-shielded mass makes the blade stick unless you have the upgrade.",
-   "trigger": "Always on - swing with both",
-   "scales": "More Space makes the sword longer, and your camera pulls back to match.",
-   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
+   "ability": "Furrow",
+   "does": "Every prism your hull hits is shoved aside, never destroyed. Pull a trigger for a little shove that way; hold it and everything you plough is thrown to that side.",
+   "trigger": "Hold LT or RT to steer",
+   "scales": "More Space throws ploughed prisms further aside.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_PLOUGH.md"
   },
   "Time": {
    "ability": "Ramp Spool",
@@ -382,12 +382,6 @@
    "trigger": "Passive - fly flat out and straight",
    "scales": "More Time winds you up to top speed faster; the top speed itself stays the same.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md"
-  },
-  "Omni": {
-   "ability": "Surge",
-   "does": "For 8 seconds your blade stays energized and a ring of swords surrounds the ship, swinging with your triggers, while the camera pulls back. A blast also breaks prisms round you.",
-   "trigger": "Pick up an omni crystal",
-   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs"
   }
  },
  "Scarab": {
@@ -395,7 +389,7 @@
    "ability": "Shove",
    "does": "Every hard dash throws a broad flat plate along your path that shreds prisms, kills creatures and debuffs any rival pilot it engulfs, flinging everything the way you dashed. It recovers in a few seconds.",
    "trigger": "Passive - rides your dash",
-   "scales": "More Charge makes the shove's debuff on rival pilots bite harder.",
+   "scales": "More Charge recharges the shove faster: 2.5 s at rest, 1.25 s at Charge 10.",
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md"
   },
   "Mass": {
@@ -537,10 +531,10 @@
  "Squirrel": {
   "Charge": {
    "ability": "Crystal Joust",
-   "does": "Overtake a creature's crystal while flying faster than it to wither a rival creature, freeing its heart and collecting it. Overtake a rival pilot to steal petals off them.",
+   "does": "Overtake a creature's crystal while flying faster than it to wither a rival creature, freeing its heart and collecting it. Overtake a rival pilot to steal petals off them. Either joust needs at least the minimum joust speed.",
    "trigger": "Passive - overtake",
-   "scales": "More Charge steals more petals with each overtake.",
-   "source": "Assets/Resources/ElementalAbilityMaps/Squirrel.asset"
+   "scales": "More Charge lowers the speed a joust needs: 90 u/s at rest, 45 u/s at Charge 10. The Charge card's gauge marks it.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_ELEMENT_RECUT.md"
   },
   "Mass": {
    "ability": "Boost Ring",
@@ -634,6 +628,42 @@
    "does": "Fires a branching thunderbolt from your cell's centre that sets prisms along it burning; any omni crystal a branch reaches sends off a smaller bolt of its own.",
    "trigger": "Pick up an omni crystal",
    "source": "Assets/_Scripts/Controller/Environment/Fulmen/README.md"
+  }
+ },
+ "Swordfish": {
+  "Charge": {
+   "ability": "Energize",
+   "does": "Hold both evenly for a second to light the sword. It stays lit while you hold, then for a few seconds after, followed by a short cooldown. It costs nothing. A sword hit on a rival knocks their petals loose as crystals.",
+   "trigger": "Hold both",
+   "scales": "More Charge knocks more petals off a rival with each sword hit.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
+  },
+  "Mass": {
+   "ability": "Afterimage",
+   "does": "When the lit sword goes out, it keeps leaving prism copies of itself in its own shape and pose for five seconds - walls you swing into place. Your own sword can still cut them.",
+   "trigger": "Passive - after Energize",
+   "scales": "More Mass makes the afterimage prisms bigger.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md"
+  },
+  "Space": {
+   "ability": "Blade Reach",
+   "does": "Your sword cuts any ordinary or shielded prism it touches, and you swing it by how hard you squeeze each side. Super-shielded mass makes the blade stick unless you have the upgrade.",
+   "trigger": "Always on - swing with both",
+   "scales": "More Space makes the sword longer, and your camera pulls back to match.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md"
+  },
+  "Time": {
+   "ability": "Ramp Spool",
+   "does": "Fly at full throttle in a straight line and the Swordfish winds up steadily toward a very high top speed. Turning bleeds it off. Its hull breaks the prisms it rams, and ramming costs it no speed.",
+   "trigger": "Passive - fly flat out and straight",
+   "scales": "More Time winds you up to top speed faster; the top speed itself stays the same.",
+   "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md"
+  },
+  "Omni": {
+   "ability": "Surge",
+   "does": "For 8 seconds your blade stays energized and a ring of swords surrounds the ship, swinging with your triggers, while the camera pulls back. A blast also breaks prisms round you.",
+   "trigger": "Pick up an omni crystal",
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs"
   }
  },
  "Thresher": {

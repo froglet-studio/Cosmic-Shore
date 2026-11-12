@@ -38,7 +38,7 @@ full history, no commit, line, area owner or role moved credit from another coll
 1. **Look before you touch.** Run `git fetch origin`, then
    `python3 Tools/Build/who_works_where.py query <the paths you will change>` (about 10 s). It lists:
    - **Owner**: the owner `Docs/TEAM.json` declares for the area, when the owner has said so. **This decides who to
-     ask.** The counts below credit whoever MERGED a pull request, so work that reached `bleeding-edge` through
+     tell, and whose queue a change goes into (rule 13).** The counts below credit whoever MERGED a pull request, so work that reached `bleeding-edge` through
      someone's integration branch reads as theirs: FTUE came in through `Ys-bleeding-edge`, read as Yash's, and a
      session wrote "FTUE owner" on a task (2026-10-18) when Shombith leads activation (2026-10-26). Add an `owners`
      entry to `Docs/TEAM.json` whenever an owner tells you an area is theirs.
@@ -49,10 +49,18 @@ full history, no commit, line, area owner or role moved credit from another coll
 2. **Say it in one or two lines** when someone else is active there: who, which branch or PR, what it does.
    For example: "Garrett's `cece/zen-fermat` made the Stoat its own vessel on 10-13; this builds on its modes."
    Read their branch, docs and skill before writing your own.
-3. **Build on it; never override it silently.** If your change would replace, retire, rename or re-tune
-   something another collaborator built or decided, stop and ask the person you are working with first. Name
-   the owner to check with ("this re-tunes Garrett's play-tuned Stoat poles; check with him"). A design
-   choice between two collaborators' ideas belongs to them, not to the session.
+3. **Build on it; never override it silently - but only a collision waits** (Garrett, 2026-11-10: "only slow
+   people down when they collide with a swimlane"). Run `python3 Tools/Build/approvals.py check --me <person>`
+   before you commit:
+   - **A collision stops you.** The change is about a swim lane (rule 12) someone ELSE occupies right now. Tell the
+     person you work with in one line (who, which branch, PR, last push) before going on; they talk to the occupant
+     or decide to go ahead.
+   - **Anything else goes through, out loud.** Replacing, retiring, renaming or re-tuning something another
+     collaborator built or decided, or editing an area they own, no longer waits for their yes. Tell your person
+     whose toes it is on, in a line, so they talk ("this re-tunes Garrett's play-tuned Stoat poles; worth a word with
+     him"), write the "Affects:" line (rule 7), and queue it for that collaborator's after-the-fact approval (rule 13).
+   A design choice between two collaborators' ideas still belongs to them: the queue is how the one who was not asked
+   gets their say.
 4. **Do not reinvent the wheel.** Before you build a new tool, system, skill, studio, lab or doc, look for one
    that exists:
    - the skills list;
@@ -66,7 +74,10 @@ full history, no commit, line, area owner or role moved credit from another coll
    AND the in-flight branches. `who_works_where.py query Assets/_Scripts/Data/Enums` shows who else is adding
    one.
 6. **Merge `bleeding-edge` in often, and keep pull requests small.** The longer two branches run apart, the
-   more each re-solves what the other already did (below).
+   more each re-solves what the other already did (below). **`/ship` merges its PR on a GO** (Garrett, 2026-11-10:
+   "it is becoming fast to batch test in bleeding edge and fix what doesn't work than switch to each branch for
+   testing"): shipped work is tested together on `bleeding-edge`, and what fails is fixed on a new branch (`/ship`
+   §5.7; "PR only" opts out).
 7. **Leave a trail.** When work touches another collaborator's area, the commit or PR says so: "Affects:
    Garrett's Thresher HUD". The next session reads the trail; the owner sees it in review.
 8. **Read the team activity when you need it** (Yash, 2026-10-15: "stay updated by searching all git repos
@@ -102,11 +113,13 @@ full history, no commit, line, area owner or role moved credit from another coll
    `/ship` puts `team_tasks.py pr-section` in the PR body. The old markdown board (`TEAM_TASKS.md`) is a pointer now;
    the `team_tasks_nudge.py` hook that pushed tasks into every prompt was switched off on 2026-10-23 and deleted on
    2026-10-25 (Shombith). Self-test: `team_tasks.py --self-test`.
-   **An area's owner is not a ticket's assignee.** Tickets still name nobody; owners are who a session ASKS before
-   changing an area, and `who_works_where.py query` prints the owner `Docs/TEAM.json` declares (`owners`). **Anything
-   on UGS or the backend** (Cloud Code, Cloud Save, Access Control, Moderation, authentication, dashboards, deploys)
-   **is Shombith's: ask him directly** (Shombith, 2026-10-26). For now Yash does the Cloud Code work, and may set up
-   the AI flight data; **anything he posts into the backend goes through Shombith first**.
+   **An area's owner is not a ticket's assignee.** Tickets still name nobody; owners are who a session TELLS when it
+   changes their area, and whose approval queue the change goes into (rule 13); `who_works_where.py query` prints the
+   owner `Docs/TEAM.json` declares (`owners`). **Anything on UGS or the backend** (Cloud Code, Cloud Save, Access
+   Control, Moderation, authentication, dashboards, deploys) **is Shombith's** (Shombith, 2026-10-26): a code change
+   there goes through and into his queue like any other, but **posting to the live backend** (a deploy, a policy, a
+   write to production data) is an action on a running service, not a change on a branch, and still goes through
+   Shombith first. For now Yash does the Cloud Code work, and may set up the AI flight data.
 10. **Give a report to whoever asks** (Yash, 2026-10-15: "if someone asks you about a report of some other person
    working on some shared field, you should be able to give those reports to them"). Garrett asking for Yash's
    Regatta AI work, Shombith asking what changed in an area he shares: build the report from the system, never from
@@ -121,8 +134,34 @@ full history, no commit, line, area owner or role moved credit from another coll
 
 11. **No favourites among the core four** (Shombith, 2026-10-23). Garrett, Caleb, Shombith and Yash carry equal
    weight. Tasks are never assigned and nobody is a default taker; there are no standing volunteer offers. Never
-   let one person's request override another's area without whoever decides there. Shombith heads tooling: the Amoebius engine, editor tools, the Claude
+   let one person's request override another's area silently: whoever decides there hears of it through their queue
+   (rule 13) and can ask to talk. Shombith heads tooling: the Amoebius engine, editor tools, the Claude
    skills (`/ship` and the rest) and the hooks.
+12. **Find your lane with `/swimlanes`, and stay out of an occupied one** (Garrett, 2026-11-08: "instead of blocking
+   people because someone else worked on that area in the past, inform people that that swim lane is currently
+   occupied"). A lane is anything someone holds in their head that takes more than a couple of prompts and one pull
+   request to finish: a vessel (the Thresher), a game (Bloomrush), an app-shell section (the Voyages map) or a
+   mechanical system (ecology, netcode), never a task. **Everything that size gets a lane** (Caleb, 2026-11-11: "the
+   whole point of tracking them is to help us coordinate our efforts"): every vessel on the roster and every shipped
+   game card is one automatically; a shell section or system nobody's lane covers is added to
+   `.claude/skills/swimlanes/lanes.json` in the same commit that starts multi-PR work on it, and archived there once
+   it is truly closed out. Keep the list usable: add a system when work on it can collide, not for every folder. `python3 .claude/skills/swimlanes/swimlanes.py` lists open lanes with obvious work on top,
+   occupied lanes under them (unmerged work pushed in the last 7 days, with who and which branch), then lanes that
+   need polish, then polished ones. **An occupied lane is the one thing that stops a change** (rule 3); past work is
+   never a block. Who worked in an open lane before is context to build on, and if your change re-tunes or replaces
+   what they built it goes into their queue (rule 13) rather than waiting for them. A lane opens when its work merges
+   into `bleeding-edge`. `approvals.py check` reads the lanes for you: a change ABOUT an occupied lane (a quarter of
+   its files, or three) collides; one that only brushes it is a heads-up to the occupant.
+13. **Approve after the fact: `/approve`** (Garrett, 2026-11-10). Each person has a queue of changes other sessions
+   made to their work: `Docs/Approvals/<Person>/`, one small file per change, committed with the change on its branch
+   (`python3 Tools/Build/approvals.py add --to <them> --by <you> --area "..." --summary "..."`). Queue one for every
+   person `check` names whose work your change actually CHANGES (re-tunes, replaces, retires, renames, decides
+   otherwise, or edits an area they own); a pure addition beside their work needs none, and when unsure, queue it.
+   The person runs `/approve` to retrieve their list (it reads every branch, so an entry shows before its change
+   merges) and answers each: **approve** (they agree, on the record), **discuss** (they want to talk to whoever made
+   it; that person sees it under `approvals.py list --from <them>`), and **resolve** once they have talked. A change
+   they want undone is new work like any other. Files and format: [`Approvals/README.md`](Approvals/README.md).
+   Self-test: `approvals.py --self-test`.
 
 ## What happened without this (2026-10-13, one merge, measured)
 

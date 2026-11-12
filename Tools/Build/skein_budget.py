@@ -195,7 +195,7 @@ Rung = namedtuple("Rung", "strands laps collar pin_stride")
 LADDER = {
     1: Rung(strands=5, laps=1, collar=190.0, pin_stride=0),
     2: Rung(strands=6, laps=2, collar=180.0, pin_stride=3),
-    3: Rung(strands=7, laps=4, collar=165.0, pin_stride=2),
+    3: Rung(strands=7, laps=3, collar=165.0, pin_stride=2),
     4: Rung(strands=9, laps=6, collar=150.0, pin_stride=1),
 }
 

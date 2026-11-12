@@ -24,7 +24,9 @@ WHAT IT MAKES (R_VesselActions/MEERKAT.md)
           X (6) -> StoatHoldAction (the stance, which the studio's Meerkat keeps); no per-device overrides
         - MeerkatSolitonNetworkRelay on the root (every peer sees every tunnel)
         - StoatHUDController -> MeerkatHUDController (the Stoat's HUD view as a stand-in; the Time card shows the reticle)
-      Everything else is the Stoat's: the studio flies the Stoat's model and lope as the Meerkat's stand-in hull.
+      Everything else is the Stoat's, except the HULL (2026-11-03): the model instance draws Meerkat.fbx, the Meerkat's own
+      hull built on the Stoat's rig (Tools/Build/vessel_model/specs/meerkat.py), so StoatAnimation still drives it; and the
+      HUD, MeerkatHUDVariant (its section below).
     Assets/_SO_Assets/VesselActions/Meerkat/: MeerkatSolitonConfig.asset (every studio key at its SHIPPED value - a
       one-shot: after it exists only studio_to_unity.py writes its numbers), MeerkatSolitonFormAction / ShortenAction.
     SO_Class_Meerkat (the Stoat's icons as placeholders, owned from the start) + its entry in SO_Classlist_All / _Classes;
@@ -57,6 +59,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from author_stoat_assets import global_object_id_hash, replace_once  # noqa: E402  (the shared Netcode hash)
 from author_wrasse_assets import (split_docs, dangling_local_refs, native_meta, read, write,  # noqa: E402
                                   guid_of, guid_of_script, DOC)
+import meerkat_icon_ids as I  # noqa: E402  (the icon guids; no numpy / Pillow, so --check runs in CI's sweep)
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 VESSELS = os.path.join(ROOT, "Assets", "_Prefabs", "Spacevessels")
@@ -81,6 +84,11 @@ STUDIO = os.path.join(ROOT, "Docs", "Studios", "VesselStudio", "meerkat.html")
 CAMERAS = os.path.join(ROOT, "Assets", "_SO_Assets", "Camera")
 DONOR_CAMERA = os.path.join(CAMERAS, "StoatCameraSettingsSO.asset")
 CAMERA = os.path.join(CAMERAS, "MeerkatCameraSettingsSO.asset")
+HUD_DIR = os.path.join(ROOT, "Assets", "_Prefabs", "UI Elements", "VesselHUD")
+HUD_DONOR = os.path.join(HUD_DIR, "StoatHUDVariant.prefab")
+HUD_VARIANT = os.path.join(HUD_DIR, "MeerkatHUDVariant.prefab")
+ICONS_DIR = os.path.join(ROOT, "Assets", "_Graphics", "Icons", "AbilityIcons", "Meerkat")
+MODEL = os.path.join(ROOT, "Assets", "_Models", "Vessel Models", "Meerkat.fbx")
 
 # 24 Flea (claude/flea-vessel), 25-27 Warden / Bulwark / Tempest (cece/keen-feynman-unrdda): checked across every origin
 # branch 2026-10-27, so the Meerkat is 28.
@@ -99,6 +107,11 @@ STOAT_HOLD_GUID = "9b50ea11259b4b1aa750eea7f1d7f781"   # StoatHoldAction (X: the
 GAME_DATA_GUID = "b35f33752bb10a44cb5033b5670f50aa"    # Runtime GameData (the domain palette)
 STOAT_CAMERA_GUID = "2fb2a0bb0eaf4bd1863fdf55490fa869"  # StoatCameraSettingsSO (the clone's, until round 10)
 CAMERA_GUID = "5e1e0cd061ab49dbbb24bf9c1080387b"        # MeerkatCameraSettingsSO
+HUD_VARIANT_GUID = "5d49e3f0fa4f801553ac3c6de6f80713"   # MeerkatHUDVariant (its own row, 2026-11-03)
+STOAT_FBX_GUID = "0ef0b84d93774ac39ddc699c59d0821a"     # Stoat.fbx, the hull the clone draws
+MEERKAT_FBX_GUID = "81b9ac1e02714f0fa49b1eef2bb2d9f5"   # Meerkat.fbx, its own hull on the Stoat's rig (2026-11-03)
+STOAT_HUD_VARIANT_GUID = "1f9b41e6fa58494599674753191b495b"
+STOAT_HUD_VIEW_GUID = "c120940f60a14c2aa390446ea0791b5a"
 
 ROOT_GO = "6417075533431866457"              # the Stoat's root GameObject
 ROOT_TRANSFORM_ID = "5928382658856804067"
@@ -125,6 +138,7 @@ SCRIPTS = {   # script name -> its .cs.meta (the guids every prefab and asset he
     "MeerkatVesselTransformer": "Assets/_Scripts/Controller/Vessel/MeerkatVesselTransformer.cs.meta",
     "MeerkatSolitonNetworkRelay": "Assets/_Scripts/Controller/Vessel/MeerkatSolitonNetworkRelay.cs.meta",
     "MeerkatHUDController": "Assets/_Scripts/UI/Controller/MeerkatHUDController.cs.meta",
+    "MeerkatHUDView": "Assets/_Scripts/UI/View/MeerkatHUDView.cs.meta",
     "MeerkatSolitonKit": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MeerkatSolitonKit.cs.meta",
     "MeerkatSentinelModeActionSO": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/MeerkatSentinelModeActionSO.cs.meta",
 }
@@ -145,6 +159,8 @@ CONFIG_KEYS = ["reticleAhead", "bendMaxDegrees", "shaftMin", "shaftMax",
                "aiBentMinDistance", "aiShapeSeconds", "aiNoise",
                # an omnicrystal's Soliton Network (MEERKAT.md section 7, the artifact's rounds 13-21)
                "omniOn", "omniCount",
+               # round 28, the Rift (the omnicrystal's ultimate; omniMode 0 the Rift, 1 the network)
+               "omniMode", "riftSpeed", "riftSeconds", "riftLife",
                # Garrett's soliton (round 23): the surface area, the pull, the carry, the fire
                "areaL0", "areaL10", "suckRadius", "suckSpeed", "swallowShare", "carryStretch", "carryTwist", "fireSpeed", "fireGlideSeconds"]
 
@@ -444,7 +460,10 @@ def retrofit(text: str) -> str:
     m = re.search(r"(--- !u!1 &%s\nGameObject:\n(?:.*\n)*?  m_Component:\n(?:  - component: \{fileID: -?\d+\}\n)+)" % ROOT_GO, text)
     if m and f"  - component: {{fileID: {RELAY_ID}}}\n" not in m.group(1):
         text = text[:m.end(1)] + f"  - component: {{fileID: {RELAY_ID}}}\n" + text[m.end(1):]
-    return kit_retrofit_prefab(text)
+    # the hull (2026-11-03): the model instance's every reference to Stoat.fbx becomes Meerkat.fbx; its rig, node, slot and
+    # take names are the Stoat's (/vessel-model, the Goby's borrowed-rig pattern), so the swap is the guid alone
+    text = text.replace(f"guid: {STOAT_FBX_GUID}", f"guid: {MEERKAT_FBX_GUID}")
+    return hud_retrofit(kit_retrofit_prefab(text))
 
 
 def build_clone(donor: str) -> str:
@@ -583,6 +602,99 @@ def register_fusion(text: str) -> str:
     return text[:last.end()] + added + text[last.end():]
 
 
+# ----------------------------------------------------------------------------- the HUD (its own row, 2026-11-03)
+# The Meerkat wore StoatHUDVariant / StoatHUDView and the Stoat's four icons until 2026-11-03 (Yash: "I want meerkat to be
+# ready with all its vessel skills"). MeerkatHUDVariant is a copy of StoatHUDVariant with the SAME internal fileIDs (the
+# Angler's pattern, author_angler_assets.py), so the hull's overrides and the controller's view reference resolve by a guid
+# swap alone. Its view is MeerkatHUDView, its gauges are named for the kit, and its icons are the icon kit's
+# (Tools/Build/icon_kit/specs/meerkat.py). A one-shot: built while the variant is absent, then only checked.
+HUD_VIEW_DOC = "5875684227236902712"   # the view's MonoBehaviour inside the variant (the hull's HUD_VIEW_ID points at it)
+GAUGES = (("rippleGauge", "sentinelGauge", "RippleGauge", "SentinelGauge"),      # charge
+          ("modeGauge", "portalGauge", "ModeGauge", "PortalGauge"),              # mass
+          ("accretionGauge", "solitonGauge", "AccretionGauge", "SolitonGauge"),  # space
+          ("timeGauge", "rideGauge", "TimeGauge", "RideGauge"))                  # time
+# The Stoat's four card sprites in the order of I.ICONS (charge, mass, space, time): Ripple, Modes, ModeTime, Pathfinder.
+STOAT_ICONS = ("ebdd346798d474b5a5ab2364683a8725", "783faf75777a15c5b2241cfc3e2691d3",
+               "fb6ff66c748d7560d236e89894823447", "669089ec7ad29ed295eccc53d8615225")
+STOAT_ONLY_VIEW_FIELDS = ("massModeIcon", "timeModeIcon", "gateModeIcon", "skipLabel", "skipFontSize")
+
+
+def build_hud_variant(donor: str) -> str:
+    text = replace_once(donor, "      value: StoatHUDVariant\n", "      value: MeerkatHUDVariant\n", "HUD variant m_Name")
+    text = replace_once(text, f"guid: {STOAT_HUD_VIEW_GUID}, type: 3}}", f"guid: {script_guid('MeerkatHUDView')}, type: 3}}",
+                        "HUD view script")
+    text = replace_once(text, "CosmicShore.UI.StoatHUDView", "CosmicShore.UI.MeerkatHUDView", "HUD view class")
+    text = re.sub(r"^  (?:%s): .*\n" % "|".join(STOAT_ONLY_VIEW_FIELDS), "", text, flags=re.M)
+    for old, new, old_go, new_go in GAUGES:
+        text = replace_once(text, f"  {old}: {{fileID:", f"  {new}: {{fileID:", f"view field {old}")
+        text = replace_once(text, f"  m_Name: {old_go}\n", f"  m_Name: {new_go}\n", f"gauge object {old_go}")
+    for old, name in zip(STOAT_ICONS, I.ICONS):
+        text = replace_once(text, f"guid: {old}, type: 3}}", f"guid: {I.guid_for(name)}, type: 3}}", f"icon sprite {name}")
+    return patch_hud_variant(text)
+
+
+OMNI_LINE = f"  omniAbilitySprite: {{fileID: 21300000, guid: {I.guid_for(I.OMNI)}, type: 3}}\n"
+# The gauges' colours are UI theme tokens (Docs/UI_STYLE_GUIDE.md, the PR UI checklist's "Theme tokens"), not the raw Color
+# pair the Stoat's view carries: NeutralLightest (7) at rest, Cta (8) when ready, resolved against UITheme.asset.
+UI_THEME_GUID = "0aef6398681c4ec98118cc9b9740060a"
+THEME_LINES = (f"  theme: {{fileID: 11400000, guid: {UI_THEME_GUID}, type: 2}}\n"
+               "  gaugeToken: 7\n"
+               "  readyToken: 8\n")
+
+
+def patch_hud_variant(text: str) -> str:
+    """Idempotent edits the committed variant takes too (its clone is a spent one-shot): the omni crystal card's sprite,
+    the Soliton Network (VesselHUDView.omniAbilitySprite; empty, the card draws LOCKED), and the gauges' theme tokens
+    (THEME_LINES), written in the view's own block."""
+    m = re.search(r"--- !u!114 &%s\n(?:.*\n)*?(?=--- !u!|\Z)" % HUD_VIEW_DOC, text)
+    if not m:
+        raise RuntimeError("MeerkatHUDVariant: the view's block is not found")
+    view = re.sub(r"^  omniAbilitySprite: .*\n", "", m.group(0), flags=re.M)
+    view = replace_once(view, "  upgradeHighlightScale:", OMNI_LINE + "  upgradeHighlightScale:", "the view's upgradeHighlightScale")
+    view = re.sub(r"^  (?:gaugeColor|readyColor|theme|gaugeToken|readyToken): .*\n", "", view, flags=re.M)
+    view = replace_once(view, "  colorBlendRate:", THEME_LINES + "  colorBlendRate:", "the view's colorBlendRate")
+    return text[:m.start()] + view + text[m.end():]
+
+
+def hud_retrofit(text: str) -> str:
+    """The hull's nested StoatHUDVariant becomes MeerkatHUDVariant, and its stripped view MeerkatHUDView. Idempotent."""
+    text = text.replace(f"guid: {STOAT_HUD_VARIANT_GUID}", f"guid: {HUD_VARIANT_GUID}")
+    text = text.replace("      value: StoatHUDVariant\n", "      value: MeerkatHUDVariant\n")
+    m = re.search(r"--- !u!114 &%s stripped\n(?:.*\n)*?(?=--- !u!|\Z)" % HUD_VIEW_ID, text)
+    if not m:
+        raise RuntimeError("Meerkat.prefab: the nested HUD view is not found")
+    view = m.group(0).replace(f"guid: {STOAT_HUD_VIEW_GUID}, type: 3}}", f"guid: {script_guid('MeerkatHUDView')}, type: 3}}")
+    view = view.replace("CosmicShore.UI.StoatHUDView", "CosmicShore.UI.MeerkatHUDView")
+    return text[:m.start()] + view + text[m.end():]
+
+
+def check_hud_variant(text: str):
+    errs = []
+    def want(cond, msg):
+        if not cond:
+            errs.append(msg)
+    view = doc_of(text, HUD_VIEW_DOC)
+    want(f"guid: {script_guid('MeerkatHUDView')}, type: 3" in view,
+         "MeerkatHUDVariant: the view is not MeerkatHUDView (the internal fileIDs must stay the Stoat variant's)")
+    want("      value: MeerkatHUDVariant\n" in text, "MeerkatHUDVariant: the root is not named MeerkatHUDVariant")
+    for _old, new, _old_go, new_go in GAUGES:
+        g = re.search(r"^  %s: \{fileID: (\d+)\}\n" % new, view, re.M)
+        want(g and g.group(1) != "0" and f"  m_Name: {new_go}\n" in text,
+             f"MeerkatHUDVariant: the view's {new} is unwired or its object is not named {new_go}")
+    for field in STOAT_ONLY_VIEW_FIELDS:
+        want(not re.search(r"^  %s: " % field, view, re.M), f"MeerkatHUDVariant: the Stoat's view field {field} is still there")
+    want(THEME_LINES in view and not re.search(r"^  (?:gaugeColor|readyColor): ", view, re.M),
+         "MeerkatHUDVariant: the gauge colours are not the UI theme's tokens (theme, gaugeToken 7, readyToken 8)")
+    want(OMNI_LINE in view, "MeerkatHUDVariant: the omni card is not the Soliton Network (an empty omniAbilitySprite draws LOCKED)")
+    for old, name in list(zip(STOAT_ICONS, I.ICONS)) + [(None, I.OMNI)]:
+        want(old is None or old not in text, f"MeerkatHUDVariant: the Stoat's sprite {old} is still on a card")
+        want(text.count(f"guid: {I.guid_for(name)}, type: 3}}") == 1, f"MeerkatHUDVariant: {name} is not on its card once")
+        meta = os.path.join(ICONS_DIR, name + ".png.meta")
+        want(os.path.exists(meta) and guid_of(meta) == I.guid_for(name),
+             f"{name}.png (+ .meta): missing, or not the guid the HUD binds: run Tools/Build/icon_kit/author.py meerkat")
+    return errs
+
+
 # ----------------------------------------------------------------------------- checks
 def doc_of(text: str, anchor: str) -> str:
     m = re.search(r"--- !u!\d+ &%s\n((?:.*\n)*?)(?=--- !u!|\Z)" % anchor, text)
@@ -611,13 +723,22 @@ def check_prefab(text: str):
     for sid in STOAT_ONLY:
         want(f"&{sid}\n" not in text and f"fileID: {sid}}}" not in text, f"Meerkat.prefab: the Stoat's executor {sid} is still on the hull")
     for name in ("StoatDipoleExecutor", "StoatPathfinderExecutor", "StoatModeExecutor", "StoatRippleExecutor",
-                 "StoatSlingExecutor", "StoatHUDController"):
+                 "StoatSlingExecutor", "StoatHUDController", "StoatHUDView"):
         want(f"guid: {guid_of_script(name)}, type: 3" not in text, f"Meerkat.prefab: the Stoat's {name} is still on the hull (one ability only)")
     t = doc_of(text, TRANSFORMER_ID)
     want(f"guid: {script_guid('MeerkatVesselTransformer')}, type: 3" in t, "Meerkat.prefab: the transformer is not MeerkatVesselTransformer (no ride, no one-thumb flight)")
     hud = doc_of(text, HUD_ID)
     want(f"guid: {script_guid('MeerkatHUDController')}, type: 3" in hud and f"  wormhole: {{fileID: {WORMHOLE_ID}}}\n" in hud,
          "Meerkat.prefab: the HUD is not MeerkatHUDController wired to the wormhole")
+    want(f"  m_SourcePrefab: {{fileID: 100100000, guid: {HUD_VARIANT_GUID}, type: 3}}\n" in text
+         and STOAT_HUD_VARIANT_GUID not in text,
+         "Meerkat.prefab: the nested HUD is not MeerkatHUDVariant (it would wear the Stoat's row)")
+    want(MEERKAT_FBX_GUID in text and STOAT_FBX_GUID not in text,
+         "Meerkat.prefab: the hull is not Meerkat.fbx (it would fly the Stoat's model)")
+    sv = re.search(r"--- !u!114 &%s stripped\n((?:.*\n)*?)(?=--- !u!|\Z)" % HUD_VIEW_ID, text)
+    want(sv and f"guid: {script_guid('MeerkatHUDView')}, type: 3" in sv.group(1)
+         and f"  view: {{fileID: {HUD_VIEW_ID}}}\n" in hud,
+         "Meerkat.prefab: the HUD controller's view is not the nested MeerkatHUDView")
     m = re.search(r"  _inputEventShipActions:\n(?:  [- ] .*\n)*", text)
     want(m and m.group(0) == MEERKAT_BINDINGS,
          "Meerkat.prefab: the bindings are not RT -> MeerkatSolitonFormAction, LT -> MeerkatSolitonShortenAction, X -> StoatHoldAction, "
@@ -687,6 +808,14 @@ def check_all():
         return ["Meerkat.prefab (+ .meta) is missing: run Tools/Build/author_meerkat_assets.py"]
     errs += [] if guid_of(PREFAB + ".meta") == PREFAB_GUID else ["Meerkat.prefab.meta: guid is not PREFAB_GUID"]
     errs += check_prefab(read(PREFAB))
+    if not os.path.exists(MODEL) or not os.path.exists(MODEL + ".meta") or guid_of(MODEL + ".meta") != MEERKAT_FBX_GUID:
+        errs.append("Meerkat.fbx (+ .meta): missing, or not the guid the prefab draws: Tools/Build/vessel_model/build.py meerkat")
+    if not os.path.exists(HUD_VARIANT) or not os.path.exists(HUD_VARIANT + ".meta"):
+        errs.append("MeerkatHUDVariant.prefab (+ .meta) is missing: run Tools/Build/author_meerkat_assets.py")
+    else:
+        if guid_of(HUD_VARIANT + ".meta") != HUD_VARIANT_GUID:
+            errs.append("MeerkatHUDVariant.prefab.meta: not the guid the hull nests")
+        errs += check_hud_variant(read(HUD_VARIANT))
     for path, guid in ((CLASS_ASSET, CLASS_GUID), (MAP, MAP_GUID), (CONFIG, CONFIG_GUID), (FORM, FORM_GUID), (SHORTEN, SHORTEN_GUID),
                        (CAMERA, CAMERA_GUID)):
         if not os.path.exists(path) or not os.path.exists(path + ".meta"):
@@ -724,6 +853,13 @@ def author():
         write(SENTINEL, sentinel_action_asset()); write(SENTINEL + ".meta", native_meta(SENTINEL_GUID))
     if not os.path.exists(CAMERA):   # a one-shot, like the config
         write(CAMERA, camera_asset(read(DONOR_CAMERA))); write(CAMERA + ".meta", native_meta(CAMERA_GUID))
+    if not os.path.exists(HUD_VARIANT):   # a one-shot, like the prefab: built while absent, then only patched
+        write(HUD_VARIANT, build_hud_variant(read(HUD_DONOR)))
+        write(HUD_VARIANT + ".meta", prefab_meta().replace(PREFAB_GUID, HUD_VARIANT_GUID))
+    else:
+        old = read(HUD_VARIANT); new = patch_hud_variant(old)
+        if new != old:
+            write(HUD_VARIANT, new)
     if not os.path.exists(PREFAB):   # the spent one-shot stands down once the prefab is committed
         write(PREFAB, build_clone(read(DONOR)))
         write(PREFAB + ".meta", prefab_meta())
@@ -767,6 +903,19 @@ def self_test():
     expect(check_prefab(good.replace(f"  - {{fileID: {KIT_ID}}}\n", "")), 1, "the kit off the registry")
     expect(check_prefab(good.replace(binding(BUTTON4_ACTION, SENTINEL_GUID), "")), 1, "Y unbound")
     expect(check_prefab(good.replace(f"  kit: {{fileID: {KIT_ID}}}\n", "")), 1, "the HUD without the kit")
+    expect(check_prefab(good.replace(HUD_VARIANT_GUID, STOAT_HUD_VARIANT_GUID)), 1, "the Stoat's HUD nested")
+    expect(check_prefab(good.replace(MEERKAT_FBX_GUID, STOAT_FBX_GUID)), 1, "the Stoat's hull")
+    expect(check_prefab(good.replace("CosmicShore.UI.MeerkatHUDView", "CosmicShore.UI.StoatHUDView").replace(
+        script_guid("MeerkatHUDView"), STOAT_HUD_VIEW_GUID)), 1, "the Stoat's HUD view")
+    hud = build_hud_variant(read(HUD_DONOR))
+    hud_errs = [e for e in check_hud_variant(hud) if ".png (+ .meta)" not in e]   # the icons are the kit's, checked on disk
+    expect(hud_errs, 0, "a fresh HUD variant passes")
+    expect(check_hud_variant(hud.replace(script_guid("MeerkatHUDView"), STOAT_HUD_VIEW_GUID)), 1, "the Stoat's view in the variant")
+    expect(check_hud_variant(hud.replace(I.guid_for(I.ICONS[2]), STOAT_ICONS[2])), 1, "the Stoat's Space sprite")
+    expect(check_hud_variant(re.sub(r"(  sentinelGauge: \{fileID: )\d+", r"\g<1>0", hud)), 1, "the Sentinel gauge unwired")
+    expect(check_hud_variant(hud.replace(OMNI_LINE, "")), 1, "the omni card empty")
+    if patch_hud_variant(hud) != hud:
+        fails.append("the HUD variant patch is not idempotent")
     cam = camera_asset(read(DONOR_CAMERA))
     expect(check_camera(cam), 0, "a fresh camera is centred")
     expect(check_camera(cam.replace("  followOffset: {x: 0, y: 0, z: -21}", "  followOffset: {x: 0, y: 6.5, z: -21}")), 1, "a height offset")

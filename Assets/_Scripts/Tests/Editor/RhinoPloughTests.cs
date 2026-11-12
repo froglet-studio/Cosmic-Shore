@@ -122,5 +122,60 @@ namespace CosmicShore.Tests
                 Object.DestroyImmediate(go);
             }
         }
+
+        // ------------------------------------------------------------ the plough kit (2026-11-07)
+
+        [Test]
+        public void ASteeredPloughThrowsEveryPrismToTheSteeredSide_AcrossTheCentreline()
+        {
+            float clearance = 10f, throwDistance = 4f;
+            // A prism LEFT of the centreline, plough steered RIGHT: it lands on the right.
+            float shove = RhinoPlough.ShoveToward(-3f, 1f, clearance, throwDistance);
+            Assert.AreEqual(clearance + throwDistance, -3f + shove, Eps);
+            // And mirrored.
+            float left = RhinoPlough.ShoveToward(3f, -1f, clearance, throwDistance);
+            Assert.AreEqual(-(clearance + throwDistance), 3f + left, Eps);
+        }
+
+        [Test]
+        public void ASteeredShoveIsStillIdempotent()
+        {
+            float clearance = 10f, throwDistance = 4f;
+            float shove = RhinoPlough.ShoveToward(-3f, 1f, clearance, throwDistance);
+            Assert.AreEqual(0f, RhinoPlough.ShoveToward(-3f + shove, 1f, clearance, throwDistance), Eps);
+        }
+
+        [Test]
+        public void AnUnsteeredPloughKeepsTheOldRule_NegativeControl()
+        {
+            foreach (float lateral in new[] { -7f, -2f, 0f, 2f, 7f })
+                Assert.AreEqual(RhinoPlough.LateralShove(lateral, 10f, 4f),
+                    RhinoPlough.ShoveToward(lateral, RhinoPlough.SteeredSide(lateral, 0f), 10f, 4f), Eps);
+            // ...and a steer DOES change the answer for a prism on the other side.
+            Assert.AreNotEqual(RhinoPlough.LateralShove(-2f, 10f, 4f),
+                RhinoPlough.ShoveToward(-2f, RhinoPlough.SteeredSide(-2f, 1f), 10f, 4f));
+        }
+
+        [Test]
+        public void TheFurrowAddsToTheThrowAtAnySpeed_AndTheSpeedThrowKeepsItsCeiling()
+        {
+            Assert.AreEqual(2f, RhinoPlough.ThrowDistance(50f, 0.04f, 30f, 0f), Eps);
+            Assert.AreEqual(22f, RhinoPlough.ThrowDistance(50f, 0.04f, 30f, 20f), Eps);
+            Assert.AreEqual(30f, RhinoPlough.ThrowDistance(840f, 0.04f, 30f, 0f), Eps);
+            Assert.AreEqual(50f, RhinoPlough.ThrowDistance(840f, 0.04f, 30f, 20f), Eps);
+            Assert.AreEqual(2f, RhinoPlough.ThrowDistance(50f, 0.04f, 30f, -5f), Eps, "a negative furrow never narrows it");
+        }
+
+        [Test]
+        public void TheLastTriggerPulledSteers_AndReleasingItHandsBackToTheOneStillHeld()
+        {
+            Assert.AreEqual(0f, RhinoPloughSteering.Side(false, false, 0f));
+            Assert.AreEqual(1f, RhinoPloughSteering.Side(true, false, 1f));
+            Assert.AreEqual(-1f, RhinoPloughSteering.Side(false, true, -1f));
+            Assert.AreEqual(-1f, RhinoPloughSteering.Side(true, true, -1f));
+            Assert.AreEqual(1f, RhinoPloughSteering.Side(true, true, 1f));
+            // Left was pulled last, then let go: the right trigger, still held, steers.
+            Assert.AreEqual(1f, RhinoPloughSteering.Side(true, false, -1f));
+        }
     }
 }

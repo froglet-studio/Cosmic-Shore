@@ -7,17 +7,91 @@ The two inputs the vessel does hold are movement — Soar (dual-trigger analog b
 (hard flat turns). This is the record of how the four abilities work, what the remake threw
 away, and how to verify it in the editor.
 
-The map is `Assets/Resources/ElementalAbilityMaps/Manta.asset` — **the asset is the record**:
+The map is `Assets/Resources/ElementalAbilityMaps/Manta.asset` — **the asset is the record**
+(authored by `Tools/Build/author_manta_kit_assets.py`, `--check` is the drift gate):
 
 | Element | Ability | Quantitative (authoring home) | L5 upgrade |
 |---|---|---|---|
-| Charge | **Sting** (passive, no input) | bomb-bay capacity 3 → 5 at Charge 15 (`capacityPerChargeLevel`) AND skim-charge rate (`chargeRateAtFullCharge`), both on `MantaStingConfig.asset` | **Contagion** — anything caught in a bloom is itself bombed, free |
-| Mass | **Yastri** (Input 12, the turn pair) | trail prism VOLUME (`VesselPrismController.trailVolume` on Manta.prefab, 1× → 2.5×, the Squirrel's Heavy Trail machinery); the turn RATE is deliberately unscaled (`YawsteryActionSO.turnRateMultiplier` disabled, `turnRateElement: None`) | **Shielded Turn Trails** — prisms laid during a hard turn come out shielded |
-| Space | **Kabloom** (passive — it fires off crystal contact) | every bomb bloom's scale (`blastScaleAtFullSpace` 1.6× on `MantaStingConfig.asset`) | **No Friendly Fire** — blooms spare allies and allied prisms |
-| Time | **Soar** (Input 13, analog boost) | max soaring speed — the map multiplier (1.3 at full, 0.7 floor) IS the authoring home, read fleet-wide by `VesselTransformer.CurrentBoostAmount` | *(open — Wake Highway was built and cut 2026-09; see §5)* |
+| Charge | **Sting** (passive) | how long the shared fuse runs when a plant resets it: 20 s at rest → 30 s at Charge 10 (`fuseSeconds` × `fuseScale` 1 → 1.5, on `MantaStingConfig.asset`; §0a) | **Contagion** — anything caught in a bloom is itself bombed, free |
+| Mass | **Decoy** (passive) | how long a decoy stands (`decoyLifetimeAtFullMass` 2×) | **Omni Decoy** — the omni crystal leaves a decoy too |
+| Space | **Skim** (passive) | the skimmer's size (Manta.prefab `Skimmer.Scale`, 20 → 40) | **Shield Breaker** — skimming a shielded rival prism pops its shield and makes it explosive |
+| Time | **Yastri** (Input 12, the turn pair) | the Manta's speed: cruise (`VesselTransformer.ThrottleScalerMultiplier` 1.5× at Time 10) and soaring (`BoostSpeedMultiplier` 1.3×); the trail is a plain Squirrel-style trail, unscaled and unflared | **Soar** — the boost stays dark until Time 5 |
 
-All three pinned multipliers are the no-double-dip rule: a dedicated authored field carries the
-scaling, so the map's generic multiplier must not scale the same parameter a second time.
+## 0. The 2026-11-07 overhaul (Garrett) — the rules as they stand
+
+This section is the current design. The sections below it are the earlier record; where one
+disagrees with this section, this section wins.
+
+- **Energy (Space card).** Skimming pays `energyPerSkim` per prism (per-prism cooldown), up to
+  `energyCapacity` (1: the loop is skim, plant, skim, plant; planted bombs have no cap). One energy plants one bomb. **Any hull contact with a prism sets off
+  every planted bomb and loses all the energy** (`MantaDetonateByPrismEffectSO` in
+  `vesselPrismEffects` → `MantaStingActionExecutor.OnPrismImpact`).
+- **One fuse (Charge card).** Every bomb shares the bay's fuse (`FuseDeadline`); each new plant
+  resets it, so all bombs always go off together. Charge sets how long the fuse runs when a plant
+  resets it (§0a); the petals a bloom knocks out of a rival are flat. A bomb moved to a new carrier (a fauna heart
+  crystal, a vessel that picked it up) keeps the running fuse. A fuse or prism-impact board blooms
+  every bomb at once at `fuseBlastScale`, growing over `bloomGrowSeconds` (slow on purpose: many
+  blooms at once read well and cost less per frame).
+- **Bombs cannot be scraped off.** The old knock-off and own-fresh-trail graces are gone.
+- **Omni crystal = cash out.** Every bomb goes off, nearest first, at `kabloomBlastScale ×
+  OmniScaleMultiplier(count)` (`1 + omniScalePerExtraBomb × (n − 1)`, capped at
+  `omniScaleMultiplierMax`), growing over `omniBloomGrowSeconds`. Press your luck: one more bomb
+  is a bigger payout and one more chance to brush a prism and lose it.
+- **Blooms never hurt the planter's side.** No Friendly Fire was the old Space upgrade; it is now
+  the base rule (contagion skips the planter's domain too).
+- **A bombed fauna's crystal stays bombed.** When the creature dies the bomb moves onto its heart
+  crystal; whoever collects that crystal (any vessel, the Manta's own side included, which blooms
+  never hurt) carries the bomb away on the same fuse.
+- **Yastri and Soar are Time.** Shielded Turn Trails is dropped. The trail is toned down to a
+  Squirrel-style trail (2026-11-07 follow-up): the Squirrel's prism size (20 × 0.75 × 5.5), no
+  element growing its volume, no turn flare. Time makes the Manta faster: cruise speed 1.5× at
+  Time 10 (`ThrottleScalerMultiplier`, the Scarab's shape), on top of the soaring speed.
+
+## 0a. Charge is the fuse, not the petals (Garrett, 2026-11-10)
+
+*"I want to move away from charge being coupled to elemental petals. It is too coarse to adjust. The manta charge
+parameter should be the length of time on the fuse when it resets."*
+
+- **The fuse.** Each plant resets the shared fuse to `fuseSeconds` × `fuseScale`, read at the planter's live Charge at
+  that moment (`MantaStingConfigSO.FuseSecondsFor`, called by `MantaStingActionExecutor.ResetFuse`). `fuseScale` is an
+  `ElementalFloat` on Charge: ×1 at rest, ×1.5 at Charge 10, floored at ×0.5. So 20 s at rest, 25 s at Charge 5, 30 s
+  at Charge 10, 15 s at Charge −5 and 35 s at Charge 15, and every tenth of a level in between moves it. A plant at a
+  higher Charge buys the whole board the longer fuse; a bomb that only moves (a heart crystal, a pickup) keeps the
+  running fuse, as before.
+- **Why the continuous level.** Only the machine that simulates the bombs runs the fuse (§4), so nothing else has to
+  agree with it, and `EvaluateLive` reads the level between petals. That is the whole point of the change.
+- **The bloom's bite is flat again.** `magnitudeAtFullCharge` on `MantaBombDebuffByExplosionEffect.asset` is back to 1:
+  every bloom ejects the priced 1.2 petals (0.12, the drain table's Debuff class) from each of Mass and Space, at any
+  Charge. From 2026-11-07 to 2026-11-10 Charge doubled it (2.4 at Charge 10).
+- **Bloomrush.** Its per-intensity ladder (`MantaBombRules.FuseSecondsOverride`, 30/25/20/20) replaces the RESTING
+  length only; Charge still scales it, so an intensity-1 Charge 10 Manta runs a 45 s fuse. Whether a mode may set the
+  fuse at all is still the open owners' call in `Docs/REFACTOR_BACKLOG.md` C3 (the LOCKED rule that a mode never
+  changes the vessel postdates the ladder).
+- **Tune it** on `MantaStingConfig.asset` through `Tools/Build/author_manta_kit_assets.py` (it writes the whole file;
+  `--check` is the drift gate and now also fails on a file that does not parse). Tests: `MantaFuseChargeTests`.
+
+## 3a. Explosive prisms
+
+Skimming an opposing-domain prism (never neutral Blue) marks it **explosive**
+(`Prism.MakeExplosive`, a colour lift is the tell; danger-suppressing silence blocks it). An
+explosive prism's death (`Prism.SetupDestruction`, the one funnel) fires `PrismExplosiveChain`:
+after a short beat it destroys its prismscape neighbours (the same trail when it has one, a
+`PrismSpatialIndex` sphere of 1.6 prism extents otherwise), and any of those that were explosive
+fire their own beat, so chains roll outward. The work is spread at most 24 hits per frame. A
+shielded prism needs the Space 5 upgrade, which pops the shield and primes it.
+
+## 4a. Decoy crystals (the Mass ability)
+
+`MantaDecoyByCrystalEffectSO` sits in all four elemental crystal lists and in the omni list of
+`MantaImpactorDataContainer`. A collected elemental crystal leaves an elemental decoy; at Mass 5 a
+collected omni crystal leaves an omni decoy too. The bay keeps one of each and pops the older one.
+
+`MantaDecoyCrystal` copies the real prefab under an inactive holder, paints it, and strips every
+gameplay part (Crystal, impactors, colliders, rigidbodies, network components), so it can never be
+collected, scored or targeted. **The tell:** one effect driver is frozen (an elemental decoy its
+own element; an omni decoy one of four, picked by a seed every peer shares). A rival vessel or
+skimmer that touches it springs it into `decoyMorphPrefabs` (the danger-block hemisphere) laid
+along the rival's heading. Decoys spawn on every peer; the morph's prism layout is each peer's own.
 
 ## 1. What the remake threw away
 
@@ -80,8 +154,8 @@ rival Manta tagging a creature first locks you out of it); the closing-speed mar
 spends one bomb and stamps a `MantaBombSnapshot` (§4) onto the target. **The target gets no
 indication** — no HUD ping, no VFX on the victim's machine. That is the spec, not an oversight.
 
-**The fuse.** `fuseSeconds` (25 s authored; Bloomrush overrides per intensity through the
-static `MantaBombRules.FuseSecondsOverride`, reset on domain reload). A fuse expiry detonates at
+**The fuse.** `fuseSeconds` (20 s at rest, × Charge's `fuseScale` since 2026-11-10, §0a; Bloomrush overrides the
+resting length per intensity through the static `MantaBombRules.FuseSecondsOverride`, reset on domain reload). A fuse expiry detonates at
 `fuseBlastScale` — smaller than a crystal-cashed bloom by construction, which is what makes
 "beat the fuse" score a fraction without any scoring special case.
 
@@ -241,6 +315,12 @@ silhouettes** (bomb / turn arrow / bloom / chevrons —
 `Tools/Build/author_manta_icon_placeholders.py`, 128 px white-on-transparent at
 `_Graphics/Icons/AbilityIcons/Manta/`) so the cards read before the art pass replaces them 1:1.
 
+**The 2026-11-07 icon pass** replaced the placeholders with kit parts (`Tools/Build/icon_kit/specs/manta.py`,
+`Docs/Icons/ABILITY_ICON_SKILL_PLAN.md` §8): Sting draws a rival wearing a bomb per plant on the shared-fuse plate, Decoy
+the decoy crystal and its trap, Skim the explosive prisms over the energy plate (`energyFill` is now the Space card's
+gauge), Yastri the hard turn with Soar's chevrons at Time 5; the omni card is the cash-out. The view tints the parts
+(the Mantas in the domain colour, rivals and the trap in danger) and shows them from the executor's state.
+
 ## 6a. The feel of the loop (the 2026-08-26 juice pass)
 
 The loop was mechanically complete and read as nothing happening: skims paid into an
@@ -341,7 +421,7 @@ GameObject, which `OnDestroy` already handles.
 | `baseCapacity` / `capacityPerChargeLevel` / `maxCapacity` | 3 / 0.2 / 5 | bay = 3 + 0.2×Charge, so 5 at Charge 15 (spec) |
 | `chargePerSkim` / `perPrismChargeCooldown` | 0.34 / 1.5 | ~3 distinct prisms arm one bomb |
 | `chargeRateAtFullCharge` / `minChargeRateMultiplier` | 2 / 0.25 | Charge scales arming speed |
-| `fuseSeconds` | 25 | mode-overridable via `MantaBombRules.FuseSecondsOverride` |
+| `fuseSeconds` / `fuseScale` | 20 / ×1 → ×1.5 (floor ×0.5) | the fuse a plant resets: 20 s at rest, 30 s at Charge 10 (§0a); the resting length is mode-overridable via `MantaBombRules.FuseSecondsOverride` |
 | `plantSpeedMargin` | 0 | closing speed required to plant; 0 = any graze |
 | `knockOffGraceSeconds` / `ownFreshTrailGraceSeconds` | 1 / 6 | scrape-off exemptions |
 | `kabloomBlastScale` / `fuseBlastScale` / `blastScaleAtFullSpace` | (asset) | cashed vs fizzle vs Space growth — keep cashed > fizzle or "beat the fuse" stops meaning anything |

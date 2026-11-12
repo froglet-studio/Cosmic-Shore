@@ -18,6 +18,7 @@ catalog. Every set is unlocked for now (Shombith, 2026-11-05: quests are not pla
 """
 import argparse
 import hashlib
+import json
 import os
 import re
 import sys
@@ -29,36 +30,105 @@ CONTAINER = "Assets/_SO_Assets/ThemeManagerDataContainer.asset"
 SCRIPT = "Assets/_Scripts/ScriptableObjects/ColorSetCatalogSO.cs"
 CATALOG_GUID = hashlib.md5(b"CosmicShore/ColorSetCatalog").hexdigest()
 
-# (id, palette asset, the name the Profile shows, its line). The words seed the asset once; edit them in Unity.
+# (id, palette asset, the name the Profile shows, its line, the vision it is made for). The words seed the asset once;
+# edit them in Unity. VISION is ColourVision (None 0, Protanopia 1, Deuteranopia 2, Tritanopia 3, Achromatopsia 4,
+# LowVision 5, Contrast 6). Every set, a vision set included, is picked in the Profile's colour-set rail; Settings >
+# General > Colour sets is a breadcrumb that opens the rail on the first set made for a vision.
 # PIGMENTS: Jade, Ruby, Gold, Blue, rim over face, from colour_sets.json (Photic has no pigments there: named by eye).
 SETS = (
-    ("nocturne", "NocturneColorSetSO", "Nocturne", "Every prism a lantern: a glowing rim over a deep jewel face."),
-    ("photic", "PhoticColorSetSO", "Photic", "The original sunlit sea: one bright hue per domain."),
-    ("dartfrog", "DartFrogColorSetSO", "Dart Frog", "Two frog pigments per domain: mint over bronze, bumblebee over indigo."),
+    ("nocturne", "NocturneColorSetSO", "Nocturne", "Every prism a lantern: a glowing rim over a deep jewel face.", 0),
+    ("photic", "PhoticColorSetSO", "Photic", "The original sunlit sea: one bright hue per domain.", 0),
+    ("dartfrog", "DartFrogColorSetSO", "Dart Frog", "Frog warning colours over their dark grounds: mint over bronze, bumblebee over coal.", 0),
+    ("nacre", "NacreColorSetSO", "Nacre", "Light, not bright: soft bodies in each family's own colour under a sheen.", 0),
+    # The /colour-set skill's worked examples, taken into the game 2026-11-11 (Garrett: "the artifact lab had some
+    # great new color sets").
+    ("blueringedoctopus", "BlueRingedOctopusColorSetSO", "Blue-ringed Octopus",
+     "Sand skin, electric rings, black outlines: an octopus flashing its warning.", 0),
+    ("neonnoir", "NeonNoirColorSetSO", "Neon Noir",
+     "Rain and neon: every rim a neon tube, every face a wet street reflecting the sign across from it.", 0),
+    ("ukiyoe", "UkiyoEColorSetSO", "Ukiyo-e", "Woodblock prints: every face its rim's own pigment, printed deeper.", 0),
+    ("dusk", "DuskColorSetSO", "Dusk", "The hush after sunset: muted rims over dusky faces, plum the clearest colour.", 0),
+    ("contrast", "ContrastColorSetSO", "Contrast",
+     "Every domain as far from every other as the rules allow, for anyone who wants the board to read at a glance.", 6),
+    ("protanopia", "ProtanopiaColorSetSO", "Protanopia",
+     "Made for eyes without red cones (protanopia and protanomaly): the domains told apart on blue-yellow and light.", 1),
+    ("deuteranopia", "DeuteranopiaColorSetSO", "Deuteranopia",
+     "Made for eyes without green cones (deuteranopia and deuteranomaly): the domains told apart on blue-yellow and light.", 2),
+    ("tritanopia", "TritanopiaColorSetSO", "Tritanopia",
+     "Made for eyes without blue cones (tritanopia): the domains told apart on red-teal and light.", 3),
+    ("achromatopsia", "AchromatopsiaColorSetSO", "Achromatopsia",
+     "Made for eyes that see no colour: every domain has its own brightness, rim and face.", 4),
+    ("lowvision", "LowVisionColorSetSO", "Low Vision",
+     "Made for low vision and cataract: bright rims over dark faces, the domains apart in brightness first.", 5),
 )
-
+VISION = {s[0]: s[4] for s in SETS}
+JSON_KEY = {"dartfrog": "dart_frog", "lowvision": "low_vision", "blueringedoctopus": "blue_ringed_octopus",
+            "neonnoir": "neon_noir", "ukiyoe": "ukiyo_e"}   # catalog id -> colour_sets.json key, where they differ
 
 PIGMENTS = {
     "nocturne": ("Lagoon over Plum", "Orchid over Deep Teal", "Honey over Violet", "Cornflower over Spruce"),
     "photic": ("Cyan over Deep cyan", "Violet over Deep violet", "Amber over Umber", "Periwinkle over Indigo"),
-    "dartfrog": ("Mint over Bronze", "Orchid over Petrol", "Bumblebee over Indigo", "Azure over Forest"),
+    "dartfrog": ("Mint over Bronze", "Orchid over Petrol", "Bumblebee over Coal", "Azure over Cobalt"),
 }
+
+
+def json_pigments():
+    """Jade, Ruby, Gold, Blue as 'rim over face' for every catalog set colour_sets.json defines (the vision sets)."""
+    with open(os.path.join(REPO, "Docs", "VesselModels", "colour_sets.json"), encoding="utf-8") as fh:
+        defs = json.load(fh)["sets"]
+    out = {}
+    for sid, *_ in SETS:
+        s = defs.get(JSON_KEY.get(sid, sid))
+        if sid not in PIGMENTS and s:
+            out[sid] = tuple("%s over %s" % (s["domains"][d]["rim"]["name"], s["domains"][d]["face"]["name"])
+                             for d in ("jade", "ruby", "gold", "blue"))
+    return out
+
+
+PIGMENTS.update(json_pigments())
 
 
 def pigment_lines(sid):
     return "    pigments:\n" + "".join(f"    - {yaml_str(p)}\n" for p in PIGMENTS[sid])
 
 
+def entry_text(sid, guid, name, line):
+    return (f"  - id: {sid}\n    colorSet: {ref(guid)}\n    displayName: {yaml_str(name)}\n"
+            f"    line: {yaml_str(line)}\n    unlocked: 1\n" + pigment_lines(sid) + f"    vision: {VISION[sid]}\n")
+
+
 def add_pigments(text):
-    """Migration (section 126): an entry without pigments gets them after its `unlocked` line. Stands down per entry
-    once present, so a person's edits in the inspector are kept."""
+    """Migration (section 126): an entry without pigments gets them after its `unlocked` line, and (2026-11-05) an
+    entry without a vision gets its own at its end. Stands down per entry once present, so a person's edits in the
+    inspector are kept."""
     out, blocks = [], re.split(r"(?=^  - id: )", text, flags=re.M)
     for b in blocks:
         m = re.match(r"  - id: (\S+)\n", b)
         if m and m.group(1) in PIGMENTS and "    pigments:" not in b:
             b = re.sub(r"(    unlocked: \d+\n)", lambda x: x.group(1) + pigment_lines(m.group(1)), b, count=1)
+        if m and m.group(1) in VISION and "    vision:" not in b:
+            b = b.rstrip("\n") + "\n" + f"    vision: {VISION[m.group(1)]}\n"
         out.append(b)
     return "".join(out)
+
+
+def add_entries(text, palette_guids):
+    """Migration (2026-11-05): a set in SETS the catalog does not have yet is added at its place in SETS order (before
+    the next SETS entry the catalog has, else at the end; 2026-11-08, so Nacre sits beside the other looks and not
+    after the vision sets). Stands down once every set is present."""
+    ids = set(re.findall(r"^  - id: (\S+)$", text, re.M))
+    if all(s[0] in ids for s in SETS):
+        return text
+    text = text.rstrip("\n") + "\n"
+    for i, (sid, _, name, line, _) in enumerate(SETS):
+        if sid in ids:
+            continue
+        entry = entry_text(sid, palette_guids[sid], name, line)
+        after = next((s[0] for s in SETS[i + 1:] if s[0] in ids), None)
+        m = re.search(r"^  - id: %s$" % re.escape(after), text, re.M) if after else None
+        text = text[:m.start()] + entry + text[m.start():] if m else text + entry
+        ids.add(sid)
+    return text
 
 
 def read(path):
@@ -85,9 +155,7 @@ def yaml_str(s):
 
 
 def catalog_text(script_guid, palette_guids):
-    entries = "".join(
-        f"  - id: {sid}\n    colorSet: {ref(palette_guids[sid])}\n    displayName: {yaml_str(name)}\n"
-        f"    line: {yaml_str(line)}\n    unlocked: 1\n" + pigment_lines(sid) for sid, _, name, line in SETS)
+    entries = "".join(entry_text(sid, palette_guids[sid], name, line) for sid, _, name, line, _ in SETS)
     return ("%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n"
             "  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n  m_PrefabInstance: {fileID: 0}\n"
             "  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n  m_Enabled: 1\n  m_EditorHideFlags: 0\n"
@@ -117,7 +185,7 @@ def validate(catalog, container, palette_guids, script_guid):
     if f"guid: {script_guid}, type: 3" not in catalog:
         errors.append(f"{CATALOG}: m_Script is not ColorSetCatalogSO ({script_guid})")
     ids = re.findall(r"^  - id: (\S+)$", catalog, re.M)
-    for sid, asset, _, _ in SETS:
+    for sid, asset, _, _, vision in SETS:
         if ids.count(sid) != 1:
             errors.append(f"{CATALOG}: id '{sid}' appears {ids.count(sid)} times (want 1)")
             continue
@@ -127,6 +195,13 @@ def validate(catalog, container, palette_guids, script_guid):
         m = re.search(r"colorSet: \{fileID: 11400000, guid: ([0-9a-f]{32}), type: 2\}", block)
         if not m or m.group(1) != palette_guids[sid]:
             errors.append(f"{CATALOG}: '{sid}' does not point at {asset}.asset ({palette_guids[sid]})")
+        v = re.search(r"^    vision: (\d+)$", block, re.M)
+        if not v or int(v.group(1)) != vision:
+            errors.append(f"{CATALOG}: '{sid}' must be made for vision {vision} (ColourVision)")
+    visions = [int(v) for v in re.findall(r"^    vision: (\d+)$", catalog, re.M) if int(v)]
+    for v in sorted(set(visions)):
+        if visions.count(v) > 1:
+            errors.append(f"{CATALOG}: {visions.count(v)} sets are made for vision {v}; one set per vision")
     if f"  Catalog: {ref(CATALOG_GUID)}" not in container:
         errors.append(f"{CONTAINER}: Catalog is not wired to {CATALOG} ({CATALOG_GUID})")
     return errors
@@ -134,7 +209,7 @@ def validate(catalog, container, palette_guids, script_guid):
 
 def inputs():
     script_guid = meta_guid(SCRIPT)
-    palette_guids = {sid: meta_guid(f"{PALETTES}/{asset}.asset") for sid, asset, _, _ in SETS}
+    palette_guids = {sid: meta_guid(f"{PALETTES}/{asset}.asset") for sid, asset, *_ in SETS}
     missing = [sid for sid, g in palette_guids.items() if not g]
     if not script_guid or missing:
         raise SystemExit(f"missing guid: script={script_guid} palettes={missing}")
@@ -153,7 +228,12 @@ def self_test():
         "the wrong script": (good_cat.replace(script_guid, "0" * 32), good_con),
         "an unwired container": (good_cat, "MonoBehaviour:\n  ColorSet: {fileID: 0}\n"),
         "a set missing a pigment": (good_cat.replace("    - Mint over Bronze\n", "", 1), good_con),
+        "a vision set made for the wrong vision": (good_cat.replace("    vision: 1\n", "    vision: 2\n", 1), good_con),
+        "two sets made for one vision": (good_cat.replace("    vision: 3\n", "    vision: 2\n", 1), good_con),
     }
+    old_shape = re.sub(r"^    vision: \d+\n", "", good_cat.split("  - id: contrast", 1)[0], flags=re.M)
+    old_shape = re.sub(r"^  - id: nacre\n(?:    .*\n)+", "", old_shape, flags=re.M)   # a set added mid-catalog
+    assert add_entries(add_pigments(old_shape), guids) == good_cat, "the migration does not reach the authored catalog"
     for name, (cat, con) in planted.items():
         assert validate(cat, con, guids, script_guid), f"self-test: '{name}' was not caught"
     print(f"author_colour_set_catalog --self-test: ok ({len(planted)} planted defects caught)")
@@ -176,10 +256,10 @@ def main():
             print(f"wrote {CATALOG}")
         else:
             cat = read(CATALOG)
-            migrated = add_pigments(cat)
+            migrated = add_entries(add_pigments(cat), guids)
             if migrated != cat:
                 write(CATALOG, migrated)
-                print(f"added pigments to {CATALOG}")
+                print(f"added pigments, visions or sets to {CATALOG}")
             else:
                 print(f"{CATALOG} exists: its words stay as authored (validating only)")
         con = read(CONTAINER)

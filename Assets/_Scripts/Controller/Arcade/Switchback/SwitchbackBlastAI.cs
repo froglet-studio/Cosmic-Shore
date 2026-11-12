@@ -68,7 +68,8 @@ namespace CosmicShore.Gameplay
         static readonly Collider[] s_hits = new Collider[SenseCap];
         static readonly Vector3[] s_pts = new Vector3[SenseCap];
         static readonly float[] s_radii = new float[SenseCap];
-        static readonly Vector3[] s_crystals = new Vector3[32];
+        /// <summary>Managed crystals the sense considers: an I4 gauntlet course carries up to ~51 keys (26 gates), so 64.</summary>
+        static readonly Vector3[] s_crystals = new Vector3[64];
         /// <summary>u ahead of the hull the sense tube starts (its own fresh trail is behind it).</summary>
         const float SenseStart = 6f;
 
@@ -215,6 +216,8 @@ namespace CosmicShore.Gameplay
                 bool keyGone = st.D.Plan == SwitchbackAIPlan.Blast && st.Phase != Phase.Done && !KeyAvailable(st.D.Station);
                 if (keyGone && Vector3.Distance(self, st.D.Key) < 30f) { st.KeyTaken = true; st.Phase = Phase.Done; }
                 else if (keyGone || (skill.ReplanSeconds > 0f && Time.time >= st.NextPlan && st.Phase != Phase.Done && st.Phase != Phase.Strike)) Plan(p, st, self, in skill);
+                // An I4 gauntlet: past this key, the next one is the plan (SWITCHBACK.md "The I4 gauntlet").
+                else if (st.D.Station >= 0 && _planner.StageFor(st.D.Gate, self) != st.D.Station) Plan(p, st, self, in skill);
             }
 
             bool gateAim = GateBlastAim(st, self, out aim);
@@ -248,7 +251,10 @@ namespace CosmicShore.Gameplay
             else
             {
                 st.Phase = Phase.Strike;
-                aim = key + fire * StrikeThrough;
+                // An I4 gauntlet key is off the line and its blast is aimed down the NEXT segment: fly THROUGH the key along
+                // the approach (a commit drift locks the course there) and let the drift look swing the nose onto the aim.
+                // Aiming past the key along the fire line passed it 13-24 u wide offline (switchback_sim_harness).
+                aim = _planner.IsGauntlet(st.D.Station) && dist > 1f ? key + toKey / dist * StrikeThrough : key + fire * StrikeThrough;
             }
             return true;
         }
@@ -614,7 +620,7 @@ namespace CosmicShore.Gameplay
             }
             if (st.D.Plan != SwitchbackAIPlan.Blast || st.Phase != Phase.Strike) return false;
             var tf = p.Vessel?.Transform;
-            if (tf == null || Vector3.Distance(tf.position, st.D.Key) > LookRange) return false;
+            if (tf == null || Vector3.Distance(tf.position, st.D.Key) > _planner.LookRangeFor(st.D.Station, LookRange)) return false;
             look = st.D.AimPoint;
             return true;
         }
@@ -630,7 +636,7 @@ namespace CosmicShore.Gameplay
             st.Plans++;
             st.NextPlan = Time.time + Mathf.Max(skill.ReplanSeconds, 0.25f);
             if (st.D.Plan != SwitchbackAIPlan.Blast) st.Phase = Phase.None;
-            else if (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != st.D.Gate) st.Phase = Phase.None;
+            else if (prev.Plan != SwitchbackAIPlan.Blast || prev.Gate != st.D.Gate || prev.Station != st.D.Station) st.Phase = Phase.None;
             if (st.Plans == 1) { st.StandingAtPlan = st.D.Standing; st.KeyTaken = false; }
             if ((st.Plans == 1 || prev.Plan != st.D.Plan) && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
                 CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,

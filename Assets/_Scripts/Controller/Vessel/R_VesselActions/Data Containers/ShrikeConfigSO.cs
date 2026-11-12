@@ -163,7 +163,7 @@ namespace CosmicShore.Gameplay
         [Header("Autopilot (input-only)")]
         [Tooltip("Rival blocks on the lance's line that make the AI hold the trigger.")]
         [SerializeField, Min(1)] int aiLanceMinTargets = 2;
-        [Tooltip("Seconds the AI stays docked before it presses Mass to detach (and leave a nest).")]
+        [Tooltip("Seconds the AI stays docked before it presses Mass to detach (and leave a nest), at least: it also waits for the sling to reload, which is faster docked.")]
         [SerializeField, Min(0f)] float aiDockSeconds = 3f;
         [Tooltip("The AI slings when its target is at least this far, u, and inside aiSlingDegrees of the nose.")]
         [SerializeField, Min(0f)] float aiSlingMinDistance = 300f;

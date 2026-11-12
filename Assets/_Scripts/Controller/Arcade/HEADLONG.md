@@ -1,5 +1,7 @@
 # Headlong — the Rhino-only circuit race
 
+> **2026-11-07: the Rhino has no sword.** The Rhino split in two (`R_VesselActions/SWORDFISH.md`): the sword went to the Swordfish, and the Rhino is the plough with its new kit (`RHINO_PLOUGH.md` § "The plough kit"). Headlong stays the Rhino's. Where this doc says the sword is the interference or the AI swings it, that is no longer true. Watch item: the Mass Blade adds a 14 u plough blade at the nose at rest (40 u at Mass 10), wider than the hull the Stampede hedge model measured.
+
 > `GameModes.Headlong = 49`. A closed loop of switch rings is cut through the cell and every
 > pilot flies **laps** of it in order; the first **domain** whose **lead runner** threads the
 > last gate of the last lap wins.
@@ -13,6 +15,65 @@
 > unchanged. Every table below that quotes 1200 u/s or a 332/356 u radius is the PRE-retune record;
 > the live curve is in `RHINO_RAMP_BOOST.md`'s retune note. ⚠ Needs a playtest — the easiest
 > level now asks for two lifts per lap where it asked for one.
+
+## 0. The stampede (2026-11-07) - NOT editor-verified
+
+Garrett, 2026-11-07: every Time game should be "a distinct and fun game that suits that vessel", like Switchback for
+the Dolphin and Skim Race for the Squirrel. Headlong asked one question per corner (how much boost is it worth?) on an
+empty circuit; it scored lowest of the fleet (4.8, `Docs/AI_SYSTEM/TIME_GAME_FUN_SCORES.md`) and its only feedback was
+the speed readout. It now stands **hedges of mass** across the straights (`HeadlongHedges`, laid by
+`HeadlongController.Stampede.cs`), because the Rhino is the one hull that goes THROUGH a wall:
+
+- **The plough.** The hull shoves a rammed prism aside and loses no speed (`RHINO_PLOUGH.md`: it carries no
+  `VesselChangeSpeedByPrismEffect`), while the ramp pays only on a straight line. So a plain hedge is free if you hold
+  the line and costs ramp if you swerve round it. Drive through, never round.
+- **The burn.** A danger slab costs the Rhino no speed either, but burns one petal of every element (the Tuned
+  `PetalBurnRule`, one contact a second, so one per hedge). On the Rhino Time is Ramp Spool (x1 at Time 0, x2.5 at 10,
+  x0.5 floor), so a burned Rhino winds up slower out of every corner for the rest of the race.
+- **Momentum** (Time L5): at Time 5 or more and above 70% of top speed (588 u/s) the burn does not land.
+
+| | The place | What stands | The question |
+|---|---|---|---|
+| I1 | **Open range** | plain hedges on the 4 longest legs | drive through, never round |
+| I2 | **Grazing** | 6 plain hedges; 2 Time crystals inside the tightest apexes (`RedlineTimeCrystals.Apex`) | a tighter exit now for a faster spool for the rest of the race |
+| I3 | **Thorns** | 8 hedges; the 3 longest legs' are danger, 160 u wide, each with a 32 u plain window 110 u off the line | swerve through the window (ramp now) or plough the thorns (spool later) |
+| I4 | **Stampede** | start at Time 5 (the card's `StartingElements`); full danger hedges just past the 3 costing corners | carry the corner: each stands where a PERFECT exit first reaches 588 u/s, plus 30 u, so an exit about 16% slow is burned below Time 5 and loses Momentum until a crystal brings it back |
+
+Measured on 400 seeds a level (`bash Tools/Build/headlong_course_harness/run.sh --sweep`): 4 / 6 / 8 / 8 hedges a lap,
+0 / 0 / 3 / 3 danger, about 780 / 1170 / 2000 / 1530 prisms a lap (Switchback lays 1200-3400).
+`HeadlongHedgesTests` (9 tests, run offline by the harness, four negative controls with `--self-test`) hold the
+ladder, that the line through the rings meets every hedge, that no hedge crowds another leg or a ring's approach, the
+windows, the stampede distance from the Rhino's own corner curve, the crystals and the budget.
+
+**Is every choice real?** `python3 Tools/Build/headlong_stampede_model.py` races the shipped course and hedges with
+`regatta_balance.py`'s competent Rhino (corner speeds off the prefab, the ramp's wind-up x Ramp Spool, the burn and
+Momentum), under four fixed habits and a pilot who reads the race (each choice decided by rolling the rest of the race
+out both ways). Five laps, 40 courses a level, seconds:
+
+| | plough all | window all | crystals + plough | crystals + window | reads the race | reading beats the best habit by |
+|---|---|---|---|---|---|---|
+| I1 | 30.9 | 30.9 | 30.9 | 30.9 | 30.9 | 0% (nothing to choose: learn the ramp) |
+| I2 | 31.9 | 31.9 | 31.8 | 31.8 | 31.4 | 1.1% (takes about half the crystals) |
+| I3 | 37.6 | 37.7 | 39.1 | 36.6 | 35.2 | 3.9% (about 6 windows and 2 burns: early laps swerve, late laps plough) |
+| I4 | 41.2 | 41.2 | 38.2 | 38.2 | 36.5 | 4.4% (a crystal at Time 5 is a spare level, so a burn keeps Momentum) |
+
+At I3 ploughing and swerving are equally good as habits (37.6 and 37.7 s), which is what makes the choice worth
+reading. The model is a competent pilot, not the AI and not a playtest: its race is 31-37 s against the editor
+Rhinos' ~36-50 s in Regatta (`Docs/AI_SYSTEM/VESSEL_MODE_CHART.md` §3).
+
+**The AI** ploughs every plain hedge (the waypoint line meets them all) and, at I3, swerves through a thorn's window
+on every lap but the last (`aiTakesThornWindows`, `TryOverrideAim`), the choice the reading pilot makes on most early
+laps. It does not steer for the crystals. **Hedges stand back up** 2.5 s after the last hull leaves them
+(`hedgeRestandSeconds`; displaced slabs are re-posed, cut ones re-laid, 40 a frame), so every lap meets every hedge
+whole; each peer stands its own hedges from what it saw, as Serpentine's shapes regrow.
+
+**The vessel is not changed** (LOCKED, Shombith 2026-10-31): the plough, the burn, Ramp Spool and Momentum are the
+Rhino's shipped kit. The mode lays mass on its own track and a starting Time level on its own card.
+
+**To check in the editor** (`Docs/UNITY_VERIFICATION_CHECKLIST.md`): open and save `MinigameHeadlong` once; at I1 a
+plain hedge sprays aside with no speed lost; at I3 a thorn burns a petal (the Time card's level drops) and its window
+lets a Rhino through clean; at I4 the race starts at Time 5, a fast exit bulldozes a stampede hedge with no burn, a
+slow one burns; ploughed hedges are whole again on the next lap; an AI Rhino swerves through windows before its last lap.
 
 ## 1. What the mode is asking
 

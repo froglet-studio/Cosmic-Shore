@@ -1,0 +1,18 @@
+{
+  "id": "2026-11-10-round-two-of-the-colour-trace-uithemeliv-75bb8d",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-10T23:43:10+00:00",
+  "area": "UI theme live repaint (UIThemeLive) and ThemeManager",
+  "summary": "Round two of the colour trace: UIThemeLive now paints UI prefab assets in memory (Graphics, TMP gradients, ColorTint selectables, shadows, input fields; never the sea-lines material), so rows instantiated from them are born in the worn theme even when a list is rebuilt with the same number of rows; the editor puts those asset colours back when play ends. Tick marks a canvas when its count changes, so a change seen during the 0.25 s throttle is no longer dropped. ThemeManager paints its domain material colours through SetDomainColor, which tells WorldColorTrace those colours are its own (a domain colour equal to some set's traced value was being repainted on scene loads), and skips its OnDestroy wear when play is ending.",
+  "why": "The runtime review found these gaps (UI rows rebuilt at an equal count stayed in authored Deep Sea; the throttle could lose a change; scene loads repainted domain colours; stopping play repainted assets after the editor restored them).",
+  "branch": "cece/nifty-cray-41hy43",
+  "commit": "2873b874d",
+  "paths": [
+    "Assets/_Scripts/UI/UIThemeLive.cs",
+    "Assets/_Scripts/Controller/Managers/ThemeManager.cs",
+    "Assets/_Scripts/Controller/Managers/WorldColorTrace.cs",
+    "Assets/_Scripts/Editor/WorldColorTraceEditor.cs",
+    "Docs/VesselModels/COLOR_TRACE.md"
+  ]
+}

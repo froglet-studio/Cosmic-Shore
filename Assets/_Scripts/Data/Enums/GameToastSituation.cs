@@ -96,6 +96,7 @@ namespace CosmicShore.Data
         PrismsDestroyedMilestone = 83,  // HostilePrismsDestroyed crossed a multiple of everyN
         LifeformKilled = 84,            // LifeformsKilled rose
         PrismsStolenMilestone = 85,     // PrismStolen crossed a multiple of everyN (Hijack)
+        StrikeLanded = 86,              // StrikeHitsLanded rose - a ball, sword or plate reached a pilot (Jackstraw)
 
         // Bloomrush. The cash-out is the mode's whole payoff, so it is the one thing worth
         // announcing: {0} = the pilot, {1} = how many bombs the crystal just cashed. 90/91
@@ -214,13 +215,40 @@ namespace CosmicShore.Data
         // changes the vessel's kit. Do not reuse them.
         SerpentTimeWallHint = 156,      // once, at the start: how the dirty race is played
 
-        // Serpent Gulag, the sniper duel (_Scripts/Controller/Arcade/SERPENTGULAG.md). Its race beats are the shared
-        // 128-130 (DomainRaceToasts); a snipe is 82 (DebuffHitsLanded rose). Posted to the LOCAL pilot only.
-        SerpentGulagScopeHint = 157,    // once, at the start: hold LT to scope, RT to fire; the field reloads you
+        // Hood (SerpentHood, was Serpent Gulag), the sniper duel (_Scripts/Controller/Arcade/SERPENTHOOD.md). Its race
+        // beats are the shared 128-130 (DomainRaceToasts); a snipe is 82 (DebuffHitsLanded rose). Posted to the LOCAL
+        // pilot only.
+        SerpentHoodScopeHint = 157,     // once, at the start: hold LT to scope, RT to fire; the heart reloads you
 
         // LanternRun, the Angler's Time race (_Scripts/Controller/Arcade/LANTERNRUN.md). Its race beats are the shared
         // 129-132 (DomainRaceToasts). Posted to the LOCAL pilot only.
         LanternRunPaintHint = 158,    // once, at the start: paint the two clusters, throw both groups, dash after them
+
+        // Jackstraw, the Thresher's charge game (_Scripts/Controller/Arcade/JACKSTRAW.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a strike is 86 (StrikeHitsLanded rose). Posted to the LOCAL pilot only.
+        JackstrawHint = 160,            // once, at the start: strike a rival with the ball or chain; fuel is in the clearings
+
+        // Flatline, the Brittle Star's charge game (_Scripts/Controller/Arcade/FLATLINE.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a cord or saber Strike is 86 (StrikeLanded). Posted to the LOCAL pilot only.
+        FlatlineHint = 159,           // once, at the start: panes stop rounds, cords cut through, get off a ring's plane
+        // Kelpwood, the Angler's charge game (_Scripts/Controller/Arcade/KELPWOOD.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a bite is 86 (StrikeHitsLanded rose). Posted to the LOCAL pilot only.
+        KelpwoodHint = 161,             // once, at the start: lock a rival with the eraser; tame the herds in the kelp
+        // Corona, the Manta's charge game (_Scripts/Controller/Arcade/CORONA.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a bloom hit is 82 (DebuffHitsLanded rose). Posted to the LOCAL pilot only.
+        CoronaHint = 162,               // once, at the start: skim a shell to arm, graze to plant, cash at the heart
+        // Glasshouse, the Angler's Mass game (_Scripts/Controller/Arcade/GLASSHOUSE.md). Its lead change is the shared
+        // 130 (DomainRaceLeadChanged), sampled by the controller because a timed mode has no target. Posted to the
+        // LOCAL pilot only.
+        GlasshouseHint = 164,             // once, at the start: take an omni crystal, let go of the lure to plant, light it to grow
+
+        // Harvest, the Thresher's space game (_Scripts/Controller/Arcade/HARVEST.md). Its race beats are the shared
+        // 128-130 (DomainRaceToasts); a prism milestone is 83 (HostilePrismsDestroyed). Posted to the LOCAL pilot only.
+        HarvestHint = 163,              // once, at the start: press A to break; mow the stalks, smash the core
+        // Shatterplane, the Brittle Star's space game (_Scripts/Controller/Arcade/SHATTERPLANE.md). Its race beats are the
+        // shared 128-130 (DomainRaceToasts). Posted to the LOCAL pilot only. Took 163 first (Harvest landed with it);
+        // 164 is GlasshouseHint's in flight (claude/peaceful-cerf-vpl3x8).
+        ShatterplaneHint = 165,         // once, at the start: square up to a plate and the ring erases it whole
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

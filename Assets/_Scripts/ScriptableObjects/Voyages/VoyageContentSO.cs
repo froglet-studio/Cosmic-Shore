@@ -77,6 +77,45 @@ namespace CosmicShore.ScriptableObjects
         public string Following = "SAILING WITH YOUR HOST: THEY PICK THE NEXT JOB";
         [Tooltip("Banner after a job's work is done or left undone: where the next voyage is chosen.")]
         public string ChooseNext = "LEAVE FREESTYLE TO CHOOSE YOUR NEXT VOYAGE";
+
+        [Header("The stops the depth pass added (Docs/Voyages/DEPTH.md section 4, section 10)")]
+        [Tooltip("Banner at a lair: its creatures wear the other colour.")]
+        public string Lair = "A LAIR: THE PREDATORS HERE WEAR ANOTHER COLOUR";
+        [Tooltip("Banner at the thieves' hoard.")]
+        public string Hoard = "THE THIEVES' HOARD: CRACK A SHELL, GRAB WHAT THEY STOLE, STOW IT";
+        [Tooltip("Banner at a nursery.")]
+        public string Nursery = "A NURSERY: THE HERDS FEED HERE";
+        [Tooltip("Banner at a derelict.")]
+        public string Derelict = "A DERELICT: STAND BY IT WITH THE ARK";
+        [Tooltip("Banner at the pens.")]
+        public string Pen = "THE PENS: RAZE THE MASS THAT HOLDS THE HERDS";
+        [Tooltip("Banner at a shrine.")]
+        public string Shrine = "A SHRINE: KEEP THE ARK AT THE BEACON";
+        [Tooltip("Banner when the Kaiju lairs at the stop.")]
+        public string KaijuHere = "THE LEVIATHAN LAIRS HERE";
+        [Tooltip("Banner when the stop's world starts under the other colour.")]
+        public string HostileWater = "THIS WATER IS HELD AGAINST YOU";
+        [Tooltip("Banner when a rival crew stands at the stop: {rival} its name.")]
+        public string RivalHere = "{rival} ARE HERE";
+        [Tooltip("Banner when a racing rival opens a shell first: {rival}.")]
+        public string RivalOpened = "{rival} OPENED A SHELL BEFORE YOU";
+        [Tooltip("Banner when arriving put the place on the chart: {to}.")]
+        public string Charted = "{to} IS ON YOUR CHART";
+        [Tooltip("Banner when a relic comes aboard: {relic} its name.")]
+        public string Relic = "{relic} IS ABOARD";
+        [Tooltip("Banner when news aboard reached the port: {to}.")]
+        public string Delivered = "NEWS DELIVERED AT {to}";
+        [Tooltip("Banner on a convoy's arrival rule: {percent} the hull floor.")]
+        public string Convoy = "KEEP THE HULL ABOVE {percent} PERCENT";
+        [Tooltip("Progress lines per verb: {done} so far, {goal} the goal.")]
+        public string ProgressStow = "STOWED {done} OF {goal}";
+        public string ProgressHold = "HOLDING: {done} OF {goal} SECONDS";
+        public string ProgressGather = "GATHERED {done} OF {goal} CRYSTALS";
+        public string ProgressCull = "FELLED {done} OF {goal}";
+        public string ProgressLay = "LAID {done} OF {goal} PRISMS";
+        public string ProgressRaze = "RAZED {done} OF {goal}";
+        public string ProgressObserve = "OBSERVED {done} OF {goal} SECONDS";
+        public string ProgressMeet = "THEY ARE HERE: THE WARRANT IS SERVED";
         [Tooltip("A voyage card's eyebrow in the Voyage window: the course, and the pilot who brought the job.")]
         public string CardRoute = "{from} TO {to} - {pilot}";
         [Tooltip("The way home's card eyebrow in the Voyage window.")]
@@ -96,12 +135,17 @@ namespace CosmicShore.ScriptableObjects
         public string CardOpen = "Open";
         public string CardClose = "Close";
         [Tooltip("An open voyage card's brief. Tokens: {summary} the job, {to} and {place} the destination and its line, " +
-                 "{squad} the seats, {intensity} the course's I1-I4, {reward} the crystals it pays, {pilot} and {story} " +
-                 "who brought it. <br> breaks a line.")]
+                 "{squad} the seats, {role} the squad role it suits, {standing} how far the pilot's faction trusts the crew, " +
+                 "{intensity} the course's I1-I4, {reward} the crystals it pays, {warnings} the world's warnings (CardWarnings), " +
+                 "{pilot} and {story} who brought it. <br> breaks a line.")]
         [TextArea] public string CardDetails =
             "{summary}<br><br>{to}: {place}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}<br>PAYS  {reward} CRYSTALS<br><br>{pilot}: {story}";
         [Tooltip("The way home's brief (the same tokens; it pays nothing itself).")]
         [TextArea] public string CardHomeDetails = "{summary}<br><br>SQUAD  {squad}<br>INTENSITY  I{intensity}";
+        [Tooltip("The warnings block a brief's {warnings} becomes when a job has warnings (empty otherwise): {warnings} the lines joined.")]
+        public string CardWarnings = "<br>{warnings}";
+        [Tooltip("What stands between two warning lines.")]
+        public string CardWarningSeparator = "<br>";
         [Tooltip("One seat of the squad in a brief's {squad}: {vessel} its hull, {pilot} its pilot.")]
         public string CardSquadSeat = "{vessel} ({pilot})";
         [Tooltip("What stands between two seats in {squad}.")]
@@ -130,7 +174,7 @@ namespace CosmicShore.ScriptableObjects
         public string MapTierSectorWhat = "star clusters and the brightest stars";
         public string MapTierRegionWhat = "clusters, clouds and the stars you see by eye";
         public string MapTierNeighbourhoodWhat = "a slab of nearby stars around one height";
-        public string MapTierCellWhat = "one 20 ly cell and the stars inside it";
+        public string MapTierCellWhat = "one 20 ly cell: membrane, cytoplasm, nucleus, and its stars";
         public string MapTierSystemWhat = "single star systems a few ly apart";
         [Tooltip("The ladder's dives: a press flies from wherever the map is down to Sol's star system, or Tumult's.")]
         public string MapDiveSol = "SOL";
@@ -204,6 +248,32 @@ namespace CosmicShore.ScriptableObjects
         public string MapCellBerth = " Inside the berth of {place}.";
         [Tooltip("{source} on a cell's card.")]
         public string MapSourceCell = "M - the sea model at the cell's centre";
+
+        [Header("Galaxy map: the cells in 3D (Docs/Voyages/VOYAGE_BOARD.md 4c)")]
+        [Tooltip("The nucleus's tag inside the cell at the view's centre (once a cell is 200 px wide).")]
+        public string MapCellNucleus = "Nucleus";
+        [Tooltip("The nucleus's tag in the central cell, whose nucleus is Sgr A*.")]
+        public string MapCellNucleusHeart = "Nucleus - Sgr A*, the Heart";
+        [Tooltip("Under the nucleus's tag when the slice cuts the nucleus.")]
+        public string MapCellNucleusBody = "6.5 ly across - omni regrows here";
+        [Tooltip("Under the nucleus's tag when the slice passes under it: {ly} how far (MapLy).")]
+        public string MapCellNucleusAbove = "{ly} above this slice - 6.5 ly across";
+        [Tooltip("Under the nucleus's tag when the slice passes over it: {ly} how far (MapLy).")]
+        public string MapCellNucleusBelow = "{ly} below this slice - 6.5 ly across";
+        [Tooltip("The cytoplasm's tag.")]
+        public string MapCellCytoplasm = "Cytoplasm";
+        [Tooltip("Under the cytoplasm's tag: {sea} the cell's sea, {density} its perceived density.")]
+        public string MapCellCytoplasmBody = "{sea}, {density} g/cc - flora and fauna live here";
+        [Tooltip("The membrane's tag.")]
+        public string MapCellMembrane = "Membrane";
+        [Tooltip("The membrane's tag in the central cell.")]
+        public string MapCellMembraneHeart = "Membrane - the circumnuclear disk";
+        [Tooltip("Under the membrane's tag.")]
+        public string MapCellMembraneBody = "14 faces - 20 ly across the square ones";
+        [Tooltip("The edge view's caption once the map shows cells: {height} the slice's height (MapAbove, MapBelow or MapMidplane).")]
+        public string EdgeCaptionCells = "THE CELLS CUT UPRIGHT ALONG THE MAP'S BOTTOM EDGE - DRAG THE GREEN BAR OR SCROLL HERE TO SLICE THE MAP AT ANOTHER HEIGHT - SLICED {height}";
+        [Tooltip("The label on the slice bar's handle in the edge view.")]
+        public string EdgeSlice = "SLICE";
 
         // The open voyage card (Rev 49 C, Docs/MENU_REDESIGN_B.md section 119): three levels, the voyage, its Ark crew, its story.
         [Tooltip("The open card's way back to the voyage cards (B).")]
@@ -318,5 +388,57 @@ namespace CosmicShore.ScriptableObjects
         public string StoryWaterLine = "Light takes {years} years to reach {to}. You take {minutes} minutes.";
         [Tooltip("Under the water beat: {sea} the thickest water on the course.")]
         public string StoryWaterBy = "{sea} on the way";
+        [Tooltip("The story's beat about the sea today: the job's warnings.")]
+        public string StoryWorld = "THE SEA TODAY";
+        [Tooltip("Under the sea beat: {warnings} the warnings, one line each.")]
+        public string StoryWorldBy = "{warnings}";
+        [Tooltip("The story's beat about the crew's own record.")]
+        public string StoryLog = "YOUR LOG";
+        [Tooltip("The log beat: {voyages} sailed, {extracted} finds brought home, {relics}, {charted} places charted, {arks} Arks lost, {kaiju} felled.")]
+        public string StoryLogLine = "{voyages} voyages sailed, {extracted} finds brought home, {relics} relics, {charted} places charted, {arks} Arks lost.";
+        [Tooltip("A voyage's row on the Voyages list (Rev 81 B5): its number and where it goes.")]
+        public string BoardRowTitle = "{n}  {place}";
+        [Tooltip("Under a row's place: the pilot who brought the voyage.")]
+        public string BoardRowBy = "Brought by {pilot}";
+        [Tooltip("Under a row's place: the voyage's three numbers.")]
+        public string BoardRowMeta = "{ly} ly - {minutes} min - Intensity {intensity}";
+        [Tooltip("Over the open voyage's distance, in the right panel.")]
+        public string BoardDistanceLabel = "DISTANCE";
+        [Tooltip("Over the open voyage's sailing time.")]
+        public string BoardSailLabel = "SAIL";
+        [Tooltip("Over the open voyage's intensity.")]
+        public string BoardIntensityLabel = "INTENSITY";
+        [Tooltip("The open voyage's intensity.")]
+        public string BoardIntensityValue = "{intensity}";
+        [Tooltip("Beside the squad chips over the seat cards.")]
+        public string BoardSquadLabel = "SQUAD";
+        [Tooltip("A squad chip for a squad the player joined.")]
+        public string BoardSquadJoined = "{name} - {owner}'s";
+        [Tooltip("A seat card's first line: who flies it and the pilot.")]
+        public string BoardSeatWho = "{who} - {pilot}";
+        [Tooltip("A seat card's second line on a seat the player may change.")]
+        public string BoardSeatKit = "{element} - {artifact}";
+        [Tooltip("A seat card's second line on a seat the player may not change.")]
+        public string BoardSeatNotYours = "{owner}'s seat";
+        [Tooltip("Over the seat editor (Rev 83 S2): the seat being changed.")]
+        public string BoardEditorTitle = "{role} - {who} - {squad}";
+        [Tooltip("Under the seat editor's pilot.")]
+        public string BoardPilotLine = "Flies the {vessel} for {squad}";
+        [Tooltip("Under a pilot in the editor's list who flies another seat now.")]
+        public string BoardPilotSwaps = "Flies the {vessel} - swaps";
+        [Tooltip("Under the pilot in the editor's list who flies this seat.")]
+        public string BoardPilotFlying = "Flying";
+        [Tooltip("Under the seat editor's element.")]
+        public string BoardElementLine = "The element this seat flies with";
+        [Tooltip("Under the seat editor's artifact when the seat carries none.")]
+        public string BoardNoArtifactLine = "This seat carries no artifact";
+        [Tooltip("The seat editor's close button.")]
+        public string BoardDone = "DONE";
+        [Tooltip("The Set sail button while the voyage is out.")]
+        public string BoardUnderway = "UNDER WAY";
+        [Tooltip("The keycap before Set sail (empty: none).")]
+        public string BoardSailKey = "A";
+        [Tooltip("The keycap before the seat editor's Done (empty: none).")]
+        public string BoardDoneKey = "B";
     }
 }

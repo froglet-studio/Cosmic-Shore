@@ -14,8 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   Mode: 73
   Notes: 'OPEN-ENDED, shell-only: Headlong''s solver cut for the Serpent, laid as ring clusters at match start, so a preview has no gates. It teaches the fuel pellets.'
-  PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
-  PreviewCellsByIntensity: []
+  PreviewCell: {fileID: 11400000, guid: 24219975faa761cac3dc4fee0ca4f2a3, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 24219975faa761cac3dc4fee0ca4f2a3, type: 2}
+  - {fileID: 11400000, guid: 311a4f568dd9c2ac1cd3983797405b39, type: 2}
+  - {fileID: 11400000, guid: f399d70e1f94ac8f3eb85a51cef07c06, type: 2}
+  - {fileID: 11400000, guid: 7dddbb0b5d96153c9116ca5de9463ce1, type: 2}
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   PreviewFauna: {fileID: 0}

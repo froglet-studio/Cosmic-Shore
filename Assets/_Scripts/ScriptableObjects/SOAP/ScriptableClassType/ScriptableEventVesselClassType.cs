@@ -1,5 +1,5 @@
 using UnityEngine;
-using Obvious.Soap;
+using CosmicShore.Soap;
 using CosmicShore.Data;
 
 namespace CosmicShore.ScriptableObjects

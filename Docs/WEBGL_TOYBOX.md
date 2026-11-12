@@ -28,7 +28,8 @@ Cloudflare and meant for testing, so switch to `play.froglet.games` before annou
    `https://pub-….r2.dev` address. Settings > CORS policy: the JSON in §5.2 B. R2 > Manage API
    tokens > Create, Object Read & Write on that bucket; note the Access Key ID, the Secret and the account ID.
 5. **Upload:** `pip install boto3`, set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, then
-   `python3 Tools/Build/publish_toybox.py upload --build-dir Builds/WebGLToybox --version 1`.
+   `python3 Tools/Build/publish_toybox.py upload --root production --build-dir Builds/WebGLToybox --version <name>
+   --commit <the sha you built>`. This hand path goes straight to `/play`; the pipeline (§5.3) stages first.
 6. **Check the host:** `python3 Tools/Build/publish_toybox.py check --root https://pub-….r2.dev/toybox` must end
    "All good". It reads every file the way `/play` will, from the www.froglet.games origin.
 7. **Website:** in `cosmic-shore-landing-page`, set `_data/toybox.yml` `build_root: https://pub-….r2.dev/toybox`, and
@@ -168,8 +169,22 @@ it sets no custom headers, and files are capped at 100 MB.
 ### 5.1 What `/play` expects
 
 - `https://play.froglet.games/toybox/latest.json`, written last by `Tools/Build/publish_toybox.py`:
-  `{ "version", "loader", "framework", "code", "data", "streamingAssets", "bytes" }`. The paths are relative to
-  `toybox/` and point into a versioned folder, `builds/<UBA build number>/Build/…`.
+  `{ "version", "loader", "framework", "code", "data", "streamingAssets", "bytes", "commit", "built_at", "manifest",
+  "previous", "published_at" }`. `/play` reads the first seven; the rest say which commit is live, when it was built,
+  where its manifest is and what was live before it (the default rollback target). The paths are relative to
+  `toybox/` and point into a versioned folder, `builds/<version>/Build/…`; the pipeline's version is
+  `<UBA build number>-<commit sha7>`, so it never collides with the hand-uploaded `1` and `2`.
+- `builds/<version>/manifest.json`, written before `latest.json`: version, commit, built_at, UBA build number, tag,
+  the pointer above, and every file with its size, sha256, content type and encoding. Every build folder written
+  from 2026-11-05 on has one; `rollback` refuses a version without one (`adopt` writes one for an old hand upload).
+  WebToyboxBuild's `build_manifest.txt` is uploaded with the build when the build has one (a UBA build made through
+  `PreExport` has none; its commit comes from UBA).
+- **Two roots in one bucket:** `toybox/` (production, what `/play` loads) and `toybox-staging/` (the same layout,
+  what a staging page loads). Builds are immutable: an upload or a promote over an existing version with different
+  bytes is refused. A promote **copies** the build server side into `toybox/builds/<version>/` and verifies the copy
+  against the manifest before moving the pointer, so production never depends on the staging folder (staging can be
+  wiped or moved to its own bucket) and the bytes that go live are the bytes that were played on staging. The cost
+  is a second ~115 MB copy per promoted build.
 - Each build file carries `Content-Encoding: br` (or `gzip`) when compressed. Content types: `application/wasm`
   for the code (without it the browser will not stream-compile), `application/javascript` for `.js`, and
   `application/octet-stream` for `.data` and the FMOD banks.
@@ -220,27 +235,74 @@ SPF), so replies from `support@froglet.games` are likely to land in players' spa
 `CosmicShore.Editor.WebToyboxBuild.PreExport`, Development off. Then create an API key, and note the org ID, project
 ID and the new target's ID.
 
-**D. GitHub (game repo).** Settings → Environments → `toybox`: add the secrets `UBA_API_KEY`, `UBA_ORG_ID`,
-`UBA_PROJECT_ID`, `UBA_TOYBOX_TARGET`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET`.
-Adding required reviewers to the environment makes every publish an approved step.
+**D. GitHub (game repo).** Two environments (Settings → Environments):
+- **`toybox`** (exists): the stage job. Secrets `UBA_API_KEY`, `UBA_ORG_ID`, `UBA_PROJECT_ID`, `UBA_TOYBOX_TARGET`,
+  `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`. Deployment branches and tags:
+  `bleeding-edge` and the tag pattern `web-v*` (a tag push runs the stage job; a branch-only rule blocks it). No
+  reviewer is needed: staging is linked from nowhere public.
+- **`toybox-production`** (a person creates it): the promote and rollback jobs. **Required reviewers** (one of the
+  core four), deployment branch `bleeding-edge` only. Secrets: **duplicate** the four `R2_*` secrets into it
+  (promote and rollback need no UBA key, so do not copy those, and do not move them: the stage job still needs
+  them in `toybox`). Better: a second R2 API token for it, so either can be revoked alone. R2 tokens are scoped per
+  bucket, not per prefix, so the `toybox` token can still write `toybox/` from outside this workflow: the reviewer
+  gate protects the workflow's path to `/play`, not the bucket. For a hard wall, give staging its own bucket.
+- Optional environment **variables** (public URLs, not secrets): `TOYBOX_STAGING_ROOT` on `toybox` and
+  `TOYBOX_PRODUCTION_ROOT` on `toybox-production`. When set, each run reads its root back with `check`.
+
+**E. A staging page (website repo `froglet-studio/cosmic-shore-landing-page`; nothing here changes it).** It needs a
+copy of `/play` that loads the staging root, e.g. `/play-staging` with `build_root:
+https://play.froglet.games/toybox-staging` (the `r2.dev` URL + `/toybox-staging` until DNS moves), linked from no
+navigation and marked `noindex`. B.3's CORS policy already covers it (same origins). Showing `latest.json`'s
+`version` and `commit` small on both pages would let every bug report name its build.
+
+**F. `play.froglet.games` (a DNS step for a person).** After A: R2 → the bucket → Settings → Custom domains →
+connect `play.froglet.games`; run `check --root https://play.froglet.games/toybox`; then set the website's
+`build_root`. Until then the live root is the rate-limited `https://pub-….r2.dev/toybox`.
 
 ### 5.3 Publish and roll back
 
-- **Publish:** Actions → *Publish browser Toybox* → Run workflow. Run it with **dry run** first. It downloads the
-  newest successful UBA build, uploads it to `toybox/builds/<build>/`, then rewrites `toybox/latest.json`.
-- **By hand** (a local build): `python3 Tools/Build/publish_toybox.py upload --build-dir Builds/WebGLToybox --version <name>`
-  with the R2 variables set. Add `--dry-run` to see every object and header first.
-- **Check a host:** `python3 Tools/Build/publish_toybox.py check --root <build_root>` reads `latest.json` and every
-  build file the way `/play` does and names anything that would stop it loading.
-- **Play a local build:** `python3 Tools/Build/publish_toybox.py serve --build-dir Builds/WebGLToybox`, then
-  http://localhost:8000.
-- **Roll back:** rewrite `toybox/latest.json` with an older build's paths (copy it from the dry-run output of that
-  build, or edit `version` and the four paths). Old builds stay in `builds/` until deleted.
+One workflow, **Publish browser Toybox** (`.github/workflows/toybox-publish.yml`), three actions:
+
+| Action | How | Environment | What it does |
+|---|---|---|---|
+| **stage** | push a tag `web-v<semver>` on the commit, or Run workflow → action `stage` (+ `commit`) | `toybox` | Takes the UBA build of exactly that commit (`fetch-uba --commit`; when UBA has none it is asked to build it, and the finished build's revision is checked again), uploads it to `toybox-staging/builds/<v>/` with its manifest, points `toybox-staging/latest.json` at it, and prints the version to promote. |
+| **promote** | Run workflow → action `promote`, `version` = the staged version | `toybox-production` (waits for a reviewer) | Refuses a version that is not staged or is not what the staging page serves; copies it into `toybox/builds/<v>/`, verifies the copy, points `toybox/latest.json` at it with `previous` = what was live. |
+| **rollback** | Run workflow → action `rollback` (+ optional `version`) | `toybox-production` (waits for a reviewer) | Points `toybox/latest.json` at `previous` (or the named version) after checking every file in that version's manifest is on R2 with its size and headers; refuses otherwise. |
+
+Every run publishes launch-status records (`Docs/LAUNCH/STATUS_CONTRACT.md`): `build-web` and `web-staging` for a
+stage, `web-production` (with `rollback_to`) for a promote or a rollback, from a final job that holds no R2 or UBA
+secret. A tag whose name contains `launchtest` validates its records without pushing them.
+
+By hand, with the R2 variables set:
+- `python3 Tools/Build/publish_toybox.py list`: every version on both roots with commit, build date and size,
+  marking LIVE and prev.
+- `... upload --root staging|production --build-dir <dir> --version <v> --commit <sha>`; `--dry-run` lists every
+  object and header and needs nothing.
+- `... promote --from-staging <v>` and `... rollback [--to <v>]`, the same refusals as the workflow.
+- `... adopt --version 2`: writes the manifest a build uploaded before manifests existed never got (builds `1` and
+  `2` on the live bucket), read from R2, so it can be a rollback target. **Run it once before the first pipeline
+  promote**, so that `previous` = `2` is a verified rollback. It changes no pointer.
+- `... check --root <build_root> [--expect-version <v>]` reads `latest.json` and every build file the way `/play`
+  does and names anything that would stop it loading.
+- `... serve --build-dir Builds/WebGLToybox`, then http://localhost:8000, plays a local build.
+- `... self-test`: offline, with a fake R2 and a fake UBA. Upload → promote → rollback, `adopt` and `list`, and the
+  refusals (an unknown version, a version staging no longer serves, an immutable overwrite, a missing file, a
+  missing manifest, a UBA build of the wrong commit), plus redaction of signed URLs, response bodies and keys.
+  Launch tools check runs it.
+
+**Nothing prints a secret.** UBA and R2 failures print a status code and a short reason, never a response body or a
+URL with a query string (a UBA download link is a signed URL GitHub does not mask), and a secret's value that reaches
+an error message becomes `***`.
+
+**Not yet proven against the real services:** the `commit` field of UBA's start-build request (its API reference
+was not reachable from the session that wrote it; the finished build's revision is checked, so a wrong guess
+refuses rather than staging the wrong commit), and R2's `CopyObject` (proven against moto, a local S3 server).
 
 Verified 2026-10-14 without the real accounts: the dry run, three refusing inputs (no `Build/`, two `.wasm`
 files, a legacy `.unityweb`), and a real upload to a local S3 server (moto), whose stored `Content-Type`,
-`Content-Encoding` and `Cache-Control` were read back per object. The UBA download has not run: it needs the
-real API key.
+`Content-Encoding` and `Cache-Control` were read back per object. Verified 2026-11-05 the same way: the self-test,
+and upload → promote → rollback against moto with its refusals (an unknown version, an immutable overwrite, a
+rollback to a version with a deleted file). The UBA download has not run: it needs the real API key.
 
 ## 6. Verification checklist (nobody has run this yet)
 

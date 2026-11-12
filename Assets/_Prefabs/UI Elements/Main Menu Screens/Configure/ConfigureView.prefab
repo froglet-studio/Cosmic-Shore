@@ -298,6 +298,7 @@ GameObject:
   - component: {fileID: 558028119440660709}
   - component: {fileID: 944462727865138314}
   - component: {fileID: 527875319065503173}
+  - component: {fileID: 713207824095485868}
   m_Layer: 5
   m_Name: Preview
   m_TagString: Untagged
@@ -369,6 +370,33 @@ MonoBehaviour:
   doubleTapToFocus: 1
   doubleTapSeconds: 0.4
   guideTarget: {fileID: 371957229545650684}
+--- !u!114 &713207824095485868
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 689432001543896569}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 40, y: -196}
+  sizeDelta: {x: 1000, y: 562}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &528768640551512027
 GameObject:
   m_ObjectHideFlags: 0
@@ -1759,6 +1787,7 @@ GameObject:
   - component: {fileID: 144710014945345867}
   - component: {fileID: 618336262082831779}
   - component: {fileID: 197535650244481749}
+  - component: {fileID: 967257845899809351}
   m_Layer: 5
   m_Name: Steps
   m_TagString: Untagged
@@ -1823,6 +1852,33 @@ MonoBehaviour:
   staggerIndex: 0
   staggerBySibling: 0
   playOnEnable: 1
+--- !u!114 &967257845899809351
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 44786156860467795}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 40, y: -1070}
+  sizeDelta: {x: 1000, y: 578}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &1020758848446984057
 GameObject:
   m_ObjectHideFlags: 0
@@ -1952,6 +2008,7 @@ GameObject:
   - component: {fileID: 700983828962445067}
   - component: {fileID: 837878463291457717}
   - component: {fileID: 531021975238290064}
+  - component: {fileID: 971500102329827851}
   m_Layer: 5
   m_Name: Line0
   m_TagString: Untagged
@@ -2016,6 +2073,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &971500102329827851
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 187148687553673956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: -468.18}
+  sizeDelta: {x: 221.14, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &888741688141542155
 GameObject:
   m_ObjectHideFlags: 0
@@ -2027,6 +2111,7 @@ GameObject:
   - component: {fileID: 599106270212415675}
   - component: {fileID: 1033238440415043689}
   - component: {fileID: 495755890370674198}
+  - component: {fileID: 24005690121968626}
   m_Layer: 5
   m_Name: Line1
   m_TagString: Untagged
@@ -2091,6 +2176,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &24005690121968626
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 888741688141542155}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 480, y: -578}
+  sizeDelta: {x: 961.5, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &1086001893619860540
 GameObject:
   m_ObjectHideFlags: 0
@@ -2102,6 +2214,7 @@ GameObject:
   - component: {fileID: 1152839860773977584}
   - component: {fileID: 1081401729842219823}
   - component: {fileID: 87154248713427219}
+  - component: {fileID: 279918003459288306}
   m_Layer: 5
   m_Name: Line2
   m_TagString: Untagged
@@ -2166,6 +2279,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &279918003459288306
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1086001893619860540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 980, y: -421.94}
+  sizeDelta: {x: 316.17267, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &164194975498469805
 GameObject:
   m_ObjectHideFlags: 0
@@ -2177,6 +2317,7 @@ GameObject:
   - component: {fileID: 388381838907444666}
   - component: {fileID: 775408880187165947}
   - component: {fileID: 572489814704007261}
+  - component: {fileID: 282209080682918572}
   m_Layer: 5
   m_Name: Line3
   m_TagString: Untagged
@@ -2241,6 +2382,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &282209080682918572
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 164194975498469805}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 1000, y: -147.94}
+  sizeDelta: {x: 237.38, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &488067484578471141
 GameObject:
   m_ObjectHideFlags: 0
@@ -2252,6 +2420,7 @@ GameObject:
   - component: {fileID: 217018414028336265}
   - component: {fileID: 929780867721311886}
   - component: {fileID: 416400430035154483}
+  - component: {fileID: 834837061851115245}
   m_Layer: 5
   m_Name: Line4
   m_TagString: Untagged
@@ -2316,6 +2485,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &834837061851115245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 488067484578471141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 985, y: -15}
+  sizeDelta: {x: 43.926407, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &769919157077862698
 GameObject:
   m_ObjectHideFlags: 0
@@ -2327,6 +2523,7 @@ GameObject:
   - component: {fileID: 1096876048792110696}
   - component: {fileID: 42411467703590643}
   - component: {fileID: 51596766882707072}
+  - component: {fileID: 23243092135632748}
   m_Layer: 5
   m_Name: Line5
   m_TagString: Untagged
@@ -2391,6 +2588,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &23243092135632748
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 769919157077862698}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 835, y: 0}
+  sizeDelta: {x: 271.5, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &504121561535804716
 GameObject:
   m_ObjectHideFlags: 0
@@ -2402,6 +2626,7 @@ GameObject:
   - component: {fileID: 752949263068825067}
   - component: {fileID: 934392927706359039}
   - component: {fileID: 582830910431886685}
+  - component: {fileID: 1117458513283060503}
   m_Layer: 5
   m_Name: Dash
   m_TagString: Untagged
@@ -2466,6 +2691,33 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1117458513283060503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 504121561535804716}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 678, y: 0}
+  sizeDelta: {x: 17.5, y: 1.5}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &1104713382246717771
 GameObject:
   m_ObjectHideFlags: 0
@@ -2552,6 +2804,7 @@ GameObject:
   - component: {fileID: 167069088898082450}
   - component: {fileID: 381518016039355285}
   - component: {fileID: 609527143644146980}
+  - component: {fileID: 177869857951943901}
   m_Layer: 5
   m_Name: Step2
   m_TagString: Untagged
@@ -2614,6 +2867,33 @@ MonoBehaviour:
   staggerIndex: 1
   staggerBySibling: 0
   playOnEnable: 1
+--- !u!114 &177869857951943901
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 794553805554088219}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 26, y: -14}
+  sizeDelta: {x: 922, y: 62}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &375399184265872558
 GameObject:
   m_ObjectHideFlags: 0
@@ -3023,6 +3303,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1128535441905192060}
   - component: {fileID: 1132649981980786668}
+  - component: {fileID: 349670574151603986}
   m_Layer: 5
   m_Name: Stepper
   m_TagString: Untagged
@@ -3080,6 +3361,33 @@ MonoBehaviour:
   - 4
   unlockLine: Play {level} to unlock
   theme: {fileID: 11400000, guid: 0aef6398681c4ec98118cc9b9740060a, type: 2}
+--- !u!114 &349670574151603986
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 752285286656414842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: -28}
+  sizeDelta: {x: 922, y: 34}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &943580286305292889
 GameObject:
   m_ObjectHideFlags: 0
@@ -5410,6 +5718,7 @@ GameObject:
   - component: {fileID: 610715962734920937}
   - component: {fileID: 1062752056657112831}
   - component: {fileID: 643850224429922503}
+  - component: {fileID: 806753027865087575}
   m_Layer: 5
   m_Name: Step3
   m_TagString: Untagged
@@ -5473,6 +5782,33 @@ MonoBehaviour:
   staggerIndex: 2
   staggerBySibling: 0
   playOnEnable: 1
+--- !u!114 &806753027865087575
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 178083225825854516}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 26, y: -92}
+  sizeDelta: {x: 922, y: 408}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &499250095903514997
 GameObject:
   m_ObjectHideFlags: 0
@@ -5882,6 +6218,7 @@ GameObject:
   m_Component:
   - component: {fileID: 478897320255927222}
   - component: {fileID: 19970678527855547}
+  - component: {fileID: 1082086758833094252}
   m_Layer: 5
   m_Name: Lineup
   m_TagString: Untagged
@@ -5949,6 +6286,33 @@ MonoBehaviour:
   - Jade
   - Ruby
   - Gold
+--- !u!114 &1082086758833094252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1046401863197234129}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: -28}
+  sizeDelta: {x: 922, y: 380}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &163319704571025271
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6052,13 +6416,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1079230242825418202}
   m_SourcePrefab: {fileID: 100100000, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
 --- !u!224 &592904701356458620 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 753652588079043980, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
   m_PrefabInstance: {fileID: 163319704571025271}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1079230242825418202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 752620342369365093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 223, y: 380}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &535542318008365439
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6162,13 +6556,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2480538869222539}
   m_SourcePrefab: {fileID: 100100000, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
 --- !u!224 &364402320771434246 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 753652588079043980, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
   m_PrefabInstance: {fileID: 535542318008365439}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2480538869222539
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1106551490576403053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 233, y: 0}
+  sizeDelta: {x: 223, y: 380}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &1151216827350672260
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6272,13 +6696,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1040506700874607985}
   m_SourcePrefab: {fileID: 100100000, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
 --- !u!224 &886791702208543188 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 753652588079043980, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
   m_PrefabInstance: {fileID: 1151216827350672260}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1040506700874607985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 561845819198658710}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 466, y: 0}
+  sizeDelta: {x: 223, y: 380}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1001 &952660657288634040
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6382,13 +6836,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 574488255769797771}
   m_SourcePrefab: {fileID: 100100000, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
 --- !u!224 &175115194233169951 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 753652588079043980, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
   m_PrefabInstance: {fileID: 952660657288634040}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &574488255769797771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 364058759665968554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 699, y: 0}
+  sizeDelta: {x: 223, y: 380}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &179219453807971776
 GameObject:
   m_ObjectHideFlags: 0
@@ -7659,6 +8143,7 @@ GameObject:
   - component: {fileID: 1071220851030491065}
   - component: {fileID: 621095248086738185}
   - component: {fileID: 1001913908531302862}
+  - component: {fileID: 431767583015027476}
   m_Layer: 5
   m_Name: AIDifficulty
   m_TagString: Untagged
@@ -7759,6 +8244,33 @@ MonoBehaviour:
   plateSelectedColor: {r: 0.23921569, g: 0.69803923, b: 1, a: 1}
   plateUnselectedColor: {r: 0.2627451, g: 0.29803923, b: 0.5372549, a: 1}
   plateSelectedMaterial: {fileID: 2100000, guid: 0defcded7bc8cac24aa943184e47ffed, type: 2}
+--- !u!114 &431767583015027476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 28687395377242660}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 566, y: -516}
+  sizeDelta: {x: 382, y: 44}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &827729091610931609
 GameObject:
   m_ObjectHideFlags: 0
@@ -9272,6 +9784,7 @@ GameObject:
   - component: {fileID: 770530092986615253}
   - component: {fileID: 907520288591503040}
   - component: {fileID: 171838221884878121}
+  - component: {fileID: 687914317407816170}
   m_Layer: 5
   m_Name: ControlsPanel
   m_TagString: Untagged
@@ -9333,6 +9846,33 @@ MonoBehaviour:
   staggerIndex: 3
   staggerBySibling: 0
   playOnEnable: 1
+--- !u!114 &687914317407816170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 332507414798980356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 40, y: -912}
+  sizeDelta: {x: 1000, y: 144}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &271282362580141391
 GameObject:
   m_ObjectHideFlags: 0
@@ -9569,6 +10109,7 @@ GameObject:
   - component: {fileID: 958764737985334683}
   - component: {fileID: 748197458291182464}
   - component: {fileID: 1125963149305475761}
+  - component: {fileID: 853453303785175252}
   m_Layer: 5
   m_Name: Controls
   m_TagString: Untagged
@@ -9673,6 +10214,33 @@ MonoBehaviour:
   rowDwellSeconds: 2.2
   sweepRampFraction: 0.25
   cooldownFraction: 0.6
+--- !u!114 &853453303785175252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1089232958848473321}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 18, y: -18}
+  sizeDelta: {x: 964, y: 108}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &684256773968416481
 GameObject:
   m_ObjectHideFlags: 0
@@ -10150,6 +10718,7 @@ GameObject:
   - component: {fileID: 789699596943887369}
   - component: {fileID: 663395324575709991}
   - component: {fileID: 757221181854603367}
+  - component: {fileID: 752788976387261328}
   m_Layer: 5
   m_Name: Content
   m_TagString: Untagged
@@ -10214,6 +10783,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &752788976387261328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 187206975740721128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 0
+  anchorMin: {x: 0.5, y: 0.5}
+  anchorMax: {x: 0.5, y: 0.5}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 0, y: 0}
+  sizeDelta: {x: 100, y: 100}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 468, y: 34}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &540295672143354593
 GameObject:
   m_ObjectHideFlags: 0
@@ -10224,6 +10820,7 @@ GameObject:
   m_Component:
   - component: {fileID: 514312839958294347}
   - component: {fileID: 248866041456390171}
+  - component: {fileID: 573635593639115578}
   m_Layer: 5
   m_Name: Status
   m_TagString: Untagged
@@ -10264,6 +10861,33 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &573635593639115578
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 540295672143354593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 0, y: 0}
+  pivot: {x: 0, y: 0}
+  anchoredPosition: {x: 100, y: 124}
+  sizeDelta: {x: 940, y: 24}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &47896001176709168
 GameObject:
   m_ObjectHideFlags: 0
@@ -10626,6 +11250,7 @@ GameObject:
   - component: {fileID: 1002210142579598656}
   - component: {fileID: 924958202196416902}
   - component: {fileID: 585472050162074964}
+  - component: {fileID: 241836171319511153}
   m_Layer: 5
   m_Name: Start
   m_TagString: Untagged
@@ -10685,6 +11310,33 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!114 &241836171319511153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 830392009493277789}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 0}
+  anchorMax: {x: 0, y: 0}
+  pivot: {x: 0, y: 0}
+  anchoredPosition: {x: 100, y: 40}
+  sizeDelta: {x: 940, y: 80}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &841524311330791028
 GameObject:
   m_ObjectHideFlags: 0
@@ -11527,6 +12179,7 @@ GameObject:
   - component: {fileID: 29220108806008925}
   - component: {fileID: 369197483213332737}
   - component: {fileID: 852286954825235849}
+  - component: {fileID: 845456303183383886}
   m_Layer: 5
   m_Name: Fly
   m_TagString: Untagged
@@ -11614,6 +12267,33 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &845456303183383886
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1146706725247584452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 64, y: -700}
+  sizeDelta: {x: 460, y: 44}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &320482774348647695
 GameObject:
   m_ObjectHideFlags: 0
@@ -12558,6 +13238,7 @@ GameObject:
   - component: {fileID: 441911373896776301}
   - component: {fileID: 937734247493205602}
   - component: {fileID: 1077647636381733935}
+  - component: {fileID: 3705857881060621}
   m_Layer: 5
   m_Name: Objective
   m_TagString: Untagged
@@ -12639,6 +13320,33 @@ MonoBehaviour:
   objectiveText: {fileID: 442310736000417515}
   pulseScale: 1.35
   pulseSeconds: 0.35
+--- !u!114 &3705857881060621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 390410865580059401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 40, y: -772}
+  sizeDelta: {x: 1000, y: 48}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &737010557419599842
 GameObject:
   m_ObjectHideFlags: 0
@@ -13412,6 +14120,7 @@ GameObject:
   - component: {fileID: 517261760608607985}
   - component: {fileID: 1117869668756341988}
   - component: {fileID: 738755480136990502}
+  - component: {fileID: 63237718466952772}
   m_Layer: 5
   m_Name: Briefing
   m_TagString: Untagged
@@ -13488,6 +14197,33 @@ MonoBehaviour:
   dwellSeconds: 6
   fadeSeconds: 0.4
   descriptionExtraDwell: 3
+--- !u!114 &63237718466952772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 120686089894121153}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 40, y: -834}
+  sizeDelta: {x: 1000, y: 64}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &283033090198297298
 GameObject:
   m_ObjectHideFlags: 0
@@ -13879,6 +14615,7 @@ GameObject:
   m_Component:
   - component: {fileID: 746040704693958999}
   - component: {fileID: 810892645653468921}
+  - component: {fileID: 609613208775403238}
   m_Layer: 5
   m_Name: TitleRow
   m_TagString: Untagged
@@ -13933,6 +14670,33 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &609613208775403238
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 185563499677476233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0, y: 1}
+  anchoredPosition: {x: 0, y: -20}
+  sizeDelta: {x: 715.3, y: 46}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &729493858434140792
 GameObject:
   m_ObjectHideFlags: 0
@@ -15205,6 +15969,7 @@ GameObject:
   - component: {fileID: 34338010486303683}
   - component: {fileID: 460155741393396064}
   - component: {fileID: 982020121449202728}
+  - component: {fileID: 625543912623353044}
   m_Layer: 5
   m_Name: FlyingHint
   m_TagString: Untagged
@@ -15272,6 +16037,33 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &625543912623353044
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 657081283717394941}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c65c7be7f8046c6ae189c022baf3347, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  drawAtPcScale: 0
+  pcWidth: 1920
+  movesRect: 1
+  anchorMin: {x: 0, y: 1}
+  anchorMax: {x: 0, y: 1}
+  pivot: {x: 0.5, y: 0.5}
+  anchoredPosition: {x: 540, y: -230}
+  sizeDelta: {x: 820, y: 40}
+  scale: 0
+  layoutSize: {x: 0, y: 0}
+  hideInPortrait: 0
+  gridCellSize: {x: 0, y: 0}
+  gridColumns: 0
+  gridSpacing: {x: -1, y: -1}
+  layoutSpacing: -1
 --- !u!1 &515242487798061598
 GameObject:
   m_ObjectHideFlags: 0
@@ -16639,3 +17431,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90fda6ea96effaa1e6dcec9e3c7b6c2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &752620342369365093 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+  m_PrefabInstance: {fileID: 163319704571025271}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1106551490576403053 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+  m_PrefabInstance: {fileID: 535542318008365439}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &561845819198658710 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+  m_PrefabInstance: {fileID: 1151216827350672260}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &364058759665968554 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 591627764972370706, guid: 28cf7d6d8ef647c56acc22ab68c4944d, type: 3}
+  m_PrefabInstance: {fileID: 952660657288634040}
+  m_PrefabAsset: {fileID: 0}

@@ -33,6 +33,16 @@ namespace CosmicShore.Gameplay
             /// See Docs/ECOSYSTEM.md §19.
             /// </summary>
             EnvironmentFree = 2,
+
+            /// <summary>
+            /// The config is the match's COURSE VARIANT: <c>CellConfigs[GameDataSO.CourseVariant]</c>, the entry of
+            /// the mode's course pool the host drew for this match (Regatta's <c>RegattaCoursePoolSO</c>, whose
+            /// entries are these configs in this order) and sent to every client in the game-config sync. Intensity
+            /// does not pick it. Like IntensityWise it depends on replicated state, so the choice waits until the
+            /// variant is known on this peer (on the host too: the controller draws it in its spawn), and it runs
+            /// the same timer-driven life spawner IntensityWise does.
+            /// </summary>
+            CourseVariantWise = 3,
         }
 
         [SerializeField] public int ID;
@@ -169,6 +179,11 @@ namespace CosmicShore.Gameplay
                         return CellConfigs[Mathf.Clamp(intensity - 1, 0, CellConfigs.Count - 1)];
                     }
 
+                    case CellTypeChoiceOptions.CourseVariantWise:
+                        return gameData == null
+                            ? CellConfigs[0]
+                            : CellConfigs[CourseVariantIndexFor(gameData.CourseVariant, CellConfigs.Count)];
+
                     case CellTypeChoiceOptions.EnvironmentFree:
                     {
                         // ResolveBootIndex, not BootIndex: the warning belongs to the one site
@@ -221,6 +236,17 @@ namespace CosmicShore.Gameplay
                 return MeasurePrefabRadius(cfg.NucleusPrefab) * nucleusScaleMultiplier;
             }
         }
+
+        /// <summary>
+        /// The nucleus radius a cell built from <paramref name="config"/> would report through
+        /// <see cref="ExpectedNucleusWorldRadius"/> at the shipped scale multiplier of 1 - for a
+        /// caller with a config and no cell. The arcade card's scale model is that caller: it
+        /// builds a gate race's course before any cell exists, and the course's inner wall is a
+        /// multiple of this, so a model built at 0 would draw a different course from the one the
+        /// tap flies. 0 when the config has no nucleus.
+        /// </summary>
+        public static float MeasureNucleusRadius(CellConfigDataSO config) =>
+            config ? MeasurePrefabRadius(config.NucleusPrefab) : 0f;
 
         /// <summary>
         /// Max half-extent of a prefab ASSET's meshes about its root, at the authored scale — the
@@ -2106,9 +2132,15 @@ namespace CosmicShore.Gameplay
             // permanently. Bail without latching; the caller retries (see postInitDeferred).
             if (!IntensityChoiceReady)
             {
-                CSDebug.LogWarning($"[Cell {ID}] IntensityWise config choice DEFERRED - the " +
-                    "server's game config has not replicated to this client yet. Retrying on " +
-                    "OnInitializeGame.");
+                // A CourseVariantWise cell waits on the host too (until the controller draws the variant), and that
+                // is the normal order of a match, not a fault: no warning for it.
+                if (cellTypeChoiceOptions == CellTypeChoiceOptions.CourseVariantWise)
+                    CSDebug.LogVerbose(CSLogChannel.Ecology, $"[Cell {ID}] CourseVariantWise config choice deferred " +
+                        "until the match's course variant is drawn / received. Retrying on OnInitializeGame.");
+                else
+                    CSDebug.LogWarning($"[Cell {ID}] IntensityWise config choice DEFERRED - the " +
+                        "server's game config has not replicated to this client yet. Retrying on " +
+                        "OnInitializeGame.");
                 return;
             }
 
@@ -2116,6 +2148,7 @@ namespace CosmicShore.Gameplay
             {
                 CellTypeChoiceOptions.Random => Random.Range(0, CellConfigs.Count),
                 CellTypeChoiceOptions.IntensityWise => IntensityIndex(),
+                CellTypeChoiceOptions.CourseVariantWise => CourseVariantIndex(),
                 CellTypeChoiceOptions.EnvironmentFree => BootIndex(),
                 _ => 0
             };
@@ -2144,12 +2177,42 @@ namespace CosmicShore.Gameplay
         /// silently builds a different intensity's arena than the host for the whole match.
         /// </summary>
         bool IntensityChoiceReady =>
-            cellTypeChoiceOptions != CellTypeChoiceOptions.IntensityWise
+            cellTypeChoiceOptions == CellTypeChoiceOptions.CourseVariantWise
+                ? CourseVariantChoiceReady
+                : cellTypeChoiceOptions != CellTypeChoiceOptions.IntensityWise
             || gameData == null
             || gameData.GameConfigSynced
             || NetworkManager.Singleton == null
             || !NetworkManager.Singleton.IsListening
             || NetworkManager.Singleton.IsServer;
+
+        /// <summary>
+        /// May a CourseVariantWise cell choose yet? Once the match's variant is known on THIS peer - drawn on the host
+        /// by the controller's spawn, received in the game-config sync on a client. Unlike IntensityWise the host is
+        /// not ready by definition: the cell's first-crystal bootstrap can run before the controller has drawn, and a
+        /// sticky choice made then would lay entry 0 while every client lays the drawn one. With no network running
+        /// (a scene opened directly) nothing will ever draw, so the first entry is taken.
+        /// </summary>
+        bool CourseVariantChoiceReady =>
+            gameData == null
+            || gameData.CourseVariant >= 0
+            || NetworkManager.Singleton == null
+            || !NetworkManager.Singleton.IsListening;
+
+        /// <summary>The <c>CellConfigs</c> index for course variant <paramref name="variant"/> of a list of
+        /// <paramref name="count"/>: the variant itself, 0 when none was drawn, the last when it over-runs.</summary>
+        public static int CourseVariantIndexFor(int variant, int count) =>
+            count <= 0 ? 0 : Mathf.Clamp(variant, 0, count - 1);
+
+        int CourseVariantIndex()
+        {
+            int variant = gameData ? gameData.CourseVariant : -1;
+            if (variant >= CellConfigs.Count)
+                CSDebug.LogWarning($"[Cell {ID}] Course variant {variant} drawn but only {CellConfigs.Count} " +
+                    "CellConfigs are authored - clamping to the last. The mode's course pool and this cell's " +
+                    "CellConfigs must list the same configs in the same order.");
+            return CourseVariantIndexFor(variant, CellConfigs.Count);
+        }
 
         /// <summary>
         /// The <c>CellConfigs</c> index for the selected intensity, floored at 1 and fail-loud on
@@ -2344,6 +2407,7 @@ namespace CosmicShore.Gameplay
             // Cleared unconditionally: a swap into a config with no environment (or none at all)
             // must not leave the previous world's beds addressable.
             ClearPlantingSites();
+            ReleaseEnvironmentFaunaCorridor();
 
             if (!cellConfigData || cellConfigData.EnvironmentPrefab == null) return;
             using (LoadInsights.Measure(LoadInsightCategory.Environment,
@@ -2363,7 +2427,38 @@ namespace CosmicShore.Gameplay
                 environment.transform.localPosition = Vector3.zero;
                 environment.transform.localRotation = Quaternion.identity;
                 AdoptPlantingSites();
+                AdoptFaunaCorridor();
             }
+        }
+
+        // ---------------------------------------------------------------------
+        //  Environment fauna corridor - an authored world (a race course) may ask its cell to keep
+        //  fauna off a path, the way a garden offers beds (ICellFaunaCorridorSource). Adopted with
+        //  the environment and released with it; a corridor a MODE set (Switchback) is never
+        //  touched here, because this only clears one it adopted itself.
+        // ---------------------------------------------------------------------
+
+        readonly List<Vector3> _environmentCorridorPath = new();
+        bool _environmentCorridorAdopted;
+
+        void AdoptFaunaCorridor()
+        {
+            if (cellConfigData.EnvironmentPrefab is not ICellFaunaCorridorSource source) return;
+            if (!source.TryGetFaunaCorridor(_environmentCorridorPath, out float radius, out bool closed,
+                    out float standoff) || radius <= 0f || _environmentCorridorPath.Count < 2)
+                return;
+
+            for (int i = 0; i < _environmentCorridorPath.Count; i++)
+                _environmentCorridorPath[i] = transform.TransformPoint(_environmentCorridorPath[i]);
+            SetFaunaPathCorridor(_environmentCorridorPath, radius, closed, standoff);
+            _environmentCorridorAdopted = true;
+        }
+
+        void ReleaseEnvironmentFaunaCorridor()
+        {
+            if (!_environmentCorridorAdopted) return;
+            _environmentCorridorAdopted = false;
+            ClearFaunaPathCorridor();
         }
 
         // ---------------------------------------------------------------------
@@ -3033,13 +3128,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Drain the suctioned world over frames. A 35k-prism world destroyed in one frame is
-        /// a multi-second freeze (every <c>Prism.OnDestroy</c> unregisters from the spatial
-        /// index and unbinds from this cell), and it would land right where the player is
-        /// waiting to see the new world. The root is already suctioned to a point, so nothing
-        /// is visible while it drains.
-        /// </summary>
-        /// <summary>
         /// Send the retired loose trail back to its pool, newest first, in 12 ms slices.
         ///
         /// WHY (B36, Docs/PartySystem/BUGS.md): one Menu_Main swap returned 76,115 pooled prisms
@@ -3078,6 +3166,13 @@ namespace CosmicShore.Gameplay
             pooledRetiring.Clear();
         }
 
+        /// <summary>
+        /// Drain the suctioned world over frames. A 35k-prism world destroyed in one frame is
+        /// a multi-second freeze (every <c>Prism.OnDestroy</c> unregisters from the spatial
+        /// index and unbinds from this cell), and it would land right where the player is
+        /// waiting to see the new world. The root is already suctioned to a point, so nothing
+        /// is visible while it drains.
+        /// </summary>
         IEnumerator ReleaseRetiredWorld(GameObject retiring)
         {
             if (!retiring) yield break;
@@ -3406,7 +3501,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            activeSpawner = cellTypeChoiceOptions == CellTypeChoiceOptions.IntensityWise
+            activeSpawner = cellTypeChoiceOptions is CellTypeChoiceOptions.IntensityWise
+                                                  or CellTypeChoiceOptions.CourseVariantWise
                 ? intensitySpawner
                 : randomSpawner;
 

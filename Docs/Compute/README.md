@@ -1,5 +1,11 @@
 # Froglet Compute: the team's idle hardware, searching for the game
 
+> **PAUSED (Shombith, 2026-11-06): analytics has the priority.** No new jobs or runs. Each computer is removed from
+> the console (Remove this computer: its agent uninstalls itself at its next heartbeat) and the VM's `froglet-hub` and
+> `froglet-compute` services are stopped. The console's hourly sync scheduled task is paused, not deleted. Results on
+> the `compute/*` branches and every job file stay as they are; switching it back on is `compute.py install` per
+> computer, the two VM services, and re-enabling that scheduled task.
+
 Some of our work is bottlenecked on compute, not on people. Two kinds are already here: training the vessel AIs
 (searching a drive's numbers so it races well at every intensity) and growing bioforms (the bodies a swarm switches
 into, and the neural cellular automata that grow them). Both are the same shape: a **parametric solution space** and a

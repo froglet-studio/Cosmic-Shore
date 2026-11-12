@@ -23,6 +23,13 @@ Shader "CosmicShore/HyperSeaSkybox"
         _StarGalacticBoost ("Star Galactic Plane Boost", Range(0, 1)) = 0.35
         _StarConcentration ("Star Galactic Concentration", Range(0, 100)) = 1.2
         _TwinkleSpeed ("Twinkle Speed", Range(0, 5)) = 1.5
+        // The star temperature ramp, hot to cool (Docs/VesselModels/COLOR_TRACE.md: every colour the sky draws is a
+        // material colour the worn colour set repaints). Stored sRGB like every Color property; Unity linearizes them
+        // to the ramp's old constants (0.65, 0.75, 1), (1, 0.95, 0.88), (1, 0.78, 0.4), (1, 0.45, 0.25).
+        _StarColorHot ("Star Colour Hot (blue-white)", Color) = (0.82665706, 0.88082502, 1, 1)
+        _StarColorWhite ("Star Colour White", Color) = (1, 0.9776916, 0.9452769, 1)
+        _StarColorWarm ("Star Colour Warm (yellow)", Color) = (1, 0.8962439, 0.6651851, 1)
+        _StarColorCool ("Star Colour Cool (red-orange)", Color) = (1, 0.7014107, 0.5370987, 1)
 
         [Header(Nebulae)]
         [HDR]_NebulaColor1 ("Nebula Color 1 (Rose)", Color) = (0.5, 0.06, 0.3, 1)
@@ -94,6 +101,10 @@ Shader "CosmicShore/HyperSeaSkybox"
     half _StarGalacticBoost;
     half _StarConcentration;
     half _TwinkleSpeed;
+    half4 _StarColorHot;
+    half4 _StarColorWhite;
+    half4 _StarColorWarm;
+    half4 _StarColorCool;
 
     half4 _NebulaColor1;
     half4 _NebulaColor2;
@@ -231,10 +242,10 @@ Shader "CosmicShore/HyperSeaSkybox"
 
     half3 starColor(float temp)
     {
-        half3 blue   = half3(0.65, 0.75, 1.0);
-        half3 white  = half3(1.0, 0.95, 0.88);
-        half3 yellow = half3(1.0, 0.78, 0.4);
-        half3 red    = half3(1.0, 0.45, 0.25);
+        half3 blue   = _StarColorHot.rgb;
+        half3 white  = _StarColorWhite.rgb;
+        half3 yellow = _StarColorWarm.rgb;
+        half3 red    = _StarColorCool.rgb;
 
         half3 col = lerp(blue, white, saturate(temp * 2.5));
         col = lerp(col, yellow, saturate((temp - 0.5) * 3.5));
@@ -254,6 +265,10 @@ Shader "CosmicShore/HyperSeaSkybox"
         float3 galNorm = normalize(_GalacticNormal.xyz);
 
         float scale = _StarDensity;
+        // pow(1 - galDist, c) <= 1 for c >= 0, so no cell's probability exceeds base + max(boost, 0): a hash above
+        // that bound (with a margin for a GPU pow a hair over 1) is rejected by the exact test below too. Skipping
+        // it first saves the normalize, dot and pow of the ~97 % of cells that are empty.
+        float maxProbability = (_StarBaseProb + max(_StarGalacticBoost, 0.0)) * 1.0001 + 1e-6;
         float3 p = dir * scale;
         float3 id = floor(p);
         float3 f = frac(p) - 0.5;
@@ -267,6 +282,8 @@ Shader "CosmicShore/HyperSeaSkybox"
 
             // Hash for object existence
             float h = hash31(cellId);
+            if (_StarConcentration >= 0.0 && h > maxProbability)
+                continue;
 
             // Increase probability near galactic plane
             float3 cellDir = normalize((cellId + 0.5) / scale);
@@ -484,15 +501,17 @@ Shader "CosmicShore/HyperSeaSkybox"
     {
         float3 galNorm = normalize(_GalacticNormal.xyz);
 
+        // Dust concentrates near galactic plane. Off the band the mask is exactly 0 and the occlusion below is
+        // exactly 1, so skip the fbm (exact; about 88 % of the sky).
+        float galDist = abs(dot(dir, galNorm));
+        float galMask = 1.0 - smoothstep(0.0, _GalacticWidth * 2.5, galDist);
+        if (galMask <= 0.0) return 1.0;
+
         float3 p = dir * _DustScale;
         float drift = time * _DriftSpeed * 0.3;
 
         float dust = fbm3(p * 1.8 + float3(0, drift, 0));
         dust = smoothstep(0.3, 0.7, dust);
-
-        // Dust concentrates near galactic plane
-        float galDist = abs(dot(dir, galNorm));
-        float galMask = 1.0 - smoothstep(0.0, _GalacticWidth * 2.5, galDist);
 
         float occlusion = 1.0 - dust * _DustStrength * galMask;
         return max(occlusion, 0.25);
@@ -520,6 +539,8 @@ Shader "CosmicShore/HyperSeaSkybox"
         // Broader glow, also constrained to the plane
         float halo = smoothstep(1.0 - _CoreHaloSize, 1.0, coreDot);
         halo *= onPlane;
+        // Exact early-out: outside both caps every term below is 0 * finite (about 85 % of the sky).
+        if (inner <= 0.0 && halo <= 0.0) return half3(0.0, 0.0, 0.0);
 
         // Particulate structure in the halo
         float rayNoise = valueNoise(dir * 8.0 + coreDir * 3.0);

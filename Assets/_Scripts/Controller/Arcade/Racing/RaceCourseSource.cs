@@ -174,16 +174,38 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The course source a mode ships with, or null for a mode that is not a gate race. What
         /// the preview uses - it has no scene to read knobs from.
+        ///
+        /// <para><b>Every <see cref="GateRaceController"/> subclass belongs here.</b> This list
+        /// once stopped at the first seven races while fifteen more shipped (every vessel's Time
+        /// game), and each of those cards then previewed a bare shell: the card's model had no
+        /// course to draw, the flight had no rings to thread, and the intensity row changed
+        /// nothing. <c>RaceCourseSourceTests.EveryGateRaceControllerIsRegistered</c> now fails
+        /// the day a new race is added without its line here.</para>
         /// </summary>
         public static RaceCourseSource For(GameModes mode) => mode switch
         {
-            GameModes.Switchback => new SwitchbackCourseSource(),
-            GameModes.Headlong   => new HeadlongCourseSource(),
-            GameModes.Redline    => new RedlineCourseSource(),
-            GameModes.Breakwater => new BreakwaterCourseSource(),
-            GameModes.Skein      => new SkeinCourseSource(),
-            GameModes.Regatta    => new RegattaCourseSource(),
-            GameModes.Waystation => new WaystationCourseSource(),
+            GameModes.Switchback      => new SwitchbackCourseSource(),
+            GameModes.Headlong        => new HeadlongCourseSource(),
+            GameModes.Redline         => new RedlineCourseSource(),
+            GameModes.Breakwater      => new BreakwaterCourseSource(),
+            GameModes.Skein           => new SkeinCourseSource(),
+            GameModes.Regatta         => new RegattaCourseSource(),
+            GameModes.Waystation      => new WaystationCourseSource(),
+            GameModes.Breach          => new BreachCourseSource(),
+            GameModes.Thornline       => new ThornlineCourseSource(),
+            GameModes.ThresherTime    => new ThresherTimeCourseSource(),
+            GameModes.GrizzlyTime     => new GrizzlyTimeCourseSource(),
+            GameModes.ScarabRally     => new ScarabRallyCourseSource(),
+            GameModes.DecoyRun        => new DecoyRunCourseSource(),
+            GameModes.BurrowRun       => new BurrowRunCourseSource(),
+            GameModes.PerchRun        => new PerchRunCourseSource(),
+            GameModes.WrasseRun       => new WrasseRunCourseSource(),
+            GameModes.LanternRun      => new LanternRunCourseSource(),
+            GameModes.Warpline        => new WarplineCourseSource(),
+            GameModes.SlipLine        => new SlipLineCourseSource(),
+            GameModes.BrittleStarTime => new BrittleStarTimeCourseSource(),
+            GameModes.Slingshot       => new SlingshotCourseSource(),
+            GameModes.SerpentTime     => new SerpentTimeCourseSource(),
             _ => null,
         };
 
@@ -192,6 +214,10 @@ namespace CosmicShore.Gameplay
         {
             GameModes.Switchback, GameModes.Headlong, GameModes.Redline, GameModes.Breakwater,
             GameModes.Skein, GameModes.Regatta, GameModes.Waystation,
+            GameModes.Breach, GameModes.Thornline, GameModes.ThresherTime, GameModes.GrizzlyTime,
+            GameModes.ScarabRally, GameModes.DecoyRun, GameModes.BurrowRun, GameModes.PerchRun,
+            GameModes.WrasseRun, GameModes.LanternRun, GameModes.Warpline, GameModes.SlipLine,
+            GameModes.BrittleStarTime, GameModes.Slingshot, GameModes.SerpentTime,
         };
     }
 }

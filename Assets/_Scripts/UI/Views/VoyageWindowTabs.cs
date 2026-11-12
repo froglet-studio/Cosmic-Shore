@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -68,6 +69,7 @@ namespace CosmicShore.UI
             Show(0);
             _openedFrame = Time.frameCount;
             if (!_window || _window.IsOpen) HubShoulders.Claim(this);
+            ColorTrace.Changed += Repaint;
         }
 
         void OnDisable()
@@ -79,7 +81,11 @@ namespace CosmicShore.UI
             }
             _window = null;
             HubShoulders.Release(this);
+            ColorTrace.Changed -= Repaint;
         }
+
+        // A colour set was worn: the tab labels take its colours.
+        void Repaint() => Show(_shown);
 
         void OnDestroy()
         {
@@ -112,7 +118,92 @@ namespace CosmicShore.UI
             else if (pad.leftShoulder.wasPressedThisFrame) Show(Step(_shown, -1, tabs.Length));
         }
 
-        /// <summary>The tab LB (-1) or RB (+1) moves to from <paramref name="from"/>: it stops at either end.</summary>
+        bool _plain;
+
+        /// <summary>
+        /// The tabs as the Voyages board draws them (Rev 79-83 on Frogma, Docs/MENU_REDESIGN_B.md section 165): plain words in
+        /// <paramref name="font"/>'s capitals, <paramref name="gap"/> apart from the left, the shown one light and underlined
+        /// (its mark, 2 units), the others idle; no frames. Once is enough: later calls do nothing.
+        /// </summary>
+        public void Plain(TMP_FontAsset font, float size, float gap)
+        {
+            if (_plain) return;
+            _plain = true;
+            float left = 0f;
+            var first = tabs.Length > 0 && tabs[0].button ? (RectTransform)tabs[0].button.transform : null;
+            if (first && first.parent is RectTransform strip)
+            {
+                // Start where the first tab started (after the LB key).
+                left = first.anchoredPosition.x - first.pivot.x * first.rect.width;
+            }
+            foreach (var t in tabs)
+            {
+                if (!t.button) continue;
+                var rt = (RectTransform)t.button.transform;
+                // The kit's theming (KitThemedGraphic, KitText and their kin) puts the frames and the label's face back
+                // every time the window is enabled: on these tabs it stands down, so the plain look stays.
+                foreach (var mb in t.button.GetComponentsInChildren<MonoBehaviour>(true))
+                    if (mb is not Graphic && mb is not Selectable && mb.GetType().Name.StartsWith("Kit")) mb.enabled = false;
+                foreach (var img in t.button.GetComponentsInChildren<Image>(true))
+                {
+                    if (t.mark && img.transform.IsChildOf(t.mark.transform)) continue;
+                    if (img.name == "Lock") continue;
+                    if (img == t.button.targetGraphic)
+                    {
+                        // Still the button's hit area, drawn clear.
+                        img.sprite = null;
+                        img.color = new Color(0f, 0f, 0f, 0f);
+                    }
+                    else img.enabled = false;
+                }
+                float lockW = 0f;
+                var lockT = rt.Find("Lock") as RectTransform;
+                if (lockT && lockT.gameObject.activeSelf)
+                {
+                    lockW = 22f;
+                    lockT.anchorMin = lockT.anchorMax = new Vector2(0f, 0.5f);
+                    lockT.pivot = new Vector2(0f, 0.5f);
+                    lockT.anchoredPosition = Vector2.zero;
+                }
+                float width = 80f;
+                if (t.label)
+                {
+                    if (font)
+                    {
+                        t.label.font = font;
+                        t.label.fontSharedMaterial = font.material;
+                    }
+                    t.label.enableAutoSizing = false;
+                    t.label.fontSize = size;
+                    t.label.fontStyle = FontStyles.UpperCase;
+                    t.label.characterSpacing = 14f;
+                    t.label.textWrappingMode = TextWrappingModes.NoWrap;
+                    t.label.alignment = TextAlignmentOptions.BottomLeft;
+                    var lrt = t.label.rectTransform;
+                    lrt.anchorMin = Vector2.zero;
+                    lrt.anchorMax = Vector2.one;
+                    lrt.offsetMin = new Vector2(lockW, 10f);
+                    lrt.offsetMax = Vector2.zero;
+                    width = t.label.GetPreferredValues(t.label.text).x + lockW + 4f;
+                }
+                rt.anchorMin = new Vector2(0f, 0f);
+                rt.anchorMax = new Vector2(0f, 1f);
+                rt.pivot = new Vector2(0f, 0.5f);
+                rt.sizeDelta = new Vector2(width, 0f);
+                rt.anchoredPosition = new Vector2(left, 0f);
+                if (t.mark && t.mark.transform is RectTransform mark)
+                {
+                    mark.anchorMin = Vector2.zero;
+                    mark.anchorMax = new Vector2(1f, 0f);
+                    mark.pivot = new Vector2(0.5f, 0f);
+                    mark.sizeDelta = new Vector2(0f, 2f);
+                    mark.anchoredPosition = Vector2.zero;
+                }
+                left += width + gap;
+            }
+        }
+
+
         public static int Step(int from, int direction, int count) =>
             count <= 0 ? -1 : Mathf.Clamp(from + Math.Sign(direction), 0, count - 1);
 
@@ -127,7 +218,7 @@ namespace CosmicShore.UI
                 var t = tabs[i];
                 if (t.page && t.page.activeSelf != on) t.page.SetActive(on);
                 if (t.mark) t.mark.SetActive(on);
-                if (t.label) t.label.color = on ? selectedColor : idleColor;
+                if (t.label) t.label.color = ColorTrace.Retrace(ColorTrace.Ui, on ? selectedColor : idleColor);
             }
         }
     }

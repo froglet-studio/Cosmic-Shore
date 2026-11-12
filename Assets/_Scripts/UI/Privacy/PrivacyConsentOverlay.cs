@@ -17,7 +17,7 @@ namespace CosmicShore.UI
     /// <para><b>It builds its own UI and is created by AppManager, deliberately.</b> The previous
     /// consent screen was a MonoBehaviour that had to be placed on a panel in some scene — and it
     /// never was, so the consent gate stayed shut forever and every analytics event in the game was
-    /// silently dropped before reaching UGS or PostHog. A screen that has to be remembered is a
+    /// silently dropped before reaching UGS or Froglet Analytics. A screen that has to be remembered is a
     /// screen that gets forgotten. This one cannot be unwired: it is constructed at runtime, made
     /// persistent, and appears in every scene and every build with nothing to author.
     /// <see cref="SceneTransitionManager"/> builds its fade overlay the same way.</para>
@@ -277,6 +277,13 @@ namespace CosmicShore.UI
             _analytics.SetConsent(false);
             Finish();
         }
+
+        /// <summary>
+        /// Close the overlay without an answer (a tool with no person at the keyboard: the escort sim, the voyage smoke
+        /// test). Nothing is granted or recorded, so analytics stays off and the overlay asks again on the next launch;
+        /// the boot it was holding is released, as an answer would release it.
+        /// </summary>
+        public void CloseUnanswered() => Finish();
 
         void Finish()
         {

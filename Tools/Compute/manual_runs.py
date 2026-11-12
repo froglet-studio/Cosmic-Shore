@@ -274,16 +274,15 @@ def load(refs=None, local=False, cwd=None):
                     out[r["id"]] = r
         return out
     for ref in refs or L.QUEUE_REFS:
-        listing = L.git_ok("ls-tree", "--name-only", f"{ref}:{DIR}", cwd=cwd) or ""
-        for name in listing.split():
-            if name.endswith(".json"):
-                try:
-                    r = json.loads(L.git("show", f"{ref}:{DIR}/{name}", cwd=cwd))
-                except Exception:
-                    continue
-                if isinstance(r, dict) and r.get("id"):
-                    r["_ref"] = ref
-                    out[r["id"]] = r
+        # One ls-tree and one cat-file per ref; files read before come from the cache (compute_lib.read_blobs).
+        files = [(path, blob) for path, blob in L.ls_blobs(ref, DIR + "/", cwd=cwd)
+                 if path.endswith(".json") and path.count("/") == DIR.count("/") + 1]
+        parsed = L.read_json_blobs([blob for _, blob in files], cwd=cwd)
+        for path, blob in sorted(files):
+            r = parsed.get(blob)
+            if isinstance(r, dict) and r.get("id"):
+                r["_ref"] = ref
+                out[r["id"]] = r
     return out
 
 

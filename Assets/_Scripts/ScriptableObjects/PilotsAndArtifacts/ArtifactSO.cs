@@ -17,17 +17,22 @@ namespace CosmicShore.ScriptableObjects
     ///
     /// <para><b>Four tracks, one per element</b> (§4): Mass is how much, Space how far, Time how long, Charge how hard.
     /// Each runs 0 to 10 and adds one qualitative twist at 5, as every vessel ability does with its elements. What each
-    /// track does is authored here (<see cref="ArtifactTrack"/>); the levels are the player's, raised by spending
-    /// crystals (<c>PilotLoadoutStore</c>, device-local until the profile carries them).</para>
+    /// track does is authored here (<see cref="ArtifactTrack"/>).</para>
+    ///
+    /// <para><b>2026-11-07 (Garrett): this asset is a KIND, not an artifact.</b> Every artifact a player holds is unique
+    /// (<see cref="ArtifactRecord"/>, Docs/Pilots/INVENTORY.md §2): rolled from its own seed on top of a kind, attuned to
+    /// ONE of the kind's tracks, fed that one element without limit with diminishing returns. Its id is this asset's id
+    /// plus '#' and its seed (<see cref="UniqueId"/>), so <see cref="PilotArtifactCatalogSO.TryGetArtifact"/> still finds
+    /// the kind from any artifact's id.</para>
     ///
     /// <para><b>2026-10-27 (Garrett):</b> replaces the 2026-10-26 "one stat in three ranks" artifact on Shombith's
-    /// branch, whose 45 vessel-bound artifacts were thrown out. The id is still what squad records save.</para>
+    /// branch, whose 45 vessel-bound artifacts were thrown out.</para>
     /// </summary>
     [CreateAssetMenu(fileName = "Artifact", menuName = "ScriptableObjects/Pilots/Artifact")]
     public class ArtifactSO : ScriptableObject
     {
         [Header("Identity")]
-        [Tooltip("Stable id saved in squad records. Never rename once players have saved it; " +
+        [Tooltip("Stable kind id: every unique artifact's id starts with it. Never rename once players hold one; " +
                  "lowercase with dots, e.g. artifact.javelin.")]
         [SerializeField] string id;
 
@@ -94,18 +99,34 @@ namespace CosmicShore.ScriptableObjects
             Track(element) is { } track ? track.Value(levels.Of(element)) : 0f;
 
         /// <summary>True once <paramref name="element"/>'s track has reached its twist.</summary>
-        public static bool Twisted(Element element, in ArtifactLevels levels) => levels.Of(element) >= ArtifactTrack.TwistLevel;
+        public static bool Twisted(Element element, in ArtifactLevels levels) => levels.Twisted(element);
+
+        /// <summary>
+        /// This kind as the pure generator reads it (Docs/Pilots/INVENTORY.md §2.1): its id, name and the tracks a
+        /// unique artifact of this kind can be attuned to. Each unique artifact (<see cref="ArtifactRecord"/>) is rolled
+        /// on top of it and accepts the crystals of ONE of these tracks.
+        /// </summary>
+        public ArtifactArchetype ToArchetype()
+        {
+            var kind = new ArtifactArchetype { Id = id, DisplayName = displayName };
+            foreach (var t in Tracks)
+                if (t != null && ArtifactLevels.IsTrackElement(t.element)) kind.Tracks.Add((t.element, t.label));
+            return kind;
+        }
     }
 
     /// <summary>
-    /// One element's track on an artifact (Docs/Pilots/ARTIFACTS.md §4): what the element raises, from its level-0 value
-    /// to its level-10 value, what each level costs in that element's crystals, and the twist level 5 adds.
+    /// One element's track on an artifact KIND (Docs/Pilots/ARTIFACTS.md §4): what the element raises, from its level-0
+    /// value to its level-10 value, and the twist level 5 adds. Since 2026-11-07 a unique artifact of the kind is attuned
+    /// to ONE track and feeds it without limit along <see cref="ArtifactCurve"/>; the other three stay at the levels it
+    /// was rolled with (Docs/Pilots/INVENTORY.md §2). <see cref="baseCost"/> and <see cref="costStep"/> priced the old
+    /// whole-level raises and are kept only so the authored data still reads.
     /// </summary>
     [Serializable]
     public class ArtifactTrack
     {
-        public const int MaxLevel = 10;
-        public const int TwistLevel = 5;
+        public const int MaxLevel = (int)ArtifactLevels.MaxLevel;
+        public const int TwistLevel = (int)ArtifactLevels.TwistLevel;
 
         [Tooltip("The crystal that raises this track: Mass, Space, Time or Charge.")]
         public Element element;
@@ -128,36 +149,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("What level 5 adds, as the player reads it.")]
         public string twistLine;
 
-        /// <summary>The value at <paramref name="level"/> (clamped to 0..10).</summary>
-        public float Value(int level) => Mathf.Lerp(atZero, atTen, Mathf.Clamp(level, 0, MaxLevel) / (float)MaxLevel);
+        /// <summary>The value at <paramref name="level"/> (clamped to 0..10; levels are continuous since 2026-11-07).</summary>
+        public float Value(float level) => Mathf.Lerp(atZero, atTen, Mathf.Clamp(level, 0f, MaxLevel) / MaxLevel);
 
-        /// <summary>Crystals to raise the track from <paramref name="level"/> to the next; 0 at the top.</summary>
+        /// <summary>LEGACY: what the old whole-level raise from <paramref name="level"/> cost; 0 at the top. Read only by
+        /// the one-time import of a device's old track levels (<c>AccountInventoryStore</c>).</summary>
         public int CostFrom(int level) => level < 0 || level >= MaxLevel ? 0 : baseCost + costStep * level;
-    }
-
-    /// <summary>A player's four track levels on one artifact.</summary>
-    public readonly struct ArtifactLevels
-    {
-        public readonly int Mass;
-        public readonly int Space;
-        public readonly int Time;
-        public readonly int Charge;
-
-        public ArtifactLevels(int mass, int space, int time, int charge)
-        {
-            Mass = Mathf.Clamp(mass, 0, ArtifactTrack.MaxLevel);
-            Space = Mathf.Clamp(space, 0, ArtifactTrack.MaxLevel);
-            Time = Mathf.Clamp(time, 0, ArtifactTrack.MaxLevel);
-            Charge = Mathf.Clamp(charge, 0, ArtifactTrack.MaxLevel);
-        }
-
-        public int Of(Element element) => element switch
-        {
-            Element.Mass => Mass,
-            Element.Space => Space,
-            Element.Time => Time,
-            Element.Charge => Charge,
-            _ => 0,
-        };
     }
 }

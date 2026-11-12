@@ -6,12 +6,15 @@ section 18; the approved Settings / SettingsOther boards, revision 2, on the "Me
 
     Assets/_Prefabs/UI Elements/Main Menu Screens/Settings/
         SettingsView.prefab     the whole window: the dim, the frame and brackets, "Settings" + the active
-                                tab's name, the five hex tabs, Close (B), four pages of rows (label, one-
+                                tab's name, the six hex tabs, Close (B), four pages of rows (label, one-
                                 line description, and a dropdown, an ON / OFF pair or a slider with its
                                 value), the General links, the Performance notices and buttons, the version,
                                 and (Rev 9, section 54) the ACCOUNT page - the pilot, the guest notice, a row
                                 per sign-in provider with LINK, Sign out and Delete account - with its window
-                                (the link conflict and the confirmations) over the settings.
+                                (the link conflict and the confirmations) over the settings; and (2026-11-12)
+                                the REGION page before it - the server-region dropdown with the ping to each
+                                Relay region, its status line, MEASURE PING and the host-region rule
+                                (RegionSettingsView).
                                 GameSettingsPanelController, SettingsTabBar and BenchmarkSceneLauncher ride
                                 on its root.
 
@@ -70,7 +73,8 @@ SLIDER = P.SLIDER
 S = dict(controller=C.script("GameSettingsPanelController"), tabbar=C.script("SettingsTabBar"),
          bench=C.script("BenchmarkSceneLauncher"), tab=K.kit_script("KitTextTab"), tile=K.kit_script("KitTile"),
          button=K.kit_script("KitButton"), close=C.script("ModalWindowCloseButton"), modal=C.script("SettingsModal"),
-         account=C.script("AccountSettingsView"), prompt=C.script("AccountPromptWindow"))
+         account=C.script("AccountSettingsView"), prompt=C.script("AccountPromptWindow"),
+         region=C.script("RegionSettingsView"))
 # Rev 9 (section 54): the Account tab. SignInProviders.asset is written by author_start_flow.py (PROVIDERS_GUID there).
 PROVIDERS_GUID = "5b0c1f7e9a2d4c6e8f1a3b5d7c9e0f21"
 ACCOUNT_ROWS = (("Steam", 2, None), ("Google", 3, None), ("Apple", 4, None))   # marks come from SignInProviders.asset (R9b)
@@ -79,10 +83,14 @@ PROMPT_W, PROMPT_H, PROMPT_CONFIRM_H = 1180, 680, 330
 PACKAGE = P.PACKAGE | {DROPDOWN, TOGGLE, SCROLL}
 
 # The rows, as the approved board draws them (revision 2: a one-line description under every label).
-# kind: dd (dropdown) / tg (ON-OFF pair) / sl (slider + value); field: the controller field it fills.
+# kind: dd (dropdown) / tg (ON-OFF pair) / sl (slider + value) / go (a button that goes where the thing lives);
+# field: the controller field it fills.
+# Colour sets (2026-11-05, Garrett): the sets made for colour blindness, low vision and contrast live in the Profile's
+# colour-set rail with every other set ("put the thing where it belongs"); General keeps only a breadcrumb to them.
 PAGES = [
     ("General", "chrome_gear", [
-        ("dd", "Colorblind mode", "Adjusts team colours for colour vision deficiency.", "colorblindDropdown"),
+        ("go", "Colour sets", "Sets made for colour blindness, low vision and contrast are in your Profile, under Colour sets.",
+         "colourSetsButton"),
         ("tg", "Subtitles", "Captions for spoken lines.", "subtitles"),
         ("dd", "Subtitle size", "How large the captions are.", "subtitleScaleDropdown"),
         ("tg", "Analytics and crash reports", "Share anonymous usage and crash reports so bugs get fixed.", "analyticsConsent"),
@@ -111,9 +119,28 @@ PAGES = [
         ("sl", "SFX volume", "How loud the effects are.", "sfxSlider"),
         ("tg", "Haptics", "Controller rumble.", "haptics"),
     ]),
+    ("Region", "chrome_globe", []),
     ("Account", "chrome_person", []),
 ]
+# The REGION tab (2026-11-12, Shombith: "Garrett is in the US and I am in India, I get 1200 ping"): the Relay region the
+# parties this player hosts are served from, with the measured ping to each (RegionSettingsView, RelayRegionPreference).
+# Its row is drawn like every other dropdown row but wired to RegionSettingsView, not the controller.
+REGION_ROW = ("dd", "Server region", "Where the parties you host are played. Friends you invite join you there.",
+              "regionDropdown")
+REGION_HELP = ("Only the party host's region counts. Playing across continents? Choose a region between you: "
+               "Europe is fair for the US and India.")
+# Display names for the Relay region ids (RelayService.ListRegionsAsync). The live list decides what is offered; these
+# name it, and are offered on their own only when UGS cannot be reached to list the regions.
+REGION_NAMES = (
+    ("us-east1", "US East"), ("us-central1", "US Central"), ("us-west2", "US West"),
+    ("northamerica-northeast1", "Canada East"), ("southamerica-east1", "South America"),
+    ("europe-west2", "Europe West (London)"), ("europe-west4", "Europe West (Netherlands)"),
+    ("europe-central2", "Europe Central"), ("europe-north1", "Europe North"),
+    ("me-west1", "Middle East"), ("asia-south1", "India"), ("asia-southeast1", "Southeast Asia"),
+    ("asia-northeast1", "Japan"), ("asia-northeast3", "Korea"), ("australia-southeast1", "Australia"),
+)
 READOUTS = {"fovSlider": "fovValueText", "musicSlider": "musicValueText", "sfxSlider": "sfxValueText"}
+GO_BUTTONS = {"colourSetsButton": ("ColourSets", "COLOUR SETS")}   # field: (instance key, caption)
 LINKS = (("BugReport", "BUG REPORT", "Default", "bugReportButton"), ("Privacy", "PRIVACY POLICY", "Default", "privacyPolicyButton"),
          ("DeleteData", "DELETE MY DATA", "Danger", "deleteDataButton"), ("Credits", "CREDITS", "Default", "creditsButton"),
          ("Quit", "QUIT GAME", "Cancel", "quitGameButton"))
@@ -264,6 +291,12 @@ def row_node(page, pk, i, kind, caption, desc, field, top):
     wiring = {}
     if kind == "dd":
         wiring[field] = ("dd", dropdown(r, k))
+    elif kind == "go":
+        key, cap = GO_BUTTONS[field]
+        w, h = K.button_size(cap, small=True)
+        r.children.append(P.Inst(f"{key}Button", "KitButtonSmall", f"{key}Button", TL(CTRL_X, (ROW_H - h) // 2, w, h),
+                                 K.button_mods("KitButtonSmall", "Default", False, cap, small=True)))
+        wiring[field] = ("go", key)
     elif kind == "tg":
         on, x = word_tab(r, k, "On", "ON", CTRL_X)
         off, _ = word_tab(r, k, "Off", "OFF", x)
@@ -415,6 +448,28 @@ def prompt_body(ctx):
                       for f, k in (("primary", "Primary"), ("secondary", "Secondary"), ("cancel", "Cancel"))))
 
 
+def region_page(page, pk):
+    """The REGION tab: the server-region dropdown, the status line under it (what a change does from here, and the
+    ping measurement), MEASURE PING, and the one rule a party needs to know."""
+    kind, cap, desc, field = REGION_ROW
+    wiring = row_node(page, pk, 0, kind, cap, desc, field, 0)
+    st = page.child(N(f"{pk}/Status", "Status", TL(0, ROW_H + 14, PAGE_W, 56)))
+    label(st, "", "Body", "NeutralLightest", valign="top", wrap=True)
+    small_buttons(page, f"{pk}/Tools", ROW_H + 84, [("MeasurePing", "MEASURE PING", "Default")])
+    hk = f"{pk}/Help"
+    hp = page.child(N(hk, "Help", TL(0, ROW_H + 156, PAGE_W, 72)))
+    H.framed(hp, hk, 10, "SurfaceVeryDark", "SurfaceLight")
+    label(hp.child(N(f"{hk}/Text", "Text", TL(18, 0, PAGE_W - 36, 72))), REGION_HELP, "Body", "TextLight", wrap=True)
+    page.add("region", 114, lambda ctx, go: mono(go, S["region"], region_body(ctx, pk, wiring)))
+
+
+def region_body(ctx, pk, wiring):
+    return (f"  regionDropdown: {ref(ctx.c(wiring['regionDropdown'][1], 'dd'))}\n"
+            f"  statusText: {ref(ctx.c(f'{pk}/Status', 'tmp'))}\n"
+            f"  measureButton: {ref(ctx.iref('MeasurePingButton', 'root#button'))}\n"
+            "  regionNames:\n" + "".join(f"  - id: {i}\n    displayName: {n}\n" for i, n in REGION_NAMES))
+
+
 def build_view():
     root = N("root", VIEW, STRETCH)
     image_node(root, "Dim", "Dim", STRETCH, "SurfaceBlack", alpha=0.82, raycast=True)
@@ -445,6 +500,8 @@ def build_view():
             small_buttons(page, f"{pk}/Links", len(rows) * ROW_H + 26, [(k, cap, v) for k, cap, v, _ in LINKS])
         if name == "Performance":
             small_buttons(page, f"{pk}/Tools", top + len(rows) * ROW_H + 22, [(k, cap, "Default") for k, cap, _ in PERF_BUTTONS])
+        if name == "Region":
+            region_page(page, pk)
         if name == "Account":
             account_page(page, pk)
 
@@ -495,7 +552,7 @@ def controller_body(ctx, wiring):
             f"  restartRequiredNotice: {ref(ctx.go('Window/Performance/Restart'))}\n"
             "  selectedColor: {r: 1, g: 1, b: 1, a: 1}\n  unselectedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}\n"
             "  selectedScale: 1.1\n  unselectedScale: 0.95\n"
-            + dd("colorblindDropdown") + onoff("subtitles") + dd("subtitleScaleDropdown") + onoff("analyticsConsent")
+            + btn("colourSetsButton", GO_BUTTONS["colourSetsButton"][0]) + onoff("subtitles") + dd("subtitleScaleDropdown") + onoff("analyticsConsent")
             + btn("bugReportButton", links["bugReportButton"]) + btn("privacyPolicyButton", links["privacyPolicyButton"])
             + btn("deleteDataButton", links["deleteDataButton"]) + btn("creditsButton", links["creditsButton"])
             + "  screenSwitcher: {fileID: 0}\n" + btn("quitGameButton", links["quitGameButton"])
@@ -778,7 +835,8 @@ def validate(files):
                     fid = re.search(r"%s: \{fileID: (-?\d+)" % side, block.group(1)).group(1)
                     assert fid != "0" and A.kind_of(view, fid)[1] == S["tab"], f"controller.{field}.{side} is not a KitTextTab"
             else:
-                C.wired(view, ctl, field, DROPDOWN if kind == "dd" else SLIDER, "GameSettingsPanelController")
+                want = {"dd": DROPDOWN, "go": S["button"]}.get(kind, SLIDER)
+                C.wired(view, ctl, field, want, "GameSettingsPanelController")
     for f in READOUTS.values():
         C.wired(view, ctl, f, TMP, "GameSettingsPanelController")
     for k, _, _, f in LINKS:
@@ -793,7 +851,21 @@ def validate(files):
             tmpl = A.doc_of(view, V(f"Window/{name}/Row{i + 1}/Dropdown/Template#go"))[1]
             assert "  m_IsActive: 0\n" in tmpl, f"{name} row {i + 1}: the dropdown template must start inactive"
     _, tb = A.doc_of(view, V("root#tabbar"))
-    assert tb.count("  - button: {fileID: ") == len(PAGES) == 5 and "  scaleLabels: 0\n" in tb, "SettingsTabBar: five kit tabs, unscaled"
+    assert tb.count("  - button: {fileID: ") == len(PAGES) == 6 and "  scaleLabels: 0\n" in tb, "SettingsTabBar: six kit tabs, unscaled"
+    # The REGION tab: its view, its wiring, its dropdown, and region names to read.
+    _, reg = A.doc_of(view, V("Window/Region#region"))
+    assert reg and S["region"] in reg, "SettingsView: the Region page carries no RegionSettingsView"
+    C.wired(view, reg, "regionDropdown", DROPDOWN, "RegionSettingsView")
+    C.wired(view, reg, "statusText", TMP, "RegionSettingsView")
+    C.wired(view, reg, "measureButton", S["button"], "RegionSettingsView")
+    _, rdd = A.doc_of(view, V("Window/Region/Row1/Dropdown#dd"))
+    for field, want in DROPDOWN_FIELDS.items():
+        C.wired(view, rdd, field, want, "Region row 1 dropdown")
+    assert "  m_IsActive: 0\n" in A.doc_of(view, V("Window/Region/Row1/Dropdown/Template#go"))[1], \
+        "Region: the dropdown template must start inactive"
+    names = re.findall(r"^  - id: (\S+)\n    displayName: (.+)$", reg, re.M)
+    assert len(names) == len(REGION_NAMES) and all(i and n for i, n in names), "RegionSettingsView: the region names are missing"
+    assert all(i == i.lower() and " " not in i for i, _ in names), "RegionSettingsView: a region id is not a Relay id"
     # Rev 9: the Account tab and its window.
     _, acc = A.doc_of(view, V("Window/Account#account"))
     assert acc and S["account"] in acc, "SettingsView: the Account page carries no AccountSettingsView"
@@ -883,6 +955,9 @@ def self_test(files):
         ("an Account row missing", lambda f: f.__setitem__(view, re.sub(r"  - provider: 4\n    root: .*\n    mark: .*\n    line: .*\n    linkButton: .*\n    linkedMark: .*\n", "", f[view]))),
         ("the Account window ships shown", lambda f: f.__setitem__(view, _show_prompt(f[view]))),
         ("a settings link back on the old site", lambda f: f.__setitem__(view, f[view].replace(STORE_SITE, "https://cosmicshore.com", 1))),
+        ("the colour-sets breadcrumb unwired", lambda f: f.__setitem__(view, re.sub(r"(  colourSetsButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),
+        ("the Region dropdown unwired", lambda f: f.__setitem__(view, re.sub(r"(  regionDropdown: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view]))),
+        ("the Region page without its view", lambda f: f.__setitem__(view, f[view].replace("guid: " + S["region"], "guid: " + S["account"]))),
         ("OptionsMenuContent left nested", lambda f: f.__setitem__(MODAL_PREFAB, f[MODAL_PREFAB] + f"# guid: {OPTIONS_GUID}\n")),
     ]
     ok = all(expect(l, m) for l, m in cases)

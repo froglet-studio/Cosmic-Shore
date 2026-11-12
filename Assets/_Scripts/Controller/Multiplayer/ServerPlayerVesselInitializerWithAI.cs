@@ -643,7 +643,11 @@ namespace CosmicShore.Gameplay
                 gameData.GameMode == GameModes.Joust ||
                 gameData.GameMode == GameModes.DogFight ||
                 gameData.GameMode == GameModes.Broadside;
-            float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
+            // An arena card has no intensity row (it always plays SO_ArcadeGame.ArenaIntensity), so its autopilot skill
+            // follows the AI difficulty the host picked instead; every other card keeps intensity x 0.25.
+            float skill = gameData.IsArenaMatch
+                ? VesselSelectionRules.ArenaAutopilotSkill(AIDifficultyRules.Resolve(difficulty ?? gameData.RequestedAIDifficulty))
+                : Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
 
             // The lobby AI difficulty, on every mode whose AI is this autopilot (all but the Skim Race and the

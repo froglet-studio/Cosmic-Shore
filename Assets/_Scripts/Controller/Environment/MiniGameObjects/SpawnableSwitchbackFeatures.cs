@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Lays Switchback's Blast Run prisms (<see cref="SwitchbackBlastRun"/>): the doors and block fields of every
-    /// blocked gate. <see cref="SwitchbackController"/> instantiates it in <c>OnCourseRaised</c>, hands it the layout
+    /// blocked gate (and at I4 the gauntlet's sealed eyes and tunnels). <see cref="SwitchbackController"/> instantiates it in <c>OnCourseRaised</c>, hands it the layout
     /// with <see cref="SetLayout"/>, then calls <c>Spawn(intensity)</c> - the same shape as Breakwater's stations.
     /// Every peer receives the same broadcast course, so every peer lays the same prisms.
     ///
@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Never baked: the layout comes from a course generated per match.</summary>
         protected override bool BakesLayout => false;
 
-        /// <summary>The list's starting size: Blast Run lays up to about 3400 prisms (<see cref="SwitchbackBlastRun.LayCapacity"/>).</summary>
+        /// <summary>The list's starting size: Blast Run lays up to 5100 prisms at the I4 gauntlet (<see cref="SwitchbackBlastRun.LayCapacity"/>).</summary>
         protected override int LayCapacity => SwitchbackBlastRun.LayCapacity;
 
         readonly List<RaceGate> _course = new(32);
@@ -60,7 +60,7 @@ namespace CosmicShore.Gameplay
         protected override int BuildParameterHash()
         {
             int hash = System.HashCode.Combine(nameof(SpawnableSwitchbackFeatures),
-                /* layout revision - bump to invalidate caches after a code-level change */ 5,
+                /* layout revision - bump to invalidate caches after a code-level change (6: the I4 gauntlet) */ 6,
                 _course.Count, _layoutIntensity, _centre, _clearRadius, _layout != null ? _layout.Prisms.Count : -1);
             for (int i = 0; i < _course.Count; i++)
                 hash = System.HashCode.Combine(hash, _course[i].Position, _course[i].Axis, _course[i].Radius);

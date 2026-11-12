@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 634002907447383638}
   - component: {fileID: 296582887329433260}
   - component: {fileID: 514242100704905636}
+  - component: {fileID: 382972104806199471}
   m_Layer: 5
   m_Name: ProfileAvatarButton
   m_TagString: Untagged
@@ -116,6 +117,20 @@ MonoBehaviour:
   BorderImage: {fileID: 0}
   IconImage: {fileID: 286254689187899334}
   tile: {fileID: 296582887329433260}
+--- !u!114 &382972104806199471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 111698954150440058}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ab003d74ac0f546021608ad90dc0065, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 0}
+  margin: 12
 --- !u!1 &33471350735514551
 GameObject:
   m_ObjectHideFlags: 0

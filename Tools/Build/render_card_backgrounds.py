@@ -95,7 +95,14 @@ SOURCES = [
     f"{_MG}/SpawnableSwell.cs",
     f"{_MG}/SpawnableWildlifeCage.cs",
     f"{_MG}/SpawnableBoneyard.cs",
-    f"{_MG}/SpawnableSerpentGulag.cs",
+    f"{_MG}/SpawnableJackstraw.cs",
+    f"{_MG}/FlatlinePanes.cs",
+    f"{_MG}/SpawnableFlatline.cs",
+    f"{_MG}/SpawnableKelpwood.cs",
+    f"{_MG}/SpawnableCorona.cs",
+    f"{_MG}/SpawnableHarvest.cs",
+    f"{_MG}/ShatterplanePlates.cs",
+    f"{_MG}/SpawnableShatterplane.cs",
     f"{_MG}/SpawnableSwitchyard.cs",
     f"{_MG}/SpawnableSkein.cs",
     f"{_MG}/SpawnableRegattaRails.cs",
@@ -105,6 +112,11 @@ SOURCES = [
     f"{_MG}/SpawnableSpherene.cs",
     f"{_AR}/Skein/SkeinCourse.cs",
     f"{_AR}/Regatta/RegattaCourse.cs",
+    # SpawnableRegattaRails reads these since the Regatta lifeform-site / corridor work (f7231d035c); without them the
+    # whole harness (card art, the layout bake, the clip audit) stopped compiling.
+    f"{_AR}/Regatta/RegattaCourseFeatures.cs",
+    f"{_AR}/Regatta/RegattaLifeformSites.cs",
+    f"{_SP}/ICellFaunaCorridorSource.cs",
     f"{_AR}/Racing/RaceCourseGeometry.cs",
     f"{_AR}/Headlong/HeadlongCircuit.cs",
     f"{_AR}/Switchback/SwitchbackCourse.cs",
@@ -117,6 +129,12 @@ SOURCES = [
     f"{_AR}/SerpentTime/SerpentTimeCourse.cs",
     f"{_AR}/BrittleStarTime/BrittleStarTimeCourse.cs",
     f"{_AR}/LanternRun/LanternRunCourse.cs",
+    f"{_AR}/Thornline/ThornlineCourse.cs",
+    f"{_AR}/DecoyRun/DecoyRunCourse.cs",
+    "Assets/_Scripts/Controller/Vessel/JacksRacePlan.cs",
+    f"{_AR}/PerchRun/PerchRunCourse.cs",
+    f"{_AR}/SlipLine/SlipLineCourse.cs",
+    f"{_AR}/Breach/BreachCourse.cs",
     f"{_AR}/Breakwater/BreakwaterCourse.cs",
     f"{_AR}/Breakwater/BreakwaterStationBuilder.cs",
 ]
@@ -748,11 +766,47 @@ CAMERAS = {
     # LanternRun: the circuit with its two mass clusters a leg glowing on each ring's line, shot from above so the
     # stepping stones read as the path painted through the rings.
     "LanternRun": (120, 34, 0.85, 44),
+    # Thornline: the thorn chain, its cubes on every bend and a ring at the middle of each leg, shot from an angle no
+    # other gate race takes so the zig-zag of straight slings reads.
+    "Thornline": (200, 30, 0.85, 44),
+    # Decoy Run: the I3 course - skewers on rolled flats, each flat's chalk rails beside its legs - shot low across the
+    # flats so the tilt between two groups reads.
+    "DecoyRun": (290, 22, 0.85, 44),
+    # Perch Run: the I4 reef - hairpins, coral heads on their legs, doubles on one line - shot along the course so a
+    # double's two mouths stack and the heads stand in front of their rings.
+    "PerchRun": (240, 18, 0.85, 44),
+    # Slip Line: the I4 course - rails in the Dynamo's three colours down every leg, the leaning ones off the line, the
+    # chains running on through two rings - shot along the course so the rails read as lanes into their rings.
+    "SlipLine": (230, 20, 0.85, 44),
+    "Breach": (215, 18, 0.85, 44),
     # Tandava: from above the feeding serpent's flank, its guarded head and the plant in the shot
     "Tandava": (35, 30, 0.95, 44),
-    # Serpent Gulag: high and wide, so the ring of nests round the crystal field reads as the arena, and the
-    # tracer crossing the middle (the one thing that scores) reads against it.
-    "SerpentGulag": (50, 26, 0.62, 46),
+    # Hood: from just outside the hoods' sphere, so the hoods round the crystal heart read as the arena, and the
+    # tracer crossing the heart (the one thing that scores) reads against it.
+    "SerpentHood": (50, 22, 0.6, 46),
+    # Jackstraw: close into the heap, so the sticks cross the whole plate and the red-hot ball swinging through
+    # them onto a rival (the strike, the one thing that scores) sits in the middle of it.
+    "Jackstraw": (40, 18, 0.7, 46),
+    # Flatline: the I2 Tunnels from just inside the field, so the loose panes read as thin plates scattered with room
+    # round each, a tunnel's crystal reads through its bore, and the cords crossing a pane (the act that scores) read
+    # against its face.
+    "Flatline": (12, 20, 0.72, 44),
+    # Kelpwood: inside the kelp ball's rim, so the strands radiate across the plate and the lock - the eraser's beam
+    # from one pilot onto a rival, a hunter on that rival's hull (the bite, the one thing that scores) - sits across it.
+    "Kelpwood": (35, 16, 0.75, 46),
+    # Glasshouse: from outside the gardens, low across the cell, so the three colours' beds stand round the glass
+    # nucleus with its seeds inside, and the lure lighting the near bed (growth, the thing that scores) sits in front.
+    "Glasshouse": (28, 14, 0.82, 46),
+    # Corona: between the two shells, looking in through a gate of the inner one, so the shells curve round the
+    # plate and the Kabloom - a bloom at the heart catching a rival (the one thing that scores) - sits in its middle.
+    "Corona": (37, -10, 0.36, 60),
+    # Harvest: inside the field, so the sheaves fill the plate, and the payoff - a Thresher's chain bowed round a
+    # sheaf's stalks, its red-hot ball in the core and the blast going off there (the act that scores most) - sits
+    # in the middle of it.
+    "Harvest": (40, 18, 0.7, 46),
+    # Shatterplane: from beside the I2 Gallery, so the plates read as thin round sheets at mixed angles and the square
+    # ring blast (the spike that scores) lies flat in the plate nearest the camera.
+    "Shatterplane": (75, -12, 0.78, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -806,6 +860,55 @@ def recipe(stem, card_path, pal, ends):
         node["intensity"] = INTENSITY
         layers.append(node)
         nucleus()
+    elif s == "Thornline":
+        # COURSE tier: ThornlineCourseSource.Build, mirrored - the shell's inner radius off the scene's controller and
+        # the cell's nucleus, the ring count off EndConditionOverrides; the harness lays the thorns too.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "thornline", "intensity": INTENSITY, "seed": stable_seed(s), "path": True,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("thornlineGateTarget", 16)},
+                       "tube": 0.14, "color": [1.45, 0.35, 0.6]})
+        nucleus()
+    elif s == "DecoyRun":
+        # COURSE tier: DecoyRunCourseSource.Build, mirrored, at I3 (the first level with flats); the harness lays the
+        # chalk rails too.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "decoyrun", "intensity": 3, "seed": stable_seed(s), "path": False,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("decoyRunGateTarget", 12)},
+                       "tube": 0.14, "color": [0.45, 1.3, 1.5]})
+        nucleus()
+    elif s == "PerchRun":
+        # COURSE tier: PerchRunCourseSource.Build, mirrored, at I4 (every role: hairpins, coral, doubles); the harness
+        # lays the coral too.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "perchrun", "intensity": 4, "seed": stable_seed(s), "path": True,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("perchRunGateTarget", 16)},
+                       "tube": 0.14, "color": [1.5, 0.75, 0.35]})
+        nucleus()
+    elif s == "SlipLine":
+        # COURSE tier: SlipLineCourseSource.Build, mirrored, at I4 (stubs, leaning rails, chains); the harness lays the
+        # rails in their colours.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "slipline", "intensity": 4, "seed": stable_seed(s), "path": True,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("slipLineGateTarget", 16)},
+                       "tube": 0.14, "color": [1.4, 1.2, 0.4]})
+        nucleus()
+    elif s == "Breach":
+        # COURSE tier: BreachCourseSource.Build, mirrored, at I4 (hard turns and walls); the harness lays the danger walls.
+        tier = "COURSE"
+        ctl = gate_race_controller(card_path)
+        inner = nuc * ctl["innerRadiusNucleusFactor"] if nuc > 0 else ctl["courseInnerRadiusFallback"]
+        layers.append({"kind": "breach", "intensity": 4, "seed": stable_seed(s), "path": True,
+                       "settings": {"InnerRadius": inner, "RingCount": ends.get("breachGateTarget", 16)},
+                       "tube": 0.14, "color": [0.5, 1.1, 1.5]})
+        nucleus()
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
                "WrasseRun", "Breakwater", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun"):
         # GateRaceController.BuildCourse, mirrored: the shell comes off the scene's controller and
@@ -848,6 +951,21 @@ def recipe(stem, card_path, pal, ends):
                                      "BrittleStarTime": [0.85, 0.35, 1.6],
                                      "LanternRun": [0.35, 1.1, 1.35]}[s]})
             nucleus()
+    elif s == "SerpentHood":
+        # MODEL tier through the OFFLINE MIRROR (Tools/Build/serpent_hood_budget.py, whose --parity proves it prism for
+        # prism against the shipped SerpentHoodLayout.cs): the controller lays the hoods on every peer, so the cell has no
+        # environment to run. Intensity 2: twelve Coil hoods round the crystal heart, every mouth turned to it.
+        tier = "MODEL"
+        sys.path.insert(0, str(ROOT / "Tools/Build"))
+        import serpent_hood_budget as shb           # noqa: E402
+        rows = []
+        for index, c, ax, _ in shb.covers(INTENSITY):
+            parts, _ = shb.build_cover(index, c, ax, INTENSITY)
+            for pos, fwd, up, sc, kind, _core in parts:
+                rows.append(prism(pos, fwd, up, list(sc), BLUE, DANGER if kind == "danger" else PLAIN))
+        layers.append({"kind": "prisms", "rows": rows})
+        for k in range(24):
+            crystal(shb.field_slot(k, 24, 380.0), 16.0)
     elif s == "Waystation":
         # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_tower_course.py), whose own --compile proves
         # it gate for gate and tile for tile against the shipped WaystationTower.cs: the clusters, the Drop Towers'
@@ -1057,6 +1175,37 @@ def recipe(stem, card_path, pal, ends):
                       "vessels": [{"domain": JADE, "r": 0.9, "tilt": 12, "a0": 150, "sweep": 55, "yaw": 0},
                                   {"domain": JADE, "r": 1.3, "tilt": -18, "a0": 200, "sweep": 45, "yaw": 20},
                                   {"domain": JADE, "r": 1.1, "tilt": 30, "a0": 110, "sweep": 40, "yaw": -15}]})
+    elif s == "Glasshouse":
+        # MODEL tier: the cell plants nothing wild, so the card draws what the mode PUTS there at this intensity - each
+        # colour's garden (cactus glyphs on its own bed outside the nucleus, half the rung's shared cap between them,
+        # the plant size read off the shipped leaf and prism scale), the omni crystals (the seeds) inside the glass
+        # nucleus, and the rung's grazers among the beds. Every count is read from the shipped assets.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        prof = read(facts["profile"])
+        flora_cfg = asset(re.findall(r"guid: (\w+)", prof.split("SupportedFloras:")[1].split("FaunaExcludeLocalDomain")[0])[0])
+        cap = int(re.search(r"^  MaxLivePopulation: (\d+)", read(flora_cfg), re.M).group(1))
+        fauna_cfg = asset(re.findall(r"guid: (\w+)", prof.split("SupportedFaunas:")[1])[0])
+        herd = int(re.search(r"^  InitialSpawnCount: (\d+)", read(fauna_cfg), re.M).group(1))
+        scene = read(next((ROOT / "Assets/_Scenes").rglob("MinigameGlasshouse.unity")))
+        extras = [int(x) for x in re.findall(r"ExtraCrystals: (\d+)", scene.split("crystalCountByIntensity:")[1])[:4]]
+        omni = extras[min(INTENSITY - 1, len(extras) - 1)]
+        rows = []
+        band = nuc + 0.35 * (R - nuc)
+        beds = {JADE: v_norm([0.75, 0.05, -0.45]), RUBY: v_norm([-0.7, 0.25, -0.35]), GOLD: v_norm([0.3, -0.62, -0.72])}
+        per = max(1, round(cap * 0.6 / 3))
+        size = R * 0.09
+        for dom, d in beds.items():
+            bed = v_mul(d, band)
+            for k in range(per):
+                off = v_mul(rng.unit(), R * 0.13 * rng.u() ** 0.5)
+                root = v_add(bed, off)
+                plant_glyph("CactiFlora", root, v_norm(root), size * rng.range(0.7, 1.2), dom, rng, rows)
+        layers.append({"kind": "prisms", "rows": rows})
+        for k in range(omni):
+            crystal(v_mul(rng.unit(), nuc * 0.6 * rng.u() ** 0.33), R * 0.02, (0.55, 1.2, 0.25))
+        stage["glasshouse"] = {"beds": {str(k): v_mul(v, band) for k, v in beds.items()}, "herd": herd}
+        nucleus()
     elif s == "Maelstrom":
         return {"tier": "MONTAGE", "layers": [], "camera": cam, "look": look, "stage": None,
                 "cell": None, "env": None, "track": None}
@@ -1079,8 +1228,11 @@ def recipe(stem, card_path, pal, ends):
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
     elif s in ("Switchback", "Headlong", "Redline", "GrizzlyTime", "Slingshot", "Warpline", "ThresherTime",
-               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun"):
+               "WrasseRun", "Waystation", "ScarabRally", "SerpentTime", "BrittleStarTime", "LanternRun", "Thornline", "DecoyRun", "PerchRun", "SlipLine", "Breach"):
         cam["percentile"] = 0.6
+    elif s == "Glasshouse":
+        aim((0.1, -0.05, -0.3), 0.66)
+        stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
@@ -1236,23 +1388,219 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             glow(p, span * 0.006, JADE, 1.2, 0.6)
         glow(v_add(top, [0, -span * 0.3, 0]), span * 0.05, JADE, 0.9, 0.35)
         stage["vessels"] = vessels([(JADE, 0.25, 10, 30, 70), (RUBY, 0.3, -10, 200, 70)])
-    elif s == "SerpentGulag":
-        # The crystal field in the middle (every intensity), and a SNIPE across it: a Sniper Shot's tracer from
-        # a nest on one side to a rival pilot on the other, who takes the hit (a glow in the shooter's colour).
-        for k in range(14):
-            crystal(v_add(centre, v_mul(rng.unit(), span * 0.12 * rng.u() ** 0.33)), span * 0.012)
-        a = v_add(centre, v_mul(v_norm([0.8, 0.12, -0.55]), span * 0.85))
-        b = v_add(centre, v_mul(v_norm([-0.75, -0.05, 0.6]), span * 0.7))
+    elif s == "SerpentHood":
+        # A SNIPE across the crystal heart: a Sniper Shot's tracer from one hood's cup to a rival pilot by a hood on the
+        # far side, who takes the hit (a glow in the shooter's colour). The hoods and the heart are the arena's own.
+        sys.path.insert(0, str(ROOT / "Tools/Build"))
+        import serpent_hood_budget as shb           # noqa: E402
+        cs = shb.covers(INTENSITY)
+        a = v_add(cs[2][1], v_mul(cs[2][2], -45.0))          # in the cup, behind the mouth
+        far = min(cs, key=lambda c: v_dot(v_norm(c[1]), v_norm(cs[2][1])))
+        b = v_add(far[1], v_mul(far[2], 160.0))               # a rival out in front of the far hood
         d = v_norm(v_sub(b, a))
         side = v_norm(v_cross([0, 1, 0], d)); u = v_cross(d, side)
-        w = span * 0.0025   # a hitscan line, not a beam
+        w = 3.0   # a hitscan line, not a beam
         sig = domain_signal(pal, JADE, 1.4)
         layers.append({"kind": "box", "c": v_mul(v_add(a, b), 0.5), "ax": v_mul(side, w), "ay": v_mul(u, w),
                        "az": v_mul(d, math.sqrt(v_dot(v_sub(b, a), v_sub(b, a))) / 2),
                        "base": sig, "rim": sig, "emissive": sig, "edge": 0})
-        glow(a, span * 0.02, JADE, 1.0, 0.4)
-        glow(b, span * 0.035, JADE, 1.1, 0.45)
-        stage["vessels"] = vessels([(JADE, 0.85, 8, 330, 20), (RUBY, 0.7, -4, 140, 25), (GOLD, 0.8, 12, 230, 25)])
+        glow(a, 30.0, JADE, 1.0, 0.4)
+        glow(b, 55.0, JADE, 1.1, 0.45)
+        stage["vessels"] = vessels([(JADE, 0.55, 8, 330, 20), (RUBY, 0.5, -4, 140, 25), (GOLD, 0.55, 12, 230, 25)])
+    elif s == "Jackstraw":
+        # A STRIKE through the heap: a Thresher's chain swung in an arc from its pilot, the ball at its end red-hot
+        # (smash speed reads red, THRESHER.md section 2) and on a rival pilot, who takes the hit (a glow in the
+        # striker's colour). The crystals float in the centre clearing.
+        for k in range(6):
+            crystal(v_add(centre, v_mul(rng.unit(), span * 0.08 * rng.u() ** 0.33)), span * 0.012)
+        pilot = v_add(centre, v_mul(v_norm([0.75, 0.15, -0.6]), span * 0.42))
+        hit = v_add(centre, v_mul(v_norm([-0.35, -0.05, 0.25]), span * 0.3))
+        chord = v_sub(hit, pilot)
+        bow = v_mul(v_norm(v_cross([0, 1, 0], chord)), math.sqrt(v_dot(chord, chord)) * 0.28)
+        links = 18
+        prev = pilot
+        for k in range(1, links + 1):
+            t = k / links
+            q = v_add(v_add(pilot, v_mul(chord, t)), v_mul(bow, 4 * t * (1 - t)))
+            d = v_norm(v_sub(q, prev))
+            side = v_norm(v_cross([0, 1, 0] if abs(d[1]) < 0.9 else [1, 0, 0], d)); u = v_cross(d, side)
+            w = span * 0.004
+            sig = domain_signal(pal, JADE, 1.3)
+            layers.append({"kind": "box", "c": v_mul(v_add(prev, q), 0.5), "ax": v_mul(side, w), "ay": v_mul(u, w),
+                           "az": v_mul(d, math.sqrt(v_dot(v_sub(q, prev), v_sub(q, prev))) * 0.42),
+                           "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+            prev = q
+        glow(hit, span * 0.075, JADE, 0.9, 0.25)
+        hot = [c * 1.6 for c in pal["danger"][:3]]   # the palette's danger red: the hot ball's own colour
+        layers.append({"kind": "sphere", "c": list(hit), "r": span * 0.03, "base": [c * 0.6 for c in hot],
+                       "rim": hot, "emissive": hot, "unbound": True})
+        stage["vessels"] = vessels([(JADE, 0.42, 8, 320, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
+    elif s == "Flatline":
+        # The crystals (the controller lays them inside the rooms first, then in front of panes; flatline_budget's sites
+        # at this rung), and a CORD STRIKE through a pane: a Jade Brittle Star's five cords reach from its ring corners
+        # straight through the loose pane nearest the centre to a Ruby pilot hiding behind it, who takes the hit. A pane
+        # stops rounds, never cords.
+        import flatline_budget as fb
+        rung = fb.RUNGS[INTENSITY - 1]
+        structs, _ = fb.layout(rung)
+        for site in fb.crystal_sites(structs, rung["crystalCount"]):
+            crystal(site, 10.0)
+        pane = min((st for st in structs if st["kind"] == fb.PANE), key=lambda st: float(v_dot(st["c"], st["c"])))
+        pc, pn, pu = [float(x) for x in pane["c"]], [float(x) for x in pane["n"]], [float(x) for x in pane["u"]]
+        jade = v_add(v_add(pc, v_mul(pn, 55)), v_mul(pu, -12))
+        ruby = v_add(v_add(pc, v_mul(pn, -22)), v_mul(pu, 8))
+        d = v_norm(v_sub(ruby, jade))
+        side = v_norm(v_cross([0, 1, 0], d)); up = v_cross(d, side)
+        sig = domain_signal(pal, JADE, 1.4)
+        for k in range(5):
+            a = 2 * math.pi * k / 5
+            root = v_add(jade, v_add(v_mul(side, 6 * math.cos(a)), v_mul(up, 6 * math.sin(a))))
+            tip = v_add(ruby, v_add(v_mul(side, 2.5 * math.cos(a)), v_mul(up, 2.5 * math.sin(a))))
+            n = 14
+            prev = root
+            for j in range(1, n + 1):
+                t = j / n
+                bow = math.sin(math.pi * t) * 7   # a whip's give, bowed outward from the cord's own corner
+                q = v_add(v_add(root, v_mul(v_sub(tip, root), t)),
+                          v_add(v_mul(side, bow * math.cos(a)), v_mul(up, bow * math.sin(a))))
+                seg = v_sub(q, prev)
+                L = math.sqrt(v_dot(seg, seg))
+                sd = v_norm(seg); sx = v_norm(v_cross([0, 1, 0] if abs(sd[1]) < 0.9 else [1, 0, 0], sd))
+                sy = v_cross(sd, sx)
+                layers.append({"kind": "box", "c": v_mul(v_add(prev, q), 0.5), "ax": v_mul(sx, 1.6),
+                               "ay": v_mul(sy, 1.6), "az": v_mul(sd, L / 2), "base": sig, "rim": sig,
+                               "emissive": sig, "edge": 0})
+                prev = q
+        glow(jade, 9, JADE, 1.0, 0.45)
+        glow(ruby, 14, JADE, 1.2, 0.5)
+        glow(ruby, 6, RUBY, 1.0, 0.6)
+    elif s == "Shatterplane":
+        # A SQUARE RING: the crystals float on the plates' axes (shatterplane_budget's sites at this rung), and on the
+        # plate nearest the centre a Jade Brittle Star, lined up on the axis, has thrown its ring square: the blast lies
+        # IN the plate, its five-fold front sweeping out across it - the one act that takes a whole plate.
+        import shatterplane_budget as sb
+        rung = sb.RUNGS[INTENSITY - 1]
+        structs, _ = sb.layout(rung)
+        for site in sb.crystal_sites(structs, rung, rung["crystalCount"]):
+            crystal(site, 10.0)
+        # The plate the camera sees most nearly face-on, among the inner half: the blast must read as lying IN it.
+        az, el = math.radians(cam["azimuth"]), math.radians(cam["elevation"])
+        view = [math.cos(el) * math.sin(az), math.sin(el), math.cos(el) * math.cos(az)]
+        def framing(st):
+            off = v_sub([float(x) for x in st["c"]], centre)
+            across = v_sub(off, v_mul(view, v_dot(off, view)))   # how far off the frame's centre line
+            return abs(v_dot([float(x) for x in st["n"]], view)) - math.sqrt(v_dot(across, across)) / span
+        plate = max(structs, key=framing)
+        front = float(sb.half_depth(rung))
+        pc = [float(x) for x in plate["c"]]
+        pn = [float(x) for x in plate["n"]]
+        face = v_add(pc, v_mul(pn, front))
+        pr = (rung["plateRadius"] + 0.5) * sb.TILE
+        sig = domain_signal(pal, JADE, 1.3)
+        for k, frac in enumerate((0.95, 0.62)):
+            layers.append({"kind": "ring", "c": face, "n": pn, "R": pr * frac, "r": pr * 0.016 * (1.3 - 0.4 * k),
+                           "domain": JADE, "tier": SUPER, "emissive": sig, "unbound": True})
+        glow(face, pr * 0.5, JADE, 0.9, 0.2)
+        pilot = v_add(face, v_mul(pn, 170))
+        glow(pilot, 9, JADE, 1.2, 0.6)
+        streak(v_add(face, v_mul(pn, 80)), pn, 70, JADE)
+    elif s == "Kelpwood":
+        # A LOCK through the kelp: the eraser's thin beam from an Angler onto a rival pilot, and the hunter it sent - a
+        # creature in the hunter's colour - on the rival's hull, biting (a glow in the hunter's colour). The omni
+        # crystals float round the core; a few tamed creatures trail the hunter's pilot.
+        for k in range(3):
+            crystal(v_add(centre, v_mul(rng.unit(), span * 0.12 * rng.u() ** 0.33)), span * 0.013)
+        pilot = v_add(centre, v_mul(v_norm([0.7, 0.2, -0.65]), span * 0.45))
+        rival = v_add(centre, v_mul(v_norm([-0.45, -0.1, 0.3]), span * 0.28))
+        beam = v_sub(rival, pilot)
+        d = v_norm(beam)
+        side = v_norm(v_cross([0, 1, 0], d)); u = v_cross(d, side)
+        w = span * 0.0025   # the eraser is 1.5 degrees: a thread, not a beam
+        sig = domain_signal(pal, JADE, 1.2)
+        layers.append({"kind": "box", "c": v_mul(v_add(pilot, rival), 0.5), "ax": v_mul(side, w), "ay": v_mul(u, w),
+                       "az": v_mul(d, math.sqrt(v_dot(beam, beam)) / 2),
+                       "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+        hunter = v_add(rival, v_mul(v_norm(v_add(v_mul(d, -1.0), side)), span * 0.03))
+        glow(hunter, span * 0.018, JADE, 1.3, 0.7)
+        glow(rival, span * 0.07, JADE, 0.9, 0.25)
+        for k in range(5):
+            glow(v_add(pilot, v_add(v_mul(d, -span * (0.05 + 0.02 * k)), v_mul(rng.unit(), span * 0.02))),
+                 span * 0.008, JADE, 1.0, 0.6)
+        stage["vessels"] = vessels([(JADE, 0.45, 8, 320, 25), (RUBY, 0.28, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
+    elif s == "Glasshouse":
+        # The act that scores: the Jade Angler holding its lure over its own bed (the esca's light, a glow in its
+        # colour, growing every plant in reach), while a Ruby school - thrown at a painted Jade plant - streaks in from
+        # the side. The rung's grazers (tadpoles, wild, no colour of their own) drift among the beds.
+        gh = stage.pop("glasshouse", None)
+        if gh:
+            beds = {int(k): v for k, v in gh["beds"].items()}
+            jade = beds[JADE]
+            glow(v_add(jade, v_mul(v_norm(jade), R * 0.12)), R * 0.03, JADE, 1.4, 0.4)
+            glow(jade, R * 0.17, JADE, 0.5, 0.08)
+            src = v_add(beds[RUBY], v_mul(v_sub(jade, beds[RUBY]), 0.45))
+            for k in range(6):
+                p = v_add(v_add(src, v_mul(v_sub(jade, src), 0.15 * k)), v_mul(rng.unit(), R * 0.015))
+                glow(p, R * 0.009, RUBY, 1.2, 0.7)
+            rows = []
+            keys = list(beds.values())
+            for k in range(gh["herd"]):
+                base = keys[k % len(keys)]
+                p = v_add(base, v_mul(rng.unit(), R * 0.16))
+                creature(p, rng.unit(), R * 0.03, BLUE, rows)
+            layers.append({"kind": "prisms", "rows": rows})
+            stage["vessels"] = vessels([(JADE, 0.62, 6, 330, 10), (RUBY, 0.6, -8, 160, 25), (GOLD, 0.7, 12, 250, 25)])
+    elif s == "Corona":
+        # A KABLOOM at the heart: a Manta touched an omni crystal, and the bloom round it catches a rival pilot (a
+        # glow in the planter's colour on the rival). Out on the shells, two bombed rivals carry fuse markers (small
+        # rings) - the next blooms. The heart's other crystal still floats beside it.
+        crystal(v_add(centre, v_mul(v_norm([0.4, 0.2, -0.3]), span * 0.03)), span * 0.014)
+        glow(centre, span * 0.11, JADE, 1.2, 0.4)
+        layers.append({"kind": "ring", "c": centre, "n": v_norm([0.3, 0.9, 0.2]), "R": span * 0.12, "r": span * 0.005,
+                       "domain": JADE, "tier": SUPER, "emissive": domain_signal(pal, JADE, 1.0), "unbound": True})
+        rival = v_add(centre, v_mul(v_norm([-0.6, 0.1, 0.5]), span * 0.07))
+        glow(rival, span * 0.03, JADE, 1.4, 0.6)
+        for d in ([0.7, -0.2, 0.6], [-0.5, 0.5, -0.7]):
+            p = v_add(centre, v_mul(v_norm(d), span * 0.33))
+            layers.append({"kind": "ring", "c": p, "n": rng.unit(), "R": span * 0.008, "r": span * 0.0015,
+                           "domain": JADE, "tier": SUPER, "emissive": domain_signal(pal, JADE, 0.9), "unbound": True})
+        stage["vessels"] = vessels([(JADE, 0.12, 4, 300, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.62, 10, 230, 25)])
+    elif s == "Harvest":
+        # A HARVEST: a Jade Thresher's chain bowed round the rim of the nearest sheaf it scores on (the mow, every cut a
+        # charge), its red-hot ball in the core and the charged blast going off there (THRESHER.md section 2a). The
+        # omni crystals float in the field's clear centre.
+        import harvest_budget as hb
+        rung = hb.RUNGS[INTENSITY - 1]
+        sheaves = hb.build(rung)["sheaves"]
+        for k in range(3):
+            crystal(v_add(centre, v_mul(rng.unit(), rung["centreClearingRadius"] * 0.6 * rng.u() ** 0.33)), 12.0)
+        # The nearest sheaf a Jade pilot SCORES on: not its own colour (an own-colour sheaf is worth nothing).
+        target = min((sh for sh in sheaves if sh["domain"] != "jade"), key=lambda sh: v_dot(sh["c"], sh["c"]))
+        core = v_add(centre, list(target["c"]))
+        reach = hb.reach(rung)
+        out = v_norm(v_sub(core, centre))
+        side = v_norm(v_cross([0, 1, 0], out)); up = v_cross(out, side)
+        pilot = v_add(core, v_add(v_mul(out, reach * 1.25), v_mul(side, reach * 0.9)))
+        links = 20
+        prev = pilot
+        sig = domain_signal(pal, JADE, 1.3)
+        for k in range(1, links + 1):
+            t = k / links
+            # The chain sweeps round the rim (a quarter turn just outside the stalk tips), then whips into the core.
+            ang = 0.5 * math.pi * min(1.0, t / 0.75)
+            rim = v_add(core, v_mul(v_add(v_mul(out, math.cos(ang)), v_mul(side, math.sin(ang))), reach * 1.1))
+            q = rim if t <= 0.75 else v_add(rim, v_mul(v_sub(core, rim), (t - 0.75) / 0.25))
+            d = v_norm(v_sub(q, prev))
+            sx = v_norm(v_cross([0, 1, 0] if abs(d[1]) < 0.9 else [1, 0, 0], d)); sy = v_cross(d, sx)
+            w = 1.6
+            layers.append({"kind": "box", "c": v_mul(v_add(prev, q), 0.5), "ax": v_mul(sx, w), "ay": v_mul(sy, w),
+                           "az": v_mul(d, math.sqrt(v_dot(v_sub(q, prev), v_sub(q, prev))) * 0.42),
+                           "base": sig, "rim": sig, "emissive": sig, "edge": 0})
+            prev = q
+        hot = [c * 1.6 for c in pal["danger"][:3]]   # the palette's danger red: the hot ball's own colour
+        layers.append({"kind": "sphere", "c": list(core), "r": 9.0, "base": [c * 0.6 for c in hot],
+                       "rim": hot, "emissive": hot, "unbound": True})
+        glow(core, rung["coreRadius"] * 1.7, JADE, 1.0, 0.3)
+        stage["vessels"] = vessels([(JADE, 0.42, 8, 320, 25), (RUBY, 0.3, -6, 140, 30), (GOLD, 0.8, 10, 230, 25)])
     elif s == "Sirocco":
         # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
         a = jitter(0.6)

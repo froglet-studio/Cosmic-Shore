@@ -1,6 +1,8 @@
 # Voyages: squads on the HyperSea
 
-**Status: DESIGN DRAFT** (Garrett, 2026-10-28; first draft written the same day). Nothing in this document is built.
+**Status: DESIGN, phase V1 built** (Garrett, 2026-10-28; first draft written the same day). V1 shipped as the slice
+([`SLICE.md`](SLICE.md)) and was deepened on 2026-11-07 ([`DEPTH.md`](DEPTH.md): the living galaxy, rival crews on the
+device, every faction type's work, sagas and relics, standing and notoriety, uncharted places). V2-V4 are not built.
 It is the plan that `Docs/Pilots/ARTIFACTS.md` §8.5 asks for before vaults, hunting and extraction can be built.
 Every default marked **(default)** is a guess waiting for Garrett's answer; §11 lists them.
 Sources beyond the repo, and what in them is out of date: [`SOURCES.md`](SOURCES.md). In short: the FigJam board *How players get, do, and learn things*, the Figma file *Cosmic Shore for Alpha* (page *UI for vLater*: the old Port faction boards), the Notion design docs *Mission Overview*, *Initial Onboarding*, *Ark Design Document* and
@@ -308,6 +310,11 @@ prey on them:
   as co-op where their jobs allow it, and a faction's own rival factions (a pirate faction and the bounty hunters
   hunting it) are what the hostile pairings feed on.
 
+**Built 2026-11-07** ([`Docs/Pilots/INVENTORY.md`](../Pilots/INVENTORY.md) §3): the person record (`PilotRecord`: name,
+human plus two animals, faction, homeworld, backstory, chronicle), founding factions per type with ids, captain and
+allies (`AccountInventory`), and the job board reading the player's real crew. Not built: the backend faction roster
+(optimal size, spawning), emissaries, ranks, and any UI to promote a captain.
+
 What the old Port boards in Figma (*Cosmic Shore for Alpha*, page *UI for vLater*, 2024) already drew for factions,
 for reference: a **primary** faction and **ally** faction slots (buy a slot, replace a faction, "You will always be
 able to rejoin this faction later"); faction **recruiters** who notice you when you upgrade classes and set high
@@ -557,8 +564,8 @@ and the in-flight branches (`CLAUDE.md` § Team).
 
 Each has a default the draft is written to; a different answer changes the section named.
 
-1. **People per squad.** Is a squad 1 to 3 people with AI in the other seats (default), or always one person flying
-   three vessels? (§2, §6.7)
+1. **Settled 2026-11-12 (Garrett):** "squads are always 3 vessels. vessels have a seat count which affects the number
+   of pilots (ai or player controlled)." A squad's pilots, human or AI, are the sum of its three vessels' seats. (§2, §6.7)
 2. **Settled 2026-10-28 (Garrett):** at least 6 people for squad vs squad and 9 for three squads, more with
    multi-seat vessels; peer to peer limits it for now and the limit gets pushed (§6.7, §7.5). Still open: a squad
    with more than 4 people (multi-seat vessels) needs Yash's yes on the party rule.

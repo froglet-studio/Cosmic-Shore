@@ -199,7 +199,7 @@ therefore sit.
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 | 5 | 0 | 24 @ 190 u | 1 | 349 u | ~32 s | 4,361 | 1.26 M | 11 | 1.89° | 11.31 u | **100.0 %** |
 | 2 | 6 | 7 | 17 @ 180 u | 2 | 698 u | ~63 s | 4,820 | 1.39 M | 18 | 1.90° | 11.35 u | 58.3 % |
-| 3 | 7 | 11 | 13 @ 165 u | 4 | 1,396 u | ~127 s | 5,083 | 1.46 M | 25 | 1.90° | 11.37 u | 3.2 % |
+| 3 | 7 | 11 | 13 @ 165 u | 3 | 1,047 u | ~95 s | 5,083 | 1.46 M | 25 | 1.90° | 11.37 u | 25.3 % |
 | 4 | 9 | 22 | 2 @ 150 u | 6 | 2,095 u | ~190 s | 6,699 | 1.93 M | 32 | 1.90° | 11.87 u | 0.0 % |
 
 Prism counts sit inside the shipped band (Hijack 2,772–9,930; Cleave 14,277–16,423).
@@ -1056,7 +1056,7 @@ produces it is one riding the outward phase, corkscrewing 43.5° off the spine.
 
 ### 15.4 What it cost, stated plainly
 
-**The race gets shorter as it gets easier: ~32 s / ~63 s / ~127 s / ~190 s of riding.** Intensity 1
+**The race gets shorter as it gets easier: ~32 s / ~63 s / ~95 s / ~190 s of riding** (intensity 3 was 4 laps and ~127 s until §17). Intensity 1
 is one lap of the cable. That falls straight out of the promise — 24 rings must close on the finish
 collar, so the gap is `laps · L / 23`, and one lap is the tightest gap the ring count allows.
 
@@ -1138,3 +1138,31 @@ Making the arena itself read the authored count was the other option and was not
 `SpawnableSkein.cs` is compiled and source-hashed by the card-art harness
 (`Tools/Build/render_card_backgrounds.py` `SOURCES`), so touching it re-stales every committed
 card background and needs a harness stub for the SO, for a value nobody has asked to change.
+
+## 17. Intensity 3 at three laps (2026-11-07)
+
+The scorecard (`Docs/AI_SYSTEM/TIME_GAME_FUN_SCORES.md`) put Skein's floor on its ladder: intensity 3 doubled
+intensity 2's ride (63 s to 127 s) and showed the next ring only 3.2 % of the time, so it read as a cliff into
+intensity 4 rather than a step toward it.
+
+Intensity 3 pins every second ring, so its transfer window is `2 x laps x L / 23`. At **3 laps** that is
+2,095 u of spine between pins, the same number intensity 2 (stride 3, 2 laps) and intensity 4 (stride 1, 6 laps)
+already ship, against the 1,650 u a curve change needs. So the change opens no new proof: every pinned rung now
+sits on the one proven pin gap, and only the collars between pins get closer.
+
+| I | laps | ride | next ring on screen |
+|---|---|---|---|
+| 2 | 2 | ~63 s | 58.3 % |
+| 3 (was) | 4 | ~127 s | 3.2 % |
+| 3 (now) | 3 | ~95 s | 25.3 % |
+| 4 | 6 | ~190 s | 0.0 % |
+
+The visibility ladder is now an even descent (100 / 58 / 25 / 0). Prism count, trails and the strand geometry at
+intensity 3 are unchanged (5,083 prisms, 25 trails); only the ring walk moved. Intensity 4 is untouched, as asked
+in §15. `skein_budget.py`: ALL PROOFS PASSED on the shipped seed and 4 swept seeds, negative controls ALL FIRE,
+the C# mirror agrees; `render_card_backgrounds.py --check Skein` OK (the card renders intensity 2).
+
+Not changed, and why: the scorecard's other idea, pinning every third ring at intensity 1, would put pins 1,047 u
+apart, under the 1,650 u transfer, and break intensity 1's no-hunting promise. Intensity 4's 190 s is the shipped
+arena kept on purpose; 5 laps would still clear the transfer (1,745 u against 1,650) if a shorter top rung is ever
+wanted, at 95 u of margin.

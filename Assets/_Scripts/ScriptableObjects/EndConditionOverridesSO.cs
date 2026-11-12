@@ -96,15 +96,51 @@ namespace CosmicShore.ScriptableObjects
         /// editor match had not reached it by 211 s).</summary>
         public const int DefaultDustupPointTarget = 4;
 
-        /// <summary>Serpent Gulag snipe target used when <see cref="serpentGulagSnipeTarget"/> is 0. One
+        /// <summary>Hood snipe target used when <see cref="serpentHoodSnipeTarget"/> is 0. One
         /// SNIPE - a Sniper Shot that strips a rival pilot (a Debuff-class combat hit) - is one point
-        /// (SerpentGulagScoringRuleSO), summed across the domain's pilots.</summary>
-        public const int DefaultSerpentGulagSnipeTarget = 3;
+        /// (SerpentHoodScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultSerpentHoodSnipeTarget = 3;
+
+        /// <summary>Jackstraw strike target used when <see cref="jackstrawStrikeTarget"/> is 0. One STRIKE - the
+        /// Thresher's ball or chain reaching a rival hull (a Strike-class combat hit) - is one point
+        /// (JackstrawScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultJackstrawStrikeTarget = 3;
+        /// <summary>Flatline point target used when <see cref="flatlinePointTarget"/> is 0 and the rung authors
+        /// nothing. Points are the fleet price (CombatHitDrain.PointsFor): a round on a rival hull is 1, a cord or
+        /// thrown-saber Strike 8, ten points to the petal; the ring blast pays nothing (FlatlineScoringRuleSO),
+        /// summed across the domain's pilots.</summary>
+        public const int DefaultFlatlinePointTarget = 90;
+
+        /// <summary>Kelpwood bite target used when <see cref="kelpwoodBiteTarget"/> is 0. One BITE - a creature an
+        /// Angler locked on a rival reaching its hull (a Strike-class combat hit) - is one point
+        /// (KelpwoodScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultKelpwoodBiteTarget = 12;
+
+        /// <summary>Corona bloom target used when <see cref="coronaBloomTarget"/> is 0. One BLOOM HIT - a rival pilot
+        /// caught in a bloom of a bomb a Manta planted (a Debuff-class combat hit) - is one point
+        /// (CoronaScoringRuleSO), summed across the domain's pilots.</summary>
+        public const int DefaultCoronaBloomTarget = 15;
+
+        /// <summary>Harvest hostile-prism target used when <see cref="harvestPrismTarget"/> is 0. The Thresher's
+        /// sheaves never grow back, so three domains' worth of it must fit in the smallest field (the generator,
+        /// author_harvest_assets.py, asserts it); Wrecking Ball's 650 is the nearest played number.</summary>
+        public const int DefaultHarvestPrismTarget = 750;
+        /// <summary>Shatterplane prism target used when <see cref="shatterplanePrismTarget"/> is 0 and the rung authors
+        /// nothing. Hostile prisms a DOMAIN breaks (the neutral plates), summed across its pilots (ShatterplaneScoringRuleSO,
+        /// Rampage's rule). An ESTIMATE pending a timed match: about 30% of a rung's breakable plate mass
+        /// (shatterplane_budget.py).</summary>
+        public const int DefaultShatterplanePrismTarget = 1600;
 
         /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
         /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
         /// "most standing at the whistle" is the only honest end condition.</summary>
         public const int DefaultTapestryRoundSeconds = 90;
+
+        /// <summary>Glasshouse round length in seconds, used when <see cref="glasshouseRoundSeconds"/> is 0. Glasshouse
+        /// is TIMED, Tapestry's reason: its score (trail + garden standing in a domain's colour) is a live stock that
+        /// grazers and rival schools eat, so "most standing at the whistle" is the only honest end condition. 90 s is
+        /// the arcade's target length (Docs/ARCADE_MATCH_LENGTH.md).</summary>
+        public const int DefaultGlasshouseRoundSeconds = 90;
 
         /// <summary>Sirocco hostile-prism target used when <see cref="siroccoPrismTarget"/> is 0.
         /// Far under Rampage's 2000: the dust takes one prism in three it touches, where a Dolphin
@@ -257,6 +293,28 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>LanternRun RACE length used when <see cref="lanternRunGateTarget"/> is 0 - gate threadings, i.e. laps x rings. 16 = two laps of the eight-gate circuit.
         /// Read by <c>LanternRunController</c> to size the course and, through it, by the turn monitor.</summary>
         public const int DefaultLanternRunGateTarget = 16;
+
+        /// <summary>Thornline RACE length used when <see cref="thornlineGateTarget"/> is 0 - gate threadings - an OPEN chain
+        /// of thorns flown once, a ring at the middle of every leg. 16 ~ a 50-65 s run of the Shrike's one-second slings and
+        /// their reloads. The course tests prove the chain at 16 (THORNLINE.md).
+        /// Read by <c>ThornlineCourseSource</c> to size the course and, through it, by the turn monitor.</summary>
+        public const int DefaultThornlineGateTarget = 16;
+
+        /// <summary>Decoy Run RACE length used when <see cref="decoyRunGateTarget"/> is 0 - rings threaded in order,
+        /// flown once. The course tests prove the course at 12 (DECOYRUN.md).</summary>
+        public const int DefaultDecoyRunGateTarget = 12;
+
+        /// <summary>Breach RACE length used when <see cref="breachGateTarget"/> is 0 - rings threaded in order,
+        /// flown once. The course tests prove the course at 16 (BREACH.md).</summary>
+        public const int DefaultBreachGateTarget = 16;
+
+        /// <summary>Slip Line RACE length used when <see cref="slipLineGateTarget"/> is 0 - rings threaded in order,
+        /// flown once. The course tests prove the course at 16 (SLIPLINE.md).</summary>
+        public const int DefaultSlipLineGateTarget = 16;
+
+        /// <summary>Perch Run RACE length used when <see cref="perchRunGateTarget"/> is 0 - rings threaded in order,
+        /// flown once. The course tests prove the course at 16 (PERCHRUN.md).</summary>
+        public const int DefaultPerchRunGateTarget = 16;
 
         /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
@@ -432,6 +490,22 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Lantern Run race length in gate threadings (laps x rings). 0 = use the default (16).")]
         [Min(0)] public int lanternRunGateTarget = 16;
 
+        [Tooltip("Thornline race length in rings (an open chain of thorns, one ring a leg). 0 = use the default (16). " +
+                 "The course is proven at 16; another count re-spaces the snipes.")]
+        [Min(0)] public int thornlineGateTarget = 16;
+
+        [Tooltip("Decoy Run race length in rings (flown once). 0 = use the default (12). The course is proven at 12.")]
+        [Min(0)] public int decoyRunGateTarget = 12;
+
+        [Tooltip("Breach race length in rings (flown once). 0 = use the default (16). The course is proven at 16.")]
+        [Min(0)] public int breachGateTarget = 16;
+
+        [Tooltip("Slip Line race length in rings (flown once). 0 = use the default (16). The course is proven at 16.")]
+        [Min(0)] public int slipLineGateTarget = 16;
+
+        [Tooltip("Perch Run race length in rings (flown once). 0 = use the default (16). The course is proven at 16.")]
+        [Min(0)] public int perchRunGateTarget = 16;
+
 
         [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "arena lays eight rings a lap with the rails threaded through them, so this " +
@@ -461,13 +535,54 @@ namespace CosmicShore.ScriptableObjects
                  "domain's pilots. 0 = default (4).")]
         [Min(0)] public int dustupPointTarget = 4;
 
-        [Tooltip("Serpent Gulag: SNIPES a DOMAIN needs to win (race to N). One Sniper Shot that " +
+        [Tooltip("Hood: SNIPES a DOMAIN needs to win (race to N). One Sniper Shot that " +
                  "strips a rival pilot is one snipe, summed across the domain's pilots. 0 = default (3).")]
-        [Min(0)] public int serpentGulagSnipeTarget = 3;
+        [FormerlySerializedAs("serpentGulagSnipeTarget")]
+        [Min(0)] public int serpentHoodSnipeTarget = 3;
+
+        [Tooltip("Jackstraw: STRIKES a DOMAIN needs to win (race to N). The Thresher's ball or chain reaching " +
+                 "a rival hull is one strike, summed across the domain's pilots. 0 = default (3).")]
+        [Min(0)] public int jackstrawStrikeTarget = 3;
+        [Tooltip("Flatline: POINTS a DOMAIN needs to win (race to N), the Brittle Star's charge game. A round " +
+                 "on a rival hull is 1 point, a cord or thrown-saber Strike 8 (the fleet price, ten points to " +
+                 "the petal); the ring blast scores nothing. 0 = default (90). The per-intensity list below " +
+                 "overrides it.")]
+        [Min(0)] public int flatlinePointTarget = 90;
+
+        [Tooltip("Flatline: per-INTENSITY override of the target above - element 0 is intensity 1. Empty, a 0 " +
+                 "entry, or an intensity past the end falls back to the scalar. 90 at every rung (Shombith, " +
+                 "2026-11-10); a rung can be re-tuned on its own once timed matches say so.")]
+        public List<int> flatlinePointTargetByIntensity = new() { 90, 90, 90, 90 };
+
+        [Tooltip("Kelpwood: BITES a DOMAIN needs to win (race to N). A creature an Angler locked on a rival biting " +
+                 "its hull is one bite, summed across the domain's pilots. 0 = default (12).")]
+        [Min(0)] public int kelpwoodBiteTarget = 12;
+
+        [Tooltip("Corona: BLOOM HITS a DOMAIN needs to win (race to N). A rival pilot caught in a bloom of a bomb a " +
+                 "Manta planted is one bloom hit, summed across the domain's pilots. 0 = default (15).")]
+        [Min(0)] public int coronaBloomTarget = 15;
+
+        [Tooltip("Harvest: hostile prisms (other domains' sheaves and neutral ones, rival trails, fauna) a DOMAIN " +
+                 "must destroy between them to win (race to N) - with the Thresher's chain, ball or blast; your own " +
+                 "colour never counts. 0 = default (750).")]
+        [Min(0)] public int harvestPrismTarget = 750;
+        [Tooltip("Shatterplane: hostile PRISMS a DOMAIN must break to win (race to N), the Brittle Star's space game. The " +
+                 "plates are neutral, so every plate tile a round, a cord or a ring breaks counts; ribs and screens never " +
+                 "break. 0 = default (1600).")]
+        [Min(0)] public int shatterplanePrismTarget = 1600;
+
+        [Tooltip("Shatterplane: per-INTENSITY override of the target above - element 0 is intensity 1. Empty, a 0 " +
+                 "entry or a missing rung falls back to the scalar.")]
+        public List<int> shatterplanePrismTargetByIntensity = new() { 1600, 1600, 2000, 1000 };
 
         [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
                  "prism volume STANDING when the clock runs out wins. 0 = default (90).")]
         [Min(0)] public int tapestryRoundSeconds = 90;
+
+        [Tooltip("Glasshouse: round length in SECONDS. The mode is timed - the domain with the most mass standing in " +
+                 "its own colour (its Anglers' trail plus the garden grown from their seeds) when the clock runs out " +
+                 "wins. 0 = default (90).")]
+        [Min(0)] public int glasshouseRoundSeconds = 90;
 
         [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
                  "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
@@ -528,14 +643,29 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int serpentTimeGateTargetBuild = 16;
         [Min(0)] public int brittleStarTimeGateTargetBuild = 16;
         [Min(0)] public int lanternRunGateTargetBuild = 16;
+        [Min(0)] public int thornlineGateTargetBuild = 16;
+        [Min(0)] public int decoyRunGateTargetBuild = 12;
+        [Min(0)] public int breachGateTargetBuild = 16;
+        [Min(0)] public int slipLineGateTargetBuild = 16;
+        [Min(0)] public int perchRunGateTargetBuild = 16;
         [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 500;
         [Min(0)] public int tollwayTollTargetBuild = 3;
         [Min(0)] public int wreckingBallPrismTargetBuild = 650;
         [Min(0)] public int undertowPointTargetBuild = 12;
         [Min(0)] public int dustupPointTargetBuild = 4;
-        [Min(0)] public int serpentGulagSnipeTargetBuild = 3;
+        [FormerlySerializedAs("serpentGulagSnipeTargetBuild")]
+        [Min(0)] public int serpentHoodSnipeTargetBuild = 3;
+        [Min(0)] public int jackstrawStrikeTargetBuild = 3;
+        [Min(0)] public int flatlinePointTargetBuild = 90;
+        [HideInInspector] public List<int> flatlinePointTargetByIntensityBuild = new() { 90, 90, 90, 90 };
+        [Min(0)] public int kelpwoodBiteTargetBuild = 12;
+        [Min(0)] public int coronaBloomTargetBuild = 15;
+        [Min(0)] public int harvestPrismTargetBuild = 750;
+        [Min(0)] public int shatterplanePrismTargetBuild = 1600;
+        [HideInInspector] public List<int> shatterplanePrismTargetByIntensityBuild = new() { 1600, 1600, 2000, 1000 };
         [Min(0)] public int tapestryRoundSecondsBuild = 90;
+        [Min(0)] public int glasshouseRoundSecondsBuild = 90;
         [Min(0)] public int siroccoPrismTargetBuild = 400;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
         [Range(0, 100)] public int tandavaBreakPercentBuild = 35;
@@ -833,6 +963,31 @@ namespace CosmicShore.ScriptableObjects
         public int GetLanternRunGateTarget() =>
             lanternRunGateTarget > 0 ? lanternRunGateTarget : DefaultLanternRunGateTarget;
 
+        /// <summary>Thornline race length (rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultThornlineGateTarget"/>.</summary>
+        public int GetThornlineGateTarget() =>
+            thornlineGateTarget > 0 ? thornlineGateTarget : DefaultThornlineGateTarget;
+
+        /// <summary>Decoy Run race length (rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultDecoyRunGateTarget"/>.</summary>
+        public int GetDecoyRunGateTarget() =>
+            decoyRunGateTarget > 0 ? decoyRunGateTarget : DefaultDecoyRunGateTarget;
+
+        /// <summary>Breach race length (rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultBreachGateTarget"/>.</summary>
+        public int GetBreachGateTarget() =>
+            breachGateTarget > 0 ? breachGateTarget : DefaultBreachGateTarget;
+
+        /// <summary>Slip Line race length (rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultSlipLineGateTarget"/>.</summary>
+        public int GetSlipLineGateTarget() =>
+            slipLineGateTarget > 0 ? slipLineGateTarget : DefaultSlipLineGateTarget;
+
+        /// <summary>Perch Run race length (rings): the authored value when above 0, otherwise
+        /// <see cref="DefaultPerchRunGateTarget"/>.</summary>
+        public int GetPerchRunGateTarget() =>
+            perchRunGateTarget > 0 ? perchRunGateTarget : DefaultPerchRunGateTarget;
+
         /// <summary>
         /// Burrow Run race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultBurrowRunGateTarget"/>. Read by
@@ -890,12 +1045,82 @@ namespace CosmicShore.ScriptableObjects
             dustupPointTarget > 0 ? dustupPointTarget : DefaultDustupPointTarget;
 
         /// <summary>
-        /// Serpent Gulag snipe target ("first domain to N snipes"): the configured value when &gt; 0,
-        /// otherwise <see cref="DefaultSerpentGulagSnipeTarget"/>. Compared against a DOMAIN's summed
+        /// Hood snipe target ("first domain to N snipes"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultSerpentHoodSnipeTarget"/>. Compared against a DOMAIN's summed
         /// CombatPoints.
         /// </summary>
-        public int GetSerpentGulagSnipeTarget() =>
-            serpentGulagSnipeTarget > 0 ? serpentGulagSnipeTarget : DefaultSerpentGulagSnipeTarget;
+        public int GetSerpentHoodSnipeTarget() =>
+            serpentHoodSnipeTarget > 0 ? serpentHoodSnipeTarget : DefaultSerpentHoodSnipeTarget;
+
+        /// <summary>
+        /// Jackstraw strike target ("first domain to N strikes"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultJackstrawStrikeTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetJackstrawStrikeTarget() =>
+            jackstrawStrikeTarget > 0 ? jackstrawStrikeTarget : DefaultJackstrawStrikeTarget;
+
+        /// <summary>
+        /// Flatline point target ("first domain to N points"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultFlatlinePointTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetFlatlinePointTarget() =>
+            flatlinePointTarget > 0 ? flatlinePointTarget : DefaultFlatlinePointTarget;
+
+        /// <summary>
+        /// Flatline target for a given INTENSITY (1-based), falling back to <see cref="GetFlatlinePointTarget()"/>
+        /// when that rung authors nothing - Cleave's fallback chain (<see cref="GetCleavePrismTarget(int)"/>), and
+        /// resolved on the server for the same reason (<c>FlatlinePointTurnMonitor</c> replicates the number).
+        /// </summary>
+        public int GetFlatlinePointTarget(int intensity)
+        {
+            if (flatlinePointTargetByIntensity == null || flatlinePointTargetByIntensity.Count == 0)
+                return GetFlatlinePointTarget();
+
+            int i = Mathf.Clamp(intensity - 1, 0, flatlinePointTargetByIntensity.Count - 1);
+            int v = flatlinePointTargetByIntensity[i];
+            return v > 0 ? v : GetFlatlinePointTarget();
+        }
+
+        /// <summary>
+        /// Kelpwood bite target ("first domain to N bites"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultKelpwoodBiteTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetKelpwoodBiteTarget() =>
+            kelpwoodBiteTarget > 0 ? kelpwoodBiteTarget : DefaultKelpwoodBiteTarget;
+
+        /// <summary>
+        /// Corona bloom target ("first domain to N bloom hits"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultCoronaBloomTarget"/>. Compared against a DOMAIN's summed CombatPoints.
+        /// </summary>
+        public int GetCoronaBloomTarget() =>
+            coronaBloomTarget > 0 ? coronaBloomTarget : DefaultCoronaBloomTarget;
+
+        /// <summary>
+        /// Harvest prism target ("first domain to N hostile prisms"): the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultHarvestPrismTarget"/>. Compared against a DOMAIN's summed HostilePrismsDestroyed.
+        /// </summary>
+        public int GetHarvestPrismTarget() =>
+            harvestPrismTarget > 0 ? harvestPrismTarget : DefaultHarvestPrismTarget;
+        /// Shatterplane prism target ("first domain to N hostile prisms broken"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultShatterplanePrismTarget"/>. Compared against a DOMAIN's summed
+        /// HostilePrismsDestroyed.
+        /// </summary>
+        public int GetShatterplanePrismTarget() =>
+            shatterplanePrismTarget > 0 ? shatterplanePrismTarget : DefaultShatterplanePrismTarget;
+
+        /// <summary>
+        /// Shatterplane target for a given INTENSITY (1-based), falling back to <see cref="GetShatterplanePrismTarget()"/>
+        /// for an empty list, a 0 entry or a missing rung. Resolved on the server (<c>ShatterplanePrismTurnMonitor</c>
+        /// replicates the number), Cleave's rule.
+        /// </summary>
+        public int GetShatterplanePrismTarget(int intensity)
+        {
+            if (shatterplanePrismTargetByIntensity == null || shatterplanePrismTargetByIntensity.Count == 0)
+                return GetShatterplanePrismTarget();
+            int i = Mathf.Clamp(intensity - 1, 0, shatterplanePrismTargetByIntensity.Count - 1);
+            int v = shatterplanePrismTargetByIntensity[i];
+            return v > 0 ? v : GetShatterplanePrismTarget();
+        }
 
         /// <summary>
         /// Tapestry round length in seconds: the configured value when &gt; 0, otherwise
@@ -904,6 +1129,13 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetTapestryRoundSeconds() =>
             tapestryRoundSeconds > 0 ? tapestryRoundSeconds : DefaultTapestryRoundSeconds;
+
+        /// <summary>
+        /// Glasshouse round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultGlasshouseRoundSeconds"/>. Read by GlasshouseTimeTurnMonitor at StartMonitor on every peer.
+        /// </summary>
+        public int GetGlasshouseRoundSeconds() =>
+            glasshouseRoundSeconds > 0 ? glasshouseRoundSeconds : DefaultGlasshouseRoundSeconds;
 
         /// <summary>
         /// Sirocco prism target ("race to N" hostile prisms destroyed): the configured value when
@@ -992,6 +1224,11 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.SerpentTime               => GetSerpentTimeGateTarget(),
                 GameModes.BrittleStarTime           => GetBrittleStarTimeGateTarget(),
                 GameModes.LanternRun              => GetLanternRunGateTarget(),
+                GameModes.Thornline                 => GetThornlineGateTarget(),
+                GameModes.DecoyRun                    => GetDecoyRunGateTarget(),
+                GameModes.Breach                      => GetBreachGateTarget(),
+                GameModes.SlipLine                    => GetSlipLineGateTarget(),
+                GameModes.PerchRun                    => GetPerchRunGateTarget(),
                 // GameModes.Waystation has no row: its finish line is the rings the course lays (towers vary with the
                 // gaps), auto-calculated from the track like a SkimRace with a 0 count.
                 GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
@@ -1000,10 +1237,19 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
                 GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
                 GameModes.Dustup                    => GetDustupPointTarget(),
-                GameModes.SerpentGulag              => GetSerpentGulagSnipeTarget(),
+                GameModes.SerpentHood              => GetSerpentHoodSnipeTarget(),
+                GameModes.Jackstraw                 => GetJackstrawStrikeTarget(),
+                // Scalar only, as for Cleave: the real answer is per-intensity (GetFlatlinePointTarget(int)).
+                GameModes.Flatline                  => GetFlatlinePointTarget(),
+                GameModes.Kelpwood                  => GetKelpwoodBiteTarget(),
+                GameModes.Corona                    => GetCoronaBloomTarget(),
+                GameModes.Harvest                   => GetHarvestPrismTarget(),
+                // Scalar only, as for Cleave and Flatline: the real answer is per-intensity (GetShatterplanePrismTarget(int)).
+                GameModes.Shatterplane              => GetShatterplanePrismTarget(),
                 GameModes.Sirocco                   => GetSiroccoPrismTarget(),
                 // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
-                // deliberately absent here and reads as "no target", like Bloomrush.
+                // deliberately absent here and reads as "no target", like Bloomrush. Glasshouse
+                // (glasshouseRoundSeconds) is timed for the same reason and is absent too.
                 // Per PILOT, not a total - the race target scales with team size and is only known at
                 // runtime, so the editor's authored-target readout shows the rate.
                 GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
@@ -1065,14 +1311,28 @@ namespace CosmicShore.ScriptableObjects
             serpentTimeGateTarget == serpentTimeGateTargetBuild &&
             brittleStarTimeGateTarget == brittleStarTimeGateTargetBuild &&
             lanternRunGateTarget == lanternRunGateTargetBuild &&
+            thornlineGateTarget == thornlineGateTargetBuild &&
+            decoyRunGateTarget == decoyRunGateTargetBuild &&
+            breachGateTarget == breachGateTargetBuild &&
+            slipLineGateTarget == slipLineGateTargetBuild &&
+            perchRunGateTarget == perchRunGateTargetBuild &&
             regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
             wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
             undertowPointTarget == undertowPointTargetBuild &&
             dustupPointTarget == dustupPointTargetBuild &&
-            serpentGulagSnipeTarget == serpentGulagSnipeTargetBuild &&
+            serpentHoodSnipeTarget == serpentHoodSnipeTargetBuild &&
+            jackstrawStrikeTarget == jackstrawStrikeTargetBuild &&
+            flatlinePointTarget == flatlinePointTargetBuild &&
+            SameInts(flatlinePointTargetByIntensity, flatlinePointTargetByIntensityBuild) &&
+            kelpwoodBiteTarget == kelpwoodBiteTargetBuild &&
+            coronaBloomTarget == coronaBloomTargetBuild &&
+            harvestPrismTarget == harvestPrismTargetBuild &&
+            shatterplanePrismTarget == shatterplanePrismTargetBuild &&
+            SameInts(shatterplanePrismTargetByIntensity, shatterplanePrismTargetByIntensityBuild) &&
             tapestryRoundSeconds == tapestryRoundSecondsBuild &&
+            glasshouseRoundSeconds == glasshouseRoundSecondsBuild &&
             siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild &&
             tandavaBreakPercent == tandavaBreakPercentBuild &&
@@ -1114,14 +1374,28 @@ namespace CosmicShore.ScriptableObjects
             serpentTimeGateTarget = serpentTimeGateTargetBuild;
             brittleStarTimeGateTarget = brittleStarTimeGateTargetBuild;
             lanternRunGateTarget = lanternRunGateTargetBuild;
+            thornlineGateTarget = thornlineGateTargetBuild;
+            decoyRunGateTarget = decoyRunGateTargetBuild;
+            breachGateTarget = breachGateTargetBuild;
+            slipLineGateTarget = slipLineGateTargetBuild;
+            perchRunGateTarget = perchRunGateTargetBuild;
             regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
             wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
             undertowPointTarget = undertowPointTargetBuild;
             dustupPointTarget = dustupPointTargetBuild;
-            serpentGulagSnipeTarget = serpentGulagSnipeTargetBuild;
+            serpentHoodSnipeTarget = serpentHoodSnipeTargetBuild;
+            jackstrawStrikeTarget = jackstrawStrikeTargetBuild;
+            flatlinePointTarget = flatlinePointTargetBuild;
+            flatlinePointTargetByIntensity = CopyInts(flatlinePointTargetByIntensityBuild);
+            kelpwoodBiteTarget = kelpwoodBiteTargetBuild;
+            coronaBloomTarget = coronaBloomTargetBuild;
+            harvestPrismTarget = harvestPrismTargetBuild;
+            shatterplanePrismTarget = shatterplanePrismTargetBuild;
+            shatterplanePrismTargetByIntensity = CopyInts(shatterplanePrismTargetByIntensityBuild);
             tapestryRoundSeconds = tapestryRoundSecondsBuild;
+            glasshouseRoundSeconds = glasshouseRoundSecondsBuild;
             siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
             tandavaBreakPercent = tandavaBreakPercentBuild;
@@ -1164,14 +1438,28 @@ namespace CosmicShore.ScriptableObjects
             serpentTimeGateTargetBuild = serpentTimeGateTarget;
             brittleStarTimeGateTargetBuild = brittleStarTimeGateTarget;
             lanternRunGateTargetBuild = lanternRunGateTarget;
+            thornlineGateTargetBuild = thornlineGateTarget;
+            decoyRunGateTargetBuild = decoyRunGateTarget;
+            breachGateTargetBuild = breachGateTarget;
+            slipLineGateTargetBuild = slipLineGateTarget;
+            perchRunGateTargetBuild = perchRunGateTarget;
             regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
             wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
             undertowPointTargetBuild = undertowPointTarget;
             dustupPointTargetBuild = dustupPointTarget;
-            serpentGulagSnipeTargetBuild = serpentGulagSnipeTarget;
+            serpentHoodSnipeTargetBuild = serpentHoodSnipeTarget;
+            jackstrawStrikeTargetBuild = jackstrawStrikeTarget;
+            flatlinePointTargetBuild = flatlinePointTarget;
+            flatlinePointTargetByIntensityBuild = CopyInts(flatlinePointTargetByIntensity);
+            kelpwoodBiteTargetBuild = kelpwoodBiteTarget;
+            coronaBloomTargetBuild = coronaBloomTarget;
+            harvestPrismTargetBuild = harvestPrismTarget;
+            shatterplanePrismTargetBuild = shatterplanePrismTarget;
+            shatterplanePrismTargetByIntensityBuild = CopyInts(shatterplanePrismTargetByIntensity);
             tapestryRoundSecondsBuild = tapestryRoundSeconds;
+            glasshouseRoundSecondsBuild = glasshouseRoundSeconds;
             siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
             tandavaBreakPercentBuild = tandavaBreakPercent;

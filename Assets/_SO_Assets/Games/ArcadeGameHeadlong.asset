@@ -15,10 +15,11 @@ MonoBehaviour:
   Mode: 49
   IsMultiplayer: 1
   DisplayName: Headlong
-  Description: Rhinos only, on a circuit that never lets go. Hold full throttle dead
-    straight and the ramp winds you up to fifteen times cruise - but the boost dies the
-    moment you steer, and every corner is cut just wide enough to take flat out if your
-    hands are quiet enough. Laps until somebody's nerve breaks.
+  Description: Rhinos only, a stampede. Hold the throttle dead straight and the ramp winds
+    you up to fifteen times cruise - and hedges of mass stand across every straight, so
+    plough straight through them. Swerve and the boost dies. Thorn hedges burn your Time,
+    so slip their window or take the burn. Top intensity starts at Time 5 - carry the
+    corner and Momentum bulldozes the danger. Five laps. Fastest domain home wins.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: a2509d2cef43488ab5130e6662487520, type: 3}
@@ -34,4 +35,12 @@ MonoBehaviour:
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
+  StartingElements:
+  - Class: 3
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.5
   ComebackRatePerScoreDeficit: 0.21

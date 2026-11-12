@@ -26,6 +26,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _BHWellCount: 0
-    m_Colors: []
+    m_Colors:
+    - _BHCoreColour: {r: 1, g: 0.986695246, b: 0.954687172, a: 1}
+    - _BHRingColour: {r: 1, g: 0.906331753, b: 0.767375658, a: 1}
+    - _BHShellColour: {r: 1, g: 0.982207082, b: 0.935741027, a: 1}
+    - _BHWaveColour: {r: 0.701410718, g: 0.797737733, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocalizedText: 1

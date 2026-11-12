@@ -373,16 +373,81 @@ namespace CosmicShore.Data
         // turn - you paint your path and zoom along it. See _Scripts/Controller/Arcade/LANTERNRUN.md.
         LanternRun = 75,
 
-        // SerpentGulag (77): the Serpent's CHARGE game, a SNIPER DUEL at range in a 3,600 u cell. Pilots spawn far
-        // apart; a field of elemental crystals floats in the middle (Charge shortens the rifle's recovery, so the
-        // field is the risk and the reward); intensities 2-4 add sniper nests and barred cell blocks. A snipe (a
-        // Sniper Shot that strips a rival pilot) is one point; first DOMAIN to the target wins. Beside Garrett's
-        // in-flight SerpentCharge (67, cece/vibrant-archimedes-n3xn3x), which it does not touch. 75 is LanternRun's
-        // and 76 was WaystationPrototype's (folded into Waystation, reserved). See _Scripts/Controller/Arcade/SERPENTGULAG.md.
-        SerpentGulag = 77,
+        // SerpentHood (77): "Hood", the Serpent's CHARGE game, a SNIPER DUEL across a crystal heart in a 3,600 u cell.
+        // Perches (Serpentine's ring shapes bent into hoods, mouths to the heart) stand on a sphere round it; a sniper
+        // sits in a hood's cup and fires out through its exits, and breaking a hood's core brings it down. Charge
+        // shortens the rifle's recovery, so the heart is the risk and the reward. A snipe (a Sniper Shot that strips a
+        // rival pilot) is one point; first DOMAIN to the target wins. Was SerpentGulag (same id, renamed and rebuilt in
+        // place 2026-11-09, Shombith). Beside Garrett's in-flight SerpentCharge (67, cece/vibrant-archimedes-n3xn3x),
+        // which it does not touch. See _Scripts/Controller/Arcade/SERPENTHOOD.md.
+        SerpentHood = 77,
+
+        // Thornline (79): the Shrike's TIME race - a chain of THORNS (one big block each) with a ring at the middle of
+        // every leg. The Shrike cruises at 18 u/s, so the race is its Void Sling: dock, aim at the next thorn, sling,
+        // reload; I2 adds plain thorns and rim-line Time crystals, I3 snipes through two rings, I4 the smallest thorns.
+        // 78 was SpeedPainter's for one commit (renamed LanternRun 75 on its branch) and is left alone.
+        // See _Scripts/Controller/Arcade/THORNLINE.md.
+        Thornline = 79,
+
+        // The Jacks' Time race (DECOY_RUN.md): herd the jacks past the rings, take off, fly
+        // to the decoys. Rings in groups a cycle takes; I3-I4 on rolled flats.
+        DecoyRun = 80,
+
+        // The Goby's Time race (PERCH_RUN.md): dart through the rings; a dart costs a second
+        // however far it goes. I2 hairpins (length), I3 coral blockers (line), I4 doubles.
+        PerchRun = 81,
+
+        // The Honeyguide's Time race (SLIP_LINE.md): rings with prism RAILS in the slip colours.
+        // Riding a rail the battery holds a charge for zips the hull down it at the slip's speed; the race is
+        // which rails to spend the Ratel's charges on.
+        SlipLine = 82,
+
+        // The Orca's Time race (BREACH.md): the helm's burn is five times cruise but turns at a fifth of
+        // its sweep, and the tank refills slowly. I2 hard turns, I3 danger walls before a ring, I4 both.
+        Breach = 83,
+
+        // The Thresher's CHARGE game (JACKSTRAW.md): a 0G heap of pick-up sticks, each about a chain long. A STRIKE -
+        // the ball or chain reaching a rival hull - is one point; first domain to the target wins. I1-I4 grow the heap
+        // (34 -> 230 sticks), add crossed jacks, red-tipped and ironwood sticks, and shrink the clearings.
+        Jackstraw = 85,
+
+        // The Brittle Star's CHARGE game (FLATLINE.md): thin panes of prisms crossing the cell. A pane stops rounds,
+        // the cords cut straight through it, and a ring thrown face-on into it bursts flat along it. Only rounds (1)
+        // and cord / thrown-saber Strikes (8) on rival hulls score; the ring blast pays nothing. Per-intensity target.
+        Flatline = 84,
+        // The Angler's CHARGE game (KELPWOOD.md): kelp strands radiate from a core in every direction. Sweep the eraser
+        // onto a rival to LOCK: one creature leaves your school and hunts them; each BITE is one point. I1-I4 grow the
+        // kelp (28 -> 88 strands), thin the herds and omni crystals, and add danger tips and collars.
+        Kelpwood = 86,
+
+        // The Manta's CHARGE game (CORONA.md): nested prism shells round a crystal heart. Skim a shell to arm a bomb,
+        // graze a rival to plant it, touch an omni crystal in the heart to set every bomb off. Each rival a bloom
+        // catches is one point. I1-I4 add shells (1 -> 4), narrow and rim the gates, and thin the heart's crystals.
+        Corona = 87,
+
+        // The Thresher's SPACE game (HARVEST.md): a field of sheaves - a core of blocks with stalks standing out of it.
+        // Mow the stalks with the chain to charge the ball, smash it into the core for one big blast. Hostile prisms
+        // destroyed score; first domain to the target wins. I1-I4 shrink and multiply the sheaves, shield the cores,
+        // colour them by domain and add danger stalks.
+        Harvest = 88,
+
+        // The Angler's MASS game (GLASSHOUSE.md): a timed garden. An omni crystal is a creature and a SEED; let go of the
+        // lure and the seed is planted in your colour, and the lure's light grows every plant in reach three times as
+        // fast. The score is the mass standing in your colour at the whistle (VolumeRemaining): your trail plus the
+        // garden grown from your seeds, outside the nucleus. Wild herds graze it and rival schools are thrown at it.
+        // I1-I4 thin the seeds, crowd in the grazers and shrink the room the gardens share.
+        // First authored as 88; Harvest (the Thresher's Space game) took 88 first, so this is 89.
+        Glasshouse = 89,
+
+        // The Brittle Star's SPACE game (SHATTERPLANE.md): wide, thin round plates of neutral prisms hang in the cell.
+        // Square up to a plate and the thrown ring's flat blast erases it whole; the guns chew what it misses. First
+        // domain to break the per-intensity prism target wins. I1-I4: plates facing the spawn, plates at mixed angles,
+        // stacks of three, plates braced by super-shielded ribs and half behind grilles.
+        // Took 88 first; Harvest landed with it, and 89 is Glasshouse's in flight (claude/peaceful-cerf-vpl3x8).
+        Shatterplane = 90,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 71) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
+        // 83) in the same commit, and take the next free ID -- 7, 28, 29, 31, 47 and 76 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

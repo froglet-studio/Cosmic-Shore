@@ -151,6 +151,9 @@ at most every 3 s, never while a trigger is held, through the replicated press.
 
 ## 1b. Time mode — the catch and the 90° slingshot (2026-10-14)
 
+**Since 2026-11-04 Time mode is the TRAMPOLINE** (`StoatSlingConfigSO.trampoline` on; "The trampoline" below). The catch,
+the orbit and the aimed exit in this section are its fallback: `trampoline` 0 flies them as they shipped in PR #1733.
+
 The design call, after the first cut was played: *"Mass mode [should] be like what we had before I tried to split into
 modes. Time mode would have less mass and reflect the way we had it working before the pathfinding and instead of
 showing your path it shows a detection radius and an orbital radius. then after orbiting 90 degrees it grants a timing
@@ -254,6 +257,56 @@ lets it go on the release. The catch and the orbit fly on the simulating machine
   model (`stoat_orbit_sim.py --earned`): 78-91 s a Slingshot race at 11-12 presses a minute with 63-78% of releases timed,
   where the press-spam AI ran 55-58 s at 19-28 a minute with almost none timed before, and 80-85 s under earned speed.
 - **On a phone** two orbit discs (LT left, RT right) sit round the right thumb; a thumb anywhere else steers.
+- **The trampoline (Yash, 2026-11-04: "Make the slingshot mechanics in a different way, now while bouncing, it's getting
+  sucked in some orbit, and then they gets puished, what if we remove the whole orbit, and make a soft tampoline like 3D surface
+  above the black hole, or remove the black hole, just keep white hole, make it so that vessels can bounce off with extra
+  boost, it will be a 3D trampoline").** No orbit and no black hole: `trampoline` on (Unity-first, not in the studio yet).
+  - **The press** lays a lone WHITE HOLE `trampolineAhead` 140 u along the line you are flying (your current turn carried on,
+    at most `trampolinePredictDegrees` 90), `trampolineLine` 0.75 × its shell's radius to the side AWAY from the bounce, with
+    a soft shell of `trampolineRadius` 60 u (× Space's reach) round it (`StoatSlingMath.TrampolineCentre`). RT bounces you
+    right (the shell sits front-left), LT left. Flying on, you graze its near flank.
+  - **The shell is soft.** Touch it moving in and a spring pushes your velocity out along its normal, (π / `trampolineSoftSeconds`
+    0.35)² × the depth (`TrampolineStep`; the velocity is carried from the touch, so a head-on hull is stopped and sent back).
+    Leaving it again is the BOUNCE: the kick along the heading it gave you (`slingBoostMin`..`slingBoostMax` of the engine speed
+    by the hold's deepest squeeze, × Mass's `launchPower`, under `speedCapShare` and `warpKickCapCruise`), and the warp kept as
+    momentum. Every bounce is timed; there is no window to hit.
+  - **Where you touch it is where you go** (measured at 150 u/s): a 0.9 graze turns you about 19°, the shipped 0.75 about 45°
+    (37-51° at 120-190 u/s), 0.5 about 83°, head-on 180° (straight back), 22 u deep and 0.28 s long. Steer into it for a
+    sharper turn, skim it for a gentle one.
+  - **The trigger's release does nothing to it**; the hold only tensions it (its deepest squeeze is the kick). It stays up
+    until you bounce off it, pass it untouched, or `trampolineSeconds` 4 s go by, then pops: the white hole goes and the
+    Charge ripple is thrown from it (the pair's annihilation threw it before). A press over a live one pops it first.
+  - **It moves no other vessel** (an owned hole, `BlackHoleVesselPull`; `Docs/ELEMENTAL_ECONOMY.md` §9, LOCKED): only the
+    Stoat that laid it bounces. The bounce is flown on the simulating machine; every peer lays its own copy from the
+    replicated press and pops it when the hull leaves it.
+  - **Drawn** (world dots, `StoatPathfinderExecutor.AddTrampolineRings`): the shell as a ball (its outline facing the camera
+    and two great circles), lime while you are in it with the DENT's rim where your hull presses in, and a lime ripple ring
+    growing off the shell at each bounce. The Time card fills through the bounce and is lime in it.
+  - **The AI** presses toward a turn of `aiSlingMinTurnDegrees` 35° or more (was 20; both configs) and lets go at once. While
+    the shell is up and untouched it borrows the steering (`AIPilot.SetExternalTargetProvider`, handed back as it was) and
+    flies at the flank as deep as the turn it wants (`TrampolineLineFor`, `trampolineAiTurnScale` 100). Model
+    (`stoat_orbit_sim.py --trampoline`, 6 courses): 125 / 113 / 111 / 121 s at I1-I4, every shell touched, 0-8 rings missed a
+    race; the aimed exit ran 115 / 124 / 111 / 133 s. Without the borrowed aim the AI touched only 12-38% of its shells.
+  - **Not carried over:** Space 5 Accretion (the black hole stole prisms; a white hole takes none, so Accretion is dormant),
+    and the flick launch (nothing to launch out of).
+- **The aimed exit (Yash, 2026-11-03: "I want to get into the orbit, and then I want to be slingshot at 30-45degrees from angle
+  of entry after a second of orbiting").** The orbit swings the hull round about 200 deg a second, so a launch along the
+  tangent after a second left at about 200 deg from the entry. Now (`aimedExit` on, `StoatSlingConfigSO`'s aimed-exit rows):
+  - **The window is time, not degrees.** The whole kick is paid from 0.8 to 1.4 s of orbit (`exitWindowSeconds` 1.1 ±
+    `exitWindowHalfSeconds` 0.3), easing off over `exitWindowFalloffSeconds` 0.4 s either side to the miss share; a release
+    in the first third of a second times nothing. The ring is lime inside it, as before.
+  - **The launch turns the ENTRY heading** (the hull's heading at the catch) `exitMinDegrees` 30 to `exitMaxDegrees` 45 the way
+    the orbit turns (right orbit right, left orbit left, in the orbit's own plane: `StoatSlingMath.AimedExit`). The stick
+    picks where (`ExitDegrees`): at rest 37.5, toward the turn 45, away from it 30. However far round the orbit you are,
+    the exit is the same, so the launch's direction is known before you press. A flick still launches at once.
+    `launchConeDegrees` is not read while it is on.
+  - `maxOrbitDegrees` is 720 (was 360), so the longest orbit never ends before the window does.
+  - **The AI** lets go as the window opens (by 1.4 s at the latest), its stick picking the angle toward its target, and
+    slings only for a turn of 20 deg or more (`aiSlingMinTurnDegrees` 20, was 7.84: a 30-45 deg exit overshot every small
+    turn). Model (`stoat_orbit_sim.py`, 8 courses): 113 / 115 / 122 / 125 s at I1-I4, every release timed, 0.8 / 1.8 / 2.6 /
+    3.4 rings missed a race. Cruising with no press takes 140-148 s; the tangent launch took 66-90 s. **A sling now costs about
+    a second of circling**, so a race is slower than with the tangent launch.
+  - Off (`aimedExit` 0) is the tangent launch with the 60-120 deg window, as it shipped in PR #1723.
 - **The easier sling (Yash, 2026-11-03 play test on bleeding-edge: "the slingshot mechanic is little hard").** Caught,
   the orbit carries the hull round at about 188 u/s, so on the 0.6 circle the full-kick window (75-105 deg) lasted 0.1-0.2 s:
   under a person's reaction time. Now:

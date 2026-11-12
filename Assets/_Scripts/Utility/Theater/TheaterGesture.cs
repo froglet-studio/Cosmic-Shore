@@ -36,15 +36,6 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// The transport a director holds a PAD for, live only while the recording area is up.
-        ///
-        /// <para>It is the D-pad and the south face button and nothing else, because the two sticks
-        /// and both triggers belong to the free camera and a theater you can fly but not scrub is
-        /// half a tool. These are safe to read unconditionally in the theater for the same reason
-        /// the free camera is: <see cref="TheaterStage"/> has paused the local pilot's input, so
-        /// nothing else on the machine is listening to the pad.</para>
-        /// </summary>
-        /// <summary>
         /// Pick a shot outright by number (0-3, in <c>TheaterShot</c>'s own order), or -1 for no
         /// request. Live only while the recording area is up.
         ///
@@ -71,6 +62,15 @@ namespace CosmicShore.Utility
             return keyboard != null && keyboard.digit5Key.wasPressedThisFrame;
         }
 
+        /// <summary>
+        /// The transport a director holds a PAD for, live only while the recording area is up.
+        ///
+        /// <para>It is the D-pad and the south face button and nothing else, because the two sticks
+        /// and both triggers belong to the free camera and a theater you can fly but not scrub is
+        /// half a tool. These are safe to read unconditionally in the theater for the same reason
+        /// the free camera is: <see cref="TheaterStage"/> has paused the local pilot's input, so
+        /// nothing else on the machine is listening to the pad.</para>
+        /// </summary>
         public static void ReadPadTransport(out int shotStep, out int pilotStep, out bool togglePause)
         {
             shotStep = 0;

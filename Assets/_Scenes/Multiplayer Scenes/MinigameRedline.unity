@@ -905,8 +905,8 @@ MonoBehaviour:
   listOfCrystalPositions: []
   anchorJitterRadius: 35
   noNucleusSpawnRadius: 0
-  crystalCountMode: 1
-  fixedCrystalCount: 1
+  crystalCountMode: 0
+  fixedCrystalCount: 0
   extraCrystalsToSpawnBeyondPlayerCount: 1
   crystalCountByIntensity:
   - CrystalsPerPlayer: 1

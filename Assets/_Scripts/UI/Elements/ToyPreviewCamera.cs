@@ -8,16 +8,9 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// A live window onto a toy standing out by the cell membrane — the picture the Toy Box's
-    /// configure modal shows in place of a preview image.
-    ///
-    /// <para><b>It photographs the REAL toy, not a model of one.</b> The toybox has already built
-    /// every toy in Menu_Main's own cell by the time this modal can open, so there is nothing to
-    /// stand up and nothing to tear down: point a camera at the object the player will fly to.
-    /// That is the whole reason this is ~200 lines rather than the arcade's satellite-arena
-    /// machinery — a mode has to BUILD its world to be previewed, a toy is already standing in
-    /// ours. It also means the preview cannot drift from the toy: re-skin the toy and the picture
-    /// re-skins itself.</para>
+    /// The picture the Toy Box's configure modal shows: a model of the selected option, or a live
+    /// thing in the world a toy just made. Toys themselves have no world body (2026-11-01), so with
+    /// nothing selected the surface is blank.
     ///
     /// <para><b>Rendered on demand into a RenderTexture, never to the screen.</b> The camera is
     /// created disabled and stepped by hand, for the reason <c>Docs/CONNECTING_PANEL.md</c>
@@ -59,7 +52,7 @@ namespace CosmicShore.UI
     /// on the Spawn Matrix releases a creature into the cell, and telling the player it
     /// happened is weaker than showing it: <see cref="Watch"/> turns the camera onto that object
     /// where it landed, at a radius the option states (the creature blooms in from zero, so its
-    /// own bounds say nothing on the frame it appears), and goes back to the toy when the target
+    /// own bounds say nothing on the frame it appears), and blanks the surface when the target
     /// dies or the window moves on.</para>
     ///
     /// <para>A variant is framed by MEASURING it rather than by being told its size. Each toy
@@ -113,10 +106,8 @@ namespace CosmicShore.UI
         float _nextRender;
         float _lastRenderTime;
 
-        // The toy this window is bound to, kept so ClearVariant can go back to it. Deliberately
-        // separate from _subject, which is whatever is in frame right now - the toy, a model, or
-        // something the toy released into the world.
-        Toy _toy;
+        const float DefaultRadius = 40f;
+
         Transform _stage;
         GameObject _variant;
         Transform _watched;
@@ -128,7 +119,7 @@ namespace CosmicShore.UI
         /// </summary>
         static readonly Vector3 StageOrigin = new(0f, -90000f, 0f);
 
-        /// <summary>True while the window is showing a variant's model rather than the toy.</summary>
+        /// <summary>True while the window is showing a variant's model.</summary>
         public bool IsShowingVariant => _variant;
 
         /// <summary>True while the window is turned onto something the toy released into the world.</summary>
@@ -136,29 +127,24 @@ namespace CosmicShore.UI
 
         void Awake() => _surface = GetComponent<RawImage>();
 
-        /// <summary>
-        /// Point the window at a toy. Safe to call with null — the surface simply goes blank,
-        /// which is the honest state for a toy the toybox has not built yet.
-        /// </summary>
-        public void Show(Toy toy)
+        /// <summary>Open on a blank surface: nothing is selected yet.</summary>
+        public void Show()
         {
-            _toy = toy;
             _watched = null;
             DestroyVariant();
-            FrameToy();
+            FrameNothing();
         }
 
         /// <summary>
         /// Show what an option would GIVE you, built by the toy that offers it. Returns false when
-        /// the option declines to build one (most do) - the window keeps showing the toy, which is
-        /// the honest picture rather than a blank surface.
+        /// the option declines to build one; the window then goes blank if it was showing something.
         /// </summary>
         public bool ShowVariant(Func<Transform, GameObject> build)
         {
             // Whether one was showing decides what a FAILURE means. Dropping the old model and
             // then returning early would leave the camera framing a destroyed transform, which is
             // the one state this class must never be left in - so a failed build after a live one
-            // goes back to the toy, while a failed build with nothing showing leaves the shot
+            // blanks the surface, while a failed build with nothing showing leaves the shot
             // exactly as it was rather than resetting the orbit on every unpreviewable row.
             bool had = _variant || _watched;
             _watched = null;
@@ -173,7 +159,7 @@ namespace CosmicShore.UI
 
             if (!model)
             {
-                if (had) FrameToy();
+                if (had) FrameNothing();
                 return false;
             }
 
@@ -192,20 +178,20 @@ namespace CosmicShore.UI
             if (!target) return false;
             DestroyVariant();
             _watched = target;
-            Frame(target, radius > 0f ? radius : (_toy ? _toy.SwitchRingRadius : 40f));
+            Frame(target, radius > 0f ? radius : DefaultRadius);
             return true;
         }
 
-        /// <summary>Drop the variant's model (or the watched object) and go back to photographing the toy itself.</summary>
+        /// <summary>Drop the variant's model (or the watched object) and blank the surface.</summary>
         public void ClearVariant()
         {
             if (!_variant && !_watched) return;
             _watched = null;
             DestroyVariant();
-            FrameToy();
+            FrameNothing();
         }
 
-        void FrameToy() => Frame(_toy ? _toy.transform : null, _toy ? _toy.SwitchRingRadius : 40f);
+        void FrameNothing() => Frame(null, DefaultRadius);
 
         void Frame(Transform subject, float radius)
         {
@@ -224,7 +210,6 @@ namespace CosmicShore.UI
 
         public void Hide()
         {
-            _toy = null;
             _watched = null;
             DestroyVariant();
             _subject = null;
@@ -250,12 +235,12 @@ namespace CosmicShore.UI
         /// The radius that frames <paramref name="model"/>: the extent of its renderers about
         /// their own centre, never about the stage origin - a model built off-centre would
         /// otherwise read as an oversized one and be framed from far too far away. Falls back to
-        /// the toy's ring for a model with no renderers, which frames nothing but frames it sanely.
+        /// a default radius for a model with no renderers, which frames nothing but frames it sanely.
         /// </summary>
         float MeasureRadius(GameObject model)
         {
             var renderers = model.GetComponentsInChildren<Renderer>(true);
-            if (renderers.Length == 0) return _toy ? Mathf.Max(1f, _toy.SwitchRingRadius) : 40f;
+            if (renderers.Length == 0) return DefaultRadius;
 
             var bounds = renderers[0].bounds;
             for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
@@ -268,7 +253,6 @@ namespace CosmicShore.UI
             // holding a surface for a session it is not drawing is worth releasing anyway.
             ReleaseRig();
             _subject = null;
-            _toy = null;
             _watched = null;
         }
 
@@ -277,8 +261,8 @@ namespace CosmicShore.UI
             if (!_subject || !_camera)
             {
                 // A watched creature that has since died (eaten, starved) takes the subject with
-                // it: go back to the toy rather than drawing a frozen last frame of nothing.
-                if (_watched == null && _toy && _surface && _surface.enabled && !_subject) FrameToy();
+                // it: blank the surface rather than drawing a frozen last frame of nothing.
+                if (_watched == null && _surface && _surface.enabled && !_subject) FrameNothing();
                 return;
             }
             if (Time.unscaledTime < _nextRender) return;

@@ -191,6 +191,19 @@ namespace CosmicShore.Gameplay
         [Tooltip("How often an AI gunner re-picks its target (s; the lab's 0.4).")]
         [SerializeField, Min(0.05f)] float aiRetargetSeconds = 0.4f;
 
+        [Header("AI helm: the burn (a race's coach overrides it; Breach's coach is this rule plus its turns and walls)")]
+        [Tooltip("Whether the AI helm burns at all outside a coached race. Off = the AI flies at cruise, as it did before 2026-11-07.")]
+        [SerializeField] bool aiBurns = true;
+        [Tooltip("Degrees the nose may be off the AI pilot's target and still burn. A burning Orca turns round a circle 3.5x " +
+                 "as wide, so it burns only when already lined up (Breach's 8).")]
+        [SerializeField, Range(1f, 45f)] float aiBurnAlignDegrees = 8f;
+        [Tooltip("The AI does not burn when its target is nearer than this (u): the burning turn radius is ~131 u, so the " +
+                 "last stretch before a target is coasted to keep the turn after it.")]
+        [SerializeField, Min(0f)] float aiBurnMinDistance = 250f;
+        [Tooltip("Tank seconds the AI waits for before it starts a burn (it keeps burning below this once started). " +
+                 "Holding the burn on an empty tank keeps it empty, so the AI lets go and refills (Breach's 1).")]
+        [SerializeField, Min(0f)] float aiBurnMinTank = 1f;
+
         [Header("Cameras (round 7: every gun looks over its turret; the sniper also keeps the Serpent's pip scope open)")]
         [Tooltip("lab turretFov: every gunner's view (deg).")]
         [SerializeField, Range(20f, 120f)] float turretFov = 75f;
@@ -254,6 +267,10 @@ namespace CosmicShore.Gameplay
 
         public float HullRadius => hullRadius;
         public float BoostTank => boostTank;
+        public bool AIBurns => aiBurns;
+        public float AIBurnAlignDegrees => aiBurnAlignDegrees;
+        public float AIBurnMinDistance => aiBurnMinDistance;
+        public float AIBurnMinTank => aiBurnMinTank;
         public float BoostRefillAt(IVesselStatus status) => boostRefill.EvaluateLive(status);
         public int ShieldBlocks => shieldBlocks;
         public float ShieldMinRadius => shieldMinRadius;
@@ -307,7 +324,7 @@ namespace CosmicShore.Gameplay
         public float BombFuse => bombFuse;
         public float BombBlastRadiusAt(IVesselStatus status) => bombBlastRadius.EvaluateLive(status);
         public float BombScale => bombScale;
-        public Color BombColor => bombColor;
+        public Color BombColor => ColorTrace.Retrace(ColorTrace.World, bombColor);
         public AOEExplosion[] BombExplosions => bombExplosions;
         public ScriptableEventCombatHitStats OnCombatHitLanded => onCombatHitLanded;
         public EventReference SniperShotSound => sniperShotSound;
@@ -360,10 +377,11 @@ namespace CosmicShore.Gameplay
         public float BombCamBack => bombCamBack;
         public float BombCamUp => bombCamUp;
         public float GunCamAim => gunCamAim;
-        public Color CrosshairColor => crosshairColor;
-        public Color CrosshairReadyColor => crosshairReadyColor;
-        public Color CrosshairHotColor => crosshairHotColor;
-        public Color CrosshairWarmColor => crosshairWarmColor;
+        // The crosshairs are drawn on a canvas (OrcaCrosshairGraphic), so their colours are retraced in the ui role.
+        public Color CrosshairColor => ColorTrace.Retrace(ColorTrace.Ui, crosshairColor);
+        public Color CrosshairReadyColor => ColorTrace.Retrace(ColorTrace.Ui, crosshairReadyColor);
+        public Color CrosshairHotColor => ColorTrace.Retrace(ColorTrace.Ui, crosshairHotColor);
+        public Color CrosshairWarmColor => ColorTrace.Retrace(ColorTrace.Ui, crosshairWarmColor);
 
         /// <summary>The core's numbers, as a plain struct.</summary>
         public OrcaCrewSettings ToSettings() => new()
