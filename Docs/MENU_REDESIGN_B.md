@@ -7608,7 +7608,8 @@ What answers each of his points:
   from `Docs/VesselModels/colour_sets.json`. Each holds, then blends into the next; the last blends back into the
   first, so the loop has no seam. A small readout names the worn set.
 - **The dull blue.** The flat discs and flat ground are gone. Behind the bands: Rev 91's sea lines and parts of a cell
-  moving in it (a membrane breathing, crystals pulsing, a prism trail being laid, flora turning).
+  moving in it (a membrane breathing, crystals pulsing, a prism trail being laid). The flora bursts were taken out
+  the same hour ("remove this sun like thing", canvas version `1794524931-85b0`).
 - **Smooth.** Every motion eases both ways and alternates; nothing pops or restarts.
 
 `frogma.py check --only R94` passes. `check_mockup.py` fails the colour gate on purpose: the 24 colour-set swatches are

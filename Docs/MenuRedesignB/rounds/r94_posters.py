@@ -13,7 +13,7 @@ So: A's crew and D's three slanted domain bands in one picture; the first pass's
                jewel, not a bright flat), the RIM colour as a thin edge. The set changes on a 28 s loop - Nocturne,
                Dart Frog, Dusk, Ukiyo-e (Docs/VesselModels/colour_sets.json) - blending, never cutting.
   the ground   no flat blue discs: Rev 91's sea lines, and parts of a cell moving in it (a membrane breathing,
-               crystals, a prism trail being laid, flora turning).
+               crystals, a prism trail being laid). The flora bursts were taken out: "remove this sun like thing".
   motion       every animation eases both ways and alternates; nothing pops or restarts.
 
   A  The crew before the domains   five pilots in a line across the three bands, the Ark above (recommended)
@@ -144,7 +144,7 @@ def board_a():
         w = round(h * 440 / 560)
         crew += img(PILOT[n], n, xs[i] - w // 2, 862 - h, w, h)
     parts = cell_parts(1, (1800, 380, 300), [(1690, 300), (1770, 470), (150, 520), (250, 660)],
-                       "M -40 760 C 160 700 300 560 380 300", [(210, 330, 110, 26, 9)])
+                       "M -40 760 C 160 700 300 560 380 300", [])
     body = (r91.sea() + parts + "".join(band(i, 360 + i * 400) for i in range(3))
             + img(ARK, "The Ark", 600, 96, 720, 337, "animation:bob 10s ease-in-out infinite alternate")
             + crew + marks(96, 64, 300, 96, 200, 180) + themes(1650, 620, row=False) + foot())
@@ -161,7 +161,7 @@ def board_b():
         crews += img(CEL[hname], f"The {hname}", cx + 70 - s // 2, 70, s, s, f"transform:rotate({tilt}deg);animation:bob {dur}s ease-in-out infinite alternate")
         crews += img(PILOT[p], p, cx - 173, 862 - 440, 346, 440)
     parts = cell_parts(2, (310, 600, 280), [(150, 520), (430, 700), (560, 420)],
-                       "M -40 840 C 180 830 500 790 700 600", [(600, 250, 80, 22, 10)])
+                       "M -40 840 C 180 830 500 790 700 600", [])
     body = (r91.sea() + parts + "".join(band(i, 700 + i * 400) for i in range(3)) + crews
             + img(ARK, "The Ark", 60, 470, 520, 244, "animation:bob 10s ease-in-out infinite alternate")
             + marks(96, 64, 400, 96, 240, 200) + themes(96, 770) + foot())
@@ -173,7 +173,7 @@ def board_notes():
         ("Asked", ["Shombith, 2026-11-12: \"Delete others and can you combine D and A and the theme switching in this scene as well, this scene needs to be very very smooth ... the colors on D is too bright ... and also the empty dull blue. Can show some animated parts of the cell along with the sea lines in the background.\""]),
         ("What changed", ["The crew (A) and the three domain bands (D) are one poster. The first four boards are off the canvas.",
                           "A band is its domain's prism: the colour set's face colour as the body, its rim colour as a thin edge. No bright flats.",
-                          "No blue discs. Behind: the sea lines, and parts of a cell moving (a membrane, crystals, a trail being laid, flora)."]),
+                          "No blue discs. Behind: the sea lines, and parts of a cell moving (a membrane, crystals, a trail being laid)."]),
         ("The colour set changes", ["Nocturne, Dart Frog, Dusk and Ukiyo-e in turn, on a 28 second loop. Each holds, then blends into the next; the loop has no seam.",
                                     "The colours are the sets' own rim and face swatches. The names top right are a readout of which is worn.",
                                     "In the game the splash would wear the player's set, and blend when it changes."]),
