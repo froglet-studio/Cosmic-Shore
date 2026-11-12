@@ -51,7 +51,7 @@ which is a diagram at 128 px and noise at 40.
 
 **Does not read:** Angler Command (a hull, a beam, a reticle, a fish and a prism row in one box),
 Angler Tame (reads as `>=`), Brittle Star Creation / Destruction (scattered squares and hairlines),
-Butterfly Scale Dust (blobs), Manta Kabloom (a flower, not an explosion), Manta Yastri (one bent
+Butterfly Scale Dust (blobs), Manta Kabloom (a flower, not an explosion), Manta Yawstery (one bent
 arrow), Manta Soar (three chevrons - any boost on any hull), Urchin Charge Ring (a bare ring), Urchin
 Slip (three circles), Urchin Track Projector (a ladder), and all eleven placeholders (Rhino's three
 slashes / double arrow / ramp / lightning, Scarab's ball and ripple and switch, Serpent's reticle /
@@ -359,7 +359,7 @@ HUD blue), which the kit's `card.py` does not draw yet.
 
 **Rhombus recut DONE 2026-11-01** (`claude/prism-recut`; Garrett: "you need to stop using the rhombuses for shielded
 prisms, that shape is owned by the time petal"): `motifs.prism` / `prism_lit` are two close triangles now, and every
-card that drew one was re-authored with its guid kept (Angler Paint parts, Manta Yastri, Scarab Cavitation Blast,
+card that drew one was re-authored with its guid kept (Angler Paint parts, Manta Yawstery, Scarab Cavitation Blast,
 Sparrow's shielded stance rounds, Squirrel's drift trail and Sharp Drift), plus the Serpent's shielded bricks (Wall
 Shield omni card) and the Squirrel's shielded-ring card (`author_squirrel_shielded_ring_icon.py`). No C# changed. The
 Rhino's super-shielded prism stays the stella octangula (its own shape, not a rhombus).
@@ -444,9 +444,9 @@ plate the ONE shared fuse, Contagion's second rival at Charge 5. Decoy (Mass, B)
 plate frozen (the tell) over the danger prisms it springs, the omni decoy beside it while one stands (Mass 5;
 `MantaStingActionExecutor.HasElementalDecoy` / `HasOmniDecoy`). Skim (Space, A): the Manta skimming rival prisms that
 wear a crown of explosive spikes, brighter as the energy gathers; the plate is the energy (`energyFill`, bound as the
-card's gauge, full = one bomb); Shield Breaker's knocked-off shell at Space 5. Yastri (Time, A): the Manta and the hard
+card's gauge, full = one bomb); Shield Breaker's knocked-off shell at Space 5. Yawstery (Time, A): the Manta and the hard
 corner its turn pair cuts, Soar's chevrons once Time 5 unlocks the boost. Omni: the cash-out, three blooms round an omni
-crystal. Option sheets: `Docs/Icons/sheets/manta_{sting,decoy,skim,yastri}_options.png`.
+crystal. Option sheets: `Docs/Icons/sheets/manta_{sting,decoy,skim,yawstery}_options.png`.
 
 **The Thresher (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the
 2026-10-13 glyphs were decent but drew no shark; every card now draws the real hull (`Thresher.fbx`, the whip tail cut

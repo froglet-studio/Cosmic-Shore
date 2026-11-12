@@ -836,7 +836,7 @@ provider is installed (the Rampage rule). See `_Scripts/Controller/Arcade/BLOOMR
 `Redline(53)` is the **Manta-only circuit race** — the third mode on the gate-race platform's
 lapped shape, and the second cut against a VESSEL'S OWN turning geometry. The Manta's two held
 inputs share two triggers: **Soar is their OVERLAP** (`min(LT, RT)`, ×4 cruise to 720 u/s) and
-**Yastri their DIFFERENCE** (60°/s of trigger yaw), so easing one trigger is trading boost for
+**Yawstery their DIFFERENCE** (60°/s of trigger yaw), so easing one trigger is trading boost for
 yaw on one linear scale and every corner asks *how much Soar is it worth?* — answered on the curve
 `RedlineCourse.CornerRadiusAtBoost` (237 u flat out, 172 at half, 82 with one trigger released;
 speed lags by the 1.5/s `LERP_AMOUNT`, so a lift costs ~2 s to win back). **It has no generator

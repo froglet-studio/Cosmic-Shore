@@ -15,7 +15,7 @@ orbit break-off, the Soar triggers, and the hull's turn law with the AI nose lag
     loss           mean over the intensities + 0.5 x the worst intensity        (no intensity is given up for the others)
                  + stay_near_shipped x mean((field - nearest genome's) / range)^2
 
-The space is the drive's own asset fields by their names (BoostStickBand, YastriStickBand; [Range(0, 1)] on the SO),
+The space is the drive's own asset fields by their names (BoostStickBand, YawsteryStickBand; [Range(0, 1)] on the SO),
 so a result is written into MantaSoarAITuning_Redline (MantaSoarAITuningSO.LoadForMode) without a rename. The mode's
 own AI (steering, throttle floor, whether it steers for Time crystals) and its course (the Soar-only ladder, the Time
 crystal field, five laps) are whatever the simulator mirrors from the job's ref: change Redline and the simulator
@@ -52,8 +52,8 @@ EXECUTOR = "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/MantaAna
 PREFAB = "Assets/_Prefabs/Spacevessels/Manta.prefab"
 POL = "Assets/Resources/AIBoostPolicies/"
 GENOMES = [POL + "MantaSoarAITuning_Redline.asset", POL + "MantaSoarAITuning_Regatta.asset"]
-FIELDS = {"BoostStickBand": (0.0, 1.0), "YastriStickBand": (0.0, 1.0)}
-CODE = {"BoostStickBand": "aiBoostStickBand", "YastriStickBand": "aiYastriStickBand"}   # the executor's own fields
+FIELDS = {"BoostStickBand": (0.0, 1.0), "YawsteryStickBand": (0.0, 1.0)}
+CODE = {"BoostStickBand": "aiBoostStickBand", "YawsteryStickBand": "aiYawsteryStickBand"}   # the executor's own fields
 LAPS_SOURCE = "Assets/_Scripts/Controller/Arcade/Redline/RedlineCourseSource.cs"   # the sim reads DefaultLaps here
 PATHS = [SIM, EXECUTOR, PREFAB, POL, LAPS_SOURCE]
 REQUEST_ARGS = {"intensities": {"subset": [1, 2, 3, 4]}, "seeds": {"lo": 1, "hi": 12}, "limit": {"lo": 300, "hi": 1500}}
@@ -184,7 +184,7 @@ def evaluate(params, ctx):
         setup(ctx)
     sim = _CTX["sim"]
     p = clamp({k: float(params.get(k, v)) for k, v in _CTX["shipped"].items()})
-    bands = (p["BoostStickBand"], p["YastriStickBand"])
+    bands = (p["BoostStickBand"], p["YawsteryStickBand"])
     limit = float(a.get("limit", 900))
     med = lambda xs: round(sorted(xs)[len(xs) // 2], 1) if xs else None
     scores, metrics, every_finishes = {}, {}, True
@@ -236,7 +236,7 @@ def self_test():
         if again["loss"] != good["loss"]:
             bad.append("redline_fit: the same params gave a different loss (the sim is not deterministic)")
         sd = seeds(ctx["args"], root)
-        if len(sd) < 2 or sd[0] != {"BoostStickBand": 0.35, "YastriStickBand": 0.75} or sd[1] == sd[0]:
+        if len(sd) < 2 or sd[0] != {"BoostStickBand": 0.35, "YawsteryStickBand": 0.75} or sd[1] == sd[0]:
             bad.append(f"redline_fit: the seeds are not the shipped bands and the Regatta genome ({sd})")
         if [d["init"] for d in space_for(root)] != [0.35, 0.75]:
             bad.append("redline_fit: the space's init is not the shipped executor bands")

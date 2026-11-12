@@ -291,7 +291,7 @@ names the ability an element owns but not always which parameter of it. Vessel k
 
 | Vessel | Pilot A (default kit, named) | Pilot B (the side-grade) | Artifact 1 | Artifact 2 |
 |---|---|---|---|---|
-| Manta | Yastri trail as shipped | **Shielded wake**: base prism production lays shielded prisms, but the trail is thinner — the `BasePrismProduction` generalised pilot from §4 | Sting cooldown | Kabloom crystal-blast travel speed |
+| Manta | Yawstery trail as shipped | **Shielded wake**: base prism production lays shielded prisms, but the trail is thinner — the `BasePrismProduction` generalised pilot from §4 | Sting cooldown | Kabloom crystal-blast travel speed |
 | Dolphin | Echo Sight as shipped | **Seed caster**: crystal seeding plants two smaller team crystals instead of one | Charge Boost top speed | Echo Sight reveal duration |
 | Rhino | Energy sword as shipped | **Cleaver**: a cut prism's halves are launched apart instead of parting in place; blade width is shorter | Sword crystal-blast radius | Sword swing arc |
 | Squirrel | Boost Ring as shipped | **Shepherd's hook**: Steal also pulls the stolen petal's crystal toward you on a miss; joust window narrower | Boost ring exit speed | Skim dwell-to-fill time |
@@ -465,7 +465,7 @@ Three things to know:
 - **The keyword table is §4's PROPOSED one, transcribed.** It is now live data, so the content pass
   (slice 6) must confirm each keyword against the vessel's real kit before a pilot or artifact
   leans on it.
-- **A default pilot's display name is its kit's name** (Yastri Trail, Echo Sight, …), from §6's
+- **A default pilot's display name is its kit's name** (Yawstery Trail, Echo Sight, …), from §6's
   "Pilot A (default kit, named)" column. Character names and portraits are a content decision;
   the 24 legacy portraits in `_Graphics/Pilots/` are the obvious pool.
 - **Nothing references the catalog yet,** so it does not ship in a build. Slice 3 (match start)

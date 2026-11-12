@@ -24,7 +24,7 @@ game where appropriate. Dolphin uses its jaw silhouette to good effect in its sp
 4. **`Urchin_ChargeRing.png` is a gauge, not an icon.** The audit called a bare ring "generic"; it is
    the hold-charge ring the HUD draws round the Charge card. Read `author_<hull>_hud.py` before
    judging a sprite in the icon folder.
-5. **Prisms in a row fuse into a zigzag at 40 px** unless the gap is ≥ 6 px (Yastri round 1: two
+5. **Prisms in a row fuse into a zigzag at 40 px** unless the gap is ≥ 6 px (Yawstery round 1: two
    prisms overlapped by 3 px and read as a chain). Two big prisms beat three small ones.
 6. **The smallest feature of a silhouette is what gets named.** The Manta's cephalic lobes, drawn
    tall, made the Soar icon a fox's head at 40 px (ears + snout). Flattened to short lobes on a blunt
