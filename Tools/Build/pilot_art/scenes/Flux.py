@@ -9,10 +9,18 @@ fractions, the eyes at mid-height, a seat laid back). The fifth names the whole 
 picture, rim to rim, and the figure "from the tips of the horns down to the gloved hands": the horns came whole, with
 glass above them (LESSONS 77).
 
-What the fifth still owes is the orca: a blind reader took the matte crest for a mane (LESSONS 80). The patch below
+What the fifth still owed was the orca: a blind reader took the matte crest for a mane (LESSONS 80). The patch below
 asks a painter that takes pictures for the fin of Flux's own likeness, an orca's skin and eye patch behind the face,
 a display with depth, and the course outside from real frames of the game. Its region is the whole frame, because the
-head itself changes. It was quoted at 11 credits and refused by the painter's plan: prepared, not run (LESSONS 85)."""
+head itself changes. It was quoted at 11 credits and refused twice by the painter's plan (LESSONS 85); Garrett moved
+the workspace to a paid plan on 2026-11-12 and it ran on the first try.
+
+The answer is the scene (LESSONS 87). The fin is a hooked blade of wet black skin, the head behind the face and the
+neck are an orca's, and the face, the horns, the clothes and the hands are the fifth painting's, in the same place.
+The display is a ball of light with the course inside it, and the course outside has the game's bricks, needles,
+crystals and net. One thing the ask said to keep was changed: "swept back toward the ear" put the white patch where
+the ear was, and no ear shows. Read blind from the close-up, a stranger named oryx and orca (the fifth painting's
+crest had been a mane to one) and took the white oval for a small ear."""
 SCENE = dict(
     treatment="Onboard camera under a shut canopy, the course streaming behind",
     shot=("An onboard photograph from a small camera fixed at the nose end of the long cockpit, looking back down "
@@ -26,10 +34,14 @@ SCENE = dict(
     side="right",
     chart=("volume", "race"),
     source="profession: a racer mid-heat, just through a ring, checking the display for the two behind",
-    swap=((", rising behind one shoulder", ""),),
+    swap=((", rising behind one shoulder", ""),
+          ("a tall glossy black orca dorsal fin rising from the crown like a blade",
+           "a glossy black orca dorsal fin at the crown between the horns, half their height, hooked back at its "
+           "tip"),
+          ("a crisp white orca eye patch swept back from behind each eye",
+           "a smooth white orca eye patch on each side of the head where an ear would be")),
     carry="it lies along the seat behind the hips, below the cockpit's rim, and none of it is in this picture",
-    seen=("the orca's black fin stands at the crown between the two horns, half their height",
-          "the irises are pale ice blue, and the amber is only a hair-thin line round each"),
+    seen=("the irises are pale ice blue, and the amber is only a hair-thin line round each",),
     doing=("Flux is racing and has just come through a ring. Flux half lies in the seat with the head against the "
            "headrest, both gloved hands on the control stick and the harness buckled tight across the chest, and "
            "looks at the small display that floats over the panel ahead, the long face three-quarters to the "

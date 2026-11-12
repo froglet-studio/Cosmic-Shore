@@ -5334,10 +5334,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Flux.png": {
-   "coloured": 0.1058,
+   "coloured": 0.309,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "007460c3f674e761",
+   "sha": "86aedde989e41bef",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_GALLEON.png": {
