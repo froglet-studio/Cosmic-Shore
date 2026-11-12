@@ -23,6 +23,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [SerializeField] GameObject prefab;
         [Tooltip("Assembly-qualified or full type name of the MonoBehaviour that owns the component to toggle.")]
         [SerializeField] string ownerType = "CosmicShore.UI.SceneTransitionModal";
+        [Tooltip("Optional: only an owner whose hierarchy path contains this text (several instances of one type).")]
+        [SerializeField] string ownerPathContains;
         [Tooltip("Optional public method on the owner, called with `setupArgument` once before settling (e.g. TransitionDoor(true) opens the doors as SceneLoader does).")]
         [SerializeField] string setupMethod = "TransitionDoor";
         [SerializeField] bool setupArgument = true;
@@ -52,7 +54,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 var candidates = prefab
                     ? Instantiate(prefab).GetComponentsInChildren<MonoBehaviour>(true)
                     : FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-                var owner = candidates.First(m => m && m.GetType().FullName == ownerType);
+                var owner = candidates.First(m => m && m.GetType().FullName == ownerType &&
+                                                  (string.IsNullOrEmpty(ownerPathContains) || PathOf(m.transform).Contains(ownerPathContains)));
                 if (!string.IsNullOrEmpty(setupMethod)) owner.GetType().GetMethod(setupMethod)?.Invoke(owner, new object[] { setupArgument });
                 toggled = (Behaviour)owner.GetComponents<Component>().First(c => c && c.GetType().FullName == toggledType);
             }
@@ -132,7 +135,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Application.Quit();
         }
 
-        [Serializable] class Dirty { public string path; public int frames; public string kind; }
+        [Serializable] class Dirty { public string path; public int frames; public string kind; public string components; }
         [Serializable] class Diagnosis { public string scene; public int frames; public List<Dirty> dirty = new List<Dirty>(); }
 
         IEnumerator Diagnose(string outPath)
@@ -142,7 +145,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             {
                 if (!c) return;
                 string key = kind + ":" + PathOf(c.transform) + (kind == "animator" ? "" : "");
-                if (!counts.TryGetValue(key, out var d)) counts[key] = d = new Dirty { path = PathOf(c.transform), kind = kind };
+                if (!counts.TryGetValue(key, out var d))
+                    counts[key] = d = new Dirty
+                    {
+                        path = PathOf(c.transform), kind = kind,
+                        // What could be driving it: the components on it and on its parent.
+                        components = string.Join(", ", c.GetComponents<Component>().Concat(c.transform.parent ? c.transform.parent.GetComponents<Component>() : Array.Empty<Component>())
+                                                         .Where(x => x).Select(x => x.GetType().Name).Distinct()),
+                    };
                 d.frames++;
             }
             var registryType = typeof(UnityEngine.UI.CanvasUpdateRegistry);

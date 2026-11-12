@@ -114,6 +114,8 @@ namespace CosmicShore.Editor.ProvenWin
                 if (Arg("-ownerType") is { } owner) so.FindProperty("ownerType").stringValue = owner;
                 if (Arg("-setupMethod") is { } setup) so.FindProperty("setupMethod").stringValue = setup;
                 if (Arg("-toggledType") is { } toggled) so.FindProperty("toggledType").stringValue = toggled;
+                if (Arg("-ownerPathContains") is { } ownerPath) so.FindProperty("ownerPathContains").stringValue = ownerPath;
+                if (Arg("-setupMethod") == "none") so.FindProperty("setupMethod").stringValue = "";
                 if (Arg("-diagnoseFrames") is { } diag) so.FindProperty("diagnoseFrames").intValue = int.Parse(diag);
                 so.ApplyModifiedPropertiesWithoutUndo();
                 if (prefab) EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), $"{Temp}/ProvenWinSceneBench.unity");
