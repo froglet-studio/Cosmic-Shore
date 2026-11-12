@@ -66,7 +66,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / PILOTS / ARTIFACTS / DECOR) and a pilot's profile page | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); the Pilots tab and the pilot profile page built 2026-11-12, not run in the editor (section 92.1) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -4088,6 +4088,71 @@ controls (Decor opened, a squad mate with no pilot button, `arkTabs` unwired); a
   reads SeatLost. Closing that race needs a Cloud Code reservation (backend, Shombith).
 - `author_pilot_assets.py --check` fails on this branch because the Meerkat (on bleeding-edge since the 10-27 merge)
   has no pilots or artifacts. That is a content gap for the pilots work, not caused by the tabs.
+
+### 92.1 The PILOTS tab and a pilot's profile page (2026-11-12, NOT RUN IN EDITOR; run in Amoebius)
+
+Garrett (2026-11-11): "the main use will be a full screen profile for each pilot accessible through the ark app shell
+menu"; (2026-11-12): "Lets get them into the game. update the avatars, and use the full size art for each pilot's
+profile page in the ark."
+- **A fourth open tab, PILOTS**, between SQUADS and ARTIFACTS (`ArkPilotsPage`): the crew in the order they joined, one
+  cell a pilot (a `SquadPickChip`, the Squads tab's own) with the close-up of their callsign's scene, their name and
+  their callsign. A crew holds at most one pilot a callsign (`Docs/Pilots/INVENTORY.md` 3.1), so the tab has one cell a
+  callsign (18, six by three), needs no scrolling and starts right of the friends orb. "Your crew" and "Pilots: {count}"
+  are the caption; an empty crew says so. Every word is on the component or the prefab.
+- **A press opens the pilot's PROFILE PAGE** (`PilotProfileModal`, `ModalWindows.PILOT_PROFILE = 21`,
+  `ScreenSwitcher.OpenPilotProfile(pilotId)`): the pilot's 1536x864 scene across the whole screen (`PilotSceneImage`:
+  cut to the screen's shape around the face, carried to the screen's edges past the safe area) and one panel of words
+  on the side the pilot does not stand on: the callsign, the name, the animals, the faction, the home, what the
+  callsign sees, the story, and who is pictured. NEXT, PREVIOUS and "3 / 18" sit on one plate at the bottom centre, the
+  same place for every pilot; Close (B) is the kit's. The page is added to the canvas from
+  `Resources/Pilots/PilotProfileView` (`EnsurePilotProfileModal`, at start when the scene has none, as the credits
+  screen is), is never reopened after a match (a window type does not say which pilot) and stays out of the browser
+  Toybox. Value 20 stays free for the Quests window of section 151, which section 159 took back out.
+- **Whose words, whose picture.** The words are the crew member's own record. A starter IS its callsign's painted pilot
+  (2026-11-12, `PaintedCrewSO`, `Docs/Pilots/PORTRAITS.md` section 8), so for the starter crew the words and the
+  picture are one person and the story is three short paragraphs about the wider world and the faction's work. Only
+  for a recruit, until each person has art, does the panel's last line say who is pictured (`picturedTemplate`,
+  "Pictured: {painted}, the first {callsign}"; blank it to drop the line).
+- **One scene in memory.** A scene is loaded by name when its pilot is drawn and unloaded when the next is shown or the
+  closed page has faded. The eighteen scenes are in `Assets/Resources/Pilots/Scenes/` (`author_pilot_scene_assets.py`,
+  9.0 MB of JPG), 32 px stand-ins on WebGL.
+- **Measured, outside Unity.** The longest story `PilotGenerator` can compose is 14 lines of the story's 15.6, and the
+  widest name fits the page's name row and a crew cell (360,000 rolls and the generator's tables, in the UI font). The
+  page's cut (`PilotSceneImage.Frame`) was run under plain .NET on all eighteen scenes at 21:9, 19.5:9, 16:9, 16:10,
+  3:2 and 4:3 with the panel in its place: every face is inside the view and clear of the words. With no words it
+  equals the scene kit's recorded crop within a pixel (90 scene and shape pairs).
+- **Seen in the engine before it shipped** (section 159: a build nobody had looked at was taken back out). The tree
+  merged with bleeding-edge was run in Amoebius, offline: the tab, a press, the page, NEXT, the panel's change of side,
+  the cut at 4:3 and 21:9, and CLOSE all work. The look found one fault. The plates under the words were authored at
+  alpha 0.88, the Credits window's dim, and **the game blends in linear light** (`m_ActiveColorSpace: 1`): a plate at
+  alpha a lets through (1 - a) of the picture's light, so a white sky under 0.88 is still sRGB 97 and the quiet lines
+  (NeutralLightest) stood at 1.5:1. A web drawing blends in sRGB and had shown the same plate near black. The plates
+  are solid now, and the layout tool computes each plate's contrast over a white picture in linear light for both
+  colours words are drawn in (4.5:1 or it fails). The engine is not Unity: it does not draw the menu's sea material
+  and sets a paragraph's lines closer (17.6 against the kit's 23.2 at Body).
+- **The pad stays on the page.** NEXT, PREVIOUS and CLOSE steer it themselves (explicit navigation, `WAYS` in the
+  page's generator): left from NEXT to PREVIOUS and right back, up from either step or right from NEXT to CLOSE, down
+  or left from CLOSE to NEXT, and nothing else. The kit's default, automatic, picks the best-placed live control on
+  the whole canvas, and **the top nav's two arrow buttons stay live under every open window** (`LeftArrrow` and
+  `RightArrow`: Buttons on automatic navigation, in a group the menu switches off only for freestyle). A full-screen
+  page covers them, so up from NEXT, up or left from PREVIOUS and left from CLOSE would land on a button nobody can
+  see (worked out with uGUI's own score on the page's rectangles after a pad run in the engine left the page; not
+  seen in Unity). Every control on the page is drawn inline and named in `WAYS`: a nested kit button keeps its
+  navigation in its own prefab, so the layout tool refuses one. The hub strip took its own
+  arrows out of the pad's way for the same reason (`author_menu_hub_nav.py`). The engine's pad also reaches controls
+  under closed windows, because its `Selectable.IsInteractable()` ignores `CanvasGroup`s; that part is the engine's
+  alone. After the change a pad run in the engine stayed on the three buttons through seventeen presses, and A on
+  CLOSE and B both closed the page.
+- **Generators:** `author_menu_pilot_profile.py` (the page; 27 negative controls) and `author_menu_ark.py` (the tab;
+  nine new controls). Each reads the tokens a line may name from the code that fills them
+  (`PilotProfileModal.TokenNames`; `ArkPilotsPage`'s two `TemplateText.Fill` calls, so `{count}` is the count's
+  alone), and a control names the rule that must catch it, so one caught by a neighbouring rule fails the self-test.
+  `ArkView.prefab` gained 814 documents and changed three (the root's children, the tabs component's new entry, the
+  tab row's width); `Menu_Main.unity` is untouched.
+- **Not drawn on Frogma first:** built straight from Garrett's words. Pictures of the page at three screen shapes and
+  of the tab, captured from that engine run, are at https://claude.ai/artifact/RAAiiZAuMzHt8Fzx6Bf1mM. No upright pose
+  is drawn: an upright phone shows the PC layout fitted to the width (section 138). Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ## 93. Rev 28 mockups: the Ark's Squads and Decor tabs (2026-10-27, awaiting board approval)
 

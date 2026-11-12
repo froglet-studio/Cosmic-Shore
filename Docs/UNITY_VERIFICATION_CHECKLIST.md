@@ -65,6 +65,111 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Swordfish's own HUD and ability icons (`claude/swordfish-icons`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md` §8 (the Swordfish's row). The Swordfish leaves the Rhino's HUD
+for its own (`SwordfishHUDVariant.prefab`, `SwordfishVesselHUDView`, `SwordfishHUDController`, swapped in
+`Swordfish.prefab`), with 19 kit-drawn parts (`Assets/_Graphics/Icons/AbilityIcons/Swordfish/`) and
+`ShieldSwipeActionExecutor.SwipeRecoveryRemaining01` for the Time plate. Stacked on `claude/swordfish-kit`.
+Ran: `unity_refcompile` (0 errors in changed files), `icon_kit/author.py swordfish --check` (no drift).
+Not run: Unity, the EditMode tests (`SwordfishHUDTests`).
+
+1. Toybox, Swordfish: the four cards show the bill (Charge), the afterimages (Mass), the bill's reach (Space) and the
+   Quickdraw bill (Time); no Rhino katana, no missing sprite.
+2. Swing with one trigger: the Charge card's bill swings to that side; both triggers raise it and light the card while
+   energized; the plate fills with the energize and the veil sweeps the cooldown.
+3. Lay afterimages: the Mass card lights, the copies in your domain colour.
+4. Raise Space: the bill on the Space card lengthens; at Space 5 the prism ahead is shattered.
+5. Swing at Time 0 and Time 10: the Time plate drains the recovery (faster at 10), the swoosh brightens with Time; reaching
+   Time 5 flashes the card once and shows the swoosh back.
+6. Fly the Rhino: its own HUD is unchanged.
+
+### 🔴 The Swordfish's fundamentals pass: Quickdraw, Flurry, the Surge alone (`claude/swordfish-kit`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SWORDFISH.md` § "Fundamentals pass". Time is the sword's rate (Quickdraw: energize
+hold, energize cooldown and swipe recovery divided by x1 -> x2.5), its L5 Flurry removes the swipe recovery; the
+Swordfish's ramp is its own unscaled asset and the Momentum ward is gone from it; the omni crystal is absorbed and
+raises the Surge with no blast.
+Ran: `unity_refcompile` player and editor (0 errors in changed files; 30 pre-existing in untouched files),
+`element_ability_table.py Swordfish` (4/4, 0 disagreements), `author_swordfish_assets.py --check`.
+Not run: Unity, the EditMode tests (`SwordfishQuickdrawTests`).
+
+1. Toybox, Swordfish, Time 0: both triggers energize after 1 s; after the 5 s tail the cooldown is 5 s.
+2. Raise Time to 10 (crystals or the debug level): energize after 0.4 s, cooldown 2 s, the swipes recover visibly faster.
+3. Time 5: the swipes never hold centre between swings, lit or not (Flurry). Below 4 it relocks.
+4. Ramp: flat out still reaches 840 u/s, at the same wind-up at every Time level.
+5. Fly through danger prisms flat out at Time 5: they drain the Swordfish (no Momentum).
+6. Take an omni crystal: it flows into the hull (no 200-500 blast), the ring of eight bills rises for 8 s.
+
+### 🔴 The Ark's Pilots tab and the pilot profile page (`claude/signature-pilot-busts`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 92.1. The Ark gains a PILOTS tab (`ArkPilotsPage`: the crew, one cell
+a pilot with the close-up of their callsign's scene). Pressing a pilot opens their PROFILE PAGE (`PilotProfileModal`,
+`ModalWindows.PILOT_PROFILE = 21`, `Resources/Pilots/PilotProfileView.prefab`): the scene full screen
+(`PilotSceneImage`, loaded by name from `Resources/Pilots/Scenes/`, one in memory), the words in a panel on the side the
+pilot does not stand on, Next / Previous through the crew. Eighteen scene textures and `PilotSceneCatalog.asset` are new
+(`author_pilot_scene_assets.py`). Affects Shombith's Ark app shell and UI.
+
+**Verified without the editor:** the three generators' `--check` and `--self-test`; `unity_refcompile`, player and
+editor (0 errors in changed files, and a planted fault in each new file is caught); `check_generated_assets.py`; the
+`Frame` arithmetic run under plain .NET on all eighteen scenes at six screen shapes, with the eight `Frame_*` cases of
+`PilotSceneAssetTests`; name and story lengths over 360,000 rolls of `PilotGenerator`. The seven asset tests of
+`PilotSceneAssetTests` have not run. Pictures of the page and the tab: https://claude.ai/artifact/RAAiiZAuMzHt8Fzx6Bf1mM.
+
+**Run in Amoebius (the engine, offline, 2026-11-12), which is not Unity:** on the tree merged with bleeding-edge the
+PILOTS tab shows "YOUR CREW", "PILOTS: 18" and the eighteen cells clear of the friends orb; a press opens the page
+with the scene, every line of the panel and "1 / 18"; NEXT steps; the panel stands on the left for ANVIL, who stands
+on the right; the cut holds at 4:3 and 21:9 with ANVIL's horns whole; CLOSE returns to the tab; the log holds no
+error. That run is why the plates are solid: at their first alpha, 0.88, a bright sky showed through as a mid grey
+and the quiet lines could not be read (the game blends in linear light; the web drawing blends in sRGB and had shown
+the plate near black). The engine does not draw the menu's sea material (it was switched off for the pictures) and
+sets a paragraph's lines 17.6 apart where the kit measures 23.2 for Unity, so a story stands about a third taller in
+Unity than in those pictures. The final look, the fonts' rendering and the fade are still Unity's to judge.
+
+**The controller, tried in the same engine:** with the kit's automatic navigation, a press left from NEXT put the
+focus on a game card outside the page, and A there opened the Arcade's configure window under it. Two causes. The
+engine's `Selectable.IsInteractable()` ignores `CanvasGroup`s, so its pad reaches controls under closed and covered
+windows; Unity's does not, and that part is the engine's alone. The second is real in Unity, worked out with uGUI's own
+score (dot / distance squared) on the page's rectangles and not run there: the top nav's `LeftArrrow` and `RightArrow`
+are Buttons on automatic navigation in a group the menu switches off only for freestyle, so they stay candidates
+under every open window, and from this page up from NEXT, up or left from PREVIOUS and left from CLOSE all land on
+one of them, hidden under the picture. So NEXT, PREVIOUS and CLOSE steer the pad themselves (explicit navigation,
+`WAYS` in `author_menu_pilot_profile.py`). The engine run after that: seventeen presses stayed on the three buttons,
+A on PREVIOUS and on NEXT stepped the crew both ways with the wrap, A on CLOSE closed the page, and so did B. The pad
+in Unity is step 6.
+
+**Verify in editor:**
+1. Let Unity import the branch. **Pass:** 18 textures under `Assets/Resources/Pilots/Scenes/` (1536x864), the catalog
+   and the page prefab import with no missing script or reference in the Console.
+2. Run the edit-mode tests `PilotSceneAssetTests`. **Pass:** all green.
+3. Main menu, Ark, PILOTS (click the tab, or move the pad's focus to it and press A). **Pass:** "YOUR CREW",
+   "PILOTS: 18", eighteen cells six by three, each with a face, a name and a callsign; nothing under the friends orb;
+   Converter, Squads, Artifacts and Decor look and work as before.
+4. Press a pilot. **Pass:** the page opens full screen over the nav bar with that pilot's callsign scene; the panel
+   shows the callsign, name, animals, faction, home, sight and story, and "PICTURED: <painted pilot>, THE FIRST
+   <CALLSIGN>" at its foot. No white rectangle shows before the scene.
+5. Press NEXT through all eighteen, then PREVIOUS back. **Pass:** the count runs "1 / 18" to "18 / 18" and wraps; the
+   panel is on the right for a pilot who stands on the left and on the left for one who stands on the right; no face
+   is under the panel, the step plate or Close; the ground never shows between two pilots.
+6. Controller, a page open. **Pass:** focus lands on NEXT; left reaches PREVIOUS and right returns to NEXT; up from
+   either step, or right from NEXT, reaches CLOSE; down or left from CLOSE returns to NEXT. No other press moves the
+   focus (down from a step, left from PREVIOUS, up or right from CLOSE), and it never leaves the page (press A after
+   each move: the page steps to the next or the previous pilot, or closes from CLOSE; nothing opens under it); B
+   closes the page with the Ark's Pilots tab behind it.
+7. Game view at 16:10, 4:3, 21:9 and 19.5:9. **Pass:** the scene fills the view with no bars and no stretch, the face
+   stays clear of the words, and a tall head (ANVIL, VOLT) is whole at 21:9.
+8. Device Simulator, a notched phone held sideways. **Pass:** the picture reaches the screen's edges; the panel, the
+   step plate and Close stay inside the safe area. Upright, the PC layout is fitted to the width.
+9. Memory Profiler, the page open and then closed. **Pass:** one scene texture while open, none once it has faded.
+10. Open a page, close it, launch an Arcade match and come back. **Pass:** the menu does not reopen the page.
+11. The importer preview per platform. **Pass:** the scenes read clean on Standalone (BC7), Android and iOS (ASTC);
+    WebGL holds 32 px stand-ins, and the browser Toybox has no way to the page.
+
+**First-pass tuning (not settled):** the plates are solid (`author_menu_pilot_profile.py` holds every plate to 4.5:1
+for both colours words are drawn in, over a white picture; a thinner plate needs brighter quiet lines); the panel
+560 x 744, which holds the longest story a pilot can have (14 lines), so a ten-line story leaves empty plate above
+the caption; the face margin 0.03 of the view; the crew cell 260 x 256 with a 180 close-up.
+
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** a sixth settings tab, REGION (globe icon), drawn by `Tools/Build/author_menu_settings.py`
@@ -22934,3 +23039,32 @@ Compiled against the Unity reference assemblies (player and editor); the model's
    ready) under "Waiting for pilots", and reaches 100% when the other reports. It used to sit at 100% for that wait.
 4. **Judge the hold.** If the bar standing still during the dwell or a gap reads as a hang, say so: the fix is the
    moving glint drawn on the Rev 91 bar, not a timed creep.
+
+## 🔴 Pilot avatars are the close-ups of the pilots' scenes at 256 px (2026-11-12, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/signature-pilot-busts` (PR #1894); `Docs/Pilots/PORTRAITS.md` sections 7 and 8. No C# changed, so no
+reference compile: the 50 `Assets/_Graphics/Profile/Pilots/Avatar_<WORD>.png` were re-cut at 256 px (they were 128 px,
+cut from the full-body portraits), first from the signature busts and then, by Garrett's decision of 2026-11-11, from
+the close-up of each pilot's realistic scene (`Docs/Pilots/art/scenes/`). Every id, guid and `.meta` and
+`SO_DefaultProfileIcons.asset` are unchanged; `author_pilot_avatar_assets.py --check` passes. Affects Shombith's profile
+window and avatar picker.
+
+1. **Profile > Change avatar.** All 50 avatars show, each a photograph-like close-up of a pilot in their own place (no
+   navy plate, no white or missing sprite), and each reads at the picker's tile size.
+2. **A saved profile keeps its avatar**: the same id shows the same pilot, now as their scene's close-up.
+3. **The small sizes**: the friends drawer, a party seat, the scoreboard and the HUD's AI seats. Look for a hard edge
+   or a soft, blurry picture where the 256 px sprite is scaled down, and note the screen.
+
+## 🔴 A pilot's page shows the painted pilot's own name, animals and story (2026-11-12, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/pilot-page-story-matches-art`; `Docs/Pilots/PORTRAITS.md` section 8. The starter crew are now the
+painted pilots (`PaintedCrewSO`, `Resources/Pilots/PaintedCrew`, written by `author_pilot_scene_assets.py` from
+`Docs/Pilots/art/scenes/people.json`); `AccountInventoryStore` repaints every starter record on each read. Compiled
+against Unity reference assemblies (`unity_refcompile`), not opened in the editor; `PaintedCrewTests` not run.
+
+1. **Run the EditMode tests** `PaintedCrewTests` and `AccountInventoryTests`.
+2. **An existing save.** With a crew granted before this change, open Ark > PILOTS and a pilot's page: the name, the
+   animals, the faction, the home and the story are the pictured pilot's (VOLT is Karenth Amberweaver, Axolotl and
+   Koi, Brass Lantern Company), and no "Pictured:" line shows. The crew list and a squad that seated them still work.
+3. **The story** reads as three short paragraphs with a blank line between, inside the panel, on every pilot.
+4. **A voyage's jobs** for a starter come from the painted faction (VOLT: a Merchant's courier and convoy work).

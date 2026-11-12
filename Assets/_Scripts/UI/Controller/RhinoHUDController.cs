@@ -8,7 +8,9 @@ using Reflex.Attributes;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Rhino's HUD: pushes the sword's state onto the fleet's four ability cards.
+    /// The Rhino's HUD: pushes the sword's state onto the fleet's four ability cards. Since the 2026-11-12 plough rework
+    /// the Rhino itself has no sword (the Swordfish took it): with <see cref="goreSpeed"/> set and no sword driver, the
+    /// Charge card is the Gore (<see cref="PushGore"/>) and the sword paths below find nothing and draw nothing.
     ///
     /// <para><b>Control chips.</b> Charge, Mass and Space wear the two-trigger glyph (map Input
     /// BothSticksAction: hold both to energize, swing to cut; the afterimages follow the energize).
@@ -73,6 +75,12 @@ namespace CosmicShore.UI
                  "Found on the vessel when empty.")]
         [SerializeField] private VesselElementalImmunity speedWard;
 
+        [Header("Charge card - the gore")]
+        [Tooltip("The Rhino's Gore speed (RhinoGoreSpeed, the asset RhinoGoreBySkimmerEffect gates on). With it, and no " +
+                 "sword, the Charge plate is the ram speed against the gore's live minimum - full when a ram counts - and " +
+                 "the card lights while it does or a Stampede runs. Empty on the Swordfish.")]
+        [SerializeField] private JoustSpeedConfigSO goreSpeed;
+
         [Header("Time card - the ramp's line")]
         [Tooltip("The ramp (RampBoostActionExecutor on the vessel), whose straightness dims the Time gauge. " +
                  "Found on the vessel when empty.")]
@@ -88,6 +96,7 @@ namespace CosmicShore.UI
         ITopSpeedSource _topSpeed;
 
         bool _chargeLit;
+        bool _stampede;
         float _chargeVeil = -1f;
         float _chargeGauge = -1f;
         bool _massLit;
@@ -121,6 +130,7 @@ namespace CosmicShore.UI
             // A re-initialise (menu vessel swap, pilot swap) starts the cards from a known state so
             // the change detection below pushes everything once.
             _chargeLit = false;
+            _stampede = false;
             _chargeVeil = -1f;
             _chargeGauge = -1f;
             _massLit = false;
@@ -188,7 +198,11 @@ namespace CosmicShore.UI
             PushLineToTimeGauge();
 
             PushSwordToKatana();
-            if (!swordDriver) return;
+            if (!swordDriver)
+            {
+                PushGore();
+                return;
+            }
 
             // Re-asserted every frame while lit, not change-detected: the card is bound to the
             // both-triggers input, so the base press path darkens it the moment the stance is let
@@ -218,6 +232,31 @@ namespace CosmicShore.UI
                 _chargeGauge = energize;
                 gauge.fillAmount = energize;
             }
+        }
+
+        // The Rhino's Charge card: the plate fills with the ram speed toward the gore's minimum (the same number the gore is
+        // admitted at: the replicated Charge level, or the Charge 10 one in a Stampede), the card lights while a ram would
+        // count, and flashes when a Stampede starts.
+        void PushGore()
+        {
+            if (!goreSpeed) return;
+
+            bool stampede = RhinoStampede.IsActive(_vesselStatus);
+            if (stampede && !_stampede) view.PlayAbilityFlash(Element.Charge);
+            _stampede = stampede;
+
+            float minimum = stampede ? goreSpeed.MinimumSpeedAtLevel(1f) : goreSpeed.MinimumSpeedFor(_vesselStatus);
+            float ready01 = minimum > 0f ? Mathf.Clamp01(_vesselStatus.Speed / minimum) : 1f;
+            if (!Mathf.Approximately(ready01, _chargeGauge) && view.TryGetAbilityGauge(Element.Charge, out var gauge))
+            {
+                _chargeGauge = ready01;
+                gauge.fillAmount = ready01;
+            }
+
+            bool lit = stampede || ready01 >= 1f;
+            if (lit == _chargeLit) return;
+            _chargeLit = lit;
+            view.SetAbilityPressed(Element.Charge, lit);
         }
 
         // The pilot's domain colour (the domain can change mid-match); white until the palette resolves.
