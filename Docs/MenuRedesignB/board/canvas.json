@@ -2302,718 +2302,6 @@
       "x": 2100,
       "y": 7780
     },
-    "R43ACrew.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 ACrew - Drawer, level 2, Ark crew (the 12 settings, presets)",
-      "w": 1920,
-      "x": 2100,
-      "y": 1260
-    },
-    "R43AEpisodes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 AEpisodes - Drawer, Episodes tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 8400,
-      "y": 1260
-    },
-    "R43ASaga.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 ASaga - Drawer, Saga tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 6300,
-      "y": 1260
-    },
-    "R43AStory.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 AStory - Drawer, level 3, the story (optional)",
-      "w": 1920,
-      "x": 4200,
-      "y": 1260
-    },
-    "R43AVoyage.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 AVoyage - Drawer, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the card slides in from",
-      "w": 1920,
-      "x": 0,
-      "y": 1260
-    },
-    "R43BCrew.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 BCrew - Tray, level 2, Ark crew (the 12 settings, presets)",
-      "w": 1920,
-      "x": 2100,
-      "y": 2520
-    },
-    "R43BEpisodes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 BEpisodes - Tray, Episodes tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 8400,
-      "y": 2520
-    },
-    "R43BSaga.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 BSaga - Tray, Saga tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 6300,
-      "y": 2520
-    },
-    "R43BStory.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 BStory - Tray, level 3, the story (optional)",
-      "w": 1920,
-      "x": 4200,
-      "y": 2520
-    },
-    "R43BVoyage.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 BVoyage - Tray, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the arena preview's tray,",
-      "w": 1920,
-      "x": 0,
-      "y": 2520
-    },
-    "R43CCrew.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 CCrew - Level tabs, level 2, Ark crew (the 12 settings, presets)",
-      "w": 1920,
-      "x": 2100,
-      "y": 3780
-    },
-    "R43CEpisodes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 CEpisodes - Level tabs, Episodes tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 8400,
-      "y": 3780
-    },
-    "R43CSaga.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 CSaga - Level tabs, Saga tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 6300,
-      "y": 3780
-    },
-    "R43CStory.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 CStory - Level tabs, level 3, the story (optional)",
-      "w": 1920,
-      "x": 4200,
-      "y": 3780
-    },
-    "R43CVoyage.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 CVoyage - Level tabs, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - one card, Voyage / A",
-      "w": 1920,
-      "x": 0,
-      "y": 3780
-    },
-    "R43Compare.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 - where the voyage card goes at each level, all six side by side",
-      "w": 1920,
-      "x": 0,
-      "y": 0
-    },
-    "R43DCrew.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 DCrew - Rising sheet, level 2, Ark crew (the 12 settings, presets)",
-      "w": 1920,
-      "x": 2100,
-      "y": 5040
-    },
-    "R43DEpisodes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 DEpisodes - Rising sheet, Episodes tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 8400,
-      "y": 5040
-    },
-    "R43DSaga.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 DSaga - Rising sheet, Saga tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 6300,
-      "y": 5040
-    },
-    "R43DStory.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 DStory - Rising sheet, level 3, the story (optional)",
-      "w": 1920,
-      "x": 4200,
-      "y": 5040
-    },
-    "R43DVoyage.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 DVoyage - Rising sheet, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 ris",
-      "w": 1920,
-      "x": 0,
-      "y": 5040
-    },
-    "R43ECrew.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 ECrew - Dossier, level 2, Ark crew (the 12 settings, presets)",
-      "w": 1920,
-      "x": 2100,
-      "y": 6300
-    },
-    "R43EEpisodes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 EEpisodes - Dossier, Episodes tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 8400,
-      "y": 6300
-    },
-    "R43ESaga.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 ESaga - Dossier, Saga tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 6300,
-      "y": 6300
-    },
-    "R43EStory.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 EStory - Dossier, level 3, the story (optional)",
-      "w": 1920,
-      "x": 4200,
-      "y": 6300
-    },
-    "R43EVoyage.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 EVoyage - Dossier, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - the three levels as num",
-      "w": 1920,
-      "x": 0,
-      "y": 6300
-    },
-    "R43FCrew.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 FCrew - Two cards, level 2, Ark crew (the 12 settings, presets)",
-      "w": 1920,
-      "x": 2100,
-      "y": 7560
-    },
-    "R43FEpisodes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 FEpisodes - Two cards, Episodes tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 8400,
-      "y": 7560
-    },
-    "R43FSaga.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 FSaga - Two cards, Saga tab on LB / RB (content unchanged)",
-      "w": 1920,
-      "x": 6300,
-      "y": 7560
-    },
-    "R43FStory.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 FStory - Two cards, level 3, the story (optional)",
-      "w": 1920,
-      "x": 4200,
-      "y": 7560
-    },
-    "R43FVoyage.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 FVoyage - Two cards, level 1, the voyage card (title, summary, crew, waypoints, Your Ark) - levels 2 and 3 slide",
-      "w": 1920,
-      "x": 0,
-      "y": 7560
-    },
-    "R43Notes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 43 - notes: what was asked, what all six share, the recommendation, what differs from the build",
-      "w": 1920,
-      "x": 2100,
-      "y": 0
-    },
-    "R44Compare.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 - the four options and their tab rows side by side",
-      "w": 1920,
-      "x": 0,
-      "y": 9940
-    },
-    "R44GCrew.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 GCrew - Crew's hand, level 2, Ark crew (the 12 settings)",
-      "w": 1920,
-      "x": 2100,
-      "y": 11200
-    },
-    "R44GEpisodes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 GEpisodes - Crew's hand, the Episodes tab, locked: coming soon",
-      "w": 1920,
-      "x": 10500,
-      "y": 11200
-    },
-    "R44GQuests.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 GQuests - Crew's hand, the Quests tab (the quest tracker)",
-      "w": 1920,
-      "x": 8400,
-      "y": 11200
-    },
-    "R44GSaga.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 GSaga - Crew's hand, the Saga tab",
-      "w": 1920,
-      "x": 6300,
-      "y": 11200
-    },
-    "R44GStory.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 GStory - Crew's hand, level 3, the story (optional)",
-      "w": 1920,
-      "x": 4200,
-      "y": 11200
-    },
-    "R44GVoyage.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 GVoyage - Crew's hand, level 1, the voyage card - each voyage a card your crew hands you, levels 2 and 3 its back",
-      "w": 1920,
-      "x": 0,
-      "y": 11200
-    },
-    "R44HCrew.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 HCrew - Logbook, level 2, Ark crew (the 12 settings)",
-      "w": 1920,
-      "x": 2100,
-      "y": 12460
-    },
-    "R44HEpisodes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 HEpisodes - Logbook, the Episodes tab, locked: coming soon",
-      "w": 1920,
-      "x": 10500,
-      "y": 12460
-    },
-    "R44HQuests.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 HQuests - Logbook, the Quests tab (the quest tracker)",
-      "w": 1920,
-      "x": 8400,
-      "y": 12460
-    },
-    "R44HSaga.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 HSaga - Logbook, the Saga tab",
-      "w": 1920,
-      "x": 6300,
-      "y": 12460
-    },
-    "R44HStory.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 HStory - Logbook, level 3, the story (optional)",
-      "w": 1920,
-      "x": 4200,
-      "y": 12460
-    },
-    "R44HVoyage.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 HVoyage - Logbook, level 1, the voyage card - the voyage a page of the Ark's log, levels 2 and 3 the next pages -",
-      "w": 1920,
-      "x": 0,
-      "y": 12460
-    },
-    "R44ICrew.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 ICrew - Formation, level 2, Ark crew (the 12 settings)",
-      "w": 1920,
-      "x": 2100,
-      "y": 13720
-    },
-    "R44IEpisodes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 IEpisodes - Formation, the Episodes tab, locked: coming soon",
-      "w": 1920,
-      "x": 10500,
-      "y": 13720
-    },
-    "R44IQuests.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 IQuests - Formation, the Quests tab (the quest tracker)",
-      "w": 1920,
-      "x": 8400,
-      "y": 13720
-    },
-    "R44ISaga.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 ISaga - Formation, the Saga tab",
-      "w": 1920,
-      "x": 6300,
-      "y": 13720
-    },
-    "R44IStory.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 IStory - Formation, level 3, the story (optional)",
-      "w": 1920,
-      "x": 4200,
-      "y": 13720
-    },
-    "R44IVoyage.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 IVoyage - Formation, level 1, the voyage card - your Ark's three hulls lead the card, Ark crew opens the formatio",
-      "w": 1920,
-      "x": 0,
-      "y": 13720
-    },
-    "R44JCrew.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 JCrew - On the sea, level 2, Ark crew (the 12 settings)",
-      "w": 1920,
-      "x": 2100,
-      "y": 14980
-    },
-    "R44JEpisodes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 JEpisodes - On the sea, the Episodes tab, locked: coming soon",
-      "w": 1920,
-      "x": 10500,
-      "y": 14980
-    },
-    "R44JQuests.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 JQuests - On the sea, the Quests tab (the quest tracker)",
-      "w": 1920,
-      "x": 8400,
-      "y": 14980
-    },
-    "R44JSaga.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 JSaga - On the sea, the Saga tab",
-      "w": 1920,
-      "x": 6300,
-      "y": 14980
-    },
-    "R44JStory.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 JStory - On the sea, level 3, the story (optional)",
-      "w": 1920,
-      "x": 4200,
-      "y": 14980
-    },
-    "R44JVoyage.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 JVoyage - On the sea, level 1, the voyage card - no card box, the levels are columns standing on the sea lines -",
-      "w": 1920,
-      "x": 0,
-      "y": 14980
-    },
-    "R44Notes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 44 - notes: what changed from Rev 43, the recommendation",
-      "w": 1920,
-      "x": 2100,
-      "y": 9940
-    },
-    "R45A.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "fleet-codex",
-      "title": "Rev 45 A - Tabs: Elements, Game Modes, Controls across the top; one element at a time; Mobile / PC / Controller as devic",
-      "w": 1920,
-      "x": 0,
-      "y": 0
-    },
-    "R45B.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "fleet-codex",
-      "title": "Rev 45 B - Rail: a section rail on the left; all four elements side by side; the three devices as columns of one Control",
-      "w": 1920,
-      "x": 2100,
-      "y": 0
-    },
-    "R45Notes.dc.html": {
-      "h": 900,
-      "page": "fleet-codex",
-      "title": "Rev 45 - notes: what moved where from the live codex, the recommendation, what the build changes",
-      "w": 1920,
-      "x": 0,
-      "y": 1260
-    },
-    "R46Cards.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 46 Cards - the voyages as four small cards, the HyperSea map at Sector with their pins - interactive",
-      "w": 1920,
-      "x": 2100,
-      "y": 17360
-    },
-    "R46Crew.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 46 Crew - the open voyage at level 2, Ark crew: the 12 settings - interactive",
-      "w": 1920,
-      "x": 2100,
-      "y": 18620
-    },
-    "R46FromMap.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 46 FromMap - opened from the map: The Maw's pin pressed at Sector, its card slid open - interactive",
-      "w": 1920,
-      "x": 0,
-      "y": 18620
-    },
-    "R46Notes.dc.html": {
-      "h": 1080,
-      "page": "menu-redesign-c",
-      "title": "Rev 46 - notes: what was asked, what it is, what the build changes",
-      "w": 1920,
-      "x": 0,
-      "y": 19880
-    },
-    "R46Open.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 46 Open - a card slid open: Lantern Reach at level 1, the map on its course - interactive",
-      "w": 1920,
-      "x": 4200,
-      "y": 17360
-    },
-    "R46Prototype.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 46 Prototype - the prototype: press a card or a pin, zoom the map, step the levels - interactive",
-      "w": 1920,
-      "x": 0,
-      "y": 17360
-    },
-    "R46Story.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 46 Story - the open voyage at level 3, its story (optional) - interactive",
-      "w": 1920,
-      "x": 4200,
-      "y": 18620
-    },
-    "R48A.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "fleet-codex",
-      "title": "Rev 48 A - Marquee: the hull as a film still, five ability cards with every device's control on each card (recommended)",
-      "w": 1920,
-      "x": 0,
-      "y": 3460
-    },
-    "R48B.dc.html": {
-      "h": 1080,
-      "is_interactive": true,
-      "page": "fleet-codex",
-      "title": "Rev 48 B - Bento: a fleet filmstrip on top, the vessel as a grid of tiles, one control map drawing all three devices tog",
-      "w": 1920,
-      "x": 2100,
-      "y": 3460
-    },
-    "R48C.dc.html": {
-      "h": 1080,
-      "page": "fleet-codex",
-      "title": "Rev 48 C - Ledger: the kit as one table, controller, PC and phone as columns of each ability row, the fleet as an index",
-      "w": 1920,
-      "x": 4200,
-      "y": 3460
-    },
-    "R48Notes.dc.html": {
-      "h": 900,
-      "page": "fleet-codex",
-      "title": "Rev 48 - notes: what changed from Rev 45, the recommendation, what the build reads",
-      "w": 1920,
-      "x": 0,
-      "y": 4720
-    },
-    "R49A.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 A - Destination glow: the destination's region, soft and blurred, fills the card; the squad stands in it (recomme",
-      "w": 760,
-      "x": 0,
-      "y": 28240
-    },
-    "R49ACrew.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 A - Destination glow, level 2, Ark crew: three seats, four settings each, following the squad picked - interactiv",
-      "w": 760,
-      "x": 0,
-      "y": 29288
-    },
-    "R49AStory.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 A - Destination glow, level 3, the story (optional) - interactive",
-      "w": 760,
-      "x": 0,
-      "y": 30336
-    },
-    "R49B.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 B - Hangar light: your squad lit large on a floor of light, the voyage a strip under it - interactive",
-      "w": 760,
-      "x": 940,
-      "y": 28240
-    },
-    "R49BCrew.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 B - Hangar light, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
-      "w": 760,
-      "x": 940,
-      "y": 29288
-    },
-    "R49BStory.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 B - Hangar light, level 3, the story (optional) - interactive",
-      "w": 760,
-      "x": 940,
-      "y": 30336
-    },
-    "R49C.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 C - Route poster: the real course on the HyperSea map, dimmed behind the card - interactive",
-      "w": 760,
-      "x": 1880,
-      "y": 28240
-    },
-    "R49CCrew.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 C - Route poster, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
-      "w": 760,
-      "x": 1880,
-      "y": 29288
-    },
-    "R49CStory.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 C - Route poster, level 3, the story (optional) - interactive",
-      "w": 760,
-      "x": 1880,
-      "y": 30336
-    },
-    "R49D.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 D - Split art: the destination's reefs across the top, the squad on the seam - interactive",
-      "w": 760,
-      "x": 2820,
-      "y": 28240
-    },
-    "R49DCrew.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 D - Split art, level 2, Ark crew: three seats, four settings each, following the squad picked - interactive",
-      "w": 760,
-      "x": 2820,
-      "y": 29288
-    },
-    "R49DStory.dc.html": {
-      "h": 868,
-      "is_interactive": true,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 D - Split art, level 3, the story (optional) - interactive",
-      "w": 760,
-      "x": 2820,
-      "y": 30336
-    },
-    "R49Notes.dc.html": {
-      "h": 868,
-      "page": "menu-redesign-c",
-      "title": "Rev 49 - notes: what was asked, what all four share, the recommendation",
-      "w": 760,
-      "x": 3760,
-      "y": 28240
-    },
     "R4Configure.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
@@ -3513,6 +2801,77 @@
       "x": 0,
       "y": 11020
     },
+    "R67Ark.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "ark",
+      "title": "Rev 67 Ark - The Ark screen - Converter, Squads, Artifacts, Decor (live) - interactive",
+      "w": 1920,
+      "x": 0,
+      "y": 9440
+    },
+    "R68A.dc.html": {
+      "h": 2160,
+      "is_interactive": true,
+      "page": "fleet-codex",
+      "title": "Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one",
+      "w": 1920,
+      "x": 0,
+      "y": 0
+    },
+    "R68B.dc.html": {
+      "h": 2160,
+      "is_interactive": true,
+      "page": "fleet-codex",
+      "title": "Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own contro",
+      "w": 1920,
+      "x": 2100,
+      "y": 0
+    },
+    "R68C.dc.html": {
+      "h": 2160,
+      "is_interactive": true,
+      "page": "fleet-codex",
+      "title": "Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the c",
+      "w": 1920,
+      "x": 4200,
+      "y": 0
+    },
+    "R68D.dc.html": {
+      "h": 2160,
+      "is_interactive": true,
+      "page": "fleet-codex",
+      "title": "Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its contr",
+      "w": 1920,
+      "x": 0,
+      "y": 2340
+    },
+    "R68Notes.dc.html": {
+      "h": 900,
+      "page": "fleet-codex",
+      "title": "Rev 68 - notes: what Shombith asked, the four type pairings, what each look changes in the live codex",
+      "w": 1920,
+      "x": 0,
+      "y": 4680
+    },
+    "R69Desktop.dc.html": {
+      "h": 3400,
+      "is_interactive": true,
+      "page": "fleet-codex",
+      "title": "Rev 69 Desktop - C's flight-deck window, then abilities with their numbers and level 5, missions with filters, flight an",
+      "w": 1920,
+      "x": 0,
+      "y": 6977
+    },
+    "R69Phone.dc.html": {
+      "h": 4040,
+      "is_interactive": true,
+      "page": "fleet-codex",
+      "title": "Rev 69 Phone - the same page at 390, the move under the ability row",
+      "w": 390,
+      "x": 2100,
+      "y": 6977
+    },
     "R6Arcade.dc.html": {
       "h": 1080,
       "page": "menu-redesign",
@@ -3568,6 +2927,65 @@
       "w": 1920,
       "x": 4200,
       "y": 47810
+    },
+    "R72Goby.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "phone",
+      "title": "Rev 72 Goby - The Goby turns into the Pistol: upright takes the Pistol's view, landscape the Goby; plays on a loop - int",
+      "w": 1920,
+      "x": 2100,
+      "y": 3644
+    },
+    "R72Menu.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "phone",
+      "title": "Rev 72 Menu - The menu turn: the UI goes out on the switch, two frames held, fades back in (0.28 s); plays on a loop - i",
+      "w": 1920,
+      "x": 0,
+      "y": 3644
+    },
+    "R72Notes.dc.html": {
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 72 - notes: the timings, the rules, what only the editor can show",
+      "w": 1920,
+      "x": 0,
+      "y": 4904
+    },
+    "R72Other.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "page": "phone",
+      "title": "Rev 72 Other - Every other vessel: the phone turns, the game does not - interactive",
+      "w": 1920,
+      "x": 4200,
+      "y": 3644
+    },
+    "R75Builder.dc.html": {
+      "h": 1080,
+      "page": "game-mode-codex",
+      "title": "Rev 75 Builder - Builder: the same game opened in the builder, its I1-I4 ladder, the dials, saved layouts and the layout",
+      "w": 1920,
+      "x": 2100,
+      "y": 0
+    },
+    "R75Codex.dc.html": {
+      "h": 1080,
+      "page": "game-mode-codex",
+      "title": "Rev 75 Codex - Codex: element doors and game cards (A) around a large 3D level (C), the intensities and the prompt besid",
+      "w": 1920,
+      "x": 0,
+      "y": 0
+    },
+    "R75Notes.dc.html": {
+      "h": 900,
+      "page": "game-mode-codex",
+      "title": "Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed",
+      "w": 1920,
+      "x": 0,
+      "y": 1260
     },
     "R7AIDifficulty.dc.html": {
       "h": 1080,
@@ -4014,14 +3432,324 @@
       "x": 22820,
       "y": 86150
     },
-    "R67Ark.dc.html": {
+    "R76Compare.dc.html": {
       "x": 0,
-      "y": 9440,
+      "y": 7264,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 76 - the five transitions side by side, in time: the menu row and the Goby row"
+    },
+    "R76A.dc.html": {
+      "x": 2100,
+      "y": 7264,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 76 A - Fade through (built) - interactive",
+      "is_interactive": true
+    },
+    "R76B.dc.html": {
+      "x": 4200,
+      "y": 7264,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 76 B - Hold steady: the UI stays level while the phone turns; the Goby's camera swings to the side - interactive",
+      "is_interactive": true
+    },
+    "R76C.dc.html": {
+      "x": 0,
+      "y": 8524,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 76 C - Re-form (recommended): the UI re-forms in three bands; the Pistol's square grows to fill the screen - interactive",
+      "is_interactive": true
+    },
+    "R76D.dc.html": {
+      "x": 2100,
+      "y": 8524,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 76 D - Sliver wipe: a cut-corner slab sweeps across on the turn - interactive",
+      "is_interactive": true
+    },
+    "R76E.dc.html": {
+      "x": 4200,
+      "y": 8524,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 76 E - Focus pull: the world softens through the turn and sharpens with the UI - interactive",
+      "is_interactive": true
+    },
+    "R76Notes.dc.html": {
+      "x": 0,
+      "y": 9784,
+      "w": 1920,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 76 - notes: the recommendation and the cost of each"
+    },
+    "R78Follow.dc.html": {
+      "x": 0,
+      "y": 12144,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 78 Follow - Follow the turn (recommended): the pieces travel with the phone and stay level - interactive",
+      "is_interactive": true
+    },
+    "R78Glide.dc.html": {
+      "x": 2100,
+      "y": 12144,
+      "w": 1920,
+      "h": 1080,
+      "page": "phone",
+      "title": "Rev 78 Glide - Turn, then glide: the pieces turn with the phone, then glide into place - interactive",
+      "is_interactive": true
+    },
+    "R78Notes.dc.html": {
+      "x": 0,
+      "y": 13404,
+      "w": 1920,
+      "h": 900,
+      "page": "phone",
+      "title": "Rev 78 - notes: Follow vs Glide, and what only a device shows"
+    },
+    "R79Compare.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 79 - Picking a vessel, four ways: one press from the squad to any hull"
+    },
+    "R79A.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 79 A - Chart: the map is the window; voyages are pins on it and the picked one docks on the right (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R79B.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 79 B - Logbook: a list of voyages, the course large in the middle, the squad as three seats on the right - interactive",
+      "is_interactive": true
+    },
+    "R79C.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 79 C - Formation: the squad's three hulls are the hero; destinations on a ribbon above them - interactive",
+      "is_interactive": true
+    },
+    "R79D.dc.html": {
+      "x": 2100,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 79 D - Route: the picked voyage as a journey line across the window, rising and falling through the disk - interactive",
+      "is_interactive": true
+    },
+    "R79Notes.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 79 - notes: what each direction is, what it redraws, the recommendation, what it would change in the game"
+    },
+    "R80Compare.dc.html": {
+      "x": 0,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 80 - What each option changes from B: the row, the squad bar, the seat card, the quiet row"
+    },
+    "R80B1.dc.html": {
+      "x": 2100,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 80 B1 - Refined: each row a course thumbnail and who brought it, seats with their pilot (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R80B2.dc.html": {
+      "x": 4200,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 80 B2 - Wide sea: a narrow list, the course map wide with the voyage over it, the squad a bar along the foot - interactive",
+      "is_interactive": true
+    },
+    "R80B3.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 80 B3 - Crew: the squad as three tall seat cards, the hull and its pilot large - interactive",
+      "is_interactive": true
+    },
+    "R80B4.dc.html": {
+      "x": 2100,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 80 B4 - Quiet: no pictures in the list, the maps muted so only the course is bright, the most air - interactive",
+      "is_interactive": true
+    },
+    "R80Notes.dc.html": {
+      "x": 0,
+      "y": 7400,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 80 - notes: what B keeps, what each option changes, the recommendation"
+    },
+    "R81B5.dc.html": {
+      "x": 0,
+      "y": 9760,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 81 B5 - Cards: B1 with labelled numbers and B3's three seat cards in the right panel (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R81Notes.dc.html": {
+      "x": 0,
+      "y": 11020,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 81 - notes: what B1 keeps, B3's cards, the three right panels, the recommendation"
+    },
+    "R82Squad.dc.html": {
+      "x": 0,
+      "y": 13380,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 82 Squad - B5 playable: choosing the squad and changing its seats - interactive",
+      "is_interactive": true
+    },
+    "R83Compare.dc.html": {
+      "x": 0,
+      "y": 15920,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 83 - Rev 82 Squad: the outlined-square editor this replaces"
+    },
+    "R83S1.dc.html": {
+      "x": 2100,
+      "y": 15920,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 83 S1 - Showroom: the choice as the hero, its render and name large, the options a slim strip along the foot (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R83S2.dc.html": {
+      "x": 4200,
+      "y": 15920,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 83 S2 - Hangar bay: the choice large on a lit podium, the options a sleek list beside it - interactive",
+      "is_interactive": true
+    },
+    "R83S3.dc.html": {
+      "x": 0,
+      "y": 17180,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 83 S3 - Seat sheet: the seat's card opens into a sheet with all four choices as rows - interactive",
+      "is_interactive": true
+    },
+    "R83Notes.dc.html": {
+      "x": 0,
+      "y": 18440,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 83 - What was wrong with Rev 82's editor, what the three draw from, the recommendation"
+    },
+    "R84A.dc.html": {
+      "x": 0,
+      "y": 12317,
+      "w": 1920,
+      "h": 1080,
+      "page": "fleet-codex",
+      "title": "Rev 84 A - On the vessel page: the certificate in the briefing, a tier beside each element game (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R84B.dc.html": {
+      "x": 2100,
+      "y": 12317,
+      "w": 1920,
+      "h": 1080,
+      "page": "fleet-codex",
+      "title": "Rev 84 B - The whole fleet, sorted and filtered by completion and by tier, each on its own - interactive",
+      "is_interactive": true
+    },
+    "R84C.dc.html": {
+      "x": 4200,
+      "y": 12317,
+      "w": 1920,
+      "h": 1080,
+      "page": "fleet-codex",
+      "title": "Rev 84 C - Tier lists: one element at a time, S to C, with each vessel's certificate under its hull - interactive",
+      "is_interactive": true
+    },
+    "R84Notes.dc.html": {
+      "x": 0,
+      "y": 13577,
+      "w": 1920,
+      "h": 900,
+      "page": "fleet-codex",
+      "title": "Rev 84 - notes: the scoring rule, the names, the tier sheet to confirm"
+    },
+    "R85ArtifactsA.dc.html": {
+      "x": 0,
+      "y": 11971,
       "w": 1920,
       "h": 1080,
       "page": "ark",
-      "title": "Rev 67 Ark - The Ark screen - Converter, Squads, Artifacts, Decor (live) - interactive",
-      "is_interactive": true
+      "title": "Rev 85 ArtifactsA - A - The Reliquary"
+    },
+    "R85ArtifactsB.dc.html": {
+      "x": 2100,
+      "y": 11971,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 85 ArtifactsB - B - The Gallery"
+    },
+    "R85ArtifactsC.dc.html": {
+      "x": 4200,
+      "y": 11971,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 85 ArtifactsC - C - The Orrery"
     }
   },
   "createdOnFiles": {
@@ -4075,17 +3803,7 @@
     "sec-start-2",
     "sec-rev38",
     "sec-rev38-2",
-    "sec-rev43",
-    "sec-rev43-2",
-    "sec-rev43-3",
-    "sec-rev43-4",
-    "sec-rev44",
-    "sec-rev44-2",
-    "sec-rev46",
     "sec-rev47",
-    "sec-rev49",
-    "sec-rev45",
-    "sec-rev48",
     "sec-hud_flow",
     "sec-hud_match",
     "sec-hud_vessels",
@@ -4144,6 +3862,19 @@
     "sec-rev65",
     "sec-rev66",
     "sec-rev67",
+    "sec-rev68",
+    "sec-rev72",
+    "sec-rev75",
+    "sec-rev76",
+    "sec-rev78",
+    "sec-rev79",
+    "sec-rev80",
+    "sec-rev81",
+    "sec-rev82",
+    "sec-rev83",
+    "sec-rev84",
+    "sec-rev85",
+    "rev69",
     "hud_end",
     "hud_flow",
     "hud_match",
@@ -4199,12 +3930,6 @@
     "ingame",
     "menu",
     "rev38",
-    "rev43",
-    "rev44",
-    "rev45",
-    "rev46",
-    "rev48",
-    "rev49",
     "style-guide",
     "rev50",
     "rev51",
@@ -4216,7 +3941,19 @@
     "rev64",
     "rev65",
     "rev66",
-    "rev67"
+    "rev67",
+    "rev68",
+    "rev72",
+    "rev75",
+    "rev76",
+    "rev78",
+    "rev79",
+    "rev80",
+    "rev81",
+    "rev82",
+    "rev83",
+    "rev84",
+    "rev85"
   ],
   "notes": {
     "hud_end": {
@@ -4694,60 +4431,6 @@
       "x": 16740,
       "y": 46110
     },
-    "rev43": {
-      "kind": "title1",
-      "maxW": 8000,
-      "page": "menu-redesign-c",
-      "text": "Rev 43 - Voyage window: the map left, the voyage card in three levels, Saga | Voyages | Episodes on LB / RB (six ways)",
-      "w": 240,
-      "x": 0,
-      "y": -400
-    },
-    "rev44": {
-      "kind": "title1",
-      "maxW": 8000,
-      "page": "menu-redesign-c",
-      "text": "Rev 44 - Voyage window, four more: four tabs (Voyages, Saga, Quests, Episodes locked) on the sea lines",
-      "w": 240,
-      "x": 0,
-      "y": 9540
-    },
-    "rev45": {
-      "kind": "title1",
-      "maxW": 6120,
-      "page": "fleet-codex",
-      "text": "Rev 45 - Fleet Codex - a vessel in tabs",
-      "w": 240,
-      "x": 0,
-      "y": -400
-    },
-    "rev46": {
-      "kind": "title1",
-      "maxW": 6120,
-      "page": "menu-redesign-c",
-      "text": "Rev 46 - Voyage window: small voyage cards that slide open, from the card or the HyperSea map (the direction going ahead)",
-      "w": 240,
-      "x": 0,
-      "y": 16960
-    },
-    "rev48": {
-      "kind": "title1",
-      "maxW": 6120,
-      "page": "fleet-codex",
-      "text": "Rev 48 - Fleet Codex, modern: one page, the kit with its controls, the omni crystal",
-      "w": 240,
-      "x": 0,
-      "y": 3060
-    },
-    "rev49": {
-      "kind": "title1",
-      "maxW": 4520,
-      "page": "menu-redesign-c",
-      "text": "Rev 49 - Voyage card I (picked): four more inviting looks, just the card",
-      "w": 240,
-      "x": 0,
-      "y": 27840
-    },
     "rev5": {
       "kind": "title1",
       "maxW": 6120,
@@ -4858,6 +4541,33 @@
       "x": 0,
       "y": 10620
     },
+    "rev67": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "ark",
+      "text": "Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)",
+      "w": 240,
+      "x": 0,
+      "y": 9040
+    },
+    "rev68": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "fleet-codex",
+      "text": "Rev 68 - Fleet Codex for the website: four looks, each the whole fleet and one vessel window, the controls playing beside each ability",
+      "w": 240,
+      "x": 0,
+      "y": -400
+    },
+    "rev69": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "fleet-codex",
+      "text": "Rev 69 - Fleet Codex vessel page, C in full: one vessel with every detail, calm - the desktop page and the phone",
+      "w": 240,
+      "x": 0,
+      "y": 6577
+    },
     "rev7": {
       "kind": "title1",
       "maxW": 8000,
@@ -4867,6 +4577,24 @@
       "w": 240,
       "x": 18840,
       "y": 40630
+    },
+    "rev72": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "phone",
+      "text": "Rev 72 - The turn, drawn: the menu fades through a turn, the Goby turns into the Pistol, every other vessel stays landscape (a storyboard, not the build)",
+      "w": 240,
+      "x": 0,
+      "y": 3244
+    },
+    "rev75": {
+      "kind": "title1",
+      "maxW": 6120,
+      "page": "game-mode-codex",
+      "text": "Rev 75 - Game Mode Codex, A and C as one: enter an element, open a game, its level in 3D; and the same level inside the builder",
+      "w": 240,
+      "x": 0,
+      "y": -400
     },
     "rev8": {
       "kind": "title1",
@@ -6028,126 +5756,6 @@
       "x": 16580,
       "y": 45950
     },
-    "sec-rev43": {
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-radius": "40px 0px 0px 0px",
-        "border-style": "solid",
-        "border-width": "3px 0px 0px 3px"
-      },
-      "h": 4680,
-      "kind": "rect",
-      "page": "menu-redesign-c",
-      "w": 5320,
-      "x": -160,
-      "y": -560
-    },
-    "sec-rev43-2": {
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-radius": "0px 40px 0px 0px",
-        "border-style": "solid",
-        "border-width": "3px 3px 0px 0px"
-      },
-      "h": 4680,
-      "kind": "rect",
-      "page": "menu-redesign-c",
-      "w": 5320,
-      "x": 5160,
-      "y": -560
-    },
-    "sec-rev43-3": {
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-radius": "0px 0px 0px 40px",
-        "border-style": "solid",
-        "border-width": "0px 0px 3px 3px"
-      },
-      "h": 4680,
-      "kind": "rect",
-      "page": "menu-redesign-c",
-      "w": 5320,
-      "x": -160,
-      "y": 4120
-    },
-    "sec-rev43-4": {
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-radius": "0px 0px 40px 0px",
-        "border-style": "solid",
-        "border-width": "0px 3px 3px 0px"
-      },
-      "h": 4680,
-      "kind": "rect",
-      "page": "menu-redesign-c",
-      "w": 5320,
-      "x": 5160,
-      "y": 4120
-    },
-    "sec-rev44": {
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-radius": "40px 0px 0px 40px",
-        "border-style": "solid",
-        "border-width": "3px 0px 3px 3px"
-      },
-      "h": 6840,
-      "kind": "rect",
-      "page": "menu-redesign-c",
-      "w": 6370,
-      "x": -160,
-      "y": 9380
-    },
-    "sec-rev44-2": {
-      "css": {
-        "background": "rgba(255, 174, 0, 0.06)",
-        "border-color": "rgba(255, 174, 0, 0.55)",
-        "border-radius": "0px 40px 40px 0px",
-        "border-style": "solid",
-        "border-width": "3px 3px 3px 0px"
-      },
-      "h": 6840,
-      "kind": "rect",
-      "page": "menu-redesign-c",
-      "w": 6370,
-      "x": 6210,
-      "y": 9380
-    },
-    "sec-rev45": {
-      "css": {
-        "background": "rgba(46, 204, 113, 0.06)",
-        "border-color": "rgba(46, 204, 113, 0.55)",
-        "border-radius": "40px 40px 40px 40px",
-        "border-style": "solid",
-        "border-width": "3px 3px 3px 3px"
-      },
-      "h": 2880,
-      "kind": "rect",
-      "page": "fleet-codex",
-      "w": 6440,
-      "x": -160,
-      "y": -560
-    },
-    "sec-rev46": {
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-radius": "40px 40px 40px 40px",
-        "border-style": "solid",
-        "border-width": "3px 3px 3px 3px"
-      },
-      "h": 4320,
-      "kind": "rect",
-      "page": "menu-redesign-c",
-      "w": 6440,
-      "x": -160,
-      "y": 16800
-    },
     "sec-rev47": {
       "css": {
         "background": "rgba(255, 92, 168, 0.06)",
@@ -6162,36 +5770,6 @@
       "w": 6440,
       "x": -160,
       "y": 21700
-    },
-    "sec-rev48": {
-      "css": {
-        "background": "rgba(0, 212, 255, 0.06)",
-        "border-color": "rgba(0, 212, 255, 0.55)",
-        "border-radius": "40px 40px 40px 40px",
-        "border-style": "solid",
-        "border-width": "3px 3px 3px 3px"
-      },
-      "h": 2880,
-      "kind": "rect",
-      "page": "fleet-codex",
-      "w": 6440,
-      "x": -160,
-      "y": 2900
-    },
-    "sec-rev49": {
-      "css": {
-        "background": "rgba(166, 0, 255, 0.06)",
-        "border-color": "rgba(166, 0, 255, 0.55)",
-        "border-radius": "40px 40px 40px 40px",
-        "border-style": "solid",
-        "border-width": "3px 3px 3px 3px"
-      },
-      "h": 3684,
-      "kind": "rect",
-      "page": "menu-redesign-c",
-      "w": 4840,
-      "x": -160,
-      "y": 27680
     },
     "sec-rev5": {
       "css": {
@@ -6388,6 +5966,36 @@
       "x": -160,
       "y": 10460
     },
+    "sec-rev67": {
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 1800,
+      "kind": "rect",
+      "page": "ark",
+      "w": 6440,
+      "x": -8139,
+      "y": 8871
+    },
+    "sec-rev68": {
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 6300,
+      "kind": "rect",
+      "page": "fleet-codex",
+      "w": 6440,
+      "x": -7225,
+      "y": -623
+    },
     "sec-rev7": {
       "css": {
         "background": "rgba(166, 0, 255, 0.06)",
@@ -6417,6 +6025,36 @@
       "w": 4270,
       "x": 22950,
       "y": 40470
+    },
+    "sec-rev72": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 2880,
+      "kind": "rect",
+      "page": "phone",
+      "w": 6440,
+      "x": -160,
+      "y": 3084
+    },
+    "sec-rev75": {
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-radius": "40px 40px 40px 40px",
+        "border-style": "solid",
+        "border-width": "3px 3px 3px 3px"
+      },
+      "h": 2880,
+      "kind": "rect",
+      "page": "game-mode-codex",
+      "w": 6440,
+      "x": -3570,
+      "y": -863
     },
     "sec-rev8": {
       "css": {
@@ -6542,19 +6180,211 @@
       "x": 0,
       "y": 0
     },
-    "rev67": {
+    "rev76": {
       "kind": "title1",
-      "text": "Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)",
+      "text": "Rev 76 - The turn: five transitions, each on the menu and on the Goby turning into the Pistol",
       "x": 0,
-      "y": 9040,
+      "y": 6864,
+      "w": 240,
+      "maxW": 6120,
+      "page": "phone"
+    },
+    "sec-rev76": {
+      "kind": "rect",
+      "x": -160,
+      "y": 6704,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "phone"
+    },
+    "rev78": {
+      "kind": "title1",
+      "text": "Rev 78 - The UI moves with the phone: every piece travels to its upright place as the phone turns",
+      "x": 0,
+      "y": 11744,
+      "w": 240,
+      "maxW": 6120,
+      "page": "phone"
+    },
+    "sec-rev78": {
+      "kind": "rect",
+      "x": -160,
+      "y": 11584,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "phone"
+    },
+    "rev79": {
+      "kind": "title1",
+      "text": "Rev 79 - Voyage window, four new directions - the whole window redrawn: its tabs, the HyperSea map and edge view, the voyages, and picking the squad's vessels",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev79": {
+      "kind": "rect",
+      "x": -160,
+      "y": -560,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev80": {
+      "kind": "title1",
+      "text": "Rev 80 - Voyage window, B Logbook taken further - the list, the course and the squad, four ways better",
+      "x": 0,
+      "y": 4480,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev80": {
+      "kind": "rect",
+      "x": -160,
+      "y": 4320,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev81": {
+      "kind": "title1",
+      "text": "Rev 81 - Voyage window, B1 with B3's seat cards - a livelier right panel, three ways",
+      "x": 0,
+      "y": 9360,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev81": {
+      "kind": "rect",
+      "x": -160,
+      "y": 9200,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev82": {
+      "kind": "title1",
+      "text": "Rev 82 - B5 playable - choosing the squad and changing its seats",
+      "x": 0,
+      "y": 12980,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev82": {
+      "kind": "rect",
+      "x": -160,
+      "y": 12820,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev83": {
+      "kind": "title1",
+      "text": "Rev 83 - the seat editor in the game's own look",
+      "x": 0,
+      "y": 15520,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev83": {
+      "kind": "rect",
+      "x": -160,
+      "y": 15360,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev84": {
+      "kind": "title1",
+      "text": "Rev 84 - Flight certificate and element tiers for the solo vessels: how ready each vessel is, and how good it is in each element's game",
+      "x": 0,
+      "y": 11917,
+      "w": 240,
+      "maxW": 6120,
+      "page": "fleet-codex"
+    },
+    "sec-rev84": {
+      "kind": "rect",
+      "x": -160,
+      "y": 11757,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "fleet-codex"
+    },
+    "rev85": {
+      "kind": "title1",
+      "text": "Rev 85 - The Artifacts room, three still mockups - A Reliquary, B Gallery, C Orrery",
+      "x": 0,
+      "y": 11571,
       "w": 240,
       "maxW": 6120,
       "page": "ark"
     },
-    "sec-rev67": {
+    "sec-rev85": {
       "kind": "rect",
       "x": -160,
-      "y": 8880,
+      "y": 11411,
       "w": 6440,
       "h": 1800,
       "css": {
@@ -6885,12 +6715,6 @@
     "R37HostLeft.dc.html",
     "R37Rejoin.dc.html",
     "R37Notes.dc.html",
-    "R38Home.dc.html",
-    "R38Computers.dc.html",
-    "R38Runs.dc.html",
-    "R38Searches.dc.html",
-    "R38NewRun.dc.html",
-    "R38Notes.dc.html",
     "R39Compare.dc.html",
     "R39A.dc.html",
     "R39B.dc.html",
@@ -6900,22 +6724,6 @@
     "R40E.dc.html",
     "R40F.dc.html",
     "R40Notes.dc.html",
-    "R41Runs.dc.html",
-    "R41NewRun.dc.html",
-    "R41Computers.dc.html",
-    "R41Notes.dc.html",
-    "R42Compare.dc.html",
-    "R42A.dc.html",
-    "R42B.dc.html",
-    "R42C.dc.html",
-    "R42Notes.dc.html",
-    "R45A.dc.html",
-    "R45B.dc.html",
-    "R45Notes.dc.html",
-    "R48A.dc.html",
-    "R48B.dc.html",
-    "R48C.dc.html",
-    "R48Notes.dc.html",
     "SGReadMe.dc.html",
     "SGColour.dc.html",
     "SGThemes.dc.html",
@@ -6950,84 +6758,6 @@
     "R66Releases.dc.html",
     "R66PlayerCompare.dc.html",
     "R66Notes.dc.html",
-    "R43Compare.dc.html",
-    "R43AVoyage.dc.html",
-    "R43ACrew.dc.html",
-    "R43AStory.dc.html",
-    "R43ASaga.dc.html",
-    "R43AEpisodes.dc.html",
-    "R43BVoyage.dc.html",
-    "R43BCrew.dc.html",
-    "R43BStory.dc.html",
-    "R43BSaga.dc.html",
-    "R43BEpisodes.dc.html",
-    "R43CVoyage.dc.html",
-    "R43CCrew.dc.html",
-    "R43CStory.dc.html",
-    "R43CSaga.dc.html",
-    "R43CEpisodes.dc.html",
-    "R43DVoyage.dc.html",
-    "R43DCrew.dc.html",
-    "R43DStory.dc.html",
-    "R43DSaga.dc.html",
-    "R43DEpisodes.dc.html",
-    "R43EVoyage.dc.html",
-    "R43ECrew.dc.html",
-    "R43EStory.dc.html",
-    "R43ESaga.dc.html",
-    "R43EEpisodes.dc.html",
-    "R43FVoyage.dc.html",
-    "R43FCrew.dc.html",
-    "R43FStory.dc.html",
-    "R43FSaga.dc.html",
-    "R43FEpisodes.dc.html",
-    "R43Notes.dc.html",
-    "R44Compare.dc.html",
-    "R44GVoyage.dc.html",
-    "R44GCrew.dc.html",
-    "R44GStory.dc.html",
-    "R44GSaga.dc.html",
-    "R44GQuests.dc.html",
-    "R44GEpisodes.dc.html",
-    "R44HVoyage.dc.html",
-    "R44HCrew.dc.html",
-    "R44HStory.dc.html",
-    "R44HSaga.dc.html",
-    "R44HQuests.dc.html",
-    "R44HEpisodes.dc.html",
-    "R44IVoyage.dc.html",
-    "R44ICrew.dc.html",
-    "R44IStory.dc.html",
-    "R44ISaga.dc.html",
-    "R44IQuests.dc.html",
-    "R44IEpisodes.dc.html",
-    "R44JVoyage.dc.html",
-    "R44JCrew.dc.html",
-    "R44JStory.dc.html",
-    "R44JSaga.dc.html",
-    "R44JQuests.dc.html",
-    "R44JEpisodes.dc.html",
-    "R44Notes.dc.html",
-    "R46Prototype.dc.html",
-    "R46Cards.dc.html",
-    "R46Open.dc.html",
-    "R46FromMap.dc.html",
-    "R46Crew.dc.html",
-    "R46Story.dc.html",
-    "R46Notes.dc.html",
-    "R49A.dc.html",
-    "R49B.dc.html",
-    "R49C.dc.html",
-    "R49D.dc.html",
-    "R49Notes.dc.html",
-    "R49ACrew.dc.html",
-    "R49AStory.dc.html",
-    "R49BCrew.dc.html",
-    "R49BStory.dc.html",
-    "R49CCrew.dc.html",
-    "R49CStory.dc.html",
-    "R49DCrew.dc.html",
-    "R49DStory.dc.html",
     "R51Compare.dc.html",
     "R51A.dc.html",
     "R51B.dc.html",
@@ -7043,6 +6773,10 @@
     "R54C.dc.html",
     "R54D.dc.html",
     "R54Notes.dc.html",
+    "R63A.dc.html",
+    "R63B.dc.html",
+    "R63C.dc.html",
+    "R63Notes.dc.html",
     "R61C.dc.html",
     "R61E.dc.html",
     "R62A.dc.html",
@@ -7052,11 +6786,73 @@
     "R62E.dc.html",
     "R62F.dc.html",
     "R64Live.dc.html",
-    "R63A.dc.html",
-    "R63B.dc.html",
-    "R63C.dc.html",
-    "R63Notes.dc.html",
-    "R67Ark.dc.html"
+    "R67Ark.dc.html",
+    "R68A.dc.html",
+    "R68B.dc.html",
+    "R68C.dc.html",
+    "R68D.dc.html",
+    "R68Notes.dc.html",
+    "R69Desktop.dc.html",
+    "R69Phone.dc.html",
+    "R72Menu.dc.html",
+    "R72Goby.dc.html",
+    "R72Other.dc.html",
+    "R72Notes.dc.html",
+    "R38Home.dc.html",
+    "R38Computers.dc.html",
+    "R38Runs.dc.html",
+    "R38Searches.dc.html",
+    "R38NewRun.dc.html",
+    "R38Notes.dc.html",
+    "R41Runs.dc.html",
+    "R41NewRun.dc.html",
+    "R41Computers.dc.html",
+    "R41Notes.dc.html",
+    "R42Compare.dc.html",
+    "R42A.dc.html",
+    "R42B.dc.html",
+    "R42C.dc.html",
+    "R42Notes.dc.html",
+    "R75Codex.dc.html",
+    "R75Builder.dc.html",
+    "R75Notes.dc.html",
+    "R76Compare.dc.html",
+    "R76A.dc.html",
+    "R76B.dc.html",
+    "R76C.dc.html",
+    "R76D.dc.html",
+    "R76E.dc.html",
+    "R76Notes.dc.html",
+    "R78Follow.dc.html",
+    "R78Glide.dc.html",
+    "R78Notes.dc.html",
+    "R79Compare.dc.html",
+    "R79A.dc.html",
+    "R79B.dc.html",
+    "R79C.dc.html",
+    "R79D.dc.html",
+    "R79Notes.dc.html",
+    "R80Compare.dc.html",
+    "R80B1.dc.html",
+    "R80B2.dc.html",
+    "R80B3.dc.html",
+    "R80B4.dc.html",
+    "R80Notes.dc.html",
+    "R81B5.dc.html",
+    "R81Notes.dc.html",
+    "R82Squad.dc.html",
+    "R83Compare.dc.html",
+    "R83S1.dc.html",
+    "R83S2.dc.html",
+    "R83S3.dc.html",
+    "R83Notes.dc.html",
+    "R84A.dc.html",
+    "R84B.dc.html",
+    "R84C.dc.html",
+    "R84Notes.dc.html",
+    "R85ArtifactsA.dc.html",
+    "R85ArtifactsB.dc.html",
+    "R85ArtifactsC.dc.html"
   ],
   "pages": [
     {
@@ -7094,6 +6890,14 @@
     {
       "id": "ark",
       "name": "Ark"
+    },
+    {
+      "id": "voyages",
+      "name": "Voyages"
+    },
+    {
+      "id": "game-mode-codex",
+      "name": "Game Mode Codex"
     }
   ],
   "title": "Frogma"

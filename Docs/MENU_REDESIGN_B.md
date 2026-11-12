@@ -62,7 +62,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels (section 139), and the live animated scene (Rev 64, section 140); **Rev 61 C picked as the final; Rev 67, the whole Ark screen inside the Ark, a room per tab, animated, every colour set, on the new Ark tab (section 143)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels (section 139), and the live animated scene (Rev 64, section 140); **Rev 61 C picked as the final; Rev 67, the whole Ark screen inside the Ark, a room per tab, animated, every colour set, on the new Ark tab (section 143); Rev 67's Converter now a pier out into the cell from inside the Ark, Decor locked (section 143); **Rev 85, the Artifacts room, three stills to pick from (section 166)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -6226,3 +6226,32 @@ prisms, the vessels' domain trim and the map's marker - from loops rendered in J
 **Status (2026-11-07):** complete on the board: all four rooms' loops in Nocturne, Photic and Dart Frog, and the
 Converter's conversion in all three, and the hangar in all three domains (21 animated WebPs, ids in `r67_blobs.json`). Rendered at 960 x 540, 10 samples,
 32-frame loops and a 40-frame conversion at 10 fps; `r67_map_frames.py` makes the HyperSea map's marker frames.
+
+## 166. Rev 85 mockups: the Artifacts room, three stills (2026-11-12, for review)
+
+**Asked (Shombith, 2026-11-12, on Rev 67's Artifacts tab, which then reused the Converter's open view):** "I do not like
+the artifacts screen, it should not reuse the same thing. It can be inside a room, let's say, but a cooler room of the
+Ark. You can give me a few still mockups separately." Earlier the same day: "the artifact screen should not be a closed
+Ark room" (Rev 67's vault) and "you do not need to render more, we can do it live on the game".
+
+**On the canvas:** tab **Ark**, round "Rev 85 - The Artifacts room, three still mockups", three boards. Each is the Ark
+screen opened on its Artifacts tab (the 2D list and the selected artifact's card on top, as Rev 67) over one still,
+rendered from `Docs/MenuRedesignB/rounds/r67_ark_tabs_render.py`'s `art_a` / `art_b` / `art_c` scenes in Rev 61 C's
+style and grade (Nocturne; the colour-set switch shows the same still). The four artifacts are the game's
+(`Assets/_SO_Assets/Pilots/Artifacts`: Javelin, Hydra, Aftershock, Aegis) shaped from the game's prisms, Hydra selected.
+
+- **A - The Reliquary (`R85ArtifactsA`):** a tall round chamber at the Ark's core. A column of cold light up its middle;
+  the four artifacts float over pedestals on the far side of it, each in its own spot, Hydra largest and brightest;
+  eight dark sockets up the wall wait for the artifacts still to be found; domain rings at floor, waist and crown.
+- **B - The Gallery (`R85ArtifactsB`):** a long hall of tall lit alcoves down both walls, the found four in the nearest
+  alcoves under spotlights, the rest dark with a dim prism each; floor trim runs to a round porthole onto the cell at
+  the far end.
+- **C - The Orrery (`R85ArtifactsC`):** a low chart room. Over a round table the artifacts ride gimbal rings round a small
+  super-shielded prism core; the selected one (Hydra) is drawn out of its ring toward you, a domain ring under it on
+  the table; dim shelves line the walls.
+
+**For the build:** live in the game, not renders (Shombith). Each room is a set piece of hull plating, domain-trim
+strips and prisms; the cost notes are in the round's reply (instanced prisms, baked or few realtime lights, no volume
+fog, the room only active while its tab is open).
+
+Affects: Shombith's Ark screen (`ArkView`, the Artifacts tab) once a room is picked; the artifacts (read only).

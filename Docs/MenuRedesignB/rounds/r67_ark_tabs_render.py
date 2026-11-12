@@ -290,7 +290,7 @@ CAM = {   # scene -> (location, aim, lens, focus, f-stop): Rev 61 C's camera and
     # an elongated platform ... we should be able to see the cell toybox, and the conversion happens in the middle"):
     # from the back of the hangar, out of the open mouth, down the pier that runs out into the cell
     "pier": ((0.0, -63.0, -16.4), (0.0, -128.0, -19.6), 24, 65.0, 16.0),
-}[SCENE]
+}.get(SCENE, ((0.0, -70.0, -17.0), (0.0, -50.0, -17.0), 24, 20.0, 4.0))     # the artifact rooms set their own
 PIER_MID = Vector((0.0, -128.0, Z0))      # the pier's middle: where Garrett's combine is laid over
 PIER_END = -170.0
 NEAR = [Vector(CAM[0])]
@@ -761,6 +761,182 @@ if SCENE == "artifacts":
         add("stella", (O.x + sx * 6.2, O.y + 4.6, O.z + 1.95), (0.42,) * 3, (SQUAD, "super", 1.0), rot=rand_rot())
     CAM = ((-1.8, O.y - 6.2, O.z + 3.1), (-2.6, O.y + 7.0, O.z + 3.5), 24, 10.4, 3.2)
 
+SPOTS = []
+from mathutils import Euler  # noqa: E402
+# ------------------------------------------------------------------------------------------------ Artifacts, three rooms
+# (Shombith, 2026-11-12: "it can be inside a room, but a cooler room of the Ark. You can give me a few still mockups")
+def emit_mat(name, color, strength, alpha=1.0):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.clear()
+    o_ = nt.nodes.new("ShaderNodeOutputMaterial")
+    e_ = nt.nodes.new("ShaderNodeEmission"); e_.inputs[0].default_value = (*color, 1); e_.inputs[1].default_value = strength
+    if alpha >= 1.0:
+        nt.links.new(e_.outputs[0], o_.inputs[0])
+    else:
+        t_ = nt.nodes.new("ShaderNodeBsdfTransparent")
+        mx = nt.nodes.new("ShaderNodeMixShader"); mx.inputs[0].default_value = alpha
+        nt.links.new(t_.outputs[0], mx.inputs[1]); nt.links.new(e_.outputs[0], mx.inputs[2]); nt.links.new(mx.outputs[0], o_.inputs[0])
+    return m
+
+
+_ring = lambda n, r, z, sz: [("octa", (r * math.cos(k * math.tau / n), r * math.sin(k * math.tau / n), z), sz) for k in range(n)]
+ART_SHAPES = [
+    [("blade", (0, 0, -0.5), (0.3, 0.3, 1.05))],                                                         # Javelin
+    [("octa", (0, 0, 0), (0.17, 0.17, 0.24))] + _ring(5, 0.46, 0.08, (0.08, 0.08, 0.12)),                # Hydra
+    [("octa", (0, 0, 0.2), (0.2, 0.2, 0.26)), ("octa", (0, 0, -0.22), (0.16, 0.16, 0.2))]
+    + _ring(6, 0.34, -0.22, (0.05, 0.05, 0.07)),                                                         # Aftershock
+    [("stella", (0, 0, 0), (0.34, 0.34, 0.34))],                                                         # Aegis
+]
+ART_SEL = 1                                                                                              # Hydra
+
+
+def art_obj(i, pos, scale=1.5, spin=0.0):
+    vs, fs = [], []
+    for (shp, p_, size) in ART_SHAPES[i]:
+        sv, sf = K.SHAPES[shp]
+        b0 = len(vs)
+        for v in sv:
+            vs.append(Vector((p_[0] + v[0] * size[0], p_[1] + v[1] * size[1], p_[2] + v[2] * size[2])) * scale)
+        for f in sf:
+            fs.append(tuple(k + b0 for k in f))
+    me = bpy.data.meshes.new(f"artifact_{i}")
+    me.from_pydata(vs, [], fs)
+    me.update()
+    o = bpy.data.objects.new(f"artifact_{i}", me)
+    col.objects.link(o)
+    o.data.materials.append(K.mat((SQUAD, "plain", 2.6 if i == ART_SEL else 1.5)))
+    bvm = o.modifiers.new("b", "BEVEL"); bvm.width = 0.015; bvm.segments = 1; bvm.limit_method = "ANGLE"
+    o.matrix_world = Matrix.Translation(pos) @ Matrix.Rotation(spin, 4, "Z")
+    return o
+
+
+def torus(loc, R, r, mat, rot=(0, 0, 0)):
+    bpy.ops.mesh.primitive_torus_add(major_radius=R, minor_radius=r, major_segments=128, minor_segments=10, location=loc, rotation=rot)
+    o = bpy.context.active_object
+    o.data.materials.append(mat)
+    return o
+
+
+def disc(loc, R, h, mat, verts=96):
+    bpy.ops.mesh.primitive_cylinder_add(vertices=verts, radius=R, depth=h, location=loc)
+    o = bpy.context.active_object
+    o.data.materials.append(mat)
+    return o
+
+
+def ring_wall(O, R, h, n, mat):
+    """A round wall: n panels and n ribs facing the centre."""
+    for k in range(n):
+        a = k * math.tau / n
+        for (rr, w, d, nm) in ((R + 0.2, 2 * math.pi * R / n + 0.05, 0.35, "panel"), (R - 0.25, 0.5, 0.6, "rib")):
+            if nm == "rib":
+                a2 = a + math.pi / n
+            else:
+                a2 = a
+            b_ = block(O.x + rr * math.sin(a2), O.y + rr * math.cos(a2), O.z + h / 2, w, d, h, mat, name=nm)
+            b_.rotation_euler = (0, 0, -a2)
+
+
+if SCENE == "art_a":
+    # A - the Reliquary: a tall round chamber at the Ark's core; a column of cold light up its middle; the four
+    # artifacts float over pedestals round it; eight dark sockets up the wall wait for the ones still to be found
+    O = Vector((0.0, 600.0, -20.0)); R_, H_ = 9.0, 15.0
+    disc(O + Vector((0, 0, -0.3)), R_ + 0.6, 0.6, BODY)
+    disc(O + Vector((0, 0, H_ + 0.3)), R_ + 0.6, 0.6, BODY)
+    ring_wall(O, R_, H_, 28, BODY)
+    for z_ in (0.12, 5.2, H_ - 0.6):
+        torus(O + Vector((0, 0, z_)), R_ - 0.55, 0.05, DOMAIN_ARK)
+    for r_ in (2.2, 3.0):
+        torus(O + Vector((0, 0, 0.05)), r_, 0.04, DOMAIN_ARK)
+    disc(O + Vector((0, 0, H_ / 2)), 0.22, H_, emit_mat("beam", (0.55, 0.75, 1.0), 2.0, alpha=0.22), verts=48)
+    disc(O + Vector((0, 0, H_ / 2)), 1.0, H_, emit_mat("beam_halo", (0.4, 0.6, 1.0), 0.25, alpha=0.06), verts=48)
+    plight("POINT", O + Vector((0, 0, 3.0)), 900, (0.65, 0.8, 1.0), 0.6)
+    plight("POINT", O + Vector((0, 0, 10.0)), 700, (0.65, 0.8, 1.0), 0.6)
+    angs = [-75, -27, 27, 75]                 # on the far side of the column, facing the door you came in by
+    for i, a_ in enumerate(angs):
+        a = math.radians(a_)
+        p = O + Vector((5.0 * math.sin(a), 5.0 * math.cos(a), 0))
+        disc(p + Vector((0, 0, 0.55)), 0.75, 1.1, BODY, verts=48)
+        torus(p + Vector((0, 0, 1.12)), 0.68, 0.035, DOMAIN_ARK)
+        art_obj(i, p + Vector((0, 0, 2.75)), scale=2.9 if i == ART_SEL else 2.3, spin=0.4 * i)
+        SPOTS.append(("SPOT", f"art_spot_{i}", p + Vector((0, 0, 8.5)), 1400 if i == ART_SEL else 420, (0.85, 0.92, 1.0), 0.15,
+                      p + Vector((0, 0, 1.0)), 16))
+        plight("POINT", p + Vector((0, 0, 2.6)), 140 if i == ART_SEL else 45, (0.8, 0.9, 1.0), 0.4)
+    for k in range(8):                       # the empty sockets, up the wall behind
+        a = math.radians(-140 + k * 40)
+        p = O + Vector(((R_ - 0.4) * math.sin(a), (R_ - 0.4) * math.cos(a), 8.6 + 1.6 * (k % 2)))
+        sk = block(p.x, p.y, p.z, 1.2, 0.5, 1.4, BODY, name="socket")
+        sk.rotation_euler = (0, 0, -a)
+        add("octa", p - Vector((math.sin(a), math.cos(a), 0)) * 0.4, (0.32, 0.32, 0.42), (SQUAD, "shielded", 0.08))
+    ROOM_BOX = (O + Vector((0, 0, H_ / 2)), Vector((R_ - 0.6, R_ - 0.6, H_ / 2 - 0.2)))
+    CAM = ((0.0, O.y - 8.3, O.z + 3.4), (0.0, O.y + 2.5, O.z + 3.6), 20, 11.0, 4.0)
+
+if SCENE == "art_b":
+    # B - the Gallery: a long hall of tall lit alcoves, the found artifacts in the nearest four, the rest dark, the
+    # hall ending in a round porthole onto the cell
+    O = Vector((0.0, 680.0, -20.0)); HX, HY, H_ = 5.5, 17.0, 9.0
+    room(O, HX, HY, H_, sockets=False)
+    port = K.image_emission("cell_port", os.path.join(ASSETS, "window.png"), 0.8)
+    disc(Vector((O.x, O.y + HY - 0.05, O.z + 4.6)), 3.2, 0.1, port).rotation_euler = (math.radians(90), 0, 0)
+    torus(Vector((O.x, O.y + HY - 0.2, O.z + 4.6)), 3.25, 0.12, DOMAIN_ARK, rot=(math.radians(90), 0, 0))
+    torus(Vector((O.x, O.y + HY - 0.3, O.z + 4.6)), 3.6, 0.35, BODY, rot=(math.radians(90), 0, 0))
+    for sx in (-1, 1):                         # runner trim converging down the floor
+        block(O.x + sx * 1.6, O.y, O.z + 0.03, 0.06, 2 * HY - 1.0, 0.04, DOMAIN_ARK, bevel=0, name="trim")
+    slot = 0
+    for k in range(4):
+        y = O.y - HY + 5.0 + k * 7.0
+        for sx in (-1, 1):
+            xw = O.x + sx * (HX - 0.3)
+            for dy in (-1.6, 1.6):
+                block(xw - sx * 0.35, y + dy, O.z + 3.4, 0.7, 0.5, 6.8, BODY, name="pilaster")
+            block(xw - sx * 0.35, y, O.z + 6.95, 0.7, 3.7, 0.5, BODY, name="lintel")
+            block(xw - sx * 0.1, y, O.z + 3.4, 0.2, 2.7, 6.4, emit_mat(f"niche_{k}_{sx}", (0.35, 0.5, 0.9), 0.35 if slot < 4 else 0.05), name="niche")
+            block(xw - sx * 0.65, y, O.z + 0.6, 1.3, 1.6, 1.2, BODY, name="plinth")
+            block(xw - sx * 1.31, y, O.z + 1.18, 0.05, 1.6, 0.05, DOMAIN_ARK, bevel=0, name="trim")
+            if slot < 4:
+                art_obj(slot, Vector((xw - sx * 0.7, y, O.z + 2.9)), scale=1.6, spin=0.5 * slot)
+                SPOTS.append(("SPOT", f"niche_spot_{slot}", (xw - sx * 1.6, y, O.z + 6.4), 1100 if slot == ART_SEL else 380,
+                              (0.85, 0.92, 1.0), 0.15, (xw - sx * 0.7, y, O.z + 2.6), 26))
+            else:
+                add("octa", (xw - sx * 0.7, y, O.z + 2.9), (0.3, 0.3, 0.4), (SQUAD, "shielded", 0.06))
+            slot += 1
+    ROOM_BOX = (O + Vector((0, 0, H_ / 2)), Vector((HX - 0.4, HY - 0.4, H_ / 2 - 0.2)))
+    CAM = ((0.6, O.y - HY + 1.2, O.z + 2.4), (-0.3, O.y + HY, O.z + 3.6), 20, 9.0, 4.0)
+
+if SCENE == "art_c":
+    # C - the Orrery: a low chart room; over a round table the four artifacts ride gimbal rings round a small cold
+    # core, the selected one (Hydra) drawn out toward you in a cone of light from the table
+    O = Vector((0.0, 760.0, -20.0)); HX, HY, H_ = 10.0, 9.0, 7.0
+    room(O, HX, HY, H_)
+    T = O + Vector((0, 0.5, 0))
+    disc(T + Vector((0, 0, 0.5)), 3.2, 1.0, BODY)
+    torus(T + Vector((0, 0, 1.02)), 3.1, 0.05, DOMAIN_ARK)
+    torus(T + Vector((0, 0, 1.02)), 1.6, 0.03, DOMAIN_ARK)
+    C0 = T + Vector((0, 0, 3.6))
+    add("stella", C0, (0.55, 0.55, 0.55), (SQUAD, "super", 2.2), rot=rand_rot())
+    plight("POINT", C0, 600, (0.65, 0.8, 1.0), 0.4)
+    rings = [(2.2, (math.radians(90), 0, 0)), (2.6, (math.radians(70), math.radians(35), 0)), (3.0, (math.radians(20), 0, 0)),
+             (1.8, (math.radians(105), math.radians(-40), 0))]
+    for i, (R2, rot) in enumerate(rings):
+        torus(C0, R2, 0.035, DOMAIN_ARK, rot=rot)
+        Rm = Euler(rot).to_matrix()
+        a = [0.6, 2.4, 3.9, 5.2][i]
+        p = C0 + Rm @ Vector((R2 * math.cos(a), R2 * math.sin(a), 0))
+        if i == ART_SEL:
+            p = C0 + Vector((0.9, -2.6, -0.9))
+            torus(Vector((p.x, p.y, T.z + 1.03)), 0.7, 0.03, DOMAIN_ARK)
+            SPOTS.append(("SPOT", "holo_spot", p + Vector((0, 0, 3.0)), 900, (0.85, 0.92, 1.0), 0.15, p, 22))
+        art_obj(i, p, scale=3.0 if i == ART_SEL else 1.3, spin=0.7 * i)
+        plight("POINT", p + Vector((0, -0.6, 0.4)), 120 if i == ART_SEL else 30, (0.8, 0.9, 1.0), 0.3)
+    for sx in (-1, 1):                       # dim display shelves along the side walls, mostly empty
+        for r in range(3):
+            block(O.x + sx * (HX - 0.7), O.y, O.z + 1.4 + r * 1.6, 1.2, 10.0, 0.12, BODY, bevel=0.02, name="shelf")
+    ROOM_BOX = (O + Vector((0, 0, H_ / 2)), Vector((HX - 0.4, HY - 0.4, H_ / 2 - 0.2)))
+    CAM = ((-3.2, O.y - 8.6, O.z + 3.4), (0.3, O.y + 0.5, O.z + 3.0), 22, 6.5, 3.6)
+
+
 if SCENE == "decor":
     # the antechamber of the decor bay: the bay's sealed hatch is the room's back wall
     O = Vector((0.0, 540.0, -20.0))
@@ -865,6 +1041,8 @@ def light(kind, name, loc, energy, color, size=0.5, aim=None, angle=40, group=No
 
 
 DOMAIN_LIGHTS = []
+for (_k, _n, _l, _e, _c, _s, _aim, _ang) in SPOTS:
+    light(_k, _n, _l, _e, _c, _s, aim=_aim, angle=_ang)
 # the cell's cold light through the open mouth: a broad soft fill and a hard shaft that the haze shows
 light("AREA", "mouth", (0, FRONT - 3, -17.5), 1400, (0.5, 0.64, 1.0), size=24, aim=(0, -50, -18))
 light("SPOT", "mouth_shaft", (6, FRONT - 30, -6), 90000, (0.55, 0.7, 1.0), size=2.0, aim=(-2, -60, -22), angle=26)
