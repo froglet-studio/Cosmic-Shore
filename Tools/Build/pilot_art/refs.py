@@ -33,6 +33,10 @@ successor, run through Weave, also takes pictures (PAINTER). So:
   * A PATCH SHOWN THE BUST. Where the pilot's earlier bust holds a part the scene lost (a pouch a stranger named,
     a tail beside the head), the patch's bust= names that one part and the bust goes with the scene as a picture
     (PATCH_BUST). The bust is a painting, so the words take its shape and never its finish.
+  * WHAT A PATCH CHANGES OF THE PILOT. A patch's first line tells the painter what stays: the pilot, the face,
+    the hands, the clothes, the place and the light (PATCH_KEPT). A patch that redraws one of those says so in
+    changes=(...), and the line then lists the rest: a painter told that the hands stay and asked for new hands
+    is given two orders and follows the smaller one.
   * ASKED AND TAKEN. A run is paid for whole, so one ask may name several things, and each is judged on its own
     when the answer is in: the record's `edit` holds only the regions that are taken, and its took= says in a
     phrase what of the ask went into the scene and what was left out (Trace's port and cylinder were taken; her
@@ -101,8 +105,9 @@ LIKENESS_LINE = ("Picture {n} is {name}, photographed before: the same person. T
                  "person from it and nothing else: the place, the pose, the framing and the light are new, as "
                  "written above.")
 PATCH_HEAD = ("Edit this photograph, picture 1. Change only {what}. Everything else stays exactly as it is, in the "
-              "same place and at the same size: {name}, the face, the hands, the clothes, the place and every light "
-              "that falls on them.")
+              "same place and at the same size: {kept}.")
+# What a patch's first line says stays, after the pilot. A patch names in changes=(...) the ones it redraws.
+PATCH_KEPT = ("the face", "the hands", "the clothes", "the place", "every light that falls on them")
 PATCH_FOOT = ("It stays one photograph taken with a real camera: the new parts have the grain, the focus and the "
               "exposure of the rest and meet it without a seam. Nothing in the picture carries writing, numbers or "
               "a symbol.")
@@ -113,7 +118,7 @@ PATCH_BUST = ("Picture {n} is {name} too, the same person, in a painted portrait
               "painting and picture 1 is a photograph: what is taken from it is photographed here, with the grain, "
               "the focus and the light of picture 1, and nothing of the painting's smooth finish, its background or "
               "its pose.")
-PATCH_KEYS = ("what", "ask", "edit", "keep", "refs", "likeness", "bust", "took")
+PATCH_KEYS = ("what", "ask", "edit", "keep", "refs", "likeness", "bust", "changes", "took")
 WHOLE = ((0, 0), (scene.FRAME[0], 0), scene.FRAME, (0, scene.FRAME[1]))   # an edit polygon: the whole frame
 VIEW_TOKEN = "{view}"   # in a patch's ask: the words the record's own display shows (scene.CHART_SHOWS)
 GROW = 0.12             # a likeness is the avatar's square and a little more of the shoulders
@@ -395,6 +400,10 @@ def record_errors(word, rec):
             out.append(f"{word}: the patch's `bust` is a phrase that goes inside a sentence: the one part taken")
         if not os.path.exists(bust_path(word)):
             out.append(f"{word}: the patch takes from the bust and {word} has none ({scene.creator.BUSTS})")
+    changed = patch.get("changes", ())
+    if isinstance(changed, str) or len(set(changed)) != len(changed) or any(c not in PATCH_KEPT for c in changed):
+        out.append(f"{word}: the patch's `changes` is a tuple of what its first line would say stays, each once: "
+                   f"{', '.join(PATCH_KEPT)}")
     if VIEW_TOKEN in patch.get("ask", "") and not rec.get("chart"):
         out.append(f"{word}: the patch's ask says {VIEW_TOKEN} and the record has no chart to take the view from")
     if not out:
@@ -434,6 +443,14 @@ def reference_lines(names, name, first):
     return lines
 
 
+def patch_head(patch):
+    """A patch's first line: what changes, then everything that stays, which is the pilot and PATCH_KEPT less the
+    patch's changes=. With no changes= it is the line every patch before 2026-11-12 was sent with."""
+    kept = ["{name}"] + [k for k in PATCH_KEPT if k not in patch.get("changes", ())]
+    told = kept[0] if len(kept) == 1 else ", ".join(kept[:-1]) + " and " + kept[-1]
+    return PATCH_HEAD.replace("{what}", patch["what"]).replace("{kept}", told)
+
+
 def _gates(word, text):
     for gate, what in ((bust.world_name_in, "names the world"), (bust.emblem_word, "invites an emblem"),
                        (lambda t: (scene.STYLE_WORDS.search(t) or [None])[0], "pulls back to a painting")):
@@ -462,7 +479,7 @@ def prompt(word, patch=False):
             ask = ask.replace(VIEW_TOKEN, scene.CHART_SHOWS[kind][view].replace("{own}", own)
                               .replace("{other}", other).replace("{third}", third))
         refs = patch_refs(w)
-        parts = [PATCH_HEAD.replace("{what}", p["what"]), ask]
+        parts = [patch_head(p), ask]
         told = [PATCH_LIKENESS.replace("{n}", "2").replace("{take}", p["likeness"])] if p.get("likeness") else []
         if p.get("bust"):
             told.append(PATCH_BUST.replace("{n}", str(2 + len(told))).replace("{take}", p["bust"]))
@@ -631,6 +648,20 @@ def self_test():
         errors.append("record_errors took a sentence for a patch's `took`")
     if not any("`bust`" in e for e in record_errors("MANGER", dict(patch=dict(whole, bust="The whole bust.")))):
         errors.append("record_errors took a sentence for a patch's `bust`")
+    if not any("`changes`" in e for e in record_errors("MANGER", dict(patch=dict(whole, changes=("the tail",))))):
+        errors.append("record_errors took a patch that changes something its first line never said stays")
+    if not any("`changes`" in e for e in record_errors("MANGER", dict(patch=dict(whole, changes="the face")))):
+        errors.append("record_errors took a string for a patch's `changes`")
+    as_sent = ("Edit this photograph, picture 1. Change only a thing. Everything else stays exactly as it is, in "
+               "the same place and at the same size: {name}, the face, the hands, the clothes, the place and every "
+               "light that falls on them.")
+    if patch_head(whole) != as_sent:
+        errors.append("a patch with no changes= no longer gets the first line the earlier patches were sent with")
+    fewer = patch_head(dict(whole, changes=("the hands", "every light that falls on them")))
+    if not fewer.endswith("at the same size: {name}, the face, the clothes and the place.") or "hands" in fewer:
+        errors.append("patch_head still says that what a patch changes stays")
+    if patch_head(dict(whole, changes=PATCH_KEPT)) != as_sent.split("{name}")[0] + "{name}.":
+        errors.append("patch_head does not end at the pilot when a patch changes everything else")
     shown = PATCH_BUST.replace("{n}", "2").replace("{take}", "the pouch under the bill").replace("{name}", "Tamako")
     if "{" in shown or "Picture 2 is Tamako too" not in shown or "only the pouch under the bill:" not in shown:
         errors.append("PATCH_BUST does not say which picture the bust is and the one part taken from it")
