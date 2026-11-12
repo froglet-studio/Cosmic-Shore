@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794503122-dda8` of **Frogma**: Rev 3 to Rev 88, 446 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794503648-5f83` of **Frogma**: Rev 3 to Rev 89, 447 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -698,6 +698,12 @@ Copied on 2026-11-12 from canvas version `1794503122-dda8` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
+#### Rev 89 - the Voyages screen with the HyperSea as the show
+
+- [`R89A.dc.html`](R89A.dc.html) - Rev 89 A - Sea table: the map tilted in perspective, the edge-on view its front face; the voyage's name over it (recommended) - interactive
+- [`R89B.dc.html`](R89B.dc.html) - Rev 89 B - Flat chart: the same screen without the tilt - the whole map in its own colours over its edge-on view - interactive
+- [`R89Notes.dc.html`](R89Notes.dc.html) - Rev 89 - notes: what was dull, what both options do, the two options, the recommendation
+
 #### Rev 88 - A taken forward: smaller top texts, every screen of the Voyage window
 
 - [`R88Voyages.dc.html`](R88Voyages.dc.html) - Rev 88 Voyages - A with smaller top texts: the voyages and the Ark escort as cards, the picked one open; the squad as rows - interactive
@@ -710,8 +716,6 @@ Copied on 2026-11-12 from canvas version `1794503122-dda8` of **Frogma**: Rev 3 
 #### Rev 87 - the Voyages tab, drawn new around the HyperSea map and the edge view
 
 - [`R87A.dc.html`](R87A.dc.html) - Rev 87 A - Slide: small voyage cards, the picked one slides open; the squad as rows that open where they stand (recommended) - interactive
-- [`R87B.dc.html`](R87B.dc.html) - Rev 87 B - Wide sea: the whole course wide over its edge view; one panel with the voyages, the squad in formation and a tray under a pressed seat - interactive
-- [`R87C.dc.html`](R87C.dc.html) - Rev 87 C - Ticket: a quiet list, and the open voyage as one ticket - where, the numbers, the crew, Set sail as its stub - interactive
 - [`R87Notes.dc.html`](R87Notes.dc.html) - Rev 87 - notes: what stays, what is new in all three, the three options, the recommendation
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)

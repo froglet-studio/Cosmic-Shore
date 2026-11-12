@@ -7227,7 +7227,7 @@ squad, so neither column is a mix; and every piece is one the menu kit has (a pl
   computer with the editor, or a screenshot after each pass (`/frogma` section 5).
 
 
-## 169. Rev 88 mockups: A taken forward - smaller top texts, every screen of the Voyage window (2026-11-12, awaiting board approval)
+## 169. Rev 88 mockups: A taken forward - smaller top texts, every screen of the Voyage window (2026-11-12; the Voyages screen not liked, redrawn in section 170)
 
 **Asked (Shombith, 2026-11-12, on Rev 87):** "I like As direction but the top texts are too big, can you show all the
 screens inside the voyage tab".
@@ -7262,3 +7262,44 @@ column on the right that ends in the screen's one Lime button. The tabs are link
 card like the voyages; the Saga, Quests and Episodes tabs take the same three columns (the build has the reverted
 pre-redesign Saga and quest track, section 159). The escort's line "Fly beside the Ark and keep it standing." is the
 board's own; the game's is `VoyageLines`.
+
+
+## 170. Rev 89 mockups: the Voyages screen with the HyperSea as the show (2026-11-12, awaiting a pick)
+
+**Asked (Shombith, 2026-11-12, on Rev 87 and 88):** "Delete B and C but still for the voyages UI, I do not know I dont
+like it, man youre fable shw your skills, give me some cool ass designed UI for the voyage".
+
+**Deleted from the canvas, on his word:** Rev 87 B (Wide sea) and C (Ticket). Their copies stay in
+`Docs/MenuRedesignB/board/`. Rev 87 A and Rev 88 stay on the tab.
+
+**What was dull:** Rev 87 and 88 muted the map (saturate .45, brightness .82, as Rev 80 had) and boxed it into a 660
+column between two columns of plates. The one thing that was to stay was the dullest thing on the screen.
+
+**On the canvas:** tab **Voyages**, round "Rev 89 - the Voyages screen with the HyperSea as the show" (canvas version
+`1794503648-5f83`), under Rev 88.
+- Copies: `Docs/MenuRedesignB/board/R89*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r89_voyages.py`, on Rev 88's.
+- Both boards pass `frogma.py check`, and `check_mockup.py` against `--baseline
+  Docs/MenuRedesignB/board/R81B5.dc.html` (a budget of 88) at 74-75 visual elements.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**Both options:** the map and its edge-on view are the screen, uncropped and in the map's own colours. The voyages
+are small chips with a sliver of their own water, the picked one under a Jade bar; the Ark escort is the fifth, and
+its difficulty stepper stands under the numbers. The squad keeps Rev 88's seat cards and steppers. One Lime: Set sail.
+
+**The options:**
+- **A - Sea table (recommended):** the map lies tilted in perspective (56 degrees about its near edge) and the
+  edge-on view is its front face: one slab cut out of the HyperSea, the course across its top and down its side. The
+  far edge fades into the menu's ground. The voyage's name stands over it at 48 with its title and numbers.
+- **B - Flat chart:** the same screen without the tilt: the whole map, 1000 wide, over its edge-on view at the same
+  width. The name and numbers head the left column over the voyages.
+- **Notes.**
+
+**Recommended: A.** It is the only one that says what the edge-on view is without a label, and nothing else in the
+menus looks like it.
+
+**Differs from the build (section 165):** the map column becomes the whole middle of the window, unmuted; the list
+rows become chips; the title, line and numbers leave the right panel; the seat editor overlay goes (as section 168).
+- **A's tilt in Unity:** one X rotation of the map's rect on a Screen Space - Camera canvas with a perspective camera,
+  or the map drawn to a RenderTexture on a tilted quad. `VoyageMapGraphic` stays as it is. The map's own labels shrink
+  with the tilt (they read at 1020 wide on the board; check them at the phone scale). B needs no tilt.
+- Not seen in Unity. A cloud session cannot run the editor.

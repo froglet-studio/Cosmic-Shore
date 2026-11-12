@@ -3595,24 +3595,6 @@
       "title": "Rev 87 A - Slide: small voyage cards, the picked one slides open; the squad as rows that open where they stand (recommended) - interactive",
       "is_interactive": true
     },
-    "R87B.dc.html": {
-      "x": 2100,
-      "y": 0,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 87 B - Wide sea: the whole course wide over its edge view; one panel with the voyages, the squad in formation and a tray under a pressed seat - interactive",
-      "is_interactive": true
-    },
-    "R87C.dc.html": {
-      "x": 4200,
-      "y": 0,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 87 C - Ticket: a quiet list, and the open voyage as one ticket - where, the numbers, the crew, Set sail as its stub - interactive",
-      "is_interactive": true
-    },
     "R87Notes.dc.html": {
       "x": 0,
       "y": 1260,
@@ -3672,6 +3654,32 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 88 - notes: the top texts, the one order, each screen, what is not drawn"
+    },
+    "R89A.dc.html": {
+      "x": 0,
+      "y": 8500,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 89 A - Sea table: the map tilted in perspective, the edge-on view its front face; the voyage's name over it (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R89B.dc.html": {
+      "x": 2100,
+      "y": 8500,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 89 B - Flat chart: the same screen without the tilt - the whole map in its own colours over its edge-on view - interactive",
+      "is_interactive": true
+    },
+    "R89Notes.dc.html": {
+      "x": 0,
+      "y": 9760,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 89 - notes: what was dull, what both options do, the two options, the recommendation"
     }
   },
   "createdOnFiles": {
@@ -3794,6 +3802,7 @@
     "sec-rev86",
     "sec-rev87",
     "sec-rev88",
+    "sec-rev89",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -3872,7 +3881,8 @@
     "rev86",
     "rev87",
     "f2u-sgbuttons",
-    "rev88"
+    "rev88",
+    "rev89"
   ],
   "notes": {
     "hud_end": {
@@ -6275,6 +6285,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev89": {
+      "kind": "title1",
+      "text": "Rev 89 - the Voyages screen with the HyperSea as the show",
+      "x": 0,
+      "y": 8100,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev89": {
+      "kind": "rect",
+      "x": -160,
+      "y": 7940,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -6715,15 +6749,16 @@
     "R85ArtifactsC.dc.html",
     "R86ArtifactsAB.dc.html",
     "R87A.dc.html",
-    "R87B.dc.html",
-    "R87C.dc.html",
     "R87Notes.dc.html",
     "R88Voyages.dc.html",
     "R88Escort.dc.html",
     "R88Saga.dc.html",
     "R88Quests.dc.html",
     "R88Episodes.dc.html",
-    "R88Notes.dc.html"
+    "R88Notes.dc.html",
+    "R89A.dc.html",
+    "R89B.dc.html",
+    "R89Notes.dc.html"
   ],
   "pages": [
     {
