@@ -12,34 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5cb53a6129e0871de97b71928d49605, type: 3}
   m_Name: VoyageBoardStyle
   m_EditorClassIdentifier: 
-  Sliver14Fill: {fileID: 21300000, guid: ca4373d0715c706b95d5b8df5b647f0c, type: 3}
-  Sliver14Line: {fileID: 21300000, guid: e75ec5d5d015d1257b05414fdff6f954, type: 3}
-  Sliver14Line2: {fileID: 21300000, guid: 6a172fe8ed96165ca76d16f9cefb285c, type: 3}
   Sliver10Fill: {fileID: 21300000, guid: 9a86abd8613e387afc691f6e48d9830a, type: 3}
   Sliver10Line: {fileID: 21300000, guid: 98099cf4a35661dd88b7e9cb399386b7, type: 3}
-  FadeV: {fileID: 21300000, guid: be1487417717ef8204aadda8a9ee27c3, type: 3}
-  Pool: {fileID: 21300000, guid: b281baa6c460cf6fea3adec48b0367e3, type: 3}
   LabelFont: {fileID: 11400000, guid: 9f6e2fcf98f99f3ed5ff96934bb43d6d, type: 2}
   Light: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
   Sub: {r: 0.454902, g: 0.4823529, b: 0.6784314, a: 1}
   Jade: {r: 0.1294118, g: 0.7529412, b: 0.7411765, a: 1}
   Cyan: {r: 0, g: 0.8313725, b: 1, a: 1}
-  Plate: {r: 0.1333333, g: 0.1490196, b: 0.2705882, a: 0.72}
-  CardFoot: {r: 0.1333333, g: 0.1490196, b: 0.2705882, a: 0.92}
   Outline: {r: 0.2627451, g: 0.2980392, b: 0.5372549, a: 1}
   Popup: {r: 0, g: 0.003921569, b: 0.03921569, a: 1}
   RowPicked: {r: 0, g: 0.01568627, b: 0.1215686, a: 0.86}
   CtaFill: {r: 0.6, g: 1, b: 0.5019608, a: 1}
   CtaText: {r: 0, g: 0.01568627, b: 0.1215686, a: 1}
-  ListRight: 0.2935
-  CourseLeft: 0.315
-  CourseRight: 0.674
-  PanelLeft: 0.696
-  EdgeShare: 0.38
-  RowHeight: 176
-  SeatCardShare: 0.41
-  OptionHeights: {x: 84, y: 104, z: 72}
-  EditorFade: 0.2
+  ListRight: 0.1685
+  CourseLeft: 0.1848
+  CourseRight: 0.7391
+  PanelLeft: 0.7554
+  RowHeight: 76
   HullCrops:
   - Sprite: {fileID: 21300000, guid: 0346d212c38317799ee4deedf0ed40e9, type: 3}
     Uv:
