@@ -36,6 +36,8 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: Impact Effects Architecture; PvP is petals only (LOCKED, Garrett 2026-10-10); Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
 - [`Docs/MULTIPLAYER_START_HERE.md`](Docs/MULTIPLAYER_START_HERE.md): **Read first for ANY multiplayer work (Unity or Amoebius).** What the owner wants, the standing rules, where everything is, current state, the owner's hand-test list, and the ordered next steps.
   Sections: What the owner wants; Rules every session keeps; Where everything is; Where things stand; What the owner tests by hand; What comes next, in order; How a session starts here
+- [`Docs/Voyages/HANDOFF.md`](Docs/Voyages/HANDOFF.md): **Voyages, start here** (handoff to Shombith, 2026-11-12): what is built and merged, which voyage doc says what, the code by job, how to debug a run, what was never opened in the editor, leftover branches, and Garrett's settled and open decisions.
+  Sections: where things stand; read these; the code; debugging; never opened in the editor; leftover branches; who else works near here; Garrett's decisions
 - [`Docs/Voyages/DEPTH.md`](Docs/Voyages/DEPTH.md): **Voyages, deep (Garrett, 2026-11-07).** Read before any voyage work:
   the living HyperSea (pressure, blooms, restocks, the Kaiju), rival crews that take the same jobs by the same rules, a
   job for every one of the 16 faction types in nine work verbs, sagas ending in named relics, standing and notoriety,
