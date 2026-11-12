@@ -1,7 +1,13 @@
 """Scales: egret and koi, a diplomat. One of the few scenes that show live play in a hologram with depth (Garrett,
 2026-11-11: "I want to see some where the pilot's are on the bridge of the ark or in a vessel. and they are looking
 at a 3D holographic display ... that 3d rendering should look like gameplay footage"): on the bridge, the morning a
-treaty takes effect, watching two sides that used to fight fly their first patrol with their trails braided."""
+treaty takes effect, watching two sides that used to fight fly their first patrol with their trails braided.
+
+His note on it (2026-11-11, 23:01 UTC): "scales is great if we could get the hypersea better represented, but the
+gyroid flora was better than other aspects. we will want more where they have the hypersea outside, but some like
+this could tell a different story. that should be the except though." So the scene, the clouds in its windows and
+the figure stay, and only the display is painted again (`patch`), from the real frames: the first painting filled
+the dome with sea urchins, strings of beads and craft like fish, none of which the game has."""
 SCENE = dict(
     treatment="Formal state-occasion photograph down the length of a bridge, soft daylight",
     shot=("A formal photograph of a state occasion, made after the room has emptied: an 85mm lens down the length "
@@ -30,4 +36,22 @@ SCENE = dict(
           "white gloves are grey at the fingertips; the polished shoes are scuffed at the toes; one long fin has a "
           "kink where it was slept on."),
     close=(350, 0, 700, 350),
+    patch=dict(
+        what="the display of light over the round well",
+        ask=("THE DISPLAY. Over the well stands one low dome of light, in the same place and with the same outline "
+             "as now: its round foot sits inside the brass rail, and it is no wider and no higher than now. All "
+             "that the old display held is gone, and the dome is filled again from nothing with what the reference "
+             "pictures show. It is a hologram with real depth: a small solid-looking scene with a near side and a "
+             "far side. Inside it is {view}. On the near side, where {name} looks, one jade teal ribbon and one "
+             "ruby magenta ribbon run side by side."),
+        edit=(   # the dome, a little wider than its own edge on the room's side, and down to the top of the rail:
+                 # the rail in front of it and the glove on the rail are outside it
+            ((700, 578), (716, 544), (750, 508), (805, 473), (861, 449), (929, 429), (1011, 412), (1093, 403),
+             (1173, 399), (1255, 402), (1337, 412), (1418, 429), (1486, 449), (1536, 466), (1536, 838), (1480, 845),
+             (1400, 852), (1300, 856), (1200, 855), (1080, 848), (1040, 845), (1000, 841), (960, 835), (920, 827),
+             (880, 816), (840, 804), (800, 789), (760, 766), (748, 757), (734, 740), (724, 720), (716, 700),
+             (710, 680), (706, 660), (702, 640), (698, 612)),
+        ),
+        refs=("sea_cell_outside", "sea_flora_approach", "sea_flora_crystal", "sea_flight_trail"),
+    ),
 )
