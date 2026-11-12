@@ -7555,7 +7555,7 @@ signing in, the profile and the session a share means `BootStatusBroadcaster` an
 steps to a shared model; it waits on the splash's pick (sections 174, 175). The scene load before the panel exists is
 not measured either: nothing reads the scene load's own progress.
 
-## 177. Rev 94 mockups: the boot splash as a poster, no neon (2026-11-12, awaiting a pick)
+## 177. Rev 94 mockups: the boot splash as a poster, no neon (2026-11-12; A and D combined in a second pass, awaiting a pick)
 
 **Asked** (Shombith, 2026-11-12, on Rev 93): "Okay can we move away from this neon design, create some good poster
 based mockups 4".
@@ -7582,3 +7582,35 @@ hull drifting, the sea sliding.
 layout pass. To know: a poster at this size wants the pilots painted larger; Gold here is a sun and a disc, not a
 purchase (a poster uses the families as paint, which is a question for the style guide's owner, who asked for the
 poster); the flat logos are thresholds of the neon ones, not drawn marks. Nothing built.
+
+### 177.1 Second pass: A and D as one poster, the colour set changing (2026-11-12)
+
+Shombith, on the four posters: "Delete others and can you combine D and A and the theme switching in this scene as
+well, this scene needs to be very very smooth. Now delete the old revs in 94 and then mockups combining D and A and
+also the colors on D is too bright, I dont like that and also the empty dull blue. Can show some animated parts of
+the cell along with the sea lines in the background."
+
+**Taken off the canvas** on his word: `R94C` (the pilot) and `R94D` (three domains) deleted; `R94A`, `R94B` and
+`R94Notes` replaced by the boards below. The four first-pass boards are in git at `aa2439de9d`. Rev 92 and Rev 93 are
+still on the canvas.
+
+**On the canvas** (version `1794524891-90ac`), drawn by the rewritten `Docs/MenuRedesignB/rounds/r94_posters.py`:
+- **A The crew before the domains (recommended)**: the five pilots in a line across three slanted domain bands, the
+  Ark above them.
+- **B Three crews**: a pilot and a hull in each band (Needle and the Dolphin, Galleon and the Squirrel, Anvil and the
+  Sparrow), the Ark beside, inside a cell.
+- `R94Notes`.
+
+What answers each of his points:
+- **Too bright.** A band is its domain's prism as the worn colour set paints it: the set's FACE colour as the body
+  (a dark jewel) and its RIM colour as a 3 px edge. No bright flat fields.
+- **Theme switching.** The colour set changes on a 28 s loop: Nocturne, Dart Frog, Dusk, Ukiyo-e, with the swatches
+  from `Docs/VesselModels/colour_sets.json`. Each holds, then blends into the next; the last blends back into the
+  first, so the loop has no seam. A small readout names the worn set.
+- **The dull blue.** The flat discs and flat ground are gone. Behind the bands: Rev 91's sea lines and parts of a cell
+  moving in it (a membrane breathing, crystals pulsing, a prism trail being laid, flora turning).
+- **Smooth.** Every motion eases both ways and alternates; nothing pops or restarts.
+
+`frogma.py check --only R94` passes. `check_mockup.py` fails the colour gate on purpose: the 24 colour-set swatches are
+not UI tokens. Looked at in a local render at two moments of the loop (two sets), before a last layout pass.
+In the game the splash would wear the player's own set and blend when it changes. Nothing built.

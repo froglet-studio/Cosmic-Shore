@@ -3857,7 +3857,7 @@
       "w": 1920,
       "h": 1080,
       "page": "loading-screens",
-      "title": "Rev 94 A - The crew: five pilots in a line before the Ark (recommended)"
+      "title": "Rev 94 A - The crew before the domains: five pilots across three domain bands, the Ark above; the colour set changing (recommended)"
     },
     "R94B.dc.html": {
       "x": 2100,
@@ -3865,31 +3865,77 @@
       "w": 1920,
       "h": 1080,
       "page": "loading-screens",
-      "title": "Rev 94 B - The shore: a travel poster, the Squirrel crossing a low cell over a flat sea"
+      "title": "Rev 94 B - Three crews: a pilot and a hull in each domain band, the Ark beside; the colour set changing"
     },
-    "R94C.dc.html": {
+    "R94Notes.dc.html": {
       "x": 4200,
       "y": 14640,
       "w": 1920,
-      "h": 1080,
-      "page": "loading-screens",
-      "title": "Rev 94 C - The pilot: a character one-sheet, four pilots take turns"
-    },
-    "R94D.dc.html": {
-      "x": 0,
-      "y": 15900,
-      "w": 1920,
-      "h": 1080,
-      "page": "loading-screens",
-      "title": "Rev 94 D - Three domains: Jade, Ruby and Gold bands with a hull in each"
-    },
-    "R94Notes.dc.html": {
-      "x": 0,
-      "y": 17160,
-      "w": 1920,
       "h": 900,
       "page": "loading-screens",
-      "title": "Rev 94 - notes: what is shared, the four, what to know"
+      "title": "Rev 94 - notes: A and D as one poster, what changed, the colour set changing"
+    },
+    "R95S1A.dc.html": {
+      "x": 0,
+      "y": 15740,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S1A - 1A Presets: the map over its edge view; the voyage's name, the squad presets as cards and Set sail on the right (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R95S1B.dc.html": {
+      "x": 2100,
+      "y": 15740,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S1B - 1B Wide map: the map across the window; a foot bar holds the edge view, the voyage, the squad and Set sail - interactive",
+      "is_interactive": true
+    },
+    "R95S1C.dc.html": {
+      "x": 4200,
+      "y": 15740,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S1C - 1C Briefing: the map full height with the edge view inset at its foot; the squad's three seats shown on the right - interactive",
+      "is_interactive": true
+    },
+    "R95S2A.dc.html": {
+      "x": 0,
+      "y": 17000,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S2A - 2A Three seats: a column per seat, its pilot and hull over its choices; Save as preset and Set sail at the foot (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R95S2B.dc.html": {
+      "x": 2100,
+      "y": 17000,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S2B - 2B Seat and picker: the seats on the left, one large picker on the right with Vessel, Pilot, Element, Artifact - interactive",
+      "is_interactive": true
+    },
+    "R95S2C.dc.html": {
+      "x": 4200,
+      "y": 17000,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S2C - 2C Roster: one table, a row per seat and a stepper per choice - interactive",
+      "is_interactive": true
+    },
+    "R95Notes.dc.html": {
+      "x": 0,
+      "y": 18260,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations"
     }
   },
   "createdOnFiles": {
@@ -3898,7 +3944,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "loading-screens",
+    "page": "voyages",
     "view": "canvas"
   },
   "noteOrder": [
@@ -4017,6 +4063,7 @@
     "sec-rev91",
     "sec-rev92",
     "sec-rev93",
+    "sec-rev95",
     "sec-rev94",
     "rev69",
     "hud_end",
@@ -4102,7 +4149,8 @@
     "rev91",
     "rev92",
     "rev93",
-    "rev94"
+    "rev94",
+    "rev95"
   ],
   "notes": {
     "hud_end": {
@@ -6628,19 +6676,43 @@
     },
     "rev94": {
       "kind": "title1",
-      "text": "Rev 94 - The boot splash as a poster: no neon",
+      "text": "Rev 94 - The boot splash as a poster: the crew and the three domains, no neon",
       "x": 0,
       "y": 14240,
       "w": 240,
       "maxW": 6120,
       "page": "loading-screens"
     },
+    "rev95": {
+      "kind": "title1",
+      "text": "Rev 95 - Voyages as two screens: the voyage on the map, then the squad",
+      "x": 0,
+      "y": 15340,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev95": {
+      "kind": "rect",
+      "x": -160,
+      "y": 15180,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
     "sec-rev94": {
       "kind": "rect",
       "x": -160,
       "y": 14080,
       "w": 6440,
-      "h": 4140,
+      "h": 1800,
       "css": {
         "background": "rgba(64, 120, 255, 0.06)",
         "border-style": "solid",
@@ -7122,9 +7194,14 @@
     "R93Notes.dc.html",
     "R94A.dc.html",
     "R94B.dc.html",
-    "R94C.dc.html",
-    "R94D.dc.html",
-    "R94Notes.dc.html"
+    "R94Notes.dc.html",
+    "R95S1A.dc.html",
+    "R95S1B.dc.html",
+    "R95S1C.dc.html",
+    "R95S2A.dc.html",
+    "R95S2B.dc.html",
+    "R95S2C.dc.html",
+    "R95Notes.dc.html"
   ],
   "pages": [
     {
