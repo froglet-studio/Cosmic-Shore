@@ -34,6 +34,12 @@ Rank by **probability of a clean proof**, not by size:
 | something already reasoned offline (`unity-standins/`, `autoopt/`, profiling notes) | a fresh idea with no offline evidence |
 | the bench can isolate it (a material, a pure function) | needs a full scene, network, input |
 
+**Measure the state the game draws, not the asset.** Before choosing, find every script that writes the material at
+run time (property blocks, tints, `SetFloat`, overlays that replace a pass) and ask the person what the thing looks like
+today. W1 was first measured on the Charge crystal as its .mat authors it; the game had replaced that look with an
+overlay that holds the old crawl at zero, which made a different, three times larger exact win (WINS.md W1). Put that
+state in the spec's `floats` / `colors`.
+
 Sources of candidates, in this repo's order: draft stand-in PRs (#1877-#1880) and their branch tables
 (`amoebius-genome/docs/UNITY_STANDINS.md`), the `autoopt/` opportunity list, `Docs/PERFORMANCE_OPTIMIZATION.md`,
 the `diag`/`prof` captures, `perf-hunt` findings. Write down the first two runners-up and why they lost; the next

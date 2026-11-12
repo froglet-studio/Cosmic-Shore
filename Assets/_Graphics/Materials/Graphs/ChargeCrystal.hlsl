@@ -144,9 +144,6 @@ void ChargeCrystalArcs(
     {
         // Triangulation diagonal — an edge inside a face, not between two faces.
         if (edgeH[i] <= 0.0) continue;
-        // Exact early-out (envelope cull). The bolt sits within arcJitter widths of the crease; beyond (jitter + 3.5) widths
-        // its Gaussian core is < 5e-6, so skip the edge's noise entirely (coherent branch: whole face interiors skip).
-        if (d[i] > arcWidth * (arcJitter + 3.5)) continue;
 
         float s = edgeSeed[i];
         float flipped = s >= 1.0 ? 1.0 : 0.0;
@@ -219,6 +216,11 @@ float3 ChargeCrystalDischarge(
     float  nodeRadius,
     float  nodeIntensity)
 {
+    // Exact early-out: with both intensities at zero the result below is 0 * (finite) everywhere. That is the state
+    // every live Charge crystal body is drawn in: CrystalChargeArcs' seam walk replaces this crawl and holds both at
+    // zero through a property block (SilenceCrawl), as do the hearts CrystalHeartDraw poses. Uniform branch.
+    if (arcIntensity <= 0.0 && nodeIntensity <= 0.0) return float3(0.0, 0.0, 0.0);
+
     float arc, heat, node;
     ChargeCrystalArcs(bary, edgeH, edgeSeed, time,
                       arcWidth, arcLength, arcSpeed, arcDuty, arcJitter, arcShimmer, nodeRadius,

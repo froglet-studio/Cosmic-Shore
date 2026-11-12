@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -59,7 +59,14 @@ namespace CosmicShore.Editor.ProvenWin
             public int chain = 8;            // command buffers submitted back to back per timed half-pair
             public int samples = 200;        // timed pairs
             public float warmupSeconds = 3f; // sustained load before timing, so the GPU clock is up
+            // The state the GAME draws the material in, when that differs from the .mat (a property block a script
+            // writes, a colour-set tint). Measure what ships, not what the asset says.
+            public List<FloatOverride> floats = new List<FloatOverride>();
+            public List<ColorOverride> colors = new List<ColorOverride>();
         }
+
+        [Serializable] public class FloatOverride { public string name; public float value; }
+        [Serializable] public class ColorOverride { public string name; public Color value; }
 
         [Serializable]
         class Report
@@ -190,6 +197,8 @@ namespace CosmicShore.Editor.ProvenWin
             var sh = AssetDatabase.LoadAssetAtPath<Shader>(clonePath) ?? throw new FileNotFoundException(clonePath);
             var m = new Material(mat) { name = $"{mat.name} ({label})", shader = sh };
             m.CopyPropertiesFromMaterial(mat);
+            foreach (var f in spec.floats) m.SetFloat(f.name, f.value);
+            foreach (var c in spec.colors) m.SetColor(c.name, c.value);
             Debug.Log($"[ShaderABBench] {label}: shader={sh.name} supported={sh.isSupported} hasError={ShaderUtil.ShaderHasError(sh)} " +
                       $"passCount={m.passCount} pipeline='{Shader.globalRenderPipeline}' api={SystemInfo.graphicsDeviceType}");
             foreach (var msg in ShaderUtil.GetShaderMessages(sh))
