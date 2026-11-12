@@ -154,6 +154,8 @@ namespace CosmicShore.UI
         [SerializeField] private string joinedKicker = "{owner}'s squad - you fly {seat}";
         [SerializeField] private string makeKicker = "Make squad";
         [SerializeField] private string editKicker = "Edit squad";
+        [Tooltip("Toast when OPEN THE SEAT opens an offline friend's seat ({seat} = the seat's name). Empty shows none.")]
+        [SerializeField] private string seatOpenedToast = "{seat} is open: the pad stands empty until someone takes it.";
         [Tooltip("{open} is how many seats are open.")]
         [SerializeField] private string ownOpenDetail = "{open} seat open for a friend.";
         [SerializeField] private string ownFullDetail = "Every seat is filled.";
@@ -258,7 +260,10 @@ namespace CosmicShore.UI
             for (int i = 0; i < mateCards.Length; i++)
             {
                 int seat = i;
-                if (mateCards[i]) mateCards[i].Pressed += () => PickSeat(seat);
+                if (!mateCards[i]) continue;
+                mateCards[i].Pressed += () => PickSeat(seat);
+                mateCards[i].ChangeVesselPressed += () => ChangeVessel(seat);
+                mateCards[i].OpenSeatPressed += () => OpenSeat(seat);
             }
             Hook(domainChips, PickDomain);
             Hook(vesselTiles, PickVessel);
@@ -446,6 +451,31 @@ namespace CosmicShore.UI
             _mode = Book.Squads.Count > 0 ? Mode.View : Mode.None;
             Saved(publish: true);
             Draw(snapDomain: true);
+        }
+
+        /// <summary>CHANGE VESSEL on your card: the squad's editor opens on your seat, on the vessel picker's page of your
+        /// vessel (a joined squad is the leader's to edit).</summary>
+        void ChangeVessel(int seat)
+        {
+            var squad = Selected();
+            if (_mode != Mode.View || squad == null || !IsMySeat(squad, seat)) return;
+            Edit();
+            if (_mode == Mode.Make) PickSeat(seat);
+        }
+
+        /// <summary>OPEN THE SEAT on an offline friend's card in a squad you lead: the seat opens (its picks kept), its pad
+        /// stands empty, and the first friend who joins takes it.</summary>
+        void OpenSeat(int seat)
+        {
+            var squad = Selected();
+            if (_mode != Mode.View || squad == null || squad.IsJoined() || seat == 0) return;
+            var slot = squad.GetSlot(seat);
+            if (!slot.IsPlayer() || OnlineFriend(slot.MemberId)) return;
+            squad.SetSlot(seat, slot.WithSeat(SquadSeat.Open));
+            Saved(publish: true);
+            if (!string.IsNullOrWhiteSpace(seatOpenedToast))
+                ToastNotificationAPI.Show(TemplateText.Fill(seatOpenedToast, "seat", SeatName(seat)), ToastKind.Success);
+            Draw();
         }
 
         void PickSeat(int seat)
@@ -1021,6 +1051,9 @@ namespace CosmicShore.UI
             bool making = _mode == Mode.Make;
             card.SetEditing(making && seat == _seat, domain);
             card.SetPressable(making && CanEdit(squad, seat));
+            bool viewing = _mode == Mode.View && !squad.IsJoined();
+            card.SetActions(viewing && IsMySeat(squad, seat),
+                viewing && seat > 0 && slot.IsPlayer() && !OnlineFriend(slot.MemberId));
         }
 
         void DrawPicker()

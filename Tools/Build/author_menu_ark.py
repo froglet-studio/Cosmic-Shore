@@ -402,6 +402,9 @@ def squad_header(page):
                   36, name, K.chrome_sprite("chrome_diamond"), TL(12, 11, 14, 14), label_rect=TL(32, 0, 74, 36))
 
 
+ACTION_W, ACTION_H = 150, 28   # a seat card's action button (CHANGE VESSEL, OPEN THE SEAT)
+
+
 def mate_card(deck, i):
     """One seat (R67): its number and name, who flies it, then the Vessel / Element / Pilot / Artifact rows, glass. The
     vessel itself stands on its pad in the hangar behind, so the card's hull render and pilot figure stay off (their
@@ -421,7 +424,11 @@ def mate_card(deck, i):
              f"  hull: {ref(ctx.c(f'{k}/Hull', 'img'))}\n  companion: {ref(ctx.c(f'{k}/Figure', 'img'))}\n"
              f"  botTemplate: {ref(ctx.c(f'{k}/Hull/Bot', 'img'))}\n  botCount: 34\n  seconds: 1.1\n  scatter: 130\n"
              "  sparkShare: 0.25\n  sparkColor: {r: 1, g: 1, b: 1, a: 1}\n  tintStrength: 0.45\n"))
-    H.ellipsize(label(card.child(N(f"{k}/Who", "Who", TL(18, 31, SEAT_W - 32, 26))), "", "Body", "TextLight"))
+    H.ellipsize(label(card.child(N(f"{k}/Who", "Who", TL(18, 31, SEAT_W - 32 - ACTION_W - 8, 26))), "", "Body", "TextLight"))
+    # The card's actions (R67), beside who flies it: CHANGE VESSEL on yours, OPEN THE SEAT (Lime) on an offline friend's;
+    # SquadsPage shows the one that applies (SquadMateCard.SetActions).
+    small_button(card, f"{k}/ChangeVessel", "ChangeVessel", "Change vessel", TR(14, 30, ACTION_W, ACTION_H))
+    small_button(card, f"{k}/OpenSeat2", "OpenTheSeat", "Open the seat", TR(14, 30, ACTION_W, ACTION_H), variant="Cta")
     for j, pick in enumerate(PICKS):
         y = SEAT_ROW_Y + j * SEAT_ROW_STEP
         image_node(card, f"{k}/{pick}Rule", f"{pick}Rule", TL(18, y, SEAT_W - 32, 1), "NeutralLightest", alpha=0.25)
@@ -439,6 +446,8 @@ def mate_card(deck, i):
 
     def body(ctx, go):
         out = (f"  button: {ref(ctx.c(k, 'button'))}\n  editMark: {ref(ctx.c(f'{k}/Edit', 'img'))}\n"
+               f"  changeVesselButton: {ref(ctx.c(f'{k}/ChangeVessel', 'button'))}\n"
+               f"  openSeatButton: {ref(ctx.c(f'{k}/OpenSeat2', 'button'))}\n"
                f"  seatText: {ref(ctx.c(f'{k}/Seat', 'tmp'))}\n  numberText: {ref(ctx.c(f'{k}/Number', 'tmp'))}\n"
                f"  whoText: {ref(ctx.c(f'{k}/Who', 'tmp'))}\n")
         for pick in PICKS:
@@ -543,6 +552,7 @@ SQUAD_WORDS = (
     + yfield("joinedLine", "{owner}'s squad - joined") + yfield("makingLine", "Making...")
     + yfield("ownKicker", "Your squad - you lead") + yfield("joinedKicker", "{owner}'s squad - you fly {seat}")
     + yfield("makeKicker", "Make squad") + yfield("editKicker", "Edit squad")
+    + yfield("seatOpenedToast", "{seat} is open: the pad stands empty until someone takes it.")
     + yfield("ownOpenDetail", "{open} seat open for a friend.") + yfield("ownFullDetail", "Every seat is filled.")
     + yfield("makeDetail", "Pick a card to edit it.")
     + yfield("seatedLine", "Only {owner} changes the squad.")
@@ -974,7 +984,7 @@ def validate(files):
     assert re.search(r"^  converterTab: 0$", doc, re.M), "ElementalConverterView.converterTab is not the Converter tab"
 
 
-MATE_FIELDS = dict(button=S["button"], editMark=IMG, seatText=TMP, numberText=TMP, whoText=TMP, vesselText=TMP,
+MATE_FIELDS = dict(button=S["button"], editMark=IMG, changeVesselButton=S["button"], openSeatButton=S["button"], seatText=TMP, numberText=TMP, whoText=TMP, vesselText=TMP,
                    elementText=TMP, pilotText=TMP, artifactText=TMP, hullImage=IMG, pilotImage=IMG, openSeatGroup=225,
                    nanobots=S["nanobots"])
 SQUADS_FIELDS = dict(countText=S["kt"], newButton=S["button"], joinButton=S["button"], headerGroup=225, kickerText=TMP,

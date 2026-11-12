@@ -7598,5 +7598,11 @@ Artifacts): `author_menu_ark.py`.
 no extra camera. 36 MB of build. Fewer bytes: drop the Photic and Dart Frog squad clips (the worn set falls back to
 Nocturne's) or encode at 1600 x 900.
 
+**The seat cards' actions** (Shombith: "add the change vessel and open seat buttons too"): beside who flies the seat,
+**Change vessel** on your own card in a squad you lead (opens the squad's editor on your seat, on your vessel's page of
+the picker) and **Open the seat** (Lime) on an offline friend's card in a squad you lead (the seat opens with its picks
+kept, its pad stands empty, the first friend who joins takes it; the toast is `SquadsPage.seatOpenedToast`). Only the one
+that applies shows (`SquadMateCard.SetActions`); a joined squad's cards show neither (the leader edits).
+
 Affects: Shombith's Ark screen (`ElementalConverterView`, `SquadsPage`, `author_menu_ark.py`); Garrett's omni combine
 (stepped, not drawn, behind the video).

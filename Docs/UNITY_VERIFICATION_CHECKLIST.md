@@ -78,6 +78,9 @@ on a missing clip and a drifted entry). No Unity editor ran.
    turning over the deck. CONVERT: the conversion plays once, the recipe merges in step, then the Omni made loops.
 2. SQUADS: the hangar video with the squad lined up, no veil over it; change the domain chip: the clip changes domain.
    The seat cards sit in the right column as on Frogma (R67).
+   Your card shows CHANGE VESSEL: it opens the squad's editor on your seat; pick another vessel, save: the card shows it.
+   A friend's card in your squad while they are offline shows OPEN THE SEAT (Lime): press it, the seat reads open and a
+   toast says the pad stands empty; online friends, AI seats and a joined squad's cards show neither button.
 3. ARTIFACTS: the room (Rev 86) behind the list and the detail card, no veil.
 4. DECOR: refused, as before.
 5. Settings: switch colour set to Photic and to Dart Frog: the hangar's clip follows.
