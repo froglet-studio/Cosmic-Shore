@@ -105,6 +105,28 @@ Traps this cost a day to find (all handled in the bench; keep them handled in an
 - Then the project's own gates on the branch with only B applied: `bash Tools/Build/unity_refcompile/run.sh`,
   `bash Tools/Build/verify_unity.sh --project D:\ABLab\wt --filter <the area's tests>`.
 
+## 3.5 On a phone
+
+The desktop GPU is not the target that matters most. `ProvenWinDeviceBenchBuilder` builds one development APK from
+the same spec files (A and B shaders and their game-state materials compiled in, nothing else of the game), and
+`ProvenWinDeviceBench` runs every pair on the phone, writing `provenwin_report.json`:
+
+```
+Unity.exe -batchmode -projectPath D:\ABLab\wt -buildTarget Android ^
+  -executeMethod CosmicShore.Editor.ProvenWin.ProvenWinDeviceBenchBuilder.Build ^
+  -abSpec "D:\ABLab\spec_dev_w1_null.json;..." -apk D:\ABLab\phone\provenwin_bench.apk -logFile D:\ABLab\logs\device_build.log
+adb install -r D:\ABLab\phone\provenwin_bench.apk
+adb shell monkey -p <package> 1
+adb logcat -s Unity | findstr ProvenWin
+adb pull /sdcard/Android/data/<package>/files/provenwin_report.json
+```
+
+Keep the phone on power, screen on, and run it twice; a tile GPU throttles. Add a phone row to the win in WINS.md.
+The build (IL2CPP, ARM64 only) took 38.5 min on Gbox with a warm Library. Its final `ld.lld` link of
+`libil2cpp.so` sat near 0 % CPU for several minutes and looks hung; it is not (the first attempt was killed there by
+mistake). The Android build rewrites a dozen project files (Gradle templates, FMOD plugin metas, URP and project
+settings): revert them in the bench worktree afterwards (`git checkout -- Assets/Plugins ProjectSettings ...`).
+
 ## 4. The human A/B
 
 Publish one blind page per win: the real frames A and B under random letters, a flicker toggle, the diff image,

@@ -35,7 +35,7 @@ namespace CosmicShore.Editor.ProvenWin
     /// </summary>
     public static class ShaderABBench
     {
-        const string TempRoot = "Assets/_ABBenchTemp";
+        internal const string TempRoot = "Assets/_ABBenchTemp";
 
         [Serializable]
         public class Spec
@@ -230,7 +230,7 @@ namespace CosmicShore.Editor.ProvenWin
 
         // Clone the material's shader (and the swapped include, when the swap is an include) under TempRoot/<label>,
         // renamed so A and B are two distinct shaders compiled side by side.
-        static Material CloneVariant(Material mat, Spec spec, string label, string content)
+        internal static Material CloneVariant(Material mat, Spec spec, string label, string content)
         {
             string dir = $"{TempRoot}/{label}";
             Directory.CreateDirectory(dir);
@@ -290,7 +290,7 @@ namespace CosmicShore.Editor.ProvenWin
             foreach (var name in spec.randomPerMoment) m.SetFloat(name, (float)rng.NextDouble());
         }
 
-        static void Invoke(string call)
+        internal static void Invoke(string call)
         {
             int dot = call.LastIndexOf('.');
             string typeName = call.Substring(0, dot), method = call.Substring(dot + 1);
@@ -301,7 +301,7 @@ namespace CosmicShore.Editor.ProvenWin
             mi.Invoke(null, null);
         }
 
-        static void WakePipeline(RenderTexture rt)
+        internal static void WakePipeline(RenderTexture rt)
         {
             var go = new GameObject("ABBench wake camera") { hideFlags = HideFlags.HideAndDontSave };
             var cam = go.AddComponent<Camera>();
@@ -319,7 +319,7 @@ namespace CosmicShore.Editor.ProvenWin
             return 0;
         }
 
-        static Mesh LoadMesh(Spec spec)
+        internal static Mesh LoadMesh(Spec spec)
         {
             // "builtin:Sphere.fbx" names one of Unity's built-in meshes (a sky is drawn on a sphere round the eye).
             if (spec.mesh.StartsWith("builtin:")) return Resources.GetBuiltinResource<Mesh>(spec.mesh.Substring(8));
