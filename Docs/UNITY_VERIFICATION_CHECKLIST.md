@@ -7001,7 +7001,7 @@ risk. Before, it aimed at each ring's centre, the middle of the braid and 22 u f
 
 ### 🔴 The Manta AI holds Soar deeper into turns in Regatta (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
-**What landed:** `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset` (`BoostStickBand` 0.8, `YastriStickBand`
+**What landed:** `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset` (`BoostStickBand` 0.8, `YawsteryStickBand`
 0.85, written with `learn_drives_from_flights.py`'s own writer). In Regatta only, the AI Manta keeps both triggers flat
 until its stick passes 0.8 (was 0.35) and pivots past 0.85 (was 0.75). Every other mode keeps the executor's bands.
 A person's Manta flights replace these numbers (`learn_drives_from_flights.py --write`).
@@ -7016,7 +7016,7 @@ A person's Manta flights replace these numbers (`learn_drives_from_flights.py --
 **Verify in editor:**
 1. Run `RegattaDriveTuningTests`: all pass.
 2. Arcade ▸ Regatta with an AI Manta, Third Eye on it. It soars (~700 u/s) through most of each leg, splits its
-   triggers (Yastri pivot) only in hard turns, and threads rings without circling. Note I1–I4 times.
+   triggers (Yawstery pivot) only in hard turns, and threads rings without circling. Note I1–I4 times.
 3. Any other mode with an AI Manta (Redline): unchanged.
 
 ### 🔴 The Dolphin AI drifts again at the discharge's peak; Regatta AIs aim through the ring's centre (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
@@ -22159,14 +22159,14 @@ Branch `claude/headlong-stampede`. `HeadlongHedgesTests` run offline (`bash Tool
 6. **I4:** the race starts at Time 5. Leave a hairpin fast and the red hedge after it sprays aside with no burn
    (Momentum, the Time card flashes); leave it slow and you are burned to Time 4.
 7. **Frame time** with four Rhinos at I3 (about 2000 hedge slabs): no worse than Switchback I2.
-## 🔴 Manta overhaul: shared fuse, prism-impact detonation, explosive prisms, decoy crystals, Yastri and Soar on Time (2026-11-07, Garrett, NOT RUN IN EDITOR)
+## 🔴 Manta overhaul: shared fuse, prism-impact detonation, explosive prisms, decoy crystals, Yawstery and Soar on Time (2026-11-07, Garrett, NOT RUN IN EDITOR)
 
 Branch `claude/manta-overhaul`. Compiled with `unity_refcompile` (player and editor: 0 errors in changed files; the 21
 remaining are in the Vivox, Moderation and Multiplayer packages the cloud session could not fetch). `gates.sh` ran on a
 sparse checkout: `author_manta_kit_assets.py --check`, `console_logging` and `conditional_compilation` OK; the failures
 are all missing `.asset` files the sparse checkout left out. Design record: `MANTA_STING_KABLOOM.md` §0, §3a, §4a.
 
-1. **Fly the Manta in the Toybox at Time 0.** The boost does nothing (Soar is Time 5); Yastri turns still work. Raise
+1. **Fly the Manta in the Toybox at Time 0.** The boost does nothing (Soar is Time 5); Yawstery turns still work. Raise
    Time to 5: the analog turn-boost and the boost button both work.
 2. **Skim rival prisms.** Energy fills (one bomb per full unit, 3 max) and each skimmed rival prism lifts its colour
    (explosive). Destroy one: its neighbours in the same trail go too, a beat later, and explosive neighbours carry on.
@@ -22870,7 +22870,7 @@ renders all four (`verify_lab.cjs`, Playwright); nothing ran in Unity.
 ## 🔴 Manta: Charge is the fuse, not the bloom's petals (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/cool-dijkstra-4puf92`. Design record: `MANTA_STING_KABLOOM.md` §0a. Compile and gate status are in the
-commit message. Also carries the quoted Yastri text that makes `Manta.asset` parse again (E-251530c87b; the same two
+commit message. Also carries the quoted Yawstery text that makes `Manta.asset` parse again (E-251530c87b; the same two
 lines as `claude/fix-manta-ability-map-yaml`, plus the generator that kept writing the broken form).
 
 1. **Run `MantaFuseChargeTests`** (EditMode): 8 tests, all green.

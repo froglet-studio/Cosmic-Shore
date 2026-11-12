@@ -95,7 +95,21 @@ cleaning the vestigial noise." What each unmerged voyage branch still holds:
 | `claude/ark-escort-voyage` (1 commit, `3b7cdb69d`) | The escort card's difficulty buttons no longer cover Set sail. | **Already on `bleeding-edge`** (`VoyageJobCard.ShowStepper`, `StepWidth`). Delete. |
 | 15 other `claude/voyage-*` branches | Fully merged, or with only a merge commit beyond `bleeding-edge` (`voyage-scene-port`). | Delete. |
 
-The deletions wait on Garrett's go-ahead.
+**Shombith: this cleanup is yours** (Garrett, 2026-11-12: "tell shombith to clean it after he is sure there is
+nothing of value"). Look through the branches above first. If nothing in them is worth keeping, archive sim-farm
+and delete the rest from a full local checkout. Claude cloud sessions cannot push tags or delete branches they did
+not create.
+
+```
+git fetch origin claude/voyage-sim-farm
+git push origin d4a6827fdb66761916aead0dada2926c709b47b1:refs/tags/archive/voyage-sim-farm
+git push origin --delete claude/voyage-ark-core claude/voyage-ark-feel claude/voyage-chaos claude/voyage-escort-roles \
+  claude/voyage-fauna-params claude/voyage-fauna-threats claude/voyage-integration claude/voyage-night \
+  claude/voyage-pacify claude/voyage-pacify-tune claude/voyage-scene claude/voyage-scene-port claude/voyage-variety \
+  claude/voyage-verify claude/ark-escort-voyage claude/voyage-sim-farm
+```
+
+`claude/voyage-coop` is not in that list. Delete it after you have ported what you want from it.
 
 ## 7. Who else works near here
 

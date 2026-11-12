@@ -114,6 +114,7 @@ namespace CosmicShore.Editor.ProvenWin
                 if (Arg("-ownerType") is { } owner) so.FindProperty("ownerType").stringValue = owner;
                 if (Arg("-setupMethod") is { } setup) so.FindProperty("setupMethod").stringValue = setup;
                 if (Arg("-toggledType") is { } toggled) so.FindProperty("toggledType").stringValue = toggled;
+                if (Arg("-offscreenAOn") is { } aon) so.FindProperty("offscreenAOn").boolValue = aon == "true" || aon == "1";
                 if (Arg("-spawnInView") is { } siv) so.FindProperty("spawnInView").intValue = int.Parse(siv);
                 if (Arg("-spawnBehind") is { } sb) so.FindProperty("spawnBehind").intValue = int.Parse(sb);
                 if (Arg("-offscreenBoundsSize") is { } ob) so.FindProperty("offscreenBoundsSize").floatValue = float.Parse(ob, System.Globalization.CultureInfo.InvariantCulture);
