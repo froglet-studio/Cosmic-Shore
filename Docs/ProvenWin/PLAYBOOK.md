@@ -95,6 +95,11 @@ Traps this cost a day to find (all handled in the bench; keep them handled in an
   was bit-identical or within one level there (2026-11-12). Unity's Vulkan path keeps HLSL `half` as relaxed precision,
   which the driver may run at fp16, so moving code changes results. Measure every API, measure the exact combination
   you will ship, and when a combination fails, split it and ship the parts that pass.
+- **Prove the guarded state happens in the bench before believing a "no gain".** For an early-out, run two probes
+  first: B returns a constant unconditionally (it must change the picture and the time: the code is reached and
+  costs something), and B returns that constant only inside the guard (it must change the picture: the guarded state
+  occurs). The creature-body bloom early-out measured 1.00x, and the second probe showed its guard never fired under
+  the bench's state, so the 1.00x said nothing about the game (WINS.md, queued).
 - **Launch detached** (`start` / `Start-Process` without waiting): a dropped remote session kills a child Unity mid
   swap and leaves the project file changed.
 - Then the project's own gates on the branch with only B applied: `bash Tools/Build/unity_refcompile/run.sh`,

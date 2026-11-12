@@ -70,7 +70,17 @@ namespace CosmicShore.Editor.ProvenWin
             // The shader animates on _Time rather than a clock property: the bench writes _Time itself each moment, so
             // A and B see the same instant (batchmode never advances it on its own).
             public bool driveGlobalTime;
+            // Includes between swapFile and the shader, in order (swapFile is included by includeChain[0], and so on).
+            public List<string> includeChain = new List<string>();
+            // Static methods run once before drawing, "Namespace.Type.Method" (the game's own global publishers).
+            public List<string> prepare = new List<string>();
+            // Globals a running system would have set (a style flag, a band) that the publishers above do not.
+            public List<VectorOverride> globalVectors = new List<VectorOverride>();
+            public float modelScale = 1f;
+            public List<string> logGlobals = new List<string>();   // globals to print after `prepare`, to check the state
         }
+
+        [Serializable] public class VectorOverride { public string name; public Vector4 value; }
 
         [Serializable] public class FloatOverride { public string name; public float value; }
         [Serializable] public class ColorOverride { public string name; public Color value; }
@@ -157,6 +167,7 @@ namespace CosmicShore.Editor.ProvenWin
             {
                 Debug.Log("[ShaderABBench] spec " + specPath);
                 var spec = JsonUtility.FromJson<Spec>(File.ReadAllText(specPath));
+                s_modelScale = spec.modelScale;
                 Directory.CreateDirectory(spec.outDir);
                 string a = File.ReadAllText(spec.variantA), b = File.ReadAllText(spec.variantB);
                 if (a == b) throw new InvalidOperationException("variant A and B are identical");
@@ -168,6 +179,9 @@ namespace CosmicShore.Editor.ProvenWin
                 rt = new RenderTexture(spec.width, spec.height, 24, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear) { name = "ABBench" };
                 rt.Create();
                 WakePipeline(rt);
+                foreach (var call in spec.prepare) Invoke(call);
+                foreach (var g in spec.globalVectors) Shader.SetGlobalVector(g.name, g.value);
+                foreach (var name in spec.logGlobals) Debug.Log($"[ShaderABBench] global {name} = {Shader.GetGlobalVector(name)}");
 
                 var matA = CloneVariant(mat, spec, "A", a);
                 var matB = CloneVariant(mat, spec, "B", b);
@@ -227,11 +241,25 @@ namespace CosmicShore.Editor.ProvenWin
                 shaderText = content;
             else
             {
-                string inc = $"{dir}/{Path.GetFileName(swap)}";
-                File.WriteAllText(inc, content);
+                // The swapped file and every file in `includeChain` (the includes between it and the shader) are cloned into
+                // one folder under their own names, so a relative #include in a clone finds the cloned file. The shader
+                // is then repointed at the clones by asset PATH (an #include) and by GUID (a Shader Graph Custom
+                // Function's m_FunctionSource).
+                var files = new List<string> { swap };
+                files.AddRange(spec.includeChain.Select(x => x.Replace('\\', '/')));
+                for (int i = 0; i < files.Count; i++)
+                    File.WriteAllText($"{dir}/{Path.GetFileName(files[i])}", i == 0 ? content : File.ReadAllText(files[i]));
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                 shaderText = File.ReadAllText(shaderPath);
-                if (!shaderText.Contains(swap)) throw new InvalidOperationException($"{shaderPath} does not include {swap}");
-                shaderText = shaderText.Replace(swap, inc);
+                bool referenced = false;
+                foreach (var f in files)
+                {
+                    string clone = $"{dir}/{Path.GetFileName(f)}";
+                    string guid = AssetDatabase.AssetPathToGUID(f), cloneGuid = AssetDatabase.AssetPathToGUID(clone);
+                    if (shaderText.Contains(f)) { shaderText = shaderText.Replace(f, clone); referenced = true; }
+                    if (!string.IsNullOrEmpty(guid) && shaderText.Contains(guid)) { shaderText = shaderText.Replace(guid, cloneGuid); referenced = true; }
+                }
+                if (!referenced) throw new InvalidOperationException($"{shaderPath} references none of {string.Join(", ", files)} (add the includes between them to `includeChain`)");
             }
             // A .shader is renamed in its text; a .shadergraph takes its name from its file, so the clone's file name does it.
             string ext = Path.GetExtension(shaderPath);
@@ -260,6 +288,17 @@ namespace CosmicShore.Editor.ProvenWin
             if (spec.driveGlobalTime) Shader.SetGlobalVector("_Time", new Vector4(clock / 20f, clock, clock * 2f, clock * 3f));
             var rng = new System.Random(5000 + i);
             foreach (var name in spec.randomPerMoment) m.SetFloat(name, (float)rng.NextDouble());
+        }
+
+        static void Invoke(string call)
+        {
+            int dot = call.LastIndexOf('.');
+            string typeName = call.Substring(0, dot), method = call.Substring(dot + 1);
+            var type = AppDomain.CurrentDomain.GetAssemblies().Select(asm => asm.GetType(typeName)).FirstOrDefault(t => t != null)
+                       ?? throw new TypeLoadException(typeName);
+            var mi = type.GetMethod(method, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, Type.EmptyTypes, null)
+                     ?? throw new MissingMethodException(call);
+            mi.Invoke(null, null);
         }
 
         static void WakePipeline(RenderTexture rt)
@@ -305,8 +344,10 @@ namespace CosmicShore.Editor.ProvenWin
         {
             var rng = new System.Random(1000 + i);
             var rot = Quaternion.Euler((float)rng.NextDouble() * 360f, (float)rng.NextDouble() * 360f, (float)rng.NextDouble() * 360f);
-            return Matrix4x4.TRS(Vector3.zero, rot, Vector3.one);
+            return Matrix4x4.TRS(Vector3.zero, rot, Vector3.one * s_modelScale);
         }
+
+        static float s_modelScale = 1f;
 
         static void Draw(CommandBuffer cmd, Spec spec, Material m, Mesh mesh, int pass, Matrix4x4 model, int copies)
         {
