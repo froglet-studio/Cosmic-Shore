@@ -7461,7 +7461,7 @@ the steps into the bar. The moving background departs from the quiet rule (no id
 brief. In the game the show would be the live models, and every word (the step names, the lines under each title) an
 authored field. F's look is not built; only the percentage is (section 175).
 
-## 174. Rev 92 mockups: the boot splash and sign-in scene - two logos and the environment (2026-11-12, awaiting a pick)
+## 174. Rev 92 mockups: the boot splash and sign-in scene - two logos and the environment (2026-11-12; rejected by Shombith the same day)
 
 **Asked** (Shombith, 2026-11-12, with a screenshot of today's splash): "This can be a good bootstrap splash and sign
 in scene but we need something better than the image I shared with you. It cannot be texts, it needs to be froglet
@@ -7489,4 +7489,11 @@ all five. Looked at in a local render.
 
 **Differs from the build**: today's splash is one still picture under a dim with the logo in it, LOADING over a
 180 x 2 bar and one status line (section 26). A picked option makes the environment move behind the two logos; the
-sign-in, pilot name, consent and connection-lost windows sit over it as today. Awaiting a pick; nothing built.
+sign-in, pilot name, consent and connection-lost windows sit over it as today. Nothing built.
+
+**Rejected (Shombith, 2026-11-12): "If this is what we enter when we enter cosmic shore I dont like the direction
+already"**, on a screenshot of all four. What the four have in common, and so what a next round must not repeat: the
+environment is a thin line drawing on a dark, mostly empty ground (A, B, D) or three small pictures (C), where today's
+splash is a full, bright picture; the logo is laid on top of it, not part of it. A next round needs the real world at
+full size (the offline arena renderer, `Tools/Build/render_card_backgrounds.py`, can draw one at 1920 x 1080 but needs
+the .NET 8 SDK, which this session could not install).
