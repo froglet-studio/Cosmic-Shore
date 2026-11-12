@@ -37,3 +37,15 @@ hit; two quick knocks on each plant (graze a rival vessel or a creature with an 
 
 **Next question.** Do the knock and the thud read clearly mid-fight, and does the omni cash-out (a big, rare
 event) want the alert shake?
+
+## Round: stronger hull hits and a fleet haptics rule (2026-11-12)
+
+**Question.** Hull hits felt too light, heavier still wanted for danger and super-shielded prisms. Is there a fleet
+rule for haptics on collisions, skims and jousts? There was none (only a list of feels in `Docs/HAPTICS.md`).
+
+**Decided (Caleb).** A universal rule with the kits' spirit (`Docs/HAPTICS.md` § The universal rule): a hull-hit
+ladder on every hull that does not want contact (plain ~240 ms, shielded ~300 ms, heavy danger/super-shielded
+~420 ms two-slam crunch), and rammers rewarded instead (the Rhino plays the skim pulse at 0.7 on each plough,
+spaced 100 ms). Skims opt-in per kit. On the Manta: the ladder on a hull hit, the knock on a plant, nothing on a skim.
+
+**Next question.** Do the Shrike, the Urchin and the Grizzly count as rammers by their kits?

@@ -25,23 +25,30 @@ it suppresses nothing. Being interruptible costs it nothing (the next pulse is m
 away) and it is what keeps the two feels the policy is built around fully legible — a thud still
 cuts cleanly through a held burst.
 
-## A universal rule (PROPOSED, Caleb 2026-11-12; not yet decided)
+## The universal rule (DECIDED, Caleb 2026-11-12)
 
-Nothing in the docs set a fleet-wide rule for what the pad says on a collision, a skim or a joust before this.
-The policy above is a list of feels; the camera already has a universal one (`Docs/CAMERA_FEEL.md`: every hull's
-hit is weighed by the prism, size and shield tier). The proposal, so every hull's pad means the same thing:
+Nothing in the docs set a fleet-wide rule for what the pad says on a collision, a skim or a joust before this; the
+camera already had one (`Docs/CAMERA_FEEL.md`: every hull's hit weighed by the prism). Caleb: honour the universal
+rule AND the spirit of each kit, "vessels that want contact should feel rewarded for doing the thing they want, not
+punished. Not even punished lightly."
 
 1. **The pad speaks for what happens to the pilot's own hull, or for a deliberate act landing.** Never for a
    background state that runs without the pilot doing something (a passive skimmer in dense mass was the Manta's
    minutes-long hum).
-2. **Hull hits are universal and weighed by what was hit**: the ladder above (plain, shielded, heavy), on every
-   hull, from the prism's state. No hull opts out and no mode rescales it.
-3. **Skims are opt-in per kit**: a skim pulse only where skimming is the hull's core, skill-tested verb (the
+2. **A hull hit is a mistake, and plays the hull-hit ladder** (plain, shielded, heavy; above) on every hull whose
+   kit does not want contact. No mode rescales it.
+3. **A rammer is rewarded, never punished.** A hull whose verb IS contact (today: the Rhino, "a plough") carries
+   `VesselRamRewardByPrismEffect` INSTEAD of the punish effect: the skim pulse at one fixed strength (0.7), spaced at
+   least 100 ms (above the 70 ms clip, so a plough through a wall never becomes a hum). Whether a rammer's reward
+   grows on shielded, danger or super-shielded prisms is open; if it does, it is a per-kit choice, like the skim.
+   Candidates to review against their kits: the Shrike ("docks to whatever it touches"), the Urchin
+   (`VesselAttachPrismEffect`), the Grizzly ("rush and ride your shockwaves").
+4. **Skims are opt-in per kit**: a skim pulse only where skimming is the hull's core, skill-tested verb (the
    Squirrel's speed tubes, the Dolphin's needle-threading), never a hull whose skimmer is a big passive sphere (the
-   Manta).
-4. **A kit's signature act gets at most one event feel**, fenced to it (the Manta's plant knock, the Sparrow's spray,
-   the Rhino's bind, the drift kicks), and must be distinguishable from the thud and the skim.
-5. **Pilot-on-pilot moments** (a joust, a petal hit taken) are silent today; adding one is a fleet decision, not a kit's.
+   Manta). Stronger skim pulses on armour or danger MAY be allowed per kit later.
+5. **A kit's signature act gets at most one event feel**, fenced to it (the Manta's plant knock, the Sparrow's spray,
+   the Rhino's bind, the drift kicks), and it must be distinguishable from the thud and the skim.
+6. **Pilot-on-pilot moments** (a joust, a petal hit taken) are silent today; adding one is a fleet decision, not a kit's.
 
 ## Where it lives
 
