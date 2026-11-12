@@ -37,6 +37,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds a struck seam takes to fade behind the bolt.")]
         [SerializeField, Range(0.05f, 3f)] float seamFadeSeconds = 0.85f;
 
+        [Tooltip("Share of the seam walk's turns (0..1) that steer the bolt toward the player's side of the crystal, so it " +
+                 "stays on screen instead of running round the far side. 1 = it never takes a seam that ends out of sight " +
+                 "while one in sight is open, and from behind it comes round by the shortest way. 0 = it ignores the player.")]
+        [SerializeField, Range(0f, 1f)] float seamFaceViewer = 1f;
+
         [Tooltip("x the light on the petals beside the bolt (on top of glowIntensity). Low, so the plasma reads over the petals it lights.")]
         [SerializeField, Range(0f, 2f)] float seamPetalGlow = 0.35f;
 
@@ -137,7 +142,7 @@ namespace CosmicShore.Gameplay
         {
             Rate = rate, Bolts = boltIntensity, Glow = glowIntensity,
             SeamStrike = seamStrikeSeconds, SeamDwellMin = seamDwellMinSeconds, SeamDwellMax = Mathf.Max(seamDwellMinSeconds, seamDwellMaxSeconds),
-            SeamFade = seamFadeSeconds,
+            SeamFade = seamFadeSeconds, SeamFaceViewer = seamFaceViewer,
             FluxGap = fluxGapSeconds, FluxCharge = fluxChargeSeconds, FluxStrike = fluxStrikeSeconds, FluxHold = fluxHoldSeconds,
             FluxFade = fluxFadeSeconds, FluxFork = fluxFork, FluxMinDegrees = fluxMinDegrees, FluxMaxDegrees = Mathf.Max(fluxMinDegrees, fluxMaxDegrees),
             FluxBundle = fluxBundle, FluxTurns = fluxTurns,
