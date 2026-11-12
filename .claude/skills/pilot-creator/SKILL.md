@@ -306,14 +306,17 @@ What a painter is shown (`refs.py`):
   go with its window or display.
 - **A pilot's likeness** (`refs.py likeness <WORD>`): head and shoulders cut from their approved scene, so a later
   picture shows the same person.
-- **A patch**, `patch=dict(what=, ask=, edit=, keep=, refs=, likeness=, bust=, took=)`: part of a finished scene is
+- **A patch**, `patch=dict(what=, ask=, edit=, keep=, refs=, likeness=, bust=, changes=, took=)`: part of a scene is
   painted again and the rest is kept to the pixel. The painter gets the scene and what to change; `apply` takes from
   its answer only the record's region. The painter repaints the whole picture a little while it works (5 to 14 of
   255 outside the region), so the pilot is never taken from an answer by accident.
 - **A patch of the pilot.** Where the head itself changes, the region is the whole frame (`refs.WHOLE`) and the
   picture is the painter's answer. `likeness=` names the one thing taken from the pilot's earlier scene (Flux's fin:
   the head changed and the face was kept, 87); `bust=` names the one part taken from the pilot's earlier bust,
-  where the bust held a part the scene lost.
+  where the bust held a part the scene lost. The patch's first line tells the painter what stays (the pilot, the
+  face, the hands, the clothes, the place, the light): `changes=(...)` names the ones the patch redraws, so the
+  line never says that what is asked to change stays. A pilot designed again waits in its record as a patch
+  until its run is approved; the record's `swap` and `seen` lines follow the picture after `apply`, never before.
 
 What five runs taught (83 to 90): one run may ask for several things, and each is judged alone when the answer is
 in, so `edit` holds only the regions taken and `took=` says what went into the scene (88). The painter copies a
