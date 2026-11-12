@@ -129,6 +129,9 @@ namespace CosmicShore.Gameplay
             float shove = RhinoPlough.ShoveToward(lateral, side, clearance, throwDistance);
             if (shove == 0f) return;
 
+            // Every prism thrown buys stampede time for the next omni crystal (RhinoStampedeByCrystalEffectSO).
+            RhinoStampede.CountPlough(status);
+
             var throwSettings = new ThrowSettings
             {
                 Carry = Mathf.Max(0f, carryDistance.EvaluateReplicated(status)),

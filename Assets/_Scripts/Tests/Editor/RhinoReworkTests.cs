@@ -43,6 +43,14 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheStampedeIsBoughtByPloughingAndCapped()
+        {
+            Assert.AreEqual(0f, RhinoStampedeByCrystalEffectSO.SecondsFor(0, 0.1f, 12f), 1e-5f);
+            Assert.AreEqual(4f, RhinoStampedeByCrystalEffectSO.SecondsFor(40, 0.1f, 12f), 1e-4f);
+            Assert.AreEqual(12f, RhinoStampedeByCrystalEffectSO.SecondsFor(500, 0.1f, 12f), 1e-4f);
+        }
+
+        [Test]
         public void ANullRhinoNeverStampedes()
         {
             RhinoStampede.Begin(null, 8f);

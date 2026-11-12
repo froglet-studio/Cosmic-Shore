@@ -265,11 +265,11 @@ the attacks), and the omni rule (P-ecology-16: every vessel morphs an omni cryst
 | Mass | Blade width (a reach, Space's identity) | **Heft**: a heavier plough throws further, 0 → 60 u (`furrowDistance`, now on Mass). LT / RT steer belongs to this card. | **Berm** (unchanged) |
 | Space | Furrow (throw distance) | **Blade**: the blade's width, 14 → 40 u (`RhinoPloughBlade.width`, now on Space) | **Unstoppable** (unchanged; the fleet's Space shield-breaker slot, as on the Swordfish and Manta) |
 | Time | Ramp Spool | unchanged (rate/mobility). Still shared with the Swordfish, which inherited it. | Momentum |
-| Omni | the slow blast, shared with the Swordfish | **Stampede**: the omni crystal is absorbed (`VesselAbsorbCrystalMorphByCrystal`), the throttle surges by the crystal's speed buff for 8 s, and every gore in that window needs only the Charge 10 speed (50 u/s) and steals (`RhinoStampedeByCrystalEffectSO`, `RhinoStampede`) | - |
+| Omni | the slow blast, shared with the Swordfish | **Stampede**: the omni crystal is absorbed (`VesselAbsorbCrystalMorphByCrystal`), for 0.1 s per prism ploughed since the last omni crystal (capped at 12 s; nothing ploughed, no stampede: Garrett 2026-11-12, "they can't surge from crystal to crystal and they get rewarded for prisms ploughed") the throttle surges by the crystal's speed buff, the Rhino is invulnerable (a `VesselTimedElementalWard` on the root warding everything: no drain, no theft, no scored hit, no silence), and every gore needs only the Charge 10 speed (50 u/s) and steals (`RhinoStampedeByCrystalEffectSO`, `RhinoStampede`) | - |
 
 Netcode: the gore is decided on the Rhino's owner like every contact take; the stampede is set where omni pickups
 resolve (server, replayed on the owner), so the owner knows it when it decides a gore. Nothing new is simulated per peer.
 
-**Not yet seen in the editor.** Hand test: ram a slower rival (petals come loose; at Charge 5 they land on you); a
-rival faster than you is not gored; take an omni crystal (surge, then every ram steals for 8 s); raise Space (wider
+**Not yet seen in the editor.** Hand test: ram a slower rival above 150 u/s (petals come loose; at Charge 10 a 50 u/s cruise is enough; at Charge 5 they land on you); a
+rival faster than you is not gored; plough prisms, then take an omni crystal (surge, invulnerable, every ram steals, 0.1 s per prism ploughed up to 12 s); take a second crystal straight away (nothing happens beyond the absorb); raise Space (wider
 blade) and Mass (prisms thrown further). Icons for Gore, Heft, Blade and Stampede are owed (`/ability-icon`).
