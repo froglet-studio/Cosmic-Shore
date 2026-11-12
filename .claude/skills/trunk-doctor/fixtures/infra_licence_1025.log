@@ -9,8 +9,8 @@
 2026-10-08T16:04:04.3905034Z [36;1mif [ -z "$UNITY" ]; then[0m
 2026-10-08T16:04:06.6614187Z [Licensing::Module] Licensing is not yet initialized.
 2026-10-08T16:04:23.6283592Z Starting IPC server.
-2026-10-08T16:04:24.3400373Z Waiting for clients to connect on \\.\pipe\Unity-LicenseClient-DRAGONSWEAPON$, press Ctrl-C to exit.
-2026-10-08T16:04:27.6896175Z [Licensing::IpcConnector] Successfully connected to: "LicenseClient-DRAGONSWEAPON$" at "2026-10-08T16:04:27.6800504Z"
+2026-10-08T16:04:24.3400373Z Waiting for clients to connect on \\.\pipe\Unity-LicenseClient-RUNNER$, press Ctrl-C to exit.
+2026-10-08T16:04:27.6896175Z [Licensing::IpcConnector] Successfully connected to: "LicenseClient-RUNNER$" at "2026-10-08T16:04:27.6800504Z"
 2026-10-08T16:04:28.1238351Z [Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 31332, path: "C:/Program Files/Unity/Hub/Editor/6000.3.17f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
 2026-10-08T16:04:28.1240599Z [Licensing::Module] LicensingClient has failed validation; ignoring
 2026-10-08T16:04:29.0303120Z [Licensing::Client] Handshaking with LicensingClient:
@@ -19,8 +19,8 @@
 2026-10-08T16:04:29.0337879Z   Correlation Id:          0f501240adc55797c811c5d43ab9706f
 2026-10-08T16:04:29.0352849Z   External correlation Id: 1830963280881084879
 2026-10-08T16:04:29.0358234Z   Machine Id:              8Pq7P9aTlH8zXIOnvs1ETzvS1GA=
-2026-10-08T16:04:29.0359780Z [Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-DRAGONSWEAPON$" (connect: 22.20s, validation: 0.89s, handshake: 0.44s)
-2026-10-08T16:04:29.0362035Z [Licensing::IpcConnector] Successfully connected to: "LicenseClient-DRAGONSWEAPON$-notifications" at "2026-10-08T16:04:29.01579Z"
+2026-10-08T16:04:29.0359780Z [Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-RUNNER$" (connect: 22.20s, validation: 0.89s, handshake: 0.44s)
+2026-10-08T16:04:29.0362035Z [Licensing::IpcConnector] Successfully connected to: "LicenseClient-RUNNER$-notifications" at "2026-10-08T16:04:29.01579Z"
 2026-10-08T16:04:29.0363877Z [Licensing::Module] Connected to LicensingClient (PId: 31332, launch time: 0.05, total connection time: 23.54s)
 2026-10-08T16:04:29.0365264Z [Licensing::Module] Error: Access token is unavailable; failed to update
 2026-10-08T16:04:29.0623772Z [Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)

@@ -202,7 +202,8 @@ def person(login: str | None) -> str:
                     m = re.match(r"\d+\+([^@]+)@users\.noreply", e)
                     if m:
                         _TEAM[m.group(1).lower()] = p["name"]
-            _TEAM["gradies"] = _TEAM.get("garrett", "Garrett")
+                    else:   # a login often equals an email's local part (gradies@gmail.com -> gradies)
+                        _TEAM.setdefault(e.split("@")[0].lower(), p["name"])
         except (OSError, ValueError):
             pass
     who = _TEAM.get(login.lower())
@@ -567,9 +568,18 @@ def advice(findings: list[Finding]) -> list[str]:
 # --------------------------------------------------------------------------------------------
 # Logs of a run
 # --------------------------------------------------------------------------------------------
+_JOBS: dict[int, list[dict]] = {}
+
+
+def run_jobs(run_id: int) -> list[dict]:
+    if run_id not in _JOBS:
+        _JOBS[run_id] = api(f"repos/{REPO}/actions/runs/{run_id}/jobs?per_page=50").get("jobs", [])
+    return _JOBS[run_id]
+
+
 def run_logs(run_id: int) -> list[tuple[str, str]]:
     """[(job name, log text)] for every failed job of a run. Cached under CACHE."""
-    jobs = api(f"repos/{REPO}/actions/runs/{run_id}/jobs?per_page=50").get("jobs", [])
+    jobs = run_jobs(run_id)
     out = []
     for j in jobs:
         if j.get("conclusion") not in ("failure", "timed_out"):
@@ -590,6 +600,26 @@ def run_logs(run_id: int) -> list[tuple[str, str]]:
             text += "\n##[error]trunk-doctor: the job failed with no failed step (the log stops: the runner was lost or the job killed)\n"
         out.append((j["name"], text))
     return out
+
+
+def check_ran(run_id: int, f: Finding) -> bool:
+    """Did this run actually run the check behind `f`? A red run that does not show a finding
+    proves nothing when the check was SKIPPED behind an earlier failure (the guard's generator step
+    has no `if: !cancelled()`, so a failing static check skips it; a failing validate job skips
+    the Unity compile)."""
+    jobs = run_jobs(run_id)
+    if f.kind in ("compile", "tests"):
+        return any(j["name"].startswith("Unity") and j.get("conclusion") in ("success", "failure") for j in jobs)
+    val = next((j for j in jobs if j["name"] == "Static validation"), None)
+    if not val or val.get("conclusion") == "success":
+        return bool(val)
+    text = "\n".join(t for n, t in run_logs(run_id) if n == "Static validation")
+    if f.kind == "generator":
+        # the sweep's summary line means it ran every generator that existed then; a generator that
+        # did not exist yet was not broken yet
+        return f"== Tools/Build/{f.check}" in text or bool(re.search(r"^\S* ?generators: ", text, re.M))
+    scripts = [c.split()[1] for c in f.check.split(" ; ") if len(c.split()) > 1]
+    return any(sc in l for sc in scripts for l in text.splitlines() if ECHO in l)
 
 
 def diagnose_run(run_id: int) -> list[Finding]:
@@ -634,6 +664,7 @@ def attribute(target: Run, runs: list[Run], findings: list[Finding], trace: bool
             continue
         first_seen = target
         prev_verdict = None
+        hidden = []
         for r in older:
             if r.verdict == "none":
                 continue
@@ -643,15 +674,21 @@ def attribute(target: Run, runs: list[Run], findings: list[Finding], trace: bool
             keys = {g.key for g in diagnose_run(r.id)}
             if key in keys:
                 first_seen = r
+            elif not check_ran(r.id, f):
+                hidden.append(r)          # skipped behind another failure: no evidence either way
             else:
                 prev_verdict = r
                 break
+        # The candidates below run from first_seen back to prev_verdict, so the hidden runs' pushes are
+        # suspects with the rest; the line printed next says why.
         a = runs.index(first_seen)
         b = runs.index(prev_verdict) if prev_verdict in runs else len(runs)
         candidates = list(reversed(runs[a:b]))           # oldest first: the pushes no verdict separated
         lines.append(f"- {f.check}{' at ' + f.file if f.file else ''}: first red in run {first_seen.number} "
                      f"({first_seen.created[:16].replace('T', ' ')}); last verdict before it: "
-                     + (f"run {prev_verdict.number} {prev_verdict.verdict} {prev_verdict.sha[:10]}" if prev_verdict else "older than the runs read"))
+                     + (f"run {prev_verdict.number} {prev_verdict.verdict} {prev_verdict.sha[:10]}" if prev_verdict else "older than the runs read")
+                     + (f"; runs {', '.join(str(h.number) for h in hidden)} never ran this check (skipped behind another "
+                        "failure), so their pushes are suspects too" if hidden else ""))
         involved = {g.file for g in fs if g.file} | ({f"Tools/Build/{f.check}"} if f.kind == "generator" else set())
         stems = {Path(p).stem.replace("author_", "").replace("_assets", "") for p in involved}
         touched = []
@@ -1004,6 +1041,27 @@ def self_test() -> int:
     ss = streaks(_fake_runs("rrgcrrgg"))
     check("history: two streaks, oldest first, the open one last", len(ss) == 2 and ss[0]["end"] and ss[1]["end"] is None,
           [(s['first'].number, s['end'] and s['end'].number) for s in ss])
+
+    print("attribution evidence (check_ran):")
+    global run_logs
+    real_run_logs = run_logs
+    logs = {1: (FIXTURES / "static_console_logging_932.log").read_text(),
+            2: (FIXTURES / "generator_crash_numpy_1897.log").read_text()}
+    _JOBS.update({1: [{"name": "Static validation", "conclusion": "failure"}, {"name": "Unity compile", "conclusion": "skipped"}],
+                  2: [{"name": "Static validation", "conclusion": "failure"}],
+                  3: [{"name": "Static validation", "conclusion": "success"}, {"name": "Unity compile", "conclusion": "failure"}]})
+    run_logs = lambda rid: [("Static validation", logs[rid])] if rid in logs else []  # noqa: E731
+    try:
+        gen = Finding("generator", "author_regatta_assets.py")
+        check("a generator step skipped behind a static failure is no evidence", not check_ran(1, gen))
+        check("a finished generator sweep is evidence, even for one that did not exist yet", check_ran(2, gen))
+        check("a skipped Unity job never compiled", not check_ran(1, Finding("compile", "CS0246", "a.cs")))
+        check("a failed Unity job did compile", check_ran(3, Finding("compile", "CS0246", "a.cs")))
+        check("a passing validate job ran every static check", check_ran(3, Finding("static", "python3 Tools/x.py")))
+    finally:
+        run_logs = real_run_logs
+        for k in (1, 2, 3):
+            _JOBS.pop(k, None)
 
     print("gate:")
     ns = argparse.Namespace(branch="claude/some-feature", fix=False)
