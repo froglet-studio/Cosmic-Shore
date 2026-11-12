@@ -414,6 +414,7 @@ namespace CosmicShore.Utility
             {
                 GameMode = (int)_gameData.GameMode,
                 GameModeName = _gameData.GameMode.ToString(),
+                MatchId = _gameData.MatchId ?? string.Empty,
                 SceneName = ResolveSceneName(),
                 Intensity = _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0,
                 CoursePoolEntry = _gameData.CourseVariant >= 0 ? _gameData.CourseVariant + 1 : 0

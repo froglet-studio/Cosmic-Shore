@@ -1,0 +1,15 @@
+{
+  "_doc": "The daily story's editable rules (Docs/StoryFlywheel/README.md). story.py reads this; nothing else. Garrett steers here: the song and its beat slots, the end card, which part of the game an activity belongs to, and how a name is said on screen.",
+  "song": {
+    "music": "Assets/_Audio/Music/Full Quality MP3/SKY FIRE.mp3",
+    "_slots": "SKY FIRE, 123 BPM: the bar-aligned cut points of trailer v2 (Tools/Build/trailer/edl-v2.json). The drop is 46.08.",
+    "slots": [26.88, 32.64, 38.40, 42.24, 46.08, 50.40, 53.76, 58.08, 61.92],
+    "end": 65.76
+  },
+  "opener": {"path": "S01", "src_in": 1.0},
+  "closer": {"path": "S16b", "src_in": 0.0},
+  "endcard": {"dur": 6.12, "tagline": "TOY GAMES  ·  VOYAGES  ·  PARTIES", "platforms": "COMING SOON  ·  iOS  ·  ANDROID  ·  STEAM"},
+  "default_pillar": "arcade",
+  "pillars": {},
+  "labels": {"SkimRace": "Skim Race", "Toybox": "the Toybox"}
+}

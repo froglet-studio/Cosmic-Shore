@@ -22871,3 +22871,13 @@ Branch `cece/cool-dijkstra-4puf92`. Design record: `SCARAB.md`, the RECUT note's
    the next one uses the new one.
 4. **Shove a rival at Charge 10 and at Charge 0**: the same petals (about 1.2 per element) come loose either way.
 5. **Undertow**: plays as before, with more plates per minute from a charged Scarab.
+
+## 🔴 Replays carry their analytics match id (2026-11-12, Garrett, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-qhoug0`. Why: the story flywheel joins footage to analytics (`Docs/StoryFlywheel/README.md`).
+The cloud reference compile found 0 errors in the changed files (its 30 others are packages the cloud could not fetch).
+
+1. **Run `ReplayStoreTests`** (EditMode): `Summary_RoundTripsThroughJson` checks `MatchId` survives the JSON.
+2. **Play one Regatta match to the end screen**, then open the newest `Recordings/*.replay.json`: `MatchId` is a
+   32-character id, the same `match_id` the game sent on `game_started` (Analytics console, Matches page).
+3. **Watch that replay from My Replays**: it plays as before.

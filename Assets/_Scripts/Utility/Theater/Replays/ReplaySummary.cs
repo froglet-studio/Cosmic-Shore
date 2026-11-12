@@ -79,6 +79,14 @@ namespace CosmicShore.Utility
         public int GameMode;
         public string GameModeName = string.Empty;
 
+        /// <summary>
+        /// The match's analytics id (<c>GameDataSO.MatchId</c>, the <c>match_id</c> on game_started and game_completed),
+        /// so a recording joins the analytics of the same match: the story pipeline reads which matches players came
+        /// back from, then finds their footage by this id (Docs/StoryFlywheel/README.md). Empty for a summary written
+        /// before 2026-11-12, and for a match the host never stamped.
+        /// </summary>
+        public string MatchId = string.Empty;
+
         public string SceneName = string.Empty;
         public int Intensity;
 

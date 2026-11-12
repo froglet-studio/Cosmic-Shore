@@ -90,8 +90,10 @@ namespace CosmicShore.Tests
         {
             var original = BuildSummary(T0);
             original.RecordingFile = "Regatta_2026-10-15_20-00.cstheater";
+            original.MatchId = "5f1c0de0a1b2c3d4e5f60718293a4b5c";
 
             Assert.IsTrue(ReplaySummary.TryParse(original.ToJson(), out var read, out string error), error);
+            Assert.AreEqual(original.MatchId, read.MatchId, "the story pipeline joins footage to analytics by it");
             Assert.AreEqual(ReplaySummary.SchemaId, read.Schema);
             Assert.AreEqual(original.RecordingFile, read.RecordingFile);
             Assert.AreEqual(56, read.GameMode);

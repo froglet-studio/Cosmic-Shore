@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-12-new-aggregate-table-activity-returns-per-af179f",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T19:55:43+00:00",
+  "area": "Froglet Analytics server",
+  "summary": "New aggregate table activity_returns (per mode, vessel, Toybox and Toybox vessel: players who did it on 2+, 3+ days and a week apart; no player id), built in rebuild_aggregates with a test. It is what the daily story pipeline measures 'what players come back to' from (Docs/StoryFlywheel/README.md). Reads go through /v1/query with an admin key.",
+  "branch": "claude/project-thread-qhoug0",
+  "commit": "d83aa140c"
+}
