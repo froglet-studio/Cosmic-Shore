@@ -10,7 +10,7 @@ explosion reads as noise. Keep it this way — see "Adding/changing a feel" befo
 | Feel | What it is | Fires on |
 |---|---|---|
 | **Skim pulse** (reward) | Short (~70 ms), bright, sharp transient at high haptic frequency. Strength scales with how close the prism passed to the skimmer centre. Many in sequence read as a rapid, continuously rewarding pulse train. | Each prism entering a skimmer (Squirrel etc.) |
-| **Punish thud** (mistake) | Short (~200 ms), heavy, **low**-frequency thud — the deliberate opposite of the bright skim. | The vessel **body** slamming a prism |
+| **Punish thud** (mistake) | Heavy, **low**-frequency thud, the deliberate opposite of the bright skim, on a three-step **hull-hit ladder** read from the prism (Caleb 2026-11-12): **plain** ~240 ms; **shielded** ~300 ms with more high-motor grit; **heavy** (danger or super-shielded) a ~420 ms crunch, two slams with a dip between. A lighter hit never cuts a heavier thud short, and a heavier one lands at once inside the 250 ms spacing. | The vessel **body** slamming a prism |
 | **Alert shake** (event) | Long (~1.2 s) hard **rattle** — full-amplitude sawtooth at mid frequency, both gamepad motors out of phase. Unmistakably neither of the above, and long enough to read as "something happened" rather than "you hit something". | Cleave's progress-milestone rungs (25% / 50% of the win target) — **nothing else** |
 | **Bind grind** (state) | Short (~80 ms) **low**-frequency (0.15) grind carried by the LOW motor with a little high-motor grit, no transient, repeated every ~100 ms. Heavy like the thud, repeating like the spray. | The Rhino's NON-energized blade held inside a super-shielded prism it cannot cut (`RHINO_ENERGY_SWORD.md` § "Binding") — the entry is a punish thud, this is the texture after it. **Nothing else** |
 | **Drift rumble** (state) | Short (~90 ms) smooth, **low-mid** frequency (0.3) swell-and-fade, low motor leading but lighter than the bind, no transient. Repeats every ~100 ms while drifting; strength follows the **slip angle** like the drift loop's volume (linear from `quietSlipDegrees` to `fullSlipDegrees`), 0 to 0.3 - subtle by design (Garrett 2026-10-27). | Drifting on the local human pilot's vessel (`DriftAudioController`, Haptics header). **Nothing else** |
@@ -18,12 +18,30 @@ explosion reads as noise. Keep it this way — see "Adding/changing a feel" befo
 | **Plant knock** (event) | Two short firm knocks (~40 ms, 40 ms gap, ~50 ms softer second), mid-low frequency (0.35), both motors with the low one leading. Two hits is its signature against the skim's one tick and the punish's one thud. Rate-limited to 150 ms; suppresses skim and the textures for its ~130 ms. | The Manta planting a bomb on a vessel or a creature (`MantaStingActionExecutor.SpendBomb`, local human pilot; Caleb 2026-11-11). **Nothing else** |
 | **Spray buzz** (state) | Short (~50 ms) **mid**-frequency buzz with no transient (skim's signature) and both motors together (which is what reads as a buzz rather than a tick or a rumble). Repeats while the trigger is down, climbing in **both** strength (0.15 → 1.0) and cadence (100 ms → 45 ms) as the gun's accuracy decays, and holding flat once the cone reaches its sustainable cap — both channels are at their ceiling there, so a longer hold has nothing worse left to say. | Holding the Sparrow's full-auto trigger — bullets **or** turret stance. **Nothing else** |
 
-**Priority, top to bottom: alert > punish > plant > skim > drift press/let-go > spray = bind = drift.** The textures share the
+**Priority, top to bottom: alert > punish (heavy > shielded > plain) > plant > skim > drift press/let-go > spray = bind = drift.** The textures share the
 bottom rung and neither sets a busy window, so neither can suppress anything. The spray is the game's only
 *continuous* feel and therefore the only one that sits below skim: everything suppresses it and
 it suppresses nothing. Being interruptible costs it nothing (the next pulse is milliseconds
 away) and it is what keeps the two feels the policy is built around fully legible — a thud still
 cuts cleanly through a held burst.
+
+## A universal rule (PROPOSED, Caleb 2026-11-12; not yet decided)
+
+Nothing in the docs set a fleet-wide rule for what the pad says on a collision, a skim or a joust before this.
+The policy above is a list of feels; the camera already has a universal one (`Docs/CAMERA_FEEL.md`: every hull's
+hit is weighed by the prism, size and shield tier). The proposal, so every hull's pad means the same thing:
+
+1. **The pad speaks for what happens to the pilot's own hull, or for a deliberate act landing.** Never for a
+   background state that runs without the pilot doing something (a passive skimmer in dense mass was the Manta's
+   minutes-long hum).
+2. **Hull hits are universal and weighed by what was hit**: the ladder above (plain, shielded, heavy), on every
+   hull, from the prism's state. No hull opts out and no mode rescales it.
+3. **Skims are opt-in per kit**: a skim pulse only where skimming is the hull's core, skill-tested verb (the
+   Squirrel's speed tubes, the Dolphin's needle-threading), never a hull whose skimmer is a big passive sphere (the
+   Manta).
+4. **A kit's signature act gets at most one event feel**, fenced to it (the Manta's plant knock, the Sparrow's spray,
+   the Rhino's bind, the drift kicks), and must be distinguishable from the thud and the skim.
+5. **Pilot-on-pilot moments** (a joust, a petal hit taken) are silent today; adding one is a fleet decision, not a kit's.
 
 ## Where it lives
 

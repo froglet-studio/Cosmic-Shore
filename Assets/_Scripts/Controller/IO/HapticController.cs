@@ -46,6 +46,18 @@ namespace CosmicShore.Gameplay
     /// the skim train never interrupts a thud; the spray is a texture, so it yields to all three
     /// and interrupts none of them.
     /// </summary>
+    /// <summary>
+    /// How hard the thing the hull hit was (Docs/HAPTICS.md, the hull-hit ladder). Read from the prism's own state, the
+    /// same facts the camera's impact weight reads (Docs/CAMERA_FEEL.md): a plain prism, a shielded one, and the two
+    /// that really hurt, danger and super-shielded.
+    /// </summary>
+    public enum PunishWeight
+    {
+        Plain = 0,
+        Shielded = 1,
+        Heavy = 2,
+    }
+
     public class HapticController : MonoBehaviour
     {
         [Inject] GameSetting injectedGameSetting;
@@ -72,7 +84,11 @@ namespace CosmicShore.Gameplay
         const float SkimMinIntervalSec = 0.030f;   // ≥30 ms between skim pulses
         // The punish thud is a punctuation mark, not a texture.
         const float PunishMinIntervalSec = 0.250f; // ≥250 ms between thuds
-        const float PunishDurationSec = 0.200f;    // ~200 ms clip — skim is suppressed for this long
+        // The thud's length per weight (each clip's segments sum to it): skim waits this long, and a lighter thud
+        // never cuts a heavier one short.
+        const float PunishPlainDurationSec = 0.240f;
+        const float PunishShieldedDurationSec = 0.300f;
+        const float PunishHeavyDurationSec = 0.420f;
 
         // The alert is the loudest event the game has: a long, rattling shake that says
         // "something just changed". It outranks BOTH other feels for its whole duration.
@@ -107,6 +123,7 @@ namespace CosmicShore.Gameplay
         static float s_lastSkimTime = -999f;
         static float s_skimBusyUntil = -999f;      // spray is suppressed until here (skim outranks it)
         static float s_lastPunishTime = -999f;
+        static PunishWeight s_punishBusyWeight = PunishWeight.Plain;
         static float s_punishBusyUntil = -999f;    // skim is suppressed until here (punish owns the motor)
         static float s_lastAlertTime = -999f;
         static float s_alertBusyUntil = -999f;     // skim AND punish are suppressed until here
@@ -127,6 +144,7 @@ namespace CosmicShore.Gameplay
             s_lastSkimTime = -999f;
             s_skimBusyUntil = -999f;
             s_lastPunishTime = -999f;
+            s_punishBusyWeight = PunishWeight.Plain;
             s_punishBusyUntil = -999f;
             s_lastAlertTime = -999f;
             s_alertBusyUntil = -999f;
@@ -164,18 +182,32 @@ namespace CosmicShore.Gameplay
         /// The mistake thud. Always interrupts the skim train (loads over it) and, once fired,
         /// suppresses skim pulses for the clip's duration so the train can never cut it short.
         /// </summary>
-        public static void PlayPunish()
+        public static void PlayPunish(PunishWeight weight = PunishWeight.Plain)
         {
             if (!TryBeginPlayback(out var level)) return;
 
             float now = Time.unscaledTime;
             if (now < s_alertBusyUntil) return;                  // alert outranks the thud too
-            if (now - s_lastPunishTime < PunishMinIntervalSec) return;
+            bool busy = now < s_punishBusyUntil;
+            if (busy && weight < s_punishBusyWeight) return;     // a lighter hit never cuts a heavier thud short
+            // Spaced out, except that a HEAVIER hit lands at once: a danger prism right after a plain one is news.
+            if (now - s_lastPunishTime < PunishMinIntervalSec && (!busy || weight <= s_punishBusyWeight)) return;
             s_lastPunishTime = now;
-            s_punishBusyUntil = now + PunishDurationSec;
+            s_punishBusyWeight = weight;
+            s_punishBusyUntil = now + weight switch
+            {
+                PunishWeight.Heavy => PunishHeavyDurationSec,
+                PunishWeight.Shielded => PunishShieldedDurationSec,
+                _ => PunishPlainDurationSec,
+            };
 
             EnsureClips();
-            PlayPattern(s_punishJson, s_punishRumble, level);
+            switch (weight)
+            {
+                case PunishWeight.Heavy:    PlayPattern(s_punishHeavyJson, s_punishHeavyRumble, level); break;
+                case PunishWeight.Shielded: PlayPattern(s_punishShieldedJson, s_punishShieldedRumble, level); break;
+                default:                    PlayPattern(s_punishJson, s_punishRumble, level); break;
+            }
         }
 
         /// <summary>
@@ -376,6 +408,8 @@ namespace CosmicShore.Gameplay
         // locale-independent.
         static byte[] s_skimJson;
         static byte[] s_punishJson;
+        static byte[] s_punishShieldedJson;
+        static byte[] s_punishHeavyJson;
         static byte[] s_alertJson;
         static byte[] s_sprayJson;
         static byte[] s_bindJson;
@@ -385,6 +419,8 @@ namespace CosmicShore.Gameplay
         static byte[] s_plantJson;
         static GamepadRumblePattern s_skimRumble;
         static GamepadRumblePattern s_punishRumble;
+        static GamepadRumblePattern s_punishShieldedRumble;
+        static GamepadRumblePattern s_punishHeavyRumble;
         static GamepadRumblePattern s_alertRumble;
         static GamepadRumblePattern s_sprayRumble;
         static GamepadRumblePattern s_bindRumble;
@@ -416,13 +452,38 @@ namespace CosmicShore.Gameplay
             // (the deepest/heaviest character, the opposite of the skim). No transient.
             s_punishJson = ClipJson(
                 "{\"time\":0.0,\"amplitude\":1.0}," +
-                "{\"time\":0.12,\"amplitude\":0.85}," +
-                "{\"time\":0.20,\"amplitude\":0.0}",
-                frequency: "0.0", durationSec: "0.20");
+                "{\"time\":0.14,\"amplitude\":0.85}," +
+                "{\"time\":0.24,\"amplitude\":0.0}",
+                frequency: "0.0", durationSec: "0.24");
             s_punishRumble = Rumble(
-                new[] { 120, 80 },
-                low: new[] { 1.0f, 0.6f },   // low-frequency motor = the heavy rumble
-                high: new[] { 0.15f, 0.1f });
+                new[] { 140, 100 },
+                low: new[] { 1.0f, 0.7f },   // low-frequency motor = the heavy rumble
+                high: new[] { 0.25f, 0.15f });
+
+            // Punish, shielded — the same thud, longer, with more grit on the high motor: you hit armour.
+            s_punishShieldedJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":1.0}," +
+                "{\"time\":0.18,\"amplitude\":0.9}," +
+                "{\"time\":0.30,\"amplitude\":0.0}",
+                frequency: "0.05", durationSec: "0.30");
+            s_punishShieldedRumble = Rumble(
+                new[] { 180, 120 },
+                low: new[] { 1.0f, 0.8f },
+                high: new[] { 0.40f, 0.25f });
+
+            // Punish, heavy (danger or super-shielded) — a CRUNCH: a full slam, a short dip, a second slam, a tail.
+            // Two hits read as "that really hurt", where the plain thud is one.
+            s_punishHeavyJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":1.0}," +
+                "{\"time\":0.15,\"amplitude\":0.4}," +
+                "{\"time\":0.21,\"amplitude\":1.0}," +
+                "{\"time\":0.34,\"amplitude\":0.5}," +
+                "{\"time\":0.42,\"amplitude\":0.0}",
+                frequency: "0.05", durationSec: "0.42");
+            s_punishHeavyRumble = Rumble(
+                new[] { 150, 60, 130, 80 },
+                low: new[] { 1.0f, 0.35f, 1.0f, 0.5f },
+                high: new[] { 0.55f, 0.15f, 0.45f, 0.15f });
 
             // Alert — a long RATTLE: full-amplitude sawtooth so the motors slam on and off
             // repeatedly instead of holding, plus a mid frequency so it reads as neither the
