@@ -24,6 +24,12 @@ namespace CosmicShore.UI
                  "someone takes it (Shombith, 2026-11-06: \"anyone can take their place in the squad\").")]
         [SerializeField] private KitButton openSeatButton;
 
+        [Header("Presence")]
+        [Tooltip("The dot beside who flies the seat while they are here: you, an AI wingmate, an online friend (Rev 67).")]
+        [SerializeField] private Graphic onlineDot;
+        [Tooltip("The dot while the friend in the seat is offline.")]
+        [SerializeField] private Graphic offlineDot;
+
         [Header("Words")]
         [SerializeField] private TMP_Text seatText;
         [SerializeField] private TMP_Text numberText;
@@ -99,6 +105,13 @@ namespace CosmicShore.UI
         {
             if (changeVesselButton) changeVesselButton.gameObject.SetActive(changeVessel);
             if (openSeatButton) openSeatButton.gameObject.SetActive(openSeat);
+        }
+
+        /// <summary>The presence dot: lit while someone is here to fly the seat, dim for an offline friend, none for an open seat.</summary>
+        public void SetPresence(bool shown, bool online)
+        {
+            if (onlineDot) onlineDot.enabled = shown && online;
+            if (offlineDot) offlineDot.enabled = shown && !online;
         }
 
         /// <summary>Make squad presses cards; a made squad's cards are shown, not pressed.</summary>

@@ -167,6 +167,7 @@ namespace CosmicShore.UI
         ArkRoom _room = ArkRoom.Pier;
         ArkBackdropRun _pierRun = ArkBackdropRun.Loop;
         SquadsPage _squads;
+        ArkArtifactsPage _artifactsPage;
 
         void Awake()
         {
@@ -176,6 +177,9 @@ namespace CosmicShore.UI
             // The hangar's clip is the squad's domain.
             _squads = GetComponentInChildren<SquadsPage>(true);
             if (_squads) _squads.HangarChanged += ShowBackdrop;
+            // GIVE TO A SEAT on the Artifacts tab carries on in the Squads tab: the next seat picked takes the artifact.
+            _artifactsPage = GetComponentInChildren<ArkArtifactsPage>(true);
+            if (_artifactsPage) _artifactsPage.GiveRequested += GiveToSeat;
             if (arkTabs)
             {
                 arkTabs.Changed += HandleTabChanged;
@@ -216,6 +220,18 @@ namespace CosmicShore.UI
         public int ConverterTab => converterTab;
 
         bool UsesBackdrops => _backdropConfig;
+
+        void GiveToSeat(string artifactId, string artifactName)
+        {
+            if (!arkTabs || !_squads) return;
+            for (int i = 0; i < 16; i++)
+            {
+                if (arkTabs.PageLogic(i) is not SquadsPage) continue;
+                arkTabs.Press(i);
+                if (arkTabs.IsShown(i)) _squads.BeginGive(artifactId, artifactName);
+                return;
+            }
+        }
 
         /// <summary>The tab's backdrop clip, in the worn colour set (and, for the hangar, the squad's domain), shown in the
         /// picture. A no-op when there is no backdrop config or the Ark is not the screen.</summary>
@@ -286,6 +302,7 @@ namespace CosmicShore.UI
         {
             if (arkTabs) arkTabs.Changed -= HandleTabChanged;
             if (_squads) _squads.HangarChanged -= ShowBackdrop;
+            if (_artifactsPage) _artifactsPage.GiveRequested -= GiveToSeat;
             ReleaseStage();
         }
 

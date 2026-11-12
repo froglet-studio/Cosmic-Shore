@@ -424,7 +424,11 @@ def mate_card(deck, i):
              f"  hull: {ref(ctx.c(f'{k}/Hull', 'img'))}\n  companion: {ref(ctx.c(f'{k}/Figure', 'img'))}\n"
              f"  botTemplate: {ref(ctx.c(f'{k}/Hull/Bot', 'img'))}\n  botCount: 34\n  seconds: 1.1\n  scatter: 130\n"
              "  sparkShare: 0.25\n  sparkColor: {r: 1, g: 1, b: 1, a: 1}\n  tintStrength: 0.45\n"))
-    H.ellipsize(label(card.child(N(f"{k}/Who", "Who", TL(18, 31, SEAT_W - 32 - ACTION_W - 8, 26))), "", "Body", "TextLight"))
+    # The presence dot before who flies the seat (R67): lit while they are here, dim for an offline friend, none if open.
+    for dot, colour in (("OnlineDot", tok("Selection")), ("OfflineDot", tok("NeutralLightest", 0.45))):
+        card.child(N(f"{k}/{dot}", dot, TL(18, 39, 10, 10))).add("cr", 222, K.canvas_renderer()) \
+            .add("img", 114, K.image(colour, K.chrome_sprite("chrome_diamond"), preserve=True))
+    H.ellipsize(label(card.child(N(f"{k}/Who", "Who", TL(34, 31, SEAT_W - 48 - ACTION_W - 8, 26))), "", "Body", "TextLight"))
     # The card's actions (R67), beside who flies it: CHANGE VESSEL on yours, OPEN THE SEAT (Lime) on an offline friend's;
     # SquadsPage shows the one that applies (SquadMateCard.SetActions).
     small_button(card, f"{k}/ChangeVessel", "ChangeVessel", "Change vessel", TR(14, 30, ACTION_W, ACTION_H))
@@ -448,6 +452,7 @@ def mate_card(deck, i):
         out = (f"  button: {ref(ctx.c(k, 'button'))}\n  editMark: {ref(ctx.c(f'{k}/Edit', 'img'))}\n"
                f"  changeVesselButton: {ref(ctx.c(f'{k}/ChangeVessel', 'button'))}\n"
                f"  openSeatButton: {ref(ctx.c(f'{k}/OpenSeat2', 'button'))}\n"
+               f"  onlineDot: {ref(ctx.c(f'{k}/OnlineDot', 'img'))}\n  offlineDot: {ref(ctx.c(f'{k}/OfflineDot', 'img'))}\n"
                f"  seatText: {ref(ctx.c(f'{k}/Seat', 'tmp'))}\n  numberText: {ref(ctx.c(f'{k}/Number', 'tmp'))}\n"
                f"  whoText: {ref(ctx.c(f'{k}/Who', 'tmp'))}\n")
         for pick in PICKS:
@@ -553,6 +558,7 @@ SQUAD_WORDS = (
     + yfield("ownKicker", "Your squad - you lead") + yfield("joinedKicker", "{owner}'s squad - you fly {seat}")
     + yfield("makeKicker", "Make squad") + yfield("editKicker", "Edit squad")
     + yfield("seatOpenedToast", "{seat} is open: the pad stands empty until someone takes it.")
+    + yfield("giveHintToast", "Pick the seat that carries {artifact}, then save.") + yfield("givenToast", "{seat} carries {artifact}.")
     + yfield("ownOpenDetail", "{open} seat open for a friend.") + yfield("ownFullDetail", "Every seat is filled.")
     + yfield("makeDetail", "Pick a card to edit it.")
     + yfield("seatedLine", "Only {owner} changes the squad.")
@@ -716,6 +722,8 @@ def artifacts_page(root, veiled=VEILED):
         small_button(t, f"{k}/Omni", "Omni", "Omni", TR(12, 56, 200, 30))
     card = glass_panel(d, "Artifacts/Detail/Card", "Card", TR(EDGE, ART_CARD_Y, ART_COL_W, ART_CARD_H))
     label(card.child(N("Artifacts/Detail/Kicker", "Kicker", TL(ART_PAD, 18, 300, 16))), "Artifact", "Label", "NeutralLightest")
+    # GIVE TO A SEAT (R86): the picked artifact goes to the Squads tab, where the next seat picked carries it.
+    small_button(card, "Artifacts/Detail/Give", "Give", "Give to a seat", TR(ART_PAD, 12, 170, 32))
     H.ellipsize(label(card.child(N("Artifacts/Detail/Name", "Name", TL(ART_PAD, 40, ART_COL_W - 2 * ART_PAD, 40))), "", "H2",
                       "TextLight"))
     label(card.child(N("Artifacts/Detail/Description", "Description", TL(ART_PAD, 86, ART_COL_W - 2 * ART_PAD, 100))), "",
@@ -741,6 +749,7 @@ def artifacts_page(root, veiled=VEILED):
                     f"  descriptionText: {ref(ctx.c('Artifacts/Detail/Description', 'tmp'))}\n"
                     "  tracks:\n" + tracks
                     + f"  statusText: {ref(ctx.c('Artifacts/Detail/Status', 'tmp'))}\n"
+                    f"  giveButton: {ref(ctx.c('Artifacts/Detail/Give', 'button'))}\n"
                     "  crystalTexts:\n" + refs_of(ctx, [f"Artifacts/Detail/Crystal{i}" for i in range(5)], "tmp")
                     + ARTIFACT_WORDS)
     page.add("logic", 114, body)
@@ -984,7 +993,8 @@ def validate(files):
     assert re.search(r"^  converterTab: 0$", doc, re.M), "ElementalConverterView.converterTab is not the Converter tab"
 
 
-MATE_FIELDS = dict(button=S["button"], editMark=IMG, changeVesselButton=S["button"], openSeatButton=S["button"], seatText=TMP, numberText=TMP, whoText=TMP, vesselText=TMP,
+MATE_FIELDS = dict(button=S["button"], editMark=IMG, changeVesselButton=S["button"], openSeatButton=S["button"],
+                   onlineDot=IMG, offlineDot=IMG, seatText=TMP, numberText=TMP, whoText=TMP, vesselText=TMP,
                    elementText=TMP, pilotText=TMP, artifactText=TMP, hullImage=IMG, pilotImage=IMG, openSeatGroup=225,
                    nanobots=S["nanobots"])
 SQUADS_FIELDS = dict(countText=S["kt"], newButton=S["button"], joinButton=S["button"], headerGroup=225, kickerText=TMP,
@@ -995,7 +1005,7 @@ SQUADS_FIELDS = dict(countText=S["kt"], newButton=S["button"], joinButton=S["but
                      viewBarGroup=225, removeButton=S["button"], removeLabel=TMP, editButton=S["button"],
                      missionButton=S["button"], missionLock=IMG, arenaButton=S["button"],
                      joinGroup=225, joinStatusText=S["kt"], joinCloseButton=S["button"])
-ART_FIELDS = dict(emptyGroup=225, detailGroup=225, nameText=TMP, descriptionText=TMP, statusText=TMP)
+ART_FIELDS = dict(emptyGroup=225, detailGroup=225, nameText=TMP, descriptionText=TMP, statusText=TMP, giveButton=S["button"])
 TRACK_FIELDS = dict(elementText=TMP, labelText=TMP, levelText=TMP, valueText=TMP, twistText=TMP, twistGroup=225,
                     raiseButton=S["button"], raiseLabel=TMP, omniButton=S["button"], omniLabel=TMP)
 ROW_VIEW_FIELDS = dict(button=S["button"], group=225, titleText=TMP, lineText=TMP, activeMark=IMG, domainText=TMP)

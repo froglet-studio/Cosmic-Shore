@@ -154,6 +154,10 @@ namespace CosmicShore.UI
         [SerializeField] private string joinedKicker = "{owner}'s squad - you fly {seat}";
         [SerializeField] private string makeKicker = "Make squad";
         [SerializeField] private string editKicker = "Edit squad";
+        [Tooltip("Toast when GIVE TO A SEAT brings an artifact here ({artifact} = its name): the next seat picked carries it.")]
+        [SerializeField] private string giveHintToast = "Pick the seat that carries {artifact}, then save.";
+        [Tooltip("Toast when the picked seat takes the artifact ({artifact}, {seat}).")]
+        [SerializeField] private string givenToast = "{seat} carries {artifact}.";
         [Tooltip("Toast when OPEN THE SEAT opens an offline friend's seat ({seat} = the seat's name). Empty shows none.")]
         [SerializeField] private string seatOpenedToast = "{seat} is open: the pad stands empty until someone takes it.";
         [Tooltip("{open} is how many seats are open.")]
@@ -484,7 +488,40 @@ namespace CosmicShore.UI
             _seat = seat;
             ShowVesselPageOf(_draft.GetSlot(seat).Vessel);
             ShowPilotPageOf(_draft.GetSlot(seat));
+            if (!string.IsNullOrEmpty(_giveArtifactId))
+            {
+                // GIVE TO A SEAT: the seat picked carries the artifact (it leaves any other card that carried it).
+                string id = _giveArtifactId, name = _giveArtifactName;
+                _giveArtifactId = null;
+                EditSlot(s => { s.ArtifactId = id; return s; });
+                if (!string.IsNullOrWhiteSpace(givenToast))
+                    ToastNotificationAPI.Show(TemplateText.Fill(givenToast, "seat", SeatName(seat), "artifact", name), ToastKind.Success);
+                return;
+            }
             Draw();
+        }
+
+        string _giveArtifactId, _giveArtifactName;
+
+        /// <summary>
+        /// GIVE TO A SEAT (the Artifacts tab): the selected squad's editor opens and the next seat picked carries
+        /// <paramref name="artifactId"/>; saving keeps it, as any edit. A joined squad is the leader's to change. False when
+        /// it cannot start (no squad, a joined one).
+        /// </summary>
+        public bool BeginGive(string artifactId, string artifactName)
+        {
+            if (string.IsNullOrEmpty(artifactId)) return false;
+            if (_mode != Mode.Make)
+            {
+                if (Selected() == null) return false;
+                Edit();
+                if (_mode != Mode.Make) return false;
+            }
+            _giveArtifactId = artifactId;
+            _giveArtifactName = artifactName;
+            if (!string.IsNullOrWhiteSpace(giveHintToast))
+                ToastNotificationAPI.Show(TemplateText.Fill(giveHintToast, "artifact", artifactName), ToastKind.Goal);
+            return true;
         }
 
         void EditSlot(System.Func<SquadSlot, SquadSlot> change)
@@ -1051,6 +1088,9 @@ namespace CosmicShore.UI
             bool making = _mode == Mode.Make;
             card.SetEditing(making && seat == _seat, domain);
             card.SetPressable(making && CanEdit(squad, seat));
+            bool live = IsMySeat(squad, seat) || (slot.IsPlayer() ? OnlineFriend(slot.MemberId)
+                : seat == 0 && squad.IsJoined() ? OnlineFriend(squad.OwnerId) : true);
+            card.SetPresence(!slot.IsOpen(), live);
             bool viewing = _mode == Mode.View && !squad.IsJoined();
             card.SetActions(viewing && IsMySeat(squad, seat),
                 viewing && seat > 0 && slot.IsPlayer() && !OnlineFriend(slot.MemberId));
