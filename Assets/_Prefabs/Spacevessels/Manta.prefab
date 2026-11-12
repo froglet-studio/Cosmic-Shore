@@ -1962,6 +1962,10 @@ MonoBehaviour:
     SoarLength: 10
     MaxLengthOfSpacing: 0.9
     FrameAwareSpacing: 1
+    TopSpeed: 1100
+    TopSpacingMultiplier: 3
+    TopLength: 20
+    TopHeightMultiplier: 0.4
     CrawlSpeed: 60
     CrawlHeightMultiplier: 4
     YawsteryHeightGain: 0.8

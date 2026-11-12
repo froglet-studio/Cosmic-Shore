@@ -35,13 +35,24 @@ namespace CosmicShore.Gameplay
         public float SoarSpeed = 600f;
         [Tooltip("Z (m) at Soar Speed and above. Lab: shFreeZMax.")]
         public float SoarLength = 10f;
-        [Tooltip("Longest a prism may be, as a fraction of the gap to the next prism on its rail (1 = end to end, " +
-                 "more overlaps). Lab: shFill.")]
+        [Tooltip("Longest a prism may be, as a fraction of the gap to the next prism on its rail (1 = end to end). " +
+                 "Below 1 neighbours never touch. Lab: shFill.")]
         [Min(0f)] public float MaxLengthOfSpacing = 0.9f;
-        [Tooltip("On: the spacing the length is measured against is the distance actually flown since the last " +
-                 "prism (the wavelength below Soar; speed x frame time above it, where the lay is one prism per " +
-                 "frame). Off: always the wavelength. Lab: shFrameAware.")]
+        [Tooltip("On: the length is capped against the lay spacing (which stretches above Soar). Off: against " +
+                 "the wavelength. Lab: shFrameAware.")]
         public bool FrameAwareSpacing = true;
+
+        [Header("Stretch (above Soar)")]
+        [Tooltip("The speed (u/s) where the stretch is complete: prisms furthest apart, longest and thinnest. " +
+                 "Time 10 with both triggers is about 1080. Lab: shTopV.")]
+        public float TopSpeed = 1100f;
+        [Tooltip("At Top Speed the gap between prisms is the wavelength times this, so production falls behind the " +
+                 "vessel. 1 = no stretch. Lab: shTopSp.")]
+        [Min(1f)] public float TopSpacingMultiplier = 3f;
+        [Tooltip("Z (m) at Top Speed, still under Max Length Of Spacing of the stretched gap. Lab: shTopZ.")]
+        public float TopLength = 20f;
+        [Tooltip("Y multiplier at Top Speed (x the cruise height). Lab: shTopY.")]
+        [Range(0.05f, 1f)] public float TopHeightMultiplier = 0.4f;
 
         [Header("Height (Y)")]
         [Tooltip("Below this speed (u/s) prisms grow taller, fully so at a quarter of it. Lab: shFreeVLow.")]
@@ -85,6 +96,14 @@ namespace CosmicShore.Gameplay
             bool inside = (int)Mathf.Sign(yawRate) == side;
             return Mathf.Clamp((radius + (inside ? -1f : 1f) * railCentreOffset) / radius, 0.2f, 3f);
         }
+
+        /// <summary>
+        /// How far apart prisms go on one rail at this speed: the wavelength up to Soar, then stretching to
+        /// <see cref="TopSpacingMultiplier"/> times it at <see cref="TopSpeed"/>, so at the top production falls
+        /// behind the vessel.
+        /// </summary>
+        public float LaySpacing(float wavelength, float speed) =>
+            wavelength * Mathf.Lerp(1f, TopSpacingMultiplier, Smooth(SoarSpeed, TopSpeed, speed));
 
         /// <summary>
         /// The speed shape's lay pacing, one frame at a time: lay by distance flown, not by a timer. A timer
@@ -133,7 +152,7 @@ namespace CosmicShore.Gameplay
         /// <param name="turn01">Turn intensity 0..1 (the net trigger, as SetTurnTrail receives it).</param>
         /// <param name="yawRate">Yaw rate, rad/s, positive turning right.</param>
         /// <param name="side">+1 the right rail, -1 the left.</param>
-        /// <param name="spacing">Expected distance along the vessel's path to the next prism on this rail, m.</param>
+        /// <param name="spacing">The lay spacing on this rail along the vessel's path, m (<see cref="LaySpacing"/>).</param>
         public Vector3 Evaluate(float baseHeight, float baseLength, float halfGap, float speed, float turn01,
             float yawRate, int side, float spacing)
         {
@@ -142,12 +161,14 @@ namespace CosmicShore.Gameplay
             float f = Mathf.Lerp(1f, ArcFactor(speed, yawRate, side, railCentre), TurnGeometry);
             float cap = spacing * MaxLengthOfSpacing * f;
 
-            // Toward Soar the prism stretches to Soar Length, or to fill its spacing when that is longer: above
-            // Soar the lay is one prism per frame, so the spacing outgrows Soar Length and a fixed length left gaps.
-            float soarZ = Mathf.Max(SoarLength, spacing * MaxLengthOfSpacing);
-            float z = Mathf.Lerp(baseLength, soarZ, Smooth(ReferenceSpeed, SoarSpeed, speed)) * f;
+            // Up to Soar the prism grows to Soar Length; above it the whole trail stretches toward Top Speed: longer,
+            // thinner, and (LaySpacing) further apart, always under Max Length Of Spacing of the gap.
+            float top = Smooth(SoarSpeed, TopSpeed, speed);
+            float z = Mathf.Lerp(Mathf.Lerp(baseLength, SoarLength, Smooth(ReferenceSpeed, SoarSpeed, speed)),
+                TopLength, top) * f;
             float y = baseHeight
                       * Mathf.Lerp(1f, CrawlHeightMultiplier, 1f - Smooth(CrawlSpeed * 0.25f, CrawlSpeed, speed))
+                      * Mathf.Lerp(1f, TopHeightMultiplier, top)
                       * (1f + YawsteryHeightGain * turn01);
             if (f > 1f) y *= 1f - OutsideThin * turn01;
 

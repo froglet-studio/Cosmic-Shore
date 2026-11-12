@@ -27,7 +27,7 @@ namespace CosmicShore.Tests
 
         static TrailSpeedShape Picked() => new() { Enabled = true };   // the class defaults ARE the pick
 
-        static float LabSpacing(float speed) => Mathf.Max(Wavelength, speed / 60f);   // the lab at 60 fps
+        static float LabSpacing(float speed) => Picked().LaySpacing(Wavelength, speed);   // the lab's laySpacing
 
         static Vector3 Straight(float speed) =>
             Picked().Evaluate(BaseY, BaseZ, HalfGap, speed, 0f, 0f, 1, LabSpacing(speed));
@@ -39,8 +39,11 @@ namespace CosmicShore.Tests
         [TestCase(300f, 0.75f, 6.5586337f)]
         [TestCase(450f, 0.75f, 8.7781704f)]
         [TestCase(600f, 0.75f, 9f)]
-        [TestCase(700f, 0.75f, 10.5f)]
-        [TestCase(1080f, 0.75f, 16.2f)]
+        [TestCase(700f, 0.7032f, 10.872f)]
+        [TestCase(850f, 0.525f, 15f)]
+        [TestCase(1080f, 0.3021024f, 19.95328f)]
+        [TestCase(1100f, 0.3f, 20f)]
+        [TestCase(1400f, 0.3f, 20f)]
         public void Straight_MatchesTheLab(float speed, float y, float z)
         {
             var s = Straight(speed);
@@ -83,12 +86,28 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void AboveSoar_LengthFillsTheSpacing_NoFixedLengthGap()
+        public void AboveSoar_TheTrailStretches_FurtherApartLongerThinner_NeverTouching()
         {
-            // Time 10 with both triggers: about 1080 u/s, one prism a frame, 18 m apart at 60 fps. A length held at
-            // Soar Length (10 m) left 8 m gaps; the prism now fills 0.9 of the spacing (Caleb's MaxLengthOfSpacing).
-            foreach (float v in new[] { 650f, 800f, 1080f, 1400f })
-                Assert.AreEqual(LabSpacing(v) * 0.9f, Straight(v).z, Tol, $"at {v} u/s");
+            // Caleb, 2026-11-12: "increase the distance between prisms at higher speed while thinning them in Y and
+            // stretching them in Z ... the whole thing stretches at the highest speeds while production struggles."
+            var shape = Picked();
+            Assert.AreEqual(10f, shape.LaySpacing(Wavelength, 600f), Tol, "Soar keeps the wavelength");
+            Assert.AreEqual(30f, shape.LaySpacing(Wavelength, 1100f), Tol, "Top Speed lays 3x apart");
+            float lastSp = 0f, lastZ = 0f, lastY = float.MaxValue;
+            for (float v = 600f; v <= 1100f; v += 25f)
+            {
+                float sp = shape.LaySpacing(Wavelength, v);
+                var s = Straight(v);
+                Assert.GreaterOrEqual(sp, lastSp - Tol, $"spacing grows at {v}");
+                Assert.GreaterOrEqual(s.z, lastZ - Tol, $"length grows at {v}");
+                Assert.LessOrEqual(s.y, lastY + Tol, $"height thins at {v}");
+                Assert.Less(s.z, sp, $"a gap at {v}: never touching");
+                lastSp = sp; lastZ = s.z; lastY = s.y;
+            }
+            // Production struggles: mass per metre at Top Speed is under a third of Soar's.
+            var soar = Straight(600f); var top = Straight(1100f);
+            float perMetreSoar = soar.x * soar.y * soar.z / LabSpacing(600f), perMetreTop = top.x * top.y * top.z / LabSpacing(1100f);
+            Assert.Less(perMetreTop, perMetreSoar / 3f);
         }
 
         // Every prism one spacing from the last, whatever the frame time does: no gaps of two wavelengths when a
@@ -154,6 +173,7 @@ namespace CosmicShore.Tests
                      {
                          "    Enabled: 1", "    RailWidth: 8", "    ReferenceSpeed: 162", "    SoarSpeed: 600",
                          "    SoarLength: 10", "    MaxLengthOfSpacing: 0.9", "    FrameAwareSpacing: 1",
+                         "    TopSpeed: 1100", "    TopSpacingMultiplier: 3", "    TopLength: 20", "    TopHeightMultiplier: 0.4",
                          "    CrawlSpeed: 60", "    CrawlHeightMultiplier: 4", "    YawsteryHeightGain: 0.8",
                          "    OutsideThin: 0.25", "    MinHeight: 0.1", "    MaxHeight: 3.5", "    TurnGeometry: 1",
                      })

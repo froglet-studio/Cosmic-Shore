@@ -383,7 +383,9 @@ namespace CosmicShore.Gameplay
                 {
                     float step = vesselStatus.Speed * Time.deltaTime;
                     sinceLay += Time.deltaTime;
-                    float wl = wavelength * warp;
+                    // Lay spacing in unwarped lengths (it stretches above Soar), then back into the warped world.
+                    float nominal = speedShape.LaySpacing(wavelength, vesselStatus.Speed / Mathf.Max(warp, 1e-4f));
+                    float wl = nominal * warp;
                     bool lay = TrailSpeedShape.StepLay(ref travelled, step, wl, out float spacing, out float back);
                     if (!lay && sinceLay >= 3f)
                     {
@@ -392,7 +394,10 @@ namespace CosmicShore.Gameplay
                     if (lay)
                     {
                         sinceLay = 0f;
-                        _laySpacing = speedShape.FrameAwareSpacing ? spacing / Mathf.Max(warp, 1e-4f) : wavelength;
+                        // Sized to the NOMINAL spacing, not this lay's measured one: when a frame flies further than
+                        // the spacing (a very low frame rate) the gap opens, but every prism keeps the same length,
+                        // so the trail stays regular.
+                        _laySpacing = speedShape.FrameAwareSpacing ? nominal : wavelength;
                         _layBack = back;
                         MeasureLayYawRate();
                         if (Mathf.Approximately(Gap, 0f))

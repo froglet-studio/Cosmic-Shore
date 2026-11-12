@@ -163,3 +163,26 @@ Other hulls keep the timed lay.
 
 **Still open.** The crawl-turn irregularity Caleb saw is partly the same cause; fly it again to see what is left. A
 gap-free Soar wall is Max Length Of Spacing 1.0 (Caleb's number, kept at 0.9).
+
+### Fly test 2: stretch at top speed, never touching (Caleb, 2026-11-12)
+
+**Asked.** Still some irregularity at full speed. "I definitely don't want any of the prisms touching or 'walling'
+at any point. Quite the opposite. Lets increase the distance between prisms at higher speed while thinning them in
+Y and stretching them in Z even more ... the whole thing stretches at the highest speeds while production struggles
+to keep up."
+
+**Why it was still irregular.** Above about 600 u/s a frame often flies further than one wavelength (10 m), so the
+lay fell back to one prism a frame and each prism was sized to that frame's own flight, which wobbles with the frame
+time. Fly test 1's "fill the spacing above Soar" also made the trail more wall-like there.
+
+**Changed.** Fly test 1's fill rule is gone. Above Soar the trail stretches toward a new Top Speed (1100 u/s; Time 10
+with both triggers is about 1080): the gap between prisms grows to 3x the wavelength (30 m), Z to 20 m and Y to 0.4x
+(0.3 m), always under Max Length Of Spacing (0.9) of the gap. Every prism is sized to the nominal spacing rather than
+the frame's measured flight, so lengths stay regular even when a slow frame opens a gap. New fields on
+`TrailSpeedShape` (Stretch header): TopSpeed 1100, TopSpacingMultiplier 3, TopLength 20, TopHeightMultiplier 0.4;
+the lab has the same four dials (Free curves) plus a Time speed dial. Lab, Caleb's numbers at Time 10: no two
+neighbours ever touch (closest 0.97 m apart); mass per metre falls from 5.4 m³ at Soar to 1.6 m³ at Top Speed
+(per rail), so mass per second drops as speed climbs past Soar: production falls behind.
+
+**Open.** At Soar itself prisms still fill 0.9 of their 10 m gap (Max Length Of Spacing, Caleb's number). Lower it
+(0.7 or so) if Soar still reads as a wall.

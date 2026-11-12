@@ -108,6 +108,7 @@
     throttleHigh: 0.9,   // AIPilot.defaultThrottleHigh (cruise stick)
     throttleLow: 0.2,    // AIPilot.defaultThrottleLow (crawl stick)
     boostMult: 4,        // VesselStatus.boostMultiplier (Soar at full trigger overlap)
+    timeMult: 1,         // VesselTransformer.ThrottleScalerMultiplier (1.5 at Time 10)
     maxYaw: 60,          // MantaAnalogTurnBoostExecutor.maxYawDegPerSec
     spdEase: 1.5,        // lab: speed tracking rate (/s), stands in for VesselTransformer.StepTowardTarget
     fps: 60,             // lab: frame rate the lay loop runs at (UniTask.Delay ends on a frame)
@@ -136,6 +137,10 @@
     shFreeV1: 600,     // proposal (Free curves): speed where Z reaches its max
     shFreeYLow: 4,     // proposal (Free curves): Y multiplier at a crawl
     shFreeVLow: 60,    // proposal (Free curves): below this speed Y grows
+    shTopV: 1100,      // TrailSpeedShape.TopSpeed: the stretch is complete here
+    shTopSp: 3,        // TrailSpeedShape.TopSpacingMultiplier: gap at Top Speed (x wavelength)
+    shTopZ: 20,        // TrailSpeedShape.TopLength: Z at Top Speed, m
+    shTopY: 0.4,       // TrailSpeedShape.TopHeightMultiplier: Y at Top Speed (x cruise)
     aiNoise: 0,        // lab: rookie steering noise (0 = skilled)
   };
 
@@ -155,8 +160,13 @@
     ['Free curves', 'shFreeV1', 200, 1000, 10, 'Soar speed (u/s)', 'Free curves only: where Z reaches its max.'],
     ['Free curves', 'shFreeYLow', 1, 8, 0.25, 'Y at a crawl (x)', 'Free curves only.'],
     ['Free curves', 'shFreeVLow', 10, 160, 5, 'Crawl speed (u/s)', 'Free curves only: below this the prism grows taller.'],
+    ['Free curves', 'shTopV', 600, 2000, 10, 'Top speed (u/s)', 'Free curves only: the stretch above Soar is complete here. Time 10 with both triggers is about 1080.'],
+    ['Free curves', 'shTopSp', 1, 6, 0.1, 'Gap at top (x wavelength)', 'Free curves only: prisms go further apart above Soar, so production falls behind.'],
+    ['Free curves', 'shTopZ', 5.5, 40, 0.5, 'Z at top (m)', 'Free curves only: still capped by Longest Z of the stretched gap.'],
+    ['Free curves', 'shTopY', 0.05, 1, 0.05, 'Y at top (x)', 'Free curves only: thinning above Soar.'],
     ['Flight', 'throttleHigh', 0.2, 1, 0.05, 'Cruise stick', 'AIPilot.defaultThrottleHigh. Cruise = stick x 180.'],
     ['Flight', 'boostMult', 1, 6, 0.1, 'Soar multiplier', 'VesselStatus.boostMultiplier, applied at full trigger overlap.'],
+    ['Flight', 'timeMult', 1, 1.5, 0.05, 'Time speed (x)', 'VesselTransformer.ThrottleScalerMultiplier: 1 at Time 0, 1.5 at Time 10.'],
     ['Flight', 'maxYaw', 20, 140, 1, 'Yaw at full trigger (deg/s)', 'MantaAnalogTurnBoostExecutor.maxYawDegPerSec.'],
     ['Flight', 'fps', 30, 144, 1, 'Frame rate', 'The lay loop waits on UniTask.Delay, which ends on a frame. At Soar that, not the wavelength, sets the spacing.'],
     ['Flight', 'aiNoise', 0, 1, 0.05, 'Rookie noise', 'Steering noise for the AI pilot. 0 = skilled.'],
@@ -196,6 +206,7 @@
     const R = c.speed / Math.abs(c.omega), inside = Math.sign(c.omega) === c.side;
     return clamp((R + (inside ? -1 : 1) * c.railD) / R, 0.2, 3);
   }
+  function laySpacing(rule, speed) { return rule === 'free' ? P.wavelength * lerp(1, P.shTopSp, smooth(P.shFreeV1, P.shTopV, speed)) : P.wavelength; }
   function shapeFor(rule, c) {
     const railOf = (xs) => P.baseX * xs / 2 - P.gap / 2;
     if (rule === 'today') return { x: Math.max(0.5, railOf(c.xscaler)), y: P.baseY, z: P.baseZ };
@@ -203,8 +214,9 @@
     if (rule === 'wide') return { x: P.shRailW, y: P.baseY, z: P.baseZ };
     const f = lerp(1, arcFactor(c), P.shArc), cap = c.spacing * (rule === 'overfill' ? 1.6 : P.shFill) * f;
     if (rule === 'free') {
-      let z = lerp(P.baseZ, Math.max(P.shFreeZMax, c.spacing * P.shFill), smooth(P.shVRef, P.shFreeV1, c.speed)) * f;
-      let y = P.baseY * lerp(1, P.shFreeYLow, 1 - smooth(P.shFreeVLow * 0.25, P.shFreeVLow, c.speed)) * (1 + P.shYawY * c.turn01);
+      const top = smooth(P.shFreeV1, P.shTopV, c.speed);
+      let z = lerp(lerp(P.baseZ, P.shFreeZMax, smooth(P.shVRef, P.shFreeV1, c.speed)), P.shTopZ, top) * f;
+      let y = P.baseY * lerp(1, P.shFreeYLow, 1 - smooth(P.shFreeVLow * 0.25, P.shFreeVLow, c.speed)) * lerp(1, P.shTopY, top) * (1 + P.shYawY * c.turn01);
       if (f > 1) y *= 1 - P.shThin * c.turn01;
       return { x: P.shRailW, y: clamp(y, P.shYMin, P.shYMax), z: Math.min(z, cap) };
     }
@@ -329,7 +341,7 @@
     const net = rt - lt; w.overlap = Math.min(lt, rt); w.turn01 = Math.abs(net);
     w.omega = net * P.maxYaw * Math.PI / 180;
     const boost = w.overlap > 0.01 ? 1 + (P.boostMult - 1) * w.overlap : 1;
-    const target = w.input.throttle * P.throttleScaler * boost;
+    const target = w.input.throttle * P.throttleScaler * P.timeMult * boost;
     w.speed += (target - w.speed) * (1 - Math.exp(-P.spdEase * dt));
     w.h += w.omega * dt;
     w.x += Math.sin(w.h) * w.speed * dt; w.z += Math.cos(w.h) * w.speed * dt;
@@ -339,16 +351,17 @@
     if (w.rule !== 'today' && w.rule !== 'plain') {
       // TrailSpeedShape.StepLay (the speed shape lays by distance flown, not by a timer that ends on a frame).
       const step = w.speed * dt;
+      const wl = laySpacing(w.rule, w.speed);   // TrailSpeedShape.LaySpacing (Free curves stretches above Soar)
       if (w.layTimer > 0) w.layTimer -= dt;   // startDelay, as the game's loop waits it before laying
       else if (w.speed <= 3) { w.travelled = Infinity; w.sinceLay = 0; }
-      else if (w.travelled === undefined || w.travelled === Infinity) { lay(Math.max(P.wavelength, step), 0); w.travelled = 0; w.sinceLay = 0; }
+      else if (w.travelled === undefined || w.travelled === Infinity) { lay(wl, 0); w.travelled = 0; w.sinceLay = 0; }
       else {
         w.travelled += step; w.sinceLay = (w.sinceLay || 0) + dt;
-        if (w.travelled >= P.wavelength) {
-          const sp = Math.max(P.wavelength, step), back = Math.min(w.travelled - sp, step);
-          lay(sp, back); w.travelled = back;
+        if (w.travelled >= wl) {
+          const sp = Math.max(wl, step), back = Math.min(w.travelled - sp, step);
+          lay(wl, back); w.travelled = back;   // sized to the nominal spacing, so a long frame only opens the gap
           w.sinceLay = 0;
-        } else if (w.sinceLay >= 3) { lay(Math.max(w.travelled, 1e-3), 0); w.travelled = 0; w.sinceLay = 0; }
+        } else if (w.sinceLay >= 3) { lay(wl, 0); w.travelled = 0; w.sinceLay = 0; }
       }
     } else {
     w.layTimer -= dt;
