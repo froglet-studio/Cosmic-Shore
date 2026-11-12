@@ -194,13 +194,20 @@ PILOT_CATALOG = K.meta_guid("Assets/Resources/Pilots/PilotArtifactCatalog.asset"
 CARD_ART = K.meta_guid("Assets/_SO_Assets/UI/HangarCardArt.asset")                  # the Hangar's hull renders
 COLOR_SET = K.meta_guid("Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset")  # the domains' colours
 DOMAIN_ORDER = (("Jade", 1), ("Ruby", 2), ("Gold", 4))                                 # Domains values
-# The deck (Rev 31): the list down the left, the cards in a fan to its right, the picker under them in Make squad.
-LIST_X, LIST_Y, LIST_W, LIST_H = 40, 176, 360, 864
-COL_X, COL_W = 430, 1450                       # the deck's column, right of the list
-DECK_Y, DECK_H, DECK_PIVOT_X = 270, 700, 1155  # the cards' parent; Make squad scales it about (1155, top)
-CARD_W, CARD_H = 350, 600
-CARDS = ((DECK_PIVOT_X, 12, 0), (DECK_PIVOT_X - 380, 30, 6), (DECK_PIVOT_X + 380, 30, -6))   # centre x, top, z degrees
-PICKER_Y, BAR_Y = 780, 996
+# SQUADS as the approved board draws it (Rev 67, R67Ark, Docs/MENU_REDESIGN_B.md section 168; Shombith 2026-11-12: "do
+# exactly how you showed me on Frogma"): the left two-thirds of the screen show the squad's vessels on the hangar's pads
+# (the room behind the page), so the squads and the domain are two rows of glass chips top-left, the squad's name is
+# top-right over its three seats as a compact glass column, and the bar runs along the foot.
+EDGE = 40                                      # the boards' margin, left and right
+LIST_Y, LIST_ROW_H = 214, 48                   # the squads row: its caption, the four squad chips, MAKE and JOIN
+LIST_CAPTION_W, SQUAD_CHIP_W, CHIP_GAP = 110, 190, 8
+HEAD_Y, HEAD_H = 172, 136                      # the squad's name (right) and the domain row (left, under the squads row)
+DOMAIN_ROW_Y = LIST_Y + LIST_ROW_H + 10 - HEAD_Y   # 100 down the header
+SEAT_W, SEAT_H, SEAT_GAP, SEAT_Y = 470, 176, 8, 262   # a seat card; the column stands `EDGE` in from the right
+DECK_H = SEATS * SEAT_H + (SEATS - 1) * SEAT_GAP      # Make squad scales the column about its top-right corner
+SEAT_ROW_Y, SEAT_ROW_STEP = 64, 26             # a card's Vessel / Element / Pilot / Artifact rows
+COL_X, COL_W = 430, 1450                       # Make squad's picker and the join list span this
+PICKER_Y, BAR_Y, BAR_H = 780, 1004, 48
 VESSEL_TILES, PILOT_CHIPS, ELEMENT_CHIPS, ARTIFACT_CHIPS = 7, 5, 4, 8
 SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 .,()!?/-]*[A-Za-z0-9.!?)]$|^[A-Za-z0-9]$")
 
@@ -235,13 +242,55 @@ TOP_BAR = 84
 def page_backdrop(page, key):
     """The veil and the sea behind a page that has no 3D picture of its own (Shombith 2026-10-27, of the Squads tab
     showing the game world straight through: "Ark no sea line"). First under the page, so its content draws over it;
-    the page's CanvasGroup hides it with the page. The converter keeps its picture and draws none."""
+    the page's CanvasGroup hides it with the page. Only DECOR draws it now: the converter, SQUADS and ARTIFACTS each
+    show their room of the Ark behind them (ElementalConverterView's picture), and a veil there hid it (Shombith,
+    2026-11-12: "why are the old UI images on top of our newly created Ark")."""
     under_bar = R((0, 0), (1, 1), (0, -TOP_BAR / 2), (0, -TOP_BAR))
     veil = page.child(N(f"{key}/Backdrop", "Backdrop", under_bar))
     veil.add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceBlack", WINDOW_BACKDROP_ALPHA), raycast=True)) \
         .add("th", 114, H.themed("SurfaceBlack", WINDOW_BACKDROP_ALPHA))
     page.children.append(M.window_sea_node(f"{key}/Sea", "Sea", under_bar))
+
+
+VEILED = {"Decor"}          # the tabs with no room behind them: the veil and the sea lines (validate_tabs holds both ways)
+# The boards' glass (R67Ark / R86ArtifactsAB `.glass`: rgba(0,4,31,.62), SurfaceVeryDark at 62 %): the room reads through.
+GLASS_ALPHA = 0.62
+BUTTON_GLASS_ALPHA = 0.55   # the boards' `.def` button: rgba(0,4,31,.55)
+SHADE_TOP, SHADE_TOP_ALPHA = 238, 0.72         # the boards' gradient over the room: SurfaceBlack .72 at the top to 0 at 22 %,
+SHADE_FOOT, SHADE_FOOT_ALPHA = 324, 0.7        # and 0 at 70 % to .7 at the foot, so the words up there and down here read
+
+
+def glass(node, sliver=10, alpha=GLASS_ALPHA):
+    """The board's glass under `node`'s own drawing: SurfaceVeryDark at `alpha`, first child, so a kit row's or a
+    button's own fill (the theme's 12 % tint) and border draw over it."""
+    g = N(f"{node.key}/Glass", "Glass", STRETCH)
+    g.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceVeryDark", alpha), K.kit_sprite(f"kit_sliver{sliver}_fill"), True)) \
+        .add("th", 114, H.themed("SurfaceVeryDark", alpha))
+    node.children.insert(0, g)
+    return node
+
+
+def glass_panel(parent, key, name, r):
+    """A glass panel (the boards' `.glass sl`): the 14 slivered fill at GLASS_ALPHA and its hairline."""
+    pn = parent.child(N(key, name, r))
+    H.framed(pn, f"{key}/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=GLASS_ALPHA)
+    return pn
+
+
+def page_ground(page, key, veiled):
+    """What a page stands on: the veil and the sea (a tab in `veiled`, no room behind it), or the shade over its room."""
+    (page_backdrop if key in veiled else page_shade)(page, key)
+
+
+def page_shade(page, key):
+    """The boards' shade over the room (no veil: the middle stays clear): darker at the top and the foot only."""
+    top = image_node(page, f"{key}/ShadeTop", "ShadeTop", R((0, 1), (1, 1), (0, 0), (0, SHADE_TOP), (0.5, 1)),
+                     "SurfaceBlack", K.kit_sprite("kit_fade_v"), alpha=SHADE_TOP_ALPHA)
+    top.rot = 180                               # kit_fade_v is clear at its top: turned, it is dark at the screen's top
+    image_node(page, f"{key}/ShadeFoot", "ShadeFoot", R((0, 0), (1, 0), (0, 0), (0, SHADE_FOOT), (0.5, 0)),
+               "SurfaceBlack", K.kit_sprite("kit_fade_v"), alpha=SHADE_FOOT_ALPHA)
 
 
 def stretch_x(left, right, top, h):
@@ -271,13 +320,23 @@ def off(body):
 
 
 def kit_row_text(parent, key, name, r, h):
-    """A selectable row (the Hangar's kit_row): a name, a line, the squad's domain and the active mark down its left edge."""
+    """A selectable row (the Hangar's kit_row): a name, a line, the squad's domain and the active mark down its left edge.
+    Under 88 tall it is the boards' compact glass chip (R67's squad chips, R86's artifact rows): the name over the line."""
     row = H.kit_row(parent, key, name, r, h, content_keys=((f"{key}/Title", "tmp"),))
     row.add("cg", 225, canvas_group(True))
-    image_node(row, f"{key}/Mark", "Mark", TL(0, 14, 3, h - 28), "ControlActive")
-    H.ellipsize(label(row.child(N(f"{key}/Title", "Title", stretch_x(20, 110, 14, 30))), "", "H3", "TextLight"))
-    label(row.child(N(f"{key}/Domain", "Domain", TR(16, 18, 90, 16))), "", "Label", "NeutralLightest", align="right")
-    H.ellipsize(label(row.child(N(f"{key}/Line", "Line", stretch_x(20, 20, 52, 22))), "", "BodySmall", "NeutralLightest"))
+    if h < 88:
+        glass(row)
+        top = (h - 42) // 2
+        image_node(row, f"{key}/Mark", "Mark", TL(0, 8, 3, h - 16), "ControlActive")
+        H.ellipsize(label(row.child(N(f"{key}/Title", "Title", stretch_x(14, 70, top, 22))), "", "Body", "TextLight"))
+        label(row.child(N(f"{key}/Domain", "Domain", TR(10, top + 3, 56, 16))), "", "Label", "NeutralLightest", align="right")
+        H.ellipsize(label(row.child(N(f"{key}/Line", "Line", stretch_x(14, 10, top + 24, 18))), "", "BodySmall",
+                          "NeutralLightest"))
+    else:
+        image_node(row, f"{key}/Mark", "Mark", TL(0, 14, 3, h - 28), "ControlActive")
+        H.ellipsize(label(row.child(N(f"{key}/Title", "Title", stretch_x(20, 110, 14, 30))), "", "H3", "TextLight"))
+        label(row.child(N(f"{key}/Domain", "Domain", TR(16, 18, 90, 16))), "", "Label", "NeutralLightest", align="right")
+        H.ellipsize(label(row.child(N(f"{key}/Line", "Line", stretch_x(20, 20, 52, 22))), "", "BodySmall", "NeutralLightest"))
     row.add("row", 114, lambda ctx, go: mono(go, S["squad_row"],
             f"  button: {ref(ctx.c(key, 'button'))}\n  group: {ref(ctx.c(key, 'cg'))}\n"
             f"  titleText: {ref(ctx.c(f'{key}/Title', 'tmp'))}\n  lineText: {ref(ctx.c(f'{key}/Line', 'tmp'))}\n"
@@ -286,13 +345,15 @@ def kit_row_text(parent, key, name, r, h):
 
 
 def small_button(parent, key, name, caption, r, variant="Default"):
-    return H.text_button(parent, key, name, caption, r, None, None, None, None, variant=variant)
+    b = H.text_button(parent, key, name, caption, r, None, None, None, None, variant=variant)
+    # A transparent button is only the theme's 12 % tint: over the room it takes the boards' `.def` glass under it.
+    return glass(b, alpha=BUTTON_GLASS_ALPHA) if variant in ("Default", "Cancel") else b
 
 
 def pick_chip(parent, key, name, r, h, caption="", picture=None, picture_rect=None, line_rect=None, label_rect=None,
               label_role="ButtonSmall", align="center"):
     """One SquadPickChip: a kit_row button, its word, an optional picture and second line, and the picked mark."""
-    chip = H.kit_row(parent, key, name, r, h, content_keys=((f"{key}/Label", "tmp"),))
+    chip = glass(H.kit_row(parent, key, name, r, h, content_keys=((f"{key}/Label", "tmp"),)))
     chip.add("cg", 225, canvas_group(True))
     chip.child(N(f"{key}/Picked", "Picked", R((0, 0), (1, 1), (0, 0), (2, 2)))).add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, off(K.image(tok("Selection"), K.kit_sprite("kit_sliver10_line2"), True)))
@@ -314,40 +375,45 @@ def pick_chip(parent, key, name, r, h, caption="", picture=None, picture_rect=No
 
 
 def squad_list(page):
-    pn = page.child(N("Squads/List", "List", TL(LIST_X, LIST_Y, LIST_W, LIST_H)))
+    """The squads row (R67): its caption and count, the four squad chips, MAKE and JOIN, glass, top-left."""
+    pn = page.child(N("Squads/List", "List", stretch_x(EDGE, SEAT_W + 2 * EDGE, LIST_Y, LIST_ROW_H)))
     pn.add("cg", 225, canvas_group(True))
-    C.section_label(pn, "Squads/List/Caption", "Caption", "Your squads", TL(0, 0, 220, 18))
-    label(pn.child(N("Squads/List/Count", "Count", TR(0, 0, 120, 18))), "0 of 4", "Label", "NeutralLightest", align="right")
+    C.section_label(pn, "Squads/List/Caption", "Caption", "Squads", TL(0, 6, LIST_CAPTION_W, 16))
+    label(pn.child(N("Squads/List/Count", "Count", TL(0, 26, LIST_CAPTION_W, 16))), "0 of 4", "Label", "NeutralLightest")
+    x = LIST_CAPTION_W + 10
     for i in range(MAX_SQUADS):
-        kit_row_text(pn, f"Squads/List/Row{i}", f"Row{i}", TL(0, 32 + i * 108, LIST_W, 96), 96)
-    small_button(pn, "Squads/List/New", "New", "Make squad", TL(0, LIST_H - 120, LIST_W, 52), "Cta")
-    small_button(pn, "Squads/List/Join", "Join", "Join a friend's squad", TL(0, LIST_H - 60, LIST_W, 52))
+        kit_row_text(pn, f"Squads/List/Row{i}", f"Row{i}", TL(x, 0, SQUAD_CHIP_W, LIST_ROW_H), LIST_ROW_H)
+        x += SQUAD_CHIP_W + CHIP_GAP
+    small_button(pn, "Squads/List/New", "New", "Make", TL(x, 0, 110, LIST_ROW_H))
+    small_button(pn, "Squads/List/Join", "Join", "Join a friend", TL(x + 110 + CHIP_GAP, 0, 170, LIST_ROW_H))
 
 
 def squad_header(page):
-    hd = page.child(N("Squads/Head", "Head", TL(COL_X, 176, COL_W, 84)))
+    """The squad's name top-right over its seats, and the domain chips as the second row top-left (R67)."""
+    hd = page.child(N("Squads/Head", "Head", stretch_x(EDGE, EDGE, HEAD_Y, HEAD_H)))
     hd.add("cg", 225, canvas_group(False))
-    label(hd.child(N("Squads/Head/Kicker", "Kicker", TL(0, 0, 800, 16))), "Your squad", "Label", "NeutralLightest")
-    H.ellipsize(label(hd.child(N("Squads/Head/Name", "Name", TL(0, 18, 800, 44))), "", "H1", "TextLight"))
-    H.ellipsize(label(hd.child(N("Squads/Head/Line", "Line", TL(0, 64, 800, 20))), "", "BodySmall", "NeutralLightest"))
-    label(hd.child(N("Squads/Head/DomainCaption", "DomainCaption", TR(3 * 118 + 8, 48, 80, 16))), "Domain", "Label",
-          "NeutralLightest", align="right")
+    label(hd.child(N("Squads/Head/Kicker", "Kicker", TR(0, 0, SEAT_W, 16))), "Your squad", "Label", "NeutralLightest")
+    H.ellipsize(label(hd.child(N("Squads/Head/Name", "Name", TR(0, 20, SEAT_W, 40))), "", "H1", "TextLight"))
+    H.ellipsize(label(hd.child(N("Squads/Head/Line", "Line", TR(0, 62, SEAT_W, 20))), "", "BodySmall", "NeutralLightest"))
+    label(hd.child(N("Squads/Head/DomainCaption", "DomainCaption", TL(0, DOMAIN_ROW_Y + 10, LIST_CAPTION_W, 16))), "Domain",
+          "Label", "NeutralLightest")
     for i, (name, _) in enumerate(DOMAIN_ORDER):
-        pick_chip(hd, f"Squads/Head/Domain{name}", f"Domain{name}", TR((2 - i) * 118, 36, 110, 40), 40, name,
-                  K.chrome_sprite("chrome_diamond"), TL(12, 13, 14, 14), label_rect=TL(32, 0, 74, 40))
+        pick_chip(hd, f"Squads/Head/Domain{name}", f"Domain{name}", TL(LIST_CAPTION_W + 10 + i * 118, DOMAIN_ROW_Y, 110, 36),
+                  36, name, K.chrome_sprite("chrome_diamond"), TL(12, 11, 14, 14), label_rect=TL(32, 0, 74, 36))
 
 
 def mate_card(deck, i):
+    """One seat (R67): its number and name, who flies it, then the Vessel / Element / Pilot / Artifact rows, glass. The
+    vessel itself stands on its pad in the hangar behind, so the card's hull render and pilot figure stay off (their
+    fields stay wired: SquadMateCard draws into them, the nanobots run on the hidden hull)."""
     k = f"Squads/Deck/Card{i}"
-    cx, top, rot = CARDS[i]
-    card = H.kit_row(deck, k, f"Card{i}", TL(cx - CARD_W // 2, top, CARD_W, CARD_H), CARD_H,
-                     content_keys=((f"{k}/Who", "tmp"),))
-    card.rot = rot
+    card = glass(H.kit_row(deck, k, f"Card{i}", TL(0, i * (SEAT_H + SEAT_GAP), SEAT_W, SEAT_H), SEAT_H,
+                           content_keys=((f"{k}/Who", "tmp"),)))
     card.child(N(f"{k}/Edit", "Edit", R((0, 0), (1, 1), (0, 0), (4, 4)))).add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, off(K.image(tok("Selection"), K.kit_sprite("kit_sliver14_line2"), True)))
-    label(card.child(N(f"{k}/Seat", "Seat", TL(18, 16, 200, 16))), ("Leader", "Rogue One", "Rogue Two")[i], "Label", "NeutralLightest")
-    label(card.child(N(f"{k}/Number", "Number", TR(18, 16, 100, 16))), f"0{i + 1} / 03", "Label", "NeutralLightest", align="right")
-    hull = card.child(N(f"{k}/Hull", "Hull", TL(40, 60, 290, 97)))
+        .add("img", 114, off(K.image(tok("Selection"), K.kit_sprite("kit_sliver10_line2"), True)))
+    label(card.child(N(f"{k}/Seat", "Seat", TL(18, 11, 260, 16))), ("Leader", "Rogue One", "Rogue Two")[i], "Label", "NeutralLightest")
+    label(card.child(N(f"{k}/Number", "Number", TR(14, 11, 100, 16))), f"0{i + 1} / 03", "Label", "NeutralLightest", align="right")
+    hull = card.child(N(f"{k}/Hull", "Hull", TL(40, 60, 290, 97), active=False))
     hull.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None, preserve=True))
     bot = hull.child(N(f"{k}/Hull/Bot", "Bot", R((0.5, 0.5), None, (0, 0), (6, 6)), active=False))
     bot.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE))
@@ -355,16 +421,16 @@ def mate_card(deck, i):
              f"  hull: {ref(ctx.c(f'{k}/Hull', 'img'))}\n  companion: {ref(ctx.c(f'{k}/Figure', 'img'))}\n"
              f"  botTemplate: {ref(ctx.c(f'{k}/Hull/Bot', 'img'))}\n  botCount: 34\n  seconds: 1.1\n  scatter: 130\n"
              "  sparkShare: 0.25\n  sparkColor: {r: 1, g: 1, b: 1, a: 1}\n  tintStrength: 0.45\n"))
-    H.ellipsize(label(card.child(N(f"{k}/Who", "Who", TL(18, 318, CARD_W - 36, 30))), "", "H3", "TextLight"))
+    H.ellipsize(label(card.child(N(f"{k}/Who", "Who", TL(18, 31, SEAT_W - 32, 26))), "", "Body", "TextLight"))
     for j, pick in enumerate(PICKS):
-        y = 360 + j * 52
-        image_node(card, f"{k}/{pick}Rule", f"{pick}Rule", TL(18, y, CARD_W - 36, 1), "SurfaceDark")
-        label(card.child(N(f"{k}/{pick}Kicker", f"{pick}Kicker", TL(18, y + 14, 110, 16))), pick, "Label", "NeutralLightest")
-        H.ellipsize(label(card.child(N(f"{k}/{pick}", pick, TR(18, y + 10, 200, 24))), "", "Body", "TextLight", align="right"))
-    # The pilot steps out of the card: over its left edge, above the frame.
-    pilot = card.child(N(f"{k}/Figure", "Figure", TL(-40, 70, 180, 290)))
+        y = SEAT_ROW_Y + j * SEAT_ROW_STEP
+        image_node(card, f"{k}/{pick}Rule", f"{pick}Rule", TL(18, y, SEAT_W - 32, 1), "NeutralLightest", alpha=0.25)
+        label(card.child(N(f"{k}/{pick}Kicker", f"{pick}Kicker", TL(18, y + 5, 110, 16))), pick, "Label", "NeutralLightest")
+        H.ellipsize(label(card.child(N(f"{k}/{pick}", pick, TR(14, y + 3, 300, 20))), "", "BodySmall", "TextLight",
+                          align="right"))
+    pilot = card.child(N(f"{k}/Figure", "Figure", TL(-40, 70, 180, 290), active=False))
     pilot.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None, preserve=True))
-    open_ = card.child(N(f"{k}/OpenSeat", "OpenSeat", TL(-10, 110, 120, 240)))
+    open_ = card.child(N(f"{k}/OpenSeat", "OpenSeat", TL(-10, 110, 120, 240), active=False))
     open_.add("cg", 225, canvas_group(False))
     open_.child(N(f"{k}/OpenSeat/Line", "Line", STRETCH)).add("cr", 222, K.canvas_renderer()) \
         .add("img", 114, K.image(tok("SurfaceLight", 0.6), K.kit_sprite("kit_sliver10_line1"), True))
@@ -385,9 +451,8 @@ def mate_card(deck, i):
 
 
 def squad_deck(page):
-    deck = page.child(N("Squads/Deck", "Deck", R((0, 1), (1, 1), (0, -DECK_Y), (0, DECK_H), (DECK_PIVOT_X / 1920, 1))))
-    # The rogues first, so the leader's card draws over them.
-    for i in (1, 2, 0):
+    deck = page.child(N("Squads/Deck", "Deck", TR(EDGE, SEAT_Y, SEAT_W, DECK_H)))
+    for i in range(SEATS):
         mate_card(deck, i)
 
 
@@ -425,39 +490,40 @@ def squad_picker(page):
 
 
 def squad_bars(page):
-    mk = page.child(N("Squads/MakeBar", "MakeBar", TL(COL_X, BAR_Y, COL_W, 52)))
+    """The foot (R67, top 1004): EDIT SQUAD on the left; Take this squad into, MISSION and ARENA on the right."""
+    mk = page.child(N("Squads/MakeBar", "MakeBar", stretch_x(EDGE, EDGE, BAR_Y, BAR_H)))
     mk.add("cg", 225, canvas_group(False))
-    small_button(mk, "Squads/MakeBar/Cancel", "Cancel", "Cancel", TL(0, 0, 160, 52))
-    label(mk.child(N("Squads/MakeBar/Hint", "Hint", TL(184, 16, 900, 20))),
+    small_button(mk, "Squads/MakeBar/Cancel", "Cancel", "Cancel", TL(0, 0, 160, BAR_H))
+    label(mk.child(N("Squads/MakeBar/Hint", "Hint", TL(184, 14, 900, 20))),
           "Pick a card, then its vessel, pilot, element and artifact. Take into appears once the squad is made.",
           "BodySmall", "NeutralLightest")
-    small_button(mk, "Squads/MakeBar/Create", "Create", "Create squad", TR(0, 0, 240, 52), "Cta")
-    vw = page.child(N("Squads/ViewBar", "ViewBar", TL(COL_X, BAR_Y, COL_W, 52)))
+    small_button(mk, "Squads/MakeBar/Create", "Create", "Create squad", TR(0, 0, 240, BAR_H), "Cta")
+    vw = page.child(N("Squads/ViewBar", "ViewBar", stretch_x(EDGE, EDGE, BAR_Y, BAR_H)))
     vw.add("cg", 225, canvas_group(False))
-    small_button(vw, "Squads/ViewBar/Remove", "Remove", "Delete", TL(0, 6, 140, 40), "Danger")
-    small_button(vw, "Squads/ViewBar/Edit", "Edit", "Edit", TL(152, 6, 120, 40))
-    label(vw.child(N("Squads/ViewBar/Hint", "Hint", TL(292, 16, 520, 20))),
-          "Three mates, four cards each: a squad is a twelve-card deck.", "BodySmall", "NeutralLightest")
-    label(vw.child(N("Squads/ViewBar/Caption", "Caption", TR(470, 18, 220, 16))), "Take this squad into", "Label",
+    small_button(vw, "Squads/ViewBar/Edit", "Edit", "Edit squad", TL(0, 4, 170, 40))
+    small_button(vw, "Squads/ViewBar/Remove", "Remove", "Delete", TL(180, 4, 130, 40), "Danger")
+    label(vw.child(N("Squads/ViewBar/Caption", "Caption", TR(400, 16, 220, 16))), "Take this squad into", "Label",
           "NeutralLightest", align="right")
-    small_button(vw, "Squads/ViewBar/Mission", "Mission", "Mission", TR(236, 0, 220, 52))
-    lock = vw.child(N("Squads/ViewBar/Mission/Lock", "Lock", TL(16, 16, 16, 20)))
+    mission = small_button(vw, "Squads/ViewBar/Mission", "Mission", "Mission", TR(200, 0, 190, BAR_H))
+    # The lock in the button, before its word (R67); it used to sit on the bar's left edge, over DELETE.
+    lock = mission.child(N("Squads/ViewBar/Mission/Lock", "Lock", TL(16, 14, 16, 20)))
     lock.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("NeutralLightest"), K.chrome_sprite("chrome_lock"), preserve=True))
-    small_button(vw, "Squads/ViewBar/Arena", "Arena", "Arena", TR(0, 0, 220, 52), "Play")
+    small_button(vw, "Squads/ViewBar/Arena", "Arena", "Arena", TR(0, 0, 190, BAR_H), "Play")
 
 
 def squad_empty(page):
-    e = page.child(N("Squads/Empty", "Empty", TL(COL_X, 250, COL_W, 760)))
+    """No squad yet: the words and MAKE SQUAD over three empty seat outlines, in the seats' own column (the hangar's
+    empty pads show in the middle)."""
+    e = page.child(N("Squads/Empty", "Empty", TR(EDGE, HEAD_Y, SEAT_W, 190 + DECK_H)))
     e.add("cg", 225, canvas_group(True))
-    for i, (x, rot) in enumerate(((550, 0), (170, 6), (930, -6))):
-        g = image_node(e, f"Squads/Empty/Ghost{i}", f"Ghost{i}", TL(x, 40, CARD_W, CARD_H), "SurfaceLight",
-                       K.kit_sprite("kit_sliver14_line1"), sliced=True, alpha=0.35)
-        g.rot = rot
-    label(e.child(N("Squads/Empty/Heading", "Heading", stretch_x(0, 0, 250, 40))), "No squad yet", "H2", "TextLight", align="center")
-    label(e.child(N("Squads/Empty/Line", "Line", stretch_x(400, 400, 300, 60))),
+    for i in range(SEATS):
+        image_node(e, f"Squads/Empty/Ghost{i}", f"Ghost{i}", TL(0, 190 + i * (SEAT_H + SEAT_GAP), SEAT_W, SEAT_H),
+                   "SurfaceLight", K.kit_sprite("kit_sliver10_line1"), sliced=True, alpha=0.35)
+    label(e.child(N("Squads/Empty/Heading", "Heading", TL(0, 0, SEAT_W, 40))), "No squad yet", "H2", "TextLight")
+    label(e.child(N("Squads/Empty/Line", "Line", TL(0, 48, SEAT_W, 66))),
           "A squad is you and two squad mates, friends or AI wingmates: three cards. Make one, then take it into a mission "
-          "or the arena.", "Body", "NeutralLightest", align="center", valign="top", wrap=True)
-    small_button(e, "Squads/Empty/Make", "Make", "Make squad", TL(COL_W // 2 - 110, 380, 220, 52), "Cta")
+          "or the arena.", "Body", "NeutralLightest", valign="top", wrap=True)
+    small_button(e, "Squads/Empty/Make", "Make", "Make squad", TL(0, 124, 220, 52), "Cta")
 
 
 def squad_join(page):
@@ -508,9 +574,9 @@ def refs_of(ctx, keys, comp):
     return "".join(f"  - {ref(ctx.c(k, comp))}\n" for k in keys)
 
 
-def squads_page(root):
+def squads_page(root, veiled=VEILED):
     page = page_node(root, "Squads", False)
-    page_backdrop(page, "Squads")
+    page_ground(page, "Squads", veiled)
     squad_list(page)
     squad_header(page)
     squad_empty(page)
@@ -573,7 +639,17 @@ def squads_page(root):
 
 ART_ROWS = 4                                   # Javelin and Aegis, and room for two more
 TRACK_ELEMENTS = ("Mass", "Space", "Time", "Charge")   # ArkArtifactsPage.TrackOrder
-TRACK_Y, TRACK_H, TRACK_STEP = 120, 156, 170
+# ARTIFACTS as the approved board draws it (Rev 86, R86ArtifactsAB, Docs/MENU_REDESIGN_B.md section 167): the room (the
+# Reliquary's dais in the Gallery's hall) fills the middle, so the list is a glass panel on the left and the picked one
+# is a glass card bottom-right; its crystals sit top-right and its four tracks in a second glass panel between them.
+ART_LIST_Y, ART_LIST_W, ART_ROW_H, ART_ROW_GAP, ART_PAD = 300, 460, 64, 8, 22
+ART_LIST_H = 48 + ART_ROWS * (ART_ROW_H + ART_ROW_GAP) - ART_ROW_GAP + 20
+ART_COL_W = 520                                # the right column: the crystals, the tracks, the card
+CRYSTAL_Y, CRYSTAL_W = 172, 104
+TRACKS_Y, TRACK_PAD, TRACK_H, TRACK_GAP = 220, 14, 92, 6
+TRACKS_H = 2 * TRACK_PAD + len(TRACK_ELEMENTS) * (TRACK_H + TRACK_GAP) - TRACK_GAP
+ART_CARD_Y, ART_CARD_H = 640, 258
+assert TRACKS_Y + TRACKS_H < ART_CARD_Y, "the artifact's tracks run into its card"
 ARTIFACT_WORDS = (
     ylist("elementNames", ("", "Charge", "Mass", "Space", "Time", "Omni"))
     + yfield("crystalTemplate", "{element} {count}")
@@ -587,48 +663,55 @@ ARTIFACT_WORDS = (
     + yfield("twistedTemplate", "{artifact} twists: {twist}"))
 
 
-def artifacts_page(root):
+def artifacts_page(root, veiled=VEILED):
     """ARTIFACTS: the player's artifacts down the left (SquadRowView rows: the name, the four levels), and the picked
     one's four element tracks to the right, each with RAISE (its own crystals) and OMNI (omni crystals instead), above
     the profile's five crystal balances. ArkArtifactsPage draws it; every word is on that component."""
     page = page_node(root, "Artifacts", False)
-    page_backdrop(page, "Artifacts")
-    pn = page.child(N("Artifacts/List", "List", TL(LIST_X, LIST_Y, LIST_W, LIST_H)))
+    page_ground(page, "Artifacts", veiled)
+    pn = glass_panel(page, "Artifacts/List", "List", TL(EDGE, ART_LIST_Y, ART_LIST_W, ART_LIST_H))
     pn.add("cg", 225, canvas_group(True))
-    C.section_label(pn, "Artifacts/List/Caption", "Caption", "Your artifacts", TL(0, 0, 220, 18))
+    C.section_label(pn, "Artifacts/List/Caption", "Caption", "Your artifacts", TL(ART_PAD, 20, 300, 18))
     for i in range(ART_ROWS):
-        kit_row_text(pn, f"Artifacts/List/Row{i}", f"Row{i}", TL(0, 32 + i * 108, LIST_W, 96), 96)
-    e = page.child(N("Artifacts/Empty", "Empty", TL(COL_X, 250, COL_W, 200)))
+        kit_row_text(pn, f"Artifacts/List/Row{i}", f"Row{i}",
+                     TL(ART_PAD, 48 + i * (ART_ROW_H + ART_ROW_GAP), ART_LIST_W - 2 * ART_PAD, ART_ROW_H), ART_ROW_H)
+    # No artifacts: the words stand in the list's panel, where the rows would be.
+    e = page.child(N("Artifacts/Empty", "Empty", TL(EDGE + ART_PAD, ART_LIST_Y + 48, ART_LIST_W - 2 * ART_PAD, 140)))
     e.add("cg", 225, canvas_group(False))
-    label(e.child(N("Artifacts/Empty/Heading", "Heading", stretch_x(0, 0, 40, 40))), "No artifacts yet", "H2", "TextLight",
-          align="center")
-    label(e.child(N("Artifacts/Empty/Line", "Line", stretch_x(300, 300, 90, 60))),
-          "Find them on voyages and bring them home to your Ark.", "Body", "NeutralLightest", align="center", wrap=True)
-    d = page.child(N("Artifacts/Detail", "Detail", TL(COL_X, LIST_Y, COL_W, LIST_H)))
+    label(e.child(N("Artifacts/Empty/Heading", "Heading", TL(0, 0, ART_LIST_W - 2 * ART_PAD, 36))), "No artifacts yet", "H2",
+          "TextLight")
+    label(e.child(N("Artifacts/Empty/Line", "Line", TL(0, 44, ART_LIST_W - 2 * ART_PAD, 60))),
+          "Find them on voyages and bring them home to your Ark.", "Body", "NeutralLightest", valign="top", wrap=True)
+    # The picked artifact: one group (ArkArtifactsPage.detailGroup) over the right column.
+    d = page.child(N("Artifacts/Detail", "Detail", STRETCH))
     d.add("cg", 225, canvas_group(True))
-    label(d.child(N("Artifacts/Detail/Kicker", "Kicker", TL(0, 0, 600, 16))), "Artifact", "Label", "NeutralLightest")
-    H.ellipsize(label(d.child(N("Artifacts/Detail/Name", "Name", TL(0, 18, 700, 44))), "", "H1", "TextLight"))
-    label(d.child(N("Artifacts/Detail/Description", "Description", TL(0, 64, 760, 44))), "", "BodySmall", "NeutralLightest",
-          valign="top", wrap=True)
-    label(d.child(N("Artifacts/Detail/CrystalCaption", "CrystalCaption", TR(0, 0, 640, 16))), "Crystals", "Label",
-          "NeutralLightest", align="right")
+    label(d.child(N("Artifacts/Detail/CrystalCaption", "CrystalCaption", TR(EDGE, CRYSTAL_Y, ART_COL_W, 16))), "Crystals",
+          "Label", "NeutralLightest", align="right")
     for i in range(5):
-        label(d.child(N(f"Artifacts/Detail/Crystal{i}", f"Crystal{i}", TR((4 - i) * 128, 24, 120, 24))), "", "Body",
-              "TextLight", align="right")
+        label(d.child(N(f"Artifacts/Detail/Crystal{i}", f"Crystal{i}", TR(EDGE + (4 - i) * CRYSTAL_W, CRYSTAL_Y + 20,
+                                                                            CRYSTAL_W - 4, 24))), "", "Body", "TextLight", align="right")
+    tp = glass_panel(d, "Artifacts/Detail/Tracks", "Tracks", TR(EDGE, TRACKS_Y, ART_COL_W, TRACKS_H))
     for i, name in enumerate(TRACK_ELEMENTS):
         k = f"Artifacts/Detail/Track{name}"
-        t = d.child(N(k, f"Track{name}", TL(0, TRACK_Y + i * TRACK_STEP, COL_W, TRACK_H)))
-        H.framed(t, k, 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.9)
-        label(t.child(N(f"{k}/Element", "Element", TL(24, 18, 200, 16))), name, "Label", "NeutralLightest")
-        H.ellipsize(label(t.child(N(f"{k}/Label", "Label", TL(24, 38, 520, 30))), "", "H3", "TextLight"))
-        label(t.child(N(f"{k}/Level", "Level", TL(560, 38, 160, 30))), "", "H3", "TextLight")
-        label(t.child(N(f"{k}/Value", "Value", TL(740, 42, 300, 24))), "", "Body", "NeutralLightest")
-        tw = t.child(N(f"{k}/Twist", "Twist", TL(24, 84, 1000, 56)))
+        t = tp.child(N(k, f"Track{name}", stretch_x(TRACK_PAD, TRACK_PAD, TRACK_PAD + i * (TRACK_H + TRACK_GAP), TRACK_H)))
+        H.framed(t, k, 10, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.5)
+        label(t.child(N(f"{k}/Element", "Element", TL(14, 10, 80, 16))), name, "Label", "NeutralLightest")
+        H.ellipsize(label(t.child(N(f"{k}/Label", "Label", TL(96, 6, 170, 24))), "", "Body", "TextLight"))
+        H.ellipsize(label(t.child(N(f"{k}/Level", "Level", TL(14, 32, 156, 20))), "", "BodySmall", "TextLight"))
+        H.ellipsize(label(t.child(N(f"{k}/Value", "Value", TL(176, 32, 90, 20))), "", "BodySmall", "NeutralLightest"))
+        tw = t.child(N(f"{k}/Twist", "Twist", TL(14, 54, 252, 36)))
         tw.add("cg", 225, canvas_group(True))
         label(tw.child(N(f"{k}/Twist/Words", "Words", STRETCH)), "", "BodySmall", "TextLight", valign="top", wrap=True)
-        small_button(t, f"{k}/Raise", "Raise", "Raise", TR(24, 24, 260, 52), "Cta")
-        small_button(t, f"{k}/Omni", "Omni", "Omni", TR(24, 88, 260, 44))
-    label(d.child(N("Artifacts/Detail/Status", "Status", TL(0, TRACK_Y + 4 * TRACK_STEP, COL_W, 24))), "", "Body", "TextLight")
+        small_button(t, f"{k}/Raise", "Raise", "Raise", TR(12, 10, 200, 40), "Cta")
+        small_button(t, f"{k}/Omni", "Omni", "Omni", TR(12, 56, 200, 30))
+    card = glass_panel(d, "Artifacts/Detail/Card", "Card", TR(EDGE, ART_CARD_Y, ART_COL_W, ART_CARD_H))
+    label(card.child(N("Artifacts/Detail/Kicker", "Kicker", TL(ART_PAD, 18, 300, 16))), "Artifact", "Label", "NeutralLightest")
+    H.ellipsize(label(card.child(N("Artifacts/Detail/Name", "Name", TL(ART_PAD, 40, ART_COL_W - 2 * ART_PAD, 40))), "", "H2",
+                      "TextLight"))
+    label(card.child(N("Artifacts/Detail/Description", "Description", TL(ART_PAD, 86, ART_COL_W - 2 * ART_PAD, 100))), "",
+          "BodySmall", "NeutralLightest", valign="top", wrap=True)
+    label(card.child(N("Artifacts/Detail/Status", "Status", TL(ART_PAD, 196, ART_COL_W - 2 * ART_PAD, 44))), "", "BodySmall",
+          "TextLight", valign="top", wrap=True)
 
     def body(ctx, go):
         tracks = ""
@@ -654,11 +737,11 @@ def artifacts_page(root):
     return page
 
 
-def decor_page(root):
+def decor_page(root, veiled=VEILED):
     """DECOR, locked (its tab refuses): the banner and the Ark's hull, outside and in. Drawn so that opening the tab is
     the one change (MenuAvailability.Available on the tab); nothing behind it yet."""
     page = page_node(root, "Decor", False)
-    page_backdrop(page, "Decor")
+    page_ground(page, "Decor", veiled)
     title_band(page, "Decor/Title", "Decor", "The Ark's banner and its hull, outside and in.")
     pn = page.child(N("Decor/Slots", "Slots", stretch_x(COL_X, 40, 180, 320)))
     C.frame(pn, "Decor/Slots/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
@@ -673,16 +756,16 @@ def decor_page(root):
     return page
 
 
-def build_view():
+def build_view(veiled=VEILED):
     root = N("root", VIEW, STRETCH)
     # The converter's overlay keeps its node keys (and so every fileID the scene's stubs point at) under its page.
     conv = page_node(root, "Converter", True)
     title_band(conv)
     recipe_panel(conv)
     converter_bar(conv)
-    squads_page(root)
-    artifacts_page(root)
-    decor_page(root)
+    squads_page(root, veiled)
+    artifacts_page(root, veiled)
+    decor_page(root, veiled)
     tab_row(root)
 
     def body(ctx, go):
@@ -697,9 +780,13 @@ def build_view():
     return root
 
 
+def view_text(veiled=VEILED):
+    return P.prefab_text(build_view(veiled), VIEW)
+
+
 def prefab_outputs():
     out = {}
-    out[f"{OUT_DIR}/{VIEW}.prefab"] = P.prefab_text(build_view(), VIEW)
+    out[f"{OUT_DIR}/{VIEW}.prefab"] = view_text()
     out[f"{OUT_DIR}/{VIEW}.prefab.meta"] = K.PREFAB_META.format(g=P.asset_guid(VIEW))
     out[OUT_DIR + ".meta"] = K.FOLDER_META.format(g=P.asset_guid("folder/Ark"))
     return out
@@ -919,6 +1006,35 @@ def listed(body, field):
     return re.findall(r"\{fileID: (-?\d+)\}", m.group(1))
 
 
+def page_children(view, V, t):
+    """The RectTransform fileIDs of the page `t`'s children, in draw order."""
+    return re.findall(r"fileID: (-?\d+)", re.search(r"^  m_Children:\n((?:  - .*\n)*)", A.doc_of(view, V(f"{t}#rt"))[1],
+                                                    re.M).group(1))
+
+
+VEIL_ALPHA = 0.5     # a full-page image at least this opaque hides the room
+
+
+def veil_of(view, rt):
+    """(name, reason) for a page child: the reason is set when the child covers the whole page with an Image at least
+    VEIL_ALPHA opaque, or draws the window's sea lines; empty otherwise."""
+    _, body = A.doc_of(view, rt)
+    go = re.search(r"^  m_GameObject: \{fileID: (-?\d+)\}", body, re.M).group(1)
+    _, gdoc = A.doc_of(view, go)
+    name = re.search(r"^  m_Name: (.*)$", gdoc, re.M).group(1)
+    full = "  m_AnchorMin: {x: 0, y: 0}\n" in body and "  m_AnchorMax: {x: 1, y: 1}\n" in body
+    for comp in re.findall(r"^  - component: \{fileID: (-?\d+)\}", gdoc, re.M):
+        _, cdoc = A.doc_of(view, comp)
+        if not cdoc or f"guid: {IMG}" not in cdoc:
+            continue
+        if f"guid: {M.SEA_WINDOW_MAT}" in cdoc:
+            return name, "sea"
+        a = re.search(r"^  m_Color: \{r: [^,]+, g: [^,]+, b: [^,]+, a: ([^}]+)\}", cdoc, re.M)
+        if full and a and float(a.group(1)) >= VEIL_ALPHA:
+            return name, "veil"
+    return name, ""
+
+
 def validate_tabs(view, V):
     """The Ark's three tabs: each a KitTextTab over a CanvasGroup page, SQUADS driven by its page, DECOR locked."""
     _, tabs = A.doc_of(view, V("root#tabs"))
@@ -926,12 +1042,18 @@ def validate_tabs(view, V):
     entries = re.findall(r"  - button: \{fileID: (-?\d+)\}\n    page: \{fileID: (-?\d+)\}\n"
                          r"    pageLogic: \{fileID: (-?\d+)\}\n    availability: \{fileID: (-?\d+)\}\n", tabs)
     assert len(entries) == len(TABS), f"the Ark has {len(entries)} tabs, not {len(TABS)} ({', '.join(TABS)})"
-    # The pages with no 3D picture draw the window backdrop: the veil, then the sea lines, under everything else.
-    for t in ("Squads", "Artifacts", "Decor"):
-        kids = re.findall(r"fileID: (-?\d+)", re.search(r"^  m_Children:\n((?:  - .*\n)*)", A.doc_of(view, V(f"{t}#rt"))[1], re.M).group(1))
-        assert kids[:2] == [str(V(f"{t}/Backdrop#rt")), str(V(f"{t}/Sea#rt"))], \
-            f"the {t} tab must open on the veil and the sea lines (\"Ark no sea line\")"
-        assert f"guid: {M.SEA_WINDOW_MAT}" in A.doc_of(view, V(f"{t}/Sea#img"))[1], f"the {t} tab's sea is not the window sea"
+    # The page with no room behind it (DECOR) draws the window backdrop: the veil, then the sea lines, under everything
+    # else. Every other page shows its room of the Ark (ElementalConverterView's picture) and must not hide it: no veil and
+    # no sea under any name (Shombith 2026-11-12: "why are the old UI images on top of our newly created Ark").
+    for t in TABS:
+        kids = page_children(view, V, t)
+        if t in VEILED:
+            assert kids[:2] == [str(V(f"{t}/Backdrop#rt")), str(V(f"{t}/Sea#rt"))], \
+                f"the {t} tab must open on the veil and the sea lines (\"Ark no sea line\")"
+            assert f"guid: {M.SEA_WINDOW_MAT}" in A.doc_of(view, V(f"{t}/Sea#img"))[1], f"the {t} tab's sea is not the window sea"
+            continue
+        hiding = [name for name, why in (veil_of(view, rt) for rt in kids) if why]
+        assert not hiding, f"the {t} tab hides its room of the Ark behind {', '.join(hiding)} (a veil or the sea lines)"
     for t, (button, page, logic, gate) in zip(TABS, entries):
         assert A.kind_of(view, button)[1] == S["text_tab"], f"the {t} tab's button is not a KitTextTab"
         assert A.kind_of(view, page)[0] == 225, f"the {t} tab's page is not a CanvasGroup"
@@ -994,6 +1116,19 @@ def plain_segment(view):
     return view[:m.start()] + m.group(0).replace("  m_Type: 3\n", "  m_Type: 0\n") + view[m.end():]
 
 
+def veil_plant(view, key):
+    """The view with node `key` (a shade) stretched over its whole page at 95 % (a veil by another name: a plant)."""
+    V = K.FileIds(VIEW)
+
+    def patch(text_, fid, old, new):
+        m = re.search(r"^--- !u!\d+ &" + str(fid) + r"\n.*?(?=^--- )", text_, re.M | re.S)
+        assert old in m.group(0), f"veil_plant: {old!r} not in {key}"
+        return text_[:m.start()] + m.group(0).replace(old, new, 1) + text_[m.end():]
+    view = patch(view, V(f"{key}#rt"), "  m_AnchorMax: {x: 1, y: 0}\n", "  m_AnchorMax: {x: 1, y: 1}\n")
+    return re.sub(r"(--- !u!114 &" + str(V(f"{key}#img")) + r"\n(?:(?!--- ).*\n)*?  m_Color: \{r: [^,]+, g: [^,]+, b: [^,]+, a: )[^}]+",
+                  r"\g<1>0.95", view, count=1)
+
+
 def unlogic_tab(view, index):
     """The view with tab `index`'s pageLogic cut (a negative control)."""
     n = [0]
@@ -1026,8 +1161,13 @@ def self_test(files):
             r"(--- !u!224 &" + IDS["rt"] + r"\n(?:(?!--- ).*\n)*?  m_SizeDelta: )\{x: 0, y: 0\}", r"\1{x: 0, y: 170.4}",
             f[SCENE], count=1))),
         ("the wrong crystal on a row", lambda f: f.__setitem__(view, f[view].replace(CRYSTAL["Mass"], CRYSTAL["Time"], 1))),
-        ("the Squads tab without its sea lines", lambda f: f.__setitem__(view, f[view].replace(
+        ("the Decor tab without its sea lines", lambda f: f.__setitem__(view, f[view].replace(
             f"guid: {M.SEA_WINDOW_MAT}", f"guid: {M.SEA_PANEL_MAT}", 1))),
+        ("the Decor tab without its veil", lambda f: f.__setitem__(view, view_text(set()))),
+        ("the veil and the sea back over the Squads room", lambda f: f.__setitem__(view, view_text(VEILED | {"Squads"}))),
+        ("the veil back over the Artifacts room", lambda f: f.__setitem__(view, view_text(VEILED | {"Artifacts"}))),
+        ("an opaque full-page image over the Artifacts room, under another name",
+         lambda f: f.__setitem__(view, veil_plant(f[view], "Artifacts/ShadeFoot"))),
         ("Decor opened", lambda f: f.__setitem__(view, f[view].replace("  availability: 1\n", "  availability: 0\n", 1))),
         ("a card with no hull", lambda f: f.__setitem__(view, re.sub(
             r"(  hullImage: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
