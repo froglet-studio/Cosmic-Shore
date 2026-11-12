@@ -2704,7 +2704,8 @@ editor-only `editorPreview` to lay the screen out as a phone would.
 - `AuthenticationSceneController` runs it: the silent provider first, else the chooser; a provider sign-in clears the
   late-sign-in net so the two cannot both resume; Cancel cancels the provider's token.
 
-**Settings > Account** (`author_menu_settings.py`; the settings window now has five tabs):
+**Settings > Account** (`author_menu_settings.py`; the settings window now has five tabs - six since 2026-11-12, when
+REGION went in before Account without a Frogma round: `RegionSettingsView`, the checklist entry "Settings > REGION"):
 - the pilot's name and a short player ID, the guest notice while nothing is linked, a row per provider the platform
   offers (mark, name, "Not linked" / the linked name / "Not ready in this build", LINK or "Linked"), Sign out (only
   when some provider is linked - a guest who signed out would lose the pilot) and Delete account (when the service
