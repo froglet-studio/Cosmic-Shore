@@ -144,6 +144,9 @@ void ChargeCrystalArcs(
     {
         // Triangulation diagonal — an edge inside a face, not between two faces.
         if (edgeH[i] <= 0.0) continue;
+        // Exact early-out (envelope cull). The bolt sits within arcJitter widths of the crease; beyond (jitter + 3.5) widths
+        // its Gaussian core is < 5e-6, so skip the edge's noise entirely (coherent branch: whole face interiors skip).
+        if (d[i] > arcWidth * (arcJitter + 3.5)) continue;
 
         float s = edgeSeed[i];
         float flipped = s >= 1.0 ? 1.0 : 0.0;
