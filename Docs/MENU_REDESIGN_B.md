@@ -6174,18 +6174,21 @@ heaps, the danger blades, the trails) take that set's colours, read from `Assets
   takes it"); your card's **Change vessel** updates your pad. Ripples run out of the back wall's tunnel through the
   hull's domain trim; on the HyperSea map a vessel marker travels the route from the Ark at Tumult toward Tollmoor
   and back, the Ark's ring breathing; the online vessels hover and their engines breathe; rims pulse; haze drifts.
-- **Every tab is its own room** (Shombith, mid-round: "all screens have different rooms"; and of the first converter
+- **Every other tab is its own room** (Shombith, mid-round: "all screens have different rooms"; and of the first converter
   render, where the crystals lay in piles on the hangar floor: "don't keep the crystals like this, only in the
   converter screen" - a separate converter room). The rooms are built in the hangar's own plating, ribs, domain trim,
   socket prisms, strip lights and haze; the hangar keeps no crystals.
-- **Converter tab: the reactor room, through its big window.** From a dark gallery you look through a
-  wide observation window (two mullions, the sill trimmed in the domain) into the reactor chamber: a well, a column, the
-  core, and three gimbal rings turning round it on three axes. The player's element crystals, the game's own models
-  (Space, Charge, Mass, Time, `Assets/_Models/*CrystalExport*.fbx`, lime as in the Codex), float in cradles round the
-  core by element, as many as the player holds (7, 4, 5 and 3 here), turning and bobbing. **Convert** (Ruby) plays the
-  conversion: one of each leaves its cradle in the game's order (Space, Charge, Mass, Time) and flies into the core,
-  each arrival flashing the trim; the rings spin up; the Omni crystal (its model) forms in the core and rises out of
-  the rings, pulsing. The counts drop by one each and "Omni made" counts up; with any element at 0, Convert is off.
+- **Converter tab: Garrett's combine, out in the cell** (Shombith, on the board, 2026-11-12: "The converter screen,
+  I don't want a room, I want the old animation that Garrett had and the same setup. It should be an open part of the Ark
+  maybe where this thing is happening outside in the cell"). The camera stands out in the cell beside the Ark, looking
+  up at its open hangar mouth (the lit bay inside, the domain trim round the opening) with the cell's lattice swaying
+  past and the HyperSea map sliding behind (`r67_ark_tabs_render.py`'s `deck` scene). Below the mouth, in the open
+  cell, Garrett's own animation plays, captured frame by frame from his Omni Combine Lab
+  (`Docs/Studios/OmniCombineLab.html`, the source `OmniCombinePlayer` is a line-for-line port of) with its shipped
+  settings and camera, nothing re-tuned: at rest the four crystals (Space, Charge, Mass, Time) each do their effect;
+  **Convert** (Ruby) plays his whole combine (13.7 s: lead 2.5 s, the morph to 10.7 s, held 3 s) and the Omni is made,
+  the counts drop by one each and "Omni made" counts up. The crystals' light blooms into the cell round them
+  (`r67_omni_capture.cjs` captures, `r67_comp_converter.py` lays it over the deck loop). The reactor room is retired.
 - **Artifacts tab: the vault.** A long room whose back wall is the cabinet: twelve lit cells behind
   glass, the four artifacts the game has (`Assets/_SO_Assets/Pilots/Artifacts`: Javelin, Hydra, Aftershock, Aegis)
   each shaped from the game's prisms after what it does, turning; the selected one (Hydra) lit brighter; eight cells
@@ -6198,10 +6201,10 @@ heaps, the danger blades, the trails) take that set's colours, read from `Assets
 
 **Not in this round:** the pilots walking the hangar (Shombith: later); the Breakers squad's own vessels (its
 backdrop stays Skim Wing's, lit in its own domain).
-In the 3D the cradles stay full after a conversion (the loop is the room at rest).
+After a conversion the converter returns to the four crystals at rest (the loop).
 
-**For the build:** this is the live-scene path: `ArkReverse`'s hangar for the Squads and a room per other tab, the squad's real hulls on the floor (powered down when offline), the reactor room's crystals as the game's crystal
-prefabs driven by `OmniCombinePlayer`, the vault and the decor antechamber as set pieces, the map's marker on the
+**For the build:** this is the live-scene path: `ArkReverse`'s hangar for the Squads and a room for Artifacts and Decor, the squad's real hulls on the floor (powered down when offline), the Converter as
+`OmniCombinePlayer` itself (unchanged) placed in the cell outside the hangar's mouth, the vault and the decor antechamber as set pieces, the map's marker on the
 Voyage Board's route, and the tunnel's ripples as a trim shader parameter. The renders are the reference for the look.
 
 Affects: Shombith's Ark screen (`author_menu_ark.py`, `ArkView`, `SquadsPage`, `ElementalConverterView`) once a

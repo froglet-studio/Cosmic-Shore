@@ -273,6 +273,9 @@ CAM = {   # scene -> (location, aim, lens, focus, f-stop): Rev 61 C's camera and
     "converter": ((2.6, -70.0, -19.0), (0.0, -47.0, -19.0), 30, 17.0, 3.4),
     "artifacts": ((0.6, -74.0, -17.4), (12.5, -72.6, -18.0), 26, 11.6, 3.0),   # the cabinet right of the list
     "decor": ((4.0, -73.5, -17.6), (-13.0, -79.0, -17.8), 30, 17.0, 3.2),
+    # the converter, open to the cell: from the hangar's lip, out of the open mouth (Shombith, 2026-11-12: "I don't want
+    # a room ... an open part of the Ark, where this is happening outside in the cell"); Garrett's combine is laid over
+    "deck": ((-26.0, -128.0, -8.0), (-13.0, -95.0, -19.5), 26, 40.0, 8.0),
 }[SCENE]
 NEAR = [Vector(CAM[0])]
 PAD_LIGHTS = []
@@ -364,7 +367,8 @@ HEAPS = {
                   (12.2, -86.0, 0.8, 1.6, 260, 2.5)],
     "decor": [(-11.5, -48.0, 1.3, 2.2, 650, 5.0), (11.5, -47.0, 1.3, 2.2, 650, 5.5), (-12.2, -66.0, 0.8, 1.8, 260, 3.0),
               (12.0, -75.0, 0.9, 4.0, 420, 3.5)],
-}[SCENE]
+}.get(SCENE, [(-11.5, -48.0, 1.3, 2.2, 650, 5.0), (11.5, -47.0, 1.3, 2.2, 650, 5.5), (-12.0, -71.0, 0.9, 3.5, 380, 3.0),
+              (12.0, -75.0, 0.9, 4.0, 420, 3.5)])
 THICKETS = [(-11.5, -84.0, 9), (11.5, -84.0, 9), (10.0, -79.5, 5)] + ([] if SCENE == "decor" else [(-9.5, -80.5, 5)])
 for hp in HEAPS:
     heap(*hp)
@@ -425,7 +429,10 @@ for t in range(7):
     for s in range(30):
         u = s / 29
         pts.append((x0 + 260 * (u - 0.5) * (1 if t % 2 else -1), yb + 60 * math.sin(u * 4 + ph), z0 + 40 * math.sin(u * 3 + ph)))
-    lattice_tube(pts, rng.uniform(1.6, 3.2), "Blue")
+    rad_ = rng.uniform(1.6, 3.2)
+    if SCENE == "deck" and min((Vector(q) - Vector(CAM[0])).length for q in pts) < 40.0:
+        continue                              # a tube through the deck camera's lens: left out of this view
+    lattice_tube(pts, rad_, "Blue")
 
 
 # ------------------------------------------------------------------------------------------------ the tabs' own things
@@ -775,10 +782,10 @@ if SCENE == "decor":
 
 K.build(bevel_width=0.06)
 for _bp in BACKDROPS:                        # the cell's picture outside the hangar's mouth: only the hangar sees it, and
-    _bp.hide_render = SCENE != "squads"      # it would cut through the rooms
+    _bp.hide_render = SCENE not in ("squads", "deck")      # it would cut through the rooms
 for _o in col.objects:                       # the cell's lattice outside: no camera here looks out of the mouth, and one
     if _o.name == str(("Blue", "plain", 0.81)):      # of its curves dips through the hangar's mouth
-        _o.hide_render = True
+        _o.hide_render = SCENE != "deck"
 
 # ------ light and air
 
@@ -979,6 +986,10 @@ def pose(t, run):
         ring.matrix_world = Matrix.Translation(CORE) @ Matrix.Rotation(math.tau * t * turns * (2.0 if run == "convert" else 1.0), 4, axis) @ base
     if SCENE == "converter":
         CORE_LIGHT.data.energy = 500 * (1.0 + 0.25 * math.sin(math.tau * 2 * t))
+    if SCENE == "deck":
+        for o_, l0 in zip(LATTICE, LAT0):
+            o_.location = l0 + Vector((9.0 * s1, 0, 3.5 * c1))
+        WIN_MAP.inputs["Location"].default_value = (0.03 * s1, 0.012 * c1, 0)
     if SCENE == "converter" and run == "convert":
         convert(t)
 
@@ -1024,10 +1035,23 @@ if ROOM_BOX is not None:
     rh = bpy.context.active_object
     rh.scale = ROOM_BOX[1]
     rh.data.materials.append(hm)
+LATTICE = [o for o in col.objects if o.name == str(("Blue", "plain", 0.81))]
+LAT0 = [o.location.copy() for o in LATTICE]
+WIN_MAP = None
+if SCENE == "deck":
+    _wnt = win.node_tree
+    _wtx = [n for n in _wnt.nodes if n.bl_idname == "ShaderNodeTexImage"][0]
+    _tc = _wnt.nodes.new("ShaderNodeTexCoord")
+    WIN_MAP = _wnt.nodes.new("ShaderNodeMapping")
+    _wnt.links.new(_tc.outputs["UV"], WIN_MAP.inputs["Vector"]); _wnt.links.new(WIN_MAP.outputs[0], _wtx.inputs["Vector"])
+    WORLD_BG.inputs[1].default_value = 0.28
+if os.environ.get("ARK_CAM"):              # "x,y,z;ax,ay,az;lens": try a camera
+    _c = [tuple(float(v) for v in part.split(",")) for part in os.environ["ARK_CAM"].split(";")]
+    CAM = (_c[0], _c[1], _c[2][0], (Vector(_c[1]) - Vector(_c[0])).length, 8.0)
 loc0, aim, lens, focus, fstop = CAM
 camd.lens, camd.clip_start, camd.clip_end = lens, 0.1, 3000
 camd.dof.use_dof, camd.dof.focus_distance, camd.dof.aperture_fstop = True, focus, fstop
-sc.view_settings.exposure = -0.9
+sc.view_settings.exposure = -0.9 if SCENE != "deck" else -0.4
 only = {int(x) for x in ONLY.split(",")} if ONLY else None
 runs = [("loop", LOOP)] + ([("convert", CONV)] if SCENE == "converter" else [])
 if RUNS:

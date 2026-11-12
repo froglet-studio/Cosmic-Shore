@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """The Ark screen inside the real Ark, animated, in every colour set: four boards (Squads, Converter, Artifacts, Decor),
-each its own room in the Ark, whose backdrops are the seamless loops of r67_ark_tabs_render.py, with the Ark screen's UI on top. Rev 61 C's style and
+each its own room in the Ark, whose backdrops are the seamless loops of ark_tabs_render.py, with the Ark screen's UI on top. Rev 61 C's style and
 lighting (picked as the Ark's final design, Shombith 2026-11-06).
 
-    python3 r67_ark_tabs_boards.py <root> <rev> <blobs.json>
+    python3 ark_tabs_boards.py <root> <rev> <blobs.json>
 
 blobs.json maps <scene>_<set>_<run> (scene: squads, converter, artifacts, decor; set: Nocturne, Photic, DartFrog; run:
 loop, and convert for the converter) to /_blob/<id> animated WebPs. Every board has a MOCKUP colour-set switch (outside
@@ -172,7 +172,7 @@ class Component extends DCLogic {
   SETS.forEach((s, i) => {
    layers.push({ src: TABS[st.tab][1] === 'squads' ? BGD[s[0]][dom] : B[s[0]].loop, op: i === st.set && !st.running ? 1 : 0, alt: i === st.set && !st.running ? 'Inside the Ark, live, ' + s[1] : '' });
    if (B[s[0]].convert) layers.push({ src: i === st.set && st.running ? B[s[0]].convert + '?run=' + st.run : B[s[0]].convert,
-     op: i === st.set && st.running ? 1 : 0, alt: i === st.set && st.running ? 'Converting: the crystals fly into the reactor core' : '' });
+     op: i === st.set && st.running ? 1 : 0, alt: i === st.set && st.running ? 'Converting: the omni combine, out in the cell below the open mouth of the Ark' : '' });
   });
   const sets = SETS.map((s, i) => ({ name: s[1], on: i === st.set, edge: i === st.set ? '#00D4FF' : 'rgba(116,123,173,.45)',
    col: i === st.set ? '#E6E9FF' : '#9AA0CC', pressed: i === st.set ? 'true' : 'false', pick: () => this.setState({ set: i }) }));
@@ -212,7 +212,7 @@ class Component extends DCLogic {
     this.setState({ running: true, run: st.run + 1 });
     if (this.c) clearTimeout(this.c);
     this.c = setTimeout(() => { const c = this.state.counts.map((n) => n - 1);
-     this.setState({ running: false, counts: c, omni: this.state.omni + 1 }); this.say('One Omni crystal made.'); }, 4900); },
+     this.setState({ running: false, counts: c, omni: this.state.omni + 1 }); this.say('One Omni crystal made.'); }, 13700); },
    arts, artName: ARTS[st.art][0], artText: ARTS[st.art][1], artHeld: st.art === 1 ? 'Equipped by Halcyon' : (st.art === 0 ? 'Equipped by you' : 'In the cabinet'),
    edit: () => this.say('Edit opens the seat picker.'), make: () => this.say('Make squad starts a new one.'),
    join: () => this.say('Join a friend\'s squad.'), mission: () => this.say('Mission is locked: finish Episode 1 first.'),
@@ -309,8 +309,8 @@ def screen_converter():
              '<span class="num" style="font-size:22px">{{x.n}}</span></span></sc-for>')
     panel = (f'<div class="abs glass sl" style="left:40px;top:300px;width:420px;box-sizing:border-box;padding:20px 22px;display:flex;flex-direction:column;gap:10px">'
              f'<span class="lab">Elemental converter</span><span style="font-size:30px">One of each makes an Omni</span>'
-             f'<span style="font-size:15px;line-height:1.45;color:{SUB}">Your crystals wait in their cradles round the reactor. Convert '
-             f'sends one of each into the core, in order, and the Omni forms there.</span><span style="display:flex;flex-direction:column;margin-top:6px">{rows_}</span>'
+             f'<span style="font-size:15px;line-height:1.45;color:{SUB}">Out in the cell, below the Ark&#39;s open mouth, your four crystals turn. Convert '
+             f'draws them together, one after another, and they fuse into an Omni.</span><span style="display:flex;flex-direction:column;margin-top:6px">{rows_}</span>'
              f'<span style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 0 0;border-top:1px solid rgba(116,123,173,.5)">'
              f'<span class="cap" style="font-size:15px">Omni made</span><span class="num" style="font-size:26px">{{{{omni}}}}</span></span></div>')
     conv = (f'<button class="{{{{convClass}}}}" type="button" onClick="{{{{convert}}}}" style="min-width:260px">{kc("A")}<span>{{{{convLabel}}}}</span></button>')
