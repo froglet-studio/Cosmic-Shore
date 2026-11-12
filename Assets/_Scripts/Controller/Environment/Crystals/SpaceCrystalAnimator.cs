@@ -59,6 +59,26 @@ namespace CosmicShore.Gameplay
             startScale = transform.localScale;
             if (TryGetComponent(out crystalRenderer) && !ResolveSpinChannels())
                 crystalRenderer = null;     // wrong mesh: leave its weights alone rather than guess
+            if (crystalRenderer) SkipDeformWhileOffscreen(crystalRenderer);
+        }
+
+        /// <summary>
+        /// The prefabs author <c>updateWhenOffscreen</c> on, so every Space heart re-deformed its blend shapes every
+        /// frame whether or not anything could see it. Off, Unity deforms it only when a camera sees its bounds, and
+        /// with the weights already set. The bounds must then hold every pose: each spin key is a rigid turn of the
+        /// blocks about the centre (Tools/Build/author_space_crystal_mesh.py) and every in-between lies on the chord
+        /// between two such poses, so no pose leaves the sphere through the rest mesh's AABB corner; a cube of that
+        /// radius holds it. Proven Win W5 (Docs/ProvenWin/WINS.md): identical on screen, including hearts straddling
+        /// the frustum edge, and MeshSkinning.Update 0.15 -> 0.05 ms with 200 hearts off screen.
+        /// </summary>
+        static void SkipDeformWhileOffscreen(SkinnedMeshRenderer renderer)
+        {
+            var mesh = renderer.sharedMesh;
+            if (!mesh) return;
+            var rest = mesh.bounds;
+            float radius = rest.extents.magnitude;
+            renderer.localBounds = new Bounds(rest.center, Vector3.one * (2f * radius));
+            renderer.updateWhenOffscreen = false;
         }
 
         bool ResolveSpinChannels()

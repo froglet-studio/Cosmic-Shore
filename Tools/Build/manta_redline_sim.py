@@ -20,7 +20,7 @@ differs on all three (measured 2026-11-03), so this one ports, line for line, wh
                   orbit break-off (turning-circle test, OrbitDetector, the escape point); the platform's crystal detour
                   never fires (GateRaceController.AIDetoursForCrystals is false, and it reads managed crystals only)
     the triggers  MantaAnalogTurnBoostExecutor.AutopilotTriggers (the Soar bands, MantaSoarAITuningSO), Soar = boost
-                  multiplier 1 + 3 x min(LT, RT), Yastri yaw 60 deg/s x (RT - LT) about the hull's up
+                  multiplier 1 + 3 x min(LT, RT), Yawstery yaw 60 deg/s x (RT - LT) about the hull's up
     the hull      VesselTransformer: roll (0.2 v + 100), yaw (0.2 v + 30), pitch (0.2 v + 50) deg/s about the NOSE's
                   axes onto the commanded rotation; the AI nose follows the command at LERP_AMOUNT 1.5/s; speed lerps
                   1.5/s toward throttle x 180 x Soar x the Time level's BoostSpeedMultiplier (Manta.prefab:
@@ -65,7 +65,7 @@ against the led roll's 6 and 11 and the lead off's 22.19 and 18.80: un-trapped, 
 the nose row (#1780).
 Numbers: /mnt/project-files/regatta-training/results/lead-roll-decoupled/.
 
-NOT modelled (LIMITS): rivals and their Yastri trails; the Sting and Kabloom; the comeback's element levels; the lobby
+NOT modelled (LIMITS): rivals and their Yawstery trails; the Sting and Kabloom; the comeback's element levels; the lobby
 difficulty (GateRaceHandicap: Easy-Hard fly a late or misjudged BELIEF of the ring and the genome is the same; Legendary
 is this pilot); the spawn ring (a pilot starts 400 u before gate 0 on its axis, at rest, facing it); frame hitches; the
 Time level's speed is taken as linear in BoostSpeedMultiplier. The editor is the measurement.
@@ -92,10 +92,10 @@ from ai_nose_lead import NoseLead, roll_stick, slerp_beyond            # the AI 
 # Manta.prefab
 CRUISE, BOOST_MULT, ROT_THROTTLE = 180.0, 4.0, 0.2
 PITCH, YAW, ROLL = 50.0, 30.0, 100.0
-YASTRI_YAW = 60.0                                   # MantaAnalogTurnBoostExecutor.maxYawDegPerSec
+YAWSTERY_YAW = 60.0                                   # MantaAnalogTurnBoostExecutor.maxYawDegPerSec
 THROTTLE_LOW, THROTTLE_HIGH = 0.2, 0.9              # AIPilot defaultThrottleLow / High
 CREEP_LOW, CREEP_HIGH = 0.0005, 0.001               # AIPilot throttleIncreaseLow / High, per second
-BOOST_BAND, YASTRI_BAND = 0.35, 0.75                # the executor's code defaults (no MantaSoarAITuning_Redline)
+BOOST_BAND, YAWSTERY_BAND = 0.35, 0.75                # the executor's code defaults (no MantaSoarAITuning_Redline)
 TRIGGER_DEADZONE = 0.0                              # see triggers(): the AI's triggers are never in the deadzone band
 LERP = 1.5                                          # VesselTransformer.LERP_AMOUNT: speed, and the AI nose
 # RedlineController / MinigameRedline.unity's GateRaceController and the platform's constants
@@ -399,7 +399,7 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
     ai_nose_lead.roll_stick): "zero" (the game's law since the roll decoupling: no roll stick while leading), "led" (the
     lead's judged yaw stick as the roll, which corkscrews a rolling hull) or "unled" (today's lead-off yaw stick). It
     has no effect with the lead off."""
-    band, yband = bands or (BOOST_BAND, YASTRI_BAND)
+    band, yband = bands or (BOOST_BAND, YAWSTERY_BAND)
     follow = (LERP if nose_rate is None or nose_rate < 0 else float(nose_rate)) if nose_lag else 0.0
     follow_step = min(1.0, follow * dt) if follow > 0 else 1.0
     lead_knob = NoseLead.from_config(nose_lead)
@@ -504,12 +504,12 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         thr = max(0.0, min(1.0, max(throttle, throttle_floor)))
         throttle += creep * dt
 
-        # MantaAnalogTurnBoostExecutor: the triggers, the Yastri yaw, the Soar
+        # MantaAnalogTurnBoostExecutor: the triggers, the Yawstery yaw, the Soar
         lt, rt = triggers(xs, max(abs(xs), abs(ys)), band, yband)
         boost = min(lt, rt)
         nose_up = q_rot(q, UP)
         if abs(rt - lt) > 0.001:
-            cmd = q_mul(q_axis((rt - lt) * YASTRI_YAW * dt, nose_up), cmd)
+            cmd = q_mul(q_axis((rt - lt) * YAWSTERY_YAW * dt, nose_up), cmd)
         # VesselTransformer.CurrentBoostAmount: the Soar multiplier x the Time level's BoostSpeedMultiplier while boosting
         mult = (1 + (BOOST_MULT - 1) * boost) * (1 + TIME_PER_LEVEL * level) if boost > 0.01 else 1.0
 
@@ -571,14 +571,14 @@ def table(label, rows):
 def self_test():
     bad = []
     # 1. triggers() is the C# shape (MantaAutopilotDriveTests): straight = both full; a full yaw stick at the default bands
-    #    is one trigger flat and the other released; inside the Yastri band the net is zero; band 0 never boosts.
+    #    is one trigger flat and the other released; inside the Yawstery band the net is zero; band 0 never boosts.
     if triggers(0.0, 0.0, 0.35, 0.75) != (1.0, 1.0):
         bad.append("triggers: a straight stick does not bury both triggers")
     if triggers(1.0, 1.0, 0.35, 0.75) != (0.0, 1.0) or triggers(-1.0, 1.0, 0.35, 0.75) != (1.0, 0.0):
         bad.append("triggers: a full yaw stick is not one trigger flat and the other released")
     lt, rt = triggers(0.6, 0.6, 0.35, 0.75)
     if abs(rt - lt) > 1e-9 or abs(lt - (1 - 0.25 / 0.65)) > 1e-6:
-        bad.append(f"triggers: inside the Yastri band ({lt}, {rt})")
+        bad.append(f"triggers: inside the Yawstery band ({lt}, {rt})")
     if triggers(0.0, 0.0, 0.0, 0.75) != (0.0, 0.0):
         bad.append("triggers: a 0 band boosts")
     # 2. the stick: dead ahead none, 90 deg right a full yaw, above a pitch up (negative YSum), behind full
@@ -754,7 +754,7 @@ def main(argv):
                      ("no nose lag", {"nose_lag": False})]
         if lead is None:
             variants.append(("AI nose lead 2.5 (the Scarab's gain)", {"nose_lead": 2.5}))
-    print(f"Redline offline, the AI Manta, {len(seeds)} courses an intensity, bands {bands or (BOOST_BAND, YASTRI_BAND)}")
+    print(f"Redline offline, the AI Manta, {len(seeds)} courses an intensity, bands {bands or (BOOST_BAND, YAWSTERY_BAND)}")
     for i in (1, 2, 3, 4):
         courses = [course_for(i, s) for s in seeds]
         for label, kw in variants:

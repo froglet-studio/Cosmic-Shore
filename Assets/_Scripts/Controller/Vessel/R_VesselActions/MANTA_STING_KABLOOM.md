@@ -1,9 +1,9 @@
-# Manta — Sting bombs, Kabloom, Soar, Yastri turn trails
+# Manta — Sting bombs, Kabloom, Soar, Yawstery turn trails
 
 The Manta's spec remake (2026-08, approved design: "Destroyer → Nuke"). The vessel's whole kit
 is **buttonless where it matters**: you arm bombs by flying (skimming), you plant them by flying
 (grazing another vessel or a creature), and you detonate them by flying (touching a crystal).
-The two inputs the vessel does hold are movement — Soar (dual-trigger analog boost) and Yastri
+The two inputs the vessel does hold are movement — Soar (dual-trigger analog boost) and Yawstery
 (hard flat turns). This is the record of how the four abilities work, what the remake threw
 away, and how to verify it in the editor.
 
@@ -15,7 +15,7 @@ The map is `Assets/Resources/ElementalAbilityMaps/Manta.asset` — **the asset i
 | Charge | **Sting** (passive) | how long the shared fuse runs when a plant resets it: 20 s at rest → 30 s at Charge 10 (`fuseSeconds` × `fuseScale` 1 → 1.5, on `MantaStingConfig.asset`; §0a) | **Contagion** — anything caught in a bloom is itself bombed, free |
 | Mass | **Decoy** (passive) | how long a decoy stands (`decoyLifetimeAtFullMass` 2×) | **Omni Decoy** — the omni crystal leaves a decoy too |
 | Space | **Skim** (passive) | the skimmer's size (Manta.prefab `Skimmer.Scale`, 20 → 40) | **Shield Breaker** — skimming a shielded rival prism pops its shield and makes it explosive |
-| Time | **Yastri** (Input 12, the turn pair) | the Manta's speed: cruise (`VesselTransformer.ThrottleScalerMultiplier` 1.5× at Time 10) and soaring (`BoostSpeedMultiplier` 1.3×); the trail is a plain Squirrel-style trail, unscaled and unflared | **Soar** — the boost stays dark until Time 5 |
+| Time | **Yawstery** (Input 12, the turn pair) | the Manta's speed: cruise (`VesselTransformer.ThrottleScalerMultiplier` 1.5× at Time 10) and soaring (`BoostSpeedMultiplier` 1.3×); the trail is a plain Squirrel-style trail, unscaled and unflared | **Soar** — the boost stays dark until Time 5 |
 
 ## 0. The 2026-11-07 overhaul (Garrett) — the rules as they stand
 
@@ -42,10 +42,13 @@ disagrees with this section, this section wins.
 - **A bombed fauna's crystal stays bombed.** When the creature dies the bomb moves onto its heart
   crystal; whoever collects that crystal (any vessel, the Manta's own side included, which blooms
   never hurt) carries the bomb away on the same fuse.
-- **Yastri and Soar are Time.** Shielded Turn Trails is dropped. The trail is toned down to a
+- **Yawstery and Soar are Time.** Shielded Turn Trails is dropped. The trail is toned down to a
   Squirrel-style trail (2026-11-07 follow-up): the Squirrel's prism size (20 × 0.75 × 5.5), no
   element growing its volume, no turn flare. Time makes the Manta faster: cruise speed 1.5× at
   Time 10 (`ThrottleScalerMultiplier`, the Scarab's shape), on top of the soaring speed.
+- **The turn is called Yawstery** (Caleb, 2026-11-11). It was "Yastri"; the name changed everywhere
+  (the ability map's `AbilityLabel`, the HUD fields, the icon sprites, the AI's `YawsteryStickBand`, docs and tools).
+  A name only: what the ability does is unchanged. Renamed serialized fields carry `[FormerlySerializedAs]`.
 
 ## 0b. The trail is shaped by speed, never by what is near it (Caleb, 2026-11-11)
 
@@ -234,7 +237,7 @@ the Rampage rule), and FusesBeaten rides its RPC.
 caught. One good route cascades through a whole pack. Uses the dying bomb's own snapshot, so a
 contagion chain keeps the original planter's credit and upgrade state.
 
-## 5. Soar + Yastri — the two held inputs
+## 5. Soar + Yawstery — the two held inputs
 
 **Soar** (`MantaAnalogTurnBoostExecutor`): the dual-trigger analog boost. The remake widened
 its device gate to **gamepad OR keyboard** — the keyboard Manta previously could neither boost
@@ -246,7 +249,7 @@ triggers held at a boost intent that is *how straight the stick is* (full under
 `aiBoostStickBand` 0.35, fading linearly to nothing at full deflection), which mirrors the human
 trade rather than inventing a policy. Gated on `AIPilot.AutoPilotEnabled`, not on the player
 being an AI, so the lava-lamp Manta and a released companion fly the same kit a human does; no
-net trigger, so no Yastri for a bot. `REDLINE.md` §5.
+net trigger, so no Yawstery for a bot. `REDLINE.md` §5.
 
 **Wake rings — built, then CUT (2026-09).** The remake shipped a Soar wake-ring layer (a
 boost ring laid behind the Manta while boosting, threadable for a velocity surge; a "Wake
@@ -259,7 +262,7 @@ are untouched platform capabilities. **Time's L5 slot is therefore OPEN** (`Upgr
 empty on the map — the audit reads 3/4 upgrades); the proposal lives in
 `Docs/ElementalAbilitySystem/FLEET_MAPS.md`.
 
-**Yastri** (`YawsteryActionSO` / `YawsteryActionExecutor`, Input 12): the hard flat turn. The
+**Yawstery** (`YawsteryActionSO` / `YawsteryActionExecutor`, Input 12): the hard flat turn. The
 remake moved its element read onto `turnRateElement` (default **None** — the turn rate is
 deliberately unscaled; Space was re-scoped to Kabloom, and an absent key on the shipped assets
 deserializes to None, which is why the field could be added without touching them). What the
@@ -291,8 +294,8 @@ Garrett, 2026-10-21: *"the manta can fly ultra fast when you lift both thumbs an
   spread - against 90 u/s at neutral thumbs. Time's boost multiplier applies on both.
 - **Steer with the gyro.** With no thumb down, phone tilt is the stick (`TouchControlProfile.tiltSteersWhileIdle`):
   wheel-turn yaws, tipping forward/back pitches.
-- **The lifts are unchanged**: one thumb lifted is still Yastri (`OnlyLeft/OnlyRightStickAction` → the shared
-  `YawsteryAction-Left/Right`). Lifting the second thumb releases the Yastri, then presses the Soar.
+- **The lifts are unchanged**: one thumb lifted is still Yawstery (`OnlyLeft/OnlyRightStickAction` → the shared
+  `YawsteryAction-Left/Right`). Lifting the second thumb releases the Yawstery, then presses the Soar.
 - An autopilot Manta Soars through `MantaAnalogTurnBoostExecutor`'s autopilot drive (checked before the device gate,
   so on any device), never through a press, so it is unaffected by this binding.
 
@@ -334,7 +337,7 @@ silhouettes** (bomb / turn arrow / bloom / chevrons —
 **The 2026-11-07 icon pass** replaced the placeholders with kit parts (`Tools/Build/icon_kit/specs/manta.py`,
 `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md` §8): Sting draws a rival wearing a bomb per plant on the shared-fuse plate, Decoy
 the decoy crystal and its trap, Skim the explosive prisms over the energy plate (`energyFill` is now the Space card's
-gauge), Yastri the hard turn with Soar's chevrons at Time 5; the omni card is the cash-out. The view tints the parts
+gauge), Yawstery the hard turn with Soar's chevrons at Time 5; the omni card is the cash-out. The view tints the parts
 (the Mantas in the domain colour, rivals and the trap in danger) and shows them from the executor's state.
 
 ## 6a. The feel of the loop (the 2026-08-26 juice pass)
@@ -460,7 +463,7 @@ GameObject, which `OnDestroy` already handles.
 4. Ram a bombed AI through dense mass — the bomb scrapes off (no bloom).
 5. Two-client party: plant on the remote pilot — NO indication on their screen; the bloom
    appears on both machines once (no double blast on the owner).
-6. Mass 5: hold a hard Yastri turn — outer-lane prisms visibly flared AND shielded.
+6. Mass 5: hold a hard Yawstery turn — outer-lane prisms visibly flared AND shielded.
 7. FrogletTools > Vessels > Audits > Audit Vessel Ability Rows / Audit Ability Lockups / Audit Vessel
    Skimmers — Manta rows green (skimmer audit: the sting container holds prism + vessel
    effects); the ability-row audit reads 3/4 upgrades (Time L5 open, by design).

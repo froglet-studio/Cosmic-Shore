@@ -51,7 +51,7 @@ which is a diagram at 128 px and noise at 40.
 
 **Does not read:** Angler Command (a hull, a beam, a reticle, a fish and a prism row in one box),
 Angler Tame (reads as `>=`), Brittle Star Creation / Destruction (scattered squares and hairlines),
-Butterfly Scale Dust (blobs), Manta Kabloom (a flower, not an explosion), Manta Yastri (one bent
+Butterfly Scale Dust (blobs), Manta Kabloom (a flower, not an explosion), Manta Yawstery (one bent
 arrow), Manta Soar (three chevrons - any boost on any hull), Urchin Charge Ring (a bare ring), Urchin
 Slip (three circles), Urchin Track Projector (a ladder), and all eleven placeholders (Rhino's three
 slashes / double arrow / ramp / lightning, Scarab's ball and ripple and switch, Serpent's reticle /
@@ -262,6 +262,7 @@ chevrons, a slope: "this ability is about the rhino and its invulnerability to d
 threshold as a line across ("not the bar across. updated sparrow has a better solution"), round 3 had the Rhino
 flying up into the plate's ticks ("travel left to right so it doesn't cause visual confusion between the impact event
 and the threshold"). `RhinoVesselHUDView.SetMomentum` / `SetMomentumMark`. The Rhino is done; next: the Scarab.
+**The Swordfish's row** (2026-11-12, `specs/swordfish.py`, no option round: Garrett's standing pick-the-recommended rule): the Swordfish ran the Rhino's HUD until now and gets its own (`SwordfishHUDVariant`, `SwordfishVesselHUDView`, `SwordfishHUDController`). **Charge** is the bill seen from the camera behind - a snout socket with the bill foreshortened at rest - that follows the real sword (side swing = yaw / 90, raise = -pitch / 90) and lights while energized; the plate is the energize. **Mass** is the bill swinging past two afterimages in the domain colour. **Space** is the bill laid flat between the reach posts, its live length the Space reach, and the prism ahead shatters once Shield Breaker is on. **Time** is Quickdraw: the bill with a tapered swoosh that brightens with Time's rate, the plate is the swing's recovery draining away, and Flurry (Time 5) flashes the card and adds the swoosh back. The omni core is the Surge, a ring of bills. Not yet run in Unity. Sheets: `Docs/Icons/sheets/swordfish*.png`.
 **The Scarab's Charge card** (2026-10-28, four rounds; Garrett picked A3, "looks good enough. lets ship it"): Cavitation
 Blast drawn TO SCALE - the punch's swept volume (54 ahead of the hull, mirrored 54 behind, 90 across, measured from
 `Scarab.prefab` and `AOEScarabCavitation.prefab`) as one white bubble, square against the plate and rounded behind, the
@@ -359,7 +360,7 @@ HUD blue), which the kit's `card.py` does not draw yet.
 
 **Rhombus recut DONE 2026-11-01** (`claude/prism-recut`; Garrett: "you need to stop using the rhombuses for shielded
 prisms, that shape is owned by the time petal"): `motifs.prism` / `prism_lit` are two close triangles now, and every
-card that drew one was re-authored with its guid kept (Angler Paint parts, Manta Yastri, Scarab Cavitation Blast,
+card that drew one was re-authored with its guid kept (Angler Paint parts, Manta Yawstery, Scarab Cavitation Blast,
 Sparrow's shielded stance rounds, Squirrel's drift trail and Sharp Drift), plus the Serpent's shielded bricks (Wall
 Shield omni card) and the Squirrel's shielded-ring card (`author_squirrel_shielded_ring_icon.py`). No C# changed. The
 Rhino's super-shielded prism stays the stella octangula (its own shape, not a rhombus).
@@ -444,9 +445,9 @@ plate the ONE shared fuse, Contagion's second rival at Charge 5. Decoy (Mass, B)
 plate frozen (the tell) over the danger prisms it springs, the omni decoy beside it while one stands (Mass 5;
 `MantaStingActionExecutor.HasElementalDecoy` / `HasOmniDecoy`). Skim (Space, A): the Manta skimming rival prisms that
 wear a crown of explosive spikes, brighter as the energy gathers; the plate is the energy (`energyFill`, bound as the
-card's gauge, full = one bomb); Shield Breaker's knocked-off shell at Space 5. Yastri (Time, A): the Manta and the hard
+card's gauge, full = one bomb); Shield Breaker's knocked-off shell at Space 5. Yawstery (Time, A): the Manta and the hard
 corner its turn pair cuts, Soar's chevrons once Time 5 unlocks the boost. Omni: the cash-out, three blooms round an omni
-crystal. Option sheets: `Docs/Icons/sheets/manta_{sting,decoy,skim,yastri}_options.png`.
+crystal. Option sheets: `Docs/Icons/sheets/manta_{sting,decoy,skim,yawstery}_options.png`.
 
 **The Thresher (2026-11-07, the roster pass; picks made by the session on Garrett's go-ahead to choose):** the
 2026-10-13 glyphs were decent but drew no shark; every card now draws the real hull (`Thresher.fbx`, the whip tail cut

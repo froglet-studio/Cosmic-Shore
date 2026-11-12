@@ -226,25 +226,31 @@ namespace CosmicShore.Gameplay
         {
             if (ActiveSession != null) return;
 
-            var opts = new SessionOptions
-            {
-                MaxPlayers       = maxPlayers,
-                IsLocked         = false,
-                IsPrivate        = true,
-                PlayerProperties = BuildLocalPlayerProperties(),
-            }.WithRelayNetwork();
-
+            // The Relay region is the player's choice in Settings > REGION (RelayRegionPreference; null = Auto, the
+            // region closest to this host). Every guest connects to it, so it is the one number that decides a
+            // cross-continent party's ping. A region Relay refuses falls back to Auto once.
             // Single-flight under "party:create": two callers racing to create collapse into one
             // request and both observe the same session. The policy retries RateLimited / Transient
             // / Benign failures with jittered back-off and a Conflict (NetworkManager still shutting
             // down) exactly once; everything else propagates.
-            var session = await _policy.ExecuteAsync("party:create",
-                async () => await _multiplayerService.CreateSessionAsync(opts).AsMainThread());
+            var (session, region) = await RelayRegionPreference.CreateWithFallbackAsync(r =>
+            {
+                var opts = new SessionOptions
+                {
+                    MaxPlayers       = maxPlayers,
+                    IsLocked         = false,
+                    IsPrivate        = true,
+                    PlayerProperties = BuildLocalPlayerProperties(),
+                }.WithRelayNetwork(r);
+                return _policy.ExecuteAsync("party:create",
+                    async () => await _multiplayerService.CreateSessionAsync(opts).AsMainThread());
+            }, "party:create");
             if (ReferenceEquals(ActiveSession, session)) return; // the coalesced second caller
+            RelayRegionPreference.MarkHostedSession(region);
             ActiveSession          = session;
             CreatedAtUnscaledTime  = Time.unscaledTime;
             Attach(ActiveSession);
-            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}, region={region ?? "auto"}).");
         }
 
         /// <summary>

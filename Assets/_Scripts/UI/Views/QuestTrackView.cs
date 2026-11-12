@@ -276,6 +276,13 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>The quests this track walks, in order (the Voyage window's Quests table reads them,
+        /// <see cref="VoyageSlabPage"/>).</summary>
+        public SO_UnlockList QuestList => questList;
+
+        /// <summary>Open the Arcade, where a quest's game is played.</summary>
+        public void OpenArcadeForQuest() => OpenArcade();
+
         void OpenArcade()
         {
             if (_screenSwitcher == null)

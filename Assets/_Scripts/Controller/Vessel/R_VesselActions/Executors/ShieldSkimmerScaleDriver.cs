@@ -118,8 +118,8 @@ namespace CosmicShore.Gameplay
         /// <summary>How much of the energize COOLDOWN is still to run, 1 the instant it starts and 0
         /// once the blade can be charged again (0 outside the cooldown). The HUD's recharge veil.</summary>
         public float EnergizeCooldownRemaining01 =>
-            _energize == RhinoSwordEnergizePhase.Cooldown && config != null && config.EnergizeCooldownSeconds > 0f
-                ? Mathf.Clamp01((_cooldownEnd - Time.time) / config.EnergizeCooldownSeconds)
+            _energize == RhinoSwordEnergizePhase.Cooldown && _cooldownSeconds > 0f
+                ? Mathf.Clamp01((_cooldownEnd - Time.time) / _cooldownSeconds)
                 : 0f;
 
         /// <summary>The Charge card's gauge: the stance filling while Charging, full while lit (held, Live
@@ -150,7 +150,11 @@ namespace CosmicShore.Gameplay
         /// lets go of the steering, "so we can compensate for lack of control by having it go quicker").
         /// Read from the REPLICATED device, so a replica's charge ramp (FX) runs the owner's clock; the
         /// ignition itself is decided on the owner and mirrored through the relay.</summary>
-        float EnergizeHoldSeconds => config.EnergizeHoldSecondsFor(IsHumanTouchPilot);
+        float EnergizeHoldSeconds => config.EnergizeHoldSecondsFor(IsHumanTouchPilot, _skimmer ? _skimmer.VesselStatus : null);
+
+        /// <summary>The length of the cooldown now running, taken at its start (Time's Quickdraw shortens it), so
+        /// the HUD veil sweeps the cooldown the pilot actually got.</summary>
+        float _cooldownSeconds;
 
         /// <summary>A human flies this Rhino on a phone. AI and autopilot keep the pad's timing (an AI's
         /// input status can read Touch, the enum's zero, without any thumb on any glass).</summary>
@@ -385,7 +389,8 @@ namespace CosmicShore.Gameplay
                     }
                     else if (_tailCounting && now >= _tailEnd)
                     {
-                        _cooldownEnd = now + config.EnergizeCooldownSeconds;
+                        _cooldownSeconds = config.EnergizeCooldownSecondsFor(_skimmer ? _skimmer.VesselStatus : null);
+                        _cooldownEnd = now + _cooldownSeconds;
                         SetEnergizePhase(RhinoSwordEnergizePhase.Cooldown, now);
                     }
                     break;

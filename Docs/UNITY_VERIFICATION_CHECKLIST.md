@@ -65,6 +65,144 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Swordfish's own HUD and ability icons (`claude/swordfish-icons`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md` §8 (the Swordfish's row). The Swordfish leaves the Rhino's HUD
+for its own (`SwordfishHUDVariant.prefab`, `SwordfishVesselHUDView`, `SwordfishHUDController`, swapped in
+`Swordfish.prefab`), with 19 kit-drawn parts (`Assets/_Graphics/Icons/AbilityIcons/Swordfish/`) and
+`ShieldSwipeActionExecutor.SwipeRecoveryRemaining01` for the Time plate. Stacked on `claude/swordfish-kit`.
+Ran: `unity_refcompile` (0 errors in changed files), `icon_kit/author.py swordfish --check` (no drift).
+Not run: Unity, the EditMode tests (`SwordfishHUDTests`).
+
+1. Toybox, Swordfish: the four cards show the bill (Charge), the afterimages (Mass), the bill's reach (Space) and the
+   Quickdraw bill (Time); no Rhino katana, no missing sprite.
+2. Swing with one trigger: the Charge card's bill swings to that side; both triggers raise it and light the card while
+   energized; the plate fills with the energize and the veil sweeps the cooldown.
+3. Lay afterimages: the Mass card lights, the copies in your domain colour.
+4. Raise Space: the bill on the Space card lengthens; at Space 5 the prism ahead is shattered.
+5. Swing at Time 0 and Time 10: the Time plate drains the recovery (faster at 10), the swoosh brightens with Time; reaching
+   Time 5 flashes the card once and shows the swoosh back.
+6. Fly the Rhino: its own HUD is unchanged.
+
+### 🔴 The Swordfish's fundamentals pass: Quickdraw, Flurry, the Surge alone (`claude/swordfish-kit`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SWORDFISH.md` § "Fundamentals pass". Time is the sword's rate (Quickdraw: energize
+hold, energize cooldown and swipe recovery divided by x1 -> x2.5), its L5 Flurry removes the swipe recovery; the
+Swordfish's ramp is its own unscaled asset and the Momentum ward is gone from it; the omni crystal is absorbed and
+raises the Surge with no blast.
+Ran: `unity_refcompile` player and editor (0 errors in changed files; 30 pre-existing in untouched files),
+`element_ability_table.py Swordfish` (4/4, 0 disagreements), `author_swordfish_assets.py --check`.
+Not run: Unity, the EditMode tests (`SwordfishQuickdrawTests`).
+
+1. Toybox, Swordfish, Time 0: both triggers energize after 1 s; after the 5 s tail the cooldown is 5 s.
+2. Raise Time to 10 (crystals or the debug level): energize after 0.4 s, cooldown 2 s, the swipes recover visibly faster.
+3. Time 5: the swipes never hold centre between swings, lit or not (Flurry). Below 4 it relocks.
+4. Ramp: flat out still reaches 840 u/s, at the same wind-up at every Time level.
+5. Fly through danger prisms flat out at Time 5: they drain the Swordfish (no Momentum).
+6. Take an omni crystal: it flows into the hull (no 200-500 blast), the ring of eight bills rises for 8 s.
+
+### 🔴 The Ark's Pilots tab and the pilot profile page (`claude/signature-pilot-busts`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 92.1. The Ark gains a PILOTS tab (`ArkPilotsPage`: the crew, one cell
+a pilot with the close-up of their callsign's scene). Pressing a pilot opens their PROFILE PAGE (`PilotProfileModal`,
+`ModalWindows.PILOT_PROFILE = 21`, `Resources/Pilots/PilotProfileView.prefab`): the scene full screen
+(`PilotSceneImage`, loaded by name from `Resources/Pilots/Scenes/`, one in memory), the words in a panel on the side the
+pilot does not stand on, Next / Previous through the crew. Eighteen scene textures and `PilotSceneCatalog.asset` are new
+(`author_pilot_scene_assets.py`). Affects Shombith's Ark app shell and UI.
+
+**Verified without the editor:** the three generators' `--check` and `--self-test`; `unity_refcompile`, player and
+editor (0 errors in changed files, and a planted fault in each new file is caught); `check_generated_assets.py`; the
+`Frame` arithmetic run under plain .NET on all eighteen scenes at six screen shapes, with the eight `Frame_*` cases of
+`PilotSceneAssetTests`; name and story lengths over 360,000 rolls of `PilotGenerator`. The seven asset tests of
+`PilotSceneAssetTests` have not run. Pictures of the page and the tab: https://claude.ai/artifact/RAAiiZAuMzHt8Fzx6Bf1mM.
+
+**Run in Amoebius (the engine, offline, 2026-11-12), which is not Unity:** on the tree merged with bleeding-edge the
+PILOTS tab shows "YOUR CREW", "PILOTS: 18" and the eighteen cells clear of the friends orb; a press opens the page
+with the scene, every line of the panel and "1 / 18"; NEXT steps; the panel stands on the left for ANVIL, who stands
+on the right; the cut holds at 4:3 and 21:9 with ANVIL's horns whole; CLOSE returns to the tab; the log holds no
+error. That run is why the plates are solid: at their first alpha, 0.88, a bright sky showed through as a mid grey
+and the quiet lines could not be read (the game blends in linear light; the web drawing blends in sRGB and had shown
+the plate near black). The engine does not draw the menu's sea material (it was switched off for the pictures) and
+sets a paragraph's lines 17.6 apart where the kit measures 23.2 for Unity, so a story stands about a third taller in
+Unity than in those pictures. The final look, the fonts' rendering and the fade are still Unity's to judge.
+
+**The controller, tried in the same engine:** with the kit's automatic navigation, a press left from NEXT put the
+focus on a game card outside the page, and A there opened the Arcade's configure window under it. Two causes. The
+engine's `Selectable.IsInteractable()` ignores `CanvasGroup`s, so its pad reaches controls under closed and covered
+windows; Unity's does not, and that part is the engine's alone. The second is real in Unity, worked out with uGUI's own
+score (dot / distance squared) on the page's rectangles and not run there: the top nav's `LeftArrrow` and `RightArrow`
+are Buttons on automatic navigation in a group the menu switches off only for freestyle, so they stay candidates
+under every open window, and from this page up from NEXT, up or left from PREVIOUS and left from CLOSE all land on
+one of them, hidden under the picture. So NEXT, PREVIOUS and CLOSE steer the pad themselves (explicit navigation,
+`WAYS` in `author_menu_pilot_profile.py`). The engine run after that: seventeen presses stayed on the three buttons,
+A on PREVIOUS and on NEXT stepped the crew both ways with the wrap, A on CLOSE closed the page, and so did B. The pad
+in Unity is step 6.
+
+**Verify in editor:**
+1. Let Unity import the branch. **Pass:** 18 textures under `Assets/Resources/Pilots/Scenes/` (1536x864), the catalog
+   and the page prefab import with no missing script or reference in the Console.
+2. Run the edit-mode tests `PilotSceneAssetTests`. **Pass:** all green.
+3. Main menu, Ark, PILOTS (click the tab, or move the pad's focus to it and press A). **Pass:** "YOUR CREW",
+   "PILOTS: 18", eighteen cells six by three, each with a face, a name and a callsign; nothing under the friends orb;
+   Converter, Squads, Artifacts and Decor look and work as before.
+4. Press a pilot. **Pass:** the page opens full screen over the nav bar with that pilot's callsign scene; the panel
+   shows the callsign, name, animals, faction, home, sight and story, and "PICTURED: <painted pilot>, THE FIRST
+   <CALLSIGN>" at its foot. No white rectangle shows before the scene.
+5. Press NEXT through all eighteen, then PREVIOUS back. **Pass:** the count runs "1 / 18" to "18 / 18" and wraps; the
+   panel is on the right for a pilot who stands on the left and on the left for one who stands on the right; no face
+   is under the panel, the step plate or Close; the ground never shows between two pilots.
+6. Controller, a page open. **Pass:** focus lands on NEXT; left reaches PREVIOUS and right returns to NEXT; up from
+   either step, or right from NEXT, reaches CLOSE; down or left from CLOSE returns to NEXT. No other press moves the
+   focus (down from a step, left from PREVIOUS, up or right from CLOSE), and it never leaves the page (press A after
+   each move: the page steps to the next or the previous pilot, or closes from CLOSE; nothing opens under it); B
+   closes the page with the Ark's Pilots tab behind it.
+7. Game view at 16:10, 4:3, 21:9 and 19.5:9. **Pass:** the scene fills the view with no bars and no stretch, the face
+   stays clear of the words, and a tall head (ANVIL, VOLT) is whole at 21:9.
+8. Device Simulator, a notched phone held sideways. **Pass:** the picture reaches the screen's edges; the panel, the
+   step plate and Close stay inside the safe area. Upright, the PC layout is fitted to the width.
+9. Memory Profiler, the page open and then closed. **Pass:** one scene texture while open, none once it has faded.
+10. Open a page, close it, launch an Arcade match and come back. **Pass:** the menu does not reopen the page.
+11. The importer preview per platform. **Pass:** the scenes read clean on Standalone (BC7), Android and iOS (ASTC);
+    WebGL holds 32 px stand-ins, and the browser Toybox has no way to the page.
+
+**First-pass tuning (not settled):** the plates are solid (`author_menu_pilot_profile.py` holds every plate to 4.5:1
+for both colours words are drawn in, over a white picture; a thinner plate needs brighter quiet lines); the panel
+560 x 744, which holds the longest story a pilot can have (14 lines), so a ten-line story leaves empty plate above
+the caption; the face margin 0.03 of the view; the crew cell 260 x 256 with a 180 close-up.
+
+### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** a sixth settings tab, REGION (globe icon), drawn by `Tools/Build/author_menu_settings.py`
+(`RegionSettingsView` on the page). A party plays through its HOST's Relay allocation; on Auto, UGS picks the region
+closest to the host, so a US host put an India guest on a US relay (~1200 ms). The tab lists the Relay regions UGS
+returns (`RelayService.ListRegionsAsync`) with this player's ping to each (`QosService.GetSortedRelayQosResultsAsync`),
+best first, plus Auto. The choice (`RelayRegionPreference`, PlayerPrefs `CosmicShore.RelayRegion`) is passed to
+`WithRelayNetwork(region)` in `PartySessionService.CreateAsync` and the quick-match host in `MultiplayerSetup`; a region
+Relay refuses falls back to Auto once. A solo host in Menu_Main moves its session when Settings closes (the leave-lobby
+cold-boot sequence, `PartyInviteController.MoveSoloHostToChosenRegionAsync`); with guests aboard, in a match or in a
+friend's party it is saved for the next party this player hosts. Amoebius gets empty Relay/QoS shims
+(`Port/src/CosmicShore.Engine/Services/RelayQosSdk.cs`). Ran headless: `unity_refcompile` player / editor / webgl (with a
+planted-error negative control), `/ship` gates, the generator's `--check` and `--self-test`, Amoebius's live compile (no
+new errors; without the shims it fails on `RelayRegionProbe.cs`). No Unity editor ran; UGS was not called.
+
+**Verify in editor:**
+1. Run the edit-mode tests `RelayRegionTests` (18).
+2. Menu_Main, signed in: Settings shows six tabs; REGION shows "Measuring your ping to each region...", then a list with
+   ms beside each region, closest first, and Auto naming the closest. MEASURE PING measures again.
+3. Pick a region far away (e.g. Japan from the US), close Settings: the screen fades, the menu reloads, and the console
+   (Party channel) logs `Created party session ... region=asia-northeast1`. Reopen REGION: "Your party server is in Japan".
+4. Two machines (US + India, or MPPM with Network Simulator latency): the host picks Europe West, invites; the guest's
+   REGION reads "You are in a friend's party". In a match, F7 `net` RTT on the guest is far below the Auto value.
+5. Host with a guest aboard changes region: nothing reloads, the guest stays, the line reads "Saved. It applies to the
+   next party you host."
+6. Pause menu in a match: the tab works, the change is saved, nothing reloads.
+7. Pick a region, unplug the network, relaunch: the tab lists the authored regions without ping; the session falls back
+   to Auto if the region is refused (one warning naming the region).
+8. FrogletTools > Game Modes > Game Mode Prefab Kit > Validate on Menu_Main (the SettingsView prefab changed).
+
+**Open:** the tab was not drawn on Frogma first (Docs/MENU_REDESIGN_B.md); the region names in the generator's
+`REGION_NAMES` name UGS's ids, and an id UGS does not list is simply never offered online.
+
 ### 🔴 Glasshouse, the Angler's Mass game (GameModes 89) (`claude/peaceful-cerf-vpl3x8`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/GLASSHOUSE.md`. A timed garden: an omni crystal is a creature and a seed, letting go
@@ -6968,7 +7106,7 @@ risk. Before, it aimed at each ring's centre, the middle of the braid and 22 u f
 
 ### 🔴 The Manta AI holds Soar deeper into turns in Regatta (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
 
-**What landed:** `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset` (`BoostStickBand` 0.8, `YastriStickBand`
+**What landed:** `Resources/AIBoostPolicies/MantaSoarAITuning_Regatta.asset` (`BoostStickBand` 0.8, `YawsteryStickBand`
 0.85, written with `learn_drives_from_flights.py`'s own writer). In Regatta only, the AI Manta keeps both triggers flat
 until its stick passes 0.8 (was 0.35) and pivots past 0.85 (was 0.75). Every other mode keeps the executor's bands.
 A person's Manta flights replace these numbers (`learn_drives_from_flights.py --write`).
@@ -6983,7 +7121,7 @@ A person's Manta flights replace these numbers (`learn_drives_from_flights.py --
 **Verify in editor:**
 1. Run `RegattaDriveTuningTests`: all pass.
 2. Arcade ▸ Regatta with an AI Manta, Third Eye on it. It soars (~700 u/s) through most of each leg, splits its
-   triggers (Yastri pivot) only in hard turns, and threads rings without circling. Note I1–I4 times.
+   triggers (Yawstery pivot) only in hard turns, and threads rings without circling. Note I1–I4 times.
 3. Any other mode with an AI Manta (Redline): unchanged.
 
 ### 🔴 The Dolphin AI drifts again at the discharge's peak; Regatta AIs aim through the ring's centre (`Ys-bleeding-edge`, 2026-10-17) — NOT EDITOR-VERIFIED
@@ -22126,14 +22264,14 @@ Branch `claude/headlong-stampede`. `HeadlongHedgesTests` run offline (`bash Tool
 6. **I4:** the race starts at Time 5. Leave a hairpin fast and the red hedge after it sprays aside with no burn
    (Momentum, the Time card flashes); leave it slow and you are burned to Time 4.
 7. **Frame time** with four Rhinos at I3 (about 2000 hedge slabs): no worse than Switchback I2.
-## 🔴 Manta overhaul: shared fuse, prism-impact detonation, explosive prisms, decoy crystals, Yastri and Soar on Time (2026-11-07, Garrett, NOT RUN IN EDITOR)
+## 🔴 Manta overhaul: shared fuse, prism-impact detonation, explosive prisms, decoy crystals, Yawstery and Soar on Time (2026-11-07, Garrett, NOT RUN IN EDITOR)
 
 Branch `claude/manta-overhaul`. Compiled with `unity_refcompile` (player and editor: 0 errors in changed files; the 21
 remaining are in the Vivox, Moderation and Multiplayer packages the cloud session could not fetch). `gates.sh` ran on a
 sparse checkout: `author_manta_kit_assets.py --check`, `console_logging` and `conditional_compilation` OK; the failures
 are all missing `.asset` files the sparse checkout left out. Design record: `MANTA_STING_KABLOOM.md` §0, §3a, §4a.
 
-1. **Fly the Manta in the Toybox at Time 0.** The boost does nothing (Soar is Time 5); Yastri turns still work. Raise
+1. **Fly the Manta in the Toybox at Time 0.** The boost does nothing (Soar is Time 5); Yawstery turns still work. Raise
    Time to 5: the analog turn-boost and the boost button both work.
 2. **Skim rival prisms.** Energy fills (one bomb per full unit, 3 max) and each skimmed rival prism lifts its colour
    (explosive). Destroy one: its neighbours in the same trail go too, a beat later, and explosive neighbours carry on.
@@ -22470,6 +22608,8 @@ The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran 
 3. **Shielded and super-shielded prisms** still read as a tier above plain in every domain (Ruby's rim is the brightest).
 4. **Danger (coral) and free crystals (lime CTA)** still stand out against the pale bodies.
 
+## ⚪ REVERTED (section 159, nothing to test) - The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
+
 ## 🔴 Voyages: own scene (Voyage.unity) and in-world toys removed (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
 Branch `claude/voyage-scene-port`. unity_refcompile could not run (no .NET SDK in the cloud session).
@@ -22484,32 +22624,6 @@ Ran 2026-11-08 on Garrett's PC (Unity 6000.3.17f1, batchmode `verify_unity.sh`):
 6. Leave the voyage from the HUD: back to the menu, and the board offers the next jobs from where the Ark anchored.
 7. Start an escort from the Voyage window: it runs in Voyage.unity.
 8. In menu freestyle, the Toy Box toys still work from the app shell and no in-world toys appear.
-
-## 🔴 The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
-
-Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 151. Compiled with `unity_refcompile` (player and
-editor: 0 errors in project code; the rest are packages the cloud cannot fetch). No Unity editor was open, so the
-`unity` CLI and the EditMode tests have not run in Unity. `VoyageCardRulesTests`' pure tests ran outside Unity;
-`Cover_CropsToTheFramesShape_Centred` needs a real `Texture2D` and has not run.
-
-1. **Run the EditMode tests** `VoyageCardRulesTests` and `VoyageShellTests`.
-2. **Open the Voyage window** from Home. It shows three tabs, Voyages, Saga and Episodes (locked), on LB / RB. Voyages
-   opens first, with the HyperSea map on the whole galaxy and the edge view under it.
-3. **The coverflow**: the voyages, with the Ark escort first, are muted place cards. The picked one faces front, and its
-   neighbours turn away and fade. Pressing a card, or moving onto it with the D-pad, picks it in one ease. The cards are
-   not blue: the colour is a quiet grey-violet with a light diamond at the centre.
-4. **One press picks**: press a hull under the flow. The vessel strip opens over the column, and one press picks and
-   saves. In Ark crew, each seat's vessel, pilot, element (the Codex's shapes) and artifact open a strip the same way,
-   and Save squad keeps the draft. Changing the domain chip changes the draft only. Change a seat without saving, close
-   the window and reopen it: the change is gone. With a friend in the squad, Save squad reaches them (their Ark shows
-   the change after its refresh), as a save in the Ark does.
-5. **Story**: the beats step with < > and the dots. **Underway**: send a voyage out, reopen the window, and the column
-   shows the place, the underway line and a dark "Set sail - after this voyage".
-6. **The Quests window**: on Home, press the quest card. The Quests window opens (not the Voyage window), titled
-   Quests, with Episode 1 (the quest tracker as before) and Episode 2 (locked) on LB / RB. Gamepad B and Back close it,
-   and the card's claim line reads "Ready to claim in Quests".
-7. **Console**: no new errors or warnings on Menu_Main load. A warning naming `Resources/Voyages/QuestsView` means the
-   prefab did not import.
 
 ## 🔴 Voyages: the Ark no longer stalls at a job's stop (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
@@ -22535,6 +22649,48 @@ Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK i
 2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
 3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
 
+## ⚪ REVERTED (section 159, nothing to test) - The Quests window's carousel, Rev 77 "Quests" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 156. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran.
+
+1. **Run the EditMode test** `VoyageCardRulesTests.SpriteCover_StaysInsideTheSpritesOwnRect_InAnAtlas`.
+2. **Home > the quest card**: the Quests window opens on Episode 1. "The Hypersea" and "N of 5 claimed" with its bar
+   sit at the top. The five quests stand on a coverflow, each its game's card art, muted, with the frontier quest in
+   front.
+3. **Pick** with a press or the D-pad: the picked card turns to face front, and the line under the cards follows it.
+4. **The button**: on a done quest it reads Claim and claims it (the count and bar go up, the pick moves on). On the
+   next quest it reads Play quest and opens that game's configure; on the Hangar quest it reads Open the Hangar.
+   Locked quests show "Unlocks after ..." and claimed ones "Claimed", with no button.
+5. **The Profile's quest track** still works as before (it is a separate view).
+6. **The Voyages tab**: the first open with five voyages no longer stalls (the place art is a quarter of the work).
+
+## ⚪ REVERTED (section 159, nothing to test) - The Saga tab, Rev 77 "Saga" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 157. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran.
+
+1. **Voyage window > Saga** (RB from Voyages). The left shows Tandava's art, muted, with "Saga - part 1 of 2",
+   "Tandava" and its four forms at the foot. The right shows the two parts on a coverflow, Tandava in front, its line
+   under them, and a full-width Lime Set sail.
+2. **Pick the Severing** (press it or move onto it with the D-pad). The left changes to its art, "part 2 of 2",
+   "Tandava: Severing" and its five forms.
+3. **Set sail** on each part opens its launch window with the hull carousel, your pilot, the seat line and a live
+   Start. It must not open an empty shell (the Arena or Maelstrom window's copy of the modal).
+4. **Back** from the launch window returns to the Saga tab.
+
+## ⚪ REVERTED (section 159, nothing to test) - The Episodes tab, Rev 77 "Episodes" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 158. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran.
+
+1. **Voyage window > Episodes** (RB twice from Voyages). One panel over the whole galaxy, dark and muted: the lock,
+   "Episode 2", "Coming soon" and "New episodes arrive here. Voyages and the Saga are open now." at its foot.
+   The first open may hitch briefly while the galaxy paints (about 140 ms measured offline); later opens do not.
+2. **Back to the Saga** under the panel shows the Saga tab (its tab lights, the page changes).
+3. **Quests window > Episode 2**: the same panel with its own line, and **Back to Episode 1** shows the quests.
+4. **D-pad / gamepad**: the button is reachable and A presses it.
+
 ## 🔴 Menu: friends orb, its minimise button, the Codex strip and the Hangar Upgrades text (2026-11-09, NOT COMPILED, generated assets only)
 
 Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generators' `--check` and `--self-test` pass (arcade's `--check` already failed before this branch: `ArcadeView.prefab` lacks the Swordfish content). Hand-checked by one person on a desktop editor (Hangar Upgrades, minimise button, orb, Codex strip). Still to check:
@@ -22543,6 +22699,80 @@ Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generato
 2. **Friends window:** the minimise square is easy to tap on a phone; it lightens under the pointer and takes the accent when pressed; the party panel under the title row is not covered.
 3. **Codex > Ecology (Field Guide):** scroll the bottom strip left; tiles stop 16 px short of the "Friends" text, never over it.
 4. **Hangar > Upgrades, any hull:** "CHARGE CRYSTALS 0 HELD - 0 SPENT" is on its own row under the step line; nothing overlaps.
+
+## 🔴 The Voyage window as the Sea table: Rev 89 A and Rev 90 (2026-11-12, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/sweet-mccarthy-ow25e2`, `Docs/MENU_REDESIGN_B.md` section 172. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code); the ship gates pass. **No Unity editor ran and nobody has seen it.** It replaces the
+entry below (Rev 81 B5 and the Rev 83 S2 seat editor). Set a screenshot of each tab beside its Frogma board (Voyages tab:
+R89A, R90Saga, R90Quests, R90Episodes) and report what differs.
+
+1. **Open the Voyage window.** The Voyages tab shows:
+   - small chips on the left, one per voyage plus the Ark escort, each "01  <place>" over its numbers, with a faded
+     sliver of its course on the right; the open one has a cyan bar;
+   - in the middle the galaxy map LYING BACK in perspective: wide at the near (bottom) edge, narrower and fading out at
+     the far edge, the course in lime across it. Straight lines stay straight and the water is not sheared along a
+     diagonal. Directly under its near edge, at the same width, the edge-on view stands as the front face;
+   - over the table's far edge, centred: "VOYAGE 02 OF 04 - BROUGHT BY ..." small, the place large, the voyage's title,
+     then "580 ly   -   29 min   -   Intensity 2";
+   - on the right: SQUAD and the squad names (the active one over a cyan line), three seat cards (pilot, vessel name,
+     who - pilot, element - artifact, hull) and a full-width Lime Set sail at the foot.
+   - The tabs are small plain capitals (Voyages, Saga, Quests, Episodes).
+2. **Your own seat is open:** its edge is Jade and under it stand four steppers, two to a row: VESSEL, PILOT, ELEMENT,
+   ARTIFACT, each `<  value  >`.
+3. **Step each one.** The seat card changes at once. A step on Pilot onto someone who flies another seat swaps the two.
+   Steps go round the ends. Close and reopen the window: the changes are still there.
+4. **Press another seat you may change.** Its steppers open and the first seat's close. Press it again: they close.
+   In a squad you joined, only your seat opens; the others are dimmed and say whose they are.
+5. **Press another chip.** The table shows that course and the name changes. The Ark escort shows its title and line
+   and two small buttons (easier, harder) under them; they change its difficulty.
+6. **Set sail** launches the open voyage, as before.
+7. **The lying map takes no pointer.** Dragging or scrolling over it does nothing; place names on it are only the
+   course's two ends, smaller the farther they are.
+8. **Saga tab, locked.** No chips. Tandava's arena lying back as the table, dimmed; "SAGA / Tandava / Voyages are open
+   now. / Coming soon" over it; "The saga opens here" on the front face; a quiet "LB  BACK TO VOYAGES" button at the
+   bottom right. Nothing launches. Then untick **Saga Locked** on the Voyages page's `VoyageJobsView` (the Voyage
+   window prefab) and reopen: two chips (the two parts) with their card art, the picked part's art as the table, its
+   forms in order as diamonds on the front face ("FORM 1 ... Great Serpent"), the squad and Set sail, which opens that
+   part's launch window. Tick it again.
+9. **Quests tab.** Five chips with their state; the galaxy lying back as the table; "EPISODE 1 / The Hypersea / n of 5
+   claimed" over it; on the front face the five quests as diamonds on a line (claimed filled, the one to claim ringed
+   cyan, locked dim, the picked one underlined); on the right the picked quest's picture, name, goal and state, and at
+   the foot Claim, or Play quest, or the state in an outline. Claim claims it and moves to the next quest. Play quest
+   opens the Arcade. The first time this tab or Episodes opens there may be a short hitch (the galaxy is painted once).
+10. **Episodes tab.** The galaxy lying back, dimmed; "EPISODES / Episode 2 / Voyages and the Saga are open now. / Coming
+    soon" over it; "New episodes arrive here" on the front face; a quiet "LB  BACK TO VOYAGES" button at the bottom
+    right that goes to the Voyages tab.
+11. **Every tab's table stands in the same place** when stepping through the tabs with LB / RB.
+12. **Sizes:** check 16:9 and a narrower window. The name over the table must not sit on the bright part of the map.
+13. **Not done, known:** the window's own title ("Voyage") and the hub row keep their old sizes; a colour set worn while
+    the window is open repaints the text only on the next open; B on a pad does not close an open seat.
+
+## 🔴 The Voyages tab as the board: Rev 81 B5 with the Rev 83 S2 seat editor (2026-11-09, Shombith, NOT RUN IN EDITOR; REPLACED 2026-11-12 by the Sea table above)
+
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 165. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code). No Unity editor ran. Compare against Frogma's Voyages tab, boards R81B5 and R83S2.
+
+1. **Open the Voyage window.** The Voyages tab shows three columns:
+   - the voyage list on the left, each row with its course on the water, "01  <place>", "Brought by <pilot>" and its
+     numbers;
+   - the galaxy map over its edge view in the middle;
+   - the right panel: title, line, Distance / Sail / Intensity, the squad chips, three seat cards and a Lime Set sail.
+   The first voyage is open (its row lit with a cyan bar), and the map frames its course.
+2. **Press another row.** It lights, and the map and the right panel change to it.
+3. **Press your own seat card.** The seat editor opens over the list and the map, and the card's edge turns Jade.
+   - The Vessel tab shows the hull large on a lit floor, with its name and its description, and the six hulls listed
+     on the right, the current one marked in Jade.
+   - Done straddles the editor's bottom edge.
+4. **Pick another hull.** The hero, the list mark and the seat card behind change at once.
+   - Pilot tab: pick a pilot who flies another seat. The two swap, and the other card changes too.
+   - Element and Artifact tabs: one press each.
+5. **Done** closes the editor. Reopen the window: the changes are still there (they save at once).
+6. **Squad chips.** Pick the other squad: the cards change. In a squad you joined, only your seat opens; the others
+   are dimmed and say whose seat they are.
+7. **Set sail** launches the open voyage, as before. With the Ark escort open, its stepper changes the difficulty.
+8. **Look:** no part overflows its column at 1920x1080 or at the phone's aspect. The text is the game's face, and the
+   labels are Chakra Petch in capitals.
 
 
 ## 🔴 Flatline, the Brittle Star's charge game (GameModes 84) (2026-11-09, re-laid as an open scattered field 2026-11-10, Shombith, NOT RUN IN EDITOR)
@@ -22745,7 +22975,7 @@ renders all four (`verify_lab.cjs`, Playwright); nothing ran in Unity.
 ## 🔴 Manta: Charge is the fuse, not the bloom's petals (2026-11-10, Garrett, NOT RUN IN EDITOR)
 
 Branch `cece/cool-dijkstra-4puf92`. Design record: `MANTA_STING_KABLOOM.md` §0a. Compile and gate status are in the
-commit message. Also carries the quoted Yastri text that makes `Manta.asset` parse again (E-251530c87b; the same two
+commit message. Also carries the quoted Yawstery text that makes `Manta.asset` parse again (E-251530c87b; the same two
 lines as `claude/fix-manta-ability-map-yaml`, plus the generator that kept writing the broken form).
 
 1. **Run `MantaFuseChargeTests`** (EditMode): 8 tests, all green.
@@ -22794,3 +23024,32 @@ Branch `cece/cool-dijkstra-4puf92`. Design record: `SCARAB.md`, the RECUT note's
    the next one uses the new one.
 4. **Shove a rival at Charge 10 and at Charge 0**: the same petals (about 1.2 per element) come loose either way.
 5. **Undertow**: plays as before, with more plates per minute from a charged Scarab.
+
+## 🔴 Pilot avatars are the close-ups of the pilots' scenes at 256 px (2026-11-12, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/signature-pilot-busts` (PR #1894); `Docs/Pilots/PORTRAITS.md` sections 7 and 8. No C# changed, so no
+reference compile: the 50 `Assets/_Graphics/Profile/Pilots/Avatar_<WORD>.png` were re-cut at 256 px (they were 128 px,
+cut from the full-body portraits), first from the signature busts and then, by Garrett's decision of 2026-11-11, from
+the close-up of each pilot's realistic scene (`Docs/Pilots/art/scenes/`). Every id, guid and `.meta` and
+`SO_DefaultProfileIcons.asset` are unchanged; `author_pilot_avatar_assets.py --check` passes. Affects Shombith's profile
+window and avatar picker.
+
+1. **Profile > Change avatar.** All 50 avatars show, each a photograph-like close-up of a pilot in their own place (no
+   navy plate, no white or missing sprite), and each reads at the picker's tile size.
+2. **A saved profile keeps its avatar**: the same id shows the same pilot, now as their scene's close-up.
+3. **The small sizes**: the friends drawer, a party seat, the scoreboard and the HUD's AI seats. Look for a hard edge
+   or a soft, blurry picture where the 256 px sprite is scaled down, and note the screen.
+
+## 🔴 A pilot's page shows the painted pilot's own name, animals and story (2026-11-12, Garrett, NOT OPENED IN EDITOR)
+
+Branch `claude/pilot-page-story-matches-art`; `Docs/Pilots/PORTRAITS.md` section 8. The starter crew are now the
+painted pilots (`PaintedCrewSO`, `Resources/Pilots/PaintedCrew`, written by `author_pilot_scene_assets.py` from
+`Docs/Pilots/art/scenes/people.json`); `AccountInventoryStore` repaints every starter record on each read. Compiled
+against Unity reference assemblies (`unity_refcompile`), not opened in the editor; `PaintedCrewTests` not run.
+
+1. **Run the EditMode tests** `PaintedCrewTests` and `AccountInventoryTests`.
+2. **An existing save.** With a crew granted before this change, open Ark > PILOTS and a pilot's page: the name, the
+   animals, the faction, the home and the story are the pictured pilot's (VOLT is Karenth Amberweaver, Axolotl and
+   Koi, Brass Lantern Company), and no "Pictured:" line shows. The crew list and a squad that seated them still work.
+3. **The story** reads as three short paragraphs with a blank line between, inside the panel, on every pilot.
+4. **A voyage's jobs** for a starter come from the painted faction (VOLT: a Merchant's courier and convoy work).

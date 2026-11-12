@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
         [FormerlySerializedAs("massUpgradeShieldsTrail")]
         [SerializeField] bool driftShieldsTrail = false;
 
-        [Tooltip("MASS level-5 'Shielded Turn Trails' (the Manta's Yastri): prisms laid while " +
+        [Tooltip("MASS level-5 'Shielded Turn Trails' (the Manta's Yawstery): prisms laid while " +
                  "a hard TURN is held arrive shielded once the Mass upgrade is live (regular " +
                  "shield, never SuperShield). The turn window is whatever drives SetTurnTrail " +
                  "above half intensity. Off on every vessel whose Mass 5 means something else.")]
@@ -306,7 +306,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Turn-trail state (the Manta's Yastri): while a hard turn is held, the OUTER lane's
+        /// Turn-trail state (the Manta's Yawstery): while a hard turn is held, the OUTER lane's
         /// prisms flare fatter with turn intensity — the bank is legible from across the cell
         /// — and, on a vessel that authors <see cref="turnUpgradeShieldsTrail"/>, prisms laid
         /// during the turn arrive SHIELDED once the Mass level-5 upgrade is live (regular
@@ -565,7 +565,7 @@ namespace CosmicShore.Gameplay
             bool widened = WidthMultiplier > 1.0001f || thickened || shaped;
             if (WidthMultiplier > 1.0001f) scale.x *= WidthMultiplier;
 
-            // Yastri flare: the OUTER lane fattens with turn intensity, so a hard bank throws
+            // Yawstery flare: the OUTER lane fattens with turn intensity, so a hard bank throws
             // visibly flared prisms off the outer wing. Applied BEFORE xShift is derived so
             // the flared rail still nests against the gap edge rather than drifting outboard.
             if (_turnFlare01 > 0.01f && halfGap != 0f
@@ -665,7 +665,7 @@ namespace CosmicShore.Gameplay
             // trail stays unshielded - the armor is the drift line's reward, and it is the reward
             // for drifting rather than for levelling, which is why the Mass-5 gate came off.
             // 'Shielded Turn Trails' is the same rule with the drift swapped for a held hard
-            // TURN (the Manta's Yastri, above half intensity) and KEEPS its Mass-5 gate - that
+            // TURN (the Manta's Yawstery, above half intensity) and KEEPS its Mass-5 gate - that
             // is the Manta's shipped level-5, and nothing about this hull's re-cut touches it.
             // ForceShielded is the base branch's unconditional override and composes with both.
             if (shielded || ForceShielded || (driftShieldsTrail
