@@ -7307,7 +7307,7 @@ rows become chips; the title, line and numbers leave the right panel; the seat e
 - Not seen in Unity. A cloud session cannot run the editor.
 
 
-## 171. Rev 90 mockups: Saga, Quests and Episodes as the Sea table (2026-11-12, awaiting board approval)
+## 171. Rev 90 mockups: Saga, Quests and Episodes as the Sea table (2026-11-12; Shombith: "Now build all of this in Unity", built in section 172)
 
 **Asked (Shombith, 2026-11-12, on Rev 89):** "Go with A, redo saga quests and episodes to match".
 
@@ -7343,3 +7343,63 @@ to R90Saga, R90Quests, R90Episodes). Only the link targets changed; the drawing 
 each becomes the slab. The front faces are new parts: a forms line (the forms are `SagaView`'s authored lines) and a
 quest track (states from `GameModeProgressionService`). The table tops are a still picture (the part's card art, the
 galaxy from `VoyagePlaceArt.Galaxy()`); only the Voyages table is the live map. Not seen in Unity.
+
+
+## 172. Built: the Voyage window as the Sea table - Rev 89 A and Rev 90 (2026-11-12, not seen in Unity)
+
+**Asked (Shombith, 2026-11-12, on Rev 89 A and Rev 90):** "Now build all of this in Unity".
+Affects: Garrett's Voyage window and galaxy map (`VoyageJobsView`, `VoyageMapGraphic`; his voyage data, launch and Ark
+escort are kept), and the quest track (`QuestTrackView`: two accessors added, its rules untouched).
+
+**No Unity editor ran, and no computer was connected to the session.** This is the fourth Voyage build made without
+seeing it (section 165's three passes each drifted). It compiles and its arithmetic is tested; whether it LOOKS like the
+boards is unknown until a screenshot is set beside R89A, R90Saga, R90Quests and R90Episodes.
+
+**What was built:**
+- **The tilt** (`VoyageSlab`). The menu's canvas is an overlay with no perspective camera, so a rotated rect would only
+  be squashed. The tilt is a projection of the picture's own mesh: every vertex is moved to where it is seen (56 degrees
+  about the near edge, the eye 0.584 widths up and 1.47 widths away: the board's CSS, as shares of the width), and
+  faded from 52% to 96% of the way back. A projection keeps lines straight; a textured quad is drawn as a 24 x 16 grid
+  so its texture is not sheared.
+- **The Voyages table.** `VoyageMapGraphic.Tilt` lays the live map back: the water as a grid, then every vertex
+  projected; the place names stand where their places are seen and shrink with them; no corner galaxy, no caption, no
+  pointer. `VoyageBoard.FitSlab` stands the edge view under the map's near edge at the same width (5.014 : 1) and the
+  map over it (1.617 : 1).
+- **`VoyageBoard`, rewritten** for Rev 89 A: voyage chips (a soft-masked sliver of the course on each), the open
+  voyage's name over the table (kicker, place at 48, title, the three numbers on one line, the escort's two buttons),
+  and the squad on the right.
+- **`VoyageSquadColumn`.** The squads as words, three seat cards, and the seat's four steppers under an open seat. It
+  replaces the S2 seat editor. Same Ark rules as before (`CanEdit`, `KeepCardsOwn`, `FillPilots`), now in one place
+  for the Voyages and Saga tabs. A step goes round the ends and saves at once. The player's own seat opens first.
+- **`VoyageSlabPage`** and its three pages, stood over the Saga, Quests and Episodes pages the first time the board
+  draws. What a page drew before is hidden and kept: its components are the data.
+  - **Saga:** the page's two `VoyageView` cards are the parts; each card's `Form1..N/Name` texts are its forms; Set
+    sail calls the card's own `SetSail`.
+  - **Quests:** the quest list and states are `QuestTrackView`'s and `QuestFrontier`'s; Claim calls
+    `ClaimQuestAndUnlockNext`; Play quest opens the Arcade as the track did.
+  - **Episodes:** the next episode's lines, and a button back to the Voyages tab.
+  - The galaxy on the Quests and Episodes tables is painted once from `HyperSea.Density` (160 x 100).
+- **The tabs** are 15 with 34 between them (Rev 88).
+- **Words:** 26 new `VoyageLines` (5 `Board*`, 21 `Slab*`) in `Docs/Voyages/voyage_slice.json`.
+- **Look:** `VoyageBoardStyleSO` now holds only what the table draws with; the B5 fields went (the 14 sliver sprites,
+  the fade and pool, Plate, CardFoot, the editor's sizes). Columns: 0-0.1685, 0.1848-0.7391, 0.7554-1.
+
+**Differs from the boards, knowingly:**
+- **The Severing is not locked.** Rev 90 drew it locked "after Tandava"; the game has no such rule and both parts
+  launch today, so none was invented. Say if it should be gated.
+- **The window's title and the hub row keep their sizes.** They are the hub's, shared by the Toy Box, Arcade and Arena
+  windows; only the tabs were stepped down.
+- **Quest pictures are the quests' icons** (`SO_UnlockData.Icon`), not the games' card art; the Saga and quest chips
+  show the whole picture, not a crop.
+- **The step marks are "<" and ">"** (`BoardStepBack`, `BoardStepOn`), not drawn chevrons.
+- **The front faces are flat `#00010A`**; the hulls are the classes' own renders, cropped, as in section 165.
+- **Hidden, not retired:** `VoyageOpenCard`, the job-card grid, the Saga cards and the quest track are unreachable
+  while `VoyageJobsView.board` is on. Retire them once the table is accepted in Unity.
+
+**Verified:**
+- `unity_refcompile`, player and editor: 0 errors in project code (the editor run compiles `VoyageBoardTests`).
+- `bash .claude/skills/ship/gates.sh`: all OK. `author_voyage_assets.py --check`, `author_voyage_board.py --check` and
+  `--self-test`, `colour_trace.py --check`, `author_colour_set_assets.py --check`, `colour_grade.py --check`: clean.
+- `VoyageBoardTests` (9 tests: the tilt's arithmetic, the fade, the grid, the picture crop, the stepper, the board
+  building and shaping its table): written and compiled, **not run**.
+- The hand test is "The Voyage window as the Sea table" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

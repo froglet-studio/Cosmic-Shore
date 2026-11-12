@@ -49,6 +49,12 @@ namespace CosmicShore.UI
         /// <summary>The tab on show.</summary>
         public int Shown => _shown;
 
+        /// <summary>How many tabs the window has.</summary>
+        public int Count => tabs.Length;
+
+        /// <summary>What tab <paramref name="index"/> shows (its page), or null.</summary>
+        public GameObject PageOf(int index) => index >= 0 && index < tabs.Length ? tabs[index].page : null;
+
         void Awake()
         {
             for (int i = 0; i < tabs.Length; i++)

@@ -22595,7 +22595,53 @@ Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generato
 3. **Codex > Ecology (Field Guide):** scroll the bottom strip left; tiles stop 16 px short of the "Friends" text, never over it.
 4. **Hangar > Upgrades, any hull:** "CHARGE CRYSTALS 0 HELD - 0 SPENT" is on its own row under the step line; nothing overlaps.
 
-## 🔴 The Voyages tab as the board: Rev 81 B5 with the Rev 83 S2 seat editor (2026-11-09, Shombith, NOT RUN IN EDITOR)
+## 🔴 The Voyage window as the Sea table: Rev 89 A and Rev 90 (2026-11-12, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/sweet-mccarthy-ow25e2`, `Docs/MENU_REDESIGN_B.md` section 172. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code); the ship gates pass. **No Unity editor ran and nobody has seen it.** It replaces the
+entry below (Rev 81 B5 and the Rev 83 S2 seat editor). Set a screenshot of each tab beside its Frogma board (Voyages tab:
+R89A, R90Saga, R90Quests, R90Episodes) and report what differs.
+
+1. **Open the Voyage window.** The Voyages tab shows:
+   - small chips on the left, one per voyage plus the Ark escort, each "01  <place>" over its numbers, with a faded
+     sliver of its course on the right; the open one has a cyan bar;
+   - in the middle the galaxy map LYING BACK in perspective: wide at the near (bottom) edge, narrower and fading out at
+     the far edge, the course in lime across it. Straight lines stay straight and the water is not sheared along a
+     diagonal. Directly under its near edge, at the same width, the edge-on view stands as the front face;
+   - over the table's far edge, centred: "VOYAGE 02 OF 04 - BROUGHT BY ..." small, the place large, the voyage's title,
+     then "580 ly   -   29 min   -   Intensity 2";
+   - on the right: SQUAD and the squad names (the active one over a cyan line), three seat cards (pilot, vessel name,
+     who - pilot, element - artifact, hull) and a full-width Lime Set sail at the foot.
+   - The tabs are small plain capitals (Voyages, Saga, Quests, Episodes).
+2. **Your own seat is open:** its edge is Jade and under it stand four steppers, two to a row: VESSEL, PILOT, ELEMENT,
+   ARTIFACT, each `<  value  >`.
+3. **Step each one.** The seat card changes at once. A step on Pilot onto someone who flies another seat swaps the two.
+   Steps go round the ends. Close and reopen the window: the changes are still there.
+4. **Press another seat you may change.** Its steppers open and the first seat's close. Press it again: they close.
+   In a squad you joined, only your seat opens; the others are dimmed and say whose they are.
+5. **Press another chip.** The table shows that course and the name changes. The Ark escort shows its title and line
+   and two small buttons (easier, harder) under them; they change its difficulty.
+6. **Set sail** launches the open voyage, as before.
+7. **The lying map takes no pointer.** Dragging or scrolling over it does nothing; place names on it are only the
+   course's two ends, smaller the farther they are.
+8. **Saga tab.** The same layout: two chips (the two parts) with their card art; the picked part's art lying back as
+   the table; on the front face its forms in order as small diamonds on a line ("FORM 1 ... Great Serpent"); the part's
+   name and line over the table; the squad and Set sail on the right. Set sail opens that part's launch window. Both
+   parts launch (the board drew the second one locked; the game has no such rule, so none was invented).
+9. **Quests tab.** Five chips with their state; the galaxy lying back as the table; "EPISODE 1 / The Hypersea / n of 5
+   claimed" over it; on the front face the five quests as diamonds on a line (claimed filled, the one to claim ringed
+   cyan, locked dim, the picked one underlined); on the right the picked quest's picture, name, goal and state, and at
+   the foot Claim, or Play quest, or the state in an outline. Claim claims it and moves to the next quest. Play quest
+   opens the Arcade. The first time this tab or Episodes opens there may be a short hitch (the galaxy is painted once).
+10. **Episodes tab.** The galaxy lying back, dimmed; "EPISODES / Episode 2 / Voyages and the Saga are open now. / Coming
+    soon" over it; "New episodes arrive here" on the front face; a quiet "LB  BACK TO VOYAGES" button at the bottom
+    right that goes to the Voyages tab.
+11. **Every tab's table stands in the same place** when stepping through the tabs with LB / RB.
+12. **Sizes:** check 16:9 and a narrower window. The name over the table must not sit on the bright part of the map.
+13. **Not done, known:** the window's own title ("Voyage") and the hub row keep their old sizes; a colour set worn while
+    the window is open repaints the text only on the next open; B on a pad does not close an open seat.
+
+## 🔴 The Voyages tab as the board: Rev 81 B5 with the Rev 83 S2 seat editor (2026-11-09, Shombith, NOT RUN IN EDITOR; REPLACED 2026-11-12 by the Sea table above)
 
 Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 165. Compiled with `unity_refcompile` (player and
 editor: 0 errors in project code). No Unity editor ran. Compare against Frogma's Voyages tab, boards R81B5 and R83S2.
