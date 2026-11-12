@@ -1,0 +1,22 @@
+{
+  "music": "Assets/_Audio/Music/Full Quality MP3/SKY FIRE.mp3",
+  "audio_fade_in": 1.2,
+  "audio_fade_out": 2.4,
+  "loudness": {"I": -14, "TP": -1, "LRA": 11},
+  "end": 65.76,
+  "segments": [
+    {"t0": 26.88, "shot": "V2A1", "src_in": 0.2, "fade_in": 1.6},
+    {"t0": 32.64, "shot": "V2A2", "src_in": 0.2},
+    {"t0": 38.40, "shot": "V2B1", "src_in": 0.3},
+    {"t0": 42.24, "shot": "V2B2", "src_in": 0.5},
+    {"t0": 46.08, "shot": "V2C1", "src_in": 0.0},
+    {"t0": 50.40, "shot": "V2C2", "src_in": 0.0},
+    {"t0": 53.76, "shot": "V2C3", "src_in": 0.2},
+    {"t0": 58.08, "shot": "V2D1c", "src_in": 0.4},
+    {"t0": 61.92, "shot": "V2D2", "src_in": 0.0}
+  ],
+  "texts": [
+    {"t0": 44.30, "t1": 46.02, "lines": ["FLY IT TOGETHER"], "sizes": [72], "cy": 0.82}
+  ],
+  "endcard": {"dur": 6.12, "tagline": "THE PARTY GAME FOR PILOTS", "platforms": "COMING SOON  ·  iOS  ·  ANDROID  ·  STEAM"}
+}
