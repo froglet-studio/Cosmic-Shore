@@ -15,27 +15,27 @@ MonoBehaviour:
   vesselClass: 3
   entries:
   - Element: 1
-    AbilityLabel: 'Carry'
-    AbilityDescription: 'A thrown prism flies on past where the furrow lands it to strike the next one in its line, and a thrown prism that strikes another destroys both (prism motion). Charge sets how far it still reaches: 0 at rest (it strikes only what is in its way), 40 u at level 10, floored at 0, read at the replicated level so every peer strikes alike (RhinoPloughPrismEffect.carryDistance). A prism that strikes nothing still lands where the furrow puts it.'
+    AbilityLabel: 'Gore'
+    AbilityDescription: 'Ram a rival vessel and its petals come loose: a gore is a scored Strike (8 points, Swordfish sword price) decided on the Rhino''s owner, landed only while the Rhino is moving faster than its victim, once per 1.4 s per victim (VesselCombatHitByGore). Charge lowers the least ram speed a gore needs, like the Squirrel joust: 150 u/s at rest (three times the 50 u/s cruise, a short ramp wind-up) down to 50 u/s at level 10 (a cruising Rhino gores), read at the replicated level (RhinoGoreSpeed); a slower contact is neither scored nor robbed. Charge also carries a thrown prism on to strike the next one in its line: 0 u at rest, 40 u at level 10 (RhinoPloughPrismEffect.carryDistance); a thrown prism that strikes another destroys both.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 'Avalanche'
-    UpgradeDescription: 'A strike carries on: the next prism down the line within the carry is thrown on too, and its own strike can throw the next, up to 3 more (RhinoPloughPrismEffectSO.avalancheUpgradeElement, gated on IsUpgradeActive(Charge); Garrett, 2026-11-07).'
+    UpgradeLabel: 'Gore Steal'
+    UpgradeDescription: 'The petals a gore knocks loose land on the Rhino instead of floating free as crystals (RhinoGoreBySkimmerEffectSO.stealUpgradeElement, gated on IsUpgradeActive(Charge); 2026-11-12, replacing Avalanche).'
   - Element: 2
-    AbilityLabel: 'Blade'
-    AbilityDescription: 'A plough blade across the nose: one hull collider whose width follows Mass - 14 u at rest (a little wider than the hull), 40 u at level 10, floored at 10, read at the replicated level (RhinoPloughBlade.width). A wider blade catches more mass, and the plough throws what it catches clear of the whole blade.'
-    Input: 0
+    AbilityLabel: 'Heft'
+    AbilityDescription: 'A heavier plough throws further: Mass adds 0 u at rest to 60 u at level 10 to every throw, at any speed, on top of the speed-driven throw (speed x 0.12 s, at most 90 u) (RhinoPloughPrismEffect.furrowDistance, replicated level). Pull a trigger for a shove that way; HOLD it and everything the hull ploughs is thrown to that side, across the centreline (RhinoPloughSteerAction: LT left, RT right, the last one pulled wins). Let go and each prism goes to the side it already sat on.'
+    Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: 'Berm'
     UpgradeDescription: 'A ploughed prism LANDS SHIELDED, so the furrow banks into walls of armour; a prism that strikes another still breaks (RhinoPloughPrismEffectSO.bermUpgradeElement, gated on IsUpgradeActive(Mass); Garrett, 2026-11-07).'
   - Element: 3
-    AbilityLabel: 'Furrow'
-    AbilityDescription: 'How far aside the plough throws what the hull hits: Space adds 0 u at rest to 60 u at level 10 to every throw, at any speed, on top of the speed-driven throw (speed x 0.12 s, at most 90 u) (RhinoPloughPrismEffect.furrowDistance, replicated level). Pull a trigger for a little shove that way; HOLD it and everything the hull ploughs is thrown to that side, across the centreline (RhinoPloughSteerAction: LT left, RT right, the last one pulled wins). Let go and each prism goes to the side it already sat on.'
-    Input: 1
+    AbilityLabel: 'Blade'
+    AbilityDescription: 'A plough blade across the nose: one hull collider whose width follows Space - 14 u at rest (a little wider than the hull), 40 u at level 10, floored at 10, read at the replicated level (RhinoPloughBlade.width). A wider blade reaches more mass, and the plough throws what it catches clear of the whole blade.'
+    Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -50,4 +50,4 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: 'Momentum'
     UpgradeDescription: 'Above 70% of top speed (588 u/s) danger prisms cannot drain the Rhino''s elements - the elemental-debuff ward scoped to DangerPrism alone, so an opposing pilot''s blast still lands (VesselElementalImmunity on the root, condition WhileAboveTopSpeedFraction, upgradeGate Time). The Time card lights while the ward is holding.'
-  omniAbilityLabel: 
+  omniAbilityLabel: Stampede
