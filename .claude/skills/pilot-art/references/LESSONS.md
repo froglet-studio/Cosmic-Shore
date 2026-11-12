@@ -431,3 +431,41 @@ for windows"). Four repaints: Longshift, Flux (five paintings), Trace (four) and
     an ear tip on the top edge, the share of vivid pixels (1.5 percent in Flux's sky against about 42 in the
     sheet of game frames). Brief a critic with the notes on THAT picture, the standing rules under their own
     heading, and ask for measurements first.
+
+## 2026-11-12 - the game's frames: a painter that takes pictures, and the wall of its plan
+
+Garrett approved, on a card, up to six runs of the painter that takes pictures (GPT Image 2.6 through Weave, 11
+credits a run, each quoted first). Two ran: Jugger's windows and display, and Scales's display. The third was
+quoted, and refused by the plan.
+
+83. **A painter shown the game paints the game, and repaints the room while it does.** Given the scene, four real
+    frames and "Edit this photograph, picture 1. Change only ...", it gave Jugger's windows and dome and Scales's
+    dome the game's own look on the first run each: bricks with bright edges and red rims, needle sprays, the
+    six-sided net, twelve-sided crystals, shard swarms, brick trails, and the ship itself from its four views.
+    Six nouns of words (76) had not done that in twelve paintings. It takes no mask, and its answer is a new
+    picture of the whole room: Scales's moved 6.09 of 255 outside the region and Jugger's 14.36 (the figure 40 px
+    to the right, the windows taller). So `refs.py apply` takes only the record's region (edit less keep,
+    feathered 2 px inward) and the pilot stays the pilot of the first painting. Both seams were clean, because
+    each region ends on something drawn: a window frame, a sill, a brass rail. Draw a region to such edges. The
+    ask with one part moved the room less than the ask with two.
+84. **A reflection is a second figure.** Jugger's ask said the glass "carries faint reflections of the bridge".
+    The answer hung a second orca head in a window. It lay above the old frames, outside the region, and was
+    dropped with the rest of the answer; the sentence is gone from the record. In an edit as in a brief (78),
+    what is named is painted: leave reflections, the shadows of people and glimpses out of an ask.
+85. **A free plan has walls its price list does not show.** Every run was quoted at 11 credits and the workspace
+    held 150. The third run was quoted, was inside what the card had approved, and came back "You've used your 2
+    free Weave model runs. Upgrade to a paid Weave plan": two model runs for an agent on the Free plan, whatever
+    credits remain. Neither the quote nor the pricing page says so, so the card that asked for six runs asked
+    for four that could not be had. A sign had been there: the same plan had refused another model outright
+    ("not available on the Free plan"). On a free plan, say on the card that its limits are not known until
+    met, and order the runs so that the first ones are worth having alone. They were: the two scenes that
+    needed only a region went first. Nothing was spent on the refused run. The wall is the plan's and is the
+    person's to move (PAINTERS.md section 2).
+86. **Look through the rolls before paying for an edit, and pick a roll by what the note is about.** Trace's kept
+    roll had the free-hanging display and wore the jelly as a hood with a rim (79), and a run was planned to edit
+    the hood away. Roll A, set aside for its glass cylinder, already had the head: the feathers thin into the
+    bell with no edge and the bell is the back of the skull. The pick had been made on the display, and his note
+    is about the creature ("a bad and lazy photoshop with a bird head some hair and jellyfish stuff"). A place
+    can be patched from frames (83); a head cannot be patched without the painter redrawing the pilot. So the
+    scene is roll A, with the cylinder and the port prepared as a patch. It also corrects 79: the brief without
+    "smooth" and "slim" painted both the best head and the wig, so those two words did not make the join.

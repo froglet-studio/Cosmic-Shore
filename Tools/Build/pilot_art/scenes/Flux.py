@@ -7,7 +7,12 @@ display shows small (his standard for a window: "the dual perspectives of jugger
 cut the horn tips with the top of the frame whatever the shot said about them ("both horns are whole", a height in
 fractions, the eyes at mid-height, a seat laid back). The fifth names the whole ARCH OF THE CANOPY as what is in the
 picture, rim to rim, and the figure "from the tips of the horns down to the gloved hands": the horns came whole, with
-glass above them (LESSONS 77)."""
+glass above them (LESSONS 77).
+
+What the fifth still owes is the orca: a blind reader took the matte crest for a mane (LESSONS 80). The patch below
+asks a painter that takes pictures for the fin of Flux's own likeness, an orca's skin and eye patch behind the face,
+a display with depth, and the course outside from real frames of the game. Its region is the whole frame, because the
+head itself changes. It was quoted at 11 credits and refused by the painter's plan: prepared, not run (LESSONS 85)."""
 SCENE = dict(
     treatment="Onboard camera under a shut canopy, the course streaming behind",
     shot=("An onboard photograph from a small camera fixed at the nose end of the long cockpit, looking back down "
@@ -47,4 +52,49 @@ SCENE = dict(
           "scratched and carries one long smear."),
     close=(460, 8, 920, 468),
     refs=("sea_flora_approach", "sea_flora_through", "sea_flora_crystal"),
+    patch=dict(
+        what=("the fin at the crown of the head and the skin behind the face, the small display over the panel, and "
+              "what is seen outside the glass"),
+        likeness="the fin at the crown: its shape, its height against the horns and its wet black gloss",
+        ask=("THE FIN. Where the dark crest stands now, between the two horns at the crown of the head, stands an "
+             "orca's dorsal fin: the fin {name} has in picture 2. It is one tall, smooth blade of wet black skin "
+             "with no hair on it, broad where it grows from the crown, narrowing as it rises and hooked a little "
+             "back at its tip, half as high as the horns, with one hard line of light down its leading edge. Both "
+             "horns stay exactly as they are, whole from base to tip, with the clear glass above their tips and the "
+             "canopy's dark frame above that."
+             "\n\n"
+             "THE SKIN BEHIND THE FACE. Behind the face {name} is an orca. From the temples back the fur ends and "
+             "the head is smooth, wet, hairless black skin, as glossy as the fin, with long soft highlights from "
+             "the glass: the temples, the back of the head, the nape and the sides of the neck down into the "
+             "collar. On that black skin, just behind and above each eye, lies one crisp white oval patch with a "
+             "clean edge, an orca's own eye patch, twice as long as the eye and swept back toward the ear. The face "
+             "in front of it, the ear and the white throat stay as they are."
+             "\n\n"
+             "OUTSIDE THE GLASS. Outside the glass is the racing course at its true size, and it has exactly the "
+             "look of the reference pictures, as bright and as deep in colour as they are: black space sown with "
+             "fine white dust, and far off the wall of a vast hollow sphere, a net of thin dim blue lines in "
+             "six-sided panes. The craft's own trail streams back from its tail: a curving ribbon of amber gold "
+             "bricks of light, flat-sided rectangular blocks with deep clear faces and thin bright edges, each as "
+             "big as a door, set end to end with a gap between each and the next. Two thick glowing rings, pale "
+             "blue-white, stand in the dark behind, already passed, and far back a jade teal ribbon and a ruby "
+             "magenta ribbon of such bricks curve toward them, each led by a small bright craft. Beside the course "
+             "drifts a coral of indigo and violet bricks set edge to edge in rings round open holes, with a spray "
+             "of white needles in every hole, and a few pale lilac crystals shaped like twelve-sided dice hang in "
+             "the dark. The canopy, its dark frame, and the scratches and the long smear on its glass stay as they "
+             "are."
+             "\n\n"
+             "THE DISPLAY. The old display is gone: the tilted sheet and everything on it. In its place, over the "
+             "panel and straight ahead of the seat, floats one small ball of light no bigger than a melon, like a "
+             "model inside a glass ball: a hologram with real depth, a small solid-looking scene with a near side "
+             "and a far side. All of it is inside the ball, and the ball touches nothing. It shows that same "
+             "course, whole and small: a line of the pale rings set one beyond another like hoops, three tiny "
+             "bright craft threading them, and behind each craft its long curving ribbon of tiny bricks, one amber "
+             "gold, one jade teal, one ruby magenta, with the coral beside the course, the crystals along the "
+             "racing line and the net of six-sided panes curving behind it all. Each ribbon ends at the craft that "
+             "lays it, a tiny dart of bright plates like the craft in the reference pictures."),
+        edit=(   # the whole frame: the head itself changes, so the figure is the painter's (refs.WHOLE)
+            ((0, 0), (1536, 0), (1536, 864), (0, 864)),
+        ),
+        refs=("sea_flight_trail", "sea_flora_approach", "sea_flora_crystal"),
+    ),
 )

@@ -668,16 +668,16 @@
    "name": "Trace",
    "file": "Docs/Pilots/art/scenes/Trace.jpg",
    "size": [1536, 864],
-   "close": [360, 34, 912, 586],
+   "close": [256, 20, 716, 480],
    "side": "left",
    "treatment": "Working photograph in a survey vessel's cabin: a sprig, the survey, and the growth itself in the port",
    "source": "profession: a researcher matches a sprig taken that day against the survey of the whole growth",
    "crops": {
     "16:9": [0, 0, 1536, 864],
-    "4:3": [60, 0, 1212, 864],
-    "1:1": [204, 0, 1068, 864],
-    "4:5": [290, 0, 981, 864],
-    "9:16": [393, 0, 879, 864]
+    "4:3": [0, 0, 1152, 864],
+    "1:1": [54, 0, 918, 864],
+    "4:5": [140, 0, 831, 864],
+    "9:16": [243, 0, 729, 864]
    },
    "chart": "volume of the garden"
   },

@@ -18,12 +18,23 @@ the avatar blind, and the painter's habits). What they agreed, and what this rec
     person's habit done with her own anatomy.
   * No tissue makes its own light. The lamp and the port light both animals, and each answers as its material would.
   * His standard for a window ("the dual perspectives of jugger"): the port is full of the growth at its true size,
-    the display holds the survey of the whole of it, and the jar holds a sprig. One thing at three sizes."""
+    the display holds the survey of the whole of it, and the jar holds a sprig. One thing at three sizes.
+
+Painted four times, from two briefs. The first brief is this record's words and gave A and B. In A the feathers thin
+into the jelly with no edge between them and the bell is the back of the skull; its display stands in a glass
+cylinder. B wore the jelly as a wig. The second brief changed six phrases (the jelly "smooth", the frills "slim", no
+needles in the port, no grain, a shorter bill, and a display that "hangs in the open air with nothing round it") and
+gave C and D: both hung the display free, and both set the jelly over the feathers like a hood with a rim. C was kept
+first, for its display. That was the wrong trade: his note is about the creature, and a cylinder of light is at home
+on a bench of specimen jars. So the scene is A (2026-11-12) and the words are the ones that painted it (LESSONS 86).
+
+What a painter that takes pictures would still do is the patch below: fill the cylinder and the port from real frames
+of the game, and blank the small plate on the microscope's head. It is prepared and has not run (LESSONS 85)."""
 SCENE = dict(
     treatment="Working photograph in a survey vessel's cabin: a sprig, the survey, and the growth itself in the port",
     shot=("A working photograph in the cabin of a small survey vessel at night: a 35mm lens from the cabin "
-          "doorway, natural colour. The display is as sharp as the face. The figure is seen from the waist up, "
-          "standing at a bench."),
+          "doorway, natural colour, fine grain. The display is as sharp as the face. The figure is seen from the "
+          "waist up, standing at a bench."),
     frame=("The frame is wide, sixteen by nine, with {name} a third of the way in from the {side} edge. The head is "
            "sharp and lit, the place behind it soft."),
     side="left",
@@ -36,12 +47,12 @@ SCENE = dict(
            "into a long, pointed slate blue-grey bill, and a rounded back no wider or higher than a seabird's. From "
            "the bill to the eye the feathers are dry and matte, cinnamon brown flecked with white. Behind the eye "
            "they lie sleek, wet and darker, mixed with pale ones the colour of the jelly. The back two fifths of "
-           "the head is the jellyfish: thick, smooth, milky, pale lilac jelly in the shape the feathered head "
-           "would have, the white flecks carried on into it as pale dots and the last dark feathers lying inside "
-           "it. Its only edge is low at the nape, below the level of the eyes, soft and lobed, with shadow under "
-           "it, and from under it hang four slim ruffled frills of the same jelly, the longest just reaching the "
-           "collarbone. Chin, throat and neck are white booby feathers down into the collar."),
-    seen=("the bill is as long as the head",),
+           "the head is the jellyfish: thick, milky, pale lilac jelly in the shape the feathered head would have, "
+           "the white flecks carried on into it as pale dots and the last dark feathers lying inside it. Its only "
+           "edge is low at the nape, below the level of the eyes, soft and lobed, with shadow under it, and from "
+           "under it hang four thick ruffled frills of the same jelly, the longest just reaching the collarbone. "
+           "Chin, throat and neck are white booby feathers down into the collar."),
+    seen=("the bill is as long as the rest of the head",),
     lower="plain dark trousers",
     hands=("Both hands are Trace's own, a person's in shape, four fingers and a thumb, and the bright turquoise "
            "blue of a blue-footed booby's feet: pebbled scales to the fingertips, broader plates along the finger "
@@ -58,8 +69,8 @@ SCENE = dict(
            "end wall behind Trace is one round port an arm-span across, and the growth outside fills it, at its "
            "true size: black space sown with fine white dust, and close outside a wall of bricks of light, each "
            "as big as a door, set edge to edge in rings round open holes, jade teal deepening to indigo and "
-           "violet. Over the end of the bench floats {chart} The display hangs in the open air with nothing round "
-           "it, as wide as a hatbox, and shows that same growth whole and small. Under it lie tweezers and an open "
+           "violet, a spray of white needles in every hole. Over the end of the bench floats {chart} The display "
+           "is as wide as a hatbox and shows that same growth whole and small. Under it lie tweezers and an open "
            "blank notebook."),
     light=("A brass reading lamp clipped to the rack is the warm light: on the near side of the face, one bright "
            "point in the near eye, one hard highlight on the wet feathers, and through the lilac webs of both blue "
@@ -68,6 +79,38 @@ SCENE = dict(
            "display tints the white throat teal and violet."),
     wear=("The plum cardigan is chalky at the cuffs, darned at one elbow and damp where the frills lie on it; a "
           "pencil is pushed through a loop of the bandolier."),
-    close=(360, 34, 912, 586),
+    close=(256, 20, 716, 480),
     refs=("sea_flora_approach", "sea_flora_through", "sea_flora_crystal"),
+    patch=dict(
+        what=("what the glass cylinder on the bench holds, what is seen through the round port, and the small plate "
+              "on the microscope"),
+        ask=("THE CYLINDER. The glass cylinder and its round stand stay exactly where they are. All that the "
+             "cylinder held is gone, and every ring and mote of light that hung round it, and the glass is filled "
+             "again from nothing with what the reference pictures show: a hologram with real depth, a small "
+             "solid-looking scene with a near side and a far side, all of it inside the glass. Inside it is {view}."
+             "\n\n"
+             "THE PORT. Through the round port is that same growth at its true size, with exactly the look of the "
+             "reference pictures: black space sown with fine white dust, and close outside a wall of bricks of "
+             "light, flat-sided rectangular blocks with deep clear faces and thin bright edges, each as big as a "
+             "door, set edge to edge in rings round open holes, jade teal deepening to indigo and violet, with a "
+             "spray of white needles in every hole. The port's riveted frame, the jar, the hand that holds it and "
+             "the bill stay where they are."
+             "\n\n"
+             "THE MICROSCOPE. The small plate on the microscope's head is plain white enamel like the rest of it, "
+             "and blank."),
+        edit=(   # the port's glass; the cylinder with the rings that pass through its glass; the microscope's plate
+            ((1060, 170), (1057, 205), (1048, 238), (1033, 270), (1013, 299), (989, 323), (960, 343), (928, 358),
+             (895, 367), (860, 370), (825, 367), (792, 358), (760, 343), (731, 323), (707, 299), (687, 270),
+             (672, 238), (663, 205), (660, 170), (663, 135), (672, 102), (687, 70), (707, 41), (731, 17), (760, 0),
+             (960, 0), (989, 17), (1013, 41), (1033, 70), (1048, 102), (1057, 135)),
+            ((896, 418), (972, 418), (976, 368), (1200, 368), (1204, 418), (1284, 418), (1284, 600), (1204, 648),
+             (972, 648), (896, 640)),
+            ((1322, 418), (1342, 418), (1342, 446), (1322, 446)),
+        ),
+        keep=(   # in front of the port: the jar with the hand and wrist that hold it, and the tip of the bill
+            ((716, 118), (812, 118), (812, 180), (832, 184), (834, 300), (812, 330), (806, 372), (730, 372),
+             (736, 300), (708, 262), (706, 214), (716, 210)),
+            ((655, 150), (700, 196), (704, 212), (655, 214)),
+        ),
+    ),
 )

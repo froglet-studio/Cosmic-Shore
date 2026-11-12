@@ -23,8 +23,13 @@ successor, run through Weave, also takes pictures (PAINTER). So:
   * A PATCH: a record's patch=dict(what=, ask=, edit=, keep=, refs=). Part of a finished scene is painted again and
     the rest is kept. The painter gets the scene, the references and what to change, and `apply` takes from its
     answer only the pixels inside the record's region (edit, less keep), feathered inward. A painter asked to
-    change one thing still repaints the whole picture a little, faces included, so the pilot is never taken from
-    its answer. The region is also written as a mask (`mask`): a painter that takes one is given it.
+    change one thing still repaints the whole picture a little, faces included (Jugger's answer moved 14.36 of
+    255 outside its region, Scales's 6.09), so the pilot is never taken from its answer. The region is also
+    written as a mask (`mask`): a painter that takes one is given it.
+  * A PATCH OF THE PILOT. Where the head itself changes (a fin, a skin), no region can hold the change and keep
+    the face: the patch's edit is the whole frame (WHOLE) and the picture is the painter's answer, looked at whole
+    before it is taken. Its likeness= names the one thing taken from the pilot's likeness, which is then given as
+    picture 2 (PATCH_LIKENESS). Written for Flux's fin, quoted, and not yet run (LESSONS 85).
   * LINKS, NOT UPLOADS. The painter fetches each picture by its link. The repository is public, so a picture that is
     committed and pushed has one (raw_url), and `input` refuses a picture that is not pushed. A link names the
     repository, which the words never do: the game's own frames were asked for (above).
@@ -63,7 +68,8 @@ RAW = f"https://raw.githubusercontent.com/{REPO}"
 # but the studio's Weave plan does not include it (asked 2026-11-12: "This model is not available on the Free
 # plan"). Its successor is included, takes up to sixteen pictures and no mask, and is quoted at 11 credits a run at
 # this variant and quality, whatever the size (3 at quality medium). `size` is the key its contract gives the
-# picture's size; `mask` is the key of a painter that takes one, None for one that does not.
+# picture's size; `mask` is the key of a painter that takes one, None for one that does not. The Free plan runs a
+# model twice for an agent, whatever credits remain, and then asks for a paid plan (met 2026-11-12 on the third run).
 PAINTER = dict(name="GPT Image 2.6 (Sunburst), through Weave", id="96f53e1c-465d-44d6-90fd-38bcb9fada66", most=16,
                size="size", mask=None, params=dict(model="Sunburst", quality="high", output_format="png"))
 
@@ -82,12 +88,15 @@ LIKENESS_LINE = ("Picture {n} is {name}, photographed before: the same person. T
                  "person from it and nothing else: the place, the pose, the framing and the light are new, as "
                  "written above.")
 PATCH_HEAD = ("Edit this photograph, picture 1. Change only {what}. Everything else stays exactly as it is, in the "
-              "same place and at the same size: {name}, the face, the hands, the clothes, the room and every light "
+              "same place and at the same size: {name}, the face, the hands, the clothes, the place and every light "
               "that falls on them.")
 PATCH_FOOT = ("It stays one photograph taken with a real camera: the new parts have the grain, the focus and the "
               "exposure of the rest and meet it without a seam. Nothing in the picture carries writing, numbers or "
               "a symbol.")
-PATCH_KEYS = ("what", "ask", "edit", "keep", "refs")
+PATCH_LIKENESS = ("Picture {n} is {name}, photographed before in another place: the same person. Take from it only "
+                  "{take}. Everything else stays as picture 1 has it.")
+PATCH_KEYS = ("what", "ask", "edit", "keep", "refs", "likeness")
+WHOLE = ((0, 0), (scene.FRAME[0], 0), scene.FRAME, (0, scene.FRAME[1]))   # an edit polygon: the whole frame
 VIEW_TOKEN = "{view}"   # in a patch's ask: the words the record's own display shows (scene.CHART_SHOWS)
 GROW = 0.12             # a likeness is the avatar's square and a little more of the shoulders
 FEATHER = 2             # px: how softly a patch's edge meets the scene, all of it inside the mask
@@ -164,7 +173,8 @@ def likeness_log():
 def likeness_box(size, close, grow=GROW):
     """The avatar's square grown a little on every side, inside the picture."""
     pad = round((close[2] - close[0]) * grow)
-    return (max(0, close[0] - pad), max(0, close[1] - pad), min(size[0], close[2] + pad), min(size[1], close[3] + pad))
+    return (max(0, close[0] - pad), max(0, close[1] - pad),
+            min(size[0], close[2] + pad), min(size[1], close[3] + pad))
 
 
 def cut_likeness(word, box=None):
@@ -267,7 +277,9 @@ def blend(base, painted, patch, feather=FEATHER):
     if feather:   # drawn in by twice its own softness first, so it has faded to nothing where the region ends
         soft = reg.filter(ImageFilter.MinFilter(4 * feather + 1)).filter(ImageFilter.GaussianBlur(feather))
         soft = ImageChops.multiply(soft, reg)
-    drift = ImageStat.Stat(ImageChops.difference(painted, base).convert("L"), ImageChops.invert(reg)).mean[0]
+    outside = ImageChops.invert(reg)   # empty when the region is the whole frame: nothing is kept, nothing drifts
+    drift = (ImageStat.Stat(ImageChops.difference(painted, base).convert("L"), outside).mean[0]
+             if outside.getbbox() else 0.0)
     return Image.composite(painted, base, soft), drift
 
 
@@ -326,6 +338,12 @@ def record_errors(word, rec):
                 out.append(f"{word}: a patch {k} polygon has under three points or leaves the frame {scene.FRAME}")
     if patch.get("what", "").rstrip()[-1:] == "." or patch.get("what", "")[:1].isupper():
         out.append(f"{word}: the patch's `what` is a phrase that goes inside a sentence (no capital, no full stop)")
+    take = patch.get("likeness")
+    if take is not None:
+        if not take or take.rstrip()[-1:] == "." or take[:1].isupper():
+            out.append(f"{word}: the patch's `likeness` is a phrase that goes inside a sentence: what is taken")
+        if not os.path.exists(likeness_path(word)):
+            out.append(f"{word}: the patch takes from a likeness and {word} has none (refs.py likeness {word})")
     if VIEW_TOKEN in patch.get("ask", "") and not rec.get("chart"):
         out.append(f"{word}: the patch's ask says {VIEW_TOKEN} and the record has no chart to take the view from")
     if not out:
@@ -394,8 +412,10 @@ def prompt(word, patch=False):
                               .replace("{other}", other).replace("{third}", third))
         refs = patch_refs(w)
         parts = [PATCH_HEAD.replace("{what}", p["what"]), ask]
-        if refs:
-            parts.append(REF_HEAD + " " + " ".join(reference_lines(refs, name, 2)))
+        told = [PATCH_LIKENESS.replace("{n}", "2").replace("{take}", p["likeness"])] if p.get("likeness") else []
+        told += reference_lines(refs, name, 2 + len(told))
+        if told:
+            parts.append(REF_HEAD + " " + " ".join(told))
         parts.append(PATCH_FOOT)
         own_words = "\n\n".join(parts).replace("{name}", name)
         _gates(w, own_words)
@@ -439,6 +459,8 @@ def pictures(word, patch=False):
     rec = scene.record(w) or {}
     if patch:
         out = [("the scene", scene.scene_path(w))]
+        if (rec.get("patch") or {}).get("likeness"):
+            out.append(("the likeness", likeness_path(w)))
         names = patch_refs(w)
     else:
         out = [("the likeness", likeness_path(w))] if os.path.exists(likeness_path(w)) else []
@@ -520,6 +542,11 @@ def self_test():
         errors.append(f"blend's edge is not soft, inside the region and faded out where it ends: {edge}")
     if drift < 100:
         errors.append("blend does not measure how far a painter's answer moved outside the mask")
+    whole, drift0 = blend(base, new, dict(edit=[[(0, 0), (640, 0), (640, 480), (0, 480)]]))
+    if drift0 != 0.0 or {whole.getpixel(xy) for xy in ((0, 0), (639, 479), (320, 240))} != {(200, 150, 100)}:
+        errors.append("a region that is the whole frame does not take the whole answer, to its corners")
+    if _polygons(scene.FRAME, [WHOLE]).getextrema() != (255, 255):
+        errors.append("WHOLE is not the whole frame")
     try:
         blend(base, Image.new("RGB", (480, 480)), patch)
         errors.append("blend took an answer of another shape")
@@ -562,7 +589,7 @@ def self_test():
                 errors.append(f"{w}: the words speak of pictures {sorted(told)} and {count} are given")
             if "{" in text:
                 errors.append(f"{w}: a token is left in the reference words")
-    for line in list(ROLES.values()) + [REF_HEAD, LIKENESS_LINE, PATCH_HEAD, PATCH_FOOT]:
+    for line in list(ROLES.values()) + [REF_HEAD, LIKENESS_LINE, PATCH_LIKENESS, PATCH_HEAD, PATCH_FOOT]:
         for gate, what in ((bust.world_name_in, "names the world"), (bust.emblem_word, "invites an emblem")):
             if gate(line):
                 errors.append(f"a reference line {what} ({gate(line)!r}): {line[:60]}...")
