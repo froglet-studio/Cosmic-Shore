@@ -65,6 +65,39 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** a sixth settings tab, REGION (globe icon), drawn by `Tools/Build/author_menu_settings.py`
+(`RegionSettingsView` on the page). A party plays through its HOST's Relay allocation; on Auto, UGS picks the region
+closest to the host, so a US host put an India guest on a US relay (~1200 ms). The tab lists the Relay regions UGS
+returns (`RelayService.ListRegionsAsync`) with this player's ping to each (`QosService.GetSortedRelayQosResultsAsync`),
+best first, plus Auto. The choice (`RelayRegionPreference`, PlayerPrefs `CosmicShore.RelayRegion`) is passed to
+`WithRelayNetwork(region)` in `PartySessionService.CreateAsync` and the quick-match host in `MultiplayerSetup`; a region
+Relay refuses falls back to Auto once. A solo host in Menu_Main moves its session when Settings closes (the leave-lobby
+cold-boot sequence, `PartyInviteController.MoveSoloHostToChosenRegionAsync`); with guests aboard, in a match or in a
+friend's party it is saved for the next party this player hosts. Amoebius gets empty Relay/QoS shims
+(`Port/src/CosmicShore.Engine/Services/RelayQosSdk.cs`). Ran headless: `unity_refcompile` player / editor / webgl (with a
+planted-error negative control), `/ship` gates, the generator's `--check` and `--self-test`, Amoebius's live compile (no
+new errors; without the shims it fails on `RelayRegionProbe.cs`). No Unity editor ran; UGS was not called.
+
+**Verify in editor:**
+1. Run the edit-mode tests `RelayRegionTests` (18).
+2. Menu_Main, signed in: Settings shows six tabs; REGION shows "Measuring your ping to each region...", then a list with
+   ms beside each region, closest first, and Auto naming the closest. MEASURE PING measures again.
+3. Pick a region far away (e.g. Japan from the US), close Settings: the screen fades, the menu reloads, and the console
+   (Party channel) logs `Created party session ... region=asia-northeast1`. Reopen REGION: "Your party server is in Japan".
+4. Two machines (US + India, or MPPM with Network Simulator latency): the host picks Europe West, invites; the guest's
+   REGION reads "You are in a friend's party". In a match, F7 `net` RTT on the guest is far below the Auto value.
+5. Host with a guest aboard changes region: nothing reloads, the guest stays, the line reads "Saved. It applies to the
+   next party you host."
+6. Pause menu in a match: the tab works, the change is saved, nothing reloads.
+7. Pick a region, unplug the network, relaunch: the tab lists the authored regions without ping; the session falls back
+   to Auto if the region is refused (one warning naming the region).
+8. FrogletTools > Game Modes > Game Mode Prefab Kit > Validate on Menu_Main (the SettingsView prefab changed).
+
+**Open:** the tab was not drawn on Frogma first (Docs/MENU_REDESIGN_B.md); the region names in the generator's
+`REGION_NAMES` name UGS's ids, and an id UGS does not list is simply never offered online.
+
 ### 🔴 Glasshouse, the Angler's Mass game (GameModes 89) (`claude/peaceful-cerf-vpl3x8`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/GLASSHOUSE.md`. A timed garden: an omni crystal is a creature and a seed, letting go
