@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794502547-82a0` of **Frogma**: Rev 3 to Rev 87, 440 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794503122-dda8` of **Frogma**: Rev 3 to Rev 88, 446 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -33,8 +33,11 @@ Copied on 2026-11-12 from canvas version `1794502547-82a0` of **Frogma**: Rev 3 
 - [`SGButtons.dc.html`](SGButtons.dc.html) - Style Guide 5 - Buttons and their states
 - [`SGWindows.dc.html`](SGWindows.dc.html) - Style Guide 6 - Cards, windows and toasts
 - [`SGMotion.dc.html`](SGMotion.dc.html) - Style Guide 7 - Motion
-- [`SGDoDont.dc.html`](SGDoDont.dc.html) - Style Guide 8 - Do and don't, from our own screens
 - [`SGChecklist.dc.html`](SGChecklist.dc.html) - Style Guide 9 - The UI checklist and the five screens to fix
+
+#### Play / Ready built in Unity: KitButton Commit, Maelstrom READY + PLAY AGAIN - in PR #1919 (2026-11-12, /frogma-to-unity)
+
+- [`SGDoDont.dc.html`](SGDoDont.dc.html) - Style Guide 8 - Do and don't, from our own screens
 
 ### Tab: Menu Redesign  (`menu-redesign`)
 
@@ -694,6 +697,15 @@ Copied on 2026-11-12 from canvas version `1794502547-82a0` of **Frogma**: Rev 3 
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 88 - A taken forward: smaller top texts, every screen of the Voyage window
+
+- [`R88Voyages.dc.html`](R88Voyages.dc.html) - Rev 88 Voyages - A with smaller top texts: the voyages and the Ark escort as cards, the picked one open; the squad as rows - interactive
+- [`R88Escort.dc.html`](R88Escort.dc.html) - Rev 88 Escort - the Ark escort card open: its difficulty stepper where a voyage has its intensity - interactive
+- [`R88Saga.dc.html`](R88Saga.dc.html) - Rev 88 Saga - the two parts as cards, Tandava open with its forms, The Severing locked; the squad and Set sail - interactive
+- [`R88Quests.dc.html`](R88Quests.dc.html) - Rev 88 Quests - the five quests as cards with their state, the picked one open over its game's art; Claim or Play quest - interactive
+- [`R88Episodes.dc.html`](R88Episodes.dc.html) - Rev 88 Episodes - Episode 2, coming soon, over the galaxy; one way back
+- [`R88Notes.dc.html`](R88Notes.dc.html) - Rev 88 - notes: the top texts, the one order, each screen, what is not drawn
 
 #### Rev 87 - the Voyages tab, drawn new around the HyperSea map and the edge view
 

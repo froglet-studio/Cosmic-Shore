@@ -3620,6 +3620,58 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 87 - notes: what stays, what is new in all three, the three options, the recommendation"
+    },
+    "R88Voyages.dc.html": {
+      "x": 0,
+      "y": 3620,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 88 Voyages - A with smaller top texts: the voyages and the Ark escort as cards, the picked one open; the squad as rows - interactive",
+      "is_interactive": true
+    },
+    "R88Escort.dc.html": {
+      "x": 2100,
+      "y": 3620,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 88 Escort - the Ark escort card open: its difficulty stepper where a voyage has its intensity - interactive",
+      "is_interactive": true
+    },
+    "R88Saga.dc.html": {
+      "x": 4200,
+      "y": 3620,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 88 Saga - the two parts as cards, Tandava open with its forms, The Severing locked; the squad and Set sail - interactive",
+      "is_interactive": true
+    },
+    "R88Quests.dc.html": {
+      "x": 0,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 88 Quests - the five quests as cards with their state, the picked one open over its game's art; Claim or Play quest - interactive",
+      "is_interactive": true
+    },
+    "R88Episodes.dc.html": {
+      "x": 2100,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 88 Episodes - Episode 2, coming soon, over the galaxy; one way back"
+    },
+    "R88Notes.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 88 - notes: the top texts, the one order, each screen, what is not drawn"
     }
   },
   "createdOnFiles": {
@@ -3741,6 +3793,7 @@
     "sec-rev85",
     "sec-rev86",
     "sec-rev87",
+    "sec-rev88",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -3817,7 +3870,9 @@
     "rev84",
     "rev85",
     "rev86",
-    "rev87"
+    "rev87",
+    "f2u-sgbuttons",
+    "rev88"
   ],
   "notes": {
     "hud_end": {
@@ -6187,6 +6242,39 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "f2u-sgbuttons": {
+      "kind": "title1",
+      "maxW": 1920,
+      "page": "style-guide",
+      "text": "Play / Ready built in Unity: KitButton Commit, Maelstrom READY + PLAY AGAIN - in PR #1919 (2026-11-12, /frogma-to-unity)",
+      "w": 240,
+      "x": 0,
+      "y": 4040
+    },
+    "rev88": {
+      "kind": "title1",
+      "text": "Rev 88 - A taken forward: smaller top texts, every screen of the Voyage window",
+      "x": 0,
+      "y": 3220,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev88": {
+      "kind": "rect",
+      "x": -160,
+      "y": 3060,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -6629,7 +6717,13 @@
     "R87A.dc.html",
     "R87B.dc.html",
     "R87C.dc.html",
-    "R87Notes.dc.html"
+    "R87Notes.dc.html",
+    "R88Voyages.dc.html",
+    "R88Escort.dc.html",
+    "R88Saga.dc.html",
+    "R88Quests.dc.html",
+    "R88Episodes.dc.html",
+    "R88Notes.dc.html"
   ],
   "pages": [
     {

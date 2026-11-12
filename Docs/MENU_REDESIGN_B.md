@@ -7161,7 +7161,7 @@ since the third pass. The hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`
 - **The Quests tab** is the pre-redesign quest track. Draw it on Frogma before building it.
 
 
-## 168. Rev 87 mockups: the Voyages tab, drawn new around the HyperSea map and the edge view (2026-11-12, awaiting a pick)
+## 168. Rev 87 mockups: the Voyages tab, drawn new around the HyperSea map and the edge view (2026-11-12; Shombith picked A's direction, taken forward in section 169)
 
 **Asked (Shombith, 2026-11-12, on the built section 165):** "The voyages tab, this has gone through a lot of updates
 but it either does not update inside unity due to some issues or I do not like the design of it. Only thing the
@@ -7200,6 +7200,9 @@ view" (canvas version `1794502547-82a0`). The tab holds only this round.
   numbers, the crew as three lines. A pressed line opens the same steppers. Set sail is the ticket's stub.
 - **Notes.** No compare board: the three stand side by side on the tab.
 
+**Picked (Shombith, 2026-11-12): A's direction:** "I like As direction but the top texts are too big, can you show all
+the screens inside the voyage tab" (section 169).
+
 **Recommended: A.** It answers both halves of the ask. The voyage's words sit with the voyage and the squad with the
 squad, so neither column is a mix; and every piece is one the menu kit has (a plate, a text tab, a stepper, a card).
 
@@ -7222,3 +7225,40 @@ squad, so neither column is a mix; and every piece is one the menu kit has (a pl
   (`VoyageBoard`). Section 165's third pass found the kit's theming components undoing the runtime restyle on every
   enable; that is the "does not update inside unity". A cloud session cannot see Unity: the build needs a session on a
   computer with the editor, or a screenshot after each pass (`/frogma` section 5).
+
+
+## 169. Rev 88 mockups: A taken forward - smaller top texts, every screen of the Voyage window (2026-11-12, awaiting board approval)
+
+**Asked (Shombith, 2026-11-12, on Rev 87):** "I like As direction but the top texts are too big, can you show all the
+screens inside the voyage tab".
+
+**On the canvas:** tab **Voyages**, round "Rev 88 - A taken forward: smaller top texts, every screen of the Voyage
+window" (canvas version `1794503122-dda8`), under Rev 87.
+- Copies: `Docs/MenuRedesignB/board/R88*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r88_voyages.py`, on Rev 87's.
+- All boards pass `frogma.py check`. They pass `check_mockup.py` against `--baseline
+  Docs/MenuRedesignB/board/R81B5.dc.html` (a budget of 88) at 42-79 visual elements; the count includes both states of
+  a part that shows one.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**The top texts** step down the type scale: the window's title 36 to 22, the hub row 18 to 15, the tabs 22 to 15.
+
+**One order on every screen:** small cards on the left, the picked one slid open; the picture in the middle; one
+column on the right that ends in the screen's one Lime button. The tabs are links between the boards.
+
+**The boards:**
+- **Voyages:** A as picked. The Ark escort is the fifth card.
+- **Escort:** the Ark escort card open. It has a difficulty stepper where a voyage has its intensity.
+- **Saga:** Tandava and The Severing as cards. Tandava open shows its four forms; The Severing is locked and the
+  button says After Tandava. The middle is the part's picture; the right is the squad and Set sail.
+- **Quests:** the five quests as cards with their state (Claimed, Done - claim it, Next to play, After the one
+  before). The picked one is open over its game's card art. Episode 1's name, its progress and the one button (Claim,
+  Play quest, or the state) stand on a plate at the picture's foot.
+- **Episodes:** Episode 2, coming soon, over the galaxy, with Back to Voyages.
+- **Notes.**
+
+**Not drawn:** a voyage that is under way, and the story beats (Rev 77 drew both in the old look).
+
+**Differs from the build (section 165):** as section 168's A, and: the top texts are smaller; the Ark escort is a
+card like the voyages; the Saga, Quests and Episodes tabs take the same three columns (the build has the reverted
+pre-redesign Saga and quest track, section 159). The escort's line "Fly beside the Ark and keep it standing." is the
+board's own; the game's is `VoyageLines`.
