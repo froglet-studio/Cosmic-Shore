@@ -187,7 +187,7 @@ def squad_compare():
 
 # ── The seat's choices, three ways ────────────────────────────────────────────────────────────────────────────────────
 
-def open_tile(listname, w, h, kind, count, img_h=0, size=15, note=False):
+def open_tile(listname, w, h, kind, count, img_h=0, size=15, note=False, gap=4):
     """One choice with no box: its picture on the screen, its name under it; the picked one lit and underlined."""
     img = ""
     if kind == "hull":
@@ -201,13 +201,13 @@ def open_tile(listname, w, h, kind, count, img_h=0, size=15, note=False):
             if kind != "word" else '')
     return (f'<sc-for list="{{{{{listname}}}}}" as="t" hint-placeholder-count="{count}"><button class="pick" type="button" aria-label="{{{{t.name}}}}" '
             f'aria-pressed="{{{{t.pressed}}}}" onClick="{{{{t.pick}}}}" style="position:relative;width:{w}px;height:{h}px;opacity:{{{{t.op}}}};display:flex;'
-            f'flex-direction:column;align-items:center;justify-content:flex-end;gap:4px">{pool}{img}'
+            f'flex-direction:column;align-items:center;justify-content:flex-end;gap:{gap}px">{pool}{img}'
             f'<span style="position:relative;font-size:{size}px;color:{INK};padding-bottom:3px;border-bottom:2px solid {{{{t.under}}}}">{{{{t.name}}}}</span>{sub}</button></sc-for>')
 
 
-def group(label, inner, style=""):
-    return (f'<div style="display:flex;flex-direction:column;gap:10px;{style}"><span class="lab" style="color:{INK}">{label}</span>'
-            f'<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">{inner}</div></div>')
+def group(label, inner, style="", gap=10, between=10):
+    return (f'<div style="display:flex;flex-direction:column;gap:{gap}px;{style}"><span class="lab" style="color:{INK}">{label}</span>'
+            f'<div style="display:flex;flex-wrap:wrap;gap:{between}px;align-items:flex-end">{inner}</div></div>')
 
 
 def shelf(x=40, y=668, w=1840):

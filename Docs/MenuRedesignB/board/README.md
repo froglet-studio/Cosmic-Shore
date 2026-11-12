@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794526432-08c7` of **Frogma**: Rev 3 to Rev 97, 480 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794526761-968f` of **Frogma**: Rev 3 to Rev 98, 482 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -697,6 +697,11 @@ Copied on 2026-11-12 from canvas version `1794526432-08c7` of **Frogma**: Rev 3 
 - `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
+
+#### Rev 98 - Voyages: 1A and 2D, Shombith's picks, with room between the words
+
+- [`R98S1A.dc.html`](R98S1A.dc.html) - Rev 98 S1A - 1A - the voyage on the map - interactive
+- [`R98S2D.dc.html`](R98S2D.dc.html) - Rev 98 S2D - 2D - the squad - interactive
 
 #### Rev 97 - Voyages: the squad presets and the seat's choices redrawn; three players picking at once
 

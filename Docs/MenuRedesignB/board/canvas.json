@@ -3962,6 +3962,24 @@
       "page": "voyages",
       "title": "Rev 97 S2H - 2H Three players - a friend's screen - interactive",
       "is_interactive": true
+    },
+    "R98S1A.dc.html": {
+      "x": 0,
+      "y": 29300,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 98 S1A - 1A - the voyage on the map - interactive",
+      "is_interactive": true
+    },
+    "R98S2D.dc.html": {
+      "x": 2100,
+      "y": 29300,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 98 S2D - 2D - the squad - interactive",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -4091,6 +4109,7 @@
     "sec-rev96",
     "sec-rev94",
     "sec-rev97",
+    "sec-rev98",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4176,7 +4195,8 @@
     "rev94",
     "rev95",
     "rev96",
-    "rev97"
+    "rev97",
+    "rev98"
   ],
   "notes": {
     "hud_end": {
@@ -6747,6 +6767,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev98": {
+      "kind": "title1",
+      "text": "Rev 98 - Voyages: 1A and 2D, Shombith's picks, with room between the words",
+      "x": 0,
+      "y": 28900,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev98": {
+      "kind": "rect",
+      "x": -160,
+      "y": 28740,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -7229,7 +7273,9 @@
     "R97S1A.dc.html",
     "R97S2D.dc.html",
     "R97S2G.dc.html",
-    "R97S2H.dc.html"
+    "R97S2H.dc.html",
+    "R98S1A.dc.html",
+    "R98S2D.dc.html"
   ],
   "pages": [
     {

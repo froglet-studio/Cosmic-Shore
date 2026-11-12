@@ -7586,7 +7586,7 @@ Rev 95's "Flown by" is not drawn on these boards.
 **Differs from the build (section 172):** as section 173, and the steppers (`VoyageSquadColumn`) are replaced by
 strips of tiles; the backdrop needs the picked voyage's map drawn behind the squad screen.
 
-## 175. Rev 97 mockups: the squad presets and the seat's choices redrawn; three players picking at once (2026-11-12, awaiting a pick)
+## 175. Rev 97 mockups: the squad presets and the seat's choices redrawn; three players picking at once (2026-11-12; Shombith picked 1A and 2D, "the texts are too cramped", respaced in section 176)
 
 **Asked (Shombith, on Rev 96, with two screenshots - the Squad plates of 1A, and 2D's tray with its foot):** "These
 screenshots are the parts I do not like". While the round was drawn: "think if you are configuring, 3 players are
@@ -7621,3 +7621,29 @@ against 98); the two compare boards carry three Lime buttons each because they s
 
 **Differs from the build (section 172):** as sections 173 and 174; the game has no per-player Ready in the Voyage
 window and no element flower outside the HUD.
+
+## 176. Rev 98 mockups: 1A and 2D with room between the words (2026-11-12, awaiting a yes)
+
+**Asked (Shombith, on Rev 97):** "s2d and s1a but the thing is that everywhere the texts are too cramped up together.
+Can we do something about that?"
+
+**Picked so far:** screen 1 is 1A (the voyage list, the flat map explorer over the edge-on view, the voyage's name,
+the squads as formations, Configure squad, Set sail). Screen 2 is 2D (the three seats large, the picked seat's choices
+on the Shelf). The three-player lanes (2G, 2H) were not picked.
+
+**Drawn** (tab Voyages, title note `rev98`, generator `Docs/MenuRedesignB/rounds/r98_voyages.py`): the same two
+screens to one spacing rule, which is also the rule for the build:
+
+- lines of one group stand at least 10 px apart, line height 1.4 or more;
+- groups stand at least 28 px apart; a label stands 16 px or more above what it labels;
+- no text wraps inside a tile: the tile is made wide enough;
+- two short lines that said one thing are one line with wide gaps between its parts.
+
+What moved: the voyage chips are 96 high (76) with their two lines 38 apart; the zoom ladder's rows are 36 high;
+the voyage's name block has 12-20 px between its lines and 40 px to the squads; a squad is its name, who flies under
+it, and its formation beside them; a seat is role, vessel, then one line of player, pilot, element, artifact; the
+Shelf's groups are 28 px apart with wider tiles, and a pilot's note stays on one line.
+
+**Gate:** `check_mockup.py` passes 1A; 2D is over the noise budget (113 against 98) because every choice is on screen.
+
+**Differs from the build (section 172):** as sections 173 to 175.
