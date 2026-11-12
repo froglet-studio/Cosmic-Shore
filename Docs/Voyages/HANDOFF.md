@@ -83,15 +83,19 @@ and the escort card. A hand pass through the checklist sections is the cheapest 
 Known gaps carried from ARK_ESCORT §4 "Known gaps": the Grizzly+Urchin+Falcon squad deploys only one AI wingmate (one
 of those hulls does not spawn as an AI companion), and the sim's single samples are noisy (±20 hull points).
 
-## 6. Leftover branches (not merged, 2-3 weeks old)
+## 6. Leftover branches (checked 2026-11-12)
 
-| Branch | Commits ahead | What it holds |
+Garrett (2026-11-12): "we don't want to be packrats hoarding branches and code. we want to curating the good and
+cleaning the vestigial noise." What each unmerged voyage branch still holds:
+
+| Branch | Holds | Verdict |
 |---|---|---|
-| `claude/voyage-sim-farm` | 13 (2026-10-31) | A farm runner for the escort sim: a Windows dev player, a Pareto archive and a co-evolution driver ([`night/sim_farm_DONE.md`](night/sim_farm_DONE.md)). Froglet Compute is paused (CLAUDE.md), so it would wait anyway. |
-| `claude/voyage-coop` | 3 (2026-10-31) | Escort party co-op: a shared course, a seeded corridor, human seats, Ark sync and a host-only card ([`night/coop_DONE.md`](night/coop_DONE.md)). |
-| `claude/ark-escort-voyage` | 1 (2026-10-29) | The escort card's difficulty buttons no longer cover Set sail (it may have been overtaken by the window's re-layout). |
+| `claude/voyage-coop` (3 commits, 2026-10-31, `209c1a2e7`) | Escort party co-op: a shared, seeded course; corridor worlds kept local to each machine (`Cell.IsSatellite`); human seats with AI filling the rest; pacification on every peer; the report for parties. 13 files, ~550 lines, with `ArkEscortRun.Coop.cs` new. Compiled and passed 62/62 EditMode tests at the time. No two-client test was ever run ([`night/coop_DONE.md`](night/coop_DONE.md)). | **Worth porting.** It is the co-op half of Garrett's first priority (§8). It is about 1,300 commits behind and touches `Ark.cs`, `CellLifeSpawnerBase.cs`, `FaunaNetworkSync.cs` and `ArkwayRun.cs`, so port it by hand onto a fresh branch rather than merging it. Each machine still runs its own Ark; the host-owned networked Ark (V2) is the next step past it. |
+| `claude/voyage-sim-farm` (13 commits, 2026-10-31, `d4a6827fd`) | A Windows farm player and a co-evolution driver that tunes the escort's difficulty ladder against the AI squads (`Tools/SimFarm/`, `SimFarmBuild.cs`, seeded runs in `ArkEscortSim.cs`). [`night/sim_farm_DONE.md`](night/sim_farm_DONE.md) records how it works and what it found. | **Not needed now.** It tunes difficulty, not the squad's roles, and Froglet Compute is paused. Keep it under an archive tag and delete the branch. |
+| `claude/ark-escort-voyage` (1 commit, `3b7cdb69d`) | The escort card's difficulty buttons no longer cover Set sail. | **Already on `bleeding-edge`** (`VoyageJobCard.ShowStepper`, `StepWidth`). Delete. |
+| 15 other `claude/voyage-*` branches | Fully merged, or with only a merge commit beyond `bleeding-edge` (`voyage-scene-port`). | Delete. |
 
-Every other `claude/voyage-*` branch is fully merged. `claude/voyage-scene` is superseded by #1855.
+The deletions wait on Garrett's go-ahead.
 
 ## 7. Who else works near here
 
@@ -105,30 +109,52 @@ From VOYAGES §10 and DEPTH §13. Tell these people when you change their area, 
 
 ## 8. Garrett's decisions
 
-Settled, and recorded in the docs:
+### Answered 2026-11-12 (these override any default below)
+
+1. **Priority: the squad, alone and together.** "Anything blocking a single player experience (3 AI on three
+   vessels that understand their role on the squad and perform it when not played) or multiplayer experience
+   (networked ark etc.) should take priority. we want to get into a testing loop where our opinions of the experience
+   are guiding each iteration. we can't do that until we can play it both alone and together without fundamental
+   issues preventing a fun time."
+2. **Shombith decides.** "he can decide anything. don't get in his way. he is racing to get voyages fun and he needs
+   to do whatever it takes to get there fast." Every open decision below is his to settle. Record the ones you
+   settle in the doc that owns them.
+3. **Squads are always 3 vessels.** "vessels have a seat count which affects the number of pilots (ai or player
+   controlled)." This answers VOYAGES §11 question 1: the squad is 3 vessels, and the number of pilots is the sum of
+   their seats (a crew vessel brings two).
+4. **An AI's role comes from its cards.** "each ai should ultimately have behavior that is determined by their
+   vessel, pilot, element, and artifact." The three basic archetypes to test first, "to derisk the idea of voyages":
+
+   | Archetype | Signalled by | Does |
+   |---|---|---|
+   | **Guardian** | the Charge element, and a pilot whose vision shows enemy fauna | protects the Ark |
+   | **Cultivator** | a Squirrel in Mass, with a pilot whose vision shows crystals | cultivates mass in the cell so the Ark can heal |
+   | **Destroyer** | a Dolphin in Space, with a pilot whose vision shows opposing prisms | helps the Squirrel take the cell by destroying enemy mass in the nucleus |
+
+   **The gap today:** `ArkEscortRoles.Create` picks a role from the hull alone (Sparrow destroyer, Squirrel,
+   Dolphin, Serpent wall, Scarab ring, anyone else a heart chaser). `DefaultElement` fixes each hull's element. The
+   pilot, its vision and the artifact play no part, so a role is not yet chosen by the cards. `Docs/AI_SYSTEM/AI_PLAN.md`
+   (vessel and element choose the genome, the pilot biases it) is the plan this joins.
+5. **The cells feel like cheap imitations.** "the cells are still not spawning a proper nucleus, shards, etc. ...
+   we need to make the hypersea feel like our galaxy condensed into a giant living organism that we interpret as
+   ecology." A lead that has not been checked: SLICE §5 says `Voyage.unity`'s cell boots the empty Barren world, and
+   the escort sails its own rolled worlds (`ArkEscortVariety`), not cells built from the course. Compare a voyage cell
+   with an arcade cell at the same intensity (nucleus, membrane, cytoplasm shards, flora, fauna). The `/ecology` and
+   `/world-look` skills cover the Cell.
+6. **Branches: curate, don't hoard.** See §6.
+
+### Settled earlier, recorded in the docs
 
 - Voyages have their own scene, kept apart from freestyle (2026-11-01).
 - Each job is a voyage of its own (2026-10-28).
 - Found artifacts stay locked until docked home (2026-10-28).
-- No fixed 4-person cap. Squad vs squad needs at least 6 people and three squads at least 9 (2026-10-28).
+- No fixed 4-person cap (2026-10-28).
 - The Voyage window has one map, the Voyage Board's sea (2026-11-01).
 
-Still open, each with a default the build already follows:
+### Still open, now Shombith's call
 
-- VOYAGES §11, questions 1 and 3-10.
+Each has a default the build already follows:
+
+- VOYAGES §11, questions 3-10 (1 is answered above).
 - DEPTH §14, decisions 1-11.
 - VOYAGE_BOARD §5, decisions 1-11.
-- The AI left on the hull a person swaps away from flies the platform default instead of an escort role.
-
-### Asked on 2026-11-12, waiting on Garrett
-
-Garrett asked to be asked, now and during the work. These questions were put to him on 2026-11-12; his answers go
-here as they come:
-
-1. What comes first this week: hand-test and polish what is built, finish D2 or start D3, start V2, or make the escort
-   a real job on the board? *(waiting)*
-2. Which voyage design calls Shombith settles himself, and which go to Garrett? *(waiting)*
-3. Squad size, an abandoned voyage's cargo, short legs vs real cells (Board §5 #8), and Tandava as a lair. *(waiting)*
-4. The AI on the hull a person leaves after a pilot swap: platform default or escort role? *(waiting)*
-5. Bugs or feel problems seen on `bleeding-edge` since #1855. *(waiting)*
-6. Whether the leftover branches in §6 are dead or worth salvaging, and whether #1688 can be closed. *(waiting)*
