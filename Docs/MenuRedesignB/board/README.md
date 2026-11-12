@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-11 from canvas version `1794355298-b0b9` of **Frogma**: Rev 3 to Rev 84, 452 boards on 11 tabs. The canvas opens on the tab `fleet-codex`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794497041-9971` of **Frogma**: Rev 3 to Rev 84, 452 boards on 11 tabs. The canvas opens on the tab `fleet-codex`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -687,38 +687,38 @@ Copied on 2026-11-11 from canvas version `1794355298-b0b9` of **Frogma**: Rev 3 
 
 #### Rev 83 - the seat editor in the game's own look
 
-- `R83Compare.dc.html` (not copied yet) - Rev 83 - Rev 82 Squad: the outlined-square editor this replaces
-- `R83S1.dc.html` (not copied yet) - Rev 83 S1 - Showroom: the choice as the hero, its render and name large, the options a slim strip along the foot (recommended) - interactive
-- `R83S2.dc.html` (not copied yet) - Rev 83 S2 - Hangar bay: the choice large on a lit podium, the options a sleek list beside it - interactive
-- `R83S3.dc.html` (not copied yet) - Rev 83 S3 - Seat sheet: the seat's card opens into a sheet with all four choices as rows - interactive
-- `R83Notes.dc.html` (not copied yet) - Rev 83 - What was wrong with Rev 82's editor, what the three draw from, the recommendation
+- [`R83Compare.dc.html`](R83Compare.dc.html) - Rev 83 - Rev 82 Squad: the outlined-square editor this replaces
+- [`R83S1.dc.html`](R83S1.dc.html) - Rev 83 S1 - Showroom: the choice as the hero, its render and name large, the options a slim strip along the foot (recommended) - interactive
+- [`R83S2.dc.html`](R83S2.dc.html) - Rev 83 S2 - Hangar bay: the choice large on a lit podium, the options a sleek list beside it - interactive
+- [`R83S3.dc.html`](R83S3.dc.html) - Rev 83 S3 - Seat sheet: the seat's card opens into a sheet with all four choices as rows - interactive
+- [`R83Notes.dc.html`](R83Notes.dc.html) - Rev 83 - What was wrong with Rev 82's editor, what the three draw from, the recommendation
 
 #### Rev 82 - B5 playable - choosing the squad and changing its seats
 
-- `R82Squad.dc.html` (not copied yet) - Rev 82 Squad - B5 playable: choosing the squad and changing its seats - interactive
+- [`R82Squad.dc.html`](R82Squad.dc.html) - Rev 82 Squad - B5 playable: choosing the squad and changing its seats - interactive
 
 #### Rev 81 - Voyage window, B1 with B3's seat cards - a livelier right panel, three ways
 
-- `R81B5.dc.html` (not copied yet) - Rev 81 B5 - Cards: B1 with labelled numbers and B3's three seat cards in the right panel (recommended) - interactive
-- `R81Notes.dc.html` (not copied yet) - Rev 81 - notes: what B1 keeps, B3's cards, the three right panels, the recommendation
+- [`R81B5.dc.html`](R81B5.dc.html) - Rev 81 B5 - Cards: B1 with labelled numbers and B3's three seat cards in the right panel (recommended) - interactive
+- [`R81Notes.dc.html`](R81Notes.dc.html) - Rev 81 - notes: what B1 keeps, B3's cards, the three right panels, the recommendation
 
 #### Rev 80 - Voyage window, B Logbook taken further - the list, the course and the squad, four ways better
 
-- `R80Compare.dc.html` (not copied yet) - Rev 80 - What each option changes from B: the row, the squad bar, the seat card, the quiet row
-- `R80B1.dc.html` (not copied yet) - Rev 80 B1 - Refined: each row a course thumbnail and who brought it, seats with their pilot (recommended) - interactive
-- `R80B2.dc.html` (not copied yet) - Rev 80 B2 - Wide sea: a narrow list, the course map wide with the voyage over it, the squad a bar along the foot - interactive
-- `R80B3.dc.html` (not copied yet) - Rev 80 B3 - Crew: the squad as three tall seat cards, the hull and its pilot large - interactive
-- `R80B4.dc.html` (not copied yet) - Rev 80 B4 - Quiet: no pictures in the list, the maps muted so only the course is bright, the most air - interactive
-- `R80Notes.dc.html` (not copied yet) - Rev 80 - notes: what B keeps, what each option changes, the recommendation
+- [`R80Compare.dc.html`](R80Compare.dc.html) - Rev 80 - What each option changes from B: the row, the squad bar, the seat card, the quiet row
+- [`R80B1.dc.html`](R80B1.dc.html) - Rev 80 B1 - Refined: each row a course thumbnail and who brought it, seats with their pilot (recommended) - interactive
+- [`R80B2.dc.html`](R80B2.dc.html) - Rev 80 B2 - Wide sea: a narrow list, the course map wide with the voyage over it, the squad a bar along the foot - interactive
+- [`R80B3.dc.html`](R80B3.dc.html) - Rev 80 B3 - Crew: the squad as three tall seat cards, the hull and its pilot large - interactive
+- [`R80B4.dc.html`](R80B4.dc.html) - Rev 80 B4 - Quiet: no pictures in the list, the maps muted so only the course is bright, the most air - interactive
+- [`R80Notes.dc.html`](R80Notes.dc.html) - Rev 80 - notes: what B keeps, what each option changes, the recommendation
 
 #### Rev 79 - Voyage window, four new directions - the whole window redrawn: its tabs, the HyperSea map and edge view, the voyages, and picking the squad's vessels
 
-- `R79Compare.dc.html` (not copied yet) - Rev 79 - Picking a vessel, four ways: one press from the squad to any hull
-- `R79A.dc.html` (not copied yet) - Rev 79 A - Chart: the map is the window; voyages are pins on it and the picked one docks on the right (recommended) - interactive
-- `R79B.dc.html` (not copied yet) - Rev 79 B - Logbook: a list of voyages, the course large in the middle, the squad as three seats on the right - interactive
-- `R79C.dc.html` (not copied yet) - Rev 79 C - Formation: the squad's three hulls are the hero; destinations on a ribbon above them - interactive
-- `R79D.dc.html` (not copied yet) - Rev 79 D - Route: the picked voyage as a journey line across the window, rising and falling through the disk - interactive
-- `R79Notes.dc.html` (not copied yet) - Rev 79 - notes: what each direction is, what it redraws, the recommendation, what it would change in the game
+- [`R79Compare.dc.html`](R79Compare.dc.html) - Rev 79 - Picking a vessel, four ways: one press from the squad to any hull
+- [`R79A.dc.html`](R79A.dc.html) - Rev 79 A - Chart: the map is the window; voyages are pins on it and the picked one docks on the right (recommended) - interactive
+- [`R79B.dc.html`](R79B.dc.html) - Rev 79 B - Logbook: a list of voyages, the course large in the middle, the squad as three seats on the right - interactive
+- [`R79C.dc.html`](R79C.dc.html) - Rev 79 C - Formation: the squad's three hulls are the hero; destinations on a ribbon above them - interactive
+- [`R79D.dc.html`](R79D.dc.html) - Rev 79 D - Route: the picked voyage as a journey line across the window, rising and falling through the disk - interactive
+- [`R79Notes.dc.html`](R79Notes.dc.html) - Rev 79 - notes: what each direction is, what it redraws, the recommendation, what it would change in the game
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 

@@ -23263,7 +23263,7 @@ MonoBehaviour:
   weeklyDock: {fileID: 6840435652906663}
   questDock: {fileID: 514050394889709973}
   noBestText: None yet
-  readyToClaimText: Ready to claim in Quests
+  readyToClaimText: Ready to claim in Voyage
   nextGoalTemplate: 'Next: {goal}'
   allUnlockedText: Every intensity unlocked
   meterTemplate: Intensity {level} of {max}

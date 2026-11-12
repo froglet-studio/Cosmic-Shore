@@ -4,22 +4,22 @@
  "tool": "Tools/Build/colour_trace.py",
  "rule": "Every colour that reaches a pixel comes from the worn colour set. Photic holds the baked values; every other set computes its own from its pigments (colour_trace.py repaint). A colour is inert, a UI theme token, fixed (pure white, pure black), traced (an id below), or untraced (listed below: the work left).",
  "counts": {
-  "fixed": 2479,
-  "inert": 29831,
-  "token": 3867,
-  "traced": 1903
+  "fixed": 2481,
+  "inert": 29785,
+  "token": 3835,
+  "traced": 1936
  },
  "inert": {
-  "ambient-mode": 177,
+  "ambient-mode": 180,
   "camera-no-clear": 8,
-  "code-fallback": 158,
-  "code-inert": 232,
-  "debug": 109,
+  "code-fallback": 157,
+  "code-inert": 231,
+  "debug": 107,
   "field-reviewed": 9,
-  "fog-off": 59,
+  "fog-off": 60,
   "gradient-key-unused": 78,
   "kit-legacy-field": 69,
-  "kit-selectable": 1420,
+  "kit-selectable": 1415,
   "material-stale": 840,
   "material-unused-prop": 20,
   "material-vector": 452,
@@ -34,11 +34,11 @@
   "shader-node-dead": 31,
   "shader-not-drawn": 19,
   "stale-field": 17,
-  "subtractive-off": 59,
-  "tmp-colour-twin": 1603,
-  "tmp-face-cache": 1603,
+  "subtractive-off": 60,
+  "tmp-colour-twin": 1596,
+  "tmp-face-cache": 1596,
   "tmp-feature-off": 52,
-  "tmp-gradient-off": 6412,
+  "tmp-gradient-off": 6384,
   "unreachable": 13561
  },
  "inert_why": {
@@ -78,24 +78,24 @@
   "tmp-feature-off": "a TextMesh Pro material colour whose feature is off (no GLOW_ON, UNDERLAY_ON or BEVEL_ON keyword, outline width 0)"
  },
  "tokens": {
-  "ControlActive": 416,
-  "Cta": 293,
+  "ControlActive": 413,
+  "Cta": 291,
   "Danger": 16,
   "ElementCharge": 4,
   "ElementMass": 4,
   "ElementSpace": 4,
   "ElementTime": 4,
   "InactiveLight": 11,
-  "NeutralLightest": 733,
+  "NeutralLightest": 732,
   "Purchase": 32,
   "Sea": 7,
   "Selection": 118,
-  "SurfaceBlack": 179,
-  "SurfaceDark": 437,
-  "SurfaceLight": 228,
-  "SurfaceVeryDark": 278,
+  "SurfaceBlack": 178,
+  "SurfaceDark": 435,
+  "SurfaceLight": 216,
+  "SurfaceVeryDark": 274,
   "TextInactive": 1,
-  "TextLight": 1100,
+  "TextLight": 1093,
   "Tooltip": 2
  },
  "ids": {
@@ -438,12 +438,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 180,
+   "uses": 179,
    "where": [
-    "Assets/Resources/Voyages/QuestsView.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI",
     "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
-    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab HexApertureGraphic"
+    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab HexApertureGraphic",
+    "Assets/_Prefabs/UI Elements/In Game/DomainScorePanel.prefab Image"
    ],
    "token": "SurfaceBlack"
   },
@@ -484,12 +484,12 @@
     0.55
    ],
    "family": "blue",
-   "uses": 279,
+   "uses": 275,
    "where": [
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
-    "Assets/Resources/Voyages/QuestsView.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
-    "Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab Image"
+    "Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab Image",
+    "Assets/_Prefabs/MaelStrom/MaelstromSummaryScoreCardContainer.prefab Image"
    ],
    "token": "SurfaceVeryDark"
   },
@@ -544,12 +544,12 @@
     1.0
    ],
    "family": "jade",
-   "uses": 417,
+   "uses": 414,
    "where": [
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
-    "Assets/Resources/Voyages/QuestsView.prefab Image",
     "Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab Image",
-    "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image"
+    "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image",
+    "Assets/_Prefabs/UI Elements/Kit/KitButton.prefab Image"
    ],
    "token": "ControlActive"
   },
@@ -611,6 +611,20 @@
     "Assets/_Scripts/UI/Views/VoyageCellDraw.cs code",
     "Assets/_Scripts/UI/Views/VoyageEdgeGraphic.cs code",
     "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:060A26": {
+   "role": "ui",
+   "photic": [
+    0.024,
+    0.039,
+    0.149,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code"
    ]
   },
   "ui:080D1F": {
@@ -793,12 +807,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 438,
+   "uses": 436,
    "where": [
-    "Assets/Resources/Voyages/QuestsView.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
     "Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab Image",
-    "Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab Image"
+    "Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab Image",
+    "Assets/_Prefabs/MaelStrom/MaelstromSummaryScoreCardContainer.prefab Image"
    ],
    "token": "SurfaceDark"
   },
@@ -940,9 +954,10 @@
     1.0
    ],
    "family": "blue",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/_Scripts/UI/PreGameCinematic/IntroCameraOverlay.cs code"
+    "Assets/_Scripts/UI/PreGameCinematic/IntroCameraOverlay.cs code",
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code"
    ]
   },
   "ui:2C2D35": {
@@ -1160,12 +1175,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 229,
+   "uses": 217,
    "where": [
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
-    "Assets/Resources/Voyages/QuestsView.prefab Image",
-    "Assets/Resources/Voyages/QuestsView.prefab TextMeshProUGUI",
-    "Assets/_Prefabs/CORE/GameCanvas.prefab Image"
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
+    "Assets/_Prefabs/UI Elements/In Game/ConnectingPanel.prefab Image"
    ],
    "token": "SurfaceLight"
   },
@@ -1398,12 +1413,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 734,
+   "uses": 733,
    "where": [
-    "Assets/Resources/Voyages/QuestsView.prefab TextMeshProUGUI",
     "Assets/_Graphics/Materials/Shaders/UI/Presence_Orb.mat Material(CosmicShore/UI/Presence)",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
-    "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI"
+    "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI",
+    "Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab TextMeshProUGUI"
    ],
    "token": "NeutralLightest"
   },
@@ -1555,6 +1570,34 @@
    "uses": 1,
    "where": [
     "Assets/_Prefabs/UI Elements/Main Menu Screens/Configure/ConfigureSeatPedestal.prefab Button"
+   ]
+  },
+  "ui:8C8C99": {
+   "role": "ui",
+   "photic": [
+    0.55,
+    0.55,
+    0.6,
+    0.6
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageBoard.cs code"
+   ]
+  },
+  "ui:8C93C7": {
+   "role": "ui",
+   "photic": [
+    0.549,
+    0.576,
+    0.78,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code"
    ]
   },
   "ui:8CEB1A": {
@@ -1744,14 +1787,28 @@
     0.0
    ],
    "family": "lime",
-   "uses": 294,
+   "uses": 292,
    "where": [
-    "Assets/Resources/Voyages/QuestsView.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
     "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
-    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab TextMeshProUGUI"
+    "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab TextMeshProUGUI",
+    "Assets/_Prefabs/UI Elements/In Game/ScoreboardPanel.prefab Image"
    ],
    "token": "Cta"
+  },
+  "ui:9AA0CC": {
+   "role": "ui",
+   "photic": [
+    0.604,
+    0.627,
+    0.8,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code"
+   ]
   },
   "ui:9C8CFF": {
    "role": "ui",
@@ -2090,6 +2147,22 @@
     "Assets/_Scripts/UI/View/ThresherHUDView.cs code"
    ]
   },
+  "ui:BFBFCC": {
+   "role": "ui",
+   "photic": [
+    0.75,
+    0.75,
+    0.8,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 3,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
+   ]
+  },
   "ui:C2C9F2": {
    "role": "ui",
    "photic": [
@@ -2113,12 +2186,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 298,
+   "uses": 296,
    "where": [
-    "Assets/Resources/Voyages/QuestsView.prefab Button",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Button",
     "Assets/_Prefabs/Spacevessels/Serpent.prefab Button",
-    "Assets/_Prefabs/UI Elements/In Game/EndGameStatsPanel.prefab Button"
+    "Assets/_Prefabs/UI Elements/In Game/EndGameStatsPanel.prefab Button",
+    "Assets/_Prefabs/UI Elements/In Game/Pip.prefab Button"
    ]
   },
   "ui:C8D2E6": {
@@ -2133,6 +2206,22 @@
    "uses": 1,
    "where": [
     "Assets/_Scripts/UI/Views/VoyageMapSky.cs code"
+   ]
+  },
+  "ui:C8FF5A": {
+   "role": "ui",
+   "photic": [
+    0.784,
+    1.0,
+    0.353,
+    1.0
+   ],
+   "family": "lime",
+   "uses": 3,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
    ]
   },
   "ui:CCCCCC": {
@@ -2338,12 +2427,12 @@
     0.16
    ],
    "family": "blue",
-   "uses": 1101,
+   "uses": 1094,
    "where": [
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
     "Assets/Resources/UI/ToastNotificationItem.prefab TextMeshProUGUI",
-    "Assets/Resources/Voyages/QuestsView.prefab Image",
-    "Assets/Resources/Voyages/QuestsView.prefab TextMeshProUGUI"
+    "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI"
    ],
    "token": "TextLight"
   },
@@ -2384,12 +2473,12 @@
     1.0
    ],
    "family": "blue",
-   "uses": 281,
+   "uses": 279,
    "where": [
-    "Assets/Resources/Voyages/QuestsView.prefab Button",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Button",
     "Assets/_Prefabs/Spacevessels/Serpent.prefab Button",
-    "Assets/_Prefabs/UI Elements/In Game/EndGameStatsPanel.prefab Button"
+    "Assets/_Prefabs/UI Elements/In Game/EndGameStatsPanel.prefab Button",
+    "Assets/_Prefabs/UI Elements/In Game/Pip.prefab Button"
    ]
   },
   "ui:F5F5FF": {
@@ -2647,6 +2736,22 @@
    "uses": 1,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image"
+   ]
+  },
+  "ui:FFC740": {
+   "role": "ui",
+   "photic": [
+    1.0,
+    0.78,
+    0.25,
+    1.0
+   ],
+   "family": "gold",
+   "uses": 3,
+   "where": [
+    "Assets/_Scripts/UI/Views/VoyageBoard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageOpenCard.cs code",
+    "Assets/_Scripts/UI/Views/VoyageRoutePoster.cs code"
    ]
   },
   "ui:FFC882": {
@@ -3022,6 +3127,21 @@
     "Assets/_Scripts/Controller/Environment/Spawning/LoadCrystalGraphic.cs code"
    ]
   },
+  "world:00010A": {
+   "role": "world",
+   "photic": [
+    0.0,
+    0.004,
+    0.039,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
   "world:00041F": {
    "role": "world",
    "photic": [
@@ -3031,10 +3151,12 @@
     0.86
    ],
    "family": "blue",
-   "uses": 3,
+   "uses": 7,
    "where": [
     "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
-    "Assets/_Prefabs/CORE/GameCanvas.prefab LoadCrystalGraphic"
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab LoadCrystalGraphic",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
    ]
   },
   "world:000440": {
@@ -3349,9 +3471,11 @@
     1.0
    ],
    "family": "jade",
-   "uses": 1,
+   "uses": 3,
    "where": [
-    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code"
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs code",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
    ]
   },
   "world:00E46A": {
@@ -4171,6 +4295,36 @@
     "Assets/_Prefabs/Environment/Materials/FX/fx_GreenCrackle.prefab ParticleSystem"
    ]
   },
+  "world:21C0BD": {
+   "role": "world",
+   "photic": [
+    0.129,
+    0.753,
+    0.741,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
+  "world:222645": {
+   "role": "world",
+   "photic": [
+    0.133,
+    0.149,
+    0.271,
+    0.72
+   ],
+   "family": "blue",
+   "uses": 4,
+   "where": [
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
+   ]
+  },
   "world:2472D9": {
    "role": "world",
    "photic": [
@@ -4225,9 +4379,10 @@
     1.0
    ],
    "family": "band~jade",
-   "uses": 1,
+   "uses": 2,
    "where": [
-    "Assets/Resources/Codex.asset CodexSO"
+    "Assets/Resources/Codex.asset CodexSO",
+    "Assets/_Scripts/Controller/Toys/ToyFactory.cs code"
    ]
   },
   "world:26FF8C": {
@@ -4271,6 +4426,34 @@
    "where": [
     "Assets/_SO_Assets/Games/TandavaSettings.asset TandavaSettingsSO",
     "Assets/_SO_Assets/Games/TandavaSeveringSettings.asset TandavaSeveringSettingsSO"
+   ]
+  },
+  "world:29C78F": {
+   "role": "world",
+   "photic": [
+    0.16,
+    0.78,
+    0.56,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs code"
+   ]
+  },
+  "world:29C7D1": {
+   "role": "world",
+   "photic": [
+    0.16,
+    0.78,
+    0.82,
+    1.0
+   ],
+   "family": "jade",
+   "uses": 1,
+   "where": [
+    "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs code"
    ]
   },
   "world:2A3340": {
@@ -4725,6 +4908,21 @@
    "uses": 1,
    "where": [
     "Assets/_Scripts/Controller/Toys/ArkwayRun.Alarm.cs code"
+   ]
+  },
+  "world:434C89": {
+   "role": "world",
+   "photic": [
+    0.263,
+    0.298,
+    0.537,
+    1.0
+   ],
+   "family": "blue",
+   "uses": 2,
+   "where": [
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
    ]
   },
   "world:4878FFx1.60": {
@@ -5296,13 +5494,14 @@
     0.455,
     0.482,
     0.678,
-    0.85
+    1.0
    ],
    "family": "blue",
-   "uses": 2,
+   "uses": 3,
    "where": [
     "Assets/Resources/AbilityLockupStyle.asset AbilityLockupStyleSO",
-    "Assets/Resources/Voyages/QuestsView.prefab VoyageWindowTabs"
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
    ]
   },
   "world:783C3C": {
@@ -5713,9 +5912,11 @@
     1.0
    ],
    "family": "lime",
-   "uses": 1,
+   "uses": 3,
    "where": [
-    "Assets/_Prefabs/CORE/GameCanvas.prefab LoadCrystalGraphic"
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab LoadCrystalGraphic",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
    ]
   },
   "world:99FF99": {
@@ -6502,10 +6703,11 @@
     1.0
    ],
    "family": "blue",
-   "uses": 7,
+   "uses": 8,
    "where": [
-    "Assets/Resources/Voyages/QuestsView.prefab VoyageWindowTabs",
-    "Assets/_Prefabs/CORE/GameCanvas.prefab GoalRow"
+    "Assets/Resources/VoyageBoardStyle.asset VoyageBoardStyleSO",
+    "Assets/_Prefabs/CORE/GameCanvas.prefab GoalRow",
+    "Assets/_Scripts/ScriptableObjects/Voyages/VoyageBoardStyleSO.cs code"
    ]
   },
   "world:E6F2FF": {

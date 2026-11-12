@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 71 C, Rev 74 C3 and Rev 77 on the canvas now; built in section 151) | Shombith, 2026-11-08 (sections 147-151) |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79-83 on the canvas now: Rev 81 B5 with the Rev 83 S2 seat editor picked and built, section 165; Rev 70-77 were reverted and taken off, section 159) | Shombith, 2026-11-08 (sections 147-151, 159-165) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -6556,8 +6556,7 @@ to Garrett (section 147).
     now reads "Ready to claim in Quests" (`author_menu_home.py`).
 
 **Not built yet:**
-- The Quests window's quests as place cards on the carousel (Rev 77 "Quests"). The tracker is today's
-  `QuestTrackView` in the new window.
+- ~~The Quests window's quests as place cards on the carousel (Rev 77 "Quests").~~ Built in section 156.
 - The Saga and Episodes tabs in the picked look.
 - The pinned voyage that stays put while the crew or domain changes stays a proposal to Garrett (section 147).
 - The open voyage column's colours are the style guide's token values written as constants in `VoyageOpenCard` (as
@@ -6734,3 +6733,429 @@ records the stage in `fleet.json` for readers; nothing draws it.
 filtering UI". The three rows of chips became one row of three dropdowns (Sort; Completion, each band with its count;
 Tier, grouped by element's games with counts), a "Clear filters" link while a filter is on, and the count shown on the
 right.
+
+
+## 156. Built: the Quests window's carousel, Rev 77 "Quests" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
+
+**Asked (Shombith, 2026-11-09):** "now build the quests place-card carousel".
+
+**Built:** `QuestCarouselView` (new) fills the Quests window's Episode 1 page in place of the old tracker column.
+- **The head:** the episode's name ("The Hypersea") and "{claimed} of {total} claimed" with a bar.
+- **The coverflow:** the five quests as cards (`VoyageFlowCard`, posed by `VoyageCardRules.FlowPose` as the Voyages
+  tab's are). Each card shows its game's own card art (the Arcade's roster, `ArcadeExploreView.FindGameByMode`;
+  the Hangar quest falls back to its icon), muted by a multiply. Locked cards are darker. The window opens on the
+  frontier quest (`QuestFrontier`). A press, or the D-pad landing on a card, picks it.
+- **The picked quest's line:** "01  Scurry - Next to play", its goal, and one Lime button:
+  - Claim when it is done (`GameModeProgressionService.ClaimQuestAndUnlockNext`; the pick moves to the next quest);
+  - Play quest when it is next (`ScreenSwitcher.OpenGame` opens that game's configure);
+  - Open the Hangar for the Hangar quest.
+  A locked quest shows "Unlocks after <the quest before>" and a claimed one "Claimed" instead of a button.
+- **The words** are serialized on `QuestCarouselView` and authored by `author_voyage_window.py`'s fourth step, which
+  then stands down (`--check` validates every word, the quest list, the font and that no `QuestTrackView` is back).
+- `QuestTrackView` itself is unchanged: the Profile screen still uses it.
+- `VoyagePlaceArt` now paints at 128 x 80, not 256 x 160. Measured here: about 80 ms a place at the old size, so five
+  voyages stalled the first open for about a second (more on a phone); now about a quarter of that.
+
+**Verified:**
+- `unity_refcompile` player and editor: 0 errors in project code.
+- `author_voyage_window.py --check --self-test`, with three new negative controls (the carousel's script gone, a
+  word retuned, the old tracker back).
+- The new EditMode test `SpriteCover_StaysInsideTheSpritesOwnRect_InAnAtlas` compiles; its numbers were checked by
+  hand. It has not run in Unity.
+
+**Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
+
+**Still not built:** nothing of Rev 77: the Saga tab is section 157, the Episodes tab section 158.
+
+Affects: the FTUE quest graph (Shombith and Caleb). It reads and claims through the same service and frontier as
+the Profile's track and Home's card; nothing about the graph changed.
+
+**Fixed after the first look in the editor (2026-11-09, Shombith's screenshots):** the Voyages tab's column ran but
+was broken.
+- **Buttons were 0 px high.** Every button in a row (the squad presets, the three hulls, Ark crew, Story, the strip's
+  Back) was invisible. The rows sized their children's height without stretching them, and a button has no height of
+  its own. Rows now stretch their children.
+- **Set sail is the column's own Lime button**, full width beside Ark crew and Story. It was a copy of the old card's
+  keycap and kept that keycap's small size.
+- **The voyage's title** shows under the kicker.
+- **The views fit the column** (about 750 px on a 1080p canvas): a shorter flow, hull row, seat rows and story panel.
+- **The card faces were near black.** The muted open sea is dark around most places. `VoyagePlaceArt` now spreads
+  each face's tones across a grey range (`Floor` 34 to `Ceiling` 150), in float, and rounds once, so it has no
+  banding. `VoyageMapGraphic.Sea` is private again; the art reads `HyperSea.SeaColor` directly.
+- **The Quests window opened on quest 1** for a player with four claimed: progress loads after the window is built.
+  The pick now follows the frontier until the player picks a card.
+
+
+## 157. Built: the Saga tab, Rev 77 "Saga" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
+
+**Asked (Shombith, 2026-11-09):** "build the saga in the picked look too".
+
+**Built:** `SagaView` (new) fills the Voyage window's Saga tab in place of the two side-by-side `VoyageView` cards.
+- **The left:** the picked part's card art, muted by a multiply, with "Saga - part 1 of 2", its name (48) and its
+  forms at the foot. The forms are the old cards' own lines: Tandava has four, the Severing five.
+- **The right:** the two parts on the coverflow (`VoyageFlowCard`, as the Voyages tab and the Quests window pose
+  them), the picked part's line (the card's own description), and one Lime Set sail the width of the column.
+- **Set sail** opens the part's launch window through `ArcadeGameConfigureModal.OpenFor`. It picks the copy of the
+  modal that can launch the part (`CanOpen`). Menu_Main carries three copies, and two are hosts with no launch panels,
+  so "find any" could open a dead window. `CanOpen` is cherry-picked whole from `claude/tandava-arena-mode`
+  (`e438e0e6d8`, 2026-10-29), which fixed exactly that and has not merged; its checklist entry stays with its branch.
+- **The words** (`partLine`, `cardLine`, `setSailLabel`, each part's forms) are serialized on `SagaView` and authored
+  by `author_voyage_window.py`'s Saga step, which stands down once on disk. `--check` validates the two parts and
+  their order, the forms, the words and the font, and three new negative controls fire.
+- **`FlowUi`** (new) is the small kit the Quests and Saga pages share (tokens, rect, fill, text, card, cover crop,
+  posing); `QuestCarouselView` now uses it and lost its own copies.
+- `VoyageView` has no user left on the Voyage window. It is kept (with the cherry-picked fix), not retired.
+
+**Not built: the lock.** The board draws part 2 locked ("After Tandava"). The game has no record of finishing
+Tandava (progress counts plays only for the quest chain's modes), so a lock would be a new progression rule and, as a
+guess, could leave the Severing unplayable. Both parts stay playable, as they are today. **Decision for Shombith:**
+what "Tandava done" means (a win, a finish, a play) and where it is recorded.
+
+**Verified:**
+- `unity_refcompile` player and editor: 0 errors in project code.
+- `author_voyage_window.py --check --self-test`: every negative control fires.
+- Menu_Main holds no reference to the 224 removed documents.
+
+**Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
+
+
+## 158. Built: the Episodes tab, Rev 77 "Episodes" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
+
+**Asked (Shombith, 2026-11-09):** "build the episodes tab in the picked look too".
+
+**Built:** `EpisodesView` (new) replaces the old Episode 2 bar and "Coming soon" in both windows that have one.
+- **The panel** (the board's 1000 x 600): the whole galaxy, muted (`VoyagePlaceArt.Galaxy()`: the same density
+  field and colour key as the map, 110,000 ly across, graded saturate .2 and brightness .5 as the board drew it,
+  then spread across a dark grey range, 8 to 96, so the light words over it read). At its foot: the lock (the old
+  bar's own sprite), "Episode 2", "Coming soon", and one line.
+- **One button under it** goes back to another tab of the same window (`VoyageWindowTabs.Show`): "Back to the Saga"
+  in the Voyage window, "Back to Episode 1" in the Quests window, each with its own line.
+- **The galaxy is painted on the first show** of the tab, not at load, and kept: about 140 ms on a desktop CPU,
+  measured offline (the core is the costly part of the field), so 160 x 96 texels.
+- **The words, the lock, the back tab and the tabs component** are serialized on `EpisodesView` and authored by
+  `author_voyage_window.py`'s Episodes step for each window, which stands down once on disk. `--check` validates
+  them, and three new negative controls fire (a button going back to the wrong tab in either window, a retuned label).
+- Rev 77 is now built in full: Voyages (151), Quests (155), Saga (156), Episodes (157).
+
+**Verified:**
+- `unity_refcompile` player and editor: 0 errors in project code.
+- `author_voyage_window.py --check --self-test`: every negative control fires.
+- Menu_Main holds no reference to the 49 removed documents.
+- The galaxy picture was rendered offline from the same code (the spiral reads; white words over it read).
+
+**Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
+
+
+## 159. Reverted: the in-game builds of sections 151, 156, 157 and 158 (2026-11-09, claude/epic-fermat-6c7n2l)
+
+**Asked (Shombith, 2026-11-09), after screenshots of the build:** "These are still old UI's ... What the hell is this,
+remove it create new ideas completely ... This is so bad", "The quality is very very bad", and then "Revert all,
+redesign window".
+
+**What went wrong:**
+- The build was never seen before it reached him. It was written as runtime-built UI with no editor and no render, and
+  it failed in ways a single look would have caught:
+  - the vessel strip squeezed about twenty hulls into one row, so each name wrapped one letter per line;
+  - every button in a row drew 0 px high;
+  - the card faces were near black.
+- Only the right column was redrawn. The tab row and the map stayed in the old look, so the window as a whole still
+  read as the old UI.
+
+**Reverted** (the six build commits, `59da71f631`, `b21c9cd767`, `d468b43343`, `3b1ce69446`, `68441a8d5f`,
+`758910be33`): the Voyage window, the Quests window, `VoyageOpenCard`, `VoyageJobsView`, `VoyageMapGraphic`, the
+`VoyageLines` added for them, `ScreenSwitcher`'s `QUESTS` modal and Home's quest card are back as they were before
+section 151. The quest tracker is the Voyage window's Quests tab again. Every Voyage file now matches the tree before
+`59da71f631`.
+
+**Kept:** `ArcadeGameConfigureModal.CanOpen` and `VoyageView`'s use of it (cherry-picked from
+`claude/tandava-arena-mode`), so the Saga cards' Set sail never opens the empty host copy of the launch window.
+
+The records of sections 151 and 156-158 stay as history.
+
+**Next:** completely new ideas for the whole Voyage window (tabs, map, voyage cards, picking vessels), drawn on Frogma
+and picked before anything is built. Each pick is built and then checked against a render before it is called done.
+
+
+## 160. Rev 79 mockups: the Voyage window, four new directions - the whole window redrawn (2026-11-09; Shombith picked B, taken forward in section 161)
+
+**Asked (Shombith, 2026-11-09):** "These are still old UI's ... remove it create new ideas completely", "The quality is
+very very bad", "Revert all, redesign window". So every option redraws the WHOLE window - its tabs, the HyperSea map
+and the edge view, the voyages, and picking the squad's vessels - and none is a variation of Rev 70, 71, 74 or 77.
+
+**Made room:** Frogma was at 510 of its 512 files. On Shombith's word ("rev71,74,77,44,46,49 remove") the 58 boards of
+Rev 44, 46, 49, 71, 74 and 77 came off the canvas with their title notes and sections. Their copies stay in
+`Docs/MenuRedesignB/board/`.
+
+**On the canvas:** tab **Voyages**, round "Rev 79 - Voyage window, four new directions" (canvas version
+`1794259825-c678`).
+- Copies: `Docs/MenuRedesignB/board/R79*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r79_voyages.py` (it reuses
+  Rev 71's kit and Rev 74's map tiers).
+- Every board is the real window inside the menu: the nav band, the hub row with VOYAGE lit, the title and Back, on the
+  menu's ground, with the canvas's own art.
+- All six pass `check_mockup.py` (noise 56-60 of 60) and `frogma.py check`. They were rendered locally with the real
+  art and looked at before publishing, the open vessel picker included.
+
+**The options** (the same content in all four: four voyages, the Skim Wing squad, one Set sail):
+- **A - Chart (recommended):** the map is the window. The voyages are pins with their names on the galaxy map, and the
+  course from the Ark is a dashed line. The edge view is a band at the map's foot. The picked voyage docks on the right:
+  its title, line and numbers, the place, the squad's three hulls and Set sail. The tabs are small pills over the map.
+- **B - Logbook:** application-like. A list of voyages on the left, the course large in the middle with the edge view
+  under it, and the squad as three seat rows on the right.
+- **C - Formation:** the squad is the hero, like the Hangar. The destinations are a ribbon across the top, the map is a
+  small round scope, and the edge view is a band beside Set sail.
+- **D - Route:** the voyage as a journey. One line runs from Tumult to the destination and rises and falls with the
+  course's height through the disk, so the map and the edge view become one picture.
+- **Compare:** picking a vessel, the four ways side by side. In every option a press on a hull opens every hull at
+  once, and one press picks. Six hull renders are on the canvas; the game's grid would scroll for more.
+- **Notes.**
+
+**Picked (Shombith, 2026-11-09): B, Logbook:** "B looks good make it better more mockus inspired from B" (section 161).
+
+**Recommended: A.** It keeps the map in view while you pick, which is what Garrett built the window around, and it
+redraws the parts the build left old: the tabs and the map.
+
+**Differs from the build:** any pick replaces the whole Voyage window: `MissionView` through its generator, and
+`VoyageJobsView`'s layout. Garrett's voyage scene launch (`VoyageLaunch`) and the voyage rules stay as they are. The
+build will be checked against a render before it is called done (section 159).
+
+
+## 161. Rev 80 mockups: the Voyage window, B Logbook taken further (2026-11-09; Shombith picked B1 with B3's cards, section 162)
+
+**Asked (Shombith, 2026-11-09, on Rev 79):** "B looks good make it better more mockus inspired from B".
+
+**On the canvas:** tab **Voyages**, round "Rev 80 - Voyage window, B Logbook taken further" (canvas version
+`1794263800-c2dc`).
+- Copies: `Docs/MenuRedesignB/board/R80*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r80_voyages.py`, built on Rev
+  79's.
+- All six boards pass `check_mockup.py` (noise 58-59 of 60) and `frogma.py check`. They were rendered locally with the
+  real art and looked at before publishing, B1's open vessel picker included.
+- B1 first drew at 74 visual elements, the kind of screen rejected before as noisy. It was trimmed to 59 by merging
+  lines, not by dropping what B1 is for.
+
+**Kept from B:** the order - the voyages as a list on the left, the picked voyage's course in the middle with the edge
+view under it, the squad on the right, one Set sail - the tabs as large words, and the vessel grid where one press
+picks.
+
+**The options:**
+- **B1 - Refined (recommended):** each row has its course as a thumbnail, who brought it, and its numbers, so a voyage
+  is recognised at a glance. The voyage's place line fills the gap above the squad. Each seat shows its pilot's
+  portrait beside the hull. The maps' colour is turned down, so the course line reads first.
+- **B2 - Wide sea:** a narrow list, and the course map across most of the window with the voyage written over it. The
+  edge view is a strip under the map, and the squad a bar along the foot beside Set sail.
+- **B3 - Crew:** the squad leads. Three tall seat cards show each pilot full length over their hull. The course is
+  smaller, between the list and the cards.
+- **B4 - Quiet:** the calmest. The list is words only with thin rules, the maps are muted, and there is the most space.
+- **Compare:** each option's changed piece beside the others: B1's row, B2's squad bar, B3's seat card, B4's quiet
+  row and muted course.
+- **Notes.**
+
+The seats use the four pilot portraits on the canvas (Shrapnel, Feist, Longshift, Flux).
+
+**Picked (Shombith, 2026-11-09): B1, with B3's cards:** "I like b1 but I want that 3 card information still and the
+right panel looks a bit dull" (section 162).
+
+**Recommended: B1.** It answers what B left plain (rows you can't tell apart, seats with no pilot, a loud map) without
+adding a new region to the window.
+
+
+## 162. Rev 81 mockups: B1 with B3's seat cards, a livelier right panel (2026-11-09; Shombith picked B5, section 163)
+
+**Asked (Shombith, 2026-11-09, on Rev 80):** "I like b1 but I want that 3 card information still and the right panel
+looks a bit dull".
+
+**On the canvas:** tab **Voyages**, round "Rev 81 - Voyage window, B1 with B3's seat cards" (canvas version
+`1794264128-4c72`).
+- Copies: `Docs/MenuRedesignB/board/R81*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r81_voyages.py`, built on Rev
+  80's.
+- All boards pass `frogma.py check`. They pass `check_mockup.py` measured against the picked board
+  (`--baseline Docs/MenuRedesignB/board/R80B1.dc.html`, a budget of 78), at 65-68 visual elements. Adding B3's cards to
+  B1, which was already at 59, takes each option past the default budget of 60; the baseline is the gate's own rule
+  for a round built on a pick.
+- They were rendered locally with the real art and looked at before publishing.
+
+**Kept from B1:** the list (each course's picture and who brought it), the muted course map and the edge view. The
+course column is 660 wide instead of 740, so the right panel has room for three cards.
+
+**B3's cards, in all three:** each seat shows its pilot large, the hull under them, the vessel's name, who flies it,
+and the element. A press on a card opens the hull grid; one press picks.
+
+**The options:**
+- **B5 - Cards (recommended):** the title, the line, the numbers labelled (Distance, Sail, Intensity), the place line,
+  then the three cards and Set sail.
+- **B6 - Manifest:** each card is its pilot, full height like a poster, with the hull over the foot of the card. The
+  most character.
+- **B7 - Banner:** the destination's own picture heads the panel with the title and numbers over it; the cards sit
+  under it.
+- **Notes.** No compare board: only the right panel differs, and the three boards stand side by side on the canvas.
+
+**Picked (Shombith, 2026-11-09): B5, Cards:** "B5 delete others and show me how the squad selection and changing
+works, create a live playable mockup" (section 163). B6 and B7 are off the canvas; their copies stay in the repo.
+
+**Recommended: B5.** It adds B3's cards with the least change to B1, and the large pilots and the labelled numbers are
+what lift the panel out of plain text.
+
+
+## 163. Rev 82: B5 playable - choosing the squad and changing its seats (2026-11-09; the editor's look was rejected, redrawn in section 164)
+
+**Asked (Shombith, 2026-11-09):** "B5 delete others and show me how the squad selection and changing works, create a
+live playable mockup".
+
+**On the canvas:** tab **Voyages**, board `R82Squad` (canvas version `1794264576-0be8`). B6 and B7 came off the canvas
+in the same publish.
+- Copy: `Docs/MenuRedesignB/board/R82Squad.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r82_voyages.py`.
+- It passes `frogma.py check` (every handler pressed) and `check_mockup.py` against B5 (69 of 88).
+- It was pressed through locally, step by step, and filmed (a 20-second clip, shown in the chat, not committed).
+
+**How it plays** (the whole window as B5 draws it):
+- **The squads** are chips over the cards: Skim Wing (yours) and Breakers (Kestrel's, which you joined). A press
+  switches the squad, and its three seats with it.
+- **A seat you may change:** a press on its card opens the seat editor over the course, with four tabs: Vessel (the
+  hull renders), Pilot (the portraits, each noting who they fly now), Element and Artifact. One press on a choice picks
+  it, and the card behind changes at once. Done (or B) closes the editor.
+- **The swap:** a pilot flies one seat, so picking one who already flies another seat swaps the two (the Ark's rule,
+  `SavedSquad.KeepCardsOwn`).
+- **A seat you may not change** is dimmed and says whose it is: a friend's seat in your squad, and every seat but yours
+  in a squad you joined (the Ark's rule, `SquadsPage.CanEdit`).
+- **The measured case:** changing the Leader's vessel, pilot, element and artifact takes five presses after opening the
+  seat (one per choice, plus a tab). The built window this replaces took 22.
+
+**Not decided here:** whether a change saves to the squad at once (as drawn) or waits for a Save squad press. As
+drawn, every pick saves, which is what the 22-press complaint asked for.
+
+## 164. Rev 83 mockups: the seat editor in the game's own look (2026-11-09; Shombith picked S2 Hangar bay, built in section 165)
+
+**Asked (Shombith, 2026-11-09, on Rev 82):** "Bro it looks soooo bad the selection UI, make it modern sleek and with
+our cosmic shore UI, what even is this, mockups for this now".
+
+**What was wrong with Rev 82's editor:** a black box of outlined squares over the course, with cyan rings for the
+picked tile. Nothing in it came from the style guide, and no choice was large enough to read.
+
+**On the canvas:** tab **Voyages**, section `sec-rev83`: `R83Compare` (Rev 82's editor, opened on the Leader), `R83S1`,
+`R83S2`, `R83S3` and `R83Notes` (canvas version `1794265064-6300`).
+- Copies: `Docs/MenuRedesignB/board/R83*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r83_voyages.py` (builds on
+  r82's logic).
+- Every board passes `frogma.py check` and `check_mockup.py` against B5 (69 of 88).
+- Each was rendered locally with the real art and pressed through: open a seat, change tab, pick, the pilot swap, an AI
+  seat.
+
+**What all three draw from:**
+- The style guide (`Docs/UI_STYLE_GUIDE.md`): the corner sliver, filled plate tiles, Jade (#21C0BD) for the picked
+  thing (a top line and a check), and a popup on #00010A with a 1-unit light border and Done straddling its foot.
+- Rev 54 A, the Showroom Shombith picked as modern: the choice is the hero and the options are a slim strip.
+- The seat being changed is outlined in Jade.
+
+**The three options** (all keep Rev 82's behaviour: one press picks, the card behind changes at once, the pilot swap,
+and the seats you may not change):
+- **S1 Showroom (recommended).** The current choice is the hero: the hull render large with the game's own line for it
+  (`SO_Class_<hull>.asset` Description), or the pilot full length. Its name is at 48, with "Vessel 1 of 6" over it. The
+  options are a strip of plate tiles along the foot.
+- **S2 Hangar bay.** The choice stands large over a lit floor, with its name and line under it. The options are sleek
+  rows on the right, each with its render.
+- **S3 Seat sheet.** No tabs. The seat's own panel opens into a sheet with its pilot and name at the head, and Vessel,
+  Pilot, Element and Artifact as four rows at once. Four presses change everything.
+
+**Real content:** the hull lines are the game's (the Serpent's "sheilded" is the game's own typo). The artifacts are
+the game's: Aegis, Aftershock, Hydra and Javelin (`Assets/_SO_Assets/Pilots/Artifacts`). The pilots carry no invented
+biography. (Corrected in section 165: the artifacts' descriptions are not empty, `Artifact_Aegis.asset` has one, and the
+built editor shows them; the pilots' `PilotSO` descriptions are the ones that are empty.)
+
+**Still open from section 163:** whether a change saves at once or waits for Save squad.
+
+**Picked (Shombith, 2026-11-09):** S2 Hangar bay, "I like this one build everything": the B5 window with the S2 seat
+editor, built in the game.
+
+## 165. Built: the Voyages tab as the board - Rev 81 B5 with the Rev 83 S2 seat editor (2026-11-09, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-09, on Rev 83):** "I like this one build everything" (S2 Hangar bay).
+Affects: Garrett's Voyage window (`VoyageJobsView`, his voyage data, launch and Ark escort, all kept).
+
+**What was built:**
+- `VoyageBoard` (`Assets/_Scripts/UI/Views/VoyageBoard.cs`) builds the Voyages tab at runtime over the page.
+  `VoyageJobsView` drives it when its new `board` toggle is on (the default). Off, the old map column and cards draw as
+  before.
+- **The list (left).** One row per voyage on offer, plus the Ark escort:
+  - each row shows its course on the HyperSea's water (`VoyageRoutePoster`), "01  Lantern Reach", who brought it, and
+    its three numbers;
+  - a press opens that voyage, and one voyage is always open.
+- **The course (middle).** The window's own galaxy map stands over its edge view in the board's course column. It
+  frames the open voyage's course.
+- **The right panel:**
+  - the open voyage's title and line (`VoyageJob.Summary`);
+  - Distance, Sail and Intensity;
+  - the squads as chips, the active one lit cyan;
+  - the active squad's three seat cards (the pilot's portrait, the hull, the vessel's name, who flies it and the pilot,
+    and the element and artifact), with seats you may not change dimmed and saying whose they are;
+  - the Lime Set sail, a copy of the window's own call to action.
+  - For the Ark escort, the panel also carries its difficulty stepper.
+- **The seat editor (S2 Hangar bay).** A press on a seat card you may change opens the editor over the list and the
+  course, and outlines that card in Jade. The editor has:
+  - Vessel, Pilot, Element and Artifact tabs;
+  - the choice large over a Jade-lit floor (`kit_pool`), with its name at 36 and its line: the hull's own description,
+    "Flies the Sparrow for Skim Wing", or the artifact's own description;
+  - the options as a list of plate rows on the right, the picked one with a Jade top line and a Jade mark;
+  - Done straddling the editor's foot.
+- **One press picks and saves.** The card behind changes at once, under the Ark's rules (`SquadsPage.CanEdit`,
+  `KeepCardsOwn` for the pilot swap, `FillPilots`). This settles the section 163 question as drawn: changes save at
+  once, with no Save squad press.
+- **Words** are 20 new `VoyageLines` (Board*), in the voyage spec (`Docs/Voyages/voyage_slice.json`), written by
+  `author_voyage_assets.py`.
+- **Look** comes from one asset, `Assets/Resources/VoyageBoardStyle.asset` (`VoyageBoardStyleSO`), written and checked
+  by `Tools/Build/author_voyage_board.py` (`--check`, `--self-test`): the kit's sliver sprites, the style guide's colour
+  tokens (checked against `Docs/UI/froglet-tokens.json`), and the B5 column proportions.
+
+**Differs from the boards:**
+- The hulls are each class's own large render (`SO_Vessel.SquadImage`). The canvas's lit renders are not in the game.
+- The window keeps its four tabs (Voyages, Saga, Quests, Episodes), as section 119 asked; the boards draw three.
+- B on a pad does not close the seat editor yet: Done does (the window's Back closes the window).
+
+**Verified:**
+- `unity_refcompile`, player and editor configurations: 0 errors in project code.
+- `VoyageBoardTests` (edit mode): written and compiled, not run.
+- The ship gates, `author_voyage_assets.py --check` and `author_voyage_board.py --check`.
+- **No Unity editor ran.** The hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Second pass (Shombith, 2026-11-09, with a screenshot of the build: "it looks nothing like frogmas design").** What
+differed from R81B5, and what changed:
+- **The tabs** were the window's four framed buttons. They are now plain words in Chakra Petch capitals, 22 and 40
+  apart, the shown one light and underlined (`VoyageWindowTabs.Plain`).
+- **The course map** showed the whole galaxy explorer, with its tier ladder ("GALAXY ARM SECTOR ...") and its readout,
+  at galaxy scale: the tier ladder lit GALAXY, so the course was not framed. On the board the map is now plain
+  (`VoyageMapGraphic.Plain`: no ladder, no readout). `FrameOn` sets the view straight onto the open course, and the
+  frame holds through a resize until the player explores.
+- **The rows' thumbnails** drew the course as thick as the open card's. They now draw it at 45%
+  (`VoyageRoutePoster.LineScale`).
+- **The title** was cut to one line (two lines of Aldrich at 28 did not fit 72 units). It now has 84 units.
+- **Set sail** was a copy of the window's own button, which kept its own small size. It is now built full width:
+  #99FF80 on the sliver, the A keycap before the words. Done carries the B keycap. The keycaps are two new lines,
+  `BoardSailKey` and `BoardDoneKey`, which an empty field hides.
+- **The hulls** were the class's square 512 render, drawn small in a wide box. Each render is now cropped to the hull,
+  measured from the PNG by `author_voyage_board.py` (`HullCrops` on the style), so it fills the box.
+- **A seat card's lines** wrapped to three and clipped. Who flies it, and the element and artifact, are now one line
+  each.
+
+Not changed: the menu's own ground (the blue waves) is the Menu_Main background behind every window. The boards drew
+it darker.
+
+**Third pass (Shombith, 2026-11-10, two screenshots: "What the hell? You are messing with me?").** The second pass was
+pushed without being seen in Unity, against this round's own rule (section 159: checked against a render before it is
+called done). Its screenshots showed what was still wrong:
+- **The tabs** kept dark boxes and mixed-case Aldrich labels. The cause: the tabs' kit components (`KitThemedGraphic` on
+  Fill, Border and the brackets; `KitText` on the label) put the kit's look back every time the window is enabled.
+  `VoyageWindowTabs.Plain` now stands those components down on the tabs before restyling them.
+- **The course map** was framed on the course, which `FrameOn` fixed. But every star, cluster and landmark was named, and
+  a tapped star's card covered the course. The plain map now names only the course's two ends, draws no sky names, and
+  opens no card.
+- **The Quests tab** is the old quest track, untouched by this round: the B boards drew no Quests tab.
+
+**Shipped as is (Shombith, 2026-11-12: "just /ship this I will fix it later").** The look has not been seen in Unity
+since the third pass. The hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Follow-ups (debt this branch created, measured 2026-11-12; rows, not done):**
+- **Two copies of the Ark's seat rules.** `VoyageBoard` repeats `VoyageOpenCard`'s seat logic: who sits in a seat, the
+  person's name, the artifact's name, and a change written back with `KeepCardsOwn` and `FillPilots`. Only `IsMySeat`
+  and `CanEdit` are shared (`internal static`). Fold them into one static class before either copy changes.
+  Measure with `grep -n "KeepCardsOwn\|FillPilots" Assets/_Scripts/UI/Views/Voyage*.cs`: 2 files.
+- **The old layout is unreachable while `board` is on.** With `VoyageJobsView.board` on (the default), nothing the
+  Voyages tab draws uses `VoyageOpenCard`, the job-card grid, or `mapHeight`, `columns` and `cardColumn`. Once the board
+  is accepted in Unity, retire them; while it is not, they are the way back.
+- **The Quests tab** is the pre-redesign quest track. Draw it on Frogma before building it.
