@@ -198,6 +198,16 @@ act = bpy.data.actions.get("rig|rig|hangaropen")
 arm.animation_data_create()
 arm.animation_data.action = act
 sc.frame_set(int(act.frame_range[0]))
+if SCENE == "pier":
+    # the pier view: the clam doors swung on past the model's open pose, the bottom leaf folded down to the pier's
+    # level and the top one up, so the mouth is a clear frame onto the cell
+    from mathutils import Quaternion  # noqa: E402
+    arm.animation_data.action = None
+    for _bn, _deg in (("hangar.door.T", float(os.environ.get("ARK_DOOR_T", "-150"))), ("hangar.door.B", float(os.environ.get("ARK_DOOR_B", "150")))):
+        _b = arm.pose.bones[_bn]
+        _b.rotation_mode = "QUATERNION"
+        _b.rotation_quaternion = Quaternion((1, 0, 0), math.radians(_deg))
+    bpy.context.view_layer.update()
 paint(ark, FLEET, BODY, DOMAIN_ARK, ENGINE_ARK)
 
 # the hull's prisms in the model's own sockets, each socket's kind at its real size, in the Ark's (the squad's) domain
@@ -276,7 +286,13 @@ CAM = {   # scene -> (location, aim, lens, focus, f-stop): Rev 61 C's camera and
     # the converter, open to the cell: from the hangar's lip, out of the open mouth (Shombith, 2026-11-12: "I don't want
     # a room ... an open part of the Ark, where this is happening outside in the cell"); Garrett's combine is laid over
     "deck": ((-26.0, -128.0, -8.0), (-13.0, -95.0, -19.5), 26, 40.0, 8.0),
+    # the converter, second pass (Shombith, 2026-11-12: "the camera should be inside the Ark and the crystals outside on
+    # an elongated platform ... we should be able to see the cell toybox, and the conversion happens in the middle"):
+    # from the back of the hangar, out of the open mouth, down the pier that runs out into the cell
+    "pier": ((0.0, -63.0, -16.4), (0.0, -128.0, -19.6), 24, 65.0, 16.0),
 }[SCENE]
+PIER_MID = Vector((0.0, -128.0, Z0))      # the pier's middle: where Garrett's combine is laid over
+PIER_END = -170.0
 NEAR = [Vector(CAM[0])]
 PAD_LIGHTS = []
 MOVERS = []          # (object, base matrix, phase): things that hover
@@ -391,12 +407,14 @@ for _ in range(DUST):
     p = (rng.uniform(-12.5, 12.5), rng.uniform(-86, -45), rng.uniform(Z0 + 1.0, Z1 - 0.6))
     if min((Vector(p) - n).length for n in NEAR) < 8.0 or (abs(p[0]) < 7.5 and -72 < p[1] < -44):
         continue
+    if SCENE == "pier" and (abs(p[0]) < 8.0 or p[1] < -66):      # the pier view looks down the middle: kept clear
+        continue
     pal = rng.choice(DOMS3 + ["Blue"] * 4)
     s = rng.uniform(0.03, 0.1)
     add("box", p, (s * 2.2, s, s), (pal, "plain", 0.15), rot=rand_rot())
 
 # ------------------------------------------------------------------------------------------------ outside
-win = K.image_emission("cell_view", os.path.join(ASSETS, "window.png"), 0.22)
+win = K.image_emission("cell_view", os.path.join(ASSETS, "window.png"), 0.75 if SCENE == "pier" else 0.22)
 BACKDROPS = []
 for (y, rotz) in ((-420.0, 0.0), (420.0, math.pi)):          # seen through the mouth from inside; outside, the world is the cell
     bpy.ops.mesh.primitive_plane_add(size=1, location=(0, y, 0), rotation=(math.radians(90), 0, rotz))
@@ -404,6 +422,12 @@ for (y, rotz) in ((-420.0, 0.0), (420.0, math.pi)):          # seen through the 
     BACKDROPS.append(bp)
     bp.scale = (1500, 850, 1)
     bp.data.materials.append(win)
+
+
+def seg_dist(q, a, b):
+    ab = b - a
+    u = max(0.0, min(1.0, (q - a).dot(ab) / ab.length_squared))
+    return (q - (a + ab * u)).length
 
 
 def lattice_tube(path, radius, pal, step=1.6):
@@ -432,6 +456,8 @@ for t in range(7):
     rad_ = rng.uniform(1.6, 3.2)
     if SCENE == "deck" and min((Vector(q) - Vector(CAM[0])).length for q in pts) < 40.0:
         continue                              # a tube through the deck camera's lens: left out of this view
+    if SCENE == "pier" and min(seg_dist(Vector(q), Vector(CAM[0]), Vector((0.0, PIER_END - 10.0, Z0 + 4.0))) for q in pts) < 15.0:
+        continue                              # a tube across the pier or the sight line down it: left out of this view
     lattice_tube(pts, rad_, "Blue")
 
 
@@ -781,11 +807,43 @@ if SCENE == "decor":
     CAM = ((2.4, O.y - 6.6, O.z + 3.2), (1.0, O.y + 8.0, O.z + 3.2), 26, 13.2, 3.2)
 
 K.build(bevel_width=0.06)
+PIER_LIGHT = None
+if SCENE == "pier":
+    # the pier: the hangar's floor carried on out of the open mouth into the cell, in the hull's plating, on girders,
+    # the domain's trim down both edges, posts with the squad's prisms for lamps, and a round deck in the middle
+    # (trimmed in the domain) where the four crystals turn and fuse
+    L_ = FRONT - PIER_END
+    yc = (FRONT + PIER_END) / 2
+    block(0.0, yc, Z0 - 0.45, 20.0, L_, 0.9, BODY, name="pier")
+    block(0.0, yc, Z0 - 2.4, 4.0, L_ - 4.0, 3.0, BODY, name="spine")
+    for k in range(int(L_ / 8) + 1):
+        y = FRONT - 2 - k * 8.0
+        block(0.0, y, Z0 - 1.6, 19.0, 0.6, 1.4, BODY, name="girder")
+    for sx in (-1, 1):
+        block(sx * 9.55, yc, Z0 + 0.04, 0.12, L_ - 0.6, 0.08, DOMAIN_ARK, bevel=0, name="trim")
+        block(sx * 10.02, yc, Z0 - 0.45, 0.06, L_, 0.06, DOMAIN_ARK, bevel=0, name="trim")
+        for k in range(int(L_ / 10)):
+            y = FRONT - 6 - k * 10.0
+            if abs(y - PIER_MID.y) < 9:
+                continue
+            block(sx * 9.4, y, Z0 + 0.7, 0.3, 0.3, 1.4, BODY, name="post")
+            add("box", (sx * 9.4, y, Z0 + 1.75), (0.22, 0.22, 0.6), (SQUAD, "plain", 1.0), fwd=(0, 0, 1), up=(0, 1, 0))
+    block(0.0, PIER_END - 0.3, Z0 + 0.04, 19.0, 0.12, 0.08, DOMAIN_ARK, bevel=0, name="trim")
+    bpy.ops.mesh.primitive_cylinder_add(vertices=96, radius=7.2, depth=0.3, location=(PIER_MID.x, PIER_MID.y, Z0 + 0.12))
+    _dk = bpy.context.active_object; _dk.data.materials.append(BODY)
+    for r_, th in ((7.0, 0.07), (5.2, 0.05)):
+        bpy.ops.mesh.primitive_torus_add(major_radius=r_, minor_radius=th, major_segments=128, minor_segments=8,
+                                         location=(PIER_MID.x, PIER_MID.y, Z0 + 0.3))
+        bpy.context.active_object.data.materials.append(DOMAIN_ARK)
+    # the crystals' own light on the deck under them (the combine is laid over this spot)
+    PIER_LIGHT = plight("POINT", PIER_MID + Vector((0, 0, 4.0)), 2600, (0.6, 1.0, 0.25), size=3.0)
+    # the cell's light falling on the pier from above
+    plight("AREA", (0.0, yc, 18.0), 9000, (0.55, 0.68, 1.0), size=60.0, aim=(0.0, yc, Z0))
 for _bp in BACKDROPS:                        # the cell's picture outside the hangar's mouth: only the hangar sees it, and
-    _bp.hide_render = SCENE not in ("squads", "deck")      # it would cut through the rooms
+    _bp.hide_render = SCENE not in ("squads", "deck", "pier")      # it would cut through the rooms
 for _o in col.objects:                       # the cell's lattice outside: no camera here looks out of the mouth, and one
     if _o.name == str(("Blue", "plain", 0.81)):      # of its curves dips through the hangar's mouth
-        _o.hide_render = SCENE != "deck"
+        _o.hide_render = SCENE not in ("deck", "pier")
 
 # ------ light and air
 
@@ -986,7 +1044,9 @@ def pose(t, run):
         ring.matrix_world = Matrix.Translation(CORE) @ Matrix.Rotation(math.tau * t * turns * (2.0 if run == "convert" else 1.0), 4, axis) @ base
     if SCENE == "converter":
         CORE_LIGHT.data.energy = 500 * (1.0 + 0.25 * math.sin(math.tau * 2 * t))
-    if SCENE == "deck":
+    if PIER_LIGHT is not None:
+        PIER_LIGHT.data.energy = 2600 * (1.0 + 0.2 * math.sin(math.tau * 2 * t))
+    if SCENE in ("deck", "pier"):
         for o_, l0 in zip(LATTICE, LAT0):
             o_.location = l0 + Vector((9.0 * s1, 0, 3.5 * c1))
         WIN_MAP.inputs["Location"].default_value = (0.03 * s1, 0.012 * c1, 0)
@@ -1038,20 +1098,28 @@ if ROOM_BOX is not None:
 LATTICE = [o for o in col.objects if o.name == str(("Blue", "plain", 0.81))]
 LAT0 = [o.location.copy() for o in LATTICE]
 WIN_MAP = None
-if SCENE == "deck":
+if SCENE in ("deck", "pier"):
     _wnt = win.node_tree
     _wtx = [n for n in _wnt.nodes if n.bl_idname == "ShaderNodeTexImage"][0]
     _tc = _wnt.nodes.new("ShaderNodeTexCoord")
     WIN_MAP = _wnt.nodes.new("ShaderNodeMapping")
     _wnt.links.new(_tc.outputs["UV"], WIN_MAP.inputs["Vector"]); _wnt.links.new(WIN_MAP.outputs[0], _wtx.inputs["Vector"])
-    WORLD_BG.inputs[1].default_value = 0.28
+    WORLD_BG.inputs[1].default_value = 0.28 if SCENE == "deck" else 0.5
 if os.environ.get("ARK_CAM"):              # "x,y,z;ax,ay,az;lens": try a camera
     _c = [tuple(float(v) for v in part.split(",")) for part in os.environ["ARK_CAM"].split(";")]
     CAM = (_c[0], _c[1], _c[2][0], (Vector(_c[1]) - Vector(_c[0])).length, 8.0)
 loc0, aim, lens, focus, fstop = CAM
 camd.lens, camd.clip_start, camd.clip_end = lens, 0.1, 3000
 camd.dof.use_dof, camd.dof.focus_distance, camd.dof.aperture_fstop = True, focus, fstop
-sc.view_settings.exposure = -0.9 if SCENE != "deck" else -0.4
+sc.view_settings.exposure = {"deck": -0.4, "pier": -0.7}.get(SCENE, -0.9)
+if os.environ.get("ARK_PROBE"):              # print what a column of rays from the camera hits, then stop
+    bpy.context.view_layer.update()
+    _dg = bpy.context.evaluated_depsgraph_get()
+    for zz in [Z0 + 0.5 * k for k in range(-2, 24)]:
+        _d = Vector((0.0, -128.0, zz)) - Vector(loc0)
+        ok, hit, _n, _i, ob, _m = sc.ray_cast(_dg, Vector(loc0), _d.normalized(), distance=500)
+        print("PROBE", round(zz, 1), ob.name if ok else None, tuple(round(v, 1) for v in hit) if ok else None, flush=True)
+    sys.exit(0)
 only = {int(x) for x in ONLY.split(",")} if ONLY else None
 runs = [("loop", LOOP)] + ([("convert", CONV)] if SCENE == "converter" else [])
 if RUNS:
@@ -1076,8 +1144,9 @@ for set_name in SETS:
                     FLASH.data.energy = 0.0
             pose(t if run == "loop" else (f / n), run)
             s1 = math.sin(math.tau * t)
-            cam.location = Vector(loc0) + Vector((0.18 * s1, 0.0, 0.08 * math.sin(math.tau * 2 * t)))
-            cam.rotation_euler = (Vector(aim) + Vector((0.3 * math.cos(math.tau * t), 0, 0)) - cam.location).to_track_quat("-Z", "Y").to_euler()
+            sway = 0.0 if SCENE == "pier" else 1.0      # the pier holds still: Garrett's combine is laid over it
+            cam.location = Vector(loc0) + sway * Vector((0.18 * s1, 0.0, 0.08 * math.sin(math.tau * 2 * t)))
+            cam.rotation_euler = (Vector(aim) + sway * Vector((0.3 * math.cos(math.tau * t), 0, 0)) - cam.location).to_track_quat("-Z", "Y").to_euler()
             bpy.context.view_layer.update()
             sc.render.filepath = os.path.join(od, f"f_{f:04d}.png")
             bpy.ops.render.render(write_still=True)

@@ -1,11 +1,11 @@
 // Garrett's omni combine, captured from the Omni Combine Lab itself (Docs/Studios/OmniCombineLab.html, the source the
 // game's OmniCombinePlayer is a line-for-line port of): its four crystals idling, then the whole combine, stepped on
 // the lab's own manual clock at 10 fps and saved with a transparent background so it can be laid over the Ark.
-//   node r67_omni_capture.cjs <lab.html> <out_dir> [w h]
+//   node r67_omni_capture.cjs <lab.html> <out_dir> [w h pitch]   (pitch: the lab's 0.35; 0.12 from inside the Ark)
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
-const [, , lab, out, W = '960', H = '540'] = process.argv;
+const [, , lab, out, W = '960', H = '540', PITCH_ARG = '0.35'] = process.argv;
 (async () => {
   fs.mkdirSync(path.join(out, 'idle'), { recursive: true });
   fs.mkdirSync(path.join(out, 'combine'), { recursive: true });
@@ -28,7 +28,7 @@ const [, , lab, out, W = '960', H = '540'] = process.argv;
     const el = await p.$('#stage');
     await el.screenshot({ path: file, omitBackground: true });
   };
-  const YAW = 0.6, PITCH = 0.35, SPIN = 6 * Math.PI / 180;
+  const YAW = 0.6, PITCH = +PITCH_ARG, SPIN = 6 * Math.PI / 180;
   // idle: the four crystals each doing their effect, before the first sets off (the lab's lead is 2.5 s)
   await p.evaluate(() => window.__lab.reset());
   for (let f = 0; f < 25; f++) {
