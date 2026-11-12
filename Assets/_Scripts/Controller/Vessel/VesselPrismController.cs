@@ -376,30 +376,44 @@ namespace CosmicShore.Gameplay
         async UniTask ShapedSpawnLoopAsync(CancellationToken ct)
         {
             float travelled = float.PositiveInfinity, sinceLay = 0f;
+            Vector3 lastPos = transform.position;
             while (!ct.IsCancellationRequested)
             {
                 float warp = WarpFieldRuntime.ScaleAt(transform.position);
+                // The distance actually flown since the last loop, read from the hull's position rather than
+                // Speed x deltaTime: this loop runs BEFORE VesselTransformer.Update moves the hull, so this frame's
+                // Speed x deltaTime has not been flown yet. Counting it placed the prism a whole frame's flight
+                // too far back, and after a long frame (an editor hitch) right up against the previous one.
+                Vector3 pos = transform.position;
+                float moved = Vector3.Distance(pos, lastPos);
+                lastPos = pos;
+                // A jump far beyond the speed (a respawn or teleport) restarts the trail instead of laying across it.
+                if (moved > Mathf.Max(vesselStatus.Speed, 10f) * Mathf.Max(Time.deltaTime, 0.1f) * 4f + 50f)
+                {
+                    travelled = float.PositiveInfinity;
+                    moved = 0f;
+                }
                 if (spawnerEnabled && !trailPenUp && !tierHold && !vesselStatus.IsAttached && vesselStatus.Speed > 3f * warp)
                 {
-                    float step = vesselStatus.Speed * Time.deltaTime;
+                    float step = moved;
                     sinceLay += Time.deltaTime;
                     // Lay spacing in unwarped lengths (it stretches above Soar), then back into the warped world.
                     float nominal = speedShape.LaySpacing(wavelength, vesselStatus.Speed / Mathf.Max(warp, 1e-4f));
                     float wl = nominal * warp;
-                    bool lay = TrailSpeedShape.StepLay(ref travelled, step, wl, out float spacing, out float back);
+                    // Every prism is sized to the NOMINAL spacing, so lengths stay regular whatever the frame did.
+                    _laySpacing = speedShape.FrameAwareSpacing ? nominal : wavelength;
+                    bool lay = TrailSpeedShape.StepLay(ref travelled, step, wl, out float back);
                     if (!lay && sinceLay >= 3f)
                     {
-                        lay = true; spacing = Mathf.Max(travelled, 1e-3f); back = 0f; travelled = 0f;
+                        lay = true; back = 0f; travelled = 0f;
                     }
-                    if (lay)
+                    // A long frame (a hitch, a low frame rate at Top Speed) can fly past several spacing points: lay
+                    // each one back along the path, so the trail stays even. Past four, the rest open one gap.
+                    for (int n = 0; lay; n++)
                     {
                         sinceLay = 0f;
-                        // Sized to the NOMINAL spacing, not this lay's measured one: when a frame flies further than
-                        // the spacing (a very low frame rate) the gap opens, but every prism keeps the same length,
-                        // so the trail stays regular.
-                        _laySpacing = speedShape.FrameAwareSpacing ? nominal : wavelength;
                         _layBack = back;
-                        MeasureLayYawRate();
+                        if (n == 0) MeasureLayYawRate();
                         if (Mathf.Approximately(Gap, 0f))
                         {
                             CreateBlock(ApplyBoostGap(0f), Trail);
@@ -410,6 +424,8 @@ namespace CosmicShore.Gameplay
                             CreateBlock(ApplyBoostGap(-Gap * 0.5f), Trail2);
                         }
                         _layBack = 0f;
+                        if (n >= 3) { travelled = Mathf.Repeat(travelled, wl); break; }
+                        lay = TrailSpeedShape.NextLay(ref travelled, wl, out back);
                     }
                 }
                 else

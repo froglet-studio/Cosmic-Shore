@@ -110,47 +110,46 @@ namespace CosmicShore.Tests
             Assert.Less(perMetreTop, perMetreSoar / 3f);
         }
 
-        // Every prism one spacing from the last, whatever the frame time does: no gaps of two wavelengths when a
-        // timer ended a frame late, and no long prism beside a short one where the lay turns one-a-frame.
-        [TestCase(162f)]
-        [TestCase(400f)]
-        [TestCase(590f)]
-        [TestCase(610f)]
-        [TestCase(1080f)]
-        public void StepLay_LaysEvenlyAtEverySpeed_EvenWithAJitteryFrameTime(float speed)
+        // Every prism exactly one spacing from the last, whatever the frame time does: steady frames, jitter, and
+        // editor hitches of a tenth of a second (Caleb's fly test 3: prisms bunched after a long frame).
+        [TestCase(162f, 10f)]
+        [TestCase(400f, 10f)]
+        [TestCase(610f, 10f)]
+        [TestCase(1080f, 30f)]
+        [TestCase(1080f, 10f)]
+        public void StepLay_LaysEvenlyAtEverySpeed_ThroughJitterAndHitches(float speed, float spacing)
         {
             var rnd = new System.Random(7);
             float travelled = float.PositiveInfinity;
-            double path = 0, lastLayAt = 0;   // double: 2000 frames at Soar fly 36 km
-            bool belowSoar = speed * 1.2f / 60f < Wavelength;   // even the longest frame flies under a wavelength
+            double path = 0, lastLayAt = 0, firstLayAt = 0;   // double: 2000 frames at top speed fly 36 km
             int lays = 0;
             for (int frame = 0; frame < 2000; frame++)
             {
-                float dt = (1f / 60f) * (0.8f + 0.4f * (float)rnd.NextDouble());
+                float dt = frame % 97 == 0 ? 0.1f : (1f / 60f) * (0.8f + 0.4f * (float)rnd.NextDouble());
                 float step = speed * dt;
                 path += step;
-                if (!TrailSpeedShape.StepLay(ref travelled, step, Wavelength, out float spacing, out float back)) continue;
-                double layAt = path - back;
-                if (lays > 0)
+                bool lay = TrailSpeedShape.StepLay(ref travelled, step, spacing, out float back);
+                for (int n = 0; lay && n < 64; n++)   // the primitive owes every point; the controller caps at four
                 {
-                    Assert.AreEqual(spacing, (float)(layAt - lastLayAt), 1e-2f, "the prism goes where its spacing says");
-                    Assert.GreaterOrEqual(spacing, Wavelength - 1e-3f);
-                    Assert.LessOrEqual(spacing, Mathf.Max(Wavelength, step) + 1e-3f, "never more than one frame's flight");
-                    Assert.LessOrEqual(back, step + 1e-3f, "never further back than this frame flew");
-                    if (belowSoar) Assert.AreEqual(Wavelength, spacing, 1e-3f, "below Soar every prism is one wavelength on");
+                    Assert.GreaterOrEqual(back, 0f);
+                    double layAt = path - back;
+                    if (lays > 0)
+                        Assert.AreEqual(spacing, (float)(layAt - lastLayAt), 1e-2f, $"lay {lays} at frame {frame}");
+                    else
+                        firstLayAt = layAt;
+                    lastLayAt = layAt;
+                    lays++;
+                    lay = TrailSpeedShape.NextLay(ref travelled, spacing, out back);
                 }
-                lastLayAt = layAt;
-                lays++;
             }
-            Assert.Greater(lays, 10);
+            Assert.AreEqual((path - firstLayAt) / spacing + 1, lays, 1.0, "one prism per spacing flown, none dropped");
         }
 
         [Test]
         public void StepLay_LaysAtOnceWhenTheTrailStarts()
         {
             float travelled = float.PositiveInfinity;
-            Assert.IsTrue(TrailSpeedShape.StepLay(ref travelled, 2f, Wavelength, out float spacing, out float back));
-            Assert.AreEqual(Wavelength, spacing, Tol);
+            Assert.IsTrue(TrailSpeedShape.StepLay(ref travelled, 2f, Wavelength, out float back));
             Assert.AreEqual(0f, back, Tol);
             Assert.AreEqual(0f, travelled, Tol);
         }

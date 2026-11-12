@@ -358,8 +358,11 @@
       else {
         w.travelled += step; w.sinceLay = (w.sinceLay || 0) + dt;
         if (w.travelled >= wl) {
-          const sp = Math.max(wl, step), back = Math.min(w.travelled - sp, step);
-          lay(wl, back); w.travelled = back;   // sized to the nominal spacing, so a long frame only opens the gap
+          // TrailSpeedShape.StepLay / NextLay: every spacing point this frame flew past gets its prism (up to 4).
+          for (let k = 0; w.travelled >= wl; k++) {
+            const back = w.travelled - wl; lay(wl, back); w.travelled = back;
+            if (k >= 3) { w.travelled %= wl; break; }
+          }
           w.sinceLay = 0;
         } else if (w.sinceLay >= 3) { lay(wl, 0); w.travelled = 0; w.sinceLay = 0; }
       }

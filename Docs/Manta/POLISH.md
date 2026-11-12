@@ -186,3 +186,18 @@ neighbours ever touch (closest 0.97 m apart); mass per metre falls from 5.4 m³ 
 
 **Open.** At Soar itself prisms still fill 0.9 of their 10 m gap (Max Length Of Spacing, Caleb's number). Lower it
 (0.7 or so) if Soar still reads as a wall.
+
+### Fly test 3: prisms still bunching at full speed (Caleb, 2026-11-12)
+
+**Seen.** At Top Speed (editor, ~115 fps) some prisms sat almost against their neighbour and others far apart.
+
+**Found.** The lay loop counted the distance flown as Speed x deltaTime, but it runs at UniTask's Update timing,
+BEFORE `VesselTransformer.Update` moves the hull. So it counted a frame of flight that had not happened yet and set
+the prism that much too far back. On a steady frame that is a small wobble; on a long frame (an editor hitch of
+0.1 s is 108 m at Top Speed) it put the prism right up against the previous one, then a long gap.
+
+**Fixed.** The loop now reads the distance actually flown from the hull's position (a jump far beyond the speed, a
+respawn, restarts the trail). A frame that flies past several spacing points lays a prism at each of them, back
+along the path (`TrailSpeedShape.NextLay`, at most four a frame; past that one gap opens), so a hitch no longer
+shows. The lab lays the same way; the test drives 0.1 s hitches every 97 frames and checks every prism is exactly
+one spacing from the last.

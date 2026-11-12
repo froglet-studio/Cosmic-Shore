@@ -106,38 +106,38 @@ namespace CosmicShore.Gameplay
             wavelength * Mathf.Lerp(1f, TopSpacingMultiplier, Smooth(SoarSpeed, TopSpeed, speed));
 
         /// <summary>
-        /// The speed shape's lay pacing, one frame at a time: lay by distance flown, not by a timer. A timer
-        /// (<c>UniTask.Delay(wavelength / speed)</c>) ends on a frame, so between one and two wavelengths a frame
-        /// it waited two frames and laid up to twice the wavelength apart, flipping between one and two frames as
-        /// the frame time wobbled: the gaps and the irregular spacing.
+        /// The speed shape's lay pacing: lay by distance flown, not by a timer. Add this frame's flight with
+        /// <see cref="StepLay"/>, then keep calling <see cref="NextLay"/> for further prisms the same frame owes.
+        /// A timer (<c>UniTask.Delay(wavelength / speed)</c>) ends on a frame, so it laid up to twice the
+        /// wavelength apart and flipped as the frame time wobbled; this lays every prism exactly one spacing from
+        /// the last, at any frame rate, through a hitch included.
         /// </summary>
         /// <param name="travelled">Distance flown since the last prism; carried between frames. Pass
         /// <see cref="float.PositiveInfinity"/> to lay at once (the first prism after the trail starts).</param>
         /// <param name="step">Distance flown this frame.</param>
-        /// <param name="wavelength">The distance between prisms on one rail.</param>
-        /// <param name="spacing">At a lay: the distance from the previous prism to this one.</param>
-        /// <param name="back">At a lay: how far behind the vessel this prism goes, so that every prism is exactly
-        /// <paramref name="spacing"/> from the last (never more than this frame's step).</param>
-        /// <returns>True when a prism is laid this frame.</returns>
-        public static bool StepLay(ref float travelled, float step, float wavelength, out float spacing, out float back)
+        /// <param name="wavelength">The distance between prisms on one rail (<see cref="LaySpacing"/>).</param>
+        /// <param name="back">At a lay: how far behind the vessel, back along its path, this prism goes.</param>
+        /// <returns>True when a prism is laid.</returns>
+        public static bool StepLay(ref float travelled, float step, float wavelength, out float back)
         {
-            spacing = 0f; back = 0f;
-            step = Mathf.Max(0f, step);
-            wavelength = Mathf.Max(1e-3f, wavelength);
+            back = 0f;
             if (float.IsPositiveInfinity(travelled))
             {
-                spacing = Mathf.Max(wavelength, step);
                 travelled = 0f;
                 return true;
             }
-            travelled += step;
+            travelled += Mathf.Max(0f, step);
+            return NextLay(ref travelled, wavelength, out back);
+        }
+
+        /// <summary>One more prism if the flight already counted owes it (a frame that flew past more than one
+        /// spacing point): it goes at the next point along the path, <paramref name="back"/> behind the vessel.</summary>
+        public static bool NextLay(ref float travelled, float wavelength, out float back)
+        {
+            back = 0f;
+            wavelength = Mathf.Max(1e-3f, wavelength);
             if (travelled < wavelength) return false;
-            // Below Soar the wavelength point was crossed inside this frame; above it a frame flies more than a
-            // wavelength and the lay is one prism a frame, as far apart as a frame flies. Either way the prism goes
-            // back to that exact point and what was flown past it carries to the next, so neighbours stay evenly
-            // spaced through the change (a prism sized to a long gap never sits beside a short one).
-            spacing = Mathf.Max(wavelength, step);
-            back = Mathf.Min(travelled - spacing, step);
+            back = travelled - wavelength;
             travelled = back;
             return true;
         }
