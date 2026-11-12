@@ -207,6 +207,9 @@ namespace CosmicShore.UI
             ReleaseTarget();
         }
 
+        /// <summary>The converter's own tab in the Ark's row (for tools that open it: the look sheet).</summary>
+        public int ConverterTab => converterTab;
+
         /// <summary>Which part of the Ark tab <paramref name="tab"/> looks at: chosen by what the tab HOLDS (its page), never
         /// by its place in the row.</summary>
         ArkRoom RoomFor(int tab)

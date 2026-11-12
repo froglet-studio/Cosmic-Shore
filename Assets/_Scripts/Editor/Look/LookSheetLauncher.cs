@@ -322,7 +322,7 @@ namespace CosmicShore.Editor
                 }
                 if (!ShowScreen(switcher, screen))
                 {
-                    Note($"unknown screen '{screen}' (HOME, HANGAR, PORT, STORE, CODEX, ARK, PROFILE, ARCADE, TOYBOX, ARENA)");
+                    Note($"unknown screen '{screen}' (HOME, HANGAR, PORT, STORE, CODEX, ARK, ARK:CONVERTER, ARK:SQUADS, ARK:ARTIFACTS, PROFILE, ARCADE, TOYBOX, ARENA)");
                     _plan.failed++;
                     NextScreen(now);
                     return;
@@ -332,7 +332,7 @@ namespace CosmicShore.Editor
                 return;
             }
             if (now - _plan.stageStarted < _plan.settle) return;
-            string stem = "menu_" + screen.ToLowerInvariant();
+            string stem = "menu_" + screen.ToLowerInvariant().Replace(':', '_');
             CaptureAll(stem, screen);
             NextScreen(now);
         }
@@ -346,6 +346,14 @@ namespace CosmicShore.Editor
 
         static bool ShowScreen(ScreenSwitcher switcher, string screen)
         {
+            // ARK:<TAB> opens the Ark on one of its tabs, picked by what the tab holds (each tab has its own room inside
+            // the Ark, Docs/MENU_REDESIGN_B.md section 169).
+            var parts = screen.ToUpperInvariant().Split(':');
+            if (parts.Length == 2 && parts[0] == "ARK")
+            {
+                switcher.OnClickArkNav();
+                return ShowArkTab(parts[1]);
+            }
             switch (screen.ToUpperInvariant())
             {
                 case "HOME": switcher.OnClickHomeNav(); return true;
@@ -360,6 +368,28 @@ namespace CosmicShore.Editor
                 case "ARENA": switcher.OnClickArenaNav(); return true;
                 default: return false;
             }
+        }
+
+        static bool ShowArkTab(string tab)
+        {
+            var tabs = UnityEngine.Object.FindAnyObjectByType<ArkTabsView>(FindObjectsInactive.Include);
+            var converter = UnityEngine.Object.FindAnyObjectByType<ElementalConverterView>(FindObjectsInactive.Include);
+            if (!tabs) return false;
+            for (int i = 0; i < 16; i++)
+            {
+                var page = tabs.PageLogic(i);
+                bool hit = tab switch
+                {
+                    "CONVERTER" => converter && i == converter.ConverterTab,
+                    "SQUADS" => page is SquadsPage,
+                    "ARTIFACTS" => page is ArkArtifactsPage,
+                    _ => false,
+                };
+                if (!hit) continue;
+                tabs.Show(i);
+                return true;
+            }
+            return false;
         }
 
         static void TickRace(double now)
