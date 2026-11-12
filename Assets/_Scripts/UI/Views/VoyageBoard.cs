@@ -60,9 +60,27 @@ namespace CosmicShore.UI
 
         static readonly Element[] Elements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
         static readonly Color Clear = new(0f, 0f, 0f, 0f);
-        static readonly Color Route = new(0.784f, 1f, 0.353f, 1f);
-        static readonly Color Ark = new(1f, 0.78f, 0.25f, 1f);
-        static readonly Color Sea = new(0.75f, 0.75f, 0.8f, 1f);
+        static readonly Color RouteAuthored = new(0.784f, 1f, 0.353f, 1f);
+        static readonly Color ArkAuthored = new(1f, 0.78f, 0.25f, 1f);
+        static readonly Color SeaAuthored = new(0.75f, 0.75f, 0.8f, 1f);
+        static readonly Color DisabledAuthored = new(0.55f, 0.55f, 0.6f, 0.6f);
+
+        // Every colour is painted as the worn colour set has it (ColorTrace, Docs/VesselModels/COLOR_TRACE.md).
+        static Color Route => ColorTrace.Retrace(ColorTrace.Ui, RouteAuthored);
+        static Color Ark => ColorTrace.Retrace(ColorTrace.Ui, ArkAuthored);
+        static Color Sea => ColorTrace.Retrace(ColorTrace.Ui, SeaAuthored);
+        static Color Disabled => ColorTrace.Retrace(ColorTrace.Ui, DisabledAuthored);
+        Color Light => ColorTrace.Retrace(ColorTrace.Ui, _style.Light);
+        Color Sub => ColorTrace.Retrace(ColorTrace.Ui, _style.Sub);
+        Color Jade => ColorTrace.Retrace(ColorTrace.Ui, _style.Jade);
+        Color Cyan => ColorTrace.Retrace(ColorTrace.Ui, _style.Cyan);
+        Color Plate => ColorTrace.Retrace(ColorTrace.Ui, _style.Plate);
+        Color CardFoot => ColorTrace.Retrace(ColorTrace.Ui, _style.CardFoot);
+        Color Outline => ColorTrace.Retrace(ColorTrace.Ui, _style.Outline);
+        Color Popup => ColorTrace.Retrace(ColorTrace.Ui, _style.Popup);
+        Color RowPicked => ColorTrace.Retrace(ColorTrace.Ui, _style.RowPicked);
+        Color CtaFill => ColorTrace.Retrace(ColorTrace.Ui, _style.CtaFill);
+        Color CtaText => ColorTrace.Retrace(ColorTrace.Ui, _style.CtaText);
 
         VoyageBoardStyleSO _style;
         VoyageLines _lines;
@@ -203,7 +221,7 @@ namespace CosmicShore.UI
             scroll.viewport = list;
             scroll.horizontal = false;
             scroll.movementType = ScrollRect.MovementType.Clamped;
-            _message = Text(list, 18, s.Sub, TextAlignmentOptions.TopLeft);
+            _message = Text(list, 18, Sub, TextAlignmentOptions.TopLeft);
             Anchor(_message.rectTransform, 0f, 0f, 1f, 1f);
             _message.textWrappingMode = TextWrappingModes.Normal;
 
@@ -221,10 +239,10 @@ namespace CosmicShore.UI
             _panel = Node("Panel", _root);
             Anchor(_panel, s.PanelLeft, 0f, 1f, 1f);
 
-            _title = Text(_panel, 28, s.Light, TextAlignmentOptions.TopLeft);
+            _title = Text(_panel, 28, Light, TextAlignmentOptions.TopLeft);
             _title.textWrappingMode = TextWrappingModes.Normal;
             Top(_title.rectTransform, 0f, 84f);
-            _line = Text(_panel, 18, s.Light, TextAlignmentOptions.TopLeft);
+            _line = Text(_panel, 18, Light, TextAlignmentOptions.TopLeft);
             _line.textWrappingMode = TextWrappingModes.Normal;
             Top(_line.rectTransform, 92f, 56f);
 
@@ -281,7 +299,7 @@ namespace CosmicShore.UI
             qh.childAlignment = TextAnchor.MiddleLeft;
             qh.childControlWidth = qh.childControlHeight = true;
             qh.childForceExpandWidth = qh.childForceExpandHeight = false;
-            _squadLabel = Label(_chips, 13, s.Sub);
+            _squadLabel = Label(_chips, 13, Sub);
         }
 
         SeatView SeatCard(Transform parent, int seat)
@@ -289,11 +307,11 @@ namespace CosmicShore.UI
             var s = _style;
             var view = new SeatView();
             var rt = Node("Seat" + seat, parent);
-            var plate = Sliced(rt, s.Sliver14Fill, new Color(s.Plate.r, s.Plate.g, s.Plate.b, 0.35f));
+            var plate = Sliced(rt, s.Sliver14Fill, new Color(Plate.r, Plate.g, Plate.b, 0.35f));
             plate.raycastTarget = true;
             var fade = Node("Fade", rt);
             Stretch(fade);
-            Sliced(fade, s.FadeV, s.CardFoot);
+            Sliced(fade, s.FadeV, CardFoot);
             view.Button = rt.gameObject.AddComponent<Button>();
             view.Button.targetGraphic = plate;
             int index = seat;
@@ -306,16 +324,16 @@ namespace CosmicShore.UI
             var hull = Node("Hull", rt);
             Anchor(hull, 0.04f, 0.29f, 0.96f, 0.52f);
             view.Hull = HullBox(hull);
-            view.Name = Text(rt, 18, s.Light, TextAlignmentOptions.Center);
+            view.Name = Text(rt, 18, Light, TextAlignmentOptions.Center);
             Anchor(view.Name.rectTransform, 0f, 0.19f, 1f, 0.29f);
-            view.Who = Text(rt, 15, s.Light, TextAlignmentOptions.Center);
+            view.Who = Text(rt, 15, Light, TextAlignmentOptions.Center);
             Anchor(view.Who.rectTransform, 0.03f, 0.11f, 0.97f, 0.19f);
-            view.Kit = Text(rt, 15, s.Light, TextAlignmentOptions.Center);
+            view.Kit = Text(rt, 15, Light, TextAlignmentOptions.Center);
             Anchor(view.Kit.rectTransform, 0.03f, 0.03f, 0.97f, 0.11f);
 
             var edge = Node("Edge", rt);
             Stretch(edge);
-            view.Edge = Sliced(edge, s.Sliver14Line, s.Outline);
+            view.Edge = Sliced(edge, s.Sliver14Line, Outline);
             return view;
         }
 
@@ -329,19 +347,19 @@ namespace CosmicShore.UI
 
             var ground = Node("Ground", _editor);
             Stretch(ground);
-            Sliced(ground, s.Sliver14Fill, s.Popup).raycastTarget = true;
+            Sliced(ground, s.Sliver14Fill, Popup).raycastTarget = true;
             // The lit floor the choice stands on (Rev 83 S2).
             var pool = Node("Floor", _editor);
             Anchor(pool, 0.06f, 0.16f, 0.62f, 0.32f);
             var floor = pool.gameObject.AddComponent<Image>();
             floor.sprite = s.Pool;
-            floor.color = new Color(s.Jade.r, s.Jade.g, s.Jade.b, 0.35f);
+            floor.color = new Color(Jade.r, Jade.g, Jade.b, 0.35f);
             floor.raycastTarget = false;
             var border = Node("Border", _editor);
             Stretch(border);
-            Sliced(border, s.Sliver14Line, s.Light);
+            Sliced(border, s.Sliver14Line, Light);
 
-            _editorTitle = Label(_editor, 13, s.Light);
+            _editorTitle = Label(_editor, 13, Light);
             Corner(_editorTitle.rectTransform, 40f, 32f, 760f, 20f);
             var tabs = Node("Tabs", _editor);
             Corner(tabs, 40f, 64f, 760f, 40f);
@@ -369,8 +387,8 @@ namespace CosmicShore.UI
             wv.childControlWidth = wv.childControlHeight = true;
             wv.childForceExpandWidth = true;
             wv.childForceExpandHeight = false;
-            _heroName = Text(words, 36, s.Light, TextAlignmentOptions.BottomLeft);
-            _heroLine = Text(words, 18, s.Light, TextAlignmentOptions.TopLeft);
+            _heroName = Text(words, 36, Light, TextAlignmentOptions.BottomLeft);
+            _heroLine = Text(words, 18, Light, TextAlignmentOptions.TopLeft);
             _heroLine.textWrappingMode = TextWrappingModes.Normal;
 
             _options = Node("Options", _editor);
@@ -391,15 +409,15 @@ namespace CosmicShore.UI
             done.pivot = new Vector2(1f, 0.5f);
             done.sizeDelta = new Vector2(150f, 48f);
             done.anchoredPosition = new Vector2(-40f, 0f);
-            var doneFill = Sliced(done, s.Sliver10Fill, s.Popup);
+            var doneFill = Sliced(done, s.Sliver10Fill, Popup);
             doneFill.raycastTarget = true;
             var doneEdge = Node("Edge", done);
             Stretch(doneEdge);
-            Sliced(doneEdge, s.Sliver10Line, s.Light);
+            Sliced(doneEdge, s.Sliver10Line, Light);
             var doneButton = done.gameObject.AddComponent<Button>();
             doneButton.targetGraphic = doneFill;
             doneButton.onClick.AddListener(CloseEditor);
-            KeyedLabel(done, _lines?.BoardDoneKey, _lines?.BoardDone, s.Light);
+            KeyedLabel(done, _lines?.BoardDoneKey, _lines?.BoardDone, Light);
         }
 
         TabView Tab(Transform parent, int index)
@@ -414,7 +432,7 @@ namespace CosmicShore.UI
             v.childControlWidth = v.childControlHeight = true;
             v.childForceExpandWidth = true;
             v.childForceExpandHeight = false;
-            view.Label = Label(rt, 18, s.Sub);
+            view.Label = Label(rt, 18, Sub);
             var line = Node("Line", rt);
             view.Line = line.gameObject.AddComponent<Image>();
             view.Line.raycastTarget = false;
@@ -430,7 +448,7 @@ namespace CosmicShore.UI
             var s = _style;
             var view = new OptionView();
             var rt = Node("Option", _options);
-            var plate = Sliced(rt, s.Sliver10Fill, s.Plate);
+            var plate = Sliced(rt, s.Sliver10Fill, Plate);
             plate.raycastTarget = true;
             view.Button = rt.gameObject.AddComponent<Button>();
             view.Button.targetGraphic = plate;
@@ -441,7 +459,7 @@ namespace CosmicShore.UI
             top.pivot = new Vector2(0.5f, 1f);
             top.sizeDelta = new Vector2(0f, 3f);
             view.Top = top.gameObject.AddComponent<Image>();
-            view.Top.color = s.Jade;
+            view.Top.color = Jade;
             view.Top.raycastTarget = false;
             view.IconRect = Node("Icon", rt);
             view.IconRect.anchorMin = new Vector2(0f, 0f);
@@ -458,8 +476,8 @@ namespace CosmicShore.UI
             wv.childControlWidth = wv.childControlHeight = true;
             wv.childForceExpandWidth = true;
             wv.childForceExpandHeight = false;
-            view.Name = Text(view.Words, 18, s.Light, TextAlignmentOptions.Left);
-            view.Note = Text(view.Words, 14, s.Sub, TextAlignmentOptions.Left);
+            view.Name = Text(view.Words, 18, Light, TextAlignmentOptions.Left);
+            view.Note = Text(view.Words, 14, Sub, TextAlignmentOptions.Left);
             // The picked option's mark: a small Jade diamond at the row's end.
             var mark = Node("Mark", rt);
             mark.anchorMin = mark.anchorMax = new Vector2(1f, 0.5f);
@@ -467,7 +485,7 @@ namespace CosmicShore.UI
             mark.anchoredPosition = new Vector2(-24f, 0f);
             mark.localRotation = Quaternion.Euler(0f, 0f, 45f);
             view.Mark = mark.gameObject.AddComponent<Image>();
-            view.Mark.color = s.Jade;
+            view.Mark.color = Jade;
             view.Mark.raycastTarget = false;
             return view;
         }
@@ -492,7 +510,7 @@ namespace CosmicShore.UI
                 bar.pivot = new Vector2(0f, 0.5f);
                 bar.sizeDelta = new Vector2(3f, 0f);
                 view.Bar = bar.gameObject.AddComponent<Image>();
-                view.Bar.color = s.Cyan;
+                view.Bar.color = Cyan;
                 view.Bar.raycastTarget = false;
                 var thumb = Node("Course", rt);
                 thumb.anchorMin = thumb.anchorMax = new Vector2(0f, 0.5f);
@@ -515,9 +533,9 @@ namespace CosmicShore.UI
                 wv.childControlWidth = wv.childControlHeight = true;
                 wv.childForceExpandWidth = true;
                 wv.childForceExpandHeight = false;
-                view.Title = Text(words, 22, s.Light, TextAlignmentOptions.Left);
-                view.By = Text(words, 15, s.Sub, TextAlignmentOptions.Left);
-                view.Meta = Text(words, 15, s.Sub, TextAlignmentOptions.Left);
+                view.Title = Text(words, 22, Light, TextAlignmentOptions.Left);
+                view.By = Text(words, 15, Sub, TextAlignmentOptions.Left);
+                view.Meta = Text(words, 15, Sub, TextAlignmentOptions.Left);
                 _rows.Add(view);
             }
             return _rows[index];
@@ -544,10 +562,10 @@ namespace CosmicShore.UI
                 var view = RowFor(i);
                 view.Button.gameObject.SetActive(true);
                 bool on = i == open;
-                view.Plate.color = on ? s.RowPicked : Clear;
+                view.Plate.color = on ? RowPicked : Clear;
                 view.Bar.enabled = on;
                 Set(view.Title, row.Title);
-                view.Title.color = on ? s.Light : s.Sub;
+                view.Title.color = on ? Light : Sub;
                 Set(view.By, row.By);
                 Set(view.Meta, row.Meta);
                 view.Poster.Show(map, row.Course, Route, Ark, Sea);
@@ -619,7 +637,7 @@ namespace CosmicShore.UI
                 Set(chip.Label, squad == null ? null : squad.IsJoined()
                     ? TemplateText.Fill(_lines?.BoardSquadJoined, "name", squad.Name, "owner", squad.OwnerName)
                     : squad.Name);
-                chip.Label.color = on ? s.Light : s.Sub;
+                chip.Label.color = on ? Light : Sub;
                 chip.Edge.enabled = !on;
                 chip.Bar.enabled = on;
             }
@@ -637,11 +655,11 @@ namespace CosmicShore.UI
             h.childAlignment = TextAnchor.MiddleCenter;
             h.childControlWidth = h.childControlHeight = true;
             h.childForceExpandWidth = h.childForceExpandHeight = false;
-            view.Label = Text(rt, 15, s.Sub, TextAlignmentOptions.Center);
+            view.Label = Text(rt, 15, Sub, TextAlignmentOptions.Center);
             var edge = Node("Edge", rt);
             Le(edge).ignoreLayout = true;
             Stretch(edge);
-            view.Edge = Sliced(edge, s.Sliver10Line, s.Outline);
+            view.Edge = Sliced(edge, s.Sliver10Line, Outline);
             var bar = Node("Bar", rt);
             Le(bar).ignoreLayout = true;
             bar.anchorMin = Vector2.zero;
@@ -649,7 +667,7 @@ namespace CosmicShore.UI
             bar.pivot = new Vector2(0.5f, 0f);
             bar.sizeDelta = new Vector2(0f, 2f);
             view.Bar = bar.gameObject.AddComponent<Image>();
-            view.Bar.color = s.Cyan;
+            view.Bar.color = Cyan;
             view.Bar.raycastTarget = false;
             view.Button = rt.gameObject.AddComponent<Button>();
             view.Button.targetGraphic = hit;
@@ -695,7 +713,7 @@ namespace CosmicShore.UI
                 view.Button.interactable = editable;
                 bool open = seat == _openSeat;
                 view.Edge.sprite = open && s.Sliver14Line2 ? s.Sliver14Line2 : s.Sliver14Line;
-                view.Edge.color = open ? s.Jade : s.Outline;
+                view.Edge.color = open ? Jade : Outline;
             }
         }
 
@@ -764,8 +782,8 @@ namespace CosmicShore.UI
             {
                 Set(_tabs[i].Label, names[i]);
                 bool on = i == _tab;
-                _tabs[i].Label.color = on ? s.Light : s.Sub;
-                _tabs[i].Line.color = on ? s.Light : Clear;
+                _tabs[i].Label.color = on ? Light : Sub;
+                _tabs[i].Line.color = on ? Light : Clear;
             }
 
             Offer(active, seat, slot, vessel);
@@ -1063,8 +1081,8 @@ namespace CosmicShore.UI
             v.childControlWidth = v.childControlHeight = true;
             v.childForceExpandWidth = true;
             v.childForceExpandHeight = false;
-            var label = Label(col, 13, _style.Sub);
-            var value = Text(col, 28, _style.Light, TextAlignmentOptions.Left);
+            var label = Label(col, 13, Sub);
+            var value = Text(col, 28, Light, TextAlignmentOptions.Left);
             return (label, value);
         }
 
@@ -1072,14 +1090,14 @@ namespace CosmicShore.UI
         {
             var s = _style;
             var rt = Node("Step", parent);
-            var fill = Sliced(rt, s.Sliver10Fill, s.Plate);
+            var fill = Sliced(rt, s.Sliver10Fill, Plate);
             fill.raycastTarget = true;
             var h = rt.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.padding = new RectOffset(16, 16, 8, 8);
             h.childAlignment = TextAnchor.MiddleCenter;
             h.childControlWidth = h.childControlHeight = true;
             h.childForceExpandWidth = h.childForceExpandHeight = false;
-            var t = Text(rt, 15, s.Light, TextAlignmentOptions.Center);
+            var t = Text(rt, 15, Light, TextAlignmentOptions.Center);
             var b = rt.gameObject.AddComponent<Button>();
             b.targetGraphic = fill;
             b.onClick.AddListener(() => onClick());
@@ -1090,14 +1108,14 @@ namespace CosmicShore.UI
         /// words.</summary>
         (Button b, TMP_Text t) Cta(RectTransform rt)
         {
-            var fill = Sliced(rt, _style.Sliver10Fill, _style.CtaFill);
+            var fill = Sliced(rt, _style.Sliver10Fill, CtaFill);
             fill.raycastTarget = true;
             var b = rt.gameObject.AddComponent<Button>();
             b.targetGraphic = fill;
             var colors = b.colors;
-            colors.disabledColor = new Color(0.55f, 0.55f, 0.6f, 0.6f);
+            colors.disabledColor = Disabled;
             b.colors = colors;
-            var t = KeyedLabel(rt, _lines?.BoardSailKey, _lines?.CardSetSail, _style.CtaText);
+            var t = KeyedLabel(rt, _lines?.BoardSailKey, _lines?.CardSetSail, CtaText);
             b.onClick.AddListener(() => _voyage?.SetSail?.Invoke());
             return (b, t);
         }

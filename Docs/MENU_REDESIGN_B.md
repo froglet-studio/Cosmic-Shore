@@ -7145,3 +7145,16 @@ called done). Its screenshots showed what was still wrong:
   a tapped star's card covered the course. The plain map now names only the course's two ends, draws no sky names, and
   opens no card.
 - **The Quests tab** is the old quest track, untouched by this round: the B boards drew no Quests tab.
+
+**Shipped as is (Shombith, 2026-11-12: "just /ship this I will fix it later").** The look has not been seen in Unity
+since the third pass. The hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Follow-ups (debt this branch created, measured 2026-11-12; rows, not done):**
+- **Two copies of the Ark's seat rules.** `VoyageBoard` repeats `VoyageOpenCard`'s seat logic: who sits in a seat, the
+  person's name, the artifact's name, and a change written back with `KeepCardsOwn` and `FillPilots`. Only `IsMySeat`
+  and `CanEdit` are shared (`internal static`). Fold them into one static class before either copy changes.
+  Measure with `grep -n "KeepCardsOwn\|FillPilots" Assets/_Scripts/UI/Views/Voyage*.cs`: 2 files.
+- **The old layout is unreachable while `board` is on.** With `VoyageJobsView.board` on (the default), nothing the
+  Voyages tab draws uses `VoyageOpenCard`, the job-card grid, or `mapHeight`, `columns` and `cardColumn`. Once the board
+  is accepted in Unity, retire them; while it is not, they are the way back.
+- **The Quests tab** is the pre-redesign quest track. Draw it on Frogma before building it.

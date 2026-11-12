@@ -47,17 +47,30 @@ namespace CosmicShore.UI
             public Action SetSail;
         }
 
-        // The style foundation's colours (Docs/STYLE_FOUNDATION.md v0.3.3) and the map's course colour.
-        static readonly Color Light = new(0.902f, 0.914f, 1f, 1f);
-        static readonly Color Sub = new(0.604f, 0.627f, 0.8f, 1f);
-        static readonly Color Lab = new(0.549f, 0.576f, 0.78f, 1f);
-        static readonly Color Route = new(0.784f, 1f, 0.353f, 1f);
-        static readonly Color Ark = new(1f, 0.78f, 0.25f, 1f);
-        static readonly Color Ground = new(0.024f, 0.039f, 0.149f, 1f);
-        static readonly Color Plate = new(0f, 0.004f, 0.039f, 0.6f);
-        static readonly Color Edge = new(0.169f, 0.196f, 0.4f, 1f);
-        static readonly Color Picked = new(0.902f, 0.914f, 1f, 0.12f);
-        static readonly Color Idle = new(0f, 0.004f, 0.039f, 0.35f);
+        // The style foundation's colours (Docs/STYLE_FOUNDATION.md v0.3.3) and the map's course colour, each painted as
+        // the worn colour set has it (ColorTrace, Docs/VesselModels/COLOR_TRACE.md).
+        static readonly Color LightAuthored = new(0.902f, 0.914f, 1f, 1f);
+        static Color Light => ColorTrace.Retrace(ColorTrace.Ui, LightAuthored);
+        static readonly Color SubAuthored = new(0.604f, 0.627f, 0.8f, 1f);
+        static Color Sub => ColorTrace.Retrace(ColorTrace.Ui, SubAuthored);
+        static readonly Color LabAuthored = new(0.549f, 0.576f, 0.78f, 1f);
+        static Color Lab => ColorTrace.Retrace(ColorTrace.Ui, LabAuthored);
+        static readonly Color RouteAuthored = new(0.784f, 1f, 0.353f, 1f);
+        static Color Route => ColorTrace.Retrace(ColorTrace.Ui, RouteAuthored);
+        static readonly Color ArkAuthored = new(1f, 0.78f, 0.25f, 1f);
+        static Color Ark => ColorTrace.Retrace(ColorTrace.Ui, ArkAuthored);
+        static readonly Color GroundAuthored = new(0.024f, 0.039f, 0.149f, 1f);
+        static Color Ground => ColorTrace.Retrace(ColorTrace.Ui, GroundAuthored);
+        static readonly Color PlateAuthored = new(0f, 0.004f, 0.039f, 0.6f);
+        static Color Plate => ColorTrace.Retrace(ColorTrace.Ui, PlateAuthored);
+        static readonly Color EdgeAuthored = new(0.169f, 0.196f, 0.4f, 1f);
+        static Color Edge => ColorTrace.Retrace(ColorTrace.Ui, EdgeAuthored);
+        static readonly Color PickedAuthored = new(0.902f, 0.914f, 1f, 0.12f);
+        static Color Picked => ColorTrace.Retrace(ColorTrace.Ui, PickedAuthored);
+        static readonly Color IdleAuthored = new(0f, 0.004f, 0.039f, 0.35f);
+        static Color Idle => ColorTrace.Retrace(ColorTrace.Ui, IdleAuthored);
+        static readonly Color SeaAuthored = new(0.75f, 0.75f, 0.8f, 1f);
+        static Color Sea => ColorTrace.Retrace(ColorTrace.Ui, SeaAuthored);
         static readonly Element[] Elements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
         const float Slide = 0.32f;
@@ -463,7 +476,7 @@ namespace CosmicShore.UI
             Set(_pager, _model.Pager);
             bool sail = _model.SetSail != null;
             foreach (var b in new[] { _sail1, _sail2, _sail3 }) if (b) b.interactable = sail;
-            if (_map) _poster.Show(_map, _model.Course, Route, Ark, new Color(0.75f, 0.75f, 0.8f, 1f));
+            if (_map) _poster.Show(_map, _model.Course, Route, Ark, Sea);
 
             Set(_chipCourse, _model.CourseChip);
             Set(_chipFound, _model.FoundBy);

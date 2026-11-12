@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -70,18 +71,23 @@ namespace CosmicShore.UI
             Vector2 At(Vector2 m) => new(Mathf.LerpUnclamped(r.xMin, r.xMax, Mathf.InverseLerp(flo.x, fhi.x, m.x)),
                 Mathf.LerpUnclamped(r.yMin, r.yMax, Mathf.InverseLerp(flo.y, fhi.y, m.y)));
 
+            // Painted as the worn colour set has them (ColorTrace, Docs/VesselModels/COLOR_TRACE.md).
+            var route = ColorTrace.Retrace(ColorTrace.Ui, _route);
+            var ark = ColorTrace.Retrace(ColorTrace.Ui, _ark);
+            var sea = ColorTrace.Retrace(ColorTrace.Ui, _sea);
+
             // The water.
             Quad(vh, new Vector2(r.xMin, r.yMin), new Vector2(r.xMin, r.yMax), new Vector2(r.xMax, r.yMax), new Vector2(r.xMax, r.yMin),
-                _sea, Uv(flo), Uv(new Vector2(flo.x, fhi.y)), Uv(fhi), Uv(new Vector2(fhi.x, flo.y)));
+                sea, Uv(flo), Uv(new Vector2(flo.x, fhi.y)), Uv(fhi), Uv(new Vector2(fhi.x, flo.y)));
 
             if (_course.Count < 2) return;
             var white = _source.WhiteUv;
             // A soft wide line under a thin bright one: the course lit on the water.
-            var glow = new Color(_route.r, _route.g, _route.b, 0.22f);
+            var glow = new Color(route.r, route.g, route.b, 0.22f);
             for (int i = 1; i < _course.Count; i++) Segment(vh, At(_course[i - 1]), At(_course[i]), 12f * LineScale, glow, white);
-            for (int i = 1; i < _course.Count; i++) Segment(vh, At(_course[i - 1]), At(_course[i]), 3f * LineScale, _route, white);
-            Diamond(vh, At(_course[0]), 9f * LineScale, _ark, white);
-            Diamond(vh, At(_course[^1]), 9f * LineScale, _route, white);
+            for (int i = 1; i < _course.Count; i++) Segment(vh, At(_course[i - 1]), At(_course[i]), 3f * LineScale, route, white);
+            Diamond(vh, At(_course[0]), 9f * LineScale, ark, white);
+            Diamond(vh, At(_course[^1]), 9f * LineScale, route, white);
         }
 
         static void Segment(VertexHelper vh, Vector2 a, Vector2 b, float width, Color c, Vector2 uv)
