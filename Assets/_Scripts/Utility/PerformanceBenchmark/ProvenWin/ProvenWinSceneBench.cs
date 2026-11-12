@@ -43,9 +43,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [Tooltip("Optional (probe P3): give every child of these objects (names, ';'-separated) that is hidden (a CanvasGroup at alpha 0, or any child not named in `nestKeep`) its own nested Canvas at setup; then B DISABLES those canvases. A is the nested-but-enabled layout, so compare A with a run without this option too.")]
         [SerializeField] string nestUnder;
         [SerializeField] string nestKeep;
+        [Tooltip("Optional stress: instantiate the prefab this many times BEHIND the camera (off screen), in a ring.")]
+        [SerializeField] int spawnBehind;
+        [Tooltip("Optional: also place this many copies on a grid that spans past the edges of the view (some fully in, some straddling the frustum), so the screenshots test the on-screen and edge cases.")]
+        [SerializeField] int spawnInView;
+        [Tooltip("Optional (with spawnBehind): B sets updateWhenOffscreen = false on every SkinnedMeshRenderer of the spawned copies, with a local bounds cube of this full size (0 = keep the authored bounds).")]
+        [SerializeField] float offscreenBoundsSize = -1f;
         [Tooltip("When > 0, skip the A/B and instead record, for this many frames, which UI objects re-dirty the canvases: RectTransforms whose transform changed, elements in uGUI's layout and graphic rebuild queues, and enabled Animators under a canvas. The candidate list for the next A/B.")]
         [SerializeField] int diagnoseFrames;
-        [SerializeField] string[] counters = { "PostLateUpdate.PlayerUpdateCanvases", "Canvas.BuildBatch", "UGUI.Rendering.UpdateBatches", "Main Thread" };
+        [SerializeField] string[] counters = { "PostLateUpdate.PlayerUpdateCanvases", "Canvas.BuildBatch", "UGUI.Rendering.UpdateBatches", "Main Thread", "PreLateUpdate.UpdateAllSkinnedMeshes", "MeshSkinning.Update", "Mesh.CreateMesh", "SkinnedMeshRenderer.UpdateBounds" };
 
         [Serializable] class Series { public string counter; public List<double> a = new List<double>(); public List<double> b = new List<double>(); public double medianA, medianB, ratioBA, shareBLower; }
         [Serializable] class Report { public string prefab, toggled, device, gpu; public int pairs, framesPerHalf; public long screenshotPixels, screenshotPixelsDifferent; public List<Series> series = new List<Series>(); public string verdict; }
@@ -70,6 +76,35 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 toggled = (Behaviour)owner.GetComponents<Component>().First(c => c && c.GetType().FullName == toggledType);
             }
             catch (Exception e) { report.verdict = "ERROR setup: " + e.Message; }
+            var skinned = new List<SkinnedMeshRenderer>();
+            if (spawnBehind > 0 && prefab)
+            {
+                var cam = Camera.main ? Camera.main : FindFirstObjectByType<Camera>();
+                var origin = cam ? cam.transform.position : Vector3.zero;
+                var back = cam ? -cam.transform.forward : Vector3.back;
+                for (int k = 0; k < spawnBehind; k++)
+                {
+                    float a = k * 2.399963f;   // golden angle: a disc of copies behind the eye
+                    var offset = back * (20f + (k % 7)) + Quaternion.LookRotation(back) * new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * (2f + 0.2f * k);
+                    var copy = Instantiate(prefab, origin + offset, Quaternion.identity);
+                    skinned.AddRange(copy.GetComponentsInChildren<SkinnedMeshRenderer>(true));
+                }
+                if (spawnInView > 0 && cam)
+                {
+                    int side = Mathf.CeilToInt(Mathf.Sqrt(spawnInView));
+                    float dist = 0.6f;
+                    float halfH = Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * dist, halfW = halfH * cam.aspect;
+                    for (int k = 0; k < spawnInView; k++)
+                    {
+                        float u = (k % side) / (float)Mathf.Max(1, side - 1) * 2.2f - 1.1f;   // -1.1..1.1: past both edges
+                        float v = (k / side) / (float)Mathf.Max(1, side - 1) * 2.2f - 1.1f;
+                        var pos = origin + cam.transform.forward * dist + cam.transform.right * (u * halfW) + cam.transform.up * (v * halfH);
+                        skinned.AddRange(Instantiate(prefab, pos, Quaternion.identity).GetComponentsInChildren<SkinnedMeshRenderer>(true));
+                    }
+                }
+                report.toggled = $"{spawnBehind} copies behind the camera, {spawnInView} across the view, {skinned.Count} skinned renderers; B: updateWhenOffscreen off";
+                report.verdict = null;
+            }
             if (!string.IsNullOrEmpty(nestUnder))
             {
                 var parents = nestUnder.Split(';').Select(x => x.Trim()).Where(x => x.Length > 0).ToHashSet();
@@ -115,8 +150,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 yield break;
             }
 
-            if (toggled != null || group.Count > 0)
+            if (toggled != null || group.Count > 0 || skinned.Count > 0)
             {
+                var authored = skinned.Select(r => (r.updateWhenOffscreen, r.localBounds)).ToList();
+                s_skinned = skinned; s_authored = authored; s_bounds = offscreenBoundsSize;
                 for (int i = 0; i < settleFrames; i++) yield return null;
                 // Find each counter by name among everything the profiler can record (markers keep their own category).
                 var handles = new List<ProfilerRecorderHandle>();
@@ -162,7 +199,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     report.series.Add(s);
                 }
 
-                // Screenshots of both states, after the same settle.
+                // Screenshots of both states, after the same settle, with scaled time stopped so anything animated on
+                // Time.deltaTime holds still between the two (a moving picture would differ whatever B does).
+                float timeScaleBefore = Time.timeScale;
+                Time.timeScale = 0f;
                 SetB(toggled, group, false);
                 for (int i = 0; i < 10; i++) yield return null;
                 yield return new WaitForEndOfFrame();
@@ -171,6 +211,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 for (int i = 0; i < 10; i++) yield return null;
                 yield return new WaitForEndOfFrame();
                 var shotB = ScreenCapture.CaptureScreenshotAsTexture();
+                Time.timeScale = timeScaleBefore;
                 var pa = shotA.GetPixels32(); var pb = shotB.GetPixels32();
                 report.screenshotPixels = pa.Length;
                 for (int i = 0; i < pa.Length && i < pb.Length; i++)
@@ -186,8 +227,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Application.Quit();
         }
 
+        static List<SkinnedMeshRenderer> s_skinned = new List<SkinnedMeshRenderer>();
+        static List<(bool, Bounds)> s_authored = new List<(bool, Bounds)>();
+        static float s_bounds = -1f;
+
         static void SetB(Behaviour one, List<Behaviour> group, bool b)
         {
+            for (int k = 0; k < s_skinned.Count; k++)
+            {
+                var r = s_skinned[k];
+                if (!r) continue;
+                r.updateWhenOffscreen = b ? false : s_authored[k].Item1;
+                r.localBounds = b && s_bounds > 0f ? new Bounds(Vector3.zero, Vector3.one * s_bounds) : s_authored[k].Item2;
+            }
+            if (s_skinned.Count > 0 && group.Count == 0 && !one) return;
             if (group.Count > 0) { foreach (var x in group) if (x) x.enabled = !b; }
             else if (one) one.enabled = !b;
         }

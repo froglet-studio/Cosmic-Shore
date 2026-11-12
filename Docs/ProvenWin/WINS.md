@@ -3,6 +3,18 @@
 One row per change that passed `Docs/ProvenWin/PLAYBOOK.md`: one change, one machine-read metric, B better in every
 paired sample, output identical, controls behaving, a human sign-off. Newest first.
 
+## W5 (proven, held: ecology lane occupied). Space hearts stop re-deforming while off screen (2026-11-12)
+
+| | |
+|---|---|
+| Change | `SpaceCrystalAnimator.Awake` turns `updateWhenOffscreen` off on the heart's SkinnedMeshRenderer and gives it local bounds of a cube through the rest mesh's AABB corner (every spin pose is a rigid turn about the centre, so no pose leaves that sphere). The prefabs author it on, so every Space heart re-deformed its blend shapes every frame, seen or not. Found by the sweep (its P2-2). |
+| Metric | CPU: `MeshSkinning.Update` and main-thread ms per frame, scene bench, editor Play mode, 200 CrystalSpace copies behind the camera plus 49 on a grid spanning past the view edges, 40 ABBA pairs of 30 frames |
+| Result | `MeshSkinning.Update` 0.152 -> 0.047 ms (B lower in 99 % of frames); main thread 4.73 -> 4.47 ms (B lower in 67 %). Without the in-view grid: 0.137 -> 0.015 ms (100 %). About 0.5 us of skinning per off-screen heart, plus main-thread overhead. |
+| Exactness | Screenshots with scaled time stopped: identical, including the hearts straddling the frustum edges. Negative control (bounds 1e-5): 1.6 M px differ. |
+| Exposure | Garland's menu world (6-12 Space hearts), fauna-heavy cells (Wildlife Liberation, about 80). Small in the menu, more with fauna. |
+| Gates | Crystal EditMode tests: the same 5 pre-existing failures as bleeding-edge. Not measured on a phone. |
+| Hold | `approvals.py check`: the Ecology lane is occupied (Yash, `claude/squirrel-time-upgrade-b02f6b`). Committed on a local branch only until Garrett decides. |
+
 ## W4. HyperSea sky: reject empty star cells before the per-cell maths (2026-11-12)
 
 | | |
@@ -136,6 +148,8 @@ Rejected:
 
 | Date | Candidate | Why | Evidence |
 |---|---|---|---|
+| 2026-11-12 | Sky nebula skip at the call site (sweep N1b, the "Vulkan-safe" rewrite) | Vulkan still moves 2.86 M px by up to 3 levels (270,000 by more than one), 1.13x. N1a (inserted in place, no reorder) had already failed as `W3S1`. So the branch itself changes Vulkan's arithmetic, not the line order. Dead on Vulkan. | `rejected_nebula/` |
+| 2026-11-12 | SeaLines wave-line early-out (sweep U1) | Bit-identical but no gain on desktop: Sea_Window 1.000x (52 % of pairs), Sea_Panel 1.000x (47 %); the negative control caught 216,000 px. 32 full-screen draws take 3.5 ms, so the pass is fill- or bandwidth-bound here, not ALU-bound. May matter on a phone. | `rejected_sea/` |
 | 2026-11-12 | Scene-transition doors Animator sleep (sweep UI-1) | No gain anywhere it runs. In-scene bench, editor Play mode, the doors opened as SceneLoader does, then 40 ABBA pairs of 30 frames, Animator enabled vs disabled. GameCanvas.prefab: PlayerUpdateCanvases 0.063 vs 0.066 ms, Canvas.BuildBatch 0.0061 vs 0.0063 ms (screens identical). Menu_Main: PlayerUpdateCanvases 1.854 vs 1.857 ms, B lower in 49 % of frames. The settled Animator does not cost a measurable rebuild; the menu canvas rebuilds every frame for other reasons. | `rejected_doors/` |
 | 2026-11-12 | ChargeCrystal envelope cull (#1880) on top of W1 | With the crawl ON (hull-fusion copies keep it) 1.86-1.89x and identical at 8 bits on all APIs. But in the game's main state (crawl silenced, where W1's skip returns before the cull's code runs) D3D11 got 1.6 % SLOWER, B slower in 95.5 % of pairs (D3D12 and Vulkan neutral): code generation, not the branch. An observed cost on every live crystal to help only fused copies. | `rejected_cull_on_w1/` |
 | 2026-11-12 | Sky nebula region-mask early-out (sweep S1) | On Vulkan, on top of W3, 3.3 M of 44 M px move by up to 3 levels (270,000 by more than one); D3D is within one level. Vulkan is the phone path. A rewrite that keeps Vulkan's fp16 arithmetic identical might pass. | `W4_stars/report_*_W3S1.json` |

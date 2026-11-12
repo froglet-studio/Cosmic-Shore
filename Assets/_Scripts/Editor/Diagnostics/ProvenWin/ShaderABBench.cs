@@ -77,6 +77,9 @@ namespace CosmicShore.Editor.ProvenWin
             // Globals a running system would have set (a style flag, a band) that the publishers above do not.
             public List<VectorOverride> globalVectors = new List<VectorOverride>();
             public float modelScale = 1f;
+            // A UI shader drawn as the canvas draws it: an orthographic view in pixels, no rotation, and a mesh named
+            // "quad:WxH" whose object coordinates ARE canvas units (white vertex colour, UVs 0..1 across it).
+            public bool orthographic;
             public List<string> logGlobals = new List<string>();   // globals to print after `prepare`, to check the state
         }
 
@@ -258,6 +261,8 @@ namespace CosmicShore.Editor.ProvenWin
                     string guid = AssetDatabase.AssetPathToGUID(f), cloneGuid = AssetDatabase.AssetPathToGUID(clone);
                     if (shaderText.Contains(f)) { shaderText = shaderText.Replace(f, clone); referenced = true; }
                     if (!string.IsNullOrEmpty(guid) && shaderText.Contains(guid)) { shaderText = shaderText.Replace(guid, cloneGuid); referenced = true; }
+                    // A relative #include "Name.cginc" resolves next to the clone, where the cloned file now sits.
+                    if (shaderText.Contains("\"" + Path.GetFileName(f) + "\"")) referenced = true;
                 }
                 if (!referenced) throw new InvalidOperationException($"{shaderPath} references none of {string.Join(", ", files)} (add the includes between them to `includeChain`)");
             }
@@ -321,6 +326,18 @@ namespace CosmicShore.Editor.ProvenWin
 
         internal static Mesh LoadMesh(Spec spec)
         {
+            if (spec.mesh.StartsWith("quad:"))
+            {
+                var wh = spec.mesh.Substring(5).Split('x');
+                float w = float.Parse(wh[0]), h = float.Parse(wh[1]);
+                var q = new Mesh { name = spec.mesh };
+                q.vertices = new[] { new Vector3(0, 0, 0), new Vector3(w, 0, 0), new Vector3(0, h, 0), new Vector3(w, h, 0) };
+                q.uv = new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 1), new Vector2(1, 1) };
+                q.colors = new[] { Color.white, Color.white, Color.white, Color.white };
+                q.triangles = new[] { 0, 2, 1, 2, 3, 1 };
+                q.RecalculateBounds();
+                return q;
+            }
             // "builtin:Sphere.fbx" names one of Unity's built-in meshes (a sky is drawn on a sphere round the eye).
             if (spec.mesh.StartsWith("builtin:")) return Resources.GetBuiltinResource<Mesh>(spec.mesh.Substring(8));
             var meshes = AssetDatabase.LoadAllAssetsAtPath(spec.mesh).OfType<Mesh>().ToList();
@@ -355,6 +372,12 @@ namespace CosmicShore.Editor.ProvenWin
             var view = Matrix4x4.TRS(eye, Quaternion.identity, Vector3.one).inverse;
             view.m20 = -view.m20; view.m21 = -view.m21; view.m22 = -view.m22; view.m23 = -view.m23; // camera looks down -Z
             var proj = Matrix4x4.Perspective(spec.fov, (float)spec.width / spec.height, 0.05f, 50f);
+            if (spec.orthographic)
+            {
+                view = Matrix4x4.identity;
+                proj = Matrix4x4.Ortho(0, spec.width, 0, spec.height, -100f, 100f);
+                model = Matrix4x4.identity;
+            }
             cmd.SetViewProjectionMatrices(view, proj);
             cmd.SetGlobalVector("_WorldSpaceCameraPos", eye);
             for (int c = 0; c < copies; c++)
