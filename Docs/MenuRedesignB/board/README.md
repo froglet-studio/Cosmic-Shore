@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794525384-1630` of **Frogma**: Rev 3 to Rev 96, 485 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794526432-08c7` of **Frogma**: Rev 3 to Rev 97, 480 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -698,6 +698,15 @@ Copied on 2026-11-12 from canvas version `1794525384-1630` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
+#### Rev 97 - Voyages: the squad presets and the seat's choices redrawn; three players picking at once
+
+- [`R97Squad.dc.html`](R97Squad.dc.html) - Rev 97 Squad - Squad presets, three ways - interactive
+- [`R97Choices.dc.html`](R97Choices.dc.html) - Rev 97 Choices - The seat's choices, three ways - interactive
+- [`R97S1A.dc.html`](R97S1A.dc.html) - Rev 97 S1A - 1A with Formation squads - interactive
+- [`R97S2D.dc.html`](R97S2D.dc.html) - Rev 97 S2D - 2D with the Shelf - interactive
+- [`R97S2G.dc.html`](R97S2G.dc.html) - Rev 97 S2G - 2G Three players - leader's screen - interactive
+- [`R97S2H.dc.html`](R97S2H.dc.html) - Rev 97 S2H - 2H Three players - a friend's screen - interactive
+
 #### Rev 96 - the squad screen: a backdrop, soft buttons, one press
 
 - [`R96S1A.dc.html`](R96S1A.dc.html) - Rev 96 S1A - 1A - Screen 1 as picked (Rev 95 1A), with the soft buttons - interactive
@@ -754,27 +763,10 @@ Copied on 2026-11-12 from canvas version `1794525384-1630` of **Frogma**: Rev 3 
 
 ### Tab: Loading Screens  (`loading-screens`)
 
-#### Rev 94 - The boot splash as a poster: the crew and the three domains, no neon
+#### Rev 94 - The boot splash: the crew before the domains (C, liked)
 
-- `R94A.dc.html` (not copied yet) - Rev 94 A - The crew before the domains: five pilots across three domain bands, the Ark above; the colour set changing (recommended)
-- `R94B.dc.html` (not copied yet) - Rev 94 B - Three crews: a pilot and a hull in each domain band, the Ark beside; the colour set changing
-- `R94C.dc.html` (not copied yet) - Rev 94 C - The crew before the domains, the living sea far behind: cells, crystals, fauna and flora; the colour set changing
-- `R94Notes.dc.html` (not copied yet) - Rev 94 - notes: A and D as one poster, what changed, the colour set changing
-
-#### Rev 93 - The boot splash as today's art with a real vessel
-
-- `R93A.dc.html` (not copied yet) - Rev 93 A - Squirrel: today's composition, the real Squirrel laying a Ruby trail (recommended)
-- `R93B.dc.html` (not copied yet) - Rev 93 B - The squad: three hulls in formation, a trail each in the domain colours
-- `R93C.dc.html` (not copied yet) - Rev 93 C - The fleet: one hull at a time in the same place, taking turns
-- `R93Notes.dc.html` (not copied yet) - Rev 93 - notes: what was asked, what this round is, what is not here
-
-#### Rev 92 - The boot splash and sign-in scene: the two logos and the environment as the show
-
-- `R92A.dc.html` (not copied yet) - Rev 92 A - The cell: one cell, three domain trails laid around it, crystals inside (recommended)
-- `R92B.dc.html` (not copied yet) - Rev 92 B - The gates: ring gates fly past the logo, two trails run out of the distance
-- `R92C.dc.html` (not copied yet) - Rev 92 C - The arenas: three windows onto real arenas, taking turns
-- `R92D.dc.html` (not copied yet) - Rev 92 D - The garden: flora blooming around the logos
-- `R92Notes.dc.html` (not copied yet) - Rev 92 - notes: what is shared, how each shows the environment, what differs from the build
+- `R94C.dc.html` (not copied yet) - Rev 94 C - The crew before the domains, in the game's own art: the new captain busts, silver hulls, Omni crystals, a real cell, fauna and flora; the colour set changing
+- `R94Notes.dc.html` (not copied yet) - Rev 94 - notes: what is now the game's own art, the far background, what was kept
 
 #### Rev 91 - Loading screens: a smooth moving sea, one honest progress bar, and a part of the game on show
 

@@ -7539,7 +7539,7 @@ second screen; the right column becomes the voyage's name, the presets and two b
 tables (Rev 90) are not redrawn here.
 
 
-## 174. Rev 96 mockups: the squad screen - a backdrop, soft buttons, one press (2026-11-12, awaiting a pick)
+## 174. Rev 96 mockups: the squad screen - a backdrop, soft buttons, one press (2026-11-12; Shombith disliked the squad preset plates and the 2D tray with its foot, redrawn in section 175)
 
 **Asked (Shombith, 2026-11-12, on Rev 95):** "S1A is good but I didnt like any of the second scren designs, the bg is
 too bland and also the button in both the screens are too hard not soft hard soft. Clicking through so many vessels and
@@ -7585,3 +7585,39 @@ Rev 95's "Flown by" is not drawn on these boards.
 
 **Differs from the build (section 172):** as section 173, and the steppers (`VoyageSquadColumn`) are replaced by
 strips of tiles; the backdrop needs the picked voyage's map drawn behind the squad screen.
+
+## 175. Rev 97 mockups: the squad presets and the seat's choices redrawn; three players picking at once (2026-11-12, awaiting a pick)
+
+**Asked (Shombith, on Rev 96, with two screenshots - the Squad plates of 1A, and 2D's tray with its foot):** "These
+screenshots are the parts I do not like". While the round was drawn: "think if you are configuring, 3 players are
+selecting their vessel, pilot, element etc it should be a good experience", and "wrong elemental icons, check ecology
+for the correct ones the ones with petals are the ones we should use".
+
+**Read as (mine, not his words):** both parts were rows of dark boxes with small pictures. Here no choice has a box:
+pictures are larger and stand on the screen, the picked one is lit and underlined in Jade, the rest are dimmed.
+
+**Drawn** (tab Voyages, title note `rev97`, generator `Docs/MenuRedesignB/rounds/r97_voyages.py`):
+
+- **Squad** - the squad presets three ways: Formation (three hulls in formation, the leader in front), Carousel (one
+  squad large, step to the next), Crew (the three pilots and what each flies).
+- **Choices** - the seat's choices three ways: Shelf (four open groups), Two rows (the vessels across the whole width),
+  Focus (each group shows its picked choice large).
+- **1A** - screen 1 with the Formation presets. **2D** - the Deck with the Shelf.
+- **2G, 2H - three players at once.** Every seat is a lane. On each player's screen their own lane is open with every
+  choice in it; the other two seats are large pictures that change as their players pick, each with Choosing or Ready.
+  2G is the leader's screen: the AI seat has Change, the button is Set sail. 2H is a friend's screen: the button is
+  Ready, and the leader sets sail.
+- **Element marks** are the HUD's flowers (`ElementalBarsView`): five copies of the element's petal
+  (`Assets/Resources/ElementPetals`) turned 72 degrees about the centre, white, no colour.
+
+**Recommended: 2G / 2H with Formation presets on 1A.** They are the only squad screens where three people pick at the
+same time without sharing one cursor.
+
+**New rules these draw, to confirm with the pick:** a Ready state per player and Set sail only for the leader; a
+friend's picks shown live on the others' screens; and section 174's (a vessel brings its kit, Save as preset).
+
+**Gate:** `check_mockup.py` noise is over the budget on every screen that shows all choices (2D 107, 2G and 2H 188
+against 98); the two compare boards carry three Lime buttons each because they show a part three times.
+
+**Differs from the build (section 172):** as sections 173 and 174; the game has no per-player Ready in the Voyage
+window and no element flower outside the HUD.
