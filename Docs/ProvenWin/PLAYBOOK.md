@@ -13,7 +13,9 @@ All five, or it is not one:
 1. **One change.** One file or one tightly-coupled set, one idea. Not a PR of three shaders.
 2. **One metric, named before measuring**, that a machine reads: GPU ms per batch of the material, vertex
    instructions executed, bytes in the build, allocations per frame, ms per death. Say its unit and instrument.
-3. **Categorical:** B beats A in **every** ABBA round, by more than the A-vs-A' null control's spread.
+3. **Categorical:** in paired samples, B is faster in at least 99 % of pairs and the 90th percentile of B/A is below 1,
+   while the A-vs-A' null control reads about 1.00 and wins about half its pairs. (A single slow pair in 200 is the
+   desktop interrupting, not the change: W4 on D3D12 won 199 of 200 with p90 0.944.)
 4. **No cost, observed or predicted:**
    - observed: output identical, in one of three tiers the bench reports: **bit-identical**; **display-identical**
      (zero pixels different at 8 bits); or **within one display level** (no channel of any pixel moves more than 1 of

@@ -3,6 +3,26 @@
 One row per change that passed `Docs/ProvenWin/PLAYBOOK.md`: one change, one machine-read metric, B better in every
 paired sample, output identical, controls behaving, a human sign-off. Newest first.
 
+## W4. HyperSea sky: reject empty star cells before the per-cell maths (2026-11-12)
+
+| | |
+|---|---|
+| Change | In `computeStars` (`HyperSeaSkybox.shader`), each of the 27 cells tests its existence hash against a bound computed once, `(_StarBaseProb + max(_StarGalacticBoost, 0)) * 1.0001 + 1e-6`, before the normalize, dot and pow of the exact test, which stays unchanged. `pow(1 - galDist, c) <= 1` for `c >= 0` (guarded), so only cells the exact test rejects are skipped; with the shipped values about 97 % of cells are empty. The sweep's S4. |
+| Metric | as W3, measured on top of W3 |
+| Owner | Shombith |
+
+| API | W3 ms | W3 + this ms | B/A median (p10-p90) | Speed-up | Pairs B faster | Pixels different |
+|---|---|---|---|---|---|---|
+| Direct3D 12 | 32.92 | 30.88 | 0.9395 (0.932-0.944) | 1.06x | 199/200 | 0 (bit-identical) |
+| Vulkan | 29.75 | 27.57 | 0.9273 (0.925-0.933) | 1.08x | 200/200 | 0 |
+| Direct3D 11 | 32.92 | 30.41 | 0.9205 (0.915-0.927) | 1.09x | 200/200 | 0 |
+
+Negative control (bound halved) caught on D3D12: 836,000 px, up to 65 levels. With W3 the sky is about 1.16-1.19x
+faster than shipped, bit-identical.
+
+Rejected with it: the nebula region-mask early-out (S1). On top of W3 it is 1.12x and within one level on D3D, but on
+Vulkan it moves 3.3 M of 44 M pixels by up to 3 levels (270,000 px by more than one).
+
 ## W3. HyperSea sky: skip the dust off the galactic band and the core outside its caps (2026-11-12)
 
 | | |
@@ -110,13 +130,13 @@ Queued with evidence:
 
 | Candidate | Evidence so far | What it needs |
 |---|---|---|
-| Sky nebula region-mask early-out (sweep S1) | 1.10x on Vulkan alone; within one display level but on 829,000 of 44 M px (1.8 %) | measure on top of W3 on all APIs, then a blind sign-off |
-| Sky star pre-test (sweep S4) | bit-identical, 1.08x on D3D12 on top of S1-S3; negative control caught (836,000 px, 65 levels) | measure on top of W3 on Vulkan and D3D11 |
 | The sweep's queue (`provenwin-queue/QUEUE.md` in the project files) | ranked 3-11: scene-transition doors Animator, parked cameras under load covers, creature body bloom pulse, ... | one at a time through `/proven-win` |
 
 Rejected:
 
 | Date | Candidate | Why | Evidence |
 |---|---|---|---|
+| 2026-11-12 | Sky nebula region-mask early-out (sweep S1) | On Vulkan, on top of W3, 3.3 M of 44 M px move by up to 3 levels (270,000 by more than one); D3D is within one level. Vulkan is the phone path. A rewrite that keeps Vulkan's fp16 arithmetic identical might pass. | `W4_stars/report_*_W3S1.json` |
+| 2026-11-12 | Spindle 2x2 Voronoi with polynomial trig (draft PR #1878's choice) | 1.5x but moves pixels by up to 140 levels | `W2_spindle/report_*_pr4.json` |
 | 2026-11-12 | `ProjectileChargeField` early-out (#1880; skip the wander FBM off the arc's band) | Not identical and not categorical: 4 px differ at 8 bits (max 0.00098, 48 moments x 3.7 M px), and B was faster in only 85 % of pairs (median 1.17x, p90 B/A 1.01). The null control read 1.00x with 47.5 %, so the instrument was fine; the change is near-exact and sometimes slower (a divergent branch on a partly covered sphere). The Sparrow's charge shell is also a few pixels on screen in play. | `ShaderABBench` DX12, `spec_pcf_*.json`; negative control caught at 140,527 px |
 

@@ -265,6 +265,10 @@ Shader "CosmicShore/HyperSeaSkybox"
         float3 galNorm = normalize(_GalacticNormal.xyz);
 
         float scale = _StarDensity;
+        // pow(1 - galDist, c) <= 1 for c >= 0, so no cell's probability exceeds base + max(boost, 0): a hash above
+        // that bound (with a margin for a GPU pow a hair over 1) is rejected by the exact test below too. Skipping
+        // it first saves the normalize, dot and pow of the ~97 % of cells that are empty.
+        float maxProbability = (_StarBaseProb + max(_StarGalacticBoost, 0.0)) * 1.0001 + 1e-6;
         float3 p = dir * scale;
         float3 id = floor(p);
         float3 f = frac(p) - 0.5;
@@ -278,6 +282,8 @@ Shader "CosmicShore/HyperSeaSkybox"
 
             // Hash for object existence
             float h = hash31(cellId);
+            if (_StarConcentration >= 0.0 && h > maxProbability)
+                continue;
 
             // Increase probability near galactic plane
             float3 cellDir = normalize((cellId + 0.5) / scale);
