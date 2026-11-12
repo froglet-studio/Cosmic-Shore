@@ -1937,3 +1937,10 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: step any per-lay or per-tick async loop the way the game's awaiter resolves (one firing per frame at most, the next wait measured from that frame), and give the lab a frame-rate dial so a phone's 30 fps is scored too.
 - Evidence: `VesselPrismController.SpawnLoopAsync`; the lab's `simStep` lay timer and `shFrameAware` dial; scorecard "Soar fill" column.
 - Promoted: no
+
+### L-STU-180 — A lab that lays "after the move" hides a loop that runs before it: port the ORDER, not only the formula
+- Lab: Manta Trail Lab (`Docs/Studios/MantaTrailLab.html`) · Branch: `claude/manta-trail-speed-shape` · By: Manta Polish thread (Caleb) · Date: 2026-11-12
+- What happened: the lab and the C# shared one pacing rule (lay by distance, back to the exact spacing point), and every lab check passed. In the editor the prisms still bunched at top speed. The game's loop runs at UniTask's Update timing, BEFORE `VesselTransformer.Update` moves the hull, so counting Speed x deltaTime as flown placed each prism a frame's flight too far back; a 0.1 s editor hitch (108 m at 1080 u/s) put one against its neighbour. The lab's `simStep` moves first and lays second, so it could not show it. Two earlier rounds on the same trail were the same shape: a timer that ends on a frame (L-STU-179), and sizing a prism to one frame's wobbling flight.
+- Do instead: in the game, read what actually happened (the hull's displacement since the last loop), never a rate times dt; when the lab models a loop, put its update order in the model (`/labmaker` §2), and feed the pacing tests long frames (a hitch every ~100 frames), not just jitter.
+- Evidence: `VesselPrismController.ShapedSpawnLoopAsync`; `TrailSpeedShape.StepLay` / `NextLay`; `TrailSpeedShapeTests.StepLay_LaysEvenlyAtEverySpeed_ThroughJitterAndHitches`; `Docs/Manta/POLISH.md` fly tests 1-3.
+- Promoted: no
