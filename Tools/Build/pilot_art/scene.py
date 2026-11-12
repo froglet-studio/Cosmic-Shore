@@ -171,43 +171,69 @@ CHART_VIEWS = {   # what the chart shows: the whole sea, or the waters round a c
 # of the galactic scale hypersea. I want to see some where the pilot's are on the bridge of the ark or in a vessel.
 # and they are looking at a 3D holographic display (not a 2d hologram embedded in 3d) that 3d rendering should look
 # like gameplay footage. prisms, trails, flora, fauna, gyroid flora, crystals, cells, etc." So a third kind of
-# display, "volume", shows play as the game draws it (the arena pictures on the arcade cards are the reference,
-# Assets/_Graphics/ARCADE/CardBackgrounds, with Docs/Ecology/FaunaScale for the creatures): a cell is a vast clear
-# pale bubble holding indigo dark; a vessel is a tiny pale dart that lays a trail of prisms, small glowing blocks
-# evenly spaced, in its domain's colour; flora are burrs of rods and the gyroid lattice; fauna are slate spindles
-# round a cream crystal heart; crystals are lime. None of it is named, since the brief names nothing of the game's:
-# it is told by what it looks like. {own} is the pilot's own domain colour (the accent their clothes are piped in),
-# {other} and {third} the other two. A volume shows play and nothing else, and a chart never shows play.
+# display, "volume", shows play. Its first words were written from the arcade cards and painted as a soap bubble
+# holding strings of beads, and he said so (22:49 UTC: "both the hypersea outside and the hypersea in the rendering
+# are very different than the hypersea in our gameplay"). These words are written from REAL FRAMES of the game
+# (Docs/Pilots/art/refs, refs.json; SEA holds the look once, for a window as well as a display):
+#   - space is black and sown with fine white dust, each mote a short pale dash;
+#   - a cell's wall is a net of thin dim blue lines in six-sided panes, like a wire dome seen from inside;
+#   - a prism is a brick of light: a flat-sided rectangular block, its faces a deep clear colour, its edges thin
+#     bright lines; a trail is a ribbon of them laid end to end; far off it reads as a row of dashes;
+#   - the gyroid flora is a coral of such bricks set edge to edge in rings round open holes, with a spray of white
+#     needles in every hole; a crystal is a pale lilac twelve-sided die; fauna are swarms of tiny violet shards;
+#   - the great ship is a closed scallop shell: a swept fan of ribbed plates behind a domed bridge, engines along
+#     the stern edge (Docs/VesselModels/ArkReverse.md).
+# None of it is named, since the brief names nothing of the game's: it is told by what it looks like. {own} is the
+# pilot's own domain colour (the accent their clothes are piped in), {other} and {third} the other two. A volume
+# shows play and nothing else, and a chart never shows play.
+SEA = dict(   # the look, once: a record's own words for a window use these same nouns (LESSONS 76)
+    dark="black space sown with fine white dust",
+    wall="the wall of a vast hollow sphere, a net of thin dim blue lines in six-sided panes",
+    brick="flat-sided rectangular blocks with deep clear faces and thin bright edges",
+    coral="set edge to edge in rings round open holes",
+    crystal="shaped like a twelve-sided die",
+    swarm="tiny violet shards",
+)
 PLAY_VIEWS = {
-    "cell": ("the inside of one vast clear bubble with a skin as thin as a soap film, pale blue-violet, holding deep "
-             "indigo dark. Six tiny pale dart-shaped craft fly inside it, and each draws behind it a long curving "
-             "trail of small glowing blocks, hundreds to a trail, evenly spaced like beads on a string: three trails "
-             "{own}, three {other}, looping over and under each other. At the bubble's heart grows a lattice like a "
-             "sponge of smoothly curving channels, built of thousands of the same small blocks. Spiny burrs of pale "
-             "violet rods drift near it, a shoal of small skeletal creatures circles it, slate-blue with a cream "
-             "crystal at the heart of each, and bright lime crystals no bigger than peas hang here and there"),
-    "race": ("a racing course strung through deep indigo dark: a long line of thin glowing rings, pale blue-white, "
-             "set one beyond another at odd angles like hoops, and three tiny pale dart-shaped craft threading "
-             "them. Each craft draws behind it a long curving trail of small glowing blocks, hundreds to a trail, "
-             "evenly spaced like beads on a string: one trail {own}, one {other}, one {third}. Where two trails "
-             "meet, blocks have been knocked loose and tumble away. Bright lime crystals no bigger than peas hang "
-             "along the racing line, and far behind it all curves the pale skin of a vast clear bubble"),
-    "siege": ("one great dark ship, no longer than a forearm in the display, its long hull built of many thousands "
-              "of small blocks, with one round tunnel straight through it. A shoal of skeletal creatures is closing "
-              "on it from every side, each a spray of slate-blue spindles round a faceted cream crystal heart, some "
-              "finned like sharks, some round-headed like tadpoles, some rayed like brittle stars; where they have "
-              "fed, blocks are gone from the hull. Three tiny pale dart-shaped craft circle the ship, and each "
-              "draws behind it a long curving trail of small glowing {own} blocks, evenly spaced like beads on a "
-              "string, the three trails winding round the hull like a cage. Bright lime crystals no bigger than "
-              "peas hang in the dark, and far behind curves the pale skin of a vast clear bubble"),
-    "garden": ("a lattice growing through deep indigo dark like coral: a sponge of smoothly curving channels with "
-               "no straight line in it, built of many thousands of small glowing blocks, {own} at its heart and "
-               "paler at its growing edges, where new blocks are budding. Spiny burrs stand off round it, each a "
-               "ball of pale violet rods. One tiny pale dart-shaped craft flies through the lattice's channels and "
-               "draws behind it a long curving trail of small glowing blocks, evenly spaced like beads on a string. "
-               "Small skeletal creatures graze on the lattice's far side, slate-blue with a cream crystal at the "
-               "heart of each; bright lime crystals no bigger than peas hang inside the channels; and far behind "
-               "curves the pale skin of a vast clear bubble"),
+    "cell": ("the inside of one vast hollow sphere whose wall is a net of thin dim blue lines in six-sided panes, "
+             "holding black space sown with fine white dust. Everything in it is built of small bricks of light: "
+             "flat-sided rectangular blocks with deep clear faces and thin bright edges. Six tiny bright craft fly "
+             "inside it, and each lays behind it a long curving ribbon of such bricks set end to end, hundreds to a "
+             "ribbon: three ribbons {own}, three {other}, looping over and under each other. At the sphere's heart "
+             "grows a coral of the same bricks in deep indigo and violet, set edge to edge in rings round open "
+             "holes so that it makes curving walls full of round windows, with a spray of white needles in every "
+             "hole. A pale lilac crystal shaped like a twelve-sided die glows in the coral's wall, a swarm of tiny "
+             "violet shards flows past it in the shape of a ring, and long rows of small cyan dashes run through "
+             "the dark"),
+    "race": ("a racing course strung through black space sown with fine white dust: a line of thick glowing rings, "
+             "pale blue-white, each drawn with a fine grid, set one beyond another at odd angles like hoops, and "
+             "three tiny bright craft threading them. Each craft lays behind it a long curving ribbon of small "
+             "bricks of light set end to end, flat-sided rectangular blocks with deep clear faces and thin bright "
+             "edges, hundreds to a ribbon: one ribbon {own}, one {other}, one {third}. Where two ribbons meet, "
+             "bricks have been knocked loose and tumble away. Beside the course stands a coral of indigo bricks set "
+             "edge to edge in rings round open holes, pale lilac crystals shaped like twelve-sided dice hang along "
+             "the racing line, and far behind it all curves the wall of a vast hollow sphere, a net of thin dim "
+             "blue lines in six-sided panes"),
+    "siege": ("one great dark ship, no longer than a forearm in the display, shaped like a closed scallop shell: a "
+              "low swept fan of ribbed plates spreading back from a domed bridge at its point, with a row of round "
+              "engine mouths glowing along its wide stern edge and thin bright seams between its plates. Swarms of "
+              "tiny violet shards are closing on it from every side, each swarm flowing like a shoal, and where "
+              "they have fed, plates are gone from the fan and the frame shows. Three tiny bright craft circle the "
+              "ship, and each lays behind it a long curving ribbon of small glowing {own} blocks set end to end, "
+              "flat-sided, with deep clear faces and thin bright edges, the three ribbons winding round the ship "
+              "like a cage. A coral of indigo blocks set edge to edge in rings round open holes drifts beside it, "
+              "pale lilac crystals shaped like twelve-sided dice hang in the dark, and far behind curves the wall "
+              "of a vast hollow sphere, a net of thin dim blue lines in six-sided panes, in black space sown with "
+              "fine white dust"),
+    "garden": ("a coral growing through black space sown with fine white dust: many hundreds of bricks of light, "
+               "flat-sided rectangular blocks with deep clear faces and thin bright edges, set edge to edge in "
+               "rings round open holes, ring joined to ring into curving walls and tunnels full of round windows, "
+               "{own} at its heart and deep indigo and violet at its growing edges, with a spray of white needles, "
+               "thin as hairs, in every hole. A pale lilac crystal shaped like a twelve-sided die glows where it "
+               "is held in the coral's wall. One tiny bright craft flies through a tunnel of it and lays behind it "
+               "a ribbon of small bricks set end to end. A swarm of tiny violet shards flows past in the shape of "
+               "a ring, long rows of small cyan dashes run through the dark, and far behind curves the wall of a "
+               "vast hollow sphere, a net of thin dim blue lines in six-sided panes"),
 }
 PLAY_COLOURS = ("jade teal", "ruby magenta", "amber gold")   # the three accents a pilot's clothes are piped in
 CHART_KINDS = {   # what the sea or the play is shown on
@@ -420,7 +446,8 @@ FUSED_NOT = re.compile(r"\b(?:owns|everything behind the face|is the face and th
 # head, and the nearest piece of the second animal when the scene carries one near it (set it after painting: `grid`).
 # ---------------------------------------------------------------------------------------------------------------
 SCENE_KEYS = ("treatment", "shot", "source", "seen", "doing", "place", "light", "wear")
-SCENE_MORE = ("frame", "side", "carry", "lower", "build", "hands", "swap", "chart", "close", "fused")
+SCENE_MORE = ("frame", "side", "carry", "lower", "build", "hands", "swap", "chart", "close", "fused", "refs",
+              "patch")   # refs, patch: the pictures a painter that takes pictures is shown (refs.py)
 SOURCES = ("profession", "hobby", "history", "want")
 SWAPPED = ("face", "coat", "second", "eyes", "hair", "outfit", "motif")   # the bust's lines a swap may correct
 WORD_CAP = 1000   # briefs of 870 to 890 words were painted faithfully; past a thousand a line is one too many.
@@ -1017,7 +1044,11 @@ def draft(word):
         if other != w:
             lines.append(f"#   {other}: {rec['treatment']} | {rec['source']}")
     lines += ["#", "# Sources: profession: | hobby: (the game's Quirks) | history: (its Upbringings) | want: (its Wants).",
-              "# `creator.py roll` prints the lines a rolled pilot already has.", "",
+              "# `creator.py roll` prints the lines a rolled pilot already has.",
+              f"# If the face and coat lines above read as a {i['a'].lower()}'s head with {i['b'].lower()} parts "
+              "added, write a",
+              "# `fused=` line: the two animals as ONE creature (it replaces both lines; the skill's \"One creature\").",
+              "",
               f'"""{i["name"]}' + (f", {w}" if i["name"] != w else "") + f": {i['a'].lower()} and {i['b'].lower()}, "
               f"a {brief.faction_words(i['faction'])}.\"\"\"",
               "SCENE = dict(", '    treatment="",', '    shot=(""),', '    side="left",', '    source="profession: ",',
@@ -1349,6 +1380,9 @@ def self_test():
                 if raw[k] not in painted and i[k] not in painted and not (k != "outfit" and fused and fused in painted):
                     errors.append(f"{w}: the brief it was painted from lacks the pilot's {k} line")
     errors += manifest_errors()
+    import refs   # the pictures a record shows a painter, and its patch: refs.py says what is wrong with them
+    for w, rec in recs.items():
+        errors += refs.record_errors(w, rec)
     charts = [w for w, rec in recs.items() if rec.get("chart")]
     cast = len(creator.catalog())   # of the whole cast, so the few may be written and painted first
     if len(charts) > max(1, int(cast * CHART_MOST + 0.999)):
@@ -1530,8 +1564,8 @@ def main():
     if args[0] == "who" and len(args) == 2:
         i = identity(args[1])
         rec = record(i["word"]) or {}
-        print(who(args[1], rec.get("seen", ()), rec.get("swap", ())))
-        print(hands_of(i))
+        print(who(args[1], rec.get("seen", ()), rec.get("swap", ()), rec.get("fused", "")))
+        print(rec.get("hands") or hands_of(i))
         return 0
     if args[0] == "draft" and len(args) == 2:
         print(draft(args[1]))
