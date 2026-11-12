@@ -50,32 +50,33 @@
     "S16b": "creation"
   },
   "camera": {
-    "min_distance": 60,
-    "min_chase_back": 40,
+    "_why": "Garrett 2026-11-12: a 14-unit chase showed only the vessel; the first wide pass (110/55/300) made it a speck. These are about 60% of that.",
+    "min_distance": 40,
+    "min_chase_back": 28,
     "pvp": {
       "verbs": [
-        "tq local 110 35 35 4"
+        "tq {pair} 70 35 22 4"
       ],
       "slowmo": 3,
       "game_seconds": 3.0
     },
     "maneuvering": {
       "verbs": [
-        "chase local 55 14 10 30 1.8"
+        "chase local 33 9 6 30 1.4"
       ],
       "slowmo": 2,
       "game_seconds": 3.5
     },
     "destruction": {
       "verbs": [
-        "tq local 90 -40 30 6"
+        "tq local 52 -40 18 6"
       ],
       "slowmo": 4,
       "game_seconds": 2.5
     },
     "creation": {
       "verbs": [
-        "crane local 0,30,-70 0,160,-300 {frames} 3"
+        "crane local 0,18,-42 0,95,-180 {frames} 3"
       ],
       "slowmo": 1,
       "game_seconds": 6.0

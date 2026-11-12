@@ -41,7 +41,7 @@ namespace CosmicShore.Editor.Trailer
     /// chase SUBJ BACK UP SIDE [LEAD] [SMOOTH] | ease BACK UP SIDE FRAMES | tq SUBJ DIST AZIMUTH HEIGHT [DRIFT] [SMOOTH] |
     /// orbit SUBJ DIST HEIGHT DEG/S [PHASE] | rail SUBJ AHEAD SIDE UP [SMOOTH] | crane SUBJ A B FRAMES [SMOOTH] (offsets
     /// from where SUBJ is when the shot starts) | fov DEGREES | release | record NAME FRAMES | still NAME | recorder NAME FRAMES (the Unity Recorder, for comparison) | quit.</para>
-    /// <para>A SUBJ is local, aiN, class:Rhino, pilot:NAME (a replay seat by its recorded pilot; local when none), nearest, fastest, fleet, all, kept, flora, fauna, crystal, or name:TEXT. It resolves
+    /// <para>A SUBJ is local, aiN, class:Rhino, pilot:NAME (a replay seat by its recorded pilot; local when none), pair:A,B (the middle of two subjects), nearest, fastest, fleet, all, kept, flora, fauna, crystal, or name:TEXT. It resolves
     /// once per shot and is held. The camera rides the subject's position exactly and low-passes only the heading,
     /// keeps a world-up horizon, and is posed after every LateUpdate, just before the frame draws.</para>
     /// </summary>
@@ -458,9 +458,10 @@ namespace CosmicShore.Editor.Trailer
             if (_subject == null || !_subject.gameObject.activeInHierarchy) _subject = Resolve(_subjectSpec);
             var s = _subject;
             if (s == null) return;
-            if (_subjectSpec is "fleet" or "all" or "kept") Resolve(_subjectSpec);
+            bool group = _subjectSpec is "fleet" or "all" or "kept" || _subjectSpec.StartsWith("pair:", StringComparison.Ordinal);
+            if (group) Resolve(_subjectSpec);
             var at = s.position;
-            if (_subjectSpec is "fleet" or "all" or "kept")
+            if (group)
             {
                 _fleetSmoothed = _fleetHave ? Vector3.Lerp(_fleetSmoothed, at, 1f - Mathf.Exp(-0.8f * dt)) : at;
                 _fleetHave = true;
@@ -617,6 +618,18 @@ namespace CosmicShore.Editor.Trailer
             var others = vessels.Where(v => !IsLocal(v)).Select(v => v.transform).ToList();
             var from = local ? local.position : Vector3.zero;
             if (spec == "local") return local ? local : others.FirstOrDefault();
+            if (spec.StartsWith("pair:", StringComparison.Ordinal))
+            {
+                // the middle of two pilots (pair:A,B, each a subject spec): a duel framed with both in it
+                var two = spec[5..].Split(',');
+                var a = two.Length > 0 ? Resolve(two[0]) : null;
+                var b = two.Length > 1 ? Resolve(two[1]) : null;
+                if (!a || !b) return a ? a : b ? b : local;
+                if (!_fleetAnchor) { _fleetAnchor = new GameObject("TrailerFleetAnchor").transform; DontDestroyOnLoad(_fleetAnchor.gameObject); }
+                _fleetAnchor.position = (a.position + b.position) * 0.5f;
+                _fleetAnchor.rotation = a.rotation;
+                return _fleetAnchor;
+            }
             if (spec.StartsWith("pilot:", StringComparison.Ordinal))
             {
                 // a replay names every seat after its recorded pilot except the local one, which flies the first human
@@ -1554,8 +1567,15 @@ namespace CosmicShore.Editor.Trailer
             while (Time.realtimeSinceStartup < deadline &&
                    !(SceneManager.GetActiveScene().name == _gameData.SceneName && FindAnyObjectByType<ReplayMatchDirector>()))
                 yield return new WaitForSecondsRealtime(0.25f);
-            if (!FindAnyObjectByType<ReplayMatchDirector>()) { Log("replay: the scene never got its director"); yield break; }
-            yield return new WaitForSecondsRealtime(3f);
+            var director = FindAnyObjectByType<ReplayMatchDirector>();
+            if (!director) { Log("replay: the scene never got its director"); yield break; }
+            // The match only starts moving once every seat is filled and its go fires, and the scene's own camera
+            // takes over a moment later: recording before both would open every clip on a frozen frame.
+            // (a later start fast-forwards from 0 first, so wait for the start point itself, not the first movement)
+            float p0 = ReplayMatch.StartAt, playing = Time.realtimeSinceStartup + 120f;
+            while (director && director.Position <= p0 + 0.1f && Time.realtimeSinceStartup < playing) yield return null;
+            if (!director || director.Position <= p0 + 0.1f) { Log("replay: the match never started playing"); yield break; }
+            yield return WaitFrames(45);
             Log("replay ready: " + Vessels().Count + " vessels");
         }
 

@@ -39,13 +39,14 @@ sys.path.insert(0, HERE)
 from moments import ELEMENTS  # noqa: E402
 
 FPS = 60
+LEAD = 0.85   # game seconds the director lets play after the start point before recording (TrailerShoot.Replay)
 CONFIG = os.path.join(HERE, "story_config.json")
 DEFAULT_CAMERA = {
-    "min_distance": 60, "min_chase_back": 40,
-    "pvp": {"verbs": ["tq local 110 35 35 4"], "slowmo": 3, "game_seconds": 3.0},
-    "maneuvering": {"verbs": ["chase local 55 14 10 30 1.8"], "slowmo": 2, "game_seconds": 3.5},
-    "destruction": {"verbs": ["tq local 90 -40 30 6"], "slowmo": 4, "game_seconds": 2.5},
-    "creation": {"verbs": ["crane local 0,30,-70 0,160,-300 {frames} 3"], "slowmo": 1, "game_seconds": 6.0},
+    "min_distance": 40, "min_chase_back": 28,
+    "pvp": {"verbs": ["tq {pair} 70 35 22 4"], "slowmo": 3, "game_seconds": 3.0},
+    "maneuvering": {"verbs": ["chase local 33 9 6 30 1.4"], "slowmo": 2, "game_seconds": 3.5},
+    "destruction": {"verbs": ["tq local 52 -40 18 6"], "slowmo": 4, "game_seconds": 2.5},
+    "creation": {"verbs": ["crane local 0,18,-42 0,95,-180 {frames} 3"], "slowmo": 1, "game_seconds": 6.0},
 }
 
 
@@ -120,17 +121,20 @@ def plan(items, cam, recordings=None, max_clips=8, why=None):
             used_pairs.add((it["id"], el))
             rule = cam[el]
             g = float(rule["game_seconds"])
-            start = round(max(0.0, m["t"] - g / 2), 2)
+            start = round(max(0.0, m["t"] - g / 2 - LEAD), 2)
             frames = int(round(g * FPS * float(rule["slowmo"])))
             name = os.path.basename(it["path"].replace("\\", "/"))
             # the camera follows the moment's own pilot: local flies the first human, every other seat is named
             pilot = m.get("pilot")
             subject = "local" if not pilot or pilot == _hero(it) or " " in pilot else f"pilot:{pilot}"
+            # a duel is framed on both pilots: the middle of the moment's pilot and the one it passed
+            rival = next((e.get("with") for e in m.get("events", []) if e.get("with") and " " not in e["with"]), None)
+            pair = f"pair:{subject},pilot:{rival}" if rival else subject
             clips.append({"clip": f"{it['id']}-{el}", "item": it["id"], "element": el,
                           "file": os.path.join(recordings, name) if recordings else name,
                           "start": start, "frames": frames, "slowmo": rule["slowmo"],
-                          "verbs": [v.replace("{frames}", str(frames)).replace(" local ", f" {subject} ")
-                                    for v in rule["verbs"]],
+                          "verbs": [v.replace("{frames}", str(frames)).replace("{pair}", pair)
+                                    .replace(" local ", f" {subject} ") for v in rule["verbs"]],
                           "mode": it.get("mode"), "pilot": m.get("pilot"), "why": (why or {}).get(it["id"]),
                           "events": [e["type"] for e in m.get("events", [])]})
             took = True
@@ -169,10 +173,11 @@ def self_test() -> int:
     assert not missing
     assert all(c["item"] != "replay-b" or c["element"] != "maneuvering" for c in clips), "filmed already"
     d = next(c for c in clips if c["element"] == "destruction")
-    assert d["start"] == 40 - 1.25 and d["frames"] == int(2.5 * 60 * 4), d        # peak centred, 4x slower
+    assert d["start"] == round(40 - 1.25 - LEAD, 2) and d["frames"] == int(2.5 * 60 * 4), d   # peak centred, 4x slower
     text = script(plan(index["items"], cam, recordings="C:\\R", max_clips=4)[0])
-    assert "replay C:/R/Kelpwood_1.cstheater 18.5" in text and "slowmo 3" in text and "record replay-a-pvp 540" in text, text
-    assert "crane local 0,30,-70 0,160,-300 360 3" in text, text                  # {frames} filled in
+    assert f"replay C:/R/Kelpwood_1.cstheater {round(18.5 - LEAD, 2)}" in text and "slowmo 3" in text, text
+    assert "record replay-a-pvp 540" in text and "crane local 0,18,-42 0,95,-180 360 3" in text, text   # {frames} filled
+    assert "tq local 70" in text, text                     # a pass with nobody named frames the pilot alone
     # rule 3: a tight chase is refused (negative control)
     tight = dict(cam, maneuvering={"verbs": ["chase local 14 3 0"], "slowmo": 1, "game_seconds": 3})
     try:
@@ -186,7 +191,11 @@ def self_test() -> int:
     # a moment of the second human follows that pilot by name, not the local seat
     index["items"][0]["moments"].append(mom("ys1", 60, 8, ["creation"], "create"))
     text = script(plan(index["items"], cam, max_clips=4)[0])
-    assert "crane pilot:ys1 0,30,-70" in text, text
+    assert "crane pilot:ys1 0,18,-42" in text, text
+    # a duel frames both pilots
+    index["items"][0]["moments"][0]["events"] = [{"type": "near_pass", "with": "ys1"}]
+    text = script(plan(index["items"], cam, max_clips=4)[0])
+    assert "tq pair:local,pilot:ys1 70" in text, text
     print("shoot: self-test OK")
     return 0
 

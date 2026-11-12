@@ -318,8 +318,8 @@ def synthetic(seconds=20.0, hz=30.0, mode=56) -> Recording:
         world.append((p[0], BORN, pid, p[1], p[2], p[3], 1)); pid += 1
     ava = []
     for k in range(40):
-        p = g[int(12 * hz) + (k % 6) - 3]
-        world.append((0.0, BORN, pid, p[1] + (k % 5) * 3, p[2], p[3] + (k % 7) * 3, 2)); ava.append(pid); pid += 1
+        p = g[int(12 * hz) + (k % 4) - 2]
+        world.append((0.0, BORN, pid, p[1] + (k % 5) * 2, p[2], p[3] + (k % 7) * 2, 2)); ava.append(pid); pid += 1
     for k, q in enumerate(ava):
         world.append((12.0 + 0.01 * k, GONE, q, 0, 0, 0, 0))
     far = rec.tracks[2].poses[int(15 * hz)]

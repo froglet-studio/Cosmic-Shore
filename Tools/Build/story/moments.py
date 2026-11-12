@@ -44,7 +44,9 @@ ELEMENTS_OF = {"near_pass": ("pvp",), "close_finish": ("pvp",), "overtake": ("pv
                "stunt": ("maneuvering",), "raid": ("destruction", "pvp"), "destroy": ("destruction",),
                "create": ("creation",)}
 
-DESTROY_RADIUS = 45.0    # prisms dying this close to a pilot are that pilot's doing (or happening to them)
+DESTROY_RADIUS = 25.0    # prisms dying this close to a pilot are that pilot's doing (or happening to them)
+EXPIRY_SHARE = 0.3       # when this share of all deaths come at one age, that age is a trail's lifetime running out
+EXPIRY_BAND = 0.1        # deaths within 10% of that age are expiry, not destruction
 DESTROY_BUCKET = 0.5
 DESTROY_MIN = 5
 DESTROY_KEEP = 4
@@ -100,7 +102,7 @@ def detect(rec: theater.Recording, me: theater.Track):
         for i in range(1, len(mine) - 1):
             if d[i] < NEAR_PASS_RADIUS and d[i] <= d[i - 1] and d[i] < d[i + 1] and mine[i][8] > fast:
                 ev.append((mine[i][0], "near_pass", 1.0 - d[i] / NEAR_PASS_RADIUS,
-                           f"{other.vessel_name} ({'AI' if other.is_ai else 'human'}) at {d[i]:.0f}u"))
+                           f"{other.vessel_name} ({'AI' if other.is_ai else 'human'}) at {d[i]:.0f}u", other.name))
     turns = []
     for i in range(1, len(mine)):
         dt = mine[i][0] - mine[i - 1][0]
@@ -129,12 +131,18 @@ def _world_events(rec, me, mine):
     """Destruction and creation around one pilot, from the prism stream: bursts, not every prism."""
     if not rec.world:
         return []
-    dead, born, where = {}, {}, {}
+    expiry = _expiry_age(rec.world)
+    dead, born, where, birth = {}, {}, {}, {}
     for t, kind, pid, x, y, z, dom in rec.world:
         if kind == theater.GONE:
             x, y, z, dom = where.get(pid, (x, y, z, dom))   # a death is placed where the prism last stood
+            age = t - birth[pid] if pid in birth else None
+            if expiry and age is not None and abs(age - expiry) <= EXPIRY_BAND * expiry:
+                continue   # a trail fading out on time: nothing broke it
         else:
             where[pid] = (x, y, z, dom)
+            if kind in (theater.BORN, theater.RESTORED) and t > 0.5:   # standing at the start: age unknown
+                birth[pid] = t
         if kind not in (theater.BORN, theater.GONE) or t < mine[0][0] or t > mine[-1][0]:
             continue
         p = _at(mine, t)
@@ -156,6 +164,24 @@ def _world_events(rec, me, mine):
             continue
         ev.append((sorted(hits)[len(hits) // 2], "create", min(1.0, len(hits) / 30.0), f"{len(hits)} prisms laid"))
     return ev
+
+
+def _expiry_age(world):
+    """The age most prisms die at, when one age dominates: a trail's lifetime, not destruction. None otherwise."""
+    birth, ages = {}, []
+    for t, kind, pid, *_ in world:
+        if kind in (theater.BORN, theater.RESTORED) and t > 0.5:
+            birth[pid] = t
+        elif kind == theater.GONE and pid in birth and t - birth[pid] > 0.5:
+            ages.append(t - birth[pid])
+    if len(ages) < 50:
+        return None
+    best, n = None, 0
+    for a in sorted(ages)[:: max(1, len(ages) // 200)]:
+        k = sum(1 for b in ages if abs(b - a) <= EXPIRY_BAND * a)
+        if k > n:
+            best, n = a, k
+    return best if n >= EXPIRY_SHARE * len(ages) else None
 
 
 def elements(events):
@@ -194,7 +220,8 @@ def moments(rec: theater.Recording, weights=None):
             feats["speed"] = p[8] / top
             feats["combo"] = float(len({e[1] for e in g}) - 1)
             score = sum(w.get(k, 0) * v for k, v in feats.items())
-            events = [{"type": e[1], "t": round(e[0], 2), "strength": round(e[2], 3), "detail": e[3]} for e in g]
+            events = [{"type": e[1], "t": round(e[0], 2), "strength": round(e[2], 3), "detail": e[3],
+                       **({"with": e[4]} if len(e) > 4 else {})} for e in g]
             out.append({"pilot": me.name, "hull": me.vessel_name, "t": round(peak[0], 2),
                         "start": round(max(0.0, g[0][0] - PRE_ROLL), 2), "end": round(g[-1][0] + POST_ROLL, 2),
                         "events": events, "elements": elements(events),
@@ -220,10 +247,25 @@ def self_test() -> int:
     ms = moments(rec)
     types = {e["type"] for m in ms for e in m["events"]}
     assert "near_pass" in types, types
+    assert any(e.get("with") == "Ava" for m in ms for e in m["events"] if e["type"] == "near_pass"), "who was passed"
     assert "close_finish" in types, types
     # the world stream: Garrett's own trail is creation, tearing through Ava's wall is a raid (destruction + pvp),
     # and Kai's prisms dying 2000 units from anyone are nobody's moment (negative control)
     assert "create" in types and "raid" in types, types
+    # a rival's trail fading out on time right beside Garrett is not destruction (negative control)
+    fade = theater.synthetic()
+    g = fade.tracks[0].poses
+    extra, pid = [], 10000
+    for k in range(200):
+        p = g[int((2 + k * 0.08) * fade.sample_hz)]
+        extra += [(1.0 + k * 0.08 - 0.9, theater.BORN, pid, p[1] + 5, p[2], p[3], 2),
+                  (1.0 + k * 0.08 + 0.1, theater.GONE, pid, 0, 0, 0, 0)]
+        pid += 1
+    fade.world = sorted(fade.world + extra, key=lambda e: e[0])
+    assert _expiry_age(fade.world) is not None
+    fms = moments(fade)
+    assert not any(e["type"] in ("raid", "destroy") and e["t"] < 10 for m in fms for e in m["events"]), "expiry"
+    assert any(e["type"] == "raid" for m in fms for e in m["events"]), "the real raid still counts"
     raid = next(m for m in ms if any(e["type"] == "raid" for e in m["events"]))
     assert raid["elements"][0] == "destruction" and "pvp" in raid["elements"], raid["elements"]
     assert all(11 < e["t"] < 13 for m in ms for e in m["events"] if e["type"] in ("raid", "destroy")), "only the wall"
