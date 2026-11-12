@@ -1,0 +1,11 @@
+{
+  "comment": "Tools/Build/approvals.py. shared_paths are files and folders everyone writes to as part of shipping (ledgers, indexes, this queue): touching them is nobody's toes, so `check` leaves them out. Add a path only when every branch writes to it.",
+  "shared_paths": [
+    "Docs/Approvals",
+    "Docs/UNITY_VERIFICATION_CHECKLIST.md",
+    "Docs/TEAM_TASKS.md",
+    "Docs/claude/DOCUMENTATION_INDEX.md",
+    "Docs/QA/.applied.json",
+    "BugLedger"
+  ]
+}

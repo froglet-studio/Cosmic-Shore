@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using Unity.Profiling;
 using UnityEngine;
 
@@ -122,6 +123,16 @@ namespace CosmicShore.Gameplay
 
             _visualParamsDirty = true;
             PushToShader();
+            ColorTrace.Changed += RepaintColors;
+        }
+
+        void OnDisable() => ColorTrace.Changed -= RepaintColors;
+
+        // A colour set was worn: the colours go to the shader again, as the worn set paints them.
+        void RepaintColors()
+        {
+            _visualParamsDirty = true;
+            PushToShader();
         }
 
         void OnValidate()
@@ -214,9 +225,9 @@ namespace CosmicShore.Gameplay
             // Visual params
             if (_visualParamsDirty)
             {
-                _propBlock.SetColor(CrackleColorAId, crackleColorA);
-                _propBlock.SetColor(CrackleColorBId, crackleColorB);
-                _propBlock.SetColor(FresnelRimColorId, fresnelRimColor);
+                _propBlock.SetColor(CrackleColorAId, ColorTrace.Retrace(ColorTrace.World, crackleColorA));
+                _propBlock.SetColor(CrackleColorBId, ColorTrace.Retrace(ColorTrace.World, crackleColorB));
+                _propBlock.SetColor(FresnelRimColorId, ColorTrace.Retrace(ColorTrace.World, fresnelRimColor));
                 _propBlock.SetFloat(ArcDensityId, arcDensity);
                 _propBlock.SetFloat(ArcSharpnessId, arcSharpness);
                 _propBlock.SetFloat(RingThicknessId, ringThickness);

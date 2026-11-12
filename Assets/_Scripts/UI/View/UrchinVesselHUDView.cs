@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -125,13 +126,13 @@ namespace CosmicShore.UI
             if (chargeRing)
             {
                 chargeRing.fillAmount = 0f;
-                chargeRing.color = WithAlpha(chargeBuildingColor, 0f);
+                chargeRing.color = WithAlpha(ColorTrace.Retrace(ColorTrace.Ui, chargeBuildingColor), 0f);
             }
 
             if (ammoFill)
             {
                 ammoFill.fillAmount = 0f;
-                ammoFill.color = ammoNormalColor;
+                ammoFill.color = ColorTrace.Retrace(ColorTrace.Ui, ammoNormalColor);
             }
 
             _riding = false;
@@ -139,7 +140,7 @@ namespace CosmicShore.UI
             if (ridingIndicator)
             {
                 ridingIndicator.fillAmount = 0f;
-                ridingIndicator.color = ridingOffColor;
+                ridingIndicator.color = ColorTrace.Retrace(ColorTrace.Ui, ridingOffColor);
             }
 
             _slipping = false;
@@ -178,12 +179,24 @@ namespace CosmicShore.UI
             RefreshParts();
         }
 
+        void OnEnable() => ColorTrace.Changed += Repaint;
+        void OnDisable() => ColorTrace.Changed -= Repaint;
+
+        // A colour set worn while the HUD is up: the parts and the ammo fill take it now (the charge ring and the
+        // riding indicator repaint every frame).
+        void Repaint()
+        {
+            RefreshParts();
+            if (ammoFill) SetAmmo(ammoFill.fillAmount);
+        }
+
         void RefreshParts()
         {
             bool charge5 = IsAbilityUpgraded(Element.Charge);
+            var danger = ColorTrace.Retrace(ColorTrace.Ui, dangerColor);
             Paint(chainUrchinIcon, _domain, 1f);
             Paint(chainSpikeIcon, Color.white, 1f);
-            Paint(chainPrismIcon, dangerColor, 1f);
+            Paint(chainPrismIcon, danger, 1f);
             Paint(chainSprayIcon, Color.white, charge5 ? 0f : 1f);
             Paint(chainSprayOverIcon, Color.white, charge5 ? 1f : 0f);
             Paint(chainDeeperIcon, Color.white, charge5 ? 1f : 0f);
@@ -192,7 +205,7 @@ namespace CosmicShore.UI
             Paint(riderUrchinIcon, _domain, riding ? 1f : 0f);
             Paint(riderLiftedIcon, _domain, riding ? 0f : 1f);
             Paint(riderMineIcon, _domain, riding ? 1f : offTrailAlpha);
-            Paint(riderTheirsIcon, dangerColor, riding ? 1f : offTrailAlpha);
+            Paint(riderTheirsIcon, danger, riding ? 1f : offTrailAlpha);
             Paint(riderShieldIcon, Color.white, riding && IsAbilityUpgraded(Element.Mass) ? 1f : 0f);
 
             Paint(trackUrchinIcon, _domain, 1f);
@@ -203,7 +216,7 @@ namespace CosmicShore.UI
             Paint(slipRidingIcon, _domain, _slipping ? 0f : 1f);
             Paint(slipGhostIcon, _domain, _slipping ? ghostAlpha : 0f);
             Paint(slipLiftedIcon, _domain, _slipping ? 1f : 0f);
-            Paint(slipTrailIcon, time5 ? dangerColor : _domain, 1f);
+            Paint(slipTrailIcon, time5 ? danger : _domain, 1f);
             Paint(slipStreamIcon, Color.white, time5 && _slipping ? 1f : 0f);
         }
 
@@ -220,7 +233,8 @@ namespace CosmicShore.UI
             if (!ammoFill) return;
             normalized = Mathf.Clamp01(normalized);
             ammoFill.fillAmount = normalized;
-            ammoFill.color = Color.Lerp(ammoNormalColor, ammoFullColor, normalized);
+            ammoFill.color = Color.Lerp(ColorTrace.Retrace(ColorTrace.Ui, ammoNormalColor),
+                                        ColorTrace.Retrace(ColorTrace.Ui, ammoFullColor), normalized);
         }
 
         public void SetRiding(bool riding)
@@ -262,7 +276,8 @@ namespace CosmicShore.UI
                 : Mathf.MoveTowards(_chargeVisible, target, Time.deltaTime / chargeFadeSeconds);
 
             chargeRing.fillAmount = _chargeProgress;
-            var c = Color.Lerp(chargeBuildingColor, chargeFullColor, _chargeProgress);
+            var c = Color.Lerp(ColorTrace.Retrace(ColorTrace.Ui, chargeBuildingColor),
+                               ColorTrace.Retrace(ColorTrace.Ui, chargeFullColor), _chargeProgress);
             chargeRing.color = WithAlpha(c, c.a * _chargeVisible);
         }
 
@@ -281,7 +296,8 @@ namespace CosmicShore.UI
             // binary state is drawn as EMPTY or FULL with only the blend's transition between -
             // never parked part-way, which would read as a meter.
             ridingIndicator.fillAmount = _ridingBlend;
-            ridingIndicator.color = Color.Lerp(ridingOffColor, ridingOnColor, _ridingBlend);
+            ridingIndicator.color = Color.Lerp(ColorTrace.Retrace(ColorTrace.Ui, ridingOffColor),
+                                               ColorTrace.Retrace(ColorTrace.Ui, ridingOnColor), _ridingBlend);
         }
     }
 }

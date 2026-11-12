@@ -65,11 +65,257 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Glasshouse, the Angler's Mass game (GameModes 89) (`claude/peaceful-cerf-vpl3x8`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/GLASSHOUSE.md`. A timed garden: an omni crystal is a creature and a seed, letting go
+of the lure plants the seed in your colour, holding it grows your plants 3x. The score is `VolumeRemaining`: trail
+(StatsManager) + garden (the controller credits each domain's plants outside the nucleus by deltas). Four cells (the
+standard cell with Barren's nucleus, no environment), a cactus planted only from seeds (`SpawnProbability 0`), tadpole
+herds, omni crystals per rung. The AI (`GlasshouseGardener`) steers and holds the lure only. New platform rows:
+`GameModes.Glasshouse = 89`, `glasshouseRoundSeconds` (90), `GameToastSituation.GlasshouseHint = 164`, the HUD arrow
+(Rampage's provider). Nothing about the Angler changed. Authored by `Tools/Build/author_glasshouse_assets.py`. Ran
+headless: the generator `--check` (with a negative control), the `/arcadegame` §4 gates, the card render, and
+`unity_refcompile` (see the commit). No Unity editor ran.
+
+**Verify in editor:**
+1. Arcade → Glasshouse card: the gardens card art, Angler only, 1-4 players, intensities 1-4, the **Mass** petal.
+2. Run the edit-mode tests `GlasshouseScoringTests`, `ModeGenreTests`, `EnumIntegrityTests`.
+3. Solo, I2: the arrow points into the nucleus at an omni crystal. Take it: the Mass card shows a seed.
+4. Fly out past the nucleus, hold A (the lure) and let go: a cactus grows at the esca in **your** colour. Your score
+   (Hold volume) rises as it grows, on top of what your trail adds.
+5. Hold the lure over the plant: it grows visibly faster (3x), and the hull stops (no trail while it is lit).
+6. Let go of the lure inside the nucleus with a seed: the plant counts nothing (the garden is outside the nucleus).
+7. Wait: the tadpoles graze the garden and your score falls; luring tames the grazers in reach.
+8. With a 2-domain lobby (AI): an AI Angler fetches a seed, flies to its bed, holds the lure and plants; at Medium and
+   above it raids (steers at your plants; its school is thrown at them).
+9. At the whistle: the domain with the most volume standing wins; the results show "{n} Volume" and "{n} grown".
+10. FrogletTools > Game Modes > End Game Conditions: Glasshouse - Round Seconds reads 90.
+11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameGlasshouse.unity`, and Reconcile Build
+    Scene List if the card refuses to load.
+12. Profiler: a full I1 arena (36 plants) stays under ~9,800 prisms; the garden sample is one pass a second.
+
+**First-pass tuning (not settled):** round 90 s; plant caps 36 / 30 / 24 / 18; omni 4 / 3 / 3 / 2; grazers
+6 / 9 / 12 / 15; cactus at 1.4x leaf (~32,900 volume mature); comeback 0.00003. The open question is the
+retire condition: does the garden matter against the trail (~42,000 volume a round of cruising)?
+### 🔴 Harvest, the Thresher's Space game (GameModes 88) (`claude/keen-rubin-rw7p6q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/HARVEST.md` (plan: `Docs/MassAndSpaceGames/THRESHER_SPACE.md`). A Thresher
+destruction race through a field of sheaves (`SpawnableHarvest`, four baked prefabs): mow a sheaf's stalks with the
+chain to charge the ball, smash it into the core for one blast. Scored on hostile prisms destroyed (PrismsDestroyed,
+Space), target 750, golf-timed. AI reapers (`HarvestReaper`) steer and press A once to leave Mass Mode. New platform
+rows: `GameModes.Harvest = 88`, `harvestPrismTarget`, toast situation 163 (`HarvestHint`). Checked offline:
+`author_harvest_assets.py --check` (and watched it fail three ways), the `/arcadegame` gates, the clip audit (0
+clipping; the C# lays 3,200 / 3,408 / 3,040 / 3,300 prisms, as the Python mirror does), the bake, the card render,
+the reference compile (player and editor: 0 errors in project code) and the full `/ship` gates (ALL OK). Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 81 modes; `HarvestTests`,
+`ModeGenreTests.Harvest_IsTheThreshersSpaceGame`).
+
+**Verify in editor:**
+1. Arcade → Harvest card: the sheaves card art, Thresher only, 1-4 players, 2-3 domains, intensities 1-4, the
+   **Space** badge.
+2. Launch I1 with one AI: you spawn just outside a field of eight big blue sheaves; the arrow points at an omni
+   crystal in the clear centre; the hint toast (163) shows once ("Press A to break ...").
+3. Before pressing A (Mass Mode): the ball steals and lays trail, nothing explodes, and the score moves only on chain
+   cuts. Press A: the ball breaks and explodes.
+4. **The question the mode stands on**: circle a sheaf with it inside your turn. Does the chain cut stalks while the
+   ball swings outside the tips (the ball's rim whitens as the bank grows)? Then whip the ball into the core: does one
+   blast clear most of it? If the ball keeps touching stalks and every blast is small, say so (the brief's retire
+   condition).
+5. Scoring: chain cuts, ball hits and blast kills all raise your count; a sheaf in your own colour (I2+) never does,
+   and a toast every 150 prisms (83) shows the count.
+6. Crystals: 8 / 4 / 3 / 1 for a lobby of four at I1-I4, in the clear centre; taking one windmills the red-hot ball
+   round you for 12 s.
+7. AI: it presses A within a couple of seconds of the start (its ball starts exploding), circles a sheaf not in its
+   colour, then turns in through the core; at Hard / Legendary it mows longer and wider. Watch whether it stalls in a
+   sheaf or orbits forever.
+8. First team to 750 wins: results show "N Prisms" per pilot and "N Prisms Left" for losers; the reveal says
+   HARVEST TIME / PRISMS LEFT. Replay works.
+9. I2, I3, I4: shielded cores (two hits), team-coloured sheaves, every fourth stalk danger at I4; the spawn ring stays
+   just outside the field.
+10. Time a full match at I2, 1v1 Medium AI: P-modes-02 wants about 90 s for an experienced pilot (FrogletTools > Game
+    Modes > End Game Conditions → Harvest).
+11. MPPM two clients: a client's chain, ball and blast kills score once each on both peers; both see the same field.
+12. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameHarvest.unity`, and Reconcile Build Scene
+    List if the scene is reported missing from the build list.
+
+**First-pass tuning:** target 750, comeback 0.012, the AI ladders in `HARVEST.md`.
+
+**Second pass, the fuller field (2026-11-10, same branch, not editor-verified):** wheel sheaves (stalks flat round the
+core, axis drawn per sheaf), chaff clouds and 3x3x3 bales at every rung (4,058 / 4,129 / 4,448 / 4,561 prisms, baked,
+0 clipping); I3 lays 4 Space crystals per team present that only that team can take (`ElementalCrystalImpactor.RestrictTo`,
+regrow 12 s); I4 runs Harvest's own copies of shark, piranha, brittlestar and tadpole (elemental, 23 live at most); the
+reaper laps a wheel in its plane, climbs the axle and dives down it. Offline: `--check`, bake, clip audit, card,
+`unity_refcompile` 0 errors in project code. Not run: Unity, the EditMode tests (`HarvestTests` gained two).
+13. Any rung: the sheaves read as wheels from the spawn ring, with drifting chaff and solid bales between them; nothing
+    clips.
+14. **The question again, on wheels**: lap a wheel in its own plane. Does the chain cut many spokes a lap (the lab says
+    38-92)? Then climb out along the axle and dive down it: does the ball reach the core with the bank intact, and does
+    one blast take about half the core? A bale hit with a full bank should vanish.
+15. I3 with Jade vs Ruby: Jade sees 4 Jade-tinted Space crystals and Ruby 4 Ruby ones, away from the sheaves. A Ruby
+    vessel flies through a Jade one without taking it; a Jade vessel takes it (its Mass rises) and it grows back
+    about 12 s later. A lone team (solo practice) gets only its own. On a client, the crystals sit in the same places.
+16. I4: creatures appear a few seconds in (sharks, piranhas, brittlestars, tadpoles) in element colours; grazers eat
+    sheaf prisms, sharks eat grazers, a dead creature drops its element's crystal. Killing one scores its body prisms.
+    Count stays at or under 23.
+17. AI at I3/I4: it takes its own team's Space crystals, laps wheels in plane rather than orbiting at the tips, climbs and
+    dives along the axle. Watch whether it ever gets stuck at the axle point.
+
+---
+
+### 🔴 Shatterplane, the Brittle Star's Space game (GameModes 90) (`claude/fervent-edison-ol600q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/SHATTERPLANE.md` (plan and decisions: `Docs/MassAndSpaceGames/BRITTLE_STAR_SPACE.md`).
+Wide, thin round plates of neutral prisms (`SpawnableShatterplane`, four baked prefabs). The ring blast erases a plate
+it lies in, and the guns chew the rest. Scored on `PrismsDestroyed` (Rampage's rule, so the card reads Space), first
+domain to 1600 / 1600 / 2000 / 1000 by intensity. The crystal field sits on the plates' axes. The arena's nucleus is
+sized to 470 u (D2), so every ring blast in this cell is 940 u across. The AI squarer only steers.
+
+New platform rows: `GameModes.Shatterplane = 90`, `shatterplanePrismTarget` + per-intensity list, toast situation 165,
+the HUD arrow (`HostileMassObjectiveProvider`).
+
+**Checked offline:**
+- `author_shatterplane_assets.py --check`, watched failing on a mutated settings asset and on a mutated C# default.
+- The reference compile: player 0 errors; editor config run as well.
+- The `/ship` gates.
+- The clip audit: 0 clipping on all 16 runs.
+- The bake: the C# lays 5,290 / 5,292 / 6,615 / 4,588 prisms, exactly the twin's.
+- The card render.
+
+**Not run:** Unity, and the EditMode tests (`ShatterplaneTests`, `ModeGenreTests`, `EnumIntegrityTests`, which now
+expects 82 modes).
+
+**Verify in editor:**
+1. Arcade → Shatterplane card: the plates-and-square-blast art, Brittle Star only, 1-4 players, intensities 1-4, the
+   **Space** badge (genre through `PrismsDestroyed`).
+2. Launch I1 with one AI, as the HOST:
+   - you spawn on a 780 u ring;
+   - ten round plates face you;
+   - a crystal floats in front of each plate;
+   - the nucleus sphere in the middle is about 470 u (`ShatterplaneSettings.nucleusRadius`);
+   - the hint toast (163) shows once;
+   - the arrow points at standing plate mass.
+3. Take a crystal (the Charge card's spare-ring slot fills), fly on along the plate's axis, throw (LT): the blast lies
+   in the plate and erases it whole; the score jumps by about 529.
+4. Throw at a slant: only a band goes.
+5. Space Mode (X + RT): the five guns chip a plate.
+6. Lay a Creation trail and shoot it: your own prisms never score.
+7. AI: it takes crystals and lines up on a plate's axis before flying in. **Count how many of its ring throws land square
+   versus fuse short in front of the plate** (the executor decides when to throw; a throw from beyond about 313 u at
+   cruise fuses before it arrives). Watch for an AI circling a plate it never lines up on.
+8. First team to the target wins: results "N Prisms" / "N Prisms Left", the reveal SHATTERPLANE TIME / PRISMS LEFT.
+   Replay works.
+9a. I3 crystals: every site shows one Space crystal per team present, side by side, each in its team's colour; a pilot
+    can take only their own team's (fly through another team's: nothing happens); the AI goes only for its own.
+9b. I4 fauna: tadpoles and sharks appear after about 10 s, each in one of the four element looks; tadpoles graze the plates
+    and sharks hunt them; breaking a rival-coloured creature's body scores; a dead creature drops a crystal.
+9. I2: plates at mixed angles. I3: stacks of three 70 u apart (the front plate shields the next from the guns). I4: white
+   super-shielded ribs on every sixth line, red danger rims, and grilles in front of every other plate (a ring thrown
+   through a grille blows on it and takes little).
+10. Profile a square ring at I1 (`prof`): one blast kills a plate in its 0.7 s sweep.
+11. Time a 2v2 at I2 with Medium AI against P-modes-02 (about 90 s for an experienced player); retune in FrogletTools >
+    Game Modes > End Game Conditions → Shatterplane.
+12. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameShatterplane.unity`, and Reconcile Build
+    Scene List if the scene is reported missing. FrogletTools > Ecology > Measure Cell Environment Baselines should
+    agree with the census above.
+
+**First-pass tuning:**
+- targets 1600 / 1600 / 2000 / 1000 (30% of each rung's breakable mass);
+- comeback rate 0.005;
+- nucleus 470;
+- crystal regrow 8 s;
+- the plates in `shatterplane_budget.RUNGS`;
+- the AI ladders in `ShatterplaneSettings`.
+
+---
+
+### 🔴 Corona, the Manta's Charge game (GameModes 87) (`claude/amazing-goldberg-7zn80e`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/CORONA.md`. Manta stings round a crystal heart in nested prism shells
+(`SpawnableCorona`, four baked prefabs), scored on blooms (a rival pilot caught in a bloom of a bomb you planted,
+Debuff-class CombatPoints, target 15), omni crystals in the heart (the scene's CrystalManager), AI stingers that only
+steer and route through the gates (`CoronaStinger`). New platform rows: `GameModes.Corona = 87`, `coronaBloomTarget`,
+toast situation 162. Checked offline: `author_corona_assets.py --check` (watched it fail on a mutated settings asset),
+the reference compile, the `/ship` gates, the clip audit (0 clipping; the C# lays 624 / 1,334 / 2,262 / 3,703 prisms
+and the mirror's volumes), the bake, the card render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now
+expects 80 modes).
+
+**Verify in editor:**
+1. Arcade → Corona card: the shells-and-bloom card art, Manta only, 2-4 players, intensities 1-4, the Charge badge.
+2. Launch I1 with one AI (any difficulty), as the HOST: you spawn outside one shell of tiles with eight wide gates;
+   four omni crystals float in the heart; the arrow points at the rival; the hint toast (162) shows once.
+3. Arm: fly along the shell close enough to skim (no hull contact): the Charge card's gauge fills and the armed badge
+   lights after about three tiles.
+4. Touch: brush a tile with the hull while carrying a planted bomb: every bomb goes off small and the energy empties.
+5. Plant: graze the rival while at least as fast as it: the armed badge drops, a fuse marker blooms on the rival (only
+   on your screen), the fuse board above the Space card counts 20 s. The rival sees nothing.
+6. Cash: dive through a gate and touch a crystal in the heart: every planted bomb blooms (nearest first) and a bloom
+   opens round your ship. Each rival caught: "<b>you</b> caught a rival in a bloom!" (82), the score goes up 1, the
+   rival is silenced and loses petals. At most one per rival per second. A fuse left to run out blooms smaller.
+7. AI: it skims a shell without touching, chases you through the gates, and dives for the heart once it has planted
+   (Easy at 1 bomb, Hard / Legendary at 3 or with 6-7 s of fuse left). Watch for the AI flying into tiles (its bombs
+   would go off early and its energy empty) and for it circling outside a gate it never lines up on.
+8. First team to 15 blooms wins: results show "N blooms" and "N Blooms Left"; the reveal says CORONA TIME / BLOOMS
+   LEFT. Replay works.
+9. I2, I3, I4: two, three, four shells; each shell's gates turned away from the last; red danger rims round the gates
+   from I3 (they take petals on contact); gates narrower (inner gate 131, 90, 65 u); 3, 2, 1 omni crystals in the heart.
+10. Blooms destroy tiles: after a full match, is I1's shell still a shell?
+11. Time a 2v2 at I2 with Medium AI. The plan wants 3-5 min; 15 is a first cut (FrogletTools > Game Modes > End Game
+    Conditions → Corona).
+12. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameCorona.unity`, and Reconcile Build Scene
+    List if the scene is reported missing from the build list. FrogletTools > Ecology > Measure Cell Environment
+    Baselines should agree with the census above.
+
+**First-pass tuning:** target 15, comeback 0.3, the shells and crystal counts in `corona_budget.RUNGS`, the AI
+ladders in `CORONA.md`.
+
+---
+
+### 🔴 Kelpwood, the Angler's Charge game (GameModes 86) (`claude/sweet-wozniak-tk48pb`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Controller/Arcade/KELPWOOD.md`. An Angler hunt through a 0G ball of kelp (`SpawnableKelpwood`, four
+baked prefabs), scored on bites (a creature an Angler locked on a rival biting its hull, Strike-class CombatPoints,
+target 12), tadpole herds grazing the kelp (four Kelpwood-owned spawn profiles) and omni crystals round the core (the
+scene's CrystalManager), AI hunters that steer and hold the eraser (`KelpwoodHunter`). New platform rows:
+`GameModes.Kelpwood = 86`, `kelpwoodBiteTarget`, toast situation 161. Checked offline: `author_kelpwood_assets.py
+--check` (watched it fail on a mutated cell config and a mutated C# constant), the reference compile (0 errors in
+project code), the `/ship` gates (all OK), the clip audit (0 clipping; the C# lays 560 / 880 / 1,280 / 2,024 prisms
+and the mirror's volumes), the bake, the card render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now
+expects 78 modes).
+
+**Verify in editor:**
+1. Arcade → Kelpwood card: the kelp card art, Angler only, 2-4 players, intensities 1-4, the Charge badge.
+2. Launch I1 with one AI (any difficulty), as the HOST: you spawn just outside a ball of kelp strands radiating in every
+   direction; the arrow points at the rival; the hint toast (161) shows once. Tadpoles appear in the kelp after ~5 s;
+   three omni crystals float round the core.
+3. Tame: hold the lure (A) on a tadpole until it joins; take an omni crystal: one creature joins.
+4. Lock: hold LT with the rival under the nose: one creature leaves the school and chases them; the hunted ring shows.
+   On the bite: "<b>you</b> drew blood..." (86), the score goes up 1, the rival is silenced and loses petals. At most
+   one bite a second on one rival, however many hunters are on them.
+5. Be hunted: a creature chases you at ~64 u/s; dash (B) to your other group to shake it. While silenced your own
+   hunters bite but do not score.
+6. AI: at Easy it presses LT wide of you and locks rarely; at Hard / Legendary it locks often, keeps up to 3-4 hunters
+   out, runs for an omni crystal when its school is under 2 or when silenced. Watch for the AI holding LT forever (it
+   must release after 0.3 s) and for the leapfrog fighting the hunter over the nose.
+7. First team to 12 bites wins: results show "N bites" and "N Bites Left"; the reveal says HUNT TIME / BITES LEFT.
+   Replay works.
+8. I2, I3, I4: more strands (44, 64, 88); danger tips on every third strand from I3 (they take petals on contact);
+   danger collars mid-strand at I4; fewer tadpoles (18, 15, 12) and omni crystals (2, 2, 1).
+9. Time a full match at I2 with 1v1 Medium AI. The plan wants 3-5 min; 12 is a first cut (FrogletTools > Game Modes >
+   End Game Conditions → Kelpwood).
+10. Known gap, confirm it: a CLIENT Angler (MPPM second player) cannot lock, dash or tame (ANGLER.md follow-up 7).
+11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameKelpwood.unity`, and Reconcile Build Scene
+    List if the scene is reported missing from the build list. FrogletTools > Ecology > Measure Cell Environment
+    Baselines should agree with the census above.
+
+**First-pass tuning:** target 12, comeback 0.4, the herd and omni counts in `kelpwood_budget.RUNGS`, the AI ladders in
+`KELPWOOD.md`.
+
+---
+
 ### 🔴 Jackstraw, the Thresher's Charge game (GameModes 85) (`claude/ecstatic-heisenberg-21lpmu`, 2026-11-09, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/JACKSTRAW.md`. A Thresher brawl in a 0G heap of pick-up sticks
 (`SpawnableJackstraw`, four baked prefabs), scored on strikes (the ball or chain on a rival hull, Strike-class
-CombatPoints, target 8), crystals in the heap's clearings, AI hunters that only steer (`JackstrawHunter`). New
+CombatPoints, target 3 since 2026-11-09, 8 before), crystals in the heap's clearings, AI hunters that only steer (`JackstrawHunter`). New
 platform rows: `GameModes.Jackstraw = 85`, `jackstrawStrikeTarget`, toast situations 86 (`StrikeLanded`) and 160.
 Checked offline: `author_jackstraw_assets.py --check`, the reference compile (0 errors), the `/ship` gates, the clip
 audit (0 clipping; the C# lays 408 / 1,122 / 2,114 / 3,566 prisms, as the Python mirror does), the bake, the card
@@ -87,17 +333,17 @@ render. Not run: Unity, the EditMode tests (`EnumIntegrityTests` now expects 77 
    in the centre clearing.
 6. AI: at Easy it chases straight; at Hard / Legendary it leads, runs through you and past, and runs to a clearing
    when silenced. It never presses A (stays in Mass Mode) and still strikes. Watch whether it gets stuck on sticks.
-7. First team to 8 strikes wins: the results show "N strikes" per pilot and "N Strikes Left" for the losers; the
+7. First team to 3 strikes wins, at every intensity: the results show "N strikes" per pilot and "N Strikes Left" for the losers; the
    reveal says HEAP TIME / STRIKES LEFT. Replay works.
 8. I2, I3, I4: the heap grows (6, 14, 26 jacks), the clearings shrink; the spawn ring stays just outside the heap.
-9. Time a full match at I2 with 1v1 Medium AI. The plan wants 3-5 min; 8 is a first cut (FrogletTools > Game Modes >
+9. Time a full match at I2 with 1v1 Medium AI. The plan wants 3-5 min; the target is 3 strikes (Shombith's call; FrogletTools > Game Modes >
    End Game Conditions → Jackstraw).
 10. MPPM two clients: a client's strike scores once (forwarded through `ReportCombatHit_ServerRpc`), both peers see the
     same heap and the same crystals.
 11. FrogletTools > Game Modes > Game Mode Prefab Kit ▸ Validate on `MinigameJackstraw.unity`, and Reconcile Build Scene
     List if the scene is reported missing from the build list.
 
-**First-pass tuning:** target 8, comeback 0.6, `aiOvershoot` 60, the AI ladders in `JACKSTRAW.md`.
+**First-pass tuning:** target 3, comeback 1.5, `aiOvershoot` 60, the AI ladders in `JACKSTRAW.md`.
 
 ---
 
@@ -21906,7 +22152,8 @@ are all missing `.asset` files the sparse checkout left out. Design record: `MAN
 9. **HUD:** the Space card's new `energyFill` / `energyCountText` are unwired on the prefab (the icon pass wires them).
 10. **Follow-up tuning (branch `claude/manta-tuning`, compiled with `unity_refcompile`, NOT RUN IN EDITOR):** the Manta
     holds one bomb of energy at a time (skim, plant, skim, plant); the fuse no longer changes with Charge; a Charge 10
-    Manta's bloom knocks twice the petals out of a rival that a Charge 0 one does; the trail is thin and even like the
+    Manta's bloom knocks twice the petals out of a rival that a Charge 0 one does *(both superseded 2026-11-10: Charge
+    is the fuse again and the bloom's petals are flat, see "Manta: Charge is the fuse" below)*; the trail is thin and even like the
     Squirrel's, the same at every Time level and through hard turns.
     A Time 10 Manta cruises about 1.5x as fast as a Time 0 one (270 against 180 u/s at full throttle).
 
@@ -21927,6 +22174,23 @@ Lab: `Docs/Studios/BrittleStarRingLab.html` (https://claude.ai/artifact/C2AB3CPY
 4. **Guns and cords while spinning**: Space Mode + RT: rounds leave the drawn turrets; Charge Mode: the cords hang from
    the drawn muzzles; LT throws a ring that looks like the ring did (no smear in flight).
 5. **Cost**: Frame Debugger / profiler on a phone during a spin: `BrittleStar ring layer` + `BrittleStar ring smear`.
+
+**2026-11-10, step 3 FAILED in the editor (Garrett: "it was too dark to see").** Cause, found by reading the code and
+URP 17.3's source (not yet seen in the editor): `BrittleStarRingSmearPass.ForwardPass` picked each material's pass by
+its LightMode tag, and the hull's `VesselGraph` is an Unlit Shader Graph whose forward pass has NO LightMode tag
+(UniversalUnlitSubTarget sets none; ShaderGraph writes `// LightMode: <None>`). No pass matched, so the ring layer was
+empty, the smear averaged nothing, and the ring the hull had hidden vanished whenever it turned more than
+`ringSmearMinDegrees` a frame (1.5° in `BrittleStarConfig.asset`). The fallback missed it because the request was marked drawn when the pass was recorded. Fixed on branch
+`claude/brittlestar-smear-empty-layer`. **Compiled, not run in Unity** (ship pass, 2026-11-10): `unity_refcompile`'s
+player and editor configs report 0 errors in the changed files, and a planted error in `BrittleStarRingSmearPass.cs`
+and in `BrittleStarRingSpinTests.cs` was each named; their only errors are the sandbox's 21 in `FactionChatService.cs`
+and `PlayerReports.cs` (Vivox and Moderation cannot be fetched), identical on bleeding-edge `5b13c396a`.
+`BrittleStarRingSpinTests` has not run. Re-run steps 1-3, plus:
+
+6. **The layer draws**: Frame Debugger during a spin: `BrittleStar ring layer` shows one draw per ring submesh (Body,
+   the domain ship material, Engine), and `BrittleStarRingSpinTests.TheSmearLayer_FindsTheForwardPassOnEveryHullMaterial`
+   passes. The ring is visible the whole time it spins; compare it with the lab's round 3 game look
+   (`Docs/Studios/BrittleStarRingLab.html`, Framing 1:1 at 1080p, same frame rate).
 
 ## 🔴 2026-11-07 — Voyages, deep: the living HyperSea, rival crews, a job for every faction type, sagas and relics (unverified: no Unity editor in the session)
 
@@ -22206,7 +22470,7 @@ The generated editor theme `FrogletSeaTheme.Themes.cs` gains a Nacre theme. Ran 
 3. **Shielded and super-shielded prisms** still read as a tier above plain in every domain (Ruby's rim is the brightest).
 4. **Danger (coral) and free crystals (lime CTA)** still stand out against the pale bodies.
 
-## ⚪ REVERTED (section 158, nothing to test) - The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
+## ⚪ REVERTED (section 159, nothing to test) - The Voyages tab as Rev 74 C3, and the Quests window (2026-11-08, Shombith, NOT RUN IN EDITOR)
 
 ## 🔴 Voyages: own scene (Voyage.unity) and in-world toys removed (2026-11-08, Garrett, NOT RUN IN EDITOR)
 
@@ -22247,9 +22511,9 @@ Branch `claude/escort-hook-stale`. unity_refcompile could not run (no .NET SDK i
 2. Swap onto a wingmate's hull (pilot swap), then let that hull you left be destroyed or leave the voyage.
 3. The console shows no `MissingReferenceException` from `ArkEscortPilot.Target`, and the wingmate you swapped with keeps flying.
 
-## ⚪ REVERTED (section 158, nothing to test) - The Quests window's carousel, Rev 77 "Quests" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+## ⚪ REVERTED (section 159, nothing to test) - The Quests window's carousel, Rev 77 "Quests" (2026-11-09, Shombith, NOT RUN IN EDITOR)
 
-Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 155. Compiled with `unity_refcompile` (player and
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 156. Compiled with `unity_refcompile` (player and
 editor: 0 errors in project code). No Unity editor ran.
 
 1. **Run the EditMode test** `VoyageCardRulesTests.SpriteCover_StaysInsideTheSpritesOwnRect_InAnAtlas`.
@@ -22263,9 +22527,9 @@ editor: 0 errors in project code). No Unity editor ran.
 5. **The Profile's quest track** still works as before (it is a separate view).
 6. **The Voyages tab**: the first open with five voyages no longer stalls (the place art is a quarter of the work).
 
-## ⚪ REVERTED (section 158, nothing to test) - The Saga tab, Rev 77 "Saga" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+## ⚪ REVERTED (section 159, nothing to test) - The Saga tab, Rev 77 "Saga" (2026-11-09, Shombith, NOT RUN IN EDITOR)
 
-Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 156. Compiled with `unity_refcompile` (player and
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 157. Compiled with `unity_refcompile` (player and
 editor: 0 errors in project code). No Unity editor ran.
 
 1. **Voyage window > Saga** (RB from Voyages). The left shows Tandava's art, muted, with "Saga - part 1 of 2",
@@ -22277,9 +22541,9 @@ editor: 0 errors in project code). No Unity editor ran.
    Start. It must not open an empty shell (the Arena or Maelstrom window's copy of the modal).
 4. **Back** from the launch window returns to the Saga tab.
 
-## ⚪ REVERTED (section 158, nothing to test) - The Episodes tab, Rev 77 "Episodes" (2026-11-09, Shombith, NOT RUN IN EDITOR)
+## ⚪ REVERTED (section 159, nothing to test) - The Episodes tab, Rev 77 "Episodes" (2026-11-09, Shombith, NOT RUN IN EDITOR)
 
-Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 157. Compiled with `unity_refcompile` (player and
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 158. Compiled with `unity_refcompile` (player and
 editor: 0 errors in project code). No Unity editor ran.
 
 1. **Voyage window > Episodes** (RB twice from Voyages). One panel over the whole galaxy, dark and muted: the lock,
@@ -22300,7 +22564,7 @@ Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generato
 
 ## 🔴 The Voyages tab as the board: Rev 81 B5 with the Rev 83 S2 seat editor (2026-11-09, Shombith, NOT RUN IN EDITOR)
 
-Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 164. Compiled with `unity_refcompile` (player and
+Branch `claude/epic-fermat-6c7n2l`, `Docs/MENU_REDESIGN_B.md` section 165. Compiled with `unity_refcompile` (player and
 editor: 0 errors in project code). No Unity editor ran. Compare against Frogma's Voyages tab, boards R81B5 and R83S2.
 
 1. **Open the Voyage window.** The Voyages tab shows three columns:
@@ -22325,31 +22589,252 @@ editor: 0 errors in project code). No Unity editor ran. Compare against Frogma's
    labels are Chakra Petch in capitals.
 
 
-## 🔴 Flatline, the Brittle Star's charge game (GameModes 84) (2026-11-09, Shombith, NOT RUN IN EDITOR)
+## 🔴 Flatline, the Brittle Star's charge game (GameModes 84) (2026-11-09, re-laid as an open scattered field 2026-11-10, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/great-rubin-rur3xs`. Everything is generated by `Tools/Build/author_flatline_assets.py` (`--check`):
 the card, scene (cloned from Serpent Gulag's, now Hood), rule, settings, toasts, preview, four cell configs, four
-`SpawnableFlatline` prefabs and their bakes, the per-intensity end targets. Doc: `Assets/_Scripts/Controller/Arcade/FLATLINE.md`.
+`SpawnableFlatline` prefabs and their bakes, the end target (90 at every intensity). Doc: `Assets/_Scripts/Controller/Arcade/FLATLINE.md`.
 Ran here: the generator `--check` (and two negative controls), `flatline_budget.py` against the shipped C# compiled and
 run (equal on every count and crystal site), `bake_prism_layouts.py --check`, `audit_prism_clipping.py SpawnableFlatline`
 (0 clipping), `render_card_backgrounds.py Flatline --check`, `author_card_backgrounds.py --strict` (Flatline OK), the
 `/arcadegame` gates, `/ship` gates (ALL OK) and `unity_refcompile` (0 errors in project code; 4 unverified Cinemachine
 missing-type errors in camera files this branch does not touch). `FlatlineTests` were NOT run (no editor).
 
-1. **Run `FlatlineTests` and `EnumIntegrityTests`** (EditMode). Census rows 4,819 / 8,393 / 7,217 / 5,440.
+1. **Run `FlatlineTests` and `EnumIntegrityTests`** (EditMode). Census rows 1,560 / 2,280 / 2,914 / 3,194.
 2. **The card**: Arcade grid shows Flatline with the Charge petal and its pane art; Brittle Star is the only vessel.
-3. **I1 to I4 each load** with AI backfill (2-4 players). Look for: three planes / five pages / six crossing panes with
-   magenta danger rims / a hollow geode with two open faces and holes. Pilots spawn on a 420 u ring facing the centre.
-4. **Crystals sit on the seams** (I1 six on the axes, I2 five up the spine, I3 six, I4 four in the cracks) and grow back
-   about 10 s after you take one. Each adds a spare ring (the Charge card's gauge).
+3. **I1 to I4 each load** with AI backfill (2-4 players). Look for an OPEN field with room round every structure:
+   I1 twenty-four loose panes / I2 adds five open-ended tunnels you can fly through / I3 adds four cages whose windows
+   you can fly into, magenta rims on some panes / I4 the maze: more cages, holed panes, more danger. No two structures
+   touch. Pilots spawn on a 680 u ring facing the centre. **Is it fun to fly round, through and into?** Note it here.
+4. **Crystals sit inside the rooms** (I1 in front of panes, I2 one in every tunnel, I3 and I4 all inside rooms) and grow
+   back about 10 s after you take one. Each adds a spare ring (the Charge card's gauge).
 5. **Scoring**: a round on a rival adds 1, a cord across a rival adds 8, a ring blast that catches a rival adds 0 (it
    still takes their petals). The results column reads "N strikes, M rounds". A team-mate never scores you anything.
 6. **Panes**: rounds stop on a pane; cords slice through one and strike the pilot behind it. A ring thrown face-on into
    a pane erases its plain tiles in that plane and leaves the white ribs standing (super-shielded).
-7. **The end**: the match ends when a domain reaches 180 / 200 / 220 / 240 (I1-I4); the HUD counts down the right
-   number. **Time a 1v1 match at each intensity** and write the times here: the targets aim at ~4 minutes and are
-   estimates (FLATLINE.md "The targets"). Re-tune in FrogletTools > Game Modes > End Game Conditions.
+7. **The end**: the match ends when a domain reaches 90 (every intensity); the HUD counts down from 90. **Time a 1v1
+   match at each intensity** and write the times here; re-tune a rung in FrogletTools > Game Modes > End Game Conditions
+   if one runs long or short.
 8. **AI**: an AI Brittle Star chases a rival, detours to a near crystal when it has no spare ring, fires when a rival is
-   on its nose and uses its cords near panes. Watch whether it ever lands a Strike; if not, note it (FLATLINE.md "Known limits").
+   on its nose and uses its cords near walls. Watch whether it ever lands a Strike; if not, note it (FLATLINE.md "Known limits").
 9. **Toasts**: the start hint ("Panes stop your rounds...") once, then quarter / halfway / lead-change beats.
 10. **Replay** (Play Again) resets every count and lays the crystals again.
+
+## 🔴 Colour sets: a separate free Colour vision rail; the worn set themes the whole UI (2026-11-09, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/quirky-ride-qv15s8`; `Docs/MENU_REDESIGN_B.md` section 126.3. Compiled with `unity_refcompile` (player and
+editor configs, 0 errors in project code); `.claude/skills/ship/gates.sh` all OK; `author_menu_profile.py --check` /
+`--self-test` pass. The C# theme maths was run outside Unity against `themes.css` (80 values, all within 1/255). Not opened
+in the editor; the edit-mode tests were compiled, not run. Affects Garrett's colour-vision sets (they now sit on their own
+rail and are always free).
+
+1. **Run the edit-mode tests** `ColorSetCatalogTests` and `ColorSetUIThemeTests`.
+2. **Profile > COLOUR SETS.** Left rail "Colour sets": Nocturne, Photic, Dart Frog, Nacre (three tiles, > slides to
+   Nacre). A hairline, then the right rail "Colour vision, always free": Contrast, Protanopia, Deuteranopia, Tritanopia,
+   Achromatopsia, Low Vision, with their own < >. "1 of 4" / "1 of 6" counts within the rail. APPLY sits right of the
+   name; nothing overlaps the rails at 16:9 and on a phone.
+3. **The pad**: left / right moves across both rails; each tile previews its set.
+4. **The UI follows the set**: browse Dart Frog: the panels, frames, text, tabs, focus ring, sea lines and APPLY turn
+   bronze-hued with Dart Frog's lime; leave without applying and the UI comes back with the worn set. APPLY it, open the
+   Arcade, Hangar, Settings and a match HUD: all of it in Dart Frog's theme. Restart Play: it starts in Dart Frog.
+5. **Look for anything left behind** (a panel still navy on a bronze theme): it is a colour that is not a theme token, or
+   a view that paints only when its data changes. Note the screen and object.
+6. **Settings > General > COLOUR SETS** opens the Profile on Contrast, in the right rail.
+
+
+## 🔴 The colour trace: every colour the game draws comes from the worn colour set (2026-11-10, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nifty-cray-41hy43`. Docs/VesselModels/COLOR_TRACE.md. Every colour authored outside the palette blocks is
+now a `TracedColor` on every `SO_ColorSet` (Photic: the baked value; every other set: computed from its pigments), and
+the runtime repaints it from the worn set: `UIThemeLive` (UI graphics, TMP gradients, ColorTint selectables, shadows,
+input carets; new UI swept before it draws), `WorldColorTrace` (every loaded material's colours, the HyperSea sky
+included, particles, trails and lines, lights, cameras, sprites, world text, fog, post colours; assets painted in
+memory and put back when play ends) and `ColorTrace.Retrace` at code and config paint sites. The sky's star ramp is now
+four material colours (`_StarColorHot/White/Warm/Cool`) saved at today's values; the static sky was re-baked (one
+pixel moved one level). The five colour-blind sets now keep rules 4 and 6 as their own viewer sees them (no waivers).
+Ran here: `colour_trace.py --check/--self-test`, `author_colour_set_assets.py --check`, `colour_sets.py
+--check/--self-test`, `bake_static_skybox.py --check`, the theme writers' checks, and `unity_refcompile` (player and
+editor configs: 0 errors in the changed files). Nothing here ran in Unity.
+
+1. **Import, then run the edit-mode tests** `ColorSetUIThemeTests` (its element test now expects each set's own element
+   colours, Photic's the authored ones) and `ColorSetCatalogTests`. The ten palette assets each gained a `TracedColors`
+   list of about 520 entries: open one and check the inspector shows Id, Color and Note.
+2. **Wear Photic** (Profile > Colour sets): nothing in the game should change colour compared with before this branch,
+   except the UI tokens' existing Photic re-hue. Any change is a bug in the trace (the gate holds Photic's values to the
+   baked ones).
+3. **Wear Nocturne (the default) and play a race, then the menu**: the sky's nebulae, core and stars, the crystal
+   materials, the flora and fauna spindles, the vessel hull body, glass and engine, particles and trails, the HUD
+   gauges and configs (ElementalBars, AbilityLockup), the Voyage map and the codex colours all take Nocturne's
+   family colours; greys and whites stay. Compare against Photic side by side.
+4. **Browse sets in the Profile (preview)**: the menu cell, the sky and the UI repaint at once. Known gap: caches copied
+   before the wear (spindle lean variants, fauna GPU palettes, vessel tails) keep the previous set until they repaint
+   (COLOR_TRACE.md section 2). No hitch should be visible while the pad moves between tiles; if there is one, profile
+   `WorldColorTrace.Repaint`.
+5. **Stop play**: `git status` shows no changed `.mat`, prefab or volume profile (the editor puts back every asset the
+   painter touched). Then press Ctrl+S during play once and check the same.
+6. **The colour-blind sets**: each set's rims should look like their names to that viewer (a deuteranope's and an
+   achromat's as nearly as the eyes allow). A player with each vision is the only real test.
+
+Second round, the same day (the runtime review's findings; also NOT RUN IN EDITOR). The lookup now names a colour from
+its id (a UI theme token used in a material or code, the Presence orb's `_SpaceColor` among them, used to fall to the
+world repaint) and from every set worn in the session; the writer keeps every value of every set naming one colour,
+and UI values clear of every set's live tokens (939 values moved, none by more than 2/255); a colour already in the
+worn set is left exactly as it is. The world painter leaves ThemeManager's domain colours alone, skips Prefab Mode's
+stage and non-game cameras, recomputes the sky's ambient light, and the three lazily loaded traced materials paint
+themselves on load. UIThemeLive paints UI prefab assets in memory. The editor stops painting before it puts assets back,
+restores only what still holds the painted colour, keeps a dirty flag it did not cause, and restores before a mid-play
+recompile. Ran here: the same gates as above (`colour_trace.py --check/--self-test` with new negative controls,
+`author_colour_set_assets.py --check`, `check_console_logging.py`, `check_conditional_compilation.py`),
+`unity_refcompile` in the player, editor and player-dev configs (0 errors in the changed files), and the real
+`ColorTrace.cs` compiled with Roslyn and run under .NET 8 against the ten shipped sets (54,120 lookups, 0 misread; 79
+with the values the sets held before). Nothing here ran in Unity.
+
+7. **Run `ColorTraceTests`** (the new cases: a token found as authored and as Photic painted it, a worn colour left
+   exactly alone, a colour from two wears ago, the id round trip, every shipped set reading every other set's paint).
+8. **Edit an asset during play and stop**: with Nocturne worn, change a float on the HyperSea sky material and a traced
+   colour on a painted flora material in the inspector, then stop. Both edits stay and the sky material is still
+   marked unsaved; every colour you did not touch is back to its authored value (`git diff` after saving shows only
+   your edits).
+9. **Open a prefab in Prefab Mode during play**, browse a set in the Profile, stop: the stage still shows the authored
+   colours and saving it changes nothing.
+10. **Recompile during play** (with Preferences > General > Script Changes While Playing set to Recompile And Continue
+    Playing): save a C# file, let it reload, stop: `git status` shows no changed asset.
+11. **Lazily loaded materials**: under Nocturne, play Switchback at I4 (the path rays), a cell with black holes on the
+    Mobile look (the glow), and Astro League (the ball's trail): each wears Nocturne's colours from its first frame.
+12. **Rebuilt UI rows**: under Nocturne, open the hangar's ship list and a scoreboard twice (rebuilt with the same
+    number of rows): every row wears the theme, none flashes the authored Deep Sea colours.
+13. **The sky's light**: preview Photic, then Nocturne in the Profile: the lit surfaces' ambient tint follows the sky.
+
+Third round, 2026-11-11 (Garrett: "this is a fundamental that should be respected universally"; also NOT RUN IN
+EDITOR). Photic's UI is now exactly the authored theme (every set carries all 18 UI tokens and the sea's four colours;
+the console and editor themes match); the Voyage map, Grizzly, Thresher and Stoat colours are traced; projectiles and
+the AI Gunner's gun take their owner's domain; display hulls paint the live ship's domain slot; the black-hole lens,
+the Soliton glint and the cage nucleus are material colours (0 untraced); and every texture is graded: the trace's
+rule through a 33^3 table per set (`colour_grade.py`, `ColorGrade.cs`), drawn by the default UI material
+(`CosmicShore/UI/GradedDefault`), CardDrift, HullLit, SilhouetteHolo, ElementRim and the static sky. Ran here: the
+gates (`colour_trace`, `colour_grade`, both with negative controls), `unity_refcompile` (player and editor: 0 errors in
+the changed files), the real `ColorTrace.cs` under .NET 8 (0 misread), and the grade applied to real art in Python
+(the look, not the shader). The shaders and the ShaderGraph edit were not compiled.
+
+14. **Shaders compile**: open the project and check the Console for errors in `GradedDefault.shader`,
+    `ColorGrade.cginc`, CardDrift, HullLit, SilhouetteHolo, ElementRim, StaticSkyPanorama, BlackHoleLens,
+    SolitonTunnel and CageGraph (the `_Nucleus_Dark` property node).
+15. **Wear Photic**: every menu, card, portrait and the sky look exactly as before this branch (the grade is off). The
+    UI is the authored Deep Sea theme, the selection Jade (`#00D4FF`); the sea lines are their material's colours.
+16. **Wear Nocturne, then a vision set**: card art, hangar renders, pilot portraits, codex pictures and flat-coloured
+    sprites take the set's colours; masks and white icons do not change; the Google sign-in button and mark keep
+    Google's colours. Compare with the sheet the session rendered from the real tables.
+17. **Masks, clipping and fonts**: scroll a masked list (stencil), a RectMask2D with softness, and legacy Text: all
+    draw as before (the graded default material is UI/Default otherwise).
+18. **A phone at Low**: open the Hangar and the Arcade grid under Nocturne and watch the frame time; the grade adds one
+    3D texture read per coloured UI texel (greys skip it).
+19. **Domain on rounds and hulls**: as a Ruby pilot, fire the Sparrow's SkyBurst and an Explodable round; meet an AI
+    Gunner; open the toybox Vessel Changer on a Goby and a Squirrel: each wears its owner's domain, the body stays dark.
+
+## 🔴 Colour sets under seven rules: Dart Frog, Nacre, Contrast and the vision sets re-derived, Nocturne's Gold 4° yellower (2026-11-10, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nifty-cray-41hy43`. `colour_sets.json` now holds every set to seven rules (`Tools/Build/colour_sets.py`,
+the `/colour-set` skill) so each domain stays distinguishable and looks like its four-letter name. Rewritten by
+`author_colour_set_assets.py`: the Dart Frog, Nocturne, Nacre, Contrast, Protanopia, Deuteranopia, Tritanopia,
+Achromatopsia and Low Vision palettes in `Assets/_SO_Assets/Color Palettes/`; regenerated: `FrogletSeaTheme.Themes.cs`,
+the console's `themes.css` / `theme.js`, `Docs/UI/froglet-tokens.json`; catalog words edited in `ColorSetCatalog.asset`.
+Ran here: `colour_sets.py --check/--self-test`, `colour_set_maker.py --self-test`, `author_colour_set_assets.py
+--check/--self-test`, `author_colour_set_catalog.py --check/--self-test`, both theme writers' `--check/--self-test`,
+`froglet_style.py --check`, every palette reader's `--check`, `/ship` gates, and `unity_refcompile` in the player and
+editor configs (0 errors in the changed file `FrogletSeaTheme.Themes.cs`; 21 elsewhere, in multiplayer and party code whose
+packages the sandbox cannot fetch). The stills come from a numpy model of the block shader with the gameplay bloom
+(`colour_set_maker.py preview` / `hero`), not from Unity.
+
+1. **Let Unity import the nine palettes**, then run the edit-mode tests `ColorSetCatalogTests` and `ColorSetUIThemeTests`
+   (the latter compares the C# theme maths to the regenerated `themes.css`).
+2. **Nocturne (the default), Gold on a team**: the Gold score panel, HUD colour and trail read honey-gold, not orange.
+   Nothing else in Nocturne moved.
+3. **Profile > Colour sets > Dart Frog**: the tile reads Mint over Bronze, Orchid over Petrol, Bumblebee over Coal, Azure
+   over Cobalt. Apply it and race with all four domains: each prism reads as its rim's colour over a dark ground (Jade
+   mint over dark bronze, no longer tan; Gold yellow over coal; Ruby orchid over petrol) and Blue prisms are wholly blue.
+   The UI theme stays bronze-hued.
+4. **Nacre**: the tile reads Aqua over Seafoam, Orchid over Amethyst, Butter over Champagne, Periwinkle over Powder.
+   Prisms should be soft bodies in their own domain's colour (seafoam Jade, champagne Gold, powder Blue, amethyst Ruby),
+   light but not white. Judge the bloom: if the faces still wash out, lower the faces' `L` in `colour_sets.json` (the Nacre
+   style allows mid L 0.50-0.74) and re-run the writer. Shielded tiers keep a tint; danger (a coral rim over a pale body)
+   still warns. The UI theme turns mint-hued (its Jade face is seafoam).
+5. **Contrast**: every prism is one domain's colour at two lightnesses (a crimson-bodied Fire, an amber-bodied Gold); the
+   board reads at a glance.
+6. **The five colour-blind sets**: Gold's HUD colour no longer reads as Fire, and the HUD colours are further apart for
+   each set's own viewer (`colour_sets.py --report`, rule 5). A colour-blind player's look at their set is the real test.
+7. **The Nacre entry above (2026-11-08)** names its old pigments in step 1; they changed here.
+
+## 🔴 Four new colour sets in the Profile: Blue-ringed Octopus, Neon Noir, Ukiyo-e, Dusk (2026-11-11, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/nifty-cray-41hy43` (after #1895). The `/colour-set` skill's four worked examples are now game sets (Garrett:
+"the artifact lab had some great new color sets ... i just tried bleeding edge and they were not there"): moved from
+`colour_sets.json` `examples` to `sets` (free track, unlocked like every set), written by `author_colour_set_assets.py`
+(`BlueRingedOctopusColorSetSO`, `NeonNoirColorSetSO`, `UkiyoEColorSetSO`, `DuskColorSetSO`, each with its TracedColors),
+catalogued after Nacre (`author_colour_set_catalog.py`; the lines are seeded words, edit them in the inspector), graded
+(`colour_grade.py`: two tables each) and themed (`FrogletSeaTheme.Themes.cs`, the console's `themes.css`). Dusk's Lime
+face moved 1 degree and 0.005 saturation for the writer's field check. Dart Frog and Nacre each moved one traced value by
+1/255 (the writer keeps every value of every set apart). Ran here: `colour_sets.py --check`, `author_colour_set_assets.py
+--check/--self-test`, `author_colour_set_catalog.py --check/--self-test`, `colour_trace.py --check`, `colour_grade.py
+--check`, both theme writers' `--check`, `froglet_style.py --check`, the `/ship` gates and `unity_refcompile`. The lab
+renders all four (`verify_lab.cjs`, Playwright); nothing ran in Unity.
+
+1. **Let Unity import**, then run `ColorSetCatalogTests`, `ColorSetUIThemeTests`, `ColorTraceTests` and `ColorGradeTests`.
+2. **Profile > Colour sets**: the rail pages through 14 sets, the four new ones after Nacre, each tile with its name, line
+   and four pigment lines.
+3. **Wear each of the four and play a race, then the menu**: every domain still reads as its name (Jade, Ruby, Gold, Blue
+   on the prisms, trails and HUD); the UI, card art and portraits take the set's colours through the theme and the grade.
+   Dusk is muted by design (the rims sit at their families' chroma floors); judge whether it is too quiet on a phone.
+4. **Neon Noir under the gameplay bloom**: its rims are neon at full strength; check the shielded tiers stay apart.
+
+## 🔴 Manta: Charge is the fuse, not the bloom's petals (2026-11-10, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/cool-dijkstra-4puf92`. Design record: `MANTA_STING_KABLOOM.md` §0a. Compile and gate status are in the
+commit message. Also carries the quoted Yastri text that makes `Manta.asset` parse again (E-251530c87b; the same two
+lines as `claude/fix-manta-ability-map-yaml`, plus the generator that kept writing the broken form).
+
+1. **Run `MantaFuseChargeTests`** (EditMode): 8 tests, all green.
+2. **Open `Resources/ElementalAbilityMaps/Manta.asset`** in the Inspector: four entries, no parse error in the Console
+   (before this branch Unity could not read the file). The Sting entry's text names the fuse.
+3. **Fly the Manta in the Toybox at Charge 0.** Skim, then plant on a rival AI: the Charge card's fuse gauge starts
+   full and the fuse board reads about 20 s.
+4. **Raise Charge to 10** (collect Charge crystals, or the dev level tool) and plant again: the board now reads about
+   30 s, and the gauge drains at the slower rate. Every bomb already planted waits for the new 30 s.
+5. **Let a fuse run out next to a rival at Charge 10, then at Charge 0.** The rival loses the same petals each time
+   (about one of Mass and one of Space per bloom): Charge no longer changes the bite.
+6. **Bloomrush I1 at Charge 0**: the fuse reads 30 s (the mode's resting length); at Charge 10 it reads 45 s.
+7. **Tuning, if wanted**: `MantaStingConfig.asset` `fuseSeconds` (resting length) and `fuseScale` (Max = the multiplier
+   at Charge 10, Floor = the least it can fall to), through `Tools/Build/author_manta_kit_assets.py` (it writes the
+   whole file; `--check` is its gate).
+
+## 🔴 Squirrel: Charge is the joust's speed, and the Charge card is a speed gauge (2026-11-11, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/cool-dijkstra-4puf92`. Design record: `SQUIRREL_ELEMENT_RECUT.md`, "Charge is the joust's SPEED".
+
+1. **Run `SquirrelJoustSpeedTests`** (EditMode): 9 tests, all green.
+2. **Fly the Squirrel in the Toybox at Charge 0.** The Charge card's plate is a gauge that rises with speed: about a
+   fifth full at cruise (60 of 300 u/s). Two short dim ticks sit in from its slanted edges at 30% (90 u/s).
+3. **Skim to boost past the ticks.** The ticks vanish and a dark gap cuts across the fill at the same height. Slow
+   down again: the ticks come back.
+4. **Joust a rival AI below the mark, then above it.** Below: nothing happens (no steal, no score, no joust point, no
+   impact blast, no haptic). Above it, while faster than the rival: the usual joust - the two hulls flash lime, the
+   rival loses about 0.8 petal per element (flat at any Charge), the blast goes off, the score counts.
+4a. **Joust mode (Squirrels only), I1**: the joust count rises only for jousts flown above the mark. Note whether the AI
+   Squirrels still joust often enough for the round to end in its usual time.
+5. **Joust a creature's heart below and above the mark.** Below: it bounces off. Above: it withers and the heart is
+   yours. At Charge 5 (Shepherd), an own-domain creature is nourished only above the mark too.
+6. **Raise Charge to 10.** The mark drops to 15% (45 u/s): a cruising Squirrel now jousts.
+7. **Two editors (MPPM):** a friendly joust below the mark buffs nobody on either screen.
+8. **Tuning:** `SquirrelJoustSpeed.asset` `minimumSpeed` (Min = at rest, Max = at Charge 10). The gauge's full scale is
+   the hull's cruise × its skim-boost ceiling, read live.
+
+## 🔴 Scarab: Charge is the shove plate's cooldown (2026-11-11, Garrett, NOT RUN IN EDITOR)
+
+Branch `cece/cool-dijkstra-4puf92`. Design record: `SCARAB.md`, the RECUT note's "Charge re-cut (2026-11-11)".
+
+1. **Run `ScarabShoveCooldownTests`** (EditMode): 4 tests, all green.
+2. **Fly the Scarab at Charge 0** and dash with a full right-stick flick: the plate fires, and the Charge card's sweep
+   takes about 2.5 s to refill. A second flick inside it dashes without a plate.
+3. **Raise Charge to 10**: the sweep refills in about 1.25 s. A flick fired just before the change keeps its old wait;
+   the next one uses the new one.
+4. **Shove a rival at Charge 10 and at Charge 0**: the same petals (about 1.2 per element) come loose either way.
+5. **Undertow**: plays as before, with more plates per minute from a charged Scarab.

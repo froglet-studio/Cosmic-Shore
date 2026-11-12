@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rev 79 boards: the Voyage window, four new directions (Frogma tab "Voyages", Docs/MENU_REDESIGN_B.md section 159).
+"""Rev 79 boards: the Voyage window, four new directions (Frogma tab "Voyages", Docs/MENU_REDESIGN_B.md section 160).
 
 Shombith, 2026-11-09, after the built Rev 74 C3: "These are still old UI's ... remove it create new ideas completely",
 "The quality is very very bad", then "Revert all, redesign window". So every board redraws the WHOLE window - its tabs,

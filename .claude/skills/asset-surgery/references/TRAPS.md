@@ -1105,6 +1105,16 @@ hand-edited, `yaml.load` it with a tag-tolerant loader
 (`L.add_multi_constructor('tag:unity3d.com', lambda l, s, n: None)`, documents split on `^--- `)
 before trusting it - 58 assets parse in a few seconds.
 
+**A colon at the END of a line inside a multi-line plain scalar is fatal to UNITY too, not only to a strict
+reader** (cece/cool-dijkstra-4puf92, 2026-11-10). The Manta's map shipped `AbilityDescription: Hard flat turns ...
+the Manta faster:` with the text continuing on the next line, and Unity refused the whole asset ("Parser Failure at
+line 60: Expect ':'", Bug Ledger E-251530c87b, from three collaborators' editors), so every ability on the hull read
+nothing. The text came from `author_manta_kit_assets.py`, whose `--check` compares bytes, so it stayed green and a
+re-run re-broke any hand fix. That generator now `yaml.safe_load`s every `.asset` it would write and refuses to write
+one that does not parse (negative-controlled by putting the unquoted text back). **A byte-comparing `--check` cannot
+see a file it wrote itself that nothing can read**: give any generator that writes free text a parse gate as well as
+a drift gate, and quote the text through one helper.
+
 ### Technique: extracting a macOS `.dmg` on Linux with nothing installed
 
 No `7z`, `hfsplus` or `dmg2img` in the container. A UDIF `.dmg` ends in a 512-byte `koly` trailer

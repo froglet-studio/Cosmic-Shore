@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79-82 on the canvas now, Rev 81 B5 picked; Rev 70-77 were reverted and taken off, section 158) | Shombith, 2026-11-08 (sections 147-151, 158-162) |
+| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79-83 on the canvas now: Rev 81 B5 with the Rev 83 S2 seat editor picked and built, section 165; Rev 70-77 were reverted and taken off, section 159) | Shombith, 2026-11-08 (sections 147-151, 159-165) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -5965,6 +5965,33 @@ breadcrumb to the color sets, but put the thing where it belongs."
 - **Not drawn on Frogma first:** it extends the picked Rev 54 A and the approved settings board with content and one
   row, as Garrett asked. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+### 126.3 Colour vision gets its own rail, free; the worn set themes the whole UI (2026-11-09, NOT RUN IN EDITOR)
+
+Shombith: "both the theme colors and color blindness accessibility colors are on the same lineup. Make a separate
+color blind section just on the right which contains only the color blind themes since they will be free as they are
+accessibility features. [...] I want the theme to also affect the UI how it does in the analytics or fleet codex
+artifacts with all UI".
+- **Two rails.** The left rail ("Colour sets") holds only the sets picked for their looks (Nocturne, Photic, Dart Frog,
+  Nacre); a hairline, then the right rail ("Colour vision, always free") holds only the sets made for a vision
+  (Contrast and the five colour-vision sets). Each rail keeps three tiles and its own < >, a window onto its own sets;
+  "2 of 6" counts inside the rail of the set shown. To give the rails the band, the words moved up 28 units and APPLY /
+  Equipped moved level with the set's name, right. The Settings breadcrumb opens the right rail on its first set.
+  Authored by `author_menu_profile.py` (`COLOUR_RAILS`); every existing node keeps its fileID.
+- **Free.** `ColorSetCatalogSO.IsPickable`: a set made for a vision is worn whatever its `unlocked` says (accessibility
+  is never a reward); the panel, the saved pick (`ThemeManager.PickedColorSet`) and the breadcrumb all ask it.
+- **The worn set themes the whole UI**, as on the analytics console and the Fleet Codex: `ColorSetUITheme` is a
+  line-for-line port of `Tools/Analytics/console/make_themes.py` (ground, panels, lines and text keep the Deep Sea
+  lightness and take the set's Jade face hue; CTA and danger are the set's; selection and control its Jade rim,
+  purchase its Gold rim; contrast fitted to 3:1 / 4.5:1; elements and tooltip stay authored). `UITheme.Resolve` answers
+  from it while worn (`UIThemeLive`), and wearing or previewing a set repaints the UI on screen: the kit repaints from
+  its tokens, any other graphic whose colour is a theme token moves to that token in the new theme, and the sea lines
+  draw with a run-time copy of their material in the set's Jade, Blue and Ruby rims (the assets are never written).
+  New UI paints itself on enable; a root canvas whose hierarchy changed is swept again once a second, and every canvas
+  of a loaded scene. `ColorSetUIThemeTests` holds every shipped set to the console's `themes.css` (checked outside
+  Unity too: 80 values, all within 1/255).
+- **Not drawn on Frogma first**: it splits the picked Rev 54 A's rail as asked. Hand test:
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
 ## 137. Rev 50 mockups: the Froglet Analytics dashboard, three ways to read it (2026-11-05; Shombith picked B)
 
 - **Asked** (Shombith, 2026-11-05): "Lets go with our own dashboard and leave posthog. Pull up /frogma create new tab to
@@ -6528,7 +6555,7 @@ to Garrett (section 147).
     now reads "Ready to claim in Quests" (`author_menu_home.py`).
 
 **Not built yet:**
-- ~~The Quests window's quests as place cards on the carousel (Rev 77 "Quests").~~ Built in section 155.
+- ~~The Quests window's quests as place cards on the carousel (Rev 77 "Quests").~~ Built in section 156.
 - The Saga and Episodes tabs in the picked look.
 - The pinned voyage that stays put while the crew or domain changes stays a proposal to Garrett (section 147).
 - The open voyage column's colours are the style guide's token values written as constants in `VoyageOpenCard` (as
@@ -6632,8 +6659,82 @@ a turn makes grows the new view out of the small square over the old one (smooth
 double tap stays instant. Not run on a device yet (checklist "Portrait menus", step 8). The nav band has a pose too (Shombith, 2026-11-08: "give the nav band a pose too"): its own rect, across the
 top upright as on PC, so it glides with the rest (`author_menu_portrait.py` SCENE_POSED).
 
+## 155. Rev 84 mockups: a flight certificate and element tiers for the solo vessels (2026-11-10; Shombith picked A + B, built; the tiers await ratings)
 
-## 155. Built: the Quests window's carousel, Rev 77 "Quests" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
+**Asked (Shombith, 2026-11-10):** "Okay now we want to do a completion certificate for the vessels in the game and also
+make a tier system based on their specific elemental system. First part the completion, vessels get completion percentage
+or minimum viable pass or arena ready progression lets set on a name you can suggest too, so it will depend if the vessel
+has all of its abilities added, l5 upgrades figured out and also time games completed that's minimum and then there is
+mass-space(vessel can have either one and be ready) and charge games. Then their tier system like vessels which are
+really good in time games have S tier time game and least have C tier, you can confirm each vessel from me. These only
+apply to solo vessels not crew do not touch them. Create mockups first before implementing", and while it was drawn: "We
+should be able to sort and filter in the fleet codex all fleet view as per tier and completion separately".
+
+**Design brief:** the fundamental is the vessel kit (four element abilities, their level 5s, a game per element); it
+obeys the codex rules (facts read from the game's files, never typed; elements carry no colour; one Lime call to action,
+none here) and comes closest to breaking "no label the data does not know": the tier letters are a person's judgement,
+so they are placeholders until Shombith rates every vessel. Prototype: these boards. Judged by Shombith on Frogma.
+Retire if the tiers are not rated, or if the certificate stops matching what the team calls ready.
+
+**The rule drawn (suggested name: the Flight Certificate):** five checks, 20% each, read from the Fleet Codex data:
+1 all four abilities in the map; 2 the level-5 upgrades, 5% per wired one; 3 a Time arcade game; 4 a Mass or a Space
+arcade game (either); 5 a Charge arcade game. Stages: **Launch Ready** (1, all of 2, and 3: the minimum viable pass),
+**Fleet Ready** (and 4), **Arena Ready** (all five); below Launch Ready, *In the hangar*. Today (bleeding-edge
+`c53235b2`): Arena Ready 7 (Manta, Dolphin, Squirrel, Sparrow, Scarab, Brittle Star, Tiger Moth), Fleet Ready 1
+(Urchin), Launch Ready 5 (Rhino, Serpent, Stoat, Jacks, Meerkat), In the hangar 6 (Grizzly 75%, Thresher 95%, Angler
+70%: an unwired level 5; Shrike 45%; Starlings 20%; Swordfish 60%: no Time game). Crews (Goby & Pistol, Wrasse &
+Grouper, Orca, Honeyguide) and the Termite (no ability map) are left out.
+
+**On the canvas:** the **Fleet Codex** tab, round "Rev 84 - Flight certificate and element tiers for the solo vessels"
+(version `1794355298-b0b9`). Copies `Docs/MenuRedesignB/board/R84*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r84_vessel_certificate.py` (Rev 68's kit and art ids, the facts from `fleet.json`).
+- **R84A (recommended), interactive:** the vessel page's flight-deck window with the certificate in the briefing (the
+  percentage, the stage, five segments, the five checks with what met each, the next step) and a tier letter beside
+  each element game; a fleet strip counts the stages. Switch between Squirrel, Grizzly, Rhino and Shrike.
+- **R84B, interactive:** the whole-fleet page (`#fleet`) with the cards carrying the certificate bar, the stage and the
+  four tier letters, and two separate controls as asked: **Sort by** completion or one element's tier; **Filter** by
+  stage and by an element's tier letter, each alone or together.
+- **R84C, interactive:** a tier list per element (Charge / Mass / Space / Time games), S to C lanes of hull tiles each
+  carrying its certificate, and the vessels with no game of that element named under it.
+- **R84Notes:** the rule, the names, the colour use (ink for done; Gold only for Arena Ready and an S, the style guide's
+  "first place"), and the sheet of every solo vessel's certificate with a `?` per tier to rate.
+
+A recommended because the certificate sits where a reader already studies one vessel; B is the fleet view the follow-up
+asked for and goes with it; C is an extra view. `check_mockup.py` fails the colours and type sizes the same way the
+picked Rev 69 codex board does (the codex is drawn in the Nocturne colour set's tokens and Saira), and the noise budget
+on B (19 cards).
+
+**Differs from the build:** the live codex (`Docs/FleetCodex/index.html`, `Tools/Build/fleet_codex.py`) gains a
+`certificate` per solo vessel (computed in the generator from the map, the L5 status and the arcade cards) and a
+`tiers` table typed by a person (a new hand table beside `abilities.json`, each entry naming who rated it and when), the
+vessel page's briefing gains the certificate, and `#fleet` gains the sort and filter controls.
+
+**Picked (Shombith, 2026-11-10):** "A+B it is"; the name ("Flight Certificate", Launch / Fleet / Arena Ready) and the rule
+that only a WIRED level 5 counts: "cool".
+
+**Built (2026-11-10):** `Tools/Build/fleet_codex.py` writes each solo vessel's `certificate` (`certificate()`: the five
+checks, the percentage, the stage, the next step) and `tiers` (`tiers_of()`: a letter from the new hand table
+`Docs/FleetCodex/tiers.json`, null for not rated yet, `-` where the vessel has no game of that element; a letter given
+there is dropped with a warning); crews and map-less vessels carry neither. `Docs/FleetCodex/index.html`: the vessel
+page's briefing shows the certificate (A) in place of the stats row, with the five checks as one row of cells, and a
+tier letter beside each element game; `#fleet` (B) adds Sort by (completion, or one element's tier) and the Completion
+and Tier filters, each on its own; a stage or tier filter leaves the crews out. Checked in Chromium at 1600 px (Rhino,
+the fleet sorted by Time tier and filtered to Launch Ready) and 390 px: no script error, no sideways scroll. Until the
+tiers are rated every letter shows `?`. The ratings are collected with the **Fleet Tier Sheet**
+(https://claude.ai/artifact/76HqmyoHRaWSM14zTcnPVt), shared with Garrett; its Copy answers text goes into `tiers.json`.
+
+**Percentage only (Shombith, 2026-11-10, on the built page):** "Should not be names but only the percantage". The
+page and the Fleet Tier Sheet no longer show Launch / Fleet / Arena Ready: the certificate is its percentage (Gold at 100%,
+soft under 60%), and the fleet's completion filter is in bands (100%, 80-95%, 60-75%, under 60%). The generator still
+records the stage in `fleet.json` for readers; nothing draws it.
+
+**Sort and filter as one row (Shombith, 2026-11-11):** "This is a big noisy section right now and I dont like this
+filtering UI". The three rows of chips became one row of three dropdowns (Sort; Completion, each band with its count;
+Tier, grouped by element's games with counts), a "Clear filters" link while a filter is on, and the count shown on the
+right.
+
+
+## 156. Built: the Quests window's carousel, Rev 77 "Quests" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
 
 **Asked (Shombith, 2026-11-09):** "now build the quests place-card carousel".
 
@@ -6663,7 +6764,7 @@ top upright as on PC, so it glides with the rest (`author_menu_portrait.py` SCEN
 
 **Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
 
-**Still not built:** nothing of Rev 77: the Saga tab is section 156, the Episodes tab section 157.
+**Still not built:** nothing of Rev 77: the Saga tab is section 157, the Episodes tab section 158.
 
 Affects: the FTUE quest graph (Shombith and Caleb). It reads and claims through the same service and frontier as
 the Profile's track and Home's card; nothing about the graph changed.
@@ -6684,7 +6785,7 @@ was broken.
   The pick now follows the frontier until the player picks a card.
 
 
-## 156. Built: the Saga tab, Rev 77 "Saga" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
+## 157. Built: the Saga tab, Rev 77 "Saga" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
 
 **Asked (Shombith, 2026-11-09):** "build the saga in the picked look too".
 
@@ -6717,7 +6818,7 @@ what "Tandava done" means (a win, a finish, a play) and where it is recorded.
 **Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
 
 
-## 157. Built: the Episodes tab, Rev 77 "Episodes" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
+## 158. Built: the Episodes tab, Rev 77 "Episodes" (2026-11-09, claude/epic-fermat-6c7n2l, not yet run in the editor)
 
 **Asked (Shombith, 2026-11-09):** "build the episodes tab in the picked look too".
 
@@ -6744,7 +6845,7 @@ what "Tandava done" means (a win, a finish, a play) and where it is recorded.
 **Not run in the editor.** `Docs/UNITY_VERIFICATION_CHECKLIST.md` has the hand test.
 
 
-## 158. Reverted: the in-game builds of sections 151, 155, 156 and 157 (2026-11-09, claude/epic-fermat-6c7n2l)
+## 159. Reverted: the in-game builds of sections 151, 156, 157 and 158 (2026-11-09, claude/epic-fermat-6c7n2l)
 
 **Asked (Shombith, 2026-11-09), after screenshots of the build:** "These are still old UI's ... What the hell is this,
 remove it create new ideas completely ... This is so bad", "The quality is very very bad", and then "Revert all,
@@ -6768,13 +6869,13 @@ section 151. The quest tracker is the Voyage window's Quests tab again. Every Vo
 **Kept:** `ArcadeGameConfigureModal.CanOpen` and `VoyageView`'s use of it (cherry-picked from
 `claude/tandava-arena-mode`), so the Saga cards' Set sail never opens the empty host copy of the launch window.
 
-The records of sections 151 and 155-157 stay as history.
+The records of sections 151 and 156-158 stay as history.
 
 **Next:** completely new ideas for the whole Voyage window (tabs, map, voyage cards, picking vessels), drawn on Frogma
 and picked before anything is built. Each pick is built and then checked against a render before it is called done.
 
 
-## 159. Rev 79 mockups: the Voyage window, four new directions - the whole window redrawn (2026-11-09; Shombith picked B, taken forward in section 160)
+## 160. Rev 79 mockups: the Voyage window, four new directions - the whole window redrawn (2026-11-09; Shombith picked B, taken forward in section 161)
 
 **Asked (Shombith, 2026-11-09):** "These are still old UI's ... remove it create new ideas completely", "The quality is
 very very bad", "Revert all, redesign window". So every option redraws the WHOLE window - its tabs, the HyperSea map
@@ -6807,17 +6908,17 @@ Rev 44, 46, 49, 71, 74 and 77 came off the canvas with their title notes and sec
   once, and one press picks. Six hull renders are on the canvas; the game's grid would scroll for more.
 - **Notes.**
 
-**Picked (Shombith, 2026-11-09): B, Logbook:** "B looks good make it better more mockus inspired from B" (section 160).
+**Picked (Shombith, 2026-11-09): B, Logbook:** "B looks good make it better more mockus inspired from B" (section 161).
 
 **Recommended: A.** It keeps the map in view while you pick, which is what Garrett built the window around, and it
 redraws the parts the build left old: the tabs and the map.
 
 **Differs from the build:** any pick replaces the whole Voyage window: `MissionView` through its generator, and
 `VoyageJobsView`'s layout. Garrett's voyage scene launch (`VoyageLaunch`) and the voyage rules stay as they are. The
-build will be checked against a render before it is called done (section 158).
+build will be checked against a render before it is called done (section 159).
 
 
-## 160. Rev 80 mockups: the Voyage window, B Logbook taken further (2026-11-09; Shombith picked B1 with B3's cards, section 161)
+## 161. Rev 80 mockups: the Voyage window, B Logbook taken further (2026-11-09; Shombith picked B1 with B3's cards, section 162)
 
 **Asked (Shombith, 2026-11-09, on Rev 79):** "B looks good make it better more mockus inspired from B".
 
@@ -6850,13 +6951,13 @@ picks.
 The seats use the four pilot portraits on the canvas (Shrapnel, Feist, Longshift, Flux).
 
 **Picked (Shombith, 2026-11-09): B1, with B3's cards:** "I like b1 but I want that 3 card information still and the
-right panel looks a bit dull" (section 161).
+right panel looks a bit dull" (section 162).
 
 **Recommended: B1.** It answers what B left plain (rows you can't tell apart, seats with no pilot, a loud map) without
 adding a new region to the window.
 
 
-## 161. Rev 81 mockups: B1 with B3's seat cards, a livelier right panel (2026-11-09; Shombith picked B5, section 162)
+## 162. Rev 81 mockups: B1 with B3's seat cards, a livelier right panel (2026-11-09; Shombith picked B5, section 163)
 
 **Asked (Shombith, 2026-11-09, on Rev 80):** "I like b1 but I want that 3 card information still and the right panel
 looks a bit dull".
@@ -6887,13 +6988,13 @@ and the element. A press on a card opens the hull grid; one press picks.
 - **Notes.** No compare board: only the right panel differs, and the three boards stand side by side on the canvas.
 
 **Picked (Shombith, 2026-11-09): B5, Cards:** "B5 delete others and show me how the squad selection and changing
-works, create a live playable mockup" (section 162). B6 and B7 are off the canvas; their copies stay in the repo.
+works, create a live playable mockup" (section 163). B6 and B7 are off the canvas; their copies stay in the repo.
 
 **Recommended: B5.** It adds B3's cards with the least change to B1, and the large pilots and the labelled numbers are
 what lift the panel out of plain text.
 
 
-## 162. Rev 82: B5 playable - choosing the squad and changing its seats (2026-11-09; the editor's look was rejected, redrawn in section 163)
+## 163. Rev 82: B5 playable - choosing the squad and changing its seats (2026-11-09; the editor's look was rejected, redrawn in section 164)
 
 **Asked (Shombith, 2026-11-09):** "B5 delete others and show me how the squad selection and changing works, create a
 live playable mockup".
@@ -6920,7 +7021,7 @@ in the same publish.
 **Not decided here:** whether a change saves to the squad at once (as drawn) or waits for a Save squad press. As
 drawn, every pick saves, which is what the 22-press complaint asked for.
 
-## 163. Rev 83 mockups: the seat editor in the game's own look (2026-11-09; Shombith picked S2 Hangar bay, built in section 164)
+## 164. Rev 83 mockups: the seat editor in the game's own look (2026-11-09; Shombith picked S2 Hangar bay, built in section 165)
 
 **Asked (Shombith, 2026-11-09, on Rev 82):** "Bro it looks soooo bad the selection UI, make it modern sleek and with
 our cosmic shore UI, what even is this, mockups for this now".
@@ -6954,15 +7055,15 @@ and the seats you may not change):
 
 **Real content:** the hull lines are the game's (the Serpent's "sheilded" is the game's own typo). The artifacts are
 the game's: Aegis, Aftershock, Hydra and Javelin (`Assets/_SO_Assets/Pilots/Artifacts`). The pilots carry no invented
-biography. (Corrected in section 164: the artifacts' descriptions are not empty, `Artifact_Aegis.asset` has one, and the
+biography. (Corrected in section 165: the artifacts' descriptions are not empty, `Artifact_Aegis.asset` has one, and the
 built editor shows them; the pilots' `PilotSO` descriptions are the ones that are empty.)
 
-**Still open from section 162:** whether a change saves at once or waits for Save squad.
+**Still open from section 163:** whether a change saves at once or waits for Save squad.
 
 **Picked (Shombith, 2026-11-09):** S2 Hangar bay, "I like this one build everything": the B5 window with the S2 seat
 editor, built in the game.
 
-## 164. Built: the Voyages tab as the board - Rev 81 B5 with the Rev 83 S2 seat editor (2026-11-09, not yet run in Unity)
+## 165. Built: the Voyages tab as the board - Rev 81 B5 with the Rev 83 S2 seat editor (2026-11-09, not yet run in Unity)
 
 **Asked (Shombith, 2026-11-09, on Rev 83):** "I like this one build everything" (S2 Hangar bay).
 Affects: Garrett's Voyage window (`VoyageJobsView`, his voyage data, launch and Ark escort, all kept).
@@ -6993,7 +7094,7 @@ Affects: Garrett's Voyage window (`VoyageJobsView`, his voyage data, launch and 
   - the options as a list of plate rows on the right, the picked one with a Jade top line and a Jade mark;
   - Done straddling the editor's foot.
 - **One press picks and saves.** The card behind changes at once, under the Ark's rules (`SquadsPage.CanEdit`,
-  `KeepCardsOwn` for the pilot swap, `FillPilots`). This settles the section 162 question as drawn: changes save at
+  `KeepCardsOwn` for the pilot swap, `FillPilots`). This settles the section 163 question as drawn: changes save at
   once, with no Save squad press.
 - **Words** are 20 new `VoyageLines` (Board*), in the voyage spec (`Docs/Voyages/voyage_slice.json`), written by
   `author_voyage_assets.py`.
@@ -7035,7 +7136,7 @@ Not changed: the menu's own ground (the blue waves) is the Menu_Main background 
 it darker.
 
 **Third pass (Shombith, 2026-11-10, two screenshots: "What the hell? You are messing with me?").** The second pass was
-pushed without being seen in Unity, against this round's own rule (section 158: checked against a render before it is
+pushed without being seen in Unity, against this round's own rule (section 159: checked against a render before it is
 called done). Its screenshots showed what was still wrong:
 - **The tabs** kept dark boxes and mixed-case Aldrich labels. The cause: the tabs' kit components (`KitThemedGraphic` on
   Fill, Border and the brackets; `KitText` on the label) put the kit's look back every time the window is enabled.

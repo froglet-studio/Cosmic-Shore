@@ -17,8 +17,8 @@ always about to clip one. A **strike**, the ball or any chain link reaching a ri
 | Metric | `ScoringMetric.CombatPoints` (8), reused. The genre badge reads Charge through `ModeGenre`'s metric fallback |
 | Rule | `JackstrawScoringRuleSO`: `strikePoints` **1**, every other hit class **0**; every result line an authored template |
 | Turn monitor | `JackstrawStrikeTurnMonitor : CombatPointTurnMonitorBase` |
-| Target | `EndConditionOverridesSO.jackstrawStrikeTarget` (**8**, a first cut: nobody has played it yet) |
-| Comeback | rate **0.6**: a quarter behind (2 strikes) buys 1.2 element levels; on the Thresher, Charge is more petals per strike |
+| Target | `EndConditionOverridesSO.jackstrawStrikeTarget` (**3** at every intensity, Shombith 2026-11-09; 8 before; nobody has played it yet) |
+| Comeback | rate **1.5**: a quarter behind (0.75 strikes) buys 1.125 element levels (0.6 against the first target of 8); on the Thresher, Charge is more petals per strike |
 | Arena | four `Jackstraw Cell Config`s (IntensityWise) in the standard 1,200 u cell (`CapsuleMembrane`, the Boneyard's) |
 | Environment | `SpawnableJackstraw`, one prefab per rung, baked (`Assets/Resources/PrismLayouts/SpawnableJackstraw_*.bytes`) |
 | Census | `Tools/Build/jackstraw_budget.py`, an exact mirror of the C# |
@@ -132,7 +132,7 @@ volumes equal to the mirror), `bake_prism_layouts.py --check`, `render_card_back
 
 ## Known limitations
 
-- The target (8) and the comeback rate are first cuts. Nothing measures strikes per minute here yet; the per-attacker
+- The target (3) and the comeback rate are unplayed. Nothing measures strikes per minute here yet; the per-attacker
   petal ledger the Charge plan asks for does not exist.
 - The hunter does not read the sticks: it flies the straight line at its rival, and the autopilot's own obstacle
   avoidance (if any) is all that steers it round a stick. A stick costs the ball speed, not the hull.

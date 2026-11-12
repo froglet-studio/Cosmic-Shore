@@ -1,13 +1,14 @@
 ---
 name: ship
-description: End-of-branch shipping protocol - review everything on the branch, prove any editor tool's ASSET OUTPUT actually landed (§2.5, never skipped), complete the documentation so the work is ready to build from, feed what any LAB on the branch taught back into the /labmaker skill (§3.55), make an honest go/no-go call (pushing back with a concrete iteration list when the branch needs another pass), and only then open the pull request. Use when a feature branch feels done ("wrap this up", "open the PR", "ship it"), before ANY pull request is created, or at the end of a long working session. Depth variants: /ship-quick (fast), /ship-deep (thorough), /ship-tools (tool output + retirement only). Pairs with /reorient (run it first when the session has run long or bleeding-edge may have moved).
+description: End-of-branch shipping protocol - review everything on the branch, prove any editor tool's ASSET OUTPUT actually landed (§2.5, never skipped), complete the documentation so the work is ready to build from, feed what any LAB on the branch taught back into the /labmaker skill (§3.55), make an honest go/no-go call (pushing back with a concrete iteration list when the branch needs another pass), and only then open the pull request - and on a GO, merge it into bleeding-edge (§5.7; Garrett 2026-11-10: batch-test on bleeding-edge and fix what does not work). Use when a feature branch feels done ("wrap this up", "open the PR", "ship it"), before ANY pull request is created, or at the end of a long working session. Depth variants: /ship-quick (fast), /ship-deep (thorough), /ship-tools (tool output + retirement only). Pairs with /reorient (run it first when the session has run long or bleeding-edge may have moved).
 ---
 
-# Ship Protocol — review, document, decide, then PR
+# Ship Protocol — review, document, decide, PR, merge
 
 You are closing out a feature branch. The goal is a pull request another developer can
-review, build on, and trust — or an honest "not yet" with a concrete list of what one or
-two more iterations should fix. **Opening the PR is the last step, never the first.**
+review, build on, and trust — merged into `bleeding-edge` on a GO (§5.7), where the team
+batch-tests it — or an honest "not yet" with a concrete list of what one or
+two more iterations should fix. **Opening the PR is the second-to-last step, never the first; merging it is the last.**
 
 ## 0. Pick the depth
 
@@ -17,9 +18,12 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 | A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5, and keeps §3.55's minimum (the lab's CATALOG row plus any costly lesson). |
 | A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, a doc-drift sweep, a mechanical refactor-opportunity sweep (D8) over §3.6, and a lab audit (D9) over §3.55. |
 | Only to land an editor tool's OUTPUT (no PR) | `/ship-tools` | Runs §2.5 alone, then retires the tool and pushes. |
-| PROMOTE an integration branch that was already reviewed PR by PR (Yash's `Ys-bleeding-edge`) | `/ship promote [branch]` | Runs §1.5 (merge bleeding-edge in, resolve, gates, push) and §5-§5.6 (the PR, CI, the Fleet Codex) and nothing else - no review, no go/no-go. Was `/to-bleeding-edge`, folded in 2026-10-26 (Garrett: one shipping process, "to avoid confusion, drift"); that name stays as an alias. |
+| PROMOTE an integration branch that was already reviewed PR by PR (Yash's `Ys-bleeding-edge`) | `/ship promote [branch]` | Runs §1.5 (merge bleeding-edge in, resolve, gates, push) and §5-§5.7 (the PR, CI, the Fleet Codex, the merge) and nothing else - no review, no go/no-go. Was `/to-bleeding-edge`, folded in 2026-10-26 (Garrett: one shipping process, "to avoid confusion, drift"); that name stays as an alias. |
 
 `/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`, `/ship promote <branch>`).
+
+**Every mode that opens a PR merges it on a GO (§5.7).** To open the PR and stop there, say so (`/ship --no-merge`,
+"PR only", "don't merge"); the session then leaves the merge to a person, as before 2026-11-10.
 
 **§2.5 is in every mode. Speed comes out of review depth, never out of the gate** — a
 fast path that can silently drop a tool's output is the exact failure this protocol
@@ -506,15 +510,22 @@ Walk every changed file against these gates:
   `///` block belongs to whatever declaration follows it, so adding a helper between an
   existing doc comment and its method hands the doc to the HELPER and leaves the method
   undocumented — with two `<summary>` tags in one block and no compile error, in a file that
-  otherwise reads perfectly. Three landed in one branch. It is mechanically detectable: scan
-  every changed `.cs` for a line `/// </summary>` immediately followed by `/// <summary>`, and
-  split the hits against the merge base so you only own the new ones. When it fires, decide per
-  site whether the orphaned doc should move DOWN onto its method or be deleted as superseded —
-  the new member usually has its own.
+  otherwise reads perfectly. Three landed in one branch. **Since 2026-11-11 it is a gate:
+  `doc_summaries` (`Tools/Build/check_doc_summaries.py`, run by `gates.sh`) fails on any doc
+  comment under `Assets/` that holds two `<summary>` blocks, so every hit is new.** It also sees
+  the shapes the old one-line scan (`/// </summary>` directly followed by `/// <summary>`) misses:
+  a first block closing on a text line, a `<param>` or `<returns>` between the two, or a blank
+  line or `//` comment between them. On bleeding-edge that day the scan found 55 and the gate 76
+  (`cece/loving-volta-kkvnex`). When it fires, decide per site whether the orphaned doc should
+  move DOWN onto its method, merge with the method's own doc, or be deleted as superseded — the
+  new member usually has its own. A check independent of the shape: every `<paramref>` /
+  `<param>` name must be a parameter of the member the doc sits on (10 mismatches before that fix,
+  0 after). In a shallow clone `git log -S '<phrase>'` reaches back only to the graft
+  (`.git/shallow`) and names the boundary merge for everything, so find the member from the code.
   **Do the scan in Python, not `awk`.** macOS ships BSD awk, and a one-liner using `prev ~ /…/`
   over a `/// ...</summary>` line followed by `/// <summary>` silently matched NOTHING on a branch
-  that had two such hits — a scan that cannot fire reads exactly like a clean branch. A five-line
-  `re.search` loop over `git diff --name-only <merge-base>..HEAD -- '*.cs'` found both.
+  that had two such hits — a scan that cannot fire reads exactly like a clean branch. For trees
+  the gate does not cover, run `check_doc_summaries.py --root Port --root Tools`.
 - **A rename sweep must split its hits by which THING the name means.** One identifier is
   routinely three: a C# class, an HLSL function, a shadergraph node's `m_FunctionName`. Renaming
   the class leaves the other two correct, so a blanket search-and-replace is as wrong as no sweep
@@ -956,7 +967,11 @@ node .claude/skills/labmaker/verify_lab.cjs <lab.html> --out <scratch>
   - a technique that made the lab legible;
   - a process change the human asked for between rounds.
 
-  Use that file's entry format. Grep the id before you claim it (§1's id-collision rule).
+  Use that file's entry format. Grep the id before you claim it (§1's id-collision rule), and again after §1.5's
+  merge: `grep -oE '^### L-[A-Z]+-[0-9]+' .claude/skills/labmaker/LEARNINGS.md | sort | uniq -d` names every id
+  two branches claimed apart, and git joins two entries with one id without a conflict. Renumber yours and every
+  reference to it (2026-11-11: this check found `cece/nifty-cray-41hy43` and bleeding-edge's Brittle Star ship pass
+  had both taken L-STU-168 to 170 the same day; L-STU-41, 42 and 102 were already doubled on bleeding-edge).
 - **Promote** into `SKILL.md` §2–§8 any entry that has now recurred in a second lab or cost a
   round. Mark it `Promoted: §N`.
 - If the branch added a reusable check, extend `verify_lab.cjs`, add its planted defect to
@@ -1044,6 +1059,8 @@ A branch that found nothing says so in the report. Silence reads as "not checked
 Say **NO** — and list the concrete iterations needed — when any of these hold:
 
 - A review gate in §2 failed and the fix isn't a quick one.
+- `approvals.py check` reports a **swim lane COLLISION** the person has not decided on (§5). Touching another
+  collaborator's work is otherwise never a NO-GO: it goes through, with its `/approve` entries.
 - **§2.5 is unresolved** — a WRITER tool is on the branch and its output is not, or the
   human has not confirmed they ran it. This one is not a judgment call: no amount of
   otherwise-good work makes a half-landed migration shippable.
@@ -1068,13 +1085,25 @@ Say **GO** when the work is coherent, documented, and honestly labeled. Loose en
 don't block building on the branch become a **Follow-ups** section in the PR body — named,
 scoped, and assigned a doc home — not reasons to sit on finished work.
 
+**A GO now means it merges (§5.7)**, so the bar is "safe to batch-test on bleeding-edge", not "proven in the
+editor": untested in Unity is fine when it is honestly labelled and its hand tests are on the branch's ticket. A
+branch that would break bleeding-edge for everyone else (a known compile error, a half-landed tool output, a broken
+scene) is still a NO.
+
 ## 5. Open the PR (GO only)
 
 - **Who else works here** (`Docs/TEAM.md`): `git fetch origin && python3 Tools/Build/who_works_where.py query
   $(git diff --name-only origin/bleeding-edge...HEAD | cut -d/ -f1-4 | sort -u)`. For every other collaborator with
   in-flight or recent work in those paths, the PR body gets an **Affects** line ("Affects: Garrett's
-  `cece/zen-fermat` Stoat modes - builds on them, changes nothing they decided"). A branch that would replace or
-  re-tune another collaborator's work is a NO-GO until the person you work with has confirmed it with them (§4).
+  `cece/zen-fermat` Stoat modes - builds on them, changes nothing they decided").
+- **Collide or go** (`Docs/TEAM.md` rules 3 and 13, Garrett 2026-11-10): `python3 Tools/Build/approvals.py check --me
+  <person>`. **Exit 2 is a COLLISION** - the branch is about a swim lane someone else occupies right now - and it is a
+  NO-GO until the person you work with has heard who is in it and decided (talk to the occupant, or go ahead). Nothing
+  else is a NO-GO for touching another collaborator's work, re-tuning or replacing it included: tell the person whose
+  toes it is on, and for each HEADS-UP person whose work the branch actually changes, commit an
+  `approvals.py add --to <them> --by <person> --area ... --summary ...` entry before opening the PR (add `--pr` when
+  you know it). The PR body's **Affects** section lists the entries it queued ("queued for Shombith's /approve:
+  <id>").
 - **Hand-offs** (`Docs/TEAM.md` rule 9, the `/team-tasks` skill): anything the branch leaves for a person (an editor
   test, a playtest, a dashboard step, content, a decision) goes on the branch's ONE ticket (`/team-tasks add`; a second
   `add` appends a checklist line), naming nobody: tickets are never assigned; taking one makes it the taker's, and naming a branch starts it. Close
@@ -1103,10 +1132,11 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   carries, grouped by area with short shas; verification (the gates.sh result, the compile numbers when it ran,
   or plainly that nothing compiled); to test by hand, one line per changed behaviour; Affects; the footer. When
   the PR merges, confirm it landed with `git merge-base --is-ancestor origin/$BRANCH origin/bleeding-edge`, and
-  say GitHub may have deleted `$BRANCH`. **Never approve or merge the PR yourself**: the person or Garrett does.
+  say GitHub may have deleted `$BRANCH`. It merges like any other ship (§5.7); **never approve the PR yourself**.
 - **Before pushing MORE work onto the branch of a PR you already opened, confirm the PR is still
   OPEN** (`pull_request_read` → `merged`/`state`), right before the push, not at the start of the
-  task. A human can merge at any moment, and a commit pushed after the merge lands on a branch
+  task. Since §5.7 it normally is NOT: a shipped branch is merged, so follow-up work restarts the branch from
+  `bleeding-edge` (below) and goes out as a new PR. A human can merge at any moment too, and a commit pushed after the merge lands on a branch
   nobody will merge again: it is stranded, and any PR-body update you make to describe it then
   claims work the merged PR does not contain. It happened on 2026-10-14: #1091 merged at 21:20 and
   the prefab-authoring commit was pushed at 21:30. The QA backlog is scanned from PR bodies, so an
@@ -1188,9 +1218,49 @@ shipped branch's facts until its PR merges instead of reverting them overnight.
 **Report:** the content hash, the tree read (the stamp), the pending list, and what changed for the vessels this branch
 touched (L5 wired counts, new abilities). If the publish is refused, say so in one line; it never holds a GO.
 
+## 5.7 Merge into bleeding-edge (every mode that opens a PR, on a GO)
+
+Garrett, 2026-11-10: "make /ship automatically merge. It is becoming fast to batch test in bleeding edge and fix what
+doesn't work than switch to each branch for testing." So a GO ends with the PR merged, and the team tests many
+branches at once on `bleeding-edge` instead of checking out each one. Skip this section only when the person said
+"PR only" / `--no-merge`, on a NO-GO (nothing was opened), and in `/ship-tools` (it opens no PR).
+
+1. **Last, after §5.5 and §5.6.** CI is fire-and-forget (§0.05): do not wait for it.
+2. **Right before merging, read the PR** (`pull_request_read`, method `get`): still open, `mergeable` true. If
+   `bleeding-edge` moved and the PR now conflicts, run §1.5 again (merge `bleeding-edge` in, resolve, `gates.sh`,
+   push) and read it again. Never merge a PR whose gates you did not run on what is being merged.
+3. **Merge with a merge commit**, never squash or rebase:
+
+   ```
+   mcp__github__merge_pull_request
+     owner: froglet-studio   repo: cosmic-shore
+     pullNumber: <the PR>
+     merge_method: merge
+   ```
+
+   The team's readers rely on GitHub's `Merge pull request #N from froglet-studio/<branch>` commits: `who_works_where.py`,
+   `swimlanes.py` and `team_tasks.py` read who landed what, which lane opened and which ticket closes from them, and
+   a squash merge leaves no such commit, so the ticket sweep and the landed lists miss it.
+4. **If GitHub refuses** (a ruleset wants a review, a code owner's review for `.github/` or the UI paths in
+   `.github/CODEOWNERS`, or a required check): turn on auto-merge instead (`mcp__github__enable_pr_auto_merge`,
+   `mergeMethod: MERGE`) so it lands the moment the requirement is met, and tell the person in one line which
+   review or check it waits for. **Never approve your own PR, never bypass a ruleset, never change one to get a
+   merge through.** If auto-merge is refused too, say so and leave the PR open.
+5. **Confirm it landed:** `git fetch origin bleeding-edge && git merge-base --is-ancestor origin/$BRANCH
+   origin/bleeding-edge` (or the merge commit's sha from the tool result). `bleeding-edge-guard.yml` verifies every
+   commit that lands there and attempts a repair; a red guard run after your merge is yours to fix, on a new branch.
+6. **After the merge the branch is finished.** Any later work on it restarts the branch from `bleeding-edge` and goes
+   out as a new PR (§5, "Before pushing MORE work"). The swim lane opens again by itself. The branch's ONE Froglet
+   Tasks ticket (§5 Hand-offs) is filed, not taken, so it stays open after the merge: it is the list the team
+   batch-tests on `bleeding-edge`. Whatever fails there is fixed on a new branch, shipped the same way.
+
+Someone else's branch (`/ship promote Ys-bleeding-edge`, a teammate's branch) merges only when §1.5 already confirmed
+with the person that you may push onto it; a merge is that same decision.
+
 ## 6. Report
 
-Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), whether
+Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), whether it
+merged (§5.7: the merge commit, or the review/check auto-merge waits for, or "PR only" when they asked), whether
 the §5.5 CI dispatch went out, the §5.6 Fleet Codex refresh (published hash and pending list, or "no codex surface
 touched"), the
 **§2.5 tool-output verdict** (every tool classified, whose output landed in which commit,

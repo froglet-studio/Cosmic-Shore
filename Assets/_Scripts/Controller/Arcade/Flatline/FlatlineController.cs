@@ -21,12 +21,12 @@ namespace CosmicShore.Gameplay
     /// winner detection, a snapshot SyncFinalScores_ClientRpc carrying the breakdown, the hit latch cleared per match).
     /// It changes nothing about the Brittle Star.</para>
     ///
-    /// <para><b>The crystal field is laid on every peer</b> at the arena's seam sites
+    /// <para><b>The crystal field is laid on every peer</b> at the arena's crystal sites
     /// (<see cref="SpawnableFlatline.CollectCrystalSites"/>), each site's element drawn from
     /// <see cref="FlatlineSettingsSO.fieldSeed"/>, and each collected crystal grows back in its own place after
     /// <see cref="FlatlineSettingsSO.fieldRegrowSeconds"/>. A crystal is a spare ring for the Brittle Star (every crystal
-    /// list on its impactor container), so the seams are where the ring is re-armed: the most exposed places in the
-    /// cell. Collection is per-peer, as in Dog Fight and Hood, which is tolerable because a crystal scores
+    /// list on its impactor container), so re-arming means flying into a room: a tunnel or a cage, where the cords
+    /// reach through the walls. Collection is per-peer, as in Dog Fight and Hood, which is tolerable because a crystal scores
     /// nothing.</para>
     ///
     /// BRITTLE-STAR-ONLY is enforced by the arcade card's Vessels list - no mode-local vessel check.
@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Arena")]
         [Tooltip("The Flatline cell. Read-only to this controller: its position is the arena CENTRE, and its " +
-                 "SpawnableFlatline answers where the seams carry crystals.")]
+                 "SpawnableFlatline answers where the crystals sit.")]
         [SerializeField] Cell arenaCell;
 
         sealed class FieldSlot
@@ -157,8 +157,8 @@ namespace CosmicShore.Gameplay
 
         readonly List<Vector3> _siteScratch = new();
 
-        /// <summary>The crystal sites in world space, read off the arena's own environment (the seams where its panes
-        /// cross). Empty when the cell has no SpawnableFlatline, and then there is no field.</summary>
+        /// <summary>The crystal sites in world space, read off the arena's own environment (inside its rooms, then in
+        /// front of its loose panes). Empty when the cell has no SpawnableFlatline, and then there is no field.</summary>
         List<Vector3> CollectSites()
         {
             _siteScratch.Clear();

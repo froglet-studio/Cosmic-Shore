@@ -10,7 +10,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Voyages tab as Shombith picked it on Frogma (Docs/MENU_REDESIGN_B.md sections 161-164): Rev 81 B5's three columns
+    /// The Voyages tab as Shombith picked it on Frogma (Docs/MENU_REDESIGN_B.md sections 162-165): Rev 81 B5's three columns
     /// and Rev 83 S2's seat editor.
     /// <list type="bullet">
     /// <item><b>The list</b> (left): one row per voyage on offer, its course on the HyperSea's water

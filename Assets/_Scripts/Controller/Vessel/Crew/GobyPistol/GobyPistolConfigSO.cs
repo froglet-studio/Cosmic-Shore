@@ -411,9 +411,10 @@ namespace CosmicShore.ScriptableObjects
         public float MapPickPixels => mapPickPixels;
         public float MapSpinDragScale => mapSpinDragScale;
         public float MapSpinRate => mapSpinRate;
-        public Color MapPathColdColor => mapPathColdColor;
-        public Color MapPathHotColor => mapPathHotColor;
-        public Color MapPickColor => mapPickColor;
+        // The path map's colours as the worn colour set paints them (ColorTrace); the fields keep the authored ones.
+        public Color MapPathColdColor => ColorTrace.Retrace(ColorTrace.World, mapPathColdColor);
+        public Color MapPathHotColor => ColorTrace.Retrace(ColorTrace.World, mapPathHotColor);
+        public Color MapPickColor => ColorTrace.Retrace(ColorTrace.World, mapPickColor);
         public GameObject PistolModel => pistolModel;
         public float PistolModelLength => pistolModelLength;
         public float SnapClawShut => snapClawShut;
@@ -442,7 +443,7 @@ namespace CosmicShore.ScriptableObjects
         public float JuiceReach => juiceReach;
         public float JuiceShardSize => juiceShardSize;
         public float JuicePulseScale => juicePulseScale;
-        public Color JuiceShieldColor => juiceShieldColor;
+        public Color JuiceShieldColor => ColorTrace.Retrace(ColorTrace.World, juiceShieldColor);
         public float JuiceRippleSpeed => juiceRippleSpeed;
         public EventReference GrowEvent => growEvent;
         public EventReference ShieldEvent => shieldEvent;

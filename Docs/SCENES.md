@@ -101,6 +101,11 @@ resolve). IDs 30 and 32 stay in the enum and no menu reaches them; `TrainingAuto
 | **MinigameSerpentHood** | `_Scenes/Multiplayer Scenes/` | `SerpentHood (77)` | `SerpentHoodController` |
 | **MinigameJackstraw** | `_Scenes/Multiplayer Scenes/` | `Jackstraw (85)` | `JackstrawController` |
 | **MinigameFlatline** | `_Scenes/Multiplayer Scenes/` | `Flatline (84)` | `FlatlineController` |
+| **MinigameKelpwood** | `_Scenes/Multiplayer Scenes/` | `Kelpwood (86)` | `KelpwoodController` |
+| **MinigameCorona** | `_Scenes/Multiplayer Scenes/` | `Corona (87)` | `CoronaController` |
+| **MinigameHarvest** | `_Scenes/Multiplayer Scenes/` | `Harvest (88)` | `HarvestController` |
+| **MinigameGlasshouse** | `_Scenes/Multiplayer Scenes/` | `Glasshouse (89)` | `GlasshouseController` |
+| **MinigameShatterplane** | `_Scenes/Multiplayer Scenes/` | `Shatterplane (90)` | `ShatterplaneController` |
 | **MinigameTapestry** | `_Scenes/Multiplayer Scenes/` | `Tapestry (60)` | `TapestryController` |
 | **MinigameSirocco** | `_Scenes/Multiplayer Scenes/` | `Sirocco (61)` | `SiroccoController` |
 | **MinigameTandava** | `_Scenes/Multiplayer Scenes/` | `Tandava (69)` | `TandavaController` |
@@ -339,7 +344,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 81 | `PerchRun` | MP | MinigamePerchRun | `PerchRunController` (see `PERCH_RUN.md`) |
 | 82 | `SlipLine` | MP | MinigameSlipLine | `SlipLineController` (see `SLIP_LINE.md`) |
 | 83 | `Breach` | MP | MinigameBreach | `BreachController` (see `BREACH.md`) |
-| 84 | `Flatline` | MP | MinigameFlatline | `FlatlineController` (Brittle Star duel through thin panes, Charge - a round on a rival is 1, a cord Strike 8, the ring 0; per-intensity target. See `FLATLINE.md`) |
+| 84 | `Flatline` | MP | MinigameFlatline | `FlatlineController` (Brittle Star duel through a scattered field of panes, tunnels and cages, Charge - a round on a rival is 1, a cord Strike 8, the ring 0; first to 90. See `FLATLINE.md`) |
 | 73 | `SerpentTime` | MP | MinigameSerpentTime | `SerpentTimeController` (see `SERPENTTIME.md`) |
 | 74 | `BrittleStarTime` | MP | MinigameBrittleStarTime | `BrittleStarTimeController` (see `BRITTLESTARTIME.md`) |
 | 75 | `LanternRun` | MP | MinigameLanternRun | `LanternRunController` (the Angler's Time race - two regrowing prism mass clusters a leg, one per group; paint, throw, dash through the ring. See `LANTERNRUN.md`) |
@@ -349,6 +354,11 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 59 | `Dustup` | MP | MinigameDustup | `DustupController` (Butterfly dust duel, Charge — a pass OVER a rival is one Strike point; Boneyard. See `DUSTUP.md`) |
 | 77 | `SerpentHood` | MP | MinigameSerpentHood | `SerpentHoodController` (Hood, the Serpent sniper duel, Charge - a snipe on a rival pilot is one Debuff point; a 3,600 u cell, a crystal heart in the middle, Serpentine's ring shapes bent into hoods as perches round it, shutters at I3-I4, a hood falls when its core breaks; was Serpent Gulag. See `SERPENTHOOD.md`) |
 | 85 | `Jackstraw` | MP | MinigameJackstraw | `JackstrawController` (Thresher brawl, Charge - the ball or chain on a rival pilot is one Strike point; a 0G heap of pick-up sticks in the standard cell, crystals in its clearings; I1-I4 grow the heap 34 -> 230 sticks, add jacks, red tips and ironwood; JACKSTRAW.md) |
+| 86 | `Kelpwood` | MP | MinigameKelpwood | `KelpwoodController` (Angler hunt, Charge - sweep the eraser onto a rival to lock it, one creature hunts it, each bite is one Strike point; a 0G ball of kelp strands in the standard cell, tadpole herds and omni crystals for the school; I1-I4 grow the kelp 28 -> 88 strands, thin the herds and crystals, add danger tips and collars) |
+| 87 | `Corona` | MP | MinigameCorona | `CoronaController` (Manta stings, Charge - skim a shell to arm a bomb, graze a rival to plant it, touch an omni crystal in the heart to set every bomb off; each rival a bloom catches is one Debuff point; nested prism shells round a crystal heart in the standard cell; I1-I4 add shells 1 -> 4, narrow and rim the gates, thin the heart's crystals 4 -> 1) |
+| 88 | `Harvest` | MP | MinigameHarvest | `HarvestController` (Thresher destruction race, Space - mow a sheaf's stalks with the chain to charge the ball, smash it into the core for one blast; hostile prisms destroyed, first domain to 750; a field of sheaves round a clear centre in the standard cell, omni crystals in the centre; I1-I4 8 -> 22 sheaves, shielded cores, team colours, danger stalks) |
+| 89 | `Glasshouse` | MP | MinigameGlasshouse | `GlasshouseController` (Angler garden, Mass - an omni crystal is a seed, let go of the lure to plant it in your colour, hold it to grow; timed, trail + garden standing in your colour wins; `GLASSHOUSE.md`) |
+| 90 | `Shatterplane` | MP | MinigameShatterplane | `ShatterplaneController` (Brittle Star plate race, Space - square up to a plate and the ring's flat blast erases it whole, the guns chew the rest; prisms destroyed to a per-intensity target. See `SHATTERPLANE.md`) |
 | 60 | `Tapestry` | MP | MinigameTapestry | `TapestryController` (Butterfly timed painting war, Mass — volume standing at the whistle, `VolumeRemaining`; Barren cell. See `TAPESTRY.md`) |
 | 61 | `Sirocco` | MP | MinigameSirocco | `SiroccoController` (Butterfly erosion race, Space — prisms destroyed through Rampage's forest. See `SIROCCO.md`) |
 | 69 | `Tandava` | MP | MinigameTandava | `TandavaController` (UNLISTED since 2026-10-25: on no roster, card in `Games/_Archive`; co-op ARENA hunt in a closed cell - Rhino / Squirrel / Sparrow on one domain against one creature that forages where it likes, rolls up round its meal behind a ring of guards while it feeds, and evolves Great Serpent -> Many-Headed Serpent -> Lord of the Dance (a halo of rings) -> Antlion; a variant of each form per match; the cell glows gold for the dance alone. See `TANDAVA.md`) |
@@ -600,7 +610,12 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DustupPointTurnMonitor` | `TurnMonitors/` | A domain's summed dustings (Strike-class CombatPoints) reach the Dustup target (on `CombatPointTurnMonitorBase`) |
 | `SerpentHoodSnipeTurnMonitor` | `TurnMonitors/` | A domain's summed snipes (Debuff-class CombatPoints) reach the Hood target (on `CombatPointTurnMonitorBase`) |
 | `JackstrawStrikeTurnMonitor` | `TurnMonitors/` | A domain's summed strikes (Strike-class CombatPoints) reach the Jackstraw target (on `CombatPointTurnMonitorBase`) |
-| `FlatlinePointTurnMonitor` | `TurnMonitors/` | A domain's summed CombatPoints (rounds 1, cord Strikes 8) reach Flatline's PER-INTENSITY target (on `CombatPointTurnMonitorBase`) |
+| `FlatlinePointTurnMonitor` | `TurnMonitors/` | A domain's summed CombatPoints (rounds 1, cord Strikes 8) reach Flatline's target (90 at every intensity, per-intensity list) (on `CombatPointTurnMonitorBase`) |
+| `KelpwoodBiteTurnMonitor` | `TurnMonitors/` | A domain's summed bites (Strike-class CombatPoints) reach the Kelpwood target (on `CombatPointTurnMonitorBase`) |
+| `ShatterplanePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Shatterplane target, resolved per intensity on the server and replicated (Sirocco's shape) |
+| `CoronaBloomTurnMonitor` | `TurnMonitors/` | A domain's summed bloom hits (Debuff-class CombatPoints) reach the Corona target (on `CombatPointTurnMonitorBase`) |
+| `HarvestPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed reach the Harvest target (Wrecking Ball's shape) |
+| `GlasshouseTimeTurnMonitor` | `TurnMonitors/` | The round clock runs out (`glasshouseRoundSeconds`, on `NetworkTimeBasedTurnMonitor`); most volume standing wins |
 | `TapestryTimeTurnMonitor` | `TurnMonitors/` | Timed: the round ends when `EndConditionOverridesSO.tapestryRoundSeconds` runs out (on `NetworkTimeBasedTurnMonitor`, duration read at `StartMonitor` on every peer) |
 | `SiroccoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Sirocco target |
 | `TandavaTurnMonitor` | `TurnMonitors/` | Server-side: the turn ends the moment the swarm's outcome stops being Running (the cycle completed, or it was shattered, starved, or its dance broken - there is no clock), read off `TandavaScoringRuleSO`; the goal stack draws the mode's own rows (`TandavaController` is its `IGoalSource`: the form and its progress, what it is doing and its body, the halo and the drum) and this monitor's display is what rebuilds it each tick |

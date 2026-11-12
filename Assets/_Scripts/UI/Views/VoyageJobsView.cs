@@ -51,7 +51,7 @@ namespace CosmicShore.UI
         [SerializeField] RectTransform cardColumn;
         [Tooltip("The space between the map and the edge view under it, in the map column.")]
         [SerializeField] float edgeGap = 12f;
-        [Tooltip("The Voyages tab as Shombith picked it (Docs/MENU_REDESIGN_B.md sections 161-164): the voyage list, the " +
+        [Tooltip("The Voyages tab as Shombith picked it (Docs/MENU_REDESIGN_B.md sections 162-165): the voyage list, the " +
                  "course and the right panel with the squad's seat cards (Rev 81 B5), and the seat editor (Rev 83 S2), built " +
                  "by VoyageBoard over this page. Off: the map column and the voyage cards as before.")]
         [SerializeField] bool board = true;

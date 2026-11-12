@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-09 from canvas version `1794265064-6300` of **Frogma**: Rev 3 to Rev 83, 448 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794497041-9971` of **Frogma**: Rev 3 to Rev 84, 452 boards on 11 tabs. The canvas opens on the tab `fleet-codex`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -567,6 +567,13 @@ Copied on 2026-11-09 from canvas version `1794265064-6300` of **Frogma**: Rev 3 
 - [`R51Notes.dc.html`](R51Notes.dc.html) - Rev 51 - notes: what each option changes, every set unlocked for now and quests later, what the repaint does in Unity, d
 
 ### Tab: Fleet Codex  (`fleet-codex`)
+
+#### Rev 84 - Flight certificate and element tiers for the solo vessels: how ready each vessel is, and how good it is in each element's game
+
+- [`R84A.dc.html`](R84A.dc.html) - Rev 84 A - On the vessel page: the certificate in the briefing, a tier beside each element game (recommended) - interactive
+- [`R84B.dc.html`](R84B.dc.html) - Rev 84 B - The whole fleet, sorted and filtered by completion and by tier, each on its own - interactive
+- [`R84C.dc.html`](R84C.dc.html) - Rev 84 C - Tier lists: one element at a time, S to C, with each vessel's certificate under its hull - interactive
+- [`R84Notes.dc.html`](R84Notes.dc.html) - Rev 84 - notes: the scoring rule, the names, the tier sheet to confirm
 
 #### Rev 69 - Fleet Codex vessel page, C in full: one vessel with every detail, calm - the desktop page and the phone
 

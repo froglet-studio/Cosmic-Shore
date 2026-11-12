@@ -5,11 +5,13 @@ Menu_Main.unity (Docs/MENU_REDESIGN_B.md section 15.2; the approved ProfileModal
 ProfileNameError boards on the "Menu Redesign B" canvas).
 
     Assets/_Prefabs/UI Elements/Main Menu Screens/Profile/
-        ProfileAvatarButton.prefab  one avatar of the 6 x 3 grid: an octagon KitTile (selected ring,
-                                    gamepad focus ring) carrying ProfileIconSelectButton
+        ProfileAvatarButton.prefab  one avatar of the 6-wide grid: an octagon KitTile (selected ring,
+                                    gamepad focus ring) carrying ProfileIconSelectButton and
+                                    KitScrollIntoView (the pad never walks off the visible rows)
         ProfileWindowView.prefab    the window body: the "How others see you" preview column, the
                                     AVATAR / DISPLAY NAME tabs (KitTextTab), the Close keycap button,
-                                    the Avatar page (grid, save note, Done) and the Display name page
+                                    the Avatar page (the scrolling grid - one avatar per pilot in
+                                    the catalog, three rows in view - save note, Done) and the Display name page
                                     (field + count, the four rule ticks, the danger strip, the
                                     checking hex, Submit / Cancel)
 
@@ -54,11 +56,12 @@ GRID = "8a8695521f0d02e499659fee002a26c2"           # UnityEngine.UI.GridLayoutG
 INPUT = "2da0c512f12947e489f739169773d7ca"          # TMPro.TMP_InputField
 S = dict(view=C.script("ProfileIconSelectView"), avatar=C.script("ProfileIconSelectButton"),
          tab=K.kit_script("KitTextTab"), tile=K.kit_script("KitTile"), button=K.kit_script("KitButton"),
-         kt=K.kit_script("KitText"), entrance=K.kit_script("KitEntrance"), close=C.script("ModalWindowCloseButton"))
-PACKAGE = P.PACKAGE | {GRID, INPUT}
+         kt=K.kit_script("KitText"), entrance=K.kit_script("KitEntrance"), close=C.script("ModalWindowCloseButton"),
+         scroll_into=K.kit_script("KitScrollIntoView"))
+PACKAGE = P.PACKAGE | {GRID, INPUT, A.SCROLL_RECT}
 C.STUB_KIND.update({"grid": (114, GRID), "input": (114, INPUT), "ttab": (114, S["tab"]),
                     "entrance": (114, S["entrance"])})
-PROFILE_ICONS = "3e6cb5b838253c7468480627fd86af5f"   # SO_DefaultProfileIcons (18)
+PROFILE_ICONS = "3e6cb5b838253c7468480627fd86af5f"   # SO_DefaultProfileIcons (every pilot, author_pilot_avatar_assets.py)
 
 
 def prefab_guid(name):
@@ -74,6 +77,7 @@ def prefab_path(name):
 # --------------------------------------------------------------------------------------------
 
 CELL = 112
+GRID_PAD = 8      # inside the avatar scroll's mask: the focus ring hangs 6 px outside a tile
 OCT = K.kit_sprite("kit_oct_fill")
 
 
@@ -93,6 +97,7 @@ def build_avatar_button():
     root.add("avatar", 114, lambda ctx, go: mono(go, S["avatar"],
              "  BorderImage: {fileID: 0}\n"
              f"  IconImage: {ref(ctx.c('Icon', 'img'))}\n  tile: {ref(ctx.c('root', 'tile'))}\n"))
+    root.add("into", 114, lambda ctx, go: mono(go, S["scroll_into"], "  target: {fileID: 0}\n  margin: 12\n"))
     return root
 
 
@@ -199,14 +204,30 @@ def footer_button(page, key, variant, caption, x):
 def avatar_page(win):
     pg = win.child(N("Window/AvatarPage", "AvatarPage", STRETCH))
     pg.add("cg", 225, canvas_group(True))
-    gap = (CW - 6 * CELL) // 5
-    grid = pg.child(N("Window/AvatarPage/Grid", "Grid", TL(X0, 100, CW, 3 * CELL + 2 * 18)))
+    # The catalog outgrew one screen (18 callsign pilots + the 32 painted ones, Garrett 2026-11-10): the grid scrolls,
+    # three rows in view, with room inside the mask for the focus ring that hangs 6 px outside a tile.
+    gap = (CW - 2 * GRID_PAD - 6 * CELL) // 5
+    sv = pg.child(N("Window/AvatarPage/Scroll", "Scroll View", TL(X0, 100, CW, 3 * CELL + 2 * 18 + 2 * GRID_PAD)))
+    sv.add("in", 114, M.entrance("Rise", play_on_enable=False))
+    sv.add("scroll", 114, lambda ctx, go: mono(go, A.SCROLL_RECT,
+           f"  m_Content: {ref(ctx.rt('Window/AvatarPage/Grid'))}\n  m_Horizontal: 0\n  m_Vertical: 1\n"
+           "  m_MovementType: 1\n  m_Elasticity: 0.1\n  m_Inertia: 1\n  m_DecelerationRate: 0.135\n"
+           f"  m_ScrollSensitivity: 30\n  m_Viewport: {ref(ctx.rt('Window/AvatarPage/Scroll/Viewport'))}\n"
+           "  m_HorizontalScrollbar: {fileID: 0}\n  m_VerticalScrollbar: {fileID: 0}\n"
+           "  m_HorizontalScrollbarVisibility: 0\n  m_VerticalScrollbarVisibility: 0\n"
+           "  m_HorizontalScrollbarSpacing: 0\n  m_VerticalScrollbarSpacing: 0\n"
+           "  m_OnValueChanged:\n    m_PersistentCalls:\n      m_Calls: []\n"))
+    vp = sv.child(N("Window/AvatarPage/Scroll/Viewport", "Viewport", STRETCH))
+    vp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 0.0), raycast=True)) \
+        .add("mask", 114, A.rect_mask())
+    grid = vp.child(N("Window/AvatarPage/Grid", "Grid", R((0, 1), (1, 1), (0, 0), (0, 0), (0.5, 1))))
+    grid.add("fit", 114, K.fitter(0, 2))
     grid.add("grid", 114, lambda ctx, go: mono(go, GRID,
-             "  m_Padding:\n    m_Left: 0\n    m_Right: 0\n    m_Top: 0\n    m_Bottom: 0\n"
+             f"  m_Padding:\n    m_Left: {GRID_PAD}\n    m_Right: {GRID_PAD}\n    m_Top: {GRID_PAD}\n"
+             f"    m_Bottom: {GRID_PAD}\n"
              "  m_ChildAlignment: 0\n  m_StartCorner: 0\n  m_StartAxis: 0\n"
              f"  m_CellSize: {{x: {CELL}, y: {CELL}}}\n  m_Spacing: {{x: {gap}, y: 18}}\n"
              "  m_Constraint: 1\n  m_ConstraintCount: 6\n"))
-    grid.add("in", 114, M.entrance("Rise", play_on_enable=False))
     label(pg.child(N("Window/AvatarPage/SaveNote", "SaveNote", TL(X0, 494, CW, 22))),
           "Your avatar saves as soon as you pick it.", "BodySmall", "NeutralLightest")
     footer_button(pg, "Done", "Play", "DONE", X0)

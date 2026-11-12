@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: Flatline Cell Config 3
   m_EditorClassIdentifier:
   CellName: Flatline
-  Description: 'Icosa Panes - intensity 3 of Flatline: six panes on the icosahedral axes crossing at
-    every angle, danger on every rim, six crystals on six of the fifteen seams. 7217 prisms,
-    all neutral (1813 super-shielded ribs, 1372 danger). Membrane radius 1200, spawn ring
-    420, the crystal field laid by the controller on the seams. NO NUCLEUS, no flora, no
-    fauna. Authored by Tools/Build/author_flatline_assets.py - re-run it rather than
-    hand-editing.'
+  Description: 'Cages - intensity 3 of Flatline: four windowed cages to fly into, four tunnels and
+    eighteen panes, danger rims on every third pane, the crystals inside the rooms. 2914
+    prisms, all neutral (646 super-shielded ribs, 168 danger). Membrane radius 1200, spawn
+    ring 680, the crystal field laid by the controller inside the rooms and in front of
+    panes. NO NUCLEUS, no flora, no fauna. Authored by Tools/Build/author_flatline_assets.py
+    - re-run it rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 3
   CellEndGameScore: 0
@@ -32,11 +32,11 @@ MonoBehaviour:
   EnvironmentIntensity: 3
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 7917
-    RestlessExit: 7717
-    FrenzyEnter: 10817
-    FrenzyExit: 10217
-    RestlessEnterVolume: 1440202
-    RestlessExitVolume: 1437002
-    FrenzyEnterVolume: 1486602
-    FrenzyExitVolume: 1477002
+    RestlessEnter: 3614
+    RestlessExit: 3414
+    FrenzyEnter: 6514
+    FrenzyExit: 5914
+    RestlessEnterVolume: 588187
+    RestlessExitVolume: 584987
+    FrenzyEnterVolume: 634587
+    FrenzyExitVolume: 624987

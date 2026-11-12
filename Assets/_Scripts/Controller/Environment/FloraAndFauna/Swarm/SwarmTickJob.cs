@@ -209,28 +209,6 @@ namespace CosmicShore.Gameplay
         readonly int[] _hc = new int[4];
         long _tick;
 
-        /// <summary>
-        /// The danger state machine of one member, one tick (round 10's strikes, hardened in round 11d - Docs/SWARM_FAUNA.md
-        /// §22). A danger plate is a hostile danger prism, so an opposing-domain pilot who hits it BURNS petals
-        /// (ELEMENTAL_ECONOMY.md §4); the swarm's own domain is only stung. Pure and static so the harness asserts it.
-        /// States: 0 calm, 1 noticed (lurker only), 2 striking (the plate is up), 3 bolted (lurker only: safe until calm).
-        /// <list type="bullet">
-        /// <item>Charge pufferfish: strikes above DangerEnter until below DangerExit (hysteresis), after a wind-up of
-        /// PuffWindupTicks shown ticks counted the same way as the pack hunter's.</item>
-        /// <item>Mass lurker: bristles while half-startled, but only once it has been so for TWO ticks (a member a rush
-        /// carries straight through the band never flashes), and a lurker that BOLTS (startle reaches DangerEnter) stays
-        /// safe until it is fully calm again (below LurkCalm / 2). Round 10 read the band every tick, so every bolted
-        /// lurker bristled again for ~2 s on the way back down - the rush that should beat it was punished after the
-        /// fact - and a member hovering at a band edge flickered.</item>
-        /// <item>Space locust: a quarter of the cloud at a time, the quarter moving every LocustPhaseTicks (stateless).</item>
-        /// <item>Time pack hunter: strikes above HuntEnter until below min(DangerExit, HuntEnter) - the hysteresis can no
-        /// longer invert if a designer sets the exit above the entry. With HuntWindupTicks it first WINDS UP: states
-        /// 4 + n count the ticks its startle has shown above HuntEnter, and the plate goes up on the HuntWindupTicks-th
-        /// (lab fair burns: a bite never lands in the same moment as its telegraph). A dip holds the count; startle
-        /// below 0.4 x HuntEnter (the lab's 0.2 against 0.5) resets it.</item>
-        /// </list>
-        /// A NaN or negative startle reads as calm. Returns the new state; the plate is up iff it is 2.
-        /// </summary>
         /// <summary>A wind-up resets once the startle falls below this fraction of the strike threshold (the lab's 0.2
         /// against 0.5).</summary>
         public const float WindupResetFrac = 0.4f;
@@ -267,6 +245,28 @@ namespace CosmicShore.Gameplay
             return tier;
         }
 
+        /// <summary>
+        /// The danger state machine of one member, one tick (round 10's strikes, hardened in round 11d - Docs/SWARM_FAUNA.md
+        /// §22). A danger plate is a hostile danger prism, so an opposing-domain pilot who hits it BURNS petals
+        /// (ELEMENTAL_ECONOMY.md §4); the swarm's own domain is only stung. Pure and static so the harness asserts it.
+        /// States: 0 calm, 1 noticed (lurker only), 2 striking (the plate is up), 3 bolted (lurker only: safe until calm).
+        /// <list type="bullet">
+        /// <item>Charge pufferfish: strikes above DangerEnter until below DangerExit (hysteresis), after a wind-up of
+        /// PuffWindupTicks shown ticks counted the same way as the pack hunter's.</item>
+        /// <item>Mass lurker: bristles while half-startled, but only once it has been so for TWO ticks (a member a rush
+        /// carries straight through the band never flashes), and a lurker that BOLTS (startle reaches DangerEnter) stays
+        /// safe until it is fully calm again (below LurkCalm / 2). Round 10 read the band every tick, so every bolted
+        /// lurker bristled again for ~2 s on the way back down - the rush that should beat it was punished after the
+        /// fact - and a member hovering at a band edge flickered.</item>
+        /// <item>Space locust: a quarter of the cloud at a time, the quarter moving every LocustPhaseTicks (stateless).</item>
+        /// <item>Time pack hunter: strikes above HuntEnter until below min(DangerExit, HuntEnter) - the hysteresis can no
+        /// longer invert if a designer sets the exit above the entry. With HuntWindupTicks it first WINDS UP: states
+        /// 4 + n count the ticks its startle has shown above HuntEnter, and the plate goes up on the HuntWindupTicks-th
+        /// (lab fair burns: a bite never lands in the same moment as its telegraph). A dip holds the count; startle
+        /// below 0.4 x HuntEnter (the lab's 0.2 against 0.5) resets it.</item>
+        /// </list>
+        /// A NaN or negative startle reads as calm. Returns the new state; the plate is up iff it is 2.
+        /// </summary>
         public static byte StrikeState(int eff, int slot, long tick, float st, byte state, SwarmTickSettings s)
         {
             if (!(st >= 0f)) st = 0f;

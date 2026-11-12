@@ -250,23 +250,6 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Metadata is the ONLY field a score carries besides its number, and it carries two
-        /// things: which PERIOD the run was for, and the player's avatar.
-        ///
-        /// <para><b>The period is mandatory and the avatar is not</b>, which is a change from when
-        /// the avatar was the whole payload. An avatar is decoration — a row without one draws the
-        /// template's art and reads as normal. The period is what makes the row legible at all: an
-        /// unstamped entry cannot be told apart from last week's, so
-        /// <see cref="WeeklyChallengeRanking.IsForPeriod"/> treats it as not this week's and a read
-        /// will hide it. So this must never return null while a period is known — the old
-        /// early-out on "no avatar" would have submitted a score the game then refuses to
-        /// display.</para>
-        ///
-        /// <para>The avatar is still omitted rather than sent as <c>{"a":-1}</c>: an absent field
-        /// and a field saying "nothing" read the same on the way back, and the shorter one does not
-        /// have to be parsed.</para>
-        /// </summary>
-        /// <summary>
         /// The server-checked path (fair play, Threat Board T2): the <c>weekly-score</c> Cloud Code script refuses
         /// impossible times and is the only writer once players are denied leaderboard writes. It stamps the same
         /// period and avatar metadata this class reads back.
@@ -285,6 +268,23 @@ namespace CosmicShore.Core
                     $"[WeeklyChallengeLeaderboard] Server refused {WeeklyChallengeRanking.FormatSeconds(seconds)} for '{id}': {verdict.reason}.");
         }
 
+        /// <summary>
+        /// Metadata is the ONLY field a score carries besides its number, and it carries two
+        /// things: which PERIOD the run was for, and the player's avatar.
+        ///
+        /// <para><b>The period is mandatory and the avatar is not</b>, which is a change from when
+        /// the avatar was the whole payload. An avatar is decoration — a row without one draws the
+        /// template's art and reads as normal. The period is what makes the row legible at all: an
+        /// unstamped entry cannot be told apart from last week's, so
+        /// <see cref="WeeklyChallengeRanking.IsForPeriod"/> treats it as not this week's and a read
+        /// will hide it. So this must never return null while a period is known — the old
+        /// early-out on "no avatar" would have submitted a score the game then refuses to
+        /// display.</para>
+        ///
+        /// <para>The avatar is still omitted rather than sent as <c>{"a":-1}</c>: an absent field
+        /// and a field saying "nothing" read the same on the way back, and the shorter one does not
+        /// have to be parsed.</para>
+        /// </summary>
         AddPlayerScoreOptions BuildSubmitOptions()
         {
             string period = CurrentPeriodKey;

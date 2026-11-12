@@ -4,17 +4,18 @@ Analytic prism budget for Flatline - the Brittle Star's charge arena (GameModes.
 
 This is the model of `FlatlinePanes.cs` (and so of `SpawnableFlatline.cs`), and it is a MIRROR, not an estimate
 (boneyard_budget.py's contract): `author_flatline_assets.py` imports it, so the arena's PhaseThresholds come from the
-same numbers that build the arena. It is exact because the C# was written to make it exact:
+same numbers that build the arena. The arena is an OPEN field of thin-paned structures scattered through the cell
+(Shombith, 2026-11-09: "scattered or open designed where we can go inside"): loose panes, tunnels and windowed cages.
 
-  * which tiles a pane has is decided on the INTEGER grid (a tile is in when a*a + b*b <= R*R), so the per-pane count
-    is integer arithmetic;
-  * the only float comparison that can move a count is the seam test (a later pane leaves a slot round an earlier
-    pane's plane), computed here in float32 in the C#'s order (numpy float32 scalars);
-  * there is no random draw: the holes are `Hash01` of the grid cell, ported verbatim.
+It is exact because the C# was written to make it exact:
+  * which tiles a structure has is decided by integers only (its half-size, the grid indices, the hole hash), so the
+    tile count is exact as long as every structure is PLACED - and this file reports any structure it could not place
+    (the generator fails on it; the C# tests assert the same counts);
+  * placement draws are `Hash01` of integer keys, ported verbatim, and the float maths runs in float32 in the C#'s order
+    (each Mathf call as the double function cast to float), so the positions agree too.
 
-A change to any constant, the basis rule, the normals, the seam test, the hole hash or the build order in
-FlatlinePanes.cs must land here too; `author_flatline_assets.py --check` fails when the C# constants move, and
-`FlatlineTests` assert the C# counts this file prints.
+A change to any constant, the basis rule, the placement rule, the wall rule or the hole hash in FlatlinePanes.cs must
+land here too; `author_flatline_assets.py --check` fails when the C# constants move.
 
     python3 Tools/Build/flatline_budget.py            # the table that belongs in FLATLINE.md
     python3 Tools/Build/flatline_budget.py --sites    # plus each rung's crystal sites
@@ -33,30 +34,37 @@ f32 = np.float32
 TILE = 10.0
 THICKNESS = 2.0
 FLUSH = 0.995
-SEAM_HALF_WIDTH = 8.5
-SEAM_REACH_MARGIN = TILE
+GAP = 40.0
+MAX_ATTEMPTS = 64
+CRYSTAL_OFFSET = 25.0
+WINDOW_HALF = 1
 HOLE_SALT = 5
+KEY_SEED, KEY_STRUCTURE, KEY_ATTEMPT = 104729, 1031, 7
 
-THREE_PLANES, FIVE_PAGES, ICOSA_PANES, PANE_GEODE = 0, 1, 2, 3
+PANE, TUNNEL, CAGE = 0, 1, 2
 PLAIN, DANGER, SHIELDED, SUPER = 0, 1, 2, 3
 
 # ── The ladder (the generator authors these onto the four prefabs) ────────────
-# (arrangement, pane radius in tiles, offset, rib every, danger rim tiles, hole share, hole cell, crystals, spacing)
 RUNGS = [
-    dict(i=1, label="Three Planes", arrangement=THREE_PLANES, radiusTiles=23, offset=0.0, ribEvery=6,
-         dangerRimTiles=0, holeShare=0.0, holeCellTiles=4, crystalCount=6, crystalSpacing=110.0,
-         blurb="three panes on the three axes, eight open rooms between them, six crystals on the seams"),
-    dict(i=2, label="Five Pages", arrangement=FIVE_PAGES, radiusTiles=24, offset=0.0, ribEvery=6,
-         dangerRimTiles=0, holeShare=0.0, holeCellTiles=4, crystalCount=5, crystalSpacing=60.0,
-         blurb="five panes round one spine like the pages of a book, ten narrow rooms, five crystals up the spine"),
-    dict(i=3, label="Icosa Panes", arrangement=ICOSA_PANES, radiusTiles=21, offset=0.0, ribEvery=6,
-         dangerRimTiles=2, holeShare=0.0, holeCellTiles=4, crystalCount=6, crystalSpacing=110.0,
-         blurb="six panes on the icosahedral axes crossing at every angle, danger on every rim, six crystals on "
-               "six of the fifteen seams"),
-    dict(i=4, label="Pane Geode", arrangement=PANE_GEODE, radiusTiles=15, offset=150.0, ribEvery=5,
-         dangerRimTiles=2, holeShare=0.25, holeCellTiles=4, crystalCount=4, crystalSpacing=0.0,
-         blurb="ten panes standing off the centre as a hollow shell with two open faces and holes punched "
-               "through, danger on every rim, four crystals in the cracks"),
+    dict(i=1, label="Scattered Panes", seed=8401, innerRadius=80.0, outerRadius=400.0,
+         paneCount=24, paneHalfMin=3, paneHalfMax=4, tunnelCount=0, cageCount=0, roomHalf=4,
+         ribEvery=4, dangerPaneEvery=0, dangerRoomEvery=0, holeShare=0.0, holeCellTiles=2, crystalCount=6,
+         blurb="twenty-four loose panes scattered through open space, room to fly round every one, six crystals "
+               "floating in front of panes"),
+    dict(i=2, label="Tunnels", seed=8402, innerRadius=80.0, outerRadius=420.0,
+         paneCount=20, paneHalfMin=3, paneHalfMax=4, tunnelCount=5, cageCount=0, roomHalf=4,
+         ribEvery=4, dangerPaneEvery=0, dangerRoomEvery=0, holeShare=0.0, holeCellTiles=2, crystalCount=6,
+         blurb="twenty loose panes and five open-ended tunnels to fly through, a crystal inside every tunnel"),
+    dict(i=3, label="Cages", seed=8403, innerRadius=80.0, outerRadius=440.0,
+         paneCount=18, paneHalfMin=3, paneHalfMax=4, tunnelCount=4, cageCount=4, roomHalf=4,
+         ribEvery=4, dangerPaneEvery=3, dangerRoomEvery=0, holeShare=0.0, holeCellTiles=2, crystalCount=6,
+         blurb="four windowed cages to fly into, four tunnels and eighteen panes, danger rims on every third pane, "
+               "the crystals inside the rooms"),
+    dict(i=4, label="Maze", seed=8404, innerRadius=60.0, outerRadius=460.0,
+         paneCount=22, paneHalfMin=2, paneHalfMax=4, tunnelCount=4, cageCount=6, roomHalf=4,
+         ribEvery=4, dangerPaneEvery=2, dangerRoomEvery=3, holeShare=0.2, holeCellTiles=2, crystalCount=5,
+         blurb="six cages, four tunnels and twenty-two holed panes, danger on every other pane and every third room, "
+               "five crystals deep inside the rooms"),
 ]
 
 
@@ -68,7 +76,13 @@ def hash01(n):
     h ^= h >> 4
     h = (h * 0x27D4EB2D) & 0xFFFFFFFF
     h ^= h >> 15
-    return float(f32(h & 0xFFFFFF) / f32(0x1000000))
+    return f32(f32(h & 0xFFFFFF) / f32(0x1000000))
+
+
+def i32(x):
+    """C# int arithmetic wraps at 32 bits."""
+    x &= 0xFFFFFFFF
+    return x - (1 << 32) if x >= 1 << 31 else x
 
 
 def v3(x, y, z):
@@ -76,7 +90,6 @@ def v3(x, y, z):
 
 
 def dot(a, b):
-    # Unity: a.x*b.x + a.y*b.y + a.z*b.z, left to right, in float32.
     return f32(f32(f32(a[0] * b[0]) + f32(a[1] * b[1])) + f32(a[2] * b[2]))
 
 
@@ -86,154 +99,147 @@ def cross(a, b):
 
 
 def normalized(a):
-    # Unity's Vector3.normalized: divide by the magnitude when it exceeds 1e-5.
     m = f32(math.sqrt(float(dot(a, a))))
     return (a / m).astype(np.float32) if m > f32(1e-5) else v3(0, 0, 0)
-
-
-def normals(arrangement):
-    if arrangement == THREE_PLANES:
-        return [v3(1, 0, 0), v3(0, 1, 0), v3(0, 0, 1)]
-    if arrangement == FIVE_PAGES:
-        out = []
-        for k in range(5):
-            a = f32(f32(math.pi) * f32(k) / f32(5))
-            out.append(v3(math.cos(a), 0, math.sin(a)))
-        return out
-    phi = f32((f32(1) + f32(math.sqrt(5.0))) * f32(0.5))
-    out = [normalized(v3(0, 1, phi)), normalized(v3(0, 1, -phi)), normalized(v3(1, phi, 0)),
-           normalized(v3(1, -phi, 0)), normalized(v3(phi, 0, 1)), normalized(v3(phi, 0, -1))]
-    if arrangement == PANE_GEODE:
-        out += [(-out[k]).astype(np.float32) for k in range(4)]
-    return out
 
 
 def basis(n):
     t = v3(1, 0, 0) if abs(float(n[0])) < 0.9 else v3(0, 1, 0)
     u = normalized(cross(n, t))
-    w = cross(n, u)
-    return u, w
+    return u, cross(n, u)
 
 
-def panes(arrangement, radius_tiles, offset):
-    out = []
-    for n in normals(arrangement):
-        u, w = basis(n)
-        out.append(dict(n=n, c=(n * f32(offset)).astype(np.float32), u=u, w=w, rt=radius_tiles,
-                        r=f32(radius_tiles * TILE)))
-    return out
+def unit_from(h1, h2):
+    z = f32(f32(2) * h1 - f32(1))
+    ring = f32(math.sqrt(float(max(f32(0), f32(f32(1) - f32(z * z))))))
+    phi = f32(f32(f32(2) * f32(math.pi)) * h2)
+    return v3(f32(ring * f32(math.cos(float(phi)))), f32(ring * f32(math.sin(float(phi)))), z)
+
+
+def radius(kind, half):
+    if kind == PANE:
+        return f32(f32(f32(f32(half + 0.5) * f32(TILE)) * f32(1.4142135)) + f32(TILE))
+    return f32(f32(f32(f32(half + 1.0) * f32(TILE)) * f32(1.7320508)) + f32(TILE))
+
+
+def layout(r):
+    """[dict(kind, half, index, c, n, u, w, danger)] and the count it could not place."""
+    out, missed = [], 0
+    r0 = f32(f32(f32(r["innerRadius"]) * f32(r["innerRadius"])) * f32(r["innerRadius"]))
+    r1 = f32(f32(f32(r["outerRadius"]) * f32(r["outerRadius"])) * f32(r["outerRadius"]))
+    total = r["cageCount"] + r["tunnelCount"] + r["paneCount"]
+    span = max(1, r["paneHalfMax"] - r["paneHalfMin"] + 1)
+    for k in range(total):
+        if k < r["cageCount"]:
+            kind, half, local = CAGE, r["roomHalf"], k
+        elif k < r["cageCount"] + r["tunnelCount"]:
+            kind, half, local = TUNNEL, r["roomHalf"], k - r["cageCount"]
+        else:
+            local = k - r["cageCount"] - r["tunnelCount"]
+            kind, half = PANE, r["paneHalfMin"] + local % span
+        every = r["dangerPaneEvery"] if kind == PANE else r["dangerRoomEvery"]
+        danger = every > 0 and local % every == every - 1
+        rad = radius(kind, half)
+        placed = False
+        for t in range(MAX_ATTEMPTS):
+            key = i32(r["seed"] * KEY_SEED + k * KEY_STRUCTURE + t * KEY_ATTEMPT)
+            rr = f32(math.pow(float(f32(r0 + f32(hash01(key) * f32(r1 - r0)))), float(f32(1) / f32(3))))
+            c = (unit_from(hash01(key + 1), hash01(key + 2)) * rr).astype(np.float32)
+            n = unit_from(hash01(key + 3), hash01(key + 4))
+            ok = True
+            for o in out:
+                need = f32(f32(rad + o["r"]) + f32(GAP))
+                d = (o["c"] - c).astype(np.float32)
+                if dot(d, d) < f32(need * need):
+                    ok = False
+                    break
+            if not ok:
+                continue
+            u, w = basis(n)
+            out.append(dict(kind=kind, half=half, index=k, c=c, n=n, u=u, w=w, danger=danger, r=rad))
+            placed = True
+            break
+        if not placed:
+            missed += 1
+    return out, missed
 
 
 def floor_div(a, b):
-    return a // b   # Python floors, as FlatlinePanes.FloorDiv does
+    return a // b
 
 
-def in_seam(ps, j, p):
-    for i in range(j):
-        o = ps[i]
-        rel = (p - o["c"]).astype(np.float32)
-        dist = dot(rel, o["n"])
-        if abs(float(dist)) >= SEAM_HALF_WIDTH:
-            continue
-        in_plane = (rel - (o["n"] * dist).astype(np.float32)).astype(np.float32)
-        reach = f32(o["r"] + f32(SEAM_REACH_MARGIN))
-        if dot(in_plane, in_plane) < f32(reach * reach):
-            return True
-    return False
-
-
-def tiles(ps, danger_rim, rib_every, hole_share, hole_cell, keep=False):
-    """[(pane, a, b, kind, position)] in the C#'s order (pane, then a, then b)."""
+def wall(st, centre, normal, a, b, h, window, r, holes, keep):
     out = []
-    for j, pane in enumerate(ps):
-        r = pane["rt"]
-        inner2 = max(0, r - danger_rim) ** 2
-        for a in range(-r, r + 1):
-            for b in range(-r, r + 1):
-                d2 = a * a + b * b
-                if d2 > r * r:
-                    continue
-                p = (pane["c"] + (pane["u"] * f32(a * TILE)).astype(np.float32)).astype(np.float32)
-                p = (p + (pane["w"] * f32(b * TILE)).astype(np.float32)).astype(np.float32)
-                if in_seam(ps, j, p):
-                    continue
-                if danger_rim > 0 and d2 > inner2:
-                    kind = DANGER
-                elif rib_every > 0 and (a % rib_every == 0 or b % rib_every == 0):
-                    kind = SUPER
-                else:
-                    if hole_share > 0 and hole_cell > 0:
-                        cx, cy = floor_div(a, hole_cell), floor_div(b, hole_cell)
-                        if hash01(j * 7919 + cx * 131 + cy * 17 + HOLE_SALT) < f32(hole_share):
-                            continue
-                    kind = PLAIN
-                out.append((j, a, b, kind, p if keep else None))
+    for i in range(-h, h + 1):
+        for j in range(-h, h + 1):
+            if window and abs(i) <= WINDOW_HALF and abs(j) <= WINDOW_HALF:
+                continue
+            rim = abs(i) == h or abs(j) == h
+            if st["danger"] and rim:
+                kind = DANGER
+            elif r["ribEvery"] > 0 and ((math.fmod(i, r["ribEvery"]) == 0 and abs(i) < h)
+                                       or (math.fmod(j, r["ribEvery"]) == 0 and abs(j) < h)):
+                kind = SUPER
+            else:
+                if holes and r["holeShare"] > 0 and r["holeCellTiles"] > 0:
+                    cx, cy = floor_div(i, r["holeCellTiles"]), floor_div(j, r["holeCellTiles"])
+                    if hash01(i32(st["index"] * 7919 + cx * 131 + cy * 17 + HOLE_SALT)) < f32(r["holeShare"]):
+                        continue
+                kind = PLAIN
+            pos = None
+            if keep:
+                pos = (centre + (a * f32(i * TILE)).astype(np.float32) + (b * f32(j * TILE)).astype(np.float32))
+            out.append((st["index"], kind, pos, normal))
     return out
 
 
-def crystal_sites(ps, count, spacing):
-    points, dirs = [], []
-    for i in range(len(ps)):
-        for j in range(i + 1, len(ps)):
-            n1, n2 = ps[i]["n"], ps[j]["n"]
-            d = cross(n1, n2)
-            dd = dot(d, d)
-            if dd < f32(1e-6):
-                continue
-            h1, h2 = dot(n1, ps[i]["c"]), dot(n2, ps[j]["c"])
-            p0 = ((cross(n2, d) * h1 + cross(d, n1) * h2) / dd).astype(np.float32)
-            if np.linalg.norm(p0 - ps[i]["c"]) > ps[i]["r"] or np.linalg.norm(p0 - ps[j]["c"]) > ps[j]["r"]:
-                continue
-            dn = normalized(d)
-            seen = False
-            for k in range(len(dirs)):
-                if abs(float(dot(dirs[k], dn))) < 0.999:
-                    continue
-                off = p0 - points[k]
-                perp = off - dirs[k] * dot(off, dirs[k])
-                if float(dot(perp, perp)) < 1.0:
-                    seen = True
-                    break
-            if seen:
-                continue
-            points.append(p0)
-            dirs.append(dn)
-    sites = []
-    for k in range(count if points else 0):
-        line, step = k % len(points), k // len(points)
-        t = spacing * (step // 2 + 1) * (1.0 if step % 2 == 0 else -1.0)
-        sites.append(tuple(float(x) for x in points[line] + dirs[line] * f32(t)))
+def tiles(structs, r, keep=False):
+    out = []
+    for st in structs:
+        if st["kind"] == PANE:
+            out += wall(st, st["c"], st["n"], st["u"], st["w"], st["half"], False, r, True, keep)
+            continue
+        d = f32(f32(st["half"] + 0.5) * f32(TILE))
+        wh = st["half"] - 1
+        win = st["kind"] == CAGE
+        c, n, u, w = st["c"], st["n"], st["u"], st["w"]
+        faces = [((c + u * d), u, w, n), ((c - u * d), -u, w, n), ((c + w * d), w, n, u), ((c - w * d), -w, n, u)]
+        if win:
+            faces += [((c + n * d), n, u, w), ((c - n * d), -n, u, w)]
+        for centre, normal, a, b in faces:
+            out += wall(st, centre.astype(np.float32), normal, a, b, wh, win, r, False, keep)
+    return out
+
+
+def crystal_sites(structs, count):
+    sites = [tuple(float(x) for x in s["c"]) for s in structs if s["kind"] != PANE][:count]
+    for s in structs:
+        if len(sites) >= count:
+            break
+        if s["kind"] == PANE:
+            sites.append(tuple(float(x) for x in (s["c"] + s["n"] * f32(CRYSTAL_OFFSET))))
     return sites
-
-
-def rung_layout(r, keep=False):
-    ps = panes(r["arrangement"], r["radiusTiles"], r["offset"])
-    ts = tiles(ps, r["dangerRimTiles"], r["ribEvery"], r["holeShare"], r["holeCellTiles"], keep)
-    return ps, ts
 
 
 TILE_VOLUME = (TILE * FLUSH) ** 2 * THICKNESS
 
 
 def census(r):
-    _, ts = rung_layout(r)
-    kinds = [t[3] for t in ts]
+    structs, missed = layout(r)
+    ts = tiles(structs, r)
+    kinds = [t[1] for t in ts]
+    reach = max(float(np.linalg.norm(s["c"])) + float(s["r"]) for s in structs)
     return dict(total=len(ts), plain=kinds.count(PLAIN), danger=kinds.count(DANGER), super=kinds.count(SUPER),
-                volume=len(ts) * TILE_VOLUME)
-
-
-def extent(r):
-    """The farthest any tile reaches from the centre (u)."""
-    return math.hypot(r["offset"], r["radiusTiles"] * TILE + TILE)
+                volume=len(ts) * TILE_VOLUME, structures=len(structs), missed=missed, reach=reach)
 
 
 if __name__ == "__main__":
-    print(f"{'rung':16} {'total':>7} {'plain':>7} {'danger':>7} {'super':>7} {'volume':>10} {'extent':>7}")
+    print(f"{'rung':18} {'total':>6} {'plain':>6} {'danger':>6} {'super':>6} {'placed':>7} {'missed':>6} {'reach':>6}")
     for r in RUNGS:
         c = census(r)
-        print(f"I{r['i']} {r['label']:13} {c['total']:7,} {c['plain']:7,} {c['danger']:7,} {c['super']:7,} "
-              f"{c['volume']:10,.0f} {extent(r):7.0f}")
+        print(f"I{r['i']} {r['label']:15} {c['total']:6,} {c['plain']:6,} {c['danger']:6,} {c['super']:6,} "
+              f"{c['structures']:7} {c['missed']:6} {c['reach']:6.0f}")
         if "--sites" in sys.argv:
-            ps = panes(r["arrangement"], r["radiusTiles"], r["offset"])
-            for s in crystal_sites(ps, r["crystalCount"], r["crystalSpacing"]):
+            structs, _ = layout(r)
+            for s in crystal_sites(structs, r["crystalCount"]):
                 print(f"     site ({s[0]:.2f}, {s[1]:.2f}, {s[2]:.2f})")

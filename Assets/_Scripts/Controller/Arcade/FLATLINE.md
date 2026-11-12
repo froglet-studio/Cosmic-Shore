@@ -1,9 +1,15 @@
 # Flatline (`GameModes.Flatline = 84`)
 
-The Brittle Star's **CHARGE** game: a duel through thin **panes** of prisms. Picked by Shombith on 2026-11-09 from
-three drawn ideas (Saber Ring, Flatline, Tangle), with the rule "only the bullets and chords should score points".
+The Brittle Star's **CHARGE** game: a duel through an **open field** of thin-paned structures scattered through the
+cell: loose panes, tunnels to fly through and windowed cages to fly into. Picked by Shombith on 2026-11-09 from three
+drawn ideas (Saber Ring, Flatline, Tangle), with the rule "only the bullets and chords should score points".
 
-> **Status.** Authored headless on 2026-11-09 (`claude/great-rubin-rur3xs`). The arena's C# geometry was compiled
+**Redesigned 2026-11-10** (Shombith, on the first build of crossing planes: "These shapes should be scattered or open
+designed where we can go inside and more, right now brittlestar game is not fun, also make the score to win at 90").
+The four crossing-plane arenas (Three Planes, Five Pages, Icosa Panes, Pane Geode) were replaced by the scattered
+field below, and the target became 90 at every intensity.
+
+> **Status.** Authored headless on 2026-11-09, re-laid as the open field on 2026-11-10 (`claude/great-rubin-rur3xs`). The arena's C# geometry was compiled
 > and RUN outside the editor and matches its Python twin prism for prism. **Not run in the Unity editor; nobody has
 > flown it.** The hand tests are in `Docs/UNITY_VERIFICATION_CHECKLIST.md` § Flatline.
 
@@ -17,11 +23,11 @@ Nothing about the Brittle Star changes (the LOCKED vessel rule). Every pane has 
 | **Rounds** (one turret, or Space Mode's five; the Sparrow's round, stopped by the first prism) | A pane is **cover**: a pilot behind one cannot be shot. |
 | **Cords** (Charge Mode; 120 u whips, 80 u sabers while RT is held; they slice every prism they sweep) | A pane is **no cover at all**: the cords reach through it and strike the pilot hiding behind it. |
 | **The ring** (LT with a spare; flies ~264 u, bursts in a flat disk across its own line of flight: 400 u across here, because the cell has no nucleus and `BrittleStarExecutor.NucleusRadiusAt` falls back to `ringBlastFallbackRadius` 200) | A ring thrown **face-on** into a pane bursts on contact, flat along the pane: it erases the pane's plain tiles within 200 u of the burst and catches whoever hugs it there. The tell is the spinning ring coming at you; the answer is to **get off the pane's plane**. |
-| **Crystals** (every crystal list on the hull's impactor adds one spare ring, up to two) | Crystals sit on the **seams** where panes cross: the places a ring thrown along either pane reaches. Re-arming is the risk. |
+| **Crystals** (every crystal list on the hull's impactor adds one spare ring, up to two) | Crystals float **inside the rooms** first (a tunnel's bore, a cage's middle), then in front of loose panes. Re-arming means flying in, where the cords reach through the walls. |
 
-**Ribs.** Every Nth grid line of every pane is **super-shielded** (nothing breaks it). The plain tiles between the ribs
-are what cords and rings wear away, so a pane the match has worked over becomes a lattice that still reads as a plane,
-not nothing. Danger rims (I3, I4) cost a sloppy pass.
+**Ribs.** Every 4th interior grid line of every wall is **super-shielded** (nothing breaks it). The plain tiles between
+the ribs are what cords and rings wear away, so a wall the match has worked over becomes a lattice that still reads as
+a plane, not nothing. Danger rims (I3, I4) cost a sloppy pass.
 
 ## Scoring (`FlatlineScoringRuleSO`)
 
@@ -40,61 +46,51 @@ nothing here. The generator fails if the fleet price, the round's class or the c
 
 The results column shows each pilot's `{strikes} strikes, {rounds} rounds` (authored template).
 
-## The targets, per intensity (`EndConditionOverridesSO.flatlinePointTargetByIntensity`)
+## The target (`EndConditionOverridesSO.flatlinePointTargetByIntensity`)
 
-| Intensity | I1 Three Planes | I2 Five Pages | I3 Icosa Panes | I4 Pane Geode |
-|---|---|---|---|---|
-| Points to win | **180** | **200** | **220** | **240** |
+**90 points to win at every intensity** (Shombith, 2026-11-10: "make the score to win at 90"). About eleven cord
+strikes, or ninety rounds, or any mix. Scalar fallback 90 (`DefaultFlatlinePointTarget`); the per-intensity list
+stays (Cleave's shape, all four rungs 90) so one rung can be re-tuned on its own in FrogletTools > Game Modes > End
+Game Conditions once timed matches say so. Resolved on the server by `FlatlinePointTurnMonitor` and replicated.
 
-Scalar fallback 200 (`DefaultFlatlinePointTarget`); a rung at 0 falls back to it (Cleave's chain). Resolved on the
-server by `FlatlinePointTurnMonitor` and replicated.
-
-**These are estimates, aimed at a 1v1 near four minutes** (a 2v2 domain sums two pilots and runs about half that).
-The model, per pilot: points/s = engaged share × ((1 − cord share) × line-of-sight share × 3 rounds/s + cord share ×
-one Strike per 3 s pass × 8):
-
-| | engaged | cord share | line of sight | points/min | × 4 min |
-|---|---|---|---|---|---|
-| I1 | 0.35 | 0.25 | 0.70 | ~47 | ~190 |
-| I2 | 0.45 | 0.35 | 0.55 | ~54 | ~215 |
-| I3 | 0.50 | 0.45 | 0.45 | ~59 | ~235 |
-| I4 | 0.55 | 0.55 | 0.35 | ~65 | ~260 |
-
-Denser panes put more of each fight inside cord reach, where a Strike pays eight rounds, so points come faster up the
-ladder and the target rises with it (rounded down to 180 / 200 / 220 / 240). Every input above is a guess until the
-per-attacker petal ledger (`SILENCE.md` §6) measures a real match; re-tune in FrogletTools > Game Modes > End Game
-Conditions after the first timed matches (checklist).
-
-**Comeback** rate **0.03**: a quarter of the smallest target behind (45 points) buys 1.35 element levels, a quarter
-of the largest (60) 1.8.
+**Comeback** rate **0.05**: a quarter of the target behind (22.5 points, about three strikes) buys 1.125 element
+levels.
 
 ## The ladder (`SpawnableFlatline`, `FlatlinePanes`, census `Tools/Build/flatline_budget.py`)
 
 A tile is 10 × 10 × 2 u, laid a hair under its cell. All tiles neutral (Blue). Standard 1,200 u membrane, no nucleus,
-no flora, no fauna. Spawn ring 420 u (every pane reaches 240 u at most), facing the centre.
+no flora, no fauna. Spawn ring 680 u (every structure reaches 549 u at most), facing the centre.
 
-| Rung | Panes | Radius | Ribs | Danger | Holes | Crystals | Prisms (plain / danger / super) |
-|---|---|---|---|---|---|---|---|
-| I1 Three Planes | 3, on the axes: eight open rooms | 230 u | every 6th line | none | none | 6, ±110 u on the 3 seams | 4,819 (3,456 / 0 / 1,363) |
-| I2 Five Pages | 5 round the y spine, 36° apart: ten narrow rooms | 240 u | every 6th | none | none | 5 up the spine, 60 u apart | 8,393 (6,000 / 0 / 2,393) |
-| I3 Icosa Panes | 6, normals on the icosahedral axes, crossing at every angle | 210 u | every 6th | 2 outer rings | none | 6 on 6 of the 15 seams, 110 u out | 7,217 (4,032 / 1,372 / 1,813) |
-| I4 Pane Geode | 10, standing 150 u off the centre: a hollow shell with two open faces | 150 u | every 5th | 2 outer rings | 25% of 4×4 cells | 4 in the cracks (~176 u out) | 5,440 (2,162 / 1,568 / 1,710) |
+Three kinds of structure, each with its own frame (an axis and two across it):
+- **Loose pane**: one square plate, (2h+1)² tiles. Cover from rounds, no cover from cords.
+- **Tunnel**: four walls of a hollow cube, open at both ends: fly through it. Room half-size 4 tiles, walls half a tile
+  beyond it, so the bore is 80 u clear.
+- **Cage**: six walls, each with a 3 × 3 tile **window** in the middle: fly into it from any side.
 
-**Flush.** Where two panes cross, the later pane leaves a slot 8.5 u either side of the earlier pane's plane (a tile
-reaches at most 7.14 u along any direction, plus the earlier tile's 1 u half-thickness). `FlatlineTests` checks every
-nearby cross-pane pair is separated along a normal; `Seams_CarveTheLaterPanes` is its negative control.
+**Open by construction.** Structures are placed rooms first (cages, then tunnels), then panes. Each takes the first of
+up to 64 hashed draws whose bounding sphere clears every earlier one by **`Gap` 40 u**, spread evenly by volume through
+the shell between the inner and outer radius. So no two structures touch or interpenetrate, there is always a way
+round, and nothing needs the old seam carving. The generator fails if any structure finds no room
+(`FlatlineTests.Field_IsOpen_EveryStructurePlacedWithAGapRoundIt` checks the same on the C#).
 
-**Exact twin.** `flatline_budget.py` mirrors `FlatlinePanes.cs`: the per-pane tile set is integer arithmetic, the seam
-test runs in float32 in the C#'s order, the holes are `Hash01` of the grid cell. Measured 2026-11-09: the C# compiled
-against the card-art Unity shim and run, and the twin, agree on every count and every crystal site on all four rungs.
-The generator imports the twin for PhaseThresholds and asserts the C# constants it counts; `FlatlineTests` pins the
-C# census.
+| Rung | Field | Structures | Danger | Holes | Crystals | Prisms (plain / danger / super) |
+|---|---|---|---|---|---|---|
+| I1 Scattered Panes | 80-400 u | 24 loose panes (half 3-4) | none | none | 6, in front of panes | 1,560 (1,200 / 0 / 360) |
+| I2 Tunnels | 80-420 u | 5 tunnels, 20 panes | none | none | 6: one in every tunnel, one at a pane | 2,280 (1,720 / 0 / 560) |
+| I3 Cages | 80-440 u | 4 cages, 4 tunnels, 18 panes | rims of every 3rd pane | none | 6, all inside rooms | 2,914 (2,100 / 168 / 646) |
+| I4 Maze | 60-460 u | 6 cages, 4 tunnels, 22 panes (half 2-4) | every 2nd pane, every 3rd room | 20% of 2×2 cells on panes | 5, all inside rooms | 3,194 (1,884 / 640 / 670) |
+
+**Exact twin.** `flatline_budget.py` mirrors `FlatlinePanes.cs` in float32 in the C#'s order (the placement hashes,
+the cube-root radius, the sphere test, the frame rule, the wall rule, the hole hash). Measured 2026-11-10: the C#
+compiled against the card-art Unity shim and run, and the twin, agree on every count, every placement and every
+crystal site on all four rungs. The generator imports the twin for PhaseThresholds and asserts the C# constants it
+counts; `FlatlineTests` pins the C# census. `audit_prism_clipping.py SpawnableFlatline`: 0 clipping.
 
 ## AI (`FlatlineHunter`, server-only)
 
 The Brittle Star already flies its own weapons with the replicated controls a human presses
 (`BrittleStarExecutor.Autopilot`): it holds RT when a rival hull is on the nose, takes Charge Mode against a dense wall
-inside cord reach (a pane is one), Space Mode against one further out, and throws its ring into a big cluster. The
+inside cord reach (a wall is one), Space Mode against one further out, and throws its ring into a big cluster. The
 hunter therefore only **steers** (`AIPilot.SetExternalTargetProvider`), and never presses:
 
 - no spare ring and a crystal within `aiCrystalDetourRange` → that crystal;
@@ -106,13 +102,13 @@ lead 0 / 0.25 / 0.5 / 0.75 s, crystal detour 120 / 180 / 260 / 340 u; humans cou
 
 **Known limits.** The hunter does not dodge a ring (it cannot see one in flight without reading the executor's
 private state), and the executor picks Charge Mode from prism density, not from a rival in reach, so most AI Strikes
-will come from fights near panes. Both are AI-side follow-ups that need no vessel change.
+will come from fights near walls. Both are AI-side follow-ups that need no vessel change.
 
 ## Files
 
 | Role | Path |
 |---|---|
-| Controller | `Arcade/Flatline/FlatlineController.cs` (sibling of `SerpentHoodController`, Hood, formerly Serpent Gulag; the crystal field on the seams) |
+| Controller | `Arcade/Flatline/FlatlineController.cs` (sibling of `SerpentHoodController`, Hood, formerly Serpent Gulag; the crystal field inside the rooms) |
 | Rule / monitor / settings / AI | `FlatlineScoringRuleSO.cs`, `TurnMonitors/FlatlinePointTurnMonitor.cs`, `FlatlineSettingsSO.cs`, `FlatlineHunter.cs` |
 | Arena | `Environment/MiniGameObjects/SpawnableFlatline.cs`, `FlatlinePanes.cs` (pure) |
 | Census twin | `Tools/Build/flatline_budget.py` |

@@ -57,7 +57,8 @@ namespace CosmicShore.ScriptableObjects
         [Header("Chip presentation")]
         [Tooltip("Colour of a glyph at rest.")]
         [SerializeField] Color restColor = new(0.65f, 0.65f, 0.7f, 1f);
-        public Color RestColor => restColor;
+        /// <summary>The rest colour as the worn colour set paints it (ColorTrace); the field keeps the authored one.</summary>
+        public Color RestColor => ColorTrace.Retrace(ColorTrace.Ui, restColor);
         [Tooltip("Colour while the control is held.")]
         [SerializeField] Color heldColor = Color.white;
         public Color HeldColor => heldColor;

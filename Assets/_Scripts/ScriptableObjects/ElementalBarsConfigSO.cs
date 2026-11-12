@@ -63,18 +63,18 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Element tick colours (per-petal value)")]
         [SerializeField, Tooltip("-1 : fire")] Color fireColor  = new(1f,    0.33f, 0.10f, 1f);
-        public Color FireColor => fireColor;
+        public Color FireColor => ColorTrace.Retrace(ColorTrace.Ui, fireColor);
         [SerializeField, Tooltip(" 0 : grey")] Color greyColor  = new(0.51f, 0.51f, 0.54f, 1f);
-        public Color GreyColor => greyColor;
+        public Color GreyColor => ColorTrace.Retrace(ColorTrace.Ui, greyColor);
         [SerializeField, Tooltip(" 1 : white")] Color whiteColor = new(0.96f, 0.96f, 1f,    1f);
-        public Color WhiteColor => whiteColor;
+        public Color WhiteColor => ColorTrace.Retrace(ColorTrace.Ui, whiteColor);
         [SerializeField, Tooltip(" 2 : blue")] Color blueColor  = new(0.22f, 0.51f, 1f,    1f);
-        public Color BlueColor => blueColor;
+        public Color BlueColor => ColorTrace.Retrace(ColorTrace.Ui, blueColor);
         [SerializeField, Tooltip(" 3 : lime")] Color limeColor  = new(0.59f, 0.92f, 0.16f, 1f);
-        public Color LimeColor => limeColor;
+        public Color LimeColor => ColorTrace.Retrace(ColorTrace.Ui, limeColor);
         [Tooltip("Flash colour on a petal that downgrades, before it settles to its tick colour.")]
         [SerializeField] Color debuffFlashColor = new(1f, 0.2f, 0.2f, 1f);
-        public Color DebuffFlashColor => debuffFlashColor;
+        public Color DebuffFlashColor => ColorTrace.Retrace(ColorTrace.Ui, debuffFlashColor);
 
         [Header("Juice - petal transitions")]
         [SerializeField] float buffPopScale        = 1.3f;
@@ -106,7 +106,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Juice - joust")]
         [SerializeField] Color joustFlashColor = Color.red;
-        public Color JoustFlashColor => joustFlashColor;
+        public Color JoustFlashColor => ColorTrace.Retrace(ColorTrace.Ui, joustFlashColor);
 
         [Header("Juice - drift")]
         [SerializeField] float driftRotationAngle    = 15f;
@@ -114,7 +114,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] float driftRotationDuration = 0.2f;
         public float DriftRotationDuration => driftRotationDuration;
         [SerializeField] Color driftTintColor        = new(0.7f, 0.9f, 1f, 1f);
-        public Color DriftTintColor => driftTintColor;
+        public Color DriftTintColor => ColorTrace.Retrace(ColorTrace.Ui, driftTintColor);
         [SerializeField] Sprite doubleDriftSprite;
         public Sprite DoubleDriftSprite => doubleDriftSprite;
 
@@ -127,14 +127,14 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Highest element level - all petals lime.</summary>
         public const int MaxLevel = PetalCount * 3;
 
-        /// <summary>Maps a per-tick value {-1..3} to its spec colour.</summary>
+        /// <summary>Maps a per-tick value {-1..3} to its spec colour, as the worn colour set paints it.</summary>
         public Color ColorForTick(int v) => v switch
         {
-            <= -1 => fireColor,
-            0     => greyColor,
-            1     => whiteColor,
-            2     => blueColor,
-            _     => limeColor, // >= 3
+            <= -1 => FireColor,
+            0     => GreyColor,
+            1     => WhiteColor,
+            2     => BlueColor,
+            _     => LimeColor, // >= 3
         };
 
         /// <summary>Returns the petal sprite for an element, or null if none is configured.</summary>

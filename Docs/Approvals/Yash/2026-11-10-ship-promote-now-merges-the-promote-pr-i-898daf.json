@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-10-ship-promote-now-merges-the-promote-pr-i-898daf",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-10T15:50:39+00:00",
+  "area": "/ship promote (was /to-bleeding-edge)",
+  "summary": "/ship promote now merges the promote PR into bleeding-edge itself on a GO, instead of leaving the merge to a person.",
+  "why": "Garrett, 2026-11-10: ship merges automatically; batch-test on bleeding-edge.",
+  "branch": "cece/great-goodall-raz7gj",
+  "commit": "5525371c3",
+  "paths": [
+    ".claude/skills/ship/SKILL.md",
+    ".claude/skills/to-bleeding-edge/SKILL.md"
+  ]
+}

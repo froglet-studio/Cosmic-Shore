@@ -1929,10 +1929,13 @@ namespace CosmicShore.Gameplay
             _cam.clearFlags = CameraClearFlags.Skybox; _cam.orthographic = false; _cam.nearClipPlane = 0.5f; _cam.farClipPlane = 6000f;
             _torus = BuildRingMesh(VortexRing.Tube, 24, 6);
             // the lock is a lit, faceted volume (nothing in the world looks flat); the vortex ring is no mesh at all but a
-            // toroidal warp of what lies behind it (VortexRingLens, Garrett 2026-10-24: "loose the flat effect")
-            _lockMat = Lit(new Color32(255, 92, 108, 255), new Color32(80, 16, 22, 255), 0.5f);
+            // toroidal warp of what lies behind it (VortexRingLens, Garrett 2026-10-24: "loose the flat effect"). Both
+            // materials are born in the worn colour set; a set worn later repaints them in place (WorldColorTrace).
+            _lockMat = Lit(ColorTrace.Retrace(ColorTrace.World, new Color32(255, 92, 108, 255)),
+                           ColorTrace.Retrace(ColorTrace.World, new Color32(80, 16, 22, 255)), 0.5f);
             // the dart's reach while it charges: where the Goby will stop (Perch Run, 2026-11-07)
-            _reachMat = Lit(new Color32(214, 240, 255, 255), new Color32(40, 64, 80, 255), 0.6f);
+            _reachMat = Lit(ColorTrace.Retrace(ColorTrace.World, new Color32(214, 240, 255, 255)),
+                            ColorTrace.Retrace(ColorTrace.World, new Color32(40, 64, 80, 255)), 0.6f);
             BuildBody();
             _render = new CrewViewRender(_cam, RenderLook);
             TwoDCameraSky.Register(_cam);   // a 2D camera: no sky cell net glued to the side view (TwoDCameraSky)

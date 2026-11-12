@@ -40,7 +40,8 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("One line under the name. Empty shows nothing.")]
             [TextArea] public string line;
             [Tooltip("Whether a player may pick it. Every set is unlocked for now (Shombith, 2026-11-05); quests " +
-                     "will give sets once they are planned.")]
+                     "will give sets once they are planned. A set made for a vision is always free, whatever this " +
+                     "says: it is accessibility (Shombith, 2026-11-09; IsPickable).")]
             public bool unlocked = true;
             [Tooltip("Jade, Ruby, Gold, Blue: each domain's rim over its face, as the Profile names them (\"Mint over " +
                      "Bronze\"). Empty shows nothing for that domain.")]
@@ -54,6 +55,14 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] private Entry[] entries = Array.Empty<Entry>();
 
         public int Count => entries?.Length ?? 0;
+
+        /// <summary>
+        /// Whether a player may wear <paramref name="entry"/>: it names a palette and is unlocked, or it is made for a
+        /// vision (colour blindness, low vision, Contrast), which is always free because it is accessibility
+        /// (Shombith, 2026-11-09). A question, never an error.
+        /// </summary>
+        public static bool IsPickable(Entry entry) =>
+            entry != null && entry.colorSet && (entry.unlocked || entry.vision != ColourVision.None);
 
         /// <summary>The pigment words for domain <paramref name="domainIndex"/> (Jade 0 .. Blue 3), or empty.</summary>
         public static string Pigment(Entry entry, int domainIndex) =>
@@ -88,7 +97,7 @@ namespace CosmicShore.ScriptableObjects
         {
             if (entries == null) return -1;
             for (int i = 0; i < entries.Length; i++)
-                if (entries[i] != null && entries[i].vision != ColourVision.None && entries[i].unlocked && entries[i].colorSet)
+                if (entries[i] != null && entries[i].vision != ColourVision.None && IsPickable(entries[i]))
                     return i;
             return -1;
         }

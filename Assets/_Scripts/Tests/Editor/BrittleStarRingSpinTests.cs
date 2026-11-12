@@ -3,7 +3,9 @@ using System.IO;
 using System.Text.RegularExpressions;
 using CosmicShore.Gameplay;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CosmicShore.Tests
 {
@@ -17,6 +19,8 @@ namespace CosmicShore.Tests
     /// <item>The motion smear's copies (<see cref="BrittleStarRules.SmearCopies"/>, <see cref="BrittleStarRules.SmearCopyBack"/>)
     /// and its shader: an AVERAGE, weights summing to one, blended premultiplied, so it adds no brightness.</item>
     /// <item>The shipped config: the lab's pick (ringTurnRate 1080) and the smear shader wired.</item>
+    /// <item>The smear's ring layer can draw every material the hull wears (2026-11-10: it drew none, so the ring vanished
+    /// while it turned).</item>
     /// </list>
     /// The numbers were measured first on a line-for-line JavaScript copy of these rules against the lab.
     /// </summary>
@@ -188,6 +192,50 @@ namespace CosmicShore.Tests
             string guid = Regex.Match(meta, @"guid: ([0-9a-f]{32})").Groups[1].Value;
             StringAssert.Contains($"ringSmearShader: {{fileID: 4800000, guid: {guid}, type: 3}}", config,
                                   "the smear shader is wired (an empty field draws no smear)");
+        }
+
+        // ------------------------------------------------------------------ the smear's ring layer
+
+        /// <summary>The materials BrittleStar.fbx maps (Body, Domain, Engine, Window) and the domain ship material that
+        /// replaces the Domain placeholder at runtime (VesselCustomization).</summary>
+        static readonly string[] HullMaterials =
+        {
+            "Assets/_Graphics/Materials/BlueBaseVesselMaterial.mat",
+            "Assets/_Graphics/Materials/GreenAccentVesselMaterial.mat",
+            "Assets/_Graphics/Materials/GreenVesselMaterial.mat",
+            "Assets/_Graphics/Materials/EngineVesselMaterial.mat",
+            "Assets/_Graphics/Materials/ScreenVesselMaterial.mat",
+        };
+
+        [Test]
+        public void TheSmearLayer_FindsTheForwardPassOnEveryHullMaterial()
+        {
+            // The smear redraws the ring with the hull's own materials. They wear VesselGraph, an Unlit Shader Graph whose
+            // forward pass carries NO LightMode tag. A lookup by tag alone found no pass, the layer came out empty and the
+            // hidden ring vanished whenever it turned (Garrett, 2026-11-10: "too dark to see").
+            var lightMode = new ShaderTagId("LightMode");
+            foreach (var path in HullMaterials)
+            {
+                var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+                Assert.IsNotNull(material, $"{path} is missing");
+                int pass = BrittleStarRingSmearPass.ForwardPass(material);
+                Assert.GreaterOrEqual(pass, 0, $"{path} ({material.shader.name}): the ring layer has no pass to draw it with");
+                var mode = material.shader.FindPassTagValue(pass, lightMode);
+                Assert.IsTrue(mode == ShaderTagId.none || mode.name == "UniversalForward" || mode.name == "UniversalForwardOnly"
+                              || mode.name == "SRPDefaultUnlit",
+                              $"{path}: pass {pass} is tagged '{mode.name}', not one URP's forward renderer draws");
+            }
+        }
+
+        [Test]
+        public void TheSmearLayer_NeverDrawsWithAPassTaggedForSomethingElse()
+        {
+            // Negative control: the smear's own shader has one pass, tagged for the smear pass only. It is no forward pass.
+            var shader = AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
+            Assert.IsNotNull(shader, $"{ShaderPath} is missing");
+            var material = new Material(shader);
+            try { Assert.AreEqual(-1, BrittleStarRingSmearPass.ForwardPass(material)); }
+            finally { Object.DestroyImmediate(material); }
         }
     }
 }

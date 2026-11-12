@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rev 80 boards: the Voyage window, B Logbook taken further (Frogma tab "Voyages", Docs/MENU_REDESIGN_B.md section 160).
+"""Rev 80 boards: the Voyage window, B Logbook taken further (Frogma tab "Voyages", Docs/MENU_REDESIGN_B.md section 161).
 
 Shombith, 2026-11-09, on Rev 79: "B looks good make it better more mockus inspired from B". Every option keeps B's
 order - the voyages as a list on the left, the picked voyage's course in the middle, the squad on the right - and

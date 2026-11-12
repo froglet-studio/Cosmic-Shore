@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-The Voyages tab's look (Docs/MENU_REDESIGN_B.md sections 161-164: Rev 81 B5 with the Rev 83 S2 seat editor, picked by
+The Voyages tab's look (Docs/MENU_REDESIGN_B.md sections 162-165: Rev 81 B5 with the Rev 83 S2 seat editor, picked by
 Shombith on 2026-11-09). VoyageBoard builds the tab at runtime and reads its sprites, colours and proportions from ONE
 asset, Assets/Resources/VoyageBoardStyle.asset (VoyageBoardStyleSO); this writes it and its metas, and the metas of the
 two scripts.

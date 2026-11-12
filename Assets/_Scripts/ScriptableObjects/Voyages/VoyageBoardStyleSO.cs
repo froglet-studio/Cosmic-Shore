@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The look of the Voyages tab as Shombith picked it on Frogma (Docs/MENU_REDESIGN_B.md sections 161-164): Rev 81 B5's
+    /// The look of the Voyages tab as Shombith picked it on Frogma (Docs/MENU_REDESIGN_B.md sections 162-165): Rev 81 B5's
     /// three columns (the voyage list, the course, the right panel with the squad's three seat cards) and Rev 83 S2's seat
     /// editor (the "Hangar bay": the choice large on a lit floor, the options a list beside it). <c>VoyageBoard</c> builds
     /// the tab at runtime and reads every sprite, colour and proportion from here; its words are the voyage content's

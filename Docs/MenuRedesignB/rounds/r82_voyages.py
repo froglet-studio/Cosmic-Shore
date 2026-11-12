@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Rev 82 board: the picked B5, playable - how the squad is chosen and changed (Frogma tab "Voyages",
-Docs/MENU_REDESIGN_B.md section 162).
+Docs/MENU_REDESIGN_B.md section 163).
 
 Shombith, 2026-11-09: "B5 delete others and show me how the squad selection and changing works, create a live
 playable mockup". One board, the whole Voyage window as Rev 81 B5 drew it, with the squad live:

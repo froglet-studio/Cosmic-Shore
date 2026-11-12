@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Rev 83 boards: the seat editor of the picked B5, redrawn in the game's own look (Frogma tab "Voyages",
-Docs/MENU_REDESIGN_B.md section 163).
+Docs/MENU_REDESIGN_B.md section 164).
 
 Shombith, 2026-11-09, on Rev 82: "Bro it looks soooo bad the selection UI, make it modern sleek and with our cosmic
 shore UI, what even is this, mockups for this now". Rev 82's editor was a black box of outlined squares. These three

@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -62,6 +63,15 @@ namespace CosmicShore.Gameplay
             _renderer.receiveShadows = false;
 
             _renderer.enabled = false;
+        }
+
+        // The cone's colour follows the colour set the player wears (its material is made once, in Awake).
+        void OnEnable() => ColorTrace.Changed += Repaint;
+        void OnDisable() => ColorTrace.Changed -= Repaint;
+
+        void Repaint()
+        {
+            if (_material) Tint(_material);
         }
 
         /// <summary>Show the cone for an ability whose reach is <paramref name="range"/>.</summary>
@@ -168,14 +178,19 @@ namespace CosmicShore.Gameplay
             mat.DisableKeyword("_ALPHATEST_ON");
             mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
 
-            // Kept dim on purpose: the cone is a reach indicator drawn over live mass,
-            // and at full strength it washes out the prisms it is telling you about.
-            var c = CoreColor * 0.22f;
+            Tint(mat);
+            return mat;
+        }
+
+        // Kept dim on purpose: the cone is a reach indicator drawn over live mass,
+        // and at full strength it washes out the prisms it is telling you about.
+        // The core colour is the worn colour set's (ColorTrace) before it is dimmed.
+        static void Tint(Material mat)
+        {
+            var c = ColorTrace.Retrace(ColorTrace.World, CoreColor) * 0.22f;
             c.a = 1f;
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", c);
-
-            return mat;
         }
 
         void OnDestroy()

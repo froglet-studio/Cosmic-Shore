@@ -8,7 +8,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Voyages tab as the board (Rev 81 B5 with the Rev 83 S2 seat editor, Docs/MENU_REDESIGN_B.md section 164): its
+    /// The Voyages tab as the board (Rev 81 B5 with the Rev 83 S2 seat editor, Docs/MENU_REDESIGN_B.md section 165): its
     /// style asset is whole, its words are authored, and it builds and shows voyages with no squad book loaded.
     /// </summary>
     public class VoyageBoardTests

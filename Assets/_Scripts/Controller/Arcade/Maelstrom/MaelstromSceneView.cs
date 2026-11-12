@@ -922,10 +922,6 @@ namespace CosmicShore.Gameplay
         // ── Roster sourcing / ordering ───────────────────────────────────────────
 
         /// <summary>
-        /// The roster for the round-0 preview - the connected human players (every peer sees all
-        /// Player NetworkObjects via the spawn manager). Between rounds the cards come from History.
-        /// </summary>
-        /// <summary>
         /// Who is in this tournament: the live human pilots, plus the AI SEATS the hub dealt.
         ///
         /// <para>The seats have to be added by hand because the hub is not a match and spawns no

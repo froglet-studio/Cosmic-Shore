@@ -1896,11 +1896,11 @@ namespace CosmicShore.Gameplay
             _job.WantStarvationVictim = true;
         }
 
-        /// <summary>A plant this swarm may not be led to: dying, outside its band, in the nucleus, not its prey, or of no element.</summary>
         /// <summary>Would this swarm graze <paramref name="f"/> - the one edibility predicate its goal and its bites use
         /// (alive, in its band, outside the nucleus, prey for its domain, a real element). Tandava asks it of an oasis.</summary>
         public bool CanEat(Flora f) => f && HostCell && !NotFoodForMe(f);
 
+        /// <summary>A plant this swarm may not be led to: dying, outside its band, in the nucleus, not its prey, or of no element.</summary>
         bool NotFoodForMe(Flora f) =>
             f.IsDying || !IsInsideBand(f.HeartTransform.position) ||
             HostCell.IsInsideNucleus(f.HeartTransform.position) ||

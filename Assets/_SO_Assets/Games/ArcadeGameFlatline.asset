@@ -16,11 +16,11 @@ MonoBehaviour:
   IsMultiplayer: 1
   DisplayName: Flatline
   Description: 'Brittle Stars only - a duel through thin panes of prisms. A pane stops your rounds, but
-    your cords cut straight through it, so nobody is safe behind one. Throw your ring
-    face-on into a pane and it bursts flat along it - get off a pane when a ring comes
-    spinning at you. A round on a rival is one point and a cord strike is eight; the ring
-    scores nothing. Crystals on the seams give you spare rings. First team to the target
-    wins.'
+    your cords cut straight through it, so nobody is safe behind one. Fly round the loose
+    panes, through the tunnels and into the cages. Throw your ring face-on into a pane and
+    it bursts flat along it - get off a pane when a ring comes spinning at you. A round on a
+    rival is one point and a cord strike is eight; the ring scores nothing. Crystals inside
+    the rooms give you spare rings. First team to 90 wins.'
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 543b9f7634624276b7a624d47b5b5533, type: 3}
@@ -36,4 +36,4 @@ MonoBehaviour:
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.03
+  ComebackRatePerScoreDeficit: 0.05

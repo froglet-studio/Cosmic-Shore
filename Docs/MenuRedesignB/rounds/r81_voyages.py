@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Rev 81 boards: Rev 80 B1 with B3's seat cards and a livelier right panel (Frogma tab "Voyages",
-Docs/MENU_REDESIGN_B.md section 161).
+Docs/MENU_REDESIGN_B.md section 162).
 
 Shombith, 2026-11-09, on Rev 80: "I like b1 but I want that 3 card information still and the right panel looks a bit
 dull". Every option keeps B1's list and course as they are (the course a little narrower so the panel has room) and

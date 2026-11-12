@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_5_3_OR_NEWER
+using CosmicShore.ScriptableObjects;
+#endif
 
 namespace CosmicShore.Gameplay
 {
@@ -94,6 +97,10 @@ namespace CosmicShore.Gameplay
         readonly List<(float polar, Vector3 p, float deg, float size)> _spokes = new();
         readonly System.Random _rng = new(20261021);
         readonly bool _linear = QualitySettings.activeColorSpace == ColorSpace.Linear;
+        Color _ash = Ash, _gold = Gold;   // Ash and Gold in the worn colour set (RetraceTints)
+#if UNITY_5_3_OR_NEWER
+        int _tintVersion = -1;
+#endif
 
         // the meshes being built this frame: [0] the kite view, [1] the pilot view
         readonly List<Vector3>[] _v = { new(), new() };
@@ -138,6 +145,7 @@ namespace CosmicShore.Gameplay
         internal void Drain(List<KiteBurst> bursts, System.Action<KiteBurst> recycle, in KiteJuiceFrame frame, in KiteJuiceSettings settings)
         {
             _f = frame; _s = settings;
+            RetraceTints();
             _up = frame.Up; _right = frame.Right; _fwd = frame.Forward;
             for (int i = 0; i < bursts.Count; i++)
             {
@@ -313,7 +321,7 @@ namespace CosmicShore.Gameplay
                         {
                             Act = Act.Home, Shape = ShardShape, T0 = now, Delay = i * 0.025f, Life = 0.5f + 0.15f, Speed = Rand(0.4f, 0.55f),
                             P0 = b.World, Ctrl = b.World + side * (chord.magnitude * Rand(-0.6f, 0.6f)) + up * Rand(-4f, 4f),
-                            Angle = Rand(0f, 360f), Size = Rand(1.4f, 2.2f), Tint = Gold,
+                            Angle = Rand(0f, 360f), Size = Rand(1.4f, 2.2f), Tint = _gold,
                         });
                     }
                     break;
@@ -355,6 +363,7 @@ namespace CosmicShore.Gameplay
         internal void Build(in KiteJuiceFrame frame, in KiteJuiceSettings settings)
         {
             _f = frame; _s = settings;
+            RetraceTints();
             float now = frame.Now;
             for (int k = 0; k < 2; k++) { _v[k].Clear(); _c[k].Clear(); _t[k].Clear(); }
             _up = frame.Up; _right = frame.Right; _fwd = frame.Forward;
@@ -374,6 +383,19 @@ namespace CosmicShore.Gameplay
         }
 
         Color Element(int e) => _s.Elements != null && e < _s.Elements.Length ? _s.Elements[e] : White;
+
+        // Ash and Gold as the worn colour set paints them, looked up again only when a set is worn (ColorTrace.Version),
+        // not per bit. UNITY_5_3_OR_NEWER is defined in every Unity compile; the offline juice sheet
+        // (Tools/Build/kite_navigator_lab/juice_sheet.sh) compiles this file without Unity and draws the authored tints.
+        void RetraceTints()
+        {
+#if UNITY_5_3_OR_NEWER
+            if (_tintVersion == ColorTrace.Version) return;
+            _tintVersion = ColorTrace.Version;
+            _ash = ColorTrace.Retrace(ColorTrace.World, Ash);
+            _gold = ColorTrace.Retrace(ColorTrace.World, Gold);
+#endif
+        }
 
         static float Smooth(float a, float b, float x) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(a, b, x));
         static float EaseOutBack(float x) { const float c = 1.9f; x -= 1f; return 1f + (c + 1f) * x * x * x + c * x * x; }
@@ -443,7 +465,7 @@ namespace CosmicShore.Gameplay
             var jitter = (_right * Mathf.Sin(73f * t + s) + _fwd * Mathf.Cos(61f * t + 1.7f * s)) * shake;
             float fall = Mathf.Max(0f, t - 0.22f);
             var pos = b.P0 + jitter - _fwd * (38f * fall * fall) + b.Dir * fall;
-            var c = Color.Lerp(Element(b.Shape), Ash, Smooth(0f, 0.35f, t));
+            var c = Color.Lerp(Element(b.Shape), _ash, Smooth(0f, 0.35f, t));
             float flicker = t < 0.22f ? 1f : 0.62f + 0.38f * Mathf.Sin(52f * t + 6f * s);
             float wilt = 1f - 0.45f * Smooth(0.2f, 0.7f, u);
             float size = b.Size * (1f - 0.55f * Smooth(0.3f, 1f, u));
@@ -581,7 +603,7 @@ namespace CosmicShore.Gameplay
             float radius = cfg.KiteRadius * 1.9f * (1f + 0.7f * Mathf.Exp(-9f * v));
             var dir = _right * Mathf.Sin(ang) + _fwd * Mathf.Cos(ang);
             var tangent = Vector3.Cross(_up, dir) * Mathf.Sign(b.Spin);
-            var c = Color.Lerp(b.Tint, Gold, Smooth(0f, 0.6f, w));
+            var c = Color.Lerp(b.Tint, _gold, Smooth(0f, 0.6f, w));
             float size = Mathf.Lerp(b.Size * 0.6f, cfg.KiteRadius * 0.18f, Smooth(0f, 1f, w));
             Petal(0, kite + dir * radius, tangent, 0f, size, size * 1.6f, WithAlpha(c, 1f - Smooth(0.6f, 1f, w)));
             return true;
