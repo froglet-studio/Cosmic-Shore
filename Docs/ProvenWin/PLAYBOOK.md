@@ -2,7 +2,11 @@
 
 Garrett, 2026-11-11: "prove out exactly one change that is a categorical improvement on some well-defined metric
 with no observed or predicted cost, measured in real Unity, with an A/B a human can sign off on" - then make that
-repeatable. This is the repeatable part, run by the `/proven-win` project skill (`.claude/skills/proven-win/SKILL.md`).
+repeatable. This is the repeatable part, run by the `/proven-win` project skill (`.claude/skills/proven-win/SKILL.md`),
+a strict checklist written for the least capable model that will run it. The judgment calls this document describes
+are made by tools in `Tools/Build/proven_win/`: `run.py` (every measurement and control, one command), `verdict.py`
+(PASS / FAIL / HOLD by the rules below, with a self-test), `signoff.py` (the blind A/B page). Candidates are found
+by `/proven-win-scout`. A worked example, measured end to end with the tools: `Docs/ProvenWin/candidates/example-w4-sky-stars/`.
 
 The first win run through it is in `Docs/ProvenWin/WINS.md` (ChargeCrystal envelope cull).
 
