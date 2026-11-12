@@ -138,3 +138,28 @@ between lays, and is off by default for every other hull. `TrailSpeedShapeTests`
 the page) and the prefab. The Time ability's description in the kit says the trail is shaped by speed.
 Not verified in Unity yet: fly the Manta from the Toybox's Vessel Changer and judge the look at a crawl, at Soar
 and in a held Yawstery.
+
+### Fly test 1: gaps flying straight and fast (Caleb, 2026-11-12)
+
+**Reported.** "A categorical improvement", but odd gaps and irregular spacing, worst flying straight with both
+triggers at Time 10, and also in crawl turns on the triggers alone.
+
+**Found (two causes).**
+1. The lay ran on a timer, `UniTask.Delay(wavelength / speed)`, which only ends on a frame. Whenever a frame flew
+   between half a wavelength and a whole one (300 to 600 u/s at 60 fps) it waited two frames, so prisms went down up to
+   twice the wavelength apart, and flipped between one and two frames as the frame time wobbled (the irregular spacing).
+   At slower speeds the same rounding added up to a frame's flight to every gap.
+2. Above Soar the lay is one prism a frame, so the spacing keeps growing with speed (18 m at 1080 u/s, about Time 10
+   with both triggers), while Free curves held the length at Soar Length (10 m): 8 m gaps.
+
+**Fixed.** With the speed shape on, the trail lays by distance flown (`TrailSpeedShape.StepLay`): each frame, once
+the vessel has flown a spacing since the last prism, the prism goes back along the course to the exact point and the
+rest carries over. The spacing is exactly one wavelength below Soar and one frame's flight above it, at any frame
+time. Toward Soar the length now stretches to Soar Length or to Max Length Of Spacing (0.9) of the spacing,
+whichever is longer, so at 1080 u/s a prism is 16.2 m with a 1.8 m gap. Below Soar nothing changed in the shape.
+The lab lays the same way (re-read: straight-flight fill above 600 u/s 0.45-0.79 before, 0.90 every prism after).
+Cost: in the 300 to 600 u/s band the trail now lays up to a third more prisms (the ones the timer was dropping).
+Other hulls keep the timed lay.
+
+**Still open.** The crawl-turn irregularity Caleb saw is partly the same cause; fly it again to see what is left. A
+gap-free Soar wall is Max Length Of Spacing 1.0 (Caleb's number, kept at 0.9).

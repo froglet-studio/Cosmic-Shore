@@ -80,6 +80,10 @@ namespace CosmicShore.Gameplay
         float _layYawRate;
         Vector3 _lastLayForward;
         float _lastLayTime = -1f;
+        // The speed shape lays by distance (TrailSpeedShape.StepLay): the spacing behind this lay (unwarped)
+        // and how far behind the vessel it goes (world units).
+        float _laySpacing;
+        float _layBack;
 
         [Header("Gap Settings")]
         [SerializeField] float offset;
@@ -326,6 +330,12 @@ namespace CosmicShore.Gameplay
         {
             await UniTask.Delay(TimeSpan.FromSeconds(startDelay), cancellationToken: ct);
 
+            if (speedShape.Enabled)
+            {
+                await ShapedSpawnLoopAsync(ct);
+                return;
+            }
+
             while (!ct.IsCancellationRequested)
             {
                 // The warp field's local length scale here (Docs/WARP_FIELD.md; exactly 1 with no
@@ -354,6 +364,57 @@ namespace CosmicShore.Gameplay
 
                 float finalDelay = ApplyBoostSpawnDelay(clamped);
                 await UniTask.Delay(TimeSpan.FromSeconds(finalDelay), cancellationToken: ct);
+            }
+        }
+
+        /// <summary>
+        /// The speed shape's lay loop: every frame, lay when the vessel has flown a wavelength since the last prism
+        /// (<see cref="TrailSpeedShape.StepLay"/>), placed back along the course to the exact wavelength point, so
+        /// the spacing is even at every speed; above Soar, one prism a frame sized to the distance flown. Same
+        /// gates as the timed loop, and a prism at least every 3 s while they hold.
+        /// </summary>
+        async UniTask ShapedSpawnLoopAsync(CancellationToken ct)
+        {
+            float travelled = float.PositiveInfinity, sinceLay = 0f;
+            while (!ct.IsCancellationRequested)
+            {
+                float warp = WarpFieldRuntime.ScaleAt(transform.position);
+                if (spawnerEnabled && !trailPenUp && !tierHold && !vesselStatus.IsAttached && vesselStatus.Speed > 3f * warp)
+                {
+                    float step = vesselStatus.Speed * Time.deltaTime;
+                    sinceLay += Time.deltaTime;
+                    float wl = wavelength * warp;
+                    bool lay = TrailSpeedShape.StepLay(ref travelled, step, wl, out float spacing, out float back);
+                    if (!lay && sinceLay >= 3f)
+                    {
+                        lay = true; spacing = Mathf.Max(travelled, 1e-3f); back = 0f; travelled = 0f;
+                    }
+                    if (lay)
+                    {
+                        sinceLay = 0f;
+                        _laySpacing = speedShape.FrameAwareSpacing ? spacing / Mathf.Max(warp, 1e-4f) : wavelength;
+                        _layBack = back;
+                        MeasureLayYawRate();
+                        if (Mathf.Approximately(Gap, 0f))
+                        {
+                            CreateBlock(ApplyBoostGap(0f), Trail);
+                        }
+                        else
+                        {
+                            CreateBlock(ApplyBoostGap(Gap * 0.5f), Trail);
+                            CreateBlock(ApplyBoostGap(-Gap * 0.5f), Trail2);
+                        }
+                        _layBack = 0f;
+                    }
+                }
+                else
+                {
+                    // Gated off (stopped, pen up, too slow): the next prism goes down as soon as the gate opens.
+                    travelled = float.PositiveInfinity;
+                    sinceLay = 0f;
+                }
+
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
         }
 
@@ -465,9 +526,7 @@ namespace CosmicShore.Gameplay
             {
                 float fieldScale = WarpFieldRuntime.ScaleAt(transform.position);
                 float speedHere = vesselStatus.Speed / Mathf.Max(fieldScale, 1e-4f);
-                float spacing = speedShape.FrameAwareSpacing
-                    ? Mathf.Max(wavelength, speedHere * Time.deltaTime)
-                    : wavelength;
+                float spacing = _laySpacing > 0f ? _laySpacing : wavelength;
                 scale = speedShape.Evaluate(BaseScale.y, BaseScale.z, halfGap, speedHere, _turnFlare01,
                     _layYawRate, (int)Mathf.Sign(halfGap), spacing);
             }
@@ -506,7 +565,7 @@ namespace CosmicShore.Gameplay
 
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
-            Vector3 pos = transform.position - vesselStatus.Course * (offset * warp)
+            Vector3 pos = transform.position - vesselStatus.Course * (offset * warp + _layBack)
                         + vesselStatus.ShipTransform.right * xShift;
             Quaternion rot = vesselStatus.blockRotation;
 

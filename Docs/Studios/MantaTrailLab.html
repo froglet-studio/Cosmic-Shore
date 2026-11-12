@@ -203,7 +203,7 @@
     if (rule === 'wide') return { x: P.shRailW, y: P.baseY, z: P.baseZ };
     const f = lerp(1, arcFactor(c), P.shArc), cap = c.spacing * (rule === 'overfill' ? 1.6 : P.shFill) * f;
     if (rule === 'free') {
-      let z = lerp(P.baseZ, P.shFreeZMax, smooth(P.shVRef, P.shFreeV1, c.speed)) * f;
+      let z = lerp(P.baseZ, Math.max(P.shFreeZMax, c.spacing * P.shFill), smooth(P.shVRef, P.shFreeV1, c.speed)) * f;
       let y = P.baseY * lerp(1, P.shFreeYLow, 1 - smooth(P.shFreeVLow * 0.25, P.shFreeVLow, c.speed)) * (1 + P.shYawY * c.turn01);
       if (f > 1) y *= 1 - P.shThin * c.turn01;
       return { x: P.shRailW, y: clamp(y, P.shYMin, P.shYMax), z: Math.min(z, cap) };
@@ -300,16 +300,18 @@
     } catch (e) { /* the viewer may block the Gamepad API */ }
     world.input.lt = lt; world.input.rt = rt; world.input.throttle = slow ? P.throttleLow : P.throttleHigh;
   }
-  function lay() {
+  function lay(measured, back) {
     const w = world, fwdX = Math.sin(w.h), fwdZ = Math.cos(w.h), rX = Math.cos(w.h), rZ = -Math.sin(w.h);
     const frameDt = 1 / P.fps;
-    const spacing = P.shFrameAware ? Math.max(P.wavelength, w.speed * frameDt) : P.wavelength;
+    back = back || 0;
+    const spacing = measured != null ? (P.shFrameAware ? measured : P.wavelength)
+      : (P.shFrameAware ? Math.max(P.wavelength, w.speed * frameDt) : P.wavelength);
     const evt = { t: w.t, speed: w.speed, turn01: w.turn01, omega: w.omega, rails: {} };
     for (const side of [-1, 1]) {
       const c0 = { speed: w.speed, turn01: w.turn01, omega: w.omega, side, railD: P.gap / 2 + P.shRailW / 2, spacing, xscaler: w.sc.xscaler };
       const s = shapeFor(w.rule, c0);
       const off = (s.x / 2 + P.gap / 2) * side;
-      const p = { x: w.x + rX * off, z: w.z + rZ * off, h: w.h, w: s.x, y: s.y, l: s.z, t: w.t, side, speed: w.speed, turn01: w.turn01 };
+      const p = { x: w.x + rX * off - fwdX * back, z: w.z + rZ * off - fwdZ * back, h: w.h, w: s.x, y: s.y, l: s.z, t: w.t, side, speed: w.speed, turn01: w.turn01 };
       const L = w.rails[side], prev = L[L.length - 1];
       if (prev && w.t - prev.t < 3.5) {
         const dist = Math.hypot(p.x - prev.x, p.z - prev.z), inside = Math.sign(w.omega) === side && Math.abs(w.omega) > 0.05;
@@ -334,11 +336,27 @@
     w.t += dt;
     if (w.rule === 'today') stepScout(dt);
     // VesselPrismController.SpawnLoopAsync: lay, then wait wavelength / speed (clamped to 3 s); the wait ends on a frame.
+    if (w.rule !== 'today' && w.rule !== 'plain') {
+      // TrailSpeedShape.StepLay (the speed shape lays by distance flown, not by a timer that ends on a frame).
+      const step = w.speed * dt;
+      if (w.layTimer > 0) w.layTimer -= dt;   // startDelay, as the game's loop waits it before laying
+      else if (w.speed <= 3) { w.travelled = Infinity; w.sinceLay = 0; }
+      else if (w.travelled === undefined || w.travelled === Infinity) { lay(Math.max(P.wavelength, step), 0); w.travelled = 0; w.sinceLay = 0; }
+      else {
+        w.travelled += step; w.sinceLay = (w.sinceLay || 0) + dt;
+        if (w.travelled >= P.wavelength) {
+          const sp = Math.max(P.wavelength, step), back = Math.min(w.travelled - sp, step);
+          lay(sp, back); w.travelled = back;
+          w.sinceLay = 0;
+        } else if (w.sinceLay >= 3) { lay(Math.max(w.travelled, 1e-3), 0); w.travelled = 0; w.sinceLay = 0; }
+      }
+    } else {
     w.layTimer -= dt;
     if (w.layTimer <= 1e-9) {
       if (w.speed > 3) lay();
       const raw = w.speed > 0 ? P.wavelength / w.speed : 1;
       w.layTimer = clamp(raw, 0, 3);
+    }
     }
     const g = GATES[w.gate];
     w.gateT += dt;

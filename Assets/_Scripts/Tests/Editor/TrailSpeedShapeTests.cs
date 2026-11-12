@@ -9,7 +9,8 @@ namespace CosmicShore.Tests
     /// The Manta's trail is shaped by speed and turning (Caleb, 2026-11-11, Manta Polish round "speed-shaped trail
     /// prisms", <c>Docs/Manta/POLISH.md</c>). The rule is the Manta Trail Lab's "Free curves"
     /// (<c>Docs/Studios/MantaTrailLab.html</c>, <c>shapeFor('free')</c>) at the numbers he recorded in the lab's
-    /// decision log. Every expected value below was read from the lab page itself (Chromium, 2026-11-11), so a drift
+    /// decision log. Every expected shape below was read from the lab page itself (Chromium, 2026-11-11; above Soar re-read 2026-11-12
+    /// after the gap fix), so a drift
     /// between the C# port and the lab fails here.
     ///
     /// <para>Also locks the prefab: the Manta authors the shape with those numbers, and the environment sizing it
@@ -38,7 +39,8 @@ namespace CosmicShore.Tests
         [TestCase(300f, 0.75f, 6.5586337f)]
         [TestCase(450f, 0.75f, 8.7781704f)]
         [TestCase(600f, 0.75f, 9f)]
-        [TestCase(700f, 0.75f, 10f)]
+        [TestCase(700f, 0.75f, 10.5f)]
+        [TestCase(1080f, 0.75f, 16.2f)]
         public void Straight_MatchesTheLab(float speed, float y, float z)
         {
             var s = Straight(speed);
@@ -78,6 +80,60 @@ namespace CosmicShore.Tests
                 Assert.LessOrEqual(shape.Evaluate(BaseY, BaseZ, HalfGap, v, 0f, 0f, 1, spacing).z,
                     spacing * shape.MaxLengthOfSpacing + Tol, $"at {v} u/s");
             }
+        }
+
+        [Test]
+        public void AboveSoar_LengthFillsTheSpacing_NoFixedLengthGap()
+        {
+            // Time 10 with both triggers: about 1080 u/s, one prism a frame, 18 m apart at 60 fps. A length held at
+            // Soar Length (10 m) left 8 m gaps; the prism now fills 0.9 of the spacing (Caleb's MaxLengthOfSpacing).
+            foreach (float v in new[] { 650f, 800f, 1080f, 1400f })
+                Assert.AreEqual(LabSpacing(v) * 0.9f, Straight(v).z, Tol, $"at {v} u/s");
+        }
+
+        // Every prism one spacing from the last, whatever the frame time does: no gaps of two wavelengths when a
+        // timer ended a frame late, and no long prism beside a short one where the lay turns one-a-frame.
+        [TestCase(162f)]
+        [TestCase(400f)]
+        [TestCase(590f)]
+        [TestCase(610f)]
+        [TestCase(1080f)]
+        public void StepLay_LaysEvenlyAtEverySpeed_EvenWithAJitteryFrameTime(float speed)
+        {
+            var rnd = new System.Random(7);
+            float travelled = float.PositiveInfinity;
+            double path = 0, lastLayAt = 0;   // double: 2000 frames at Soar fly 36 km
+            bool belowSoar = speed * 1.2f / 60f < Wavelength;   // even the longest frame flies under a wavelength
+            int lays = 0;
+            for (int frame = 0; frame < 2000; frame++)
+            {
+                float dt = (1f / 60f) * (0.8f + 0.4f * (float)rnd.NextDouble());
+                float step = speed * dt;
+                path += step;
+                if (!TrailSpeedShape.StepLay(ref travelled, step, Wavelength, out float spacing, out float back)) continue;
+                double layAt = path - back;
+                if (lays > 0)
+                {
+                    Assert.AreEqual(spacing, (float)(layAt - lastLayAt), 1e-2f, "the prism goes where its spacing says");
+                    Assert.GreaterOrEqual(spacing, Wavelength - 1e-3f);
+                    Assert.LessOrEqual(spacing, Mathf.Max(Wavelength, step) + 1e-3f, "never more than one frame's flight");
+                    Assert.LessOrEqual(back, step + 1e-3f, "never further back than this frame flew");
+                    if (belowSoar) Assert.AreEqual(Wavelength, spacing, 1e-3f, "below Soar every prism is one wavelength on");
+                }
+                lastLayAt = layAt;
+                lays++;
+            }
+            Assert.Greater(lays, 10);
+        }
+
+        [Test]
+        public void StepLay_LaysAtOnceWhenTheTrailStarts()
+        {
+            float travelled = float.PositiveInfinity;
+            Assert.IsTrue(TrailSpeedShape.StepLay(ref travelled, 2f, Wavelength, out float spacing, out float back));
+            Assert.AreEqual(Wavelength, spacing, Tol);
+            Assert.AreEqual(0f, back, Tol);
+            Assert.AreEqual(0f, travelled, Tol);
         }
 
         [Test]
