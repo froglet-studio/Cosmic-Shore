@@ -33,10 +33,14 @@ half a head each fill the chest as one bib) and leaves the body inside the open 
 (hung from the cloak's collar with loose plumes, the loop is a feather stole, which is worn); the wing's bend is
 placed by the round brooch on the cloak (beside the collar and below the jaw could not both be true); and the crown's
 plumes stand out behind the head across the lit wood above the window (over the dark cloak they were black on black).
-Two of the three still said that no wording gets a heron in this pose. It is still the weakest of the eight: a wading
-bird of any kind named from the avatar is about one in four, and a heron by name one in ten (the critics' estimate:
-nothing is painted or tested). So this is the run to leave till last, or to leave out. Not painted yet: this is one of
-the eight weakest reads, and painting them waits for Garrett's go-ahead."""
+The three then read only the sentences that draft had rewritten, beside the picture once more: the neck's root is said
+to be at the collarbones just under the jaw (read as low in the shirt's opening, it leaves 40 to 60 px of drop for a
+neck 75 px wide: a bulge on the chest and no bend), and the crown's plumes are two thirds as long as the head (a head
+long, they reach the top of the picture). Two of the three call these the best words this pose allows, and all three
+say that the pose still caps it. It is still the weakest of the eight: a wading bird of any kind named from the avatar
+is about one in four or five, and a heron by name one in ten (the critics' estimate: nothing is painted or tested). So
+this is the run to leave till last, or to leave out. Not painted yet: this is one of the eight weakest reads, and
+painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Travel reportage on slow slide film, a chart house lit by the reef outside",
     shot=("A travel-reportage photograph on slow colour slide film: a 35mm lens nearly wide open. Saturated colour, "
@@ -76,25 +80,25 @@ SCENE = dict(
               "behind the far shoulder"),
         ask=("THE NECK. Where the white furred throat and chest are now, from the jaw down to the cream shirt, "
              "{name} has a heron's neck: long, slim, a third as wide as the head, and folded once on itself, as a "
-             "heron carries it. It leaves the body low, inside the open neck of the shirt at the collarbones, "
-             "comes forward and sinks in one deep rounded bend that hangs in front of the chest as low as the "
-             "breastbone, above the round pendant, and from there it turns up to join the head behind the jaw. The "
-             "whole curve of the bend is in clear view, the cream shirt and the dark cloak showing at both sides "
-             "of it, and the chart lights its underside. The head is where it is now, hung out over the chart on "
-             "that neck. The neck is feathered smooth, slate blue-grey, with a narrow white stripe down its front "
-             "that carries two rows of short black streaks, and the stripe runs round the outside of the bend. "
-             "From the jaw down, over a third of the head's height, the white fur of the cheek and throat lies "
-             "flatter and broader, hair by hair, until it is feather, and its black spots draw out, each longer "
-             "than the one above it, into the first streaks. From the lower half of the bend grow long loose "
-             "pointed plumes, pale grey with white shafts, each a third as long as the head. They hang from the "
-             "neck itself, down in front of the cream shirt among the strings of beads, some over a string and "
+             "heron carries it. It leaves the body inside the open neck of the shirt, at the collarbones just "
+             "under the jaw, comes forward and sinks in one deep rounded bend that hangs in front of the chest as "
+             "low as the breastbone, above the round pendant, and from there it turns up to join the head behind "
+             "the jaw. The whole curve of the bend is in clear view, the cream shirt and the dark cloak showing at "
+             "both sides of it, and the chart lights its underside. The head is where it is now, hung out over the "
+             "chart on that neck. The neck is feathered smooth, slate blue-grey, with a narrow white stripe down "
+             "its front that carries two rows of short black streaks, and the stripe runs round the outside of the "
+             "bend. From the jaw down, over a third of the head's height, the white fur of the cheek and throat "
+             "lies flatter and broader, hair by hair, until it is feather, and its black spots draw out, each "
+             "longer than the one above it, into the first streaks. From the lower half of the bend grow long "
+             "loose pointed plumes, pale grey with white shafts, each a third as long as the head. They hang from "
+             "the neck itself, down in front of the cream shirt among the strings of beads, some over a string and "
              "some under it, and the chart shines up through them."
              "\n\n"
              "THE CROWN. Where the black shape stands behind the ears now, the back of the head is feathered "
              "smooth, slate blue-grey like the neck. From the back edge of the white crown patch, midway between "
-             "the ears, grow two narrow black plumes, each as wide as the eye and as long as the head. They stand "
-             "out behind the head, back and a little upward, clear of the far ear, across the lit wood above the "
-             "window, and the lamp puts a thin warm line of light along each."
+             "the ears, grow two narrow black plumes, each as wide as the eye and two thirds as long as the head. "
+             "They stand out behind the head, back and a little upward, clear of the far ear, across the lit wood "
+             "above the window, and the lamp puts a thin warm line of light along each."
              "\n\n"
              "THE WING. Where the wing stands above the far shoulder now there is the room: the window and its "
              "wooden frame. The wing is folded low. It grows from the shoulder blade, comes out through the cloak "

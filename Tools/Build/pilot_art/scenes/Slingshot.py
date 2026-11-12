@@ -20,10 +20,13 @@ patch takes away. The same three then read the second draft against their first 
 paddle grows where the red fin grows now and points the other way, toward the eye, and the fin's place is given back
 to the shell and the sky (told both to swing forward and to stand where a fin that points back stands, the painter
 would keep the fin, and the fin is the fish a stranger sees); the tail is held level with the hips, where the second
-draft had it both level and just above the ground, and its plates are turned flat to the camera. A lobster or a
-shrimp, which counts as its kind, named from the avatar: about one in two, and a mantis shrimp by name one in five
-(the critics' estimate: nothing is painted or tested). Not painted yet: this is one of the eight weakest reads, and
-painting them waits for Garrett's go-ahead."""
+draft had it both level and just above the ground, and its plates are turned flat to the camera. The three then read
+only the sentences that draft had rewritten, beside the picture once more: all three would send it as written. In a
+painting, look first at the near paddle: orange-red on pink feathers behind the eye is low in contrast, and its stalk,
+its darker edge and the ice breaking on it are what keep it from being a red cheek. A lobster or a shrimp, which
+counts as its kind, named from the avatar: about one in two, and a mantis shrimp by name one in five (the critics'
+estimate: nothing is painted or tested). Not painted yet: this is one of the eight weakest reads, and painting them
+waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Rear-curtain flash at dusk with the shutter dragged, ice in the air",
     shot=("A photograph made at dusk with the shutter dragged and a flash fired at its end: a 28mm lens close in, "

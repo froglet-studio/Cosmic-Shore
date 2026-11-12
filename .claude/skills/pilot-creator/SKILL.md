@@ -329,8 +329,9 @@ reflection asked for in glass is painted as a second figure (84). Each `apply` r
 avatar and commit it. After changing `edit` or `keep`, run `refs.py mask <WORD>` or the self-test fails.
 
 **Read a pilot patch's words beside the picture before a run is asked for.** Three critics read the eight designs
-twice on 2026-11-12 (an art director's eye, a painter's eye, a stranger's eye; their figures are estimates until a
-run tests them). The same faults were in every first draft, and the rewrite brought the last one in:
+twice on 2026-11-12, and the sentences the third draft rewrote once more (an art director's eye, a painter's eye,
+a stranger's eye; their figures are estimates until a run tests them). The same faults were in every first draft,
+and each rewrite brought the last one in:
 
 - **A place the frame has no room for.** Name each new part's root and end by things already in the picture, on a
   gridded view (`scene.py grid <WORD> out.jpg`), and check the anchors against each other: given a length, a slope
@@ -347,11 +348,17 @@ run tests them). The same faults were in every first draft, and the rewrite brou
   256 px (small feathers become fur, lapped plates become scales), and a part with no root is a separate object.
   Count only what the square has pixels for (five bands on a neck 45 px tall are a texture; three are rings).
 - **The rewrite's own anchors.** A second draft answered every must of the first and brought in four new conflicts,
-  each in a sentence written to fix an old one, so measure the new sentences on the grid again. A part that takes
-  another's place names the old part in `what` and gives its place back (told to stand "where the red fin stands"
-  and to point forward, the painter keeps the fin, which points back). A grown part leaves from the body, in view
-  (a neck "from the collar of the cloak" is a stole). A thing lies where the picture has a surface for it. A word
-  for the hour ("evening" in a sunrise) repaints the light.
+  each in a sentence written to fix an old one, and a third draft two more: measure the new sentences on the grid
+  again, and have those sentences alone read once more (four pilots, three critics: about 390,000 tokens). Stop
+  when what a read finds can be taken in the critics' own words; check anything added to them by drawing the part
+  roughly over the scene and looking at what it covers. A word of height beside an anchor moves the anchor (a neck
+  that leaves "low" in the shirt's opening has no room left for its bend). A flat part is turned to this camera in
+  words (a flat tail "on its side" on a crate top that the camera sees edge-on is a hose: it stands on its lower
+  edge, flat side to the camera). A part that takes another's place names the old part in `what` and gives its
+  place back (told to stand "where the red fin stands" and to point forward, the painter keeps the fin, which
+  points back). A grown part leaves from the body, in view (a neck "from the collar of the cloak" is a stole). A
+  thing lies where the picture has a surface for it. A word for the hour ("evening" in a sunrise) repaints the
+  light.
 
 ## 8. Showing a round
 

@@ -17,9 +17,13 @@ what a fish has not; and leaf, pearl and sheet are out of the words. The same th
 their first notes, and this is the third: the tail lies along the front rim of the full crate beside the seat, on the
 side of the raised hand, with the heaped fruit against it (on the megaphone's side, where the second draft laid it,
 the megaphone stands at the blanket's edge: there is no top to lie on there and no fruit); and when it is painted the
-avatar's square moves about 40 px toward the raised hand, so that the whole orange palm is inside it. A newt or a
-salamander named from the avatar: about one in three, and a lizard, which counts as its kind, in a quarter more (the
-critics' estimate: nothing is painted or tested). Not painted yet: this is one of the eight weakest reads, and
+avatar's square moves about 40 px toward the raised hand, so that the whole orange palm is inside it. The three then
+read only the sentences that draft had rewritten, beside the picture once more: the tail stands on its lower edge
+along that rim, its flat side to the camera, leaning back against the fruit (lying on its side it is seen edge-on by
+this camera: a dark hose, with its stripe and its lit border hidden), and it is said to pass over the corner of the
+seat in full view. In a painting, look first for that stretch: without it the tail is an eel laid on the fruit. A newt
+or a salamander named from the avatar: about one in three, and a lizard, which counts as its kind, in a quarter more
+(the critics' estimate: nothing is painted or tested). Not painted yet: this is one of the eight weakest reads, and
 painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Frozen at 1/4000 s like a sports frame, a fruit in the air",
@@ -79,12 +83,13 @@ SCENE = dict(
              "THE TAIL. Where the big curled tail stands behind the shoulder now there is the street behind: the "
              "pale stone wall in the morning light. The tail is a newt's swimming tail. It grows from the base of "
              "the spine and comes into view from under the poncho's hem beside the hip, on the side of the raised "
-             "hand. It lies on its side along the front rim of the full crate of fruit that stands beside the seat "
-             "there, and the top fruit of the heap rest against it, kept in the crate by it. Its end hangs over "
-             "the front of that crate at its outer end, away from {name}, flat side to the camera, and drips. It "
-             "is tall and flat from side to side, smooth and wet, near black with a pale silver-white stripe along "
-             "its middle, and along its upper and lower edges runs a soft wavy border of thin skin, amber where "
-             "the low sun comes through it."
+             "hand, where it passes over the corner of the seat in full view. From there it lies along the front "
+             "rim of the full crate of fruit that stands beside the seat, on its lower edge and leaning back "
+             "against the top row of fruit, its flat side to the camera, and it keeps them in the crate: their "
+             "tops show over it. Its end hangs down over the front of that crate at its outer end, away from "
+             "{name}, and drips. It is tall and flat from side to side, smooth and wet, near black with a pale "
+             "silver-white stripe along its middle, and along its upper and lower edges runs a soft wavy border of "
+             "thin skin, amber where the low sun comes through it."
              "\n\n"
              "THE BRAID. The silver-white braid begins in the toucan's own white feathers: at the side of the "
              "neck, below the cheek on the braid's side, the white feathers grow long and fine and are gathered "
