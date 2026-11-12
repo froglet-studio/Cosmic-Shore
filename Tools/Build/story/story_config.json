@@ -8,7 +8,7 @@
   },
   "opener": {"path": "S01", "src_in": 1.0},
   "closer": {"path": "S16b", "src_in": 0.0},
-  "endcard": {"dur": 6.12, "tagline": "TOY GAMES  ·  VOYAGES  ·  PARTIES", "platforms": "COMING SOON  ·  iOS  ·  ANDROID  ·  STEAM"},
+  "endcard": {"dur": 6.12, "tagline": "EVERY TRAIL TELLS A STORY", "platforms": "COMING SOON  ·  iOS  ·  ANDROID  ·  STEAM"},
   "default_pillar": "arcade",
   "pillars": {},
   "labels": {"SkimRace": "Skim Race", "Toybox": "the Toybox"}
