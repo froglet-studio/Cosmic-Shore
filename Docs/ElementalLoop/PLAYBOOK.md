@@ -93,10 +93,12 @@ model number (standing rule).
   Rivals, Fairness; Ladder is read in step 2) from the recorded flights (`VESSEL_MODE_CHART.md` §3), the mode doc and
   the model, and raise the lowest floor first. Show it (a still or a clip, `Docs/claude/VIDEOS_AND_PREVIEWS.md`), then
   hand a person a one-line playtest.
-- **Ability changes are vessel changes.** They are made on the vessel, never through the mode (LOCKED), and the
-  vessel's owner hears of them through `/approve`. Use the Vessel Studio for the feel if the person wants it (one line,
+- **Ability changes are vessel changes.** They are made on the vessel, never through the mode (LOCKED). They go
+  through without waiting: each one is queued for Garrett's `/approve` (and the vessel owner's), which never slows
+  anything or anyone down (Garrett, 2026-11-12: "I will catch problems in vessel tunings eventually"). Use the Vessel Studio for the feel if the person wants it (one line,
   never required), and `/artifact-to-unity` to bring numbers in.
-- **Exit (done).** A person flew it and says it is fun, and no fun dimension is below 6 (proposed bar). Record
+- **Exit (done). ONE human flew it and signs it off as fun** (Garrett, 2026-11-12). Only then is it flagged for
+  intensity production (step 2). Score the six fun dimensions to find what to fix, but the sign-off is the bar. Record
   `set <Vessel> <Element> 1 done --by <who> --kind human --evidence "<playtest / report>"`.
 - **Tools:** `/vessel`, `/vessel-studio`, `/arcadegame`, `/element-ability-table`, `VESSEL_MODE_CHART.md`,
   `TIME_GAME_FUN_SCORES.md`.
@@ -109,7 +111,8 @@ model number (standing rule).
   (seeded courses, spawn profiles), not one map, so the AI in step 3 cannot memorise a track.
 - **Exit (done), proposed bars, measured from recorded flights and the AI:** I1: a first-time pilot finishes. I2: the
   step-1 fun bar holds. I3: a skilled pilot finishes, the Medium AI often does not. I4: the best humans and the
-  Legendary AI finish near the limit. A person signs off the ladder.
+  Legendary AI finish near the limit. **ONE human plays the rungs and signs them off as fun** (Garrett, 2026-11-12);
+  only then is the vessel and element sent to AI training (step 3).
 - **Tools:** `/arcadegame` (the per-mode intensity ladder: four `CellConfigDataSO`s), the End Game Conditions window
   (`/EndGameConditions`), `/ecology` for spawn profiles.
 
@@ -156,8 +159,9 @@ model number (standing rule).
   rival mass destroyed), never tuned toward a target.
 - **Exit.** The plateau is inside the arena's band: **no step 5 is needed**, and the arena step is done until a new
   vessel enters.
-- **Approval.** Vessel tuning needs Garrett's yes (standing rule from the Regatta plan) and goes to the vessel owner's
-  `/approve`.
+- **Approval.** Vessel tuning goes through without waiting and is queued for Garrett's `/approve` (and the vessel
+  owner's): he catches problems after the fact, and nothing waits on him (Garrett, 2026-11-12; this replaces the
+  Regatta plan's "vessel tuning needs Garrett's yes").
 
 ## 4. Running the loop
 
@@ -221,11 +225,10 @@ model number (standing rule).
 
 ## 9. Decisions for Garrett
 
-1. **The step-1 fun bar and who may sign off.** Proposed: any of the core four, after flying it; no fun dimension
-   below 6.
-2. **Vessel tuning in step 1.** Under the Regatta plan vessel tuning needed your yes. Proposed: step-1 tuning goes
-   through on the vessel owner's `/approve` like any other change, and your yes is kept for step 5 (tuning a vessel the
-   arenas were balanced around).
+1. ~~The step-1 fun bar~~ **Decided (Garrett, 2026-11-12):** one human flies it and signs it off as fun before it is
+   flagged for intensity production; the intensities also need one human's fun sign-off before AI training.
+2. ~~Vessel tuning~~ **Decided (Garrett, 2026-11-12):** vessel tunings (step 1 and step 5) go through and are queued for
+   his `/approve`; they never wait on him.
 3. **The meta schedule.** How often step-5 rebalances ship (proposed: batched, at most once a month).
 4. **Mass and Space AIs.** One genome per element (the AI plan's rule, proposed) that Brood Rush flies situationally,
    or one coupled genome for Brood Rush.
@@ -236,4 +239,5 @@ model number (standing rule).
 
 | Date | What moved |
 |---|---|
+| 2026-11-12 | **Garrett** decided 1 and 2: one human's fun sign-off gates step 1 to step 2 and step 2 to step 3 (`elemental_loop.py` refuses a step 1 or 2 `done` that is not `--kind human`, and a step `done` before the one below it); vessel tunings go through and queue for his `/approve` without waiting |
 | 2026-11-12 | Garrett set the loop as the top priority. This playbook, `loop.json`, `elemental_loop.py` (board, `next`, `set`, `--check`, `--self-test`) and the `/elemental-loop` skill were added. Loop 1 started with the Time element furthest along: steps 1-2 built for every vessel with a Time game, step 3 built (trained, model only) for seven hulls and in progress for the Manta and Urchin, Regatta's step 4 in progress. The AI plan's `mass-arena` and `space-arena` became one step, `massspace-arena` (Brood Rush) |
