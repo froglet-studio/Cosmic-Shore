@@ -7222,3 +7222,251 @@ since the third pass. The hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`
   Voyages tab draws uses `VoyageOpenCard`, the job-card grid, or `mapHeight`, `columns` and `cardColumn`. Once the board
   is accepted in Unity, retire them; while it is not, they are the way back.
 - **The Quests tab** is the pre-redesign quest track. Draw it on Frogma before building it.
+
+
+## 168. Rev 87 mockups: the Voyages tab, drawn new around the HyperSea map and the edge view (2026-11-12; Shombith picked A's direction, taken forward in section 169)
+
+**Asked (Shombith, 2026-11-12, on the built section 165):** "The voyages tab, this has gone through a lot of updates
+but it either does not update inside unity due to some issues or I do not like the design of it. Only thing the
+hypersea map and the bottom edge on view should stay apart from that, bring up the /frogma skill and delete the old
+voyages mockups and create new".
+
+**Deleted from the canvas, on his word:** the Voyages tab's five rounds, Rev 79 to Rev 83 (20 boards, their titles and
+sections). Their copies stay in `Docs/MenuRedesignB/board/` as the record of what sections 160-165 picked and built. The
+older Voyage boards on the Menu Redesign tab (Rev 13-17, 25) were not touched.
+
+**On the canvas:** tab **Voyages**, round "Rev 87 - the Voyages tab, drawn new around the HyperSea map and the edge
+view" (canvas version `1794502547-82a0`). The tab holds only this round.
+- Copies: `Docs/MenuRedesignB/board/R87*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r87_voyages.py`, on Rev 82's
+  data and Rev 80's map and edge view.
+- All boards pass `frogma.py check`. They pass `check_mockup.py` against the picked board (`--baseline
+  Docs/MenuRedesignB/board/R81B5.dc.html`, a budget of 88) at 66-74 visual elements; R81B5 itself is 68. Against the
+  default budget of 60 they fail, as R81B5 and R83S2 do. The count includes both states of a part that shows one.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**Kept, in all three:** the course on the HyperSea and the same course seen edge on under it, as Rev 81 drew them.
+
+**New, in all three:**
+- Four tabs, as the game has them (Voyages, Saga, Quests, Episodes; Episodes says Soon).
+- No seat editor screen. A seat changes where it stands, and the map is never covered. Your own seat stands open.
+- The squad is picked by its name, the picked one under a Jade line. One Lime: Set sail.
+
+**The options:**
+- **A - Slide (recommended):** small voyage cards on their own water; the picked one slides open with its place, its
+  title, its line and the three numbers (section 117's "smaller cards ... they slide open"). The right column is only
+  the squad: a row per seat (pilot, vessel, who flies it, element and artifact, hull). A pressed row opens Vessel, Pilot,
+  Element and Artifact as four steppers.
+- **B - Wide sea:** the whole course picture, uncropped, takes the left of the window with its edge view under it. One
+  panel on the right: the four voyages, the open one's title and numbers, the squad's three hulls in formation, and a
+  tray of tiles (tabs Vessel, Pilot, Element, Artifact) under a pressed seat.
+- **C - Ticket:** the quietest. A list of places with no pictures, and the open voyage as one ticket: where, the
+  numbers, the crew as three lines. A pressed line opens the same steppers. Set sail is the ticket's stub.
+- **Notes.** No compare board: the three stand side by side on the tab.
+
+**Picked (Shombith, 2026-11-12): A's direction:** "I like As direction but the top texts are too big, can you show all
+the screens inside the voyage tab" (section 169).
+
+**Recommended: A.** It answers both halves of the ask. The voyage's words sit with the voyage and the squad with the
+squad, so neither column is a mix; and every piece is one the menu kit has (a plate, a text tab, a stepper, a card).
+
+**Design brief:**
+- The fundamental it serves: choosing where the Ark sails and who flies, on one screen.
+- The principles it obeys: P-ui-11 (nothing moves for its own sake), P-ui-12/31/33/35 (Jade the pick, Lime the one
+  call to action), P-ui-13 (elements are words, no colour), P-ui-28 (four tabs, Voyages first), P-ui-37 (authored words).
+- The one it comes closest to: P-ui-21 (one configure card serves Arcade, Arena and Voyage). Set sail still opens that
+  card; the steppers change the squad's seats, the Ark's own data, not a match's configuration.
+- What it changes for a player: a seat is changed in place with the course still in view.
+- The cheapest prototype: this round.
+- Who judges it, and where: Shombith, on Frogma, then in the Unity editor.
+- The retire condition: the build is set beside the picked board in Unity and does not match it.
+
+**Differs from the build (section 165):**
+- The seat editor (`VoyageBoard`'s S2 overlay) goes; a seat's four choices are steppers or a tray on the seat itself.
+- A: the list rows become cards with the open one holding the title, line and numbers; the right panel loses them.
+  B: the map column widens from 660 to 960 and the list moves into the right panel. C: the right panel becomes one plate.
+- **For the build:** author the tab as prefabs from the kit's own parts rather than building it in code at runtime
+  (`VoyageBoard`). Section 165's third pass found the kit's theming components undoing the runtime restyle on every
+  enable; that is the "does not update inside unity". A cloud session cannot see Unity: the build needs a session on a
+  computer with the editor, or a screenshot after each pass (`/frogma` section 5).
+
+
+## 169. Rev 88 mockups: A taken forward - smaller top texts, every screen of the Voyage window (2026-11-12; the Voyages screen not liked, redrawn in section 170)
+
+**Asked (Shombith, 2026-11-12, on Rev 87):** "I like As direction but the top texts are too big, can you show all the
+screens inside the voyage tab".
+
+**On the canvas:** tab **Voyages**, round "Rev 88 - A taken forward: smaller top texts, every screen of the Voyage
+window" (canvas version `1794503122-dda8`), under Rev 87.
+- Copies: `Docs/MenuRedesignB/board/R88*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r88_voyages.py`, on Rev 87's.
+- All boards pass `frogma.py check`. They pass `check_mockup.py` against `--baseline
+  Docs/MenuRedesignB/board/R81B5.dc.html` (a budget of 88) at 42-79 visual elements; the count includes both states of
+  a part that shows one.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**The top texts** step down the type scale: the window's title 36 to 22, the hub row 18 to 15, the tabs 22 to 15.
+
+**One order on every screen:** small cards on the left, the picked one slid open; the picture in the middle; one
+column on the right that ends in the screen's one Lime button. The tabs are links between the boards.
+
+**The boards:**
+- **Voyages:** A as picked. The Ark escort is the fifth card.
+- **Escort:** the Ark escort card open. It has a difficulty stepper where a voyage has its intensity.
+- **Saga:** Tandava and The Severing as cards. Tandava open shows its four forms; The Severing is locked and the
+  button says After Tandava. The middle is the part's picture; the right is the squad and Set sail.
+- **Quests:** the five quests as cards with their state (Claimed, Done - claim it, Next to play, After the one
+  before). The picked one is open over its game's card art. Episode 1's name, its progress and the one button (Claim,
+  Play quest, or the state) stand on a plate at the picture's foot.
+- **Episodes:** Episode 2, coming soon, over the galaxy, with Back to Voyages.
+- **Notes.**
+
+**Not drawn:** a voyage that is under way, and the story beats (Rev 77 drew both in the old look).
+
+**Differs from the build (section 165):** as section 168's A, and: the top texts are smaller; the Ark escort is a
+card like the voyages; the Saga, Quests and Episodes tabs take the same three columns (the build has the reverted
+pre-redesign Saga and quest track, section 159). The escort's line "Fly beside the Ark and keep it standing." is the
+board's own; the game's is `VoyageLines`.
+
+
+## 170. Rev 89 mockups: the Voyages screen with the HyperSea as the show (2026-11-12; Shombith picked A, the Sea table; the other tabs in section 171)
+
+**Asked (Shombith, 2026-11-12, on Rev 87 and 88):** "Delete B and C but still for the voyages UI, I do not know I dont
+like it, man youre fable shw your skills, give me some cool ass designed UI for the voyage".
+
+**Deleted from the canvas, on his word:** Rev 87 B (Wide sea) and C (Ticket). Their copies stay in
+`Docs/MenuRedesignB/board/`. Rev 87 A and Rev 88 stay on the tab.
+
+**What was dull:** Rev 87 and 88 muted the map (saturate .45, brightness .82, as Rev 80 had) and boxed it into a 660
+column between two columns of plates. The one thing that was to stay was the dullest thing on the screen.
+
+**On the canvas:** tab **Voyages**, round "Rev 89 - the Voyages screen with the HyperSea as the show" (canvas version
+`1794503648-5f83`), under Rev 88.
+- Copies: `Docs/MenuRedesignB/board/R89*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r89_voyages.py`, on Rev 88's.
+- Both boards pass `frogma.py check`, and `check_mockup.py` against `--baseline
+  Docs/MenuRedesignB/board/R81B5.dc.html` (a budget of 88) at 74-75 visual elements.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**Both options:** the map and its edge-on view are the screen, uncropped and in the map's own colours. The voyages
+are small chips with a sliver of their own water, the picked one under a Jade bar; the Ark escort is the fifth, and
+its difficulty stepper stands under the numbers. The squad keeps Rev 88's seat cards and steppers. One Lime: Set sail.
+
+**The options:**
+- **A - Sea table (recommended):** the map lies tilted in perspective (56 degrees about its near edge) and the
+  edge-on view is its front face: one slab cut out of the HyperSea, the course across its top and down its side. The
+  far edge fades into the menu's ground. The voyage's name stands over it at 48 with its title and numbers.
+- **B - Flat chart:** the same screen without the tilt: the whole map, 1000 wide, over its edge-on view at the same
+  width. The name and numbers head the left column over the voyages.
+- **Notes.**
+
+**Picked (Shombith, 2026-11-12): A, the Sea table:** "Go with A, redo saga quests and episodes to match" (section 171).
+
+**Recommended: A.** It is the only one that says what the edge-on view is without a label, and nothing else in the
+menus looks like it.
+
+**Differs from the build (section 165):** the map column becomes the whole middle of the window, unmuted; the list
+rows become chips; the title, line and numbers leave the right panel; the seat editor overlay goes (as section 168).
+- **A's tilt in Unity:** one X rotation of the map's rect on a Screen Space - Camera canvas with a perspective camera,
+  or the map drawn to a RenderTexture on a tilted quad. `VoyageMapGraphic` stays as it is. The map's own labels shrink
+  with the tilt (they read at 1020 wide on the board; check them at the phone scale). B needs no tilt.
+- Not seen in Unity. A cloud session cannot run the editor.
+
+
+## 171. Rev 90 mockups: Saga, Quests and Episodes as the Sea table (2026-11-12; Shombith: "Now build all of this in Unity", built in section 172)
+
+**Asked (Shombith, 2026-11-12, on Rev 89):** "Go with A, redo saga quests and episodes to match".
+
+**On the canvas:** tab **Voyages**, round "Rev 90 - Saga, Quests and Episodes as the Sea table" (canvas version
+`1794504089-60a9`), under Rev 89.
+- Copies: `Docs/MenuRedesignB/board/R90*.dc.html`. Generator: `Docs/MenuRedesignB/rounds/r90_voyages.py`, on Rev 89's.
+- All boards pass `frogma.py check`, and `check_mockup.py` against `--baseline
+  Docs/MenuRedesignB/board/R81B5.dc.html` (a budget of 88) at 43-77 visual elements.
+- They were rendered locally with the canvas's own art, at rest and pressed, and looked at before publishing.
+
+**One slab on every tab:** a picture lying tilted in perspective, and under its near edge a front face that shows the
+same thing as a line. On Voyages (R89A) that line is the course seen edge on. The chips on the left, the name over the
+table, the right column and the one Lime button are R89A's.
+
+**The boards:**
+- **Saga:** the part's arena on the table. The front face is the fight's four forms in order, as stations on a line.
+  The Severing is dimmed; its front face says "Opens when Tandava is done" and the button says After Tandava. The squad
+  and Set sail are Voyages' own.
+- **Quests:** the HyperSea on the table, because Episode 1 is The Hypersea; its name and "1 of 5 claimed" stand over
+  it. The front face is the five quests as a track: claimed ones filled, the one to claim ringed in Jade, locked ones
+  dim, the picked one underlined in Jade. The picked quest's own card art, name, goal and state stand in the right
+  column over Claim, Play quest, or the state.
+- **Episodes:** the galaxy on the table, dimmed. Episode 2, Coming soon; the front face says "New episodes arrive here";
+  one button back to Voyages.
+- **Notes.**
+
+**Changed on a picked board:** R89A's and R89B's tabs are now links to these boards (Voyages to R89A, the other three
+to R90Saga, R90Quests, R90Episodes). Only the link targets changed; the drawing is as picked.
+
+**Not drawn:** a voyage that is under way, and the story beats.
+
+**Differs from the build (section 165):** the Saga, Quests and Episodes tabs are the pre-redesign ones (section 159);
+each becomes the slab. The front faces are new parts: a forms line (the forms are `SagaView`'s authored lines) and a
+quest track (states from `GameModeProgressionService`). The table tops are a still picture (the part's card art, the
+galaxy from `VoyagePlaceArt.Galaxy()`); only the Voyages table is the live map. Not seen in Unity.
+
+
+## 172. Built: the Voyage window as the Sea table - Rev 89 A and Rev 90 (2026-11-12, not seen in Unity)
+
+**Asked (Shombith, 2026-11-12, on Rev 89 A and Rev 90):** "Now build all of this in Unity".
+Affects: Garrett's Voyage window and galaxy map (`VoyageJobsView`, `VoyageMapGraphic`; his voyage data, launch and Ark
+escort are kept), and the quest track (`QuestTrackView`: two accessors added, its rules untouched).
+
+**No Unity editor ran, and no computer was connected to the session.** This is the fourth Voyage build made without
+seeing it (section 165's three passes each drifted). It compiles and its arithmetic is tested; whether it LOOKS like the
+boards is unknown until a screenshot is set beside R89A, R90Saga, R90Quests and R90Episodes.
+
+**What was built:**
+- **The tilt** (`VoyageSlab`). The menu's canvas is an overlay with no perspective camera, so a rotated rect would only
+  be squashed. The tilt is a projection of the picture's own mesh: every vertex is moved to where it is seen (56 degrees
+  about the near edge, the eye 0.584 widths up and 1.47 widths away: the board's CSS, as shares of the width), and
+  faded from 52% to 96% of the way back. A projection keeps lines straight; a textured quad is drawn as a 24 x 16 grid
+  so its texture is not sheared.
+- **The Voyages table.** `VoyageMapGraphic.Tilt` lays the live map back: the water as a grid, then every vertex
+  projected; the place names stand where their places are seen and shrink with them; no corner galaxy, no caption, no
+  pointer. `VoyageBoard.FitSlab` stands the edge view under the map's near edge at the same width (5.014 : 1) and the
+  map over it (1.617 : 1).
+- **`VoyageBoard`, rewritten** for Rev 89 A: voyage chips (a soft-masked sliver of the course on each), the open
+  voyage's name over the table (kicker, place at 48, title, the three numbers on one line, the escort's two buttons),
+  and the squad on the right.
+- **`VoyageSquadColumn`.** The squads as words, three seat cards, and the seat's four steppers under an open seat. It
+  replaces the S2 seat editor. Same Ark rules as before (`CanEdit`, `KeepCardsOwn`, `FillPilots`), now in one place
+  for the Voyages and Saga tabs. A step goes round the ends and saves at once. The player's own seat opens first.
+- **`VoyageSlabPage`** and its three pages, stood over the Saga, Quests and Episodes pages the first time the board
+  draws. What a page drew before is hidden and kept: its components are the data.
+  - **Saga:** the page's two `VoyageView` cards are the parts; each card's `Form1..N/Name` texts are its forms; Set
+    sail calls the card's own `SetSail`.
+  - **Quests:** the quest list and states are `QuestTrackView`'s and `QuestFrontier`'s; Claim calls
+    `ClaimQuestAndUnlockNext`; Play quest opens the Arcade as the track did.
+  - **Episodes:** the next episode's lines, and a button back to the Voyages tab.
+  - The galaxy on the Quests and Episodes tables is painted once from `HyperSea.Density` (160 x 100).
+- **The tabs** are 15 with 34 between them (Rev 88).
+- **Words:** 29 new `VoyageLines` (5 `Board*`, 24 `Slab*`) in `Docs/Voyages/voyage_slice.json`.
+- **Look:** `VoyageBoardStyleSO` now holds only what the table draws with; the B5 fields went (the 14 sliver sprites,
+  the fade and pool, Plate, CardFoot, the editor's sizes). Columns: 0-0.1685, 0.1848-0.7391, 0.7554-1.
+
+**Differs from the boards, knowingly:**
+- **The whole Saga tab is locked (Shombith, 2026-11-12: "lock saga", then "Lock the whole Saga tab").** The page is
+  drawn as Episodes is: Tandava's arena on the table, dimmed, "SAGA / Tandava / Voyages are open now. / Coming soon",
+  "The saga opens here" on the front face, and the button back to Voyages. No part is listed and nothing launches from
+  the Voyage window. `VoyageJobsView.sagaLocked` (on by default, in the inspector) opens it again as Rev 90 drew it:
+  the parts, their forms, the squad and Set sail. The tab's own label carries no lock mark (Episodes' tab has one in
+  the prefab; the Saga tab has none, and no prefab was edited). Rev 90's "The Severing after Tandava" is not built.
+- **The window's title and the hub row keep their sizes.** They are the hub's, shared by the Toy Box, Arcade and Arena
+  windows; only the tabs were stepped down.
+- **Quest pictures are the quests' icons** (`SO_UnlockData.Icon`), not the games' card art; the Saga and quest chips
+  show the whole picture, not a crop.
+- **The step marks are "<" and ">"** (`BoardStepBack`, `BoardStepOn`), not drawn chevrons.
+- **The front faces are flat `#00010A`**; the hulls are the classes' own renders, cropped, as in section 165.
+- **Hidden, not retired:** `VoyageOpenCard`, the job-card grid, the Saga cards and the quest track are unreachable
+  while `VoyageJobsView.board` is on. Retire them once the table is accepted in Unity.
+
+**Verified:**
+- `unity_refcompile`, player and editor: 0 errors in project code (the editor run compiles `VoyageBoardTests`).
+- `bash .claude/skills/ship/gates.sh`: all OK. `author_voyage_assets.py --check`, `author_voyage_board.py --check` and
+  `--self-test`, `colour_trace.py --check`, `author_colour_set_assets.py --check`, `colour_grade.py --check`: clean.
+- `VoyageBoardTests` (9 tests: the tilt's arithmetic, the fade, the grid, the picture crop, the stepper, the board
+  building and shaping its table): written and compiled, **not run**.
+- The hand test is "The Voyage window as the Sea table" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
