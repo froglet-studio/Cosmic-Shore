@@ -111,8 +111,14 @@ This file holds only the rules every session needs. Everything else moved verbat
   gates, the sheet beside the nearest references, the writer that keeps every guid and wires the `PilotSO`).
   Garrett's bar (2026-11-07): "art like the ones we have but even better". Read before touching
   `Assets/_Graphics/Pilots/**`, a `Pilot_<Callsign>.asset` portrait or `Tools/Build/pilot_art/**`. The painted set
-  is the reference and is never overwritten.
-  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions
+  is the reference and is never overwritten. A pilot's realistic widescreen SCENE and the player AVATAR cut from its
+  close-up are made by **`/pilot-creator`** (`scene.py`, `refs.py`, `Docs/Pilots/art/scenes/`; Garrett, 2026-11-11:
+  the scenes replaced the signature busts; each pilot is designed as ONE creature; the sea in a picture is painted
+  from the game's own frames). It also rolls a player's unique pilot (`creator.py`), and `blind.py` is the blind
+  read that measures whether a stranger names both animals. The eighteen callsign scenes are in the build
+  (`author_pilot_scene_assets.py`) for the Ark's Pilots tab and each pilot's full-screen profile page
+  (`PilotProfileModal`, `Docs/MENU_REDESIGN_B.md` section 92.1).
+  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions; the signature busts; the scenes
 - [`Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md`](Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md): Namespace convention, key systems & classes reference, async pattern.
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.
