@@ -467,7 +467,22 @@ namespace CosmicShore.Gameplay
             else if (swung)
             {
                 swung = false;
-                readyAt = now + config.SwipeCooldownSecondsFor(_status);   // recovery starts on release; Time shortens it
+                _lastRecoverySeconds = config.SwipeCooldownSecondsFor(_status);
+                readyAt = now + _lastRecoverySeconds;   // recovery starts on release; Time (Quickdraw) shortens it
+            }
+        }
+
+        float _lastRecoverySeconds;
+
+        /// <summary>The swing's recovery still to run, 1 the instant a swing is released and 0 once both sides can
+        /// swing again (0 while energized or under Flurry, which owe none). The Swordfish's Time card plate.</summary>
+        public float SwipeRecoveryRemaining01
+        {
+            get
+            {
+                if (_lastRecoverySeconds <= 0f) return 0f;
+                float left = Mathf.Max(_rightReadyAt, _leftReadyAt) - Time.time;
+                return left <= 0f ? 0f : Mathf.Clamp01(left / _lastRecoverySeconds);
             }
         }
 

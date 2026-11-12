@@ -51,6 +51,11 @@ Charge has PvP, each vessel morphs the omni crystal into its own effect, and not
   (the slow blast the old Rhino had, with Charge and Space scaling authored inert) and retires the crystal through
   `VesselAbsorbCrystalMorphByCrystal`, so the crystal flows into the hull and the ring of swords comes out of it.
 - Tests: `SwordfishQuickdrawTests`. The HUD's Time card and the icons follow in the icon pass.
+- **Its own HUD and icons (2026-11-12, icon pass)**: `SwordfishHUDVariant`, `SwordfishVesselHUDView`,
+  `SwordfishHUDController` (the Rhino's HUD is the Rhino's alone now). Charge: the bill follows the real sword and lights
+  while energized, the plate the energize. Mass: the afterimages. Space: the bill's live reach, the prism shattered under
+  Shield Breaker. Time: Quickdraw, the plate the swing's recovery, the swoosh by Time's rate, a flash when Flurry unlocks.
+  Drawn by `Tools/Build/icon_kit/specs/swordfish.py`; tests `SwordfishHUDTests`.
 
 ## A swordfish, and the sword is its bill (2026-11-08)
 
@@ -115,8 +120,7 @@ before the plough (2026-10-13).
 | `Assets/Resources/TouchControlProfiles.asset` (`author_touch_profiles.py`) | The Rhino's old phone row (lifts swing, both off energizes) |
 | `Assets/_Prefabs/CORE/NetworkManager.prefab` | ProtocolVersion 25 → 26 (a new network prefab) |
 
-Shared with the Rhino, not copied: the HUD (`RhinoHUDVariant`), the ramp (`RhinoRampBoostAction`), the sword's
-effects. Its own since 2026-11-08: the model (`Swordfish.fbx`), the camera (`SwordfishCameraSettingsSO`), the blade
+Shared with the Rhino, not copied: the sword's effects (the HUD and the ramp are its own since 2026-11-12). Its own since 2026-11-08: the model (`Swordfish.fbx`), the camera (`SwordfishCameraSettingsSO`), the blade
 mesh (`SwordfishBill.asset`); the sword's configs are only the Swordfish's now (the Rhino has no sword).
 
 ## In-editor verification

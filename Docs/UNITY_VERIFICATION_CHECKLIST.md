@@ -65,6 +65,25 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Swordfish's own HUD and ability icons (`claude/swordfish-icons`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/Icons/ABILITY_ICON_SKILL_PLAN.md` §8 (the Swordfish's row). The Swordfish leaves the Rhino's HUD
+for its own (`SwordfishHUDVariant.prefab`, `SwordfishVesselHUDView`, `SwordfishHUDController`, swapped in
+`Swordfish.prefab`), with 19 kit-drawn parts (`Assets/_Graphics/Icons/AbilityIcons/Swordfish/`) and
+`ShieldSwipeActionExecutor.SwipeRecoveryRemaining01` for the Time plate. Stacked on `claude/swordfish-kit`.
+Ran: `unity_refcompile` (0 errors in changed files), `icon_kit/author.py swordfish --check` (no drift).
+Not run: Unity, the EditMode tests (`SwordfishHUDTests`).
+
+1. Toybox, Swordfish: the four cards show the bill (Charge), the afterimages (Mass), the bill's reach (Space) and the
+   Quickdraw bill (Time); no Rhino katana, no missing sprite.
+2. Swing with one trigger: the Charge card's bill swings to that side; both triggers raise it and light the card while
+   energized; the plate fills with the energize and the veil sweeps the cooldown.
+3. Lay afterimages: the Mass card lights, the copies in your domain colour.
+4. Raise Space: the bill on the Space card lengthens; at Space 5 the prism ahead is shattered.
+5. Swing at Time 0 and Time 10: the Time plate drains the recovery (faster at 10), the swoosh brightens with Time; reaching
+   Time 5 flashes the card once and shows the swoosh back.
+6. Fly the Rhino: its own HUD is unchanged.
+
 ### 🔴 The Swordfish's fundamentals pass: Quickdraw, Flurry, the Surge alone (`claude/swordfish-kit`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SWORDFISH.md` § "Fundamentals pass". Time is the sword's rate (Quickdraw: energize
