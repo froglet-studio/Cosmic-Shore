@@ -42,15 +42,52 @@ paintings a round will make before making them, and name the file.
 - A second candidate for the same pilot is a second call with the same prompt; do not vary the prompt by hand -
   vary the spec's `pose` or `extra`, so the variation is recorded.
 
-## 2. Weave models with REFERENCE images (for a style-matched repaint)
+## 2. Weave models that take REFERENCE pictures (the game's own frames, a pilot's likeness)
 
-`weave_find_model` / `weave_run_model` (through the same connector) run image models that take reference images
-(a few of the painted set as style anchors plus the brief). Every run needs the person's explicit approval of the
-quoted credit cost in the session (the tool refuses without it), so this route is for an interactive session,
-never an autonomous one. Use it when a pilot must match a specific painted reference's handling more closely than
-the text brief achieves. The scenes are the case for it: a text brief keeps a pilot recognisable (found among 50
-avatars every time) and still leaves two of four "mostly the same" side by side, and a model that is shown the
-avatar should close most of that. Not run yet: it waits for Garrett's approval of the cost.
+Garrett, 2026-11-11: "is there a way to upload screenshots or other content so we can keep consistency between the
+game and the art we are generating? ... we will need something like this if we want the same character in more than
+one piece of art as well", then "i connected weave". The kit's side is `Tools/Build/pilot_art/refs.py` (the library
+of real frames, a pilot's likeness, a record's `refs=` and `patch=`, the links, the run's input, `apply`).
+
+- **The tools**: `weave_find_model` (a model's id and contract), `weave_run_model {id, input, acknowledgedCost?}`,
+  `weave_get_model_run_output {predictionIds}`. A run takes about three minutes: poll, never sleep.
+- **The painter**: GPT Image 2.6, id `96f53e1c-465d-44d6-90fd-38bcb9fada66`. Inputs `prompt` and `images` (up to
+  sixteen https links); params `size {width, height}`, `model: "Sunburst"`, `quality: "high"`,
+  `output_format: "png"`. It takes no mask. GPT Image 2.5 Sunburst, the painter of section 1, takes one on Weave
+  and "is not available on the Free plan".
+- **Two pools of credits.** Section 1's painter spends Figma AI credits on the file's plan; they ran out on
+  2026-11-12 after twelve repaints ("Insufficient Figma AI credits ... resets at 2026-11-14T01:41:00Z"). Weave
+  spends the workspace's own ("These are your workspace's Weave credits, not Figma AI credits"): 150 a month on the
+  Free plan, and this painter is quoted at 11 a run at quality high whatever the size (3 at medium).
+- **Every run is quoted, and the person approves the cost on a card.** A call without `acknowledgedCost` spends
+  nothing and returns the quote. Put the cost on a decision card (never free text) and run only what the card
+  approved, at the cost it named: a card may approve a named set of runs at so much each and so much in all, each
+  still quoted first, and a quote that differs goes back to the person. An interactive route, never an
+  autonomous one.
+- **The plan's wall.** The Free plan gives an agent two model runs, whatever credits remain. The third came back
+  "You've used your 2 free Weave model runs. Upgrade to a paid Weave plan" (2026-11-12, after a quote of 11 and
+  with 128 credits left; nothing was spent). The pricing page that day (https://weave.figma.com/pricing) listed
+  Starter at 1,500 credits a month and Professional at 4,000, and did not mention the limit. The plan is the
+  person's to change: never route round it (another tool, another account, a published workflow).
+- **Links, not uploads.** The painter fetches each picture by its link. The repository is public, so a picture
+  that is committed and pushed has one (`refs.py input` builds them at the pushed HEAD and refuses a picture that
+  is not pushed). Figma's upload host is not reachable from a Default-environment session. A link names the
+  repository, which the words never do; the game's own frames were asked for.
+- **The answer** is served from `s3-alpha-sig.figma.com`, which must be on the environment's allowed hosts (added
+  to Default on 2026-11-12, Garrett approving the prompt): `curl -sS -f -L -o <a new scratch folder>/a.png
+  '<url>'`, one folder a download, read with `python3 -I`.
+- **What it does** (LESSONS 83, 84): from the scene, four frames and "Edit this photograph, picture 1. Change
+  only ..." it painted the game's own bricks, needles, net, crystals, shards and trails, and the ship from its
+  four views, on the first run each (Jugger's windows and dome, Scales's dome). It repaints the whole picture a
+  little while it works (6.09 and 14.36 of 255 outside the region), so `refs.py apply` takes only the record's
+  region and the pilot stays the pilot of the first painting. What an ask names is painted: "faint reflections of
+  the bridge" hung a second head in a window.
+- **Run the first of a set alone** and look at its answer whole and at full size before the next is quoted.
+- **Where it stands** (2026-11-12): two runs made. Flux's patch (the fin of Flux's own likeness, an orca's skin,
+  the display, the course outside; the whole frame) and Trace's (her cylinder, her port, a plate) are written
+  into their records and wait for a plan that runs them. Garrett chose "I'll move Weave to a paid plan" on a card
+  (04:03 UTC); one more try after that answer was quoted at 11 and refused the same way, so the next try waits
+  for his word that the plan has changed. A quote never shows the plan: only a run meets the wall.
 
 ## 3. An artist
 
