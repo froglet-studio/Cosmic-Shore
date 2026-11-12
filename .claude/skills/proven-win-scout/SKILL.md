@@ -5,8 +5,14 @@ description: Find candidates for /proven-win - exact, cost-free performance impr
 
 # Proven Win scout
 
-You produce a QUEUE, not changes. Every entry is a prediction for `/proven-win` to measure. Read
-`Docs/ProvenWin/WINS.md` first: never re-propose anything in its Rejected table, and skip what its queue already holds.
+You add entries to the ONE queue, `Docs/ProvenWin/QUEUE.json`, through `Tools/Build/proven_win/queue.py add`; you never
+change game files and never measure. Every entry is a prediction for `/proven-win` to measure. Before searching, read:
+- `Docs/ProvenWin/LENSES.md`: the lenses below with what each has found and been rejected for, and every lesson
+  learned so far (newest last). Apply the lessons: they exist because a candidate failed for that reason.
+- `python Tools/Build/proven_win/queue.py list --all`: what is queued, measuring, won, rejected and inconclusive.
+  `add` refuses an id that exists and a candidate in the same place with the same title as a rejected one; do not
+  try to slip one past it with new words.
+Aim to leave at least 5 queued entries; stop at 10.
 
 ## 1. Lenses (search in this order; each has found real wins)
 
@@ -35,26 +41,36 @@ You produce a QUEUE, not changes. Every entry is a prediction for `/proven-win` 
 - **Lines moved**: propose the change as an INSERTED early-out with nothing reordered. On Vulkan even pure code motion
   changed pixels.
 
-## 3. The queue entry (one per candidate; this exact shape)
+## 3. The queue entry (one JSON file per candidate, then `queue.py add <file>`)
 
+```json
+{
+ "id": "short-kebab-id",
+ "title": "one line: what the change does",
+ "where": ["Assets/<path>:<first>-<last line>"],
+ "runtimeWriters": "every writer, file:line, the value IN THE GAME (or: none, grepped <names>)",
+ "inUse": "scenes / prefabs / configs by guid; platform tiers at full price",
+ "waste": "what is computed and thrown away, how often, and how you estimated it",
+ "change": "the inserted lines, nothing moved",
+ "exactness": "bit-identical | display-identical | approximate",
+ "bench": "shader | scene",
+ "probes": "early-outs: what probe_reach and probe_guard return; anything the bench state needs",
+ "negativeControl": "the deliberately wrong variant",
+ "otherStates": "states the game also draws it in, where the change must not cost",
+ "owner": "who_works_where.py owner",
+ "lane": "approvals.py lane",
+ "gain": "predicted gain, and what is unmeasured",
+ "confidence": "high | medium | low",
+ "lens": "which LENSES.md lens found it"
+}
 ```
-### <rank>. <title>
-- Where: <file>:<lines>
-- Runtime writers: <every writer, file:line, the value in the game>  (or "none: grepped <names>")
-- In use: <scenes/prefabs/configs; tiers at full price>
-- Why it's wasted: <what is computed and thrown away, how often (share of pixels/frames, with how you estimated it)>
-- Change: <the inserted lines, as a diff>
-- Exactness: <bit-identical / display-identical / approximate, and the algebra>
-- Bench: shader (material + mesh + spec values: the game's state) | scene (prefab or scene + what to toggle)
-- Probes (early-outs): <what probe_reach and probe_guard return>
-- Negative control: <the deliberately wrong variant>
-- Other states it must not cost in: <e.g. the feature switched ON>
-- Owner / lane: <who_works_where.py; approvals.py lane>
-- Predicted gain and confidence: <and what is unmeasured>
-```
+`add` refuses an entry with a field missing, an exactness or bench outside the lists, or a `where` file that does not
+exist; it records the commit and each file's hash so `/proven-win` can tell when the code under an entry moved.
+A change neither bench can measure (`bench` must be shader or scene) is not a candidate yet: write it into LENSES.md as
+a lens note instead.
 
-## 4. Rank and hand over
+## 4. Rank, add, commit
 
-Rank by: exactness first (bit-identical over anything else), then exposure (on screen in every scene beats a rare
-effect), then size. Write the queue into WINS.md's queue table (one row per candidate, the full entries in
-`Docs/ProvenWin/queue/<date>.md`) and commit it. Do not measure, and do not edit game files.
+`queue.py` ranks queued entries by exactness, then confidence. Add every entry, run
+`python Tools/Build/proven_win/queue.py render`, and commit `QUEUE.json` and `QUEUE.md` (and any new lens note in
+LENSES.md) together. Say in one line how many you added and which lens found each.

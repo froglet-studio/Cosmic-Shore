@@ -16,11 +16,21 @@ run it from PowerShell. Unity runs take 10-30 minutes: start `run.py` in the bac
 wait for it to finish; never start a second Unity on the same worktree while one runs, and do not edit `Assets/` in the
 worktree while it runs (the runner puts back every `Assets/`, `ProjectSettings/` and `Packages/` file that changed).
 
-## 1. Pick ONE candidate (done: you can say in one sentence what changes, and why it is exact)
+## 1. Take ONE candidate from the queue (done: `queue.py take` printed an entry and marked it measuring)
 
-- Take the top item of WINS.md's queue table, or one from `/proven-win-scout`. Never one in WINS.md's Rejected table.
-- It must be ONE change: one file or one tightly coupled set. Not a PR of three shaders.
-- STOP if you cannot fill `runtimeWriters` in step 3: an unknown runtime state is how the first measurement of W1
+The queue is `Docs/ProvenWin/QUEUE.json` (view: `QUEUE.md`). Change it only with `Tools/Build/proven_win/queue.py`,
+run in your bench worktree (step 2; make it first if it does not exist yet), on a branch cut from `origin/bleeding-edge`.
+```
+git fetch origin bleeding-edge            # the queue's file hashes are checked against what you have
+python Tools/Build/proven_win/queue.py stale
+python Tools/Build/proven_win/queue.py count
+```
+- If `count` is below 3, run `/proven-win-scout` FIRST (it refills the queue), then come back here.
+- Then `python Tools/Build/proven_win/queue.py take` (the best queued entry) and read the entry it prints: `where`,
+  `runtimeWriters`, `change`, `probes`, `negativeControl`, `otherStates` become your candidate folder in step 3.
+- A stale entry (its files changed since it was queued) is never measured as it is: re-read the code, then either
+  `add` a corrected entry under a new id or finish it with `done --outcome rejected`.
+- STOP if you cannot confirm `runtimeWriters` in the code: an unknown runtime state is how the first measurement of W1
   measured the wrong crystal.
 
 ## 2. Your own worktree on the GPU machine (done: `git -C <wt> status` is clean, Library copied)
@@ -58,12 +68,20 @@ It runs Vulkan first. To save time on a candidate that may fail, run `--apis vul
 ## 5. Read the verdict (done: you acted on PASS, FAIL or HOLD exactly as below)
 
 `verdict.py` decides; you do not. Re-run it any time: `python Tools/Build/proven_win/verdict.py <candidate>`.
-- **FAIL**: copy its numbers into WINS.md's Rejected table with the reason it printed, commit, and go back to step 1.
+- **FAIL**: record it (below), copy its numbers into WINS.md's Rejected table, commit, and go back to step 1.
   Do not tune B until it passes on the same candidate without saying so in WINS.md: that is how a win is faked.
 - **HOLD**: the evidence is not good enough. Fix exactly what it names (a busy machine: re-run; a negative control
   that was not caught: make C more wrong; a probe that changed nothing: fix the bench state in `spec`). Delete the
   affected `reports/<api>/<role>.json` and re-run step 4. STOP after two HOLDs in a row and ask the person.
 - **PASS**: go on.
+
+Every candidate ends with ONE `queue.py done` call, which also teaches the scout (the lesson goes into
+`Docs/ProvenWin/LENSES.md`):
+```
+MSYS_NO_PATHCONV=1 python Tools/Build/proven_win/queue.py done <id> --outcome won|rejected|inconclusive   --reason "<the numbers verdict.py printed>" --lesson "<one sentence: what the scout should look for or avoid next time>"
+```
+Do it for a FAIL now, for a PASS after it ships (step 8), and for a candidate you give up on (`inconclusive`, with what
+would settle it).
 
 ## 6. The blind sign-off page (done: the person has the link)
 
@@ -88,7 +106,8 @@ rejected. Bit-identical wins may ship before the answer; "within-one-level" wins
 ## 8. Ship (done: merged, or the person told what blocks it)
 
 Use `/ship`. Never use `--admin`, never approve your own PR: if branch protection blocks the merge, give the person
-the exact command or button and stop.
+the exact command or button and stop. Then `queue.py done <id> --outcome won ...` (step 5) and commit QUEUE.json,
+QUEUE.md and LENSES.md. If `done` says the queue is below 3, the next run starts with `/proven-win-scout`.
 
 ## What this does not cover (say so in every report)
 
