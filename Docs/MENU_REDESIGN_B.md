@@ -4127,7 +4127,20 @@ profile page in the ark."
   are solid now, and the layout tool computes each plate's contrast over a white picture in linear light for both
   colours words are drawn in (4.5:1 or it fails). The engine is not Unity: it does not draw the menu's sea material
   and sets a paragraph's lines closer (17.6 against the kit's 23.2 at Body).
-- **Generators:** `author_menu_pilot_profile.py` (the page; 20 negative controls) and `author_menu_ark.py` (the tab;
+- **The pad stays on the page.** NEXT, PREVIOUS and CLOSE steer it themselves (explicit navigation, `WAYS` in the
+  page's generator): left from NEXT to PREVIOUS and right back, up from either step or right from NEXT to CLOSE, down
+  or left from CLOSE to NEXT, and nothing else. The kit's default, automatic, picks the best-placed live control on
+  the whole canvas, and **the top nav's two arrow buttons stay live under every open window** (`LeftArrrow` and
+  `RightArrow`: Buttons on automatic navigation, in a group the menu switches off only for freestyle). A full-screen
+  page covers them, so up from NEXT, up or left from PREVIOUS and left from CLOSE would land on a button nobody can
+  see (worked out with uGUI's own score on the page's rectangles after a pad run in the engine left the page; not
+  seen in Unity). Every control on the page is drawn inline and named in `WAYS`: a nested kit button keeps its
+  navigation in its own prefab, so the layout tool refuses one. The hub strip took its own
+  arrows out of the pad's way for the same reason (`author_menu_hub_nav.py`). The engine's pad also reaches controls
+  under closed windows, because its `Selectable.IsInteractable()` ignores `CanvasGroup`s; that part is the engine's
+  alone. After the change a pad run in the engine stayed on the three buttons through seventeen presses, and A on
+  CLOSE and B both closed the page.
+- **Generators:** `author_menu_pilot_profile.py` (the page; 27 negative controls) and `author_menu_ark.py` (the tab;
   nine new controls). Each reads the tokens a line may name from the code that fills them
   (`PilotProfileModal.TokenNames`; `ArkPilotsPage`'s two `TemplateText.Fill` calls, so `{count}` is the count's
   alone), and a control names the rule that must catch it, so one caught by a neighbouring rule fails the self-test.

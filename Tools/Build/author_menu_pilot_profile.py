@@ -20,6 +20,11 @@ in one plate at the bottom centre, the same place for every pilot, so a mouse do
 side. Both plates are the window's black, solid (PLATE_ALPHA), so words read on any picture. EVERY WORD is a template
 on PilotProfileModal (WORDS below) or the text of a button.
 
+THE PAD. Next, Previous and Close steer the pad themselves (WAYS below, Unity's Explicit navigation): left from Next
+to Previous and right back, up from either step or right from Next to Close, down or left from Close to Next, and
+nothing else. The kit's automatic search would leave the page. Every control is drawn inline: a nested kit prefab
+keeps its navigation in its own file, where WAYS cannot name it.
+
 STANDING DOWN: every output is re-derived on each run, so a re-run is a no-op (--check).
 
     python3 Tools/Build/author_menu_pilot_profile.py              # write
@@ -58,6 +63,8 @@ PAGE_TYPE = 21                                            # ScreenSwitcher.Modal
 
 # The words panel, against the left edge (PilotProfileModal.PlacePanel mirrors it). Its bottom clears the friends
 # orb, whose top is 124 above the canvas's bottom left (author_menu_arcade.ORB_CLEARANCE is 100 for a 52-tall bar).
+# The orb itself hides while this page is open (FriendsDrawer.Blocked: any window that is not a hub window), so the
+# clearance is a margin that holds if that rule changes, not a meeting the page has today.
 PANEL_W, PANEL_H, PANEL_INSET, PANEL_BOTTOM, PAD = 560, 744, 48, 140, 24
 INNER = PANEL_W - 2 * PAD
 # The ground under words that sit on a painted scene is SOLID. The game blends in linear light (ProjectSettings
@@ -74,6 +81,25 @@ ORB_TOP = 124
 # The step through the crew: one plate at the bottom centre.
 STEP_W, STEP_H, STEP_BOTTOM, STEP_PAD = 392, 72, 32, 12
 BUTTON_W, BUTTON_H, COUNT_W = 128, 48, 96
+
+# The pad's ways round the page: where each of its three buttons sends the selection, and nowhere else (Unity's
+# Navigation.Mode.Explicit). The kit's default, Automatic, picks the best-placed live control on the WHOLE canvas, and
+# two stay live under every open window: the top nav's arrow buttons (Menu_Main's LeftArrrow and RightArrow, Automatic
+# themselves, in a group the menu switches off only for freestyle). This page covers them, so a press up from Next or
+# left from Close would land on a button nobody can see, and A there would turn the screen under the page (worked out
+# with Unity's own score, dot / distance squared, after a pad run in the engine left the page, 2026-11-12). A way that
+# is not named goes nowhere. Close stays a stop: the keyboard has no other way to it. With a crew of ONE the page
+# disables both steps (PilotProfileModal.Draw) and Close's ways still name Next: Explicit navigation moves to a disabled
+# button, which draws no ring, and up comes back. Play never leaves a crew of one (the starter crew is one pilot a
+# callsign and no play code removes a pilot); only a damaged save can, where the repair after a load
+# (AccountInventory.Normalize) drops every entry but one. Docs/REFACTOR_BACKLOG.md row PP6 has what the pad does then.
+NAV_EXPLICIT = 4
+WAY_NAMES = ("Up", "Down", "Left", "Right")               # the order Unity writes them in
+WAYS = {
+    "Stepper/Next": dict(Left="Stepper/Previous", Up="Window/Close", Right="Window/Close"),
+    "Stepper/Previous": dict(Right="Stepper/Next", Up="Window/Close"),
+    "Window/Close": dict(Down="Stepper/Next", Left="Stepper/Next"),
+}
 
 # Rows of the panel, top-left corner down from the panel's top: (key, name, y, height, role, token, wrap).
 ROWS = (
@@ -179,15 +205,44 @@ def plate(parent, key, sliver):
     C.frame(parent, key, sliver, "SurfaceBlack", "TextLight", fill_alpha=PLATE_ALPHA)
 
 
+AUTOMATIC = K.SELECTABLE_FIELDS[:K.SELECTABLE_FIELDS.index("  m_Transition:")]   # the kit's navigation block
+
+
+def steer(button, key):
+    """Give `button` (the node at `key`) the page's own ways (WAYS) in place of the kit's automatic search."""
+    misnamed = sorted(set(WAYS[key]) - set(WAY_NAMES)) + sorted(set(WAYS[key].values()) - set(WAYS))
+    assert not misnamed, f"WAYS[{key!r}] names a way or a button the page does not have: {', '.join(misnamed)}"
+
+    def navigation(ctx):
+        landing = {way: ctx.c(WAYS[key][way], "button") if way in WAYS[key] else 0 for way in WAY_NAMES}
+        return (f"  m_Navigation:\n    m_Mode: {NAV_EXPLICIT}\n    m_WrapAround: 0\n"
+                + "".join(f"    m_SelectOn{way}: {{fileID: {landing[way]}}}\n" for way in WAY_NAMES))
+
+    def steered(body):
+        def write(ctx, go):
+            text = body(ctx, go)
+            assert text.count(AUTOMATIC) == 1, f"{key}: the kit's navigation block is not where steer() reads it"
+            return text.replace(AUTOMATIC, navigation(ctx))
+        return write
+
+    at = [i for i, (comp_key, _, _) in enumerate(button.comps) if comp_key == "button"]
+    assert len(at) == 1, f"{key} carries no one button to steer"
+    comp_key, class_id, body = button.comps[at[0]]
+    button.comps[at[0]] = (comp_key, class_id, steered(body))
+    return button
+
+
 def stepper(content):
     """NEXT, PREVIOUS and "3 / 18" on one plate at the bottom centre. Next is first in the hierarchy: the pad's
     selection lands on the first control that takes it (ScreenSwitcher.PreferredSelectable)."""
     st = content.child(N("Stepper", "Stepper", R((0.5, 0), None, (0, STEP_BOTTOM), (STEP_W, STEP_H), (0.5, 0))))
     plate(st, "Stepper/Frame", 10)
-    H.text_button(st, "Stepper/Next", "Next", "Next",
-                  R((1, 0.5), None, (-STEP_PAD, 0), (BUTTON_W, BUTTON_H), (1, 0.5)), None, None, None, None)
-    H.text_button(st, "Stepper/Previous", "Previous", "Previous",
-                  R((0, 0.5), None, (STEP_PAD, 0), (BUTTON_W, BUTTON_H), (0, 0.5)), None, None, None, None)
+    steer(H.text_button(st, "Stepper/Next", "Next", "Next",
+                        R((1, 0.5), None, (-STEP_PAD, 0), (BUTTON_W, BUTTON_H), (1, 0.5)), None, None, None, None),
+          "Stepper/Next")
+    steer(H.text_button(st, "Stepper/Previous", "Previous", "Previous",
+                        R((0, 0.5), None, (STEP_PAD, 0), (BUTTON_W, BUTTON_H), (0, 0.5)), None, None, None, None),
+          "Stepper/Previous")
     label(st.child(N("Stepper/Count", "Count", R((0.5, 0.5), None, (0, 0), (COUNT_W, 20)))), "", "Label",
           "NeutralLightest", align="center")
     return st
@@ -214,7 +269,7 @@ def close(content):
         .add("img", 114, K.image(tok("SurfaceBlack", PLATE_ALPHA), K.kit_sprite("kit_sliver10_fill"), True)) \
         .add("th", 114, H.themed("SurfaceBlack", PLATE_ALPHA)).add("le", 114, le(ignore=True))
     button.children.insert(0, under)
-    return button
+    return steer(button, "Window/Close")
 
 
 def build_modal():
@@ -314,6 +369,34 @@ def contrast_over_white(words, plate, alpha):
     return (max(ink, ground) + 0.05) / (min(ink, ground) + 0.05)
 
 
+def ways_written(text, key):
+    """A button's navigation as the prefab holds it: its mode, and the file id each way lands on (0: nowhere)."""
+    _, doc = A.doc_of(text, F(f"{key}#button"))
+    block = re.search(r"^  m_Navigation:\n    m_Mode: (\d+)\n    m_WrapAround: \d+\n"
+                      + "".join(rf"    m_SelectOn{way}: \{{fileID: (-?\d+)\}}\n" for way in WAY_NAMES),
+                      doc or "", re.M)
+    assert block, f"{key} carries no navigation to read"
+    return int(block.group(1)), dict(zip(WAY_NAMES, (int(fid) for fid in block.groups()[1:])))
+
+
+def nested_controls(text):
+    """The pad controls `text` holds through the prefabs it nests, all the way down, as the prefabs' file names: a
+    Selectable writes its navigation in the file that draws it, so a nested one is on the kit's automatic search
+    where WAYS cannot name it. KitButtonSmall holds none of its own: it is a variant, and its base's is found."""
+    found = []
+    for nested in re.finditer(r"^--- !u!1001 &-?\d+\n(.*?)(?=^--- |\Z)", text, re.M | re.S):
+        source = re.search(r"^  m_SourcePrefab: \{fileID: \d+, guid: ([0-9a-f]{32})", nested.group(1), re.M)
+        assert source, "a nested prefab names no source"
+        kit = sorted(n for n in os.listdir(os.path.join(REPO, K.PREFAB_DIR)) if n.endswith(".prefab"))
+        name = next((n for n in kit if K.meta_guid(f"{K.PREFAB_DIR}/{n}") == source.group(1)), None)
+        assert name, (f"the page nests a prefab that is not the kit's ({source.group(1)}): "
+                      "nested_controls() cannot read it for pad controls")
+        with open(os.path.join(REPO, K.PREFAB_DIR, name), encoding="utf-8") as fh:
+            inner = fh.read()
+        found += [name] * inner.count("  m_Navigation:\n") + nested_controls(inner)
+    return found
+
+
 def validate(files):
     guids = T.known_guids() | PACKAGE
     minted = {re.search(r"^guid: (\w+)$", t, re.M).group(1) for p, t in files.items() if p.endswith(".meta")}
@@ -374,6 +457,39 @@ def validate(files):
     step_kids = children_of(pf, F("Stepper#rt"))
     assert step_kids.index(str(F("Stepper/Next#rt"))) < step_kids.index(str(F("Stepper/Previous#rt"))), \
         "Next must come before Previous in the hierarchy"
+
+    # The pad stays on the page. Read from what was written: every control that takes the pad is drawn in this file
+    # and steers it itself, each way lands on one of the page's own buttons, every button can be reached from every
+    # other, and the ways are the authored ones. In that order, so a planted fault is caught by the rule that names it.
+    assert pf.count("  m_Navigation:\n") == len(WAYS), \
+        "the page holds a control the pad's ways (WAYS) do not name: it would search the whole menu for a neighbour"
+    nested = nested_controls(pf)
+    assert not nested, \
+        (f"the page nests a control the pad's ways (WAYS) cannot name ({', '.join(sorted(set(nested)))}): its navigation "
+         "is written in that prefab, the kit's automatic search. Draw it inline (H.text_button) and name it in WAYS")
+    button_at = {F(f"{key}#button"): key for key in WAYS}
+    lands = {}
+    for key in WAYS:
+        mode, written_ways = ways_written(pf, key)
+        assert mode == NAV_EXPLICIT, \
+            (f"{key} must steer the pad itself (Navigation mode {NAV_EXPLICIT}, Explicit): the kit's automatic search "
+             "leaves the page for the nav's arrow buttons, which the page covers")
+        for way, fid in written_ways.items():
+            assert fid == 0 or fid in button_at, f"{key}'s way {way.lower()} leads off the page"
+        lands[key] = {button_at[fid] for fid in written_ways.values() if fid}
+    for start in WAYS:
+        reached, frontier = {start}, [start]
+        while frontier:
+            for key in lands[frontier.pop()] - reached:
+                reached.add(key)
+                frontier.append(key)
+        lost = sorted(set(WAYS) - reached)
+        assert not lost, f"the pad cannot reach {', '.join(lost)} from {start}"
+    for key, authored in WAYS.items():
+        _, written_ways = ways_written(pf, key)
+        for way in WAY_NAMES:
+            want = F(f"{authored[way]}#button") if way in authored else 0
+            assert written_ways[way] == want, f"{key}'s way {way.lower()} is not the authored one"
 
     # The panel is authored against the left edge (PlacePanel mirrors it) and clears the friends orb.
     against_left = all(rect_field(pf, F("Panel#rt"), field) == (0, 0)
@@ -462,6 +578,16 @@ def self_test(files):
             f[pf] = f[pf][:a] + f[pf][a:b].replace(old, new, 1) + f[pf][b:]
         return mutate
 
+    def redrawn(add):
+        """The page drawn again with a control added to the step plate, the way a later edit would add one."""
+        def mutate(f):
+            root = build_modal()
+            content = next(node for node in root.children if node.key == "Content")
+            add(next(node for node in content.children if node.key == "Stepper"))
+            f[pf] = P.prefab_text(root, NAME)
+        return mutate
+
+    place = R((0.5, 1), None, (0, 12), (BUTTON_W, BUTTON_H), (0.5, 0))
     kids = "".join(f"  - {{fileID: {F(k + '#rt')}}}\n" for k in ("Dim", "Scene", "Content"))
     flipped = "".join(f"  - {{fileID: {F(k + '#rt')}}}\n" for k in ("Scene", "Dim", "Content"))
     cases = [
@@ -501,6 +627,28 @@ def self_test(files):
          doc_swap(F("Window/Close/Plate#th"), f"  token: {K.TOKEN_INDEX['SurfaceBlack']}\n",
                   f"  token: {K.TOKEN_INDEX['TextLight']}\n"), "is not the window's black"),
         ("a Close that closes nothing", swap("guid: " + S["close"], "guid: " + S["scene"])),
+        ("a fourth button drawn on the step plate that the ways do not name",
+         redrawn(lambda st: H.text_button(st, "Stepper/Select", "Select", "Select", place, None, None, None, None)),
+         "do not name"),
+        ("a fourth button nested from the kit, whose navigation is written in KitButton.prefab",
+         redrawn(lambda st: st.child(P.kit_button("Stepper/Select", "Select", "Cta", "SELECT", place))),
+         "cannot name"),
+        ("the same from the kit's small button, a variant that holds no navigation of its own",
+         redrawn(lambda st: st.child(P.kit_button("Stepper/Select", "Select", "Cta", "SELECT", place, small=True))),
+         "cannot name"),
+        ("a step left on the kit's automatic search (the pad leaves the page for the nav's arrows)",
+         doc_swap(F("Stepper/Next#button"), f"    m_Mode: {NAV_EXPLICIT}\n", "    m_Mode: 3\n"),
+         "must steer the pad itself"),
+        ("a way that lands on something that is not one of the page's buttons",
+         doc_swap(F("Stepper/Previous#button"), f"    m_SelectOnUp: {{fileID: {F('Window/Close#button')}}}\n",
+                  f"    m_SelectOnUp: {{fileID: {F('Panel/Name#tmp')}}}\n"), "leads off the page"),
+        ("a Close the pad cannot leave",
+         lambda f: [doc_swap(F("Window/Close#button"), f"    m_SelectOn{way}: {{fileID: {F('Stepper/Next#button')}}}\n",
+                             f"    m_SelectOn{way}: {{fileID: 0}}\n")(f) for way in ("Down", "Left")],
+         "the pad cannot reach"),
+        ("a way changed from the authored one (left from Close lands on Previous)",
+         doc_swap(F("Window/Close#button"), f"    m_SelectOnLeft: {{fileID: {F('Stepper/Next#button')}}}\n",
+                  f"    m_SelectOnLeft: {{fileID: {F('Stepper/Previous#button')}}}\n"), "is not the authored one"),
     ]
     ok = all([expect(*case) for case in cases])
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")

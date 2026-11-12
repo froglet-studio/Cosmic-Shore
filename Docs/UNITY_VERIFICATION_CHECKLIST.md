@@ -88,7 +88,19 @@ error. That run is why the plates are solid: at their first alpha, 0.88, a brigh
 and the quiet lines could not be read (the game blends in linear light; the web drawing blends in sRGB and had shown
 the plate near black). The engine does not draw the menu's sea material (it was switched off for the pictures) and
 sets a paragraph's lines 17.6 apart where the kit measures 23.2 for Unity, so a story stands about a third taller in
-Unity than in those pictures. The final look, the fonts' rendering, the fade and the pad are still Unity's to judge.
+Unity than in those pictures. The final look, the fonts' rendering and the fade are still Unity's to judge.
+
+**The controller, tried in the same engine:** with the kit's automatic navigation, a press left from NEXT put the
+focus on a game card outside the page, and A there opened the Arcade's configure window under it. Two causes. The
+engine's `Selectable.IsInteractable()` ignores `CanvasGroup`s, so its pad reaches controls under closed and covered
+windows; Unity's does not, and that part is the engine's alone. The second is real in Unity, worked out with uGUI's own
+score (dot / distance squared) on the page's rectangles and not run there: the top nav's `LeftArrrow` and `RightArrow`
+are Buttons on automatic navigation in a group the menu switches off only for freestyle, so they stay candidates
+under every open window, and from this page up from NEXT, up or left from PREVIOUS and left from CLOSE all land on
+one of them, hidden under the picture. So NEXT, PREVIOUS and CLOSE steer the pad themselves (explicit navigation,
+`WAYS` in `author_menu_pilot_profile.py`). The engine run after that: seventeen presses stayed on the three buttons,
+A on PREVIOUS and on NEXT stepped the crew both ways with the wrap, A on CLOSE closed the page, and so did B. The pad
+in Unity is step 6.
 
 **Verify in editor:**
 1. Let Unity import the branch. **Pass:** 18 textures under `Assets/Resources/Pilots/Scenes/` (1536x864), the catalog
@@ -103,8 +115,11 @@ Unity than in those pictures. The final look, the fonts' rendering, the fade and
 5. Press NEXT through all eighteen, then PREVIOUS back. **Pass:** the count runs "1 / 18" to "18 / 18" and wraps; the
    panel is on the right for a pilot who stands on the left and on the left for one who stands on the right; no face
    is under the panel, the step plate or Close; the ground never shows between two pilots.
-6. Controller, a page open. **Pass:** focus lands on NEXT, left reaches PREVIOUS, and B closes the page with the Ark's
-   Pilots tab behind it.
+6. Controller, a page open. **Pass:** focus lands on NEXT; left reaches PREVIOUS and right returns to NEXT; up from
+   either step, or right from NEXT, reaches CLOSE; down or left from CLOSE returns to NEXT. No other press moves the
+   focus (down from a step, left from PREVIOUS, up or right from CLOSE), and it never leaves the page (press A after
+   each move: the page steps to the next or the previous pilot, or closes from CLOSE; nothing opens under it); B
+   closes the page with the Ark's Pilots tab behind it.
 7. Game view at 16:10, 4:3, 21:9 and 19.5:9. **Pass:** the scene fills the view with no bars and no stretch, the face
    stays clear of the words, and a tall head (ANVIL, VOLT) is whole at 21:9.
 8. Device Simulator, a notched phone held sideways. **Pass:** the picture reaches the screen's edges; the panel, the
