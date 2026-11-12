@@ -272,4 +272,8 @@ resolve (server, replayed on the owner), so the owner knows it when it decides a
 
 **Not yet seen in the editor.** Hand test: ram a slower rival above 150 u/s (petals come loose; at Charge 10 a 50 u/s cruise is enough; at Charge 5 they land on you); a
 rival faster than you is not gored; plough prisms, then take an omni crystal (surge, invulnerable, every ram steals, 0.1 s per prism ploughed up to 12 s); take a second crystal straight away (nothing happens beyond the absorb); raise Space (wider
-blade) and Mass (prisms thrown further). Icons for Gore, Heft, Blade and Stampede are owed (`/ability-icon`).
+blade) and Mass (prisms thrown further). The HUD (2026-11-12): Rhino.prefab's overrides on its nested `RhinoHUDVariant` put `Rhino_Gore`, `Rhino_Heft` and
+`Rhino_Blade` (`Tools/Build/icon_kit/specs/rhino.py`) on the Charge, Mass and Space cards and switch the Swordfish's
+sword parts off; Time keeps the Ramp Spool card. The Charge plate is the gore-speed gauge (`RhinoHUDController.PushGore`:
+ram speed over the live minimum, full and lit when a ram counts, a flash when a Stampede starts). The omni Stampede has
+no card (the row is four).
