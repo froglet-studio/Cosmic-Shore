@@ -129,6 +129,7 @@ Queued with evidence:
 | Candidate | Evidence so far | What it needs |
 |---|---|---|
 | Creature body bloom pulse early-out (sweep SG-1, `IncorporealDepth_BloomPulse`) | **Inconclusive.** In the material bench the early-out measured 1.00x (B faster in 26 % of pairs), but probes showed why: returning 1 from the pulse unconditionally was 1.6x (so the pulse is real cost), while returning 1 only when `openness` is 0 changed nothing, so the closed state never occurred in the bench. The bench's state is not the game's (the publishers ran, `_IncorporealSpread` read (0.09, 0.29, 0.8, 1e5)), so the guard was never tested. | an in-scene bench (a real body under `SpindleLodSystem`), with the probe pair kept as its first check |
+| Find what re-batches the Menu_Main canvas every frame | Measured while rejecting UI-1: `UGUI.Rendering.UpdateBatches` costs about 1.8 ms EVERY frame in Menu_Main (editor Play, RTX 3080 machine), with or without the doors Animator. Something else dirties the 3,400-graphic canvas each frame. | bisect with the scene bench (disable one candidate component or subtree per A/B), then fix the writer that dirties it |
 | The sweep's queue (`provenwin-queue/QUEUE.md` in the project files) | ranked 3-11: scene-transition doors Animator, parked cameras under load covers, creature body bloom pulse, ... | one at a time through `/proven-win` |
 
 Rejected:
