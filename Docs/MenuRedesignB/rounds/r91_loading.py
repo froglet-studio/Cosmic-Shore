@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rev 91 boards: loading screens (Frogma tab "Loading Screens", Docs/MENU_REDESIGN_B.md).
+"""Rev 91 boards: the boot loading screen (Frogma tab "Loading Screens", Docs/MENU_REDESIGN_B.md).
 
 Shombith, 2026-11-12: "create me mockups for the animated smooth background with perfect progress bar ... maybe all
 parts of the game is shown in the loading menu. Like squads or the ark or the pilots or vessels the toybox. Create
@@ -8,9 +8,9 @@ like 6 mockups".
 Every board shares three things and differs in the fourth:
 
   the sea     three slow fields of the Blue family drifting under three layers of sea lines (CSS only)
-  the bar     one bar on one 16 s loop: four segments sized to the four real steps, a tabular percentage, the
+  the bar     one bar on one 16 s loop: four segments named by the boot status lines, a tabular percentage, the
               step's name, a glint that keeps travelling when a step is slow, Lime and "Ready" at 100
-  the brief   ENTERING and the mode's name, top left
+  the brief   the game's name, top left (this is the Bootstrap splash and the sign-in scene, not a mode entry)
   the show    A the squad, B the Ark, C pilots, D vessels, E the Toy Box, F all five in turn (recommended)
 
 All motion is keyframe percentages on the one loop (the Rev 33 rule), so a clip can be cut by seeking.
@@ -47,8 +47,9 @@ TOYS = ["Vessel Changer", "Cell Selector", "Domain Changer", "Element Charger", 
 ROOMS = ["Converter", "Squads", "Artifacts", "Decor"]
 
 # The loop, in percent of 16 s. A step starts at its mark; the bar reaches the step's share of the work at the next.
-STEPS = [("Connecting to shore", 0, 22), ("Building the arena", 18, 64), ("Settling the arena", 52, 86),
-         ("Waiting for pilots", 70, 100)]
+# The boot status channel's own lines (BootStatusBroadcaster / BootWelcomeCard, sections 26 and the welcome card).
+STEPS = [("Connecting", 0, 22), ("Signing in", 18, 64), ("Loading profile", 52, 86),
+         ("Creating session", 70, 100)]
 DONE = 84
 P_KEYS = "0%,4%{--p:0;--pi:0}18%{--p:22;--pi:22}30%{--p:38;--pi:38}40%{--p:44;--pi:44}52%{--p:64;--pi:64}70%{--p:86;--pi:86}84%,100%{--p:100;--pi:100}"
 
@@ -164,9 +165,10 @@ def bar(x=96, y=884, w=1728, live=True, p=None, word=None, done=False, slow=Fals
 </section>"""
 
 
-def brief(mode="Skim Race"):
+def brief():
+    """The boot screen's brief: the game's name. Nothing about a mode: this is the first screen after launch."""
     return (f'<header class="abs" style="left:96px;top:64px;display:flex;flex-direction:column;gap:6px">'
-            f'<span class="lab">Entering</span><span style="font-size:28px;line-height:1.2">{mode}</span></header>')
+            f'<span class="lab">Froglet</span><span style="font-size:28px;line-height:1.2">Cosmic Shore</span></header>')
 
 
 def glow(x, y, w, h, a=.12):
@@ -396,11 +398,11 @@ def board_f():
 # ── Compare: the bar on its own ───────────────────────────────────────────────────────────
 
 def board_compare():
-    held = [(0, "Connecting to shore", False, False, "Start: the first step is named before anything has moved."),
-            (12, "Connecting to shore", False, False, "Step 1 of 4. Each segment is as long as its share of the work."),
-            (41, "Building the arena", False, True, "A slow patch: the number holds, the glint keeps travelling, so it never looks frozen."),
-            (75, "Settling the arena", False, False, "Step 3. A finished step's marker is filled."),
-            (93, "Waiting for pilots", False, False, "Step 4. The bar only ever moves forward."),
+    held = [(0, "Connecting", False, False, "Start: the first step is named before anything has moved."),
+            (12, "Connecting", False, False, "Step 1 of 4. Each segment is as long as its share of the work."),
+            (41, "Signing in", False, True, "A slow patch: the number holds, the glint keeps travelling, so it never looks frozen."),
+            (75, "Loading profile", False, False, "Step 3. A finished step's marker is filled."),
+            (93, "Creating session", False, False, "Step 4. The bar only ever moves forward."),
             (100, "Ready", True, False, "Done: the bar turns Lime and says Ready. Lime appears nowhere else.")]
     body = (sea() + f'<header class="abs" style="left:96px;top:56px;display:flex;flex-direction:column;gap:6px"><span class="lab">The progress bar</span>'
             f'<span style="font-size:28px">Live on top, then held at six moments</span></header>'
@@ -420,16 +422,18 @@ def board_notes():
     cols = [
         ("Asked", ["Shombith, 2026-11-12: \"mockups for the animated smooth background with perfect progress bar ... maybe all parts of the game is shown in the loading menu. Like squads or the ark or the pilots or vessels the toybox.\""]),
         ("Shared by all six", ["The sea: three slow fields of the Blue family and three layers of sea lines. Nothing black, nothing still.",
-                               "The bar: four segments for the four real steps, a tabular percentage, the step's name, Lime only at Ready.",
-                               "ENTERING and the mode's name, top left. No tip line, no spinner."]),
+                               "The bar: four segments named by the boot status lines, a tabular percentage, the step's name, Lime only at Ready.",
+                               "When: the first screen after launch (the Bootstrap splash and the sign-in scene), and each return to the menu.",
+                               "The game's name, top left. No tip line, no spinner."]),
         ("What each one shows", ["A Squad: three seats, each arriving as the load moves on.",
                                  "B The Ark: the ship drifting; its four rooms lit one per step.",
                                  "C Pilots: one pilot large, the roster beside.",
                                  "D Vessels: one hull large, the fleet beside.",
                                  "E Toy Box: the Vessel Changer cycling hulls, the seven toys.",
                                  "F The tour (recommended): all five in turn, so a long load is never one picture."]),
-        ("Against the build", ["Today: the Cell gate (Rev 33 A): an Omni crystal in a hex, the steps panel, the pilots panel, a tip and a slim bar.",
-                               "New: the show replaces the crystal and both panels; the steps move into the bar itself.",
+        ("Against the build", ["Today: the Bootstrap splash: the feature art under a dim, LOADING over a 180 x 2 bar, one status line, the welcome card.",
+                               "New: the show replaces the still art; the status lines become the bar's four steps.",
+                               "The sign-in, pilot name, consent and connection-lost windows are unchanged and sit over this screen.",
                                "Art: the hull cards, the roster's painted portraits, the Ark's model render. The game would show the live models.",
                                "Departs from the quiet rule (no idle motion) because moving was the brief."]),
     ]

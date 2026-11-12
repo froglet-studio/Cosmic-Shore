@@ -7409,7 +7409,7 @@ boards is unknown until a screenshot is set beside R89A, R90Saga, R90Quests and 
   building and shaping its table): written and compiled, **not run**.
 - The hand test is "The Voyage window as the Sea table" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
-## 173. Rev 91 mockups: loading screens - a moving sea, one progress bar, a part of the game on show (2026-11-12, awaiting a pick)
+## 173. Rev 91 mockups: the boot loading screen - a moving sea, one progress bar, a part of the game on show (2026-11-12, awaiting a pick)
 
 **Asked** (Shombith, 2026-11-12): "use /frogma-new and create me mockups for the animated smooth background with
 perfect progress bar. Create me mockups, maybe all parts of the game is shown in the loading menu. Like squads or the
@@ -7423,12 +7423,12 @@ loop; all motion is keyframe percentages on that loop, so a clip can be cut by s
 Shared by all six:
 - **The sea.** Three slow fields of the Blue family drifting under three layers of sea lines that slide at different
   speeds, on the Deep Sea ground. CSS only.
-- **The bar.** Four segments, one per real step (Connecting to shore, Building the arena, Settling the arena, Waiting
-  for pilots: the `ConnectingPanel` phases of section 99.4), each as long as its share of the work. The step's name
+- **The bar.** Four segments named by the boot status lines (Connecting, Signing in, Loading profile, Creating
+  session: `BootStatusBroadcaster`, section 26), each as long as its share of the work. The step's name
   sits over the bar, a tabular percentage on the right, and each step's marker fills when the step is done. The bar
   only moves forward. A glint keeps travelling along the fill, so a slow step never looks frozen. At 100 the fill
   turns Lime and the name reads Ready; Lime appears nowhere else.
-- ENTERING and the mode's name, top left. No tip line and no spinner.
+- The game's name, top left. No tip line and no spinner.
 
 The boards:
 - `R91Compare`: the bar on its own, live, then held at 0, 12, 41 (a slow patch), 75, 93 and 100.
@@ -7450,8 +7450,16 @@ Gates: `frogma.py check --only R91` clean. `check_mockup.py`: colours, type and 
 gate fails E (72) and F (67) because it counts the layers that take turns, though one shows at a time, and fails the
 Compare board, which is a sheet of fragments. Looked at in a local render at two moments of the loop.
 
-**Differs from the build**: today's mode entry is the Cell gate (Rev 33 A, section 99.4): an Omni crystal in a hex,
-a steps panel, a pilots panel, a tip and a slim bar. A picked option replaces the crystal and both panels with its
-show and moves the steps into the bar. The moving background departs from the quiet rule (no idle motion) because
+**When it shows** (corrected the same day; Shombith: "I was talking about when we entered the game and the first
+scene in authentication screen"): the first screen after launch, the Bootstrap splash and the sign-in scene, which
+is also the cover on every return to the menu (section 26, "One loading screen, not three"). The first publish drew
+it as a mode entry (ENTERING Skim Race, the arena's steps); the boards were republished with the boot's words
+(canvas version `1794511852-8af9`).
+
+**Differs from the build**: today's Bootstrap splash is the feature art under a dim, LOADING over a 180 x 2
+`KitLoadBar`, one status line and the welcome card. A picked option replaces the still art with its show and turns
+the status lines into the bar's four steps; the sign-in, pilot name, consent and connection-lost windows are
+unchanged and sit over it. The bar today reads only the prism builder (`EnvironmentLoadVeil.BarSpan`), so a bar that
+also covers connecting and signing in needs those steps given a share: a build question for the pick. The moving background departs from the quiet rule (no idle motion) because
 motion was the brief. In the game the show would be the live models, and every word (the step names, the lines under
 each title) an authored field. Nothing is built; the build waits on a pick.
