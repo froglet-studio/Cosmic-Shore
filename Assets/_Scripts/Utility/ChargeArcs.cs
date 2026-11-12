@@ -47,6 +47,13 @@ namespace CosmicShore.Utility
         /// can see the plasma, more prominently").</summary>
         public float SeamPetalGlow;
 
+        /// <summary>Seam walk: the share of seam choices (0..1) that steer the bolt toward the viewer's side of the crystal,
+        /// when the walker is given the eye. At a junction it then never takes a seam that ends out of sight while one that
+        /// ends in sight is open; from behind the crystal it takes the seam that comes round fastest. Garrett, 2026-11-12:
+        /// "the bolt should always be on screen. it spends too much time invisible to the player on the other side of the
+        /// crystal." 0 = the walk ignores the viewer (the lab and every walker given no eye).</summary>
+        public float SeamFaceViewer;
+
         /// <summary>Flux arc: a Mass column lights where an arc passes through it only while it stands out of the omni
         /// (designer, 2026-10-13: "they should only light when protracted (not retracted)"). Its strike fades in as its
         /// protraction (1 - its column place) rises from the first to the second.</summary>
@@ -699,12 +706,16 @@ namespace CosmicShore.Utility
         readonly List<Leg> legs = new();
         readonly List<int> recent = new(4);
         readonly List<int> options = new(3);
+        readonly List<int> kept = new(3);
+        readonly Vector3 centre;
         int at, previous = -1, serial;
         float end, odometer;
 
         public ChargeSeamWalker(ChargeSites sites, int seed, float startSeconds)
         {
             this.sites = sites;
+            for (int j = 0; j < sites.Junctions.Length; j++) centre += sites.Junctions[j];
+            centre /= Mathf.Max(1, sites.Junctions.Length);
             random = new System.Random(seed);
             at = random.Next(sites.Junctions.Length);
             end = startSeconds;
@@ -714,20 +725,41 @@ namespace CosmicShore.Utility
 
         /// <summary>Strikes every seam due by <paramref name="seconds"/> (and a second ahead), and forgets the ones that
         /// have faded out.</summary>
-        public void Advance(float seconds, in ChargeArcSettings settings)
+        public void Advance(float seconds, in ChargeArcSettings settings) => Advance(seconds, settings, null);
+
+        /// <summary><see cref="Advance(float, in ChargeArcSettings)"/>, steering the walk toward <paramref name="eye"/> (the
+        /// viewer, in the sites' space) as <see cref="ChargeArcSettings.SeamFaceViewer"/> says. Null = no steering.</summary>
+        public void Advance(float seconds, in ChargeArcSettings settings, Vector3? eye)
         {
             float span = settings.Span;
-            while (end <= seconds + 1f)
+            // Plan a second ahead; a walk that follows the viewer plans only a beat ahead, so each turn sees where the
+            // viewer is now rather than where they were a second ago.
+            float ahead = eye.HasValue && settings.SeamFaceViewer > 0f ? 0.1f : 1f;
+            while (end <= seconds + ahead)
             {
                 options.Clear();
                 foreach (int e in sites.SeamsOfJunction[at]) if (e != previous) options.Add(e);
+                bool steer = eye.HasValue && settings.SeamFaceViewer > 0f;
                 if (recent.Count >= 4)
                 {
-                    // never a fifth seam round one bloom
+                    // never a fifth seam round one bloom - unless, steering for the viewer, every way out leaves their
+                    // sight: then staying in view wins (Garrett, 2026-11-12: "the bolt should always be on screen")
                     var first = sites.Seams[recent[0]];
+                    int before = options.Count;
+                    if (steer) { kept.Clear(); kept.AddRange(options); }
                     AvoidCircling(first.SiteA);
                     AvoidCircling(first.SiteB);
+                    if (steer && options.Count < before && !AnyEndsInSight(eye.Value) && AnyEndsInSight(eye.Value, kept))
+                    {
+                        options.Clear();
+                        options.AddRange(kept);
+                    }
                 }
+                // Draw the steering roll only when steering can apply, so a walker given no eye (or a zero share)
+                // keeps exactly the sequence it always had.
+                if (eye.HasValue && settings.SeamFaceViewer > 0f && options.Count > 1
+                    && random.NextDouble() < settings.SeamFaceViewer)
+                    KeepFacing(eye.Value);
                 int seam = options[random.Next(options.Count)];
                 var edge = sites.Seams[seam];
                 bool forward = edge.A == at;
@@ -745,6 +777,92 @@ namespace CosmicShore.Utility
             int drop = 0;
             while (drop < legs.Count && seconds - legs[drop].Leaves > settings.SeamFade * span) drop++;
             if (drop > 0) legs.RemoveRange(0, drop);
+        }
+
+        /// <summary>How squarely junction <paramref name="j"/> faces <paramref name="eye"/>: the cosine between its outward
+        /// direction from the crystal's centre and the direction to the eye. Above 0 it is on the viewer's side.</summary>
+        public float Facing(int j, Vector3 eye)
+        {
+            Vector3 p = sites.Junctions[j];
+            Vector3 outward = p - centre, look = eye - p;
+            float lo = outward.magnitude, ll = look.magnitude;
+            return lo > 1e-6f && ll > 1e-6f ? Vector3.Dot(outward, look) / (lo * ll) : 0f;
+        }
+
+        const int SightLookahead = 4;
+
+        // Keep the options that keep the bolt in sight longest, looking SightLookahead seams ahead: the most seams in a
+        // row that can end in sight from here (never straight back); from behind the crystal, the soonest return to
+        // sight, then the seam ending nearest the viewer's side. Recursion over at most 2^4 paths an option, no
+        // allocation: this runs for every seam struck on every Charge crystal.
+        void KeepFacing(Vector3 eye)
+        {
+            int best = int.MinValue;
+            float bestFacing = float.NegativeInfinity;
+            for (int o = 0; o < options.Count; o++)
+            {
+                int score = Score(options[o], at, eye);
+                float f = Facing(FarEnd(options[o]), eye);
+                if (score > best || (score == best && f > bestFacing)) { best = score; bestFacing = f; }
+            }
+            for (int o = options.Count - 1; o >= 0 && options.Count > 1; o--)
+            {
+                int score = Score(options[o], at, eye);
+                bool keep = score == best && (best > 0 || Facing(FarEnd(options[o]), eye) >= bestFacing);
+                if (!keep) options.RemoveAt(o);
+            }
+        }
+
+        // > 0: seams in a row in sight starting with this one (best path); <= 0: minus the seams spent out of sight before
+        // the walk can be back in sight (-SightLookahead when it cannot within the lookahead).
+        int Score(int seam, int from, Vector3 eye)
+        {
+            int run = InSightRun(seam, from, eye, SightLookahead);
+            if (run > 0) return run;
+            for (int out_ = 1; out_ < SightLookahead; out_++)
+                if (BackInSightWithin(seam, from, eye, out_)) return -out_;
+            return -SightLookahead;
+        }
+
+        int InSightRun(int seam, int from, Vector3 eye, int depth)
+        {
+            var e = sites.Seams[seam];
+            int far = e.A == from ? e.B : e.A;
+            if (Facing(far, eye) <= 0f) return 0;
+            if (depth <= 1) return 1;
+            int best = 0;
+            foreach (int next in sites.SeamsOfJunction[far])
+                if (next != seam) best = Mathf.Max(best, InSightRun(next, far, eye, depth - 1));
+            return 1 + best;
+        }
+
+        // True when, after this seam and at most `outSeams - 1` more out of sight, the next seam ends in sight.
+        bool BackInSightWithin(int seam, int from, Vector3 eye, int outSeams)
+        {
+            var e = sites.Seams[seam];
+            int far = e.A == from ? e.B : e.A;
+            foreach (int next in sites.SeamsOfJunction[far])
+            {
+                if (next == seam) continue;
+                var n = sites.Seams[next];
+                if (Facing(n.A == far ? n.B : n.A, eye) > 0f) return true;
+                if (outSeams > 1 && BackInSightWithin(next, far, eye, outSeams - 1)) return true;
+            }
+            return false;
+        }
+
+        bool AnyEndsInSight(Vector3 eye) => AnyEndsInSight(eye, options);
+
+        bool AnyEndsInSight(Vector3 eye, List<int> seams)
+        {
+            for (int o = 0; o < seams.Count; o++) if (Facing(FarEnd(seams[o]), eye) > 0f) return true;
+            return false;
+        }
+
+        int FarEnd(int seam)
+        {
+            var e = sites.Seams[seam];
+            return e.A == at ? e.B : e.A;
         }
 
         // When the last four seams all ran round <paramref name="site"/>, drop the options that would run round it a
