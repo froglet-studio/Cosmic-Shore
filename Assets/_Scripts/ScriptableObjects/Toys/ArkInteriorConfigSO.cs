@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -57,6 +58,30 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Near and far clip of the interior camera.")]
         [SerializeField] Vector2 clipPlanes = new(0.3f, 1500f);
 
+        [Header("The hangar (SQUADS)")]
+        [Tooltip("Where each seat's vessel stands (seat 0, 1, 2), model space on the hangar floor: the squad lined up across the bay facing the camera (Rev 61 C).")]
+        [SerializeField] Vector3[] padPositions =
+            { new(0f, -23f, 66f), new(9f, -23f, 60.5f), new(-9.6f, -23f, 60.5f) };
+        [Tooltip("The vessels' prefabs (Vessel Prefab Container): a squad vessel is drawn from its prefab's renderers alone, a picture with nothing of the vessel's play.")]
+        [SerializeField] VesselPrefabContainer vesselPrefabs;
+        [Tooltip("Every vessel is drawn this long (its longest side), whatever its class's size, so the line reads as three equals.")]
+        [SerializeField, Min(1f)] float vesselLength = 8f;
+        [Tooltip("How high a live vessel hovers over its pad (an offline one rests lower).")]
+        [SerializeField, Min(0f)] float hoverHeight = 2.6f;
+        [Tooltip("The pad's glow under a live vessel, in the squad's domain colour.")]
+        [SerializeField, Min(0f)] float padLightIntensity = 4f;
+        [Tooltip("How much of its colour a powered-down vessel keeps (an offline friend's).")]
+        [SerializeField, Range(0f, 1f)] float offlineBrightness = 0.12f;
+
+        [Header("The cell outside")]
+        [Tooltip("Show the menu's own cell beyond the open mouth: captured once by a camera at the menu camera's place when the Ark opens (the menu is paused behind the Ark, so the cell holds still), shown on a backdrop. Off: the camera's skybox.")]
+        [SerializeField] bool liveCell = true;
+        [Tooltip("The backdrop's centre (model space, far beyond the pier's end) and its size.")]
+        [SerializeField] Vector3 cellBackdropCentre = new(0f, -10f, 420f);
+        [SerializeField] Vector2 cellBackdropSize = new(1500f, 850f);
+        [Tooltip("The capture's pixel size.")]
+        [SerializeField] Vector2Int cellCaptureSize = new(1280, 720);
+
         [Header("The pier (CONVERTER)")]
         [Tooltip("Where the pier leaves the hangar (model z of the mouth).")]
         [SerializeField] float pierStartZ = 88f;
@@ -109,6 +134,16 @@ namespace CosmicShore.ScriptableObjects
         public View PierView => pierView;
         public View ArtifactsView => artifactsView;
         public Vector2 ClipPlanes => clipPlanes;
+        public IReadOnlyList<Vector3> PadPositions => padPositions;
+        public VesselPrefabContainer VesselPrefabs => vesselPrefabs;
+        public float VesselLength => vesselLength;
+        public float HoverHeight => hoverHeight;
+        public float PadLightIntensity => padLightIntensity;
+        public float OfflineBrightness => offlineBrightness;
+        public bool LiveCell => liveCell;
+        public Vector3 CellBackdropCentre => cellBackdropCentre;
+        public Vector2 CellBackdropSize => cellBackdropSize;
+        public Vector2Int CellCaptureSize => cellCaptureSize;
         public float PierStartZ => pierStartZ;
         public float PierLength => pierLength;
         public float PierWidth => pierWidth;

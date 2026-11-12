@@ -43,6 +43,30 @@ namespace CosmicShore.UI
         static readonly Vector3 PrismHalfExtents = Vector3.one * 0.5125f;
         static readonly int ColorMultiplierId = Shader.PropertyToID("_ColorMultiplier");
         static readonly float[] PedestalDegrees = { -75f, -27f, 27f, 75f };
+        /// <summary>The artifacts the game has, in pedestal order (Assets/_SO_Assets/Pilots/Artifacts ids).</summary>
+        static readonly string[] ArtifactKinds = { "artifact.javelin", "artifact.hydra", "artifact.aftershock", "artifact.aegis" };
+        static readonly int BaseColorId = Shader.PropertyToID("_BaseColor"), ColorId = Shader.PropertyToID("_Color"),
+            EmissionColorId = Shader.PropertyToID("_EmissionColor"), BaseMapId = Shader.PropertyToID("_BaseMap");
+
+        enum Themed { Block, Shielded, Danger }
+
+        sealed class Pad
+        {
+            public Transform Root;
+            public VesselClassType Vessel;
+            public HangarPadState State;
+            public Light Light;
+            public Vector3 Base;
+            public float Phase;
+            public readonly List<(Renderer r, Material[] lit)> Parts = new();
+        }
+
+        sealed class ArtifactSlot
+        {
+            public Transform Piece;
+            public Light Spot;
+            public bool Selected;
+        }
 
         ArkInteriorConfigSO _cfg;
         Domains _domain;
@@ -52,7 +76,15 @@ namespace CosmicShore.UI
         float _crystalBase;
         readonly List<Object> _owned = new();
         readonly List<(Transform t, float turnsPerSecond)> _spinners = new();
-        Material _body, _trim, _window, _block, _shielded;
+        Material _body, _trim, _window, _block, _shielded, _danger;
+        bool _trimIsShip;
+        readonly List<(Renderer r, Themed role)> _themed = new();
+        readonly List<Pad> _pads = new();
+        readonly Dictionary<Material, Material> _darkCopies = new();
+        readonly List<ArtifactSlot> _artifactSlots = new();
+        Renderer _cellBackdrop;
+        RenderTexture _cellTexture;
+        bool _cellCaptured;
         Mesh _cube, _cylinder, _torusThick, _torusThin;
 
         /// <summary>Where the combine plays: over the pier's round deck, its spread shrunk to fit (<see cref="FitCombine"/>).</summary>
@@ -91,14 +123,57 @@ namespace CosmicShore.UI
             {
                 _block = set.BlockMaterial;
                 _shielded = theme.GetTeamShieldedBlockMaterial(_domain);
+                _danger = theme.GetTeamDangerousBlockMaterial(_domain);
             }
             BuildModel(theme);
+            BuildPads();
+            BuildCellBackdrop();
             _pier = new GameObject("Pier");
             _pier.transform.SetParent(transform, false);
             BuildPier(_pier.transform);
             _artifacts = new GameObject("ArtifactsRoom");
             _artifacts.transform.SetParent(transform, false);
             BuildArtifactsRoom(_artifacts.transform);
+            IndexThemed();
+        }
+
+        /// <summary>Every renderer wearing one of the theme's prism materials, so a domain change can repaint them.</summary>
+        void IndexThemed()
+        {
+            _themed.Clear();
+            foreach (var r in GetComponentsInChildren<MeshRenderer>(true))
+            {
+                var m = r.sharedMaterial;
+                if (!m) continue;
+                if (m == _block) _themed.Add((r, Themed.Block));
+                else if (m == _shielded) _themed.Add((r, Themed.Shielded));
+                else if (m == _danger) _themed.Add((r, Themed.Danger));
+            }
+        }
+
+        /// <summary>The squad's domain relights the Ark (Shombith, 2026-11-07: "changing domain does not affect the
+        /// environment"): the hull's and the set pieces' trim, every prism, and the vessels on the pads.</summary>
+        public void SetDomain(Domains domain)
+        {
+            if (domain == _domain) return;
+            var theme = ThemeManager.Data;
+            if (theme?.TeamMaterialSets == null || !theme.TeamMaterialSets.TryGetValue(domain, out var set) || !set) return;
+            _domain = domain;
+            if (_trimIsShip && set.ShipMaterial && _trim)
+            {
+                _trim.shader = set.ShipMaterial.shader;
+                _trim.CopyPropertiesFromMaterial(set.ShipMaterial);
+                DressCopy(_trim, _cfg.ArkModel.DomainBrightness);
+            }
+            _block = set.BlockMaterial;
+            var shielded = theme.GetTeamShieldedBlockMaterial(domain);
+            var danger = theme.GetTeamDangerousBlockMaterial(domain);
+            _shielded = shielded ? shielded : _block;
+            _danger = danger ? danger : _block;
+            foreach (var (r, role) in _themed)
+                if (r) r.sharedMaterial = role switch { Themed.Shielded => _shielded, Themed.Danger => _danger, _ => _block };
+            foreach (var pad in _pads)
+                if (pad.Root) RepaintPad(pad, rebuild: true);
         }
 
         /// <summary>Shows one room: the hull for the hangar and the pier (the pier also shows its deck), the artifacts room
@@ -145,12 +220,17 @@ namespace CosmicShore.UI
             if (Room == ArkRoom.Artifacts)
                 foreach (var (t, turns) in _spinners)
                     if (t) t.Rotate(0f, 360f * turns * dt, 0f, Space.Self);
+            if (Room == ArkRoom.Hangar)
+                foreach (var pad in _pads)
+                    if (pad.Root && pad.State == HangarPadState.Live)
+                        pad.Root.localPosition = pad.Base + Vector3.up * (0.12f * Mathf.Sin(seconds * 1.3f + pad.Phase));
             if (Room == ArkRoom.Pier && _crystalLight)
                 _crystalLight.intensity = _crystalBase * (1f + 0.2f * Mathf.Sin(seconds * Mathf.PI * 2f * 0.5f));
         }
 
         void OnDestroy()
         {
+            if (_cellTexture) _cellTexture.Release();
             foreach (var o in _owned)
                 if (o) Destroy(o);
             _owned.Clear();
@@ -195,15 +275,14 @@ namespace CosmicShore.UI
                     if (!copies.TryGetValue(source, out var copy))
                     {
                         copy = Own(new Material(source) { name = source.name + " (Ark interior)", doubleSidedGI = true });
-                        if (copy.HasProperty("_Cull")) copy.SetFloat("_Cull", 0f);
-                        if (copy.HasProperty("_CullMode")) copy.SetFloat("_CullMode", 0f);
-                        if (copy.HasProperty("_RenderFace")) copy.SetFloat("_RenderFace", 0f);
-                        MakeOpaque(copy);
-                        if (copy.HasProperty(ColorMultiplierId))
-                            copy.SetFloat(ColorMultiplierId, copy.GetFloat(ColorMultiplierId) * Brightness(def, slot));
+                        DressCopy(copy, Brightness(def, slot));
                         copies[source] = copy;
                         if (slot == SlotBody && !_body) _body = copy;
-                        if (slot == SlotDomain && !_trim) _trim = copy;
+                        if (slot == SlotDomain && !_trim)
+                        {
+                            _trim = copy;
+                            _trimIsShip = source == ship;
+                        }
                         if (slot == SlotWindow && !_window) _window = copy;
                     }
                     materials[i] = copy;
@@ -214,6 +293,16 @@ namespace CosmicShore.UI
             _body ??= _trim ?? _window;
             _trim ??= _window ?? _body;
             _window ??= _trim;
+        }
+
+        /// <summary>A copy drawn both faces, opaque and depth-writing, at <paramref name="brightness"/> (ArkModel's dressing).</summary>
+        static void DressCopy(Material copy, float brightness)
+        {
+            if (copy.HasProperty("_Cull")) copy.SetFloat("_Cull", 0f);
+            if (copy.HasProperty("_CullMode")) copy.SetFloat("_CullMode", 0f);
+            if (copy.HasProperty("_RenderFace")) copy.SetFloat("_RenderFace", 0f);
+            MakeOpaque(copy);
+            if (copy.HasProperty(ColorMultiplierId)) copy.SetFloat(ColorMultiplierId, copy.GetFloat(ColorMultiplierId) * brightness);
         }
 
         static int SlotOf(ArkModelDefinitionSO def, Material source)
@@ -278,8 +367,7 @@ namespace CosmicShore.UI
             if (!_block || !_cfg.PrismBoxMesh) return;
             var root = new GameObject("HullPrisms").transform;
             root.SetParent(_hull.transform, false);
-            var theme = ThemeManager.Data;
-            var danger = theme.GetTeamDangerousBlockMaterial(_domain);
+            var danger = _danger;
             var octa = OctahedronMeshGenerator.GetSharedShieldMesh(PrismHalfExtents);
             var stella = StellatedOctahedronMeshGenerator.GetSharedShieldMesh(PrismHalfExtents);
             foreach (var lay in ArkModel.SocketLays(def, _domain))
@@ -411,16 +499,15 @@ namespace CosmicShore.UI
                 var foot = P + new Vector3(_cfg.PlatformRadii.y * Mathf.Sin(a), 0.3f, _cfg.PlatformRadii.y * Mathf.Cos(a));
                 Cylinder(r, "Pedestal", foot + Vector3.up * 0.55f, 0.75f, 1.1f, _body);
                 Ring(r, foot + Vector3.up * 1.12f, 0.68f, false);
-                bool selected = i == 1;
                 var artifact = BuildArtifact(i, r);
                 artifact.localPosition = foot + Vector3.up * 2.75f;
-                artifact.localScale = Vector3.one * (_cfg.ArtifactScale.x * (selected ? _cfg.ArtifactScale.y : 1f));
-                _spinners.Add((artifact, selected ? 0.12f : 0.06f * (i % 2 == 0 ? 1f : -1f)));
-                var spot = Light("ArtifactSpot", foot + Vector3.up * 8.5f, LightType.Spot, Color.white,
-                    _cfg.ArtifactSpotIntensity * (selected ? 2f : 1f), 14f, r);
+                _spinners.Add((artifact, 0.06f * (i % 2 == 0 ? 1f : -1f)));
+                var spot = Light("ArtifactSpot", foot + Vector3.up * 8.5f, LightType.Spot, _cfg.CellLight, _cfg.ArtifactSpotIntensity, 14f, r);
                 spot.spotAngle = 28f;
                 spot.transform.localRotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+                _artifactSlots.Add(new ArtifactSlot { Piece = artifact, Spot = spot });
             }
+            SetArtifacts(string.Empty, null);
         }
 
         /// <summary>The four artifacts the game has (Assets/_SO_Assets/Pilots/Artifacts), each built from the game's prisms after
@@ -458,6 +545,224 @@ namespace CosmicShore.UI
             return root;
         }
 
+        /// <summary>The artifacts room follows the Artifacts list (<see cref="ArkArtifactsPage.RoomChanged"/>): a kind the
+        /// player does not hold leaves its pedestal empty; the picked one is drawn larger, turns faster and its spot is
+        /// twice as bright. <paramref name="held"/> null shows every kind (before the list has drawn).</summary>
+        public void SetArtifacts(string pickedKind, IReadOnlyCollection<string> held)
+        {
+            for (int i = 0; i < _artifactSlots.Count && i < ArtifactKinds.Length; i++)
+            {
+                var slot = _artifactSlots[i];
+                bool has = held == null || Contains(held, ArtifactKinds[i]);
+                slot.Selected = has && ArtifactKinds[i] == pickedKind;
+                if (slot.Piece)
+                {
+                    slot.Piece.gameObject.SetActive(has);
+                    slot.Piece.localScale = Vector3.one * (_cfg.ArtifactScale.x * (slot.Selected ? _cfg.ArtifactScale.y : 1f));
+                }
+                if (slot.Spot)
+                {
+                    slot.Spot.enabled = has;
+                    slot.Spot.intensity = _cfg.ArtifactSpotIntensity * (slot.Selected ? 2f : 1f);
+                }
+                for (int k = 0; k < _spinners.Count; k++)
+                    if (_spinners[k].t == slot.Piece)
+                        _spinners[k] = (slot.Piece, slot.Selected ? 0.12f : 0.06f * (i % 2 == 0 ? 1f : -1f));
+            }
+        }
+
+        static bool Contains(IReadOnlyCollection<string> set, string kind)
+        {
+            if (set is ICollection<string> c) return c.Contains(kind);
+            foreach (var k in set) if (k == kind) return true;
+            return false;
+        }
+
+        // ── The hangar's pads ───────────────────────────────────────────────────
+
+        void BuildPads()
+        {
+            var positions = _cfg.PadPositions;
+            if (positions == null) return;
+            for (int i = 0; i < positions.Count; i++)
+            {
+                var pad = new Pad { Base = positions[i] + Vector3.up * _cfg.HoverHeight, Phase = i * 2.1f };
+                pad.Light = Light("PadLight", positions[i] + Vector3.up * 0.6f, LightType.Point, Color.white, _cfg.PadLightIntensity, 7f, _hull.transform);
+                pad.Light.enabled = false;
+                _pads.Add(pad);
+            }
+        }
+
+        /// <summary>The squad on the pads (<see cref="SquadsPage.HangarChanged"/>): each seat's vessel, lit and hovering for
+        /// you, an AI wingmate or an online friend, powered down and resting for an offline friend, the pad empty for an
+        /// open seat. A vessel is rebuilt only when its class changes.</summary>
+        public void SetHangar(IReadOnlyList<HangarPad> pads, Color domainColour)
+        {
+            for (int i = 0; i < _pads.Count; i++)
+            {
+                var pad = _pads[i];
+                var want = pads != null && i < pads.Count ? pads[i] : new HangarPad(default, HangarPadState.Empty);
+                bool rebuild = want.State != HangarPadState.Empty && (!pad.Root || pad.Vessel != want.Vessel);
+                pad.Vessel = want.Vessel;
+                pad.State = want.State;
+                if (pad.Light) pad.Light.color = domainColour;
+                RepaintPad(pad, rebuild);
+            }
+        }
+
+        void RepaintPad(Pad pad, bool rebuild)
+        {
+            if (rebuild)
+            {
+                if (pad.Root) Destroy(pad.Root.gameObject);
+                pad.Root = BuildVesselPicture(pad);
+            }
+            bool shown = pad.State != HangarPadState.Empty && pad.Root;
+            if (pad.Root) pad.Root.gameObject.SetActive(shown);
+            if (pad.Light) pad.Light.enabled = shown && pad.State == HangarPadState.Live;
+            if (!shown) return;
+            bool dark = pad.State == HangarPadState.Dark;
+            pad.Root.localPosition = dark ? pad.Base - Vector3.up * (_cfg.HoverHeight * 0.6f) : pad.Base;
+            foreach (var (r, lit) in pad.Parts)
+            {
+                if (!r) continue;
+                if (!dark) { r.sharedMaterials = lit; continue; }
+                var mats = new Material[lit.Length];
+                for (int k = 0; k < lit.Length; k++) mats[k] = Dark(lit[k]);
+                r.sharedMaterials = mats;
+            }
+        }
+
+        /// <summary>A vessel as a picture: its prefab's own mesh renderers copied (nothing of its play - no abilities, no
+        /// network, no physics), the Domain slot in the squad's domain, scaled to <see cref="ArkInteriorConfigSO.VesselLength"/>,
+        /// nose toward the camera.</summary>
+        Transform BuildVesselPicture(Pad pad)
+        {
+            pad.Parts.Clear();
+            if (!_cfg.VesselPrefabs || !_cfg.VesselPrefabs.TryGetShipPrefab(pad.Vessel, out var prefab, reportMissing: false) || !prefab)
+                return null;
+            var theme = ThemeManager.Data;
+            Material ship = theme?.TeamMaterialSets != null && theme.TeamMaterialSets.TryGetValue(_domain, out var set) && set ? set.ShipMaterial : null;
+            var placeholders = _cfg.ArkModel.DomainReplacesMaterials;
+            var root = new GameObject("Vessel " + pad.Vessel).transform;
+            root.SetParent(_hull.transform, false);
+            var model = new GameObject("Model").transform;
+            model.SetParent(root, false);
+            var toRoot = prefab.worldToLocalMatrix;
+            var bounds = new Bounds();
+            bool any = false;
+            foreach (var r in prefab.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!r.enabled || !ActiveUnder(r.transform, prefab)) continue;
+                var mesh = r is SkinnedMeshRenderer skinned ? skinned.sharedMesh
+                    : r is MeshRenderer && r.TryGetComponent<MeshFilter>(out var mf) ? mf.sharedMesh : null;
+                if (!mesh) continue;
+                var m = toRoot * r.transform.localToWorldMatrix;
+                var lit = r.sharedMaterials;
+                for (int k = 0; k < lit.Length; k++)
+                    for (int j = 0; j < placeholders.Count; j++)
+                        if (lit[k] == placeholders[j] && ship) lit[k] = ship;
+                var part = Piece("Part", mesh, null, model);
+                part.transform.SetLocalPositionAndRotation(m.GetPosition(), m.rotation);
+                part.transform.localScale = m.lossyScale;
+                var renderer = part.GetComponent<MeshRenderer>();
+                renderer.sharedMaterials = lit;
+                pad.Parts.Add((renderer, lit));
+                var b = mesh.bounds;
+                for (int c = 0; c < 8; c++)
+                {
+                    var corner = m.MultiplyPoint3x4(b.center + Vector3.Scale(b.extents, new Vector3((c & 1) == 0 ? -1 : 1, (c & 2) == 0 ? -1 : 1, (c & 4) == 0 ? -1 : 1)));
+                    if (!any) { bounds = new Bounds(corner, Vector3.zero); any = true; }
+                    else bounds.Encapsulate(corner);
+                }
+            }
+            if (!any)
+            {
+                Destroy(root.gameObject);
+                return null;
+            }
+            float k2 = _cfg.VesselLength / Mathf.Max(1e-3f, Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z)));
+            model.localScale = Vector3.one * k2;
+            model.localPosition = -bounds.center * k2;
+            root.localPosition = pad.Base;
+            return root;
+        }
+
+        static bool ActiveUnder(Transform t, Transform root)
+        {
+            for (; t; t = t.parent)
+            {
+                if (!t.gameObject.activeSelf) return false;
+                if (t == root) return true;
+            }
+            return true;
+        }
+
+        /// <summary>A powered-down copy of <paramref name="lit"/>: the same material at a sliver of its colour, no glow.</summary>
+        Material Dark(Material lit)
+        {
+            if (!lit) return lit;
+            if (_darkCopies.TryGetValue(lit, out var dark)) return dark;
+            dark = Own(new Material(lit) { name = lit.name + " (powered down)" });
+            float k = _cfg.OfflineBrightness;
+            if (dark.HasProperty(ColorMultiplierId)) dark.SetFloat(ColorMultiplierId, dark.GetFloat(ColorMultiplierId) * k);
+            if (dark.HasProperty(BaseColorId)) dark.SetColor(BaseColorId, dark.GetColor(BaseColorId) * k);
+            if (dark.HasProperty(ColorId)) dark.SetColor(ColorId, dark.GetColor(ColorId) * k);
+            if (dark.HasProperty(EmissionColorId)) dark.SetColor(EmissionColorId, Color.black);
+            _darkCopies[lit] = dark;
+            return dark;
+        }
+
+        // ── The cell outside ────────────────────────────────────────────────────
+
+        void BuildCellBackdrop()
+        {
+            if (!_cfg.LiveCell) return;
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (!shader)
+            {
+                CSDebug.LogWarning("[ArkInteriorStage] URP's Unlit shader is not in this build: the cell outside the mouth is the camera's sky.", this);
+                return;
+            }
+            var material = Own(new Material(shader) { name = "Ark interior cell backdrop" });
+            var quad = Piece("CellBackdrop", Resources.GetBuiltinResource<Mesh>("Quad.fbx"), material, _hull.transform);
+            quad.transform.localPosition = _cfg.CellBackdropCentre;
+            quad.transform.localScale = new Vector3(_cfg.CellBackdropSize.x, _cfg.CellBackdropSize.y, 1f);
+            _cellBackdrop = quad.GetComponent<MeshRenderer>();
+            _cellBackdrop.enabled = false;
+        }
+
+        /// <summary>The menu's own cell, captured once from where the menu camera stands (the menu is paused behind the
+        /// Ark, so it holds still), shown on the backdrop beyond the mouth. Costs one render of the cell per visit.</summary>
+        public void CaptureCell()
+        {
+            if (_cellCaptured || !_cellBackdrop) return;
+            var source = Camera.main;
+            if (!source) return;
+            var size = _cfg.CellCaptureSize;
+            if (!_cellTexture)
+                _cellTexture = Own(new RenderTexture(Mathf.Max(64, size.x), Mathf.Max(64, size.y), 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
+                    { name = "Ark interior cell" });
+            var go = new GameObject("CellCapture") { hideFlags = HideFlags.DontSave };
+            var cam = go.AddComponent<Camera>();
+            cam.CopyFrom(source);
+            cam.enabled = false;
+            cam.targetTexture = _cellTexture;
+            cam.aspect = (float)_cellTexture.width / _cellTexture.height;
+            cam.cullingMask = source.cullingMask & ~LayerMask.GetMask("UI");
+            cam.Render();
+            cam.targetTexture = null;
+            Destroy(go);
+            var material = _cellBackdrop.sharedMaterial;
+            material.SetTexture(BaseMapId, _cellTexture);
+            material.mainTexture = _cellTexture;
+            _cellBackdrop.enabled = true;
+            _cellCaptured = true;
+        }
+
+        /// <summary>The next visit captures the cell afresh (it may have moved on while the player was elsewhere).</summary>
+        public void ForgetCell() => _cellCaptured = false;
+
         // ── Pieces ──────────────────────────────────────────────────────────────
 
         GameObject Piece(string name, Mesh mesh, Material material, Transform parent)
@@ -466,7 +771,7 @@ namespace CosmicShore.UI
             go.transform.SetParent(parent, false);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = material;
+            if (material) mr.sharedMaterial = material;
             mr.shadowCastingMode = ShadowCastingMode.Off;
             mr.receiveShadows = false;
             mr.lightProbeUsage = LightProbeUsage.Off;

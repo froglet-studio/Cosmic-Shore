@@ -88,8 +88,15 @@ class no longer declares), `colour_trace` and the colour-set writers. No Unity e
 7. Profiler, Menu_Main Release, the Ark open on each tab: CPU and GPU ms against the Menu_Main baseline (`perf_hunt.py`),
    and `Camera.Render` of `ElementalConverterCamera`.
 
-**Open:** the vessels on the pads, the squad's domain relight, the selected artifact following the list, the live cell
-through the mouth (section 169, "Not in phase 1").
+8. Phase 2 (section 170): SQUADS shows the squad's three vessels across the bay - yours and AI wingmates lit and
+   hovering over glowing pads, an offline friend's powered down and resting, an open seat's pad empty; Change vessel
+   updates your pad; a domain chip relights the hull's trim, the prisms and the vessels.
+9. ARTIFACTS: pick each artifact in the list - its pedestal's artifact grows and its spot brightens; kinds you do not
+   hold stand empty.
+10. CONVERTER and SQUADS: the menu's own cell shows beyond the mouth (not the sky). If the console warns that URP's
+   Unlit shader is missing, add it to Always Included Shaders or name another unlit shader in `ArkInteriorStage`.
+11. Look sheet: `python3 Tools/Build/unity_look/look.py menu ARK:CONVERTER,ARK:SQUADS,ARK:ARTIFACTS` (the CI run was
+   refused by the `unity-ci` environment before a runner started).
 
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 

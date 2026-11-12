@@ -222,6 +222,32 @@ namespace CosmicShore.UI
             };
         }
 
+        /// <summary>
+        /// What the Ark's artifacts room shows behind this page (<see cref="ArkInteriorStage"/>, Docs/MENU_REDESIGN_B.md
+        /// section 169): the picked artifact's kind (lit and drawn larger on its pedestal) and every kind the player holds
+        /// (a kind not held leaves its pedestal empty). Raised when either changes.
+        /// </summary>
+        public event System.Action RoomChanged;
+        /// <summary>False until the list has drawn once (the room shows every kind until then).</summary>
+        public bool HasRoom { get; private set; }
+        public string PickedKind { get; private set; } = string.Empty;
+        public IReadOnlyCollection<string> HeldKinds => _heldKinds;
+        readonly HashSet<string> _heldKinds = new();
+        readonly HashSet<string> _scratchKinds = new();
+
+        void PublishRoom(int picked)
+        {
+            _scratchKinds.Clear();
+            foreach (var a in _hoard) _scratchKinds.Add(a.Kind());
+            string pickedKind = picked >= 0 && picked < _hoard.Count ? _hoard[picked].Kind() : string.Empty;
+            if (HasRoom && pickedKind == PickedKind && _scratchKinds.SetEquals(_heldKinds)) return;
+            HasRoom = true;
+            PickedKind = pickedKind;
+            _heldKinds.Clear();
+            _heldKinds.UnionWith(_scratchKinds);
+            RoomChanged?.Invoke();
+        }
+
         void Refresh()
         {
             if (!_shown) return;
@@ -253,6 +279,7 @@ namespace CosmicShore.UI
                     TemplateText.Fill(rowLineTemplate, "element", ElementName(a.Element), "aspect", a.Aspect ?? string.Empty,
                         "level", Level(a.AttunedLevel()), "serial", a.Serial()), index == picked);
             }
+            PublishRoom(picked);
             KitVisibility.SetShown(emptyGroup, _hoard.Count == 0);
             KitVisibility.SetShown(detailGroup, _hoard.Count > 0);
             if (_hoard.Count > 0) DrawDetail(_hoard[picked]);

@@ -7538,3 +7538,34 @@ hangar (later, Shombith). Verification steps: `Docs/UNITY_VERIFICATION_CHECKLIST
 Affects: Shombith's Ark screen (`ElementalConverterView`, `ArkTabsView` gains a read-only `PageLogic`); Garrett's omni
 combine (placed and scaled, its code unchanged) and Ark model (read; its dressing duplicated in the stage, `ArkModel`
 untouched); the colour sets (three traced colours added by their writers).
+
+## 170. Built: the Ark screen inside the Ark, phase 2 - the squad on the pads, its domain, the picked artifact, the live cell (2026-11-12, claude/dazzling-einstein-gnr5iw, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-12):** "do phase 2" (section 169's "Not in phase 1").
+
+- **The squad on the hangar's pads** (`SquadsPage.HangarChanged`, `HangarPad`): the shown squad's three seats stand
+  across the bay from Rev 61 C's camera (`padPositions`). You, an AI wingmate and an online friend: the vessel lit,
+  hovering, its pad glowing in the squad's domain colour. A friend who is offline: the vessel powered down (its
+  materials at `offlineBrightness`, no glow), resting low, no pad light. An open seat: the pad empty. A vessel is a
+  picture of its prefab's mesh renderers only (`Vessel Prefab Container`, asked as a question: a hull with no prefab is
+  simply not drawn), its Domain slot in the squad's domain, scaled to `vesselLength`, rebuilt only when the seat's class
+  changes; changing vessel on your card updates your pad.
+- **The squad's domain relights the Ark** (`ArkInteriorStage.SetDomain`): the hull's and every set piece's trim (one
+  material copy, re-dressed from the domain's ship material), every prism (the hull's sockets, the lamps, the artifacts,
+  the empty slots) and the vessels.
+- **The picked artifact** (`ArkArtifactsPage.RoomChanged`): the artifact picked in the list is drawn larger on its
+  pedestal, turns faster, its spot twice as bright; a kind the player does not hold leaves its pedestal empty.
+- **The live cell beyond the mouth** (`liveCell`): on each visit to the hangar or the pier, one camera at the menu
+  camera's place renders the menu's own cell once (the menu is paused behind every screen but Home, so it holds still)
+  onto a backdrop far beyond the pier's end. One render of the cell per visit; it needs URP's Unlit shader in the build
+  (a warning names it if it is not, and the camera's sky shows instead).
+
+**Look sheet:** the launcher opens the Ark on a tab (`ARK:CONVERTER`, `ARK:SQUADS`, `ARK:ARTIFACTS`). Its CI run (Actions >
+Look sheet, run 43272542494) was refused before a runner started (no steps, no log): the `unity-ci` environment either
+does not allow this branch or has no licence secrets. Run it on a machine with Unity:
+`python3 Tools/Build/unity_look/look.py menu ARK:CONVERTER,ARK:SQUADS,ARK:ARTIFACTS`.
+
+**Still to come:** the pilots walking the hangar (later, Shombith).
+
+Affects: Shombith's Ark screen (`SquadsPage`, `ArkArtifactsPage` publish what the 3D shows; `ElementalConverterView`
+applies it) and look sheet (`LookSheetLauncher`); the vessels' prefabs (read only, drawn as pictures).

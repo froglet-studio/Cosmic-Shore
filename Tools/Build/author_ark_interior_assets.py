@@ -8,6 +8,7 @@ Writes (and with --check, compares):
     Assets/Resources/ArkInteriorConfig.asset (+ .meta)            the config ElementalConverterView loads when unwired
     Assets/_Scripts/ScriptableObjects/Toys/ArkInteriorConfigSO.cs.meta
     Assets/_Scripts/UI/Elements/Ark/ArkInteriorStage.cs.meta
+    Assets/_Scripts/UI/Elements/Ark/HangarPad.cs.meta
 
 The numbers are the Blender mockups' (Docs/MenuRedesignB/rounds/r67_ark_tabs_render.py: the `pier`, `squads` and
 `art_ab` scenes), turned from Blender's frame into Unity model space (x, y, z) = (-bx, bz, -by); a 24 mm lens on a 36 mm
@@ -32,10 +33,12 @@ def guid(path):
 
 SO_CS = "Assets/_Scripts/ScriptableObjects/Toys/ArkInteriorConfigSO.cs"
 STAGE_CS = "Assets/_Scripts/UI/Elements/Ark/ArkInteriorStage.cs"
+PAD_CS = "Assets/_Scripts/UI/Elements/Ark/HangarPad.cs"
 ASSET = "Assets/Resources/ArkInteriorConfig.asset"
 REFS = {
     "arkModel": ("Assets/_SO_Assets/Toys/ArkReverseModel.asset", "8caf2baf516a4c169ca47fe0558a3c2c", 11400000),
     "prismBoxMesh": ("Assets/_Models/Testing/Prism.asset", "8f4a329b97818584886f68265bb01988", 4300000),
+    "vesselPrefabs": ("Assets/_SO_Assets/Vessel Prefab Container.asset", "05f8f1205bd90e14b8e59cf78da1a6f2", 11400000),
 }
 
 
@@ -75,6 +78,19 @@ MonoBehaviour:
   pierView:{view((0, -16.4, 63), (0, -19.6, 128), 45.6, 0)}
   artifactsView:{view((-3.6, -16.4, 590.5), (-0.6, -16.6, 606), 53.7, 0.3)}
   clipPlanes: {{x: 0.3, y: 1500}}
+  padPositions:
+  - {v3(0, -23, 66)}
+  - {v3(9, -23, 60.5)}
+  - {v3(-9.6, -23, 60.5)}
+  vesselPrefabs: {ref("vesselPrefabs")}
+  vesselLength: 8
+  hoverHeight: 2.6
+  padLightIntensity: 4
+  offlineBrightness: 0.12
+  liveCell: 1
+  cellBackdropCentre: {v3(0, -10, 420)}
+  cellBackdropSize: {{x: 1500, y: 850}}
+  cellCaptureSize: {{x: 1280, y: 720}}
   pierStartZ: 88
   pierLength: 82
   pierWidth: 20
@@ -131,6 +147,7 @@ def outputs():
         ASSET + ".meta": asset_meta(),
         SO_CS + ".meta": script_meta(SO_CS),
         STAGE_CS + ".meta": script_meta(STAGE_CS),
+        PAD_CS + ".meta": script_meta(PAD_CS),
     }
 
 
@@ -142,14 +159,15 @@ def validate():
             errors.append(f"{key}: {path} is missing")
         elif f"guid: {g}" not in open(meta).read():
             errors.append(f"{key}: {path}'s guid is no longer {g}")
-    for cs in (SO_CS, STAGE_CS):
+    for cs in (SO_CS, STAGE_CS, PAD_CS):
         if not os.path.exists(os.path.join(REPO, cs)):
             errors.append(f"{cs} is missing")
     so = open(os.path.join(REPO, SO_CS)).read() if os.path.exists(os.path.join(REPO, SO_CS)) else ""
     for line in asset_text().splitlines():
         field = line.strip().split(":")[0]
         declared = re.search(r"\bSerializeField\b[^;]*?\b" + re.escape(field) + r"\s*[;=]", so)
-        if line.startswith("  ") and not line.startswith("   ") and not field.startswith("m_") and field and not declared:
+        if line.startswith("  ") and not line.startswith("   ") and not line.startswith("  -") and not field.startswith("m_") \
+                and field and not declared:
             errors.append(f"the asset writes '{field}', which ArkInteriorConfigSO does not declare")
     return errors
 

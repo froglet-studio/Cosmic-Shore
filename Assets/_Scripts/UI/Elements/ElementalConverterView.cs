@@ -168,12 +168,19 @@ namespace CosmicShore.UI
         ArkInteriorStage _interior;
         ArkRoom _room = ArkRoom.Pier;
         float _seconds;
+        SquadsPage _squads;
+        ArkArtifactsPage _artifactsPage;
 
         void Awake()
         {
             // The tabs first: the picture BuildUi makes starts hidden when another tab is already up.
             if (!arkTabs) arkTabs = GetComponentInChildren<ArkTabsView>(true);
             _interiorConfig = interior ? interior : ArkInteriorConfigSO.LoadDefault();
+            // The pages the rooms follow: the squad on the hangar's pads, the picked artifact in the artifacts room.
+            _squads = GetComponentInChildren<SquadsPage>(true);
+            _artifactsPage = GetComponentInChildren<ArkArtifactsPage>(true);
+            if (_squads) _squads.HangarChanged += ApplyHangar;
+            if (_artifactsPage) _artifactsPage.RoomChanged += ApplyArtifacts;
             if (arkTabs)
             {
                 arkTabs.Changed += HandleTabChanged;
@@ -204,11 +211,32 @@ namespace CosmicShore.UI
         {
             _active = false;
             if (arkTabs) arkTabs.OnScreenExit();
+            if (_interior) _interior.ForgetCell();
             ReleaseTarget();
         }
 
         /// <summary>The converter's own tab in the Ark's row (for tools that open it: the look sheet).</summary>
         public int ConverterTab => converterTab;
+
+        /// <summary>The squad's hangar: its domain relights the Ark, its seats' vessels stand on the pads.</summary>
+        void ApplyHangar()
+        {
+            if (!_interior || !_squads) return;
+            if (!_squads.HasHangar)
+            {
+                _interior.SetHangar(null, Color.white);
+                return;
+            }
+            _interior.SetDomain(_squads.HangarDomain);
+            _interior.SetHangar(_squads.HangarPads, _squads.HangarColor);
+        }
+
+        /// <summary>The artifacts room follows the Artifacts list.</summary>
+        void ApplyArtifacts()
+        {
+            if (!_interior || !_artifactsPage || !_artifactsPage.HasRoom) return;
+            _interior.SetArtifacts(_artifactsPage.PickedKind, _artifactsPage.HeldKinds);
+        }
 
         /// <summary>Which part of the Ark tab <paramref name="tab"/> looks at: chosen by what the tab HOLDS (its page), never
         /// by its place in the row.</summary>
@@ -259,6 +287,8 @@ namespace CosmicShore.UI
         void OnDestroy()
         {
             if (arkTabs) arkTabs.Changed -= HandleTabChanged;
+            if (_squads) _squads.HangarChanged -= ApplyHangar;
+            if (_artifactsPage) _artifactsPage.RoomChanged -= ApplyArtifacts;
             ReleaseStage();
         }
 
@@ -281,6 +311,7 @@ namespace CosmicShore.UI
             {
                 // Inside the Ark: the tab's own camera; the combine plays only while the pier is the room shown.
                 _seconds += dt;
+                if (_room is ArkRoom.Pier or ArkRoom.Hangar) _interior.CaptureCell();   // once per visit
                 _interior.PoseCamera(_camera, _room, _seconds);
                 if (_room == ArkRoom.Pier) _player.Tick(dt, _camera.transform.position);
                 _interior.Tick(dt, _seconds);
@@ -406,7 +437,12 @@ namespace CosmicShore.UI
                 ReleaseStage();
                 return false;
             }
-            if (_interior) _interior.FitCombine(_player.FramingRadius);
+            if (_interior)
+            {
+                _interior.FitCombine(_player.FramingRadius);
+                ApplyHangar();
+                ApplyArtifacts();
+            }
 
             var go = new GameObject("ElementalConverterCamera") { hideFlags = HideFlags.DontSave };
             go.transform.SetParent(_stage, false);
