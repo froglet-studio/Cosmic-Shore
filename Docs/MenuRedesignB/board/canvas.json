@@ -3927,7 +3927,8 @@
     "rev81",
     "rev82",
     "rev83",
-    "rev84"
+    "rev84",
+    "f2u-sgbuttons"
   ],
   "notes": {
     "hud_end": {
@@ -6345,6 +6346,15 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "fleet-codex"
+    },
+    "f2u-sgbuttons": {
+      "kind": "title1",
+      "maxW": 1920,
+      "page": "style-guide",
+      "text": "Play / Ready built in Unity: KitButton Commit, Maelstrom READY + PLAY AGAIN - in PR #1919 (2026-11-12, /frogma-to-unity)",
+      "w": 240,
+      "x": 0,
+      "y": 4040
     }
   },
   "order": [

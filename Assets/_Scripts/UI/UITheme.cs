@@ -70,6 +70,13 @@ namespace CosmicShore.UI
         public static readonly Color ElementTime = new Color32(0x5F, 0xF0, 0xC8, 0xFF);
         public static readonly Color Selection = new Color32(0x3D, 0xB2, 0xFF, 0xFF);
 
+        /// <summary>
+        /// The label on a commit fill: the style guide's <c>on-commit</c> token (Docs/UI/froglet-tokens.json), white in
+        /// every theme. Not a <see cref="UIColorToken"/>: pure white is the same in every colour set and never traced
+        /// (<see cref="UIThemeLive"/>), so it is a constant here as it is in <c>Tools/Build/froglet_style.py</c>.
+        /// </summary>
+        public static readonly Color OnCommit = Color.white;
+
         static readonly float[] DefaultSpacing = { 4f, 8f, 12f, 16f, 24f, 32f, 48f, 64f, 96f };
 
         public const float SliverLarge = 14f;
