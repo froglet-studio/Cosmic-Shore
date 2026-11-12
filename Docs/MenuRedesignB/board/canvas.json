@@ -3778,6 +3778,46 @@
       "h": 900,
       "page": "loading-screens",
       "title": "Rev 91 - notes: what is shared, what each option shows, the bar's rules, what differs from the build"
+    },
+    "R92A.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 92 A - The cell: one cell, three domain trails laid around it, crystals inside (recommended)"
+    },
+    "R92B.dc.html": {
+      "x": 2100,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 92 B - The gates: ring gates fly past the logo, two trails run out of the distance"
+    },
+    "R92C.dc.html": {
+      "x": 4200,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 92 C - The arenas: three windows onto real arenas, taking turns"
+    },
+    "R92D.dc.html": {
+      "x": 0,
+      "y": 7400,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 92 D - The garden: flora blooming around the logos"
+    },
+    "R92Notes.dc.html": {
+      "x": 0,
+      "y": 8660,
+      "w": 1920,
+      "h": 900,
+      "page": "loading-screens",
+      "title": "Rev 92 - notes: what is shared, how each shows the environment, what differs from the build"
     }
   },
   "createdOnFiles": {
@@ -3903,6 +3943,7 @@
     "sec-rev89",
     "sec-rev90",
     "sec-rev91",
+    "sec-rev92",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -3984,7 +4025,8 @@
     "rev88",
     "rev89",
     "rev90",
-    "rev91"
+    "rev91",
+    "rev92"
   ],
   "notes": {
     "hud_end": {
@@ -6459,6 +6501,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "loading-screens"
+    },
+    "rev92": {
+      "kind": "title1",
+      "text": "Rev 92 - The boot splash and sign-in scene: the two logos and the environment as the show",
+      "x": 0,
+      "y": 5740,
+      "w": 240,
+      "maxW": 6120,
+      "page": "loading-screens"
+    },
+    "sec-rev92": {
+      "kind": "rect",
+      "x": -160,
+      "y": 5580,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "loading-screens"
     }
   },
   "order": [
@@ -6920,7 +6986,12 @@
     "R91D.dc.html",
     "R91E.dc.html",
     "R91F.dc.html",
-    "R91Notes.dc.html"
+    "R91Notes.dc.html",
+    "R92A.dc.html",
+    "R92B.dc.html",
+    "R92C.dc.html",
+    "R92D.dc.html",
+    "R92Notes.dc.html"
   ],
   "pages": [
     {

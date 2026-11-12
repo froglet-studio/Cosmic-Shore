@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794511320-7d3f` of **Frogma**: Rev 3 to Rev 91, 459 boards on 12 tabs. The canvas opens on the tab `loading-screens`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794512490-bf4f` of **Frogma**: Rev 3 to Rev 92, 464 boards on 12 tabs. The canvas opens on the tab `loading-screens`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -734,6 +734,14 @@ Copied on 2026-11-12 from canvas version `1794511320-7d3f` of **Frogma**: Rev 3 
 - `R75Notes.dc.html` (not copied yet) - Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed
 
 ### Tab: Loading Screens  (`loading-screens`)
+
+#### Rev 92 - The boot splash and sign-in scene: the two logos and the environment as the show
+
+- [`R92A.dc.html`](R92A.dc.html) - Rev 92 A - The cell: one cell, three domain trails laid around it, crystals inside (recommended)
+- [`R92B.dc.html`](R92B.dc.html) - Rev 92 B - The gates: ring gates fly past the logo, two trails run out of the distance
+- [`R92C.dc.html`](R92C.dc.html) - Rev 92 C - The arenas: three windows onto real arenas, taking turns
+- [`R92D.dc.html`](R92D.dc.html) - Rev 92 D - The garden: flora blooming around the logos
+- [`R92Notes.dc.html`](R92Notes.dc.html) - Rev 92 - notes: what is shared, how each shows the environment, what differs from the build
 
 #### Rev 91 - Loading screens: a smooth moving sea, one honest progress bar, and a part of the game on show
 

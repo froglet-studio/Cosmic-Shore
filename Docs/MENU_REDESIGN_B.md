@@ -34,7 +34,7 @@ section here. The build that follows a pick is verified against the picked board
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
 | Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79-83 on the canvas now: Rev 81 B5 with the Rev 83 S2 seat editor picked and built, section 165; Rev 70-77 were reverted and taken off, section 159) | Shombith, 2026-11-08 (sections 147-151, 159-165) |
-| Loading Screens | `loading-screens` | Every loading screen: the moving background, the progress bar, and what the screen shows while it loads, from Rev 91 (section 173) | Shombith, 2026-11-12 (section 173) |
+| Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -7409,26 +7409,32 @@ boards is unknown until a screenshot is set beside R89A, R90Saga, R90Quests and 
   building and shaping its table): written and compiled, **not run**.
 - The hand test is "The Voyage window as the Sea table" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
-## 173. Rev 91 mockups: the boot loading screen - a moving sea, one progress bar, a part of the game on show (2026-11-12, awaiting a pick)
+## 173. Rev 91 mockups: the loading screen - a moving sea, one progress bar, a part of the game on show (2026-11-12; Shombith picked F)
 
 **Asked** (Shombith, 2026-11-12): "use /frogma-new and create me mockups for the animated smooth background with
 perfect progress bar. Create me mockups, maybe all parts of the game is shown in the loading menu. Like squads or the
 ark or the pilots or vessels the toybox. Create like 6 mockups". He named the new tab **Loading Screens**.
+
+**Picked (Shombith, 2026-11-12): "for the Loading screen I liked F"**, and "Make the percentage real" (section 175).
 
 **On the canvas**: tab **Loading Screens** (`loading-screens`, opened for this round), section "Rev 91 - Loading
 screens". Copies: `Docs/MenuRedesignB/board/R91*.dc.html`; the source that draws them is
 `Docs/MenuRedesignB/rounds/r91_loading.py` (re-run it on a planned root to redraw). Every board plays one 16 second
 loop; all motion is keyframe percentages on that loop, so a clip can be cut by seeking.
 
+**When it shows**: loading into a game mode (today's `ConnectingPanel`). For an hour the boards were republished with
+the boot's words, after he asked whether they were the Bootstrap scene; he then asked for the boot splash as separate
+mockups (Rev 92, section 174), so these went back to the mode entry (canvas version `1794512490-bf4f`).
+
 Shared by all six:
 - **The sea.** Three slow fields of the Blue family drifting under three layers of sea lines that slide at different
   speeds, on the Deep Sea ground. CSS only.
-- **The bar.** Four segments named by the boot status lines (Connecting, Signing in, Loading profile, Creating
-  session: `BootStatusBroadcaster`, section 26), each as long as its share of the work. The step's name
+- **The bar.** Four segments, one per real step (Connecting to shore, Building the arena, Settling the arena, Waiting
+  for pilots: the `ConnectingPanel` phases of section 99.4), each as long as its share of the work. The step's name
   sits over the bar, a tabular percentage on the right, and each step's marker fills when the step is done. The bar
   only moves forward. A glint keeps travelling along the fill, so a slow step never looks frozen. At 100 the fill
   turns Lime and the name reads Ready; Lime appears nowhere else.
-- The game's name, top left. No tip line and no spinner.
+- ENTERING and the mode's name, top left. No tip line and no spinner.
 
 The boards:
 - `R91Compare`: the bar on its own, live, then held at 0, 12, 41 (a slow patch), 75, 93 and 100.
@@ -7437,9 +7443,8 @@ The boards:
 - **C Pilots**: one pilot stands large with the callsign; four take turns; eight of the roster beside.
 - **D Vessels**: one hull large; four take turns; the fleet as a grid beside.
 - **E Toy Box**: the Vessel Changer in a hex cycling six hulls; the seven toys listed and lit in turn.
-- **F The tour (recommended)**: Squad, the Ark, Pilots, Vessels and the Toy Box in turn while the bar fills, with a
-  five-word index top right. Recommended because it is the one that shows every part, and a long load is never one
-  picture.
+- **F The tour (recommended, picked)**: Squad, the Ark, Pilots, Vessels and the Toy Box in turn while the bar fills,
+  with a five-word index top right.
 - `R91Notes`: what was asked, what is shared, what each option shows, what differs from the build.
 
 Art, uploaded to the canvas for this round: six hull cards (`Assets/_Graphics/CardImages/<Hull>_large.png`), eight of
@@ -7450,16 +7455,38 @@ Gates: `frogma.py check --only R91` clean. `check_mockup.py`: colours, type and 
 gate fails E (72) and F (67) because it counts the layers that take turns, though one shows at a time, and fails the
 Compare board, which is a sheet of fragments. Looked at in a local render at two moments of the loop.
 
-**When it shows** (corrected the same day; Shombith: "I was talking about when we entered the game and the first
-scene in authentication screen"): the first screen after launch, the Bootstrap splash and the sign-in scene, which
-is also the cover on every return to the menu (section 26, "One loading screen, not three"). The first publish drew
-it as a mode entry (ENTERING Skim Race, the arena's steps); the boards were republished with the boot's words
-(canvas version `1794511852-8af9`).
+**Differs from the build**: today's mode entry is the Cell gate (Rev 33 A, section 99.4): an Omni crystal in a hex,
+a steps panel, a pilots panel, a tip and a slim bar. F replaces the crystal and both panels with the tour and moves
+the steps into the bar. The moving background departs from the quiet rule (no idle motion) because motion was the
+brief. In the game the show would be the live models, and every word (the step names, the lines under each title) an
+authored field. F's look is not built; only the percentage is (section 175).
 
-**Differs from the build**: today's Bootstrap splash is the feature art under a dim, LOADING over a 180 x 2
-`KitLoadBar`, one status line and the welcome card. A picked option replaces the still art with its show and turns
-the status lines into the bar's four steps; the sign-in, pilot name, consent and connection-lost windows are
-unchanged and sit over it. The bar today reads only the prism builder (`EnvironmentLoadVeil.BarSpan`), so a bar that
-also covers connecting and signing in needs those steps given a share: a build question for the pick. The moving background departs from the quiet rule (no idle motion) because
-motion was the brief. In the game the show would be the live models, and every word (the step names, the lines under
-each title) an authored field. Nothing is built; the build waits on a pick.
+## 174. Rev 92 mockups: the boot splash and sign-in scene - two logos and the environment (2026-11-12, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-12, with a screenshot of today's splash): "This can be a good bootstrap splash and sign
+in scene but we need something better than the image I shared with you. It cannot be texts, it needs to be froglet
+logo, game name and something cool to show off the environment, create separate mockups for that."
+
+**On the canvas**: tab **Loading Screens**, section "Rev 92 - The boot splash and sign-in scene", under Rev 91. Copies:
+`Docs/MenuRedesignB/board/R92*.dc.html`; drawn by `Docs/MenuRedesignB/rounds/r92_splash.py` (it imports Rev 91's sea,
+bar and page).
+
+Shared by all four: the Cosmic Shore logo and the Froglet Games logo as images (cut from
+`Assets/_Graphics/Icons/App Icons/SPLASH SCREEN.png` and `FrogSplashLogo.png`), Rev 91's sea, and Rev 91's bar with
+the boot status lines as its four steps (Connecting, Signing in, Loading profile, Creating session). No other words.
+
+- **A The cell (recommended)**: one cell with three domain trails being laid around it, passing behind and in front,
+  crystals pulsing inside, a second cell far off. The logo stands left. Recommended: it is the game's own picture (a
+  cell, trails, crystals) and the calmest of the four.
+- **B The gates**: ring gates fly out of the distance past the logo; a Jade and a Ruby trail run out to the edges.
+- **C The arenas**: three windows onto real arenas (the card-art renders of Waystation, Glasshouse, Tapestry,
+  Bloomrush, Harvest and Kelpwood at their own size), taking turns. The only one made of the game's own pictures.
+- **D The garden**: flora blooming and turning around the logos.
+- `R92Notes`.
+
+A, B and D are SVG and CSS stand-ins for the live world. `frogma.py check --only R92` and `check_mockup.py` pass on
+all five. Looked at in a local render.
+
+**Differs from the build**: today's splash is one still picture under a dim with the logo in it, LOADING over a
+180 x 2 bar and one status line (section 26). A picked option makes the environment move behind the two logos; the
+sign-in, pilot name, consent and connection-lost windows sit over it as today. Awaiting a pick; nothing built.
