@@ -7493,3 +7493,48 @@ since the third pass. The hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`
   Voyages tab draws uses `VoyageOpenCard`, the job-card grid, or `mapHeight`, `columns` and `cardColumn`. Once the board
   is accepted in Unity, retire them; while it is not, they are the way back.
 - **The Quests tab** is the pre-redesign quest track. Draw it on Frogma before building it.
+
+## 169. Built: the Ark screen inside the Ark, phase 1 - the hangar, the pier, the artifacts room (2026-11-12, claude/dazzling-einstein-gnr5iw, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-12):** "Let's build it inside Unity, let's go", of Rev 67 (section 168: the Converter on the
+pier) and Rev 86 (section 167: the Artifacts room, A and B as one); earlier: "you do not need to render more, we can do
+it live on the game".
+
+**What is built.** The converter's off-screen stage (`ElementalConverterView`, the picture behind every Ark tab) now
+holds the Ark itself, built in code by `ArkInteriorStage` (`Assets/_Scripts/UI/Elements/Ark/`) from
+`ArkInteriorConfigSO` (`Assets/Resources/ArkInteriorConfig.asset`, written by `Tools/Build/author_ark_interior_assets.py`,
+`--check` in the `/ship` gates). One camera; each tab looks at its own part, chosen by the page the tab holds (never its
+place in the row, so the Pilots tab in flight on `claude/signature-pilot-busts` slots in without a change):
+- **SQUADS: the hangar** from Rev 61 C's camera: `ArkReverse` dressed as the gameplay Ark dresses it (the domain's ship
+  material, every material double-sided and opaque at the definition's slot brightness), the clam doors swung clear
+  (`hangar.door.T` / `.B` at -150 / 150 degrees about the model's x, through `ArkRigTable.PoseLocal`), the 108 hull prisms
+  in the model's sockets as plain renderers in the theme's prism materials (a picture, not mass).
+- **CONVERTER: the pier.** From inside the hangar, out of the open mouth, down an 82 m pier (the hull's Body material,
+  girders, the domain's trim down both edges, lamp posts with a prism each) to its round deck, ringed in the domain,
+  where Garrett's `OmniCombinePlayer` plays unchanged, its whole spread shrunk to 9 m (`FitCombine`); the crystals light
+  the deck lime, breathing. CONVERT, the recipe and the bar are the overlay as before.
+- **ARTIFACTS: the room**, away from the hull: the Gallery's hall (ribs, beams, the domain's trim, a porthole at its end,
+  alcoves down both walls each with a dim shielded prism - the slots still to be found) and the Reliquary's platform in
+  its middle (a column of light, the four artifacts the game has - Javelin, Hydra, Aftershock, Aegis - built from the
+  game's prism meshes on pedestals, turning, a spotlight each, Hydra larger and brighter).
+- **DECOR:** no room (locked), so no picture and nothing rendered.
+
+**Cost, by construction** (not yet measured): rendered only while the Ark is the screen and its tab has a room; only that
+room is active (the hull for the hangar and the pier, the room alone for Artifacts); every set piece is a shared built-in
+mesh on the model's own material copies (no new material asset, no texture); no shadows, no probes, a handful of pixel
+point and spot lights per room, nothing per frame but the turning artifacts and one light's intensity. The menu cell's
+camera still renders (frozen) behind the screen, as it did behind the converter before.
+
+**Colours** are read through the colour trace (`ColorTrace.Retrace`, Docs/VesselModels/COLOR_TRACE.md): the cell's light,
+the crystals' light and the clear colour were added to the trace (`colour_trace.py --build`, the sets rewritten by
+`author_colour_set_assets.py`, Photic by `--write-photic`); the domain's materials come from the theme, so a colour set
+repaints them as it repaints the game.
+
+**Not in phase 1 (next):** the squad's vessels on the hangar's pads (online lit, offline dark) and the squad's domain
+relighting the hangar (the stage is dressed in Jade, `interiorDomain`); the selected artifact following the Artifacts
+list; the live menu cell seen through the mouth and the porthole (today the camera's skybox); the pilots walking the
+hangar (later, Shombith). Verification steps: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The Ark screen inside the Ark".
+
+Affects: Shombith's Ark screen (`ElementalConverterView`, `ArkTabsView` gains a read-only `PageLogic`); Garrett's omni
+combine (placed and scaled, its code unchanged) and Ark model (read; its dressing duplicated in the stage, `ArkModel`
+untouched); the colour sets (three traced colours added by their writers).

@@ -65,6 +65,32 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Ark screen inside the Ark: the hangar, the pier with the omni combine, the artifacts room (`claude/dazzling-einstein-gnr5iw`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `ArkInteriorStage` (built in code on `ElementalConverterView`'s off-screen stage from
+`Assets/Resources/ArkInteriorConfig.asset`): SQUADS looks at the hangar of the real `ArkReverse` (doors swung clear, hull
+prisms in its sockets), CONVERTER looks from inside the hangar down a pier to a round deck where the omni combine plays
+(scaled to 9 m), ARTIFACTS looks at a room of its own (gallery hall, platform with the four artifacts), DECOR shows no 3D
+(Docs/MENU_REDESIGN_B.md section 169). Ran headless: `unity_refcompile` (no errors in project code), the `/ship` gates
+(all OK, including the new `author_ark_interior_assets.py --check`, proven to fail on a drifted value and on a field the
+class no longer declares), `colour_trace` and the colour-set writers. No Unity editor ran; nothing was rendered in Unity.
+
+**Verify in editor:**
+1. Menu_Main, Play, open the Ark. CONVERTER: the picture is the view from inside the hangar out of the open mouth down the
+   pier; the four crystals idle over the round deck, inside the mouth's frame (not crossing the lintel). If the doors
+   still block the mouth, the door angles' sign is wrong for the imported rig: flip `topDoorDegrees` /
+   `bottomDoorDegrees` in `ArkInteriorConfig` and say which worked.
+2. Press CONVERT: the combine plays over the deck to the Omni; the recipe and the bar run as before.
+3. SQUADS: the hangar from the back toward the pads, the hull's trim and prisms in Jade.
+4. ARTIFACTS: the gallery with the platform, four artifacts turning on pedestals, alcoves with dim prisms, a porthole.
+5. DECOR: refused as before, and no picture behind the other tabs' pages goes missing.
+6. Switch colour set (Settings) and come back: the trim and the lights take the set's colours.
+7. Profiler, Menu_Main Release, the Ark open on each tab: CPU and GPU ms against the Menu_Main baseline (`perf_hunt.py`),
+   and `Camera.Render` of `ElementalConverterCamera`.
+
+**Open:** the vessels on the pads, the squad's domain relight, the selected artifact following the list, the live cell
+through the mouth (section 169, "Not in phase 1").
+
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** a sixth settings tab, REGION (globe icon), drawn by `Tools/Build/author_menu_settings.py`

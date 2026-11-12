@@ -1,4 +1,6 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
@@ -135,6 +137,15 @@ namespace CosmicShore.UI
         [Tooltip("The converter's own tab in that row.")]
         [SerializeField, Min(0)] int converterTab;
 
+        [Header("Ark interior")]
+        [Tooltip("The Ark screen's 3D: the menu is INSIDE the Ark (Docs/MENU_REDESIGN_B.md sections 166-168) - the hangar behind " +
+                 "SQUADS, the pier the combine plays on behind CONVERTER, the artifacts room behind ARTIFACTS; a tab with no room " +
+                 "(DECOR) shows none. Empty uses the shipped Resources/ArkInteriorConfig; with neither, the converter plays on its " +
+                 "own orbiting stage as before and the other tabs show no 3D.")]
+        [SerializeField] ArkInteriorConfigSO interior;
+        [Tooltip("The domain the menu's Ark is dressed in (its trim, the pier's trim, the hull's prisms).")]
+        [SerializeField] Domains interiorDomain = Domains.Jade;
+
         const float OmniDimAlpha = 0.35f;
         const int Elements = 4;
 
@@ -153,15 +164,21 @@ namespace CosmicShore.UI
         bool _active;
         bool _pageShown = true;
         float _orbit, _frame;
+        ArkInteriorConfigSO _interiorConfig;
+        ArkInteriorStage _interior;
+        ArkRoom _room = ArkRoom.Pier;
+        float _seconds;
 
         void Awake()
         {
             // The tabs first: the picture BuildUi makes starts hidden when another tab is already up.
             if (!arkTabs) arkTabs = GetComponentInChildren<ArkTabsView>(true);
+            _interiorConfig = interior ? interior : ArkInteriorConfigSO.LoadDefault();
             if (arkTabs)
             {
                 arkTabs.Changed += HandleTabChanged;
-                _pageShown = arkTabs.Current < 0 || arkTabs.IsShown(converterTab);
+                _pageShown = arkTabs.Current < 0 || PictureFor(arkTabs.Current);
+                _room = arkTabs.Current < 0 ? ArkRoom.Pier : RoomFor(arkTabs.Current);
             }
             BuildUi();
         }
@@ -190,10 +207,30 @@ namespace CosmicShore.UI
             ReleaseTarget();
         }
 
-        // Another tab is up: the picture goes with the converter's overlay, and its target is let go as on exit.
+        /// <summary>Which part of the Ark tab <paramref name="tab"/> looks at: chosen by what the tab HOLDS (its page), never
+        /// by its place in the row.</summary>
+        ArkRoom RoomFor(int tab)
+        {
+            if (tab == converterTab) return ArkRoom.Pier;
+            return (arkTabs ? arkTabs.PageLogic(tab) : null) switch
+            {
+                SquadsPage => ArkRoom.Hangar,
+                ArkArtifactsPage => ArkRoom.Artifacts,
+                _ => ArkRoom.None,
+            };
+        }
+
+        /// <summary>Whether the picture shows behind tab <paramref name="tab"/>: every tab with a room inside the Ark, or the
+        /// converter alone when there is no interior.</summary>
+        bool PictureFor(int tab) => _interiorConfig ? RoomFor(tab) != ArkRoom.None : tab == converterTab;
+
+        // Another tab is up: its room shows (the hangar, the pier, the artifacts room), or, for a tab with none, the picture
+        // goes and its target is let go as on exit.
         void HandleTabChanged(int tab)
         {
-            bool shown = tab == converterTab;
+            _room = _interiorConfig ? RoomFor(tab) : ArkRoom.Pier;
+            if (_interior) _interior.Show(_room);
+            bool shown = PictureFor(tab);
             if (shown == _pageShown) return;
             _pageShown = shown;
             if (_surface) _surface.enabled = shown;
@@ -237,6 +274,16 @@ namespace CosmicShore.UI
         {
             if (!_active || !_pageShown || !_player) return;
             float dt = Time.unscaledDeltaTime;
+            if (_interior)
+            {
+                // Inside the Ark: the tab's own camera; the combine plays only while the pier is the room shown.
+                _seconds += dt;
+                _interior.PoseCamera(_camera, _room, _seconds);
+                if (_room == ArkRoom.Pier) _player.Tick(dt, _camera.transform.position);
+                _interior.Tick(dt, _seconds);
+                RenderPicture();
+                return;
+            }
             // Pose first (the Mass depth effect reads last frame's camera, which nothing can see), then frame it.
             _player.Tick(dt, _camera.transform.position);
             _orbit += orbitDegreesPerSecond * dt;
@@ -253,6 +300,11 @@ namespace CosmicShore.UI
             _camera.nearClipPlane = Mathf.Max(0.5f, 0.5f * (distance - _player.FramingRadius));
             _camera.farClipPlane = distance + 2f * _player.FramingRadius;
             _camera.fieldOfView = fieldOfView;
+            RenderPicture();
+        }
+
+        void RenderPicture()
+        {
             EnsureTarget();
             if (_target && _target.height > 0) _camera.aspect = (float)_target.width / _target.height;
             _camera.Render();
@@ -334,12 +386,24 @@ namespace CosmicShore.UI
             var stage = new GameObject("ElementalConverterStage") { hideFlags = HideFlags.DontSave };
             stage.transform.position = StageOrigin;
             _stage = stage.transform;
-            _player = OmniCombinePlayer.Create(_stage, config);
+            // Inside the Ark: the combine plays over the pier's round deck, shrunk to fit it.
+            var combineParent = _stage;
+            if (_interiorConfig)
+            {
+                _interior = ArkInteriorStage.Build(_stage, _interiorConfig, interiorDomain);
+                if (_interior)
+                {
+                    _interior.Show(_room);
+                    combineParent = _interior.CombineAnchor;
+                }
+            }
+            _player = OmniCombinePlayer.Create(combineParent, config);
             if (!_player)
             {
                 ReleaseStage();
                 return false;
             }
+            if (_interior) _interior.FitCombine(_player.FramingRadius);
 
             var go = new GameObject("ElementalConverterCamera") { hideFlags = HideFlags.DontSave };
             go.transform.SetParent(_stage, false);
@@ -410,8 +474,9 @@ namespace CosmicShore.UI
         void ReleaseStage()
         {
             ReleaseTarget();
-            if (_stage) Destroy(_stage.gameObject);   // the player and the camera are its children
+            if (_stage) Destroy(_stage.gameObject);   // the player, the Ark interior and the camera are its children
             _stage = null;
+            _interior = null;
             _player = null;
             _camera = null;
         }

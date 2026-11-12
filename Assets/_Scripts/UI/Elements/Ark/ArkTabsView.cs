@@ -54,6 +54,10 @@ namespace CosmicShore.UI
         /// <summary>True while tab <paramref name="index"/> is the one shown.</summary>
         public bool IsShown(int index) => index == _current;
 
+        /// <summary>The page logic tab <paramref name="index"/> drives (its <see cref="IArkTabPage"/>), or null. The Ark's 3D
+        /// picks each tab's room by WHAT the tab holds, never by its position in the row (tabs get inserted).</summary>
+        public MonoBehaviour PageLogic(int index) => index >= 0 && index < tabs.Length ? tabs[index].pageLogic : null;
+
         void Awake()
         {
             for (int i = 0; i < tabs.Length; i++)
