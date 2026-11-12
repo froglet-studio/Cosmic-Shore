@@ -3750,6 +3750,14 @@
       "h": 1080,
       "page": "ark",
       "title": "Rev 85 ArtifactsC - C - The Orrery"
+    },
+    "R86ArtifactsAB.dc.html": {
+      "x": 0,
+      "y": 14511,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 86 ArtifactsAB - A + B - the Reliquary platform in the Gallery"
     }
   },
   "createdOnFiles": {
@@ -3874,6 +3882,7 @@
     "sec-rev83",
     "sec-rev84",
     "sec-rev85",
+    "sec-rev86",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -3953,7 +3962,8 @@
     "rev82",
     "rev83",
     "rev84",
-    "rev85"
+    "rev85",
+    "rev86"
   ],
   "notes": {
     "hud_end": {
@@ -6395,6 +6405,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "ark"
+    },
+    "rev86": {
+      "kind": "title1",
+      "text": "Rev 86 - The Artifacts room, A and B as one - the Reliquary's platform in the Gallery's hall",
+      "x": 0,
+      "y": 14111,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev86": {
+      "kind": "rect",
+      "x": -160,
+      "y": 13951,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
     }
   },
   "order": [
@@ -6852,7 +6886,8 @@
     "R84Notes.dc.html",
     "R85ArtifactsA.dc.html",
     "R85ArtifactsB.dc.html",
-    "R85ArtifactsC.dc.html"
+    "R85ArtifactsC.dc.html",
+    "R86ArtifactsAB.dc.html"
   ],
   "pages": [
     {

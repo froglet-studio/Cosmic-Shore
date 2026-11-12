@@ -62,7 +62,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels (section 139), and the live animated scene (Rev 64, section 140); **Rev 61 C picked as the final; Rev 67, the whole Ark screen inside the Ark, a room per tab, animated, every colour set, on the new Ark tab (section 143); Rev 67's Converter now a pier out into the cell from inside the Ark, Decor locked (section 143); **Rev 85, the Artifacts room, three stills to pick from (section 166)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / DECOR) | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels (section 139), and the live animated scene (Rev 64, section 140); **Rev 61 C picked as the final; Rev 67, the whole Ark screen inside the Ark, a room per tab, animated, every colour set, on the new Ark tab (section 143); Rev 67's Converter now a pier out into the cell from inside the Ark, Decor locked (section 143); **Rev 85, the Artifacts room, three stills (section 166); Rev 86, A and B as one (section 167)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -6255,3 +6255,20 @@ strips and prisms; the cost notes are in the round's reply (instanced prisms, ba
 fog, the room only active while its tab is open).
 
 Affects: Shombith's Ark screen (`ArkView`, the Artifacts tab) once a room is picked; the artifacts (read only).
+
+## 167. Rev 86 mockup: the Artifacts room, A and B as one (2026-11-12, for review)
+
+**Asked (Shombith, 2026-11-12, on Rev 85, section 166):** "Combine A and B, A for the platform and B for the background."
+
+**On the canvas:** tab **Ark**, round "Rev 86 - The Artifacts room, A and B as one", one board, `R86ArtifactsAB`: the Ark
+screen opened on its Artifacts tab (the list and the selected artifact's card on top) over one still from
+`r67_ark_tabs_render.py`'s `art_ab` scene. The Reliquary's platform (A) stands in the middle of the Gallery's hall (B):
+a round dais ringed in the domain, the column of cold light up its middle, and the four found artifacts (Javelin,
+Hydra, Aftershock, Aegis) floating over their pedestals in an arc behind it. The hall around it is B's: tall alcoves
+down both walls, now holding the eight dark slots for the artifacts still to be found (a dim prism in each), and the
+round porthole onto the cell at the far end, beside the column. Nocturne; the colour-set switch shows the same still.
+
+**For the build:** live in the game (the cost notes in section 166 hold: instanced prisms, baked light with one or two
+realtime spots on the selected artifact, no volume fog, the room on only while its tab is open).
+
+Affects: Shombith's Ark screen (the Artifacts tab, once picked); the artifacts (read only).

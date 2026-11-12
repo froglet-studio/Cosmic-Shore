@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794501024-a769` of **Frogma**: Rev 3 to Rev 85, 455 boards on 11 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794501420-015f` of **Frogma**: Rev 3 to Rev 86, 456 boards on 11 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -660,6 +660,10 @@ Copied on 2026-11-12 from canvas version `1794501024-a769` of **Frogma**: Rev 3 
 - `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
 
 ### Tab: Ark  (`ark`)
+
+#### Rev 86 - The Artifacts room, A and B as one - the Reliquary's platform in the Gallery's hall
+
+- [`R86ArtifactsAB.dc.html`](R86ArtifactsAB.dc.html) - Rev 86 ArtifactsAB - A + B - the Reliquary platform in the Gallery
 
 #### Rev 85 - The Artifacts room, three still mockups - A Reliquary, B Gallery, C Orrery
 

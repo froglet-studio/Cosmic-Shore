@@ -937,6 +937,52 @@ if SCENE == "art_c":
     CAM = ((-3.2, O.y - 8.6, O.z + 3.4), (0.3, O.y + 0.5, O.z + 3.0), 22, 6.5, 3.6)
 
 
+if SCENE == "art_ab":
+    # A + B (Shombith, 2026-11-12: "combine A and B, A for the platform and B for the background"): the Reliquary's
+    # platform - pedestals round a column of light, domain rings - standing in the Gallery's hall; the hall's alcoves
+    # now hold the eight dark slots for the artifacts still to be found, its porthole onto the cell at the far end
+    O = Vector((0.0, 840.0, -20.0)); HX, HY, H_ = 8.0, 17.0, 10.0
+    room(O, HX, HY, H_, sockets=False)
+    port = K.image_emission("cell_port_ab", os.path.join(ASSETS, "window.png"), 0.8)
+    disc(Vector((O.x, O.y + HY - 0.05, O.z + 5.0)), 3.4, 0.1, port).rotation_euler = (math.radians(90), 0, 0)
+    torus(Vector((O.x, O.y + HY - 0.2, O.z + 5.0)), 3.45, 0.12, DOMAIN_ARK, rot=(math.radians(90), 0, 0))
+    torus(Vector((O.x, O.y + HY - 0.3, O.z + 5.0)), 3.8, 0.35, BODY, rot=(math.radians(90), 0, 0))
+    for sx in (-1, 1):
+        block(O.x + sx * 1.6, O.y - HY / 2 - 2.5, O.z + 0.03, 0.06, HY - 5.0, 0.04, DOMAIN_ARK, bevel=0, name="trim")
+        block(O.x + sx * 1.6, O.y + HY / 2 + 2.5, O.z + 0.03, 0.06, HY - 5.0, 0.04, DOMAIN_ARK, bevel=0, name="trim")
+    for k in range(4):
+        y = O.y - HY + 5.0 + k * 7.6
+        for sx in (-1, 1):
+            xw = O.x + sx * (HX - 0.3)
+            for dy in (-1.6, 1.6):
+                block(xw - sx * 0.35, y + dy, O.z + 3.6, 0.7, 0.5, 7.2, BODY, name="pilaster")
+            block(xw - sx * 0.35, y, O.z + 7.35, 0.7, 3.7, 0.5, BODY, name="lintel")
+            block(xw - sx * 0.1, y, O.z + 3.6, 0.2, 2.7, 6.8, emit_mat(f"niche_ab_{k}_{sx}", (0.35, 0.5, 0.9), 0.16), name="niche")
+            block(xw - sx * 0.65, y, O.z + 0.6, 1.3, 1.6, 1.2, BODY, name="plinth")
+            block(xw - sx * 1.31, y, O.z + 1.18, 0.05, 1.6, 0.05, DOMAIN_ARK, bevel=0, name="trim")
+            add("octa", (xw - sx * 0.7, y, O.z + 2.9), (0.3, 0.3, 0.4), (SQUAD, "shielded", 0.06))
+    # A's platform in the middle of the hall
+    P = O + Vector((0.0, 2.0, 0.0)); H2 = H_
+    disc(P + Vector((0, 0, 0.15)), 6.6, 0.3, BODY)
+    for r_, th in ((6.4, 0.06), (2.2, 0.04), (3.0, 0.04)):
+        torus(P + Vector((0, 0, 0.32)), r_, th, DOMAIN_ARK)
+    disc(P + Vector((0, 0, H2 / 2)), 0.22, H2, emit_mat("beam_ab", (0.55, 0.75, 1.0), 2.0, alpha=0.22), verts=48)
+    disc(P + Vector((0, 0, H2 / 2)), 1.0, H2, emit_mat("beam_halo_ab", (0.4, 0.6, 1.0), 0.25, alpha=0.06), verts=48)
+    torus(P + Vector((0, 0, H2 - 0.2)), 1.2, 0.08, DOMAIN_ARK)
+    plight("POINT", P + Vector((0, 0, 3.0)), 900, (0.65, 0.8, 1.0), 0.6)
+    for i, a_ in enumerate([-75, -27, 27, 75]):
+        a = math.radians(a_)
+        p = P + Vector((4.4 * math.sin(a), 4.4 * math.cos(a), 0.3))
+        disc(p + Vector((0, 0, 0.55)), 0.75, 1.1, BODY, verts=48)
+        torus(p + Vector((0, 0, 1.12)), 0.68, 0.035, DOMAIN_ARK)
+        art_obj(i, p + Vector((0, 0, 2.75)), scale=2.9 if i == ART_SEL else 2.3, spin=0.4 * i)
+        SPOTS.append(("SPOT", f"ab_spot_{i}", p + Vector((0, 0, 8.5)), 1400 if i == ART_SEL else 420, (0.85, 0.92, 1.0), 0.15,
+                      p + Vector((0, 0, 1.0)), 16))
+        plight("POINT", p + Vector((0, 0, 2.6)), 140 if i == ART_SEL else 45, (0.8, 0.9, 1.0), 0.4)
+    ROOM_BOX = (O + Vector((0, 0, H_ / 2)), Vector((HX - 0.4, HY - 0.4, H_ / 2 - 0.2)))
+    CAM = ((3.6, O.y - 9.5, O.z + 3.6), (0.6, O.y + 6.0, O.z + 3.4), 20, 12.0, 4.5)
+
+
 if SCENE == "decor":
     # the antechamber of the decor bay: the bay's sealed hatch is the room's back wall
     O = Vector((0.0, 540.0, -20.0))
