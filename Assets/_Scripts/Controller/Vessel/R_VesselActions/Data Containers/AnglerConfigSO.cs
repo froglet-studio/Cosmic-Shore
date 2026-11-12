@@ -82,8 +82,24 @@ namespace CosmicShore.Gameplay
                  "from x1 at Time 0 to x2 at Time 10. The element's one parameter (vessel contract: Time = rate / mobility).")]
         [SerializeField] ElementalFloat faunaSpeed = ElementalFloat.Multiplier(1f, 2f, Element.Time, 1f);
         [Tooltip("Charge: a squad locked on to a vessel bites it as a scored Strike (PvP is petals only) at most once per this " +
-                 "many seconds, however many creatures are on it (CombatHitDrain's per-pair latch).")]
+                 "many seconds at Charge 0, however many creatures are on it (CombatHitDrain's per-pair latch). biteRate divides it.")]
         [SerializeField, Min(0.1f)] float lockBiteCooldown = 1f;
+        [Tooltip("CHARGE: how often a hunter bites (vessel contract: Charge = threat). Divides lockBiteCooldown: x1 at Charge 0 " +
+                 "(one bite a second) to x2.5 at Charge 10 (one every 0.4 s), so a charged Angler's hunters take petals 2.5 times as fast.")]
+        [SerializeField] ElementalFloat biteRate = ElementalFloat.Multiplier(1f, 2.5f, Element.Charge, 1f);
+        [Tooltip("CHARGE level-5 'Swallow': with this element's upgrade active a bite's petals land on the Angler instead of " +
+                 "coming loose as crystals. None = always eject.")]
+        [SerializeField] Element swallowUpgradeElement = Element.Charge;
+        [Tooltip("MASS: the lure's size (vessel contract: Mass = physical size). Multiplies the lure reach and the hold radius " +
+                 "(and the ring drawn round the esca): x1 at Mass 0 to x2 at Mass 10.")]
+        [SerializeField] ElementalFloat lureScale = ElementalFloat.Multiplier(1f, 2f, Element.Mass, 1f);
+        [Tooltip("SPACE: the paint brush's width (vessel contract: Space = reach / presence). Multiplies the brush's half-angle and " +
+                 "its radius at the nose: x1 at Space 0 to x2 at Space 10. The eraser (Charge's beam) is unchanged.")]
+        [SerializeField] ElementalFloat brushScale = ElementalFloat.Multiplier(1f, 2f, Element.Space, 1f);
+        [Tooltip("TIME level-5 'Riptide': with this element's upgrade active a dash pressed while one is in flight is kept and " +
+                 "fires the moment it lands, at the other group, so the Angler chains between its two groups. None = a press " +
+                 "during a dash is ignored.")]
+        [SerializeField] Element riptideUpgradeElement = Element.Time;
         [Tooltip("Charge: a locked creature bites when it is within this many units of the vessel, beyond its own mouth's reach.")]
         [SerializeField, Min(0f)] float lockBiteReach = 6f;
         [Tooltip("The omni crystal morphs into one of these, at random (a leashable herbivore species; the lab's O).")]
@@ -134,6 +150,36 @@ namespace CosmicShore.Gameplay
         public float LureGrowth => Mathf.Max(1f, lureGrowth);
         public ElementalFloat FaunaSpeed => faunaSpeed;
         public float LockBiteCooldown => Mathf.Max(0.1f, lockBiteCooldown);
+        public ElementalFloat BiteRate => biteRate;
+        public Element SwallowUpgradeElement => swallowUpgradeElement;
+        public ElementalFloat LureScale => lureScale;
+        public ElementalFloat BrushScale => brushScale;
+        public Element RiptideUpgradeElement => riptideUpgradeElement;
+
+        /// <summary>Seconds between bites on one vessel for <paramref name="angler"/>: lockBiteCooldown over Charge's biteRate.</summary>
+        public float BiteCooldownFor(IVesselStatus angler) => Mathf.Max(0.1f, LockBiteCooldown / Mathf.Max(1f, biteRate.EvaluateLive(angler)));
+
+        /// <summary>Charge 5 'Swallow': a bite's petals land on <paramref name="angler"/> instead of coming loose.</summary>
+        public bool SwallowActive(IVesselStatus angler)
+        {
+            if (swallowUpgradeElement == Element.None || angler == null) return false;
+            var abilities = angler.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(swallowUpgradeElement);
+        }
+
+        /// <summary>Time 5 'Riptide': a dash pressed while one is in flight is kept and fired on landing.</summary>
+        public bool RiptideActive(IVesselStatus angler)
+        {
+            if (riptideUpgradeElement == Element.None || angler == null) return false;
+            var abilities = angler.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(riptideUpgradeElement);
+        }
+
+        /// <summary>The lure's size for <paramref name="angler"/> (Mass): x1 at rest, x2 at Mass 10.</summary>
+        public float LureScaleFor(IVesselStatus angler) => Mathf.Max(1f, lureScale.EvaluateLive(angler));
+
+        /// <summary>The paint brush's width for <paramref name="angler"/> (Space): x1 at rest, x2 at Space 10.</summary>
+        public float BrushScaleFor(IVesselStatus angler) => Mathf.Max(1f, brushScale.EvaluateLive(angler));
         public float LockBiteReach => lockBiteReach;
         public IReadOnlyList<FaunaConfigurationSO> OmniFauna => omniFauna;
         public float BrushInterval => brushInterval;
