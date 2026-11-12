@@ -16,9 +16,14 @@ scales, the fish a stranger sees now), and four bands come round to the camera's
 a fish cannot have; the paddles are half as long as the bill and the near one stops behind the eye, so they are not
 ears and do not cover the face; nothing is worn (a shell that is worn is a helmet, and hands that wear shell are
 gloves); and the bust is not sent, since its gloss and its rainbow are the fish's colours and it shows the fan this
-patch takes away. A lobster or a shrimp, which counts as its kind, named from the avatar: about one in two, and a
-mantis shrimp by name one in five (the critics' estimate: nothing is painted or tested). Not painted yet: this is one
-of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
+patch takes away. The same three then read the second draft against their first notes, and this is the third: the near
+paddle grows where the red fin grows now and points the other way, toward the eye, and the fin's place is given back
+to the shell and the sky (told both to swing forward and to stand where a fin that points back stands, the painter
+would keep the fin, and the fin is the fish a stranger sees); the tail is held level with the hips, where the second
+draft had it both level and just above the ground, and its plates are turned flat to the camera. A lobster or a
+shrimp, which counts as its kind, named from the avatar: about one in two, and a mantis shrimp by name one in five
+(the critics' estimate: nothing is painted or tested). Not painted yet: this is one of the eight weakest reads, and
+painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Rear-curtain flash at dusk with the shutter dragged, ice in the air",
     shot=("A photograph made at dusk with the shutter dragged and a flash fired at its end: a 28mm lens close in, "
@@ -49,8 +54,8 @@ SCENE = dict(
           "has built up on the boot soles; a few pink feathers at the neck are stiff with rime."),
     close=(610, 0, 1070, 460),
     patch=dict(
-        what=("the shell over the head and the neck, the paddles and feelers at the brow, the two hands, and the "
-              "fan behind the shoulder, which becomes a tail"),
+        what=("the shell over the head and the neck, the red fin at the temple, which becomes one of two paddles "
+              "at the brow, the feelers, the two hands, and the fan behind the shoulder, which becomes a tail"),
         changes=("the hands",),
         ask=("THE HEAD AND NECK. {name} is feathered pink as far back as the eyes. Behind them, where the shining "
              "green dome is now, the back of the head and the back of the neck are a mantis shrimp's own shell, "
@@ -67,12 +72,14 @@ SCENE = dict(
              "\n\n"
              "THE PADDLES. Low at each side of the brow, where the shield's front edge meets the pink feathers, on "
              "a short jointed stalk that is seen, is one flat oval paddle of smooth hard shell, half as long as "
-             "the bill: orange-red with a darker edge and short red bristles along it. Both are swung forward and "
-             "outward, away from the head, toward the flying ice. The far one stands clear against the sky in "
-             "front of the brow. The near one is where the red fin stands at the temple now: it stops level with "
-             "the back corner of the eye, so the eye, the cheek and the whole bill are in full view in front of "
-             "it, and ice is breaking on its outer face. From the brow between them two thin red feelers are "
-             "thrown back over the head by the blow."
+             "the bill: orange-red with a darker edge and short red bristles along it. Both point forward, toward "
+             "the flying ice, and a little outward. The far one stands clear against the sky in front of the brow. "
+             "Where the red fin stands at the temple now, and where its blade lies back past the head, there is "
+             "the olive shell of the head and the dusk sky behind it. The near paddle grows where that fin grows "
+             "now and points the other way: toward the eye, along the side of the head and a little out toward the "
+             "camera. Its tip stops level with the back corner of the eye, so the eye, the cheek and the whole "
+             "bill are in full view in front of it, and ice is breaking on its outer face. From the brow between "
+             "them two thin red feelers are thrown back over the head by the blow."
              "\n\n"
              "THE HANDS. Both hands are of the same shell, grown from their own skin: dull red, four fingers and a "
              "thumb, each finger in three short jointed pieces, pitted, scuffed pale at the knuckles and frosted. "
@@ -82,9 +89,9 @@ SCENE = dict(
              "lights and the frozen field. The tail grows from the base of the spine. It comes into view from "
              "under the hoodie's hem at the back of the hips, on the side away from the frosted intake, as six "
              "broad bands of the olive shell, each narrower than the last. It passes behind the hanging hand and "
-             "is held out low and level to the left of the standing leg, for balance, clear against the wet "
-             "ground, where it ends in its tail plates: one ridged middle plate and two flat blades at each side "
-             "of it, deep blue edged with red, held just above the ground."),
+             "is held straight out behind the body, level with the hips, for balance, clear against the snow and "
+             "the wet ground beyond it, where it ends in its tail plates: one ridged middle plate and two flat "
+             "blades at each side of it, deep blue edged with red, turned flat to the camera."),
         edit=(   # the whole frame: the head itself changes, so the figure is the painter's (refs.WHOLE)
             ((0, 0), (1536, 0), (1536, 864), (0, 864)),
         ),

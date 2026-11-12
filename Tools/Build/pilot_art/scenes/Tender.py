@@ -17,8 +17,13 @@ in front of the green jacket, where ivory shows, and its point stops short of th
 ends at a hand is held); the three sentences that named a thing in order to remove it are gone (what is named is
 painted); the blowhole is high on the back of the head, where its breath streams back against the dark shore and can
 be seen (over the head it was white on a white sky); and the bust is not sent, since it shows the dome and the fluke
-this patch takes away. A narwhal named from the avatar: about one in two (the critics' estimate: nothing is painted or
-tested). Not painted yet: this is one of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
+this patch takes away. The same three then read the second draft against their first notes, and this is the third: the
+tusk's root is well behind the corner of the mouth, so that on its slope it clears the seed case; the words no longer
+say it grows from the upper jaw, which on this face is the upper bill, where the old root is; and since the first
+third of the tusk lies over the neck before it reaches the jacket, the neck's dark blotches run down the side toward
+the camera, so that ivory shows there too. A narwhal named from the avatar: about one in two (the critics' estimate:
+nothing is painted or tested). Not painted yet: this is one of the eight weakest reads, and painting them waits for
+Garrett's go-ahead."""
 SCENE = dict(
     treatment="Editorial portrait for a feature, held mid-task under flat bright overcast",
     shot=("An editorial portrait made for a feature about a replanting, the subject asked to hold still in the "
@@ -61,24 +66,24 @@ SCENE = dict(
              "feathered as a scarlet macaw's, the same scarlet as the face, over the whole crown. Down the back of "
              "the head the feathers thin, until single scarlet feathers lie on bare skin, and from there the back "
              "of the head and the whole neck are a narwhal's: smooth wet skin, pale grey, with soft dark blotches "
-             "that run into one another along the back of the neck and fade to plain cream at the throat. Under "
-             "the jaw the scarlet feathers thin in the same way, and the grey skin of the throat shows between "
-             "them. High on the back of the head, where the last scarlet feathers lie on the grey skin, on the "
-             "side toward the camera, is a blowhole: a dark crescent slit as wide as the eye, with a raised wet "
-             "rim. A small plume of breath streams back from it, level with it, pale against the far blue-green "
-             "shore."
+             "that run into one another along the back of the neck and down its side toward the camera, and fade "
+             "to plain cream only down the front of the throat. Under the jaw the scarlet feathers thin in the "
+             "same way, and the grey skin shows between them. High on the back of the head, where the last scarlet "
+             "feathers lie on the grey skin, on the side toward the camera, is a blowhole: a dark crescent slit as "
+             "wide as the eye, with a raised wet rim. A small plume of breath streams back from it, level with it, "
+             "pale against the far blue-green shore."
              "\n\n"
              "THE TUSK. Where the tusk shows to the left of the bill now, out over the flats, there is the flat: "
-             "water, white growths and rows of shoots. The tusk grows from the upper jaw. It leaves the face low "
-             "on the near cheek, at the lower edge of the red feathers, below and just behind the corner of the "
-             "mouth and clear of the seed case, through a swollen ring of pink-grey gum that is in full view. From "
-             "its root it runs straight, forward and down, at the slope the tusk has now: it passes clear below "
-             "the seed case and lies in front of the collar and the near shoulder of the green jacket, and it ends "
-             "in front of the upper sleeve, its point just inside the sleeve's outer edge, so the dark green of "
-             "the jacket is behind its whole length. It is half as long as the tusk is now: ivory, twisted along "
-             "its whole length in close spiral grooves as it is now, wet. The grooves hold wet white sand, "
-             "thickest over its last quarter, and a drop of water hangs from its point. The bill and the seed case "
-             "stay whole and in full view."
+             "water, white growths and rows of shoots. The tusk leaves the face low on the near cheek, at the "
+             "lower edge of the red feathers, below and well behind the corner of the mouth and clear of the seed "
+             "case, through a swollen ring of pink-grey gum that is in full view. From its root it runs straight, "
+             "forward and down, at the slope the tusk has now: it passes clear below the seed case, across the "
+             "dark-blotched side of the neck, and lies in front of the collar and the near shoulder of the green "
+             "jacket, and it ends in front of the upper sleeve, its point just inside the sleeve's outer edge, so "
+             "the blotched grey skin and then the dark green of the jacket are behind its whole length. It is half "
+             "as long as the tusk is now: ivory, twisted along its whole length in close spiral grooves as it is "
+             "now, wet. The grooves hold wet white sand, thickest over its last quarter, and a drop of water hangs "
+             "from its point. The bill and the seed case stay whole and in full view."
              "\n\n"
              "THE HAND AT THE LEFT. Where the hand at the left grips a wooden tool now, and where the tool runs "
              "down out of the picture, the hand holds three green shoots by their stems, their pale roots hanging "

@@ -14,10 +14,12 @@ begins in front of the eye and below it (from the forehead it was the cap again,
 broad part keeps its round front edge and both corners, the outline a platypus is named by, where the first draft drew
 it in to a wedge; the head turns only a little, so the long curve the ibis is named by stays in side view and its tip
 stays where it is; slate, marble and the string of drops are out of the words; and the hands are left as they are,
-since they are small, already dark and wet, and hold the line. Only the name counts for a platypus: about one in three
-(the critics' estimate: nothing is painted or tested). This scene is one of the four Garrett approved on 2026-11-11,
-so the run is his to allow by name, and nothing but the head is asked. Not painted yet: this is one of the eight
-weakest reads, and painting them waits for Garrett's go-ahead."""
+since they are small, already dark and wet, and hold the line. The same three then read the second draft against their
+first notes, and this is the third: a three-quarter view is out of the words (it is a noun a painter can paint, and it
+would shorten the long curve); the turn of the head is given by what it shows. Only the name counts for a platypus:
+about one in three (the critics' estimate: nothing is painted or tested). This scene is one of the four Garrett
+approved on 2026-11-11, so the run is his to allow by name, and nothing but the head is asked. Not painted yet: this
+is one of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Field documentary, a long lens from far off",
     shot=("A documentary photograph taken in the field by a photojournalist who waited hours for it, in the manner "
@@ -68,10 +70,10 @@ SCENE = dict(
              "parts, from the corner of the mouth to the tip, and the bare red skin round the eye runs in soft "
              "blotches into the blue-black skin at the side of the bill."
              "\n\n"
-             "THE HEAD. The head is turned a little toward the camera, less than halfway to a three-quarter view: "
-             "just enough that the flat upper side of the bill's broad part, both nostrils and both round corners "
-             "are seen. The slim red part of the bill is still seen from the side, with its whole curve, tipped "
-             "down over the float as it is now, and the eye is where it is now."
+             "THE HEAD. The head is turned a little toward the camera, just enough that the flat upper side of the "
+             "bill's broad part, both nostrils and both round corners are seen. The slim red part of the bill is "
+             "still seen from the side, with its whole curve, tipped down over the float as it is now, and the eye "
+             "is where it is now."
              "\n\n"
              "THE WATER. Beads of water stand on the blue-black skin. One bright drop hangs from the tip of the "
              "bill, and one small soft puff of breath hangs over the nostrils in the cold air."),

@@ -18,9 +18,11 @@ the curl out of sight through the lantern's ring; the lantern burns low and hang
 the root it shows now, so it is not drawn twice; no length is given in hands or fingers beside a hidden hand (a named
 hand comes back as a third hand); gold, column and rings are out of the neck's words (they are painted as jewellery);
 and the painter is shown only the front of the bust's head and neck (bust_box), not its row of points. It costs the
-scene its tail on the rail, from which the whole scene was named. A seahorse named from the avatar: about one in two,
-with the spiral in view (the critics' estimate: nothing is painted or tested). Not painted yet: this is one of the
-eight weakest reads, and painting them waits for Garrett's go-ahead."""
+scene its tail on the rail, from which the whole scene was named. The same three then read the second draft against
+their first notes, and this is the third: three broad bands show on the bare neck where five were asked (the bare neck
+is about a third as tall as the face, and five bands in it are a texture, where three are rings). A seahorse named
+from the avatar: about one in two, with the spiral in view (the critics' estimate: nothing is painted or tested). Not
+painted yet: this is one of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Architectural interior with a shift lens, verticals true",
     shot=("An architectural interior photograph made on a tripod with a shift lens: every vertical true, the room "
@@ -77,11 +79,11 @@ SCENE = dict(
              "the coat's collar, and the lace frill hangs below it, at the collarbone, as it does now. The neck is "
              "a seahorse's: skin pulled tight over bony plates that go round it in bands, each band with a raised "
              "edge and a small blunt knob at the front and at each side. The skin is dull amber orange, straw "
-             "yellow on the raised edges, wet and finely pitted, and the bands are a little uneven. Five bands "
-             "show between the jaw and the coat's collar. Where the head meets the neck the grey skin warms into "
-             "the orange within the first band, and a few of the head's dark flecks lie on the second. The bands "
-             "begin before the colour does: the back of the head, behind the eye, already shows two shallow bands "
-             "under its grey skin."
+             "yellow on the raised edges, wet and finely pitted, and the bands are a little uneven. Three broad "
+             "bands show between the jaw and the coat's collar. Where the head meets the neck the grey skin warms "
+             "into the orange within the first band, and a few of the head's dark flecks lie on the second. The "
+             "bands begin before the colour does: the back of the head, behind the eye, already shows two shallow "
+             "bands under its grey skin."
              "\n\n"
              "THE TAIL. Where the tail's end is wound on the handrail now, the handrail stands bare brass. The "
              "tail grows from the base of the spine and shows at the left edge of the coat's skirt, beside the "

@@ -328,9 +328,9 @@ size, send the scene alone (`refs=()`) and point the words at it ("the round por
 reflection asked for in glass is painted as a second figure (84). Each `apply` re-encodes the scene, so re-cut the
 avatar and commit it. After changing `edit` or `keep`, run `refs.py mask <WORD>` or the self-test fails.
 
-**Read a pilot patch's words beside the picture before a run is asked for.** Three critics read eight drafts on
-2026-11-12 (an art director's eye, a painter's eye, a stranger's eye; their figures are estimates until a run
-tests them), and the same faults were in every draft:
+**Read a pilot patch's words beside the picture before a run is asked for.** Three critics read the eight designs
+twice on 2026-11-12 (an art director's eye, a painter's eye, a stranger's eye; their figures are estimates until a
+run tests them). The same faults were in every first draft, and the rewrite brought the last one in:
 
 - **A place the frame has no room for.** Name each new part's root and end by things already in the picture, on a
   gridded view (`scene.py grid <WORD> out.jpg`), and check the anchors against each other: given a length, a slope
@@ -345,6 +345,13 @@ tests them), and the same faults were in every draft:
   denial ("Neither hand touches it" puts a hand on it). "Where X is now there is Y" is the form that works.
 - **One large shape with its own outline inside the avatar's square**, shown with its root: texture is lost at
   256 px (small feathers become fur, lapped plates become scales), and a part with no root is a separate object.
+  Count only what the square has pixels for (five bands on a neck 45 px tall are a texture; three are rings).
+- **The rewrite's own anchors.** A second draft answered every must of the first and brought in four new conflicts,
+  each in a sentence written to fix an old one, so measure the new sentences on the grid again. A part that takes
+  another's place names the old part in `what` and gives its place back (told to stand "where the red fin stands"
+  and to point forward, the painter keeps the fin, which points back). A grown part leaves from the body, in view
+  (a neck "from the collar of the cloak" is a stole). A thing lies where the picture has a surface for it. A word
+  for the hour ("evening" in a sunrise) repaints the light.
 
 ## 8. Showing a round
 

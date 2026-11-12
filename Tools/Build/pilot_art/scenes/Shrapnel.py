@@ -10,13 +10,17 @@ smooth moist skin, orange blotched with black on the throat and the palms, a thi
 low sun shines through, round soft fingertips, and a flat swimming tail. Three critics then read the first draft of
 these words beside the picture (an art director's eye, a painter's, a stranger's), and this is the second draft: the
 fold of skin stands along the whole head (flopped over, it was a flap of hair or a rooster's comb) and its edge runs
-in rounded waves; the tail leaves the place behind the shoulder, where it read as unattached, and lies on the blanket
-in a curve that keeps four of the fruit on the crates, so it has a root in view and a job; the braid begins in the
-toucan's own white feathers, where the camera can see it; the raised palm shows its orange to the camera, since
-fingers are what a fish has not; and leaf, pearl and sheet are out of the words. A newt or a salamander named from the
-avatar: about four in ten, with a lizard, which counts as its kind, in most of the rest (the critics' estimate:
-nothing is painted or tested). Not painted yet: this is one of the eight weakest reads, and painting them waits for
-Garrett's go-ahead."""
+in rounded waves; the tail leaves the place behind the shoulder, where it read as unattached, and lies along the
+barricade, where it keeps fruit from rolling off, so it has a root in view and a job; the braid begins in the toucan's
+own white feathers, where the camera can see it; the raised palm shows its orange to the camera, since fingers are
+what a fish has not; and leaf, pearl and sheet are out of the words. The same three then read the second draft against
+their first notes, and this is the third: the tail lies along the front rim of the full crate beside the seat, on the
+side of the raised hand, with the heaped fruit against it (on the megaphone's side, where the second draft laid it,
+the megaphone stands at the blanket's edge: there is no top to lie on there and no fruit); and when it is painted the
+avatar's square moves about 40 px toward the raised hand, so that the whole orange palm is inside it. A newt or a
+salamander named from the avatar: about one in three, and a lizard, which counts as its kind, in a quarter more (the
+critics' estimate: nothing is painted or tested). Not painted yet: this is one of the eight weakest reads, and
+painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Frozen at 1/4000 s like a sports frame, a fruit in the air",
     shot=("A photograph frozen at one four-thousandth of a second, like a sports frame: an 85mm lens at chest "
@@ -74,12 +78,13 @@ SCENE = dict(
              "\n\n"
              "THE TAIL. Where the big curled tail stands behind the shoulder now there is the street behind: the "
              "pale stone wall in the morning light. The tail is a newt's swimming tail. It grows from the base of "
-             "the spine and comes into view from under the poncho's hem beside the hip, on the megaphone's side. "
-             "It lies along the blanket on top of the crates, in front of the megaphone, in one loose curve, and "
-             "four of the fruit lie inside the curve, kept on the crates by it. Its end hangs over the front edge "
-             "of the crates, flat side to the camera, and drips. It is tall and flat from side to side, smooth and "
-             "wet, near black with a pale silver-white stripe along its middle, and along its upper and lower "
-             "edges runs a soft wavy border of thin skin that the low sun shines through, amber."
+             "the spine and comes into view from under the poncho's hem beside the hip, on the side of the raised "
+             "hand. It lies on its side along the front rim of the full crate of fruit that stands beside the seat "
+             "there, and the top fruit of the heap rest against it, kept in the crate by it. Its end hangs over "
+             "the front of that crate at its outer end, away from {name}, flat side to the camera, and drips. It "
+             "is tall and flat from side to side, smooth and wet, near black with a pale silver-white stripe along "
+             "its middle, and along its upper and lower edges runs a soft wavy border of thin skin, amber where "
+             "the low sun comes through it."
              "\n\n"
              "THE BRAID. The silver-white braid begins in the toucan's own white feathers: at the side of the "
              "neck, below the cheek on the braid's side, the white feathers grow long and fine and are gathered "

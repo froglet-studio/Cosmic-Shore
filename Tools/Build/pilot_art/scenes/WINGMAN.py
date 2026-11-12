@@ -13,9 +13,11 @@ second draft: the pouch is placed by what the picture already holds (its lower e
 pin, its front edge against the hillside), because its own outline is what a stranger names; the comparison to the wet
 shirt, the cap and the tuft are out of the words (a comparison is painted as its noun, and a tuft at the nape is the
 wig again); the second wing is not asked for, since it would stand behind the pouch; and the painter is shown only the
-bill and the pouch of the bust (bust_box), which also holds the plumes this patch takes away. A pelican named from the
-avatar: about one in two (the critics' estimate: nothing is painted or tested). Not painted yet: this is one of the
-eight weakest reads, and painting them waits for Garrett's go-ahead."""
+bill and the pouch of the bust (bust_box), which also holds the plumes this patch takes away. The same three then read
+the second draft against their first notes, and this is the third: the one peg in the tip of the bill is said to be in
+front of the line, which runs from that same point in the picture (a peg there could come back clipped on the line). A
+pelican named from the avatar: about one in two (the critics' estimate: nothing is painted or tested). Not painted
+yet: this is one of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Hard sea light on a cliff ledge, from a burrow's doorway",
     shot=("A photograph taken from just inside a burrow's doorway on a cliff ledge, a little of the dark door "
@@ -62,8 +64,9 @@ SCENE = dict(
              "The white feathers of the cheek thin to wisps along its upper edge."
              "\n\n"
              "THE BILL. The bill is shut on one wooden clothes peg, the same as the pegs in the pouch and the peg "
-             "the glove is pushing onto the line. It is gripped by its middle in the very tip of the bill, its two "
-             "legs hanging down, seen from the side. The bill's stripes and the eye stay as they are."
+             "the glove is pushing onto the line. It is gripped by its middle in the very tip of the bill, in "
+             "front of the line, its two legs hanging down, seen from the side. The bill's stripes and the eye "
+             "stay as they are."
              "\n\n"
              "THE BACK OF THE HEAD. Where the long pale plumes sweep back from the head now there is the hillside "
              "behind, and the back of the head is smooth and round: the black feathers of the crown run on down "

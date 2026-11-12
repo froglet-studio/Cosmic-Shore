@@ -402,12 +402,14 @@ GPT Image 2.6 through Weave, five runs, 55 credits. Both are in `PAINTERS.md`.
 1. **The eight weakest are designed again as one creature each**, in words, as a pending `patch` in each record;
    painting them waits for Garrett's answer on a card (up to 16 runs on Weave, 176 credits at most). Three of the
    pairs are limits whatever is painted: a heron behind an ocelot's face, a platypus behind an ibis's bill, and a
-   jackal, which is a fox to nearly everyone (`LESSONS` 43, 50). The words are a second draft: three critics read
+   jackal, which is a fox to nearly everyone (`LESSONS` 43, 50). The words are a third draft: three critics read
    the first beside the pictures (an art director's eye, a painter's, a stranger's) and none of the eight was
-   ready to send. What they found is in each record's docstring and, as rules, in the skill's section 7. Their
-   estimate of a stranger naming the second animal from the avatar, with nothing painted or tested: about one in
-   two for WINGMAN, NEEDLE, Tender and Slingshot (Slingshot by kind), four in ten for Shrapnel and TALON (TALON
-   by kind), one in three for MANGER and for ZODIAC at best, which is the run to leave till last or leave out.
+   ready to send; the same three read the second against their notes and would send six as written, change one
+   sentence of Slingshot's, and two of them still said no wording gets ZODIAC a heron in her pose. What they
+   found is in each record's docstring and, as rules, in the skill's section 7. Their estimate of a stranger
+   naming the second animal from the avatar, with nothing painted or tested: about one in two for WINGMAN,
+   NEEDLE, Tender, Slingshot, TALON and Shrapnel (the last three by kind: a shrimp or lobster, a fox, a lizard),
+   one in three for MANGER, and one in four for ZODIAC, which is the run to leave till last or leave out.
 2. **What is still weak in the six painted again**: Trace's bell is still called worn by a reader who is sure it
    is a jellyfish; ZODIAC's heron is missed; the white patch on Flux sits where his ear was; Longshift's fingers
    read as fused.

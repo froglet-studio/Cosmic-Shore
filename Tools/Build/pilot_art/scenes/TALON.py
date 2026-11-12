@@ -12,9 +12,11 @@ beside the picture (an art director's eye, a painter's, a stranger's), and this 
 under the forearm and rises between the arms (over the forearm it ran on over a glove, and a hidden hand comes back as
 a third hand); its black end lies at the brick's corner beside the chin, inside the avatar, with the grit it has
 pushed up, since a stroke that is over cannot be painted; the dark fur no longer lies over the shoulders (fur over a
-collar is a fur collar) and is one grey with no white in it (a white band on a head is a skunk or a badger). Two
-furred animals merge and a jackal is a fox to nearly everyone: a fox, a wolf or a dog, which counts as its kind, named
-from the avatar is about four in ten, and a jackal by name one in twenty (the critics' estimate: nothing is painted or
+collar is a fur collar) and is one grey with no white in it (a white band on a head is a skunk or a badger). The same
+three then read the second draft against their first notes, and this is the third: the sky where the tail stands now
+is said as it is, pale gold (the second draft called a sunrise evening, and an evening can be painted). Two furred
+animals merge and a jackal is a fox to nearly everyone: a fox, a wolf or a dog, which counts as its kind, named from
+the avatar is four or five in ten, and a jackal by name one in twenty (the critics' estimate: nothing is painted or
 tested). Not painted yet: this is one of the eight weakest reads, and painting them waits for Garrett's go-ahead."""
 SCENE = dict(
     treatment="Raking-light documentary at sunrise, eye to eye",
@@ -56,16 +58,17 @@ SCENE = dict(
              "pale cheek ruff at each side, the dark hairs and the pale ones lie mixed together for a short way; "
              "the ruff and the chest stay as they are."
              "\n\n"
-             "THE TAIL. Where the tail stands behind the shoulder now there is the evening sky and the far stacks "
-             "of brick. The tail grows from the base of the spine and comes forward round the hip on the side "
-             "where it stands now. It lies along the top of the thigh on that side, passes under the forearm that "
-             "rests over that thigh and rises in front of the chest between the two arms, in one long easy bend: "
-             "as long as his leg, thick and full to its blunt end, smooth, plain rust red, with the dark grizzled "
-             "grey of the neck along its upper side and a black end a quarter of its length. That black end lies "
-             "along the brick's top edge at the corner nearest his chin, beside his cheek, its long hairs spread "
-             "on the clay. A small pale ridge of grit is pushed up along that edge where it has just passed, the "
-             "black hairs are grey with clay dust, and dust still hangs round it in the low light. Both gloved "
-             "hands stay on the brick as they are, and the whole print is in clear view."),
+             "THE TAIL. Where the tail stands behind the shoulder now there is what lies behind it: the pale gold "
+             "sky, the far trees and the stacks of brick. The tail grows from the base of the spine and comes "
+             "forward round the hip on the side where it stands now. It lies along the top of the thigh on that "
+             "side, passes under the forearm that rests over that thigh and rises in front of the chest between "
+             "the two arms, in one long easy bend: as long as his leg, thick and full to its blunt end, smooth, "
+             "plain rust red, with the dark grizzled grey of the neck along its upper side and a black end a "
+             "quarter of its length. That black end lies along the brick's top edge at the corner nearest his "
+             "chin, beside his cheek, its long hairs spread on the clay. A small pale ridge of grit is pushed up "
+             "along that edge where it has just passed, the black hairs are grey with clay dust, and dust still "
+             "hangs round it in the low light. Both gloved hands stay on the brick as they are, and the whole "
+             "print is in clear view."),
         edit=(   # the whole frame: the head itself changes, so the figure is the painter's (refs.WHOLE)
             ((0, 0), (1536, 0), (1536, 864), (0, 864)),
         ),
