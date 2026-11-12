@@ -43,8 +43,22 @@ def _enum(path: str, name: str) -> dict[int, str]:
     return out
 
 
-VESSELS = _enum("Assets/_Scripts/Data/Enums/VesselClassType.cs", "VesselClassType")
-MODES = _enum("Assets/_Scripts/Data/Enums/GameModes.cs", "GameModes")
+ENUMS_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "enums.json")
+
+
+def _enums():
+    """From the C# source when this runs in a checkout; else from enums.json beside this file (a copy of the tools
+    outside the repo, e.g. C:\\Claude\\story\\tools on Gbox). `--write-enums` refreshes the JSON."""
+    v = _enum("Assets/_Scripts/Data/Enums/VesselClassType.cs", "VesselClassType")
+    m = _enum("Assets/_Scripts/Data/Enums/GameModes.cs", "GameModes")
+    if not v and os.path.exists(ENUMS_JSON):
+        data = json.load(open(ENUMS_JSON, encoding="utf-8"))
+        v = {int(k): n for k, n in data.get("vessels", {}).items()}
+        m = {int(k): n for k, n in data.get("modes", {}).items()}
+    return v, m
+
+
+VESSELS, MODES = _enums()
 
 
 def vessel_name(v: int) -> str:
@@ -123,6 +137,7 @@ class Recording:
         self.has_world = self.has_actions = False
         self.summary: dict = {}
         self.path = ""
+        self.time_offset = 0.0
 
     @property
     def mode_name(self):
@@ -172,6 +187,13 @@ def parse(data: bytes) -> Recording:
         payload = r.bytes(length)
         if cid == STREAM_VESSELS:
             rec.tracks = _vessels(payload)
+            # Pose times are the game clock at capture (seconds since the app started); the story wants seconds into
+            # the recording, the same clock the replay's playback scrubs.
+            starts = [t.poses[0][0] for t in rec.tracks if t.poses]
+            rec.time_offset = min(starts) if starts else 0.0
+            if rec.time_offset:
+                for t in rec.tracks:
+                    t.poses = [(p[0] - rec.time_offset,) + tuple(p[1:]) for p in t.poses]
         elif cid == STREAM_WORLD:
             rec.has_world = True
         elif cid == STREAM_ACTIONS:
@@ -252,6 +274,11 @@ def self_test() -> int:
     assert len(back.tracks[1].poses) == len(rec.tracks[1].poses)
     assert abs(back.tracks[0].poses[10][1] - rec.tracks[0].poses[10][1]) < 1e-3
     assert len(back.humans) == 1 and back.duration > 19
+    late = synthetic()
+    for t in late.tracks:
+        t.poses = [(p[0] + 1000.0,) + tuple(p[1:]) for p in t.poses]
+    late = parse(write(late))
+    assert late.time_offset == 1000.0 and late.tracks[0].poses[0][0] == 0.0 and late.duration < 21
     # a reader steps over a stream it does not know, and refuses a wrong magic or version
     data = bytearray(write(rec))
     try:
@@ -271,6 +298,10 @@ def self_test() -> int:
 def main(argv):
     if "--self-test" in argv:
         return self_test()
+    if "--write-enums" in argv:
+        json.dump({"vessels": VESSELS, "modes": MODES}, open(ENUMS_JSON, "w", encoding="utf-8"), indent=0, sort_keys=True)
+        print(f"wrote {ENUMS_JSON}: {len(VESSELS)} vessels, {len(MODES)} modes")
+        return 0
     for path in argv:
         rec = read(path)
         print(json.dumps({"file": os.path.basename(path), "mode": rec.mode_name, "scene": rec.scene,

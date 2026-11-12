@@ -39,6 +39,7 @@ import moments as M  # noqa: E402
 SCHEMA = "cosmic-shore.footage-index/1"
 KEEP = ("rating", "used_in", "notes", "clip")   # written by people or later stages; survive a re-index
 TOP_MOMENTS = 8
+INDEXER = 2   # bump when a replay's entry would come out differently (moments, times): older entries are re-read
 
 
 def _id(kind, key):
@@ -145,7 +146,7 @@ def build(index_path, replays=(), shots=(), flight_moments=None, clips=()):
     for path in theater.find(replays):
         key = f"{os.path.basename(path)}|{os.path.getsize(path)}"
         iid = _id("replay", key)
-        if iid in old and old[iid].get("path") == path:
+        if iid in old and old[iid].get("path") == path and old[iid].get("indexer") == INDEXER:
             items.append(old[iid])
             continue
         try:
@@ -153,7 +154,7 @@ def build(index_path, replays=(), shots=(), flight_moments=None, clips=()):
         except (ValueError, EOFError, OSError) as e:
             errors.append({"path": path, "error": str(e)})
             continue
-        it["id"] = iid
+        it["id"], it["indexer"] = iid, INDEXER
         items.append(it)
     for folder in shots:
         for it in index_shots(folder):

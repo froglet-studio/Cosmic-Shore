@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-12-proposal-only-no-code-four-voyage-analyt-b71f73",
+  "to": "Shombith",
+  "by": "Garrett",
+  "date": "2026-11-12T20:26:30+00:00",
+  "area": "Analytics events and voyages",
+  "summary": "Proposal only, no code: four voyage analytics events and an opt-in upload of playtesters' match replays, so the daily story can measure voyages and show real play (Docs/StoryFlywheel/PROPOSALS.md). Needs your call before anything is built.",
+  "branch": "claude/project-thread-qhoug0",
+  "commit": "5e116bab2"
+}

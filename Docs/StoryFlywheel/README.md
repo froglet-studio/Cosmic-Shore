@@ -25,10 +25,11 @@ playtests ──> analytics server (events) ──> measure.py ─┐
 | Measure | `Tools/Build/story/measure.py` | the analytics server's `aggregates.db` (no player ids): `activity_returns`, `plays`, `freestyle_vessels`, `sessions` | `measure.json`: per mode, vessel, the Toybox and each Toybox vessel, who came back on another day, a week later, rematches, quits, hours, trend; ranked by `pull` |
 | Index | `Tools/Build/story/footage.py` | match replays (`theater.py`, moments by `moments.py`), staged Unity shots (`shots.json`), mined flight moments, re-filmed clips | `footage_index.json`: every piece of footage tagged real or staged, showable or needing a re-film; ratings and notes survive re-indexing |
 | Decide | `Tools/Build/story/story.py` (+ `story_config.json`) | measure, index, yesterday's `story.json` | `story.json`, `edl.json`, `shoot.json`, `brief.md` |
+| Film | `Tools/Build/story/shoot.py` | `shoot.json` (or `--best`: the best unfilmed replays), the footage index | a script for the Unity trailer director's inbox: `replay FILE START`, a chase on the recording's pilot, `record <item id>`; encoded clips named `<item id>.mp4` make that item showable |
 | Cut | `Tools/Build/trailer/cut.py` | `edl.json`, shots | the day's video and contact sheet |
 | All of it | `Tools/Build/story/daily.py` | the above | `<root>/days/<YYYY-MM-DD>/` |
 
-Every script has `--self-test`.
+Every script has `--self-test`. `theater.py --write-enums` refreshes `enums.json`, which names vessels and modes when the scripts run outside a checkout (`C:\Claude\story\tools` on Gbox).
 
 ## The honesty rules (enforced in `story.py`)
 
@@ -67,5 +68,5 @@ the file instead; `--measure measure.json` reuses a measurement.
 
 ## What is not built yet
 
-See the plan: voyage events, collecting replays from playtesters' machines, filming the shoot list in Unity without
+See the plan, and `PROPOSALS.md` here for the two that are Shombith's call (voyage events, collecting replays from playtesters' machines). Also not built: filming the shoot list in Unity without
 a person, scoring the videos people rewatch, and the scheduled daily run.

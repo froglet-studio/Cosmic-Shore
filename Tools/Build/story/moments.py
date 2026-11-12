@@ -132,7 +132,19 @@ def moments(rec: theater.Recording, weights=None):
                         "events": [{"type": e[1], "t": round(e[0], 2), "strength": round(e[2], 3), "detail": e[3]}
                                    for e in g],
                         "features": {k: round(v, 3) for k, v in feats.items()}, "score": round(score, 3)})
-    return sorted(out, key=lambda m: -m["score"])
+    return _dedupe(sorted(out, key=lambda m: -m["score"]))
+
+
+def _dedupe(ms):
+    """Two humans passing each other is one moment seen twice: keep the higher-scored window, note the other pilot."""
+    kept = []
+    for m in ms:
+        twin = next((k for k in kept if k["pilot"] != m["pilot"] and abs(k["t"] - m["t"]) <= MERGE_GAP), None)
+        if twin:
+            twin.setdefault("also", []).append(m["pilot"])
+            continue
+        kept.append(m)
+    return kept
 
 
 def self_test() -> int:
@@ -144,6 +156,13 @@ def self_test() -> int:
     assert "close_finish" in types, types
     assert all(m["pilot"] == "Garrett" for m in ms), "only humans get moments"
     assert ms == sorted(ms, key=lambda m: -m["score"])
+    # two humans passing each other: one moment, not two
+    both = theater.synthetic()
+    both.tracks[1].is_ai = False
+    two = moments(both)
+    near = [m for m in two if any(e["type"] == "near_pass" for e in m["events"])]
+    assert near and all(sum(1 for k in near if abs(k["t"] - m["t"]) <= MERGE_GAP) == 1 for m in near), near
+    assert any("also" in m for m in near)
     # a lone flyer far from everyone has no near pass (negative control)
     rec.tracks = [rec.tracks[0], rec.tracks[2]]
     assert not any(e["type"] == "near_pass" for m in moments(rec) for e in m["events"])

@@ -35,7 +35,8 @@ namespace CosmicShore.Editor.Trailer
     /// clearfleet | aim SUBJ TARGET|X,Y,Z|clear | circle SUBJ RADIUS SECONDS | action SUBJ|all INPUTEVENT [FRAMES] |
     /// blast SUBJ COUNT [FORCE] | herd follow SUBJ DIST [NAME] | herd off | teleport SUBJ TARGET DIST [UP] [SIDE] |
     /// place SUBJ X,Y,Z FACINGX,Y,Z | aimcrystal SUBJ | sea LEVEL [FRAMES] | keep SUBJ.. | dark on|off | hide|unhide TEXT | reveal SUBJ|X,Y,Z SPEED [FADE] [FLASH] | renderers | pace SUBJ|all THROTTLE | formation SUBJ LEADER LEAD RATE RADIUS PERIOD | muster X,Y,Z FACINGX,Y,Z SPREAD [hero] | squadron LEADER SPREAD [FAR] [SECONDS] | wave SUBJ SPEED [FADE] [FLASH] | drive SUBJ X,Y,Z FACINGX,Y,Z SPEED [SWAY] [PERIOD] | parts SUBJ | hidepart SUBJ TEXT | weave SUBJ TARGET LEAD RADIUS PERIOD | headon SUBJ TARGET DIST SIDE UP | cue FRAME VERB.. (runs at that frame of the next record) | super N (supersampling) |
-    /// arcade MODE PLAYERS INTENSITY CLASS | menu |
+    /// arcade MODE PLAYERS INTENSITY CLASS | replay FILE [SECONDS] (a recorded match, in its real scene, from SECONDS in;
+    /// FILE is a path or a name in the project's Recordings folder; the story flywheel's shoot list) | menu |
     /// chase SUBJ BACK UP SIDE [LEAD] [SMOOTH] | ease BACK UP SIDE FRAMES | tq SUBJ DIST AZIMUTH HEIGHT [DRIFT] [SMOOTH] |
     /// orbit SUBJ DIST HEIGHT DEG/S [PHASE] | rail SUBJ AHEAD SIDE UP [SMOOTH] | crane SUBJ A B FRAMES [SMOOTH] (offsets
     /// from where SUBJ is when the shot starts) | fov DEGREES | release | record NAME FRAMES | still NAME | recorder NAME FRAMES (the Unity Recorder, for comparison) | quit.</para>
@@ -321,6 +322,7 @@ namespace CosmicShore.Editor.Trailer
                     return null;
                 case "teleport": Teleport(w[1], w[2], F(w[3]), At(w, 4, 0f), At(w, 5, 0f)); return null;
                 case "arcade": return Arcade(w[1], I(w[2]), I(w[3]), w[4]);
+                case "replay": return Replay(w[1], w.Length > 2 ? F(w[2]) : 0f);
                 case "menu": return BackToMenu();
                 case "chase":
                     Take(); _mode = CamMode.Chase; Subject(w[1]); _back = F(w[2]); _up = F(w[3]); _side = F(w[4]);
@@ -1504,6 +1506,48 @@ namespace CosmicShore.Editor.Trailer
                 Log("host seat not handed to the AI: " + refusal);
             _taken = false; _cam = null;
             Status();
+        }
+
+        // ---- a recorded match (Docs/StoryFlywheel/README.md: real play re-filmed with the trailer's look) ----
+
+        IEnumerator Replay(string file, float startAt)
+        {
+            string path = File.Exists(file) ? file
+                : Path.Combine(Directory.GetParent(Application.dataPath).FullName, "Recordings", file);
+            if (!File.Exists(path)) { Log("replay: no file " + file); yield break; }
+            TheaterRecording recording;
+            string error;
+            using (var stream = File.OpenRead(path))
+                if (!TheaterRecording.TryRead(stream, out recording, out error)) { Log("replay: " + error); yield break; }
+            ReplaySummary summary = null;
+            string side = Path.Combine(Path.GetDirectoryName(path) ?? string.Empty,
+                Path.GetFileNameWithoutExtension(path) + ReplaySummary.SidecarExtension);
+            if (File.Exists(side) && !ReplaySummary.TryParse(File.ReadAllText(side), out summary, out error))
+                Log("replay: summary unreadable (" + error + "), playing without it");
+            summary ??= new ReplaySummary
+            {
+                RecordingFile = Path.GetFileName(path), GameMode = recording.GameMode,
+                GameModeName = ((GameModes)recording.GameMode).ToString()
+            };
+
+            SO_ArcadeGame card = null;
+            foreach (var guid in AssetDatabase.FindAssets("t:SO_ArcadeGame"))
+            {
+                var g = AssetDatabase.LoadAssetAtPath<SO_ArcadeGame>(AssetDatabase.GUIDToAssetPath(guid));
+                if (g && (int)g.Mode == recording.GameMode) { card = g; break; }
+            }
+            if (!card) { Log("replay: no arcade card for " + (GameModes)recording.GameMode); yield break; }
+            Release();
+            if (!ReplayMatch.TryLaunch(recording, summary, card, _gameData, startAt)) { Log("replay: it has no vessels"); yield break; }
+            Log($"replay launched {Path.GetFileName(path)} at {startAt:0.0}s -> {_gameData.SceneName}");
+
+            float deadline = Time.realtimeSinceStartup + 180f;
+            while (Time.realtimeSinceStartup < deadline &&
+                   !(SceneManager.GetActiveScene().name == _gameData.SceneName && FindAnyObjectByType<ReplayMatchDirector>()))
+                yield return new WaitForSecondsRealtime(0.25f);
+            if (!FindAnyObjectByType<ReplayMatchDirector>()) { Log("replay: the scene never got its director"); yield break; }
+            yield return new WaitForSecondsRealtime(3f);
+            Log("replay ready: " + Vessels().Count + " vessels");
         }
 
         IEnumerator BackToMenu()
