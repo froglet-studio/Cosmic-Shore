@@ -7569,3 +7569,34 @@ does not allow this branch or has no licence secrets. Run it on a machine with U
 
 Affects: Shombith's Ark screen (`SquadsPage`, `ArkArtifactsPage` publish what the 3D shows; `ElementalConverterView`
 applies it) and look sheet (`LookSheetLauncher`); the vessels' prefabs (read only, drawn as pictures).
+
+## 171. Built: the Ark's backdrops are the Frogma renders as video; the live Ark model is retired; the pages open onto them (2026-11-12, claude/dazzling-einstein-gnr5iw, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-12, after running sections 169-170 in the editor):** "You are using the actual Ark model, no,
+don't do that, do exactly how you showed me on Frogma, no need to use the actual model, it can either be a video or gif
+of this high quality. Second, why are the old UI images on top of our newly created Ark."
+
+**What changed.** `ArkInteriorStage` and its config and generator (sections 169-170) are deleted. Behind the Ark's tabs
+`ElementalConverterView` now plays the Frogma renders through `ArkBackdrop` (a `VideoPlayer` on unscaled time into one
+1920 x 1080 texture, released on leaving the Ark), chosen from `ArkBackdropConfigSO`
+(`Assets/Resources/ArkBackdropConfig.asset`, `Tools/Build/author_ark_backdrop_assets.py`, `--check` in the `/ship` gates):
+- **SQUADS:** Rev 67's hangar (the squad lined up, ripples in the tunnel, the map's vessel moving), one clip per colour set
+  (Nocturne, Photic, Dart Frog, matched to the worn set's name) and squad domain (Jade, Ruby, Gold: `SquadsPage.HangarDomain`).
+- **CONVERTER:** Rev 67's pier from inside the hangar with Garrett's combine on the deck: the four at rest (loop), CONVERT
+  plays the conversion once, then the Omni made loops. The combine (`OmniCombinePlayer`) is still stepped, drawn by no
+  camera, because the recipe, the bar and CONVERT read its progress; the stage camera and its render target are not
+  built at all. Nocturne only (the pier was rendered in Nocturne).
+- **ARTIFACTS:** Rev 86's room (A's platform in B's gallery), one still as a two-second clip. Nocturne only.
+- **DECOR:** none (locked).
+The clips (`Assets/_Graphics/Video/Ark/`, 13 files, 36 MB, H.264, transcoding off) are encoded from the Frogma frames
+by `Docs/MenuRedesignB/rounds/r67_ark_backdrop_videos.py`: Rev 61 C's grade, its grain settled by a light temporal
+denoise (a fifth of the bytes), upscaled to 1920 x 1080 and blended from 10 to 30 fps. The pages' 95 % veil and sea lines
+(drawn for tabs with no picture) come off Squads and Artifacts, and their layouts follow the boards (R67's Squads, R86's
+Artifacts): `author_menu_ark.py`.
+
+**Cost:** one H.264 decode at 1080p while the Ark is open on a tab with a backdrop, one 8 MB texture; no 3D, no lights,
+no extra camera. 36 MB of build. Fewer bytes: drop the Photic and Dart Frog squad clips (the worn set falls back to
+Nocturne's) or encode at 1600 x 900.
+
+Affects: Shombith's Ark screen (`ElementalConverterView`, `SquadsPage`, `author_menu_ark.py`); Garrett's omni combine
+(stepped, not drawn, behind the video).

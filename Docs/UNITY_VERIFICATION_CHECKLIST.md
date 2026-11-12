@@ -65,38 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 The Ark screen inside the Ark: the hangar, the pier with the omni combine, the artifacts room (`claude/dazzling-einstein-gnr5iw`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
+### 🔴 The Ark screen's backdrops: the Frogma renders as video behind Squads, Converter and Artifacts (`claude/dazzling-einstein-gnr5iw`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
-**What landed:** `ArkInteriorStage` (built in code on `ElementalConverterView`'s off-screen stage from
-`Assets/Resources/ArkInteriorConfig.asset`): SQUADS looks at the hangar of the real `ArkReverse` (doors swung clear, hull
-prisms in its sockets), CONVERTER looks from inside the hangar down a pier to a round deck where the omni combine plays
-(scaled to 9 m), ARTIFACTS looks at a room of its own (gallery hall, platform with the four artifacts), DECOR shows no 3D
-(Docs/MENU_REDESIGN_B.md section 169). Ran headless: `unity_refcompile` (no errors in project code), the `/ship` gates
-(all OK, including the new `author_ark_interior_assets.py --check`, proven to fail on a drifted value and on a field the
-class no longer declares), `colour_trace` and the colour-set writers. No Unity editor ran; nothing was rendered in Unity.
+**What landed** (Docs/MENU_REDESIGN_B.md section 171; it replaces sections 169-170's live Ark model, which Shombith
+rejected in the editor): `ElementalConverterView` plays `ArkBackdropConfig`'s clips through `ArkBackdrop` (VideoPlayer,
+unscaled time) behind each tab; Squads and Artifacts lost the opaque veil and follow the boards' layouts. Ran headless:
+`unity_refcompile` (no errors in project code), the `/ship` gates, `author_ark_backdrop_assets.py --check` (proven to fail
+on a missing clip and a drifted entry). No Unity editor ran.
 
 **Verify in editor:**
-1. Menu_Main, Play, open the Ark. CONVERTER: the picture is the view from inside the hangar out of the open mouth down the
-   pier; the four crystals idle over the round deck, inside the mouth's frame (not crossing the lintel). If the doors
-   still block the mouth, the door angles' sign is wrong for the imported rig: flip `topDoorDegrees` /
-   `bottomDoorDegrees` in `ArkInteriorConfig` and say which worked.
-2. Press CONVERT: the combine plays over the deck to the Omni; the recipe and the bar run as before.
-3. SQUADS: the hangar from the back toward the pads, the hull's trim and prisms in Jade.
-4. ARTIFACTS: the gallery with the platform, four artifacts turning on pedestals, alcoves with dim prisms, a porthole.
-5. DECOR: refused as before, and no picture behind the other tabs' pages goes missing.
-6. Switch colour set (Settings) and come back: the trim and the lights take the set's colours.
-7. Profiler, Menu_Main Release, the Ark open on each tab: CPU and GPU ms against the Menu_Main baseline (`perf_hunt.py`),
-   and `Camera.Render` of `ElementalConverterCamera`.
-
-8. Phase 2 (section 170): SQUADS shows the squad's three vessels across the bay - yours and AI wingmates lit and
-   hovering over glowing pads, an offline friend's powered down and resting, an open seat's pad empty; Change vessel
-   updates your pad; a domain chip relights the hull's trim, the prisms and the vessels.
-9. ARTIFACTS: pick each artifact in the list - its pedestal's artifact grows and its spot brightens; kinds you do not
-   hold stand empty.
-10. CONVERTER and SQUADS: the menu's own cell shows beyond the mouth (not the sky). If the console warns that URP's
-   Unlit shader is missing, add it to Always Included Shaders or name another unlit shader in `ArkInteriorStage`.
-11. Look sheet: `python3 Tools/Build/unity_look/look.py menu ARK:CONVERTER,ARK:SQUADS,ARK:ARTIFACTS` (the CI run was
-   refused by the `unity-ci` environment before a runner started).
+1. Menu_Main, Play, open the Ark on CONVERTER: the pier video plays behind the recipe and the bar, the four crystals
+   turning over the deck. CONVERT: the conversion plays once, the recipe merges in step, then the Omni made loops.
+2. SQUADS: the hangar video with the squad lined up, no veil over it; change the domain chip: the clip changes domain.
+   The seat cards sit in the right column as on Frogma (R67).
+3. ARTIFACTS: the room (Rev 86) behind the list and the detail card, no veil.
+4. DECOR: refused, as before.
+5. Settings: switch colour set to Photic and to Dart Frog: the hangar's clip follows.
+6. Leave the Ark and come back: the clips start again; no error about a missing clip in the console.
+7. Profiler on a phone build: the video decode cost on the Ark screen.
 
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 

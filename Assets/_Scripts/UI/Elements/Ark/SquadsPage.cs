@@ -874,39 +874,18 @@ namespace CosmicShore.UI
         // ---- drawing ----
 
         /// <param name="snapDomain">True when a different squad comes on screen: its hulls take its colour at once, with no swap.</param>
-        /// <summary>
-        /// The hangar the Ark's 3D shows behind this page (<see cref="ArkInteriorStage"/>, Docs/MENU_REDESIGN_B.md section
-        /// 169): the shown squad's domain and each seat's pad - its vessel, lit for you, an AI wingmate or an online friend,
-        /// powered down for a friend who is offline, empty for an open seat. Raised when any of it changes.
-        /// </summary>
+        /// <summary>The shown squad's domain: the Ark's hangar backdrop plays in it (Docs/MENU_REDESIGN_B.md section 171).
+        /// Raised when it changes.</summary>
         public event System.Action HangarChanged;
         /// <summary>False until a squad has been drawn (or while none is shown).</summary>
         public bool HasHangar { get; private set; }
         public Domains HangarDomain { get; private set; } = Domains.Jade;
-        public Color HangarColor { get; private set; } = Color.white;
-        public IReadOnlyList<HangarPad> HangarPads => _pads;
-        readonly HangarPad[] _pads = new HangarPad[SavedSquad.SlotCount];
 
         void PublishHangar(SavedSquad squad)
         {
-            bool changed = HasHangar != (squad != null);
+            bool changed = HasHangar != (squad != null) || squad != null && HangarDomain != squad.Domain;
             HasHangar = squad != null;
-            if (squad != null)
-            {
-                changed |= HangarDomain != squad.Domain;
-                HangarDomain = squad.Domain;
-                HangarColor = DomainColor(squad.Domain);
-                for (int i = 0; i < _pads.Length; i++)
-                {
-                    var slot = squad.GetSlot(i);
-                    bool live = IsMySeat(squad, i) || (slot.IsPlayer() ? OnlineFriend(slot.MemberId)
-                        : i == 0 && squad.IsJoined() ? OnlineFriend(squad.OwnerId) : true);
-                    var pad = new HangarPad(slot.Vessel, slot.IsOpen() ? HangarPadState.Empty : live ? HangarPadState.Live : HangarPadState.Dark);
-                    if (_pads[i].Same(pad)) continue;
-                    _pads[i] = pad;
-                    changed = true;
-                }
-            }
+            if (squad != null) HangarDomain = squad.Domain;
             if (changed) HangarChanged?.Invoke();
         }
 

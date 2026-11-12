@@ -4,10 +4,10 @@
  "tool": "Tools/Build/colour_trace.py",
  "rule": "Every colour that reaches a pixel comes from the worn colour set. Photic holds the baked values; every other set computes its own from its pigments (colour_trace.py repaint). A colour is inert, a UI theme token, fixed (pure white, pure black), traced (an id below), or untraced (listed below: the work left).",
  "counts": {
-  "fixed": 2492,
-  "inert": 29831,
-  "token": 3864,
-  "traced": 1942
+  "fixed": 2489,
+  "inert": 29825,
+  "token": 3925,
+  "traced": 1936
  },
  "inert": {
   "ambient-mode": 180,
@@ -35,10 +35,10 @@
   "shader-not-drawn": 19,
   "stale-field": 17,
   "subtractive-off": 60,
-  "tmp-colour-twin": 1603,
-  "tmp-face-cache": 1603,
+  "tmp-colour-twin": 1602,
+  "tmp-face-cache": 1602,
   "tmp-feature-off": 52,
-  "tmp-gradient-off": 6412,
+  "tmp-gradient-off": 6408,
   "unreachable": 13561
  },
  "inert_why": {
@@ -78,24 +78,24 @@
   "tmp-feature-off": "a TextMesh Pro material colour whose feature is off (no GLOW_ON, UNDERLAY_ON or BEVEL_ON keyword, outline width 0)"
  },
  "tokens": {
-  "ControlActive": 417,
-  "Cta": 294,
+  "ControlActive": 419,
+  "Cta": 291,
   "Danger": 16,
   "ElementCharge": 4,
   "ElementMass": 4,
   "ElementSpace": 4,
   "ElementTime": 4,
   "InactiveLight": 11,
-  "NeutralLightest": 737,
+  "NeutralLightest": 748,
   "Purchase": 32,
   "Sea": 7,
   "Selection": 118,
-  "SurfaceBlack": 178,
-  "SurfaceDark": 438,
+  "SurfaceBlack": 180,
+  "SurfaceDark": 429,
   "SurfaceLight": 219,
-  "SurfaceVeryDark": 278,
+  "SurfaceVeryDark": 335,
   "TextInactive": 1,
-  "TextLight": 1100,
+  "TextLight": 1101,
   "Tooltip": 2
  },
  "ids": {
@@ -438,7 +438,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 179,
+   "uses": 181,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab TextMeshProUGUI",
     "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
@@ -484,7 +484,7 @@
     0.55
    ],
    "family": "blue",
-   "uses": 279,
+   "uses": 336,
    "where": [
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
@@ -544,7 +544,7 @@
     1.0
    ],
    "family": "jade",
-   "uses": 418,
+   "uses": 420,
    "where": [
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
     "Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab Image",
@@ -807,7 +807,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 439,
+   "uses": 430,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
     "Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab Image",
@@ -1413,7 +1413,7 @@
     1.0
    ],
    "family": "blue",
-   "uses": 738,
+   "uses": 749,
    "where": [
     "Assets/_Graphics/Materials/Shaders/UI/Presence_Orb.mat Material(CosmicShore/UI/Presence)",
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
@@ -1787,7 +1787,7 @@
     0.0
    ],
    "family": "lime",
-   "uses": 295,
+   "uses": 292,
    "where": [
     "Assets/_Prefabs/CORE/GameCanvas.prefab Image",
     "Assets/_Prefabs/UI Elements/Guide/GuideCommsView.prefab Image",
@@ -2427,7 +2427,7 @@
     0.16
    ],
    "family": "blue",
-   "uses": 1101,
+   "uses": 1102,
    "where": [
     "Assets/Resources/UI/ToastNotificationItem.prefab Image",
     "Assets/Resources/UI/ToastNotificationItem.prefab TextMeshProUGUI",
@@ -4281,21 +4281,6 @@
     "Assets/_SO_Assets/Toys/Toy_Wander.asset WanderToyDefinitionSO"
    ]
   },
-  "world:1F529E": {
-   "role": "world",
-   "photic": [
-    0.12,
-    0.32,
-    0.62,
-    1.0
-   ],
-   "family": "blue",
-   "uses": 2,
-   "where": [
-    "Assets/Resources/ArkInteriorConfig.asset ArkInteriorConfigSO",
-    "Assets/_Scripts/ScriptableObjects/Toys/ArkInteriorConfigSO.cs code"
-   ]
-  },
   "world:21807B": {
    "role": "world",
    "photic": [
@@ -5778,21 +5763,6 @@
     "Assets/_Scripts/Controller/Camera/ThirdEye/ThirdEyePilots.cs code"
    ]
   },
-  "world:8CADFF": {
-   "role": "world",
-   "photic": [
-    0.55,
-    0.68,
-    1.0,
-    1.0
-   ],
-   "family": "blue",
-   "uses": 2,
-   "where": [
-    "Assets/Resources/ArkInteriorConfig.asset ArkInteriorConfigSO",
-    "Assets/_Scripts/ScriptableObjects/Toys/ArkInteriorConfigSO.cs code"
-   ]
-  },
   "world:8CBFFF": {
    "role": "world",
    "photic": [
@@ -5931,21 +5901,6 @@
    "uses": 1,
    "where": [
     "Assets/_Scripts/Utility/Tools/LogControlWindow.cs code"
-   ]
-  },
-  "world:99FF40": {
-   "role": "world",
-   "photic": [
-    0.6,
-    1.0,
-    0.25,
-    1.0
-   ],
-   "family": "lime",
-   "uses": 2,
-   "where": [
-    "Assets/Resources/ArkInteriorConfig.asset ArkInteriorConfigSO",
-    "Assets/_Scripts/ScriptableObjects/Toys/ArkInteriorConfigSO.cs code"
    ]
   },
   "world:99FF80": {
