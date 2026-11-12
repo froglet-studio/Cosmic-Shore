@@ -34,6 +34,7 @@ section here. The build that follows a pick is verified against the picked board
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
 | Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79-83 on the canvas now: Rev 81 B5 with the Rev 83 S2 seat editor picked and built, section 165; Rev 70-77 were reverted and taken off, section 159) | Shombith, 2026-11-08 (sections 147-151, 159-165) |
+| Loading Screens | `loading-screens` | Every loading screen: the moving background, the progress bar, and what the screen shows while it loads, from Rev 91 (section 173) | Shombith, 2026-11-12 (section 173) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -7407,3 +7408,50 @@ boards is unknown until a screenshot is set beside R89A, R90Saga, R90Quests and 
 - `VoyageBoardTests` (9 tests: the tilt's arithmetic, the fade, the grid, the picture crop, the stepper, the board
   building and shaping its table): written and compiled, **not run**.
 - The hand test is "The Voyage window as the Sea table" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## 173. Rev 91 mockups: loading screens - a moving sea, one progress bar, a part of the game on show (2026-11-12, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-12): "use /frogma-new and create me mockups for the animated smooth background with
+perfect progress bar. Create me mockups, maybe all parts of the game is shown in the loading menu. Like squads or the
+ark or the pilots or vessels the toybox. Create like 6 mockups". He named the new tab **Loading Screens**.
+
+**On the canvas**: tab **Loading Screens** (`loading-screens`, opened for this round), section "Rev 91 - Loading
+screens". Copies: `Docs/MenuRedesignB/board/R91*.dc.html`; the source that draws them is
+`Docs/MenuRedesignB/rounds/r91_loading.py` (re-run it on a planned root to redraw). Every board plays one 16 second
+loop; all motion is keyframe percentages on that loop, so a clip can be cut by seeking.
+
+Shared by all six:
+- **The sea.** Three slow fields of the Blue family drifting under three layers of sea lines that slide at different
+  speeds, on the Deep Sea ground. CSS only.
+- **The bar.** Four segments, one per real step (Connecting to shore, Building the arena, Settling the arena, Waiting
+  for pilots: the `ConnectingPanel` phases of section 99.4), each as long as its share of the work. The step's name
+  sits over the bar, a tabular percentage on the right, and each step's marker fills when the step is done. The bar
+  only moves forward. A glint keeps travelling along the fill, so a slow step never looks frozen. At 100 the fill
+  turns Lime and the name reads Ready; Lime appears nowhere else.
+- ENTERING and the mode's name, top left. No tip line and no spinner.
+
+The boards:
+- `R91Compare`: the bar on its own, live, then held at 0, 12, 41 (a slow patch), 75, 93 and 100.
+- **A Squad**: three seat cards (pilot, hull, callsign); each seat arrives as the load moves on.
+- **B The Ark**: the Ark drifts across the sea; Converter, Squads, Artifacts and Decor are lit one per step.
+- **C Pilots**: one pilot stands large with the callsign; four take turns; eight of the roster beside.
+- **D Vessels**: one hull large; four take turns; the fleet as a grid beside.
+- **E Toy Box**: the Vessel Changer in a hex cycling six hulls; the seven toys listed and lit in turn.
+- **F The tour (recommended)**: Squad, the Ark, Pilots, Vessels and the Toy Box in turn while the bar fills, with a
+  five-word index top right. Recommended because it is the one that shows every part, and a long load is never one
+  picture.
+- `R91Notes`: what was asked, what is shared, what each option shows, what differs from the build.
+
+Art, uploaded to the canvas for this round: six hull cards (`Assets/_Graphics/CardImages/<Hull>_large.png`), eight of
+the roster's painted portraits (Galleon, Needle, Anvil, Sundial, Flume, Doe, Hornet, Manger), and two views of the Ark
+cut from `Docs/VesselModels/ArkReverse_sheet.png`. The seven toys have no icon in the repo, so E lists them by name.
+
+Gates: `frogma.py check --only R91` clean. `check_mockup.py`: colours, type and contrast pass on all eight; the noise
+gate fails E (72) and F (67) because it counts the layers that take turns, though one shows at a time, and fails the
+Compare board, which is a sheet of fragments. Looked at in a local render at two moments of the loop.
+
+**Differs from the build**: today's mode entry is the Cell gate (Rev 33 A, section 99.4): an Omni crystal in a hex,
+a steps panel, a pilots panel, a tip and a slim bar. A picked option replaces the crystal and both panels with its
+show and moves the steps into the bar. The moving background departs from the quiet rule (no idle motion) because
+motion was the brief. In the game the show would be the live models, and every word (the step names, the lines under
+each title) an authored field. Nothing is built; the build waits on a pick.

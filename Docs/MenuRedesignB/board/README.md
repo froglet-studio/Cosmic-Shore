@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794504089-60a9` of **Frogma**: Rev 3 to Rev 90, 451 boards on 11 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-12 from canvas version `1794511320-7d3f` of **Frogma**: Rev 3 to Rev 91, 459 boards on 12 tabs. The canvas opens on the tab `loading-screens`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -732,5 +732,18 @@ Copied on 2026-11-12 from canvas version `1794504089-60a9` of **Frogma**: Rev 3 
 - `R75Codex.dc.html` (not copied yet) - Rev 75 Codex - Codex: element doors and game cards (A) around a large 3D level (C), the intensities and the prompt besid
 - `R75Builder.dc.html` (not copied yet) - Rev 75 Builder - Builder: the same game opened in the builder, its I1-I4 ladder, the dials, saved layouts and the layout
 - `R75Notes.dc.html` (not copied yet) - Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed
+
+### Tab: Loading Screens  (`loading-screens`)
+
+#### Rev 91 - Loading screens: a smooth moving sea, one honest progress bar, and a part of the game on show
+
+- [`R91Compare.dc.html`](R91Compare.dc.html) - Rev 91 - The progress bar on its own: live, and held at each step, a slow patch and done
+- [`R91A.dc.html`](R91A.dc.html) - Rev 91 A - Squad: your three seats arrive one by one as the load moves on
+- [`R91B.dc.html`](R91B.dc.html) - Rev 91 B - The Ark: the ship drifts across the sea, its four rooms lit in turn
+- [`R91C.dc.html`](R91C.dc.html) - Rev 91 C - Pilots: one pilot stands large, the roster beside
+- [`R91D.dc.html`](R91D.dc.html) - Rev 91 D - Vessels: one hull at a time, large, the fleet beside
+- [`R91E.dc.html`](R91E.dc.html) - Rev 91 E - Toy Box: the Vessel Changer cycling hulls, the seven toys lit in turn
+- [`R91F.dc.html`](R91F.dc.html) - Rev 91 F - The tour: Squad, Ark, Pilots, Vessels and Toy Box in turn while the bar fills (recommended)
+- [`R91Notes.dc.html`](R91Notes.dc.html) - Rev 91 - notes: what is shared, what each option shows, the bar's rules, what differs from the build
 
 <!-- frogma.py readme: end -->

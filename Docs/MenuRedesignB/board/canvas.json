@@ -3714,6 +3714,70 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 90 - notes: one slab on every tab, each tab, the tabs as links"
+    },
+    "R91Compare.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 - The progress bar on its own: live, and held at each step, a slow patch and done"
+    },
+    "R91A.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 A - Squad: your three seats arrive one by one as the load moves on"
+    },
+    "R91B.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 B - The Ark: the ship drifts across the sea, its four rooms lit in turn"
+    },
+    "R91C.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 C - Pilots: one pilot stands large, the roster beside"
+    },
+    "R91D.dc.html": {
+      "x": 2100,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 D - Vessels: one hull at a time, large, the fleet beside"
+    },
+    "R91E.dc.html": {
+      "x": 4200,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 E - Toy Box: the Vessel Changer cycling hulls, the seven toys lit in turn"
+    },
+    "R91F.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 F - The tour: Squad, Ark, Pilots, Vessels and Toy Box in turn while the bar fills (recommended)"
+    },
+    "R91Notes.dc.html": {
+      "x": 0,
+      "y": 3780,
+      "w": 1920,
+      "h": 900,
+      "page": "loading-screens",
+      "title": "Rev 91 - notes: what is shared, what each option shows, the bar's rules, what differs from the build"
     }
   },
   "createdOnFiles": {
@@ -3722,7 +3786,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "voyages",
+    "page": "loading-screens",
     "view": "canvas"
   },
   "noteOrder": [
@@ -3838,6 +3902,7 @@
     "sec-rev88",
     "sec-rev89",
     "sec-rev90",
+    "sec-rev91",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -3918,7 +3983,8 @@
     "f2u-sgbuttons",
     "rev88",
     "rev89",
-    "rev90"
+    "rev90",
+    "rev91"
   ],
   "notes": {
     "hud_end": {
@@ -6369,6 +6435,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev91": {
+      "kind": "title1",
+      "text": "Rev 91 - Loading screens: a smooth moving sea, one honest progress bar, and a part of the game on show",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "loading-screens"
+    },
+    "sec-rev91": {
+      "kind": "rect",
+      "x": -160,
+      "y": -560,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "loading-screens"
     }
   },
   "order": [
@@ -6822,7 +6912,15 @@
     "R90Saga.dc.html",
     "R90Quests.dc.html",
     "R90Episodes.dc.html",
-    "R90Notes.dc.html"
+    "R90Notes.dc.html",
+    "R91Compare.dc.html",
+    "R91A.dc.html",
+    "R91B.dc.html",
+    "R91C.dc.html",
+    "R91D.dc.html",
+    "R91E.dc.html",
+    "R91F.dc.html",
+    "R91Notes.dc.html"
   ],
   "pages": [
     {
@@ -6868,6 +6966,10 @@
     {
       "id": "game-mode-codex",
       "name": "Game Mode Codex"
+    },
+    {
+      "id": "loading-screens",
+      "name": "Loading Screens"
     }
   ],
   "title": "Frogma"
