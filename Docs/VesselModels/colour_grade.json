@@ -2,7 +2,7 @@
  "counts": {
   "exempt": 8,
   "grey": 468,
-  "ui": 583,
+  "ui": 601,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -38,6 +38,132 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "72d0782de5418a68"
+  },
+  "Assets/Resources/Pilots/Scenes/ANVIL.jpg": {
+   "coloured": 0.3931,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d251a5ed02652a37",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/BANDIT.jpg": {
+   "coloured": 0.354,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "f3a28728af561f7b",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/CITADEL.jpg": {
+   "coloured": 0.5222,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "0a5ef8e4182d03ad",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/DOE.jpg": {
+   "coloured": 0.6123,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "03e0400c3aea2ab1",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/ENSIGN.jpg": {
+   "coloured": 0.3889,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "708cc0177795e74e",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/FLUME.jpg": {
+   "coloured": 0.8628,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "0852fa9db680e3f5",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/GALLEON.jpg": {
+   "coloured": 0.5388,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "9d03e952d85e3a06",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/HORNET.jpg": {
+   "coloured": 0.3609,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "64807db828d888a3",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/IVY.jpg": {
+   "coloured": 0.957,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "54f0ccab3c184e74",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/MANGER.jpg": {
+   "coloured": 0.2629,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "4f8d9e57e3a0edf8",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/NEEDLE.jpg": {
+   "coloured": 0.2695,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "18f5ccddfcad09a2",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/OPAL.jpg": {
+   "coloured": 0.6128,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "e61b5d3d5cf8f9ee",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/RAMPART.jpg": {
+   "coloured": 0.848,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "1efefe7217dd8aa3",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/SUNDIAL.jpg": {
+   "coloured": 0.4221,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "158483edc17a43c6",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/TALON.jpg": {
+   "coloured": 0.9838,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "cd8382c8ca8671c1",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/VOLT.jpg": {
+   "coloured": 0.9238,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "3e9d7784db62cf1b",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/WINGMAN.jpg": {
+   "coloured": 0.5318,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "1a390f362a5d9b56",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/Resources/Pilots/Scenes/ZODIAC.jpg": {
+   "coloured": 0.8478,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "4db182f4f0e2ec87",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/Resources/UI/icon_Spectate.png": {
    "coloured": 0.0,

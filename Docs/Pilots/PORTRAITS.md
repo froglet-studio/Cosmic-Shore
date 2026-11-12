@@ -106,7 +106,9 @@ against the spec); its results are in LESSONS, round 2.
 
 1. **A callsign's portrait is its first painted person** (Wyvendo is TALON's face for every crew's TALON) until a
    per-person portrait exists. The Hangar already pairs "the person's name and the callsign's portrait", so
-   nothing in the UI changes. Alternatives: an archetype per callsign (no person), or per-person art.
+   nothing in the UI changes. Alternatives: an archetype per callsign (no person), or per-person art. The scenes
+   follow the same rule (2026-11-12): a crew member's profile page shows their own words over their callsign's
+   scene and says who is pictured (section 8, "The scenes in the game").
 2. **Per-person art for unlimited unique pilots** needs a place a PNG per person cannot be: a cloud-rendered
    portrait on recruit (the record's seed names the heritage and faction, so the brief is deterministic), a
    procedural painter (PAINTERS.md section 4), or a heritage "card" (silhouette + colours) drawn at runtime. Open;
@@ -397,10 +399,48 @@ place by name; a loud unearthly sky reads as a render). What the 46 scenes after
 and their repaints (19 of them for the four samples), and its plan's credits ran out on 2026-11-12. From pictures:
 GPT Image 2.6 through Weave, five runs, 55 credits. Both are in `PAINTERS.md`.
 
+### The scenes in the game (2026-11-12)
+
+Garrett, 2026-11-12 13:51 UTC: "as you have pointed out there are many little changes and tweaks we could make to
+polish these and fix oddities. But we will do that on the next pass. for now these are an excellent start. Lets get
+them into the game. update the avatars, and use the full size art for each pilot's profile page in the ark."
+
+**What is in the build.** The eighteen callsign scenes, copied by `Tools/Build/author_pilot_scene_assets.py`
+(`--check` is a ship gate; `--self-test` plants its faults) from `Docs/Pilots/art/scenes/<WORD>.jpg` to
+`Assets/Resources/Pilots/Scenes/<WORD>.jpg`, and one catalog, `Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset`
+(`PilotSceneCatalogSO`): for each callsign the painted pilot's name, the scene's resource name, the close-up sprite
+(the avatar, `Assets/_Graphics/Profile/Pilots/Avatar_<WORD>.png`), the close-up's box in the scene and the side the
+pilot stands on, all read from `scenes.json`. The other thirty-two scenes stay under `Docs/`: those pilots are in
+no crew, so nothing in the game can show them yet. The fifty avatars were already the scenes' close-ups.
+
+**Where a player sees them.** The Ark's PILOTS tab (`ArkPilotsPage`, `author_menu_ark.py`) lists the crew, one cell
+a pilot with the close-up; pressing one opens the pilot's PROFILE PAGE (`PilotProfileModal`,
+`Resources/Pilots/PilotProfileView.prefab`, `author_menu_pilot_profile.py`, `ScreenSwitcher.OpenPilotProfile`):
+the scene across the whole screen and the words in a panel on the side the pilot does not stand on.
+`Docs/MENU_REDESIGN_B.md` section 92.1 is the page's record.
+
+**The cut** is `PilotSceneImage.Frame`, the kit's `crop_box` in C#: the largest window of the screen's shape with
+the face a little above the middle; a wider screen moves up until a tall close-up shows whole; then the window
+moves the least it takes for the face to stand clear of the words. With no words it equals the manifest's recorded
+crop within a pixel (90 scene and shape pairs). With the panel in its place, on all eighteen scenes at 21:9,
+19.5:9, 16:9, 16:10, 3:2 and 4:3, every face is inside the view and clear of the words.
+
+**Memory and size.** A scene is loaded by name when its pilot is drawn and unloaded when the next is shown or the
+closed page has faded: one 1536x864 texture at a time, never eighteen. The import is a Sprite-typed texture, BC7
+on Standalone, the platform default (ASTC) on Android and iOS, and 32 px on WebGL, where the browser Toybox never
+opens the Ark (`ScreenSwitcher.IsModalInWebToybox` keeps the page out). 8.8 MB of JPG joins the repository.
+
+**Whose words, whose picture.** A crew member is a rolled person (`PilotRecord`); the art is their callsign's
+painted pilot (decision 1 of section 6). The page shows the person's own name, animals, faction, home and story
+over the callsign's scene, and an authored line (`picturedTemplate`; blank it to drop the line) says who is
+pictured. The words and the picture disagree until one of the routes in decision 2 is taken, or until crews are
+drawn from the painted pilots. That is Garrett's call for the next pass.
+
 **Open:**
 
 1. **The eight weakest are designed again as one creature each**, in words, as a pending `patch` in each record;
-   painting them waits for Garrett's answer on a card (up to 16 runs on Weave, 176 credits at most). Three of the
+   painting them waits for the next pass (Garrett, 2026-11-12: "we will do that on the next pass"; it would take
+   up to 16 runs on Weave, 176 credits at most). Three of the
    pairs are limits whatever is painted: a heron behind an ocelot's face, a platypus behind an ibis's bill, and a
    jackal, which is a fox to nearly everyone (`LESSONS` 43, 50). The words are a third draft: three critics read
    the first beside the pictures (an art director's eye, a painter's, a stranger's) and none of the eight was
@@ -417,9 +457,10 @@ GPT Image 2.6 through Weave, five runs, 55 credits. Both are in `PAINTERS.md`.
    read as fused.
 3. **Twenty-four scenes read as a render or a digital painting**, and the icon-size read is 16 of 50. Neither has
    been worked on.
-4. **The full-screen pilot profile** reached from the Ark app-shell menu is not built (the app shell and its menus
-   are Shombith's UI). `scenes.json` is written for whoever builds it. The scenes live under `Docs/` and are not
-   in a build; bringing them in is a texture import with its own memory budget.
+4. **The full-screen pilot profile** is built and not yet run in the editor ("The scenes in the game" above;
+   the hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`). It shows a crew member's words over their
+   callsign's painted pilot; art for each person, or crews drawn from the painted pilots, is the next decision.
+   An upright phone has no pose of its own for the page.
 5. **Size.** The painter returns 1536x864. A 4K screen needs an upscale or a painter that returns more.
 6. **The hand test** of the avatars in the profile window and avatar picker
    (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "Pilot avatars are the close-ups of the pilots' scenes").

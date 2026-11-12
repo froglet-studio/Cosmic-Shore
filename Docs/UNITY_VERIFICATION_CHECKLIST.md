@@ -65,6 +65,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Ark's Pilots tab and the pilot profile page (`claude/signature-pilot-busts`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 92.1. The Ark gains a PILOTS tab (`ArkPilotsPage`: the crew, one cell
+a pilot with the close-up of their callsign's scene). Pressing a pilot opens their PROFILE PAGE (`PilotProfileModal`,
+`ModalWindows.PILOT_PROFILE = 21`, `Resources/Pilots/PilotProfileView.prefab`): the scene full screen
+(`PilotSceneImage`, loaded by name from `Resources/Pilots/Scenes/`, one in memory), the words in a panel on the side the
+pilot does not stand on, Next / Previous through the crew. Eighteen scene textures and `PilotSceneCatalog.asset` are new
+(`author_pilot_scene_assets.py`). Affects Shombith's Ark app shell and UI.
+
+**Verified without the editor:** the three generators' `--check` and `--self-test`; `unity_refcompile`, player and
+editor (0 errors in changed files, and a planted fault in each new file is caught); `check_generated_assets.py`; the
+`Frame` arithmetic run under plain .NET on all eighteen scenes at six screen shapes, with the eight `Frame_*` cases of
+`PilotSceneAssetTests`; name and story lengths over 360,000 rolls of `PilotGenerator`. The seven asset tests of
+`PilotSceneAssetTests` have not run. A drawing of the layout: https://claude.ai/artifact/RAAiiZAuMzHt8Fzx6Bf1mM.
+
+**Verify in editor:**
+1. Let Unity import the branch. **Pass:** 18 textures under `Assets/Resources/Pilots/Scenes/` (1536x864), the catalog
+   and the page prefab import with no missing script or reference in the Console.
+2. Run the edit-mode tests `PilotSceneAssetTests`. **Pass:** all green.
+3. Main menu, Ark, PILOTS (click the tab, or move the pad's focus to it and press A). **Pass:** "YOUR CREW",
+   "PILOTS: 18", eighteen cells six by three, each with a face, a name and a callsign; nothing under the friends orb;
+   Converter, Squads, Artifacts and Decor look and work as before.
+4. Press a pilot. **Pass:** the page opens full screen over the nav bar with that pilot's callsign scene; the panel
+   shows the callsign, name, animals, faction, home, sight and story, and "PICTURED: <painted pilot>, THE FIRST
+   <CALLSIGN>" at its foot. No white rectangle shows before the scene.
+5. Press NEXT through all eighteen, then PREVIOUS back. **Pass:** the count runs "1 / 18" to "18 / 18" and wraps; the
+   panel is on the right for a pilot who stands on the left and on the left for one who stands on the right; no face
+   is under the panel, the step plate or Close; the ground never shows between two pilots.
+6. Controller, a page open. **Pass:** focus lands on NEXT, left reaches PREVIOUS, and B closes the page with the Ark's
+   Pilots tab behind it.
+7. Game view at 16:10, 4:3, 21:9 and 19.5:9. **Pass:** the scene fills the view with no bars and no stretch, the face
+   stays clear of the words, and a tall head (ANVIL, VOLT) is whole at 21:9.
+8. Device Simulator, a notched phone held sideways. **Pass:** the picture reaches the screen's edges; the panel, the
+   step plate and Close stay inside the safe area. Upright, the PC layout is fitted to the width.
+9. Memory Profiler, the page open and then closed. **Pass:** one scene texture while open, none once it has faded.
+10. Open a page, close it, launch an Arcade match and come back. **Pass:** the menu does not reopen the page.
+11. The importer preview per platform. **Pass:** the scenes read clean on Standalone (BC7), Android and iOS (ASTC);
+    WebGL holds 32 px stand-ins, and the browser Toybox has no way to the page.
+
+**First-pass tuning (not settled):** the plates' alpha 0.88; the panel 560 x 744; the face margin 0.03 of the view;
+the crew cell 260 x 256 with a 180 close-up.
+
 ### 🔴 Glasshouse, the Angler's Mass game (GameModes 89) (`claude/peaceful-cerf-vpl3x8`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/GLASSHOUSE.md`. A timed garden: an omni crystal is a creature and a seed, letting go

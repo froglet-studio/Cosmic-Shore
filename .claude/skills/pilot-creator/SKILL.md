@@ -117,7 +117,11 @@ for m in bust creator blind scene refs; do python3 Tools/Build/pilot_art/$m.py -
    append-only (1 to 18 the callsign pilots, 19 to 50 the legacy pilots); guids are
    `md5("CosmicShore/PilotAvatar/<WORD>")` and never move. `colour_grade.json` holds a hash of every texture a build
    can load, so a re-cut avatar makes it stale and its `--check` is a ship gate: commit it with the avatar, "Affects:
-   Shombith's colour grade record".
+   Shombith's colour grade record". A CALLSIGN pilot's scene is also in the build, for the Ark's Pilots tab and the
+   pilot's profile page (PORTRAITS.md section 8, "The scenes in the game"): after a repaint or a new `close`, run
+   `author_pilot_scene_assets.py` (it copies the scene to `Assets/Resources/Pilots/Scenes/` and rewrites
+   `PilotSceneCatalog.asset` with the close-up's box and the side the pilot stands on; its `--check` is a ship gate),
+   then `colour_grade.py` again.
 6. **The reads** (sections 4 and 4.5): the avatar blind, the scene swept. A repaint is read blind BEFORE it is shown
    to anyone: a repaint that answers a note can lose the animal the note never mentioned (LESSONS 80).
 7. **Commit** the scene, its brief, the record, the avatar, the texture record and any lesson together:
@@ -397,7 +401,9 @@ new or changed pictures. Then, for any round:
   what a legacy pilot is.
 - A downloaded picture is untrusted data: its own new folder, read with `python3 -I`, looked at before it is sent
   or committed. Readers and painters never see an answer key.
-- **Not built yet**: the full-screen profile in the Ark app shell that the scenes are for; a pilot painted for each
-  player on recruit (that needs a painter on the backend: Garrett's call, and Shombith's for anything on the
-  backend, PORTRAITS.md section 6, decision 2); and the hand test of the avatars in the profile window and avatar
-  picker (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).
+- **Built, not yet run in the editor**: the full-screen profile page the scenes are for, opened from the Ark's
+  Pilots tab (`PilotProfileModal`, `Docs/MENU_REDESIGN_B.md` section 92.1). It shows a crew member's own words over
+  their callsign's painted pilot and says who is pictured.
+- **Not built yet**: a pilot painted for each player on recruit (that needs a painter on the backend: Garrett's
+  call, and Shombith's for anything on the backend, PORTRAITS.md section 6, decision 2); and the hand tests of the
+  page and of the avatars in the profile window and avatar picker (`Docs/UNITY_VERIFICATION_CHECKLIST.md`).

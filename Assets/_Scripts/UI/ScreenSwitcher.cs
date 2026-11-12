@@ -117,6 +117,12 @@ namespace CosmicShore.UI
             // Voyage window for a window of its own, opened from Home like the Profile. Not a hub window, so the
             // triggers do not slide it. Built from Resources/Voyages/QuestsView (EnsureQuestsModal).
             QUESTS = 20,
+
+            // A pilot's profile page (Docs/MENU_REDESIGN_B.md section 92.1): the pilot's scene full screen, opened
+            // from the Ark's Pilots tab WITH a pilot (OpenPilotProfile). Not a hub window, never in the browser
+            // Toybox, and never reopened from the return-to-window pref, which carries a type and no pilot. Built
+            // from Resources/Pilots/PilotProfileView (EnsurePilotProfileModal).
+            PILOT_PROFILE = 21,
         }
 
         [System.Serializable]
@@ -695,6 +701,8 @@ namespace CosmicShore.UI
             CacheScreenComponents();
             EnsureCreditsModal();
             EnsureQuestsModal();
+            // Before the first layout: the page's ground is found there as a background that bleeds to the screen's edges.
+            EnsurePilotProfileModal();
             LayoutScreensToViewport();
             MarkDisabledNavLinks();
             UpdateHubButtonsVisibility();
@@ -801,9 +809,11 @@ namespace CosmicShore.UI
             // re-opening the arcade overlay on its own causes stale game configuration to
             // resurface. Coming back from a match re-opens the launched card through
             // MenuReturnCard instead, which carries the card (ReturnToLaunchedCardCoroutine).
+            // PILOT_PROFILE needs its pilot the same way: the type does not say whose page it was.
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
                           or ModalWindows.ARCADE
-                          or ModalWindows.ARENA_GAME_CONFIGURE)
+                          or ModalWindows.ARENA_GAME_CONFIGURE
+                          or ModalWindows.PILOT_PROFILE)
                 yield break;
 
             if (WebToybox.IsBuild && !IsModalInWebToybox(modalType))
@@ -1804,6 +1814,46 @@ namespace CosmicShore.UI
             Modals.Add(modal);
         }
 
+        /// <summary>Where <see cref="EnsurePilotProfileModal"/> finds a pilot's profile page
+        /// (Tools/Build/author_menu_pilot_profile.py writes it).</summary>
+        public const string PilotProfileWindowResource = "Pilots/PilotProfileView";
+
+        /// <summary>
+        /// Adds the pilot profile page to the canvas (Docs/MENU_REDESIGN_B.md section 92.1), as
+        /// <see cref="EnsureQuestsModal"/> adds the Quests window. Not in the browser Toybox: the Ark is not there, and
+        /// that build keeps the scenes only as 32 px stand-ins (Tools/Build/author_pilot_scene_assets.py), so a page
+        /// opened there would have nothing to show.
+        /// </summary>
+        private void EnsurePilotProfileModal()
+        {
+            if (WebToybox.IsBuild) return;
+
+            Modals ??= new List<ModalWindowManager>();
+            foreach (var authored in Modals)
+                if (authored != null && authored.ModalType == ModalWindows.PILOT_PROFILE)
+                    return;
+
+            var prefab = Resources.Load<ModalWindowManager>(PilotProfileWindowResource);
+            if (prefab == null)
+            {
+                CSDebug.LogWarning($"[ScreenSwitcher] No pilot profile page at Resources/{PilotProfileWindowResource} " +
+                                   "(run Tools/Build/author_menu_pilot_profile.py); the Ark's pilots do not open.");
+                return;
+            }
+
+            // Beside the Voyage window, so it sits in the same layer of the canvas and stretches the same way.
+            var mission = FindModal(ModalWindows.MISSION);
+            Transform parent = mission ? mission.transform.parent : _canvasRect;
+            var modal = Instantiate(prefab, parent, false);
+            modal.name = prefab.name;
+            modal.transform.SetAsLastSibling();
+            if (_container != null)
+                GameObjectInjector.InjectRecursive(modal.gameObject, _container);
+            modal.ModalType = ModalWindows.PILOT_PROFILE;
+            modal.AttachScreenSwitcher(this);
+            Modals.Add(modal);
+        }
+
         #endregion
 
         #region Nav Button Handlers (legacy, kept)
@@ -1883,6 +1933,17 @@ namespace CosmicShore.UI
         {
             if (FindModal(ModalWindows.QUESTS)) OpenModal(ModalWindows.QUESTS);
             else OnClickMissionNav();
+        }
+
+        /// <summary>
+        /// Opens <paramref name="pilotId"/>'s profile page (the Ark's Pilots tab; a crew pilot's id, or a legacy callsign
+        /// id, which the page resolves to the crew's pilot). False when the page is not in this build or did not open.
+        /// </summary>
+        public bool OpenPilotProfile(string pilotId)
+        {
+            if (FindModal(ModalWindows.PILOT_PROFILE) is not PilotProfileModal page) return false;
+            page.SetPilot(pilotId);
+            return OpenModal(ModalWindows.PILOT_PROFILE);
         }
 
         #region Hub window slide (rev 7)
