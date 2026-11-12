@@ -137,6 +137,11 @@ is written. It stands the project's SceneBootstrapper aside through its in-proce
 (shared with every editor on the machine). `ProvenWinSceneBenchBuilder.Build` makes a Windows player instead, but
 only where the Library is already built for Windows: a platform switch reimports everything.
 
+For a cost with no obvious owner (a canvas that re-batches every frame), run the same bench with
+`-diagnoseFrames 300` first: it lists, by how many frames they did it, the RectTransforms that moved, the elements in
+uGUI's layout and graphic rebuild queues, and the enabled Animators under each root canvas. Those are the A/B
+candidates, most frequent first.
+
 ## 4. The human A/B
 
 Publish one blind page per win: the real frames A and B under random letters, a flicker toggle, the diff image,

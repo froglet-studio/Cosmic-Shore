@@ -32,6 +32,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [SerializeField] int pairs = 40;
         [SerializeField] int framesPerHalf = 30;
         [SerializeField] int discardFramesPerHalf = 3;
+        [Tooltip("When > 0, skip the A/B and instead record, for this many frames, which UI objects re-dirty the canvases: RectTransforms whose transform changed, elements in uGUI's layout and graphic rebuild queues, and enabled Animators under a canvas. The candidate list for the next A/B.")]
+        [SerializeField] int diagnoseFrames;
         [SerializeField] string[] counters = { "PostLateUpdate.PlayerUpdateCanvases", "Canvas.BuildBatch", "UGUI.Rendering.UpdateBatches", "Main Thread" };
 
         [Serializable] class Series { public string counter; public List<double> a = new List<double>(); public List<double> b = new List<double>(); public double medianA, medianB, ratioBA, shareBLower; }
@@ -55,6 +57,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 toggled = (Behaviour)owner.GetComponents<Component>().First(c => c && c.GetType().FullName == toggledType);
             }
             catch (Exception e) { report.verdict = "ERROR setup: " + e.Message; }
+
+            if (diagnoseFrames > 0)
+            {
+                for (int i = 0; i < settleFrames; i++) yield return null;
+                yield return Diagnose(outPath);
+                Application.Quit();
+                yield break;
+            }
 
             if (toggled != null)
             {
@@ -120,6 +130,75 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             File.WriteAllText(outPath, JsonUtility.ToJson(report, true));
             Debug.Log("ProvenWin scene: " + report.verdict);
             Application.Quit();
+        }
+
+        [Serializable] class Dirty { public string path; public int frames; public string kind; }
+        [Serializable] class Diagnosis { public string scene; public int frames; public List<Dirty> dirty = new List<Dirty>(); }
+
+        IEnumerator Diagnose(string outPath)
+        {
+            var counts = new Dictionary<string, Dirty>();
+            void Count(string kind, Component c)
+            {
+                if (!c) return;
+                string key = kind + ":" + PathOf(c.transform) + (kind == "animator" ? "" : "");
+                if (!counts.TryGetValue(key, out var d)) counts[key] = d = new Dirty { path = PathOf(c.transform), kind = kind };
+                d.frames++;
+            }
+            var registryType = typeof(UnityEngine.UI.CanvasUpdateRegistry);
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            var layoutField = registryType.GetField("m_LayoutRebuildQueue", flags);
+            var graphicField = registryType.GetField("m_GraphicRebuildQueue", flags);
+            var rects = new List<RectTransform>();
+            void Sample()
+            {
+                var registry = UnityEngine.UI.CanvasUpdateRegistry.instance;
+                foreach (var f in new[] { layoutField, graphicField })
+                {
+                    // uGUI's IndexedSet does not implement enumeration; read it through Count and the indexer.
+                    var queue = f?.GetValue(registry);
+                    if (queue == null) continue;
+                    var type = queue.GetType();
+                    int n = (int)type.GetProperty("Count").GetValue(queue);
+                    var item = type.GetProperty("Item");
+                    for (int k = 0; k < n; k++)
+                        Count(f == layoutField ? "layout" : "graphic", (item.GetValue(queue, new object[] { k }) as UnityEngine.UI.ICanvasElement)?.transform);
+                }
+                foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+                {
+                    if (!canvas.isRootCanvas) continue;
+                    canvas.GetComponentsInChildren(false, rects);
+                    foreach (var rt in rects) { if (rt.hasChanged) { Count("moved", rt); rt.hasChanged = false; } }
+                    foreach (var an in canvas.GetComponentsInChildren<Animator>(false)) if (an.enabled) Count("animator", an);
+                }
+            }
+            // Clear the flags once, then sample just before the canvases are rendered each frame.
+            foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+                foreach (var rt in canvas.GetComponentsInChildren<RectTransform>(true)) rt.hasChanged = false;
+            // Sampled from the coroutine each frame (after Update): transform flags persist until read, so writes
+            // from Animators and LateUpdate are seen the next frame; the rebuild queues show what Update dirtied.
+            int sampled = 0, canvases = 0;
+            for (int i = 0; i < diagnoseFrames; i++)
+            {
+                yield return null;
+                try { Sample(); sampled++; }
+                catch (Exception e) { Debug.LogWarning("ProvenWin scene: sample failed: " + e.Message); }
+            }
+            canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None).Count(c => c.isRootCanvas);
+            Debug.Log($"ProvenWin scene: sampled {sampled} frames over {canvases} root canvases");
+            var report = new Diagnosis { scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name + $" ({canvases} root canvases)", frames = sampled };
+            report.dirty = counts.Values.OrderByDescending(d => d.frames).ThenBy(d => d.path).Take(200).ToList();
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath)));
+            File.WriteAllText(outPath, JsonUtility.ToJson(report, true));
+            Debug.Log($"ProvenWin scene: diagnosed {counts.Count} dirtying objects over {diagnoseFrames} frames");
+        }
+
+        static string PathOf(Transform t)
+        {
+            var parts = new List<string>();
+            for (; t; t = t.parent) parts.Add(t.name);
+            parts.Reverse();
+            return string.Join("/", parts);
         }
 
         static double Median(List<double> xs)

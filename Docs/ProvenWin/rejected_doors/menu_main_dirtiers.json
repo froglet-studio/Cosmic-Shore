@@ -1,0 +1,26 @@
+{
+    "scene": "Menu_Main (2 root canvases)",
+    "frames": 300,
+    "dirty": [
+        {
+            "path": "UI_Refactored/Safe Area/ModalWindows/ProfileModal",
+            "frames": 300,
+            "kind": "animator"
+        },
+        {
+            "path": "UI_Refactored/SceneTransitionModal",
+            "frames": 300,
+            "kind": "animator"
+        },
+        {
+            "path": "UI_Refactored/Screens Viewport/Screens/ArkScreen/ElementalConverter/ArkView/Converter/Bar/Convert/ConvertButton/Sweep",
+            "frames": 142,
+            "kind": "moved"
+        },
+        {
+            "path": "[DiagnosticsHUD]/DiagnosticsCanvas/Panel/ValuesA",
+            "frames": 14,
+            "kind": "graphic"
+        }
+    ]
+}
