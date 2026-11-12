@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>{{TITLE}}</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
@@ -214,7 +215,7 @@ $("submit").onclick = async () => {
       saved = true;
     } catch (e) { saved = false; }
   }
-  $("status").textContent = saved ? "Signed off. Thank you." : "Your answer could not be saved here. Copy this line and send it to Garrett: " +
+  $("status").textContent = saved ? "Signed off. Thank you." : "Your answer could not be saved here. Copy this line and send it to whoever shared this page: " +
     `${TEST}: ${pick === "none" ? "no difference" : "preferred " + pick} - ${why}`;
   $("status").classList.toggle("err", !saved);
   renderReveal(pick);
