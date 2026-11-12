@@ -166,3 +166,17 @@ Desktop GPU only (a tile GPU's early-Z and bandwidth behave differently); one gr
 `-force-vulkan` / `-force-d3d11` to widen); the material in isolation, not its share of a real frame. A per-pixel
 saving is real; its frame-level weight is (pixels the material covers) x (saving per pixel), which is small for a
 small object. Say so in the row.
+
+## 7. The loop that keeps itself going
+
+- One queue: `QUEUE.json` (view `QUEUE.md`), changed only by `Tools/Build/proven_win/queue.py`. The scout `add`s,
+  `/proven-win` `take`s, every candidate ends with `done` (won, rejected or inconclusive) and a required lesson.
+- Refill: `/proven-win` step 1 runs the scout whenever fewer than 3 are queued.
+- Learning: every lesson goes into `LENSES.md`, which the scout reads first; three lessons saying the same thing are
+  folded into their lens.
+- Staleness: each entry records its files' hashes; `queue.py stale` sets aside any entry whose code moved, and `take`
+  refuses one.
+- Schedule: the desktop app's scheduled task `proven-win-weekly` (Sundays 02:00 on Gbox) runs scout + one
+  `/proven-win` in `D:\ABLab\wt`, opens a PR for an identical PASS, publishes a sign-off page for a one-level PASS,
+  and records failures. It never merges: the person does.
+
