@@ -1,0 +1,29 @@
+2026-11-06T19:28:26.2809818Z ##[group]Run actions/checkout@v4
+2026-11-06T19:28:26.2810524Z with:
+2026-11-06T19:29:26.3698092Z ##[group]Run bash Tools/CI/check_generators.sh
+2026-11-06T19:29:26.3698421Z [36;1mbash Tools/CI/check_generators.sh[0m
+2026-11-06T19:29:26.3742693Z shell: /usr/bin/bash -e {0}
+2026-11-06T19:29:26.3742914Z env:
+2026-11-06T19:29:26.3743093Z   REPORT_LABEL: ci-bleeding-edge
+2026-11-06T19:29:26.3743342Z   REPORT_TITLE: bleeding-edge is broken
+2026-11-06T19:29:26.3743573Z ##[endgroup]
+2026-11-06T19:29:26.3837818Z == Tools/Build/arcade_mode_lib.py --self-test
+2026-11-06T19:29:26.4165952Z   ok    card_background reads the /cardart render's .meta guid, not the placeholder
+2026-11-06T19:30:04.2432231Z == Tools/Build/author_payload_assets.py
+2026-11-06T19:30:04.2544968Z payload assets DRIFT from author_payload_assets.py:
+2026-11-06T19:30:04.2545471Z   Assets/_Graphics/Materials/ArtifactPickup.mat
+2026-11-06T19:30:04.2568070Z == Tools/Build/author_pilot_assets.py
+2026-11-06T19:30:06.8028230Z check: 68 files, 0 drifted, 0 guid problems
+2026-11-06T19:30:32.1239788Z == Tools/Build/author_thresher_assets.py
+2026-11-06T19:30:32.8331506Z FAIL: the hull model's Transform is not a child of ThresherHull
+2026-11-06T19:30:32.8332137Z FAIL: Thresher.prefab differs from a re-run of the pass (hand edit or drift)
+2026-11-06T19:30:32.8332465Z author_thresher_assets: 2 finding(s)
+2026-11-06T19:30:32.8381772Z == Tools/Build/author_thresher_time_assets.py
+2026-11-06T19:31:07.7131108Z 
+2026-11-06T19:31:07.7136637Z generators: 2 RED (62 checked):
+2026-11-06T19:31:07.7137030Z   RED  Tools/Build/author_payload_assets.py
+2026-11-06T19:31:07.7137303Z   RED  Tools/Build/author_thresher_assets.py
+2026-11-06T19:31:07.7137694Z Each one's own output is under its '== <path>' header above.
+2026-11-06T19:31:07.7142095Z ##[error]Tools/Build/author_payload_assets.py --check failed; its output is under '== Tools/Build/author_payload_assets.py' in this step's log
+2026-11-06T19:31:07.7170494Z ##[error]Tools/Build/author_thresher_assets.py --check failed; its output is under '== Tools/Build/author_thresher_assets.py' in this step's log
+2026-11-06T19:31:07.7204317Z ##[error]Process completed with exit code 1.
