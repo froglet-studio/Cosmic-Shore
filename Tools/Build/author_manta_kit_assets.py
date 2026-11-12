@@ -58,7 +58,9 @@ AOE_EXPLOSION_COMPONENT_FILEID = 3479271500403630839
 AOE_FLOWER_PREFAB_GUID = "f5ecfb9923155a84c860975d559b2714"
 AOE_FLOWER_COMPONENT_FILEID = 6875622972764638977
 COMBAT_HIT_BY_BLAST_GUID = "fb13e2c96ac07b6d086178c042518dcf"
-SKIMMER_HAPTICS_GUID = "dcce08b9351b97c4eb275508001a5b8e"
+# SkimmerHapticsByPrismEffect is deliberately NOT in the Sting container: the Manta's skim has no haptic
+# (Caleb, 2026-11-11). A pulse per entry into the 20-40 unit sphere held the pad at a steady hum in dense
+# prisms; the pad now speaks only on a hull collision and a bomb plant (Docs/HAPTICS.md, the Manta row).
 STING_CONTAINER_GUID = "911a107d002544e47bc70cef1714a1a6"  # the renamed overcharge container
 
 # ── Minted guids for the new assets ──────────────────────────────────────────
@@ -297,7 +299,6 @@ FILES["Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/MantaStingS
              f"  - {{fileID: 11400000, guid: {PLANT_EFFECT_GUID}, type: 2}}\n"
              "  skimmerPrismEffectsSO:\n"
              f"  - {{fileID: 11400000, guid: {SKIM_EFFECT_GUID}, type: 2}}\n"
-             f"  - {{fileID: 11400000, guid: {SKIMMER_HAPTICS_GUID}, type: 2}}\n"
              "  skimmerCrystalEffectsSO: []\n"),
     ASSET_META.format(guid=STING_CONTAINER_GUID))
 

@@ -332,9 +332,9 @@ and a cashed board went off as one flat bang. Every beat now answers, in four ch
 
 | Beat | What it does |
 |---|---|
-| **Skim pays charge** | Charge card flashes (`VesselHUDView.PlayAbilityFlash`), gauge climbs, `skimChargeEvent`. The skim-pulse haptic was already wired. |
+| **Skim pays charge** | Charge card flashes (`VesselHUDView.PlayAbilityFlash`), gauge climbs, `skimChargeEvent`. **No haptic** (Caleb, 2026-11-11): the per-entry skim pulse held the pad at a steady hum in dense prisms, so skimming is told by sound and the HUD; the Manta's pad speaks only on a hull hit (punish thud) and a plant (`HapticController.PlayPlant`, `Docs/HAPTICS.md`). |
 | **A bomb finishes arming** | Charge card flashes again + `bombArmedEvent`, and the armed badge lights (≥1 bomb = highlight colour). This is the "you may plant" moment. |
-| **A bomb is planted** | Charge card flashes, badge decrements, `bombPlantedEvent`, and the **fuse marker blooms in** on the target. |
+| **A bomb is planted** | Charge card flashes, badge decrements, `bombPlantedEvent`, the **fuse marker blooms in** on the target, and the pad gives the **plant knock** (two quick knocks, local human pilot). |
 | **A fuse burns down** | The marker crosses calm → critical and its pulse quickens from `markerCalmPulseHz` to `markerCriticalPulseHz`; the HUD board counts the shortest fuse. |
 | **A fuse runs out** | `fuseExpiredEvent` (its own cue — the opposite outcome to a cashed bloom) then the smaller fizzle blast. |
 | **Crystal → Kabloom** | Space card flashes, `kabloomEvent`, a `BloomrushKabloom` toast in the dedicated feed, and the board **cascades** rather than detonating at once. |
