@@ -5565,10 +5565,10 @@
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_Trace.png": {
-   "coloured": 0.4878,
+   "coloured": 0.527,
    "graded": "ui",
    "kind": "sprite",
-   "sha": "0bf16817d9276c99",
+   "sha": "592a7b81f0293701",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Profile/Pilots/Avatar_VOLT.png": {
