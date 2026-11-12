@@ -40,7 +40,14 @@ six Garrett approved on a card), and each was judged on its own when the answer 
     A jellyfish needs its bell, and jelly that hangs where hair hangs is read as hair whatever its outline. The
     head stays the bell; the head that was tried is kept beside the gallery page.
   * THE MICROSCOPE, not taken: "the small plate ... is blank" was painted as a white dish on its stage.
-The patch below is that ask as it was sent. Its `edit` holds only the two regions taken, and `took` says so."""
+That ask, as it was sent, and what was taken of it are kept in patches/Trace.json (under `earlier`).
+
+The patch below is the second (2026-11-12, 11 credits, the fifth of the six): the cylinder alone, asked again so
+that it holds the growth of her own port. It was sent with the scene and no frame of the game: the words point at
+"the round port of this same photograph". The answer is in the port's jade teal and violet on the first run, in the
+same place and at the same size, and all of it is inside the glass: a chain of bricks with needles at its joints,
+violet rings, the crystal, a craft and the net. So the scene now holds one thing at three sizes, as designed: the
+sprig in the jar, the survey in the cylinder, the growth in the port."""
 SCENE = dict(
     treatment="Working photograph in a survey vessel's cabin: a sprig, the survey, and the growth itself in the port",
     shot=("A working photograph in the cabin of a small survey vessel at night: a 35mm lens from the cabin "
@@ -92,47 +99,23 @@ SCENE = dict(
           "pencil is pushed through a loop of the bandolier."),
     close=(256, 20, 716, 480),
     refs=("sea_flora_approach", "sea_flora_through", "sea_flora_crystal"),
-    patch=dict(
-        what=("the back of the head and the ribbons of jelly at the neck, what the glass cylinder on the bench "
-              "holds, what is seen through the round port, and the small plate on the microscope"),
-        ask=("THE BACK OF THE HEAD. {name} has one head, and its outline is a seabird's. Where the clear dome swells "
-             "out behind the head now, the back of the head is drawn in close: a low rounded crown and a nape that "
-             "runs straight down into the back of the neck, no wider and no higher than a booby's own head. Along "
-             "that outline the head changes what it is made of. Behind the eye the brown feathers go clear one by "
-             "one: a few whole feathers of clear lilac jelly lying flat among the brown ones, then more, and at the "
-             "back of the head they have run together into smooth, thick, milky lilac jelly, lying as close to the "
-             "head as the feathers did, with the last brown feathers lying deep inside it. At the nape the jelly "
-             "thins and becomes the skin of the neck. Out of that skin, in one row down the back of the neck from "
-             "the nape to the collar, grow five ruffled ribbons of the same jelly, each rooted in the neck and lying "
-             "flat against it. Four end at the shoulder; the longest comes forward over the collar to the fingers "
-             "of the hand at the collarbone, which holds its end as before. The jelly is lit only from outside: the "
-             "port's cold light shows through it from behind, and the lamp puts one warm highlight on it. The "
-             "face, the eye, the bill, the white throat and both hands stay exactly as they are."
-             "\n\n"
-             "THE CYLINDER. The glass cylinder and its round stand stay exactly where they are. All that the "
-             "cylinder held is gone, and every ring and mote of light that hung round it, and the glass is filled "
-             "again from nothing with what the reference pictures show: a hologram with real depth, a small "
-             "solid-looking scene with a near side and a far side, all of it inside the glass. Inside it is {view}."
-             "\n\n"
-             "THE PORT. Through the round port is that same growth at its true size, with exactly the look of the "
-             "reference pictures: black space sown with fine white dust, and close outside a wall of bricks of "
-             "light, flat-sided rectangular blocks with deep clear faces and thin bright edges, each as big as a "
-             "door, set edge to edge in rings round open holes, jade teal deepening to indigo and violet, with a "
-             "spray of white needles in every hole. The port's riveted frame, the jar, the hand that holds it and "
-             "the bill stay where they are."
-             "\n\n"
-             "THE MICROSCOPE. The small plate on the microscope's head is plain white enamel like the rest of it, "
-             "and blank."),
-        took=("what is seen through the round port and what the cylinder holds; the head, drawn in as asked, was "
-              "read blind and left as it was, and the microscope was left as it was"),
-        edit=(   # the port's glass; the cylinder on its stand, with the bench where the old rings of light stood
-            # outside the glass. Everything inside them is the answer's, the jar and the hand that holds it too.
-            ((1076, 166), (1073, 202), (1063, 238), (1048, 271), (1027, 301), (1001, 327), (971, 348), (938, 363),
-             (902, 373), (866, 376), (830, 373), (794, 363), (761, 348), (731, 327), (705, 301), (684, 271),
-             (669, 238), (659, 202), (656, 166), (659, 130), (669, 94), (684, 61), (705, 31), (731, 5), (737, 0),
-             (995, 0), (1001, 5), (1027, 31), (1048, 61), (1063, 94), (1073, 130)),
+    patch=dict(   # the second patch of this scene; the first is told above and kept in patches/Trace.json
+        what="what the glass cylinder on the bench holds",
+        ask=("THE CYLINDER. The glass cylinder and its round stand stay exactly where they are, at the same size. "
+             "All that the cylinder holds is gone, and the glass is filled again from nothing: a hologram with real "
+             "depth, a small solid-looking scene with a near side and a far side, all of it inside the glass. It is "
+             "a small model of the growth that fills the round port of this same photograph, the whole of it seen "
+             "from far off, in the same colours and the same glow as the port shows it: chains of jade teal bricks "
+             "of light with a spray of white needles at every joint, and rings of violet bricks behind them, joined "
+             "ring to ring into one coral that curves through black space sown with fine white dust. Each brick is "
+             "a flat-sided block with a deep clear face and thin bright edges, exactly like the bricks in the port. "
+             "Among the rings, one pale lilac crystal shaped like a twelve-sided die glows where the coral holds "
+             "it. One tiny bright craft flies through a ring and lays behind it a ribbon of small jade teal bricks "
+             "set end to end. Far behind it all curves a net of thin dim blue lines in six-sided panes."),
+        edit=(   # the cylinder on its stand, and the bench where its light falls
             ((882, 362), (1290, 362), (1290, 560), (1262, 600), (1215, 640), (1206, 708), (1040, 708), (1035, 730),
              (882, 730)),
         ),
+        refs=(),   # the port in the picture itself is the reference: a frame of another colour was copied (88)
     ),
 )
