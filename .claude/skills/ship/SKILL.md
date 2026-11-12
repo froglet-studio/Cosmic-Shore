@@ -22,6 +22,9 @@ two more iterations should fix. **Opening the PR is the second-to-last step, nev
 
 `/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`, `/ship promote <branch>`).
 
+To work through PRs a person has ALREADY opened (classify, refresh, land several in a safe order, close the stale ones),
+use `/land-queue`: it calls this file's §1.5 and §5.7 rather than repeating them.
+
 **Every mode that opens a PR merges it on a GO (§5.7).** To open the PR and stop there, say so (`/ship --no-merge`,
 "PR only", "don't merge"); the session then leaves the merge to a person, as before 2026-11-10.
 
