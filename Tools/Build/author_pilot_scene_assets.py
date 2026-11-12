@@ -33,6 +33,7 @@ Usage:
     python3 Tools/Build/author_pilot_scene_assets.py --check     # compare with disk; exit 1 on drift
     python3 Tools/Build/author_pilot_scene_assets.py --self-test # negative controls
 """
+import copy
 import hashlib
 import json
 import os
@@ -52,6 +53,12 @@ RESOURCE_DIR = "Pilots/Scenes"                       # SCENE_DIR as Resources.Lo
 CATALOG = "Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset"
 CATALOG_SCRIPT_META = "Assets/_Scripts/ScriptableObjects/PilotsAndArtifacts/PilotSceneCatalogSO.cs.meta"
 AVATAR = "Assets/_Graphics/Profile/Pilots/Avatar_{word}.png"     # author_pilot_avatar_assets.py owns these
+PEOPLE = "Docs/Pilots/art/scenes/people.json"         # the painted pilots as people: the starter crew (authored)
+CREW = "Assets/Resources/Pilots/PaintedCrew.asset"    # PaintedCrewSO.ResourcePath
+CREW_SCRIPT_META = "Assets/_Scripts/ScriptableObjects/PilotsAndArtifacts/PaintedCrewSO.cs.meta"
+SPECIES_CS = "Assets/_Scripts/Data/Inventory/AnimalSpecies.cs"
+FACTION_TYPES_CS = "Assets/_Scripts/Data/Voyages/VoyageEnums.cs"
+FACTIONS_CS = "Assets/_Scripts/Data/Inventory/FactionCatalog.cs"
 
 WEBGL_STAND_IN = 32      # px: the longest side a browser build keeps (see the module docstring)
 BC7 = 25                 # TextureImporterFormat.BC7
@@ -318,6 +325,85 @@ def entry_of(value, word, scene, source):
             SIDES[scene["side"]])
 
 
+def enum_values(rel, enum):
+    """{member: value} of a C# enum whose members are written `Name = 3,`."""
+    body = re.search(r"enum " + enum + r"\s*\{(.*?)\}", read(rel), re.S).group(1)
+    return {m.group(1): int(m.group(2)) for m in re.finditer(r"^\s*([A-Za-z]+)\s*=\s*(\d+)", body, re.M)}
+
+
+def founding_names():
+    """{faction type: [founding names]} from FactionCatalog.cs."""
+    return {m.group(1): re.findall(r'"([^"]+)"', m.group(2))
+            for m in re.finditer(r"\[FactionType\.([A-Za-z]+)\] = new\[\] \{([^}]*)\}", read(FACTIONS_CS))}
+
+
+def yaml_text(s):
+    """A YAML double-quoted scalar: what Unity reads back as the same string, line breaks included."""
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n") + '"'
+
+
+PRINTABLE = re.compile(r"^[ -~]*$")
+
+
+def crew_rows(people=None, manifest=None):
+    """[(callsign value, person)] for every painted pilot whose scene is in the game, with each fault named."""
+    people = (people if people is not None else json.loads(read(PEOPLE)))["people"]
+    species, types, factions = enum_values(SPECIES_CS, "AnimalSpecies"), enum_values(FACTION_TYPES_CS, "FactionType"), founding_names()
+    out = []
+    for value, word, scene in rows(manifest):
+        p = people.get(word)
+        assert p, f"{word}'s scene is in the game but {PEOPLE} has no person for it: its page would show a stranger"
+        name = f"{p['given']} {p['family']}"
+        assert name == scene.get("name"), f"{word}: {PEOPLE} names {name}, the scene shows {scene.get('name')}"
+        one, two = p["species"]
+        for animal in (one, two):
+            assert animal in species and species[animal] > 0, f"{word}: '{animal}' is not an AnimalSpecies"
+        assert one != two, f"{word}: the two animals are the same"
+        kind, faction = p["faction"]
+        assert kind in types and types[kind] > 0, f"{word}: '{kind}' is not a FactionType"
+        assert faction in factions.get(kind, []), f"{word}: '{faction}' is not one of FactionCatalog's {kind} factions"
+        story = p["story"]
+        assert story and all(par.strip() == par and par for par in story), f"{word}: an empty or padded paragraph"
+        for text in (p["given"], p["family"], p["home"], faction, *story):
+            assert PRINTABLE.match(text), f"{word}: '{text}' has a character the UI font cannot draw"
+        out.append((value, dict(given=p["given"], family=p["family"], one=species[one], two=species[two],
+                                type=types[kind], faction=faction, home=p["home"], story="\n\n".join(story))))
+    return out
+
+
+def crew_text(people, script_guid):
+    lines = [
+        "%YAML 1.1",
+        "%TAG !u! tag:unity3d.com,2011:",
+        "--- !u!114 &11400000",
+        "MonoBehaviour:",
+        "  m_ObjectHideFlags: 0",
+        "  m_CorrespondingSourceObject: {fileID: 0}",
+        "  m_PrefabInstance: {fileID: 0}",
+        "  m_PrefabAsset: {fileID: 0}",
+        "  m_GameObject: {fileID: 0}",
+        "  m_Enabled: 1",
+        "  m_EditorHideFlags: 0",
+        f"  m_Script: {{fileID: 11500000, guid: {script_guid}, type: 3}}",
+        "  m_Name: PaintedCrew",
+        "  m_EditorClassIdentifier: ",
+        "  people:" if people else "  people: []",
+    ]
+    for value, p in people:
+        lines += [
+            f"  - callsign: {value}",
+            f"    given: {yaml_text(p['given'])}",
+            f"    family: {yaml_text(p['family'])}",
+            f"    speciesOne: {p['one']}",
+            f"    speciesTwo: {p['two']}",
+            f"    factionType: {p['type']}",
+            f"    factionName: {yaml_text(p['faction'])}",
+            f"    homeworld: {yaml_text(p['home'])}",
+            f"    story: {yaml_text(p['story'])}",
+        ]
+    return "\n".join(lines) + "\n"
+
+
 def outputs(manifest=None):
     """{repo path: bytes} of everything this script owns."""
     out, entries = {}, []
@@ -329,6 +415,8 @@ def outputs(manifest=None):
     out[SCENE_DIR + ".meta"] = folder_meta(minted("folder")).encode("utf-8")
     out[CATALOG] = catalog_text(entries, guid_of(CATALOG_SCRIPT_META)).encode("utf-8")
     out[CATALOG + ".meta"] = asset_meta(minted("catalog")).encode("utf-8")
+    out[CREW] = crew_text(crew_rows(manifest=manifest), guid_of(CREW_SCRIPT_META)).encode("utf-8")
+    out[CREW + ".meta"] = asset_meta(minted("crew")).encode("utf-8")
     return out
 
 
@@ -380,8 +468,8 @@ def self_test():
     expected = outputs()
     words = [word for _, word, _ in rows()]
     expect("today every callsign has a painted scene", len(words) == len(CALLSIGNS) and not unpainted())
-    expect("one scene, one importer a callsign, plus the folder, the catalog and its meta",
-           len(expected) == 2 * len(words) + 3)
+    expect("one scene, one importer a callsign, plus the folder, the catalog, the crew and their metas",
+           len(expected) == 2 * len(words) + 5)
 
     # The maths a page's crop rests on: the close box, top-left pixels, as a Rect from the bottom left.
     x, y, w, h = face_rect([296, 0, 606, 310], [1536, 864])
@@ -413,6 +501,32 @@ def self_test():
         failures.append("bytes that are not a JPEG were written")
     except AssertionError:
         pass
+
+    # The painted crew: every fault in a person is raised by name, never written.
+    people = json.loads(read(PEOPLE))
+    first = words[0]
+
+    def person_fault(label, mutate):
+        bad = copy.deepcopy(people)
+        mutate(bad["people"])
+        try:
+            crew_rows(bad)
+            failures.append(f"{label} was written")
+        except AssertionError:
+            pass
+
+    person_fault("a painted pilot with no person", lambda ps: ps.pop(first))
+    person_fault("a person not named as the scene names them", lambda ps: ps[first].__setitem__("given", "Someone"))
+    person_fault("an animal that is not an AnimalSpecies", lambda ps: ps[first].__setitem__("species", ["Dragon", "Koi"]))
+    person_fault("the same animal twice", lambda ps: ps[first].__setitem__("species", ["Koi", "Koi"]))
+    person_fault("a faction type that does not exist", lambda ps: ps[first].__setitem__("faction", ["Wizard", "X"]))
+    person_fault("a faction FactionCatalog does not found",
+                 lambda ps: ps[first].__setitem__("faction", [ps[first]["faction"][0], "Nobody's Company"]))
+    person_fault("an empty paragraph", lambda ps: ps[first]["story"].append(""))
+    person_fault("a character the UI font cannot draw", lambda ps: ps[first]["story"].__setitem__(0, "Caf\u00e9 life."))
+    crew = expected[CREW].decode("utf-8")
+    expect("the crew holds one person a scene", crew.count("  - callsign: ") == len(words))
+    expect("a story keeps its paragraph breaks", "\\n\\n" in crew)
 
     # A callsign with no painted scene is left out, not invented.
     manifest = json.loads(read(MANIFEST))

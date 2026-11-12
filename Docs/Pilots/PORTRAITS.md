@@ -430,11 +430,19 @@ closed page has faded: one 1536x864 texture at a time, never eighteen. The impor
 on Standalone, the platform default (ASTC) on Android and iOS, and 32 px on WebGL, where the browser Toybox never
 opens the Ark (`ScreenSwitcher.IsModalInWebToybox` keeps the page out). 9.0 MB of JPG joins the repository.
 
-**Whose words, whose picture.** A crew member is a rolled person (`PilotRecord`); the art is their callsign's
-painted pilot (decision 1 of section 6). The page shows the person's own name, animals, faction, home and story
-over the callsign's scene, and an authored line (`picturedTemplate`; blank it to drop the line) says who is
-pictured. The words and the picture disagree until one of the routes in decision 2 is taken, or until crews are
-drawn from the painted pilots. That is Garrett's call for the next pass.
+**Whose words, whose picture.** The starter crew ARE the painted pilots (Garrett, 2026-11-12: "the stories and the
+art got mixed up because none of the stories matched the art"). Each painted pilot is a person in
+`Docs/Pilots/art/scenes/people.json`: the name the scene carries, the two animals it shows, a faction and home that
+fit its place, and a story in three short paragraphs. The story does not explain the callsign's sight (the page has
+its own Sight row); it opens the wider world and says what work the pilot's faction brings the crew (Garrett: "more
+about exposing the player to the wider world and about what kind of jobs they will be finding through that pilot's
+faction connection"; the jobs follow `Docs/Voyages/DEPTH.md` section 4). `author_pilot_scene_assets.py` writes them
+into `Resources/Pilots/PaintedCrew` (`PaintedCrewSO`), and `AccountInventoryStore` paints every starter record from
+it on each read, so a crew saved before this, and every later edit of a story, catches up; id, callsign, origin and
+chronicle are kept, and voyage jobs follow the painted faction. A recruit is still a rolled person of their own, and
+only then does the page's last line (`picturedTemplate`; blank it to drop the line) say who is pictured.
+`author_menu_pilot_profile.py --check` fails a painted story that does not fit the Story row with its paragraph
+breaks (9 to 12 of 14 lines today).
 
 **Open:**
 

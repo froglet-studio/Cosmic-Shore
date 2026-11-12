@@ -4107,9 +4107,11 @@ profile page in the ark."
   `Resources/Pilots/PilotProfileView` (`EnsurePilotProfileModal`, at start when the scene has none, as the credits
   screen is), is never reopened after a match (a window type does not say which pilot) and stays out of the browser
   Toybox. Value 20 stays free for the Quests window of section 151, which section 159 took back out.
-- **Whose words, whose picture.** The words are the crew member's own record; the picture is their callsign's painted
-  pilot until each person has art (`Docs/Pilots/PORTRAITS.md` section 6, decision 1), so the panel's last line says who
-  is pictured (`picturedTemplate`, "Pictured: {painted}, the first {callsign}"; blank it to drop the line).
+- **Whose words, whose picture.** The words are the crew member's own record. A starter IS its callsign's painted pilot
+  (2026-11-12, `PaintedCrewSO`, `Docs/Pilots/PORTRAITS.md` section 8), so for the starter crew the words and the
+  picture are one person and the story is three short paragraphs about the wider world and the faction's work. Only
+  for a recruit, until each person has art, does the panel's last line say who is pictured (`picturedTemplate`,
+  "Pictured: {painted}, the first {callsign}"; blank it to drop the line).
 - **One scene in memory.** A scene is loaded by name when its pilot is drawn and unloaded when the next is shown or the
   closed page has faded. The eighteen scenes are in `Assets/Resources/Pilots/Scenes/` (`author_pilot_scene_assets.py`,
   9.0 MB of JPG), 32 px stand-ins on WebGL.

@@ -121,6 +121,9 @@ RULE_Y = 188
 STORY_LINES, SIGHT_LINES = 14, 2
 WIDEST_NAME = "Darthawen Lanternweaver"                   # the widest name those tables compose, in the UI font
 CALLSIGN_SET = "Assets/Resources/Pilots/CallsignSet.asset"
+# The painted pilots' own words (the starter crew, Tools/Build/author_pilot_scene_assets.py writes them into
+# Resources/Pilots/PaintedCrew): short paragraphs, a blank line between, and all of it inside the Story row.
+PAINTED_PEOPLE = "Docs/Pilots/art/scenes/people.json"
 # Words a player must read sit on the plate in these: TextInactive is the DISABLED colour, near the plate's own.
 READABLE = ("TextLight", "NeutralLightest")
 
@@ -345,6 +348,27 @@ def wrapped(words, role, width):
     return lines + [line] if line else lines
 
 
+def story_lines(story):
+    """The lines a story takes in the Story row: each paragraph wrapped, and one blank line between paragraphs."""
+    lines = 0
+    for paragraph in story.split("\n"):
+        lines += len(wrapped(paragraph, "Body", INNER)) if paragraph else 1
+    return lines
+
+
+def painted_stories():
+    """{callsign word: story as the asset holds it} for every painted pilot."""
+    import json
+    with open(os.path.join(REPO, PAINTED_PEOPLE), encoding="utf-8") as fh:
+        people = json.load(fh)["people"]
+    return {word: "\n\n".join(p["story"]) for word, p in people.items()}
+
+
+def story_errors(stories):
+    return [f"{word}'s painted story takes {story_lines(text)} lines of the Story row's {STORY_LINES}"
+            for word, text in sorted(stories.items()) if story_lines(text) > STORY_LINES]
+
+
 def callsign_meanings():
     """What each callsign lights, as authored (the page's Sight row shows one)."""
     with open(os.path.join(REPO, CALLSIGN_SET), encoding="utf-8") as fh:
@@ -503,6 +527,8 @@ def validate(files):
     story, sight = (next(r for r in ROWS if r[0] == key) for key in ("Story", "Sight"))
     assert story[3] >= STORY_LINES * K.line_height("Body"), "the story's rows do not hold the longest story"
     assert sight[3] >= SIGHT_LINES * K.line_height("Body"), "the sight's rows do not hold SIGHT_LINES lines"
+    errors = story_errors(painted_stories())
+    assert not errors, "; ".join(errors)
     for meaning in callsign_meanings():
         assert len(wrapped(meaning, "Body", INNER)) <= SIGHT_LINES, \
             f"a callsign's meaning needs more than {SIGHT_LINES} lines of the Sight row: {meaning}"
@@ -651,6 +677,11 @@ def self_test(files):
                   f"    m_SelectOnLeft: {{fileID: {F('Stepper/Previous#button')}}}\n"), "is not the authored one"),
     ]
     ok = all([expect(*case) for case in cases])
+    long_story = dict(painted_stories())
+    long_story["ANVIL"] = long_story["ANVIL"] + "\n\n" + long_story["ANVIL"]
+    caught = bool(story_errors(long_story)) and not story_errors(painted_stories())
+    print(f"  {'caught' if caught else 'MISSED'}: a painted story longer than the Story row")
+    ok = ok and caught
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
     return ok
 
