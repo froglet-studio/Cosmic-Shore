@@ -428,7 +428,7 @@ crop within a pixel (90 scene and shape pairs). With the panel in its place, on 
 **Memory and size.** A scene is loaded by name when its pilot is drawn and unloaded when the next is shown or the
 closed page has faded: one 1536x864 texture at a time, never eighteen. The import is a Sprite-typed texture, BC7
 on Standalone, the platform default (ASTC) on Android and iOS, and 32 px on WebGL, where the browser Toybox never
-opens the Ark (`ScreenSwitcher.IsModalInWebToybox` keeps the page out). 8.8 MB of JPG joins the repository.
+opens the Ark (`ScreenSwitcher.IsModalInWebToybox` keeps the page out). 9.0 MB of JPG joins the repository.
 
 **Whose words, whose picture.** A crew member is a rolled person (`PilotRecord`); the art is their callsign's
 painted pilot (decision 1 of section 6). The page shows the person's own name, animals, faction, home and story

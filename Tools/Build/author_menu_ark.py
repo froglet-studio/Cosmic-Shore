@@ -590,8 +590,22 @@ PILOT_NAME_Y, PILOT_NAME_H, PILOT_LINE_Y, PILOT_LINE_H = 200, 24, 226, 18   # th
 # than the callsign's row).
 PILOT_NAME_PAD, WIDEST_NAME = 6, "Darthawen Lanternweaver"
 SCENE_CATALOG = K.meta_guid("Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset")     # author_pilot_scene_assets.py
-PILOT_TOKENS = ("name", "given", "family", "callsign", "species", "faction", "count")   # ArkPilotsPage fills these
 PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("countTemplate", "Pilots: {count}"))
+
+
+def pilot_tokens():
+    """The tokens ArkPilotsPage fills in each of its lines, read from its own two TemplateText.Fill calls, so the
+    lists cannot drift from the page: a cell's two lines take the pilot's facts, the count takes {count} alone."""
+    source = open(os.path.join(REPO, "Assets/_Scripts/UI/Elements/Ark/ArkPilotsPage.cs"), encoding="utf-8").read()
+    cell = re.search(r"TemplateText\.Fill\(template,(.*?)\);", source, re.S)
+    count = re.search(r"TemplateText\.Fill\(countTemplate,(.*?)\);", source, re.S)
+    assert cell and count, "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
+    cell, count = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count))
+    assert cell and count, "ArkPilotsPage's filled tokens read as empty"
+    return {"nameTemplate": cell, "lineTemplate": cell, "countTemplate": count}
+
+
+PILOT_TOKENS = pilot_tokens()
 PILOT_WORDS = "".join(yfield(field, words) for field, words in PILOT_LINES)
 
 
@@ -1008,10 +1022,17 @@ def validate_pilots(view, V):
     for i in cells:
         for field, want in PILOT_CELL_FIELDS.items():
             C.wired(view, A.doc_of(view, i)[1], field, want, "a crew cell")
+    # Each line names only the tokens the page fills in THAT line. Read from what was written, not from PILOT_LINES,
+    # and before the next rule, so a planted token is caught by this one.
+    written = re.findall(r"^  (\w+Template): (.*)$", page, re.M)
+    assert {field for field, _ in written} == set(PILOT_TOKENS), \
+        "ArkPilotsPage's lines in the prefab are not the ones its code fills"
+    for field, value in written:
+        for token in re.findall(r"\{(\w+)\}", value):
+            assert token in PILOT_TOKENS[field], \
+                f"ArkPilotsPage.{field} names {{{token}}}, which the page does not fill there"
     for field, words in PILOT_LINES:
         assert yfield(field, words) in page, f"ArkPilotsPage.{field} is not the authored line"
-        for token in re.findall(r"\{(\w+)\}", words):
-            assert token in PILOT_TOKENS, f"ArkPilotsPage.{field} names {{{token}}}, which the page does not fill"
     for i in range(CALLSIGNS):
         rt = V(f"Pilots/Cell{i}#rt")
         assert rect_xy(view, rt, "m_AnchorMin") == (0, 1) and rect_xy(view, rt, "m_Pivot") == (0, 1), \
@@ -1129,12 +1150,16 @@ def in_doc(view, fid, change):
 
 
 def self_test(files):
-    def expect(label_, mutate):
+    def expect(label_, mutate, by=""):
+        """`by`: words of the rule that must catch the control. Caught by a neighbouring rule is not caught."""
         bad = dict(files)
         mutate(bad)
         try:
             validate(bad)
         except AssertionError as e:
+            if by not in str(e):
+                print(f"  CAUGHT BY THE WRONG RULE: {label_} ({e}); expected the rule that says '{by}'")
+                return False
             print(f"  caught: {label_} ({e})")
             return True
         print(f"  MISSED: {label_}")
@@ -1180,9 +1205,18 @@ def self_test(files):
                 f"  m_SizeDelta: {{x: {PILOT_W - 2 * PILOT_NAME_PAD}, y: ", "  m_SizeDelta: {x: 228, y: ")))),
         ("a crew line naming a token the page does not fill", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(yfield("lineTemplate", "{callsign}"),
-                                                             yfield("lineTemplate", "{sight}"))))),
+                                                             yfield("lineTemplate", "{sight}")))),
+         "which the page does not fill there"),
+        ("a crew line naming the count's token", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(yfield("nameTemplate", "{name}"),
+                                                             yfield("nameTemplate", "{count}")))),
+         "which the page does not fill there"),
+        ("a crew line changed from its authored words", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(yfield("lineTemplate", "{callsign}"),
+                                                             yfield("lineTemplate", "{given}")))),
+         "is not the authored line"),
     ]
-    ok = all(expect(l, m) for l, m in cases)
+    ok = all([expect(*case) for case in cases])
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
     return ok
 

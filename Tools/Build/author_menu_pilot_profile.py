@@ -105,8 +105,19 @@ WORDS = (
     ("picturedTemplate", "Pictured: {painted}, the first {callsign}"),
     ("countTemplate", "{index} / {count}"),
 )
-TOKENS = ("name", "given", "family", "callsign", "sight", "species", "blend", "faction", "homeworld", "backstory",
-          "painted", "index", "count")                  # PilotProfileModal.TokenNames
+
+
+def page_tokens():
+    """The tokens PilotProfileModal fills, read from its own TokenNames, so this list cannot drift from the page."""
+    source = open(os.path.join(REPO, "Assets/_Scripts/UI/Modals/PilotProfileModal.cs"), encoding="utf-8").read()
+    names = re.search(r"static readonly string\[\] TokenNames =\s*\{(.*?)\};", source, re.S)
+    assert names, "PilotProfileModal.cs no longer declares TokenNames where author_menu_pilot_profile.py reads it"
+    tokens = tuple(re.findall(r'"(\w+)"', names.group(1)))
+    assert tokens, "PilotProfileModal.TokenNames reads as empty"
+    return tokens
+
+
+TOKENS = page_tokens()
 TEXT_FIELDS = dict(kickerText="Kicker", nameText="Name", speciesText="Species", factionText="Faction",
                    homeText="Home", sightCaptionText="SightCaption", sightText="Sight",
                    storyCaptionText="StoryCaption", storyText="Story", picturedText="Pictured")
@@ -297,11 +308,17 @@ def validate(files):
     C.wired(pf, page, "panel", 224, "PilotProfileModal")
     C.wired(pf, page, "windowAnimator", 95, "PilotProfileModal")
 
-    # Every word is authored, quoted where YAML needs it, and names only tokens the page fills.
+    # Every template names only tokens the page fills. Read from what was written, not from WORDS, so a line changed
+    # in the prefab is held to it too; and before the next rule, so a planted token is caught by this one.
+    written = re.findall(r"^  (\w+Template): (.*)$", page, re.M)
+    assert {field for field, _ in written} == {field for field, _ in WORDS}, \
+        "PilotProfileModal's templates in the prefab are not the ones WORDS authors"
+    for field, value in written:
+        for token in re.findall(r"\{(\w+)\}", value):
+            assert token in TOKENS, f"PilotProfileModal.{field} names {{{token}}}, which the page does not fill"
+    # Every word is authored, quoted where YAML needs it.
     for field, words in WORDS:
         assert f"  {field}: {ystr(words)}\n" in page, f"PilotProfileModal.{field} is not the authored line"
-        for token in re.findall(r"\{(\w+)\}", words):
-            assert token in TOKENS, f"PilotProfileModal.{field} names {{{token}}}, which the page does not fill"
     for key in TEXT_FIELDS.values():
         _, tmp = A.doc_of(pf, F(f"Panel/{key}#tmp"))
         assert re.search(r"^  m_text: $", tmp, re.M), f"Panel/{key} holds a word of its own; its template is the word"
@@ -369,12 +386,16 @@ def drift(files):
 
 
 def self_test(files):
-    def expect(label_, mutate):
+    def expect(label_, mutate, by=""):
+        """`by`: words of the rule that must catch the control. Caught by a neighbouring rule is not caught."""
         bad = dict(files)
         mutate(bad)
         try:
             validate(bad)
         except AssertionError as e:
+            if by not in str(e):
+                print(f"  CAUGHT BY THE WRONG RULE: {label_} ({e}); expected the rule that says '{by}'")
+                return False
             print(f"  caught: {label_} ({e})")
             return True
         print(f"  MISSED: {label_}")
@@ -411,7 +432,11 @@ def self_test(files):
         ("the scene image unwired", unwire("sceneImage")),
         ("the scene catalog left off", swap(f"guid: {SCENE_CATALOG}", f"guid: {S['page']}")),
         ("a template naming a token the page does not fill",
-         swap(f"  homeTemplate: {ystr('From {homeworld}')}\n", f"  homeTemplate: {ystr('From {planet}')}\n")),
+         swap(f"  homeTemplate: {ystr('From {homeworld}')}\n", f"  homeTemplate: {ystr('From {planet}')}\n"),
+         "which the page does not fill"),
+        ("a template changed from its authored words",
+         swap(f"  homeTemplate: {ystr('From {homeworld}')}\n", f"  homeTemplate: {ystr('Home: {homeworld}')}\n"),
+         "is not the authored line"),
         ("a row holding a word of its own",
          doc_swap(F("Panel/Name#tmp"), "  m_text: \n", "  m_text: Veliane Crestward\n")),
         ("a scene that starts switched on (a white rectangle)",
@@ -431,7 +456,7 @@ def self_test(files):
         ("a page that starts shown", doc_swap(F("root#cg"), "  m_Alpha: 0\n", "  m_Alpha: 1\n")),
         ("a Close that closes nothing", swap("guid: " + S["close"], "guid: " + S["scene"])),
     ]
-    ok = all([expect(l, m) for l, m in cases])
+    ok = all([expect(*case) for case in cases])
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
     return ok
 

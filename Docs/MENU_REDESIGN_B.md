@@ -4110,15 +4110,18 @@ profile page in the ark."
   is pictured (`picturedTemplate`, "Pictured: {painted}, the first {callsign}"; blank it to drop the line).
 - **One scene in memory.** A scene is loaded by name when its pilot is drawn and unloaded when the next is shown or the
   closed page has faded. The eighteen scenes are in `Assets/Resources/Pilots/Scenes/` (`author_pilot_scene_assets.py`,
-  8.8 MB of JPG), 32 px stand-ins on WebGL.
+  9.0 MB of JPG), 32 px stand-ins on WebGL.
 - **Measured, outside Unity.** The longest story `PilotGenerator` can compose is 14 lines of the story's 15.6, and the
   widest name fits the page's name row and a crew cell (360,000 rolls and the generator's tables, in the UI font). The
   page's cut (`PilotSceneImage.Frame`) was run under plain .NET on all eighteen scenes at 21:9, 19.5:9, 16:9, 16:10,
   3:2 and 4:3 with the panel in its place: every face is inside the view and clear of the words. With no words it
   equals the scene kit's recorded crop within a pixel (90 scene and shape pairs).
-- **Generators:** `author_menu_pilot_profile.py` (the page; 16 negative controls) and `author_menu_ark.py` (the tab;
-  seven new controls). `ArkView.prefab` gained 814 documents and changed three (the root's children, the tabs
-  component's new entry, the tab row's width); `Menu_Main.unity` is untouched.
+- **Generators:** `author_menu_pilot_profile.py` (the page; 17 negative controls) and `author_menu_ark.py` (the tab;
+  nine new controls). Each reads the tokens a line may name from the code that fills them
+  (`PilotProfileModal.TokenNames`; `ArkPilotsPage`'s two `TemplateText.Fill` calls, so `{count}` is the count's
+  alone), and a control names the rule that must catch it, so one caught by a neighbouring rule fails the self-test.
+  `ArkView.prefab` gained 814 documents and changed three (the root's children, the tabs component's new entry, the
+  tab row's width); `Menu_Main.unity` is untouched.
 - **Not drawn on Frogma first:** built straight from Garrett's words. A drawing of the page at three screen shapes and
   of the tab, laid out from the generators' numbers, is at https://claude.ai/artifact/RAAiiZAuMzHt8Fzx6Bf1mM. No
   upright pose is drawn: an upright phone shows the PC layout fitted to the width (section 138). Hand test:
