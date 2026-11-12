@@ -42,12 +42,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = -1;
             string outPath = Arg("-provenwinOut") ?? Path.Combine(Application.persistentDataPath, "provenwin_scene.json");
-            var report = new Report { prefab = prefab ? prefab.name : "none", toggled = toggledType, device = SystemInfo.deviceModel, gpu = SystemInfo.graphicsDeviceName, pairs = pairs, framesPerHalf = framesPerHalf };
+            var report = new Report { prefab = prefab ? prefab.name : UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, toggled = toggledType, device = SystemInfo.deviceModel, gpu = SystemInfo.graphicsDeviceName, pairs = pairs, framesPerHalf = framesPerHalf };
             Behaviour toggled = null;
             try
             {
-                var go = Instantiate(prefab);
-                var owner = go.GetComponentsInChildren<MonoBehaviour>(true).First(m => m && m.GetType().FullName == ownerType);
+                // With a prefab, measure a fresh instance; without one, measure the owner already in the open scene.
+                var candidates = prefab
+                    ? Instantiate(prefab).GetComponentsInChildren<MonoBehaviour>(true)
+                    : FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                var owner = candidates.First(m => m && m.GetType().FullName == ownerType);
                 if (!string.IsNullOrEmpty(setupMethod)) owner.GetType().GetMethod(setupMethod)?.Invoke(owner, new object[] { setupArgument });
                 toggled = (Behaviour)owner.GetComponents<Component>().First(c => c && c.GetType().FullName == toggledType);
             }

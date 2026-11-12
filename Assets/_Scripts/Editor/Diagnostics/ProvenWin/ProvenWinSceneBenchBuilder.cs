@@ -90,16 +90,24 @@ namespace CosmicShore.Editor.ProvenWin
         {
             try
             {
-                string prefabPath = Arg("-prefab") ?? throw new ArgumentException("-prefab is required");
+                // -prefab: a fresh instance in an empty scene. -scene: the real scene, opened as it is and NOT saved
+                // (the bench object is added in memory; Play keeps it because this project skips the scene reload).
+                string prefabPath = Arg("-prefab"), scenePathIn = Arg("-scene");
                 string outPath = Arg("-provenwinOut") ?? throw new ArgumentException("-provenwinOut is required");
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) ?? throw new FileNotFoundException(prefabPath);
                 if (File.Exists(outPath)) File.Delete(outPath);
-                Directory.CreateDirectory(Temp);
-                AssetDatabase.Refresh();
-                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                var cam = new GameObject("Camera").AddComponent<Camera>();
-                cam.clearFlags = CameraClearFlags.SolidColor;
-                cam.backgroundColor = Color.black;
+                GameObject prefab = null;
+                if (scenePathIn != null) EditorSceneManager.OpenScene(scenePathIn, OpenSceneMode.Single);
+                else
+                {
+                    prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath ?? throw new ArgumentException("-prefab or -scene is required"))
+                             ?? throw new FileNotFoundException(prefabPath);
+                    Directory.CreateDirectory(Temp);
+                    AssetDatabase.Refresh();
+                    EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                    var cam = new GameObject("Camera").AddComponent<Camera>();
+                    cam.clearFlags = CameraClearFlags.SolidColor;
+                    cam.backgroundColor = Color.black;
+                }
                 var bench = new GameObject("ProvenWinSceneBench").AddComponent<ProvenWinSceneBench>();
                 var so = new SerializedObject(bench);
                 so.FindProperty("prefab").objectReferenceValue = prefab;
@@ -107,7 +115,7 @@ namespace CosmicShore.Editor.ProvenWin
                 if (Arg("-setupMethod") is { } setup) so.FindProperty("setupMethod").stringValue = setup;
                 if (Arg("-toggledType") is { } toggled) so.FindProperty("toggledType").stringValue = toggled;
                 so.ApplyModifiedPropertiesWithoutUndo();
-                EditorSceneManager.SaveScene(scene, $"{Temp}/ProvenWinSceneBench.unity");
+                if (prefab) EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), $"{Temp}/ProvenWinSceneBench.unity");
                 // The project's SceneBootstrapper turns every Play into a Bootstrap boot. Its switch is an EditorPrefs
                 // key shared with every editor on this machine, so leave it alone and use its in-process
                 // "restarting to switch scene" guard, which makes it stand aside for this one Play.
