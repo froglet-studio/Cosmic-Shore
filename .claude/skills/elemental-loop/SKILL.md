@@ -33,13 +33,13 @@ is occupied by someone else, say who and take the next action. Run
 | Step | Load first | The exit you are working toward (PLAYBOOK section 3) |
 |---|---|---|
 | 0 kit | `/arcadegame`, `Docs/MassAndSpaceGames/` prompts, `/cardart` | the vessel has a Time, a Charge and a Mass or Space game on the arcade roster |
-| 1 fun | `/vessel`, `/element-ability-table`, `/vessel-studio` (offer in one line) | a person flew it and says fun; no fun dimension below 6 |
-| 2 ladder | `/arcadegame` (intensity ladder), `/EndGameConditions`, `/ecology` | I1 intro, I2 fun, I3 challenging, I4 very hard, each showing a vessel capability; a person signs off |
+| 1 fun | `/vessel`, `/element-ability-table`, `/vessel-studio` (offer in one line) | ONE human flew it and signs it off as fun; only then step 2 |
+| 2 ladder | `/arcadegame` (intensity ladder), `/EndGameConditions`, `/ecology` | I1 intro, I2 fun, I3 challenging, I4 very hard, each showing a vessel capability; ONE human signs them off as fun; only then AI training |
 | 3 AI | `/vessel-ai`, `/compute-job`, `Docs/AI_SYSTEM/AI_PLAN.md` | one genome on I1-I4, four-part test, editor check; commit says `Plan step: <id>` |
 | 4 creator | `/regatta-balance` (Time), `/arenagame`, `/compute-job` | the generator plateaus against the fixed AI pool; a person agrees its environments are fair and fun |
-| 5 imbalance | `/vessel`, `/approve` | the smallest vessel tuning, approved by Garrett; tuned elements set to `redo` |
+| 5 imbalance | `/vessel`, `/approve` | the smallest vessel tuning, shipped and queued for Garrett's `/approve` (never waits on him); tuned elements set to `redo` |
 
-Rules that always hold: a game mode never changes the vessel (ability tuning is on the vessel, LOCKED); no AI is
+Vessel tunings (ability changes, step 5) go through without waiting: queue each with `python3 Tools/Build/approvals.py add --to Garrett ...` (and the vessel owner). Rules that always hold: a game mode never changes the vessel (ability tuning is on the vessel, LOCKED); no AI is
 trained inside an arena game; racing AIs never go for crystals; compute runs in cloud sessions, never on Garrett's PC;
 Garrett's playtest beats any model number. Show a change that looks or moves (`Docs/claude/VIDEOS_AND_PREVIEWS.md`)
 instead of asking someone to go and check.
@@ -53,7 +53,7 @@ python3 Tools/Build/elemental_loop.py --check
 ```
 
 States: `todo`, `doing`, `built` (exists, not signed off), `done` (signed off), `redo` (step 5 sent it back), `n/a`.
-**Never record `done` for steps 1, 2 or 4 without a person's playtest**, and say who in `--by`. Use `--kind auto` only
+**Never record `done` for steps 1, 2 or 4 without a person's playtest** (for steps 1 and 2 the tool refuses anything but `--kind human`, and refuses a step `done` before the one below it), and say who in `--by`. Use `--kind auto` only
 when a gate, not a person, decided it: that share is how the loop measures that each round needs fewer people. Commit
 `loop.json` and `STATUS.md` with the work they describe, and add a row to the PLAYBOOK log when a step moves for a
 whole element or arena.

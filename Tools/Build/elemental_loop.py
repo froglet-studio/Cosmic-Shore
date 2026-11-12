@@ -45,6 +45,7 @@ STATUS_MD = os.path.join(REPO, "Docs", "ElementalLoop", "STATUS.md")
 ELEMENTS = ("Time", "Charge", "Mass", "Space")
 VESSEL_STEPS = ("1", "2", "3")          # per vessel and element: fun, intensities, AI
 ARENA_STEPS = ("4", "5")                # per arena game: environment creator, vessel imbalance
+HUMAN_GATED = ("1", "2")                # one human signs these off as fun (Garrett, 2026-11-12)
 STATES = ("todo", "doing", "built", "done", "redo", "n/a")
 STEP_NAMES = {
     "0": "game kit",
@@ -182,6 +183,15 @@ def validate(data, vessels):
                 if step not in VESSEL_STEPS:
                     problems.append(f"vessels.{vessel}.{element}.{step}: vessel steps are 1, 2, 3")
                 check_entry(f"vessels.{vessel}.{element}.{step}", entry)
+                # Garrett, 2026-11-12: one human's fun sign-off gates step 1 -> 2 and step 2 -> 3.
+                if entry.get("state") == "done" and step in HUMAN_GATED and entry.get("kind") != "human":
+                    problems.append(f"vessels.{vessel}.{element}.{step}: step {step} is signed off as fun by a human "
+                                    f"(--kind human), never automatically")
+                below = str(int(step) - 1)
+                if entry.get("state") == "done" and step in ("2", "3") and \
+                        steps.get(below, {}).get("state") != "done":
+                    problems.append(f"vessels.{vessel}.{element}.{step}: done before step {below} is signed off; "
+                                    f"step {below} needs a human's fun sign-off first")
     for arena, steps in data["arenas"].items():
         if arena not in data["arena_games"]:
             problems.append(f"arenas.{arena}: not one of arena_games")
@@ -481,6 +491,16 @@ def self_test():
     bad["vessels"]["Dolphin"] = {"Time": {"2": {"state": "built"}}}
     expect(any("needs its evidence" in p for p in validate(bad, vessels)), "a state with no evidence is caught")
 
+    bad = json.loads(json.dumps(data))
+    bad["vessels"]["Dolphin"] = {"Time": {"1": {"state": "done", "by": "gate", "date": "2026-01-01", "kind": "auto",
+                                              "evidence": "x", "loop": 1}}}
+    expect(any("signed off as fun by a human" in p for p in validate(bad, vessels)),
+           "an automatic fun sign-off is caught")
+    bad = json.loads(json.dumps(data))
+    bad["vessels"]["Dolphin"] = {"Time": {"2": {"state": "done", "by": "Garrett", "date": "2026-01-01", "kind": "human",
+                                              "evidence": "x", "loop": 1}}}
+    expect(any("done before step 1" in p for p in validate(bad, vessels)), "a step 2 done before step 1 is caught")
+
     board = build(data=data)
     rows = {r["vessel"]: r for r in board["rows"]}
     # Known answers from the shipped cards (Docs/MassAndSpaceGames/PLAN.md section 2).
@@ -496,18 +516,20 @@ def self_test():
     expect(acts and acts[0]["element"] == "Time", "the first action is on the Time element (element order)")
     # A recorded 'done' moves the step on.
     trial = set_step(json.loads(json.dumps(data)), "Dolphin", "Time", "1", "done", "test", "t", "human", 1, "2026-01-01")
-    trial = set_step(trial, "Dolphin", "Time", "2", "done", "test", "t", "auto", 1, "2026-01-01")
+    trial = set_step(trial, "Dolphin", "Time", "2", "done", "test", "t", "human", 1, "2026-01-01")
+    expect(not validate(trial, vessels), "a human-signed step 1 then 2 validates")
+    trial = set_step(trial, "Dolphin", "Time", "3", "done", "test", "t", "auto", 1, "2026-01-01")
     b2 = build(data=trial)
     d2 = {r["vessel"]: r for r in b2["rows"]}["Dolphin"]
     expect(d2["steps"]["Time"]["1"][0] == "done", "set marks a step done")
-    expect(human_share(trial).get(1) == {"human": 1 + human_share(data).get(1, {}).get("human", 0),
+    expect(human_share(trial).get(1) == {"human": 2 + human_share(data).get(1, {}).get("human", 0),
                                          "auto": 1 + human_share(data).get(1, {}).get("auto", 0)},
            "human_share counts human and automatic sign-offs")
     expect(markdown(board).startswith("# The elemental loop"), "the board renders")
     if failures:
         print("SELF-TEST FAILED:\n  " + "\n  ".join(failures))
         return 1
-    print("self-test OK (validation, 4 negative controls, known answers from the cards, set, the board)")
+    print("self-test OK (validation, 6 negative controls, known answers from the cards, set, the board)")
     return 0
 
 
