@@ -135,3 +135,7 @@
 2026-11-12T17:24:07.956Z editor load: play=False capture=True minPlay=15s issues=28
 2026-11-12T17:24:17.478Z E-0de9ec6c70: fix 93765d6aa is not in this checkout yet — waiting for a pull
 2026-11-12T17:30:14.867Z PlayMode session ended (348s play run, exiting play mode): 2 fix(es) waiting; counted: E-251530c87b 2/2
+2026-11-12T17:50:02.268Z EditMode session ended (26min editor span, script reload): 1 fix(es) waiting; counted: E-603d7f129d 2/2
+2026-11-12T17:50:11.222Z editor load: play=False capture=True minPlay=15s issues=26
+2026-11-12T17:50:24.699Z E-0de9ec6c70: fix 93765d6aa is not in this checkout yet — waiting for a pull
+2026-11-12T17:56:31.894Z PlayMode session ended (288s play run, exiting play mode): 0 fix(es) waiting; counted: none
