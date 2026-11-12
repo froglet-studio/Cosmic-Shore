@@ -168,15 +168,22 @@ model number (standing rule).
 1. **Order.** `next` ranks by element (Time, then Charge, then Mass and Space), then vessels the arena seats before
    those it does not, then the earliest step. Each vessel and element moves one step at a time. Kit gaps (step 0) are
    listed after; they are the work for anyone who would rather build a game.
-2. **Claim.** A vessel is a swim lane. Check `/swimlanes`; an occupied vessel lane is someone else's, take the next
-   action. Only a lane collision waits (CLAUDE.md).
-3. **Record.** Every step's outcome goes into `loop.json` through `elemental_loop.py set ... --evidence` with the doc,
+2. **Claim.** A vessel is a swim lane, and **every vessel is its own parallel lane through the loop**: `/swimlanes`
+   leads with them (Garrett, 2026-11-12: it "should be advancing each vessel as a high priority parallel lane through
+   this process"), each with its progress and next step, so several people and sessions move different vessels at
+   once. An occupied vessel lane is someone else's; take the next one. Only a lane collision waits (CLAUDE.md).
+3. **Catch it early.** A stakeholder who finds a change against the spirit of a vessel they worked on sends it back
+   through the loop, and everything built on the change is redone (a retraining at step 3, a new plateau at step 4).
+   `/approve` therefore ranks each person's queue by **loop impact**, the work such a catch would send back now
+   (`elemental_loop.rework`), which grows while the entry waits: the costly catches are answered before more is built
+   on them. File a vessel change with `approvals.py add ... --vessel <V> [--element E] [--loop-step 1|2|3]`.
+4. **Record.** Every step's outcome goes into `loop.json` through `elemental_loop.py set ... --evidence` with the doc,
    PR or playtest that proves it, then `--write` the board. `elemental_loop.py --check` is the drift gate.
-4. **Less human involvement each loop.** Every `done` records `kind` (human or auto) and its loop number; the board's
+5. **Less human involvement each loop.** Every `done` records `kind` (human or auto) and its loop number; the board's
    section 5 is the share. The aim, loop by loop: step 3 and step 4 fully automatic (they nearly are), step 2's rung
    bars checked from recorded flights, step 1 scored by a fun model calibrated on the people's sign-offs, and step 5
    proposed automatically with only the approval left to a person.
-5. **New vessels** enter at step 0 and step 1 and run the whole loop. When one reaches step 4, the arena re-plateaus
+6. **New vessels** enter at step 0 and step 1 and run the whole loop. When one reaches step 4, the arena re-plateaus
    with it in the pool, and step 5 may tune vessels other than the new one. Those rebalances are batched on a schedule
    so the meta changes before it goes stale and not more often (decision 3).
 
@@ -239,5 +246,6 @@ model number (standing rule).
 
 | Date | What moved |
 |---|---|
+| 2026-11-12 | **Garrett**: the loop dominates `/swimlanes` and `/approve`. The swim lanes board now opens with every unoccupied vessel as its own loop lane (progress and next step, `elemental_loop.vessel_lanes`); the approval queues rank entries by loop impact, the rework a late "against the vessel's spirit" catch would cause (`elemental_loop.rework`) |
 | 2026-11-12 | **Garrett** decided 1 and 2: one human's fun sign-off gates step 1 to step 2 and step 2 to step 3 (`elemental_loop.py` refuses a step 1 or 2 `done` that is not `--kind human`, and a step `done` before the one below it); vessel tunings go through and queue for his `/approve` without waiting |
 | 2026-11-12 | Garrett set the loop as the top priority. This playbook, `loop.json`, `elemental_loop.py` (board, `next`, `set`, `--check`, `--self-test`) and the `/elemental-loop` skill were added. Loop 1 started with the Time element furthest along: steps 1-2 built for every vessel with a Time game, step 3 built (trained, model only) for seven hulls and in progress for the Manta and Urchin, Regatta's step 4 in progress. The AI plan's `mass-arena` and `space-arena` became one step, `massspace-arena` (Brood Rush) |

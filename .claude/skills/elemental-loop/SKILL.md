@@ -24,8 +24,9 @@ just go, take the top one nobody holds.
 
 ## 2. Claim it
 
-The vessel is a swim lane. Run `/swimlanes` (or `python3 .claude/skills/swimlanes/swimlanes.py`). If the vessel's lane
-is occupied by someone else, say who and take the next action. Run
+The vessel is a swim lane, and every vessel is its own parallel lane through the loop: `/swimlanes` (or
+`python3 .claude/skills/swimlanes/swimlanes.py`) opens with them, each with its progress and next step. Take one nobody
+holds; if the vessel's lane is occupied by someone else, say who and take the next one. Run
 `python3 Tools/Build/who_works_where.py query <paths>` on the files you will touch and name whoever else works there.
 
 ## 3. Do the step
@@ -39,7 +40,7 @@ is occupied by someone else, say who and take the next action. Run
 | 4 creator | `/regatta-balance` (Time), `/arenagame`, `/compute-job` | the generator plateaus against the fixed AI pool; a person agrees its environments are fair and fun |
 | 5 imbalance | `/vessel`, `/approve` | the smallest vessel tuning, shipped and queued for Garrett's `/approve` (never waits on him); tuned elements set to `redo` |
 
-Vessel tunings (ability changes, step 5) go through without waiting: queue each with `python3 Tools/Build/approvals.py add --to Garrett ...` (and the vessel owner). Rules that always hold: a game mode never changes the vessel (ability tuning is on the vessel, LOCKED); no AI is
+Vessel tunings (ability changes, step 5) go through without waiting: queue each with `python3 Tools/Build/approvals.py add --to Garrett ... --vessel <Vessel> [--element <E>] [--loop-step 1|2|3]` (and the vessel owner). The vessel names it for the loop: `/approve` ranks every queue by the loop work a late "that is not this vessel" would send back, so the stakeholders answer it before your next step builds on it. Rules that always hold: a game mode never changes the vessel (ability tuning is on the vessel, LOCKED); no AI is
 trained inside an arena game; racing AIs never go for crystals; compute runs in cloud sessions, never on Garrett's PC;
 Garrett's playtest beats any model number. Show a change that looks or moves (`Docs/claude/VIDEOS_AND_PREVIEWS.md`)
 instead of asking someone to go and check.

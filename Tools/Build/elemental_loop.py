@@ -312,6 +312,61 @@ def actions(board):
     return out
 
 
+# ---------------------------------------------------------------- what the other tools read: lanes and rework
+
+
+def vessel_lanes(board):
+    """The loop as swim lanes (Garrett, 2026-11-12: /swimlanes "should be advancing each vessel as a high priority
+    parallel lane through this process"). Per vessel: its open loop actions in `next` order, the rank of its first,
+    a one-line progress (each element's steps 1-3 as board marks) and the arenas it is seated in."""
+    acts = actions(board)
+    out = {}
+    for r in board["rows"]:
+        mine = [a for a in acts if a["vessel"] == r["vessel"]]
+        progress = ", ".join(f"{e} " + "".join(MARK.get(r["steps"][e][s][0], "?") for s in VESSEL_STEPS)
+                             for e in ELEMENTS)
+        out[r["vessel"]] = {"actions": mine, "rank": mine[0]["rank"] if mine else None, "progress": progress,
+                            "seated": [board["data"]["arena_games"][e] for e, v in r["arenas"].items() if v]}
+    return out
+
+
+STEP_COST = {"1": 1, "2": 2, "3": 3, "4": 4}     # a retraining (3) and an environment creator (4) cost the most to redo
+LIVE = ("doing", "built", "done")                 # work that exists, so a late catch throws it away
+
+
+def rework(board, vessel, elements=None, from_step="1"):
+    """What a problem caught NOW in this vessel (against its spirit, at `from_step`) sends back, and what it costs.
+    Every loop step at or after `from_step` that is already doing, built or done for the named elements (all four when
+    none are named) has to be redone, and so does the arena's step 4 when the vessel is seated there and it is under
+    way. A signed-off step costs double (a person's playtest is lost too). The later a catch comes, the higher this is:
+    /approve sorts by it so a stakeholder catches the issue before more is built on it (Garrett, 2026-11-12).
+    Returns (score, [sentences])."""
+    row = next((r for r in board["rows"] if r["vessel"].lower() == vessel.lower()), None)
+    if row is None:
+        return 0, []
+    score, hits, arenas = 0, [], set()
+    for e in (elements or ELEMENTS):
+        if e not in ELEMENTS:
+            continue
+        for s in VESSEL_STEPS:
+            if int(s) < int(from_step):
+                continue
+            st = row["steps"][e][s][0]
+            if st in LIVE:
+                cost = STEP_COST[s] * (2 if st == "done" else 1)
+                score += cost
+                hits.append(f"{row['vessel']} {e} step {s} {('fun', 'intensities', 'AI')[int(s) - 1]} ({st})")
+        arena_e = e if e in ("Time", "Charge") else "Mass"
+        if row["arenas"].get(arena_e):
+            arenas.add(arena_e)
+    for a in sorted(arenas):
+        st = board["data"]["arenas"].get(a, {}).get("4", {}).get("state", "todo")
+        if st in LIVE:
+            score += STEP_COST["4"] * (2 if st == "done" else 1)
+            hits.append(f"{board['data']['arena_games'][a]} step 4 environment creator ({st}), trained against this AI")
+    return score, hits
+
+
 def human_share(data):
     """Per loop: how many sign-offs were a person's and how many were automatic."""
     counts = {}
@@ -526,10 +581,20 @@ def self_test():
                                          "auto": 1 + human_share(data).get(1, {}).get("auto", 0)},
            "human_share counts human and automatic sign-offs")
     expect(markdown(board).startswith("# The elemental loop"), "the board renders")
+    # Rework: a late catch costs more than an early one, and a signed-off step costs double.
+    early = rework(board, "Dolphin", ["Time"], "1")[0]
+    late = rework(b2, "Dolphin", ["Time"], "1")[0]
+    expect(late > early > 0, f"signing steps off raises what a late catch sends back ({early} -> {late})")
+    expect(rework(board, "Dolphin", ["Mass"], "1") == (0, []), "an excused element sends nothing back")                                      # negative control
+    expect(rework(board, "NoSuchVessel") == (0, []), "an unknown vessel sends nothing back")
+    expect(rework(board, "Dolphin", ["Time"], "3")[0] < early, "a catch at step 3 spares steps 1-2")
+    lanes = vessel_lanes(board)
+    expect(set(lanes) == set(rows) and lanes["Dolphin"]["actions"][0]["vessel"] == "Dolphin",
+           "every vessel is its own lane, carrying its own next actions")
     if failures:
         print("SELF-TEST FAILED:\n  " + "\n  ".join(failures))
         return 1
-    print("self-test OK (validation, 6 negative controls, known answers from the cards, set, the board)")
+    print("self-test OK (validation, 6 negative controls, known answers from the cards, set, the board, rework, lanes)")
     return 0
 
 
