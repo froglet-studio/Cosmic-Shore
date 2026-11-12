@@ -49,3 +49,9 @@ Runner-ups, for the next run:
    (hull fusion copies), so price how many of those draw before taking it.
 2. `ProjectileChargeField` early-out (#1880, same shape; claimed 1.19-1.28x). Check its run-time state first.
 3. Prism rest (#1879; claimed -35 % vertex work per resting prism; C# + shader, needs a scene bench, not a material bench).
+
+## Queue and rejections
+
+The queue is W1's runner-ups above plus whatever the "Find more provable Unity performance wins" thread ranks; a
+candidate moves here with its evidence when it is picked, proven or rejected. Rejected so far: none (the envelope cull
+was superseded, not rejected: it is runner-up 1).

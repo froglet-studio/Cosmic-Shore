@@ -2,8 +2,7 @@
 
 Garrett, 2026-11-11: "prove out exactly one change that is a categorical improvement on some well-defined metric
 with no observed or predicted cost, measured in real Unity, with an A/B a human can sign off on" - then make that
-repeatable. This is the repeatable part. It is written as a skill (`SKILL.md` beside this file is the installable
-copy); skills are installed from claude.ai settings, not from a session.
+repeatable. This is the repeatable part, run by the `/proven-win` project skill (`.claude/skills/proven-win/SKILL.md`).
 
 The first win run through it is in `Docs/ProvenWin/WINS.md` (ChargeCrystal envelope cull).
 
