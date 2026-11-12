@@ -8,7 +8,10 @@ Three sources, each tagged with where it came from, because an honest story says
 | `replay` | real   | a match recording (.cstheater + .replay.json) from a playtest        | no: re-film it in Unity (TrailerShoot) |
 | `flight` | real   | a moment mined from an editor flight record (mine_moments.py output) | no: re-film it (flight_to_replay.py)   |
 | `shot`   | staged | a clip filmed in Unity for a trailer (shots.json beside it)          | yes |
-| `clip`   | real   | a re-filmed replay or flight moment (`<id>.mp4` named after the item)| yes |
+| `clip`   | real   | a re-filmed replay or flight moment (`<id>.mp4` or `<id>-<element>.mp4`)| yes |
+
+A replay's moments name their elements (PvP, maneuvering, destruction, creation: `moments.py`); a clip named
+`<item id>-<element>.mp4` is that item filmed for that element (`shoot.py`), and the item lists it under `clips`.
 
     python3 Tools/Build/story/footage.py --index INDEX.json --replays DIR [--replays DIR] --shots DIR [--shots DIR]
                                          [--flight-moments moments.json] [--clips DIR]
@@ -39,7 +42,7 @@ import moments as M  # noqa: E402
 SCHEMA = "cosmic-shore.footage-index/1"
 KEEP = ("rating", "used_in", "notes", "clip")   # written by people or later stages; survive a re-index
 TOP_MOMENTS = 8
-INDEXER = 2   # bump when a replay's entry would come out differently (moments, times): older entries are re-read
+INDEXER = 3   # bump when a replay's entry would come out differently (moments, times): older entries are re-read
 
 
 def _id(kind, key):
@@ -87,6 +90,8 @@ def index_replay(path):
         "winner": s.get("WinnerName", ""),
         "moments": ms[:TOP_MOMENTS],
         "best_score": ms[0]["score"] if ms else 0.0,
+        "elements": sorted({el for m in ms for el in m.get("elements", [])}),
+        "has_world": rec.has_world,
         "showable": False,
     }
 
@@ -166,16 +171,20 @@ def build(index_path, replays=(), shots=(), flight_moments=None, clips=()):
             items.append(it)
     clip_files = {}
     for folder in clips:
-        for f in os.listdir(folder):
+        for f in sorted(os.listdir(folder)):
             if f.lower().endswith(".mp4"):
-                clip_files[os.path.splitext(f)[0]] = os.path.join(folder, f)
+                stem = os.path.splitext(f)[0]
+                # item ids are "<kind>-<hash>": a third part is the element the clip was filmed for
+                iid, element = stem.rsplit("-", 1) if stem.count("-") > 1 else (stem, "")
+                clip_files.setdefault(iid, []).append({"path": os.path.join(folder, f), "element": element or None})
     for it in items:
         prev = old.get(it["id"], {})
         for k in KEEP:
             if k in prev and k not in it:
                 it[k] = prev[k]
         if it["id"] in clip_files:
-            it["clip"] = clip_files[it["id"]]
+            it["clips"] = clip_files[it["id"]]
+            it["clip"] = it["clips"][0]["path"]
             it["showable"] = True
     index = {"schema": SCHEMA, "built_at": dt.datetime.now(dt.timezone.utc).replace(tzinfo=None).replace(microsecond=0).isoformat() + "Z",
              "counts": counts(items), "errors": errors, "items": items}
@@ -236,6 +245,11 @@ def self_test() -> int:
     idx2 = build(idx_path, replays=[rdir], shots=[sdir], clips=[cdir])
     rep2 = next(it for it in idx2["items"] if it["kind"] == "replay")
     assert rep2["rating"] == 5 and rep2["showable"] and rep2["clip"].endswith(".mp4")
+    # a clip filmed for one element is listed with it
+    open(os.path.join(cdir, rep["id"] + "-destruction.mp4"), "wb").write(b"")
+    rep3 = next(it for it in build(idx_path, replays=[rdir], shots=[sdir], clips=[cdir])["items"] if it["kind"] == "replay")
+    assert {c["element"] for c in rep3["clips"]} == {None, "destruction"}, rep3["clips"]
+    assert "creation" in rep3["elements"] and rep3["has_world"], rep3["elements"]
     shutil.rmtree(tmp)
     print("footage: self-test OK")
     return 0

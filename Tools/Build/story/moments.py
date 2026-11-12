@@ -4,7 +4,12 @@
 The match-replay twin of `Tools/Build/highlights/mine_moments.py`, which reads the editor's flight records. The
 same moment types and the same weights (imported from there, so a refit of one is a refit of both), detected from
 what a replay carries: every hull's pose at 30 Hz. A replay has every hull's orientation, so turns are measured, not
-guessed; it has no rings or crystals, so overtakes and crystal snatches come only from flight records for now.
+guessed; it has no rings or crystals, so overtakes and crystal snatches come only from flight records for now. Its
+world stream has every prism's birth and death, so creation (a pilot's own trail going up) and destruction (prisms
+dying around a pilot; a raid when they were a rival's) are measured too.
+
+Every moment names its ELEMENTS, the four things a Cosmic Shore video has to show (Garrett, 2026-11-12): PvP,
+maneuvering, destruction and creation. The shoot list films each element with its own camera.
 
     python3 Tools/Build/story/moments.py FILE.cstheater [...]     # print each human's moments
     python3 Tools/Build/story/moments.py --self-test
@@ -29,6 +34,24 @@ except ImportError:  # the highlight tools are not on this branch: the same star
                "close_finish": 1.6, "finish": 0.6, "pack": 0.7, "speed": 0.5, "combo": 0.6}
     NEAR_PASS_RADIUS, PRE_ROLL, POST_ROLL, MERGE_GAP = 60.0, 3.0, 2.0, 1.0
 
+WEIGHTS.setdefault("destroy", 1.2)
+WEIGHTS.setdefault("raid", 1.6)
+WEIGHTS.setdefault("create", 0.9)
+
+ELEMENTS = ("pvp", "maneuvering", "destruction", "creation")
+# what each event shows; the first is the element its moment is filmed as
+ELEMENTS_OF = {"near_pass": ("pvp",), "close_finish": ("pvp",), "overtake": ("pvp",), "crystal_snatch": ("pvp",),
+               "stunt": ("maneuvering",), "raid": ("destruction", "pvp"), "destroy": ("destruction",),
+               "create": ("creation",)}
+
+DESTROY_RADIUS = 45.0    # prisms dying this close to a pilot are that pilot's doing (or happening to them)
+DESTROY_BUCKET = 0.5
+DESTROY_MIN = 5
+DESTROY_KEEP = 4
+CREATE_RADIUS = 35.0     # the pilot's own prisms going up this close behind it: its trail
+CREATE_BUCKET = 1.0
+CREATE_MIN = 8
+CREATE_KEEP = 3
 STUNT_KEEP = 6          # turn-rate peaks kept per human per match
 STUNT_MIN_DEG_S = 120.0  # slower than this is flying, not a stunt
 ANALYSIS_HZ = 10.0       # poses are thinned to this before detection (30 Hz buys nothing here)
@@ -87,6 +110,7 @@ def detect(rec: theater.Recording, me: theater.Track):
              if r > STUNT_MIN_DEG_S and (k == 0 or r >= turns[k - 1][0]) and (k + 1 == len(turns) or r > turns[k + 1][0])]
     for r, t in sorted(peaks, reverse=True)[:STUNT_KEEP]:
         ev.append((t, "stunt", min(1.0, r / 720.0), f"turn {r:.0f} deg/s"))
+    ev += _world_events(rec, me, mine)
     results = rec.summary.get("Results") or []
     if results:
         mine_r = next((x for x in results if x.get("Name") == me.name), None)
@@ -99,6 +123,49 @@ def detect(rec: theater.Recording, me: theater.Track):
             else:
                 ev.append((end, "finish", 1.0 if mine_r.get("Rank") == 1 else 0.4, f"rank {mine_r.get('Rank')}"))
     return sorted(ev)
+
+
+def _world_events(rec, me, mine):
+    """Destruction and creation around one pilot, from the prism stream: bursts, not every prism."""
+    if not rec.world:
+        return []
+    dead, born, where = {}, {}, {}
+    for t, kind, pid, x, y, z, dom in rec.world:
+        if kind == theater.GONE:
+            x, y, z, dom = where.get(pid, (x, y, z, dom))   # a death is placed where the prism last stood
+        else:
+            where[pid] = (x, y, z, dom)
+        if kind not in (theater.BORN, theater.GONE) or t < mine[0][0] or t > mine[-1][0]:
+            continue
+        p = _at(mine, t)
+        d = math.sqrt((p[1] - x) ** 2 + (p[2] - y) ** 2 + (p[3] - z) ** 2)
+        if kind == theater.GONE and d < DESTROY_RADIUS:
+            dead.setdefault(int(t / DESTROY_BUCKET), []).append((t, dom))
+        elif kind == theater.BORN and d < CREATE_RADIUS and dom == me.domain and t > 0.5:
+            born.setdefault(int(t / CREATE_BUCKET), []).append(t)
+    ev = []
+    for k, hits in sorted(dead.items(), key=lambda kv: -len(kv[1]))[:DESTROY_KEEP]:
+        if len(hits) < DESTROY_MIN:
+            continue
+        rival = sum(1 for _, dom in hits if dom and dom != me.domain)
+        kind = "raid" if rival * 2 > len(hits) else "destroy"
+        t = sorted(h[0] for h in hits)[len(hits) // 2]
+        ev.append((t, kind, min(1.0, len(hits) / 25.0), f"{len(hits)} prisms" + (" of a rival's" if kind == "raid" else "")))
+    for k, hits in sorted(born.items(), key=lambda kv: -len(kv[1]))[:CREATE_KEEP]:
+        if len(hits) < CREATE_MIN:
+            continue
+        ev.append((sorted(hits)[len(hits) // 2], "create", min(1.0, len(hits) / 30.0), f"{len(hits)} prisms laid"))
+    return ev
+
+
+def elements(events):
+    """The elements a moment shows, the filmed one first (the strongest event's)."""
+    out = []
+    for e in sorted(events, key=lambda e: -WEIGHTS.get(e["type"], 0) * e.get("strength", 1)):
+        for el in ELEMENTS_OF.get(e["type"], ()):
+            if el not in out:
+                out.append(el)
+    return out
 
 
 def moments(rec: theater.Recording, weights=None):
@@ -127,10 +194,10 @@ def moments(rec: theater.Recording, weights=None):
             feats["speed"] = p[8] / top
             feats["combo"] = float(len({e[1] for e in g}) - 1)
             score = sum(w.get(k, 0) * v for k, v in feats.items())
+            events = [{"type": e[1], "t": round(e[0], 2), "strength": round(e[2], 3), "detail": e[3]} for e in g]
             out.append({"pilot": me.name, "hull": me.vessel_name, "t": round(peak[0], 2),
                         "start": round(max(0.0, g[0][0] - PRE_ROLL), 2), "end": round(g[-1][0] + POST_ROLL, 2),
-                        "events": [{"type": e[1], "t": round(e[0], 2), "strength": round(e[2], 3), "detail": e[3]}
-                                   for e in g],
+                        "events": events, "elements": elements(events),
                         "features": {k: round(v, 3) for k, v in feats.items()}, "score": round(score, 3)})
     return _dedupe(sorted(out, key=lambda m: -m["score"]))
 
@@ -154,6 +221,14 @@ def self_test() -> int:
     types = {e["type"] for m in ms for e in m["events"]}
     assert "near_pass" in types, types
     assert "close_finish" in types, types
+    # the world stream: Garrett's own trail is creation, tearing through Ava's wall is a raid (destruction + pvp),
+    # and Kai's prisms dying 2000 units from anyone are nobody's moment (negative control)
+    assert "create" in types and "raid" in types, types
+    raid = next(m for m in ms if any(e["type"] == "raid" for e in m["events"]))
+    assert raid["elements"][0] == "destruction" and "pvp" in raid["elements"], raid["elements"]
+    assert all(11 < e["t"] < 13 for m in ms for e in m["events"] if e["type"] in ("raid", "destroy")), "only the wall"
+    assert all(4 <= e["t"] <= 7 for m in ms for e in m["events"] if e["type"] == "create")
+    assert {el for m in ms for el in m["elements"]} >= {"pvp", "destruction", "creation"}
     assert all(m["pilot"] == "Garrett" for m in ms), "only humans get moments"
     assert ms == sorted(ms, key=lambda m: -m["score"])
     # two humans passing each other: one moment, not two

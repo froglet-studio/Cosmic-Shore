@@ -23,6 +23,10 @@ Honesty rules, enforced here rather than left to taste:
    in, and the brief says how much of the cut is staged. No footage, no beat (it goes on the shoot list).
 4. The story is re-decided every day. Keeping yesterday's headline is allowed only when today's numbers still put
    it first; the brief says which happened.
+5. Every cut shows the four elements, PvP, maneuvering, destruction and creation (Garrett, 2026-11-12). An element
+   the beats do not show is filled with the best clip of it (real first); an element with no clip at all goes on
+   the shoot list and the brief says it is missing. Which element a staged shot shows is `staged_elements` in the
+   config; a real clip's is in its name (`shoot.py`).
 """
 from __future__ import annotations
 
@@ -37,6 +41,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CONFIG = os.path.join(HERE, "story_config.json")
 MIN_PLAYERS = 3
 MAX_BEATS = 3
+ELEMENTS = ("pvp", "maneuvering", "destruction", "creation")
 
 
 def _norm(s):
@@ -97,6 +102,42 @@ def footage_for(a, items, used):
     return showable, refilm
 
 
+def clips_of(it, cfg):
+    """(path, element) for each showable piece of an item: a real item's element clips, a staged shot's config."""
+    if not it.get("showable"):
+        return []
+    if it.get("clips"):
+        return [(c["path"], c.get("element")) for c in it["clips"]]
+    if it["kind"] == "shot":
+        return [(it["path"], (cfg.get("staged_elements") or {}).get(it.get("shot")))]
+    return [(it.get("clip") or it["path"], None)]
+
+
+def _frame(it, path, element):
+    return {"id": it["id"], "origin": it["origin"], "path": path, "element": element,
+            "src_in": it.get("best_in") or 0.0, "shows": it.get("shows", "")}
+
+
+def fill_elements(beats, items, cfg, used):
+    """Rule 5: the best clip of each element the beats do not show; real before staged, rated before not."""
+    shown = {f.get("element") for b in beats for f in b["footage"]}
+    fills, missing, taken = [], [], set()   # one item may fill several elements, each with its own clip
+    for el in ELEMENTS:
+        if el in shown:
+            continue
+        pool = [(it, path) for it in items if it["id"] not in used for path, e in clips_of(it, cfg)
+                if e == el and path not in taken]
+        pool.sort(key=lambda p: (p[0]["origin"] != "real", -(p[0].get("rating") or 0),
+                                 -(p[0].get("best_score") or p[0].get("score") or 0)))
+        if not pool:
+            missing.append(el)
+            continue
+        it, path = pool[0]
+        taken.add(path)
+        fills.append(_frame(it, path, el))
+    return fills, missing
+
+
 def decide(measure, index, cfg, yesterday=None):
     items = index.get("items", [])
     candidates = [a for a in measure["activities"] if a.get("players", 0) >= MIN_PLAYERS]
@@ -121,12 +162,14 @@ def decide(measure, index, cfg, yesterday=None):
                       "claim": claim(cfg, a), "evidence": {k: a.get(k) for k in (
                           "players", "came_back", "came_back_3", "week_apart", "window_plays", "finished",
                           "rematched", "rematch_rate", "abandoned", "quit_rate", "hours", "trend")},
-                      "footage": [{"id": it["id"], "origin": it["origin"], "path": it.get("clip") or it["path"],
-                                   "src_in": it.get("best_in") or 0.0, "shows": it.get("shows", "")} for it in picks]})
+                      "footage": [_frame(it, *clips_of(it, cfg)[0]) for it in picks]})
     headline = beats[0] if beats else None
     held = bool(yesterday and headline and yesterday.get("headline") and
                 (yesterday["headline"]["kind"], yesterday["headline"]["name"]) == (headline["kind"], headline["name"]))
-    frames = [f for b in beats for f in b["footage"]]
+    fills, missing = fill_elements(beats, items, cfg, used)
+    for el in missing:
+        shoot.append({"why": f"no clip shows {el} yet: film one (shoot.py --best covers every element)", "element": el})
+    frames = [f for b in beats for f in b["footage"]] + fills
     real = sum(1 for f in frames if f["origin"] == "real")
     return {
         "schema": "cosmic-shore.story/1", "day": dt.date.today().isoformat(),
@@ -135,7 +178,7 @@ def decide(measure, index, cfg, yesterday=None):
         "headline": {"kind": headline["kind"], "name": headline["name"]} if headline else None,
         "held_from_yesterday": held,
         "yesterday_headline": (yesterday or {}).get("headline"),
-        "beats": beats, "skipped": skipped, "shoot": shoot,
+        "beats": beats, "element_fills": fills, "missing_elements": missing, "skipped": skipped, "shoot": shoot,
         "footage": {"clips": len(frames), "real": real, "staged": len(frames) - real},
         "gaps": gaps(measure, index),
     }
@@ -162,11 +205,16 @@ def edl(story, cfg):
     opener = cfg.get("opener")
     if opener:
         frames.append({"shot": opener["path"], "src_in": opener.get("src_in", 0.0), "fade_in": 1.6})
+    fills = story.get("element_fills") or []
+    room = len(slots) - len(frames) - len(fills) - (1 if cfg.get("closer") else 0)
+    per_beat = 2 if room >= 2 * len(story["beats"]) else 1   # the four elements outrank a beat's second slot
     beat_slots = {}
     for b in story["beats"]:
         beat_slots[b["name"]] = len(frames)
-        for f in (b["footage"] * 2)[:2]:
+        for f in (b["footage"] * 2)[:per_beat]:
             frames.append({"shot": f["path"], "src_in": f["src_in"]})
+    for f in fills:
+        frames.append({"shot": f["path"], "src_in": f["src_in"]})
     closer = cfg.get("closer")
     if closer:
         frames.append({"shot": closer["path"], "src_in": closer.get("src_in", 0.0)})
@@ -179,7 +227,7 @@ def edl(story, cfg):
         if i is None or i >= len(segs):
             continue
         t0 = segs[i]["t0"]
-        t1 = segs[i + 2]["t0"] if i + 2 < len(segs) else end - cfg["endcard"]["dur"]
+        t1 = segs[i + per_beat]["t0"] if i + per_beat < len(segs) else end - cfg["endcard"]["dur"]
         texts.append({"t0": round(t0 + 0.3, 2), "t1": round(t1 - 0.2, 2), "lines": b["claim"]["lines"],
                       "sizes": [64, 34], "cy": 0.80})
     return {"music": cfg["song"]["music"], "audio_fade_in": 1.2, "audio_fade_out": 2.4,
@@ -211,6 +259,10 @@ def brief(story):
             L.append("  Footage: " + ", ".join(f"{os.path.basename(str(f['path']))} ({f['origin']})" for f in b["footage"]))
         f = story["footage"]
         L += ["", f"Footage in the cut: {f['real']} real, {f['staged']} staged."]
+    if story.get("element_fills") or story.get("missing_elements"):
+        L += ["", "## The four elements", ""]
+        L += [f"- {f['element']}: {os.path.basename(str(f['path']))} ({f['origin']})" for f in story.get("element_fills", [])]
+        L += [f"- **{el}: no clip yet**, on the shoot list" for el in story.get("missing_elements", [])]
     if story["skipped"]:
         L += ["", "## Measured but not shown (no footage)", ""] + [f"- {s['activity']} ({s['kind']})" for s in story["skipped"]]
     if story["shoot"]:
@@ -253,6 +305,22 @@ def self_test() -> int:
     assert s2["held_from_yesterday"]
     s3 = decide(measure, index, cfg, yesterday={"headline": {"kind": "mode", "name": "Regatta"}})
     assert not s3["held_from_yesterday"] and "changed from" in brief(s3)
+    # rule 5: elements the beats miss are filled, real before staged; one with no clip is listed, not faked
+    els = dict(index)
+    els["items"] = index["items"] + [
+        {"id": "replay-x", "kind": "replay", "origin": "real", "path": "/r/x.cstheater", "mode": "Kelpwood",
+         "showable": True, "best_score": 4.0, "clips": [{"path": "/c/replay-x-destruction.mp4", "element": "destruction"},
+                                                        {"path": "/c/replay-x-pvp.mp4", "element": "pvp"}]},
+        {"id": "shot-9", "kind": "shot", "shot": "S11a", "origin": "staged", "path": "/s/S11a.mp4", "showable": True}]
+    cfg9 = dict(cfg, staged_elements={"S11a": "destruction", "S14a": "creation"})
+    s4 = decide(measure, els, cfg9)
+    fill = {f["element"]: f for f in s4["element_fills"]}
+    assert fill["destruction"]["origin"] == "real", "real before staged"
+    assert set(s4["missing_elements"]) == {"maneuvering", "creation"} - set(fill), s4["missing_elements"]
+    assert any(x.get("element") == "creation" for x in s4["shoot"]) and "no clip yet" in brief(s4)
+    e4 = edl(s4, cfg9)
+    assert len(e4["segments"]) <= len(cfg9["song"]["slots"])
+    assert any("destruction" in seg["shot"] for seg in e4["segments"]), "the fill is in the cut"
     print("story: self-test OK")
     return 0
 

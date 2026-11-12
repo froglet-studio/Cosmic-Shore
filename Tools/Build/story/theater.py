@@ -2,9 +2,10 @@
 """Read (and, for tests, write) the game's match recordings: `.cstheater` frames and `.replay.json` summaries.
 
 The format is Will's Theater format (`Assets/_Scripts/Utility/Theater/TheaterRecording.cs`, magic 'CSTH', v1): a
-header, then chunks (id, byte length, payload) so a reader steps over what it does not know. Only the vessel stream
-(id 1) is decoded here: every hull's pose at the recorder's rate. The world stream (prisms, id 2) and the action
-stream (button presses, id 3) are skipped by length; the story pipeline does not need them yet.
+header, then chunks (id, byte length, payload) so a reader steps over what it does not know. Two streams are decoded:
+the vessels (id 1, every hull's pose at the recorder's rate) and the world (id 2, every prism's birth, death,
+restoration and move: `TheaterWorld.cs`), which is where creation and destruction are seen. The action stream (button
+presses, id 3) is skipped by length.
 
     python3 Tools/Build/story/theater.py FILE.cstheater        # print what is in it
     python3 Tools/Build/story/theater.py --self-test
@@ -81,6 +82,7 @@ class _Reader:
             raise EOFError("truncated recording")
         return chunk
 
+    def u8(self): return self._take(1)[0]
     def u16(self): return struct.unpack("<H", self._take(2))[0]
     def u32(self): return struct.unpack("<I", self._take(4))[0]
     def i32(self): return struct.unpack("<i", self._take(4))[0]
@@ -134,6 +136,9 @@ class Recording:
         self.sample_hz = 30.0
         self.utc_ticks = 0
         self.tracks: list[Track] = []
+        # prism events: (t, kind, id, x, y, z, domain); kind BORN/GONE/RESTORED/MOVED. A GONE event carries the
+        # position the prism last had, so destruction can be placed in the world.
+        self.world: list[tuple] = []
         self.has_world = self.has_actions = False
         self.summary: dict = {}
         self.path = ""
@@ -196,9 +201,38 @@ def parse(data: bytes) -> Recording:
                     t.poses = [(p[0] - rec.time_offset,) + tuple(p[1:]) for p in t.poses]
         elif cid == STREAM_WORLD:
             rec.has_world = True
+            rec.world = _world(payload)
         elif cid == STREAM_ACTIONS:
             rec.has_actions = True
+    if rec.time_offset and rec.world:   # the same game clock as the poses
+        rec.world = [(e[0] - rec.time_offset,) + e[1:] for e in rec.world]
     return rec
+
+
+BORN, GONE, RESTORED, MOVED = 0, 1, 2, 3
+
+
+def _world(payload: bytes) -> list[tuple]:
+    """`TheaterWorld.Write`: a count, then per event kind byte, time, id, and the kind's own fields."""
+    r = _Reader(payload)
+    out, where = [], {}
+    for _ in range(r.i32()):
+        kind, t, pid = r.u8(), r.f32(), r.i32()
+        if kind == GONE:
+            x, y, z, dom = where.get(pid, (0.0, 0.0, 0.0, 0))
+            out.append((t, GONE, pid, x, y, z, dom))
+            continue
+        x, y, z = struct.unpack("<3f", r.bytes(12))
+        r.bytes(16)   # rotation
+        if kind == MOVED:
+            dom = where.get(pid, (0, 0, 0, 0))[3]
+        else:
+            r.bytes(12)   # scale
+            dom = r.u8()
+            r.u8()        # flags
+        where[pid] = (x, y, z, dom)
+        out.append((t, kind, pid, x, y, z, dom))
+    return out
 
 
 def _vessels(payload: bytes) -> list[Track]:
@@ -214,13 +248,13 @@ def _vessels(payload: bytes) -> list[Track]:
 
 
 def write(rec: Recording) -> bytes:
-    """The bytes `TheaterRecording.Write` produces for a recording with only a vessel stream."""
+    """The bytes `TheaterRecording.Write` produces: the vessel stream, and the world stream when there are events."""
     out = io.BytesIO()
     out.write(struct.pack("<IH", MAGIC, VERSION))
     _w_string(out, rec.scene)
     _w_string(out, rec.cell_config)
     out.write(struct.pack("<ifq", rec.game_mode, rec.sample_hz, rec.utc_ticks))
-    out.write(struct.pack("<H", 1))
+    out.write(struct.pack("<H", 2 if rec.world else 1))
     body = io.BytesIO()
     body.write(struct.pack("<i", len(rec.tracks)))
     for t in rec.tracks:
@@ -231,6 +265,19 @@ def write(rec: Recording) -> bytes:
     data = body.getvalue()
     out.write(struct.pack("<Hi", STREAM_VESSELS, len(data)))
     out.write(data)
+    if rec.world:
+        w = io.BytesIO()
+        w.write(struct.pack("<i", len(rec.world)))
+        for t, kind, pid, x, y, z, dom in rec.world:
+            w.write(struct.pack("<Bfi", kind, t, pid))
+            if kind == GONE:
+                continue
+            w.write(struct.pack("<3f4f", x, y, z, 0.0, 0.0, 0.0, 1.0))
+            if kind != MOVED:
+                w.write(struct.pack("<3fBB", 1.0, 1.0, 1.0, dom, 0))
+        data = w.getvalue()
+        out.write(struct.pack("<Hi", STREAM_WORLD, len(data)))
+        out.write(data)
     return out.getvalue()
 
 
@@ -262,6 +309,24 @@ def synthetic(seconds=20.0, hz=30.0, mode=56) -> Recording:
     rec.tracks = [loop(0.0, 200, 0, False, "Garrett", 11, 1),
                   loop(0.15, 205, 6, True, "Ava", 2, 2),
                   loop(math.pi, 200, 400, True, "Kai", 3, 3)]
+    # the world: Garrett lays a dense trail from 4 to 7 s; Ava's wall stands from the start and Garrett tears
+    # through 40 of its prisms around 12 s; Kai, far away, loses prisms nobody is near (no one's destruction).
+    world, pid = [], 0
+    g = rec.tracks[0].poses
+    for i in range(int(4 * hz), int(7 * hz)):
+        p = g[i]
+        world.append((p[0], BORN, pid, p[1], p[2], p[3], 1)); pid += 1
+    ava = []
+    for k in range(40):
+        p = g[int(12 * hz) + (k % 6) - 3]
+        world.append((0.0, BORN, pid, p[1] + (k % 5) * 3, p[2], p[3] + (k % 7) * 3, 2)); ava.append(pid); pid += 1
+    for k, q in enumerate(ava):
+        world.append((12.0 + 0.01 * k, GONE, q, 0, 0, 0, 0))
+    far = rec.tracks[2].poses[int(15 * hz)]
+    for k in range(40):
+        world.append((0.0, BORN, pid, far[1] + 2000, far[2], far[3], 3))
+        world.append((15.0, GONE, pid, 0, 0, 0, 0)); pid += 1
+    rec.world = sorted(world, key=lambda e: e[0])
     return rec
 
 
@@ -274,10 +339,15 @@ def self_test() -> int:
     assert len(back.tracks[1].poses) == len(rec.tracks[1].poses)
     assert abs(back.tracks[0].poses[10][1] - rec.tracks[0].poses[10][1]) < 1e-3
     assert len(back.humans) == 1 and back.duration > 19
+    assert back.has_world and len(back.world) == len(rec.world)
+    gone = [e for e in back.world if e[1] == GONE]
+    assert gone and all(e[3] or e[5] for e in gone), "a death carries where the prism stood"
     late = synthetic()
     for t in late.tracks:
         t.poses = [(p[0] + 1000.0,) + tuple(p[1:]) for p in t.poses]
+    late.world = [(e[0] + 1000.0,) + e[1:] for e in late.world]
     late = parse(write(late))
+    assert min(e[0] for e in late.world) == 0.0
     assert late.time_offset == 1000.0 and late.tracks[0].poses[0][0] == 0.0 and late.duration < 21
     # a reader steps over a stream it does not know, and refuses a wrong magic or version
     data = bytearray(write(rec))

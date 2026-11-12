@@ -37,10 +37,11 @@ namespace CosmicShore.Editor.Trailer
     /// place SUBJ X,Y,Z FACINGX,Y,Z | aimcrystal SUBJ | sea LEVEL [FRAMES] | keep SUBJ.. | dark on|off | hide|unhide TEXT | reveal SUBJ|X,Y,Z SPEED [FADE] [FLASH] | renderers | pace SUBJ|all THROTTLE | formation SUBJ LEADER LEAD RATE RADIUS PERIOD | muster X,Y,Z FACINGX,Y,Z SPREAD [hero] | squadron LEADER SPREAD [FAR] [SECONDS] | wave SUBJ SPEED [FADE] [FLASH] | drive SUBJ X,Y,Z FACINGX,Y,Z SPEED [SWAY] [PERIOD] | parts SUBJ | hidepart SUBJ TEXT | weave SUBJ TARGET LEAD RADIUS PERIOD | headon SUBJ TARGET DIST SIDE UP | cue FRAME VERB.. (runs at that frame of the next record) | super N (supersampling) |
     /// arcade MODE PLAYERS INTENSITY CLASS | replay FILE [SECONDS] (a recorded match, in its real scene, from SECONDS in;
     /// FILE is a path or a name in the project's Recordings folder; the story flywheel's shoot list) | menu |
+    /// slowmo N (every filmed frame is 1/(60 N) s of game: N times slower, 1 to 8; menu resets it) |
     /// chase SUBJ BACK UP SIDE [LEAD] [SMOOTH] | ease BACK UP SIDE FRAMES | tq SUBJ DIST AZIMUTH HEIGHT [DRIFT] [SMOOTH] |
     /// orbit SUBJ DIST HEIGHT DEG/S [PHASE] | rail SUBJ AHEAD SIDE UP [SMOOTH] | crane SUBJ A B FRAMES [SMOOTH] (offsets
     /// from where SUBJ is when the shot starts) | fov DEGREES | release | record NAME FRAMES | still NAME | recorder NAME FRAMES (the Unity Recorder, for comparison) | quit.</para>
-    /// <para>A SUBJ is local, aiN, class:Rhino, nearest, fastest, fleet, all, kept, flora, fauna, crystal, or name:TEXT. It resolves
+    /// <para>A SUBJ is local, aiN, class:Rhino, pilot:NAME (a replay seat by its recorded pilot; local when none), nearest, fastest, fleet, all, kept, flora, fauna, crystal, or name:TEXT. It resolves
     /// once per shot and is held. The camera rides the subject's position exactly and low-passes only the heading,
     /// keeps a world-up horizon, and is posed after every LateUpdate, just before the frame draws.</para>
     /// </summary>
@@ -354,6 +355,7 @@ namespace CosmicShore.Editor.Trailer
                     _craneStart = Time.frameCount; _anchor = _subject != null ? _subject.position : Vector3.zero; _haveHeading = false; _smooth = At(w, 5, 3f);
                     return null;
                 case "fov": _fov = F(w[1]); return null;
+                case "slowmo": SlowMo(F(w[1])); return null;
                 case "release": Release(); return null;
                 case "record": return RecordRt(w[1], I(w[2]));
                 case "still": return RecordRt(w[1], 1);
@@ -615,6 +617,13 @@ namespace CosmicShore.Editor.Trailer
             var others = vessels.Where(v => !IsLocal(v)).Select(v => v.transform).ToList();
             var from = local ? local.position : Vector3.zero;
             if (spec == "local") return local ? local : others.FirstOrDefault();
+            if (spec.StartsWith("pilot:", StringComparison.Ordinal))
+            {
+                // a replay names every seat after its recorded pilot except the local one, which flies the first human
+                string pilot = spec[6..];
+                return vessels.FirstOrDefault(v => string.Equals(v.GetComponent<IVesselStatus>()?.Player?.Name, pilot,
+                    StringComparison.OrdinalIgnoreCase))?.transform ?? local;
+            }
             if (spec.StartsWith("class:", StringComparison.Ordinal))
             {
                 string cls = spec[6..];
@@ -1550,8 +1559,19 @@ namespace CosmicShore.Editor.Trailer
             Log("replay ready: " + Vessels().Count + " vessels");
         }
 
+        /// <summary>
+        /// Slow motion by stepping less game time per filmed frame: at N, every frame is 1/(60 N) s of game, so a
+        /// 60 fps clip plays the moment N times slower with every frame really drawn (no frame blending). 1 is real time.
+        /// </summary>
+        void SlowMo(float factor)
+        {
+            Time.captureFramerate = Mathf.RoundToInt(60f * Mathf.Clamp(factor, 1f, 8f));
+            Log($"slowmo x{Time.captureFramerate / 60f:0.##}");
+        }
+
         IEnumerator BackToMenu()
         {
+            SlowMo(1f);
             Release();
             var loader = FindAnyObjectByType<SceneLoader>();
             if (loader) loader.ReturnToMainMenu();

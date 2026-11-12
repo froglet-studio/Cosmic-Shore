@@ -25,7 +25,7 @@ playtests ──> analytics server (events) ──> measure.py ─┐
 | Measure | `Tools/Build/story/measure.py` | the analytics server's `aggregates.db` (no player ids): `activity_returns`, `plays`, `freestyle_vessels`, `sessions` | `measure.json`: per mode, vessel, the Toybox and each Toybox vessel, who came back on another day, a week later, rematches, quits, hours, trend; ranked by `pull` |
 | Index | `Tools/Build/story/footage.py` | match replays (`theater.py`, moments by `moments.py`), staged Unity shots (`shots.json`), mined flight moments, re-filmed clips | `footage_index.json`: every piece of footage tagged real or staged, showable or needing a re-film; ratings and notes survive re-indexing |
 | Decide | `Tools/Build/story/story.py` (+ `story_config.json`) | measure, index, yesterday's `story.json` | `story.json`, `edl.json`, `shoot.json`, `brief.md` |
-| Film | `Tools/Build/story/shoot.py` | `shoot.json` (or `--best`: the best unfilmed replays), the footage index | a script for the Unity trailer director's inbox: `replay FILE START`, a chase on the recording's pilot, `record <item id>`; encoded clips named `<item id>.mp4` make that item showable |
+| Film | `Tools/Build/story/shoot.py` | `shoot.json` (or `--best`: the best unfilmed moments), the footage index, `story_config.json` `camera` | a script for the Unity trailer director's inbox: per moment `replay FILE START`, `slowmo N`, that element's camera on the moment's own pilot, `record <item id>-<element>`; encoded clips with those names make the item showable for that element |
 | Cut | `Tools/Build/trailer/cut.py` | `edl.json`, shots | the day's video and contact sheet |
 | All of it | `Tools/Build/story/daily.py` | the above | `<root>/days/<YYYY-MM-DD>/` |
 
@@ -40,6 +40,26 @@ Every script has `--self-test`. `theater.py --write-enums` refreshes `enums.json
    No footage, no beat: it goes on the shoot list instead.
 4. The story is re-decided every day; yesterday's headline is kept only when today's numbers still put it first,
    and the brief says so.
+5. Every cut shows the four elements: PvP, maneuvering, destruction and creation. An element the beats miss is
+   filled with its best clip (real first); one with no clip goes on the shoot list and the brief names it.
+
+## The shot rules (Garrett, 2026-11-12, after the first real reel)
+
+"The camera was way too close up so all I could see was a vessel. We need more slow motion, wide shots, etc. Show
+PvP, maneuvering, destruction, and creation."
+
+- **The four elements.** `moments.py` tags every moment: a near pass or a close finish is PvP; a turn-rate peak is
+  maneuvering; prisms dying around a pilot is destruction (a raid, and PvP too, when they were a rival's); the
+  pilot's own prisms going up behind it is creation. Destruction and creation come from the replay's prism stream.
+  `shoot.py` picks round-robin across the four, so a list covers all of them before it repeats one.
+- **Wide, never tight.** Each element has its own camera in `story_config.json` `camera`: a wide three-quarter for
+  PvP (110 away) and destruction (90), a crane pulling up and back for creation so the trail is seen being drawn, a
+  loose chase for maneuvering (55 back). `check_camera` refuses a chase closer than `min_chase_back` (40) or any
+  other camera closer than `min_distance` (60).
+- **Real slow motion.** The director's `slowmo N` steps 1/(60 N) s of game per filmed frame, so every frame is drawn:
+  PvP x3, maneuvering x2, destruction x4, creation real time. The moment's peak is in the middle of the window.
+- **The moment's own pilot.** The camera follows `local` for the recording's first human and `pilot:NAME` for any
+  other, so a moment of the second pilot is not filmed on the first.
 
 ## The fun signals the game sends
 
@@ -50,6 +70,7 @@ Every script has `--self-test`. `theater.py --write-enums` refreshes `enums.json
 | Toybox entries, minutes, vessel switches | `freestyle_vessels`, `freestyle_switches` | 2026-11-06 builds |
 | Session length, cold start vs resume | `sessions` | 2026-11-07 builds |
 | A replay's analytics match | `ReplaySummary.MatchId` (stamped by `ReplayService` from `GameDataSO.MatchId`) | 2026-11-12 |
+| Creation and destruction | the replay's prism stream (`TheaterWorld`: births and deaths with positions), read by `theater.py` | 2026-11-12 |
 | Voyages | **nothing yet** (plan phase 1) | |
 
 ## Running it
