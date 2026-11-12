@@ -40,6 +40,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [SerializeField] string toggleUnder;
         [Tooltip("With toggleTypes: these types (full names, ';'-separated) stay ON in B (leave-one-in).")]
         [SerializeField] string keepTypes;
+        [Tooltip("Optional (probe P3): give every child of these objects (names, ';'-separated) that is hidden (a CanvasGroup at alpha 0, or any child not named in `nestKeep`) its own nested Canvas at setup; then B DISABLES those canvases. A is the nested-but-enabled layout, so compare A with a run without this option too.")]
+        [SerializeField] string nestUnder;
+        [SerializeField] string nestKeep;
         [Tooltip("When > 0, skip the A/B and instead record, for this many frames, which UI objects re-dirty the canvases: RectTransforms whose transform changed, elements in uGUI's layout and graphic rebuild queues, and enabled Animators under a canvas. The candidate list for the next A/B.")]
         [SerializeField] int diagnoseFrames;
         [SerializeField] string[] counters = { "PostLateUpdate.PlayerUpdateCanvases", "Canvas.BuildBatch", "UGUI.Rendering.UpdateBatches", "Main Thread" };
@@ -67,6 +70,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 toggled = (Behaviour)owner.GetComponents<Component>().First(c => c && c.GetType().FullName == toggledType);
             }
             catch (Exception e) { report.verdict = "ERROR setup: " + e.Message; }
+            if (!string.IsNullOrEmpty(nestUnder))
+            {
+                var parents = nestUnder.Split(';').Select(x => x.Trim()).Where(x => x.Length > 0).ToHashSet();
+                var keepNames = (nestKeep ?? "").Split(';').Select(x => x.Trim()).Where(x => x.Length > 0).ToHashSet();
+                foreach (var parent in FindObjectsByType<Transform>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Where(t => parents.Contains(t.name)).ToList())
+                    for (int c = 0; c < parent.childCount; c++)
+                    {
+                        var child = parent.GetChild(c);
+                        if (!child.gameObject.activeInHierarchy || keepNames.Contains(child.name) || child.GetComponent<Canvas>()) continue;
+                        var cg = child.GetComponent<CanvasGroup>();
+                        bool hidden = parent.name == "Screens" || (cg ? cg.alpha <= 0f : true);   // screens off the strip are hidden whatever their alpha
+                        if (!hidden) continue;
+                        var canvas = child.gameObject.AddComponent<Canvas>();
+                        child.gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                        group.Add(canvas);
+                    }
+                report.toggled = $"{group.Count} hidden subtrees on their own canvases: " + string.Join(", ", group.Select(g => g.name));
+                Debug.Log("ProvenWin scene: " + report.toggled);
+                report.verdict = null;
+            }
             if (!string.IsNullOrEmpty(toggleTypes))
             {
                 var types = toggleTypes.Split(';').Select(x => x.Trim()).Where(x => x.Length > 0).ToHashSet();

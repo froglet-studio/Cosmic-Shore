@@ -114,6 +114,8 @@ namespace CosmicShore.Editor.ProvenWin
                 if (Arg("-ownerType") is { } owner) so.FindProperty("ownerType").stringValue = owner;
                 if (Arg("-setupMethod") is { } setup) so.FindProperty("setupMethod").stringValue = setup;
                 if (Arg("-toggledType") is { } toggled) so.FindProperty("toggledType").stringValue = toggled;
+                if (Arg("-nestUnder") is { } nu) so.FindProperty("nestUnder").stringValue = nu;
+                if (Arg("-nestKeep") is { } nk) so.FindProperty("nestKeep").stringValue = nk;
                 if (Arg("-toggleTypes") is { } tt) so.FindProperty("toggleTypes").stringValue = tt;
                 if (Arg("-toggleUnder") is { } tu) so.FindProperty("toggleUnder").stringValue = tu;
                 if (Arg("-keepTypes") is { } kt) so.FindProperty("keepTypes").stringValue = kt;
