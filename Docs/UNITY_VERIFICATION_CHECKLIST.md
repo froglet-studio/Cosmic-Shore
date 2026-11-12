@@ -22624,10 +22624,12 @@ R89A, R90Saga, R90Quests, R90Episodes) and report what differs.
 6. **Set sail** launches the open voyage, as before.
 7. **The lying map takes no pointer.** Dragging or scrolling over it does nothing; place names on it are only the
    course's two ends, smaller the farther they are.
-8. **Saga tab.** The same layout: two chips (the two parts) with their card art; the picked part's art lying back as
-   the table; on the front face its forms in order as small diamonds on a line ("FORM 1 ... Great Serpent"); the part's
-   name and line over the table; the squad and Set sail on the right. Set sail opens that part's launch window. Both
-   parts launch (the board drew the second one locked; the game has no such rule, so none was invented).
+8. **Saga tab, locked.** No chips. Tandava's arena lying back as the table, dimmed; "SAGA / Tandava / Voyages are open
+   now. / Coming soon" over it; "The saga opens here" on the front face; a quiet "LB  BACK TO VOYAGES" button at the
+   bottom right. Nothing launches. Then untick **Saga Locked** on the Voyages page's `VoyageJobsView` (the Voyage
+   window prefab) and reopen: two chips (the two parts) with their card art, the picked part's art as the table, its
+   forms in order as diamonds on the front face ("FORM 1 ... Great Serpent"), the squad and Set sail, which opens that
+   part's launch window. Tick it again.
 9. **Quests tab.** Five chips with their state; the galaxy lying back as the table; "EPISODE 1 / The Hypersea / n of 5
    claimed" over it; on the front face the five quests as diamonds on a line (claimed filled, the one to claim ringed
    cyan, locked dim, the picked one underlined); on the right the picked quest's picture, name, goal and state, and at

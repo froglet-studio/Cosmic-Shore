@@ -56,6 +56,9 @@ namespace CosmicShore.UI
                  "A), built by VoyageBoard over this page; the Saga, Quests and Episodes pages take the same table (Rev " +
                  "90). Off: the map column and the voyage cards as before.")]
         [SerializeField] bool board = true;
+        [Tooltip("The Saga tab is locked (Shombith, 2026-11-12: \"lock saga\"): its table is dimmed and says Coming soon, " +
+                 "no part is listed and nothing launches from it. Off: the saga's parts, the squad and Set sail.")]
+        [SerializeField] bool sagaLocked = true;
 
         const string MapName = "GalaxyMap";
         const string EdgeName = "EdgeView";
@@ -363,7 +366,8 @@ namespace CosmicShore.UI
             {
                 tabs.Plain(style.LabelFont, 15f, 34f);
                 // The Saga, Quests and Episodes pages take the same table (Rev 90).
-                VoyageSlabPage.Stand(tabs, new VoyageKit(style, lines, template ? template.LabelTemplate : null), vessels, page);
+                VoyageSlabPage.Stand(tabs, new VoyageKit(style, lines, template ? template.LabelTemplate : null), vessels, page,
+                    sagaLocked);
             }
             // The map and its edge view stand in the board's course column.
             if (mapColumn)

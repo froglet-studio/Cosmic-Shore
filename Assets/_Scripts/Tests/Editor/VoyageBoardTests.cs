@@ -43,6 +43,7 @@ namespace CosmicShore.Tests
                          lines.SlabQuestClaimed, lines.SlabQuestReady, lines.SlabQuestNext, lines.SlabQuestLocked,
                          lines.SlabQuestClaim, lines.SlabQuestPlay, lines.SlabEpisodesKicker, lines.SlabEpisodesName,
                          lines.SlabEpisodesSoon, lines.SlabEpisodesLine, lines.SlabEpisodesFace, lines.SlabEpisodesBack,
+                         lines.SlabSagaLockedKicker, lines.SlabSagaLockedLine, lines.SlabSagaLockedFace,
                      })
                 Assert.IsFalse(string.IsNullOrEmpty(line));
         }

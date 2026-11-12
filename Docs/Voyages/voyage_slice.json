@@ -2767,7 +2767,10 @@
   "SlabEpisodesLine": "Voyages and the Saga are open now.",
   "SlabEpisodesFace": "New episodes arrive here",
   "SlabEpisodesBack": "BACK TO VOYAGES",
-  "SlabEpisodesBackKey": "LB"
+  "SlabEpisodesBackKey": "LB",
+  "SlabSagaLockedKicker": "Saga",
+  "SlabSagaLockedLine": "Voyages are open now.",
+  "SlabSagaLockedFace": "The saga opens here"
  },
  "toy": {
   "id": "voyage",

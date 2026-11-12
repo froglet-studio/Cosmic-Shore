@@ -492,5 +492,11 @@ namespace CosmicShore.ScriptableObjects
         public string SlabEpisodesBack = "BACK TO VOYAGES";
         [Tooltip("The keycap before the Episodes table's button (empty: none).")]
         public string SlabEpisodesBackKey = "LB";
+        [Tooltip("Over the saga's name on the Saga table while the saga is locked.")]
+        public string SlabSagaLockedKicker = "Saga";
+        [Tooltip("The locked Saga table's one line.")]
+        public string SlabSagaLockedLine = "Voyages are open now.";
+        [Tooltip("On the locked Saga table's front face.")]
+        public string SlabSagaLockedFace = "The saga opens here";
     }
 }

@@ -397,7 +397,7 @@ MonoBehaviour:
     Note: '2 uses: Assets/_Prefabs/UI Elements/Main Menu Screens/Settings/SettingsView.prefab GameSettingsPanelController; Assets/_Scripts/UI/Modals/GameSettingsPanelController.cs code'
   - Id: ui:808599
     Color: {r: 0.594540119, g: 0.495238662, b: 0.501126289, a: 1}
-    Note: '1 use: Assets/_Scripts/UI/Views/VoyageEpisodeSlab.cs code'
+    Note: '1 use: Assets/_Scripts/UI/Views/VoyageSlabPage.cs code'
   - Id: ui:828282
     Color: {r: 0.509433985, g: 0.509433985, b: 0.509433985, a: 0.0352941193}
     Note: '1 use: Assets/_Prefabs/UI Elements/Panels/Duel Cell Stats Panel/Duel Cell Stats Panel.prefab Image'

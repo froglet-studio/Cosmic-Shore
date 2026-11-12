@@ -7380,13 +7380,17 @@ boards is unknown until a screenshot is set beside R89A, R90Saga, R90Quests and 
   - **Episodes:** the next episode's lines, and a button back to the Voyages tab.
   - The galaxy on the Quests and Episodes tables is painted once from `HyperSea.Density` (160 x 100).
 - **The tabs** are 15 with 34 between them (Rev 88).
-- **Words:** 26 new `VoyageLines` (5 `Board*`, 21 `Slab*`) in `Docs/Voyages/voyage_slice.json`.
+- **Words:** 29 new `VoyageLines` (5 `Board*`, 24 `Slab*`) in `Docs/Voyages/voyage_slice.json`.
 - **Look:** `VoyageBoardStyleSO` now holds only what the table draws with; the B5 fields went (the 14 sliver sprites,
   the fade and pool, Plate, CardFoot, the editor's sizes). Columns: 0-0.1685, 0.1848-0.7391, 0.7554-1.
 
 **Differs from the boards, knowingly:**
-- **The Severing is not locked.** Rev 90 drew it locked "after Tandava"; the game has no such rule and both parts
-  launch today, so none was invented. Say if it should be gated.
+- **The whole Saga tab is locked (Shombith, 2026-11-12: "lock saga", then "Lock the whole Saga tab").** The page is
+  drawn as Episodes is: Tandava's arena on the table, dimmed, "SAGA / Tandava / Voyages are open now. / Coming soon",
+  "The saga opens here" on the front face, and the button back to Voyages. No part is listed and nothing launches from
+  the Voyage window. `VoyageJobsView.sagaLocked` (on by default, in the inspector) opens it again as Rev 90 drew it:
+  the parts, their forms, the squad and Set sail. The tab's own label carries no lock mark (Episodes' tab has one in
+  the prefab; the Saga tab has none, and no prefab was edited). Rev 90's "The Severing after Tandava" is not built.
 - **The window's title and the hub row keep their sizes.** They are the hub's, shared by the Toy Box, Arcade and Arena
   windows; only the tabs were stepped down.
 - **Quest pictures are the quests' icons** (`SO_UnlockData.Icon`), not the games' card art; the Saga and quest chips

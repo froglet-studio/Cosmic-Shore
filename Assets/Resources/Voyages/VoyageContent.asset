@@ -2857,3 +2857,6 @@ MonoBehaviour:
     SlabEpisodesFace: New episodes arrive here
     SlabEpisodesBack: BACK TO VOYAGES
     SlabEpisodesBackKey: LB
+    SlabSagaLockedKicker: Saga
+    SlabSagaLockedLine: Voyages are open now.
+    SlabSagaLockedFace: The saga opens here

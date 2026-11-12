@@ -84,16 +84,17 @@ namespace CosmicShore.UI
         /// laid over <paramref name="reference"/> (the rect the Voyages board stands on). Once: a page that already has
         /// its table is left alone.
         /// </summary>
-        public static void Stand(VoyageWindowTabs tabs, VoyageKit kit, SO_VesselList vessels, RectTransform reference)
+        public static void Stand(VoyageWindowTabs tabs, VoyageKit kit, SO_VesselList vessels, RectTransform reference,
+            bool sagaLocked)
         {
             if (!tabs || kit == null || tabs.Count < 4 || !reference) return;
-            Add<VoyageSagaSlab>(tabs, 1, kit, vessels, reference);
-            Add<VoyageQuestSlab>(tabs, 2, kit, vessels, reference);
-            Add<VoyageEpisodeSlab>(tabs, 3, kit, vessels, reference);
+            Add<VoyageSagaSlab>(tabs, 1, kit, vessels, reference, saga => saga.Locked = sagaLocked);
+            Add<VoyageQuestSlab>(tabs, 2, kit, vessels, reference, null);
+            Add<VoyageEpisodeSlab>(tabs, 3, kit, vessels, reference, null);
         }
 
-        static void Add<T>(VoyageWindowTabs tabs, int index, VoyageKit kit, SO_VesselList vessels, RectTransform reference)
-            where T : VoyageSlabPage
+        static void Add<T>(VoyageWindowTabs tabs, int index, VoyageKit kit, SO_VesselList vessels, RectTransform reference,
+            Action<T> setUp) where T : VoyageSlabPage
         {
             var page = tabs.PageOf(index);
             if (!page || page.TryGetComponent<T>(out _)) return;
@@ -102,6 +103,7 @@ namespace CosmicShore.UI
             slab.Vessels = vessels;
             slab.Tabs = tabs;
             slab._reference = reference;
+            setUp?.Invoke(slab);
             // A page that is on show now draws at once; the others draw when their tab is shown (OnEnable).
             if (page.activeInHierarchy) slab.Redraw();
         }
@@ -229,6 +231,42 @@ namespace CosmicShore.UI
         }
 
         // ── The shared parts ─────────────────────────────────────────────────
+
+        // A locked page's picture: multiplied down, as the board drew it (saturate .25, brightness .9).
+        static readonly Color DimAuthored = new(0.5f, 0.52f, 0.6f, 1f);
+
+        /// <summary>
+        /// A locked page (Episodes; the Saga while it is locked): no chips, <paramref name="picture"/> on the table
+        /// dimmed (none: the galaxy), the page's name over it with "Coming soon", one line on the front face.
+        /// </summary>
+        protected void ShowLocked(string kicker, string name, string line, string face, Sprite picture)
+        {
+            ShowChips(null, -1, null);
+            ShowName(kicker, name, line, Lines?.SlabEpisodesSoon);
+            Picture.color = ColorTrace.Retrace(ColorTrace.Ui, DimAuthored);
+            if (picture)
+            {
+                Picture.Zoom = 1f;
+                Picture.Show(picture);
+            }
+            else
+            {
+                Picture.Zoom = 1.9f;
+                Picture.Show(VoyageGalaxyArt.Texture(), new Rect(0f, 0f, 1f, 1f), VoyageGalaxyArt.Aspect);
+            }
+            ShowFaceWords(face);
+        }
+
+        /// <summary>A locked page's one way out: a quiet button at the right column's foot, back to the Voyages tab.</summary>
+        protected void BuildBack()
+        {
+            var back = VoyageKit.Node("Back", Panel);
+            back.anchorMin = back.anchorMax = new Vector2(1f, 0f);
+            back.pivot = new Vector2(1f, 0f);
+            back.sizeDelta = new Vector2(340f, 56f);
+            back.anchoredPosition = Vector2.zero;
+            Kit.Quiet(back, Lines?.SlabEpisodesBackKey, Lines?.SlabEpisodesBack, () => { if (Tabs) Tabs.Show(0); });
+        }
 
         /// <summary>Show the name over the table; an empty line takes no room.</summary>
         protected void ShowName(string kicker, string name, string sub, string extra)
