@@ -410,6 +410,21 @@ Verify the state at any time by opening a recent **Unity CI** run and reading th
 `unity` shows *skipped*, no Unity has compiled the project in CI and every green check on that run
 came from the Python checkers alone.
 
+### When it is red: `/trunk-doctor`
+
+`python3 .claude/skills/trunk-doctor/trunk_doctor.py` says whether `bleeding-edge` is green from the guard's RUNS
+(never from the issue), names the first red push and every push since, and `diagnose` classifies the failing log
+(static, generator, compile, tests, infra) and names the PR that introduced each finding. `/ship` calls
+`trunk_doctor.py --gate` before every push and merge, so work stops piling onto a red trunk. Every incident is
+recorded in `Docs/Reports/TRUNK_HEALTH.md`.
+
+Two fixes it made to this workflow on 2026-11-12, both from its first incident:
+- **A cancelled run is no verdict.** The report job used to read a run cancelled by a newer push as green, comment
+  "Recovered" and close the issue while the trunk was red (#1867, #1872, #1889, #1897). It now leaves the issue alone.
+- **The checks' Python packages are installed.** `Tools/CI/requirements-checks.txt` (numpy, for the generators whose
+  `--check` mirrors the C# in float32) is installed before the checks in `validate`, the autofix prompt and
+  `unity-ci.yml`. Without it, three generators crashed on the runner and passed on every developer's machine.
+
 ### Autofix rules
 
 - It opens a **pull request against `bleeding-edge`** and never pushes to the branch. An unreviewed
