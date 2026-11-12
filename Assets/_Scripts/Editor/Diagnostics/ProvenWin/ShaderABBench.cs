@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -43,6 +43,7 @@ namespace CosmicShore.Editor.ProvenWin
             public string material;          // asset path of the material under test
             public string mesh;              // asset path of the model holding the mesh
             public string meshName;          // optional: which mesh in the model
+            public long meshFileId;          // optional: which mesh, by the local file id a prefab's m_Mesh names
             public string meshPrep;          // optional: "Namespace.Type.Method" taking (Mesh[, defaults]) -> Mesh
             public string swapFile;          // asset path of the file that differs (the .shader or an include it uses)
             public string variantA;          // absolute path of the A content
@@ -63,6 +64,12 @@ namespace CosmicShore.Editor.ProvenWin
             // writes, a colour-set tint). Measure what ships, not what the asset says.
             public List<FloatOverride> floats = new List<FloatOverride>();
             public List<ColorOverride> colors = new List<ColorOverride>();
+            // Per-instance values the game stamps per object (a seed per shot): each moment draws a fresh value in [0,1),
+            // the same for A and B.
+            public List<string> randomPerMoment = new List<string>();
+            // The shader animates on _Time rather than a clock property: the bench writes _Time itself each moment, so
+            // A and B see the same instant (batchmode never advances it on its own).
+            public bool driveGlobalTime;
         }
 
         [Serializable] public class FloatOverride { public string name; public float value; }
@@ -82,6 +89,8 @@ namespace CosmicShore.Editor.ProvenWin
             public long pixelsBitDifferent;
             public double maxAbsDiff;
             public long pixelsDifferent8bit;
+            public int maxLevelDiff8bit;      // the most display levels (0-255) any channel of any pixel moved
+            public long pixelsOverOneLevel;   // pixels where some channel moved by more than one display level
             public List<double> msA = new List<double>();
             public List<double> msB = new List<double>();
             public double medianA;
@@ -102,6 +111,41 @@ namespace CosmicShore.Editor.ProvenWin
             if (string.IsNullOrEmpty(list)) { Debug.LogError("[ShaderABBench] -abSpec <spec.json>[;<spec.json>...] is required"); exit = 1; }
             else foreach (var specPath in list.Split(';').Where(s => s.Trim().Length > 0))
                 if (!RunOne(specPath.Trim())) exit = 1;
+            EditorApplication.Exit(exit);
+        }
+
+        /// <summary>Batchmode entry: reimports each shader named by -shaders "a;b;c" (asset paths), draws it once into a
+        /// small target with every pass so its variants compile, and fails on any compiler error or the magenta fallback.
+        /// The check a shader change needs on every graph it touches, not only the one the bench times.</summary>
+        public static void CheckShaders()
+        {
+            int exit = 0;
+            ShaderUtil.allowAsyncCompilation = false;
+            var rt = new RenderTexture(64, 64, 24, RenderTextureFormat.ARGBHalf) { name = "ABBench check" };
+            rt.Create();
+            WakePipeline(rt);
+            foreach (var path in (ArgAfter("-shaders") ?? "").Split(';').Where(x => x.Trim().Length > 0).Select(x => x.Trim()))
+            {
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+                var sh = AssetDatabase.LoadAssetAtPath<Shader>(path);
+                if (sh == null) { Debug.LogError($"[ShaderABBench] check {path}: not a shader"); exit = 1; continue; }
+                var m = new Material(sh);
+                var mesh = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
+                var cmd = new CommandBuffer();
+                cmd.SetRenderTarget(rt);
+                cmd.ClearRenderTarget(true, true, Color.clear);
+                for (int p = 0; p < m.passCount; p++) cmd.DrawMesh(mesh, Matrix4x4.TRS(new Vector3(0, 0, 3), Quaternion.identity, Vector3.one), m, 0, p);
+                Graphics.ExecuteCommandBuffer(cmd);
+                cmd.Release();
+                Sync(rt);
+                var errors = ShaderUtil.GetShaderMessages(sh).Where(x => x.severity == UnityEditor.Rendering.ShaderCompilerMessageSeverity.Error).ToList();
+                bool fallback = sh.passCount <= 1 && sh.name.Contains("Error");
+                foreach (var e in errors) Debug.LogError($"[ShaderABBench] check {path}: {e.message} ({e.file}:{e.line})");
+                Debug.Log($"[ShaderABBench] check {path}: {(errors.Count == 0 && sh.isSupported ? "OK" : "FAIL")} passes={sh.passCount} errors={errors.Count} supported={sh.isSupported}");
+                if (errors.Count > 0 || !sh.isSupported || fallback) exit = 1;
+                UnityEngine.Object.DestroyImmediate(m);
+            }
+            rt.Release();
             EditorApplication.Exit(exit);
         }
 
@@ -150,7 +194,7 @@ namespace CosmicShore.Editor.ProvenWin
                 rep.verdict =
                     (rep.pixelsDifferent8bit == 0
                         ? (rep.pixelsBitDifferent == 0 ? "BIT-IDENTICAL" : $"IDENTICAL at 8 bits ({rep.pixelsBitDifferent} px differ in HDR, max {rep.maxAbsDiff:G3})")
-                        : $"DIFFERS: {rep.pixelsDifferent8bit} px at 8 bits (max {rep.maxAbsDiff:G3})") +
+                        : $"DIFFERS: {rep.pixelsDifferent8bit} px at 8 bits, at most {rep.maxLevelDiff8bit} level(s), {rep.pixelsOverOneLevel} px by more than one (HDR max {rep.maxAbsDiff:G3})") +
                     $"; B/A {rep.medianRatioBA:F4} (p10 {rep.ratioP10:F4}, p90 {rep.ratioP90:F4}); B faster in {100 * rep.shareBFaster:F1}% of {rep.msA.Count} pairs" +
                     $"; medians A {rep.medianA:F3} ms, B {rep.medianB:F3} ms";
 
@@ -189,8 +233,11 @@ namespace CosmicShore.Editor.ProvenWin
                 if (!shaderText.Contains(swap)) throw new InvalidOperationException($"{shaderPath} does not include {swap}");
                 shaderText = shaderText.Replace(swap, inc);
             }
-            shaderText = new Regex("^\\s*Shader\\s+\"[^\"]*\"", RegexOptions.Multiline).Replace(shaderText, $"Shader \"ABBench/{label}\"", 1);
-            string clonePath = $"{dir}/ABBench_{label}.shader";
+            // A .shader is renamed in its text; a .shadergraph takes its name from its file, so the clone's file name does it.
+            string ext = Path.GetExtension(shaderPath);
+            if (ext == ".shader")
+                shaderText = new Regex("^\\s*Shader\\s+\"[^\"]*\"", RegexOptions.Multiline).Replace(shaderText, $"Shader \"ABBench/{label}\"", 1);
+            string clonePath = $"{dir}/ABBench_{label}{ext}";
             File.WriteAllText(clonePath, shaderText);
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
 
@@ -205,6 +252,14 @@ namespace CosmicShore.Editor.ProvenWin
                 if (msg.severity == UnityEditor.Rendering.ShaderCompilerMessageSeverity.Error)
                     throw new InvalidOperationException($"{label} shader error: {msg.message} ({msg.file}:{msg.line})");
             return m;
+        }
+
+        static void SetMoment(Spec spec, Material m, int i, float clock)
+        {
+            if (!string.IsNullOrEmpty(spec.clockProperty)) m.SetFloat(spec.clockProperty, clock);
+            if (spec.driveGlobalTime) Shader.SetGlobalVector("_Time", new Vector4(clock / 20f, clock, clock * 2f, clock * 3f));
+            var rng = new System.Random(5000 + i);
+            foreach (var name in spec.randomPerMoment) m.SetFloat(name, (float)rng.NextDouble());
         }
 
         static void WakePipeline(RenderTexture rt)
@@ -228,7 +283,9 @@ namespace CosmicShore.Editor.ProvenWin
         static Mesh LoadMesh(Spec spec)
         {
             var meshes = AssetDatabase.LoadAllAssetsAtPath(spec.mesh).OfType<Mesh>().ToList();
-            var mesh = string.IsNullOrEmpty(spec.meshName) ? meshes.FirstOrDefault() : meshes.FirstOrDefault(m => m.name == spec.meshName);
+            var mesh = spec.meshFileId != 0
+                ? meshes.FirstOrDefault(m => AssetDatabase.TryGetGUIDAndLocalFileIdentifier(m, out string _, out long id) && id == spec.meshFileId)
+                : string.IsNullOrEmpty(spec.meshName) ? meshes.FirstOrDefault() : meshes.FirstOrDefault(m => m.name == spec.meshName);
             if (mesh == null) throw new FileNotFoundException("no mesh in " + spec.mesh);
             if (string.IsNullOrEmpty(spec.meshPrep)) return mesh;
 
@@ -282,7 +339,7 @@ namespace CosmicShore.Editor.ProvenWin
             var tex = new Texture2D(spec.width, spec.height, TextureFormat.RGBAHalf, false, true);
             for (int i = 0; i < spec.timepoints; i++)
             {
-                if (!string.IsNullOrEmpty(spec.clockProperty)) m.SetFloat(spec.clockProperty, spec.clockSpan * i / spec.timepoints);
+                SetMoment(spec, m, i, spec.clockSpan * i / spec.timepoints);
                 var cmd = new CommandBuffer { name = "ABBench capture" };
                 cmd.SetRenderTarget(rt);
                 cmd.ClearRenderTarget(true, true, Color.clear);
@@ -330,7 +387,7 @@ namespace CosmicShore.Editor.ProvenWin
                 for (int p = 0; p < a.Length; p += 4)
                 {
                     rep.pixelsCompared++;
-                    bool bit = false, b8 = false;
+                    bool bit = false, b8 = false, over1 = false;
                     for (int c = 0; c < 3; c++)
                     {
                         if (a[p + c] == b[p + c]) continue;
@@ -338,13 +395,17 @@ namespace CosmicShore.Editor.ProvenWin
                         float va = Mathf.HalfToFloat(a[p + c]), vb = Mathf.HalfToFloat(b[p + c]);
                         double d = Math.Abs(va - vb);
                         if (d > rep.maxAbsDiff) rep.maxAbsDiff = d;
-                        if (To8(va) != To8(vb)) b8 = true;
+                        int levels = Math.Abs(To8(va) - To8(vb));
+                        if (levels > 0) b8 = true;
+                        if (levels > rep.maxLevelDiff8bit) rep.maxLevelDiff8bit = levels;
+                        if (levels > 1) over1 = true;
                     }
                     ushort mark = Mathf.FloatToHalf(b8 ? 1f : bit ? 0.25f : 0f);
                     diff[p] = diff[p + 1] = diff[p + 2] = mark;
                     diff[p + 3] = Mathf.FloatToHalf(1f);
                     if (bit) { rep.pixelsBitDifferent++; any = true; }
                     if (b8) rep.pixelsDifferent8bit++;
+                    if (over1) rep.pixelsOverOneLevel++;
                 }
                 if (f < 6 || (any && f < 24)) WritePng(spec, $"diff_t{f:D2}.png", diff, spec.width, spec.height);
             }
@@ -403,12 +464,9 @@ namespace CosmicShore.Editor.ProvenWin
             int bFaster = 0;
             for (int i = 0; i < spec.samples; i++)
             {
-                if (!string.IsNullOrEmpty(spec.clockProperty))
-                {
-                    float t = spec.clockSpan * (i % 97) / 97f;
-                    ma.SetFloat(spec.clockProperty, t);
-                    mb.SetFloat(spec.clockProperty, t);
-                }
+                float t = spec.clockSpan * (i % 97) / 97f;
+                SetMoment(spec, ma, i % 97, t);
+                SetMoment(spec, mb, i % 97, t);
                 double ta, tb;
                 if (i % 2 == 0) { ta = TimeChain(ca, rt, sw); tb = TimeChain(cb, rt, sw); }
                 else { tb = TimeChain(cb, rt, sw); ta = TimeChain(ca, rt, sw); }

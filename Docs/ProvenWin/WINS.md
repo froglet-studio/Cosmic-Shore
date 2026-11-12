@@ -3,6 +3,31 @@
 One row per change that passed `Docs/ProvenWin/PLAYBOOK.md`: one change, one machine-read metric, B better in every
 paired sample, output identical, controls behaving, a human sign-off. Newest first.
 
+## W2. Spindle lace: search 6 Voronoi cells, not 9 (2026-11-12)
+
+| | |
+|---|---|
+| Change | The lace's Voronoi node in SpindleGraph, SpindleDepthGraph, SpindleLodMidGraph, SpindleLodFarGraph and SpindleWireGraph becomes a Custom Function, `SpindleVoronoi6` (`Assets/_Graphics/Materials/Graphs/Standins/SpindleStandin.hlsl`): rows {-1, 0} x columns {-1, 0, 1}, the node's own Tchou hash and true sin/cos. The lace angle is `sin(_Time.y + _Phase)`, so a feature point's y lies in [0.77, 1] and the row above can never be nearest. From the spindle stand-in study (draft PR #1878), its exact variant. |
+| Metric | GPU time to draw the spindle: ms per batch of 48 draws at 2560 x 1440 (GyroidSpindleMaterial on the Branch prefab's mesh, about 8-10 % of the frame), 200 interleaved pairs, `_Time` driven by the bench |
+| Owner | Garrett (Docs/SPINDLE_LOD.md) |
+
+| API | Shipped ms | Change ms | B/A median (p10-p90) | Speed-up | Pairs B faster | Display difference |
+|---|---|---|---|---|---|---|
+| Direct3D 12 | 0.689 | 0.570 | 0.8234 (0.784-0.876) | 1.21x | 200/200 | 104 px move 1 level, none more |
+| Vulkan | 0.669 | 0.545 | 0.8135 (0.777-0.867) | 1.23x | 200/200 | 99 px, 1 level |
+| Direct3D 11 | 0.650 | 0.524 | 0.8045 (0.769-0.852) | 1.24x | 200/200 | 104 px, 1 level |
+
+177 M pixels compared per API; HDR max |diff| 0.00049 (float rounding of the reordered min). The final graph as
+committed re-measured 1.21x (D3D12), 98 px at one level. Null control 1.00x (50.5 % of pairs). All five graphs
+compile in the real editor with no errors (`ShaderABBench.CheckShaders`); `wire_spindle_lod.py --check` agrees.
+
+Tier: **within one display level**, not bit-identical. Garrett's bar is that "any human observable difference is either
+insignificant or an improvement", so the blind sign-off decides:
+https://claude.ai/artifact/U4Bwcwvi127XeH8nZwjwpK
+
+Not taken: the study's 2x2 search with polynomial sin/cos (the draft PR's own choice) measured 1.49-1.54x but moved
+pixels by up to 140 levels (85-337 px by more than one), so it fails the bar. Not measured: a phone GPU.
+
 ## W1. Charge crystal body: skip the silenced crawl (2026-11-12)
 
 | | |
@@ -53,5 +78,12 @@ Runner-ups, for the next run:
 ## Queue and rejections
 
 The queue is W1's runner-ups above plus whatever the "Find more provable Unity performance wins" thread ranks; a
-candidate moves here with its evidence when it is picked, proven or rejected. Rejected so far: none (the envelope cull
-was superseded, not rejected: it is runner-up 1).
+candidate moves here with its evidence when it is picked, proven or rejected. The envelope cull was superseded, not
+rejected: it is runner-up 1.
+
+Rejected:
+
+| Date | Candidate | Why | Evidence |
+|---|---|---|---|
+| 2026-11-12 | `ProjectileChargeField` early-out (#1880; skip the wander FBM off the arc's band) | Not identical and not categorical: 4 px differ at 8 bits (max 0.00098, 48 moments x 3.7 M px), and B was faster in only 85 % of pairs (median 1.17x, p90 B/A 1.01). The null control read 1.00x with 47.5 %, so the instrument was fine; the change is near-exact and sometimes slower (a divergent branch on a partly covered sphere). The Sparrow's charge shell is also a few pixels on screen in play. | `ShaderABBench` DX12, `spec_pcf_*.json`; negative control caught at 140,527 px |
+

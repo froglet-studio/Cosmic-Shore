@@ -15,7 +15,11 @@ All five, or it is not one:
    instructions executed, bytes in the build, allocations per frame, ms per death. Say its unit and instrument.
 3. **Categorical:** B beats A in **every** ABBA round, by more than the A-vs-A' null control's spread.
 4. **No cost, observed or predicted:**
-   - observed: output identical (bit-identical, or zero pixels different at 8 bits after the game's own encode),
+   - observed: output identical, in one of three tiers the bench reports: **bit-identical**; **display-identical**
+     (zero pixels different at 8 bits); or **within one display level** (no channel of any pixel moves more than 1 of
+     255, on a vanishing share of pixels: rounding, not a look change). The third tier ships only with the blind
+     sign-off, because Garrett's bar is that "any human observable difference is either insignificant or an
+     improvement". Anything that moves a pixel by more than one level is rejected;
      tests still pass, no new allocation, no new warning;
    - predicted: write down every way it could cost (another platform, another graphics API, a code path the
      bench does not hit, a tile GPU, divergence) and either measure it or say plainly it is unmeasured.
