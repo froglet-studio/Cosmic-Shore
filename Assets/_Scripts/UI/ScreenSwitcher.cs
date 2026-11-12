@@ -112,11 +112,6 @@ namespace CosmicShore.UI
             // own modal TYPE: gamepad B out of it lands back on the Arcade. Not a hub window, so the
             // triggers do not slide it, and not in the browser Toybox (replays need a device folder).
             REPLAYS = 19,
-
-            // The Quests window (Docs/MENU_REDESIGN_B.md section 150, Rev 77 "Quests"): the quest tracker left the
-            // Voyage window for a window of its own, opened from Home like the Profile. Not a hub window, so the
-            // triggers do not slide it. Built from Resources/Voyages/QuestsView (EnsureQuestsModal).
-            QUESTS = 20,
         }
 
         [System.Serializable]
@@ -694,7 +689,6 @@ namespace CosmicShore.UI
 
             CacheScreenComponents();
             EnsureCreditsModal();
-            EnsureQuestsModal();
             LayoutScreensToViewport();
             MarkDisabledNavLinks();
             UpdateHubButtonsVisibility();
@@ -1766,44 +1760,6 @@ namespace CosmicShore.UI
             Modals.Add(modal);
         }
 
-        /// <summary>Where <see cref="EnsureQuestsModal"/> finds the Quests window (Tools/Build/author_voyage_window.py
-        /// writes it).</summary>
-        public const string QuestsWindowResource = "Voyages/QuestsView";
-
-        /// <summary>
-        /// Builds the Quests window (Docs/MENU_REDESIGN_B.md section 150) beside the Voyage window when the scene
-        /// has none: the quest tracker is its own modal now, opened from Home like the Profile. It stands down when a
-        /// QUESTS modal is already registered, so authoring one into the scene is an ordinary scene edit.
-        /// </summary>
-        private void EnsureQuestsModal()
-        {
-            Modals ??= new List<ModalWindowManager>();
-            foreach (var authored in Modals)
-                if (authored != null && authored.ModalType == ModalWindows.QUESTS)
-                    return;
-
-            var prefab = Resources.Load<ModalWindowManager>(QuestsWindowResource);
-            if (prefab == null)
-            {
-                CSDebug.LogWarning($"[ScreenSwitcher] No Quests window at Resources/{QuestsWindowResource} " +
-                                   "(run Tools/Build/author_voyage_window.py); Home's quest card opens the Voyage window.");
-                return;
-            }
-
-            // Beside the Voyage window, so it sits in the same layer of the canvas and stretches the same way.
-            var mission = FindModal(ModalWindows.MISSION);
-            Transform parent = mission ? mission.transform.parent : _canvasRect;
-            var modal = Instantiate(prefab, parent, false);
-            modal.name = prefab.name;
-            if (mission) modal.transform.SetSiblingIndex(mission.transform.GetSiblingIndex() + 1);
-            else modal.transform.SetAsLastSibling();
-            if (_container != null)
-                GameObjectInjector.InjectRecursive(modal.gameObject, _container);
-            modal.ModalType = ModalWindows.QUESTS;
-            modal.AttachScreenSwitcher(this);
-            Modals.Add(modal);
-        }
-
         #endregion
 
         #region Nav Button Handlers (legacy, kept)
@@ -1877,13 +1833,6 @@ namespace CosmicShore.UI
 
         /// <summary>The home hub's Mission entry.</summary>
         public void OnClickMissionNav() => OpenModal(ModalWindows.MISSION);
-
-        /// <summary>The Quests window (Home's quest card); the Voyage window when the scene has no Quests window.</summary>
-        public void OnClickQuests()
-        {
-            if (FindModal(ModalWindows.QUESTS)) OpenModal(ModalWindows.QUESTS);
-            else OnClickMissionNav();
-        }
 
         #region Hub window slide (rev 7)
 

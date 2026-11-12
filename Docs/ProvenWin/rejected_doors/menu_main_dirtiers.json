@@ -1,0 +1,30 @@
+{
+    "scene": "Menu_Main (2 root canvases)",
+    "frames": 300,
+    "dirty": [
+        {
+            "path": "UI_Refactored/Safe Area/ModalWindows/ProfileModal",
+            "frames": 300,
+            "kind": "animator",
+            "components": "RectTransform, CanvasGroup, Animator, ProfileModal, PortraitRect"
+        },
+        {
+            "path": "UI_Refactored/SceneTransitionModal",
+            "frames": 300,
+            "kind": "animator",
+            "components": "RectTransform, CanvasRenderer, CanvasGroup, Animator, SceneTransitionModal, EventListenerBool, Canvas, CanvasScaler, GraphicRaycaster, PhoneFlipDetector, AdaptiveCanvasScaler, OrientationGlide"
+        },
+        {
+            "path": "UI_Refactored/Screens Viewport/Screens/ArkScreen/ElementalConverter/ArkView/Converter/Bar/Convert/ConvertButton/Sweep",
+            "frames": 185,
+            "kind": "moved",
+            "components": "RectTransform, CanvasRenderer, Image, LayoutElement, KitSpark, KitButton, HorizontalLayoutGroup, ContentSizeFitter, KitRectMask2D"
+        },
+        {
+            "path": "[DiagnosticsHUD]/DiagnosticsCanvas/Panel/ValuesA",
+            "frames": 15,
+            "kind": "graphic",
+            "components": "RectTransform, CanvasRenderer, Text, Image, Button"
+        }
+    ]
+}

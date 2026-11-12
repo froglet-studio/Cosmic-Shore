@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
-using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
-using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,146 +10,126 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Voyage window's right column in the picked look (Shombith, 2026-11-08: Rev 71 C, the Coverflow, with the
-    /// Rev 74 C3 "Place" card face, and the other windows of Rev 77; Docs/MENU_REDESIGN_B.md sections 148-151). It
-    /// stands over the voyage cards' column and holds four views:
-    /// <list type="bullet">
-    /// <item>the voyage: the coverflow of voyages (each card a muted close-up of its place, <see cref="VoyagePlaceArt"/>,
-    /// and the Ark escort as a card of its own), the picked voyage's numbers (or the escort's difficulty), the squad (its
-    /// presets, its three hulls - a press on a hull opens the vessel strip on that seat and one press picks - and who
-    /// flies what), Ark crew, Story and Set sail;</item>
-    /// <item>Ark crew: the squad's three seats and four settings each (vessel, pilot, element, artifact) and its domain.
-    /// A press on a setting opens a strip of every choice; one press picks (it used to cycle one choice per press: up to
-    /// 22 presses for a hull). The Ark's own rules decide what may change (<c>SquadsPage</c>: your own seat, and the AI
-    /// or open seats of a squad you made), and Save squad keeps it;</item>
-    /// <item>the story: one beat at a time over the place;</item>
-    /// <item>under way: the place, where the voyage stands, the squad flying it, Set sail dark until it is over.</item>
+    /// The open voyage (Shombith, 2026-11-02, Docs/MENU_REDESIGN_B.md section 119): a voyage card on the Voyage window
+    /// slides this open over the voyage cards, and so does the voyage's place pressed on the HyperSea map. It is the
+    /// picked design, Rev 44 I (the squad leads the card, its presets beside its formation) in the Rev 49 C look (the
+    /// real course on the HyperSea map behind the card, <see cref="VoyageRoutePoster"/>), with three levels:
+    /// <list type="number">
+    /// <item>the voyage: where it goes, who found it, three numbers, the course's two ends lit, the squad with its presets
+    /// (the Ark's squads, <see cref="SquadBook"/>), Set sail;</item>
+    /// <item>Ark crew: the squad's three seats and four settings each (vessel, pilot, element, artifact), pressed to change
+    /// under the Ark's own rules (<c>SquadsPage</c>: your own seat, and the AI or open seats of a squad you made), and
+    /// Save squad;</item>
+    /// <item>the story: one beat at a time (the news, the place, who brought it, the water).</item>
     /// </list>
     /// <see cref="VoyageJobsView"/> builds it once and fills it; every word is the voyage content's
     /// (<see cref="VoyageLines"/>) or the game's data, never this class's.
     ///
-    /// <para><b>Pilots are people, artifacts one of a kind</b> (Garrett 2026-11-07, Docs/Pilots/INVENTORY.md). A seat's
-    /// pilot strip lists the people in the player's crew whose callsign can fly the hull, its artifact strip the hoard's
-    /// artifacts the hull can carry (and none); each writes the record's own id into the slot, as the Ark's picker
-    /// does. A joined squad's other seats carry the owner's ids, so they show the callsign and kind from the catalog.</para>
+    /// <para><b>Pilots are people, artifacts one of a kind</b> (Garrett 2026-11-07, Docs/Pilots/INVENTORY.md). Pressing a
+    /// seat's pilot cycles the people in the player's crew whose callsign can fly the hull, and its artifact cycles the
+    /// hoard's artifacts the hull can carry (and none); each writes the record's own id into the slot, as the Ark's
+    /// picker does. A seat whose ids are the player's shows the person's name (its callsign word on the setting's label)
+    /// and the artifact's name; a joined squad's other seats carry the owner's ids, which this crew does not hold, so they
+    /// show the callsign and kind from the catalog. A legacy slot (a bare callsign or kind id saved before 2026-11-07)
+    /// cycles on from the person or artifact it resolves to.</para>
     /// </summary>
     public class VoyageOpenCard : MonoBehaviour
     {
-        /// <summary>One card on the coverflow.</summary>
-        public sealed class Card
-        {
-            public string Name;
-            public Texture Art;
-        }
-
-        /// <summary>What the column shows (filled by <see cref="VoyageJobsView"/> from the jobs, their places and courses).</summary>
+        /// <summary>What one open voyage shows (filled by <see cref="VoyageJobsView"/> from the job and its course).</summary>
         public sealed class Model
         {
-            public string Kicker, Title, CourseValue, SailValue, IntensityValue, PlaceName, CrewVoyage;
-            public Texture PlaceArt;
-            public readonly List<Card> Flow = new();
-            public int Picked;
-            /// <summary>The picked card is the Ark escort: its difficulty stands where a voyage's numbers do.</summary>
-            public bool Escort;
-            public string Difficulty;
-            public Action<int> StepDifficulty;
-            /// <summary>A voyage (or the escort) is out: the column shows where it stands.</summary>
-            public bool Underway;
-            public string UnderwayLine, UnderwayCourse;
+            public string Pager, Kicker, Title, CourseChip, FoundBy;
+            public string CourseValue, SailValue, IntensityValue, Cells, From, To;
+            /// <summary>The raw numbers (no template), for the Voyages board's rows.</summary>
+            public string LightYears, Minutes, Intensity;
+            public readonly List<Vector2> Course = new();
             public readonly List<VoyageCardRules.Beat> Beats = new();
             public Action SetSail;
         }
 
-        // The style guide's tokens (Docs/UI/froglet-tokens.json, Deep Sea).
-        static readonly Color Light = new(0.902f, 0.914f, 1f, 1f);          // text
-        static readonly Color Soft = new(0.455f, 0.482f, 0.678f, 1f);       // text-soft
-        static readonly Color Line = new(0.263f, 0.298f, 0.537f, 1f);       // line
-        static readonly Color Deep = new(0f, 0.004f, 0.039f, 1f);           // ground-deep
-        static readonly Color Plate = new(0f, 0.016f, 0.122f, 0.78f);       // ground, glass
-        static readonly Color Selection = new(0f, 0.831f, 1f, 1f);          // selection
-        static readonly Color Lime = new(0.6f, 1f, 0.502f, 1f);             // cta
-        static readonly Color OnLime = new(0f, 0.016f, 0.122f, 1f);         // text on a fill
-        static readonly Color Clear = new(0f, 0f, 0f, 0f);
+        // The style foundation's colours (Docs/STYLE_FOUNDATION.md v0.3.3) and the map's course colour, each painted as
+        // the worn colour set has it (ColorTrace, Docs/VesselModels/COLOR_TRACE.md).
+        static readonly Color LightAuthored = new(0.902f, 0.914f, 1f, 1f);
+        static Color Light => ColorTrace.Retrace(ColorTrace.Ui, LightAuthored);
+        static readonly Color SubAuthored = new(0.604f, 0.627f, 0.8f, 1f);
+        static Color Sub => ColorTrace.Retrace(ColorTrace.Ui, SubAuthored);
+        static readonly Color LabAuthored = new(0.549f, 0.576f, 0.78f, 1f);
+        static Color Lab => ColorTrace.Retrace(ColorTrace.Ui, LabAuthored);
+        static readonly Color RouteAuthored = new(0.784f, 1f, 0.353f, 1f);
+        static Color Route => ColorTrace.Retrace(ColorTrace.Ui, RouteAuthored);
+        static readonly Color ArkAuthored = new(1f, 0.78f, 0.25f, 1f);
+        static Color Ark => ColorTrace.Retrace(ColorTrace.Ui, ArkAuthored);
+        static readonly Color GroundAuthored = new(0.024f, 0.039f, 0.149f, 1f);
+        static Color Ground => ColorTrace.Retrace(ColorTrace.Ui, GroundAuthored);
+        static readonly Color PlateAuthored = new(0f, 0.004f, 0.039f, 0.6f);
+        static Color Plate => ColorTrace.Retrace(ColorTrace.Ui, PlateAuthored);
+        static readonly Color EdgeAuthored = new(0.169f, 0.196f, 0.4f, 1f);
+        static Color Edge => ColorTrace.Retrace(ColorTrace.Ui, EdgeAuthored);
+        static readonly Color PickedAuthored = new(0.902f, 0.914f, 1f, 0.12f);
+        static Color Picked => ColorTrace.Retrace(ColorTrace.Ui, PickedAuthored);
+        static readonly Color IdleAuthored = new(0f, 0.004f, 0.039f, 0.35f);
+        static Color Idle => ColorTrace.Retrace(ColorTrace.Ui, IdleAuthored);
+        static readonly Color SeaAuthored = new(0.75f, 0.75f, 0.8f, 1f);
+        static Color Sea => ColorTrace.Retrace(ColorTrace.Ui, SeaAuthored);
         static readonly Element[] Elements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
-        static readonly Domains[] DomainOrder = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
-        const float FlowHeight = 360f, CardWidth = 340f, CardHeight = 300f;
+        const float Slide = 0.32f;
 
-        /// <summary>A card on the coverflow was picked (by a press, or the D-pad's selection landing on it).</summary>
-        public event Action<int> Pick;
-        /// <summary>The squad changed and was saved: the window redraws (the seated pilots decide the voyages on offer).</summary>
+        public event Action Closed;
+        public event Action<int> Step;
         public event Action SquadChanged;
 
         VoyageLines _lines;
+        VoyageMapGraphic _map;
         SO_VesselList _vessels;
         PilotArtifactCatalogSO _catalog;
-        Sprite[] _elementShapes;
         TMP_Text _font;
         Button _buttonFrom;
         RectTransform _root, _panel;
+        CanvasGroup _group;
+        VoyageRoutePoster _poster;
         Model _model;
         int _level = 1, _beat;
+        bool _open;
         // Ark crew edits a copy of the active squad, as the Ark does (SquadsPage's draft): Save squad writes it back, and
-        // leaving the column or picking another squad drops it.
+        // closing the card or picking another squad drops it.
         SavedSquad _draft;
-        string _draftId;   // the squad the draft was copied from: matched by id, never by its place in the book
+        int _draftIndex = -1;
         bool Drafting => _draft != null;
+        float _t, _from, _to;
 
-        // Views.
-        GameObject _l0, _l1, _l2, _l3;
-        RectTransform _flow;
-        readonly List<VoyageFlowCard> _cards = new();
-        TMP_Text _kicker, _course, _sail, _intensity, _escortKicker, _difficulty, _crewLine, _crewLine0;
-        GameObject _numbers, _escort;
+        // Level parts.
+        GameObject _l1, _l2, _l3;
+        TMP_Text _pager, _chipCourse, _chipFound, _kicker, _title, _course, _sail, _intensity, _cells, _from_, _toName;
+        TMP_Text _squadName, _crewName, _crewNote, _beatLabel, _beatLine, _beatBy, _saveLabel;
+        readonly TMP_Text[] _crumbs = new TMP_Text[3];
+        readonly Image[] _formation = new Image[3];
         readonly List<(Button b, TMP_Text t, Image fill)> _presets = new();
         TMP_Text _noSquad;
-        readonly (Button b, Image hull, Outline edge)[] _formation = new (Button, Image, Outline)[3];
-        readonly Image[] _formation0 = new Image[3];
-        Button _sail1, _sail3;
-        RawImage _placeArt0, _placeArt3;
-        TMP_Text _placeName0, _underwayLine, _underwayCourse, _sailAfter;
-        TMP_Text _crewVoyage, _crewName, _crewNote, _saveLabel;
-        Button _save;
-        readonly (Button b, TMP_Text t, Image fill)[] _domains = new (Button, TMP_Text, Image)[3];
         readonly Seat[] _seats = new Seat[3];
-        TMP_Text _storyKicker, _storyTitle, _beatLabel, _beatLine, _beatBy;
         readonly List<Image> _dots = new();
-
-        // The strip of choices, over the top of the column.
-        RectTransform _strip;
-        TMP_Text _stripCaption;
-        RectTransform _stripTiles;
-        readonly List<(Button b, Image icon, TMP_Text label, Outline edge)> _tiles = new();
-        readonly List<Choice> _choices = new();
-        int _stripSeat = -1, _stripSetting = -1;
-        bool _stripSaves;
-
-        // Read for the strips (reused, not allocated per press).
+        RectTransform _sweep, _routeLine;
+        Image _endNode;
+        Button _sail1, _sail2, _sail3, _save;
+        // Read on each press of a pilot or artifact setting (reused, not allocated per press).
         readonly List<PilotRecord> _crew = new();
         readonly List<ArtifactRecord> _hoard = new();
         readonly List<string> _ids = new();
 
         sealed class Seat
         {
-            public TMP_Text Who;
+            public TMP_Text Role, Who;
             public Image Hull;
-            public Outline Edge;
-            public readonly (Button b, TMP_Text label, TMP_Text value, Outline edge)[] Settings = new (Button, TMP_Text, TMP_Text, Outline)[4];
-        }
-
-        struct Choice
-        {
-            public string Value, Label;
-            public Sprite Icon;
+            public readonly (Button b, TMP_Text label, TMP_Text value)[] Settings = new (Button, TMP_Text, TMP_Text)[4];
         }
 
         // ── Building ─────────────────────────────────────────────────────────
 
-        /// <summary>The column, built once over <paramref name="column"/>, its words from <paramref name="lines"/>, its text
-        /// in <paramref name="font"/>'s face, Set sail a copy of <paramref name="button"/>, the element choices drawn with
-        /// <paramref name="elementShapes"/> (the Codex's four shapes, Charge to Time; empty draws the names alone).</summary>
-        public static VoyageOpenCard Create(RectTransform column, TMP_Text font, Button button, SO_VesselList vessels,
-            VoyageLines lines, Sprite[] elementShapes)
+        /// <summary>The card, built once over <paramref name="column"/> (it covers that column while open), its words
+        /// from <paramref name="lines"/>, its text in <paramref name="font"/>'s face, its big buttons copies of
+        /// <paramref name="button"/>, and its ground <paramref name="map"/>'s water.</summary>
+        public static VoyageOpenCard Create(RectTransform column, TMP_Text font, Button button, VoyageMapGraphic map,
+            SO_VesselList vessels, VoyageLines lines)
         {
             var go = new GameObject("OpenVoyage", typeof(RectTransform));
             go.transform.SetParent(column.parent, false);
@@ -162,361 +140,322 @@ namespace CosmicShore.UI
             rt.pivot = column.pivot;
             rt.anchoredPosition = column.anchoredPosition;
             rt.sizeDelta = column.sizeDelta;
+            go.AddComponent<RectMask2D>();
             var card = go.AddComponent<VoyageOpenCard>();
             card._root = rt;
             card._font = font;
             card._buttonFrom = button;
+            card._map = map;
             card._vessels = vessels;
             card._lines = lines;
-            card._elementShapes = elementShapes;
             card._catalog = PilotArtifactCatalogSO.Load();
             card.Build();
-            // Closing the window drops an unsaved crew change, as closing the Ark's edit does.
-            card._window = column.GetComponentInParent<ModalWindowManager>(true);
-            if (card._window) card._window.OnModalClosed += card.WindowClosed;
-            go.SetActive(false);
             return card;
         }
 
-        ModalWindowManager _window;
-
-        void OnDestroy()
-        {
-            if (_window) _window.OnModalClosed -= WindowClosed;
-        }
-
-        void WindowClosed()
-        {
-            DropDraft();
-            CloseStrip();
-            if (_model != null) Draw();
-        }
+        /// <summary>The map whose water the card's ground shows (it is made after the card on a first draw).</summary>
+        public void SetMap(VoyageMapGraphic map) => _map = map;
 
         void Build()
         {
             _panel = Node("Panel", _root);
             Stretch(_panel);
+            _group = _panel.gameObject.AddComponent<CanvasGroup>();
+            Fill(_panel, Ground);
+            var posterGo = Node("Course", _panel);
+            Stretch(posterGo);
+            _poster = posterGo.gameObject.AddComponent<VoyageRoutePoster>();
+            // The course shows through at the top and darkens toward the words below (Rev 49 C).
+            var shade = Node("Shade", _panel);
+            Stretch(shade);
+            Fill(shade, new Color(Ground.r, Ground.g, Ground.b, 0.35f));
+            var foot = Node("Foot", _panel);
+            foot.anchorMin = Vector2.zero;
+            foot.anchorMax = new Vector2(1f, 0.58f);
+            foot.offsetMin = foot.offsetMax = Vector2.zero;
+            Fill(foot, new Color(Ground.r, Ground.g, Ground.b, 0.9f));
+            var border = Node("Border", _panel);
+            Stretch(border);
+            var outline = border.gameObject.AddComponent<Outline>();
+            Fill(border, new Color(0, 0, 0, 0)).raycastTarget = false;
+            outline.effectColor = Edge;
+            outline.effectDistance = new Vector2(1, -1);
+
             var content = Node("Content", _panel);
             Stretch(content);
             var v = content.gameObject.AddComponent<VerticalLayoutGroup>();
-            v.padding = new RectOffset(0, 0, 0, 0);
-            v.spacing = 0;
+            v.padding = new RectOffset(24, 24, 18, 22);
+            v.spacing = 10;
             v.childControlWidth = v.childControlHeight = true;
             v.childForceExpandWidth = true;
             v.childForceExpandHeight = false;
 
-            _l0 = Level(content, "Underway");
+            // Shared head: back, the pager, the three levels.
+            var head = Row(content, 40, 10);
+            MakeButton(head, _lines.CardBack, 15, Plate, () => Closed?.Invoke(), 150);
+            Spacer(head);
+            MakeButton(head, _lines.CardPrevious, 18, Plate, () => Step?.Invoke(-1), 44);
+            _pager = Text(head, 14, Sub, TextAlignmentOptions.Center, 190);
+            MakeButton(head, _lines.CardNext, 18, Plate, () => Step?.Invoke(+1), 44);
+            var crumbs = Row(content, 26, 22);
+            string[] names = { _lines.CardLevelVoyage, _lines.CardLevelCrew, _lines.CardLevelStory };
+            for (int i = 0; i < 3; i++)
+            {
+                int level = i + 1;
+                _crumbs[i] = MakeButton(crumbs, names[i], 13, new Color(0, 0, 0, 0), () => ShowLevel(level), 130).t;
+            }
+            Spacer(crumbs);
+
             _l1 = Level(content, "Voyage");
             _l2 = Level(content, "ArkCrew");
             _l3 = Level(content, "Story");
-            BuildUnderway(_l0.transform);
             BuildVoyage(_l1.transform);
             BuildCrew(_l2.transform);
             BuildStory(_l3.transform);
-            BuildStrip();
+            _group.alpha = 0f;
+            _group.interactable = _group.blocksRaycasts = false;
+            _panel.anchoredPosition = new Vector2(PanelWidth + 40f, 0f);
         }
 
         void BuildVoyage(Transform l)
         {
-            _flow = Node("Flow", l);
-            Height(_flow, FlowHeight);
-            _flow.gameObject.AddComponent<RectMask2D>();
+            var chips = Row(l, 30, 10);
+            _chipCourse = Chip(chips, Route);
+            Spacer(chips);
+            _chipFound = Chip(chips, Light);
+            Spacer(l, true);
+            _kicker = Text(l, 13, Lab, TextAlignmentOptions.Left);
+            Height(_kicker, 18);
+            _title = Text(l, 32, Light, TextAlignmentOptions.BottomLeft);
+            _title.textWrappingMode = TextWrappingModes.Normal;
+            Height(_title, 80);
 
-            _kicker = Text(l, 14, Soft, TextAlignmentOptions.Left);
-            Height(_kicker, 22);
-            var nums = Row(l, 40, 34);
-            _numbers = nums.gameObject;
-            _course = Text(nums, 28, Light, TextAlignmentOptions.Left, 180);
-            _sail = Text(nums, 28, Light, TextAlignmentOptions.Left, 160);
-            _intensity = Text(nums, 28, Light, TextAlignmentOptions.Left, 240);
+            var nums = Row(l, 58, 34);
+            _course = Number(nums, _lines.CardCourseLabel);
+            _sail = Number(nums, _lines.CardSailLabel);
+            _intensity = Number(nums, _lines.CardIntensityLabel);
             Spacer(nums);
-            var esc = Row(l, 44, 14);
-            _escort = esc.gameObject;
-            _escortKicker = Text(esc, 14, Soft, TextAlignmentOptions.Left);
-            Flex(_escortKicker);
-            MakeButton(esc, _lines.CardPrevious, 22, Plate, () => _model?.StepDifficulty?.Invoke(-1), 52);
-            _difficulty = Text(esc, 22, Light, TextAlignmentOptions.Center, 200);
-            MakeButton(esc, _lines.CardNext, 22, Plate, () => _model?.StepDifficulty?.Invoke(+1), 52);
-            Spacer(l, 14f);
 
-            var presets = Row(l, 40, 10);
+            // The course's two ends, lit, with a light sweeping from the Ark to where it goes.
+            var route = Node("Route", l);
+            Height(route, 62);
+            _routeLine = Node("Line", route);
+            _routeLine.anchorMin = new Vector2(0f, 1f);
+            _routeLine.anchorMax = new Vector2(1f, 1f);
+            _routeLine.offsetMin = new Vector2(8f, -9f);
+            _routeLine.offsetMax = new Vector2(-8f, -7f);
+            Fill(_routeLine, new Color(Route.r, Route.g, Route.b, 0.5f));
+            _sweep = Node("Sweep", _routeLine);
+            _sweep.anchorMin = new Vector2(0f, 0.5f);
+            _sweep.anchorMax = new Vector2(0f, 0.5f);
+            _sweep.sizeDelta = new Vector2(90f, 8f);
+            Fill(_sweep, new Color(Route.r, Route.g, Route.b, 0.85f));
+            Node4(route, Ark, false);
+            _endNode = Node4(route, Route, true);
+            _from_ = EndLabel(route, false, _lines.CardYourArk, Ark);
+            _toName = EndLabel(route, true, _lines.CardDestination, Route);
+            _cells = Text(route, 12, Sub, TextAlignmentOptions.Center);
+            var crt = _cells.rectTransform;
+            crt.anchorMin = new Vector2(0.5f, 1f);
+            crt.anchorMax = new Vector2(0.5f, 1f);
+            crt.sizeDelta = new Vector2(260f, 20f);
+            crt.anchoredPosition = new Vector2(0f, -28f);
+
+            // The squad: its name and formation, its presets beside it.
+            var squad = Row(l, 168, 16);
+            var left = Column(squad, 4);
+            Flex(left);
+            var label = Text(left, 12, Lab, TextAlignmentOptions.Left);
+            label.text = _lines.CardSquadLabel ?? string.Empty;
+            Height(label, 16);
+            _squadName = Text(left, 22, Light, TextAlignmentOptions.Left);
+            Height(_squadName, 30);
+            var form = Node("Formation", left);
+            Height(form, 110);
+            Vector2[] at = { new(0.5f, 0.78f), new(0.2f, 0.32f), new(0.8f, 0.32f) };
+            for (int i = 0; i < 3; i++)
+            {
+                var h = Node("Hull" + i, form);
+                h.anchorMin = h.anchorMax = at[i];
+                h.sizeDelta = i == 0 ? new Vector2(170f, 58f) : new Vector2(140f, 48f);
+                _formation[i] = h.gameObject.AddComponent<Image>();
+                _formation[i].preserveAspect = true;
+                _formation[i].raycastTarget = false;
+            }
+            var right = Column(squad, 6);
+            Width(right, 230);
+            var plabel = Text(right, 12, Light, TextAlignmentOptions.Left);
+            plabel.text = _lines.CardPresetsLabel ?? string.Empty;
+            Height(plabel, 16);
             for (int i = 0; i < SquadBook.MaxSquads; i++)
             {
                 int index = i;
-                _presets.Add(MakeButton(presets, string.Empty, 14, Plate, () => PickSquad(index), 170));
+                var p = MakeButton(right, string.Empty, 14, Idle, () => PickSquad(index), 230);
+                Height(p.b.transform, 26);
+                _presets.Add(p);
             }
-            _noSquad = Text(presets, 15, Soft, TextAlignmentOptions.Left);
+            _noSquad = Text(right, 13, Sub, TextAlignmentOptions.TopLeft);
+            _noSquad.textWrappingMode = TextWrappingModes.Normal;
             _noSquad.text = _lines.CardNoSquad ?? string.Empty;
-            Flex(_noSquad);
-            Spacer(l, 10f);
-            var form = Row(l, 104, 10);
-            for (int i = 0; i < 3; i++)
-            {
-                int seat = i;
-                var b = MakeButton(form, string.Empty, 14, Clear, () => OpenStrip(seat, 0, true), 0);
-                Flex(b.b);
-                var hull = Node("Hull", b.b.transform);
-                Stretch(hull);
-                hull.offsetMin = new Vector2(6, 6);
-                hull.offsetMax = new Vector2(-6, -6);
-                var img = hull.gameObject.AddComponent<Image>();
-                img.preserveAspect = true;
-                img.raycastTarget = false;
-                var edge = b.b.gameObject.AddComponent<Outline>();
-                edge.effectDistance = new Vector2(2, -2);
-                edge.effectColor = Clear;
-                _formation[i] = (b.b, img, edge);
-            }
-            _crewLine = Text(l, 15, Light, TextAlignmentOptions.Left);
-            Height(_crewLine, 24);
-            Spacer(l, 16f);
-            var buttons = Row(l, 44, 10);
-            Flex(MakeButton(buttons, _lines.CardCrew, 14, Plate, () => ShowLevel(2), 0).b);
-            Flex(MakeButton(buttons, _lines.CardStory, 14, Plate, () => ShowLevel(3), 0).b);
-            Spacer(l, true);
-            _sail1 = BigButton(l, _lines.CardSetSail, () => _model?.SetSail?.Invoke());
-        }
+            Height(_noSquad, 40);
+            var cfg = MakeButton(right, _lines.CardConfigure, 12, Plate, () => ShowLevel(2), 230);
+            Height(cfg.b.transform, 30);
 
-        void BuildUnderway(Transform l)
-        {
-            PlacePanel(l, 360, out _placeArt0, out var words);
-            _placeName0 = Text(words, 48, Light, TextAlignmentOptions.BottomLeft);
-            Height(_placeName0, 56);
-            Spacer(l, 18f);
-            _underwayLine = Text(l, 22, Light, TextAlignmentOptions.Left);
-            Height(_underwayLine, 30);
-            _underwayCourse = Text(l, 15, Soft, TextAlignmentOptions.Left);
-            Height(_underwayCourse, 24);
-            Spacer(l, 18f);
-            var form = Row(l, 104, 10);
-            for (int i = 0; i < 3; i++)
-            {
-                var h = Node("Hull", form);
-                Flex(h);
-                _formation0[i] = h.gameObject.AddComponent<Image>();
-                _formation0[i].preserveAspect = true;
-                _formation0[i].raycastTarget = false;
-            }
-            _crewLine0 = Text(l, 15, Light, TextAlignmentOptions.Left);
-            Height(_crewLine0, 24);
-            Spacer(l, true);
-            var dark = MakeButton(l, _lines.CardSailAfter, 18, Plate, () => { }, 0);
-            dark.b.interactable = false;
-            dark.t.color = Soft;
-            Height(dark.b, 56);
-            _sailAfter = dark.t;
+            var buttons = Row(l, 48, 10);
+            _sail1 = BigButton(buttons, _lines.CardSetSail, 2f, () => _model?.SetSail?.Invoke());
+            BigButton(buttons, _lines.CardCrew, 1f, () => ShowLevel(2));
+            BigButton(buttons, _lines.CardStory, 1f, () => ShowLevel(3));
         }
 
         void BuildCrew(Transform l)
         {
-            _crewVoyage = Text(l, 14, Soft, TextAlignmentOptions.Left);
-            Height(_crewVoyage, 22);
-            var head = Row(l, 48, 12);
-            _crewName = Text(head, 28, Light, TextAlignmentOptions.Left, 260);
-            string[] names = { _lines.CardDomainJade, _lines.CardDomainRuby, _lines.CardDomainGold };
-            for (int i = 0; i < 3; i++)
-            {
-                int index = i;
-                _domains[i] = MakeButton(head, names[i], 14, Plate, () => PickDomain(DomainOrder[index]), 110);
-            }
-            Spacer(head);
-            _crewNote = Text(l, 15, Soft, TextAlignmentOptions.Left);
-            Height(_crewNote, 24);
-            Spacer(l, 8f);
+            var head = Text(l, 13, Lab, TextAlignmentOptions.Left);
+            head.text = _lines.CardCrewHead ?? string.Empty;
+            Height(head, 18);
+            _crewName = Text(l, 28, Light, TextAlignmentOptions.Left);
+            Height(_crewName, 36);
+            _crewNote = Text(l, 13, Sub, TextAlignmentOptions.Left);
+            _crewNote.textWrappingMode = TextWrappingModes.Normal;
+            Height(_crewNote, 34);
+            var seats = Row(l, 380, 12);
             string[] settings = { _lines.CardSettingVessel, _lines.CardSettingPilot, _lines.CardSettingElement, _lines.CardSettingArtifact };
             for (int s = 0; s < 3; s++)
             {
-                var row = Node("Seat" + s, l);
-                Height(row, 196);
-                Fill(row, Plate);
+                var col = Column(seats, 6);
+                Flex(col);
                 var seat = _seats[s] = new Seat();
-                seat.Edge = row.gameObject.AddComponent<Outline>();
-                seat.Edge.effectColor = Line;
-                seat.Edge.effectDistance = new Vector2(1, -1);
-                seat.Who = Text(row, 14, Soft, TextAlignmentOptions.TopLeft);
-                var wrt = seat.Who.rectTransform;
-                wrt.anchorMin = new Vector2(0f, 1f);
-                wrt.anchorMax = new Vector2(0.34f, 1f);
-                wrt.pivot = new Vector2(0f, 1f);
-                wrt.offsetMin = new Vector2(16f, -34f);
-                wrt.offsetMax = new Vector2(0f, -12f);
-                var hull = Node("Hull", row);
-                hull.anchorMin = new Vector2(0f, 0f);
-                hull.anchorMax = new Vector2(0.34f, 1f);
-                hull.offsetMin = new Vector2(12f, 12f);
-                hull.offsetMax = new Vector2(-8f, -40f);
+                seat.Role = Text(col, 11, Lab, TextAlignmentOptions.Left);
+                Height(seat.Role, 14);
+                seat.Who = Text(col, 17, Light, TextAlignmentOptions.Left);
+                Height(seat.Who, 22);
+                var hull = Node("Hull", col);
+                Height(hull, 84);
                 seat.Hull = hull.gameObject.AddComponent<Image>();
                 seat.Hull.preserveAspect = true;
                 seat.Hull.raycastTarget = false;
-                var grid = Node("Settings", row);
-                grid.anchorMin = new Vector2(0.34f, 0f);
-                grid.anchorMax = new Vector2(1f, 1f);
-                grid.offsetMin = new Vector2(8f, 14f);
-                grid.offsetMax = new Vector2(-14f, -14f);
-                var g = grid.gameObject.AddComponent<GridLayoutGroup>();
-                g.cellSize = new Vector2(220f, 76f);
-                g.spacing = new Vector2(10f, 10f);
-                g.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-                g.constraintCount = 2;
                 for (int k = 0; k < 4; k++)
                 {
                     int seatIndex = s, setting = k;
-                    var b = MakeButton(grid, string.Empty, 18, Plate, () => OpenStrip(seatIndex, setting, false), 0);
+                    var b = MakeButton(col, string.Empty, 15, Idle, () => ChangeSetting(seatIndex, setting), 0);
+                    Height(b.b.transform, 50);
                     b.t.alignment = TextAlignmentOptions.BottomLeft;
-                    b.t.margin = new Vector4(14, 0, 10, 10);
-                    var label = Text(b.b.transform, 14, Soft, TextAlignmentOptions.TopLeft);
+                    b.t.margin = new Vector4(10, 0, 10, 6);
+                    var label = Text(b.b.transform, 10, Lab, TextAlignmentOptions.TopLeft);
                     label.text = settings[k] ?? string.Empty;
-                    label.margin = new Vector4(14, 10, 10, 0);
+                    label.margin = new Vector4(10, 6, 10, 0);
                     Stretch(label.rectTransform);
-                    var edge = b.b.gameObject.AddComponent<Outline>();
-                    edge.effectDistance = new Vector2(2, -2);
-                    edge.effectColor = Line;
-                    seat.Settings[k] = (b.b, label, b.t, edge);
+                    seat.Settings[k] = (b.b, label, b.t);
                 }
-                if (s < 2) Spacer(l, 10f);
             }
             Spacer(l, true);
-            var buttons = Row(l, 56, 10);
-            var save = MakeButton(buttons, _lines.CardSaveSquad, 18, Lime, SaveSquad, 0);
-            save.t.color = OnLime;
-            Le(save.b).flexibleWidth = 2f;
-            _save = save.b;
-            _saveLabel = save.t;
-            Flex(MakeButton(buttons, _lines.CardVoyage, 14, Plate, () => ShowLevel(1), 0).b);
+            var buttons = Row(l, 48, 10);
+            _sail2 = BigButton(buttons, _lines.CardSetSail, 2f, () => _model?.SetSail?.Invoke());
+            _save = BigButton(buttons, _lines.CardSaveSquad, 1.2f, SaveSquad);
+            _saveLabel = _save.GetComponentInChildren<TMP_Text>(true);
+            BigButton(buttons, _lines.CardVoyage, 1f, () => ShowLevel(1));
         }
 
         void BuildStory(Transform l)
         {
-            _storyKicker = Text(l, 14, Soft, TextAlignmentOptions.Left);
-            Height(_storyKicker, 22);
-            _storyTitle = Text(l, 36, Light, TextAlignmentOptions.Left);
-            Height(_storyTitle, 46);
-            Spacer(l, 12f);
-            PlacePanel(l, 500, out _placeArt3, out var words);
-            _beatLabel = Text(words, 14, Soft, TextAlignmentOptions.Left);
-            Height(_beatLabel, 20);
-            _beatLine = Text(words, 28, Light, TextAlignmentOptions.BottomLeft);
+            var head = Row(l, 24, 10);
+            var h = Text(head, 13, Lab, TextAlignmentOptions.Left, 80);
+            h.text = _lines.CardStoryHead ?? string.Empty;
+            var opt = Text(head, 11, Sub, TextAlignmentOptions.Left, 100);
+            opt.text = _lines.CardStoryOptional ?? string.Empty;
+            Spacer(head);
+            Spacer(l, true);
+            _beatLabel = Text(l, 13, Route, TextAlignmentOptions.Left);
+            Height(_beatLabel, 18);
+            _beatLine = Text(l, 32, Light, TextAlignmentOptions.TopLeft);
             _beatLine.textWrappingMode = TextWrappingModes.Normal;
-            Height(_beatLine, 120);
-            _beatBy = Text(words, 15, Light, TextAlignmentOptions.Left);
-            Height(_beatBy, 22);
-            Spacer(l, 12f);
-            var nav = Row(l, 44, 12);
-            MakeButton(nav, _lines.CardPrevious, 22, Plate, () => StepBeat(-1), 56);
+            Height(_beatLine, 170);
+            _beatBy = Text(l, 13, Sub, TextAlignmentOptions.Left);
+            Height(_beatBy, 18);
+            Spacer(l, true);
+            var nav = Row(l, 32, 12);
             Spacer(nav);
-            for (int i = 0; i < 6; i++)
+            MakeButton(nav, _lines.CardPrevious, 18, Plate, () => StepBeat(-1), 44);
+            for (int i = 0; i < 4; i++)
             {
                 var d = Node("Dot" + i, nav);
-                Width(d, 12);
+                Width(d, 8);
                 Height(d, 4);
-                _dots.Add(Fill(d, Line));
+                _dots.Add(Fill(d, Sub));
             }
+            MakeButton(nav, _lines.CardNext, 18, Plate, () => StepBeat(+1), 44);
             Spacer(nav);
-            MakeButton(nav, _lines.CardNext, 22, Plate, () => StepBeat(+1), 56);
-            Spacer(l, true);
-            var buttons = Row(l, 56, 10);
-            _sail3 = BigButton(buttons, _lines.CardSetSail, () => _model?.SetSail?.Invoke());
-            Le(_sail3).flexibleWidth = 2f;
-            Flex(MakeButton(buttons, _lines.CardVoyage, 14, Plate, () => ShowLevel(1), 0).b);
-        }
-
-        /// <summary>A panel filled with a place's close-up; words go in its foot (returned).</summary>
-        RectTransform PlacePanel(Transform parent, float height, out RawImage art, out RectTransform words)
-        {
-            var panel = Node("Place", parent);
-            Height(panel, height);
-            Fill(panel, Deep);
-            panel.gameObject.AddComponent<RectMask2D>();
-            var a = Node("Art", panel);
-            Stretch(a);
-            art = a.gameObject.AddComponent<RawImage>();
-            art.raycastTarget = false;
-            var edge = panel.gameObject.AddComponent<Outline>();
-            edge.effectColor = Line;
-            edge.effectDistance = new Vector2(1, -1);
-            words = Node("Words", panel);
-            words.anchorMin = new Vector2(0f, 0f);
-            words.anchorMax = new Vector2(1f, 0f);
-            words.pivot = new Vector2(0.5f, 0f);
-            words.offsetMin = new Vector2(30f, 26f);
-            words.offsetMax = new Vector2(-30f, 26f);
-            var v = words.gameObject.AddComponent<VerticalLayoutGroup>();
-            v.spacing = 8;
-            v.childControlWidth = v.childControlHeight = true;
-            v.childForceExpandWidth = true;
-            v.childForceExpandHeight = false;
-            v.childAlignment = TextAnchor.LowerLeft;
-            var fit = words.gameObject.AddComponent<ContentSizeFitter>();
-            fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            return panel;
-        }
-
-        void BuildStrip()
-        {
-            _strip = Node("Strip", _panel);
-            _strip.anchorMin = new Vector2(0f, 1f);
-            _strip.anchorMax = new Vector2(1f, 1f);
-            _strip.pivot = new Vector2(0.5f, 1f);
-            _strip.sizeDelta = new Vector2(0f, 236f);
-            _strip.anchoredPosition = Vector2.zero;
-            var bg = Fill(_strip, new Color(Deep.r, Deep.g, Deep.b, 0.96f));
-            bg.raycastTarget = true;
-            var edge = _strip.gameObject.AddComponent<Outline>();
-            edge.effectColor = Selection;
-            edge.effectDistance = new Vector2(1, -1);
-            var head = Row(_strip, 30, 10);
-            var hrt = head;
-            hrt.anchorMin = new Vector2(0f, 1f);
-            hrt.anchorMax = new Vector2(1f, 1f);
-            hrt.pivot = new Vector2(0.5f, 1f);
-            hrt.offsetMin = new Vector2(20f, -46f);
-            hrt.offsetMax = new Vector2(-14f, -14f);
-            _stripCaption = Text(head, 14, Light, TextAlignmentOptions.Left);
-            Flex(_stripCaption);
-            MakeButton(head, _lines.CardBack, 14, Plate, CloseStrip, 110);
-            _stripTiles = Node("Tiles", _strip);
-            _stripTiles.anchorMin = Vector2.zero;
-            _stripTiles.anchorMax = Vector2.one;
-            _stripTiles.offsetMin = new Vector2(16f, 16f);
-            _stripTiles.offsetMax = new Vector2(-16f, -58f);
-            var h = _stripTiles.gameObject.AddComponent<HorizontalLayoutGroup>();
-            h.spacing = 10;
-            h.childControlWidth = h.childControlHeight = true;
-            h.childForceExpandWidth = h.childForceExpandHeight = true;
-            _strip.gameObject.SetActive(false);
+            var buttons = Row(l, 48, 10);
+            _sail3 = BigButton(buttons, _lines.CardSetSail, 2f, () => _model?.SetSail?.Invoke());
+            BigButton(buttons, _lines.CardVoyage, 1f, () => ShowLevel(1));
         }
 
         // ── Showing ──────────────────────────────────────────────────────────
 
-        public bool IsOpen => gameObject.activeSelf;
+        public bool IsOpen => _open;
 
-        /// <summary>Show the column on <paramref name="model"/>, on the voyage view unless <paramref name="keepLevel"/>
-        /// and the same picked card.</summary>
+        float PanelWidth => _root ? Mathf.Max(1f, _root.rect.width) : 760f;
+
+        /// <summary>Slide the card open on <paramref name="model"/> (or redraw it, if it is open), on its first level
+        /// unless <paramref name="keepLevel"/>.</summary>
         public void Show(Model model, bool keepLevel = false)
         {
-            bool same = _model != null && model != null && _model.Picked == model.Picked && _model.Title == model.Title;
+            bool sameVoyage = _model != null && model != null && _model.Title == model.Title;
             _model = model;
-            if (!keepLevel || !same)
+            if (!keepLevel || !sameVoyage)
             {
                 _level = 1;
                 _beat = 0;
             }
-            if (!gameObject.activeSelf) gameObject.SetActive(true);
             Draw();
+            if (!_open)
+            {
+                _open = true;
+                Animate(true);
+            }
         }
 
-        /// <summary>Put the column away (no voyage to show), dropping an unsaved change.</summary>
+        /// <summary>Slide the card shut.</summary>
         public void Hide()
         {
+            if (!_open) return;
+            _open = false;
             DropDraft();
-            CloseStrip();
-            if (gameObject.activeSelf) gameObject.SetActive(false);
+            Animate(false);
+        }
+
+        void Animate(bool open)
+        {
+            _from = _panel.anchoredPosition.x;
+            _to = open ? 0f : PanelWidth + 40f;
+            _t = 0f;
+            _group.interactable = _group.blocksRaycasts = open;
+        }
+
+        void Update()
+        {
+            if (!_panel) return;
+            if (_t < 1f)
+            {
+                _t = Mathf.Min(1f, _t + Time.unscaledDeltaTime / Slide);
+                // OutQuint, the style foundation's panel motion.
+                float e = 1f - Mathf.Pow(1f - _t, 5f);
+                _panel.anchoredPosition = new Vector2(Mathf.Lerp(_from, _to, e), 0f);
+                _group.alpha = Mathf.Lerp(_open ? 0f : 1f, _open ? 1f : 0f, e);
+            }
+            if (_open && _level == 1 && _sweep && _routeLine)
+            {
+                // The light sweeps the course every 4.2 s; the destination breathes as it arrives.
+                float cycle = Mathf.Repeat(Time.unscaledTime, 4.2f) / 2.9f;
+                float w = _routeLine.rect.width;
+                _sweep.anchoredPosition = new Vector2(Mathf.Clamp01(cycle) * w, 0f);
+                _sweep.gameObject.SetActive(cycle <= 1f);
+                if (_endNode) _endNode.transform.localScale = Vector3.one * (1f + 0.25f * Mathf.Max(0f, 1f - Mathf.Abs(cycle - 1f) * 4f));
+            }
         }
 
         void ShowLevel(int level)
         {
             _level = Mathf.Clamp(level, 1, 3);
-            CloseStrip();
             Draw();
         }
 
@@ -530,35 +469,25 @@ namespace CosmicShore.UI
         void Draw()
         {
             if (_model == null) return;
-            bool under = _model.Underway;
-            _l0.SetActive(under);
-            _l1.SetActive(!under && _level == 1);
-            _l2.SetActive(!under && _level == 2);
-            _l3.SetActive(!under && _level == 3);
+            _l1.SetActive(_level == 1);
+            _l2.SetActive(_level == 2);
+            _l3.SetActive(_level == 3);
+            for (int i = 0; i < 3; i++) if (_crumbs[i]) _crumbs[i].color = i + 1 == _level ? Light : Lab;
+            Set(_pager, _model.Pager);
             bool sail = _model.SetSail != null;
-            if (_sail1) _sail1.interactable = sail;
-            if (_sail3) _sail3.interactable = sail;
+            foreach (var b in new[] { _sail1, _sail2, _sail3 }) if (b) b.interactable = sail;
+            if (_map) _poster.Show(_map, _model.Course, Route, Ark, Sea);
 
-            DrawFlow();
+            Set(_chipCourse, _model.CourseChip);
+            Set(_chipFound, _model.FoundBy);
             Set(_kicker, _model.Kicker);
-            _numbers.SetActive(!_model.Escort);
-            _escort.SetActive(_model.Escort);
+            Set(_title, _model.Title);
             Set(_course, _model.CourseValue);
             Set(_sail, _model.SailValue);
             Set(_intensity, _model.IntensityValue);
-            Set(_escortKicker, _model.Kicker);
-            Set(_difficulty, _model.Difficulty);
-
-            Place(_placeArt0, _model.PlaceArt);
-            Set(_placeName0, _model.PlaceName);
-            Set(_underwayLine, _model.UnderwayLine);
-            Set(_underwayCourse, _model.UnderwayCourse);
-            Set(_sailAfter, _lines.CardSailAfter);
-
-            Set(_crewVoyage, _model.CrewVoyage);
-            Set(_storyKicker, _model.Kicker);
-            Set(_storyTitle, _model.Title);
-            Place(_placeArt3, _model.PlaceArt);
+            Set(_cells, _model.Cells);
+            Set(_from_, _model.From);
+            Set(_toName, _model.To);
             DrawSquad();
 
             int beats = _model.Beats.Count;
@@ -570,98 +499,13 @@ namespace CosmicShore.UI
                 Set(_beatLine, b.Line);
                 Set(_beatBy, b.By);
             }
-            else
-            {
-                // No beats (the Ark escort): nothing of the last voyage's story stays on screen.
-                Set(_beatLabel, string.Empty);
-                Set(_beatLine, string.Empty);
-                Set(_beatBy, string.Empty);
-            }
             for (int i = 0; i < _dots.Count; i++)
             {
                 _dots[i].gameObject.SetActive(i < beats);
-                _dots[i].color = i == _beat ? Light : Line;
+                _dots[i].color = i == _beat ? Route : Sub;
                 var le = _dots[i].GetComponent<LayoutElement>();
-                if (le) le.preferredWidth = i == _beat ? 30f : 12f;
+                if (le) le.preferredWidth = i == _beat ? 28f : 8f;
             }
-        }
-
-        void DrawFlow()
-        {
-            var flow = _model.Flow;
-            while (_cards.Count < flow.Count) _cards.Add(MakeCard(_cards.Count));
-            float step = Mathf.Max(200f, _flow.rect.width * 0.33f);
-            for (int i = 0; i < _cards.Count; i++)
-            {
-                var c = _cards[i];
-                bool shown = i < flow.Count;
-                c.gameObject.SetActive(shown);
-                if (!shown) continue;
-                c.Index = i;
-                c.Art.texture = flow[i].Art;
-                c.Art.uvRect = Cover(flow[i].Art, CardWidth / CardHeight);
-                c.Name.text = flow[i].Name ?? string.Empty;
-                int offset = i - _model.Picked;
-                c.Pose(offset, step);
-                var outline = c.Edge.GetComponent<Outline>();
-                if (outline) outline.effectColor = offset == 0 ? Selection : Line;
-            }
-            // The picked card stands in front: the further out, the further back.
-            var order = new List<VoyageFlowCard>();
-            for (int i = 0; i < flow.Count; i++) order.Add(_cards[i]);
-            order.Sort((a, b) => Mathf.Abs(b.Index - _model.Picked).CompareTo(Mathf.Abs(a.Index - _model.Picked)));
-            foreach (var c in order) c.transform.SetAsLastSibling();
-        }
-
-        VoyageFlowCard MakeCard(int index)
-        {
-            var rt = Node("Card" + index, _flow);
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(CardWidth, CardHeight);
-            var bg = rt.gameObject.AddComponent<Image>();
-            bg.color = Deep;
-            var b = rt.gameObject.AddComponent<Button>();
-            b.targetGraphic = bg;
-            var edge = rt.gameObject.AddComponent<Outline>();
-            edge.effectDistance = new Vector2(2, -2);
-            edge.effectColor = Line;
-            var a = Node("Art", rt);
-            Stretch(a);
-            var art = a.gameObject.AddComponent<RawImage>();
-            art.raycastTarget = false;
-            var name = Text(rt, 28, Light, TextAlignmentOptions.BottomLeft);
-            Stretch(name.rectTransform);
-            name.margin = new Vector4(24, 0, 20, 22);
-            name.textWrappingMode = TextWrappingModes.Normal;
-            var card = rt.gameObject.AddComponent<VoyageFlowCard>();
-            card.Init(b, art, name, bg);
-            card.Index = index;
-            card.Picked = i => Pick?.Invoke(i);
-            return card;
-        }
-
-        /// <summary>The uv rectangle that fills an <paramref name="aspect"/>-shaped frame with <paramref name="tex"/>,
-        /// centred, cropping what spills (CSS object-fit: cover).</summary>
-        public static Rect Cover(Texture tex, float aspect)
-        {
-            if (!tex || tex.height == 0 || aspect <= 0f) return new Rect(0f, 0f, 1f, 1f);
-            float t = (float)tex.width / tex.height;
-            if (t > aspect)
-            {
-                float w = aspect / t;
-                return new Rect((1f - w) * 0.5f, 0f, w, 1f);
-            }
-            float h = t / aspect;
-            return new Rect(0f, (1f - h) * 0.5f, 1f, h);
-        }
-
-        static void Place(RawImage img, Texture tex)
-        {
-            if (!img) return;
-            img.texture = tex;
-            img.enabled = tex;
-            var r = img.rectTransform.rect;
-            img.uvRect = Cover(tex, r.height > 1f ? r.width / r.height : 1.5f);
         }
 
         static void Set(TMP_Text t, string value)
@@ -673,24 +517,7 @@ namespace CosmicShore.UI
 
         static SquadBook Book => UGSDataService.Instance?.SquadRepo?.Data?.Book;
 
-        // Never `GetComponent<T>() ?? Add...`: in the Editor a missing component comes back as a fake-null object, which
-        // `??` keeps (Unity overloads ==, not ??), so the add never runs and the next setter throws.
-        static Outline EdgeOf(Button b) => b.TryGetComponent(out Outline e) ? e : b.gameObject.AddComponent<Outline>();
-
-        /// <summary>Who the published squad record names (the Ark's SquadsPage publishes the same record); empty while
-        /// unknown, and then nothing is published from here.</summary>
-        public Func<string> PlayerName;
-
-        /// <summary>Keep the book; with <paramref name="publish"/>, also write the public squad record, as the Ark does, so
-        /// the friends in the squad (or its owner, for a joined one) see the change.</summary>
-        void SaveBook(bool publish = false)
-        {
-            UGSDataService.Instance?.SquadRepo?.MarkDirty();
-            if (!publish || !SquadDirectory.IsReady) return;
-            string name = PlayerName?.Invoke();
-            if (string.IsNullOrEmpty(name)) return;
-            SquadDirectory.PublishAsync(SquadMembership.BuildPublicRecord(Book, name)).Forget();
-        }
+        static void SaveBook() => UGSDataService.Instance?.SquadRepo?.MarkDirty();
 
         void DrawSquad()
         {
@@ -703,14 +530,13 @@ namespace CosmicShore.UI
                 _presets[i].b.gameObject.SetActive(show);
                 if (!show) continue;
                 var s = book.Squads[i];
-                bool on = i == book.ActiveIndex;
                 _presets[i].t.text = s?.Name ?? string.Empty;
-                _presets[i].t.color = on ? Light : Soft;
-                var edge = EdgeOf(_presets[i].b);
-                edge.effectDistance = new Vector2(2, -2);
-                edge.effectColor = on ? Selection : Line;
+                bool on = i == book.ActiveIndex;
+                _presets[i].fill.color = on ? Picked : Idle;
+                _presets[i].t.color = on ? Light : Sub;
             }
             if (_noSquad) _noSquad.gameObject.SetActive(count == 0);
+            Set(_squadName, active?.Name);
             Set(_crewName, active?.Name);
             Set(_crewNote, active != null && active.IsJoined()
                 ? TemplateText.Fill(_lines.CardCrewJoined, "owner", active.OwnerName)
@@ -718,44 +544,19 @@ namespace CosmicShore.UI
             if (_saveLabel) _saveLabel.text = (Drafting ? _lines.CardSaveSquad : _lines.CardSaved) ?? string.Empty;
             if (_save) _save.interactable = Drafting;
 
-            var palette = ThemeManager.LiveOr(null);
-            for (int i = 0; i < 3; i++)
-            {
-                var d = DomainOrder[i];
-                bool on = active != null && active.Domain == d;
-                _domains[i].b.interactable = active != null && !active.IsJoined();
-                _domains[i].t.color = on ? Light : Soft;
-                _domains[i].fill.color = palette ? Color.Lerp(Plate, palette.GetDomainSignalColor(d), on ? 0.35f : 0.12f) : Plate;
-                var edge = EdgeOf(_domains[i].b);
-                edge.effectDistance = new Vector2(2, -2);
-                edge.effectColor = on ? Selection : Line;
-            }
-
             string[] roles = { _lines.CardSeatLeader, _lines.CardSeatRogueOne, _lines.CardSeatRogueTwo };
-            var line = new System.Text.StringBuilder();
             for (int seat = 0; seat < 3; seat++)
             {
                 var slot = active != null ? active.GetSlot(seat) : default;
                 var vessel = active != null ? Vessel(slot.Vessel) : null;
                 var sprite = Hull(vessel);
-                _formation[seat].hull.sprite = sprite;
-                _formation[seat].hull.enabled = sprite;
-                _formation[seat].b.interactable = active != null && CanEdit(active, seat);
-                _formation[seat].edge.effectColor = _stripSaves && _stripSeat == seat ? Selection : Clear;
-                _formation0[seat].sprite = sprite;
-                _formation0[seat].enabled = sprite;
-                if (active != null && vessel)
-                {
-                    if (line.Length > 0) line.Append(_lines.CardCrewSeparator);
-                    line.Append(TemplateText.Fill(_lines.CardCrewSeat, "who", Who(active, seat, slot), "vessel", vessel.CardName));
-                }
-
+                _formation[seat].sprite = sprite;
+                _formation[seat].enabled = sprite;
                 var view = _seats[seat];
-                Set(view.Who, active == null ? string.Empty
-                    : TemplateText.Fill(_lines.CardSeatWho, "role", roles[seat], "who", Who(active, seat, slot)));
+                Set(view.Role, roles[seat]);
+                Set(view.Who, active == null ? string.Empty : Who(active, seat, slot));
                 view.Hull.sprite = sprite;
                 view.Hull.enabled = sprite;
-                view.Edge.effectColor = !_stripSaves && _stripSeat == seat ? Selection : Line;
                 bool editable = active != null && CanEdit(active, seat);
                 var keywords = vessel ? vessel.Keywords : null;
                 var pilot = active != null && _catalog ? _catalog.ResolvePilot(slot, keywords) : null;
@@ -767,8 +568,7 @@ namespace CosmicShore.UI
                 if (editable && pilot && PilotLoadoutStore.TryGetPilot(slot.PilotId, out var p) && p.CallsignOrTemplate() == pilot.Id) person = p;
                 if (editable && artifact && PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var a) && a.Kind() == artifact.Id) held = a;
                 string word = pilot ? Callsigns.WordOf(pilot.Vision) : string.Empty;
-                Set(view.Settings[1].label, string.IsNullOrEmpty(word) ? _lines.CardSettingPilot
-                    : TemplateText.Fill(_lines.CardSettingWord, "setting", _lines.CardSettingPilot, "word", word));
+                Set(view.Settings[1].label, string.IsNullOrEmpty(word) ? _lines.CardSettingPilot : _lines.CardSettingPilot + " - " + word);
                 string[] values =
                 {
                     vessel ? vessel.CardName : string.Empty,
@@ -780,11 +580,8 @@ namespace CosmicShore.UI
                 {
                     Set(view.Settings[k].value, active == null ? string.Empty : values[k]);
                     view.Settings[k].b.interactable = editable;
-                    view.Settings[k].edge.effectColor = !_stripSaves && _stripSeat == seat && _stripSetting == k ? Selection : Line;
                 }
             }
-            Set(_crewLine, line.ToString());
-            Set(_crewLine0, line.ToString());
         }
 
         void PickSquad(int index)
@@ -793,26 +590,16 @@ namespace CosmicShore.UI
             if (book == null || index == book.ActiveIndex) return;
             if (!book.TrySetActive(index)) return;
             DropDraft();
-            CloseStrip();
             SaveBook();
-            // The pilots seated in the squad decide which voyages are offered: the window redraws.
+            // The pilots seated in the squad decide which voyages are offered: the window redraws its cards.
             SquadChanged?.Invoke();
             Draw();
         }
 
-        void PickDomain(Domains domain)
-        {
-            var book = Book;
-            var active = Editing(book);
-            if (active == null || active.IsJoined() || active.Domain == domain) return;
-            Draft(book).Domain = domain;
-            Draw();
-        }
-
         // The Ark's rules (SquadsPage.IsMySeat / CanEdit): your own card, and the AI or open cards of a squad you made.
-        static bool IsMySeat(SavedSquad squad, int seat) => squad.IsJoined() ? seat == squad.MySeat : seat == 0;
+        internal static bool IsMySeat(SavedSquad squad, int seat) => squad.IsJoined() ? seat == squad.MySeat : seat == 0;
 
-        static bool CanEdit(SavedSquad squad, int seat) =>
+        internal static bool CanEdit(SavedSquad squad, int seat) =>
             squad != null && (IsMySeat(squad, seat) || (!squad.IsJoined() && seat > 0 && !squad.GetSlot(seat).IsPlayer()));
 
         string Who(SavedSquad squad, int seat, SquadSlot slot)
@@ -823,220 +610,107 @@ namespace CosmicShore.UI
             return _lines.CardSeatAi;
         }
 
-        /// <summary>The squad being edited: the draft, made from the active squad on the first change.</summary>
-        SavedSquad Draft(SquadBook book)
-        {
-            if (_draft == null)
-            {
-                var active = book.GetActive();
-                _draft = SquadMembership.Copy(active);
-                _draftId = active?.Id;
-            }
-            return _draft;
-        }
-
-        // ── The strip of choices (one press picks) ───────────────────────────
-
-        /// <summary>Open the strip of every choice for <paramref name="seat"/>'s <paramref name="setting"/> (0 vessel,
-        /// 1 pilot, 2 element, 3 artifact). From the voyage view the pick is saved at once (<paramref name="saves"/>); in
-        /// Ark crew it waits for Save squad. Pressing the same setting again shuts it.</summary>
-        void OpenStrip(int seat, int setting, bool saves)
-        {
-            if (_stripSeat == seat && _stripSetting == setting && _stripSaves == saves && _strip.gameObject.activeSelf)
-            {
-                CloseStrip();
-                return;
-            }
-            var book = Book;
-            var squad = Editing(book);
-            if (squad == null || !CanEdit(squad, seat)) return;
-            Choices(squad, seat, setting);
-            if (_choices.Count == 0) return;
-            _stripSeat = seat;
-            _stripSetting = setting;
-            _stripSaves = saves;
-            string[] roles = { _lines.CardSeatLeader, _lines.CardSeatRogueOne, _lines.CardSeatRogueTwo };
-            string[] settings = { _lines.CardSettingVessel, _lines.CardSettingPilot, _lines.CardSettingElement, _lines.CardSettingArtifact };
-            Set(_stripCaption, TemplateText.Fill(_lines.CardPickSetting, "seat", roles[seat], "setting", settings[setting]));
-            string current = Current(squad.GetSlot(seat), setting);
-            while (_tiles.Count < _choices.Count) _tiles.Add(MakeTile(_tiles.Count));
-            for (int i = 0; i < _tiles.Count; i++)
-            {
-                bool shown = i < _choices.Count;
-                _tiles[i].b.gameObject.SetActive(shown);
-                if (!shown) continue;
-                var c = _choices[i];
-                _tiles[i].icon.sprite = c.Icon;
-                _tiles[i].icon.enabled = c.Icon;
-                _tiles[i].label.text = c.Label ?? string.Empty;
-                _tiles[i].edge.effectColor = c.Value == current ? Selection : Clear;
-            }
-            _strip.gameObject.SetActive(true);
-            _strip.SetAsLastSibling();
-            Draw();
-        }
-
-        void CloseStrip()
-        {
-            _stripSeat = _stripSetting = -1;
-            if (_strip) _strip.gameObject.SetActive(false);
-        }
-
-        (Button b, Image icon, TMP_Text label, Outline edge) MakeTile(int index)
-        {
-            var b = MakeButton(_stripTiles, string.Empty, 15, Clear, () => PickChoice(index), 0);
-            var icon = Node("Icon", b.b.transform);
-            icon.anchorMin = new Vector2(0f, 0.28f);
-            icon.anchorMax = new Vector2(1f, 1f);
-            icon.offsetMin = new Vector2(8f, 0f);
-            icon.offsetMax = new Vector2(-8f, -8f);
-            var img = icon.gameObject.AddComponent<Image>();
-            img.preserveAspect = true;
-            img.raycastTarget = false;
-            b.t.alignment = TextAlignmentOptions.Bottom;
-            b.t.margin = new Vector4(4, 0, 4, 8);
-            b.t.textWrappingMode = TextWrappingModes.Normal;
-            var edge = b.b.gameObject.AddComponent<Outline>();
-            edge.effectDistance = new Vector2(2, -2);
-            edge.effectColor = Clear;
-            return (b.b, img, b.t, edge);
-        }
-
-        void PickChoice(int index)
-        {
-            if (index < 0 || index >= _choices.Count || _stripSeat < 0) return;
-            int seat = _stripSeat, setting = _stripSetting;
-            bool saves = _stripSaves;
-            CloseStrip();
-            SetSetting(seat, setting, _choices[index].Value);
-            if (saves) SaveSquad();
-            else Draw();
-        }
-
-        /// <summary>The value a choice carries for <paramref name="slot"/>'s <paramref name="setting"/> as it stands.</summary>
-        static string Current(SquadSlot slot, int setting) => setting switch
-        {
-            0 => slot.Vessel.ToString(),
-            1 => PilotLoadoutStore.TryGetPilot(slot.PilotId, out var p) ? p.Id : slot.PilotId,
-            2 => slot.Element.ToString(),
-            _ => PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var a) ? a.Id : string.Empty,
-        };
-
-        /// <summary>Every choice the seat's setting offers, as the Ark's picker offers them.</summary>
-        void Choices(SavedSquad squad, int seat, int setting)
-        {
-            _choices.Clear();
-            var slot = squad.GetSlot(seat);
-            var vessel = Vessel(slot.Vessel);
-            switch (setting)
-            {
-                case 0:
-                    if (_vessels && _vessels.VesselList != null)
-                        foreach (var v in _vessels.VesselList)
-                            if (v && !v.IsLocked)
-                                _choices.Add(new Choice { Value = v.Class.ToString(), Label = v.CardName, Icon = Hull(v) });
-                    break;
-                case 1:
-                    // The crew's people whose callsign can fly the hull, in crew order.
-                    if (!_catalog || !vessel) break;
-                    PilotLoadoutStore.GetCrew(_crew);
-                    foreach (var person in _crew)
-                        if (_catalog.TryGetPilot(person.Id, out var callsign) && callsign && callsign.Requirement != null
-                            && callsign.Requirement.IsMetBy(vessel.Class, vessel.Keywords))
-                            _choices.Add(new Choice { Value = person.Id, Label = person.DisplayName(), Icon = callsign.Portrait ? callsign.Portrait : callsign.Icon });
-                    break;
-                case 2:
-                    for (int i = 0; i < Elements.Length; i++)
-                        _choices.Add(new Choice
-                        {
-                            Value = Elements[i].ToString(), Label = ElementName(Elements[i]),
-                            Icon = _elementShapes != null && i < _elementShapes.Length ? _elementShapes[i] : null,
-                        });
-                    break;
-                default:
-                    // The hoard's artifacts the hull can carry: each is one of a kind, so every seat this column edits (the
-                    // player's own, or an AI or open seat of a squad they made) carries only what is held. Empty is none.
-                    _choices.Add(new Choice { Value = string.Empty, Label = _lines.CardNoArtifact });
-                    if (!_catalog || !vessel) break;
-                    PilotLoadoutStore.GetHoard(_hoard);
-                    foreach (var artifact in _hoard)
-                        if (_catalog.TryGetArtifact(artifact.Id, out var kind) && kind && kind.Requirement != null
-                            && kind.Requirement.IsMetBy(vessel.Class, vessel.Keywords))
-                            _choices.Add(new Choice { Value = artifact.Id, Label = artifact.Name, Icon = kind.Icon });
-                    break;
-            }
-        }
-
-        /// <summary>Set <paramref name="seat"/>'s <paramref name="setting"/> to <paramref name="value"/> in the draft, then
-        /// keep each card on its own vessel and every seat piloted, as the Ark does.</summary>
-        void SetSetting(int seat, int setting, string value)
+        void ChangeSetting(int seat, int setting)
         {
             var book = Book;
             var active = book?.GetActive();
             if (active == null || !CanEdit(active, seat)) return;
-            var squad = Draft(book);
+            if (_draft == null)
+            {
+                _draft = SquadMembership.Copy(active);
+                _draftIndex = book.ActiveIndex;
+            }
+            var squad = _draft;
             var slot = squad.GetSlot(seat);
             string previousPilot = slot.PilotId;
             bool mine = IsMySeat(squad, seat);
             switch (setting)
             {
                 case 0:
-                    if (!Enum.TryParse(value, out VesselClassType cls) || cls == slot.Vessel) return;
-                    slot = slot.WithVessel(cls);
+                {
+                    var offered = new List<VesselClassType>();
+                    if (_vessels && _vessels.VesselList != null)
+                        foreach (var v in _vessels.VesselList)
+                            if (v && !v.IsLocked) offered.Add(v.Class);
+                    var next = VoyageCardRules.Cycle(offered, slot.Vessel);
+                    if (offered.Count == 0 || next == slot.Vessel) return;
+                    slot = slot.WithVessel(next);
                     // The player's own card starts on the person they keep in that vessel's Hangar seat (a crew id).
-                    if (mine) slot.PilotId = PilotLoadoutStore.GetPilot(cls);
+                    if (mine) slot.PilotId = PilotLoadoutStore.GetPilot(next);
                     break;
+                }
                 case 1:
-                    slot.PilotId = value;
+                {
+                    // The crew's people whose callsign can fly the hull, in crew order.
+                    var vessel = Vessel(slot.Vessel);
+                    _ids.Clear();
+                    if (_catalog && vessel)
+                    {
+                        PilotLoadoutStore.GetCrew(_crew);
+                        foreach (var person in _crew)
+                            if (_catalog.TryGetPilot(person.Id, out var callsign) && callsign && callsign.Requirement != null
+                                && callsign.Requirement.IsMetBy(vessel.Class, vessel.Keywords))
+                                _ids.Add(person.Id);
+                    }
+                    if (_ids.Count == 0) return;
+                    // A legacy callsign id cycles on from the person it resolves to.
+                    string current = PilotLoadoutStore.TryGetPilot(slot.PilotId, out var seated) ? seated.Id : slot.PilotId;
+                    slot.PilotId = VoyageCardRules.Cycle(_ids, current);
                     break;
+                }
                 case 2:
-                    if (!Enum.TryParse(value, out Element element)) return;
-                    slot.Element = element;
+                    slot.Element = VoyageCardRules.Cycle(Elements, slot.Element);
                     break;
                 default:
-                    slot.ArtifactId = string.IsNullOrEmpty(value) ? null : value;
+                {
+                    // The hoard's artifacts the hull can carry: each is one of a kind, so every seat this card edits (the
+                    // player's own, or an AI or open seat of a squad they made) carries only what is held. Null is none.
+                    var vessel = Vessel(slot.Vessel);
+                    _ids.Clear();
+                    _ids.Add(null);
+                    if (_catalog && vessel)
+                    {
+                        PilotLoadoutStore.GetHoard(_hoard);
+                        foreach (var artifact in _hoard)
+                            if (_catalog.TryGetArtifact(artifact.Id, out var kind) && kind && kind.Requirement != null
+                                && kind.Requirement.IsMetBy(vessel.Class, vessel.Keywords))
+                                _ids.Add(artifact.Id);
+                    }
+                    // A legacy kind id cycles on from the artifact it resolves to.
+                    string current = PilotLoadoutStore.TryGetArtifact(slot.ArtifactId, out var carried) ? carried.Id : null;
+                    slot.ArtifactId = VoyageCardRules.Cycle(_ids, current);
                     break;
+                }
             }
             squad.SetSlot(seat, slot);
             // Each vessel has its own pilot and artifact: one moved onto this vessel leaves the others (the pilot swaps).
             squad.KeepCardsOwn(seat, previousPilot);
             // Every vessel needs a pilot: an empty or doubled seat takes the next free person of the crew.
-            // A legacy callsign id on one of the player's cards becomes the person it resolves to first, so the
-            // "another seat flies them" test compares people (SquadsPage.FillPilots).
-            for (int s = 0; s < SavedSquad.SlotCount; s++)
-            {
-                if (!CanEdit(squad, s)) continue;
-                var own = squad.GetSlot(s);
-                if (own.UsesDefaultPilot() || !PilotLoadoutStore.TryGetPilot(own.PilotId, out var person) || person.Id == own.PilotId) continue;
-                own.PilotId = person.Id;
-                squad.SetSlot(s, own);
-            }
             PilotLoadoutStore.GetCrew(_crew);
             _ids.Clear();
             foreach (var p in _crew) if (!string.IsNullOrEmpty(p.Id)) _ids.Add(p.Id);
             squad.FillPilots(_ids);
+            Draw();
         }
 
-        /// <summary>The squad shown: the unsaved copy while one is being edited, else the active squad.</summary>
+        /// <summary>The squad Ark crew shows: the unsaved copy while one is being edited, else the active squad.</summary>
         SavedSquad Editing(SquadBook book) =>
-            _draft != null && DraftIsOf(book?.GetActive()) ? _draft : book?.GetActive();
-
-        bool DraftIsOf(SavedSquad squad) => squad != null && !string.IsNullOrEmpty(_draftId) && squad.Id == _draftId;
+            _draft != null && book != null && _draftIndex == book.ActiveIndex ? _draft : book?.GetActive();
 
         void DropDraft()
         {
             _draft = null;
-            _draftId = null;
+            _draftIndex = -1;
         }
 
         void SaveSquad()
         {
             var book = Book;
             if (_draft == null || book?.Squads == null) return;
-            int at = book.Squads.FindIndex(DraftIsOf);
-            if (at >= 0) book.Squads[at] = _draft;
+            if (_draftIndex == book.ActiveIndex && _draftIndex >= 0 && _draftIndex < book.Squads.Count)
+                book.Squads[_draftIndex] = _draft;
             DropDraft();
-            SaveBook(publish: at >= 0);
+            SaveBook();
             SquadChanged?.Invoke();
             Draw();
         }
@@ -1105,12 +779,6 @@ namespace CosmicShore.UI
             else le.flexibleWidth = 1f;
         }
 
-        static void Spacer(Transform parent, float height)
-        {
-            var s = Node("Gap", parent);
-            Height(s, height);
-        }
-
         static RectTransform Row(Transform parent, float height, float spacing)
         {
             var r = Node("Row", parent);
@@ -1123,16 +791,23 @@ namespace CosmicShore.UI
             return r;
         }
 
-        static GameObject Level(Transform parent, string name)
+        static RectTransform Column(Transform parent, float spacing)
         {
-            var c = Node(name, parent);
+            var c = Node("Column", parent);
             var v = c.gameObject.AddComponent<VerticalLayoutGroup>();
-            v.spacing = 0;
+            v.spacing = spacing;
             v.childControlWidth = v.childControlHeight = true;
             v.childForceExpandWidth = true;
             v.childForceExpandHeight = false;
-            Le(c).flexibleHeight = 1f;
-            return c.gameObject;
+            return c;
+        }
+
+        static GameObject Level(Transform parent, string name)
+        {
+            var l = Column(parent, 10);
+            l.name = name;
+            Le(l).flexibleHeight = 1f;
+            return l.gameObject;
         }
 
         TMP_Text Text(Transform parent, float size, Color color, TextAlignmentOptions align, float width = -1f)
@@ -1154,6 +829,58 @@ namespace CosmicShore.UI
             return t;
         }
 
+        TMP_Text Chip(Transform parent, Color color)
+        {
+            // A plate as wide as its words: the row asks the plate for its width, the plate asks its text.
+            var plate = Node("Chip", parent);
+            Fill(plate, Plate);
+            var h = plate.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.padding = new RectOffset(10, 10, 4, 4);
+            h.childAlignment = TextAnchor.MiddleCenter;
+            h.childControlWidth = h.childControlHeight = true;
+            h.childForceExpandWidth = h.childForceExpandHeight = false;
+            return Text(plate, 12, color, TextAlignmentOptions.Center);
+        }
+
+        TMP_Text Number(Transform parent, string label)
+        {
+            var col = Column(parent, 2);
+            var value = Text(col, 28, Light, TextAlignmentOptions.Left);
+            Height(value, 32);
+            var l = Text(col, 10, Lab, TextAlignmentOptions.Left);
+            l.text = label ?? string.Empty;
+            Height(l, 14);
+            return value;
+        }
+
+        Image Node4(RectTransform route, Color c, bool right)
+        {
+            var n = Node(right ? "Destination" : "Ark", route);
+            n.anchorMin = n.anchorMax = new Vector2(right ? 1f : 0f, 1f);
+            n.sizeDelta = new Vector2(13f, 13f);
+            n.anchoredPosition = new Vector2(right ? -8f : 8f, -8f);
+            n.localRotation = Quaternion.Euler(0, 0, 45f);
+            return Fill(n, c);
+        }
+
+        TMP_Text EndLabel(RectTransform route, bool right, string under, Color underColor)
+        {
+            var name = Text(route, 13, Light, right ? TextAlignmentOptions.Right : TextAlignmentOptions.Left);
+            var rt = name.rectTransform;
+            rt.anchorMin = rt.anchorMax = new Vector2(right ? 1f : 0f, 1f);
+            rt.pivot = new Vector2(right ? 1f : 0f, 1f);
+            rt.sizeDelta = new Vector2(220f, 18f);
+            rt.anchoredPosition = new Vector2(0f, -20f);
+            var tag = Text(route, 10, underColor, right ? TextAlignmentOptions.Right : TextAlignmentOptions.Left);
+            tag.text = under ?? string.Empty;
+            var tr = tag.rectTransform;
+            tr.anchorMin = tr.anchorMax = rt.anchorMin;
+            tr.pivot = rt.pivot;
+            tr.sizeDelta = new Vector2(220f, 14f);
+            tr.anchoredPosition = new Vector2(0f, -40f);
+            return name;
+        }
+
         (Button b, TMP_Text t, Image fill) MakeButton(Transform parent, string label, float size, Color fill, Action onClick, float width)
         {
             var rt = Node("Button", parent);
@@ -1169,13 +896,13 @@ namespace CosmicShore.UI
             return (b, t, img);
         }
 
-        Button BigButton(Transform parent, string label, Action onClick)
+        Button BigButton(Transform parent, string label, float weight, Action onClick)
         {
             Button b;
             if (_buttonFrom)
             {
                 b = Instantiate(_buttonFrom, parent);
-                b.name = "SetSail";
+                b.name = "Action";
                 b.onClick.RemoveAllListeners();
                 b.gameObject.SetActive(true);
                 var rt = (RectTransform)b.transform;
@@ -1183,12 +910,12 @@ namespace CosmicShore.UI
                 b.interactable = true;
                 var t = b.GetComponentInChildren<TMP_Text>(true);
                 if (t) t.text = label ?? string.Empty;
-                b.onClick.AddListener(() => onClick());
             }
-            else b = MakeButton(parent, label, 18, Plate, onClick, 0).b;
+            else b = MakeButton(parent, label, 15, Plate, onClick, 0).b;
+            if (_buttonFrom) b.onClick.AddListener(() => onClick());
             var le = Le(b);
-            le.flexibleWidth = 1f;
-            le.minHeight = le.preferredHeight = 56f;
+            le.flexibleWidth = weight;
+            le.minHeight = le.preferredHeight = 48f;
             return b;
         }
     }
