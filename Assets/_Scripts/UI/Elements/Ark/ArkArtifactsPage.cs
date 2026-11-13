@@ -80,6 +80,11 @@ namespace CosmicShore.UI
         [Tooltip("Row 0 is the attuned track; rows 1-3 the fixed tracks, read-only.")]
         [SerializeField] private TrackRow[] tracks = new TrackRow[4];
         [SerializeField] private TMP_Text statusText;
+        [Tooltip("GIVE TO A SEAT: takes the picked artifact to the Squads tab, where the next seat picked carries it (R86).")]
+        [SerializeField] private KitButton giveButton;
+
+        /// <summary>Raised by GIVE TO A SEAT with the picked artifact's id and its name (the Ark takes it to the Squads tab).</summary>
+        public event System.Action<string, string> GiveRequested;
 
         [Header("Feeding")]
         [Tooltip("Crystals one press of FEED (or OMNI) spends. Each crystal adds a little less than the one before.")]
@@ -150,6 +155,7 @@ namespace CosmicShore.UI
             if (tracks.Length > 0 && tracks[0] != null)
             {
                 if (tracks[0].raiseButton) tracks[0].raiseButton.onClick.AddListener(() => Feed(false));
+                if (giveButton) giveButton.onClick.AddListener(Give);
                 if (tracks[0].omniButton) tracks[0].omniButton.onClick.AddListener(() => Feed(true));
             }
         }
@@ -196,6 +202,12 @@ namespace CosmicShore.UI
             for (int i = 0; i < _hoard.Count; i++)
                 if (_hoard[i].Id == _pickedId) return i;
             return -1;
+        }
+
+        void Give()
+        {
+            if (string.IsNullOrEmpty(_pickedId) || !PilotLoadoutStore.TryGetArtifact(_pickedId, out var artifact)) return;
+            GiveRequested?.Invoke(_pickedId, DisplayName(artifact));
         }
 
         void Feed(bool payWithOmni)
@@ -253,6 +265,7 @@ namespace CosmicShore.UI
                     TemplateText.Fill(rowLineTemplate, "element", ElementName(a.Element), "aspect", a.Aspect ?? string.Empty,
                         "level", Level(a.AttunedLevel()), "serial", a.Serial()), index == picked);
             }
+            if (giveButton) giveButton.interactable = _hoard.Count > 0;
             KitVisibility.SetShown(emptyGroup, _hoard.Count == 0);
             KitVisibility.SetShown(detailGroup, _hoard.Count > 0);
             if (_hoard.Count > 0) DrawDetail(_hoard[picked]);

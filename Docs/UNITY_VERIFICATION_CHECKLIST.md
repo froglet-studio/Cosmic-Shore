@@ -278,6 +278,59 @@ for both colours words are drawn in, over a white picture; a thinner plate needs
 560 x 744, which holds the longest story a pilot can have (14 lines), so a ten-line story leaves empty plate above
 the caption; the face margin 0.03 of the view; the crew cell 260 x 256 with a 180 close-up.
 
+---
+
+### 🔴 The Ark's HyperSea pass: tab changes through the pearl membrane (`claude/project-thread-s689ho`, 2026-11-13, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed** (Docs/MENU_REDESIGN_B.md section 197): `ArkBackdrop` prepares the next clip on a second player and
+carries the picture across with the `CosmicShore/UI/ArkPass` shader; `ArkTabsView` fades the page left and rises the page
+reached in step. Ran headless: `unity_refcompile` player and editor (no errors in the changed files),
+`author_ark_backdrop_assets.py --check`, `colour_trace.py --check`. `ArkPassTests` compiled, not run. No Unity editor ran.
+
+**Verify in editor:**
+1. Menu_Main, Play, open the Ark. CONVERTER to SQUADS: the hangar comes in from the right through a wobbling pearl
+   membrane, rainbow at its crest, the pier drifting left and pushing in; caustic light ripples over the hangar and
+   settles. No black frame, no frozen frame, no pink (a missing shader).
+2. SQUADS to CONVERTER: the same from the left. Press tabs quickly: each press starts from where the last one reached.
+3. SQUADS to PILOTS: the hangar passes into the dark, then the Pilots page shows on its veil. PILOTS to ARTIFACTS: the
+   room passes in from the dark.
+4. The page's words: the old page fades at once, the new one rises in once the membrane is past the middle. Buttons on
+   the old page do nothing after the press.
+5. CONVERT: the rest dissolves into the conversion (0.3 s), and the conversion into the Omni made. Change the squad's
+   domain on SQUADS: the hangar dissolves into the other domain's clip.
+5b. Each tab change picks A (membrane), B (ripple from the tab word pressed) or E (caustic veil) at random, 0.5 s each:
+   press tabs a dozen times and see all three; B's ring starts at the word you pressed.
+6. Tune the feel on `Assets/Resources/ArkBackdropConfig` (pass and dissolve seconds; written by
+   `author_ark_backdrop_assets.py`, so change the numbers there) and on the material's strengths (membrane width, lens,
+   sheen, split, push, drift, dip, caustics) in the shader's defaults.
+7. On a phone: no hitch when a pass starts (the second decode), and the Ark still frees both textures on leaving
+   (Memory Profiler: no "Ark backdrop A/B" textures after going Home).
+
+### 🔴 The Ark screen's backdrops: the Frogma renders as video behind Squads, Converter and Artifacts (`claude/dazzling-einstein-gnr5iw`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed** (Docs/MENU_REDESIGN_B.md section 190; it replaces sections 188-189's live Ark model, which Shombith
+rejected in the editor): `ElementalConverterView` plays `ArkBackdropConfig`'s clips through `ArkBackdrop` (VideoPlayer,
+unscaled time) behind each tab; Squads and Artifacts lost the opaque veil and follow the boards' layouts. Ran headless:
+`unity_refcompile` (no errors in project code), the `/ship` gates, `author_ark_backdrop_assets.py --check` (proven to fail
+on a missing clip and a drifted entry). No Unity editor ran.
+
+**Verify in editor:**
+1. Menu_Main, Play, open the Ark on CONVERTER: the pier video plays behind the recipe and the bar, the four crystals
+   turning over the deck. CONVERT: the conversion plays once, the recipe merges in step, then the Omni made loops.
+2. SQUADS: the hangar video with the squad lined up, no veil over it; change the domain chip: the clip changes domain.
+   The seat cards sit in the right column as on Frogma (R67).
+   Your card shows CHANGE VESSEL: it opens the squad's editor on your seat; pick another vessel, save: the card shows it.
+   A friend's card in your squad while they are offline shows OPEN THE SEAT (Lime): press it, the seat reads open and a
+   toast says the pad stands empty; online friends, AI seats and a joined squad's cards show neither button.
+   Each card's presence diamond: lit for you, an AI and an online friend, dim for an offline friend, none for an open seat.
+3. ARTIFACTS: the room (Rev 86) behind the list and the detail card, no veil.
+   GIVE TO A SEAT on the picked artifact's card: the Squads tab opens in the editor with a toast asking for a seat; press
+   a card: it carries the artifact (toast), save: the card's Artifact row shows it.
+4. DECOR: refused, as before.
+5. Settings: switch colour set to Photic and to Dart Frog: the hangar's clip follows.
+6. Leave the Ark and come back: the clips start again; no error about a missing clip in the console.
+7. Profiler on a phone build: the video decode cost on the Ark screen.
+
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** a sixth settings tab, REGION (globe icon), drawn by `Tools/Build/author_menu_settings.py`

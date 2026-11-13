@@ -666,13 +666,13 @@ Copied on 2026-11-13 from canvas version `1794582883-6c29` of **Frogma**: Rev 3 
 
 #### Rev 86 - The Artifacts room, A and B as one - the Reliquary's platform in the Gallery's hall
 
-- `R86ArtifactsAB.dc.html` (not copied yet) - Rev 86 ArtifactsAB - A + B - the Reliquary platform in the Gallery
+- [`R86ArtifactsAB.dc.html`](R86ArtifactsAB.dc.html) - Rev 86 ArtifactsAB - A + B - the Reliquary platform in the Gallery
 
 #### Rev 85 - The Artifacts room, three still mockups - A Reliquary, B Gallery, C Orrery
 
-- `R85ArtifactsA.dc.html` (not copied yet) - Rev 85 ArtifactsA - A - The Reliquary
-- `R85ArtifactsB.dc.html` (not copied yet) - Rev 85 ArtifactsB - B - The Gallery
-- `R85ArtifactsC.dc.html` (not copied yet) - Rev 85 ArtifactsC - C - The Orrery
+- [`R85ArtifactsA.dc.html`](R85ArtifactsA.dc.html) - Rev 85 ArtifactsA - A - The Reliquary
+- [`R85ArtifactsB.dc.html`](R85ArtifactsB.dc.html) - Rev 85 ArtifactsB - B - The Gallery
+- [`R85ArtifactsC.dc.html`](R85ArtifactsC.dc.html) - Rev 85 ArtifactsC - C - The Orrery
 
 #### Rev 67 - The Ark screen inside the Ark: every tab its own room, animated, in every colour set (Rev 61 C's style)
 
@@ -680,21 +680,21 @@ Copied on 2026-11-13 from canvas version `1794582883-6c29` of **Frogma**: Rev 3 
 
 #### Rev 64 - The Ark's lobby as a live scene: the hangar moving (the cell drifting, rims pulsing, haze, the doors), a separate mockup
 
-- `R64Live.dc.html` (not copied yet) - Rev 64 Live - Live scene (animated) - interactive
+- [`R64Live.dc.html`](R64Live.dc.html) - Rev 64 Live - Live scene (animated) - interactive
 
 #### Rev 62 - The Ark's lobby by the game's own light: C and E's style, portholes onto the cell, no vessels
 
-- `R62A.dc.html` (not copied yet) - Rev 62 A - The pads (recommended) - interactive
-- `R62B.dc.html` (not copied yet) - Rev 62 B - The map wall - interactive
-- `R62C.dc.html` (not copied yet) - Rev 62 C - Down the bay - interactive
-- `R62D.dc.html` (not copied yet) - Rev 62 D - The porthole row - interactive
-- `R62E.dc.html` (not copied yet) - Rev 62 E - Across the bay - interactive
-- `R62F.dc.html` (not copied yet) - Rev 62 F - At a porthole - interactive
+- [`R62A.dc.html`](R62A.dc.html) - Rev 62 A - The pads (recommended) - interactive
+- [`R62B.dc.html`](R62B.dc.html) - Rev 62 B - The map wall - interactive
+- [`R62C.dc.html`](R62C.dc.html) - Rev 62 C - Down the bay - interactive
+- [`R62D.dc.html`](R62D.dc.html) - Rev 62 D - The porthole row - interactive
+- [`R62E.dc.html`](R62E.dc.html) - Rev 62 E - Across the bay - interactive
+- [`R62F.dc.html`](R62F.dc.html) - Rev 62 F - At a porthole - interactive
 
 #### Rev 61 - The Ark's lobby, filmed: the real Ark and the squad's real vessels, beside it and inside (Rev 59 read as a cartoon)
 
-- `R61C.dc.html` (not copied yet) - Rev 61 C - On the pads - interactive
-- `R61E.dc.html` (not copied yet) - Rev 61 E - The map wall - interactive
+- [`R61C.dc.html`](R61C.dc.html) - Rev 61 C - On the pads - interactive
+- [`R61E.dc.html`](R61E.dc.html) - Rev 61 E - The map wall - interactive
 
 ### Tab: Voyages  (`voyages`)
 

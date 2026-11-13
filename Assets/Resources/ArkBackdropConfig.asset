@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dfd1ad23a01253049b14df7300d654b4, type: 3}
+  m_Name: ArkBackdropConfig
+  m_EditorClassIdentifier:
+  clips:
+  - room: 1
+    run: 0
+    colourSet: Nocturne
+    domain: 1
+    anyDomain: 0
+    clip: {fileID: 32900000, guid: 519b16fe1322521d9534e1089f51864d, type: 3}
+  - room: 1
+    run: 0
+    colourSet: Nocturne
+    domain: 2
+    anyDomain: 0
+    clip: {fileID: 32900000, guid: dcbb4f3c0403573195eaa92c8f5934c9, type: 3}
+  - room: 1
+    run: 0
+    colourSet: Nocturne
+    domain: 4
+    anyDomain: 0
+    clip: {fileID: 32900000, guid: b144a8991eed5fa08a7433a96333572d, type: 3}
+  - room: 1
+    run: 0
+    colourSet: Photic
+    domain: 1
+    anyDomain: 0
+    clip: {fileID: 32900000, guid: 1a1845d776f45d3d8551a99931834983, type: 3}
+  - room: 1
+    run: 0
+    colourSet: Photic
+    domain: 2
+    anyDomain: 0
+    clip: {fileID: 32900000, guid: 7cadb13a6ce452718ea8389bb45c7f2d, type: 3}
+  - room: 1
+    run: 0
+    colourSet: Photic
+    domain: 4
+    anyDomain: 0
+    clip: {fileID: 32900000, guid: 63292eba3f465cb98573afde5bd90d68, type: 3}
+  - room: 1
+    run: 0
+    colourSet: DartFrog
+    domain: 1
+    anyDomain: 0
+    clip: {fileID: 32900000, guid: a3206808d72d565ebba68e8ce4f6d1b4, type: 3}
+  - room: 1
+    run: 0
+    colourSet: DartFrog
+    domain: 2
+    anyDomain: 0
+    clip: {fileID: 32900000, guid: 513d7e00c3e95bacad927003444f994a, type: 3}
+  - room: 1
+    run: 0
+    colourSet: DartFrog
+    domain: 4
+    anyDomain: 0
+    clip: {fileID: 32900000, guid: 67be507204c95df5ac827507f78552a8, type: 3}
+  - room: 2
+    run: 0
+    colourSet: Nocturne
+    domain: 1
+    anyDomain: 1
+    clip: {fileID: 32900000, guid: 5d5e679222c858e6ba4d939528e73c0d, type: 3}
+  - room: 2
+    run: 1
+    colourSet: Nocturne
+    domain: 1
+    anyDomain: 1
+    clip: {fileID: 32900000, guid: 9710ea1711f756e0aa9831f17ce6af13, type: 3}
+  - room: 2
+    run: 2
+    colourSet: Nocturne
+    domain: 1
+    anyDomain: 1
+    clip: {fileID: 32900000, guid: 1e79eac0756e5a209c9b02cc44c0782a, type: 3}
+  - room: 3
+    run: 0
+    colourSet: Nocturne
+    domain: 1
+    anyDomain: 1
+    clip: {fileID: 32900000, guid: 4cbd38fb6bd751b18daabdc2f59e30dc, type: 3}
+  textureSize: {x: 1920, y: 1080}
+  passShader: {fileID: 4800000, guid: 6d5c7870a5e35568b99cba9ddb28b2e1, type: 3}
+  passSeconds: 0.5
+  passStyles:
+  - 0
+  - 1
+  - 2
+  dissolveSeconds: 0.3

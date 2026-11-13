@@ -151,6 +151,22 @@ the engine.
    - **When the live build is already red, compare error SETS, not exit codes.** `grep "error CS" | sed 's/ \[.*//'
      | sort -u` before and after: identical sets mean the change adds nothing. Then remove the new map rows and build
      again to prove the comparison can fail (here it named `RelayRegionProbe.cs` twice).
+17. **Traps from the catch-up session (2026-11-05, `claude/dazzling-einstein-gnr5iw`).**
+   - **The live compile had been red on bleeding-edge since about Oct 29** (77 errors there, 72 on this branch, behind 3
+     declaration errors that hid the rest). The gaps were Unity members newer game code calls: batched queries
+     (`SpherecastCommand`, `OverlapCapsuleCommand`, `QueryParameters`, `ColliderHit`), IMGUI (`Event`, `GUILayout`
+     scroll views / text fields / sliders / size options, `GUIStyle` from a string), immediate-mode `GL`,
+     `Mesh.CombineMeshes`, ranged `SetColors` / `SetIndices`, `Gradient.mode`, `Application.exitCancellationToken`,
+     netcode metrics switches and `OnInstantiated`, TMP `alpha` / `isTextObjectScaleStatic` / `TMP_UpdateManager`,
+     `Graphic.s_WhiteTexture`, Game Center / Play Games sign-in. Fill them as engine members, never by moving game files
+     out of the sync (moving the 15 failing files cascaded into the arcade screens within 8 rounds).
+   - **An engine type named like a Silk.NET type collides in the renderer.** `CosmicShore.Engine.GL` made every `GL` in
+     `CosmicShore.Render`, `.Player`, `.Client` and `.Launcher` ambiguous; each has `GlobalUsings.Gl.cs` pinning
+     `GL` to Silk.NET's binding.
+   - **Clean world pictures from the menu**: `set UI_Refactored Canvas enabled false` hides the menu UI, and
+     `set Camera Transform position (x,y,z)` / `eulerAngles (p,y,0)` plus `Camera Camera farClipPlane 6000` frame the cell
+     from anywhere (the menu camera holds still once its intro ends).
+   - **Maelstrom's launch panel waits for others**: `do arcade start` does not reach it; drive another mode.
 
 17. **Traps from the weeks-red compile (2026-11-13, `claude/great-pascal-gelycr`).**
    - **CI's error count is a floor, not the size.** The parity build listed 6 errors (four missing types); adding

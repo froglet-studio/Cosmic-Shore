@@ -154,6 +154,12 @@ namespace CosmicShore.UI
         [SerializeField] private string joinedKicker = "{owner}'s squad - you fly {seat}";
         [SerializeField] private string makeKicker = "Make squad";
         [SerializeField] private string editKicker = "Edit squad";
+        [Tooltip("Toast when GIVE TO A SEAT brings an artifact here ({artifact} = its name): the next seat picked carries it.")]
+        [SerializeField] private string giveHintToast = "Pick the seat that carries {artifact}, then save.";
+        [Tooltip("Toast when the picked seat takes the artifact ({artifact}, {seat}).")]
+        [SerializeField] private string givenToast = "{seat} carries {artifact}.";
+        [Tooltip("Toast when OPEN THE SEAT opens an offline friend's seat ({seat} = the seat's name). Empty shows none.")]
+        [SerializeField] private string seatOpenedToast = "{seat} is open: the pad stands empty until someone takes it.";
         [Tooltip("{open} is how many seats are open.")]
         [SerializeField] private string ownOpenDetail = "{open} seat open for a friend.";
         [SerializeField] private string ownFullDetail = "Every seat is filled.";
@@ -258,7 +264,10 @@ namespace CosmicShore.UI
             for (int i = 0; i < mateCards.Length; i++)
             {
                 int seat = i;
-                if (mateCards[i]) mateCards[i].Pressed += () => PickSeat(seat);
+                if (!mateCards[i]) continue;
+                mateCards[i].Pressed += () => PickSeat(seat);
+                mateCards[i].ChangeVesselPressed += () => ChangeVessel(seat);
+                mateCards[i].OpenSeatPressed += () => OpenSeat(seat);
             }
             Hook(domainChips, PickDomain);
             Hook(vesselTiles, PickVessel);
@@ -448,13 +457,71 @@ namespace CosmicShore.UI
             Draw(snapDomain: true);
         }
 
+        /// <summary>CHANGE VESSEL on your card: the squad's editor opens on your seat, on the vessel picker's page of your
+        /// vessel (a joined squad is the leader's to edit).</summary>
+        void ChangeVessel(int seat)
+        {
+            var squad = Selected();
+            if (_mode != Mode.View || squad == null || !IsMySeat(squad, seat)) return;
+            Edit();
+            if (_mode == Mode.Make) PickSeat(seat);
+        }
+
+        /// <summary>OPEN THE SEAT on an offline friend's card in a squad you lead: the seat opens (its picks kept), its pad
+        /// stands empty, and the first friend who joins takes it.</summary>
+        void OpenSeat(int seat)
+        {
+            var squad = Selected();
+            if (_mode != Mode.View || squad == null || squad.IsJoined() || seat == 0) return;
+            var slot = squad.GetSlot(seat);
+            if (!slot.IsPlayer() || OnlineFriend(slot.MemberId)) return;
+            squad.SetSlot(seat, slot.WithSeat(SquadSeat.Open));
+            Saved(publish: true);
+            if (!string.IsNullOrWhiteSpace(seatOpenedToast))
+                ToastNotificationAPI.Show(TemplateText.Fill(seatOpenedToast, "seat", SeatName(seat)), ToastKind.Success);
+            Draw();
+        }
+
         void PickSeat(int seat)
         {
             if (_mode != Mode.Make || !CanEdit(_draft, seat)) return;
             _seat = seat;
             ShowVesselPageOf(_draft.GetSlot(seat).Vessel);
             ShowPilotPageOf(_draft.GetSlot(seat));
+            if (!string.IsNullOrEmpty(_giveArtifactId))
+            {
+                // GIVE TO A SEAT: the seat picked carries the artifact (it leaves any other card that carried it).
+                string id = _giveArtifactId, name = _giveArtifactName;
+                _giveArtifactId = null;
+                EditSlot(s => { s.ArtifactId = id; return s; });
+                if (!string.IsNullOrWhiteSpace(givenToast))
+                    ToastNotificationAPI.Show(TemplateText.Fill(givenToast, "seat", SeatName(seat), "artifact", name), ToastKind.Success);
+                return;
+            }
             Draw();
+        }
+
+        string _giveArtifactId, _giveArtifactName;
+
+        /// <summary>
+        /// GIVE TO A SEAT (the Artifacts tab): the selected squad's editor opens and the next seat picked carries
+        /// <paramref name="artifactId"/>; saving keeps it, as any edit. A joined squad is the leader's to change. False when
+        /// it cannot start (no squad, a joined one).
+        /// </summary>
+        public bool BeginGive(string artifactId, string artifactName)
+        {
+            if (string.IsNullOrEmpty(artifactId)) return false;
+            if (_mode != Mode.Make)
+            {
+                if (Selected() == null) return false;
+                Edit();
+                if (_mode != Mode.Make) return false;
+            }
+            _giveArtifactId = artifactId;
+            _giveArtifactName = artifactName;
+            if (!string.IsNullOrWhiteSpace(giveHintToast))
+                ToastNotificationAPI.Show(TemplateText.Fill(giveHintToast, "artifact", artifactName), ToastKind.Goal);
+            return true;
         }
 
         void EditSlot(System.Func<SquadSlot, SquadSlot> change)
@@ -874,10 +941,26 @@ namespace CosmicShore.UI
         // ---- drawing ----
 
         /// <param name="snapDomain">True when a different squad comes on screen: its hulls take its colour at once, with no swap.</param>
+        /// <summary>The shown squad's domain: the Ark's hangar backdrop plays in it (Docs/MENU_REDESIGN_B.md section 190).
+        /// Raised when it changes.</summary>
+        public event System.Action HangarChanged;
+        /// <summary>False until a squad has been drawn (or while none is shown).</summary>
+        public bool HasHangar { get; private set; }
+        public Domains HangarDomain { get; private set; } = Domains.Jade;
+
+        void PublishHangar(SavedSquad squad)
+        {
+            bool changed = HasHangar != (squad != null) || squad != null && HangarDomain != squad.Domain;
+            HasHangar = squad != null;
+            if (squad != null) HangarDomain = squad.Domain;
+            if (changed) HangarChanged?.Invoke();
+        }
+
         void Draw(bool snapDomain = false)
         {
             DrawList();
             var squad = Shown();
+            PublishHangar(squad);
             bool has = squad != null;
             if (headerGroup) KitVisibility.SetShown(headerGroup, has);
             if (emptyGroup) KitVisibility.SetShown(emptyGroup, !has);
@@ -1005,6 +1088,12 @@ namespace CosmicShore.UI
             bool making = _mode == Mode.Make;
             card.SetEditing(making && seat == _seat, domain);
             card.SetPressable(making && CanEdit(squad, seat));
+            bool live = IsMySeat(squad, seat) || (slot.IsPlayer() ? OnlineFriend(slot.MemberId)
+                : seat == 0 && squad.IsJoined() ? OnlineFriend(squad.OwnerId) : true);
+            card.SetPresence(!slot.IsOpen(), live);
+            bool viewing = _mode == Mode.View && !squad.IsJoined();
+            card.SetActions(viewing && IsMySeat(squad, seat),
+                viewing && seat > 0 && slot.IsPlayer() && !OnlineFriend(slot.MemberId));
         }
 
         void DrawPicker()
