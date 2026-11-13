@@ -184,7 +184,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The I4 gauntlet</b> (Yash, 2026-11-03: "I4 is too empty ... they cannot just simply fly into the rings,
     /// they have to use both drifting and blasting multiple times to pass the rings"). There is no bore: the field fills
-    /// the leg's line, and both doors' eyes are SEALED (<see cref="EmitSeal"/>, a Danger heart). The way through is a
+    /// the leg's line, and both doors' eyes are SEALED (<see cref="EmitSeal"/>: nine plain cubes; the Danger heart they had until 2026-11-13
+    /// made every missed blast two dead stops a gate, Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md). The way through is a
     /// zig-zag of <see cref="GauntletStages"/> keys (<see cref="GauntletKeys"/>), each off the line and aimed at the next,
     /// the last on the line aimed at the door; every segment between them is a plugged tunnel (<see cref="BlastRunTunnel"/>).
     /// Each key's segment turns from the one before it, so a blast down the cleared lane needs the nose swung onto the
@@ -602,9 +603,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The I4 eye SEAL: a 3 x 3 of <see cref="SealCube"/> cubes filling the door's 18 u eye, square to the door
-        /// (<see cref="DoorBasis"/>), its middle a Danger heart. Nothing threads a sealed eye: a hull rams it (a dead stop at
-        /// the heart) or a key's blast clears it.
+        /// The I4 eye SEAL: a 3 x 3 of <see cref="SealCube"/> plain cubes filling the door's 18 u eye, square to the door
+        /// (<see cref="DoorBasis"/>). Nothing threads a sealed eye: a hull rams it (a plain hit's slow per cube) or a key's
+        /// blast clears it. Its middle was a Danger heart until 2026-11-13 (elemental loop step 2: two dead stops a gate for
+        /// every missed blast were most of I4's cliff over I3, Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md).
         /// </summary>
         public static void EmitSeal(Vector3 position, Vector3 axis, System.Action<Vector3, Quaternion, Vector3, PrismKind> emit)
         {
@@ -614,8 +616,7 @@ namespace CosmicShore.Gameplay
             var size = new Vector3(SealCube, SealCube, SealCube);
             for (int i = -1; i <= 1; i++)
             for (int j = -1; j <= 1; j++)
-                emit(position + u * (i * SealPitch) + v * (j * SealPitch), rot, size,
-                     i == 0 && j == 0 ? PrismKind.Danger : PrismKind.Plain);
+                emit(position + u * (i * SealPitch) + v * (j * SealPitch), rot, size, PrismKind.Plain);
         }
 
         // ── fields ───────────────────────────────────────────────────────

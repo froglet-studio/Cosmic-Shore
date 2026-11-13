@@ -190,11 +190,11 @@ sealed class Opts
     // The AI nose's follow rate per second, one row per intensity (I1..I4), each Easy, Medium, Hard, Legendary: 1.5 = the
     // fleet lag, 0 = no lag. noseFollow=e,m,h,l sets every row (1.5,1.5,1.5,1.5 = the fleet lag, as before 2026-11-02);
     // noseFollowI<n>=e,m,h,l sets one. Mirrors SwitchbackController.aiNoseFollowByIntensity for I1-I3 and, at I4 (the
-    // simulator always lays the gauntlet), SwitchbackController.aiNoseFollowGauntlet (2026-11-03; the old I4 row was
+    // simulator always lays the gauntlet), SwitchbackController.aiNoseFollowGauntlet (2026-11-03, retuned 2026-11-13 for the plain seals; the old I4 row was
     // 1.8, 2.2, 3.5, 6, which a mode without the gauntlet still flies).
     public float[][] NoseFollowTable =
     {
-        new[] { 1.9f, 2.2f, 3f, 5f }, new[] { 2f, 2.4f, 3f, 5f }, new[] { 2.1f, 2.2f, 2.8f, 6f }, new[] { 1.9f, 2.8f, 3.5f, 5f },
+        new[] { 1.9f, 2.2f, 3f, 5f }, new[] { 2f, 2.4f, 3f, 5f }, new[] { 2.1f, 2.2f, 2.8f, 6f }, new[] { 1.5f, 2.2f, 3.5f, 6f },
     };
     // AIPilot.NoseLeadGain / NoseLeadMaxExtraDegrees (PR #1786; Tools/Build/ai_nose_lead.py is the Python twin): with a gain
     // above 0 the pilot judges its error from the COMMAND, not the lagging nose, and wants the nose turned toward the aim by

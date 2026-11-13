@@ -23254,3 +23254,17 @@ Not run in a Unity editor (cloud session; unity_refcompile editor config: 0 erro
 2. The AI Scarabs never turn off the line for a crystal.
 3. At I4 the block fields are still laid as before.
 4. Switchback at I1-I4 is unchanged (Blast Run on every intensity).
+
+## 🔴 Switchback I4: plain gauntlet seals and the retuned AI pace (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-j3xxyz`. Record: `Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md`, `SWITCHBACK.md` "The I4
+gauntlet, softened". The changed files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors
+in changed files; the 30 errors it reports are in multiplayer and camera files this change does not touch, and fail the
+same on `bleeding-edge`). The 76 shipped Switchback layout and planner tests pass headless (`switchback_sim_harness/run.sh
+tests`); no Unity editor ran.
+
+1. Run the EditMode tests `SwitchbackBlastRunTests` and `SwitchbackAISteeringTests`.
+2. Arcade, Switchback, Dolphin, I4, seed FIXED (45_504). At a gate's door, the eye's seal is nine plain prisms: ramming
+   it slows the Dolphin, it never stops it dead; a key's blast still clears it.
+3. Same race with three AI seats at Easy, then at Medium: Medium finishes ahead of Easy (offline Easy ~176 s, Medium ~167).
+4. Scarab Rally I4 is unchanged (no seals there).
