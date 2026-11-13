@@ -220,6 +220,13 @@ jobs:
           lfs: false          # source-only check; binary assets are not needed
           fetch-depth: 1
 
+      # The generator --check loop below imports numpy (Tools/CI/requirements-checks.txt says
+      # which and why); the hosted image does not ship it. Same step as bleeding-edge-guard.yml.
+      - name: Install the Python packages the checks import
+        run: |
+          python3 -m pip install --user --quiet --break-system-packages --only-binary :all: -r Tools/CI/requirements-checks.txt
+          python3 -c "import numpy; print('numpy', numpy.__version__)"
+
       # The checker has no-opped before while still reporting "OK". Prove it can
       # still detect its own fixtures BEFORE trusting a clean scan.
       - name: Verify the checker still detects

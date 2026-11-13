@@ -1,0 +1,51 @@
+2026-11-12T16:18:51.4174630Z ##[group]Run actions/checkout@v4
+2026-11-12T16:18:51.4175342Z with:
+2026-11-12T16:19:50.1949681Z ##[group]Run bash Tools/CI/check_generators.sh
+2026-11-12T16:19:50.1950148Z [36;1mbash Tools/CI/check_generators.sh[0m
+2026-11-12T16:19:50.2001829Z shell: /usr/bin/bash -e {0}
+2026-11-12T16:19:50.2002077Z env:
+2026-11-12T16:19:50.2002266Z   REPORT_LABEL: ci-bleeding-edge
+2026-11-12T16:19:50.2002529Z   REPORT_TITLE: bleeding-edge is broken
+2026-11-12T16:19:50.2002771Z ##[endgroup]
+2026-11-12T16:19:50.2101577Z == Tools/Build/arcade_mode_lib.py --self-test
+2026-11-12T16:19:50.2529942Z   ok    toast() doubles an apostrophe, so the template round-trips through YAML
+2026-11-12T16:19:59.7240890Z == Tools/Build/author_corona_assets.py
+2026-11-12T16:19:59.8030998Z Traceback (most recent call last):
+2026-11-12T16:19:59.8032301Z   File "/home/runner/work/Cosmic-Shore/Cosmic-Shore/Tools/Build/author_corona_assets.py", line 32, in <module>
+2026-11-12T16:19:59.8032968Z     import corona_budget as budget  # noqa: E402
+2026-11-12T16:19:59.8033317Z     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-11-12T16:19:59.8033883Z   File "/home/runner/work/Cosmic-Shore/Cosmic-Shore/Tools/Build/corona_budget.py", line 23, in <module>
+2026-11-12T16:19:59.8034666Z     import numpy as np
+2026-11-12T16:19:59.8034968Z ModuleNotFoundError: No module named 'numpy'
+2026-11-12T16:19:59.8167966Z == Tools/Build/author_decoy_run_assets.py
+2026-11-12T16:20:00.1427993Z --check: OK, 23 file(s) match.
+2026-11-12T16:20:05.5746875Z == Tools/Build/author_flatline_assets.py
+2026-11-12T16:20:05.6485486Z Traceback (most recent call last):
+2026-11-12T16:20:05.6486650Z   File "/home/runner/work/Cosmic-Shore/Cosmic-Shore/Tools/Build/author_flatline_assets.py", line 38, in <module>
+2026-11-12T16:20:05.6487136Z     import flatline_budget as fb  # noqa: E402
+2026-11-12T16:20:05.6487369Z     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-11-12T16:20:05.6487739Z   File "/home/runner/work/Cosmic-Shore/Cosmic-Shore/Tools/Build/flatline_budget.py", line 29, in <module>
+2026-11-12T16:20:05.6488132Z     import numpy as np
+2026-11-12T16:20:05.6488370Z ModuleNotFoundError: No module named 'numpy'
+2026-11-12T16:20:05.6616527Z == Tools/Build/author_glasshouse_assets.py
+2026-11-12T16:20:05.8391857Z --check: OK, 61 file(s) match.
+2026-11-12T16:20:33.7612363Z == Tools/Build/author_shatterplane_assets.py
+2026-11-12T16:20:33.8428436Z Traceback (most recent call last):
+2026-11-12T16:20:33.8429392Z   File "/home/runner/work/Cosmic-Shore/Cosmic-Shore/Tools/Build/author_shatterplane_assets.py", line 45, in <module>
+2026-11-12T16:20:33.8429857Z     import shatterplane_budget as sb  # noqa: E402
+2026-11-12T16:20:33.8430492Z     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-11-12T16:20:33.8430887Z   File "/home/runner/work/Cosmic-Shore/Cosmic-Shore/Tools/Build/shatterplane_budget.py", line 31, in <module>
+2026-11-12T16:20:33.8431301Z     import numpy as np
+2026-11-12T16:20:33.8431515Z ModuleNotFoundError: No module named 'numpy'
+2026-11-12T16:20:33.8589047Z == Tools/Build/author_shrike_assets.py
+2026-11-12T16:20:33.8870387Z author_shrike_assets: OK
+2026-11-12T16:21:33.4086465Z 
+2026-11-12T16:21:33.4092089Z generators: 3 RED (76 checked):
+2026-11-12T16:21:33.4092493Z   RED  Tools/Build/author_corona_assets.py
+2026-11-12T16:21:33.4092875Z   RED  Tools/Build/author_flatline_assets.py
+2026-11-12T16:21:33.4093212Z   RED  Tools/Build/author_shatterplane_assets.py
+2026-11-12T16:21:33.4093515Z Each one's own output is under its '== <path>' header above.
+2026-11-12T16:21:33.4099680Z ##[error]Tools/Build/author_corona_assets.py --check failed; its output is under '== Tools/Build/author_corona_assets.py' in this step's log
+2026-11-12T16:21:33.4127170Z ##[error]Tools/Build/author_flatline_assets.py --check failed; its output is under '== Tools/Build/author_flatline_assets.py' in this step's log
+2026-11-12T16:21:33.4155884Z ##[error]Tools/Build/author_shatterplane_assets.py --check failed; its output is under '== Tools/Build/author_shatterplane_assets.py' in this step's log
+2026-11-12T16:21:33.4192346Z ##[error]Process completed with exit code 1.

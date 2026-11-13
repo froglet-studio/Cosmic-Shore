@@ -1,0 +1,5 @@
+2026-11-20T11:00:00.0000000Z ##[group]Run # `set +e` is REQUIRED and must be explicit. GitHub invokes `shell: bash`
+2026-11-20T11:00:00.0000001Z ##[endgroup]
+2026-11-20T11:20:41.0000000Z Refreshing native plugins compatible for Editor in 1.20 ms, found 3 plugins.
+2026-11-20T11:31:02.0000000Z ##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled.
+2026-11-20T11:31:02.0000001Z ##[error]The operation was canceled.
