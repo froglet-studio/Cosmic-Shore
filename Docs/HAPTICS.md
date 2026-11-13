@@ -41,8 +41,7 @@ punished. Not even punished lightly."
    `VesselRamRewardByPrismEffect` INSTEAD of the punish effect: the skim pulse at one fixed strength (0.7), spaced at
    least 100 ms (above the 70 ms clip, so a plough through a wall never becomes a hum). Whether a rammer's reward
    grows on shielded, danger or super-shielded prisms is open; if it does, it is a per-kit choice, like the skim.
-   Candidates to review against their kits: the Shrike ("docks to whatever it touches"), the Urchin
-   (`VesselAttachPrismEffect`), the Grizzly ("rush and ride your shockwaves").
+   The Shrike, the Urchin and the Grizzly are **not** rammers (Caleb, 2026-11-13): they keep the hull-hit ladder.
 4. **Skims are opt-in per kit**: a skim pulse only where skimming is the hull's core, skill-tested verb (the
    Squirrel's speed tubes, the Dolphin's needle-threading), never a hull whose skimmer is a big passive sphere (the
    Manta). Stronger skim pulses on armour or danger MAY be allowed per kit later.
