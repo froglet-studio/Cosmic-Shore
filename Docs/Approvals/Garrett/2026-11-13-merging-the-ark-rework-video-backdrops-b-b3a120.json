@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-13-merging-the-ark-rework-video-backdrops-b-b3a120",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-13T17:46:34+00:00",
+  "area": "the Ark's Pilots tab (author_menu_ark.py)",
+  "summary": "Merging the Ark rework (video backdrops behind Converter, Squads and Artifacts) with bleeding-edge: the Pilots tab is kept exactly as you built it, but its grid now reads its own copy of the old list margins (PILOT_LIST_X/Y/H = 40, 176, 864) because Squads moved to the R67 board's row, and Pilots joins Decor in VEILED (it keeps its veil and sea: it has no room video behind it). ArkView.prefab was regenerated. A separate thread is drawing PDA-style mockups for the Pilots tab; nothing there is built yet.",
+  "branch": "claude/project-thread-7uw75v",
+  "commit": "4489595c8"
+}

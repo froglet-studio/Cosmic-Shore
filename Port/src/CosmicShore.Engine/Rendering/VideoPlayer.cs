@@ -54,6 +54,9 @@ namespace CosmicShore.Engine.Video
         public VideoAspectRatio aspectRatio { get; set; } = VideoAspectRatio.FitVertically;
         public VideoAudioOutputMode audioOutputMode { get; set; } = VideoAudioOutputMode.Direct;
         public VideoTimeReference timeReference { get; set; } = VideoTimeReference.Freerun;
+        /// <summary>The clock playback follows (original: VideoPlayer.timeUpdateMode). GameTime follows the scaled game
+        /// clock; UnscaledGameTime and DSPTime (no audio clock here) follow the unscaled one.</summary>
+        public VideoTimeUpdateMode timeUpdateMode { get; set; } = VideoTimeUpdateMode.GameTime;
         public bool isLooping { get; set; }
         public bool playOnAwake { get; set; } = true;
         public bool waitForFirstFrame { get; set; } = true;
@@ -153,7 +156,7 @@ namespace CosmicShore.Engine.Video
         public void Tick()
         {
             if (!isPlaying) return;
-            double now = Time.unscaledTimeAsDouble;
+            double now = timeUpdateMode == VideoTimeUpdateMode.GameTime ? Time.timeAsDouble : Time.unscaledTimeAsDouble;
             if (_lastTick < 0) _lastTick = now;
             _time += (now - _lastTick) * playbackSpeed;
             _lastTick = now;

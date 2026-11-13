@@ -66,7 +66,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / PILOTS / ARTIFACTS / DECOR) and a pilot's profile page | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); the Pilots tab and the pilot profile page built 2026-11-12, not run in the editor (section 92.1) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / PILOTS / ARTIFACTS / DECOR) and a pilot's profile page | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); the Pilots tab and the pilot profile page built 2026-11-12, not run in the editor (section 92.1); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels (section 139), and the live animated scene (Rev 64, section 140); **Rev 61 C picked as the final; Rev 67, the whole Ark screen inside the Ark, a room per tab, animated, every colour set, on the new Ark tab (section 187); Rev 67's Converter now a pier out into the cell from inside the Ark, Decor locked (section 187); **Rev 85, the Artifacts room, three stills (section 166); Rev 86, A and B as one (section 167)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -6016,6 +6016,340 @@ Shombith, on 126 in the editor: "Missing background" and "Misaligned texts".
 - **Tabs.** Each tab's word was pinned to the top of its 44-unit row while the keycaps were centred; the words are now
   centred, and the underline sits at the row's foot.
 
+## 133. Rev 47 mockups: the Ark's Squads tab (2026-11-02; removed 2026-11-05)
+
+Six options for the Squads tab (the Ark in 3D, the nanobot swap or the Meerkat warp) were drawn on Menu Redesign C and removed from the canvas and this copy at Shombith's ask (2026-11-05: "None of it, Remove this completely"). The next round redraws the tab as the inside of the Ark (Rev 59, section 134). The colour bug it found in the build stays open as row 19 of the Design feedback queue (`Docs/UI_REDESIGN_TASKS.md`): `SquadNanobotSwap` tints the whole hull toward `TrailHighlightColor`.
+
+## 134. Rev 59 mockups: the Ark's lobby - the Squads tab in the Ark's own hangar (2026-11-06; read as a cartoon, D and C's map liked; redone filmed in section 136)
+
+**Asked (Shombith, 2026-11-05/06):** "None of it, Remove this completely. We want to inside of the ark in more of a 3d
+view with maybe a couch and prisms but no characters or vessels and cards can be on top of that. Create a new modernized
+AAA screen for this part ... saved to for later when a player comes." Then, on the drafts: "This is like a k pop studio
+wtf. see how our game looks make it detailed raw and scary use in game prisms environments etc", "It can be a noisy lobby
+with a lot of stuff", "Take real game screenshots ... Not the card ones", "fix amoebius and take the screenshots
+yourself", "The lobby can have a board showing the hypersea galaxy or sector location and has a window outside which we
+can see the cell", "make it detailed take your time", "Maybe a zoomed in more aesthetic view do not show a real couch",
+"Check the actual model of the ark in the game it should look like the inside so make sense of that". Rev 47 (section
+127) was removed first.
+
+**The game it is built from.** Amoebius could not compile the game since about Oct 29; this branch fills the 72 missing
+Unity members (`Port/`, commit `fix(amoebius): the live game compiles and runs again`), and the screenshots were taken in
+it: the menu's live cell (HUD hidden with `set UI_Refactored Canvas enabled false`), prisms up close, the whole cell, the
+Rampage arena (the Compare board). What they showed: a prism is a near-black block whose bevelled edges carry a bright
+fresnel rim in its domain colour; the cell is lattice tubes of gridded blocks, lattice-disc flora and block trails in blue
+haze; the live palette is Garrett's Nocturne.
+
+**The room is the real Ark** (`ArkReverse.fbx`, `Docs/VesselModels/ArkReverse.md`): its **hangar** in the prow, between
+the jaws, rendered from the model itself (`Docs/MenuRedesignB/rounds/r59_ark_hangar_render.py`, Blender 5, seeded):
+- the model's bay of arched frames, its three launch pads for the three escorts (`hangar.slot.0..2`, one per seat), the
+  floor lights, the glowing back wall and the tunnel that curves down through the keel, and the clam-jaw doors opened with
+  the model's own `hangaropen` take; the outside camera shows the prow, the jaws and the neon-framed mouth;
+- in the game's ship materials (`vessel_colors.py`: the gunmetal body, glass, the engine ember) with the domain slot in
+  the squad's domain (Nocturne's `ShipColor1` / `ShipColor2`), drawn with VesselGraph's read;
+- the hull's prisms in the model's own sockets (`socket.*` bones, 108), each socket's kind at its real size (gills and
+  danger blades 3.6 x 1.6 x 9, octahedra 4.8, stellations 6.6), in Nocturne's block colours.
+
+Dressed with the game's own pieces, raw and noisy: the squad's prisms hover over the pads (no couch; the third seat is
+KEPT for a friend, its prism a dark outline until they come aboard); the HyperSea board between the arches (the Voyage
+Board's own Sector chart, the Ark at Tumult and its route, rendered from `Docs/Voyages/VoyageBoard/voyage-board.html` at
+2x with its chrome hidden; the galaxy on the opposite wall); heaps of prism debris along the walls; danger thickets at the
+mouth; hanging block chains; junk in the haze; out of the open mouth, the cell (the game's own picture of it) with lattice
+tubes and a block trail. Three close cameras with depth of field (in the hangar, at the board, from the cell) x three
+domains, graded darker (`r59_ark_lobby_grade.py`).
+
+**On the canvas:** tab **Menu Redesign A** (id `menu-redesign-c`), round "Rev 59 - The Ark's lobby ...". Copies:
+`Docs/MenuRedesignB/board/R59*.dc.html`; the boards' generator `r59_ark_lobby_boards.py`, the uploaded ids
+`r59_blobs.json`, the prism kit the render shares `r59_prismkit.py`, the HyperSea board's pictures
+`r59_voyage_board_shot.cjs`. The cards are text only and follow the style guide: the squad's domain is a team thing in Nocturne
+(`#21C0BD` / `#BD1BC8` / `#FF8F11`), the selected seat wears the Jade ring `#00D4FF`, TAKE INTO ARENA is Ruby `#A600FF`
+(no way back), the kept seat's INVITE is Lime (a call to action), elements have no colour. Every board is interactive: the
+domain chips relight the hangar (a cross-fade between the renders), the seat cards select, the kept seat invites its
+friend or seats an AI until then, Breakers is Kestrel's so its chips refuse.
+
+- **A - Seat placards (recommended):** each card hangs over its pad's prism, a hairline down to it. Recommended because
+  the pads are the Ark's own seats for the squad and only here does each card visibly belong to its pad, so the kept seat
+  reads as the empty pad waiting for someone; the open mouth and the cell stay in view above the cards.
+- **B - Rail:** the hangar clear, the three seats in one glass rail along the bottom.
+- **C - The board wall:** turned to the HyperSea board between the arches, the seats stacked on the right.
+- **D - From the cell:** outside, before the prow: the real Ark with its mouth open on the lit hangar, the seats in a
+  column.
+- **E - Slate:** one glass slate on the right lists the squad; the hangar and its pads fill the left.
+- **F - One seat at a time:** the chosen seat large, the other two as tabs; LB / RB step between them.
+
+**Differs from the build:** today the Squads tab is the Rev 31 deck on the menu's sea (section 95). This puts the Ark's
+hangar behind it: either baked backdrops per domain (these renders, cheapest) or the `ArkReverse` hangar as a small scene
+with the game's real prisms (it would breathe; the doors, the pads and the domain trim would react). Seat data, Make,
+Join, Edit and Take into are unchanged; the kept seat (an invited friend's place, an AI until they come) is new. The build
+waits on a pick.
+
+Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's Ark model (rendered
+only, its `hangaropen` take played), Voyage Board (rendered only) and Nocturne palette (read only).
+
+## 136. Rev 61 mockups: the Ark's lobby, filmed - the real Ark and the squad's real vessels, no cartoon (2026-11-06; C and E liked and kept, followed up in section 139)
+
+**Asked (Shombith, 2026-11-06, on Rev 59):** "I liked D and in C the map ... can you also show the vessels beside the ark
+and then another inside ... current one looks like they are from a cartoon please we need to fix that first. Cannot be
+looking like a cartoon."
+
+**Why Rev 59 read as a cartoon, and what changed.** Rev 59 (section 134) drew every surface self-lit under one strong blue
+fill light, and the Standard view transform clipped each glow to a flat colour, so the hull read as black with neon
+outlines and the debris as candy. Rev 61 films the same pieces (`Docs/MenuRedesignB/rounds/r61_ark_real_render.py`,
+Blender 5, Cycles, seeded):
+- AgX tone mapping (light rolls off instead of clipping); a near-black world whose only sky is the cell (the Amoebius
+  screenshot as the environment); every light motivated: the cell through the open mouth, strip lights in the arches,
+  the pads lit from below in the squad's domain, the back wall's ember, a cold sun and a rim outside;
+- the hull lit, not self-lit: rectangular panels with seams and sub-plates on a 3D grid, each panel its own shade,
+  grime, gloss that wanders, scratches (procedural, no textures); the domain slot as the hull's running lights in the
+  squad's domain (Nocturne `ShipColor2`), the jets and pads at rest, glass as glass;
+- the prisms as the game reads them, but lit (`r61_prismkit.py`): glossy black faces that reflect the room, the rim
+  colour caught on their bevelled edges, the fresnel kept faint; the spent prisms in the heaps mostly dead and dark;
+- haze in the hangar, depth of field; in the grade (`r61_ark_lobby_grade.py`) bloom, lateral chromatic fringing, a
+  vignette and film grain.
+
+**The vessels.** The squad's own models at their real sizes, in the squad's domain: the leader's Sparrow
+(`SparrowModel1.fbx`, 12.5 u) and Rogue One's Dolphin (`dolphin_shapekey_with_animations.fbx`, 5.3 u; its nose is at -y
+after import, so it is turned). Inside they stand on their launch pads (head on the pad, tail toward the door, as
+`ArkReverse.md` places `hangar.slot.0..2`); the third pad is kept for Mothwing, empty but for a dark prism outline.
+Outside they fly beside the Ark, banked to show their backs, each laying the game's block trail.
+
+**On the canvas:** tab **Menu Redesign A** (id `menu-redesign-c`), round "Rev 61 - The Ark's lobby, filmed ...". Copies:
+`Docs/MenuRedesignB/board/R61*.dc.html`; the boards' generator `r61_ark_lobby_boards.py`, the uploaded ids
+`r61_blobs.json`. Five cameras x three domains. The canvas is at its 512-file cap, so the round is the six option boards (no Compare or
+Notes board; the generator writes them with `--all`), and Rev 59's A, B, E, F, Compare and Notes were taken off the
+canvas to make room (not liked; their copies stay in `board/`); Rev 59's C and D stay up beside this round as the before. Cards, colours and interaction as Rev 59 (style guide: the domain in
+Nocturne, the Jade selection ring, Ruby TAKE INTO, Lime INVITE, elements without colour); the domain chips now relight
+the Ark, the vessels' trim and their trails.
+
+- **A - Beside the Ark (recommended):** Rev 59 D, filmed: outside before the prow, the Ark's mouth open on the lit hangar,
+  the Sparrow and the Dolphin flying beside it; the seats in a column on the left. Recommended because it is the view
+  that was liked, now with the squad in it: the squad is what the tab is about, and the open hangar says where they live.
+- **B - The leader, close:** on the Sparrow's wing, the Ark and the Dolphin beyond; the seats on the right.
+- **C - On the pads:** inside, from the door: the two vessels on their pads, the kept pad, the back wall's tunnel. The
+  inside to pair with A if the tab should open inside.
+- **D - Across the bay:** inside, from the starboard corner: the vessels before the HyperSea board.
+- **E - The map wall:** Rev 59 C's map, filmed; the seats stacked on the right.
+- **F - Beside the Ark, with the map:** A plus the Voyage Board's Sector chart as a glass panel (the Ark at Tumult).
+
+**Differs from the build:** today the Squads tab is the Rev 31 deck on the menu's sea (section 95). This puts the Ark and
+its escorts behind it: baked backdrops per domain (these renders) or a small live scene with `ArkReverse` and the seats'
+real hulls (the doors, the trails and the trim would react). The vessels shown would be the seats' own. Seat data, Make,
+Join, Edit and Take into are unchanged; the kept seat is new. The build waits on a pick.
+
+Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's Ark model and the Sparrow and
+Dolphin models (rendered only), Voyage Board (rendered only) and Nocturne palette (read only).
+
+## 139. Rev 62 mockups: the Ark's lobby by the game's own light - C and E kept, portholes, no vessels (2026-11-06, awaiting a pick)
+
+**Asked (Shombith, 2026-11-06, on Rev 61):** "I like C and E. Keep both and follow that style design and create more
+mock-ups, do not show the 3D vessel models. Maybe it can have spaceship small windows where we see the outside. We will
+use no lightning just the natural game lightning as you know."
+
+**Kept:** Rev 61 C (On the pads) and E (The map wall) stay on the canvas as they are. Rev 61 A, B, D and F, and Rev 59 C
+and D (which Rev 61 replaced), were taken off the canvas to make room under its 512-file cap; their copies stay in
+`Docs/MenuRedesignB/board/`.
+
+**What changed** (`Docs/MenuRedesignB/rounds/r62_ark_ports_render.py`, from r61's, Blender 5, Cycles, seeded):
+- **No light rig.** Every lamp of Rev 61 is gone. The room is lit only by what the game has: the cell (its picture as
+  the sky) coming in through the open mouth and the portholes, and the game's own glow, which is the prisms' rims, the
+  hull's domain trim and the HyperSea board's screen. The same AgX view, lit hull panels and prism read as Rev 61.
+- **Portholes.** Twelve along both side walls at eye height over the heaps, and two in the back wall either side of the
+  tunnel; none behind the HyperSea board or the galaxy. Each is placed on the model's real wall (a ray cast from the
+  bay's axis onto `ArkReverse`). It is a heavy ring of the hull's metal with eight bolts, and its pane is a portal: it
+  shows the cell in the direction you look through it, so it has true parallax, and its light comes into the room.
+- **No vessel models, no seat markers.** The launch pads are bare; the cards on top say who sits where. (A first
+  render put a floating prism with a ring of shards over each taken pad and an outline over the kept one; Shombith:
+  "What are these, remove these." They were removed and every frame rendered again.)
+
+**On the canvas:** tab **Menu Redesign A** (id `menu-redesign-c`), round "Rev 62 - The Ark's lobby by the game's own
+light ...", beside Rev 61 C and E. Six option boards (the canvas is at its file cap; the generator
+`r62_ark_lobby_boards.py` writes Compare and Notes too with `--all`); the uploaded ids are in `r62_blobs.json`. Six
+views x three domains. Cards, colours and interaction as Rev 61 (style guide: the domain in Nocturne, the Jade
+selection ring, Ruby TAKE INTO, Lime INVITE, elements without colour).
+
+- **A - The pads (recommended):** Rev 61 C by the game's light: from the door down the bare pads, the
+  portholes and the back wall's tunnel; seats on the right. Recommended because it is the view picked, now by the
+  game's own light.
+- **B - The map wall:** Rev 61 E by the game's light: the HyperSea board between portholes; seats on the right.
+- **C - Down the bay:** from the back wall, high: the bay to the open mouth, portholes down both walls.
+- **D - The porthole row:** along the starboard wall, its portholes receding with the cell outside; seats on the left.
+- **E - Across the bay:** from the starboard corner, the pads before the board.
+- **F - At a porthole:** close at the glass, the cell outside, the room dark around it.
+
+**Is it animated? (Shombith asked.)** Not on the board: each view is a still render per domain, and the only motion is
+the cross-fade when a domain chip is pressed. Built as a live scene from `ArkReverse` and the game's prisms, these could
+move, all from things the game already does: the cell moving past the portholes and the open mouth (the menu
+already runs a live cell behind it), the prisms' rims pulsing, haze drifting through the porthole light, the clam
+doors opening and closing (the `hangaropen` take), and the domain trim relighting when the domain changes. A baked backdrop cannot do these; a short looping clip could fake some of
+them.
+
+**Differs from the build:** today the Squads tab is the Rev 31 deck on the menu's sea (section 95). This puts the Ark's
+hangar behind it by the game's own light: baked backdrops per domain (these renders) or the `ArkReverse` hangar as a
+small scene with the game's real prisms, lit only by the cell and the game's materials. Seat data, Make, Join, Edit and
+Take into are unchanged; the kept seat is new. The build waits on a pick.
+
+Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's Ark model (rendered
+only), Voyage Board (rendered only) and Nocturne palette (read only).
+
+## 140. Rev 64 mockup: the Ark's lobby as a live, animated scene (2026-11-06, for review)
+
+**Asked (Shombith, 2026-11-06, on Rev 62):** "Is this bg animated, what are its features?" and then "make a separate
+mockup for live animated scene".
+
+**What it is.** One board (`R64Live`) whose backdrop is a seamless animated loop of Rev 62's "Down the bay" view
+(section 139): the real `ArkReverse` hangar lit only by the cell and the game's own glow, the portholes, the bare pads.
+It shows what the Squads tab would look like if the hangar were a live scene rather than a baked still. Everything
+that moves is something the game already does:
+- **the cell** outside drifts: the sky seen through the portholes and the open mouth turns slowly, and the lattice
+  outside sways past the mouth;
+- **the prisms' rims pulse**, each material on its own beat (the heaps, the hull's sockets, the danger blades);
+- **haze** rolls through the porthole light (4D noise moved round a circle, so the loop closes without a seam);
+- **the clam doors** shut and open again: the model's own `hangaropen` take, eased from open to rest and back, so
+  the mouth's light goes and returns;
+- **the camera** breathes a little.
+
+Rendered with `Docs/MenuRedesignB/rounds/r64_ark_live_render.py` (built on r62's scene; Blender 5, Cycles, seeded,
+60 frames at 1280x720, graded with r62's grade) and assembled into an animated WebP played at 10 fps (a
+6-second loop). The board (`r64_ark_live_board.py`) puts Rev 62's seat cards on top, with a panel listing what
+moves. The loop is rendered in Jade; the Ruby and Gold chips show Rev 62's stills of the same view (a loop per domain
+would triple the render). Uploaded ids: `r64_blobs.json`.
+
+**For the build:** this is the "live scene" path of section 139: `ArkReverse`'s hangar as a small scene with the game's
+real prisms and cell, lit only by them. Each moving part maps to existing game systems: the menu's live cell, the
+prism rim shader, a volume or particle haze, the Ark rig's `hangaropen` take (which `ArkModel` already plays), and a
+gentle camera sway. A pre-rendered loop (this file) is the cheaper fallback: a video backdrop per domain.
+
+Affects: Shombith's Ark tab (`author_menu_ark.py`, `SquadsPage`) once a path is picked; Garrett's Ark model (rendered
+only, its `hangaropen` take played).
+
+## 187. Rev 67 mockups: the Ark screen inside the Ark, every tab its own room, animated, in every colour set (2026-11-07, for review)
+
+**Asked (Shombith, 2026-11-06):** Rev 61 C is the Ark's final design ("Keep this 61 C style and lighting, this is
+great"), E liked too. "When we select Ark from the menu it's basically inside the Ark": the Converter "a big window
+from inside the Ark or a place inside where the conversion happens in 3D", the player's elements "in 3D lying around
+inside the converter view, and then when pressed convert they actually convert"; Artifacts "a 2D UI but also a 3D
+artifact cabinet"; Decor the same but locked; "everything should be animated"; mockups "for all colour sets like
+Photic, Dart Frog and Nocturne"; the Ark's mockups moved to a new tab, the old designs kept. On Rev 61 C (a comment
+and drawings on the board): "the 3 vessels should line up and everything 3D ... animate this, make ripples in the
+tunnel behind them, make the galaxy map vessel animated". Asked about the drawings: the two tall shapes are pilots
+walking around (later, once this is done: the captains you have selected walking the hangar). "There shouldn't be any
+reserved [seat]: all the squad mates should show up; if they are offline the vessel lighting can be off, but anyone
+can take their place in the squad, and at that time that place will be empty; upon changing vessels it should update."
+
+**On the canvas:** a new tab **Ark** (id `ark`), with Rev 61 C and E, Rev 62 and Rev 64 moved into it (kept as they
+were); round "Rev 67 - The Ark screen inside the Ark ...": ONE interactive board, `R67Ark`, the Ark screen itself - its tab row
+(LB / RB or a click) switches between the four rooms, each with its own backdrop (one board, because the canvas is at
+its 512-file cap and the old designs are kept). Each backdrop is a
+seamless animated loop (animated WebP, 10 fps) rendered from `ArkReverse` in Rev 61 C's style and lighting
+(`Docs/MenuRedesignB/rounds/r67_ark_tabs_render.py`, Blender 5, Cycles; `r67_assemble.py` grades with Rev 61 C's
+grade and encodes). A dashed **Mockup - colour set** switch (not part of the game's UI) swaps every backdrop between
+**Nocturne, Photic and Dart Frog**: the hull's domain trim, the pads' light and every prism (the hull's sockets, the
+heaps, the danger blades, the trails) take that set's colours, read from `Assets/_SO_Assets/Color Palettes/`.
+
+- **Squads tab:** the squad's three vessels lined up across the bay, facing you, in the left two-thirds of
+  the frame (the drawing's three loops): Halcyon's Dolphin, your Sparrow, Mothwing's Serpent. Mothwing is offline:
+  their Serpent is powered down (no domain trim, no engine, no pad light), still standing in the line. No reserved
+  seat: the offline seat's card offers **Open the seat** (Lime), which empties it ("the pad stands empty until someone
+  takes it"); your card's **Change vessel** updates your pad. Ripples run out of the back wall's tunnel through the
+  hull's domain trim; on the HyperSea map a vessel marker travels the route from the Ark at Tumult toward Tollmoor
+  and back, the Ark's ring breathing; the online vessels hover and their engines breathe; rims pulse; haze drifts.
+- **Every other tab is its own room** (Shombith, mid-round: "all screens have different rooms"; and of the first converter
+  render, where the crystals lay in piles on the hangar floor: "don't keep the crystals like this, only in the
+  converter screen" - a separate converter room). The rooms are built in the hangar's own plating, ribs, domain trim,
+  socket prisms, strip lights and haze; the hangar keeps no crystals.
+- **Converter tab: from inside the Ark, down the pier, Garrett's combine out in the cell** (Shombith, on the board,
+  2026-11-12: "I don't want a room, I want the old animation that Garrett had and the same setup ... an open part of
+  the Ark where this is happening outside in the cell"; then, of a first pass that showed the combine on its own:
+  "the camera should be inside the Ark and the crystals outside on an elongated platform, we should be able to see the
+  cell toybox for sure, and the conversion happens in the middle"). The camera stands at the back of the hangar and
+  looks out of the open mouth (the clam doors swung on past their open pose, `hangar.door.T` / `.B` at -150 / 150
+  degrees, so the mouth is a clear frame) down a pier that carries the hangar's floor 82 m out into the cell: the
+  hull's plating on girders, the domain's trim down both edges, posts with the squad's prisms for lamps, and a round
+  deck in its middle ringed in the domain. Beyond it the cell: the in-game cell picture and its lattice swaying
+  (`r67_ark_tabs_render.py`'s `pier` scene). Over the round deck Garrett's own animation plays, captured frame by
+  frame from his Omni Combine Lab (`Docs/Studios/OmniCombineLab.html`, the source `OmniCombinePlayer` is a line-for-line
+  port of) with its shipped settings, only its camera lowered (pitch 0.12) to match a view from inside the hangar:
+  at rest the four crystals (Space, Charge, Mass, Time) each do their effect; **Convert** plays his combine to the
+  Omni (the morph, 10.7 s), the recipe merges each element in turn over it, and the Omni stays over the deck. The
+  crystals light the deck lime and bloom into the cell (`r67_omni_capture.cjs` captures, `r67_comp_converter.py` lays
+  it over the pier loop). The converter's panels (the recipe, the progress bar, Convert again) are the board's own,
+  as someone reworked them on the canvas; only the backdrop changed, now per colour set. The reactor room is retired.
+- **Artifacts tab: open to the cell, not a closed room** (Shombith, 2026-11-12: "the artifact screen should not be
+  a closed Ark room"): its backdrop is the Converter's view from inside the hangar out of the open mouth, without the
+  crystals; the list and the selected artifact's card (its real description, who holds it, **Give to a seat**) sit on top.
+  The vault render is retired; the 3D cabinet is for the live scene in the game.
+- **Decor tab: locked completely** (Shombith, 2026-11-12: "there is no decor scene, we do it later"): no screen and no
+  backdrop; the tab shows its lock, a press says it opens later, and LB / RB cycle Converter, Squads and Artifacts only.
+- **No more renders for this round** (Shombith, 2026-11-12: "you do not need to render more, we can do it live on the
+  game"): the Converter and Artifacts backdrops are one still frame of the `pier` scene (Nocturne, shown for every colour
+  set) with Garrett's combine as the only motion; the live scene in the game is the target.
+
+**Not in this round:** the pilots walking the hangar (Shombith: later); the Breakers squad's own vessels (its
+backdrop stays Skim Wing's, lit in its own domain).
+After a conversion the converter returns to the four crystals at rest (the loop).
+
+**For the build:** this is the live-scene path: `ArkReverse`'s hangar for the Squads and a room for Artifacts and Decor, the squad's real hulls on the floor (powered down when offline), the Converter as
+`OmniCombinePlayer` itself (unchanged) placed over a pier that runs out of the hangar's mouth into the cell, the
+menu camera inside the hangar, the vault and the decor antechamber as set pieces, the map's marker on the
+Voyage Board's route, and the tunnel's ripples as a trim shader parameter. The renders are the reference for the look.
+
+Affects: Shombith's Ark screen (`author_menu_ark.py`, `ArkView`, `SquadsPage`, `ElementalConverterView`) once a
+build is picked; Garrett's Ark model, the Sparrow, Dolphin and Serpent models, the crystal models (rendered only); the
+colour sets and the artifacts (read only).
+
+**Domain (Shombith, on the board, 2026-11-07: "changing domain does not affect the environment"):** the Squads
+domain chips now relight the hangar itself - the hull's trim and the tunnel's ripples, the pads' light, the squad's
+prisms, the vessels' domain trim and the map's marker - from loops rendered in Jade, Ruby and Gold for every colour set
+(`ARK_DOMAIN`; `r67_map_frames.py ... <domain>`).
+
+**Status (2026-11-07):** complete on the board: all four rooms' loops in Nocturne, Photic and Dart Frog, and the
+Converter's conversion in all three, and the hangar in all three domains (21 animated WebPs, ids in `r67_blobs.json`). Rendered at 960 x 540, 10 samples,
+32-frame loops and a 40-frame conversion at 10 fps; `r67_map_frames.py` makes the HyperSea map's marker frames.
+
+## 166. Rev 85 mockups: the Artifacts room, three stills (2026-11-12, for review)
+
+**Asked (Shombith, 2026-11-12, on Rev 67's Artifacts tab, which then reused the Converter's open view):** "I do not like
+the artifacts screen, it should not reuse the same thing. It can be inside a room, let's say, but a cooler room of the
+Ark. You can give me a few still mockups separately." Earlier the same day: "the artifact screen should not be a closed
+Ark room" (Rev 67's vault) and "you do not need to render more, we can do it live on the game".
+
+**On the canvas:** tab **Ark**, round "Rev 85 - The Artifacts room, three still mockups", three boards. Each is the Ark
+screen opened on its Artifacts tab (the 2D list and the selected artifact's card on top, as Rev 67) over one still,
+rendered from `Docs/MenuRedesignB/rounds/r67_ark_tabs_render.py`'s `art_a` / `art_b` / `art_c` scenes in Rev 61 C's
+style and grade (Nocturne; the colour-set switch shows the same still). The four artifacts are the game's
+(`Assets/_SO_Assets/Pilots/Artifacts`: Javelin, Hydra, Aftershock, Aegis) shaped from the game's prisms, Hydra selected.
+
+- **A - The Reliquary (`R85ArtifactsA`):** a tall round chamber at the Ark's core. A column of cold light up its middle;
+  the four artifacts float over pedestals on the far side of it, each in its own spot, Hydra largest and brightest;
+  eight dark sockets up the wall wait for the artifacts still to be found; domain rings at floor, waist and crown.
+- **B - The Gallery (`R85ArtifactsB`):** a long hall of tall lit alcoves down both walls, the found four in the nearest
+  alcoves under spotlights, the rest dark with a dim prism each; floor trim runs to a round porthole onto the cell at
+  the far end.
+- **C - The Orrery (`R85ArtifactsC`):** a low chart room. Over a round table the artifacts ride gimbal rings round a small
+  super-shielded prism core; the selected one (Hydra) is drawn out of its ring toward you, a domain ring under it on
+  the table; dim shelves line the walls.
+
+**For the build:** live in the game, not renders (Shombith). Each room is a set piece of hull plating, domain-trim
+strips and prisms; the cost notes are in the round's reply (instanced prisms, baked or few realtime lights, no volume
+fog, the room only active while its tab is open).
+
+Affects: Shombith's Ark screen (`ArkView`, the Artifacts tab) once a room is picked; the artifacts (read only).
+
+## 167. Rev 86 mockup: the Artifacts room, A and B as one (2026-11-12, for review)
+
+**Asked (Shombith, 2026-11-12, on Rev 85, section 166):** "Combine A and B, A for the platform and B for the background."
+
+**On the canvas:** tab **Ark**, round "Rev 86 - The Artifacts room, A and B as one", one board, `R86ArtifactsAB`: the Ark
+screen opened on its Artifacts tab (the list and the selected artifact's card on top) over one still from
+`r67_ark_tabs_render.py`'s `art_ab` scene. The Reliquary's platform (A) stands in the middle of the Gallery's hall (B):
+a round dais ringed in the domain, the column of cold light up its middle, and the four found artifacts (Javelin,
+Hydra, Aftershock, Aegis) floating over their pedestals in an arc behind it. The hall around it is B's: tall alcoves
+down both walls, now holding the eight dark slots for the artifacts still to be found (a dim prism in each), and the
+round porthole onto the cell at the far end, beside the column. Nocturne; the colour-set switch shows the same still.
+
+**For the build:** live in the game (the cost notes in section 166 hold: instanced prisms, baked light with one or two
+realtime spots on the selected artifact, no volume fog, the room on only while its tab is open).
+
+Affects: Shombith's Ark screen (the Artifacts tab, once picked); the artifacts (read only).
 ### 126.2 Six colour sets for colour vision join the rail; Settings keeps a breadcrumb (2026-11-05, NOT RUN IN EDITOR)
 
 Garrett: "adding these to the profile is extending with new content, it is following a pattern, it is putting the
@@ -7226,6 +7560,125 @@ since the third pass. The hand test is in `Docs/UNITY_VERIFICATION_CHECKLIST.md`
   is accepted in Unity, retire them; while it is not, they are the way back.
 - **The Quests tab** is the pre-redesign quest track. Draw it on Frogma before building it.
 
+## 188. Built: the Ark screen inside the Ark, phase 1 - the hangar, the pier, the artifacts room (2026-11-12, claude/dazzling-einstein-gnr5iw, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-12):** "Let's build it inside Unity, let's go", of Rev 67 (section 187: the Converter on the
+pier) and Rev 86 (section 167: the Artifacts room, A and B as one); earlier: "you do not need to render more, we can do
+it live on the game".
+
+**What is built.** The converter's off-screen stage (`ElementalConverterView`, the picture behind every Ark tab) now
+holds the Ark itself, built in code by `ArkInteriorStage` (`Assets/_Scripts/UI/Elements/Ark/`) from
+`ArkInteriorConfigSO` (`Assets/Resources/ArkInteriorConfig.asset`, written by `Tools/Build/author_ark_interior_assets.py`,
+`--check` in the `/ship` gates). One camera; each tab looks at its own part, chosen by the page the tab holds (never its
+place in the row, so the Pilots tab in flight on `claude/signature-pilot-busts` slots in without a change):
+- **SQUADS: the hangar** from Rev 61 C's camera: `ArkReverse` dressed as the gameplay Ark dresses it (the domain's ship
+  material, every material double-sided and opaque at the definition's slot brightness), the clam doors swung clear
+  (`hangar.door.T` / `.B` at -150 / 150 degrees about the model's x, through `ArkRigTable.PoseLocal`), the 108 hull prisms
+  in the model's sockets as plain renderers in the theme's prism materials (a picture, not mass).
+- **CONVERTER: the pier.** From inside the hangar, out of the open mouth, down an 82 m pier (the hull's Body material,
+  girders, the domain's trim down both edges, lamp posts with a prism each) to its round deck, ringed in the domain,
+  where Garrett's `OmniCombinePlayer` plays unchanged, its whole spread shrunk to 9 m (`FitCombine`); the crystals light
+  the deck lime, breathing. CONVERT, the recipe and the bar are the overlay as before.
+- **ARTIFACTS: the room**, away from the hull: the Gallery's hall (ribs, beams, the domain's trim, a porthole at its end,
+  alcoves down both walls each with a dim shielded prism - the slots still to be found) and the Reliquary's platform in
+  its middle (a column of light, the four artifacts the game has - Javelin, Hydra, Aftershock, Aegis - built from the
+  game's prism meshes on pedestals, turning, a spotlight each, Hydra larger and brighter).
+- **DECOR:** no room (locked), so no picture and nothing rendered.
+
+**Cost, by construction** (not yet measured): rendered only while the Ark is the screen and its tab has a room; only that
+room is active (the hull for the hangar and the pier, the room alone for Artifacts); every set piece is a shared built-in
+mesh on the model's own material copies (no new material asset, no texture); no shadows, no probes, a handful of pixel
+point and spot lights per room, nothing per frame but the turning artifacts and one light's intensity. The menu cell's
+camera still renders (frozen) behind the screen, as it did behind the converter before.
+
+**Colours** are read through the colour trace (`ColorTrace.Retrace`, Docs/VesselModels/COLOR_TRACE.md): the cell's light,
+the crystals' light and the clear colour were added to the trace (`colour_trace.py --build`, the sets rewritten by
+`author_colour_set_assets.py`, Photic by `--write-photic`); the domain's materials come from the theme, so a colour set
+repaints them as it repaints the game.
+
+**Not in phase 1 (next):** the squad's vessels on the hangar's pads (online lit, offline dark) and the squad's domain
+relighting the hangar (the stage is dressed in Jade, `interiorDomain`); the selected artifact following the Artifacts
+list; the live menu cell seen through the mouth and the porthole (today the camera's skybox); the pilots walking the
+hangar (later, Shombith). Verification steps: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The Ark screen inside the Ark".
+
+Affects: Shombith's Ark screen (`ElementalConverterView`, `ArkTabsView` gains a read-only `PageLogic`); Garrett's omni
+combine (placed and scaled, its code unchanged) and Ark model (read; its dressing duplicated in the stage, `ArkModel`
+untouched); the colour sets (three traced colours added by their writers).
+
+## 189. Built: the Ark screen inside the Ark, phase 2 - the squad on the pads, its domain, the picked artifact, the live cell (2026-11-12, claude/dazzling-einstein-gnr5iw, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-12):** "do phase 2" (section 188's "Not in phase 1").
+
+- **The squad on the hangar's pads** (`SquadsPage.HangarChanged`, `HangarPad`): the shown squad's three seats stand
+  across the bay from Rev 61 C's camera (`padPositions`). You, an AI wingmate and an online friend: the vessel lit,
+  hovering, its pad glowing in the squad's domain colour. A friend who is offline: the vessel powered down (its
+  materials at `offlineBrightness`, no glow), resting low, no pad light. An open seat: the pad empty. A vessel is a
+  picture of its prefab's mesh renderers only (`Vessel Prefab Container`, asked as a question: a hull with no prefab is
+  simply not drawn), its Domain slot in the squad's domain, scaled to `vesselLength`, rebuilt only when the seat's class
+  changes; changing vessel on your card updates your pad.
+- **The squad's domain relights the Ark** (`ArkInteriorStage.SetDomain`): the hull's and every set piece's trim (one
+  material copy, re-dressed from the domain's ship material), every prism (the hull's sockets, the lamps, the artifacts,
+  the empty slots) and the vessels.
+- **The picked artifact** (`ArkArtifactsPage.RoomChanged`): the artifact picked in the list is drawn larger on its
+  pedestal, turns faster, its spot twice as bright; a kind the player does not hold leaves its pedestal empty.
+- **The live cell beyond the mouth** (`liveCell`): on each visit to the hangar or the pier, one camera at the menu
+  camera's place renders the menu's own cell once (the menu is paused behind every screen but Home, so it holds still)
+  onto a backdrop far beyond the pier's end. One render of the cell per visit; it needs URP's Unlit shader in the build
+  (a warning names it if it is not, and the camera's sky shows instead).
+
+**Look sheet:** the launcher opens the Ark on a tab (`ARK:CONVERTER`, `ARK:SQUADS`, `ARK:ARTIFACTS`). Its CI run (Actions >
+Look sheet, run 43272542494) was refused before a runner started (no steps, no log): the `unity-ci` environment either
+does not allow this branch or has no licence secrets. Run it on a machine with Unity:
+`python3 Tools/Build/unity_look/look.py menu ARK:CONVERTER,ARK:SQUADS,ARK:ARTIFACTS`.
+
+**Still to come:** the pilots walking the hangar (later, Shombith).
+
+Affects: Shombith's Ark screen (`SquadsPage`, `ArkArtifactsPage` publish what the 3D shows; `ElementalConverterView`
+applies it) and look sheet (`LookSheetLauncher`); the vessels' prefabs (read only, drawn as pictures).
+
+## 190. Built: the Ark's backdrops are the Frogma renders as video; the live Ark model is retired; the pages open onto them (2026-11-12, claude/dazzling-einstein-gnr5iw, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-12, after running sections 188-189 in the editor):** "You are using the actual Ark model, no,
+don't do that, do exactly how you showed me on Frogma, no need to use the actual model, it can either be a video or gif
+of this high quality. Second, why are the old UI images on top of our newly created Ark."
+
+**What changed.** `ArkInteriorStage` and its config and generator (sections 188-189) are deleted. Behind the Ark's tabs
+`ElementalConverterView` now plays the Frogma renders through `ArkBackdrop` (a `VideoPlayer` on unscaled time into one
+1920 x 1080 texture, released on leaving the Ark), chosen from `ArkBackdropConfigSO`
+(`Assets/Resources/ArkBackdropConfig.asset`, `Tools/Build/author_ark_backdrop_assets.py`, `--check` in the `/ship` gates):
+- **SQUADS:** Rev 67's hangar (the squad lined up, ripples in the tunnel, the map's vessel moving), one clip per colour set
+  (Nocturne, Photic, Dart Frog, matched to the worn set's name) and squad domain (Jade, Ruby, Gold: `SquadsPage.HangarDomain`).
+- **CONVERTER:** Rev 67's pier from inside the hangar with Garrett's combine on the deck: the four at rest (loop), CONVERT
+  plays the conversion once, then the Omni made loops. The combine (`OmniCombinePlayer`) is still stepped, drawn by no
+  camera, because the recipe, the bar and CONVERT read its progress; the stage camera and its render target are not
+  built at all. Nocturne only (the pier was rendered in Nocturne).
+- **ARTIFACTS:** Rev 86's room (A's platform in B's gallery), one still as a two-second clip. Nocturne only.
+- **DECOR:** none (locked).
+The clips (`Assets/_Graphics/Video/Ark/`, 13 files, 36 MB, H.264, transcoding off) are encoded from the Frogma frames
+by `Docs/MenuRedesignB/rounds/r67_ark_backdrop_videos.py`: Rev 61 C's grade, its grain settled by a light temporal
+denoise (a fifth of the bytes), upscaled to 1920 x 1080 and blended from 10 to 30 fps. The pages' 95 % veil and sea lines
+(drawn for tabs with no picture) come off Squads and Artifacts, and their layouts follow the boards (R67's Squads, R86's
+Artifacts): `author_menu_ark.py`.
+
+**Cost:** one H.264 decode at 1080p while the Ark is open on a tab with a backdrop, one 8 MB texture; no 3D, no lights,
+no extra camera. 36 MB of build. Fewer bytes: drop the Photic and Dart Frog squad clips (the worn set falls back to
+Nocturne's) or encode at 1600 x 900.
+
+**The seat cards' actions** (Shombith: "add the change vessel and open seat buttons too"): beside who flies the seat,
+**Change vessel** on your own card in a squad you lead (opens the squad's editor on your seat, on your vessel's page of
+the picker) and **Open the seat** (Lime) on an offline friend's card in a squad you lead (the seat opens with its picks
+kept, its pad stands empty, the first friend who joins takes it; the toast is `SquadsPage.seatOpenedToast`). Only the one
+that applies shows (`SquadMateCard.SetActions`); a joined squad's cards show neither (the leader edits).
+
+**The presence dot and Give to a seat** (Shombith: "add the online dot and give to a seat too"): each seat card shows a
+small diamond before who flies it, in the theme's Selection colour while they are here (you, an AI wingmate, an online
+friend), dim for an offline friend, none for an open seat (`SquadMateCard.SetPresence`). The picked artifact's card has
+**Give to a seat**: it switches to the Squads tab, opens the selected squad's editor and asks for a seat
+(`SquadsPage.giveHintToast`); the seat picked carries the artifact (`givenToast`), and saving keeps it as any edit does
+(a joined squad refuses: only its leader changes it).
+
+Affects: Shombith's Ark screen (`ElementalConverterView`, `SquadsPage`, `author_menu_ark.py`); Garrett's omni combine
+(stepped, not drawn, behind the video).
 
 ## 168. Rev 87 mockups: the Voyages tab, drawn new around the HyperSea map and the edge view (2026-11-12; Shombith picked A's direction, taken forward in section 169)
 

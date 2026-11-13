@@ -278,6 +278,33 @@ for both colours words are drawn in, over a white picture; a thinner plate needs
 560 x 744, which holds the longest story a pilot can have (14 lines), so a ten-line story leaves empty plate above
 the caption; the face margin 0.03 of the view; the crew cell 260 x 256 with a 180 close-up.
 
+---
+
+### 🔴 The Ark screen's backdrops: the Frogma renders as video behind Squads, Converter and Artifacts (`claude/dazzling-einstein-gnr5iw`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed** (Docs/MENU_REDESIGN_B.md section 190; it replaces sections 188-189's live Ark model, which Shombith
+rejected in the editor): `ElementalConverterView` plays `ArkBackdropConfig`'s clips through `ArkBackdrop` (VideoPlayer,
+unscaled time) behind each tab; Squads and Artifacts lost the opaque veil and follow the boards' layouts. Ran headless:
+`unity_refcompile` (no errors in project code), the `/ship` gates, `author_ark_backdrop_assets.py --check` (proven to fail
+on a missing clip and a drifted entry). No Unity editor ran.
+
+**Verify in editor:**
+1. Menu_Main, Play, open the Ark on CONVERTER: the pier video plays behind the recipe and the bar, the four crystals
+   turning over the deck. CONVERT: the conversion plays once, the recipe merges in step, then the Omni made loops.
+2. SQUADS: the hangar video with the squad lined up, no veil over it; change the domain chip: the clip changes domain.
+   The seat cards sit in the right column as on Frogma (R67).
+   Your card shows CHANGE VESSEL: it opens the squad's editor on your seat; pick another vessel, save: the card shows it.
+   A friend's card in your squad while they are offline shows OPEN THE SEAT (Lime): press it, the seat reads open and a
+   toast says the pad stands empty; online friends, AI seats and a joined squad's cards show neither button.
+   Each card's presence diamond: lit for you, an AI and an online friend, dim for an offline friend, none for an open seat.
+3. ARTIFACTS: the room (Rev 86) behind the list and the detail card, no veil.
+   GIVE TO A SEAT on the picked artifact's card: the Squads tab opens in the editor with a toast asking for a seat; press
+   a card: it carries the artifact (toast), save: the card's Artifact row shows it.
+4. DECOR: refused, as before.
+5. Settings: switch colour set to Photic and to Dart Frog: the hangar's clip follows.
+6. Leave the Ark and come back: the clips start again; no error about a missing clip in the console.
+7. Profiler on a phone build: the video decode cost on the Ark screen.
+
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** a sixth settings tab, REGION (globe icon), drawn by `Tools/Build/author_menu_settings.py`

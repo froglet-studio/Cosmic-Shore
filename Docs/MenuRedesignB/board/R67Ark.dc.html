@@ -43,16 +43,16 @@ body{margin:0;background:#00010A}
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
-const BG = {"converter": {"Nocturne": {"loop": "/_blob/35a38ed04a34199a9ef84900c5651c53", "convert": "/_blob/0701b3cd43e1dbf84fe098d515bf0af7"}, "Photic": {"loop": "/_blob/08b425ca97a974a886b137f1bd03bd72", "convert": "/_blob/1e8fa4f365763824e2c03b9d16c88a45"}, "DartFrog": {"loop": "/_blob/c699f269129bafa282b5d3740c450b3d", "convert": "/_blob/02789cf7240e71c159dda5bdc9902352"}}, "squads": {"Nocturne": {"loop": "/_blob/c2a9b2634cf0ccae357e84f5a3ff5917", "convert": ""}, "Photic": {"loop": "/_blob/43f64a4b0693cd635e599417375b48fb", "convert": ""}, "DartFrog": {"loop": "/_blob/c10074d79d9ffeff4eb1a5be8fbea11a", "convert": ""}}, "artifacts": {"Nocturne": {"loop": "/_blob/09185c136ff76f5527fc042cbd7d0d0a", "convert": ""}, "Photic": {"loop": "/_blob/237b17c90cf15a257a2cad62fca9dfa6", "convert": ""}, "DartFrog": {"loop": "/_blob/4408e2d2dbfeceeb7d2b7380b178a3a5", "convert": ""}}, "decor": {"Nocturne": {"loop": "/_blob/4041979f299c4471c3b0a0f3b7251b98", "convert": ""}, "Photic": {"loop": "/_blob/e463ac2a056ebe275e048b33443ac58a", "convert": ""}, "DartFrog": {"loop": "/_blob/c3e4896a471700b0f28e15650c335bc6", "convert": ""}}};
+const BG = {"converter": {"Nocturne": {"loop": "/_blob/35a38ed04a34199a9ef84900c5651c53", "convert": "/_blob/0701b3cd43e1dbf84fe098d515bf0af7"}, "Photic": {"loop": "/_blob/08b425ca97a974a886b137f1bd03bd72", "convert": "/_blob/1e8fa4f365763824e2c03b9d16c88a45"}, "DartFrog": {"loop": "/_blob/c699f269129bafa282b5d3740c450b3d", "convert": "/_blob/02789cf7240e71c159dda5bdc9902352"}}, "squads": {"Nocturne": {"loop": "/_blob/c2a9b2634cf0ccae357e84f5a3ff5917", "convert": ""}, "Photic": {"loop": "/_blob/43f64a4b0693cd635e599417375b48fb", "convert": ""}, "DartFrog": {"loop": "/_blob/c10074d79d9ffeff4eb1a5be8fbea11a", "convert": ""}}, "artifacts": {"Nocturne": {"loop": "/_blob/931cb7c34deb8b675f544d1beaa7e970", "convert": ""}, "Photic": {"loop": "/_blob/931cb7c34deb8b675f544d1beaa7e970", "convert": ""}, "DartFrog": {"loop": "/_blob/931cb7c34deb8b675f544d1beaa7e970", "convert": ""}}, "decor": {"Nocturne": {"loop": "/_blob/4041979f299c4471c3b0a0f3b7251b98", "convert": ""}, "Photic": {"loop": "/_blob/e463ac2a056ebe275e048b33443ac58a", "convert": ""}, "DartFrog": {"loop": "/_blob/c3e4896a471700b0f28e15650c335bc6", "convert": ""}}};
 const BGD = {"Nocturne": {"Ruby": "/_blob/cd2a783f5d168b8a448e948e3d67122a", "Gold": "/_blob/48075ef29368f88768c579631ceb3f3d", "Jade": "/_blob/c2a9b2634cf0ccae357e84f5a3ff5917"}, "Photic": {"Ruby": "/_blob/dc208d4ec8a65f0e61592dfbe88962ea", "Gold": "/_blob/36d205e0877a5cceb459982d273a004b", "Jade": "/_blob/43f64a4b0693cd635e599417375b48fb"}, "DartFrog": {"Ruby": "/_blob/59a6293758e7e4596c432529a128545b", "Gold": "/_blob/fc075dc960dcc5bbb6fd99f87011a4e3", "Jade": "/_blob/c10074d79d9ffeff4eb1a5be8fbea11a"}};
 const TABS = [["Converter", "converter"], ["Squads", "squads"], ["Artifacts", "artifacts"], ["Decor", "decor"]];
 const SETS = [["Nocturne", "Nocturne"], ["Photic", "Photic"], ["DartFrog", "Dart Frog"]];
 const DOMC = {"Jade": "#21C0BD", "Ruby": "#BD1BC8", "Gold": "#FF8F11"};
 const BOOK = [{"name": "Skim Wing", "dom": "Jade", "mine": true, "line": "Yours - three in the squad, one offline", "seats": [{"seat": "Leader", "who": "You", "v": "Sparrow", "e": "Charge", "p": "Shrapnel", "a": "Javelin", "on": true, "me": true}, {"seat": "Rogue One", "who": "Halcyon", "v": "Dolphin", "e": "Space", "p": "Riptide", "a": "Hydra", "on": true}, {"seat": "Rogue Two", "who": "Mothwing", "v": "Serpent", "e": "Mass", "p": "Scales", "a": "Aegis", "on": false}]}, {"name": "Breakers", "dom": "Ruby", "mine": false, "owner": "Kestrel", "line": "Kestrel's squad - joined", "seats": [{"seat": "Leader", "who": "Kestrel", "v": "Rhino", "e": "Mass", "p": "Tomahawk", "a": "Aftershock", "on": true}, {"seat": "Rogue One", "who": "You", "v": "Manta", "e": "Charge", "p": "Reaper", "a": "Javelin", "on": true, "me": true}, {"seat": "Rogue Two", "who": "Tern", "v": "Serpent", "e": "Space", "p": "Scales", "a": "Hydra", "on": false}]}];
 const ARTS = [["Javelin", "Throws the payload down your heading. It cracks every rival super-shield along its line and bursts where it stops."], ["Hydra", "Splits on release into heads that fan out across your heading, each carrying part of the payload, and each cracks where it lands."], ["Aftershock", "Lands down your heading and cracks, then cracks again in the same place a few seconds later, catching whatever was rebuilt."], ["Aegis", "Release the payload beside your Ark and it super-shields the Ark's hull for a while, guarding everything aboard."]];
-const STAGE = {"idle": "/_blob/c9999edfbb9e5342b0a84eb6eb05fc39", "mid": "/_blob/eeb01a5c8caf5faed492d8154a6a12d3", "done": "/_blob/039878603522653c303fae6e474a529b"};
+const STAGE = {"Nocturne": {"idle": "/_blob/b4d3a50f635920dcbc432b01ebbcd8e3", "mid": "/_blob/e8ed85637cd4d359472bfe01a819e349", "done": "/_blob/a7054fbdfd972ad6e86f648bd4127b19"}, "Photic": {"idle": "/_blob/b4d3a50f635920dcbc432b01ebbcd8e3", "mid": "/_blob/e8ed85637cd4d359472bfe01a819e349", "done": "/_blob/a7054fbdfd972ad6e86f648bd4127b19"}, "DartFrog": {"idle": "/_blob/b4d3a50f635920dcbc432b01ebbcd8e3", "mid": "/_blob/e8ed85637cd4d359472bfe01a819e349", "done": "/_blob/a7054fbdfd972ad6e86f648bd4127b19"}};
 const ART = {"Space": "/_blob/552b1a2acbcb63737e1174c398089c9c", "Charge": "/_blob/9b5b9502defc2ffb3ddfc86af8f2b581", "Mass": "/_blob/f1c37884ec4eaede9f7a20f81af70273", "Time": "/_blob/5f2b5586aa94e21d23984dedc2c4f93a"};
-const STEP = 1300;
+const STEP = 2675;
 const ELEMS = [["Space", 7], ["Charge", 4], ["Mass", 5], ["Time", 3]];
 
 class Component extends DCLogic {
@@ -64,9 +64,12 @@ class Component extends DCLogic {
   const st = this.state, q = BOOK[st.sq], dom = st.doms[st.sq], dc = DOMC[dom];
   const layers = [];
   const B = BG[TABS[st.tab][1]];
-  if (st.tab === 0) layers.push({ src: st.running ? STAGE.mid : (st.done ? STAGE.done : STAGE.idle), op: 1, alt: 'The Ark open to the cell, the crystals flying into the reactor' });
+  if (st.tab === 0) SETS.forEach((s, i) => { const G = STAGE[s[0]], on = i === st.set;
+   layers.push({ src: G.idle, op: on && !st.running && !st.done ? 1 : 0, alt: on && !st.running && !st.done ? 'From inside the Ark, down the pier into the cell: the four crystals on its round deck, ' + s[1] : '' });
+   layers.push({ src: on && st.running ? G.mid + '?run=' + st.run : G.mid, op: on && st.running ? 1 : 0, alt: on && st.running ? 'The omni combine on the pier deck' : '' });
+   layers.push({ src: G.done, op: on && st.done && !st.running ? 1 : 0, alt: on && st.done && !st.running ? 'The Omni crystal made, over the pier deck' : '' }); });
   else SETS.forEach((s, i) => {
-   layers.push({ src: TABS[st.tab][1] === 'squads' ? BGD[s[0]][dom] : B[s[0]].loop, op: i === st.set && !st.running ? 1 : 0, alt: i === st.set && !st.running ? 'Inside the Ark, live, ' + s[1] : '' });
+   layers.push({ src: TABS[st.tab][1] === 'squads' ? BGD[s[0]][dom] : B[s[0]].loop, op: i === st.set && !st.running ? 1 : 0, alt: i === st.set && !st.running ? (st.tab === 2 ? 'From inside the Ark, out of the open mouth into the cell, ' : 'Inside the Ark, live, ') + s[1] : '' });
    if (B[s[0]].convert) layers.push({ src: i === st.set && st.running ? B[s[0]].convert + '?run=' + st.run : B[s[0]].convert,
      op: i === st.set && st.running ? 1 : 0, alt: i === st.set && st.running ? 'Converting: the crystals fly into the reactor core' : '' });
   });
@@ -100,13 +103,13 @@ class Component extends DCLogic {
    barColor: active(i) ? '#99FF80' : '#00D4FF', fillScale: merged(i) ? 1 : 0, barAnim: active(i) ? 'csGrowX ' + STEP + 'ms linear both' : 'none' }));
   const segs = ELEMS.map((x, i) => ({ name: x[0], c: active(i) ? '#99FF80' : '#00D4FF', scale: merged(i) ? 1 : 0, spark: merged(i),
    anim: active(i) ? 'csGrowX ' + STEP + 'ms linear both' : 'none', lc: merged(i) || active(i) ? '#E6E9FF' : '#5C5F70' }));
-  const secs = Math.round(st.step * 5.5), pad = (k) => (k < 10 ? '0' : '') + k;
+  const secs = Math.round(st.step * STEP / 1000), pad = (k) => (k < 10 ? '0' : '') + k;
   const canConvert = st.counts.every((n) => n > 0) && !st.running;
   const arts = ARTS.map((a, i) => ({ name: a[0], on: i === st.art, ring: i === st.art ? '#00D4FF' : 'rgba(116,123,173,.35)',
    col: i === st.art ? '#E6E9FF' : '#9AA0CC', pick: () => this.setState({ art: i }) }));
-  const go = (k) => { if (st.running) return; this.setState({ tab: (k + 4) % 4, toast: '' }); };
+  const go = (k) => { if (st.running) return; this.setState({ tab: (k + 3) % 3, toast: '' }); };
   const tabs = TABS.map((x, i) => ({ name: x[0], on: i === st.tab, col: i === st.tab ? '#E6E9FF' : (x[0] === 'Decor' ? '#5C5F70' : '#747BAD'),
-   mark: i === st.tab ? '#E6E9FF' : 'transparent', locked: x[0] === 'Decor', pick: () => go(i) }));
+   mark: i === st.tab ? '#E6E9FF' : 'transparent', locked: x[0] === 'Decor', pick: () => (x[0] === 'Decor' ? this.say('Decor is locked. It opens later.') : go(i)) }));
   return { tabs, prevTab: () => go(st.tab - 1), nextTab: () => go(st.tab + 1),
    isConverter: st.tab === 0, isSquads: st.tab === 1, isArtifacts: st.tab === 2, isDecor: st.tab === 3,
    layers, sets, seats, squads, domains, dom, dc, name: q.name, line: q.line,
@@ -115,7 +118,7 @@ class Component extends DCLogic {
    omniFill: st.done ? 'rgba(18,34,43,.95)' : 'rgba(0,4,31,.6)', omniBorder: st.done ? '#99FF80' : '#222645', omniAlpha: st.done ? 1 : 0.4,
    omniAnim: st.done ? 'csPop 500ms cubic-bezier(.34,1.56,.64,1) both' : 'none',
    omniLine: st.done ? 'Formed. Convert again to replay the combine.' : 'Forms when all four elements have merged.',
-   phaseLabel: st.done ? 'Converted in' : (st.running ? 'Converting' : 'Ready'), clock: '00:' + pad(secs) + ' / 00:22',
+   phaseLabel: st.done ? 'Converted in' : (st.running ? 'Converting' : 'Ready'), clock: '00:' + pad(secs) + ' / 00:11',
    elems, omni: String(st.omni), running: st.running, idle: !st.running, convLabel: st.running ? 'Converting...' : (st.done ? 'Convert again' : 'Convert'),
    convClass: canConvert ? 'btn commit sl' : 'btn off sl',
    convert: () => { if (st.running) return; if (!st.counts.every((n) => n > 0)) { this.say('You need one of each element.'); return; }

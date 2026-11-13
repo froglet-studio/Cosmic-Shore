@@ -1,4 +1,6 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
@@ -135,6 +137,13 @@ namespace CosmicShore.UI
         [Tooltip("The converter's own tab in that row.")]
         [SerializeField, Min(0)] int converterTab;
 
+        [Header("Ark backdrops")]
+        [Tooltip("The Ark screen's backdrops: the Frogma renders played as video behind each tab (Docs/MENU_REDESIGN_B.md " +
+                 "section 190) - the hangar with the squad behind SQUADS, the pier with Garrett's combine behind CONVERTER, the " +
+                 "artifacts room behind ARTIFACTS; a tab with none (DECOR) shows none. Empty uses the shipped " +
+                 "Resources/ArkBackdropConfig; with neither, the converter plays the combine live on its own stage as before.")]
+        [SerializeField] ArkBackdropConfigSO backdrops;
+
         const float OmniDimAlpha = 0.35f;
         const int Elements = 4;
 
@@ -153,15 +162,29 @@ namespace CosmicShore.UI
         bool _active;
         bool _pageShown = true;
         float _orbit, _frame;
+        ArkBackdropConfigSO _backdropConfig;
+        ArkBackdrop _backdrop;
+        ArkRoom _room = ArkRoom.Pier;
+        ArkBackdropRun _pierRun = ArkBackdropRun.Loop;
+        SquadsPage _squads;
+        ArkArtifactsPage _artifactsPage;
 
         void Awake()
         {
             // The tabs first: the picture BuildUi makes starts hidden when another tab is already up.
             if (!arkTabs) arkTabs = GetComponentInChildren<ArkTabsView>(true);
+            _backdropConfig = backdrops ? backdrops : ArkBackdropConfigSO.LoadDefault();
+            // The hangar's clip is the squad's domain.
+            _squads = GetComponentInChildren<SquadsPage>(true);
+            if (_squads) _squads.HangarChanged += ShowBackdrop;
+            // GIVE TO A SEAT on the Artifacts tab carries on in the Squads tab: the next seat picked takes the artifact.
+            _artifactsPage = GetComponentInChildren<ArkArtifactsPage>(true);
+            if (_artifactsPage) _artifactsPage.GiveRequested += GiveToSeat;
             if (arkTabs)
             {
                 arkTabs.Changed += HandleTabChanged;
-                _pageShown = arkTabs.Current < 0 || arkTabs.IsShown(converterTab);
+                _pageShown = arkTabs.Current < 0 || PictureFor(arkTabs.Current);
+                _room = arkTabs.Current < 0 ? ArkRoom.Pier : RoomFor(arkTabs.Current);
             }
             BuildUi();
         }
@@ -174,6 +197,8 @@ namespace CosmicShore.UI
             if (!EnsureStage()) return;
             // Arriving shows the four idling, waiting to be converted; a finished combine plays again.
             _player.Begin(convert: false);
+            _pierRun = ArkBackdropRun.Loop;
+            ShowBackdrop();
             _frame = 0f;   // snap to the first framing rather than easing in from the last visit's
             // No Select() here: the switcher's Refocus lands on CONVERT, the screen's first live control,
             // and a second owner of first focus is how the pad lost track of it on other screens.
@@ -187,14 +212,70 @@ namespace CosmicShore.UI
         {
             _active = false;
             if (arkTabs) arkTabs.OnScreenExit();
+            if (_backdrop) _backdrop.Release();
             ReleaseTarget();
         }
 
-        // Another tab is up: the picture goes with the converter's overlay, and its target is let go as on exit.
+        /// <summary>The converter's own tab in the Ark's row (for tools that open it: the look sheet).</summary>
+        public int ConverterTab => converterTab;
+
+        bool UsesBackdrops => _backdropConfig;
+
+        void GiveToSeat(string artifactId, string artifactName)
+        {
+            if (!arkTabs || !_squads) return;
+            for (int i = 0; i < 16; i++)
+            {
+                if (arkTabs.PageLogic(i) is not SquadsPage) continue;
+                arkTabs.Press(i);
+                if (arkTabs.IsShown(i)) _squads.BeginGive(artifactId, artifactName);
+                return;
+            }
+        }
+
+        /// <summary>The tab's backdrop clip, in the worn colour set (and, for the hangar, the squad's domain), shown in the
+        /// picture. A no-op when there is no backdrop config or the Ark is not the screen.</summary>
+        void ShowBackdrop()
+        {
+            if (!UsesBackdrops || !_active || !_pageShown || _room == ArkRoom.None) return;
+            if (!_backdrop) _backdrop = ArkBackdrop.Create(transform);
+            var run = _room == ArkRoom.Pier ? _pierRun : ArkBackdropRun.Loop;
+            var set = ColorTrace.Worn ? ColorTrace.Worn.name : string.Empty;
+            var domain = _squads && _squads.HasHangar ? _squads.HangarDomain : Domains.Jade;
+            var clip = _backdropConfig.Find(_room, run, set, domain);
+            if (!clip) return;
+            _backdrop.Show(clip, run != ArkBackdropRun.Convert, _backdropConfig.TextureSize);
+            if (_surface) _surface.texture = _backdrop.Texture;
+        }
+
+        /// <summary>Which part of the Ark tab <paramref name="tab"/> looks at: chosen by what the tab HOLDS (its page), never
+        /// by its place in the row.</summary>
+        ArkRoom RoomFor(int tab)
+        {
+            if (tab == converterTab) return ArkRoom.Pier;
+            return (arkTabs ? arkTabs.PageLogic(tab) : null) switch
+            {
+                SquadsPage => ArkRoom.Hangar,
+                ArkArtifactsPage => ArkRoom.Artifacts,
+                _ => ArkRoom.None,
+            };
+        }
+
+        /// <summary>Whether the picture shows behind tab <paramref name="tab"/>: every tab with a backdrop, or the
+        /// converter alone when there are no backdrops.</summary>
+        bool PictureFor(int tab) => UsesBackdrops ? _backdropConfig.Has(RoomFor(tab)) : tab == converterTab;
+
+        // Another tab is up: its room shows (the hangar, the pier, the artifacts room), or, for a tab with none, the picture
+        // goes and its target is let go as on exit.
         void HandleTabChanged(int tab)
         {
-            bool shown = tab == converterTab;
-            if (shown == _pageShown) return;
+            _room = UsesBackdrops ? RoomFor(tab) : ArkRoom.Pier;
+            bool shown = PictureFor(tab);
+            if (shown == _pageShown)
+            {
+                ShowBackdrop();
+                return;
+            }
             _pageShown = shown;
             if (_surface) _surface.enabled = shown;
             if (!shown)
@@ -206,6 +287,7 @@ namespace CosmicShore.UI
             {
                 _frame = 0f;
                 _phase = Phase.None;
+                ShowBackdrop();
                 DrawOverlay();
             }
         }
@@ -219,6 +301,8 @@ namespace CosmicShore.UI
         void OnDestroy()
         {
             if (arkTabs) arkTabs.Changed -= HandleTabChanged;
+            if (_squads) _squads.HangarChanged -= ShowBackdrop;
+            if (_artifactsPage) _artifactsPage.GiveRequested -= GiveToSeat;
             ReleaseStage();
         }
 
@@ -230,6 +314,8 @@ namespace CosmicShore.UI
             // "Converting..." and is inactive meanwhile).
             if (_player.IsRunning) return;
             _player.Convert();
+            _pierRun = ArkBackdropRun.Convert;   // the conversion's clip plays once, then the Omni made loops
+            ShowBackdrop();
             DrawOverlay();
         }
 
@@ -237,6 +323,20 @@ namespace CosmicShore.UI
         {
             if (!_active || !_pageShown || !_player) return;
             float dt = Time.unscaledDeltaTime;
+            if (UsesBackdrops)
+            {
+                // The backdrop plays the picture; the combine is still stepped (never drawn) because the recipe, the bar
+                // and CONVERT read its progress.
+                if (_room == ArkRoom.Pier) _player.Tick(dt, _stage.position + Vector3.back * 1000f);
+                if (_pierRun == ArkBackdropRun.Convert && _backdrop && _backdrop.Finished)
+                {
+                    _pierRun = ArkBackdropRun.Done;
+                    ShowBackdrop();
+                }
+                if (_surface && _backdrop && _surface.texture != _backdrop.Texture) _surface.texture = _backdrop.Texture;
+                DrawOverlay();
+                return;
+            }
             // Pose first (the Mass depth effect reads last frame's camera, which nothing can see), then frame it.
             _player.Tick(dt, _camera.transform.position);
             _orbit += orbitDegreesPerSecond * dt;
@@ -253,6 +353,11 @@ namespace CosmicShore.UI
             _camera.nearClipPlane = Mathf.Max(0.5f, 0.5f * (distance - _player.FramingRadius));
             _camera.farClipPlane = distance + 2f * _player.FramingRadius;
             _camera.fieldOfView = fieldOfView;
+            RenderPicture();
+        }
+
+        void RenderPicture()
+        {
             EnsureTarget();
             if (_target && _target.height > 0) _camera.aspect = (float)_target.width / _target.height;
             _camera.Render();
@@ -334,12 +439,17 @@ namespace CosmicShore.UI
             var stage = new GameObject("ElementalConverterStage") { hideFlags = HideFlags.DontSave };
             stage.transform.position = StageOrigin;
             _stage = stage.transform;
-            _player = OmniCombinePlayer.Create(_stage, config);
+            var combineParent = _stage;
+            _player = OmniCombinePlayer.Create(combineParent, config);
             if (!_player)
             {
                 ReleaseStage();
                 return false;
             }
+
+            // With backdrops the picture is a video: no camera and no render target (at screen pixels x2 with MSAA they
+            // are the bulk of this screen's memory). The combine is stepped for the overlay and drawn by no camera.
+            if (UsesBackdrops) return true;
 
             var go = new GameObject("ElementalConverterCamera") { hideFlags = HideFlags.DontSave };
             go.transform.SetParent(_stage, false);

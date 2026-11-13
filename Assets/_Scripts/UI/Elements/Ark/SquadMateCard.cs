@@ -17,6 +17,19 @@ namespace CosmicShore.UI
         [Tooltip("The thin line in the domain colour round the card being edited (off otherwise).")]
         [SerializeField] private Graphic editMark;
 
+        [Header("Actions")]
+        [Tooltip("CHANGE VESSEL: on your own card in a squad you lead; opens the squad's editor on your seat (Rev 67, section 187).")]
+        [SerializeField] private KitButton changeVesselButton;
+        [Tooltip("OPEN THE SEAT: on an offline friend's card in a squad you lead; the seat opens and its pad stands empty until " +
+                 "someone takes it (Shombith, 2026-11-06: \"anyone can take their place in the squad\").")]
+        [SerializeField] private KitButton openSeatButton;
+
+        [Header("Presence")]
+        [Tooltip("The dot beside who flies the seat while they are here: you, an AI wingmate, an online friend (Rev 67).")]
+        [SerializeField] private Graphic onlineDot;
+        [Tooltip("The dot while the friend in the seat is offline.")]
+        [SerializeField] private Graphic offlineDot;
+
         [Header("Words")]
         [SerializeField] private TMP_Text seatText;
         [SerializeField] private TMP_Text numberText;
@@ -41,12 +54,18 @@ namespace CosmicShore.UI
 
         /// <summary>Raised when the card is pressed.</summary>
         public event System.Action Pressed;
+        /// <summary>Raised by CHANGE VESSEL.</summary>
+        public event System.Action ChangeVesselPressed;
+        /// <summary>Raised by OPEN THE SEAT.</summary>
+        public event System.Action OpenSeatPressed;
 
         public SquadNanobotSwap Nanobots => nanobots;
 
         void Awake()
         {
             if (button) button.onClick.AddListener(() => Pressed?.Invoke());
+            if (changeVesselButton) changeVesselButton.onClick.AddListener(() => ChangeVesselPressed?.Invoke());
+            if (openSeatButton) openSeatButton.onClick.AddListener(() => OpenSeatPressed?.Invoke());
         }
 
         public void Draw(string seat, string number, string who, Sprite hull, string vessel, string element,
@@ -79,6 +98,20 @@ namespace CosmicShore.UI
             if (!editMark) return;
             editMark.enabled = editing;
             editMark.color = domain;
+        }
+
+        /// <summary>Which of the card's actions show: CHANGE VESSEL, OPEN THE SEAT.</summary>
+        public void SetActions(bool changeVessel, bool openSeat)
+        {
+            if (changeVesselButton) changeVesselButton.gameObject.SetActive(changeVessel);
+            if (openSeatButton) openSeatButton.gameObject.SetActive(openSeat);
+        }
+
+        /// <summary>The presence dot: lit while someone is here to fly the seat, dim for an offline friend, none for an open seat.</summary>
+        public void SetPresence(bool shown, bool online)
+        {
+            if (onlineDot) onlineDot.enabled = shown && online;
+            if (offlineDot) offlineDot.enabled = shown && !online;
         }
 
         /// <summary>Make squad presses cards; a made squad's cards are shown, not pressed.</summary>
