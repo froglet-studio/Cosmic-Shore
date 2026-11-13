@@ -266,8 +266,8 @@ of this project is still open, so the Manta lane (and Redline, Corona and Bloomr
 Caleb steps out of the Manta lane for now; anyone may pick it up (`/swimlanes --lane manta`).
 
 **Open questions, for whoever picks it up.**
-- **Haptics:** do the Shrike, the Urchin and the Grizzly count as rammers by their kits (`Docs/HAPTICS.md` § The
-  universal rule, item 3)? This is the main one left open.
+- ~~**Haptics:** do the Shrike, the Urchin and the Grizzly count as rammers?~~ **Answered (Caleb, 2026-11-13): no.**
+  They keep the hull-hit ladder; the Rhino stays the only rammer (`Docs/HAPTICS.md` § The universal rule, item 3).
 - From the earlier rounds: should the chase camera look slightly ahead (`lookAheadDistance`, `lookAheadLift`)?
   Does the omni cash-out want the alert shake? Should Max Length Of Spacing drop below 0.9 if Soar reads as a wall?
 - The fleet's other hulls still lay their trail on a timed delay whose mass per second depends on frame rate (the
