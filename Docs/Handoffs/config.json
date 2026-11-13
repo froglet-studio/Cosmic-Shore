@@ -1,0 +1,4 @@
+{
+  "comment": "Handoffs (Tools/Build/handoff.py, .claude/skills/swimlanes/HANDOFF.md): one file per handoff, H-<date>-<lane>-<hash>.json, and one per answer, <id>.<stamp>.<seen|feedback>.json. `testers` receive /handoff-for-test; the first one is the default (Shombith, 2026-11-13: Andrew).",
+  "testers": ["Andrew"]
+}

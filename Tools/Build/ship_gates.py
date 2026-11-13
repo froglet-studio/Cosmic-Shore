@@ -6,6 +6,9 @@ The /ship gates: the ONE list of checks a branch passes before its pull request 
     python3 Tools/Build/ship_gates.py --no-refcompile    # skip the headless C# compile (the Unity editor
                                                          # compiles for itself: Source Control passes this)
     python3 Tools/Build/ship_gates.py --list             # print the gates without running them
+    python3 Tools/Build/ship_gates.py --jobs 1           # one gate at a time (default: one per CPU, at most 8)
+    python3 Tools/Build/ship_gates.py --changed          # only the gates whose inputs this branch changed (a fast
+                                                         # first pass while working; /ship still runs them all)
     bash .claude/skills/ship/gates.sh                    # the same thing; gates.sh only calls this file
 
 Each gate prints `ok    <label>`, `FAIL  <label> :: <the last lines of its output>` or `SKIP  <label>: <why>`;
@@ -19,10 +22,12 @@ add a gate HERE, never to a copy.
 A READER: it runs the checks and writes nothing into the repo (the reference compile caches under the temp
 directory, as before).
 """
+import concurrent.futures
 import glob
 import os
 import subprocess
 import sys
+import threading
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 GATE_TIMEOUT_S = 600
@@ -54,6 +59,10 @@ STATIC = [
     ('ship_gates_self_test', 'Tools/Build/ship_gates.py', ['--self-test']),
     ('push_checks_self_test', 'Tools/Build/push_checks.py', ['--self-test']),
     ('approvals_self_test', 'Tools/Build/approvals.py', ['--self-test']),
+    # Swim lane hand-offs (Shombith, 2026-11-13): the tool, its generated /handoff-* skills, and the /ship triage.
+    ('handoff_self_test', 'Tools/Build/handoff.py', ['--self-test']),
+    ('handoff_skills', 'Tools/Build/handoff.py', ['skills', '--check']),
+    ('ship_triage_self_test', 'Tools/Build/ship_triage.py', ['--self-test']),
     ('editor_themes', 'Tools/Build/author_editor_themes.py', ['--check']),
     ('editor_themes_self_test', 'Tools/Build/author_editor_themes.py', ['--self-test']),
     # Every colour comes from the colour set (Garrett, 2026-11-10, LOCKED; Docs/VesselModels/COLOR_TRACE.md): every
@@ -112,53 +121,97 @@ def dotnet_exe():
     return root, None
 
 
-def refcompile(dotnet_root):
+def refcompile(dotnet_root, out=None):
     """The headless player + editor compile (Tools/Build/unity_refcompile), then the gate that needs its output.
     Returns the number of failures."""
+    say = out.append if out is not None else emit
     env = dict(os.environ, DOTNET_ROOT=dotnet_root)
     env.setdefault('TMPDIR', os.environ.get('TMPDIR') or os.environ.get('TEMP') or '/tmp')
     here = 'Tools/Build/unity_refcompile'
     fails = 0
     rc, out = run_one(f'{here}/fetch.py', [], env=env)
     if rc != 0:
-        emit(f'FAIL  refcompile fetch :: {tail(out)}')
+        say(f'FAIL  refcompile fetch :: {tail(out)}')
         return 1
     rc, out = run_one(f'{here}/build.py', ['--quiet-buckets'], env=env)
     if 'RESULT: OK' in out:
-        emit('ok    refcompile player')
+        say('ok    refcompile player')
     else:
-        emit('FAIL  refcompile player :: ' + ' '.join(l for l in out.splitlines() if 'RESULT' in l or 'error CS' in l)[:400])
+        say('FAIL  refcompile player :: ' + ' '.join(l for l in out.splitlines() if 'RESULT' in l or 'error CS' in l)[:400])
         fails += 1
     # Editor config is approximate: only errors in files changed since bleeding-edge gate.
     rc, out = run_one(f'{here}/build.py', ['--config', 'editor', '--quiet-buckets'], env=env)
     if 'RESULT: OK' in out or '(0 in files changed since' in out:
-        emit('ok    refcompile editor (changed files)')
+        say('ok    refcompile editor (changed files)')
     else:
-        emit('FAIL  refcompile editor :: ' + ' '.join(l for l in out.splitlines() if 'RESULT' in l or 'CHANGED-TONIGHT' in l)[:400])
+        say('FAIL  refcompile editor :: ' + ' '.join(l for l in out.splitlines() if 'RESULT' in l or 'CHANGED-TONIGHT' in l)[:400])
         fails += 1
     # check_generated_assets needs the player compile output, so it runs after it.
     rc, out = run_one('Tools/Build/check_generated_assets.py', [], env=env)
-    emit('ok    generated_assets' if rc == 0 else f'FAIL  generated_assets :: {tail(out)}')
+    say('ok    generated_assets' if rc == 0 else f'FAIL  generated_assets :: {tail(out)}')
     return fails + (rc != 0)
 
 
-def run_all(with_refcompile=True):
+def default_jobs():
+    return max(1, min(8, os.cpu_count() or 1))
+
+
+def changed_paths(root=ROOT):
+    """Files this branch changes from bleeding-edge, plus uncommitted ones (for --changed)."""
+    def git(*a):
+        r = subprocess.run(['git'] + list(a), cwd=root, capture_output=True, text=True)
+        return r.stdout.split() if r.returncode == 0 else []
+    return set(git('diff', '--name-only', 'origin/bleeding-edge...HEAD')) | set(git('diff', '--name-only', 'HEAD'))
+
+
+def gate_touched(script, changed):
+    """A gate is worth re-running when its own script changed, or when the branch touched Assets/, Docs/ or
+    Tools/Build/ at all (most gates read those trees). A branch that only changed .claude/ or Port/ runs the self-tests."""
+    if script in changed:
+        return True
+    return any(p.startswith(('Assets/', 'Docs/', 'Tools/Build/', 'Tools/CI/', 'ProjectSettings/', 'Packages/')) for p in changed)
+
+
+def run_all(with_refcompile=True, jobs=None, only_changed=False):
+    """Every gate, `jobs` at a time (they are independent READERS), printed in list order; the reference compile runs
+    beside them on its own thread. The output is the same lines, in the same order, as one at a time."""
+    jobs = jobs or default_jobs()
+    gates = gate_list()
+    if only_changed:
+        changed = changed_paths()
+        gates = [g for g in gates if gate_touched(g[1], changed) or g[0].endswith('self_test')]
     fails = 0
-    for label, script, args in gate_list():
-        rc, out = run_one(script, args)
-        if rc == 0:
-            emit(f'ok    {label}')
-        else:
-            emit(f'FAIL  {label} :: {tail(out)}')
-            fails += 1
-    if with_refcompile:
+    ref_lines, ref_fails = [], [0]
+
+    def ref_job():
         root, exe = dotnet_exe()
-        if exe:
-            fails += refcompile(root)
-        else:
-            emit(f'SKIP  refcompile + generated_assets: no .NET SDK at {root} (install: see SKILL.md step 4)')
+        if not exe:
+            ref_lines.append(f'SKIP  refcompile + generated_assets: no .NET SDK at {root} (install: see SKILL.md step 4)')
+            return
+        ref_fails[0] = refcompile(root, out=ref_lines)
+
+    ref_thread = None
+    if with_refcompile:
+        ref_thread = threading.Thread(target=ref_job, daemon=True)
+        ref_thread.start()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as pool:
+        futs = [pool.submit(run_one, script, args) for _, script, args in gates]
+        for (label, _, _), fut in zip(gates, futs):
+            rc, out = fut.result()
+            if rc == 0:
+                emit(f'ok    {label}')
+            else:
+                emit(f'FAIL  {label} :: {tail(out)}')
+                fails += 1
+    if ref_thread:
+        ref_thread.join()
+        for l in ref_lines:
+            emit(l)
+        fails += ref_fails[0]
     else:
         emit('SKIP  refcompile + generated_assets: --no-refcompile (the Unity editor compiles the project itself)')
+    if only_changed:
+        emit(f'NOTE  --changed ran {len(gates)} of {len(gate_list())} gates; /ship runs them all before the PR')
     emit('GATES: ALL OK' if fails == 0 else 'GATES: FAILED')
     return 0 if fails == 0 else 1
 
@@ -183,6 +236,13 @@ def self_test():
     rc, out = run_one('Tools/Build/does_not_exist.py', [])
     if rc == 0:
         errs.append('a missing gate script passed')
+    # Parallel runs keep list order and still report a failure (negative control through the pool).
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+        res = list(pool.map(lambda a: run_one('-c', [a]), ['import time; time.sleep(.3)', 'import sys; sys.exit(2)', 'pass']))
+    if [r[0] for r in res] != [0, 2, 0]:
+        errs.append(f'the parallel pool lost order or a failure: {[r[0] for r in res]}')
+    if not gate_touched('Tools/Build/x.py', {'Assets/a.cs'}) or gate_touched('Tools/Build/x.py', {'.claude/skills/a.md'}):
+        errs.append('--changed picks the wrong gates')
     # gates.sh must stay a wrapper: a second list is how the two would drift.
     sh = open(os.path.join(ROOT, '.claude/skills/ship/gates.sh'), encoding='utf-8').read()
     if 'ship_gates.py' not in sh or 'author_' in sh:
@@ -200,7 +260,10 @@ def main(argv):
         for label, script, args in gate_list():
             print(f'{label}\t{script} {" ".join(args)}'.rstrip())
         return 0
-    return run_all(with_refcompile='--no-refcompile' not in argv)
+    jobs = None
+    if '--jobs' in argv:
+        jobs = int(argv[argv.index('--jobs') + 1])
+    return run_all(with_refcompile='--no-refcompile' not in argv, jobs=jobs, only_changed='--changed' in argv)
 
 
 if __name__ == '__main__':
