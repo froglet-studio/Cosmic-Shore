@@ -669,8 +669,9 @@ def squads_page(root, veiled=VEILED):
 # and pda_c PDA_HELD=1), measured at 2400 x 1350 and written here at the backdrop's 1920 x 1080.
 CALLSIGNS = len(re.findall(r"^\s+\w+ = [1-9]\d*,", open(os.path.join(
     REPO, "Assets/_Scripts/Data/Enums/PilotVision.cs"), encoding="utf-8").read(), re.M))
-PDA_REST_CORNERS = ((800.9, 832.4), (1144.4, 820.7), (1220.5, 974.2), (776.1, 993.9))   # TL TR BR BL, lying on the bench
-PDA_GLASS_ASPECT = 0.325 / 0.236                     # the glass's own width over height (the render's PDA)
+# TL TR BR BL of the display lying on the bench: the nautilus's standing sheet of light (Rev 109 B, picked 2026-11-13)
+PDA_REST_CORNERS = ((709.5, 682.9), (1186.6, 671.2), (1139.9, 870.4), (743.6, 885.2))
+PDA_GLASS_ASPECT = 0.325 / 0.236                     # the display's own width over height (r109_ark_pda_render.py SW / SD)
 GLASS_X, GLASS_Y, GLASS_W, GLASS_H = 403, 194, 1114, 809   # held up: the glass, square to the view
 LAST_X, LAST_Y, LAST_W, LAST_H = 1280, 812, 440, 176       # lying down: the last pilot read and PICK UP, right of the PDA
 SCREEN_PAD, SCREEN_HEAD = 28, 52                    # the glass's margin and its header strip

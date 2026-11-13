@@ -8594,7 +8594,7 @@ PICK UP unwired, a file template naming an unfilled token), `author_ark_backdrop
 Affects: Garrett's Pilots tab (`ArkPilotsPage`, reworked; queued in `Docs/Approvals/Garrett/`); his profile page is
 unchanged and opened from the file's FULL PROFILE.
 
-## 198. Rev 109 mockups: the crew PDA itself, redesigned - three devices from the Ark (2026-11-13, awaiting a pick)
+## 198. Rev 109 mockups: the crew PDA itself, redesigned - three devices from the Ark (2026-11-13; Shombith picked B, built)
 
 **Asked** (Shombith, 2026-11-13, on the built Rev 99 C, section 192): "For the PDA mockups, I like C but the actual device
 it looks too earth like, it should be something completely different and modern and never seen before so work on this."
@@ -8618,6 +8618,13 @@ C's prisms leave the frame as the view closes in; it also matches the Converter'
 **Differs from the build**: no C#. The bench clips are re-rendered from the picked device
 (`r99_pilots_bench_videos.py`), and `author_menu_ark.py`'s `PDA_REST_CORNERS` and `GLASS_X/Y/W/H` take the picked
 device's screen corners (held, all three sit within 20 px of the built glass, 403,194 to 1517,1003).
+
+**Picked (Shombith, 2026-11-13): "109 B"**, the nautilus. **Built** on claude/project-thread-5ayjx3: the bench clips
+(`bench_Nocturne_{loop,pickup,held,putdown}.mp4`) re-made from `r109_ark_pda_render.py` with `PDA_KIND=nautilus`, the
+held still at `PDA_HELD_DIST=0.545` so the light sheet lands exactly on the built screen (403,194 to 1517,1003; the
+Rev 109 boards' held still was at 0.575, a little smaller). `author_menu_ark.py`'s `PDA_REST_CORNERS` are the lying
+sheet's corners, and `r99_pilots_bench_videos.py`'s `REST_GLASS` its centre. The page, its words and the C# did not
+change. The pick-up move is still the Rev 99 zoom and dissolve; the transitions thread owns how it moves.
 
 ## 199. Built: each pilot's ability on the Pilots tab (2026-11-13, claude/project-thread-60987t on top of section 192, not run in Unity)
 

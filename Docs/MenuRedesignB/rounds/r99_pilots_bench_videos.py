@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The PILOTS tab's backdrops as the game plays them (Rev 99 C, picked by Shombith 2026-11-13; Docs/MENU_REDESIGN_B.md
 section 191): the crew PDA lying on the hangar's workbench, and the same PDA held up square to the view. Both are
-Blender stills (r99_ark_pilots_render.py: `pda_c`, and `pda_c` with PDA_HELD=1), graded with Rev 61 C's grade
+Blender stills (r109_ark_pda_render.py: `pda_c` with PDA_KIND=nautilus, and the same with PDA_HELD=1 PDA_HELD_DIST=0.545;
+Rev 109 B, picked by Shombith 2026-11-13; r99_ark_pilots_render.py drew the Rev 99 C slab), graded with Rev 61 C's grade
 (r67_grade.py, the hangar's lift, as the Squads clips are), scaled to 1920x1080 and written as H.264 into
 Assets/_Graphics/Video/Ark/ (ArkBackdropConfigSO names them; author_ark_backdrop_assets.py writes the table):
 
@@ -28,7 +29,7 @@ REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 DST = os.path.join(REPO, "Assets", "_Graphics", "Video", "Ark")
 W, H, FPS = 1920, 1080, 30
 MOVE_FRAMES = 15                       # the pick-up, 0.5 s
-REST_GLASS = (985.5, 905.3)            # the glass's centre lying down, at 1920 x 1080 (author_menu_ark.PDA_REST_CORNERS)
+REST_GLASS = (944.9, 777.4)            # the display's centre lying down (the nautilus's sheet, Rev 109 B), at 1920 x 1080 (author_menu_ark.PDA_REST_CORNERS)
 HELD_GLASS = (960.0, 598.5)            # and held up (GLASS_X/Y/W/H)
 ZOOM = 2.4                             # how far the view closes in on the lying PDA by the end of the move
 

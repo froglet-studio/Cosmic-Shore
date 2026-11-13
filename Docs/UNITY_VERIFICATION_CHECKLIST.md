@@ -342,6 +342,8 @@ follows; blank it and that line disappears.
 - [ ] Crew cards (claude/project-thread-5ayjx3): each close-up fills its card, cut at the sides, not stretched; the fade
       darkens the foot so the callsign, name and "Sees ..." read over every painting; the screen's ground is near-black,
       not navy; the picked card's outline shows over its art
+- [ ] The nautilus (Rev 109 B): lying, the last pilot's close-up sits on the standing sheet of light; held, the crew
+      fills the sheet edge to edge with the shell and pearl below it
 
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
