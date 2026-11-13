@@ -8,7 +8,7 @@ it was not shipped; wider stick bands are faster (--bands): Regatta flies 0.8 / 
 A MODEL, not the game. A point mass on the Regatta course generator's rings flies the gate steering as Regatta does
 (approach point, then through the ring's CENTRE; see rhino_drive_sim.py) with the Manta's numbers (Manta.prefab):
 cruise 180 u/s, boost multiplier 4 (Soar 720 u/s), speed lerp 1.5/s toward the target, stick turn rate
-(0.2 v + 30) deg/s (RotationThrottleScaler 0.2, the smaller of Pitch 50 / Yaw 30), Yastri trigger yaw 60 deg/s at a full
+(0.2 v + 30) deg/s (RotationThrottleScaler 0.2, the smaller of Pitch 50 / Yaw 30), Yawstery trigger yaw 60 deg/s at a full
 net pull. The stick is proportional to the angle error, as rhino_drive_sim.py. No break-off and no rotation follow lag:
 the editor is the measurement.
 
@@ -67,8 +67,8 @@ import situation_features as sf
 from rhino_drive_sim import add, sub, mul, dot, norm, unit, ang, rotate_toward
 from ai_nose_lead import NoseLead, judge_and_want, NOSE_FOLLOW   # the AI nose lead (AIPilot.NoseLeadGain), one shared piece
 
-CRUISE, MULT, LERP, YASTRI_YAW = 180.0, 4.0, 1.5, 60.0
-BOOST_BAND, YASTRI_BAND = 0.35, 0.75
+CRUISE, MULT, LERP, YAWSTERY_YAW = 180.0, 4.0, 1.5, 60.0
+BOOST_BAND, YAWSTERY_BAND = 0.35, 0.75
 
 
 class Tuning:
@@ -120,7 +120,7 @@ def race(aware, intensity, T=300, dt=1 / 60, bands=None, nose_rate=None, nose_le
     mouth) is set as well. nose_rate: None (today: the heading turns at once) or the nose follow rate per second (1.5 =
     the game's AI hulls); nose_lead: AIPilot.NoseLeadGain on top of the lag (None = off, a gain, {"gain", "max_extra_deg"}
     or a NoseLead). Both are OFF by default: the module docstring."""
-    band, yband = bands or (BOOST_BAND, YASTRI_BAND)
+    band, yband = bands or (BOOST_BAND, YAWSTERY_BAND)
     # the nose lag and the AI nose lead, both OFF by default: a rate of 0, inf or one that closes the whole gap in a step
     # is no lag, today's model; the effective gain is AIPilot.EffectiveNoseLeadGain from THIS race's rate, computed once
     follow = float(nose_rate) if nose_rate is not None and 0 < nose_rate < math.inf and nose_rate * dt < 1.0 else None
@@ -155,7 +155,7 @@ def race(aware, intensity, T=300, dt=1 / 60, bands=None, nose_rate=None, nose_le
         boost = min(lt, rt); net = abs(rt - lt)
         v += (CRUISE * (1 + (MULT - 1) * boost) - v) * LERP * dt
         top = max(top, v)
-        rate = (0.2 * v + 30) * stick + YASTRI_YAW * net
+        rate = (0.2 * v + 30) * stick + YAWSTERY_YAW * net
         if follow is None:
             fwd = rotate_toward(fwd, want, math.radians(rate) * dt)   # today: the heading IS the command
         else:
@@ -322,7 +322,7 @@ def self_test():
     if _with_knobs([(0.35, 0.75)], None, None) != [(0.35, 0.75)] or \
             _with_knobs([(0.35, 0.75)], None, 2.5) != [(0.35, 0.75, NOSE_FOLLOW, {"gain": 2.5, "max_extra_deg": 40.0})]:
         bad.append("_with_knobs")
-    plain, led_cell = _bands_one((BOOST_BAND, YASTRI_BAND)), _bands_one((BOOST_BAND, YASTRI_BAND, 1.5, {"gain": 2.5}))
+    plain, led_cell = _bands_one((BOOST_BAND, YAWSTERY_BAND)), _bands_one((BOOST_BAND, YAWSTERY_BAND, 1.5, {"gain": 2.5}))
     if plain[2] != [r[0] for r in TODAY[(False, None)]] or led_cell[2] != [r[0][0] for r in LED[(False, None)]]:
         bad.append(f"the --bands worker does not race today's / the lead's races: {plain[2]} / {led_cell[2]}")
     print("manta_drive_sim self-test: " + ("ok" if not bad else "FAILED " + repr(bad)))
@@ -351,7 +351,7 @@ if __name__ == '__main__':
         grid = [(b, y) for b in (0.2, 0.35, 0.5, 0.65, 0.8, 0.9) for y in (0.5, 0.75, 0.85, 0.95) if y >= b]
         with ProcessPoolExecutor() as ex:
             out = sorted(ex.map(_bands_one, _with_knobs(grid, nose_rate, nose_lead)))
-        print(f"total s (I1-I4), (BoostStickBand, YastriStickBand{knob_cols}), per course")
+        print(f"total s (I1-I4), (BoostStickBand, YawsteryStickBand{knob_cols}), per course")
         for o in out[:10]: print(o)
     elif "--sweep" in sys.argv:
         import itertools

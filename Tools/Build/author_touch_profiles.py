@@ -67,7 +67,7 @@ PROFILES = [
     # as sharp at the rim (Garrett, 2026-10-25: "too sensitive around the home... I like that it can turn sharp").
     profile("Dolphin", "ThumbLifts", tiltRoll=True, oneThumbCurve=0.6,
             glyphs=[("Charge", "LiftEitherThumb"), ("Time", "LiftEitherThumb")]),
-    # Yastri on either lift; both thumbs off soars (IdleAction -> the boost) steered by tilt.
+    # Yawstery on either lift; both thumbs off soars (IdleAction -> the boost) steered by tilt.
     # Flat out: the throttle reads full with no thumb down (720 u/s, the pad's full soar). Its tilt PITCH is turned
     # over (Garrett, 2026-10-22: "both left/right and up/down were the opposite of my expectation"); its yaw was
     # flipped with it and put back on 2026-10-25 ("manta gyro has its yaw controls flipped from intended").

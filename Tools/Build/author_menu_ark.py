@@ -5,8 +5,8 @@ and mount it in Menu_Main.unity (Docs/MENU_REDESIGN_B.md section 16; the approve
 boards, revision 2, on the "Menu Redesign B" canvas).
 
     Assets/_Prefabs/UI Elements/Main Menu Screens/Ark/
-        ArkView.prefab   the Ark's four tabs (ArkTabsView: CONVERTER, SQUADS, DECOR - Shombith, 2026-10-27; ARTIFACTS -
-                         Garrett, 2026-10-27) and
+        ArkView.prefab   the Ark's five tabs (ArkTabsView: CONVERTER, SQUADS, DECOR - Shombith, 2026-10-27; ARTIFACTS -
+                         Garrett, 2026-10-27; PILOTS - Garrett, 2026-11-12) and
                          their pages:
                          CONVERTER, the overlay over the converter's 3D picture: the title band, the recipe panel
                          (four ConverterRecipeRows in fly-in order, the Omni block), and the converter bar
@@ -14,6 +14,8 @@ boards, revision 2, on the "Menu Redesign B" canvas).
                          SQUADS (SquadsPage): the player's squads (up to four, made and joined), the selected
                          squad's three squad mates with their vessel, element, pilot and artifact, NEW / JOIN /
                          DELETE, PLAY into Arcade / Arena / Mission, and the join list of friends' open seats;
+                         PILOTS (ArkPilotsPage, section 92.1): the crew, one cell a pilot with the close-up of their
+                         callsign's scene; a press opens that pilot's profile page (author_menu_pilot_profile.py);
                          ARTIFACTS (ArkArtifactsPage): the player's artifacts, the picked one's four element tracks
                          with RAISE (its own crystals) and OMNI, and the profile's five crystal balances;
                          DECOR: the banner and hull skins, LOCKED (MenuAvailabilityView) - not open yet
@@ -58,7 +60,8 @@ S = dict(view=C.script("ElementalConverterView"), row=C.script("ConverterRecipeR
          ambient=K.kit_script("KitAmbient"), spark=K.kit_script("KitSpark"), tabs=C.script("ArkTabsView"),
          squads=C.script("SquadsPage"), squad_row=C.script("SquadRowView"), mate=C.script("SquadMateCard"),
          availability=C.script("MenuAvailabilityView"), text_tab=K.kit_script("KitTextTab"),
-         chip=C.script("SquadPickChip"), nanobots=C.script("SquadNanobotSwap"), artifacts=C.script("ArkArtifactsPage"))
+         chip=C.script("SquadPickChip"), nanobots=C.script("SquadNanobotSwap"), artifacts=C.script("ArkArtifactsPage"),
+         pilots=C.script("ArkPilotsPage"))
 C.STUB_KIND.update({"recipe": (114, S["row"]), "entrance": (114, S["entrance"]), "tabs": (114, S["tabs"])})
 
 ORDER = ("Space", "Charge", "Mass", "Time")       # OmniCombineCore.Order: the fly-in order
@@ -184,7 +187,9 @@ def converter_bar(root):
 
 # ARTIFACTS (Garrett, 2026-10-27, Docs/Pilots/ARTIFACTS.md §4 and §8.3: "the Ark screen gets an artifact panel beside the
 # Converter"): spend elemental crystals on an artifact's four tracks.
-TABS = ("Converter", "Squads", "Artifacts", "Decor")
+# PILOTS (Garrett, 2026-11-12: "use the full size art for each pilot's profile page in the ark"; section 92.1): the crew,
+# each pilot a door to their profile page. Between Squads and Artifacts, the order of a squad mate's cards.
+TABS = ("Converter", "Squads", "Pilots", "Artifacts", "Decor")
 LOCKED_TABS = {"Decor"}                       # MenuAvailability.Locked: refuses with the sting and "Not open yet."
 TAB_Y, TAB_H = 108, 52
 MAX_SQUADS, SEATS, JOIN_ROWS = 4, 3, 6        # SquadBook.MaxSquads, SavedSquad.SlotCount, the join list's rows
@@ -290,7 +295,7 @@ def small_button(parent, key, name, caption, r, variant="Default"):
 
 
 def pick_chip(parent, key, name, r, h, caption="", picture=None, picture_rect=None, line_rect=None, label_rect=None,
-              label_role="ButtonSmall", align="center"):
+              label_role="ButtonSmall", align="center", line_align="left"):
     """One SquadPickChip: a kit_row button, its word, an optional picture and second line, and the picked mark."""
     chip = H.kit_row(parent, key, name, r, h, content_keys=((f"{key}/Label", "tmp"),))
     chip.add("cg", 225, canvas_group(True))
@@ -301,7 +306,8 @@ def pick_chip(parent, key, name, r, h, caption="", picture=None, picture_rect=No
         pic.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, picture, preserve=True))
     label(chip.child(N(f"{key}/Label", "Label", label_rect or STRETCH)), caption, label_role, "TextLight", align=align)
     if line_rect is not None:
-        H.ellipsize(label(chip.child(N(f"{key}/Line", "Line", line_rect)), "", "Label", "NeutralLightest"))
+        H.ellipsize(label(chip.child(N(f"{key}/Line", "Line", line_rect)), "", "Label", "NeutralLightest",
+                          align=line_align))
 
     def body(ctx, go):
         pic = ref(ctx.c(f"{key}/Picture", "img")) if picture_rect is not None else "{fileID: 0}"
@@ -571,6 +577,79 @@ def squads_page(root):
     return page
 
 
+# The PILOTS tab: one cell a callsign (a crew holds at most one pilot a callsign, Docs/Pilots/INVENTORY.md 3.1), six
+# across and three down, right of the friends orb and inside the page's right and bottom margins.
+CALLSIGNS = len(re.findall(r"^\s+\w+ = [1-9]\d*,", open(os.path.join(
+    REPO, "Assets/_Scripts/Data/Enums/PilotVision.cs"), encoding="utf-8").read(), re.M))
+PILOT_COLS, PILOT_W, PILOT_H, PILOT_GAP = 6, 260, 256, 32
+PILOT_X, PILOT_Y = A.ORB_CLEARANCE, LIST_Y + 32          # the grid's top left; the caption sits on LIST_Y
+PILOT_FACE, PILOT_FACE_Y, PILOT_PAD = 180, 12, 16        # the close-up's side and top, and the callsign's inset
+PILOT_NAME_Y, PILOT_NAME_H, PILOT_LINE_Y, PILOT_LINE_H = 200, 24, 226, 18   # the name and the callsign under it
+# The name runs nearer the cell's edges than the callsign: it must hold the widest name PilotGenerator's tables
+# compose (measured 2026-11-12 over its given and family names, in the UI font; 68 of 357,027 rolled names were wider
+# than the callsign's row).
+PILOT_NAME_PAD, WIDEST_NAME = 6, "Darthawen Lanternweaver"
+SCENE_CATALOG = K.meta_guid("Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset")     # author_pilot_scene_assets.py
+PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("countTemplate", "Pilots: {count}"))
+
+
+def pilot_tokens():
+    """The tokens ArkPilotsPage fills in each of its lines, read from its own two TemplateText.Fill calls, so the
+    lists cannot drift from the page: a cell's two lines take the pilot's facts, the count takes {count} alone."""
+    source = open(os.path.join(REPO, "Assets/_Scripts/UI/Elements/Ark/ArkPilotsPage.cs"), encoding="utf-8").read()
+    cell = re.search(r"TemplateText\.Fill\(template,(.*?)\);", source, re.S)
+    count = re.search(r"TemplateText\.Fill\(countTemplate,(.*?)\);", source, re.S)
+    assert cell and count, "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
+    cell, count = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count))
+    assert cell and count, "ArkPilotsPage's filled tokens read as empty"
+    return {"nameTemplate": cell, "lineTemplate": cell, "countTemplate": count}
+
+
+PILOT_TOKENS = pilot_tokens()
+PILOT_WORDS = "".join(yfield(field, words) for field, words in PILOT_LINES)
+
+
+def pilot_cell_rect(i):
+    """Cell `i` of the crew, left to right then down: (x, y) of its top left on the page."""
+    return (PILOT_X + (i % PILOT_COLS) * (PILOT_W + PILOT_GAP), PILOT_Y + (i // PILOT_COLS) * (PILOT_H + PILOT_GAP))
+
+
+def pilots_page(root):
+    """PILOTS: the crew in join order, one cell a pilot (SquadPickChip: the close-up of their callsign's scene, their
+    name, their callsign). A press opens the pilot's profile page (ScreenSwitcher.OpenPilotProfile). ArkPilotsPage
+    draws it; every word is on that component or the text of a caption here."""
+    page = page_node(root, "Pilots", False)
+    page_backdrop(page, "Pilots")
+    grid_w = PILOT_COLS * PILOT_W + (PILOT_COLS - 1) * PILOT_GAP
+    C.section_label(page, "Pilots/Caption", "Caption", "Your crew", TL(PILOT_X, LIST_Y, 220, 18))
+    label(page.child(N("Pilots/Count", "Count", TL(PILOT_X + grid_w - 220, LIST_Y, 220, 18))), "", "Label",
+          "NeutralLightest", align="right")
+    e = page.child(N("Pilots/Empty", "Empty", TL(PILOT_X, 250, grid_w, 200)))
+    e.add("cg", 225, canvas_group(False))
+    label(e.child(N("Pilots/Empty/Heading", "Heading", stretch_x(0, 0, 40, 40))), "No pilots yet", "H2", "TextLight",
+          align="center")
+    label(e.child(N("Pilots/Empty/Line", "Line", stretch_x(300, 300, 90, 60))),
+          "Your crew appears here once your account has loaded.", "Body", "NeutralLightest", align="center", wrap=True)
+    words_w = PILOT_W - 2 * PILOT_PAD
+    for i in range(CALLSIGNS):
+        x, y = pilot_cell_rect(i)
+        pick_chip(page, f"Pilots/Cell{i}", f"Cell{i}", TL(x, y, PILOT_W, PILOT_H), PILOT_H, "", None,
+                  TL((PILOT_W - PILOT_FACE) // 2, PILOT_FACE_Y, PILOT_FACE, PILOT_FACE),
+                  line_rect=TL(PILOT_PAD, PILOT_LINE_Y, words_w, PILOT_LINE_H),
+                  label_rect=TL(PILOT_NAME_PAD, PILOT_NAME_Y, PILOT_W - 2 * PILOT_NAME_PAD, PILOT_NAME_H),
+                  label_role="Body", line_align="center")
+
+    def body(ctx, go):
+        return mono(go, S["pilots"],
+                    f"  scenes: {K.ref(11400000, SCENE_CATALOG, 2)}\n"
+                    "  cells:\n" + refs_of(ctx, [f"Pilots/Cell{i}" for i in range(CALLSIGNS)], "chip")
+                    + f"  emptyGroup: {ref(ctx.c('Pilots/Empty', 'cg'))}\n"
+                    f"  countText: {ref(ctx.c('Pilots/Count', 'tmp'))}\n  screenSwitcher: {{fileID: 0}}\n"
+                    + PILOT_WORDS)
+    page.add("logic", 114, body)
+    return page
+
+
 ART_ROWS = 4                                   # Javelin and Aegis, and room for two more
 TRACK_ELEMENTS = ("Mass", "Space", "Time", "Charge")   # ArkArtifactsPage.TrackOrder
 TRACK_Y, TRACK_H, TRACK_STEP = 120, 156, 170
@@ -681,6 +760,7 @@ def build_view():
     recipe_panel(conv)
     converter_bar(conv)
     squads_page(root)
+    pilots_page(root)
     artifacts_page(root)
     decor_page(root)
     tab_row(root)
@@ -688,7 +768,7 @@ def build_view():
     def body(ctx, go):
         entries = ""
         for t in TABS:
-            logic = {"Squads": ref(ctx.c("Squads", "logic")), "Artifacts": ref(ctx.c("Artifacts", "logic"))}.get(t, "{fileID: 0}")
+            logic = ref(ctx.c(t, "logic")) if t in ("Squads", "Pilots", "Artifacts") else "{fileID: 0}"
             gate = ref(ctx.c(f"Tabs/{t}", "gate")) if t in LOCKED_TABS else "{fileID: 0}"
             entries += (f"  - button: {ref(ctx.c(f'Tabs/{t}', 'tab'))}\n    page: {ref(ctx.c(t, 'cg'))}\n"
                         f"    pageLogic: {logic}\n    availability: {gate}\n")
@@ -919,15 +999,68 @@ def listed(body, field):
     return re.findall(r"\{fileID: (-?\d+)\}", m.group(1))
 
 
+PILOT_CELL_FIELDS = dict(CHIP_FIELDS, line=TMP, image=IMG)      # a crew cell needs its callsign line and its close-up
+PILOTS_FIELDS = dict(emptyGroup=225, countText=TMP)
+
+
+def rect_xy(view, fid, field):
+    m = re.search(r"^  " + field + r": \{x: (-?[\d.e-]+), y: (-?[\d.e-]+)\}", A.doc_of(view, fid)[1], re.M)
+    return float(m.group(1)), float(m.group(2))
+
+
+def validate_pilots(view, V):
+    """The PILOTS tab: one wired cell a callsign, laid out clear of the friends orb and inside the page, every word
+    authored and naming only tokens ArkPilotsPage fills."""
+    _, page = A.doc_of(view, V("Pilots#logic"))
+    for field, want in PILOTS_FIELDS.items():
+        C.wired(view, page, field, want, "ArkPilotsPage")
+    assert f"guid: {SCENE_CATALOG}" in page, "ArkPilotsPage reads no pilot scene catalog"
+    cells = listed(page, "cells")
+    assert len(cells) == CALLSIGNS and all(i != "0" and A.kind_of(view, i)[1] == S["chip"] for i in cells), \
+        f"ArkPilotsPage.cells is not {CALLSIGNS} wired SquadPickChips (one a callsign)"
+    assert len(set(cells)) == len(cells), "ArkPilotsPage.cells names a cell twice"
+    for i in cells:
+        for field, want in PILOT_CELL_FIELDS.items():
+            C.wired(view, A.doc_of(view, i)[1], field, want, "a crew cell")
+    # Each line names only the tokens the page fills in THAT line. Read from what was written, not from PILOT_LINES,
+    # and before the next rule, so a planted token is caught by this one.
+    written = re.findall(r"^  (\w+Template): (.*)$", page, re.M)
+    assert {field for field, _ in written} == set(PILOT_TOKENS), \
+        "ArkPilotsPage's lines in the prefab are not the ones its code fills"
+    for field, value in written:
+        for token in re.findall(r"\{(\w+)\}", value):
+            assert token in PILOT_TOKENS[field], \
+                f"ArkPilotsPage.{field} names {{{token}}}, which the page does not fill there"
+    for field, words in PILOT_LINES:
+        assert yfield(field, words) in page, f"ArkPilotsPage.{field} is not the authored line"
+    for i in range(CALLSIGNS):
+        rt = V(f"Pilots/Cell{i}#rt")
+        assert rect_xy(view, rt, "m_AnchorMin") == (0, 1) and rect_xy(view, rt, "m_Pivot") == (0, 1), \
+            f"crew cell {i} is not laid out from the page's top left"
+        (x, y), (w, h) = rect_xy(view, rt, "m_AnchoredPosition"), rect_xy(view, rt, "m_SizeDelta")
+        assert x >= A.ORB_CLEARANCE, f"crew cell {i} starts {x:g} from the left edge, under the friends orb"
+        assert x + w <= 1920 - LIST_X and -y + h <= LIST_Y + LIST_H, f"crew cell {i} runs outside the page's margins"
+        assert -y >= LIST_Y + 18, f"crew cell {i} runs over the caption"
+        assert (x, -y) == pilot_cell_rect(i) and (w, h) == (PILOT_W, PILOT_H), f"crew cell {i} is off the grid"
+        name_w = rect_xy(view, V(f"Pilots/Cell{i}/Label#rt"), "m_SizeDelta")[0]
+        assert K.label_width(WIDEST_NAME, "Body") <= name_w <= PILOT_W, \
+            f"crew cell {i}'s name row ({name_w:g}) does not hold the widest name a pilot can have"
+    assert PILOT_FACE_Y + PILOT_FACE <= PILOT_NAME_Y and PILOT_NAME_Y + PILOT_NAME_H <= PILOT_LINE_Y \
+        and PILOT_LINE_Y + PILOT_LINE_H + PILOT_FACE_Y <= PILOT_H, "a crew cell's close-up, name and callsign overlap"
+    assert K.line_height("Body") <= PILOT_NAME_H and K.line_height("Label") <= PILOT_LINE_H + 0.5, \
+        "a crew cell's rows are shorter than their text"
+
+
 def validate_tabs(view, V):
-    """The Ark's three tabs: each a KitTextTab over a CanvasGroup page, SQUADS driven by its page, DECOR locked."""
+    """The Ark's tabs: each a KitTextTab over a CanvasGroup page; SQUADS, PILOTS and ARTIFACTS driven by their pages;
+    DECOR locked."""
     _, tabs = A.doc_of(view, V("root#tabs"))
     assert tabs and S["tabs"] in tabs, "ArkView's root carries no ArkTabsView"
     entries = re.findall(r"  - button: \{fileID: (-?\d+)\}\n    page: \{fileID: (-?\d+)\}\n"
                          r"    pageLogic: \{fileID: (-?\d+)\}\n    availability: \{fileID: (-?\d+)\}\n", tabs)
     assert len(entries) == len(TABS), f"the Ark has {len(entries)} tabs, not {len(TABS)} ({', '.join(TABS)})"
     # The pages with no 3D picture draw the window backdrop: the veil, then the sea lines, under everything else.
-    for t in ("Squads", "Artifacts", "Decor"):
+    for t in ("Squads", "Pilots", "Artifacts", "Decor"):
         kids = re.findall(r"fileID: (-?\d+)", re.search(r"^  m_Children:\n((?:  - .*\n)*)", A.doc_of(view, V(f"{t}#rt"))[1], re.M).group(1))
         assert kids[:2] == [str(V(f"{t}/Backdrop#rt")), str(V(f"{t}/Sea#rt"))], \
             f"the {t} tab must open on the veil and the sea lines (\"Ark no sea line\")"
@@ -939,12 +1072,16 @@ def validate_tabs(view, V):
             assert logic != "0" and A.kind_of(view, logic)[1] == S["squads"], "the Squads tab is not driven by its SquadsPage"
         if t == "Artifacts":
             assert logic != "0" and A.kind_of(view, logic)[1] == S["artifacts"], "the Artifacts tab is not driven by its ArkArtifactsPage"
+        if t == "Pilots":
+            assert logic != "0" and A.kind_of(view, logic)[1] == S["pilots"], \
+                "the Pilots tab is not driven by its ArkPilotsPage"
         if t in LOCKED_TABS:
             assert gate != "0", f"the {t} tab has no MenuAvailabilityView: it would open"
             _, g = A.doc_of(view, gate)
             assert S["availability"] in g and "  availability: 1\n" in g, f"the {t} tab is not Locked"
         else:
             assert gate == "0", f"the {t} tab is gated"
+    validate_pilots(view, V)
     _, art = A.doc_of(view, V("Artifacts#logic"))
     for field, want in ART_FIELDS.items():
         C.wired(view, art, field, want, "ArkArtifactsPage")
@@ -1004,19 +1141,32 @@ def unlogic_tab(view, index):
     return re.sub(r"(  - button: \{fileID: -?\d+\}\n    page: \{fileID: -?\d+\}\n    pageLogic: )(\{fileID: -?\d+\})", cut, view)
 
 
+def in_doc(view, fid, change):
+    """The view with `change` applied to the one document `fid` (a negative control's plant)."""
+    m = re.search(r"^--- !u!\d+ &" + str(fid) + r"\n.*?(?=^--- |\Z)", view, re.M | re.S)
+    out = change(m.group(0))
+    assert out != m.group(0), f"the control changed nothing in document {fid}"
+    return view[:m.start()] + out + view[m.end():]
+
+
 def self_test(files):
-    def expect(label_, mutate):
+    def expect(label_, mutate, by=""):
+        """`by`: words of the rule that must catch the control. Caught by a neighbouring rule is not caught."""
         bad = dict(files)
         mutate(bad)
         try:
             validate(bad)
         except AssertionError as e:
+            if by not in str(e):
+                print(f"  CAUGHT BY THE WRONG RULE: {label_} ({e}); expected the rule that says '{by}'")
+                return False
             print(f"  caught: {label_} ({e})")
             return True
         print(f"  MISSED: {label_}")
         return False
     view = f"{OUT_DIR}/{VIEW}.prefab"
     mount = ArkMount()
+    V = K.FileIds(VIEW)
     cases = [
         ("a recipe row with no bar", lambda f: f.__setitem__(view, re.sub(r"(  fill: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
         ("a segment that is a plain image", lambda f: f.__setitem__(view, plain_segment(f[view]))),
@@ -1040,8 +1190,33 @@ def self_test(files):
         ("the Artifacts tab with no page logic", lambda f: f.__setitem__(view, unlogic_tab(f[view], TABS.index("Artifacts")))),
         ("the Ark's arkTabs unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  arkTabs: {{fileID: {mount.stub_fid('root#tabs')}}}", "  arkTabs: {fileID: 0}"))),
+        ("the Pilots tab with no page logic", lambda f: f.__setitem__(view, unlogic_tab(f[view], TABS.index("Pilots")))),
+        ("the Pilots tab reading no scene catalog", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(f"guid: {SCENE_CATALOG}", f"guid: {PILOT_CATALOG}")))),
+        ("a callsign with no crew cell", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(f"  - {{fileID: {V('Pilots/Cell17#chip')}}}\n", "")))),
+        ("a crew cell with no close-up", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots/Cell3#chip"), lambda d: re.sub(r"(  image: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d)))),
+        ("a crew cell under the friends orb", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots/Cell12#rt"), lambda d: d.replace(
+                f"  m_AnchoredPosition: {{x: {PILOT_X}, y: ", f"  m_AnchoredPosition: {{x: {LIST_X}, y: ")))),
+        ("a crew cell too narrow for the widest name", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots/Cell7/Label#rt"), lambda d: d.replace(
+                f"  m_SizeDelta: {{x: {PILOT_W - 2 * PILOT_NAME_PAD}, y: ", "  m_SizeDelta: {x: 228, y: ")))),
+        ("a crew line naming a token the page does not fill", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(yfield("lineTemplate", "{callsign}"),
+                                                             yfield("lineTemplate", "{sight}")))),
+         "which the page does not fill there"),
+        ("a crew line naming the count's token", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(yfield("nameTemplate", "{name}"),
+                                                             yfield("nameTemplate", "{count}")))),
+         "which the page does not fill there"),
+        ("a crew line changed from its authored words", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(yfield("lineTemplate", "{callsign}"),
+                                                             yfield("lineTemplate", "{given}")))),
+         "is not the authored line"),
     ]
-    ok = all(expect(l, m) for l, m in cases)
+    ok = all([expect(*case) for case in cases])
     print("OK: every negative control fires" if ok else "FAIL: a negative control did not fire")
     return ok
 

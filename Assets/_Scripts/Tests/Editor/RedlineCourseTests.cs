@@ -14,7 +14,7 @@ namespace CosmicShore.Tests
     /// permission, not a demand). Since 2026-11-04 the ladder is cut against SOAR ALONE (both
     /// triggers eased together, <see cref="RedlineCourse.SoarRadius"/>): no corner of any seed is
     /// tighter than <see cref="RedlineCourse.SoarOnlyMinimumRadius"/>, so the race never needs the
-    /// Yastri pivot (Yash: "only time"). Asserted across a 400-seed sweep of every intensity, because
+    /// Yawstery pivot (Yash: "only time"). Asserted across a 400-seed sweep of every intensity, because
     /// a generated course is exactly the kind of thing that is fine on the seed you looked at.
     ///
     /// <para>The solver is Headlong's and is deliberately unable to fail, so the liveness half
@@ -85,7 +85,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Soar_only_curve_matches_the_shipped_Manta()
         {
-            // Both triggers buried: no trigger difference, so the same 237u as the Soar/Yastri curve.
+            // Both triggers buried: no trigger difference, so the same 237u as the Soar/Yawstery curve.
             Assert.AreEqual(RedlineCourse.FullBoostRadius, RedlineCourse.SoarRadius(1f), 1e-3f);
             // Half Soar: 450 u/s over (450 x 0.2 + 30) = 120 deg/s - a 215u circle.
             Assert.AreEqual(214.9f, RedlineCourse.SoarRadius(0.5f), 0.5f);
@@ -212,7 +212,7 @@ namespace CosmicShore.Tests
                 var s = Settings(intensity);
                 Assert.Greater(s.CornerFloorRadius, 0f, "Redline states its floor in absolute units");
                 Assert.GreaterOrEqual(s.CornerFloorRadius, RedlineCourse.SoarOnlyMinimumRadius,
-                    $"i{intensity}: the floor must never ask for a corner Soar alone cannot make (it would need the Yastri pivot)");
+                    $"i{intensity}: the floor must never ask for a corner Soar alone cannot make (it would need the Yawstery pivot)");
                 for (int seed = 1; seed <= Seeds; seed++)
                 {
                     var c = Circuit(intensity, seed);

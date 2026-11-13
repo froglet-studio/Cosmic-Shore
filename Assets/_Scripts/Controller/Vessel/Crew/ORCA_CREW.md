@@ -13,7 +13,7 @@ then bring this into unity".
 with all four seats, its three guns, per-seat missiles, the helm's shield, its own hovering-assembly model, the
 missiles' look and the bomb's lit blast. Garrett flew it through round 7; rounds 8 and 9 are compiled, not flown. Every round's steps are in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Orca round 5" to "Orca round 9"). What a full vessel still needs is the
-Follow-ups list at the end: networking, level-5 upgrades, sounds, a prefab fitted to the model, its own HUD art.
+Follow-ups list at the end: networking, level-5 upgrades, sounds, a prefab fitted to the model (its own HUD art landed 2026-11-13).
 
 **Seats, not names.** "We can start referring to multiplayer vessels by their seats. this is a 4 seat vessel. that lets
 players know it supports four players or brings in 4 AI" (Garrett, 2026-10-20). Two new `SO_Vessel` fields carry this:
@@ -92,6 +92,28 @@ needs the ui breaking top row of text, unique to that vessel."
 
 **Unverified:** nothing has been flown in the Unity Editor yet (`Docs/UNITY_VERIFICATION_CHECKLIST.md`, and the team
 task in "Try it"). The crew runs on one machine, as the Wrasse's seat does (see Follow-ups).
+
+## Level 5 (the fundamentals pass, Garrett, 2026-11-12)
+
+Garrett: polish the fleet vessel by vessel as the Rhino was (#1927). The Orca's four element channels already scale one
+number each (Charge the missiles' speed and turn, Mass how long the shield rides, Space both blasts, Time the tank's
+refill), so the pass fills its four empty level-5 slots. All four are game only (the lab models no upgrades; `parity.cjs`
+still passes), each gated on its own element in `OrcaCrewConfigSO` (`RearmActive`, `BulwarkActive`, `ChainBurstActive`,
+`AfterburnerActive`):
+
+| Element | Level 5 | What it does |
+|---|---|---|
+| Charge | **Rearm** | Every gunner's magazine regains a missile every `rearmSeconds` (12 s), up to its size: the crew never runs dry between omni crystals (`OrcaCrew.StepRearm`). |
+| Mass | **Bulwark** | The shield is laid twice, a second shell `bulwarkGap` (14 u) further out, carried and dropped with the first: the wall is twice as thick (`LayBulwark`). |
+| Space | **Chain Burst** | A missile or bomb burst sets off every other missile of the crew, and its bomb, inside its blast; each chains on in turn (`ChainFrom`). |
+| Time | **Afterburner** | The boost tank keeps refilling while the helm burns, so a burn lasts longer and an empty tank recovers under a held trigger (`StepHelm`). |
+
+Tests: `OrcaUpgradeTests`.
+
+**Its own HUD (2026-11-13).** The Orca no longer draws the Sparrow's HUD: `OrcaHUDVariant` (written by
+`Tools/Build/author_orca_hud.py`, `--check`) carries `OrcaHUDView`, and each card is the icon kit's picture of its seat
+(`Tools/Build/icon_kit/specs/orca.py`), with the level-5 card swapped in when the upgrade unlocks: Flown Missiles /
+Rearm, Danger Shield / Bulwark, Burst / Chain Burst, Boost Tank / Afterburner. Tests: `OrcaHUDTests`.
 
 ## The seats
 
@@ -367,8 +389,7 @@ python3 Tools/Build/element_ability_table.py Orca  # four cards, four channels
   (`Docs/CREW_STATIONS.md`): that seat runs on THEIR machine (`OrcaCrew` `Mode.Rider`: turret, gun, missiles, bomb), and
   the hull's machine leaves it alone. What their rounds do is seen on their machine only, and nobody else sees their
   turret turn; replicating the turrets' aim and deciding the bursts on one machine for everyone is the open part.
-- **Level-5 upgrades:** none is designed. The map's four `UpgradeLabel`s are empty, waiting on Garrett (vessel skill §3,
-  the design-approval gate).
+- ~~**Level-5 upgrades**~~ Done 2026-11-12: Rearm, Bulwark, Chain Burst, Afterburner (*Level 5* above).
 - **Sounds:** all eight `EventReference` slots ship empty: launch, burst, shield, omni refill, empty magazine, sniper
   shot, bomb throw, bomb burst. (The fast gun's rounds and the bomb carry their prefabs' own sounds, if any.)
 - **Touch:** the helm's lifts are the Orca's ThumbLifts row in `Tools/Build/author_touch_profiles.py`; a gunner seat's

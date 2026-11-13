@@ -79,6 +79,12 @@ MonoBehaviour:
   detachNestMissiles: 1
   leaveNestSeconds: 2
   maxNests: 3
+  salvoUpgradeElement: 1
+  salvoLaunchScale: 2
+  armedNestsUpgradeElement: 2
+  armedNestMissiles: 2
+  whipcrackUpgradeElement: 4
+  whipcrackSeconds: 0.6
   turretRegen: 6
   floraMissileMax: 4
   maxFlora: 8

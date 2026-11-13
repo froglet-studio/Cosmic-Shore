@@ -132,7 +132,7 @@ Time card (one part + the plate gauge). `specs/squirrel.py`, `specs/dolphin.py`.
 
 ## 4. Rules that keep being relearned
 
-- Prisms in a row need a gap ≥ 6 px or they fuse into a zigzag at 40 px (Yastri, round 1).
+- Prisms in a row need a gap ≥ 6 px or they fuse into a zigzag at 40 px (Yawstery, round 1).
 - A silhouette's smallest feature is the first thing a viewer names (lobes → ears). Remove the
   feature; do not shrink it.
 - Three speed lines say "boost" on every hull and so say nothing; ONE chamfered bar, or a lean, is

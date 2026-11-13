@@ -6,10 +6,24 @@ You are expected to work autonomously and persistently. Complete the entire task
 
 When a task spans multiple files or systems, complete ALL of them in a single pass. Do not stop after the first file and ask if you should proceed to the next.
 
+## TOP PRIORITY: the elemental vessel loop (Garrett, 2026-11-12)
+
+"Pushing every vessel through this plan in a systematic way remains the highest priority for anyone who has any
+cycles." When a person has no task for you, or asks what to work on, start here: **`/elemental-loop`**, or
+`python3 Tools/Build/elemental_loop.py next`. The loop, per vessel and element: 0 a game kit (a Time, a Charge and a
+Mass or Space arcade game), 1 fun (abilities and game together, one intensity), 2 the I1-I4 ladder (intro, fun,
+challenging, very hard), 3 one AI on all four rungs; then per arena game (Regatta for Time, Broadside for Charge,
+Brood Rush for Mass and Space together, balanced on net control of space): 4 an environment creator trained against
+the fixed AI pool, 5 the plateau's vessel imbalance tuned and sent back to steps 2-4 until no step 5 is needed. Each
+loop needs fewer people. Process: [`Docs/ElementalLoop/PLAYBOOK.md`](Docs/ElementalLoop/PLAYBOOK.md); board:
+`Docs/ElementalLoop/STATUS.md` (generated); sign-offs: `loop.json`, written by `elemental_loop.py set`.
+
 ## Where everything else lives (read the topic file before touching its area)
 
 This file holds only the rules every session needs. Everything else moved verbatim into topic files under `Docs/claude/`. Each entry lists the section headings the file contains, so a reference like "CLAUDE.md § Anti-Patterns" can be found by grepping this index. To find a passage quoted from the old single-file CLAUDE.md, search both places: `grep -rn '<phrase>' CLAUDE.md Docs/claude/`.
 
+- [`Docs/ElementalLoop/PLAYBOOK.md`](Docs/ElementalLoop/PLAYBOOK.md): **The elemental vessel loop, the top priority** (`/elemental-loop`, Garrett 2026-11-12): steps 0-5 with each step's start, work, exit and sign-off, the game kit rule, the three arena games, how the loop needs fewer people each round, the missing scaffolding and Garrett's open decisions. Board `STATUS.md` and sign-offs `loop.json`, both through `Tools/Build/elemental_loop.py` (`next`, `vessel`, `set`, `--check`).
+  Sections: Garrett's words; The loop at a glance; Step 0 the game kit; The steps; Running the loop; What the loop pays for; How this maps onto what exists; Missing scaffolding; Rules this loop keeps; Decisions for Garrett; Log
 - [`Docs/TEAM_TASKS.md`](Docs/TEAM_TASKS.md): **Froglet Tasks, the team's hand-off tickets** - tests, playtests, setup, content and decisions one collaborator's session leaves for another: GitHub issues labelled `team-task`, read on the Froglet Tasks page, written only through the `/team-tasks` skill (`Tools/Build/team_tasks.py`). Tickets are nobody's until someone takes one.
   Sections: a pointer to the tickets (the board moved to GitHub Issues)
 - [`.claude/skills/swimlanes/SKILL.md`](.claude/skills/swimlanes/SKILL.md): **Swim lanes** (`/swimlanes`, Garrett 2026-11-08) - which vessels, games, app-shell sections and systems are occupied right now and which open ones to pick up next (open with work, occupied, needs polish, polished), from git, the tickets, the checklist and the Bug Ledger (`swimlanes.py`; catalog and verdicts in `lanes.json`).
@@ -22,7 +36,7 @@ This file holds only the rules every session needs. Everything else moved verbat
   Sections: The questions; What we have today; Amoebius: keep, narrow, or stop?; The Vessel Studio: keep, narrow, or remove?; The one tool; Decision record; How we decide
 - [`Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md`](Docs/claude/ECOSYSTEM_DESIGN_PRINCIPLES.md): LOCKED. Read before any ecology, fauna, flora, or HyperSea change.
   Sections: Ecosystem Design Principles (LOCKED — read before any ecology change)
-- [`Docs/ProvenWin/PLAYBOOK.md`](Docs/ProvenWin/PLAYBOOK.md): **Proven wins** (`/proven-win`, Garrett 2026-11-11): one cost-free improvement at a time, measured in real Unity on a GPU (paired A/B with null and negative controls, `ShaderABBench`), output proven identical, a blind sign-off page. `WINS.md` is the record of proven, rejected and queued candidates.
+- [`Docs/ProvenWin/PLAYBOOK.md`](Docs/ProvenWin/PLAYBOOK.md): **Proven wins** (`/proven-win`, Garrett 2026-11-11; `/proven-win-scout` finds candidates; `Tools/Build/proven_win/` run.py, verdict.py, signoff.py make every judgment mechanical): one cost-free improvement at a time, measured in real Unity on a GPU (paired A/B with null and negative controls, `ShaderABBench`), output proven identical, a blind sign-off page. `WINS.md` is the record of proven, rejected and queued candidates.
   Sections: what counts; pick; isolate; measure (and the batchmode GPU traps); the human A/B; record; limits
 - [`Docs/claude/ABOUT_PROJECT.md`](Docs/claude/ABOUT_PROJECT.md): Vessel classes, team domains, tech stack.
   Sections: About This Project; Vessel Classes; Team Domains; Tech Stack
@@ -111,8 +125,14 @@ This file holds only the rules every session needs. Everything else moved verbat
   gates, the sheet beside the nearest references, the writer that keeps every guid and wires the `PilotSO`).
   Garrett's bar (2026-11-07): "art like the ones we have but even better". Read before touching
   `Assets/_Graphics/Pilots/**`, a `Pilot_<Callsign>.asset` portrait or `Tools/Build/pilot_art/**`. The painted set
-  is the reference and is never overwritten.
-  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions
+  is the reference and is never overwritten. A pilot's realistic widescreen SCENE and the player AVATAR cut from its
+  close-up are made by **`/pilot-creator`** (`scene.py`, `refs.py`, `Docs/Pilots/art/scenes/`; Garrett, 2026-11-11:
+  the scenes replaced the signature busts; each pilot is designed as ONE creature; the sea in a picture is painted
+  from the game's own frames). It also rolls a player's unique pilot (`creator.py`), and `blind.py` is the blind
+  read that measures whether a stranger names both animals. The eighteen callsign scenes are in the build
+  (`author_pilot_scene_assets.py`) for the Ark's Pilots tab and each pilot's full-screen profile page
+  (`PilotProfileModal`, `Docs/MENU_REDESIGN_B.md` section 92.1).
+  Sections: what a portrait is; the painted set measured; the kit; the rounds; what comes next; decisions; the signature busts; the scenes
 - [`Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md`](Docs/claude/KEY_SYSTEMS_AND_CONVENTIONS.md): Namespace convention, key systems & classes reference, async pattern.
   Sections: Namespace Convention; Key Systems & Classes; Async Pattern
 - [`Docs/claude/ANTI_PATTERNS.md`](Docs/claude/ANTI_PATTERNS.md): Read before writing or reviewing C#.

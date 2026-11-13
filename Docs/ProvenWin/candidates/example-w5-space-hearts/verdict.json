@@ -1,0 +1,12 @@
+{
+ "verdict": "PASS",
+ "reasons": [],
+ "rows": {
+  "editor": {
+   "a": 0.147,
+   "b": 0.0468,
+   "share": 0.9898148148148148,
+   "screen": 0
+  }
+ }
+}
