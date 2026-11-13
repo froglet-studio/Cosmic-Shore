@@ -65,6 +65,26 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Jacks' vessel pass: authored element scaling, four level-5 cards, their own HUD (`claude/jacks-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/JACKS.md` § 2. The four element curves moved from `JacksMath`'s formulas onto
+`ElementalFloat` endpoints on `JacksConfigSO` (`dangerShare`, `herdBirthRate`, `ringScale`, `herdSpeed`), set to the
+lab's curves exactly, so gameplay should not change. `JacksHUDVariant` + `JacksHUDView` (forked from the Rhino's by
+`author_jacks_hud.py`, the shared fork now taking a source) replace RhinoHUDVariant, whose reworked view built a katana and
+reach blade over the Charge and Space cards; four level-5 cards (Attack, Mass Clusters, Eat Shields, Second Decoy).
+Ran: `unity_refcompile` runtime and editor (0 errors in changed files), `element_ability_table.py Jacks` (4/4 scaling,
+4/4 L5), `author_jacks_assets.py --check`, `author_jacks_hud.py --check`, `author_{orca,wrasse,honeyguide}_hud.py --check`
+(no drift), `icon_kit/author.py jacks --check`. `author_jacks_assets.py --self-test` has 5 failures that are also on
+bleeding-edge (the hidden-skimmer container check), not from this change. Not run: Unity, `JacksScalingTests`,
+`JacksHUDTests`.
+
+1. Toybox, Jacks: the four cards show Danger Share, The Call, Wide and Decoys. No katana or blade drawn over any card,
+   and no console errors from the HUD at spawn.
+2. The Charge card's gauge still fills with the danger share, the herd count still sits on the Mass card, and Space lights
+   while the view is Wide.
+3. Reach level 5 in each element: that card swaps to Attack, Mass Clusters, Eat Shields or Second Decoy.
+4. Herd at a few element levels: the ring, the herd's speed and the share of danger creatures feel as before.
+
 ### 🔴 The Shrike's level-5 upgrades: Salvo, Armed Nests, Whipcrack (`claude/shrike-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/SHRIKE.md` § 3 "Level-5 upgrades". Charge 5 Salvo (nest flora launch x2 as often while
