@@ -1,0 +1,17 @@
+{
+  "id": "H-20261113-claude-tooling-2bd117",
+  "kind": "keep",
+  "lane": "claude-tooling",
+  "laneName": "Claude skills, hooks and editor tools",
+  "laneKind": "system",
+  "by": "Shombith",
+  "on": "2026-11-13T17:41:35+00:00",
+  "branch": "claude/epic-pascal-coonfe",
+  "note": "Owner keeps it after #1959 merged.",
+  "signals": {
+    "laneKind": "system",
+    "handTests": false,
+    "merged": true
+  },
+  "source": "cli"
+}
