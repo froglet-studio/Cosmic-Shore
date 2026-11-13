@@ -23345,3 +23345,16 @@ tests`); no Unity editor ran.
    it slows the Dolphin, it never stops it dead; a key's blast still clears it.
 3. Same race with three AI seats at Easy, then at Medium: Medium finishes ahead of Easy (offline Easy ~176 s, Medium ~167).
 4. Scarab Rally I4 is unchanged (no seals there).
+
+## 🔴 The loading screen's sea and motion (Rev 91 F, the rest) (2026-11-13, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/gracious-faraday-h2ny3a`. Record: `Docs/MENU_REDESIGN_B.md` section 186. Compiled against the Unity
+reference assemblies; `author_ingame_hud.py --check` and `--self-test` clean.
+
+1. Launch any arcade mode from Menu_Main. Behind the tour: three soft blue fields drifting slowly under the sea lines,
+   never popping or jumping; the sea lines still slide.
+2. On The Ark chapter the Ark drifts sideways with a slight turn; on the Vessels chapter the Sparrow bobs up and down.
+   Both move smoothly as their chapter cross-fades in.
+3. At Ready, as the hex opens, the fields fade with the words and the bar: nothing covers the arena once the hole grows.
+4. Replay the mode: the fields are back at full strength on the next loading screen.
+5. Profiler during the loading screen: no GC per frame from `PosterDrift`.

@@ -39,8 +39,14 @@ in the Unity editor yet.
   bursts past the screen (`ConnectingGateView.Open`, 1.7 s).
 - Gone, through the generator: the Omni crystal, the tagline and the objective and intensity chips, the steps panel
   (and the `{done} / {total} prisms` count), the pilots panel, the tip and the footer.
-- Not built from the board: the drifting sea fields and sea lines (the cover is still `Sea_Window.mat`), the Ark's
-  drift and the hull's bob (idle motion), and tabular digits on the percentage.
+- **The sea** (section 186): the cover's black base, then three soft fields drifting slowly (`Gate/Cover/Fields`,
+  `kit_ring_glow` in the theme's `SurfaceLight` and `NeutralLightest`, each a `PosterDrift` with the board's timings,
+  26 / 34 / 42 s one way), then the sea lines (`Sea_Window.mat`, which animates itself). The fields have no hole of
+  their own, so the gate fades their group (`ConnectingGateView.backdrop`) with the content as the hex starts to open.
+- **The motion** (section 186): the Ark drifts (16 s one way, a slight turn) and the Vessels chapter's Sparrow bobs
+  (6 s), each a `PosterDrift`; both sleep while their chapter is hidden.
+- Not built from the board: tabular digits on the percentage. The sea lines are the menu windows' (`Sea_Window.mat`),
+  not the board's own three CSS layers.
 
 `author_ingame_hud.py` section 12c generates all of it; its `--self-test` plants thirteen defects for this screen (nine of them the tour's and the bar's).
 
