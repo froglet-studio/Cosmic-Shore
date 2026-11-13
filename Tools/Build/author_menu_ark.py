@@ -16,8 +16,9 @@ boards, revision 2, on the "Menu Redesign B" canvas).
                          DELETE, PLAY into Arcade / Arena / Mission, and the join list of friends' open seats;
                          PILOTS (ArkPilotsPage, section 92.1): the crew, one cell a pilot with the close-up of their
                          callsign's scene; a press opens that pilot's profile page (author_menu_pilot_profile.py);
-                         ARTIFACTS (ArkArtifactsPage): the player's artifacts, the picked one's four element tracks
-                         with RAISE (its own crystals) and OMNI, and the profile's five crystal balances;
+                         ARTIFACTS (ArkArtifactsPage, Rev 105 B, section 201): the hoard as a rail of medallions
+                         (ArtifactMedallion); a pick opens the lens (ArtifactLens: the payload over prisms, the four
+                         tracks round the rim) and the artifact's words; FEED IT shows its level, crystals and FEED;
                          DECOR: the banner and hull skins, LOCKED (MenuAvailabilityView) - not open yet
 
     Menu_Main.unity, `ArkScreen/ElementalConverter` (author_elemental_converter.py made it):
@@ -36,6 +37,7 @@ The documents this script owns are re-emitted and validated on every run, --chec
 
 import argparse
 import importlib.util
+import math
 import os
 import re
 import sys
@@ -61,7 +63,7 @@ S = dict(view=C.script("ElementalConverterView"), row=C.script("ConverterRecipeR
          squads=C.script("SquadsPage"), squad_row=C.script("SquadRowView"), mate=C.script("SquadMateCard"),
          availability=C.script("MenuAvailabilityView"), text_tab=K.kit_script("KitTextTab"),
          chip=C.script("SquadPickChip"), nanobots=C.script("SquadNanobotSwap"), artifacts=C.script("ArkArtifactsPage"),
-         pilots=C.script("ArkPilotsPage"))
+         pilots=C.script("ArkPilotsPage"), medal=C.script("ArtifactMedallion"), lens=C.script("ArtifactLens"))
 C.STUB_KIND.update({"recipe": (114, S["row"]), "entrance": (114, S["entrance"]), "tabs": (114, S["tabs"])})
 
 ORDER = ("Space", "Charge", "Mass", "Time")       # OmniCombineCore.Order: the fly-in order
@@ -735,104 +737,319 @@ def pilots_page(root, veiled=VEILED):
     return page
 
 
-ART_ROWS = 4                                   # Javelin and Aegis, and room for two more
-TRACK_ELEMENTS = ("Mass", "Space", "Time", "Charge")   # ArkArtifactsPage.TrackOrder
-# ARTIFACTS as the approved board draws it (Rev 86, R86ArtifactsAB, Docs/MENU_REDESIGN_B.md section 167): the room (the
-# Reliquary's dais in the Gallery's hall) fills the middle, so the list is a glass panel on the left and the picked one
-# is a glass card bottom-right; its crystals sit top-right and its four tracks in a second glass panel between them.
-ART_LIST_Y, ART_LIST_W, ART_ROW_H, ART_ROW_GAP, ART_PAD = 300, 460, 64, 8, 22
-ART_LIST_H = 48 + ART_ROWS * (ART_ROW_H + ART_ROW_GAP) - ART_ROW_GAP + 20
-ART_COL_W = 520                                # the right column: the crystals, the tracks, the card
-CRYSTAL_Y, CRYSTAL_W = 172, 104
-TRACKS_Y, TRACK_PAD, TRACK_H, TRACK_GAP = 220, 14, 92, 6
-TRACKS_H = 2 * TRACK_PAD + len(TRACK_ELEMENTS) * (TRACK_H + TRACK_GAP) - TRACK_GAP
-ART_CARD_Y, ART_CARD_H = 640, 258
-assert TRACKS_Y + TRACKS_H < ART_CARD_Y, "the artifact's tracks run into its card"
-ARTIFACT_WORDS = (
-    ylist("elementNames", ("", "Charge", "Mass", "Space", "Time", "Omni"))
-    + yfield("crystalTemplate", "{element} {count}")
-    + yfield("levelsTemplate", "Mass {mass}  Space {space}  Time {time}  Charge {charge}")
-    + yfield("levelTemplate", "{level} / {max}") + yfield("valueTemplate", "{now} -> {next}")
-    + yfield("valueTopTemplate", "{now}") + yfield("twistLockedTemplate", "At {at}: {twist}")
-    + yfield("twistOpenTemplate", "{twist}") + yfield("raiseTemplate", "Raise - {cost} {element}")
-    + yfield("omniTemplate", "{cost} Omni instead") + yfield("topWord", "At the top")
-    + yfield("notEnoughTemplate", "Not enough {element} crystals.")
-    + yfield("raisedTemplate", "{artifact}: {element} is now {level}.")
-    + yfield("twistedTemplate", "{artifact} twists: {twist}"))
+# ARTIFACTS as Rev 105 B draws it (Docs/MENU_REDESIGN_B.md sections 193 and 201; Shombith, 2026-11-13: "B is good",
+# after "the UI cards on top of each screen, I do not like them at all"): no card and no panel behind any word, the
+# Reliquary whole behind the page, and three levels, one press each (ArkArtifactsPage.Level): the hoard (a rail of
+# medallions along the floor), one artifact (the lens opens on the right and plays its payload over prisms, its four
+# tracks round the rim; its words stand on the left), and feeding it (the attuned track's level, its crystals, FEED).
+_gspec = importlib.util.spec_from_file_location("author_artifact_glyphs", os.path.join(HERE, "author_artifact_glyphs.py"))
+GLYPHS = importlib.util.module_from_spec(_gspec)
+_gspec.loader.exec_module(GLYPHS)
+
+TRACK_ELEMENTS = ("Mass", "Space", "Time", "Charge")   # ArkArtifactsPage.TrackOrder: the lens's arcs, in this order
+# Each kind: its catalog id, its mark, its payload (ArtifactLens.Payload: Fan 0, Line 1, Repeat 2, Shell 3), the track
+# whose value counts the payload (every kind counts on Charge: heads, cracks, shocks, re-raises) and what is added to it.
+ART_KINDS = (("javelin", 1, 0), ("hydra", 0, 0), ("aftershock", 2, 0), ("aegis", 3, 1))
+ELEMENT_VALUE = dict(Charge=1, Mass=2, Space=3, Time=4)       # Element
+COUNT_TRACK = "Charge"
+CRYSTAL_BY_VALUE = (None, CRYSTAL["Charge"], CRYSTAL["Mass"], CRYSTAL["Space"], CRYSTAL["Time"], OMNI)
+# The rail (the board's BODY_B): a line along the floor, medallions 150 wide from x 170 every 186, the disc 112 across.
+MEDALLIONS, MED_X, MED_STEP, MED_W, MED_Y, MED_DISC = 7, 170, 186, 150, 834, 112
+RAIL_Y = MED_Y + MED_DISC // 2
+HINT_Y = 786
+# The lens: 640 across, its top left at (1180, 196); the field of prisms is 300 in radius, the arcs run at 318 and their
+# words at 370, each arc 80 degrees, the first starting at 95 (SVG degrees, clockwise from the right).
+LENS_X, LENS_Y, LENS = 1180, 196, 640
+FIELD_R, ARC_R, WORDS_R, ARC_SPAN, ARC_START = 300, 318, 370, 80, 95
+ARC_WORDS_W, ARC_WORDS_H = 150, 66
+# The words on the left, no box: from (80, 232), 560 wide (520 for the feed's meter and its buttons).
+COL_X, COL_Y, COL_W, METER_W = 80, 232, 560, 520
+ACTIONS_Y, BUTTON_H = 488, 44
+BAND_Y, CRYSTAL_ICONS, CRYSTAL_ICON, CRYSTAL_STEP = 524, 10, 42, 48
+STATUS_Y = 776
+assert STATUS_Y + 50 < MED_Y, "the feed's status line runs into the rail"
+assert COL_X + COL_W < LENS_X - (WORDS_R - LENS // 2) - ARC_WORDS_W // 2, "the artifact's words run under the lens's arc words"
+
+
+def artifact_words():
+    """Every word ArkArtifactsPage shows, as (field, words). Templates name only the tokens ART_TOKENS lists."""
+    return (
+        ("trailHoard", "Artifacts"), ("trailArtifact", "Artifacts  /  {kind}"),
+        ("trailFeed", "Artifacts  /  {kind}  /  Feed"), ("kickerTemplate", "{kind} - {serial}"),
+        ("attunedTemplate", "{element} - {aspect}  {value}"), ("heldTemplate", "Carried in {squad}, the {seat} seat"),
+        ("notHeldWord", "In your hoard - no seat carries it"), ("giveWord", "Give to a seat"),
+        ("giveAgainWord", "Give to another seat"), ("levelNowTemplate", "{level}"),
+        ("levelNextTemplate", "{level}  >  {next}"),
+        ("valueTemplate", "Next feed: {now} > {next} {aspect}. {fed} crystals fed so far."),
+        ("twistLockedTemplate", "At {at}: {twist}"), ("twistOpenTemplate", "{twist}"),
+        ("balanceTemplate", "{element} crystals {count} - Omni {omni} - a feed takes {batch}"),
+        ("feedTemplate", "Feed {count} {element}"), ("omniTemplate", "Feed {count} Omni"),
+        ("notEnoughTemplate", "Not enough {element} crystals. The Converter makes more."),
+        ("wrongElementTemplate", "{artifact} takes only {element}."),
+        ("goneWord", "That artifact is no longer in your hoard."),
+        ("fedTemplate", "{artifact}: {aspect} is now level {level} (+{gain})."),
+        ("twistedTemplate", "{artifact} twists: {twist}"))
+
+
+# The tokens ArkArtifactsPage fills in each line (its TemplateText.Fill calls).
+ART_TOKENS = dict(trailHoard={"kind"}, trailArtifact={"kind"}, trailFeed={"kind"}, kickerTemplate={"kind", "serial"},
+                  attunedTemplate={"element", "aspect", "value"}, heldTemplate={"squad", "seat"},
+                  levelNowTemplate={"level"}, levelNextTemplate={"level", "next"},
+                  valueTemplate={"now", "next", "aspect", "fed"}, twistLockedTemplate={"twist", "at"},
+                  twistOpenTemplate={"twist"}, balanceTemplate={"element", "count", "omni", "batch"},
+                  feedTemplate={"count", "element"}, omniTemplate={"count"}, notEnoughTemplate={"element"},
+                  wrongElementTemplate={"artifact", "element"}, fedTemplate={"artifact", "aspect", "element", "level", "gain"},
+                  twistedTemplate={"artifact", "twist"})
+ARTIFACT_WORDS = (ylist("elementNames", ("", "Charge", "Mass", "Space", "Time", "Omni"))
+                  + ylist("seatNames", ("Leader", "Rogue One", "Rogue Two"))
+                  + "".join(yfield(f, w) for f, w in artifact_words()))
+
+
+def filled(parent, key, name, r, token, alpha=1.0, sprite=None, method=0, origin=0, amount=0.0):
+    """A themed Image, Filled: `method` 0 horizontal (from the left), 4 radial 360 (from `origin`, clockwise)."""
+    base = K.image(tok(token, alpha), sprite)
+    n = parent.child(N(key, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lambda ctx, go: base(ctx, go)
+        .replace("  m_Type: 0\n", "  m_Type: 3\n").replace("  m_FillMethod: 4\n", f"  m_FillMethod: {method}\n")
+        .replace("  m_FillAmount: 1\n", f"  m_FillAmount: {K.f32(amount)}\n")
+        .replace("  m_FillOrigin: 0\n", f"  m_FillOrigin: {origin}\n")).add("th", 114, H.themed(token, alpha))
+    return n
+
+
+def ring(parent, key, name, r, token, alpha=1.0, sprite="kit_ring_line", raycast=False, shown=True):
+    n = image_node(parent, key, name, r, token, K.kit_sprite(sprite), alpha=alpha, raycast=raycast)
+    if not shown:
+        n.comps = [(k, cid, off(b)) if k == "img" else (k, cid, b) for k, cid, b in n.comps]
+    return n
+
+
+def medallion(page, i):
+    """One medallion on the rail (ArtifactMedallion): a held artifact's mark in a round glass with its kind's name under
+    it, or an empty slot. The glass is a KitButton (its own fill the theme's tint over the glass disc, the resting ring its
+    border); the picked ring is a second ring the medallion switches on."""
+    k = f"Artifacts/Rail/Medallion{i}"
+    m = page.child(N(k, f"Medallion{i}", TL(MED_X + i * MED_STEP, MED_Y, MED_W, MED_W)))
+    disc = TL((MED_W - MED_DISC) // 2, 0, MED_DISC, MED_DISC)
+    held = m.child(N(f"{k}/Held", "Held", STRETCH))
+    held.add("cg", 225, canvas_group(True))
+    ring(held, f"{k}/Held/Glass", "Glass", disc, "SurfaceVeryDark", 0.9, "kit_ring_fill")
+    focus = held.child(N(f"{k}/Held/FocusRing", "FocusRing", TL((MED_W - MED_DISC) // 2 - 6, -6, MED_DISC + 12, MED_DISC + 12)))
+    focus.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight", 0.0), K.kit_sprite("kit_ring_line")))
+    held.child(N(f"{k}/Held/Fill", "Fill", disc)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.0), K.kit_sprite("kit_ring_fill"), raycast=True))
+    held.child(N(f"{k}/Held/Rest", "Rest", disc)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_ring_line")))
+    ring(held, f"{k}/Held/Picked", "Picked", TL((MED_W - MED_DISC) // 2 - 2, -2, MED_DISC + 4, MED_DISC + 4), "ControlActive",
+         shown=False)
+    held.child(N(f"{k}/Held/Glyph", "Glyph", TL((MED_W - 64) // 2, (MED_DISC - 64) // 2, 64, 64))) \
+        .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None, preserve=True)) \
+        .add("th", 114, H.themed("TextLight"))
+    ng = held.child(N(f"{k}/Held/NameGroup", "NameGroup", TL(0, MED_DISC + 10, MED_W, 20)))
+    ng.add("cg", 225, canvas_group(True))
+    H.ellipsize(label(ng.child(N(f"{k}/Held/Name", "Name", STRETCH)), "", "Label", "TextLight", align="center"))
+    empty = m.child(N(f"{k}/Empty", "Empty", STRETCH))
+    empty.add("cg", 225, canvas_group(False))
+    ring(empty, f"{k}/Empty/Ring", "Ring", disc, "NeutralLightest", 0.35)
+    label(empty.child(N(f"{k}/Empty/Mark", "Mark", disc)), "?", "H2", "NeutralLightest", align="center")
+
+    def button(ctx, go):
+        return K.mono(go, H.KIT_BUTTON,
+                      K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {ref(ctx.c(f'{k}/Held/Fill', 'img'))}\n" + H.EMPTY_CALLS
+                      + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{k}/Held/FocusRing', 'img'))}\n"
+                      f"  variant: {K.VARIANTS['Cancel']}\n  fill: 0\n"
+                      f"  fillGraphic: {ref(ctx.c(f'{k}/Held/Fill', 'img'))}\n"
+                      f"  borderGraphic: {ref(ctx.c(f'{k}/Held/Rest', 'img'))}\n"
+                      f"  contentGraphics:\n  - {ref(ctx.c(f'{k}/Held/Name', 'tmp'))}\n  playGradient: {{fileID: 0}}\n")
+    m.add("button", 114, button)
+    m.add("audio", 114, lambda ctx, go: K.mono(go, H.MENU_AUDIO, "  category: 11\n"))
+    m.add("medal", 114, lambda ctx, go: mono(go, S["medal"],
+          f"  button: {ref(ctx.c(k, 'button'))}\n  heldGroup: {ref(ctx.c(f'{k}/Held', 'cg'))}\n"
+          f"  emptyGroup: {ref(ctx.c(f'{k}/Empty', 'cg'))}\n  glyph: {ref(ctx.c(f'{k}/Held/Glyph', 'img'))}\n"
+          f"  nameText: {ref(ctx.c(f'{k}/Held/Name', 'tmp'))}\n  restRing: {ref(ctx.c(f'{k}/Held/Rest', 'img'))}\n"
+          f"  pickedRing: {ref(ctx.c(f'{k}/Held/Picked', 'img'))}\n  nameGroup: {ref(ctx.c(f'{k}/Held/NameGroup', 'cg'))}\n"
+          "  dimmedNameAlpha: 0.6\n"))
+    return m
+
+
+def arc_start(i):
+    """Arc `i`'s start in SVG degrees (clockwise from the right, as the board draws it)."""
+    return ARC_START + 90 * i
+
+
+def lens(page):
+    """The lens (ArtifactLens): a round glass with a rim, the field of prisms masked inside it, and the four tracks as arcs
+    round the rim with their words outside. Hidden until an artifact is picked."""
+    L = "Artifacts/Lens"
+    ln = page.child(N(L, "Lens", TL(LENS_X, LENS_Y, LENS, LENS)))
+    ln.add("cg", 225, canvas_group(False))
+    body = ln.child(N(f"{L}/Body", "Body", STRETCH))
+    ring(body, f"{L}/Body/Halo", "Halo", R((0, 0), (1, 1), (0, 0), (30, 30)), "ControlActive", 0.35)
+    ring(body, f"{L}/Body/Glass", "Glass", STRETCH, "SurfaceVeryDark", 0.94, "kit_ring_fill")
+    ring(body, f"{L}/Body/Rim", "Rim", STRETCH, "ControlActive", 0.75)
+    inset = LENS - 2 * FIELD_R
+    fd = body.child(N(f"{L}/Body/Field", "Field", R((0, 0), (1, 1), (0, 0), (-inset, -inset))))
+    fd.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceBlack", 0.35), K.kit_sprite("kit_ring_fill"))) \
+        .add("th", 114, H.themed("SurfaceBlack", 0.35)).add("mask", 114, A.mask(True))
+    centre = lambda w, h, y=0: R((0.5, 0.5), None, (0, y), (w, h))
+    image_node(fd, f"{L}/Body/Field/Release", "Release", centre(28, 28, -0.82 * FIELD_R), "TextLight",
+               K.chrome_sprite("chrome_diamond"), alpha=0.6, preserve=True)
+    image_node(fd, f"{L}/Body/Field/Prism", "Prism", centre(22, 12), "SurfaceLight", alpha=0.5)
+    image_node(fd, f"{L}/Body/Field/Head", "Head", centre(14, 14), "ControlActive", K.kit_sprite("kit_ring_fill"))
+    image_node(fd, f"{L}/Body/Field/Burst", "Burst", centre(40, 40), "TextLight", K.kit_sprite("kit_ring_line"))
+    arc_rect = R((0, 0), (1, 1), (0, 0), (2 * ARC_R - LENS, 2 * ARC_R - LENS))
+    span = ARC_SPAN / 360
+    for i, name in enumerate(TRACK_ELEMENTS):
+        k = f"{L}/Body/Arc{name}"
+        a = body.child(N(k, f"Arc{name}", STRETCH))
+        for part, token, alpha, amount in (("Track", "NeutralLightest", 0.35, span), ("Fixed", "TextLight", 0.55, span / 2),
+                                            ("Attuned", "ControlActive", 1.0, span / 2)):
+            f = filled(a, f"{k}/{part}", part, arc_rect, token, alpha, K.kit_sprite("kit_ring_line"), method=4, origin=1,
+                       amount=amount)
+            f.rot = -arc_start(i)                  # radial 360 from the right, clockwise: turned to start at the arc's start
+        mid = math.radians(arc_start(i) + ARC_SPAN / 2)
+        x, y = LENS / 2 + WORDS_R * math.cos(mid), LENS / 2 + WORDS_R * math.sin(mid)
+        w = a.child(N(f"{k}/Words", "Words", TL(round(x - ARC_WORDS_W / 2), round(y - ARC_WORDS_H / 2), ARC_WORDS_W,
+                                                ARC_WORDS_H)))
+        w.add("cg", 225, canvas_group(True))
+        H.element_flower(w, f"{k}/Words/Flower", "Flower", TL((ARC_WORDS_W - 24) // 2, 0, 24, 24), name, 5)
+        label(w.child(N(f"{k}/Words/Value", "Value", TL(0, 26, ARC_WORDS_W, 20))), "", "DataSmall", "TextLight", align="center")
+        H.ellipsize(label(w.child(N(f"{k}/Words/Label", "Label", TL(0, 46, ARC_WORDS_W, 18))), "", "Label", "NeutralLightest",
+                          align="center"))
+
+    def body_(ctx, go):
+        arcs = ""
+        for name in TRACK_ELEMENTS:
+            k = f"{L}/Body/Arc{name}"
+            arcs += (f"  - attunedFill: {ref(ctx.c(f'{k}/Attuned', 'img'))}\n    fixedFill: {ref(ctx.c(f'{k}/Fixed', 'img'))}\n"
+                     f"    flower: {ref(ctx.c(f'{k}/Words/Flower', 'flower'))}\n"
+                     f"    valueText: {ref(ctx.c(f'{k}/Words/Value', 'tmp'))}\n"
+                     f"    labelText: {ref(ctx.c(f'{k}/Words/Label', 'tmp'))}\n"
+                     f"    wordsGroup: {ref(ctx.c(f'{k}/Words', 'cg'))}\n")
+        return mono(go, S["lens"],
+                    f"  group: {ref(ctx.c(L, 'cg'))}\n  body: {ref(ctx.rt(f'{L}/Body'))}\n"
+                    f"  field: {ref(ctx.rt(f'{L}/Body/Field'))}\n"
+                    f"  prismTemplate: {ref(ctx.c(f'{L}/Body/Field/Prism', 'img'))}\n"
+                    f"  headTemplate: {ref(ctx.c(f'{L}/Body/Field/Head', 'img'))}\n"
+                    f"  burstTemplate: {ref(ctx.c(f'{L}/Body/Field/Burst', 'img'))}\n"
+                    "  arcs:\n" + arcs + f"  arcSpan: {K.f32(span)}\n  fixedWordsAlpha: 0.6\n  prismCount: 40\n"
+                    "  cycleSeconds: 2.4\n  flightShare: 0.55\n  openSeconds: 0.6\n  closedScale: 0.18\n  burstSize: 0.16\n"
+                    "  maxCount: 8\n")
+    ln.add("lens", 114, body_)
+    return ln
+
+
+def artifact_detail(page):
+    """The picked artifact's words on the left, no box (levels 2 and 3), its two actions (level 2) and the feed (level 3)."""
+    D = "Artifacts/Detail"
+    d = page.child(N(D, "Detail", TL(COL_X, COL_Y, COL_W, STATUS_Y + 50 - COL_Y)))
+    d.add("cg", 225, canvas_group(False))
+    y = lambda v: v - COL_Y
+    label(d.child(N(f"{D}/Kicker", "Kicker", TL(0, 0, COL_W, 16))), "", "Label", "NeutralLightest")
+    H.ellipsize(label(d.child(N(f"{D}/Name", "Name", TL(0, 22, COL_W, 44))), "", "H1", "TextLight"))
+    label(d.child(N(f"{D}/Description", "Description", TL(0, 74, COL_W, 84))), "", "Body", "NeutralLightest", valign="top",
+          wrap=True)
+    H.element_flower(d, f"{D}/Flower", "Flower", TL(0, 168, 30, 30), "Charge", 5)
+    H.ellipsize(label(d.child(N(f"{D}/Attuned", "Attuned", TL(42, 170, COL_W - 42, 26))), "", "Body", "TextLight"))
+    H.ellipsize(label(d.child(N(f"{D}/Held", "Held", TL(0, 210, COL_W, 20))), "", "BodySmall", "NeutralLightest"))
+    act = d.child(N(f"{D}/Actions", "Actions", TL(0, y(ACTIONS_Y), COL_W, BUTTON_H)))
+    act.add("cg", 225, canvas_group(True))
+    small_button(act, f"{D}/Actions/FeedIt", "FeedIt", "Feed it", TL(0, 0, 160, BUTTON_H))
+    small_button(act, f"{D}/Actions/Give", "Give", "Give to a seat", TL(172, 0, 240, BUTTON_H), "Cta")
+    fg = d.child(N(f"{D}/Feed", "Feed", TL(0, y(ACTIONS_Y), COL_W, STATUS_Y + 50 - ACTIONS_Y)))
+    fg.add("cg", 225, canvas_group(False))
+    F = f"{D}/Feed"
+    fy = lambda v: v - ACTIONS_Y
+    label(fg.child(N(f"{F}/Caption", "Caption", TL(0, 8, 200, 16))), "Level", "Label", "NeutralLightest")
+    label(fg.child(N(f"{F}/Level", "Level", TL(METER_W - 300, 0, 300, 28))), "", "Data", "TextLight", align="right")
+    band = fg.child(N(f"{F}/Band", "Band", TL(0, fy(BAND_Y), METER_W, 6)))
+    image_node(band, f"{F}/Band/Track", "Track", STRETCH, "NeutralLightest", alpha=0.3)
+    filled(band, f"{F}/Band/Next", "Next", STRETCH, "Cta", 0.45, amount=0.5)
+    filled(band, f"{F}/Band/Now", "Now", STRETCH, "ControlActive", amount=0.4)
+    image_node(band, f"{F}/Band/TwistMark", "TwistMark", R((0.5, 0), (0.5, 1), (0, 0), (2, 12)), "TextLight", alpha=0.8)
+    image_node(band, f"{F}/Band/Ceiling", "Ceiling", R((1, 0), (1, 1), (0, 0), (1, 8)), "NeutralLightest")
+    tw = fg.child(N(f"{F}/Twist", "Twist", TL(0, fy(BAND_Y) + 20, METER_W, 44)))
+    tw.add("cg", 225, canvas_group(True))
+    label(tw.child(N(f"{F}/Twist/Words", "Words", STRETCH)), "", "BodySmall", "TextLight", valign="top", wrap=True)
+    H.ellipsize(label(fg.child(N(f"{F}/Value", "Value", TL(0, fy(BAND_Y) + 70, METER_W, 20))), "", "DataSmall",
+                      "NeutralLightest"))
+    icons_y = fy(BAND_Y) + 104
+    for i in range(CRYSTAL_ICONS):
+        fg.child(N(f"{F}/Crystal{i}", f"Crystal{i}", TL(i * CRYSTAL_STEP, icons_y, CRYSTAL_ICON, CRYSTAL_ICON))) \
+            .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, CRYSTAL["Charge"], preserve=True))
+    H.ellipsize(label(fg.child(N(f"{F}/Balance", "Balance", TL(0, icons_y + CRYSTAL_ICON + 8, METER_W, 20))), "", "DataSmall",
+                      "NeutralLightest"))
+    buttons_y = icons_y + CRYSTAL_ICON + 36
+    small_button(fg, f"{F}/FeedButton", "FeedButton", "Feed", TL(0, buttons_y, 250, BUTTON_H), "Cta")
+    small_button(fg, f"{F}/Omni", "Omni", "Feed Omni", TL(262, buttons_y, 250, BUTTON_H))
+    assert ACTIONS_Y + buttons_y + BUTTON_H + 8 <= STATUS_Y, "the feed's buttons run into its status line"
+    label(d.child(N(f"{D}/Status", "Status", TL(0, y(STATUS_Y), COL_W, 44))), "", "BodySmall", "TextLight", valign="top",
+          wrap=True)
+    return d
 
 
 def artifacts_page(root, veiled=VEILED):
-    """ARTIFACTS: the player's artifacts down the left (SquadRowView rows: the name, the four levels), and the picked
-    one's four element tracks to the right, each with RAISE (its own crystals) and OMNI (omni crystals instead), above
-    the profile's five crystal balances. ArkArtifactsPage draws it; every word is on that component."""
+    """ARTIFACTS (Rev 105 B): the hoard as a rail of medallions along the floor; a pick opens the lens and the artifact's
+    words; FEED IT goes one level deeper; BACK one level up. ArkArtifactsPage draws it; every word is on that component."""
     page = page_node(root, "Artifacts", False)
     page_ground(page, "Artifacts", veiled)
-    pn = glass_panel(page, "Artifacts/List", "List", TL(EDGE, ART_LIST_Y, ART_LIST_W, ART_LIST_H))
-    pn.add("cg", 225, canvas_group(True))
-    C.section_label(pn, "Artifacts/List/Caption", "Caption", "Your artifacts", TL(ART_PAD, 20, 300, 18))
-    for i in range(ART_ROWS):
-        kit_row_text(pn, f"Artifacts/List/Row{i}", f"Row{i}",
-                     TL(ART_PAD, 48 + i * (ART_ROW_H + ART_ROW_GAP), ART_LIST_W - 2 * ART_PAD, ART_ROW_H), ART_ROW_H)
-    # No artifacts: the words stand in the list's panel, where the rows would be.
-    e = page.child(N("Artifacts/Empty", "Empty", TL(EDGE + ART_PAD, ART_LIST_Y + 48, ART_LIST_W - 2 * ART_PAD, 140)))
+    rail = page.child(N("Artifacts/Rail", "Rail", stretch_x(60, 60, RAIL_Y - 1, 2)))
+    image_node(rail, "Artifacts/Rail/Line", "Line", STRETCH, "ControlActive", K.kit_sprite("kit_fade_h"), alpha=0.55)
+    for i in range(MEDALLIONS):
+        medallion(page, i)
+    hint = page.child(N("Artifacts/Hint", "Hint", TL(MED_X, HINT_Y, 900, 28)))
+    hint.add("cg", 225, canvas_group(True))
+    label(hint.child(N("Artifacts/Hint/Words", "Words", STRETCH)), "Pick one to see what it does.", "Body", "TextLight")
+    # No artifacts: the words stand over the rail, where the medallions would be.
+    e = page.child(N("Artifacts/Empty", "Empty", TL(MED_X, MED_Y - 6, 1000, 110)))
     e.add("cg", 225, canvas_group(False))
-    label(e.child(N("Artifacts/Empty/Heading", "Heading", TL(0, 0, ART_LIST_W - 2 * ART_PAD, 36))), "No artifacts yet", "H2",
-          "TextLight")
-    label(e.child(N("Artifacts/Empty/Line", "Line", TL(0, 44, ART_LIST_W - 2 * ART_PAD, 60))),
-          "Find them on voyages and bring them home to your Ark.", "Body", "NeutralLightest", valign="top", wrap=True)
-    # The picked artifact: one group (ArkArtifactsPage.detailGroup) over the right column.
-    d = page.child(N("Artifacts/Detail", "Detail", STRETCH))
-    d.add("cg", 225, canvas_group(True))
-    label(d.child(N("Artifacts/Detail/CrystalCaption", "CrystalCaption", TR(EDGE, CRYSTAL_Y, ART_COL_W, 16))), "Crystals",
-          "Label", "NeutralLightest", align="right")
-    for i in range(5):
-        label(d.child(N(f"Artifacts/Detail/Crystal{i}", f"Crystal{i}", TR(EDGE + (4 - i) * CRYSTAL_W, CRYSTAL_Y + 20,
-                                                                            CRYSTAL_W - 4, 24))), "", "Body", "TextLight", align="right")
-    tp = glass_panel(d, "Artifacts/Detail/Tracks", "Tracks", TR(EDGE, TRACKS_Y, ART_COL_W, TRACKS_H))
-    for i, name in enumerate(TRACK_ELEMENTS):
-        k = f"Artifacts/Detail/Track{name}"
-        t = tp.child(N(k, f"Track{name}", stretch_x(TRACK_PAD, TRACK_PAD, TRACK_PAD + i * (TRACK_H + TRACK_GAP), TRACK_H)))
-        H.framed(t, k, 10, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.5)
-        label(t.child(N(f"{k}/Element", "Element", TL(14, 10, 80, 16))), name, "Label", "NeutralLightest")
-        H.ellipsize(label(t.child(N(f"{k}/Label", "Label", TL(96, 6, 170, 24))), "", "Body", "TextLight"))
-        H.ellipsize(label(t.child(N(f"{k}/Level", "Level", TL(14, 32, 156, 20))), "", "BodySmall", "TextLight"))
-        H.ellipsize(label(t.child(N(f"{k}/Value", "Value", TL(176, 32, 90, 20))), "", "BodySmall", "NeutralLightest"))
-        tw = t.child(N(f"{k}/Twist", "Twist", TL(14, 54, 252, 36)))
-        tw.add("cg", 225, canvas_group(True))
-        label(tw.child(N(f"{k}/Twist/Words", "Words", STRETCH)), "", "BodySmall", "TextLight", valign="top", wrap=True)
-        small_button(t, f"{k}/Raise", "Raise", "Raise", TR(12, 10, 200, 40), "Cta")
-        small_button(t, f"{k}/Omni", "Omni", "Omni", TR(12, 56, 200, 30))
-    card = glass_panel(d, "Artifacts/Detail/Card", "Card", TR(EDGE, ART_CARD_Y, ART_COL_W, ART_CARD_H))
-    label(card.child(N("Artifacts/Detail/Kicker", "Kicker", TL(ART_PAD, 18, 300, 16))), "Artifact", "Label", "NeutralLightest")
-    # GIVE TO A SEAT (R86): the picked artifact goes to the Squads tab, where the next seat picked carries it.
-    small_button(card, "Artifacts/Detail/Give", "Give", "Give to a seat", TR(ART_PAD, 12, 170, 32))
-    H.ellipsize(label(card.child(N("Artifacts/Detail/Name", "Name", TL(ART_PAD, 40, ART_COL_W - 2 * ART_PAD, 40))), "", "H2",
-                      "TextLight"))
-    label(card.child(N("Artifacts/Detail/Description", "Description", TL(ART_PAD, 86, ART_COL_W - 2 * ART_PAD, 100))), "",
-          "BodySmall", "NeutralLightest", valign="top", wrap=True)
-    label(card.child(N("Artifacts/Detail/Status", "Status", TL(ART_PAD, 196, ART_COL_W - 2 * ART_PAD, 44))), "", "BodySmall",
-          "TextLight", valign="top", wrap=True)
+    label(e.child(N("Artifacts/Empty/Heading", "Heading", TL(0, 0, 1000, 36))), "No artifacts yet", "H2", "TextLight")
+    label(e.child(N("Artifacts/Empty/Line", "Line", TL(0, 44, 1000, 28))),
+          "Find them on voyages and bring them home to your Ark.", "Body", "NeutralLightest")
+    label(page.child(N("Artifacts/Trail", "Trail", TR(EDGE, TAB_Y + 16, 460, 20))), "", "Label", "TextLight", align="right")
+    back = page.child(N("Artifacts/Back", "Back", TL(EDGE, TAB_Y + TAB_H + 4, 110, 38)))
+    back.add("cg", 225, canvas_group(False))
+    small_button(back, "Artifacts/Back/Button", "Button", "Back", STRETCH)
+    lens(page)
+    artifact_detail(page)
+    D, F = "Artifacts/Detail", "Artifacts/Detail/Feed"
 
     def body(ctx, go):
-        tracks = ""
-        for name in TRACK_ELEMENTS:
-            k = f"Artifacts/Detail/Track{name}"
-            tracks += (f"  - elementText: {ref(ctx.c(f'{k}/Element', 'tmp'))}\n    labelText: {ref(ctx.c(f'{k}/Label', 'tmp'))}\n"
-                       f"    levelText: {ref(ctx.c(f'{k}/Level', 'tmp'))}\n    valueText: {ref(ctx.c(f'{k}/Value', 'tmp'))}\n"
-                       f"    twistText: {ref(ctx.c(f'{k}/Twist/Words', 'tmp'))}\n    twistGroup: {ref(ctx.c(f'{k}/Twist', 'cg'))}\n"
-                       f"    raiseButton: {ref(ctx.c(f'{k}/Raise', 'button'))}\n    raiseLabel: {ref(ctx.c(f'{k}/Raise/Label', 'tmp'))}\n"
-                       f"    omniButton: {ref(ctx.c(f'{k}/Omni', 'button'))}\n    omniLabel: {ref(ctx.c(f'{k}/Omni/Label', 'tmp'))}\n")
+        kinds = "".join(f"  - kindId: artifact.{kind}\n    glyph: {K.sprite_ref(GLYPHS.glyph_guid(kind))}\n"
+                        f"    payload: {payload}\n    countTrack: {ELEMENT_VALUE[COUNT_TRACK]}\n    countOffset: {offset}\n"
+                        for kind, payload, offset in ART_KINDS)
+        sprites = "".join(f"  - {K.sprite_ref(g)}\n" for g in CRYSTAL_BY_VALUE)
         return mono(go, S["artifacts"],
-                    f"  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n"
-                    "  rows:\n" + refs_of(ctx, [f"Artifacts/List/Row{i}" for i in range(ART_ROWS)], "row")
-                    + f"  emptyGroup: {ref(ctx.c('Artifacts/Empty', 'cg'))}\n"
-                    f"  detailGroup: {ref(ctx.c('Artifacts/Detail', 'cg'))}\n"
-                    f"  nameText: {ref(ctx.c('Artifacts/Detail/Name', 'tmp'))}\n"
-                    f"  descriptionText: {ref(ctx.c('Artifacts/Detail/Description', 'tmp'))}\n"
-                    "  tracks:\n" + tracks
-                    + f"  statusText: {ref(ctx.c('Artifacts/Detail/Status', 'tmp'))}\n"
-                    f"  giveButton: {ref(ctx.c('Artifacts/Detail/Give', 'button'))}\n"
-                    "  crystalTexts:\n" + refs_of(ctx, [f"Artifacts/Detail/Crystal{i}" for i in range(5)], "tmp")
+                    f"  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n  kinds:\n" + kinds
+                    + "  medallions:\n" + refs_of(ctx, [f"Artifacts/Rail/Medallion{i}" for i in range(MEDALLIONS)], "medal")
+                    + f"  hintGroup: {ref(ctx.c('Artifacts/Hint', 'cg'))}\n"
+                    f"  emptyGroup: {ref(ctx.c('Artifacts/Empty', 'cg'))}\n"
+                    f"  trailText: {ref(ctx.c('Artifacts/Trail', 'tmp'))}\n"
+                    f"  lens: {ref(ctx.c('Artifacts/Lens', 'lens'))}\n"
+                    f"  detailGroup: {ref(ctx.c(D, 'cg'))}\n  kickerText: {ref(ctx.c(f'{D}/Kicker', 'tmp'))}\n"
+                    f"  nameText: {ref(ctx.c(f'{D}/Name', 'tmp'))}\n"
+                    f"  descriptionText: {ref(ctx.c(f'{D}/Description', 'tmp'))}\n"
+                    f"  attunedFlower: {ref(ctx.c(f'{D}/Flower', 'flower'))}\n"
+                    f"  attunedText: {ref(ctx.c(f'{D}/Attuned', 'tmp'))}\n  heldText: {ref(ctx.c(f'{D}/Held', 'tmp'))}\n"
+                    f"  actionsGroup: {ref(ctx.c(f'{D}/Actions', 'cg'))}\n"
+                    f"  feedItButton: {ref(ctx.c(f'{D}/Actions/FeedIt', 'button'))}\n"
+                    f"  giveButton: {ref(ctx.c(f'{D}/Actions/Give', 'button'))}\n"
+                    f"  giveLabel: {ref(ctx.c(f'{D}/Actions/Give/Label', 'tmp'))}\n"
+                    f"  backGroup: {ref(ctx.c('Artifacts/Back', 'cg'))}\n"
+                    f"  backButton: {ref(ctx.c('Artifacts/Back/Button', 'button'))}\n"
+                    f"  feedGroup: {ref(ctx.c(F, 'cg'))}\n  levelText: {ref(ctx.c(f'{F}/Level', 'tmp'))}\n"
+                    f"  levelFill: {ref(ctx.c(f'{F}/Band/Now', 'img'))}\n  nextFill: {ref(ctx.c(f'{F}/Band/Next', 'img'))}\n"
+                    f"  ceilingMark: {ref(ctx.rt(f'{F}/Band/Ceiling'))}\n"
+                    f"  twistText: {ref(ctx.c(f'{F}/Twist/Words', 'tmp'))}\n  twistGroup: {ref(ctx.c(f'{F}/Twist', 'cg'))}\n"
+                    f"  valueText: {ref(ctx.c(f'{F}/Value', 'tmp'))}\n"
+                    "  crystalIcons:\n" + refs_of(ctx, [f"{F}/Crystal{i}" for i in range(CRYSTAL_ICONS)], "img")
+                    + "  crystalSprites:\n" + sprites
+                    + f"  balanceText: {ref(ctx.c(f'{F}/Balance', 'tmp'))}\n"
+                    f"  feedButton: {ref(ctx.c(f'{F}/FeedButton', 'button'))}\n"
+                    f"  feedLabel: {ref(ctx.c(f'{F}/FeedButton/Label', 'tmp'))}\n"
+                    f"  omniButton: {ref(ctx.c(f'{F}/Omni', 'button'))}\n"
+                    f"  omniLabel: {ref(ctx.c(f'{F}/Omni/Label', 'tmp'))}\n"
+                    f"  statusText: {ref(ctx.c(f'{D}/Status', 'tmp'))}\n  feedBatch: 5\n"
                     + ARTIFACT_WORDS)
     page.add("logic", 114, body)
     return page
@@ -1088,9 +1305,19 @@ SQUADS_FIELDS = dict(countText=S["kt"], newButton=S["button"], joinButton=S["but
                      viewBarGroup=225, removeButton=S["button"], removeLabel=TMP, editButton=S["button"],
                      missionButton=S["button"], missionLock=IMG, arenaButton=S["button"],
                      joinGroup=225, joinStatusText=S["kt"], joinCloseButton=S["button"])
-ART_FIELDS = dict(emptyGroup=225, detailGroup=225, nameText=TMP, descriptionText=TMP, statusText=TMP, giveButton=S["button"])
-TRACK_FIELDS = dict(elementText=TMP, labelText=TMP, levelText=TMP, valueText=TMP, twistText=TMP, twistGroup=225,
-                    raiseButton=S["button"], raiseLabel=TMP, omniButton=S["button"], omniLabel=TMP)
+FLOWER = H.FLOWER_SCRIPT
+ART_FIELDS = dict(hintGroup=225, emptyGroup=225, trailText=TMP, lens=S["lens"], detailGroup=225, kickerText=TMP,
+                  nameText=TMP, descriptionText=TMP, attunedFlower=FLOWER, attunedText=TMP, heldText=TMP, actionsGroup=225,
+                  feedItButton=S["button"], giveButton=S["button"], giveLabel=TMP, backGroup=225, backButton=S["button"],
+                  feedGroup=225, levelText=TMP, levelFill=IMG, nextFill=IMG, ceilingMark=224, twistText=TMP,
+                  twistGroup=225, valueText=TMP, balanceText=TMP, feedButton=S["button"], feedLabel=TMP,
+                  omniButton=S["button"], omniLabel=TMP, statusText=TMP)
+MEDAL_FIELDS = dict(button=S["button"], heldGroup=225, emptyGroup=225, glyph=IMG, nameText=TMP, restRing=IMG, pickedRing=IMG,
+                    nameGroup=225)
+LENS_FIELDS = dict(group=225, body=224, field=224, prismTemplate=IMG, headTemplate=IMG, burstTemplate=IMG)
+ARC_FIELDS = dict(attunedFill=IMG, fixedFill=IMG, flower=FLOWER, valueText=TMP, labelText=TMP, wordsGroup=225)
+# The first cut's fields (a list of rows, the four tracks with RAISE each, the five crystal counts): gone with Rev 105 B.
+RETIRED_ART_FIELDS = ("rows", "tracks", "crystalTexts", "raiseTemplate", "topWord")
 ROW_VIEW_FIELDS = dict(button=S["button"], group=225, titleText=TMP, lineText=TMP, activeMark=IMG, domainText=TMP)
 CHIP_FIELDS = dict(button=S["button"], group=225, label=TMP, selectedMark=IMG)
 NANOBOT_FIELDS = dict(hull=IMG, companion=IMG, botTemplate=IMG)
@@ -1227,21 +1454,7 @@ def validate_tabs(view, V):
         else:
             assert gate == "0", f"the {t} tab is gated"
     validate_pilots(view, V)
-    _, art = A.doc_of(view, V("Artifacts#logic"))
-    for field, want in ART_FIELDS.items():
-        C.wired(view, art, field, want, "ArkArtifactsPage")
-    rows_ = listed(art, "rows")
-    assert len(rows_) == ART_ROWS and all(A.kind_of(view, i)[1] == S["squad_row"] for i in rows_), \
-        f"ArkArtifactsPage.rows is not {ART_ROWS} SquadRowViews"
-    assert len(listed(art, "crystalTexts")) == 5, "ArkArtifactsPage.crystalTexts is not the five crystals"
-    for field, want in TRACK_FIELDS.items():
-        found = re.findall(r"^  [- ] " + field + r": \{fileID: (-?\d+)\}", art, re.M)
-        assert len(found) == len(TRACK_ELEMENTS), f"ArkArtifactsPage has {len(found)} track {field}s, not {len(TRACK_ELEMENTS)}"
-        for fid in found:
-            assert fid != "0", f"an ArkArtifactsPage track's {field} is not wired"
-            cls, scr = A.kind_of(view, fid)
-            assert (cls == want if isinstance(want, int) else scr == want), f"an ArkArtifactsPage track's {field} is the wrong kind"
-    assert f"guid: {PILOT_CATALOG}" in art, "ArkArtifactsPage reads no pilot catalog"
+    validate_artifacts(view, V)
     _, page = A.doc_of(view, V("Squads#logic"))
     for field, want in SQUADS_FIELDS.items():
         C.wired(view, page, field, want, "SquadsPage")
@@ -1263,6 +1476,97 @@ def validate_tabs(view, V):
                        (COLOR_SET, "the domain colours")):
         assert f"guid: {guid}" in page, f"SquadsPage reads no {what}"
 
+
+def fill_of(view, fid):
+    """(type, method, origin) of an Image."""
+    _, body = A.doc_of(view, fid)
+    return tuple(int(re.search(r"^  " + f + r": (\d+)$", body, re.M).group(1)) for f in ("m_Type", "m_FillMethod", "m_FillOrigin"))
+
+
+def validate_artifacts(view, V):
+    """The ARTIFACTS tab as Rev 105 B draws it: the rail's medallions, the lens with its four arcs, the words on the left,
+    the feed, every field wired; every kind's mark and payload; every word authored and naming only tokens the page fills;
+    and no card or panel behind the words (the board's whole point)."""
+    _, art = A.doc_of(view, V("Artifacts#logic"))
+    for field, want in ART_FIELDS.items():
+        C.wired(view, art, field, want, "ArkArtifactsPage")
+    for field in RETIRED_ART_FIELDS:
+        assert not re.search(r"^  " + field + ":", art, re.M), f"ArkArtifactsPage.{field} is back (Rev 105 B retired it)"
+    assert f"guid: {PILOT_CATALOG}" in art, "ArkArtifactsPage reads no pilot catalog"
+    medals = listed(art, "medallions")
+    assert len(medals) == MEDALLIONS and all(i != "0" and A.kind_of(view, i)[1] == S["medal"] for i in medals), \
+        f"ArkArtifactsPage.medallions is not {MEDALLIONS} wired ArtifactMedallions"
+    for i in medals:
+        for field, want in MEDAL_FIELDS.items():
+            C.wired(view, A.doc_of(view, i)[1], field, want, "a medallion")
+    icons = listed(art, "crystalIcons")
+    assert len(icons) == CRYSTAL_ICONS and all(i != "0" and A.kind_of(view, i)[0] == 114 and A.kind_of(view, i)[1] == IMG
+                                               for i in icons), f"ArkArtifactsPage.crystalIcons is not {CRYSTAL_ICONS} Images"
+    m = re.search(r"^  crystalSprites:\n((?:  - .*\n)*)", art, re.M)
+    assert m and m.group(1) == "".join(f"  - {K.sprite_ref(g)}\n" for g in CRYSTAL_BY_VALUE), \
+        "ArkArtifactsPage.crystalSprites is not None, Charge, Mass, Space, Time, Omni"
+    kinds = re.findall(r"^  - kindId: artifact\.(\w+)\n    glyph: \{fileID: 21300000, guid: ([0-9a-f]{32}), type: 3\}\n"
+                       r"    payload: (\d)\n    countTrack: (\d)\n    countOffset: (\d)\n", art, re.M)
+    assert [(k, int(p), int(o)) for k, _, p, _, o in kinds] == list(ART_KINDS), \
+        "ArkArtifactsPage.kinds is not Javelin (Line), Hydra (Fan), Aftershock (Repeat), Aegis (Shell, re-raises + 1)"
+    for kind, guid, _, track, _ in kinds:
+        assert guid == GLYPHS.glyph_guid(kind), f"the {kind} medallion shows another kind's mark"
+        assert os.path.exists(os.path.join(REPO, GLYPHS.OUT, f"artifact_{kind}.png")), \
+            f"the {kind} mark is not on disk (run author_artifact_glyphs.py)"
+        assert int(track) == ELEMENT_VALUE[COUNT_TRACK], f"the {kind} payload is not counted on {COUNT_TRACK}"
+        cat = os.path.join(REPO, f"Assets/_SO_Assets/Pilots/Artifacts/Artifact_{kind.capitalize()}.asset")
+        assert re.search(r"^  id: artifact\." + kind + "$", open(cat, encoding="utf-8").read(), re.M), \
+            f"no artifact kind artifact.{kind} in the catalog"
+    lens_ = re.search(r"^  lens: \{fileID: (-?\d+)\}", art, re.M).group(1)
+    _, ld = A.doc_of(view, lens_)
+    for field, want in LENS_FIELDS.items():
+        C.wired(view, ld, field, want, "ArtifactLens")
+    field_go = re.search(r"^  m_GameObject: \{fileID: (-?\d+)\}", A.doc_of(view, V("Artifacts/Lens/Body/Field#rt"))[1],
+                         re.M).group(1)
+    assert any(A.kind_of(view, c)[1] == A.MASK for c in re.findall(r"^  - component: \{fileID: (-?\d+)\}",
+                                                                    A.doc_of(view, field_go)[1], re.M)), \
+        "the lens's field is not masked to its disc: the prisms would spill past the rim"
+    arcs = re.findall(r"^  - attunedFill: \{fileID: (-?\d+)\}\n    fixedFill: \{fileID: (-?\d+)\}\n"
+                      r"    flower: \{fileID: (-?\d+)\}\n    valueText: \{fileID: (-?\d+)\}\n"
+                      r"    labelText: \{fileID: (-?\d+)\}\n    wordsGroup: \{fileID: (-?\d+)\}\n", ld, re.M)
+    assert len(arcs) == len(TRACK_ELEMENTS), f"the lens has {len(arcs)} arcs, not {len(TRACK_ELEMENTS)}"
+    for name, ids in zip(TRACK_ELEMENTS, arcs):
+        for (field, want), fid in zip(ARC_FIELDS.items(), ids):
+            assert fid != "0", f"the lens's {name} arc's {field} is not wired"
+            cls, scr = A.kind_of(view, fid)
+            assert (cls == want if isinstance(want, int) else scr == want), f"the lens's {name} arc's {field} is the wrong kind"
+        for fid in ids[:2]:
+            assert fill_of(view, fid) == (3, 4, 1), f"the lens's {name} arc is not a radial fill from the right"
+        _, fl = A.doc_of(view, ids[2])
+        assert f"  element: {dict(H.ELEMENTS)[name]}\n" in fl, f"the lens's {name} arc wears another element's flower"
+    for key in ("Artifacts/Detail/Feed/Band/Now", "Artifacts/Detail/Feed/Band/Next"):
+        assert fill_of(view, V(f"{key}#img"))[:2] == (3, 0), f"{key} is not a horizontal fill"
+    # Every word: authored, and naming only the tokens the page fills there.
+    written = dict(re.findall(r"^  (\w+(?:Template|Word)|trail(?:Hoard|Artifact|Feed)): (.*)$", art, re.M))
+    assert set(written) == {f for f, _ in artifact_words()}, "ArkArtifactsPage's words in the prefab are not the authored set"
+    for field, value in written.items():
+        assert value.strip(), f"ArkArtifactsPage.{field} is blank: the line would show nothing"
+        for token in re.findall(r"\{(\w+)\}", value):
+            assert token in ART_TOKENS.get(field, ()), f"ArkArtifactsPage.{field} names {{{token}}}, which the page does not fill there"
+    # No card or panel behind the words (the cards Shombith turned down): nothing on the page wears a panel's sliver.
+    panel = {K.kit_sprite(f"kit_sliver14_{p}") for p in ("fill", "line1", "line2")}
+    for name, cdoc in page_images(view, V("Artifacts#rt")):
+        assert not any(f"guid: {g}" in cdoc for g in panel), f"the Artifacts tab draws a card again ({name})"
+
+
+def page_images(view, rt):
+    """(GameObject name, Image document) for every Image under the RectTransform `rt`, depth first."""
+    _, body = A.doc_of(view, rt)
+    go = re.search(r"^  m_GameObject: \{fileID: (-?\d+)\}", body, re.M).group(1)
+    _, gdoc = A.doc_of(view, go)
+    name = re.search(r"^  m_Name: (.*)$", gdoc, re.M).group(1)
+    for comp in re.findall(r"^  - component: \{fileID: (-?\d+)\}", gdoc, re.M):
+        _, cdoc = A.doc_of(view, comp)
+        if cdoc and f"guid: {IMG}" in cdoc:
+            yield name, cdoc
+    kids = re.search(r"^  m_Children:\n((?:  - .*\n)*)", body, re.M)
+    for kid in re.findall(r"fileID: (-?\d+)", kids.group(1) if kids else ""):
+        yield from page_images(view, kid)
 
 def drift(files):
     return [p for p, t in files.items()
@@ -1348,8 +1652,34 @@ def self_test(files):
             "  missionButton: ", "  playArcadeButton: {fileID: 0}\n  missionButton: ", 1))),
         ("the nanobots with no bot", lambda f: f.__setitem__(view, re.sub(
             r"(  botTemplate: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
-        ("an artifact track's RAISE unwired", lambda f: f.__setitem__(view, re.sub(
-            r"(    raiseButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("FEED unwired", lambda f: f.__setitem__(view, re.sub(
+            r"(  feedButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "feedButton is not wired"),
+        ("the lens's attuned fill unwired", lambda f: f.__setitem__(view, re.sub(
+            r"(  - attunedFill: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "attunedFill is not wired"),
+        ("a lens arc that is a plain image", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts/Lens/Body/ArcTime/Fixed#img"), lambda d: d.replace("  m_Type: 3\n", "  m_Type: 0\n"))),
+         "not a radial fill"),
+        ("the lens's field unmasked", lambda f: f.__setitem__(view, f[view].replace(f"guid: {A.MASK}", f"guid: {A.KIT_RECT_MASK_2D}")),
+         "not masked"),
+        ("a glass card behind the artifact's words", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts/Rail/Line#img"), lambda d: re.sub(r"(  m_Sprite: \{fileID: 21300000, guid: )[0-9a-f]{32}",
+                                                                    r"\g<1>" + K.kit_sprite("kit_sliver14_fill"), d))),
+         "draws a card again"),
+        ("a medallion with no glyph", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts/Rail/Medallion2#medal"), lambda d: re.sub(r"(  glyph: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d))),
+         "glyph is not wired"),
+        ("the Hydra medallion wearing the Javelin's mark", lambda f: f.__setitem__(view, f[view].replace(
+            GLYPHS.glyph_guid("hydra"), GLYPHS.glyph_guid("javelin"), 1)), "another kind's mark"),
+        ("an artifact line naming a token the page does not fill", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts#logic"), lambda d: d.replace(yfield("omniTemplate", "Feed {count} Omni"),
+                                                                yfield("omniTemplate", "Feed {count} {element}")))),
+         "which the page does not fill there"),
+        ("an artifact line blanked", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts#logic"), lambda d: d.replace(yfield("goneWord", "That artifact is no longer in your hoard."),
+                                                                "  goneWord: \n"))), "is blank"),
+        ("the first cut's track rows back", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts#logic"), lambda d: d.replace("  medallions:\n", "  rows: []\n  medallions:\n"))),
+         "Rev 105 B retired it"),
         ("the Artifacts tab with no page logic", lambda f: f.__setitem__(view, unlogic_tab(f[view], TABS.index("Artifacts")))),
         ("the Ark's arkTabs unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  arkTabs: {{fileID: {mount.stub_fid('root#tabs')}}}", "  arkTabs: {fileID: 0}"))),

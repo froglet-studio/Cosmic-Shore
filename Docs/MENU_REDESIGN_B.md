@@ -8517,7 +8517,7 @@ gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; 
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 
-## 193. Rev 105 mockups: the Artifacts tab without cards - three levels, the words on the room (2026-11-13, awaiting a pick)
+## 193. Rev 105 mockups: the Artifacts tab without cards - three levels, the words on the room (2026-11-13; Shombith picked B, built in section 201)
 
 **Asked (Shombith, 2026-11-13):** "The UI cards on top of each screen. I do not like them at all. Start separate threads
 for each page's new UIs ... For the artifacts screen, lets see what you come up with." The backdrops stay ("fire for
@@ -8549,5 +8549,45 @@ the quietest but crowds past four artifacts; C reads best on a phone but hides t
 go; the page gains the three levels and the feed step on screen (ArkArtifactsPage already holds FEED / OMNI and the four
 track rows); the crystals start at 10 each until the economy sets them. No new data.
 
+**Picked (Shombith, 2026-11-13):** "B is good." Built in section 201.
+
 Affects: Shombith's Ark screen (the Artifacts tab, `ArkArtifactsPage`, `author_menu_ark.py`) once picked; Garrett's
 artifact kinds and inventory (read only).
+
+## 201. Built: the Artifacts tab as Rev 105 B, the lens (2026-11-13, not seen in Unity)
+
+**Asked:** Shombith picked B in section 193 ("B is good"). Branch `claude/project-thread-yzd03y`, on the Ark rework.
+
+**Built** (`Tools/Build/author_menu_ark.py` writes `ArkView.prefab`'s Artifacts page; `--check` and `--self-test` clean):
+- **No cards.** Rev 86's list box and picked-artifact box are gone; the Reliquary shows whole behind the page, with only
+  the shade at the top and the foot. The validator fails if any panel sliver comes back on the page.
+- **Three levels, one press each** (`ArkArtifactsPage.Level`), BACK one level up, the trail in the tab row's right:
+  1. **The hoard:** a rail of seven medallions along the floor (`ArtifactMedallion`): each held artifact's mark in a
+     round glass with its kind's name, then empty "?" slots. One hint line: "Pick one to see what it does."
+  2. **One artifact:** the lens opens on the right (`ArtifactLens`, 640 across): its payload plays over a field of 40
+     prisms laid from the artifact's id (Hydra's heads fan out, Javelin throws one line, Aftershock cracks the same place
+     again, Aegis raises a shell), the count from its Charge track (Aegis: re-raises + 1); its four tracks as arcs round
+     the rim (Mass, Space, Time, Charge), each with its flower, value and label, the attuned one full and the fixed
+     three dimmed. On the left, no box: kind and serial, the unique name, what the kind does, the attuned element's flower
+     with its aspect and value, which seat carries it; FEED IT and GIVE TO A SEAT.
+  3. **Feeding it:** the same words, then the level now and after the next feed on one band (the twist marked at 5, the
+     ceiling marked), the twist line, the value now and next, one icon per crystal of its element held (up to 10), the
+     balance line, FEED and OMNI (5 a press), and the result line.
+- **The marks** are white stroked glyphs from the room's prism shapes (`Tools/Build/author_artifact_glyphs.py`,
+  `Assets/_Graphics/Icons/Artifacts/`): Javelin a long diamond, Hydra three diamonds in a fan, Aftershock two stacked,
+  Aegis a hexagon in a hexagon. White, so the theme tints them.
+- **Unchanged:** the feeding rule (`PilotLoadoutStore.TryFeed`, one element per artifact, the diminishing curve), GIVE
+  TO A SEAT (`GiveRequested`), the crystals the profile holds (the Converter thread's 10 of each default fills them).
+  Every word is a field on `ArkArtifactsPage` (authored by the generator, tokens checked against what the page fills);
+  every colour is a themed token.
+
+**Differs from the board:** the lens's hex grid behind the prisms is left out (a plain glass field); the release point is
+a small diamond. Motion is drawn on the canvas (pooled images), not a 3D scene; a render texture can replace the field
+later without touching the page.
+
+**Verified:** reference compile against the Unity assemblies (no errors in changed files; 30 errors elsewhere on the
+branch were there before), `author_menu_ark.py --check / --self-test`, `author_artifact_glyphs.py --check`,
+`colour_trace.py --check`, `colour_grade.py --check`, `check_console_logging.py`. Not run in the Unity editor: hand test
+in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("The Artifacts tab as Rev 105 B").
+
+Affects: Shombith's Ark screen (the Artifacts tab); Garrett's artifact kinds (read only, the marks are new).

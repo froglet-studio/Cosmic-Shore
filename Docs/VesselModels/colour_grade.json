@@ -1,7 +1,7 @@
 {
  "counts": {
   "exempt": 7,
-  "grey": 518,
+  "grey": 522,
   "ui": 612,
   "world": 1
  },
@@ -5151,6 +5151,26 @@
    "kind": "sprite",
    "sha": "2b68790f13f9ff7b",
    "why": "the app icon and splash: the platform draws them before any script runs"
+  },
+  "Assets/_Graphics/Icons/Artifacts/artifact_aegis.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "ce9d0f7b4a87663b"
+  },
+  "Assets/_Graphics/Icons/Artifacts/artifact_aftershock.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "585b669bb4aa901a"
+  },
+  "Assets/_Graphics/Icons/Artifacts/artifact_hydra.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "8bdae21e59af1505"
+  },
+  "Assets/_Graphics/Icons/Artifacts/artifact_javelin.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "6bcf56f83c3ee474"
   },
   "Assets/_Graphics/Icons/Icon_Generate.png": {
    "coloured": 1.0,

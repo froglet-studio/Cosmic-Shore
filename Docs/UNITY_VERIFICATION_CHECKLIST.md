@@ -23385,3 +23385,23 @@ reference assemblies; `author_ingame_hud.py --check` and `--self-test` clean.
 3. At Ready, as the hex opens, the fields fade with the words and the bar: nothing covers the arena once the hole grows.
 4. Replay the mode: the fields are back at full strength on the next loading screen.
 5. Profiler during the loading screen: no GC per frame from `PosterDrift`.
+
+## 🔴 The Artifacts tab as Rev 105 B, the lens (2026-11-13, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-yzd03y`. Record: `Docs/MENU_REDESIGN_B.md` section 201. Compiled against the Unity
+reference assemblies; `author_menu_ark.py --check` and `--self-test` clean.
+
+1. Ark > ARTIFACTS: the Reliquary shows whole, no boxes. Along the floor a rail of medallions: one per held artifact
+   (its white mark, its kind's name), then "?" slots. One hint line above the rail.
+2. Pick Hydra: the lens grows open on the right; heads fan out from the diamond at its foot and burst, over prisms that
+   stay inside the round glass. Four arcs round the rim with their flowers, values and labels; the attuned arc full, the
+   others dimmed. The words stand on the left; the medallion is ringed and the other names dim. The trail reads
+   "Artifacts / Hydra". BACK appears top-left.
+3. Pick Javelin, Aftershock, Aegis in turn: each plays its own shape (a line, repeated cracks, a raised shell).
+4. FEED IT: the level band (now, next, the twist mark at 5), crystal icons of the artifact's element (10 with the
+   default), FEED and OMNI. Press FEED: the level, the band and the icons move; the result line reads.
+5. BACK twice returns to the hoard and the lens closes. Leave the tab and come back: it opens on the hoard.
+6. GIVE TO A SEAT still takes the artifact to the Squads tab.
+7. Switch the colour set: the marks, arcs, rim and rings recolour; nothing stays a fixed colour.
+8. Profiler with the lens open: no GC per frame from `ArtifactLens`.
+
