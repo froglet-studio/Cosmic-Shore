@@ -1930,3 +1930,17 @@ Entries are grouped by family; within a family, the newest goes at the bottom.
 - Do instead: hold an example to everything a set is held to, the writer's field check included (`author_colour_set_assets.py --check` now does), so promoting one is a move in `colour_sets.json`. When a lab shows sets beside the game's, a ship report names the ones that are not shipped and offers to take them in: a person reads the lab's rail as the game's.
 - Evidence: `author_colour_set_assets.py --self-test` (Dusk's old Heather, planted as an example, is caught); the window scan in the promotion commit.
 - Promoted: `.claude/skills/colour-set/SKILL.md` §7, §9
+
+### L-STU-179 — A per-lay loop that waits on UniTask.Delay is frame-bound at speed: the spacing is speed × frame time, not the authored wavelength
+- Lab: Manta Trail Lab (`Docs/Studios/MantaTrailLab.html`) · Branch: `claude/manta-trail-speed-shape` · By: Manta Polish thread (Caleb) · Date: 2026-11-11
+- What happened: `VesselPrismController.SpawnLoopAsync` lays, then waits `wavelength / speed` (10 m / speed). A `UniTask.Delay` ends on a frame, so once the wait is shorter than a frame the lay is one per frame. At the Manta's Soar (~600-700 u/s at 60 fps) the rail spacing is ~11 m, not 10, and it grows with speed and with a lower frame rate. A first lab that stepped the lay with sub-frame timing would have shown a Soar ribbon that the game never lays: Soar fill read 0.45 for the shipped 5.5 m prism, and a "Z fills the wavelength" rule left gaps at Soar until its cap used `max(wavelength, speed × dt)`.
+- Do instead: step any per-lay or per-tick async loop the way the game's awaiter resolves (one firing per frame at most, the next wait measured from that frame), and give the lab a frame-rate dial so a phone's 30 fps is scored too.
+- Evidence: `VesselPrismController.SpawnLoopAsync`; the lab's `simStep` lay timer and `shFrameAware` dial; scorecard "Soar fill" column.
+- Promoted: no
+
+### L-STU-180 — A lab that lays "after the move" hides a loop that runs before it: port the ORDER, not only the formula
+- Lab: Manta Trail Lab (`Docs/Studios/MantaTrailLab.html`) · Branch: `claude/manta-trail-speed-shape` · By: Manta Polish thread (Caleb) · Date: 2026-11-12
+- What happened: the lab and the C# shared one pacing rule (lay by distance, back to the exact spacing point), and every lab check passed. In the editor the prisms still bunched at top speed. The game's loop runs at UniTask's Update timing, BEFORE `VesselTransformer.Update` moves the hull, so counting Speed x deltaTime as flown placed each prism a frame's flight too far back; a 0.1 s editor hitch (108 m at 1080 u/s) put one against its neighbour. The lab's `simStep` moves first and lays second, so it could not show it. Two earlier rounds on the same trail were the same shape: a timer that ends on a frame (L-STU-179), and sizing a prism to one frame's wobbling flight.
+- Do instead: in the game, read what actually happened (the hull's displacement since the last loop), never a rate times dt; when the lab models a loop, put its update order in the model (`/labmaker` §2), and feed the pacing tests long frames (a hitch every ~100 frames), not just jitter.
+- Evidence: `VesselPrismController.ShapedSpawnLoopAsync`; `TrailSpeedShape.StepLay` / `NextLay`; `TrailSpeedShapeTests.StepLay_LaysEvenlyAtEverySpeed_ThroughJitterAndHitches`; `Docs/Manta/POLISH.md` fly tests 1-3.
+- Promoted: no
