@@ -141,6 +141,9 @@ namespace CosmicShore.Gameplay
         /// it is worth (ten points to the petal, on four elements; a missile that upgrades a tier
         /// adds only the difference, as its score does) - whether or not the victim holds petals.
         /// This runs on the machine that decides the hit, which is the only one that admits it.</para>
+        ///
+        /// <para>An admitted hit is also ANNOUNCED (<see cref="CombatHitCue"/>), on this machine and every
+        /// peer, so it can be drawn as the theft it is: who hit whom, and for how much.</para>
         /// </summary>
         public static bool TryAdmit(IVesselStatus victim, IVesselStatus attacker, CombatHitClass hitClass,
                                     float cooldownSeconds, ElementalDebuffSources source,
@@ -152,6 +155,7 @@ namespace CosmicShore.Gameplay
             int points = PointsFor(hitClass);
             if (supersededRank > 0) points -= PointsFor(ClassForMissileRank(supersededRank));
             VesselSilence.OnHitAdmitted(victim, points, source);
+            CombatHitCue.OnAdmitted(victim, attacker, VesselSilence.PetalsForPoints(points));
             return true;
         }
 
@@ -166,6 +170,7 @@ namespace CosmicShore.Gameplay
         {
             if (!Admits(victim, attacker, hitClass, cooldownSeconds, source, out _)) return false;
             VesselSilence.OnPetalsAdmitted(victim, petals, source);
+            CombatHitCue.OnAdmitted(victim, attacker, petals);
             return true;
         }
 

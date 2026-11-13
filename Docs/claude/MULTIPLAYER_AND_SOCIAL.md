@@ -66,6 +66,9 @@ the arena cards' Vessels row (Pick, Random, Draft, Squad), `Docs/HomeHub/ARCHITE
 **29** (2026-11-07, `claude/regatta-integration`; 29 was free on bleeding-edge and every in-flight branch, checked
 that day) - no wire change of its own: the build that carries both 27 (the Vessels row) and 28 (the course pool), so a
 28 build without the Vessels row, or a 27 build without the drawn course, cannot join one that has both (as with 20 above).
+**31** (2026-11-13, `claude/project-thread-jd2kqa`; 30 is taken on `Ys-bleeding-edge`, checked across every origin branch
+that day) - `NetworkVesselImpactor`'s `PublishHitCue` RPC pair (unreliable): the decider of a scored hit telling every peer
+who hit whom and for how much, so the theft is drawn on every screen (`Docs/ElementalAbilitySystem/PETAL_THEFT_CUE.md`).
 **Both branches bumped it** (a merge conflict on `ProtocolVersion`): keep the HIGHER number - it is the one build
 that carries both wire changes, and both sides' builds are refused by it, which is right - and keep both history
 entries above. A number skipped because another branch reserved it is fine; Netcode only compares for equality.
