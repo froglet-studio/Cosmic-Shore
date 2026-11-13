@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using FMODUnity;
 using UnityEngine;
@@ -171,6 +172,19 @@ namespace CosmicShore.Gameplay
         [Tooltip("... and never more than this (s), so a far one is still quick.")]
         [SerializeField, Min(0.05f)] float travelMaxSeconds = 1.2f;
 
+        [Header("Element scaling (authored endpoints of the lab's curves, JacksMath; 2026-11-13)")]
+        [Tooltip("CHARGE: the share of the herd that is DANGER (stings rivals). The lab's 0 at -5, 1 at 15: 0.25 at rest, " +
+                 "0.75 at level 10. Clamped to 0..1.")]
+        [SerializeField] ElementalFloat dangerShare = ElementalFloat.Multiplier(0.25f, 0.75f, Element.Charge, 0f);
+        [Tooltip("MASS: how much faster the herd breeds (a birth takes the species' feeds over this). The lab's 1 at -5, " +
+                 "3 at 15: 1.5 at rest, 2.5 at level 10.")]
+        [SerializeField] ElementalFloat herdBirthRate = ElementalFloat.Multiplier(1.5f, 2.5f, Element.Mass, 1f);
+        [Tooltip("SPACE: every herder's ring, as a multiple of the thumb floor (RingFloor). The lab's floor at -5, +6% per " +
+                 "level: 1.3 at rest, 1.9 at level 10.")]
+        [SerializeField] ElementalFloat ringScale = ElementalFloat.Multiplier(1.3f, 1.9f, Element.Space, 1f);
+        [Tooltip("TIME: the herd's speed multiplier. The lab's +6% per level, floored at x0.4: 1 at rest, 1.6 at level 10.")]
+        [SerializeField] ElementalFloat herdSpeed = ElementalFloat.Multiplier(1f, 1.6f, Element.Time, 0.4f);
+
         [Header("Level 5")]
         [Tooltip("pooEvery: Mass L5, seconds between clusters.")]
         [SerializeField, Min(0.1f)] float pooEvery = 6f;
@@ -332,5 +346,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The ring's floor in GAME units: a big thumb on the lab's nominal phone, at the lab's view span.</summary>
         public float RingFloor => JacksMath.FloorUnits(thumbMm, thumbMargin, LabViewSpan);
+
+        /// <summary>CHARGE: the herd's danger share on this hull (0..1); the authored base off a vessel.</summary>
+        public float DangerShareFor(IVesselStatus status) => Mathf.Clamp01(dangerShare.EvaluateLive(status));
+        /// <summary>MASS: the share of its species' feeds a herded creature needs for a birth (1 / the birth rate).</summary>
+        public float FeedsPerOffspringScaleFor(IVesselStatus status) => 1f / Mathf.Max(0.01f, herdBirthRate.EvaluateLive(status));
+        /// <summary>SPACE: every herder's ring (u) on this hull.</summary>
+        public float RingFor(IVesselStatus status) => RingFloor * ringScale.EvaluateLive(status);
+        /// <summary>TIME: the herd's speed multiplier on this hull.</summary>
+        public float HerdSpeedFor(IVesselStatus status) => herdSpeed.EvaluateLive(status);
     }
 }
