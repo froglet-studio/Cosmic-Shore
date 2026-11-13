@@ -253,9 +253,10 @@ def element_complete(board, element, step="3"):
 
 ACTION = {
     "1": "Fun pass on {game}: score the {v}'s {e} abilities and the game together at one intensity (PLAYBOOK step 1), "
-         "raise the lowest floor, then hand a person the playtest that signs it off",
+         "raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it)",
     "2": "Intensity pass on {game}: check I1-I4 serve intro, fun, challenging and very hard and each shows what the {v} "
-         "can do (PLAYBOOK step 2), fix the worst rung, then hand a person the playtest that signs it off",
+         "can do (PLAYBOOK step 2; rung_bars.py checks the rungs from the flights), fix the worst rung, then ask a person "
+         "to fly I1-I4 and answer the fun card on each",
     "3": "Train the {v}'s universal {e} AI on {game} I1-I4 (one genome, AI_PLAN rule 2), check it in the editor",
 }
 

@@ -99,9 +99,12 @@ model number (standing rule).
   never required), and `/artifact-to-unity` to bring numbers in.
 - **Exit (done). ONE human flew it and signs it off as fun** (Garrett, 2026-11-12). Only then is it flagged for
   intensity production (step 2). Score the six fun dimensions to find what to fix, but the sign-off is the bar. Record
-  `set <Vessel> <Element> 1 done --by <who> --kind human --evidence "<playtest / report>"`.
+  `set <Vessel> <Element> 1 done --by <who> --kind human --evidence "<playtest / report>"`. **The fun card records it
+  without typing** (2026-11-12): when Play stops after an arcade match, the editor asks "was it fun?" (yes / almost /
+  no, and what held it back), "was this rung right?" (too easy / right / too hard) and an optional line, and sends the
+  answer with the Bug Hunt send; `python3 Tools/Build/fun_cards.py apply` turns a "yes" into this sign-off.
 - **Tools:** `/vessel`, `/vessel-studio`, `/arcadegame`, `/element-ability-table`, `VESSEL_MODE_CHART.md`,
-  `TIME_GAME_FUN_SCORES.md`.
+  `TIME_GAME_FUN_SCORES.md`, the fun card and `fun_cards.py`.
 
 ### Step 2: the intensity ladder (I1 intro, I2 fun, I3 challenging, I4 very hard)
 
@@ -112,9 +115,14 @@ model number (standing rule).
 - **Exit (done), proposed bars, measured from recorded flights and the AI:** I1: a first-time pilot finishes. I2: the
   step-1 fun bar holds. I3: a skilled pilot finishes, the Medium AI often does not. I4: the best humans and the
   Legendary AI finish near the limit. **ONE human plays the rungs and signs them off as fun** (Garrett, 2026-11-12);
-  only then is the vessel and element sent to AI training (step 3).
+  only then is the vessel and element sent to AI training (step 3). The fun card signs it off when one person
+  answered "fun: yes" and "right" on all four rungs (`fun_cards.py apply`). **The bars are checked from the recorded
+  flights** by `python3 Tools/Build/rung_bars.py` (Garrett, 2026-11-12: defaults, then learned): each rung's least
+  finish rate and median time band start from `rung_bars.json`'s defaults (I1 90%, I2 75%, I3 50%, I4 25% of human
+  races that run to the end), a game may override them there, and once three runs of a rung were rated "right" on the
+  card its bar is what those runs showed. A higher rung finished more often than the one below fails the ladder.
 - **Tools:** `/arcadegame` (the per-mode intensity ladder: four `CellConfigDataSO`s), the End Game Conditions window
-  (`/EndGameConditions`), `/ecology` for spawn profiles.
+  (`/EndGameConditions`), `/ecology` for spawn profiles, `rung_bars.py`, the fun card's rung answer.
 
 ### Step 3: the vessel's AI for the element (one genome, all four rungs)
 
@@ -209,11 +217,16 @@ model number (standing rule).
 
 ## 7. Missing scaffolding (ranked)
 
-1. **No recorded fun sign-off exists for any vessel and element.** `TIME_GAME_FUN_SCORES.md` is a 2026-10-27
-   estimate nobody played. Step 1 needs a playtest card a person can answer in a minute; until then, sign-offs are
-   recorded by hand with `set`.
-2. **No per-rung bars per game.** Only Switchback has time bands per intensity. Step 2 needs each game's I1-I4 targets
-   (finish rate, time band) so the recorded flights can check a ladder without a person.
+1. ~~No recorded fun sign-off exists for any vessel and element.~~ **Built 2026-11-12, not yet answered in the
+   editor:** the one-minute fun card (`Assets/_Scripts/Editor/Diagnostics/FunCard.cs`, after every arcade match;
+   FrogletTools > Diagnostics > Fun Card) and `Tools/Build/fun_cards.py` (reads the answers from every bugledger
+   branch, `apply` records the step 1 and 2 sign-offs). No sign-off exists until someone answers one.
+2. ~~No per-rung bars per game.~~ **Built 2026-11-12:** `rung_bars.json` (default bars, per-game overrides) and
+   `Tools/Build/rung_bars.py` (checks every arcade game's I1-I4 from the human flights on the bugledger branches,
+   learns a rung's bar from three "right" fun cards). First run: of the games with three or more finished-to-the-end
+   races on a rung, Switchback I1, Serpent Time I1 and I3, Slingshot I2 and I3, Thresher Time I1 and I2 and Skim Race I1
+   and I2 fail their finish-rate bar, and most rungs have too few flights for a verdict. In score games (Grizzly
+   Charge, Scarab Scramble) "finished" may not mean a finish; give them a game override or let the card learn them.
 3. **Charge AIs need the per-attacker petal ledger** (`SILENCE.md` §6) before `charge-arcade` can be scored.
 4. **No Mass or Space AI model or learner exists for any game**, and Brood Rush has no net-control-of-space measure and
    no cultivator/destroyer readout. Both are needed before Brood Rush's step 4.
@@ -247,5 +260,6 @@ model number (standing rule).
 | Date | What moved |
 |---|---|
 | 2026-11-12 | **Garrett**: the loop dominates `/swimlanes` and `/approve`. The swim lanes board now opens with every unoccupied vessel as its own loop lane (progress and next step, `elemental_loop.vessel_lanes`); the approval queues rank entries by loop impact, the rework a late "against the vessel's spirit" catch would cause (`elemental_loop.rework`) |
+| 2026-11-12 | **Garrett** decided the fun card: it opens in Unity right after Play, after every arcade match (the newest answer per vessel, game and rung wins), and the per-rung bars are defaults, then learned from the card. Built: `FunCard.cs`, the Bug Hunt kind `fun`, `fun_cards.py`, `rung_bars.py`, `rung_bars.json` (scaffolding 1 and 2) |
 | 2026-11-12 | **Garrett** decided 1 and 2: one human's fun sign-off gates step 1 to step 2 and step 2 to step 3 (`elemental_loop.py` refuses a step 1 or 2 `done` that is not `--kind human`, and a step `done` before the one below it); vessel tunings go through and queue for his `/approve` without waiting |
 | 2026-11-12 | Garrett set the loop as the top priority. This playbook, `loop.json`, `elemental_loop.py` (board, `next`, `set`, `--check`, `--self-test`) and the `/elemental-loop` skill were added. Loop 1 started with the Time element furthest along: steps 1-2 built for every vessel with a Time game, step 3 built (trained, model only) for seven hulls and in progress for the Manta and Urchin, Regatta's step 4 in progress. The AI plan's `mass-arena` and `space-arena` became one step, `massspace-arena` (Brood Rush) |
