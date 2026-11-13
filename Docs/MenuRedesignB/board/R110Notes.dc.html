@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 110 - the vessels in the hangar: real models over an empty-pad video, checked</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#8C93C7;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;height:48px;padding:0 20px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase}
+.btn.sm{height:40px;padding:0 14px;font-size:14px}
+.commit{background:#A600FF;color:#E6E9FF}
+.cta{background:#99FF80;color:#00010A}
+.def{background:rgba(0,4,31,.55);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.off{background:rgba(0,4,31,.4);color:#5C5F70;box-shadow:inset 0 0 0 1px #222645}
+.btn .kc{border-color:currentColor;color:inherit;opacity:.85}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity 900ms ease-in-out}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lat{background-image:repeating-linear-gradient(60deg,rgba(230,233,255,.05) 0 1px,transparent 1px 24px),repeating-linear-gradient(-60deg,rgba(230,233,255,.05) 0 1px,transparent 1px 24px)}
+.ava{object-fit:cover;display:block}
+.rise{animation:csRise 360ms cubic-bezier(.2,.8,.2,1) both}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:csFade 300ms ease-out both}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="abs" style="left:64px;top:48px;display:flex;flex-direction:column;gap:6px"><span class="lab">Rev 110 - the vessels in the hangar</span><span style="font-size:34px">Change a vessel and the hangar changes with it: real models over an empty-pad video</span></div><img class="abs" src="/_blob/00d6d67b8e8c484472ef059f3a564131" alt="Four renders: today's clip with the vessels baked in; the hangar with empty pads; the live layer of the squad's real models with a Rhino in your seat; the Rhino rendered into the room in one pass" style="left:64px;top:150px;width:1180px;height:708px;object-fit:contain;background:#00010A"><div class="abs" style="left:1290px;top:150px;width:570px;display:flex;flex-direction:column;gap:12px"><span class="lab">Asked - Shombith, 2026-11-13</span><p style="margin:0;font-size:18px;line-height:1.5;color:#E6E9FF">"On changing the vessel will the model behind the image change since this is a video so should be put actual vessel models inside and check?"</p><span class="lab" style="margin-top:10px">Today: no</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">Each Squads clip (one per colour set and domain, section 190) has the Dolphin, the Sparrow and the Serpent rendered into it (1). Changing a vessel changes the words, never the picture.</p><span class="lab" style="margin-top:10px">The fix, checked</span><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">Render the same hangar with the pads empty (2) and draw the squad's real models on the pads live, from the same camera (3). Laid over the video (as in the game) it matches the Rhino rendered into the room in one pass (4) to within 2 of 255 per pixel on average.</p><p style="margin:0;font-size:17px;line-height:1.5;color:#C9CDEA">In the game: the empty-pad clips replace the nine Squads clips; a camera at the render's camera draws each seat's vessel prefab on its pad into a transparent layer over the video, rebuilt only when a seat's vessel changes; offline hulls powered down, open pads empty.</p><p style="margin:0;font-size:15px;line-height:1.5;color:#9AA0CC">Still to match in Unity: the hulls' light (the room's lamps and pad glow as real lights) and a little haze over them. Renders here use stand-in pictures on the wall boards and windows.</p></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -8517,7 +8517,7 @@ gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; 
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 
-## 194. Rev 106 mockups: the Squads tab in levels, lit like the captains' bridges (2026-11-13, awaiting a pick)
+## 194. Rev 106 mockups: the Squads tab in levels, lit like the captains' bridges (2026-11-13, B picked; taken forward in section 200)
 
 **Asked (Shombith, 2026-11-13):** "The UI cards on top of each screen. I do not like them at all ... the worst is the
 ark UI itself, selecting through so many and the text is noisy, it can be broken down in levels if we want." The
@@ -8553,3 +8553,43 @@ locked, Arena). Colours from the worn set's domain colours. The Breakers hangar 
 
 Affects: Shombith's Ark screen (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's pilot scenes (read
 as reference, two downscaled copies uploaded to the canvas).
+
+**Picked (Shombith, 2026-11-13):** "B is good." Every setting of B and the vessels in the hangar: section 200.
+
+## 200. Rev 110 mockups: the Squads tab's B with every setting, and the hangar's vessels as real models (2026-11-13, awaiting board approval)
+
+**Asked (Shombith, 2026-11-13, picking Rev 106 B):** "B is good. Can you show me all the settings and on changing the
+vessel will the model behind the image change since this is a video so should be put actual vessel models inside and
+check?"
+
+**On the canvas:** tab **Ark**, round "Rev 110 - The Squads tab, option B with every setting; the vessels in the hangar as
+real models" (canvas version `1794610288-7e60`; rounds 107-109 belong to the sibling Ark threads). Copies
+`Docs/MenuRedesignB/board/R110*.dc.html`, generator `Docs/MenuRedesignB/rounds/r110_ark_squads_b.py` (on Rev 106's kit).
+- **R110B:** B, interactive, with a dashed mockup row that jumps to every setting: at rest; your seat; the Vessel,
+  Element, Pilot (with the callsigns' faces) and Artifact lists, each projected over its plate with one line on what it
+  changes; an offline mate and Open the seat; an open seat and who flies it (AI wingmate, or open for a friend: the
+  build's SeatMode); a joined squad (read-only: its leader sets the seats); the squad's light on the rail; Make (a new
+  squad, you and two open seats); Join a friend (friends' squads with an open seat). All of it works by pressing too.
+- **R110Notes:** the vessel check below, with its four renders.
+
+**Does the model change with the vessel? Not today.** Each Squads clip (section 190, one per colour set and domain) has
+the Dolphin, the Sparrow and the Serpent rendered into it; changing a vessel changes the words only.
+
+**The fix, checked offline.** `r67_ark_tabs_render.py` gained `ARK_LINE` (the hulls on the three pads, or `none` for
+empty pads) and `ARK_PASS=vessels` (only the hulls, transparent, the room held out so it still occludes). One frame
+each (Nocturne, Jade, 960 x 540, 24 samples, Blender 5.3 as a Python module): the shipped line-up; the hangar with the
+pads empty; the live layer with a Rhino in your seat; and the Rhino rendered into the room in one pass. The empty
+hangar with the layer laid over it matches the one-pass render to 2.0 of 255 per pixel on average (6.7 inside the
+hulls, which cover 6 % of the frame). The wall boards and windows used stand-in pictures (the Voyage Board charts and
+the cell screenshot of the shipped renders are not in the repo), so these frames are a check, not the new clips.
+Hull sizes for hulls outside the shipped three are scaled to 0.6 of the Sparrow's largest extent (the Manta's rest
+pose, unrigged, splits into pieces in Blender; the game's prefab does not).
+
+**For the build (once approved):** re-render the nine Squads clips with `ARK_LINE=none`; in Unity a camera at the
+render's camera (`CAM["squads"]`: position, aim, 24 mm lens) draws each seat's vessel prefab on its pad into a
+transparent layer over the video, rebuilt only when a seat's vessel changes (the pad positions are `SPOTS` in the
+render script), offline hulls powered down and open pads empty. What only Unity can judge: the hulls' light matching
+the render (the room's lamps and the pad glow as real lights) and haze over them.
+
+Affects: Shombith's Ark screen (`ArkBackdrop`, `SquadsPage`, `author_menu_ark.py`) once built; the Rev 67 render script
+(two env switches added, the default render unchanged).
