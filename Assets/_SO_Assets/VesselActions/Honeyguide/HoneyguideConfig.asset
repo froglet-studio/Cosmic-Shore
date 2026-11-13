@@ -126,6 +126,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: 50dc94dbf11d2798ac169967b60e106a, type: 3}
   - effect: 31
     trigger: 0
     reach: 22
@@ -137,6 +138,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: 1ac94c7e97eae1e90912e516fb09bb42, type: 3}
   - effect: 20
     trigger: 0
     reach: 55
@@ -148,6 +150,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: 74ff8913fd7a7cacc1edd87351439179, type: 3}
   - effect: 6
     trigger: 0
     reach: 40
@@ -159,6 +162,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: 1c1d6922d20d2afa8cbaa81e43418bdb, type: 3}
   - effect: 16
     trigger: 0
     reach: 50
@@ -170,6 +174,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: 3643cb8efffe34ef35515f47319451b9, type: 3}
   - effect: 7
     trigger: 0
     reach: 20
@@ -181,6 +186,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: 89eaac26ed4c6c75d12d996bc0a4af87, type: 3}
   - effect: 13
     trigger: 0
     reach: 50
@@ -192,6 +198,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: f9a5ca8fff11692c9992657741e0cde2, type: 3}
   - effect: 8
     trigger: 1
     reach: 90
@@ -203,6 +210,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: c2b06e51381ecf6d02bbe9ec4ff4cc24, type: 3}
   - effect: 38
     trigger: 1
     reach: 60
@@ -214,6 +222,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: 9aaa8504bfb9b3a674b24b0bd20918ee, type: 3}
   - effect: 34
     trigger: 1
     reach: 30
@@ -225,6 +234,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: d4c28ee0e2498e427081c915a128e273, type: 3}
   - effect: 35
     trigger: 1
     reach: 300
@@ -236,6 +246,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: 6c28fe399eabc4c9cbeeb356c4f2bdc3, type: 3}
   - effect: 30
     trigger: 1
     reach: 60
@@ -247,6 +258,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: f3c42757b4e4dd876d9f5ad8a086048e, type: 3}
   - effect: 39
     trigger: 1
     reach: 40
@@ -258,6 +270,7 @@ MonoBehaviour:
         Data3: 0
         Data4: 0
       Path: 
+    icon: {fileID: 21300000, guid: 7fc0d975f87792d278ad2b5b058ce683, type: 3}
   lassoCone: 30
   lassoReelSpeed: 220
   lassoReelSeconds: 1.2
