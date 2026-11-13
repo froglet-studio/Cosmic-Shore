@@ -8516,3 +8516,38 @@ Verified: `author_ingame_hud.py` run, `--check` and `--self-test` (two new negat
 gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; `gates.sh`. Hand test: "The loading
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+
+## 193. Rev 105 mockups: the Artifacts tab without cards - three levels, the words on the room (2026-11-13, awaiting a pick)
+
+**Asked (Shombith, 2026-11-13):** "The UI cards on top of each screen. I do not like them at all. Start separate threads
+for each page's new UIs ... For the artifacts screen, lets see what you come up with." The backdrops stay ("fire for
+now"); the Ark takes its light, motion and design from the pilot scenes that show captains inside the Ark (Jugger,
+Scales, Trace: domes and glass cases in which the game itself plays).
+
+**On the canvas:** tab **Ark**, round "Rev 105 - The Artifacts tab without cards", four boards, written by
+`Docs/MenuRedesignB/rounds/r105_artifacts.py` (copies in `Docs/MenuRedesignB/board/R105*.dc.html`). Each option is the
+full Ark screen on its Artifacts tab over the built backdrop (Rev 86's room) with the same content and the same three
+levels, one press each and B back, shown as a trail in the tab row: **the hoard** (which artifacts you have), **one
+artifact** (its unique name and serial, what it does, its attuned element and value, who carries it, Give), **feeding
+it** (its element's crystals, 10 of each for now, a feed of 5 flying in, the level now and after on the diminishing
+curve, the twist at 5). No option draws a box behind its words. The hoard is four unique artifacts rolled on the shipped
+kinds (Docs/Pilots/INVENTORY.md section 2), values from the kinds' tracks.
+
+- **A - In the room (`R105A`):** each artifact's name and holder hang over its own pedestal on a leader line; the picked
+  one's words stand in the open air on the right, tied to it by a line; feeding lays the crystals along the floor.
+- **B - The lens (`R105B`, recommended):** the hoard as round medallions on a rail along the floor (empty ones for the
+  slots still to find); picking one opens a round hologram lens, like Jugger's and Scales' domes, in which the payload
+  plays out over prisms (Hydra's heads fan out and burst, as many as its level gives), its four tracks as arcs round the
+  rim; the words sit on the left.
+- **C - One at a time (`R105C`):** the picked artifact drawn large in the room's middle, its name and lore on the left,
+  what it does and its tracks on the right, a caption row of the hoard under it.
+
+**Recommended: B** - the only option that shows what an artifact does before you feed it, and the most HyperSea. A is
+the quietest but crowds past four artifacts; C reads best on a phone but hides the hoard.
+
+**Differs from the build:** Rev 86's two cards (the list box, the picked artifact's box) and the mockup colour-set switch
+go; the page gains the three levels and the feed step on screen (ArkArtifactsPage already holds FEED / OMNI and the four
+track rows); the crystals start at 10 each until the economy sets them. No new data.
+
+Affects: Shombith's Ark screen (the Artifacts tab, `ArkArtifactsPage`, `author_menu_ark.py`) once picked; Garrett's
+artifact kinds and inventory (read only).
