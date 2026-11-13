@@ -23410,3 +23410,18 @@ and `--self-test`, `author_honeyguide_hud.py --check` clean; no Unity editor ran
 3. Make a Ratel upgrade card that banks on RT (e.g. Genesis Lance): the Space card shows its picture until its uses are
    spent, then Peck again (or Piercing Pecks at Space 5). Same on LT with an LT card (e.g. Blink Drive) on the Charge card.
 4. Bank two different RT upgrades: the card shows the newer one; spend it and the older one's picture comes back.
+## 🔴 Rhino: its own plough HUD (sword code out) and the three level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/rhino-plough-hud`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `author_rhino_hud.py --check`,
+`author_hull_ability_rows.py --check`, `author_jacks_hud.py --check` and `icon_kit/author.py rhino --check` clean; no
+Unity editor ran. `RhinoKatanaPoseTests` and `RhinoBladeReachLayoutTests` were deleted with the code they tested (the
+Swordfish's copies keep their own tests).
+
+1. Open `RhinoHUDVariant.prefab`: the Charge, Mass and Space cards show Gore, Heft and Blade with no override from
+   Rhino.prefab; there are no Afterimage objects; the view has no katana / reach / afterimage fields.
+2. Rhino in Freestyle: the Charge plate still fills toward the gore speed and lights at a ram; the Time card still shows
+   the hull, the danger prism and, at Time 5 above 70% speed, the ward. No console errors from the HUD.
+3. Each of Charge, Mass, Space to 5: the card swaps to Gore Steal, Berm, Unstoppable; below 4 it swaps back.
+4. Jacks in Freestyle: its four cards are unchanged (its HUD is regenerated from the Rhino's without the dead afterimage
+   objects).
