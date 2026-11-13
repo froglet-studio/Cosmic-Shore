@@ -77,3 +77,10 @@ inside them; whether the prism occlusion dither keeps the hull clear in dense ce
 
 **Next question.** Is 15 the number, or does it want 18-20? And does the Manta want a little height or look-ahead
 (`lookAheadDistance`, `lookAheadLift`) so the hull sits lower in the frame and shows where it is going?
+
+### Fly test 1 (Caleb, 2026-11-12)
+
+**Seen.** "I think 15 is great!" To be thorough he flies 20 as well before deciding. `followOffset` z -15 -> -20
+(dynamic pair -18 / -20): the wingspan is 20% of the frame height at 20, against 27% at 15 and 13% at 30.
+
+**Next.** Caleb picks 15 or 20 after flying both; whichever he picks goes in this PR before it ships.
