@@ -128,6 +128,21 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0.5f, PosterFit.ScaleFor(960f, 1920f), 1e-6f);
             Assert.AreEqual(1f, PosterFit.ScaleFor(0f, 1920f), "a frame with no size yet leaves the stage alone");
         }
+
+        [Test]
+        public void PosterExit_HoldsWhileTheSplashIsUpAndPushesThroughAsItGoes()
+        {
+            Assert.AreEqual(1f, PosterExit.ScaleFor(1f, 0.12f), 1e-6f, "an opaque splash leaves the poster alone");
+            Assert.AreEqual(1.12f, PosterExit.ScaleFor(0f, 0.12f), 1e-6f, "a dissolved splash is the full push");
+            float last = 1f;
+            for (int i = 100; i >= 0; i--)
+            {
+                float s = PosterExit.ScaleFor(i / 100f, 0.12f);
+                Assert.GreaterOrEqual(s, last, "the poster only grows as the splash fades");
+                last = s;
+            }
+            Assert.AreEqual(1f, PosterExit.ScaleFor(1f, -1f), 1e-6f, "a negative push is no push");
+        }
     }
 }
 #endif

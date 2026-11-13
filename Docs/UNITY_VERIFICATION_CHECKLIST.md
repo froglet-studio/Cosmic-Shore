@@ -22822,6 +22822,45 @@ Branch `claude/exciting-albattani-s14gdm`, PR #1860. No C# changed; the generato
 3. **Codex > Ecology (Field Guide):** scroll the bottom strip left; tiles stop 16 px short of the "Friends" text, never over it.
 4. **Hangar > Upgrades, any hull:** "CHARGE CRYSTALS 0 HELD - 0 SPENT" is on its own row under the step line; nothing overlaps.
 
+## 🔴 The Voyages tab as two screens: Rev 98 1A and 2D (2026-11-13, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/sweet-mccarthy-ow25e2`, `Docs/MENU_REDESIGN_B.md` section 184. Compiled with `unity_refcompile` (player and
+editor: 0 errors in project code); the ship gates pass; `VoyageBoardTests` compiled, not run. **No Unity editor ran and
+nobody has seen it.** It replaces the Voyages tab of the entry below (the Saga, Quests and Episodes steps there still
+hold). Set a screenshot of each screen beside its Frogma board (Voyages tab: R98S1A, R98S2D) and report what differs.
+
+1. **Open the Voyage window.** The four tabs are plain words in capitals, the shown one underlined: **no dark boxes, no
+   LB / RB keys**. A click on a tab shows it. Change the colour set (or anything that re-themes the menu) and look
+   again: still no boxes. LB / RB on a pad slide the hub (Toy Box, Arcade, Arena, Voyage), not the window's tabs.
+2. **The voyage screen.** Left: a chip per voyage, taller than before, its two lines well apart, the open one with a
+   cyan bar. Middle: the HyperSea map, flat, with its tier ladder and readout, and the edge-on view under it. Right: the
+   voyage's name and numbers, SQUAD, one block per squad (name, who flies, three hulls in formation), CONFIGURE SQUAD,
+   SET SAIL.
+3. **Explore the map.** Drag, pinch or wheel; press + and - at its top right; press a tier on the ladder. Press a place
+   a voyage sails to: that voyage opens. Press another chip: the map frames that course.
+4. **Buttons.** Set sail and Configure squad have no box: solid in the middle, fading out to both ends. Nothing is
+   clipped at the ends and the words are readable.
+5. **Squads.** With two or more squads: press another squad's block. It lights, the other dims, and the voyages may
+   change (the pilots bring them).
+6. **Configure squad.** The squad screen: VOYAGES (back) and the voyage on one line at the top, the squads' names at the
+   right, three seats large, the choices under them, SAVE AS PRESET, a note, SET SAIL. The voyage's map is dimmed
+   behind and does not take the pointer.
+7. **A seat.** Your own seat is lit and underlined; the others are dimmed. Each shows the pilot, the hull, its place
+   (LEADER...), the vessel's name and one line of four parts. In your own squad press the AI seat: it becomes the lit
+   one and the choices change. A friend's seat does not respond.
+8. **The choices.** Vessel, Pilot, Element (four flowers of five petals), Artifact. No boxes; the taken one is lit and
+   underlined. Press another vessel: the seat's hull changes at once, and on your own seat the pilot becomes the one
+   kept for that vessel in the Hangar. Press a pilot marked "Swaps with ...": the two seats swap pilots.
+9. **Save as preset.** A new squad appears among the names and becomes the one that sails. With four squads, or on a
+   joined squad, the button is dark.
+10. **Back, and Set sail from both screens.** VOYAGES returns to the voyage screen with the same voyage open. Set sail
+    launches the voyage from either screen.
+11. **Words.** Blank `BoardHangarNote` in `VoyageContent.asset`: the note is gone, nothing else moves.
+12. **Other tabs.** Saga (locked), Quests, Episodes still draw; their buttons have the soft look too and their chips are
+    taller.
+13. **Other shapes.** Phone, iPad, 21:9: nothing overlaps on either screen. Not tested at all.
+14. **Known gaps** (section 184): no lobby line, no blur behind the squad screen, the pad does not press X / B / Y.
+
 ## 🔴 The Voyage window as the Sea table: Rev 89 A and Rev 90 (2026-11-12, Shombith, NOT RUN IN EDITOR)
 
 Branch `claude/sweet-mccarthy-ow25e2`, `Docs/MENU_REDESIGN_B.md` section 172. Compiled with `unity_refcompile` (player and
@@ -23246,3 +23285,43 @@ editor: this is the first screen of the game, so run step 1 before anything else
    were still growing in the scene being left, check the bar does not start above 0.
 8. A portrait or 4:3 Game view: the stage shrinks to fit.
 9. Profiler with the splash faded out: no `PosterDrift` or `BootStepBar` cost, and 0 GC per frame while it is visible.
+
+## 🔴 The boot reveal into the Toy Box (2026-11-13, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/gracious-faraday-h2ny3a`. Record: `Docs/MENU_REDESIGN_B.md` section 185. Compiled against the Unity
+reference assemblies (player and editor); `author_start_flow.py --check` and `--self-test` clean.
+
+1. Run EditMode tests `SceneTransitionManagerTests` and `BootPosterTests`; all pass.
+2. Open `Bootstrap.unity` and press Play. Watch the Console from the first frame: no exception from `BootStepBar` or
+   `BootLoadProgress`, and the bar shows a number in front of its `%` from the start.
+3. Froglet's logo sits in the bottom-right corner under the percentage, on the splash and on the sign-in scene.
+4. When the bar says Ready: the splash dissolves over about a second, eased, while the poster grows slightly; the Toy
+   Box comes into view through it. It must never vanish in one frame.
+5. The menu's screen elements play their entrances as the world appears, not before.
+6. Profiler, Timeline, on the reveal: the `GC.Collect` frame and the load report's write are under the opaque splash
+   or after the fade, never inside it; the fade's frames stay smooth.
+7. Play a match and return to the menu: the cover lifts the same way, and the poster shrinks back into place when the
+   splash comes back over the world at the start of the return.
+8. Note how long the frame that activates Menu_Main takes (while the bar is at Loading profile) and send it: that
+   frame is the remaining lag, and the next fix needs its profile.
+## Scarab Rally: Blast Run only at I4 (2026-11-13, `claude/project-thread-v8enx0`)
+
+Not run in a Unity editor (cloud session; unity_refcompile editor config: 0 errors in changed files). Hand test:
+1. Arcade > Scarab Rally at I2 with three AI Scarabs: no block fields, doors or key crystals on any leg; the rings are the race.
+2. The AI Scarabs never turn off the line for a crystal.
+3. At I4 the block fields are still laid as before.
+4. Switchback at I1-I4 is unchanged (Blast Run on every intensity).
+
+## 🔴 Switchback I4: plain gauntlet seals and the retuned AI pace (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-j3xxyz`. Record: `Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md`, `SWITCHBACK.md` "The I4
+gauntlet, softened". The changed files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors
+in changed files; the 30 errors it reports are in multiplayer and camera files this change does not touch, and fail the
+same on `bleeding-edge`). The 76 shipped Switchback layout and planner tests pass headless (`switchback_sim_harness/run.sh
+tests`); no Unity editor ran.
+
+1. Run the EditMode tests `SwitchbackBlastRunTests` and `SwitchbackAISteeringTests`.
+2. Arcade, Switchback, Dolphin, I4, seed FIXED (45_504). At a gate's door, the eye's seal is nine plain prisms: ramming
+   it slows the Dolphin, it never stops it dead; a key's blast still clears it.
+3. Same race with three AI seats at Easy, then at Medium: Medium finishes ahead of Easy (offline Easy ~176 s, Medium ~167).
+4. Scarab Rally I4 is unchanged (no seals there).

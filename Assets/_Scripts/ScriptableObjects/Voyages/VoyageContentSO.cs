@@ -440,7 +440,7 @@ namespace CosmicShore.ScriptableObjects
         public string BoardSailKey = "A";
         [Tooltip("The keycap before the seat editor's Done (empty: none).")]
         public string BoardDoneKey = "B";
-        [Tooltip("Over the open voyage's name on the Sea table (Rev 89 A): which voyage it is and who brought it.")]
+        [Tooltip("Over the open voyage's name on the Voyages tab: which voyage it is and who brought it.")]
         public string BoardKicker = "Voyage {n} of {count} - brought by {pilot}";
         [Tooltip("Over the open voyage's name when nobody brought it.")]
         public string BoardKickerAlone = "Voyage {n} of {count}";
@@ -450,6 +450,28 @@ namespace CosmicShore.ScriptableObjects
         public string BoardStepBack = "<";
         [Tooltip("A stepper's step on.")]
         public string BoardStepOn = ">";
+        [Tooltip("The voyage screen's zoom-in step over the map.")]
+        public string BoardZoomIn = "+";
+        [Tooltip("The voyage screen's zoom-out step over the map.")]
+        public string BoardZoomOut = "-";
+        [Tooltip("The voyage screen's button that opens the squad screen.")]
+        public string BoardConfigure = "CONFIGURE SQUAD";
+        [Tooltip("The pad key drawn before Configure squad.")]
+        public string BoardConfigureKey = "X";
+        [Tooltip("The squad screen's way back to the voyage screen.")]
+        public string BoardBack = "VOYAGES";
+        [Tooltip("The pad key drawn before the squad screen's way back.")]
+        public string BoardBackKey = "B";
+        [Tooltip("The squad screen's button that keeps the squad as a new squad.")]
+        public string BoardSavePreset = "SAVE AS PRESET";
+        [Tooltip("The pad key drawn before Save as preset.")]
+        public string BoardSavePresetKey = "Y";
+        [Tooltip("The squad screen's note at its foot: what changing your own vessel also changes.")]
+        public string BoardHangarNote = "A vessel brings the pilot you keep for it in the Hangar.";
+        [Tooltip("Who flies a squad, under its name on the voyage screen: {leader}, {one} and {two} are the three seats.")]
+        public string BoardPresetWho = "{leader}, {one}, {two}";
+        [Tooltip("Under a pilot who flies another seat of the squad: taking them swaps the two; {vessel} is the vessel they leave.")]
+        public string BoardSwapsWith = "Swaps with {vessel}";
         [Tooltip("A chip on a table's left (a saga part, a quest): its number and name.")]
         public string SlabChip = "{n}  {name}";
         [Tooltip("Under a saga part's chip.")]

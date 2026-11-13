@@ -4,8 +4,9 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The look of the Voyage window's Sea table as Shombith picked it on Frogma (Rev 89 A and Rev 90,
-    /// Docs/MENU_REDESIGN_B.md sections 170-172): the chips on the left, the table in the middle, the squad on the right.
+    /// The look of the Voyage window as Shombith picked it on Frogma (the Voyages tab's two screens, Rev 98 1A and 2D,
+    /// Docs/MENU_REDESIGN_B.md sections 180-184; the Saga, Quests and Episodes tables, Rev 90, sections 171-172): the chips
+    /// on the left, the map or the table in the middle, the voyage or the squad on the right.
     /// <c>VoyageBoard</c> and <c>VoyageSlabPage</c> build the tabs at runtime and read every sprite, colour and
     /// proportion from here (through <c>VoyageKit</c>); their words are the voyage content's (<see cref="VoyageLines"/>,
     /// the Board* and Slab* lines). The tilt's own numbers are <c>VoyageSlab</c>'s.
@@ -55,7 +56,7 @@ namespace CosmicShore.ScriptableObjects
                  "box: measured from the PNG by Tools/Build/author_voyage_board.py.")]
         public HullCrop[] HullCrops = System.Array.Empty<HullCrop>();
 
-        [Header("Columns (fractions of the Voyages page's width, the Sea table, Rev 89 A)")]
+        [Header("Columns (fractions of the Voyages page's width: chips, map or table, the right column)")]
         [Tooltip("The voyage chips' right edge.")]
         [Range(0f, 1f)] public float ListRight = 0.1685f;
         [Tooltip("The table's left edge.")]
@@ -67,7 +68,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Sizes")]
         [Tooltip("A chip's height (a voyage, a saga part, a quest).")]
-        public float RowHeight = 76f;
+        public float RowHeight = 96f;
 
         /// <summary>The part of <paramref name="sprite"/> its hull fills (0-1, from the bottom left); the whole sprite when
         /// it was not measured.</summary>

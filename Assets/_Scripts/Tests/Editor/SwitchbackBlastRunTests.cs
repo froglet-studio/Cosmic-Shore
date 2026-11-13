@@ -493,13 +493,15 @@ namespace CosmicShore.Tests
             for (int i = bars; i < door.Count; i++)
             {
                 var seal = door[i];
-                if (seal.Kind == PrismKind.Danger) { danger++; Assert.Less((seal.Position - at).magnitude, 0.01f, "the heart is the middle"); }
+                if (seal.Kind == PrismKind.Danger) danger++;
                 Across(seal, at, axis, out _, out float far);
                 Assert.Less(far, BreakwaterCourseSettings.EyeRadius, "a seal cube reaches out of the eye");
                 for (int j = 0; j < bars; j++)
                     Assert.IsFalse(Overlap(seal, door[j], 0.05f), $"seal cube {i - bars} clips door prism {j}");
             }
-            Assert.AreEqual(1, danger);
+            // The seal is plain since 2026-11-13: its Danger heart made every missed blast two dead stops a gate
+            // (Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md). Ramming it still costs a plain hit per cube.
+            Assert.AreEqual(0, danger, "a seal has no Danger heart");
         }
 
         [Test]
