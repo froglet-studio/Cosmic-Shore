@@ -33,7 +33,7 @@ section here. The build that follows a pick is verified against the picked board
 | Fleet Codex | `fleet-codex` | The Fleet Codex artifact (every vessel's abilities, modes and controls; `/fleet-codex`), from Rev 45 | Shombith, 2026-11-02 (section 114) |
 | Froglet Analytics | `froglet-analytics` | The team analytics dashboard that replaces PostHog (our own server on the Oracle VM, Claude's nightly read), from Rev 50 | Shombith, 2026-11-05 (section 137) |
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
-| Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79-83 on the canvas now: Rev 81 B5 with the Rev 83 S2 seat editor picked and built, section 165; Rev 70-77 were reverted and taken off, section 159) | Shombith, 2026-11-08 (sections 147-151, 159-165) |
+| Voyages | `voyages` | All the Voyage UI, from Rev 70. Cleared on 2026-11-13 (Rev 87-98 taken off, copies kept); now Rev 100, the new three-page set (section 201), Rev 108, its picked direction (section 202), Rev 111, the full-screen map (section 203), and Rev 103, Saga and Episodes locked | Shombith, 2026-11-08 (sections 147-151, 159-165) |
 | Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
 | Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 187) |
 
@@ -8157,3 +8157,152 @@ still open.
 
 **Not seen:** no Unity editor ran. `Docs/UNITY_VERIFICATION_CHECKLIST.md` lists what to look at.
 
+## 201. Rev 100 mockups: the Voyages tab drawn new, in three pages - the HyperSea and your crew's voyages, the voyage opened, your Ark (2026-11-13; P2A picked, P3A's direction taken on in section 202)
+
+**Asked (Shombith, 2026-11-13):** "Delete everything from the voyages tab, I dont like any of these designs. We will start on
+a new design set. So the voyages need new modern UI with the hyper sea theme ofcourse. Main Preview (Show me some
+interesting option along with the table top version but we should be able to zoom like how we used for the whole hypersea
+map). For Voyages, they dont use intensity rather they use the difficulty level 1-9. Each of these voyages are recommended
+by a certain pilot. Look at the pilots the user has and they can offer bounty hunts or piracy task etc and reccoment to the
+user in the voyages tab, each possesses different routes, storylines and rewards. The configure your ark shoud not include
+the squads but your lobby first if the lobby is not there then they can select the squads and also the squad selection
+screen can be in a different page. So we can divide in 3 pages." Quests (their own screen) and Saga / Episodes (locked,
+Rev 103) are separate rounds.
+
+**The tab cleared:** Rev 87-98 (36 boards and their sections) were taken off the Voyages tab on his word; their copies stay
+in `Docs/MenuRedesignB/board/`.
+
+**On the canvas:** tab **Voyages**, round "Rev 100 - Voyages, new: the HyperSea and your crew's voyages, the voyage
+opened, your Ark" (canvas version `1794608714-a28f`), under Rev 103. Copies: `Docs/MenuRedesignB/board/R100*.dc.html`.
+Generator: `Docs/MenuRedesignB/rounds/r100_voyages.py` (new, on Rev 70's kit only). Laid out a page per row (page 1 on
+two rows, the notes beside P1D).
+
+- **Page 1, the HyperSea** (every map zooms one way: the ladder Galaxy / Arm / Sector / Course, + and -, the wheel; a press
+  on a place or a pilot's card picks the voyage; Open voyage goes on):
+  - **P1A Table top (recommended):** the chart lies on a table, the edge-on view is its front face, the places stand up as
+    beacons whose height is the difficulty; the crew's voyages on the right.
+  - **P1B Orrery:** the galaxy as a disc in the sea with a slow ring of bearings (its one idle motion, 240 s a turn).
+  - **P1C Bridge:** the map flat and full-bleed, the four voyages along its foot.
+  - **P1D Dive:** Galaxy, Sector and Course as three glass sheets; a zoom is a dive between them.
+  - The foot (y 940-1060) carries Rev 103 A as picked: Saga and Episodes, two locked cards.
+- **Page 2, the voyage** (who offers it, the job, the story in the pilot's words, the stops, the pay; difficulty 1-9 with the
+  pilot's recommendation marked; the crystals follow the difficulty):
+  - **P2A Briefing (recommended):** the pilot's portrait and story, the route drawing itself, the rewards arriving.
+  - **P2B Journey:** one lane across the window, the Ark sailing it; each stop tells its part.
+  - **P2C Dossier:** the map stays; Story, Route and Rewards slide open.
+- **Page 3, your Ark:**
+  - **P3A Lobby (recommended):** the lobby's three seats as they stand (Ready / Choosing); your seat changes in place.
+  - **P3B No lobby:** a squad picked from the list, Invite friends beside it.
+  - **P3C Formation:** the lobby's three vessels in formation over the course; a press opens the seat's tray.
+- **Notes.**
+
+**The voyages drawn** are the slice's jobs (`Docs/Voyages/voyage_slice.json`) offered by four of the eighteen pilots as the
+Ark's Pilots tab names them (Rev 99): Rosh Rusthook (Black Tide), a bounty hunt at Lantern Reach, difficulty 6; Haradek
+Anchorkeel (The Unmoored), piracy at Gallowglass, 4; Wyvendo Waveline (Hollowfen Trackers), the Leviathan at The Maw, 8;
+Karenth Amberweaver (Brass Lantern Company), a courier run to Tollmoor, 2. Element marks are the HUD's flowers, uploaded
+to the canvas.
+
+**New rules these draw, to confirm with the pick:** a voyage is a job one of your crew's pilots offers; difficulty 1-9
+replaces intensity on voyages and scales the crystal pay (drawn as base x (0.55 + 0.1 x difficulty)); with a lobby, the
+lobby is the squad, and squads show only without one.
+
+**Gate:** `frogma.py check --only R100` passes all 11. `check_mockup.py` against R89A (budget 98): nine pass; P3A is at 99.
+The soft buttons' faded ends draw contrast warnings where there are no words (as in Rev 96). Rendered locally with stand-in
+art (the Voyage Board's own renders, the pilot scenes, the Hangar cards) and looked at before publishing.
+
+**Differs from the build (section 184):** all of it. The Voyages tab becomes three pages (map with recommendations, the
+voyage, the Ark) instead of the voyage screen and the squad deck; the voyage chips become pilots' offers; intensity becomes
+difficulty 1-9; the lobby replaces the squad presets when there is one.
+
+## 202. Rev 108 mockups: the Voyages table and the Ark redrawn from Shombith's notes on Rev 100 (2026-11-13, awaiting a pick)
+
+Asked (Shombith, on Rev 100): "P1A : I dont like how the edge on view looks we can barely see it, tilt the table top
+more flat I guess, make the edges softer and have some animation I would say. P2A is good. I like p3A's direction. Can
+you go more towards it? Make the cards look cooler and have hover animation or glowing borders and show me also what
+happens when I select fly a squad instead and when I want to swap my vessel or pilot, there would be a lot so clicking
+22 times shouldnt be an option as I am saying, make it interesting and easy for the user maybe a popup".
+
+Picked from Rev 100: P2A (the voyage briefing) as drawn; P3A's direction (the lobby first).
+
+Drawn on the Voyages tab, section sec-rev108 (generator `Docs/MenuRedesignB/rounds/r108_voyages.py`, copies
+`Docs/MenuRedesignB/board/R108*.dc.html`), all four interactive:
+- **R108Table**: P1A again. The table lies flatter (34 degrees, was 50), its corners are round and its edges fade into
+  the sea, it floats slowly with a light sheen passing over it, and the picked voyage's beacon breathes. The edge-on
+  view is no longer the table's thin front face: it stands upright and readable under the table as a "Side view" strip.
+- **R108Lobby**: P3A again. Glass cards with a glowing rim; a card lifts and its rim lights on hover, and the vessel
+  rises. Your card has four buttons (Vessel, Pilot, Element, Artifact) that open the seat popup on that tab; friends
+  show Ready or Choosing and their artifact. The foot holds "Fly a squad instead", Back and Set sail.
+- **R108Squad**: what "Fly a squad instead" shows. Your squads sit along the top as formations; the picked one fills
+  the seats below with AI wingmates. Your lobby is kept, and the foot offers "Back to your lobby".
+- **R108Picker**: the seat popup, so a swap is one press, not 22. Tabs for vessel, pilot, element and artifact show
+  the current pick under each; quick kits change all four at once (a kit for this hunt, two by role, the last flown);
+  on Pilot, the voyage's suggested pilots come first ("For this hunt") and a "Sees" filter narrows the 18 pilots by
+  what each sees (crystals, prisms, life, vessels, paths); a preview beside the grid shows the pick. The seat behind
+  updates as you pick; Done closes it.
+
+Gates: `frogma.py check --only R108` OK; `check_mockup.py` 4 of 4 pass (contrast warns only at a gradient stop of the
+soft buttons, as on Rev 100). Not built in Unity.
+
+Revised the same night on Shombith's second note: "I don't like the table its too flat now and the edgy corner should
+be sticking together and also see the top left is clipping over the hypersea map. The blue background is too dull man.
+make it interesting with sea lines maybe". The table tilts 46 degrees (steeper than both 34 and Rev 100's look), its
+corners stay whole (a solid rounded slab with a lit rim and a soft inner shade, no feathered mask); the map inside is
+cropped so the baked layer tabs no longer show in its top-left, and the table sits clear of the zoom ladder. Every
+Rev 108 board stands on a new sea ground: a deeper blue with two lit swells and two layers of wave lines drifting
+slowly in opposite directions (canvas assets `sea_waves_a.svg` and `sea_waves_b.svg`, written by `WAVE_SVGS` in the
+generator). The side view under the table is cropped to the course and its height labels.
+
+Third pass on the table, the same night ("Nahhh too soft corners I liked the old 100p1A more as well and also in this
+map I cannot move around just zoom"): R108Table is Rev 100 P1A's table again (50 degrees, square corners, its rim and
+shadow), standing on the new sea, with the side view upright and square under it. The map now pans: drag it (up to 22%
+each way of a 160% sheet, so no edge shows); the pins and Tumult move with it, and the wheel and ladder still zoom.
+Fourth pass ("Adjojn these parts and is the bottom edge on view working and moving?"): the side view is the table's
+front face again, joined to its bottom edge, but turned to face the player (rotateX -50 against the table's 50), so the
+table reads as one block. It was a still picture that did not move; it now sits in the same 160% sheet as the map and
+slides with every drag, and it changes with the picked voyage.
+Fifth pass ("For background I was talking about this card background."): the seat cards themselves carry the sea: a
+lit swell behind the vessel, a cyan glow at the foot, and the two wave layers drifting through the card (faster on
+hover). The page-wide sea from the second pass stays until Shombith says otherwise.
+Sixth pass ("Good but the clipping is still happening and also the edge on view should not be this big the main map
+should be bigger I guess and bring the map a little bit down and center it"; then "I like the background but not the
+glow remove that and give the same treatment picker tab"): the zoom ladder and + / - lie in one row above the table,
+off the map; the table sits lower and centred in the space left of the crew list; the front edge is 70 px. The seat
+cards lose their glows and keep the drifting wave lines, and the seat popup gets the same waves.
+Seventh pass ("We cannot zoom further than the course there should be maybe a fullscreen mode where we select and the
+whole map widens and the crew goes to the sides like in preview full screen and we can do the full zoom till the cell
+view as we created the foam view take the pull from the voyages branch and integrate that part too"): **R108Full**, the
+full-screen map, opened by "Full screen" beside the zoom row on R108Table and closed by "Exit full screen". The map
+spans the window (flat, 1490 x 780, dragged and zoomed like the table), the crew goes to a column of portraits on the
+right with the picked voyage's card and Open voyage over the foot of the map, and the ladder runs six tiers: Galaxy,
+Arm, Sector, Course, then Neighbourhood (20 ly, the packed cells) and Cell (5 ly: membrane, cytoplasm, nucleus). The two
+deep tiers are frames of the Voyage Board's foam (`deepzoom/cells.js` as merged into `voyages` with PR #1972, identical
+to round 3), captured headless around Tumult; copies in `Docs/MenuRedesignB/rounds/r108_assets/`. They are pictures,
+not the live foam: the build would draw the cells with `HyperSeaCells`.
+
+## 203. Rev 111 mockup: the Voyages table opens to full screen, down to one Cell (2026-11-14, awaiting a pick)
+
+Asked (Shombith, on Rev 108 Full): "Remove the other variations on the board and craete the 109 full and on clicking
+full screen the animation too on full screen I do not like the border there should be any border and the view of zoom
+should be inside th map and there hsould be a back from full screen button". Rev 109 was already taken on the canvas
+by another round, so this is Rev 111, the next free number.
+
+Drawn on the Voyages tab, section sec-rev111 (generator `Docs/MenuRedesignB/rounds/r111_voyages.py`, built on
+`r108_voyages.py`; copy `Docs/MenuRedesignB/board/R111Full.dc.html`), one interactive board, **R111Full**: it opens as
+the Rev 108 table (Rev 100 P1A's 50 degree table on the moving sea, the side view as its front edge, the zoom row
+above it, the crew list on the right). "Full screen" animates the table up and out in 0.9 s: it lies flat and grows to
+the whole screen, its front edge fades, and no border is left. The zoom row rides into the map's top-left corner, the
+crew becomes a column of portraits on the right, the picked voyage and Open voyage sit at the foot, and the ladder
+gains Neighbourhood (20 ly) and Cell (5 ly), the foam frames of section 202's seventh pass. "Back from full screen" (top
+right) animates it home and steps back to Sector when it was deeper than Course. Drag pans in both views.
+
+Taken off the Voyages tab (copies kept in `Docs/MenuRedesignB/board/`): Rev 100 P1B, P1C, P1D, P2B, P2C, P3B and P3C
+(the variations Shombith did not pick), and R108Full (replaced by R111Full). Rev 100 keeps P1A, P2A, P3A and its notes.
+
+Gates: `frogma.py check --only R111` OK; `check_mockup.py` passes (noise 96 of 98). Not built in Unity.
+Second pass ("What happened with the Ui we should go with 108 right? Also the crew reccomemends should be a toggle with
+a sliding and the details only show when we want to"): the first R111Full broke on Frogma (the map collapsed into the
+top-left corner) because each of its animated boxes was one hole holding several style declarations, which Frogma does
+not set; every animated property now has its own hole. The crew is a column of portraits at the right edge in both
+views, with a "Crew" toggle above it: the voyage cards slide out beside the portraits only when it is pressed, and
+"Hide" closes them. The picked voyage and Open voyage are one card that moves from under the table to the foot of the
+full screen.
