@@ -23,7 +23,7 @@ namespace CosmicShore.Engine.Rendering
     /// <summary>Original: UnityEngine.Rendering.CullMode - written into materials' _Cull (values frozen).</summary>
     public enum CullMode { Off = 0, Front = 1, Back = 2 }
 
-    /// <summary>Original: UnityEngine.Rendering.CompareFunction - written into materials' _ZTest / _StencilComp (values frozen).</summary>
+    /// <summary>Original: UnityEngine.Rendering.CompareFunction - written into materials' _ZTest / stencil ints (values frozen).</summary>
     public enum CompareFunction { Disabled = 0, Never = 1, Less = 2, Equal = 3, LessEqual = 4, Greater = 5, NotEqual = 6, GreaterEqual = 7, Always = 8 }
 
     /// <summary>Original: UnityEngine.Rendering.RenderQueue - the standard queue values (frozen).</summary>

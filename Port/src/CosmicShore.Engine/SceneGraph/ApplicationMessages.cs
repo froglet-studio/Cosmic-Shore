@@ -17,7 +17,7 @@ namespace CosmicShore.Engine
         static bool s_quitSent;
         static System.Threading.CancellationTokenSource s_exitCts = new();
 
-        /// <summary>Cancelled when the application quits (original: Application.exitCancellationToken), after <see cref="quitting"/>.</summary>
+        /// <summary>Original contract: cancelled when the application quits (after <see cref="quitting"/>).</summary>
         public static System.Threading.CancellationToken exitCancellationToken => s_exitCts.Token;
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace CosmicShore.Engine
             s_quitSent = true;
             Broadcast(h => h.ApplicationQuit, (call, mb) => call(mb));
             quitting?.Invoke();
-            s_exitCts.Cancel();
+            try { s_exitCts.Cancel(); } catch (Exception e) { Debug.LogException(e); }
             return true;
         }
 
@@ -52,9 +52,8 @@ namespace CosmicShore.Engine
         /// <summary>For a new world (tests): the quit sequence may run again.</summary>
         internal static void ResetQuit()
         {
-            QuitRequested = false;
-            s_quitSent = false;
-            if (s_exitCts.IsCancellationRequested) s_exitCts = new();
+            QuitRequested = false; s_quitSent = false;
+            if (s_exitCts.IsCancellationRequested) s_exitCts = new System.Threading.CancellationTokenSource();
         }
 
         static void Broadcast<TCall>(Func<LifecycleHooks, TCall> pick, Action<TCall, MonoBehaviour> invoke) where TCall : Delegate

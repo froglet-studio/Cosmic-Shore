@@ -440,5 +440,85 @@ namespace CosmicShore.ScriptableObjects
         public string BoardSailKey = "A";
         [Tooltip("The keycap before the seat editor's Done (empty: none).")]
         public string BoardDoneKey = "B";
+        [Tooltip("Over the open voyage's name on the Voyages tab: which voyage it is and who brought it.")]
+        public string BoardKicker = "Voyage {n} of {count} - brought by {pilot}";
+        [Tooltip("Over the open voyage's name when nobody brought it.")]
+        public string BoardKickerAlone = "Voyage {n} of {count}";
+        [Tooltip("Under the open voyage's name: its three numbers on one line.")]
+        public string BoardStats = "{distance}   -   {sail}   -   Intensity {intensity}";
+        [Tooltip("A stepper's step back (a seat's vessel, pilot, element or artifact).")]
+        public string BoardStepBack = "<";
+        [Tooltip("A stepper's step on.")]
+        public string BoardStepOn = ">";
+        [Tooltip("The voyage screen's zoom-in step over the map.")]
+        public string BoardZoomIn = "+";
+        [Tooltip("The voyage screen's zoom-out step over the map.")]
+        public string BoardZoomOut = "-";
+        [Tooltip("The voyage screen's button that opens the squad screen.")]
+        public string BoardConfigure = "CONFIGURE SQUAD";
+        [Tooltip("The pad key drawn before Configure squad.")]
+        public string BoardConfigureKey = "X";
+        [Tooltip("The squad screen's way back to the voyage screen.")]
+        public string BoardBack = "VOYAGES";
+        [Tooltip("The pad key drawn before the squad screen's way back.")]
+        public string BoardBackKey = "B";
+        [Tooltip("The squad screen's button that keeps the squad as a new squad.")]
+        public string BoardSavePreset = "SAVE AS PRESET";
+        [Tooltip("The pad key drawn before Save as preset.")]
+        public string BoardSavePresetKey = "Y";
+        [Tooltip("The squad screen's note at its foot: what changing your own vessel also changes.")]
+        public string BoardHangarNote = "A vessel brings the pilot you keep for it in the Hangar.";
+        [Tooltip("Who flies a squad, under its name on the voyage screen: {leader}, {one} and {two} are the three seats.")]
+        public string BoardPresetWho = "{leader}, {one}, {two}";
+        [Tooltip("Under a pilot who flies another seat of the squad: taking them swaps the two; {vessel} is the vessel they leave.")]
+        public string BoardSwapsWith = "Swaps with {vessel}";
+        [Tooltip("A chip on a table's left (a saga part, a quest): its number and name.")]
+        public string SlabChip = "{n}  {name}";
+        [Tooltip("Under a saga part's chip.")]
+        public string SlabSagaPart = "Part {n} of {count}";
+        [Tooltip("Over the picked saga part's name.")]
+        public string SlabSagaKicker = "Saga - part {n} of {count}";
+        [Tooltip("Over a form's station on the Saga table's front face.")]
+        public string SlabSagaForm = "Form {n}";
+        [Tooltip("Over the episode's name on the Quests table.")]
+        public string SlabQuestsKicker = "Episode 1";
+        [Tooltip("The episode's name over the Quests table.")]
+        public string SlabQuestsName = "The Hypersea";
+        [Tooltip("Under the episode's name: how many quests are claimed.")]
+        public string SlabQuestsProgress = "{claimed} of {total} claimed";
+        [Tooltip("Over the picked quest in the Quests table's right column.")]
+        public string SlabQuestKicker = "Quest {n} of {count}";
+        [Tooltip("A quest that is claimed.")]
+        public string SlabQuestClaimed = "Claimed";
+        [Tooltip("A quest that is done and waits to be claimed.")]
+        public string SlabQuestReady = "Done - claim it";
+        [Tooltip("The quest to play next.")]
+        public string SlabQuestNext = "Next to play";
+        [Tooltip("A locked quest: the quest it opens after.")]
+        public string SlabQuestLocked = "After {name}";
+        [Tooltip("The Quests table's button on a quest that is done.")]
+        public string SlabQuestClaim = "CLAIM";
+        [Tooltip("The Quests table's button on the quest to play next.")]
+        public string SlabQuestPlay = "PLAY QUEST";
+        [Tooltip("Over the next episode's name on the Episodes table.")]
+        public string SlabEpisodesKicker = "Episodes";
+        [Tooltip("The next episode's name.")]
+        public string SlabEpisodesName = "Episode 2";
+        [Tooltip("Under the next episode's name.")]
+        public string SlabEpisodesSoon = "Coming soon";
+        [Tooltip("The Episodes table's one line.")]
+        public string SlabEpisodesLine = "Voyages and the Saga are open now.";
+        [Tooltip("On the Episodes table's front face.")]
+        public string SlabEpisodesFace = "New episodes arrive here";
+        [Tooltip("The Episodes table's button back to the Voyages tab.")]
+        public string SlabEpisodesBack = "BACK TO VOYAGES";
+        [Tooltip("The keycap before the Episodes table's button (empty: none).")]
+        public string SlabEpisodesBackKey = "LB";
+        [Tooltip("Over the saga's name on the Saga table while the saga is locked.")]
+        public string SlabSagaLockedKicker = "Saga";
+        [Tooltip("The locked Saga table's one line.")]
+        public string SlabSagaLockedLine = "Voyages are open now.";
+        [Tooltip("On the locked Saga table's front face.")]
+        public string SlabSagaLockedFace = "The saga opens here";
     }
 }

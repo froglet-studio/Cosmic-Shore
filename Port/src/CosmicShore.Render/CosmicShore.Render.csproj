@@ -20,4 +20,8 @@
     <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
   </ItemGroup>
 
+  <!-- UnityEngine.GL has a look-alike (CosmicShore.Engine.GL); in renderer code GL is Silk's OpenGL API. -->
+  <ItemGroup>
+    <Using Include="Silk.NET.OpenGL.GL" Alias="GL" />
+  </ItemGroup>
 </Project>

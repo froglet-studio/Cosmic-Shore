@@ -26,6 +26,15 @@ MonoBehaviour:
   returnSeconds: 0.3
   swipeCooldownSeconds: 0.35
   swipeEngageThreshold: 0.4
+  timeSwipeRateMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 4
+    UseFloor: 1
+    Floor: 0.5
+  flurryUpgradeElement: 4
   stanceSumThreshold: 1.5
   stanceCenterEpsilon: 0.4
   comboLibrary: {fileID: 11400000, guid: 93cd91bfb2a74d648db6762a71dfc3e9, type: 2}

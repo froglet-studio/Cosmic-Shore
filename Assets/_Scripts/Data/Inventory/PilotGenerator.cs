@@ -208,6 +208,16 @@ namespace CosmicShore.Data
             return "the " + name;
         }
 
+        /// <summary><see cref="Printable"/> for a text of paragraphs: keeps the line breaks between them (a story).</summary>
+        public static string PrintableText(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return string.Empty;
+            var sb = new StringBuilder(text.Length);
+            foreach (char c in text)
+                if ((c >= ' ' && c <= '~') || c == '\n') sb.Append(c);
+            return sb.ToString();
+        }
+
         /// <summary>Printable ASCII only (anything else would draw as an empty box in the UI font).</summary>
         public static string Printable(string text)
         {

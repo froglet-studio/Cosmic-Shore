@@ -18,7 +18,7 @@ namespace CosmicShore.UI
         [SerializeField] private Graphic editMark;
 
         [Header("Actions")]
-        [Tooltip("CHANGE VESSEL: on your own card in a squad you lead; opens the squad's editor on your seat (Rev 67, section 168).")]
+        [Tooltip("CHANGE VESSEL: on your own card in a squad you lead; opens the squad's editor on your seat (Rev 67, section 187).")]
         [SerializeField] private KitButton changeVesselButton;
         [Tooltip("OPEN THE SEAT: on an offline friend's card in a squad you lead; the seat opens and its pad stands empty until " +
                  "someone takes it (Shombith, 2026-11-06: \"anyone can take their place in the squad\").")]

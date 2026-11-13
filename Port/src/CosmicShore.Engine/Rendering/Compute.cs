@@ -163,7 +163,7 @@ namespace CosmicShore.Engine
     public enum FullScreenMode { ExclusiveFullScreen = 0, FullScreenWindow = 1, MaximizedWindow = 2, Windowed = 3 }
 
     /// <summary>IMGUI style (UnityEngine.GUIStyle) — the port draws no IMGUI; styles are data.</summary>
-    public class GUIStyle
+    public partial class GUIStyle
     {
         public GUIStyle() { }
         public GUIStyle(GUIStyle other) { if (other != null) { fontSize = other.fontSize; alignment = other.alignment; richText = other.richText; wordWrap = other.wordWrap; } }
@@ -177,16 +177,6 @@ namespace CosmicShore.Engine
         public RectOffset padding { get; set; } = new();
         public RectOffset margin { get; set; } = new();
         public Vector2 CalcSize(GUIContent content) => new((content?.text?.Length ?? 0) * fontSize * 0.6f, fontSize * 1.2f);
-        public string name { get; set; } = "";
-        public GUIStyleState hover { get; set; } = new();
-        public GUIStyleState active { get; set; } = new();
-        public bool stretchWidth { get; set; }
-        public bool stretchHeight { get; set; }
-        public float fixedWidth { get; set; }
-        public float fixedHeight { get; set; }
-        public static GUIStyle none { get; } = new();
-        /// <summary>Original contract: a style named by a string is looked up in the current skin (here: a plain style of that name).</summary>
-        public static implicit operator GUIStyle(string str) => new() { name = str ?? "" };
     }
 
     public class GUIStyleState
@@ -195,19 +185,13 @@ namespace CosmicShore.Engine
         public Texture2D background { get; set; }
     }
 
-    public class GUIContent
+    public partial class GUIContent
     {
         public string text { get; set; }
         public Texture image { get; set; }
         public string tooltip { get; set; }
         public GUIContent() { }
         public GUIContent(string text) { this.text = text; }
-        public GUIContent(string text, string tooltip) { this.text = text; this.tooltip = tooltip; }
-        public GUIContent(string text, Texture image) { this.text = text; this.image = image; }
-        public GUIContent(string text, Texture image, string tooltip) { this.text = text; this.image = image; this.tooltip = tooltip; }
-        public GUIContent(Texture image) { this.image = image; }
-        public GUIContent(GUIContent src) { if (src != null) { text = src.text; image = src.image; tooltip = src.tooltip; } }
-        public static GUIContent none { get; } = new("");
     }
 
     public enum FontStyle { Normal = 0, Bold = 1, Italic = 2, BoldAndItalic = 3 }

@@ -26,7 +26,7 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// The Ark screen's backdrops: the Frogma renders played as video behind each tab (Shombith, 2026-11-12: "do exactly
     /// how you showed me on Frogma, no need to use the actual model, it can be a video or gif of this high quality";
-    /// Docs/MENU_REDESIGN_B.md section 171). SQUADS plays the hangar with the squad lined up (one clip per colour set and
+    /// Docs/MENU_REDESIGN_B.md section 190). SQUADS plays the hangar with the squad lined up (one clip per colour set and
     /// domain), CONVERTER the pier out in the cell with Garrett's combine (at rest, the conversion, the Omni made),
     /// ARTIFACTS the room of Rev 86; DECOR has none. A clip is chosen by room, run, the worn colour set (matched against
     /// the set asset's name) and the squad's domain, falling back to the first clip of the room and run.

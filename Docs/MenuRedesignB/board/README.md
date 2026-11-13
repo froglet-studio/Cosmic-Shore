@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794501420-015f` of **Frogma**: Rev 3 to Rev 86, 456 boards on 11 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-13 from canvas version `1794582883-6c29` of **Frogma**: Rev 3 to Rev 98, 482 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -33,8 +33,11 @@ Copied on 2026-11-12 from canvas version `1794501420-015f` of **Frogma**: Rev 3 
 - [`SGButtons.dc.html`](SGButtons.dc.html) - Style Guide 5 - Buttons and their states
 - [`SGWindows.dc.html`](SGWindows.dc.html) - Style Guide 6 - Cards, windows and toasts
 - [`SGMotion.dc.html`](SGMotion.dc.html) - Style Guide 7 - Motion
-- [`SGDoDont.dc.html`](SGDoDont.dc.html) - Style Guide 8 - Do and don't, from our own screens
 - [`SGChecklist.dc.html`](SGChecklist.dc.html) - Style Guide 9 - The UI checklist and the five screens to fix
+
+#### Play / Ready built in Unity: KitButton Commit, Maelstrom READY + PLAY AGAIN - in PR #1919 (2026-11-12, /frogma-to-unity)
+
+- [`SGDoDont.dc.html`](SGDoDont.dc.html) - Style Guide 8 - Do and don't, from our own screens
 
 ### Tab: Menu Redesign  (`menu-redesign`)
 
@@ -570,46 +573,46 @@ Copied on 2026-11-12 from canvas version `1794501420-015f` of **Frogma**: Rev 3 
 
 #### Rev 84 - Flight certificate and element tiers for the solo vessels: how ready each vessel is, and how good it is in each element's game
 
-- `R84A.dc.html` (not copied yet) - Rev 84 A - On the vessel page: the certificate in the briefing, a tier beside each element game (recommended) - interactive
-- `R84B.dc.html` (not copied yet) - Rev 84 B - The whole fleet, sorted and filtered by completion and by tier, each on its own - interactive
-- `R84C.dc.html` (not copied yet) - Rev 84 C - Tier lists: one element at a time, S to C, with each vessel's certificate under its hull - interactive
-- `R84Notes.dc.html` (not copied yet) - Rev 84 - notes: the scoring rule, the names, the tier sheet to confirm
+- [`R84A.dc.html`](R84A.dc.html) - Rev 84 A - On the vessel page: the certificate in the briefing, a tier beside each element game (recommended) - interactive
+- [`R84B.dc.html`](R84B.dc.html) - Rev 84 B - The whole fleet, sorted and filtered by completion and by tier, each on its own - interactive
+- [`R84C.dc.html`](R84C.dc.html) - Rev 84 C - Tier lists: one element at a time, S to C, with each vessel's certificate under its hull - interactive
+- [`R84Notes.dc.html`](R84Notes.dc.html) - Rev 84 - notes: the scoring rule, the names, the tier sheet to confirm
 
 #### Rev 69 - Fleet Codex vessel page, C in full: one vessel with every detail, calm - the desktop page and the phone
 
-- `R69Desktop.dc.html` (not copied yet) - Rev 69 Desktop - C's flight-deck window, then abilities with their numbers and level 5, missions with filters, flight an - interactive
-- `R69Phone.dc.html` (not copied yet) - Rev 69 Phone - the same page at 390, the move under the ability row - interactive
+- [`R69Desktop.dc.html`](R69Desktop.dc.html) - Rev 69 Desktop - C's flight-deck window, then abilities with their numbers and level 5, missions with filters, flight an - interactive
+- [`R69Phone.dc.html`](R69Phone.dc.html) - Rev 69 Phone - the same page at 390, the move under the ability row - interactive
 
 #### Rev 68 - Fleet Codex for the website: four looks, each the whole fleet and one vessel window, the controls playing beside each ability
 
-- `R68A.dc.html` (not copied yet) - Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one - interactive
-- `R68B.dc.html` (not copied yet) - Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own contro - interactive
-- `R68C.dc.html` (not copied yet) - Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the c - interactive
-- `R68D.dc.html` (not copied yet) - Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its contr - interactive
-- `R68Notes.dc.html` (not copied yet) - Rev 68 - notes: what Shombith asked, the four type pairings, what each look changes in the live codex
+- [`R68A.dc.html`](R68A.dc.html) - Rev 68 A - Showroom: the fleet as lit hull cards; the vessel in the middle, its five abilities beside it, the picked one - interactive
+- [`R68B.dc.html`](R68B.dc.html) - Rev 68 B - Trading cards: the fleet as a deck of collectible cards; every ability a card whose face plays its own contro - interactive
+- [`R68C.dc.html`](R68C.dc.html) - Rev 68 C - Flight deck: the vessel window as the game's HUD - the hull flying on the sea lines, the four-icon row, the c - interactive
+- [`R68D.dc.html`](R68D.dc.html) - Rev 68 D - Editorial: the fleet as a big-type index; the vessel as a magazine spread, each ability a line with its contr - interactive
+- [`R68Notes.dc.html`](R68Notes.dc.html) - Rev 68 - notes: what Shombith asked, the four type pairings, what each look changes in the live codex
 
 ### Tab: Froglet Analytics  (`froglet-analytics`)
 
 #### Rev 66 - Froglet Analytics, more ideas: chart switches, live now, alerts, funnels, release and player compare
 
-- `R66Switches.dc.html` (not copied yet) - Rev 66 Switches - Chart switches close up: one chart as Business, Marketing and Analysis set its form, measure and split
-- `R66Live.dc.html` (not copied yet) - Rev 66 Live - Live now: who is online and in a match right now, the modes, the countries, the event ticker
-- `R66Alerts.dc.html` (not copied yet) - Rev 66 Alerts - Alerts: Claude watches the numbers and raises a card with its chart and why; admins set thresholds
-- `R66Funnel.dc.html` (not copied yet) - Rev 66 Funnel - Funnel builder: any events in order, conversion and drop-off, split by any dimension
-- `R66Releases.dc.html` (not copied yet) - Rev 66 Releases - Release compare: build A against build B - finish rate, exceptions, launch time, retention
-- `R66PlayerCompare.dc.html` (not copied yet) - Rev 66 PlayerCompare - Player compare: two or three players side by side, and players like this one
-- `R66Notes.dc.html` (not copied yet) - Rev 66 - notes: what each idea adds, what the server has, what is new
+- [`R66Switches.dc.html`](R66Switches.dc.html) - Rev 66 Switches - Chart switches close up: one chart as Business, Marketing and Analysis set its form, measure and split
+- [`R66Live.dc.html`](R66Live.dc.html) - Rev 66 Live - Live now: who is online and in a match right now, the modes, the countries, the event ticker
+- [`R66Alerts.dc.html`](R66Alerts.dc.html) - Rev 66 Alerts - Alerts: Claude watches the numbers and raises a card with its chart and why; admins set thresholds
+- [`R66Funnel.dc.html`](R66Funnel.dc.html) - Rev 66 Funnel - Funnel builder: any events in order, conversion and drop-off, split by any dimension
+- [`R66Releases.dc.html`](R66Releases.dc.html) - Rev 66 Releases - Release compare: build A against build B - finish rate, exceptions, launch time, retention
+- [`R66PlayerCompare.dc.html`](R66PlayerCompare.dc.html) - Rev 66 PlayerCompare - Player compare: two or three players side by side, and players like this one
+- [`R66Notes.dc.html`](R66Notes.dc.html) - Rev 66 - notes: what each idea adds, what the server has, what is new
 
 #### Rev 65 - Froglet Analytics, the full tool: filters, charts, cohorts, eras and admin queries
 
-- `R65Players.dc.html` (not copied yet) - Rev 65 Players - Players: filter bar, sortable columns, each player's play mix and lifespan
-- `R65Profile.dc.html` (not copied yet) - Rev 65 Profile - Player profile: charts, not lists (play-type donut, ranked modes and vessels, match timeline, crystals)
-- `R65Lifespans.dc.html` (not copied yet) - Rev 65 Lifespans - Cohorts: every player's lifespan as a Gantt, and return by cohort
-- `R65Eras.dc.html` (not copied yet) - Rev 65 Eras - Eras: the plan chart - Old PostHog data, Pre-beta editor testing, the betas ahead - and the eras compared
-- `R65PlayTypes.dc.html` (not copied yet) - Rev 65 PlayTypes - Solo vs AI, Solo, Multiplayer side by side, and the Play filter
-- `R65Query.dc.html` (not copied yet) - Rev 65 Query - Query Studio (admins): build a query, save it as a table, chart it
-- `R65Dashboards.dc.html` (not copied yet) - Rev 65 Dashboards - Dashboards (admins): pin saved queries into your own boards
-- `R65Notes.dc.html` (not copied yet) - Rev 65 - notes: what each board adds, what the server already answers, what is new
+- [`R65Players.dc.html`](R65Players.dc.html) - Rev 65 Players - Players: filter bar, sortable columns, each player's play mix and lifespan
+- [`R65Profile.dc.html`](R65Profile.dc.html) - Rev 65 Profile - Player profile: charts, not lists (play-type donut, ranked modes and vessels, match timeline, crystals)
+- [`R65Lifespans.dc.html`](R65Lifespans.dc.html) - Rev 65 Lifespans - Cohorts: every player's lifespan as a Gantt, and return by cohort
+- [`R65Eras.dc.html`](R65Eras.dc.html) - Rev 65 Eras - Eras: the plan chart - Old PostHog data, Pre-beta editor testing, the betas ahead - and the eras compared
+- [`R65PlayTypes.dc.html`](R65PlayTypes.dc.html) - Rev 65 PlayTypes - Solo vs AI, Solo, Multiplayer side by side, and the Play filter
+- [`R65Query.dc.html`](R65Query.dc.html) - Rev 65 Query - Query Studio (admins): build a query, save it as a table, chart it
+- [`R65Dashboards.dc.html`](R65Dashboards.dc.html) - Rev 65 Dashboards - Dashboards (admins): pin saved queries into your own boards
+- [`R65Notes.dc.html`](R65Notes.dc.html) - Rev 65 - notes: what each board adds, what the server already answers, what is new
 
 #### Rev 50 - Froglet Analytics dashboard: our own backend replaces PostHog, three ways to read it
 
@@ -623,15 +626,15 @@ Copied on 2026-11-12 from canvas version `1794501420-015f` of **Frogma**: Rev 3 
 
 #### Rev 78 - The UI moves with the phone: every piece travels to its upright place as the phone turns
 
-- `R78Follow.dc.html` (not copied yet) - Rev 78 Follow - Follow the turn (recommended): the pieces travel with the phone and stay level - interactive
-- `R78Glide.dc.html` (not copied yet) - Rev 78 Glide - Turn, then glide: the pieces turn with the phone, then glide into place - interactive
-- `R78Notes.dc.html` (not copied yet) - Rev 78 - notes: Follow vs Glide, and what only a device shows
+- [`R78Follow.dc.html`](R78Follow.dc.html) - Rev 78 Follow - Follow the turn (recommended): the pieces travel with the phone and stay level - interactive
+- [`R78Glide.dc.html`](R78Glide.dc.html) - Rev 78 Glide - Turn, then glide: the pieces turn with the phone, then glide into place - interactive
+- [`R78Notes.dc.html`](R78Notes.dc.html) - Rev 78 - notes: Follow vs Glide, and what only a device shows
 
 #### Rev 76 - The turn: five transitions, each on the menu and on the Goby turning into the Pistol
 
 - `R76Compare.dc.html` (not copied yet) - Rev 76 - the five transitions side by side, in time: the menu row and the Goby row
-- `R76A.dc.html` (not copied yet) - Rev 76 A - Fade through (built) - interactive
-- `R76B.dc.html` (not copied yet) - Rev 76 B - Hold steady: the UI stays level while the phone turns; the Goby's camera swings to the side - interactive
+- [`R76A.dc.html`](R76A.dc.html) - Rev 76 A - Fade through (built) - interactive
+- [`R76B.dc.html`](R76B.dc.html) - Rev 76 B - Hold steady: the UI stays level while the phone turns; the Goby's camera swings to the side - interactive
 - `R76C.dc.html` (not copied yet) - Rev 76 C - Re-form (recommended): the UI re-forms in three bands; the Pistol's square grows to fill the screen - interactive
 - `R76D.dc.html` (not copied yet) - Rev 76 D - Sliver wipe: a cut-corner slab sweeps across on the turn - interactive
 - `R76E.dc.html` (not copied yet) - Rev 76 E - Focus pull: the world softens through the turn and sharpens with the UI - interactive
@@ -639,16 +642,16 @@ Copied on 2026-11-12 from canvas version `1794501420-015f` of **Frogma**: Rev 3 
 
 #### Rev 72 - The turn, drawn: the menu fades through a turn, the Goby turns into the Pistol, every other vessel stays landscape (a storyboard, not the build)
 
-- `R72Menu.dc.html` (not copied yet) - Rev 72 Menu - The menu turn: the UI goes out on the switch, two frames held, fades back in (0.28 s); plays on a loop - i - interactive
-- `R72Goby.dc.html` (not copied yet) - Rev 72 Goby - The Goby turns into the Pistol: upright takes the Pistol's view, landscape the Goby; plays on a loop - int - interactive
-- `R72Other.dc.html` (not copied yet) - Rev 72 Other - Every other vessel: the phone turns, the game does not - interactive
-- `R72Notes.dc.html` (not copied yet) - Rev 72 - notes: the timings, the rules, what only the editor can show
+- [`R72Menu.dc.html`](R72Menu.dc.html) - Rev 72 Menu - The menu turn: the UI goes out on the switch, two frames held, fades back in (0.28 s); plays on a loop - i - interactive
+- [`R72Goby.dc.html`](R72Goby.dc.html) - Rev 72 Goby - The Goby turns into the Pistol: upright takes the Pistol's view, landscape the Goby; plays on a loop - int - interactive
+- [`R72Other.dc.html`](R72Other.dc.html) - Rev 72 Other - Every other vessel: the phone turns, the game does not - interactive
+- [`R72Notes.dc.html`](R72Notes.dc.html) - Rev 72 - notes: the timings, the rules, what only the editor can show
 
 #### Rev 63 - Portrait menus: the same PC UI with the phone held upright (menus only; matches stay landscape)
 
-- `R63A.dc.html` (not copied yet) - Rev 63 A - Scale to width: the PC layout as it is, shrunk to the phone's width
-- `R63B.dc.html` (not copied yet) - Rev 63 B - Re-flow, band on top: the same PC pieces laid out on a tall 1080-wide canvas (recommended)
-- `R63C.dc.html` (not copied yet) - Rev 63 C - Re-flow, band at the bottom: as B, the nav band a tab bar under the thumb
+- [`R63A.dc.html`](R63A.dc.html) - Rev 63 A - Scale to width: the PC layout as it is, shrunk to the phone's width
+- [`R63B.dc.html`](R63B.dc.html) - Rev 63 B - Re-flow, band on top: the same PC pieces laid out on a tall 1080-wide canvas (recommended)
+- [`R63C.dc.html`](R63C.dc.html) - Rev 63 C - Re-flow, band at the bottom: as B, the nav band a tab bar under the thumb
 - `R63Notes.dc.html` (not copied yet) - Rev 63 - notes: what each costs to build and how big the words are
 
 ### Tab: Launch Console  (`launch-console`)
@@ -695,40 +698,65 @@ Copied on 2026-11-12 from canvas version `1794501420-015f` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
-#### Rev 83 - the seat editor in the game's own look
+#### Rev 98 - Voyages: 1A and 2D, Shombith's picks, with room between the words
 
-- `R83Compare.dc.html` (not copied yet) - Rev 83 - Rev 82 Squad: the outlined-square editor this replaces
-- `R83S1.dc.html` (not copied yet) - Rev 83 S1 - Showroom: the choice as the hero, its render and name large, the options a slim strip along the foot (recommended) - interactive
-- `R83S2.dc.html` (not copied yet) - Rev 83 S2 - Hangar bay: the choice large on a lit podium, the options a sleek list beside it - interactive
-- `R83S3.dc.html` (not copied yet) - Rev 83 S3 - Seat sheet: the seat's card opens into a sheet with all four choices as rows - interactive
-- `R83Notes.dc.html` (not copied yet) - Rev 83 - What was wrong with Rev 82's editor, what the three draw from, the recommendation
+- [`R98S1A.dc.html`](R98S1A.dc.html) - Rev 98 S1A - 1A - the voyage on the map - interactive
+- [`R98S2D.dc.html`](R98S2D.dc.html) - Rev 98 S2D - 2D - the squad - interactive
 
-#### Rev 82 - B5 playable - choosing the squad and changing its seats
+#### Rev 97 - Voyages: the squad presets and the seat's choices redrawn; three players picking at once
 
-- `R82Squad.dc.html` (not copied yet) - Rev 82 Squad - B5 playable: choosing the squad and changing its seats - interactive
+- [`R97Squad.dc.html`](R97Squad.dc.html) - Rev 97 Squad - Squad presets, three ways - interactive
+- [`R97Choices.dc.html`](R97Choices.dc.html) - Rev 97 Choices - The seat's choices, three ways - interactive
+- [`R97S1A.dc.html`](R97S1A.dc.html) - Rev 97 S1A - 1A with Formation squads - interactive
+- [`R97S2D.dc.html`](R97S2D.dc.html) - Rev 97 S2D - 2D with the Shelf - interactive
+- [`R97S2G.dc.html`](R97S2G.dc.html) - Rev 97 S2G - 2G Three players - leader's screen - interactive
+- [`R97S2H.dc.html`](R97S2H.dc.html) - Rev 97 S2H - 2H Three players - a friend's screen - interactive
 
-#### Rev 81 - Voyage window, B1 with B3's seat cards - a livelier right panel, three ways
+#### Rev 96 - the squad screen: a backdrop, soft buttons, one press
 
-- `R81B5.dc.html` (not copied yet) - Rev 81 B5 - Cards: B1 with labelled numbers and B3's three seat cards in the right panel (recommended) - interactive
-- `R81Notes.dc.html` (not copied yet) - Rev 81 - notes: what B1 keeps, B3's cards, the three right panels, the recommendation
+- [`R96S1A.dc.html`](R96S1A.dc.html) - Rev 96 S1A - 1A - Screen 1 as picked (Rev 95 1A), with the soft buttons - interactive
+- [`R96Buttons.dc.html`](R96Buttons.dc.html) - Rev 96 Buttons - three readings of soft hard soft on Set sail and Configure squad, beside the buttons as they were
+- [`R96S2D.dc.html`](R96S2D.dc.html) - Rev 96 S2D - 2D Deck: the three seats stand across a lit deck; the picked seat's four choices are one tray under them, one press each (recommended) - interactive
+- [`R96S2E.dc.html`](R96S2E.dc.html) - Rev 96 S2E - 2E Kits: the picked seat large; six whole kits from the Hangar, one press sets all four; element and artifact beside - interactive
+- [`R96S2F.dc.html`](R96S2F.dc.html) - Rev 96 S2F - 2F Showroom: a rail of seats, the picked seat as the hero on the deck, its four choices as strips beside it - interactive
+- [`R96Notes.dc.html`](R96Notes.dc.html) - Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens
 
-#### Rev 80 - Voyage window, B Logbook taken further - the list, the course and the squad, four ways better
+#### Rev 95 - Voyages as two screens: the voyage on the map, then the squad
 
-- `R80Compare.dc.html` (not copied yet) - Rev 80 - What each option changes from B: the row, the squad bar, the seat card, the quiet row
-- `R80B1.dc.html` (not copied yet) - Rev 80 B1 - Refined: each row a course thumbnail and who brought it, seats with their pilot (recommended) - interactive
-- `R80B2.dc.html` (not copied yet) - Rev 80 B2 - Wide sea: a narrow list, the course map wide with the voyage over it, the squad a bar along the foot - interactive
-- `R80B3.dc.html` (not copied yet) - Rev 80 B3 - Crew: the squad as three tall seat cards, the hull and its pilot large - interactive
-- `R80B4.dc.html` (not copied yet) - Rev 80 B4 - Quiet: no pictures in the list, the maps muted so only the course is bright, the most air - interactive
-- `R80Notes.dc.html` (not copied yet) - Rev 80 - notes: what B keeps, what each option changes, the recommendation
+- [`R95S1A.dc.html`](R95S1A.dc.html) - Rev 95 S1A - 1A Presets: the map over its edge view; the voyage's name, the squad presets as cards and Set sail on the right (recommended) - interactive
+- [`R95S1B.dc.html`](R95S1B.dc.html) - Rev 95 S1B - 1B Wide map: the map across the window; a foot bar holds the edge view, the voyage, the squad and Set sail - interactive
+- [`R95S1C.dc.html`](R95S1C.dc.html) - Rev 95 S1C - 1C Briefing: the map full height with the edge view inset at its foot; the squad's three seats shown on the right - interactive
+- [`R95S2A.dc.html`](R95S2A.dc.html) - Rev 95 S2A - 2A Three seats: a column per seat, its pilot and hull over its choices; Save as preset and Set sail at the foot (recommended) - interactive
+- [`R95S2B.dc.html`](R95S2B.dc.html) - Rev 95 S2B - 2B Seat and picker: the seats on the left, one large picker on the right with Vessel, Pilot, Element, Artifact - interactive
+- [`R95S2C.dc.html`](R95S2C.dc.html) - Rev 95 S2C - 2C Roster: one table, a row per seat and a stepper per choice - interactive
+- [`R95Notes.dc.html`](R95Notes.dc.html) - Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations
 
-#### Rev 79 - Voyage window, four new directions - the whole window redrawn: its tabs, the HyperSea map and edge view, the voyages, and picking the squad's vessels
+#### Rev 90 - Saga, Quests and Episodes as the Sea table
 
-- `R79Compare.dc.html` (not copied yet) - Rev 79 - Picking a vessel, four ways: one press from the squad to any hull
-- `R79A.dc.html` (not copied yet) - Rev 79 A - Chart: the map is the window; voyages are pins on it and the picked one docks on the right (recommended) - interactive
-- `R79B.dc.html` (not copied yet) - Rev 79 B - Logbook: a list of voyages, the course large in the middle, the squad as three seats on the right - interactive
-- `R79C.dc.html` (not copied yet) - Rev 79 C - Formation: the squad's three hulls are the hero; destinations on a ribbon above them - interactive
-- `R79D.dc.html` (not copied yet) - Rev 79 D - Route: the picked voyage as a journey line across the window, rising and falling through the disk - interactive
-- `R79Notes.dc.html` (not copied yet) - Rev 79 - notes: what each direction is, what it redraws, the recommendation, what it would change in the game
+- [`R90Saga.dc.html`](R90Saga.dc.html) - Rev 90 Saga - the part's arena on the table, its forms in order on the front face; The Severing locked - interactive
+- [`R90Quests.dc.html`](R90Quests.dc.html) - Rev 90 Quests - the HyperSea on the table, the episode's five quests as a track on the front face; the picked quest's card, Claim or Play quest - interactive
+- [`R90Episodes.dc.html`](R90Episodes.dc.html) - Rev 90 Episodes - the galaxy on the table, dimmed; Episode 2 is coming; one way back
+- [`R90Notes.dc.html`](R90Notes.dc.html) - Rev 90 - notes: one slab on every tab, each tab, the tabs as links
+
+#### Rev 89 - the Voyages screen with the HyperSea as the show
+
+- [`R89A.dc.html`](R89A.dc.html) - Rev 89 A - Sea table: the map tilted in perspective, the edge-on view its front face; the voyage's name over it (recommended) - interactive
+- [`R89B.dc.html`](R89B.dc.html) - Rev 89 B - Flat chart: the same screen without the tilt - the whole map in its own colours over its edge-on view - interactive
+- [`R89Notes.dc.html`](R89Notes.dc.html) - Rev 89 - notes: what was dull, what both options do, the two options, the recommendation
+
+#### Rev 88 - A taken forward: smaller top texts, every screen of the Voyage window
+
+- [`R88Voyages.dc.html`](R88Voyages.dc.html) - Rev 88 Voyages - A with smaller top texts: the voyages and the Ark escort as cards, the picked one open; the squad as rows - interactive
+- [`R88Escort.dc.html`](R88Escort.dc.html) - Rev 88 Escort - the Ark escort card open: its difficulty stepper where a voyage has its intensity - interactive
+- [`R88Saga.dc.html`](R88Saga.dc.html) - Rev 88 Saga - the two parts as cards, Tandava open with its forms, The Severing locked; the squad and Set sail - interactive
+- [`R88Quests.dc.html`](R88Quests.dc.html) - Rev 88 Quests - the five quests as cards with their state, the picked one open over its game's art; Claim or Play quest - interactive
+- [`R88Episodes.dc.html`](R88Episodes.dc.html) - Rev 88 Episodes - Episode 2, coming soon, over the galaxy; one way back
+- [`R88Notes.dc.html`](R88Notes.dc.html) - Rev 88 - notes: the top texts, the one order, each screen, what is not drawn
+
+#### Rev 87 - the Voyages tab, drawn new around the HyperSea map and the edge view
+
+- [`R87A.dc.html`](R87A.dc.html) - Rev 87 A - Slide: small voyage cards, the picked one slides open; the squad as rows that open where they stand (recommended) - interactive
+- [`R87Notes.dc.html`](R87Notes.dc.html) - Rev 87 - notes: what stays, what is new in all three, the three options, the recommendation
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 
@@ -737,5 +765,23 @@ Copied on 2026-11-12 from canvas version `1794501420-015f` of **Frogma**: Rev 3 
 - `R75Codex.dc.html` (not copied yet) - Rev 75 Codex - Codex: element doors and game cards (A) around a large 3D level (C), the intensities and the prompt besid
 - `R75Builder.dc.html` (not copied yet) - Rev 75 Builder - Builder: the same game opened in the builder, its I1-I4 ladder, the dials, saved layouts and the layout
 - `R75Notes.dc.html` (not copied yet) - Rev 75 - notes: what was mixed from A and C, what the builder adds, Rev 73 removed
+
+### Tab: Loading Screens  (`loading-screens`)
+
+#### Rev 94 - The boot splash: the crew before the domains (C, liked)
+
+- [`R94C.dc.html`](R94C.dc.html) - Rev 94 C - The crew before the domains, in the game's own art: the new captain busts, silver hulls, Omni crystals, a real cell, fauna and flora; the colour set changing
+- [`R94Notes.dc.html`](R94Notes.dc.html) - Rev 94 - notes: what is now the game's own art, the far background, what was kept
+
+#### Rev 91 - Loading screens: a smooth moving sea, one honest progress bar, and a part of the game on show
+
+- [`R91Compare.dc.html`](R91Compare.dc.html) - Rev 91 - The progress bar on its own: live, and held at each step, a slow patch and done
+- [`R91A.dc.html`](R91A.dc.html) - Rev 91 A - Squad: your three seats arrive one by one as the load moves on
+- [`R91B.dc.html`](R91B.dc.html) - Rev 91 B - The Ark: the ship drifts across the sea, its four rooms lit in turn
+- [`R91C.dc.html`](R91C.dc.html) - Rev 91 C - Pilots: one pilot stands large, the roster beside
+- [`R91D.dc.html`](R91D.dc.html) - Rev 91 D - Vessels: one hull at a time, large, the fleet beside
+- [`R91E.dc.html`](R91E.dc.html) - Rev 91 E - Toy Box: the Vessel Changer cycling hulls, the seven toys lit in turn
+- [`R91F.dc.html`](R91F.dc.html) - Rev 91 F - The tour: Squad, Ark, Pilots, Vessels and Toy Box in turn while the bar fills (recommended)
+- [`R91Notes.dc.html`](R91Notes.dc.html) - Rev 91 - notes: what is shared, what each option shows, the bar's rules, what differs from the build
 
 <!-- frogma.py readme: end -->

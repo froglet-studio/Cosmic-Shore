@@ -139,7 +139,7 @@ namespace CosmicShore.UI
 
         [Header("Ark backdrops")]
         [Tooltip("The Ark screen's backdrops: the Frogma renders played as video behind each tab (Docs/MENU_REDESIGN_B.md " +
-                 "section 171) - the hangar with the squad behind SQUADS, the pier with Garrett's combine behind CONVERTER, the " +
+                 "section 190) - the hangar with the squad behind SQUADS, the pier with Garrett's combine behind CONVERTER, the " +
                  "artifacts room behind ARTIFACTS; a tab with none (DECOR) shows none. Empty uses the shipped " +
                  "Resources/ArkBackdropConfig; with neither, the converter plays the combine live on its own stage as before.")]
         [SerializeField] ArkBackdropConfigSO backdrops;

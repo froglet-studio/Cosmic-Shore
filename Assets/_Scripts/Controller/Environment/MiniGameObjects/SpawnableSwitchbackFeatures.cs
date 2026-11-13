@@ -60,7 +60,7 @@ namespace CosmicShore.Gameplay
         protected override int BuildParameterHash()
         {
             int hash = System.HashCode.Combine(nameof(SpawnableSwitchbackFeatures),
-                /* layout revision - bump to invalidate caches after a code-level change (6: the I4 gauntlet) */ 6,
+                /* layout revision - bump to invalidate caches after a code-level change (6: the I4 gauntlet; 7: plain I4 seals) */ 7,
                 _course.Count, _layoutIntensity, _centre, _clearRadius, _layout != null ? _layout.Prisms.Count : -1);
             for (int i = 0; i < _course.Count; i++)
                 hash = System.HashCode.Combine(hash, _course[i].Position, _course[i].Axis, _course[i].Radius);

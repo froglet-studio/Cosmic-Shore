@@ -1689,7 +1689,6 @@ GameObject:
   - component: {fileID: 538077361211256076}
   - component: {fileID: 6733957700513663958}
   - component: {fileID: 7965853245772039612}
-  - component: {fileID: 3064061082551029771}
   - component: {fileID: 8678703874602163012}
   - component: {fileID: 8100000000000000081}
   - component: {fileID: 8100000000000000083}
@@ -1955,6 +1954,25 @@ MonoBehaviour:
     element: 0
   turnUpgradeShieldsTrail: 0
   turnFlareMaxScale: 1
+  speedShape:
+    Enabled: 1
+    RailWidth: 8
+    ReferenceSpeed: 162
+    SoarSpeed: 600
+    SoarLength: 10
+    MaxLengthOfSpacing: 0.9
+    FrameAwareSpacing: 1
+    TopSpeed: 1100
+    TopSpacingMultiplier: 3
+    TopLength: 20
+    TopHeightMultiplier: 0.4
+    CrawlSpeed: 60
+    CrawlHeightMultiplier: 4
+    YawsteryHeightGain: 0.8
+    OutsideThin: 0.25
+    MinHeight: 0.1
+    MaxHeight: 3.5
+    TurnGeometry: 1
   offset: 0
   Gap: 18
   MinimumGap: 1
@@ -2240,19 +2258,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   vesselImpactor: {fileID: 538077361211256076}
---- !u!114 &3064061082551029771
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6b1f12eb3ed4ed94c9a10d3834dc7d4c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: f793dcfbb935bd645bf7f0cc4c9c976d, type: 2}
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0
@@ -3591,9 +3596,9 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 811999532631787190}
-  - {fileID: 1103082603550459716}
-  - {fileID: 1032069452111844737}
+  - {fileID: 170949194672600467}
+  - {fileID: 392002587913188835}
+  - {fileID: 992362874211075278}
   m_Father: {fileID: 8900000000000001041}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -3991,9 +3996,9 @@ MonoBehaviour:
   fuseContainer: {fileID: 521423433274224661}
   fuseText: {fileID: 1233584866538271001}
   omniAbilitySprite: {fileID: 21300000, guid: 3123065b6b5349a69e92d075c6b04500, type: 3}
-  yastriSoarIcon: {fileID: 816402595048925841}
-  yastriTurnIcon: {fileID: 971759049030194860}
-  yastriMantaIcon: {fileID: 691854371276946999}
+  yawsterySoarIcon: {fileID: 491822414735696540}
+  yawsteryTurnIcon: {fileID: 932301820285648718}
+  yawsteryMantaIcon: {fileID: 71806925898849087}
   energyFill: {fileID: 904910737377361575}
   skimShardsIcon: {fileID: 83147295611360939}
   skimSparksIcon: {fileID: 942618807152932961}
@@ -5717,7 +5722,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!1 &355498905049427229
+--- !u!1 &821926674869261752
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5725,23 +5730,23 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 811999532631787190}
-  - component: {fileID: 451327820861173014}
-  - component: {fileID: 691854371276946999}
+  - component: {fileID: 170949194672600467}
+  - component: {fileID: 425146010489083878}
+  - component: {fileID: 71806925898849087}
   m_Layer: 5
-  m_Name: YastriManta
+  m_Name: YawsteryManta
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &811999532631787190
+--- !u!224 &170949194672600467
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 355498905049427229}
+  m_GameObject: {fileID: 821926674869261752}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -5754,21 +5759,21 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &451327820861173014
+--- !u!222 &425146010489083878
 CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 355498905049427229}
+  m_GameObject: {fileID: 821926674869261752}
   m_CullTransparentMesh: 1
---- !u!114 &691854371276946999
+--- !u!114 &71806925898849087
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 355498905049427229}
+  m_GameObject: {fileID: 821926674869261752}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
@@ -5792,7 +5797,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!1 &776516271078260910
+--- !u!1 &220876208494514557
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5800,23 +5805,23 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1103082603550459716}
-  - component: {fileID: 717464269114248009}
-  - component: {fileID: 971759049030194860}
+  - component: {fileID: 392002587913188835}
+  - component: {fileID: 1082732725904687505}
+  - component: {fileID: 932301820285648718}
   m_Layer: 5
-  m_Name: YastriTurn
+  m_Name: YawsteryTurn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &1103082603550459716
+--- !u!224 &392002587913188835
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 776516271078260910}
+  m_GameObject: {fileID: 220876208494514557}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -5829,21 +5834,21 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &717464269114248009
+--- !u!222 &1082732725904687505
 CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 776516271078260910}
+  m_GameObject: {fileID: 220876208494514557}
   m_CullTransparentMesh: 1
---- !u!114 &971759049030194860
+--- !u!114 &932301820285648718
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 776516271078260910}
+  m_GameObject: {fileID: 220876208494514557}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
@@ -5867,7 +5872,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!1 &1067866915654759135
+--- !u!1 &438575108979718318
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5875,23 +5880,23 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1032069452111844737}
-  - component: {fileID: 422705722307276699}
-  - component: {fileID: 816402595048925841}
+  - component: {fileID: 992362874211075278}
+  - component: {fileID: 152164263643738682}
+  - component: {fileID: 491822414735696540}
   m_Layer: 5
-  m_Name: YastriSoar
+  m_Name: YawsterySoar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &1032069452111844737
+--- !u!224 &992362874211075278
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1067866915654759135}
+  m_GameObject: {fileID: 438575108979718318}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -5904,21 +5909,21 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &422705722307276699
+--- !u!222 &152164263643738682
 CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1067866915654759135}
+  m_GameObject: {fileID: 438575108979718318}
   m_CullTransparentMesh: 1
---- !u!114 &816402595048925841
+--- !u!114 &491822414735696540
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1067866915654759135}
+  m_GameObject: {fileID: 438575108979718318}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}

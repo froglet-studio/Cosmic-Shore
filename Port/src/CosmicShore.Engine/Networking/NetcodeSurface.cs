@@ -33,9 +33,8 @@ namespace CosmicShore.Engine.Networking
         public NetworkTopologyTypes NetworkTopology = NetworkTopologyTypes.ClientServer;
         public bool UseCMBService;
         public bool AutoSpawnPlayerPrefabClientSide = true;
-        /// <summary>Original: message metrics for com.unity.multiplayer.tools. The port collects none; kept as data.</summary>
+        /// <summary>Netcode's metrics switches (present with com.unity.multiplayer.tools). The port gathers no Netcode metrics; recorded only.</summary>
         public bool NetworkMessageMetrics = true;
-        /// <summary>Original: profiler metrics for com.unity.multiplayer.tools. The port collects none; kept as data.</summary>
         public bool NetworkProfilingMetrics = true;
 
         /// <summary>

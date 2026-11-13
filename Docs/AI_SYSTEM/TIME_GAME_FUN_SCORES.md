@@ -159,3 +159,12 @@ person already needed), and one AI race coach per hull (`IJacksRaceCoach`, `IGob
 `IOrcaRaceCoach`), inert outside its race. **Found:** the shipped Orca AI helm never burns in any mode; a default
 gate-race coach from Breach's burn rule is proposed, not made. Slip Line's spending decision measured at about 1% and is
 documented as such. None of the four has been flown; Rivals and Fairness stay low until people race them.
+
+## 2026-11-11, round 5: the ten most-played vessels
+
+Ranked from 518 recorded flights on the `origin/bugledger/*` branches (the analytics read key was unavailable). Each
+vessel's Time game is upgraded in place by its own session; each adds its own row.
+
+| Vessel | Game | The change | Reading the course saves (I1-I4) | Verb | Flow | Ladder | Feedback | Rivals | Fairness | Fun (est.) | Floor |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Manta | Redline (53) | **Soar lit from the gun**: since 2026-11-07 Soar is the Time level-5 upgrade and the card seeded no Time, so every Manta raced at 180 u/s; the card now starts at Time 6 (1104 u/s). 8 laps; the AI on a race line through the mouths' centres with a throttle floor by difficulty (every difficulty finishes every level offline, Legendary 60-91 s against an ideal person's 38-89); the heat: shock rings off clean and redhot threads, called streaks, lap splits, clean-lap chases, the redline (toasts 360-366, 9 empty FMOD slots). REDLINE.md §0 | 0 / 0 / -11 / +0.3 % (a miss loops back in ~1.4 s at Soar speed; the re-cut for the flown hull is next) | 9 | **8** | 7 | **6** | **5** | **4** | **6.5** est. (was 5.5) | 4 Fairness |

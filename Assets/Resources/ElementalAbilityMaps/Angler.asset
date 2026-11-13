@@ -16,16 +16,16 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Erase / Lock-on
-    AbilityDescription: 'LT, held: a narrow beam from the nose unpaints prisms (an already-ordered one leaves every order). Each time the beam comes onto a rival vessel - another one, or the same one again - it LOCKS, and the lock SPENDS one creature: it leaves your school (your count drops by one) and chases that vessel until it dies, each bite a scored contact Strike that takes petals. R_VesselActions/ANGLER.md.'
+    AbilityDescription: 'LT, held: a narrow beam from the nose unpaints prisms (an already-ordered one leaves every order). Each time the beam comes onto a rival vessel - another one, or the same one again - it LOCKS, and the lock SPENDS one creature: it leaves your school (your count drops by one) and chases that vessel until it dies, each bite a scored contact Strike that takes petals. Charge sets how often a hunter bites: once a second at Charge 0, every 0.4 s at Charge 10 (AnglerConfigSO.biteRate). R_VesselActions/ANGLER.md.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Swallow
+    UpgradeDescription: 'A hunter''s bite no longer knocks the petals loose: they land on you. Gated on IsUpgradeActive(Charge).'
   - Element: 2
     AbilityLabel: Lure, Tame & Grow
-    AbilityDescription: 'A (Space on a keyboard), held: the esca lights and the hull stops. Wild herbivores in its reach turn to it, and one held in the light for the taming time joins your school (the count on this card). Plants in the light grow three times as fast. Let go, and any seed an omni crystal left is planted at the esca, in your domain.'
+    AbilityDescription: 'A (Space on a keyboard), held: the esca lights and the hull stops. Wild herbivores in its reach turn to it, and one held in the light for the taming time joins your school (the count on this card). Plants in the light grow three times as fast. Let go, and any seed an omni crystal left is planted at the esca, in your domain. Mass sets the light''s size: its reach and hold grow x1 at Mass 0 to x2 at Mass 10 (AnglerConfigSO.lureScale).'
     Input: 6
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -34,7 +34,7 @@ MonoBehaviour:
     UpgradeDescription: 'The lure takes creatures from other holders too: another Angler''s tamed fauna can be lured, tamed and kept. Gated on IsUpgradeActive(Mass).'
   - Element: 3
     AbilityLabel: Paint
-    AbilityDescription: 'RT, held: a beam reaching 3200 u (and close up, at the nose) paints prisms, which light up, and every creature prefers them; half your school balls up ahead, any of that half still in flight included. Let go: each creature of that half flies at the most recently painted prisms first, at any distance, and eats them, and the next paint sends the other half. Lit prisms stay lit until eaten or erased.'
+    AbilityDescription: 'RT, held: a beam reaching 3200 u (and close up, at the nose) paints prisms, which light up, and every creature prefers them; half your school balls up ahead, any of that half still in flight included. Let go: each creature of that half flies at the most recently painted prisms first, at any distance, and eats them, and the next paint sends the other half. Lit prisms stay lit until eaten or erased. Space sets the brush''s width: x1 at Space 0 to x2 at Space 10 (AnglerConfigSO.brushScale).'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -48,5 +48,5 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Riptide
+    UpgradeDescription: 'A dash pressed while one is in flight is kept and fires the moment it lands, at your other group, so you chain between your two groups. Gated on IsUpgradeActive(Time).'

@@ -1,0 +1,37 @@
+2026-10-08T16:04:04.3900444Z [36;1m# inherited -e, so the step aborted the instant Unity exited non-zero:[0m
+2026-10-08T16:04:04.3901123Z [36;1m# before PIPESTATUS was read, before compile-vs-tests was decided, and[0m
+2026-10-08T16:04:04.3901817Z [36;1m# before UNITY_TESTS_BLOCKING was ever consulted. The symptom was a bare[0m
+2026-10-08T16:04:04.3902501Z [36;1m# "Process completed with exit code 2" and a red job no repository[0m
+2026-10-08T16:04:04.3903169Z [36;1m# variable could soften. Here the exit code IS the signal, not an abort.[0m
+2026-10-08T16:04:04.3903714Z [36;1mset +e[0m
+2026-10-08T16:04:04.3903942Z [36;1mset -uo pipefail[0m
+2026-10-08T16:04:04.3904455Z [36;1mUNITY="${UNITY_PATH:-C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity.exe}"[0m
+2026-10-08T16:04:04.3905034Z [36;1mif [ -z "$UNITY" ]; then[0m
+2026-10-08T16:04:06.6614187Z [Licensing::Module] Licensing is not yet initialized.
+2026-10-08T16:04:23.6283592Z Starting IPC server.
+2026-10-08T16:04:24.3400373Z Waiting for clients to connect on \\.\pipe\Unity-LicenseClient-RUNNER$, press Ctrl-C to exit.
+2026-10-08T16:04:27.6896175Z [Licensing::IpcConnector] Successfully connected to: "LicenseClient-RUNNER$" at "2026-10-08T16:04:27.6800504Z"
+2026-10-08T16:04:28.1238351Z [Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 31332, path: "C:/Program Files/Unity/Hub/Editor/6000.3.17f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+2026-10-08T16:04:28.1240599Z [Licensing::Module] LicensingClient has failed validation; ignoring
+2026-10-08T16:04:29.0303120Z [Licensing::Client] Handshaking with LicensingClient:
+2026-10-08T16:04:29.0315252Z   Version:                 1.18.1+9fbee8e
+2026-10-08T16:04:29.0321179Z   Session Id:              750fafb915e240e481f5b3cd84d7b6d7
+2026-10-08T16:04:29.0337879Z   Correlation Id:          0f501240adc55797c811c5d43ab9706f
+2026-10-08T16:04:29.0352849Z   External correlation Id: 1830963280881084879
+2026-10-08T16:04:29.0358234Z   Machine Id:              8Pq7P9aTlH8zXIOnvs1ETzvS1GA=
+2026-10-08T16:04:29.0359780Z [Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-RUNNER$" (connect: 22.20s, validation: 0.89s, handshake: 0.44s)
+2026-10-08T16:04:29.0362035Z [Licensing::IpcConnector] Successfully connected to: "LicenseClient-RUNNER$-notifications" at "2026-10-08T16:04:29.01579Z"
+2026-10-08T16:04:29.0363877Z [Licensing::Module] Connected to LicensingClient (PId: 31332, launch time: 0.05, total connection time: 23.54s)
+2026-10-08T16:04:29.0365264Z [Licensing::Module] Error: Access token is unavailable; failed to update
+2026-10-08T16:04:29.0623772Z [Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+2026-10-08T16:04:29.1552796Z [Licensing::Client] Successfully updated license, isAsync: False, time: 0.09
+2026-10-08T16:04:29.1581362Z [Licensing::Module] Licensing Background thread has ended after 23.71s
+2026-10-08T16:04:29.1597124Z [Licensing::Module] Licensing is initialized (took 22.51s).
+2026-10-08T16:04:29.1628847Z [Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+2026-10-08T16:04:29.1656742Z [Licensing::Module] Error: 'com.unity.editor.headless' was not found.
+2026-10-08T16:04:29.1742185Z [Licensing::Client] Error: Code 404 while processing request (status: Found 0 entitlement groups and 0 free entitlements matching requested entitlement ids)
+2026-10-08T16:04:29.1744635Z No valid Unity Editor license found. Please activate your license.
+2026-10-08T16:04:29.2568100Z Exiting without the bug reporter. Application will terminate with return code 198Shut down.
+2026-10-08T16:04:30.0937765Z ##[error]The project did not compile. This is what breaks the Windows build.
+2026-10-08T16:04:30.2674517Z ##[error]Process completed with exit code 1.
+2026-10-08T16:04:30.4694285Z ##[group]Run actions/upload-artifact@v4

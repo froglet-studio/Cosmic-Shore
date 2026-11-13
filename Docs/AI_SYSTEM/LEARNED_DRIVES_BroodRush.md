@@ -37,7 +37,7 @@ Nothing written: 1 finished race(s) or complete match(es); nothing is written be
 | Measure | You (fastest finished races) | The AI today (seconds it held your hull) | Written |
 |---|---:|---:|---:|
 | `BoostStickBand` | 0.03 | - | - |
-| `YastriStickBand` | 0.03 | - | - |
+| `YawsteryStickBand` | 0.03 | - | - |
 | `meanSoar` | 0.18 | - | - |
 | `samples` | 817 | 1 | - |
 

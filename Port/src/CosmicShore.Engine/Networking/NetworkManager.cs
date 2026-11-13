@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Engine.Tasks;
 
 namespace CosmicShore.Engine.Networking
@@ -29,10 +30,11 @@ namespace CosmicShore.Engine.Networking
         public bool RunInBackground = true;
         public bool DontDestroy = true;
 
-        /// <summary>Raised when a NetworkManager wakes (original: NetworkManager.OnInstantiated), before its config is adopted.</summary>
-        public static event System.Action<NetworkManager> OnInstantiated;
-        /// <summary>Raised when a NetworkManager is destroyed (original: NetworkManager.OnDestroying).</summary>
-        public static event System.Action<NetworkManager> OnDestroying;
+        /// <summary>Netcode 2's hook: raised in every NetworkManager's Awake, before anything else it does.</summary>
+        public static event Action<NetworkManager> OnInstantiated;
+
+        /// <summary>Netcode 2's hook: raised when a NetworkManager is destroyed.</summary>
+        public static event Action<NetworkManager> OnDestroying;
 
         void Awake()
         {

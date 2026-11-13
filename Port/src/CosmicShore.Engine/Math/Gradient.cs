@@ -2,6 +2,9 @@ using System;
 
 namespace CosmicShore.Engine
 {
+    /// <summary>How a gradient blends between keys (original: UnityEngine.GradientMode; values match).</summary>
+    public enum GradientMode { Blend = 0, Fixed = 1, PerceptualBlend = 2 }
+
     /// <summary>
     /// Color-over-time ramp with separate color and alpha key tracks (E14), preserving
     /// the original engine's contract: defaults to a solid-white, fully-opaque ramp;
@@ -10,13 +13,13 @@ namespace CosmicShore.Engine
     /// alpha curve) can't be mutated out from under the holder; <see cref="Evaluate"/>
     /// blends linearly between neighboring keys and clamps past the ends.
     /// </summary>
-    /// <summary>How a gradient reads between keys (original: UnityEngine.GradientMode; values match).</summary>
-    public enum GradientMode { Blend = 0, Fixed = 1, PerceptualBlend = 2 }
-
     public class Gradient
     {
-        /// <summary>Blend lerps between keys; Fixed holds the next key's value (Unity's step). PerceptualBlend reads as Blend here.</summary>
+        /// <summary>Original contract. Fixed holds each key's colour up to its time; PerceptualBlend blends as Blend here.</summary>
         public GradientMode mode { get; set; } = GradientMode.Blend;
+
+        /// <summary>Original contract: the space keys blend in. Recorded only; the port blends in the keys' own space.</summary>
+        public ColorSpace colorSpace { get; set; } = ColorSpace.Gamma;
 
         GradientColorKey[] _colorKeys =
         {
@@ -64,9 +67,10 @@ namespace CosmicShore.Engine
             for (int i = 1; i < keys.Length; i++)
             {
                 if (time > keys[i].time) continue;
+                if (mode == GradientMode.Fixed) return keys[i].color;
                 float span = keys[i].time - keys[i - 1].time;
                 float t = span <= 0f ? 1f : (time - keys[i - 1].time) / span;
-                return Color.Lerp(keys[i - 1].color, keys[i].color, mode == GradientMode.Fixed ? 1f : t);
+                return Color.Lerp(keys[i - 1].color, keys[i].color, t);
             }
             return keys[^1].color;
         }
@@ -79,9 +83,10 @@ namespace CosmicShore.Engine
             for (int i = 1; i < keys.Length; i++)
             {
                 if (time > keys[i].time) continue;
+                if (mode == GradientMode.Fixed) return keys[i].alpha;
                 float span = keys[i].time - keys[i - 1].time;
                 float t = span <= 0f ? 1f : (time - keys[i - 1].time) / span;
-                return Mathf.Lerp(keys[i - 1].alpha, keys[i].alpha, mode == GradientMode.Fixed ? 1f : t);
+                return Mathf.Lerp(keys[i - 1].alpha, keys[i].alpha, t);
             }
             return keys[^1].alpha;
         }

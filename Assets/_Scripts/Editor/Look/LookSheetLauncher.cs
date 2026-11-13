@@ -347,7 +347,7 @@ namespace CosmicShore.Editor
         static bool ShowScreen(ScreenSwitcher switcher, string screen)
         {
             // ARK:<TAB> opens the Ark on one of its tabs, picked by what the tab holds (each tab has its own room inside
-            // the Ark, Docs/MENU_REDESIGN_B.md section 169).
+            // the Ark, Docs/MENU_REDESIGN_B.md section 188).
             var parts = screen.ToUpperInvariant().Split(':');
             if (parts.Length == 2 && parts[0] == "ARK")
             {

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Author the Ark screen's backdrops (Docs/MENU_REDESIGN_B.md section 171): the Frogma renders as video behind each Ark tab
+Author the Ark screen's backdrops (Docs/MENU_REDESIGN_B.md section 190): the Frogma renders as video behind each Ark tab
 (Shombith, 2026-11-12: "do exactly how you showed me on Frogma, no need to use the actual model, it can be a video").
 ElementalConverterView plays them through ArkBackdrop from ArkBackdropConfigSO.
 

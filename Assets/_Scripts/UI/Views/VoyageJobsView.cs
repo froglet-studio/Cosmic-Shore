@@ -51,10 +51,14 @@ namespace CosmicShore.UI
         [SerializeField] RectTransform cardColumn;
         [Tooltip("The space between the map and the edge view under it, in the map column.")]
         [SerializeField] float edgeGap = 12f;
-        [Tooltip("The Voyages tab as Shombith picked it (Docs/MENU_REDESIGN_B.md sections 162-165): the voyage list, the " +
-                 "course and the right panel with the squad's seat cards (Rev 81 B5), and the seat editor (Rev 83 S2), built " +
-                 "by VoyageBoard over this page. Off: the map column and the voyage cards as before.")]
+        [Tooltip("The Voyages tab as Shombith picked it (Docs/MENU_REDESIGN_B.md sections 180-184): two screens built by " +
+                 "VoyageBoard over this page - the voyage on the flat map with its explorer, then Configure squad (Rev 98 " +
+                 "1A and 2D); the Saga, Quests and Episodes pages are the Sea table (Rev 90, sections 171-172). Off: the " +
+                 "map column and the voyage cards as before.")]
         [SerializeField] bool board = true;
+        [Tooltip("The Saga tab is locked (Shombith, 2026-11-12: \"lock saga\"): its table is dimmed and says Coming soon, " +
+                 "no part is listed and nothing launches from it. Off: the saga's parts, the squad and Set sail.")]
+        [SerializeField] bool sagaLocked = true;
 
         const string MapName = "GalaxyMap";
         const string EdgeName = "EdgeView";
@@ -95,7 +99,11 @@ namespace CosmicShore.UI
 
         void OnDestroy()
         {
-            if (_board) _board.SquadChanged -= Refresh;
+            if (_board)
+            {
+                _board.SquadChanged -= Refresh;
+                _board.ScreenChanged -= Refresh;
+            }
             if (!_card) return;
             _card.Closed -= CloseCard;
             _card.Step -= StepCard;
@@ -238,7 +246,7 @@ namespace CosmicShore.UI
             if (!focused) Map(content, lines, style, here, null, _placeCaption);
         }
 
-        // ── The board (Rev 81 B5 with the Rev 83 S2 seat editor) ─────────────
+        // ── The board (the Voyages tab as two screens, Rev 98 1A and 2D) ──────────────────────────────
 
         /// <summary>
         /// Draw the Voyages tab as the board: one row per voyage on offer (and the Ark escort), the open one framed on the
@@ -256,8 +264,9 @@ namespace CosmicShore.UI
             if (grid && grid != transform) grid.gameObject.SetActive(false);
             _boardRows.Clear();
             var map = EnsureMap();
-            // The board's map is the course: no tier ladder or readout over it.
-            if (map) map.Plain = true;
+            // The voyage screen's map is the explorer, flat: its tier ladder, readout, drag, pinch and wheel, and a press
+            // on a place sets the course there (Rev 98 1A). Behind the squad screen it is the course alone.
+            if (map) map.Plain = _board.OnSquadScreen;
             FitBoardColumn();
 
             // The escort or a job under way: its one row, open, Set sail dark.
@@ -284,7 +293,7 @@ namespace CosmicShore.UI
                 var underway = VoyageRules.Route(content, job.From, job.To);
                 var model = OpenModel(content, lines, job, underway, 0, 1, null);
                 _boardRows.Add(BoardRow(lines, model, 0, content.Person(job.PilotId)));
-                var voyage = BoardVoyage(lines, job, model, null);
+                var voyage = BoardVoyage(lines, job, model, null, 0, 1, content.Person(job.PilotId));
                 voyage.SailLabel = lines.BoardUnderway;
                 Map(content, lines, style, job.From, underway, CourseLine(content, lines, underway));
                 if (map) map.FrameOn(model.Course);
@@ -315,7 +324,7 @@ namespace CosmicShore.UI
                 var model = OpenModel(content, lines, job, route, i, jobs.Count, () => SetSail(taken));
                 _boardRows.Add(BoardRow(lines, model, i, content.Person(job.PilotId)));
                 if (i != _open) continue;
-                open = BoardVoyage(lines, job, model, model.SetSail);
+                open = BoardVoyage(lines, job, model, model.SetSail, i, jobs.Count, content.Person(job.PilotId));
                 Map(content, lines, style, here, route, CourseLine(content, lines, route));
                 if (map) map.FrameOn(model.Course);
             }
@@ -349,10 +358,18 @@ namespace CosmicShore.UI
             if (lines == null || transform is not RectTransform page) return false;
             _board = VoyageBoard.Create(page, template ? template.LabelTemplate : null, vessels, lines);
             _board.SquadChanged += Refresh;
-            // The window's tabs as the board draws them: plain words, the shown one underlined (Rev 79-83).
+            _board.ScreenChanged += Refresh;
+            // The window's tabs as the board draws them: plain words, the shown one underlined, one step down the type
+            // scale (Rev 88: "the top texts are too big").
             var style = VoyageBoardStyleSO.Load();
             var tabs = GetComponentInParent<VoyageWindowTabs>(true);
-            if (tabs) tabs.Plain(style.LabelFont, 22f, 40f);
+            if (tabs)
+            {
+                tabs.Plain(style.LabelFont, 15f, 34f);
+                // The Saga, Quests and Episodes pages take the same table (Rev 90).
+                VoyageSlabPage.Stand(tabs, new VoyageKit(style, lines, template ? template.LabelTemplate : null), vessels, page,
+                    sagaLocked);
+            }
             // The map and its edge view stand in the board's course column.
             if (mapColumn)
             {
@@ -367,27 +384,13 @@ namespace CosmicShore.UI
             return true;
         }
 
-        /// <summary>The map over the edge view in the course column, the edge view a share of its height (Rev 81 B5).</summary>
+        /// <summary>The table in the course column: the map over its edge-on view (Rev 98 1A); behind the squad screen
+        /// the map alone, over the whole page.</summary>
         void FitBoardColumn()
         {
-            if (!mapColumn) return;
-            float share = VoyageBoardStyleSO.Load().EdgeShare;
-            if (_mapHost)
-            {
-                _mapHost.anchorMin = new Vector2(0f, share);
-                _mapHost.anchorMax = Vector2.one;
-                _mapHost.offsetMin = new Vector2(0f, edgeGap * 0.5f);
-                _mapHost.offsetMax = Vector2.zero;
-            }
-            var edge = EnsureEdge();
-            if (edge && _edgeHost)
-            {
-                _edgeHost.anchorMin = Vector2.zero;
-                _edgeHost.anchorMax = new Vector2(1f, share);
-                _edgeHost.pivot = new Vector2(0.5f, 0.5f);
-                _edgeHost.offsetMin = Vector2.zero;
-                _edgeHost.offsetMax = new Vector2(0f, -edgeGap * 0.5f);
-            }
+            if (!mapColumn || !_board) return;
+            EnsureEdge();
+            _board.FitTable(_mapHost, _edgeHost);
         }
 
         static VoyageBoard.Row BoardRow(VoyageLines lines, VoyageOpenCard.Model model, int index, CrewPerson person)
@@ -407,8 +410,13 @@ namespace CosmicShore.UI
             string.IsNullOrEmpty(model.LightYears) ? null
                 : TemplateText.Fill(lines.BoardRowMeta, "ly", model.LightYears, "minutes", model.Minutes, "intensity", model.Intensity);
 
-        static VoyageBoard.Voyage BoardVoyage(VoyageLines lines, VoyageJob job, VoyageOpenCard.Model model, System.Action setSail) => new()
+        static VoyageBoard.Voyage BoardVoyage(VoyageLines lines, VoyageJob job, VoyageOpenCard.Model model, System.Action setSail,
+            int index, int count, CrewPerson person) => new()
         {
+            Kicker = TemplateText.Fill(person != null ? lines.BoardKicker : lines.BoardKickerAlone,
+                "n", (index + 1).ToString("00", CultureInfo.InvariantCulture),
+                "count", count.ToString("00", CultureInfo.InvariantCulture), "pilot", person?.Name),
+            Place = model.To,
             Title = job.Title,
             Line = job.Summary,
             Distance = model.CourseValue,

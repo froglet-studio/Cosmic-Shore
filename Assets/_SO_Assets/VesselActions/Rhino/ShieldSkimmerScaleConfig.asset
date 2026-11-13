@@ -18,6 +18,14 @@ MonoBehaviour:
   touchEnergizeRateMultiplier: 2
   energizedTailSeconds: 5
   energizeCooldownSeconds: 5
+  timeSwordRateMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 4
+    UseFloor: 1
+    Floor: 0.5
   superShieldUpgradeElement: 3
   surgeRingSwordCount: 8
   surgeRingUnfurlSeconds: 0.35

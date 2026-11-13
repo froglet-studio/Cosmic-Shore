@@ -223,6 +223,16 @@ merged tree; hand-delete only files that generator no longer emits, once a guid 
 
 **Amoebius is not rebuilt here.** The three-weekly scheduled Amoebius update owns the engine build (see §0.05).
 
+**Trunk gate: is bleeding-edge green?** (every mode that pushes or merges; /trunk-doctor §6)
+```bash
+python3 .claude/skills/trunk-doctor/trunk_doctor.py --gate
+```
+Exit 2 means `bleeding-edge` is red. **Stop.** Tell the person it is red, why (the gate names the first red PR and the
+issue), and point to `/trunk-doctor`. Push or merge only if this change IS the fix (rerun with `--fix`; a
+`trunk-doctor/*` branch passes by itself) or if the person says to go ahead anyway, and record that in the PR. Exit 3
+means unknown: say so and carry on. Why: 2026-11-09 to 11-12, 31 PRs merged onto a red trunk while the local gates
+stayed green (`Docs/Reports/TRUNK_HEALTH.md`).
+
 **Push.** `git push -u origin "$BRANCH"`. Rejected because someone pushed meanwhile: `git fetch origin
 "$BRANCH"`, `git merge origin/$BRANCH`, re-run the gates if the new commits touched C#, push again. Network
 failures: retry 4 times, waiting 2 s, 4 s, 8 s, 16 s.
@@ -1226,7 +1236,8 @@ branches at once on `bleeding-edge` instead of checking out each one. Skip this 
 "PR only" / `--no-merge`, on a NO-GO (nothing was opened), and in `/ship-tools` (it opens no PR).
 
 1. **Last, after §5.5 and §5.6.** CI is fire-and-forget (§0.05): do not wait for it.
-2. **Right before merging, read the PR** (`pull_request_read`, method `get`): still open, `mergeable` true. If
+2. **Right before merging, run the trunk gate again** (`python3 .claude/skills/trunk-doctor/trunk_doctor.py --gate`,
+   §1.5): on exit 2, do not merge unless this PR is the fix or the person says to merge anyway. Then **read the PR** (`pull_request_read`, method `get`): still open, `mergeable` true. If
    `bleeding-edge` moved and the PR now conflicts, run §1.5 again (merge `bleeding-edge` in, resolve, `gates.sh`,
    push) and read it again. Never merge a PR whose gates you did not run on what is being merged.
 3. **Merge with a merge commit**, never squash or rebase:

@@ -941,7 +941,7 @@ namespace CosmicShore.UI
         // ---- drawing ----
 
         /// <param name="snapDomain">True when a different squad comes on screen: its hulls take its colour at once, with no swap.</param>
-        /// <summary>The shown squad's domain: the Ark's hangar backdrop plays in it (Docs/MENU_REDESIGN_B.md section 171).
+        /// <summary>The shown squad's domain: the Ark's hangar backdrop plays in it (Docs/MENU_REDESIGN_B.md section 190).
         /// Raised when it changes.</summary>
         public event System.Action HangarChanged;
         /// <summary>False until a squad has been drawn (or while none is shown).</summary>
