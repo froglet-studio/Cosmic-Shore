@@ -39,6 +39,8 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Text[] stepLabels = new TMP_Text[0];
         [Tooltip("One marker per step under the bar (optional): lit once the step has started, filled once it is done.")]
         [SerializeField] Graphic[] stepMarkers = new Graphic[0];
+        [Tooltip("One fill per marker (optional): hidden until its step is done.")]
+        [SerializeField] Graphic[] stepMarkerFills = new Graphic[0];
 
         [Header("Readout")]
         [Tooltip("The running step's name, over the bar.")]
@@ -49,6 +51,16 @@ namespace CosmicShore.UI
         [SerializeField] string percentTemplate = "{pct}";
         [Tooltip("Shown in place of a step's name once the bar is done.")]
         [SerializeField] string doneWord = "";
+
+        [Header("Look (theme tokens)")]
+        [Tooltip("The fill while the load runs.")]
+        [SerializeField] UIColorToken fillToken = UIColorToken.TextLight;
+        [Tooltip("The fill and the done word once the load is complete. Lime means done and nothing else.")]
+        [SerializeField] UIColorToken doneToken = UIColorToken.Cta;
+        [Tooltip("A step's label and marker once the step has started, and the running step's name.")]
+        [SerializeField] UIColorToken stepOnToken = UIColorToken.TextLight;
+        [Tooltip("A step's label and marker before the step starts.")]
+        [SerializeField] UIColorToken stepOffToken = UIColorToken.NeutralLightest;
 
         float _shown = -1f;
         bool _done;
@@ -104,7 +116,37 @@ namespace CosmicShore.UI
         }
 
         /// <summary>The look of the steps and the done state: markers, label emphasis, the fill's done colour.</summary>
-        protected virtual void OnShown(float value01, int step, bool done) { }
+        protected virtual void OnShown(float value01, int step, bool done)
+        {
+            var on = UITheme.Resolve(null, stepOnToken);
+            var off = UITheme.Resolve(null, stepOffToken);
+            var doneColour = UITheme.Resolve(null, doneToken);
+
+            if (fillGraphic) fillGraphic.color = done ? doneColour : UITheme.Resolve(null, fillToken);
+            if (stepText) stepText.color = done ? doneColour : on;
+            // The glint says "still working": it leaves with the work.
+            if (glint && glint.gameObject.activeSelf == done) glint.gameObject.SetActive(!done);
+
+            int count = StepCount;
+            for (int i = 0; i < count; i++)
+            {
+                bool started = StepStarted(i, step, done);
+                bool finished = StepFinished(i, step, done);
+                if (i < stepLabels.Length && stepLabels[i]) stepLabels[i].color = started ? on : off;
+                if (i < stepMarkers.Length && stepMarkers[i]) stepMarkers[i].color = started ? on : off;
+                if (i < stepMarkerFills.Length && stepMarkerFills[i])
+                {
+                    stepMarkerFills[i].color = on;
+                    stepMarkerFills[i].enabled = finished;
+                }
+            }
+        }
+
+        /// <summary>A step has started once the bar is in it or past it. Pure.</summary>
+        public static bool StepStarted(int index, int step, bool done) => done || index <= step;
+
+        /// <summary>A step is finished once the bar has moved past it, or the load is done. Pure.</summary>
+        public static bool StepFinished(int index, int step, bool done) => done || index < step;
 
         void Update()
         {
