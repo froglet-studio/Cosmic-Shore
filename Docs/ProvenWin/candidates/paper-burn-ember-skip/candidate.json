@@ -1,0 +1,56 @@
+{
+ "id": "paper-burn-ember-skip",
+ "title": "PrismPaperBurn skips the ember flicker noise and ember maths where the ember is exactly zero (outside the char band, or before ignition)",
+ "owner": "Garrett",
+ "lane": "world-look",
+ "kind": "shader",
+ "earlyOut": true,
+ "runtimeWriters": "Only _Burn is written at runtime: PrismBurnView.cs:203-228 stamps per instance (progress 0..1, e.Seed, coverage near*a or (1-near)*a, flags 0/+1 MID/+2 NoHoles) and Submit (PrismBurnView.cs:244-255) draws it with Graphics.RenderMeshInstanced through a MaterialPropertyBlock. Every other property (_EmberWidth 0.035, _CharWidth 0.11, _ScorchWidth 0.22, _Span 1.3, _EmberFlicker 0.35, _NoiseAmount 0.38, _NoiseFreq 4.5) is the .mat's: grep of each name across Assets/_Scripts finds no writer. The laser burn (PrismLaserBurn.mat) uses another shader and is untouched.",
+ "exposure": "Drawn by PrismBurnManager (EnsureInstance, PrismBurnManager.cs:88) for every prism burning in the paper style: the Grizzly flamethrower (GrizzlyFlamethrowerActionExecutor.cs:119). NEAR tier (PrismPaperBurnNear.mat, _BURN_CURL) close up, MID tier (PrismPaperBurnMid.mat) further out, every platform tier. Only while prisms burn.",
+ "spec": {
+  "material": "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnNear.mat",
+  "mesh": "builtin:Cube.fbx",
+  "swapFile": "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurn.shader",
+  "cameraDistance": 1.6,
+  "fov": 60,
+  "width": 2560,
+  "height": 1440,
+  "timepoints": 48,
+  "drawsPerBatch": 48,
+  "chain": 8,
+  "samples": 200,
+  "warmupSeconds": 3,
+  "clockSpan": 20,
+  "driveGlobalTime": true,
+  "floats": [],
+  "colors": [],
+  "vectors": [{"name": "_Burn", "value": {"x": 0.45, "y": 0.37, "z": 1.0, "w": 0.0}}],
+  "randomPerMoment": []
+ },
+ "variants": {
+  "A": "variants/A.shader",
+  "B": "variants/B.shader",
+  "C": "variants/C.shader",
+  "probe_reach": "variants/probe_reach.shader",
+  "probe_guard": "variants/probe_guard.shader"
+ },
+ "states": {
+  "mid": {"material": "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurnMid.mat", "vectors": [{"name": "_Burn", "value": {"x": 0.45, "y": 0.37, "z": 1.0, "w": 1.0}}]},
+  "early": {"vectors": [{"name": "_Burn", "value": {"x": 0.12, "y": 0.61, "z": 1.0, "w": 0.0}}]},
+  "late": {"vectors": [{"name": "_Burn", "value": {"x": 0.68, "y": 0.23, "z": 1.0, "w": 0.0}}]},
+  "convert": {"vectors": [{"name": "_Burn", "value": {"x": 0.7, "y": 0.37, "z": 1.0, "w": 2.0}}]},
+  "ignite": {"vectors": [{"name": "_Burn", "value": {"x": 0.0, "y": 0.37, "z": 1.0, "w": 0.0}}]}
+ },
+ "machine": "an RTX 3080 (Gbox)",
+ "signoff": {
+  "heading": "Paper burn sign-off",
+  "subject": "the burning-paper look a prism takes when the Grizzly's flame catches it",
+  "whatChanged": "The glowing ember edge and the faint smoulder behind it are only ever visible near the burn. Everywhere else they add exactly nothing, but the shader still worked out a flicker noise for every pixel. Now it skips that work where the glow is zero. The glow itself is drawn exactly as before.",
+  "changeName": "ember skip",
+  "frameNote": "Material PrismPaperBurnNear on a cube, burned about half way, seen from many angles. The ember glow is the thin bright edge round the hole; look there in the 1:1 view.",
+  "notMeasured": [
+   "A phone GPU.",
+   "Its share of a real frame: it only costs anything while prisms are burning."
+  ]
+ }
+}

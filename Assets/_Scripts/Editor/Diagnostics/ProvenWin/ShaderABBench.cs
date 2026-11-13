@@ -41,6 +41,10 @@ namespace CosmicShore.Editor.ProvenWin
         public class Spec
         {
             public string material;          // asset path of the material under test
+            // optional: a material whose properties are copied over it first, the way a system that clones a template
+            // and copies the object's own look onto it does (SpindleLodSystem.BodyMaterialFor)
+            public string copyFrom;
+            public float farClip = 50f;      // far plane of the bench camera (raise it for a body placed far from the eye)
             public string mesh;              // asset path of the model holding the mesh
             public string meshName;          // optional: which mesh in the model
             public long meshFileId;          // optional: which mesh, by the local file id a prefab's m_Mesh names
@@ -64,6 +68,9 @@ namespace CosmicShore.Editor.ProvenWin
             // writes, a colour-set tint). Measure what ships, not what the asset says.
             public List<FloatOverride> floats = new List<FloatOverride>();
             public List<ColorOverride> colors = new List<ColorOverride>();
+            // Vector properties the game writes per draw or per instance (PrismBurnView's _Burn stamp). The bench draws
+            // without instancing, so an instanced property is read from the material.
+            public List<VectorOverride> vectors = new List<VectorOverride>();
             // Per-instance values the game stamps per object (a seed per shot): each moment draws a fresh value in [0,1),
             // the same for A and B.
             public List<string> randomPerMoment = new List<string>();
@@ -104,6 +111,7 @@ namespace CosmicShore.Editor.ProvenWin
             public long pixelsDifferent8bit;
             public int maxLevelDiff8bit;      // the most display levels (0-255) any channel of any pixel moved
             public long pixelsOverOneLevel;   // pixels where some channel moved by more than one display level
+            public long repeatDriftValues;    // half-float values that differ when A is drawn twice (must be 0)
             public List<double> msA = new List<double>();
             public List<double> msB = new List<double>();
             public double medianA;
@@ -203,6 +211,14 @@ namespace CosmicShore.Editor.ProvenWin
                 var framesA = Capture(spec, "A", matA, mesh, passA, rt, out int coveredA);
                 var framesB = Capture(spec, "B", matB, mesh, passB, rt, out _);
                 rep.coveredPixelsMean = coveredA;
+                // Repeatability: A drawn again after B must match the first A exactly, or some input the bench does not
+                // drive (an undriven clock) moved between the captures and every A/B difference below is suspect.
+                var framesA2 = Capture(spec, "repeat", matA, mesh, passA, rt, out _);
+                long drift = 0;
+                for (int f = 0; f < framesA.Count; f++)
+                    for (int p = 0; p < framesA[f].Length; p++) if (framesA[f][p] != framesA2[f][p]) drift++;
+                rep.repeatDriftValues = drift;
+                if (drift > 0) Debug.LogWarning($"[ShaderABBench] NOT REPEATABLE: A drawn twice differs in {drift} half-float values; an input the bench does not drive is moving");
                 Compare(spec, framesA, framesB, rep);
 
                 // â”€â”€ 2. Cost, paired â”€â”€
@@ -241,7 +257,13 @@ namespace CosmicShore.Editor.ProvenWin
             string swap = spec.swapFile.Replace('\\', '/');
             string shaderText;
             if (string.Equals(swap, shaderPath, StringComparison.OrdinalIgnoreCase))
-                shaderText = content;
+            {
+                // The clone sits in another folder, so a bare #include "Name.hlsl" that resolved next to the original
+                // shader is pointed at the original's folder (same text for A and B, so the comparison is unchanged).
+                string origDir = Path.GetDirectoryName(shaderPath).Replace('\\', '/');
+                shaderText = new Regex("#include\\s+\"([^\"/\\\\]+)\"").Replace(content, mt =>
+                    File.Exists($"{origDir}/{mt.Groups[1].Value}") ? $"#include \"{origDir}/{mt.Groups[1].Value}\"" : mt.Value);
+            }
             else
             {
                 // The swapped file and every file in `includeChain` (the includes between it and the shader) are cloned into
@@ -277,8 +299,11 @@ namespace CosmicShore.Editor.ProvenWin
             var sh = AssetDatabase.LoadAssetAtPath<Shader>(clonePath) ?? throw new FileNotFoundException(clonePath);
             var m = new Material(mat) { name = $"{mat.name} ({label})", shader = sh };
             m.CopyPropertiesFromMaterial(mat);
+            if (!string.IsNullOrEmpty(spec.copyFrom))
+                m.CopyPropertiesFromMaterial(AssetDatabase.LoadAssetAtPath<Material>(spec.copyFrom) ?? throw new FileNotFoundException(spec.copyFrom));
             foreach (var f in spec.floats) m.SetFloat(f.name, f.value);
             foreach (var c in spec.colors) m.SetColor(c.name, c.value);
+            foreach (var v in spec.vectors) m.SetVector(v.name, v.value);
             Debug.Log($"[ShaderABBench] {label}: shader={sh.name} supported={sh.isSupported} hasError={ShaderUtil.ShaderHasError(sh)} " +
                       $"passCount={m.passCount} pipeline='{Shader.globalRenderPipeline}' api={SystemInfo.graphicsDeviceType}");
             foreach (var msg in ShaderUtil.GetShaderMessages(sh))
@@ -290,7 +315,17 @@ namespace CosmicShore.Editor.ProvenWin
         static void SetMoment(Spec spec, Material m, int i, float clock)
         {
             if (!string.IsNullOrEmpty(spec.clockProperty)) m.SetFloat(spec.clockProperty, clock);
-            if (spec.driveGlobalTime) Shader.SetGlobalVector("_Time", new Vector4(clock / 20f, clock, clock * 2f, clock * 3f));
+            if (spec.driveGlobalTime)
+            {
+                Shader.SetGlobalVector("_Time", new Vector4(clock / 20f, clock, clock * 2f, clock * 3f));
+                // Shader Graph's Time node reads URP's _TimeParameters, which only a camera render writes: without this a
+                // graph's clock is whatever the last render left, and A and B are drawn at different instants (measured
+                // 2026-11-12: a null control on SpindleDepthGraph moved 24 M px).
+                Shader.SetGlobalVector("_TimeParameters", new Vector4(clock, Mathf.Sin(clock), Mathf.Cos(clock), 0f));
+                // and the game's own graph clock (PrismClock.cs publishes it every frame; the spindle and prism graphs'
+                // Clock input), which nothing writes in batchmode
+                Shader.SetGlobalFloat("_PrismClock", clock);
+            }
             var rng = new System.Random(5000 + i);
             foreach (var name in spec.randomPerMoment) m.SetFloat(name, (float)rng.NextDouble());
         }
@@ -371,7 +406,7 @@ namespace CosmicShore.Editor.ProvenWin
             var eye = new Vector3(0, 0, -spec.cameraDistance);
             var view = Matrix4x4.TRS(eye, Quaternion.identity, Vector3.one).inverse;
             view.m20 = -view.m20; view.m21 = -view.m21; view.m22 = -view.m22; view.m23 = -view.m23; // camera looks down -Z
-            var proj = Matrix4x4.Perspective(spec.fov, (float)spec.width / spec.height, 0.05f, 50f);
+            var proj = Matrix4x4.Perspective(spec.fov, (float)spec.width / spec.height, 0.05f, spec.farClip);
             if (spec.orthographic)
             {
                 view = Matrix4x4.identity;
@@ -380,6 +415,9 @@ namespace CosmicShore.Editor.ProvenWin
             }
             cmd.SetViewProjectionMatrices(view, proj);
             cmd.SetGlobalVector("_WorldSpaceCameraPos", eye);
+            // Also as a plain global: a distance-driven shader (IncorporealDepth) read a stale camera position from the
+            // command-buffer write alone on D3D, so its guarded state never happened there (measured 2026-11-12).
+            Shader.SetGlobalVector("_WorldSpaceCameraPos", eye);
             for (int c = 0; c < copies; c++)
                 for (int s = 0; s < mesh.subMeshCount; s++)
                     cmd.DrawMesh(mesh, model, m, s, pass);

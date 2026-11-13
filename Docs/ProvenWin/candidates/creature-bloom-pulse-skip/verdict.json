@@ -1,0 +1,54 @@
+{
+ "verdict": "HOLD",
+ "reasons": [
+  "dx12: null control is off (B/A 0.9730, B won 55.0 %): the desktop is busy or the instrument is biased; re-run when the machine is idle",
+  "d3d11: the negative control was NOT caught: the comparison cannot see this kind of error",
+  "dx12: the negative control was NOT caught: the comparison cannot see this kind of error",
+  "d3d11: probe_guard changed nothing: the guarded state never occurs in the bench (fix the bench state: game-state floats, globals, camera distance), so the measurement says nothing",
+  "dx12: probe_guard changed nothing: the guarded state never occurs in the bench (fix the bench state: game-state floats, globals, camera distance), so the measurement says nothing",
+  "d3d11: not categorically faster (B won 32.5 % of pairs, p90 B/A 1.0695)",
+  "d3d11 state_open: output differs in this state (22500185 px)",
+  "d3d11 state_open: the change COSTS 3.1 % in this state (B slower in 84.0 % of pairs)",
+  "dx12: not categorically faster (B won 48.5 % of pairs, p90 B/A 1.0773)",
+  "dx12 state_open: output differs in this state (22463172 px)",
+  "vulkan state_open: output differs in this state (22497623 px)"
+ ],
+ "rows": {
+  "d3d11": {
+   "a": 1.5630562500000003,
+   "b": 1.5807562499999999,
+   "ratio": 1.0105363406545882,
+   "p10": 0.9585233133511728,
+   "p90": 1.069527619318137,
+   "share": 0.325,
+   "tier": "bit-identical",
+   "px8": 0,
+   "levels": 0,
+   "over1": 0
+  },
+  "dx12": {
+   "a": 1.7288125,
+   "b": 1.72861875,
+   "ratio": 1.0008437660368292,
+   "p10": 0.9297110411129256,
+   "p90": 1.0772963870177588,
+   "share": 0.485,
+   "tier": "bit-identical",
+   "px8": 0,
+   "levels": 0,
+   "over1": 0
+  },
+  "vulkan": {
+   "a": 1.7012875000000003,
+   "b": 1.21790625,
+   "ratio": 0.7295843365841517,
+   "p10": 0.6684035933423431,
+   "p90": 0.8192752391858446,
+   "share": 1.0,
+   "tier": "bit-identical",
+   "px8": 0,
+   "levels": 0,
+   "over1": 0
+  }
+ }
+}

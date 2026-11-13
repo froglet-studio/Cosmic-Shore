@@ -1,0 +1,64 @@
+{
+ "id": "creature-bloom-pulse-skip",
+ "title": "Creature bodies skip the bloom pulse's Newton solve when openness is 0 (nearer than ~313 u, farther than ~693 u)",
+ "owner": "Garrett",
+ "lane": "world-look",
+ "kind": "shader",
+ "earlyOut": true,
+ "runtimeWriters": "Globals: _IncorporealSpread/_IncorporealFlow/_IncorporealRecede by IncorporealDepth.Publish (Assets/_Scripts/Utility/IncorporealDepth.cs:42-57, from Resources/IncorporealDepth.asset: recede 2.25..4.9, flowAmplitude 0.35, flowWaves 1.5, flowSpeed 0.6, pulseGlow 0.02), called by SpindleLodSystem.PublishGlobals (SpindleLodSystem.cs:387-398), which also writes _SpindleLodLook2.y = 1 in the Overt style (line 397). Per body material: SpindleLodSystem.BodyMaterialFor (SpindleLodSystem.cs:637-652) clones the depth template (SpindleDepth.mat), copies the creature's own material (QuadFishSpindleMaterial for the QuadFish) and sets _SpindleLodStrength, _SpindleDepthReach (ReachBucket of the bounds) and _SpindleDepthForm 0. The bench reproduces exactly that: copyFrom the creature material, the three floats, Publish as prepare, Look2 as a global.",
+ "exposure": "Every creature body SpindleLodSystem hands a depth material (the shark, brittlestar, worm and quadfish models) in the Overt style, ~50 per Garland/Lattice match; every platform tier. The pulse runs per body pixel at every distance; it is non-zero only between ~313 u and ~693 u.",
+ "spec": {
+  "material": "Assets/_Graphics/Materials/SpindleDepth.mat",
+  "copyFrom": "Assets/_Graphics/Materials/QuadFishSpindleMaterial.mat",
+  "mesh": "Assets/_Models/Fauna/mediumfish.fbx",
+  "meshFileId": 150581138598605843,
+  "swapFile": "Assets/_Graphics/Materials/Graphs/IncorporealDepth.hlsl",
+  "includeChain": ["Assets/_Graphics/Materials/Graphs/SpindleLod.hlsl"],
+  "cameraDistance": 150,
+  "farClip": 2000,
+  "fov": 7,
+  "modelScale": 10,
+  "width": 2560,
+  "height": 1440,
+  "timepoints": 48,
+  "drawsPerBatch": 48,
+  "chain": 8,
+  "samples": 200,
+  "warmupSeconds": 3,
+  "clockSpan": 20,
+  "driveGlobalTime": true,
+  "prepare": ["CosmicShore.Utility.IncorporealDepth.Publish"],
+  "globalVectors": [{"name": "_SpindleLodLook2", "value": {"x": 1.0, "y": 1.0, "z": 0.0, "w": 0.0}}],
+  "logGlobals": ["_IncorporealSpread", "_IncorporealFlow", "_IncorporealRecede", "_SpindleLodLook2"],
+  "floats": [
+   {"name": "_SpindleLodStrength", "value": 0.01},
+   {"name": "_SpindleDepthReach", "value": 8.0},
+   {"name": "_SpindleDepthForm", "value": 0.0}
+  ],
+  "colors": [],
+  "randomPerMoment": []
+ },
+ "variants": {
+  "A": "variants/A.hlsl",
+  "B": "variants/B.hlsl",
+  "C": "variants/C.hlsl",
+  "probe_reach": "variants/probe_reach.hlsl",
+  "probe_guard": "variants/probe_guard.hlsl"
+ },
+ "states": {
+  "open": {"cameraDistance": 450, "fov": 2.4},
+  "far": {"cameraDistance": 800, "fov": 1.3}
+ },
+ "machine": "an RTX 3080 (Gbox)",
+ "signoff": {
+  "heading": "Creature glow sign-off",
+  "subject": "the creatures' bodies (the quadfish, shark, brittlestar and worm) as the sea's depth effect opens them",
+  "whatChanged": "When a creature is far enough away its body opens up and a faint pulse of light runs through it. Up close, and again very far away, the pulse is exactly zero, but the shader still solved where the pulse would be for every pixel of the body. Now it skips that when the pulse is zero. Where the pulse shows, it is drawn exactly as before.",
+  "changeName": "pulse skip",
+  "frameNote": "Material SpindleDepth with the QuadFish's look on the quadfish model, seen from 150 units through a narrow lens so it fills the frame.",
+  "notMeasured": [
+   "A phone GPU.",
+   "Its share of a real frame: it is paid per creature body pixel in matches with creatures."
+  ]
+ }
+}

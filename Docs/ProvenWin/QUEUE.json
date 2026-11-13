@@ -164,12 +164,14 @@
    "gain": "20-30 % of body pixel ALU",
    "confidence": "medium",
    "lens": "multiplied-by-zero",
-   "status": "queued",
+   "status": "inconclusive",
    "added": "2026-11-12",
    "baseCommit": "3479a8e3ba",
    "fileHashes": {
     "Assets/_Graphics/Materials/Graphs/IncorporealDepth.hlsl": "70fc17291febd8dd517b2b81b35f4a1fbb108efe"
-   }
+   },
+   "outcomeReason": "Vulkan 1.37x bit-identical (100% of pairs, probes and negative control caught); DX12/D3D11 1.00x: on D3D openness at rest is a tiny positive, not 0, so the guard never fires; open-state null not repeatable across compiles",
+   "finished": "2026-11-12"
   },
   {
    "id": "switch-ring-lace-skip",
@@ -218,12 +220,15 @@
    "gain": "~30 % of the burn fragment while burning; ~0 of most frames",
    "confidence": "high",
    "lens": "multiplied-by-zero",
-   "status": "queued",
+   "status": "rejected",
    "added": "2026-11-12",
    "baseCommit": "3479a8e3ba",
    "fileHashes": {
     "Assets/_Graphics/Materials/PrismBurn/PrismPaperBurn.shader": "20b583633230225697a8bbb46b5fd929548c0d30"
-   }
+   },
+   "taken": "2026-11-12",
+   "outcomeReason": "Vulkan: block guard 1.04x and 11 px one level at half burn (1.38-1.43x early/igniting); noise-only guard 333k px one level, 0.98x",
+   "finished": "2026-11-12"
   },
   {
    "id": "membrane-frustum-cull",

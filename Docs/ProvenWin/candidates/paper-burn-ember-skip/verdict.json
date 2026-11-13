@@ -1,0 +1,25 @@
+{
+ "verdict": "FAIL",
+ "reasons": [
+  "vulkan: output differs (333239 px at 8 bits, up to 1 levels): a picture change is decisive, no other measurement can rescue it",
+  "only ['vulkan'] measured; a shader win is measured on dx12, vulkan and d3d11 (Vulkan is the phone path)",
+  "an early-out needs both probes (probe_reach: return a constant always; probe_guard: only inside the guard). Without them a 'no gain' or an 'identical' may mean the bench never reached the state",
+  "vulkan: not categorically faster (B won 39.0 % of pairs, p90 B/A 1.1413)",
+  "vulkan state_convert: output differs in this state (21676 px)",
+  "vulkan state_early: output differs in this state (46263 px)"
+ ],
+ "rows": {
+  "vulkan": {
+   "a": 4.28925625,
+   "b": 4.39356875,
+   "ratio": 1.0155890294820134,
+   "p10": 0.9140810660744031,
+   "p90": 1.1413421505322732,
+   "share": 0.39,
+   "tier": "different",
+   "px8": 333239,
+   "levels": 1,
+   "over1": 0
+  }
+ }
+}
