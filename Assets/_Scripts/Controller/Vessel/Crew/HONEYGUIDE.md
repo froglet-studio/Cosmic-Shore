@@ -242,6 +242,23 @@ While an AI flies the hull (an AI crew, or you on the Ratel's seat) the crew pul
 lab's `wanted8`, holding each pull `aiPreviewSeconds`, with "ahead" standing in for the lab's destination (freestyle has
 none). The AI pilot does not yet steer to a Mass hive (a follow-up).
 
+## Element scaling and level 5 (the vessel pass, Garrett, 2026-11-13)
+
+The fleet contract (Space = reach, Time = rate, Charge = threat and PvP petals, Mass = size) now holds on every card and
+the three open level-5 slots are filled. Game only: the lab's numbers stay the base, each multiplier is x1 at level 0,
+and every gate reads its own element field on `HoneyguideConfigSO` (`element_ability_table.py Honeyguide`: 4/4, 4/4):
+
+| Element | Scales | Level 5 |
+|---|---|---|
+| Charge | `flitStrikeScale` x1 -> x2: Flit's strike radius (8 -> 16 u) | **Relentless** (new): a Flit that strikes a vessel or creature is ready again at once (`RelentlessActive`) |
+| Mass | `hiveReachScale` x1 -> x2: how near the hull must pass a hive (25 -> 50 u); the hive still comes sooner with Mass | **Hive Chain** (new): reaching a hive plants the next one at once (`HiveChainActive`) |
+| Space | `peckBurstScale` x1 -> x2: shots in a Peck (3 -> 6) | Piercing Pecks (unchanged, the gun's own upgrade) |
+| Time | `slipSpeedScale` x1 -> x1.5: the Slip's top speed | **Slipstream** (new): a slip carries `slipstreamExitScale` (2) times `zipExitBoost` out (`ZipExitBoostFor`) |
+
+The Sparrow parts the hull was cloned with still carry their own gates (`FireGunActionExecutor`, the block-shoot
+executor, `VesselElementalImmunity` while translation is restricted); the Honeyguide never fires those, so they are
+inert here. Tests: `HoneyguideFundamentalsTests`.
+
 ## Choices made in the port (not in the lab)
 
 - **Peck is the Sparrow's gun** at the lab's rate and range, so it is the real networked projectile.
