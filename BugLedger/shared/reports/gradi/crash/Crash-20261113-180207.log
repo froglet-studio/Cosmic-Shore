@@ -1,0 +1,975 @@
+==== Cosmic Shore editor crash report ====
+written:        2026-11-13 18:02:07 (next editor launch after the abnormal exit)
+session:        20261113-190810217  (pid 15600, Unity 6000.3.17f1)
+started:        2026-11-13T19:08:10.218Z UTC
+last heartbeat: 2026-11-13T22:59:04.383Z UTC
+last state:     PlayMode
+main thread:    unresponsive for ~8s at the last heartbeat — likely a hang / freeze that was then killed
+hang dump:      C:\Users\gradi\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261113-190810217.dmp — open in Visual Studio / WinDbg; the main thread's stack names the deadlock
+
+---- Captured errors (crash-detector journal) ----
+==== Cosmic Shore crash-detector journal ====
+session: 20261113-190810217
+started: 2026-11-13T19:08:10.218Z UTC
+unity:   6000.3.17f1
+pid:     15600
+Errors, exceptions and asserts land here as they happen; a background thread
+flushes after every entry so the tail survives a hard crash.
+
+[14:08:50.883] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[14:08:51.297] [EditMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[14:10:25.395] ---- entering play mode ----
+[14:10:29.357] [EditMode] Exception: [Vivox]: System.ArgumentException: 'server' is null or empty
+Parameter name: server
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[14:10:29.920] ---- play mode running ----
+[14:11:36.448] [PlayMode] Exception: [Vivox]: System.Exception: Vivox initialization failed. ---> System.NullReferenceException: Object reference not set to an instance of an object
+  at Unity.Services.Vivox.VivoxServiceInternal.InitializeInternalAsync (Unity.Services.Vivox.VivoxConfigurationOptions options) [0x00084] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxServiceInternal.cs:325 
+   --- End of inner exception stack trace ---
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[14:12:08.928] [PlayMode] Exception: [Vivox]: System.Exception: Vivox initialization failed. ---> System.NullReferenceException: Object reference not set to an instance of an object
+  at Unity.Services.Vivox.VivoxServiceInternal.InitializeInternalAsync (Unity.Services.Vivox.VivoxConfigurationOptions options) [0x00084] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxServiceInternal.cs:325 
+   --- End of inner exception stack trace ---
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[14:12:08.932] [PlayMode] Exception: [Vivox]: System.Exception: Vivox initialization failed. Queued actions will be cleared. ---> System.NullReferenceException: Object reference not set to an instance of an object
+  at Unity.Services.Vivox.VivoxServiceInternal.InitializeInternalAsync (Unity.Services.Vivox.VivoxConfigurationOptions options) [0x002ac] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxServiceInternal.cs:369 
+  at Unity.Services.Vivox.VivoxServiceInternal.InitializeAsync (Unity.Services.Vivox.VivoxConfigurationOptions options) [0x000e8] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxServiceInternal.cs:301 
+  at Unity.Services.Vivox.VivoxServiceInternal.InitializeAndProcessQueueAsync () [0x0002a] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxServiceInternal.cs:1502 
+   --- End of inner exception stack trace ---
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[14:45:33.398] [PlayMode] Error: Trying to remove Slice (TMPro.TextMeshProUGUI) from rebuild list while we are already inside a rebuild loop. This is not supported.
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[14:45:46.778] [PlayMode] Error: Trying to remove Slice (TMPro.TextMeshProUGUI) from rebuild list while we are already inside a rebuild loop. This is not supported.
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[14:46:07.169] [PlayMode] Error: Trying to remove Slice (TMPro.TextMeshProUGUI) from rebuild list while we are already inside a rebuild loop. This is not supported.
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:04:58.702] ---- leaving play mode ----
+[15:05:02.946] ---- edit mode restored ----
+[15:05:28.574] ---- entering play mode ----
+[15:06:14.449] ---- main thread unresponsive ~45s — wrote hang dump: C:\Users\gradi\source\repos\Cosmic-Shore\Logs\CrashDetector\HangDump-20261113-190810217.dmp (open in Visual Studio or WinDbg; the main thread's stack names the deadlock) ----
+[15:06:43.971] [EditMode] Exception: [Vivox]: System.ArgumentException: 'server' is null or empty
+Parameter name: server
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:06:44.252] ---- play mode running ----
+[15:06:44.752] ---- main thread stalled ~77s and RECOVERED — slow, not hung ----
+[15:11:16.512] [PlayMode] Exception: [Vivox]: System.Exception: Vivox initialization failed. ---> System.NullReferenceException: Object reference not set to an instance of an object
+  at Unity.Services.Vivox.VivoxServiceInternal.InitializeInternalAsync (Unity.Services.Vivox.VivoxConfigurationOptions options) [0x00084] in .\Library\PackageCache\com.unity.services.vivox@c9029deeec82\Runtime\VivoxServiceInternal.cs:325 
+   --- End of inner exception stack trace ---
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:23:25.091] [PlayMode] Error: [PartyInviteController] direct-join -> RedshirtBrownpants: never became ready within budget - bouncing to solo menu.
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:23:25.107] [PlayMode] Error: [PartyInviteController] direct-join -> RedshirtBrownpants failed (UnityException): UnityEngine.UnityException: get_realtimeSinceStartupAsDouble can only be called from the main thread.
+Constructors and field initializers will be executed from the loading thread when loading a scene.
+Don't use this function in the constructor or field initializers, instead move initialization code to the Awake or Start function.
+  at (wrapper managed-to-native) UnityEngine.Time.get_realtimeSinceStartupAsDouble()
+  at CosmicShore.Utility.NetSessionRecorder+<>c.<.cctor>b__34_0 () [0x00000] in C:\Users\gradi\source\repos\Cosmic-Shore\Assets\_Scripts\Utility\NetSessionRecorder.cs:60 
+  at CosmicShore.Utility.NetSessionRecorder.get_Elapsed () [0x00000] in C:\Users\gradi\source\repos\Cosmic-Shore\Assets\_Scripts\Utility\NetSessionRecorder.cs:82 
+  at CosmicShore.Utility.NetSessionRecorder.Mark (System.String e, System.String detail) [0x00083] in C:\Users\gradi\source\repos\Cosmic-Shore\Assets\_Scripts\Utility\NetSessionRecorder.cs:107 
+  at CosmicShore.Gameplay.PartyInviteController.BounceToSoloMenuAsync (System.String toastMessage) [0x00025] in C:\Users\gradi\source\repos\Cosmic-Shore\Assets\_Scripts\Controller\Party\PartyInviteController.cs:770 
+  at Cysharp.Threading.Tasks.UniTask+ExceptionResultSource.GetResult (System.Int16 token) [0x0001e] in .\Library\PackageCache\com.cysharp.unitask@86b6e6a2e286\Runtime\UniTask.Factory.cs:326 
+  at Cysharp.Threading.Tasks.UniTask+Awaiter.GetResult () [0x00015] in .\Library\PackageCache\com.cysharp.unitask@86b6e6a2e286\Runtime\UniTask.cs:316 
+  at CosmicShore.Gameplay.PartyInviteController.RunClientJoinAsync (System.String label, System.Boolean expectLocalVessel, System.Func`1[TResult] joinSession, System.Func`2[T,TResult] afterConnected, System.String targetSessionId) [0x00716] in C:\Users\gradi\source\repos\Cosmic-Shore\Assets\_Scripts\Controller\Party\PartyInviteController.cs:500 
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:32:50.350] [PlayMode] Error: Trying to remove Slice (TMPro.TextMeshProUGUI) from rebuild list while we are already inside a rebuild loop. This is not supported.
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:32:51.792] [PlayMode] Error: Trying to remove Slice (TMPro.TextMeshProUGUI) from rebuild list while we are already inside a rebuild loop. This is not supported.
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:33:00.160] [PlayMode] Error: Trying to remove Slice (TMPro.TextMeshProUGUI) from rebuild list while we are already inside a rebuild loop. This is not supported.
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[15:36:07.403] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.UrchinAnimation.Update () (at Assets/_Scripts/Controller/Animation/UrchinAnimation.cs:114)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[15:36:07.435] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.UrchinAnimation.Update () (at Assets/_Scripts/Controller/Animation/UrchinAnimation.cs:114)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[15:48:52.228] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.UrchinAnimation.Update () (at Assets/_Scripts/Controller/Animation/UrchinAnimation.cs:114)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[15:48:52.266] [PlayMode] Exception: NullReferenceException: Object reference not set to an instance of an object
+        CosmicShore.Gameplay.UrchinAnimation.Update () (at Assets/_Scripts/Controller/Animation/UrchinAnimation.cs:114)
+        UnityEngine.DebugLogHandler:LogException(Exception, Object)
+        CosmicShore.Utility.FilteringLogHandler:LogException(Exception, Object) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:46)
+        UnityEngine.Debug:CallOverridenDebugHandler(Exception, Object)
+[16:05:44.615] [PlayMode] Error: System.Exception: HTTP/1.1 403 Forbidden
+        0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+        0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+        0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+        0x00007ffcab26587f (Unity) DebugStringToFile
+        0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+        0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+        0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+        0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+        ...
+[17:58:54.151] ---- leaving play mode ----
+
+---- Tail of Unity's own log (Editor-prev.log) ----
+(...truncated...)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Nullable`1<int>>:SetException (System.Exception)
+Mono.Net.Security.AsyncProtocolRequest/<InnerRead>d__25:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetException (System.Exception)
+Mono.Net.Security.MobileAuthenticatedStream/<InnerRead>d__66:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Threading.Tasks.ValueTask`1/ValueTaskSourceAsTask/<>c<int>:<.cctor>b__4_0 (object)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:InvokeContinuation (System.Action`1<object>,object,bool)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:OnCompleted (System.Net.Sockets.SocketAsyncEventArgs)
+System.Net.Sockets.SocketAsyncEventArgs:Complete_internal ()
+System.Net.Sockets.Socket/<>c:<.cctor>b__367_10 (System.IAsyncResult)
+System.Net.Sockets.SocketAsyncResult/<>c:<Complete>b__27_0 (object)
+System.Threading.QueueUserWorkItemCallback:System.Threading.IThreadPoolWorkItem.ExecuteWorkItem ()
+System.Threading.ThreadPoolWorkQueue:Dispatch ()
+System.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()
+
+(Filename: ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs Line: 231)
+
+[Wire - ws#]: [11/13/2026 4:46:25 PM] FATAL <>c__DisplayClass169_0.<startReceiving>b__2:2577
+
+  Cannot access a disposed object.
+  Object name: 'MobileAuthenticatedStream'.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (string,object)
+UnityWebSocketSharp.Logger:defaultOutput (UnityWebSocketSharp.LogData,string) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:231)
+UnityWebSocketSharp.Logger:output (string,UnityWebSocketSharp.LogLevel) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:249)
+UnityWebSocketSharp.Logger:Fatal (string) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:316)
+UnityWebSocketSharp.WebSocket/<>c__DisplayClass169_0:<startReceiving>b__2 (System.Exception) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/WebSocket.cs:2577)
+UnityWebSocketSharp.Ext/<>c__DisplayClass51_0:<ReadBytesAsync>b__0 (System.IAsyncResult) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Ext.cs:812)
+System.Threading.Tasks.TaskToApm/<>c__DisplayClass3_0:<InvokeCallbackWhenTaskCompletes>b__0 ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetException (System.Exception)
+Mono.Net.Security.MobileAuthenticatedStream/<StartOperation>d__57:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<Mono.Net.Security.AsyncProtocolResult>:TrySetResult (Mono.Net.Security.AsyncProtocolResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Mono.Net.Security.AsyncProtocolResult>:SetResult (Mono.Net.Security.AsyncProtocolResult)
+Mono.Net.Security.AsyncProtocolRequest/<StartOperation>d__23:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetException (System.Exception)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)
+Mono.Net.Security.AsyncProtocolRequest/<ProcessOperation>d__24:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Nullable`1<int>>:SetException (System.Exception)
+Mono.Net.Security.AsyncProtocolRequest/<InnerRead>d__25:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetException (System.Exception)
+Mono.Net.Security.MobileAuthenticatedStream/<InnerRead>d__66:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Threading.Tasks.ValueTask`1/ValueTaskSourceAsTask/<>c<int>:<.cctor>b__4_0 (object)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:InvokeContinuation (System.Action`1<object>,object,bool)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:OnCompleted (System.Net.Sockets.SocketAsyncEventArgs)
+System.Net.Sockets.SocketAsyncEventArgs:Complete_internal ()
+System.Net.Sockets.Socket/<>c:<.cctor>b__367_10 (System.IAsyncResult)
+System.Net.Sockets.SocketAsyncResult/<>c:<Complete>b__27_0 (object)
+System.Threading.QueueUserWorkItemCallback:System.Threading.IThreadPoolWorkItem.ExecuteWorkItem ()
+System.Threading.ThreadPoolWorkQueue:Dispatch ()
+System.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()
+
+(Filename: ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs Line: 231)
+
+Scanning for USB devices : 14.566ms
+Attempted to call .Dispose on an already disposed CancellationTokenSource
+Scanning for USB devices : 12.496ms
+Android Extension - Scanning For ADB Devices 336 ms
+Android Extension - Scanning For ADB Devices 186 ms
+Attempted to call .Dispose on an already disposed CancellationTokenSource
+Android Extension - Scanning For ADB Devices 204 ms
+Android Extension - Scanning For ADB Devices 175 ms
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Scanning for USB devices : 21.945ms
+[Wire - ws#]: [11/13/2026 5:46:34 PM] FATAL <>c__DisplayClass169_0.<startReceiving>b__2:2577
+
+  Cannot access a disposed object.
+  Object name: 'MobileAuthenticatedStream'.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (string,object)
+UnityWebSocketSharp.Logger:defaultOutput (UnityWebSocketSharp.LogData,string) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:231)
+UnityWebSocketSharp.Logger:output (string,UnityWebSocketSharp.LogLevel) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:249)
+UnityWebSocketSharp.Logger:Fatal (string) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs:316)
+UnityWebSocketSharp.WebSocket/<>c__DisplayClass169_0:<startReceiving>b__2 (System.Exception) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/WebSocket.cs:2577)
+UnityWebSocketSharp.Ext/<>c__DisplayClass51_0:<ReadBytesAsync>b__0 (System.IAsyncResult) (at ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Ext.cs:812)
+System.Threading.Tasks.TaskToApm/<>c__DisplayClass3_0:<InvokeCallbackWhenTaskCompletes>b__0 ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetException (System.Exception)
+Mono.Net.Security.MobileAuthenticatedStream/<StartOperation>d__57:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task`1<Mono.Net.Security.AsyncProtocolResult>:TrySetResult (Mono.Net.Security.AsyncProtocolResult)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<Mono.Net.Security.AsyncProtocolResult>:SetResult (Mono.Net.Security.AsyncProtocolResult)
+Mono.Net.Security.AsyncProtocolRequest/<StartOperation>d__23:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Threading.Tasks.VoidTaskResult>:SetException (System.Exception)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder:SetException (System.Exception)
+Mono.Net.Security.AsyncProtocolRequest/<ProcessOperation>d__24:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<System.Nullable`1<int>>:SetException (System.Exception)
+Mono.Net.Security.AsyncProtocolRequest/<InnerRead>d__25:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int>:SetException (System.Exception)
+Mono.Net.Security.MobileAuthenticatedStream/<InnerRead>d__66:MoveNext ()
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:InvokeMoveNext (object)
+System.Threading.ExecutionContext:RunInternal (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Threading.ExecutionContext:Run (System.Threading.ExecutionContext,System.Threading.ContextCallback,object,bool)
+System.Runtime.CompilerServices.AsyncMethodBuilderCore/MoveNextRunner:Run ()
+System.Threading.Tasks.AwaitTaskContinuation:RunOrScheduleAction (System.Action,bool,System.Threading.Tasks.Task&)
+System.Threading.Tasks.Task:FinishContinuations ()
+System.Threading.Tasks.Task:FinishStageThree ()
+System.Threading.Tasks.Task:FinishStageTwo ()
+System.Threading.Tasks.Task:Finish (bool)
+System.Threading.Tasks.Task:TrySetException (object)
+System.Threading.Tasks.ValueTask`1/ValueTaskSourceAsTask/<>c<int>:<.cctor>b__4_0 (object)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:InvokeContinuation (System.Action`1<object>,object,bool)
+System.Net.Sockets.Socket/AwaitableSocketAsyncEventArgs:OnCompleted (System.Net.Sockets.SocketAsyncEventArgs)
+System.Net.Sockets.SocketAsyncEventArgs:Complete_internal ()
+System.Net.Sockets.Socket/<>c:<.cctor>b__367_10 (System.IAsyncResult)
+System.Net.Sockets.SocketAsyncResult/<>c:<Complete>b__27_0 (object)
+System.Threading.QueueUserWorkItemCallback:System.Threading.IThreadPoolWorkItem.ExecuteWorkItem ()
+System.Threading.ThreadPoolWorkQueue:Dispatch ()
+System.Threading._ThreadPoolWaitCallback:PerformWaitCallback ()
+
+(Filename: ./Library/PackageCache/com.unity.services.wire@af86088a4eac/Runtime/websocket-sharp/Logger.cs Line: 231)
+
+Assembly reference Packages/com.unity.cinemachine/Editor/Samples/ExposeHDRPInternals/HDRP-Editor-ref.asmref has no target assembly definition
+Assembly reference Packages/com.unity.entities/Unity.Scenes.Editor/Internals/Properties/Unity.Properties.Internals.asmref has no target assembly definition
+[ScriptCompilation] Requested script compilation because: Assetdatabase observed changes in script compilation related files
+AssetDatabase: script compilation time: 0.034996s
+Start importing Assets/_SO_Assets/VesselActions/Swordfish using Guid(ba0540cc921f516f78b2c3cafe6c296f) (DefaultImporter) -> (artifact id: '20396ca1966f799174e4cefb6958be95') in 0.0506463 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_GoreSteal.png using Guid(a087fd7a3c93b79bd0138977b90ff64b) (TextureImporter) -> (artifact id: 'c299b4963c0a0dbeedd0c7573102e9d6') in 0.3155644 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Goby/Goby_PhaseDart.png using Guid(a0dd35aca3924e520df672ac25408f37) (TextureImporter) -> (artifact id: '58b6fb2bfc79f3d1d712a396ccfe6210') in 0.0312124 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_DangerPortal.png using Guid(71ba0cfbf60d7df9fa0b4351416abf2c) (TextureImporter) -> (artifact id: '207897634e7976f12fde0a872c1c076a') in 0.03127 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_SafeDetonation.png using Guid(f1d8b2ce362e2afe98db90f1f75376ce) (TextureImporter) -> (artifact id: 'b1a8348540a465d56ea0e1dde8aa65f2') in 0.0300081 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_ClaimedFire.png using Guid(d36eef78dfc952cc2b9dd9733b41d9eb) (TextureImporter) -> (artifact id: 'be82706d70b4ea7e85bd24aea9db3e21') in 0.0299796 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Unstoppable.png using Guid(947ca83f8426ca47d5a93488c34227c9) (TextureImporter) -> (artifact id: '2a98b77d0eac52a699ea730f7f9ee362') in 0.0326868 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_BattleSight.png using Guid(167f4b1ffec3a65081f7cf002e6e564f) (TextureImporter) -> (artifact id: '229873d62a8999c8bde39346a4238b3c') in 0.0321578 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_Steal.png using Guid(6661ebc4a5556543f8682bf9963ec930) (TextureImporter) -> (artifact id: '74ef6dbea8f5f7d3988112df9220222f') in 0.0310032 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Berm.png using Guid(76d65d4a3dd2548987c2a7ce4182c615) (TextureImporter) -> (artifact id: 'f58b6aa42c28146da3a629f51a4853b5') in 0.0315223 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Thresher/Parts/Thresher_PlantDanger.png using Guid(678983cb2b6df5e305b6e8c9e3214185) (TextureImporter) -> (artifact id: 'aff721a64df0e63170bd498a68389e62') in 0.0316649 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Goby/Pistol_VortexSteal.png using Guid(38c198ee16a6f0c4f0ca77d7abd6e801) (TextureImporter) -> (artifact id: 'bb8dd4344a1fb1495e3c50a9fbcaa7fd') in 0.0365732 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Thresher/Parts/Thresher_PlantWard.png using Guid(f946326609a16955d90fc5651cb7a415) (TextureImporter) -> (artifact id: '95ebceed61ba8023aca9977a417fd459') in 0.0329073 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Goby/Pistol_Fortress.png using Guid(0a5019527318a505cf54ed0cce230388) (TextureImporter) -> (artifact id: '98abd15e2bcca060ac3ef0a0c9abca52') in 0.0333761 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_BoostOut.png using Guid(0b43684f01895aa4c0dc418620483855) (TextureImporter) -> (artifact id: 'f4947c717a2eacd3f6b6fbe6c63db210') in 0.039397 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Grizzly/Grizzly_VectorControl.png using Guid(0d26e04ebb5faf676249536c8b6561e2) (TextureImporter) -> (artifact id: 'ad0b2e62a3d12be1221116d10526bb81') in 0.0344653 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Goby/Goby_DeepUndertow.png using Guid(ad6839521a72a9a8ad1f8b052c7bec22) (TextureImporter) -> (artifact id: '881bf53522e525835685478f3f26ef62') in 0.0349162 seconds
+Start importing Assets/_Graphics/Icons/AbilityIcons/Meerkat/Meerkat_SixSentinels.png using Guid(de357d263ae00825a6a04b34964c972b) (TextureImporter) -> (artifact id: '1d708b118a09ed5bee1806fcb83662ee') in 0.0397247 seconds
+Start importing Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat using Guid(3ea2631ba11d404ea9b8e5eae9f91159) (NativeFormatImporter) -> (artifact id: '47a06028756cc6197e5b94a659bff0bb') in 0.0423828 seconds
+Start importing Assets/_SO_Assets/Effects/Vessel Prism Effects/SwordfishSkimmerDamagePrismEffect.asset using Guid(5006731ea9ee63142b1a70233d4423a3) (NativeFormatImporter) -> (artifact id: 'af26a1bbe750852ad1c24316fd7a2174') in 0.0080666 seconds
+Start importing Assets/_SO_Assets/Color Palettes/NocturneColorSetSO.asset using Guid(116ff08ebc0c4e6db955bab003a86ce4) (NativeFormatImporter) -> (artifact id: '5620008df72abfbfd8ded06989c336d4') in 0.0088683 seconds
+Start importing Assets/_SO_Assets/Color Palettes/ProtanopiaColorSetSO.asset using Guid(31cde80f4f78432bac8960d826595421) (NativeFormatImporter) -> (artifact id: 'c91a87151f3b945ef126767c4672fb27') in 0.0091157 seconds
+Start importing Assets/_SO_Assets/Color Palettes/UkiyoEColorSetSO.asset using Guid(32a11b7b922d4094bce00730a8568ae3) (NativeFormatImporter) -> (artifact id: '5fb71abf51fff2983cc7b9db83184ab9') in 0.0081315 seconds
+Start importing Assets/_SO_Assets/Color Palettes/ContrastColorSetSO.asset using Guid(a2b69fd4235d40b683d21c958716a7f8) (NativeFormatImporter) -> (artifact id: '6565bf16177f625118ec63cb5a491082') in 0.0083097 seconds
+Start importing Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordSwingKinematicsConfig.asset using Guid(735dbb9ed6b14a679875ac7da7855708) (NativeFormatImporter) -> (artifact id: '7b3ce2b051b803fabfd032c7b16c1424') in 0.0078502 seconds
+Start importing Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset using Guid(93cd91bfb2a74d648db6762a71dfc3e9) (NativeFormatImporter) -> (artifact id: 'f562993355ad72f229ad70fba0757f04') in 0.0136348 seconds
+Start importing Assets/_SO_Assets/VesselActions/Honeyguide/HoneyguideConfig.asset using Guid(f39120e072fe4d5e9de0ca6e6180d575) (NativeFormatImporter) -> (artifact id: '74bc3e6214023eb863561201385b503f') in 0.0083667 seconds
+Start importing Assets/_SO_Assets/Color Palettes/TritanopiaColorSetSO.asset using Guid(744330f0b8aa4ef1a9adcdd29ad77dda) (NativeFormatImporter) -> (artifact id: 'c7afbe75bb89ac957905201f4a80ba64') in 0.0096587 seconds
+Start importing Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/SwordfishForceFieldSkimmerImpactorDataContainer.asset using Guid(05483649aa8bbea458ee49ed300542bd) (NativeFormatImporter) -> (artifact id: 'c5b3b6fc5f743ac65cd5ab0b941ade97') in 0.0093464 seconds
+Start importing Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordAfterimageConfig.asset using Guid(953f02dd6f9b7deee1504a725d5b47a2) (NativeFormatImporter) -> (artifact id: '8812075349ef017b1a41e058a870b6cc') in 0.0078666 seconds
+Start importing Assets/_SO_Assets/Effects/Vessel Skimmer Effects/SwordfishSwordStealBySkimmerEffect.asset using Guid(66b5ab8b91d019d32b57e5c30d8dabf0) (NativeFormatImporter) -> (artifact id: '003092e5de48379a6a806907783e002f') in 0.0082317 seconds
+Start importing Assets/_SO_Assets/Color Palettes/DeuteranopiaColorSetSO.asset using Guid(c60912e872a449699ac1e217150b1eeb) (NativeFormatImporter) -> (artifact id: '2dc2798eca6b9617ba48bdc3bb0aa1d2') in 0.0071026 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Thresher.asset using Guid(79e804358d2844eea7f5ce7ededd4465) (NativeFormatImporter) -> (artifact id: '1bc5bf6fd7792845be84deae69542d44') in 0.0022011 seconds
+Start importing Assets/_SO_Assets/VesselActions/Swordfish/SwordfishShieldSwipeRightAction.asset using Guid(b92a3e13c6d6cae4c13166674711fddb) (NativeFormatImporter) -> (artifact id: '9edad67b0b3ba17f4e18c85451e7c7fd') in 0.0021557 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Grizzly.asset using Guid(d90d75e4812343a6975c594506e6494b) (NativeFormatImporter) -> (artifact id: 'a6aa7d35c55be49b7d950c9e7959e58a') in 0.0022546 seconds
+Start importing Assets/_SO_Assets/Color Palettes/LowVisionColorSetSO.asset using Guid(e94dde772fbd4e3dbe87f5514b3ac707) (NativeFormatImporter) -> (artifact id: '956d4a2df99d7e1a4d980480fadf4a31') in 0.0024303 seconds
+Start importing Assets/_SO_Assets/Color Palettes/NeonNoirColorSetSO.asset using Guid(6a7e9e76e42c40b19d5216644774eb96) (NativeFormatImporter) -> (artifact id: 'e2c7f5e55a28360365a310eb18c1f1cf') in 0.0020011 seconds
+Start importing Assets/_SO_Assets/VesselActions/Meerkat/MeerkatSolitonConfig.asset using Guid(9a8b7c6d5e4f4a3b2c1d0e9f8a7b6c5d) (NativeFormatImporter) -> (artifact id: '41a2fbded91f3e045cb5026c31d4fd44') in 0.0016796 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Swordfish.asset using Guid(3b9e7d1c5a2f4e8d9c6b0a1e2f3d4c58) (NativeFormatImporter) -> (artifact id: '1d9b595cb89c66473b1094480d171a86') in 0.001787 seconds
+Start importing Assets/_SO_Assets/VesselActions/Swordfish/SwordfishShieldSwipeConfig.asset using Guid(2c351e381977b8fe987125acf055e8f4) (NativeFormatImporter) -> (artifact id: '5070d78a400f03abf65793d6b771ffe7') in 0.0018074 seconds
+Start importing Assets/_SO_Assets/Effects/Vessel Crystal Effects/SwordfishVesselSurgeByCrystalEffect.asset using Guid(2c9905659013874571988cf2fda5904c) (NativeFormatImporter) -> (artifact id: 'ac4b8cc0b08132547285825620f39196') in 0.0023404 seconds
+Start importing Assets/_SO_Assets/Color Palettes/NacreColorSetSO.asset using Guid(5c23989fe41646f5998662aa44c15ffa) (NativeFormatImporter) -> (artifact id: '32814f427104bccf02fbd7ca5d215a89') in 0.0020302 seconds
+Start importing Assets/_SO_Assets/Color Palettes/DartFrogColorSetSO.asset using Guid(fc278fc4db3642deb6d5c94314865280) (NativeFormatImporter) -> (artifact id: '50fb0d625f3344b20e7247f675db42e0') in 0.0022709 seconds
+Start importing Assets/Resources/ElementalAbilityMaps/Goby.asset using Guid(0d9a12bec1e54418b13d4c3d5ad0fb77) (NativeFormatImporter) -> (artifact id: '9ca403658dcc4afd2d6e1c478d94b2ee') in 0.0019096 seconds
+Start importing Assets/_SO_Assets/Color Palettes/PhoticColorSetSO.asset using Guid(8d1c1bdcb636a424d9c54fbd1afc952f) (NativeFormatImporter) -> (artifact id: '89e7c98d388e618c82a319ddbaac1f6b') in 0.001806 seconds
+Start importing Assets/_SO_Assets/Color Palettes/DuskColorSetSO.asset using Guid(7e428642c62b47f4a40c7da1717b9699) (NativeFormatImporter) -> (artifact id: '66a826c35bee3a4bcd04f291e833dc66') in 0.0017995 seconds
+Start importing Assets/_SO_Assets/Color Palettes/BlueRingedOctopusColorSetSO.asset using Guid(de30bf08df564c14bddcbb3fe0edf203) (NativeFormatImporter) -> (artifact id: 'ceb3e2b5ab0c917f1c2dd5f539536592') in 0.0019263 seconds
+Start importing Assets/_SO_Assets/VesselActions/Swordfish/SwordfishShieldSwipeLeftAction.asset using Guid(4ff8e060662050b3e6c52df601ba9ca2) (NativeFormatImporter) -> (artifact id: '95cf3938d68568ab4522aa6c2e03522f') in 0.0016927 seconds
+Start importing Assets/_SO_Assets/Color Palettes/AchromatopsiaColorSetSO.asset using Guid(dfa527e6fbe540f5bac81322305c848f) (NativeFormatImporter) -> (artifact id: '30bf756a8ed2bfa60d577a28d68207f9') in 0.0020522 seconds
+Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md using Guid(e14e9481b85e400399a21dd9c1f3f629) (TextScriptImporter) -> (artifact id: '2eb019df30755a3dc7e2cdebb450712b') in 0.0073743 seconds
+Start importing Assets/_Scripts/Controller/Arcade/REGATTA.md using Guid(55efaf46990f77c15cd2ba0375f2f773) (TextScriptImporter) -> (artifact id: '6cae0af69d1e162a267999e320680ce5') in 0.006792 seconds
+Start importing Assets/_Scripts/Controller/Arcade/BROADSIDE.md using Guid(8667944fe3ce25d815f6b1a9054c6332) (TextScriptImporter) -> (artifact id: 'eea7eec1b1e54b41523e6b5f3d8569dc') in 0.0070236 seconds
+Start importing Assets/_Scripts/Controller/Arcade/ASTROLEAGUE.md using Guid(d75349d851444205bcf98febb4e23886) (TextScriptImporter) -> (artifact id: '701d1e41754478427981e4dc7d532d84') in 0.0071558 seconds
+Start importing Assets/_Scripts/Controller/Arcade/HEADLONG.md using Guid(68add6c5a7ebed0df4111f02fda07f6e) (TextScriptImporter) -> (artifact id: '8c475227367a3d2b8e5bc1f428173a39') in 0.0070474 seconds
+Start importing Assets/_Scripts/Controller/Arcade/CLEAVE.md using Guid(f879ae60f6ca5dd4bb9d596ef0c7e9eb) (TextScriptImporter) -> (artifact id: '8ad3ea26896881259aa5b36884edb86a') in 0.0071738 seconds
+Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/SWORDFISH.md using Guid(492d9cc4c20a4ae08576d539e9639737) (TextScriptImporter) -> (artifact id: '455caa901a75d4dca15bdfeec83db550') in 0.0067027 seconds
+Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md using Guid(89d50b5608de486eb367f0f1dd861bc6) (TextScriptImporter) -> (artifact id: '7d22c83d8690630b8c5c460efd301848') in 0.0067326 seconds
+Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md using Guid(3a7776e698a074df1ee14f255378ebf9) (TextScriptImporter) -> (artifact id: '9b72a7c0c684530a7445343a8bbc00b0') in 0.0213822 seconds
+Start importing Assets/_Scripts/Controller/AI/AI_BOOST.md using Guid(0bc82918c4c2466685a82186805a585b) (TextScriptImporter) -> (artifact id: '9e0620c05930425a2bbb1c99897994f7') in 0.0060332 seconds
+Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_COMBOS.md using Guid(7c2e4a91d05f4b6e8a3f1b9c6d2e0a45) (TextScriptImporter) -> (artifact id: '0d4a5236e69f950bd5a4ec530039f2a0') in 0.0091277 seconds
+Start importing Assets/_Scripts/Controller/Vessel/R_VesselActions/RHINO_SWORD_AFTERIMAGE.md using Guid(bedf7a88c02a9d39e9cebd7ebe743c6e) (TextScriptImporter) -> (artifact id: 'dc7b4ff4e7bdf5e669074d7b95598a50') in 0.0066899 seconds
+Start importing Assets/_Scripts/Controller/ImpactEffects/SELF_TRAIL_CONTACT.md using Guid(3f6a1e3211bb4d9d9538f8db70bc84b8) (TextScriptImporter) -> (artifact id: '8854daa6408ff077b98ebfed1d68aaad') in 0.0067634 seconds
+Start importing Assets/_Prefabs/Spacevessels/Grizzly.prefab using Guid(73c8fd79b947fef4f80df7c233451d3c) (PrefabImporter) -> (artifact id: '9845e5339f212fe224336245e918b3c4') in 0.0733322 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/RhinoHUDVariant.prefab using Guid(2656b477a4af7304180e65f2848a84b3) (PrefabImporter) -> (artifact id: 'a30392a0903d30efdc4f40c5cb5c1041') in 0.0290448 seconds
+Start importing Assets/_Prefabs/Spacevessels/Honeyguide.prefab using Guid(f6abe5afafae41909d25da175bc23493) (PrefabImporter) -> (artifact id: '9ffe454d606bbf04dd837427d4bd848c') in 0.0339265 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/GobyHUDVariant.prefab using Guid(6bdd09c80ab85367dd77f55a98e8cc3c) (PrefabImporter)The referenced script (Unknown) on this Behaviour is missing!
+0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab26587f (Unity) DebugStringToFile
+0x00007ffcabb2fd4f (Unity) SerializableManagedRef::RebuildMonoInstance
+0x00007ffcabb66ab1 (Unity) PersistentManager::ProduceObject
+0x00007ffcabb5436e (Unity) PersistentManager::CreateThreadActivationQueueEntry
+0x00007ffcabb662b3 (Unity) PersistentManager::PreallocateObjectThreaded
+0x00007ffcab45f58a (Unity) ImmediatePtr<Unity::Component>::AssignObjectFromInstanceID
+0x00007ffcab45ace4 (Unity) ImmediatePtr<Unity::Component>::Transfer<StreamedBinaryRead>
+0x00007ffcab456afc (Unity) StreamedBinaryRead::Transfer<core::vector<GameObject::ComponentPair,core::allocator<GameObject::ComponentPair,0> > >
+0x00007ffcab45b065 (Unity) GameObject::Transfer<StreamedBinaryRead>
+0x00007ffcab466b42 (Unity) GameObject::VirtualRedirectTransfer
+0x00007ffcabb698a0 (Unity) SerializedFile::ReadObject
+0x00007ffcabb66fbb (Unity) PersistentManager::ReadAndActivateObjectThreaded
+0x00007ffcabb69b3b (Unity) PersistentManager::ReadObjectThreaded
+0x00007ffcabb69019 (Unity) PersistentManager::ReadObject
+0x00007ffcaacaf7f5 (Unity) PPtr<GameObject>::operator GameObject * __ptr64
+0x00007ffcac6b2556 (Unity) MergeAllPrefabInstanceInfosDuringLoad
+0x00007ffcac6b3627 (Unity) MergeAllPrefabInstancesDuringLoad
+0x00007ffcac351cd3 (Unity) PrefabImporter::GenerateAssetData
+0x00007ffcada0f88e (Unity) ImportToObjects
+0x00007ffcada0e712 (Unity) ImportAsset
+0x00007ffcada322d9 (Unity) AssetImportWorker::Import
+0x00007ffcada64b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffcada636b3 (Unity) AssetImportManager::Import
+0x00007ffcada655d2 (Unity) ImportOutOfDateAssets
+0x00007ffcada6e3fa (Unity) RefreshInternalV2
+0x00007ffcada76f17 (Unity) StopAssetImportingV2Internal
+0x00007ffcada6f51c (Unity) RefreshV2
+0x00007ffcad9e1073 (Unity) AssetDatabase::Refresh
+0x00007ffcac312951 (Unity) Application::AutoRefresh
+0x00007ffcac144674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ffd6c02ef5c (USER32) CallWindowProcW
+0x00007ffd6c02e9de (USER32) CallWindowProcW
+0x00007ffd551ba08a (COMCTL32) DefSubclassProc
+0x00007ffd551b9fc8 (COMCTL32) DefSubclassProc
+0x00007ffd42d233f3 (AppUINativePlugin) 
+0x00007ffd551ba08a (COMCTL32) DefSubclassProc
+0x00007ffd551b9e87 (COMCTL32) DSA_Create
+0x00007ffd6c02ef5c (USER32) CallWindowProcW
+0x00007ffd6c02e8cc (USER32) DispatchMessageW
+0x00007ffd6c0410e3 (USER32) SendMessageTimeoutW
+0x00007ffd6dfb1424 (ntdll) KiUserCallbackDispatcher
+0x00007ffd6bd51064 (win32u) NtUserPeekMessage
+0x00007ffd6c02a333 (USER32) PeekMessageW
+0x00007ffd6c02a293 (USER32) PeekMessageW
+0x00007ffcac109b24 (Unity) MainMessageLoop
+0x00007ffcac111a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+The referenced script on this Behaviour (Game Object '') is missing!
+0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab26587f (Unity) DebugStringToFile
+0x00007ffcab9d24f3 (Unity) ManagedMonoBehaviourRef::DoScriptRebuildWarning
+0x00007ffcabb30ecb (Unity) SerializableManagedRef::SetScriptingDataFrom
+0x00007ffcac6d0323 (Unity) InheritManagedObjectHost
+0x00007ffcac6d1c19 (Unity) MergePrefabChanges
+0x00007ffcac6b53e2 (Unity) MergePrefabInternal
+0x00007ffcac6b26f4 (Unity) MergeAllPrefabInstanceInfosDuringLoad
+0x00007ffcac6b3627 (Unity) MergeAllPrefabInstancesDuringLoad
+0x00007ffcac351cd3 (Unity) PrefabImporter::GenerateAssetData
+0x00007ffcada0f88e (Unity) ImportToObjects
+0x00007ffcada0e712 (Unity) ImportAsset
+0x00007ffcada322d9 (Unity) AssetImportWorker::Import
+0x00007ffcada64b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffcada636b3 (Unity) AssetImportManager::Import
+0x00007ffcada655d2 (Unity) ImportOutOfDateAssets
+0x00007ffcada6e3fa (Unity) RefreshInternalV2
+0x00007ffcada76f17 (Unity) StopAssetImportingV2Internal
+0x00007ffcada6f51c (Unity) RefreshV2
+0x00007ffcad9e1073 (Unity) AssetDatabase::Refresh
+0x00007ffcac312951 (Unity) Application::AutoRefresh
+0x00007ffcac144674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ffd6c02ef5c (USER32) CallWindowProcW
+0x00007ffd6c02e9de (USER32) CallWindowProcW
+0x00007ffd551ba08a (COMCTL32) DefSubclassProc
+0x00007ffd551b9fc8 (COMCTL32) DefSubclassProc
+0x00007ffd42d233f3 (AppUINativePlugin) 
+0x00007ffd551ba08a (COMCTL32) DefSubclassProc
+0x00007ffd551b9e87 (COMCTL32) DSA_Create
+0x00007ffd6c02ef5c (USER32) CallWindowProcW
+0x00007ffd6c02e8cc (USER32) DispatchMessageW
+0x00007ffd6c0410e3 (USER32) SendMessageTimeoutW
+0x00007ffd6dfb1424 (ntdll) KiUserCallbackDispatcher
+0x00007ffd6bd51064 (win32u) NtUserPeekMessage
+0x00007ffd6c02a333 (USER32) PeekMessageW
+0x00007ffd6c02a293 (USER32) PeekMessageW
+0x00007ffcac109b24 (Unity) MainMessageLoop
+0x00007ffcac111a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+ -> (artifact id: '1e1a21fdb7e079b9e139ec24638cc708') in 0.5107167 seconds
+Start importing Assets/_Prefabs/Spacevessels/Goby.prefab using Guid(982ad3e4c35f4421ae0424bf7bb1ee47) (PrefabImporter) -> (artifact id: 'f9824ee3f22f64fc8c7140ca117dde89') in 0.034951 seconds
+Start importing Assets/_Prefabs/Spacevessels/Rhino.prefab using Guid(b8c185f31f5b4add8202df2e3efeacce) (PrefabImporter) -> (artifact id: '29b73f65f760a2545f4490b35b5dff9d') in 0.1184577 seconds
+Start importing Assets/_Prefabs/Spacevessels/Wrasse.prefab using Guid(c81d6c43058343b796fee1128ce6ccda) (PrefabImporter) -> (artifact id: 'fd61a57764d952fc73e9bd629be10c3b') in 0.036227 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/ThresherHUDVariant.prefab using Guid(6b2f9e1c3a7d4e8f9a0b1c2d3e4f5a6b) (PrefabImporter)The referenced script on this Behaviour (Game Object '') is missing!
+0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab26587f (Unity) DebugStringToFile
+0x00007ffcab9d24f3 (Unity) ManagedMonoBehaviourRef::DoScriptRebuildWarning
+0x00007ffcabb30ecb (Unity) SerializableManagedRef::SetScriptingDataFrom
+0x00007ffcac6d0323 (Unity) InheritManagedObjectHost
+0x00007ffcac6d1c19 (Unity) MergePrefabChanges
+0x00007ffcac6b53e2 (Unity) MergePrefabInternal
+0x00007ffcac6b26f4 (Unity) MergeAllPrefabInstanceInfosDuringLoad
+0x00007ffcac6b3627 (Unity) MergeAllPrefabInstancesDuringLoad
+0x00007ffcac351cd3 (Unity) PrefabImporter::GenerateAssetData
+0x00007ffcada0f88e (Unity) ImportToObjects
+0x00007ffcada0e712 (Unity) ImportAsset
+0x00007ffcada322d9 (Unity) AssetImportWorker::Import
+0x00007ffcada64b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffcada636b3 (Unity) AssetImportManager::Import
+0x00007ffcada655d2 (Unity) ImportOutOfDateAssets
+0x00007ffcada6e3fa (Unity) RefreshInternalV2
+0x00007ffcada76f17 (Unity) StopAssetImportingV2Internal
+0x00007ffcada6f51c (Unity) RefreshV2
+0x00007ffcad9e1073 (Unity) AssetDatabase::Refresh
+0x00007ffcac312951 (Unity) Application::AutoRefresh
+0x00007ffcac144674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ffd6c02ef5c (USER32) CallWindowProcW
+0x00007ffd6c02e9de (USER32) CallWindowProcW
+0x00007ffd551ba08a (COMCTL32) DefSubclassProc
+0x00007ffd551b9fc8 (COMCTL32) DefSubclassProc
+0x00007ffd42d233f3 (AppUINativePlugin) 
+0x00007ffd551ba08a (COMCTL32) DefSubclassProc
+0x00007ffd551b9e87 (COMCTL32) DSA_Create
+0x00007ffd6c02ef5c (USER32) CallWindowProcW
+0x00007ffd6c02e8cc (USER32) DispatchMessageW
+0x00007ffd6c0410e3 (USER32) SendMessageTimeoutW
+0x00007ffd6dfb1424 (ntdll) KiUserCallbackDispatcher
+0x00007ffd6bd51064 (win32u) NtUserPeekMessage
+0x00007ffd6c02a333 (USER32) PeekMessageW
+0x00007ffd6c02a293 (USER32) PeekMessageW
+0x00007ffcac109b24 (Unity) MainMessageLoop
+0x00007ffcac111a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+ -> (artifact id: 'ea60b81b6450d09611d68ae18a8c3926') in 0.0266136 seconds
+Start importing Assets/_Prefabs/Spacevessels/Thresher.prefab using Guid(291d45422a244f3ab14f4e592c941c8d) (PrefabImporter) -> (artifact id: '9f6a80542db1751d2542c3fc6ae581ba') in 0.0608295 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/JacksHUDVariant.prefab using Guid(dacce99a4a521d2995cc614beb26d6a3) (PrefabImporter) -> (artifact id: 'a3755af4284c1636347da9d4108427e6') in 0.0047955 seconds
+Start importing Assets/_Prefabs/Spacevessels/Orca.prefab using Guid(db757691ec7343cc9decf08f3fd8c8cc) (PrefabImporter) -> (artifact id: '4513a6c3b58af5818752d6b519286a97') in 0.0265847 seconds
+Start importing Assets/_Prefabs/UI Elements/VesselHUD/MeerkatHUDVariant.prefab using Guid(5d49e3f0fa4f801553ac3c6de6f80713) (PrefabImporter)The referenced script on this Behaviour (Game Object '') is missing!
+0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab26587f (Unity) DebugStringToFile
+0x00007ffcab9d24f3 (Unity) ManagedMonoBehaviourRef::DoScriptRebuildWarning
+0x00007ffcabb30ecb (Unity) SerializableManagedRef::SetScriptingDataFrom
+0x00007ffcac6d0323 (Unity) InheritManagedObjectHost
+0x00007ffcac6d1c19 (Unity) MergePrefabChanges
+0x00007ffcac6b53e2 (Unity) MergePrefabInternal
+0x00007ffcac6b26f4 (Unity) MergeAllPrefabInstanceInfosDuringLoad
+0x00007ffcac6b3627 (Unity) MergeAllPrefabInstancesDuringLoad
+0x00007ffcac351cd3 (Unity) PrefabImporter::GenerateAssetData
+0x00007ffcada0f88e (Unity) ImportToObjects
+0x00007ffcada0e712 (Unity) ImportAsset
+0x00007ffcada322d9 (Unity) AssetImportWorker::Import
+0x00007ffcada64b1a (Unity) AssetImportManager::ImportInProcess
+0x00007ffcada636b3 (Unity) AssetImportManager::Import
+0x00007ffcada655d2 (Unity) ImportOutOfDateAssets
+0x00007ffcada6e3fa (Unity) RefreshInternalV2
+0x00007ffcada76f17 (Unity) StopAssetImportingV2Internal
+0x00007ffcada6f51c (Unity) RefreshV2
+0x00007ffcad9e1073 (Unity) AssetDatabase::Refresh
+0x00007ffcac312951 (Unity) Application::AutoRefresh
+0x00007ffcac144674 (Unity) ContainerPlatform::ContainerWndProc
+0x00007ffd6c02ef5c (USER32) CallWindowProcW
+0x00007ffd6c02e9de (USER32) CallWindowProcW
+0x00007ffd551ba08a (COMCTL32) DefSubclassProc
+0x00007ffd551b9fc8 (COMCTL32) DefSubclassProc
+0x00007ffd42d233f3 (AppUINativePlugin) 
+0x00007ffd551ba08a (COMCTL32) DefSubclassProc
+0x00007ffd551b9e87 (COMCTL32) DSA_Create
+0x00007ffd6c02ef5c (USER32) CallWindowProcW
+0x00007ffd6c02e8cc (USER32) DispatchMessageW
+0x00007ffd6c0410e3 (USER32) SendMessageTimeoutW
+0x00007ffd6dfb1424 (ntdll) KiUserCallbackDispatcher
+0x00007ffd6bd51064 (win32u) NtUserPeekMessage
+0x00007ffd6c02a333 (USER32) PeekMessageW
+0x00007ffd6c02a293 (USER32) PeekMessageW
+0x00007ffcac109b24 (Unity) MainMessageLoop
+0x00007ffcac111a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+ -> (artifact id: '92a43ae1af75701160f8ce16c264d329') in 0.0461051 seconds
+Start importing Assets/_Prefabs/Spacevessels/Swordfish.prefab using Guid(5d0f3c9e8a7b4e21b6c4f1a2e9d80b37) (PrefabImporter) -> (artifact id: '87041b7a0a5a067b1ea7ea445588e4ef') in 0.0600782 seconds
+Start importing Assets/_Prefabs/Spacevessels/Jacks.prefab using Guid(5d7f0a3c9e2b4f61a8c47e1b2d9f6a03) (PrefabImporter) -> (artifact id: '6e9c4cbdc612ecfbce78ef2bee8b3d81') in 0.0135007 seconds
+Start importing Assets/_Prefabs/Spacevessels/Meerkat.prefab using Guid(4e2a8c1f7b9d4f3e8a6c5b2d1e0f9a87) (PrefabImporter) -> (artifact id: '8496b2986f33c60b48ebf103ff7d3841') in 0.0331716 seconds
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: F4-3R3R-7XBU-DPUF-F234-XXXX
+  Product: Unity Personal
+  Type: ULF
+  Expiration: Unlimited
+[Licensing::Module] License group:
+  Id: 2475930519505-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Duplicate assembly 'System.Runtime.CompilerServices.Unsafe.dll' with different versions detected, using 'Packages/com.unity.collections/Unity.Collections.Tests/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' and ignoring 'Packages/com.unity.pipeline/Runtime/Plugins/CodeAnalysis/System.Runtime.CompilerServices.Unsafe.dll, AssemblyName=System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'.Refreshing native plugins compatible for Editor in 21.45 ms, found 15 plugins.
+Preloading 2 native plugins for Editor in 0.10 ms.
+Asset Pipeline Refresh (id=c4730d724628b0e41963ee3c9228e609): Total: 11.625 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+	Summary:
+		Imports: total=77 (actual=77, local cache=0, cache server=0)
+		Asset DB Process Time: managed=702 ms, native=7423 ms
+		Asset DB Callback time: managed=3059 ms, native=404 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=35 ms, other=0 ms
+		Project Asset Count: scripts=4716, non-scripts=13183
+		Asset File Changes: new=18, changed=119, moved=30, deleted=2
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.007ms
+	InvokePackagesCallback: 0.001ms
+	ApplyChangesToAssetFolders: 0.837ms
+	Scan: 131.373ms
+	OnSourceAssetsModified: 16.724ms
+	CategorizeAssetsWithTransientArtifact: 2.102ms
+	ProcessAssetsWithTransientArtifactChanges: 64.775ms
+	UnregisterDeletedAssets: 0.019ms
+	CategorizeAssets: 94.964ms
+	ImportOutOfDateAssets: 2752.820ms (-163.769ms without children)
+		ImportManagerImport: 2531.775ms (199.734ms without children)
+			ImportInProcess: 2331.273ms
+			UpdateCategorizedAssets: 0.769ms
+		CompileScripts: 35.040ms
+		ReloadNativeAssets: 69.861ms
+		UnloadImportedAssets: 134.332ms
+		ReloadImportedAssets: 129.786ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 2.227ms
+		InitializingProgressBar: 0.089ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.002ms
+		OnDemandSchedulerStart: 13.478ms
+	PostProcessAllAssets: 3095.929ms
+	Hotreload: 351.868ms
+	GatherAllCurrentPrimaryArtifactRevisions: 17.296ms
+	UnloadStreamsBegin: 1.573ms
+	PersistCurrentRevisions: 21.005ms
+	UnloadStreamsEnd: 0.064ms
+	Untracked: 5073.186ms
+
+[Net] The game froze for 11.8 s in Menu_Main while online. Unity Relay drops a connection after about 10 s without traffic, so this session may end with 'player timed out due to inactivity' (Docs/PartySystem/BUGS.md B36).
+0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab26587f (Unity) DebugStringToFile
+0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001cdc2590b4e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000001cc9da1259e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001cc9da1223d (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001cdc259099b (Mono JIT Code) CosmicShore.Utility.CSDebug:LogWarning (object) (at C:/Users/gradi/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/Foundation/CSDebug.cs:485)
+0x000001cdc37808bb (Mono JIT Code) CosmicShore.Utility.FrameStallWatch:ObserveFrame (string) (at C:/Users/gradi/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/FrameStallWatch.cs:96)
+0x000001cdc377f9cb (Mono JIT Code) CosmicShore.Utility.FrameStallWatch/<WatchAsync>d__34:MoveNext () (at C:/Users/gradi/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/FrameStallWatch.cs:165)
+0x000001cdc37fafb7 (Mono JIT Code) Cysharp.Threading.Tasks.CompilerServices.AsyncUniTaskVoid`1<TStateMachine_REF>:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/CompilerServices/StateMachineRunner.cs:104)
+0x000001ce2326a3a0 (Mono JIT Code) Cysharp.Threading.Tasks.Internal.ContinuationQueue:RunCore () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/ContinuationQueue.cs:194)
+0x000001ce2326b033 (Mono JIT Code) Cysharp.Threading.Tasks.Internal.ContinuationQueue:Update () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/ContinuationQueue.cs:159)
+0x000001ce23269513 (Mono JIT Code) Cysharp.Threading.Tasks.Internal.ContinuationQueue:Run () (at ./Library/PackageCache/com.cysharp.unitask@86b6e6a2e286/Runtime/Internal/ContinuationQueue.cs:118)
+0x000001cc50b48648 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void__this__ (object,intptr,intptr,intptr)
+0x00007ffca50a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffca4fe8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffca4fe8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcabaefdd4 (Unity) scripting_method_invoke
+0x00007ffcabaf6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcab99ad44 (Unity) ExecutePlayerLoop
+0x00007ffcab99ad65 (Unity) ExecutePlayerLoop
+0x00007ffcab99fc0f (Unity) PlayerLoop
+0x00007ffcac315635 (Unity) EditorPlayerLoop::Execute
+0x00007ffcac32c7cf (Unity) PlayerLoopController::InternalUpdateScene
+0x00007ffcac32e78f (Unity) PlayerLoopController::UpdateSceneIfNeededFromMainLoop
+0x00007ffcac32866d (Unity) Application::TickTimer
+0x00007ffcac109f7c (Unity) MainMessageLoop
+0x00007ffcac111a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+IPCStream (hubIPCService): IPC stream failed to read (Not connected)
+Container Menu_Main (-759158626) disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:57)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Container RootContainer disposed
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+UnityEngine.Logger:Log (UnityEngine.LogType,object,UnityEngine.Object)
+UnityEngine.Debug:Log (object,UnityEngine.Object)
+Reflex.Logging.ReflexLogger:Log (object,Reflex.Logging.LogLevel,UnityEngine.Object) (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Logging/ReflexLogger.cs:37)
+Reflex.Core.Container:Dispose () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs:63)
+Reflex.Injectors.UnityInjector:<AfterAssembliesLoaded>g__DisposeProject|4_2 () (at ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Injectors/UnityInjector.cs:55)
+UnityEngine.Application:Internal_ApplicationQuit ()
+
+(Filename: ./Library/PackageCache/com.gustavopsantos.reflex@fabfbc86f712/Core/Container.cs Line: 63)
+
+Analytics Dispatcher is already flushing.
+0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab26587f (Unity) DebugStringToFile
+0x00007ffcab121b20 (Unity) DebugLogHandler_CUSTOM_Internal_Log
+0x000001cc9da1365e (Mono JIT Code) (wrapper managed-to-native) UnityEngine.DebugLogHandler:Internal_Log_Injected (UnityEngine.LogType,UnityEngine.LogOption,UnityEngine.Bindings.ManagedSpanWrapper&,intptr)
+0x000001cc9da13463 (Mono JIT Code) UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+0x000001cc9da1311b (Mono JIT Code) UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+0x000001cdc2590b4e (Mono JIT Code) CosmicShore.Utility.BenignLobbyLogFilter/FilteringLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/Users/gradi/source/repos/Cosmic-Shore/Assets/_Scripts/Utility/BenignLobbyLogFilter.cs:57)
+0x000001cc9da1259e (Mono JIT Code) UnityEngine.Logger:Log (UnityEngine.LogType,object)
+0x000001cc9da1223d (Mono JIT Code) UnityEngine.Debug:LogWarning (object)
+0x000001cdc40955c3 (Mono JIT Code) Unity.Services.Analytics.Internal.Dispatcher:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/Dispatcher.cs:52)
+0x000001cdc4095356 (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:Flush () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:298)
+0x000001cfaefa53bb (Mono JIT Code) Unity.Services.Analytics.AnalyticsServiceInstance:ApplicationQuit () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/AnalyticsServiceInstance.cs:321)
+0x000001cfaefa5143 (Mono JIT Code) Unity.Services.Analytics.AnalyticsContainer:CleanUp () (at ./Library/PackageCache/com.unity.services.analytics@84c10b70585c/Runtime/Runtime/AnalyticsContainer.cs:109)
+0x000001cd147ff957 (Mono JIT Code) (wrapper delegate-invoke) <Module>:invoke_void ()
+0x000001cfaefa258b (Mono JIT Code) UnityEngine.Application:Internal_ApplicationQuit ()
+0x000001cc549f4445 (Mono JIT Code) (wrapper runtime-invoke) object:runtime_invoke_void (object,intptr,intptr,intptr)
+0x00007ffca50a6c0e (mono-2.0-bdwgc) mono_jit_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/mini/mini-runtime.c:3445)
+0x00007ffca4fe8984 (mono-2.0-bdwgc) do_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3068)
+0x00007ffca4fe8a70 (mono-2.0-bdwgc) mono_runtime_invoke (at C:/build/output/Unity-Technologies/mono/mono/metadata/object.c:3115)
+0x00007ffcabaefdd4 (Unity) scripting_method_invoke
+0x00007ffcabaf6c93 (Unity) ScriptingInvocation::Invoke
+0x00007ffcabaf2235 (Unity) ScriptingInvocation::Invoke<void>
+0x00007ffcaafcab4b (Unity) Scripting::UnityEngine::ApplicationProxy::Internal_ApplicationQuit
+0x00007ffcab9bf689 (Unity) NotifyPlayerQuit
+0x00007ffcac32b7b2 (Unity) PlayerLoopController::ExitPlayMode
+0x00007ffcac32d4b4 (Unity) PlayerLoopController::SetIsPlaying
+0x00007ffcac32896c (Unity) Application::TickTimer
+0x00007ffcac109f7c (Unity) MainMessageLoop
+0x00007ffcac111a12 (Unity) UnityMain
+0x00007ff786642f2a (Unity) __scrt_common_main_seh
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+Unloading 84 Unused Serialized files (Serialized files now loaded: 0)
+Loaded scene 'Temp/__Backupscenes/0.backup'
+	Deserialize:            76.135 ms
+	Integration:            1023.824 ms
+	Integration of assets:  0.025 ms
+	Thread Wait Time:       0.018 ms
+	Total Operation Time:   1100.003 ms
+Unloading 45981 unused Assets / (23.2 MB). Loaded Objects now: 44316.
+Memory consumption went from 1.25 GB to 1.22 GB.
+Total: 862.470600 ms (FindLiveObjects: 5.936300 ms CreateObjectMapping: 7.236000 ms MarkObjects: 678.142800 ms  DeleteObjects: 171.154300 ms)
+
+IPCStream (Upm-15600): IPC stream failed to read (Not connected)
+Unexpected transport error from import worker 1 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker1.log
+0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab26587f (Unity) DebugStringToFile
+0x00007ffcadb00ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ffcadb0da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ffcadad0207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ffcadad2aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ffcadac90c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ffcadad3f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ffcadae0867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ffcadacca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ffcadacdcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ffcadadd809 (Unity) IOService::Run
+0x00007ffcadade46b (Unity) IOService::Impl::ThreadFunction
+0x00007ffcacae2b80 (Unity) Thread::RunThreadWrapper
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 1: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker1.log
+Unexpected transport error from import worker 0 (possible crash). code=10054 error=An existing connection was forcibly closed by the remote host. -- for more information, check Logs/AssetImportWorker0.log
+0x00007ffcab2b4e2e (Unity) StackWalker::ShowCallstack
+0x00007ffcacaef369 (Unity) PlatformStacktrace::GetStacktrace
+0x00007ffcacaefbee (Unity) Stacktrace::GetStacktrace
+0x00007ffcab26587f (Unity) DebugStringToFile
+0x00007ffcadb00ffe (Unity) WorkerManagerASIO::OnTransportError
+0x00007ffcadb0da2a (Unity) TcpMessagingSession::OnReceiveCompleted
+0x00007ffcadad0207 (Unity) asio::asio_handler_invoke<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64> >
+0x00007ffcadad2aea (Unity) asio::detail::executor_function::complete<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,std::allocator<void> >
+0x00007ffcadac90c9 (Unity) asio::io_context::basic_executor_type<std::allocator<void>,4>::execute<asio::detail::executor_function>
+0x00007ffcadad3f5e (Unity) asio::detail::handler_work_base<asio::any_io_executor,void,asio::io_context,asio::executor,void>::dispatch<asio::detail::binder2<<lambda_e236e2fc9e7ee82e7162d86d6937b199>,std::error_code,unsigned __int64>,<lambda_e236e2fc9e7ee82e7162d86d6937b199> >
+0x00007ffcadae0867 (Unity) asio::detail::win_iocp_socket_recv_op<asio::mutable_buffers_1,<lambda_e236e2fc9e7ee82e7162d86d6937b199>,asio::any_io_executor>::do_complete
+0x00007ffcadacca91 (Unity) asio::detail::win_iocp_io_context::do_one
+0x00007ffcadacdcb4 (Unity) asio::detail::win_iocp_io_context::run
+0x00007ffcadadd809 (Unity) IOService::Run
+0x00007ffcadade46b (Unity) IOService::Impl::ThreadFunction
+0x00007ffcacae2b80 (Unity) Thread::RunThreadWrapper
+0x00007ffd6de07374 (KERNEL32) BaseThreadInitThunk
+0x00007ffd6df5cc91 (ntdll) RtlUserThreadStart
+
+[OnDemand] Worker 0: WorkerState(Connected), ImporterState(Idle) session transport - while handling artifactKey Guid(00000000000000000000000000000000) Importer(-2,00000000000000000000000000000000) - path  - see Logs/AssetImportWorker0.log
+
