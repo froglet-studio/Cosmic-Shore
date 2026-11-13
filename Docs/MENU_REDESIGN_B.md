@@ -35,6 +35,7 @@ section here. The build that follows a pick is verified against the picked board
 | Launch Console | `launch-console` | The Launch Console: one place to see and drive the launch on every platform (go/no-go, per-platform pipelines, checklist, live ops, gates, runbook); an artifact and a FrogletTools editor window (`Docs/LAUNCH/`) | Shombith, 2026-11-05 |
 | Voyages | `voyages` | All the Voyage UI (the Voyage window, Ark crew, the story) and the Quests window, from Rev 70 (Rev 79-83 on the canvas now: Rev 81 B5 with the Rev 83 S2 seat editor picked and built, section 165; Rev 70-77 were reverted and taken off, section 159) | Shombith, 2026-11-08 (sections 147-151, 159-165) |
 | Loading Screens | `loading-screens` | Every loading screen: the loading screen into a game (Rev 91, F picked, section 173) and the boot splash and sign-in scene (Rev 92, section 174) | Shombith, 2026-11-12 (section 173) |
+| Quests | `quests` | The Quests screen, out of the Voyage window and a screen of its own, from Rev 101 | Shombith, 2026-11-13 (section 187) |
 
 Work goes one item at a time, with three approval gates per item:
 1. **Plan:** the inventory, build order and kit (this document).
@@ -8062,4 +8063,39 @@ Still not built: tabular digits on the percentage. The sea lines are the menu wi
 Verified: `author_ingame_hud.py` run, `--check` and `--self-test` (two new negative controls: the fields left out of the
 gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; `gates.sh`. Hand test: "The loading
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+
+## 187. Rev 101 mockups: Quests as a screen of its own - star chart, quest log, route (2026-11-13, awaiting a pick)
+
+**Asked (Shombith, 2026-11-13):** "Remove the quest from inside the voyages. Quest should be a seperate screen with its
+own interactive UI not inside this itself."
+
+**On the canvas:** a new tab **Quests** (`quests`), round "Rev 101 - Quests as a screen of its own" (canvas version
+`1794608105-c3b6`). Copies: `Docs/MenuRedesignB/board/R101*.dc.html`. Generator:
+`Docs/MenuRedesignB/rounds/r101_quests.py` (the kit is lifted from Rev 90's Quests board). All boards pass
+`frogma.py check --only R101`; they were rendered locally (the canvas art stood in by the repo's card backgrounds) at rest
+and after Claim and Play quest, and looked at before publishing.
+
+Every option is the whole window over Home (hub band, "Quests", Back), on the same content: Episode 1 The Hypersea, its
+five quests in order (Scurry, Skim Race, Joust, Maelstrom, Vessel Hangar), each one's two goals and the step each opens,
+and what its claim opens. Claim works, and on the board Play quest counts a goal done, so the whole chain can be clicked
+through. Ready to claim is Lime; the picked quest is the one Jade line. The one motion: on Claim the line to the next
+quest draws in (A and C). Episode 2 is one "Coming soon" line.
+
+- **A Star chart (recommended):** the quests are stars on the HyperSea, joined by the current that opens them; the
+  picked star's art, goals as a ladder, what its claim opens and the button stand on the right. The most its own, and
+  the HyperSea theme without a second live map.
+- **B Quest log:** a calm list with the episode's meter on the left, the open quest's art and goals large in the middle,
+  what the claim opens in its own column.
+- **C Route:** the episode as one course across the screen, each quest's art over its station; the goals run as
+  checkpoints under it.
+- **Compare:** one quest's goals and claim in each option (Joust ready to claim; Maelstrom one goal of two).
+- **Notes.**
+
+**Open question:** whether Quests also gets a place on the top band; not drawn, the band is shared by every screen.
+
+**Differs from the build:** the quest track is the Voyage window's Quests tab (the Rev 90 tilted table, section 172).
+Any pick takes the Quests tab out of `VoyageWindowTabs` and opens a Quests window from Home's quest card (the shape
+section 151 built and section 159 reverted), drawing `QuestFrontier`'s states and `QuestTrackView`'s claim. The goals
+are the quest assets' `Intensity3GoalDescription` / `Intensity4GoalDescription`; "HEX RACE" is shown as Skim Race.
 
