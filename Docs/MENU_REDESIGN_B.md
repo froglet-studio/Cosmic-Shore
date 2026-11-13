@@ -8517,7 +8517,7 @@ gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; 
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 
-## 193. Rev 106 mockups: the Squads tab in levels, lit like the captains' bridges (2026-11-13, awaiting a pick)
+## 194. Rev 106 mockups: the Squads tab in levels, lit like the captains' bridges (2026-11-13, awaiting a pick)
 
 **Asked (Shombith, 2026-11-13):** "The UI cards on top of each screen. I do not like them at all ... the worst is the
 ark UI itself, selecting through so many and the text is noisy, it can be broken down in levels if we want." The
