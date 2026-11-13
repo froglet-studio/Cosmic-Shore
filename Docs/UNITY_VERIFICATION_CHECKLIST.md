@@ -23371,3 +23371,15 @@ Branch `claude/goby-vortex-steal`. The changed files compile clean against the U
    at Mass 5 the Mass card shows Fortress (the den with a shell). Swap to the Goby (D-pad): its Charge and Mass cards
    keep their pictures; its Space card shows Deep Undertow at Space 5 and its Time card Phase Dart at Time 5.
 3. Drop an element below 4: that card's picture returns to the seat's ordinary card in both seats.
+## 🔴 Thresher: Anchor Ward (Time 5) and its Time card ward (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/thresher-anchor-ward`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `icon_kit/author.py thresher --check`
+clean; no Unity editor ran.
+
+1. Thresher in Freestyle, Time to 5. Plant (full LT) and orbit through a field of danger prisms: the bars do not drain.
+   Let go and fly through the same prisms: they drain as before.
+2. Still at Time 5, planted, take a rival pilot's hit: it lands (the ward is danger prisms only).
+3. Time card: planted at Time 5 shows the white ward arc and an orange danger prism outside it; flying free, or below
+   Time 4, neither shows.
+4. Swap vessels mid-plant: the next hull is not left warded (the executor revokes the grant on disable).

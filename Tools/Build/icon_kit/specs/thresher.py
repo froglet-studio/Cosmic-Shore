@@ -235,6 +235,17 @@ def t_chain():
     return links(_t_pos(17), _t_pos(T_R - 13), 2)
 
 
+def t_ward():
+    """Time 5 Anchor Ward: a white ward arc outside the orbit, between the pivot and the danger prism it turns."""
+    return band(T_C[0], T_C[1], 52, 108, 162, w=7)
+
+
+def t_danger():
+    """Time 5 Anchor Ward: the arena's danger prism the ward turns away, outside the arc."""
+    a = math.radians(135)
+    return prism_square_x(T_C[0] + 64 * math.cos(a), T_C[1] + 64 * math.sin(a), 11, cut=2.6)
+
+
 # ---- Omni: Windmill ---------------------------------------------------------------------------------------------------------
 def windmill():
     hull = shark_top(118, 64, 66, -90, keep=0.55)[0]
@@ -271,7 +282,11 @@ WINCH_PARTS = [("WinchShark", "Thresher_WinchShark", "winchSharkIcon", s_shark, 
 PLANT_PARTS = [("PlantShark", "Thresher_PlantShark", "plantSharkIcon", t_shark, "the shark on its orbit (domain)"),
                ("PlantOrbit", "Thresher_PlantOrbit", "plantOrbitIcon", t_orbit, "the orbit (white; faint flying free)"),
                ("PlantChain", "Thresher_PlantChain", "plantChainIcon", t_chain, "the chain to the pivot (white; planted)"),
-               ("PlantBall", "Thresher_PlantBall", "plantBallIcon", t_ball, "the ball stopped as a pivot (white)")]
+               ("PlantBall", "Thresher_PlantBall", "plantBallIcon", t_ball, "the ball stopped as a pivot (white)"),
+               ("PlantWard", "Thresher_PlantWard", "plantWardIcon", t_ward,
+                "Anchor Ward: the ward round the planted orbit (white; Time 5)"),
+               ("PlantDanger", "Thresher_PlantDanger", "plantDangerIcon", t_danger,
+                "Anchor Ward: the danger prism the ward turns away (danger; Time 5)")]
 
 ICONS = []
 for element, parts in (("Charge", WRECK_PARTS), ("Mass", MASS_PARTS), ("Space", WINCH_PARTS), ("Time", PLANT_PARTS)):
@@ -317,10 +332,12 @@ CARDS = [
                  ("Space 5: Breaker", WINCH_RIGID + [("WinchBreaker", "white")])],
          lockup_state=1),
     dict(name="plant", element="Time", before=ICON_DIR + "Thresher_Plant.png",
-         title="Plant (Time): the ball stopped as a pivot with the shark on the orbit round it; faint flying free",
+         title="Plant (Time): the ball stopped as a pivot with the shark on the orbit round it; faint flying free; "
+               "Anchor Ward turns the arena's danger prisms while planted",
          parts=_parts(PLANT_PARTS),
          states=[("flying free", [("PlantShark", "domain"), ("PlantOrbit", "white", 0.35), ("PlantBall", "white")]),
-                 ("planted", PLANTED)],
+                 ("planted", PLANTED),
+                 ("Time 5: Anchor Ward", PLANTED + [("PlantWard", "white"), ("PlantDanger", "danger")])],
          lockup_state=1),
     dict(name="omni", element="Omni", title="The OMNI crystal card: Windmill",
          parts=dict(i=windmill), states=[("an omni crystal collected", [("i", "white")])]),
