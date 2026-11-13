@@ -166,8 +166,9 @@ before it lands.
 
    Exit 2 (COLLISION) takes that PR out of the batch until the person has talked to the occupant (`/approve` §7).
 3. **Ask once for the whole batch** with `AskUserQuestion`: land these N in this order, yes / no / pick. Include
-   the trunk state, and the merge method: **a merge commit**. Measured by `land_queue.py trunk` on 2026-11-12: 180
-   merge commits against 2 squashes on bleeding-edge in 60 days. `/ship` §5.7 explains why: the team's readers
+   the trunk state, and the merge method: **a merge commit**. Measured by `land_queue.py trunk` on 2026-11-13 over full
+   history: 450 merge commits against 3 squashes on bleeding-edge in 60 days (a shallow clone undercounts; re-run it,
+   never quote this). `/ship` §5.7 explains why: the team's readers
    (`who_works_where.py`, `swimlanes.py`, `team_tasks.py`) need `Merge pull request #N` commits. Never squash or
    rebase into bleeding-edge.
 4. **Then, one PR at a time, in order:**
