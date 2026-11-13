@@ -93,9 +93,9 @@ namespace CosmicShore.Gameplay
             new(1.8f, 2.2f, 3.5f, 6f),   // I4 without the gauntlet
         };
         [Tooltip("The AI nose's follow rates at I4 WITH the gauntlet (SWITCHBACK.md \"The I4 gauntlet\"), Easy/Medium/Hard/" +
-                 "Legendary, set to Yash's gauntlet bands (2026-11-03): offline Easy ~185 s, Medium ~173, Hard ~165, Legendary ~155, " +
-                 "each inside its 20 s band (175-195 / 165-185 / 155-175 / 145-165).")]
-        [SerializeField] SwitchbackNoseFollow aiNoseFollowGauntlet = new(1.9f, 2.8f, 3.5f, 5f);
+                 "Legendary. Retuned 2026-11-13 when the seals' Danger hearts became plain (elemental loop step 2): offline " +
+                 "Easy ~176 s, Medium ~167, Hard ~155, Legendary ~141, about 10 s apart as in Yash's gauntlet bands of 2026-11-03.")]
+        [SerializeField] SwitchbackNoseFollow aiNoseFollowGauntlet = new(1.5f, 2.2f, 3.5f, 6f);
         [Tooltip("Draw each AI's plan (key, fire line, gape axis, aim point) when the controller is selected.")]
         [SerializeField] bool aiPlanGizmos = true;
         [Tooltip("AI prism-sense debug: draws every AI's sense tube and emergency sweep (Debug.DrawLine - Scene view, or Game " +

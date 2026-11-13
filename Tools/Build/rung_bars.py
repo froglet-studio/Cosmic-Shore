@@ -33,6 +33,7 @@ sys.path.insert(0, HERE)
 
 import elemental_loop as loop  # noqa: E402
 import fun_cards  # noqa: E402
+from learn_drives_from_flights import on_shipped_family  # noqa: E402  - Switchback: Blast Run flights only
 
 BARS_JSON = os.path.join(REPO, "Docs", "ElementalLoop", "rung_bars.json")
 MIN_FLIGHTS = 3       # fewer human flights than this on a rung: no verdict
@@ -47,7 +48,7 @@ LEARN_FINISH_SLACK = 0.10
 def _head(text, n=6000):
     """The flight's header fields (they come first; samples follow)."""
     out = {}
-    for key in ("schema", "mode", "hull", "intensity", "pilot", "finished", "raceSeconds", "date", "ended"):
+    for key in ("schema", "mode", "hull", "intensity", "pilot", "finished", "raceSeconds", "date", "ended", "funType"):
         i = text.find(f'"{key}":', 0, n)
         if i < 0:
             continue
@@ -109,7 +110,10 @@ def flights_from_dirs(dirs):
 def human(f):
     """A race a person flew to its end (the AI holding the hull the whole race is 'ai'; 'mixed' is a person with the
     toggle). A run left early ('play stopped', 'left before the end') is a person testing something, not a verdict on
-    the rung, so it is not counted."""
+    the rung, so it is not counted. A mode whose course family changed counts its shipped family only (Switchback:
+    Blast Run since 2026-10-29; a Classic race says nothing about today's rung, learn_drives_from_flights.SHIPPED_FAMILY)."""
+    if not on_shipped_family(dict(f, name=str(f.get("_source", "")).rsplit("/", 1)[-1])):
+        return False
     return f.get("pilot", "human") != "ai" and f.get("ended", "race over") == "race over" and f.get("mode") and f.get("hull") not in (None, "", "Unknown") \
         and isinstance(f.get("intensity"), (int, float)) and 1 <= int(f["intensity"]) <= 4
 
@@ -230,6 +234,7 @@ def self_test():
 
     def fl(rung, finished=True, secs=100.0, hull="Dolphin", mode="Switchback", pilot="human", name=None):
         return {"mode": mode, "hull": hull, "intensity": rung, "finished": finished, "raceSeconds": secs, "pilot": pilot,
+                "funType": "BlastRun" if mode == "Switchback" else None,
                 "_source": f"x:{name or 'flight_%s_%d_%f.json' % (mode, rung, secs)}", "_person": "t"}
 
     good = [fl(r, secs=60 + 20 * r + i) for r in (1, 2, 3, 4) for i in range(3)]
@@ -248,6 +253,8 @@ def self_test():
     left = [dict(fl(1, finished=False), ended="play stopped") for _ in range(3)]
     expect(not check(left, bars), "a run left early (Play stopped) is not counted")
     expect(not check([fl(1, mode="Regatta") for _ in range(3)], bars), "an arena game (Regatta) is not a rung check")
+    expect(not check([dict(fl(1), funType=None) for _ in range(3)], bars),
+           "a Switchback flight on the retired Classic ladder (no funType) is not counted")
     # Learned: three "right" cards replace the default band.
     runs = [fl(3, secs=s, name=f"flight_Switchback_Dolphin_{i}.json") for i, s in enumerate((200, 210, 220))]
     cards = [fun_cards._card(intensity=3, flight=f"flight_Switchback_Dolphin_{i}.json", finished=True) for i in range(3)]
@@ -258,7 +265,7 @@ def self_test():
     if failures:
         print("SELF-TEST FAILED:\n  " + "\n  ".join(failures))
         return 1
-    print("self-test OK (defaults, header reader, a sound ladder, 8 negative controls, a learned bar)")
+    print("self-test OK (defaults, header reader, a sound ladder, 9 negative controls, a learned bar)")
     return 0
 
 

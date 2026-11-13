@@ -23212,3 +23212,17 @@ editor: this is the first screen of the game, so run step 1 before anything else
    were still growing in the scene being left, check the bar does not start above 0.
 8. A portrait or 4:3 Game view: the stage shrinks to fit.
 9. Profiler with the splash faded out: no `PosterDrift` or `BootStepBar` cost, and 0 GC per frame while it is visible.
+
+## 🔴 Switchback I4: plain gauntlet seals and the retuned AI pace (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-j3xxyz`. Record: `Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md`, `SWITCHBACK.md` "The I4
+gauntlet, softened". The changed files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors
+in changed files; the 30 errors it reports are in multiplayer and camera files this change does not touch, and fail the
+same on `bleeding-edge`). The 76 shipped Switchback layout and planner tests pass headless (`switchback_sim_harness/run.sh
+tests`); no Unity editor ran.
+
+1. Run the EditMode tests `SwitchbackBlastRunTests` and `SwitchbackAISteeringTests`.
+2. Arcade, Switchback, Dolphin, I4, seed FIXED (45_504). At a gate's door, the eye's seal is nine plain prisms: ramming
+   it slows the Dolphin, it never stops it dead; a key's blast still clears it.
+3. Same race with three AI seats at Easy, then at Medium: Medium finishes ahead of Easy (offline Easy ~176 s, Medium ~167).
+4. Scarab Rally I4 is unchanged (no seals there).
