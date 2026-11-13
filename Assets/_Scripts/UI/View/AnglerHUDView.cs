@@ -61,6 +61,9 @@ namespace CosmicShore.UI
         [SerializeField] Image lockRivalIcon;
         [Tooltip("The lock ring a hunted hull wears (Angler_LockRing): white, shown while a hunter is out.")]
         [SerializeField] Image lockRingIcon;
+        [Tooltip("Charge 5 Swallow (Angler_LockPetal): a bitten petal flying home to the school; white, shown while a hunter " +
+                 "is out and the upgrade is active.")]
+        [SerializeField] Image lockPetalIcon;
         [Tooltip("The rival's colour: the danger tint (ElementalBarsConfigSO.FireColor), as the Rhino's danger prisms.")]
         [SerializeField] Color lockDangerColor = new(1f, 0.3294f, 0.1020f, 1f);
         [Tooltip("The rival's alpha while nothing hunts it.")]
@@ -123,6 +126,8 @@ namespace CosmicShore.UI
         [SerializeField, Range(0f, 1f)] float dashGhostFlightAlpha = 0.3f;
         [Tooltip("Alpha of every Time part with no school (no dash).")]
         [SerializeField, Range(0f, 1f)] float dashNoSchoolAlpha = 0.3f;
+        [Tooltip("Time 5 Riptide: alpha of the OTHER group's hull, shown too, because a press mid-dash chains on to it.")]
+        [SerializeField, Range(0f, 1f)] float dashRiptideAlpha = 0.45f;
 
         /// <summary>Seat every readout at rest (nothing tamed, the light off). Idempotent: it re-runs on a swap.</summary>
         public override void Initialize()
@@ -132,6 +137,7 @@ namespace CosmicShore.UI
             Seat(spaceGauge);
             Seat(timeGauge);
             _lockDomain = Color.white;
+            _chargeUpgraded = _timeUpgraded = false;
             _lockHunting = true;
             SetLockOn(false);
             _joinedUntil = 0f;
@@ -150,6 +156,7 @@ namespace CosmicShore.UI
         // ---- the Time card: where the hull was and where the dash puts it, toward the group it goes to ----
 
         int _dashShown = -2;
+        bool _timeUpgraded;
         Color _dashDomain = Color.white;
 
         /// <summary>The pilot's domain colour on the Time card (alpha 0 = not resolved yet, keep the last).</summary>
@@ -165,7 +172,7 @@ namespace CosmicShore.UI
         /// </summary>
         public void SetDash(int nextGroup, bool hasSchool, bool dashing)
         {
-            int key = nextGroup | (hasSchool ? 2 : 0) | (dashing ? 4 : 0);
+            int key = nextGroup | (hasSchool ? 2 : 0) | (dashing ? 4 : 0) | (_timeUpgraded ? 8 : 0);
             if (key == _dashShown) return;
             _dashShown = key;
             Color Domain(float a) => new(_dashDomain.r, _dashDomain.g, _dashDomain.b, a);
@@ -175,9 +182,12 @@ namespace CosmicShore.UI
             Color ghost = Domain(!hasSchool ? dashNoSchoolAlpha * dashGhostAlpha : dashing ? dashGhostFlightAlpha : dashGhostAlpha);
             if (dashGroupAIcon) dashGroupAIcon.color = nextGroup == 0 ? next : waiting;
             if (dashGroupBIcon) dashGroupBIcon.color = nextGroup == 1 ? next : waiting;
-            Show(dashHullAIcon, nextGroup == 0, hull);
+            // Time 5 Riptide: the other group's hull shows too, dim - a press mid-dash chains on to it.
+            bool chain = _timeUpgraded && hasSchool;
+            Color chained = Domain(dashRiptideAlpha);
+            Show(dashHullAIcon, nextGroup == 0 || chain, nextGroup == 0 ? hull : chained);
             Show(dashGhostAIcon, nextGroup == 0, ghost);
-            Show(dashHullBIcon, nextGroup == 1, hull);
+            Show(dashHullBIcon, nextGroup == 1 || chain, nextGroup == 1 ? hull : chained);
             Show(dashGhostBIcon, nextGroup == 1, ghost);
         }
 
@@ -312,7 +322,15 @@ namespace CosmicShore.UI
         // ---- the Charge card: one creature spent per lock, out hunting the locked rival ----
 
         Color _lockDomain = Color.white;
-        bool _lockHunting;
+        bool _lockHunting, _chargeUpgraded;
+
+        /// <summary>Charge 5 Swallow: the petal flying home shows while a hunter is out.</summary>
+        void ShowSwallow()
+        {
+            if (!lockPetalIcon) return;
+            lockPetalIcon.enabled = _lockHunting && _chargeUpgraded;
+            lockPetalIcon.color = Color.white;
+        }
 
         /// <summary>The school's colour on the Charge card: the pilot's domain (alpha 0 = not resolved yet, keep the last).</summary>
         public void SetLockOnColor(Color domain)
@@ -338,6 +356,7 @@ namespace CosmicShore.UI
                 lockWakeIcon.color = new Color(1f, 1f, 1f, lockWakeAlpha);
             }
             if (lockRingIcon) lockRingIcon.enabled = hunting;
+            ShowSwallow();
             if (lockRivalIcon)
             {
                 var danger = ColorTrace.Retrace(ColorTrace.Ui, lockDangerColor);
@@ -460,6 +479,16 @@ namespace CosmicShore.UI
                 bool p = _painted;
                 _painted = !p;
                 SetPaintPrism(p);
+            }
+            if (element == Element.Charge)
+            {
+                _chargeUpgraded = upgraded;   // Swallow: a bitten petal flies home
+                ShowSwallow();
+            }
+            if (element == Element.Time)
+            {
+                _timeUpgraded = upgraded;   // Riptide: the other group's hull waits too
+                _dashShown = -2;
             }
             if (element == Element.Mass)
             {
