@@ -134,6 +134,16 @@
      "evidence": "Skein aim, rail seek and genome (#1845); not yet well trained: Docs/Reports/SKEIN_URCHIN_AI.md"
     }
    }
+  },
+  "Scarab": {
+   "Time": {
+    "1": {
+     "state": "doing",
+     "by": "Claude for Garrett",
+     "date": "2026-11-13",
+     "evidence": "Rally I1-I3 off Blast Run, AI no crystal detours (SCARABRALLY.md 2026-11-13); awaiting Garrett's fun card at I2"
+    }
+   }
   }
  },
  "arenas": {

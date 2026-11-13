@@ -23246,3 +23246,11 @@ editor: this is the first screen of the game, so run step 1 before anything else
    were still growing in the scene being left, check the bar does not start above 0.
 8. A portrait or 4:3 Game view: the stage shrinks to fit.
 9. Profiler with the splash faded out: no `PosterDrift` or `BootStepBar` cost, and 0 GC per frame while it is visible.
+
+## Scarab Rally: Blast Run only at I4 (2026-11-13, `claude/project-thread-v8enx0`)
+
+Not run in a Unity editor (cloud session; unity_refcompile editor config: 0 errors in changed files). Hand test:
+1. Arcade > Scarab Rally at I2 with three AI Scarabs: no block fields, doors or key crystals on any leg; the rings are the race.
+2. The AI Scarabs never turn off the line for a crystal.
+3. At I4 the block fields are still laid as before.
+4. Switchback at I1-I4 is unchanged (Blast Run on every intensity).
