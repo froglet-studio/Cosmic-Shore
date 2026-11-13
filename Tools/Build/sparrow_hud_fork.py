@@ -84,9 +84,36 @@ def script_meta(guid):
             f"  assetBundleName: \n  assetBundleVariant: \n")
 
 
+BASE_CONTROLLER_GUID = "2134c837bdb00594d80fc211aa9d0c12"   # VesselHUDController
+SPARROW_CONTROLLER_GUID = "e1938f2b097540e7abd1e4210d446545"
+
+
+def base_controller(text):
+    """A hull that still runs the Sparrow's HUD CONTROLLER (it reads the Sparrow's view and guns) gets the fleet's base
+    VesselHUDController on the same component (same fileID, so every reference to it holds), keeping its baseView."""
+    head, docs = _docs(text)
+    out = [head]
+    for h, b in docs:
+        if f"guid: {SPARROW_CONTROLLER_GUID}" in b:
+            b = b.replace(f"guid: {SPARROW_CONTROLLER_GUID}", f"guid: {BASE_CONTROLLER_GUID}")
+            keep, drop = [], False
+            for line in b.split("\n"):
+                if re.match(r"^  (view|fireGunExecutor|barrelRollController|gunSprayAccuracy|stationaryModeChanged|"
+                            r"onInputEventBlocked):", line):
+                    drop = True
+                elif re.match(r"^  \S", line) or line == "":
+                    drop = False
+                if not drop:
+                    keep.append(line)
+            b = "\n".join(keep)
+        out.append(h + b)
+    return "".join(out)
+
+
 def swap_vessel(vessel_prefab, hull, hud_guid):
     with open(os.path.join(ROOT, vessel_prefab)) as f:
         text = f.read()
+    text = base_controller(text)
     text = text.replace(f"guid: {SPARROW_GUID}", f"guid: {hud_guid}")
     text = re.sub(r"(?m)^(      value: )SparrowHUDVariant$", rf"\g<1>{hull}HUDVariant", text)
     assert SPARROW_GUID not in text

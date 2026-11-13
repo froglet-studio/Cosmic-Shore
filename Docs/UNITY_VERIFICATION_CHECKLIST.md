@@ -65,6 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Honeyguide's vessel pass: element scaling, Relentless, Hive Chain, Slipstream, its own HUD (`claude/honeyguide-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Crew/HONEYGUIDE.md` § "Element scaling and level 5". Charge scales Flit's strike radius, Mass the hive's
+reach, Space Peck's burst (each x2 at 10), Time the Slip's speed (x1.5); Charge 5 Relentless, Mass 5 Hive Chain, Time 5
+Slipstream. `HoneyguideHUDVariant` + `HoneyguideHUDView`; the hull's `SparrowHUDController` became the base
+`VesselHUDController`. Ran: `unity_refcompile` (0 errors in changed files), `element_ability_table.py Honeyguide` (4/4,
+4/4), `author_honeyguide_assets.py --check`, `author_honeyguide_hud.py --check`, `icon_kit/author.py honeyguide --check`.
+Not run: Unity, `HoneyguideFundamentalsTests`, `HoneyguideHUDTests`.
+
+1. Toybox, Honeyguide: the four cards show Flit, the hive, Peck and the Slip (not the Sparrow's). No console errors from
+   the HUD controller at spawn.
+2. Charge 5: Flit into a rival; LT is ready again at once. Below Charge 4 it waits 2 s.
+3. Mass 5: reach a hive; the next hive marker appears at once. Space 10: a Peck fires six shots.
+4. Time 5: ride a slip to its end; the boost after it lasts about 1.5 s instead of 0.75 s.
+
 ### 🔴 The Wrasse's vessel pass: element scaling, Time 5 Tailwind, its own HUD and eight cards (`claude/wrasse-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Crew/KITE_NAVIGATOR.md` § "Element scaling and level 5". Charge scales the kite's ram power, Mass the
