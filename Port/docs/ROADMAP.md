@@ -59,8 +59,10 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 7. **Parity CI.** The port should compile against the new `Assets/` and smoke-run every mode
    headless on a Linux runner. `amoebius-parity-ci.yml` does this nightly on bleeding-edge and by
    hand from the Actions tab; it ran on every push until 2026-11-13, when Shombith moved it off
-   the push trigger because it had never passed and mailed every merger a failure. Today a Unity-side change that breaks
-   the port is found by hand.
+   the push trigger because it had never passed and mailed every merger a failure. Since 2026-11-13 its live compile
+   passes again, and a pull request into bleeding-edge that changes the game's scripts gets a warning-only `pr-compile`
+   job: it compiles the PR and its base in the port and warns about each live-compile error the PR adds (usually a
+   Unity type the port lacks), so the author sees a break before the merge. It never blocks a merge.
 8. **Cooked content.** The player parses Unity YAML at load time. A binary cooked format built
    by `cs-build` would cut load times (Steam DoD #5 wants a load-time target) and make phone
    builds smaller.

@@ -152,11 +152,37 @@ namespace CosmicShore.Content.Scenes
             {
                 ("CollisionModule", ps.collision), ("UVModule", ps.textureSheetAnimation), ("LightsModule", ps.lights),
                 ("SubModule", ps.subEmitters), ("InheritVelocityModule", ps.inheritVelocity), ("ForceModule", ps.forceOverLifetime),
-                ("ExternalForcesModule", ps.externalForces), ("TriggerModule", ps.trigger), ("CustomDataModule", ps.customData),
+                ("ExternalForcesModule", ps.externalForces), ("TriggerModule", ps.trigger),
             };
             foreach (var (key, module) in toggles)
                 if (b[key] is YMap m) { var t = module; t.enabled = m.Int("enabled") != 0; }
-            if (b["TrailModule"] is YMap trail) { var t = ps.trails; t.enabled = trail.Int("enabled") != 0; }
+            if (b["TrailModule"] is YMap trail)
+            {
+                var t = ps.trails;
+                t.enabled = trail.Int("enabled") != 0;
+                if (trail["colorOverLifetime"] != null) t.colorOverLifetime = Gradient(trail["colorOverLifetime"]);
+            }
+            if (b["ColorBySpeedModule"] is YMap bySpeed)
+            {
+                var c = ps.colorBySpeed;
+                c.enabled = bySpeed.Int("enabled") != 0;
+                c.color = Gradient(bySpeed["gradient"]);
+                if (bySpeed["range"] is YMap range) c.range = new Vector2(range.Float("x"), range.Float("y", 1f));
+            }
+            if (b["CustomDataModule"] is YMap custom)
+            {
+                var c = ps.customData;
+                c.enabled = custom.Int("enabled") != 0;
+                for (int i = 0; i < 2; i++)
+                {
+                    var stream = (ParticleSystemCustomData)i;
+                    c.SetMode(stream, (ParticleSystemCustomDataMode)custom.Int("mode" + i));
+                    c.SetVectorComponentCount(stream, custom.Int("vectorComponentCount" + i, 4));
+                    if (custom["color" + i] != null) c.SetColor(stream, Gradient(custom["color" + i]));
+                    for (int k = 0; k < 4; k++)
+                        if (custom["vector" + i + "_" + k] != null) c.SetVector(stream, k, Curve(custom["vector" + i + "_" + k], 0f));
+                }
+            }
         }
 
         public static void ApplyRenderer(ParticleSystemRenderer r, YMap b, Func<YNode, Mesh> mesh)

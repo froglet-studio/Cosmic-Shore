@@ -8,6 +8,20 @@ namespace CosmicShore.Engine
     }
 
     /// <summary>
+    /// Realtime global illumination (original: UnityEngine.DynamicGI). The port's renderer re-captures the skybox for
+    /// ambient and reflection by itself when the skybox material changes (EnvironmentLighting, at most every two
+    /// seconds), so UpdateEnvironment has nothing to start: the calls are accepted and do nothing.
+    /// </summary>
+    public static class DynamicGI
+    {
+        public static float indirectScale { get; set; } = 1f;
+        public static float updateThreshold { get; set; }
+        public static bool isConverged => true;
+        public static void UpdateEnvironment() { }
+        public static void SetEmissive(Renderer renderer, Color color) { }
+    }
+
+    /// <summary>
     /// The active scene's lighting environment (original contract: UnityEngine.RenderSettings).
     /// A Single scene load replaces it with that scene's authored settings; the 3D pass reads
     /// the skybox, fog and ambient terms from here.

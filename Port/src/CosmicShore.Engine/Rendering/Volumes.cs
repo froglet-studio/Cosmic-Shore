@@ -66,12 +66,15 @@ namespace CosmicShore.Engine.Rendering
         public bool active = true;
         public virtual bool IsActive() => active;
         public string displayName { get; set; } = string.Empty;
-        public IEnumerable<VolumeParameter> parameters
+        /// <summary>Original contract: every public VolumeParameter field, in declaration order (read fresh each time).</summary>
+        public System.Collections.ObjectModel.ReadOnlyCollection<VolumeParameter> parameters
         {
             get
             {
+                var list = new List<VolumeParameter>();
                 foreach (var f in GetType().GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))
-                    if (f.GetValue(this) is VolumeParameter p) yield return p;
+                    if (f.GetValue(this) is VolumeParameter p) list.Add(p);
+                return list.AsReadOnly();
             }
         }
         public void SetAllOverridesTo(bool state) { foreach (var p in parameters) p.overrideState = state; }

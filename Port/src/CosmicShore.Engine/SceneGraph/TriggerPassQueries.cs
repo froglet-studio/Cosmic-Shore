@@ -102,6 +102,11 @@ namespace CosmicShore.Engine
             int layerMask = DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
             => Raycast(origin, direction, out hitInfo, maxDistance + radius, layerMask, queryTriggerInteraction);
 
+        /// <summary>Original contract; the same ray-down-the-centre approximation as <see cref="SphereCast(Vector3, float, Vector3, out RaycastHit, float, int, QueryTriggerInteraction)"/>, nearest first.</summary>
+        public static int SphereCastNonAlloc(Vector3 origin, float radius, Vector3 direction, RaycastHit[] results, float maxDistance = float.PositiveInfinity,
+            int layerMask = DefaultRaycastLayers, QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+            => RaycastNonAlloc(origin, direction, results, maxDistance + radius, layerMask, queryTriggerInteraction);
+
         public static int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
             => Pass?.OverlapSphereNonAlloc(position, radius, results, layerMask, queryTriggerInteraction) ?? 0;
 
