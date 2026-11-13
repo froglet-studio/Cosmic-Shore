@@ -65,6 +65,75 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Shrike's level-5 upgrades: Salvo, Armed Nests, Whipcrack (`claude/shrike-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SHRIKE.md` § 3 "Level-5 upgrades". Charge 5 Salvo (nest flora launch x2 as often while
+painting), Mass 5 Armed Nests (a left-behind nest carries 2 missiles), Time 5 Whipcrack (sling reaches its anchor in
+0.6 s); Void Pierce (Space 5) unchanged. Three new HUD parts (`arraySalvoIcon`, `nestArmedIcon`, `slingWhipIcon`) painted
+by `ShrikeHUDView.RefreshParts`. Ran: `unity_refcompile` runtime and editor (0 errors in changed files),
+`element_ability_table.py Shrike` (4/4 L5s gated), `author_shrike_assets.py --check` (only the sparse-checkout class-card
+metas), `icon_kit/author.py shrike --check` (no drift). Not run: Unity, `ShrikeFundamentalsTests`.
+
+1. Toybox, Shrike at Charge 5: paint a rival prism; the flora's missiles come about twice as fast, and the Charge card
+   shows the second volley while painting.
+2. Mass 5: dock, then detach; the nest flora left behind carries two missiles, and the Mass card shows both.
+3. Time 5: shoot the sling; the hull reaches the anchor in about 0.6 s, and the Time card shows the whip chevrons.
+
+### 🔴 The Honeyguide's vessel pass: element scaling, Relentless, Hive Chain, Slipstream, its own HUD (`claude/honeyguide-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Crew/HONEYGUIDE.md` § "Element scaling and level 5". Charge scales Flit's strike radius, Mass the hive's
+reach, Space Peck's burst (each x2 at 10), Time the Slip's speed (x1.5); Charge 5 Relentless, Mass 5 Hive Chain, Time 5
+Slipstream. `HoneyguideHUDVariant` + `HoneyguideHUDView`; the hull's `SparrowHUDController` became the base
+`VesselHUDController`. Ran: `unity_refcompile` (0 errors in changed files), `element_ability_table.py Honeyguide` (4/4,
+4/4), `author_honeyguide_assets.py --check`, `author_honeyguide_hud.py --check`, `icon_kit/author.py honeyguide --check`.
+Not run: Unity, `HoneyguideFundamentalsTests`, `HoneyguideHUDTests`.
+
+1. Toybox, Honeyguide: the four cards show Flit, the hive, Peck and the Slip (not the Sparrow's). No console errors from
+   the HUD controller at spawn.
+2. Charge 5: Flit into a rival; LT is ready again at once. Below Charge 4 it waits 2 s.
+3. Mass 5: reach a hive; the next hive marker appears at once. Space 10: a Peck fires six shots.
+4. Time 5: ride a slip to its end; the boost after it lasts about 1.5 s instead of 0.75 s.
+
+### 🔴 The Wrasse's vessel pass: element scaling, Time 5 Tailwind, its own HUD and eight cards (`claude/wrasse-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Crew/KITE_NAVIGATOR.md` § "Element scaling and level 5". Charge scales the kite's ram power, Mass the
+cluster, Space the blast (each x1 -> x2); Time 5 Tailwind makes every saved boost last 1.5x. `WrasseHUDVariant` (forked
+from the Sparrow's by `author_wrasse_hud.py`, `--check`) with `WrasseHUDView` and eight kit icons. Ran: `unity_refcompile`
+editor (0 errors in changed files), `element_ability_table.py Wrasse` (4/4 scaling, 4/4 L5 gates),
+`author_wrasse_assets.py --check`, `icon_kit/author.py wrasse --check`. Not run: Unity, `WrasseFundamentalsTests`,
+`WrasseHUDTests`.
+
+1. Toybox, Wrasse at Charge 0 then Charge 10: close the same Charge loop; the card's ram count roughly doubles at 10.
+2. Mass 10: a Mass loop lays about twice the prisms. Space 10: the blast reaches about twice as far.
+3. Time 5: spend a saved boost on RT; it runs about 2.25 s instead of 1.5 s. Below Time 4 it is 1.5 s.
+4. The four cards show the kite on its lasso (Mass, Space, Time) and the ram (Charge), not the Sparrow's parts; each
+   swaps to its level-5 card at 5, and the Charge, Space and Time counts still show.
+
+### 🔴 The Orca's own HUD and eight ability cards (`claude/orca-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `OrcaHUDVariant.prefab` (from the Sparrow's, every fileID kept, `author_orca_hud.py --check`) with
+`OrcaHUDView`, nested in `Orca.prefab` in place of `SparrowHUDVariant`; eight kit icons in
+`Assets/_Graphics/Icons/AbilityIcons/Orca/` (`icon_kit/author.py orca --check`, all gates pass). Ran: `unity_refcompile`
+editor (0 errors in changed files). Not run: Unity, `OrcaHUDTests`.
+
+1. Toybox, Orca: the four cards show a missile on its path (Charge), the hull in a shell (Mass), a burst in its ring
+   (Space), the hull over its tank (Time). No Sparrow rocket bay, stance hull or afterburner parts.
+2. Each gunner card still shows its seat's missile count under the picture.
+3. Raise each element to 5: the card swaps to Rearm (two missiles), Bulwark (two shells), Chain Burst (two bursts),
+   Afterburner (double flame, full tank, feed chevron).
+
+### 🔴 The Orca's level-5 upgrades: Rearm, Bulwark, Chain Burst, Afterburner (`claude/orca-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Crew/ORCA_CREW.md` § "Level 5". The four empty slots filled, each gated on its own element in
+`OrcaCrewConfigSO`. Ran: `unity_refcompile` editor (0 errors in changed files), `element_ability_table.py Orca`
+(4/4 L5 gates), `author_orca_assets.py --check`, `orca_crew_lab/parity.cjs` (PASS). Not run: Unity, `OrcaUpgradeTests`.
+
+1. Toybox, Orca, Charge 5: fire every gunner's missiles; each magazine regains one every 12 s (the card counts it).
+2. Mass 5: raise the shield (LT); two shells stand round the hull, the outer 14 u further out, and both drop as danger.
+3. Space 5: fly two gunners' missiles close together and burst one; the other bursts with it. Throw the bomb next to a
+   missile and burst it; the missile goes too.
+4. Time 5: hold RT past the tank; it drains slower, and holding on empty recovers the tank. Below Time 4 it does not.
+
 ### 🔴 The Angler's fundamentals pass: bite rate, lure size, brush width, Swallow, Riptide (`claude/angler-kit`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/ANGLER.md` §1n. Charge divides the bite cooldown (1 s -> 0.4 s), Mass grows the lure's

@@ -492,15 +492,17 @@ def register_network(text: str) -> str:
 MAP_ENTRIES = [
     (1, "Flit", "Hold LT to see the dart, let go to fly it: 18 u ahead, striking every rival vessel and creature within 8 u "
                 "of its lane, every 2 s. Each Charge card the Ratel makes (Hard Light Lasso, Blink Drive, All Terrain "
-                "Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) banks three uses on LT; the newest fires first.", 2, "", ""),
+                "Portals, Rosen Bridge, FTL Chromatool, Monte Cannon) banks three uses on LT; the newest fires first.", 2,
+     "Relentless", "A Flit that strikes a vessel or creature is ready again at once."),
     (2, "Hive", "Every 45 s (sooner as Mass rises) a hive appears somewhere in the cell. Fly to it to open hive mode.",
-     0, "", ""),
+     0, "Hive Chain", "Reaching a hive plants the next one at once."),
     (3, "Peck", "Hold RT to see the aim line, let go for three quick shots, every 1 s. Each Space card the Ratel makes "
                 "(Genesis Lance, Little Bang Grenade, Particle Harmonizer, Fugacity Discharger, Sepia Drone, Thruster Swarm, "
                 "Hexapod Eyelet Jet) banks three uses on RT; the newest fires first. Hold both triggers to cancel.", 1,
      "Piercing Pecks", "Pecks pierce through prisms instead of stopping at the first."),
     (4, "Slip", "Touch a trail of a domain the battery holds with your nose along it and ride it to its end, fast: the "
-                "charge is spent. The Ratel charges the battery by making patterns on the Dynamo.", 0, "", ""),
+                "charge is spent. The Ratel charges the battery by making patterns on the Dynamo.", 0,
+     "Slipstream", "A slip carries twice the boost out."),
 ]
 
 
