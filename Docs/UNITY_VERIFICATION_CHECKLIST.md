@@ -65,6 +65,21 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Wrasse's vessel pass: element scaling, Time 5 Tailwind, its own HUD and eight cards (`claude/wrasse-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Crew/KITE_NAVIGATOR.md` § "Element scaling and level 5". Charge scales the kite's ram power, Mass the
+cluster, Space the blast (each x1 -> x2); Time 5 Tailwind makes every saved boost last 1.5x. `WrasseHUDVariant` (forked
+from the Sparrow's by `author_wrasse_hud.py`, `--check`) with `WrasseHUDView` and eight kit icons. Ran: `unity_refcompile`
+editor (0 errors in changed files), `element_ability_table.py Wrasse` (4/4 scaling, 4/4 L5 gates),
+`author_wrasse_assets.py --check`, `icon_kit/author.py wrasse --check`. Not run: Unity, `WrasseFundamentalsTests`,
+`WrasseHUDTests`.
+
+1. Toybox, Wrasse at Charge 0 then Charge 10: close the same Charge loop; the card's ram count roughly doubles at 10.
+2. Mass 10: a Mass loop lays about twice the prisms. Space 10: the blast reaches about twice as far.
+3. Time 5: spend a saved boost on RT; it runs about 2.25 s instead of 1.5 s. Below Time 4 it is 1.5 s.
+4. The four cards show the kite on its lasso (Mass, Space, Time) and the ram (Charge), not the Sparrow's parts; each
+   swaps to its level-5 card at 5, and the Charge, Space and Time counts still show.
+
 ### 🔴 The Orca's own HUD and eight ability cards (`claude/orca-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `OrcaHUDVariant.prefab` (from the Sparrow's, every fileID kept, `author_orca_hud.py --check`) with
