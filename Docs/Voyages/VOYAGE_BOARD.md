@@ -255,9 +255,15 @@ dry soap foam. Three mockup rounds (https://claude.ai/artifact/LW2rKkQ4UThHhBUSj
 - **The nucleus** now sits at its cell's centroid, sized by its cell (never more than 0.32 of its radius), and is
   drawn as the game's `Nucleus.prefab` with `CageMaterial`: a white translucent sphere in a cage with deep-blue edges
   (it was pale warm before). Above or below the slice it shows as a soft haze.
-- **Not yet in the game.** `HyperSeaCells.cs` and `HyperSeaCellsTests` still hold the regular lattice, so the board's
-  `cells_golden.js` output and the game's test differ until the port (the next PR) lands. Below 40 px a cell the
-  board's pixel pass draws the new shapes without the wet look.
+- **In the game (the port, 2026-11-13).** `HyperSeaCells.cs` builds the same foam (hashed sites, knots, power cells,
+  wet outline) and matches `cells_golden.js` to 1e-9 on every line `HyperSeaCellsTests` checks (cell lookups, sections
+  with each nucleus's middle and radius, the slice's 290 crossings, the wet outline, a knot sharing its lattice point;
+  checked under .NET against the page, not yet in Unity). `VoyageMapSky` and `VoyageEdgeGraphic` draw each cell's
+  rounded outline over the liquid, dark with its sea (read at its lattice point) and brighter toward its nucleus, each
+  cell's own thin membrane, and the nucleus at the cell's middle at its own size; `VoyageCellDraw`'s sprite is the
+  game-look caged nucleus, its five blues traced into every colour set (`colour_trace.py`). The board's blur layers,
+  ghost slices and cytoplasm snow are not in the game mesh. Below 40 px a cell the board's pixel pass draws the new
+  shapes without the wet look.
 - The committed board is no longer byte for byte the Voyage Board artifact's version 11; that artifact was not
   republished.
 
