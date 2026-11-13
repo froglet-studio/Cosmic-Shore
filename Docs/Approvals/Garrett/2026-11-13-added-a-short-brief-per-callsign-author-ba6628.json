@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-13-added-a-short-brief-per-callsign-author-ba6628",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-13T22:33:13+00:00",
+  "area": "Pilot callsigns (CallsignSetSO) and the Ark Pilots tab",
+  "summary": "Added a short 'brief' per callsign (author_callsign_assets.py BRIEFS, e.g. 'Charge crystals') and a 'Sees {brief}' line under each crew cell's callsign on the Pilots tab; the cell close-up shrank from 120 to 96 to fit. Shombith asked for each pilot's ability on the tab and picked the callsign sight. MENU_REDESIGN_B.md section 199.",
+  "branch": "claude/project-thread-60987t",
+  "commit": "b05773d9d"
+}

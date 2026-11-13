@@ -331,6 +331,16 @@ outside them), `author_menu_ark.py --check` and `--self-test` (every negative co
 **First-pass choices (not settled):** the crew grid 6 x 3 of 164 x 212 cells with a 120 close-up (a long name shrinks to
 fit); the pick-up 0.5 s; the words appear 0.4 s after a press.
 
+### 🔴 Each pilot's ability on the Ark's Pilots tab (`claude/project-thread-60987t`, 2026-11-13, Shombith) — NOT EDITOR-VERIFIED
+
+Built on the crew PDA above (`Docs/MENU_REDESIGN_B.md` section 199). Pick up the PDA on the Pilots tab: every crew cell
+shows the close-up, the name, the callsign and under it "Sees ..." (e.g. "Sees Charge crystals") in at most two rows,
+nothing clipped or overlapping; empty cells show no line. Edit a `brief` on `Resources/Pilots/CallsignSet` and the cell
+follows; blank it and that line disappears.
+
+- [ ] Every cell's three lines read, none clipped (18 callsigns)
+- [ ] The smaller close-up (96) still reads as the pilot
+
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** a sixth settings tab, REGION (globe icon), drawn by `Tools/Build/author_menu_settings.py`
