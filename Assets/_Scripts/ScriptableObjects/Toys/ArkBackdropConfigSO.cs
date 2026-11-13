@@ -13,14 +13,20 @@ namespace CosmicShore.ScriptableObjects
         Hangar = 1,
         Pier = 2,
         Artifacts = 3,
+        /// <summary>The hangar's workbench, where the crew PDA lies (PILOTS; Rev 99 C, section 191).</summary>
+        Bench = 4,
     }
 
-    /// <summary>Which of a room's clips: the room at rest, the conversion (played once), the room after it.</summary>
+    /// <summary>Which of a room's clips: the room at rest, the conversion (played once), the room after it; for the
+    /// bench, the PDA picked up (played once), held up to read (loops) and laid back down (played once).</summary>
     public enum ArkBackdropRun
     {
         Loop = 0,
         Convert = 1,
         Done = 2,
+        PickUp = 3,
+        Held = 4,
+        PutDown = 5,
     }
 
     /// <summary>Which HyperSea pass carries the picture between rooms (the <c>_Style</c> of CosmicShore/UI/ArkPass).</summary>
@@ -39,7 +45,8 @@ namespace CosmicShore.ScriptableObjects
     /// how you showed me on Frogma, no need to use the actual model, it can be a video or gif of this high quality";
     /// Docs/MENU_REDESIGN_B.md section 190). SQUADS plays the hangar with the squad lined up (one clip per colour set and
     /// domain), CONVERTER the pier out in the cell with Garrett's combine (at rest, the conversion, the Omni made),
-    /// ARTIFACTS the room of Rev 86; DECOR has none. A clip is chosen by room, run, the worn colour set (matched against
+    /// ARTIFACTS the room of Rev 86, PILOTS the hangar's workbench with the crew PDA lying on it (Rev 99 C: at rest, picked
+    /// up, held, laid down; section 191); DECOR has none. A clip is chosen by room, run, the worn colour set (matched against
     /// the set asset's name) and the squad's domain, falling back to the first clip of the room and run.
     /// Written by <c>Tools/Build/author_ark_backdrop_assets.py</c>; the clips by
     /// <c>Docs/MenuRedesignB/rounds/r67_ark_backdrop_videos.py</c>.
@@ -52,7 +59,7 @@ namespace CosmicShore.ScriptableObjects
         {
             [Tooltip("The room this clip shows.")]
             public ArkRoom room;
-            [Tooltip("At rest (loops), the conversion (once) or after it (loops).")]
+            [Tooltip("At rest (loops), the conversion (once) or after it (loops); the bench's pick-up and put-down (once) and held (loops).")]
             public ArkBackdropRun run;
             [Tooltip("The colour set it was rendered in: the start of the set asset's name (Nocturne, Photic, DartFrog).")]
             public string colourSet;

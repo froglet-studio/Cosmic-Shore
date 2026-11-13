@@ -66,7 +66,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / PILOTS / ARTIFACTS / DECOR) and a pilot's profile page | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); the Pilots tab and the pilot profile page built 2026-11-12, not run in the editor (section 92.1); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels (section 139), and the live animated scene (Rev 64, section 140); **Rev 61 C picked as the final; Rev 67, the whole Ark screen inside the Ark, a room per tab, animated, every colour set, on the new Ark tab (section 187); Rev 67's Converter now a pier out into the cell from inside the Ark, Decor locked (section 187); **Rev 85, the Artifacts room, three stills (section 166); Rev 86, A and B as one (section 167)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / PILOTS / ARTIFACTS / DECOR) and a pilot's profile page | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); the Pilots tab and the pilot profile page built 2026-11-12, not run in the editor (section 92.1); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels (section 139), and the live animated scene (Rev 64, section 140); **Rev 61 C picked as the final; Rev 67, the whole Ark screen inside the Ark, a room per tab, animated, every colour set, on the new Ark tab (section 187); Rev 67's Converter now a pier out into the cell from inside the Ark, Decor locked (section 187); **Rev 85, the Artifacts room, three stills (section 166); Rev 86, A and B as one (section 167)**; **Rev 99, the Pilots tab as a crew PDA (section 191); C, the hangar bench, built 2026-11-13, not run in the editor (section 192)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -8647,3 +8647,139 @@ branch were there before), `author_menu_ark.py --check / --self-test`, `author_a
 in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("The Artifacts tab as Rev 105 B").
 
 Affects: Shombith's Ark screen (the Artifacts tab); Garrett's artifact kinds (read only, the marks are new).
+
+## 191. Rev 99 mockups: the Pilots tab as a crew PDA lying in the Ark (2026-11-13; Shombith picked C, built in section 192)
+
+**Asked (Shombith, 2026-11-13):** "we also do need to visualize the pilots tab too. In the pilots tab on the images there
+are images where the captains are inside the arks which shows a pretty cool view of the ark. I was thinking more like a
+PDA lying somewhere where you see the details and stories of each pilot." Garrett's Pilots tab (section 92.1) was built
+from his words without a board; this round draws it.
+
+**On the canvas:** tab **Ark**, round "Rev 99 - The Pilots tab as a crew PDA lying in the Ark", copies in
+`Docs/MenuRedesignB/board/R99*.dc.html`. Each option is the Ark screen on its PILOTS tab over a still of an Ark place
+with a crew PDA lying in it, rendered in Rev 61 C's style (`Docs/MenuRedesignB/rounds/r99_ark_pilots_render.py`, the
+Rev 67 room kit with three new scenes; Nocturne). The PDA's glass is drawn live on the board, mapped onto its rendered
+corners (`r99_pilots_boards.py`), so it reads as the device's own screen. Three states, the same in every option: lying
+down (the last pilot read, "Pick up"), picked up (a second still leaning over the PDA, cross-faded: the one
+transition; the crew, 18 cells), and a pilot's file (picture, sight, callsign, name, animals, faction, home, story,
+PREV / NEXT, "5 / 18"). The words are the starter crew's records (`PaintedCrew.asset`, `CallsignSet.asset`); the pictures
+are their scenes cut by the scene kit's close and 4:5 crops.
+- **A - The chart room (recommended):** the PDA on a chart table under the Ark's great window onto the HyperSea
+  (Zodiac's and Needle's rooms). Shows the most of the Ark while the PDA sits clear in front.
+- **B - The captain's cabin:** on the desk under a round porthole, one warm lamp; the quietest and most personal.
+- **C - The hangar bench:** on a workbench at the back of the hangar, the bay running out of the open mouth into the cell
+  (Galleon's view).
+- **Compare:** the three screens flat, and the three places side by side. **Notes:** the decisions and open questions.
+
+**Differs from the build (section 92.1):** the build lays the crew grid over the Ark backdrop and opens a full-screen
+profile page. The picked option would make the tab a place in the Ark (a live set piece, like the Rev 85/86 rooms)
+with a PDA whose screen carries `ArkPilotsPage`'s cells and `PilotProfileModal`'s words; nothing is built until a pick.
+
+**Picked (Shombith, 2026-11-13): "I like C"** - the hangar bench: the PDA on a workbench at the back of the hangar,
+the bay running out of the open mouth into the cell. Shombith: "Yes build it" (2026-11-13); built in section 192.
+
+Affects: Garrett's Pilots tab and pilot profile page.
+
+## 192. Built: the Pilots tab as the crew PDA on the hangar's workbench - Rev 99 C (2026-11-13, claude/project-thread-5ayjx3, not run in Unity)
+
+**Asked (Shombith, 2026-11-13):** "Yes build it", of Rev 99 C (section 191). Built on the Ark rework (PR #1960, sections
+187-190), so the tab joins the other rooms of the Ark as a backdrop.
+
+**What it is:**
+- **The bench is the tab's room.** `ArkRoom.Bench` (4) in `ArkBackdropConfigSO`, with the runs `PickUp` (3), `Held` (4)
+  and `PutDown` (5) beside the converter's. Four clips, `Assets/_Graphics/Video/Ark/bench_Nocturne_{loop,pickup,held,
+  putdown}.mp4` (`author_ark_backdrop_assets.py`), encoded by `Docs/MenuRedesignB/rounds/r99_pilots_bench_videos.py` from
+  two Blender stills: the board's `pda_c` (the PDA lying on the bench) and a new `PDA_HELD=1` render of
+  `r99_ark_pilots_render.py` (the PDA held up square to the view, so its glass is an upright rectangle the game lays the
+  crew on without warping it). The pick-up closes in on the lying PDA while the held still dissolves over it, 0.5 s; the
+  put-down plays it backwards. `ElementalConverterView` maps `ArkPilotsPage` to the bench and plays the move from its
+  `HeldChanged`; arriving on the tab always shows the PDA lying, with no move.
+- **Lying down** (`Pilots/Rest`): the PDA's glass shows the last pilot read, drawn by `PdaGlassImage` (a new UI graphic:
+  the sprite cut to the glass's proportion and drawn through the homography of the render's four glass corners, on an
+  8 x 8 grid). "Last read", the callsign, the name and PICK UP (Lime, the call to action) stand in a glass panel right of
+  the PDA.
+- **Picked up** (`Pilots/Held/Screen`, anchored to the held render's glass corners as fractions of the picture, so it
+  follows the stretched picture on any aspect): the header (Your crew, Pilots: N), the crew 6 x 3 (one cell a callsign,
+  the Squads tab's `SquadPickChip`, the close-up, the name and the callsign; the last read is the picked cell), "Tap a
+  pilot to read their file." and LAY DOWN. The words fade in 0.4 s after the press, once the move has played.
+- **A pilot's file** on the glass, as the board drew it: the close-up and the callsign's sight on the left; the callsign,
+  the name, the human and two animals, "faction - home", the story on the right; CREW, PREV / n of N / NEXT, and FULL
+  PROFILE, which opens Garrett's full-screen profile page (`ScreenSwitcher.OpenPilotProfile`, section 92.1), kept as it is.
+  Every word is an authored template on `ArkPilotsPage` (`file*Template`, `last*Template`); the generator checks each names
+  only the tokens the page fills (read from its `FileTokens`).
+
+**Differs from the board:** the board leaned over the lying PDA (a second still at an angle, the screen warped onto it);
+the game holds it up square to the view instead, so the crew is real UI on an upright glass. The board's lying screen
+carried the callsign and PICK UP on the glass; in the game they stand beside the PDA (text on a glass that small and
+that slanted does not read), and only the picture is on the glass. Recruits without art show no "Pictured:" line on the
+PDA (the full profile page still shows it).
+
+**Not built:** B on the pad does not lay the PDA down or leave a file (no page of the Ark handles cancel yet); the clips
+are Nocturne only (the other colour sets fall back to it, as the converter's do).
+
+**Ran:** `unity_refcompile` (0 errors in the changed files), `author_menu_ark.py --check` and `--self-test` (new controls:
+a crew cell off the glass, the veil back over the bench, the screen off the glass, the glass off the bench's corners,
+PICK UP unwired, a file template naming an unfilled token), `author_ark_backdrop_assets.py --check`. No Unity editor ran:
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The Ark's Pilots tab as the crew PDA".
+
+Affects: Garrett's Pilots tab (`ArkPilotsPage`, reworked; queued in `Docs/Approvals/Garrett/`); his profile page is
+unchanged and opened from the file's FULL PROFILE.
+
+## 198. Rev 109 mockups: the crew PDA itself, redesigned - three devices from the Ark (2026-11-13; Shombith picked B, built)
+
+**Asked** (Shombith, 2026-11-13, on the built Rev 99 C, section 192): "For the PDA mockups, I like C but the actual device
+it looks too earth like, it should be something completely different and modern and never seen before so work on this."
+And for the whole Ark: take the lighting, animation and design ideas from the pilot scenes set inside the Ark.
+
+**On the canvas** (Frogma, tab Ark, "Rev 109 - The crew PDA itself, redesigned"; copies in `Docs/MenuRedesignB/board/R109*`).
+The bench, camera, crew page, file and pad are Rev 99 C's, unchanged; only the device differs. Each option board lies
+the device on the bench and picks it up to the crew, held square to the view:
+- **R109A - the tidestone (recommended)**: a long hexagon of clear crystal, the crew glowing inside it, thin cyan seams
+  along the cuts, brass claws over both points, a lime seed crystal at one tip.
+- **R109B - the nautilus**: a dark lacquered chambered shell with brass septa; a pearl in its mouth throws the crew up
+  as a standing sheet of light.
+- **R109C - the light scroll**: two long triangular hull-metal prisms with cyan trim and brass caps, the crew a
+  membrane of light stretched between them.
+- **R109Compare**: the three lying and held, beside the built slab. **R109Notes**: the cues and the recommendation.
+
+A is recommended because it stays itself when held: crystal and claws frame the crew on every side, where B's shell and
+C's prisms leave the frame as the view closes in; it also matches the Converter's crystals. Renders:
+`rounds/r109_ark_pda_render.py` (PDA_KIND), boards `rounds/r109_pda_device_boards.py` (blobs `r109_blobs.json`).
+
+**Differs from the build**: no C#. The bench clips are re-rendered from the picked device
+(`r99_pilots_bench_videos.py`), and `author_menu_ark.py`'s `PDA_REST_CORNERS` and `GLASS_X/Y/W/H` take the picked
+device's screen corners (held, all three sit within 20 px of the built glass, 403,194 to 1517,1003).
+
+**Picked (Shombith, 2026-11-13): "109 B"**, the nautilus. **Built** on claude/project-thread-5ayjx3: the bench clips
+(`bench_Nocturne_{loop,pickup,held,putdown}.mp4`) re-made from `r109_ark_pda_render.py` with `PDA_KIND=nautilus`, the
+held still at `PDA_HELD_DIST=0.545` so the light sheet lands exactly on the built screen (403,194 to 1517,1003; the
+Rev 109 boards' held still was at 0.575, a little smaller). `author_menu_ark.py`'s `PDA_REST_CORNERS` are the lying
+sheet's corners, and `r99_pilots_bench_videos.py`'s `REST_GLASS` its centre. The page, its words and the C# did not
+change. The pick-up move is still the Rev 99 zoom and dissolve; the transitions thread owns how it moves.
+
+## 199. Built: each pilot's ability on the Pilots tab (2026-11-13, claude/project-thread-60987t on top of section 192, not run in Unity)
+
+**Asked (Shombith, 2026-11-13):** the Pilots screen "is alright but we should also mention each one's ability". Shown the
+abilities the game already has, he picked the callsign sight (Garrett's pilot concept, `Docs/Pilots/CALLSIGNS.md`): what
+holding LB lights. The retired kit-rewrite pilots stay retired.
+
+**Built:** every crew cell on the PDA's glass carries a third line under the callsign, "Sees {brief}" (Sees Charge
+crystals, Sees rivals through mass), two rows at most in BodySmall. `{brief}` is a new authored field on each
+`CallsignSetSO` row, the sight in a few words, written by `author_callsign_assets.py` (`BRIEFS`; validated, with a
+negative control for a missing one); the full line stays the file's Sight row. To make room the cell's close-up went from
+120 to 96. The cell lines also accept `{brief}` and `{sight}`. `ArkPilotsPage.sightLines` holds one line per cell; the
+generator checks it is wired in cell order, that every brief wraps into its two rows, and that the rows do not overlap.
+
+**Note:** RAMPART, HORNET and NEEDLE show their brief although their sights are not built in the match yet (CALLSIGNS.md).
+
+**Ran:** `unity_refcompile` (0 errors in the changed files), `author_menu_ark.py --check` and `--self-test`,
+`author_callsign_assets.py --check` and `--self-test`, `/ship` gates. No Unity editor ran.
+
+**Crew cards (2026-11-13, claude/project-thread-5ayjx3, after section 199's line merged in):** Shombith on the crew
+screen: "I don't like the blue background it looks so dull and also the text is not that interesting." Each crew cell
+is now a portrait card: the callsign's close-up fills the whole 164 x 212 card (cut to its width by a RectMask2D), a
+SurfaceBlack fade rises from its foot, and on the fade, left-aligned, the callsign in H3, the name, and "Sees {brief}"
+in TextLight; the picked mark draws over the art. The screen's ground is SurfaceBlack instead of the navy
+SurfaceVeryDark, so the paintings carry the colour, as the pilot scenes inside the Ark do; no blue text is left in a
+cell. `author_menu_ark.py` `pilot_card()` builds it, and the checks now hold the card's rows inside the fade and every
+callsign word in H3 on its card. No C#: the cell is still a SquadPickChip.

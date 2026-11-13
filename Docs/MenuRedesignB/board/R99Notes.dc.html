@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 99 - notes: what was asked, what Garrett&#x27;s tab has, what changes, the recommendation</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#8A8FAE;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#B8C0F0}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.pick:focus-visible,.pbtn:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.glass{background:rgba(0,4,31,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.scene{position:absolute;inset:0;transition:transform 520ms cubic-bezier(.22,.8,.25,1)}
+.scr{position:absolute;left:0;top:0;width:1200px;height:870px;transform-origin:0 0;overflow:hidden;background:#00010A;color:#E6E9FF;font-family:'Aldrich','Chakra Petch',sans-serif}
+.pbtn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:12px;height:72px;padding:0 30px;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:28px;letter-spacing:.1em;text-transform:uppercase;background:rgba(0,4,31,.7);color:#E6E9FF;box-shadow:inset 0 0 0 2px #747BAD}
+.pbtn .kc{min-width:40px;height:34px;font-size:18px;border-color:currentColor;color:inherit}
+.chip{position:relative;width:168px;height:214px}
+.chip img{display:block;width:168px;height:168px;object-fit:cover}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<span class="abs cap" style="left:80px;top:60px;font-size:28px">Rev 99 - the Pilots tab as a crew PDA</span><div class="abs" style="left:80px;top:120px;width:1760px"><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:18px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Asked</span><span style="font-size:18px;line-height:1.5">Shombith, 2026-11-13: the Pilots tab needs designing; the pilot pictures that show captains inside the Ark give a cool view of it; &quot;more like a PDA lying somewhere where you see the details and stories of each pilot&quot;.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:18px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">What it replaces</span><span style="font-size:18px;line-height:1.5">Garrett&#x27;s built Pilots tab (section 92.1): a 6 x 3 grid of the crew over the Ark backdrop, and a press opens a full-screen profile page, the pilot&#x27;s scene behind one panel of words. Built from his words, not drawn on Frogma first.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:18px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Kept from the build</span><span style="font-size:18px;line-height:1.5">Every word the profile page shows: callsign, name, the two animals, faction, home, the callsign&#x27;s sight, the story, and the count. One cell a callsign, eighteen, in the order they joined. The scenes&#x27; close-ups for the cells.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:18px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">What changes</span><span style="font-size:18px;line-height:1.5">The tab is a place in the Ark, like every other Ark tab (Rev 67): a crew PDA lies there. The crew and the files are read ON the PDA, not on a page over the screen. Three states: lying down (the last pilot read), picked up (the crew), a file. Picking up leans the view in toward the PDA; that is the one transition, no idle motion.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:18px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">The options</span><span style="font-size:18px;line-height:1.5">Only the place differs. A: the chart room, on the chart table under the Ark&#x27;s great window onto the HyperSea (Zodiac&#x27;s and Needle&#x27;s rooms). B: a captain&#x27;s cabin, on the desk under a porthole, one warm lamp. C: the hangar, on a workbench, the bay running out of the open mouth into the cell (Galleon&#x27;s view).</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:18px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Recommended: A</span><span style="font-size:18px;line-height:1.5">It shows the most of the Ark (the window, the HyperSea, the room&#x27;s trim and prisms) while the PDA still sits clear in front, and a chart table is where a crew&#x27;s files would be kept. B is the quietest and most personal; C reuses the hangar the Squads tab already shows.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:18px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Pad</span><span style="font-size:18px;line-height:1.5">A picks up; on the crew, the D-pad moves between cells and A opens a file; on a file, left and right step the crew and B goes back; B on the crew lays the PDA down. LB / RB still change tab.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:18px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">For the build</span><span style="font-size:18px;line-height:1.5">The place is a live set piece in the Ark scene like the Rev 85/86 rooms; the PDA is a small mesh whose screen is a world-space canvas (or a render texture) carrying the existing ArkPilotsPage cells and PilotProfileModal&#x27;s words. The renders here are Blender stills (r99_ark_pilots_render.py, the Rev 67 kit); the screen is drawn live on the board, mapped onto the glass.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:18px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Type on the PDA</span><span style="font-size:18px;line-height:1.5">The lying PDA&#x27;s rest screen keeps two sizes off the scale (96 and 40 px on its own 1200 px glass) so the callsign still reads through the table&#x27;s foreshortening, about a third of that on screen.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:18px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Open</span><span style="font-size:18px;line-height:1.5">Whether the PDA shows the pilot&#x27;s whole scene (as the profile page does now) or the 4:5 crop drawn here. Whether recruits without art keep the &quot;Pictured:&quot; line on the PDA.</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

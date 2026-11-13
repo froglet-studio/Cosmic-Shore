@@ -1,0 +1,16 @@
+{
+  "id": "2026-11-13-the-pilots-tab-is-now-rev-99-c-the-crew-4a814a",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-13T19:06:55+00:00",
+  "area": "the Ark's Pilots tab",
+  "summary": "The Pilots tab is now Rev 99 C: the crew PDA on the hangar's workbench. The crew grid moved onto the PDA's glass (6 x 3, smaller cells), a press opens the pilot's file on the PDA, and your full-screen profile page opens from its FULL PROFILE button instead of from the cell.",
+  "why": "Shombith picked Rev 99 C on Frogma and asked for it to be built (Docs/MENU_REDESIGN_B.md sections 191-192).",
+  "branch": "claude/project-thread-5ayjx3",
+  "lane": "ark-converter",
+  "commit": "d0aa41baf",
+  "paths": [
+    "Assets/_Scripts/UI/Elements/Ark/ArkPilotsPage.cs",
+    "Tools/Build/author_menu_ark.py"
+  ]
+}
