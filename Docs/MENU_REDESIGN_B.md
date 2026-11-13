@@ -8636,3 +8636,12 @@ generator checks it is wired in cell order, that every brief wraps into its two 
 
 **Ran:** `unity_refcompile` (0 errors in the changed files), `author_menu_ark.py --check` and `--self-test`,
 `author_callsign_assets.py --check` and `--self-test`, `/ship` gates. No Unity editor ran.
+
+**Crew cards (2026-11-13, claude/project-thread-5ayjx3, after section 199's line merged in):** Shombith on the crew
+screen: "I don't like the blue background it looks so dull and also the text is not that interesting." Each crew cell
+is now a portrait card: the callsign's close-up fills the whole 164 x 212 card (cut to its width by a RectMask2D), a
+SurfaceBlack fade rises from its foot, and on the fade, left-aligned, the callsign in H3, the name, and "Sees {brief}"
+in TextLight; the picked mark draws over the art. The screen's ground is SurfaceBlack instead of the navy
+SurfaceVeryDark, so the paintings carry the colour, as the pilot scenes inside the Ark do; no blue text is left in a
+cell. `author_menu_ark.py` `pilot_card()` builds it, and the checks now hold the card's rows inside the fade and every
+callsign word in H3 on its card. No C#: the cell is still a SquadPickChip.

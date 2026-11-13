@@ -675,13 +675,20 @@ GLASS_X, GLASS_Y, GLASS_W, GLASS_H = 403, 194, 1114, 809   # held up: the glass,
 LAST_X, LAST_Y, LAST_W, LAST_H = 1280, 812, 440, 176       # lying down: the last pilot read and PICK UP, right of the PDA
 SCREEN_PAD, SCREEN_HEAD = 28, 52                    # the glass's margin and its header strip
 SCREEN_GROUND_ALPHA = 0.9                           # the lit screen's ground over the render's pale glass
+# The ground is near-black, not the theme's navy (Shombith, 2026-11-13: "I don't like the blue background, it looks so
+# dull"): the crew's paintings carry the colour, as the pilot scenes inside the Ark do.
+SCREEN_GROUND = "SurfaceBlack"
 PILOT_COLS, PILOT_W, PILOT_H, PILOT_GAP = 6, 164, 212, 14
 PILOT_X = (GLASS_W - (PILOT_COLS * PILOT_W + (PILOT_COLS - 1) * PILOT_GAP)) // 2
 PILOT_Y = SCREEN_HEAD + 20                          # the grid's top left on the glass
-PILOT_FACE, PILOT_FACE_Y, PILOT_PAD = 96, 10, 8     # the close-up's side and top, and the words' inset
-PILOT_NAME_Y, PILOT_NAME_H, PILOT_LINE_Y, PILOT_LINE_H = 114, 24, 140, 18   # the name and the callsign under it
-# Under the callsign, the pilot's ability: what their sight shows, in two lines at most (Shombith, 2026-11-13).
-PILOT_SIGHT_Y, PILOT_SIGHT_LINES, PILOT_SIGHT_ROLE = 160, 2, "BodySmall"
+# A crew cell is a portrait card: the close-up fills it (square, cut to the card's width), a fade darkens its foot, and
+# the words stand on the fade, left-aligned: the callsign large, the name, and what the callsign sees.
+PILOT_FACE, PILOT_FACE_Y, PILOT_PAD = PILOT_H, 0, 10    # the close-up's side and top, and the words' inset
+PILOT_FADE_Y = 56                                   # where the foot's fade starts
+PILOT_LINE_Y, PILOT_LINE_H, PILOT_LINE_ROLE = 106, 28, "H3"     # the callsign
+PILOT_NAME_Y, PILOT_NAME_H = 134, 20                # the name under it
+# Under the name, the pilot's ability: what their sight shows, in two lines at most (Shombith, 2026-11-13).
+PILOT_SIGHT_Y, PILOT_SIGHT_LINES, PILOT_SIGHT_ROLE = 158, 2, "BodySmall"
 PILOT_SIGHT_H = PILOT_SIGHT_LINES * 20
 PILOT_NAME_ROLE = "BodySmall"
 FOOT_Y, FOOT_H = GLASS_H - 20 - 44, 44              # the glass's foot row: LAY DOWN, or CREW / PREV / NEXT / FULL PROFILE
@@ -730,6 +737,47 @@ def callsign_briefs():
     return found
 
 
+def callsign_words():
+    """Every callsign's word, as CallsignSet.asset holds it."""
+    path = os.path.join(REPO, "Assets/Resources/Pilots/CallsignSet.asset")
+    found = [v.strip().strip("'") for v in re.findall(r"^    word: (.*)$", open(path, encoding="utf-8").read(), re.M)]
+    assert len(found) == CALLSIGNS and all(found), "CallsignSet.asset does not hold a word for every callsign"
+    return found
+
+
+def pilot_card(parent, i):
+    """Crew cell `i` (a SquadPickChip): the callsign's close-up filling the card, cut by a mask to its width, a fade up
+    from its foot, the callsign large, the name, the sight, and the picked mark over all of it."""
+    key = f"Pilots/Cell{i}"
+    x, y = pilot_cell_rect(i)
+    chip = glass(H.kit_row(parent, key, f"Cell{i}", TL(x, y, PILOT_W, PILOT_H), PILOT_H,
+                           content_keys=((f"{key}/Label", "tmp"),)), alpha=1.0)
+    chip.add("cg", 225, canvas_group(True))
+    clip = chip.child(N(f"{key}/Clip", "Clip", STRETCH))
+    clip.add("cr", 222, K.canvas_renderer()).add("rmask", 114, A.rect_mask())
+    clip.child(N(f"{key}/Picture", "Picture", TL((PILOT_W - PILOT_FACE) // 2, PILOT_FACE_Y, PILOT_FACE, PILOT_FACE))) \
+        .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None, preserve=True))
+    image_node(clip, f"{key}/Fade", "Fade", TL(0, PILOT_FADE_Y, PILOT_W, PILOT_H - PILOT_FADE_Y), "SurfaceBlack",
+               K.kit_sprite("kit_fade_v"))
+    words_w = PILOT_W - 2 * PILOT_PAD
+    H.ellipsize(label(chip.child(N(f"{key}/Line", "Line", TL(PILOT_PAD, PILOT_LINE_Y, words_w, PILOT_LINE_H))), "",
+                      PILOT_LINE_ROLE, "TextLight"))
+    label(chip.child(N(f"{key}/Label", "Label", TL(PILOT_NAME_PAD, PILOT_NAME_Y, PILOT_W - 2 * PILOT_NAME_PAD,
+                                                   PILOT_NAME_H))), "", PILOT_NAME_ROLE, "TextLight")
+    label(chip.child(N(f"{key}/Sight", "Sight", TL(PILOT_PAD, PILOT_SIGHT_Y, words_w, PILOT_SIGHT_H))),
+          "", PILOT_SIGHT_ROLE, "TextLight", valign="top", wrap=True)
+    chip.child(N(f"{key}/Picked", "Picked", R((0, 0), (1, 1), (0, 0), (2, 2)))).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, off(K.image(tok("Selection"), K.kit_sprite("kit_sliver10_line2"), True)))
+
+    def body(ctx, go):
+        return mono(go, S["chip"], f"  button: {ref(ctx.c(key, 'button'))}\n  group: {ref(ctx.c(key, 'cg'))}\n"
+                    f"  label: {ref(ctx.c(f'{key}/Label', 'tmp'))}\n  line: {ref(ctx.c(f'{key}/Line', 'tmp'))}\n"
+                    f"  image: {ref(ctx.c(f'{key}/Picture', 'img'))}\n"
+                    f"  selectedMark: {ref(ctx.c(f'{key}/Picked', 'img'))}\n")
+    chip.add("chip", 114, body)
+    return chip
+
+
 def pilot_cell_rect(i):
     """Cell `i` of the crew, left to right then down: (x, y) of its top left on the PDA's glass."""
     return (PILOT_X + (i % PILOT_COLS) * (PILOT_W + PILOT_GAP), PILOT_Y + (i // PILOT_COLS) * (PILOT_H + PILOT_GAP))
@@ -769,8 +817,7 @@ def pilots_rest(page):
 
 
 def pilots_crew(screen):
-    """Picked up, the crew on the glass: one cell a pilot (SquadPickChip: the close-up of their callsign's scene, their
-    name, their callsign), the empty words, and LAY DOWN."""
+    """Picked up, the crew on the glass: one portrait card a pilot (pilot_card), the empty words, and LAY DOWN."""
     crew = screen.child(N("Pilots/Held/Screen/Crew", "Crew", STRETCH))
     crew.add("cg", 225, canvas_group(True))
     e = crew.child(N("Pilots/Empty", "Empty", TL(0, 250, GLASS_W, 200)))
@@ -779,17 +826,8 @@ def pilots_crew(screen):
           align="center")
     label(e.child(N("Pilots/Empty/Line", "Line", stretch_x(200, 200, 90, 60))),
           "Your crew appears here once your account has loaded.", "Body", "NeutralLightest", align="center", wrap=True)
-    words_w = PILOT_W - 2 * PILOT_PAD
     for i in range(CALLSIGNS):
-        x, y = pilot_cell_rect(i)
-        chip = pick_chip(crew, f"Pilots/Cell{i}", f"Cell{i}", TL(x, y, PILOT_W, PILOT_H), PILOT_H, "", None,
-                         TL((PILOT_W - PILOT_FACE) // 2, PILOT_FACE_Y, PILOT_FACE, PILOT_FACE),
-                         line_rect=TL(PILOT_PAD, PILOT_LINE_Y, words_w, PILOT_LINE_H),
-                         label_rect=TL(PILOT_NAME_PAD, PILOT_NAME_Y, PILOT_W - 2 * PILOT_NAME_PAD, PILOT_NAME_H),
-                         label_role=PILOT_NAME_ROLE, line_align="center")
-        # The pilot's ability under the callsign (ArkPilotsPage.sightLines): inside the chip, so it hides with it.
-        label(chip.child(N(f"Pilots/Cell{i}/Sight", "Sight", TL(PILOT_PAD, PILOT_SIGHT_Y, words_w, PILOT_SIGHT_H))),
-              "", PILOT_SIGHT_ROLE, "NeutralLightest", align="center", wrap=True)
+        pilot_card(crew, i)
     label(crew.child(N("Pilots/Held/Screen/Crew/Hint", "Hint", TL(SCREEN_PAD, FOOT_Y + 13, 500, 18))),
           "Tap a pilot to read their file.", "BodySmall", "NeutralLightest")
     small_button(crew, "Pilots/Held/Screen/Crew/PutDown", "PutDown", "Lay down", TR(SCREEN_PAD, FOOT_Y, 170, FOOT_H))
@@ -831,7 +869,7 @@ def pilots_held(page):
     screen = held.child(N("Pilots/Held/Screen", "Screen", R(frac(GLASS_X, GLASS_Y + GLASS_H), frac(GLASS_X + GLASS_W, GLASS_Y),
                                                              (0, 0), (0, 0))))
     # The screen lit: the render's glass is pale under the hangar's grade, so the words stand on the theme's dark ground.
-    image_node(screen, "Pilots/Held/Screen/Ground", "Ground", STRETCH, "SurfaceVeryDark", alpha=SCREEN_GROUND_ALPHA)
+    image_node(screen, "Pilots/Held/Screen/Ground", "Ground", STRETCH, SCREEN_GROUND, alpha=SCREEN_GROUND_ALPHA)
     image_node(screen, "Pilots/Held/Screen/Head", "Head", TL(0, 0, GLASS_W, SCREEN_HEAD), "SurfaceBlack", alpha=0.55)
     C.section_label(screen, "Pilots/Caption", "Caption", "Your crew", TL(SCREEN_PAD, 17, 300, 18))
     label(screen.child(N("Pilots/Count", "Count", TR(SCREEN_PAD, 17, 220, 18))), "", "Label", "NeutralLightest",
@@ -1334,9 +1372,11 @@ def validate_pilots(view, V):
         name_w = rect_xy(view, V(f"Pilots/Cell{i}/Label#rt"), "m_SizeDelta")[0]
         assert K.label_width(WIDEST_NAME, PILOT_NAME_ROLE) * K.FIT_MIN_SCALE <= name_w <= PILOT_W, \
             f"crew cell {i}'s name row ({name_w:g}) does not hold the widest name a pilot can have"
-    assert PILOT_FACE_Y + PILOT_FACE <= PILOT_NAME_Y and PILOT_NAME_Y + PILOT_NAME_H <= PILOT_LINE_Y \
-        and PILOT_LINE_Y + PILOT_LINE_H <= PILOT_SIGHT_Y and PILOT_SIGHT_Y + PILOT_SIGHT_H + PILOT_FACE_Y <= PILOT_H, \
-        "a crew cell's close-up, name, callsign and sight overlap"
+    assert PILOT_FADE_Y <= PILOT_LINE_Y and PILOT_LINE_Y + PILOT_LINE_H <= PILOT_NAME_Y \
+        and PILOT_NAME_Y + PILOT_NAME_H <= PILOT_SIGHT_Y and PILOT_SIGHT_Y + PILOT_SIGHT_H + PILOT_PAD // 2 <= PILOT_H, \
+        "a crew cell's callsign, name and sight overlap, leave the fade or run off the card"
+    for w in callsign_words():
+        assert K.label_width(w, PILOT_LINE_ROLE) <= PILOT_W - 2 * PILOT_PAD, f"the callsign {w} does not fit its card"
     assert K.line_height(PILOT_SIGHT_ROLE) * PILOT_SIGHT_LINES <= PILOT_SIGHT_H, "a crew cell's sight rows are too short"
     # Every callsign's sight, as the cell words it, wraps into the rows it has.
     words_w = PILOT_W - 2 * PILOT_PAD
@@ -1350,7 +1390,7 @@ def validate_pilots(view, V):
             else:
                 cur = nxt
         assert lines <= PILOT_SIGHT_LINES, f"a crew cell's sight needs more than {PILOT_SIGHT_LINES} lines: {said}"
-    assert K.line_height(PILOT_NAME_ROLE) <= PILOT_NAME_H and K.line_height("Label") <= PILOT_LINE_H + 0.5, \
+    assert K.line_height(PILOT_NAME_ROLE) <= PILOT_NAME_H and K.line_height(PILOT_LINE_ROLE) <= PILOT_LINE_H + 0.5, \
         "a crew cell's rows are shorter than their text"
     # The held glass is anchored to the held render's glass, so the words stay on it however the picture stretches.
     srt = V("Pilots/Held/Screen#rt")

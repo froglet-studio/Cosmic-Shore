@@ -339,7 +339,9 @@ nothing clipped or overlapping; empty cells show no line. Edit a `brief` on `Res
 follows; blank it and that line disappears.
 
 - [ ] Every cell's three lines read, none clipped (18 callsigns)
-- [ ] The smaller close-up (96) still reads as the pilot
+- [ ] Crew cards (claude/project-thread-5ayjx3): each close-up fills its card, cut at the sides, not stretched; the fade
+      darkens the foot so the callsign, name and "Sees ..." read over every painting; the screen's ground is near-black,
+      not navy; the picked card's outline shows over its art
 
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
