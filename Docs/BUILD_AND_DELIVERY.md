@@ -286,8 +286,10 @@ runner attached, only `static` does any work.
 Agent sessions push often and open many pull requests, so a branch named `claude/**` fires CI in
 exactly two cases:
 
-1. **It lands on `bleeding-edge`.** The merge push runs `bleeding-edge-guard.yml` (§10.1) and
-   `amoebius-parity-ci.yml` like any other.
+1. **It lands on `bleeding-edge`.** The merge push runs `bleeding-edge-guard.yml` (§10.1) like any
+   other. `amoebius-parity-ci.yml` no longer runs per push (Shombith, 2026-11-13): it runs nightly at
+   11:17 UTC on `bleeding-edge` and by hand from the Actions tab (**Run workflow**), so a merge no
+   longer mails its author the port's standing failure.
 2. **A `/ship`, `/ship-quick`, `/ship-deep` or `/ship-tools` command runs on it.** The skill
    dispatches `unity-ci.yml` with `mode=static` on the branch once, after its final push
    (`.claude/skills/ship/SKILL.md` §5.5).

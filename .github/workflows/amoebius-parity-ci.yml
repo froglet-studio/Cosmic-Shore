@@ -1,7 +1,7 @@
 # Amoebius parity CI (Port/docs/ROADMAP.md C1, item 4).
 #
-# On every bleeding-edge push: compile the port against the new Assets/ (the live compile of
-# Assets/_Scripts), run the engine's unit tests, then smoke-run EVERY enabled build scene headless
+# Nightly on bleeding-edge, and by hand from the Actions tab (Run workflow): compile the port
+# against the current Assets/ (the live compile of Assets/_Scripts), run the engine's unit tests, then smoke-run EVERY enabled build scene headless
 # with the same `engine_smoke` the MCP server gives an agent (amoebius-mcp --call). A Unity-side
 # change that breaks the port fails here instead of being found by hand.
 #
@@ -13,12 +13,20 @@
 # in Port/parity/goldens; a channel without a golden reports MISSING and does not fail.
 #
 # This only builds and runs Port/. It never imports or changes the Unity project.
+#
+# WHEN IT RUNS (Shombith, 2026-11-13): once a night at 11:17 UTC (03:17 PST / 04:17 PDT), outside
+# 06:00-09:00 Pacific, plus workflow_dispatch. It no longer runs on every bleeding-edge push: it had
+# never passed (83 of its last 100 runs failed at the first step, the live compile of
+# Assets/_Scripts), nobody gates on it, and every red push run mailed "Run failed" to whoever merged
+# the PR. Only the trigger changed; every job and step is the same and still blocking. A scheduled
+# run checks out the default branch, bleeding-edge; a manual run checks out the branch picked in the
+# Run workflow menu.
 
 name: Amoebius parity CI
 
 on:
-  push:
-    branches: [ 'bleeding-edge' ]
+  schedule:
+    - cron: '17 11 * * *'
   workflow_dispatch:
 
 permissions:
