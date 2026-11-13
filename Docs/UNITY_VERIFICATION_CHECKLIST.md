@@ -23395,3 +23395,4 @@ Not run: the Unity editor, the EditMode tests (`PlayerProfileDataTests` grant te
 - [ ] Convert until an element is 0: CONVERT goes inactive, the line names the short element; the counts survive a restart.
 - [ ] The dais's rings, beams and balances sit clear of the pier's crystals and the nav on 16:9, 19.5:9 phone and 4:3;
   each beam lights lime as its crystal flies and stays lit until the omni forms.
+- [ ] The pier's crystals (re-encoded clips) sit centred over the deck, never on the ceiling beam, in idle, convert and done.

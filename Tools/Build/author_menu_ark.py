@@ -92,16 +92,21 @@ def title_band(root, key="Title", heading="Elemental converter",
 # The holo dais (Rev 104 B, Shombith 2026-11-13: "I like B"; no cards on top, "the elemental converter should show the
 # actual elemental crystals balance the user has"): a projection rises from the pier's edge like the bridge tables in the
 # pilot scenes, the four balances standing round its arc and the omni wallet at its centre, a beam from each crystal to
-# the omni, the line over the dais and CONVERT under it. Every place is board R104B's, measured from the screen's foot
-# (y up) and its centre line: the dais's rings are centred on the foot, so only their upper halves show.
-DAIS_RINGS = (("Outer", "kit_ring_line", 940, 660, 0.35), ("Inner", "kit_ring_line", 760, 524, 0.18),
-              ("Floor", "kit_pool_rim", 1120, 80, 0.26))
-DAIS_GLOW = (1200, 644, 0.12)                       # the board's radial glow, 50% x 70% of its 1200 x 460 box
+# the omni, the line over the dais and CONVERT under it. Measured from the screen's foot (y up) and its centre line: the
+# rings are centred on the foot, so only their upper halves show. The dais is board R104B's, pressed down under the
+# pier's crystals (Shombith, of the first build: "The actual crystals are clipping and does not seem to be the center of
+# attraction"): the recomposed clips (r104_converter_recomp.py) hold the crystals between 362 and 809 of 1080 from the
+# top (the ceiling beam's foot is at 350), so everything here stays under DAIS_CEILING (270 over the foot) and the outer
+# ring caps each column.
+DAIS_CEILING = 270
+DAIS_RINGS = (("Outer", "kit_ring_line", 1280, 600, 0.35), ("Inner", "kit_ring_line", 1000, 440, 0.18),
+              ("Floor", "kit_pool_rim", 1300, 70, 0.26))
+DAIS_GLOW = (1300, 600, 0.12)
 DAIS_COL_W, DAIS_COL_H, DAIS_ART = 140, 140, 64
-DAIS_POS = {"Space": (-407, 197), "Charge": (-199, 331), "Mass": (199, 331), "Time": (407, 197)}   # column top-centres
-DAIS_OMNI_W, DAIS_OMNI_ART, DAIS_OMNI_TOP = 200, 92, 220
+DAIS_POS = {"Space": (-470, 172), "Charge": (-230, 238), "Mass": (230, 238), "Time": (470, 172)}   # column top-centres
+DAIS_OMNI_W, DAIS_OMNI_ART, DAIS_OMNI_TOP = 200, 92, 212
 DAIS_OMNI_CENTRE = (0, DAIS_OMNI_TOP - DAIS_OMNI_ART // 2)
-DAIS_LINE_Y, DAIS_LINE_W = 376, 1000
+DAIS_LINE_Y, DAIS_LINE_W = 266, 1000
 CONVERT_Y, CONVERT_MIN_W = 22, 300
 
 
@@ -1026,6 +1031,8 @@ def validate(files):
             C.wired(view, body, field, want, f"the {n} balance")
         assert f"guid: {CRYSTAL[n]}" in A.doc_of(view, V(f"Dais/{n}/Art#img"))[1], f"the {n} balance shows the wrong crystal"
     assert f"guid: {OMNI}" in A.doc_of(view, V("Dais/Omni/Art#img"))[1], "the omni wallet shows the wrong crystal"
+    assert max([t for _, t in DAIS_POS.values()] + [DAIS_OMNI_TOP, DAIS_LINE_Y]) <= DAIS_CEILING, \
+        "the dais reaches up into the pier's crystals"
     for n in ORDER:                             # each beam runs from its crystal's centre to the omni's
         x, top = DAIS_POS[n]
         _, rt = A.doc_of(view, V(f"Dais/{n}Beam#rt"))

@@ -8544,13 +8544,21 @@ that spends something (`Docs/UI_COLOR_RULES.md`).
 A (the ledger) was built first, ahead of the pick; Shombith picked B and the overlay was rebuilt as B. Everything below
 except the overlay's layout was the same for both.
 
-- **The dais** (`author_menu_ark.py` `dais()`, every place measured from board R104B, from the screen's foot): three
-  rings centred on the foot (`kit_ring_line` 940 x 660 and 760 x 524, `kit_pool_rim` 1120 x 80, TextLight at 0.35 /
-  0.18 / 0.26) over a `kit_pool` glow; Space and Time stand 197 over the foot at x -407 / +407, Charge and Mass 331 over
-  it at -199 / +199; the omni (92 art, Data count, the ceremony pop) 220 over it at the centre; a 2-wide beam from each
-  crystal's centre to the omni's, turned to it; the line 376 over the foot; CONVERT 22 over it. `ConverterBalance.beam`
-  (a `KitThemedGraphic`) is TextLight at 0.18 at rest and the CTA once its crystal starts to fly, until the run ends.
-  `validate` checks each beam starts at its crystal and ends at the omni; the self-test turns one off it.
+- **The crystals are the centre of the pier** (Shombith, of the first build: "The actual crystals are clipping and does
+  not seem to be the center of attraction"). The old clips pasted a 960 capture whose top crystal ran off its own frame
+  over the pier, so it was cut and sat on the ceiling beam. The three converter clips are recomposed
+  (`Docs/MenuRedesignB/rounds/r104_converter_recomp.py`): the combine re-captured at 1920 x 1080 with the lab's camera
+  pulled back (`r67_omni_capture.cjs`, `VD=10`), laid over the clean pier still (the Frogma blob `artifacts_open`)
+  centred on the deck. Over every frame of the three runs the crystals stay between y 362 and 809 of 1080; the beam's
+  foot is at 350. Same names, guids, run lengths (32 / 107 / 32 at 10 fps) and 30 fps encode.
+- **The dais** (`author_menu_ark.py` `dais()`, board R104B pressed down under the crystals, from the screen's foot):
+  three rings centred on the foot (`kit_ring_line` 1280 x 600 and 1000 x 440, `kit_pool_rim` 1300 x 70, TextLight at
+  0.35 / 0.18 / 0.26) over a `kit_pool` glow; Space and Time stand 172 over the foot at x -470 / +470, Charge and Mass
+  238 over it at -230 / +230; the omni (92 art, Data count, the ceremony pop) 212 over it at the centre; a 2-wide beam
+  from each crystal's centre to the omni's, turned to it; the line 266 over the foot; CONVERT 22 over it. Nothing rises
+  above `DAIS_CEILING` (270), where the pier's crystals begin. `ConverterBalance.beam` (a `KitThemedGraphic`) is
+  TextLight at 0.18 at rest and the CTA once its crystal starts to fly, until the run ends.
+  `validate` checks each beam starts at its crystal and ends at the omni, and the ceiling; the self-test turns a beam off.
 
 - **The starting grant.** `ProfileEconomy.GrantStartingElementalCrystals(amount)` gives every element with no entry yet
   an entry holding `amount` (counted as earned); an element that has an entry, even at 0, is never refilled.
