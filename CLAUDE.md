@@ -337,7 +337,7 @@ colour that is not traced. How it works and what is still unfinished: `Docs/Vess
 Workflows in `.github/workflows/` (2026-10-29):
 
 - `unity-ci.yml` (Unity CI): compile / mono / il2cpp / static tiers. **No Unity runner has been attached since 2026-10-13**, so the `unity` job is skipped while `UNITY_RUNNER_LABEL` is unset; only the static tier does real work. A green run here is not a Unity compile.
-- `amoebius-parity-ci.yml` (Amoebius parity CI): on every bleeding-edge push, compiles the port, runs the engine tests and smoke-runs scenes.
+- `amoebius-parity-ci.yml` (Amoebius parity CI): nightly (11:17 UTC, on bleeding-edge) and by hand from the Actions tab, compiles the port, runs the engine tests and smoke-runs scenes. It stopped running on every bleeding-edge push on 2026-11-13 (Shombith): it had never passed and mailed every merger a failure.
 - `bleeding-edge-guard.yml` (Bleeding-edge guard): verifies every commit landing on `bleeding-edge` / `development` and attempts a repair.
 - `build-branch-ci.yml` (Build branch CI): verifies `build/android` and `build/windows`.
 - `ios-testflight.yml` (iOS TestFlight): Xcode sign + upload, no Unity step.
