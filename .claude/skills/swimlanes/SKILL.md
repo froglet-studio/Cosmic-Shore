@@ -1,6 +1,6 @@
 ---
 name: swimlanes
-description: Show which swim lanes of Cosmic Shore are OCCUPIED right now and which open ones to work on next, led by the elemental vessel loop (every vessel a parallel lane with its next loop step, the top priority) - a lane is anything someone holds in their head that takes more than a couple of prompts and one PR - a vessel (the Thresher, the Goby, ...), a game (Bloomrush, Regatta, ...), a section of the app shell (the Voyages map, the Hangar, Settings, the in-game HUD) or a mechanical system (ecology, prisms, netcode, the AI platform, ...) - never a task. Ranked from git and the team's own records by swimlanes.py - the loop's vessel lanes on top, then open lanes with obvious work waiting, occupied lanes under them, then lanes that need polish, then polished ones. Use on "/swimlanes", "what should I work on next", "what's free", "is anyone working on <vessel / game / screen / system>", "who is in the <X> lane", "am I going to collide with someone", "find me the next thing", "mark <lane> polished / rough", "add a lane", "archive a lane", or before starting work on a vessel, a game, an app-shell section or a system. Also the Swim Lanes PAGE (the artifact, section 6: claim, hand off, test feedback and approvals from a browser, then "/swimlanes sync") and the hand-offs (/handoff-to-<person>, /handoff-open, /handoff-for-test, /handoff-feedback; section 4.5).
+description: Show which swim lanes of Cosmic Shore are OCCUPIED right now and which open ones to work on next, led by the elemental vessel loop (every vessel a parallel lane with its next loop step, the top priority) - a lane is anything someone holds in their head that takes more than a couple of prompts and one PR - a vessel (the Thresher, the Goby, ...), a game (Bloomrush, Regatta, ...), a section of the app shell (the Voyages map, the Hangar, Settings, the in-game HUD) or a mechanical system (ecology, prisms, netcode, the AI platform, ...) - never a task. Ranked from git and the team's own records by swimlanes.py - the loop's vessel lanes on top, then open lanes with obvious work waiting, occupied lanes under them, then lanes that need polish, then polished ones. Use on "/swimlanes", "what should I work on next", "what's free", "is anyone working on <vessel / game / screen / system>", "who is in the <X> lane", "am I going to collide with someone", "find me the next thing", "mark <lane> polished / rough", "add a lane", "archive a lane", or before starting work on a vessel, a game, an app-shell section or a system. Also the Swim Lanes PAGE (the artifact, section 6: claim, hand off, test feedback and approvals from a browser, then "/swimlanes sync") and the hand-offs (/handoff-to-<person>, /handoff-open, /handoff-for-test, /handoff-feedback; section 4.5). Opens the Swim Lanes page (the artifact) first, every time.
 ---
 
 # Swim lanes - find the next thing, and don't collide
@@ -24,6 +24,18 @@ they built goes into their `/approve` queue instead of waiting for them. A lane 
 the moment its work merges into `bleeding-edge`, or when the branch goes quiet for the window (7 days).
 
 `swimlanes.py` is a READER: it writes nothing except a person's verdict (section 4).
+
+## 0. Open the Swim Lanes page first (every `/swimlanes`)
+
+**The first thing `/swimlanes` does is open the page** (Shombith, 2026-11-13): call the `Artifact` tool with
+`action: "open"` and the `url` in `PAGE.json` beside this file
+(https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf). The person lands on their Home there (what was passed to them,
+what went quiet, their approvals) while you work. Then:
+- **The page is older than a day** (its data's `generated`, read with `Artifact` `read` path `data.json`, or a person
+  says it looks stale) or anyone made changes on it since the last sync: run the sync (section 6) and republish.
+- **They asked a question** ("what's free", "is anyone in the Thresher"): answer it from the board below as before;
+  the page is the picture, the terminal is the answer.
+- Opening it never replaces the collision check (`approvals.py check`) before a commit.
 
 ## 1. Run it
 
