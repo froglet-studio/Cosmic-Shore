@@ -42,6 +42,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds of cooldown after the energized tail before the blade can charge again.")]
         [SerializeField] private float energizeCooldownSeconds = 5f;
 
+        /// <summary>TIME -> the sword's RATE, the Swordfish's Time card QUICKDRAW (Garrett, 2026-11-12: the
+        /// Swordfish gets its own Time ability instead of the Rhino's Ramp Spool). Divides the energize hold and
+        /// the energize cooldown: x1 at rest, x2.5 at level 10 (hold 1 -> 0.4 s, cooldown 5 -> 2 s), floored at
+        /// x0.5 so a deficit slows the sword rather than inverting it. The let-go tail is a DURATION, not a rate,
+        /// and stays as authored. Read live on the owner, which decides the energize and replicates it.</summary>
+        [Tooltip("TIME (Quickdraw): divides the energize hold and the energize cooldown. x1 at rest, x2.5 at " +
+                 "level 10, floored x0.5. The tail is not scaled.")]
+        [SerializeField] private ElementalFloat timeSwordRateMultiplier =
+            ElementalFloat.Multiplier(1f, 2.5f, Element.Time, 0.5f);
+
         [Tooltip("Element whose level-5 upgrade, SHIELD BREAKER, lets the sword destroy SUPER-SHIELDED " +
                  "prisms at all (the Rhino: Space; Garrett, 2026-10-26). Without it the blade binds in " +
                  "hardened mass, energized or not. Gated on the replicated unlock bit (IsUpgradeActive) - " +
@@ -167,6 +177,16 @@ namespace CosmicShore.Gameplay
             touchPilot ? Mathf.Max(0.01f, EnergizeHoldSeconds / TouchEnergizeRateMultiplier) : EnergizeHoldSeconds;
         public float EnergizedTailSeconds    => Mathf.Max(0f, energizedTailSeconds);
         public float EnergizeCooldownSeconds => Mathf.Max(0f, energizeCooldownSeconds);
+
+        /// <summary>Time's live rate multiplier on the sword (Quickdraw), floored at 0.05 so it can never divide by 0.</summary>
+        public float TimeSwordRate(IVesselStatus status) => Mathf.Max(0.05f, timeSwordRateMultiplier.EvaluateLive(status));
+
+        /// <summary>The stance hold for this pilot at this vessel's live Time level (Quickdraw).</summary>
+        public float EnergizeHoldSecondsFor(bool touchPilot, IVesselStatus status) =>
+            Mathf.Max(0.01f, EnergizeHoldSecondsFor(touchPilot) / TimeSwordRate(status));
+
+        /// <summary>The energize cooldown at this vessel's live Time level (Quickdraw).</summary>
+        public float EnergizeCooldownSecondsFor(IVesselStatus status) => EnergizeCooldownSeconds / TimeSwordRate(status);
 
         /// <summary>SPACE level-5, Shield Breaker: may this vessel's sword destroy super-shielded prisms?
         /// Through the replicated unlock bit (IsUpgradeActive), never a raw level read.</summary>
