@@ -7666,9 +7666,11 @@ Shelf's groups are 28 px apart with wider tiles, and a pilot's note stays on one
 - **Soft fills** (`VoyageSoftFill`, new): Set sail and the quiet buttons are solid in the middle and fade to both ends,
   on every tab of the window; the bands and the light under a picked picture are the same graphic.
 - **Element marks**: the HUD's flower (`VoyageKit.Flower`, five petals through `ElementalBarsView.ConfigurePetal`).
-- **The tabs' boxes** (section 172's reject): the kit's painters on the four tabs are removed, not disabled. A theme or
-  colour-set change re-applied every `KitThemedGraphic`, disabled ones too (`UIThemeLive`), which painted the cleared
-  fill dark again.
+- **The tabs' boxes** (section 172's reject; Shombith saw them again on 2026-11-13: "This looks so ugly"): every frame
+  piece of a tab (Fill, Border, the four Brackets) is switched off as an object and the button gets its own clear hit
+  area with no colour transition. Clearing or disabling was not enough: the menu's theme pass (`UIThemeLive`) repaints
+  every `KitThemedGraphic`, disabled ones too. The LB / RB keys are gone and the window no longer takes the bumpers
+  ("it does not need an LB/RB support for now ... just clicks work fine"): a tab is clicked.
 - 11 new authored lines (`BoardZoomIn` to `BoardSwapsWith`); chips are 96 high on every tab (`RowHeight`).
 
 **Differs from the boards:**

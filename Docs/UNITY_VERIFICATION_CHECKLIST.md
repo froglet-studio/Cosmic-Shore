@@ -22707,8 +22707,9 @@ editor: 0 errors in project code); the ship gates pass; `VoyageBoardTests` compi
 nobody has seen it.** It replaces the Voyages tab of the entry below (the Saga, Quests and Episodes steps there still
 hold). Set a screenshot of each screen beside its Frogma board (Voyages tab: R98S1A, R98S2D) and report what differs.
 
-1. **Open the Voyage window.** The four tabs are plain words, the shown one underlined: **no dark boxes**. Change the
-   colour set (or anything that re-themes the menu) and look again: still no boxes.
+1. **Open the Voyage window.** The four tabs are plain words in capitals, the shown one underlined: **no dark boxes, no
+   LB / RB keys**. A click on a tab shows it. Change the colour set (or anything that re-themes the menu) and look
+   again: still no boxes. LB / RB on a pad slide the hub (Toy Box, Arcade, Arena, Voyage), not the window's tabs.
 2. **The voyage screen.** Left: a chip per voyage, taller than before, its two lines well apart, the open one with a
    cyan bar. Middle: the HyperSea map, flat, with its tier ladder and readout, and the edge-on view under it. Right: the
    voyage's name and numbers, SQUAD, one block per squad (name, who flies, three hulls in formation), CONFIGURE SQUAD,
