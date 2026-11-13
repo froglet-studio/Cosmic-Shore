@@ -339,9 +339,10 @@ MODEL_ROOT_TRANSFORM = "-8679921383154817045"
 MARLIN_INSTANCE_ID, MARLIN_TRANSFORM_ID, MARLIN_GO_ID = "2200000000000000011", "2200000000000000012", "2200000000000000013"
 JACK_IDS = (("Jack A", "2200000000000000021", "2200000000000000022"), ("Jack B", "2200000000000000031", "2200000000000000032"))
 BODIES_ID = "2200000000000000041"                # JacksBodies on the root
-# the ability row's four icons (author_jacks_icons.py), over the Rhino's sword placeholders the HUD variant draws
-HUD_INSTANCE = "2754590152818896375"            # RhinoHUDVariant nested in the hull
-HUD_VARIANT_GUID = "2656b477a4af7304180e65f2848a84b3"
+# the ability row's four icons, bound on the hull's nested HUD (JacksHUDVariant since 2026-11-13, author_jacks_hud.py,
+# forked from RhinoHUDVariant with every fileID kept; the variant carries the same sprites and each level-5 card)
+HUD_INSTANCE = "2754590152818896375"            # JacksHUDVariant nested in the hull
+HUD_VARIANT_GUID = "dacce99a4a521d2995cc614beb26d6a3"   # JacksHUDVariant (was RhinoHUDVariant 2656b477a4af7304180e65f2848a84b3)
 ICON_SPRITES = (("7720000000000003015", "c3a91e5d7b2f4c68a0e4d1b9f6c2a873"),   # ChargeIcon: Danger Share
                 ("7720000000000003025", "5e8b2d6a1f9c4b37a2d0e7c4b1f9a645"),   # MassIcon: The Call
                 ("7720000000000003035", "9f1c4a7e3b6d4e82b5a0c8d2e7f1b396"),   # SpaceIcon: Wide
