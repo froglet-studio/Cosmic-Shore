@@ -23398,3 +23398,15 @@ sprites. Not touched here.)
 3. Each element to 5: Charge card shows Six Sentinels (three sentinels under one guard), Mass shows Danger Portal (six
    spiked prisms), Space shows Steal (a hollow prism in, a solid one out), Time shows Boost Out (two long bars). Below 4
    the ordinary card returns.
+## 🔴 Honeyguide: off the Sparrow's weapon data, and the banked upgrade's picture on the trigger cards (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/honeyguide-own-data`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `author_honeyguide_assets.py --check`
+and `--self-test`, `author_honeyguide_hud.py --check` clean; no Unity editor ran.
+
+1. Open `Honeyguide.prefab`: no component names `SkyBurstGunAction` or `FullAutoAction` (the Sparrow's). GunSprayAccuracy
+   reads `HoneyguidePeckAction`; the FireGunActionExecutor's default action is empty; VesselRearmOnPrismDestruction is off.
+2. Honeyguide in Freestyle: RT Pecks as before (straight, no spray); no warnings from the rearm or the missile executor.
+3. Make a Ratel upgrade card that banks on RT (e.g. Genesis Lance): the Space card shows its picture until its uses are
+   spent, then Peck again (or Piercing Pecks at Space 5). Same on LT with an LT card (e.g. Blink Drive) on the Charge card.
+4. Bank two different RT upgrades: the card shows the newer one; spend it and the older one's picture comes back.
