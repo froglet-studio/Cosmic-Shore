@@ -323,6 +323,40 @@ headless: the generator `--check` (with a negative control), the `/arcadegame` �
 **First-pass tuning (not settled):** round 90 s; plant caps 36 / 30 / 24 / 18; omni 4 / 3 / 3 / 2; grazers
 6 / 9 / 12 / 15; cactus at 1.4x leaf (~32,900 volume mature); comeback 0.00003. The open question is the
 retire condition: does the garden matter against the trail (~42,000 volume a round of cruising)?
+### 🔴 Redline round 5: Soar from the gun, 8 laps, the AI race line, the heat (`Ys-bleeding-edge`, 2026-11-11, Yash) — NOT EDITOR-VERIFIED
+
+**What landed:** `Assets/_Scripts/Controller/Arcade/REDLINE.md` section 0. The card starts every Manta at Time 6
+(`StartingElements`, from `RedlineCourse.StartingTimeLevelByIntensity`) so Soar (the Time level-5 upgrade) is lit from
+the gun; the race is 8 laps (64 gates); the AI Mantas fly a race line through the mouths' centres
+(`RedlineController.TryRaceLine`) at a throttle floor by difficulty (`AIThrottleFloorFor`, a new additive hook on
+`GateRaceController` that every other mode answers with its old `AIThrottleFloor`), with quicker Easy/Medium noses at
+I3-I4; and the local pilot's threads are graded and called (`RedlineHeat`, `RedlineController.Heat`, toasts 360-366, nine
+EMPTY FMOD slots). **Not compiled in Unity:** `redline_course_harness` compiled and ran `RedlineCourse`, `RedlineHeat` and
+their tests out of the editor (29/29, four negative controls); `RedlineController`, `RedlineController.Heat`,
+`GateRaceController` and `RedlineAISteeringTests` have not been compiled (no Unity was run in this worktree; ten
+sessions shared the machine).
+
+**Verify in editor:**
+1. Compile; run the EditMode tests `RedlineHeatTests`, `RedlineCourseTests`, `RedlineTimeCrystalsTests`,
+   `RedlineAISteeringTests` (the last has three new or changed tests: the nose rows, the throttle floor, the race line).
+2. Launch Redline at I1 with two players: the Manta starts with six Time petals, and both triggers buried go to ~1100
+   u/s within ~2 s. (Before this, Soar was dark at I1 for the whole race.) The goal row reads x/64.
+3. Thread a ring dead centre: a copy of its mouth grows off the gate and vanishes (redhot, flat out: a bigger one).
+   Three clean in a row: the toast "3 clean in a row". Off-centre or a miss: the streak ends silently.
+4. Finish a lap: "Lap 1 - N.Ns"; a faster later lap reads "Best lap yet". A lap threaded clean end to end: a chase
+   of shock rings round the circuit and "Clean lap N".
+5. At I4 take Time crystals to Time 10 and bury both triggers: once a race, "REDLINE - 13xx u/s" and every ring flares.
+6. Add AI Mantas at Easy and Legendary, I1 and I4: they race at the mouths' centres and finish (offline: Legendary
+   60/64/71/91 s, Easy 139/143/153/149 s for 8 laps at I1-I4). After a missed mouth they turn back and re-attack.
+7. Regression: Headlong, Grizzly Time and every other gate race unchanged (they answer `AIThrottleFloorFor` with their
+   own `AIThrottleFloor`).
+8. MPPM two clients: both peers see the same circuit and crystals; each sees only its OWN shock rings and heat toasts.
+
+**First-pass tuning:** start Time 6; 8 laps; throttle floors 0.7 / 0.85 / 1 / 1; nose rows I3 2.5/3/6/9, I4 4/5/6/9;
+clean 0.5 of the mouth, redhot 0.8 of full Soar, redline 1362 u/s; flare 1.6x / 2.6x over 0.45 s.
+
+---
+
 ### 🔴 Harvest, the Thresher's Space game (GameModes 88) (`claude/keen-rubin-rw7p6q`, 2026-11-10, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** `Controller/Arcade/HARVEST.md` (plan: `Docs/MassAndSpaceGames/THRESHER_SPACE.md`). A Thresher
@@ -23212,6 +23246,14 @@ editor: this is the first screen of the game, so run step 1 before anything else
    were still growing in the scene being left, check the bar does not start above 0.
 8. A portrait or 4:3 Game view: the stage shrinks to fit.
 9. Profiler with the splash faded out: no `PosterDrift` or `BootStepBar` cost, and 0 GC per frame while it is visible.
+
+## Scarab Rally: Blast Run only at I4 (2026-11-13, `claude/project-thread-v8enx0`)
+
+Not run in a Unity editor (cloud session; unity_refcompile editor config: 0 errors in changed files). Hand test:
+1. Arcade > Scarab Rally at I2 with three AI Scarabs: no block fields, doors or key crystals on any leg; the rings are the race.
+2. The AI Scarabs never turn off the line for a crystal.
+3. At I4 the block fields are still laid as before.
+4. Switchback at I1-I4 is unchanged (Blast Run on every intensity).
 
 ## 🔴 Switchback I4: plain gauntlet seals and the retuned AI pace (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
 

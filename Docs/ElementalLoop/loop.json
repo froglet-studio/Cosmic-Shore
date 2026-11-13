@@ -122,6 +122,12 @@
      "by": "Regatta plan threads",
      "date": "2026-11-08",
      "evidence": "Redline AI nose rate (#1844); the Soar steering should be re-searched at the new nose rates (AI_PLAN.md section 5)"
+    },
+    "1": {
+     "state": "doing",
+     "by": "Claude (Garrett's thread)",
+     "date": "2026-11-13",
+     "evidence": "Redline round 5 (Yash, 2026-11-11) brought onto bleeding-edge: Soar was dark in Redline since 2026-11-07 (Time level-5 upgrade, card started at Time 0); now Time 6 start, 8 laps, AI race line and throttle floors, the heat. Waiting on one human's fun card at I2 (REDLINE.md section 0.2)"
     }
    }
   },
@@ -132,6 +138,16 @@
      "by": "Regatta plan threads",
      "date": "2026-11-08",
      "evidence": "Skein aim, rail seek and genome (#1845); not yet well trained: Docs/Reports/SKEIN_URCHIN_AI.md"
+    }
+   }
+  },
+  "Scarab": {
+   "Time": {
+    "1": {
+     "state": "doing",
+     "by": "Claude for Garrett",
+     "date": "2026-11-13",
+     "evidence": "Rally I1-I3 off Blast Run, AI no crystal detours (SCARABRALLY.md 2026-11-13); awaiting Garrett's fun card at I2"
     }
    }
   }

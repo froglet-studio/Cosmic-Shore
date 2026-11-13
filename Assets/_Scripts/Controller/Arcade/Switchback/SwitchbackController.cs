@@ -118,6 +118,14 @@ namespace CosmicShore.Gameplay
         protected virtual bool BlastRunGauntlet => true;
 
         /// <summary>
+        /// Whether this intensity lays Blast Run at all (doors, block fields, movers, key crystals, path rays). Switchback is
+        /// Blast Run at every intensity (Yash, 2026-10-29). A mode that reuses Switchback's course for a hull without the
+        /// Dolphin's key blast overrides it to fly the bare ring course where Blast Run is not its question (Scarab Rally,
+        /// I1-I3): the layout is then empty, so no key replaces the passive crystals and the blast planner has no station.
+        /// </summary>
+        protected virtual bool LaysBlastRun(int intensity) => true;
+
+        /// <summary>
         /// Switchback flies Regatta's gate steering (<see cref="GateRaceController.AICommitFromApproachPoint"/>): commit no
         /// earlier than the approach point, which now always lies inside the commit radius; aim through the ring's CENTRE
         /// from where the pilot is; re-attack at once after a missed mouth. Switchback is the Dolphin's training minigame
@@ -335,7 +343,9 @@ namespace CosmicShore.Gameplay
             // The nucleus sits inside the course's inner shell (inner = nucleus x innerRadiusNucleusFactor).
             float clearRadius = inner / innerRadiusNucleusFactor + NucleusMargin;
 
-            var layout = SwitchbackBlastRun.Layout(_course, intensity, centre, clearRadius, BlastRunGauntlet);
+            var layout = LaysBlastRun(intensity)
+                ? SwitchbackBlastRun.Layout(_course, intensity, centre, clearRadius, BlastRunGauntlet)
+                : new SwitchbackFeatureLayout();
             RaiseBlastRun(layout);
             ApplyFaunaCorridor(intensity);
             // The I4 gauntlet's rays light the way through every blocked gate (empty below I4).
