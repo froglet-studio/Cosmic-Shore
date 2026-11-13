@@ -65,6 +65,31 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Orca's own HUD and eight ability cards (`claude/orca-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `OrcaHUDVariant.prefab` (from the Sparrow's, every fileID kept, `author_orca_hud.py --check`) with
+`OrcaHUDView`, nested in `Orca.prefab` in place of `SparrowHUDVariant`; eight kit icons in
+`Assets/_Graphics/Icons/AbilityIcons/Orca/` (`icon_kit/author.py orca --check`, all gates pass). Ran: `unity_refcompile`
+editor (0 errors in changed files). Not run: Unity, `OrcaHUDTests`.
+
+1. Toybox, Orca: the four cards show a missile on its path (Charge), the hull in a shell (Mass), a burst in its ring
+   (Space), the hull over its tank (Time). No Sparrow rocket bay, stance hull or afterburner parts.
+2. Each gunner card still shows its seat's missile count under the picture.
+3. Raise each element to 5: the card swaps to Rearm (two missiles), Bulwark (two shells), Chain Burst (two bursts),
+   Afterburner (double flame, full tank, feed chevron).
+
+### 🔴 The Orca's level-5 upgrades: Rearm, Bulwark, Chain Burst, Afterburner (`claude/orca-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `Crew/ORCA_CREW.md` § "Level 5". The four empty slots filled, each gated on its own element in
+`OrcaCrewConfigSO`. Ran: `unity_refcompile` editor (0 errors in changed files), `element_ability_table.py Orca`
+(4/4 L5 gates), `author_orca_assets.py --check`, `orca_crew_lab/parity.cjs` (PASS). Not run: Unity, `OrcaUpgradeTests`.
+
+1. Toybox, Orca, Charge 5: fire every gunner's missiles; each magazine regains one every 12 s (the card counts it).
+2. Mass 5: raise the shield (LT); two shells stand round the hull, the outer 14 u further out, and both drop as danger.
+3. Space 5: fly two gunners' missiles close together and burst one; the other bursts with it. Throw the bomb next to a
+   missile and burst it; the missile goes too.
+4. Time 5: hold RT past the tank; it drains slower, and holding on empty recovers the tank. Below Time 4 it does not.
+
 ### 🔴 The Angler's fundamentals pass: bite rate, lure size, brush width, Swallow, Riptide (`claude/angler-kit`, 2026-11-12, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/ANGLER.md` §1n. Charge divides the bite cooldown (1 s -> 0.4 s), Mass grows the lure's
