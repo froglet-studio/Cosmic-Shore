@@ -81,6 +81,16 @@ Options:
   people in its commits (`who_works_where.py`'s `Team`, the one place a git identity becomes a person). A Claude
   branch with none of those reads as "a Claude session (no person on record)" - open its PR or ask.
 
+### Quiet work and owners (Shombith, 2026-11-13)
+
+Work pushed more than `window_days` (7) ago holds nothing on the board. Up to `quiet_days` (21) back, the board still
+reads it as **quiet**, and only the last branch in a lane counts, asked of that branch's own person (not its mergers):
+- if that person **owns** the lane (`lanes.json` `owners`, set by a person's word with
+  `swimlanes.py owner <lane> <person> --by <who>`; else the owner a lane note or `Docs/TEAM.json` declares), the lane
+  stays listed under them on the People page until they hand it off (the Stoat stays Yash's);
+- otherwise it is open for anyone, and their board (`--me`, FOR YOU, "WENT QUIET") and the page's Home ask them:
+  keep it (`handoff.py claim <lane>`) or let it go (`handoff.py open --lane <lane>`).
+
 ## 3. Answer the person
 
 - **"What should I work on next?"**: the **elemental vessel loop is the top priority** (Garrett, 2026-11-12) and it
@@ -168,11 +178,15 @@ tooling" in a commit that changes how it ranks.
 ## 6. The Swim Lanes page (the artifact)
 
 **The page:** https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf (`PAGE.json`; the ONE page, never publish a second).
-Shombith picked its layout from four mockups (2026-11-13: B and D). Pages: **Board** (the lanes in five status
-columns, Loop / Open / Held / Handed and test / Polish, each scrolling on its own; a card opens a drawer with every
-detail and the actions), **People** (a card per person: what they hold, what was handed to them, what they test),
-**For you** (each hand-off to you with its brief, the next steps as a checklist whose ticks and notes are private to
-you, the lanes you hold, your approvals), **For test**, **Approvals** and **How it works**. Its look is the analytics
+Shombith shaped it over three rounds on 2026-11-13 (mockups B and D, then "much more user friendly", plain words,
+animations). Pages, under one light top bar: **Home** (hi and a one-line summary; what was passed to you with its
+brief, the next steps as a checklist whose ticks and notes only you can read; what went quiet, with Keep it / Let it
+go; what you are on; what waits for your OK), **Board** (five columns: Loop vessels, Free to pick up, Being worked on,
+Passed on, Could use polish; each scrolls on its own and a card opens a side panel with the details and Pass it on),
+**People** (a card per person: working on now, passed to them, belongs to them), **Testing**, **Approvals** and
+**Help**. Words are everyday and in sentence case (capitals only on buttons); the git wording is translated on the page
+(`friendly()`). Motion follows `Docs/UI_STYLE_GUIDE.md` 7: entrances stagger 40 ms, hover lifts 120 ms, the side panel
+and toasts 320 ms, nothing loops, reduced motion holds still. Its look is the analytics
 console's: `console.css`, `themes.css` and `theme.js` from `Tools/Analytics/console/` ship beside it (the rail,
 panels, tiles, segments, Aldrich and Chakra Petch; `Docs/UI_STYLE_GUIDE.md`). People pick their name in the bar; Claim, Hand off, Take it, test feedback and
 approve / discuss are saved at once in the page's `actions` collection and shown to everyone, marked "waiting for sync".

@@ -12,7 +12,7 @@ import argparse, datetime, json, os, shutil, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
-SLIM_LANE = ('key', 'name', 'kind', 'tier', 'workScore', 'polishGap', 'occupants', 'work', 'polish', 'landed', 'note', 'loop', 'handoff')
+SLIM_LANE = ('key', 'name', 'kind', 'tier', 'workScore', 'polishGap', 'occupants', 'work', 'polish', 'landed', 'note', 'loop', 'handoff', 'owner', 'quiet')
 
 
 def run_json(args):

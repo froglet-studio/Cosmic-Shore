@@ -7,7 +7,7 @@
   "by": "Garrett",
   "to": "Shombith",
   "on": "2026-11-13T16:18:18+00:00",
-  "note": "Voyages, start here: what is built, what was never opened in the editor, the leftover branches and my decisions (recorded from Docs/Voyages/HANDOFF.md, 2026-11-12).",
+  "note": "Garrett's notes on Voyages, from his hand-off doc (Docs/Voyages/HANDOFF.md, written 12 Nov).",
   "signals": {
     "laneKind": "shell",
     "handTests": false,
@@ -16,52 +16,51 @@
   "source": "Docs/Voyages/HANDOFF.md",
   "brief": {
     "doc": "Docs/Voyages/HANDOFF.md",
-    "summary": "Everything voyage is on bleeding-edge (V1, D1 and most of D2); D3, V2, V3 and V4 are not built. Nothing has been played in the Unity editor yet (HANDOFF section 5). Garrett: you decide everything now, and record each call in the doc that owns it.",
+    "summary": "All the Voyages work so far is merged into bleeding-edge, but nobody has played it in the Unity editor yet. From here on, the calls are yours. When you make one, write it down in the doc it belongs to.",
     "decisions": [
-      "The squad comes first, alone and together: anything that blocks single player (3 AI that play their roles) or multiplayer (the networked Ark) wins.",
-      "You decide everything; record each call in the doc that owns it.",
-      "Squads are always 3 vessels; the number of pilots is the sum of their seats.",
-      "An AI's role comes from its cards (vessel, pilot, element, artifact); test three archetypes first: Guardian (Charge), Cultivator (Squirrel in Mass), Destroyer (Dolphin in Space).",
-      "The cells feel like cheap imitations: no proper nucleus or shards.",
-      "Curate branches, don't hoard them."
+      "Get the squad working first, both solo (three AI teammates that each play their role) and co-op (the networked Ark).",
+      "A squad is always three vessels. The number of pilots is however many seats those vessels have.",
+      "An AI's role comes from its cards: vessel, pilot, element and artifact. Try three first: Guardian, Cultivator and Destroyer.",
+      "The cells look cheap right now: they need a proper nucleus and shards.",
+      "Keep the branch list tidy: finish or delete old branches instead of keeping them around."
     ],
     "open": [
       [
-        "VOYAGES.md section 11",
-        "questions 3-10: one galaxy, flown lanes, refusing meetings, abandoned voyages, the first five jobs, faction size, the galactic war, Tandava as a lair"
+        "VOYAGES.md, section 11",
+        "8 questions, like one galaxy or many, and what happens when a voyage is abandoned"
       ],
       [
-        "DEPTH.md section 14",
-        "decisions 1-11"
+        "DEPTH.md, section 14",
+        "11 choices that already have a default"
       ],
       [
-        "VOYAGE_BOARD.md section 5",
-        "decisions 1-11"
+        "VOYAGE_BOARD.md, section 5",
+        "11 choices about the galaxy map"
       ],
       [
         "SOURCES.md, Open",
-        "items 2-7"
+        "which old design sources are still right (items 2-7)"
       ]
     ],
     "steps": [
-      "Hand-test the red voyage sections of Docs/UNITY_VERIFICATION_CHECKLIST.md (HANDOFF section 5: the cheapest way to find what is broken), then close ticket #1688",
-      "Choose AI roles from the cards: ArkEscortRoles.Create reads the hull only; join it to Docs/AI_SYSTEM/AI_PLAN.md and test the three archetypes",
-      "Port claude/voyage-coop by hand onto a fresh branch (about 1,300 commits behind: do not merge it)",
-      "Compare a voyage cell with an arcade cell at the same intensity (Voyage.unity boots the empty Barren world; the escort rolls its own)",
-      "Delete or archive the 17 leftover voyage branches (HANDOFF section 6; needs a local checkout)",
-      "Answer the voyage entries in your approval queue"
+      "Play the Voyages tests that are still unchecked in the editor test checklist, then close ticket #1688.",
+      "Pick each AI's role from its cards, not just its hull (ArkEscortRoles.Create).",
+      "Bring the co-op work over from claude/voyage-coop onto a fresh branch by hand. It's too far behind to merge.",
+      "Put a voyage cell next to an arcade cell at the same intensity and see why it looks cheaper.",
+      "Clean up the 17 old Voyages branches. This needs a local checkout.",
+      "Answer the Voyages changes waiting in your approvals."
     ],
     "reading": [
       [
-        "Docs/Voyages/HANDOFF.md",
-        "read first"
+        "HANDOFF.md",
+        "start here"
       ],
       [
         "VOYAGES.md",
-        "read first"
+        "the main design"
       ],
       [
-        "DEPTH.md sections 12-15",
+        "DEPTH.md, sections 12-15",
         "read"
       ],
       [
@@ -74,11 +73,11 @@
       ],
       [
         "VOYAGE_BOARD.md",
-        "reference"
+        "look up when needed"
       ],
       [
         "SOURCES.md",
-        "reference"
+        "look up when needed"
       ]
     ]
   }

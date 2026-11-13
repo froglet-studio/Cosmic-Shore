@@ -571,6 +571,20 @@ def build(root, args):
     handoffs, holder = ({}, None) if getattr(args, 'no_handoffs', False) else read_handoffs(root, notes)
     if handoffs:
         occ = apply_handoffs(occ, handoffs, holder)
+    # Quiet work: pushed in the last quiet_days but not the last window_days. It holds nothing on the board; the People
+    # page keeps it under the lane's OWNER, and asks anyone else whether they are still on it (Shombith, 2026-11-13).
+    long_days = max(days, catalog.get('quiet_days', 30))
+    occ_long = occupancy(root, lanes, team, catalog, long_days, BASE, prs, merged) if long_days > days else {}
+    cutoff = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+    quiet = {}
+    for k, rows in occ_long.items():
+        active = {p for o in occ.get(k, []) for p in o['people']}
+        h = handoffs.get(k)
+        rows = [o for o in rows if o['last'] < cutoff and not superseded(o, last.get(k))
+                and not (h and h['on'][:10] >= o['last']) and not (o['people'] and set(o['people']) <= active)]
+        if rows and not occ.get(k):                       # someone else is on it now: nothing to ask about
+            quiet[k] = [dict(o, asked=o['people'][0] if o['people'] else None)    # the branch's own person, not its mergers
+                        for o in sorted(rows, key=lambda o: o['last'], reverse=True)[:1]]  # only the LAST work in it is asked
     found = assess(root, lanes, files, ticket_rows, bug_rows, l5, catalog.get('verdicts', {}))
     for k, h in handoffs.items():                      # an open or sent-back lane carries the handoff's note on top
         if k in found and h['status'] in ('open', 'back'):
@@ -581,9 +595,13 @@ def build(root, args):
             found[k]['work'].append((9 if h['status'] == 'back' else 6, text))
         elif k in found and h['status'] == 'passed':
             found[k]['polish'].append((0, f'tested good to go by {h.get("to")} {h["events"][-1]["on"][:10]}'))
-    owners = {}
+    owners, lane_owner = {}, {}
+    declared = catalog.get('owners', {})
     for ln in lanes:
         decl = [o['owner'] for o in team.declared_owners(ln.paths)] if ln.paths else []
+        who_owns = (declared.get(ln.key) or {}).get('owner') or (re.match(r'\s*(\w+)', decl[0]).group(1) if decl else None)
+        if who_owns:
+            lane_owner[ln.key] = who_owns
         if decl or ln.note:
             owners[ln.key] = (ln.note or ('Owner: ' + ', '.join(decl) + ' (Docs/TEAM.json): tell them, and queue changes for their /approve.'))
     loop = loop_lanes(root, notes)
@@ -612,7 +630,8 @@ def build(root, args):
         board.append({'key': ln.key, 'name': ln.name, 'kind': ln.kind, 'tier': tier, 'workScore': work, 'polishGap': gap,
                       'occupants': occ.get(ln.key, []), 'work': [t for _, t in sorted(f['work'], key=lambda x: -x[0])],
                       'polish': [t for _, t in sorted(f['polish'], key=lambda x: -x[0])], 'landed': last.get(ln.key),
-                      'note': owners.get(ln.key, ''),
+                      'note': owners.get(ln.key, ''), 'owner': lane_owner.get(ln.key),
+                      'quiet': quiet.get(ln.key, []),
                       'handoff': {x: h.get(x) for x in ('id', 'kind', 'status', 'by', 'to', 'on', 'note', 'what', 'branch', 'events', 'brief', 'source')} if h else None,
                       'loop': {'progress': lp['progress'], 'seated': lp['seated'], 'rank': list(lp['rank'] or []),
                                'actions': [loop_line(a) for a in lp['actions']]} if lp else None})
@@ -666,7 +685,7 @@ def print_board(data, full=False, md=False, limit=3, kind=None):
     me = data.get('me')
     if me:
         mine = [b for b in data['lanes'] if (b.get('handoff') or {}).get('to') == me and b['tier'] in ('handed', 'testing')]
-        h(f'FOR YOU, {me}  [{len(mine)}]')
+        h(f'FOR YOU, {me}  [{len(mine) + sum(1 for b in data["lanes"] if b.get("owner") != me and any(q.get("asked") == me for q in b.get("quiet", [])))}]')
         if not mine:
             out.append('  nothing handed to you')
         for b in mine:
@@ -675,6 +694,13 @@ def print_board(data, full=False, md=False, limit=3, kind=None):
             out.append(f'  {new}{b["name"]} [{b["kind"]}] from {ho["by"]} {ho["on"][:10]}' + (f': {ho["note"]}' if ho.get('note') else ''))
             if ho.get('what'):
                 out.append(f'        test: {ho["what"]}')
+        gone = [b for b in data['lanes'] if b.get('owner') != me and any(q.get('asked') == me for q in b.get('quiet', []))]
+        for b in gone[:5]:
+            q = next(q for q in b['quiet'] if q.get('asked') == me)
+            out.append(f'  WENT QUIET  {b["name"]}: your last push was {q["last"]} ({q["branch"]}), so it is open for anyone again.'
+                       f' Still on it: `handoff.py claim {b["key"]}`. Done with it: `handoff.py open --lane {b["key"]} --note "..."`.')
+        if len(gone) > 5:
+            out.append(f'  ... {len(gone) - 5} more went quiet (the Swim Lanes page lists them all)')
     for tier in data['order']:
         rows = [b for b in data['lanes'] if b['tier'] == tier and (not kind or b['kind'] == kind)]
         h(HEADS[tier] + f'  [{len(rows)}]')
@@ -778,6 +804,19 @@ def set_verdict(key, polish, by, note):
         json.dump(catalog, fh, indent=2, ensure_ascii=False)
         fh.write('\n')
     print(f'{key}: {polish}' + (f' ({note})' if note else '') + f' - written to {os.path.relpath(CATALOG)}; commit it so everyone sees it.')
+
+
+def set_owner(key, person, by):
+    catalog = json.load(open(CATALOG, encoding='utf-8'))
+    o = catalog.setdefault('owners', {})
+    if person == 'clear':
+        o.pop(key, None)
+    else:
+        o[key] = {'owner': person, 'said': f'{by}, {datetime.date.today().isoformat()}'}
+    with open(CATALOG, 'w', encoding='utf-8', newline='\n') as fh:
+        json.dump(catalog, fh, indent=2, ensure_ascii=False)
+        fh.write('\n')
+    print(f'{key}: owner {person} - written to {os.path.relpath(CATALOG)}; commit it so everyone sees it.')
 
 
 def parse_iso(s):
@@ -927,8 +966,8 @@ def self_test():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('cmd', nargs='?', choices=['board', 'set'], default='board')
-    ap.add_argument('rest', nargs='*', help='set: <lane> polished|rough|clear')
+    ap.add_argument('cmd', nargs='?', choices=['board', 'set', 'owner'], default='board')
+    ap.add_argument('rest', nargs='*', help='set: <lane> polished|rough|clear; owner: <lane> <person>|clear')
     ap.add_argument('--lane', help='one lane in full')
     ap.add_argument('--days', type=int, help='how recent a push must be to occupy a lane (default lanes.json window_days)')
     ap.add_argument('--full', action='store_true', help='every work item, every polish gap')
@@ -950,6 +989,11 @@ def main():
         if len(a.rest) != 2 or a.rest[1] not in ('polished', 'rough', 'clear') or (a.rest[1] != 'clear' and not a.by):
             ap.error('set <lane> polished|rough|clear --by <name> [--note "..."]')
         set_verdict(a.rest[0].lower(), a.rest[1], a.by, a.note)
+        return 0
+    if a.cmd == 'owner':
+        if len(a.rest) != 2 or not a.by:
+            ap.error('owner <lane> <person>|clear --by <name>')
+        set_owner(a.rest[0].lower(), a.rest[1], a.by)
         return 0
     root = repo_root()
     if not a.me:
