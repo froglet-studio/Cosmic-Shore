@@ -8063,3 +8063,32 @@ Verified: `author_ingame_hud.py` run, `--check` and `--self-test` (two new negat
 gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; `gates.sh`. Hand test: "The loading
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+
+## 187. Rev 99 mockups: the Pilots tab as a crew PDA lying in the Ark (2026-11-13, awaiting a pick)
+
+**Asked (Shombith, 2026-11-13):** "we also do need to visualize the pilots tab too. In the pilots tab on the images there
+are images where the captains are inside the arks which shows a pretty cool view of the ark. I was thinking more like a
+PDA lying somewhere where you see the details and stories of each pilot." Garrett's Pilots tab (section 92.1) was built
+from his words without a board; this round draws it.
+
+**On the canvas:** tab **Ark**, round "Rev 99 - The Pilots tab as a crew PDA lying in the Ark", copies in
+`Docs/MenuRedesignB/board/R99*.dc.html`. Each option is the Ark screen on its PILOTS tab over a still of an Ark place
+with a crew PDA lying in it, rendered in Rev 61 C's style (`Docs/MenuRedesignB/rounds/r99_ark_pilots_render.py`, the
+Rev 67 room kit with three new scenes; Nocturne). The PDA's glass is drawn live on the board, mapped onto its rendered
+corners (`r99_pilots_boards.py`), so it reads as the device's own screen. Three states, the same in every option: lying
+down (the last pilot read, "Pick up"), picked up (a second still leaning over the PDA, cross-faded: the one
+transition; the crew, 18 cells), and a pilot's file (picture, sight, callsign, name, animals, faction, home, story,
+PREV / NEXT, "5 / 18"). The words are the starter crew's records (`PaintedCrew.asset`, `CallsignSet.asset`); the pictures
+are their scenes cut by the scene kit's close and 4:5 crops.
+- **A - The chart room (recommended):** the PDA on a chart table under the Ark's great window onto the HyperSea
+  (Zodiac's and Needle's rooms). Shows the most of the Ark while the PDA sits clear in front.
+- **B - The captain's cabin:** on the desk under a round porthole, one warm lamp; the quietest and most personal.
+- **C - The hangar bench:** on a workbench at the back of the hangar, the bay running out of the open mouth into the cell
+  (Galleon's view).
+- **Compare:** the three screens flat, and the three places side by side. **Notes:** the decisions and open questions.
+
+**Differs from the build (section 92.1):** the build lays the crew grid over the Ark backdrop and opens a full-screen
+profile page. The picked option would make the tab a place in the Ark (a live set piece, like the Rev 85/86 rooms)
+with a PDA whose screen carries `ArkPilotsPage`'s cells and `PilotProfileModal`'s words; nothing is built until a pick.
+
+Affects: Garrett's Pilots tab and pilot profile page (a proposal only; no game code changed).

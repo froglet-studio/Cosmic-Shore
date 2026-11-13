@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-13 from canvas version `1794582883-6c29` of **Frogma**: Rev 3 to Rev 98, 482 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-13 from canvas version `1794593437-0e0d` of **Frogma**: Rev 3 to Rev 99, 487 boards on 12 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -663,6 +663,14 @@ Copied on 2026-11-13 from canvas version `1794582883-6c29` of **Frogma**: Rev 3 
 - `R58Notes.dc.html` (not copied yet) - Rev 58 - notes: what the window reads, the pill rule, where it departs from the artifact
 
 ### Tab: Ark  (`ark`)
+
+#### Rev 99 - The Pilots tab as a crew PDA lying in the Ark: each pilot's file and story read on it
+
+- [`R99Compare.dc.html`](R99Compare.dc.html) - Rev 99 - The PDA's three screens flat, and the three places it lies
+- [`R99A.dc.html`](R99A.dc.html) - Rev 99 A - The chart room: the PDA on the chart table under the Ark's great window (recommended) - interactive
+- [`R99B.dc.html`](R99B.dc.html) - Rev 99 B - The captain's cabin: the PDA on the desk under a porthole, one warm lamp - interactive
+- [`R99C.dc.html`](R99C.dc.html) - Rev 99 C - The hangar bench: the PDA on a workbench, the hangar running out to the cell - interactive
+- [`R99Notes.dc.html`](R99Notes.dc.html) - Rev 99 - notes: what was asked, what Garrett's tab has, what changes, the recommendation
 
 #### Rev 86 - The Artifacts room, A and B as one - the Reliquary's platform in the Gallery's hall
 

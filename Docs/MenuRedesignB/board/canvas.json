@@ -3980,6 +3980,49 @@
       "page": "voyages",
       "title": "Rev 98 S2D - 2D - the squad - interactive",
       "is_interactive": true
+    },
+    "R99Compare.dc.html": {
+      "x": 0,
+      "y": 17051,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 99 - The PDA's three screens flat, and the three places it lies"
+    },
+    "R99A.dc.html": {
+      "x": 2100,
+      "y": 17051,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 99 A - The chart room: the PDA on the chart table under the Ark's great window (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R99B.dc.html": {
+      "x": 4200,
+      "y": 17051,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 99 B - The captain's cabin: the PDA on the desk under a porthole, one warm lamp - interactive",
+      "is_interactive": true
+    },
+    "R99C.dc.html": {
+      "x": 0,
+      "y": 18311,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 99 C - The hangar bench: the PDA on a workbench, the hangar running out to the cell - interactive",
+      "is_interactive": true
+    },
+    "R99Notes.dc.html": {
+      "x": 0,
+      "y": 19571,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 99 - notes: what was asked, what Garrett's tab has, what changes, the recommendation"
     }
   },
   "createdOnFiles": {
@@ -3988,7 +4031,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "voyages",
+    "page": "ark",
     "view": "canvas"
   },
   "noteOrder": [
@@ -4110,6 +4153,7 @@
     "sec-rev94",
     "sec-rev97",
     "sec-rev98",
+    "sec-rev99",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4196,7 +4240,8 @@
     "rev95",
     "rev96",
     "rev97",
-    "rev98"
+    "rev98",
+    "rev99"
   ],
   "notes": {
     "hud_end": {
@@ -6791,6 +6836,30 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev99": {
+      "kind": "title1",
+      "text": "Rev 99 - The Pilots tab as a crew PDA lying in the Ark: each pilot's file and story read on it",
+      "x": 0,
+      "y": 16651,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev99": {
+      "kind": "rect",
+      "x": -160,
+      "y": 16491,
+      "w": 6440,
+      "h": 4320,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
     }
   },
   "order": [
@@ -7275,7 +7344,12 @@
     "R97S2G.dc.html",
     "R97S2H.dc.html",
     "R98S1A.dc.html",
-    "R98S2D.dc.html"
+    "R98S2D.dc.html",
+    "R99Compare.dc.html",
+    "R99A.dc.html",
+    "R99B.dc.html",
+    "R99C.dc.html",
+    "R99Notes.dc.html"
   ],
   "pages": [
     {
