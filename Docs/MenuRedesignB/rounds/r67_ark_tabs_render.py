@@ -350,8 +350,8 @@ if SCENE == "squads":
             MOVERS.append((o, o.matrix_world.copy(), k * 2.1))
         else:
             OFFLINE.append(o)
-    if not names:                                    # empty pads still glow where the squad stands
-        PAD_LIGHTS.extend([(Vector((p.x, p.y, Z0)), True) for p in SPOTS[:2]] + [(Vector((SPOTS[2].x, SPOTS[2].y, Z0)), False)])
+    if not names:                                    # empty pads all glow: any seat may hold a live hull (the game lights
+        PAD_LIGHTS.extend([(Vector((p.x, p.y, Z0)), True) for p in SPOTS])          # an offline one from its own layer)
 # the HyperSea board between the arches on the left wall; the galaxy on the right wall
 BX = -HW + 0.9
 board = K.image_emission("board_sector", os.path.join(ASSETS, "board_sector.png"), 0.9)
@@ -1370,6 +1370,11 @@ if os.environ.get("ARK_PASS") == "vessels":     # the live layer: only the hulls
             o_.hide_render = True                    # the haze box encloses the bay: it would hold out everything
         elif o_.type == "MESH" and o_ not in keep:
             o_.is_holdout = True
+if os.environ.get("ARK_BORDER"):              # "x0,x1,y0,y1" in pixels from the top left: render only that box (the frame
+    _b = [float(v) for v in os.environ["ARK_BORDER"].split(",")]     # stays full size, black outside it; r110_squads_empty_pads.py re-renders the pads)
+    sc.render.use_border, sc.render.use_crop_to_border = True, False
+    sc.render.border_min_x, sc.render.border_max_x = _b[0] / W, _b[1] / W
+    sc.render.border_min_y, sc.render.border_max_y = 1.0 - _b[3] / H, 1.0 - _b[2] / H
 camd.lens, camd.clip_start, camd.clip_end = lens, 0.1, 3000
 camd.dof.use_dof, camd.dof.focus_distance, camd.dof.aperture_fstop = True, focus, fstop
 sc.view_settings.exposure = {"deck": -0.4, "pier": -0.7}.get(SCENE, -0.9)

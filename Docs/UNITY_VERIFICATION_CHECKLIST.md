@@ -65,7 +65,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 The Jacks' vessel pass: authored element scaling, four level-5 cards, their own HUD (`claude/jacks-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+### 🔴 The squad's real vessels in the hangar, over empty-pad clips (`claude/project-thread-sdvd40`, 2026-11-14, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed:** `Docs/MENU_REDESIGN_B.md` section 202. The nine Squads clips now show the hangar's pads empty;
+`SquadVesselLayer` stands each seat's real vessel on its pad from the clips' own camera, as a transparent layer over the
+picture (`ElementalConverterView`, `SquadsPage.GetHangarSeat`, `ArkBackdrop.LoopPhase`, `ArkBackdropConfigSO.Hangar`).
+Ran: `unity_refcompile` (0 errors in changed files), `author_ark_backdrop_assets.py --check`, `colour_trace.py --check`,
+the camera checked against Blender's projection (0.03 px). Not run: Unity.
+
+1. Main menu, Ark, SQUADS with a squad shown. **Pass:** three hulls stand on the three glowing pads (yours in the
+   middle), no empty pad shows a ghost of the old Dolphin, Sparrow or Serpent, and the hulls do not slide on the floor as
+   the camera breathes.
+2. Change vessel on your seat. **Pass:** the middle hull becomes the new vessel within a frame, in the squad's domain.
+3. Open the seat of an offline mate. **Pass:** that pad stands empty. A mate who is offline shows a dark, still hull.
+4. Switch the squad's domain chip and the colour set. **Pass:** the clip and the hulls' colour change together.
+5. Leave the Squads tab for Pilots, Artifacts and Decor. **Pass:** no hull shows over any other room.
+6. On a phone: the layer stays in step with the video, and the menu holds its frame rate.
+
+🔴 The Jacks' vessel pass: authored element scaling, four level-5 cards, their own HUD (`claude/jacks-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `R_VesselActions/JACKS.md` § 2. The four element curves moved from `JacksMath`'s formulas onto
 `ElementalFloat` endpoints on `JacksConfigSO` (`dangerShare`, `herdBirthRate`, `ringScale`, `herdSpeed`), set to the

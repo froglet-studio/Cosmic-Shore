@@ -24,6 +24,17 @@ namespace CosmicShore.UI
         /// <summary>The clip playing (or last played).</summary>
         public VideoClip Current => _clip;
 
+        /// <summary>How far through its loop the clip is, 0..1 (the render's own loop time: the hangar clips' camera breathes
+        /// on it, and SquadVesselLayer moves its camera with it); -1 while nothing plays.</summary>
+        public float LoopPhase
+        {
+            get
+            {
+                if (!_player || !_clip || !_player.isPlaying || _clip.length <= 0.0) return -1f;
+                return Mathf.Repeat((float)(_player.time / _clip.length), 1f);
+            }
+        }
+
         public static ArkBackdrop Create(Transform parent)
         {
             var go = new GameObject("ArkBackdrop");

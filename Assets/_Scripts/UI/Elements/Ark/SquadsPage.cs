@@ -940,22 +940,66 @@ namespace CosmicShore.UI
 
         // ---- drawing ----
 
-        /// <param name="snapDomain">True when a different squad comes on screen: its hulls take its colour at once, with no swap.</param>
-        /// <summary>The shown squad's domain: the Ark's hangar backdrop plays in it (Docs/MENU_REDESIGN_B.md section 190).
-        /// Raised when it changes.</summary>
+        /// <summary>What stands on one of the hangar's pads: the seat's vessel, whether anyone holds the seat (an open seat's
+        /// pad stands empty) and whether its pilot is here (an offline mate's hull is powered down).</summary>
+        public readonly struct HangarSeat : System.IEquatable<HangarSeat>
+        {
+            public readonly VesselClassType Vessel;
+            public readonly bool Filled;
+            public readonly bool Live;
+
+            public HangarSeat(VesselClassType vessel, bool filled, bool live)
+            {
+                Vessel = vessel;
+                Filled = filled;
+                Live = live;
+            }
+
+            public bool Equals(HangarSeat o) => Vessel == o.Vessel && Filled == o.Filled && Live == o.Live;
+            public override bool Equals(object obj) => obj is HangarSeat o && Equals(o);
+            public override int GetHashCode() => ((int)Vessel * 4) ^ (Filled ? 1 : 0) ^ (Live ? 2 : 0);
+        }
+
+        /// <summary>The shown squad's domain and line-up: the Ark's hangar backdrop plays in the domain (Docs/MENU_REDESIGN_B.md
+        /// section 190) and the seats' real vessels stand on its pads (SquadVesselLayer, section 202). Raised when either
+        /// changes.</summary>
         public event System.Action HangarChanged;
         /// <summary>False until a squad has been drawn (or while none is shown).</summary>
         public bool HasHangar { get; private set; }
         public Domains HangarDomain { get; private set; } = Domains.Jade;
+
+        readonly HangarSeat[] _hangarSeats = new HangarSeat[SavedSquad.SlotCount];
+
+        /// <summary>Seat <paramref name="seat"/> of the shown squad as its pad shows it (an empty pad out of range).</summary>
+        public HangarSeat GetHangarSeat(int seat) =>
+            HasHangar && seat >= 0 && seat < _hangarSeats.Length ? _hangarSeats[seat] : default;
 
         void PublishHangar(SavedSquad squad)
         {
             bool changed = HasHangar != (squad != null) || squad != null && HangarDomain != squad.Domain;
             HasHangar = squad != null;
             if (squad != null) HangarDomain = squad.Domain;
+            for (int i = 0; i < _hangarSeats.Length; i++)
+            {
+                var seat = default(HangarSeat);
+                if (squad != null)
+                {
+                    var slot = squad.GetSlot(i);
+                    seat = new HangarSeat(slot.Vessel, !slot.IsOpen(), SeatLive(squad, i, slot));
+                }
+                if (seat.Equals(_hangarSeats[i])) continue;
+                _hangarSeats[i] = seat;
+                changed = true;
+            }
             if (changed) HangarChanged?.Invoke();
         }
 
+        /// <summary>Whether the seat's pilot is here: the player, an online friend, or an AI (always).</summary>
+        bool SeatLive(SavedSquad squad, int seat, SquadSlot slot) =>
+            IsMySeat(squad, seat) || (slot.IsPlayer() ? OnlineFriend(slot.MemberId)
+                : seat == 0 && squad.IsJoined() ? OnlineFriend(squad.OwnerId) : true);
+
+        /// <param name="snapDomain">True when a different squad comes on screen: its hulls take its colour at once, with no swap.</param>
         void Draw(bool snapDomain = false)
         {
             DrawList();
@@ -1088,8 +1132,7 @@ namespace CosmicShore.UI
             bool making = _mode == Mode.Make;
             card.SetEditing(making && seat == _seat, domain);
             card.SetPressable(making && CanEdit(squad, seat));
-            bool live = IsMySeat(squad, seat) || (slot.IsPlayer() ? OnlineFriend(slot.MemberId)
-                : seat == 0 && squad.IsJoined() ? OnlineFriend(squad.OwnerId) : true);
+            bool live = SeatLive(squad, seat, slot);
             card.SetPresence(!slot.IsOpen(), live);
             bool viewing = _mode == Mode.View && !squad.IsJoined();
             card.SetActions(viewing && IsMySeat(squad, seat),

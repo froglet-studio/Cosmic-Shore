@@ -8556,7 +8556,7 @@ as reference, two downscaled copies uploaded to the canvas).
 
 **Picked (Shombith, 2026-11-13):** "B is good." Every setting of B and the vessels in the hangar: section 200.
 
-## 200. Rev 110 mockups: the Squads tab's B with every setting, and the hangar's vessels as real models (2026-11-13, awaiting board approval)
+## 200. Rev 110 mockups: the Squads tab's B with every setting, and the hangar's vessels as real models (2026-11-13; the vessels built in section 202)
 
 **Asked (Shombith, 2026-11-13, picking Rev 106 B):** "B is good. Can you show me all the settings and on changing the
 vessel will the model behind the image change since this is a video so should be put actual vessel models inside and
@@ -8593,3 +8593,43 @@ the render (the room's lamps and the pad glow as real lights) and haze over them
 
 Affects: Shombith's Ark screen (`ArkBackdrop`, `SquadsPage`, `author_menu_ark.py`) once built; the Rev 67 render script
 (two env switches added, the default render unchanged).
+
+## 202. Built: the squad's real vessels on the hangar's pads, over empty-pad clips (2026-11-14, claude/project-thread-sdvd40, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-14, of section 200's vessel check):** "Yeah lets build that."
+
+**The clips.** The nine Squads clips (`Assets/_Graphics/Video/Ark/squads_<Set>_<Domain>_loop.mp4`) now play the hangar
+with its three pads empty and all three glowing (any seat may hold a live hull). The hangar was not re-rendered whole:
+the Voyage Board charts and the cell picture the first renders used are not in the repo. Only the box round the hulls
+(x 0-680, y 57-394 at 960 x 540) was re-rendered, with the clips' own settings (32-frame loop, 10 samples,
+`ARK_LINE=none`, `ARK_BORDER`), graded and blown up exactly as the clips were (`r67_ark_backdrop_videos.py`'s grade and
+filter chain), and laid into each shipped clip frame by frame through the hulls' mask (their union over the loop from
+an `ARK_PASS=vessels` render, widened 15 px and feathered 8 px). Where a hull stood in front of a wall board, the board
+is filled from the clip round it rather than from the stand-in picture. Script:
+`Docs/MenuRedesignB/rounds/r110_squads_empty_pads.py` (`render`, `comp`, `preview`).
+
+**The vessels (`SquadVesselLayer`).** The Squads page publishes its shown squad's line-up with its domain
+(`SquadsPage.GetHangarSeat`: each seat's vessel, whether the seat is held, whether its pilot is here; `HangarChanged`
+fires when any of it changes, so Change vessel, Open the seat, a friend coming online and Make's draft all reach the
+hangar). The converter view lays a transparent layer exactly over the picture while the hangar shows and steps it in
+`LateUpdate`:
+- a camera at the render's camera (`ArkBackdropConfigSO.Hangar`: position, aim, 45.75 degrees vertical = the 24 mm lens
+  on a 36 mm sensor at 16:9, Blender's z up turned into Unity's y up), breathing with the clip: `ArkBackdrop.LoopPhase`
+  drives the same sway the render used, so the hulls never slide on their pads. Checked against Blender's own
+  projection at three loop times: the pads land within 0.03 px at 960 x 540;
+- each held seat's hull, a display copy built by `VesselModelBuilder.TryBuildLive` from the Vessel Prefab Container,
+  fitted to 7.5 m and stood 1.6 m over its pad (the player's pad in the middle, a step back; seats two and three left and
+  right, as the clips' line-up was). Live hulls wear the squad's domain ship material, float and rock, and get their pad's
+  glow in the domain colour; an offline mate's hull wears the class livery, holds still and is lit by the bay's white
+  lamp alone; an open seat's pad stays empty. Hulls are rebuilt only when the line-up, the domain or the worn colour set
+  changes;
+- no post-processing on the layer's camera (URP's post pass writes alpha 1), 4x MSAA on its 1920 x 1080 target, up to
+  30 renders a second.
+
+The numbers live on the config asset (`Assets/Resources/ArkBackdropConfig.asset`, written by
+`author_ark_backdrop_assets.py`, `--check` clean). What only Unity can judge: the hulls' light against the video (the
+pad glow, the lamp, the haze in front of them), their size on the pads, and whether the video and the layer stay in step
+on a phone. Hand test: the "squad's real vessels in the hangar" entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+Affects: Shombith's Ark screen (`ElementalConverterView`, `SquadsPage`, `ArkBackdrop`, the backdrop config and its
+generator).

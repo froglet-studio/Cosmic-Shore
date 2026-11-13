@@ -92,3 +92,29 @@ MonoBehaviour:
     anyDomain: 1
     clip: {fileID: 32900000, guid: 4cbd38fb6bd751b18daabdc2f59e30dc, type: 3}
   textureSize: {x: 1920, y: 1080}
+  hangar:
+    enabled: 1
+    cameraPosition: {x: 6, y: -15.6, z: -85}
+    cameraAim: {x: 6, y: -20.6, z: -62}
+    verticalFov: 45.75
+    cameraSway: {x: 0.18, y: 0.08}
+    aimSway: 0.3
+    loopSeconds: 3.2
+    pads:
+    - {x: 0, y: -23, z: -66}
+    - {x: -9, y: -23, z: -60.5}
+    - {x: 9.6, y: -23, z: -60.5}
+    hullLength: 7.5
+    clearance: 1.6
+    hover: 0.12
+    rockDegrees: 1.7
+    phaseStep: 2.1
+    padLightIntensity: 4
+    padLightRange: 7
+    lampOffset: {x: -2, y: 6, z: -4}
+    lampIntensity: 2
+    lampRange: 16
+    layerSize: {x: 1920, y: 1080}
+    renderRate: 30
+  vesselPrefabs: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2, type: 2}
+  offlineLivery: {fileID: 2100000, guid: bda6299e6e2046339d7a18b1a1ef8443, type: 2}
