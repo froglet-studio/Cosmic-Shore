@@ -105,6 +105,26 @@ namespace CosmicShore.UI
         /// the OmniCrystal balance because they are the same kind of money and ride the same save.
         /// </summary>
         public List<ElementalCrystalBalance> ElementalCrystals = new();
+
+        /// <summary>
+        /// The starting grant (Shombith 2026-11-13: "the first should be 0 but for now lets give everyone 10 of each by
+        /// default"): every element (Charge 1 .. Time 4) with no entry yet gets one holding <paramref name="amount"/>,
+        /// counted as earned. An element that has an entry is left alone, even at 0 held, so spending never refills
+        /// it and the grant is given once per element per account. True when anything was added.
+        /// </summary>
+        public bool GrantStartingElementalCrystals(int amount)
+        {
+            if (amount <= 0) return false;
+            ElementalCrystals ??= new List<ElementalCrystalBalance>();
+            bool added = false;
+            for (int element = 1; element <= 4; element++)
+            {
+                if (ElementalCrystals.Exists(b => b != null && b.Element == element)) continue;
+                ElementalCrystals.Add(new ElementalCrystalBalance { Element = element, Held = amount, Earned = amount });
+                added = true;
+            }
+            return added;
+        }
     }
 
     /// <summary>One element's crystals. Element is the enum's stored value (Charge 1 .. Time 4).</summary>

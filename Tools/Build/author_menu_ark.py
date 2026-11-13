@@ -8,9 +8,9 @@ boards, revision 2, on the "Menu Redesign B" canvas).
         ArkView.prefab   the Ark's five tabs (ArkTabsView: CONVERTER, SQUADS, DECOR - Shombith, 2026-10-27; ARTIFACTS -
                          Garrett, 2026-10-27; PILOTS - Garrett, 2026-11-12) and
                          their pages:
-                         CONVERTER, the overlay over the converter's 3D picture: the title band, the recipe panel
-                         (four ConverterRecipeRows in fly-in order, the Omni block), and the converter bar
-                         (the run's clock, four segments with their sparks, CONVERT with the sweep);
+                         CONVERTER, the overlay over the pier (Rev 104 A, section 196: no cards): the shade, and the
+                         ledger at the pier's foot - the player's four elemental balances (ConverterBalance, fly-in
+                         order) and the omni wallet in one row, the line over it, and CONVERT with the sweep under it;
                          SQUADS (SquadsPage): the player's squads (up to four, made and joined), the selected
                          squad's three squad mates with their vessel, element, pilot and artifact, NEW / JOIN /
                          DELETE, PLAY into Arcade / Arena / Mission, and the join list of friends' open seats;
@@ -55,14 +55,14 @@ text, label, le, canvas_group = H.text, H.label, H.le, H.canvas_group
 image_node, art_node = A.image_node, A.art_node
 
 VIEW = "ArkView"
-S = dict(view=C.script("ElementalConverterView"), row=C.script("ConverterRecipeRow"),
+S = dict(view=C.script("ElementalConverterView"), balance=C.script("ConverterBalance"),
          button=K.kit_script("KitButton"), kt=K.kit_script("KitText"), entrance=K.kit_script("KitEntrance"),
          ambient=K.kit_script("KitAmbient"), spark=K.kit_script("KitSpark"), tabs=C.script("ArkTabsView"),
          squads=C.script("SquadsPage"), squad_row=C.script("SquadRowView"), mate=C.script("SquadMateCard"),
          availability=C.script("MenuAvailabilityView"), text_tab=K.kit_script("KitTextTab"),
          chip=C.script("SquadPickChip"), nanobots=C.script("SquadNanobotSwap"), artifacts=C.script("ArkArtifactsPage"),
          pilots=C.script("ArkPilotsPage"))
-C.STUB_KIND.update({"recipe": (114, S["row"]), "entrance": (114, S["entrance"]), "tabs": (114, S["tabs"])})
+C.STUB_KIND.update({"balance": (114, S["balance"]), "entrance": (114, S["entrance"]), "tabs": (114, S["tabs"])})
 
 ORDER = ("Space", "Charge", "Mass", "Time")       # OmniCombineCore.Order: the fly-in order
 CRYSTAL = {k: K.meta_guid(f"Assets/_Graphics/Codex/ethirion_{k.lower()}.png") for k in ORDER}
@@ -77,13 +77,6 @@ def c(node_key, comp):
     return lambda ctx: ctx.c(node_key, comp)
 
 
-def filled_image(color):
-    """An Image, Filled Horizontal from the left, empty."""
-    base = K.image(color)
-    return lambda ctx, go: base(ctx, go).replace("  m_Type: 0\n", "  m_Type: 3\n").replace(
-        "  m_FillMethod: 4\n", "  m_FillMethod: 0\n").replace("  m_FillAmount: 1\n", "  m_FillAmount: 0\n")
-
-
 def title_band(root, key="Title", heading="Elemental converter",
                line="Space, Charge, Mass and Time combine into one omni crystal."):
     band = root.child(N(key, "Title", TL(40, 108, 514, 116)))
@@ -94,88 +87,43 @@ def title_band(root, key="Title", heading="Elemental converter",
     label(band.child(N(f"{key}/Line", "Line", TL(22, 84, 480, 20))), line, "BodySmall", "NeutralLightest")
 
 
-def recipe_row(panel, i, name):
-    k = f"Recipe/{name}"
-    row = panel.child(N(k, name, TL(26, 58 + i * 104, 386, 92)))
-    fill = row.child(N(f"{k}/Fill", "Fill", STRETCH))
-    fill.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver10_fill"), True))
-    bord = row.child(N(f"{k}/Border", "Border", STRETCH))
-    bord.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
-    label(row.child(N(f"{k}/Numeral", "Numeral", TL(14, 22, 64, 48))), f"{i + 1:02d}", "H1", "NeutralLightest")
-    art = art_node(row, f"{k}/Art", "Art", TL(84, 18, 56, 56), CRYSTAL[name], preserve=True)
-    art.add("bob", 114, lambda ctx, go: M.ambient("Float", period=1.2, amplitude=4)(ctx, go).replace(
-        "  m_Enabled: 1\n", "  m_Enabled: 0\n", 1))
-    label(row.child(N(f"{k}/Name", "Name", TL(158, 18, 150, 30))), name, "H3", "TextLight")
-    st = row.child(N(f"{k}/State", "State", TR(14, 24, 110, 16)))
-    label(st, "Ready", "Label", "NeutralLightest", align="right")
-    image_node(row, f"{k}/Track", "Track", TL(158, 58, 214, 3), "SurfaceDark")
-    bar = row.child(N(f"{k}/Bar", "Bar", TL(158, 58, 214, 3)))
-    bar.add("cr", 222, K.canvas_renderer()).add("img", 114, filled_image(tok("ControlActive")))
-    row.add("row", 114, lambda ctx, go: mono(go, S["row"],
-            f"  theme: {K.ref(11400000, K.THEME, 2)}\n  stateText: {ref(ctx.c(f'{k}/State', 'kt'))}\n"
-            f"  fill: {ref(ctx.c(f'{k}/Bar', 'img'))}\n  border: {ref(ctx.c(f'{k}/Border', 'img'))}\n"
-            f"  art: {ref(ctx.c(f'{k}/Art', 'img'))}\n  bob: {ref(ctx.c(f'{k}/Art', 'bob'))}\n"))
+# The ledger on the deck (Rev 104 A, Shombith 2026-11-13: no cards on top; "the elemental converter should show the actual
+# elemental crystals balance the user has"): the four balances and the omni wallet in one row at the pier's foot, on the
+# room with no panel behind them, the line over the row and CONVERT under it. Board R104A: 132-wide columns 56 apart,
+# a hairline, the omni's 150-wide column; the row stands 120 over the foot and CONVERT 36 over it.
+LEDGER_COL_W, LEDGER_GAP, LEDGER_OMNI_W = 132, 56, 150
+LEDGER_DIVIDER_X = len(ORDER) * LEDGER_COL_W + (len(ORDER) - 1) * LEDGER_GAP + LEDGER_GAP
+LEDGER_OMNI_X = LEDGER_DIVIDER_X + 1 + LEDGER_GAP
+LEDGER_W, LEDGER_H, LEDGER_Y = LEDGER_OMNI_X + LEDGER_OMNI_W, 200, 120
+CONVERT_Y, CONVERT_MIN_W = 36, 320
 
 
-def recipe_panel(root):
-    pn = root.child(N("Recipe", "Recipe", TR(40, 108, 438, 760)))
-    pn.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
-    C.frame(pn, "Recipe/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
-    pn.child(M.panel_sea_node("Recipe/Grid"))
-    M.bracket_nodes(pn, "Recipe/Bracket")
-    C.section_label(pn, "Recipe/Caption", "Caption", "Recipe", TL(26, 26, 200, 18))
-    label(pn.child(N("Recipe/Merged", "Merged", TR(26, 26, 220, 18))), "0 of 4 merged", "Label", "NeutralLightest",
-          align="right")
+def ledger_column(row, key, name, x, w, art_size, sprite, words):
+    col = row.child(N(key, name, TL(x, 30, w, 170)))
+    art_node(col, f"{key}/Art", "Art", TL((w - art_size) // 2, 82 - art_size, art_size, art_size), sprite, preserve=True)
+    label(col.child(N(f"{key}/Count", "Count", TL(0, 90, w, 50))), "0", "DataLarge", "TextLight", align="center")
+    label(col.child(N(f"{key}/Name", "Name", TL(0, 146, w, 18))), words, "Label", "NeutralLightest", align="center")
+    return col
+
+
+def ledger(root):
+    row = root.child(N("Ledger", "Ledger", R((0.5, 0), None, (0, LEDGER_Y), (LEDGER_W, LEDGER_H), (0.5, 0))))
+    row.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
+    label(row.child(N("Ledger/Line", "Line", TL(0, 0, LEDGER_W, 20))), "One of each makes one omni crystal", "Label",
+          "NeutralLightest", align="center")
     for i, name in enumerate(ORDER):
-        recipe_row(pn, i, name)
-    image_node(pn, "Recipe/RuleLeft", "RuleLeft", TL(26, 486, 150, 1), "SurfaceDark")
-    image_node(pn, "Recipe/RuleRight", "RuleRight", TR(26, 486, 150, 1), "SurfaceDark")
-    label(pn.child(N("Recipe/Makes", "Makes", TL(176, 477, 86, 18))), "Makes", "Label", "NeutralLightest",
-          align="center")
-    om = pn.child(N("Recipe/Omni", "Omni", TL(26, 516, 386, 216)))
-    om.add("cg", 225, lambda ctx, go: canvas_group(True)(ctx, go).replace("  m_Alpha: 1\n", "  m_Alpha: 0.35\n"))
+        k = f"Ledger/{name}"
+        col = ledger_column(row, k, name, i * (LEDGER_COL_W + LEDGER_GAP), LEDGER_COL_W, 76, CRYSTAL[name], name)
+        col.add("balance", 114, lambda ctx, go, k=k: mono(go, S["balance"],
+                f"  art: {ref(ctx.c(f'{k}/Art', 'img'))}\n  countText: {ref(ctx.c(f'{k}/Count', 'kt'))}\n"
+                f"  nameText: {ref(ctx.c(f'{k}/Name', 'kt'))}\n"))
+    image_node(row, "Ledger/Divider", "Divider", TL(LEDGER_DIVIDER_X, 40, 1, 132), "NeutralLightest", alpha=0.5)
+    om = ledger_column(row, "Ledger/Omni", "Omni", LEDGER_OMNI_X, LEDGER_OMNI_W, 96, OMNI, "Omni")
     om.add("pop", 114, M.entrance("Pop", play_on_enable=False, duration=M.CEREMONY))
-    fill = om.child(N("Recipe/Omni/Fill", "Fill", STRETCH))
-    fill.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver10_fill"), True))
-    bord = om.child(N("Recipe/Omni/Border", "Border", STRETCH))
-    bord.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
-    art = art_node(om, "Recipe/Omni/Art", "Art", TL(26, 58, 100, 100), OMNI, preserve=True)
-    label(om.child(N("Recipe/Omni/Name", "Name", TL(146, 66, 220, 30))), "Omni crystal", "H3", "TextLight")
-    label(om.child(N("Recipe/Omni/Line", "Line", TL(146, 100, 220, 48))), "Forms when all four elements have merged.",
-          "BodySmall", "NeutralLightest", valign="top", wrap=True)
-
-
-SEG_X, SEG_W, SEG_GAP = 248, 150, 6
-BAR_W, BAR_H = 1120, 112
-
-
-def converter_bar(root):
-    bar = root.child(N("Bar", "Bar", R((0.5, 0), None, (0, 68), (BAR_W, BAR_H), (0.5, 0))))
-    bar.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
-    C.frame(bar, "Bar/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
-    M.bracket_nodes(bar, "Bar/Bracket")
-    label(bar.child(N("Bar/Status", "Status", TL(28, 22, 200, 16))), "Ready", "Label", "NeutralLightest")
-    label(bar.child(N("Bar/Clock", "Clock", TL(28, 44, 210, 40))), "00:00 / --:--", "H2", "TextLight")
-    for i, name in enumerate(ORDER):
-        x = SEG_X + i * (SEG_W + SEG_GAP)
-        k = f"Bar/Seg{name}"
-        image_node(bar, f"{k}Track", f"Seg{name}Track", TL(x, 42, SEG_W, 4), "SurfaceDark")
-        seg = bar.child(N(k, f"Seg{name}", TL(x, 42, SEG_W, 4)))
-        seg.add("cr", 222, K.canvas_renderer()).add("img", 114, filled_image(tok("ControlActive"))) \
-            .add("mask", 114, A.rect_mask())
-        sg = seg.child(N(f"{k}/SparkGroup", "SparkGroup", STRETCH))
-        sg.add("cg", 225, canvas_group(False))
-        sp = sg.child(N(f"{k}/Spark", "Spark", R((0, 0), (0, 1), (-48, 0), (48, 0), (0, 0.5))))
-        sp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_spark"))) \
-            .add("sp", 114, M.spark_body(False, period=1.8, delay=0.3 * i))
-        label(bar.child(N(f"Bar/Label{name}", f"Label{name}", TL(x, 60, SEG_W, 16))), name, "Label", "NeutralLightest")
     w, h = K.button_size("CONVERT")
-    w = max(w, 210)
-    holder = bar.child(N("Bar/Convert", "Convert", R((1, 0.5), None, (-28, 0), (w, h), (1, 0.5))))
+    w = max(w, CONVERT_MIN_W)
+    holder = root.child(N("Convert", "Convert", R((0.5, 0), None, (0, CONVERT_Y), (w, h), (0.5, 0))))
+    holder.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
     holder.children.append(P.Inst("ConvertButton", "KitButton", "ConvertButton", STRETCH,
                                   K.button_mods("KitButton", "Purchase", True, "CONVERT"),
                                   added=[("mask", 114, A.rect_mask())], added_nodes=[C.sweep_node()]))
@@ -861,9 +809,8 @@ def build_view(veiled=VEILED):
     root = N("root", VIEW, STRETCH)
     # The converter's overlay keeps its node keys (and so every fileID the scene's stubs point at) under its page.
     conv = page_node(root, "Converter", True)
-    title_band(conv)
-    recipe_panel(conv)
-    converter_bar(conv)
+    page_shade(conv, "Converter")
+    ledger(conv)
     squads_page(root, veiled)
     pilots_page(root, veiled)
     artifacts_page(root, veiled)
@@ -902,20 +849,19 @@ IDS = dict(go="7700130000000000001", rt="7700130000000000002", view="77001300000
 VIEW_REFS = {
     "convertButton": ("ConvertButton|root#button", "button"),
     "convertLabel": ("ConvertButton|Label#tmp", "tmp"),
-    "statusText": ("Bar/Status#kt", "kt"),
-    "clockText": ("Bar/Clock#tmp", "tmp"),
-    "mergedText": ("Recipe/Merged#kt", "kt"),
-    "omniGroup": ("Recipe/Omni#cg", "cg"),
-    "omniPop": ("Recipe/Omni#pop", "entrance"),
+    "omniCountText": ("Ledger/Omni/Count#kt", "kt"),
+    "balanceLineText": ("Ledger/Line#kt", "kt"),
+    "omniPop": ("Ledger/Omni#pop", "entrance"),
     "arkTabs": ("root#tabs", "tabs"),
 }
 LISTS = {
-    "segments": [(f"Bar/Seg{n}#img", "img") for n in ORDER],
-    "segmentSparks": [(f"Bar/Seg{n}/SparkGroup#cg", "cg") for n in ORDER],
-    "recipeRows": [(f"Recipe/{n}#row", "recipe") for n in ORDER],
+    "balances": [(f"Ledger/{n}#balance", "balance") for n in ORDER],
 }
-OVERLAY_ORDER = ("convertButton", "convertLabel", "statusText", "clockText", "segments", "segmentSparks",
-                 "recipeRows", "mergedText", "omniGroup", "omniPop", "arkTabs")
+OVERLAY_ORDER = ("convertButton", "convertLabel", "balances", "omniCountText", "balanceLineText", "omniPop", "arkTabs")
+# The overlay fields Rev 104 A retired (section 196) with the cards they pointed into: their scene stubs are removed too.
+RETIRED_REFS = (["Bar/Status#kt", "Bar/Clock#tmp", "Recipe/Merged#kt", "Recipe/Omni#cg", "Recipe/Omni#pop"]
+                + [f"Bar/Seg{n}#img" for n in ORDER] + [f"Bar/Seg{n}/SparkGroup#cg" for n in ORDER]
+                + [f"Recipe/{n}#row" for n in ORDER])
 
 
 class ArkMount(C.Mount):
@@ -945,7 +891,8 @@ class ArkMount(C.Mount):
         return [K.unity_empty_scalars(d) for d in out]
 
     def ids(self):
-        return {self.inst, self.stub} | {self.stub_fid(k) for k, _ in self.refs()}
+        return ({self.inst, self.stub} | {self.stub_fid(k) for k, _ in self.refs()}
+                | {self.stub_fid(k) for k in RETIRED_REFS})
 
 
 def rebuild_view_doc(doc, mount):
@@ -1027,7 +974,7 @@ def check_sources(path, text_, files, memo):
 
 
 TMP, IMG = K.TMP_UGUI, K.IMAGE
-ROW_FIELDS = dict(stateText=S["kt"], fill=IMG, border=IMG, art=IMG, bob=S["ambient"])
+BALANCE_FIELDS = dict(art=IMG, countText=S["kt"], nameText=S["kt"])
 
 
 def validate(files):
@@ -1043,14 +990,17 @@ def validate(files):
     view = files[f"{OUT_DIR}/{VIEW}.prefab"]
     V = K.FileIds(VIEW)
     for n in ORDER:
-        _, body = A.doc_of(view, V(f"Recipe/{n}#row"))
-        assert body and S["row"] in body, f"ArkView: the {n} row carries no ConverterRecipeRow"
-        for field, want in ROW_FIELDS.items():
-            C.wired(view, body, field, want, f"the {n} row")
-        assert f"guid: {CRYSTAL[n]}" in A.doc_of(view, V(f"Recipe/{n}/Art#img"))[1], f"the {n} row shows the wrong crystal"
-        _, seg = A.doc_of(view, V(f"Bar/Seg{n}#img"))
-        assert "  m_Type: 3\n" in seg and "  m_FillMethod: 0\n" in seg, f"the {n} segment is not a horizontal fill"
-    assert view.count("guid: " + S["spark"]) == len(ORDER) + 1, "ArkView needs a spark per segment and the CONVERT sweep"
+        _, body = A.doc_of(view, V(f"Ledger/{n}#balance"))
+        assert body and S["balance"] in body, f"ArkView: the {n} balance carries no ConverterBalance"
+        for field, want in BALANCE_FIELDS.items():
+            C.wired(view, body, field, want, f"the {n} balance")
+        assert f"guid: {CRYSTAL[n]}" in A.doc_of(view, V(f"Ledger/{n}/Art#img"))[1], f"the {n} balance shows the wrong crystal"
+    assert f"guid: {OMNI}" in A.doc_of(view, V("Ledger/Omni/Art#img"))[1], "the omni wallet shows the wrong crystal"
+    # Rev 104 A: no cards on the converter (Shombith 2026-11-13: "The UI cards on top of each screen. I do not like them
+    # at all"). The retired title band, recipe panel and converter bar stay gone.
+    for retired in ("Title", "Recipe", "Bar"):
+        assert not A.doc_of(view, V(f"{retired}#rt"))[1], f"the converter's {retired} card is back (Rev 104 A has none)"
+    assert view.count("guid: " + S["spark"]) == 1, "ArkView needs exactly the CONVERT sweep"
     validate_tabs(view, V)
 
     sc = T.Scene(files[SCENE])
@@ -1269,11 +1219,10 @@ def drift(files):
             if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
 
 
-def plain_segment(view):
-    """The Space segment's Image turned back into a Simple image (the self-test's plant)."""
-    fid = str(K.FileIds(VIEW)("Bar/SegSpace#img"))
-    m = re.search(r"^--- !u!114 &" + fid + r"\n.*?(?=^--- )", view, re.M | re.S)
-    return view[:m.start()] + m.group(0).replace("  m_Type: 3\n", "  m_Type: 0\n") + view[m.end():]
+def recipe_card_plant(view):
+    """The view with a RectTransform document under the retired Recipe card's fileID (the self-test's plant)."""
+    fid = str(K.FileIds(VIEW)("Recipe#rt"))
+    return view + f"--- !u!224 &{fid}\nRectTransform:\n  m_ObjectHideFlags: 0\n"
 
 
 def veil_plant(view, key):
@@ -1326,14 +1275,14 @@ def self_test(files):
     mount = ArkMount()
     V = K.FileIds(VIEW)
     cases = [
-        ("a recipe row with no bar", lambda f: f.__setitem__(view, re.sub(r"(  fill: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
-        ("a segment that is a plain image", lambda f: f.__setitem__(view, plain_segment(f[view]))),
+        ("a balance with no count", lambda f: f.__setitem__(view, re.sub(r"(  countText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "the Space balance"),
+        ("the recipe card back", lambda f: f.__setitem__(view, recipe_card_plant(f[view])), "card is back"),
         ("CONVERT unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  convertButton: {{fileID: {mount.stub_fid('ConvertButton|root#button')}}}", "  convertButton: {fileID: 0}"))),
         ("the converter grown up under the nav again", lambda f: f.__setitem__(SCENE, re.sub(
             r"(--- !u!224 &" + IDS["rt"] + r"\n(?:(?!--- ).*\n)*?  m_SizeDelta: )\{x: 0, y: 0\}", r"\1{x: 0, y: 170.4}",
             f[SCENE], count=1))),
-        ("the wrong crystal on a row", lambda f: f.__setitem__(view, f[view].replace(CRYSTAL["Mass"], CRYSTAL["Time"], 1))),
+        ("the wrong crystal on a balance", lambda f: f.__setitem__(view, f[view].replace(CRYSTAL["Mass"], CRYSTAL["Time"], 1)), "wrong crystal"),
         ("the Decor tab without its sea lines", lambda f: f.__setitem__(view, f[view].replace(
             f"guid: {M.SEA_WINDOW_MAT}", f"guid: {M.SEA_PANEL_MAT}", 1))),
         ("the Decor tab without its veil", lambda f: f.__setitem__(view, view_text(set()))),

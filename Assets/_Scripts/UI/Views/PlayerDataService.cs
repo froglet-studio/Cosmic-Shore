@@ -28,6 +28,12 @@ namespace CosmicShore.UI
         [Header("Game Data")]
         [SerializeField] private GameDataSO gameData;
 
+        [Header("Elemental crystals")]
+        [Tooltip("Crystals of each element (Space, Charge, Mass, Time) an account starts with, given once per element " +
+                 "the first time a profile has none of that element (ProfileEconomy.GrantStartingElementalCrystals). " +
+                 "Shombith 2026-11-13: 10 for now, 0 once matches pay them out. 0 gives nothing.")]
+        [SerializeField, Min(0)] private int startingElementalCrystals = 10;
+
         [Inject] UGSDataService _ugsDataService;
         [Inject] AnalyticsServiceFacade _analytics;
 
@@ -258,6 +264,8 @@ namespace CosmicShore.UI
             catch { /* auth not ready, keep existing userId */ }
 
             CurrentProfile = cloudData;
+            // A profile saved before the starting grant (or on another device before it) gets it now, once.
+            if (GrantStartingElementalCrystals()) needsResync = true;
 
             if (needsResync)
             {
@@ -273,7 +281,14 @@ namespace CosmicShore.UI
                 : playerId;
             CurrentProfile.Identity.DisplayName = GenerateDefaultDisplayName();
             CurrentProfile.Identity.AvatarId = GetDefaultAvatarId();
+            GrantStartingElementalCrystals();
         }
+
+        /// <summary>Gives the profile its starting elemental crystals for every element it has none of yet
+        /// (<see cref="ProfileEconomy.GrantStartingElementalCrystals"/>). Run on the local default profile and again on
+        /// the cloud profile that replaces it, so an existing account gets the grant once too.</summary>
+        bool GrantStartingElementalCrystals() =>
+            CurrentProfile?.Economy != null && CurrentProfile.Economy.GrantStartingElementalCrystals(startingElementalCrystals);
 
         static string GenerateDefaultDisplayName()
         {
