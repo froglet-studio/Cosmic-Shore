@@ -65,6 +65,19 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Orca's own HUD and eight ability cards (`claude/orca-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `OrcaHUDVariant.prefab` (from the Sparrow's, every fileID kept, `author_orca_hud.py --check`) with
+`OrcaHUDView`, nested in `Orca.prefab` in place of `SparrowHUDVariant`; eight kit icons in
+`Assets/_Graphics/Icons/AbilityIcons/Orca/` (`icon_kit/author.py orca --check`, all gates pass). Ran: `unity_refcompile`
+editor (0 errors in changed files). Not run: Unity, `OrcaHUDTests`.
+
+1. Toybox, Orca: the four cards show a missile on its path (Charge), the hull in a shell (Mass), a burst in its ring
+   (Space), the hull over its tank (Time). No Sparrow rocket bay, stance hull or afterburner parts.
+2. Each gunner card still shows its seat's missile count under the picture.
+3. Raise each element to 5: the card swaps to Rearm (two missiles), Bulwark (two shells), Chain Burst (two bursts),
+   Afterburner (double flame, full tank, feed chevron).
+
 ### 🔴 The Orca's level-5 upgrades: Rearm, Bulwark, Chain Burst, Afterburner (`claude/orca-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Crew/ORCA_CREW.md` § "Level 5". The four empty slots filled, each gated on its own element in

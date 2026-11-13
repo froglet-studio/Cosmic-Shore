@@ -13,7 +13,7 @@ then bring this into unity".
 with all four seats, its three guns, per-seat missiles, the helm's shield, its own hovering-assembly model, the
 missiles' look and the bomb's lit blast. Garrett flew it through round 7; rounds 8 and 9 are compiled, not flown. Every round's steps are in
 `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("Orca round 5" to "Orca round 9"). What a full vessel still needs is the
-Follow-ups list at the end: networking, level-5 upgrades, sounds, a prefab fitted to the model, its own HUD art.
+Follow-ups list at the end: networking, level-5 upgrades, sounds, a prefab fitted to the model (its own HUD art landed 2026-11-13).
 
 **Seats, not names.** "We can start referring to multiplayer vessels by their seats. this is a 4 seat vessel. that lets
 players know it supports four players or brings in 4 AI" (Garrett, 2026-10-20). Two new `SO_Vessel` fields carry this:
@@ -108,7 +108,12 @@ still passes), each gated on its own element in `OrcaCrewConfigSO` (`RearmActive
 | Space | **Chain Burst** | A missile or bomb burst sets off every other missile of the crew, and its bomb, inside its blast; each chains on in turn (`ChainFrom`). |
 | Time | **Afterburner** | The boost tank keeps refilling while the helm burns, so a burn lasts longer and an empty tank recovers under a held trigger (`StepHelm`). |
 
-Tests: `OrcaUpgradeTests`. The Orca still draws the Sparrow's HUD art (Follow-ups); its own cards follow in the icon pass.
+Tests: `OrcaUpgradeTests`.
+
+**Its own HUD (2026-11-13).** The Orca no longer draws the Sparrow's HUD: `OrcaHUDVariant` (written by
+`Tools/Build/author_orca_hud.py`, `--check`) carries `OrcaHUDView`, and each card is the icon kit's picture of its seat
+(`Tools/Build/icon_kit/specs/orca.py`), with the level-5 card swapped in when the upgrade unlocks: Flown Missiles /
+Rearm, Danger Shield / Bulwark, Burst / Chain Burst, Boost Tank / Afterburner. Tests: `OrcaHUDTests`.
 
 ## The seats
 
