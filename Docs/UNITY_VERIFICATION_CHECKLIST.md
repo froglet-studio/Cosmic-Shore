@@ -23104,3 +23104,42 @@ against Unity reference assemblies (`unity_refcompile`), not opened in the edito
    Koi, Brass Lantern Company), and no "Pictured:" line shows. The crew list and a squad that seated them still work.
 3. **The story** reads as three short paragraphs with a blank line between, inside the panel, on every pilot.
 4. **A voyage's jobs** for a starter come from the painted faction (VOLT: a Merchant's courier and convoy work).
+
+## 🔴 Loading screen into a game: the tour (Rev 91 F) (2026-11-13, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/gracious-faraday-h2ny3a`. Record: `Docs/MENU_REDESIGN_B.md` section 178, `Docs/CONNECTING_PANEL.md`.
+Compiled against the Unity reference assemblies (player and editor); `author_ingame_hud.py --check` and `--self-test`
+clean. Never opened in the editor: compare what you see with the board `R91F` on Frogma and send a screenshot.
+
+1. Open the project and let it import; no console errors, and `Assets/_Graphics/UI/Loading/loading_tour_ark.png` is a Sprite.
+2. Run EditMode tests `LoadingTourTests` and `ArenaLoadProgressTests`; all pass.
+3. Open `ConnectingPanel.prefab`: the Tour shows only chapter 1, and the Bar's `stepEnds` are 0.6 / 0.9 / 1.
+4. Launch any arcade mode from Menu_Main. ENTERING and the mode name are top-left; the arena is never visible.
+5. Chapters advance Squad, The Ark, Pilots, Vessels, Toy Box as the percentage passes 20 / 40 / 60 / 80, cross-fading,
+   never going back; the index word of the current chapter is lit and underlined.
+6. The step name changes at 60 and 90 (Building the arena, Settling the arena, Waiting for pilots), labels and markers
+   light, and the fill never jumps backward.
+7. At the end the bar and the word turn Lime ("Ready"), the content fades, and the hex opens from the centre into the arena.
+8. Two editors (MPPM), two humans: the screen holds on "Waiting for pilots" until both are ready; no pilot rows are drawn.
+9. Replay a mode: the tour restarts at chapter 1 and the bar at 0.
+10. A phone aspect (safe area): the index and the bar's labels do not clip.
+
+## 🔴 Boot splash and sign-in scene: the poster (Rev 94 C) (2026-11-13, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/gracious-faraday-h2ny3a`. Record: `Docs/MENU_REDESIGN_B.md` section 179. Compiled against the Unity
+reference assemblies (player and editor); `author_start_flow.py --check` and `--self-test` clean. Never opened in the
+editor: this is the first screen of the game, so run step 1 before anything else and send a screenshot beside board `R94C`.
+
+1. Open `Bootstrap.unity` and press Play from a signed-out state. The game must reach the menu.
+2. Splash: a cell frame pushing in under the sea lines; three leaning Jade, Ruby and Gold bands with rim edges; five
+   captains with bottoms aligned and Galleon largest; three silver hulls bobbing; crystals, fauna, flora and prism runs
+   moving; both logos top-left; a dark foot.
+3. Bar: the percentage never drops; Connecting, Signing in, Loading profile, Creating session light in order; it holds
+   while waiting; it ends at 100 with "Ready". Run EditMode tests `BootLoadProgressTests` and `BootPosterTests`.
+4. Sign-in scene: the same poster; the sign-in, pilot-name and consent windows are opaque and usable; the percentage carries over.
+5. Disconnect the network and boot: the retry window is opaque, the bar is hidden under it, and Retry works.
+6. Profile: change the colour set and return to the splash. The bands show the new set, blended over about 1 s.
+7. Play a match and return to the menu: the overlay shows "Building the world", no step labels, 0 to 100. If prisms
+   were still growing in the scene being left, check the bar does not start above 0.
+8. A portrait or 4:3 Game view: the stage shrinks to fit.
+9. Profiler with the splash faded out: no `PosterDrift` or `BootStepBar` cost, and 0 GC per frame while it is visible.

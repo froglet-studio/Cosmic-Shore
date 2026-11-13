@@ -1,7 +1,7 @@
 {
  "counts": {
   "exempt": 7,
-  "grey": 486,
+  "grey": 487,
   "ui": 612,
   "world": 1
  },
@@ -3513,6 +3513,11 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "e7b513ab0e814eab"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Angler/Parts/Angler_LockPetal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "dc73587824bc4256"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Angler/Parts/Angler_LockRing.png": {
    "coloured": 0.0,
