@@ -71,6 +71,22 @@ negative control, the shipped AI finishing I1 and I4 at Easy and Legendary, and 
 Checks 9-12 (the 2026-11-07 nose-lead record, run on the old hull) were already red on `bleeding-edge` before this work
 (the same 13 lines, measured on HEAD's own copy); they are left as the record and not re-measured here.
 
+### 0.2 On bleeding-edge, and the step-1 fun pass (2026-11-13)
+
+Round 5 lived only on `Ys-bleeding-edge`, so on `bleeding-edge` Soar stayed dark in Redline until it was cherry-picked
+for the elemental loop's Manta Time step 1 (`Docs/ElementalLoop/PLAYBOOK.md`; Caleb's Manta polish, `Docs/Manta/POLISH.md`,
+touched the trail, haptics and camera, not the race). Re-measured there, nothing re-tuned:
+
+- **The AI's Soar bands are not the floor.** A 5 x 4 grid of `aiBoostStickBand` x `aiYawsteryStickBand` at Legendary
+  (nose 9/s, floor 1, 6 courses an intensity) puts the shipped 0.35 / 0.75 within 3% of the best at I1-I3 and 16% at I4
+  (best 0.2 / 0.5: 61 / 67 / 74 / 88 s against 61 / 64 / 71 / 105 s). The bands are a vessel dial every AI Manta
+  flies, so a change waits for step 3 (`time-arcade`), searched on the signed-off ladder.
+- **The rivals at the fun rung (I2):** the model's ideal person 44 s; Legendary 64 s, Hard 71 s, Medium (the default
+  difficulty) 109 s, Easy 145 s. A first fly test against **Hard** rivals is the one that reads whether they race.
+- **The open question is the verb at speed** (section 0.1): at Time 6 the model's perfect-aim person never gains by
+  lifting at I1-I2. A real pilot misses mouths a perfect aim does not, so whether a lift pays is the fun card's
+  question, and the re-cut of section 9 waits on that flight.
+
 ## 1. What the mode is asking
 
 > **Sections 1-5 are the 2026-11-04 design, on the hull before Soar's unlock; section 0 is how the race is flown now.**
