@@ -80,5 +80,12 @@ pushes while red, notes.
   three RED); passes with a fresh wheel-only numpy installed from that file (`--check: OK`, 46, 48 and 50 files). No
   generator was skipped or loosened. Second fix in the same PR: the report job no longer treats a cancelled run as a
   recovery. Both land with the `/trunk-doctor` PR.
+- **A fourth finding, hidden behind the first (found 2026-11-13, 56 pushes in):** `author_kelpwood_assets.py --check`
+  went red in run 813 (2026-11-13 00:40), introduced by froglet-studio/Cosmic-Shore#1934 (`claude/angler-kit`,
+  merged by Garrett). The Angler's bite cooldown became element-scaled (`config.BiteCooldownFor(_status)` in place of
+  `config.LockBiteCooldown`), and Kelpwood's load-bearing-assumption check matched the old call literally. Kelpwood
+  reads no cooldown, only that a bite is still admitted as a Strike through `TryAdmit`, which still holds. Fix
+  forward on the same PR: the needle names the new call. Reproduced red (`VALIDATION FAILED`), then `--check: OK, 60
+  file(s) match`; a wrong needle still fails (exit 1). Nobody saw it because the trunk had been red for three days.
 - **Red for:** still red at the time of writing. Update this line with the green run once the repair merges
   (`trunk_doctor.py` §5).
