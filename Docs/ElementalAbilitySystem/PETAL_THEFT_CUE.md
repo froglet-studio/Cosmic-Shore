@@ -53,8 +53,9 @@ time, so the cue holds in a 0.25x shot. Every number is on `Resources/PetalTheft
 
 ## Left for others
 
-- The small 2D hit stars (`critique/stills/01`, `02`) belong to the explosion pass (weak link 2), which replaces them;
-  this cue does not touch them.
+- The white four-point star and pink starburst the critique called "hit stars" (`critique/stills/01`, `02`) are the
+  Grizzly trigger bomb's own visuals, not hit effects; the explosion pass (weak link 2, PR #1940: `GrizzlyBombVisual`,
+  `GrizzlyBomb.prefab`, `AOEExplosion`'s blast look) replaces them. This cue is its own effect and touches none of those.
 - The ejected crystals still wear the lime collect-me signal. That is the economy's look, not this cue's.
 
 ## Verification
