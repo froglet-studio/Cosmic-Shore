@@ -9,7 +9,7 @@ using UnityEngine.UI;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Voyage window (Docs/MENU_REDESIGN_B.md sections 170-177): the Voyages tab as two screens (Rev 98 1A and 2D)
+    /// The Voyage window (Docs/MENU_REDESIGN_B.md sections 170-184): the Voyages tab as two screens (Rev 98 1A and 2D)
     /// building and showing voyages with no squad book loaded, the soft fills and the shelf's cut; and the Saga, Quests
     /// and Episodes tables' tilt (Rev 90), the style asset and the authored words.
     /// </summary>

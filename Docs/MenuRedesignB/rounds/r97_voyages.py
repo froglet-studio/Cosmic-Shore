@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Rev 97 boards: the two parts Shombith did not like, redrawn - the squad presets and the seat's choices (Frogma tab
-"Voyages", Docs/MENU_REDESIGN_B.md section 175).
+"Voyages", Docs/MENU_REDESIGN_B.md section 182).
 
 Shombith, 2026-11-12, on Rev 96, with two screenshots: the Squad block of 1A (two dark plates, three small hulls on
 each) and 2D's tray with its foot (dark boxed tiles, small pictures): "These screenshots are the parts I do not like".

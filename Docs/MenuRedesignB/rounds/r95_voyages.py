@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Rev 95 boards: the Voyages tab as two screens - pick the voyage on the map, then the squad (Frogma tab "Voyages",
-Docs/MENU_REDESIGN_B.md section 173).
+Docs/MENU_REDESIGN_B.md section 180).
 
 Shombith, 2026-11-12, with two screenshots of the built Sea table (section 172): "the top bar looks nothing like the
 design", and "I dont like the preview earlier we could zoom in and out of the whole map, set course directly there

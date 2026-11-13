@@ -127,7 +127,7 @@ namespace CosmicShore.UI
         bool _plain;
 
         /// <summary>
-        /// The tabs as the Voyages board draws them (Frogma Rev 87-98, Docs/MENU_REDESIGN_B.md sections 165-177): plain
+        /// The tabs as the Voyages board draws them (Frogma Rev 87-98, Docs/MENU_REDESIGN_B.md sections 165-184): plain
         /// words in <paramref name="font"/>'s capitals, <paramref name="gap"/> apart from the left, the shown one light
         /// and underlined (its mark, 2 units), the others idle. No frame of any kind, and no LB / RB: a tab is pressed
         /// (Shombith, 2026-11-13: "it does not need an LB/RB support for now ... just clicks work fine"). Once is enough:

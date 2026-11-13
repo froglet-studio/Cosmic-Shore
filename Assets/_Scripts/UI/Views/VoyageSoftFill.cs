@@ -5,7 +5,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// A fill with no hard edge, for the Voyage window's two screens (Rev 96-98, Docs/MENU_REDESIGN_B.md sections
-    /// 174-177; Shombith: "the button in both the screens are too hard not soft hard soft").
+    /// 181-184; Shombith: "the button in both the screens are too hard not soft hard soft").
     /// <list type="bullet">
     /// <item><see cref="Shape.Band"/>: solid in the middle, fading out to both ends (a button's fill, the band behind a
     /// group of choices, a hairline).</item>

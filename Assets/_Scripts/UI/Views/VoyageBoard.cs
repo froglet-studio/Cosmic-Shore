@@ -10,7 +10,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The Voyages tab as two screens, as Shombith picked them on Frogma (Rev 98 1A and 2D, Docs/MENU_REDESIGN_B.md
-    /// sections 173-177; they replace the Sea table of section 172, whose lying map could not be explored).
+    /// sections 180-184; they replace the Sea table of section 172, whose lying map could not be explored).
     /// <list type="bullet">
     /// <item><b>The voyage screen</b>: the voyages on offer as chips (left); the window's own HyperSea map, flat, with
     /// its explorer (the tier ladder, drag, pinch, wheel, the + and - here, a press on a place) over its edge-on view
@@ -22,7 +22,7 @@ namespace CosmicShore.UI
     /// voyage's map stands dimmed behind it.</item>
     /// </list>
     /// Every word is the voyage content's (<see cref="VoyageLines"/>) or the game's data; every colour, sprite and
-    /// proportion is <see cref="VoyageBoardStyleSO"/>'s. The spacing is one rule (section 176): lines of one group 10 or
+    /// proportion is <see cref="VoyageBoardStyleSO"/>'s. The spacing is one rule (section 183): lines of one group 10 or
     /// more apart, groups 28 or more apart, no text wrapping inside a tile.
     /// </summary>
     public class VoyageBoard : MonoBehaviour
@@ -330,7 +330,7 @@ namespace CosmicShore.UI
                 bar.sizeDelta = new Vector2(3f, 0f);
                 view.Bar = VoyageKit.Block(bar, _kit.Cyan);
 
-                // The chip's two lines stand well apart (section 176).
+                // The chip's two lines stand well apart (section 183).
                 var words = VoyageKit.Node("Words", rt);
                 VoyageKit.Stretch(words);
                 words.offsetMin = new Vector2(22f, 0f);

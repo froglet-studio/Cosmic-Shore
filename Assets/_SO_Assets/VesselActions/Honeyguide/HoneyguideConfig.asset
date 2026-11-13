@@ -313,6 +313,42 @@ MonoBehaviour:
   massHiveLevelGain: 0.1
   hiveMinDistance: 150
   hiveReach: 25
+  flitStrikeScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 1
+    UseFloor: 1
+    Floor: 1
+  hiveReachScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 2
+    UseFloor: 1
+    Floor: 1
+  peckBurstScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 3
+    UseFloor: 1
+    Floor: 1
+  slipSpeedScale:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.5
+    element: 4
+    UseFloor: 1
+    Floor: 1
+  relentlessUpgradeElement: 1
+  hiveChainUpgradeElement: 2
+  slipstreamUpgradeElement: 4
+  slipstreamExitScale: 2
   hiveMarkerSize: 12
   hiveMarkerColour: {r: 1, g: 0.82, b: 0.48, a: 0.9}
   engineerLevel: 2

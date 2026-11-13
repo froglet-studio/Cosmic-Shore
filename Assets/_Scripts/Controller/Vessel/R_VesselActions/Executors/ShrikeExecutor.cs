@@ -352,7 +352,7 @@ namespace CosmicShore.Gameplay
             _leftNestUntil = Time.time + config.LeaveNestSeconds;
             _nestCd = config.NestCooldown;
             float radius = ShrikeRules.NestRadiusFor(nest.Blocks.Count, false, config.NestBlockSize, config.NestClearance);
-            AddFlora(at + rot * ShrikeRules.TurretLocal(radius), rot * Vector3.up, config.DetachNestMissiles, nest);
+            AddFlora(at + rot * ShrikeRules.TurretLocal(radius), rot * Vector3.up, config.NestMissilesFor(_status), nest);   // Mass 5 Armed Nests
             PlayAt(config.NestEvent, at);
         }
 
@@ -1002,7 +1002,7 @@ namespace CosmicShore.Gameplay
             _slingDir = (_tetherPoint - HullPosition).normalized;
             _slingDist = dist;
             _slingWent = 0f;
-            _slingSpeed = ShrikeRules.SlingSpeed(dist, config.SlingSeconds);
+            _slingSpeed = ShrikeRules.SlingSpeed(dist, config.SlingSecondsFor(_status));   // Time 5 Whipcrack
             _slingTrailOwed = 0f;
             _slingTrail.Clear();
             Pin(true);
@@ -1273,7 +1273,7 @@ namespace CosmicShore.Gameplay
         void Launch(Flora flora)
         {
             flora.Ready--;
-            flora.LaunchCooldown = config.MissileEvery;
+            flora.LaunchCooldown = config.MissileEveryFor(_status);   // Charge 5 Salvo
             Vector3 from = flora.View.LaunchPoint;
             Vector3 up = flora.View.transform.up;
             var missile = TakeMissile();

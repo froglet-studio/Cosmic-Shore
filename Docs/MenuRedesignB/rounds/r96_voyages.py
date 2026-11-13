@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Rev 96 boards: the squad screen redrawn - a real backdrop, softer buttons, and one press for a choice (Frogma tab
-"Voyages", Docs/MENU_REDESIGN_B.md section 174).
+"Voyages", Docs/MENU_REDESIGN_B.md section 181).
 
 Shombith, 2026-11-12, on Rev 95: "S1A is good but I didnt like any of the second scren designs, the bg is too bland
 and also the button in both the screens are too hard not soft hard soft. Clicking through so many vessels and pilots

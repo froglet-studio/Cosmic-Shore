@@ -55,8 +55,8 @@ MonoBehaviour:
     AbilityLabel: Yawstery
     AbilityDescription: 'Hard flat turns on the turn pair. Time makes the Manta faster:
       cruise speed (VesselTransformer.ThrottleScalerMultiplier, x1.5 at level 10) and the
-      soaring speed (BoostSpeedMultiplier, x1.3 at level 10). The trail is a plain
-      Squirrel-style trail: no element grows it and turns do not flare it.'
+      soaring speed (BoostSpeedMultiplier, x1.3 at level 10). Speed shapes the trail, never
+      an element: tall at a crawl, long and thin at Soar, and a Yawstery bends both rails.'
     Input: 12
     UnlockLevel: 5
     RelockBelowLevel: 4

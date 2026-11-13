@@ -10,7 +10,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The Voyage window's squad screen, as Shombith picked it on Frogma (Rev 98 2D, Docs/MENU_REDESIGN_B.md sections
-    /// 174-177): the squad's three seats large across the screen, and under them every choice the picked seat may take.
+    /// 181-184): the squad's three seats large across the screen, and under them every choice the picked seat may take.
     /// <list type="bullet">
     /// <item><b>The stage</b>: each seat is its pilot and its hull, its place in the squad, the vessel's name, and one
     /// line of who flies it, the pilot, the element and the artifact. A press on a seat the player may change picks it;

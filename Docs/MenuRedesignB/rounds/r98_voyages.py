@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Rev 98 boards: Shombith's picks from Rev 97 (1A and 2D) with room between the words (Frogma tab "Voyages",
-Docs/MENU_REDESIGN_B.md section 176).
+Docs/MENU_REDESIGN_B.md section 183).
 
 Shombith, 2026-11-12, on Rev 97: "s2d and s1a but the thing is that everywhere the texts are too cramped up together.
 Can we do something about that?"
