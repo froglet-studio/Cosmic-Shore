@@ -520,5 +520,71 @@ namespace CosmicShore.ScriptableObjects
         public string SlabSagaLockedLine = "Voyages are open now.";
         [Tooltip("On the locked Saga table's front face.")]
         public string SlabSagaLockedFace = "The saga opens here";
+
+        // The Quests window (Docs/MENU_REDESIGN_B.md sections 188 and 200, Rev 107 D).
+        [Tooltip("The Quests window's title, top left.")]
+        public string QuestsTitle = "Quests";
+        [Tooltip("The Quests window's way back to Home.")]
+        public string QuestsBack = "BACK";
+        [Tooltip("The keycap before the way back (empty: none).")]
+        public string QuestsBackKey = "B";
+        [Tooltip("A quest whose goals are done and whose reward waits.")]
+        public string QuestsReady = "Ready to claim";
+        [Tooltip("A quest being played: {done} goals of {total}.")]
+        public string QuestsOpen = "{done} of {total} goals";
+        [Tooltip("Under a quest's first goal: what reaching it opens.")]
+        public string QuestsTier3 = "Opens Intensity 3";
+        [Tooltip("Under a quest's second goal: what reaching it opens.")]
+        public string QuestsTier4 = "Opens Intensity 4";
+        [Tooltip("Under the goal of a quest that opens a feature, not a game ({name} is the quest's).")]
+        public string QuestsTierFeature = "Opens the {name}";
+        [Tooltip("Beside a goal that is done.")]
+        public string QuestsGoalDone = "Done";
+        [Tooltip("Beside the goal being played for.")]
+        public string QuestsGoalNext = "Next";
+        [Tooltip("The last step of every quest.")]
+        public string QuestsClaimStep = "Claim";
+        [Tooltip("Under the claim step: the colour set it gives.")]
+        public string QuestsClaimUnlocks = "Unlocks {reward}";
+        [Tooltip("Beside the claim step when it can be pressed.")]
+        public string QuestsClaimReady = "Ready";
+        [Tooltip("Over the reward while it is not the player's.")]
+        public string QuestsRewardKicker = "Reward";
+        [Tooltip("Over the reward once the quest is claimed.")]
+        public string QuestsRewardKickerYours = "Your colour set";
+        [Tooltip("Under the reward's name.")]
+        public string QuestsRewardKind = "Colour set";
+        [Tooltip("Under the reward once the quest is claimed.")]
+        public string QuestsRewardYours = "Yours. Wear it from the Profile.";
+        [Tooltip("Under the reward when the quest is ready to claim.")]
+        public string QuestsRewardReady = "Claim to unlock it";
+        [Tooltip("Under the reward while the quest is still being played or locked.")]
+        public string QuestsRewardLater = "Unlocked by this quest";
+        [Tooltip("Under the reward's Jade prism.")]
+        public string QuestsDomainJade = "Jade";
+        [Tooltip("Under the reward's Ruby prism.")]
+        public string QuestsDomainRuby = "Ruby";
+        [Tooltip("Under the reward's Gold prism.")]
+        public string QuestsDomainGold = "Gold";
+        [Tooltip("Under the reward's Blue prism.")]
+        public string QuestsDomainBlue = "Blue";
+        [Tooltip("Over what else claiming the quest opens.")]
+        public string QuestsAlsoOpens = "Claim also opens";
+        [Tooltip("Over what claiming the quest opened, once claimed.")]
+        public string QuestsOpened = "Opened";
+        [Tooltip("Over Play quest: where the button takes the player.")]
+        public string QuestsPlayNote = "Play {name} in the Arcade";
+        [Tooltip("Over the saga's name on its locked card at the foot of the Voyages page (Frogma Rev 103 A).")]
+        public string StripSagaKicker = "Saga";
+        [Tooltip("The saga's name on its locked card at the foot of the Voyages page.")]
+        public string StripSagaName = "Tandava and The Severing";
+        [Tooltip("Over the episode's name on its locked card at the foot of the Voyages page.")]
+        public string StripEpisodesKicker = "Episodes";
+        [Tooltip("The next episode's name on its locked card at the foot of the Voyages page.")]
+        public string StripEpisodesName = "Episode 2";
+        [Tooltip("Under a locked card's name at the foot of the Voyages page.")]
+        public string StripSoon = "Coming soon";
+        [Tooltip("Under a locked card's name once it is pressed: it opens nothing.")]
+        public string StripNotOpen = "Not open yet. Voyages are open now.";
     }
 }

@@ -29,6 +29,7 @@ MonoBehaviour:
   Intensity4GoalDescription: Rank first in an Intensity 3 game
   Order: 0
   IsPlaceholder: 0
+  RewardColorSet: {fileID: 11400000, guid: 32a11b7b922d4094bce00730a8568ae3, type: 2}
   CallToActionTargetID: 433
   CompletionUserAction: -1
   DependencyTargetIDs: 64000000

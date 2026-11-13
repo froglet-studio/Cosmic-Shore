@@ -118,6 +118,13 @@ namespace CosmicShore.UI
             // Toybox, and never reopened from the return-to-window pref, which carries a type and no pilot. Built
             // from Resources/Pilots/PilotProfileView (EnsurePilotProfileModal).
             PILOT_PROFILE = 21,
+
+            // The Quests window (Docs/MENU_REDESIGN_B.md sections 187, 188 and 200, Frogma Rev 107 D; Shombith, 2026-11-13:
+            // "Quest should be a seperate screen"): the route of quests, the picked quest's goals and its colour set
+            // reward, opened from Home's quest card (OnClickQuests). Not a hub window, so the triggers do not slide
+            // it. Built in code beside the Voyage window (EnsureQuestsModal). 20 was this window's once before
+            // (section 151, reverted in section 159) and nothing took it since.
+            QUESTS = 20,
         }
 
         [System.Serializable]
@@ -701,6 +708,7 @@ namespace CosmicShore.UI
             EnsureCreditsModal();
             // Before the first layout: the page's ground is found there as a background that bleeds to the screen's edges.
             EnsurePilotProfileModal();
+            EnsureQuestsModal();
             LayoutScreensToViewport();
             MarkDisabledNavLinks();
             UpdateHubButtonsVisibility();
@@ -1816,6 +1824,53 @@ namespace CosmicShore.UI
             Modals.Add(modal);
         }
 
+        /// <summary>
+        /// Builds the Quests window (<see cref="QuestsModal"/>, Docs/MENU_REDESIGN_B.md section 200) beside the Voyage
+        /// window when the scene has none, with the Voyage window's kit (its style, words and label face). It stands
+        /// down when a QUESTS modal is already registered, so authoring one into the scene is an ordinary scene edit.
+        /// </summary>
+        private void EnsureQuestsModal()
+        {
+            Modals ??= new List<ModalWindowManager>();
+            foreach (var authored in Modals)
+                if (authored != null && authored.ModalType == ModalWindows.QUESTS)
+                    return;
+
+            var mission = FindModal(ModalWindows.MISSION);
+            var lines = VoyageContentSO.Load() is { } content ? content.Lines : null;
+            var style = VoyageBoardStyleSO.Load();
+            if (lines == null || !style)
+            {
+                CSDebug.LogWarning("[ScreenSwitcher] No voyage content or board style in Resources; Home's quest card " +
+                                   "opens the Voyage window instead of the Quests window.");
+                return;
+            }
+            var view = mission ? mission.GetComponentInChildren<VoyageJobsView>(true) : null;
+
+            // In the Voyage window's layer of the canvas, so it stretches the same way; just after it, so the pilot
+            // profile page (last in the layer) still covers it.
+            Transform parent = mission ? mission.transform.parent : _canvasRect;
+            var go = new GameObject("QuestsWindow", typeof(RectTransform));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            if (mission) rt.SetSiblingIndex(mission.transform.GetSiblingIndex() + 1);
+            var modal = go.AddComponent<QuestsModal>();
+            // Hidden from the first frame; the window's own Start keeps it so until it is opened.
+            var group = go.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            modal.Setup(new VoyageKit(style, lines, view ? view.FontTemplate : null));
+            if (_container != null)
+                GameObjectInjector.InjectRecursive(go, _container);
+            modal.ModalType = ModalWindows.QUESTS;
+            modal.AttachScreenSwitcher(this);
+            Modals.Add(modal);
+        }
+
         #endregion
 
         #region Nav Button Handlers (legacy, kept)
@@ -1889,6 +1944,13 @@ namespace CosmicShore.UI
 
         /// <summary>The home hub's Mission entry.</summary>
         public void OnClickMissionNav() => OpenModal(ModalWindows.MISSION);
+
+        /// <summary>The Quests window (Home's quest card); the Voyage window when this build has no Quests window.</summary>
+        public void OnClickQuests()
+        {
+            if (FindModal(ModalWindows.QUESTS)) OpenModal(ModalWindows.QUESTS);
+            else OnClickMissionNav();
+        }
 
         /// <summary>
         /// Opens <paramref name="pilotId"/>'s profile page (the Ark's Pilots tab; a crew pilot's id, or a legacy callsign

@@ -23465,3 +23465,34 @@ files. `colour_trace.py --check` ok. No Unity editor ran and `HyperSeaCellsTests
 4. Tap open water: the cell under the tap is outlined along its rounded wall; a second tap closes it.
 5. The edge strip under the map shows the same foam cut upright.
 6. Wear another colour set (Nocturne, Nacre): the nuclei's blues follow it.
+
+## 🔴 Quests window: its own screen, Rev 107 D (2026-11-13, Shombith's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-ytvai5`, `Docs/MENU_REDESIGN_B.md` section 200. Compiled with `Tools/Build/unity_refcompile`
+only. No Unity editor ran.
+
+1. Menu_Main starts with no errors; the Quests window is not visible until opened.
+2. Home's quest card opens the Quests window (not the Voyage window). Back and gamepad B close it.
+3. The route shows five pictures over five stations, names and states under them, the course solid up to the open
+   quest and dotted after it. Pressing a station shows its goals and reward below.
+4. A quest ready to claim: Claim claims it, the next station lights and its stretch draws in.
+5. An open quest: Play quest opens the Arcade.
+6. The reward column names the colour set and shows four prisms in its colours; wearing another set from the Profile
+   recolours the window.
+7. The Voyage window has no Quests tab; Voyages, Saga and Episodes still switch.
+
+## 🔴 Saga and Episodes locked at the foot of the Voyages page (Rev 103 A) (2026-11-14, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-z6k09o` (PR into `voyages`). Board: Frogma, Voyages tab, Rev 103 A (narrowed). The changed
+files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files; the 30 it
+reports are in multiplayer and camera files this change does not touch). `author_voyage_assets.py --check` and the
+`/ship` gates pass. No Unity editor ran.
+
+1. Menu_Main, open the Voyage window. The tab row shows no Saga and no Episodes tab (Quests too once its own screen lands).
+2. At the foot of the Voyages page: two cards, 520 wide each, centred, 24 apart: the Saga card with Tandava's card art
+   dimmed, "SAGA", "Tandava and The Severing", a lock top right, "COMING SOON"; the Episodes card the same with the
+   galaxy picture and "Episode 2".
+3. Press the Saga card: its line reads "Not open yet. Voyages are open now."; nothing opens. Press again: "Coming soon".
+4. The voyage list, the map and the right panel stand above the strip, none of them covered by it.
+5. Configure / go to the squad screen: the strip is gone and the map fills the page; back to the voyage screen, it returns.
+6. Wear another colour set: the cards repaint with it.
