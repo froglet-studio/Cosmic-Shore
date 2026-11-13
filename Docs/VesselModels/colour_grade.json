@@ -1,8 +1,8 @@
 {
  "counts": {
-  "exempt": 8,
+  "exempt": 7,
   "grey": 486,
-  "ui": 602,
+  "ui": 612,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -1335,6 +1335,13 @@
    "sha": "4474d154f3583934",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/Codex/fauna_piranha.png": {
+   "coloured": 0.9997,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "c7c16e0eec4dc695",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/Codex/fauna_quadfish.png": {
    "coloured": 0.9957,
    "graded": "ui",
@@ -1347,6 +1354,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "dd9868068f45f9a7",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/Codex/fauna_shoal.png": {
+   "coloured": 0.9924,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "2e42290a1cc18000",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Codex/fauna_tadpole.png": {
@@ -4964,13 +4978,6 @@
    "sha": "8efd498d5500ce97",
    "why": "the app icon and splash: the platform draws them before any script runs"
   },
-  "Assets/_Graphics/Icons/App Icons/Feature_Graphic_width_matched.png": {
-   "coloured": 1.0,
-   "graded": "exempt",
-   "kind": "sprite",
-   "sha": "613d73eadbe5076d",
-   "why": "the app icon and splash: the platform draws them before any script runs"
-  },
   "Assets/_Graphics/Icons/App Icons/FrogSplash.png": {
    "coloured": 1.0,
    "graded": "exempt",
@@ -6440,6 +6447,62 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "41b4a39c58fdb397"
+  },
+  "Assets/_Graphics/UI/Splash/captain_anvil.jpg": {
+   "coloured": 0.6299,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "9b81432c96876485",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_galleon.jpg": {
+   "coloured": 0.8091,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d77cbe3f0b5ea612",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_hornet.jpg": {
+   "coloured": 0.6107,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "52688fc5614b93c0",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_needle.jpg": {
+   "coloured": 0.6964,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "fb5d89180fe3bce1",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_sundial.jpg": {
+   "coloured": 0.6906,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d6d687213c265738",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/poster_cell.jpg": {
+   "coloured": 0.9996,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "b1147f37a5e8d258",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/poster_logo_cosmic_shore.png": {
+   "coloured": 0.7676,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "4d215ac04f4b2554",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/poster_logo_froglet.png": {
+   "coloured": 0.1229,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "3ecc6da27f2d6052",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/UI/TopBar/topbar_domain_glow.png": {
    "coloured": 0.0,
