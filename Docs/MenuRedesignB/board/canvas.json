@@ -3714,6 +3714,200 @@
       "h": 900,
       "page": "voyages",
       "title": "Rev 90 - notes: one slab on every tab, each tab, the tabs as links"
+    },
+    "R91Compare.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 - The progress bar on its own: live, and held at each step, a slow patch and done"
+    },
+    "R91A.dc.html": {
+      "x": 2100,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 A - Squad: your three seats arrive one by one as the load moves on"
+    },
+    "R91B.dc.html": {
+      "x": 4200,
+      "y": 0,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 B - The Ark: the ship drifts across the sea, its four rooms lit in turn"
+    },
+    "R91C.dc.html": {
+      "x": 0,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 C - Pilots: one pilot stands large, the roster beside"
+    },
+    "R91D.dc.html": {
+      "x": 2100,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 D - Vessels: one hull at a time, large, the fleet beside"
+    },
+    "R91E.dc.html": {
+      "x": 4200,
+      "y": 1260,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 E - Toy Box: the Vessel Changer cycling hulls, the seven toys lit in turn"
+    },
+    "R91F.dc.html": {
+      "x": 0,
+      "y": 2520,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 91 F - The tour: Squad, Ark, Pilots, Vessels and Toy Box in turn while the bar fills (recommended)"
+    },
+    "R91Notes.dc.html": {
+      "x": 0,
+      "y": 3780,
+      "w": 1920,
+      "h": 900,
+      "page": "loading-screens",
+      "title": "Rev 91 - notes: what is shared, what each option shows, the bar's rules, what differs from the build"
+    },
+    "R94Notes.dc.html": {
+      "x": 2100,
+      "y": 6140,
+      "w": 1920,
+      "h": 900,
+      "page": "loading-screens",
+      "title": "Rev 94 - notes: what is now the game's own art, the far background, what was kept"
+    },
+    "R95S1A.dc.html": {
+      "x": 0,
+      "y": 15740,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S1A - 1A Presets: the map over its edge view; the voyage's name, the squad presets as cards and Set sail on the right (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R95S1B.dc.html": {
+      "x": 2100,
+      "y": 15740,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S1B - 1B Wide map: the map across the window; a foot bar holds the edge view, the voyage, the squad and Set sail - interactive",
+      "is_interactive": true
+    },
+    "R95S1C.dc.html": {
+      "x": 4200,
+      "y": 15740,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S1C - 1C Briefing: the map full height with the edge view inset at its foot; the squad's three seats shown on the right - interactive",
+      "is_interactive": true
+    },
+    "R95S2A.dc.html": {
+      "x": 0,
+      "y": 17000,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S2A - 2A Three seats: a column per seat, its pilot and hull over its choices; Save as preset and Set sail at the foot (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R95S2B.dc.html": {
+      "x": 2100,
+      "y": 17000,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S2B - 2B Seat and picker: the seats on the left, one large picker on the right with Vessel, Pilot, Element, Artifact - interactive",
+      "is_interactive": true
+    },
+    "R95S2C.dc.html": {
+      "x": 4200,
+      "y": 17000,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 95 S2C - 2C Roster: one table, a row per seat and a stepper per choice - interactive",
+      "is_interactive": true
+    },
+    "R95Notes.dc.html": {
+      "x": 0,
+      "y": 18260,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations"
+    },
+    "R94C.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "loading-screens",
+      "title": "Rev 94 C - The crew before the domains, in the game's own art: the new captain busts, silver hulls, Omni crystals, a real cell, fauna and flora; the colour set changing"
+    },
+    "R96S1A.dc.html": {
+      "x": 0,
+      "y": 20620,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 96 S1A - 1A - Screen 1 as picked (Rev 95 1A), with the soft buttons - interactive",
+      "is_interactive": true
+    },
+    "R96Buttons.dc.html": {
+      "x": 2100,
+      "y": 20620,
+      "w": 1920,
+      "h": 620,
+      "page": "voyages",
+      "title": "Rev 96 Buttons - three readings of soft hard soft on Set sail and Configure squad, beside the buttons as they were"
+    },
+    "R96S2D.dc.html": {
+      "x": 4200,
+      "y": 20620,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 96 S2D - 2D Deck: the three seats stand across a lit deck; the picked seat's four choices are one tray under them, one press each (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R96S2E.dc.html": {
+      "x": 0,
+      "y": 21880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 96 S2E - 2E Kits: the picked seat large; six whole kits from the Hangar, one press sets all four; element and artifact beside - interactive",
+      "is_interactive": true
+    },
+    "R96S2F.dc.html": {
+      "x": 2100,
+      "y": 21880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 96 S2F - 2F Showroom: a rail of seats, the picked seat as the hero on the deck, its four choices as strips beside it - interactive",
+      "is_interactive": true
+    },
+    "R96Notes.dc.html": {
+      "x": 0,
+      "y": 23140,
+      "w": 1920,
+      "h": 900,
+      "page": "voyages",
+      "title": "Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens"
     }
   },
   "createdOnFiles": {
@@ -3838,6 +4032,10 @@
     "sec-rev88",
     "sec-rev89",
     "sec-rev90",
+    "sec-rev91",
+    "sec-rev95",
+    "sec-rev96",
+    "sec-rev94",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -3918,7 +4116,11 @@
     "f2u-sgbuttons",
     "rev88",
     "rev89",
-    "rev90"
+    "rev90",
+    "rev91",
+    "rev94",
+    "rev95",
+    "rev96"
   ],
   "notes": {
     "hud_end": {
@@ -6369,6 +6571,102 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "voyages"
+    },
+    "rev91": {
+      "kind": "title1",
+      "text": "Rev 91 - Loading screens: a smooth moving sea, one honest progress bar, and a part of the game on show",
+      "x": 0,
+      "y": -400,
+      "w": 240,
+      "maxW": 6120,
+      "page": "loading-screens"
+    },
+    "sec-rev91": {
+      "kind": "rect",
+      "x": -160,
+      "y": -560,
+      "w": 6440,
+      "h": 5400,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "loading-screens"
+    },
+    "rev94": {
+      "kind": "title1",
+      "text": "Rev 94 - The boot splash: the crew before the domains (C, liked)",
+      "x": 0,
+      "y": 5740,
+      "w": 240,
+      "maxW": 6120,
+      "page": "loading-screens"
+    },
+    "rev95": {
+      "kind": "title1",
+      "text": "Rev 95 - Voyages as two screens: the voyage on the map, then the squad",
+      "x": 0,
+      "y": 15340,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev95": {
+      "kind": "rect",
+      "x": -160,
+      "y": 15180,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev96": {
+      "kind": "title1",
+      "text": "Rev 96 - the squad screen: a backdrop, soft buttons, one press",
+      "x": 0,
+      "y": 20220,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev96": {
+      "kind": "rect",
+      "x": -160,
+      "y": 20060,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "sec-rev94": {
+      "kind": "rect",
+      "x": -160,
+      "y": 5580,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "loading-screens"
     }
   },
   "order": [
@@ -6822,7 +7120,30 @@
     "R90Saga.dc.html",
     "R90Quests.dc.html",
     "R90Episodes.dc.html",
-    "R90Notes.dc.html"
+    "R90Notes.dc.html",
+    "R91Compare.dc.html",
+    "R91A.dc.html",
+    "R91B.dc.html",
+    "R91C.dc.html",
+    "R91D.dc.html",
+    "R91E.dc.html",
+    "R91F.dc.html",
+    "R91Notes.dc.html",
+    "R94C.dc.html",
+    "R94Notes.dc.html",
+    "R95S1A.dc.html",
+    "R95S1B.dc.html",
+    "R95S1C.dc.html",
+    "R95S2A.dc.html",
+    "R95S2B.dc.html",
+    "R95S2C.dc.html",
+    "R95Notes.dc.html",
+    "R96S1A.dc.html",
+    "R96Buttons.dc.html",
+    "R96S2D.dc.html",
+    "R96S2E.dc.html",
+    "R96S2F.dc.html",
+    "R96Notes.dc.html"
   ],
   "pages": [
     {
@@ -6868,6 +7189,10 @@
     {
       "id": "game-mode-codex",
       "name": "Game Mode Codex"
+    },
+    {
+      "id": "loading-screens",
+      "name": "Loading Screens"
     }
   ],
   "title": "Frogma"

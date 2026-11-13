@@ -1,8 +1,8 @@
 {
  "counts": {
-  "exempt": 8,
-  "grey": 468,
-  "ui": 601,
+  "exempt": 7,
+  "grey": 487,
+  "ui": 612,
   "world": 1
  },
  "doc": "Docs/VesselModels/COLOR_TRACE.md",
@@ -1335,6 +1335,13 @@
    "sha": "4474d154f3583934",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
+  "Assets/_Graphics/Codex/fauna_piranha.png": {
+   "coloured": 0.9997,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "c7c16e0eec4dc695",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/Codex/fauna_quadfish.png": {
    "coloured": 0.9957,
    "graded": "ui",
@@ -1347,6 +1354,13 @@
    "graded": "ui",
    "kind": "sprite",
    "sha": "dd9868068f45f9a7",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/Codex/fauna_shoal.png": {
+   "coloured": 0.9924,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "2e42290a1cc18000",
    "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/Codex/fauna_tadpole.png": {
@@ -3500,6 +3514,11 @@
    "kind": "sprite",
    "sha": "e7b513ab0e814eab"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Angler/Parts/Angler_LockPetal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "dc73587824bc4256"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Angler/Parts/Angler_LockRing.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3969,6 +3988,21 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "f478c28010a20610"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Blade.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "9568de9c4b5a41ae"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Gore.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "fd1eb42b35785d65"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Rhino/Rhino_Heft.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "1d412c723108d0ea"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Scarab/Core/Scarab_BallForge.png": {
    "coloured": 0.0,
@@ -4545,6 +4579,81 @@
    "kind": "sprite",
    "sha": "c44c2c2262d255ac"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Core/Swordfish_Surge.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "7b527867d76e30ea"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_AfterimageBlade.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "8b126329f0c731b0"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_AfterimageFar.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c5a8373fee9245c3"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_AfterimageNear.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "cccc4224b15e1273"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_Bill.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "a8e15e7be738ad05"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_BillSocket.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "108a06ed6688375c"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_QuickdrawArc.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "fb91c709ec7612c8"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_QuickdrawBill.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "f7ee5e2da5ed0447"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_QuickdrawFlurry.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "0084ea516a2784ab"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_QuickdrawSocket.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3dec767d7636b039"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_ReachBlade.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "1aa9fa4e4c071ff7"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_ReachHilt.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "ef103c14e83e99db"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_ReachPosts.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "e8f3de0f0f449ab0"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_ReachPrism.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "eb6533916e95905a"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Swordfish/Parts/Swordfish_ReachPrismBroken.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "292dbc590e2f379f"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Thresher/Core/Thresher_Windmill.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -4872,13 +4981,6 @@
    "graded": "exempt",
    "kind": "texture",
    "sha": "8efd498d5500ce97",
-   "why": "the app icon and splash: the platform draws them before any script runs"
-  },
-  "Assets/_Graphics/Icons/App Icons/Feature_Graphic_width_matched.png": {
-   "coloured": 1.0,
-   "graded": "exempt",
-   "kind": "sprite",
-   "sha": "613d73eadbe5076d",
    "why": "the app icon and splash: the platform draws them before any script runs"
   },
   "Assets/_Graphics/Icons/App Icons/FrogSplash.png": {
@@ -6259,6 +6361,13 @@
    "kind": "sprite",
    "sha": "12e16545ced968cb"
   },
+  "Assets/_Graphics/UI/Loading/loading_tour_ark.png": {
+   "coloured": 0.5372,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "e6d505c7c0c36094",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
   "Assets/_Graphics/UI/NavGlyphs/nav_ark.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -6343,6 +6452,62 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "41b4a39c58fdb397"
+  },
+  "Assets/_Graphics/UI/Splash/captain_anvil.jpg": {
+   "coloured": 0.6299,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "9b81432c96876485",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_galleon.jpg": {
+   "coloured": 0.8091,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d77cbe3f0b5ea612",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_hornet.jpg": {
+   "coloured": 0.6107,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "52688fc5614b93c0",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_needle.jpg": {
+   "coloured": 0.6964,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "fb5d89180fe3bce1",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/captain_sundial.jpg": {
+   "coloured": 0.6906,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "d6d687213c265738",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/poster_cell.jpg": {
+   "coloured": 0.9996,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "b1147f37a5e8d258",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/poster_logo_cosmic_shore.png": {
+   "coloured": 0.7676,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "4d215ac04f4b2554",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
+  },
+  "Assets/_Graphics/UI/Splash/poster_logo_froglet.png": {
+   "coloured": 0.1229,
+   "graded": "ui",
+   "kind": "sprite",
+   "sha": "3ecc6da27f2d6052",
+   "why": "drawn on a canvas: the default UI material or a repo UI shader grades it"
   },
   "Assets/_Graphics/UI/TopBar/topbar_domain_glow.png": {
    "coloured": 0.0,
