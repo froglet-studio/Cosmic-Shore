@@ -567,6 +567,12 @@ multiplier is x1 at level 0, and every gate reads its own element field on `Kite
 
 Tests: `WrasseFundamentalsTests`.
 
+**Its own HUD (2026-11-13).** The Wrasse no longer draws the Sparrow's HUD: `WrasseHUDVariant` (forked by
+`Tools/Build/author_wrasse_hud.py`, `--check`) carries `WrasseHUDView`, and each card is the icon kit's picture
+(`Tools/Build/icon_kit/specs/wrasse.py`) with its level-5 card swapped in when the upgrade unlocks: Kite Ram / Crystal
+Steal, Mass Cluster / Shielded Clusters, Space Blast / Shield Breaker, Saved Boosts / Tailwind. `WrasseHUDController`
+still generates the counts and the Mass flash. Tests: `WrasseHUDTests`.
+
 ## Files
 
 | File | What |
