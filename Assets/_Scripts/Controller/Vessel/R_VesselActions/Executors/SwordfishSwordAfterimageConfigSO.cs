@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Tuning for the Rhino's MASS ability, <b>Afterimage</b> (<see cref="RhinoSwordAfterimage"/>):
+    /// Tuning for the Rhino's MASS ability, <b>Afterimage</b> (<see cref="SwordfishSwordAfterimage"/>):
     /// for a few seconds after the blade LEAVES the energized state, it leaves prisms behind it in
     /// its own shape - afterimages of the sword - and while an omni-crystal surge holds the blade
     /// energized it lays them the whole time. MASS scales their VOLUME; the Mass level-5 upgrade
@@ -12,9 +12,9 @@ namespace CosmicShore.Gameplay
     ///
     /// <para>Shared by every Rhino and stateless: per-vessel state lives on the component.</para>
     /// </summary>
-    [CreateAssetMenu(fileName = "RhinoSwordAfterimageConfig",
+    [CreateAssetMenu(fileName = "SwordfishSwordAfterimageConfig",
         menuName = "ScriptableObjects/Vessel Actions/Rhino Sword Afterimage Config")]
-    public sealed class RhinoSwordAfterimageConfigSO : ScriptableObject
+    public sealed class SwordfishSwordAfterimageConfigSO : ScriptableObject
     {
         [Header("Window")]
         [Tooltip("Seconds the blade keeps laying afterimages after it LEAVES the energized state. " +

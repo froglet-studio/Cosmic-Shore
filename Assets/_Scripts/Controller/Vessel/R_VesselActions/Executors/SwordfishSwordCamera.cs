@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// <para>The pan is the sword's MIDPOINT moved off its rest, in the hull's frame: at rest the bill lies along the
     /// nose, so the pan is zero; swung out to the side its midpoint is half a blade to that side (an x pan); raised
     /// straight up it is half a blade overhead (a y pan). Only the across-the-view part (x, y) is used - the camera
-    /// already pulls back with the blade's length (<see cref="RhinoSwordCamera"/>). Written to
+    /// already pulls back with the blade's length (<see cref="SwordfishSwordLengthCamera"/>). Written to
     /// <see cref="CustomCameraController.FramingPan"/>, which pans the camera and its look point together, for the
     /// local human pilot only; an AI or a remote copy never moves anyone's camera.</para>
     ///
@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
             return new Vector3(midpointOffsetInHull.x * c, midpointOffsetInHull.y * c, 0f);
         }
 
-        public void Tick(IVesselStatus status, Vector3 midpointOffsetInHull, RhinoShieldSwipeConfigSO config, float dt)
+        public void Tick(IVesselStatus status, Vector3 midpointOffsetInHull, SwordfishShieldSwipeConfigSO config, float dt)
         {
             bool pilot = status?.Player != null && status.IsLocalUser && !status.IsInitializedAsAI
                          && (status.AIPilot == null || !status.AIPilot.AutoPilotEnabled);

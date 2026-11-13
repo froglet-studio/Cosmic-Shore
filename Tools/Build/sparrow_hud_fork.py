@@ -134,11 +134,15 @@ def base_controller(text):
     return "".join(out)
 
 
-def swap_vessel(vessel_prefab, hull, hud_guid, src=SPARROW_SRC):
+def swap_vessel(vessel_prefab, hull, hud_guid, src=SPARROW_SRC, view_guid=None):
     with open(os.path.join(ROOT, vessel_prefab)) as f:
         text = f.read()
     text = base_controller(text)
     text = text.replace(f"guid: {src['guid']}", f"guid: {hud_guid}")
+    if view_guid:
+        # a stripped stub of the nested view still names the SOURCE's view script; the fork's view is the hull's own
+        text = text.replace(f"m_Script: {{fileID: 11500000, guid: {src['view_guid']}, type: 3}}",
+                            f"m_Script: {{fileID: 11500000, guid: {view_guid}, type: 3}}")
     text = re.sub(r"(?m)^(      value: )%s$" % src["name"], rf"\g<1>{hull}HUDVariant", text)
     assert src["guid"] not in text
     return text
@@ -154,7 +158,7 @@ def fork(hull, view_cs, icons_dir, cards, vessel_prefab, argv=None, src=SPARROW_
         hud: build_variant(hull, view_guid, icons_dir, cards, src),
         hud + ".meta": prefab_meta(hud_guid),
         os.path.join(ROOT, view_cs) + ".meta": script_meta(view_guid),
-        os.path.join(ROOT, vessel_prefab): swap_vessel(vessel_prefab, hull, hud_guid, src),
+        os.path.join(ROOT, vessel_prefab): swap_vessel(vessel_prefab, hull, hud_guid, src, view_guid),
     }
     drift = []
     for path, content in want.items():

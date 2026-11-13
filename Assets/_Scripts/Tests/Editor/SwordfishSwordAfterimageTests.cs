@@ -8,7 +8,7 @@ namespace CosmicShore.Tests
     /// The tiling is the one piece of the ability that is pure, and the one that sets how much mass an
     /// afterimage is - so it is pinned here.
     /// </summary>
-    public class RhinoSwordAfterimageTests
+    public class SwordfishSwordAfterimageTests
     {
         [TestCase(27f, 10f, 6, 3)]    // resting blade (30 x 0.9): three segments of 9
         [TestCase(45f, 10f, 6, 5)]    // Space-10 blade (50 x 0.9)
@@ -18,13 +18,13 @@ namespace CosmicShore.Tests
         public void SegmentCount_IsTheFewestSegmentsNoLongerThanTheLimit(float covered, float segment, int max,
                                                                          int expected)
         {
-            Assert.AreEqual(expected, RhinoSwordAfterimageConfigSO.SegmentCount(covered, segment, max));
+            Assert.AreEqual(expected, SwordfishSwordAfterimageConfigSO.SegmentCount(covered, segment, max));
         }
 
         [Test]
         public void SegmentCount_NeverReturnsZero_EvenForADegenerateConfig()
         {
-            Assert.AreEqual(1, RhinoSwordAfterimageConfigSO.SegmentCount(50f, 0f, 0));
+            Assert.AreEqual(1, SwordfishSwordAfterimageConfigSO.SegmentCount(50f, 0f, 0));
         }
     }
 }

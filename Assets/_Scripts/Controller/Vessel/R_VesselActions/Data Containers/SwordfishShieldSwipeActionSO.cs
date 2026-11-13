@@ -8,10 +8,10 @@ namespace CosmicShore.Gameplay
     /// sum = downward chop) and these press/release events only replicate the swipe to
     /// remote peers; on binary devices (touch, future bindings) the press itself drives
     /// a full swipe. Right = rightward yaw + counterclockwise roll (from the pilot's
-    /// seat); left mirrors both axes. All tuning lives in RhinoShieldSwipeConfigSO.
+    /// seat); left mirrors both axes. All tuning lives in SwordfishShieldSwipeConfigSO.
     /// </summary>
-    [CreateAssetMenu(fileName = "RhinoShieldSwipeAction", menuName = "ScriptableObjects/Vessel Actions/RhinoShieldSwipeActionSO")]
-    public class RhinoShieldSwipeActionSO : ShipActionSO
+    [CreateAssetMenu(fileName = "SwordfishShieldSwipeAction", menuName = "ScriptableObjects/Vessel Actions/SwordfishShieldSwipeActionSO")]
+    public class SwordfishShieldSwipeActionSO : ShipActionSO
     {
         public enum SwipeDirection
         {

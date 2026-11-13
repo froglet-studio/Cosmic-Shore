@@ -5,9 +5,9 @@ Every two- and three-press trigger sequence (RR, LL, RL, LR, RRR ... LRR) calls 
 flourish, with an upgraded set for an ENERGIZED blade: 12 + 12 = 24 authored paths through the
 sword's pose channels (yaw, roll, pitch in degrees; thrust as a fraction of the hilt anchor).
 
-This script is the ONLY author of `RhinoSwordComboLibrary.asset`. It also wires the library onto
-`RhinoShieldSwipeConfig.asset`, and before writing anything it RUNS the shipped pose math (a
-bit-for-bit mirror of `RhinoSwordComboPath.SamplePath` and `ShieldSwipeActionExecutor.
+This script is the ONLY author of `SwordfishSwordComboLibrary.asset`. It also wires the library onto
+`SwordfishShieldSwipeConfig.asset`, and before writing anything it RUNS the shipped pose math (a
+bit-for-bit mirror of `SwordfishSwordComboPath.SamplePath` and `ShieldSwipeActionExecutor.
 ApplyShieldPose`) over every path and fails the build unless:
 
   1. all 12 sequences exist in BOTH sets, each path's keys start at 0, end at 1, and increase;
@@ -17,7 +17,7 @@ ApplyShieldPose`) over every path and fails the build unless:
      set is at least MIN_UNIQUE of the blade length, and each energized path differs from its
      own base path by the same margin -- a mirror, a retime, or a copy all fail this;
   4. every energized path carries MORE flourish than its base (tip travel >= ENERGIZED_TRAVEL x);
-  5. no path sweeps the blade through the pilot's camera (Rhino follow offset z = -70) at the
+  5. no path sweeps the blade through the pilot's camera (the Swordfish's follow offset) at the
      resting blade length, and the camera clearance at the energized length is REPORTED;
   6. every path ends inside +/-180 on the wrapped channels only by wrapping (checked: the
      runtime wraps the end pose before blending back, so a full turn is never unwound).
@@ -34,15 +34,15 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from arcade_mode_lib import ROOT, header_for, num, asset_meta_text, script_meta_text  # noqa: E402
 
-LIB_REL = "Assets/_SO_Assets/VesselActions/Rhino/RhinoSwordComboLibrary.asset"
+LIB_REL = "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishSwordComboLibrary.asset"
 LIB_GUID = "93cd91bfb2a74d648db6762a71dfc3e9"
-SCRIPT_REL = "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/RhinoSwordComboLibrarySO.cs"
+SCRIPT_REL = "Assets/_Scripts/Controller/Vessel/R_VesselActions/Data Containers/SwordfishSwordComboLibrarySO.cs"
 SCRIPT_GUID = "80297f0e643a4fc29678db12756af97d"
-DETECTOR_REL = "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/RhinoSwordComboDetector.cs"
+DETECTOR_REL = "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/SwordfishSwordComboDetector.cs"
 DETECTOR_GUID = "7f6d054b64c84b93b7c6706387b17d7d"
-CONFIG_REL = "Assets/_SO_Assets/VesselActions/Rhino/RhinoShieldSwipeConfig.asset"
-PREFAB_REL = "Assets/_Prefabs/Spacevessels/Rhino.prefab"
-CAMERA_REL = "Assets/_SO_Assets/Camera/RhinoCameraSettingsSO.asset"
+CONFIG_REL = "Assets/_SO_Assets/VesselActions/Swordfish/SwordfishShieldSwipeConfig.asset"
+PREFAB_REL = "Assets/_Prefabs/Spacevessels/Swordfish.prefab"
+CAMERA_REL = "Assets/_SO_Assets/Camera/SwordfishCameraSettingsSO.asset"
 
 # Detection + playback (the SO's own defaults, authored explicitly so the asset is complete).
 DETECTION = dict(pressThreshold=0.5, releaseThreshold=0.2, comboWindowSeconds=0.35,
@@ -272,7 +272,7 @@ ENERGIZED = {
 # The shipped math, mirrored.
 # ---------------------------------------------------------------------------------------------
 def sample(keys, t01):
-    """RhinoSwordComboPath.SamplePath: piecewise cubic Hermite, finite-difference tangents,
+    """SwordfishSwordComboPath.SamplePath: piecewise cubic Hermite, finite-difference tangents,
     zero end tangents. keys: list of (t, yaw, roll, pitch, thrust)."""
     t = min(1.0, max(0.0, t01))
     last = len(keys) - 1
@@ -359,7 +359,7 @@ def read_rig():
     for m in re.finditer(r"--- !u!1001 &\d+\nPrefabInstance:.*?(?=\n--- )", text, re.S):
         if re.search(r"propertyPath: m_Name\n\s+value: ForceFieldSkimmer\n", m.group(0)):
             block = m.group(0)
-    assert block, "ForceFieldSkimmer instance not found in Rhino.prefab"
+    assert block, "ForceFieldSkimmer instance not found in Swordfish.prefab"
 
     def f(prop):
         mm_ = re.search(r"propertyPath: " + re.escape(prop) + r"\n\s+value: ([-\d.eE]+)", block)
@@ -480,7 +480,7 @@ def validate(base, energized, rig, report=True):
 # Emit
 # ---------------------------------------------------------------------------------------------
 def emit_library():
-    out = [header_for(SCRIPT_GUID, "RhinoSwordComboLibrary")]
+    out = [header_for(SCRIPT_GUID, "SwordfishSwordComboLibrary")]
     for k in ["pressThreshold", "releaseThreshold", "comboWindowSeconds", "tapMaxHoldSeconds",
               "chordWindowSeconds", "finisherLockoutFraction", "blendInSeconds", "blendOutSeconds"]:
         out.append(f"  {k}: {num(DETECTION[k])}\n")
@@ -591,9 +591,9 @@ def self_test(rig):
     e4 = copy.deepcopy(e)
     e4["RR"] = b["RR"]
     cases.append(("energized not bigger", b, e4, "not bigger"))
-    # 4. camera: a flat revolution with the blade laid horizontal
+    # 4. camera: the bill swung straight back and thrust out along itself, through the pilot's camera
     b5 = copy.deepcopy(b)
-    b5["RRR"] = ("flat", 0.9, [(0.0, 0, 0, 0, 0), (0.5, 180, 90, 0, 0), (1.0, 380, 90, 0, 0)])
+    b5["RRR"] = ("backstab", 0.9, [(0.0, 0, 0, 0, 0), (0.5, 180, 0, 0, 1.6), (1.0, 90, 0, 0, 0)])
     cases.append(("flat revolution through the camera", b5, e, "from the camera"))
     # 5. missing sequence
     b6 = copy.deepcopy(b)

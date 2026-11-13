@@ -276,7 +276,7 @@ namespace CosmicShore.Gameplay
         /// How far the camera has moved into the SURROUND framing: 0 = the authored offset and look point,
         /// 1 = straight behind the hull at the authored distance × <see cref="SurroundDistanceScale"/>, looking
         /// at the hull itself (no look-ahead, no lift), so the hull sits in the middle of the frame. Driven only
-        /// by the Rhino's omni-crystal Surge (<c>RhinoSurgeSwordRing</c>, <c>R_VesselActions/RHINO_ENERGY_SWORD.md</c>
+        /// by the Rhino's omni-crystal Surge (<c>SwordfishSurgeSwordRing</c>, <c>R_VesselActions/RHINO_ENERGY_SWORD.md</c>
         /// § "The omni-crystal Surge"), which eases it in and out itself: a ring of swords round the hull only
         /// reads if the hull is its centre and the whole ring is on screen.
         ///
@@ -303,7 +303,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// A vessel-owned multiplier on the camera's distance (and its look point), applied at the point of
         /// use like <see cref="SurroundFraming01"/>: 1 = the authored framing. Driven only by the Rhino, whose
-        /// camera pulls back as Space lengthens its sword (<c>RhinoSwordCamera</c>, Garrett 2026-10-26: "Space
+        /// camera pulls back as Space lengthens its sword (<c>SwordfishSwordLengthCamera</c>, Garrett 2026-10-26: "Space
         /// alone can grow the sword, but move the camera accordingly"). Scaling the look point with the
         /// offset keeps the hull where it sat on screen. Reset with the follow target.
         /// </summary>

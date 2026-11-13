@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
 
     /// <summary>One authored point on a combo path. <c>time</c> is normalized (0..1) over the path's duration.</summary>
     [Serializable]
-    public struct RhinoSwordComboKeyframe
+    public struct SwordfishSwordComboKeyframe
     {
         [Range(0f, 1f)] public float time;
         public float yaw;
@@ -72,7 +72,7 @@ namespace CosmicShore.Gameplay
     /// whole flourish.
     /// </summary>
     [Serializable]
-    public class RhinoSwordComboPath
+    public class SwordfishSwordComboPath
     {
         [Tooltip("Trigger sequence, oldest first: R = right trigger, L = left. Two or three letters.")]
         [SerializeField] string sequence = "RR";
@@ -83,7 +83,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds the authored path takes, before the blend back to the triggers.")]
         [SerializeField, Min(0.05f)] float durationSeconds = 0.7f;
         [Tooltip("Keys in increasing normalized time; first at 0, last at 1.")]
-        [SerializeField] List<RhinoSwordComboKeyframe> keys = new();
+        [SerializeField] List<SwordfishSwordComboKeyframe> keys = new();
 
         [Header("Audio")]
         [Tooltip("FMOD event played when this flourish starts. Leave empty for silence.")]
@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
         public bool Energized => energized;
         public string DisplayName => displayName;
         public float DurationSeconds => Mathf.Max(0.05f, durationSeconds);
-        public IReadOnlyList<RhinoSwordComboKeyframe> Keys => keys;
+        public IReadOnlyList<SwordfishSwordComboKeyframe> Keys => keys;
         public EventReference Sound => sound;
         public bool IsValid => keys is { Count: >= 2 };
 
@@ -106,9 +106,9 @@ namespace CosmicShore.Gameplay
         /// Piecewise cubic Hermite through <paramref name="keys"/>. Interior tangents are the
         /// finite difference across the neighbouring keys (non-uniform Catmull–Rom), end tangents
         /// are zero. Pure — shared by the runtime and the edit-mode tests, and mirrored exactly by
-        /// Tools/Build/author_rhino_sword_combos.py.
+        /// Tools/Build/author_swordfish_sword_combos.py.
         /// </summary>
-        public static SwordPoseChannels SamplePath(IReadOnlyList<RhinoSwordComboKeyframe> keys, float t01)
+        public static SwordPoseChannels SamplePath(IReadOnlyList<SwordfishSwordComboKeyframe> keys, float t01)
         {
             if (keys == null || keys.Count == 0) return default;
             if (keys.Count == 1) return keys[0].Channels;
@@ -143,7 +143,7 @@ namespace CosmicShore.Gameplay
         }
 
         // Tangent at key j, expressed per unit of the SEGMENT's local parameter (scaled by span).
-        static SwordPoseChannels Tangent(IReadOnlyList<RhinoSwordComboKeyframe> keys, int j, float span)
+        static SwordPoseChannels Tangent(IReadOnlyList<SwordfishSwordComboKeyframe> keys, int j, float span)
         {
             if (j <= 0 || j >= keys.Count - 1) return default;
             var a = keys[j - 1];
@@ -164,10 +164,10 @@ namespace CosmicShore.Gameplay
     /// for an ENERGIZED blade. Combos are an OVERLAY on the analog swordsmanship — holding a
     /// trigger still positions the sword exactly as before; only a rapid string of taps calls
     /// a flourish, which plays its path and then hands the pose back to the fingers.
-    /// Authored by Tools/Build/author_rhino_sword_combos.py (--check); see RHINO_SWORD_COMBOS.md.
+    /// Authored by Tools/Build/author_swordfish_sword_combos.py (--check); see RHINO_SWORD_COMBOS.md.
     /// </summary>
-    [CreateAssetMenu(fileName = "RhinoSwordComboLibrary", menuName = "ScriptableObjects/Vessel Actions/RhinoSwordComboLibrarySO")]
-    public class RhinoSwordComboLibrarySO : ScriptableObject
+    [CreateAssetMenu(fileName = "SwordfishSwordComboLibrary", menuName = "ScriptableObjects/Vessel Actions/SwordfishSwordComboLibrarySO")]
+    public class SwordfishSwordComboLibrarySO : ScriptableObject
     {
         [Header("Detection (read from the replicated trigger mirrors, so every peer agrees)")]
         [Tooltip("Trigger value (0..1, deadzone-renormalized) a pull must reach to count as a PRESS.")]
@@ -199,7 +199,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] string comboToastTemplate = "{name}";
 
         [Header("Flourishes")]
-        [SerializeField] List<RhinoSwordComboPath> combos = new();
+        [SerializeField] List<SwordfishSwordComboPath> combos = new();
 
         public float PressThreshold => pressThreshold;
         public float ReleaseThreshold => Mathf.Min(releaseThreshold, pressThreshold);
@@ -209,10 +209,10 @@ namespace CosmicShore.Gameplay
         public float FinisherLockoutFraction => Mathf.Clamp01(finisherLockoutFraction);
         public float BlendInSeconds => Mathf.Max(0.01f, blendInSeconds);
         public float BlendOutSeconds => Mathf.Max(0.01f, blendOutSeconds);
-        public IReadOnlyList<RhinoSwordComboPath> Combos => combos;
+        public IReadOnlyList<SwordfishSwordComboPath> Combos => combos;
         public string ComboToastTemplate => comboToastTemplate;
 
-        public RhinoSwordComboDetector.Settings DetectorSettings => new()
+        public SwordfishSwordComboDetector.Settings DetectorSettings => new()
         {
             PressThreshold = PressThreshold,
             ReleaseThreshold = ReleaseThreshold,
@@ -226,10 +226,10 @@ namespace CosmicShore.Gameplay
         /// variant, falling back to the base one if none is authored — a missing upgrade must
         /// never make a combo vanish exactly when the player has earned the better one.
         /// </summary>
-        public bool TryGet(string sequence, bool energized, out RhinoSwordComboPath path)
+        public bool TryGet(string sequence, bool energized, out SwordfishSwordComboPath path)
         {
             path = null;
-            RhinoSwordComboPath fallback = null;
+            SwordfishSwordComboPath fallback = null;
             for (int i = 0; i < combos.Count; i++)
             {
                 var c = combos[i];

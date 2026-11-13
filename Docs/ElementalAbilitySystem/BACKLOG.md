@@ -766,13 +766,13 @@ Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS
   (was snapshotted at first engage); climb/bleed compares against `VesselTransformer.TrackedSpeed`.
 - **Sword pose and energy replication.** Every peer poses the blade from the replicated analog
   trigger mirrors (press/release events drive the pose only for touch, which writes no mirrors).
-  Energy, energize phase and surge are owner-authoritative through `RhinoSwordNetworkRelay` on the
+  Energy, energize phase and surge are owner-authoritative through `SwordfishSwordNetworkRelay` on the
   Rhino root; non-owners mirror them.
 - **AI never ramped or energized.** `RampBoostAIPolicySO` / `RhinoAIBoostPolicy.asset` ramps on a
   straight that pays the wind-up back, brakes ON the ramp to a corner speed and lets go at a sharp
   corner (`AI_BOOST.md`, Ramp; only a human input strategy raised `FullSpeedStraightAction`, so
   `AI_BOOST.md`'s old "the Rhino AI could already boost" was wrong).
-  `RhinoSwordAutopilot` writes the trigger mirrors on the owning machine: strokes at the nearest
+  `SwordfishSwordAutopilot` writes the trigger mirrors on the owning machine: strokes at the nearest
   hostile prism in reach, holds the energize stance near super-shielded mass or on a ≥ 75% meter.
   The AIPilot abilities list is empty (its one entry was the dead `GrowTrail`).
 - **`ChargeTestHarness` 0.5 on `Rhino.prefab`** pinned Charge at level 5 every frame; set to 0.
@@ -793,7 +793,7 @@ Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS
 
 ### Open
 
-- **Afterimage mass budget — playtest.** `RhinoSwordAfterimageConfig.asset` is a first pass that has
+- **Afterimage mass budget — playtest.** `SwordfishSwordAfterimageConfig.asset` is a first pass that has
   never been played: window 5 s, one afterimage per ≥ 0.3 s and ≥ 6 u of tip travel, ≤ 16 per window,
   ≤ 6 segments of ≤ 10 u covering 90% of the blade, segment 2 × 0.8 (× cbrt of the Mass multiplier,
   ×1 → ×2.5 volume), collider delay 0.1 s; the Surge lays them for its whole 6 s too. It adds mass
@@ -817,7 +817,7 @@ Reach / Breaker, Ramp Spool / Momentum, plus the omni-crystal Surge (`FLEET_MAPS
   the branch never runs (only `DolphinVesselExplosionByCrystalEffect.asset` authors it `1`). This is
   finding #5 of `FLEET_GAPS.md` §3 again — `guard_state` reading a serialized bool's C# default —
   on a guard that sits ABOVE the gate rather than on it. Breaker is really gated only at
-  `RhinoSkimmerDamagePrismEffectSO`. *(tool)*
+  `SwordfishSkimmerDamagePrismEffectSO`. *(tool)*
 - **[gate false positive] `check_vessel_on_vessel_motion.py` is red on bleeding-edge as well as here
   (measured 2026-10-18, exit 1 on both trees: "1 PROBLEM(S) (13 victim-facing effect(s) over 3
   families)").** It flags `VesselImpulseByExplosionEffectSO.cs:75` (`ModifyVelocity`), but the
@@ -863,5 +863,5 @@ Rows only, from `/ship` §3.6. Each one names what was measured and what is stil
   - The gate sits inside `if (_spaceUpgradeSparesAllies)`, and that bool is absent from `RhinoVesselExplosionByCrystalEffect.asset` (`grep -i spare` finds nothing), so Unity ships the C# default `false` and the gate never runs on the Rhino.
   - The tool marks `[OFF]` only when the bool is in the same condition as `IsUpgradeActive`; here it is an enclosing `if`. Teach it to read the enclosing block, then re-run `--gaps` fleet-wide. That is a fix to the tool, not to the vessel.
 - **[debt this branch created] The bind drag ignores the `popRequiresEnergizedBlade` A/B switch.**
-  - `RhinoSkimmerDamagePrismEffectSO.popRequiresEnergizedBlade` off lets an upgraded blade pop super-shields without the energize. `ShieldSkimmerScaleDriver.UpdateBind` still binds any blade that is not energized, so in that A/B a non-energized, upgraded blade both pops on entry and drags while inside. This was already true before the re-cut, for any non-energized blade.
+  - `SwordfishSkimmerDamagePrismEffectSO.popRequiresEnergizedBlade` off lets an upgraded blade pop super-shields without the energize. `ShieldSkimmerScaleDriver.UpdateBind` still binds any blade that is not energized, so in that A/B a non-energized, upgraded blade both pops on entry and drags while inside. This was already true before the re-cut, for any non-energized blade.
   - The switch is off by default and is a designer A/B only. Fix it when someone flips it: move the switch onto the sword config beside `superShieldUpgradeElement` so the driver can read it.

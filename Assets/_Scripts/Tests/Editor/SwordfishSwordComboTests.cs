@@ -14,11 +14,11 @@ namespace CosmicShore.Tests
     /// two pieces of math a flourish's look rests on.
     /// </summary>
     [TestFixture]
-    public class RhinoSwordComboTests
+    public class SwordfishSwordComboTests
     {
         const float Dt = 1f / 60f;
 
-        static RhinoSwordComboDetector NewDetector() => new(new RhinoSwordComboDetector.Settings
+        static SwordfishSwordComboDetector NewDetector() => new(new SwordfishSwordComboDetector.Settings
         {
             PressThreshold = 0.5f,
             ReleaseThreshold = 0.2f,
@@ -37,7 +37,7 @@ namespace CosmicShore.Tests
         static Seg Tap(char side, float held = 0.1f) => side == 'R' ? new Seg(0, 1, held) : new Seg(1, 0, held);
         static Seg Gap(float s = 0.1f) => new(0, 0, s);
 
-        static List<string> Run(RhinoSwordComboDetector d, params Seg[] segs)
+        static List<string> Run(SwordfishSwordComboDetector d, params Seg[] segs)
         {
             var found = new List<string>();
             float t = 0f;
@@ -88,7 +88,7 @@ namespace CosmicShore.Tests
         {
             // Hold right for half a second (placing the sword), then tap left. The window is
             // widened so ONLY the hold rule can be what refuses the link.
-            var d = new RhinoSwordComboDetector(new RhinoSwordComboDetector.Settings
+            var d = new SwordfishSwordComboDetector(new SwordfishSwordComboDetector.Settings
             {
                 PressThreshold = 0.5f, ReleaseThreshold = 0.2f, ComboWindowSeconds = 5f,
                 TapMaxHoldSeconds = 0.3f, ChordWindowSeconds = 0.08f,
@@ -168,7 +168,7 @@ namespace CosmicShore.Tests
         [Test]
         public void SamplePath_HitsEveryKeyExactly_AndClampsOutside()
         {
-            var keys = new List<RhinoSwordComboKeyframe>
+            var keys = new List<SwordfishSwordComboKeyframe>
             {
                 new() { time = 0f, yaw = 0f },
                 new() { time = 0.3f, yaw = 90f, roll = 80f, pitch = 10f },
@@ -177,27 +177,27 @@ namespace CosmicShore.Tests
             };
             foreach (var k in keys)
             {
-                var s = RhinoSwordComboPath.SamplePath(keys, k.time);
+                var s = SwordfishSwordComboPath.SamplePath(keys, k.time);
                 Assert.AreEqual(k.yaw, s.yaw, 1e-3f);
                 Assert.AreEqual(k.roll, s.roll, 1e-3f);
                 Assert.AreEqual(k.pitch, s.pitch, 1e-3f);
                 Assert.AreEqual(k.thrust, s.thrust, 1e-3f);
             }
-            Assert.AreEqual(0f, RhinoSwordComboPath.SamplePath(keys, -1f).yaw, 1e-4f);
-            Assert.AreEqual(380f, RhinoSwordComboPath.SamplePath(keys, 2f).yaw, 1e-4f);
+            Assert.AreEqual(0f, SwordfishSwordComboPath.SamplePath(keys, -1f).yaw, 1e-4f);
+            Assert.AreEqual(380f, SwordfishSwordComboPath.SamplePath(keys, 2f).yaw, 1e-4f);
         }
 
         [Test]
         public void SamplePath_IsContinuous()
         {
-            var keys = new List<RhinoSwordComboKeyframe>
+            var keys = new List<SwordfishSwordComboKeyframe>
             {
                 new() { time = 0f }, new() { time = 0.2f, yaw = 360f }, new() { time = 0.5f, yaw = -90f, pitch = -200f }, new() { time = 1f, yaw = 20f },
             };
-            var prev = RhinoSwordComboPath.SamplePath(keys, 0f);
+            var prev = SwordfishSwordComboPath.SamplePath(keys, 0f);
             for (int i = 1; i <= 1000; i++)
             {
-                var s = RhinoSwordComboPath.SamplePath(keys, i / 1000f);
+                var s = SwordfishSwordComboPath.SamplePath(keys, i / 1000f);
                 Assert.Less(Mathf.Abs(s.yaw - prev.yaw), 15f, $"jump at {i}");
                 Assert.Less(Mathf.Abs(s.pitch - prev.pitch), 15f, $"jump at {i}");
                 prev = s;
@@ -228,7 +228,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Library_EnergizedFallsBackToBase_ButPrefersItsOwnVariant()
         {
-            var lib = ScriptableObject.CreateInstance<RhinoSwordComboLibrarySO>();
+            var lib = ScriptableObject.CreateInstance<SwordfishSwordComboLibrarySO>();
             const string k = "\"keys\":[{\"time\":0},{\"time\":1,\"yaw\":90}]";
             JsonUtility.FromJsonOverwrite(
                 "{\"combos\":[" +

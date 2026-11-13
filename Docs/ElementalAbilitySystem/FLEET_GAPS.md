@@ -20,7 +20,7 @@ been filled.
 
 | Vessel | Element | State | What filling it costs |
 |---|---|---|---|
-| ~~**Rhino**~~ | ~~Charge~~ | **FILLED 2026-10-16:** Sword Energy (`chargeEnergyGainMultiplier` ×1 → ×2, floored ×0.5, on `RhinoSkimmerDamagePrismEffect.asset`) + **Live Wire** (`ShieldSkimmerScaleConfigSO.liveWireUpgradeElement`) | |
+| ~~**Rhino**~~ | ~~Charge~~ | **FILLED 2026-10-16:** Sword Energy (`chargeEnergyGainMultiplier` ×1 → ×2, floored ×0.5, on `SwordfishSkimmerDamagePrismEffect.asset`) + **Live Wire** (`ShieldSkimmerScaleConfigSO.liveWireUpgradeElement`) | |
 | ~~**Rhino**~~ | ~~Space~~ | **FILLED 2026-10-16:** Blade Reach (`Skimmer.Scale` 30 → 50 on `ForceFieldSkimmer Variant`) on the row whose L5 **Breaker** had shipped 2026-10-13 | |
 | ~~**Serpent**~~ | ~~Mass~~ | **FILLED 2026-10-09:** Seed Wall + Lockdown (`R_VesselActions/SERPENT_SEED_WALL.md`) | |
 
@@ -41,8 +41,8 @@ hole, because the next reader cannot tell it from a designed one.
 
 | Vessel | Element | Ability | Live scaling | L5 |
 |---|---|---|---|---|
-| Rhino | Charge | Energize *(2026-10-26; was Sword Steal, before that Sword Energy)* | `stealScale` ×1 → ×2.5, floored ×1 (`RhinoSwordStealBySkimmerEffect.asset`) — petals a sword hit takes | **Sword Steal** *(2026-10-26; was Live Wire)*: the hit's petals land on the Rhino instead of being ejected (`stealUpgradeElement`) |
-| Rhino | Mass | Afterimage *(2026-10-16; was Trail Slabs)* | `massVolumeMultiplier` ×1 → ×2.5, floored ×0.25 (`RhinoSwordAfterimageConfig.asset`) — afterimage VOLUME, at the replicated level | **Danger Afterimages** |
+| Rhino | Charge | Energize *(2026-10-26; was Sword Steal, before that Sword Energy)* | `stealScale` ×1 → ×2.5, floored ×1 (`SwordfishSwordStealBySkimmerEffect.asset`) — petals a sword hit takes | **Sword Steal** *(2026-10-26; was Live Wire)*: the hit's petals land on the Rhino instead of being ejected (`stealUpgradeElement`) |
+| Rhino | Mass | Afterimage *(2026-10-16; was Trail Slabs)* | `massVolumeMultiplier` ×1 → ×2.5, floored ×0.25 (`SwordfishSwordAfterimageConfig.asset`) — afterimage VOLUME, at the replicated level | **Danger Afterimages** |
 | Rhino | Space | Blade Reach *(2026-10-16; Space ALONE since 2026-10-26)* | `Skimmer.Scale` 24 → 40 (the Rhino's own `ForceFieldSkimmer Variant` instance in `Rhino.prefab`) — the blade's only length source; the camera follows it | **Shield Breaker** *(2026-10-26; was Breaker)*: the sword can pop super-shielded prisms at all, still with an energized blade (`ShieldSkimmerScaleConfigSO.superShieldUpgradeElement`) |
 | Rhino | Time | Ramp Spool | `timeAccelerationMultiplier` ×1 → ×2.5, floored ×0.5 (`RhinoRampBoostAction.asset`), read live since 2026-10-16 | **Momentum** *(2026-10-16)* |
 | Serpent | Charge | Sniper Shot | `cooldownMultiplierAtFullCharge` 0.45 on `SniperShotAction.asset`, read through `ElementalScaling.Multiplier` in the executor | **Pierce** |

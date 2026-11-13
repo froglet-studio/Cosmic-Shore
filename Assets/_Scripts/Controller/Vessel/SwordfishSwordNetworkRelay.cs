@@ -22,12 +22,12 @@ namespace CosmicShore.Gameplay
     /// <para>Off the network (a menu vessel, an un-spawned editor test) <see cref="IsAuthority"/> is
     /// true and the driver runs its own state machine exactly as before.</para>
     /// </summary>
-    public sealed class RhinoSwordNetworkRelay : NetworkBehaviour
+    public sealed class SwordfishSwordNetworkRelay : NetworkBehaviour
     {
         const byte SurgeBit = 0x10;
         const byte PhaseMask = 0x0F;
 
-        // Low nibble: RhinoSwordEnergizePhase. SurgeBit: an omni-crystal surge is holding the blade.
+        // Low nibble: SwordfishSwordEnergizePhase. SurgeBit: an omni-crystal surge is holding the blade.
         readonly NetworkVariable<byte> n_state = new(
             readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
@@ -35,11 +35,11 @@ namespace CosmicShore.Gameplay
         /// server for an AI), or anywhere at all while the vessel is not network-spawned.</summary>
         public bool IsAuthority => !IsSpawned || IsOwner;
 
-        public RhinoSwordEnergizePhase Phase => (RhinoSwordEnergizePhase)(n_state.Value & PhaseMask);
+        public SwordfishSwordEnergizePhase Phase => (SwordfishSwordEnergizePhase)(n_state.Value & PhaseMask);
         public bool IsSurging => (n_state.Value & SurgeBit) != 0;
 
         /// <summary>Owner only: publish this frame's state. Writes nothing that has not changed.</summary>
-        public void Publish(RhinoSwordEnergizePhase phase, bool surging)
+        public void Publish(SwordfishSwordEnergizePhase phase, bool surging)
         {
             if (!IsSpawned || !IsOwner) return;
 

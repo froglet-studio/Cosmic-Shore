@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
     /// (There is no energy to spend since 2026-10-26.)</item>
     /// <item><b>Combo</b> (2026-10-26): sometimes, instead of one stroke, TAP a string of triggers - two
     /// taps for a combo, three for a finisher, the first on the target's side - quickly enough that the
-    /// shipped detector links them (<see cref="RhinoSwordComboDetector"/>, under its combo window and
+    /// shipped detector links them (<see cref="SwordfishSwordComboDetector"/>, under its combo window and
     /// tap length). The detector reads the same mirrors, so the AI's flourish plays on every peer.</item>
     /// <item><b>Swing</b> at the nearest hostile prism in reach: pull the trigger on its side for one
     /// stroke, release, and let the swipe recovery run before the next.</item>
@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
     /// <para>It never steers (the pilot owns the sticks) and never fights a human: it drives only
     /// while the vessel's autopilot is on, and lets go of both triggers the frame it stops.</para>
     /// </summary>
-    public sealed class RhinoSwordAutopilot : MonoBehaviour
+    public sealed class SwordfishSwordAutopilot : MonoBehaviour
     {
         [Header("Refs")]
         [Tooltip("The sword's brain (ScaleSkimmerObject). Found under the vessel when empty.")]
@@ -88,7 +88,7 @@ namespace CosmicShore.Gameplay
         bool _driving;
 
         // The combo being tapped: its letters, the one being played, and whether its trigger is down.
-        readonly char[] _combo = new char[RhinoSwordComboDetector.MaxLength];
+        readonly char[] _combo = new char[SwordfishSwordComboDetector.MaxLength];
         int _comboLength, _comboIndex;
         bool _comboPressed;
         System.Random _rng;
@@ -219,7 +219,7 @@ namespace CosmicShore.Gameplay
         }
 
         // The blade can charge: not already charging, lit or cooling down.
-        bool CanEnergize() => sword.EnergizePhase == RhinoSwordEnergizePhase.Idle;
+        bool CanEnergize() => sword.EnergizePhase == SwordfishSwordEnergizePhase.Idle;
 
         /// <summary>A string of <paramref name="length"/> taps, the first on the target's side, the rest
         /// picked at random so the AI plays the whole library rather than one move.</summary>

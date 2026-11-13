@@ -7,13 +7,13 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Rhino's MASS ability, <b>Afterimage</b>: once the energized blade goes out, the sword
     /// keeps leaving copies of itself - prisms in the blade's own shape and pose - for a few
-    /// seconds (<see cref="RhinoSwordAfterimageConfigSO.WindowSeconds"/>). An omni-crystal surge
+    /// seconds (<see cref="SwordfishSwordAfterimageConfigSO.WindowSeconds"/>). An omni-crystal surge
     /// lays them for as long as it holds the blade energized. MASS scales their volume; at Mass
     /// level 5 they are laid as DANGER prisms. See <c>R_VesselActions/RHINO_SWORD_AFTERIMAGE.md</c>.
     ///
     /// <para><b>Every peer lays its own.</b> Prisms are simulated per machine, like the trail. The
     /// window is opened by the energize PHASE, which is owner-authoritative and replicated
-    /// (<see cref="RhinoSwordNetworkRelay"/>), and the blade's pose is read from the replicated
+    /// (<see cref="SwordfishSwordNetworkRelay"/>), and the blade's pose is read from the replicated
     /// trigger mirrors (<see cref="ShieldSwipeActionExecutor"/>), so every machine lays the same
     /// afterimages to within a network tick. The size and the danger flag read REPLICATED state
     /// (the integer element level, the unlock bit) for the same reason.</para>
@@ -28,10 +28,10 @@ namespace CosmicShore.Gameplay
     /// <para>Passive: bound to no input, so the config is wired directly here rather than resolved
     /// through the action handler (vessel skill rule 20).</para>
     /// </summary>
-    public sealed class RhinoSwordAfterimage : MonoBehaviour
+    public sealed class SwordfishSwordAfterimage : MonoBehaviour
     {
         [Header("Config")]
-        [SerializeField] RhinoSwordAfterimageConfigSO config;
+        [SerializeField] SwordfishSwordAfterimageConfigSO config;
 
         [Header("Refs")]
         [Tooltip("The sword's brain on this GameObject - its energize phase opens the window.")]
@@ -56,7 +56,7 @@ namespace CosmicShore.Gameplay
         {
             if (!driver) TryGetComponent(out driver);
             if (!config)
-                CSDebug.LogWarning($"[{nameof(RhinoSwordAfterimage)}] No {nameof(RhinoSwordAfterimageConfigSO)} " +
+                CSDebug.LogWarning($"[{nameof(SwordfishSwordAfterimage)}] No {nameof(SwordfishSwordAfterimageConfigSO)} " +
                                    $"wired on '{name}' - the Rhino lays no afterimages. Wire it on the prefab.", this);
         }
 
@@ -72,12 +72,12 @@ namespace CosmicShore.Gameplay
             CloseWindow();
         }
 
-        void HandlePhaseChanged(RhinoSwordEnergizePhase from, RhinoSwordEnergizePhase to)
+        void HandlePhaseChanged(SwordfishSwordEnergizePhase from, SwordfishSwordEnergizePhase to)
         {
             // The ability WAITS for the energize to end: the window opens on the way out of it.
             // Always a FRESH window - its own container and its own budget - so the window that
             // follows a surge is not left with the surge's spent budget.
-            if (from == RhinoSwordEnergizePhase.Energized && to != RhinoSwordEnergizePhase.Energized && config)
+            if (from == SwordfishSwordEnergizePhase.Energized && to != SwordfishSwordEnergizePhase.Energized && config)
                 OpenWindow(Time.time + config.WindowSeconds, fresh: true);
         }
 
@@ -140,7 +140,7 @@ namespace CosmicShore.Gameplay
                 if (!_warnedNoChannel)
                 {
                     _warnedNoChannel = true;
-                    CSDebug.LogWarning($"[{nameof(RhinoSwordAfterimage)}] '{name}': the vessel has no prism " +
+                    CSDebug.LogWarning($"[{nameof(SwordfishSwordAfterimage)}] '{name}': the vessel has no prism " +
                                        "spawn channel (VesselPrismController), so no afterimage can be laid.", this);
                 }
                 return false;
@@ -154,7 +154,7 @@ namespace CosmicShore.Gameplay
             Vector3 axis = along / bladeLength;
 
             float covered = bladeLength * config.LengthCoverage;
-            int count = RhinoSwordAfterimageConfigSO.SegmentCount(covered, config.SegmentLength, config.MaxSegments);
+            int count = SwordfishSwordAfterimageConfigSO.SegmentCount(covered, config.SegmentLength, config.MaxSegments);
             float segment = covered / count;
             Vector3 start = hilt + axis * (0.5f * (bladeLength - covered));
 
@@ -213,12 +213,12 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// One afterimage window's container. A distinct type so the sword can recognise its own
-    /// afterimages by identity (<see cref="RhinoSwordAfterimage.IsMine"/>) without any registry.
+    /// afterimages by identity (<see cref="SwordfishSwordAfterimage.IsMine"/>) without any registry.
     /// </summary>
     public sealed class RhinoAfterimageTrail : Trail
     {
-        public RhinoSwordAfterimage Owner { get; }
+        public SwordfishSwordAfterimage Owner { get; }
 
-        public RhinoAfterimageTrail(RhinoSwordAfterimage owner) => Owner = owner;
+        public RhinoAfterimageTrail(SwordfishSwordAfterimage owner) => Owner = owner;
     }
 }

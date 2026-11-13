@@ -25,8 +25,8 @@ namespace CosmicShore.Gameplay
     /// bill out to a side on the difference and stands it up on the shared pull. The rest pose is authored on
     /// the skimmer transform in the vessel's prefab.
     /// </summary>
-    [CreateAssetMenu(fileName = "RhinoShieldSwipeConfig", menuName = "ScriptableObjects/Vessel Actions/RhinoShieldSwipeConfigSO")]
-    public class RhinoShieldSwipeConfigSO : ScriptableObject
+    [CreateAssetMenu(fileName = "SwordfishShieldSwipeConfig", menuName = "ScriptableObjects/Vessel Actions/SwordfishShieldSwipeConfigSO")]
+    public class SwordfishShieldSwipeConfigSO : ScriptableObject
     {
         [Header("Swipe (difference axis: right trigger - left trigger, -1..1)")]
         [Tooltip("Yaw at a full single-trigger pull. Positive = rightward for the right trigger.")]
@@ -110,10 +110,10 @@ namespace CosmicShore.Gameplay
         [Header("Combos (RHINO_SWORD_COMBOS.md)")]
         [Tooltip("Flourishes called by rapid strings of trigger taps (RR, RL, RLR, ...), with an upgraded " +
                  "set for an ENERGIZED blade. Empty = no combos; the analog swordsmanship is unaffected " +
-                 "either way. Authored by Tools/Build/author_rhino_sword_combos.py.")]
-        [SerializeField] RhinoSwordComboLibrarySO comboLibrary;
+                 "either way. Authored by Tools/Build/author_swordfish_sword_combos.py.")]
+        [SerializeField] SwordfishSwordComboLibrarySO comboLibrary;
 
-        public RhinoSwordComboLibrarySO ComboLibrary => comboLibrary;
+        public SwordfishSwordComboLibrarySO ComboLibrary => comboLibrary;
         public SwordPoseMapping PoseMapping => poseMapping;
         public float BillSideYawDegrees => billSideYawDegrees;
         public float BillSideRollDegrees => billSideRollDegrees;

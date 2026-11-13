@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: RhinoSwordTracerMaterial
+  m_Name: SwordfishSwordTracerMaterial
   m_Shader: {fileID: 4800000, guid: 20424d64830139e4d856f9eff8565409, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []

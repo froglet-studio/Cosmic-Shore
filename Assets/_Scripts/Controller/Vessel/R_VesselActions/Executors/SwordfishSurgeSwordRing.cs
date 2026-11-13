@@ -21,23 +21,23 @@ namespace CosmicShore.Gameplay
     /// <para><b>Each copy is a real blade.</b> It is a clone of the blade root (mesh, both trigger
     /// colliders, kinematic body, <see cref="SkimmerImpactor"/>, <see cref="ImpactCollider"/>, its own
     /// <see cref="SkimmerSwingKinematics"/>) with the parts that are the ONE sword's brain or look removed
-    /// before it ever wakes (it is cloned under an inactive holder): <see cref="RhinoSwordFXController"/>
+    /// before it ever wakes (it is cloned under an inactive holder): <see cref="SwordfishSwordFXController"/>
     /// would re-seat and tint the pilot's own tracers. Its <see cref="Skimmer"/> is initialised with the
     /// vessel, stands its own scale write down, and points <see cref="Skimmer.SwordState"/> at the real
     /// sword, so every copy cuts through the same effect chain, banks energy into the same meter, and
     /// pops super-shields while the blade is energized - which a surge holds it for. Each copy's own
     /// swing model gives its cuts the velocity of the part of THAT sword that struck.</para>
     ///
-    /// <para><b>Every peer.</b> The surge bit replicates (<see cref="RhinoSwordNetworkRelay"/>) and the
+    /// <para><b>Every peer.</b> The surge bit replicates (<see cref="SwordfishSwordNetworkRelay"/>) and the
     /// blade is posed from the replicated trigger mirrors, so every peer raises the same ring in the same
     /// pose and cuts against its own copy, exactly as it already does for the blade.</para>
     ///
-    /// <para><b>The camera</b> is <see cref="RhinoSwordCamera"/>'s (the driver ticks it beside this).</para>
+    /// <para><b>The camera</b> is <see cref="SwordfishSwordLengthCamera"/>'s (the driver ticks it beside this).</para>
     /// </summary>
-    public sealed class RhinoSurgeSwordRing
+    public sealed class SwordfishSurgeSwordRing
     {
         readonly Transform _blade;
-        readonly IRhinoSwordState _sword;
+        readonly ISwordfishSwordState _sword;
         readonly List<Copy> _copies = new(15);
         readonly MaterialPropertyBlock _mpb = new();
 
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
             public MeshRenderer Body;
         }
 
-        public RhinoSurgeSwordRing(Transform blade, IRhinoSwordState sword)
+        public SwordfishSurgeSwordRing(Transform blade, ISwordfishSwordState sword)
         {
             _blade = blade;
             _sword = sword;
@@ -172,7 +172,7 @@ namespace CosmicShore.Gameplay
                     if (!_warned)
                     {
                         _warned = true;
-                        CSDebug.LogError($"[{nameof(RhinoSurgeSwordRing)}] The blade '{_blade.name}' carries no " +
+                        CSDebug.LogError($"[{nameof(SwordfishSurgeSwordRing)}] The blade '{_blade.name}' carries no " +
                                          $"{nameof(Skimmer)}, so the surge's sword copies cannot cut. The ring is off.");
                     }
                     Object.Destroy(_holder);
@@ -205,9 +205,9 @@ namespace CosmicShore.Gameplay
         /// not woken yet and must never wake with these on it.</summary>
         static void Strip(GameObject copy)
         {
-            DestroyAll<RhinoSwordFXController>(copy);
+            DestroyAll<SwordfishSwordFXController>(copy);
             DestroyAll<ShieldSkimmerScaleDriver>(copy);
-            DestroyAll<RhinoSwordAfterimage>(copy);
+            DestroyAll<SwordfishSwordAfterimage>(copy);
             DestroyAll<ShieldSwipeActionExecutor>(copy);
         }
 

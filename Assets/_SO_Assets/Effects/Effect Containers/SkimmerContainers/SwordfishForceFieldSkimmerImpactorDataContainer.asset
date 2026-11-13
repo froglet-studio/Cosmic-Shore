@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 68b3e74284f14e32a6e21b5fb8c3e8ad, type: 3}
-  m_Name: RhinoForceFieldSkimmerImpactorDataContainer
+  m_Name: SwordfishForceFieldSkimmerImpactorDataContainer
   m_EditorClassIdentifier: 
   vesselSkimmerEffectsSO:
   - {fileID: 11400000, guid: 02cd4a20ea91bbc4591c9ccbf9db91af, type: 2}

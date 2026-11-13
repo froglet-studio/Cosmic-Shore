@@ -63,7 +63,7 @@ HULL_CONTAINERS = {
                  "Explosion Containers/SkyBurstBlastExplosionImpactorDataContainer.asset"],
     "Urchin":   ["Projectile Containers/UrchinSpikeProjectileImpactContainer.asset"],
     "Squirrel": ["SkimmerContainers/SquirrelSkimmerImpactorDataContainer.asset"],
-    "Rhino":    ["SkimmerContainers/RhinoForceFieldSkimmerImpactorDataContainer.asset"],
+    "Rhino":    ["SkimmerContainers/SwordfishForceFieldSkimmerImpactorDataContainer.asset"],
     "Dolphin":  ["Explosion Containers/AOEConicExplosionImpactorDataContainer.asset"],
     "Scarab":   ["Explosion Containers/ScarabCavitationExplosionImpactorDataContainer.asset"],
     "Manta":    ["Explosion Containers/MantaBloomExplosionImpactorDataContainer.asset"],

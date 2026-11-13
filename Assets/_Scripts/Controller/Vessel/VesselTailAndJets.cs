@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// the whole reason <see cref="VesselTail"/> and <see cref="VesselJet"/> exist as components
     /// rather than as a naming convention. A vessel can carry streaks that are not identity at
     /// all — the Rhino's five <c>RhinoSwordBladeTracer</c>s are a STATE readout owned by
-    /// <c>RhinoSwordFXController</c>, which drives their colour from the blade's energy and its
+    /// <c>SwordfishSwordFXController</c>, which drives their colour from the blade's energy and its
     /// impact flash. Sweeping every trail under the vessel repaints those with the domain and
     /// fights the controller for them every frame. Anything that wants the domain says so by
     /// carrying a marker.
@@ -118,7 +118,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para><b>Scoped to the MARKERS</b>, like every other operation on this class — never a
         /// sweep of the <c>TrailRenderer</c>s under the vessel, which would take the Rhino's five
-        /// blade tracers with it (they are a state readout owned by <c>RhinoSwordFXController</c>).</para>
+        /// blade tracers with it (they are a state readout owned by <c>SwordfishSwordFXController</c>).</para>
         ///
         /// <para>It hides by <see cref="Renderer.forceRenderingOff"/> rather than by disabling the
         /// component, because a disabled <c>TrailRenderer</c> stops RECORDING as well as drawing —
