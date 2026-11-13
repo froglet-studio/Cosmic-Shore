@@ -446,7 +446,9 @@ if 0.25 * BITE_TARGET * COMEBACK_RATE < 1.0:
 # still reports a bite as a Strike through TryAdmit on the scoring channel.
 executor = g.read(ANGLER_EXECUTOR)
 for needle in ("input.LeftTriggerAnalog", "void UpdateBeamLock(bool erasing", "SpendOn(inBeam)",
-               "CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike, config.LockBiteCooldown",
+               # The class, not the cooldown argument: the Angler tunes its bite rate per element (Charge scales
+               # BiteCooldownFor, 2026-11-12) and Kelpwood counts bites, never their spacing.
+               "CombatHitDrain.TryAdmit(victim, _status, CombatHitClass.Strike,",
                "HitClass = CombatHitClass.Strike", "public int TamedCount", "public int HunterCount"):
     if needle not in executor:
         errors.append(f"AnglerCommandExecutor no longer has '{needle}' - Kelpwood's rule pays a lock's bites and its "
