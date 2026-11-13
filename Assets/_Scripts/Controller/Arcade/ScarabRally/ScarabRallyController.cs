@@ -29,6 +29,17 @@ namespace CosmicShore.Gameplay
 
         protected override RaceCourseSource CreateCourseSource() => new ScarabRallyCourseSource();
 
+        /// <summary>Switchback became Blast Run two days after this race was cut (2026-10-29), and this class inherited it:
+        /// block fields across every blocked leg, doors of danger rakes and Dolphin key crystals (which a Scarab's skimmer
+        /// forges into a ball sitting on the line). Those ask for the Dolphin's blast and punish the Scarab's own verbs, a
+        /// drift's wide line and a held throttle. So I1-I3 fly the bare ring course they were designed as
+        /// (<see cref="ScarabRallyCourse.LaysBlastRun"/>); I4 keeps the field it had (the elemental loop's ladder step).</summary>
+        protected override bool LaysBlastRun(int intensity) => ScarabRallyCourse.LaysBlastRun(intensity);
+
+        /// <summary>A racing AI flies the rings and nothing else (Yash, 2026-10-26). Switchback's AI detours for Blast Run's
+        /// keys; a Scarab has no key blast, and a crystal it touches becomes a ball in its own path.</summary>
+        protected override bool AIDetoursForCrystals => false;
+
         [Header("AI juke")]
         [Tooltip("The AI jukes when, flying on as it is, it would cross the next mouth's plane outside the mouth by no " +
                  "more than one juke (~40 u), and that crossing is at least this many seconds away (the dash takes 0.5 s).")]

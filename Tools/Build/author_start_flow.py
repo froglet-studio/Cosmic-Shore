@@ -413,7 +413,7 @@ def life_nodes(k):
 def poster_node(prefix):
     k = f"{prefix}/Poster"
     root = N(k, "Poster", STRETCH)
-    # The exit (section 180): the poster grows as the splash dissolves, so the reveal moves through it into the world.
+    # The exit (section 185): the poster grows as the splash dissolves, so the reveal moves through it into the world.
     root.add("exit", 114, lambda ctx, go: K.mono(go, S["exit"], f"  push: {K.f32(POSTER_EXIT_PUSH)}\n"))
     cell = root.child(N(f"{k}/Cell", "Cell", STRETCH))
     shot = picture(cell.child(N(f"{k}/Cell/Picture", "Picture", R(size=(1920, 1080)))), art_guid("poster_cell.jpg"), 0.62, preserve=False)
@@ -1249,7 +1249,7 @@ def check_poster(path, sc, ctx, prefix, files):
         f"{path}: the poster's motion is missing or has a zero period"
     fits = [d for d in comps if f"guid: {S['fit']}" in d]
     assert len(fits) == 1 and field_ref(fits[0], "frame") == root, f"{path}: the stage does not fit itself to the poster"
-    # The exit (section 180): on the poster's root, so the whole picture moves through as the splash dissolves.
+    # The exit (section 185): on the poster's root, so the whole picture moves through as the splash dissolves.
     exits = [c for c in sc.components(sc.go_of(root)) if f"guid: {S['exit']}" in sc.docs.get(c, "")]
     assert len(exits) == 1 and f"  push: {K.f32(POSTER_EXIT_PUSH)}\n" in sc.docs[exits[0]], \
         f"{path}: the poster has no PosterExit on its root (the reveal would pop open instead of moving through it)"

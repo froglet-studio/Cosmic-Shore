@@ -3,7 +3,7 @@ using UnityEngine;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The boot poster's exit (Docs/MENU_REDESIGN_B.md section 180): as the splash dissolves into the Toy Box, the
+    /// The boot poster's exit (Docs/MENU_REDESIGN_B.md section 185): as the splash dissolves into the Toy Box, the
     /// poster grows a little about its centre, so the player seems to move THROUGH it into the world instead of the
     /// world popping open behind a fading picture. It reads the fade from the groups above it (the splash overlay
     /// <c>SceneTransitionManager</c> fades), so it needs no wiring and runs the same in reverse when the splash comes

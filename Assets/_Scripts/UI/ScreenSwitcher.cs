@@ -629,7 +629,7 @@ namespace CosmicShore.UI
         /// its entrances now, so the menu ARRIVES with the world instead of having settled behind
         /// the cover where nobody saw it (Docs/MENU_REDESIGN_B.md section 25). On a boot or a return
         /// the veil lifts while the splash is still opaque over it, so the entrances play again when
-        /// the splash starts to dissolve (<see cref="SceneTransitionManager.RevealStarted"/>, section 180).
+        /// the splash starts to dissolve (<see cref="SceneTransitionManager.RevealStarted"/>, section 185).
         /// </summary>
         private void PlayCurrentScreenEntrances() => KitEntrance.ReplayUnder(GetScreenRootRT(currentScreen));
 

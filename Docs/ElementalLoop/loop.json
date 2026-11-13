@@ -46,6 +46,12 @@
      "evidence": "Garrett, project thread 2026-11-13: Dolphin signed off as fun on Switchback; I1-I4 not all flown yet",
      "kind": "human",
      "loop": 1
+    },
+    "2": {
+     "state": "built",
+     "by": "Claude (Garrett's project thread)",
+     "date": "2026-11-13",
+     "evidence": "Docs/ElementalLoop/DOLPHIN_TIME_LADDER.md: I4 gauntlet seals made plain (the cliff), AI gauntlet pace retuned; awaiting Garrett's four-rung fun card"
     }
    }
   },
@@ -132,6 +138,16 @@
      "by": "Regatta plan threads",
      "date": "2026-11-08",
      "evidence": "Skein aim, rail seek and genome (#1845); not yet well trained: Docs/Reports/SKEIN_URCHIN_AI.md"
+    }
+   }
+  },
+  "Scarab": {
+   "Time": {
+    "1": {
+     "state": "doing",
+     "by": "Claude for Garrett",
+     "date": "2026-11-13",
+     "evidence": "Rally I1-I3 off Blast Run, AI no crystal detours (SCARABRALLY.md 2026-11-13); awaiting Garrett's fun card at I2"
     }
    }
   }

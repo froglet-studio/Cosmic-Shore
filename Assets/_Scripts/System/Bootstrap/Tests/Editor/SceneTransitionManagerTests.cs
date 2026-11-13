@@ -200,7 +200,7 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region The reveal: a hitch never eats the fade (section 180)
+        #region The reveal: a hitch never eats the fade (section 185)
 
         [Test]
         public void FadeStep_CapsAHitchFrame()

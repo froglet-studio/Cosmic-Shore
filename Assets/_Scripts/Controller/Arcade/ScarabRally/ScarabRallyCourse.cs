@@ -100,6 +100,11 @@ namespace CosmicShore.Gameplay
         public static float RingRadiusForIntensity(int intensity) =>
             new[] { WidestRingRadius, 46f, 32f, 22f }[Mathf.Clamp(intensity, 1, 4) - 1];
 
+        /// <summary>Whether a Scarab Rally intensity lays Switchback's Blast Run (block fields, doors, key crystals): only
+        /// I4. I1-I3 are the bare ring course, so the throttle, the drift and the juke are the whole question
+        /// (<c>ScarabRallyController.LaysBlastRun</c>, SCARABRALLY.md "The ladder").</summary>
+        public static bool LaysBlastRun(int intensity) => intensity >= 4;
+
         public static SwitchbackCourseSettings ForIntensity(int intensity)
         {
             int i = Mathf.Clamp(intensity, 1, 4);

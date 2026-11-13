@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-12 from canvas version `1794525596-970e` of **Frogma**: Rev 3 to Rev 96, 474 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-13 from canvas version `1794582883-6c29` of **Frogma**: Rev 3 to Rev 98, 482 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -698,24 +698,38 @@ Copied on 2026-11-12 from canvas version `1794525596-970e` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
+#### Rev 98 - Voyages: 1A and 2D, Shombith's picks, with room between the words
+
+- [`R98S1A.dc.html`](R98S1A.dc.html) - Rev 98 S1A - 1A - the voyage on the map - interactive
+- [`R98S2D.dc.html`](R98S2D.dc.html) - Rev 98 S2D - 2D - the squad - interactive
+
+#### Rev 97 - Voyages: the squad presets and the seat's choices redrawn; three players picking at once
+
+- [`R97Squad.dc.html`](R97Squad.dc.html) - Rev 97 Squad - Squad presets, three ways - interactive
+- [`R97Choices.dc.html`](R97Choices.dc.html) - Rev 97 Choices - The seat's choices, three ways - interactive
+- [`R97S1A.dc.html`](R97S1A.dc.html) - Rev 97 S1A - 1A with Formation squads - interactive
+- [`R97S2D.dc.html`](R97S2D.dc.html) - Rev 97 S2D - 2D with the Shelf - interactive
+- [`R97S2G.dc.html`](R97S2G.dc.html) - Rev 97 S2G - 2G Three players - leader's screen - interactive
+- [`R97S2H.dc.html`](R97S2H.dc.html) - Rev 97 S2H - 2H Three players - a friend's screen - interactive
+
 #### Rev 96 - the squad screen: a backdrop, soft buttons, one press
 
-- `R96S1A.dc.html` (not copied yet) - Rev 96 S1A - 1A - Screen 1 as picked (Rev 95 1A), with the soft buttons - interactive
-- `R96Buttons.dc.html` (not copied yet) - Rev 96 Buttons - three readings of soft hard soft on Set sail and Configure squad, beside the buttons as they were
-- `R96S2D.dc.html` (not copied yet) - Rev 96 S2D - 2D Deck: the three seats stand across a lit deck; the picked seat's four choices are one tray under them, one press each (recommended) - interactive
-- `R96S2E.dc.html` (not copied yet) - Rev 96 S2E - 2E Kits: the picked seat large; six whole kits from the Hangar, one press sets all four; element and artifact beside - interactive
-- `R96S2F.dc.html` (not copied yet) - Rev 96 S2F - 2F Showroom: a rail of seats, the picked seat as the hero on the deck, its four choices as strips beside it - interactive
-- `R96Notes.dc.html` (not copied yet) - Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens
+- [`R96S1A.dc.html`](R96S1A.dc.html) - Rev 96 S1A - 1A - Screen 1 as picked (Rev 95 1A), with the soft buttons - interactive
+- [`R96Buttons.dc.html`](R96Buttons.dc.html) - Rev 96 Buttons - three readings of soft hard soft on Set sail and Configure squad, beside the buttons as they were
+- [`R96S2D.dc.html`](R96S2D.dc.html) - Rev 96 S2D - 2D Deck: the three seats stand across a lit deck; the picked seat's four choices are one tray under them, one press each (recommended) - interactive
+- [`R96S2E.dc.html`](R96S2E.dc.html) - Rev 96 S2E - 2E Kits: the picked seat large; six whole kits from the Hangar, one press sets all four; element and artifact beside - interactive
+- [`R96S2F.dc.html`](R96S2F.dc.html) - Rev 96 S2F - 2F Showroom: a rail of seats, the picked seat as the hero on the deck, its four choices as strips beside it - interactive
+- [`R96Notes.dc.html`](R96Notes.dc.html) - Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens
 
 #### Rev 95 - Voyages as two screens: the voyage on the map, then the squad
 
-- `R95S1A.dc.html` (not copied yet) - Rev 95 S1A - 1A Presets: the map over its edge view; the voyage's name, the squad presets as cards and Set sail on the right (recommended) - interactive
-- `R95S1B.dc.html` (not copied yet) - Rev 95 S1B - 1B Wide map: the map across the window; a foot bar holds the edge view, the voyage, the squad and Set sail - interactive
-- `R95S1C.dc.html` (not copied yet) - Rev 95 S1C - 1C Briefing: the map full height with the edge view inset at its foot; the squad's three seats shown on the right - interactive
-- `R95S2A.dc.html` (not copied yet) - Rev 95 S2A - 2A Three seats: a column per seat, its pilot and hull over its choices; Save as preset and Set sail at the foot (recommended) - interactive
-- `R95S2B.dc.html` (not copied yet) - Rev 95 S2B - 2B Seat and picker: the seats on the left, one large picker on the right with Vessel, Pilot, Element, Artifact - interactive
-- `R95S2C.dc.html` (not copied yet) - Rev 95 S2C - 2C Roster: one table, a row per seat and a stepper per choice - interactive
-- `R95Notes.dc.html` (not copied yet) - Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations
+- [`R95S1A.dc.html`](R95S1A.dc.html) - Rev 95 S1A - 1A Presets: the map over its edge view; the voyage's name, the squad presets as cards and Set sail on the right (recommended) - interactive
+- [`R95S1B.dc.html`](R95S1B.dc.html) - Rev 95 S1B - 1B Wide map: the map across the window; a foot bar holds the edge view, the voyage, the squad and Set sail - interactive
+- [`R95S1C.dc.html`](R95S1C.dc.html) - Rev 95 S1C - 1C Briefing: the map full height with the edge view inset at its foot; the squad's three seats shown on the right - interactive
+- [`R95S2A.dc.html`](R95S2A.dc.html) - Rev 95 S2A - 2A Three seats: a column per seat, its pilot and hull over its choices; Save as preset and Set sail at the foot (recommended) - interactive
+- [`R95S2B.dc.html`](R95S2B.dc.html) - Rev 95 S2B - 2B Seat and picker: the seats on the left, one large picker on the right with Vessel, Pilot, Element, Artifact - interactive
+- [`R95S2C.dc.html`](R95S2C.dc.html) - Rev 95 S2C - 2C Roster: one table, a row per seat and a stepper per choice - interactive
+- [`R95Notes.dc.html`](R95Notes.dc.html) - Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations
 
 #### Rev 90 - Saga, Quests and Episodes as the Sea table
 
