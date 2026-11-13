@@ -23425,3 +23425,15 @@ Swordfish's copies keep their own tests).
 3. Each of Charge, Mass, Space to 5: the card swaps to Gore Steal, Berm, Unstoppable; below 4 it swaps back.
 4. Jacks in Freestyle: its four cards are unchanged (its HUD is regenerated from the Rhino's without the dead afterimage
    objects).
+## 🔴 Grizzly: Mass scaling, Charge 5 Battle Sight, four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/grizzly-kit-pass`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `icon_kit/author.py grizzly --check`
+clean; `element_ability_table.py Grizzly` shows 4/4 scaling and 4/4 L5 gates. No Unity editor ran.
+
+1. Fly the Grizzly in the Toybox; raise Mass. Trail prisms grow (x1 at rest, x2.5 at Mass 10; never below x0.4).
+2. Raise Charge to 5, dig in with rivals within ~600 m: each rival's hull turns its domain colour with a ringed halo,
+   visible through mass. Un-plant (or drop below Charge 4): the marks fade out within a quarter second, none stick.
+   Allies and your own hull are never marked; an AI Grizzly marks nothing on anyone's screen.
+3. At level 5 of each element the card swaps to its upgraded picture: Battle Sight (Charge), Claimed Fire (Mass),
+   Safe Detonation (Space), Vector Control (Time); below level 4 it swaps back.
