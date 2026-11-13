@@ -23143,3 +23143,22 @@ editor: this is the first screen of the game, so run step 1 before anything else
    were still growing in the scene being left, check the bar does not start above 0.
 8. A portrait or 4:3 Game view: the stage shrinks to fit.
 9. Profiler with the splash faded out: no `PosterDrift` or `BootStepBar` cost, and 0 GC per frame while it is visible.
+
+## 🔴 The boot reveal into the Toy Box (2026-11-13, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/gracious-faraday-h2ny3a`. Record: `Docs/MENU_REDESIGN_B.md` section 180. Compiled against the Unity
+reference assemblies (player and editor); `author_start_flow.py --check` and `--self-test` clean.
+
+1. Run EditMode tests `SceneTransitionManagerTests` and `BootPosterTests`; all pass.
+2. Open `Bootstrap.unity` and press Play. Watch the Console from the first frame: no exception from `BootStepBar` or
+   `BootLoadProgress`, and the bar shows a number in front of its `%` from the start.
+3. Froglet's logo sits in the bottom-right corner under the percentage, on the splash and on the sign-in scene.
+4. When the bar says Ready: the splash dissolves over about a second, eased, while the poster grows slightly; the Toy
+   Box comes into view through it. It must never vanish in one frame.
+5. The menu's screen elements play their entrances as the world appears, not before.
+6. Profiler, Timeline, on the reveal: the `GC.Collect` frame and the load report's write are under the opaque splash
+   or after the fade, never inside it; the fade's frames stay smooth.
+7. Play a match and return to the menu: the cover lifts the same way, and the poster shrinks back into place when the
+   splash comes back over the world at the start of the return.
+8. Note how long the frame that activates Menu_Main takes (while the bar is at Loading profile) and send it: that
+   frame is the remaining lag, and the next fix needs its profile.

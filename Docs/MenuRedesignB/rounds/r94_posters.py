@@ -174,7 +174,9 @@ def board_c():
     hulls = "".join(img(HULL[n], f"The {n}", x, y, s, s, f"animation:bob {d}s ease-in-out infinite alternate")
                     for n, x, y, s, d in [("Squirrel", 500, 20, 300, 9), ("Dolphin", 830, -10, 300, 7), ("Sparrow", 1190, 20, 300, 8)])
     body = (far_sea() + "".join(band(i, 360 + i * 400) for i in range(3)) + hulls + crew
-            + marks(96, 64, 300, 96, 196, 180) + themes(1690, 300) + foot())
+            + img(LOGO, "Cosmic Shore", 96, 64, 300, round(300 * 359 / 910)) + themes(1690, 300) + foot()
+            # Froglet's logo under the bar's percentage, bottom right (Shombith, 2026-11-13).
+            + img(FROG, "Froglet Games", 1920 - 96 - 150, 1080 - 8 - round(150 * 322 / 900), 150, round(150 * 322 / 900)))
     return r91.page(f"R{REV}C.dc.html", body, CSS)
 
 
