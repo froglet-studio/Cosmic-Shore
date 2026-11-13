@@ -213,3 +213,46 @@ ladder on every hull that does not want contact (plain ~240 ms, shielded ~300 ms
 spaced 100 ms). Skims opt-in per kit. On the Manta: the ladder on a hull hit, the knock on a plant, nothing on a skim.
 
 **Next question.** Do the Shrike, the Urchin and the Grizzly count as rammers by their kits?
+
+## Round: the chase camera is too far out (2026-11-12)
+
+**Question.** Does the Manta read better, and feel faster, with its chase camera at half the distance?
+
+**What good looks like (Caleb, 2026-11-12).** The camera sits closer: "I think it's too far out. Let's move to half
+the distance to start with." The hull fills more of the frame without the view losing what is ahead.
+
+**How we'll know.** Caleb flies it from the Toybox's Vessel Changer. This is a starting point, not a lab round: one
+number, halved, then tuned by feel.
+
+**Found (bleeding-edge 91a319c).** The distance is `MantaCameraSettingsSO.asset`, which only `Manta.prefab` uses, so
+the change stays on the Manta. It flies `FixedCamera` (mode 0), so `followOffset.z` is the distance; the dynamic pair
+only matters in dynamic mode. No generator owns the asset and no test pins its numbers. The camera feel
+(`Docs/CAMERA_FEEL.md`) works in fractions of the follow distance, so G lag, kicks and shake read the same size on
+screen at the new distance. `VesselRearView` mirrors the same offset, so the look-back comes in to 15 too.
+
+**Changed.** `followOffset` (0, 0, -30) -> (0, 0, -15); `dynamicMinDistance` -27 -> -13.5 and `dynamicMaxDistance`
+-30 -> -15 (kept in proportion in case the mode is ever switched). At a 60 degree field of view the frame is 17.3 u
+tall at the hull instead of 34.6 u: the 4.63 u wingspan goes from 13% to 27% of the frame height (about 290 px at
+1080p), so the hull reads twice as big and the view ahead covers half the width at the hull.
+
+**Only the editor can judge.** Whether 15 is too close at Soar (speed reads more strongly up close); whether the
+Space skimmer's visuals (20-40 u across) or the trail rails (18 apart) crowd the view now that the camera can sit
+inside them; whether the prism occlusion dither keeps the hull clear in dense cells.
+
+**Next question.** Is 15 the number, or does it want 18-20? And does the Manta want a little height or look-ahead
+(`lookAheadDistance`, `lookAheadLift`) so the hull sits lower in the frame and shows where it is going?
+
+### Fly test 1 (Caleb, 2026-11-12)
+
+**Seen.** "I think 15 is great!" To be thorough he flies 20 as well before deciding. `followOffset` z -15 -> -20
+(dynamic pair -18 / -20): the wingspan is 20% of the frame height at 20, against 27% at 15 and 13% at 30.
+
+**Next.** Caleb picks 15 or 20 after flying both; whichever he picks goes in this PR before it ships.
+
+### Decided (Caleb, 2026-11-12)
+
+**18.** Caleb flew the whole range from 15 to 20 in the editor, moving the asset's value himself, and picked 18: "Lets ship
+at -18". `followOffset` (0, 0, -18), dynamic pair -16.2 / -18. The wingspan is about 22% of the frame height (it was 13% at 30).
+
+**Next question.** Should the camera look slightly ahead (`lookAheadDistance`, `lookAheadLift`) so the hull sits lower
+in the frame and shows where it is going?
