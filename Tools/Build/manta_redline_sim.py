@@ -125,6 +125,176 @@ LAPS = _shipped_laps()
 PER_LAP = (0, 1, 2, 3)
 ON_LINE_FRACTION, APEX_ALONG_EXIT, APEX_INSET = 0.5, 0.25, 70.0
 TIME_PER_LEVEL, MAX_LEVEL = 0.03, 10
+# THE TIME MODEL AS FLOWN (2026-11-11, RedlineCourse's "curve as the race is FLOWN"): since 2026-11-07 (96952eb939,
+# c4052cb70e) Soar is the Manta's Time LEVEL-5 upgrade (MantaAnalogTurnBoostExecutor.soarUnlockedBy, the ability map's
+# UnlockLevel 5 / RelockBelowLevel 4) and Time raises the CRUISE too (VesselTransformer.ThrottleScalerMultiplier 1 -> 1.5
+# over Time 0-10: +5% a level; BoostSpeedMultiplier 1 -> 1.3, +3% a level, while boosting). The race starts every Manta
+# at the card's Time level (RedlineCourse.StartingTimeLevelByIntensity, read from the C#). TIME_MODEL "legacy" is the
+# hull this model was first written for (Soar live at Time 0, Time scaling Soar alone, start at 0): the 2026-11-07
+# baselines in --self-test checks 3-12 were measured on it and are kept as that record.
+CRUISE_PER_LEVEL = 0.05
+SOAR_UNLOCK, SOAR_RELOCK_BELOW = 5, 4
+TIME_MODEL = "flown"
+LEGACY_LAPS = 5                                     # the race the legacy baselines were measured on
+# RedlineController (2026-11-11): the AI race line (TryRaceLine, aiRaceLine on), the throttle floor by difficulty
+# (aiThrottleFloorByDifficulty) and the nose rows (aiNoseFollowByIntensity). DIFFICULTIES is (name, floor, nose rate by
+# intensity I1..I4).
+AI_RACE_LINE = True
+DIFFICULTIES = (("Easy", 0.7, (2, 2, 2.5, 4)), ("Medium", 0.85, (3, 3, 3, 5)),
+                ("Hard", 1.0, (6, 6, 6, 6)), ("Legendary", 1.0, (9, 9, 9, 9)))
+
+
+def _shipped_start_levels():
+    """RedlineCourse.StartingTimeLevelByIntensity, read from the C# (the card's StartingElements)."""
+    import re
+    path = os.path.join(REPO, "Assets", "_Scripts", "Controller", "Arcade", "Redline", "RedlineCourse.cs")
+    with open(path, encoding="utf-8") as fh:
+        m = re.search(r"StartingTimeLevelByIntensity\s*=\s*\{\s*([0-9, ]+)\}", fh.read())
+    if not m:
+        raise RuntimeError(f"RedlineCourse.StartingTimeLevelByIntensity not found in {path}")
+    return tuple(int(x) for x in m.group(1).split(","))
+
+
+START_LEVELS = _shipped_start_levels()
+
+
+def cruise_mult(level, model=None):
+    """ThrottleScalerMultiplier at a Time level (1 on the legacy hull)."""
+    return 1.0 if (model or TIME_MODEL) == "legacy" else 1.0 + CRUISE_PER_LEVEL * min(MAX_LEVEL, level)
+
+
+def soar_lit(level, model=None):
+    """Soar's level-5 gate (always lit on the legacy hull). The race only climbs, so the relock never fires here."""
+    return (model or TIME_MODEL) == "legacy" or level >= SOAR_UNLOCK
+
+
+def soar_speed(s, level, model=None):
+    """RedlineCourse.SoarSpeed: both triggers at s, throttle buried."""
+    cruise = CRUISE * cruise_mult(level, model)
+    if s <= 0.01 or not soar_lit(level, model):
+        return cruise
+    return cruise * (1 + (BOOST_MULT - 1) * s) * (1 + TIME_PER_LEVEL * min(MAX_LEVEL, level))
+
+
+def stick_radius(v):
+    """RedlineCourse.StickRadiusAt: the stick alone, 0.2 v + 30 deg/s."""
+    return v / math.radians(v * ROT_THROTTLE + YAW)
+
+
+def fastest_soar(radius, level):
+    """RedlineCourse.FastestSoarForCorner(radius, timeLevel)."""
+    if not soar_lit(level):
+        return 0.0
+    if radius >= stick_radius(soar_speed(1.0, level)):
+        return 1.0
+    if radius <= stick_radius(soar_speed(0.0101, level)):
+        return 0.0
+    lo, hi = 0.0101, 1.0
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if stick_radius(soar_speed(mid, level)) > radius:
+            hi = mid
+        else:
+            lo = mid
+    return lo
+
+
+def settle_distance(v_from, v_to, settle=0.1):
+    """RedlineCourse.SettleDistance: the ground a speed change takes on the 1.5/s lag."""
+    if v_from <= v_to:
+        return 0.0
+    t = math.log(1.0 / settle) / LERP
+    return v_to * t + (v_from - v_to) * (1 - math.exp(-LERP * t)) / LERP
+
+
+# THE READER (2026-11-11, model only: nothing in the game reads a plan). What each corner asks of the triggers, two ways:
+#   plan(), by the course's own corner radius (RaceCourseGeometry.CornerRadius, the circle tangent to both legs at
+#   half-leg, the number the course is CUT on): measured, a pilot who lifts by it LOSES 20-45% at I2-I4, because a
+#   pilot flying at the mouths' centres has the whole leg to turn and the radius overstates the corner;
+#   pursuit_plan(), by flying it: the most Soar at which a hull turning flat out from a gate, at constant speed, still
+#   threads the next mouth (inside 80% of it). This is the honest reader, and "reading the course saves" is measured on it.
+FLAT, EASE, LIFT, KNIFE = 0, 1, 2, 3
+CLEAN_MOUTH = 0.5                                   # RedlineHeat.CleanMouthFraction
+EASE_SOAR = 0.2                                     # a corner that still holds this much Soar is an Ease, under it a Lift
+READER = "pursuit"                                  # race(pilot="reader") reads pursuit_plan(); "radius" reads plan()
+
+
+def verb_for(radius, level):
+    """A corner of `radius` (u) at a Time level, by the corner radius."""
+    if radius < stick_radius(CRUISE * cruise_mult(level)):
+        return KNIFE
+    if not soar_lit(level) or radius >= stick_radius(soar_speed(1.0, level)):
+        return FLAT
+    return EASE if fastest_soar(radius, level) >= EASE_SOAR else LIFT
+
+
+def plan(course, level, settle=0.1):
+    """By the corner radius: [(verb, soar, turn_in)] per gate of one lap; `settle` is the fraction of the speed change
+    left at the gate (turn_in is the ground it takes from full Soar)."""
+    gates = [tuple(g["p"]) for g in course["gates"]]
+    n = len(gates)
+    top = soar_speed(1.0, level)
+    out = []
+    for i in range(n):
+        r = corner_radius(gates[i - 1], gates[i], gates[(i + 1) % n])
+        verb = verb_for(r, level)
+        s = 1.0 if verb == FLAT else 0.0 if verb == KNIFE else fastest_soar(r, level)
+        out.append((verb, s, 0.0 if verb == FLAT else settle_distance(top, soar_speed(s, level), settle)))
+    return out
+
+
+def _rot_toward(h, d, max_deg):
+    a = angle(h, d)
+    if a <= max_deg or a < 1e-6:
+        return unit(d)
+    ax = cross(h, d)
+    ax = unit(ax) if norm(ax) > 1e-9 else (0.0, 1.0, 0.0)
+    t = math.radians(max_deg)
+    return unit(add(add(mul(h, math.cos(t)), mul(cross(ax, h), math.sin(t))), mul(ax, dot(ax, h) * (1 - math.cos(t)))))
+
+
+def pursuit_threads(p0, h0, gp, ga, gr, v, margin=0.8, dt=1 / 60, tmax=6.0):
+    """A hull at p0 heading h0, at constant speed v, turning at its stick's full rate (0.2 v + 30 deg/s) straight at
+    gp: does it cross that gate's plane inside `margin` of its mouth?"""
+    pos, h, t = p0, unit(h0), 0.0
+    w = v * ROT_THROTTLE + YAW
+    while t < tmax:
+        h = _rot_toward(h, sub(gp, pos), w * dt)
+        nxt = add(pos, mul(h, v * dt))
+        a, b = dot(sub(pos, gp), ga), dot(sub(nxt, gp), ga)
+        if (a <= 0 < b) or (b <= 0 < a) or (a < 0 <= b) or (b < 0 <= a):
+            x = add(pos, mul(sub(nxt, pos), a / (a - b) if a != b else 0.0))
+            return norm(sub(x, gp)) <= gr * margin
+        pos, t = nxt, t + dt
+    return False
+
+
+def pursuit_plan(course, level, settle=0.1):
+    """By flying it: [(verb, soar, turn_in)] for the corner AT each gate (the turn from its leg in onto the next mouth)."""
+    gates = [(tuple(x["p"]), unit(tuple(x["a"])), float(x["r"])) for x in course["gates"]]
+    n = len(gates)
+    top = soar_speed(1.0, level)
+    out = []
+    for g in range(n):
+        at, heading = gates[g][0], sub(gates[g][0], gates[g - 1][0])
+        tp, ta, tr = gates[(g + 1) % n]
+        if pursuit_threads(at, heading, tp, ta, tr, top):
+            out.append((FLAT, 1.0, 0.0))
+            continue
+        if not pursuit_threads(at, heading, tp, ta, tr, soar_speed(0.0, level)):
+            out.append((KNIFE, 0.0, settle_distance(top, soar_speed(0.0, level), settle)))
+            continue
+        lo, hi = 0.0, 1.0
+        for _ in range(20):
+            mid = 0.5 * (lo + hi)
+            if pursuit_threads(at, heading, tp, ta, tr, soar_speed(mid, level)):
+                lo = mid
+            else:
+                hi = mid
+        out.append((EASE if lo >= EASE_SOAR else LIFT, lo, settle_distance(top, soar_speed(lo, level), settle)))
+    return out
+
+
 PICKUP = 10.0 + 3.55
 REGROW = 5.0
 AI_CRYSTAL_SLACK = 0.0                              # RedlineController.aiTimeCrystalSlack (off as shipped)
@@ -384,8 +554,9 @@ def crystal_aim(pos, heading, ring, field, back_at, slack):
 
 
 def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor=THROTTLE_FLOOR, nose_lag=True,
-         limit=900.0, dt=1 / 60, laps=LAPS, crystals=True, crystal_slack=AI_CRYSTAL_SLACK, trace=None, nose_rate=None,
-         nose_lead=None):
+         limit=900.0, dt=1 / 60, laps=None, crystals=True, crystal_slack=AI_CRYSTAL_SLACK, trace=None, nose_rate=None,
+         nose_lead=None, pilot="ai", start_level=None, time_model=None, turn_slack=0.0, read_settle=0.1,
+         out_deg=45.0, react=False, centre_line=None):
     """One AI Manta flies `laps` laps of `course` ({gates: [{p, a, r}]}), steering for a Time crystal on its way when it
     costs under `crystal_slack` u (RedlineController.TryOverrideAim; `crystals`: True = RedlineTimeCrystals' field,
     False = none, or a list of positions). Returns {time (None = not finished), rings, of, top, mean_speed, soar (mean
@@ -398,9 +569,25 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
     The roll stick while the lead is on is the NoseLead's `roll` law ({"gain": 2.5, "roll": "zero" | "led" | "unled"},
     ai_nose_lead.roll_stick): "zero" (the game's law since the roll decoupling: no roll stick while leading), "led" (the
     lead's judged yaw stick as the roll, which corkscrews a rolling hull) or "unled" (today's lead-off yaw stick). It
-    has no effect with the lead off."""
+    has no effect with the lead off.
+    `pilot` (2026-11-11): "ai" is the AI Manta above. The others are PEOPLE: no nose lag, the throttle buried, the same
+    mouths' centres, and their own triggers - "bury" (both always flat), "ease" (a habit: eases both to half for EVERY
+    corner, at that corner's turn-in, and winds back once it points at the next ring), "band" (a habit: the AI's stick
+    bands on a person's stick, easing only as the stick goes over) and "reader" (reads the lap: pursuit_plan's verb at
+    each corner, READER above, lifting at its turn-in, and the Yawstery pull out of a knife). `start_level` overrides the card's
+    Time level; `time_model` "legacy" flies the hull before 2026-11-07 (module TIME_MODEL otherwise); `turn_slack` adds
+    ground (u) to every turn-in. `centre_line` is RedlineController's AI race line (TryRaceLine, 2026-11-11): the AI aims at
+    the mouth's centre, judged as a look-ahead (no orbit break-off), until it misses that ring, then flies the gate way
+    above to re-attack it."""
+    model = time_model or TIME_MODEL
+    if laps is None:
+        laps = LEGACY_LAPS if model == "legacy" else LAPS
+    if centre_line is None:
+        centre_line = AI_RACE_LINE and model != "legacy"
     band, yband = bands or (BOOST_BAND, YAWSTERY_BAND)
     follow = (LERP if nose_rate is None or nose_rate < 0 else float(nose_rate)) if nose_lag else 0.0
+    if pilot != "ai":
+        follow = 0.0                                                # a person's nose IS the command
     follow_step = min(1.0, follow * dt) if follow > 0 else 1.0
     lead_knob = NoseLead.from_config(nose_lead)
     # AIPilot.EffectiveNoseLeadGain, once a race, from THIS race's nose rate (`follow`): max(1, gain x 1.5 / rate), and
@@ -413,7 +600,45 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
     total = n * max(1, laps)
     field = crystals_for(course, intensity) if crystals is True else list(crystals or [])
     back_at = [-1.0] * len(field)                                   # when a taken crystal is back (-1 = standing)
-    level = 0
+    if start_level is not None:
+        level = int(start_level)
+    else:
+        level = 0 if model == "legacy" else START_LEVELS[max(1, min(4, intensity)) - 1]
+    plans = {}
+
+    def plan_at(lv):
+        if lv not in plans:
+            if pilot == "reader":
+                plans[lv] = (pursuit_plan if READER == "pursuit" else plan)(course, lv, read_settle)
+            else:
+                plans[lv] = [(EASE, 0.5, settle_distance(soar_speed(1.0, lv, model), soar_speed(0.5, lv, model)))] * n
+        return plans[lv]
+
+    def person_triggers(xs_now, ys_now, heading_now):
+        """The people's triggers (`pilot`): (lt, rt)."""
+        if pilot == "bury":
+            return 1.0, 1.0
+        pl = plan_at(level)
+        want, knife = 1.0, False
+        if idx > 0:                                             # turning out of the gate just threaded
+            verb, s_c, _ = pl[(idx - 1) % n]
+            if verb != FLAT and angle(heading_now, sub(gates[idx % n][0], pos)) > out_deg:
+                want, knife = min(want, s_c), verb == KNIFE
+        along = norm(sub(gates[idx % n][0], pos))
+        for k in range(2):                                      # the next two corners' turn-ins
+            if idx + k >= total:
+                break
+            g = (idx + k) % n
+            verb, s_c, turn = pl[g]
+            if verb != FLAT and along <= turn + turn_slack:
+                want = min(want, s_c)
+            along += norm(sub(gates[(g + 1) % n][0], gates[g][0]))
+        if knife and abs(xs_now) > 0.2:
+            return (0.0, 1.0) if xs_now > 0 else (1.0, 0.0)     # Yawstery: the trigger on the turn's side, the other off
+        if react:                                               # and eases on the stick as the habit does
+            want = min(want, boost_intent(max(abs(xs_now), abs(ys_now)), band))
+        return want, want
+
     skill = max(0.0, min(1.0, intensity * 0.25))
     throttle = THROTTLE_LOW + (THROTTLE_HIGH - THROTTLE_LOW) * skill
     creep = CREEP_LOW + (CREEP_HIGH - CREEP_LOW) * skill
@@ -424,11 +649,12 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
     cmd = q
     v, t = 0.0, 0.0
     idx, locked, side, lead = 0, -1, 1.0, LEAD
+    line_lost = -1                                                  # GateRaceController's lineLostIndex
     extending, ext_t = False, 0.0
     orbit = Orbit()
     prev = None
     top = soar_sum = speed_sum = 0.0
-    frames = misses = breakoffs = 0
+    frames = misses = breakoffs = clean = 0
     next_trace = 0.0
 
     while t < limit and idx < total:
@@ -437,6 +663,7 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         # GateRaceController's aim provider: the mode's override first (RedlineController.TryOverrideAim)
         aim = crystal_aim(pos, q_rot(q, FWD), ring, field, back_at, crystal_slack) if field else None
         if aim is None and regatta and prev is not None and plane_crossing(prev, pos, ring, ax, rad) == -1:
+            line_lost = idx
             locked = -1                                             # re-latch the side, and AIPilot.BreakOffNow
             breakoffs += not extending
             extending, ext_t = True, 0.0
@@ -455,6 +682,8 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         approaching = dot(to_ring, to_ring) > commit * commit
         if aim is not None:
             target = aim
+        elif pilot != "ai" or (centre_line and line_lost != idx):
+            target = ring                                           # a person (and the race line) flies at the centre
         elif approaching:
             target = add(ring, mul(ax, side * lead))
         elif regatta and dot(to_ring, to_ring) > 1.0:
@@ -466,7 +695,10 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         to = sub(target, pos)
         heading = q_rot(q, FWD)
         run = max(max(0.0, 2 * r_min - CAPTURE), abs(v) * RUN_SECONDS)
-        if extending:
+        on_line = pilot == "ai" and centre_line and line_lost != idx and aim is None
+        if on_line:
+            extending = False                                       # MarkAimAsPathLead: no break-off judges the line
+        elif extending:
             ext_t += dt
             if (norm(to) >= run and ext_t >= BREAK_MIN) or ext_t >= BREAK_MAX:
                 extending, ext_t = False, 0.0
@@ -501,17 +733,21 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
             xs, ys = stick(q, unit(dist), dsq)
         if yd is None:
             yd = xs                                                 # the roll stick (no belly target in Redline)
-        thr = max(0.0, min(1.0, max(throttle, throttle_floor)))
+        thr = 1.0 if pilot != "ai" else max(0.0, min(1.0, max(throttle, throttle_floor)))
         throttle += creep * dt
 
         # MantaAnalogTurnBoostExecutor: the triggers, the Yawstery yaw, the Soar
-        lt, rt = triggers(xs, max(abs(xs), abs(ys)), band, yband)
-        boost = min(lt, rt)
+        if pilot in ("ai", "band"):
+            lt, rt = triggers(xs, max(abs(xs), abs(ys)), band, yband)
+        else:
+            lt, rt = person_triggers(xs, ys, q_rot(q, FWD))
+        boost = min(lt, rt) if soar_lit(level, model) else 0.0
         nose_up = q_rot(q, UP)
         if abs(rt - lt) > 0.001:
             cmd = q_mul(q_axis((rt - lt) * YAWSTERY_YAW * dt, nose_up), cmd)
         # VesselTransformer.CurrentBoostAmount: the Soar multiplier x the Time level's BoostSpeedMultiplier while boosting
         mult = (1 + (BOOST_MULT - 1) * boost) * (1 + TIME_PER_LEVEL * level) if boost > 0.01 else 1.0
+        mult *= cruise_mult(level, model)
 
         # VesselTransformer.RotateShip: roll, yaw, pitch about the nose's axes onto the command; the nose follows
         k = v * ROT_THROTTLE
@@ -525,6 +761,9 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
         newpos = add(pos, mul(q_rot(q, FWD), v * dt))
         crossing = plane_crossing(pos, newpos, ring, ax, rad)
         if crossing == 1:
+            a_, b_ = dot(sub(pos, ring), ax), dot(sub(newpos, ring), ax)
+            x_ = add(pos, mul(sub(newpos, pos), a_ / (a_ - b_) if a_ != b_ else 0.0))
+            clean += norm(sub(x_, ring)) <= CLEAN_MOUTH * rad      # RedlineHeat: through the heart of the mouth
             idx += 1
         elif crossing == -1:
             misses += 1
@@ -547,7 +786,7 @@ def race(course, intensity, bands=None, regatta=REGATTA_STEERING, throttle_floor
                          f"Time {level}")
     return {"time": round(t, 3) if idx >= total else None, "rings": idx, "of": total, "top": round(top),
             "mean_speed": round(speed_sum / max(1, frames), 1), "soar": round(soar_sum / max(1, frames), 3),
-            "misses": misses, "breakoffs": breakoffs, "level": level}
+            "misses": misses, "breakoffs": breakoffs, "level": level, "clean": clean}
 
 
 # ── courses ─────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -569,6 +808,63 @@ def table(label, rows):
 
 
 def self_test():
+    global TIME_MODEL
+    TIME_MODEL = "legacy"          # checks 1-12 are the 2026-11-07 record, measured on the hull before Soar's unlock
+    try:
+        bad = _legacy_checks()
+    finally:
+        TIME_MODEL = "flown"
+    bad += _flown_checks()
+    print("manta_redline_sim self-test: " + ("ok" if not bad else "FAILED\n  " + "\n  ".join(bad)))
+    return 0 if not bad else 1
+
+
+def _flown_checks():
+    """13-17 (2026-11-11): the race as flown since Soar became the Time level-5 upgrade (REDLINE.md section 0)."""
+    bad = []
+    import re
+    # 13. the flown hull is the shipped one: Manta.prefab's Time multipliers, the ability map's unlock, the card's start
+    prefab = open(os.path.join(REPO, "Assets", "_Prefabs", "Spacevessels", "Manta.prefab"), encoding="utf-8").read()
+    for name, lo, hi in (("ThrottleScalerMultiplier", 1, 1.5), ("BoostSpeedMultiplier", 1, 1.3)):
+        m = re.search(rf"  {name}:\n    Enabled: 1\n    Value: [0-9.]+\n    Min: ([0-9.]+)\n    Max: ([0-9.]+)\n    element: 4\n", prefab)
+        if not m or (float(m.group(1)), float(m.group(2))) != (lo, hi):
+            bad.append(f"Manta.prefab {name} is not Time {lo} -> {hi} (re-port cruise_mult / soar_speed)")
+    amap = open(os.path.join(REPO, "Assets", "Resources", "ElementalAbilityMaps", "Manta.asset"), encoding="utf-8").read()
+    m = re.search(r"UnlockLevel: (\d+)\n(?:    [^\n]*\n){0,4}?    UpgradeLabel: Soar", amap)
+    if not m or int(m.group(1)) != SOAR_UNLOCK:
+        bad.append(f"Manta.asset's Soar does not unlock at Time {SOAR_UNLOCK}")
+    card = open(os.path.join(REPO, "Assets", "_SO_Assets", "Games", "ArcadeGameRedline.asset"), encoding="utf-8").read()
+    rows = re.findall(r"  - Class: 1\n    Intensity: (\d)\n    Levels:\n(?:      \w+: [0-9.]+\n){3}      Time: ([0-9.]+)\n", card)
+    if sorted((int(i), round(float(t) * 10)) for i, t in rows) != [(i + 1, START_LEVELS[i]) for i in range(4)]:
+        bad.append(f"the card's StartingElements {rows} are not RedlineCourse.StartingTimeLevelByIntensity {START_LEVELS}")
+    if abs(soar_speed(1.0, 6) - 1104.48) > 0.05 or abs(soar_speed(1.0, 10) - 1404.0) > 0.05:
+        bad.append(f"soar_speed is not RedlineCourse.SoarTop ({soar_speed(1.0, 6)}, {soar_speed(1.0, 10)})")
+    # 14. negative control: on the flown hull a Manta started at Time 0 never Soars (the race before 2026-11-11), and is
+    #     at least twice as slow as one started at the card's Time 6
+    c = course_for(1, 1)
+    lit, dark = race(c, 1, pilot="bury"), race(c, 1, pilot="bury", start_level=0)
+    if not (lit["time"] and dark["time"] and dark["time"] > 2 * lit["time"] and dark["soar"] == 0.0):
+        bad.append(f"a Time-0 start is not the dark race ({dark}) against the lit one ({lit})")
+    # 15. the shipped AI (race line, floor, nose rows) finishes I1 and I4 at Legendary and at Easy
+    for i in (1, 4):
+        for name, floor, rates in (DIFFICULTIES[0], DIFFICULTIES[3]):
+            r = race(course_for(i, 2), i, throttle_floor=floor, nose_rate=rates[i - 1])
+            if r["time"] is None:
+                bad.append(f"the shipped {name} AI did not finish I{i} course 2: {r}")
+    # 16. why the race line: on the gate way the Legendary AI is far slower at I1 (negative control)
+    c = course_for(1, 2)
+    line, gate = race(c, 1, throttle_floor=1.0, nose_rate=9), race(c, 1, throttle_floor=1.0, nose_rate=9, centre_line=False)
+    if not (line["time"] and (gate["time"] is None or gate["time"] > 1.3 * line["time"])):
+        bad.append(f"the race line no longer beats the gate way at I1 ({line['time']} vs {gate['time']})")
+    # 17. the people: the same race twice is the same race, and the reader on a lap with no costing corner is bury
+    if race(c, 1, pilot="reader") != race(c, 1, pilot="reader"):
+        bad.append("a person's race is not deterministic")
+    if race(c, 1, pilot="reader")["time"] != race(c, 1, pilot="bury")["time"]:
+        bad.append("at I1 (no costing corner) the reader does not fly the burier's race")
+    return bad
+
+
+def _legacy_checks():
     bad = []
     # 1. triggers() is the C# shape (MantaAutopilotDriveTests): straight = both full; a full yaw stick at the default bands
     #    is one trigger flat and the other released; inside the Yawstery band the net is zero; band 0 never boosts.
@@ -660,12 +956,13 @@ def self_test():
     }
     for (i, s), want in baseline.items():
         got = race(course_for(i, s), i)
+        got.pop("clean", None)                                  # counted since 2026-11-11, not in the record
         if got != want:
             bad.append(f"I{i} course {s} drifted from the 2026-11-07 baseline (re-measure): {got} vs {want}")
     c = course_for(1, 1)
     fleet = baseline[(1, 1)]
     for form in (NoseLead(), 0, {}, {"gain": 0}, False):
-        if race(c, 1, nose_lead=form) != fleet:
+        if {k: v for k, v in race(c, 1, nose_lead=form).items() if k != "clean"} != fleet:
             bad.append(f"nose_lead={form!r} is not today's race")
     # 10. the lead is applied as AIPilot applies it and only through the nose lag: a gain changes a lagged race (a dict
     #     with the config key is the same gain); the gain is scaled to the race's own nose rate once (on a 9/s nose 2.5
@@ -673,7 +970,7 @@ def self_test():
     #     is gain 1 (the command placed ON the aim); and on a lag-free nose (nose_lag=False, nose_rate=0, or a rate that
     #     closes the whole gap in one step) the lead changes nothing
     led = race(c, 1, nose_lead=2.5)
-    if led == fleet:
+    if {k: v for k, v in led.items() if k != "clean"} == fleet:
         bad.append("nose_lead 2.5 raced today's race (the lead is not applied)")
     if race(c, 1, nose_lead={"nose_lead": 2.5}) != led:
         bad.append("{'nose_lead': 2.5} is not the 2.5 lead")
@@ -715,8 +1012,7 @@ def self_test():
             bad.append(f"roll law {law} changed a race with the lead off")
     if race(c, 1, nose_lead={"gain": 2.5, "roll": "unled"}) in (race(c, 1, nose_lead=2.5), led):
         bad.append("the unled roll what-if is the same race as another law (is roll_stick wired?)")
-    print("manta_redline_sim self-test: " + ("ok" if not bad else "FAILED\n  " + "\n  ".join(bad)))
-    return 0 if not bad else 1
+    return bad
 
 
 def nose_lead_arg(argv):
@@ -728,9 +1024,43 @@ def nose_lead_arg(argv):
     return NoseLead(float(parts[0]), float(parts[1]) if len(parts) > 1 else None)
 
 
+def reading(seeds):
+    """--reading (2026-11-11): the race as flown. People (no nose lag, throttle buried, at the mouths' centres): bury,
+    the two habits (ease at every corner, ease on the stick) and the reader (RedlineReading's plan read off the course);
+    "reading the course saves" = the best habit's median race over the reader's. Then the shipped AI by difficulty, and
+    the laps a ~90 s race wants."""
+    import statistics
+    print(f"Redline as flown (Time {START_LEVELS} start, {LAPS} laps), {len(seeds)} courses an intensity")
+    per_lap = {}
+    for i in (1, 2, 3, 4):
+        courses = [course_for(i, s) for s in seeds]
+        med = {}
+        for p in ("bury", "ease", "band", "reader"):
+            rs = [race(c, i, pilot=p) for c in courses]
+            fin = [r["time"] for r in rs if r["time"] is not None]
+            med[p] = statistics.median(fin) if fin else float("inf")
+            clean = sum(r["clean"] for r in rs) / max(1, sum(r["rings"] for r in rs))
+            print(f"I{i} person {p:<7} {len(fin)}/{len(rs)}  median {med[p]:6.1f} s  clean {clean:4.0%}  "
+                  f"misses {sum(r['misses'] for r in rs)}")
+        best_habit = min(med["bury"], med["ease"], med["band"])
+        print(f"I{i} reading the course saves {100 * (best_habit - med['reader']) / best_habit:+.1f}% "
+              f"(the best habit {best_habit:.1f} s, the reader {med['reader']:.1f} s)")
+        per_lap[i] = min(best_habit, med["reader"]) / LAPS
+        for name, floor, rates in DIFFICULTIES:
+            rs = [race(c, i, throttle_floor=floor, nose_rate=rates[i - 1]) for c in courses]
+            fin = [r["time"] for r in rs if r["time"] is not None]
+            print(f"I{i} AI {name:<9} {len(fin)}/{len(rs)}  median {statistics.median(fin) if fin else 0:6.1f} s  "
+                  f"misses {sum(r['misses'] for r in rs)}")
+    print("laps for a ~90 s race (the model's ideal person): " +
+          ", ".join(f"I{i} {90 / per_lap[i]:.1f}" for i in per_lap))
+    return 0
+
+
 def main(argv):
     if "--self-test" in argv:
         return self_test()
+    if "--reading" in argv:
+        return reading(range(1, 1 + (int(argv[argv.index("--seeds") + 1]) if "--seeds" in argv else 6)))
     lead = nose_lead_arg(argv)
     if "--trace" in argv:
         k = argv.index("--trace")
