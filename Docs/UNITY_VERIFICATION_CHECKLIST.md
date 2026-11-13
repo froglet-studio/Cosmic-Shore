@@ -23383,3 +23383,18 @@ clean; no Unity editor ran.
 3. Time card: planted at Time 5 shows the white ward arc and an orange danger prism outside it; flying free, or below
    Time 4, neither shows.
 4. Swap vessels mid-plant: the next hull is not left warded (the executor revokes the grant on disable).
+## 🔴 Meerkat: the soliton's surface area as an ElementalFloat, and the four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/meerkat-space-scaling`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `author_meerkat_assets.py --check`,
+`studio_to_unity.py --vessel meerkat --check` and `icon_kit/author.py meerkat` gates clean; no Unity editor ran.
+(`author_meerkat_assets.py --self-test` was already failing on bleeding-edge: its HUD donor no longer carries the Stoat's
+sprites. Not touched here.)
+
+1. Open `MeerkatSolitonConfig.asset`: Space's area is one `Surface Area` ElementalFloat (6000 at rest, 18000 at Space 10,
+   floor 3000, element Space). `areaL0` / `areaL10` are gone.
+2. Meerkat in Freestyle, Space 0 then Space 10 (Toybox crystal dial): the reticle and the formed soliton are thinner at 0
+   and fatter at 10, as before. Drain Space below rest: the tunnel thins further but never closes.
+3. Each element to 5: Charge card shows Six Sentinels (three sentinels under one guard), Mass shows Danger Portal (six
+   spiked prisms), Space shows Steal (a hollow prism in, a solid one out), Time shows Boost Out (two long bars). Below 4
+   the ordinary card returns.

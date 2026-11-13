@@ -332,7 +332,7 @@ namespace CosmicShore.Gameplay
             float ke = SolitonTunnelShapeMath.ReticleEase(dt, config.ReticleSmoothSeconds);
             _eased += (_stick - _eased) * ke;
             _easedLq += (LtLive() - _easedLq) * ke;
-            var sh = SolitonTunnelShapeMath.ShapeFor(config.Shape(SpaceLevel()), _easedLq, _eased.x, _eased.y);   // round 23: Space sets its area
+            var sh = SolitonTunnelShapeMath.ShapeFor(config.Shape(SpaceArea()), _easedLq, _eased.x, _eased.y);   // round 23: Space sets its area
             Vector3 c = sh.Stick >= 0.05f ? right * sh.Dx + up * sh.Dy : _retSide;
             c -= fwd * Vector3.Dot(c, fwd);
             _retSide = c.sqrMagnitude > 1e-8f ? c.normalized : right;
@@ -344,15 +344,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The hull's Space level, 0-10 (round 23, Garrett: "at a given Space level a soliton keeps one surface area"): read at
-        /// use time, every frame the reticle is shaped, so a crystal taken mid-flight resizes the next tunnel. -1 (the
-        /// authored fixed size) when the hull has no element levels.
+        /// The soliton's surface area on the hull's live Space (round 23, Garrett: "at a given Space level a soliton keeps one
+        /// surface area"; the config's <c>surfaceArea</c> ElementalFloat): read at use time, every frame the reticle is shaped,
+        /// so a crystal taken mid-flight resizes the next tunnel. 0 (the authored fixed size) without element levels.
         /// </summary>
-        float SpaceLevel()
-        {
-            var resources = _status?.ResourceSystem;
-            return resources ? Mathf.Clamp(resources.GetLevel(Element.Space), 0, 10) : -1f;
-        }
+        float SpaceArea() => config.SurfaceArea(_status);
 
         /// <summary>The page's <c>gateCommit</c>.</summary>
         void Commit()
@@ -687,7 +683,7 @@ namespace CosmicShore.Gameplay
                 }
             }
             else if (d > Mathf.Min(config.AiStraightMinDistance, config.AiBentMinDistance) && CanForm &&
-                     SolitonTunnelShapeMath.TryPlan(config.Plan(TurnRateDegrees(), SpaceLevel()), local, Mathf.Max(1f, _status.Speed),
+                     SolitonTunnelShapeMath.TryPlan(config.Plan(TurnRateDegrees(), SpaceArea()), local, Mathf.Max(1f, _status.Speed),
                          SolitonTunnelShapeMath.Clamp01(config.AiNoise), (float)_aiRand.NextDouble(),
                          d <= config.AiStraightMinDistance, out float lq, out float m))
             {
@@ -1011,7 +1007,7 @@ namespace CosmicShore.Gameplay
                 if (d > 0.5f) { _riftPts.Add(hull.position); _riftLen += d; }
             }
             if (_riftLen < RiftMinLength || _riftPts.Count < 2) { _riftPts.Clear(); return; }
-            var shape = config.Shape(SpaceLevel());
+            var shape = config.Shape(SpaceArea());
             float b = Mathf.Max(0.5f, shape.ThroatRadius), m = Mathf.Max(b, shape.MouthRadius);
             if (shape.Area > 0f) SolitonTunnelShapeMath.SurfaceAreaThroat(shape.ThroatRadius, shape.MouthRadius, shape.Area, _riftLen, out b, out m);
             var cfg = config.TunnelConfig ? config.TunnelConfig : config.NetworkConfig;

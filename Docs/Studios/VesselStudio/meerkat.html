@@ -6541,8 +6541,10 @@
   // MeerkatSolitonConfig ('new'; Tools/Build/studio_to_unity/meerkat.json links each one once it exists); 'lab' is the
   // studio's own (never in the game). Shown under every slider.
   const GAME_NAMES = {
-    areaL0: ['MeerkatSolitonConfig.areaL0', 'linked'],
-    areaL10: ['MeerkatSolitonConfig.areaL10', 'linked'],
+    // 2026-11-13: the game's area is the ElementalFloat surfaceArea (Min at Space 0, Max at Space 10), written by
+    // author_meerkat_assets.py like rush / zapPetals / portalSize, so these are 'field' (studio_to_unity.py writes plain fields only)
+    areaL0: ['MeerkatSolitonConfig.surfaceArea.Min', 'field'],
+    areaL10: ['MeerkatSolitonConfig.surfaceArea.Max', 'field'],
     suckRadius: ['MeerkatSolitonConfig.suckRadius', 'linked'],
     suckSpeed: ['MeerkatSolitonConfig.suckSpeed', 'linked'],
     swallowShare: ['MeerkatSolitonConfig.swallowShare', 'linked'],
