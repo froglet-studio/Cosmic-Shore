@@ -8064,7 +8064,7 @@ gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; 
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 
-## 187. Rev 99 mockups: the Pilots tab as a crew PDA lying in the Ark (2026-11-13, awaiting a pick)
+## 187. Rev 99 mockups: the Pilots tab as a crew PDA lying in the Ark (2026-11-13; Shombith picked C)
 
 **Asked (Shombith, 2026-11-13):** "we also do need to visualize the pilots tab too. In the pilots tab on the images there
 are images where the captains are inside the arks which shows a pretty cool view of the ark. I was thinking more like a
@@ -8090,5 +8090,8 @@ are their scenes cut by the scene kit's close and 4:5 crops.
 **Differs from the build (section 92.1):** the build lays the crew grid over the Ark backdrop and opens a full-screen
 profile page. The picked option would make the tab a place in the Ark (a live set piece, like the Rev 85/86 rooms)
 with a PDA whose screen carries `ArkPilotsPage`'s cells and `PilotProfileModal`'s words; nothing is built until a pick.
+
+**Picked (Shombith, 2026-11-13): "I like C"** - the hangar bench: the PDA on a workbench at the back of the hangar,
+the bay running out of the open mouth into the cell. Not built yet.
 
 Affects: Garrett's Pilots tab and pilot profile page (a proposal only; no game code changed).
