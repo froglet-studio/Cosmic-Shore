@@ -3248,7 +3248,7 @@
    "area": "vessel",
    "retired": "knockback on other vessels (VesselImpulseByExplosionEffectSO), VesselShrinkSkimmerEffectSO, the Rhino's VesselDangerBlockFormationBySkimmerEffectSO and its sword's danger dome, the Butterfly dust's decaying debuff",
    "test": "List every effect the design has on an opposing vessel; each must be a petal move that scores through CombatHitDrain.TryAdmit, and nothing else.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-03",
@@ -3328,7 +3328,7 @@
    "area": "vessel",
    "retired": "SparrowDebuffByRhinoDangerPrismEffectSO's 5 s Button2 mute and its event asset (deleted 2026-10-17)",
    "test": "Does any effect in the design mute, lock or steal an input? It fails.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-08",
@@ -3392,7 +3392,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the design add a way to take petals without silencing by worth, or silence anything beyond harm (movement, Mass, Time)? Either breaks the fleet-wide silence rule.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-12",
