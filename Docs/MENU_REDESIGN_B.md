@@ -7783,7 +7783,6 @@ Verified: `author_start_flow.py` nothing to write, `--check` and `--self-test` (
 `unity_refcompile` player and editor, `gates.sh`, `colour_trace.py --check`. Hand test: "Boot splash and sign-in scene:
 the poster" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
-
 ## 180. Rev 95 mockups: Voyages as two screens - the voyage on the map, then the squad (2026-11-12; Shombith picked 1A, the squad screens rejected, redrawn in section 181)
 
 **Asked (Shombith, 2026-11-12, with two screenshots of the built section 172 in Unity):**
@@ -7995,3 +7994,48 @@ Shelf's groups are 28 px apart with wider tiles, and a pilot's note stays on one
 
 **Verified:** `unity_refcompile` player and editor, 0 errors in project code; the ship gates pass; `VoyageBoardTests`
 (11 tests) compiled, not run. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The Voyages tab as two screens".
+
+## 185. The boot reveal: no lag, no pop, a way into the Toy Box; Froglet's logo under the bar (2026-11-13, not seen in Unity)
+
+Shombith, 2026-11-13, after section 179: "After the loading screen is completed there is a big lag when the scene is
+switching aren't we using async scene loading? Why will it lag when the scene is getting switched and there can be a
+smooth transition into the toybox dont just boom open scene". And: "The froglet logo should be in the bottom right
+corner below the percentage bar".
+
+**Why it lagged, from the code** (no recording was available here; `LoadInsights` writes them on the player's machine):
+the scene load IS async (`SceneManager.LoadSceneAsync`), and by the time the bar says Ready the menu has loaded and its
+world is built. The lag was the reveal frame itself, which did three things at once:
+- a full blocking `GC.Collect()` (`SceneLoader.FadeFromSplashWhenSettled`, every boot);
+- the boot's load report finished on the same frame: `LoadInsights.CompleteLoad` serialises it to JSON and writes two
+  files, synchronously, on every boot;
+- the fade started on the next frame. `SceneTransitionManager.FadeAsync` advanced by each frame's real time with no
+  cap, so the frame that carried the collect and the write (easily half a second) used up the whole 0.4 s fade at
+  once. That is the "boom": the splash vanished in one frame.
+
+What still is not fixed: the menu scene's activation (its objects' `Awake`) is one main-thread frame however the load
+is called; on 26 Oct one such frame took 10.4 s. It happens while the bar is at Loading profile, not after Ready, and
+it needs a profile of that frame before anything is changed.
+
+**What changed:**
+- **The reveal** (`SceneLoader`): the collect still runs under the opaque splash, then `revealSettleFrames` (2) frames
+  render under cover so a long frame ends out of sight. The menu's "shown" moment is stamped then
+  (`LoadInsights.MarkVisualReady`), and the report is written after the reveal, not on its first frame.
+- **The fade** (`SceneTransitionManager`): every fade advances by at most `_maxFadeStep` (1/30 s) per frame, so a hitch
+  lengthens a fade a little instead of skipping it. Entering the menu (the boot, and a return from a game) uses
+  `RevealAsync`: `_revealDuration` 1.2 s, eased at both ends.
+- **Into the Toy Box** (`PosterExit`, new, on the poster's root): as the splash dissolves the poster grows 12 percent
+  about its centre, so the player moves through it into the world. It reads the splash's own fade, needs no wiring,
+  and runs in reverse when the splash comes back on a return.
+- **The menu arrives with the world**: `ScreenSwitcher` also replays the current screen's entrances when the reveal
+  starts (`SceneTransitionManager.RevealStarted`); before, on a boot they played behind the still-opaque splash.
+- **Froglet's logo** moved from under the game's logo to the foot's bottom-right corner, under the bar's percentage,
+  150 wide, on both the splash and the sign-in scene (`author_start_flow.py`), and on board `R94C`.
+
+Verified: `unity_refcompile` player and editor; `author_start_flow.py` check and self-test (two new negative controls:
+the poster without its exit, the logo back at the top left); `gates.sh`. New EditMode tests (`SceneTransitionManagerTests`
+for the hitch rule and the ease, `BootPosterTests` for the exit's scale) compile and were not run. Hand test: "The boot
+reveal into the Toy Box" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+Seen in Shombith's screenshot and not explained from the code: the splash's bar showed the `%` sign with no number
+and an empty track, which means `BootStepBar` never drew. Its wiring in both scenes is correct; an exception in the
+Console from `BootStepBar` or `BootLoadProgress` is the likely cause and is the first thing to look for.
