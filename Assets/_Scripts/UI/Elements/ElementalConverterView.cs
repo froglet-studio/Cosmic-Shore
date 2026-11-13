@@ -406,7 +406,7 @@ namespace CosmicShore.UI
                 if (_paidRun && running && p <= 0f) held += 1;   // still waiting on the pier
                 if (held < 1 && shortest < 0) shortest = k;
                 if (held < 1) empty++;
-                if (k < balances.Length && balances[k]) balances[k].Draw(held, running && p > 0f && p < 1f);
+                if (k < balances.Length && balances[k]) balances[k].Draw(held, running && p > 0f && p < 1f, running && p > 0f);
             }
 
             bool formed = _player.OmniFormed;

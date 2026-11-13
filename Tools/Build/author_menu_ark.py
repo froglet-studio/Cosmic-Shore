@@ -8,9 +8,10 @@ boards, revision 2, on the "Menu Redesign B" canvas).
         ArkView.prefab   the Ark's five tabs (ArkTabsView: CONVERTER, SQUADS, DECOR - Shombith, 2026-10-27; ARTIFACTS -
                          Garrett, 2026-10-27; PILOTS - Garrett, 2026-11-12) and
                          their pages:
-                         CONVERTER, the overlay over the pier (Rev 104 A, section 196: no cards): the shade, and the
-                         ledger at the pier's foot - the player's four elemental balances (ConverterBalance, fly-in
-                         order) and the omni wallet in one row, the line over it, and CONVERT with the sweep under it;
+                         CONVERTER, the overlay over the pier (Rev 104 B, section 196: no cards): the shade, and the
+                         holo dais at the pier's foot - the player's four elemental balances (ConverterBalance, fly-in
+                         order) round its arc, each with its beam to the omni wallet at its centre, the line over it,
+                         and CONVERT with the sweep under it;
                          SQUADS (SquadsPage): the player's squads (up to four, made and joined), the selected
                          squad's three squad mates with their vessel, element, pilot and artifact, NEW / JOIN /
                          DELETE, PLAY into Arcade / Arena / Mission, and the join list of friends' open seats;
@@ -35,6 +36,7 @@ The documents this script owns are re-emitted and validated on every run, --chec
 """
 
 import argparse
+import math
 import importlib.util
 import os
 import re
@@ -87,38 +89,64 @@ def title_band(root, key="Title", heading="Elemental converter",
     label(band.child(N(f"{key}/Line", "Line", TL(22, 84, 480, 20))), line, "BodySmall", "NeutralLightest")
 
 
-# The ledger on the deck (Rev 104 A, Shombith 2026-11-13: no cards on top; "the elemental converter should show the actual
-# elemental crystals balance the user has"): the four balances and the omni wallet in one row at the pier's foot, on the
-# room with no panel behind them, the line over the row and CONVERT under it. Board R104A: 132-wide columns 56 apart,
-# a hairline, the omni's 150-wide column; the row stands 120 over the foot and CONVERT 36 over it.
-LEDGER_COL_W, LEDGER_GAP, LEDGER_OMNI_W = 132, 56, 150
-LEDGER_DIVIDER_X = len(ORDER) * LEDGER_COL_W + (len(ORDER) - 1) * LEDGER_GAP + LEDGER_GAP
-LEDGER_OMNI_X = LEDGER_DIVIDER_X + 1 + LEDGER_GAP
-LEDGER_W, LEDGER_H, LEDGER_Y = LEDGER_OMNI_X + LEDGER_OMNI_W, 200, 120
-CONVERT_Y, CONVERT_MIN_W = 36, 320
+# The holo dais (Rev 104 B, Shombith 2026-11-13: "I like B"; no cards on top, "the elemental converter should show the
+# actual elemental crystals balance the user has"): a projection rises from the pier's edge like the bridge tables in the
+# pilot scenes, the four balances standing round its arc and the omni wallet at its centre, a beam from each crystal to
+# the omni, the line over the dais and CONVERT under it. Every place is board R104B's, measured from the screen's foot
+# (y up) and its centre line: the dais's rings are centred on the foot, so only their upper halves show.
+DAIS_RINGS = (("Outer", "kit_ring_line", 940, 660, 0.35), ("Inner", "kit_ring_line", 760, 524, 0.18),
+              ("Floor", "kit_pool_rim", 1120, 80, 0.26))
+DAIS_GLOW = (1200, 644, 0.12)                       # the board's radial glow, 50% x 70% of its 1200 x 460 box
+DAIS_COL_W, DAIS_COL_H, DAIS_ART = 140, 140, 64
+DAIS_POS = {"Space": (-407, 197), "Charge": (-199, 331), "Mass": (199, 331), "Time": (407, 197)}   # column top-centres
+DAIS_OMNI_W, DAIS_OMNI_ART, DAIS_OMNI_TOP = 200, 92, 220
+DAIS_OMNI_CENTRE = (0, DAIS_OMNI_TOP - DAIS_OMNI_ART // 2)
+DAIS_LINE_Y, DAIS_LINE_W = 376, 1000
+CONVERT_Y, CONVERT_MIN_W = 22, 300
 
 
-def ledger_column(row, key, name, x, w, art_size, sprite, words):
-    col = row.child(N(key, name, TL(x, 30, w, 170)))
-    art_node(col, f"{key}/Art", "Art", TL((w - art_size) // 2, 82 - art_size, art_size, art_size), sprite, preserve=True)
-    label(col.child(N(f"{key}/Count", "Count", TL(0, 90, w, 50))), "0", "DataLarge", "TextLight", align="center")
-    label(col.child(N(f"{key}/Name", "Name", TL(0, 146, w, 18))), words, "Label", "NeutralLightest", align="center")
-    return col
+def foot(x, y, w, h, pivot=(0.5, 1)):
+    """A rect anchored at the screen's foot-centre: (x, y) is its pivot, y up from the foot."""
+    return R((0.5, 0), None, (x, y), (w, h), pivot)
 
 
-def ledger(root):
-    row = root.child(N("Ledger", "Ledger", R((0.5, 0), None, (0, LEDGER_Y), (LEDGER_W, LEDGER_H), (0.5, 0))))
-    row.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
-    label(row.child(N("Ledger/Line", "Line", TL(0, 0, LEDGER_W, 20))), "One of each makes one omni crystal", "Label",
-          "NeutralLightest", align="center")
-    for i, name in enumerate(ORDER):
-        k = f"Ledger/{name}"
-        col = ledger_column(row, k, name, i * (LEDGER_COL_W + LEDGER_GAP), LEDGER_COL_W, 76, CRYSTAL[name], name)
-        col.add("balance", 114, lambda ctx, go, k=k: mono(go, S["balance"],
+def dais_beam(x0, y0, x1, y1):
+    """The beam's rect and its turn: pivoted at its start, as long as the gap, turned to the end."""
+    dx, dy = x1 - x0, y1 - y0
+    return foot(x0, y0, round(math.hypot(dx, dy), 2), 2, (0, 0.5)), round(math.degrees(math.atan2(dy, dx)), 3)
+
+
+def dais(root):
+    d = root.child(N("Dais", "Dais", R((0, 0), (1, 1), (0, 0), (0, 0))))
+    d.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
+    gw, gh, ga = DAIS_GLOW
+    image_node(d, "Dais/Glow", "Glow", foot(0, 0, gw, gh, (0.5, 0.5)), "TextLight", K.kit_sprite("kit_pool"), alpha=ga)
+    for name, sprite, w, h, alpha in DAIS_RINGS:
+        image_node(d, f"Dais/{name}Ring", f"{name}Ring", foot(0, 0, w, h, (0.5, 0.5)), "TextLight", K.kit_sprite(sprite),
+                   alpha=alpha)
+    label(d.child(N("Dais/Line", "Line", foot(0, DAIS_LINE_Y, DAIS_LINE_W, 20))), "One of each makes one omni crystal",
+          "Label", "NeutralLightest", align="center")
+    for name in ORDER:
+        x, top = DAIS_POS[name]
+        r, deg = dais_beam(x, top - DAIS_ART // 2, *DAIS_OMNI_CENTRE)
+        image_node(d, f"Dais/{name}Beam", f"{name}Beam", r, "TextLight", alpha=0.18).rot = deg
+    for name in ORDER:
+        k = f"Dais/{name}"
+        x, top = DAIS_POS[name]
+        col = d.child(N(k, name, foot(x, top, DAIS_COL_W, DAIS_COL_H)))
+        art_node(col, f"{k}/Art", "Art", TL((DAIS_COL_W - DAIS_ART) // 2, 0, DAIS_ART, DAIS_ART), CRYSTAL[name],
+                 preserve=True)
+        label(col.child(N(f"{k}/Count", "Count", TL(0, 68, DAIS_COL_W, 50))), "0", "DataLarge", "TextLight",
+              align="center")
+        label(col.child(N(f"{k}/Name", "Name", TL(0, 120, DAIS_COL_W, 18))), name, "Label", "NeutralLightest",
+              align="center")
+        col.add("balance", 114, lambda ctx, go, k=k, name=name: mono(go, S["balance"],
                 f"  art: {ref(ctx.c(f'{k}/Art', 'img'))}\n  countText: {ref(ctx.c(f'{k}/Count', 'kt'))}\n"
-                f"  nameText: {ref(ctx.c(f'{k}/Name', 'kt'))}\n"))
-    image_node(row, "Ledger/Divider", "Divider", TL(LEDGER_DIVIDER_X, 40, 1, 132), "NeutralLightest", alpha=0.5)
-    om = ledger_column(row, "Ledger/Omni", "Omni", LEDGER_OMNI_X, LEDGER_OMNI_W, 96, OMNI, "Omni")
+                f"  nameText: {ref(ctx.c(f'{k}/Name', 'kt'))}\n  beam: {ref(ctx.c(f'Dais/{name}Beam', 'th'))}\n"))
+    om = d.child(N("Dais/Omni", "Omni", foot(0, DAIS_OMNI_TOP, DAIS_OMNI_W, 140)))
+    art_node(om, "Dais/Omni/Art", "Art", TL((DAIS_OMNI_W - DAIS_OMNI_ART) // 2, 0, DAIS_OMNI_ART, DAIS_OMNI_ART), OMNI,
+             preserve=True)
+    label(om.child(N("Dais/Omni/Count", "Count", TL(0, 96, DAIS_OMNI_W, 40))), "0", "Data", "TextLight", align="center")
     om.add("pop", 114, M.entrance("Pop", play_on_enable=False, duration=M.CEREMONY))
     w, h = K.button_size("CONVERT")
     w = max(w, CONVERT_MIN_W)
@@ -810,7 +838,7 @@ def build_view(veiled=VEILED):
     # The converter's overlay keeps its node keys (and so every fileID the scene's stubs point at) under its page.
     conv = page_node(root, "Converter", True)
     page_shade(conv, "Converter")
-    ledger(conv)
+    dais(conv)
     squads_page(root, veiled)
     pilots_page(root, veiled)
     artifacts_page(root, veiled)
@@ -849,19 +877,21 @@ IDS = dict(go="7700130000000000001", rt="7700130000000000002", view="77001300000
 VIEW_REFS = {
     "convertButton": ("ConvertButton|root#button", "button"),
     "convertLabel": ("ConvertButton|Label#tmp", "tmp"),
-    "omniCountText": ("Ledger/Omni/Count#kt", "kt"),
-    "balanceLineText": ("Ledger/Line#kt", "kt"),
-    "omniPop": ("Ledger/Omni#pop", "entrance"),
+    "omniCountText": ("Dais/Omni/Count#kt", "kt"),
+    "balanceLineText": ("Dais/Line#kt", "kt"),
+    "omniPop": ("Dais/Omni#pop", "entrance"),
     "arkTabs": ("root#tabs", "tabs"),
 }
 LISTS = {
-    "balances": [(f"Ledger/{n}#balance", "balance") for n in ORDER],
+    "balances": [(f"Dais/{n}#balance", "balance") for n in ORDER],
 }
 OVERLAY_ORDER = ("convertButton", "convertLabel", "balances", "omniCountText", "balanceLineText", "omniPop", "arkTabs")
 # The overlay fields Rev 104 A retired (section 196) with the cards they pointed into: their scene stubs are removed too.
 RETIRED_REFS = (["Bar/Status#kt", "Bar/Clock#tmp", "Recipe/Merged#kt", "Recipe/Omni#cg", "Recipe/Omni#pop"]
                 + [f"Bar/Seg{n}#img" for n in ORDER] + [f"Bar/Seg{n}/SparkGroup#cg" for n in ORDER]
-                + [f"Recipe/{n}#row" for n in ORDER])
+                + [f"Recipe/{n}#row" for n in ORDER]
+                # Rev 104 A's ledger, built first and replaced by B's dais (Shombith picked B, 2026-11-13)
+                + ["Ledger/Omni/Count#kt", "Ledger/Line#kt", "Ledger/Omni#pop"] + [f"Ledger/{n}#balance" for n in ORDER])
 
 
 class ArkMount(C.Mount):
@@ -974,7 +1004,7 @@ def check_sources(path, text_, files, memo):
 
 
 TMP, IMG = K.TMP_UGUI, K.IMAGE
-BALANCE_FIELDS = dict(art=IMG, countText=S["kt"], nameText=S["kt"])
+BALANCE_FIELDS = dict(art=IMG, countText=S["kt"], nameText=S["kt"], beam=A.S["th"])
 
 
 def validate(files):
@@ -990,16 +1020,25 @@ def validate(files):
     view = files[f"{OUT_DIR}/{VIEW}.prefab"]
     V = K.FileIds(VIEW)
     for n in ORDER:
-        _, body = A.doc_of(view, V(f"Ledger/{n}#balance"))
+        _, body = A.doc_of(view, V(f"Dais/{n}#balance"))
         assert body and S["balance"] in body, f"ArkView: the {n} balance carries no ConverterBalance"
         for field, want in BALANCE_FIELDS.items():
             C.wired(view, body, field, want, f"the {n} balance")
-        assert f"guid: {CRYSTAL[n]}" in A.doc_of(view, V(f"Ledger/{n}/Art#img"))[1], f"the {n} balance shows the wrong crystal"
-    assert f"guid: {OMNI}" in A.doc_of(view, V("Ledger/Omni/Art#img"))[1], "the omni wallet shows the wrong crystal"
-    # Rev 104 A: no cards on the converter (Shombith 2026-11-13: "The UI cards on top of each screen. I do not like them
+        assert f"guid: {CRYSTAL[n]}" in A.doc_of(view, V(f"Dais/{n}/Art#img"))[1], f"the {n} balance shows the wrong crystal"
+    assert f"guid: {OMNI}" in A.doc_of(view, V("Dais/Omni/Art#img"))[1], "the omni wallet shows the wrong crystal"
+    for n in ORDER:                             # each beam runs from its crystal's centre to the omni's
+        x, top = DAIS_POS[n]
+        _, rt = A.doc_of(view, V(f"Dais/{n}Beam#rt"))
+        start = [float(v) for v in re.search(r"m_AnchoredPosition: \{x: (-?[\d.e-]+), y: (-?[\d.e-]+)\}", rt).groups()]
+        a = math.radians(float(re.search(r"m_LocalEulerAnglesHint: \{x: 0, y: 0, z: (-?[\d.e-]+)\}", rt).group(1)))
+        length = float(re.search(r"m_SizeDelta: \{x: (-?[\d.e-]+)", rt).group(1))
+        end = (start[0] + length * math.cos(a), start[1] + length * math.sin(a))
+        assert abs(start[0] - x) < 0.5 and abs(start[1] - (top - DAIS_ART // 2)) < 0.5, f"the {n} beam does not start at its crystal"
+        assert math.hypot(end[0] - DAIS_OMNI_CENTRE[0], end[1] - DAIS_OMNI_CENTRE[1]) < 1.0, f"the {n} beam ends at {end}, not the omni"
+    # Rev 104: no cards on the converter (Shombith 2026-11-13: "The UI cards on top of each screen. I do not like them
     # at all"). The retired title band, recipe panel and converter bar stay gone.
     for retired in ("Title", "Recipe", "Bar"):
-        assert not A.doc_of(view, V(f"{retired}#rt"))[1], f"the converter's {retired} card is back (Rev 104 A has none)"
+        assert not A.doc_of(view, V(f"{retired}#rt"))[1], f"the converter's {retired} card is back (Rev 104 has none)"
     assert view.count("guid: " + S["spark"]) == 1, "ArkView needs exactly the CONVERT sweep"
     validate_tabs(view, V)
 
@@ -1219,6 +1258,13 @@ def drift(files):
             if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
 
 
+def beam_turn_plant(view, rt_fid):
+    """Turn one beam ten degrees off its line to the omni."""
+    head, doc = A.doc_of(view, rt_fid)
+    z = float(re.search(r"m_LocalEulerAnglesHint: \{x: 0, y: 0, z: (-?[\d.e-]+)\}", doc).group(1))
+    return view.replace(doc, re.sub(r"(m_LocalEulerAnglesHint: \{x: 0, y: 0, z: )-?[\d.e-]+", rf"\g<1>{z + 10}", doc), 1)
+
+
 def recipe_card_plant(view):
     """The view with a RectTransform document under the retired Recipe card's fileID (the self-test's plant)."""
     fid = str(K.FileIds(VIEW)("Recipe#rt"))
@@ -1277,6 +1323,8 @@ def self_test(files):
     cases = [
         ("a balance with no count", lambda f: f.__setitem__(view, re.sub(r"(  countText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "the Space balance"),
         ("the recipe card back", lambda f: f.__setitem__(view, recipe_card_plant(f[view])), "card is back"),
+        ("a balance with no beam", lambda f: f.__setitem__(view, re.sub(r"(  beam: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "the Space balance"),
+        ("a beam turned off the omni", lambda f: f.__setitem__(view, beam_turn_plant(f[view], V("Dais/MassBeam#rt"))), "the Mass beam ends"),
         ("CONVERT unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  convertButton: {{fileID: {mount.stub_fid('ConvertButton|root#button')}}}", "  convertButton: {fileID: 0}"))),
         ("the converter grown up under the nav again", lambda f: f.__setitem__(SCENE, re.sub(
