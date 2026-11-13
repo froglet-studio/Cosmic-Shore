@@ -7622,7 +7622,7 @@ against 98); the two compare boards carry three Lime buttons each because they s
 **Differs from the build (section 172):** as sections 173 and 174; the game has no per-player Ready in the Voyage
 window and no element flower outside the HUD.
 
-## 176. Rev 98 mockups: 1A and 2D with room between the words (2026-11-12, awaiting a yes)
+## 176. Rev 98 mockups: 1A and 2D with room between the words (2026-11-12; Shombith: "Yes, build these two screens in Unity", built in section 177)
 
 **Asked (Shombith, on Rev 97):** "s2d and s1a but the thing is that everywhere the texts are too cramped up together.
 Can we do something about that?"
@@ -7647,3 +7647,39 @@ Shelf's groups are 28 px apart with wider tiles, and a pilot's note stays on one
 **Gate:** `check_mockup.py` passes 1A; 2D is over the noise budget (113 against 98) because every choice is on screen.
 
 **Differs from the build (section 172):** as sections 173 to 175.
+
+## 177. Built: the Voyages tab as two screens - Rev 98 1A and 2D (2026-11-13, not seen in Unity)
+
+**Asked (Shombith, on Rev 98):** "Yes, build these two screens in Unity".
+
+**Built** (branch `claude/sweet-mccarthy-ow25e2`; no Unity editor ran, so nobody has seen it):
+
+- **The voyage screen** (`VoyageBoard`, rewritten): the voyage chips (96 high, their two lines apart); the window's own
+  HyperSea map, flat, with its explorer back (the tier ladder, readout, drag, pinch, wheel, a press on a place sets the
+  course there) and a + and - over it (`VoyageMapGraphic.ZoomStep`), over the edge-on view; on the right the voyage's
+  name and numbers, the squads as formations (name, who flies, three hulls), Configure squad and Set sail.
+- **The squad screen** (`VoyageSquadDeck`, new; `VoyageBoard.ShowScreen`): the way back and the voyage on one line, the
+  squads' names, the three seats large, the picked seat's choices on the shelf (Vessel, Pilot, Element, Artifact as
+  open pictures; one press takes and saves), Save as preset, Set sail. The voyage's map stands dimmed behind it.
+- **The squad rules in one place** (`VoyageSeats`, new): what a seat may take and how it changes, moved out of
+  `VoyageSquadColumn`, which the Saga tab still uses. Same Ark rules.
+- **Soft fills** (`VoyageSoftFill`, new): Set sail and the quiet buttons are solid in the middle and fade to both ends,
+  on every tab of the window; the bands and the light under a picked picture are the same graphic.
+- **Element marks**: the HUD's flower (`VoyageKit.Flower`, five petals through `ElementalBarsView.ConfigurePetal`).
+- **The tabs' boxes** (section 172's reject): the kit's painters on the four tabs are removed, not disabled. A theme or
+  colour-set change re-applied every `KitThemedGraphic`, disabled ones too (`UIThemeLive`), which painted the cleared
+  fill dark again.
+- 11 new authored lines (`BoardZoomIn` to `BoardSwapsWith`); chips are 96 high on every tab (`RowHeight`).
+
+**Differs from the boards:**
+
+- No blur and no deck grid behind the squad screen: the map is dimmed by a veil.
+- The "in your lobby, not in this squad" line is not built: the window has no reach to the party's members yet.
+- The zoom ladder is the map's own (seven tiers, drawn by the map), not the board's four rows.
+- Save as preset copies the squad under the book's own name ("Squad N"); it is dark on a joined squad or a full book.
+- The keycaps (X, B, Y, A) are drawn; the pad does not press them yet.
+- The window title and hub row keep their sizes; Saga, Quests and Episodes keep the tilted table (Rev 90).
+- More vessels, pilots or artifacts than the board showed narrow their tiles; a pilot's note that would not fit is left out.
+
+**Verified:** `unity_refcompile` player and editor, 0 errors in project code; the ship gates pass; `VoyageBoardTests`
+(11 tests) compiled, not run. Hand test: `Docs/UNITY_VERIFICATION_CHECKLIST.md`, "The Voyages tab as two screens".

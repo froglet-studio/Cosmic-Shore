@@ -467,6 +467,16 @@ namespace CosmicShore.UI
             ZoomAbout(Local(e, e.position), Mathf.Pow(WheelZoom, e.scrollDelta.y));
         }
 
+        /// <summary>Zoom by <paramref name="factor"/> about the middle of the view (the Voyages screen's + and -), as the
+        /// wheel does about the pointer.</summary>
+        public void ZoomStep(float factor)
+        {
+            if (float.IsInfinity(_minX) || factor <= 0f) return;
+            _fixWidth = 0f;
+            _flying = false;
+            ZoomAbout(rectTransform.rect.center, factor);
+        }
+
         public void OnPointerClick(PointerEventData e)
         {
             if (_content?.Locations == null || float.IsInfinity(_minX)) return;

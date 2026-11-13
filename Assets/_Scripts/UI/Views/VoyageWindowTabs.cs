@@ -147,9 +147,12 @@ namespace CosmicShore.UI
                 if (!t.button) continue;
                 var rt = (RectTransform)t.button.transform;
                 // The kit's theming (KitThemedGraphic, KitText and their kin) puts the frames and the label's face back
-                // every time the window is enabled: on these tabs it stands down, so the plain look stays.
+                // every time the window is enabled.
+                // Standing down is not enough: a theme or colour-set change re-applies every KitThemedGraphic it finds,
+                // disabled ones too (UIThemeLive), which painted the cleared fill dark again - the boxes Shombith saw in
+                // Unity. So on these tabs the kit's painters are removed.
                 foreach (var mb in t.button.GetComponentsInChildren<MonoBehaviour>(true))
-                    if (mb is not Graphic && mb is not Selectable && mb.GetType().Name.StartsWith("Kit")) mb.enabled = false;
+                    if (mb && mb is not Graphic && mb is not Selectable && mb.GetType().Name.StartsWith("Kit")) Destroy(mb);
                 foreach (var img in t.button.GetComponentsInChildren<Image>(true))
                 {
                     if (t.mark && img.transform.IsChildOf(t.mark.transform)) continue;

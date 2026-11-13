@@ -67,7 +67,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Sizes")]
         [Tooltip("A chip's height (a voyage, a saga part, a quest).")]
-        public float RowHeight = 76f;
+        public float RowHeight = 96f;
 
         /// <summary>The part of <paramref name="sprite"/> its hull fills (0-1, from the bottom left); the whole sprite when
         /// it was not measured.</summary>
