@@ -84,3 +84,11 @@ inside them; whether the prism occlusion dither keeps the hull clear in dense ce
 (dynamic pair -18 / -20): the wingspan is 20% of the frame height at 20, against 27% at 15 and 13% at 30.
 
 **Next.** Caleb picks 15 or 20 after flying both; whichever he picks goes in this PR before it ships.
+
+### Decided (Caleb, 2026-11-12)
+
+**18.** Caleb flew the whole range from 15 to 20 in the editor, moving the asset's value himself, and picked 18: "Lets ship
+at -18". `followOffset` (0, 0, -18), dynamic pair -16.2 / -18. The wingspan is about 22% of the frame height (it was 13% at 30).
+
+**Next question.** Should the camera look slightly ahead (`lookAheadDistance`, `lookAheadLift`) so the hull sits lower
+in the frame and shows where it is going?

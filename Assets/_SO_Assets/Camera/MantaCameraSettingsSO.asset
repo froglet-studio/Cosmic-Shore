@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: MantaCameraSettingsSO
   m_EditorClassIdentifier: 
   mode: 0
-  followOffset: {x: 0, y: 0, z: -20}
-  dynamicMinDistance: -18
-  dynamicMaxDistance: -20
+  followOffset: {x: 0, y: 0, z: -18}
+  dynamicMinDistance: -16.2
+  dynamicMaxDistance: -18
   followSmoothTime: 0.02
   rotationSmoothTime: 10
   disableSmoothing: 0
