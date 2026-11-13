@@ -42,7 +42,7 @@ in the Unity editor yet.
 - Not built from the board: the drifting sea fields and sea lines (the cover is still `Sea_Window.mat`), the Ark's
   drift and the hull's bob (idle motion), and tabular digits on the percentage.
 
-`author_ingame_hud.py` section 12c generates all of it; its `--self-test` plants eleven defects for this screen.
+`author_ingame_hud.py` section 12c generates all of it; its `--self-test` plants thirteen defects for this screen (nine of them the tour's and the bar's).
 
 ## Before (Rev 33, 2026-10-28): the Cell gate COVERS the arena
 
