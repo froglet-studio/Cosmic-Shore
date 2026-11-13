@@ -1,0 +1,13 @@
+{
+  "id": "2026-11-13-the-grizzly-trigger-bomb-s-look-faceted-62050a",
+  "to": "Yash",
+  "by": "Garrett",
+  "date": "2026-11-13T01:10:20+00:00",
+  "area": "Grizzly lane (Grizzly Time)",
+  "summary": "The Grizzly trigger bomb's look (faceted body, heat pulse, faceted shell instead of glow/ring billboards) and a new cinematic blast look (core, shock shell, light, lingering shards) on AOEGrizzlyExplosion. No Grizzly Time mode files touched.",
+  "why": "Footage critique weak link 2, Garrett-approved: the bomb read as flat stars on film and the blast vanished in two frames",
+  "branch": "claude/project-thread-4ph2ke",
+  "pr": 1940,
+  "lane": "grizzly",
+  "commit": "7c5a59f95"
+}
