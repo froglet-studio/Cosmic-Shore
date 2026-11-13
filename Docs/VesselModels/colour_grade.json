@@ -1,7 +1,7 @@
 {
  "counts": {
   "exempt": 7,
-  "grey": 514,
+  "grey": 518,
   "ui": 612,
   "world": 1
  },
@@ -3824,6 +3824,11 @@
    "kind": "sprite",
    "sha": "ab8b71d68803bcab"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_Attack.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c3ec86019fa382ea"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_DangerShare.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3833,6 +3838,21 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "3966f49e38789f5a"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_EatShields.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "44c674fc55173959"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_MassClusters.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "10e50bd60ebf65b8"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_SecondDecoy.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "91d82be789e7decd"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_TheCall.png": {
    "coloured": 0.0,
