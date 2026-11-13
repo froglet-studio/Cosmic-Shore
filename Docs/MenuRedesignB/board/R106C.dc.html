@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 106 C - Seat by seat: one seat in type over the hangar, no panels - interactive</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#8C93C7;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:10px;height:48px;padding:0 20px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:18px;letter-spacing:.1em;text-transform:uppercase}
+.btn.sm{height:40px;padding:0 14px;font-size:14px}
+.commit{background:#A600FF;color:#E6E9FF}
+.cta{background:#99FF80;color:#00010A}
+.def{background:rgba(0,4,31,.55);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.off{background:rgba(0,4,31,.4);color:#5C5F70;box-shadow:inset 0 0 0 1px #222645}
+.btn .kc{border-color:currentColor;color:inherit;opacity:.85}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity 900ms ease-in-out}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lat{background-image:repeating-linear-gradient(60deg,rgba(230,233,255,.05) 0 1px,transparent 1px 24px),repeating-linear-gradient(-60deg,rgba(230,233,255,.05) 0 1px,transparent 1px 24px)}
+.ava{object-fit:cover;display:block}
+.rise{animation:csRise 360ms cubic-bezier(.2,.8,.2,1) both}
+@keyframes csRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:csFade 300ms ease-out both}
+@keyframes csFade{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<img class="bg" src="{{bg}}" alt="{{bgAlt}}"><div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(0,1,10,.72) 0%,rgba(0,1,10,0) 20%,rgba(0,1,10,0) 72%,rgba(0,1,10,.78) 100%);pointer-events:none"></div><nav aria-label="Menu screens" class="abs" style="left:0;right:0;top:0;height:84px;background:rgba(0,1,10,.78);border-bottom:1px solid #222645;display:flex;align-items:center;justify-content:center;gap:48px;z-index:5"><span class="kc">LT</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/ec690d6b90d6fcdbc430b9bbaacf28a9" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">CODEX</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/34f5a50f1275fef42808fe9df3bf6af5" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HANGAR</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/a5bd4d8d1de7b494567fc3de75525e1e" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HOME</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#E6E9FF"><img src="/_blob/e5b050c5a676193c650e94d873ad40e2" alt="" style="width:26px;height:26px;object-fit:contain;opacity:1">ARK<span class="abs" style="left:0;right:0;bottom:-10px;height:2px;background:#E6E9FF"></span></span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/d0e850bc927559f1a499868d26f2a3de" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">PORT</span><span class="kc">RT</span></nav><div class="abs num" style="right:40px;top:30px;z-index:6;display:flex;align-items:center;gap:8px;font-size:20px;color:#FFAE00"><span style="width:14px;height:18px;background:#FFAE00;clip-path:polygon(50% 0,100% 35%,50% 100%,0 35%)"></span>1,240</div><div class="abs" style="left:40px;right:40px;top:96px;height:52px;display:flex;align-items:center;gap:30px;border-bottom:1px solid rgba(116,123,173,.25);z-index:4"><span class="kc">LB</span><sc-for list="{{tabs}}" as="t" hint-placeholder-count="5"><button class="pick" type="button" onClick="{{t.pick}}" style="position:relative;display:flex;align-items:center;gap:8px;color:{{t.col}}"><sc-if value="{{t.locked}}" hint-placeholder-val="{{ false }}"><svg width="12" height="14" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg></sc-if><span class="cap" style="font-size:16px;color:{{t.col}}">{{t.name}}</span><span class="abs" style="left:0;right:0;bottom:-15px;height:2px;background:{{t.mark}}"></span></button></sc-for><span class="kc">RB</span></div><button class="pick abs" type="button" onClick="{{toggleList}}" aria-expanded="{{listAria}}" style="left:40px;top:166px;display:flex;align-items:center;gap:12px;z-index:7"><span style="width:12px;height:12px;transform:rotate(45deg);background:{{dc}}"></span><span style="font-size:30px;line-height:1;text-shadow:0 2px 10px rgba(0,1,10,.9)">{{squadName}}</span><span style="color:#9AA0CC;display:flex"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 4l4 4 4-4"></path></svg></span><span class="kc">Y</span></button><div class="abs" style="inset:0;background:linear-gradient(270deg,rgba(0,1,10,.9) 0,rgba(0,1,10,.7) 24%,rgba(0,1,10,0) 44%);pointer-events:none;z-index:1"></div><div class="abs" style="left:{{fx}}px;top:{{fy}}px;width:360px;height:200px;transition:left 420ms cubic-bezier(.2,.8,.2,1),top 420ms cubic-bezier(.2,.8,.2,1);z-index:2;pointer-events:none"><span class="abs" style="left:0;top:0;width:28px;height:28px;border-left:2px solid {{dc}};border-top:2px solid {{dc}}"></span><span class="abs" style="right:0;top:0;width:28px;height:28px;border-right:2px solid {{dc}};border-top:2px solid {{dc}}"></span><span class="abs" style="left:0;bottom:0;width:28px;height:28px;border-left:2px solid {{dc}};border-bottom:2px solid {{dc}}"></span><span class="abs" style="right:0;bottom:0;width:28px;height:28px;border-right:2px solid {{dc}};border-bottom:2px solid {{dc}}"></span></div><section aria-label="Seat" class="abs" style="left:1330px;top:200px;width:540px;z-index:3;display:flex;flex-direction:column;gap:0"><span class="lab num">Seat {{seatNo}} of 3</span><span class="ell" style="font-size:72px;line-height:1.05;margin-top:8px;text-shadow:0 2px 18px rgba(0,1,10,.9)">{{s.who}}</span><span style="display:flex;align-items:center;gap:10px;margin-top:6px"><span style="width:8px;height:8px;transform:rotate(45deg);background:{{sDot}}"></span><span class="lab">{{s.state}}</span></span><div style="display:flex;flex-direction:column;margin-top:34px"><sc-for list="{{lines}}" as="k" hint-placeholder-count="4"><div style="position:relative;display:flex;flex-direction:column;gap:4px;padding:12px 0 12px 18px"><span class="abs" style="left:0;top:14px;bottom:14px;width:2px;background:{{k.mark}}"></span><span class="lab" style="font-size:11px">{{k.label}}</span><sc-if value="{{k.idle}}" hint-placeholder-val="{{ true }}"><button class="pick" type="button" onClick="{{k.pick}}" style="font-size:32px;line-height:1.1;text-shadow:0 2px 12px rgba(0,1,10,.9)">{{k.value}}</button></sc-if><sc-if value="{{k.live}}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:18px"><button class="pick" type="button" onClick="{{k.prev}}" aria-label="Previous" style="display:flex;color:{{dc}};padding:6px"><svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 2L4 6l4 4"></path></svg></button><span style="font-size:32px;line-height:1.1;min-width:200px">{{k.value}}</span><button class="pick" type="button" onClick="{{k.next}}" aria-label="Next" style="display:flex;color:{{dc}};padding:6px"><svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 2l4 4-4 4"></path></svg></button><button class="pick" type="button" onClick="{{k.done}}"><span class="kc">A</span></button></span></sc-if></div></sc-for></div><sc-if value="{{hasAction}}" hint-placeholder-val="{{ true }}"><button class="pick" type="button" onClick="{{action}}" style="display:flex;align-items:center;gap:10px;margin-top:22px;color:{{actionCol}}"><span class="kc">X</span><span class="cap" style="font-size:16px">{{actionLabel}}</span></button></sc-if><div style="display:flex;align-items:center;gap:14px;margin-top:40px"><button class="pick" type="button" onClick="{{prevSeat}}" aria-label="Previous seat" style="display:flex;color:#C9CDEA;padding:6px"><svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 2L4 6l4 4"></path></svg></button><sc-for list="{{pips}}" as="p" hint-placeholder-count="3"><button class="pick" type="button" onClick="{{p.pick}}" aria-label="{{p.aria}}" style="width:10px;height:10px;transform:rotate(45deg);background:{{p.fill}};box-shadow:inset 0 0 0 1px {{p.edge}}"></button></sc-for><button class="pick" type="button" onClick="{{nextSeat}}" aria-label="Next seat" style="display:flex;color:#C9CDEA;padding:6px"><svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 2l4 4-4 4"></path></svg></button><span class="kc">D-pad</span></div></section><sc-if value="{{listOpen}}" hint-placeholder-val="{{ false }}"><div class="abs rise lat sl" style="left:40px;top:220px;width:360px;box-sizing:border-box;padding:16px 18px;z-index:8;background-color:rgba(0,1,10,.9);box-shadow:inset 0 0 0 1px {{lightEdge}};display:flex;flex-direction:column;gap:6px"><sc-for list="{{squadRows}}" as="s" hint-placeholder-count="2"><button class="pick" type="button" onClick="{{s.pick}}" style="position:relative;display:flex;align-items:center;gap:12px;height:46px;padding:0 12px;background:{{s.fill}}"><span class="abs" style="left:0;top:8px;bottom:8px;width:2px;background:{{s.mark}}"></span><span style="width:10px;height:10px;transform:rotate(45deg);background:{{s.dot}}"></span><span style="flex:1;font-size:18px">{{s.name}}</span><span class="lab" style="font-size:11px">{{s.whose}}</span></button></sc-for><sc-if value="{{isMine}}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:14px;padding:10px 12px 4px;border-top:1px solid rgba(116,123,173,.25);margin-top:4px"><span class="lab" style="font-size:11px">Light</span><sc-for list="{{domains}}" as="d" hint-placeholder-count="3"><button class="pick" type="button" aria-pressed="{{d.pressed}}" onClick="{{d.pick}}" style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:2px solid {{d.line}}"><span style="width:9px;height:9px;transform:rotate(45deg);background:{{d.dot}}"></span><span class="cap" style="font-size:13px;color:{{d.col}}">{{d.name}}</span></button></sc-for></div></sc-if><div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid rgba(116,123,173,.25);margin-top:6px"><button class="btn sm def sls" type="button" onClick="{{make}}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M7 1v12M1 7h12"></path></svg><span>Make</span></button><button class="btn sm def sls" type="button" onClick="{{join}}"><span>Join a friend</span></button></div></div></sc-if><sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}"><div class="abs fade" role="status" style="left:50%;top:170px;transform:translateX(-50%);z-index:9;padding:10px 18px;background:rgba(0,1,10,.88);box-shadow:inset 0 0 0 1px {{lightEdge}};font-size:15px;white-space:nowrap">{{toast}}</div></sc-if><div class="abs" style="right:40px;bottom:36px;display:flex;align-items:center;gap:10px;z-index:6"><button class="btn off sl" type="button" onClick="{{mission}}" aria-label="Mission, locked"><svg width="12" height="14" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg><span>Mission</span></button><button class="btn commit sl" type="button" onClick="{{arena}}"><span class="kc">A</span><span>Arena</span></button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+
+const BOOK = [{"name": "Skim Wing", "dom": "Jade", "mine": true, "owner": "You", "seats": [{"who": "You", "v": "Sparrow", "e": "Charge", "p": "VOLT", "a": "Javelin", "on": true, "me": true}, {"who": "Halcyon", "v": "Dolphin", "e": "Space", "p": "ZODIAC", "a": "Hydra", "on": true}, {"who": "Mothwing", "v": "Serpent", "e": "Mass", "p": "ANVIL", "a": "Aegis", "on": false}]}, {"name": "Breakers", "dom": "Ruby", "mine": false, "owner": "Kestrel", "seats": [{"who": "Kestrel", "v": "Rhino", "e": "Mass", "p": "TALON", "a": "Aftershock", "on": true}, {"who": "You", "v": "Manta", "e": "Charge", "p": "HORNET", "a": "Javelin", "on": true, "me": true}, {"who": "Tern", "v": "Serpent", "e": "Space", "p": "NEEDLE", "a": "Hydra", "on": false}]}];
+const CHOICES = {"v": ["Sparrow", "Dolphin", "Serpent", "Manta", "Rhino", "Squirrel", "Urchin"], "e": ["Charge", "Mass", "Space", "Time"], "p": ["VOLT", "ZODIAC", "ANVIL", "TALON", "HORNET", "NEEDLE", "IVY", "OPAL"], "a": ["Javelin", "Hydra", "Aftershock", "Aegis", "None"]};
+const CLOSE = {"VOLT": "32a9eed26dda493c7334d13cddaf435e", "ZODIAC": "30c5723ab68af43282bfca424757ff31", "ANVIL": "f4c3e0f26d1f48e7d121156e212e4136", "TALON": "77e722ebf367c3b4093b2ae2778762e4", "HORNET": "5bb7e9dc77ccbb917e79991a86168b17", "NEEDLE": "17190fc5544dfc08266eab625c0aa6a2", "IVY": "d750680bcbd6bed6958c9fa98632d348", "OPAL": "02126cf45624881e04e68ab3443b261b"};
+const HANGAR = {"Jade": "/_blob/c2a9b2634cf0ccae357e84f5a3ff5917", "Ruby": "/_blob/cd2a783f5d168b8a448e948e3d67122a", "Gold": "/_blob/48075ef29368f88768c579631ceb3f3d"};
+const DOMC = {"Jade": "#21C0BD", "Ruby": "#BD1BC8", "Gold": "#FF8F11"};
+const PADS = [{"x": 690, "y": 545}, {"x": 250, "y": 535}, {"x": 1120, "y": 470}];
+const TABS = ["Converter", "Squads", "Pilots", "Artifacts", "Decor"];
+const KEYS = [["v", "Vessel"], ["e", "Element"], ["p", "Pilot"], ["a", "Artifact"]];
+function hexA(h, a) { const n = parseInt(h.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+
+class Component extends DCLogic {
+ constructor(props) { super(props); this.state = { sq: 0, doms: BOOK.map((b) => b.dom), seat: 0, picking: '', list: false,
+   edits: {}, opened: {}, toast: '' }; this.t = null; }
+ componentWillUnmount() { if (this.t) clearTimeout(this.t); }
+ say(x) { if (this.t) clearTimeout(this.t); this.setState({ toast: x }); this.t = setTimeout(() => this.setState({ toast: '' }), 2600); }
+ seatData(i) {
+  const st = this.state, q = BOOK[st.sq], s = q.seats[i], k = st.sq + ':' + i, e = st.edits[k] || {};
+  const open = !!st.opened[k];
+  return { i, who: open ? 'Open seat' : s.who, on: s.on, me: !!s.me, open, mine: q.mine,
+   v: e.v || s.v, e: e.e || s.e, p: e.p || s.p, a: e.a || s.a,
+   state: open ? 'Open' : (s.on ? 'Online' : 'Offline'),
+   avatar: '/_blob/' + CLOSE[e.p || s.p] };
+ }
+ canEdit(d) { const q = BOOK[this.state.sq]; return q.mine || d.me; }
+ choose(i, key, val) { const k = this.state.sq + ':' + i, e = Object.assign({}, this.state.edits);
+  e[k] = Object.assign({}, e[k] || {}); e[k][key] = val; this.setState({ edits: e, picking: '' }); }
+ openSeat(i) { const k = this.state.sq + ':' + i, o = Object.assign({}, this.state.opened); o[k] = true; this.setState({ opened: o, picking: '' });
+  this.say(BOOK[this.state.sq].seats[i].who + ' is offline. The seat is open; the pad stands empty until someone takes it.'); }
+ common() {
+  const st = this.state, q = BOOK[st.sq], dom = st.doms[st.sq], dc = DOMC[dom];
+  const tabs = TABS.map((x, i) => ({ name: x, col: i === 1 ? '#E6E9FF' : (x === 'Decor' ? '#5C5F70' : '#747BAD'),
+   mark: i === 1 ? '#E6E9FF' : 'transparent', locked: x === 'Decor', pick: () => this.say(i === 1 ? 'You are on Squads.' : x + ' is another thread of this round.') }));
+  const squadRows = BOOK.map((b, i) => ({ name: b.name, dot: DOMC[st.doms[i]], whose: b.mine ? 'Yours' : b.owner + "'s",
+   fill: i === st.sq ? hexA(DOMC[st.doms[i]], 0.14) : 'transparent', mark: i === st.sq ? DOMC[st.doms[i]] : 'transparent',
+   pick: () => this.setState({ sq: i, list: false, picking: '', seat: 0 }) }));
+  const domains = ['Jade', 'Ruby', 'Gold'].map((k) => ({ name: k, dot: DOMC[k], line: k === dom ? DOMC[k] : 'transparent',
+   col: k === dom ? '#E6E9FF' : '#9AA0CC', pressed: k === dom ? 'true' : 'false',
+   pick: () => { const d = st.doms.slice(); d[st.sq] = k; this.setState({ doms: d }); } }));
+  return { tabs, dc, dom, squadName: q.name, isMine: q.mine, bg: HANGAR[dom], bgAlt: 'Inside the Ark: the squad lined up in the hangar, lit ' + dom,
+   lightEdge: hexA(dc, 0.6), lightFill: hexA(dc, 0.10), lightGlow: hexA(dc, 0.35), lightLine: hexA(dc, 0.85),
+   toast: st.toast, hasToast: st.toast !== '', listOpen: st.list, listAria: st.list ? 'true' : 'false', squadRows, domains,
+   toggleList: () => this.setState({ list: !st.list }),
+   make: () => this.say('A new squad: you and two empty pads.'), join: () => this.say("Your friends' open seats."),
+   mission: () => this.say('Missions open later.'), arena: () => this.say('Taking ' + q.name + ' into the Arena.') };
+ }
+
+ renderVals() {
+  const st = this.state, c = this.common(), q = BOOK[st.sq], i = st.seat, d = this.seatData(i), pad = PADS[i];
+  const pk = st.picking;
+  const lines = KEYS.map((k) => { const live = st.picking === k[0], list = CHOICES[k[0]], at = list.indexOf(d[k[0]]);
+   const step = (n) => this.choose(i, k[0], list[(at + n + list.length) % list.length]);
+   return { label: k[1], value: d.open ? '-' : d[k[0]], live, idle: !live, mark: live ? c.dc : 'transparent',
+    pick: () => { if (d.open) return; if (!this.canEdit(d)) { this.say('Only ' + q.owner + ' changes this seat.'); return; }
+     this.setState({ picking: k[0] }); },
+    prev: () => { step(-1); this.setState({ picking: k[0] }); }, next: () => { step(1); this.setState({ picking: k[0] }); },
+    done: () => this.setState({ picking: '' }) }; });
+  const offlineFriend = !d.on && !d.me && !d.open && d.mine;
+  const go = (n) => this.setState({ seat: (i + n + 3) % 3, picking: '' });
+  const pips = [0, 1, 2].map((n) => ({ fill: n === i ? c.dc : 'transparent', edge: n === i ? c.dc : '#747BAD', aria: 'Seat ' + (n + 1),
+   pick: () => this.setState({ seat: n, picking: '' }) }));
+  return Object.assign(c, { s: d, seatNo: String(i + 1), sDot: d.open ? '#5C5F70' : (d.on ? c.dc : '#5C5F70'), lines,
+   fx: pad.x - 180, fy: pad.y - 120, pips, prevSeat: () => go(-1), nextSeat: () => go(1),
+   hasAction: (d.me || offlineFriend) && !pk, actionLabel: d.me ? 'Change vessel' : 'Open the seat', actionCol: d.me ? '#E6E9FF' : '#99FF80',
+   action: () => (d.me ? this.setState({ picking: 'v' }) : this.openSeat(i)) });
+ }
+}
+
+</script>
+</body>
+</html>

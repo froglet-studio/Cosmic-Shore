@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-13 from canvas version `1794582883-6c29` of **Frogma**: Rev 3 to Rev 98, 482 boards on 12 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-13 from canvas version `1794608651-4779` of **Frogma**: Rev 3 to Rev 106, 473 boards on 13 tabs. The canvas opens on the tab `ark`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -664,6 +664,35 @@ Copied on 2026-11-13 from canvas version `1794582883-6c29` of **Frogma**: Rev 3 
 
 ### Tab: Ark  (`ark`)
 
+#### Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like the captains' bridges
+
+- [`R106Compare.dc.html`](R106Compare.dc.html) - Rev 106 - one seat at rest and open, in the build and in A, B and C
+- [`R106A.dc.html`](R106A.dc.html) - Rev 106 A - Levels: tags over the vessels, a seat opens, one choice at a time (recommended) - interactive
+- [`R106B.dc.html`](R106B.dc.html) - Rev 106 B - The holo table: the squad on a bridge console, its seat projected up - interactive
+- [`R106C.dc.html`](R106C.dc.html) - Rev 106 C - Seat by seat: one seat in type over the hangar, no panels - interactive
+- [`R106Notes.dc.html`](R106Notes.dc.html) - Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen
+
+#### Rev 105 - The Artifacts tab without cards: three levels (the hoard, one artifact, feeding it), the words on the room
+
+- `R105A.dc.html` (not copied yet) - Rev 105 A - In the room: each artifact's words hang beside it, no box - interactive
+- `R105B.dc.html` (not copied yet) - Rev 105 B - The lens: a hologram of what it does, its tracks round the rim (recommended) - interactive
+- `R105C.dc.html` (not copied yet) - Rev 105 C - One at a time: the artifact large in the room, a caption under it - interactive
+- `R105Notes.dc.html` (not copied yet) - Rev 105 - notes: no cards, three levels, real artifacts, the recommendation
+
+#### Rev 104 - Elemental Converter without the cards: the player's real crystal balances, inside the Ark
+
+- `R104A.dc.html` (not copied yet) - Rev 104 A - Ledger on the deck: the four balances and the omni stand in one row at the foot of the pier, no panels (recommended) - interactive
+- `R104B.dc.html` (not copied yet) - Rev 104 B - Holo dais: a projection rises from the pier's edge like the bridge tables in the pilot scenes, the four round the omni - interactive
+- `R104C.dc.html` (not copied yet) - Rev 104 C - Wall gauges: each balance mounted on the pier's tiled walls, two a side, the omni count on the lintel - interactive
+
+#### Rev 99 - The Pilots tab as a crew PDA lying in the Ark: each pilot's file and story read on it
+
+- `R99Compare.dc.html` (not copied yet) - Rev 99 - The PDA's three screens flat, and the three places it lies
+- `R99A.dc.html` (not copied yet) - Rev 99 A - The chart room: the PDA on the chart table under the Ark's great window (recommended) - interactive
+- `R99B.dc.html` (not copied yet) - Rev 99 B - The captain's cabin: the PDA on the desk under a porthole, one warm lamp - interactive
+- `R99C.dc.html` (not copied yet) - Rev 99 C - The hangar bench: the PDA on a workbench, the hangar running out to the cell - interactive
+- `R99Notes.dc.html` (not copied yet) - Rev 99 - notes: what was asked, what Garrett's tab has, what changes, the recommendation
+
 #### Rev 86 - The Artifacts room, A and B as one - the Reliquary's platform in the Gallery's hall
 
 - [`R86ArtifactsAB.dc.html`](R86ArtifactsAB.dc.html) - Rev 86 ArtifactsAB - A + B - the Reliquary platform in the Gallery
@@ -698,65 +727,13 @@ Copied on 2026-11-13 from canvas version `1794582883-6c29` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
-#### Rev 98 - Voyages: 1A and 2D, Shombith's picks, with room between the words
+#### Rev 103 - Saga and Episodes locked together: one coming-soon strip at the foot of the Voyages screen
 
-- [`R98S1A.dc.html`](R98S1A.dc.html) - Rev 98 S1A - 1A - the voyage on the map - interactive
-- [`R98S2D.dc.html`](R98S2D.dc.html) - Rev 98 S2D - 2D - the squad - interactive
-
-#### Rev 97 - Voyages: the squad presets and the seat's choices redrawn; three players picking at once
-
-- [`R97Squad.dc.html`](R97Squad.dc.html) - Rev 97 Squad - Squad presets, three ways - interactive
-- [`R97Choices.dc.html`](R97Choices.dc.html) - Rev 97 Choices - The seat's choices, three ways - interactive
-- [`R97S1A.dc.html`](R97S1A.dc.html) - Rev 97 S1A - 1A with Formation squads - interactive
-- [`R97S2D.dc.html`](R97S2D.dc.html) - Rev 97 S2D - 2D with the Shelf - interactive
-- [`R97S2G.dc.html`](R97S2G.dc.html) - Rev 97 S2G - 2G Three players - leader's screen - interactive
-- [`R97S2H.dc.html`](R97S2H.dc.html) - Rev 97 S2H - 2H Three players - a friend's screen - interactive
-
-#### Rev 96 - the squad screen: a backdrop, soft buttons, one press
-
-- [`R96S1A.dc.html`](R96S1A.dc.html) - Rev 96 S1A - 1A - Screen 1 as picked (Rev 95 1A), with the soft buttons - interactive
-- [`R96Buttons.dc.html`](R96Buttons.dc.html) - Rev 96 Buttons - three readings of soft hard soft on Set sail and Configure squad, beside the buttons as they were
-- [`R96S2D.dc.html`](R96S2D.dc.html) - Rev 96 S2D - 2D Deck: the three seats stand across a lit deck; the picked seat's four choices are one tray under them, one press each (recommended) - interactive
-- [`R96S2E.dc.html`](R96S2E.dc.html) - Rev 96 S2E - 2E Kits: the picked seat large; six whole kits from the Hangar, one press sets all four; element and artifact beside - interactive
-- [`R96S2F.dc.html`](R96S2F.dc.html) - Rev 96 S2F - 2F Showroom: a rail of seats, the picked seat as the hero on the deck, its four choices as strips beside it - interactive
-- [`R96Notes.dc.html`](R96Notes.dc.html) - Rev 96 - notes: the backdrop, the buttons, one press, the three squad screens
-
-#### Rev 95 - Voyages as two screens: the voyage on the map, then the squad
-
-- [`R95S1A.dc.html`](R95S1A.dc.html) - Rev 95 S1A - 1A Presets: the map over its edge view; the voyage's name, the squad presets as cards and Set sail on the right (recommended) - interactive
-- [`R95S1B.dc.html`](R95S1B.dc.html) - Rev 95 S1B - 1B Wide map: the map across the window; a foot bar holds the edge view, the voyage, the squad and Set sail - interactive
-- [`R95S1C.dc.html`](R95S1C.dc.html) - Rev 95 S1C - 1C Briefing: the map full height with the edge view inset at its foot; the squad's three seats shown on the right - interactive
-- [`R95S2A.dc.html`](R95S2A.dc.html) - Rev 95 S2A - 2A Three seats: a column per seat, its pilot and hull over its choices; Save as preset and Set sail at the foot (recommended) - interactive
-- [`R95S2B.dc.html`](R95S2B.dc.html) - Rev 95 S2B - 2B Seat and picker: the seats on the left, one large picker on the right with Vessel, Pilot, Element, Artifact - interactive
-- [`R95S2C.dc.html`](R95S2C.dc.html) - Rev 95 S2C - 2C Roster: one table, a row per seat and a stepper per choice - interactive
-- [`R95Notes.dc.html`](R95Notes.dc.html) - Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations
-
-#### Rev 90 - Saga, Quests and Episodes as the Sea table
-
-- [`R90Saga.dc.html`](R90Saga.dc.html) - Rev 90 Saga - the part's arena on the table, its forms in order on the front face; The Severing locked - interactive
-- [`R90Quests.dc.html`](R90Quests.dc.html) - Rev 90 Quests - the HyperSea on the table, the episode's five quests as a track on the front face; the picked quest's card, Claim or Play quest - interactive
-- [`R90Episodes.dc.html`](R90Episodes.dc.html) - Rev 90 Episodes - the galaxy on the table, dimmed; Episode 2 is coming; one way back
-- [`R90Notes.dc.html`](R90Notes.dc.html) - Rev 90 - notes: one slab on every tab, each tab, the tabs as links
-
-#### Rev 89 - the Voyages screen with the HyperSea as the show
-
-- [`R89A.dc.html`](R89A.dc.html) - Rev 89 A - Sea table: the map tilted in perspective, the edge-on view its front face; the voyage's name over it (recommended) - interactive
-- [`R89B.dc.html`](R89B.dc.html) - Rev 89 B - Flat chart: the same screen without the tilt - the whole map in its own colours over its edge-on view - interactive
-- [`R89Notes.dc.html`](R89Notes.dc.html) - Rev 89 - notes: what was dull, what both options do, the two options, the recommendation
-
-#### Rev 88 - A taken forward: smaller top texts, every screen of the Voyage window
-
-- [`R88Voyages.dc.html`](R88Voyages.dc.html) - Rev 88 Voyages - A with smaller top texts: the voyages and the Ark escort as cards, the picked one open; the squad as rows - interactive
-- [`R88Escort.dc.html`](R88Escort.dc.html) - Rev 88 Escort - the Ark escort card open: its difficulty stepper where a voyage has its intensity - interactive
-- [`R88Saga.dc.html`](R88Saga.dc.html) - Rev 88 Saga - the two parts as cards, Tandava open with its forms, The Severing locked; the squad and Set sail - interactive
-- [`R88Quests.dc.html`](R88Quests.dc.html) - Rev 88 Quests - the five quests as cards with their state, the picked one open over its game's art; Claim or Play quest - interactive
-- [`R88Episodes.dc.html`](R88Episodes.dc.html) - Rev 88 Episodes - Episode 2, coming soon, over the galaxy; one way back
-- [`R88Notes.dc.html`](R88Notes.dc.html) - Rev 88 - notes: the top texts, the one order, each screen, what is not drawn
-
-#### Rev 87 - the Voyages tab, drawn new around the HyperSea map and the edge view
-
-- [`R87A.dc.html`](R87A.dc.html) - Rev 87 A - Slide: small voyage cards, the picked one slides open; the squad as rows that open where they stand (recommended) - interactive
-- [`R87Notes.dc.html`](R87Notes.dc.html) - Rev 87 - notes: what stays, what is new in all three, the three options, the recommendation
+- `R103Compare.dc.html` (not copied yet) - Rev 103 - the three strips side by side at full width, at rest and pressed
+- `R103A.dc.html` (not copied yet) - Rev 103 A - One shelf: two locked cards side by side, each with its dimmed picture (recommended) - interactive
+- `R103B.dc.html` (not copied yet) - Rev 103 B - One line: a single quiet line, lock mark, Saga and Episodes, Coming soon - interactive
+- `R103C.dc.html` (not copied yet) - Rev 103 C - Teaser band: one dimmed picture strip with both names over it - interactive
+- `R103Notes.dc.html` (not copied yet) - Rev 103 - notes: what changes against the build and why A
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 
@@ -783,5 +760,15 @@ Copied on 2026-11-13 from canvas version `1794582883-6c29` of **Frogma**: Rev 3 
 - [`R91E.dc.html`](R91E.dc.html) - Rev 91 E - Toy Box: the Vessel Changer cycling hulls, the seven toys lit in turn
 - [`R91F.dc.html`](R91F.dc.html) - Rev 91 F - The tour: Squad, Ark, Pilots, Vessels and Toy Box in turn while the bar fills (recommended)
 - [`R91Notes.dc.html`](R91Notes.dc.html) - Rev 91 - notes: what is shared, what each option shows, the bar's rules, what differs from the build
+
+### Tab: Quests  (`quests`)
+
+#### Rev 101 - Quests as a screen of its own: the episode's five quests, each one's goals, claim and what it opens
+
+- `R101Compare.dc.html` (not copied yet) - Rev 101 - one quest's goals and its claim, as each option draws them
+- `R101A.dc.html` (not copied yet) - Rev 101 A - Star chart: the five quests as stars on the HyperSea, joined by the current that opens them (recommended) - interactive
+- `R101B.dc.html` (not copied yet) - Rev 101 B - Quest log: a calm list on the left, the open quest's goals as a ladder in the middle - interactive
+- `R101C.dc.html` (not copied yet) - Rev 101 C - The route: the quests as stations along one course across the screen - interactive
+- `R101Notes.dc.html` (not copied yet) - Rev 101 - notes: where the screen opens from, what each option changes, what is real data
 
 <!-- frogma.py readme: end -->

@@ -8516,3 +8516,40 @@ Verified: `author_ingame_hud.py` run, `--check` and `--self-test` (two new negat
 gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; `gates.sh`. Hand test: "The loading
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+
+## 193. Rev 106 mockups: the Squads tab in levels, lit like the captains' bridges (2026-11-13, awaiting a pick)
+
+**Asked (Shombith, 2026-11-13):** "The UI cards on top of each screen. I do not like them at all ... the worst is the
+ark UI itself, selecting through so many and the text is noisy, it can be broken down in levels if we want." The
+hangar backdrops stay ("I like the backgrounds alright. That's fire for now"). The style for the whole Ark redesign:
+the pilot scenes that show captains inside the Ark ("take the lighting or animation or design ideas from there").
+
+**On the canvas:** tab **Ark**, round "Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like
+the captains' bridges" (canvas version `1794608651-4779`; Rev 104 and 105 on the same tab are the Converter's and the
+Artifacts' rounds from the sibling threads). Copies: `Docs/MenuRedesignB/board/R106*.dc.html`; generator:
+`Docs/MenuRedesignB/rounds/r106_ark_squads.py`, on Rev 67's hangar renders (per domain) and Rev 99's pilot close-ups.
+All five boards pass `frogma.py check`; each was rendered locally with the real backdrop and the flows pressed.
+The cues taken from Jugger's and Scales's scenes (`Docs/Pilots/art/scenes/`, shown on the notes board): the room is
+dark and lit by its display, so no board has a solid card, every panel is light in the squad's own domain colour over
+a faint lattice; the display has depth (a dome); warm lamps and a brass rail frame the cold light; the squad's
+domain is the light, so switching to Ruby turns the tags, the dome and the hangar Ruby.
+- **R106A, Levels (recommended):** level 1 is the hangar with a tag of light over each vessel (the pilot's face, the
+  name, here or not) and Arena; a tag opens that seat on the right (vessel, element, pilot, artifact; Change vessel or
+  Open the seat); a line opens only that list. The squads, Make, Join and the squad's light sit behind the squad's
+  name (Y). About 10 words at rest against about 80 in the build.
+- **R106B, The holo table:** a bridge console in front of the hangar; the three seats stand on a dome of light, the
+  picked one projects its loadout up; the squad dial, Make, Join and the light on the brass rail.
+- **R106C, Seat by seat:** no panel; one seat in large type over the dark side of the hangar, corner brackets round its
+  vessel, D-pad to the next seat, a value changes in place.
+- **R106Compare:** one seat at rest and opened, in the build and in A, B and C, and the presses to change a vessel.
+- **Why A:** the levels cut the text to the names and the light sits on the vessels it describes, so the render stays
+  the screen. B is the most like the bridges but covers the hangar floor with a console; its dome look could dress A's
+  seat panel. C is the calmest but shows one seat at a time.
+
+**Differs from the build:** `author_menu_ark.py`'s Squads page loses the squads row, the domain row, the header and the
+three seat cards (section 190) for the tags (positioned per pad from the render), one seat panel and the squad list;
+`SquadsPage` keeps its data and actions (Change vessel, Open the seat, the presence, a joined squad read-only, Mission
+locked, Arena). Colours from the worn set's domain colours. The Breakers hangar is still Skim Wing's vessels lit Ruby.
+
+Affects: Shombith's Ark screen (`author_menu_ark.py`, `SquadsPage`) once a pick is built; Garrett's pilot scenes (read
+as reference, two downscaled copies uploaded to the canvas).
