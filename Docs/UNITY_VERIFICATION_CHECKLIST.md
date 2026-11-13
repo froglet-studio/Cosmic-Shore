@@ -65,6 +65,20 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 The Shrike's level-5 upgrades: Salvo, Armed Nests, Whipcrack (`claude/shrike-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
+
+**What landed:** `R_VesselActions/SHRIKE.md` § 3 "Level-5 upgrades". Charge 5 Salvo (nest flora launch x2 as often while
+painting), Mass 5 Armed Nests (a left-behind nest carries 2 missiles), Time 5 Whipcrack (sling reaches its anchor in
+0.6 s); Void Pierce (Space 5) unchanged. Three new HUD parts (`arraySalvoIcon`, `nestArmedIcon`, `slingWhipIcon`) painted
+by `ShrikeHUDView.RefreshParts`. Ran: `unity_refcompile` runtime and editor (0 errors in changed files),
+`element_ability_table.py Shrike` (4/4 L5s gated), `author_shrike_assets.py --check` (only the sparse-checkout class-card
+metas), `icon_kit/author.py shrike --check` (no drift). Not run: Unity, `ShrikeFundamentalsTests`.
+
+1. Toybox, Shrike at Charge 5: paint a rival prism; the flora's missiles come about twice as fast, and the Charge card
+   shows the second volley while painting.
+2. Mass 5: dock, then detach; the nest flora left behind carries two missiles, and the Mass card shows both.
+3. Time 5: shoot the sling; the hull reaches the anchor in about 0.6 s, and the Time card shows the whip chevrons.
+
 ### 🔴 The Honeyguide's vessel pass: element scaling, Relentless, Hive Chain, Slipstream, its own HUD (`claude/honeyguide-kit`, 2026-11-13, Garrett) — NOT EDITOR-VERIFIED
 
 **What landed:** `Crew/HONEYGUIDE.md` § "Element scaling and level 5". Charge scales Flit's strike radius, Mass the hive's
