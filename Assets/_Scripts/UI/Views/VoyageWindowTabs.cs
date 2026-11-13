@@ -55,6 +55,41 @@ namespace CosmicShore.UI
         /// <summary>What tab <paramref name="index"/> shows (its page), or null.</summary>
         public GameObject PageOf(int index) => index >= 0 && index < tabs.Length ? tabs[index].page : null;
 
+        bool[] _dropped = Array.Empty<bool>();
+
+        /// <summary>Whether tab <paramref name="index"/> was taken out of the window (<see cref="Drop{T}"/>).</summary>
+        public bool IsDropped(int index) => index >= 0 && index < _dropped.Length && _dropped[index];
+
+        /// <summary>
+        /// Take out of the window every tab whose page carries a <typeparamref name="T"/> (on the page or under it): its
+        /// button and page are switched off for good, <see cref="Plain"/> lays the others out without it, and
+        /// <see cref="Show"/> and the bumpers pass over it. The indexes of the other tabs do not change. Call before
+        /// <see cref="Plain"/>. The Quests tab left this way for its own window (Shombith, 2026-11-13: "Quest should be a
+        /// seperate screen"; <see cref="QuestsModal"/>); the Saga and Episodes tabs can leave the same way.
+        /// </summary>
+        public void Drop<T>() where T : Component
+        {
+            if (_dropped.Length != tabs.Length) Array.Resize(ref _dropped, tabs.Length);
+            for (int i = 0; i < tabs.Length; i++)
+            {
+                var t = tabs[i];
+                if (_dropped[i] || !t.page || !t.page.GetComponentInChildren<T>(true)) continue;
+                _dropped[i] = true;
+                if (t.button) t.button.gameObject.SetActive(false);
+                if (t.mark) t.mark.SetActive(false);
+                t.page.SetActive(false);
+            }
+            if (IsDropped(_shown)) Show(First());
+        }
+
+        // The first tab still in the window.
+        int First()
+        {
+            for (int i = 0; i < tabs.Length; i++)
+                if (!IsDropped(i)) return i;
+            return -1;
+        }
+
         void Awake()
         {
             for (int i = 0; i < tabs.Length; i++)
@@ -72,7 +107,7 @@ namespace CosmicShore.UI
                 _window.OnModalOpened += Opened;
                 _window.OnModalClosed += Closed;
             }
-            Show(0);
+            Show(First());
             _openedFrame = Time.frameCount;
             if (shoulderInput && (!_window || _window.IsOpen)) HubShoulders.Claim(this);
             ColorTrace.Changed += Repaint;
@@ -102,7 +137,7 @@ namespace CosmicShore.UI
         // Every visit opens on Voyages.
         void Opened()
         {
-            Show(0);
+            Show(First());
             _openedFrame = Time.frameCount;
             if (shoulderInput) HubShoulders.Claim(this);
         }
@@ -120,8 +155,11 @@ namespace CosmicShore.UI
             if (ModePreviewWindow.AnyHasFocus || Time.frameCount == _openedFrame) return;
             var pad = Gamepad.current;
             if (pad == null) return;
-            if (pad.rightShoulder.wasPressedThisFrame) Show(Step(_shown, +1, tabs.Length));
-            else if (pad.leftShoulder.wasPressedThisFrame) Show(Step(_shown, -1, tabs.Length));
+            int direction = pad.rightShoulder.wasPressedThisFrame ? +1 : pad.leftShoulder.wasPressedThisFrame ? -1 : 0;
+            if (direction == 0) return;
+            int to = Step(_shown, direction, tabs.Length);
+            while (IsDropped(to) && to != Step(to, direction, tabs.Length)) to = Step(to, direction, tabs.Length);
+            if (!IsDropped(to)) Show(to);
         }
 
         bool _plain;
@@ -149,11 +187,13 @@ namespace CosmicShore.UI
             if (strip)
                 foreach (Transform child in strip)
                     if (!IsTab(child)) child.gameObject.SetActive(false);
+                    else if (IsDroppedButton(child)) child.gameObject.SetActive(false);
 
             float left = 0f;
-            foreach (var t in tabs)
+            for (int i = 0; i < tabs.Length; i++)
             {
-                if (!t.button) continue;
+                var t = tabs[i];
+                if (!t.button || IsDropped(i)) continue;
                 var rt = (RectTransform)t.button.transform;
                 Strip(t);
                 float lockW = 0f;
@@ -203,6 +243,13 @@ namespace CosmicShore.UI
             }
         }
 
+        bool IsDroppedButton(Transform child)
+        {
+            for (int i = 0; i < tabs.Length; i++)
+                if (tabs[i].button && tabs[i].button.transform == child) return IsDropped(i);
+            return false;
+        }
+
         bool IsTab(Transform child)
         {
             foreach (var t in tabs)
@@ -238,12 +285,13 @@ namespace CosmicShore.UI
         /// <summary>Show tab <paramref name="index"/> and hide the others.</summary>
         public void Show(int index)
         {
-            if (index < 0 || index >= tabs.Length) return;
+            if (index < 0 || index >= tabs.Length || IsDropped(index)) return;
             _shown = index;
             for (int i = 0; i < tabs.Length; i++)
             {
                 bool on = i == index;
                 var t = tabs[i];
+                if (IsDropped(i)) continue;
                 if (t.page && t.page.activeSelf != on) t.page.SetActive(on);
                 if (t.mark) t.mark.SetActive(on);
                 if (t.label) t.label.color = ColorTrace.Retrace(ColorTrace.Ui, on ? selectedColor : idleColor);

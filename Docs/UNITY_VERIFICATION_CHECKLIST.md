@@ -23448,3 +23448,19 @@ is kept, so no prefab or asset reference changes. Compiled against the Unity ref
 1. Open the project: no "missing script" or "class name does not match file name" warnings for any Swordfish* script.
 2. Fly the Swordfish in the Toybox: swipe, energize, afterimages, combos and the Surge ring all work as before.
 3. The Rhino and the Jacks fly as before (they share only `RhinoAnimation` and `RhinoAIBoostPolicy`, which keep their names).
+
+## 🔴 Quests window: its own screen, Rev 107 D (2026-11-13, Shombith's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-ytvai5`, `Docs/MENU_REDESIGN_B.md` section 200. Compiled with `Tools/Build/unity_refcompile`
+only. No Unity editor ran.
+
+1. Menu_Main starts with no errors; the Quests window is not visible until opened.
+2. Home's quest card opens the Quests window (not the Voyage window). Back and gamepad B close it.
+3. The route shows five pictures over five stations, names and states under them, the course solid up to the open
+   quest and dotted after it. Pressing a station shows its goals and reward below.
+4. A quest ready to claim: Claim claims it, the next station lights and its stretch draws in.
+5. An open quest: Play quest opens the Arcade.
+6. The reward column names the colour set and shows four prisms in its colours; wearing another set from the Profile
+   recolours the window.
+7. The Voyage window has no Quests tab; Voyages, Saga and Episodes still switch.
+

@@ -2871,3 +2871,29 @@ MonoBehaviour:
     SlabSagaLockedKicker: Saga
     SlabSagaLockedLine: Voyages are open now.
     SlabSagaLockedFace: The saga opens here
+    QuestsTitle: Quests
+    QuestsBack: BACK
+    QuestsBackKey: B
+    QuestsReady: Ready to claim
+    QuestsOpen: '{done} of {total} goals'
+    QuestsTier3: Opens Intensity 3
+    QuestsTier4: Opens Intensity 4
+    QuestsTierFeature: 'Opens the {name}'
+    QuestsGoalDone: Done
+    QuestsGoalNext: Next
+    QuestsClaimStep: Claim
+    QuestsClaimUnlocks: 'Unlocks {reward}'
+    QuestsClaimReady: Ready
+    QuestsRewardKicker: Reward
+    QuestsRewardKickerYours: Your colour set
+    QuestsRewardKind: Colour set
+    QuestsRewardYours: Yours. Wear it from the Profile.
+    QuestsRewardReady: Claim to unlock it
+    QuestsRewardLater: Unlocked by this quest
+    QuestsDomainJade: Jade
+    QuestsDomainRuby: Ruby
+    QuestsDomainGold: Gold
+    QuestsDomainBlue: Blue
+    QuestsAlsoOpens: Claim also opens
+    QuestsOpened: Opened
+    QuestsPlayNote: 'Play {name} in the Arcade'

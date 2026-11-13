@@ -29,6 +29,7 @@ MonoBehaviour:
   Intensity4GoalDescription: Win a Joust match at Intensity 3
   Order: 2
   IsPlaceholder: 0
+  RewardColorSet: {fileID: 11400000, guid: 6a7e9e76e42c40b19d5216644774eb96, type: 2}
   CallToActionTargetID: 434
   CompletionUserAction: -1
   DependencyTargetIDs: 64000000

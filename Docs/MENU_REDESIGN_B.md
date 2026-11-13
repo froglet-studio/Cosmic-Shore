@@ -8100,7 +8100,7 @@ section 151 built and section 159 reverted), drawing `QuestFrontier`'s states an
 are the quest assets' `Intensity3GoalDescription` / `Intensity4GoalDescription`; "HEX RACE" is shown as Skim Race.
 
 
-## 188. Rev 107 mockups: Quests - B and C mixed, a colour set as each quest's reward, no episode (2026-11-14, awaiting a pick)
+## 188. Rev 107 mockups: Quests - B and C mixed, a colour set as each quest's reward, no episode (2026-11-13; Shombith picked D, built in section 200)
 
 **Asked (Shombith, 2026-11-14, on Rev 101):** "Maybe mix up B and C but also there should be a section showing the
 reward. We are thinking of color sets to be rewards for each quests. And dont name it Episode 1, its just quest."
@@ -8124,4 +8124,36 @@ with "2 of 5 claimed" and its meter. Claim's step reads "Unlocks <set>"; the nex
 
 **Differs from the build:** as section 187, plus a reward per quest: `SO_UnlockData` has no reward field, so a pick needs
 one (a colour set reference) and the claim to grant the set (Garrett's colour sets, `/colour-set`).
+
+## 200. Built: the Quests window - Rev 107 D (2026-11-13, claude/project-thread-ytvai5, not seen in Unity)
+
+**Asked (Shombith, 2026-11-13):** "Lets go D we can build this in unity now", on section 188. Quests leaves the Voyage
+window for a window of its own (section 187: "Quest should be a seperate screen with its own interactive UI").
+
+**Built:**
+- **The window:** `QuestsModal` (`Assets/_Scripts/UI/Modals/`), a `ModalWindowManager` built in code with the Voyage
+  window's kit (`VoyageKit`: its style, faces and soft buttons, every colour through the worn colour set).
+  `ScreenSwitcher.EnsureQuestsModal` adds it beside the Voyage window at start (`ModalWindows.QUESTS = 20`, free since
+  section 159), and stands down when a scene already registers one. Home's quest card opens it (`HomeUpNext` calls
+  `OnClickQuests`, which falls back to the Voyage window); its ready line reads "Ready to claim in Quests".
+- **The layout, at the board's numbers (1920 x 1080):** the header ("Quests", "N of 5 claimed", a five-segment meter,
+  Back); the route across the top, each quest's picture (soft-edged) over its station, its name and state under it,
+  the course dotted and drawn solid up to every open quest (`QuestRouteGraphic`; a claim draws the next stretch in over
+  1.1 s); below, the picked quest and its goals as a ladder ending in Claim ("Unlocks <set>"), the reward (the colour
+  set's name, "Colour set", the catalog's line, a prism per domain with the face colour as the body and the rim colour as
+  the edge, and its state), and what the claim also opens over the one button, Claim or Play quest (to the Arcade).
+  Pressing a station picks it; every visit opens on the quest to play or claim next. No episode is named.
+- **The rewards:** `SO_UnlockData.RewardColorSet`, set on the five quests as proposed in section 188 (Scurry Ukiyo-e,
+  Skim Race Dusk, Joust Neon Noir, Maelstrom Blue-ringed Octopus, Vessel Hangar Nacre).
+- **The Voyage window:** its Quests tab is gone (`VoyageWindowTabs.Drop<QuestTrackView>()`, generic so Saga and
+  Episodes can leave the same way); the other tabs keep their indexes.
+- **Words:** every line is a `VoyageLines` field (`Docs/Voyages/voyage_slice.json`, `author_voyage_assets.py`).
+- **Rules:** `QuestsRules` (stations, bends, goals done, swatches), tested by `QuestsRulesTests`.
+
+**Differs from the board:** the board draws six colour families; the game's colour sets carry four domains (Jade, Ruby,
+Gold, Blue), so the reward shows four prisms. Claiming does not yet grant anything new: every colour set is unlocked for
+everyone (2026-11-05), so the reward is shown and named but locking the five sets behind their quests is a decision
+still open.
+
+**Not seen:** no Unity editor ran. `Docs/UNITY_VERIFICATION_CHECKLIST.md` lists what to look at.
 
