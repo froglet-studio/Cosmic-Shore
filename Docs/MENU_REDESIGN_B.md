@@ -8065,7 +8065,7 @@ gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; 
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 
-## 187. Rev 101 mockups: Quests as a screen of its own - star chart, quest log, route (2026-11-13, awaiting a pick)
+## 187. Rev 101 mockups: Quests as a screen of its own - star chart, quest log, route (2026-11-13; Shombith: mix B and C with a reward, section 188)
 
 **Asked (Shombith, 2026-11-13):** "Remove the quest from inside the voyages. Quest should be a seperate screen with its
 own interactive UI not inside this itself."
@@ -8098,4 +8098,30 @@ quest draws in (A and C). Episode 2 is one "Coming soon" line.
 Any pick takes the Quests tab out of `VoyageWindowTabs` and opens a Quests window from Home's quest card (the shape
 section 151 built and section 159 reverted), drawing `QuestFrontier`'s states and `QuestTrackView`'s claim. The goals
 are the quest assets' `Intensity3GoalDescription` / `Intensity4GoalDescription`; "HEX RACE" is shown as Skim Race.
+
+
+## 188. Rev 107 mockups: Quests - B and C mixed, a colour set as each quest's reward, no episode (2026-11-14, awaiting a pick)
+
+**Asked (Shombith, 2026-11-14, on Rev 101):** "Maybe mix up B and C but also there should be a section showing the
+reward. We are thinking of color sets to be rewards for each quests. And dont name it Episode 1, its just quest."
+
+**On the canvas:** tab **Quests**, round "Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no
+episode" (canvas version `1794608786-849b`). Copies `Docs/MenuRedesignB/board/R107*.dc.html`; generator
+`Docs/MenuRedesignB/rounds/r107_quests.py` (runs on Rev 101's kit and data). All pass `frogma.py check --only R107` and
+were rendered locally and looked at.
+
+- **D Route on top (recommended):** C's course across the top with each quest's art; below it, side by side, the
+  quest and its goals (B's ladder), the reward (the colour set's six domains as prisms in a row) and Claim.
+- **E Route as the list:** B's list made C's course, down the left, each station naming its reward; the quest large in
+  the middle with its goals as checkpoints; the reward as a tall column of prisms (three by two) beside Claim.
+- **Compare:** the reward drawn three ways (a row of prisms, three by two, six bands).
+- **Notes.**
+
+**Rewards (a proposal):** Scurry Ukiyo-e, Skim Race Dusk, Joust Neon Noir, Maelstrom Blue-ringed Octopus, Vessel Hangar
+Nacre; swatches from `Docs/VesselModels/colour_sets.json`. Nocturne (the default) and the accessibility sets are kept free.
+A prism is drawn with the face colour as its body and the rim colour as its edge. No "Episode": the header is Quests
+with "2 of 5 claimed" and its meter. Claim's step reads "Unlocks <set>"; the next quest it opens is a line by the button.
+
+**Differs from the build:** as section 187, plus a reward per quest: `SO_UnlockData` has no reward field, so a pick needs
+one (a colour set reference) and the claim to grant the set (Garrett's colour sets, `/colour-set`).
 

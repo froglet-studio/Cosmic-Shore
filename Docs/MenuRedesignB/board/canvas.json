@@ -3794,6 +3794,243 @@
       "h": 900,
       "page": "quests",
       "title": "Rev 101 - notes: where the screen opens from, what each option changes, what is real data"
+    },
+    "R104A.dc.html": {
+      "x": 0,
+      "y": 22111,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 104 A - Ledger on the deck: the four balances and the omni stand in one row at the foot of the pier, no panels (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R104B.dc.html": {
+      "x": 2100,
+      "y": 22111,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 104 B - Holo dais: a projection rises from the pier's edge like the bridge tables in the pilot scenes, the four round the omni - interactive",
+      "is_interactive": true
+    },
+    "R104C.dc.html": {
+      "x": 4200,
+      "y": 22111,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 104 C - Wall gauges: each balance mounted on the pier's tiled walls, two a side, the omni count on the lintel - interactive",
+      "is_interactive": true
+    },
+    "R105A.dc.html": {
+      "x": 0,
+      "y": 24651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 105 A - In the room: each artifact's words hang beside it, no box - interactive",
+      "is_interactive": true
+    },
+    "R105B.dc.html": {
+      "x": 2100,
+      "y": 24651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 105 B - The lens: a hologram of what it does, its tracks round the rim (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R105C.dc.html": {
+      "x": 4200,
+      "y": 24651,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 105 C - One at a time: the artifact large in the room, a caption under it - interactive",
+      "is_interactive": true
+    },
+    "R105Notes.dc.html": {
+      "x": 0,
+      "y": 25911,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 105 - notes: no cards, three levels, real artifacts, the recommendation"
+    },
+    "R106Compare.dc.html": {
+      "x": 0,
+      "y": 28271,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 106 - one seat at rest and open, in the build and in A, B and C"
+    },
+    "R106A.dc.html": {
+      "x": 2100,
+      "y": 28271,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 106 A - Levels: tags over the vessels, a seat opens, one choice at a time (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R106B.dc.html": {
+      "x": 4200,
+      "y": 28271,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 106 B - The holo table: the squad on a bridge console, its seat projected up - interactive",
+      "is_interactive": true
+    },
+    "R106C.dc.html": {
+      "x": 0,
+      "y": 29531,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 106 C - Seat by seat: one seat in type over the hangar, no panels - interactive",
+      "is_interactive": true
+    },
+    "R106Notes.dc.html": {
+      "x": 0,
+      "y": 30791,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen"
+    },
+    "R100P1A.dc.html": {
+      "x": 0,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P1A - Page 1 Table top: the HyperSea on a chart table, its edge view the front; the crew's voyages on the right (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R100P1B.dc.html": {
+      "x": 2100,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P1B - Page 1 Orrery: the galaxy as a disc floating in the sea, a slow ring of bearings; the voyages on the left - interactive",
+      "is_interactive": true
+    },
+    "R100P1C.dc.html": {
+      "x": 4200,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P1C - Page 1 Bridge: the map flat and full-bleed; the crew's voyages along its foot - interactive",
+      "is_interactive": true
+    },
+    "R100P1D.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P1D - Page 1 Dive: Galaxy, Sector and Course as three glass sheets; a zoom is a dive between them - interactive",
+      "is_interactive": true
+    },
+    "R100P2A.dc.html": {
+      "x": 0,
+      "y": 7400,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P2A - Page 2 Briefing: the pilot's story, the route drawing itself, the rewards arriving; difficulty 1-9 (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R100P2B.dc.html": {
+      "x": 2100,
+      "y": 7400,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P2B - Page 2 Journey: one lane across the window, the Ark sailing it; each stop tells its part - interactive",
+      "is_interactive": true
+    },
+    "R100P2C.dc.html": {
+      "x": 4200,
+      "y": 7400,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P2C - Page 2 Dossier: the map stays; Story, Route and Rewards slide open - interactive",
+      "is_interactive": true
+    },
+    "R100P3A.dc.html": {
+      "x": 0,
+      "y": 8660,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P3A - Page 3 Lobby: your lobby's three seats; your seat changes in place; Set sail (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R100P3B.dc.html": {
+      "x": 2100,
+      "y": 8660,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P3B - Page 3 No lobby: pick a squad from the list, or invite friends; Set sail - interactive",
+      "is_interactive": true
+    },
+    "R100P3C.dc.html": {
+      "x": 4200,
+      "y": 8660,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 P3C - Page 3 Formation: your lobby's vessels in formation over the course; a press opens its tray - interactive",
+      "is_interactive": true
+    },
+    "R100Notes.dc.html": {
+      "x": 4200,
+      "y": 6140,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 100 - notes: what was asked, each page, the new rules to confirm"
+    },
+    "R107Compare.dc.html": {
+      "x": 0,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "quests",
+      "title": "Rev 107 - the colour set reward, drawn three ways"
+    },
+    "R107D.dc.html": {
+      "x": 2100,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "quests",
+      "title": "Rev 107 D - Route on top: the course across, the quest, its reward and Claim side by side below (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R107E.dc.html": {
+      "x": 4200,
+      "y": 4880,
+      "w": 1920,
+      "h": 1080,
+      "page": "quests",
+      "title": "Rev 107 E - Route as the list: the course down the left, the quest and its checkpoints in the middle, the reward beside Claim - interactive",
+      "is_interactive": true
+    },
+    "R107Notes.dc.html": {
+      "x": 0,
+      "y": 6140,
+      "w": 1920,
+      "h": 900,
+      "page": "quests",
+      "title": "Rev 107 - notes: the two mixes, the proposed reward per quest, what changed from Rev 101"
     }
   },
   "createdOnFiles": {
@@ -3919,6 +4156,11 @@
     "sec-rev99",
     "sec-rev103",
     "sec-rev101",
+    "sec-rev104",
+    "sec-rev105",
+    "sec-rev106",
+    "sec-rev100",
+    "sec-rev107",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4000,7 +4242,12 @@
     "rev94",
     "rev99",
     "rev103",
-    "rev101"
+    "rev101",
+    "rev104",
+    "rev105",
+    "rev106",
+    "rev100",
+    "rev107"
   ],
   "notes": {
     "hud_end": {
@@ -6475,6 +6722,126 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "quests"
+    },
+    "rev104": {
+      "kind": "title1",
+      "text": "Rev 104 - Elemental Converter without the cards: the player's real crystal balances, inside the Ark",
+      "x": 0,
+      "y": 21711,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev104": {
+      "kind": "rect",
+      "x": -160,
+      "y": 21551,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev105": {
+      "kind": "title1",
+      "text": "Rev 105 - The Artifacts tab without cards: three levels (the hoard, one artifact, feeding it), the words on the room",
+      "x": 0,
+      "y": 24251,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev105": {
+      "kind": "rect",
+      "x": -160,
+      "y": 24091,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev106": {
+      "kind": "title1",
+      "text": "Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like the captains' bridges",
+      "x": 0,
+      "y": 27871,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev106": {
+      "kind": "rect",
+      "x": -160,
+      "y": 27711,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev100": {
+      "kind": "title1",
+      "text": "Rev 100 - Voyages, new: the HyperSea and your crew's voyages, the voyage opened, your Ark",
+      "x": 0,
+      "y": 4480,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev100": {
+      "kind": "rect",
+      "x": -160,
+      "y": 4320,
+      "w": 6440,
+      "h": 5580,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev107": {
+      "kind": "title1",
+      "text": "Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no episode",
+      "x": 0,
+      "y": 4480,
+      "w": 240,
+      "maxW": 6120,
+      "page": "quests"
+    },
+    "sec-rev107": {
+      "kind": "rect",
+      "x": -160,
+      "y": 4320,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(255, 92, 168, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 92, 168, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "quests"
     }
   },
   "order": [
@@ -6938,7 +7305,34 @@
     "R101A.dc.html",
     "R101B.dc.html",
     "R101C.dc.html",
-    "R101Notes.dc.html"
+    "R101Notes.dc.html",
+    "R104A.dc.html",
+    "R104B.dc.html",
+    "R104C.dc.html",
+    "R105A.dc.html",
+    "R105B.dc.html",
+    "R105C.dc.html",
+    "R105Notes.dc.html",
+    "R106Compare.dc.html",
+    "R106A.dc.html",
+    "R106B.dc.html",
+    "R106C.dc.html",
+    "R106Notes.dc.html",
+    "R100P1A.dc.html",
+    "R100P1B.dc.html",
+    "R100P1C.dc.html",
+    "R100P1D.dc.html",
+    "R100P2A.dc.html",
+    "R100P2B.dc.html",
+    "R100P2C.dc.html",
+    "R100P3A.dc.html",
+    "R100P3B.dc.html",
+    "R100P3C.dc.html",
+    "R100Notes.dc.html",
+    "R107Compare.dc.html",
+    "R107D.dc.html",
+    "R107E.dc.html",
+    "R107Notes.dc.html"
   ],
   "pages": [
     {

@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-13 from the canvas of **Frogma**: Rev 3 to Rev 103, 461 boards on 13 tabs. The canvas opens on the tab `quests`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-13 from canvas version `1794608786-849b` of **Frogma**: Rev 3 to Rev 107, 488 boards on 13 tabs. The canvas opens on the tab `quests`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -664,6 +664,27 @@ Copied on 2026-11-13 from the canvas of **Frogma**: Rev 3 to Rev 103, 461 boards
 
 ### Tab: Ark  (`ark`)
 
+#### Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like the captains' bridges
+
+- `R106Compare.dc.html` (not copied yet) - Rev 106 - one seat at rest and open, in the build and in A, B and C
+- `R106A.dc.html` (not copied yet) - Rev 106 A - Levels: tags over the vessels, a seat opens, one choice at a time (recommended) - interactive
+- `R106B.dc.html` (not copied yet) - Rev 106 B - The holo table: the squad on a bridge console, its seat projected up - interactive
+- `R106C.dc.html` (not copied yet) - Rev 106 C - Seat by seat: one seat in type over the hangar, no panels - interactive
+- `R106Notes.dc.html` (not copied yet) - Rev 106 - notes: what was asked, the cues from the captains' bridges, words on screen
+
+#### Rev 105 - The Artifacts tab without cards: three levels (the hoard, one artifact, feeding it), the words on the room
+
+- `R105A.dc.html` (not copied yet) - Rev 105 A - In the room: each artifact's words hang beside it, no box - interactive
+- `R105B.dc.html` (not copied yet) - Rev 105 B - The lens: a hologram of what it does, its tracks round the rim (recommended) - interactive
+- `R105C.dc.html` (not copied yet) - Rev 105 C - One at a time: the artifact large in the room, a caption under it - interactive
+- `R105Notes.dc.html` (not copied yet) - Rev 105 - notes: no cards, three levels, real artifacts, the recommendation
+
+#### Rev 104 - Elemental Converter without the cards: the player's real crystal balances, inside the Ark
+
+- `R104A.dc.html` (not copied yet) - Rev 104 A - Ledger on the deck: the four balances and the omni stand in one row at the foot of the pier, no panels (recommended) - interactive
+- `R104B.dc.html` (not copied yet) - Rev 104 B - Holo dais: a projection rises from the pier's edge like the bridge tables in the pilot scenes, the four round the omni - interactive
+- `R104C.dc.html` (not copied yet) - Rev 104 C - Wall gauges: each balance mounted on the pier's tiled walls, two a side, the omni count on the lintel - interactive
+
 #### Rev 99 - The Pilots tab as a crew PDA lying in the Ark: each pilot's file and story read on it
 
 - `R99Compare.dc.html` (not copied yet) - Rev 99 - The PDA's three screens flat, and the three places it lies
@@ -714,6 +735,20 @@ Copied on 2026-11-13 from the canvas of **Frogma**: Rev 3 to Rev 103, 461 boards
 - `R103C.dc.html` (not copied yet) - Rev 103 C - Teaser band: one dimmed picture strip with both names over it - interactive
 - `R103Notes.dc.html` (not copied yet) - Rev 103 - notes: what changes against the build and why A
 
+#### Rev 100 - Voyages, new: the HyperSea and your crew's voyages, the voyage opened, your Ark
+
+- `R100P1A.dc.html` (not copied yet) - Rev 100 P1A - Page 1 Table top: the HyperSea on a chart table, its edge view the front; the crew's voyages on the right (recommended) - interactive
+- `R100P1B.dc.html` (not copied yet) - Rev 100 P1B - Page 1 Orrery: the galaxy as a disc floating in the sea, a slow ring of bearings; the voyages on the left - interactive
+- `R100P1C.dc.html` (not copied yet) - Rev 100 P1C - Page 1 Bridge: the map flat and full-bleed; the crew's voyages along its foot - interactive
+- `R100P1D.dc.html` (not copied yet) - Rev 100 P1D - Page 1 Dive: Galaxy, Sector and Course as three glass sheets; a zoom is a dive between them - interactive
+- `R100Notes.dc.html` (not copied yet) - Rev 100 - notes: what was asked, each page, the new rules to confirm
+- `R100P2A.dc.html` (not copied yet) - Rev 100 P2A - Page 2 Briefing: the pilot's story, the route drawing itself, the rewards arriving; difficulty 1-9 (recommended) - interactive
+- `R100P2B.dc.html` (not copied yet) - Rev 100 P2B - Page 2 Journey: one lane across the window, the Ark sailing it; each stop tells its part - interactive
+- `R100P2C.dc.html` (not copied yet) - Rev 100 P2C - Page 2 Dossier: the map stays; Story, Route and Rewards slide open - interactive
+- `R100P3A.dc.html` (not copied yet) - Rev 100 P3A - Page 3 Lobby: your lobby's three seats; your seat changes in place; Set sail (recommended) - interactive
+- `R100P3B.dc.html` (not copied yet) - Rev 100 P3B - Page 3 No lobby: pick a squad from the list, or invite friends; Set sail - interactive
+- `R100P3C.dc.html` (not copied yet) - Rev 100 P3C - Page 3 Formation: your lobby's vessels in formation over the course; a press opens its tray - interactive
+
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 
 #### Rev 75 - Game Mode Codex, A and C as one: enter an element, open a game, its level in 3D; and the same level inside the builder
@@ -741,6 +776,13 @@ Copied on 2026-11-13 from the canvas of **Frogma**: Rev 3 to Rev 103, 461 boards
 - [`R91Notes.dc.html`](R91Notes.dc.html) - Rev 91 - notes: what is shared, what each option shows, the bar's rules, what differs from the build
 
 ### Tab: Quests  (`quests`)
+
+#### Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no episode
+
+- [`R107Compare.dc.html`](R107Compare.dc.html) - Rev 107 - the colour set reward, drawn three ways
+- [`R107D.dc.html`](R107D.dc.html) - Rev 107 D - Route on top: the course across, the quest, its reward and Claim side by side below (recommended) - interactive
+- [`R107E.dc.html`](R107E.dc.html) - Rev 107 E - Route as the list: the course down the left, the quest and its checkpoints in the middle, the reward beside Claim - interactive
+- [`R107Notes.dc.html`](R107Notes.dc.html) - Rev 107 - notes: the two mixes, the proposed reward per quest, what changed from Rev 101
 
 #### Rev 101 - Quests as a screen of its own: the episode's five quests, each one's goals, claim and what it opens
 
