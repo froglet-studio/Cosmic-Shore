@@ -671,7 +671,7 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   model, first through the last ring wins outright; (4) a playtest before any of them, because
   this model is arithmetic.
 - **2026-10-16 Rhino kit — needs a playtest.** (1) **AI Rhinos now cut the rails.**
-  `RhinoSwordAutopilot` holds the energize stance near super-shielded mass, and every rail prism is
+  `SwordfishSwordAutopilot` holds the energize stance near super-shielded mass, and every rail prism is
   super-shielded, so an AI Rhino flying beside a rail will now energize and pop holes in it — before
   today no AI could. A rider bridges a hole at full pace, but whether a bot grid shreds the braid is
   a playtest question. (2) **The AI now ramps** (`RampBoostAIPolicySO`), so the AI Rhino's lap time

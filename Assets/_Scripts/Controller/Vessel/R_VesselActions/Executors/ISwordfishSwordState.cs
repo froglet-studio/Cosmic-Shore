@@ -4,12 +4,12 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The energize ritual's phases, driven by <see cref="ShieldSkimmerScaleDriver"/> and
-    /// read by <see cref="RhinoSwordFXController"/> for the blade's look:
+    /// read by <see cref="SwordfishSwordFXController"/> for the blade's look:
     /// Idle → (hold the both-triggers chop stance) Charging → (hold met) Energized —
     /// danger red, pops super-shielded prisms (with the Space L5), stays lit for a tail after leaving the
     /// stance → Cooldown → Idle.
     /// </summary>
-    public enum RhinoSwordEnergizePhase
+    public enum SwordfishSwordEnergizePhase
     {
         Idle = 0,
         Charging = 1,
@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
     /// blade (energized with no stance and a ring of swords round the hull while it lasts -
     /// <see cref="Surge"/>). See <c>RHINO_ENERGY_SWORD.md</c>.
     /// </summary>
-    public interface IRhinoSwordState
+    public interface ISwordfishSwordState
     {
         /// <summary>True while the blade is energized — danger red, and the supershield
         /// key is live (contact pops super-shielded prisms instead of binding in them).</summary>
@@ -61,7 +61,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The omni-crystal pickup: hold the blade ENERGIZED for <paramref name="seconds"/> with no stance -
         /// overriding a cooldown - while a ring of trigger-driven copies of the blade surrounds the hull
-        /// and the pilot's camera pulls back onto it (<see cref="RhinoSurgeSwordRing"/>), and the Mass
+        /// and the pilot's camera pulls back onto it (<see cref="SwordfishSurgeSwordRing"/>), and the Mass
         /// afterimages, which otherwise wait for the energize to END, lay throughout.
         /// A no-op on a peer that does not own the sword's state (the owner's surge replicates).
         /// </summary>

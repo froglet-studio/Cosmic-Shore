@@ -10,21 +10,21 @@ namespace CosmicShore.Tests
     /// the camera's surround framing, and how far the camera pulls back as Space lengthens the blade.
     /// </summary>
     [TestFixture]
-    public class RhinoSurgeSwordRingTests
+    public class SwordfishSurgeSwordRingTests
     {
         [Test]
         public void FullyOpen_SpreadsTheSwordsEvenlyRoundTheNose()
         {
             const int count = 8;
             for (int k = 1; k < count; k++)
-                Assert.AreEqual(k * 45f, RhinoSurgeSwordRing.CopyAngleDegrees(k, count, 1f), 1e-4f);
+                Assert.AreEqual(k * 45f, SwordfishSurgeSwordRing.CopyAngleDegrees(k, count, 1f), 1e-4f);
         }
 
         [Test]
         public void Folded_PutsEveryCopyInsideTheBlade()
         {
             for (int k = 1; k < 8; k++)
-                Assert.AreEqual(0f, RhinoSurgeSwordRing.CopyAngleDegrees(k, 8, 0f), 1e-6f);
+                Assert.AreEqual(0f, SwordfishSurgeSwordRing.CopyAngleDegrees(k, 8, 0f), 1e-6f);
         }
 
         [Test]
@@ -33,12 +33,12 @@ namespace CosmicShore.Tests
             float prev = -1f;
             for (int i = 0; i <= 20; i++)
             {
-                float a = RhinoSurgeSwordRing.CopyAngleDegrees(3, 8, i / 20f);
+                float a = SwordfishSurgeSwordRing.CopyAngleDegrees(3, 8, i / 20f);
                 Assert.GreaterOrEqual(a, prev);
                 prev = a;
             }
             // Eased: the first tenth of the time covers well under a tenth of the sweep.
-            Assert.Less(RhinoSurgeSwordRing.CopyAngleDegrees(3, 8, 0.1f), 0.1f * 135f);
+            Assert.Less(SwordfishSurgeSwordRing.CopyAngleDegrees(3, 8, 0.1f), 0.1f * 135f);
         }
 
         [Test]
@@ -70,21 +70,21 @@ namespace CosmicShore.Tests
         [Test]
         public void ReachDistance_AtRestLength_IsTheAuthoredDistance()
         {
-            Assert.AreEqual(1f, RhinoSwordCamera.ReachDistanceScale(1f, 1f), 1e-6f);
+            Assert.AreEqual(1f, SwordfishSwordLengthCamera.ReachDistanceScale(1f, 1f), 1e-6f);
         }
 
         [Test]
         public void ReachDistance_FullFollow_PullsBackInProportion()
         {
             // Space 10: a 40-unit blade over the 24-unit rest, so the camera sits 40/24 as far back.
-            Assert.AreEqual(40f / 24f, RhinoSwordCamera.ReachDistanceScale(40f / 24f, 1f), 1e-5f);
+            Assert.AreEqual(40f / 24f, SwordfishSwordLengthCamera.ReachDistanceScale(40f / 24f, 1f), 1e-5f);
         }
 
         [Test]
         public void ReachDistance_NoFollow_NeverMoves_AndNeverComesNearer()
         {
-            Assert.AreEqual(1f, RhinoSwordCamera.ReachDistanceScale(40f / 24f, 0f), 1e-6f);
-            Assert.AreEqual(1f, RhinoSwordCamera.ReachDistanceScale(0.5f, 1f), 1e-6f);   // a deficit band never pulls in
+            Assert.AreEqual(1f, SwordfishSwordLengthCamera.ReachDistanceScale(40f / 24f, 0f), 1e-6f);
+            Assert.AreEqual(1f, SwordfishSwordLengthCamera.ReachDistanceScale(0.5f, 1f), 1e-6f);   // a deficit band never pulls in
         }
 
         [Test]

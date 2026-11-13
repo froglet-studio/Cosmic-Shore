@@ -32,7 +32,7 @@ namespace CosmicShore.UI
         [Tooltip("The sword's swipe (pose, recovery, Quickdraw / Flurry). Found under the vessel when empty.")]
         [SerializeField] private ShieldSwipeActionExecutor swipe;
         [Tooltip("The Mass ability (afterimages). Found under the vessel when empty.")]
-        [SerializeField] private RhinoSwordAfterimage afterimage;
+        [SerializeField] private SwordfishSwordAfterimage afterimage;
 
         [Inject] GameDataSO _gameData;
 
@@ -57,7 +57,7 @@ namespace CosmicShore.UI
 
             var root = vesselStatus?.ShipTransform;
             if (!swordDriver && root) swordDriver = root.GetComponentInChildren<ShieldSkimmerScaleDriver>(true);
-            if (!afterimage && root) afterimage = root.GetComponentInChildren<RhinoSwordAfterimage>(true);
+            if (!afterimage && root) afterimage = root.GetComponentInChildren<SwordfishSwordAfterimage>(true);
             if (!swipe && root) swipe = root.GetComponentInChildren<ShieldSwipeActionExecutor>(true);
 
             _chargeLit = false;

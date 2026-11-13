@@ -3985,7 +3985,7 @@
    "family": "jade",
    "uses": 1,
    "where": [
-    "Assets/_Graphics/Materials/RhinoSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
+    "Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
    ]
   },
   "world:0F157B": {
@@ -5930,7 +5930,7 @@
    "family": "jade",
    "uses": 1,
    "where": [
-    "Assets/_Graphics/Materials/RhinoSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
+    "Assets/_Graphics/Materials/SwordfishSwordTracerMaterial.mat Material(Custom/ViewAngleBasedColorBlendHDR)"
    ]
   },
   "world:9DFF2E": {
@@ -7030,7 +7030,7 @@
    "uses": 3,
    "where": [
     "Assets/_Graphics/Materials/ProjectileChargeFieldMaterial.mat Material(Shader Graphs/ProjectileChargeField)",
-    "Assets/_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO",
+    "Assets/_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO",
     "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleConfigSO.cs code"
    ],
    "palette": "EnvironmentColors.Danger",
@@ -7917,7 +7917,7 @@
    "family": "blue",
    "uses": 2,
    "where": [
-    "Assets/_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO",
+    "Assets/_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset ShieldSkimmerScaleConfigSO",
     "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ShieldSkimmerScaleConfigSO.cs code"
    ]
   },

@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
             return _last.Count > 0;
         }
 
-        // RhinoSwordAfterimage.LayOne's shape: the flags before Initialize, a stated size admitted after it
+        // SwordfishSwordAfterimage.LayOne's shape: the flags before Initialize, a stated size admitted after it
         static Prism LayOne(PrismEventChannelWithReturnSO channel, PrismType type, Vector3 position, Quaternion rotation,
             Vector3 scale, bool danger, IVesselStatus status)
         {

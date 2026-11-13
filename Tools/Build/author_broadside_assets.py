@@ -94,7 +94,7 @@ CONTAINERS = {
     "urchin": "Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/"
               "UrchinSpikeProjectileImpactContainer.asset",
     "rhino":  "Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/"
-              "RhinoForceFieldSkimmerImpactorDataContainer.asset",
+              "SwordfishForceFieldSkimmerImpactorDataContainer.asset",
     "squirrel": "Assets/_SO_Assets/Effects/Effect Containers/SkimmerContainers/"
                 "SquirrelSkimmerImpactorDataContainer.asset",
 }

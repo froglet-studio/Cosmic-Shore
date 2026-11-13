@@ -76,7 +76,7 @@ makes it does not exist (section 4). Professional space sound, Yash's bar: sub w
 | Owner | Empty slots | What they are |
 |---|---|---|
 | Honeyguide (`HoneyguideConfig.asset`) | 25 | the whole crew kit: flit, jump, slip, spin, hive enter/leave/sting/colour/chain, pattern made, reveal, upgrade |
-| Rhino sword combos (`RhinoSwordComboLibrary.asset`) | 24 | one `Sound` per tap string, RR through LRR, plain and energized |
+| Rhino sword combos (`SwordfishSwordComboLibrary.asset`) | 24 | one `Sound` per tap string, RR through LRR, plain and energized |
 | Callsigns (`Resources/Pilots/CallsignSet.asset`) | 18 | `openSound` per callsign |
 | Brittle Star (`BrittleStarConfig.asset`) | 14 | fire, explosive round, saber throw, ring launch/blast/rebuild, cord slice, the three modes on/off, overheat, charge stored |
 | Shrike (`ShrikeConfig.asset`) | 11 | lance, lock, dock, undock, nest, sling, tether, missile launch/blast, mode, crystal |

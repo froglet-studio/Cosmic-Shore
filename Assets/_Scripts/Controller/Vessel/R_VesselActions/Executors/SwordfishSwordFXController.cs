@@ -38,7 +38,7 @@ namespace CosmicShore.Gameplay
     /// Camera shake (super-shield pop, crystal burst) fires for the LOCAL human pilot
     /// only. See <c>RHINO_ENERGY_SWORD.md</c>.
     /// </summary>
-    public sealed class RhinoSwordFXController : MonoBehaviour
+    public sealed class SwordfishSwordFXController : MonoBehaviour
     {
         static readonly int ColorId     = Shader.PropertyToID("_Color");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -123,7 +123,7 @@ namespace CosmicShore.Gameplay
         // ── driver entry points ────────────────────────────────────────────────
 
         /// <summary>Per-frame look update, called by the driver after its state ticks.</summary>
-        public void Tick(RhinoSwordEnergizePhase phase, float charge01, float dt)
+        public void Tick(SwordfishSwordEnergizePhase phase, float charge01, float dt)
         {
             if (config == null) return;
 
@@ -133,8 +133,8 @@ namespace CosmicShore.Gameplay
             // (anticipation — the blade visibly wants to ignite), nothing otherwise.
             float blendTarget = phase switch
             {
-                RhinoSwordEnergizePhase.Energized => 1f,
-                RhinoSwordEnergizePhase.Charging  => 0.35f * charge01,
+                SwordfishSwordEnergizePhase.Energized => 1f,
+                SwordfishSwordEnergizePhase.Charging  => 0.35f * charge01,
                 _                                 => 0f
             };
             _energizedBlend = Mathf.MoveTowards(_energizedBlend, blendTarget, dt / config.ColorTransitionSeconds);
@@ -154,7 +154,7 @@ namespace CosmicShore.Gameplay
             ApplyTracerColor(color);
 
             // Anticipation arcs while charging: small, quickening in weight with charge.
-            if (phase == RhinoSwordEnergizePhase.Charging && crackle && Time.time >= _nextChargeCrackle)
+            if (phase == SwordfishSwordEnergizePhase.Charging && crackle && Time.time >= _nextChargeCrackle)
             {
                 _nextChargeCrackle = Time.time + config.ChargeCrackleInterval;
                 float intensity = Mathf.Lerp(config.ChargeCrackleIntensity / 3f, config.ChargeCrackleIntensity, charge01);
@@ -164,11 +164,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Phase transitions. The Energized edge is the ignition centerpiece.</summary>
-        public void NotifyEnergizePhaseChanged(RhinoSwordEnergizePhase phase)
+        public void NotifyEnergizePhaseChanged(SwordfishSwordEnergizePhase phase)
         {
             if (config == null) return;
 
-            if (phase == RhinoSwordEnergizePhase.Energized)
+            if (phase == SwordfishSwordEnergizePhase.Energized)
             {
                 Flash(config.PopFlashAmount);
                 if (crackle)
@@ -436,7 +436,7 @@ namespace CosmicShore.Gameplay
             bool tracersWired = bladeTracers != null && bladeTracers.Length > 0;
             if (config != null && bodyRenderer && crackle && tracersWired) return;
             _warned = true;
-            CSDebug.LogWarning($"[{nameof(RhinoSwordFXController)}] '{name}' is missing authored FX wiring — " +
+            CSDebug.LogWarning($"[{nameof(SwordfishSwordFXController)}] '{name}' is missing authored FX wiring — " +
                                $"config: {(config ? "ok" : "MISSING")}, bodyRenderer: {(bodyRenderer ? "ok" : "MISSING")}, " +
                                $"crackle: {(crackle ? "ok" : "MISSING")}, bladeTracers: {(tracersWired ? bladeTracers.Length + " wired" : "MISSING")}. " +
                                "The sword runs, but that layer of its look is dark — " +

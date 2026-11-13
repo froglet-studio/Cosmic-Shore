@@ -9,10 +9,10 @@ namespace CosmicShore.Gameplay
     /// <item>Normal / shielded prism — standard damage on contact (a shielded prism loses its
     /// shield, a normal prism explodes), exactly like the generic skimmer damage effect.</item>
     /// <item>Super-shielded prism — POPPED only under the SPACE level-5 upgrade
-    /// (<see cref="IRhinoSwordState.SuperShieldUpgradeActive"/>, authored on the sword's
+    /// (<see cref="ISwordfishSwordState.SuperShieldUpgradeActive"/>, authored on the sword's
     /// ShieldSkimmerScaleConfigSO; Garrett 2026-10-26: "the sword only destroys
     /// supershielded prisms as the space L5 upgrade") AND while the blade is ENERGIZED
-    /// (<see cref="IRhinoSwordState.IsEnergized"/>, the hold-the-chop-stance ritual), via the
+    /// (<see cref="ISwordfishSwordState.IsEnergized"/>, the hold-the-chop-stance ritual), via the
     /// sanctioned mass-conserving teardown (DeactivateShields → devastating Damage, the
     /// AstroLeagueArena.ClearEdgeLining precedent). A non-energized blade BINDS in it rather
     /// than recoiling: this effect plays the entry beat (a dim denied-spark, the deflection
@@ -24,10 +24,10 @@ namespace CosmicShore.Gameplay
     /// <see cref="popRequiresEnergizedBlade"/> false to pop ungated (the v2 debug behavior).</item>
     /// </list>
     /// Every prism the sword actually destroys kicks its impact feedback (blade flash + contact
-    /// spark) on the per-vessel <see cref="IRhinoSwordState"/> (read via
+    /// spark) on the per-vessel <see cref="ISwordfishSwordState"/> (read via
     /// <c>impactor.Skimmer.SwordState</c>). It banks NOTHING: the Rhino's energy was discarded on
     /// 2026-10-26, along with the Charge-scaled gain that fed it (Charge now scales the sword's
-    /// petal STEAL, <c>RhinoSwordStealBySkimmerEffect</c>). The sword's own AFTERIMAGES (its Mass
+    /// petal STEAL, <c>SwordfishSwordStealBySkimmerEffect</c>). The sword's own AFTERIMAGES (its Mass
     /// ability) are prisms like any other: it cuts them (Garrett, 2026-10-17: "not immune to our
     /// destruction"). Only the fleet's 1 s self-trail grace keeps it off one it has just laid.
     /// With no sword state present (a non-Rhino skimmer reusing this asset) the blade is never
@@ -35,9 +35,9 @@ namespace CosmicShore.Gameplay
     /// only the FX bookkeeping is skipped.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "RhinoSkimmerDamagePrismEffect",
-        menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/RhinoSkimmerDamagePrismEffectSO")]
-    public sealed class RhinoSkimmerDamagePrismEffectSO : SkimmerPrismEffectSO
+        fileName = "SwordfishSkimmerDamagePrismEffect",
+        menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/SwordfishSkimmerDamagePrismEffectSO")]
+    public sealed class SwordfishSkimmerDamagePrismEffectSO : SkimmerPrismEffectSO
     {
         [Header("Damage")]
         [SerializeField] private float inertia = 70f;

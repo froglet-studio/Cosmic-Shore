@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
     /// and the chain stays open so a third press within the window upgrades it into the
     /// finisher. After a finisher the chain clears.
     /// </summary>
-    public sealed class RhinoSwordComboDetector
+    public sealed class SwordfishSwordComboDetector
     {
         public struct Settings
         {
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
         bool _chordLatched;
         float _suppressUntil = float.NegativeInfinity;
 
-        public RhinoSwordComboDetector(Settings settings) => _settings = settings;
+        public SwordfishSwordComboDetector(Settings settings) => _settings = settings;
 
         public void Configure(Settings settings) => _settings = settings;
 

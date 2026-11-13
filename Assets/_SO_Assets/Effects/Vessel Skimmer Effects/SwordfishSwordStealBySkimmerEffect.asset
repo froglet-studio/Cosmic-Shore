@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e18c66be8e429824487e2beb945f71bd, type: 3}
-  m_Name: RhinoSwordStealBySkimmerEffect
+  m_Name: SwordfishSwordStealBySkimmerEffect
   m_EditorClassIdentifier: 
   debuffMagnitude: -0.08
   buffMagnitude: 0.08

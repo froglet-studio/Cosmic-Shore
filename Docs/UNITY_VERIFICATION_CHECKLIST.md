@@ -23437,3 +23437,14 @@ clean; `element_ability_table.py Grizzly` shows 4/4 scaling and 4/4 L5 gates. No
    Allies and your own hull are never marked; an AI Grizzly marks nothing on anyone's screen.
 3. At level 5 of each element the card swaps to its upgraded picture: Battle Sight (Charge), Claimed Fire (Mass),
    Safe Detonation (Space), Vector Control (Time); below level 4 it swaps back.
+## 🔴 Swordfish: the Rhino-named sword classes and assets renamed (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/swordfish-rename`. Every class, script and asset only the Swordfish uses lost its Rhino name
+(`RhinoSword*` / `RhinoShieldSwipe*` / ... -> `Swordfish*`; `RhinoSwordCamera` -> `SwordfishSwordLengthCamera`, as
+`SwordfishSwordCamera` already exists); the sword's action assets moved to `VesselActions/Swordfish/`. Every .meta guid
+is kept, so no prefab or asset reference changes. Compiled against the Unity reference assemblies (`unity_refcompile`:
+0 errors in changed files). No Unity editor ran.
+
+1. Open the project: no "missing script" or "class name does not match file name" warnings for any Swordfish* script.
+2. Fly the Swordfish in the Toybox: swipe, energize, afterimages, combos and the Surge ring all work as before.
+3. The Rhino and the Jacks fly as before (they share only `RhinoAnimation` and `RhinoAIBoostPolicy`, which keep their names).

@@ -54,8 +54,8 @@ KATANA_LEN = 92              # habaki to point (px)
 KATANA_W = 12                # the blade's depth
 KATANA_SORI = 14             # how far the point sits off the hilt's straight line (px): the curve
 CARD_SWIPE = 0.5             # the card turns half the sword's real swipe (90 deg real -> 45), so it stays in the card
-REAL_SWIPE = 90.0            # RhinoShieldSwipeConfig.swipeYawDegrees: a full single-trigger pull
-REAL_CHOP = 65.0             # RhinoShieldSwipeConfig.chopPitchDegrees: both triggers fully pulled
+REAL_SWIPE = 90.0            # SwordfishShieldSwipeConfig.swipeYawDegrees: a full single-trigger pull
+REAL_CHOP = 65.0             # SwordfishShieldSwipeConfig.chopPitchDegrees: both triggers fully pulled
 
 
 def katana(angle=0.0, chop=0.0, tsuba=True, tsuka=True, length=KATANA_LEN, w=KATANA_W, sori=KATANA_SORI, hilt=KATANA_HILT, mirror=False):
@@ -113,7 +113,7 @@ def katana_chop():
 
 
 CHOP_STRAIGHT01 = 0.75       # the view's katanaChopStraight01: the chop at which the blade shows from behind (sum 1.5 of
-                             # 2, RhinoShieldSwipeConfig.stanceSumThreshold - the both-triggers energize stance)
+                             # 2, SwordfishShieldSwipeConfig.stanceSumThreshold - the both-triggers energize stance)
 CHOP_LENGTH01 = 0.8          # the view's katanaChopLength01: the blade's length on the card at a full chop (it tips away)
 
 

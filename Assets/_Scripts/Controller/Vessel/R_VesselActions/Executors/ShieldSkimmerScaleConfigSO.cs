@@ -10,9 +10,9 @@ namespace CosmicShore.Gameplay
     /// omni-crystal surge's sword ring and camera, and every blade-look/juice knob (energized danger
     /// red, impact flashes, crackle, camera shake). There is no energy (2026-10-26). The blade's
     /// LENGTH range is Space's: Skimmer.Scale on Rhino.prefab (24 at rest, 40 at Space 10).
-    /// One shared asset (`_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset`)
+    /// One shared asset (`_SO_Assets/VesselActions/Swordfish/ShieldSkimmerScaleConfig.asset`)
     /// drives every Rhino, read by <see cref="ShieldSkimmerScaleDriver"/> and
-    /// <see cref="RhinoSwordFXController"/>.
+    /// <see cref="SwordfishSwordFXController"/>.
     /// </summary>
     [CreateAssetMenu(
         fileName = "ShieldSkimmerScaleConfig",
@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
                  "A phone pilot energizes by lifting BOTH thumbs, which also lets go of the steering, so the " +
                  "hold is divided by this (2 = half the hold). 1 = the pad's timing. AI and autopilot keep the " +
                  "pad's timing. Decided on the vessel's owner and replicated with the energize phase " +
-                 "(RhinoSwordNetworkRelay), so every peer ignites on the same edge.")]
+                 "(SwordfishSwordNetworkRelay), so every peer ignites on the same edge.")]
         [SerializeField, Min(0.01f)] private float touchEnergizeRateMultiplier = 2f;
         [Tooltip("Seconds the blade stays energized AFTER leaving the stance. Holding the stance " +
                  "from ignition keeps it lit; once let go the tail runs out whatever the fingers do.")]
@@ -137,7 +137,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Rotation (pitch/yaw/roll) rate multiplier while the blade is inside a super-shielded prism it " +
                  "cannot cut — the armour DRAGS on the sword instead of throwing the ship back. " +
                  "1 = no drag, 0 = the vessel cannot rotate at all while bound. " +
-                 "Replaces the old recoil (RhinoSkimmerDamagePrismEffectSO.recoilWhenDenied).")]
+                 "Replaces the old recoil (SwordfishSkimmerDamagePrismEffectSO.recoilWhenDenied).")]
         [SerializeField, Range(0f, 1f)] private float bindTurnRateMultiplier = 0.3f;
         [Tooltip("How fast (multiplier units/sec) the turn rate eases DOWN into the bind. High, so " +
                  "the drag reads as the blade biting on contact.")]

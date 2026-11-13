@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c9f0edf05ea30da01ed7031534f5017, type: 3}
-  m_Name: RhinoShieldSwipeRightAction
+  m_Script: {fileID: 11500000, guid: 1091d0d547931cdaa76216e288eb8f7e, type: 3}
+  m_Name: SwordfishVesselSurgeByCrystalEffect
   m_EditorClassIdentifier: 
-  direction: 0
+  surgeSeconds: 8

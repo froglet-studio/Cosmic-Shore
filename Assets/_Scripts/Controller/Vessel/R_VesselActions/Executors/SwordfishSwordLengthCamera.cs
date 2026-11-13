@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// surge the camera eases straight back and re-centres on the hull so the sword ring is on screen.</item>
     /// </list>
     /// </summary>
-    public sealed class RhinoSwordCamera
+    public sealed class SwordfishSwordLengthCamera
     {
         float _surround01;
         bool _written;
