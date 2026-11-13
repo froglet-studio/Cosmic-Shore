@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 95 - notes: what was asked, the map, the three of each screen, the recommendations</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.abs{position:absolute}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#E6E9FF}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;padding:0 26px;white-space:nowrap;border:0;cursor:pointer;text-decoration:none;font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:18px;letter-spacing:.14em;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.btn.sm{height:44px;padding:0 18px;font-size:14px}
+.commit{background:#A600FF;color:#FFFFFF}
+.cta{background:#99FF80;color:#00041F}
+.def{background:rgba(0,4,31,.78);color:#E6E9FF;box-shadow:inset 0 0 0 1px #747BAD}
+.btn .kc{border-color:currentColor;color:inherit}
+.pick{background:none;border:0;padding:0;margin:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.glass{background:rgba(0,4,31,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hull{mix-blend-mode:screen;object-fit:contain}
+.set::before{content:attr(data-l);display:block;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#747BAD;margin-bottom:4px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<div class="abs" style="left:80px;top:64px;width:1760px;display:flex;flex-direction:column;gap:22px"><span style="font-size:36px">Rev 95 - Voyages as two screens: the voyage on the map, then the squad</span><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">Asked</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">"I dont like the preview earlier we could zoom in and out of the whole map, set course directly there ... first screen in voyages is the left side list, that can stay, the middle becomes the preview with all features ... squad presets and set sail directly ... the second image can give us the options to select the vessel, pilot, artifact, element etc and then set sail. Create 3 mockups each for both the screens" (Shombith, 2026-11-12).</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">The map, in all three</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">Flat again, and the explorer: a zoom ladder (Galaxy, Arm, Sector, Course) with + and -, and when zoomed out a press on a place sets the course there. The edge-on view stays with it.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">Screen 1</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">1A Presets (recommended): the squad presets are cards, so Set sail is one press away. 1B Wide map: the map takes the window and a foot bar holds the rest. 1C Briefing: the tallest map, and the squad's seats are shown.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">Configure squad</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">On every screen 1. It names a lobby friend who has no seat yet, and opens screen 2.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">Screen 2</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">2A Three seats (recommended): a column per seat, everything visible at once. 2B Seat and picker: large pictures to choose from, one seat at a time. 2C Roster: the most compact, a table.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">A lobby friend's seat</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">A seat you may change has a fifth stepper, Flown by: the AI or a friend in the lobby.</span></div><div style="display:grid;grid-template-columns:340px 1fr;gap:28px"><span class="cap" style="font-size:18px">The top bar</span><span style="font-size:18px;line-height:1.5;color:#E6E9FF">As Rev 88 drew it: small plain capitals, the shown tab underlined. The build still shows boxed tabs; that is a fault of the build, to be fixed with whichever of these is picked.</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

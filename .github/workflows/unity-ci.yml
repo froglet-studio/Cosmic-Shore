@@ -14,9 +14,9 @@
 #
 # claude/** BRANCHES DO NOT TRIGGER CI ON THEIR OWN. Agent sessions push often and open many
 # pull requests, so a pull_request event whose head is claude/** skips every job here. CI for such
-# a branch fires only when (a) it lands on bleeding-edge (bleeding-edge-guard.yml and
-# amoebius-parity-ci.yml run on that push) or (b) a /ship, /ship-quick, /ship-deep or /ship-tools
-# command dispatches this workflow on it with mode=static (.claude/skills/ship/SKILL.md, section 5.5).
+# a branch fires only when (a) it lands on bleeding-edge (bleeding-edge-guard.yml runs on that
+# push; amoebius-parity-ci.yml runs nightly on bleeding-edge, not per push, since 2026-11-13) or
+# (b) a /ship, /ship-quick, /ship-deep or /ship-tools command dispatches this workflow on it with mode=static (.claude/skills/ship/SKILL.md, section 5.5).
 #
 # NO RUNNER IS ATTACHED (since 2026-10-13). The `unity` job is SKIPPED while the repository variable
 # UNITY_RUNNER_LABEL is unset, and when set it targets whatever label it names. The self-hosted
@@ -219,6 +219,13 @@ jobs:
           ref: ${{ needs.resolve.outputs.ref }}
           lfs: false          # source-only check; binary assets are not needed
           fetch-depth: 1
+
+      # The generator --check loop below imports numpy (Tools/CI/requirements-checks.txt says
+      # which and why); the hosted image does not ship it. Same step as bleeding-edge-guard.yml.
+      - name: Install the Python packages the checks import
+        run: |
+          python3 -m pip install --user --quiet --break-system-packages --only-binary :all: -r Tools/CI/requirements-checks.txt
+          python3 -c "import numpy; print('numpy', numpy.__version__)"
 
       # The checker has no-opped before while still reporting "OK". Prove it can
       # still detect its own fixtures BEFORE trusting a clean scan.

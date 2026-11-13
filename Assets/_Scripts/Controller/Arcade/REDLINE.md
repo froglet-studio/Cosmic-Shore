@@ -4,7 +4,92 @@
 > pilot flies **laps** of it in order; the first **domain** whose **lead runner** threads the
 > last gate of the last lap wins. The race the Manta was asked for: **crazy fast**.
 
+## 0. Soar from the gun, the heat, and rivals that race (2026-11-11, round 5) - NOT editor-verified
+
+Round 5 of the Time games (`Docs/AI_SYSTEM/TIME_GAME_FUN_SCORES.md`, "the ten most-played vessels") found the race
+broken before it was dull: **since 2026-11-07 Soar is the Manta's Time LEVEL-5 upgrade** (`96952eb939`:
+`MantaAnalogTurnBoostExecutor.soarUnlockedBy` = Time, the ability map's `UnlockLevel` 5 / `RelockBelowLevel` 4), and
+**Time raises the cruise too** (`c4052cb70e`: `ThrottleScalerMultiplier` 1 -> 1.5 over Time 0-10). This card seeded no
+Time, so every Manta, human and AI, raced the "crazy fast" circuit at 180 u/s with Soar dark - at I1 for the whole race
+(no crystals), at I2-I4 until a fifth Time crystal lit it. Every speed sections 1-5 quote is the hull before that change.
+
+What changed (the vessel's kit is untouched; the course, every seed of it, is the same course):
+
+| | before | now | where |
+|---|---|---|---|
+| start | Time 0, Soar dark | **Time 6 at I1-I4**: Soar lit from the gun, two petals over its relock | `RedlineCourse.StartingTimeLevelByIntensity`, written to the card's `StartingElements` by the generator |
+| speed | 180 u/s (720 if Soar were lit) | **1104 u/s** flat out at Time 6, 1404 at Time 10; full-Soar circle 252 / 259 u | `RedlineCourse.SoarSpeed`, `SoarTop`, `FullSoarRadius` (the flown curve) |
+| race | 5 laps, 40 gates | **8 laps, 64 gates** (a lap is ~5 s at I1, ~11 s at I4 for the model's ideal pilot) | `redlineGateTarget` 64, `RedlineCourseSource.DefaultLaps` 8 |
+| AI line | the gate way (approach point on the axis, then a through point) | **a race line through the mouths' centres** (`TryRaceLine`); a missed mouth is still re-attacked the gate way | `RedlineController.aiRaceLine` |
+| AI throttle | the skill throttle (0.375 at I1: a third of the hull) | **a floor by difficulty**: Easy 0.7, Medium 0.85, Hard and Legendary 1 | `aiThrottleFloorByDifficulty`, through the new `GateRaceController.AIThrottleFloorFor(pilot)` |
+| AI nose | 2 / 3 / 6 / 9 per s at every intensity | the same at I1-I2; **Easy 2.5 at I3; 4 / 5 / 6 / 9 at I4** | `aiNoseFollowByIntensity` |
+| feedback | the shared race beats | **the heat**: every clean thread throws a shock ring off its gate (redhot: a bigger one), streaks called at 3 / 8 / 16 / every 16, lap splits, best lap, a clean lap chases shock rings round the circuit, the redline (1362 u/s, Time 10 only) flares every ring once | `RedlineHeat`, `RedlineController.Heat`, toasts 360-366, nine empty FMOD slots |
+
+**The heat** (`RedlineHeat`): a thread is CLEAN through the heart of the mouth (half its radius) and REDHOT when it is
+clean at 80% of full Soar for the pilot's Time level. Anything else - a thread off the heart, a missed mouth - ends the
+streak. Graded on the local pilot's own machine from its own hull crossing the gate it is flying at (the race's own plane
+test), so it is unscored and unnetworked: it is how the race tells a pilot they flew it well. The shock ring is a copy
+of the gate's mouth that grows to 1.6x (2.6x redhot) and vanishes in 0.45 s - in the world, a shape, never a colour.
+Toasts (all authored on `GameToastConfig_Redline`, which the generator now owns, its guid kept): 360 the hint, 361 the
+streak, 362 the lap split, 363 a best lap, 364 a clean lap, 365 Soar dark (Time fell below 4), 366 the redline.
+367-369 are free.
+
+### 0.1 Measured offline (`Tools/Build/manta_redline_sim.py --reading`, 6 courses an intensity, 8 laps)
+
+The model now flies the flown hull (`TIME_MODEL` "flown": the unlock, the cruise multiplier, the card's start) and
+PEOPLE as well as the AI: no nose lag, the throttle buried, straight at each mouth's centre, with their own triggers -
+`bury` (both always flat), two habits (`ease` half at every corner; `band` easing only as the stick goes over) and the
+`reader` (each corner flown in its head first: the most Soar at which a hull turning flat out from the gate still
+threads the next mouth, lifted for at the turn-in and the Yawstery pull out of a knife).
+
+| median race (s) | I1 | I2 | I3 | I4 |
+|---|---:|---:|---:|---:|
+| person, bury | 37.5 | 43.7 | 71.3 | 89.2 |
+| person, the best habit | 37.5 | 43.7 | 64.8 (band) | 89.2 (bury) |
+| person, the reader | 37.5 | 43.7 | 71.9 | 88.9 |
+| **reading the course saves** | **0%** | **0%** | **-11%** | **+0.3%** |
+| AI Easy (6 of 6 at every level) | 139.0 | 142.5 | 152.9 | 149.0 |
+| AI Medium | 102.9 | 108.5 | 133.9 | 136.8 |
+| AI Hard | 68.4 | 70.7 | 95.6 | 120.9 |
+| AI Legendary | 60.1 | 63.6 | 71.4 | 91.0 |
+| before: the AI on the gate way, Soar lit, 5 laps, Legendary / Easy | 98 / 151 | 90 / 158 | 96 / 230 (3 of 4) | 104 / none of 4 |
+
+**What it says.** (1) With Soar lit the race is what it was named for, and 8 laps put an ideal pilot at 38-89 s (a
+person ~50-115). (2) The AIs now race: every difficulty finishes every level, ordered, and Legendary is within 2-60% of
+the model's ideal person (it trails most at I1, where an ideal person never misses). (3) **On this course, reading the
+corners does not pay at Soar speed**: a flat-out Manta that misses a mouth loops back in ~1.4 s (its 252 u circle at
+1100 u/s), which costs about what a lift does, and the course's own corner radius (the circle tangent to both legs at
+half-leg, what the course is CUT on) overstates every corner for a pilot at the mouths' centres: a pilot who lifts BY
+it loses 20-45% at I2-I4. The ladder is real in misses (0 / 0 / 51 / 73 for bury over six races) and lap time
+(4.7 -> 11 s), not in lift decisions. **The next round re-cuts the course for the flown hull** (section 9). Prism posts
+marking the lift points were designed and measured, and not built: they would mark a decision the course does not ask.
+(4) Clean threads are 93-100% for every person model: the model aims at the centre perfectly, so the heat's real
+spread is a person's, and only the editor shows it.
+
+`--self-test` checks 13-17 hold the flown hull to `Manta.prefab`, `Manta.asset` and the card, the Time-0 start as the
+negative control, the shipped AI finishing I1 and I4 at Easy and Legendary, and the race line beating the gate way.
+Checks 9-12 (the 2026-11-07 nose-lead record, run on the old hull) were already red on `bleeding-edge` before this work
+(the same 13 lines, measured on HEAD's own copy); they are left as the record and not re-measured here.
+
+### 0.2 On bleeding-edge, and the step-1 fun pass (2026-11-13)
+
+Round 5 lived only on `Ys-bleeding-edge`, so on `bleeding-edge` Soar stayed dark in Redline until it was cherry-picked
+for the elemental loop's Manta Time step 1 (`Docs/ElementalLoop/PLAYBOOK.md`; Caleb's Manta polish, `Docs/Manta/POLISH.md`,
+touched the trail, haptics and camera, not the race). Re-measured there, nothing re-tuned:
+
+- **The AI's Soar bands are not the floor.** A 5 x 4 grid of `aiBoostStickBand` x `aiYawsteryStickBand` at Legendary
+  (nose 9/s, floor 1, 6 courses an intensity) puts the shipped 0.35 / 0.75 within 3% of the best at I1-I3 and 16% at I4
+  (best 0.2 / 0.5: 61 / 67 / 74 / 88 s against 61 / 64 / 71 / 105 s). The bands are a vessel dial every AI Manta
+  flies, so a change waits for step 3 (`time-arcade`), searched on the signed-off ladder.
+- **The rivals at the fun rung (I2):** the model's ideal person 44 s; Legendary 64 s, Hard 71 s, Medium (the default
+  difficulty) 109 s, Easy 145 s. A first fly test against **Hard** rivals is the one that reads whether they race.
+- **The open question is the verb at speed** (section 0.1): at Time 6 the model's perfect-aim person never gains by
+  lifting at I1-I2. A real pilot misses mouths a perfect aim does not, so whether a lift pays is the fun card's
+  question, and the re-cut of section 9 waits on that flight.
+
 ## 1. What the mode is asking
+
+> **Sections 1-5 are the 2026-11-04 design, on the hull before Soar's unlock; section 0 is how the race is flown now.**
 
 **Redline teaches one ability: Soar, the Manta's Time ability** (Yash, 2026-11-04: "introduce the
 new player to the time ability of Manta in intensity 1, and in intensity 4 it will get intense; no
@@ -238,8 +323,14 @@ by the compute job `redline-manta-time`.
 
 | Knob | Where | Shipped |
 |---|---|---|
-| race length (laps × rings) | `Resources/EndConditionOverrides` → `redlineGateTarget` | **40** (5 × 8, since the 2026-10-26 ~90 s target pass; it was 24) |
-| laps | `MinigameRedline.unity` → `RedlineController.laps` (`RedlineCourseSource.DefaultLaps`) | **5** |
+| race length (laps × rings) | `Resources/EndConditionOverrides` → `redlineGateTarget` | **64** (8 × 8, since 2026-11-11, section 0; 40 from the 2026-10-26 ~90 s pass; it was 24) |
+| laps | `MinigameRedline.unity` → `RedlineController.laps` (`RedlineCourseSource.DefaultLaps`) | **8** |
+| starting Time level | `RedlineCourse.StartingTimeLevelByIntensity` → the card's `StartingElements` (generator) | **6** at I1-I4 (Soar lit) |
+| AI race line | `RedlineController.aiRaceLine` (code default) | **on**: straight at each mouth's centre (section 0) |
+| AI throttle floor by difficulty | `RedlineController.aiThrottleFloorByDifficulty` (code default) | Easy / Medium / Hard / Legendary **0.7 / 0.85 / 1 / 1** |
+| heat | `RedlineController` → `heatOn`, `cleanFlarePunch` 1.6, `redhotFlarePunch` 2.6, `flareSeconds` 0.45, `chaseStagger` 0.06; `RedlineHeat` (clean 0.5 of the mouth, redhot 0.8 of full Soar, redline 0.97 of Time 10's) | on |
+| heat toasts | `GameToastConfig_Redline` (generator), `GameToastSituation` 360-366 | section 0 |
+| heat sounds | `RedlineController` → nine `EventReference` slots | **empty** (FMOD convention) |
 | rings per lap | `RedlineCourse.ForIntensity` → `GateCount` | **8** |
 | circuit base radius | same | **820** (~5 k per lap) |
 | corner profile (turn angles) | same, per intensity | see §1 — with `AngularSpread` and the floor, **this is the design** |
@@ -247,14 +338,14 @@ by the compute job `redline-manta-time`.
 | Time crystals a lap | `RedlineTimeCrystals.PerLapByIntensity` | 0 / 1 / 2 / 3 (on the line at I2-I3, inside the apexes at I4) |
 | Time crystal regrow | `RedlineController.timeCrystalRegrowSeconds` (code default; not in the scene) | 5 s |
 | AI steers for Time crystals | `RedlineController.aiTimeCrystalSlack` (code default) | **0** (off, §4a) |
-| AI nose follow rate by difficulty | `RedlineController.aiNoseFollowByIntensity` (code default; Switchback's shape) | Easy / Medium / Hard / Legendary **2 / 3 / 6 / 9** per second at every intensity (fleet lag 1.5; `Docs/Reports/REDLINE_MANTA_NOSE.md` §4, 2026-11-08; not yet run in Unity) |
+| AI nose follow rate by difficulty | `RedlineController.aiNoseFollowByIntensity` (code default; Switchback's shape) | Easy / Medium / Hard / Legendary **2 / 3 / 6 / 9** per second at I1-I2; **2.5** / 3 / 6 / 9 at I3; **4 / 5** / 6 / 9 at I4 (2026-11-11, section 0; fleet lag 1.5; `Docs/Reports/REDLINE_MANTA_NOSE.md` §4; not yet run in Unity) |
 | the cell's omni crystal | scene → `CrystalManager.crystalCountMode` / `fixedCrystalCount` (authored by the generator) | FixedCount / **0** |
 | AI commit / lead / through | scene → `GateRaceController` | 420 / 480 / 320 |
 | AI steering | `RedlineController.AICommitFromApproachPoint` (code) | the Regatta steering (§5.1) |
-| detection clamp | scene → `maxPlausibleSpeed` | **1400** (a Time-10 Manta's 30 fps step is 31 u; the inherited 400 rejected it within a unit) |
+| detection clamp | scene → `maxPlausibleSpeed` | **1400** (the clamp is twice this a frame: a Time-10 Manta at full Soar is 1404 u/s and an overcharged one ~1827, both inside it; the inherited 400 rejected even the old 936) |
 | autopilot boost band | `MantaAnalogTurnBoostExecutor.aiBoostStickBand` (code default; not stored on `Manta.prefab` until it is next saved) | 0.35 |
 | autopilot Yawstery band | `MantaAnalogTurnBoostExecutor.aiYawsteryStickBand` (code default; the prefab has no entry until it is next saved) | 0.75 |
-| comeback rate | `ArcadeGameRedline.asset` | **0.21** (ten gates behind, a quarter of the race, buys 2.1 levels; the comeback raises all four elements equally, the platform's law, and on this hull only the Time share changes what a pilot does) |
+| comeback rate | `ArcadeGameRedline.asset` | **0.21** (ten gates behind, a lap and a quarter of the 8-lap race, buys 2.1 levels; the comeback raises all four elements equally, the platform's law, and on this hull only the Time share changes what a pilot does: +5% cruise and +3% Soar a level) |
 | course shell | scene → `courseOuterRadius` / `courseInnerRadiusFallback` | 1080 / 480 |
 
 **The race length is ONE number.** The controller divides it by `laps` to size the circuit and
@@ -306,6 +397,17 @@ and irrelevant: the card's `Vessels` list clamps every AI to the Manta
    400-seed suite still green (the solver gained a field it leaves at 0).
 
 ## 9. Known limitations / follow-ups
+
+- **Section 0 is not editor-verified** (2026-11-11): the Time-6 start, 8 laps, the AI race line and floors, the heat. The
+  out-of-editor compile covers `RedlineCourse`, `RedlineHeat` and their tests (`redline_course_harness`, 29 of 29, four
+  negative controls); `RedlineController` and its `Heat` partial have not been compiled. The checklist entry is in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+- **Reading the course does not pay at Soar speed** (section 0.1: 0 / 0 / -11 / +0.3%). The next round is a re-cut for
+  the flown hull, a MODE change: either a ladder cut on the Time-6 curve with corners a flat-out Manta cannot loop back
+  from cheaply, or overshoot fences (Headlong's hedges, Breach's walls) where a full-Soar line misses a mouth, so a miss
+  costs more than a lift. Measure it in `manta_redline_sim.py --reading` first; the card art re-renders with the course.
+- **Whether Redline's Time crystals leave the Manta's Mass decoys** (every elemental crystal it takes leaves one, and a
+  rival who takes a decoy gets a danger field that could relock its Soar) is unverified for mode-minted crystals.
 
 - **Not editor-verified.** Asserted by a real out-of-editor compile of the course + tests
   against Unity-semantics stubs and a 1,600-circuit run of the shipped solver; nobody has

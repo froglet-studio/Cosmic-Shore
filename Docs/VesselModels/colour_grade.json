@@ -1,7 +1,7 @@
 {
  "counts": {
   "exempt": 7,
-  "grey": 487,
+  "grey": 518,
   "ui": 612,
   "world": 1
  },
@@ -3784,6 +3784,51 @@
    "kind": "sprite",
    "sha": "95a0462c060db8c0"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Flit.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "a05ea46deec77aef"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Hive.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "91bfa715a930694f"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_HiveChain.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "a2027d3a60f4e119"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Peck.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "1c17401e88a1cc12"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_PiercingPecks.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "dc9df494b10b2b4e"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Relentless.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "f7b1c8f234f077fd"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Slip.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "bb2f139e2e4dbc03"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Honeyguide/Honeyguide_Slipstream.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "ab8b71d68803bcab"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_Attack.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c3ec86019fa382ea"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_DangerShare.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -3793,6 +3838,21 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "3966f49e38789f5a"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_EatShields.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "44c674fc55173959"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_MassClusters.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "10e50bd60ebf65b8"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_SecondDecoy.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "91d82be789e7decd"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Jacks/Jacks_TheCall.png": {
    "coloured": 0.0,
@@ -3918,6 +3978,46 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "de87c41eee5ea0a4"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_Afterburner.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "e4507baed96a6c2e"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_BoostTank.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "e7e3baff4d79735f"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_Bulwark.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3ba49f6492f21c61"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_Burst.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "1ed8cade38fd5f5f"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_ChainBurst.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "24d919fe325cc1ae"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_DangerShield.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "2a2ef025b27e673f"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_FlownMissiles.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "d6c63cd98b783c6b"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Orca/Orca_Rearm.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "8c4ac747515581c5"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Rhino/Parts/Rhino_AfterimageBlade.png": {
    "coloured": 0.0,
@@ -4199,6 +4299,11 @@
    "kind": "sprite",
    "sha": "6ee9274f664b2ad2"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Shrike/Parts/Shrike_ArraySalvo.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "bbbde72ed7198e03"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Shrike/Parts/Shrike_ArrayShrike.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -4239,6 +4344,11 @@
    "kind": "sprite",
    "sha": "c848aa9081b278d3"
   },
+  "Assets/_Graphics/Icons/AbilityIcons/Shrike/Parts/Shrike_NestArmed.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "95ad47837c119851"
+  },
   "Assets/_Graphics/Icons/AbilityIcons/Shrike/Parts/Shrike_NestCup.png": {
    "coloured": 0.0,
    "kind": "sprite",
@@ -4273,6 +4383,11 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "eac9cd8ca3bea920"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Shrike/Parts/Shrike_SlingWhip.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "89e4a2ddf72f2104"
   },
   "Assets/_Graphics/Icons/AbilityIcons/Sparrow/Ladder/Sparrow_Rockets_0.png": {
    "coloured": 0.0,
@@ -4968,6 +5083,46 @@
    "coloured": 0.0,
    "kind": "sprite",
    "sha": "41befcc65e79e7f2"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_CrystalSteal.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "b1baccc665164ba4"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_KiteRam.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3cf31e0bf864d8c1"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_MassCluster.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3269948db0811ebc"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_SavedBoosts.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "13636dc15cf85f42"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_ShieldBreaker.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "3f10e2cf378f5b85"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_ShieldedClusters.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "5484c00556010f4a"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_SpaceBlast.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "c9779aab51786652"
+  },
+  "Assets/_Graphics/Icons/AbilityIcons/Wrasse/Wrasse_Tailwind.png": {
+   "coloured": 0.0,
+   "kind": "sprite",
+   "sha": "dfdc815837181929"
   },
   "Assets/_Graphics/Icons/App Icons/Android Adaptive Icon/432 fore.png": {
    "coloured": 1.0,

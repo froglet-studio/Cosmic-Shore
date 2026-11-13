@@ -20,6 +20,10 @@ namespace CosmicShore.Engine
         public int width, height, msaaSamples, volumeDepth, mipCount, depthBufferBits;
         public RenderTextureFormat colorFormat;
         public bool sRGB, useMipMap, autoGenerateMips, enableRandomWrite, bindMS;
+        /// <summary>Original contract: the colour format as a GraphicsFormat. Recorded; the port allocates from <see cref="colorFormat"/>.</summary>
+        public CosmicShore.Engine.Experimental.Rendering.GraphicsFormat graphicsFormat { get; set; }
+        /// <summary>Original contract: the depth-stencil format (None: no depth). Recorded only.</summary>
+        public CosmicShore.Engine.Experimental.Rendering.GraphicsFormat depthStencilFormat { get; set; }
         public RenderTextureDescriptor(int width, int height) : this(width, height, RenderTextureFormat.Default, 0) { }
         public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits)
         {

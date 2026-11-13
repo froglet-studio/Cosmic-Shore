@@ -99,6 +99,7 @@ S = dict(
     paint=HUD.script_guid("Assets/_Scripts/UI/Screens/PosterDomainPaint.cs"),
     drift=HUD.script_guid("Assets/_Scripts/UI/Screens/PosterDrift.cs"),
     fit=HUD.script_guid("Assets/_Scripts/UI/Screens/PosterFit.cs"),
+    exit=HUD.script_guid("Assets/_Scripts/UI/Screens/PosterExit.cs"),
     slant=K.kit_script("KitSlant"),
     cover=K.kit_script("KitCoverImage"),
 )
@@ -251,6 +252,8 @@ SLANT = math.tan(math.radians(LEAN))
 FOOT_H, STAGE_W = 220, 1920
 STAGE_H = 1080 - FOOT_H
 POSTER_MARGIN = 96
+POSTER_EXIT_PUSH = 0.12      # PosterExit: 12 percent larger when the splash has dissolved
+FROGLET_W, FROGLET_BOTTOM = 150, 8   # the Froglet logo under the bar (whose step names sit 72 above the canvas foot)
 BLEND_SECONDS = 1.0
 WINDOW_FILL = 1.0              # the start flow's windows are opaque: they sit on the poster, not on a dimmed still
 BAR_H = 132
@@ -410,6 +413,8 @@ def life_nodes(k):
 def poster_node(prefix):
     k = f"{prefix}/Poster"
     root = N(k, "Poster", STRETCH)
+    # The exit (section 185): the poster grows as the splash dissolves, so the reveal moves through it into the world.
+    root.add("exit", 114, lambda ctx, go: K.mono(go, S["exit"], f"  push: {K.f32(POSTER_EXIT_PUSH)}\n"))
     cell = root.child(N(f"{k}/Cell", "Cell", STRETCH))
     shot = picture(cell.child(N(f"{k}/Cell/Picture", "Picture", R(size=(1920, 1080)))), art_guid("poster_cell.jpg"), 0.62, preserve=False)
     shot.add("drift", 114, motion(40, offset=((-10, -6), (14, 10)), scale=(1.02, 1.1)))       # the slow push-in
@@ -430,9 +435,13 @@ def poster_node(prefix):
         stage.child(captain_card(f"{k}/Stage", CAPTAINS[i][0], CAPTAIN_X[i], CAPTAINS[i][1], CAPTAINS[i][2]))
 
     picture(root.child(N(f"{k}/Logo", "Logo Cosmic Shore", TL(POSTER_MARGIN, 64, 300, round(300 * 359 / 910)))), art_guid("poster_logo_cosmic_shore.png"))
-    picture(root.child(N(f"{k}/Froglet", "Logo Froglet", TL(POSTER_MARGIN, 196, 180, round(180 * 322 / 900)))), art_guid("poster_logo_froglet.png"))
     foot = root.child(N(f"{k}/Foot", "Foot", R((0, 0), (1, 0), (0, 0), (0, FOOT_H), (0.5, 0))))
     foot.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack"))).add("th", 114, H.themed("SurfaceBlack"))
+    # Froglet's logo sits in the foot's bottom-right corner, under the bar's percentage (Shombith, 2026-11-13: "The
+    # froglet logo should be in the bottom right corner below the percentage bar"). After the foot, so it draws on it.
+    picture(root.child(N(f"{k}/Froglet", "Logo Froglet",
+                         R((1, 0), None, (-POSTER_MARGIN, FROGLET_BOTTOM), (FROGLET_W, round(FROGLET_W * 322 / 900)), (1, 0)))),
+            art_guid("poster_logo_froglet.png"))
     return root
 
 
@@ -1240,6 +1249,17 @@ def check_poster(path, sc, ctx, prefix, files):
         f"{path}: the poster's motion is missing or has a zero period"
     fits = [d for d in comps if f"guid: {S['fit']}" in d]
     assert len(fits) == 1 and field_ref(fits[0], "frame") == root, f"{path}: the stage does not fit itself to the poster"
+    # The exit (section 185): on the poster's root, so the whole picture moves through as the splash dissolves.
+    exits = [c for c in sc.components(sc.go_of(root)) if f"guid: {S['exit']}" in sc.docs.get(c, "")]
+    assert len(exits) == 1 and f"  push: {K.f32(POSTER_EXIT_PUSH)}\n" in sc.docs[exits[0]], \
+        f"{path}: the poster has no PosterExit on its root (the reveal would pop open instead of moving through it)"
+    # Froglet's logo: in the bottom-right corner under the bar, drawn after the foot so the foot does not hide it.
+    frog = sc.docs[str(ctx.rt(f"{prefix}/Poster/Froglet"))]
+    assert "  m_AnchorMin: {x: 1, y: 0}\n" in frog and "  m_AnchorMax: {x: 1, y: 0}\n" in frog \
+        and "  m_Pivot: {x: 1, y: 0}\n" in frog, f"{path}: the Froglet logo is not in the bottom-right corner"
+    kids = re.findall(r"^  - \{fileID: (-?\d+)\}", sc.docs[root].split("  m_Children:\n", 1)[1].split("  m_Father:", 1)[0], re.M)
+    assert kids.index(str(ctx.rt(f"{prefix}/Poster/Froglet"))) > kids.index(str(ctx.rt(f"{prefix}/Poster/Foot"))), \
+        f"{path}: the Froglet logo is drawn under the foot"
     for name in ART:
         meta = files[f"{SPLASH_DIR}/{name}.meta"]
         assert f"guid: {art_guid(name)}\n" in meta and "spriteMode: 1\n" in meta, f"{name}.meta is not a sprite with the poster's guid"
@@ -1332,6 +1352,9 @@ def self_test(files):
         ("the retry window see-through", edit_doc(SPLASH, str(splash_ctx().c("Retry/Fill", "th")), lambda d: d.replace("  alpha: 1\n", "  alpha: 0.92\n"))),
         ("the bar stays up under the retry window", edit_doc(SPLASH, SP["panel_comp"], lambda d: re.sub(
             r"(  readoutGroup: )\{fileID: -?\d+\}", r"\1{fileID: %s}" % splash_ctx().c("Splash/Readout/StepWords", "cg"), d))),
+        ("the poster lost its exit", lambda f: f.__setitem__(SPLASH, f[SPLASH].replace(f"guid: {S['exit']}", "0" * 32))),
+        ("the Froglet logo back at the top left", edit_doc(SPLASH, str(splash_ctx().rt("Splash/Poster/Froglet")),
+                                                  lambda d: d.replace("  m_AnchorMin: {x: 1, y: 0}", "  m_AnchorMin: {x: 0, y: 1}", 1))),
         ("a band lost a rim", edit_doc(AUTH, str(auth_ctx().c("Auth/Poster/Stage/BandGold", "paint")),
                                lambda d: re.sub(r"(  rims:\n  - .*\n)  - .*\n", r"\1", d, count=1))),
         ("the rule ticks judge another field", lambda f: f.__setitem__(AUTH, re.sub(r"(  input: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[AUTH], count=1))),

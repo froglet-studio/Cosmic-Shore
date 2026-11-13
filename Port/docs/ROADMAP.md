@@ -56,9 +56,13 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
    `amoebius` UGS environment and plays two PCs), and Gate G2 still decides UGS or Steam lobbies +
    Datagram Relay for the Steam build. The netcode still lacks delta compression (NetworkVariable
    writes dominate measured traffic).
-7. **Parity CI.** Every bleeding-edge push should compile the port against the new `Assets/`
-   and smoke-run every mode headless on a Linux runner. Today a Unity-side change that breaks
-   the port is found by hand.
+7. **Parity CI.** The port should compile against the new `Assets/` and smoke-run every mode
+   headless on a Linux runner. `amoebius-parity-ci.yml` does this nightly on bleeding-edge and by
+   hand from the Actions tab; it ran on every push until 2026-11-13, when Shombith moved it off
+   the push trigger because it had never passed and mailed every merger a failure. Since 2026-11-13 its live compile
+   passes again, and a pull request into bleeding-edge that changes the game's scripts gets a warning-only `pr-compile`
+   job: it compiles the PR and its base in the port and warns about each live-compile error the PR adds (usually a
+   Unity type the port lacks), so the author sees a break before the merge. It never blocks a merge.
 8. **Cooked content.** The player parses Unity YAML at load time. A binary cooked format built
    by `cs-build` would cut load times (Steam DoD #5 wants a load-time target) and make phone
    builds smaller.
@@ -109,7 +113,7 @@ starts by measuring use in `Assets/`, and anything the game doesn't touch stays 
 
 | Factor | Effect | Plan |
 |---|---|---|
-| **The game keeps moving in Unity.** Every day new scripts, Shader Graphs and packages land on bleeding-edge. | Parity is a moving target; the port can break on any push. | Parity CI (C1.3) on every push; a "port breakers" list reviewed weekly; new Unity APIs get engine support within a week. |
+| **The game keeps moving in Unity.** Every day new scripts, Shader Graphs and packages land on bleeding-edge. | Parity is a moving target; the port can break on any push. | Parity CI (C1.3) nightly on bleeding-edge (per push until 2026-11-13); a "port breakers" list reviewed weekly; new Unity APIs get engine support within a week. |
 | **The Steam Early Access release runs on Unity** (`Docs/STEAM_RELEASE_TASKS.md`; 3-week test cadence) | The engine is never on the launch's critical path. | The port never changes `Assets/` (`check_unity_isolation.py`). Engine work never blocks a Unity release. Switching the shipped build to the engine is a separate decision after M1. |
 | **Team capacity:** one developer plus Claude sessions | Throughput is bounded by review time, not typing. Claude plan usage limits cap long agent runs. | Parallel Claude sessions per checkpoint (one per row of the parity matrix); the launcher's session reports and `engine_smoke` keep each loop short. Assume ~2 checkpoint-weeks of output per calendar week. |
 | **Hardware access:** no Mac, no Android test phone yet, GTX 1060 is the floor | Phones and low-end performance go unverified. | iOS needs a Mac (the GitHub macOS runner + Sideloadly route was retired 2026-10-13; TestFlight is the game's only iOS route). Buy one mid-range Android phone (~$200). Profile on a GTX 1060 machine at each performance checkpoint (Steam task H8). |
@@ -148,7 +152,7 @@ C0 foundations (done Oct 6)
 | # | Checkpoint | Exit criterion (measurable) | Weeks | Depends on |
 |---|---|---|---|---|
 | **C0** | **Foundations** (done 2026-10-06) | `#line` maps errors to `Assets/`; incremental sync; RPCs the sync cannot intercept are warned (`AMOEBIUS001`); execution order from `.meta` and the attribute in every phase; Unity's serialization rules with `cs-asset serialization-audit` at 0 dropped / 0 extra; CPU, allocation and GC per phase in session reports; acceptance criteria on the board; budgets and fallback for milestone sessions; GL kept behind the render boundary (test) | - | - |
-| **C1** | **Parity harness** | (1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay, plus `Random` sequences for a set of seeds. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens using the per-channel tolerances in the review response (C9): exact state, RNG and event order; transforms within 1e-4 relative for 10 s; SSIM per frame. (4) GitHub CI: build the port and run `engine_smoke` for every mode on each bleeding-edge push. (5) A generated parity scoreboard (`docs/PARITY.md` + JSON): every subsystem and shader Faithful / Approximate / Missing with its covering test | 4 | C0 |
+| **C1** | **Parity harness** | (1) An input recorder/replayer in game code (`Assets/_Scripts/Utility`, its own Unity PR) that both engines run. (2) A Unity-side capture command producing golden frames, scores and audio events for a replay, plus `Random` sequences for a set of seeds. (3) `engine_parity` in the MCP server: replay in the engine and diff against the goldens using the per-channel tolerances in the review response (C9): exact state, RNG and event order; transforms within 1e-4 relative for 10 s; SSIM per frame. (4) GitHub CI: build the port and run `engine_smoke` for every mode on bleeding-edge (each push until 2026-11-13, nightly since). (5) A generated parity scoreboard (`docs/PARITY.md` + JSON): every subsystem and shader Faithful / Approximate / Missing with its covering test | 4 | C0 |
 | **C1b** | **Bisect** (done 2026-10-08: found a planted regression in 3 steps) | `amoebius_bisect(good, bad, check)` in the MCP server: `git bisect run` over commits touching `Port/`, each built in a scratch worktree and checked by a replay diff or an `engine_smoke` error signature; finds a planted regression in under 15 steps | 1 | C1 |
 | **C2** | **Visual completeness** | A Shader Graph compiler (the 85 node types the project uses) with the 30 custom functions ported once and families keyed by guid; the 38 `.shader` files hand-translated by on-screen use; an unknown shader warns once; ParticleSystem (the modules the 26 prefabs use) and both VFX Graphs draw (VFX Graph as Approximate); the Timeline plays; SSIM >= 0.97 against goldens in every mode's first 60 s | 14 (rolling) | C1 |
 | **C3** | **Physics parity** | Contact resolution for the 17 Rigidbody users, plus oriented boxes; OnCollision* fires; replays end with identical scores. Rule: never a general solver in-house; bind BepuPhysics v2 for contacts only if the census needs mesh contacts or PhysX-like friction | 3 | C1 |

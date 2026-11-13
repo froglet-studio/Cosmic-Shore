@@ -286,8 +286,10 @@ runner attached, only `static` does any work.
 Agent sessions push often and open many pull requests, so a branch named `claude/**` fires CI in
 exactly two cases:
 
-1. **It lands on `bleeding-edge`.** The merge push runs `bleeding-edge-guard.yml` (§10.1) and
-   `amoebius-parity-ci.yml` like any other.
+1. **It lands on `bleeding-edge`.** The merge push runs `bleeding-edge-guard.yml` (§10.1) like any
+   other. `amoebius-parity-ci.yml` no longer runs per push (Shombith, 2026-11-13): it runs nightly at
+   11:17 UTC on `bleeding-edge` and by hand from the Actions tab (**Run workflow**), so a merge no
+   longer mails its author the port's standing failure.
 2. **A `/ship`, `/ship-quick`, `/ship-deep` or `/ship-tools` command runs on it.** The skill
    dispatches `unity-ci.yml` with `mode=static` on the branch once, after its final push
    (`.claude/skills/ship/SKILL.md` §5.5).
@@ -409,6 +411,21 @@ variable deleted (§10, "No runner is attached").
 Verify the state at any time by opening a recent **Unity CI** run and reading the job list: if
 `unity` shows *skipped*, no Unity has compiled the project in CI and every green check on that run
 came from the Python checkers alone.
+
+### When it is red: `/trunk-doctor`
+
+`python3 .claude/skills/trunk-doctor/trunk_doctor.py` says whether `bleeding-edge` is green from the guard's RUNS
+(never from the issue), names the first red push and every push since, and `diagnose` classifies the failing log
+(static, generator, compile, tests, infra) and names the PR that introduced each finding. `/ship` calls
+`trunk_doctor.py --gate` before every push and merge, so work stops piling onto a red trunk. Every incident is
+recorded in `Docs/Reports/TRUNK_HEALTH.md`.
+
+Two fixes it made to this workflow on 2026-11-12, both from its first incident:
+- **A cancelled run is no verdict.** The report job used to read a run cancelled by a newer push as green, comment
+  "Recovered" and close the issue while the trunk was red (#1867, #1872, #1889, #1897). It now leaves the issue alone.
+- **The checks' Python packages are installed.** `Tools/CI/requirements-checks.txt` (numpy, for the generators whose
+  `--check` mirrors the C# in float32) is installed before the checks in `validate`, the autofix prompt and
+  `unity-ci.yml`. Without it, three generators crashed on the runner and passed on every developer's machine.
 
 ### Autofix rules
 

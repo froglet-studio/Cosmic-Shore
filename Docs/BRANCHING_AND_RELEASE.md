@@ -201,6 +201,11 @@ Two things that will not notify you, so do not rely on them:
 - For scheduled workflows, GitHub's own failure email goes **only to whoever
   last edited the cron line**, not to the repo watchers.
 
+**`bleeding-edge` itself** has its own issue, labelled `ci-bleeding-edge` and titled "bleeding-edge is broken", run
+by the Bleeding-edge guard. Do not judge the trunk by that issue's state. Until 2026-11-12 a cancelled run closed it
+while the trunk was red. Ask `python3 .claude/skills/trunk-doctor/trunk_doctor.py`, which reads the runs, and use
+`/trunk-doctor` to repair it. The history of red trunks is `Docs/Reports/TRUNK_HEALTH.md`.
+
 ---
 
 ## 5. What stops a broken build reaching testers

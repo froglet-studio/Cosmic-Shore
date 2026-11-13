@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-07",
+  "date": "2026-11-13",
   "cases": {
     "random": {
       "random": {
@@ -26,6 +26,42 @@
       }
     },
     "skimrace-fly": {
+      "state": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "events": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "transforms": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "frames": {
+        "status": "missing",
+        "detail": "no golden"
+      }
+    },
+    "astroleague-strike": {
+      "state": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "events": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "transforms": {
+        "status": "missing",
+        "detail": "no golden"
+      },
+      "frames": {
+        "status": "missing",
+        "detail": "no golden"
+      }
+    },
+    "bloomrush-i4": {
       "state": {
         "status": "missing",
         "detail": "no golden"

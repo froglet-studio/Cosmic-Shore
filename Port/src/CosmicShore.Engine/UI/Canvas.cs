@@ -51,6 +51,15 @@ namespace CosmicShore.Engine
         /// </summary>
         public static void ForceUpdateCanvases() => UI.LayoutRebuilder.FlushQueuedRebuilds();
 
+        static Material s_defaultCanvasMaterial;
+
+        /// <summary>
+        /// Original contract: uGUI's built-in "UI/Default" material. Unlike <see cref="UI.Graphic.defaultGraphicMaterial"/>,
+        /// which a Graphic subclass may replace, this is always the built-in one.
+        /// </summary>
+        public static Material GetDefaultCanvasMaterial()
+            => s_defaultCanvasMaterial ??= new Material(Shader.Find("UI/Default")) { name = "Default UI Material" };
+
         float _scaleFactor = 1f;
 
         /// <summary>The topmost Canvas in this canvas's parent chain (self when none above).</summary>

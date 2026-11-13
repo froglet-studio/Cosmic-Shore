@@ -28,7 +28,7 @@ MonoBehaviour:
   CourseLeft: 0.1848
   CourseRight: 0.7391
   PanelLeft: 0.7554
-  RowHeight: 76
+  RowHeight: 96
   HullCrops:
   - Sprite: {fileID: 21300000, guid: 0346d212c38317799ee4deedf0ed40e9, type: 3}
     Uv:

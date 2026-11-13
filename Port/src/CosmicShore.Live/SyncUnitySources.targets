@@ -179,13 +179,21 @@
 
         string Transform(string text) {
           var lines = text.Split('\n');
+          var imported = new HashSet<string>();
+          foreach (var l in lines) { var um = usingRx.Match(l); if (um.Success) imported.Add(um.Groups[2].Value); }
+          // Unity.Netcode and Unity.Services.Multiplayer share one port namespace, so a file that imports only
+          // Netcode also sees Multiplayer's IPlayer, which Unity would not show it. Where the game's own IPlayer is
+          // imported, an alias keeps the name the game's, as in Unity (AnalyticsServiceFacade, 2026-11-13).
+          bool gameIPlayer = imported.Contains("Unity.Netcode") && imported.Contains("CosmicShore.Gameplay")
+            && !imported.Contains("Unity.Services.Multiplayer") && Regex.IsMatch(text, @"\bIPlayer\b");
           for (int i = 0; i < lines.Length; i++) {
             var m = usingRx.Match(lines[i]);
             if (!m.Success) continue;
             var mapped = MapNs(m.Groups[2].Value);
             if (mapped == null) continue;
             var indent = m.Groups[1].Value.Replace("﻿", "");
-            lines[i] = mapped.Length == 0 ? "" : indent + "using " + mapped + ";" + (lines[i].EndsWith("\r") ? "\r" : "");
+            var extra = gameIPlayer && m.Groups[2].Value == "Unity.Netcode" ? " using IPlayer = global::CosmicShore.Gameplay.IPlayer;" : "";
+            lines[i] = mapped.Length == 0 ? "" : indent + "using " + mapped + ";" + extra + (lines[i].EndsWith("\r") ? "\r" : "");
           }
           text = string.Join("\n", lines);
           foreach (var (rx, to) in qualified) text = rx.Replace(text, to);
