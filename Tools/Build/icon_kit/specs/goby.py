@@ -162,6 +162,66 @@ def pistol_dive():
     return (hill & ~grow(hull, 3)) | hull
 
 
+# ---- level 5 (the fleet pass, 2026-11-13): each the seat's upgraded icon, swapped in by GobyPistolHUDView when the
+# card's element reaches its level-5 upgrade, on the seat whose act the upgrade changes (the other seat keeps its card)
+
+def _petal(cx, cy, s, rot=0.0):
+    from canvas import rotate
+    return fill(rotate([(cx, cy - s), (cx + s * 0.55, cy), (cx, cy + s), (cx - s * 0.55, cy)], rot, cx, cy))
+
+
+def _shell(cx, cy, r, w=5.0):
+    """A shielded prism's shell: a hexagonal band round it (the Wrasse's Shielded Clusters shell)."""
+    from canvas import ngon
+    return fill(ngon(6, r, cx, cy, rot=30.0)) & ~fill(ngon(6, r - w, cx, cy, rot=30.0))
+
+
+@fitted
+def pistol_vortex_steal():
+    """Charge 5 VORTEX STEAL: the ring closed on a rival hull, and the petals it took coming back to the Pistol."""
+    import motifs
+    hull = pistol(70, 34, 40, take="rig|snap")
+    rival = mesh_silhouette.silhouette(RIVAL, pitch=-15, yaw=0, box=40, cx=96, cy=92, roll=-40, dilate_px=2.0)
+    ring = ellipse_ring(96, 92, 30, 30, 7)
+    petals = _petal(76, 62, 11, 45) | _petal(52, 82, 11, 45)
+    heads = motifs.arrowhead((60.0, 52.0), (-0.7, -0.7), 13.0) | motifs.arrowhead((36.0, 72.0), (-0.7, -0.7), 13.0)
+    return hull | rival | (ring & ~grow(rival, 3)) | ((petals | heads) & ~grow(hull | ring, 2.5))
+
+
+@fitted
+def pistol_fortress():
+    """Mass 5 FORTRESS: the den grows shielded and super-shielded prisms - shells round the den's top courses."""
+    den, shells = empty(), empty()
+    for x, y in ((76, 104), (96, 104), (116, 104), (86, 84), (106, 84)):
+        den |= prism_square_x(x, y, 9.5)
+    top = prism_square_x(96, 60, 9.5)
+    shells |= _shell(96, 60, 22, 8)
+    hull = pistol(84, 40, 52, dil=2.4)
+    ground = rect(4, 116, 124, 123)
+    return (hull & ~grow(den | top | shells, 2)) | den | top | shells | ground
+
+
+@fitted
+def goby_deep_undertow():
+    """Space 5 DEEP UNDERTOW: shielded prisms are pulled in too - the pulled mass beside the plane wears shells."""
+    plane = rect(58, 2, 70, 126)
+    pulled = prism_square_x(36, 34, 11) | prism_square_x(92, 64, 11) | prism_square_x(36, 96, 11)
+    shells = _shell(92, 64, 24, 8)
+    was = prism_square_x(10, 64, 10) | prism_square_x(118, 30, 10) | prism_square_x(118, 98, 10)
+    return [(plane | pulled | (shells & ~grow(plane, 2)), 1.0), (was, 0.4)]
+
+
+@fitted
+def goby_phase_dart():
+    """Time 5 PHASE DART: the dart passes through prisms - the Goby out the far side of a wall, its ghost behind."""
+    wall = empty()
+    for y in (22, 50, 78, 106):
+        wall |= prism_square_x(58, y, 11)
+    hull = goby(54, 98, 64)
+    ghost = goby(46, 24, 64) & ~grow(wall | hull, 2)
+    return [(hull | (wall & ~grow(hull, 2.5)), 1.0), (ghost, 0.5)]
+
+
 def omni_crystal_card():
     return importlib.import_module("specs.scarab").omni_crystal(64, 64, 104)
 
@@ -183,6 +243,14 @@ ICONS = [
          draw=pistol_ghost, before=ICON_DIR + "Pistol_Ghost.png", exempt=HULL_EXEMPT, family=False),
     dict(name="Pistol_Dive", element="Time", act="The dive (the Pistol): nose-down over a hill",
          draw=pistol_dive, before=ICON_DIR + "Pistol_Dive.png", exempt=HULL_EXEMPT, family=False),
+    dict(name="Pistol_VortexSteal", element="Charge", act="Charge 5 Vortex Steal: a ring's hit steals the petals it takes",
+         draw=pistol_vortex_steal, exempt=HULL_EXEMPT, family=False),
+    dict(name="Pistol_Fortress", element="Mass", act="Mass 5 Fortress: the den grows shielded and super-shielded prisms",
+         draw=pistol_fortress, exempt=HULL_EXEMPT, family=False),
+    dict(name="Goby_DeepUndertow", element="Space", act="Space 5 Deep Undertow: shielded prisms are pulled in too",
+         draw=goby_deep_undertow, exempt=PRISM_EXEMPT, family=False),
+    dict(name="Goby_PhaseDart", element="Time", act="Time 5 Phase Dart: the dart passes through prisms",
+         draw=goby_phase_dart, exempt=HULL_EXEMPT, family=False),
     dict(name="Goby_OmniCrystal", element="Omni", subdir="Core", family=False, draw=omni_crystal_card,
          act="The OMNI crystal card: the omni crystal (one white sprite)",
          exempt={"components": "the crystal's plates, projected from its own mesh",

@@ -406,7 +406,7 @@ leaving them as an absence.
   ramps**: `RampBoostAIPolicySO` (`RhinoAIBoostPolicy.asset`) ramps on a straight that pays the
   wind-up back, brakes on the ramp to a corner speed and lets go at sharp corners
   (`AI/AI_BOOST.md`, Ramp), so AI lap times change completely and the approach/commit distances above are
-  now load-bearing rather than theoretical. The AI also swings the sword (`RhinoSwordAutopilot`),
+  now load-bearing rather than theoretical. The AI also swings the sword (`SwordfishSwordAutopilot`),
   so it now interferes with a rival's line. (2) **Momentum** (Time L5) — above 588 u/s (70% of
   840) danger prisms cannot drain the Rhino. The card authors no Time row, so only the comeback
   levels or an omni Surge (+2 levels) can reach L5 here; it matters only where a danger prism sits

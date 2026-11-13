@@ -27,6 +27,10 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("What holding LB lights, in one line.")]
             public string meaning;
 
+            [Tooltip("The same sight in a few words, where there is no room for the line (the Ark's Pilots tab, under " +
+                     "each pilot's callsign). Empty shows nothing.")]
+            public string brief;
+
             [Tooltip("The callsign's glyph (from /ability-icon's kit). Empty until drawn.")]
             public Sprite glyph;
 

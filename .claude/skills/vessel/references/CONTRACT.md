@@ -481,7 +481,7 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   the sanctioned exception to the first slot** (2026-10-13): its hull destroys nothing, so
   `RhinoPloughPrismEffect` REPLACES `VesselDamagePrismEffect` (`RhinoImpactorDataContainer`:
   plough + ram reward haptic + elemental-debuff-by-danger), and its crystal pair is
-  `RhinoVesselExplosionByCrystalEffect` + `RhinoVesselSurgeByCrystalEffect` (the Surge replaced the
+  `RhinoVesselExplosionByCrystalEffect` + `SwordfishVesselSurgeByCrystalEffect` (the Surge replaced the
   resource-change effect 2026-10-16). It also carries no `VesselChangeSpeedByPrismEffect` by design —
   "the bulldozer ignores mass". The trio is the default, not a law: a hull whose contact verb is
   not destruction swaps the first slot for its own verb. Empty arrays

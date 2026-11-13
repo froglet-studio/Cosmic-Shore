@@ -22,7 +22,7 @@ namespace CosmicShore.Tests
         public void TimeRaisesTheSwordsRateTwoAndAHalfTimes()
         {
             var sword = AssetDatabase.LoadAssetAtPath<ShieldSkimmerScaleConfigSO>(Dir + "ShieldSkimmerScaleConfig.asset");
-            var swipe = AssetDatabase.LoadAssetAtPath<RhinoShieldSwipeConfigSO>(Dir + "RhinoShieldSwipeConfig.asset");
+            var swipe = AssetDatabase.LoadAssetAtPath<SwordfishShieldSwipeConfigSO>(Dir + "SwordfishShieldSwipeConfig.asset");
             Assert.IsNotNull(sword); Assert.IsNotNull(swipe);
             foreach (var f in new[] { Field(sword, "timeSwordRateMultiplier"), Field(swipe, "timeSwipeRateMultiplier") })
             {
@@ -37,7 +37,7 @@ namespace CosmicShore.Tests
         public void OffAVesselTheSwordKeepsItsAuthoredTimings()
         {
             var sword = AssetDatabase.LoadAssetAtPath<ShieldSkimmerScaleConfigSO>(Dir + "ShieldSkimmerScaleConfig.asset");
-            var swipe = AssetDatabase.LoadAssetAtPath<RhinoShieldSwipeConfigSO>(Dir + "RhinoShieldSwipeConfig.asset");
+            var swipe = AssetDatabase.LoadAssetAtPath<SwordfishShieldSwipeConfigSO>(Dir + "SwordfishShieldSwipeConfig.asset");
             Assert.AreEqual(sword.EnergizeCooldownSeconds, sword.EnergizeCooldownSecondsFor(null), 1e-5f);
             Assert.AreEqual(sword.EnergizeHoldSecondsFor(false), sword.EnergizeHoldSecondsFor(false, null), 1e-5f);
             Assert.AreEqual(swipe.SwipeCooldownSeconds, swipe.SwipeCooldownSecondsFor(null), 1e-5f);

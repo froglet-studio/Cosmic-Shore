@@ -15,10 +15,13 @@ boards, revision 2, on the "Menu Redesign B" canvas).
                          SQUADS (SquadsPage): the player's squads (up to four, made and joined), the selected
                          squad's three squad mates with their vessel, element, pilot and artifact, NEW / JOIN /
                          DELETE, PLAY into Arcade / Arena / Mission, and the join list of friends' open seats;
-                         PILOTS (ArkPilotsPage, section 92.1): the crew, one cell a pilot with the close-up of their
-                         callsign's scene; a press opens that pilot's profile page (author_menu_pilot_profile.py);
-                         ARTIFACTS (ArkArtifactsPage): the player's artifacts, the picked one's four element tracks
-                         with RAISE (its own crystals) and OMNI, and the profile's five crystal balances;
+                         PILOTS (ArkPilotsPage, sections 92.1 and 191): the crew PDA on the hangar's workbench (Rev
+                         99 C, the nautilus of Rev 109 B): lying down, the last pilot read and PICK UP; picked up, the
+                         crew on its glass, one portrait card a pilot, and a pilot's file, whose FULL PROFILE opens
+                         their profile page (author_menu_pilot_profile.py);
+                         ARTIFACTS (ArkArtifactsPage, Rev 105 B, section 201): the hoard as a rail of medallions
+                         (ArtifactMedallion); a pick opens the lens (ArtifactLens: the payload over prisms, the four
+                         tracks round the rim) and the artifact's words; FEED IT shows its level, crystals and FEED;
                          DECOR: the banner and hull skins, LOCKED (MenuAvailabilityView) - not open yet
 
     Menu_Main.unity, `ArkScreen/ElementalConverter` (author_elemental_converter.py made it):
@@ -36,8 +39,8 @@ The documents this script owns are re-emitted and validated on every run, --chec
 """
 
 import argparse
-import math
 import importlib.util
+import math
 import os
 import re
 import sys
@@ -63,7 +66,8 @@ S = dict(view=C.script("ElementalConverterView"), balance=C.script("ConverterBal
          squads=C.script("SquadsPage"), squad_row=C.script("SquadRowView"), mate=C.script("SquadMateCard"),
          availability=C.script("MenuAvailabilityView"), text_tab=K.kit_script("KitTextTab"),
          chip=C.script("SquadPickChip"), nanobots=C.script("SquadNanobotSwap"), artifacts=C.script("ArkArtifactsPage"),
-         pilots=C.script("ArkPilotsPage"))
+         pilots=C.script("ArkPilotsPage"), medal=C.script("ArtifactMedallion"), lens=C.script("ArtifactLens"),
+         glass=C.script("PdaGlassImage"))
 C.STUB_KIND.update({"balance": (114, S["balance"]), "entrance": (114, S["entrance"]), "tabs": (114, S["tabs"])})
 
 ORDER = ("Space", "Charge", "Mass", "Time")       # OmniCombineCore.Order: the fly-in order
@@ -239,7 +243,7 @@ def page_backdrop(page, key):
     page.children.append(M.window_sea_node(f"{key}/Sea", "Sea", under_bar))
 
 
-VEILED = {"Pilots", "Decor"}   # the tabs with no room behind them: the veil and the sea lines (validate_tabs holds both ways)
+VEILED = {"Decor"}   # the tabs with no room behind them (PILOTS has the bench since Rev 99 C, section 191): the veil and the sea lines (validate_tabs holds both ways)
 # The boards' glass (R67Ark / R86ArtifactsAB `.glass`: rgba(0,4,31,.62), SurfaceVeryDark at 62 %): the room reads through.
 GLASS_ALPHA = 0.62
 BUTTON_GLASS_ALPHA = 0.55   # the boards' `.def` button: rgba(0,4,31,.55)
@@ -640,180 +644,575 @@ def squads_page(root, veiled=VEILED):
     return page
 
 
-# The PILOTS tab: one cell a callsign (a crew holds at most one pilot a callsign, Docs/Pilots/INVENTORY.md 3.1), six
-# across and three down, right of the friends orb and inside the page's right and bottom margins.
+# The PILOTS tab, built from Rev 99 C (Shombith picked it 2026-11-13; section 191): the crew PDA lying on the hangar's
+# workbench (the backdrop, ArkRoom.Bench). Lying down, its glass shows the last pilot read (PdaGlassImage over the
+# render's own glass corners) and PICK UP stands beside it; picked up, the backdrop holds the PDA square to the view and
+# the crew (one cell a callsign, a crew holds at most one pilot a callsign, Docs/Pilots/INVENTORY.md 3.1) or a pilot's
+# file is laid on its glass. The corners are the renders' (Docs/MenuRedesignB/rounds/r99_ark_pilots_render.py, pda_c
+# and pda_c PDA_HELD=1), measured at 2400 x 1350 and written here at the backdrop's 1920 x 1080.
 CALLSIGNS = len(re.findall(r"^\s+\w+ = [1-9]\d*,", open(os.path.join(
     REPO, "Assets/_Scripts/Data/Enums/PilotVision.cs"), encoding="utf-8").read(), re.M))
-# The page margins the grid was laid out in (Garrett, 2026-11-12): the Squads list's old box, kept here because
-# Squads moved to the R67 board's row (LIST_Y above) and the crew grid did not.
-PILOT_LIST_X, PILOT_LIST_Y, PILOT_LIST_H = 40, 176, 864
-PILOT_COLS, PILOT_W, PILOT_H, PILOT_GAP = 6, 260, 256, 32
-PILOT_X, PILOT_Y = A.ORB_CLEARANCE, PILOT_LIST_Y + 32          # the grid's top left; the caption sits on PILOT_LIST_Y
-PILOT_FACE, PILOT_FACE_Y, PILOT_PAD = 180, 12, 16        # the close-up's side and top, and the callsign's inset
-PILOT_NAME_Y, PILOT_NAME_H, PILOT_LINE_Y, PILOT_LINE_H = 200, 24, 226, 18   # the name and the callsign under it
-# The name runs nearer the cell's edges than the callsign: it must hold the widest name PilotGenerator's tables
-# compose (measured 2026-11-12 over its given and family names, in the UI font; 68 of 357,027 rolled names were wider
-# than the callsign's row).
-PILOT_NAME_PAD, WIDEST_NAME = 6, "Darthawen Lanternweaver"
+# TL TR BR BL of the display lying on the bench: the nautilus's standing sheet of light (Rev 109 B, picked 2026-11-13)
+PDA_REST_CORNERS = ((709.5, 682.9), (1186.6, 671.2), (1139.9, 870.4), (743.6, 885.2))
+PDA_GLASS_ASPECT = 0.325 / 0.236                     # the display's own width over height (r109_ark_pda_render.py SW / SD)
+GLASS_X, GLASS_Y, GLASS_W, GLASS_H = 403, 194, 1114, 809   # held up: the glass, square to the view
+LAST_X, LAST_Y, LAST_W, LAST_H = 1280, 812, 440, 176       # lying down: the last pilot read and PICK UP, right of the PDA
+SCREEN_PAD, SCREEN_HEAD = 28, 52                    # the glass's margin and its header strip
+SCREEN_GROUND_ALPHA = 0.9                           # the lit screen's ground over the render's pale glass
+# The ground is near-black, not the theme's navy (Shombith, 2026-11-13: "I don't like the blue background, it looks so
+# dull"): the crew's paintings carry the colour, as the pilot scenes inside the Ark do.
+SCREEN_GROUND = "SurfaceBlack"
+PILOT_COLS, PILOT_W, PILOT_H, PILOT_GAP = 6, 164, 212, 14
+PILOT_X = (GLASS_W - (PILOT_COLS * PILOT_W + (PILOT_COLS - 1) * PILOT_GAP)) // 2
+PILOT_Y = SCREEN_HEAD + 20                          # the grid's top left on the glass
+# A crew cell is a portrait card: the close-up fills it (square, cut to the card's width), a fade darkens its foot, and
+# the words stand on the fade, left-aligned: the callsign large, the name, and what the callsign sees.
+PILOT_FACE, PILOT_FACE_Y, PILOT_PAD = PILOT_H, 0, 10    # the close-up's side and top, and the words' inset
+PILOT_FADE_Y = 56                                   # where the foot's fade starts
+PILOT_LINE_Y, PILOT_LINE_H, PILOT_LINE_ROLE = 106, 28, "H3"     # the callsign
+PILOT_NAME_Y, PILOT_NAME_H = 134, 20                # the name under it
+# Under the name, the pilot's ability: what their sight shows, in two lines at most (Shombith, 2026-11-13).
+PILOT_SIGHT_Y, PILOT_SIGHT_LINES, PILOT_SIGHT_ROLE = 158, 2, "BodySmall"
+PILOT_SIGHT_H = PILOT_SIGHT_LINES * 20
+PILOT_NAME_ROLE = "BodySmall"
+FOOT_Y, FOOT_H = GLASS_H - 20 - 44, 44              # the glass's foot row: LAY DOWN, or CREW / PREV / NEXT / FULL PROFILE
+# The name must hold the widest name PilotGenerator's tables compose (measured 2026-11-12 over its given and family names,
+# in the UI font): on the PDA's glass at the kit's shrink-to-fit floor (KitText shrinks a label to 60 % before it clips).
+PILOT_NAME_PAD, WIDEST_NAME = PILOT_PAD, "Darthawen Lanternweaver"
+FILE_FACE = 320                                     # the file's close-up
+FILE_COL_X = SCREEN_PAD + FILE_FACE + SCREEN_PAD    # the file's words column
+FILE_COL_W = GLASS_W - FILE_COL_X - SCREEN_PAD
 SCENE_CATALOG = K.meta_guid("Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset")     # author_pilot_scene_assets.py
-PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("countTemplate", "Pilots: {count}"))
+PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("sightTemplate", "Sees {brief}"),
+               ("countTemplate", "Pilots: {count}"),
+               ("lastCallsignTemplate", "{callsign}"), ("lastNameTemplate", "{name}"),
+               ("fileKickerTemplate", "{callsign}"), ("fileNameTemplate", "{name}"), ("fileSpeciesTemplate", "{species}"),
+               ("fileFactionTemplate", "{faction} - {homeworld}"), ("fileSightCaptionTemplate", "Sight"),
+               ("fileSightTemplate", "{sight}"), ("fileStoryCaptionTemplate", "Story"),
+               ("fileStoryTemplate", "{backstory}"), ("fileCountTemplate", "{index} / {count}"))
+FILE_TEMPLATES = [f for f, _ in PILOT_LINES if f.startswith(("last", "file"))]
 
 
 def pilot_tokens():
-    """The tokens ArkPilotsPage fills in each of its lines, read from its own two TemplateText.Fill calls, so the
-    lists cannot drift from the page: a cell's two lines take the pilot's facts, the count takes {count} alone."""
+    """The tokens ArkPilotsPage fills in each of its lines, read from its own code, so the lists cannot drift from the
+    page: a cell's two lines take the pilot's facts (its TemplateText.Fill call), the count takes {count} alone, and the
+    file's and the last read's lines take every token of its FileTokens."""
     source = open(os.path.join(REPO, "Assets/_Scripts/UI/Elements/Ark/ArkPilotsPage.cs"), encoding="utf-8").read()
     cell = re.search(r"TemplateText\.Fill\(template,(.*?)\);", source, re.S)
     count = re.search(r"TemplateText\.Fill\(countTemplate,(.*?)\);", source, re.S)
-    assert cell and count, "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
-    cell, count = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count))
-    assert cell and count, "ArkPilotsPage's filled tokens read as empty"
-    return {"nameTemplate": cell, "lineTemplate": cell, "countTemplate": count}
+    filed = re.search(r"FileTokens\s*=\s*\{(.*?)\};", source, re.S)
+    assert cell and count and filed, "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
+    cell, count, filed = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count, filed))
+    assert cell and count and filed, "ArkPilotsPage's filled tokens read as empty"
+    return dict({"nameTemplate": cell, "lineTemplate": cell, "sightTemplate": cell, "countTemplate": count},
+                **{f: filed for f in FILE_TEMPLATES})
 
 
 PILOT_TOKENS = pilot_tokens()
 PILOT_WORDS = "".join(yfield(field, words) for field, words in PILOT_LINES)
 
 
+def callsign_briefs():
+    """Every callsign's brief, as CallsignSet.asset holds it (author_callsign_assets.py writes it)."""
+    path = os.path.join(REPO, "Assets/Resources/Pilots/CallsignSet.asset")
+    found = [v.strip().strip("'").replace("''", "'") for v in
+             re.findall(r"^    brief: (.*)$", open(path, encoding="utf-8").read(), re.M)]
+    assert len(found) == CALLSIGNS and all(found), "CallsignSet.asset does not hold a brief for every callsign"
+    return found
+
+
+def callsign_words():
+    """Every callsign's word, as CallsignSet.asset holds it."""
+    path = os.path.join(REPO, "Assets/Resources/Pilots/CallsignSet.asset")
+    found = [v.strip().strip("'") for v in re.findall(r"^    word: (.*)$", open(path, encoding="utf-8").read(), re.M)]
+    assert len(found) == CALLSIGNS and all(found), "CallsignSet.asset does not hold a word for every callsign"
+    return found
+
+
+def pilot_card(parent, i):
+    """Crew cell `i` (a SquadPickChip): the callsign's close-up filling the card, cut by a mask to its width, a fade up
+    from its foot, the callsign large, the name, the sight, and the picked mark over all of it."""
+    key = f"Pilots/Cell{i}"
+    x, y = pilot_cell_rect(i)
+    chip = glass(H.kit_row(parent, key, f"Cell{i}", TL(x, y, PILOT_W, PILOT_H), PILOT_H,
+                           content_keys=((f"{key}/Label", "tmp"),)), alpha=1.0)
+    chip.add("cg", 225, canvas_group(True))
+    clip = chip.child(N(f"{key}/Clip", "Clip", STRETCH))
+    clip.add("cr", 222, K.canvas_renderer()).add("rmask", 114, A.rect_mask())
+    clip.child(N(f"{key}/Picture", "Picture", TL((PILOT_W - PILOT_FACE) // 2, PILOT_FACE_Y, PILOT_FACE, PILOT_FACE))) \
+        .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None, preserve=True))
+    image_node(clip, f"{key}/Fade", "Fade", TL(0, PILOT_FADE_Y, PILOT_W, PILOT_H - PILOT_FADE_Y), "SurfaceBlack",
+               K.kit_sprite("kit_fade_v"))
+    words_w = PILOT_W - 2 * PILOT_PAD
+    H.ellipsize(label(chip.child(N(f"{key}/Line", "Line", TL(PILOT_PAD, PILOT_LINE_Y, words_w, PILOT_LINE_H))), "",
+                      PILOT_LINE_ROLE, "TextLight"))
+    label(chip.child(N(f"{key}/Label", "Label", TL(PILOT_NAME_PAD, PILOT_NAME_Y, PILOT_W - 2 * PILOT_NAME_PAD,
+                                                   PILOT_NAME_H))), "", PILOT_NAME_ROLE, "TextLight")
+    label(chip.child(N(f"{key}/Sight", "Sight", TL(PILOT_PAD, PILOT_SIGHT_Y, words_w, PILOT_SIGHT_H))),
+          "", PILOT_SIGHT_ROLE, "TextLight", valign="top", wrap=True)
+    chip.child(N(f"{key}/Picked", "Picked", R((0, 0), (1, 1), (0, 0), (2, 2)))).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, off(K.image(tok("Selection"), K.kit_sprite("kit_sliver10_line2"), True)))
+
+    def body(ctx, go):
+        return mono(go, S["chip"], f"  button: {ref(ctx.c(key, 'button'))}\n  group: {ref(ctx.c(key, 'cg'))}\n"
+                    f"  label: {ref(ctx.c(f'{key}/Label', 'tmp'))}\n  line: {ref(ctx.c(f'{key}/Line', 'tmp'))}\n"
+                    f"  image: {ref(ctx.c(f'{key}/Picture', 'img'))}\n"
+                    f"  selectedMark: {ref(ctx.c(f'{key}/Picked', 'img'))}\n")
+    chip.add("chip", 114, body)
+    return chip
+
+
 def pilot_cell_rect(i):
-    """Cell `i` of the crew, left to right then down: (x, y) of its top left on the page."""
+    """Cell `i` of the crew, left to right then down: (x, y) of its top left on the PDA's glass."""
     return (PILOT_X + (i % PILOT_COLS) * (PILOT_W + PILOT_GAP), PILOT_Y + (i // PILOT_COLS) * (PILOT_H + PILOT_GAP))
 
 
-def pilots_page(root, veiled=VEILED):
-    """PILOTS: the crew in join order, one cell a pilot (SquadPickChip: the close-up of their callsign's scene, their
-    name, their callsign). A press opens the pilot's profile page (ScreenSwitcher.OpenPilotProfile). ArkPilotsPage
-    draws it; every word is on that component or the text of a caption here."""
-    page = page_node(root, "Pilots", False)
-    page_ground(page, "Pilots", veiled)
-    grid_w = PILOT_COLS * PILOT_W + (PILOT_COLS - 1) * PILOT_GAP
-    C.section_label(page, "Pilots/Caption", "Caption", "Your crew", TL(PILOT_X, PILOT_LIST_Y, 220, 18))
-    label(page.child(N("Pilots/Count", "Count", TL(PILOT_X + grid_w - 220, PILOT_LIST_Y, 220, 18))), "", "Label",
-          "NeutralLightest", align="right")
-    e = page.child(N("Pilots/Empty", "Empty", TL(PILOT_X, 250, grid_w, 200)))
+def frac(x, y):
+    """A point of the 1920 x 1080 backdrop as a fraction of the page, from its bottom left (an anchor)."""
+    return (round(x / 1920, 5), round(1 - y / 1080, 5))
+
+
+def glass_image(parent, key, name):
+    """The PDA's glass lying on the bench (PdaGlassImage): the last pilot's close-up drawn through the render's corners."""
+    n = parent.child(N(key, name, STRETCH))
+    corners = "".join(f"  - {{x: {round(x / 1920, 5)}, y: {round(y / 1080, 5)}}}\n" for x, y in PDA_REST_CORNERS)
+    n.add("cr", 222, K.canvas_renderer()).add("glass", 114, lambda ctx, go: mono(
+        go, S["glass"],
+        "  m_Material: {fileID: 0}\n  m_Color: {r: 1, g: 1, b: 1, a: 1}\n  m_RaycastTarget: 0\n"
+        "  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}\n  m_Maskable: 1\n"
+        "  m_OnCullStateChanged:\n    m_PersistentCalls:\n      m_Calls: []\n"
+        "  sprite: {fileID: 0}\n  corners:\n" + corners
+        + f"  glassAspect: {round(PDA_GLASS_ASPECT, 4)}\n  cutFromTop: 0.3\n  grid: 8\n"))
+    return n
+
+
+def pilots_rest(page):
+    """Lying down: the PDA's glass shows the last pilot read; their callsign and name and PICK UP stand right of it."""
+    rest = page.child(N("Pilots/Rest", "Rest", STRETCH))
+    rest.add("cg", 225, canvas_group(True))
+    glass_image(rest, "Pilots/Rest/Glass", "Glass")
+    pn = glass_panel(rest, "Pilots/Rest/Last", "Last", TL(LAST_X, LAST_Y, LAST_W, LAST_H))
+    C.section_label(pn, "Pilots/Rest/Last/Kicker", "Kicker", "Last read", TL(22, 18, LAST_W - 44, 16))
+    H.ellipsize(label(pn.child(N("Pilots/Rest/Last/Callsign", "Callsign", TL(22, 38, LAST_W - 44, 38))), "", "H2",
+                      "TextLight"))
+    H.ellipsize(label(pn.child(N("Pilots/Rest/Last/Name", "Name", TL(22, 78, LAST_W - 44, 24))), "", "Body",
+                      "NeutralLightest"))
+    small_button(pn, "Pilots/Rest/Last/PickUp", "PickUp", "Pick up", TL(22, 114, 200, 44), "Cta")
+
+
+def pilots_crew(screen):
+    """Picked up, the crew on the glass: one portrait card a pilot (pilot_card), the empty words, and LAY DOWN."""
+    crew = screen.child(N("Pilots/Held/Screen/Crew", "Crew", STRETCH))
+    crew.add("cg", 225, canvas_group(True))
+    e = crew.child(N("Pilots/Empty", "Empty", TL(0, 250, GLASS_W, 200)))
     e.add("cg", 225, canvas_group(False))
     label(e.child(N("Pilots/Empty/Heading", "Heading", stretch_x(0, 0, 40, 40))), "No pilots yet", "H2", "TextLight",
           align="center")
-    label(e.child(N("Pilots/Empty/Line", "Line", stretch_x(300, 300, 90, 60))),
+    label(e.child(N("Pilots/Empty/Line", "Line", stretch_x(200, 200, 90, 60))),
           "Your crew appears here once your account has loaded.", "Body", "NeutralLightest", align="center", wrap=True)
-    words_w = PILOT_W - 2 * PILOT_PAD
     for i in range(CALLSIGNS):
-        x, y = pilot_cell_rect(i)
-        pick_chip(page, f"Pilots/Cell{i}", f"Cell{i}", TL(x, y, PILOT_W, PILOT_H), PILOT_H, "", None,
-                  TL((PILOT_W - PILOT_FACE) // 2, PILOT_FACE_Y, PILOT_FACE, PILOT_FACE),
-                  line_rect=TL(PILOT_PAD, PILOT_LINE_Y, words_w, PILOT_LINE_H),
-                  label_rect=TL(PILOT_NAME_PAD, PILOT_NAME_Y, PILOT_W - 2 * PILOT_NAME_PAD, PILOT_NAME_H),
-                  label_role="Body", line_align="center")
+        pilot_card(crew, i)
+    label(crew.child(N("Pilots/Held/Screen/Crew/Hint", "Hint", TL(SCREEN_PAD, FOOT_Y + 13, 500, 18))),
+          "Tap a pilot to read their file.", "BodySmall", "NeutralLightest")
+    small_button(crew, "Pilots/Held/Screen/Crew/PutDown", "PutDown", "Lay down", TR(SCREEN_PAD, FOOT_Y, 170, FOOT_H))
+
+
+def pilots_file(screen):
+    """A pilot's file on the glass: the close-up and the callsign's sight down the left; the callsign, name, animals,
+    faction and home, and the story to the right; CREW, PREV / NEXT with the count, and FULL PROFILE along the foot."""
+    f = screen.child(N("Pilots/Held/Screen/File", "File", STRETCH))
+    f.add("cg", 225, canvas_group(False))
+    k = "Pilots/Held/Screen/File"
+    art_node(f, f"{k}/Picture", "Picture", TL(SCREEN_PAD, PILOT_Y, FILE_FACE, FILE_FACE), None, preserve=True)
+    label(f.child(N(f"{k}/SightCaption", "SightCaption", TL(SCREEN_PAD, PILOT_Y + FILE_FACE + 16, FILE_FACE, 16))), "",
+          "Label", "NeutralLightest")
+    label(f.child(N(f"{k}/Sight", "Sight", TL(SCREEN_PAD, PILOT_Y + FILE_FACE + 38, FILE_FACE, FOOT_Y - PILOT_Y - FILE_FACE - 54))),
+          "", "BodySmall", "TextLight", valign="top", wrap=True)
+    x, w = FILE_COL_X, FILE_COL_W
+    H.ellipsize(label(f.child(N(f"{k}/Kicker", "Kicker", TL(x, PILOT_Y, w, 18))), "", "Label", "NeutralLightest"))
+    H.ellipsize(label(f.child(N(f"{k}/Name", "Name", TL(x, PILOT_Y + 22, w, 48))), "", "H1", "TextLight"))
+    H.ellipsize(label(f.child(N(f"{k}/Species", "Species", TL(x, PILOT_Y + 76, w, 24))), "", "Body", "NeutralLightest"))
+    H.ellipsize(label(f.child(N(f"{k}/Faction", "Faction", TL(x, PILOT_Y + 102, w, 24))), "", "Body", "NeutralLightest"))
+    image_node(f, f"{k}/Rule", "Rule", TL(x, PILOT_Y + 140, w, 2), "SurfaceDark")
+    label(f.child(N(f"{k}/StoryCaption", "StoryCaption", TL(x, PILOT_Y + 156, w, 16))), "", "Label", "NeutralLightest")
+    label(f.child(N(f"{k}/Story", "Story", TL(x, PILOT_Y + 180, w, FOOT_Y - PILOT_Y - 196))), "", "BodySmall", "TextLight",
+          valign="top", wrap=True)
+    small_button(f, f"{k}/Back", "Back", "Crew", TL(SCREEN_PAD, FOOT_Y, 140, FOOT_H))
+    mid = GLASS_W // 2
+    small_button(f, f"{k}/Previous", "Previous", "Prev", TL(mid - 60 - 8 - 120, FOOT_Y, 120, FOOT_H))
+    label(f.child(N(f"{k}/Count", "Count", TL(mid - 60, FOOT_Y + 10, 120, 24))), "", "Body", "TextLight", align="center")
+    small_button(f, f"{k}/Next", "Next", "Next", TL(mid + 60 + 8, FOOT_Y, 120, FOOT_H))
+    small_button(f, f"{k}/Profile", "Profile", "Full profile", TR(SCREEN_PAD, FOOT_Y, 200, FOOT_H))
+
+
+def pilots_held(page):
+    """Picked up: the glass square to the view (anchored to the render's corners, so it follows the stretched picture),
+    its header (the caption and the crew's count), and the crew or a pilot's file."""
+    held = page.child(N("Pilots/Held", "Held", STRETCH))
+    held.add("cg", 225, canvas_group(False))
+    screen = held.child(N("Pilots/Held/Screen", "Screen", R(frac(GLASS_X, GLASS_Y + GLASS_H), frac(GLASS_X + GLASS_W, GLASS_Y),
+                                                             (0, 0), (0, 0))))
+    # The screen lit: the render's glass is pale under the hangar's grade, so the words stand on the theme's dark ground.
+    image_node(screen, "Pilots/Held/Screen/Ground", "Ground", STRETCH, SCREEN_GROUND, alpha=SCREEN_GROUND_ALPHA)
+    image_node(screen, "Pilots/Held/Screen/Head", "Head", TL(0, 0, GLASS_W, SCREEN_HEAD), "SurfaceBlack", alpha=0.55)
+    C.section_label(screen, "Pilots/Caption", "Caption", "Your crew", TL(SCREEN_PAD, 17, 300, 18))
+    label(screen.child(N("Pilots/Count", "Count", TR(SCREEN_PAD, 17, 220, 18))), "", "Label", "NeutralLightest",
+          align="right")
+    pilots_crew(screen)
+    pilots_file(screen)
+
+
+def pilots_page(root, veiled=VEILED):
+    """PILOTS (Rev 99 C, section 191): the crew PDA on the hangar's workbench. ArkPilotsPage draws it; every word is on
+    that component or the text of a caption here."""
+    page = page_node(root, "Pilots", False)
+    page_ground(page, "Pilots", veiled)
+    pilots_rest(page)
+    pilots_held(page)
+    F = "Pilots/Held/Screen/File"
 
     def body(ctx, go):
+        def r(key, comp):
+            return ref(ctx.c(key, comp))
         return mono(go, S["pilots"],
                     f"  scenes: {K.ref(11400000, SCENE_CATALOG, 2)}\n"
                     "  cells:\n" + refs_of(ctx, [f"Pilots/Cell{i}" for i in range(CALLSIGNS)], "chip")
-                    + f"  emptyGroup: {ref(ctx.c('Pilots/Empty', 'cg'))}\n"
-                    f"  countText: {ref(ctx.c('Pilots/Count', 'tmp'))}\n  screenSwitcher: {{fileID: 0}}\n"
+                    + "  sightLines:\n" + refs_of(ctx, [f"Pilots/Cell{i}/Sight" for i in range(CALLSIGNS)], "tmp")
+                    + f"  emptyGroup: {r('Pilots/Empty', 'cg')}\n"
+                    f"  countText: {r('Pilots/Count', 'tmp')}\n  screenSwitcher: {{fileID: 0}}\n"
+                    f"  restGroup: {r('Pilots/Rest', 'cg')}\n  pickUpButton: {r('Pilots/Rest/Last/PickUp', 'button')}\n"
+                    f"  glass: {r('Pilots/Rest/Glass', 'glass')}\n"
+                    f"  lastCallsignText: {r('Pilots/Rest/Last/Callsign', 'tmp')}\n"
+                    f"  lastNameText: {r('Pilots/Rest/Last/Name', 'tmp')}\n"
+                    f"  heldGroup: {r('Pilots/Held', 'cg')}\n  crewGroup: {r('Pilots/Held/Screen/Crew', 'cg')}\n"
+                    f"  putDownButton: {r('Pilots/Held/Screen/Crew/PutDown', 'button')}\n"
+                    "  settleSeconds: 0.4\n  fadeSeconds: 0.2\n"
+                    f"  fileGroup: {r(F, 'cg')}\n  filePicture: {r(F + '/Picture', 'img')}\n"
+                    f"  fileKickerText: {r(F + '/Kicker', 'tmp')}\n  fileNameText: {r(F + '/Name', 'tmp')}\n"
+                    f"  fileSpeciesText: {r(F + '/Species', 'tmp')}\n  fileFactionText: {r(F + '/Faction', 'tmp')}\n"
+                    f"  fileSightCaptionText: {r(F + '/SightCaption', 'tmp')}\n  fileSightText: {r(F + '/Sight', 'tmp')}\n"
+                    f"  fileStoryCaptionText: {r(F + '/StoryCaption', 'tmp')}\n  fileStoryText: {r(F + '/Story', 'tmp')}\n"
+                    f"  fileCountText: {r(F + '/Count', 'tmp')}\n  backButton: {r(F + '/Back', 'button')}\n"
+                    f"  previousButton: {r(F + '/Previous', 'button')}\n  nextButton: {r(F + '/Next', 'button')}\n"
+                    f"  profileButton: {r(F + '/Profile', 'button')}\n"
                     + PILOT_WORDS)
     page.add("logic", 114, body)
     return page
 
 
-ART_ROWS = 4                                   # Javelin and Aegis, and room for two more
-TRACK_ELEMENTS = ("Mass", "Space", "Time", "Charge")   # ArkArtifactsPage.TrackOrder
-# ARTIFACTS as the approved board draws it (Rev 86, R86ArtifactsAB, Docs/MENU_REDESIGN_B.md section 167): the room (the
-# Reliquary's dais in the Gallery's hall) fills the middle, so the list is a glass panel on the left and the picked one
-# is a glass card bottom-right; its crystals sit top-right and its four tracks in a second glass panel between them.
-ART_LIST_Y, ART_LIST_W, ART_ROW_H, ART_ROW_GAP, ART_PAD = 300, 460, 64, 8, 22
-ART_LIST_H = 48 + ART_ROWS * (ART_ROW_H + ART_ROW_GAP) - ART_ROW_GAP + 20
-ART_COL_W = 520                                # the right column: the crystals, the tracks, the card
-CRYSTAL_Y, CRYSTAL_W = 172, 104
-TRACKS_Y, TRACK_PAD, TRACK_H, TRACK_GAP = 220, 14, 92, 6
-TRACKS_H = 2 * TRACK_PAD + len(TRACK_ELEMENTS) * (TRACK_H + TRACK_GAP) - TRACK_GAP
-ART_CARD_Y, ART_CARD_H = 640, 258
-assert TRACKS_Y + TRACKS_H < ART_CARD_Y, "the artifact's tracks run into its card"
-ARTIFACT_WORDS = (
-    ylist("elementNames", ("", "Charge", "Mass", "Space", "Time", "Omni"))
-    + yfield("crystalTemplate", "{element} {count}")
-    + yfield("levelsTemplate", "Mass {mass}  Space {space}  Time {time}  Charge {charge}")
-    + yfield("levelTemplate", "{level} / {max}") + yfield("valueTemplate", "{now} -> {next}")
-    + yfield("valueTopTemplate", "{now}") + yfield("twistLockedTemplate", "At {at}: {twist}")
-    + yfield("twistOpenTemplate", "{twist}") + yfield("raiseTemplate", "Raise - {cost} {element}")
-    + yfield("omniTemplate", "{cost} Omni instead") + yfield("topWord", "At the top")
-    + yfield("notEnoughTemplate", "Not enough {element} crystals.")
-    + yfield("raisedTemplate", "{artifact}: {element} is now {level}.")
-    + yfield("twistedTemplate", "{artifact} twists: {twist}"))
+# ARTIFACTS as Rev 105 B draws it (Docs/MENU_REDESIGN_B.md sections 193 and 201; Shombith, 2026-11-13: "B is good",
+# after "the UI cards on top of each screen, I do not like them at all"): no card and no panel behind any word, the
+# Reliquary whole behind the page, and three levels, one press each (ArkArtifactsPage.Level): the hoard (a rail of
+# medallions along the floor), one artifact (the lens opens on the right and plays its payload over prisms, its four
+# tracks round the rim; its words stand on the left), and feeding it (the attuned track's level, its crystals, FEED).
+_gspec = importlib.util.spec_from_file_location("author_artifact_glyphs", os.path.join(HERE, "author_artifact_glyphs.py"))
+GLYPHS = importlib.util.module_from_spec(_gspec)
+_gspec.loader.exec_module(GLYPHS)
+
+TRACK_ELEMENTS = ("Mass", "Space", "Time", "Charge")   # ArkArtifactsPage.TrackOrder: the lens's arcs, in this order
+# Each kind: its catalog id, its mark, its payload (ArtifactLens.Payload: Fan 0, Line 1, Repeat 2, Shell 3), the track
+# whose value counts the payload (every kind counts on Charge: heads, cracks, shocks, re-raises) and what is added to it.
+ART_KINDS = (("javelin", 1, 0), ("hydra", 0, 0), ("aftershock", 2, 0), ("aegis", 3, 1))
+ELEMENT_VALUE = dict(Charge=1, Mass=2, Space=3, Time=4)       # Element
+COUNT_TRACK = "Charge"
+CRYSTAL_BY_VALUE = (None, CRYSTAL["Charge"], CRYSTAL["Mass"], CRYSTAL["Space"], CRYSTAL["Time"], OMNI)
+# The rail (the board's BODY_B): a line along the floor, medallions 150 wide from x 170 every 186, the disc 112 across.
+MEDALLIONS, MED_X, MED_STEP, MED_W, MED_Y, MED_DISC = 7, 170, 186, 150, 834, 112
+RAIL_Y = MED_Y + MED_DISC // 2
+HINT_Y = 786
+# The lens: 640 across, its top left at (1180, 196); the field of prisms is 300 in radius, the arcs run at 318 and their
+# words at 370, each arc 80 degrees, the first starting at 95 (SVG degrees, clockwise from the right).
+LENS_X, LENS_Y, LENS = 1180, 196, 640
+FIELD_R, ARC_R, WORDS_R, ARC_SPAN, ARC_START = 300, 318, 370, 80, 95
+ARC_WORDS_W, ARC_WORDS_H = 150, 66
+# The words on the left, no box: from (80, 232), 560 wide (520 for the feed's meter and its buttons).
+COL_X, COL_Y, COL_W, METER_W = 80, 232, 560, 520
+ACTIONS_Y, BUTTON_H = 488, 44
+BAND_Y, CRYSTAL_ICONS, CRYSTAL_ICON, CRYSTAL_STEP = 524, 10, 42, 48
+STATUS_Y = 776
+assert STATUS_Y + 50 < MED_Y, "the feed's status line runs into the rail"
+assert COL_X + COL_W < LENS_X - (WORDS_R - LENS // 2) - ARC_WORDS_W // 2, "the artifact's words run under the lens's arc words"
+
+
+def artifact_words():
+    """Every word ArkArtifactsPage shows, as (field, words). Templates name only the tokens ART_TOKENS lists."""
+    return (
+        ("trailHoard", "Artifacts"), ("trailArtifact", "Artifacts  /  {kind}"),
+        ("trailFeed", "Artifacts  /  {kind}  /  Feed"), ("kickerTemplate", "{kind} - {serial}"),
+        ("attunedTemplate", "{element} - {aspect}  {value}"), ("heldTemplate", "Carried in {squad}, the {seat} seat"),
+        ("notHeldWord", "In your hoard - no seat carries it"), ("giveWord", "Give to a seat"),
+        ("giveAgainWord", "Give to another seat"), ("levelNowTemplate", "{level}"),
+        ("levelNextTemplate", "{level}  >  {next}"),
+        ("valueTemplate", "Next feed: {now} > {next} {aspect}. {fed} crystals fed so far."),
+        ("twistLockedTemplate", "At {at}: {twist}"), ("twistOpenTemplate", "{twist}"),
+        ("balanceTemplate", "{element} crystals {count} - Omni {omni} - a feed takes {batch}"),
+        ("feedTemplate", "Feed {count} {element}"), ("omniTemplate", "Feed {count} Omni"),
+        ("notEnoughTemplate", "Not enough {element} crystals. The Converter makes more."),
+        ("wrongElementTemplate", "{artifact} takes only {element}."),
+        ("goneWord", "That artifact is no longer in your hoard."),
+        ("fedTemplate", "{artifact}: {aspect} is now level {level} (+{gain})."),
+        ("twistedTemplate", "{artifact} twists: {twist}"))
+
+
+# The tokens ArkArtifactsPage fills in each line (its TemplateText.Fill calls).
+ART_TOKENS = dict(trailHoard={"kind"}, trailArtifact={"kind"}, trailFeed={"kind"}, kickerTemplate={"kind", "serial"},
+                  attunedTemplate={"element", "aspect", "value"}, heldTemplate={"squad", "seat"},
+                  levelNowTemplate={"level"}, levelNextTemplate={"level", "next"},
+                  valueTemplate={"now", "next", "aspect", "fed"}, twistLockedTemplate={"twist", "at"},
+                  twistOpenTemplate={"twist"}, balanceTemplate={"element", "count", "omni", "batch"},
+                  feedTemplate={"count", "element"}, omniTemplate={"count"}, notEnoughTemplate={"element"},
+                  wrongElementTemplate={"artifact", "element"}, fedTemplate={"artifact", "aspect", "element", "level", "gain"},
+                  twistedTemplate={"artifact", "twist"})
+ARTIFACT_WORDS = (ylist("elementNames", ("", "Charge", "Mass", "Space", "Time", "Omni"))
+                  + ylist("seatNames", ("Leader", "Rogue One", "Rogue Two"))
+                  + "".join(yfield(f, w) for f, w in artifact_words()))
+
+
+def filled(parent, key, name, r, token, alpha=1.0, sprite=None, method=0, origin=0, amount=0.0):
+    """A themed Image, Filled: `method` 0 horizontal (from the left), 4 radial 360 (from `origin`, clockwise)."""
+    base = K.image(tok(token, alpha), sprite)
+    n = parent.child(N(key, name, r))
+    n.add("cr", 222, K.canvas_renderer()).add("img", 114, lambda ctx, go: base(ctx, go)
+        .replace("  m_Type: 0\n", "  m_Type: 3\n").replace("  m_FillMethod: 4\n", f"  m_FillMethod: {method}\n")
+        .replace("  m_FillAmount: 1\n", f"  m_FillAmount: {K.f32(amount)}\n")
+        .replace("  m_FillOrigin: 0\n", f"  m_FillOrigin: {origin}\n")).add("th", 114, H.themed(token, alpha))
+    return n
+
+
+def ring(parent, key, name, r, token, alpha=1.0, sprite="kit_ring_line", raycast=False, shown=True):
+    n = image_node(parent, key, name, r, token, K.kit_sprite(sprite), alpha=alpha, raycast=raycast)
+    if not shown:
+        n.comps = [(k, cid, off(b)) if k == "img" else (k, cid, b) for k, cid, b in n.comps]
+    return n
+
+
+def medallion(page, i):
+    """One medallion on the rail (ArtifactMedallion): a held artifact's mark in a round glass with its kind's name under
+    it, or an empty slot. The glass is a KitButton (its own fill the theme's tint over the glass disc, the resting ring its
+    border); the picked ring is a second ring the medallion switches on."""
+    k = f"Artifacts/Rail/Medallion{i}"
+    m = page.child(N(k, f"Medallion{i}", TL(MED_X + i * MED_STEP, MED_Y, MED_W, MED_W)))
+    disc = TL((MED_W - MED_DISC) // 2, 0, MED_DISC, MED_DISC)
+    held = m.child(N(f"{k}/Held", "Held", STRETCH))
+    held.add("cg", 225, canvas_group(True))
+    ring(held, f"{k}/Held/Glass", "Glass", disc, "SurfaceVeryDark", 0.9, "kit_ring_fill")
+    focus = held.child(N(f"{k}/Held/FocusRing", "FocusRing", TL((MED_W - MED_DISC) // 2 - 6, -6, MED_DISC + 12, MED_DISC + 12)))
+    focus.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("TextLight", 0.0), K.kit_sprite("kit_ring_line")))
+    held.child(N(f"{k}/Held/Fill", "Fill", disc)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceVeryDark", 0.0), K.kit_sprite("kit_ring_fill"), raycast=True))
+    held.child(N(f"{k}/Held/Rest", "Rest", disc)).add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_ring_line")))
+    ring(held, f"{k}/Held/Picked", "Picked", TL((MED_W - MED_DISC) // 2 - 2, -2, MED_DISC + 4, MED_DISC + 4), "ControlActive",
+         shown=False)
+    held.child(N(f"{k}/Held/Glyph", "Glyph", TL((MED_W - 64) // 2, (MED_DISC - 64) // 2, 64, 64))) \
+        .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, None, preserve=True)) \
+        .add("th", 114, H.themed("TextLight"))
+    ng = held.child(N(f"{k}/Held/NameGroup", "NameGroup", TL(0, MED_DISC + 10, MED_W, 20)))
+    ng.add("cg", 225, canvas_group(True))
+    H.ellipsize(label(ng.child(N(f"{k}/Held/Name", "Name", STRETCH)), "", "Label", "TextLight", align="center"))
+    empty = m.child(N(f"{k}/Empty", "Empty", STRETCH))
+    empty.add("cg", 225, canvas_group(False))
+    ring(empty, f"{k}/Empty/Ring", "Ring", disc, "NeutralLightest", 0.35)
+    label(empty.child(N(f"{k}/Empty/Mark", "Mark", disc)), "?", "H2", "NeutralLightest", align="center")
+
+    def button(ctx, go):
+        return K.mono(go, H.KIT_BUTTON,
+                      K.SELECTABLE_FIELDS + f"  m_TargetGraphic: {ref(ctx.c(f'{k}/Held/Fill', 'img'))}\n" + H.EMPTY_CALLS
+                      + f"  theme: {K.ref(11400000, K.THEME, 2)}\n  focusRing: {ref(ctx.c(f'{k}/Held/FocusRing', 'img'))}\n"
+                      f"  variant: {K.VARIANTS['Cancel']}\n  fill: 0\n"
+                      f"  fillGraphic: {ref(ctx.c(f'{k}/Held/Fill', 'img'))}\n"
+                      f"  borderGraphic: {ref(ctx.c(f'{k}/Held/Rest', 'img'))}\n"
+                      f"  contentGraphics:\n  - {ref(ctx.c(f'{k}/Held/Name', 'tmp'))}\n  playGradient: {{fileID: 0}}\n")
+    m.add("button", 114, button)
+    m.add("audio", 114, lambda ctx, go: K.mono(go, H.MENU_AUDIO, "  category: 11\n"))
+    m.add("medal", 114, lambda ctx, go: mono(go, S["medal"],
+          f"  button: {ref(ctx.c(k, 'button'))}\n  heldGroup: {ref(ctx.c(f'{k}/Held', 'cg'))}\n"
+          f"  emptyGroup: {ref(ctx.c(f'{k}/Empty', 'cg'))}\n  glyph: {ref(ctx.c(f'{k}/Held/Glyph', 'img'))}\n"
+          f"  nameText: {ref(ctx.c(f'{k}/Held/Name', 'tmp'))}\n  restRing: {ref(ctx.c(f'{k}/Held/Rest', 'img'))}\n"
+          f"  pickedRing: {ref(ctx.c(f'{k}/Held/Picked', 'img'))}\n  nameGroup: {ref(ctx.c(f'{k}/Held/NameGroup', 'cg'))}\n"
+          "  dimmedNameAlpha: 0.6\n"))
+    return m
+
+
+def arc_start(i):
+    """Arc `i`'s start in SVG degrees (clockwise from the right, as the board draws it)."""
+    return ARC_START + 90 * i
+
+
+def lens(page):
+    """The lens (ArtifactLens): a round glass with a rim, the field of prisms masked inside it, and the four tracks as arcs
+    round the rim with their words outside. Hidden until an artifact is picked."""
+    L = "Artifacts/Lens"
+    ln = page.child(N(L, "Lens", TL(LENS_X, LENS_Y, LENS, LENS)))
+    ln.add("cg", 225, canvas_group(False))
+    body = ln.child(N(f"{L}/Body", "Body", STRETCH))
+    ring(body, f"{L}/Body/Halo", "Halo", R((0, 0), (1, 1), (0, 0), (30, 30)), "ControlActive", 0.35)
+    ring(body, f"{L}/Body/Glass", "Glass", STRETCH, "SurfaceVeryDark", 0.94, "kit_ring_fill")
+    ring(body, f"{L}/Body/Rim", "Rim", STRETCH, "ControlActive", 0.75)
+    inset = LENS - 2 * FIELD_R
+    fd = body.child(N(f"{L}/Body/Field", "Field", R((0, 0), (1, 1), (0, 0), (-inset, -inset))))
+    fd.add("cr", 222, K.canvas_renderer()) \
+        .add("img", 114, K.image(tok("SurfaceBlack", 0.35), K.kit_sprite("kit_ring_fill"))) \
+        .add("th", 114, H.themed("SurfaceBlack", 0.35)).add("mask", 114, A.mask(True))
+    centre = lambda w, h, y=0: R((0.5, 0.5), None, (0, y), (w, h))
+    image_node(fd, f"{L}/Body/Field/Release", "Release", centre(28, 28, -0.82 * FIELD_R), "TextLight",
+               K.chrome_sprite("chrome_diamond"), alpha=0.6, preserve=True)
+    image_node(fd, f"{L}/Body/Field/Prism", "Prism", centre(22, 12), "SurfaceLight", alpha=0.5)
+    image_node(fd, f"{L}/Body/Field/Head", "Head", centre(14, 14), "ControlActive", K.kit_sprite("kit_ring_fill"))
+    image_node(fd, f"{L}/Body/Field/Burst", "Burst", centre(40, 40), "TextLight", K.kit_sprite("kit_ring_line"))
+    arc_rect = R((0, 0), (1, 1), (0, 0), (2 * ARC_R - LENS, 2 * ARC_R - LENS))
+    span = ARC_SPAN / 360
+    for i, name in enumerate(TRACK_ELEMENTS):
+        k = f"{L}/Body/Arc{name}"
+        a = body.child(N(k, f"Arc{name}", STRETCH))
+        for part, token, alpha, amount in (("Track", "NeutralLightest", 0.35, span), ("Fixed", "TextLight", 0.55, span / 2),
+                                            ("Attuned", "ControlActive", 1.0, span / 2)):
+            f = filled(a, f"{k}/{part}", part, arc_rect, token, alpha, K.kit_sprite("kit_ring_line"), method=4, origin=1,
+                       amount=amount)
+            f.rot = -arc_start(i)                  # radial 360 from the right, clockwise: turned to start at the arc's start
+        mid = math.radians(arc_start(i) + ARC_SPAN / 2)
+        x, y = LENS / 2 + WORDS_R * math.cos(mid), LENS / 2 + WORDS_R * math.sin(mid)
+        w = a.child(N(f"{k}/Words", "Words", TL(round(x - ARC_WORDS_W / 2), round(y - ARC_WORDS_H / 2), ARC_WORDS_W,
+                                                ARC_WORDS_H)))
+        w.add("cg", 225, canvas_group(True))
+        H.element_flower(w, f"{k}/Words/Flower", "Flower", TL((ARC_WORDS_W - 24) // 2, 0, 24, 24), name, 5)
+        label(w.child(N(f"{k}/Words/Value", "Value", TL(0, 26, ARC_WORDS_W, 20))), "", "DataSmall", "TextLight", align="center")
+        H.ellipsize(label(w.child(N(f"{k}/Words/Label", "Label", TL(0, 46, ARC_WORDS_W, 18))), "", "Label", "NeutralLightest",
+                          align="center"))
+
+    def body_(ctx, go):
+        arcs = ""
+        for name in TRACK_ELEMENTS:
+            k = f"{L}/Body/Arc{name}"
+            arcs += (f"  - attunedFill: {ref(ctx.c(f'{k}/Attuned', 'img'))}\n    fixedFill: {ref(ctx.c(f'{k}/Fixed', 'img'))}\n"
+                     f"    flower: {ref(ctx.c(f'{k}/Words/Flower', 'flower'))}\n"
+                     f"    valueText: {ref(ctx.c(f'{k}/Words/Value', 'tmp'))}\n"
+                     f"    labelText: {ref(ctx.c(f'{k}/Words/Label', 'tmp'))}\n"
+                     f"    wordsGroup: {ref(ctx.c(f'{k}/Words', 'cg'))}\n")
+        return mono(go, S["lens"],
+                    f"  group: {ref(ctx.c(L, 'cg'))}\n  body: {ref(ctx.rt(f'{L}/Body'))}\n"
+                    f"  field: {ref(ctx.rt(f'{L}/Body/Field'))}\n"
+                    f"  prismTemplate: {ref(ctx.c(f'{L}/Body/Field/Prism', 'img'))}\n"
+                    f"  headTemplate: {ref(ctx.c(f'{L}/Body/Field/Head', 'img'))}\n"
+                    f"  burstTemplate: {ref(ctx.c(f'{L}/Body/Field/Burst', 'img'))}\n"
+                    "  arcs:\n" + arcs + f"  arcSpan: {K.f32(span)}\n  fixedWordsAlpha: 0.6\n  prismCount: 40\n"
+                    "  cycleSeconds: 2.4\n  flightShare: 0.55\n  openSeconds: 0.6\n  closedScale: 0.18\n  burstSize: 0.16\n"
+                    "  maxCount: 8\n")
+    ln.add("lens", 114, body_)
+    return ln
+
+
+def artifact_detail(page):
+    """The picked artifact's words on the left, no box (levels 2 and 3), its two actions (level 2) and the feed (level 3)."""
+    D = "Artifacts/Detail"
+    d = page.child(N(D, "Detail", TL(COL_X, COL_Y, COL_W, STATUS_Y + 50 - COL_Y)))
+    d.add("cg", 225, canvas_group(False))
+    y = lambda v: v - COL_Y
+    label(d.child(N(f"{D}/Kicker", "Kicker", TL(0, 0, COL_W, 16))), "", "Label", "NeutralLightest")
+    H.ellipsize(label(d.child(N(f"{D}/Name", "Name", TL(0, 22, COL_W, 44))), "", "H1", "TextLight"))
+    label(d.child(N(f"{D}/Description", "Description", TL(0, 74, COL_W, 84))), "", "Body", "NeutralLightest", valign="top",
+          wrap=True)
+    H.element_flower(d, f"{D}/Flower", "Flower", TL(0, 168, 30, 30), "Charge", 5)
+    H.ellipsize(label(d.child(N(f"{D}/Attuned", "Attuned", TL(42, 170, COL_W - 42, 26))), "", "Body", "TextLight"))
+    H.ellipsize(label(d.child(N(f"{D}/Held", "Held", TL(0, 210, COL_W, 20))), "", "BodySmall", "NeutralLightest"))
+    act = d.child(N(f"{D}/Actions", "Actions", TL(0, y(ACTIONS_Y), COL_W, BUTTON_H)))
+    act.add("cg", 225, canvas_group(True))
+    small_button(act, f"{D}/Actions/FeedIt", "FeedIt", "Feed it", TL(0, 0, 160, BUTTON_H))
+    small_button(act, f"{D}/Actions/Give", "Give", "Give to a seat", TL(172, 0, 240, BUTTON_H), "Cta")
+    fg = d.child(N(f"{D}/Feed", "Feed", TL(0, y(ACTIONS_Y), COL_W, STATUS_Y + 50 - ACTIONS_Y)))
+    fg.add("cg", 225, canvas_group(False))
+    F = f"{D}/Feed"
+    fy = lambda v: v - ACTIONS_Y
+    label(fg.child(N(f"{F}/Caption", "Caption", TL(0, 8, 200, 16))), "Level", "Label", "NeutralLightest")
+    label(fg.child(N(f"{F}/Level", "Level", TL(METER_W - 300, 0, 300, 28))), "", "Data", "TextLight", align="right")
+    band = fg.child(N(f"{F}/Band", "Band", TL(0, fy(BAND_Y), METER_W, 6)))
+    image_node(band, f"{F}/Band/Track", "Track", STRETCH, "NeutralLightest", alpha=0.3)
+    filled(band, f"{F}/Band/Next", "Next", STRETCH, "Cta", 0.45, amount=0.5)
+    filled(band, f"{F}/Band/Now", "Now", STRETCH, "ControlActive", amount=0.4)
+    image_node(band, f"{F}/Band/TwistMark", "TwistMark", R((0.5, 0), (0.5, 1), (0, 0), (2, 12)), "TextLight", alpha=0.8)
+    image_node(band, f"{F}/Band/Ceiling", "Ceiling", R((1, 0), (1, 1), (0, 0), (1, 8)), "NeutralLightest")
+    tw = fg.child(N(f"{F}/Twist", "Twist", TL(0, fy(BAND_Y) + 20, METER_W, 44)))
+    tw.add("cg", 225, canvas_group(True))
+    label(tw.child(N(f"{F}/Twist/Words", "Words", STRETCH)), "", "BodySmall", "TextLight", valign="top", wrap=True)
+    H.ellipsize(label(fg.child(N(f"{F}/Value", "Value", TL(0, fy(BAND_Y) + 70, METER_W, 20))), "", "DataSmall",
+                      "NeutralLightest"))
+    icons_y = fy(BAND_Y) + 104
+    for i in range(CRYSTAL_ICONS):
+        fg.child(N(f"{F}/Crystal{i}", f"Crystal{i}", TL(i * CRYSTAL_STEP, icons_y, CRYSTAL_ICON, CRYSTAL_ICON))) \
+            .add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, CRYSTAL["Charge"], preserve=True))
+    H.ellipsize(label(fg.child(N(f"{F}/Balance", "Balance", TL(0, icons_y + CRYSTAL_ICON + 8, METER_W, 20))), "", "DataSmall",
+                      "NeutralLightest"))
+    buttons_y = icons_y + CRYSTAL_ICON + 36
+    small_button(fg, f"{F}/FeedButton", "FeedButton", "Feed", TL(0, buttons_y, 250, BUTTON_H), "Cta")
+    small_button(fg, f"{F}/Omni", "Omni", "Feed Omni", TL(262, buttons_y, 250, BUTTON_H))
+    assert ACTIONS_Y + buttons_y + BUTTON_H + 8 <= STATUS_Y, "the feed's buttons run into its status line"
+    label(d.child(N(f"{D}/Status", "Status", TL(0, y(STATUS_Y), COL_W, 44))), "", "BodySmall", "TextLight", valign="top",
+          wrap=True)
+    return d
 
 
 def artifacts_page(root, veiled=VEILED):
-    """ARTIFACTS: the player's artifacts down the left (SquadRowView rows: the name, the four levels), and the picked
-    one's four element tracks to the right, each with RAISE (its own crystals) and OMNI (omni crystals instead), above
-    the profile's five crystal balances. ArkArtifactsPage draws it; every word is on that component."""
+    """ARTIFACTS (Rev 105 B): the hoard as a rail of medallions along the floor; a pick opens the lens and the artifact's
+    words; FEED IT goes one level deeper; BACK one level up. ArkArtifactsPage draws it; every word is on that component."""
     page = page_node(root, "Artifacts", False)
     page_ground(page, "Artifacts", veiled)
-    pn = glass_panel(page, "Artifacts/List", "List", TL(EDGE, ART_LIST_Y, ART_LIST_W, ART_LIST_H))
-    pn.add("cg", 225, canvas_group(True))
-    C.section_label(pn, "Artifacts/List/Caption", "Caption", "Your artifacts", TL(ART_PAD, 20, 300, 18))
-    for i in range(ART_ROWS):
-        kit_row_text(pn, f"Artifacts/List/Row{i}", f"Row{i}",
-                     TL(ART_PAD, 48 + i * (ART_ROW_H + ART_ROW_GAP), ART_LIST_W - 2 * ART_PAD, ART_ROW_H), ART_ROW_H)
-    # No artifacts: the words stand in the list's panel, where the rows would be.
-    e = page.child(N("Artifacts/Empty", "Empty", TL(EDGE + ART_PAD, ART_LIST_Y + 48, ART_LIST_W - 2 * ART_PAD, 140)))
+    rail = page.child(N("Artifacts/Rail", "Rail", stretch_x(60, 60, RAIL_Y - 1, 2)))
+    image_node(rail, "Artifacts/Rail/Line", "Line", STRETCH, "ControlActive", K.kit_sprite("kit_fade_h"), alpha=0.55)
+    for i in range(MEDALLIONS):
+        medallion(page, i)
+    hint = page.child(N("Artifacts/Hint", "Hint", TL(MED_X, HINT_Y, 900, 28)))
+    hint.add("cg", 225, canvas_group(True))
+    label(hint.child(N("Artifacts/Hint/Words", "Words", STRETCH)), "Pick one to see what it does.", "Body", "TextLight")
+    # No artifacts: the words stand over the rail, where the medallions would be.
+    e = page.child(N("Artifacts/Empty", "Empty", TL(MED_X, MED_Y - 6, 1000, 110)))
     e.add("cg", 225, canvas_group(False))
-    label(e.child(N("Artifacts/Empty/Heading", "Heading", TL(0, 0, ART_LIST_W - 2 * ART_PAD, 36))), "No artifacts yet", "H2",
-          "TextLight")
-    label(e.child(N("Artifacts/Empty/Line", "Line", TL(0, 44, ART_LIST_W - 2 * ART_PAD, 60))),
-          "Find them on voyages and bring them home to your Ark.", "Body", "NeutralLightest", valign="top", wrap=True)
-    # The picked artifact: one group (ArkArtifactsPage.detailGroup) over the right column.
-    d = page.child(N("Artifacts/Detail", "Detail", STRETCH))
-    d.add("cg", 225, canvas_group(True))
-    label(d.child(N("Artifacts/Detail/CrystalCaption", "CrystalCaption", TR(EDGE, CRYSTAL_Y, ART_COL_W, 16))), "Crystals",
-          "Label", "NeutralLightest", align="right")
-    for i in range(5):
-        label(d.child(N(f"Artifacts/Detail/Crystal{i}", f"Crystal{i}", TR(EDGE + (4 - i) * CRYSTAL_W, CRYSTAL_Y + 20,
-                                                                            CRYSTAL_W - 4, 24))), "", "Body", "TextLight", align="right")
-    tp = glass_panel(d, "Artifacts/Detail/Tracks", "Tracks", TR(EDGE, TRACKS_Y, ART_COL_W, TRACKS_H))
-    for i, name in enumerate(TRACK_ELEMENTS):
-        k = f"Artifacts/Detail/Track{name}"
-        t = tp.child(N(k, f"Track{name}", stretch_x(TRACK_PAD, TRACK_PAD, TRACK_PAD + i * (TRACK_H + TRACK_GAP), TRACK_H)))
-        H.framed(t, k, 10, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.5)
-        label(t.child(N(f"{k}/Element", "Element", TL(14, 10, 80, 16))), name, "Label", "NeutralLightest")
-        H.ellipsize(label(t.child(N(f"{k}/Label", "Label", TL(96, 6, 170, 24))), "", "Body", "TextLight"))
-        H.ellipsize(label(t.child(N(f"{k}/Level", "Level", TL(14, 32, 156, 20))), "", "BodySmall", "TextLight"))
-        H.ellipsize(label(t.child(N(f"{k}/Value", "Value", TL(176, 32, 90, 20))), "", "BodySmall", "NeutralLightest"))
-        tw = t.child(N(f"{k}/Twist", "Twist", TL(14, 54, 252, 36)))
-        tw.add("cg", 225, canvas_group(True))
-        label(tw.child(N(f"{k}/Twist/Words", "Words", STRETCH)), "", "BodySmall", "TextLight", valign="top", wrap=True)
-        small_button(t, f"{k}/Raise", "Raise", "Raise", TR(12, 10, 200, 40), "Cta")
-        small_button(t, f"{k}/Omni", "Omni", "Omni", TR(12, 56, 200, 30))
-    card = glass_panel(d, "Artifacts/Detail/Card", "Card", TR(EDGE, ART_CARD_Y, ART_COL_W, ART_CARD_H))
-    label(card.child(N("Artifacts/Detail/Kicker", "Kicker", TL(ART_PAD, 18, 300, 16))), "Artifact", "Label", "NeutralLightest")
-    # GIVE TO A SEAT (R86): the picked artifact goes to the Squads tab, where the next seat picked carries it.
-    small_button(card, "Artifacts/Detail/Give", "Give", "Give to a seat", TR(ART_PAD, 12, 170, 32))
-    H.ellipsize(label(card.child(N("Artifacts/Detail/Name", "Name", TL(ART_PAD, 40, ART_COL_W - 2 * ART_PAD, 40))), "", "H2",
-                      "TextLight"))
-    label(card.child(N("Artifacts/Detail/Description", "Description", TL(ART_PAD, 86, ART_COL_W - 2 * ART_PAD, 100))), "",
-          "BodySmall", "NeutralLightest", valign="top", wrap=True)
-    label(card.child(N("Artifacts/Detail/Status", "Status", TL(ART_PAD, 196, ART_COL_W - 2 * ART_PAD, 44))), "", "BodySmall",
-          "TextLight", valign="top", wrap=True)
+    label(e.child(N("Artifacts/Empty/Heading", "Heading", TL(0, 0, 1000, 36))), "No artifacts yet", "H2", "TextLight")
+    label(e.child(N("Artifacts/Empty/Line", "Line", TL(0, 44, 1000, 28))),
+          "Find them on voyages and bring them home to your Ark.", "Body", "NeutralLightest")
+    label(page.child(N("Artifacts/Trail", "Trail", TR(EDGE, TAB_Y + 16, 460, 20))), "", "Label", "TextLight", align="right")
+    back = page.child(N("Artifacts/Back", "Back", TL(EDGE, TAB_Y + TAB_H + 4, 110, 38)))
+    back.add("cg", 225, canvas_group(False))
+    small_button(back, "Artifacts/Back/Button", "Button", "Back", STRETCH)
+    lens(page)
+    artifact_detail(page)
+    D, F = "Artifacts/Detail", "Artifacts/Detail/Feed"
 
     def body(ctx, go):
-        tracks = ""
-        for name in TRACK_ELEMENTS:
-            k = f"Artifacts/Detail/Track{name}"
-            tracks += (f"  - elementText: {ref(ctx.c(f'{k}/Element', 'tmp'))}\n    labelText: {ref(ctx.c(f'{k}/Label', 'tmp'))}\n"
-                       f"    levelText: {ref(ctx.c(f'{k}/Level', 'tmp'))}\n    valueText: {ref(ctx.c(f'{k}/Value', 'tmp'))}\n"
-                       f"    twistText: {ref(ctx.c(f'{k}/Twist/Words', 'tmp'))}\n    twistGroup: {ref(ctx.c(f'{k}/Twist', 'cg'))}\n"
-                       f"    raiseButton: {ref(ctx.c(f'{k}/Raise', 'button'))}\n    raiseLabel: {ref(ctx.c(f'{k}/Raise/Label', 'tmp'))}\n"
-                       f"    omniButton: {ref(ctx.c(f'{k}/Omni', 'button'))}\n    omniLabel: {ref(ctx.c(f'{k}/Omni/Label', 'tmp'))}\n")
+        kinds = "".join(f"  - kindId: artifact.{kind}\n    glyph: {K.sprite_ref(GLYPHS.glyph_guid(kind))}\n"
+                        f"    payload: {payload}\n    countTrack: {ELEMENT_VALUE[COUNT_TRACK]}\n    countOffset: {offset}\n"
+                        for kind, payload, offset in ART_KINDS)
+        sprites = "".join(f"  - {K.sprite_ref(g)}\n" for g in CRYSTAL_BY_VALUE)
         return mono(go, S["artifacts"],
-                    f"  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n"
-                    "  rows:\n" + refs_of(ctx, [f"Artifacts/List/Row{i}" for i in range(ART_ROWS)], "row")
-                    + f"  emptyGroup: {ref(ctx.c('Artifacts/Empty', 'cg'))}\n"
-                    f"  detailGroup: {ref(ctx.c('Artifacts/Detail', 'cg'))}\n"
-                    f"  nameText: {ref(ctx.c('Artifacts/Detail/Name', 'tmp'))}\n"
-                    f"  descriptionText: {ref(ctx.c('Artifacts/Detail/Description', 'tmp'))}\n"
-                    "  tracks:\n" + tracks
-                    + f"  statusText: {ref(ctx.c('Artifacts/Detail/Status', 'tmp'))}\n"
-                    f"  giveButton: {ref(ctx.c('Artifacts/Detail/Give', 'button'))}\n"
-                    "  crystalTexts:\n" + refs_of(ctx, [f"Artifacts/Detail/Crystal{i}" for i in range(5)], "tmp")
+                    f"  catalog: {K.ref(11400000, PILOT_CATALOG, 2)}\n  kinds:\n" + kinds
+                    + "  medallions:\n" + refs_of(ctx, [f"Artifacts/Rail/Medallion{i}" for i in range(MEDALLIONS)], "medal")
+                    + f"  hintGroup: {ref(ctx.c('Artifacts/Hint', 'cg'))}\n"
+                    f"  emptyGroup: {ref(ctx.c('Artifacts/Empty', 'cg'))}\n"
+                    f"  trailText: {ref(ctx.c('Artifacts/Trail', 'tmp'))}\n"
+                    f"  lens: {ref(ctx.c('Artifacts/Lens', 'lens'))}\n"
+                    f"  detailGroup: {ref(ctx.c(D, 'cg'))}\n  kickerText: {ref(ctx.c(f'{D}/Kicker', 'tmp'))}\n"
+                    f"  nameText: {ref(ctx.c(f'{D}/Name', 'tmp'))}\n"
+                    f"  descriptionText: {ref(ctx.c(f'{D}/Description', 'tmp'))}\n"
+                    f"  attunedFlower: {ref(ctx.c(f'{D}/Flower', 'flower'))}\n"
+                    f"  attunedText: {ref(ctx.c(f'{D}/Attuned', 'tmp'))}\n  heldText: {ref(ctx.c(f'{D}/Held', 'tmp'))}\n"
+                    f"  actionsGroup: {ref(ctx.c(f'{D}/Actions', 'cg'))}\n"
+                    f"  feedItButton: {ref(ctx.c(f'{D}/Actions/FeedIt', 'button'))}\n"
+                    f"  giveButton: {ref(ctx.c(f'{D}/Actions/Give', 'button'))}\n"
+                    f"  giveLabel: {ref(ctx.c(f'{D}/Actions/Give/Label', 'tmp'))}\n"
+                    f"  backGroup: {ref(ctx.c('Artifacts/Back', 'cg'))}\n"
+                    f"  backButton: {ref(ctx.c('Artifacts/Back/Button', 'button'))}\n"
+                    f"  feedGroup: {ref(ctx.c(F, 'cg'))}\n  levelText: {ref(ctx.c(f'{F}/Level', 'tmp'))}\n"
+                    f"  levelFill: {ref(ctx.c(f'{F}/Band/Now', 'img'))}\n  nextFill: {ref(ctx.c(f'{F}/Band/Next', 'img'))}\n"
+                    f"  ceilingMark: {ref(ctx.rt(f'{F}/Band/Ceiling'))}\n"
+                    f"  twistText: {ref(ctx.c(f'{F}/Twist/Words', 'tmp'))}\n  twistGroup: {ref(ctx.c(f'{F}/Twist', 'cg'))}\n"
+                    f"  valueText: {ref(ctx.c(f'{F}/Value', 'tmp'))}\n"
+                    "  crystalIcons:\n" + refs_of(ctx, [f"{F}/Crystal{i}" for i in range(CRYSTAL_ICONS)], "img")
+                    + "  crystalSprites:\n" + sprites
+                    + f"  balanceText: {ref(ctx.c(f'{F}/Balance', 'tmp'))}\n"
+                    f"  feedButton: {ref(ctx.c(f'{F}/FeedButton', 'button'))}\n"
+                    f"  feedLabel: {ref(ctx.c(f'{F}/FeedButton/Label', 'tmp'))}\n"
+                    f"  omniButton: {ref(ctx.c(f'{F}/Omni', 'button'))}\n"
+                    f"  omniLabel: {ref(ctx.c(f'{F}/Omni/Label', 'tmp'))}\n"
+                    f"  statusText: {ref(ctx.c(f'{D}/Status', 'tmp'))}\n  feedBatch: 5\n"
                     + ARTIFACT_WORDS)
     page.add("logic", 114, body)
     return page
@@ -1084,9 +1483,19 @@ SQUADS_FIELDS = dict(countText=S["kt"], newButton=S["button"], joinButton=S["but
                      viewBarGroup=225, removeButton=S["button"], removeLabel=TMP, editButton=S["button"],
                      missionButton=S["button"], missionLock=IMG, arenaButton=S["button"],
                      joinGroup=225, joinStatusText=S["kt"], joinCloseButton=S["button"])
-ART_FIELDS = dict(emptyGroup=225, detailGroup=225, nameText=TMP, descriptionText=TMP, statusText=TMP, giveButton=S["button"])
-TRACK_FIELDS = dict(elementText=TMP, labelText=TMP, levelText=TMP, valueText=TMP, twistText=TMP, twistGroup=225,
-                    raiseButton=S["button"], raiseLabel=TMP, omniButton=S["button"], omniLabel=TMP)
+FLOWER = H.FLOWER_SCRIPT
+ART_FIELDS = dict(hintGroup=225, emptyGroup=225, trailText=TMP, lens=S["lens"], detailGroup=225, kickerText=TMP,
+                  nameText=TMP, descriptionText=TMP, attunedFlower=FLOWER, attunedText=TMP, heldText=TMP, actionsGroup=225,
+                  feedItButton=S["button"], giveButton=S["button"], giveLabel=TMP, backGroup=225, backButton=S["button"],
+                  feedGroup=225, levelText=TMP, levelFill=IMG, nextFill=IMG, ceilingMark=224, twistText=TMP,
+                  twistGroup=225, valueText=TMP, balanceText=TMP, feedButton=S["button"], feedLabel=TMP,
+                  omniButton=S["button"], omniLabel=TMP, statusText=TMP)
+MEDAL_FIELDS = dict(button=S["button"], heldGroup=225, emptyGroup=225, glyph=IMG, nameText=TMP, restRing=IMG, pickedRing=IMG,
+                    nameGroup=225)
+LENS_FIELDS = dict(group=225, body=224, field=224, prismTemplate=IMG, headTemplate=IMG, burstTemplate=IMG)
+ARC_FIELDS = dict(attunedFill=IMG, fixedFill=IMG, flower=FLOWER, valueText=TMP, labelText=TMP, wordsGroup=225)
+# The first cut's fields (a list of rows, the four tracks with RAISE each, the five crystal counts): gone with Rev 105 B.
+RETIRED_ART_FIELDS = ("rows", "tracks", "crystalTexts", "raiseTemplate", "topWord")
 ROW_VIEW_FIELDS = dict(button=S["button"], group=225, titleText=TMP, lineText=TMP, activeMark=IMG, domainText=TMP)
 CHIP_FIELDS = dict(button=S["button"], group=225, label=TMP, selectedMark=IMG)
 NANOBOT_FIELDS = dict(hull=IMG, companion=IMG, botTemplate=IMG)
@@ -1135,7 +1544,12 @@ def veil_of(view, rt):
 
 
 PILOT_CELL_FIELDS = dict(CHIP_FIELDS, line=TMP, image=IMG)      # a crew cell needs its callsign line and its close-up
-PILOTS_FIELDS = dict(emptyGroup=225, countText=TMP)
+PILOTS_FIELDS = dict(emptyGroup=225, countText=TMP, restGroup=225, pickUpButton=S["button"], glass=S["glass"],
+                     lastCallsignText=TMP, lastNameText=TMP, heldGroup=225, crewGroup=225, putDownButton=S["button"],
+                     fileGroup=225, filePicture=IMG, fileKickerText=TMP, fileNameText=TMP, fileSpeciesText=TMP,
+                     fileFactionText=TMP, fileSightCaptionText=TMP, fileSightText=TMP, fileStoryCaptionText=TMP,
+                     fileStoryText=TMP, fileCountText=TMP, backButton=S["button"], previousButton=S["button"],
+                     nextButton=S["button"], profileButton=S["button"])
 
 
 def rect_xy(view, fid, field):
@@ -1154,6 +1568,9 @@ def validate_pilots(view, V):
     assert len(cells) == CALLSIGNS and all(i != "0" and A.kind_of(view, i)[1] == S["chip"] for i in cells), \
         f"ArkPilotsPage.cells is not {CALLSIGNS} wired SquadPickChips (one a callsign)"
     assert len(set(cells)) == len(cells), "ArkPilotsPage.cells names a cell twice"
+    sights = listed(page, "sightLines")
+    assert sights == [str(V(f"Pilots/Cell{i}/Sight#tmp")) for i in range(CALLSIGNS)], \
+        "ArkPilotsPage.sightLines is not each crew cell's own Sight line, in cell order"
     for i in cells:
         for field, want in PILOT_CELL_FIELDS.items():
             C.wired(view, A.doc_of(view, i)[1], field, want, "a crew cell")
@@ -1171,19 +1588,46 @@ def validate_pilots(view, V):
     for i in range(CALLSIGNS):
         rt = V(f"Pilots/Cell{i}#rt")
         assert rect_xy(view, rt, "m_AnchorMin") == (0, 1) and rect_xy(view, rt, "m_Pivot") == (0, 1), \
-            f"crew cell {i} is not laid out from the page's top left"
+            f"crew cell {i} is not laid out from the glass's top left"
         (x, y), (w, h) = rect_xy(view, rt, "m_AnchoredPosition"), rect_xy(view, rt, "m_SizeDelta")
-        assert x >= A.ORB_CLEARANCE, f"crew cell {i} starts {x:g} from the left edge, under the friends orb"
-        assert x + w <= 1920 - PILOT_LIST_X and -y + h <= PILOT_LIST_Y + PILOT_LIST_H, f"crew cell {i} runs outside the page's margins"
-        assert -y >= PILOT_LIST_Y + 18, f"crew cell {i} runs over the caption"
+        assert x >= 0 and x + w <= GLASS_W and -y >= SCREEN_HEAD and -y + h <= FOOT_Y, \
+            f"crew cell {i} runs off the PDA's glass (over its header or its foot)"
         assert (x, -y) == pilot_cell_rect(i) and (w, h) == (PILOT_W, PILOT_H), f"crew cell {i} is off the grid"
         name_w = rect_xy(view, V(f"Pilots/Cell{i}/Label#rt"), "m_SizeDelta")[0]
-        assert K.label_width(WIDEST_NAME, "Body") <= name_w <= PILOT_W, \
+        assert K.label_width(WIDEST_NAME, PILOT_NAME_ROLE) * K.FIT_MIN_SCALE <= name_w <= PILOT_W, \
             f"crew cell {i}'s name row ({name_w:g}) does not hold the widest name a pilot can have"
-    assert PILOT_FACE_Y + PILOT_FACE <= PILOT_NAME_Y and PILOT_NAME_Y + PILOT_NAME_H <= PILOT_LINE_Y \
-        and PILOT_LINE_Y + PILOT_LINE_H + PILOT_FACE_Y <= PILOT_H, "a crew cell's close-up, name and callsign overlap"
-    assert K.line_height("Body") <= PILOT_NAME_H and K.line_height("Label") <= PILOT_LINE_H + 0.5, \
+    assert PILOT_FADE_Y <= PILOT_LINE_Y and PILOT_LINE_Y + PILOT_LINE_H <= PILOT_NAME_Y \
+        and PILOT_NAME_Y + PILOT_NAME_H <= PILOT_SIGHT_Y and PILOT_SIGHT_Y + PILOT_SIGHT_H + PILOT_PAD // 2 <= PILOT_H, \
+        "a crew cell's callsign, name and sight overlap, leave the fade or run off the card"
+    for w in callsign_words():
+        assert K.label_width(w, PILOT_LINE_ROLE) <= PILOT_W - 2 * PILOT_PAD, f"the callsign {w} does not fit its card"
+    assert K.line_height(PILOT_SIGHT_ROLE) * PILOT_SIGHT_LINES <= PILOT_SIGHT_H, "a crew cell's sight rows are too short"
+    # Every callsign's sight, as the cell words it, wraps into the rows it has.
+    words_w = PILOT_W - 2 * PILOT_PAD
+    for brief in callsign_briefs():
+        said = dict(PILOT_LINES)["sightTemplate"].replace("{brief}", brief)
+        lines, cur = 1, ""
+        for word in said.split():
+            nxt = f"{cur} {word}".strip()
+            if cur and K.label_width(nxt, PILOT_SIGHT_ROLE) > words_w:
+                lines, cur = lines + 1, word
+            else:
+                cur = nxt
+        assert lines <= PILOT_SIGHT_LINES, f"a crew cell's sight needs more than {PILOT_SIGHT_LINES} lines: {said}"
+    assert K.line_height(PILOT_NAME_ROLE) <= PILOT_NAME_H and K.line_height(PILOT_LINE_ROLE) <= PILOT_LINE_H + 0.5, \
         "a crew cell's rows are shorter than their text"
+    # The held glass is anchored to the held render's glass, so the words stay on it however the picture stretches.
+    srt = V("Pilots/Held/Screen#rt")
+    assert (rect_xy(view, srt, "m_AnchorMin"), rect_xy(view, srt, "m_AnchorMax")) == \
+        (frac(GLASS_X, GLASS_Y + GLASS_H), frac(GLASS_X + GLASS_W, GLASS_Y)) and \
+        rect_xy(view, srt, "m_SizeDelta") == (0, 0), "the PDA's screen is not anchored to the held render's glass"
+    # Lying down, the picture is drawn through the rest render's glass corners.
+    _, g = A.doc_of(view, V("Pilots/Rest/Glass#glass"))
+    corners = [tuple(float(v) for v in m) for m in re.findall(r"^  - \{x: ([\d.]+), y: ([\d.]+)\}", g, re.M)]
+    assert corners == [(round(x / 1920, 5), round(y / 1080, 5)) for x, y in PDA_REST_CORNERS], \
+        "the PDA's glass on the bench is not drawn through the rest render's corners"
+    last_x = LAST_X
+    assert last_x >= PDA_REST_CORNERS[2][0] + 40, "the last pilot read and PICK UP stand over the PDA lying on the bench"
 
 
 def validate_tabs(view, V):
@@ -1223,21 +1667,7 @@ def validate_tabs(view, V):
         else:
             assert gate == "0", f"the {t} tab is gated"
     validate_pilots(view, V)
-    _, art = A.doc_of(view, V("Artifacts#logic"))
-    for field, want in ART_FIELDS.items():
-        C.wired(view, art, field, want, "ArkArtifactsPage")
-    rows_ = listed(art, "rows")
-    assert len(rows_) == ART_ROWS and all(A.kind_of(view, i)[1] == S["squad_row"] for i in rows_), \
-        f"ArkArtifactsPage.rows is not {ART_ROWS} SquadRowViews"
-    assert len(listed(art, "crystalTexts")) == 5, "ArkArtifactsPage.crystalTexts is not the five crystals"
-    for field, want in TRACK_FIELDS.items():
-        found = re.findall(r"^  [- ] " + field + r": \{fileID: (-?\d+)\}", art, re.M)
-        assert len(found) == len(TRACK_ELEMENTS), f"ArkArtifactsPage has {len(found)} track {field}s, not {len(TRACK_ELEMENTS)}"
-        for fid in found:
-            assert fid != "0", f"an ArkArtifactsPage track's {field} is not wired"
-            cls, scr = A.kind_of(view, fid)
-            assert (cls == want if isinstance(want, int) else scr == want), f"an ArkArtifactsPage track's {field} is the wrong kind"
-    assert f"guid: {PILOT_CATALOG}" in art, "ArkArtifactsPage reads no pilot catalog"
+    validate_artifacts(view, V)
     _, page = A.doc_of(view, V("Squads#logic"))
     for field, want in SQUADS_FIELDS.items():
         C.wired(view, page, field, want, "SquadsPage")
@@ -1259,6 +1689,97 @@ def validate_tabs(view, V):
                        (COLOR_SET, "the domain colours")):
         assert f"guid: {guid}" in page, f"SquadsPage reads no {what}"
 
+
+def fill_of(view, fid):
+    """(type, method, origin) of an Image."""
+    _, body = A.doc_of(view, fid)
+    return tuple(int(re.search(r"^  " + f + r": (\d+)$", body, re.M).group(1)) for f in ("m_Type", "m_FillMethod", "m_FillOrigin"))
+
+
+def validate_artifacts(view, V):
+    """The ARTIFACTS tab as Rev 105 B draws it: the rail's medallions, the lens with its four arcs, the words on the left,
+    the feed, every field wired; every kind's mark and payload; every word authored and naming only tokens the page fills;
+    and no card or panel behind the words (the board's whole point)."""
+    _, art = A.doc_of(view, V("Artifacts#logic"))
+    for field, want in ART_FIELDS.items():
+        C.wired(view, art, field, want, "ArkArtifactsPage")
+    for field in RETIRED_ART_FIELDS:
+        assert not re.search(r"^  " + field + ":", art, re.M), f"ArkArtifactsPage.{field} is back (Rev 105 B retired it)"
+    assert f"guid: {PILOT_CATALOG}" in art, "ArkArtifactsPage reads no pilot catalog"
+    medals = listed(art, "medallions")
+    assert len(medals) == MEDALLIONS and all(i != "0" and A.kind_of(view, i)[1] == S["medal"] for i in medals), \
+        f"ArkArtifactsPage.medallions is not {MEDALLIONS} wired ArtifactMedallions"
+    for i in medals:
+        for field, want in MEDAL_FIELDS.items():
+            C.wired(view, A.doc_of(view, i)[1], field, want, "a medallion")
+    icons = listed(art, "crystalIcons")
+    assert len(icons) == CRYSTAL_ICONS and all(i != "0" and A.kind_of(view, i)[0] == 114 and A.kind_of(view, i)[1] == IMG
+                                               for i in icons), f"ArkArtifactsPage.crystalIcons is not {CRYSTAL_ICONS} Images"
+    m = re.search(r"^  crystalSprites:\n((?:  - .*\n)*)", art, re.M)
+    assert m and m.group(1) == "".join(f"  - {K.sprite_ref(g)}\n" for g in CRYSTAL_BY_VALUE), \
+        "ArkArtifactsPage.crystalSprites is not None, Charge, Mass, Space, Time, Omni"
+    kinds = re.findall(r"^  - kindId: artifact\.(\w+)\n    glyph: \{fileID: 21300000, guid: ([0-9a-f]{32}), type: 3\}\n"
+                       r"    payload: (\d)\n    countTrack: (\d)\n    countOffset: (\d)\n", art, re.M)
+    assert [(k, int(p), int(o)) for k, _, p, _, o in kinds] == list(ART_KINDS), \
+        "ArkArtifactsPage.kinds is not Javelin (Line), Hydra (Fan), Aftershock (Repeat), Aegis (Shell, re-raises + 1)"
+    for kind, guid, _, track, _ in kinds:
+        assert guid == GLYPHS.glyph_guid(kind), f"the {kind} medallion shows another kind's mark"
+        assert os.path.exists(os.path.join(REPO, GLYPHS.OUT, f"artifact_{kind}.png")), \
+            f"the {kind} mark is not on disk (run author_artifact_glyphs.py)"
+        assert int(track) == ELEMENT_VALUE[COUNT_TRACK], f"the {kind} payload is not counted on {COUNT_TRACK}"
+        cat = os.path.join(REPO, f"Assets/_SO_Assets/Pilots/Artifacts/Artifact_{kind.capitalize()}.asset")
+        assert re.search(r"^  id: artifact\." + kind + "$", open(cat, encoding="utf-8").read(), re.M), \
+            f"no artifact kind artifact.{kind} in the catalog"
+    lens_ = re.search(r"^  lens: \{fileID: (-?\d+)\}", art, re.M).group(1)
+    _, ld = A.doc_of(view, lens_)
+    for field, want in LENS_FIELDS.items():
+        C.wired(view, ld, field, want, "ArtifactLens")
+    field_go = re.search(r"^  m_GameObject: \{fileID: (-?\d+)\}", A.doc_of(view, V("Artifacts/Lens/Body/Field#rt"))[1],
+                         re.M).group(1)
+    assert any(A.kind_of(view, c)[1] == A.MASK for c in re.findall(r"^  - component: \{fileID: (-?\d+)\}",
+                                                                    A.doc_of(view, field_go)[1], re.M)), \
+        "the lens's field is not masked to its disc: the prisms would spill past the rim"
+    arcs = re.findall(r"^  - attunedFill: \{fileID: (-?\d+)\}\n    fixedFill: \{fileID: (-?\d+)\}\n"
+                      r"    flower: \{fileID: (-?\d+)\}\n    valueText: \{fileID: (-?\d+)\}\n"
+                      r"    labelText: \{fileID: (-?\d+)\}\n    wordsGroup: \{fileID: (-?\d+)\}\n", ld, re.M)
+    assert len(arcs) == len(TRACK_ELEMENTS), f"the lens has {len(arcs)} arcs, not {len(TRACK_ELEMENTS)}"
+    for name, ids in zip(TRACK_ELEMENTS, arcs):
+        for (field, want), fid in zip(ARC_FIELDS.items(), ids):
+            assert fid != "0", f"the lens's {name} arc's {field} is not wired"
+            cls, scr = A.kind_of(view, fid)
+            assert (cls == want if isinstance(want, int) else scr == want), f"the lens's {name} arc's {field} is the wrong kind"
+        for fid in ids[:2]:
+            assert fill_of(view, fid) == (3, 4, 1), f"the lens's {name} arc is not a radial fill from the right"
+        _, fl = A.doc_of(view, ids[2])
+        assert f"  element: {dict(H.ELEMENTS)[name]}\n" in fl, f"the lens's {name} arc wears another element's flower"
+    for key in ("Artifacts/Detail/Feed/Band/Now", "Artifacts/Detail/Feed/Band/Next"):
+        assert fill_of(view, V(f"{key}#img"))[:2] == (3, 0), f"{key} is not a horizontal fill"
+    # Every word: authored, and naming only the tokens the page fills there.
+    written = dict(re.findall(r"^  (\w+(?:Template|Word)|trail(?:Hoard|Artifact|Feed)): (.*)$", art, re.M))
+    assert set(written) == {f for f, _ in artifact_words()}, "ArkArtifactsPage's words in the prefab are not the authored set"
+    for field, value in written.items():
+        assert value.strip(), f"ArkArtifactsPage.{field} is blank: the line would show nothing"
+        for token in re.findall(r"\{(\w+)\}", value):
+            assert token in ART_TOKENS.get(field, ()), f"ArkArtifactsPage.{field} names {{{token}}}, which the page does not fill there"
+    # No card or panel behind the words (the cards Shombith turned down): nothing on the page wears a panel's sliver.
+    panel = {K.kit_sprite(f"kit_sliver14_{p}") for p in ("fill", "line1", "line2")}
+    for name, cdoc in page_images(view, V("Artifacts#rt")):
+        assert not any(f"guid: {g}" in cdoc for g in panel), f"the Artifacts tab draws a card again ({name})"
+
+
+def page_images(view, rt):
+    """(GameObject name, Image document) for every Image under the RectTransform `rt`, depth first."""
+    _, body = A.doc_of(view, rt)
+    go = re.search(r"^  m_GameObject: \{fileID: (-?\d+)\}", body, re.M).group(1)
+    _, gdoc = A.doc_of(view, go)
+    name = re.search(r"^  m_Name: (.*)$", gdoc, re.M).group(1)
+    for comp in re.findall(r"^  - component: \{fileID: (-?\d+)\}", gdoc, re.M):
+        _, cdoc = A.doc_of(view, comp)
+        if cdoc and f"guid: {IMG}" in cdoc:
+            yield name, cdoc
+    kids = re.search(r"^  m_Children:\n((?:  - .*\n)*)", body, re.M)
+    for kid in re.findall(r"fileID: (-?\d+)", kids.group(1) if kids else ""):
+        yield from page_images(view, kid)
 
 def drift(files):
     return [p for p, t in files.items()
@@ -1352,8 +1873,34 @@ def self_test(files):
             "  missionButton: ", "  playArcadeButton: {fileID: 0}\n  missionButton: ", 1))),
         ("the nanobots with no bot", lambda f: f.__setitem__(view, re.sub(
             r"(  botTemplate: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
-        ("an artifact track's RAISE unwired", lambda f: f.__setitem__(view, re.sub(
-            r"(    raiseButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
+        ("FEED unwired", lambda f: f.__setitem__(view, re.sub(
+            r"(  feedButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "feedButton is not wired"),
+        ("the lens's attuned fill unwired", lambda f: f.__setitem__(view, re.sub(
+            r"(  - attunedFill: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "attunedFill is not wired"),
+        ("a lens arc that is a plain image", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts/Lens/Body/ArcTime/Fixed#img"), lambda d: d.replace("  m_Type: 3\n", "  m_Type: 0\n"))),
+         "not a radial fill"),
+        ("the lens's field unmasked", lambda f: f.__setitem__(view, f[view].replace(f"guid: {A.MASK}", f"guid: {A.KIT_RECT_MASK_2D}")),
+         "not masked"),
+        ("a glass card behind the artifact's words", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts/Rail/Line#img"), lambda d: re.sub(r"(  m_Sprite: \{fileID: 21300000, guid: )[0-9a-f]{32}",
+                                                                    r"\g<1>" + K.kit_sprite("kit_sliver14_fill"), d))),
+         "draws a card again"),
+        ("a medallion with no glyph", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts/Rail/Medallion2#medal"), lambda d: re.sub(r"(  glyph: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d))),
+         "glyph is not wired"),
+        ("the Hydra medallion wearing the Javelin's mark", lambda f: f.__setitem__(view, f[view].replace(
+            GLYPHS.glyph_guid("hydra"), GLYPHS.glyph_guid("javelin"), 1)), "another kind's mark"),
+        ("an artifact line naming a token the page does not fill", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts#logic"), lambda d: d.replace(yfield("omniTemplate", "Feed {count} Omni"),
+                                                                yfield("omniTemplate", "Feed {count} {element}")))),
+         "which the page does not fill there"),
+        ("an artifact line blanked", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts#logic"), lambda d: d.replace(yfield("goneWord", "That artifact is no longer in your hoard."),
+                                                                "  goneWord: \n"))), "is blank"),
+        ("the first cut's track rows back", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Artifacts#logic"), lambda d: d.replace("  medallions:\n", "  rows: []\n  medallions:\n"))),
+         "Rev 105 B retired it"),
         ("the Artifacts tab with no page logic", lambda f: f.__setitem__(view, unlogic_tab(f[view], TABS.index("Artifacts")))),
         ("the Ark's arkTabs unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  arkTabs: {{fileID: {mount.stub_fid('root#tabs')}}}", "  arkTabs: {fileID: 0}"))),
@@ -1362,17 +1909,35 @@ def self_test(files):
             f[view], V("Pilots#logic"), lambda d: d.replace(f"guid: {SCENE_CATALOG}", f"guid: {PILOT_CATALOG}")))),
         ("a callsign with no crew cell", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(f"  - {{fileID: {V('Pilots/Cell17#chip')}}}\n", "")))),
+        ("a crew cell with no sight line", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(f"  - {{fileID: {V('Pilots/Cell5/Sight#tmp')}}}\n", "")))),
         ("a crew cell with no close-up", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots/Cell3#chip"), lambda d: re.sub(r"(  image: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d)))),
-        ("a crew cell under the friends orb", lambda f: f.__setitem__(view, in_doc(
-            f[view], V("Pilots/Cell12#rt"), lambda d: d.replace(
-                f"  m_AnchoredPosition: {{x: {PILOT_X}, y: ", f"  m_AnchoredPosition: {{x: {PILOT_LIST_X}, y: ")))),
+        ("a crew cell off the PDA's glass", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots/Cell17#rt"), lambda d: re.sub(
+                r"  m_AnchoredPosition: \{x: [\d.]+, y: ", f"  m_AnchoredPosition: {{x: {GLASS_W - 40}, y: ", d))),
+         "runs off the PDA's glass"),
         ("a crew cell too narrow for the widest name", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots/Cell7/Label#rt"), lambda d: d.replace(
-                f"  m_SizeDelta: {{x: {PILOT_W - 2 * PILOT_NAME_PAD}, y: ", "  m_SizeDelta: {x: 228, y: ")))),
+                f"  m_SizeDelta: {{x: {PILOT_W - 2 * PILOT_NAME_PAD}, y: ", "  m_SizeDelta: {x: 100, y: "))),
+         "does not hold the widest name"),
+        ("the veil back over the Pilots bench", lambda f: f.__setitem__(view, view_text(VEILED | {"Pilots"})),
+         "hides its room"),
+        ("the PDA's screen off its glass", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots/Held/Screen#rt"), lambda d: re.sub(r"  m_AnchorMin: \{x: [\d.]+", "  m_AnchorMin: {x: 0", d))),
+         "not anchored to the held render's glass"),
+        ("the glass drawn off the bench's corners", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots/Rest/Glass#glass"), lambda d: d.replace(f"{{x: {round(PDA_REST_CORNERS[0][0] / 1920, 5)},", "{x: 0.1,"))),
+         "not drawn through the rest render's corners"),
+        ("PICK UP unwired", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: re.sub(r"(  pickUpButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d)))),
+        ("a file template naming a token the page does not fill", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(yfield("fileStoryTemplate", "{backstory}"),
+                                                             yfield("fileStoryTemplate", "{relic}")))),
+         "which the page does not fill there"),
         ("a crew line naming a token the page does not fill", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(yfield("lineTemplate", "{callsign}"),
-                                                             yfield("lineTemplate", "{sight}")))),
+                                                             yfield("lineTemplate", "{homeworld}")))),
          "which the page does not fill there"),
         ("a crew line naming the count's token", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(yfield("nameTemplate", "{name}"),

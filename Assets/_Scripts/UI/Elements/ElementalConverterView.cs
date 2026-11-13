@@ -134,7 +134,8 @@ namespace CosmicShore.UI
         [Header("Ark backdrops")]
         [Tooltip("The Ark screen's backdrops: the Frogma renders played as video behind each tab (Docs/MENU_REDESIGN_B.md " +
                  "section 190) - the hangar with the squad behind SQUADS, the pier with Garrett's combine behind CONVERTER, the " +
-                 "artifacts room behind ARTIFACTS; a tab with none (DECOR) shows none. Empty uses the shipped " +
+                 "artifacts room behind ARTIFACTS, the hangar's workbench and its crew PDA behind PILOTS (section 191); " +
+                 "a tab with none (DECOR) shows none. Empty uses the shipped " +
                  "Resources/ArkBackdropConfig; with neither, the converter plays the combine live on its own stage as before.")]
         [SerializeField] ArkBackdropConfigSO backdrops;
 
@@ -167,8 +168,12 @@ namespace CosmicShore.UI
         ArkBackdrop _backdrop;
         ArkRoom _room = ArkRoom.Pier;
         ArkBackdropRun _pierRun = ArkBackdropRun.Loop;
+        ArkBackdropRun _benchRun = ArkBackdropRun.Loop;
         SquadsPage _squads;
+        ArkPilotsPage _pilots;
         ArkArtifactsPage _artifactsPage;
+        int _lastTab = -1;
+        bool _fadingOut;   // the picture is passing into a tab with no room; hidden once it is dark
 
         void Awake()
         {
@@ -177,7 +182,10 @@ namespace CosmicShore.UI
             _backdropConfig = backdrops ? backdrops : ArkBackdropConfigSO.LoadDefault();
             // The hangar's clip is the squad's domain.
             _squads = GetComponentInChildren<SquadsPage>(true);
-            if (_squads) _squads.HangarChanged += ShowBackdrop;
+            if (_squads) _squads.HangarChanged += ShowHangarBackdrop;
+            // The bench's clip follows the crew PDA: lying, picked up, held, laid down (Rev 99 C).
+            _pilots = GetComponentInChildren<ArkPilotsPage>(true);
+            if (_pilots) _pilots.HeldChanged += HandlePdaHeld;
             // GIVE TO A SEAT on the Artifacts tab carries on in the Squads tab: the next seat picked takes the artifact.
             _artifactsPage = GetComponentInChildren<ArkArtifactsPage>(true);
             if (_artifactsPage) _artifactsPage.GiveRequested += GiveToSeat;
@@ -186,6 +194,7 @@ namespace CosmicShore.UI
                 arkTabs.Changed += HandleTabChanged;
                 _pageShown = arkTabs.Current < 0 || PictureFor(arkTabs.Current);
                 _room = arkTabs.Current < 0 ? ArkRoom.Pier : RoomFor(arkTabs.Current);
+                _lastTab = arkTabs.Current;
             }
             BuildUi();
         }
@@ -199,7 +208,8 @@ namespace CosmicShore.UI
             // Arriving shows the four idling, waiting to be converted; a finished combine plays again.
             _player.Begin(convert: false);
             _pierRun = ArkBackdropRun.Loop;
-            ShowBackdrop();
+            SettleBench();
+            ShowBackdrop(ArkPassKind.Cut);   // arriving: the screen switcher has its own transition
             _frame = 0f;   // snap to the first framing rather than easing in from the last visit's
             // No Select() here: the switcher's Refocus lands on CONVERT, the screen's first live control,
             // and a second owner of first focus is how the pad lost track of it on other screens.
@@ -235,18 +245,63 @@ namespace CosmicShore.UI
         }
 
         /// <summary>The tab's backdrop clip, in the worn colour set (and, for the hangar, the squad's domain), shown in the
-        /// picture. A no-op when there is no backdrop config or the Ark is not the screen.</summary>
-        void ShowBackdrop()
+        /// picture: by <paramref name="kind"/> from what is showing, in direction <paramref name="dir"/> along the tab row
+        /// (the HyperSea pass, Docs/MENU_REDESIGN_B.md section 197). A no-op when there is no backdrop config or the Ark is
+        /// not the screen.</summary>
+        void ShowBackdrop(ArkPassKind kind, int dir = 1, Vector2? origin = null)
         {
             if (!UsesBackdrops || !_active || !_pageShown || _room == ArkRoom.None) return;
-            if (!_backdrop) _backdrop = ArkBackdrop.Create(transform);
-            var run = _room == ArkRoom.Pier ? _pierRun : ArkBackdropRun.Loop;
+            EnsureBackdrop();
+            var run = _room switch
+            {
+                ArkRoom.Pier => _pierRun,
+                ArkRoom.Bench => _benchRun,
+                _ => ArkBackdropRun.Loop,
+            };
             var set = ColorTrace.Worn ? ColorTrace.Worn.name : string.Empty;
             var domain = _squads && _squads.HasHangar ? _squads.HangarDomain : Domains.Jade;
             var clip = _backdropConfig.Find(_room, run, set, domain);
             if (!clip) return;
-            _backdrop.Show(clip, run != ArkBackdropRun.Convert, _backdropConfig.TextureSize);
+            _backdrop.Show(clip, !PlaysOnce(run), _backdropConfig.TextureSize, kind, dir, origin);
             if (_surface) _surface.texture = _backdrop.Texture;
+        }
+
+        static bool PlaysOnce(ArkBackdropRun run) =>
+            run is ArkBackdropRun.Convert or ArkBackdropRun.PickUp or ArkBackdropRun.PutDown;
+
+        // The crew PDA was picked up or laid down: its move plays once (the clip is the move, so a cut), then the bench
+        // holds where it ended.
+        void HandlePdaHeld(bool held)
+        {
+            _benchRun = held ? ArkBackdropRun.PickUp : ArkBackdropRun.PutDown;
+            ShowBackdrop(ArkPassKind.Cut);
+        }
+
+        // Arriving at the bench (or the screen) shows the PDA where the page has it, without its move.
+        void SettleBench() => _benchRun = _pilots && _pilots.Held ? ArkBackdropRun.Held : ArkBackdropRun.Loop;
+
+        // The squad's domain changed: the same hangar in another colour, so a dissolve, not a pass.
+        void ShowHangarBackdrop() => ShowBackdrop(ArkPassKind.Dissolve);
+
+        /// <summary>Where tab <paramref name="tab"/>'s word sits on the picture, 0-1 across it (the ripple starts there); null
+        /// without the picture or the word.</summary>
+        Vector2? TabOrigin(int tab)
+        {
+            var word = arkTabs ? arkTabs.ButtonRect(tab) : null;
+            if (!word || !_surface) return null;
+            var picture = _surface.rectTransform;
+            Vector2 local = picture.InverseTransformPoint(word.TransformPoint(word.rect.center));
+            var r = picture.rect;
+            if (r.width <= 0f || r.height <= 0f) return null;
+            return new Vector2((local.x - r.xMin) / r.width, (local.y - r.yMin) / r.height);
+        }
+
+        void EnsureBackdrop()
+        {
+            if (_backdrop) return;
+            _backdrop = ArkBackdrop.Create(transform, _backdropConfig.PassShader, _backdropConfig.PassSeconds,
+                                           _backdropConfig.DissolveSeconds, _backdropConfig.PassStyles);
+            if (_surface && _backdrop.Material) _surface.material = _backdrop.Material;
         }
 
         /// <summary>Which part of the Ark tab <paramref name="tab"/> looks at: chosen by what the tab HOLDS (its page), never
@@ -258,6 +313,7 @@ namespace CosmicShore.UI
             {
                 SquadsPage => ArkRoom.Hangar,
                 ArkArtifactsPage => ArkRoom.Artifacts,
+                ArkPilotsPage => ArkRoom.Bench,
                 _ => ArkRoom.None,
             };
         }
@@ -268,27 +324,40 @@ namespace CosmicShore.UI
 
         // Another tab is up: its room shows (the hangar, the pier, the artifacts room), or, for a tab with none, the picture
         // goes and its target is let go as on exit.
+        // The picture passes through the Ark's membrane toward the tab pressed: a tab to the right comes in from the right.
         void HandleTabChanged(int tab)
         {
+            int dir = _lastTab < 0 || tab >= _lastTab ? 1 : -1;
+            _lastTab = tab;
+            var origin = TabOrigin(tab);
             _room = UsesBackdrops ? RoomFor(tab) : ArkRoom.Pier;
+            SettleBench();
             bool shown = PictureFor(tab);
             if (shown == _pageShown)
             {
-                ShowBackdrop();
+                ShowBackdrop(ArkPassKind.Pass, dir, origin);
                 return;
             }
             _pageShown = shown;
-            if (_surface) _surface.enabled = shown;
             if (!shown)
             {
+                // Into the dark of a tab with no room (Pilots, Decor), then the picture hides (LateUpdate).
+                if (_backdrop && _backdrop.Material && _active && _surface && _surface.enabled)
+                {
+                    _backdrop.ShowDark(ArkPassKind.Pass, dir, origin);
+                    _fadingOut = true;
+                }
+                else if (_surface) _surface.enabled = false;
                 ReleaseTarget();
                 return;
             }
+            _fadingOut = false;
+            if (_surface) _surface.enabled = true;
             if (_active && EnsureStage())
             {
                 _frame = 0f;
                 _phase = Phase.None;
-                ShowBackdrop();
+                ShowBackdrop(ArkPassKind.Pass, dir, origin);
                 DrawOverlay();
             }
         }
@@ -302,7 +371,8 @@ namespace CosmicShore.UI
         void OnDestroy()
         {
             if (arkTabs) arkTabs.Changed -= HandleTabChanged;
-            if (_squads) _squads.HangarChanged -= ShowBackdrop;
+            if (_squads) _squads.HangarChanged -= ShowHangarBackdrop;
+            if (_pilots) _pilots.HeldChanged -= HandlePdaHeld;
             if (_artifactsPage) _artifactsPage.GiveRequested -= GiveToSeat;
             ReleaseStage();
         }
@@ -317,7 +387,7 @@ namespace CosmicShore.UI
             if (convertButton && !TryPay()) return;
             _player.Convert();
             _pierRun = ArkBackdropRun.Convert;   // the conversion's clip plays once, then the Omni made loops
-            ShowBackdrop();
+            ShowBackdrop(ArkPassKind.Dissolve);
             DrawOverlay();
         }
 
@@ -343,6 +413,15 @@ namespace CosmicShore.UI
 
         void LateUpdate()
         {
+            if (_fadingOut && _backdrop && _surface)
+            {
+                _surface.texture = _backdrop.Texture;
+                if (_backdrop.RestingDark || !_active)
+                {
+                    _fadingOut = false;
+                    _surface.enabled = false;
+                }
+            }
             if (!_active || !_pageShown || !_player) return;
             float dt = Time.unscaledDeltaTime;
             if (UsesBackdrops)
@@ -353,7 +432,12 @@ namespace CosmicShore.UI
                 if (_pierRun == ArkBackdropRun.Convert && _backdrop && _backdrop.Finished)
                 {
                     _pierRun = ArkBackdropRun.Done;
-                    ShowBackdrop();
+                    ShowBackdrop(ArkPassKind.Dissolve);
+                }
+                if (_room == ArkRoom.Bench && PlaysOnce(_benchRun) && _backdrop && _backdrop.Finished)
+                {
+                    _benchRun = _benchRun == ArkBackdropRun.PickUp ? ArkBackdropRun.Held : ArkBackdropRun.Loop;
+                    ShowBackdrop(ArkPassKind.Cut);   // the move ended on this very frame
                 }
                 if (_surface && _backdrop && _surface.texture != _backdrop.Texture) _surface.texture = _backdrop.Texture;
                 DrawOverlay();
