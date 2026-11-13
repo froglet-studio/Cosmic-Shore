@@ -305,6 +305,32 @@ on a missing clip and a drifted entry). No Unity editor ran.
 6. Leave the Ark and come back: the clips start again; no error about a missing clip in the console.
 7. Profiler on a phone build: the video decode cost on the Ark screen.
 
+### 🔴 The Ark's Pilots tab as the crew PDA on the hangar's workbench, Rev 99 C (`claude/project-thread-5ayjx3`, 2026-11-13, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed** (Docs/MENU_REDESIGN_B.md section 192): PILOTS is no longer veiled. Its backdrop is the hangar's
+workbench with the crew PDA lying on it (`ArkRoom.Bench`, four clips: lying, picked up, held, laid down). Lying down, the
+PDA's glass shows the last pilot read (`PdaGlassImage`, drawn through the render's corners) with PICK UP beside it;
+picked up, the crew (one cell a callsign) and a pilot's file are laid on the glass, and FULL PROFILE opens Garrett's
+profile page. Ran headless: `unity_refcompile` (0 errors in the changed files; the 30 it reports are package gaps
+outside them), `author_menu_ark.py --check` and `--self-test` (every negative control fires),
+`author_ark_backdrop_assets.py --check`, the `/ship` gates. No Unity editor ran.
+
+**Verify in editor:**
+1. Menu_Main, Play, Ark, PILOTS. **Pass:** the bench clip with the PDA lying on it, no veil; the PDA's glass shows a
+   pilot's close-up lying flat in its frame (not floating, not bent along a diagonal); "Last read", the callsign, the
+   name and PICK UP stand right of the PDA, clear of it.
+2. PICK UP. **Pass:** the view closes in as the held PDA rises (half a second), then the crew fades in ON the glass,
+   inside its frame; the header (Your crew, Pilots: N) sits on the glass's top edge.
+3. Resize the Game view (16:9, 19.5:9, 4:3). **Pass:** the crew stays on the glass (it is anchored to the picture).
+4. Press a pilot. **Pass:** their file: close-up, sight, callsign, name, animals, faction - home, story; PREV / NEXT step
+   the crew with "n / N"; CREW goes back; FULL PROFILE opens the full-screen profile page.
+5. LAY DOWN. **Pass:** the view pulls back to the bench; the glass shows the pilot just read.
+6. Switch to another tab and back. **Pass:** the PDA lies on the bench again, no move played.
+7. Pad: the cells, PREV / NEXT and the buttons take focus. B does not lay the PDA down yet (not built).
+
+**First-pass choices (not settled):** the crew grid 6 x 3 of 164 x 212 cells with a 120 close-up (a long name shrinks to
+fit); the pick-up 0.5 s; the words appear 0.4 s after a press.
+
 ### 🔴 Settings > REGION: choose the Relay region your parties are hosted in (`claude/ecstatic-curie-fjt6ep`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed:** a sixth settings tab, REGION (globe icon), drawn by `Tools/Build/author_menu_settings.py`

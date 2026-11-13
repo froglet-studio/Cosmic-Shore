@@ -140,7 +140,8 @@ namespace CosmicShore.UI
         [Header("Ark backdrops")]
         [Tooltip("The Ark screen's backdrops: the Frogma renders played as video behind each tab (Docs/MENU_REDESIGN_B.md " +
                  "section 190) - the hangar with the squad behind SQUADS, the pier with Garrett's combine behind CONVERTER, the " +
-                 "artifacts room behind ARTIFACTS; a tab with none (DECOR) shows none. Empty uses the shipped " +
+                 "artifacts room behind ARTIFACTS, the hangar's workbench and its crew PDA behind PILOTS (section 191); " +
+                 "a tab with none (DECOR) shows none. Empty uses the shipped " +
                  "Resources/ArkBackdropConfig; with neither, the converter plays the combine live on its own stage as before.")]
         [SerializeField] ArkBackdropConfigSO backdrops;
 
@@ -166,7 +167,9 @@ namespace CosmicShore.UI
         ArkBackdrop _backdrop;
         ArkRoom _room = ArkRoom.Pier;
         ArkBackdropRun _pierRun = ArkBackdropRun.Loop;
+        ArkBackdropRun _benchRun = ArkBackdropRun.Loop;
         SquadsPage _squads;
+        ArkPilotsPage _pilots;
         ArkArtifactsPage _artifactsPage;
 
         void Awake()
@@ -177,6 +180,9 @@ namespace CosmicShore.UI
             // The hangar's clip is the squad's domain.
             _squads = GetComponentInChildren<SquadsPage>(true);
             if (_squads) _squads.HangarChanged += ShowBackdrop;
+            // The bench's clip follows the crew PDA: lying, picked up, held, laid down (Rev 99 C).
+            _pilots = GetComponentInChildren<ArkPilotsPage>(true);
+            if (_pilots) _pilots.HeldChanged += HandlePdaHeld;
             // GIVE TO A SEAT on the Artifacts tab carries on in the Squads tab: the next seat picked takes the artifact.
             _artifactsPage = GetComponentInChildren<ArkArtifactsPage>(true);
             if (_artifactsPage) _artifactsPage.GiveRequested += GiveToSeat;
@@ -198,6 +204,7 @@ namespace CosmicShore.UI
             // Arriving shows the four idling, waiting to be converted; a finished combine plays again.
             _player.Begin(convert: false);
             _pierRun = ArkBackdropRun.Loop;
+            SettleBench();
             ShowBackdrop();
             _frame = 0f;   // snap to the first framing rather than easing in from the last visit's
             // No Select() here: the switcher's Refocus lands on CONVERT, the screen's first live control,
@@ -239,14 +246,32 @@ namespace CosmicShore.UI
         {
             if (!UsesBackdrops || !_active || !_pageShown || _room == ArkRoom.None) return;
             if (!_backdrop) _backdrop = ArkBackdrop.Create(transform);
-            var run = _room == ArkRoom.Pier ? _pierRun : ArkBackdropRun.Loop;
+            var run = _room switch
+            {
+                ArkRoom.Pier => _pierRun,
+                ArkRoom.Bench => _benchRun,
+                _ => ArkBackdropRun.Loop,
+            };
             var set = ColorTrace.Worn ? ColorTrace.Worn.name : string.Empty;
             var domain = _squads && _squads.HasHangar ? _squads.HangarDomain : Domains.Jade;
             var clip = _backdropConfig.Find(_room, run, set, domain);
             if (!clip) return;
-            _backdrop.Show(clip, run != ArkBackdropRun.Convert, _backdropConfig.TextureSize);
+            _backdrop.Show(clip, !PlaysOnce(run), _backdropConfig.TextureSize);
             if (_surface) _surface.texture = _backdrop.Texture;
         }
+
+        static bool PlaysOnce(ArkBackdropRun run) =>
+            run is ArkBackdropRun.Convert or ArkBackdropRun.PickUp or ArkBackdropRun.PutDown;
+
+        // The crew PDA was picked up or laid down: its move plays once, then the bench holds where it ended.
+        void HandlePdaHeld(bool held)
+        {
+            _benchRun = held ? ArkBackdropRun.PickUp : ArkBackdropRun.PutDown;
+            ShowBackdrop();
+        }
+
+        // Arriving at the bench (or the screen) shows the PDA where the page has it, without its move.
+        void SettleBench() => _benchRun = _pilots && _pilots.Held ? ArkBackdropRun.Held : ArkBackdropRun.Loop;
 
         /// <summary>Which part of the Ark tab <paramref name="tab"/> looks at: chosen by what the tab HOLDS (its page), never
         /// by its place in the row.</summary>
@@ -257,6 +282,7 @@ namespace CosmicShore.UI
             {
                 SquadsPage => ArkRoom.Hangar,
                 ArkArtifactsPage => ArkRoom.Artifacts,
+                ArkPilotsPage => ArkRoom.Bench,
                 _ => ArkRoom.None,
             };
         }
@@ -270,6 +296,7 @@ namespace CosmicShore.UI
         void HandleTabChanged(int tab)
         {
             _room = UsesBackdrops ? RoomFor(tab) : ArkRoom.Pier;
+            SettleBench();
             bool shown = PictureFor(tab);
             if (shown == _pageShown)
             {
@@ -302,6 +329,7 @@ namespace CosmicShore.UI
         {
             if (arkTabs) arkTabs.Changed -= HandleTabChanged;
             if (_squads) _squads.HangarChanged -= ShowBackdrop;
+            if (_pilots) _pilots.HeldChanged -= HandlePdaHeld;
             if (_artifactsPage) _artifactsPage.GiveRequested -= GiveToSeat;
             ReleaseStage();
         }
@@ -331,6 +359,11 @@ namespace CosmicShore.UI
                 if (_pierRun == ArkBackdropRun.Convert && _backdrop && _backdrop.Finished)
                 {
                     _pierRun = ArkBackdropRun.Done;
+                    ShowBackdrop();
+                }
+                if (_room == ArkRoom.Bench && PlaysOnce(_benchRun) && _backdrop && _backdrop.Finished)
+                {
+                    _benchRun = _benchRun == ArkBackdropRun.PickUp ? ArkBackdropRun.Held : ArkBackdropRun.Loop;
                     ShowBackdrop();
                 }
                 if (_surface && _backdrop && _surface.texture != _backdrop.Texture) _surface.texture = _backdrop.Texture;

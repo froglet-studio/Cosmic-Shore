@@ -6,6 +6,10 @@
 #   ARK_LOOP=1 ARK_EXP=-0.6 <bpy python> r99_ark_pilots_render.py <out> <assets> pda_a Nocturne 2400 1350 20
 # assets: window.png = Assets/_Graphics/Skyboxes/StaticHyperSeaSky.png (also board_sector.png, board_galaxy.png,
 # map/map_0000.png) and colour_sets.json = r67_colour_sets.json.
+# PDA_HELD=1 (pda_c only; Rev 99 C built, section 192) renders the PDA held up square to the view for the game's
+# Pilots tab: its glass is an upright rectangle the game lays the crew on. Rendered for the game with the rest still's
+# settings: ARK_LOOP=1 ARK_EXP=-0.6 PDA_HELD=1 <bpy python> r99_ark_pilots_render.py <out> <assets> pda_c Nocturne 2400 1350 20
+# The two stills become the tab's clips through r99_pilots_bench_videos.py.
 """The Ark screen inside the real Ark, animated, in every colour set: the Squads, Converter, Artifacts and Decor tabs as
 places in ArkReverse's hangar, in the style and lighting of Rev 61 C (picked as the Ark's final design by Shombith,
 2026-11-06). One script, one scene per run:
@@ -998,12 +1002,12 @@ if SCENE == "art_ab":
 PDA_SCREEN = None
 
 
-def pda(center, yaw_deg, tilt_deg=0.0, w=0.40, d=0.27, t=0.026):
+def pda(center, yaw_deg, tilt_deg=0.0, w=0.40, d=0.27, t=0.026, basis=None):
     """A crew PDA in the Ark's own make: a gunmetal slab with a bevelled rim, the domain's trim round its glass, a grip
     ridge at one end, two hard keys and a status light. Returns the screen's four corners (world), TL TR BR BL as
     seen from the long edge nearest the reader."""
     global PDA_SCREEN
-    R = Matrix.Rotation(math.radians(yaw_deg), 4, "Z") @ Matrix.Rotation(math.radians(tilt_deg), 4, "X")
+    R = basis if basis is not None else Matrix.Rotation(math.radians(yaw_deg), 4, "Z") @ Matrix.Rotation(math.radians(tilt_deg), 4, "X")
     root = bpy.data.objects.new("pda_root", None)
     col.objects.link(root)
     root.matrix_world = Matrix.Translation(center) @ R
@@ -1022,7 +1026,7 @@ def pda(center, yaw_deg, tilt_deg=0.0, w=0.40, d=0.27, t=0.026):
     gb.inputs["Base Color"].default_value = (0.004, 0.006, 0.012, 1)
     gb.inputs["Roughness"].default_value = 0.06
     gb.inputs["Emission Color"].default_value = (0.25, 0.45, 1.0, 1)
-    gb.inputs["Emission Strength"].default_value = 0.35
+    gb.inputs["Emission Strength"].default_value = 0.06 if os.environ.get("PDA_HELD") else 0.35   # held: the game draws the screen
     scr = block(sx0, 0, t + 0.0042, sw, sd, 0.0006, glass, bevel=0, name="pda_screen")
     parts.append(scr)
     grip = block(w / 2 - 0.022, 0, t + 0.004, 0.026, d - 0.03, 0.008, BODY, bevel=0.003, name="pda_grip")
@@ -1163,13 +1167,33 @@ if SCENE == "pda_c":
     block(B.x + 0.85, B.y + 0.2, B.z + 1.17, 0.5, 0.45, 0.34, hull_mat("crate", (0.1, 0.1, 0.11), metal=0.6, panel=0.3), name="crate")
     add("octa", (B.x + 0.8, B.y - 0.32, B.z + 1.12), (0.1, 0.1, 0.14), (SQUAD, "shielded", 0.8))
     P0 = Vector((B.x - 0.25, B.y - 0.05, B.z + 1.005))
-    pda(P0, yaw_deg=-6.0)
+    if not os.environ.get("PDA_HELD"):
+        pda(P0, yaw_deg=-6.0)
     plight("AREA", B + Vector((0.4, 0.6, 3.0)), 160, (0.82, 0.88, 1.0), size=1.6, aim=(B.x, B.y, B.z + 1.0))
     CAM = cam_stand(P0, 0.8, 0.52, 13.0, 20, 4.0, yaw_deg=10.0)
     _cv = Vector(CAM[0])
     for _o in list(col.objects):
         if _o.type == "MESH" and not _o.name.startswith("pda") and max(_o.dimensions) < 0.5 and (_o.matrix_world.to_translation() - _cv).length < 6.0:
             _o.hide_render = True
+
+if SCENE == "pda_c" and os.environ.get("PDA_HELD"):
+    # picked up, for the game (Rev 99 C built): the PDA held up square to the view, so its glass is an upright rectangle
+    # on the screen and the game lays its live screen there without warping it; the hangar runs out behind, soft.
+    _loc = Vector(CAM[0]) + Vector((0, 0, float(os.environ.get("PDA_HELD_UP", "0.12"))))
+    _aim = Vector(CAM[1])
+    _f = (_aim - _loc).normalized()
+    _p = math.radians(float(os.environ.get("PDA_HELD_PITCH", "4")))      # how far the eye looks down the bay
+    _flat = Vector((_f.x, _f.y, 0)).normalized()
+    _f = (_flat * math.cos(_p) - Vector((0, 0, math.sin(_p)))).normalized()
+    _r = _f.cross(Vector((0, 0, 1))).normalized()
+    _u = _r.cross(_f).normalized()
+    _dist = float(os.environ.get("PDA_HELD_DIST", "0.575"))
+    _drop = float(os.environ.get("PDA_HELD_DROP", "0.017"))
+    _bas = Matrix.Identity(4)
+    for _i in range(3):
+        _bas[_i][0], _bas[_i][1], _bas[_i][2] = _r[_i], _u[_i], -_f[_i]
+    pda(_loc + _f * _dist - _u * _drop + _r * 0.022, 0.0, basis=_bas)
+    CAM = (tuple(_loc), tuple(_loc + _f * 4.0), 35, _dist, 4.0)
 
 if SCENE in ("pda_a", "pda_b", "pda_c") and os.environ.get("PDA_LEAN"):
     # picked up: leaning over the PDA, its glass near square to the view, the table round it
@@ -1544,7 +1568,7 @@ if RUNS:
 for set_name in SETS:
     apply_set(set_name)
     for run, n in runs:
-        od = os.path.join(OUT, f"{SCENE}{'_lean' if os.environ.get('PDA_LEAN') else ''}_{set_name}{'' if DOM == 'Jade' else '_' + DOM}_{run}")
+        od = os.path.join(OUT, f"{SCENE}{'_lean' if os.environ.get('PDA_LEAN') else ''}{'_held' if os.environ.get('PDA_HELD') else ''}_{set_name}{'' if DOM == 'Jade' else '_' + DOM}_{run}")
         os.makedirs(od, exist_ok=True)
         for f in range(n):
             if only is not None and f not in only:

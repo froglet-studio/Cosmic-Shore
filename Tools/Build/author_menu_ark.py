@@ -14,8 +14,10 @@ boards, revision 2, on the "Menu Redesign B" canvas).
                          SQUADS (SquadsPage): the player's squads (up to four, made and joined), the selected
                          squad's three squad mates with their vessel, element, pilot and artifact, NEW / JOIN /
                          DELETE, PLAY into Arcade / Arena / Mission, and the join list of friends' open seats;
-                         PILOTS (ArkPilotsPage, section 92.1): the crew, one cell a pilot with the close-up of their
-                         callsign's scene; a press opens that pilot's profile page (author_menu_pilot_profile.py);
+                         PILOTS (ArkPilotsPage, sections 92.1 and 191): the crew PDA on the hangar's workbench (Rev
+                         99 C): lying down, the last pilot read and PICK UP; picked up, the crew on its glass, one
+                         cell a pilot with the close-up of their callsign's scene, and a pilot's file, whose FULL
+                         PROFILE opens their profile page (author_menu_pilot_profile.py);
                          ARTIFACTS (ArkArtifactsPage): the player's artifacts, the picked one's four element tracks
                          with RAISE (its own crystals) and OMNI, and the profile's five crystal balances;
                          DECOR: the banner and hull skins, LOCKED (MenuAvailabilityView) - not open yet
@@ -61,7 +63,7 @@ S = dict(view=C.script("ElementalConverterView"), row=C.script("ConverterRecipeR
          squads=C.script("SquadsPage"), squad_row=C.script("SquadRowView"), mate=C.script("SquadMateCard"),
          availability=C.script("MenuAvailabilityView"), text_tab=K.kit_script("KitTextTab"),
          chip=C.script("SquadPickChip"), nanobots=C.script("SquadNanobotSwap"), artifacts=C.script("ArkArtifactsPage"),
-         pilots=C.script("ArkPilotsPage"))
+         pilots=C.script("ArkPilotsPage"), glass=C.script("PdaGlassImage"))
 C.STUB_KIND.update({"recipe": (114, S["row"]), "entrance": (114, S["entrance"]), "tabs": (114, S["tabs"])})
 
 ORDER = ("Space", "Charge", "Mass", "Time")       # OmniCombineCore.Order: the fly-in order
@@ -258,7 +260,7 @@ def page_backdrop(page, key):
     page.children.append(M.window_sea_node(f"{key}/Sea", "Sea", under_bar))
 
 
-VEILED = {"Pilots", "Decor"}   # the tabs with no room behind them: the veil and the sea lines (validate_tabs holds both ways)
+VEILED = {"Decor"}   # the tabs with no room behind them (PILOTS has the bench since Rev 99 C, section 191): the veil and the sea lines (validate_tabs holds both ways)
 # The boards' glass (R67Ark / R86ArtifactsAB `.glass`: rgba(0,4,31,.62), SurfaceVeryDark at 62 %): the room reads through.
 GLASS_ALPHA = 0.62
 BUTTON_GLASS_ALPHA = 0.55   # the boards' `.def` button: rgba(0,4,31,.55)
@@ -659,35 +661,55 @@ def squads_page(root, veiled=VEILED):
     return page
 
 
-# The PILOTS tab: one cell a callsign (a crew holds at most one pilot a callsign, Docs/Pilots/INVENTORY.md 3.1), six
-# across and three down, right of the friends orb and inside the page's right and bottom margins.
+# The PILOTS tab, built from Rev 99 C (Shombith picked it 2026-11-13; section 191): the crew PDA lying on the hangar's
+# workbench (the backdrop, ArkRoom.Bench). Lying down, its glass shows the last pilot read (PdaGlassImage over the
+# render's own glass corners) and PICK UP stands beside it; picked up, the backdrop holds the PDA square to the view and
+# the crew (one cell a callsign, a crew holds at most one pilot a callsign, Docs/Pilots/INVENTORY.md 3.1) or a pilot's
+# file is laid on its glass. The corners are the renders' (Docs/MenuRedesignB/rounds/r99_ark_pilots_render.py, pda_c
+# and pda_c PDA_HELD=1), measured at 2400 x 1350 and written here at the backdrop's 1920 x 1080.
 CALLSIGNS = len(re.findall(r"^\s+\w+ = [1-9]\d*,", open(os.path.join(
     REPO, "Assets/_Scripts/Data/Enums/PilotVision.cs"), encoding="utf-8").read(), re.M))
-# The page margins the grid was laid out in (Garrett, 2026-11-12): the Squads list's old box, kept here because
-# Squads moved to the R67 board's row (LIST_Y above) and the crew grid did not.
-PILOT_LIST_X, PILOT_LIST_Y, PILOT_LIST_H = 40, 176, 864
-PILOT_COLS, PILOT_W, PILOT_H, PILOT_GAP = 6, 260, 256, 32
-PILOT_X, PILOT_Y = A.ORB_CLEARANCE, PILOT_LIST_Y + 32          # the grid's top left; the caption sits on PILOT_LIST_Y
-PILOT_FACE, PILOT_FACE_Y, PILOT_PAD = 180, 12, 16        # the close-up's side and top, and the callsign's inset
-PILOT_NAME_Y, PILOT_NAME_H, PILOT_LINE_Y, PILOT_LINE_H = 200, 24, 226, 18   # the name and the callsign under it
-# The name runs nearer the cell's edges than the callsign: it must hold the widest name PilotGenerator's tables
-# compose (measured 2026-11-12 over its given and family names, in the UI font; 68 of 357,027 rolled names were wider
-# than the callsign's row).
-PILOT_NAME_PAD, WIDEST_NAME = 6, "Darthawen Lanternweaver"
+PDA_REST_CORNERS = ((800.9, 832.4), (1144.4, 820.7), (1220.5, 974.2), (776.1, 993.9))   # TL TR BR BL, lying on the bench
+PDA_GLASS_ASPECT = 0.325 / 0.236                     # the glass's own width over height (the render's PDA)
+GLASS_X, GLASS_Y, GLASS_W, GLASS_H = 403, 194, 1114, 809   # held up: the glass, square to the view
+LAST_X, LAST_Y, LAST_W, LAST_H = 1280, 812, 440, 176       # lying down: the last pilot read and PICK UP, right of the PDA
+SCREEN_PAD, SCREEN_HEAD = 28, 52                    # the glass's margin and its header strip
+SCREEN_GROUND_ALPHA = 0.9                           # the lit screen's ground over the render's pale glass
+PILOT_COLS, PILOT_W, PILOT_H, PILOT_GAP = 6, 164, 212, 14
+PILOT_X = (GLASS_W - (PILOT_COLS * PILOT_W + (PILOT_COLS - 1) * PILOT_GAP)) // 2
+PILOT_Y = SCREEN_HEAD + 20                          # the grid's top left on the glass
+PILOT_FACE, PILOT_FACE_Y, PILOT_PAD = 120, 10, 8    # the close-up's side and top, and the words' inset
+PILOT_NAME_Y, PILOT_NAME_H, PILOT_LINE_Y, PILOT_LINE_H = 138, 24, 164, 18   # the name and the callsign under it
+PILOT_NAME_ROLE = "BodySmall"
+FOOT_Y, FOOT_H = GLASS_H - 20 - 44, 44              # the glass's foot row: LAY DOWN, or CREW / PREV / NEXT / FULL PROFILE
+# The name must hold the widest name PilotGenerator's tables compose (measured 2026-11-12 over its given and family names,
+# in the UI font): on the PDA's glass at the kit's shrink-to-fit floor (KitText shrinks a label to 60 % before it clips).
+PILOT_NAME_PAD, WIDEST_NAME = PILOT_PAD, "Darthawen Lanternweaver"
+FILE_FACE = 320                                     # the file's close-up
+FILE_COL_X = SCREEN_PAD + FILE_FACE + SCREEN_PAD    # the file's words column
+FILE_COL_W = GLASS_W - FILE_COL_X - SCREEN_PAD
 SCENE_CATALOG = K.meta_guid("Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset")     # author_pilot_scene_assets.py
-PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("countTemplate", "Pilots: {count}"))
+PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("countTemplate", "Pilots: {count}"),
+               ("lastCallsignTemplate", "{callsign}"), ("lastNameTemplate", "{name}"),
+               ("fileKickerTemplate", "{callsign}"), ("fileNameTemplate", "{name}"), ("fileSpeciesTemplate", "{species}"),
+               ("fileFactionTemplate", "{faction} - {homeworld}"), ("fileSightCaptionTemplate", "Sight"),
+               ("fileSightTemplate", "{sight}"), ("fileStoryCaptionTemplate", "Story"),
+               ("fileStoryTemplate", "{backstory}"), ("fileCountTemplate", "{index} / {count}"))
+FILE_TEMPLATES = [f for f, _ in PILOT_LINES if f.startswith(("last", "file"))]
 
 
 def pilot_tokens():
-    """The tokens ArkPilotsPage fills in each of its lines, read from its own two TemplateText.Fill calls, so the
-    lists cannot drift from the page: a cell's two lines take the pilot's facts, the count takes {count} alone."""
+    """The tokens ArkPilotsPage fills in each of its lines, read from its own code, so the lists cannot drift from the
+    page: a cell's two lines take the pilot's facts (its TemplateText.Fill call), the count takes {count} alone, and the
+    file's and the last read's lines take every token of its FileTokens."""
     source = open(os.path.join(REPO, "Assets/_Scripts/UI/Elements/Ark/ArkPilotsPage.cs"), encoding="utf-8").read()
     cell = re.search(r"TemplateText\.Fill\(template,(.*?)\);", source, re.S)
     count = re.search(r"TemplateText\.Fill\(countTemplate,(.*?)\);", source, re.S)
-    assert cell and count, "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
-    cell, count = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count))
-    assert cell and count, "ArkPilotsPage's filled tokens read as empty"
-    return {"nameTemplate": cell, "lineTemplate": cell, "countTemplate": count}
+    filed = re.search(r"FileTokens\s*=\s*\{(.*?)\};", source, re.S)
+    assert cell and count and filed, "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
+    cell, count, filed = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count, filed))
+    assert cell and count and filed, "ArkPilotsPage's filled tokens read as empty"
+    return dict({"nameTemplate": cell, "lineTemplate": cell, "countTemplate": count}, **{f: filed for f in FILE_TEMPLATES})
 
 
 PILOT_TOKENS = pilot_tokens()
@@ -695,41 +717,144 @@ PILOT_WORDS = "".join(yfield(field, words) for field, words in PILOT_LINES)
 
 
 def pilot_cell_rect(i):
-    """Cell `i` of the crew, left to right then down: (x, y) of its top left on the page."""
+    """Cell `i` of the crew, left to right then down: (x, y) of its top left on the PDA's glass."""
     return (PILOT_X + (i % PILOT_COLS) * (PILOT_W + PILOT_GAP), PILOT_Y + (i // PILOT_COLS) * (PILOT_H + PILOT_GAP))
 
 
-def pilots_page(root, veiled=VEILED):
-    """PILOTS: the crew in join order, one cell a pilot (SquadPickChip: the close-up of their callsign's scene, their
-    name, their callsign). A press opens the pilot's profile page (ScreenSwitcher.OpenPilotProfile). ArkPilotsPage
-    draws it; every word is on that component or the text of a caption here."""
-    page = page_node(root, "Pilots", False)
-    page_ground(page, "Pilots", veiled)
-    grid_w = PILOT_COLS * PILOT_W + (PILOT_COLS - 1) * PILOT_GAP
-    C.section_label(page, "Pilots/Caption", "Caption", "Your crew", TL(PILOT_X, PILOT_LIST_Y, 220, 18))
-    label(page.child(N("Pilots/Count", "Count", TL(PILOT_X + grid_w - 220, PILOT_LIST_Y, 220, 18))), "", "Label",
-          "NeutralLightest", align="right")
-    e = page.child(N("Pilots/Empty", "Empty", TL(PILOT_X, 250, grid_w, 200)))
+def frac(x, y):
+    """A point of the 1920 x 1080 backdrop as a fraction of the page, from its bottom left (an anchor)."""
+    return (round(x / 1920, 5), round(1 - y / 1080, 5))
+
+
+def glass_image(parent, key, name):
+    """The PDA's glass lying on the bench (PdaGlassImage): the last pilot's close-up drawn through the render's corners."""
+    n = parent.child(N(key, name, STRETCH))
+    corners = "".join(f"  - {{x: {round(x / 1920, 5)}, y: {round(y / 1080, 5)}}}\n" for x, y in PDA_REST_CORNERS)
+    n.add("cr", 222, K.canvas_renderer()).add("glass", 114, lambda ctx, go: mono(
+        go, S["glass"],
+        "  m_Material: {fileID: 0}\n  m_Color: {r: 1, g: 1, b: 1, a: 1}\n  m_RaycastTarget: 0\n"
+        "  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}\n  m_Maskable: 1\n"
+        "  m_OnCullStateChanged:\n    m_PersistentCalls:\n      m_Calls: []\n"
+        "  sprite: {fileID: 0}\n  corners:\n" + corners
+        + f"  glassAspect: {round(PDA_GLASS_ASPECT, 4)}\n  cutFromTop: 0.3\n  grid: 8\n"))
+    return n
+
+
+def pilots_rest(page):
+    """Lying down: the PDA's glass shows the last pilot read; their callsign and name and PICK UP stand right of it."""
+    rest = page.child(N("Pilots/Rest", "Rest", STRETCH))
+    rest.add("cg", 225, canvas_group(True))
+    glass_image(rest, "Pilots/Rest/Glass", "Glass")
+    pn = glass_panel(rest, "Pilots/Rest/Last", "Last", TL(LAST_X, LAST_Y, LAST_W, LAST_H))
+    C.section_label(pn, "Pilots/Rest/Last/Kicker", "Kicker", "Last read", TL(22, 18, LAST_W - 44, 16))
+    H.ellipsize(label(pn.child(N("Pilots/Rest/Last/Callsign", "Callsign", TL(22, 38, LAST_W - 44, 38))), "", "H2",
+                      "TextLight"))
+    H.ellipsize(label(pn.child(N("Pilots/Rest/Last/Name", "Name", TL(22, 78, LAST_W - 44, 24))), "", "Body",
+                      "NeutralLightest"))
+    small_button(pn, "Pilots/Rest/Last/PickUp", "PickUp", "Pick up", TL(22, 114, 200, 44), "Cta")
+
+
+def pilots_crew(screen):
+    """Picked up, the crew on the glass: one cell a pilot (SquadPickChip: the close-up of their callsign's scene, their
+    name, their callsign), the empty words, and LAY DOWN."""
+    crew = screen.child(N("Pilots/Held/Screen/Crew", "Crew", STRETCH))
+    crew.add("cg", 225, canvas_group(True))
+    e = crew.child(N("Pilots/Empty", "Empty", TL(0, 250, GLASS_W, 200)))
     e.add("cg", 225, canvas_group(False))
     label(e.child(N("Pilots/Empty/Heading", "Heading", stretch_x(0, 0, 40, 40))), "No pilots yet", "H2", "TextLight",
           align="center")
-    label(e.child(N("Pilots/Empty/Line", "Line", stretch_x(300, 300, 90, 60))),
+    label(e.child(N("Pilots/Empty/Line", "Line", stretch_x(200, 200, 90, 60))),
           "Your crew appears here once your account has loaded.", "Body", "NeutralLightest", align="center", wrap=True)
     words_w = PILOT_W - 2 * PILOT_PAD
     for i in range(CALLSIGNS):
         x, y = pilot_cell_rect(i)
-        pick_chip(page, f"Pilots/Cell{i}", f"Cell{i}", TL(x, y, PILOT_W, PILOT_H), PILOT_H, "", None,
+        pick_chip(crew, f"Pilots/Cell{i}", f"Cell{i}", TL(x, y, PILOT_W, PILOT_H), PILOT_H, "", None,
                   TL((PILOT_W - PILOT_FACE) // 2, PILOT_FACE_Y, PILOT_FACE, PILOT_FACE),
                   line_rect=TL(PILOT_PAD, PILOT_LINE_Y, words_w, PILOT_LINE_H),
                   label_rect=TL(PILOT_NAME_PAD, PILOT_NAME_Y, PILOT_W - 2 * PILOT_NAME_PAD, PILOT_NAME_H),
-                  label_role="Body", line_align="center")
+                  label_role=PILOT_NAME_ROLE, line_align="center")
+    label(crew.child(N("Pilots/Held/Screen/Crew/Hint", "Hint", TL(SCREEN_PAD, FOOT_Y + 13, 500, 18))),
+          "Tap a pilot to read their file.", "BodySmall", "NeutralLightest")
+    small_button(crew, "Pilots/Held/Screen/Crew/PutDown", "PutDown", "Lay down", TR(SCREEN_PAD, FOOT_Y, 170, FOOT_H))
+
+
+def pilots_file(screen):
+    """A pilot's file on the glass: the close-up and the callsign's sight down the left; the callsign, name, animals,
+    faction and home, and the story to the right; CREW, PREV / NEXT with the count, and FULL PROFILE along the foot."""
+    f = screen.child(N("Pilots/Held/Screen/File", "File", STRETCH))
+    f.add("cg", 225, canvas_group(False))
+    k = "Pilots/Held/Screen/File"
+    art_node(f, f"{k}/Picture", "Picture", TL(SCREEN_PAD, PILOT_Y, FILE_FACE, FILE_FACE), None, preserve=True)
+    label(f.child(N(f"{k}/SightCaption", "SightCaption", TL(SCREEN_PAD, PILOT_Y + FILE_FACE + 16, FILE_FACE, 16))), "",
+          "Label", "NeutralLightest")
+    label(f.child(N(f"{k}/Sight", "Sight", TL(SCREEN_PAD, PILOT_Y + FILE_FACE + 38, FILE_FACE, FOOT_Y - PILOT_Y - FILE_FACE - 54))),
+          "", "BodySmall", "TextLight", valign="top", wrap=True)
+    x, w = FILE_COL_X, FILE_COL_W
+    H.ellipsize(label(f.child(N(f"{k}/Kicker", "Kicker", TL(x, PILOT_Y, w, 18))), "", "Label", "NeutralLightest"))
+    H.ellipsize(label(f.child(N(f"{k}/Name", "Name", TL(x, PILOT_Y + 22, w, 48))), "", "H1", "TextLight"))
+    H.ellipsize(label(f.child(N(f"{k}/Species", "Species", TL(x, PILOT_Y + 76, w, 24))), "", "Body", "NeutralLightest"))
+    H.ellipsize(label(f.child(N(f"{k}/Faction", "Faction", TL(x, PILOT_Y + 102, w, 24))), "", "Body", "NeutralLightest"))
+    image_node(f, f"{k}/Rule", "Rule", TL(x, PILOT_Y + 140, w, 2), "SurfaceDark")
+    label(f.child(N(f"{k}/StoryCaption", "StoryCaption", TL(x, PILOT_Y + 156, w, 16))), "", "Label", "NeutralLightest")
+    label(f.child(N(f"{k}/Story", "Story", TL(x, PILOT_Y + 180, w, FOOT_Y - PILOT_Y - 196))), "", "BodySmall", "TextLight",
+          valign="top", wrap=True)
+    small_button(f, f"{k}/Back", "Back", "Crew", TL(SCREEN_PAD, FOOT_Y, 140, FOOT_H))
+    mid = GLASS_W // 2
+    small_button(f, f"{k}/Previous", "Previous", "Prev", TL(mid - 60 - 8 - 120, FOOT_Y, 120, FOOT_H))
+    label(f.child(N(f"{k}/Count", "Count", TL(mid - 60, FOOT_Y + 10, 120, 24))), "", "Body", "TextLight", align="center")
+    small_button(f, f"{k}/Next", "Next", "Next", TL(mid + 60 + 8, FOOT_Y, 120, FOOT_H))
+    small_button(f, f"{k}/Profile", "Profile", "Full profile", TR(SCREEN_PAD, FOOT_Y, 200, FOOT_H))
+
+
+def pilots_held(page):
+    """Picked up: the glass square to the view (anchored to the render's corners, so it follows the stretched picture),
+    its header (the caption and the crew's count), and the crew or a pilot's file."""
+    held = page.child(N("Pilots/Held", "Held", STRETCH))
+    held.add("cg", 225, canvas_group(False))
+    screen = held.child(N("Pilots/Held/Screen", "Screen", R(frac(GLASS_X, GLASS_Y + GLASS_H), frac(GLASS_X + GLASS_W, GLASS_Y),
+                                                             (0, 0), (0, 0))))
+    # The screen lit: the render's glass is pale under the hangar's grade, so the words stand on the theme's dark ground.
+    image_node(screen, "Pilots/Held/Screen/Ground", "Ground", STRETCH, "SurfaceVeryDark", alpha=SCREEN_GROUND_ALPHA)
+    image_node(screen, "Pilots/Held/Screen/Head", "Head", TL(0, 0, GLASS_W, SCREEN_HEAD), "SurfaceBlack", alpha=0.55)
+    C.section_label(screen, "Pilots/Caption", "Caption", "Your crew", TL(SCREEN_PAD, 17, 300, 18))
+    label(screen.child(N("Pilots/Count", "Count", TR(SCREEN_PAD, 17, 220, 18))), "", "Label", "NeutralLightest",
+          align="right")
+    pilots_crew(screen)
+    pilots_file(screen)
+
+
+def pilots_page(root, veiled=VEILED):
+    """PILOTS (Rev 99 C, section 191): the crew PDA on the hangar's workbench. ArkPilotsPage draws it; every word is on
+    that component or the text of a caption here."""
+    page = page_node(root, "Pilots", False)
+    page_ground(page, "Pilots", veiled)
+    pilots_rest(page)
+    pilots_held(page)
+    F = "Pilots/Held/Screen/File"
 
     def body(ctx, go):
+        def r(key, comp):
+            return ref(ctx.c(key, comp))
         return mono(go, S["pilots"],
                     f"  scenes: {K.ref(11400000, SCENE_CATALOG, 2)}\n"
                     "  cells:\n" + refs_of(ctx, [f"Pilots/Cell{i}" for i in range(CALLSIGNS)], "chip")
-                    + f"  emptyGroup: {ref(ctx.c('Pilots/Empty', 'cg'))}\n"
-                    f"  countText: {ref(ctx.c('Pilots/Count', 'tmp'))}\n  screenSwitcher: {{fileID: 0}}\n"
+                    + f"  emptyGroup: {r('Pilots/Empty', 'cg')}\n"
+                    f"  countText: {r('Pilots/Count', 'tmp')}\n  screenSwitcher: {{fileID: 0}}\n"
+                    f"  restGroup: {r('Pilots/Rest', 'cg')}\n  pickUpButton: {r('Pilots/Rest/Last/PickUp', 'button')}\n"
+                    f"  glass: {r('Pilots/Rest/Glass', 'glass')}\n"
+                    f"  lastCallsignText: {r('Pilots/Rest/Last/Callsign', 'tmp')}\n"
+                    f"  lastNameText: {r('Pilots/Rest/Last/Name', 'tmp')}\n"
+                    f"  heldGroup: {r('Pilots/Held', 'cg')}\n  crewGroup: {r('Pilots/Held/Screen/Crew', 'cg')}\n"
+                    f"  putDownButton: {r('Pilots/Held/Screen/Crew/PutDown', 'button')}\n"
+                    "  settleSeconds: 0.4\n  fadeSeconds: 0.2\n"
+                    f"  fileGroup: {r(F, 'cg')}\n  filePicture: {r(F + '/Picture', 'img')}\n"
+                    f"  fileKickerText: {r(F + '/Kicker', 'tmp')}\n  fileNameText: {r(F + '/Name', 'tmp')}\n"
+                    f"  fileSpeciesText: {r(F + '/Species', 'tmp')}\n  fileFactionText: {r(F + '/Faction', 'tmp')}\n"
+                    f"  fileSightCaptionText: {r(F + '/SightCaption', 'tmp')}\n  fileSightText: {r(F + '/Sight', 'tmp')}\n"
+                    f"  fileStoryCaptionText: {r(F + '/StoryCaption', 'tmp')}\n  fileStoryText: {r(F + '/Story', 'tmp')}\n"
+                    f"  fileCountText: {r(F + '/Count', 'tmp')}\n  backButton: {r(F + '/Back', 'button')}\n"
+                    f"  previousButton: {r(F + '/Previous', 'button')}\n  nextButton: {r(F + '/Next', 'button')}\n"
+                    f"  profileButton: {r(F + '/Profile', 'button')}\n"
                     + PILOT_WORDS)
     page.add("logic", 114, body)
     return page
@@ -1139,7 +1264,12 @@ def veil_of(view, rt):
 
 
 PILOT_CELL_FIELDS = dict(CHIP_FIELDS, line=TMP, image=IMG)      # a crew cell needs its callsign line and its close-up
-PILOTS_FIELDS = dict(emptyGroup=225, countText=TMP)
+PILOTS_FIELDS = dict(emptyGroup=225, countText=TMP, restGroup=225, pickUpButton=S["button"], glass=S["glass"],
+                     lastCallsignText=TMP, lastNameText=TMP, heldGroup=225, crewGroup=225, putDownButton=S["button"],
+                     fileGroup=225, filePicture=IMG, fileKickerText=TMP, fileNameText=TMP, fileSpeciesText=TMP,
+                     fileFactionText=TMP, fileSightCaptionText=TMP, fileSightText=TMP, fileStoryCaptionText=TMP,
+                     fileStoryText=TMP, fileCountText=TMP, backButton=S["button"], previousButton=S["button"],
+                     nextButton=S["button"], profileButton=S["button"])
 
 
 def rect_xy(view, fid, field):
@@ -1175,19 +1305,30 @@ def validate_pilots(view, V):
     for i in range(CALLSIGNS):
         rt = V(f"Pilots/Cell{i}#rt")
         assert rect_xy(view, rt, "m_AnchorMin") == (0, 1) and rect_xy(view, rt, "m_Pivot") == (0, 1), \
-            f"crew cell {i} is not laid out from the page's top left"
+            f"crew cell {i} is not laid out from the glass's top left"
         (x, y), (w, h) = rect_xy(view, rt, "m_AnchoredPosition"), rect_xy(view, rt, "m_SizeDelta")
-        assert x >= A.ORB_CLEARANCE, f"crew cell {i} starts {x:g} from the left edge, under the friends orb"
-        assert x + w <= 1920 - PILOT_LIST_X and -y + h <= PILOT_LIST_Y + PILOT_LIST_H, f"crew cell {i} runs outside the page's margins"
-        assert -y >= PILOT_LIST_Y + 18, f"crew cell {i} runs over the caption"
+        assert x >= 0 and x + w <= GLASS_W and -y >= SCREEN_HEAD and -y + h <= FOOT_Y, \
+            f"crew cell {i} runs off the PDA's glass (over its header or its foot)"
         assert (x, -y) == pilot_cell_rect(i) and (w, h) == (PILOT_W, PILOT_H), f"crew cell {i} is off the grid"
         name_w = rect_xy(view, V(f"Pilots/Cell{i}/Label#rt"), "m_SizeDelta")[0]
-        assert K.label_width(WIDEST_NAME, "Body") <= name_w <= PILOT_W, \
+        assert K.label_width(WIDEST_NAME, PILOT_NAME_ROLE) * K.FIT_MIN_SCALE <= name_w <= PILOT_W, \
             f"crew cell {i}'s name row ({name_w:g}) does not hold the widest name a pilot can have"
     assert PILOT_FACE_Y + PILOT_FACE <= PILOT_NAME_Y and PILOT_NAME_Y + PILOT_NAME_H <= PILOT_LINE_Y \
         and PILOT_LINE_Y + PILOT_LINE_H + PILOT_FACE_Y <= PILOT_H, "a crew cell's close-up, name and callsign overlap"
-    assert K.line_height("Body") <= PILOT_NAME_H and K.line_height("Label") <= PILOT_LINE_H + 0.5, \
+    assert K.line_height(PILOT_NAME_ROLE) <= PILOT_NAME_H and K.line_height("Label") <= PILOT_LINE_H + 0.5, \
         "a crew cell's rows are shorter than their text"
+    # The held glass is anchored to the held render's glass, so the words stay on it however the picture stretches.
+    srt = V("Pilots/Held/Screen#rt")
+    assert (rect_xy(view, srt, "m_AnchorMin"), rect_xy(view, srt, "m_AnchorMax")) == \
+        (frac(GLASS_X, GLASS_Y + GLASS_H), frac(GLASS_X + GLASS_W, GLASS_Y)) and \
+        rect_xy(view, srt, "m_SizeDelta") == (0, 0), "the PDA's screen is not anchored to the held render's glass"
+    # Lying down, the picture is drawn through the rest render's glass corners.
+    _, g = A.doc_of(view, V("Pilots/Rest/Glass#glass"))
+    corners = [tuple(float(v) for v in m) for m in re.findall(r"^  - \{x: ([\d.]+), y: ([\d.]+)\}", g, re.M)]
+    assert corners == [(round(x / 1920, 5), round(y / 1080, 5)) for x, y in PDA_REST_CORNERS], \
+        "the PDA's glass on the bench is not drawn through the rest render's corners"
+    last_x = LAST_X
+    assert last_x >= PDA_REST_CORNERS[2][0] + 40, "the last pilot read and PICK UP stand over the PDA lying on the bench"
 
 
 def validate_tabs(view, V):
@@ -1360,12 +1501,28 @@ def self_test(files):
             f[view], V("Pilots#logic"), lambda d: d.replace(f"  - {{fileID: {V('Pilots/Cell17#chip')}}}\n", "")))),
         ("a crew cell with no close-up", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots/Cell3#chip"), lambda d: re.sub(r"(  image: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d)))),
-        ("a crew cell under the friends orb", lambda f: f.__setitem__(view, in_doc(
-            f[view], V("Pilots/Cell12#rt"), lambda d: d.replace(
-                f"  m_AnchoredPosition: {{x: {PILOT_X}, y: ", f"  m_AnchoredPosition: {{x: {PILOT_LIST_X}, y: ")))),
+        ("a crew cell off the PDA's glass", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots/Cell17#rt"), lambda d: re.sub(
+                r"  m_AnchoredPosition: \{x: [\d.]+, y: ", f"  m_AnchoredPosition: {{x: {GLASS_W - 40}, y: ", d))),
+         "runs off the PDA's glass"),
         ("a crew cell too narrow for the widest name", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots/Cell7/Label#rt"), lambda d: d.replace(
-                f"  m_SizeDelta: {{x: {PILOT_W - 2 * PILOT_NAME_PAD}, y: ", "  m_SizeDelta: {x: 228, y: ")))),
+                f"  m_SizeDelta: {{x: {PILOT_W - 2 * PILOT_NAME_PAD}, y: ", "  m_SizeDelta: {x: 100, y: "))),
+         "does not hold the widest name"),
+        ("the veil back over the Pilots bench", lambda f: f.__setitem__(view, view_text(VEILED | {"Pilots"})),
+         "hides its room"),
+        ("the PDA's screen off its glass", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots/Held/Screen#rt"), lambda d: re.sub(r"  m_AnchorMin: \{x: [\d.]+", "  m_AnchorMin: {x: 0", d))),
+         "not anchored to the held render's glass"),
+        ("the glass drawn off the bench's corners", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots/Rest/Glass#glass"), lambda d: d.replace(f"{{x: {round(PDA_REST_CORNERS[0][0] / 1920, 5)},", "{x: 0.1,"))),
+         "not drawn through the rest render's corners"),
+        ("PICK UP unwired", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: re.sub(r"(  pickUpButton: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d)))),
+        ("a file template naming a token the page does not fill", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(yfield("fileStoryTemplate", "{backstory}"),
+                                                             yfield("fileStoryTemplate", "{relic}")))),
+         "which the page does not fill there"),
         ("a crew line naming a token the page does not fill", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(yfield("lineTemplate", "{callsign}"),
                                                              yfield("lineTemplate", "{sight}")))),
