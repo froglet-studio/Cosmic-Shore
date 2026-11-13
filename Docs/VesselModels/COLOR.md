@@ -27,7 +27,7 @@ Here `facing` is the view-space normal's z: 1 where the surface faces the camera
 - `_Color1` is the **rim**: the outline the ship draws against the sky.
 - `_Color2` is the **face**: the colour the camera sees head-on.
 
-The result then passes through `VesselVisionShade`, the distance-gated cel band in `Docs/VESSEL_VISION.md`, which
+The result is then lit by the hull light (§2a) and passes through `VesselVisionShade`, the distance-gated cel band in `Docs/VESSEL_VISION.md`, which
 is off at close range. Colours are stored as sRGB, and the project renders in linear space.
 
 The engine slot's multiplier is 1 at rest. `VesselAnimation.FlareEngine` sets it to 5 under boost on
@@ -36,6 +36,28 @@ same way.
 
 The body (`BlueBaseVesselMaterial`) is the one TRANSPARENT slot. Its alpha is a distance fade:
 `clamp(distance / 2.5 − 2.5)`. It also writes no depth. Its surface mode was left as it was (see §6).
+
+## 2a. The hull light: every hull lit by the world (2026-11-13)
+
+The footage critique (2026-11-13, weak link 4: "hulls look like unlit plastic toys") asked for hulls that sit in the
+sea's light. `VesselHullLighting.hlsl` is spliced into `VesselGraph` between the final Multiply and the vision band
+(`Tools/Shaders/wire_vessel_hull_lighting.py`, `--check`), so it lights every slot of every hull:
+
+- **Key**: the galactic core, from where the sky draws it (`HyperSeaSkybox` `_CoreDirection`), in the core's colour
+  times its brightness. Wrapped diffuse gives every hull a lit side and a shade side (`shadeFloor`, never black).
+- **Highlight**: Blinn-Phong off that key, rolling off rather than clipping.
+- **Reflections**, Fresnel-weighted so they live on the grazing surfaces: the core as a hot point and the galactic
+  band (`_GalacticNormal`, `_GalacticEmission`) as a streak that slides over the shell as the ship rolls, plus the
+  sky's cell glow (`_CellOverlayColor`).
+- **Rim**: the pilot's domain signal colour on the silhouette (`_VesselHullDomain`, stamped with the vision tint and
+  on replay ghosts, never cleared for the local pilot), the sky's glow where nothing was stamped.
+
+No colour of its own: every colour is read live off the skybox material, which `WorldColorTrace` repaints from the
+worn set, or is the domain signal colour. `VesselHullLighting.cs` publishes nine globals a frame.
+`Resources/VesselHullLightingConfig.asset` holds the amounts; `strength` 0 is the old unlit hull exactly, and
+`VesselHullLighting.StrengthOverride` flips it live for A/B captures. Per slot, `_HullGloss` (body 1, glass 1.6,
+domain 0.6, engine 0) scales highlight and reflections, and `_HullSelfLit` (engine 1, domain 0.5) keeps a glowing
+slot from falling into shade. At range the vision band still wins: it sits after the hull light.
 
 ## 3. The scheme (sRGB, as the materials store it)
 
