@@ -8039,3 +8039,27 @@ reveal into the Toy Box" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 Seen in Shombith's screenshot and not explained from the code: the splash's bar showed the `%` sign with no number
 and an empty track, which means `BootStepBar` never drew. Its wiring in both scenes is correct; an exception in the
 Console from `BootStepBar` or `BootLoadProgress` is the likely cause and is the first thing to look for.
+
+## 186. Built: the loading screen's sea and motion - the rest of Rev 91 F (2026-11-13, not seen in Unity)
+
+Shombith, 2026-11-13: "Now build the F loading screen's missing sea lines and bob". Section 178 had left out the
+board's moving sea and its idle motion.
+
+- **The sea.** The cover already drew sea lines: its upper layer is `Sea_Window.mat`, which animates by itself. What
+  the board had and the build did not were the three soft fields drifting under the lines. They are now
+  `Gate/Cover/Fields`, between the cover's black base and its sea lines: three `kit_ring_glow` soft discs at the board's
+  boxes, each a `PosterDrift` with the board's timings (26, 34 and 42 s one way, the board's offsets and scales). The
+  board's two indigos are not theme colours, so the fields wear the theme's blue family (`SurfaceLight` at 0.50 and 0.46,
+  `NeutralLightest` at 0.30) and follow the worn colour set: a little greyer than the board.
+- **The gate.** The fields have no hex hole of their own, so `ConnectingGateView` gained a `backdrop` group, faded
+  with the content as the gate starts (it is gone before the hole has grown) and reset on the next hold.
+- **The bob.** The Ark drifts (16 s one way, -40 to 110 across, a turn from 1 to -1.5 degrees) and the Vessels
+  chapter's Sparrow bobs (6 s, 10 up to 12 down), as on the board. `PosterDrift` sleeps while its chapter's group is at
+  zero, so the hidden chapters cost nothing.
+
+Still not built: tabular digits on the percentage. The sea lines are the menu windows', not the board's own layers.
+
+Verified: `author_ingame_hud.py` run, `--check` and `--self-test` (two new negative controls: the fields left out of the
+gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; `gates.sh`. Hand test: "The loading
+screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
