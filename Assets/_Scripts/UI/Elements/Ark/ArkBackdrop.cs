@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using UnityEngine.Video;
 
@@ -43,6 +45,8 @@ namespace CosmicShore.UI
         static readonly int AspectId = Shader.PropertyToID("_Aspect");
         static readonly int FromOnId = Shader.PropertyToID("_FromOn");
         static readonly int ToOnId = Shader.PropertyToID("_ToOn");
+        static readonly int StyleId = Shader.PropertyToID("_Style");
+        static readonly int OriginId = Shader.PropertyToID("_Origin");
 
         // A clip that has not shown a frame by then passes anyway (a slow decoder must not strand the old room).
         const float PrepareTimeout = 0.6f;
@@ -52,7 +56,10 @@ namespace CosmicShore.UI
         bool _frontDark = true;        // nothing shown yet, or the dark of a tab with no room (Pilots, Decor)
         bool _hasShown;                // a picture has been shown since the last Release: later changes pass
         Material _material;
-        float _passSeconds = 0.9f, _dissolveSeconds = 0.3f;
+        float _passSeconds = 0.5f, _dissolveSeconds = 0.3f;
+        readonly List<ArkPassStyle> _styles = new();
+        ArkPassStyle _style;
+        Vector2 _origin = new(0.5f, 0.9f);
         float _clock;
 
         // The change under way: waiting for the next clip's first frame, then passing.
@@ -83,7 +90,11 @@ namespace CosmicShore.UI
         /// <summary>True when the picture is dark and no change is going anywhere else: the picture can be hidden.</summary>
         public bool RestingDark => _frontDark && !_pending && !_passing;
 
-        public static ArkBackdrop Create(Transform parent, Shader passShader, float passSeconds, float dissolveSeconds)
+        /// <summary>The pass the change under way (or the last one) uses.</summary>
+        public ArkPassStyle Style => _style;
+
+        public static ArkBackdrop Create(Transform parent, Shader passShader, float passSeconds, float dissolveSeconds,
+                                         IReadOnlyList<ArkPassStyle> styles = null)
         {
             var go = new GameObject("ArkBackdrop");
             go.transform.SetParent(parent, false);
@@ -105,6 +116,7 @@ namespace CosmicShore.UI
             }
             backdrop._passSeconds = Mathf.Max(0.05f, passSeconds);
             backdrop._dissolveSeconds = Mathf.Max(0.05f, dissolveSeconds);
+            if (styles != null) backdrop._styles.AddRange(styles);
             if (passShader && passShader.isSupported)
                 backdrop._material = new Material(passShader) { name = "Ark pass (runtime)" };
             backdrop.Apply();
@@ -112,9 +124,12 @@ namespace CosmicShore.UI
         }
 
         /// <summary>Shows <paramref name="clip"/>: at once the first time, then by <paramref name="kind"/> in direction
-        /// <paramref name="dir"/> (+1: the next room is to the right). A clip already shown carries on.</summary>
-        public void Show(VideoClip clip, bool loop, Vector2Int size, ArkPassKind kind = ArkPassKind.Pass, int dir = 1)
+        /// <paramref name="dir"/> (+1: the next room is to the right), a ripple starting at <paramref name="origin"/> (0-1 across
+        /// the picture: the tab pressed). A clip already shown carries on.</summary>
+        public void Show(VideoClip clip, bool loop, Vector2Int size, ArkPassKind kind = ArkPassKind.Pass, int dir = 1,
+                         Vector2? origin = null)
         {
+            if (origin.HasValue) _origin = origin.Value;
             if (!clip || !Front.Player) return;
             EnsureTextures(size);
             if (!_pending && !_passing && !_frontDark && Front.Clip == clip && Front.Player.isPlaying &&
@@ -140,8 +155,9 @@ namespace CosmicShore.UI
 
         /// <summary>Takes the picture into the dark (a tab with no room) by <paramref name="kind"/>; the view hides the
         /// picture once <see cref="RestingDark"/>.</summary>
-        public void ShowDark(ArkPassKind kind = ArkPassKind.Pass, int dir = 1)
+        public void ShowDark(ArkPassKind kind = ArkPassKind.Pass, int dir = 1, Vector2? origin = null)
         {
+            if (origin.HasValue) _origin = origin.Value;
             if (_frontDark && !_pending && !_passing) return;
             if ((_pending || _passing) && _toDark) return;
             SettleChange();
@@ -176,6 +192,7 @@ namespace CosmicShore.UI
         void Begin(ArkPassKind kind, int dir, bool toDark)
         {
             _kind = kind == ArkPassKind.Cut ? ArkPassKind.Dissolve : kind;
+            if (_kind == ArkPassKind.Pass) _style = PickStyle(_styles, Random.value);
             _dir = dir >= 0 ? 1f : -1f;
             _toDark = toDark;
             _progress = 0f;
@@ -247,9 +264,20 @@ namespace CosmicShore.UI
             _material.SetFloat(ModeId, changing ? (float)_kind : 0f);
             _material.SetFloat(PassId, changing ? Smootherstep(_progress) : 0f);
             _material.SetFloat(DirId, _dir);
+            _material.SetFloat(StyleId, (float)_style);
+            _material.SetVector(OriginId, new Vector4(_origin.x, _origin.y, 0f, 0f));
             _material.SetFloat(ClockId, _clock);
             var t = Front.Texture ? Front.Texture : Back.Texture;
             _material.SetFloat(AspectId, t ? (float)t.width / Mathf.Max(1, t.height) : 16f / 9f);
+        }
+
+        /// <summary>The pass for one change: one of <paramref name="styles"/> by <paramref name="roll"/> (0-1), the membrane when
+        /// there are none.</summary>
+        public static ArkPassStyle PickStyle(IReadOnlyList<ArkPassStyle> styles, float roll)
+        {
+            if (styles == null || styles.Count == 0) return ArkPassStyle.Membrane;
+            int i = Mathf.Clamp(Mathf.FloorToInt(roll * styles.Count), 0, styles.Count - 1);
+            return styles[i];
         }
 
         /// <summary>Ken Perlin's smootherstep: still at both ends, so the glide starts and lands without a jolt.</summary>

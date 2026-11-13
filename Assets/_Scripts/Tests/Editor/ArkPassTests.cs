@@ -29,6 +29,9 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(config.PassShader, "author_ark_backdrop_assets.py writes passShader");
             Assert.AreEqual("CosmicShore/UI/ArkPass", config.PassShader.name);
             Assert.Greater(config.PassSeconds, config.DissolveSeconds, "a pass between rooms is the longer change");
+            CollectionAssert.AreEquivalent(
+                new[] { ArkPassStyle.Membrane, ArkPassStyle.Ripple, ArkPassStyle.CausticVeil }, config.PassStyles,
+                "A, B and E at random until one is final (Shombith, 2026-11-13)");
         }
 
         [Test]
@@ -46,6 +49,18 @@ namespace CosmicShore.Tests
                 Assert.GreaterOrEqual(v, last);
                 last = v;
             }
+        }
+
+        [Test]
+        public void PickStyle_CoversEveryStyle_AndFallsBackToTheMembrane()
+        {
+            var styles = new[] { ArkPassStyle.Membrane, ArkPassStyle.Ripple, ArkPassStyle.CausticVeil };
+            Assert.AreEqual(ArkPassStyle.Membrane, ArkBackdrop.PickStyle(styles, 0f));
+            Assert.AreEqual(ArkPassStyle.Ripple, ArkBackdrop.PickStyle(styles, 0.5f));
+            Assert.AreEqual(ArkPassStyle.CausticVeil, ArkBackdrop.PickStyle(styles, 0.99f));
+            Assert.AreEqual(ArkPassStyle.CausticVeil, ArkBackdrop.PickStyle(styles, 1f), "Random.value can return 1");
+            Assert.AreEqual(ArkPassStyle.Membrane, ArkBackdrop.PickStyle(null, 0.7f));
+            Assert.AreEqual(ArkPassStyle.Ripple, ArkBackdrop.PickStyle(new[] { ArkPassStyle.Ripple }, 0.3f));
         }
 
         static CanvasGroup Page(Transform parent, string name)

@@ -28,7 +28,8 @@ PLAYER_CS = "Assets/_Scripts/UI/Elements/Ark/ArkBackdrop.cs"
 ASSET = "Assets/Resources/ArkBackdropConfig.asset"
 VIDEO_DIR = "Assets/_Graphics/Video/Ark"
 PASS_SHADER = "Assets/_Graphics/Materials/Shaders/UI/ArkPass.shader"   # the HyperSea pass (MENU_REDESIGN_B.md section 197)
-PASS_SECONDS = 0.9        # a pass from one room to another (the prototype's, R4jLUUM48M6EJu7ERx8AaW)
+PASS_SECONDS = 0.5        # a pass from one room to another (Shombith, 2026-11-13: "the pass can be .50s")
+PASS_STYLES = (0, 1, 2)   # membrane, ripple, caustic veil, picked at random per change until one is final
 DISSOLVE_SECONDS = 0.3    # the pier's own runs: at rest, the conversion, the Omni made
 ROOM = {"Hangar": 1, "Pier": 2, "Artifacts": 3}
 RUN = {"loop": 0, "convert": 1, "done": 2}
@@ -80,6 +81,7 @@ MonoBehaviour:
   textureSize: {{x: 1920, y: 1080}}
   passShader: {{fileID: 4800000, guid: {guid(PASS_SHADER)}, type: 3}}
   passSeconds: {PASS_SECONDS}
+  passStyles:{"".join(chr(10) + "  - " + str(x) for x in PASS_STYLES) if PASS_STYLES else " []"}
   dissolveSeconds: {DISSOLVE_SECONDS}
 """
 
@@ -177,7 +179,7 @@ def validate():
         errors.append(f"{VIDEO_DIR}/{f} is not a backdrop this config names (ship it in the table or delete it)")
     so = open(os.path.join(REPO, SO_CS)).read() if os.path.exists(os.path.join(REPO, SO_CS)) else ""
     for field in ("clips", "textureSize", "room", "run", "colourSet", "domain", "anyDomain", "clip", "passShader",
-                  "passSeconds", "dissolveSeconds"):
+                  "passSeconds", "dissolveSeconds", "passStyles"):
         if not re.search(r"\b" + field + r"\s*[;=]", so):
             errors.append(f"the asset writes '{field}', which ArkBackdropConfigSO does not declare")
     if not os.path.exists(os.path.join(REPO, PASS_SHADER)):

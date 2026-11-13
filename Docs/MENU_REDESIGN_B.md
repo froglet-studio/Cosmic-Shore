@@ -8562,3 +8562,13 @@ pass (one outside it).
 Verified: `unity_refcompile` player and editor (no errors in the changed files), `ArkPassTests` (compiled, not run),
 `author_ark_backdrop_assets.py --check` (fails when `passShader` is dropped from the asset), `colour_trace.py --check`.
 The look and the timing need the editor: "The Ark's HyperSea pass" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+**Round two (Shombith, 2026-11-13: "only 1 kind of transformation, can you show some more?").** The prototype grew four
+more passes: B Ripple (a ring from the tab pressed, like a drop landing in the sea), C Current (carried sideways, both
+rooms streaking), D Tunnel dive (the room left spirals into a pearl tunnel, the room reached opens from its mouth),
+E Caustic veil (the room reached found first along caustic light veins). **Picked:** "randomise between A B and E every
+time for now until we finalise one, and the pass can be .50s". The shader carries all three (`_Style`: 0 membrane,
+1 ripple, 2 caustic veil; `_Origin` is the tab pressed, from `ArkTabsView.ButtonRect`); `ArkBackdrop.PickStyle` picks one
+per change from `ArkBackdropConfig.passStyles`; `passSeconds` is 0.5 and the page rises in from 0.22 s. Leaving one style
+in `passStyles` (in `author_ark_backdrop_assets.py`, `PASS_STYLES`) makes it the only one once a pass is final. C and D
+are on the prototype only.

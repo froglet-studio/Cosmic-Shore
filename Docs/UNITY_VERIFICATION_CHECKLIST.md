@@ -298,6 +298,8 @@ reached in step. Ran headless: `unity_refcompile` player and editor (no errors i
    the old page do nothing after the press.
 5. CONVERT: the rest dissolves into the conversion (0.3 s), and the conversion into the Omni made. Change the squad's
    domain on SQUADS: the hangar dissolves into the other domain's clip.
+5b. Each tab change picks A (membrane), B (ripple from the tab word pressed) or E (caustic veil) at random, 0.5 s each:
+   press tabs a dozen times and see all three; B's ring starts at the word you pressed.
 6. Tune the feel on `Assets/Resources/ArkBackdropConfig` (pass and dissolve seconds; written by
    `author_ark_backdrop_assets.py`, so change the numbers there) and on the material's strengths (membrane width, lens,
    sheen, split, push, drift, dip, caustics) in the shader's defaults.

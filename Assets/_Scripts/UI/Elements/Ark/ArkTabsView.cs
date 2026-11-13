@@ -49,7 +49,7 @@ namespace CosmicShore.UI
         [SerializeField, Min(0f)] private float pageOutSeconds = KitMotion.Micro;
         [Tooltip("Seconds before the page reached starts to come in: the backdrop's membrane is past the middle by then " +
                  "(0.45 of ArkBackdropConfig's pass seconds).")]
-        [SerializeField, Min(0f)] private float pageInDelay = 0.4f;
+        [SerializeField, Min(0f)] private float pageInDelay = 0.22f;
         [Tooltip("Seconds the page reached takes to rise in (the kit's panel token).")]
         [SerializeField, Min(0f)] private float pageInSeconds = KitMotion.Panel;
         [Tooltip("How far the page reached rises as it comes in, in canvas units.")]
@@ -75,6 +75,10 @@ namespace CosmicShore.UI
         /// <summary>The page logic tab <paramref name="index"/> drives (its <see cref="IArkTabPage"/>), or null. The Ark's 3D
         /// picks each tab's room by WHAT the tab holds, never by its position in the row (tabs get inserted).</summary>
         public MonoBehaviour PageLogic(int index) => index >= 0 && index < tabs.Length ? tabs[index].pageLogic : null;
+
+        /// <summary>Tab <paramref name="index"/>'s word in the row, or null (the backdrop's ripple starts from it).</summary>
+        public RectTransform ButtonRect(int index) =>
+            index >= 0 && index < tabs.Length && tabs[index].button ? tabs[index].button.transform as RectTransform : null;
 
         void Awake()
         {

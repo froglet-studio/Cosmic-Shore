@@ -9,6 +9,9 @@
 // (the pier's runs: rest, conversion, Omni made), 2 is the pass. ArkBackdrop drives every property each frame on
 // unscaled time (_Clock): the menu is paused behind the Ark, so _Time would hold still.
 // The maths is the prototype's (https://claude.ai/artifact/R4jLUUM48M6EJu7ERx8AaW), line for line.
+// _Style picks the pass (Shombith 2026-11-13: "randomise between A B and E every time for now until we finalise one"):
+// 0 the pearl membrane (A), 1 the ripple from the tab pressed, like a drop landing in the sea (B), 2 the caustic veil,
+// the room reached found first along caustic light veins (E). ArkBackdrop picks one per change.
 Shader "CosmicShore/UI/ArkPass"
 {
     Properties
@@ -23,6 +26,8 @@ Shader "CosmicShore/UI/ArkPass"
         _Aspect ("Width over height", Float) = 1.7778
         _FromOn ("Room left has a picture (0 is the dark)", Float) = 1
         _ToOn ("Room reached has a picture (0 is the dark)", Float) = 1
+        _Style ("Pass: 0 membrane, 1 ripple, 2 caustic veil", Float) = 0
+        _Origin ("Where the ripple starts (the tab pressed, 0-1 across the picture)", Vector) = (0.5, 0.9, 0, 0)
 
         [Header(Membrane)]
         _Width ("Width of the membrane (share of the screen)", Range(0.02, 0.4)) = 0.11
@@ -109,7 +114,8 @@ Shader "CosmicShore/UI/ArkPass"
             float4 _MainTex_ST;
             fixed4 _Color;
             float4 _ClipRect;
-            float _Pass, _Mode, _Dir, _Clock, _Aspect, _FromOn, _ToOn;
+            float _Pass, _Mode, _Dir, _Clock, _Aspect, _FromOn, _ToOn, _Style;
+            float4 _Origin;
             float _Width, _Lens, _Sheen, _Crest, _Split;
             float _Push, _Drift, _Dip, _Caustics;
 
@@ -177,6 +183,58 @@ Shader "CosmicShore/UI/ArkPass"
                 return col;
             }
 
+            float Luma(float3 c) { return dot(c, float3(0.299, 0.587, 0.114)); }
+
+            // B: a ring spreads from the tab pressed, like a drop landing in the sea; the room reached is inside it.
+            float3 Ripple(float2 uv, float p, float t)
+            {
+                float2 o = _Origin.xy;
+                float2 q = (uv - o) * float2(_Aspect, 1.0);
+                float r = length(q);
+                float2 dirv = r > 0.0 ? q / r : float2(0.0, 0.0);
+                float d = r - p * 2.2;
+                float band = exp(-d * d / (0.09 * 0.09));
+                float edge = exp(-d * d / (0.025 * 0.025));
+                float wave = sin(d * 55.0 - t * 8.0) * band;
+                float trail = sin(d * 26.0 - t * 5.0) * exp(min(d, 0.0) * 3.5) * (1.0 - p) * step(d, 0.0);
+                float2 toUv = dirv / float2(_Aspect, 1.0);
+                float2 off = toUv * (-d * band * _Lens * 0.9 + wave * 0.012 + trail * 0.008);
+                float2 ds = toUv * 0.006 * band * _Split;
+                float3 a = float3(Room(_MainTex, uv + off + ds, _FromOn).r, Room(_MainTex, uv + off, _FromOn).g,
+                                  Room(_MainTex, uv + off - ds, _FromOn).b);
+                float2 un = o + (uv - o) / (1.0 + 0.08 * (1.0 - p));
+                float3 n = float3(Room(_ToTex, un + off + ds, _ToOn).r, Room(_ToTex, un + off, _ToOn).g,
+                                  Room(_ToTex, un + off - ds, _ToOn).b);
+                float m = smoothstep(-0.02, 0.02, d);
+                float3 col = lerp(n, a, m);
+                float l = Luma(col);
+                col += (col * 0.7 + l * 0.5) * band * (_Sheen * 0.9) + (col + l) * edge * (_Crest * 0.9);
+                return col * (1.0 - _Dip * 0.8 * sin(UNITY_PI * p));
+            }
+
+            // E: light finds the room reached first along caustic veins, like sun through water, until it is whole.
+            float3 CausticVeil(float2 uv, float p, float t)
+            {
+                float2 q = float2(uv.x * _Aspect, uv.y) * 5.0;
+                float cpat = Caustic(q, t * 1.1);
+                float slow = 0.5 + 0.5 * sin(uv.x * 3.0 + uv.y * 2.0 + t * 0.6);
+                float v = 1.0 - (0.8 * sqrt(cpat) + 0.2 * slow);
+                float m = smoothstep(p * 1.2 - 0.12, p * 1.2, v);
+                const float e = 0.01;
+                float2 g = float2(Caustic(q + float2(e, 0.0), t * 1.1) - cpat, Caustic(q + float2(0.0, e), t * 1.1) - cpat) / e;
+                float k = sin(UNITY_PI * p);
+                float2 off = g * 0.0025 * k;
+                float3 a = Room(_MainTex, uv + off, _FromOn);
+                float3 n = Room(_ToTex, uv - off * 1.5, _ToOn);
+                float3 col = lerp(n, a, m);
+                float h = (m - 0.5) * 3.0;
+                float rim = exp(-h * h);
+                float l = Luma(col);
+                col += (col + l * 0.6) * rim * (_Crest * 1.15) * k;
+                col += col * cpat * (_Caustics * 0.55) * k;
+                return col * (1.0 - _Dip * 0.7 * k);
+            }
+
             fixed4 frag(v2f IN) : SV_Target
             {
                 float2 uv = IN.texcoord;
@@ -185,8 +243,12 @@ Shader "CosmicShore/UI/ArkPass"
                     rgb = Room(_MainTex, uv, _FromOn);
                 else if (_Mode < 1.5)
                     rgb = lerp(Room(_MainTex, uv, _FromOn), Room(_ToTex, uv, _ToOn), _Pass);
-                else
+                else if (_Style < 0.5)
                     rgb = HyperSeaPass(uv, _Pass, _Clock);
+                else if (_Style < 1.5)
+                    rgb = Ripple(uv, _Pass, _Clock);
+                else
+                    rgb = CausticVeil(uv, _Pass, _Clock);
 
                 fixed4 color = fixed4(rgb, 1.0) * IN.color;
 

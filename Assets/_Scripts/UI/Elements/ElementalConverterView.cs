@@ -240,7 +240,7 @@ namespace CosmicShore.UI
         /// picture: by <paramref name="kind"/> from what is showing, in direction <paramref name="dir"/> along the tab row
         /// (the HyperSea pass, Docs/MENU_REDESIGN_B.md section 197). A no-op when there is no backdrop config or the Ark is
         /// not the screen.</summary>
-        void ShowBackdrop(ArkPassKind kind, int dir = 1)
+        void ShowBackdrop(ArkPassKind kind, int dir = 1, Vector2? origin = null)
         {
             if (!UsesBackdrops || !_active || !_pageShown || _room == ArkRoom.None) return;
             EnsureBackdrop();
@@ -249,18 +249,31 @@ namespace CosmicShore.UI
             var domain = _squads && _squads.HasHangar ? _squads.HangarDomain : Domains.Jade;
             var clip = _backdropConfig.Find(_room, run, set, domain);
             if (!clip) return;
-            _backdrop.Show(clip, run != ArkBackdropRun.Convert, _backdropConfig.TextureSize, kind, dir);
+            _backdrop.Show(clip, run != ArkBackdropRun.Convert, _backdropConfig.TextureSize, kind, dir, origin);
             if (_surface) _surface.texture = _backdrop.Texture;
         }
 
         // The squad's domain changed: the same hangar in another colour, so a dissolve, not a pass.
         void ShowHangarBackdrop() => ShowBackdrop(ArkPassKind.Dissolve);
 
+        /// <summary>Where tab <paramref name="tab"/>'s word sits on the picture, 0-1 across it (the ripple starts there); null
+        /// without the picture or the word.</summary>
+        Vector2? TabOrigin(int tab)
+        {
+            var word = arkTabs ? arkTabs.ButtonRect(tab) : null;
+            if (!word || !_surface) return null;
+            var picture = _surface.rectTransform;
+            Vector2 local = picture.InverseTransformPoint(word.TransformPoint(word.rect.center));
+            var r = picture.rect;
+            if (r.width <= 0f || r.height <= 0f) return null;
+            return new Vector2((local.x - r.xMin) / r.width, (local.y - r.yMin) / r.height);
+        }
+
         void EnsureBackdrop()
         {
             if (_backdrop) return;
             _backdrop = ArkBackdrop.Create(transform, _backdropConfig.PassShader, _backdropConfig.PassSeconds,
-                                           _backdropConfig.DissolveSeconds);
+                                           _backdropConfig.DissolveSeconds, _backdropConfig.PassStyles);
             if (_surface && _backdrop.Material) _surface.material = _backdrop.Material;
         }
 
@@ -288,11 +301,12 @@ namespace CosmicShore.UI
         {
             int dir = _lastTab < 0 || tab >= _lastTab ? 1 : -1;
             _lastTab = tab;
+            var origin = TabOrigin(tab);
             _room = UsesBackdrops ? RoomFor(tab) : ArkRoom.Pier;
             bool shown = PictureFor(tab);
             if (shown == _pageShown)
             {
-                ShowBackdrop(ArkPassKind.Pass, dir);
+                ShowBackdrop(ArkPassKind.Pass, dir, origin);
                 return;
             }
             _pageShown = shown;
@@ -301,7 +315,7 @@ namespace CosmicShore.UI
                 // Into the dark of a tab with no room (Pilots, Decor), then the picture hides (LateUpdate).
                 if (_backdrop && _backdrop.Material && _active && _surface && _surface.enabled)
                 {
-                    _backdrop.ShowDark(ArkPassKind.Pass, dir);
+                    _backdrop.ShowDark(ArkPassKind.Pass, dir, origin);
                     _fadingOut = true;
                 }
                 else if (_surface) _surface.enabled = false;
@@ -314,7 +328,7 @@ namespace CosmicShore.UI
             {
                 _frame = 0f;
                 _phase = Phase.None;
-                ShowBackdrop(ArkPassKind.Pass, dir);
+                ShowBackdrop(ArkPassKind.Pass, dir, origin);
                 DrawOverlay();
             }
         }
