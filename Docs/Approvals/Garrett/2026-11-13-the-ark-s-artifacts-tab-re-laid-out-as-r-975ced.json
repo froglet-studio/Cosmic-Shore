@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-13-the-ark-s-artifacts-tab-re-laid-out-as-r-975ced",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-13T23:01:07+00:00",
+  "area": "Artifacts (the Ark's Artifacts tab)",
+  "summary": "The Ark's Artifacts tab re-laid out as Rev 105 B (Shombith's pick): a rail of medallions, a lens that plays each kind's payload, three levels; new white marks for the four kinds. The feeding rule and the artifact data are unchanged.",
+  "branch": "claude/project-thread-yzd03y",
+  "commit": "12b3ccf15"
+}

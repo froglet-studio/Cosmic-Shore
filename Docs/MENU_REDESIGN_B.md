@@ -8572,3 +8572,78 @@ time for now until we finalise one, and the pass can be .50s". The shader carrie
 per change from `ArkBackdropConfig.passStyles`; `passSeconds` is 0.5 and the page rises in from 0.22 s. Leaving one style
 in `passStyles` (in `author_ark_backdrop_assets.py`, `PASS_STYLES`) makes it the only one once a pass is final. C and D
 are on the prototype only.
+
+## 193. Rev 105 mockups: the Artifacts tab without cards - three levels, the words on the room (2026-11-13; Shombith picked B, built in section 201)
+
+**Asked (Shombith, 2026-11-13):** "The UI cards on top of each screen. I do not like them at all. Start separate threads
+for each page's new UIs ... For the artifacts screen, lets see what you come up with." The backdrops stay ("fire for
+now"); the Ark takes its light, motion and design from the pilot scenes that show captains inside the Ark (Jugger,
+Scales, Trace: domes and glass cases in which the game itself plays).
+
+**On the canvas:** tab **Ark**, round "Rev 105 - The Artifacts tab without cards", four boards, written by
+`Docs/MenuRedesignB/rounds/r105_artifacts.py` (copies in `Docs/MenuRedesignB/board/R105*.dc.html`). Each option is the
+full Ark screen on its Artifacts tab over the built backdrop (Rev 86's room) with the same content and the same three
+levels, one press each and B back, shown as a trail in the tab row: **the hoard** (which artifacts you have), **one
+artifact** (its unique name and serial, what it does, its attuned element and value, who carries it, Give), **feeding
+it** (its element's crystals, 10 of each for now, a feed of 5 flying in, the level now and after on the diminishing
+curve, the twist at 5). No option draws a box behind its words. The hoard is four unique artifacts rolled on the shipped
+kinds (Docs/Pilots/INVENTORY.md section 2), values from the kinds' tracks.
+
+- **A - In the room (`R105A`):** each artifact's name and holder hang over its own pedestal on a leader line; the picked
+  one's words stand in the open air on the right, tied to it by a line; feeding lays the crystals along the floor.
+- **B - The lens (`R105B`, recommended):** the hoard as round medallions on a rail along the floor (empty ones for the
+  slots still to find); picking one opens a round hologram lens, like Jugger's and Scales' domes, in which the payload
+  plays out over prisms (Hydra's heads fan out and burst, as many as its level gives), its four tracks as arcs round the
+  rim; the words sit on the left.
+- **C - One at a time (`R105C`):** the picked artifact drawn large in the room's middle, its name and lore on the left,
+  what it does and its tracks on the right, a caption row of the hoard under it.
+
+**Recommended: B** - the only option that shows what an artifact does before you feed it, and the most HyperSea. A is
+the quietest but crowds past four artifacts; C reads best on a phone but hides the hoard.
+
+**Differs from the build:** Rev 86's two cards (the list box, the picked artifact's box) and the mockup colour-set switch
+go; the page gains the three levels and the feed step on screen (ArkArtifactsPage already holds FEED / OMNI and the four
+track rows); the crystals start at 10 each until the economy sets them. No new data.
+
+**Picked (Shombith, 2026-11-13):** "B is good." Built in section 201.
+
+Affects: Shombith's Ark screen (the Artifacts tab, `ArkArtifactsPage`, `author_menu_ark.py`) once picked; Garrett's
+artifact kinds and inventory (read only).
+
+## 201. Built: the Artifacts tab as Rev 105 B, the lens (2026-11-13, not seen in Unity)
+
+**Asked:** Shombith picked B in section 193 ("B is good"). Branch `claude/project-thread-yzd03y`, on the Ark rework.
+
+**Built** (`Tools/Build/author_menu_ark.py` writes `ArkView.prefab`'s Artifacts page; `--check` and `--self-test` clean):
+- **No cards.** Rev 86's list box and picked-artifact box are gone; the Reliquary shows whole behind the page, with only
+  the shade at the top and the foot. The validator fails if any panel sliver comes back on the page.
+- **Three levels, one press each** (`ArkArtifactsPage.Level`), BACK one level up, the trail in the tab row's right:
+  1. **The hoard:** a rail of seven medallions along the floor (`ArtifactMedallion`): each held artifact's mark in a
+     round glass with its kind's name, then empty "?" slots. One hint line: "Pick one to see what it does."
+  2. **One artifact:** the lens opens on the right (`ArtifactLens`, 640 across): its payload plays over a field of 40
+     prisms laid from the artifact's id (Hydra's heads fan out, Javelin throws one line, Aftershock cracks the same place
+     again, Aegis raises a shell), the count from its Charge track (Aegis: re-raises + 1); its four tracks as arcs round
+     the rim (Mass, Space, Time, Charge), each with its flower, value and label, the attuned one full and the fixed
+     three dimmed. On the left, no box: kind and serial, the unique name, what the kind does, the attuned element's flower
+     with its aspect and value, which seat carries it; FEED IT and GIVE TO A SEAT.
+  3. **Feeding it:** the same words, then the level now and after the next feed on one band (the twist marked at 5, the
+     ceiling marked), the twist line, the value now and next, one icon per crystal of its element held (up to 10), the
+     balance line, FEED and OMNI (5 a press), and the result line.
+- **The marks** are white stroked glyphs from the room's prism shapes (`Tools/Build/author_artifact_glyphs.py`,
+  `Assets/_Graphics/Icons/Artifacts/`): Javelin a long diamond, Hydra three diamonds in a fan, Aftershock two stacked,
+  Aegis a hexagon in a hexagon. White, so the theme tints them.
+- **Unchanged:** the feeding rule (`PilotLoadoutStore.TryFeed`, one element per artifact, the diminishing curve), GIVE
+  TO A SEAT (`GiveRequested`), the crystals the profile holds (the Converter thread's 10 of each default fills them).
+  Every word is a field on `ArkArtifactsPage` (authored by the generator, tokens checked against what the page fills);
+  every colour is a themed token.
+
+**Differs from the board:** the lens's hex grid behind the prisms is left out (a plain glass field); the release point is
+a small diamond. Motion is drawn on the canvas (pooled images), not a 3D scene; a render texture can replace the field
+later without touching the page.
+
+**Verified:** reference compile against the Unity assemblies (no errors in changed files; 30 errors elsewhere on the
+branch were there before), `author_menu_ark.py --check / --self-test`, `author_artifact_glyphs.py --check`,
+`colour_trace.py --check`, `colour_grade.py --check`, `check_console_logging.py`. Not run in the Unity editor: hand test
+in `Docs/UNITY_VERIFICATION_CHECKLIST.md` ("The Artifacts tab as Rev 105 B").
+
+Affects: Shombith's Ark screen (the Artifacts tab); Garrett's artifact kinds (read only, the marks are new).

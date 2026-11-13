@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 105 - notes: no cards, three levels, the recommendation</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#8A8FAE}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.sh{text-shadow:0 0 10px rgba(0,1,10,.95),0 0 3px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.sl{clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14px;color:#B8C0F0}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.pick:focus-visible,.btn:focus-visible{outline:2px solid #00D4FF;outline-offset:3px}
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;gap:10px;height:44px;padding:0 18px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:15px;letter-spacing:.1em;text-transform:uppercase}
+.btn .kc{border-color:currentColor;color:inherit;opacity:.85}
+.cta{background:#99FF80;color:#00010A}
+.ghost{background:rgba(0,1,10,.35);color:#E6E9FF;box-shadow:inset 0 0 0 1px rgba(230,233,255,.55)}
+.off{background:rgba(0,1,10,.3);color:#5C5F70;box-shadow:inset 0 0 0 1px #222645}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@keyframes feedA{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-260px) scale(.2);opacity:0}}
+@keyframes feedB{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-260px) scale(.2);opacity:0}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes lensOpen{from{transform:scale(.18);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fly{from{stroke-dashoffset:300}to{stroke-dashoffset:0}}
+@keyframes burst{0%,55%{r:0;opacity:0}70%{opacity:1}100%{r:26;opacity:0}}
+@keyframes turn{from{transform:rotateY(0)}to{transform:rotateY(360deg)}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 900px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif"><span class="abs cap" style="left:80px;top:56px;font-size:28px">Rev 105 - the Artifacts tab without cards</span><div class="abs" style="left:80px;top:112px;width:1760px"><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:16px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Asked</span><span style="font-size:18px;line-height:1.5">Shombith, 2026-11-13: &quot;The UI cards on top of each screen. I do not like them at all. ... For the artifacts screen, lets see what you come up with.&quot; The backdrops stay (&quot;fire for now&quot;); the Ark takes its light, motion and design from the pilot scenes set inside the Ark.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:16px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">What goes</span><span style="font-size:18px;line-height:1.5">Rev 86's two cards: the list box on the left and the picked artifact's box on the right. No option draws a box behind its words: text sits on the room with a soft shadow, and the only lines are a leader, a meter and a lens rim. The mockup colour-set switch is gone too.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:16px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Three levels</span><span style="font-size:18px;line-height:1.5">Every option breaks the tab into three steps, one press each, B to go back: the hoard (which artifacts you have), one artifact (what it is and does, who carries it, Give), and feeding it (its element's crystals and the level they buy). The level shows in the tab row's trail. Each level shows only what it needs, so there is never a wall of words.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:16px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Real content</span><span style="font-size:18px;line-height:1.5">The hoard is four unique artifacts as the game rolls them (INVENTORY.md 2): a kind, a name, a serial, ONE attuned element on the diminishing curve, three fixed tracks. Values come from the shipped kinds. Crystals start at 10 of each, Shombith's default for now; a feed takes 5 (ArkArtifactsPage.feedBatch). Feed works on the boards: the crystals fly in and the level rises.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:16px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">From the pilot scenes</span><span style="font-size:18px;line-height:1.5">B's lens is Jugger's and Scales' dome: a round glass over the room in which the game itself plays, prisms and trails in depth, the payload of the picked artifact doing its thing. A warm light under the rim stands for the brass and lanterns. A and C keep the scenes' rule that the words belong to the object: labels on the pedestals, a caption under the piece.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:16px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Recommended: B</span><span style="font-size:18px;line-height:1.5">It is the only option that SHOWS what an artifact does (Hydra's heads fan out and burst; the number of heads is the level), which is what a player needs before feeding one, and it is the most HyperSea. A is the quietest and keeps the room whole but crowds when the hoard grows past what the pedestals hold. C reads best on a phone (one big thing, one caption) but hides the hoard.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:16px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">Not decided</span><span style="font-size:18px;line-height:1.5">Where the eight empty slots show (A: the alcoves, B: empty lenses on the rail, C: a count). Whether Give stays here or moves to the Squads tab only. The hoard past four: B's rail scrolls, A needs more pedestals in the room.</span></div><div style="display:grid;grid-template-columns:280px 1fr;gap:28px;padding:16px 0;border-top:1px solid #222645"><span class="cap" style="font-size:15px;color:#8A8FAE">For the build</span><span style="font-size:18px;line-height:1.5">Over the built backdrop clip (ArkBackdrop): B's lens is one UI circle with a render texture of a small payload scene, or a looped clip per kind for a first pass; the rail and words are the existing ArkArtifactsPage fields, re-laid out (author_menu_ark.py). No new data.</span></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
