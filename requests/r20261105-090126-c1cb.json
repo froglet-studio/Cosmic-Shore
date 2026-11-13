@@ -4,7 +4,7 @@
  "epoch": "cb586f87a203",
  "id": "r20261105-090126-c1cb",
  "job": "unity-train",
- "stopped": "failed (exit 6): the project does not compile in Unity: Scripts have compiler errors.",
+ "stopped": "budget",
  "tries": 52,
- "updated": 1794549728
+ "updated": 1794588810
 }
