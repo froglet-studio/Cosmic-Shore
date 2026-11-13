@@ -22,7 +22,8 @@ namespace CosmicShore.UI
     /// beside it.</item>
     /// <item><b>Picked up.</b> The backdrop plays the PDA lifted to the eye (<see cref="ArkBackdropRun.PickUp"/>, then
     /// <see cref="ArkBackdropRun.Held"/>), and the crew appears on its glass once it is up: one cell a pilot, the close-up
-    /// of their callsign's scene, their name and their callsign.</item>
+    /// of their callsign's scene, their name, their callsign and, under it, their ability: what their sight shows
+    /// (<see cref="CallsignSetSO.Callsign.brief"/>; Shombith, 2026-11-13).</item>
     /// <item><b>A pilot's file.</b> A press opens that pilot's file on the glass: the close-up, the callsign and what it
     /// lights, the name, the human and two animals, the faction and home, the story, PREV / NEXT through the crew, and
     /// FULL PROFILE, which opens Garrett's full-screen profile page (<see cref="ScreenSwitcher.OpenPilotProfile"/>).</item>
@@ -42,6 +43,8 @@ namespace CosmicShore.UI
         [SerializeField] private PilotSceneCatalogSO scenes;
         [Tooltip("One cell a pilot, in crew order. A crew holds one pilot a callsign, so one cell a callsign.")]
         [SerializeField] private SquadPickChip[] cells;
+        [Tooltip("One a cell, in the same order: what that pilot's sight shows, under their callsign.")]
+        [SerializeField] private TMP_Text[] sightLines;
         [Tooltip("Shown on the glass while the crew is empty.")]
         [SerializeField] private CanvasGroup emptyGroup;
         [SerializeField] private TMP_Text countText;
@@ -87,10 +90,13 @@ namespace CosmicShore.UI
         [SerializeField] private KitButton profileButton;
 
         [Header("Words (empty shows nothing)")]
-        [Tooltip("A cell's first line. {name}, {given}, {family}, {callsign}, {species} and {faction} are filled in.")]
+        [Tooltip("A cell's first line. {name}, {given}, {family}, {callsign}, {brief}, {sight}, {species} and {faction} are " +
+                 "filled in ({brief} is the callsign's sight in a few words, {sight} its whole line).")]
         [SerializeField] private string nameTemplate;
         [Tooltip("A cell's second line. The same tokens.")]
         [SerializeField] private string lineTemplate;
+        [Tooltip("A cell's third line, under the callsign: the pilot's ability, what their sight shows. The same tokens.")]
+        [SerializeField] private string sightTemplate;
         [Tooltip("Beside the caption: {count} is the crew's size.")]
         [SerializeField] private string countTemplate;
 
@@ -257,9 +263,11 @@ namespace CosmicShore.UI
             {
                 var cell = cells[i];
                 if (!cell) continue;
+                var sightLine = sightLines != null && i < sightLines.Length ? sightLines[i] : null;
                 if (i >= _crew.Count)
                 {
                     cell.Draw(false, string.Empty, string.Empty, null, false);
+                    if (sightLine) sightLine.text = string.Empty;
                     continue;
                 }
 
@@ -268,12 +276,14 @@ namespace CosmicShore.UI
                 var row = PilotSight.Set ? PilotSight.Set.For(callsign) : null;
                 cell.Draw(true, Fill(nameTemplate, person, row), Fill(lineTemplate, person, row), CloseUp(callsign),
                           person.Id == s_lastRead);
+                if (sightLine) sightLine.text = string.IsNullOrEmpty(row?.brief) ? string.Empty : Fill(sightTemplate, person, row);
             }
         }
 
         static string Fill(string template, PilotRecord person, CallsignSetSO.Callsign row) =>
             TemplateText.Fill(template, "name", person.DisplayName(), "given", person.GivenName, "family", person.FamilyName,
-                "callsign", row?.word, "species", person.SpeciesCombo(), "faction", person.FactionName);
+                "callsign", row?.word, "brief", row?.brief, "sight", row?.meaning, "species", person.SpeciesCombo(),
+                "faction", person.FactionName);
 
         Sprite CloseUp(PilotVision callsign) => scenes && scenes.TryGet(callsign, out var scene) ? scene.closeUp : null;
 

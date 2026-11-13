@@ -16,6 +16,7 @@ MonoBehaviour:
   - sight: 1
     word: ENSIGN
     meaning: 'Your domain''s mass: what is yours to defend, and the gaps in it.'
+    brief: your own mass
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -28,6 +29,7 @@ MonoBehaviour:
   - sight: 2
     word: MANGER
     meaning: The mass cluster the fauna are heading for.
+    brief: where fauna graze
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -40,6 +42,7 @@ MonoBehaviour:
   - sight: 3
     word: ANVIL
     meaning: Every Mass crystal.
+    brief: Mass crystals
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -52,6 +55,7 @@ MonoBehaviour:
   - sight: 4
     word: VOLT
     meaning: Every Charge crystal.
+    brief: Charge crystals
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -64,6 +68,7 @@ MonoBehaviour:
   - sight: 5
     word: ZODIAC
     meaning: Every Space crystal.
+    brief: Space crystals
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -76,6 +81,7 @@ MonoBehaviour:
   - sight: 6
     word: SUNDIAL
     meaning: Every Time crystal.
+    brief: Time crystals
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -88,6 +94,7 @@ MonoBehaviour:
   - sight: 7
     word: OPAL
     meaning: Every Omni crystal.
+    brief: Omni crystals
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -100,6 +107,7 @@ MonoBehaviour:
   - sight: 8
     word: RAMPART
     meaning: Every shielded prism.
+    brief: shielded prisms
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -112,6 +120,7 @@ MonoBehaviour:
   - sight: 9
     word: CITADEL
     meaning: 'Every super-shielded prism: what a payload is for.'
+    brief: super-shields
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -124,6 +133,7 @@ MonoBehaviour:
   - sight: 10
     word: HORNET
     meaning: 'Every danger prism: the mass that burns your petals.'
+    brief: danger prisms
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -136,6 +146,7 @@ MonoBehaviour:
   - sight: 11
     word: IVY
     meaning: Every plant.
+    brief: plants
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -148,6 +159,7 @@ MonoBehaviour:
   - sight: 12
     word: TALON
     meaning: Every predator.
+    brief: predators
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -160,6 +172,7 @@ MonoBehaviour:
   - sight: 13
     word: DOE
     meaning: Every herbivore.
+    brief: herbivores
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -172,6 +185,7 @@ MonoBehaviour:
   - sight: 14
     word: WINGMAN
     meaning: 'Every vessel on your side, through mass.'
+    brief: allies through mass
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -184,6 +198,7 @@ MonoBehaviour:
   - sight: 15
     word: BANDIT
     meaning: 'Every opposing vessel, through mass.'
+    brief: rivals through mass
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -196,6 +211,7 @@ MonoBehaviour:
   - sight: 16
     word: NEEDLE
     meaning: 'Every ring that activates something: gates, Scarab switches, goals.'
+    brief: switches and gates
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -208,6 +224,7 @@ MonoBehaviour:
   - sight: 17
     word: GALLEON
     meaning: 'The Arks, and the payload aboard.'
+    brief: Arks and payloads
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:
@@ -220,6 +237,7 @@ MonoBehaviour:
   - sight: 18
     word: FLUME
     meaning: 'Every soliton, whoever made it: where it is and where it leads.'
+    brief: solitons
     glyph: {fileID: 0}
     plateGlyph: {fileID: 0}
     openSound:

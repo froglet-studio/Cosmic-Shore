@@ -8618,3 +8618,21 @@ C's prisms leave the frame as the view closes in; it also matches the Converter'
 **Differs from the build**: no C#. The bench clips are re-rendered from the picked device
 (`r99_pilots_bench_videos.py`), and `author_menu_ark.py`'s `PDA_REST_CORNERS` and `GLASS_X/Y/W/H` take the picked
 device's screen corners (held, all three sit within 20 px of the built glass, 403,194 to 1517,1003).
+
+## 199. Built: each pilot's ability on the Pilots tab (2026-11-13, claude/project-thread-60987t on top of section 192, not run in Unity)
+
+**Asked (Shombith, 2026-11-13):** the Pilots screen "is alright but we should also mention each one's ability". Shown the
+abilities the game already has, he picked the callsign sight (Garrett's pilot concept, `Docs/Pilots/CALLSIGNS.md`): what
+holding LB lights. The retired kit-rewrite pilots stay retired.
+
+**Built:** every crew cell on the PDA's glass carries a third line under the callsign, "Sees {brief}" (Sees Charge
+crystals, Sees rivals through mass), two rows at most in BodySmall. `{brief}` is a new authored field on each
+`CallsignSetSO` row, the sight in a few words, written by `author_callsign_assets.py` (`BRIEFS`; validated, with a
+negative control for a missing one); the full line stays the file's Sight row. To make room the cell's close-up went from
+120 to 96. The cell lines also accept `{brief}` and `{sight}`. `ArkPilotsPage.sightLines` holds one line per cell; the
+generator checks it is wired in cell order, that every brief wraps into its two rows, and that the rows do not overlap.
+
+**Note:** RAMPART, HORNET and NEEDLE show their brief although their sights are not built in the match yet (CALLSIGNS.md).
+
+**Ran:** `unity_refcompile` (0 errors in the changed files), `author_menu_ark.py --check` and `--self-test`,
+`author_callsign_assets.py --check` and `--self-test`, `/ship` gates. No Unity editor ran.

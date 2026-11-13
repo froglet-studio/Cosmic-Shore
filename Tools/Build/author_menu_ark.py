@@ -678,8 +678,11 @@ SCREEN_GROUND_ALPHA = 0.9                           # the lit screen's ground ov
 PILOT_COLS, PILOT_W, PILOT_H, PILOT_GAP = 6, 164, 212, 14
 PILOT_X = (GLASS_W - (PILOT_COLS * PILOT_W + (PILOT_COLS - 1) * PILOT_GAP)) // 2
 PILOT_Y = SCREEN_HEAD + 20                          # the grid's top left on the glass
-PILOT_FACE, PILOT_FACE_Y, PILOT_PAD = 120, 10, 8    # the close-up's side and top, and the words' inset
-PILOT_NAME_Y, PILOT_NAME_H, PILOT_LINE_Y, PILOT_LINE_H = 138, 24, 164, 18   # the name and the callsign under it
+PILOT_FACE, PILOT_FACE_Y, PILOT_PAD = 96, 10, 8     # the close-up's side and top, and the words' inset
+PILOT_NAME_Y, PILOT_NAME_H, PILOT_LINE_Y, PILOT_LINE_H = 114, 24, 140, 18   # the name and the callsign under it
+# Under the callsign, the pilot's ability: what their sight shows, in two lines at most (Shombith, 2026-11-13).
+PILOT_SIGHT_Y, PILOT_SIGHT_LINES, PILOT_SIGHT_ROLE = 160, 2, "BodySmall"
+PILOT_SIGHT_H = PILOT_SIGHT_LINES * 20
 PILOT_NAME_ROLE = "BodySmall"
 FOOT_Y, FOOT_H = GLASS_H - 20 - 44, 44              # the glass's foot row: LAY DOWN, or CREW / PREV / NEXT / FULL PROFILE
 # The name must hold the widest name PilotGenerator's tables compose (measured 2026-11-12 over its given and family names,
@@ -689,7 +692,8 @@ FILE_FACE = 320                                     # the file's close-up
 FILE_COL_X = SCREEN_PAD + FILE_FACE + SCREEN_PAD    # the file's words column
 FILE_COL_W = GLASS_W - FILE_COL_X - SCREEN_PAD
 SCENE_CATALOG = K.meta_guid("Assets/_SO_Assets/Pilots/PilotSceneCatalog.asset")     # author_pilot_scene_assets.py
-PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("countTemplate", "Pilots: {count}"),
+PILOT_LINES = (("nameTemplate", "{name}"), ("lineTemplate", "{callsign}"), ("sightTemplate", "Sees {brief}"),
+               ("countTemplate", "Pilots: {count}"),
                ("lastCallsignTemplate", "{callsign}"), ("lastNameTemplate", "{name}"),
                ("fileKickerTemplate", "{callsign}"), ("fileNameTemplate", "{name}"), ("fileSpeciesTemplate", "{species}"),
                ("fileFactionTemplate", "{faction} - {homeworld}"), ("fileSightCaptionTemplate", "Sight"),
@@ -709,11 +713,21 @@ def pilot_tokens():
     assert cell and count and filed, "ArkPilotsPage.cs no longer fills its lines where author_menu_ark.py reads them"
     cell, count, filed = (tuple(re.findall(r'"(\w+)"', m.group(1))) for m in (cell, count, filed))
     assert cell and count and filed, "ArkPilotsPage's filled tokens read as empty"
-    return dict({"nameTemplate": cell, "lineTemplate": cell, "countTemplate": count}, **{f: filed for f in FILE_TEMPLATES})
+    return dict({"nameTemplate": cell, "lineTemplate": cell, "sightTemplate": cell, "countTemplate": count},
+                **{f: filed for f in FILE_TEMPLATES})
 
 
 PILOT_TOKENS = pilot_tokens()
 PILOT_WORDS = "".join(yfield(field, words) for field, words in PILOT_LINES)
+
+
+def callsign_briefs():
+    """Every callsign's brief, as CallsignSet.asset holds it (author_callsign_assets.py writes it)."""
+    path = os.path.join(REPO, "Assets/Resources/Pilots/CallsignSet.asset")
+    found = [v.strip().strip("'").replace("''", "'") for v in
+             re.findall(r"^    brief: (.*)$", open(path, encoding="utf-8").read(), re.M)]
+    assert len(found) == CALLSIGNS and all(found), "CallsignSet.asset does not hold a brief for every callsign"
+    return found
 
 
 def pilot_cell_rect(i):
@@ -768,11 +782,14 @@ def pilots_crew(screen):
     words_w = PILOT_W - 2 * PILOT_PAD
     for i in range(CALLSIGNS):
         x, y = pilot_cell_rect(i)
-        pick_chip(crew, f"Pilots/Cell{i}", f"Cell{i}", TL(x, y, PILOT_W, PILOT_H), PILOT_H, "", None,
-                  TL((PILOT_W - PILOT_FACE) // 2, PILOT_FACE_Y, PILOT_FACE, PILOT_FACE),
-                  line_rect=TL(PILOT_PAD, PILOT_LINE_Y, words_w, PILOT_LINE_H),
-                  label_rect=TL(PILOT_NAME_PAD, PILOT_NAME_Y, PILOT_W - 2 * PILOT_NAME_PAD, PILOT_NAME_H),
-                  label_role=PILOT_NAME_ROLE, line_align="center")
+        chip = pick_chip(crew, f"Pilots/Cell{i}", f"Cell{i}", TL(x, y, PILOT_W, PILOT_H), PILOT_H, "", None,
+                         TL((PILOT_W - PILOT_FACE) // 2, PILOT_FACE_Y, PILOT_FACE, PILOT_FACE),
+                         line_rect=TL(PILOT_PAD, PILOT_LINE_Y, words_w, PILOT_LINE_H),
+                         label_rect=TL(PILOT_NAME_PAD, PILOT_NAME_Y, PILOT_W - 2 * PILOT_NAME_PAD, PILOT_NAME_H),
+                         label_role=PILOT_NAME_ROLE, line_align="center")
+        # The pilot's ability under the callsign (ArkPilotsPage.sightLines): inside the chip, so it hides with it.
+        label(chip.child(N(f"Pilots/Cell{i}/Sight", "Sight", TL(PILOT_PAD, PILOT_SIGHT_Y, words_w, PILOT_SIGHT_H))),
+              "", PILOT_SIGHT_ROLE, "NeutralLightest", align="center", wrap=True)
     label(crew.child(N("Pilots/Held/Screen/Crew/Hint", "Hint", TL(SCREEN_PAD, FOOT_Y + 13, 500, 18))),
           "Tap a pilot to read their file.", "BodySmall", "NeutralLightest")
     small_button(crew, "Pilots/Held/Screen/Crew/PutDown", "PutDown", "Lay down", TR(SCREEN_PAD, FOOT_Y, 170, FOOT_H))
@@ -838,6 +855,7 @@ def pilots_page(root, veiled=VEILED):
         return mono(go, S["pilots"],
                     f"  scenes: {K.ref(11400000, SCENE_CATALOG, 2)}\n"
                     "  cells:\n" + refs_of(ctx, [f"Pilots/Cell{i}" for i in range(CALLSIGNS)], "chip")
+                    + "  sightLines:\n" + refs_of(ctx, [f"Pilots/Cell{i}/Sight" for i in range(CALLSIGNS)], "tmp")
                     + f"  emptyGroup: {r('Pilots/Empty', 'cg')}\n"
                     f"  countText: {r('Pilots/Count', 'tmp')}\n  screenSwitcher: {{fileID: 0}}\n"
                     f"  restGroup: {r('Pilots/Rest', 'cg')}\n  pickUpButton: {r('Pilots/Rest/Last/PickUp', 'button')}\n"
@@ -1288,6 +1306,9 @@ def validate_pilots(view, V):
     assert len(cells) == CALLSIGNS and all(i != "0" and A.kind_of(view, i)[1] == S["chip"] for i in cells), \
         f"ArkPilotsPage.cells is not {CALLSIGNS} wired SquadPickChips (one a callsign)"
     assert len(set(cells)) == len(cells), "ArkPilotsPage.cells names a cell twice"
+    sights = listed(page, "sightLines")
+    assert sights == [str(V(f"Pilots/Cell{i}/Sight#tmp")) for i in range(CALLSIGNS)], \
+        "ArkPilotsPage.sightLines is not each crew cell's own Sight line, in cell order"
     for i in cells:
         for field, want in PILOT_CELL_FIELDS.items():
             C.wired(view, A.doc_of(view, i)[1], field, want, "a crew cell")
@@ -1314,7 +1335,21 @@ def validate_pilots(view, V):
         assert K.label_width(WIDEST_NAME, PILOT_NAME_ROLE) * K.FIT_MIN_SCALE <= name_w <= PILOT_W, \
             f"crew cell {i}'s name row ({name_w:g}) does not hold the widest name a pilot can have"
     assert PILOT_FACE_Y + PILOT_FACE <= PILOT_NAME_Y and PILOT_NAME_Y + PILOT_NAME_H <= PILOT_LINE_Y \
-        and PILOT_LINE_Y + PILOT_LINE_H + PILOT_FACE_Y <= PILOT_H, "a crew cell's close-up, name and callsign overlap"
+        and PILOT_LINE_Y + PILOT_LINE_H <= PILOT_SIGHT_Y and PILOT_SIGHT_Y + PILOT_SIGHT_H + PILOT_FACE_Y <= PILOT_H, \
+        "a crew cell's close-up, name, callsign and sight overlap"
+    assert K.line_height(PILOT_SIGHT_ROLE) * PILOT_SIGHT_LINES <= PILOT_SIGHT_H, "a crew cell's sight rows are too short"
+    # Every callsign's sight, as the cell words it, wraps into the rows it has.
+    words_w = PILOT_W - 2 * PILOT_PAD
+    for brief in callsign_briefs():
+        said = dict(PILOT_LINES)["sightTemplate"].replace("{brief}", brief)
+        lines, cur = 1, ""
+        for word in said.split():
+            nxt = f"{cur} {word}".strip()
+            if cur and K.label_width(nxt, PILOT_SIGHT_ROLE) > words_w:
+                lines, cur = lines + 1, word
+            else:
+                cur = nxt
+        assert lines <= PILOT_SIGHT_LINES, f"a crew cell's sight needs more than {PILOT_SIGHT_LINES} lines: {said}"
     assert K.line_height(PILOT_NAME_ROLE) <= PILOT_NAME_H and K.line_height("Label") <= PILOT_LINE_H + 0.5, \
         "a crew cell's rows are shorter than their text"
     # The held glass is anchored to the held render's glass, so the words stay on it however the picture stretches.
@@ -1499,6 +1534,8 @@ def self_test(files):
             f[view], V("Pilots#logic"), lambda d: d.replace(f"guid: {SCENE_CATALOG}", f"guid: {PILOT_CATALOG}")))),
         ("a callsign with no crew cell", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(f"  - {{fileID: {V('Pilots/Cell17#chip')}}}\n", "")))),
+        ("a crew cell with no sight line", lambda f: f.__setitem__(view, in_doc(
+            f[view], V("Pilots#logic"), lambda d: d.replace(f"  - {{fileID: {V('Pilots/Cell5/Sight#tmp')}}}\n", "")))),
         ("a crew cell with no close-up", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots/Cell3#chip"), lambda d: re.sub(r"(  image: )\{fileID: -?\d+\}", r"\1{fileID: 0}", d)))),
         ("a crew cell off the PDA's glass", lambda f: f.__setitem__(view, in_doc(
@@ -1525,7 +1562,7 @@ def self_test(files):
          "which the page does not fill there"),
         ("a crew line naming a token the page does not fill", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(yfield("lineTemplate", "{callsign}"),
-                                                             yfield("lineTemplate", "{sight}")))),
+                                                             yfield("lineTemplate", "{homeworld}")))),
          "which the page does not fill there"),
         ("a crew line naming the count's token", lambda f: f.__setitem__(view, in_doc(
             f[view], V("Pilots#logic"), lambda d: d.replace(yfield("nameTemplate", "{name}"),

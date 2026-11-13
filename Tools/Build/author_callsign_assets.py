@@ -54,6 +54,30 @@ CALLSIGNS = [
     (18, 'FLUME', 'Every soliton, whoever made it: where it is and where it leads.'),
 ]
 
+# The same sight in a few words, for places with no room for the line: the Ark's Pilots tab shows it under each pilot's
+# callsign (Shombith, 2026-11-13: "mention each one's ability"). Kept apart from CALLSIGNS so the scripts that unpack
+# its (value, word, meaning) rows are untouched.
+BRIEFS = {
+    'ENSIGN': 'your own mass',
+    'MANGER': 'where fauna graze',
+    'ANVIL': 'Mass crystals',
+    'VOLT': 'Charge crystals',
+    'ZODIAC': 'Space crystals',
+    'SUNDIAL': 'Time crystals',
+    'OPAL': 'Omni crystals',
+    'RAMPART': 'shielded prisms',
+    'CITADEL': 'super-shields',
+    'HORNET': 'danger prisms',
+    'IVY': 'plants',
+    'TALON': 'predators',
+    'DOE': 'herbivores',
+    'WINGMAN': 'allies through mass',
+    'BANDIT': 'rivals through mass',
+    'NEEDLE': 'switches and gates',
+    'GALLEON': 'Arks and payloads',
+    'FLUME': 'solitons',
+}
+
 LOOK = {
     'fadeInSeconds': 0.25,
     'fadeOutSeconds': 0.35,
@@ -93,7 +117,7 @@ def empty_event(indent):
             f'{p}  Path: \n')
 
 
-def set_asset(callsigns=CALLSIGNS):
+def set_asset(callsigns=CALLSIGNS, briefs=BRIEFS):
     out = ('%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n--- !u!114 &11400000\nMonoBehaviour:\n'
            '  m_ObjectHideFlags: 0\n  m_CorrespondingSourceObject: {fileID: 0}\n'
            '  m_PrefabInstance: {fileID: 0}\n  m_PrefabAsset: {fileID: 0}\n  m_GameObject: {fileID: 0}\n'
@@ -102,6 +126,7 @@ def set_asset(callsigns=CALLSIGNS):
            '  m_Name: CallsignSet\n  m_EditorClassIdentifier: \n  callsigns:\n')
     for value, word, meaning in callsigns:
         out += (f'  - sight: {value}\n    word:{yaml_text(word)}\n    meaning:{yaml_text(meaning)}\n'
+                f'    brief:{yaml_text(briefs.get(word, ""))}\n'
                 '    glyph: {fileID: 0}\n    plateGlyph: {fileID: 0}\n' + empty_event(4))
     out += f'  fadeInSeconds: {num(LOOK["fadeInSeconds"])}\n  fadeOutSeconds: {num(LOOK["fadeOutSeconds"])}\n'
     out += f'  suppressSaturation: {num(LOOK["suppressSaturation"])}\n  suppressExposure: {num(LOOK["suppressExposure"])}\n'
@@ -152,7 +177,7 @@ def enum_values():
     return {name.upper(): int(v) for name, v in re.findall(r'^\s*(\w+)\s*=\s*(\d+),', text, re.M) if name != 'None'}
 
 
-def validate(callsigns=CALLSIGNS):
+def validate(callsigns=CALLSIGNS, briefs=BRIEFS):
     errors = []
     values = enum_values()
     words = [w for _, w, _ in callsigns]
@@ -163,6 +188,10 @@ def validate(callsigns=CALLSIGNS):
             errors.append(f'{word} is {value} here but {values.get(word)} in PilotVision.cs')
         if not meaning:
             errors.append(f'{word} has no line')
+        if not briefs.get(word):
+            errors.append(f'{word} has no brief (BRIEFS)')
+    if set(briefs) - {w for _, w, _ in callsigns}:
+        errors.append(f'BRIEFS names no callsign: {sorted(set(briefs) - {w for _, w, _ in callsigns})}')
     if len({w[0] for w in words}) != len(words):
         errors.append('two callsigns share a first letter (CALLSIGNS.md §2: every first letter different)')
     if len(set(words)) != len(words):
@@ -190,6 +219,8 @@ def self_test():
         print('self-test FAILED: a callsign off its enum value validated'); ok = False
     if not validate(CALLSIGNS[:-1]):
         print('self-test FAILED: sixteen callsigns validated'); ok = False
+    if not validate(CALLSIGNS, {w: b for w, b in BRIEFS.items() if w != 'FLUME'}):
+        print('self-test FAILED: a callsign with no brief validated'); ok = False
     if drift({SET + '.missing': 'x'}) != [SET + '.missing (missing)']:
         print('self-test FAILED: --check did not see a missing asset'); ok = False
     print('self-test passed' if ok else 'self-test FAILED')
