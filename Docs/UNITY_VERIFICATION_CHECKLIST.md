@@ -23358,3 +23358,16 @@ reference assemblies; `author_ingame_hud.py --check` and `--self-test` clean.
 3. At Ready, as the hex opens, the fields fade with the words and the bar: nothing covers the arena once the hole grows.
 4. Replay the mode: the fields are back at full strength on the next loading screen.
 5. Profiler during the loading screen: no GC per frame from `PosterDrift`.
+
+## 🔴 Goby: Vortex Steal (Charge 5) and the four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/goby-vortex-steal`. The changed files compile clean against the Unity reference assemblies
+(`unity_refcompile`: 0 errors in changed files; the 30 it reports are UGS/party files this change does not touch).
+`author_goby_assets.py --check`, `author_goby_hud.py --check` and `icon_kit/author.py goby --check` clean; no Unity editor ran.
+
+1. Goby & Pistol in Freestyle, Charge to 5 (Toybox crystal dial): a Pistol vortex ring that hits a rival hull now adds the
+   petals to the Goby's bars (no loose crystals). Below Charge 4 the hit ejects them again.
+2. Same flight, fly the Pistol: at Charge 5 the Charge card shows Vortex Steal (the ring on a rival, petals coming back),
+   at Mass 5 the Mass card shows Fortress (the den with a shell). Swap to the Goby (D-pad): its Charge and Mass cards
+   keep their pictures; its Space card shows Deep Undertow at Space 5 and its Time card Phase Dart at Time 5.
+3. Drop an element below 4: that card's picture returns to the seat's ordinary card in both seats.
