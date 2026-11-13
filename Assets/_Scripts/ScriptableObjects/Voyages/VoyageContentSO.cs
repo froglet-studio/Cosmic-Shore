@@ -574,5 +574,17 @@ namespace CosmicShore.ScriptableObjects
         public string QuestsOpened = "Opened";
         [Tooltip("Over Play quest: where the button takes the player.")]
         public string QuestsPlayNote = "Play {name} in the Arcade";
+        [Tooltip("Over the saga's name on its locked card at the foot of the Voyages page (Frogma Rev 103 A).")]
+        public string StripSagaKicker = "Saga";
+        [Tooltip("The saga's name on its locked card at the foot of the Voyages page.")]
+        public string StripSagaName = "Tandava and The Severing";
+        [Tooltip("Over the episode's name on its locked card at the foot of the Voyages page.")]
+        public string StripEpisodesKicker = "Episodes";
+        [Tooltip("The next episode's name on its locked card at the foot of the Voyages page.")]
+        public string StripEpisodesName = "Episode 2";
+        [Tooltip("Under a locked card's name at the foot of the Voyages page.")]
+        public string StripSoon = "Coming soon";
+        [Tooltip("Under a locked card's name once it is pressed: it opens nothing.")]
+        public string StripNotOpen = "Not open yet. Voyages are open now.";
     }
 }

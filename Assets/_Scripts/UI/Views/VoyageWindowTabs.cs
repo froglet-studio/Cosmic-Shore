@@ -74,12 +74,38 @@ namespace CosmicShore.UI
             {
                 var t = tabs[i];
                 if (_dropped[i] || !t.page || !t.page.GetComponentInChildren<T>(true)) continue;
-                _dropped[i] = true;
-                if (t.button) t.button.gameObject.SetActive(false);
-                if (t.mark) t.mark.SetActive(false);
-                t.page.SetActive(false);
+                DropAt(i);
             }
             if (IsDropped(_shown)) Show(First());
+        }
+
+        /// <summary>The Saga and Episodes tabs (the tooltip's order). Both are locked and shown together at the foot of the
+        /// Voyages page instead (<see cref="VoyageLockedStrip"/>, Frogma Rev 103 A).</summary>
+        public const int SagaTab = 1, EpisodesTab = 3;
+
+        /// <summary>Tab <paramref name="index"/>'s button in the top row, or null.</summary>
+        public Button ButtonOf(int index) => index >= 0 && index < tabs.Length ? tabs[index].button : null;
+
+        /// <summary>
+        /// <see cref="Drop{T}"/> by place in the row, for a tab whose page carries nothing of its own to find it by: the
+        /// Saga and Episodes tabs (Shombith, 2026-11-13: "Lock both saga and episodes for now. I do not think they should
+        /// be different panels"). The Voyages tab (0) never leaves.
+        /// </summary>
+        public void Drop(int index)
+        {
+            if (index <= 0 || index >= tabs.Length) return;
+            if (_dropped.Length != tabs.Length) Array.Resize(ref _dropped, tabs.Length);
+            if (!_dropped[index]) DropAt(index);
+            if (IsDropped(_shown)) Show(First());
+        }
+
+        void DropAt(int i)
+        {
+            var t = tabs[i];
+            _dropped[i] = true;
+            if (t.button) t.button.gameObject.SetActive(false);
+            if (t.mark) t.mark.SetActive(false);
+            if (t.page) t.page.SetActive(false);
         }
 
         // The first tab still in the window.

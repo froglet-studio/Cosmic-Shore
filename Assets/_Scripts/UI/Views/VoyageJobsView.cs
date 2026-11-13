@@ -83,6 +83,7 @@ namespace CosmicShore.UI
         VoyageOpenCard _card;
         int _jobCount;
         VoyageBoard _board;
+        VoyageLockedStrip _lockedStrip;
         readonly List<VoyageBoard.Row> _boardRows = new();
 
         void OnEnable()
@@ -368,15 +369,27 @@ namespace CosmicShore.UI
             // scale (Rev 88: "the top texts are too big").
             var style = VoyageBoardStyleSO.Load();
             var tabs = GetComponentInParent<VoyageWindowTabs>(true);
+            Sprite sagaArt = null, lockSprite = null;
             if (tabs)
             {
                 // Quests left the Voyage window for its own (QuestsModal; Shombith, 2026-11-13).
                 tabs.Drop<QuestTrackView>();
+                // Saga and Episodes are locked and leave the tab row: both are shown together at the page's foot
+                // (Frogma Rev 103 A). Their art and the tabs' lock are read before the tabs go.
+                var part = tabs.PageOf(VoyageWindowTabs.SagaTab) is { } sagaPage
+                    ? sagaPage.GetComponentInChildren<VoyageView>(true) : null;
+                sagaArt = part && part.Card ? part.Card.CardBackground : null;
+                var lockT = tabs.ButtonOf(VoyageWindowTabs.EpisodesTab) is { } epButton ? epButton.transform.Find("Lock") : null;
+                if (lockT && lockT.TryGetComponent<Image>(out var lockImage)) lockSprite = lockImage.sprite;
+                tabs.Drop(VoyageWindowTabs.SagaTab);
+                tabs.Drop(VoyageWindowTabs.EpisodesTab);
                 tabs.Plain(style.LabelFont, 15f, 34f);
                 // The Saga, Quests and Episodes pages take the same table (Rev 90).
                 VoyageSlabPage.Stand(tabs, new VoyageKit(style, lines, template ? template.LabelTemplate : null), vessels, page,
                     sagaLocked);
             }
+            _lockedStrip = VoyageLockedStrip.Create(page, new VoyageKit(style, lines, template ? template.LabelTemplate : null),
+                sagaArt, lockSprite);
             // The map and its edge view stand in the board's course column.
             if (mapColumn)
             {
@@ -398,6 +411,19 @@ namespace CosmicShore.UI
             if (!mapColumn || !_board) return;
             EnsureEdge();
             _board.FitTable(_mapHost, _edgeHost);
+            FitLockedStrip();
+        }
+
+        /// <summary>The locked Saga and Episodes strip stands at the voyage screen's foot, and the board and the map stand
+        /// above it; behind the squad screen it stands down and they take the whole page again.</summary>
+        void FitLockedStrip()
+        {
+            if (!_lockedStrip || !_board) return;
+            bool show = !_board.OnSquadScreen;
+            _lockedStrip.gameObject.SetActive(show);
+            float lift = show ? VoyageLockedStrip.Lift : 0f;
+            if (_board.transform is RectTransform boardRect) boardRect.offsetMin = new Vector2(boardRect.offsetMin.x, lift);
+            if (mapColumn) mapColumn.offsetMin = new Vector2(mapColumn.offsetMin.x, lift);
         }
 
         static VoyageBoard.Row BoardRow(VoyageLines lines, VoyageOpenCard.Model model, int index, CrewPerson person)

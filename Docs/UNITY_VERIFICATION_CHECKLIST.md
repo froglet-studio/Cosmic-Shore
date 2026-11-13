@@ -23464,3 +23464,18 @@ only. No Unity editor ran.
    recolours the window.
 7. The Voyage window has no Quests tab; Voyages, Saga and Episodes still switch.
 
+## 🔴 Saga and Episodes locked at the foot of the Voyages page (Rev 103 A) (2026-11-14, Shombith, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-z6k09o` (PR into `voyages`). Board: Frogma, Voyages tab, Rev 103 A (narrowed). The changed
+files compile clean against the Unity reference assemblies (`unity_refcompile`: 0 errors in changed files; the 30 it
+reports are in multiplayer and camera files this change does not touch). `author_voyage_assets.py --check` and the
+`/ship` gates pass. No Unity editor ran.
+
+1. Menu_Main, open the Voyage window. The tab row shows no Saga and no Episodes tab (Quests too once its own screen lands).
+2. At the foot of the Voyages page: two cards, 520 wide each, centred, 24 apart: the Saga card with Tandava's card art
+   dimmed, "SAGA", "Tandava and The Severing", a lock top right, "COMING SOON"; the Episodes card the same with the
+   galaxy picture and "Episode 2".
+3. Press the Saga card: its line reads "Not open yet. Voyages are open now."; nothing opens. Press again: "Coming soon".
+4. The voyage list, the map and the right panel stand above the strip, none of them covered by it.
+5. Configure / go to the squad screen: the strip is gone and the map fills the page; back to the voyage screen, it returns.
+6. Wear another colour set: the cards repaint with it.
