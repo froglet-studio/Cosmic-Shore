@@ -280,6 +280,32 @@ the caption; the face margin 0.03 of the view; the crew cell 260 x 256 with a 18
 
 ---
 
+### 🔴 The Ark's HyperSea pass: tab changes through the pearl membrane (`claude/project-thread-s689ho`, 2026-11-13, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed** (Docs/MENU_REDESIGN_B.md section 197): `ArkBackdrop` prepares the next clip on a second player and
+carries the picture across with the `CosmicShore/UI/ArkPass` shader; `ArkTabsView` fades the page left and rises the page
+reached in step. Ran headless: `unity_refcompile` player and editor (no errors in the changed files),
+`author_ark_backdrop_assets.py --check`, `colour_trace.py --check`. `ArkPassTests` compiled, not run. No Unity editor ran.
+
+**Verify in editor:**
+1. Menu_Main, Play, open the Ark. CONVERTER to SQUADS: the hangar comes in from the right through a wobbling pearl
+   membrane, rainbow at its crest, the pier drifting left and pushing in; caustic light ripples over the hangar and
+   settles. No black frame, no frozen frame, no pink (a missing shader).
+2. SQUADS to CONVERTER: the same from the left. Press tabs quickly: each press starts from where the last one reached.
+3. SQUADS to PILOTS: the hangar passes into the dark, then the Pilots page shows on its veil. PILOTS to ARTIFACTS: the
+   room passes in from the dark.
+4. The page's words: the old page fades at once, the new one rises in once the membrane is past the middle. Buttons on
+   the old page do nothing after the press.
+5. CONVERT: the rest dissolves into the conversion (0.3 s), and the conversion into the Omni made. Change the squad's
+   domain on SQUADS: the hangar dissolves into the other domain's clip.
+5b. Each tab change picks A (membrane), B (ripple from the tab word pressed) or E (caustic veil) at random, 0.5 s each:
+   press tabs a dozen times and see all three; B's ring starts at the word you pressed.
+6. Tune the feel on `Assets/Resources/ArkBackdropConfig` (pass and dissolve seconds; written by
+   `author_ark_backdrop_assets.py`, so change the numbers there) and on the material's strengths (membrane width, lens,
+   sheen, split, push, drift, dip, caustics) in the shader's defaults.
+7. On a phone: no hitch when a pass starts (the second decode), and the Ark still frees both textures on leaving
+   (Memory Profiler: no "Ark backdrop A/B" textures after going Home).
+
 ### 🔴 The Ark screen's backdrops: the Frogma renders as video behind Squads, Converter and Artifacts (`claude/dazzling-einstein-gnr5iw`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed** (Docs/MENU_REDESIGN_B.md section 190; it replaces sections 188-189's live Ark model, which Shombith
@@ -23385,6 +23411,96 @@ reference assemblies; `author_ingame_hud.py --check` and `--self-test` clean.
 3. At Ready, as the hex opens, the fields fade with the words and the bar: nothing covers the arena once the hole grows.
 4. Replay the mode: the fields are back at full strength on the next loading screen.
 5. Profiler during the loading screen: no GC per frame from `PosterDrift`.
+
+## 🔴 Goby: Vortex Steal (Charge 5) and the four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/goby-vortex-steal`. The changed files compile clean against the Unity reference assemblies
+(`unity_refcompile`: 0 errors in changed files; the 30 it reports are UGS/party files this change does not touch).
+`author_goby_assets.py --check`, `author_goby_hud.py --check` and `icon_kit/author.py goby --check` clean; no Unity editor ran.
+
+1. Goby & Pistol in Freestyle, Charge to 5 (Toybox crystal dial): a Pistol vortex ring that hits a rival hull now adds the
+   petals to the Goby's bars (no loose crystals). Below Charge 4 the hit ejects them again.
+2. Same flight, fly the Pistol: at Charge 5 the Charge card shows Vortex Steal (the ring on a rival, petals coming back),
+   at Mass 5 the Mass card shows Fortress (the den with a shell). Swap to the Goby (D-pad): its Charge and Mass cards
+   keep their pictures; its Space card shows Deep Undertow at Space 5 and its Time card Phase Dart at Time 5.
+3. Drop an element below 4: that card's picture returns to the seat's ordinary card in both seats.
+## 🔴 Thresher: Anchor Ward (Time 5) and its Time card ward (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/thresher-anchor-ward`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `icon_kit/author.py thresher --check`
+clean; no Unity editor ran.
+
+1. Thresher in Freestyle, Time to 5. Plant (full LT) and orbit through a field of danger prisms: the bars do not drain.
+   Let go and fly through the same prisms: they drain as before.
+2. Still at Time 5, planted, take a rival pilot's hit: it lands (the ward is danger prisms only).
+3. Time card: planted at Time 5 shows the white ward arc and an orange danger prism outside it; flying free, or below
+   Time 4, neither shows.
+4. Swap vessels mid-plant: the next hull is not left warded (the executor revokes the grant on disable).
+## 🔴 Meerkat: the soliton's surface area as an ElementalFloat, and the four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/meerkat-space-scaling`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `author_meerkat_assets.py --check`,
+`studio_to_unity.py --vessel meerkat --check` and `icon_kit/author.py meerkat` gates clean; no Unity editor ran.
+(`author_meerkat_assets.py --self-test` was already failing on bleeding-edge: its HUD donor no longer carries the Stoat's
+sprites. Not touched here.)
+
+1. Open `MeerkatSolitonConfig.asset`: Space's area is one `Surface Area` ElementalFloat (6000 at rest, 18000 at Space 10,
+   floor 3000, element Space). `areaL0` / `areaL10` are gone.
+2. Meerkat in Freestyle, Space 0 then Space 10 (Toybox crystal dial): the reticle and the formed soliton are thinner at 0
+   and fatter at 10, as before. Drain Space below rest: the tunnel thins further but never closes.
+3. Each element to 5: Charge card shows Six Sentinels (three sentinels under one guard), Mass shows Danger Portal (six
+   spiked prisms), Space shows Steal (a hollow prism in, a solid one out), Time shows Boost Out (two long bars). Below 4
+   the ordinary card returns.
+## 🔴 Honeyguide: off the Sparrow's weapon data, and the banked upgrade's picture on the trigger cards (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/honeyguide-own-data`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `author_honeyguide_assets.py --check`
+and `--self-test`, `author_honeyguide_hud.py --check` clean; no Unity editor ran.
+
+1. Open `Honeyguide.prefab`: no component names `SkyBurstGunAction` or `FullAutoAction` (the Sparrow's). GunSprayAccuracy
+   reads `HoneyguidePeckAction`; the FireGunActionExecutor's default action is empty; VesselRearmOnPrismDestruction is off.
+2. Honeyguide in Freestyle: RT Pecks as before (straight, no spray); no warnings from the rearm or the missile executor.
+3. Make a Ratel upgrade card that banks on RT (e.g. Genesis Lance): the Space card shows its picture until its uses are
+   spent, then Peck again (or Piercing Pecks at Space 5). Same on LT with an LT card (e.g. Blink Drive) on the Charge card.
+4. Bank two different RT upgrades: the card shows the newer one; spend it and the older one's picture comes back.
+## 🔴 Rhino: its own plough HUD (sword code out) and the three level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/rhino-plough-hud`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `author_rhino_hud.py --check`,
+`author_hull_ability_rows.py --check`, `author_jacks_hud.py --check` and `icon_kit/author.py rhino --check` clean; no
+Unity editor ran. `RhinoKatanaPoseTests` and `RhinoBladeReachLayoutTests` were deleted with the code they tested (the
+Swordfish's copies keep their own tests).
+
+1. Open `RhinoHUDVariant.prefab`: the Charge, Mass and Space cards show Gore, Heft and Blade with no override from
+   Rhino.prefab; there are no Afterimage objects; the view has no katana / reach / afterimage fields.
+2. Rhino in Freestyle: the Charge plate still fills toward the gore speed and lights at a ram; the Time card still shows
+   the hull, the danger prism and, at Time 5 above 70% speed, the ward. No console errors from the HUD.
+3. Each of Charge, Mass, Space to 5: the card swaps to Gore Steal, Berm, Unstoppable; below 4 it swaps back.
+4. Jacks in Freestyle: its four cards are unchanged (its HUD is regenerated from the Rhino's without the dead afterimage
+   objects).
+## 🔴 Grizzly: Mass scaling, Charge 5 Battle Sight, four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/grizzly-kit-pass`. Compiled against the Unity reference assemblies (`unity_refcompile`: 0 errors in
+changed files; the 30 it reports are UGS/party files this change does not touch). `icon_kit/author.py grizzly --check`
+clean; `element_ability_table.py Grizzly` shows 4/4 scaling and 4/4 L5 gates. No Unity editor ran.
+
+1. Fly the Grizzly in the Toybox; raise Mass. Trail prisms grow (x1 at rest, x2.5 at Mass 10; never below x0.4).
+2. Raise Charge to 5, dig in with rivals within ~600 m: each rival's hull turns its domain colour with a ringed halo,
+   visible through mass. Un-plant (or drop below Charge 4): the marks fade out within a quarter second, none stick.
+   Allies and your own hull are never marked; an AI Grizzly marks nothing on anyone's screen.
+3. At level 5 of each element the card swaps to its upgraded picture: Battle Sight (Charge), Claimed Fire (Mass),
+   Safe Detonation (Space), Vector Control (Time); below level 4 it swaps back.
+## 🔴 Swordfish: the Rhino-named sword classes and assets renamed (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/swordfish-rename`. Every class, script and asset only the Swordfish uses lost its Rhino name
+(`RhinoSword*` / `RhinoShieldSwipe*` / ... -> `Swordfish*`; `RhinoSwordCamera` -> `SwordfishSwordLengthCamera`, as
+`SwordfishSwordCamera` already exists); the sword's action assets moved to `VesselActions/Swordfish/`. Every .meta guid
+is kept, so no prefab or asset reference changes. Compiled against the Unity reference assemblies (`unity_refcompile`:
+0 errors in changed files). No Unity editor ran.
+
+1. Open the project: no "missing script" or "class name does not match file name" warnings for any Swordfish* script.
+2. Fly the Swordfish in the Toybox: swipe, energize, afterimages, combos and the Surge ring all work as before.
+3. The Rhino and the Jacks fly as before (they share only `RhinoAnimation` and `RhinoAIBoostPolicy`, which keep their names).
 
 ## 🔴 The Artifacts tab as Rev 105 B, the lens (2026-11-13, Shombith, NOT RUN IN EDITOR)
 

@@ -1,0 +1,6 @@
+{
+  "comment": "The ONE Swim Lanes page (/swimlanes section 6). Publish to this url only; never a second page. Source: page.html beside this file; data: page_data.py; clicks on the page land in its `actions` collection until a sync turns them into Docs/Handoffs and Docs/Approvals files.",
+  "url": "https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf",
+  "created": "2026-11-13",
+  "by": "Shombith"
+}

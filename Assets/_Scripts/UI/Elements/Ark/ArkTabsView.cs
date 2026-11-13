@@ -44,8 +44,25 @@ namespace CosmicShore.UI
         [Tooltip("The tab shown the first time the Ark opens.")]
         [SerializeField, Min(0)] private int defaultTab;
 
+        [Header("Page change (the HyperSea pass, Docs/MENU_REDESIGN_B.md section 197)")]
+        [Tooltip("Seconds the page left takes to fade out. It takes no input from the press on.")]
+        [SerializeField, Min(0f)] private float pageOutSeconds = KitMotion.Micro;
+        [Tooltip("Seconds before the page reached starts to come in: the backdrop's membrane is past the middle by then " +
+                 "(0.45 of ArkBackdropConfig's pass seconds).")]
+        [SerializeField, Min(0f)] private float pageInDelay = 0.22f;
+        [Tooltip("Seconds the page reached takes to rise in (the kit's panel token).")]
+        [SerializeField, Min(0f)] private float pageInSeconds = KitMotion.Panel;
+        [Tooltip("How far the page reached rises as it comes in, in canvas units.")]
+        [SerializeField, Min(0f)] private float pageRise = 14f;
+
         int _current = -1;
         bool _screenActive;
+
+        // The pages in motion: the one left fading out, the one reached rising in.
+        CanvasGroup _leaving, _arriving;
+        RectTransform _arrivingRect;
+        Vector2 _arrivingRest;
+        float _leaveClock = -1f, _arriveClock = -1f;
 
         /// <summary>Raised with the new tab's index when the shown tab changes.</summary>
         public event Action<int> Changed;
@@ -58,6 +75,10 @@ namespace CosmicShore.UI
         /// <summary>The page logic tab <paramref name="index"/> drives (its <see cref="IArkTabPage"/>), or null. The Ark's 3D
         /// picks each tab's room by WHAT the tab holds, never by its position in the row (tabs get inserted).</summary>
         public MonoBehaviour PageLogic(int index) => index >= 0 && index < tabs.Length ? tabs[index].pageLogic : null;
+
+        /// <summary>Tab <paramref name="index"/>'s word in the row, or null (the backdrop's ripple starts from it).</summary>
+        public RectTransform ButtonRect(int index) =>
+            index >= 0 && index < tabs.Length && tabs[index].button ? tabs[index].button.transform as RectTransform : null;
 
         void Awake()
         {
@@ -84,6 +105,7 @@ namespace CosmicShore.UI
             if (index < 0 || index >= tabs.Length || index == _current) return;
             int previous = _current;
             _current = index;
+            SettlePages();
             for (int i = 0; i < tabs.Length; i++)
             {
                 var t = tabs[i];
@@ -93,6 +115,9 @@ namespace CosmicShore.UI
                 if (t.availability) t.availability.Reapply();
                 if (t.page) KitVisibility.SetShown(t.page, on);
             }
+            // Pressed from another tab: the page left fades (it took no input from the press on), the page reached
+            // rises in once the backdrop's membrane has passed the middle. The first page of all just shows.
+            if (previous >= 0 && enabled && gameObject.activeInHierarchy) BeginPageChange(tabs[previous].page, tabs[index].page);
             if (previous >= 0) Tell(previous, false);
             Tell(index, _screenActive);
             Changed?.Invoke(index);
@@ -109,8 +134,77 @@ namespace CosmicShore.UI
         public void OnScreenExit()
         {
             _screenActive = false;
+            SettlePages();
             if (_current >= 0) Tell(_current, false);
         }
+
+        void BeginPageChange(CanvasGroup leaving, CanvasGroup arriving)
+        {
+            if (leaving && leaving != arriving && pageOutSeconds > 0f)
+            {
+                _leaving = leaving;
+                _leaving.alpha = 1f;          // hidden already (no input, no layout); only its look fades
+                _leaveClock = 0f;
+            }
+            if (arriving && (pageInDelay > 0f || pageInSeconds > 0f))
+            {
+                _arriving = arriving;
+                _arrivingRect = arriving.transform as RectTransform;
+                _arrivingRest = _arrivingRect ? _arrivingRect.anchoredPosition : Vector2.zero;
+                _arriveClock = 0f;
+                ApplyArrival(0f);
+            }
+        }
+
+        void Update()
+        {
+            float dt = Time.unscaledDeltaTime;
+            if (_leaveClock >= 0f)
+            {
+                _leaveClock += dt;
+                float k = Mathf.Clamp01(_leaveClock / Mathf.Max(0.001f, pageOutSeconds));
+                if (_leaving) _leaving.alpha = 1f - k;
+                if (k >= 1f) EndLeave();
+            }
+            if (_arriveClock >= 0f)
+            {
+                _arriveClock += dt;
+                float k = pageInSeconds <= 0f ? 1f : (_arriveClock - pageInDelay) / pageInSeconds;
+                if (_arriveClock >= pageInDelay + pageInSeconds) EndArrive();
+                else ApplyArrival(KitMotion.Ease(KitEase.OutQuint, Mathf.Max(0f, k)));
+            }
+        }
+
+        void ApplyArrival(float e)
+        {
+            if (_arriving) _arriving.alpha = e;
+            if (_arrivingRect) _arrivingRect.anchoredPosition = _arrivingRest + Vector2.down * (pageRise * (1f - e));
+        }
+
+        void EndLeave()
+        {
+            if (_leaving && _leaving != _arriving) _leaving.alpha = 0f;
+            _leaving = null;
+            _leaveClock = -1f;
+        }
+
+        void EndArrive()
+        {
+            if (_arriving) _arriving.alpha = 1f;
+            if (_arrivingRect) _arrivingRect.anchoredPosition = _arrivingRest;
+            _arriving = null;
+            _arrivingRect = null;
+            _arriveClock = -1f;
+        }
+
+        /// <summary>Lands any page change under way where it was going (a new press, leaving the screen).</summary>
+        void SettlePages()
+        {
+            if (_leaveClock >= 0f) EndLeave();
+            if (_arriveClock >= 0f) EndArrive();
+        }
+
+        void OnDisable() => SettlePages();
 
         void Tell(int index, bool shown)
         {

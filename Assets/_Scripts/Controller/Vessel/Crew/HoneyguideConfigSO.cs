@@ -104,6 +104,9 @@ namespace CosmicShore.Gameplay
         public HoneyguidePreview preview;
         [Tooltip("Plays on each use. Ship empty; an unwired slot is a visible TODO.")]
         public EventReference sfx;
+        [Tooltip("Its card picture: the trigger's card (RT the Space card, LT the Charge card) shows it while this ability is " +
+                 "the newest banked on that trigger (icon kit, AbilityIcons/Honeyguide/Upgrades/).")]
+        public Sprite icon;
     }
 
     /// <summary>A designed engine (Appendix B): its printed rows, top first, M / C / S a port of that colour.</summary>

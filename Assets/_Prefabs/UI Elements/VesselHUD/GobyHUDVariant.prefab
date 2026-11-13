@@ -195,15 +195,23 @@ MonoBehaviour:
   - element: 1
     goby: {fileID: 21300000, guid: c800cffcb3c323d2b40c0b31e143ca80, type: 3}
     pistol: {fileID: 21300000, guid: 2f4ed38e1439e9286a3cab32ded186d9, type: 3}
+    gobyUpgraded: {fileID: 0}
+    pistolUpgraded: {fileID: 21300000, guid: 38c198ee16a6f0c4f0ca77d7abd6e801, type: 3}
   - element: 2
     goby: {fileID: 21300000, guid: b9a4dab02bd4c4da7e78cb9ce35cf242, type: 3}
     pistol: {fileID: 21300000, guid: 5e2c67481aefb6fa224dd99648dfd7ab, type: 3}
+    gobyUpgraded: {fileID: 0}
+    pistolUpgraded: {fileID: 21300000, guid: 0a5019527318a505cf54ed0cce230388, type: 3}
   - element: 3
     goby: {fileID: 21300000, guid: 0bd93aecdf1715c37c0ee8e887888ad1, type: 3}
     pistol: {fileID: 21300000, guid: 9de4b8518ebfa1ef0bbc36a48f5af60c, type: 3}
+    gobyUpgraded: {fileID: 21300000, guid: ad6839521a72a9a8ad1f8b052c7bec22, type: 3}
+    pistolUpgraded: {fileID: 0}
   - element: 4
     goby: {fileID: 21300000, guid: b40f0c9dcf80aff353c978ffef5e08ba, type: 3}
     pistol: {fileID: 21300000, guid: 3fa5c9fbcc1c01efc8c644899d61a475, type: 3}
+    gobyUpgraded: {fileID: 21300000, guid: a0dd35aca3924e520df672ac25408f37, type: 3}
+    pistolUpgraded: {fileID: 0}
   timeGauge: {fileID: 7881000000000001203}
   spaceGauge: {fileID: 7881000000000001213}
   massGauge: {fileID: 7881000000000001223}

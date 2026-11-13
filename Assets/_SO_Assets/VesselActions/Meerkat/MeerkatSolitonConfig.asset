@@ -40,8 +40,14 @@ MonoBehaviour:
   riftSpeed: 2
   riftSeconds: 5
   riftLife: 45
-  areaL0: 6000
-  areaL10: 18000
+  surfaceArea:
+    Enabled: 1
+    Value: 6000
+    Min: 6000
+    Max: 18000
+    element: 3
+    UseFloor: 1
+    Floor: 3000
   suckRadius: 40
   suckSpeed: 30
   swallowShare: 1.5

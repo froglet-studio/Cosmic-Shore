@@ -1,0 +1,17 @@
+{
+  "id": "2026-11-13-ship-s-1272-line-skill-md-is-now-a-559-l-e290f0",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-13T16:05:08+00:00",
+  "area": "/ship (your §5.7 and the 11-10/11-12 /ship and /swimlanes changes)",
+  "summary": "/ship's 1272-line SKILL.md is now a 559-line procedure plus references/ (merge traps, review traps, verify, lab, compute, codex, refactor: moved word for word, numbered and indexed); a 0.2 s triage (ship_triage.py) names the sections and traps a branch needs; gates run in parallel (3 min 14 s to 57 s, same verdicts); new §6.5 offers a hand-off at a GO. /swimlanes gains HANDED OFF and FOR TEST tiers right after your loop tier (the loop stays first) and a FOR YOU block.",
+  "why": "Shombith, 2026-11-13: /ship was too slow and read every line every time; lanes need hand-offs to a person, to open and to test.",
+  "branch": "claude/epic-pascal-coonfe",
+  "lane": "claude-tooling",
+  "commit": "1ba6face9",
+  "paths": [
+    ".claude/skills/ship",
+    ".claude/skills/swimlanes",
+    "Tools/Build/ship_gates.py"
+  ]
+}

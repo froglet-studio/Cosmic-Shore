@@ -32,8 +32,8 @@ two-trigger chip). Time stays `Input: 0`, the passive sentinel (the ramp gesture
 
 | Element | Ability | What the element scales | Level 5 |
 |---|---|---|---|
-| Charge | **Energize** (was Sword Steal, and Sword Energy before that, until 2026-10-26) | petals a sword hit takes from a rival, x1 at rest -> x2.5 at level 10, floored x1 (`RhinoSwordStealBySkimmerEffect.stealScale`) | **Sword Steal** (was Live Wire until 2026-10-26) - the hit's petals land on the Rhino instead of being ejected as crystals (`VesselOvertakeBySkimmerEffectSO.stealUpgradeElement`) |
-| Mass | **Afterimage** | afterimage VOLUME, x1 -> x2.5, floored x0.25, read at the REPLICATED level (`RhinoSwordAfterimageConfigSO.massVolumeMultiplier`) | **Danger Afterimages** - laid as danger prisms (`RhinoSwordAfterimageConfigSO.DangerActive`) |
+| Charge | **Energize** (was Sword Steal, and Sword Energy before that, until 2026-10-26) | petals a sword hit takes from a rival, x1 at rest -> x2.5 at level 10, floored x1 (`SwordfishSwordStealBySkimmerEffect.stealScale`) | **Sword Steal** (was Live Wire until 2026-10-26) - the hit's petals land on the Rhino instead of being ejected as crystals (`VesselOvertakeBySkimmerEffectSO.stealUpgradeElement`) |
+| Mass | **Afterimage** | afterimage VOLUME, x1 -> x2.5, floored x0.25, read at the REPLICATED level (`SwordfishSwordAfterimageConfigSO.massVolumeMultiplier`) | **Danger Afterimages** - laid as danger prisms (`SwordfishSwordAfterimageConfigSO.DangerActive`) |
 | Space | **Blade Reach** | the blade's length, 24 -> 40 (`Skimmer.Scale` on the Rhino's ForceFieldSkimmer instance) - Space ALONE since 2026-10-26, with the camera following it | **Shield Breaker** (was Breaker until 2026-10-26) - the sword can pop super-shielded prisms at all, with an energized blade (`ShieldSkimmerScaleConfigSO.superShieldUpgradeElement`) |
 | Time | **Ramp Spool** | the ramp's wind-up, 220 u/s per second x1 -> x2.5, floored x0.5 | **Momentum** - above 70% of top speed (588 of 840 u/s) danger prisms cannot drain the Rhino's elements |
 
@@ -57,7 +57,7 @@ zero - for one 0.1 payment. Now:
 
 ## 3. Mass - Afterimage
 
-`RhinoSwordAfterimage` (on `ScaleSkimmerObject`, beside the sword driver) listens to the driver's
+`SwordfishSwordAfterimage` (on `ScaleSkimmerObject`, beside the sword driver) listens to the driver's
 `EnergizePhaseChanged`. On the way OUT of `Energized` it opens a **5 s window**; while a window is
 open it lays an afterimage whenever the blade tip has moved at least 6 u and 0.3 s has passed, up to
 16 per window. An afterimage is the blade itself, tiled: the hilt-to-tip line, 90% of it, cut into at
@@ -75,9 +75,9 @@ Each prism is laid through the vessel's own spawn channel and prism type, owned 
 should be danger prisms and not immune to our destruction"* - they stay plain until Mass 5 (that
 split is unchanged), and the Rhino's own blade now cuts them like any prism once the fleet's 1 s
 self-trail grace is past, banking energy for them (0.04 x Charge each). Until 2026-10-17
-`RhinoSkimmerDamagePrismEffectSO` skipped them and the blade never cut its own. The identity test
-survives for the AI: `RhinoSwordAfterimage.IsMine` (`prism.Trail is RhinoAfterimageTrail t &&
-t.Owner == this`, surfaced as `IRhinoSwordState.IsOwnAfterimage`) lets `RhinoSwordAutopilot` aim at
+`SwordfishSkimmerDamagePrismEffectSO` skipped them and the blade never cut its own. The identity test
+survives for the AI: `SwordfishSwordAfterimage.IsMine` (`prism.Trail is RhinoAfterimageTrail t &&
+t.Owner == this`, surfaced as `ISwordfishSwordState.IsOwnAfterimage`) lets `SwordfishSwordAutopilot` aim at
 something else first. A recycled prism cannot pass it: pool reuse clears membership and its new
 layer stamps its own. The hull still ploughs them (`RHINO_PLOUGH.md`, unchanged).
 
@@ -109,7 +109,7 @@ the ramp keeps climbing. That was recorded as a gap; it is the design.
 
 ## 5. The omni crystal - the Surge
 
-`RhinoVesselSurgeByCrystalEffect` replaces `RhinoVesselChangeResourceByCrystalEffect` in the
+`SwordfishVesselSurgeByCrystalEffect` replaces `RhinoVesselChangeResourceByCrystalEffect` in the
 Rhino's vessel container (the explosion beside it is unchanged). On an omni pickup:
 
 *(Reworked 2026-10-26 - the 2026-10-16 surge also filled the energy, burst the blade and lent every
@@ -140,7 +140,7 @@ and the owner, like every crystal's.
   EVENTS - a full single-trigger swing at the deadzone - and every peer cuts against its own blade,
   so a half-pull sweep that missed for the pilot cut on everyone else's screen. Events still drive
   a device that writes no mirrors (touch).
-- **State.** `RhinoSwordNetworkRelay` (NetworkBehaviour, Rhino root) carries energy (quantized
+- **State.** `SwordfishSwordNetworkRelay` (NetworkBehaviour, Rhino root) carries energy (quantized
   1/1024), the energize phase and the surge bit, owner-write. The driver decides on the owner
   (`IsAuthority`) and mirrors elsewhere, routing the phase through `SetEnergizePhase` so the
   ignition re-dispatch, the FX and the afterimage window fire on every peer.
@@ -153,7 +153,7 @@ and the owner, like every crystal's.
   straight whose leg pays the wind-up back, brakes ON the ramp to a corner speed, and `End()`s it at
   a sharp corner (a graded ramp's own release is the top of its slope, not an end); it re-arms a ramp
   the grading let fall off. `Controller/AI/AI_BOOST.md`, Ramp.
-- **Sword** - `RhinoSwordAutopilot` (Rhino root) writes the trigger MIRRORS on the machine that owns
+- **Sword** - `SwordfishSwordAutopilot` (Rhino root) writes the trigger MIRRORS on the machine that owns
   the AI's input, so the shipped sword code poses, energizes and replicates it like a human's. Every
   0.15 s at rest it picks: hold the energize stance when the meter can pay and hardened mass is near
   (or the meter is >= 75% and anything is in reach), else one 0.3 s stroke at the nearest hostile
@@ -194,34 +194,34 @@ deleted (`ABILITY_LOCKUP.md`).
 
 | File | Role |
 |---|---|
-| `Executors/RhinoSwordAfterimage.cs` (+ `RhinoAfterimageTrail`) | Mass: lays the afterimages |
-| `Executors/RhinoSwordAfterimageConfigSO.cs`, `_SO_Assets/VesselActions/Rhino/RhinoSwordAfterimageConfig.asset` | Mass tuning, Mass scaling, Mass-5 gate |
+| `Executors/SwordfishSwordAfterimage.cs` (+ `RhinoAfterimageTrail`) | Mass: lays the afterimages |
+| `Executors/SwordfishSwordAfterimageConfigSO.cs`, `_SO_Assets/VesselActions/Swordfish/SwordfishSwordAfterimageConfig.asset` | Mass tuning, Mass scaling, Mass-5 gate |
 | `Executors/ShieldSkimmerScaleDriver.cs` | energy / energize / tail / Surge / authority + mirror / `EnergizePhaseChanged` |
 | `Executors/ShieldSkimmerScaleConfigSO.cs`, `ShieldSkimmerScaleConfig.asset` | energize and surge tuning (`liveWireUpgradeElement` / `LiveWireActive` DELETED 2026-10-26) |
-| `Executors/IRhinoSwordState.cs` | `IsSurging`, `Surge`, `IsOwnAfterimage` (TriggerCrystalBurst removed) |
-| `Vessel/RhinoSwordNetworkRelay.cs` | owner-authoritative energy / phase / surge |
+| `Executors/ISwordfishSwordState.cs` | `IsSurging`, `Surge`, `IsOwnAfterimage` (TriggerCrystalBurst removed) |
+| `Vessel/SwordfishSwordNetworkRelay.cs` | owner-authoritative energy / phase / surge |
 | `Executors/ShieldSwipeActionExecutor.cs` | pose from the replicated mirrors on every peer |
-| `Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs`, `RhinoSkimmerDamagePrismEffect.asset` | Charge energy scaling; cuts own afterimages past the 1 s grace (since 2026-10-17) |
-| `Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs`, `RhinoVesselSurgeByCrystalEffect.asset` | the Surge |
+| `Skimmer Prism Effects/SwordfishSkimmerDamagePrismEffectSO.cs`, `SwordfishSkimmerDamagePrismEffect.asset` | Charge energy scaling; cuts own afterimages past the 1 s grace (since 2026-10-17) |
+| `Vessel Crystal Effects/SwordfishVesselSurgeByCrystalEffectSO.cs`, `SwordfishVesselSurgeByCrystalEffect.asset` | the Surge |
 | `Vessel/VesselElementalImmunity.cs`, `Vessel/ITopSpeedSource.cs`, `Executors/RampBoostActionExecutor.cs` | Momentum |
-| `AI/Rhino/RhinoSwordAutopilot.cs`, `AI/Boost/RampBoostAIPolicySO.cs`, `AI Boost Policies/RhinoAIBoostPolicy.asset` | AI |
+| `AI/Rhino/SwordfishSwordAutopilot.cs`, `AI/Boost/RampBoostAIPolicySO.cs`, `AI Boost Policies/RhinoAIBoostPolicy.asset` | AI |
 | `UI/Controller/RhinoHUDController.cs` | the card states, both gauges, the Time chip |
-| `Tests/Editor/RhinoSwordAfterimageTests.cs` | the segment tiling |
+| `Tests/Editor/SwordfishSwordAfterimageTests.cs` | the segment tiling |
 
 ## Tuning knobs (first pass - never played)
 
 | Knob | Where | Value |
 |---|---|---|
-| Afterimage window | `RhinoSwordAfterimageConfig.windowSeconds` | 5 s |
+| Afterimage window | `SwordfishSwordAfterimageConfig.windowSeconds` | 5 s |
 | Cadence | `layIntervalSeconds` / `minTipTravel` | 0.3 s / 6 u |
 | Budget | `maxAfterimagesPerWindow` | 16 |
 | Shape | `segmentLength` / `maxSegments` / `lengthCoverage` / `width` / `thickness` | 10 / 6 / 0.9 / 2 / 0.8 |
 | Collider delay | `colliderDelaySeconds` | 0.1 s |
 | Mass volume | `massVolumeMultiplier` | x1 -> x2.5, floor x0.25 |
-| Charge steal | `RhinoSwordStealBySkimmerEffect.stealScale` | x1 -> x2.5, floor x1 |
+| Charge steal | `SwordfishSwordStealBySkimmerEffect.stealScale` | x1 -> x2.5, floor x1 |
 | Momentum | `VesselElementalImmunity.topSpeedFraction` (Rhino root) | 0.7 |
-| Surge | `RhinoVesselSurgeByCrystalEffect` `surgeSeconds` | 8 (no fill, no element buff since 2026-10-26) |
-| AI sword | `RhinoSwordAutopilot` think / stroke / rest / energize crowd / combo chance / finisher chance / tap / gap / combo rest | 0.15 / 0.3 / 0.45 / 6 / 0.35 / 0.4 / 0.08 / 0.1 / 0.9 |
+| Surge | `SwordfishVesselSurgeByCrystalEffect` `surgeSeconds` | 8 (no fill, no element buff since 2026-10-26) |
+| AI sword | `SwordfishSwordAutopilot` think / stroke / rest / energize crowd / combo chance / finisher chance / tap / gap / combo rest | 0.15 / 0.3 / 0.45 / 6 / 0.35 / 0.4 / 0.08 / 0.1 / 0.9 |
 | AI ramp | `RhinoAIBoostPolicy` `cornerSpeed` / `minCornerSpeed` / `minSpeedGain` / `cornerReleaseDegrees` / `minRearmSeconds` | 600 / 160 / 50 / 30° / 0.5 s (align / runway: fleet defaults) |
 
 Budget: at most 16 x 6 = 96 prisms per window, each <= 2 x 0.8 x 10 = 16 volume at rest (x2.5 at
@@ -260,7 +260,7 @@ Nothing here has run in the Unity editor (no editor in the authoring session). C
 - **Self-farm playtest** - one energize then self-cuts can refill the meter (§3); the lever is
   energy-per-own-afterimage.
 - **Combos** - the AI never combos; a staggered energize stance can fire a combo
-  (`RhinoSwordComboDetector` links a rolled press - `RhinoSwordComboTests.ARolledTap_StillLinks`).
+  (`SwordfishSwordComboDetector` links a rolled press - `SwordfishSwordComboTests.ARolledTap_StillLinks`).
 - **Icons** are PLACEHOLDERS (`*-PLACEHOLDER.png`).
 - **Engage SFX** for the surge / afterimages: no new FMOD slots were added; the existing burst FX
   reads for the surge.

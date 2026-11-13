@@ -27,6 +27,10 @@ SO_CS = "Assets/_Scripts/ScriptableObjects/Toys/ArkBackdropConfigSO.cs"
 PLAYER_CS = "Assets/_Scripts/UI/Elements/Ark/ArkBackdrop.cs"
 ASSET = "Assets/Resources/ArkBackdropConfig.asset"
 VIDEO_DIR = "Assets/_Graphics/Video/Ark"
+PASS_SHADER = "Assets/_Graphics/Materials/Shaders/UI/ArkPass.shader"   # the HyperSea pass (MENU_REDESIGN_B.md section 197)
+PASS_SECONDS = 0.5        # a pass from one room to another (Shombith, 2026-11-13: "the pass can be .50s")
+PASS_STYLES = (0, 1, 2)   # membrane, ripple, caustic veil, picked at random per change until one is final
+DISSOLVE_SECONDS = 0.3    # the pier's own runs: at rest, the conversion, the Omni made
 ROOM = {"Hangar": 1, "Pier": 2, "Artifacts": 3}
 RUN = {"loop": 0, "convert": 1, "done": 2}
 DOMAIN = {"Jade": 1, "Ruby": 2, "Gold": 4}
@@ -75,6 +79,24 @@ MonoBehaviour:
   clips:
 {chr(10).join(rows)}
   textureSize: {{x: 1920, y: 1080}}
+  passShader: {{fileID: 4800000, guid: {guid(PASS_SHADER)}, type: 3}}
+  passSeconds: {PASS_SECONDS}
+  passStyles:{"".join(chr(10) + "  - " + str(x) for x in PASS_STYLES) if PASS_STYLES else " []"}
+  dissolveSeconds: {DISSOLVE_SECONDS}
+"""
+
+
+def shader_meta():
+    return f"""fileFormatVersion: 2
+guid: {guid(PASS_SHADER)}
+ShaderImporter:
+  externalObjects: {{}}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
 """
 
 
@@ -138,7 +160,8 @@ NativeFormatImporter:
 
 def outputs():
     out = {ASSET: asset_text(), ASSET + ".meta": asset_meta(),
-           SO_CS + ".meta": script_meta(SO_CS), PLAYER_CS + ".meta": script_meta(PLAYER_CS)}
+           SO_CS + ".meta": script_meta(SO_CS), PLAYER_CS + ".meta": script_meta(PLAYER_CS),
+           PASS_SHADER + ".meta": shader_meta()}
     for f, *_ in clips():
         p = VIDEO_DIR + "/" + f
         out[p + ".meta"] = video_meta(p)
@@ -155,9 +178,14 @@ def validate():
     for f in stray:
         errors.append(f"{VIDEO_DIR}/{f} is not a backdrop this config names (ship it in the table or delete it)")
     so = open(os.path.join(REPO, SO_CS)).read() if os.path.exists(os.path.join(REPO, SO_CS)) else ""
-    for field in ("clips", "textureSize", "room", "run", "colourSet", "domain", "anyDomain", "clip"):
+    for field in ("clips", "textureSize", "room", "run", "colourSet", "domain", "anyDomain", "clip", "passShader",
+                  "passSeconds", "dissolveSeconds", "passStyles"):
         if not re.search(r"\b" + field + r"\s*[;=]", so):
             errors.append(f"the asset writes '{field}', which ArkBackdropConfigSO does not declare")
+    if not os.path.exists(os.path.join(REPO, PASS_SHADER)):
+        errors.append(f"{PASS_SHADER} is missing (the HyperSea pass)")
+    elif 'Shader "CosmicShore/UI/ArkPass"' not in open(os.path.join(REPO, PASS_SHADER)).read():
+        errors.append(f"{PASS_SHADER} is not the CosmicShore/UI/ArkPass shader")
     if not os.path.exists(os.path.join(REPO, PLAYER_CS)):
         errors.append(f"{PLAYER_CS} is missing")
     return errors

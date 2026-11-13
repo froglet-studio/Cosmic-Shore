@@ -2452,8 +2452,8 @@ sword landed.** Two independent reasons, and both are wiring rather than design:
 
 1. Four of the five skimmer containers (Dolphin, Manta-overcharge, Sparrow, Squirrel) carry **no
    prism-damage effect at all**, so they never call `Prism.Damage` and cannot reach the gate.
-2. The fifth — `RhinoForceFieldSkimmerImpactorDataContainer` — carries
-   `RhinoSkimmerDamagePrismEffectSO`, which handles super-shielded contact in its own branch
+2. The fifth — `SwordfishForceFieldSkimmerImpactorDataContainer` — carries
+   `SwordfishSkimmerDamagePrismEffectSO`, which handles super-shielded contact in its own branch
    (`PopSuperShield` on an energized blade, `NotifyPopDenied` + `BounceBack` otherwise) and
    **returns before any `Damage` call** either way.
 
@@ -2599,7 +2599,7 @@ the three time constants, the dissolve window, separation, opening angle, drift,
 clamp, the budget); the time constants and window are written onto a runtime CLONE of the material,
 so the shared material asset is never written at runtime. `PrismSliceMaterial` owns the look
 (fresnel, fresh-cut colour and cooling time, seam width, cut-face glow and shading, dissolve noise,
-ember band/glow/whiteness). `RhinoSkimmerDamagePrismEffectSO.sliceDestroyedPrisms` is the A/B switch.
+ember band/glow/whiteness). `SwordfishSkimmerDamagePrismEffectSO.sliceDestroyedPrisms` is the A/B switch.
 
 **Proof.** `Tools/Shaders/verify_prism_slice.py` — (A) clang++ compiles and RUNS the shipped HLSL:
 identity unstamped, the kept side bit-identical, every far vertex on the cut and inside the prism,

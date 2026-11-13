@@ -34,8 +34,7 @@ RHINO = dict(path=os.path.join(HUD_DIR, "RhinoHUDVariant.prefab"), name="RhinoHU
              guid="2656b477a4af7304180e65f2848a84b3", view_guid="d6e5753c294347a1966bc06a0e2e0424",
              view_id="5161366343835098938",
              icon_ids={1: "7720000000000003015", 2: "7720000000000003025", 3: "7720000000000003035", 4: "7720000000000003045"},
-             parts=("AfterimageFar", "AfterimageNear", "AfterimageBlade", "SpoolPrism", "SpoolGlance", "SpoolWard",
-                    "SpoolHull"),
+             parts=("SpoolPrism", "SpoolGlance", "SpoolWard", "SpoolHull"),   # the afterimage parts left with the sword (2026-11-13)
              keep_gauges=True)
 
 
@@ -85,8 +84,10 @@ def build_variant(hull, view_guid, icons_dir, cards, src=SPARROW_SRC):
                       f"    gauge: {gauges.get(str(el), '{fileID: 0}')}\n")
             b += "  upgradeHighlightScale: 1.15\n  upgradePunchScale: 1.35\n  upgradePunchDuration: 0.35\n"
         elif fid in icon_sprite:
-            b, n1 = re.subn(r"(?m)^  m_Color: \{r: 1, g: 1, b: 1, a: 0\}$", "  m_Color: {r: 1, g: 1, b: 1, a: 1}", b)
-            b, n2 = re.subn(r"(?m)^  m_Sprite: \{fileID: 0\}$", f"  m_Sprite: {sprite_ref(icons_dir, icon_sprite[fid])}", b)
+            # the source's card may be a sprite-less container (the Sparrow's) or carry its own hull's sprite (the Rhino's
+            # plough cards since 2026-11-13): either way the fork's card is the hull's own picture at full alpha
+            b, n1 = re.subn(r"(?m)^  m_Color: \{r: 1, g: 1, b: 1, a: [\d.]+\}$", "  m_Color: {r: 1, g: 1, b: 1, a: 1}", b)
+            b, n2 = re.subn(r"(?m)^  m_Sprite: \{[^\n]*\}$", f"  m_Sprite: {sprite_ref(icons_dir, icon_sprite[fid])}", b)
             assert n1 == 1 and n2 == 1, f"icon {fid} shape changed"
         elif fid in off_gos:
             b = re.sub(r"(?m)^  m_IsActive: 1$", "  m_IsActive: 0", b)
@@ -133,11 +134,15 @@ def base_controller(text):
     return "".join(out)
 
 
-def swap_vessel(vessel_prefab, hull, hud_guid, src=SPARROW_SRC):
+def swap_vessel(vessel_prefab, hull, hud_guid, src=SPARROW_SRC, view_guid=None):
     with open(os.path.join(ROOT, vessel_prefab)) as f:
         text = f.read()
     text = base_controller(text)
     text = text.replace(f"guid: {src['guid']}", f"guid: {hud_guid}")
+    if view_guid:
+        # a stripped stub of the nested view still names the SOURCE's view script; the fork's view is the hull's own
+        text = text.replace(f"m_Script: {{fileID: 11500000, guid: {src['view_guid']}, type: 3}}",
+                            f"m_Script: {{fileID: 11500000, guid: {view_guid}, type: 3}}")
     text = re.sub(r"(?m)^(      value: )%s$" % src["name"], rf"\g<1>{hull}HUDVariant", text)
     assert src["guid"] not in text
     return text
@@ -153,7 +158,7 @@ def fork(hull, view_cs, icons_dir, cards, vessel_prefab, argv=None, src=SPARROW_
         hud: build_variant(hull, view_guid, icons_dir, cards, src),
         hud + ".meta": prefab_meta(hud_guid),
         os.path.join(ROOT, view_cs) + ".meta": script_meta(view_guid),
-        os.path.join(ROOT, vessel_prefab): swap_vessel(vessel_prefab, hull, hud_guid, src),
+        os.path.join(ROOT, vessel_prefab): swap_vessel(vessel_prefab, hull, hud_guid, src, view_guid),
     }
     drift = []
     for path, content in want.items():

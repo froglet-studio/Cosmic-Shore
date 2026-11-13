@@ -663,7 +663,7 @@
    "ability": "Surge",
    "does": "For 8 seconds your blade stays energized and a ring of swords surrounds the ship, swinging with your triggers, while the camera pulls back. A blast also breaks prisms round you.",
    "trigger": "Pick up an omni crystal",
-   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/RhinoVesselSurgeByCrystalEffectSO.cs"
+   "source": "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Crystal Effects/SwordfishVesselSurgeByCrystalEffectSO.cs"
   }
  },
  "Thresher": {
