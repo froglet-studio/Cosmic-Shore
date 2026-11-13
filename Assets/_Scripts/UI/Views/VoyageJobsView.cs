@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,6 +35,10 @@ namespace CosmicShore.UI
     {
         [Tooltip("The card every job is drawn on; copies of it stand beside it in its grid, one per job.")]
         [SerializeField] VoyageJobCard template;
+
+        /// <summary>The words the window's runtime-built pages are set in (the job card's label), for windows built
+        /// with the same kit (<see cref="QuestsModal"/>).</summary>
+        public TMP_Text FontTemplate => template ? template.LabelTemplate : null;
 
         [Tooltip("The vessels the brief names the squad's hulls from (their card names).")]
         [SerializeField] SO_VesselList vessels;
@@ -365,6 +370,8 @@ namespace CosmicShore.UI
             var tabs = GetComponentInParent<VoyageWindowTabs>(true);
             if (tabs)
             {
+                // Quests left the Voyage window for its own (QuestsModal; Shombith, 2026-11-13).
+                tabs.Drop<QuestTrackView>();
                 tabs.Plain(style.LabelFont, 15f, 34f);
                 // The Saga, Quests and Episodes pages take the same table (Rev 90).
                 VoyageSlabPage.Stand(tabs, new VoyageKit(style, lines, template ? template.LabelTemplate : null), vessels, page,
