@@ -168,11 +168,13 @@ tooling" in a commit that changes how it ranks.
 ## 6. The Swim Lanes page (the artifact)
 
 **The page:** https://claude.ai/artifact/PXfvsmRch9BL87oBdBHKcf (`PAGE.json`; the ONE page, never publish a second).
-It shows the board by tier (the loop, handed off, for test, open with work, occupied, polish, polished) with every
-lane's detail, **For you** (what was handed to you, the lanes you hold, your queue), **For test** (the tester's list
-with Good to go / Send back), **Approvals** (every person's queue, answered by its owner), and **How it works**. Its
-look is the Fleet Codex's and the analytics console's: the game's colour sets as themes, Saira type, the sea lines
-(`Docs/UI_STYLE_GUIDE.md`). People pick their name in the bar; Claim, Hand off, Take it, test feedback and
+Shombith picked its layout from four mockups (2026-11-13: B and D). Pages: **Board** (the lanes in five status
+columns, Loop / Open / Held / Handed and test / Polish, each scrolling on its own; a card opens a drawer with every
+detail and the actions), **People** (a card per person: what they hold, what was handed to them, what they test),
+**For you** (each hand-off to you with its brief, the next steps as a checklist whose ticks and notes are private to
+you, the lanes you hold, your approvals), **For test**, **Approvals** and **How it works**. Its look is the analytics
+console's: `console.css`, `themes.css` and `theme.js` from `Tools/Analytics/console/` ship beside it (the rail,
+panels, tiles, segments, Aldrich and Chakra Petch; `Docs/UI_STYLE_GUIDE.md`). People pick their name in the bar; Claim, Hand off, Take it, test feedback and
 approve / discuss are saved at once in the page's `actions` collection and shown to everyone, marked "waiting for sync".
 
 **Sync** (on "/swimlanes sync", "update the swim lanes page", after any hand-off, and whenever the person asks), in
@@ -190,7 +192,7 @@ this order:
 4. **Republish.** `git fetch --prune origin`, then
    `python3 .claude/skills/swimlanes/page_data.py --out <scratchpad>/swimpage` (about 25 s: the board, every approval
    queue, every hand-off, and the page's assets). Publish `<scratchpad>/swimpage/index.html` to the page url with
-   `files` `data.json`, `theme.js`, `themes.css` from that folder, keeping the declared capabilities (omit
+   `files` `data.json`, `theme.js`, `themes.css`, `console.css` from that folder, keeping the declared capabilities (omit
    `capabilities` on a republish).
 5. **Say** in one line how many actions were applied, any refused and why, and that the page is current.
 

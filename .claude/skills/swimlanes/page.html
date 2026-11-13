@@ -1,255 +1,211 @@
 <title>Froglet Swim Lanes</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&family=Saira:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aldrich&family=Chakra+Petch:wght@500;600;700&display=swap">
 <script src="theme.js"></script>
 <link rel="stylesheet" href="themes.css">
+<link rel="stylesheet" href="console.css">
 <style>
-/* Froglet Swim Lanes (/swimlanes section 6; source .claude/skills/swimlanes/page.html, data from page_data.py).
-   Layout: one sticky bar (brand, five views, search, who you are, colour set), then the view. The board is the lanes in
-   their tiers, one hairline row per lane, most urgent tier first; a row opens in place for every detail and its actions.
-   Look: the Fleet Codex's and the analytics console's (Docs/UI_STYLE_GUIDE.md): the game's colour sets as themes
-   (themes.css / theme.js from Tools/Analytics/console/make_themes.py), Saira Condensed for display, Saira for text,
-   Lime (--fs-cta) only for the one call to action, Jade (--fs-selection) for a choice you can take back, Ruby
-   (--fs-danger) for no way back. Motion: transform and opacity on one curve; reduced motion holds still. */
-:root{
-  --ease:cubic-bezier(.45,0,.2,1);
-  --ink:var(--fs-text); --soft:var(--fs-text-soft); --off:var(--fs-text-off); --line:var(--fs-line);
-  --hair:color-mix(in srgb,var(--fs-line) 60%,transparent); --panel:var(--fs-surface); --deep:var(--fs-ground-deep);
-  --sel:var(--fs-selection); --cta:var(--fs-cta-fill); --warn:var(--fs-danger); --gold:var(--fs-gold);
-  --disp:"Saira Condensed","Arial Narrow",sans-serif; --body:"Saira",system-ui,sans-serif;
+/* Froglet Swim Lanes (/swimlanes section 6). Source .claude/skills/swimlanes/page.html; data page_data.py.
+   Layout (Shombith picked mockups B and D, 2026-11-13): the analytics console's shell (console.css, its rail, panels,
+   tiles, segments, cut corners and Aldrich / Chakra Petch type, Docs/UI_STYLE_GUIDE.md) with six pages: Board (the
+   lanes in five status columns, each scrolling on its own; a card opens a drawer with every detail and the actions),
+   People (a card per person: what they hold and what was handed to them), For you (a hand-off's brief with private
+   ticks, the lanes you hold, your approvals), For test, Approvals, How it works. Colours: the theme only; a person's
+   mark is one of the four series colours. Lime is the one call to action, Jade a choice you can take back. */
+.p1{--pc:var(--series-1)} .p2{--pc:var(--series-2)} .p3{--pc:var(--series-3)} .p4{--pc:var(--series-4)} .p0{--pc:var(--fs-text-soft)}
+.av{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:none;font-family:var(--fs-font-label);font-weight:700;font-size:12px;color:var(--fs-ground);background:var(--pc)}
+.av.lg{width:46px;height:46px;font-size:20px}
+.av.ghost{background:transparent;color:var(--fs-text-soft);box-shadow:inset 0 0 0 1px var(--fs-line)}
+.pill{display:inline-flex;align-items:center;height:22px;padding:0 8px;font-family:var(--fs-font-label);font-weight:600;font-size:11px;letter-spacing:.12em;text-transform:uppercase;box-shadow:inset 0 0 0 1px var(--fs-line);color:var(--fs-text-soft);white-space:nowrap;flex:none}
+.pill.new{background:var(--fs-cta-fill);color:var(--fs-on-fill);box-shadow:none}
+.pill.sel{box-shadow:inset 0 0 0 1px var(--fs-selection);color:var(--fs-selection)}
+.pill.warn{box-shadow:inset 0 0 0 1px var(--fs-gold);color:var(--fs-gold)}
+.pill.no{box-shadow:inset 0 0 0 1px var(--fs-danger);color:var(--fs-danger)}
+.k{width:16px;height:16px;flex:none;color:var(--fs-text-soft)}
+.bs{font-family:var(--fs-font-label);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;height:32px;padding:0 12px;border:0;cursor:pointer;background:transparent;color:var(--fs-text);box-shadow:inset 0 0 0 1px var(--fs-line);white-space:nowrap}
+.bs:hover{background:color-mix(in srgb,var(--fs-surface) 70%,transparent)}
+.bs.cta{background:var(--fs-cta-fill);color:var(--fs-on-fill);box-shadow:none}
+.bs.sel{box-shadow:inset 0 0 0 1px var(--fs-selection);color:var(--fs-selection)}
+.bs.no{box-shadow:inset 0 0 0 1px var(--fs-danger);color:var(--fs-danger)}
+.nbadge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;margin-left:auto;font-size:12px;background:var(--fs-selection);color:var(--fs-on-fill)}
+.nbadge.hot{background:var(--fs-cta-fill)}
+.seg input{all:unset;font-family:var(--fs-font-label);font-weight:600;font-size:13px;letter-spacing:.06em;color:var(--fs-text);width:230px;padding:0 10px;height:38px}
+.seg input::placeholder{color:var(--fs-text-soft);text-transform:uppercase;letter-spacing:.08em}
+.who select{background:transparent;border:0;color:var(--fs-text);font:inherit;font-size:13px;padding:0;cursor:pointer;max-width:100%}
+.who select option{background:var(--fs-ground);color:var(--fs-text)}
+.sets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.sets button{height:22px;border:0;padding:3px;cursor:pointer;display:flex;gap:2px;background:transparent;box-shadow:inset 0 0 0 1px var(--fs-line)}
+.sets button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--fs-selection)}
+.sets i{flex:1}
+.empty{color:var(--fs-text-soft);font-size:14px;padding:10px 2px}
+.wait{color:var(--fs-gold)}
+code{font-size:.92em;color:var(--fs-text);background:color-mix(in srgb,var(--fs-ground-deep) 70%,transparent);padding:1px 5px;overflow-wrap:anywhere}
+
+/* Board: five columns, each scrolls on its own */
+.cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:start}
+.col{display:flex;flex-direction:column;min-width:0;padding:12px 12px 8px}
+.col-h{display:flex;align-items:baseline;gap:8px;padding:2px 2px 2px}
+.col-h .lab{color:var(--fs-text)}
+.col-h .num{margin-left:auto;color:var(--fs-text-soft);font-size:15px}
+.col-d{font-size:12px;color:var(--fs-text-soft);padding:0 2px 8px;line-height:1.35;min-height:2.7em}
+.col-b{display:flex;flex-direction:column;gap:8px;max-height:calc(100dvh - 300px);min-height:260px;overflow-y:auto;padding-right:2px;scrollbar-width:thin}
+.sub{font-family:var(--fs-font-label);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--fs-text-soft);padding:8px 2px 0}
+.kc{display:flex;flex-direction:column;gap:6px;padding:10px 12px;text-align:left;border:0;cursor:pointer;color:var(--fs-text);background:color-mix(in srgb,var(--fs-ground-deep) 60%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fs-line) 70%,transparent);transition:box-shadow var(--fs-dur-micro)}
+.kc:hover{box-shadow:inset 0 0 0 1px var(--fs-selection)}
+.kc.mine{box-shadow:inset 3px 0 0 var(--series-3),inset 0 0 0 1px color-mix(in srgb,var(--fs-line) 70%,transparent)}
+.kc .t{display:flex;gap:8px;align-items:center;font-size:15px;line-height:1.2}
+.kc .t span{min-width:0;overflow-wrap:anywhere}
+.kc .h{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--fs-text);flex-wrap:wrap}
+.kc .s{font-size:12px;color:var(--fs-text-soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.prog{font-family:var(--fs-font-label);font-weight:600;font-size:12px;letter-spacing:.06em;color:var(--fs-text)}
+
+/* the lane drawer */
+.scrim{position:fixed;inset:0;z-index:30;background:color-mix(in srgb,var(--fs-ground-deep) 60%,transparent)}
+.drawer{position:fixed;top:0;right:0;bottom:0;z-index:31;width:min(560px,100%);overflow-y:auto;padding:max(24px,env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) 32px 26px;background:var(--fs-ground);box-shadow:inset 1px 0 0 var(--fs-line),-24px 0 60px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:16px}
+.drawer h2{display:flex;gap:10px;align-items:center}
+.drawer ul{margin:4px 0 0;padding-left:18px}
+.drawer li{font-size:14px;margin:3px 0;overflow-wrap:anywhere}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.x{position:absolute;right:max(18px,env(safe-area-inset-right,0px));top:max(18px,env(safe-area-inset-top,0px));width:36px;height:36px;border:0;cursor:pointer;background:transparent;color:var(--fs-text-soft);box-shadow:inset 0 0 0 1px var(--fs-line);font-size:18px}
+.form label{display:block;margin-top:12px}
+.form select,.form textarea,.card textarea{display:block;width:100%;margin-top:6px;padding:10px;background:var(--fs-ground-deep);color:var(--fs-text);border:0;box-shadow:inset 0 0 0 1px var(--fs-line);font:inherit;font-size:14px}
+.form textarea,.card textarea{min-height:84px;resize:vertical}
+.opt{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;padding:10px 12px;margin-top:6px;cursor:pointer;box-shadow:inset 0 0 0 1px var(--fs-line)}
+.opt:has(input:checked){box-shadow:inset 0 0 0 1px var(--fs-selection),inset 3px 0 0 var(--fs-selection)}
+.opt input{accent-color:var(--fs-selection);margin-top:3px}
+
+/* People: a card per person */
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start}
+.pcard{padding:18px 18px 12px;display:flex;flex-direction:column;gap:12px;min-width:0;box-shadow:inset 0 3px 0 var(--pc),inset 0 0 0 1px color-mix(in srgb,var(--rim) 28%,var(--fs-line))}
+.ph{display:flex;gap:12px;align-items:center}
+.ph .h2{line-height:1.1}
+.ph .small{font-size:12px}
+.stats{display:flex;gap:18px}
+.stats div{display:flex;flex-direction:column}
+.stats b{font-weight:400;font-size:24px;line-height:1.1}
+.stats span{font-family:var(--fs-font-label);font-weight:600;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--fs-text-soft)}
+.prow{width:100%;display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid color-mix(in srgb,var(--fs-line) 55%,transparent);cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;color:var(--fs-text);text-align:left;font:inherit}
+.prow:hover .nm{color:var(--fs-selection)}
+.prow .nm{font-size:14px;overflow-wrap:anywhere}
+.prow .br{display:block;font-size:11px;color:var(--fs-text-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .dt{font-size:11px;color:var(--fs-text-soft);white-space:nowrap}
+
+/* For you: the brief */
+.brief{padding:22px 24px;display:flex;flex-direction:column;gap:16px;box-shadow:inset 3px 0 0 var(--fs-cta-fill),inset 0 0 0 1px color-mix(in srgb,var(--rim) 28%,var(--fs-line))}
+.brief.taken{box-shadow:inset 3px 0 0 var(--fs-selection),inset 0 0 0 1px color-mix(in srgb,var(--rim) 28%,var(--fs-line))}
+.bhead{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.bhead .small{margin-left:auto}
+.bcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.chk{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--fs-line) 55%,transparent);font-size:14px;cursor:pointer}
+.chk input{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin:2px 0 0;box-shadow:inset 0 0 0 1.5px var(--fs-text-soft);cursor:pointer}
+.chk input:checked{background:var(--fs-selection);box-shadow:none}
+.chk input:checked + span{color:var(--fs-text-soft);text-decoration:line-through}
+.dec{display:grid;grid-template-columns:8px minmax(0,1fr);gap:10px;font-size:14px;padding:5px 0}
+.dec i{width:8px;height:8px;margin-top:7px;background:var(--fs-text-soft)}
+.rd{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;padding:7px 0;border-bottom:1px solid color-mix(in srgb,var(--fs-line) 50%,transparent);min-width:0}
+.rd > span:first-child{min-width:0}
+.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.lock{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--fs-text-soft)}
+.pnote{width:100%;min-height:70px;margin-top:8px;padding:10px;background:var(--fs-ground-deep);color:var(--fs-text);border:0;box-shadow:inset 0 0 0 1px var(--fs-line);font:inherit;font-size:14px;resize:vertical}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;padding:12px 18px;background:var(--fs-surface);box-shadow:inset 0 0 0 1px var(--fs-selection);font-size:14px;max-width:calc(100% - 32px)}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.how .card p{margin:0;font-size:14px;line-height:1.55}
+.flow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.flow span{padding:5px 9px;box-shadow:inset 0 0 0 1px var(--fs-line);font-size:12px}
+
+@media (max-width:1180px){.cols{grid-template-columns:repeat(3,minmax(0,1fr))}.bcols{grid-template-columns:1fr}}
+@media (max-width:900px){
+  :root{--gutter:16px}
+  .shell{grid-template-columns:minmax(0,1fr);background:none}
+  .rail{position:static;height:auto;padding:12px max(16px,env(safe-area-inset-left,0px)) 0;box-shadow:0 1px 0 var(--fs-line)}
+  .rail-top{padding:0 0 8px}
+  .rail-body .navs{display:flex;flex-wrap:wrap;gap:2px}
+  .nav-group{flex-direction:row;flex-wrap:wrap}
+  .nav-head{display:none}
+  .rail-body{display:block!important;height:auto!important;position:static!important;overflow:visible!important}
+  .rail-foot{display:flex!important;flex-direction:row;flex-wrap:wrap;gap:8px 16px;padding:8px 0 10px;box-shadow:none}
+  .rail-foot > .who:not(:first-child),.rail-foot > .sets{display:none!important}
+  .menu-btn{display:none!important}
+  .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .col-b{max-height:420px}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .seg input{width:100%}
 }
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-html,body{margin:0}
-body{background:var(--fs-ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--fs-ground)}
-a{color:inherit}
-button,input,select,textarea{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
-.disp{font-family:var(--disp);font-weight:700;text-transform:uppercase;letter-spacing:.02em;line-height:1}
-.lab{font-size:12px;letter-spacing:.2em;color:var(--soft);text-transform:uppercase}
-.wrap{max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.soft{color:var(--soft)} .off{color:var(--off)}
-.sea{position:fixed;inset:0;z-index:-1;pointer-events:none;
-  background:radial-gradient(ellipse 70% 55% at 50% 18%,color-mix(in srgb,var(--sea-glow) 12%,transparent),transparent 70%),
-    linear-gradient(180deg,var(--sea-wash) 0%,color-mix(in srgb,var(--sea-wash) 40%,var(--fs-ground)) 50%,var(--fs-ground) 100%)}
-.sea-lines{position:absolute;inset:0;-webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 14%,#000 86%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0%,#000 14%,#000 86%,transparent 100%)}
-.sea-layer{position:absolute;inset:0;background:linear-gradient(90deg,var(--sea-1),var(--sea-2) 50%,var(--sea-3));-webkit-mask-repeat:repeat-x;mask-repeat:repeat-x;animation:sea-slide 90s linear infinite}
-@keyframes sea-slide{from{-webkit-mask-position:0 0;mask-position:0 0}to{-webkit-mask-position:-480px 0;mask-position:-480px 0}}
-
-/* ---------- top bar ---------- */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--fs-ground) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 1px 0 var(--hair)}
-.top .wrap{display:flex;align-items:center;gap:18px;min-height:68px;flex-wrap:wrap;padding-block:8px}
-.brand{font-family:var(--disp);font-weight:700;font-size:25px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;display:flex;align-items:center;gap:10px;white-space:nowrap}
-.brand svg{width:26px;height:26px;color:var(--sel)}
-nav.views{display:flex;gap:2px;flex-wrap:wrap}
-nav.views a{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;font-size:13px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:var(--soft);transition:color .2s var(--ease)}
-nav.views a:hover{color:var(--ink)}
-nav.views a[aria-current="page"]{color:var(--ink);box-shadow:inset 0 -2px 0 var(--sel)}
-.badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;font-size:12px;font-weight:600;letter-spacing:0;background:var(--sel);color:var(--fs-on-fill)}
-.badge.hot{background:var(--cta)}
-.tools{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
-.search{display:flex;align-items:center;gap:8px;height:40px;width:220px;padding:0 12px;color:var(--soft);box-shadow:inset 0 0 0 1px var(--line)}
-.search input{all:unset;font-size:13px;width:100%;color:var(--ink)}
-.tbtn,.who select{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:0;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px var(--line);font-size:13px}
-.who{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--soft);letter-spacing:.12em;text-transform:uppercase}
-.who select{background:var(--fs-ground);color:var(--ink);letter-spacing:0;text-transform:none}
-.sw{display:inline-flex;gap:2px}.sw i{display:block;width:7px;height:14px}
-.themes{position:relative}
-.tmenu{position:absolute;right:0;top:48px;width:320px;max-height:70vh;overflow:auto;padding:8px;z-index:30;background:var(--fs-ground);box-shadow:inset 0 0 0 1px var(--line),0 24px 60px rgba(0,0,0,.5)}
-.titem{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;cursor:pointer;background:none;padding:10px}
-.titem:hover,.titem[aria-checked="true"]{background:var(--panel)}
-.titem[aria-checked="true"]{box-shadow:inset 2px 0 0 var(--sel)}
-.titem .sw i{width:10px;height:22px}
-.titem b{display:block;font-family:var(--disp);font-size:19px;text-transform:uppercase}
-.titem span.d{display:block;font-size:12px;color:var(--soft);line-height:1.4}
-
-/* ---------- page head ---------- */
-.head{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;padding-block:34px 18px}
-.head h1{font-size:72px;margin:0}
-.head p{margin:8px 0 0;max-width:62ch;color:var(--soft)}
-.sync{margin-left:auto;text-align:right;font-size:13px;color:var(--soft);min-width:0}
-.sync b{color:var(--ink);font-weight:600}
-.pend{color:var(--gold)}
-
-/* ---------- tier strip ---------- */
-.strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-bottom:10px}
-.strip a{display:flex;flex-direction:column;gap:4px;padding:12px 14px;text-decoration:none;background:color-mix(in srgb,var(--deep) 70%,transparent);box-shadow:inset 0 0 0 1px var(--hair);transition:background .2s var(--ease)}
-.strip a:hover{background:var(--panel)}
-.strip .n{font-family:var(--disp);font-weight:700;font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
-.strip .t{font-size:11px;letter-spacing:.16em;color:var(--soft);text-transform:uppercase}
-.strip a.t-handed .n,.strip a.t-testing .n{color:var(--sel)}
-.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:14px 0 6px}
-.chip{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:0;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px var(--line);font-size:13px;color:var(--soft)}
-.chip[aria-pressed="true"]{color:var(--ink);box-shadow:inset 0 0 0 1px var(--sel),inset 0 -2px 0 var(--sel)}
-
-/* ---------- tiers and rows ---------- */
-.tier{margin-top:34px}
-.tier>header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-bottom:10px;box-shadow:0 1px 0 var(--line)}
-.tier h2{font-size:34px;margin:0}
-.tier h2 small{font-family:var(--body);font-weight:500;font-size:15px;color:var(--soft);letter-spacing:0;margin-left:8px}
-.tier>header p{margin:0;color:var(--soft);font-size:14px;flex:1 1 320px;min-width:0}
-.row{border-bottom:1px solid var(--hair)}
-.rhead{display:grid;grid-template-columns:30px minmax(150px,240px) minmax(0,1fr) auto;gap:14px;align-items:center;width:100%;padding:12px 4px;border:0;background:none;cursor:pointer;text-align:left}
-.rhead:hover{background:color-mix(in srgb,var(--panel) 55%,transparent)}
-.kind{width:26px;height:26px;display:flex;align-items:center;justify-content:center;color:var(--soft)}
-.kind svg{width:20px;height:20px}
-.name{display:flex;flex-direction:column;min-width:0}
-.name b{font-family:var(--disp);font-size:22px;font-weight:700;text-transform:uppercase;line-height:1.05;overflow-wrap:anywhere}
-.name small{font-size:11px;letter-spacing:.14em;color:var(--soft);text-transform:uppercase}
-.line{min-width:0;font-size:14px;color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.line strong{color:var(--ink);font-weight:600}
-.pill{display:inline-flex;align-items:center;height:22px;padding:0 8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;box-shadow:inset 0 0 0 1px var(--line);color:var(--soft);white-space:nowrap}
-.pill.new{background:var(--cta);color:var(--fs-on-fill);box-shadow:none;font-weight:600}
-.pill.sel{box-shadow:inset 0 0 0 1px var(--sel);color:var(--sel)}
-.pill.wait{box-shadow:inset 0 0 0 1px var(--gold);color:var(--gold)}
-.pill.no{box-shadow:inset 0 0 0 1px var(--warn);color:var(--warn)}
-.prog{font-variant-numeric:tabular-nums;font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:12px;color:var(--ink);letter-spacing:.04em}
-.caret{transition:transform .25s var(--ease);color:var(--soft)}
-.row.open .caret{transform:rotate(180deg)}
-.detail{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;padding:6px 4px 22px 48px}
-.detail h4{margin:14px 0 6px;font-size:11px;letter-spacing:.18em;color:var(--soft);text-transform:uppercase;font-weight:500}
-.detail ul{margin:0;padding:0 0 0 18px}
-.detail li{margin:3px 0;font-size:14px;overflow-wrap:anywhere}
-.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border:0;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px var(--line);font-family:var(--disp);font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase;transition:background .2s var(--ease),box-shadow .2s var(--ease)}
-.btn:hover{background:var(--panel)}
-.btn.cta{background:var(--cta);color:var(--fs-on-fill);box-shadow:none}
-.btn.cta:hover{filter:brightness(1.08)}
-.btn.sel{box-shadow:inset 0 0 0 1px var(--sel);color:var(--sel)}
-.btn.no{box-shadow:inset 0 0 0 1px var(--warn);color:var(--warn)}
-.btn[disabled]{opacity:.45;cursor:not-allowed}
-.more{display:block;margin:10px auto 0;}
-.empty{color:var(--soft);padding:18px 4px}
-code{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:.9em;color:var(--ink);background:color-mix(in srgb,var(--panel) 70%,transparent);padding:1px 5px;overflow-wrap:anywhere}
-
-/* ---------- cards (for you, test, approvals) ---------- */
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px;margin-top:14px}
-.card{padding:18px;background:color-mix(in srgb,var(--deep) 75%,transparent);box-shadow:inset 0 0 0 1px var(--hair);display:flex;flex-direction:column;gap:8px;min-width:0}
-.card.new{box-shadow:inset 0 0 0 1px var(--cta),inset 3px 0 0 var(--cta)}
-.card h3{margin:0;font-family:var(--disp);font-size:24px;text-transform:uppercase;line-height:1.05}
-.card .meta{font-size:12px;color:var(--soft);letter-spacing:.06em}
-.card p{margin:0;font-size:14px;overflow-wrap:anywhere}
-.card textarea{width:100%;min-height:70px;padding:10px;background:var(--fs-ground);border:0;box-shadow:inset 0 0 0 1px var(--line);resize:vertical}
-.sec{margin-top:36px}
-.sec>h2{font-size:30px;margin:0 0 4px}
-.sec>p{margin:0;color:var(--soft);max-width:70ch}
-.qhead{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
-.qhead select{height:40px;padding:0 12px;background:var(--fs-ground);border:0;box-shadow:inset 0 0 0 1px var(--line)}
-.impact{color:var(--gold);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
-
-/* ---------- how it works ---------- */
-.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;margin-top:20px}
-.how h3{font-family:var(--disp);font-size:24px;text-transform:uppercase;margin:0 0 6px}
-.how p,.how li{font-size:15px;color:var(--ink)}
-.how p{margin:0 0 10px;max-width:62ch}
-.flow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:10px 0}
-.flow span{padding:6px 10px;box-shadow:inset 0 0 0 1px var(--line);font-size:13px}
-.flow i{color:var(--soft);font-style:normal}
-
-/* ---------- dialog ---------- */
-.scrim{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,var(--fs-ground-deep) 72%,transparent);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.dlg{width:min(560px,100%);max-height:100%;overflow:auto;padding:24px;background:var(--fs-ground);box-shadow:inset 0 0 0 1px var(--line),0 30px 80px rgba(0,0,0,.6)}
-.dlg h3{margin:0;font-size:34px}
-.dlg .opts{display:grid;gap:6px;margin:16px 0}
-.opt{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;padding:12px;cursor:pointer;box-shadow:inset 0 0 0 1px var(--hair)}
-.opt:has(input:checked){box-shadow:inset 0 0 0 1px var(--sel),inset 3px 0 0 var(--sel)}
-.opt input{accent-color:var(--sel);margin-top:4px}
-.opt b{display:block;font-family:var(--disp);font-size:19px;text-transform:uppercase}
-.opt span{font-size:13px;color:var(--soft)}
-.dlg label.f{display:block;margin-top:12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
-.dlg select,.dlg textarea{display:block;width:100%;margin-top:6px;padding:10px;background:var(--deep);border:0;box-shadow:inset 0 0 0 1px var(--line)}
-.dlg textarea{min-height:90px;resize:vertical}
-.dlg .acts{justify-content:flex-end}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;padding:12px 18px;background:var(--panel);box-shadow:inset 0 0 0 1px var(--sel);font-size:14px;max-width:calc(100% - 32px)}
-
-@media (max-width:980px){
-  .strip{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .rhead{grid-template-columns:26px minmax(0,1fr) auto}
-  .rhead .line{grid-column:2/4;white-space:normal}
-  .detail{grid-template-columns:1fr;padding-left:4px}
-  .head h1{font-size:52px}
-  .search{width:auto;flex:1}
-  .tools{width:100%;margin-left:0}
-  .top{position:static}
-  .sync{margin-left:0;text-align:left}
-}
-@media (max-width:520px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.cards{grid-template-columns:1fr}.brand{font-size:21px}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 
 <div class="sea" aria-hidden="true"><div class="sea-lines"><div class="sea-layer"></div><div class="sea-layer"></div><div class="sea-layer"></div></div></div>
-<header class="top">
-  <div class="wrap">
-    <a class="brand" href="#board"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 7c3-3 6 3 9 0s6 3 9 0 4-1 4-1M2 13c3-3 6 3 9 0s6 3 9 0 4-1 4-1M2 19c3-3 6 3 9 0s6 3 9 0 4-1 4-1"/></svg>Swim Lanes</a>
-    <nav class="views" aria-label="Views">
-      <a href="#board" data-v="board">Board</a>
-      <a href="#mine" data-v="mine">For you <span class="badge hot" id="bMine" hidden></span></a>
-      <a href="#test" data-v="test">For test <span class="badge" id="bTest" hidden></span></a>
-      <a href="#approvals" data-v="approvals">Approvals <span class="badge" id="bAppr" hidden></span></a>
-      <a href="#how" data-v="how">How it works</a>
-    </nav>
-    <div class="tools">
-      <label class="search"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" aria-label="Search lanes" placeholder="Search lanes, people, branches"></label>
-      <label class="who" for="me">You are <select id="me"><option value="">Pick your name</option></select></label>
-      <div class="themes">
-        <button class="tbtn" id="tbtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="tmenu"><span class="sw" id="tsw"></span><span id="tname">Theme</span></button>
-        <div class="tmenu" id="tmenu" role="menu" aria-label="Colour set" hidden></div>
+<div class="shell">
+  <nav class="rail" aria-label="Pages">
+    <div class="rail-top"><a class="brand" href="#board"><span class="lab">Froglet</span><span class="h3">Swim Lanes</span><span class="strip" aria-hidden="true"></span></a></div>
+    <div class="rail-body">
+      <div class="navs">
+        <div class="nav-group"><div class="nav-head">Lanes</div>
+          <a class="nav" href="#board" data-v="board"><span class="nav-text">Board</span></a>
+          <a class="nav" href="#people" data-v="people"><span class="nav-text">People</span></a>
+          <a class="nav" href="#mine" data-v="mine"><span class="nav-text">For you</span><span class="nbadge hot" id="bMine" hidden></span></a>
+        </div>
+        <div class="nav-group"><div class="nav-head">Work</div>
+          <a class="nav" href="#test" data-v="test"><span class="nav-text">For test</span><span class="nbadge" id="bTest" hidden></span></a>
+          <a class="nav" href="#approvals" data-v="approvals"><span class="nav-text">Approvals</span><span class="nbadge" id="bAppr" hidden></span></a>
+          <a class="nav" href="#how" data-v="how"><span class="nav-text">How it works</span></a>
+        </div>
+      </div>
+      <div class="rail-foot">
+        <div class="who"><label class="lab" for="me">You are</label><select id="me"><option value="">Pick your name</option></select></div>
+        <div class="who"><span class="lab">Theme</span><span class="small" id="tname"></span></div>
+        <div class="sets" id="sets" role="group" aria-label="Colour set"></div>
+        <div class="who"><span class="lab">Synced</span><span class="small" id="synced"></span></div>
       </div>
     </div>
-  </div>
-</header>
-<main class="wrap" id="app"><p class="empty">Reading the lanes&hellip;</p></main>
+  </nav>
+  <main class="main" id="app"><p class="empty">Reading the lanes&hellip;</p></main>
+</div>
 <div id="layer"></div>
 
 <script>
 (function(){
   "use strict";
-  var TH = window.FA_THEMES || {themes:[], current:function(){return "";}, pick:function(){}};
-  var D = null, actions = [], db = null, viewerId = null, view = "board", query = "", kindF = "all", openRows = {}, showAll = {};
+  var TH = window.FA_THEMES || {themes:[], current:function(){ return ""; }, pick:function(){}};
+  var D = null, actions = [], db = null, user = null, viewerId = null, view = "board", query = "", kindF = "all", personF = "", privateDocs = {};
   var app = document.getElementById("app"), meSel = document.getElementById("me");
-  var TIERS = {
-    loop:{t:"The elemental loop", short:"Loop", d:"Every vessel nobody holds is its own lane through Garrett's elemental vessel loop, the top priority (2026-11-12). Take one and advance it one step with /elemental-loop."},
-    handed:{t:"Handed off", short:"Handed", d:"Passed to a person with /handoff-to-<name>. NEW until they read it; theirs from then on."},
-    testing:{t:"For test", short:"For test", d:"Sent to the tester with /handoff-for-test. Back on the board when the tester answers: good to go, or back to open."},
-    work:{t:"Open, work waiting", short:"Open", d:"Nobody is in it and there is obvious work: tickets, editor hand tests nobody ran, console errors, a hand-off note."},
-    occupied:{t:"Occupied", short:"Occupied", d:"Someone pushed unmerged work here in the last week, or claimed it. Build elsewhere or talk to them first."},
-    polish:{t:"Needs polish", short:"Polish", d:"No obvious work, but measured gaps: undesigned level-5 upgrades, no tests, a worst screen, or a person said rough."},
-    polished:{t:"Polished", short:"Polished", d:"Nothing measured and nothing waiting. Lowest priority."}
+  var CORE = {Garrett:"p1", Caleb:"p2", Shombith:"p3", Yash:"p4"};
+  var COLS = [
+    {k:"loop", t:"Loop", d:"Free vessels in the elemental loop, the top priority. Take one, advance it one step."},
+    {k:"work", t:"Open", d:"Nobody is in it and work is waiting: tickets, hand tests, errors, a hand-off note."},
+    {k:"occupied", t:"Held", d:"Someone pushed unmerged work in the last week, or claimed it. Talk to them first."},
+    {k:"handed", t:"Handed / test", d:"Passed to a person (NEW until they take it), or with the tester.", also:["testing"]},
+    {k:"polish", t:"Polish", d:"No obvious work, measured gaps. Polished lanes at the bottom.", also:["polished"]}
+  ];
+  var ICON = {
+    vessel:'<svg class="k" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12l7-6 13 6-13 6z"/><path d="M9 6v12"/></svg>',
+    game:'<svg class="k" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>',
+    shell:'<svg class="k" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16"/><path d="M3 9h18"/></svg>',
+    system:'<svg class="k" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>'
   };
-  var KIND_SVG = {
-    vessel:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12l7-6 13 6-13 6z"/><path d="M9 6v12"/></svg>',
-    game:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>',
-    shell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16"/><path d="M3 9h18"/></svg>',
-    system:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/></svg>'
-  };
-  var CARET = '<svg class="caret" width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg>';
+  var LOCK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
   function md(s){ return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>"); }
   function day(s){ return (s || "").slice(0, 10); }
   function ls(k, v){ try { if(v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch(e){ return null; } }
   function me(){ return meSel.value || ""; }
-  function toast(msg){ var t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); t.textContent = msg; document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3800); }
+  function av(n, cls){ return n ? '<span class="av ' + (CORE[n] || "p0") + ' ' + (cls || "") + '" title="' + esc(n) + '">' + esc(n.charAt(0).toUpperCase()) + '</span>' : '<span class="av ghost ' + (cls || "") + '" title="a Claude session with no person on record">?</span>'; }
+  function toast(msg){ var t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); t.textContent = msg; document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 4000); }
+  function head(eyebrow, title, right){ return '<div class="top"><div class="title"><span class="lab">' + eyebrow + '</span><h1 class="h1">' + title + '</h1></div><span class="small updated">' + (right || "") + '</span></div>'; }
 
-  /* ---------- themes and sea (the analytics console's, like the Fleet Codex) ---------- */
-  function swatch(t){ return (t.swatch || []).map(function(p){ return '<i style="background:' + p[0] + '"></i>'; }).join(""); }
-  function applyTheme(id){
-    if(id) TH.pick(id);
+  /* ---------- themes and sea ---------- */
+  function themes(){
     var cur = TH.current(), t = TH.themes.filter(function(x){ return x.id === cur; })[0] || TH.themes[0];
     if(!t) return;
     document.getElementById("tname").textContent = t.name;
-    document.getElementById("tsw").innerHTML = swatch(t);
-    var m = document.getElementById("tmenu");
-    m.innerHTML = '<p class="lab" style="margin:6px 10px 8px">A colour set changes how you see the HyperSea</p>' + TH.themes.map(function(x){
-      return '<button class="titem" type="button" role="menuitemradio" aria-checked="' + (x.id === t.id) + '" data-t="' + x.id + '"><span class="sw">' + swatch(x) + '</span><span><b>' + esc(x.name) + '</b><span class="d">' + esc(x.line) + '</span></span></button>'; }).join("");
-    Array.prototype.forEach.call(m.querySelectorAll(".titem"), function(b){ b.addEventListener("click", function(){ applyTheme(b.dataset.t); openTheme(false); }); });
+    document.getElementById("sets").innerHTML = TH.themes.map(function(x){ return '<button type="button" aria-pressed="' + (x.id === t.id) + '" title="' + esc(x.name) + '" aria-label="' + esc(x.name) + '" data-t="' + x.id + '">' + (x.swatch || []).map(function(p){ return '<i style="background:' + p[0] + '"></i>'; }).join("") + '</button>'; }).join("");
   }
-  function openTheme(open){ var m = document.getElementById("tmenu"); m.hidden = !open; document.getElementById("tbtn").setAttribute("aria-expanded", String(open)); }
-  document.getElementById("tbtn").addEventListener("click", function(e){ e.stopPropagation(); openTheme(document.getElementById("tmenu").hidden); });
-  document.addEventListener("click", function(e){ if(!e.target.closest(".themes")) openTheme(false); });
-  applyTheme(null);
+  document.getElementById("sets").addEventListener("click", function(e){ var b = e.target.closest("[data-t]"); if(b){ TH.pick(b.dataset.t); themes(); } });
+  themes();
   (function sea(){
     var layers = document.querySelectorAll(".sea-layer");
     if(!TH.sea || layers.length !== 3) return;
@@ -263,7 +219,7 @@ code{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:.9em;co
         for(var x = 0; x <= loop; x += 6) pts.push(x + "," + (i * sp + a1 * Math.sin(k1 * x + i * 0.9) + a2 * Math.sin(k2 * x + i * 1.7)).toFixed(1));
         lines += "<polyline points='" + pts.join(" ") + "' fill='none' stroke='#fff' stroke-opacity='" + layer.alpha + "' stroke-width='" + layer.width + "'/>";
       }
-      var url = 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='" + loop + "' height='" + tall + "' viewBox='0 0 " + loop + " " + tall + "'>" + lines + "</svg>") + '")';
+      var url = 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='" + loop + "' height='" + tall + "'>" + lines + "</svg>") + '")';
       var el = layers[n];
       el.style.webkitMaskImage = url; el.style.maskImage = url;
       el.style.webkitMaskSize = loop + "px " + tall + "px"; el.style.maskSize = loop + "px " + tall + "px";
@@ -272,265 +228,309 @@ code{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:.9em;co
   })();
 
   /* ---------- the page's clicks, laid over the last sync ---------- */
-  function pending(){ return actions.filter(function(a){ return !a.synced; }).sort(function(a, b){ return (a.at || "") < (b.at || "") ? -1 : 1; }); }
+  function pending(){ return actions.filter(function(a){ return !a.synced && !a.refused; }).sort(function(a, b){ return (a.at || "") < (b.at || "") ? -1 : 1; }); }
   function lanesNow(){
     var by = {}, out = D.lanes.map(function(l){ var c = JSON.parse(JSON.stringify(l)); by[c.key] = c; return c; });
     pending().forEach(function(a){
       var l = by[a.lane]; if(!l) return;
       var stamp = {by:a.by, on:a.at, note:a.note || "", pendingSync:true};
-      if(a.type === "claim"){
-        l.tier = "occupied";
-        l.occupants = [{people:[a.by], branch:"(claimed on this page)", last:day(a.at), commits:0, subjects:["claimed on this page"], pendingSync:true}].concat(l.occupants || []);
-      } else if(a.type === "to"){
-        l.tier = "handed"; l.handoff = Object.assign({kind:"to", status:"new", to:a.to}, stamp); l.occupants = [];
-      } else if(a.type === "test"){
-        l.tier = "testing"; l.handoff = Object.assign({kind:"test", status:"testing", to:D.testers[0], what:a.what}, stamp); l.occupants = [];
-      } else if(a.type === "open"){
-        l.tier = "work"; l.occupants = []; l.handoff = Object.assign({kind:"open", status:"open"}, stamp);
-        l.work = ["handed off open by " + a.by + " " + day(a.at) + (a.note ? ": " + a.note : "")].concat(l.work || []);
-      } else if(a.type === "feedback" && l.handoff){
-        l.handoff.status = a.verdict === "good" ? "passed" : "back"; l.handoff.pendingSync = true;
-        l.tier = a.verdict === "good" ? (l.polish && l.polish.length ? "polish" : "polished") : "work";
-        if(a.verdict === "back") l.work = ["sent back from test by " + a.by + ": " + (a.note || "")].concat(l.work || []);
-      } else if(a.type === "seen" && l.handoff){
-        l.handoff.status = "taken"; l.handoff.pendingSync = true;
-      }
+      if(a.type === "claim"){ l.tier = "occupied"; l.occupants = [{people:[a.by], branch:"claimed on this page", last:day(a.at), commits:0, subjects:["claimed on this page"], pendingSync:true}].concat(l.occupants || []); }
+      else if(a.type === "to"){ l.tier = "handed"; l.handoff = Object.assign({kind:"to", status:"new", to:a.to}, stamp); l.occupants = []; }
+      else if(a.type === "test"){ l.tier = "testing"; l.handoff = Object.assign({kind:"test", status:"testing", to:D.testers[0], what:a.what}, stamp); l.occupants = []; }
+      else if(a.type === "open"){ l.tier = "work"; l.occupants = []; l.handoff = Object.assign({kind:"open", status:"open"}, stamp); l.work = ["handed off open by " + a.by + " " + day(a.at) + (a.note ? ": " + a.note : "")].concat(l.work || []); }
+      else if(a.type === "feedback" && l.handoff){ l.handoff.status = a.verdict === "good" ? "passed" : "back"; l.handoff.pendingSync = true; l.tier = a.verdict === "good" ? ((l.polish || []).length ? "polish" : "polished") : "work"; if(a.verdict === "back") l.work = ["sent back from test by " + a.by + ": " + (a.note || "")].concat(l.work || []); }
+      else if(a.type === "seen" && l.handoff){ l.handoff.status = "taken"; l.handoff.pendingSync = true; }
     });
     return out;
   }
   function approvalsNow(){
-    var answered = {};
-    pending().forEach(function(a){ if(a.type === "approve" || a.type === "discuss") answered[a.entry] = a; });
-    return D.approvals.map(function(e){ var a = answered[e.id]; return a ? Object.assign({}, e, {status:a.type === "approve" ? "approved" : "discuss", pendingSync:true, myNote:a.note}) : e; });
+    var done = {};
+    pending().forEach(function(a){ if(a.type === "approve" || a.type === "discuss") done[a.entry] = a; });
+    return D.approvals.map(function(e){ var a = done[e.id]; return a ? Object.assign({}, e, {status:a.type === "approve" ? "approved" : "discuss", pendingSync:true}) : e; });
   }
   function act(a){
-    if(!me()){ toast("Pick your name in the bar first: every hand-off and claim says who made it."); meSel.focus(); return Promise.resolve(false); }
-    a.by = me(); a.at = new Date().toISOString(); a.synced = false; if(viewerId) a.viewer = viewerId;
+    if(!me()){ toast("Pick your name under You are first: every change says who made it."); meSel.focus(); return Promise.resolve(false); }
     if(!db){ toast("Saving needs you signed in to claude.ai on this page. Nothing was saved."); return Promise.resolve(false); }
-    return db.collection("actions").add(a).then(function(){ toast("Saved. It shows here now and reaches the repo at the next /swimlanes sync."); return true; },
-      function(e){ toast("Not saved: " + (e && e.code === "not_granted" ? "you can view this page but not change it. Ask an editor for access." : (e && e.message) || "try again.")); return false; });
+    a.by = me(); a.at = new Date().toISOString(); a.synced = false; if(viewerId) a.viewer = viewerId;
+    return db.collection("actions").add(a).then(function(){ toast("Saved. Everyone sees it now; it reaches the repo at the next /swimlanes sync."); return true; },
+      function(e){ toast("Not saved: " + (e && e.code === "not_granted" ? "you can view this page but not change it; ask an editor for access." : (e && e.message) || "try again.")); return false; });
   }
 
-  /* ---------- rendering ---------- */
+  /* ---------- lane helpers ---------- */
+  function holders(l){ return (l.occupants || []).map(function(o){ return {who:(o.people || [])[0] || "", more:(o.people || []).slice(1), br:o.branch, last:o.last, pr:o.pr, sub:(o.subjects || [""])[0], pend:o.pendingSync}; }); }
+  function holderNames(l){
+    if((l.tier === "handed" || l.tier === "testing") && l.handoff) return [l.handoff.to];
+    return holders(l).map(function(h){ return h.who; });
+  }
+  function nextOf(l){ if(l.loop && l.loop.actions && l.loop.actions[0]) return l.loop.actions[0].replace(/ \(PLAYBOOK.*$/, "").replace(/: score the .*$/, ""); return (l.work || [])[0] || (l.polish || [])[0] || ""; }
   function matches(l){
     if(kindF !== "all" && l.kind !== kindF) return false;
+    if(personF){ var hn = holderNames(l); if(hn.indexOf(personF) < 0 && !(l.handoff && l.handoff.by === personF && (l.tier === "handed" || l.tier === "testing"))) return false; }
     if(!query) return true;
-    var hay = [l.name, l.key, l.kind, l.note, (l.work || []).join(" "), (l.polish || []).join(" "),
-      (l.occupants || []).map(function(o){ return (o.people || []).join(" ") + " " + o.branch; }).join(" "),
-      l.handoff ? [l.handoff.by, l.handoff.to, l.handoff.note].join(" ") : ""].join(" ").toLowerCase();
+    var hay = [l.name, l.key, l.kind, l.note, (l.work || []).join(" "), holders(l).map(function(h){ return h.who + " " + h.br; }).join(" "), l.handoff ? [l.handoff.by, l.handoff.to, l.handoff.note].join(" ") : ""].join(" ").toLowerCase();
     return query.split(/\s+/).every(function(w){ return hay.indexOf(w) >= 0; });
   }
-  function who(o){ return (o.people && o.people.length ? o.people.join(", ") : "a Claude session (no person on record)"); }
-  function summary(l){
-    var h = l.handoff;
-    if(l.tier === "handed") return '<strong>' + esc(h.by) + ' &rarr; ' + esc(h.to) + '</strong> ' + day(h.on) + (h.note ? ' &middot; ' + md(h.note) : '');
-    if(l.tier === "testing") return '<strong>' + esc(h.by) + ' &rarr; ' + esc(h.to) + '</strong> ' + (h.what ? md(h.what) : '');
-    if(l.tier === "occupied" && l.occupants && l.occupants[0]){ var o = l.occupants[0]; return '<strong>' + esc(who(o)) + '</strong> on ' + esc(o.branch) + (o.pr ? ' (PR #' + o.pr + ')' : '') + ', ' + esc(o.last) + ' &middot; ' + esc((o.subjects || [""])[0]); }
-    if(l.tier === "loop" && l.loop) return '<span class="prog">' + esc(l.loop.progress) + '</span> &middot; next: ' + md((l.loop.actions[0] || "").replace(/ \(PLAYBOOK.*$/, ""));
-    if(l.work && l.work.length) return md(l.work[0]);
-    if(l.polish && l.polish.length) return md(l.polish[0]);
-    return "";
-  }
-  function pills(l){
-    var h = l.handoff, p = "";
-    if(h && h.status === "new") p += '<span class="pill new">New</span>';
-    if(h && h.status === "passed") p += '<span class="pill sel">Tested</span>';
-    if(h && h.status === "back") p += '<span class="pill no">Sent back</span>';
-    if(l.tier === "work") p += '<span class="pill">Score ' + l.workScore + '</span>';
-    if((h && h.pendingSync) || (l.occupants || []).some(function(o){ return o.pendingSync; })) p += '<span class="pill wait" title="Made on this page; reaches the repo at the next sync">Waiting for sync</span>';
-    return p;
-  }
-  function holder(l){
-    if(l.tier === "handed" || l.tier === "testing") return l.handoff && l.handoff.to;
-    if(l.tier === "occupied") return (l.occupants || []).reduce(function(a, o){ return a.concat(o.people || []); }, []);
-    return null;
-  }
-  function actionsFor(l){
-    var mine = me(), held = holder(l), isMine = mine && (held === mine || (Array.isArray(held) && held.indexOf(mine) >= 0)), b = "";
-    var open = l.tier === "loop" || l.tier === "work" || l.tier === "polish" || l.tier === "polished";
-    if(l.tier === "handed" && l.handoff && l.handoff.status === "new" && l.handoff.to === mine)
-      b += '<button class="btn cta" data-do="seen" data-lane="' + esc(l.key) + '">Take it</button>';
-    if(open) b += '<button class="btn cta" data-do="claim" data-lane="' + esc(l.key) + '">Claim this lane</button>';
-    if(l.tier === "occupied" && !isMine) b += '<button class="btn" data-do="claim" data-lane="' + esc(l.key) + '" title="It is held: talk to them first">Claim anyway</button>';
-    b += '<button class="btn' + (isMine ? ' sel' : '') + '" data-do="handoff" data-lane="' + esc(l.key) + '">Hand off</button>';
-    if(l.tier === "testing" && D.testers.indexOf(mine) >= 0){
-      b += '<button class="btn cta" data-do="good" data-lane="' + esc(l.key) + '">Good to go</button><button class="btn no" data-do="back" data-lane="' + esc(l.key) + '">Send back</button>';
-    }
-    return b;
-  }
-  function detail(l){
-    var left = "", right = "";
-    if(l.note) left += '<p style="margin:0 0 6px;color:var(--gold)">' + md(l.note) + '</p>';
-    if(l.handoff){ var h = l.handoff; left += '<h4>Hand-off</h4><ul><li>' + esc(h.kind === "to" ? "to " + h.to : h.kind === "test" ? "for test with " + h.to : h.kind === "claim" ? "claimed" : "open") + ' by ' + esc(h.by) + ', ' + day(h.on) + ' &middot; ' + esc(h.status) + '</li>' + (h.note ? '<li>' + md(h.note) + '</li>' : '') + (h.what ? '<li>Test: ' + md(h.what) + '</li>' : '') + (h.branch ? '<li>Branch <code>' + esc(h.branch) + '</code></li>' : '') + '</ul>'; }
-    if(l.loop){ left += '<h4>Elemental loop &middot; <span class="prog">' + esc(l.loop.progress) + '</span>' + (l.loop.seated && l.loop.seated.length ? ' &middot; seats ' + esc(l.loop.seated.join(", ")) : '') + '</h4><ul>' + l.loop.actions.map(function(t){ return '<li>' + md(t) + '</li>'; }).join("") + '</ul>'; }
-    if(l.work && l.work.length) left += '<h4>Work waiting (score ' + l.workScore + ')</h4><ul>' + l.work.map(function(t){ return '<li>' + md(t) + '</li>'; }).join("") + '</ul>';
-    if(l.occupants && l.occupants.length) right += '<h4>In it now</h4><ul>' + l.occupants.map(function(o){ return '<li><b>' + esc(who(o)) + '</b> on <code>' + esc(o.branch) + '</code>' + (o.pr ? ' PR #' + o.pr : '') + ', last push ' + esc(o.last) + (o.commits ? ', ' + o.commits + ' commit(s)' : '') + '<br><span class="soft">' + esc((o.subjects || []).join(" / ")) + '</span></li>'; }).join("") + '</ul>';
-    if(l.polish && l.polish.length) right += '<h4>Polish gaps</h4><ul>' + l.polish.map(function(t){ return '<li>' + md(t) + '</li>'; }).join("") + '</ul>';
-    if(l.landed) right += '<h4>Last landed</h4><ul><li>' + esc(l.landed.date) + ': ' + (l.landed.pr ? '#' + l.landed.pr + ' ' : '') + esc(l.landed.branch || l.landed.subject || "") + (l.landed.by ? ', ' + esc(l.landed.by) : '') + '</li></ul>';
-    right += '<h4>In a session</h4><ul><li><code>swimlanes.py --lane ' + esc(l.key) + '</code></li></ul>';
-    return '<div class="detail"><div>' + (left || '<p class="soft">Nothing waiting.</p>') + '<div class="acts">' + actionsFor(l) + '</div></div><div>' + right + '</div></div>';
-  }
-  function row(l){
-    var o = !!openRows[l.key];
-    return '<div class="row' + (o ? ' open' : '') + '" id="lane-' + esc(l.key) + '"><button class="rhead" type="button" aria-expanded="' + o + '" data-row="' + esc(l.key) + '">' +
-      '<span class="kind" title="' + esc(l.kind) + '">' + (KIND_SVG[l.kind] || "") + '</span>' +
-      '<span class="name"><b>' + esc(l.name) + '</b><small>' + esc(l.kind) + '</small></span>' +
-      '<span class="line">' + summary(l) + '</span>' +
-      '<span style="display:flex;gap:6px;align-items:center">' + pills(l) + CARET + '</span></button>' +
-      (o ? detail(l) : '') + '</div>';
-  }
-  function board(){
-    var lanes = lanesNow(), shown = lanes.filter(matches), counts = {};
-    D.order.forEach(function(t){ counts[t] = 0; });
-    lanes.forEach(function(l){ counts[l.tier] = (counts[l.tier] || 0) + 1; });
-    var p = pending().length;
-    var h = '<section class="head"><div><p class="lab">Who is in which vessel, game, screen and system</p><h1 class="disp">The board</h1>' +
-      '<p>A lane is anything bigger than a couple of prompts and one pull request. Occupied is the only thing that says not now. Claim an open lane, or hand yours on when you are done.</p></div>' +
-      '<div class="sync">Read from <b>' + esc(D.base) + '</b><br>synced ' + esc(D.generated.replace("T", " ").replace("+00:00", " UTC")) +
-      (p ? '<br><span class="pend">' + p + ' change' + (p > 1 ? 's' : '') + ' made here wait for the next sync</span>' : '') + '</div></section>';
-    h += '<div class="strip">' + D.order.map(function(t){ return '<a class="t-' + t + '" href="#board" data-jump="' + t + '"><span class="n">' + (counts[t] || 0) + '</span><span class="t">' + esc(TIERS[t].short) + '</span></a>'; }).join("") + '</div>';
-    h += '<div class="filters" role="group" aria-label="Kind">' + ["all", "vessel", "game", "shell", "system"].map(function(k){
-      return '<button class="chip" type="button" aria-pressed="' + (kindF === k) + '" data-kind="' + k + '">' + ({all:"All lanes", vessel:"Vessels", game:"Games", shell:"App screens", system:"Systems"})[k] + '</button>'; }).join("") + '</div>';
-    D.order.forEach(function(t){
-      var rows = shown.filter(function(l){ return l.tier === t; });
-      if(!rows.length && (query || kindF !== "all")) return;
-      var cap = (t === "polish" || t === "polished") ? 8 : t === "work" ? 14 : 999, more = rows.length - cap;
-      h += '<section class="tier" id="tier-' + t + '"><header><h2 class="disp">' + esc(TIERS[t].t) + '<small>' + rows.length + '</small></h2><p>' + esc(TIERS[t].d) + '</p></header>' +
-        (rows.length ? (showAll[t] ? rows : rows.slice(0, cap)).map(row).join("") : '<p class="empty">None right now.</p>') +
-        (more > 0 && !showAll[t] ? '<button class="btn more" type="button" data-all="' + t + '">Show ' + more + ' more</button>' : '') + '</section>';
-    });
-    if(D.notes && D.notes.length) h += '<p class="off" style="margin-top:30px;font-size:13px">' + D.notes.map(esc).join("<br>") + '</p>';
-    return h;
-  }
-  function mine(){
-    var m = me(), lanes = lanesNow();
-    if(!m) return '<section class="head"><div><p class="lab">For you</p><h1 class="disp">Who are you?</h1><p>Pick your name in the bar. This view shows what was handed to you, what is yours to test, the lanes you hold and your approval queue.</p></div></section>';
-    var handed = lanes.filter(function(l){ return l.handoff && l.handoff.to === m && (l.tier === "handed" || l.tier === "testing"); });
-    var held = lanes.filter(function(l){ return l.tier === "occupied" && (l.occupants || []).some(function(o){ return (o.people || []).indexOf(m) >= 0; }); });
-    var sent = D.handoffs.filter(function(x){ return x.by === m && x.kind !== "keep"; }).slice(0, 12);
-    var q = approvalsNow().filter(function(e){ return e.to === m && (e.status === "pending" || e.status === "discuss"); });
-    function card(l){ var h = l.handoff, isNew = h.status === "new"; return '<article class="card' + (isNew ? ' new' : '') + '"><div style="display:flex;gap:8px;align-items:center">' + (isNew ? '<span class="pill new">New</span>' : '') + (l.tier === "testing" ? '<span class="pill sel">To test</span>' : '') + (h.pendingSync ? '<span class="pill wait">Waiting for sync</span>' : '') + '</div><h3>' + esc(l.name) + '</h3><p class="meta">from ' + esc(h.by) + ', ' + day(h.on) + (h.branch ? ' &middot; ' + esc(h.branch) : '') + '</p>' + (h.note ? '<p>' + md(h.note) + '</p>' : '') + (h.what ? '<p><b>Test:</b> ' + md(h.what) + '</p>' : '') + '<div class="acts">' + actionsFor(l) + '<a class="btn" href="#board" data-open="' + esc(l.key) + '">Open on the board</a></div></article>'; }
-    var h = '<section class="head"><div><p class="lab">For you</p><h1 class="disp">' + esc(m) + '</h1><p>' + handed.filter(function(l){ return l.handoff.status === "new"; }).length + ' new hand-off(s), ' + held.length + ' lane(s) you hold, ' + q.length + ' approval(s) waiting.</p></div></section>';
-    h += '<section class="sec"><h2 class="disp">Handed to you</h2><p>NEW until you take it. Taking it makes the lane yours on everyone\'s board.</p>' + (handed.length ? '<div class="cards">' + handed.map(card).join("") + '</div>' : '<p class="empty">Nothing handed to you.</p>') + '</section>';
-    h += '<section class="sec"><h2 class="disp">Lanes you hold</h2><p>Hand one on when you are done with it: to a person, back to open, or to the tester.</p>' + (held.length ? held.map(row).join("") : '<p class="empty">You hold no lane right now.</p>') + '</section>';
-    h += '<section class="sec"><h2 class="disp">Your approvals</h2><p>' + (q.length ? q.length + ' change(s) other people made to your work wait for your answer. <a href="#approvals">Answer them</a>.' : 'Your queue is empty.') + '</p></section>';
-    h += '<section class="sec"><h2 class="disp">What you handed off</h2>' + (sent.length ? sent.map(function(x){ return '<div class="row"><div class="rhead" style="cursor:default"><span class="kind">' + (KIND_SVG[x.laneKind] || "") + '</span><span class="name"><b>' + esc(x.laneName) + '</b><small>' + day(x.on) + '</small></span><span class="line">' + esc(x.kind === "to" ? "to " + x.to : x.kind === "test" ? "for test with " + x.to : x.kind) + (x.note ? ' &middot; ' + md(x.note) : '') + '</span><span></span></div></div>'; }).join("") : '<p class="empty">Nothing yet.</p>') + '</section>';
-    return h;
-  }
-  function tests(){
-    var lanes = lanesNow(), t = lanes.filter(function(l){ return l.tier === "testing"; }), isTester = D.testers.indexOf(me()) >= 0;
-    var done = D.handoffs.filter(function(x){ return x.kind === "test" && (x.events || []).some(function(e){ return e.event === "feedback"; }); }).slice(0, 10);
-    var h = '<section class="head"><div><p class="lab">With ' + esc(D.testers.join(", ")) + '</p><h1 class="disp">For test</h1><p>Lanes sent with /handoff-for-test. ' + (isTester ? 'Run each brief, then answer: good to go, or send it back with what failed.' : 'The tester answers each one with good to go, or back to open.') + '</p></div></section>';
-    h += t.length ? '<div class="cards">' + t.map(function(l){ var x = l.handoff; return '<article class="card"><span class="pill sel" style="align-self:flex-start">From ' + esc(x.by) + ', ' + day(x.on) + '</span><h3>' + esc(l.name) + '</h3>' + (x.what ? '<p><b>Test:</b> ' + md(x.what) + '</p>' : '') + (x.note ? '<p class="soft">' + md(x.note) + '</p>' : '') + (x.branch ? '<p class="meta">branch ' + esc(x.branch) + '</p>' : '') +
-      (isTester ? '<label class="lab" for="fb-' + esc(l.key) + '">What you ran, or what failed</label><textarea id="fb-' + esc(l.key) + '"></textarea><div class="acts"><button class="btn cta" data-do="good" data-lane="' + esc(l.key) + '">Good to go</button><button class="btn no" data-do="back" data-lane="' + esc(l.key) + '">Send back to open</button></div>' : '') + '</article>'; }).join("") + '</div>' : '<p class="empty">Nothing waits for test.</p>';
-    if(done.length) h += '<section class="sec"><h2 class="disp">Answered</h2>' + done.map(function(x){ var f = x.events.filter(function(e){ return e.event === "feedback"; }).pop(); return '<div class="row"><div class="rhead" style="cursor:default"><span class="kind">' + (KIND_SVG[x.laneKind] || "") + '</span><span class="name"><b>' + esc(x.laneName) + '</b><small>' + day(f.on) + '</small></span><span class="line">' + (f.verdict === "good" ? '<strong>Good to go</strong>' : '<strong>Sent back</strong>') + (f.note ? ' &middot; ' + md(f.note) : '') + '</span><span>' + (f.verdict === "good" ? '<span class="pill sel">Tested</span>' : '<span class="pill no">Back</span>') + '</span></div></div>'; }).join("") + '</section>';
-    return h;
-  }
-  var apprPerson = null;
-  function approvals(){
-    var all = approvalsNow(), people = {};
-    all.forEach(function(e){ people[e.to] = (people[e.to] || 0) + ((e.status === "pending" || e.status === "discuss") ? 1 : 0); });
-    var p = apprPerson || me() || Object.keys(people)[0] || "";
-    var rows = all.filter(function(e){ return e.to === p; });
-    var h = '<section class="head"><div><p class="lab">Approve after the fact</p><h1 class="disp">Approvals</h1><p>Changes go through unless they collide with an occupied lane. Whoever\'s work a change touched answers here: approve, or ask to talk about it.</p></div></section>';
-    h += '<div class="qhead"><label class="lab" for="apprWho">Queue of</label><select id="apprWho">' + Object.keys(people).sort().map(function(n){ return '<option' + (n === p ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join("") + '</select><span class="soft">' + rows.length + ' waiting' + (p !== me() ? ' &middot; only ' + esc(p) + ' can answer these' : '') + '</span></div>';
-    h += rows.length ? '<div class="cards">' + rows.map(function(e){ var mineQ = e.to === me(), done = e.status === "approved"; return '<article class="card"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="pill' + (e.status === "discuss" ? ' wait' : done ? ' sel' : '') + '">' + esc(e.status) + '</span>' + (e.loopImpact ? '<span class="impact">Loop impact ' + e.loopImpact + '</span>' : '') + (e.pendingSync ? '<span class="pill wait">Waiting for sync</span>' : '') + '</div><p class="meta">from ' + esc(e.by) + ', ' + day(e.date) + ' &middot; ' + esc(e.where === "landed" ? "on bleeding-edge" : "on " + (e.where || "")) + '</p><p>' + md(e.summary) + '</p>' + (e.area ? '<p class="soft"><b>Your area:</b> ' + md(e.area) + '</p>' : '') + (e.loopRework && e.loopRework.length ? '<p class="soft">A no here sends back: ' + esc(e.loopRework.join("; ")) + '</p>' : '') +
-      (mineQ && !e.pendingSync ? '<label class="lab" for="an-' + esc(e.id) + '">Note (needed to discuss)</label><textarea id="an-' + esc(e.id) + '"></textarea><div class="acts"><button class="btn cta" data-ap="approve" data-id="' + esc(e.id) + '">Approve</button><button class="btn sel" data-ap="discuss" data-id="' + esc(e.id) + '">Discuss</button></div>' : '') + '</article>'; }).join("") + '</div>' : '<p class="empty">Nothing waits for ' + esc(p) + '.</p>';
-    return h;
-  }
-  function how(){
-    return '<section class="head"><div><p class="lab">The rules, in one page</p><h1 class="disp">How it works</h1></div></section><div class="how">' +
-      '<div><h3>A lane</h3><p>A lane is a vessel, a game, an app screen or a system: anything that takes more than a couple of prompts and one pull request. It is never a task. Vessels and games are lanes by themselves; screens and systems are listed in <code>lanes.json</code>.</p><p>A lane is <b>occupied</b> while someone has unmerged work in it from the last 7 days, or has claimed it. That is the only thing that says not now, and the only thing that stops a commit (<code>approvals.py check</code>). It opens again when the work merges into bleeding-edge.</p></div>' +
-      '<div><h3>The tiers</h3>' + D.order.map(function(t){ return '<p><b>' + esc(TIERS[t].t) + '.</b> ' + esc(TIERS[t].d) + '</p>'; }).join("") + '</div>' +
-      '<div><h3>Hand-offs</h3><p>When your work in a lane is done for now, hand it on, from a session or here:</p><div class="flow"><span>/handoff-to-&lt;name&gt;</span><i>&rarr;</i><span>NEW on their board</span><i>&rarr;</i><span>theirs</span></div><div class="flow"><span>/handoff-open</span><i>&rarr;</i><span>open, with your note on top</span></div><div class="flow"><span>/handoff-for-test</span><i>&rarr;</i><span>' + esc(D.testers[0]) + '</span><i>&rarr;</i><span>/handoff-feedback good</span><i>or</i><span>back to open</span></div><p>/ship asks whether to hand off when a ship reaches a GO, and learns from what you choose.</p></div>' +
-      '<div><h3>This page and the repo</h3><p>The board is a snapshot of git, read by <code>swimlanes.py</code>. A claim, hand-off, test answer or approval made here is saved at once and shown to everyone with a "waiting for sync" mark. A /swimlanes sync turns them into files in <code>Docs/Handoffs</code> and <code>Docs/Approvals</code>, commits them and republishes this page.</p><p>Pick your name in the bar so every change says who made it.</p></div></div>';
+  function filters(){
+    var ppl = ["Garrett", "Caleb", "Shombith", "Yash"];
+    return '<div class="filters"><div class="seg" role="group" aria-label="Kind">' + [["all", "All"], ["vessel", "Vessels"], ["game", "Games"], ["shell", "Screens"], ["system", "Systems"]].map(function(k){ return '<button type="button" aria-pressed="' + (kindF === k[0]) + '" data-kind="' + k[0] + '">' + k[1] + '</button>'; }).join("") + '</div>' +
+      '<div class="seg" role="group" aria-label="Person"><button type="button" aria-pressed="' + (!personF) + '" data-person="">Everyone</button>' + ppl.map(function(p){ return '<button type="button" aria-pressed="' + (personF === p) + '" data-person="' + p + '">' + p + '</button>'; }).join("") + '</div>' +
+      '<div class="seg"><input id="q" type="search" aria-label="Search lanes, people, branches" placeholder="Search lanes, people, branches" value="' + esc(query) + '"></div></div>';
   }
 
-  /* ---------- the hand-off dialog ---------- */
-  function dialog(key){
+  /* ---------- Board (columns) ---------- */
+  function kcard(l){
+    var h = l.handoff, hs = holders(l), m = me(), mine = m && holderNames(l).indexOf(m) >= 0;
+    var who = "", line = "";
+    if((l.tier === "handed" || l.tier === "testing") && h){ who = '<span class="h">' + av(h.to) + esc(h.to) + (l.tier === "testing" ? ' <span class="pill sel">test</span>' : '') + '</span>'; line = "from " + h.by + ", " + day(h.on) + (h.what ? " \u00b7 " + h.what : h.note ? " \u00b7 " + h.note : ""); }
+    else if(l.tier === "occupied"){ who = '<span class="h">' + hs.map(function(x){ return av(x.who) + esc(x.who || "Claude session"); }).join(' <span class="small">+</span> ') + '</span>'; line = hs[0] ? hs[0].br + (hs[0].pr ? " #" + hs[0].pr : "") + " \u00b7 " + hs[0].last : ""; }
+    else if(l.tier === "loop" && l.loop){ who = '<span class="prog">' + esc(l.loop.progress) + '</span>'; line = nextOf(l); }
+    else line = nextOf(l);
+    var flags = (h && h.status === "new" ? '<span class="pill new">New</span>' : '') + (h && h.status === "back" ? '<span class="pill no">Sent back</span>' : '') + (h && h.status === "passed" ? '<span class="pill sel">Tested</span>' : '') +
+      ((h && h.pendingSync) || hs.some(function(x){ return x.pend; }) ? '<span class="pill warn" title="Made on this page; reaches the repo at the next sync">Sync</span>' : '');
+    return '<button type="button" class="kc' + (mine ? ' mine' : '') + '" data-lane="' + esc(l.key) + '"><span class="t">' + ICON[l.kind] + '<span>' + esc(l.name) + '</span>' + flags + '</span>' + who + (line ? '<span class="s">' + esc(line) + '</span>' : '') + '</button>';
+  }
+  function board(){
+    var ls = lanesNow(), shown = ls.filter(matches), cnt = function(t){ return ls.filter(function(l){ return l.tier === t; }).length; };
+    var m = me(), newMine = m ? ls.filter(function(l){ return l.handoff && l.handoff.to === m && l.handoff.status === "new"; }).length : 0;
+    var p = pending().length;
+    var h = head("Who is in which vessel, game, screen and system", "Board", "Read from git, " + esc(D.base) + (p ? '<br><span class="wait">' + p + ' change' + (p > 1 ? 's' : '') + ' made here wait for the next sync</span>' : ''));
+    h += filters();
+    h += '<div class="tiles">' + [["Held", cnt("occupied"), "lanes with someone in them"], ["Handed off", cnt("handed"), newMine ? newMine + " new for you" : "passed to a person"], ["For test", cnt("testing"), "with " + D.testers.join(", ")],
+      ["Loop vessels", cnt("loop"), "free to advance"], ["Open with work", cnt("work"), "tickets, hand tests, errors"], ["Polish", cnt("polish") + cnt("polished"), "gaps and polished"]].map(function(t, i){
+      return '<div class="tile panel sl"><span class="lab">' + t[0] + '</span><span class="value num"' + (i === 1 && newMine ? ' style="color:var(--fs-cta)"' : '') + '>' + t[1] + '</span><span class="small">' + esc(t[2]) + '</span></div>'; }).join("") + '</div>';
+    h += '<div class="cols">' + COLS.map(function(c){
+      var main = shown.filter(function(l){ return l.tier === c.k || (c.also && c.also[0] === "testing" && l.tier === "testing"); });
+      var extra = c.k === "polish" ? shown.filter(function(l){ return l.tier === "polished"; }) : [];
+      var n = main.length + extra.length;
+      return '<section class="col panel sl" aria-label="' + esc(c.t) + '"><div class="col-h"><span class="lab">' + c.t + '</span><span class="num">' + n + '</span></div><div class="col-d">' + esc(c.d) + '</div><div class="col-b">' +
+        (main.length ? main.map(kcard).join("") : (extra.length ? '' : '<p class="empty">None right now.</p>')) +
+        (extra.length ? '<div class="sub">Polished &middot; ' + extra.length + '</div>' + extra.map(kcard).join("") : '') + '</div></section>';
+    }).join("") + '</div>';
+    if(D.notes && D.notes.length) h += '<p class="small">' + D.notes.map(esc).join("<br>") + '</p>';
+    return h;
+  }
+
+  /* ---------- the lane drawer ---------- */
+  function drawer(key, mode){
     var l = lanesNow().filter(function(x){ return x.key === key; })[0]; if(!l) return;
-    var others = D.people.filter(function(n){ return n !== me(); });
+    var m = me(), hn = holderNames(l), mine = m && hn.indexOf(m) >= 0, h = l.handoff, hs = holders(l), body = "";
+    var isOpen = ["loop", "work", "polish", "polished"].indexOf(l.tier) >= 0;
+    if(mode === "handoff"){
+      var others = D.people.filter(function(n){ return n !== m; });
+      body = '<form class="form" id="hform"><span class="lab">Hand off</span>' +
+        '<label class="opt"><input type="radio" name="hk" value="to" checked><span><b class="h3">To a person</b><br><span class="small">It shows on their board as NEW and becomes their lane.</span></span></label>' +
+        '<label class="opt"><input type="radio" name="hk" value="open"><span><b class="h3">Back to open</b><br><span class="small">Anyone can pick it up; your note goes on top of its work.</span></span></label>' +
+        '<label class="opt"><input type="radio" name="hk" value="test"><span><b class="h3">For test</b><br><span class="small">' + esc(D.testers[0]) + ' tests it and answers: good to go, or back to open.</span></span></label>' +
+        '<label id="hToL"><span class="lab">To</span><select id="hTo">' + others.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join("") + '</select></label>' +
+        '<label id="hWhatL" hidden><span class="lab">What to test (the tester\'s whole brief)</span><textarea id="hWhat" placeholder="The steps, the branch or build, what good looks like"></textarea></label>' +
+        '<label><span class="lab">Where it stands</span><textarea id="hNote" placeholder="What is done, what is next, what is untested"></textarea></label>' +
+        '<div class="acts" style="margin-top:14px"><button class="bs" type="button" data-back="1">Back</button><button class="bs cta" type="submit">Hand off</button></div></form>';
+    } else {
+      if(l.note) body += '<p class="small wait" style="margin:0">' + md(l.note) + '</p>';
+      body += '<div class="acts">' +
+        (h && h.status === "new" && h.to === m ? '<button class="bs cta" data-do="seen">Take it</button>' : '') +
+        (isOpen ? '<button class="bs cta" data-do="claim">Claim this lane</button>' : '') +
+        (l.tier === "occupied" && !mine ? '<button class="bs" data-do="claim" title="Someone holds it: talk to them first">Claim anyway</button>' : '') +
+        '<button class="bs' + (mine ? ' sel' : '') + '" data-do="handoff">Hand off</button>' +
+        (l.tier === "testing" && D.testers.indexOf(m) >= 0 ? '<a class="bs cta" href="#test" style="display:inline-flex;align-items:center;text-decoration:none">Answer the test</a>' : '') + '</div>';
+      if(hn.length && (l.tier === "occupied" || l.tier === "handed" || l.tier === "testing")){
+        body += '<div><span class="lab">Held by</span><ul>' + ((l.tier === "handed" || l.tier === "testing") && h ? '<li>' + av(h.to) + ' ' + esc(h.to) + (l.tier === "testing" ? ' (testing)' : '') + ', handed by ' + esc(h.by) + ' ' + day(h.on) + '</li>' :
+          hs.map(function(x){ return '<li>' + av(x.who) + ' <b>' + esc(x.who || "a Claude session (no person on record)") + '</b>' + (x.more.length ? ' with ' + esc(x.more.join(", ")) : '') + ' on <code>' + esc(x.br) + '</code>' + (x.pr ? ' PR #' + x.pr : '') + ', last push ' + esc(x.last) + '<br><span class="small">' + esc(x.sub) + '</span></li>'; }).join("")) + '</ul></div>';
+      }
+      if(h){ body += '<div><span class="lab">Hand-off</span><ul><li>' + esc(h.kind === "to" ? "to " + h.to : h.kind === "test" ? "for test with " + h.to : h.kind === "claim" ? "claimed" : "back to open") + ' by ' + esc(h.by) + ', ' + day(h.on) + ' &middot; ' + esc(h.status) + '</li>' + (h.note ? '<li>' + md(h.note) + '</li>' : '') + (h.what ? '<li>Test: ' + md(h.what) + '</li>' : '') + (h.brief ? '<li>Carries a brief: <a href="#mine">For you</a></li>' : '') + '</ul></div>'; }
+      if(l.loop) body += '<div><span class="lab">Elemental loop &middot; <span class="prog">' + esc(l.loop.progress) + '</span>' + (l.loop.seated && l.loop.seated.length ? ' &middot; seats ' + esc(l.loop.seated.join(", ")) : '') + '</span><ul>' + l.loop.actions.map(function(t){ return '<li>' + md(t) + '</li>'; }).join("") + '</ul></div>';
+      if((l.work || []).length) body += '<div><span class="lab">Work waiting &middot; score ' + l.workScore + '</span><ul>' + l.work.map(function(t){ return '<li>' + md(t) + '</li>'; }).join("") + '</ul></div>';
+      if((l.polish || []).length) body += '<div><span class="lab">Polish gaps</span><ul>' + l.polish.map(function(t){ return '<li>' + md(t) + '</li>'; }).join("") + '</ul></div>';
+      if(l.landed) body += '<div><span class="lab">Last landed</span><ul><li>' + esc(l.landed.date) + ': ' + (l.landed.pr ? '#' + l.landed.pr + ' ' : '') + esc(l.landed.branch || l.landed.subject || "") + (l.landed.by ? ', ' + esc(l.landed.by) : '') + '</li></ul></div>';
+      body += '<p class="small">In a session: <code>swimlanes.py --lane ' + esc(l.key) + '</code></p>';
+    }
     var layer = document.getElementById("layer");
-    layer.innerHTML = '<div class="scrim" id="scrim"><form class="dlg" id="hform" role="dialog" aria-modal="true" aria-labelledby="hTitle"><p class="lab">Hand off</p><h3 class="disp" id="hTitle">' + esc(l.name) + '</h3>' +
-      '<div class="opts">' +
-      '<label class="opt"><input type="radio" name="hk" value="to" checked><span><b>To a person</b><span>It shows on their board as NEW and becomes their lane.</span></span></label>' +
-      '<label class="opt"><input type="radio" name="hk" value="open"><span><b>Back to open</b><span>Anyone can pick it up; your note goes on top of its work.</span></span></label>' +
-      '<label class="opt"><input type="radio" name="hk" value="test"><span><b>For test</b><span>' + esc(D.testers[0]) + ' tests it and answers: good to go, or back to open.</span></span></label></div>' +
-      '<label class="f" for="hTo">To</label><select id="hTo">' + others.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join("") + '</select>' +
-      '<label class="f" for="hWhat" hidden id="hWhatL">What to test (the tester\'s whole brief)</label><textarea id="hWhat" hidden placeholder="The steps, the branch or build, what good looks like"></textarea>' +
-      '<label class="f" for="hNote">Where it stands</label><textarea id="hNote" placeholder="What is done, what is next, what is untested"></textarea>' +
-      '<div class="acts"><button class="btn" type="button" id="hCancel">Cancel</button><button class="btn cta" type="submit">Hand off</button></div></form></div>';
-    var form = document.getElementById("hform");
-    function sync(){ var k = form.querySelector("input[name=hk]:checked").value; document.getElementById("hTo").hidden = document.querySelector("label[for=hTo]").hidden = k !== "to"; document.getElementById("hWhat").hidden = document.getElementById("hWhatL").hidden = k !== "test"; }
-    Array.prototype.forEach.call(form.querySelectorAll("input[name=hk]"), function(r){ r.addEventListener("change", sync); });
-    sync();
+    layer.innerHTML = '<div class="scrim" data-close="1"></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle"><button class="x" type="button" data-close="1" aria-label="Close">&times;</button><span class="lab">' + esc(l.kind) + '</span><h2 class="h1" id="dTitle">' + ICON[l.kind] + esc(l.name) + '</h2>' + body + '</aside>';
+    var d = layer.querySelector(".drawer");
+    d.addEventListener("keydown", function(e){ if(e.key === "Escape") close(); });
+    layer.querySelectorAll("[data-close]").forEach(function(b){ b.addEventListener("click", close); });
+    var back = layer.querySelector("[data-back]"); if(back) back.addEventListener("click", function(){ drawer(key); });
+    layer.querySelectorAll("[data-do]").forEach(function(b){ b.addEventListener("click", function(){
+      var w = b.dataset.do;
+      if(w === "handoff"){ if(!m){ toast("Pick your name under You are first."); meSel.focus(); return; } drawer(key, "handoff"); }
+      else if(w === "claim") act({type:"claim", lane:l.key, laneName:l.name}).then(function(ok){ if(ok) close(); });
+      else if(w === "seen") act({type:"seen", lane:l.key, handoff:h && h.id}).then(function(ok){ if(ok) close(); });
+    }); });
+    var form = layer.querySelector("#hform");
+    if(form){
+      var sync = function(){ var k = form.querySelector("input[name=hk]:checked").value; document.getElementById("hToL").hidden = k !== "to"; document.getElementById("hWhatL").hidden = k !== "test"; };
+      form.querySelectorAll("input[name=hk]").forEach(function(r){ r.addEventListener("change", sync); });
+      form.addEventListener("submit", function(e){
+        e.preventDefault();
+        var k = form.querySelector("input[name=hk]:checked").value, what = document.getElementById("hWhat").value.trim();
+        if(k === "test" && !what){ toast("Write what to test: it is the tester's whole brief."); return; }
+        act({type:k, lane:l.key, laneName:l.name, to:k === "to" ? document.getElementById("hTo").value : null, what:what, note:document.getElementById("hNote").value.trim()}).then(function(ok){ if(ok) close(); });
+      });
+    }
+    (d.querySelector("button:not(.x), input") || d.querySelector(".x")).focus();
     function close(){ layer.innerHTML = ""; }
-    document.getElementById("hCancel").addEventListener("click", close);
-    document.getElementById("scrim").addEventListener("click", function(e){ if(e.target.id === "scrim") close(); });
-    form.addEventListener("keydown", function(e){ if(e.key === "Escape") close(); });
-    form.addEventListener("submit", function(e){
-      e.preventDefault();
-      var k = form.querySelector("input[name=hk]:checked").value, what = document.getElementById("hWhat").value.trim();
-      if(k === "test" && !what){ toast("Write what to test: it is the tester's whole brief."); return; }
-      act({type:k, lane:l.key, laneName:l.name, to:k === "to" ? document.getElementById("hTo").value : null, what:what, note:document.getElementById("hNote").value.trim()}).then(function(ok){ if(ok){ close(); } });
+  }
+
+  /* ---------- People ---------- */
+  function people(){
+    var ls = lanesNow(), cards = {};
+    function slot(n){ return cards[n] = cards[n] || {name:n, held:[], handed:[], testing:[], sent:0}; }
+    ls.forEach(function(l){
+      if((l.tier === "handed" || l.tier === "testing") && l.handoff){ slot(l.handoff.to)[l.tier === "testing" ? "testing" : "handed"].push({l:l, sub:"from " + l.handoff.by, date:day(l.handoff.on), isNew:l.handoff.status === "new"}); }
+      else if(l.tier === "occupied") holders(l).forEach(function(x){ slot(x.who || "Claude sessions").held.push({l:l, sub:x.br + (x.pr ? " #" + x.pr : ""), date:x.last, pend:x.pend}); });
     });
-    form.querySelector("input[name=hk]").focus();
+    D.handoffs.forEach(function(x){ if(x.kind !== "keep" && cards[x.by]) cards[x.by].sent++; });
+    var order = D.people.concat(Object.keys(cards).filter(function(n){ return D.people.indexOf(n) < 0; }));
+    var list = order.filter(function(n){ return cards[n]; }).sort(function(a, b){ return (a === "Claude sessions") - (b === "Claude sessions") || (cards[b].held.length + cards[b].handed.length) - (cards[a].held.length + cards[a].handed.length); });
+    var free = D.people.filter(function(n){ return !cards[n]; });
+    var h = head("Who holds what, right now", "People", "A lane is held by unmerged work from the last 7 days, a claim, or a hand-off");
+    h += '<div class="people">' + list.map(function(n){
+      var c = cards[n], rows = c.handed.concat(c.testing, c.held);
+      return '<section class="pcard panel sl ' + (CORE[n] || "p0") + '"><div class="ph">' + (n === "Claude sessions" ? av("", "lg") : av(n, "lg")) + '<div><div class="h2">' + esc(n) + '</div><span class="small">' + (n === "Claude sessions" ? "branches with no person on record: open their PR or ask" : n === me() ? "you" : D.testers.indexOf(n) >= 0 ? "tester" : "") + '</span></div></div>' +
+        '<div class="stats"><div><b class="num">' + c.held.length + '</b><span>Held</span></div><div><b class="num"' + (c.handed.some(function(x){ return x.isNew; }) ? ' style="color:var(--fs-cta)"' : '') + '>' + c.handed.length + '</b><span>Handed to</span></div><div><b class="num">' + c.testing.length + '</b><span>To test</span></div></div>' +
+        '<div>' + rows.map(function(r){ return '<button type="button" class="prow" data-lane="' + esc(r.l.key) + '">' + ICON[r.l.kind] + '<span><span class="nm">' + esc(r.l.name) + '</span>' + (r.isNew ? ' <span class="pill new">New</span>' : '') + (r.pend ? ' <span class="pill warn">Sync</span>' : '') + '<span class="br">' + esc(r.sub) + '</span></span><span class="dt">' + esc(r.date) + '</span></button>'; }).join("") + '</div></section>';
+    }).join("") + '</div>';
+    if(free.length) h += '<p class="small">Holding nothing right now: ' + free.map(esc).join(", ") + '.</p>';
+    return h;
+  }
+
+  /* ---------- For you ---------- */
+  function brief(l){
+    var h = l.handoff, b = h.brief || {}, pd = privateDocs[h.id] || {}, ticks = pd.ticks || [], isNew = h.status === "new";
+    var steps = b.steps || [], done = steps.filter(function(_, i){ return ticks[i]; }).length;
+    return '<section class="brief panel sl' + (isNew ? '' : ' taken') + '"><div class="bhead">' + (isNew ? '<span class="pill new">New hand-off</span>' : '<span class="pill sel">Yours</span>') + av(h.by) + '<span class="h2">' + esc(h.by) + ' handed you <b>' + esc(l.name) + '</b></span><span class="small">' + day(h.on) + (b.doc ? ' &middot; <code>' + esc(b.doc) + '</code>' : '') + '</span></div>' +
+      (b.summary ? '<p class="body">' + md(b.summary) + '</p>' : h.note ? '<p class="body">' + md(h.note) + '</p>' : '') +
+      (steps.length || (b.decisions || []).length ? '<div class="bcols"><div>' +
+        (steps.length ? '<span class="lab" style="color:var(--fs-text)">Next steps &middot; ' + done + ' of ' + steps.length + ' ticked</span>' + steps.map(function(s, i){ return '<label class="chk"><input type="checkbox" data-tick="' + esc(h.id) + '" data-i="' + i + '"' + (ticks[i] ? ' checked' : '') + '><span>' + md(s) + '</span></label>'; }).join("") : '') +
+        '<label class="lab" for="pn-' + esc(h.id) + '" style="display:block;margin-top:14px">Your notes</label><textarea class="pnote" id="pn-' + esc(h.id) + '" data-pnote="' + esc(h.id) + '" placeholder="Only you can read these">' + esc(pd.note || "") + '</textarea>' +
+        '<div class="acts" style="margin-top:12px">' + (isNew ? '<button class="bs cta" data-take="' + esc(l.key) + '">Take it</button>' : '') + '<button class="bs" data-lane="' + esc(l.key) + '">Open the lane</button></div></div><div>' +
+        ((b.decisions || []).length ? '<span class="lab" style="color:var(--fs-text)">' + esc(h.by) + ' decided</span>' + b.decisions.map(function(d){ return '<div class="dec"><i></i><span>' + md(d) + '</span></div>'; }).join("") : '') +
+        ((b.open || []).length ? '<span class="lab" style="color:var(--fs-text);display:block;margin-top:16px">Waiting on your call</span>' + b.open.map(function(o){ return '<div class="rd"><span>' + md(o[0]) + '</span><span class="small" style="text-align:right">' + md(o[1]) + '</span></div>'; }).join("") : '') +
+        '</div></div>' : '') +
+      ((b.reading || []).length ? '<div><span class="lab" style="color:var(--fs-text)">Read, in this order</span><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' + b.reading.map(function(r){ return '<span class="pill' + (/first/.test(r[1]) ? ' sel' : '') + '">' + esc(r[0]) + ' &middot; ' + esc(r[1]) + '</span>'; }).join("") + '</div></div>' : '') + '</section>';
+  }
+  function mine(){
+    var m = me();
+    if(!m) return head("Curated for you", "For you") + '<section class="card panel sl"><p class="body">Pick your name under <b>You are</b> in the rail. This page shows what was handed to you with its brief, the lanes you hold and your approval queue. Your ticks and notes here are private to you.</p></section>';
+    var ls = lanesNow(), handed = ls.filter(function(l){ return l.handoff && l.handoff.to === m && (l.tier === "handed"); });
+    var tests = ls.filter(function(l){ return l.tier === "testing" && l.handoff && l.handoff.to === m; });
+    var held = ls.filter(function(l){ return l.tier === "occupied" && holders(l).some(function(x){ return x.who === m; }); });
+    var q = approvalsNow().filter(function(e){ return e.to === m && (e.status === "pending" || e.status === "discuss"); });
+    var h = head("Curated for you, " + esc(m), "For you", db ? '<span class="lock">' + LOCK + 'your ticks and notes are private to you</span>' : '');
+    h += handed.length ? handed.map(brief).join("") : '<section class="card panel sl"><p class="small">Nothing is handed to you right now.</p></section>';
+    if(tests.length) h += '<section class="card panel sl"><div class="card-head"><span class="lab">For you to test</span><span class="small">' + tests.length + '</span></div>' + tests.map(function(l){ return '<div class="rd"><span>' + esc(l.name) + ' <span class="small">from ' + esc(l.handoff.by) + '</span></span><a class="bs cta" href="#test" style="display:inline-flex;align-items:center;text-decoration:none">Test it</a></div>'; }).join("") + '</section>';
+    h += '<div class="grid2"><section class="card panel sl"><div class="card-head"><span class="lab">Lanes you hold</span><span class="small">' + held.length + '</span></div>' +
+      (held.length ? held.map(function(l){ var o = holders(l).filter(function(x){ return x.who === m; })[0]; return '<div class="rd"><span style="display:flex;gap:8px;align-items:center;min-width:0">' + ICON[l.kind] + '<span class="ell">' + esc(l.name) + '<span class="small" style="display:block">' + esc(o.br) + (o.pr ? ' #' + o.pr : '') + ' &middot; ' + esc(o.last) + '</span></span></span><button class="bs" data-handoff="' + esc(l.key) + '">Hand off</button></div>'; }).join("") : '<p class="small">You hold no lane right now.</p>') + '</section>' +
+      '<section class="card panel sl"><div class="card-head"><span class="lab">Your approvals</span><span class="small">' + q.length + ' waiting &middot; loop impact first</span></div>' +
+      (q.length ? q.slice(0, 5).map(function(e){ return '<div class="rd"><span style="display:flex;gap:8px;align-items:center;min-width:0">' + av(e.by) + '<span class="ell">' + esc(e.summary) + '</span></span>' + (e.loopImpact ? '<span class="pill warn">Loop ' + e.loopImpact + '</span>' : '<span class="small" style="white-space:nowrap">' + day(e.date) + '</span>') + '</div>'; }).join("") + '<div class="acts"><a class="bs cta" href="#approvals" style="display:inline-flex;align-items:center;text-decoration:none">Answer them</a></div>' : '<p class="small">Your queue is empty.</p>') + '</section></div>';
+    return h;
+  }
+
+  /* ---------- For test ---------- */
+  function tests(){
+    var ls = lanesNow(), t = ls.filter(function(l){ return l.tier === "testing"; }), isTester = D.testers.indexOf(me()) >= 0;
+    var done = D.handoffs.filter(function(x){ return x.kind === "test" && (x.events || []).some(function(e){ return e.event === "feedback"; }); }).slice(0, 12);
+    var h = head("With " + esc(D.testers.join(", ")), "For test", isTester ? "Run each brief, then answer" : "The tester answers each one");
+    h += t.length ? '<div class="cards">' + t.map(function(l){ var x = l.handoff; return '<section class="card panel sl"><div class="card-head"><span class="lab">' + esc(l.name) + '</span><span class="small">from ' + esc(x.by) + ', ' + day(x.on) + '</span></div>' + (x.what ? '<p class="body"><b>Test:</b> ' + md(x.what) + '</p>' : '') + (x.note ? '<p class="small">' + md(x.note) + '</p>' : '') +
+      (isTester ? '<label class="lab" for="fb-' + esc(l.key) + '">What you ran, or what failed</label><textarea id="fb-' + esc(l.key) + '"></textarea><div class="acts"><button class="bs cta" data-fb="good" data-lane-fb="' + esc(l.key) + '">Good to go</button><button class="bs no" data-fb="back" data-lane-fb="' + esc(l.key) + '">Send back to open</button></div>' : '') + '</section>'; }).join("") + '</div>' : '<section class="card panel sl"><p class="small">Nothing waits for test. A lane arrives here with /handoff-for-test, or Hand off &rarr; For test on the board.</p></section>';
+    if(done.length) h += '<section class="card panel sl"><div class="card-head"><span class="lab">Answered</span></div>' + done.map(function(x){ var f = x.events.filter(function(e){ return e.event === "feedback"; }).pop(); return '<div class="rd"><span>' + esc(x.laneName) + ' <span class="small">' + day(f.on) + (f.note ? ' &middot; ' + esc(f.note) : '') + '</span></span>' + (f.verdict === "good" ? '<span class="pill sel">Good to go</span>' : '<span class="pill no">Sent back</span>') + '</div>'; }).join("") + '</section>';
+    return h;
+  }
+
+  /* ---------- Approvals ---------- */
+  var apprPerson = null;
+  function approvals(){
+    var all = approvalsNow(), counts = {};
+    all.forEach(function(e){ counts[e.to] = (counts[e.to] || 0) + ((e.status === "pending" || e.status === "discuss") ? 1 : 0); });
+    var p = apprPerson || (counts[me()] !== undefined ? me() : Object.keys(counts)[0]) || "";
+    var rows = all.filter(function(e){ return e.to === p; });
+    var h = head("Approve after the fact", "Approvals", "Changes go through unless they collide with a held lane");
+    h += '<div class="filters"><div class="seg" role="group" aria-label="Queue of">' + Object.keys(counts).sort().map(function(n){ return '<button type="button" aria-pressed="' + (n === p) + '" data-q="' + esc(n) + '">' + esc(n) + ' ' + counts[n] + '</button>'; }).join("") + '</div>' + (p !== me() ? '<span class="small">Only ' + esc(p) + ' answers these.</span>' : '') + '</div>';
+    h += rows.length ? '<div class="cards">' + rows.map(function(e){ var own = e.to === me() && !e.pendingSync; return '<section class="card panel sl"><div class="card-head"><span style="display:flex;gap:8px;align-items:center">' + av(e.by) + '<span class="lab">' + esc(e.by) + ', ' + day(e.date) + '</span></span><span style="display:flex;gap:6px">' + (e.loopImpact ? '<span class="pill warn">Loop ' + e.loopImpact + '</span>' : '') + '<span class="pill' + (e.status === "discuss" ? ' warn' : e.status === "approved" ? ' sel' : '') + '">' + esc(e.status) + '</span>' + (e.pendingSync ? '<span class="pill warn">Sync</span>' : '') + '</span></div>' +
+      '<p class="body" style="font-size:14px">' + md(e.summary) + '</p>' + (e.area ? '<p class="small"><b>Your area:</b> ' + md(e.area) + '</p>' : '') + (e.loopRework && e.loopRework.length ? '<p class="small">A no here sends back: ' + esc(e.loopRework.join("; ")) + '</p>' : '') + '<p class="small">' + esc(e.where === "landed" ? "on bleeding-edge" : "on " + (e.where || "")) + '</p>' +
+      (own ? '<label class="lab" for="an-' + esc(e.id) + '">Note (needed to discuss)</label><textarea id="an-' + esc(e.id) + '"></textarea><div class="acts"><button class="bs cta" data-ap="approve" data-id="' + esc(e.id) + '">Approve</button><button class="bs sel" data-ap="discuss" data-id="' + esc(e.id) + '">Discuss</button></div>' : '') + '</section>'; }).join("") + '</div>' : '<section class="card panel sl"><p class="small">Nothing waits for ' + esc(p) + '.</p></section>';
+    return h;
+  }
+
+  /* ---------- How it works ---------- */
+  function how(){
+    return head("The rules, in one page", "How it works") + '<div class="how">' +
+      '<section class="card panel sl"><span class="lab">A lane</span><p>A vessel, a game, an app screen or a system: anything bigger than a couple of prompts and one pull request. Never a task. A lane is <b>held</b> while someone has unmerged work in it from the last 7 days, claimed it, or was handed it. Held is the only thing that says not now, and the only thing that stops a commit (<code>approvals.py check</code>).</p></section>' +
+      '<section class="card panel sl"><span class="lab">The board</span>' + COLS.map(function(c){ return '<p><b>' + c.t + '.</b> ' + esc(c.d) + '</p>'; }).join("") + '</section>' +
+      '<section class="card panel sl"><span class="lab">Hand-offs</span><div class="flow"><span>/handoff-to-&lt;name&gt;</span><span>NEW on their board</span><span>theirs</span></div><div class="flow"><span>/handoff-open</span><span>open, your note on top</span></div><div class="flow"><span>/handoff-for-test</span><span>' + esc(D.testers[0]) + '</span><span>good to go, or back to open</span></div><p>A hand-off can carry a brief (decisions, next steps, what to read); it shows on the recipient\'s For you page, where their ticks and notes are private to them. /ship offers a hand-off when a ship reaches a GO.</p></section>' +
+      '<section class="card panel sl"><span class="lab">This page and the repo</span><p>The board is a snapshot of git (<code>swimlanes.py</code>). A claim, hand-off, test answer or approval made here is saved at once and shown to everyone with a Sync mark; <code>/swimlanes sync</code> writes it into <code>Docs/Handoffs</code> or <code>Docs/Approvals</code>, commits it and republishes the page.</p></section></div>';
   }
 
   /* ---------- routing and events ---------- */
   function badges(){
-    if(!D) return;
-    var lanes = lanesNow(), m = me();
-    var n = m ? lanes.filter(function(l){ return l.handoff && l.handoff.to === m && l.handoff.status === "new"; }).length : 0;
-    var t = lanes.filter(function(l){ return l.tier === "testing"; }).length;
+    var ls = lanesNow(), m = me();
+    var n = m ? ls.filter(function(l){ return l.handoff && l.handoff.to === m && l.handoff.status === "new"; }).length : 0;
+    var t = ls.filter(function(l){ return l.tier === "testing"; }).length;
     var a = m ? approvalsNow().filter(function(e){ return e.to === m && (e.status === "pending" || e.status === "discuss"); }).length : 0;
     [["bMine", n], ["bTest", t], ["bAppr", a]].forEach(function(x){ var el = document.getElementById(x[0]); el.hidden = !x[1]; el.textContent = x[1]; });
   }
   function render(){
     if(!D) return;
-    var y = window.scrollY;
-    app.innerHTML = view === "mine" ? mine() : view === "test" ? tests() : view === "approvals" ? approvals() : view === "how" ? how() : board();
-    Array.prototype.forEach.call(document.querySelectorAll("nav.views a"), function(a){ if(a.dataset.v === view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+    var y = window.scrollY, focus = document.activeElement && document.activeElement.id;
+    var scrolls = Array.prototype.map.call(document.querySelectorAll(".col-b"), function(c){ return c.scrollTop; });
+    app.innerHTML = ({people:people, mine:mine, test:tests, approvals:approvals, how:how}[view] || board)();
+    document.querySelectorAll(".col-b").forEach(function(c, i){ c.scrollTop = scrolls[i] || 0; });
+    document.querySelectorAll(".rail .nav").forEach(function(a){ if(a.dataset.v === view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     badges();
     window.scrollTo(0, y);
+    if(focus === "q"){ var q = document.getElementById("q"); if(q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
   }
-  function route(){ var h = (location.hash || "#board").slice(1); view = ["board", "mine", "test", "approvals", "how"].indexOf(h) >= 0 ? h : "board"; render(); }
+  function route(){ var h = (location.hash || "#board").slice(1); view = ["board", "people", "mine", "test", "approvals", "how"].indexOf(h) >= 0 ? h : "board"; document.getElementById("layer").innerHTML = ""; render(); }
   window.addEventListener("hashchange", function(){ route(); window.scrollTo(0, 0); });
   app.addEventListener("click", function(e){
-    var r = e.target.closest("[data-row]"); if(r){ openRows[r.dataset.row] = !openRows[r.dataset.row]; render(); return; }
-    var j = e.target.closest("[data-jump]"); if(j){ e.preventDefault(); var s = document.getElementById("tier-" + j.dataset.jump); if(s) s.scrollIntoView({behavior:"smooth"}); return; }
-    var k = e.target.closest("[data-kind]"); if(k){ kindF = k.dataset.kind; render(); return; }
-    var m = e.target.closest("[data-all]"); if(m){ showAll[m.dataset.all] = true; render(); return; }
-    var o = e.target.closest("[data-open]"); if(o){ openRows[o.dataset.open] = true; setTimeout(function(){ var el = document.getElementById("lane-" + o.dataset.open); if(el) el.scrollIntoView(); }, 30); return; }
-    var ap = e.target.closest("[data-ap]");
-    if(ap){ var note = (document.getElementById("an-" + ap.dataset.id) || {}).value || ""; if(ap.dataset.ap === "discuss" && !note.trim()){ toast("Say what you want to talk about: it goes to the person who made the change."); return; }
-      act({type:ap.dataset.ap, entry:ap.dataset.id, note:note.trim()}); return; }
-    var b = e.target.closest("[data-do]"); if(!b) return;
-    var l = lanesNow().filter(function(x){ return x.key === b.dataset.lane; })[0]; if(!l) return;
-    if(b.dataset.do === "handoff"){ if(!me()){ toast("Pick your name in the bar first."); meSel.focus(); return; } dialog(l.key); }
-    else if(b.dataset.do === "claim") act({type:"claim", lane:l.key, laneName:l.name});
-    else if(b.dataset.do === "seen") act({type:"seen", lane:l.key, handoff:l.handoff && l.handoff.id});
-    else if(b.dataset.do === "good" || b.dataset.do === "back"){
-      var ta = document.getElementById("fb-" + l.key), note2 = ta ? ta.value.trim() : "";
-      if(b.dataset.do === "back" && !note2){ if(!ta){ location.hash = "#test"; } toast("Say what failed and how to see it: it is the next person's brief."); return; }
-      act({type:"feedback", lane:l.key, handoff:l.handoff && l.handoff.id, verdict:b.dataset.do, note:note2});
+    var t;
+    if((t = e.target.closest("[data-kind]"))){ kindF = t.dataset.kind; render(); return; }
+    if((t = e.target.closest("[data-person]"))){ personF = t.dataset.person; render(); return; }
+    if((t = e.target.closest("[data-q]"))){ apprPerson = t.dataset.q; render(); return; }
+    if((t = e.target.closest("[data-take]"))){ var l = lanesNow().filter(function(x){ return x.key === t.dataset.take; })[0]; act({type:"seen", lane:l.key, handoff:l.handoff && l.handoff.id}); return; }
+    if((t = e.target.closest("[data-handoff]"))){ if(!me()){ toast("Pick your name under You are first."); meSel.focus(); return; } drawer(t.dataset.handoff, "handoff"); return; }
+    if((t = e.target.closest("[data-lane]"))){ drawer(t.dataset.lane); return; }
+    if((t = e.target.closest("[data-ap]"))){ var note = (document.getElementById("an-" + t.dataset.id) || {}).value || ""; if(t.dataset.ap === "discuss" && !note.trim()){ toast("Say what you want to talk about: it goes to the person who made the change."); return; } act({type:t.dataset.ap, entry:t.dataset.id, note:note.trim()}); return; }
+    if((t = e.target.closest("[data-fb]"))){
+      var key = t.dataset.laneFb, ln = lanesNow().filter(function(x){ return x.key === key; })[0], ta = document.getElementById("fb-" + key), n2 = ta ? ta.value.trim() : "";
+      if(t.dataset.fb === "back" && !n2){ toast("Say what failed and how to see it: it is the next person's brief."); return; }
+      act({type:"feedback", lane:key, handoff:ln.handoff && ln.handoff.id, verdict:t.dataset.fb, note:n2});
     }
   });
-  app.addEventListener("change", function(e){ if(e.target.id === "apprWho"){ apprPerson = e.target.value; render(); } });
-  document.getElementById("q").addEventListener("input", function(e){ query = e.target.value.trim().toLowerCase(); if(view !== "board"){ location.hash = "#board"; } else render(); });
+  app.addEventListener("input", function(e){ if(e.target.id === "q"){ query = e.target.value.trim().toLowerCase(); render(); } });
+  /* private ticks and notes: data/users/<you>/<hand-off id>, readable by nobody else (the db's per-user space) */
+  function savePrivate(hid, patch){
+    if(!db || !viewerId){ toast("Ticks and notes save when you are signed in to claude.ai on this page."); return; }
+    var cur = Object.assign({ticks:[], note:""}, privateDocs[hid] || {}, patch);
+    privateDocs[hid] = cur;
+    db.collection("data/users/" + viewerId).doc(hid).set(cur).catch(function(){ toast("Your tick did not save. Try again."); });
+  }
+  var noteTimer = null;
+  app.addEventListener("change", function(e){
+    var t = e.target;
+    if(t.dataset && t.dataset.tick){ var cur = ((privateDocs[t.dataset.tick] || {}).ticks || []).slice(); cur[+t.dataset.i] = t.checked; savePrivate(t.dataset.tick, {ticks:cur}); render(); }
+  });
+  app.addEventListener("input", function(e){
+    var t = e.target;
+    if(t.dataset && t.dataset.pnote){ clearTimeout(noteTimer); noteTimer = setTimeout(function(){ savePrivate(t.dataset.pnote, {note:t.value}); }, 800); }
+  });
   meSel.addEventListener("change", function(){ ls("swimlanesMe", me()); render(); });
 
-  /* ---------- boot: the snapshot, then the live clicks ---------- */
+  /* ---------- boot: the snapshot, then the live clicks and your private ticks ---------- */
   fetch("data.json").then(function(r){ return r.json(); }).then(function(d){
     D = d;
+    document.getElementById("synced").textContent = d.base + ", " + d.generated.slice(0, 16).replace("T", " ") + " UTC";
     meSel.innerHTML = '<option value="">Pick your name</option>' + d.people.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join("");
     var saved = ls("swimlanesMe"); if(saved && d.people.indexOf(saved) >= 0) meSel.value = saved;
     route();
     if(!window.claude || !window.claude.use) return;
     window.claude.use("user").then(function(u){
-      if(!u) return;
-      u.id().then(function(id){ viewerId = id; }, function(){});
-      if(!me()) u.me().then(function(v){ var first = (v && v.name || "").split(/\s+/)[0].toLowerCase(); var hit = d.people.filter(function(n){ return n.toLowerCase() === first; })[0]; if(hit && !me()){ meSel.value = hit; ls("swimlanesMe", hit); render(); } }, function(){});
+      user = u; if(!u) return;
+      u.id().then(function(id){
+        viewerId = id;
+        if(db && id) loadPrivate();
+      }, function(){});
+      if(!me()) u.me().then(function(v){ var first = ((v && v.name) || "").split(/\s+/)[0].toLowerCase(); var hit = d.people.filter(function(n){ return n.toLowerCase() === first; })[0]; if(hit && !me()){ meSel.value = hit; ls("swimlanesMe", hit); render(); } }, function(){});
     });
     window.claude.use("db").then(function(x){
       db = x; if(!db) return;
@@ -540,7 +540,16 @@ code{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:.9em;co
         actions = snap.docs.map(function(s){ return Object.assign({_id:s.id}, s.data()); });
         render();
       }, function(){ clearTimeout(timer); });
+      if(viewerId) loadPrivate();
     });
+    var loaded = false;
+    function loadPrivate(){
+      if(loaded) return; loaded = true;
+      db.collection("data/users/" + viewerId).onSnapshot(function(snap){
+        snap.docs.forEach(function(s){ privateDocs[s.id] = s.data(); });
+        if(view === "mine" && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.pnote)) render();
+      }, function(){});
+    }
   }, function(){ app.innerHTML = '<p class="empty">The board data did not load. Republish the page with /swimlanes (section 6).</p>'; });
 })();
 </script>

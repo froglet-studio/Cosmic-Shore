@@ -85,10 +85,10 @@ def main():
         json.dump(data, fh, ensure_ascii=False, separators=(',', ':'))
     for src, dst in (('page.html', 'index.html'),):
         shutil.copyfile(os.path.join(HERE, src), os.path.join(a.out, dst))
-    for f in ('theme.js', 'themes.css'):
+    for f in ('theme.js', 'themes.css', 'console.css'):
         shutil.copyfile(os.path.join(ROOT, 'Tools', 'Analytics', 'console', f), os.path.join(a.out, f))
     print(f'{a.out}: index.html, data.json ({len(data["lanes"])} lanes, {len(data["approvals"])} open approvals, '
-          f'{len(data["handoffs"])} handoffs), theme.js, themes.css')
+          f'{len(data["handoffs"])} handoffs), theme.js, themes.css, console.css')
     return 0
 
 

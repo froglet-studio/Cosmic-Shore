@@ -36,6 +36,16 @@ Plus `handoff.py claim <lane>` (take a lane before pushing; lapses after 7 days,
 Never hand off a lane without your person's yes, and never hand a lane to someone as an assignment they did not
 agree to: a hand-off is a heads-up with a brief, and the recipient can hand it straight back to open.
 
+## A brief (a hand-off with more than a note)
+
+A hand-off can carry a **brief**: `--brief <file.json>` with `summary`, `decisions` (what the sender settled),
+`open` (`[[where, what]]`: the calls waiting on the recipient), `steps` (the next steps, in order), `reading`
+(`[[doc, read first|read|skim|reference]]`) and `doc` (the document it came from). The recipient's **For you** page
+shows it whole, with the steps as a checklist; their ticks and notes live in the page's per-person space
+(`data/users/<them>/<hand-off id>`), which nobody else can read, the page owner included. The hand-off itself stays a
+file in git, so the board can show who holds the lane. A hand-off someone wrote as a doc (Garrett's
+`Docs/Voyages/HANDOFF.md`, 2026-11-12) is recorded with `--by <them> --source <the doc> --brief <file>`.
+
 ## How the board reads them (swimlanes.py)
 
 The newest hand-off of a lane wins. To a person, the tester or a claimer: that person holds it, and the work pushed

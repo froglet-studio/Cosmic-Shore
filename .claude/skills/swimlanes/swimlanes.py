@@ -613,7 +613,7 @@ def build(root, args):
                       'occupants': occ.get(ln.key, []), 'work': [t for _, t in sorted(f['work'], key=lambda x: -x[0])],
                       'polish': [t for _, t in sorted(f['polish'], key=lambda x: -x[0])], 'landed': last.get(ln.key),
                       'note': owners.get(ln.key, ''),
-                      'handoff': {x: h.get(x) for x in ('id', 'kind', 'status', 'by', 'to', 'on', 'note', 'what', 'branch', 'events')} if h else None,
+                      'handoff': {x: h.get(x) for x in ('id', 'kind', 'status', 'by', 'to', 'on', 'note', 'what', 'branch', 'events', 'brief', 'source')} if h else None,
                       'loop': {'progress': lp['progress'], 'seated': lp['seated'], 'rank': list(lp['rank'] or []),
                                'actions': [loop_line(a) for a in lp['actions']]} if lp else None})
     order = {'loop': 0, 'handed': 1, 'testing': 2, 'work': 3, 'occupied': 4, 'polish': 5, 'polished': 6}

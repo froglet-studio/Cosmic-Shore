@@ -1,0 +1,85 @@
+{
+  "id": "H-20261113-voyages-399835",
+  "kind": "to",
+  "lane": "voyages",
+  "laneName": "Voyages map",
+  "laneKind": "shell",
+  "by": "Garrett",
+  "to": "Shombith",
+  "on": "2026-11-13T16:18:18+00:00",
+  "note": "Voyages, start here: what is built, what was never opened in the editor, the leftover branches and my decisions (recorded from Docs/Voyages/HANDOFF.md, 2026-11-12).",
+  "signals": {
+    "laneKind": "shell",
+    "handTests": false,
+    "merged": false
+  },
+  "source": "Docs/Voyages/HANDOFF.md",
+  "brief": {
+    "doc": "Docs/Voyages/HANDOFF.md",
+    "summary": "Everything voyage is on bleeding-edge (V1, D1 and most of D2); D3, V2, V3 and V4 are not built. Nothing has been played in the Unity editor yet (HANDOFF section 5). Garrett: you decide everything now, and record each call in the doc that owns it.",
+    "decisions": [
+      "The squad comes first, alone and together: anything that blocks single player (3 AI that play their roles) or multiplayer (the networked Ark) wins.",
+      "You decide everything; record each call in the doc that owns it.",
+      "Squads are always 3 vessels; the number of pilots is the sum of their seats.",
+      "An AI's role comes from its cards (vessel, pilot, element, artifact); test three archetypes first: Guardian (Charge), Cultivator (Squirrel in Mass), Destroyer (Dolphin in Space).",
+      "The cells feel like cheap imitations: no proper nucleus or shards.",
+      "Curate branches, don't hoard them."
+    ],
+    "open": [
+      [
+        "VOYAGES.md section 11",
+        "questions 3-10: one galaxy, flown lanes, refusing meetings, abandoned voyages, the first five jobs, faction size, the galactic war, Tandava as a lair"
+      ],
+      [
+        "DEPTH.md section 14",
+        "decisions 1-11"
+      ],
+      [
+        "VOYAGE_BOARD.md section 5",
+        "decisions 1-11"
+      ],
+      [
+        "SOURCES.md, Open",
+        "items 2-7"
+      ]
+    ],
+    "steps": [
+      "Hand-test the red voyage sections of Docs/UNITY_VERIFICATION_CHECKLIST.md (HANDOFF section 5: the cheapest way to find what is broken), then close ticket #1688",
+      "Choose AI roles from the cards: ArkEscortRoles.Create reads the hull only; join it to Docs/AI_SYSTEM/AI_PLAN.md and test the three archetypes",
+      "Port claude/voyage-coop by hand onto a fresh branch (about 1,300 commits behind: do not merge it)",
+      "Compare a voyage cell with an arcade cell at the same intensity (Voyage.unity boots the empty Barren world; the escort rolls its own)",
+      "Delete or archive the 17 leftover voyage branches (HANDOFF section 6; needs a local checkout)",
+      "Answer the voyage entries in your approval queue"
+    ],
+    "reading": [
+      [
+        "Docs/Voyages/HANDOFF.md",
+        "read first"
+      ],
+      [
+        "VOYAGES.md",
+        "read first"
+      ],
+      [
+        "DEPTH.md sections 12-15",
+        "read"
+      ],
+      [
+        "SLICE.md",
+        "skim"
+      ],
+      [
+        "ARK_ESCORT.md",
+        "skim"
+      ],
+      [
+        "VOYAGE_BOARD.md",
+        "reference"
+      ],
+      [
+        "SOURCES.md",
+        "reference"
+      ]
+    ]
+  }
+}

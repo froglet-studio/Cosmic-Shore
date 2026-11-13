@@ -193,13 +193,13 @@ def signals(root, lane_kind, branch):
 
 # --- write ----------------------------------------------------------------------------------------------------------
 
-def record(root, kind, lane, by, to=None, note='', what='', branch=None, pr=None, sig=None, when=None, source='cli'):
+def record(root, kind, lane, by, to=None, note='', what='', branch=None, pr=None, sig=None, when=None, source='cli', brief=None):
     when = when or now_utc()
     rid = make_id(kind, lane.key, by, when)
     data = {k: v for k, v in {
         'id': rid, 'kind': kind, 'lane': lane.key, 'laneName': lane.name, 'laneKind': lane.kind,
         'by': by, 'to': to, 'on': when.isoformat(), 'branch': branch, 'pr': pr, 'note': note, 'what': what,
-        'signals': sig, 'source': source}.items() if v not in (None, '', {})}
+        'signals': sig, 'source': source, 'brief': brief}.items() if v not in (None, '', {})}
     write_json(os.path.join(root, DIR, rid + '.json'), data)
     return data
 
@@ -674,6 +674,9 @@ def main():
         p.add_argument('--by')
         p.add_argument('--note', default='')
         p.add_argument('--pr', type=int)
+        p.add_argument('--brief', help='a JSON file: the hand-off brief the recipient sees on For you (summary, decisions, '
+                       'open [[where, what]], steps [..], reading [[doc, how]], doc)')
+        p.add_argument('--source', default='cli', help='where the hand-off was written (a doc path when recorded from one)')
         if k == 'test':
             p.add_argument('--what', required=True, help='the tester\'s brief: steps, branch or build, what good looks like')
     p = sub.add_parser('feedback')
@@ -715,8 +718,15 @@ def main():
         if a.cmd == 'test':
             to = (config(root).get('testers') or ['Andrew'])[0]
         sig = signals(root, lane.kind, branch)
+        brief = None
+        if a.brief:
+            brief = json.load(open(a.brief, encoding='utf-8'))
+            unknown = set(brief) - {'summary', 'decisions', 'open', 'steps', 'reading', 'doc'}
+            if unknown:
+                raise SystemExit(f'--brief has keys a page cannot show: {sorted(unknown)}')
         r = record(root, a.cmd, lane, by, to=to, note=a.note, what=getattr(a, 'what', ''),
-                   branch=None if branch in ('HEAD', 'bleeding-edge') else branch, pr=a.pr, sig=sig)
+                   branch=None if a.source != 'cli' or branch in ('HEAD', 'bleeding-edge') else branch,
+                   pr=a.pr, sig=sig, source=a.source, brief=brief)
         print(f'{DIR}/{r["id"]}.json written: {lane.name} ' + {'to': f'handed to {to} (NEW on their board)',
               'open': 'back on the open list', 'test': f'sent for test to {to}', 'claim': f'claimed by {by}',
               'keep': 'kept (recorded so /ship learns when to ask)'}[a.cmd] + '. Commit Docs/Handoffs/ and push it.')
