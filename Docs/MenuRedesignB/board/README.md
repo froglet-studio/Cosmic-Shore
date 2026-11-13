@@ -16,7 +16,7 @@ canvas's `project/` files (Artifact read) into this folder.
 
 <!-- frogma.py readme: generated below, edit the text above -->
 
-Copied on 2026-11-13 from canvas version `1794608786-849b` of **Frogma**: Rev 3 to Rev 107, 488 boards on 13 tabs. The canvas opens on the tab `quests`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
+Copied on 2026-11-13 from the canvas of **Frogma**: Rev 3 to Rev 111, 493 boards on 13 tabs. The canvas opens on the tab `voyages`. Refresh with `python3 .claude/skills/frogma/frogma.py pull --src <dir the Artifact read saved> --version <v>`.
 
 ## Tabs, rounds and boards (newest first)
 
@@ -664,6 +664,19 @@ Copied on 2026-11-13 from canvas version `1794608786-849b` of **Frogma**: Rev 3 
 
 ### Tab: Ark  (`ark`)
 
+#### Rev 110 - The Squads tab, option B with every setting; the vessels in the hangar as real models
+
+- `R110B.dc.html` (not copied yet) - Rev 110 B - The holo table with every setting: the seat, its four lists, an open seat, the squads, the light, Make, Join - interactive
+- `R110Notes.dc.html` (not copied yet) - Rev 110 - the vessels in the hangar: real models over an empty-pad video, checked
+
+#### Rev 109 - The crew PDA itself, redesigned: three devices from the Ark for the hangar bench
+
+- `R109Compare.dc.html` (not copied yet) - Rev 109 - the three devices lying on the bench and held up, beside the built slab
+- `R109A.dc.html` (not copied yet) - Rev 109 A - The tidestone: a slab of clear crystal, the crew glowing inside, brass claws (recommended) - interactive
+- `R109B.dc.html` (not copied yet) - Rev 109 B - The nautilus: a chambered shell whose pearl throws the crew up as light - interactive
+- `R109C.dc.html` (not copied yet) - Rev 109 C - The light scroll: the crew stretched between two long prisms - interactive
+- `R109Notes.dc.html` (not copied yet) - Rev 109 - notes: what was asked, the three devices, the recommendation, what the build changes
+
 #### Rev 106 - The Squads tab in levels: the hangar first, one seat at a time, lit like the captains' bridges
 
 - `R106Compare.dc.html` (not copied yet) - Rev 106 - one seat at rest and open, in the build and in A, B and C
@@ -727,6 +740,17 @@ Copied on 2026-11-13 from canvas version `1794608786-849b` of **Frogma**: Rev 3 
 
 ### Tab: Voyages  (`voyages`)
 
+#### Rev 111 Voyages: the table opens to full screen, down to one Cell
+
+- [`R111Full.dc.html`](R111Full.dc.html) - Rev 111 Full - The table animates to full screen: no border, zoom inside the map, back from full screen, Galaxy to Cell - interactive
+
+#### Rev 108 Voyages: flatter table, cooler Ark cards, squad mode, seat popup
+
+- [`R108Table.dc.html`](R108Table.dc.html) - Rev 108 Table - P1A again: table flatter at 34 deg, feathered round edges, slow float and sheen, side view upright beneath - interactive
+- [`R108Lobby.dc.html`](R108Lobby.dc.html) - Rev 108 Lobby - P3A again: glass cards with glowing rims and hover lift; your card opens the seat popup - interactive
+- [`R108Squad.dc.html`](R108Squad.dc.html) - Rev 108 Squad - Fly a squad instead: squad choices on top, AI wingmates fill the seats, lobby kept - interactive
+- [`R108Picker.dc.html`](R108Picker.dc.html) - Rev 108 Picker - Seat popup: vessel, pilot, element, artifact tabs, quick kits, Sees filter, one press per pick - interactive
+
 #### Rev 103 - Saga and Episodes locked together: one coming-soon strip at the foot of the Voyages screen
 
 - `R103Compare.dc.html` (not copied yet) - Rev 103 - the three strips side by side at full width, at rest and pressed
@@ -737,17 +761,10 @@ Copied on 2026-11-13 from canvas version `1794608786-849b` of **Frogma**: Rev 3 
 
 #### Rev 100 - Voyages, new: the HyperSea and your crew's voyages, the voyage opened, your Ark
 
-- `R100P1A.dc.html` (not copied yet) - Rev 100 P1A - Page 1 Table top: the HyperSea on a chart table, its edge view the front; the crew's voyages on the right (recommended) - interactive
-- `R100P1B.dc.html` (not copied yet) - Rev 100 P1B - Page 1 Orrery: the galaxy as a disc floating in the sea, a slow ring of bearings; the voyages on the left - interactive
-- `R100P1C.dc.html` (not copied yet) - Rev 100 P1C - Page 1 Bridge: the map flat and full-bleed; the crew's voyages along its foot - interactive
-- `R100P1D.dc.html` (not copied yet) - Rev 100 P1D - Page 1 Dive: Galaxy, Sector and Course as three glass sheets; a zoom is a dive between them - interactive
-- `R100Notes.dc.html` (not copied yet) - Rev 100 - notes: what was asked, each page, the new rules to confirm
-- `R100P2A.dc.html` (not copied yet) - Rev 100 P2A - Page 2 Briefing: the pilot's story, the route drawing itself, the rewards arriving; difficulty 1-9 (recommended) - interactive
-- `R100P2B.dc.html` (not copied yet) - Rev 100 P2B - Page 2 Journey: one lane across the window, the Ark sailing it; each stop tells its part - interactive
-- `R100P2C.dc.html` (not copied yet) - Rev 100 P2C - Page 2 Dossier: the map stays; Story, Route and Rewards slide open - interactive
-- `R100P3A.dc.html` (not copied yet) - Rev 100 P3A - Page 3 Lobby: your lobby's three seats; your seat changes in place; Set sail (recommended) - interactive
-- `R100P3B.dc.html` (not copied yet) - Rev 100 P3B - Page 3 No lobby: pick a squad from the list, or invite friends; Set sail - interactive
-- `R100P3C.dc.html` (not copied yet) - Rev 100 P3C - Page 3 Formation: your lobby's vessels in formation over the course; a press opens its tray - interactive
+- [`R100P1A.dc.html`](R100P1A.dc.html) - Rev 100 P1A - Page 1 Table top: the HyperSea on a chart table, its edge view the front; the crew's voyages on the right (recommended) - interactive
+- [`R100P2A.dc.html`](R100P2A.dc.html) - Rev 100 P2A - Page 2 Briefing: the pilot's story, the route drawing itself, the rewards arriving; difficulty 1-9 (recommended) - interactive
+- [`R100P3A.dc.html`](R100P3A.dc.html) - Rev 100 P3A - Page 3 Lobby: your lobby's three seats; your seat changes in place; Set sail (recommended) - interactive
+- [`R100Notes.dc.html`](R100Notes.dc.html) - Rev 100 - notes: what was asked, each page, the new rules to confirm
 
 ### Tab: Game Mode Codex  (`game-mode-codex`)
 

@@ -3909,89 +3909,26 @@
       "title": "Rev 100 P1A - Page 1 Table top: the HyperSea on a chart table, its edge view the front; the crew's voyages on the right (recommended) - interactive",
       "is_interactive": true
     },
-    "R100P1B.dc.html": {
+    "R100P2A.dc.html": {
       "x": 2100,
       "y": 4880,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 P1B - Page 1 Orrery: the galaxy as a disc floating in the sea, a slow ring of bearings; the voyages on the left - interactive",
-      "is_interactive": true
-    },
-    "R100P1C.dc.html": {
-      "x": 4200,
-      "y": 4880,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 P1C - Page 1 Bridge: the map flat and full-bleed; the crew's voyages along its foot - interactive",
-      "is_interactive": true
-    },
-    "R100P1D.dc.html": {
-      "x": 0,
-      "y": 6140,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 P1D - Page 1 Dive: Galaxy, Sector and Course as three glass sheets; a zoom is a dive between them - interactive",
-      "is_interactive": true
-    },
-    "R100P2A.dc.html": {
-      "x": 0,
-      "y": 7400,
       "w": 1920,
       "h": 1080,
       "page": "voyages",
       "title": "Rev 100 P2A - Page 2 Briefing: the pilot's story, the route drawing itself, the rewards arriving; difficulty 1-9 (recommended) - interactive",
       "is_interactive": true
     },
-    "R100P2B.dc.html": {
-      "x": 2100,
-      "y": 7400,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 P2B - Page 2 Journey: one lane across the window, the Ark sailing it; each stop tells its part - interactive",
-      "is_interactive": true
-    },
-    "R100P2C.dc.html": {
-      "x": 4200,
-      "y": 7400,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 P2C - Page 2 Dossier: the map stays; Story, Route and Rewards slide open - interactive",
-      "is_interactive": true
-    },
     "R100P3A.dc.html": {
-      "x": 0,
-      "y": 8660,
+      "x": 4200,
+      "y": 4880,
       "w": 1920,
       "h": 1080,
       "page": "voyages",
       "title": "Rev 100 P3A - Page 3 Lobby: your lobby's three seats; your seat changes in place; Set sail (recommended) - interactive",
       "is_interactive": true
     },
-    "R100P3B.dc.html": {
-      "x": 2100,
-      "y": 8660,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 P3B - Page 3 No lobby: pick a squad from the list, or invite friends; Set sail - interactive",
-      "is_interactive": true
-    },
-    "R100P3C.dc.html": {
-      "x": 4200,
-      "y": 8660,
-      "w": 1920,
-      "h": 1080,
-      "page": "voyages",
-      "title": "Rev 100 P3C - Page 3 Formation: your lobby's vessels in formation over the course; a press opens its tray - interactive",
-      "is_interactive": true
-    },
     "R100Notes.dc.html": {
-      "x": 4200,
+      "x": 0,
       "y": 6140,
       "w": 1920,
       "h": 1080,
@@ -4031,6 +3968,111 @@
       "h": 900,
       "page": "quests",
       "title": "Rev 107 - notes: the two mixes, the proposed reward per quest, what changed from Rev 101"
+    },
+    "R108Table.dc.html": {
+      "x": 0,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 108 Table - P1A again: table flatter at 34 deg, feathered round edges, slow float and sheen, side view upright beneath - interactive",
+      "is_interactive": true
+    },
+    "R108Lobby.dc.html": {
+      "x": 2100,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 108 Lobby - P3A again: glass cards with glowing rims and hover lift; your card opens the seat popup - interactive",
+      "is_interactive": true
+    },
+    "R108Squad.dc.html": {
+      "x": 4200,
+      "y": 11200,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 108 Squad - Fly a squad instead: squad choices on top, AI wingmates fill the seats, lobby kept - interactive",
+      "is_interactive": true
+    },
+    "R108Picker.dc.html": {
+      "x": 0,
+      "y": 12460,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 108 Picker - Seat popup: vessel, pilot, element, artifact tabs, quick kits, Sees filter, one press per pick - interactive",
+      "is_interactive": true
+    },
+    "R109Compare.dc.html": {
+      "x": 0,
+      "y": 33151,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 109 - the three devices lying on the bench and held up, beside the built slab"
+    },
+    "R109A.dc.html": {
+      "x": 2100,
+      "y": 33151,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 109 A - The tidestone: a slab of clear crystal, the crew glowing inside, brass claws (recommended) - interactive",
+      "is_interactive": true
+    },
+    "R109B.dc.html": {
+      "x": 4200,
+      "y": 33151,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 109 B - The nautilus: a chambered shell whose pearl throws the crew up as light - interactive",
+      "is_interactive": true
+    },
+    "R109C.dc.html": {
+      "x": 0,
+      "y": 34411,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 109 C - The light scroll: the crew stretched between two long prisms - interactive",
+      "is_interactive": true
+    },
+    "R109Notes.dc.html": {
+      "x": 0,
+      "y": 35671,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 109 - notes: what was asked, the three devices, the recommendation, what the build changes"
+    },
+    "R110B.dc.html": {
+      "x": 0,
+      "y": 38031,
+      "w": 1920,
+      "h": 1080,
+      "page": "ark",
+      "title": "Rev 110 B - The holo table with every setting: the seat, its four lists, an open seat, the squads, the light, Make, Join - interactive",
+      "is_interactive": true
+    },
+    "R110Notes.dc.html": {
+      "x": 0,
+      "y": 39291,
+      "w": 1920,
+      "h": 900,
+      "page": "ark",
+      "title": "Rev 110 - the vessels in the hangar: real models over an empty-pad video, checked"
+    },
+    "R111Full.dc.html": {
+      "x": 0,
+      "y": 15000,
+      "w": 1920,
+      "h": 1080,
+      "page": "voyages",
+      "title": "Rev 111 Full - The table animates to full screen: no border, zoom inside the map, back from full screen, Galaxy to Cell - interactive",
+      "is_interactive": true
     }
   },
   "createdOnFiles": {
@@ -4039,7 +4081,7 @@
   },
   "designSystems": [],
   "launch": {
-    "page": "quests",
+    "page": "voyages",
     "view": "canvas"
   },
   "noteOrder": [
@@ -4159,8 +4201,12 @@
     "sec-rev104",
     "sec-rev105",
     "sec-rev106",
-    "sec-rev100",
     "sec-rev107",
+    "sec-rev108",
+    "sec-rev109",
+    "sec-rev110",
+    "sec-rev111",
+    "sec-rev100",
     "rev69",
     "hud_end",
     "hud_flow",
@@ -4247,7 +4293,11 @@
     "rev105",
     "rev106",
     "rev100",
-    "rev107"
+    "rev107",
+    "rev108",
+    "rev109",
+    "rev110",
+    "rev111"
   ],
   "notes": {
     "hud_end": {
@@ -6804,21 +6854,6 @@
       "maxW": 6120,
       "page": "voyages"
     },
-    "sec-rev100": {
-      "kind": "rect",
-      "x": -160,
-      "y": 4320,
-      "w": 6440,
-      "h": 5580,
-      "css": {
-        "background": "rgba(64, 120, 255, 0.06)",
-        "border-style": "solid",
-        "border-color": "rgba(64, 120, 255, 0.55)",
-        "border-width": "3px 3px 3px 3px",
-        "border-radius": "40px 40px 40px 40px"
-      },
-      "page": "voyages"
-    },
     "rev107": {
       "kind": "title1",
       "text": "Rev 107 - Quests: B and C mixed, a colour set as each quest's reward, no episode",
@@ -6842,6 +6877,117 @@
         "border-radius": "40px 40px 40px 40px"
       },
       "page": "quests"
+    },
+    "rev108": {
+      "kind": "title1",
+      "text": "Rev 108 Voyages: flatter table, cooler Ark cards, squad mode, seat popup",
+      "x": 0,
+      "y": 10800,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev108": {
+      "kind": "rect",
+      "x": -160,
+      "y": 10640,
+      "w": 6440,
+      "h": 3060,
+      "css": {
+        "background": "rgba(0, 212, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(0, 212, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "rev109": {
+      "kind": "title1",
+      "text": "Rev 109 - The crew PDA itself, redesigned: three devices from the Ark for the hangar bench",
+      "x": 0,
+      "y": 32751,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev109": {
+      "kind": "rect",
+      "x": -160,
+      "y": 32591,
+      "w": 6440,
+      "h": 4140,
+      "css": {
+        "background": "rgba(166, 0, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(166, 0, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev110": {
+      "kind": "title1",
+      "text": "Rev 110 - The Squads tab, option B with every setting; the vessels in the hangar as real models",
+      "x": 0,
+      "y": 37631,
+      "w": 240,
+      "maxW": 6120,
+      "page": "ark"
+    },
+    "sec-rev110": {
+      "kind": "rect",
+      "x": -160,
+      "y": 37471,
+      "w": 6440,
+      "h": 2880,
+      "css": {
+        "background": "rgba(255, 174, 0, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(255, 174, 0, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "ark"
+    },
+    "rev111": {
+      "kind": "title1",
+      "text": "Rev 111 Voyages: the table opens to full screen, down to one Cell",
+      "x": 0,
+      "y": 14600,
+      "w": 240,
+      "maxW": 6120,
+      "page": "voyages"
+    },
+    "sec-rev111": {
+      "kind": "rect",
+      "x": -160,
+      "y": 14440,
+      "w": 6440,
+      "h": 1800,
+      "css": {
+        "background": "rgba(46, 204, 113, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(46, 204, 113, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
+    },
+    "sec-rev100": {
+      "kind": "rect",
+      "x": -160,
+      "y": 4320,
+      "w": 6440,
+      "h": 3060,
+      "css": {
+        "background": "rgba(64, 120, 255, 0.06)",
+        "border-style": "solid",
+        "border-color": "rgba(64, 120, 255, 0.55)",
+        "border-width": "3px 3px 3px 3px",
+        "border-radius": "40px 40px 40px 40px"
+      },
+      "page": "voyages"
     }
   },
   "order": [
@@ -7319,20 +7465,25 @@
     "R106C.dc.html",
     "R106Notes.dc.html",
     "R100P1A.dc.html",
-    "R100P1B.dc.html",
-    "R100P1C.dc.html",
-    "R100P1D.dc.html",
     "R100P2A.dc.html",
-    "R100P2B.dc.html",
-    "R100P2C.dc.html",
     "R100P3A.dc.html",
-    "R100P3B.dc.html",
-    "R100P3C.dc.html",
     "R100Notes.dc.html",
     "R107Compare.dc.html",
     "R107D.dc.html",
     "R107E.dc.html",
-    "R107Notes.dc.html"
+    "R107Notes.dc.html",
+    "R108Table.dc.html",
+    "R108Lobby.dc.html",
+    "R108Squad.dc.html",
+    "R108Picker.dc.html",
+    "R109Compare.dc.html",
+    "R109A.dc.html",
+    "R109B.dc.html",
+    "R109C.dc.html",
+    "R109Notes.dc.html",
+    "R110B.dc.html",
+    "R110Notes.dc.html",
+    "R111Full.dc.html"
   ],
   "pages": [
     {
