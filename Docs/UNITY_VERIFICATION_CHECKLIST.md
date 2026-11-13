@@ -23449,6 +23449,23 @@ is kept, so no prefab or asset reference changes. Compiled against the Unity ref
 2. Fly the Swordfish in the Toybox: swipe, energize, afterimages, combos and the Surge ring all work as before.
 3. The Rhino and the Jacks fly as before (they share only `RhinoAnimation` and `RhinoAIBoostPolicy`, which keep their names).
 
+## 🔴 Voyages: the HyperSea's cells as an uneven wet Kelvin foam on the galaxy map (2026-11-13, Shombith's project thread, NOT RUN IN EDITOR)
+
+Branch `claude/project-thread-ev7zfw`, into `voyages`. `HyperSeaCells` packs the cells as the Voyage Board does
+(`Docs/Voyages/VOYAGE_BOARD.md` §4d): a jittered BCC lattice with uneven power cells and knots of small cells, wet
+rounded outlines, the nucleus at each cell's middle at its own size and in the game's white caged look. The maths was
+run under .NET against `cells_golden.js` (0 differences); `unity_refcompile` (player and editor): 0 errors in changed
+files. `colour_trace.py --check` ok. No Unity editor ran and `HyperSeaCellsTests` did not run in Unity.
+
+1. Run `HyperSeaCellsTests` in the Test Runner: all pass.
+2. Open the Voyages tab's galaxy map and zoom in until cells show: rounded cells of uneven sizes with a pale liquid
+   between them, no square slivers, each cell darker at its wall and brighter round its nucleus.
+3. Zoom further: the nuclei are white caged spheres with a deep-blue edge, sitting in their cells (none on a wall), and
+   small cells have small nuclei. The cell tags (Nucleus, Cytoplasm, Membrane) sit on the cell nearest the centre.
+4. Tap open water: the cell under the tap is outlined along its rounded wall; a second tap closes it.
+5. The edge strip under the map shows the same foam cut upright.
+6. Wear another colour set (Nocturne, Nacre): the nuclei's blues follow it.
+
 ## 🔴 Quests window: its own screen, Rev 107 D (2026-11-13, Shombith's project thread, NOT RUN IN EDITOR)
 
 Branch `claude/project-thread-ytvai5`, `Docs/MENU_REDESIGN_B.md` section 200. Compiled with `Tools/Build/unity_refcompile`

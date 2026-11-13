@@ -102,16 +102,19 @@ namespace CosmicShore.UI
         readonly List<Candidate> _candidates = new();
         readonly List<Rect> _boxes = new();
         readonly List<Rect> _backs = new();
-        // The cells the view's slice crosses: each nucleus, and its section's corners (board x, y) in _cellPoly from
-        // _cellStart[i] to _cellStart[i + 1].
+        // The cells the view's slice crosses: each cell, its nucleus's middle in the slice (board x, y), how far the
+        // nucleus sits off the slice and its radius, and its wet outline (board x, y) in _cellPoly from _cellStart[i] to
+        // _cellStart[i + 1].
         readonly List<(double x, double y, double z)> _nuclei = new();
         readonly List<(double x, double y, double z)> _cellNuclei = new();
         readonly List<double> _cellH = new();
+        readonly List<double> _cellR = new();
+        readonly List<(double x, double y)> _cellMid = new();
+        readonly List<(double u, double v)> _wetScratch = new();
         readonly List<int> _cellStart = new();
         readonly List<(double u, double v)> _cellPoly = new();
         readonly List<(double u, double v)> _sectionScratch = new();
         readonly List<Vector2> _screenPoly = new();
-        readonly HashSet<long> _walls = new();
         readonly Dictionary<(int, int, int), Color> _cellSea = new();
         float _cellAlpha;
         double _sliceZ;
@@ -305,6 +308,8 @@ namespace CosmicShore.UI
         {
             _cellNuclei.Clear();
             _cellH.Clear();
+            _cellR.Clear();
+            _cellMid.Clear();
             _cellStart.Clear();
             _cellPoly.Clear();
             float px = CellPx;
@@ -315,21 +320,26 @@ namespace CosmicShore.UI
             foreach (var c in _nuclei)
             {
                 if (!HyperSeaCells.TrySection(c, (0, 0, _sliceZ), (1, 0, 0), (0, 1, 0), _sectionScratch, out var sec)) continue;
+                // a sliver the slice only grazes is left to the liquid between cells
+                if (!HyperSeaCells.TryWetOutline(_sectionScratch, _wetScratch)) continue;
                 _cellNuclei.Add(c);
-                _cellH.Add(sec.H);
+                _cellH.Add(sec.Mh);
+                _cellR.Add(sec.NucleusR);
+                _cellMid.Add((sec.Mu, sec.Mv));
                 _cellStart.Add(_cellPoly.Count);
-                _cellPoly.AddRange(_sectionScratch);
+                _cellPoly.AddRange(_wetScratch);
             }
             _cellStart.Add(_cellPoly.Count);
         }
 
-        /// <summary>A cell's own sea: the colour of the water at its nucleus.</summary>
+        /// <summary>A cell's own sea: the colour of the water at its lattice point (a knot's cells share it).</summary>
         Color CellSea((double x, double y, double z) c)
         {
             var key = HyperSeaCells.KeyOf(c);
             if (_cellSea.TryGetValue(key, out var col)) return col;
             if (_cellSea.Count > 50000) _cellSea.Clear();
-            var (r, g, b) = HyperSea.SeaColor(HyperSea.Density(c.x, c.y, c.z));
+            var l = HyperSeaCells.LatticePoint(c);
+            var (r, g, b) = HyperSea.SeaColor(HyperSea.Density(l.x, l.y, l.z));
             col = new Color((float)r / 255f, (float)g / 255f, (float)b / 255f, 1f);
             _cellSea[key] = col;
             return col;
@@ -447,10 +457,10 @@ namespace CosmicShore.UI
             if (Selected is { Kind: SkyKind.Cell })
             {
                 if (HyperSeaCells.TrySection((Selected.X, Selected.Y, Selected.Z), (0, 0, _sliceZ), (1, 0, 0), (0, 1, 0),
-                        _sectionScratch, out _))
+                        _sectionScratch, out _) && HyperSeaCells.TryWetOutline(_sectionScratch, _wetScratch))
                 {
                     _screenPoly.Clear();
-                    foreach (var p in _sectionScratch) _screenPoly.Add(At(p.u, p.v));
+                    foreach (var p in _wetScratch) _screenPoly.Add(At(p.u, p.v));
                     for (int k = 0; k < _screenPoly.Count; k++)
                         VoyageMapGraphic.Line(vh, _screenPoly[k], _screenPoly[(k + 1) % _screenPoly.Count], 2f, Color.white, white);
                 }
@@ -490,33 +500,34 @@ namespace CosmicShore.UI
             bool inner = px > CellInnerFrom;
             var lim = new Rect(r.xMin - px, r.yMin - px, r.width + 2f * px, r.height + 2f * px);
             int budget = vh.currentVertCount + CellVertBudget;
-            _walls.Clear();
+            // the liquid between the cells, under them
+            float memA = (float)HyperSeaCells.MembraneAlpha(px);
+            VoyageCellDraw.Liquid(vh, r, Mathf.Max(.4f, memA) * _cellAlpha, white);
             for (int pass = 0; pass < 2; pass++)
                 for (int i = 0; i < _cellNuclei.Count; i++)
                 {
                     if (vh.currentVertCount > budget) break;
-                    var c = _cellNuclei[i];
-                    var at = At(c.x, c.y);
+                    var at = At(_cellMid[i].x, _cellMid[i].y);
                     if (!lim.Contains(at)) continue;
                     _screenPoly.Clear();
                     for (int k = _cellStart[i]; k < _cellStart[i + 1]; k++) _screenPoly.Add(At(_cellPoly[k].u, _cellPoly[k].v));
                     if (pass == 0)
                     {
-                        if (fill > 0f) VoyageCellDraw.Cell(vh, _screenPoly, at, CellSea(c), px, fill * _cellAlpha, inner, white);
+                        if (fill > 0f) VoyageCellDraw.Cell(vh, _screenPoly, at, CellSea(_cellNuclei[i]), px, fill * _cellAlpha, inner, white);
                     }
-                    else VoyageCellDraw.Walls(vh, _screenPoly, px, _cellAlpha, _walls, white);
+                    else VoyageCellDraw.Walls(vh, _screenPoly, px, _cellAlpha, white);
                 }
-            // The nuclei: where the slice cuts one, its section; where it passes above or below, its outline, dashed.
+            // The nuclei, each at its cell's middle and as big as its cell: where the slice cuts one, its section; where
+            // it passes above or below, its outline, dashed.
             float nucA = (float)HyperSeaCells.NucleusAlpha(px);
             if (nucA <= 0f) return;
-            double s = _map.PixelsPerUnit, R = HyperSeaCells.NucleusRadius;
+            double s = _map.PixelsPerUnit;
             for (int i = 0; i < _cellNuclei.Count; i++)
             {
                 if (vh.currentVertCount > budget + 4000) break;
-                var c = _cellNuclei[i];
-                var at = At(c.x, c.y);
+                var at = At(_cellMid[i].x, _cellMid[i].y);
                 if (!lim.Contains(at)) continue;
-                double h = Math.Abs(_cellH[i]);
+                double R = _cellR[i], h = Math.Abs(_cellH[i]);
                 if (h < R)
                 {
                     float rad = (float)(Math.Sqrt(R * R - h * h) * s);
@@ -733,13 +744,14 @@ namespace CosmicShore.UI
             var c = HyperSeaCells.NearestInSlice(vc.x, -vc.y, _sliceZ);
             if (!HyperSeaCells.TrySection(c, (0, 0, _sliceZ), (1, 0, 0), (0, 1, 0), _sectionScratch, out var sec)) return;
             bool heart = HyperSeaCells.IsHeart(c);
-            double s = _map.PixelsPerUnit, R = HyperSeaCells.NucleusRadius, h = sec.H, ah = Math.Abs(h);
-            var at = At(c.x, c.y);
+            double s = _map.PixelsPerUnit, R = sec.NucleusR, h = sec.Mh, ah = Math.Abs(h);
+            var at = At(sec.Mu, sec.Mv);
             var top = _sectionScratch[0];
             foreach (var p in _sectionScratch) if (p.v < top.v) top = p;
             var topAt = At(top.u, top.v);
             float nucR = (float)((ah < R ? Math.Sqrt(R * R - h * h) : R) * s);
-            double n = HyperSea.Density(c.x, c.y, c.z);
+            var l = HyperSeaCells.LatticePoint(c);
+            double n = HyperSea.Density(l.x, l.y, l.z);
             Tag(heart ? L.MapCellNucleusHeart : L.MapCellNucleus,
                 ah < R ? L.MapCellNucleusBody : TemplateText.Fill(h > 0 ? L.MapCellNucleusAbove : L.MapCellNucleusBelow, "ly", Ly(ah)),
                 new Vector2(at.x, at.y - nucR - 18f), TagNucleus, 30f);

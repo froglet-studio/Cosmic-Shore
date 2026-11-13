@@ -1,0 +1,15 @@
+{
+  "id": "2026-11-13-the-board-s-regular-truncated-octahedron-dcbd96",
+  "to": "Garrett",
+  "by": "Shombith",
+  "date": "2026-11-13T22:43:27+00:00",
+  "area": "the Voyage Board's 3D cells (VOYAGE_BOARD.md §4c)",
+  "summary": "The board's regular truncated-octahedron cells are now an uneven wet Kelvin foam (drifted, weighted, knotted BCC nuclei as power cells), with the nucleus drawn as the game's white caged Nucleus.prefab instead of pale warm",
+  "why": "Shombith took over Voyages and asked for a genuine-looking BCC foam after a soap-foam photo; §4d",
+  "branch": "claude/project-thread-ev7zfw",
+  "lane": "voyages",
+  "commit": "bbee6b66b",
+  "paths": [
+    "Docs/Voyages/VoyageBoard"
+  ]
+}
