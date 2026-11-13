@@ -73,6 +73,12 @@ namespace CosmicShore.Utility
             }
         }
 
+        /// <summary>
+        /// A live override of the config's strength, for A/B captures (the trailer director's before and after, the
+        /// look sheet). Null = the config decides. Never set by gameplay.
+        /// </summary>
+        public static float? StrengthOverride { get; set; }
+
         /// <summary>Forget the cached config, so the next frame reloads it (tests, domain reload).</summary>
         public static void InvalidateConfig()
         {
@@ -153,7 +159,7 @@ namespace CosmicShore.Utility
         static void Publish()
         {
             var config = Config;
-            float strength = config.Strength;
+            float strength = Mathf.Clamp01(StrengthOverride ?? config.Strength);
             if (strength <= 0f)
             {
                 PublishOff();
@@ -182,6 +188,7 @@ namespace CosmicShore.Utility
         static void InstallPublisher()
         {
             InvalidateConfig();
+            StrengthOverride = null;
             // Globals survive play-mode exit in the editor; start from off so nothing stale lights a hull.
             PublishOff();
             var go = new GameObject("[VesselHullLighting]") { hideFlags = HideFlags.HideInHierarchy };
