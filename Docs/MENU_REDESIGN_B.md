@@ -8593,3 +8593,28 @@ PICK UP unwired, a file template naming an unfilled token), `author_ark_backdrop
 
 Affects: Garrett's Pilots tab (`ArkPilotsPage`, reworked; queued in `Docs/Approvals/Garrett/`); his profile page is
 unchanged and opened from the file's FULL PROFILE.
+
+## 198. Rev 109 mockups: the crew PDA itself, redesigned - three devices from the Ark (2026-11-13, awaiting a pick)
+
+**Asked** (Shombith, 2026-11-13, on the built Rev 99 C, section 192): "For the PDA mockups, I like C but the actual device
+it looks too earth like, it should be something completely different and modern and never seen before so work on this."
+And for the whole Ark: take the lighting, animation and design ideas from the pilot scenes set inside the Ark.
+
+**On the canvas** (Frogma, tab Ark, "Rev 109 - The crew PDA itself, redesigned"; copies in `Docs/MenuRedesignB/board/R109*`).
+The bench, camera, crew page, file and pad are Rev 99 C's, unchanged; only the device differs. Each option board lies
+the device on the bench and picks it up to the crew, held square to the view:
+- **R109A - the tidestone (recommended)**: a long hexagon of clear crystal, the crew glowing inside it, thin cyan seams
+  along the cuts, brass claws over both points, a lime seed crystal at one tip.
+- **R109B - the nautilus**: a dark lacquered chambered shell with brass septa; a pearl in its mouth throws the crew up
+  as a standing sheet of light.
+- **R109C - the light scroll**: two long triangular hull-metal prisms with cyan trim and brass caps, the crew a
+  membrane of light stretched between them.
+- **R109Compare**: the three lying and held, beside the built slab. **R109Notes**: the cues and the recommendation.
+
+A is recommended because it stays itself when held: crystal and claws frame the crew on every side, where B's shell and
+C's prisms leave the frame as the view closes in; it also matches the Converter's crystals. Renders:
+`rounds/r109_ark_pda_render.py` (PDA_KIND), boards `rounds/r109_pda_device_boards.py` (blobs `r109_blobs.json`).
+
+**Differs from the build**: no C#. The bench clips are re-rendered from the picked device
+(`r99_pilots_bench_videos.py`), and `author_menu_ark.py`'s `PDA_REST_CORNERS` and `GLASS_X/Y/W/H` take the picked
+device's screen corners (held, all three sit within 20 px of the built glass, 403,194 to 1517,1003).
