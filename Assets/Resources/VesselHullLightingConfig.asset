@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3bbc24823ca246f49b3316ddca3b6c8b, type: 3}
+  m_Name: VesselHullLightingConfig
+  m_EditorClassIdentifier: 
+  strength: 1
+  wrap: 0.35
+  shadeFloor: 0.55
+  keyGain: 1.2
+  skyFillGain: 1.5
+  highlightExponent: 48
+  highlightGain: 1.6
+  fresnelF0: 0.06
+  coreReflectionExponent: 400
+  coreReflectionGain: 1.5
+  bandWidth: 0.18
+  bandReflectionGain: 1.4
+  skyReflectionGain: 1
+  rimInner: 0.6
+  rimOuter: 0.98
+  rimGain: 0.6
+  rimKeyBias: 0.6

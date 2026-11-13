@@ -257,6 +257,11 @@ def validate(docs, expect_wired):
 
     base_src = sources.get((vision["m_ObjectId"], 3))
     assert base_src is not None, "vision BaseColor unconnected"
+    # The hull light (wire_vessel_hull_lighting.py) may sit between the Multiply and the band; it
+    # passes the multiplied colour through, so look through it to the Multiply that feeds it.
+    if idx[base_src[0]].get("m_FunctionName") == "VesselHullLight":
+        base_src = sources.get((base_src[0], 5))
+        assert base_src is not None, "hull light BaseColor unconnected"
     assert idx[base_src[0]].get("m_Type", "").endswith("MultiplyNode"), \
         ("vision BaseColor is not fed by the graph's final Multiply — the splice MUST sit after "
          "_ColorMultiplier, or the mark's brightness becomes a function of which cowling it "
