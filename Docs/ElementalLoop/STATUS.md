@@ -15,7 +15,7 @@ Marks: `D` done (signed off), `b` built (exists, not yet signed off against the 
 | Grizzly | `b b .` | `x x x` | `x x x` | `b b .` | Charge | - |
 | Honeyguide | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Jacks | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
-| Manta | `b b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
+| Manta | `~ b ~` | `b b .` | `b b .` | `b b .` | - | Regatta, Broadside, BroodRush |
 | Meerkat | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Orca | `b b .` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | - |
 | Rhino | `b b b` | `x x x` | `x x x` | `x x x` | Charge, Mass or Space | Regatta, BroodRush |
@@ -76,6 +76,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 |---|---|---|---|---|---|---|
 | Dolphin Time | 1 fun (abilities + game, one intensity) | done | Garrett | 2026-11-13 | human | Garrett, project thread 2026-11-13: Dolphin signed off as fun on Switchback; I1-I4 not all flown yet |
 | Dolphin Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | trained drive promoted to Switchback (all four files), model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
+| Manta Time | 1 fun (abilities + game, one intensity) | doing | Claude (Garrett's thread) | 2026-11-13 |  | Redline round 5 (Yash, 2026-11-11) brought onto bleeding-edge: Soar was dark in Redline since 2026-11-07 (Time level-5 upgrade, card started at Time 0); now Time 6 start, 8 laps, AI race line and throttle floors, the heat. Waiting on one human's fun card at I2 (REDLINE.md section 0.2) |
 | Manta Time | 3 AI on I1-I4 | doing | Regatta plan threads | 2026-11-08 |  | Redline AI nose rate (#1844); the Soar steering should be re-searched at the new nose rates (AI_PLAN.md section 5) |
 | Rhino Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | RhinoAIBoostPolicy_Headlong from drive-rhino-headlong-on-lead, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
 | Serpent Time | 3 AI on I1-I4 | built | Regatta plan threads | 2026-11-08 |  | SerpentAIBoostPolicy_SerpentTime from serpenttime-serpent-time, model only, editor check pending: Docs/Reports/TRAINED_DRIVES_PROMOTED.md (#1846) |
@@ -96,7 +97,7 @@ A shared card (several hulls) counts for every hull it seats; `*` marks a card w
 
 | # | Who can do it | Vessel | Element | Step | State | Action |
 |---:|---|---|---|---|---|---|
-| 1 | session, a person signs off | Manta | Time | 1 | built | Fun pass on Redline: score the Manta's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
+| 1 | session, a person signs off | Manta | Time | 1 | doing | Fun pass on Redline: score the Manta's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it) (now: Redline round 5 (Yash, 2026-11-11) brought onto bleeding-edge: Soar was dark in Redline since 2026-11-07 (Time level-5 upgrade, card started at Time 0); now Time 6 start, 8 laps, AI race line and throttle floors, the heat. Waiting on one human's fun card at I2 (REDLINE.md section 0.2)). |
 | 2 | session, a person signs off | Rhino | Time | 1 | built | Fun pass on Headlong: score the Rhino's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
 | 3 | session, a person signs off | Scarab | Time | 1 | built | Fun pass on Scarab Rally: score the Scarab's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
 | 4 | session, a person signs off | Serpent | Time | 1 | built | Fun pass on Serpentine: score the Serpent's Time abilities and the game together at one intensity (PLAYBOOK step 1), raise the lowest floor, then ask a person to fly it in the editor and answer the fun card (fun_cards.py apply records it). |
