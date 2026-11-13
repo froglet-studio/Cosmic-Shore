@@ -269,6 +269,9 @@ namespace CosmicShore.Gameplay
             _seeded = false;
             _payOut = false;
             _plantHeld = false;
+            if (_anchorWardHeld && _status?.ResourceSystem)
+                _status.ResourceSystem.SetElementalDebuffImmunity(this, false, ElementalDebuffSources.DangerPrism);
+            _anchorWardHeld = false;
             _touchLaunch.Clear();
             _snap.Clear();
             ClearAutopilotAim();
@@ -320,8 +323,28 @@ namespace CosmicShore.Gameplay
         bool ArmouredTrailActive => Abilities && Abilities.IsUpgradeActive(Element.Mass);
         /// <summary>Space L5 "Breaker": a red ball's direct hit destroys super-shielded prisms.</summary>
         bool BreakerActive => Abilities && Abilities.IsUpgradeActive(Element.Space);
-        // Time L5: OPEN since 2026-10-13. "Perfect Release" (a timed aimed launch x1.6) retired when every
-        // aimed launch took the boost (LetGo) - its gate is deleted, not left beside the new rule (rule 26).
+        /// <summary>Time L5 "Anchor Ward" (2026-11-13; the slot was open since "Perfect Release" retired on 2026-10-13):
+        /// while the ball is planted as the pivot, the arena's danger prisms cannot drain the Thresher. Scoped to
+        /// <see cref="ElementalDebuffSources.DangerPrism"/> alone, the Dolphin's Drift Ward and the Rhino's Momentum
+        /// scoping, so a rival pilot's hit still lands on a spinning Thresher.</summary>
+        bool AnchorWardActive => Abilities && Abilities.IsUpgradeActive(Element.Time);
+
+        bool _anchorWardHeld;
+
+        /// <summary>Grant or revoke the Anchor Ward on the hull's ResourceSystem: held while planted at Time 5. Keyed on
+        /// this executor (the grantor), so another ward on the hull is never cleared by it.</summary>
+        void UpdateAnchorWard()
+        {
+            bool hold = _solver != null && _solver.Mode == ThresherMode.Pivot && AnchorWardActive;
+            if (hold == _anchorWardHeld) return;
+            var resources = _status?.ResourceSystem;
+            if (!resources) return;
+            resources.SetElementalDebuffImmunity(this, hold, ElementalDebuffSources.DangerPrism);
+            _anchorWardHeld = hold;
+        }
+
+        /// <summary>True while the Anchor Ward holds (the HUD's Time card draws the ward).</summary>
+        public bool AnchorWardHeld => _anchorWardHeld;
 
         // ------------------------------------------------------------------ input edges
 
@@ -476,6 +499,9 @@ namespace CosmicShore.Gameplay
             if (_solver != null && (_plantHeld || _solver.LaunchArmed || _solver.Mode == ThresherMode.Pivot || _solver.Mode == ThresherMode.Skidding))
                 _solver.Release(_lastShipVelocity);
             _plantHeld = false;
+            if (_anchorWardHeld && _status?.ResourceSystem)
+                _status.ResourceSystem.SetElementalDebuffImmunity(this, false, ElementalDebuffSources.DangerPrism);
+            _anchorWardHeld = false;
             _touchLaunch.Clear();
             _snap.Clear();
             _ltDepth = 0f; _rtDepth = 0f;
@@ -543,6 +569,7 @@ namespace CosmicShore.Gameplay
             UpdateLaunchView(dt);
             UpdateAutopilotAim(shipPosition, dt);
             UpdateCombo(dt);
+            UpdateAnchorWard();
             return result.ShipVelocity;
         }
 
