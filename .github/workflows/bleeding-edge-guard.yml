@@ -236,6 +236,16 @@ jobs:
           python3 Tools/Build/check_ai_no_state_writes.py --self-test
           python3 Tools/Build/check_ai_no_state_writes.py --check
 
+      # The generators' Python dependencies. Three arena-budget modules import numpy and the pilot-avatar generator
+      # needs numpy + Pillow; nothing installed them, so the guard sat red from 2026-11-10 on
+      # `ModuleNotFoundError: No module named 'numpy'` (and the avatar check printed SKIP, which is not a check).
+      # Pinned by version and hash (Tools/CI/requirements-generators.txt): the versions the generators were checked with.
+      - name: Install the generators' Python dependencies
+        run: |
+          python3 -m pip install --quiet --break-system-packages --only-binary :all: \
+            --require-hashes -r Tools/CI/requirements-generators.txt
+          python3 -c "import numpy, PIL; print('numpy', numpy.__version__, '/ Pillow', PIL.__version__)"
+
       # Every asset generator must still match what it authored. CLAUDE.md records the failure
       # class this closes: a generator that owns an asset's content is a second place every schema
       # change has to land, and it fails months later on somebody else's branch; on 2026-09-09 six

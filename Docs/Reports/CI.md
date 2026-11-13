@@ -10,6 +10,25 @@ bleeding-edge by `feature/starling-element-draws` (`77fedb3ad`, `1421c3022`, `af
 generator left**, so the guard and Unity CI stay red on it alone. Amoebius is unchanged. Sections 1-3 are the
 18:50 measurement and are kept as the record.
 
+**Update, 2026-11-13 (`bleeding-edge` at `20b24d5433`; fix on `claude/dreamy-goldberg-enztvh`, PR
+[froglet-studio/Cosmic-Shore#1916](https://github.com/froglet-studio/Cosmic-Shore/pull/1916), not merged yet):** the guard
+was red again from 2026-11-10 on four generators, in two classes.
+- **An environment gap, three generators.** `author_corona/flatline/shatterplane_assets.py` import `*_budget.py`
+  modules that import numpy, and neither the guard nor Unity CI installed it (`ModuleNotFoundError`). The pilot-avatar
+  generator printed SKIP for the same reason. Both workflows now install `Tools/CI/requirements-generators.txt`
+  (numpy 2.5.3 and Pillow 12.3.0, pinned by version and wheel hash) before `check_generators.sh`.
+- **A stale assumption, one generator.** `author_kelpwood_assets.py` required the Angler's bite to pass
+  `config.LockBiteCooldown`. The Angler fundamentals pass (`2c36b6ed1b`) made the cooldown Charge-scaled, so the check
+  now asserts what Kelpwood depends on: a bite is a `Strike` admitted through `TryAdmit`.
+
+Proof, in a clean venv:
+- with nothing installed, `check_generators.sh` names 4 red;
+- with exactly that requirements file (plus the runner's PyYAML), it reads `generators: OK (77 checked)` with no SKIP.
+
+`colour_grade.py --check` (a `/ship` gate the guard does not run) was also stale on clean bleeding-edge after #1942's
+Honeyguide icons, and the record is regenerated on the same branch. `land_queue.py trunk`
+(`.claude/skills/land-queue/`) reads the guard's state in one line.
+
 ## 1. In one minute
 
 - **Two separate problems make "all the CI runs" red.** Every red run on bleeding-edge and on PRs comes from one or both.
