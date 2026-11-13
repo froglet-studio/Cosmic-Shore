@@ -165,6 +165,15 @@ namespace CosmicShore.Gameplay
         public void Tick(IReadOnlyList<IPlayer> players, IVessel self, in BlastVolume volume,
                          float strength01, float deltaTime,
                          System.Func<IVessel, Color> domainColorFor)
+            => Tick(players, self, volume.AsLitVolume(), strength01, deltaTime, domainColorFor);
+
+        /// <summary>
+        /// The same frame against any lit volume - the Grizzly's Battle Sight marks the rivals inside
+        /// a sphere around its dug-in turret rather than a blast's cone.
+        /// </summary>
+        public void Tick(IReadOnlyList<IPlayer> players, IVessel self, in LitVolume volume,
+                         float strength01, float deltaTime,
+                         System.Func<IVessel, Color> domainColorFor)
         {
             bool live = players != null && volume.IsValid && strength01 > 0.001f;
 
