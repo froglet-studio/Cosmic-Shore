@@ -8516,3 +8516,49 @@ Verified: `author_ingame_hud.py` run, `--check` and `--self-test` (two new negat
 gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; `gates.sh`. Hand test: "The loading
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
+
+## 197. Built: the HyperSea pass, how the Ark goes from one room to the next (2026-11-13, claude/project-thread-s689ho, not yet run in Unity)
+
+**Asked (Shombith, 2026-11-13, after the backdrops of section 190):** "I like the backgrounds alright. That's fire for now
+but the transition is not good. Make the transitions smoother and realistic as they belong in the HyperSea ... there are
+a few in the pilots images where they are showing inside the ark which is pretty cool, so you can take the lighting or
+animation or design ideas from there."
+
+**What was wrong.** A tab press swapped `ArkBackdrop`'s one `VideoPlayer` to the next clip in the same frame: the old
+room vanished, the texture held its last frame (or black) until the new clip decoded, then the new room popped in, and
+the page's words snapped with it. A tab with no room (Pilots, Decor) switched the picture off in one frame.
+
+**Cues from the pilot scenes inside the arks** (`Docs/Pilots/art/scenes/`): the pearl, iridescent HyperSea tunnels of
+Reaper and Astrofoil (a membrane you pass through, light split into a rainbow sheen); the holo tables on the Jugger,
+Scales and ZODIAC bridges (caustic, moving light thrown over a dark room); wet floors and haze (the light dips and comes
+back).
+
+**Prototype:** [Ark HyperSea Pass](https://claude.ai/artifact/R4jLUUM48M6EJu7ERx8AaW), the real clips with the build's cut
+beside the pass, a duration slider and slow motion. The shader below is its maths line for line.
+
+**What changed.**
+- **`ArkBackdrop` has two players.** The room shown keeps playing while the next clip prepares on the other; the change
+  starts when that clip has a frame in its texture (or after 0.6 s), so no change shows a black or frozen frame. Arriving
+  on the Ark is a cut (the screen switcher has its own transition); later changes go by `ArkPassKind`.
+- **The pass** (`CosmicShore/UI/ArkPass`, `Assets/_Graphics/Materials/Shaders/UI/ArkPass.shader`, on the picture's
+  RawImage): a bowed membrane, wobbling like water, crosses in the direction of travel (a tab to the right comes in from
+  the right). It bends both rooms like a lens and splits them into the pearl rainbow at its crest; the room left drifts
+  on and pushes in (7 %) while the room reached settles out of the same drift; caustic light washes over the arrived room
+  behind the front and fades; the light dips 22 % between rooms. 0.9 s, smootherstep. Nothing is tinted: every colour is
+  the rooms' own light, lifted or split (`colour_trace.py --check` passes). Its strengths are material properties.
+- **A dissolve** (0.3 s) for changes inside one room: the pier's rest, conversion and Omni made, and the hangar's domain.
+- **Into a tab with no room** (Pilots, Decor) the membrane passes into the dark, then the picture hides; back out, it
+  passes from the dark into the room.
+- **The page** (`ArkTabsView`): the page left takes no input from the press on and fades in 0.12 s; the page reached
+  rises 14 units and fades in over 0.32 s from 0.4 s, when the membrane is past the middle. A new press or leaving the
+  Ark lands any change where it was going.
+- `ArkBackdropConfigSO` carries the shader and both durations (`passShader`, `passSeconds`, `dissolveSeconds`), written by
+  `author_ark_backdrop_assets.py`, which now also owns the shader's guid.
+
+**Cost:** a second 1920 x 1080 texture while the Ark is open (16 MB in all, both let go on leaving), a second H.264
+decode during the 0.6 s a change waits and the 0.9 s it passes, and one full-screen pass of seven texture reads during the
+pass (one outside it).
+
+Verified: `unity_refcompile` player and editor (no errors in the changed files), `ArkPassTests` (compiled, not run),
+`author_ark_backdrop_assets.py --check` (fails when `passShader` is dropped from the asset), `colour_trace.py --check`.
+The look and the timing need the editor: "The Ark's HyperSea pass" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

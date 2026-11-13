@@ -280,6 +280,30 @@ the caption; the face margin 0.03 of the view; the crew cell 260 x 256 with a 18
 
 ---
 
+### 🔴 The Ark's HyperSea pass: tab changes through the pearl membrane (`claude/project-thread-s689ho`, 2026-11-13, Shombith) — NOT EDITOR-VERIFIED
+
+**What landed** (Docs/MENU_REDESIGN_B.md section 197): `ArkBackdrop` prepares the next clip on a second player and
+carries the picture across with the `CosmicShore/UI/ArkPass` shader; `ArkTabsView` fades the page left and rises the page
+reached in step. Ran headless: `unity_refcompile` player and editor (no errors in the changed files),
+`author_ark_backdrop_assets.py --check`, `colour_trace.py --check`. `ArkPassTests` compiled, not run. No Unity editor ran.
+
+**Verify in editor:**
+1. Menu_Main, Play, open the Ark. CONVERTER to SQUADS: the hangar comes in from the right through a wobbling pearl
+   membrane, rainbow at its crest, the pier drifting left and pushing in; caustic light ripples over the hangar and
+   settles. No black frame, no frozen frame, no pink (a missing shader).
+2. SQUADS to CONVERTER: the same from the left. Press tabs quickly: each press starts from where the last one reached.
+3. SQUADS to PILOTS: the hangar passes into the dark, then the Pilots page shows on its veil. PILOTS to ARTIFACTS: the
+   room passes in from the dark.
+4. The page's words: the old page fades at once, the new one rises in once the membrane is past the middle. Buttons on
+   the old page do nothing after the press.
+5. CONVERT: the rest dissolves into the conversion (0.3 s), and the conversion into the Omni made. Change the squad's
+   domain on SQUADS: the hangar dissolves into the other domain's clip.
+6. Tune the feel on `Assets/Resources/ArkBackdropConfig` (pass and dissolve seconds; written by
+   `author_ark_backdrop_assets.py`, so change the numbers there) and on the material's strengths (membrane width, lens,
+   sheen, split, push, drift, dip, caustics) in the shader's defaults.
+7. On a phone: no hitch when a pass starts (the second decode), and the Ark still frees both textures on leaving
+   (Memory Profiler: no "Ark backdrop A/B" textures after going Home).
+
 ### 🔴 The Ark screen's backdrops: the Frogma renders as video behind Squads, Converter and Artifacts (`claude/dazzling-einstein-gnr5iw`, 2026-11-12, Shombith) — NOT EDITOR-VERIFIED
 
 **What landed** (Docs/MENU_REDESIGN_B.md section 190; it replaces sections 188-189's live Ark model, which Shombith

@@ -92,3 +92,6 @@ MonoBehaviour:
     anyDomain: 1
     clip: {fileID: 32900000, guid: 4cbd38fb6bd751b18daabdc2f59e30dc, type: 3}
   textureSize: {x: 1920, y: 1080}
+  passShader: {fileID: 4800000, guid: 6d5c7870a5e35568b99cba9ddb28b2e1, type: 3}
+  passSeconds: 0.9
+  dissolveSeconds: 0.3

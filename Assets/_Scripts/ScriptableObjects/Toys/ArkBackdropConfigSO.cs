@@ -57,7 +57,20 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Pixel size of the texture the clips play into (they are 1920 x 1080).")]
         [SerializeField] Vector2Int textureSize = new(1920, 1080);
 
+        [Header("Changes between rooms")]
+        [Tooltip("The HyperSea pass (Docs/MENU_REDESIGN_B.md section 197): the shader that carries the picture from one " +
+                 "room to the next through the Ark's pearl membrane (CosmicShore/UI/ArkPass). Empty: a change is a cut, " +
+                 "at the next clip's first frame.")]
+        [SerializeField] Shader passShader;
+        [Tooltip("Seconds a pass from one room to another takes.")]
+        [SerializeField, Min(0.05f)] float passSeconds = 0.9f;
+        [Tooltip("Seconds the dissolve between one room's own clips takes (the pier: at rest, the conversion, the Omni made).")]
+        [SerializeField, Min(0.05f)] float dissolveSeconds = 0.3f;
+
         public Vector2Int TextureSize => textureSize;
+        public Shader PassShader => passShader;
+        public float PassSeconds => passSeconds;
+        public float DissolveSeconds => dissolveSeconds;
 
         /// <summary>The clip for <paramref name="room"/> and <paramref name="run"/> in the worn set and the squad's domain;
         /// the room and run's clip in another set or domain when there is no exact one; null when the room has none.</summary>
