@@ -455,6 +455,7 @@ and "again" every month so a repeat is seen.
 | 3.6 Multiplayer | R0 the skill; R1 the scenario scaffold | **built 2026-11-07 night**: `/multiplayer` + `references/HAND_TESTS.md`, `net_scenarios.py` (rows 2-5 as data, a judge over `net_logs.py`, `--run` unverified: no port build here); B48 is claimed twice, next free B50 (D6) |
 | 3.7 Near-A skills | the measurement and the owed negative controls | **measured 2026-11-07 night** for fauna-creation, cardart and prism-morph (a 'Round status and what each gate still owes' section each); flora and ecology not reached |
 | ledger | `Tools/Build/rework_ledger.py` | built 2026-11-07, the numbers in section 2 |
+| elemental loop | scaffolding 1-2: the one-minute fun card and the per-rung bars | **built 2026-11-12** (Garrett picked each design choice on a card): `FunCard.cs` after every arcade match, `fun_cards.py` (sign-offs), `rung_bars.py` + `rung_bars.json` (defaults, then learned); the card has not been answered in the editor yet |
 
 ## 7. What each step taught (append; newest last)
 
@@ -474,6 +475,14 @@ and "again" every month so a repeat is seen.
   agents, the writer first on a small sample, and a budget per workflow. (5) **Every area had a measurable
   first finding the same night** (13 mis-wired or unbanked sound slots, 72 flat signals on 25 effects, one undecided
   UI round, two B48s): the audit tools pay on their first run; the craft rounds need the owners' eyes.
+
+- 2026-11-12, the fun card: (1) **ride what already sends**: the card is three taps because the Bug Hunt send
+  already pushes flight records from every editor to a branch, so the answer goes the same way and the board reads
+  it with no new service. (2) **The recorded flights answered a question nobody had asked**: 521 races were already on
+  the bugledger branches, and the first run of the rung bars found seven rungs whose human finish rate misses its bar.
+  (3) **Count only races run to the end**: 175 of the 521 were left early (Play stopped), which made Switchback I1 look
+  like a 39% finish instead of 47%. (4) **One question per card worked**: three decision cards answered in about ten
+  minutes settled the design.
 
 ## 8. Appendix A: the skills, hand-audited (2026-11-07)
 

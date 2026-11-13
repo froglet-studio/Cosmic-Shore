@@ -136,9 +136,9 @@ def race(hull, model, course, intensity=1, drive=None, steering="centre", limit=
         elif model == "manta_drive":
             sim = _sim("manta_drive_sim")
             for k, v in drive.items():
-                if k not in ("boost_band", "yastri_band", "aware"):
+                if k not in ("boost_band", "yawstery_band", "aware"):
                     setattr(sim.Tuning, k, v)
-            bands = (drive.get("boost_band", sim.BOOST_BAND), drive.get("yastri_band", sim.YASTRI_BAND))
+            bands = (drive.get("boost_band", sim.BOOST_BAND), drive.get("yawstery_band", sim.YAWSTERY_BAND))
             t, rings, top = sim.race(bool(drive.get("aware", False)), intensity, T=limit, bands=bands,
                                      nose_rate=nose_rate, nose_lead=nose_lead)
         elif model == "dolphin_drive":
@@ -220,7 +220,7 @@ DRIVE_FIELDS = {
                     "minCornerSpeed": "mincorner", "brakeMarginUnits": "margin", "brakeLeadSeconds": "lead",
                     "graceShare": "gshare", "brakeSteerFloor": "steerfloor", "throttleSlewPerSecond": "slew",
                     "cornerReleaseDegrees": "crel"},
-    "manta_drive": {"BoostStickBand": "boost_band", "YastriStickBand": "yastri_band"},
+    "manta_drive": {"BoostStickBand": "boost_band", "YawsteryStickBand": "yawstery_band"},
     "dolphin_drive": {"alignDegrees": "align", "engageRunwaySeconds": "runway", "spendAtCharge01": "spend",
                       "maxHoldOffSeconds": "max_hold", "peakMarginUnits": "peak_margin",
                       "minDischargeSeconds": "min_dis", "minPulseGainUnits": "min_gain"},

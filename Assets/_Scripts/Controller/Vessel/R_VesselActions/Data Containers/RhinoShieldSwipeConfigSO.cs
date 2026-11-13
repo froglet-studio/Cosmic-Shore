@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -84,6 +85,18 @@ namespace CosmicShore.Gameplay
                  "just drifting off centre and costs nothing.")]
         [SerializeField, Range(0f, 1f)] float swipeEngageThreshold = 0.4f;
 
+        /// <summary>TIME -> the swing's RATE (the Swordfish's QUICKDRAW, 2026-11-12): divides the swipe recovery,
+        /// x1 at rest, x2.5 at level 10 (0.35 -> 0.14 s), floored at x0.5. The same numbers as the energize's rate
+        /// on ShieldSkimmerScaleConfig, on the asset that owns this parameter.</summary>
+        [Tooltip("TIME (Quickdraw): divides the swipe recovery. x1 at rest, x2.5 at level 10, floored x0.5.")]
+        [SerializeField] ElementalFloat timeSwipeRateMultiplier =
+            ElementalFloat.Multiplier(1f, 2.5f, Element.Time, 0.5f);
+
+        [Tooltip("Element whose level-5 upgrade, FLURRY, takes the swipe recovery away for good: the sword swings " +
+                 "as freely as an energized blade, lit or not (the Swordfish: Time). Gated on the replicated " +
+                 "unlock bit (IsUpgradeActive). None = no Flurry.")]
+        [SerializeField] Element flurryUpgradeElement = Element.Time;
+
         [Header("Energize Stance — gesture thresholds (RHINO_ENERGY_SWORD.md)")]
         [Tooltip("Sum (left + right trigger, 0..2, from the replicated InputStatus mirrors so every " +
                  "peer computes the same verdict) above which the blade is in the lower/chop stance — " +
@@ -116,6 +129,18 @@ namespace CosmicShore.Gameplay
         public float StanceSumThreshold => stanceSumThreshold;
         public float StanceCenterEpsilon => stanceCenterEpsilon;
         public float SwipeCooldownSeconds => Mathf.Max(0f, swipeCooldownSeconds);
+
+        /// <summary>The swipe recovery at this vessel's live Time level (Quickdraw).</summary>
+        public float SwipeCooldownSecondsFor(IVesselStatus status) =>
+            SwipeCooldownSeconds / Mathf.Max(0.05f, timeSwipeRateMultiplier.EvaluateLive(status));
+
+        /// <summary>TIME level-5, Flurry: no swipe recovery at all. Through the replicated unlock bit.</summary>
+        public bool FlurryActive(IVesselStatus status)
+        {
+            if (flurryUpgradeElement == Element.None) return false;
+            var abilities = status?.ElementalAbilityHandler;
+            return abilities && abilities.IsUpgradeActive(flurryUpgradeElement);
+        }
         public float SwipeEngageThreshold => Mathf.Clamp01(swipeEngageThreshold);
     }
 }

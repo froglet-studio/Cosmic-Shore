@@ -79,7 +79,7 @@ they are not game crystals.
 | Space blasts destroy shielded and super-shielded prisms at Space L5 | Super shields inside the blast's reach are dropped first (`Prism.DeactivateShields`, the Rhino sword's sequence), and the blast goes out with `DevastatingOverride = true`. |
 | The lasso 50% longer (round 4b) | `tailLength` 1.6 → 2.4 board radii (384 u); the lab's default moved with it (parity's asset check holds them equal). |
 | An Omni crystal: 5 s of a longer lasso and a kite view zoomed out twice as far | Replaced in round 4e by a burst of motes (below). |
-| Boosts: 2 s cooldown, none at Time L5 | Retired 2026-10-21 (Garrett: "the grouper should not have a cooldown on its boost forward ability. as it is already limited by the wrasse's ability to collect"). A held trigger chains saved boosts back to back; the field is gone and Time L5 is an open slot. |
+| Boosts: 2 s cooldown, none at Time L5 | Retired 2026-10-21 (Garrett: "the grouper should not have a cooldown on its boost forward ability. as it is already limited by the wrasse's ability to collect"). A held trigger chains saved boosts back to back; the field is gone and Time L5 was an open slot until Tailwind (2026-11-13, below). |
 
 **Round 4b (the same day, after flying round 4):** the petals could not be seen. Every instanced draw used
 `Sprites/Default`, whose instanced path takes its colour from `unity_SpriteRendererColorArray`, which only a
@@ -550,6 +550,28 @@ seats.
 7. **Hand tests** (MPPM with two players, then a phone and a PC): each human picks a seat and an offer swaps them; a
    leaver's seat falls to the AI; pops, blasts and clusters match on both screens; saved boosts reach the pilot; a ram
    steals once.
+
+## Element scaling and level 5 (the vessel pass, Garrett, 2026-11-13)
+
+The fleet contract (Space = reach, Time = rate, Charge = threat and PvP petals, Mass = size) now holds on every card,
+and the open Time 5 slot is filled. Game only: the lab's numbers stay the base (`KiteNavigatorConfigTests`), each
+multiplier is x1 at level 0, and every gate reads its own element field on `KiteNavigatorConfigSO` (so
+`element_ability_table.py Wrasse` sees 4/4 scaling and 4/4 gates):
+
+| Element | Scales | Level 5 |
+|---|---|---|
+| Charge | `chargePetalScale` x1 -> x2: kite power per Charge mote and its cap, so a ram takes up to twice the petals | **Crystal Steal** (unchanged): a ram steals instead of knocking crystals loose (`CrystalStealActive`) |
+| Mass | `massClusterScale` x1 -> x2: prisms per Mass mote and the cluster cap | **Shielded Clusters** (unchanged, `ShieldedClustersActive`) |
+| Space | `spaceReachScale` x1 -> x2: the blast's MaxScale per Space mote and its cap | **Shield Breaker** (unchanged, `ShieldBreakerActive`) |
+| Time | the hull's boost speed (`BoostSpeedMultiplier` on the prefab, x1 -> x1.5) | **Tailwind** (new): every saved boost lasts `tailwindBoostScale` (1.5) times `timeBoostSeconds` (`BoostSecondsFor`) |
+
+Tests: `WrasseFundamentalsTests`.
+
+**Its own HUD (2026-11-13).** The Wrasse no longer draws the Sparrow's HUD: `WrasseHUDVariant` (forked by
+`Tools/Build/author_wrasse_hud.py`, `--check`) carries `WrasseHUDView`, and each card is the icon kit's picture
+(`Tools/Build/icon_kit/specs/wrasse.py`) with its level-5 card swapped in when the upgrade unlocks: Kite Ram / Crystal
+Steal, Mass Cluster / Shielded Clusters, Space Blast / Shield Breaker, Saved Boosts / Tailwind. `WrasseHUDController`
+still generates the counts and the Mass flash. Tests: `WrasseHUDTests`.
 
 ## Files
 

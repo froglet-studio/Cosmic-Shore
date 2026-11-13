@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Swim lanes: which vessels, games, app-shell sections and systems are OCCUPIED right now, and which open ones to pick up next.
 
-    python3 .claude/skills/swimlanes/swimlanes.py                 # the board: open with work, occupied, needs polish, polished
+    python3 .claude/skills/swimlanes/swimlanes.py                 # the board: the loop's vessel lanes, open with work, occupied, needs polish, polished
     python3 .claude/skills/swimlanes/swimlanes.py --lane thresher # one lane in full: who is in it, its work, its polish gaps
     python3 .claude/skills/swimlanes/swimlanes.py --kind game     # only one kind: vessel, game, shell, system
     python3 .claude/skills/swimlanes/swimlanes.py --md | --json   # for a page or another tool
@@ -18,6 +18,11 @@ one that is truly closed out is archived there (`archived`), not deleted silentl
   OCCUPIED   an unmerged branch has pushed work focused on the lane in the last `window_days` (default 7). The lane
              opens again by itself when that work merges into bleeding-edge, or when the branch goes quiet. Past work
              that has merged never occupies a lane: history is context, not a block.
+  LOOP       FIRST, above everything else: every vessel nobody occupies is its own parallel lane through Garrett's
+             elemental vessel loop (2026-11-12, the top priority; Docs/ElementalLoop/PLAYBOOK.md), showing its loop
+             progress and its next step from Tools/Build/elemental_loop.py, ranked as `elemental_loop.py next` ranks
+             them (Time first, arena-seated vessels first, earliest step). Never cut. An occupied vessel shows its
+             next loop step too, for its occupant.
   OPEN       nobody is in it. Ranked, highest first:
                1. work waiting: open Froglet Tasks tickets that name it, editor hand tests not yet run
                   (Docs/UNITY_VERIFICATION_CHECKLIST.md), open Bug Ledger errors thrown from its files, placeholder
@@ -481,6 +486,28 @@ def assess(root, lanes, files, ticket_rows, bug_rows, l5, verdicts):
 
 # --- The board ----------------------------------------------------------------------------------------------------
 
+def loop_line(a):
+    """One loop action as a work line: 'Time step 2 (built): <what to do>'."""
+    step = 'step 0 kit' if a['step'] == '0' else f'step {a["step"]}'
+    return f'{a["element"]} {step} ({a["state"]}): {a["text"]}' + (f' [blocked: {a["blocked"]}]' if a.get('blocked') else '')
+
+
+def loop_lanes(root, notes):
+    """The elemental vessel loop (Garrett, 2026-11-12, the top priority): every vessel is its own parallel lane, and
+    its next loop step is that lane's first work. {lane key: elemental_loop.vessel_lanes() row}; empty (with a note)
+    when the board cannot be read, so the swim lanes never fail because of it."""
+    if not os.path.exists(os.path.join(root, 'Docs', 'ElementalLoop', 'loop.json')):
+        return {}
+    try:
+        sys.path.insert(0, os.path.join(root, 'Tools', 'Build'))
+        import elemental_loop
+        return {v.lower(): row for v, row in elemental_loop.vessel_lanes(elemental_loop.build(root)).items()}
+    except Exception as exc:                          # a reader, never a gate: say so and carry on
+        notes.append(f'the elemental loop board could not be read ({type(exc).__name__}: {exc}); run '
+                     '`python3 Tools/Build/elemental_loop.py --check`.')
+        return {}
+
+
 def build(root, args):
     catalog = json.load(open(CATALOG, encoding='utf-8'))
     days = args.days or catalog.get('window_days', 7)
@@ -511,13 +538,17 @@ def build(root, args):
         decl = [o['owner'] for o in team.declared_owners(ln.paths)] if ln.paths else []
         if decl or ln.note:
             owners[ln.key] = (ln.note or ('Owner: ' + ', '.join(decl) + ' (Docs/TEAM.json): tell them, and queue changes for their /approve.'))
+    loop = loop_lanes(root, notes)
     board = []
     for ln in lanes:
         f = found[ln.key]
         work = sum(wt for wt, _ in f['work'])
         gap = sum(wt for wt, _ in f['polish'])
+        lp = loop.get(ln.key) if ln.kind == 'vessel' else None
         if occ.get(ln.key):
             tier = 'occupied'
+        elif lp and lp['actions']:
+            tier = 'loop'
         elif work > 0:
             tier = 'work'
         elif gap > 0:
@@ -527,13 +558,16 @@ def build(root, args):
         board.append({'key': ln.key, 'name': ln.name, 'kind': ln.kind, 'tier': tier, 'workScore': work, 'polishGap': gap,
                       'occupants': occ.get(ln.key, []), 'work': [t for _, t in sorted(f['work'], key=lambda x: -x[0])],
                       'polish': [t for _, t in sorted(f['polish'], key=lambda x: -x[0])], 'landed': last.get(ln.key),
-                      'note': owners.get(ln.key, '')})
-    order = {'work': 0, 'occupied': 1, 'polish': 2, 'polished': 3}
+                      'note': owners.get(ln.key, ''),
+                      'loop': {'progress': lp['progress'], 'seated': lp['seated'], 'rank': list(lp['rank'] or []),
+                               'actions': [loop_line(a) for a in lp['actions']]} if lp else None})
+    order = {'loop': 0, 'work': 1, 'occupied': 2, 'polish': 3, 'polished': 4}
 
     board.sort(key=lambda b: b['name'])
     board.sort(key=lambda b: b['occupants'][0]['last'] if b['occupants'] else '', reverse=True)   # occupied: newest push first
-    board.sort(key=lambda b: (order[b['tier']], -b['workScore'] if b['tier'] == 'work' else
-                              -b['polishGap'] if b['tier'] == 'polish' else 0))
+    board.sort(key=lambda b: (order[b['tier']], b['loop']['rank'] if b['tier'] == 'loop' else
+                              [-b['workScore']] if b['tier'] == 'work' else
+                              [-b['polishGap']] if b['tier'] == 'polish' else []))
     return {'generated': datetime.date.today().isoformat(), 'windowDays': days, 'base': BASE, 'notes': notes,
             'lanes': board, 'order': list(order)}
 
@@ -552,7 +586,9 @@ def opened(b):
     return f'  (last landed {l["date"]}: {what}' + (f', {l["by"]}' if l.get('by') else '') + ')'
 
 
-HEADS = {'work': 'OPEN - WORK WAITING (highest priority: pick one of these)',
+HEADS = {'loop': 'THE ELEMENTAL LOOP - every vessel is its own parallel lane (Garrett 2026-11-12, TOP PRIORITY): take one '
+                 'and advance it one step (/elemental-loop)',
+         'work': 'OPEN - WORK WAITING (pick one of these when every loop lane is held)',
          'occupied': 'OCCUPIED - someone has their head in it right now (do not collide: build elsewhere or talk to them)',
          'polish': 'OPEN - NEEDS POLISH (no obvious work, but it does not feel finished)',
          'polished': 'OPEN - POLISHED (lowest priority)'}
@@ -582,10 +618,23 @@ def print_board(data, full=False, md=False, limit=3, kind=None):
             bullet = '- ' if md else f'  {i:>2}. '
             name = f'**{b["name"]}**' if md else b['name']
             tag = f'[{b["kind"]}]'
-            if tier == 'occupied':
+            if tier == 'loop':
+                lp = b['loop']
+                seated = f'; seats: {", ".join(lp["seated"])}' if lp['seated'] else '; no arena seat'
+                out.append(f'{bullet}{name} {tag} {lp["progress"]}{seated}{opened(b)}')
+                for t in lp['actions'][:None if full else 1]:
+                    out.append(f'        next: {t}')
+                rest = len(lp['actions']) - 1
+                if not full and rest > 0:
+                    out.append(f'        ... {rest} more loop step(s) in other elements (elemental_loop.py vessel {b["name"]})')
+                if b['work'] and full:
+                    out.append(f'        other work: {b["work"][0]}')
+            elif tier == 'occupied':
                 out.append(f'{bullet}{name} {tag}: ' + who(b['occupants'][0]))
                 for o in b['occupants'][1:]:
                     out.append(f'        also {who(o)}')
+                if b.get('loop') and b['loop']['actions']:
+                    out.append(f'        loop next (theirs to advance, or talk to them): {b["loop"]["actions"][0]}')
                 if b['work'] and full:
                     out.append(f'        work waiting for after: {b["work"][0]}')
             elif tier == 'work':
@@ -602,6 +651,9 @@ def print_board(data, full=False, md=False, limit=3, kind=None):
                 out.append(f'        ! {b["note"]}')
         if hidden:
             out.append(f'  ... {hidden} more (--full, or --kind vessel|game|shell|system)')
+    if any(b['tier'] == 'loop' for b in data['lanes']):
+        out.append('\nLoop marks per element, steps 1 fun / 2 intensities / 3 AI: . todo, ~ doing, b built (not signed off),'
+                   ' D done, R redo, x no game, - not needed. Record a step: elemental_loop.py set (/elemental-loop).')
     out.append('\nA lane is a vessel, a game, an app-shell section or a system, not a task. It opens when its work merges into'
                ' bleeding-edge. Details: --lane <key>. Mark one: swimlanes.py set <key> polished|rough --by <you>.')
     print('\n'.join(out))
@@ -619,6 +671,11 @@ def print_lane(data, key):
         print(f'  {who(o)}')
         for s in o['subjects'][1:]:
             print(f'      "{s[:100]}"')
+    if b.get('loop'):
+        print(f'\nElemental loop (top priority): {b["loop"]["progress"]}' +
+              (f'; seats: {", ".join(b["loop"]["seated"])}' if b['loop']['seated'] else '; no arena seat'))
+        for t in b['loop']['actions']:
+            print(f'  - {t}')
     print(f'\nWork waiting (score {b["workScore"]}):' if b['work'] else '\nWork waiting: none found')
     for t in b['work']:
         print(f'  - {t}')
@@ -688,6 +745,17 @@ def self_test():
         bad.append('a vessel change that also touches its game and the AI system lost one of the three lanes')
     if focus_lanes([f'Assets/Cards/{g}{i}.asset' for g in ('Bloomrush', 'Corona', 'Regatta') for i in range(3)], mixed):
         bad.append('a card sweep across three games occupied each of them')                         # negative control
+    import contextlib, io
+    lane = lambda k, tier, loop: {'key': k, 'name': k.title(), 'kind': 'vessel', 'tier': tier, 'workScore': 0, 'polishGap': 0,
+                                  'occupants': [], 'work': [], 'polish': [], 'landed': None, 'note': '', 'loop': loop}
+    lp = {'progress': 'Time bb.', 'seated': ['Regatta'], 'rank': [0, 0, 1, 'Manta'], 'actions': ['Time step 1 (built): fun pass']}
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        print_board({'generated': 'd', 'windowDays': 7, 'notes': [], 'order': ['loop', 'work', 'occupied', 'polish', 'polished'],
+                     'lanes': [lane('manta', 'loop', lp), lane('goby', 'polished', None)]})
+    shown = buf.getvalue()
+    if 'THE ELEMENTAL LOOP' not in shown or shown.index('Manta') > shown.index('Goby') or 'next: Time step 1' not in shown:
+        bad.append('the loop tier is not the first tier, or its lane does not show its next step')
     tmp = tempfile.mkdtemp(prefix='lanes-')
     try:
         for rel, body in [('Assets/Resources/ElementalAbilityMaps/Manta.asset', ''),

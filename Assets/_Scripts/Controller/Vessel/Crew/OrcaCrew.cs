@@ -461,7 +461,9 @@ namespace CosmicShore.Gameplay
 
             if (wantBoost && _tank > 0f)
             {
-                _tank = Mathf.Max(0f, _tank - dt);
+                // Time 5 Afterburner: the tank keeps refilling under the burn, so it drains at (1 - refill) per second.
+                float refill = _cfg.AfterburnerActive(_status) ? _cfg.BoostRefillAt(_status) : 0f;
+                _tank = Mathf.Clamp(_tank - dt + refill * dt, 0f, _cfg.BoostTank);
                 _boosting = true;
                 _status.IsBoosting = true;   // what a boost executor writes; the hull's own boostMultiplier applies
                 if (_tank <= 0f) StopBoost();
@@ -472,6 +474,7 @@ namespace CosmicShore.Gameplay
                 _tank = Mathf.Min(_cfg.BoostTank, _tank + _cfg.BoostRefillAt(_status) * dt);
             }
 
+            StepRearm(dt);
             if (_shield.Count > 0 && Time.time >= _shieldEndsAt) EndCarry();
             if (shieldEdge && Time.time >= _shieldReadyAt) RaiseShield();
         }
@@ -496,6 +499,19 @@ namespace CosmicShore.Gameplay
                 _fireButtonHeld = down;
             }
             else if (button == MissileButton && down) _missileButtonPressed = true;
+        }
+
+        // Charge 5 Rearm: every gunner seat regains a missile every rearmSeconds, up to its magazine's size. Runs with the
+        // helm, on the machine that holds the crew (a rider's own seat is that rider's, as an omni refill is).
+        float _rearmOwed;
+
+        void StepRearm(float dt)
+        {
+            if (!_cfg.RearmActive(_status)) { _rearmOwed = 0f; return; }
+            _rearmOwed += dt;
+            if (_rearmOwed < _cfg.RearmSeconds) return;
+            _rearmOwed = 0f;
+            for (int s = 1; s < Seats; s++) _mags[s]?.AddOmni(1);
         }
 
         void StopBoost()
@@ -529,10 +545,30 @@ namespace CosmicShore.Gameplay
                 _shieldBorn.Add(prism.prismProperties.TimeCreated);
                 _shieldLocal.Add(local);
             }
+            if (_cfg.BulwarkActive(_status)) LayBulwark(channel, owner, hull);
             _shieldEndsAt = Time.time + _cfg.ShieldSecondsAt(_status);
             _shieldReadyAt = Time.time + _cfg.ShieldCooldown;
             ShieldRaisedAt = Time.time;
             Play(_cfg.ShieldRaiseSound, hull.position);
+        }
+
+        /// <summary>Mass 5 Bulwark: the same shell again, <see cref="OrcaCrewConfigSO.BulwarkGap"/> further out, carried and
+        /// dropped with the first.</summary>
+        void LayBulwark(CosmicShore.ScriptableObjects.PrismEventChannelWithReturnSO channel, string owner, Transform hull)
+        {
+            int first = _dirs.Count;
+            for (int k = 0; k < _dirs.Count; k++)
+            {
+                float radius = Mathf.Lerp(_cfg.ShieldMinRadius, _cfg.ShieldMaxRadius, (float)_rng.NextDouble()) + _cfg.BulwarkGap;
+                var local = U(_dirs[k]) * radius;
+                var world = hull.TransformDirection(local);
+                var prism = BoostRingBuilder.LayOne(channel, hull.position + world, Quaternion.LookRotation(world, hull.up),
+                    _cfg.ShieldBlockScale, _cfg.ShieldSuper ? PrismKind.SuperShielded : PrismKind.Danger, _status.Domain, _status.PlayerName, owner + (first + k));
+                if (!prism) continue;
+                _shield.Add(prism);
+                _shieldBorn.Add(prism.prismProperties.TimeCreated);
+                _shieldLocal.Add(local);
+            }
         }
 
         // A shield prism is still ours only while it is alive, active, unrecycled and named for this shield (the
@@ -762,6 +798,7 @@ namespace CosmicShore.Gameplay
             }
             LastBurstAt = _burstAt[s] = Time.time;
             Play(_cfg.MissileBurstSound, at);
+            if (_cfg.ChainBurstActive(_status)) ChainFrom(at, BlastRadius);
         }
 
         // ------------------------------------------------------------------ the guns (round 5: one per seat, each different)
@@ -1018,6 +1055,16 @@ namespace CosmicShore.Gameplay
             _bombPrev = pos;
         }
 
+        /// <summary>Space 5 Chain Burst: every other missile of this crew, and its bomb, inside a burst's blast sets off too
+        /// (each of those then chains on in turn; a burst missile is gone, so nothing bursts twice).</summary>
+        void ChainFrom(Vector3 at, float radius)
+        {
+            float r2 = radius * radius;
+            for (int o = 1; o < Seats; o++)
+                if (_missiles[o] != null && (U(_missiles[o].Position) - at).sqrMagnitude <= r2) Burst(o);
+            if (_bomb && (_bomb.transform.position - at).sqrMagnitude <= r2) DetonateBomb();
+        }
+
         void DetonateBomb()
         {
             var shot = _bomb;
@@ -1043,6 +1090,7 @@ namespace CosmicShore.Gameplay
                 };
                 ExplosionHelper.CreateExplosion(explosions, init, _impactor ? _impactor.DIContainer : null);
             }
+            if (_cfg.ChainBurstActive(_status)) ChainFrom(at, _cfg.BombBlastRadiusAt(_status));
             LastBurstAt = _burstAt[BombSeat] = Time.time;
             Play(_cfg.BombBurstSound, at);
         }

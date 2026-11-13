@@ -48,7 +48,7 @@ two carve-outs from the ecosystem rules (§0.x armour gnawing, §0.z feeding lur
 | Content, as data and never C# literals | `Docs/Voyages/voyage_slice.json` is the spec. `Tools/Build/author_voyage_assets.py` (`--check`) writes `Assets/Resources/Voyages/VoyageContent.asset`. `voyage_content.json` sits beside it. |
 | The scene and the run | `Assets/_Scenes/Voyage.unity` (built by `VoyageSceneBuilder`: FrogletTools > Scenes > Build Voyage Scene), `VoyageLaunch` (Set sail), `VoyageScene`, `VoyageHarbour`, `VoyageRun`, `VoyageVault`, `VoyageCourseLink` (a party follows the host's course) |
 | The escort | `ArkEscortRun` (and its `.Chaos`, `.Course`, `.Variety` and `.Metrics` partials), `ArkEscortPilot`, the `*Role.cs` files, `IArkEscortHost`, `ArkEscortSim` (+ `Editor/ArkEscortSimLauncher`), with tuning in `ArkEscortSO` |
-| The Voyage window (UI) | `Assets/_Scripts/UI/Views/Voyage*.cs`: `VoyageJobsView`, `VoyageOpenCard`, `VoyageMapGraphic`, `VoyageCellDraw`, `VoyageWindowTabs`. The layout comes from `Tools/Build/author_voyage_window.py`. Since `claude/epic-fermat-6c7n2l` (2026-11-12) the Voyages tab is `VoyageBoard` (Rev 81 B5 with the Rev 83 S2 seat editor, `Docs/MENU_REDESIGN_B.md` section 165; its look still differs from the boards), and the Quests tab is the earlier quest track: that branch reverted `QuestsView.prefab`. |
+| The Voyage window (UI) | `Assets/_Scripts/UI/Views/Voyage*.cs`: `VoyageJobsView`, `VoyageOpenCard`, `VoyageMapGraphic`, `VoyageCellDraw`, `VoyageWindowTabs`. The layout comes from `Tools/Build/author_voyage_window.py`. Since `claude/sweet-mccarthy-ow25e2` (2026-11-12) every tab is the Sea table (Rev 89 A and Rev 90, `Docs/MENU_REDESIGN_B.md` section 172): `VoyageBoard` (Voyages), `VoyageSlabPage` and its `VoyageSagaSlab`, `VoyageQuestSlab`, `VoyageEpisodeSlab`, with `VoyageSlab` (the tilt), `VoyageSquadColumn` (seats and steppers) and `VoyageKit` (builders). Built at runtime over the window's pages; the old Saga cards and quest track stay on their pages, hidden, as the data. Not seen in Unity. |
 | Saving | `Assets/_Scripts/System/Voyages/VoyageStore.cs` (on the device; the backend does not hold voyages yet) |
 | Settings | `Assets/Resources/Voyages/Voyage.asset` (`VoyageToyDefinitionSO`, no longer a toybox toy) |
 | Dev tools | `Editor/Voyages/VoyageDevTools.cs` (two galaxy tools under FrogletTools) |
@@ -95,7 +95,21 @@ cleaning the vestigial noise." What each unmerged voyage branch still holds:
 | `claude/ark-escort-voyage` (1 commit, `3b7cdb69d`) | The escort card's difficulty buttons no longer cover Set sail. | **Already on `bleeding-edge`** (`VoyageJobCard.ShowStepper`, `StepWidth`). Delete. |
 | 15 other `claude/voyage-*` branches | Fully merged, or with only a merge commit beyond `bleeding-edge` (`voyage-scene-port`). | Delete. |
 
-The deletions wait on Garrett's go-ahead.
+**Shombith: this cleanup is yours** (Garrett, 2026-11-12: "tell shombith to clean it after he is sure there is
+nothing of value"). Look through the branches above first. If nothing in them is worth keeping, archive sim-farm
+and delete the rest from a full local checkout. Claude cloud sessions cannot push tags or delete branches they did
+not create.
+
+```
+git fetch origin claude/voyage-sim-farm
+git push origin d4a6827fdb66761916aead0dada2926c709b47b1:refs/tags/archive/voyage-sim-farm
+git push origin --delete claude/voyage-ark-core claude/voyage-ark-feel claude/voyage-chaos claude/voyage-escort-roles \
+  claude/voyage-fauna-params claude/voyage-fauna-threats claude/voyage-integration claude/voyage-night \
+  claude/voyage-pacify claude/voyage-pacify-tune claude/voyage-scene claude/voyage-scene-port claude/voyage-variety \
+  claude/voyage-verify claude/ark-escort-voyage claude/voyage-sim-farm
+```
+
+`claude/voyage-coop` is not in that list. Delete it after you have ported what you want from it.
 
 ## 7. Who else works near here
 

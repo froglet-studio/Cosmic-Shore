@@ -595,7 +595,7 @@ findings did not change.
 
 **What was wrong with the model the queue raced.** `drive-manta-redline` (Shombith's machine ran it 34,070 times)
 raced `manta_drive_sim.py`, which is Regatta's model: a point mass at full throttle with no nose lag. Its
-best bands (BoostStickBand 1.0, YastriStickBand 0.63: always Soar) were an artefact of that. Redline flies none of the
+best bands (BoostStickBand 1.0, YawsteryStickBand 0.63: always Soar) were an artefact of that. Redline flies none of the
 three. The AI's throttle is the skill throttle (Lerp(0.2, 0.9, intensity x 0.25): 37.5% at I1), the AI nose follows
 its command at 1.5/s, and Redline flew the old gate steering. The editor's own AI Mantas in recorded Regatta races
 reached 12-21 of 24 rings in about 100 s at I1, where that model finished all 24 in 25-35 s.
@@ -632,7 +632,7 @@ scored 38.21 and finished none of the 12 races at I3-I4. The bands are a small l
 
 Built the same day (`REDLINE.md` §1, §4, §4a, §5.1):
 - **The course asks for Soar alone.** No corner of any seed is tighter than the 156 u both triggers released make, so
-  no level needs the Yastri pivot (Mass): one corner that costs Soar a level, 0 / 1 / 2 / 3 (I2 217 u at half Soar, I3
+  no level needs the Yawstery pivot (Mass): one corner that costs Soar a level, 0 / 1 / 2 / 3 (I2 217 u at half Soar, I3
   184 u and 228 u, I4 171 u, 199 u and a 233 u knife-edge), through mouths of 110 / 88 / 72 / 44 (`RedlineCourse`,
   `RedlineCourseTests`, run out of Unity by `Tools/Build/redline_course_harness`).
 - **Only Time is fed.** The cell's omni crystal is off; Time crystals (the elemental set's, one level each, +3% Soar top

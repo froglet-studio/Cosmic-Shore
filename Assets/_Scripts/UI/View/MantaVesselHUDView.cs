@@ -88,13 +88,16 @@ namespace CosmicShore.UI
         [Tooltip("The spikes' alpha with no energy gathered.")]
         [SerializeField, Range(0f, 1f)] private float sparksIdleAlpha = 0.45f;
 
-        [Header("Time card parts (Yastri)")]
-        [Tooltip("The Manta from above (Manta_YastriManta), the domain colour.")]
-        [SerializeField] private Image yastriMantaIcon;
-        [Tooltip("The hard corner its turn pair cuts (Manta_YastriTurn), white.")]
-        [SerializeField] private Image yastriTurnIcon;
-        [Tooltip("Soar (Time 5): the boost chevrons ahead of the nose (Manta_YastriSoar), white.")]
-        [SerializeField] private Image yastriSoarIcon;
+        [Header("Time card parts (Yawstery)")]
+        [Tooltip("The Manta from above (Manta_YawsteryManta), the domain colour.")]
+        [FormerlySerializedAs("yastriMantaIcon")]
+        [SerializeField] private Image yawsteryMantaIcon;
+        [Tooltip("The hard corner its turn pair cuts (Manta_YawsteryTurn), white.")]
+        [FormerlySerializedAs("yastriTurnIcon")]
+        [SerializeField] private Image yawsteryTurnIcon;
+        [Tooltip("Soar (Time 5): the boost chevrons ahead of the nose (Manta_YawsterySoar), white.")]
+        [FormerlySerializedAs("yastriSoarIcon")]
+        [SerializeField] private Image yawsterySoarIcon;
 
         [Tooltip("The danger colour the rivals and the trap wear (ElementalBarsConfigSO.FireColor).")]
         [SerializeField] private Color dangerColor = new(1f, 0.3294f, 0.1020f, 1f);
@@ -146,7 +149,7 @@ namespace CosmicShore.UI
         void RefreshParts()
         {
             Paint(stingMantaIcon, _domain, 1f);
-            Paint(yastriMantaIcon, _domain, 1f);
+            Paint(yawsteryMantaIcon, _domain, 1f);
             Paint(skimMantaIcon, _domain, 1f);
 
             bool charge5 = IsAbilityUpgraded(Element.Charge);
@@ -168,8 +171,8 @@ namespace CosmicShore.UI
             Paint(skimSparksIcon, Color.white, Mathf.Lerp(sparksIdleAlpha, 1f, _energy01));
             Paint(skimShardsIcon, Color.white, IsAbilityUpgraded(Element.Space) ? 1f : 0f);
 
-            Paint(yastriTurnIcon, Color.white, 1f);
-            Paint(yastriSoarIcon, Color.white, IsAbilityUpgraded(Element.Time) ? 1f : 0f);
+            Paint(yawsteryTurnIcon, Color.white, 1f);
+            Paint(yawsterySoarIcon, Color.white, IsAbilityUpgraded(Element.Time) ? 1f : 0f);
         }
 
         static void Paint(Image part, Color color, float alpha)

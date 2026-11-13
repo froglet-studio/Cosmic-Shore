@@ -210,7 +210,7 @@ namespace CosmicShore.Data
         // through the cell and every pilot flies LAPS of it in order; the first DOMAIN whose
         // LEAD RUNNER threads the last gate of the last lap wins. Every corner is cut against
         // the Manta's FULL-BOOST turn radius - the 237u circle it holds with both triggers
-        // flat - and since Soar is the OVERLAP of the triggers and Yastri their DIFFERENCE, a
+        // flat - and since Soar is the OVERLAP of the triggers and Yawstery their DIFFERENCE, a
         // corner is one question: how much Soar is it worth? Intensity is how many corners a
         // lap asks it at. The solver is Headlong's, the cut is the Manta's. See
         // _Scripts/Controller/Arcade/REDLINE.md.
