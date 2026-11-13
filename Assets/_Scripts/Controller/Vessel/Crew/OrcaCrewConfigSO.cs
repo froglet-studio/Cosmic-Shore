@@ -26,6 +26,24 @@ namespace CosmicShore.Gameplay
                  "at level 15 is 0.35 at level 10 (the lab's 1 + k x level / 15 is this channel's line through 1 and 1 + 2k/3).")]
         [SerializeField] ElementalFloat boostRefill = ElementalFloat.Multiplier(0.25f, 0.35f, Element.Time, 0.05f);
 
+        [Header("Level-5 upgrades (game only: the fundamentals pass, Garrett 2026-11-12, ORCA_CREW.md 'Level 5')")]
+        [Tooltip("CHARGE level-5 'Rearm': with this element's upgrade active every gunner's magazine regains one missile every " +
+                 "rearmSeconds (up to its size), so the crew never runs dry between omni crystals. None = only crystals refill.")]
+        [SerializeField] Element rearmUpgradeElement = Element.Charge;
+        [Tooltip("Rearm: seconds between the missiles it gives each gunner seat.")]
+        [SerializeField, Min(1f)] float rearmSeconds = 12f;
+        [Tooltip("MASS level-5 'Bulwark': with this element's upgrade active the helm's shield is laid twice, a second shell " +
+                 "bulwarkGap further out, so the wall is twice as thick. None = one shell.")]
+        [SerializeField] Element bulwarkUpgradeElement = Element.Mass;
+        [Tooltip("Bulwark: how much further out the second shell stands (u).")]
+        [SerializeField, Min(0f)] float bulwarkGap = 14f;
+        [Tooltip("SPACE level-5 'Chain Burst': with this element's upgrade active a missile or bomb burst sets off every other " +
+                 "missile of this crew, and its bomb, inside its blast. None = each bursts on its own.")]
+        [SerializeField] Element chainUpgradeElement = Element.Space;
+        [Tooltip("TIME level-5 'Afterburner': with this element's upgrade active the boost tank keeps refilling while the helm " +
+                 "burns, so a burn lasts longer and an empty tank recovers under a held trigger. None = it refills only off the burn.")]
+        [SerializeField] Element afterburnerUpgradeElement = Element.Time;
+
         [Header("Helm: shield (prisms round the hull, the forward cone open: carried super-shielded, then dropped as danger)")]
         [Tooltip("lab shieldBlocks: danger prisms in the shield (DangerHemisphereConfig: 12 rays x 12 blocks).")]
         [SerializeField, Min(1)] int shieldBlocks = 144;
@@ -272,6 +290,18 @@ namespace CosmicShore.Gameplay
         public float AIBurnMinDistance => aiBurnMinDistance;
         public float AIBurnMinTank => aiBurnMinTank;
         public float BoostRefillAt(IVesselStatus status) => boostRefill.EvaluateLive(status);
+        public float RearmSeconds => rearmSeconds;
+        public float BulwarkGap => bulwarkGap;
+        /// <summary>Charge 5 'Rearm': every gunner seat regains a missile every <see cref="RearmSeconds"/>.</summary>
+        public bool RearmActive(IVesselStatus status) => Unlocked(status, rearmUpgradeElement) && status.ElementalAbilityHandler.IsUpgradeActive(rearmUpgradeElement);
+        /// <summary>Mass 5 'Bulwark': the shield is laid as two shells.</summary>
+        public bool BulwarkActive(IVesselStatus status) => Unlocked(status, bulwarkUpgradeElement) && status.ElementalAbilityHandler.IsUpgradeActive(bulwarkUpgradeElement);
+        /// <summary>Space 5 'Chain Burst': a burst sets off the crew's other missiles and its bomb inside the blast.</summary>
+        public bool ChainBurstActive(IVesselStatus status) => Unlocked(status, chainUpgradeElement) && status.ElementalAbilityHandler.IsUpgradeActive(chainUpgradeElement);
+        /// <summary>Time 5 'Afterburner': the boost tank refills while burning too.</summary>
+        public bool AfterburnerActive(IVesselStatus status) => Unlocked(status, afterburnerUpgradeElement) && status.ElementalAbilityHandler.IsUpgradeActive(afterburnerUpgradeElement);
+        static bool Unlocked(IVesselStatus status, Element element) =>
+            element != Element.None && status != null && status.ElementalAbilityHandler;
         public int ShieldBlocks => shieldBlocks;
         public float ShieldMinRadius => shieldMinRadius;
         public float ShieldMaxRadius => Mathf.Max(shieldMinRadius, shieldMaxRadius);

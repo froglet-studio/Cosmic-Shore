@@ -269,7 +269,7 @@
    "source": "Assets/_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md"
   },
   "Time": {
-   "ability": "Yastri",
+   "ability": "Yawstery",
    "does": "Hard, flat turns on the turn pair, one side per direction. Your trail is a plain trail; Time makes the Manta faster, cruising and soaring.",
    "trigger": "Hold, one side per direction",
    "scales": "More Time raises your cruise speed and your soaring speed.",

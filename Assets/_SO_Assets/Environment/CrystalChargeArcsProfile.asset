@@ -19,6 +19,7 @@ MonoBehaviour:
   seamDwellMinSeconds: 0.1
   seamDwellMaxSeconds: 0.28
   seamFadeSeconds: 0.85
+  seamFaceViewer: 1
   seamPetalGlow: 0.35
   fluxGapSeconds: 0.9
   fluxChargeSeconds: 0.45

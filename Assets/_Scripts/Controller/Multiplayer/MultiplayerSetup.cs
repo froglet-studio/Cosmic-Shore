@@ -433,17 +433,21 @@ namespace CosmicShore.Gameplay
             var playerProperties  = await GetPlayerProperties();
             var sessionProperties = GetSessionProperties();
 
-            var sessionOpts = new SessionOptions
+            // Hosted in the player's chosen Relay region (Settings > REGION; Auto when none), falling back to Auto once.
+            var (session, _) = await RelayRegionPreference.CreateWithFallbackAsync(region =>
             {
-                MaxPlayers        = gameData.SelectedPlayerCount.Value,
-                IsLocked          = false,
-                IsPrivate         = false,
-                PlayerProperties  = playerProperties,
-                SessionProperties = sessionProperties
-            }.WithRelayNetwork();
-
-            gameData.ActiveSession = await Policy.ExecuteAsync("match:create",
-                async () => await MultiplayerService.Instance.CreateSessionAsync(sessionOpts).AsMainThread());
+                var sessionOpts = new SessionOptions
+                {
+                    MaxPlayers        = gameData.SelectedPlayerCount.Value,
+                    IsLocked          = false,
+                    IsPrivate         = false,
+                    PlayerProperties  = playerProperties,
+                    SessionProperties = sessionProperties
+                }.WithRelayNetwork(region);
+                return Policy.ExecuteAsync("match:create",
+                    async () => await MultiplayerService.Instance.CreateSessionAsync(sessionOpts).AsMainThread());
+            }, "match:create");
+            gameData.ActiveSession = session;
 
             gameData.InvokeSessionStarted();
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");

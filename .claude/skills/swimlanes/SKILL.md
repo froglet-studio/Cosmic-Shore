@@ -1,6 +1,6 @@
 ---
 name: swimlanes
-description: Show which swim lanes of Cosmic Shore are OCCUPIED right now and which open ones to work on next - a lane is anything someone holds in their head that takes more than a couple of prompts and one PR - a vessel (the Thresher, the Goby, ...), a game (Bloomrush, Regatta, ...), a section of the app shell (the Voyages map, the Hangar, Settings, the in-game HUD) or a mechanical system (ecology, prisms, netcode, the AI platform, ...) - never a task. Ranked from git and the team's own records by swimlanes.py - open lanes with obvious work waiting on top, occupied lanes under them, then lanes that need polish, then polished ones. Use on "/swimlanes", "what should I work on next", "what's free", "is anyone working on <vessel / game / screen / system>", "who is in the <X> lane", "am I going to collide with someone", "find me the next thing", "mark <lane> polished / rough", "add a lane", "archive a lane", or before starting work on a vessel, a game, an app-shell section or a system.
+description: Show which swim lanes of Cosmic Shore are OCCUPIED right now and which open ones to work on next, led by the elemental vessel loop (every vessel a parallel lane with its next loop step, the top priority) - a lane is anything someone holds in their head that takes more than a couple of prompts and one PR - a vessel (the Thresher, the Goby, ...), a game (Bloomrush, Regatta, ...), a section of the app shell (the Voyages map, the Hangar, Settings, the in-game HUD) or a mechanical system (ecology, prisms, netcode, the AI platform, ...) - never a task. Ranked from git and the team's own records by swimlanes.py - the loop's vessel lanes on top, then open lanes with obvious work waiting, occupied lanes under them, then lanes that need polish, then polished ones. Use on "/swimlanes", "what should I work on next", "what's free", "is anyone working on <vessel / game / screen / system>", "who is in the <X> lane", "am I going to collide with someone", "find me the next thing", "mark <lane> polished / rough", "add a lane", "archive a lane", or before starting work on a vessel, a game, an app-shell section or a system.
 ---
 
 # Swim lanes - find the next thing, and don't collide
@@ -35,11 +35,12 @@ git fetch --prune origin
 python3 .claude/skills/swimlanes/swimlanes.py
 ```
 
-About 15-20 s. It prints four groups, in this order:
+About 15-20 s. It prints five groups, in this order:
 
 | Group | What puts a lane there |
 |---|---|
-| **Open - work waiting** (top: pick one of these) | Nobody is in it, and there is obvious work: open, untaken Froglet Tasks tickets that name it; editor hand tests not yet run (`Docs/UNITY_VERIFICATION_CHECKLIST.md`); open Bug Ledger errors thrown from its files; placeholder files; level-5 upgrades named but not gated. Ranked by score (a P0 ticket weighs 5, P3 2; each other item 1, capped per kind). |
+| **The elemental loop** (top, never cut: Garrett 2026-11-12, the top priority) | Every vessel nobody occupies is its own **parallel lane through the loop** (`Docs/ElementalLoop/PLAYBOOK.md`): its progress per element (steps 1 fun / 2 intensities / 3 AI as board marks), the arenas that seat it, and its **next loop step**, from `Tools/Build/elemental_loop.py`. Ranked as `elemental_loop.py next` ranks: Time first, arena-seated vessels first, earliest step. Take one vessel and advance it one step (`/elemental-loop`); the next session takes another, so every vessel moves at once. An occupied vessel stays under Occupied and shows its next loop step for its occupant. |
+| **Open - work waiting** (when every loop lane is held) | Nobody is in it, and there is obvious work: open, untaken Froglet Tasks tickets that name it; editor hand tests not yet run (`Docs/UNITY_VERIFICATION_CHECKLIST.md`); open Bug Ledger errors thrown from its files; placeholder files; level-5 upgrades named but not gated. Ranked by score (a P0 ticket weighs 5, P3 2; each other item 1, capped per kind). |
 | **Occupied** | An unmerged branch has pushed work focused on it in the last 7 days. Shows who, the branch, its PR, the last push and the newest commit. Newest first. |
 | **Open - needs polish** | No obvious work, but measured gaps: undesigned level-5 upgrades, no model dossier, no arcade card of its own, one of the style guide's five worst screens, no edit-mode test names it, five or more TODOs - or a person said "rough". |
 | **Open - polished** (bottom) | None of that, or a person said "polished". |
@@ -82,7 +83,11 @@ Options:
 
 ## 3. Answer the person
 
-- **"What should I work on next?"**: run the board and give them the top of **Open - work waiting** - the first three
+- **"What should I work on next?"**: the **elemental vessel loop is the top priority** (Garrett, 2026-11-12) and it
+  heads the board: give them the first three or four vessel lanes of **The elemental loop** with each one's next step,
+  propose the first, and take it through `/elemental-loop`. Every vessel is a lane of its own so several people (and
+  sessions) advance different vessels in parallel; never two on one vessel. Then, for anyone who wants something
+  else, give them the top of **Open - work waiting** - the first three
   or four lanes with their top item each - then one line naming the occupied lanes to stay out of. If they say what
   they like (vessels, UI, a platform), pick from that. Offer `--lane <key>` for the one they lean to.
 - **"Is anyone in <X>?"**: `--lane <key>`. If occupied, say who, the branch, the PR and the last push in one line,

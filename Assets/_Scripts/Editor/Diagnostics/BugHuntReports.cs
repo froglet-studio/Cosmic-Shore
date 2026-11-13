@@ -19,6 +19,8 @@ namespace CosmicShore.Editor
     /// (<c>Documents/CosmicShore Diagnostics/*.json</c>).</item>
     /// <item><b>flights</b> — human Regatta flights the Squirrel AI learns from
     /// (<c>Documents/CosmicShore Diagnostics/Flights/flight_*.json</c>, <c>HumanFlightRecorder</c>).</item>
+    /// <item><b>fun</b> — the one-minute fun card's answers (<c>Documents/CosmicShore Diagnostics/FunCards/funcard_*.json</c>,
+    /// <see cref="FunCard"/>; read with <c>Tools/Build/fun_cards.py</c>).</item>
     /// <item><b>net</b> — the logs of a multiplayer play test, one file per player (the main editor and each
     /// MPPM virtual player): its session record and console (<c>Logs/NetSessions/net_*.json</c>,
     /// <see cref="NetTestLogs"/>; read with <c>Tools/Build/net_logs.py</c>).</item>
@@ -72,6 +74,9 @@ namespace CosmicShore.Editor
             // A flight is ~130 bytes a sample at 10 Hz plus its rail, so a long race passes the 512 KB report cap; a
             // flight over it was skipped SILENTLY (no file sent, no question asked). Flights get their own cap.
             if (perfDir != null) Collect(candidates, Path.Combine(perfDir, "Flights"), "flight_*.json", "flights", cutoff, MaxFlightBytes);
+            // The one-minute fun card's answers (FunCard): the elemental loop's step 1 and 2 sign-offs, read by
+            // Tools/Build/fun_cards.py from every bugledger branch.
+            if (perfDir != null) Collect(candidates, Path.Combine(perfDir, FunCard.FolderName), "funcard_*.json", "fun", cutoff);
             // Multiplayer test logs (NetTestLogs). Virtual players write into the main project's folder; the
             // Library/VP scan is the fallback for a layout where one could not tell it was a virtual player.
             Collect(candidates, Path.Combine(projectRoot, "Logs", NetTestLogs.FolderName), "net_*.json", "net", cutoff);
