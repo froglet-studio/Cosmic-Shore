@@ -51,10 +51,10 @@ namespace CosmicShore.UI
         [SerializeField] RectTransform cardColumn;
         [Tooltip("The space between the map and the edge view under it, in the map column.")]
         [SerializeField] float edgeGap = 12f;
-        [Tooltip("The Voyages tab as Shombith picked it (Docs/MENU_REDESIGN_B.md sections 170-172): the Sea table - the " +
-                 "voyages as chips, the map lying back over its edge view, the squad's seats with their steppers (Rev 89 " +
-                 "A), built by VoyageBoard over this page; the Saga, Quests and Episodes pages take the same table (Rev " +
-                 "90). Off: the map column and the voyage cards as before.")]
+        [Tooltip("The Voyages tab as Shombith picked it (Docs/MENU_REDESIGN_B.md sections 180-184): two screens built by " +
+                 "VoyageBoard over this page - the voyage on the flat map with its explorer, then Configure squad (Rev 98 " +
+                 "1A and 2D); the Saga, Quests and Episodes pages are the Sea table (Rev 90, sections 171-172). Off: the " +
+                 "map column and the voyage cards as before.")]
         [SerializeField] bool board = true;
         [Tooltip("The Saga tab is locked (Shombith, 2026-11-12: \"lock saga\"): its table is dimmed and says Coming soon, " +
                  "no part is listed and nothing launches from it. Off: the saga's parts, the squad and Set sail.")]
@@ -246,7 +246,7 @@ namespace CosmicShore.UI
             if (!focused) Map(content, lines, style, here, null, _placeCaption);
         }
 
-        // ── The board (the Sea table, Rev 89 A) ──────────────────────────────
+        // ── The board (the Voyages tab as two screens, Rev 98 1A and 2D) ──────────────────────────────
 
         /// <summary>
         /// Draw the Voyages tab as the board: one row per voyage on offer (and the Ark escort), the open one framed on the
@@ -266,11 +266,7 @@ namespace CosmicShore.UI
             var map = EnsureMap();
             // The voyage screen's map is the explorer, flat: its tier ladder, readout, drag, pinch and wheel, and a press
             // on a place sets the course there (Rev 98 1A). Behind the squad screen it is the course alone.
-            if (map)
-            {
-                map.Tilt = false;
-                map.Plain = _board.OnSquadScreen;
-            }
+            if (map) map.Plain = _board.OnSquadScreen;
             FitBoardColumn();
 
             // The escort or a job under way: its one row, open, Set sail dark.

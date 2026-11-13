@@ -7,9 +7,10 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The small builders every part of the Voyage window's Sea table is made with (<see cref="VoyageBoard"/>,
-    /// <see cref="VoyageSquadColumn"/>, <see cref="VoyageSlabPage"/>): a node, a slivered plate, a line of text in the
-    /// window's face, a label in the style's label face, a keyed button. One look: every sprite, colour and face is
+    /// The small builders every part of the Voyage window is made with (<see cref="VoyageBoard"/>,
+    /// <see cref="VoyageSquadDeck"/>, <see cref="VoyageSquadColumn"/>, <see cref="VoyageSlabPage"/>): a node, a slivered
+    /// plate, a soft-ended band, a line of text in the window's face, a label in the style's label face, a keyed button,
+    /// an element's flower. One look: every sprite, colour and face is
     /// <see cref="VoyageBoardStyleSO"/>'s, and every colour is read as the worn colour set has it
     /// (ColorTrace, Docs/VesselModels/COLOR_TRACE.md).
     /// </summary>

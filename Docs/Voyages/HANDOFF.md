@@ -83,6 +83,23 @@ and the escort card. A hand pass through the checklist sections is the cheapest 
 Known gaps carried from ARK_ESCORT §4 "Known gaps": the Grizzly+Urchin+Falcon squad deploys only one AI wingmate (one
 of those hulls does not spawn as an AI companion), and the sim's single samples are noisy (±20 hull points).
 
+**The Voyage window's own open work** (from the two-screen build, `Docs/MENU_REDESIGN_B.md` section 184, 2026-11-13):
+
+- **Hidden, not retired.** `VoyageOpenCard` (922 lines), `VoyageJobCard` and the job-card grid are unreachable while
+  `VoyageJobsView.board` is on (measure: `grep -rn "VoyageOpenCard\b" Assets/_Scripts --include=*.cs`; its static
+  `IsMySeat` / `CanEdit` are still read by `VoyageSeats`). Retire them once the two screens are accepted in Unity, after
+  moving those two rules into `VoyageSeats`.
+- **`VoyageSquadColumn` serves only the locked Saga tab.** When the Saga opens, give it `VoyageSquadDeck` (or the
+  voyage screen's squads) instead, and delete the column and `VoyageKit.Stepper`.
+- **The lobby line is not built.** Rev 95-98 draw "Mirel is in your lobby, not in this squad" over Configure squad; the
+  window has no reach to the party's members. It needs a read of the party roster (`Docs/claude/MULTIPLAYER_AND_SOCIAL.md`
+  § Party), which is Shombith's backend area.
+- **The pad does not press the drawn keycaps** (X Configure squad, B back, Y Save as preset). LB / RB were taken off on
+  Shombith's word ("just clicks work fine", 2026-11-13); the keycaps' wiring is a separate decision.
+- **The tabs' frames are switched off with `SetActive(false)`**, which the kit's show / hide convention
+  (`KitVisibility.SetShown`, `Docs/claude/MENU_AND_LAVA_LAMP.md`) avoids. Here it is permanent removal, not a toggle;
+  the clean fix is the window's prefab without the frames (`Tools/Build/author_voyage_window.py`).
+
 ## 6. Leftover branches (checked 2026-11-12)
 
 Garrett (2026-11-12): "we don't want to be packrats hoarding branches and code. we want to curating the good and

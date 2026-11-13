@@ -353,7 +353,7 @@ namespace CosmicShore.UI
                 var band = VoyageKit.Band(view.Root, _kit.RowPicked, 0.14f, hit: true);
                 view.Button = view.Root.gameObject.AddComponent<Button>();
                 view.Button.targetGraphic = band;
-                view.Button.onClick.AddListener(() => { if (_rules.PickSquad(i)) _deck.Reset(); });
+                view.Button.onClick.AddListener(() => PickSquad(i));
                 view.Group = view.Root.gameObject.AddComponent<CanvasGroup>();
 
                 // The squad's three hulls in formation at the right: the leader in front, the rogues behind to each side.
@@ -400,10 +400,20 @@ namespace CosmicShore.UI
                 view.Bar = VoyageKit.Block(bar, _kit.Cyan);
                 view.Button = rt.gameObject.AddComponent<Button>();
                 view.Button.targetGraphic = hit;
-                view.Button.onClick.AddListener(() => { if (_rules.PickSquad(i)) _deck.Reset(); });
+                view.Button.onClick.AddListener(() => PickSquad(i));
                 _words.Add(view);
             }
             return _words[index];
+        }
+
+        // Another squad sails: the squad screen picks that squad's own seat first. The reset comes before the pick,
+        // because the pick redraws the window at once (VoyageSeats.Changed).
+        void PickSquad(int index)
+        {
+            var book = VoyageSeats.Book;
+            if (book == null || index == book.ActiveIndex) return;
+            _deck.Reset();
+            _rules.PickSquad(index);
         }
 
         // ── The two screens ──────────────────────────────────────────────────

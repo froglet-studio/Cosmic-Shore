@@ -440,7 +440,7 @@ namespace CosmicShore.ScriptableObjects
         public string BoardSailKey = "A";
         [Tooltip("The keycap before the seat editor's Done (empty: none).")]
         public string BoardDoneKey = "B";
-        [Tooltip("Over the open voyage's name on the Sea table (Rev 89 A): which voyage it is and who brought it.")]
+        [Tooltip("Over the open voyage's name on the Voyages tab: which voyage it is and who brought it.")]
         public string BoardKicker = "Voyage {n} of {count} - brought by {pilot}";
         [Tooltip("Over the open voyage's name when nobody brought it.")]
         public string BoardKickerAlone = "Voyage {n} of {count}";
