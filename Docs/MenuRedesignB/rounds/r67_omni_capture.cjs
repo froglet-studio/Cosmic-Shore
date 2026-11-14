@@ -2,6 +2,7 @@
 // game's OmniCombinePlayer is a line-for-line port of): its four crystals idling, then the whole combine, stepped on
 // the lab's own manual clock at 10 fps and saved with a transparent background so it can be laid over the Ark.
 //   node r67_omni_capture.cjs <lab.html> <out_dir> [w h pitch]   (pitch: the lab's 0.35; 0.12 from inside the Ark)
+//   VD=<omni radii> sets the lab's camera distance (7 by default; Rev 104 used 10 so no crystal leaves the frame)
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -23,7 +24,7 @@ const [, , lab, out, W = '960', H = '540', PITCH_ARG = '0.35'] = process.argv;
     #stageWrap{position:fixed!important;inset:0!important}
     #stage{width:100vw!important;height:100vh!important}` });
   await p.waitForTimeout(800);
-  await p.evaluate(() => { const L = window.__lab; L.manualClock = true; L.setParam && L.setParam('viewSpin', 0); });
+  await p.evaluate((vd) => { const L = window.__lab; L.manualClock = true; L.setParam && L.setParam('viewSpin', 0); L.setParam && L.setParam('viewDist', vd); }, +(process.env.VD || 7));
   const shot = async (file) => {
     const el = await p.$('#stage');
     await el.screenshot({ path: file, omitBackground: true });

@@ -23452,6 +23452,17 @@ reference assemblies; `author_ingame_hud.py --check` and `--self-test` clean.
 4. Replay the mode: the fields are back at full strength on the next loading screen.
 5. Profiler during the loading screen: no GC per frame from `PosterDrift`.
 
+## 🔴 The Ark converter's balances and the 10-of-each start (Rev 104 B, the holo dais) (2026-11-13, Shombith, `claude/project-thread-p16700`, NOT RUN IN EDITOR)
+
+Ran: `author_menu_ark.py --check` / `--self-test`, `author_elemental_converter.py --check`, `unity_refcompile`.
+Not run: the Unity editor, the EditMode tests (`PlayerProfileDataTests` grant tests).
+- [ ] A fresh profile (and an existing one) shows 10 under Space, Charge, Mass and Time on the Ark's CONVERTER tab.
+- [ ] CONVERT steps each count down as its crystal flies in, and the omni count (row and nav) up by one; the cards are gone.
+- [ ] Convert until an element is 0: CONVERT goes inactive, the line names the short element; the counts survive a restart.
+- [ ] The dais's rings, beams and balances sit clear of the pier's crystals and the nav on 16:9, 19.5:9 phone and 4:3;
+  each beam lights lime as its crystal flies and stays lit until the omni forms.
+- [ ] The pier's crystals (re-encoded clips) sit centred over the deck, never on the ceiling beam, in idle, convert and done.
+
 ## 🔴 Goby: Vortex Steal (Charge 5) and the four level-5 card pictures (2026-11-13, Garrett's project thread, NOT RUN IN EDITOR)
 
 Branch `claude/goby-vortex-steal`. The changed files compile clean against the Unity reference assemblies

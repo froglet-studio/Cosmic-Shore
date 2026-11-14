@@ -55,6 +55,39 @@ namespace CosmicShore.Tests
             var mass = back.Economy.ElementalCrystals[0];
             Assert.AreEqual((2, 7, 12L, 5L), (mass.Element, mass.Held, mass.Earned, mass.Spent));
         }
+
+        [Test]
+        public void StartingGrant_GivesTenOfEachElementToANewProfile()
+        {
+            var economy = new PlayerProfileData().Economy;
+            Assert.IsTrue(economy.GrantStartingElementalCrystals(10));
+            Assert.AreEqual(4, economy.ElementalCrystals.Count);
+            for (int element = 1; element <= 4; element++)
+            {
+                var b = economy.ElementalCrystals.Find(x => x.Element == element);
+                Assert.IsNotNull(b, $"element {element} has no entry");
+                Assert.AreEqual((10, 10L, 0L), (b.Held, b.Earned, b.Spent));
+            }
+        }
+
+        [Test]
+        public void StartingGrant_NeverRefillsAnElementThePlayerSpent()
+        {
+            var economy = new PlayerProfileData().Economy;
+            economy.ElementalCrystals.Add(new ElementalCrystalBalance { Element = 4, Held = 0, Earned = 10, Spent = 10 });
+            Assert.IsTrue(economy.GrantStartingElementalCrystals(10), "the three missing elements are granted");
+            Assert.AreEqual(0, economy.ElementalCrystals.Find(x => x.Element == 4).Held, "Time stays spent");
+            Assert.IsFalse(economy.GrantStartingElementalCrystals(10), "a second grant adds nothing");
+            Assert.AreEqual(4, economy.ElementalCrystals.Count);
+        }
+
+        [Test]
+        public void StartingGrant_OfZeroGivesNothing()
+        {
+            var economy = new PlayerProfileData().Economy;
+            Assert.IsFalse(economy.GrantStartingElementalCrystals(0));
+            Assert.IsEmpty(economy.ElementalCrystals);
+        }
     }
 }
 #endif

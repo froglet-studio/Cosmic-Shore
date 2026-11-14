@@ -8,9 +8,10 @@ boards, revision 2, on the "Menu Redesign B" canvas).
         ArkView.prefab   the Ark's five tabs (ArkTabsView: CONVERTER, SQUADS, DECOR - Shombith, 2026-10-27; ARTIFACTS -
                          Garrett, 2026-10-27; PILOTS - Garrett, 2026-11-12) and
                          their pages:
-                         CONVERTER, the overlay over the converter's 3D picture: the title band, the recipe panel
-                         (four ConverterRecipeRows in fly-in order, the Omni block), and the converter bar
-                         (the run's clock, four segments with their sparks, CONVERT with the sweep);
+                         CONVERTER, the overlay over the pier (Rev 104 B, section 196: no cards): the shade, and the
+                         holo dais at the pier's foot - the player's four elemental balances (ConverterBalance, fly-in
+                         order) round its arc, each with its beam to the omni wallet at its centre, the line over it,
+                         and CONVERT with the sweep under it;
                          SQUADS (SquadsPage): the player's squads (up to four, made and joined), the selected
                          squad's three squad mates with their vessel, element, pilot and artifact, NEW / JOIN /
                          DELETE, PLAY into Arcade / Arena / Mission, and the join list of friends' open seats;
@@ -59,7 +60,7 @@ text, label, le, canvas_group = H.text, H.label, H.le, H.canvas_group
 image_node, art_node = A.image_node, A.art_node
 
 VIEW = "ArkView"
-S = dict(view=C.script("ElementalConverterView"), row=C.script("ConverterRecipeRow"),
+S = dict(view=C.script("ElementalConverterView"), balance=C.script("ConverterBalance"),
          button=K.kit_script("KitButton"), kt=K.kit_script("KitText"), entrance=K.kit_script("KitEntrance"),
          ambient=K.kit_script("KitAmbient"), spark=K.kit_script("KitSpark"), tabs=C.script("ArkTabsView"),
          squads=C.script("SquadsPage"), squad_row=C.script("SquadRowView"), mate=C.script("SquadMateCard"),
@@ -67,7 +68,7 @@ S = dict(view=C.script("ElementalConverterView"), row=C.script("ConverterRecipeR
          chip=C.script("SquadPickChip"), nanobots=C.script("SquadNanobotSwap"), artifacts=C.script("ArkArtifactsPage"),
          pilots=C.script("ArkPilotsPage"), medal=C.script("ArtifactMedallion"), lens=C.script("ArtifactLens"),
          glass=C.script("PdaGlassImage"))
-C.STUB_KIND.update({"recipe": (114, S["row"]), "entrance": (114, S["entrance"]), "tabs": (114, S["tabs"])})
+C.STUB_KIND.update({"balance": (114, S["balance"]), "entrance": (114, S["entrance"]), "tabs": (114, S["tabs"])})
 
 ORDER = ("Space", "Charge", "Mass", "Time")       # OmniCombineCore.Order: the fly-in order
 CRYSTAL = {k: K.meta_guid(f"Assets/_Graphics/Codex/ethirion_{k.lower()}.png") for k in ORDER}
@@ -82,13 +83,6 @@ def c(node_key, comp):
     return lambda ctx: ctx.c(node_key, comp)
 
 
-def filled_image(color):
-    """An Image, Filled Horizontal from the left, empty."""
-    base = K.image(color)
-    return lambda ctx, go: base(ctx, go).replace("  m_Type: 0\n", "  m_Type: 3\n").replace(
-        "  m_FillMethod: 4\n", "  m_FillMethod: 0\n").replace("  m_FillAmount: 1\n", "  m_FillAmount: 0\n")
-
-
 def title_band(root, key="Title", heading="Elemental converter",
                line="Space, Charge, Mass and Time combine into one omni crystal."):
     band = root.child(N(key, "Title", TL(40, 108, 514, 116)))
@@ -99,88 +93,74 @@ def title_band(root, key="Title", heading="Elemental converter",
     label(band.child(N(f"{key}/Line", "Line", TL(22, 84, 480, 20))), line, "BodySmall", "NeutralLightest")
 
 
-def recipe_row(panel, i, name):
-    k = f"Recipe/{name}"
-    row = panel.child(N(k, name, TL(26, 58 + i * 104, 386, 92)))
-    fill = row.child(N(f"{k}/Fill", "Fill", STRETCH))
-    fill.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver10_fill"), True))
-    bord = row.child(N(f"{k}/Border", "Border", STRETCH))
-    bord.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
-    label(row.child(N(f"{k}/Numeral", "Numeral", TL(14, 22, 64, 48))), f"{i + 1:02d}", "H1", "NeutralLightest")
-    art = art_node(row, f"{k}/Art", "Art", TL(84, 18, 56, 56), CRYSTAL[name], preserve=True)
-    art.add("bob", 114, lambda ctx, go: M.ambient("Float", period=1.2, amplitude=4)(ctx, go).replace(
-        "  m_Enabled: 1\n", "  m_Enabled: 0\n", 1))
-    label(row.child(N(f"{k}/Name", "Name", TL(158, 18, 150, 30))), name, "H3", "TextLight")
-    st = row.child(N(f"{k}/State", "State", TR(14, 24, 110, 16)))
-    label(st, "Ready", "Label", "NeutralLightest", align="right")
-    image_node(row, f"{k}/Track", "Track", TL(158, 58, 214, 3), "SurfaceDark")
-    bar = row.child(N(f"{k}/Bar", "Bar", TL(158, 58, 214, 3)))
-    bar.add("cr", 222, K.canvas_renderer()).add("img", 114, filled_image(tok("ControlActive")))
-    row.add("row", 114, lambda ctx, go: mono(go, S["row"],
-            f"  theme: {K.ref(11400000, K.THEME, 2)}\n  stateText: {ref(ctx.c(f'{k}/State', 'kt'))}\n"
-            f"  fill: {ref(ctx.c(f'{k}/Bar', 'img'))}\n  border: {ref(ctx.c(f'{k}/Border', 'img'))}\n"
-            f"  art: {ref(ctx.c(f'{k}/Art', 'img'))}\n  bob: {ref(ctx.c(f'{k}/Art', 'bob'))}\n"))
+# The holo dais (Rev 104 B, Shombith 2026-11-13: "I like B"; no cards on top, "the elemental converter should show the
+# actual elemental crystals balance the user has"): a projection rises from the pier's edge like the bridge tables in the
+# pilot scenes, the four balances standing round its arc and the omni wallet at its centre, a beam from each crystal to
+# the omni, the line over the dais and CONVERT under it. Measured from the screen's foot (y up) and its centre line: the
+# rings are centred on the foot, so only their upper halves show. The dais is board R104B's, pressed down under the
+# pier's crystals (Shombith, of the first build: "The actual crystals are clipping and does not seem to be the center of
+# attraction"): the recomposed clips (r104_converter_recomp.py) hold the crystals between 362 and 809 of 1080 from the
+# top (the ceiling beam's foot is at 350), so everything here stays under DAIS_CEILING (270 over the foot) and the outer
+# ring caps each column.
+DAIS_CEILING = 270
+DAIS_RINGS = (("Outer", "kit_ring_line", 1280, 600, 0.35), ("Inner", "kit_ring_line", 1000, 440, 0.18),
+              ("Floor", "kit_pool_rim", 1300, 70, 0.26))
+DAIS_GLOW = (1300, 600, 0.12)
+DAIS_COL_W, DAIS_COL_H, DAIS_ART = 140, 140, 64
+DAIS_POS = {"Space": (-470, 172), "Charge": (-230, 238), "Mass": (230, 238), "Time": (470, 172)}   # column top-centres
+DAIS_OMNI_W, DAIS_OMNI_ART, DAIS_OMNI_TOP = 200, 92, 212
+DAIS_OMNI_CENTRE = (0, DAIS_OMNI_TOP - DAIS_OMNI_ART // 2)
+DAIS_LINE_Y, DAIS_LINE_W = 266, 1000
+CONVERT_Y, CONVERT_MIN_W = 22, 300
 
 
-def recipe_panel(root):
-    pn = root.child(N("Recipe", "Recipe", TR(40, 108, 438, 760)))
-    pn.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
-    C.frame(pn, "Recipe/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
-    pn.child(M.panel_sea_node("Recipe/Grid"))
-    M.bracket_nodes(pn, "Recipe/Bracket")
-    C.section_label(pn, "Recipe/Caption", "Caption", "Recipe", TL(26, 26, 200, 18))
-    label(pn.child(N("Recipe/Merged", "Merged", TR(26, 26, 220, 18))), "0 of 4 merged", "Label", "NeutralLightest",
-          align="right")
-    for i, name in enumerate(ORDER):
-        recipe_row(pn, i, name)
-    image_node(pn, "Recipe/RuleLeft", "RuleLeft", TL(26, 486, 150, 1), "SurfaceDark")
-    image_node(pn, "Recipe/RuleRight", "RuleRight", TR(26, 486, 150, 1), "SurfaceDark")
-    label(pn.child(N("Recipe/Makes", "Makes", TL(176, 477, 86, 18))), "Makes", "Label", "NeutralLightest",
-          align="center")
-    om = pn.child(N("Recipe/Omni", "Omni", TL(26, 516, 386, 216)))
-    om.add("cg", 225, lambda ctx, go: canvas_group(True)(ctx, go).replace("  m_Alpha: 1\n", "  m_Alpha: 0.35\n"))
+def foot(x, y, w, h, pivot=(0.5, 1)):
+    """A rect anchored at the screen's foot-centre: (x, y) is its pivot, y up from the foot."""
+    return R((0.5, 0), None, (x, y), (w, h), pivot)
+
+
+def dais_beam(x0, y0, x1, y1):
+    """The beam's rect and its turn: pivoted at its start, as long as the gap, turned to the end."""
+    dx, dy = x1 - x0, y1 - y0
+    return foot(x0, y0, round(math.hypot(dx, dy), 2), 2, (0, 0.5)), round(math.degrees(math.atan2(dy, dx)), 3)
+
+
+def dais(root):
+    d = root.child(N("Dais", "Dais", R((0, 0), (1, 1), (0, 0), (0, 0))))
+    d.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise"))
+    gw, gh, ga = DAIS_GLOW
+    image_node(d, "Dais/Glow", "Glow", foot(0, 0, gw, gh, (0.5, 0.5)), "TextLight", K.kit_sprite("kit_pool"), alpha=ga)
+    for name, sprite, w, h, alpha in DAIS_RINGS:
+        image_node(d, f"Dais/{name}Ring", f"{name}Ring", foot(0, 0, w, h, (0.5, 0.5)), "TextLight", K.kit_sprite(sprite),
+                   alpha=alpha)
+    label(d.child(N("Dais/Line", "Line", foot(0, DAIS_LINE_Y, DAIS_LINE_W, 20))), "One of each makes one omni crystal",
+          "Label", "NeutralLightest", align="center")
+    for name in ORDER:
+        x, top = DAIS_POS[name]
+        r, deg = dais_beam(x, top - DAIS_ART // 2, *DAIS_OMNI_CENTRE)
+        image_node(d, f"Dais/{name}Beam", f"{name}Beam", r, "TextLight", alpha=0.18).rot = deg
+    for name in ORDER:
+        k = f"Dais/{name}"
+        x, top = DAIS_POS[name]
+        col = d.child(N(k, name, foot(x, top, DAIS_COL_W, DAIS_COL_H)))
+        art_node(col, f"{k}/Art", "Art", TL((DAIS_COL_W - DAIS_ART) // 2, 0, DAIS_ART, DAIS_ART), CRYSTAL[name],
+                 preserve=True)
+        label(col.child(N(f"{k}/Count", "Count", TL(0, 68, DAIS_COL_W, 50))), "0", "DataLarge", "TextLight",
+              align="center")
+        label(col.child(N(f"{k}/Name", "Name", TL(0, 120, DAIS_COL_W, 18))), name, "Label", "NeutralLightest",
+              align="center")
+        col.add("balance", 114, lambda ctx, go, k=k, name=name: mono(go, S["balance"],
+                f"  art: {ref(ctx.c(f'{k}/Art', 'img'))}\n  countText: {ref(ctx.c(f'{k}/Count', 'kt'))}\n"
+                f"  nameText: {ref(ctx.c(f'{k}/Name', 'kt'))}\n  beam: {ref(ctx.c(f'Dais/{name}Beam', 'th'))}\n"))
+    om = d.child(N("Dais/Omni", "Omni", foot(0, DAIS_OMNI_TOP, DAIS_OMNI_W, 140)))
+    art_node(om, "Dais/Omni/Art", "Art", TL((DAIS_OMNI_W - DAIS_OMNI_ART) // 2, 0, DAIS_OMNI_ART, DAIS_OMNI_ART), OMNI,
+             preserve=True)
+    label(om.child(N("Dais/Omni/Count", "Count", TL(0, 96, DAIS_OMNI_W, 40))), "0", "Data", "TextLight", align="center")
     om.add("pop", 114, M.entrance("Pop", play_on_enable=False, duration=M.CEREMONY))
-    fill = om.child(N("Recipe/Omni/Fill", "Fill", STRETCH))
-    fill.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceVeryDark"), K.kit_sprite("kit_sliver10_fill"), True))
-    bord = om.child(N("Recipe/Omni/Border", "Border", STRETCH))
-    bord.add("cr", 222, K.canvas_renderer()) \
-        .add("img", 114, K.image(tok("SurfaceDark"), K.kit_sprite("kit_sliver10_line1"), True))
-    art = art_node(om, "Recipe/Omni/Art", "Art", TL(26, 58, 100, 100), OMNI, preserve=True)
-    label(om.child(N("Recipe/Omni/Name", "Name", TL(146, 66, 220, 30))), "Omni crystal", "H3", "TextLight")
-    label(om.child(N("Recipe/Omni/Line", "Line", TL(146, 100, 220, 48))), "Forms when all four elements have merged.",
-          "BodySmall", "NeutralLightest", valign="top", wrap=True)
-
-
-SEG_X, SEG_W, SEG_GAP = 248, 150, 6
-BAR_W, BAR_H = 1120, 112
-
-
-def converter_bar(root):
-    bar = root.child(N("Bar", "Bar", R((0.5, 0), None, (0, 68), (BAR_W, BAR_H), (0.5, 0))))
-    bar.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=2))
-    C.frame(bar, "Bar/Frame", 14, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.92)
-    M.bracket_nodes(bar, "Bar/Bracket")
-    label(bar.child(N("Bar/Status", "Status", TL(28, 22, 200, 16))), "Ready", "Label", "NeutralLightest")
-    label(bar.child(N("Bar/Clock", "Clock", TL(28, 44, 210, 40))), "00:00 / --:--", "H2", "TextLight")
-    for i, name in enumerate(ORDER):
-        x = SEG_X + i * (SEG_W + SEG_GAP)
-        k = f"Bar/Seg{name}"
-        image_node(bar, f"{k}Track", f"Seg{name}Track", TL(x, 42, SEG_W, 4), "SurfaceDark")
-        seg = bar.child(N(k, f"Seg{name}", TL(x, 42, SEG_W, 4)))
-        seg.add("cr", 222, K.canvas_renderer()).add("img", 114, filled_image(tok("ControlActive"))) \
-            .add("mask", 114, A.rect_mask())
-        sg = seg.child(N(f"{k}/SparkGroup", "SparkGroup", STRETCH))
-        sg.add("cg", 225, canvas_group(False))
-        sp = sg.child(N(f"{k}/Spark", "Spark", R((0, 0), (0, 1), (-48, 0), (48, 0), (0, 0.5))))
-        sp.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(K.WHITE, K.kit_sprite("kit_spark"))) \
-            .add("sp", 114, M.spark_body(False, period=1.8, delay=0.3 * i))
-        label(bar.child(N(f"Bar/Label{name}", f"Label{name}", TL(x, 60, SEG_W, 16))), name, "Label", "NeutralLightest")
     w, h = K.button_size("CONVERT")
-    w = max(w, 210)
-    holder = bar.child(N("Bar/Convert", "Convert", R((1, 0.5), None, (-28, 0), (w, h), (1, 0.5))))
+    w = max(w, CONVERT_MIN_W)
+    holder = root.child(N("Convert", "Convert", R((0.5, 0), None, (0, CONVERT_Y), (w, h), (0.5, 0))))
+    holder.add("cg", 225, canvas_group(True)).add("in", 114, M.entrance("Rise", stagger=1))
     holder.children.append(P.Inst("ConvertButton", "KitButton", "ConvertButton", STRETCH,
                                   K.button_mods("KitButton", "Purchase", True, "CONVERT"),
                                   added=[("mask", 114, A.rect_mask())], added_nodes=[C.sweep_node()]))
@@ -1261,9 +1241,8 @@ def build_view(veiled=VEILED):
     root = N("root", VIEW, STRETCH)
     # The converter's overlay keeps its node keys (and so every fileID the scene's stubs point at) under its page.
     conv = page_node(root, "Converter", True)
-    title_band(conv)
-    recipe_panel(conv)
-    converter_bar(conv)
+    page_shade(conv, "Converter")
+    dais(conv)
     squads_page(root, veiled)
     pilots_page(root, veiled)
     artifacts_page(root, veiled)
@@ -1302,20 +1281,21 @@ IDS = dict(go="7700130000000000001", rt="7700130000000000002", view="77001300000
 VIEW_REFS = {
     "convertButton": ("ConvertButton|root#button", "button"),
     "convertLabel": ("ConvertButton|Label#tmp", "tmp"),
-    "statusText": ("Bar/Status#kt", "kt"),
-    "clockText": ("Bar/Clock#tmp", "tmp"),
-    "mergedText": ("Recipe/Merged#kt", "kt"),
-    "omniGroup": ("Recipe/Omni#cg", "cg"),
-    "omniPop": ("Recipe/Omni#pop", "entrance"),
+    "omniCountText": ("Dais/Omni/Count#kt", "kt"),
+    "balanceLineText": ("Dais/Line#kt", "kt"),
+    "omniPop": ("Dais/Omni#pop", "entrance"),
     "arkTabs": ("root#tabs", "tabs"),
 }
 LISTS = {
-    "segments": [(f"Bar/Seg{n}#img", "img") for n in ORDER],
-    "segmentSparks": [(f"Bar/Seg{n}/SparkGroup#cg", "cg") for n in ORDER],
-    "recipeRows": [(f"Recipe/{n}#row", "recipe") for n in ORDER],
+    "balances": [(f"Dais/{n}#balance", "balance") for n in ORDER],
 }
-OVERLAY_ORDER = ("convertButton", "convertLabel", "statusText", "clockText", "segments", "segmentSparks",
-                 "recipeRows", "mergedText", "omniGroup", "omniPop", "arkTabs")
+OVERLAY_ORDER = ("convertButton", "convertLabel", "balances", "omniCountText", "balanceLineText", "omniPop", "arkTabs")
+# The overlay fields Rev 104 A retired (section 196) with the cards they pointed into: their scene stubs are removed too.
+RETIRED_REFS = (["Bar/Status#kt", "Bar/Clock#tmp", "Recipe/Merged#kt", "Recipe/Omni#cg", "Recipe/Omni#pop"]
+                + [f"Bar/Seg{n}#img" for n in ORDER] + [f"Bar/Seg{n}/SparkGroup#cg" for n in ORDER]
+                + [f"Recipe/{n}#row" for n in ORDER]
+                # Rev 104 A's ledger, built first and replaced by B's dais (Shombith picked B, 2026-11-13)
+                + ["Ledger/Omni/Count#kt", "Ledger/Line#kt", "Ledger/Omni#pop"] + [f"Ledger/{n}#balance" for n in ORDER])
 
 
 class ArkMount(C.Mount):
@@ -1345,7 +1325,8 @@ class ArkMount(C.Mount):
         return [K.unity_empty_scalars(d) for d in out]
 
     def ids(self):
-        return {self.inst, self.stub} | {self.stub_fid(k) for k, _ in self.refs()}
+        return ({self.inst, self.stub} | {self.stub_fid(k) for k, _ in self.refs()}
+                | {self.stub_fid(k) for k in RETIRED_REFS})
 
 
 def rebuild_view_doc(doc, mount):
@@ -1427,7 +1408,7 @@ def check_sources(path, text_, files, memo):
 
 
 TMP, IMG = K.TMP_UGUI, K.IMAGE
-ROW_FIELDS = dict(stateText=S["kt"], fill=IMG, border=IMG, art=IMG, bob=S["ambient"])
+BALANCE_FIELDS = dict(art=IMG, countText=S["kt"], nameText=S["kt"], beam=A.S["th"])
 
 
 def validate(files):
@@ -1443,14 +1424,28 @@ def validate(files):
     view = files[f"{OUT_DIR}/{VIEW}.prefab"]
     V = K.FileIds(VIEW)
     for n in ORDER:
-        _, body = A.doc_of(view, V(f"Recipe/{n}#row"))
-        assert body and S["row"] in body, f"ArkView: the {n} row carries no ConverterRecipeRow"
-        for field, want in ROW_FIELDS.items():
-            C.wired(view, body, field, want, f"the {n} row")
-        assert f"guid: {CRYSTAL[n]}" in A.doc_of(view, V(f"Recipe/{n}/Art#img"))[1], f"the {n} row shows the wrong crystal"
-        _, seg = A.doc_of(view, V(f"Bar/Seg{n}#img"))
-        assert "  m_Type: 3\n" in seg and "  m_FillMethod: 0\n" in seg, f"the {n} segment is not a horizontal fill"
-    assert view.count("guid: " + S["spark"]) == len(ORDER) + 1, "ArkView needs a spark per segment and the CONVERT sweep"
+        _, body = A.doc_of(view, V(f"Dais/{n}#balance"))
+        assert body and S["balance"] in body, f"ArkView: the {n} balance carries no ConverterBalance"
+        for field, want in BALANCE_FIELDS.items():
+            C.wired(view, body, field, want, f"the {n} balance")
+        assert f"guid: {CRYSTAL[n]}" in A.doc_of(view, V(f"Dais/{n}/Art#img"))[1], f"the {n} balance shows the wrong crystal"
+    assert f"guid: {OMNI}" in A.doc_of(view, V("Dais/Omni/Art#img"))[1], "the omni wallet shows the wrong crystal"
+    assert max([t for _, t in DAIS_POS.values()] + [DAIS_OMNI_TOP, DAIS_LINE_Y]) <= DAIS_CEILING, \
+        "the dais reaches up into the pier's crystals"
+    for n in ORDER:                             # each beam runs from its crystal's centre to the omni's
+        x, top = DAIS_POS[n]
+        _, rt = A.doc_of(view, V(f"Dais/{n}Beam#rt"))
+        start = [float(v) for v in re.search(r"m_AnchoredPosition: \{x: (-?[\d.e-]+), y: (-?[\d.e-]+)\}", rt).groups()]
+        a = math.radians(float(re.search(r"m_LocalEulerAnglesHint: \{x: 0, y: 0, z: (-?[\d.e-]+)\}", rt).group(1)))
+        length = float(re.search(r"m_SizeDelta: \{x: (-?[\d.e-]+)", rt).group(1))
+        end = (start[0] + length * math.cos(a), start[1] + length * math.sin(a))
+        assert abs(start[0] - x) < 0.5 and abs(start[1] - (top - DAIS_ART // 2)) < 0.5, f"the {n} beam does not start at its crystal"
+        assert math.hypot(end[0] - DAIS_OMNI_CENTRE[0], end[1] - DAIS_OMNI_CENTRE[1]) < 1.0, f"the {n} beam ends at {end}, not the omni"
+    # Rev 104: no cards on the converter (Shombith 2026-11-13: "The UI cards on top of each screen. I do not like them
+    # at all"). The retired title band, recipe panel and converter bar stay gone.
+    for retired in ("Title", "Recipe", "Bar"):
+        assert not A.doc_of(view, V(f"{retired}#rt"))[1], f"the converter's {retired} card is back (Rev 104 has none)"
+    assert view.count("guid: " + S["spark"]) == 1, "ArkView needs exactly the CONVERT sweep"
     validate_tabs(view, V)
 
     sc = T.Scene(files[SCENE])
@@ -1791,11 +1786,17 @@ def drift(files):
             if not os.path.exists(os.path.join(REPO, p)) or open(os.path.join(REPO, p), encoding="utf-8").read() != t]
 
 
-def plain_segment(view):
-    """The Space segment's Image turned back into a Simple image (the self-test's plant)."""
-    fid = str(K.FileIds(VIEW)("Bar/SegSpace#img"))
-    m = re.search(r"^--- !u!114 &" + fid + r"\n.*?(?=^--- )", view, re.M | re.S)
-    return view[:m.start()] + m.group(0).replace("  m_Type: 3\n", "  m_Type: 0\n") + view[m.end():]
+def beam_turn_plant(view, rt_fid):
+    """Turn one beam ten degrees off its line to the omni."""
+    head, doc = A.doc_of(view, rt_fid)
+    z = float(re.search(r"m_LocalEulerAnglesHint: \{x: 0, y: 0, z: (-?[\d.e-]+)\}", doc).group(1))
+    return view.replace(doc, re.sub(r"(m_LocalEulerAnglesHint: \{x: 0, y: 0, z: )-?[\d.e-]+", rf"\g<1>{z + 10}", doc), 1)
+
+
+def recipe_card_plant(view):
+    """The view with a RectTransform document under the retired Recipe card's fileID (the self-test's plant)."""
+    fid = str(K.FileIds(VIEW)("Recipe#rt"))
+    return view + f"--- !u!224 &{fid}\nRectTransform:\n  m_ObjectHideFlags: 0\n"
 
 
 def veil_plant(view, key):
@@ -1848,14 +1849,16 @@ def self_test(files):
     mount = ArkMount()
     V = K.FileIds(VIEW)
     cases = [
-        ("a recipe row with no bar", lambda f: f.__setitem__(view, re.sub(r"(  fill: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1))),
-        ("a segment that is a plain image", lambda f: f.__setitem__(view, plain_segment(f[view]))),
+        ("a balance with no count", lambda f: f.__setitem__(view, re.sub(r"(  countText: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "the Space balance"),
+        ("the recipe card back", lambda f: f.__setitem__(view, recipe_card_plant(f[view])), "card is back"),
+        ("a balance with no beam", lambda f: f.__setitem__(view, re.sub(r"(  beam: )\{fileID: -?\d+\}", r"\1{fileID: 0}", f[view], count=1)), "the Space balance"),
+        ("a beam turned off the omni", lambda f: f.__setitem__(view, beam_turn_plant(f[view], V("Dais/MassBeam#rt"))), "the Mass beam ends"),
         ("CONVERT unwired", lambda f: f.__setitem__(SCENE, f[SCENE].replace(
             f"  convertButton: {{fileID: {mount.stub_fid('ConvertButton|root#button')}}}", "  convertButton: {fileID: 0}"))),
         ("the converter grown up under the nav again", lambda f: f.__setitem__(SCENE, re.sub(
             r"(--- !u!224 &" + IDS["rt"] + r"\n(?:(?!--- ).*\n)*?  m_SizeDelta: )\{x: 0, y: 0\}", r"\1{x: 0, y: 170.4}",
             f[SCENE], count=1))),
-        ("the wrong crystal on a row", lambda f: f.__setitem__(view, f[view].replace(CRYSTAL["Mass"], CRYSTAL["Time"], 1))),
+        ("the wrong crystal on a balance", lambda f: f.__setitem__(view, f[view].replace(CRYSTAL["Mass"], CRYSTAL["Time"], 1)), "wrong crystal"),
         ("the Decor tab without its sea lines", lambda f: f.__setitem__(view, f[view].replace(
             f"guid: {M.SEA_WINDOW_MAT}", f"guid: {M.SEA_PANEL_MAT}", 1))),
         ("the Decor tab without its veil", lambda f: f.__setitem__(view, view_text(set()))),

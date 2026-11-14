@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rev 104 A - Ledger on the deck: the four balances and the omni stand in one row at the foot of the pier, no panels (recommended)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Aldrich&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#00010A}
+.lab{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#8C93C7;text-shadow:0 0 8px rgba(0,1,10,.95),0 1px 2px rgba(0,1,10,.95)}
+.cap{font-family:'Chakra Petch',sans-serif;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.num{font-variant-numeric:tabular-nums}
+.abs{position:absolute}
+.sl{clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.sls{clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;box-sizing:border-box;border:1px solid #434C89;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:12px;color:#C9CDEA}
+.btn{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:12px;height:64px;padding:0 34px;white-space:nowrap;border:0;cursor:pointer;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:22px;letter-spacing:.12em;text-transform:uppercase}
+.cta{background:#99FF80;color:#00010A}
+.off{background:rgba(0,4,31,.5);color:#5C5F70;box-shadow:inset 0 0 0 1px #222645;cursor:default}
+.btn .kc{border-color:currentColor;color:inherit;opacity:.85}
+.btn:focus-visible,.pick:focus-visible{outline:2px solid #00D4FF;outline-offset:2px}
+.pick{background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.glass{background:rgba(0,4,31,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity 900ms ease-in-out}
+.tick{transition:color 260ms ease-out,opacity 260ms ease-out}
+@keyframes csRise{0%{opacity:0;transform:translateY(8px)}25%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-26px)}}
+@keyframes csPop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1080px; position: relative; overflow: hidden; background: #00041F; color: #E6E9FF; font-family: 'Aldrich', 'Chakra Petch', sans-serif">
+<sc-for list="{{layers}}" as="l" hint-placeholder-count="3"><img class="bg" src="{{l.src}}" alt="{{l.alt}}" style="opacity:{{l.op}}"></sc-for>
+<div class="abs" style="inset:0;background:linear-gradient(180deg,rgba(0,1,10,.72) 0%,rgba(0,1,10,0) 22%,rgba(0,1,10,0) 58%,rgba(0,1,10,.82) 100%);pointer-events:none"></div>
+<nav aria-label="Menu screens" class="abs" style="left:0;right:0;top:0;height:84px;background:rgba(0,1,10,.78);border-bottom:1px solid #222645;display:flex;align-items:center;justify-content:center;gap:48px;z-index:5"><span class="kc">LT</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/ec690d6b90d6fcdbc430b9bbaacf28a9" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">CODEX</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/34f5a50f1275fef42808fe9df3bf6af5" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HANGAR</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/a5bd4d8d1de7b494567fc3de75525e1e" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">HOME</span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#E6E9FF"><img src="/_blob/e5b050c5a676193c650e94d873ad40e2" alt="" style="width:26px;height:26px;object-fit:contain;opacity:1">ARK<span class="abs" style="left:0;right:0;bottom:-10px;height:2px;background:#E6E9FF"></span></span><span style="position:relative;display:flex;align-items:center;gap:10px;font-family:'Chakra Petch';font-weight:600;font-size:17px;letter-spacing:.12em;color:#747BAD"><img src="/_blob/d0e850bc927559f1a499868d26f2a3de" alt="" style="width:26px;height:26px;object-fit:contain;opacity:0.7">PORT</span><span class="kc">RT</span></nav><div class="abs num" style="right:40px;top:30px;z-index:6;display:flex;align-items:center;gap:8px;font-size:20px;color:#FFAE00"><span style="width:14px;height:18px;background:#FFAE00;clip-path:polygon(50% 0,100% 35%,50% 100%,0 35%)"></span>{{omniText}}</div><div class="abs" style="left:40px;right:40px;top:96px;height:52px;display:flex;align-items:center;gap:30px;border-bottom:1px solid rgba(116,123,173,.35);z-index:4"><span class="kc">LB</span><span style="position:relative;display:flex;align-items:center;gap:8px;color:#E6E9FF"><span class="cap" style="font-size:16px">Converter</span><span class="abs" style="left:0;right:0;bottom:-15px;height:2px;background:#E6E9FF"></span></span><span style="position:relative;display:flex;align-items:center;gap:8px;color:#747BAD"><span class="cap" style="font-size:16px">Squads</span><span class="abs" style="left:0;right:0;bottom:-15px;height:2px;background:transparent"></span></span><span style="position:relative;display:flex;align-items:center;gap:8px;color:#747BAD"><span class="cap" style="font-size:16px">Pilots</span><span class="abs" style="left:0;right:0;bottom:-15px;height:2px;background:transparent"></span></span><span style="position:relative;display:flex;align-items:center;gap:8px;color:#747BAD"><span class="cap" style="font-size:16px">Artifacts</span><span class="abs" style="left:0;right:0;bottom:-15px;height:2px;background:transparent"></span></span><span style="position:relative;display:flex;align-items:center;gap:8px;color:#5C5F70"><svg width="12" height="14" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V5a4 4 0 018 0v2"></path><path d="M1.5 7h11v8h-11z"></path></svg><span class="cap" style="font-size:16px">Decor</span><span class="abs" style="left:0;right:0;bottom:-15px;height:2px;background:transparent"></span></span><span class="kc">RB</span></div><div class="abs" style="left:40px;top:164px;display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px dashed rgba(154,160,204,.5);z-index:6"><span class="lab" style="font-size:11px">Mockup - balances</span><sc-for list="{{presets}}" as="p" hint-placeholder-count="3"><button class="pick sls glass" type="button" aria-pressed="{{p.pressed}}" onClick="{{p.pick}}" style="padding:6px 12px;box-shadow:inset 0 0 0 1px {{p.edge}}"><span class="cap" style="font-size:13px;color:{{p.col}}">{{p.name}}</span></button></sc-for></div>
+<section aria-label="Your crystals" class="abs" style="left:0;right:0;bottom:120px;display:flex;flex-direction:column;align-items:center;gap:20px;z-index:4">
+<span class="lab" style="font-size:14px;color:{{lineCol}}">{{line}}</span>
+<div style="display:flex;align-items:flex-end;gap:56px">
+<sc-for list="{{elems}}" as="e" hint-placeholder-count="4"><div role="group" aria-label="{{e.aria}}" style="position:relative;width:132px;display:flex;flex-direction:column;align-items:center;gap:6px">
+<img src="{{e.art}}" alt="" style="width:76px;height:76px;object-fit:contain;opacity:{{e.artOp}};transition:opacity 260ms ease-out">
+<span class="num tick" style="font-size:60px;line-height:1;color:{{e.col}}">{{e.n}}</span>
+<span class="lab" style="font-size:14px;color:{{e.nameCol}}">{{e.name}}</span>
+<sc-if value="{{e.spending}}" hint-placeholder-val="{{ false }}"><span class="abs cap" style="top:-18px;font-size:22px;color:#99FF80;animation:csRise 700ms ease-out both">-1</span></sc-if>
+</div></sc-for>
+<span aria-hidden="true" style="align-self:center;width:1px;height:132px;background:linear-gradient(180deg,rgba(116,123,173,0),#747BAD,rgba(116,123,173,0))"></span>
+<div role="group" aria-label="{{omniAria}}" style="position:relative;width:150px;display:flex;flex-direction:column;align-items:center;gap:6px">
+<img src="/_blob/7850440a6efe08dd09a6f63c7810dd29" alt="" style="width:96px;height:96px;object-fit:contain;animation:{{omniAnim}}">
+<span class="num tick" style="font-size:44px;line-height:1;color:{{omniCol}}">{{omniText}}</span>
+<span class="lab" style="font-size:14px">Omni</span>
+<sc-if value="{{omniGained}}" hint-placeholder-val="{{ false }}"><span class="abs cap" style="top:-18px;font-size:22px;color:#99FF80;animation:csRise 900ms ease-out both">+1</span></sc-if>
+</div>
+</div>
+</section>
+<div class="abs" style="left:0;right:0;bottom:36px;display:flex;justify-content:center;z-index:4"><button class="{{convClass}}" type="button" onClick="{{convert}}" aria-disabled="{{convOff}}" style="min-width:320px"><span class="kc">A</span><span>{{convLabel}}</span></button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080},"start":{"preset":0}}'>
+const ORDER = ["Space", "Charge", "Mass", "Time"];
+const ART = {"Space": "/_blob/552b1a2acbcb63737e1174c398089c9c", "Charge": "/_blob/9b5b9502defc2ffb3ddfc86af8f2b581", "Mass": "/_blob/f1c37884ec4eaede9f7a20f81af70273", "Time": "/_blob/5f2b5586aa94e21d23984dedc2c4f93a"};
+const BG = {"idle": "/_blob/7ac8cae4fa1672907baa9fb0e73dd2e1", "busy": "/_blob/c0a80065bda4df0778cad35299132c7e", "done": "/_blob/9a3144de6c2328cb7ae1a795c05bf9e0"};
+const ALT = {"idle": "The pier out of the Ark, the four crystals idling over it in the cell", "busy": "The crystals flying in to the pier's ring", "done": "The omni crystal formed over the pier's ring"};
+const PRESETS = [["Starting 10 each", [10, 10, 10, 10]], ["Short of Time", [6, 9, 4, 0]], ["Later: none yet", [0, 0, 0, 0]]];
+const POS = [[0, 0], [0, 0], [0, 0], [0, 0]];
+const STEP = 700;
+const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const s = Object.assign({ preset: 0 }, props.start || {});
+    const p = Math.max(0, Math.min(PRESETS.length - 1, s.preset | 0));
+    this.state = { preset: p, bal: PRESETS[p][1].slice(), omni: 1240, phase: 'idle', step: -1, gained: false };
+    this.t = null;
+  }
+  componentWillUnmount() { if (this.t) clearInterval(this.t); }
+  stop() { if (this.t) { clearInterval(this.t); this.t = null; } }
+  pickPreset(i) { this.stop(); this.setState({ preset: i, bal: PRESETS[i][1].slice(), phase: 'idle', step: -1, gained: false }); }
+  spend(i) { const bal = this.state.bal.slice(); bal[i] -= 1; return bal; }
+  run() {
+    const st = this.state;
+    if (st.phase === 'busy' || st.bal.some((b) => b < 1)) return;
+    this.stop();
+    this.setState({ phase: 'busy', step: 0, bal: this.spend(0), gained: false });
+    this.t = setInterval(() => {
+      const n = this.state.step + 1;
+      if (n >= ORDER.length) {
+        this.stop();
+        this.setState({ phase: 'done', step: -1, omni: this.state.omni + 1, gained: true });
+      } else this.setState({ step: n, bal: this.spend(n) });
+    }, STEP);
+  }
+  renderVals() {
+    const st = this.state;
+    const busy = st.phase === 'busy', done = st.phase === 'done';
+    const shortIdx = st.bal.findIndex((b) => b < 1);
+    const can = !busy && shortIdx < 0;
+    const empty = st.bal.every((b) => b < 1);
+    const elems = ORDER.map((name, i) => {
+      const n = st.bal[i], active = busy && i === st.step, zero = n < 1;
+      return { name, art: ART[name], n: String(n), aria: name + ' crystals: ' + n,
+        col: active ? '#99FF80' : (zero ? '#5C5F70' : '#E6E9FF'), nameCol: zero && !busy ? '#C9CDEA' : '#8C93C7',
+        artOp: zero ? 0.35 : 1, spending: active, edge: active ? '#99FF80' : (zero ? '#434C89' : '#747BAD'),
+        left: POS[i][0] + 'px', top: POS[i][1] + 'px' };
+    });
+    const rays = ORDER.map((name, i) => ({ x: POS[i][0] - 360 + 70, y: POS[i][1] - 620 + 32,
+      c: busy && i <= st.step ? '#99FF80' : 'rgba(184,192,240,.18)', w: busy && i === st.step ? 2 : 1 }));
+    let line = 'One of each makes one omni crystal', lineCol = '#8C93C7';
+    if (busy) line = 'Converting';
+    else if (empty) { line = 'No elemental crystals yet. Matches earn them.'; lineCol = '#C9CDEA'; }
+    else if (shortIdx >= 0) { line = 'Short of ' + ORDER[shortIdx] + ': one more converts'; lineCol = '#C9CDEA'; }
+    const ph = busy ? 'busy' : (done ? 'done' : 'idle');
+    return {
+      layers: ['idle', 'busy', 'done'].map((k) => ({ src: BG[k], op: k === ph ? 1 : 0, alt: k === ph ? ALT[k] : '' })),
+      presets: PRESETS.map((p, i) => ({ name: p[0], pressed: i === st.preset ? 'true' : 'false',
+        edge: i === st.preset ? '#00D4FF' : 'rgba(116,123,173,.45)', col: i === st.preset ? '#E6E9FF' : '#9AA0CC', pick: () => this.pickPreset(i) })),
+      elems, rays, line, lineCol,
+      omniText: fmt(st.omni), omniAria: 'Omni crystals: ' + st.omni, omniCol: done ? '#99FF80' : '#E6E9FF',
+      omniAnim: done ? 'csPop 500ms cubic-bezier(.34,1.56,.64,1) both' : 'none', omniGained: st.gained,
+      convLabel: busy ? 'Converting' : (done && can ? 'Convert again' : 'Convert'),
+      convClass: can ? 'btn cta sl' : 'btn off sl', convOff: can ? 'false' : 'true',
+      convert: () => this.run()
+    };
+  }
+}
+</script>
+</body>
+</html>

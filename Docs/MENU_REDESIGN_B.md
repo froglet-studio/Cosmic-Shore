@@ -66,7 +66,7 @@ Legend: `Planned` ▸ `Mockup` ▸ `Mockup approved` ▸ `Built` ▸ `Approved i
 | 4 | Game configure: `ArcadeGameConfigureModal`, plus the Maelstrom and Arena configure windows and the weekly leaderboard | Built (2026-10-15, section 14) | `Configure.dc.html` (interactive), `ConfigureArena`, `ConfigureMaelstrom`, `ConfigureWeekly`, `ConfigureWeeklySpent`, `ConfigureGuest`, `ConfigureLocked`, `WeeklyLeaderboard` (interactive), `LeaderboardEmpty`, `ConfigureNotes` | |
 | 5 | Profile screen, Profile modal (avatar / display name), Episodes entry | Built (2026-10-15, section 15): Profile screen and profile window | `Profile.dc.html` (interactive), `ProfileFresh`, `ProfileModal` (interactive), `ProfileName`, `ProfileNameError`, `ProfileNameTaken`, `ProfileNotes` | |
 | 6 | Home screen: hub row, header, settings and freestyle buttons, invite popup | Built (2026-10-15, section 21): hub row, pilot chip, question bar, settings, freestyle hint, Up next cards, party invite | `Home.dc.html` (interactive), `HomeInvite`, `HomeFocus`, `HomeOffline`, `HomeNotes` | |
-| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / PILOTS / ARTIFACTS / DECOR) and a pilot's profile page | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); the Pilots tab and the pilot profile page built 2026-11-12, not run in the editor (section 92.1); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels (section 139), and the live animated scene (Rev 64, section 140); **Rev 61 C picked as the final; Rev 67, the whole Ark screen inside the Ark, a room per tab, animated, every colour set, on the new Ark tab (section 187); Rev 67's Converter now a pier out into the cell from inside the Ark, Decor locked (section 187); **Rev 85, the Artifacts room, three stills (section 166); Rev 86, A and B as one (section 167)**; **Rev 99, the Pilots tab as a crew PDA (section 191); C, the hangar bench, built 2026-11-13, not run in the editor (section 192)** | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
+| 7 | Ark screen (Elemental Converter; tabs CONVERTER / SQUADS / PILOTS / ARTIFACTS / DECOR) and a pilot's profile page | Built (2026-10-15, section 16); Squads and Decor tabs built 2026-10-27 (section 92); the Pilots tab and the pilot profile page built 2026-11-12, not run in the editor (section 92.1); **Squads in the Ark's hangar: Rev 61 C and E liked (section 136); Rev 62, their style by the game's own light with portholes and no vessels (section 139), and the live animated scene (Rev 64, section 140); **Rev 61 C picked as the final; Rev 67, the whole Ark screen inside the Ark, a room per tab, animated, every colour set, on the new Ark tab (section 187); Rev 67's Converter now a pier out into the cell from inside the Ark, Decor locked (section 187); **Rev 85, the Artifacts room, three stills (section 166); Rev 86, A and B as one (section 167)**; **Rev 99, the Pilots tab as a crew PDA (section 191); C, the hangar bench, built 2026-11-13, not run in the editor (section 192)**; Rev 104, the converter without cards showing the real crystal balances, B (the holo dais) picked and built (sections 195-196) | `Ark.dc.html` (interactive), `ArkConverting`, `ArkDone`, `ArkNotes` | |
 | 8 | Arena, Toy Box and Mission modals, and Toy configure | Built (2026-10-15, section 17): Arena window, Toy Box, Toy configure and the Mission window | `ToyBox.dc.html` (interactive), `ToyBoxClaimed`, `ArenaWindow`, `MissionWindow`, `ToyConfigure` (interactive), `ToyConfigurePaint`, `ToyConfigureSpawn`, `ToyConfigureDomain`, `ModesNotes` | |
 | 9 | Settings modal and Credits | Built (2026-10-15, section 18): Settings window and Credits | `Settings.dc.html` (interactive), `SettingsDisplay`, `SettingsPerformance`, `SettingsOther`, `Credits`, `SystemNotes` | |
 | 10 | Closed surfaces: Port (locked), Store (no slot), Episodes panel, purchase confirmation | Built (2026-10-15, section 19): purchase confirmation drawn blind; locked states from items 1 and 5 | `ClosedSurfaces.dc.html`, `PurchaseConfirm` (blind), `SystemNotes` | |
@@ -8517,6 +8517,67 @@ gate's fade, the hull no longer bobbing); `unity_refcompile` player and editor; 
 screen's sea and motion" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 
+## 195. Rev 104 mockups: the Elemental Converter without the cards, showing the player's real crystals (2026-11-13, B picked, built in section 196)
+
+**Asked** (Shombith, 2026-11-13): "The UI cards on top of each screen. I do not like them at all ... The elemental
+converter should show the actual elemental crystals balance the user has. the first should be 0 but for now lets give
+everyone 10 of each by default." Kept: the pier backdrops ("fire for now"). Style: the pilot scenes set inside the Ark
+(GALLEON's and Scales's holo tables, Flux's cockpit readouts), per the Ark style rule.
+
+**On the canvas:** the Ark tab, "Rev 104 - Elemental Converter without the cards: the player's real crystal balances,
+inside the Ark" (copies `Docs/MenuRedesignB/board/R104A-C.dc.html`; the pier stills are frames of the shipped
+`converter_Nocturne_*` clips). Every board is interactive: CONVERT takes one of each and adds one omni, counts step
+down as each crystal flies in, and a "Mockup - balances" switch shows 10 each, short of one element and none yet.
+No compare or notes board: the canvas had 16 files left of its 512.
+- **A - Ledger on the deck (recommended):** the four balances and the omni count in one row at the pier's foot, no
+  panel, the line over them, CONVERT under. Quietest and easiest to read on a phone; nothing covers the pier.
+- **B - Holo dais (PICKED, Shombith 2026-11-13: "I like B"):** a projection rises from the pier's edge, the four
+  round its arc and the omni at its centre.
+- **C - Wall gauges:** two balances mounted on each tiled wall, the omni count on the lintel.
+
+**Differs from the build:** the title band, the recipe panel and the converter bar (section 16) go; the balances are
+new. The boards draw CONVERT in lime; the build keeps it gold (Purchase), because gold is the one colour for a button
+that spends something (`Docs/UI_COLOR_RULES.md`).
+
+## 196. Built: Rev 104 B, the converter's holo dais, and 10 of each elemental crystal to start (2026-11-13, not seen in Unity)
+
+A (the ledger) was built first, ahead of the pick; Shombith picked B and the overlay was rebuilt as B. Everything below
+except the overlay's layout was the same for both.
+
+- **The crystals are the centre of the pier** (Shombith, of the first build: "The actual crystals are clipping and does
+  not seem to be the center of attraction"). The old clips pasted a 960 capture whose top crystal ran off its own frame
+  over the pier, so it was cut and sat on the ceiling beam. The three converter clips are recomposed
+  (`Docs/MenuRedesignB/rounds/r104_converter_recomp.py`): the combine re-captured at 1920 x 1080 with the lab's camera
+  pulled back (`r67_omni_capture.cjs`, `VD=10`), laid over the clean pier still (the Frogma blob `artifacts_open`)
+  centred on the deck. Over every frame of the three runs the crystals stay between y 362 and 809 of 1080; the beam's
+  foot is at 350. Same names, guids, run lengths (32 / 107 / 32 at 10 fps) and 30 fps encode.
+- **The dais** (`author_menu_ark.py` `dais()`, board R104B pressed down under the crystals, from the screen's foot):
+  three rings centred on the foot (`kit_ring_line` 1280 x 600 and 1000 x 440, `kit_pool_rim` 1300 x 70, TextLight at
+  0.35 / 0.18 / 0.26) over a `kit_pool` glow; Space and Time stand 172 over the foot at x -470 / +470, Charge and Mass
+  238 over it at -230 / +230; the omni (92 art, Data count, the ceremony pop) 212 over it at the centre; a 2-wide beam
+  from each crystal's centre to the omni's, turned to it; the line 266 over the foot; CONVERT 22 over it. Nothing rises
+  above `DAIS_CEILING` (270), where the pier's crystals begin. `ConverterBalance.beam` (a `KitThemedGraphic`) is
+  TextLight at 0.18 at rest and the CTA once its crystal starts to fly, until the run ends.
+  `validate` checks each beam starts at its crystal and ends at the omni, and the ceiling; the self-test turns a beam off.
+
+- **The starting grant.** `ProfileEconomy.GrantStartingElementalCrystals(amount)` gives every element with no entry yet
+  an entry holding `amount` (counted as earned); an element that has an entry, even at 0, is never refilled.
+  `PlayerDataService` runs it on the local default profile and again in `MergeCloudProfile`, so existing accounts get it
+  once too, from its new field `startingElementalCrystals` (10; set it to 0 when matches pay crystals out). Everything
+  that reads the balances sees it: the converter, the Hangar's upgrades line, the Artifacts tab (`PilotLoadoutStore`).
+- **CONVERT spends.** `ElementalConverterView.TryPay`: one of each element out (`TrySpendElementalCrystals`, source
+  `ark_convert`) and one omni crystal in (`AddCrystals`), booked on the press, so leaving mid-run loses nothing. With
+  any element at 0 CONVERT is Inactive and the line says which one is short. The server wallet (`ServerEconomyGate`) is
+  off; when it goes on, Cloud Code needs a convert route (step 3 of section 97).
+- **The overlay, as A had it** (replaced by the dais above): `ConverterBalance` per element in one row with the omni
+  wallet's column, a hairline between, the line over the row, CONVERT 36 over the foot, and the page shade top and foot. The row shows a paid crystal until it flies in and the new omni once it forms. The
+  title band, recipe panel, converter bar, `ConverterRecipeRow` and the view's clock / segment / merged fields are
+  retired with their scene stubs; `validate` fails if a card comes back.
+- **Words:** every line is a field on the view (`recipeLine`, `convertingLine`, `shortLine` with `{element}`,
+  `emptyLine`, `elementNames`).
+- **Gates:** `author_menu_ark.py --check` and `--self-test` (new controls: a balance with no count, a retired card
+  back, the wrong crystal on a balance), `author_elemental_converter.py --check`. `PlayerProfileDataTests` gains three
+  grant tests. Hand test: "The Ark converter's balances" in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 ## 197. Built: the HyperSea pass, how the Ark goes from one room to the next (2026-11-13, claude/project-thread-s689ho, not yet run in Unity)
 
 **Asked (Shombith, 2026-11-13, after the backdrops of section 190):** "I like the backgrounds alright. That's fire for now
