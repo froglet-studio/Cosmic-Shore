@@ -8645,7 +8645,7 @@ each rebuilt the right hull. The first run showed the hulls too big and floating
 7.5 m tall and 1.6 m up), which the height cap and the 0.6 m clearance fixed. Still for Unity: the light, and that the
 player's hull sits partly behind the vessel picker row at 1600 x 900.
 
-## 203. Built: the Squads tab as Rev 110 B, the holo table (2026-11-14, claude/project-thread-sdvd40, not run in Unity)
+## 206. Built: the Squads tab as Rev 110 B, the holo table (2026-11-14, claude/project-thread-sdvd40, not run in Unity)
 
 **Asked (Shombith, 2026-11-14):** "Why do I see this old UI and not the rev 110 UIs ... just fix it first and merge to
 ark-rework. I will open unity and check." Section 202 had built only the vessels on the pads; the panels over them were
