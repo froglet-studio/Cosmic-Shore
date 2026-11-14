@@ -58,7 +58,7 @@ Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(371,20):
 Assets\_Scripts\Controller\Multiplayer\ClientPlayerVesselInitializer.cs(386,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
 Assets\_Scripts\Controller\Vessel\VesselController.cs(491,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
 Assets\_Scripts\Controller\Vessel\VesselController.cs(501,20): warning CS0618: 'ServerRpcAttribute.RequireOwnership' is obsolete: 'ServerRpc with RequireOwnership is deprecated. Use [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)] or [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)] instead.)]'
-AssetDatabase: script compilation time: 5.791461s
+AssetDatabase: script compilation time: 5.862180s
 Scripts have compiler errors.
 0x00007ffd204c4e2e (Unity) StackWalker::ShowCallstack
 0x00007ffd21cff369 (Unity) PlatformStacktrace::GetStacktrace
