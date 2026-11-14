@@ -422,11 +422,17 @@ KINDS = (("Starter", "Yours from the start", "NeutralLightest", None),
          ("Premium", "Premium", "Purchase", "chrome_crystal"))
 FILTERS = (("All", "All"), ("ColorBlind", "Color Blind supported (Free)"), ("Premium", "Premium"))
 TIERS = 3
-TRAIL = 5
+TRAIL = 4
+HULL_LIT_MAT = M._lattice_guid("hull_lit_mat")   # Hull_Lit.mat: the near-black hull renders lifted and rimmed (section 73)
+TILE_SEA_ALPHA = 0.35                            # the tiles' sea lines sit back so the prisms and hulls read (section 190)
 # One hull per domain for the Vessels tile: each SO_Class_<Hull>.IconActive (the vessel selector's icon).
 VESSEL_ICONS = (("Squirrel", "5d8f022f56d65ef4fae2cea4428a990f"), ("Sparrow", "ba44f040361ef7a48bc5af4f07dc0123"),
                 ("Dolphin", "c07463db6e8244c45b639760efd18f9e"), ("Manta", "3cf78c88592fff3419945dc7d6a4889a"))
-NOSE = 40                          # the icons are drawn nose to the upper right, this many degrees above level
+NOSE = 40                          # the board's assumption; the game's icons each have their own (ICON_POSE)
+# Each IconActive's own pose, measured from its alpha (principal axis, and the centroid against the 256 px canvas;
+# section 190): (nose degrees above level, centroid x, centroid y). A hull is turned by its own nose and placed by its
+# centroid, so it sits on its trail's line.
+ICON_POSE = {"Squirrel": (28, 132, 129), "Sparrow": (15, 128, 128), "Dolphin": (25, 124, 129), "Manta": (35, 144, 115)}   # Manta by eye: its blobs give no clear axis (elongation 2.6)
 # The Codex's crystal renders (author_menu_codex.py, its Elements page): (name, centre x as a fraction of the tile, top, size).
 CRYSTALS = (("omni", 0.5, 40, 92), ("charge", 0.12, 54, 46), ("mass", 0.12, 112, 46), ("space", 0.88, 54, 46),
             ("time", 0.88, 112, 46))
@@ -477,10 +483,20 @@ def text_tab(parent, k, name, caption, role, r, selected=False):
     return n
 
 
+def centred(r):
+    """The same rect with its pivot at its centre: a RectTransform turns about its pivot, and TL's pivot is the top-left
+    corner, so a rotated TL node swings off its place (section 190: the trails and hulls sat off their lines)."""
+    if tuple(r["pivot"]) == (0.5, 0.5):
+        return r
+    (px, py), (w, h) = r["pivot"], r["size"]
+    x, y = r["pos"]
+    return dict(r, pos=(round(x + (0.5 - px) * w, 2), round(y + (0.5 - py) * h, 2)), pivot=(0.5, 0.5))
+
+
 def tint_node(parent, key, name, r, sprite, sliced=False, preserve=True, rot=0):
     """A white Image ProfileColorSetsPanel / ColorSetRowView paints from the set (no KitThemedGraphic: the set, not the
     UI theme, owns its colour, and a themed graphic would paint it back - the Voyages lesson in /frogma section 5)."""
-    n = parent.child(N(key, name, r))
+    n = parent.child(N(key, name, centred(r) if rot else r))
     n.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((1.0, 1.0, 1.0, 1.0), sprite, sliced, False, preserve))
     if rot:
         n.rot = rot
@@ -489,7 +505,7 @@ def tint_node(parent, key, name, r, sprite, sliced=False, preserve=True, rot=0):
 
 def prism_nodes(parent, key, r, rot=0):
     """A prism glyph: face, lit facet and rim, stacked (author_colour_set_glyphs.py), all painted at run time."""
-    n = parent.child(N(key, key.split("/")[-1], r))
+    n = parent.child(N(key, key.split("/")[-1], centred(r) if rot else r))
     if rot:
         n.rot = rot
     for part in ("Face", "Lit", "Rim"):
@@ -497,11 +513,41 @@ def prism_nodes(parent, key, r, rot=0):
     return n
 
 
-def card_sea(parent, key, inset=4):
-    """The menu's sea lines inside a card, under its content (Sea_Panel.mat, as the arcade cards' bodies carry)."""
+def card_sea(parent, key, inset=4, alpha=1.0):
+    """The menu's sea lines inside a card, under its content (Sea_Panel.mat, as the arcade cards' bodies carry). Its
+    vertex alpha fades it (the material carries the colours)."""
     sea = parent.child(N(key, "Sea", R((0, 0), (1, 1), (0, 0), (-2 * inset, -2 * inset))))
-    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, M.lattice_image(M.SEA_PANEL_MAT))
+    body = M.lattice_image(M.SEA_PANEL_MAT)
+    if alpha < 1.0:
+        def faded(ctx, go, body=body):
+            out = body(ctx, go)
+            assert "  m_Color: {r: 1, g: 1, b: 1, a: 1}\n" in out, "Sea_Panel image colour moved; update card_sea"
+            return out.replace("  m_Color: {r: 1, g: 1, b: 1, a: 1}\n", f"  m_Color: {{r: 1, g: 1, b: 1, a: {alpha}}}\n")
+        body = faded
+    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, body)
     return sea
+
+
+def hull_at(parent, key, name, hull, cx, cy, size, heading):
+    """A hull icon flying along `heading` (degrees above level) with its visual centre at (cx, cy) in page units."""
+    nose, gx, gy = ICON_POSE[hull]
+    rot = heading - nose
+    ox, oy = (gx - 128) * size / 256, -(gy - 128) * size / 256      # the centroid's offset, y up
+    c, s_ = math.cos(math.radians(rot)), math.sin(math.radians(rot))
+    rx, ry = ox * c - oy * s_, ox * s_ + oy * c                      # turned with the icon
+    guid = dict(VESSEL_ICONS)[hull]
+    return hull_node(parent, key, name, TL(round(cx - rx - size / 2), round(cy + ry - size / 2), round(size), round(size)),
+                     guid, rot=round(rot, 1))
+
+
+def hull_node(parent, key, name, r, guid, rot=0):
+    """A vessel's IconActive drawn with Hull_Lit.mat (lifted toward grey, edged in white: the renders are near black),
+    its Image colour the domain's vessel colour, painted at run time."""
+    n = tint_node(parent, key, name, r, guid, rot=rot)
+    n.comps = [(k_, cid, (lambda body: (lambda ctx, go: body(ctx, go).replace(
+        "  m_Material: {fileID: 0}\n", f"  m_Material: {{fileID: 2100000, guid: {HULL_LIT_MAT}, type: 2}}\n", 1)))(b))
+               if k_ == "img" else (k_, cid, b) for k_, cid, b in n.comps]
+    return n
 
 
 def big_name(node, size=NAME_SIZE):
@@ -592,7 +638,7 @@ def world_layout():
         for j, (x, y, ang) in enumerate(marks):
             prisms.append((x, y, 15 * sc * a, -ang, d, 0, round(a * (.35 + .65 * j / max(1, len(marks))), 3)))
         hx, hy, ha = samples[-1]
-        vessels.append((hx, hy, 120 * sc * a, -(ha + NOSE), d))
+        vessels.append((hx, hy, 120 * sc * a, -ha, d))   # the heading, degrees above level (page y runs down)
     return prisms, vessels
 
 
@@ -614,8 +660,7 @@ def build_world(pg):
         ph = size * 2.3
         prism_nodes(wd, f"{k}/P{i}", TL(round(x - size / 2), round(y - ph / 2), round(size, 1), round(ph, 1)), rot=round(rot, 1))
     for i, (x, y, size, rot, _) in enumerate(vessels):
-        tint_node(wd, f"{k}/Vessel{i}", f"Vessel{i}", TL(round(x - size / 2), round(y - size / 2), round(size), round(size)),
-                  VESSEL_ICONS[_][1], rot=round(rot, 1))
+        hull_at(wd, f"{k}/Vessel{i}", f"Vessel{i}", VESSEL_ICONS[_][0], x, y, size, rot)
     # The words' backing: the world darkens toward the foot, where the name, the pigments and the tiles sit.
     fade = wd.child(N(f"{k}/Fade", "Fade", TL(0, 360, WORLD_W, 260)))
     fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.9), K.kit_sprite("kit_fade_v"), False))
@@ -660,7 +705,7 @@ def tile_frame(parent, key, name, r, title, sub):
     """One of the four tiles: a card over the sea lines with its title and a word on what it shows."""
     t = parent.child(N(key, name, r))
     frame(t, f"{key}/Frame", 10, "SurfaceVeryDark", "SurfaceDark", fill_alpha=0.94)
-    card_sea(t, f"{key}/Sea")
+    card_sea(t, f"{key}/Sea", alpha=TILE_SEA_ALPHA)
     label(t.child(N(f"{key}/Title", "Title", TL(16, 14, 200, 18))), title, "Label", "TextLight")
     label(t.child(N(f"{key}/Sub", "Sub", TR(16, 13, 150, 18))), sub, "BodySmall", "NeutralLightest", align="right")
     return t
@@ -678,14 +723,19 @@ def build_tiles(pg):
     for d in range(4):
         for t in range(TIERS):
             prism_nodes(p, f"{k}/Prisms/P{d}{t}", TL(34 + d * 66 + t * 12, 44 + t * 44, 20, 44), rot=12)
-    # Vessels and trails: a cell per domain, its hull's icon at the head of a line of prisms.
+    # Vessels and trails: a cell per domain, its hull at the head of a line of prisms, on that line (section 190: the
+    # vessel used to sit to one side of where its trail pointed). The trail rises at HEADING; each prism stands across
+    # it; the hull's nose is turned from NOSE onto the same heading.
     v = tile_frame(tiles, f"{k}/Vessels", "Vessels", TL(x(1), 0, tw, TILES_H), "Vessels and trails", "every team")
-    for d, (hull, guid) in enumerate(VESSEL_ICONS):
-        cx, cy = 14 + (d % 2) * (tw - 28) // 2, 46 + (d // 2) * 68
-        heading = 20                                       # the trail rises 20 degrees to the right
+    heading, step, pw, ph, hull = 18, 17, 11, 25, 60
+    ux, uy = math.cos(math.radians(heading)), -math.sin(math.radians(heading))   # page y runs down
+    for d, (name, guid) in enumerate(VESSEL_ICONS):
+        sx, sy = 16 + (d % 2) * (tw - 16) // 2, 92 + (d // 2) * 66              # the trail's oldest prism, centred
         for j in range(TRAIL):
-            prism_nodes(v, f"{k}/Vessels/T{d}{j}", TL(cx + j * 16, cy + 34 - j * 6, 9, 20), rot=heading)
-        tint_node(v, f"{k}/Vessels/Hull{d}", f"Hull{hull}", TL(cx + 84, cy - 4, 52, 52), guid, rot=heading - NOSE)
+            px, py = sx + ux * step * j, sy + uy * step * j
+            prism_nodes(v, f"{k}/Vessels/T{d}{j}", TL(round(px - pw / 2), round(py - ph / 2), pw, ph), rot=heading)
+        reach = step * (TRAIL - 1) + step + hull * 0.42                        # the hull's centre, just past the newest prism
+        hull_at(v, f"{k}/Vessels/Hull{d}", f"Hull{name}", name, sx + ux * reach, sy + uy * reach, hull, heading)
     # Crystals: the Codex's own renders (its Elements page), the Omni crystal large among the four elemental ones.
     c_ = tile_frame(tiles, f"{k}/Crystals", "Crystals", TL(x(2), 0, tw, TILES_H), "Crystals", "omni and elemental")
     for i, (name, cx, cy, sz) in enumerate(CRYSTALS):
@@ -1566,6 +1616,14 @@ def validate_colour_sets(files):
                 "ColourSets/Tiles/Crystals/Sea", "ColourSets/Tiles/Menus/Sea"):
         _, sea = A.doc_of(view, V(f"{key}#img"))
         assert sea and M.SEA_PANEL_MAT in sea, f"{key}: the card has no sea lines (Sea_Panel.mat; Shombith on Rev 112 D)"
+    # A RectTransform turns about its pivot: every turned node (prisms, hulls) pivots at its centre (section 190).
+    for doc in re.split(r"^--- ", view, flags=re.M):
+        if not doc.startswith("!u!224 "):
+            continue
+        rz = re.search(r"m_LocalRotation: \{x: 0, y: 0, z: ([-\d.e]+), w:", doc)
+        if rz and abs(float(rz.group(1))) > 1e-6:
+            assert "  m_Pivot: {x: 0.5, y: 0.5}\n" in doc, \
+                f"a turned node pivots off its centre and swings off its place ({doc.split(chr(10), 1)[0]})"
     # The icons and the crystals are real art: an Image whose sprite does not resolve draws a plain square.
     for hull, guid in VESSEL_ICONS:
         assert f"m_Sprite: {{fileID: 21300000, guid: {guid}, type: 3}}" in view, f"the {hull} icon is not the vessel's IconActive sprite"
@@ -1697,6 +1755,9 @@ def self_test(files):
             f[prefab_path("ProfileView")].replace("  m_text: Color Blind supported (Free)\n", "  m_text: Free\n", 1))),
         ("a vessel icon that does not resolve (a plain square)", lambda f: f.__setitem__(prefab_path("ProfileView"),
             f[prefab_path("ProfileView")].replace(f"m_Sprite: {{fileID: 21300000, guid: {VESSEL_ICONS[0][1]}, type: 3}}", "m_Sprite: {fileID: 0}"))),
+        ("a turned prism pivoting at its corner", lambda f: f.__setitem__(prefab_path("ProfileView"), re.sub(
+            r"(m_LocalRotation: \{x: 0, y: 0, z: -?0\.[1-9][\d.e-]*, w: [\d.e-]+\}\n(?:  .*\n)*?  m_Pivot: )\{x: 0\.5, y: 0\.5\}",
+            r"\1{x: 0, y: 1}", f[prefab_path("ProfileView")], count=1))),
         ("the template row shipped active", lambda f: f.__setitem__(prefab_path("ProfileView"),
             re.sub(r"(m_Name: RowTemplate\n(?:.*\n)*?  m_IsActive: )0", r"\g<1>1", f[prefab_path("ProfileView")], count=1))),
         ("a dangling profile reference", lambda f: f.__setitem__(SCENE, f[SCENE].replace("  profileIconImage: {fileID: 0}",
