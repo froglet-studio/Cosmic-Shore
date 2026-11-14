@@ -31,6 +31,7 @@ re-emitted and validated on every run, --check included.
 
 import argparse
 import hashlib
+import math
 import importlib.util
 import os
 import re
@@ -426,6 +427,18 @@ TRAIL = 5
 VESSEL_ICONS = (("Squirrel", "5d8f022f56d65ef4fae2cea4428a990f"), ("Sparrow", "ba44f040361ef7a48bc5af4f07dc0123"),
                 ("Dolphin", "c07463db6e8244c45b639760efd18f9e"), ("Manta", "3cf78c88592fff3419945dc7d6a4889a"))
 NOSE = 40                          # the icons are drawn nose to the upper right, this many degrees above level
+# The Codex's crystal renders (author_menu_codex.py, its Elements page): (name, centre x as a fraction of the tile, top, size).
+CRYSTALS = (("omni", 0.5, 40, 92), ("charge", 0.12, 54, 46), ("mass", 0.12, 112, 46), ("space", 0.88, 54, 46),
+            ("time", 0.88, 112, 46))
+# The world behind the page (section 189): the board's world (r112_colour_sets_catalog.world, the same seed), in the UI.
+WORLD_W, WORLD_H = 1920, 996
+WORLD_PRISMS = 46
+WORLD_CENTRES = {"jade": (.2, .44), "ruby": (.8, .36), "gold": (.52, .26), "blue": (.44, .72)}
+DOMAIN_KEYS = ("jade", "ruby", "gold", "blue")
+# (domain, the cubic its vessel flies (fractions of the world), scale): Ruby top left, Gold right, Jade the hero.
+WORLD_LANES = (("ruby", ((.02, .2), (.14, .16), (.22, .1), (.32, .12)), .62),
+               ("gold", ((1.02, .62), (.94, .58), (.9, .48), (.84, .44)), .72),
+               ("jade", ((-.01, .86), (.25, .8), (.42, .52), (.66, .32)), 1.0))
 SCROLL_INTO = K.kit_script("KitScrollIntoView")
 ROW_SCRIPT = C.script("ColorSetRowView")
 
@@ -514,20 +527,106 @@ def build_colour_sets(root):
     k0 = "ColourSets"
     pg = root.child(N(k0, "ColourSets", R((0, 0), (1, 1), (0, -42), (0, -84))))
     pg.add("cg", 225, canvas_group(False))
+    build_world(pg)
     build_shown(pg)
     build_tiles(pg)
     build_list(pg)
     pg.add("colours", 114, lambda ctx, go: mono(go, S["colours"], colour_sets_body(ctx)))
 
 
+def _rand(seed):
+    s_ = seed & 0x7FFFFFFF
+
+    def r():
+        nonlocal s_
+        s_ = (s_ * 1103515245 + 12345) & 0x7FFFFFFF
+        return s_ / 0x7FFFFFFF
+    return r
+
+
+def _bez(p, t):
+    (x0, y0), (x1, y1), (x2, y2), (x3, y3) = p
+    m = 1 - t
+    x = m ** 3 * x0 + 3 * m * m * t * x1 + 3 * m * t * t * x2 + t ** 3 * x3
+    y = m ** 3 * y0 + 3 * m * m * t * y1 + 3 * m * t * t * y2 + t ** 3 * y3
+    dx = 3 * m * m * (x1 - x0) + 6 * m * t * (x2 - x1) + 3 * t * t * (x3 - x2)
+    dy = 3 * m * m * (y1 - y0) + 6 * m * t * (y2 - y1) + 3 * t * t * (y3 - y2)
+    return x, y, math.degrees(math.atan2(dy, dx))
+
+
+def world_layout():
+    """The world's prisms and vessels, in page units: [(x, y, w, rot_ui, domain, tier, alpha)] back to front, and
+    [(x, y, size, rot_ui, domain)]. The board's world (r112_colour_sets_catalog.world, seed 11) at 1920 x 996: near
+    prisms large and opaque, far ones small and faint; each lane a line of prisms across the flight path, its hull's
+    icon at the head (SVG angles are clockwise, a UI rotation counter-clockwise, hence the sign)."""
+    w, h = WORLD_W, WORLD_H
+    r = _rand(11)
+    sc = min(w, h) / 864
+    for _ in range(int(60 * w * h / (1840 * 864)) + 8):   # the board's stars, drawn first from the same stream
+        r(), r(), r(), r()
+    items = []
+    for i in range(WORLD_PRISMS):
+        d = i % 4
+        cx, cy = WORLD_CENTRES[DOMAIN_KEYS[d]]
+        z = r()
+        x = (cx + (r() - .5) * .44) * w
+        y = (cy + (r() - .5) * .4) * h
+        t = 0 if r() < .62 else (1 if r() < .7 else 2)
+        size = sc * (12 + z * z * 44)
+        items.append((z, x, y, size, d, t, (r() - .5) * 70))
+    items.sort()
+    prisms = [(x, y, size, -rot, d, t, round(.45 + z * .55, 3)) for z, x, y, size, d, t, rot in items]
+    vessels = []
+    for dom, pts, a in WORLD_LANES:
+        d = DOMAIN_KEYS.index(dom)
+        pts = [(px * w, py * h) for px, py in pts]
+        samples = [_bez(pts, i / 400) for i in range(401)]
+        marks, run, last = [], 0.0, samples[0]
+        for sx, sy, ang in samples[1:]:
+            run += math.hypot(sx - last[0], sy - last[1])
+            last = (sx, sy, ang)
+            if run >= 26 * sc * a:
+                marks.append((sx, sy, ang))
+                run = 0.0
+        marks = marks[:-2]
+        for j, (x, y, ang) in enumerate(marks):
+            prisms.append((x, y, 15 * sc * a, -ang, d, 0, round(a * (.35 + .65 * j / max(1, len(marks))), 3)))
+        hx, hy, ha = samples[-1]
+        vessels.append((hx, hy, 120 * sc * a, -(ha + NOSE), d))
+    return prisms, vessels
+
+
+def build_world(pg):
+    """The preview behind the page (Shombith on the build: "Where is the whole background preview image?"): the
+    board's world in the UI - the sea, each domain's glow, prisms in depth, three vessels laying prism trails - every
+    colour painted from the set shown (ProfileColorSetsPanel.PaintWorld). The sea is 80 % opaque, so the real cell,
+    which wears the set too, still moves behind it."""
+    k = "ColourSets/World"
+    wd = pg.child(N(k, "World", STRETCH))
+    sea = wd.child(N(f"{k}/Sea", "Sea", STRETCH))
+    sea.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image(tok("SurfaceBlack", 0.8))).add("th", 114, H.themed("SurfaceBlack", 0.8))
+    for d, dom in enumerate(DOMAIN_KEYS):
+        cx, cy = WORLD_CENTRES[dom]
+        tint_node(wd, f"{k}/Wash{d}", f"Wash{DOMAIN_NAMES[d]}", TL(round(cx * WORLD_W - 620), round(cy * WORLD_H - 380), 1240, 760),
+                  K.kit_sprite("kit_ring_glow"), preserve=False)
+    prisms, vessels = world_layout()
+    for i, (x, y, size, rot, *_rest) in enumerate(prisms):
+        ph = size * 2.3
+        prism_nodes(wd, f"{k}/P{i}", TL(round(x - size / 2), round(y - ph / 2), round(size, 1), round(ph, 1)), rot=round(rot, 1))
+    for i, (x, y, size, rot, _) in enumerate(vessels):
+        tint_node(wd, f"{k}/Vessel{i}", f"Vessel{i}", TL(round(x - size / 2), round(y - size / 2), round(size), round(size)),
+                  VESSEL_ICONS[_][1], rot=round(rot, 1))
+    # The words' backing: the world darkens toward the foot, where the name, the pigments and the tiles sit.
+    fade = wd.child(N(f"{k}/Fade", "Fade", TL(0, 360, WORLD_W, 260)))
+    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.9), K.kit_sprite("kit_fade_v"), False))
+    band = wd.child(N(f"{k}/Band", "Band", TL(0, 620, WORLD_W, WORLD_H - 620)))
+    band.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.9)))
+
+
 def build_shown(pg):
     """The set shown, over the cell: a fade into a backing band (the real cell is busy: section 126.1), the wearing
     line, the kind, the name, the line, the four pigments, and APPLY / UNLOCK / Equipped against the right edge."""
     k = "ColourSets/Shown"
-    fade = pg.child(N(f"{k}Fade", "ShownFade", TL(0, 330, LIST_X - 10, 200)))
-    fade.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.85), K.kit_sprite("kit_fade_v"), False))
-    band = pg.child(N(f"{k}Band", "ShownBand", TL(0, 530, LIST_X - 10, 466)))
-    band.add("cr", 222, K.canvas_renderer()).add("img", 114, K.image((0.0, 0.004, 0.04, 0.85)))
     label(pg.child(N(f"{k}/Wearing", "Wearing", TL(40, 456, 300, 18))), "", "Label", "TextLight")
     label(pg.child(N(f"{k}/Private", "Private", TL(340, 454, 600, 20))), "Only you see your colour set", "BodySmall", "NeutralLightest")
     for kk, words, token, icon in KINDS:
@@ -586,12 +685,12 @@ def build_tiles(pg):
         heading = 20                                       # the trail rises 20 degrees to the right
         for j in range(TRAIL):
             prism_nodes(v, f"{k}/Vessels/T{d}{j}", TL(cx + j * 16, cy + 34 - j * 6, 9, 20), rot=heading)
-        icon = tint_node(v, f"{k}/Vessels/Hull{d}", f"Hull{hull}", TL(cx + 84, cy - 4, 52, 52),
-                         f"{{fileID: 21300000, guid: {guid}, type: 3}}", rot=heading - NOSE)
-    # Crystals: the set's call to action on the crystal glyph, one large and three small.
-    c_ = tile_frame(tiles, f"{k}/Crystals", "Crystals", TL(x(2), 0, tw, TILES_H), "Crystals", "what you collect")
-    for i, (cx, cy, sz) in enumerate(((tw / 2 - 30, 64, 60), (40, 120, 26), (tw - 70, 52, 30), (tw - 60, 128, 20))):
-        tint_node(c_, f"{k}/Crystals/C{i}", f"Crystal{i}", TL(round(cx), cy, sz, sz), K.chrome_sprite("chrome_crystal"))
+        tint_node(v, f"{k}/Vessels/Hull{d}", f"Hull{hull}", TL(cx + 84, cy - 4, 52, 52), guid, rot=heading - NOSE)
+    # Crystals: the Codex's own renders (its Elements page), the Omni crystal large among the four elemental ones.
+    c_ = tile_frame(tiles, f"{k}/Crystals", "Crystals", TL(x(2), 0, tw, TILES_H), "Crystals", "omni and elemental")
+    for i, (name, cx, cy, sz) in enumerate(CRYSTALS):
+        tint_node(c_, f"{k}/Crystals/{name.capitalize()}", name.capitalize(), TL(round(cx * tw - sz / 2), cy, sz, sz),
+                  K.meta_guid(f"Assets/_Graphics/Codex/ethirion_{name}.png"))
     # Menus: a panel in the set's UI theme with a picked card, a plain card, a call to action and a purchase.
     m = tile_frame(tiles, f"{k}/Menus", "Menus", TL(x(3), 0, tw, TILES_H), "Menus", "panels, picks, buttons")
     mw = tw - 48
@@ -680,6 +779,19 @@ def row_body(ctx, k):
             "  priceTemplate: '{price}'\n")
 
 
+def world_body(ctx):
+    k = "ColourSets/World"
+    prisms, vessels = world_layout()
+    seq = lambda name, ids: f"  {name}:\n" + "".join(f"  - {ref(x)}\n" for x in ids)
+    part = lambda p: [ctx.c(f"{k}/P{i}/{p}", "img") for i in range(len(prisms))]
+    return (seq("worldFaces", part("Face")) + seq("worldRims", part("Rim")) + seq("worldLits", part("Lit"))
+            + "  worldPrisms:\n" + "".join(f"  - {{x: {d}, y: {t}, z: {K.f32(a)}}}\n" for *_x, d, t, a in prisms)
+            + seq("worldVessels", [ctx.c(f"{k}/Vessel{i}", "img") for i in range(len(vessels))])
+            + "  worldVesselDomains:\n" + "".join(f"  - {d}\n" for *_x, d in vessels)
+            + seq("worldWashes", [ctx.c(f"{k}/Wash{d}", "img") for d in range(4)])
+            + "  washAlpha: 0.18\n")
+
+
 def colour_sets_body(ctx):
     k0, k, kt, kl = "ColourSets", "ColourSets/Shown", "ColourSets/Tiles", "ColourSets/List"
     ck = f"{kl}/Scroll/Viewport/Content"
@@ -721,7 +833,7 @@ def colour_sets_body(ctx):
             + seq("vesselIcons", [ctx.c(f"{kt}/Vessels/Hull{d}", "img") for d in range(4)])
             + seq("trailFaces", trail_parts("Face")) + seq("trailRims", trail_parts("Rim"))
             + f"  trailLength: {TRAIL}\n"
-            + seq("crystals", [ctx.c(f"{kt}/Crystals/C{i}", "img") for i in range(4)])
+            + world_body(ctx)
             + f"  menuPanel: {ref(ctx.c(f'{kt}/Menus/Panel', 'img'))}\n"
             f"  menuLine: {ref(ctx.c(f'{kt}/Menus/Line', 'img'))}\n"
             f"  menuSelection: {ref(ctx.c(f'{kt}/Menus/Selection', 'img'))}\n"
@@ -1438,7 +1550,8 @@ def validate_colour_sets(files):
         raise AssertionError(f"ProfileColorSetsPanel.{m.group(1)} is not wired")
     for name, n in (("headings", 3), ("headingCounts", 3), ("filterCounts", 3), ("kindLabels", 3), ("pairRims", 4),
                     ("prismFaces", 4 * TIERS), ("prismRims", 4 * TIERS), ("prismLits", 4 * TIERS), ("vesselIcons", 4),
-                    ("trailFaces", 4 * TRAIL), ("trailRims", 4 * TRAIL), ("crystals", 4)):
+                    ("trailFaces", 4 * TRAIL), ("trailRims", 4 * TRAIL), ("worldWashes", 4), ("worldVessels", len(WORLD_LANES)),
+                    ("worldFaces", len(world_layout()[0])), ("worldRims", len(world_layout()[0]))):
         m = re.search(rf"^  {name}:\n((?:  - .*\n)*)", body, re.M)
         got = re.findall(r"\{fileID: (-?\d+)\}", m.group(1)) if m else []
         assert len(got) == n and "0" not in got, f"ProfileColorSetsPanel.{name} needs {n} references (has {len(got)})"
@@ -1453,6 +1566,12 @@ def validate_colour_sets(files):
                 "ColourSets/Tiles/Crystals/Sea", "ColourSets/Tiles/Menus/Sea"):
         _, sea = A.doc_of(view, V(f"{key}#img"))
         assert sea and M.SEA_PANEL_MAT in sea, f"{key}: the card has no sea lines (Sea_Panel.mat; Shombith on Rev 112 D)"
+    # The icons and the crystals are real art: an Image whose sprite does not resolve draws a plain square.
+    for hull, guid in VESSEL_ICONS:
+        assert f"m_Sprite: {{fileID: 21300000, guid: {guid}, type: 3}}" in view, f"the {hull} icon is not the vessel's IconActive sprite"
+    for name, *_ in CRYSTALS:
+        g = K.meta_guid(f"Assets/_Graphics/Codex/ethirion_{name}.png")
+        assert f"m_Sprite: {{fileID: 21300000, guid: {g}, type: 3}}" in view, f"the {name} crystal is not the Codex's render"
     for words in re.findall(r"^  m_text: (.*)$", view, re.M):
         assert words.strip().strip("'").upper() != "FREE", "a heading or filter says a bare FREE (Rev 112 D: Color Blind supported (Free))"
 
@@ -1576,6 +1695,8 @@ def self_test(files):
             re.sub(r"(  trailRims:\n)  - \{fileID: -?\d+\}\n", r"\1", f[prefab_path("ProfileView")], count=1))),
         ("a heading back to a bare Free", lambda f: f.__setitem__(prefab_path("ProfileView"),
             f[prefab_path("ProfileView")].replace("  m_text: Color Blind supported (Free)\n", "  m_text: Free\n", 1))),
+        ("a vessel icon that does not resolve (a plain square)", lambda f: f.__setitem__(prefab_path("ProfileView"),
+            f[prefab_path("ProfileView")].replace(f"m_Sprite: {{fileID: 21300000, guid: {VESSEL_ICONS[0][1]}, type: 3}}", "m_Sprite: {fileID: 0}"))),
         ("the template row shipped active", lambda f: f.__setitem__(prefab_path("ProfileView"),
             re.sub(r"(m_Name: RowTemplate\n(?:.*\n)*?  m_IsActive: )0", r"\g<1>1", f[prefab_path("ProfileView")], count=1))),
         ("a dangling profile reference", lambda f: f.__setitem__(SCENE, f[SCENE].replace("  profileIconImage: {fileID: 0}",

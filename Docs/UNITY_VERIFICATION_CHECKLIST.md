@@ -23486,3 +23486,6 @@ Branch `claude/clever-clarke-7uxwca`; `Docs/MENU_REDESIGN_B.md` sections 187-188
 - [ ] Unlock (set a Premium set's `unlocked` off in ColorSetCatalog.asset): the row shows the crystal price, the gold
       UNLOCK 1,200 button; short of crystals shows "Not enough crystals"; with enough, the crystals go and APPLY appears.
 - [ ] Settings > General > Colour sets opens the Profile on the Color Blind supported filter, first set shown.
+- [ ] (Section 189) Behind the page, the set's world: prisms in depth, three vessels on prism trails, each domain's glow;
+      it repaints as you browse. The Vessels tile shows the real hull icons (no squares); the Crystals tile shows the
+      Codex's Omni and four elemental crystals.

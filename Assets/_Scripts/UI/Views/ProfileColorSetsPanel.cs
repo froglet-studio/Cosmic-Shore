@@ -22,8 +22,9 @@ namespace CosmicShore.UI
     /// groups: Yours from the start, Color Blind supported (Free) and Premium, with All / Color Blind supported / Premium
     /// filters. Over the cell on the left: the set's kind, name, line and four rim-over-face pigments, and APPLY (or
     /// UNLOCK with its crystal price for a Premium set not owned yet, or Equipped). Along the foot four tiles show what
-    /// the set repaints - prisms in three shields, vessels and their prism trails, crystals, menus - painted from the
-    /// set itself.</para>
+    /// the set repaints - prisms in three shields, vessels and their prism trails, the Codex's own crystal renders, menus -
+    /// painted from the set itself. Behind it all, the board's world - prisms in depth, three vessels laying prism trails,
+    /// the domains' glow on the sea - drawn in the UI and painted from the set shown (§189), over the dimmed real cell.</para>
     ///
     /// <para>APPLY raises the cell-change veil and wears the set (<see cref="ThemeManager.ApplyColorSet"/>); UNLOCK
     /// spends the crystals (<see cref="PlayerDataService.TryUnlockColorSet"/>). Leaving the tab or the Profile without
@@ -102,6 +103,22 @@ namespace CosmicShore.UI
         [Tooltip("Shown after UNLOCK when the crystals are short, until another set is picked.")]
         [SerializeField] private GameObject shortMark;
 
+        [Header("The world (the preview behind the page)")]
+        [Tooltip("The board's world, drawn in the UI and painted from the set shown: a prism per entry, its face, rim " +
+                 "and lit facet (Rev 112 D, section 189).")]
+        [SerializeField] private Image[] worldFaces = Array.Empty<Image>();
+        [SerializeField] private Image[] worldRims = Array.Empty<Image>();
+        [SerializeField] private Image[] worldLits = Array.Empty<Image>();
+        [Tooltip("Per world prism: x its domain (Jade 0, Ruby 1, Gold 2, Blue 3), y its tier (0 plain, 1 shielded, " +
+                 "2 super-shielded), z its alpha (far prisms are fainter).")]
+        [SerializeField] private Vector3[] worldPrisms = Array.Empty<Vector3>();
+        [Tooltip("The vessels flying through the world, each tinted with its domain's vessel colour.")]
+        [SerializeField] private Image[] worldVessels = Array.Empty<Image>();
+        [SerializeField] private int[] worldVesselDomains = Array.Empty<int>();
+        [Tooltip("Jade, Ruby, Gold, Blue: the soft glow each domain's rim casts on the sea.")]
+        [SerializeField] private Image[] worldWashes = Array.Empty<Image>();
+        [Range(0f, 1f)] [SerializeField] private float washAlpha = 0.18f;
+
         [Header("What the set repaints")]
         [Tooltip("Prisms: Jade, Ruby, Gold, Blue x plain, shielded, super-shielded (domain * 3 + tier).")]
         [SerializeField] private Image[] prismFaces = Array.Empty<Image>();
@@ -113,8 +130,6 @@ namespace CosmicShore.UI
         [SerializeField] private Image[] trailFaces = Array.Empty<Image>();
         [SerializeField] private Image[] trailRims = Array.Empty<Image>();
         [Min(1)] [SerializeField] private int trailLength = 5;
-        [Tooltip("Crystals: tinted with the set's call-to-action colour.")]
-        [SerializeField] private Image[] crystals = Array.Empty<Image>();
         [Tooltip("Menus: a panel, its line, a picked card, a call to action and a purchase, in the set's UI theme.")]
         [SerializeField] private Image menuPanel;
         [SerializeField] private Image menuLine;
@@ -488,15 +503,38 @@ namespace CosmicShore.UI
                         Paint(trailRims, d * trailLength + k, WithAlpha(Display(trailRim), a));
                     }
             }
-            var cta = Display(set.EnvironmentColors.BrightCTA);
-            foreach (var c in crystals)
-                if (c) c.color = cta;
+            PaintWorld(set);
             var ui = ColorSetUITheme.Build(theme, set);
             if (menuPanel) menuPanel.color = ui[UIColorToken.SurfaceVeryDark];
             if (menuLine) menuLine.color = ui[UIColorToken.SurfaceDark];
             if (menuSelection) menuSelection.color = ui[UIColorToken.ControlActive];
             if (menuCta) menuCta.color = ui[UIColorToken.Cta];
             if (menuPurchase) menuPurchase.color = ui[UIColorToken.Purchase];
+        }
+
+        // The world behind the page: every prism, vessel and wash in the set's colours.
+        void PaintWorld(SO_ColorSet set)
+        {
+            int n = Mathf.Min(worldPrisms.Length, Mathf.Min(worldFaces.Length, Mathf.Min(worldRims.Length, worldLits.Length)));
+            for (int i = 0; i < n; i++)
+            {
+                var p = worldPrisms[i];
+                int d = Mathf.Clamp((int)p.x, 0, DomainOrder.Length - 1);
+                int t = Mathf.Clamp((int)p.y, 0, Tiers.Length - 1);
+                if (!set.TryGetPrismKindColors(DomainOrder[d], Tiers[t], out var rim, out var face)) continue;
+                Paint(worldFaces, i, WithAlpha(Display(face), p.z));
+                Paint(worldRims, i, WithAlpha(Display(rim), p.z));
+                Paint(worldLits, i, WithAlpha(Lit(face, rim), p.z));
+            }
+            for (int i = 0; i < worldVessels.Length && i < worldVesselDomains.Length; i++)
+            {
+                int d = Mathf.Clamp(worldVesselDomains[i], 0, DomainOrder.Length - 1);
+                if (set.TryGetColorSetByDomain(DomainOrder[d], out var domain))
+                    Paint(worldVessels, i, Display(domain.ShipColor2));
+            }
+            for (int d = 0; d < DomainOrder.Length; d++)
+                if (set.TryGetPrismKindColors(DomainOrder[d], PrismKind.Plain, out var rim, out _))
+                    Paint(worldWashes, d, WithAlpha(Display(rim), washAlpha));
         }
 
         static Color WithAlpha(Color c, float a) => new(c.r, c.g, c.b, a);
