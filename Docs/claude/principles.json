@@ -3408,7 +3408,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the silenced state block an input, stop an ability from playing, or leave any of its harm live? Any of those is wrong.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-13",
@@ -3424,7 +3424,7 @@
    "area": "vessel",
    "retired": "silencing for settled petals only (the first cut)",
    "test": "Would a scored hit on a pilot holding no petals silence them for the hit's worth? If not, the design has gone back to petals settled.",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-14",
@@ -3440,7 +3440,7 @@
    "area": "vessel",
    "retired": "",
    "test": "Does the hit's consequence ride the scored hit itself and take only harmlessness, never motion or control?",
-   "status": "drafted"
+   "status": "confirmed"
   },
   {
    "id": "P-vessel-15",
