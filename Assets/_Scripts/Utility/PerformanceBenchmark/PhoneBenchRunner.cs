@@ -34,6 +34,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public const string TagExtraName = "csbenchtag";
         /// <summary>Optional extra Profiler markers for each game's capture, comma-separated (<c>--es csbenchm "SerpentTime.AI,AI.Pilot.Update"</c>).</summary>
         public const string MarkersExtraName = "csbenchm";
+        /// <summary>Optional graphics override for the whole run, never saved: <c>--es csbenchgfx "MSAA2x:65"</c> (anti-aliasing name, render scale percent; either side may be empty).</summary>
+        public const string GfxExtraName = "csbenchgfx";
         const string OutputFolder = "PerfRuns";
         const string OfflineKey = "CosmicShore.OfflinePreferred";
         const float SettleSeconds = 15f;
@@ -52,6 +54,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         bool _skippedName;
         string _markers = "";
         int _offlineWas;
+        string _gfx;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void MaybeStart()
@@ -65,6 +68,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             r._tag = DeviceLogFormat.SafeName(ReadExtra(TagExtraName), "bench");
             string markers = ReadExtra(MarkersExtraName);
             r._markers = string.IsNullOrWhiteSpace(markers) ? "" : " " + MarkerBudget.ExtraMarkersPrefix + markers.Replace(" ", "");
+            r._gfx = ReadExtra(GfxExtraName);
             // Offline (a local host): a Relay hiccup mid-game bounces the host to the menu and voids the run. Put back at the end.
             r._offlineWas = PlayerPrefs.GetInt(OfflineKey, 0);
             PlayerPrefs.SetInt(OfflineKey, 1);
@@ -174,8 +178,21 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Finish("done");
         }
 
+        /// <summary>Applies the <c>csbenchgfx</c> override to a copy of the player's settings: nothing is saved, the next
+        /// normal launch has the player's own settings. Re-applied per game because each scene has its own camera.</summary>
+        void ApplyGfxOverride()
+        {
+            if (string.IsNullOrWhiteSpace(_gfx) || !DisplayGraphicsSettings.Instance) return;
+            var data = DisplayGraphicsSettings.Instance.Current.Clone();
+            var f = _gfx.Split(':');
+            if (f[0].Trim().Length > 0 && Enum.TryParse(f[0].Trim(), true, out CosmicShore.Data.AntiAliasingSetting aa)) data.AntiAliasing = aa;
+            if (f.Length > 1 && int.TryParse(f[1], out int pct)) data.RenderScalePercent = Mathf.Clamp(pct, 25, 200);
+            GraphicsSettingsApplier.ApplyQuality(data);
+        }
+
         IEnumerator Measure(Entry e, string seat, bool menu)
         {
+            ApplyGfxOverride();
             yield return new WaitForSecondsRealtime(SettleSeconds);
 
             string scene = SceneManager.GetActiveScene().name;
@@ -237,6 +254,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             sb.Append("\"targetFps\":").Append(Application.targetFrameRate).Append(',');
             sb.Append("\"refreshHz\":").Append(Screen.currentResolution.refreshRateRatio.value.ToString("F0", inv)).Append(',');
             Field(sb, "quality", QualitySettings.names[QualitySettings.GetQualityLevel()]).Append(',');
+            if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline is UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urp)
+                sb.Append("\"renderScale\":").Append(urp.renderScale.ToString("F2", inv)).Append(",\"msaa\":").Append(urp.msaaSampleCount).Append(',');
+            Field(sb, "gfx", _gfx ?? "").Append(',');
             Field(sb, "build", Application.buildGUID).Append(',');
             Field(sb, "version", Application.version);
             sb.Append('}');
